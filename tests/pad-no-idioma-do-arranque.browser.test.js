@@ -14,7 +14,7 @@
 // matters: a game whose words follow the language (the quiz reads them through getters) was drawn in the gap too.
 //
 // 📌 OWN FILE, for the reason the pause-card file measured: a clean module registry is what makes the gap
-// exist. In a file where an earlier case already awaited `idiomaPronto()`, the `en` chunk is warm and this case
+// exist. In a file where an earlier case already awaited `localeReady()`, the `en` chunk is warm and this case
 // would pass with the fix undone.
 //
 // MUTATIONS CHECKED — at the end of the file.
@@ -53,7 +53,7 @@ const declaracaoValida = () => ({
 describe('the virtual pad speaks the boot language', () => {
   it('🔴 [Zero] with `en` stored, the pad shows the game\'s words in English — drawn again once the language arrives', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { idiomaPronto, getLocale } = await import('../app/js/core/i18n.js');
+    const { localeReady, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = document.createElement('div');
     raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
       + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
@@ -72,7 +72,7 @@ describe('the virtual pad speaks the boot language', () => {
       },
     });
 
-    await idiomaPronto();
+    await localeReady();
     expect(getLocale(), 'the en chunk did not load; the case would measure nothing').toBe('en');
 
     const nomes = ['up', 'down']
@@ -95,7 +95,7 @@ describe('the virtual pad speaks the boot language', () => {
 });
 
 // ===== MUTATIONS CHECKED (2026-09-12) =====
-// 1. remove the `void idiomaPronto().then(…)` redraw from `create-game`   → red: the pad stays in the fallback language
+// 1. remove the `void localeReady().then(…)` redraw from `create-game`   → red: the pad stays in the fallback language
 // 2. redraw without `ligacoesDoToque.rewire()`                            → red, by the PAIR only: the labels are
 //    right and the redrawn buttons are dead. 🎯 It first SURVIVED, while the pair only counted buttons — a count
 //    does not prove a wire.

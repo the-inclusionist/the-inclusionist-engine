@@ -20,7 +20,7 @@ import { DEFAULTS } from '../core/state.js';
 // O módulo INTEIRO, e não os nomes soltos: `menuIndexOn` é ligação viva e `setMenuIndexOnValue` a muda — ler
 // pelo namespace deixa isso à vista em cada uso, em vez de parecer uma constante importada.
 import * as state from '../core/state.js';
-import { RITMOS_DA_FALA } from '../core/speech-rate.js';
+import { SPEECH_RATES } from '../core/speech-rate.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
@@ -396,9 +396,9 @@ export function montarInteriorDoSom(ctx: PanelShellCtx, card: HTMLElement, lista
 
 export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   // ⚠️ PADRÃO DA ENGINE (ADR-0106 §4): quem injecta manda; quem não injecta deixa de ficar sem modo cego.
-  // O `setModoCegoValue` faz as três coisas que o `core/state` diz que um setter faz — grava, persiste, avisa
+  // O `setBlindModeValue` faz as três coisas que o `core/state` diz que um setter faz — grava, persiste, avisa
   // — e nada mais: os efeitos (refazer os extras do nível) são reação, e quem reage assina o evento.
-  const setModoCego = ctx.setModoCego ?? state.setModoCegoValue;
+  const setModoCego = ctx.setModoCego ?? state.setBlindModeValue;
 
   let audioDevices: MediaDeviceInfo[] = [];
 
@@ -518,7 +518,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     const sel = ctx.$<HTMLSelectElement>('#tts-ppm');
     if (!sel) return;
     while (sel.firstChild) sel.removeChild(sel.firstChild);
-    for (const ppm of RITMOS_DA_FALA) {
+    for (const ppm of SPEECH_RATES) {
       const o = document.createElement('option'); o.value = String(ppm); o.textContent = t('visual.legenda.ppm', { n: ppm }); sel.appendChild(o);
     }
     sel.value = String(state.speechPpm);
@@ -660,7 +660,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
       mudou.push(changed);
       markChanged(ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
     };
-    marcar('#opt-modocego', ctx.getModoCego() !== DEFAULTS.modoCego);
+    marcar('#opt-modocego', ctx.getModoCego() !== DEFAULTS.blindMode);
     marcar('#cane-div', ctx.getCaneBlockDiv() !== DEFAULTS.caneBlockDiv);
     // ⚠️ DUAS MARCAS DE MENU, uma por painel: a de «Áudio» acesa por um sonar mudado mandaria a criança
     // procurar no painel errado.
@@ -708,7 +708,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    * anunciar porque UM cartucho o fazia a partir do próprio `setModoCego`, e o painel herdava o efeito.
    *
    * ⚠️ E ISSO PASSOU A EXPOR SILÊNCIO no mesmo dia: desde que o campo ganhou padrão da engine
-   * (`setModoCegoValue`, que grava/persiste/avisa e NÃO fala), um jogo que não injecta o seu próprio setter
+   * (`setBlindModeValue`, que grava/persiste/avisa e NÃO fala), um jogo que não injecta o seu próprio setter
    * ficava com este botão mudo. Um alternador que muda estado sem o dizer é invisível para quem usa leitor de
    * tela — a mesma família de defeito que o `reflectTTS` e o `reflectModoCego` já custaram aqui.
    *
@@ -854,7 +854,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   }
   const resetBtn = ctx.$<HTMLButtonElement>('#audio-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
-    setModoCego(DEFAULTS.modoCego);
+    setModoCego(DEFAULTS.blindMode);
     ctx.setCaneBlockDiv(DEFAULTS.caneBlockDiv);
     // 🔴 DESDE O ADR-0151 ESTE MENU NÃO TEM A MÚSICA: repor aqui a música seria alcançar fora de si — a regra do
     // escopo, acima. Tudo o que não é das categorias de gosto é deste painel.
@@ -888,7 +888,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
 
   /*
    * ⚠️ O PAINEL ASSINA O EVENTO, e isto não é uma ideia nova: é a decisão que o `core/state` já tinha
-   * escrito ao lado do `setModoCegoValue` — «o setter faz três coisas e só três: grava, persiste, avisa. Os
+   * escrito ao lado do `setBlindModeValue` — «o setter faz três coisas e só três: grava, persiste, avisa. Os
    * efeitos … são reação, e quem reage assina o evento».
    *
    * Sem esta assinatura, um jogo que NÃO injecta o seu próprio `setModoCego` liga o modo cego pelo ícone da
@@ -900,7 +900,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    * e reescreve o botão. Um anúncio duplicado seria outra história, e por isso a assinatura NÃO anuncia: o
    * ícone da barra já diz `sr.icon.blindOn`/`Off` por si.
    */
-  state.on('modoCego', () => { reflectModoCego(); });
+  state.on('blindMode', () => { reflectModoCego(); });
 
   return { renderAudio, reflectModoCego, reflectTts };
 }

@@ -9,7 +9,7 @@
 // como pilha, produzem exatamente o que o enum produz. Se isso não fosse verdade, a pilha não substituiria
 // nada — seria uma segunda forma de dizer a mesma coisa, com o dobro do custo.
 import { describe, it, expect } from 'vitest';
-import { criarPilha } from '../app/js/core/scenes.js';
+import { createSceneStack } from '../app/js/core/scenes.js';
 
 /** Uma cena que ANOTA tudo o que recebe — é assim que se afirma "quem foi chamado, e em que ordem". */
 function cena(nome, log, over = {}) {
@@ -26,7 +26,7 @@ function cena(nome, log, over = {}) {
 
 describe('empilhar e desempilhar', () => {
   it('[Zero] pilha vazia não quebra em nada', () => {
-    const p = criarPilha();
+    const p = createSceneStack();
     expect(p.top()).toBeNull();
     expect(p.nomes()).toEqual([]);
     expect(p.pop()).toBeNull();
@@ -36,7 +36,7 @@ describe('empilhar e desempilhar', () => {
 
   it('[Right] push avisa quem sai e quem entra, nessa ordem', () => {
     const log = [];
-    const p = criarPilha();
+    const p = createSceneStack();
     p.push(cena('jogo', log));
     p.push(cena('pausa', log));
     expect(log).toEqual(['jogo:enter', 'jogo:exit', 'pausa:enter']);
@@ -47,7 +47,7 @@ describe('empilhar e desempilhar', () => {
     // O `enter()` de quem reaparece é o que faz "voltar da pausa" ser um evento, e não um silêncio. Sem ele,
     // a cena de baixo volta ao topo sem saber — e é ali que se re-apanha o foco do teclado, por exemplo.
     const log = [];
-    const p = criarPilha();
+    const p = createSceneStack();
     p.push(cena('jogo', log));
     p.push(cena('pausa', log));
     log.length = 0;
@@ -61,7 +61,7 @@ describe('empilhar e desempilhar', () => {
     // Se fosse pop+push, a cena de baixo receberia `enter()` por um instante e reapareceria no topo entre as
     // duas chamadas. Numa transição de tela isso é um quadro com a cena errada — visível, e intermitente.
     const log = [];
-    const p = criarPilha();
+    const p = createSceneStack();
     p.push(cena('menu', log));
     p.push(cena('mapa', log));
     log.length = 0;
@@ -72,7 +72,7 @@ describe('empilhar e desempilhar', () => {
   });
 
   it('[Interface] `nomes()` é CÓPIA — quem lê não muta a pilha por acidente', () => {
-    const p = criarPilha();
+    const p = createSceneStack();
     p.push(cena('a', []));
     p.nomes().push('intruso');
     expect(p.nomes()).toEqual(['a']);
@@ -82,7 +82,7 @@ describe('empilhar e desempilhar', () => {
 describe('as três regras', () => {
   it('[Right] update só no TOPO — é o congelamento da pausa, virado estrutura', () => {
     const log = [];
-    const p = criarPilha();
+    const p = createSceneStack();
     p.push(cena('jogo', log));
     p.push(cena('pausa', log));
     log.length = 0;
@@ -92,7 +92,7 @@ describe('as três regras', () => {
 
   it('[Right] draw de BAIXO para cima — o menu por cima, o mundo ainda visível', () => {
     const log = [];
-    const p = criarPilha();
+    const p = createSceneStack();
     p.push(cena('jogo', log));
     p.push(cena('pausa', log));
     log.length = 0;
@@ -102,7 +102,7 @@ describe('as três regras', () => {
 
   it('[Right] input só no topo, e o RETORNO diz se consumiu', () => {
     const log = [];
-    const p = criarPilha();
+    const p = createSceneStack();
     p.push(cena('jogo', log));
     p.push(cena('pausa', log, { input: (i) => { log.push('pausa:input:' + i); return true; } }));
     log.length = 0;
@@ -113,13 +113,13 @@ describe('as três regras', () => {
   it('[Boundary] topo que NÃO consome devolve false — a tecla é de outro dono', () => {
     // A distinção que o ADR-0033 deu à entrada modal: "é do modal" e "significa algo no modal" são perguntas
     // diferentes. Sem o retorno, a pilha teria de adivinhar, e adivinhar aqui é engolir tecla em silêncio.
-    const p = criarPilha();
+    const p = createSceneStack();
     p.push({ nome: 'x', input: () => false });
     expect(p.input('qualquer')).toBe(false);
   });
 
   it('[Zero] cena SEM ganchos é legítima — nada de `update` vazio por obrigação', () => {
-    const p = criarPilha();
+    const p = createSceneStack();
     p.push({ nome: 'so-nome' });
     expect(() => { p.update(1); p.draw(); }).not.toThrow();
     expect(p.input('a')).toBe(false);
@@ -131,7 +131,7 @@ describe('as fases de HOJE, ditas como pilha', () => {
   // `[jogo, pausa]` — e as respostas que `ui/shell.phaseView` dá a partir do enum saem da pilha sem que ela
   // conheça nenhum dos três nomes.
   const montar = (fases) => {
-    const p = criarPilha();
+    const p = createSceneStack();
     for (const f of fases) p.push({ nome: f });
     return p;
   };

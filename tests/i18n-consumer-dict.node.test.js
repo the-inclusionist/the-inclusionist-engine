@@ -47,7 +47,7 @@ async function carregarI18n() {
   dublarDocumento();
   const m = await import('../app/js/core/i18n.js');
   // a fresh module has no port: the composition root would have loaded one (ADR-0178), and so does this double
-  m.carregarIdioma({ get: () => null, set: () => undefined, KEYS: { lang: 'incl_lang' } });
+  m.loadLocale({ get: () => null, set: () => undefined, KEYS: { lang: 'incl_lang' } });
   return m;
 }
 

@@ -13,8 +13,8 @@
 // A LEAF: imports nothing.
 
 /** The grid: 64×64 cells of a 1024×768 reference. */
-export const COLUNAS = 16;
-export const LINHAS = 12;
+export const COLUMNS = 16;
+export const ROWS = 12;
 /** The 10° field as whole cells: 5×4 = 320×256, the nearest rectangle to 341×256. */
 const JANELA_C = 5;
 const JANELA_L = 4;
@@ -24,14 +24,14 @@ const MUDANCA = 0.1;
 const ESCURA_ABAIXO_DE = 0.8;
 const MAXIMO_POR_SEGUNDO = 3;
 
-export interface QuadroDeLuminancia {
+export interface LuminanceFrame {
   /** Milliseconds. */
   readonly t: number;
-  /** Relative luminance 0..1 per cell, row by row, `COLUNAS * LINHAS` long. */
+  /** Relative luminance 0..1 per cell, row by row, `COLUMNS * ROWS` long. */
   readonly luminancias: ArrayLike<number>;
 }
 
-export interface VeredictoDeFlashes {
+export interface FlashVerdict {
   readonly passa: boolean;
   /** The most general flashes any 10° field showed within one second. */
   readonly piorSegundo: number;
@@ -44,11 +44,11 @@ export interface VeredictoDeFlashes {
  * further in the same direction extends the extreme instead of counting. Per field, a transition is 6 cells making one in
  * the same direction in the same frame; a FLASH is two opposing field transitions, and the pair then starts afresh.
  */
-export function analisarFlashes(quadros: readonly QuadroDeLuminancia[]): VeredictoDeFlashes {
-  const n = COLUNAS * LINHAS;
+export function analyseFlashes(quadros: readonly LuminanceFrame[]): FlashVerdict {
+  const n = COLUMNS * ROWS;
   const referencia = new Float64Array(n).fill(Number.NaN);
   const direcao = new Int8Array(n);
-  const janelas = (COLUNAS - JANELA_C + 1) * (LINHAS - JANELA_L + 1);
+  const janelas = (COLUMNS - JANELA_C + 1) * (ROWS - JANELA_L + 1);
   const ultimaDaJanela = new Int8Array(janelas);
   const flashesDaJanela: number[][] = Array.from({ length: janelas }, () => []);
   const transicao = new Int8Array(n);
@@ -68,13 +68,13 @@ export function analisarFlashes(quadros: readonly QuadroDeLuminancia[]): Veredic
       }
     }
     let j = 0;
-    for (let lin = 0; lin + JANELA_L <= LINHAS; lin++) {
-      for (let col = 0; col + JANELA_C <= COLUNAS; col++, j++) {
+    for (let lin = 0; lin + JANELA_L <= ROWS; lin++) {
+      for (let col = 0; col + JANELA_C <= COLUMNS; col++, j++) {
         let subiu = 0;
         let desceu = 0;
         for (let dl = 0; dl < JANELA_L; dl++) {
           for (let dc = 0; dc < JANELA_C; dc++) {
-            const s = transicao[(lin + dl) * COLUNAS + col + dc]!;
+            const s = transicao[(lin + dl) * COLUMNS + col + dc]!;
             if (s > 0) subiu++; else if (s < 0) desceu++;
           }
         }

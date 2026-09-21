@@ -103,8 +103,8 @@ describe('a superfície pública do pacote só encolhe por declaração (docs/6-
       expect(constantes.has(n), `${n} voltou a core/constants.ts; a doc de quebras precisa de ser corrigida`).toBe(false);
     }
     // E as duas que FICARAM ficaram por uma razão de acessibilidade, não por simetria.
-    expect(constantes.has('ehPerigo'), 'ehPerigo saiu: `isSolidType` depende dele no modo cego').toBe(true);
-    expect(constantes.has('ehTrampolim'), 'ehTrampolim saiu: `isSolidType` depende dele no modo cadeirante').toBe(true);
+    expect(constantes.has('isHazard'), 'isHazard saiu: `isSolidType` depende dele no modo cego').toBe(true);
+    expect(constantes.has('isTrampoline'), 'isTrampoline saiu: `isSolidType` depende dele no modo cadeirante').toBe(true);
   });
 });
 

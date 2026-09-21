@@ -9,7 +9,7 @@ import * as store from './storage.js';
 import { t, bcp47 } from '../core/i18n.js';
 import { criarFalaInterrompivel } from './interruptible-speech.js';
 import { vozesDoIdioma, type VozNeural } from './voice-plan.js';
-import { palavrasFaladas, segundosDeFala, taxaDaFala } from '../core/speech-rate.js';
+import { spokenWords, speechSeconds, speechPlaybackRate } from '../core/speech-rate.js';
 import {
   VOZES_KOKORO, tokenizar, estiloDaFrase, eFala, wavDe,
   type LoadKokoro, type KokoroModule, type KokoroSession,
@@ -156,14 +156,14 @@ export function createTts(ctx: TtsCtx): Tts {
       // ADR-0183 §1: the browser's `rate` is a multiplier. The voice's words a minute at rate 1 is measured on its own utterances
       // (start to end, so the silent ends count — an approximation the neural path does not need); until one is measured, 1.
       const idDaVoz = 'webspeech:' + (voz?.name ?? bcp47());
-      const palavras = palavrasFaladas(text);
+      const palavras = spokenWords(text);
       const baseDaVoz = mediaDaVoz.get(idDaVoz) ?? null;
-      u.rate = ctx.getSpeechPpm && baseDaVoz ? taxaDaFala(0, 0, ctx.getSpeechPpm(), baseDaVoz).taxa : 1;
+      u.rate = ctx.getSpeechPpm && baseDaVoz ? speechPlaybackRate(0, 0, ctx.getSpeechPpm(), baseDaVoz).taxa : 1;
       let inicio = 0;
       u.onstart = () => { inicio = performance.now(); };
       u.onend = () => {
         const segundos = inicio ? (performance.now() - inicio) / 1000 : 0;
-        const medido = taxaDaFala(palavras, segundos, 150, null).ppmDaVoz;
+        const medido = speechPlaybackRate(palavras, segundos, 150, null).ppmDaVoz;
         if (medido) media(idDaVoz, medido / u.rate);
       };
       ss.speak(u); return true;
@@ -183,7 +183,7 @@ export function createTts(ctx: TtsCtx): Tts {
         let taxa = 1;
         if (ctx.getSpeechPpm) {
           const buf = await ac.decodeAudioData(bytes.slice(0));
-          const medida = taxaDaFala(palavrasFaladas(texto), segundosDeFala(buf.getChannelData(0), buf.sampleRate), ctx.getSpeechPpm(), mediaDaVoz.get(vozId) ?? null);
+          const medida = speechPlaybackRate(spokenWords(texto), speechSeconds(buf.getChannelData(0), buf.sampleRate), ctx.getSpeechPpm(), mediaDaVoz.get(vozId) ?? null);
           media(vozId, medida.ppmDaVoz);
           taxa = medida.taxa;
         }

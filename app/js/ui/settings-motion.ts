@@ -20,7 +20,7 @@ import { t } from '../core/i18n.js';
 import { montarPassos, atualizarPassos, passoSeguinte } from './panel-widgets.js';
 
 import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena } from './motion-scene.js';
-import { escaparHtml } from '../core/escape-html.js';
+import { escapeHtml } from '../core/escape-html.js';
 import type {
   MotionSceneKey as ChaveDeCenaLeaf,
   MotionCharProp as PropDoPersonagemLeaf,
@@ -334,7 +334,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       // 📌 Os outros dois rótulos deste subtítulo continuam crus e estão no livro-razão do módulo — são
       // outras duas linhas, e consertá-las de passagem misturava duas decisões num commit.
       // A secção inteira só existe se o jogo tem personagem (ADR-0153): um subtítulo sem linhas seria o mesmo defeito.
-      (charRows ? `<h3 class="panel-sub">${escaparHtml(ctx.rotuloDoPersonagem?.() ?? 'Personagem')}${ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: selectedPlayer + 1 }) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` : '') +
+      (charRows ? `<h3 class="panel-sub">${escapeHtml(ctx.rotuloDoPersonagem?.() ?? 'Personagem')}${ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: selectedPlayer + 1 }) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` : '') +
       `${secao('Cena')}${sceneRows}` +
       `${secao('Estética CRT')}${crtRows}`;
 

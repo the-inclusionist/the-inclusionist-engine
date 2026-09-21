@@ -12,7 +12,7 @@ import {
 } from '../app/js/ui/shell.js';
 
 // A CASCA DEIXOU DE CONHECER AS FASES em 2026-08-26 (ADR-0030 C3). `phaseView`/`touchControlsPlan` recebem
-// três BOOLEANOS — `FatosDaCena` —, e os três nomes moram na raiz de composição, que é este jogo. Este
+// três BOOLEANOS — `SceneFacts` —, e os três nomes moram na raiz de composição, que é este jogo. Este
 // arquivo continua escrito em `'title'`/`'playing'`/`'paused'` porque é como os casos se leem melhor; a
 // tradução acontece aqui, num lugar só, e é justamente o que a raiz faz de verdade.
 const fase = (p) => ({ telaDeTitulo: p === 'title', mundoRodando: p === 'playing', menuDePausa: p === 'paused' });

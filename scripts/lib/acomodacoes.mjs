@@ -127,7 +127,7 @@ export const ACOM = {
   simulacaoVisual: { tem: true, o: 'empatia: simular cegueira / baixa visão / daltonismo', chave: { eixo: 'mundo', valores: ['element'] } },
   // 🔴 E o sonar precisa de MUNDO e de DIRECÇÃO — ver `EIXOS_DERIVADOS`. Numa lista de pontos, ou sem mundo,
   // a criança cega joga pela narração e pelo índice falado, que são universais.
-  modoCego: { tem: true, o: 'jogar sem ver, por pistas de áudio', chave: { eixo: 'espaco', valores: ['espacial'] } },
+  blindMode: { tem: true, o: 'jogar sem ver, por pistas de áudio', chave: { eixo: 'espaco', valores: ['espacial'] } },
   navegacaoSonora: { tem: true, o: 'volume de bengala/sonar/guia', chave: { eixo: 'espaco', valores: ['espacial'] } },
 
   // — pela taxonomia —

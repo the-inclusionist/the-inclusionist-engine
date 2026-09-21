@@ -18,7 +18,7 @@
 //
 // 📌 ESTE FICHEIRO É PRÓPRIO, e a razão foi MEDIDA em vez de copiada. A primeira versão deste caso vivia no
 // `barra-no-idioma-do-arranque`, e ali ele ficava VERDE com o conserto desfeito: o caso anterior daquele
-// ficheiro faz `await idiomaPronto()`, o chunk de `en` fica quente, e o cartão do segundo caso nascia já em
+// ficheiro faz `await localeReady()`, o chunk de `en` fica quente, e o cartão do segundo caso nascia já em
 // inglês. O crivo estava a afirmar o conserto e a medir a ORDEM DOS CASOS. Registo de módulos limpo é o que
 // faz o intervalo existir — que é o próprio sítio onde o defeito mora.
 //
@@ -68,7 +68,7 @@ function palco() {
 describe('o cartão de pausa fala o idioma do arranque', () => {
   it('🔴 [Zero] o NOME ACESSÍVEL e o sufixo do assento saem do idioma de recuo', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { idiomaPronto, getLocale } = await import('../app/js/core/i18n.js');
+    const { localeReady, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = palco();
 
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
@@ -86,7 +86,7 @@ describe('o cartão de pausa fala o idioma do arranque', () => {
     expect(aoMontar, 'o cartão nasceu já em inglês: este ambiente não tem o intervalo onde o defeito vive')
       .toMatch(/Menu de pausa/);
 
-    await idiomaPronto();
+    await localeReady();
     expect(getLocale(), 'o chunk de en não carregou; o caso mediria o nada').toBe('en');
 
     // ⚠️ ABRIR é o que repinta: `pausa.mostrar` chama `reflectPauseIcons()`, e é lá que o nome se refaz. O

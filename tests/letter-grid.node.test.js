@@ -4,26 +4,26 @@
 // O alvo destes casos não é "o cursor anda". É a fronteira: as bordas, a LINHA INCOMPLETA e o valor cheio —
 // os três lugares onde uma grade cai num índice que não existe e o leitor de tela anuncia vazio.
 import { describe, it, expect } from 'vitest';
-import { criarGrade } from '../app/js/core/letter-grid.js';
-import { ALFABETO } from '../app/js/core/password.js';
+import { createLetterGrid } from '../app/js/core/letter-grid.js';
+import { ALPHABET } from '../app/js/core/password.js';
 
 /** A grade da senha: os 32 símbolos de Crockford em 8 colunas — 4 linhas cheias, sem sobra. */
-const gradeSenha = (capacidade = 4) => criarGrade({ simbolos: ALFABETO, colunas: 8, capacidade });
+const gradeSenha = (capacidade = 4) => createLetterGrid({ simbolos: ALPHABET, colunas: 8, capacidade });
 
 /** Uma grade com SOBRA: 10 símbolos em 4 colunas dão 2 linhas cheias e uma terceira com 2. */
-const gradeTorta = () => criarGrade({ simbolos: 'ABCDEFGHIJ', colunas: 4 });
+const gradeTorta = () => createLetterGrid({ simbolos: 'ABCDEFGHIJ', colunas: 4 });
 
-describe('criarGrade — o que a grade recusa a nascer', () => {
+describe('createLetterGrid — o que a grade recusa a nascer', () => {
   it('sem símbolo nenhum: uma grade sem casa não tem cursor, e um cursor sem casa vira undefined três telas adiante', () => {
-    expect(() => criarGrade({ simbolos: '', colunas: 4 })).toThrow('simbolos');
+    expect(() => createLetterGrid({ simbolos: '', colunas: 4 })).toThrow('simbolos');
   });
   it('colunas inválidas — zero, negativo e fracionário', () => {
     for (const colunas of [0, -1, 2.5]) {
-      expect(() => criarGrade({ simbolos: 'AB', colunas }), String(colunas)).toThrow('colunas');
+      expect(() => createLetterGrid({ simbolos: 'AB', colunas }), String(colunas)).toThrow('colunas');
     }
   });
   it('capacidade inválida', () => {
-    expect(() => criarGrade({ simbolos: 'AB', colunas: 2, capacidade: -1 })).toThrow('capacidade');
+    expect(() => createLetterGrid({ simbolos: 'AB', colunas: 2, capacidade: -1 })).toThrow('capacidade');
   });
 });
 
@@ -129,7 +129,7 @@ describe('irPara — o mapeamento símbolo → posição, que a leitura de tela 
   });
   it('cada símbolo do alfabeto tem uma posição, e ela devolve o próprio símbolo', () => {
     const g = gradeSenha();
-    for (const s of ALFABETO) {
+    for (const s of ALPHABET) {
       expect(g.irPara(s), s).toBe(true);
       expect(g.sob(), s).toBe(s);
     }
@@ -170,7 +170,7 @@ describe('o valor digitado', () => {
     expect(g.indice()).toBe(onde); // quem apagou continua olhando para onde estava
   });
   it('sem capacidade declarada não há limite nem "faltam" — é o caso dos jogos de palavra', () => {
-    const g = criarGrade({ simbolos: ALFABETO, colunas: 8 });
+    const g = createLetterGrid({ simbolos: ALPHABET, colunas: 8 });
     for (let i = 0; i < 40; i++) g.digitar();
     expect(g.valor()).toHaveLength(40);
     expect(g.faltam()).toBeNull();

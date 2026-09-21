@@ -46,18 +46,18 @@
 // exige seis coisas de plataforma. Não substitui o boot do `main.js`, que tem catorze anos de ordem própria.
 // O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
-import { initI18n, lacunasDosDicionarios, carregarIdioma } from '../core/i18n.js';
+import { initI18n, dictionaryGaps, loadLocale } from '../core/i18n.js';
 import { entradaDe, keys, marcarTecla, soltarTecla, arestaDoJogador } from '../input/state.js';
 import { initTouch, montarControleDeToque, lacunasDoToque } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
 import { criarAvisoDeQueda } from '../ui/loop-crash.js';
-import { registrarAvisoDeQueda } from '../core/loop.js';
-import { analisarFlashes, COLUNAS, LINHAS, type QuadroDeLuminancia } from '../core/flash-threshold.js';
+import { registerCrashNotice } from '../core/loop.js';
+import { analyseFlashes, COLUMNS, ROWS, type LuminanceFrame } from '../core/flash-threshold.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
 import { accommodationAnswersProblems, subjectWord, type AccommodationAnswers } from '../core/accommodations.js';
-import { generoProblems, generoAviso } from '../core/genres.js';
+import { genreProblems, genreWarning } from '../core/genres.js';
 import { contractSubjects } from '../core/accommodation-subjects.js';
 import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
@@ -69,7 +69,7 @@ import { createHandControl } from '../ui/hand-control.js';
 import { followCameraMode } from '../ui/camera-control.js';
 import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from '../ui/pause-icons.js';
 import { anunciarItem } from '../ui/item-announcement.js';
-import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
+import { accessibleLabel } from '../core/rotulo-acessivel.js';
 import { itensNavegaveis } from '../ui/menu-items.js';
 import { helpRows, montarSlides, mostrarSlide, animarFigura, howToPlayProblems, type HowToPlaySlide } from '../ui/help-panel.js';
 import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
@@ -78,14 +78,14 @@ import * as state from '../core/state.js';
 import type { CameraControl } from '../core/state.js';
 import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
-import { criarPilha, type SceneStack } from '../core/scenes.js';
+import { createSceneStack, type SceneStack } from '../core/scenes.js';
 import { createTts } from '../platform/tts.js';
 import { createReading, type Reading, type ListenOptions } from '../platform/reading.js';
 import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain, setHearingLossGraph } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
 // responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
-import { ehCego, ehBaixaVisao, PADRAO, filtroChave, simulacaoIndisponivel, type VisualState, type Tema, type Correcao } from '../render/viz-axes.js';
+import { ehCego, ehBaixaVisao, PADRAO, filtroChave, simulacaoIndisponivel, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
 import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
 import { desenharBaixaVisao } from '../render/low-vision-drawing.js';
@@ -97,7 +97,7 @@ import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
-import { duracaoDaLegenda, RITMOS_DA_LEGENDA } from '../core/caption-duration.js';
+import { captionDuration, CAPTION_RATES } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
 // 📌 `recusaDaAlternancia` e `definirAlternanciaDeMarcha` saíram destes imports com a linha do painel (2026-09-21): quem escreve
@@ -436,8 +436,8 @@ export interface CreateGameOptions {
    * como corrigir cor, ou o contrário. O `game-pinball` é o segundo caso — a imagem dele é um framebuffer
    * de 320x180 sem textura para repintar, e o filtro de cor ele aplica há semanas.
    */
-  readonly setTemaDoJogador?: (i: number, tema: Tema) => void;
-  readonly setCorrecaoDoJogador?: (i: number, correcao: Correcao) => void;
+  readonly setTemaDoJogador?: (i: number, tema: Theme) => void;
+  readonly setCorrecaoDoJogador?: (i: number, correcao: Correction) => void;
 }
 
 /** What `Engine.medirFlashes` found. `passa` and `piorSegundo` exist only when the canvas was read. */
@@ -623,7 +623,7 @@ function recusarSeNaoResponde(quem: string, acomodacoes: unknown): void {
 
 /** A genre outside the engine's list, or Casino game, refuses the boot (ADR-0156 §2, §4); an absent genre is conformant. */
 function recusarSeGeneroRecusado(quem: string, genero: unknown): void {
-  const problemas = generoProblems(genero);
+  const problemas = genreProblems(genero);
   if (problemas.length) recusarDeclaracao(quem, problemas);
 }
 
@@ -704,8 +704,8 @@ export function createGame(o: CreateGameOptions): Engine {
 
   const { doc, win } = o.host;
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
-  state.carregarEstado(store);
-  carregarIdioma(store);
+  state.loadState(store);
+  loadLocale(store);
   /*
    * ⚠️ LEITOR E NÃO INSTANTÂNEO — terceira vez que este ficheiro comete e conserta o mesmo padrão, depois do
    * `seguraTeclas` e do `players`. `declines` é da metade do JOGO (ADR-0139, errata de 2026-09-11: é o
@@ -759,7 +759,7 @@ export function createGame(o: CreateGameOptions): Engine {
     if (tamanho) p.push(tamanho);
     const piso = desenhadoAbaixoDoPiso();
     if (piso) p.push(piso);
-    const avisoDoGenero = generoAviso(cartucho.genero);
+    const avisoDoGenero = genreWarning(cartucho.genero);
     if (avisoDoGenero) p.push(avisoDoGenero);
     // O mundo declarado tem de existir na página — e quem o declara é o jogo, não o hospedeiro.
     const mundo = cartucho.declaration.world();
@@ -965,12 +965,12 @@ export function createGame(o: CreateGameOptions): Engine {
    *
    * 🔴 ESTAS DUAS METADES GANHARAM PADRÃO EM DIAS DIFERENTES E NÃO SE FALAVAM, o que produziu um defeito que
    * nenhum teste podia ver. O escritor recebeu o padrão da engine na etapa 1b do ADR-0106
-   * (`ui/pause-icons` → `ctx.setModoCego ?? setModoCegoValue`), que grava no `core/state`. O leitor ficou com
+   * (`ui/pause-icons` → `ctx.setModoCego ?? setBlindModeValue`), que grava no `core/state`. O leitor ficou com
    * o `() => false` que já cá estava — uma CONSTANTE. Num jogo que não injecta `isBlindMode`:
    *
    *   1. a criança carrega no ícone → `setModoCego(!false)` → o modo LIGA de verdade;
    *   2. o reflexo lê `false` → o ícone diz «desligado» e o anúncio diz o mesmo;
-   *   3. ela carrega outra vez → `setModoCegoValue(!false)` = `true` OUTRA VEZ → a guarda de igualdade do
+   *   3. ela carrega outra vez → `setBlindModeValue(!false)` = `true` OUTRA VEZ → a guarda de igualdade do
    *      `core/state` devolve cedo → nada acontece.
    *
    * ⚠️ O modo cego ligava uma vez e NÃO HAVIA COMO DESLIGAR — um jogo que começa a descrever tudo em voz alta
@@ -980,7 +980,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * respostas à mesma pergunta divergem, e foi assim que esta divergiu. `import * as state` dá ligação VIVA,
    * então isto lê o valor de agora e não o do arranque.
    */
-  const lerModoCego = cartucho.isBlindMode ?? (() => state.modoCego);
+  const lerModoCego = cartucho.isBlindMode ?? (() => state.blindMode);
 
   /**
    * O QUE A ENGINE SABE ACCIONAR SOZINHA NO MENU DE PAUSA — preenchido pelo bloco 4f, lido quando a pausa abre.
@@ -1173,7 +1173,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * for que a aplica. ⚠️ Envolver só o da engine deixaria um jogo que corrige no próprio render (o `game-pinball`)
    * sem a paleta que a criança pediu ao carregar no mesmo ícone.
    */
-  function comPaletaSegura(escrever: (i: number, correcao: Correcao) => void): (i: number, correcao: Correcao) => void {
+  function comPaletaSegura(escrever: (i: number, correcao: Correction) => void): (i: number, correcao: Correction) => void {
     return (i, correcao) => {
       escrever(i, correcao);
       state.setCbSafeValue(correcao !== 'tricro');
@@ -1336,7 +1336,7 @@ export function createGame(o: CreateGameOptions): Engine {
          * 📌 E `filtroChave` faz mais do que colar um prefixo: ela põe a SIMULAÇÃO à frente da correcção
          * quando há uma, que é a regra que este módulo não teria de reinventar.
          */
-        ? { setCorrecaoDoJogador: comPaletaSegura((i: number, correcao: Correcao) => {
+        ? { setCorrecaoDoJogador: comPaletaSegura((i: number, correcao: Correction) => {
           /*
            * 🔴 GUARDA ANTES DE APLICAR, e a primeira versão desta linha só aplicava — o que fazia o ciclo
            * ficar PRESO na primeira posição. Quem calcula o passo seguinte é `proximaCorrecao(p.visual)`, em
@@ -1388,7 +1388,7 @@ export function createGame(o: CreateGameOptions): Engine {
       pauseIcons.iconAct(botao.dataset.pi ?? '', 0);
       pauseIcons.reflectIconsIn(a11yBar, 0);
       const legenda = a11yBar.querySelector('.pause-icons-cap');
-      if (legenda) legenda.textContent = rotuloAcessivel(botao); // the NEW state, after the reflection; «N de M» is spoken, never written (ADR-0167)
+      if (legenda) legenda.textContent = accessibleLabel(botao); // the NEW state, after the reflection; «N de M» is spoken, never written (ADR-0167)
       // O anúncio lê o `aria-label` DEPOIS do reflexo, porque é ele que carrega o estado NOVO — anunciar
       // antes diria o estado que a criança acabou de deixar.
       srSay(botao.getAttribute('aria-label') ?? '');
@@ -1405,7 +1405,7 @@ export function createGame(o: CreateGameOptions): Engine {
      *
      * 📌 SINCE STUDY ITEM C6 (ADR-0031) IT IS THE `i18n:change` LISTENER near the pad that repaints it: the boot's
      * preferred language arrives through `setLocale`, which dispatches that same event, so one path serves the boot
-     * and a change made mid-game. The `idiomaPronto()` repaint that stood here was the same work twice.
+     * and a change made mid-game. The `localeReady()` repaint that stood here was the same work twice.
      */
 
     /*
@@ -1415,10 +1415,10 @@ export function createGame(o: CreateGameOptions): Engine {
      * estado, que é a família de defeito que o `reflectTTS` e o `#opt-modocego` já custaram a este projeto.
      *
      * 📌 SÓ O MODO CEGO, e a limitação é medida e não preguiça: dos ícones que esta raiz monta, ele é o ÚNICO
-     * cujo estado tem evento (`EventoDoJogo` tem `modoCego`; TTS, Libras, TEA e alternância não emitem nada).
+     * cujo estado tem evento (`GameEvent` tem `blindMode`; TTS, Libras, TEA e alternância não emitem nada).
      * Os outros continuam a refletir-se ao clique, que é o caminho por onde hoje eles mudam.
      */
-    state.on('modoCego', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
+    state.on('blindMode', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
     // the 👀 changes elsewhere too: the eye control puts it back to off when the camera or the files are missing (ADR-0213)
     state.on('cameraControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); }); // a mode that cannot start puts the 📷 back to off
     // 🔴 AND THE 👄 FOR THE SAME REASON, measured in a browser on 2026-09-21: with the microphone refused, the child heard «it did
@@ -1735,8 +1735,8 @@ export function createGame(o: CreateGameOptions): Engine {
     /* THE CAPTION RATE (ADR-0183 §4; issue #179): 125, 145 or 175 words a minute, by steps, right after the captions switch. */
     const specDoRitmo = () => ({
       rotulo: t('visual.legenda.ritmo'),
-      valores: RITMOS_DA_LEGENDA.map((n) => t('visual.legenda.ppm', { n })),
-      atual: Math.max(0, (RITMOS_DA_LEGENDA as readonly number[]).indexOf(state.captionPpm)),
+      valores: CAPTION_RATES.map((n) => t('visual.legenda.ppm', { n })),
+      atual: Math.max(0, (CAPTION_RATES as readonly number[]).indexOf(state.captionPpm)),
     });
     const linhaDoRitmo = doc.createElement('div');
     linhaDoRitmo.className = 'ctrl-row ctrl-row--passos';
@@ -1754,9 +1754,9 @@ export function createGame(o: CreateGameOptions): Engine {
     painelVisual.casca.card.insertBefore(linhaDoRitmo, linhaDasLegendas.nextSibling);
     passosDoRitmo.addEventListener('passo', (ev) => {
       const atual = specDoRitmo().atual;
-      const nova = passoSeguinte(atual, RITMOS_DA_LEGENDA.length, (ev as CustomEvent<number>).detail);
+      const nova = passoSeguinte(atual, CAPTION_RATES.length, (ev as CustomEvent<number>).detail);
       if (nova === atual) return;
-      state.setCaptionPpmValue(RITMOS_DA_LEGENDA[nova]!);
+      state.setCaptionPpmValue(CAPTION_RATES[nova]!);
       atualizarPassos(passosDoRitmo, specDoRitmo());
       markChanged(linhaDoRitmo, state.captionPpm !== state.DEFAULTS.captionPpm);
       srSay(`${t('visual.legenda.ritmo')}: ${t('visual.legenda.ppm', { n: state.captionPpm })}`);
@@ -1899,13 +1899,13 @@ export function createGame(o: CreateGameOptions): Engine {
     painelDeEmpatia.casca.card.insertBefore(linhaUmPorVez, painelDeEmpatia.casca.lista);
     painelDeEmpatia.casca.card.insertBefore(linhaSemForca, painelDeEmpatia.casca.lista);
     const refletirSimulacoesMotoras = (): void => {
-      for (const [id, on] of [['#opt-onebtn', state.oneButton], ['#opt-semforca', state.semForca]] as const) {
+      for (const [id, on] of [['#opt-onebtn', state.oneButton], ['#opt-semforca', state.noGripStrength]] as const) {
         const b = $<HTMLElement>(id);
         if (!b) continue;
         toggleBtn(b, on);
         b.textContent = toggleLabel(on);
       }
-      markChanged(linhaSemForca, state.semForca !== state.DEFAULTS.semForca);
+      markChanged(linhaSemForca, state.noGripStrength !== state.DEFAULTS.noGripStrength);
     };
     const simular = (i: number, chave: string): boolean => {
       const simulacao = (chave === 'normal' ? null : chave) as VisualState['simulacao'];
@@ -1988,14 +1988,14 @@ export function createGame(o: CreateGameOptions): Engine {
     // «sem força para segurar» is wired here: the empathy module predates it. Refused over toggle keys (ADR-0076): a latch
     // would hold what the simulation lets go, and the demonstration would show the accommodation instead of the difficulty.
     $<HTMLElement>('#opt-semforca')?.addEventListener('click', () => {
-      const ligar = !state.semForca;
+      const ligar = !state.noGripStrength;
       if (ligar && players().some((p) => (p as { toggleMove?: boolean }).toggleMove)) { srAlert(t('sim.indisponivel.alternancia')); return; }
-      state.setSemForcaValue(ligar);
+      state.setNoGripStrengthValue(ligar);
       srSay(t(ligar ? 'sr.empathy.semforcaOn' : 'sr.empathy.semforcaOff'));
       empatia.render();
     });
     // and the panel's «restore defaults» turns it off too, after the module's own reset
-    $<HTMLElement>('#empathy-reset')?.addEventListener('click', () => { state.setSemForcaValue(false); empatia.render(); });
+    $<HTMLElement>('#empathy-reset')?.addEventListener('click', () => { state.setNoGripStrengthValue(false); empatia.render(); });
     acoesDaEngine.empatia = painelDeEmpatia.abrir;
 
     /*
@@ -2108,8 +2108,8 @@ export function createGame(o: CreateGameOptions): Engine {
       tts,
       getModoCego: lerModoCego,
       // 📌 O padrão do `core/state`: grava, persiste, avisa. Os efeitos de jogo são REACÇÃO, e quem reage
-      // assina `on('modoCego', …)` — é a mesma decisão que o `ui/pause-icons` já tomou para o ícone.
-      setModoCego: state.setModoCegoValue,
+      // assina `on('blindMode', …)` — é a mesma decisão que o `ui/pause-icons` já tomou para o ícone.
+      setModoCego: state.setBlindModeValue,
       getCaneBlockDiv: () => state.caneBlockDiv,
       setCaneBlockDiv: state.setCaneBlockDivValue,
       fillExplain: overlays.fillExplain,
@@ -2625,7 +2625,7 @@ export function createGame(o: CreateGameOptions): Engine {
     narrar: (texto) => tts.narrate(texto),
   });
   // study item D1: every `startLoop` that passes no `aoFalhar` announces through this one (measured: game-soccer passes none)
-  registrarAvisoDeQueda(aoFalhar);
+  registerCrashNotice(aoFalhar);
 
   /*
    * ⚠️ MOSTRAR REFAZ OS ITENS ANTES DE REVELAR, e a ordem é a regra: o §5 do ADR-0106 diz que a criança nunca
@@ -2768,10 +2768,10 @@ export function createGame(o: CreateGameOptions): Engine {
       // a submenu is named by the item that opens it; the root by the card's title
       const porta = sub === 'opcoes' ? 'options' : sub === 'jogo' ? 'opcoesdojogo' : null;
       const botao = porta ? cartao.querySelector<HTMLElement>(`.pm-btn[data-act="${porta}"]`) : null;
-      const titulo = botao ? rotuloAcessivel(botao) : (cartao.querySelector('h2')?.textContent?.trim() ?? '');
+      const titulo = botao ? accessibleLabel(botao) : (cartao.querySelector('h2')?.textContent?.trim() ?? '');
       const itens = [...cartao.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
       const sel = cartao.querySelector<HTMLElement>('.pm-sel') ?? itens[0];
-      const item = sel ? anunciarItem({ rotulo: rotuloAcessivel(sel), posicao: itens.indexOf(sel) + 1, total: itens.length }, comIndiceDaRaiz()) : '';
+      const item = sel ? anunciarItem({ rotulo: accessibleLabel(sel), posicao: itens.indexOf(sel) + 1, total: itens.length }, comIndiceDaRaiz()) : '';
       return { chave: `cartao:${cartao.id}:${sub}`, frase: [titulo, item].filter(Boolean).join('. ') };
     }
     return { chave: 'jogo', frase: null };
@@ -2854,7 +2854,7 @@ export function createGame(o: CreateGameOptions): Engine {
     casaDaLegenda.textContent = texto;
     casaDaLegenda.hidden = false;
     if (apagarLegendaDeSom !== null) clearTimeout(apagarLegendaDeSom);
-    apagarLegendaDeSom = setTimeout(() => { casaDaLegenda.hidden = true; casaDaLegenda.textContent = ''; }, duracaoDaLegenda(texto, state.captionPpm));
+    apagarLegendaDeSom = setTimeout(() => { casaDaLegenda.hidden = true; casaDaLegenda.textContent = ''; }, captionDuration(texto, state.captionPpm));
   }
   /** O rodapé diz UMA explicação de cada vez: a do ícone apontado, ou o motivo de um item travado (ADR-0161). */
   function escreverNoRodape(texto: string | null): void {
@@ -3116,7 +3116,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * (`ui/mount-panel`), keeping focus where it was; nothing here moves focus.
    * 🔴 THE BOOT IS THE SAME EVENT: the pad and the bar are drawn in the fallback language, and the preferred one arrives
    * through `setLocale` (measured in the `dist`: «Cima/Baixo» on an English page). This listener replaced the
-   * `idiomaPronto()` repaints that did it for the boot alone.
+   * `localeReady()` repaints that did it for the boot alone.
    */
   if (typeof win.addEventListener === 'function') {
     win.addEventListener('i18n:change', () => {
@@ -3610,7 +3610,7 @@ export function createGame(o: CreateGameOptions): Engine {
       barrar(e);
       return;
     }
-    const decisao = filtroMotor.keydown(e.code, e.repeat, { umPorVez: state.oneButton, semForca: state.semForca });
+    const decisao = filtroMotor.keydown(e.code, e.repeat, { umPorVez: state.oneButton, noGripStrength: state.noGripStrength });
     if (decisao === 'barrar') { barrar(e); return; }
     if (decisao === 'tocar') {
       const alvo = e.target ?? win;
@@ -3687,7 +3687,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * A PILHA DE CENAS É DA RAIZ, e não do retorno, porque o `desmontar()` tem de a alcançar. Nasce uma vez
    * (ADR-0117 §2: a página tem uma) e é esvaziada entre cartuchos, nunca substituída.
    */
-  const cenasDaRaiz = criarPilha();
+  const cenasDaRaiz = createSceneStack();
 
   // ⚠️ SEM PADRÃO `{}` desde o ADR-0153: os ganchos carregam a resposta obrigatória às acomodações, e um padrão vazio
   // seria o cartucho que não respondeu — o arranque recusá-lo-ia de qualquer forma, com uma mensagem pior.
@@ -3956,7 +3956,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       if (!card) return [];
       return [...card.querySelectorAll<HTMLElement>('button, [data-passos]')]
         .filter((el) => !el.hidden && el.getAttribute('aria-disabled') !== 'true')
-        .map((el) => rotuloAcessivel(el))
+        .map((el) => accessibleLabel(el))
         .filter((s) => s.length > 1);
     };
     const voice = createVoiceControl({
@@ -3972,8 +3972,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     state.on('menuIndexOn', () => { voice.refreshGrammar(); });
     void voice.apply(state.voiceControl);
   }
-  const AMOSTRA_C = COLUNAS * 10;
-  const AMOSTRA_L = LINHAS * 10;
+  const AMOSTRA_C = COLUMNS * 10;
+  const AMOSTRA_L = ROWS * 10;
   const linear = (v: number): number => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
   function medirFlashes(ms: number): Promise<MedicaoDeFlashes> {
     const mundo = cartucho.declaration.world();
@@ -3986,7 +3986,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     const ctx = copia.getContext('2d', { willReadFrequently: true });
     if (!ctx || typeof win.requestAnimationFrame !== 'function') return Promise.resolve({ lido: false, motivo: 'this host cannot sample canvases' });
     return new Promise((resolver) => {
-      const quadros: QuadroDeLuminancia[] = [];
+      const quadros: LuminanceFrame[] = [];
       let inicio = -1;
       let algumPixel = false;
       const passo = (agora: number): void => {
@@ -4000,13 +4000,13 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
           resolver({ lido: false, motivo: 'the page may not read the world\'s canvas (an image from another origin drew on it)' });
           return;
         }
-        const grade = new Float32Array(COLUNAS * LINHAS);
+        const grade = new Float32Array(COLUMNS * ROWS);
         for (let y = 0; y < AMOSTRA_L; y++) {
           for (let x = 0; x < AMOSTRA_C; x++) {
             const i = (y * AMOSTRA_C + x) * 4;
             if (px[i + 3]) algumPixel = true;
             const l = 0.2126 * linear(px[i]!) + 0.7152 * linear(px[i + 1]!) + 0.0722 * linear(px[i + 2]!);
-            grade[Math.floor(y / 10) * COLUNAS + Math.floor(x / 10)] += l / 100;
+            grade[Math.floor(y / 10) * COLUMNS + Math.floor(x / 10)] += l / 100;
           }
         }
         quadros.push({ t: agora - inicio, luminancias: grade });
@@ -4015,7 +4015,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
           resolver({ lido: false, motivo: 'the world\'s canvas read transparent in every frame (WebGL canvases need preserveDrawingBuffer)' });
           return;
         }
-        const { passa, piorSegundo } = analisarFlashes(quadros);
+        const { passa, piorSegundo } = analyseFlashes(quadros);
         if (!passa) {
           problemasMedidos.push(`the world's canvas flashed ${piorSegundo} times in one second within a 10-degree field `
             + '(WCAG 2.3.1 allows 3): it can trigger a seizure in a child with photosensitive epilepsy — slow or dim it');
@@ -4030,7 +4030,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     closeReadingThread();
     registrarMapeamentoDoTeclado(null);
     registrarMapeamentoDoPad(null);
-    registrarAvisoDeQueda(null);
+    registerCrashNotice(null);
     retirarAvisoDeAlcance();
     hudMontado?.remove();
     hudMontado = null;
@@ -4058,7 +4058,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     aplicarFiltroDeVisao,
     cenas: cenasDaRaiz,
     cvdFilters,
-    get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho(), ...lacunasDosDicionarios(), ...problemasMedidos, ...armazenamentoForaDoEscopo()]; },
+    get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho(), ...dictionaryGaps(), ...problemasMedidos, ...armazenamentoForaDoEscopo()]; },
     aoFalhar,
     get alcance() { return alcanceAtual; },
   };

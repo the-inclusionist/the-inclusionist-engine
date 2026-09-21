@@ -54,7 +54,7 @@ and **no computed font size under 16 px** in engine UI. The 18 sub-1em declarati
 | C3 | ADR-0148 | The accessibility bar is HUD; the game does not draw over it | 🟡 **Reported, not prevented** (`problems`). | Built (1g). |
 | C4 | ADR-0059 | HUD numbers in four bands (identity top-left, session top-centre, round top-right, learning bottom-centre) | 🔴 **Not imposed.** `createGame` mounts no HUD. | grep: no `ui/hud` in `create-game.ts`. |
 | C5 | ADR-0102 | A skip link above the transition | 🔴 **Not imposed.** The quiz page writes its own `.skip-link`; `createGame` mounts none. | grep. |
-| C6 | ADR-0031 | Every panel, activity and text menu **redraws itself on a language or font change, restoring focus** | 🟡 **Boot only.** `idiomaPronto()` covers the boot language; a runtime `i18n:change` is not handled (the code names it the Dev's question). | grep. |
+| C6 | ADR-0031 | Every panel, activity and text menu **redraws itself on a language or font change, restoring focus** | 🟡 **Boot only.** `localeReady()` covers the boot language; a runtime `i18n:change` is not handled (the code names it the Dev's question). | grep. |
 
 ## D. Time, loop, sound
 

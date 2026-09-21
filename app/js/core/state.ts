@@ -3,15 +3,15 @@
 // UMA A UMA, lidas como binding vivo (import) e escritas por setter.
 // Bus mínimo (Map<evento, Set<fn>>) para os poucos leitores "de longe" que virão com os outros subsistemas.
 
-// ⚠️ NO STORAGE IMPORT (ADR-0178, issue #174): the child's settings come through the port `carregarEstado` receives — the
+// ⚠️ NO STORAGE IMPORT (ADR-0178, issue #174): the child's settings come through the port `loadState` receives — the
 // shape `platform/storage` already has — so `core` does not reach up to `platform` (ADR-0173).
 
-import { velocidadeValida } from './game-speed.js';
-import { ritmoDaLegendaValido } from './caption-duration.js';
-import { ritmoDaFalaValido } from './speech-rate.js';
+import { isGameSpeed } from './game-speed.js';
+import { isCaptionRate } from './caption-duration.js';
+import { isSpeechRate } from './speech-rate.js';
 
 /** The port the settings are read and written through. `platform/storage` has this shape; a test passes a double. */
-export interface PortaDoEstado {
+export interface StatePort {
   get(key: string, fallback: string | null): string | null;
   set(key: string, value: string | number | boolean): unknown;
   getBool(key: string, fallback?: boolean): boolean;
@@ -24,7 +24,7 @@ export interface PortaDoEstado {
 }
 
 /** An empty storage: every read gives its fallback. What the bindings hold until the root loads the child's settings. */
-const VAZIO: PortaDoEstado = {
+const VAZIO: StatePort = {
   get: (_k, fallback) => fallback,
   set: () => false,
   getBool: (_k, fallback = false) => fallback,
@@ -33,7 +33,7 @@ const VAZIO: PortaDoEstado = {
   KEYS: { letterCase: '', captions: '', menuIndex: '', cbsafe: '', ownercolors: '', outfg: '', outbg: '' },
 };
 
-let porta: PortaDoEstado | null = null;
+let porta: StatePort | null = null;
 
 /**
  * ========================= O BARRAMENTO, TIPADO (Fase C do plano) =========================
@@ -46,12 +46,12 @@ let porta: PortaDoEstado | null = null;
  *     digitar errado é exatamente a chance de escrever a próxima linha.
  *   · A CARGA ERA `unknown`. Quem assinasse tinha de converter, e a conversão é onde a mentira entra.
  *
- * Agora `EventoDoJogo` é um mapa nome → carga, e `emit`/`on` são genéricos sobre ele. Nome inexistente não
+ * Agora `GameEvent` é um mapa nome → carga, e `emit`/`on` são genéricos sobre ele. Nome inexistente não
  * compila; carga errada não compila.
  *
  * ✅ ERRATA 2026-09-08: O BARRAMENTO TEM ASSINANTES EM PRODUÇÃO. O parágrafo abaixo dizia «ZERO `on()` em
  * produção (só o teste assina)», e isso deixou de ser verdade no dia em que a engine passou a montar a barra
- * de acessibilidade: o `ui/settings-audio` assina `modoCego` para o botão `#opt-modocego` não mentir o
+ * de acessibilidade: o `ui/settings-audio` assina `blindMode` para o botão `#opt-modocego` não mentir o
  * estado, e o `boot/create-game` assina o mesmo evento para a barra montada não mentir o dela. Os dois
  * chegaram pela razão que o parágrafo previa — «painéis que se redesenham quando a criança muda um ajuste» —
  * e chegaram com o contrato já tipado, que era o ponto de ele nascer assim.
@@ -62,11 +62,11 @@ let porta: PortaDoEstado | null = null;
  * e a casca do `demos` vai reagir a ajuste durante a partida. O primeiro assinante chega com o contrato
  * pronto, em vez de chegar e ser seguido por uma migração.
  */
-export interface EventoDoJogo {
+export interface GameEvent {
   /* --- ENGINE: o que este módulo emite --- */
   numPlayers: number;
   vizMode: string;
-  modoCego: boolean;
+  blindMode: boolean;
   letterCase: LetterCase;
   captionsOn: boolean;
   menuIndexOn: boolean;
@@ -90,7 +90,7 @@ export interface EventoDoJogo {
   /** The child's speech rate, words a minute (ADR-0183 §1, ADR-0196): 254 to 504 by 50. */
   speechPpm: number;
   /** The «no strength to hold» empathy simulation (ADR-0181): a held game key reads as one tap. */
-  semForca: boolean;
+  noGripStrength: boolean;
   /** Playing through the webcam (ADR-0215): off, hands, face or eyes — one mode at a time, each with its lines. */
   cameraControl: CameraControl;
 
@@ -99,17 +99,17 @@ export interface EventoDoJogo {
      tipo do jogo (ADR-0033/0039) —, e não precisa: quem é dono do evento declara o evento. --- */
 }
 
-type Ouvinte<K extends keyof EventoDoJogo> = (val: EventoDoJogo[K]) => void;
-const _subs = new Map<keyof EventoDoJogo, Set<(val: never) => void>>();
+type Ouvinte<K extends keyof GameEvent> = (val: GameEvent[K]) => void;
+const _subs = new Map<keyof GameEvent, Set<(val: never) => void>>();
 
 /** Assina `evt`. Devolve a função que cancela — guardar o retorno é mais barato que lembrar do `off`. */
-export function on<K extends keyof EventoDoJogo>(evt: K, fn: Ouvinte<K>): () => void {
+export function on<K extends keyof GameEvent>(evt: K, fn: Ouvinte<K>): () => void {
   if (!_subs.has(evt)) _subs.set(evt, new Set());
   _subs.get(evt)!.add(fn as (val: never) => void);
   return () => off(evt, fn);
 }
 
-export function off<K extends keyof EventoDoJogo>(evt: K, fn: Ouvinte<K>): void {
+export function off<K extends keyof GameEvent>(evt: K, fn: Ouvinte<K>): void {
   const s = _subs.get(evt);
   if (s) s.delete(fn as (val: never) => void);
 }
@@ -122,7 +122,7 @@ export function off<K extends keyof EventoDoJogo>(evt: K, fn: Ouvinte<K>): void 
  * O `try` em volta de cada assinante NÃO é preguiça: um ouvinte que estoura não pode impedir os outros de
  * receber. Um painel quebrado derruba o painel; não derruba o jogo.
  */
-export function emit<K extends keyof EventoDoJogo>(evt: K, val: EventoDoJogo[K]): void {
+export function emit<K extends keyof GameEvent>(evt: K, val: GameEvent[K]): void {
   const s = _subs.get(evt);
   if (s) for (const fn of s) { try { (fn as unknown as Ouvinte<K>)(val); } catch (e) { /* noop */ } }
 }
@@ -234,7 +234,7 @@ export function defaultReducedMotion(): boolean {
 
 export const DEFAULTS = Object.freeze({
   // auditiva
-  modoCego: false,
+  blindMode: false,
   caneBlockDiv: 1,
   captionsOn: true,
   menuIndexOn: true, // o indice nasce LIGADO: quem nao sabe que ele existe e quem mais precisa dele
@@ -247,7 +247,7 @@ export const DEFAULTS = Object.freeze({
   gameSpeed: 1,
   captionPpm: 125,
   speechPpm: 254, // the voice's normal speed, the minimum (ADR-0196)
-  semForca: false,
+  noGripStrength: false,
   cameraControl: 'off' as CameraControl,
   easy: false,       // por jogador (Modo Fácil)
   toggleMove: false,  // por jogador (movimento por alternância)
@@ -290,10 +290,10 @@ export const DEFAULTS = Object.freeze({
 //     antigo `setModoCego` — refazer os extras do nível, refletir o painel, anunciar ao leitor de tela — NÃO
 //     entram aqui: são reação, e quem reage assina o evento. Um setter que sabe redesenhar a tela é um setter
 //     que nenhum teste consegue chamar. ---
-export let modoCego: boolean = VAZIO.getBool('incl_modocego', DEFAULTS.modoCego);
-export function setModoCegoValue(on: boolean): void {
-  if (modoCego === on) return; // a guarda VEM DO ORIGINAL: sem ela o anúncio repetiria a cada clique redundante
-  const p = armazem('setModoCegoValue'); p.setBool('incl_modocego', on); modoCego = on; emit('modoCego', on);
+export let blindMode: boolean = VAZIO.getBool('incl_modocego', DEFAULTS.blindMode);
+export function setBlindModeValue(on: boolean): void {
+  if (blindMode === on) return; // a guarda VEM DO ORIGINAL: sem ela o anúncio repetiria a cada clique redundante
+  const p = armazem('setBlindModeValue'); p.setBool('incl_modocego', on); blindMode = on; emit('blindMode', on);
 }
 
 
@@ -466,11 +466,11 @@ export function setOneButtonValue(on: boolean): void {
 
 // --- semForca: «sem força para segurar botão», the second motor empathy simulation (ADR-0181): any sustained contact of a
 //     game key reads as one tap. Stored like the other simulations, off by default. ---
-export let semForca: boolean = VAZIO.getBool('incl_sem_forca', DEFAULTS.semForca);
-export function setSemForcaValue(on: boolean): void {
+export let noGripStrength: boolean = VAZIO.getBool('incl_sem_forca', DEFAULTS.noGripStrength);
+export function setNoGripStrengthValue(on: boolean): void {
   const v = !!on;
-  if (semForca === v) return;
-  const p = armazem('setSemForcaValue'); p.setBool('incl_sem_forca', v); semForca = v; emit('semForca', v);
+  if (noGripStrength === v) return;
+  const p = armazem('setNoGripStrengthValue'); p.setBool('incl_sem_forca', v); noGripStrength = v; emit('noGripStrength', v);
 }
 
 // --- inputCooldown: a tremor is not a second press (ADR-0217, GAG Advanced/Motor). MILLISECONDS, and 0 is off — the rule reads
@@ -527,27 +527,27 @@ export function setCameraControlValue(v: CameraControl): void {
 
 // --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
 //     by it. Stored and carried between games; a stored value outside the steps reads as 100%. ---
-export let gameSpeed: number = velocidadeValida(VAZIO.getNum('incl_game_speed', DEFAULTS.gameSpeed));
+export let gameSpeed: number = isGameSpeed(VAZIO.getNum('incl_game_speed', DEFAULTS.gameSpeed));
 export function setGameSpeedValue(v: number): void {
-  const valida = velocidadeValida(v);
+  const valida = isGameSpeed(v);
   if (gameSpeed === valida) return;
   const p = armazem('setGameSpeedValue'); p.set('incl_game_speed', valida); gameSpeed = valida; emit('gameSpeed', valida);
 }
 
 // --- captionPpm: the child's caption reading rate, words a minute (ADR-0183 §4): how long a sound caption stays. One of
 //     125, 145, 175; anything else reads as 125. ---
-export let captionPpm: number = ritmoDaLegendaValido(VAZIO.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
+export let captionPpm: number = isCaptionRate(VAZIO.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
 export function setCaptionPpmValue(ppm: number): void {
-  const valido = ritmoDaLegendaValido(ppm);
+  const valido = isCaptionRate(ppm);
   if (captionPpm === valido) return;
   const p = armazem('setCaptionPpmValue'); p.set('incl_caption_ppm', valido); captionPpm = valido; emit('captionPpm', valido);
 }
 
 // --- speechPpm: the child's speech rate, words a minute (ADR-0183 §1; issue #179): each engine measures its voice and plays at
 //     the ratio (`core/speech-rate`). One of 254…504 by 50; anything else reads as 254, the normal speed (ADR-0196). ---
-export let speechPpm: number = ritmoDaFalaValido(VAZIO.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
+export let speechPpm: number = isSpeechRate(VAZIO.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
 export function setSpeechPpmValue(ppm: number): void {
-  const valido = ritmoDaFalaValido(ppm);
+  const valido = isSpeechRate(ppm);
   if (speechPpm === valido) return;
   const p = armazem('setSpeechPpmValue'); p.set('incl_speech_ppm', valido); speechPpm = valido; emit('speechPpm', valido);
 }
@@ -559,8 +559,8 @@ export function setSpeechPpmValue(ppm: number): void {
  * The port for a write — or an error. ⚠️ A write before the load would put a default over what the child saved, and nobody
  * would see it; the error names the setter, so the root that calls it too early is found the first time it runs.
  */
-function armazem(setter: string): PortaDoEstado {
-  if (!porta) throw new Error(`core/state: ${setter} wrote a setting before carregarEstado — it would overwrite the child's stored choice; the composition root loads the settings first (ADR-0178)`);
+function armazem(setter: string): StatePort {
+  if (!porta) throw new Error(`core/state: ${setter} wrote a setting before loadState — it would overwrite the child's stored choice; the composition root loads the settings first (ADR-0178)`);
   return porta;
 }
 
@@ -568,9 +568,9 @@ function armazem(setter: string): PortaDoEstado {
  * Loads the child's stored settings into the bindings, and keeps the port for the setters. The composition root calls it
  * first (`createGame` does); calling it again reads again.
  */
-export function carregarEstado(p: PortaDoEstado): void {
+export function loadState(p: StatePort): void {
   porta = p;
-  modoCego = p.getBool('incl_modocego', DEFAULTS.modoCego);
+  blindMode = p.getBool('incl_modocego', DEFAULTS.blindMode);
   letterCase = p.get(p.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
   captionsOn = p.getBool(p.KEYS.captions, DEFAULTS.captionsOn);
   menuIndexOn = p.getBool(p.KEYS.menuIndex, DEFAULTS.menuIndexOn);
@@ -581,11 +581,11 @@ export function carregarEstado(p: PortaDoEstado): void {
   caneBlockDiv = p.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
   wheelchair = p.getBool('incl_wheelchair', DEFAULTS.wheelchair);
   oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
-  gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
-  semForca = p.getBool('incl_sem_forca', DEFAULTS.semForca);
+  gameSpeed = isGameSpeed(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
+  noGripStrength = p.getBool('incl_sem_forca', DEFAULTS.noGripStrength);
   switchScan = p.getBool('incl_switch_scan', DEFAULTS.switchScan);
   voiceControl = p.getBool('incl_voice_control', DEFAULTS.voiceControl);
   cameraControl = cameraModeOf(p.get('incl_camera_control', DEFAULTS.cameraControl));
-  captionPpm = ritmoDaLegendaValido(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
-  speechPpm = ritmoDaFalaValido(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
+  captionPpm = isCaptionRate(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
+  speechPpm = isSpeechRate(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
 }

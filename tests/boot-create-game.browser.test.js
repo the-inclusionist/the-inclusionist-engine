@@ -70,7 +70,7 @@ describe('createGame num documento de verdade', () => {
     // ⚠️ O MODO CEGO É ESTADO DE MÓDULO E PERSISTE — em `core/state` e no armazenamento. Sem esta reposição,
     // um caso que o liga deixa o seguinte a começar ligado, e o seguinte mede o contrário do que diz. Foi o
     // que aconteceu na primeira volta, e apanhá-lo aqui é mais barato do que voltar a caçá-lo.
-    if (!repor) ({ setModoCegoValue: repor } = await import('../app/js/core/state.js'));
+    if (!repor) ({ setBlindModeValue: repor } = await import('../app/js/core/state.js'));
     repor(false);
     raiz = montarHospedeiro();
   });
@@ -130,7 +130,7 @@ describe('createGame num documento de verdade', () => {
     // BORBULHA a partir de um filho, que é como um clique real chega. O `iconAct` lê `e.target.closest(...)`,
     // e um alvo que não é elemento — ou um ouvinte pendurado no sítio errado — só falha aqui.
     // 📌 O ÍCONE ESCOLHIDO É O MODO CEGO de propósito: é o que a etapa 1b deu à engine por padrão
-    // (`setModoCegoValue`), logo um jogo que não injecta nada tem de o ver funcionar — e foi exactamente ali
+    // (`setBlindModeValue`), logo um jogo que não injecta nada tem de o ver funcionar — e foi exactamente ali
     // que o botão ficou mudo em 2026-09-08. O caminho medido é o inteiro: clique real → `iconAct` →
     // `setModoCego` → evento de estado → `reflectIconsIn` → o DOM diz o estado novo.
     abrir();
@@ -155,7 +155,7 @@ describe('createGame num documento de verdade', () => {
   // `reflectTTS`: uma saída cujo único destino é o leitor de tela não tem quem note quando ela mente.
   //
   // 📏 O ÍCONE É O `tea` E NÃO O MODO CEGO, e a escolha foi MEDIDA por uma mutação que sobreviveu. Com o
-  // modo cego, inverter a ordem não muda nada: `create-game` subscreve `state.on('modoCego')` e o reflexo
+  // modo cego, inverter a ordem não muda nada: `create-game` subscreve `state.on('blindMode')` e o reflexo
   // já aconteceu DENTRO do `iconAct`, então o rótulo lido já é o novo de qualquer maneira. Era equivalência
   // e não cobertura — e um caso que só passa por causa de uma subscrição não mede a linha que diz medir.
   // Medido: essa é a ÚNICA subscrição de estado desta raiz, logo o `tea` percorre o caminho de todos os
@@ -174,9 +174,9 @@ describe('createGame num documento de verdade', () => {
     // 📌 O QUE ELE DESTAPA NO PRODUTO, e fica dito em vez de consertado às cegas: uma criança que carregue no
     // ícone ANTES de o dicionário aterrar ouve o idioma de recuo enquanto o rótulo já mudou. É a mesma
     // fronteira do `424ee36` (a barra bilingue), do lado do ANÚNCIO em vez do rótulo — e ali a resposta foi
-    // reflectir depois do `idiomaPronto()`. Aqui o anúncio é composto uma vez e não se reflecte.
-    const { idiomaPronto } = await import('../app/js/core/i18n.js');
-    await idiomaPronto();
+    // reflectir depois do `localeReady()`. Aqui o anúncio é composto uma vez e não se reflecte.
+    const { localeReady } = await import('../app/js/core/i18n.js');
+    await localeReady();
     const alvo = document.querySelector('#title-icons [data-pi="tea"]');
     const rotuloAntes = alvo.getAttribute('aria-label');
     alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -265,12 +265,12 @@ describe('createGame num documento de verdade', () => {
     // 🔴 ESTE CASO EXISTE POR CAUSA DE UM DEFEITO REAL QUE SÓ UM DOM REAL PODIA MOSTRAR, e ele era meu.
     //
     // O par do modo cego ganhou os dois padrões em dias diferentes e eles não se falavam: o ESCRITOR ficou
-    // com `setModoCegoValue` (etapa 1b do ADR-0106), que escreve no `core/state`; o LEITOR ficou com
+    // com `setBlindModeValue` (etapa 1b do ADR-0106), que escreve no `core/state`; o LEITOR ficou com
     // `() => false`, uma CONSTANTE que já lá estava. Com um jogo que não injecta `isBlindMode`:
     //
     //   1. a criança carrega → `setModoCego(!false)` → o modo LIGA de verdade;
     //   2. o reflexo lê `false` → o ícone continua a dizer «desligado» e o anúncio também;
-    //   3. ela carrega outra vez → `setModoCegoValue(!false)` = `true` OUTRA VEZ → a guarda de igualdade
+    //   3. ela carrega outra vez → `setBlindModeValue(!false)` = `true` OUTRA VEZ → a guarda de igualdade
     //      devolve cedo → nada acontece.
     //
     // ⚠️ Ou seja: o modo cego ligava uma vez e NÃO HAVIA COMO DESLIGAR. Para quem não depende dele, é um jogo

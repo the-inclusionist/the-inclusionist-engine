@@ -34,15 +34,15 @@ import { CONTRAST_LEVELS } from './settings-visual.js';
 import { CURTO_DO_TEMA, CURTO_DA_CORRECAO } from './visual-axes-panel.js';
 import {
   proximoTema, proximaCorrecao, temAltoContraste, PADRAO,
-  type Tema, type Correcao, type VisualState,
+  type Theme, type Correction, type VisualState,
 } from '../render/viz-axes.js';
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
 import type { AudioCatState } from './settings-audio.js';
 import { anunciarItem } from './item-announcement.js';
-import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
-import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
+import { accessibleLabel } from '../core/rotulo-acessivel.js';
+import { stepInRing } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
-import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, voiceControl, setVoiceControlValue, switchScan, setSwitchScanValue, type CameraControl } from '../core/state.js';
+import { menuIndexOn, DEFAULTS, setBlindModeValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, voiceControl, setVoiceControlValue, switchScan, setSwitchScanValue, type CameraControl } from '../core/state.js';
 
 /** The word for each position of the 📷 cycle (ADR-0215). */
 const CAMERA_MODE_NAME: { readonly [M in CameraControl]: string } = { off: 'state.off', hands: 'camera.hands', face: 'camera.face', eyes: 'camera.eyes' };
@@ -93,7 +93,7 @@ export function nextInputMode(m: InputMode, holdsKeys: boolean, latchRequired = 
 // 📌 `applyInputMode` VIVEU AQUI e saiu no mesmo dia (2026-09-21). Ele existia para que as DUAS superfícies deste ajuste — o ☝️
 // e a linha do painel motora — escrevessem pela mesma porta; o Dev tirou a linha, ficou um chamador só, e uma porta partilhada
 // por um é uma indireção a mais para quem lê. A regra que ele guardava está escrita no acto do ícone, onde acontece.
-import { proximaVelocidade } from '../core/game-speed.js';
+import { nextGameSpeed } from '../core/game-speed.js';
 // ⚠️ IMPORT DIRETO DE `platform/storage`, e não uma peça a mais no `ctx`, e a escolha é sobre quem pode
 // esquecer: `initPauseIcons` é chamado pela raiz de composição de CADA jogo, e um `store` injetado é um
 // campo que um consumidor pode omitir — e omiti-lo faria o nível TEA voltar a não persistir, em silêncio,
@@ -127,7 +127,7 @@ import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena }
 export function ligarLegendaDaBarra(bar: HTMLElement, explicar: (k: string | null) => void): void {
   const cap = bar.querySelector('.pause-icons-cap');
   const mostrar = (b: HTMLElement): void => {
-    if (cap) cap.textContent = rotuloAcessivel(b); // name and state only: «N de M» is spoken, never written (ADR-0167)
+    if (cap) cap.textContent = accessibleLabel(b); // name and state only: «N de M» is spoken, never written (ADR-0167)
     explicar(b.dataset.pi ?? null);
   };
   const largar = (): void => {
@@ -150,7 +150,7 @@ export function legendaDoIcone(barra: ParentNode, el: HTMLElement): string {
   // e agora vale para o menu inicial e para a lista de pausa também — uma resposta para "como se chama este
   // controle", e não três.
   return anunciarItem(
-    { rotulo: rotuloAcessivel(el), posicao: icones.indexOf(el) + 1, total: icones.length },
+    { rotulo: accessibleLabel(el), posicao: icones.indexOf(el) + 1, total: icones.length },
     menuIndexOn,
   );
 }
@@ -285,7 +285,7 @@ export interface PauseMenuButton {
 
 /** Everything the label/visual of ONE icon depends on, gathered in one value. */
 export interface IconStateSnapshot {
-  modoCego: boolean;
+  blindMode: boolean;
   ttsOn: boolean;
   librasOn: boolean;
   calmMode: number;
@@ -379,7 +379,7 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   // presas numa frase em português, e uma língua que anteponha o estado ao nome precisa do dicionário para
   // reordenar. `nomeDoIcone: estado` é a moldura; o estado é o conteúdo, e ele também é traduzido.
   const rotulo = (v: string): string => t('icon.state', { nome: t(ic.n), v: t(v) });
-  if (k === 'blind') return rotulo(s.modoCego ? 'state.on' : 'state.off');
+  if (k === 'blind') return rotulo(s.blindMode ? 'state.on' : 'state.off');
   if (k === 'tts') return rotulo(s.ttsOn ? 'state.on' : 'state.off');
   if (k === 'libras') return rotulo(s.librasOn ? 'state.on' : 'state.off');
   // TEA e daltonismo usam um nome CURTO aqui, diferente do nome do botão: o rótulo já diz o nível, e
@@ -413,7 +413,7 @@ export interface IconVisual {
 /** Pure form of reflectIconBtn's branching. */
 export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   let on = false, dis = false, calm = false, cvd = '';
-  if (k === 'blind') { on = s.modoCego; dis = !s.privateOutput; }
+  if (k === 'blind') { on = s.blindMode; dis = !s.privateOutput; }
   else if (k === 'tts') { on = s.ttsOn; dis = !s.privateOutput || !!s.semVoz; }
   else if (k === 'libras') { on = s.librasOn; }
   else if (k === 'tea') { on = s.calmMode === 2; calm = s.calmMode === 1; }
@@ -898,7 +898,7 @@ export interface PauseIconsCtx {
    * usava; os 300 jogos teriam de a responder na mesma.
    */
 
-  // --- blind mode (game.js owns `modoCego` + persistence + the cane/extras rebuild) ---
+  // --- blind mode (game.js owns `blindMode` + persistence + the cane/extras rebuild) ---
   getModoCego: () => boolean;
   setModoCego?: (on: boolean) => void;
 
@@ -949,8 +949,8 @@ export interface PauseIconsCtx {
   transporteEmUso?: (jogador: number) => string;
   setPlayerViz?: (i: number, mode: string) => void;
   /** Os escritores POR EIXO (#104): mexer no tema não apaga a correção, e vice-versa. */
-  setTemaDoJogador?: (i: number, tema: Tema) => void;
-  setCorrecaoDoJogador?: (i: number, correcao: Correcao) => void;
+  setTemaDoJogador?: (i: number, tema: Theme) => void;
+  setCorrecaoDoJogador?: (i: number, correcao: Correction) => void;
   /**
    * ANDA UM PASSO NO CICLO DE TIPOGRAFIA e devolve a face que ficou (ADR-0149 §1).
    *
@@ -1076,10 +1076,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   /*
    * ⚠️ O MODO CEGO IDEM, e aqui o padrão é literalmente o que o `core/state` já decidiu que um setter faz:
    * «grava, persiste, avisa» — e nada mais. Os efeitos de jogo (refazer os extras do nível) são REACÇÃO, e
-   * quem reage assina `on('modoCego', …)`. O anúncio não se perde para quem não injecta: este ícone já diz
+   * quem reage assina `on('blindMode', …)`. O anúncio não se perde para quem não injecta: este ícone já diz
    * `sr.icon.blindOn`/`Off` por si, logo abaixo.
    */
-  const setModoCego = ctx.setModoCego ?? setModoCegoValue;
+  const setModoCego = ctx.setModoCego ?? setBlindModeValue;
 
   /** O documento onde se constroi. Resolvido a cada uso, e por globalThis — em node o identificador
    *  document nem existe, e um ?? sobre ele lançaria ReferenceError em vez de cair no padrão. */
@@ -1150,7 +1150,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const p = P()[i] || {};
     const cat = ctx.getAudioCat();
     return {
-      modoCego: ctx.getModoCego(),
+      blindMode: ctx.getModoCego(),
       ttsOn: !!(cat && cat.tts && cat.tts.on),
       librasOn: ctx.isLibrasOn(),
       calmMode,
@@ -1294,7 +1294,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     // THE GAME SPEED (ADR-0180): one step down, wrapping at 50%; stored, and felt on the next frame of `startLoop`.
     velocidade: () => {
-      const v = proximaVelocidade(gameSpeed);
+      const v = nextGameSpeed(gameSpeed);
       setGameSpeedValue(v);
       ctx.srSay(t('sr.icon.velocidade', { pct: Math.round(v * 100) }));
     },
@@ -1498,7 +1498,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     bar.querySelectorAll<HTMLElement>('.pi-sel').forEach((x) => x.classList.remove('pi-sel'));
     el.classList.add('pi-sel');
     const cap = bar.querySelector('.pause-icons-cap');
-    if (cap) cap.textContent = rotuloAcessivel(el);
+    if (cap) cap.textContent = accessibleLabel(el);
     ctx.srSay(legendaDoIcone(bar, el)); // the spoken one carries the place (ADR-0167)
     ctx.explicarIcone?.(i, el.dataset.pi ?? null);
   }
@@ -1568,7 +1568,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (acao === 'ativar') { setPauseActor(i); if (cur) cur.click(); return; }
     if (acao === 'andar') {
       const d = (k.down || k.right) ? 1 : -1;
-      selecionarIcone(i, bar, icones[passoNoAnel(icones.length, idx, d)]);
+      selecionarIcone(i, bar, icones[stepInRing(icones.length, idx, d)]);
     }
   }
 
@@ -1662,7 +1662,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       setPauseActor(i);
       iconAct(ib.dataset.pi || '', i);
       reflectPauseIcons(); // must run BEFORE reading the label back — that is what makes the caption honest
-      if (cap) cap.textContent = rotuloAcessivel(ib);
+      if (cap) cap.textContent = accessibleLabel(ib);
     });
 
     // Legenda = o `aria-label` do botão, para que passar o mouse ou focar diga a MESMA verdade que um leitor

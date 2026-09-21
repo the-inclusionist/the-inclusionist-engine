@@ -10,7 +10,7 @@
 import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
 import { montarPassos, atualizarPassos, passoSeguinte } from './panel-widgets.js';
-import { escaparHtml } from '../core/escape-html.js';
+import { escapeHtml } from '../core/escape-html.js';
 
 import { lqName as lqLabel } from '../render/lq-filter.js';
 
@@ -247,14 +247,14 @@ export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings,
     // E O RÓTULO VAI PARA DENTRO DOS PASSOS — «◀ Realce de contraste: linear ▶» (errata do ADR-0130); a dica fica
     // no seu `.opt-hint`, que o rodapé recolhe.
     '<div class="ctrl-row ctrl-row--passos"><span><span class="opt-hint">' +
-    escaparHtml(t('visual.lq.dica')) + '</span></span><span data-passos-lugar="lq"></span></div>' +
+    escapeHtml(t('visual.lq.dica')) + '</span></span><span data-passos-lugar="lq"></span></div>' +
     (oferecer.dono
       ? '<div class="ctrl-row"><span><strong>Itens na cor do dono</strong> — no multiplayer, cada jogador vê os próprios itens na cor dele. Desligado: itens na cor original para todos.</span>' +
         `<button id="opt-ownercolors" class="mode-btn${s.ownerColors ? ' is-on' : ''}" type="button" aria-pressed="${s.ownerColors}">${onOffLabel(s.ownerColors)}</button></div>`
       : '') +
     // 🔴 The safe palette's words through the dictionary, the explanation in `.opt-hint` (`CLAUDE.md` §4): it was raw
     // Portuguese with its explanation glued after a dash, and the engine now mounts this row on pages in any language.
-    `<div class="ctrl-row"><span><strong>${escaparHtml(t('visual.cbsafe'))}</strong><span class="opt-hint">${escaparHtml(t('visual.cbsafe.dica'))}</span></span>` +
+    `<div class="ctrl-row"><span><strong>${escapeHtml(t('visual.cbsafe'))}</strong><span class="opt-hint">${escapeHtml(t('visual.cbsafe.dica'))}</span></span>` +
     `<button id="opt-cbsafe" class="mode-btn${s.cbSafe ? ' is-on' : ''}" type="button" aria-pressed="${s.cbSafe}">${onOffLabel(s.cbSafe)}</button></div>` +
     (oferecer.papeis
       ? '<div class="ctrl-row"><span><strong>Cores do color-blocking</strong> — nos modos de alto contraste, escolha a cor de cada papel: perigo, escalável, água e portão. ↺ restaura o padrão.</span>' +

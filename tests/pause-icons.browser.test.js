@@ -34,7 +34,7 @@ const RM_CHAR = [{ prop: 'rmWalk' }, { prop: 'rmBreath' }, { prop: 'rmFlavor' }]
 function makeCtx(over = {}) {
   const said = [], alerted = [];
   const state = {
-    modoCego: false, libras: false, pauseActor: -1, screens: [], ran: [],
+    blindMode: false, libras: false, pauseActor: -1, screens: [], ran: [],
     audioCat: { tts: { on: false, vol: 1 }, ambient: { on: true, vol: 1 }, music: { on: true, vol: 1 }, earcons: { on: true, vol: 1 }, other: { on: true, vol: 1 }, interact: { on: true, vol: 1 } },
     rm: { parallax: false, decor: false, items: false, particles: false },
   };
@@ -59,8 +59,8 @@ function makeCtx(over = {}) {
     // por aqui que `reflectPauseIcons` os encontra. Os testes que exercitam o reflexo alimentam `state.bars`;
     // os que só olham o markup do cartão deixam a lista vazia — e o reflexo então não faz nada, corretamente.
     getA11yBars: () => state.bars || state.screens,
-    getModoCego: () => state.modoCego,
-    setModoCego: (on) => { state.modoCego = on; },
+    getModoCego: () => state.blindMode,
+    setModoCego: (on) => { state.blindMode = on; },
     getAudioCat: () => state.audioCat,
     setCatGain: () => {},
     reflectTtsPanel: () => {},
@@ -380,7 +380,7 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     const b = bar.querySelector('.pi-btn[data-pi="blind"]');
     expect(b.getAttribute('aria-label')).toBe('Modo cego'); // rótulo cru do markup
     b.click();
-    expect(state.modoCego).toBe(true);
+    expect(state.blindMode).toBe(true);
     expect(state.pauseActor).toBe(0);
     expect(b.getAttribute('aria-label')).toBe('Modo cego: ligado');
     expect(b.getAttribute('aria-pressed')).toBe('true');
@@ -471,7 +471,7 @@ describe('buildScreenPause — a legenda segue o foco e o mouse', () => {
 
   it('depois de um reflexo, o foco mostra o estado ATUAL — não o rótulo cru do markup', () => {
     const { api, sp, bar, state } = mount();
-    state.modoCego = true;
+    state.blindMode = true;
     api.reflectPauseIcons();
     const b = bar.querySelector('.pi-btn[data-pi="blind"]');
     b.dispatchEvent(new FocusEvent('focus'));
@@ -563,7 +563,7 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     const alvo = icones.findIndex((b) => b.dataset.pi === 'blind');
     for (let i = 0; i < alvo; i++) api.navBar(0, { right: true });
     api.navBar(0, { yes: true });
-    expect(state.modoCego).toBe(true);
+    expect(state.blindMode).toBe(true);
     expect(bar.querySelector('.pause-icons-cap').textContent).toContain('ligado');
   });
 

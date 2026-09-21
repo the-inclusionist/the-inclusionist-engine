@@ -26,7 +26,7 @@
  * E ele escapa, não apaga. Apagar mudaria a palavra que a criança digitou, e uma atividade cujo texto muda
  * sozinho é um defeito diferente e igualmente sério.
  */
-export function escaparHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return String(s)
     .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;').replaceAll("'", '&#39;');

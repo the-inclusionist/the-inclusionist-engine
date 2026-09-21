@@ -15,7 +15,7 @@ import {
   createAudioSonar, passoDoMundo, PAN_PACES, GUIA_TIPO, GUIA_VOL, QUADROS_ENTRE_ROTAS,
 } from '../app/js/platform/audio-sonar.js';
 import { CORTE_LONGE, CORTE_PERTO } from '../app/js/platform/guide-intensity.js';
-import { rotaAte } from '../app/js/core/route.js';
+import { routeTo } from '../app/js/core/route.js';
 import { distance } from '../app/js/core/contract.js';
 
 // ========================= O CONTEXTO DE ÁUDIO FALSO =========================
@@ -76,7 +76,7 @@ function setup(over = {}) {
     // módulo consultar, e passava por isso. Agora o ctx responde a PERGUNTA, e o fixture diz em português
     // quais jogadores têm a visão comprometida, que é o que os casos sempre quiseram dizer.
     visaoComprometida: (pl) => (over.visaoComprometida ? over.visaoComprometida(pl) : !!pl.vePouco),
-    getModoCego: () => over.modoCego || false,
+    getModoCego: () => over.blindMode || false,
     LOGICAL_W: 320,
     getPlayers: () => over.players || [],
     getNumPlayers: () => over.numPlayers || 1,
@@ -108,7 +108,7 @@ describe('platform/audio-sonar · o que não depende de gênero', () => {
   it('[Boundary] needsAudioCues: o modo cego LIGA para toda a gente; fora dele, quem vê pouco recebe', () => {
     // ⚠️ A REGRA QUE FICOU NESTE MÓDULO É A PRIMEIRA, e é a única que é mesmo dele: o modo cego vence a
     // visão declarada, porque ele é uma escolha de quem está a jogar e não uma medida do que ela enxerga.
-    expect(setup({ modoCego: true }).som.needsAudioCues(pl({ vePouco: false }))).toBe(true);
+    expect(setup({ blindMode: true }).som.needsAudioCues(pl({ vePouco: false }))).toBe(true);
     expect(setup().som.needsAudioCues(pl({ vePouco: true }))).toBe(true);
     expect(setup().som.needsAudioCues(pl({ vePouco: false }))).toBe(false);
     // E a metade visual é INJECTADA: o módulo não a calcula, e um ctx que responda outra coisa manda.
@@ -361,13 +361,13 @@ describe('platform/audio-sonar · a rota, quando o jogo a permite (#84 item 2)',
 
   it('⚠️ [Interface] as DUAS distâncias já estão na mesma unidade: passos', () => {
     // É a asserção que impede a conversão a mais. `distance()` divide pela `unit` no ramo contínuo, e
-    // `rotaAte().passos` conta passos por definição — dividir outra vez pelo passo do mundo poria o guia no
+    // `routeTo().passos` conta passos por definição — dividir outra vez pelo passo do mundo poria o guia no
     // brilho máximo para sempre num jogo com `unit = 16`. É o defeito que a #121 tirou do `panFor`.
     const semParede = { topology: GRADE_ORTO, roleAt: () => 'free' };
-    const rota = rotaAte({ ...semParede, topology: GRADE_ORTO }, { x: 0, y: 0 }, [{ x: 7, y: 0 }]);
+    const rota = routeTo({ ...semParede, topology: GRADE_ORTO }, { x: 0, y: 0 }, [{ x: 7, y: 0 }]);
     expect(rota.passos).toBe(distance(GRADE_ORTO, { x: 0, y: 0 }, { x: 7, y: 0 }));
     // E com parede a rota é ESTRITAMENTE maior — nunca menor do que a reta, em nenhum caso.
-    const desvio = rotaAte({ topology: GRADE_ORTO, roleAt: PAREDE }, { x: 4, y: 0 }, [{ x: 6, y: 0 }]);
+    const desvio = routeTo({ topology: GRADE_ORTO, roleAt: PAREDE }, { x: 4, y: 0 }, [{ x: 6, y: 0 }]);
     expect(desvio.passos).toBeGreaterThan(distance(GRADE_ORTO, { x: 4, y: 0 }, { x: 6, y: 0 }));
   });
 });

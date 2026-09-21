@@ -160,8 +160,8 @@ import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de
 import type { DomQuery } from '../core/dom-query.js';
 import { mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from './pause-icons.js';
 import { anunciarItem } from './item-announcement.js';
-import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
-import { passoNoAnel } from '../core/anel.js';
+import { accessibleLabel } from '../core/rotulo-acessivel.js';
+import { stepInRing } from '../core/anel.js';
 import { itensNavegaveis } from './menu-items.js';
 import { t } from '../core/i18n.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
@@ -170,7 +170,7 @@ export { hasNavIntent as hasIntent } from '../input/edges.js';
 // dela, e como ESTE módulo já importa aquele, a volta fecharia um ciclo de importação — que em ESM não
 // estoura na hora, estoura no boot em TDZ. O nome público fica: é daqui que os menus e os testes já a
 // importavam, e mudar isso seria pedir uma edição em cada um deles para não ganhar nada.
-export { passoNoAnel } from '../core/anel.js';
+export { stepInRing } from '../core/anel.js';
 
 /** `select` com esquerda/direita: um passo, SEM dar a volta — ajustar VALOR não é navegar lista (ver acima). */
 export function selectStep(selectedIndex: number, optionsLen: number, delta: number): number {
@@ -207,7 +207,7 @@ export function rangeStep(value: number, min: number, max: number, step: number,
  */
 export function passoNaPausa(len: number, idx: number, k: NavKeys): number {
   const d = (k.down || k.right) ? 1 : -1;
-  return passoNoAnel(len, idx < 0 ? 0 : idx, d);
+  return stepInRing(len, idx < 0 ? 0 : idx, d);
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -322,7 +322,7 @@ export interface MenuNavApi {
  */
 export function partesDoControle(el: HTMLElement): { rotulo: string; estado: string } {
   const forte = el.closest('.ctrl-row')?.querySelector('strong')?.textContent?.trim() || '';
-  const nome = rotuloAcessivel(el);
+  const nome = accessibleLabel(el);
   const com = (rotulo: string, papel: string): string => `${rotulo}, ${t(papel)}`;
   if (el.hasAttribute('data-passos')) {
     return { rotulo: com(el.getAttribute('aria-label') || forte, 'sr.papel.passos'), estado: el.getAttribute('aria-valuetext') ?? '' };
@@ -427,11 +427,11 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); dizerItem(items, idx); return; }
       // Os PASSOS ⯇ ⯈ (ADR-0151): esquerda e direita são o próprio ajuste, e quem o aplica ouve o `passo` (e anuncia).
       if (cur.hasAttribute('data-passos')) { cur.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true })); return; }
-      focarEDizer(items, passoNoAnel(items.length, idx, d));
+      focarEDizer(items, stepInRing(items.length, idx, d));
       return;
     }
 
-    if (k.up || k.down) { focarEDizer(items, passoNoAnel(items.length, idx, k.down ? 1 : -1)); return; }
+    if (k.up || k.down) { focarEDizer(items, stepInRing(items.length, idx, k.down ? 1 : -1)); return; }
 
     if (k.yes) {
       if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, 'wrap'); dizerItem(items, idx); return; }
@@ -493,11 +493,11 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // nem região viva. MEDIDO no jogo construído: a seta andava e o `#sr-status` ficava vazio. O item 3 do
     // ADR-0044 pede posição e total "em todo lugar", e este era o lugar onde ele não tinha chegado — o menu
     // que o item 5 reconstruiu.
-    // `rotuloAcessivel` e não `textContent`: um item com `aria-label` seria narrado de um jeito pelo jogo e de
+    // `accessibleLabel` e não `textContent`: um item com `aria-label` seria narrado de um jeito pelo jogo e de
     // outro pelo leitor de tela, e quem ouve os dois não teria como saber qual é a verdadeira.
     // 🔴 UM ITEM TRAVADO DIZ PORQUÊ ao ser alcançado (ADR-0161): dito a seguir ao nome, e escrito no rodapé.
     const motivo = items[n].getAttribute('aria-disabled') === 'true' ? (items[n].dataset.motivo ?? '') : '';
-    const anuncio = anunciarItem({ rotulo: rotuloAcessivel(items[n]), posicao: n + 1, total: items.length }, ctx.comIndice());
+    const anuncio = anunciarItem({ rotulo: accessibleLabel(items[n]), posicao: n + 1, total: items.length }, ctx.comIndice());
     ctx.srSay(motivo ? `${anuncio}. ${motivo}` : anuncio);
     ctx.explicarItem?.(motivo || null);
   }

@@ -106,7 +106,7 @@ const QL_NAME = { 1: 'pré-silábico', 2: 'silábico', 3: 'silábico-alfabético
 function buildCtx(over = {}) {
   const said = [], alerted = [];
   const state = {
-    modoCego: false, libras: false, pauseActor: -1,
+    blindMode: false, libras: false, pauseActor: -1,
     audioCat: makeAudioCat(),
     rm: { parallax: false, decor: false, items: false, particles: false },
     saved: 0, catGains: [], ttsPanelRefreshes: 0, toggleMoveCalls: [], vizCalls: [], librasToggles: 0,
@@ -132,8 +132,8 @@ function buildCtx(over = {}) {
     // por aqui que `reflectPauseIcons` os encontra. Os testes que exercitam o reflexo alimentam `state.bars`;
     // os que só olham o markup do cartão deixam a lista vazia — e o reflexo então não faz nada, corretamente.
     getA11yBars: () => state.bars || state.screens,
-    getModoCego: () => state.modoCego,
-    setModoCego: (on) => { state.modoCego = on; },
+    getModoCego: () => state.blindMode,
+    setModoCego: (on) => { state.blindMode = on; },
     getAudioCat: () => state.audioCat,
     setCatGain: (k) => state.catGains.push(k),
     reflectTtsPanel: () => { state.ttsPanelRefreshes++; },
@@ -299,7 +299,7 @@ describe('plano do modo TEA (applyCalm sem DOM)', () => {
  */
 function snap(over = {}) {
   const base = {
-    modoCego: false, ttsOn: false, librasOn: false, calmMode: 0,
+    blindMode: false, ttsOn: false, librasOn: false, calmMode: 0,
     toggleMove: false, viz: 'normal', privateOutput: true, ...over,
   };
   return { ...base, visual: base.visual ?? migrarVisual(base.viz) };
@@ -307,7 +307,7 @@ function snap(over = {}) {
 
 describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
   it('INTERFACE: todo ícone com estado produz rótulo não-vazio nas duas pontas do toggle', () => {
-    const on = snap({ modoCego: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, viz: 'hc-direto' });
+    const on = snap({ blindMode: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, viz: 'hc-direto' });
     for (const ic of PAUSE_ICONS) {
       expect(computeIconLabel(ic.k, snap()).length).toBeGreaterThan(0);
       expect(computeIconLabel(ic.k, on).length).toBeGreaterThan(0);
@@ -316,7 +316,7 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
 
   it('os 5 toggles booleanos dizem on/off e MUDAM quando o estado muda', () => {
     const cases = [
-      ['blind', 'modoCego', 'Modo cego'],
+      ['blind', 'blindMode', 'Modo cego'],
       ['tts', 'ttsOn', 'Narração por voz'],
       ['libras', 'librasOn', 'Modo pessoa surda'],
       // ☝️ LEFT THIS LIST in 2026-09-21: it stopped being a boolean and became three positions (ADR-0218). Its own case is below.
@@ -416,7 +416,7 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
    * sobre um ícone que age ensina a criança a não tentar — que é o mesmo defeito, virado do avesso.
    */
   it('🔴 [Zero] nenhum ícone da barra se anuncia EM CONSTRUÇÃO — e o 👄, que era o último, diz o estado', () => {
-    const tudoLigado = snap({ modoCego: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, voz: true });
+    const tudoLigado = snap({ blindMode: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, voz: true });
     for (const ic of PAUSE_ICONS) {
       expect(ic, `${ic.k} trouxe o campo \`soon\` de volta sem mecanismo por trás`).not.toHaveProperty('soon');
       expect(computeIconLabel(ic.k, tudoLigado), ic.k).not.toMatch(/em constru|under construction|en construcci/i);
@@ -444,13 +444,13 @@ describe('computeIconVisual — o visual e o aria-pressed andam juntos', () => {
    * que tem de ser verdade é o oposto e é mais forte — o ícone responde ao ESTADO DELE, e só a ele.
    */
   it('🔴 [Right] o 👄 lê o próprio estado, e nada do resto da barra o liga', () => {
-    const tudoMenosAVoz = snap({ modoCego: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, viz: 'fix-protan', privateOutput: false });
+    const tudoMenosAVoz = snap({ blindMode: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, viz: 'fix-protan', privateOutput: false });
     expect(computeIconVisual('voice', tudoMenosAVoz)).toEqual({ on: false, dis: false, calm: false, cvd: '', active: false });
     expect(computeIconVisual('voice', snap({ voz: true }))).toMatchObject({ on: true, active: true });
   });
 
   it('blind/tts ficam DESABILITADOS sem saída de áudio privada — mas o `on` continua verdadeiro', () => {
-    const s = snap({ modoCego: true, ttsOn: true, privateOutput: false });
+    const s = snap({ blindMode: true, ttsOn: true, privateOutput: false });
     expect(computeIconVisual('blind', s)).toMatchObject({ on: true, dis: true });
     expect(computeIconVisual('tts', s)).toMatchObject({ on: true, dis: true });
   });
@@ -458,7 +458,7 @@ describe('computeIconVisual — o visual e o aria-pressed andam juntos', () => {
   it('🔴 [Right] tts is LOCKED when no voice speaks the language (ADR-0185), even with a private output', () => {
     expect(computeIconVisual('tts', snap({ ttsOn: true, semVoz: true }))).toMatchObject({ on: true, dis: true });
     expect(computeIconVisual('tts', snap({ ttsOn: true, semVoz: false })), 'locked with a voice for the language').toMatchObject({ dis: false });
-    expect(computeIconVisual('blind', snap({ modoCego: true, semVoz: true })), 'blind mode needs no voice').toMatchObject({ dis: false });
+    expect(computeIconVisual('blind', snap({ blindMode: true, semVoz: true })), 'blind mode needs no voice').toMatchObject({ dis: false });
   });
 
   it('BORDA do TEA: nível 1 é `.pi-calm` (não `.pi-on`) e nível 2 é `.pi-on` (não `.pi-calm`)', () => {
@@ -481,7 +481,7 @@ describe('computeIconVisual — o visual e o aria-pressed andam juntos', () => {
   });
 
   it('INVARIANTE: active é exatamente on || calm || cvd — nunca um subconjunto', () => {
-    const estados = [snap({ calmMode: 1 }), snap({ viz: 'fix-tritan' }), snap({ modoCego: true }), snap()];
+    const estados = [snap({ calmMode: 1 }), snap({ viz: 'fix-tritan' }), snap({ blindMode: true }), snap()];
     for (const s of estados) {
       for (const ic of PAUSE_ICONS) {
         const v = computeIconVisual(ic.k, s);
@@ -629,16 +629,16 @@ describe('initPauseIcons — ações dos ícones', () => {
     const { ctx, state, said } = buildCtx();
     const api = initPauseIcons(ctx);
     api.iconAct('blind', 0);
-    expect(state.modoCego).toBe(true);
+    expect(state.blindMode).toBe(true);
     expect(said).toEqual(['Modo cego ligado.']);
     api.iconAct('blind', 0);
-    expect(state.modoCego).toBe(false);
+    expect(state.blindMode).toBe(false);
     expect(said[1]).toBe('Modo cego desligado.');
   });
   it('⚠️ [Right] SEM `setModoCego` injetado, o ícone continua a ligar o modo cego — e a PERSISTIR', async () => {
     // ADR-0106 §4, etapa 1b. Cinco jogos do catálogo nunca injectaram nada disto, e a consequência não é
     // «o botão não faz efeito»: é uma criança cega abrir o jogo e não ter por onde. O padrão é o
-    // `setModoCegoValue` do `core/state`, que faz as três coisas que aquele registo diz que um setter faz —
+    // `setBlindModeValue` do `core/state`, que faz as três coisas que aquele registo diz que um setter faz —
     // grava, persiste, avisa — e NADA mais: refazer os extras do nível é reacção, e quem reage assina.
     const guardado = {};
     globalThis.localStorage = {
@@ -648,14 +648,14 @@ describe('initPauseIcons — ações dos ícones', () => {
     };
     try {
       const estadoReal = await import('../app/js/core/state.js');
-      const antes = estadoReal.modoCego;
+      const antes = estadoReal.blindMode;
       const { ctx, said } = buildCtx();
       delete ctx.setModoCego;                 // o jogo que não se lembrou
-      ctx.getModoCego = () => estadoReal.modoCego;
+      ctx.getModoCego = () => estadoReal.blindMode;
 
       initPauseIcons(ctx).iconAct('blind', 0);
 
-      expect(estadoReal.modoCego, 'o ícone não mexeu no estado real').toBe(!antes);
+      expect(estadoReal.blindMode, 'o ícone não mexeu no estado real').toBe(!antes);
       // ⚠️ `'1'`/`'0'` e não `'true'`/`'false'`: é a codificação que o `store.setBool` grava, e é ela que o
       // armazenamento de uma criança que já jogou contém. Pinada pelo literal de propósito — afirmar isto
       // relendo pelo `store.getBool` mediria a ida e a volta pela mesma tabela, e as duas mover-se-iam juntas.
@@ -664,7 +664,7 @@ describe('initPauseIcons — ações dos ícones', () => {
       // ⚠️ E o anúncio NÃO se perde nem se duplica: quem o diz é este ícone, não o setter.
       expect(said).toEqual([antes ? 'Modo cego desligado.' : 'Modo cego ligado.']);
 
-      estadoReal.setModoCegoValue(antes);      // devolve o estado do módulo a quem vier a seguir
+      estadoReal.setBlindModeValue(antes);      // devolve o estado do módulo a quem vier a seguir
     } finally {
       delete globalThis.localStorage;
     }
@@ -917,7 +917,7 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(estado.voiceControl, 'o segundo toque não desligou').toBe(false);
     expect(said[1]).toBe('Comando de voz: desligado.');
     // e o acto do 👄 não escorrega para os vizinhos
-    expect(state.modoCego).toBe(false);
+    expect(state.blindMode).toBe(false);
     expect(state.vizCalls).toEqual([]);
   });
 
@@ -928,7 +928,7 @@ describe('initPauseIcons — ações dos ícones', () => {
     api.iconAct('blind', 0);
     api.iconAct('tts', 0);
     expect(alerted).toHaveLength(2);
-    expect(state.modoCego).toBe(false);
+    expect(state.blindMode).toBe(false);
     expect(state.audioCat.tts.on).toBe(false);
   });
 
@@ -1049,7 +1049,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
 
   it('UM botão: recebe classe, aria-pressed e aria-label coerentes com o estado', () => {
     const { ctx, state } = buildCtx();
-    state.modoCego = true;
+    state.blindMode = true;
     const api = initPauseIcons(ctx);
     const b = fakeIconBtn('blind');
     api.reflectIconBtn(b, 0);
@@ -1060,12 +1060,12 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
 
   it('o reflexo é IDEMPOTENTE e reversível: desligar limpa a classe e corrige o rótulo', () => {
     const { ctx, state } = buildCtx();
-    state.modoCego = true;
+    state.blindMode = true;
     const api = initPauseIcons(ctx);
     const b = fakeIconBtn('blind');
     api.reflectIconBtn(b, 0); api.reflectIconBtn(b, 0);
     expect(b.className.split(' ').filter((c) => c === 'pi-on')).toHaveLength(1);
-    state.modoCego = false;
+    state.blindMode = false;
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-on')).toBe(false);
     expect(b.getAttribute('aria-label')).toBe('Modo cego: desligado');
@@ -1132,7 +1132,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
   it('INVARIANTE: depois do reflexo, TODO .pi-btn tem aria-label não-vazio e aria-pressed definido', () => {
     setPlayers([{ viz: 'fix-deuter', toggleMove: true }]);
     const { ctx, state } = buildCtx();
-    state.modoCego = true; state.libras = true;
+    state.blindMode = true; state.libras = true;
     state.screens = [fakeScreen()];
     const api = initPauseIcons(ctx);
     api.setCalmMode(1);
@@ -1156,7 +1156,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
   it('CRUZAMENTO: iconLabel do módulo bate com computeIconLabel puro sobre o mesmo snapshot', () => {
     setPlayers([{ viz: 'hc-direto-7', toggleMove: true }]);
     const { ctx, state } = buildCtx();
-    state.modoCego = true; state.audioCat.tts.on = true; state.libras = true;
+    state.blindMode = true; state.audioCat.tts.on = true; state.libras = true;
     const api = initPauseIcons(ctx);
     api.setCalmMode(2);
     const s = api.iconState(0);

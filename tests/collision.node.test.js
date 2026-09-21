@@ -10,7 +10,7 @@ import { TILE } from '../app/js/core/constants.js';
 const mkCtx = (grid, flags = {}) => ({
   world: grid, W: grid[0].length, H: grid.length,
   isWheelchair: () => !!flags.wheelchair,
-  isModoCego: () => !!flags.modoCego,
+  isModoCego: () => !!flags.blindMode,
   caneDiv: () => flags.caneDiv ?? 1,
   wcSolid: () => flags.wcSolid ?? new Set(),
   gateTiles: () => flags.gateTiles ?? new Set(),
@@ -69,7 +69,7 @@ describe('core/collision — isSolidType (por TIPO de tile)', () => {
     expect(COL.isSolidType(9)).toBe(true);
   });
   it('[Right/a11y] modo cego: SÓ lava(9) vira chão; trampolim(5) segue como está (já sólido)', () => {
-    COL.initCollision(mkCtx(FLAT, { modoCego: true }));
+    COL.initCollision(mkCtx(FLAT, { blindMode: true }));
     expect(COL.isSolidType(9)).toBe(true);
     expect(COL.isSolidType(5)).toBe(true);
   });

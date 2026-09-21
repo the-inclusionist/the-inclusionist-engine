@@ -102,7 +102,7 @@
     "type ActionLabeller": "(a: Action) => string"
   },
   "core/caption-duration.ts": {
-    "type RitmoDaLegenda": "(typeof RITMOS_DA_LEGENDA)[number]"
+    "type CaptionRate": "(typeof CAPTION_RATES)[number]"
   },
   "core/collision.ts": {
     "type CollisionCtx": "{ world: number[][]"
@@ -242,24 +242,24 @@
     "type PlayerView": "Pick<Player, K>"
   },
   "core/flash-threshold.ts": {
-    "interface QuadroDeLuminancia": [
+    "interface LuminanceFrame": [
       "luminancias",
       "t"
     ],
-    "interface VeredictoDeFlashes": [
+    "interface FlashVerdict": [
       "passa",
       "piorSegundo"
     ]
   },
   "core/genres.ts": {
-    "interface Genero": [
+    "interface Genre": [
       "familia",
       "marca?",
       "nome"
     ]
   },
   "core/i18n.ts": {
-    "interface PortaDoIdioma": [
+    "interface LocalePort": [
       "KEYS",
       "get",
       "set"
@@ -270,11 +270,11 @@
     "type PostFx": "typeof POST_FX_ORDER[number]"
   },
   "core/letter-grid.ts": {
-    "interface Posicao": [
+    "interface Position": [
       "coluna",
       "linha"
     ],
-    "interface GradeDeLetras": [
+    "interface LetterGrid": [
       "apagar",
       "capacidade",
       "colunas",
@@ -291,24 +291,24 @@
       "sob",
       "valor"
     ],
-    "interface OpcoesDaGrade": [
+    "interface LetterGridOptions": [
       "capacidade?",
       "colunas",
       "simbolos"
     ],
-    "type Direcao": "'esquerda' | 'direita' | 'cima' | 'baixo'"
+    "type Direction": "'esquerda' | 'direita' | 'cima' | 'baixo'"
   },
   "core/loop.ts": {
-    "interface OpcoesDoLaco": [
+    "interface LoopOptions": [
       "aoFalhar?"
     ]
   },
   "core/password.ts": {
-    "interface CampoSenha": [
+    "interface PasswordField": [
       "bits",
       "nome"
     ],
-    "interface CodecSenha": [
+    "interface PasswordCodec": [
       "campos",
       "codificar",
       "comprimento",
@@ -324,7 +324,7 @@
     ]
   },
   "core/rotulo-acessivel.ts": {
-    "interface ElementoComRotulo": [
+    "interface LabelledElement": [
       "getAttribute",
       "textContent"
     ]
@@ -335,14 +335,14 @@
       "roleAt",
       "topology"
     ],
-    "interface Rota": [
+    "interface Route": [
       "ate",
       "passos",
       "proximo"
     ]
   },
   "core/run-state.ts": {
-    "interface ExtrasDoNivel": [
+    "interface LevelExtras": [
       "gate",
       "gateOpen",
       "gateTiles",
@@ -367,7 +367,7 @@
       "setWcSolid",
       "wcSolid"
     ],
-    "interface OpcoesDaRodada": [
+    "interface RunOptions": [
       "aoTrocarJogadores?"
     ]
   },
@@ -390,7 +390,7 @@
       "top",
       "update"
     ],
-    "interface FatosDaCena": [
+    "interface SceneFacts": [
       "menuDePausa",
       "mundoRodando",
       "telaDeTitulo"
@@ -402,10 +402,10 @@
     ]
   },
   "core/speech-rate.ts": {
-    "type RitmoDaFala": "(typeof RITMOS_DA_FALA)[number]"
+    "type SpeechRate": "(typeof SPEECH_RATES)[number]"
   },
   "core/state.ts": {
-    "interface PortaDoEstado": [
+    "interface StatePort": [
       "KEYS",
       "get",
       "getBool",
@@ -413,7 +413,8 @@
       "set",
       "setBool"
     ],
-    "interface EventoDoJogo": [
+    "interface GameEvent": [
+      "blindMode",
       "cameraControl",
       "caneBlockDiv",
       "captionPpm",
@@ -425,11 +426,10 @@
       "inputCooldown",
       "letterCase",
       "menuIndexOn",
-      "modoCego",
+      "noGripStrength",
       "numPlayers",
       "oneButton",
       "ownerColors",
-      "semForca",
       "speechPpm",
       "switchScan",
       "vizMode",
@@ -449,9 +449,9 @@
       "simulacao",
       "tema"
     ],
-    "type Tema": "'padrao' | 'hc3' | 'hc45' | 'hc7'",
-    "type Correcao": "'tricro' | 'protan' | 'deuter' | 'tritan'",
-    "type Simulacao": "null | 'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'lv-blur' | 'lv-haze' | 'lv-tunnel' | 'lv-macular' | 'lv-diabetic' | 'blind'"
+    "type Theme": "'padrao' | 'hc3' | 'hc45' | 'hc7'",
+    "type Correction": "'tricro' | 'protan' | 'deuter' | 'tritan'",
+    "type Simulation": "null | 'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'lv-blur' | 'lv-haze' | 'lv-tunnel' | 'lv-macular' | 'lv-diabetic' | 'blind'"
   },
   "educational/activities-registry.ts": {
     "interface ActivityDef": [
@@ -2111,9 +2111,9 @@
       "direto",
       "filtro"
     ],
-    "type Tema": "TemaDoCore",
-    "type Correcao": "CorrecaoDoCore",
-    "type Simulacao": "SimulacaoDoCore",
+    "type Theme": "TemaDoCore",
+    "type Correction": "CorrecaoDoCore",
+    "type Simulation": "SimulacaoDoCore",
     "type VisualState": "VisualStateDoCore",
     "type MotivoIndisponivel": "'tema' | 'correcao' | 'ambos'"
   },
@@ -2640,11 +2640,11 @@
     ],
     "interface IconStateSnapshot": [
       "alternanciaExigida?",
+      "blindMode",
       "calmMode",
       "camera?",
       "idioma?",
       "librasOn",
-      "modoCego",
       "privateOutput",
       "semVoz?",
       "switchScan?",

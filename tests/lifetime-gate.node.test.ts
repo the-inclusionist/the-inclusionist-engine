@@ -53,11 +53,11 @@ const SEM_PERSISTIR: Record<string, string> = {
  * que o módulo esteja — e a ordem dos casos deixa de importar.
  */
 const ARGUMENTOS: Record<string, readonly [unknown, unknown]> = {
-  setVizModeValue: ['sim-deuter', 'normal'], setModoCegoValue: [true, false],
+  setVizModeValue: ['sim-deuter', 'normal'], setBlindModeValue: [true, false],
   setLetterCaseValue: ['lower', 'upper'], setCaptionsOnValue: [false, true],
   setCbSafeValue: [true, false], setOwnerColorsValue: [false, true],
   setOutlineFgValue: [2, 0], setOutlineBgValue: [2, 0], setCaneBlockDivValue: [4, 2],
-  setWheelchairValue: [true, false], setOneButtonValue: [true, false], setGameSpeedValue: [0.5, 1], setSemForcaValue: [true, false], setCameraControlValue: ['eyes', 'off'], setCaptionPpmValue: [175, 125],
+  setWheelchairValue: [true, false], setOneButtonValue: [true, false], setGameSpeedValue: [0.5, 1], setNoGripStrengthValue: [true, false], setCameraControlValue: ['eyes', 'off'], setCaptionPpmValue: [175, 125],
   setSpeechPpmValue: [404, 254], setInputCooldownValue: [500, 0],
   setMenuIndexOnValue: [false, true], setSwitchScanValue: [true, false], setVoiceControlValue: [true, false],
 };
@@ -99,7 +99,7 @@ describe('ADR-0038 · PÁGINA — o que mora em core/state sobrevive a fechar o 
     // que ele existe para pegar.
     const achados = settersDoModulo();
     expect(achados.length).toBeGreaterThanOrEqual(11);
-    expect(achados).toContain('setModoCegoValue');
+    expect(achados).toContain('setBlindModeValue');
     expect(achados).toContain('setOneButtonValue');
   });
 

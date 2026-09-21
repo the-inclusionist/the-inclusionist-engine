@@ -1,8 +1,8 @@
 {
-  "about": "The public names that speak Portuguese, and what each one is called in English (ADR-0219, issue #202). The engine renames itself from this file (`node scripts/apply-rename.mjs`) and the migration table of docs/6-DevOps-SRE/Breaking-Changes.md is PRINTED from it, so a name cannot be renamed without being written down. One layer at a time, in the direction the dependencies run; `done` names the commit that applied each layer.",
+  "about": "The public names that speak Portuguese, and what each one is called in English (ADR-0219, issue #202). The engine renames itself from this file (`node scripts/apply-rename.mjs`) and the migration table of docs/6-DevOps-SRE/Breaking-Changes.md is PRINTED from it, so a name cannot be renamed without being written down. One layer at a time, in the direction the dependencies run; `done` is the date the layer was applied — and it is what tells the gate that a name already IN the tree is this work and not a collision.",
   "layers": {
     "core": {
-      "done": "",
+      "done": "2026-09-21",
       "names": {
         "passoNoAnel": "stepInRing",
 

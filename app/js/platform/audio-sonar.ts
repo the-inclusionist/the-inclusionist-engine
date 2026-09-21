@@ -44,7 +44,7 @@ import { t } from '../core/i18n.js';
 // O GUIA (#84 item 2) é feito destes dois, e de mais nada: a ROTA diz quantos passos faltam contornando
 // parede, e a INTENSIDADE traduz esse número em brilho e volume. Nenhum dos dois toca no Web Audio; a fiação
 // — a única parte que toca — é o `updateGuide` lá em baixo, e é por isso que o desenho é conferível em `node`.
-import { rotaAte } from '../core/route.js';
+import { routeTo } from '../core/route.js';
 import { intensidadeDoGuia, CORTE_LONGE, PASSOS_ATE_O_FUNDO } from './guide-intensity.js';
 
 export type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
@@ -402,7 +402,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * QUANTOS PASSOS FALTAM, e a resposta preferida é a que contorna parede.
    *
    * ⚠️ AS DUAS RESPOSTAS JÁ ESTÃO NA MESMA UNIDADE, e é a única razão pela qual esta função é uma linha em vez
-   * de uma conversão: `rotaAte().passos` conta passos por definição, e `distance()` também devolve passos em
+   * de uma conversão: `routeTo().passos` conta passos por definição, e `distance()` também devolve passos em
    * TODA topologia — ela própria divide pela `unit` no ramo contínuo. Dividir aqui outra vez pelo passo do
    * mundo era o erro à espera de ser cometido, e num jogo com `unit = 16` ele poria o guia no brilho máximo
    * para sempre. É o mesmo defeito que a #121 tirou do `panFor`: misturar régua de mundo com régua de ecrã.
@@ -415,7 +415,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   function passosAteOAlvo(pl: SonarPlayer, alvo: { at: Spot; d: number }): number {
     const roleAt = ctx.roleAt;
     if (roleAt) {
-      const rota = rotaAte(
+      const rota = routeTo(
         { topology: ctx.topology(), roleAt, orcamento: ORCAMENTO_DA_ROTA },
         { x: pl.x, y: pl.y }, [alvo.at],
       );

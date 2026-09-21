@@ -25,13 +25,25 @@ export const MAP = 'scripts/rename-map.json';
 
 export const readMap = () => JSON.parse(readFileSync(join(ROOT, MAP), 'utf8'));
 
-/** The tracked files a rename may touch: code and its gates, never the dictionaries, never the delivery. */
+/*
+ * The tracked files a rename may touch. 🔴 THE WHOLE REPOSITORY AND NOT A LIST OF FOLDERS, measured the hard way: the first
+ * version walked `app/js`, `tests`, `scripts` and `docs`, and `vitest.setup.node.js` — which lives at the ROOT and imports
+ * `carregarEstado` — was left behind. Every one of the 200 test files then failed to LOAD, with `tsc` perfectly clean, because
+ * a setup file is not type-checked against the tree the way a module is.
+ *
+ * What is left out, and each for its own reason:
+ *   · `app/js/i18n/` — key→sentence data; a key that spells an identifier is a promise to three languages, not a name;
+ *   · the map, the tool and its gate — they QUOTE the old names on purpose, and renaming a quotation erases the evidence;
+ *   · `docs/6-DevOps-SRE/Breaking-Changes.md` — the migration table is where the old names have to survive.
+ */
+const LEFT_OUT = [MAP, 'scripts/apply-rename.mjs', 'tests/rename-map.node.test.js', 'docs/6-DevOps-SRE/Breaking-Changes.md'];
+
 export function filesToRename() {
-  return execFileSync('git', ['ls-files', 'app/js', 'tests', 'scripts', 'docs'], { cwd: ROOT, encoding: 'utf8' })
+  return execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
     .trim().split(/\r?\n/)
-    .filter((f) => /\.(ts|js|mjs|md|json)$/.test(f))
+    .filter((f) => /\.(ts|js|mjs|cjs|md|json|html)$/.test(f))
     .filter((f) => !f.startsWith('app/js/i18n/'))
-    .filter((f) => f !== MAP);
+    .filter((f) => !LEFT_OUT.includes(f));
 }
 
 const wholeWord = (name) => new RegExp(`(?<![\\w$])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w$])`, 'g');

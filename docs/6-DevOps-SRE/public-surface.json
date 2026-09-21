@@ -67,14 +67,14 @@
     "startClaimProblem"
   ],
   "core/anel.ts": [
-    "passoNoAnel"
+    "stepInRing"
   ],
   "core/caption-duration.ts": [
-    "LEGENDA_MINIMA_MS",
-    "RITMOS_DA_LEGENDA",
-    "RitmoDaLegenda",
-    "duracaoDaLegenda",
-    "ritmoDaLegendaValido"
+    "CAPTION_MIN_MS",
+    "CAPTION_RATES",
+    "CaptionRate",
+    "captionDuration",
+    "isCaptionRate"
   ],
   "core/collision.ts": [
     "CollisionCtx",
@@ -97,8 +97,8 @@
     "TILE_COLOR",
     "TILE_TYPES",
     "TileType",
-    "ehPerigo",
-    "ehTrampolim"
+    "isHazard",
+    "isTrampoline"
   ],
   "core/contract.ts": [
     "Announcement",
@@ -136,36 +136,36 @@
     "PlayerView"
   ],
   "core/escape-html.ts": [
-    "escaparHtml"
+    "escapeHtml"
   ],
   "core/flash-threshold.ts": [
-    "COLUNAS",
-    "LINHAS",
-    "QuadroDeLuminancia",
-    "VeredictoDeFlashes",
-    "analisarFlashes"
+    "COLUMNS",
+    "FlashVerdict",
+    "LuminanceFrame",
+    "ROWS",
+    "analyseFlashes"
   ],
   "core/game-speed.ts": [
-    "VELOCIDADES_DO_JOGO",
-    "proximaVelocidade",
-    "velocidadeValida"
+    "GAME_SPEEDS",
+    "isGameSpeed",
+    "nextGameSpeed"
   ],
   "core/genres.ts": [
-    "GENEROS",
-    "Genero",
-    "generoAviso",
-    "generoProblems"
+    "GENRES",
+    "Genre",
+    "genreProblems",
+    "genreWarning"
   ],
   "core/i18n.ts": [
-    "PortaDoIdioma",
+    "LocalePort",
     "applyDom",
     "availableLocales",
     "bcp47",
-    "carregarIdioma",
+    "dictionaryGaps",
     "getLocale",
-    "idiomaPronto",
     "initI18n",
-    "lacunasDosDicionarios",
+    "loadLocale",
+    "localeReady",
     "registerDict",
     "setLocale",
     "t"
@@ -177,56 +177,56 @@
     "Z"
   ],
   "core/letter-grid.ts": [
-    "Direcao",
-    "GradeDeLetras",
-    "OpcoesDaGrade",
-    "Posicao",
-    "criarGrade"
+    "Direction",
+    "LetterGrid",
+    "LetterGridOptions",
+    "Position",
+    "createLetterGrid"
   ],
   "core/loop.ts": [
-    "OpcoesDoLaco",
-    "registrarAvisoDeQueda",
+    "LoopOptions",
+    "registerCrashNotice",
     "startLoop"
   ],
   "core/password.ts": [
-    "ALFABETO",
-    "CampoSenha",
-    "CodecSenha",
-    "criarCodec",
-    "formatar"
+    "ALPHABET",
+    "PasswordCodec",
+    "PasswordField",
+    "createPasswordCodec",
+    "formatPassword"
   ],
   "core/rng.ts": [
+    "DEFAULT_SEED",
     "Rng",
-    "SEMENTE_PADRAO",
     "createRng",
+    "decorationRng",
     "randInt",
     "reseed",
     "rnd",
-    "rngDecoracao",
     "shuffle"
   ],
   "core/rotulo-acessivel.ts": [
-    "ElementoComRotulo",
-    "rotuloAcessivel"
+    "LabelledElement",
+    "accessibleLabel"
   ],
   "core/route.ts": [
-    "PAPEIS_ATRAVESSAVEIS",
-    "Rota",
+    "Route",
     "RouteCtx",
-    "atravessavel",
-    "rotaAte"
+    "WALKABLE_ROLES",
+    "isWalkable",
+    "routeTo"
   ],
   "core/run-state.ts": [
-    "ExtrasDoNivel",
-    "OpcoesDaRodada",
+    "LevelExtras",
+    "RunOptions",
     "RunState",
     "createRunState"
   ],
   "core/scenes.ts": [
-    "FatosDaCena",
     "Scene",
+    "SceneFacts",
     "SceneStack",
-    "criarPilha"
+    "createSceneStack"
   ],
   "core/screens.ts": [
     "ScreenGrid",
@@ -234,28 +234,28 @@
     "screenGrid"
   ],
   "core/speech-rate.ts": [
-    "RITMOS_DA_FALA",
-    "RitmoDaFala",
-    "TAXA_MAXIMA",
-    "TAXA_MINIMA",
-    "palavrasFaladas",
-    "ritmoDaFalaValido",
-    "segundosDeFala",
-    "taxaDaFala"
+    "MAX_PLAYBACK_RATE",
+    "MIN_PLAYBACK_RATE",
+    "SPEECH_RATES",
+    "SpeechRate",
+    "isSpeechRate",
+    "speechPlaybackRate",
+    "speechSeconds",
+    "spokenWords"
   ],
   "core/state.ts": [
     "CameraControl",
     "DEFAULTS",
-    "EventoDoJogo",
+    "GameEvent",
     "GateTile",
     "LetterCase",
     "OutlineLevel",
-    "PortaDoEstado",
+    "StatePort",
+    "blindMode",
     "cameraControl",
     "caneBlockDiv",
     "captionPpm",
     "captionsOn",
-    "carregarEstado",
     "cbSafe",
     "defaultReducedMotion",
     "emit",
@@ -265,14 +265,15 @@
     "initVizMode",
     "inputCooldown",
     "letterCase",
+    "loadState",
     "menuIndexOn",
-    "modoCego",
     "nextCameraControl",
+    "noGripStrength",
     "off",
     "on",
     "oneButton",
     "ownerColors",
-    "semForca",
+    "setBlindModeValue",
     "setCameraControlValue",
     "setCaneBlockDivValue",
     "setCaptionPpmValue",
@@ -282,12 +283,11 @@
     "setInputCooldownValue",
     "setLetterCaseValue",
     "setMenuIndexOnValue",
-    "setModoCegoValue",
+    "setNoGripStrengthValue",
     "setOneButtonValue",
     "setOutlineBgValue",
     "setOutlineFgValue",
     "setOwnerColorsValue",
-    "setSemForcaValue",
     "setSpeechPpmValue",
     "setSwitchScanValue",
     "setVizModeValue",
@@ -308,9 +308,9 @@
     "selfTest"
   ],
   "core/visual-state.ts": [
-    "Correcao",
-    "Simulacao",
-    "Tema",
+    "Correction",
+    "Simulation",
+    "Theme",
     "VisualState"
   ],
   "core/world.ts": [
@@ -1348,13 +1348,13 @@
     "Aplicacao",
     "CHAVES_ANTIGAS",
     "CORRECOES",
-    "Correcao",
+    "Correction",
     "MotivoIndisponivel",
     "PADRAO",
     "SIMULACOES",
-    "Simulacao",
+    "Simulation",
     "TEMAS",
-    "Tema",
+    "Theme",
     "VisualState",
     "aplicacao",
     "chaveDeTextura",

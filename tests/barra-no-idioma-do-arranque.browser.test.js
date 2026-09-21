@@ -68,7 +68,7 @@ function palco() {
 describe('a barra da primeira tela fala o idioma do arranque', () => {
   it('🔴 [Zero] com `en` guardado, NENHUM dos oito rótulos fica no idioma de recuo', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { idiomaPronto, getLocale } = await import('../app/js/core/i18n.js');
+    const { localeReady, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = palco();
 
     createGame({ acomodacoes: SEM_ASSUNTO,
@@ -83,7 +83,7 @@ describe('a barra da primeira tela fala o idioma do arranque', () => {
 
     // ⚠️ O `await` É A METADE QUE FALTAVA NO CÓDIGO, e é por isso que ele está aqui e não num `beforeEach`:
     // o defeito vive exactamente no intervalo entre montar e o dicionário chegar.
-    await idiomaPronto();
+    await localeReady();
     expect(getLocale(), 'o chunk de en não carregou; o caso mediria o nada').toBe('en');
 
     const botoes = [...raiz.querySelectorAll('#title-icons .pi-btn')];
@@ -107,7 +107,7 @@ describe('a barra da primeira tela fala o idioma do arranque', () => {
 });
 
 // ===== MUTAÇÕES CONFERIDAS (2026-09-08) =====
-// 1. tirar o `void idiomaPronto().then(…)` do `create-game`   → reprova, com os OITO ícones encalhados
+// 1. tirar o `void localeReady().then(…)` do `create-game`   → reprova, com os OITO ícones encalhados
 // 2. repor o guarda `if (!…soon)` em `reflectIconBtn`         → reprova, com os TRÊS `soon` encalhados
 //    🎯 é o par que mostra que as duas metades do conserto são precisas e nenhuma basta sozinha
 // 3. `reflectIconsIn` a limpar o rótulo em vez de o escrever  → reprova pelo PAR (rótulo vazio), e não pela

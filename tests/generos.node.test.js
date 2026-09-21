@@ -7,13 +7,13 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { GENEROS, generoProblems, generoAviso } from '../app/js/core/genres.js';
+import { GENRES, genreProblems, genreWarning } from '../app/js/core/genres.js';
 
-const nomes = GENEROS.map((g) => g.nome);
+const nomes = GENRES.map((g) => g.nome);
 
 describe('the genre list (ADR-0156)', () => {
   it('🔴 [Right] it is exactly §1: the ten families and their genres, in the Dev\'s order', () => {
-    const familias = [...new Set(GENEROS.map((g) => g.familia))];
+    const familias = [...new Set(GENRES.map((g) => g.familia))];
     expect(familias).toEqual(['Action', 'Action-adventure', 'Adventure', 'Puzzle', 'Role-playing', 'Simulation', 'Strategy', 'Sports', 'MMO', 'Other notable genres']);
     for (const n of ['Platform games', 'Hero shooters', 'Metroidvania', 'Visual novels', 'Puzzle-platform game', 'Monster-taming',
       'Vehicle simulation', 'Auto chess', 'Grand strategy wargame', 'Racing', 'MMO', 'Typing game', 'Trivia game', 'Casino game', 'Horror game']) {
@@ -30,27 +30,27 @@ describe('the genre list (ADR-0156)', () => {
   });
 
   it('🎯 [Zero] no genre declared is conformant — the genre is optional (ADR-0153)', () => {
-    expect(generoProblems(undefined)).toEqual([]);
-    expect(generoAviso(undefined)).toBeNull();
+    expect(genreProblems(undefined)).toEqual([]);
+    expect(genreWarning(undefined)).toBeNull();
   });
 
   it('🔴 [Right] Casino game is refused, with the reason', () => {
-    expect(generoProblems('Casino game').join(' ')).toMatch(/Casino game.*prohibited.*ADR-0156/);
+    expect(genreProblems('Casino game').join(' ')).toMatch(/Casino game.*prohibited.*ADR-0156/);
   });
 
   it('🔴 [Right] Horror game is accepted and carries its «avoid» mark', () => {
-    expect(generoProblems('Horror game')).toEqual([]);
-    expect(GENEROS.find((g) => g.nome === 'Horror game').marca).toBe('avoid');
-    expect(generoAviso('Horror game')).toMatch(/Horror game.*avoid.*children.*ADR-0156/);
-    expect(generoAviso('Platform games'), 'a genre without a mark reports nothing').toBeNull();
+    expect(genreProblems('Horror game')).toEqual([]);
+    expect(GENRES.find((g) => g.nome === 'Horror game').marca).toBe('avoid');
+    expect(genreWarning('Horror game')).toMatch(/Horror game.*avoid.*children.*ADR-0156/);
+    expect(genreWarning('Platform games'), 'a genre without a mark reports nothing').toBeNull();
   });
 
   it('🔴 [Boundary] an unknown genre, or one from §4, is refused as not in the list', () => {
-    expect(generoProblems('Educational game').join(' ')).toMatch(/Educational game.*not in the engine's genre list/);
-    expect(generoProblems('Plataforma').join(' ')).toMatch(/not in the engine's genre list/);
-    expect(generoProblems(7).join(' ')).toMatch(/must be a genre name/);
-    expect(generoProblems('Platform games')).toEqual([]);
-    expect(generoProblems('Action'), 'a family is not a genre a cartridge declares').not.toEqual([]);
+    expect(genreProblems('Educational game').join(' ')).toMatch(/Educational game.*not in the engine's genre list/);
+    expect(genreProblems('Plataforma').join(' ')).toMatch(/not in the engine's genre list/);
+    expect(genreProblems(7).join(' ')).toMatch(/must be a genre name/);
+    expect(genreProblems('Platform games')).toEqual([]);
+    expect(genreProblems('Action'), 'a family is not a genre a cartridge declares').not.toEqual([]);
   });
 });
 

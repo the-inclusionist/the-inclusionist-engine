@@ -9,10 +9,10 @@ globalThis.PIXI = PIXI;
 // The stored settings are loaded as a composition root loads them (ADR-0178); `createGame` loads them again from the page's
 // storage, and `estado-carregado-pela-raiz` checks the order without this setup.
 import * as store from './app/js/platform/storage.js';
-import { carregarEstado } from './app/js/core/state.js';
-import { carregarIdioma } from './app/js/core/i18n.js';
-carregarEstado(store);
-carregarIdioma(store);
+import { loadState } from './app/js/core/state.js';
+import { loadLocale } from './app/js/core/i18n.js';
+loadState(store);
+loadLocale(store);
 
 // EACH FILE STARTS WITH NO TYPOGRAPHY CHOSEN. The browser project shares one localStorage across files, and five of them walk the
 // typography cycle: since ADR-0176 a stored face with a 20 px floor is applied at boot (25% larger text), and the next file
@@ -22,5 +22,5 @@ beforeAll(() => {
   for (const chave of ['incl_font_k', 'incl_lettercase']) localStorage.removeItem(chave);
   document.documentElement.style.removeProperty('--fonte-escala');
   delete document.documentElement.dataset.letras;
-  carregarEstado(store);
+  loadState(store);
 });

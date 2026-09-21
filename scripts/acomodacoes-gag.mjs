@@ -117,9 +117,9 @@ const D = {
   'use-distinct-sound-music-design-for-all-objects-and-events': { razao: 'autoria', nota: 'desenho de som do jogo' },
   'ensure-screenreader-support-including-menus-installers': ['leitorDeTela'],
   'ensure-that-all-key-actions-can-be-carried-out-by-digital-controls-pads-keys-presses-with-more-complex-input-eg-analogue-gesture-not-required-and-included-only-as-supplementary-alternati': { razao: 'regra-da-engine', nota: 'a mesma do eixo Motor: `core/actions.ts`' },
-  'allow-easy-orientation-to-movement-along-compass-points': ['modoCego'],
+  'allow-easy-orientation-to-movement-along-compass-points': ['blindMode'],
   'provide-a-voiced-gps': ['navegacaoSonora'],
-  'provide-a-pingable-sonar-style-audio-map': ['modoCego'],
+  'provide-a-pingable-sonar-style-audio-map': ['blindMode'],
   'allow-the-font-size-to-be-adjusted': ['tipografia'],
   // — Hearing —
   'if-any-subtitles-captions-are-used-present-them-in-a-clear-easy-to-read-way': ['legendasDeSom'],

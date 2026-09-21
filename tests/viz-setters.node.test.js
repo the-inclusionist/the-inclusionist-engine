@@ -106,7 +106,7 @@ function setup(over = {}) {
     vpSpr: over.vpSpr || [],
     vpDots: over.vpDots || [],
     log: {
-      frontDim: [], modoCego: [], hideTouch: [], say: [], selWrites: [],
+      frontDim: [], blindMode: [], hideTouch: [], say: [], selWrites: [],
       rebuildExtras: 0, rebuildCoins: 0, reflect: 0, visual: 0, empathy: 0, filtrosCss: [], hcNoDom: [],
       clearPlayerDirect: 0, invalidate: 0, sharedWrites: [],
     },
@@ -148,7 +148,7 @@ function setup(over = {}) {
     setFrontDim: (on) => env.log.frontDim.push(on),
     rebuildExtras: () => { env.log.rebuildExtras++; },
     rebuildCoins: () => { env.log.rebuildCoins++; },
-    setModoCego: (on) => env.log.modoCego.push(on),
+    setModoCego: (on) => env.log.blindMode.push(on),
     hideTouchControls: (r) => env.log.hideTouch.push(r),
     reflectVizButtons: () => { env.log.reflect++; },
     renderVisualPanel: () => { env.log.visual++; },
@@ -563,12 +563,12 @@ describe('setPlayerViz — solo e multi-tela seguem caminhos DIFERENTES', () => 
   it('[Right] cegueira liga o modo cego (bengala + pistas de áudio) por padrão', () => {
     const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
     api.setPlayerViz(0, 'blind');
-    expect(env.log.modoCego).toEqual([true]);
+    expect(env.log.blindMode).toEqual([true]);
   });
   it('[Inverse] sair da cegueira NÃO desliga o modo cego sozinho (só a entrada é automática)', () => {
     const { env, api } = setup({ players: [{ viz: 'blind' }], numPlayers: 1 });
     api.setPlayerViz(0, 'normal');
-    expect(env.log.modoCego).toEqual([]);
+    expect(env.log.blindMode).toEqual([]);
   });
   it('[Right] invalida o registro do render estático (o modo mudou, os estáticos precisam refazer)', () => {
     const { env, api } = setup({ players: [{ viz: 'normal' }, { viz: 'normal' }], numPlayers: 2, sharedViz: 'normal', vpSpr: [filtered(), filtered()] });

@@ -25,7 +25,7 @@
  * presos nas pontas, e a diferença é real: passar do volume máximo para o mínimo com uma tecla é um susto,
  * não uma conveniência — e num jogo com pistas de áudio para cegueira, um susto de volume é dano.
  */
-export function passoNoAnel(len: number, idx: number, delta: number): number {
+export function stepInRing(len: number, idx: number, delta: number): number {
   if (len <= 0) return 0;
   return ((idx + delta) % len + len) % len; // o `+ len` extra: `%` de negativo em JS devolve negativo
 }

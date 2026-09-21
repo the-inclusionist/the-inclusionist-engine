@@ -43,7 +43,7 @@
 // dicionário.
 //
 // ⚠️ E NÃO IMPORTA NADA. Uma casca que não usa `innerHTML` também não precisa de escapar texto: `textContent`
-// escapa por construção. Chegou a haver aqui um `escaparHtml` importado «por conveniência» — que é como um
+// escapa por construção. Chegou a haver aqui um `escapeHtml` importado «por conveniência» — que é como um
 // módulo-folha deixa de o ser, e como um leitor futuro passa a procurar a interpolação que não existe.
 
 /** As três coisas do `document` de que a casca precisa. Mesma forma de `ui/loop-crash`. */

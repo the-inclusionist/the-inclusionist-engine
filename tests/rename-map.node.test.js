@@ -15,10 +15,17 @@ import { renameInText, readMap } from '../scripts/apply-rename.mjs';
 const RAIZ = process.cwd().endsWith('app') ? join(process.cwd(), '..') : process.cwd();
 
 describe('o mapa é declaração, não adivinhação', () => {
+  /*
+   * ⚠️ SÓ AS CAMADAS POR APLICAR, e a razão é mecânica: depois de uma camada correr, o nome NOVO existe na árvore de
+   * propósito, e uma verificação de colisão que não soubesse disso acusaria o próprio trabalho de ontem. O campo `done` de
+   * cada camada é o que separa «ainda vai renomear» de «já renomeou» — e é por isso que ele é dado do mapa e não memória.
+   */
   it('🔴 [Right] todo nome novo é inglês, e nenhum choca com um nome que já existe', () => {
     const mapa = readMap();
-    const pares = Object.values(mapa.layers).flatMap((l) => Object.entries(l.names));
-    expect(pares.length, 'o mapa está vazio').toBeGreaterThan(0);
+    const porAplicar = Object.values(mapa.layers).filter((l) => !l.done);
+    const pares = porAplicar.flatMap((l) => Object.entries(l.names));
+    const aplicadas = Object.values(mapa.layers).filter((l) => l.done);
+    expect(pares.length + aplicadas.length, 'o mapa está vazio').toBeGreaterThan(0);
 
     const retrato = JSON.parse(readFileSync(join(RAIZ, 'docs/6-DevOps-SRE/public-surface.json'), 'utf8'));
     const existentes = new Set(Object.values(retrato).flat());

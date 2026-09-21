@@ -4,7 +4,7 @@
 // estado VIVO do game.js (wheelchair/modoCego/caneBlockDiv/wcSolid/gateTiles/gateOpen). Assim a colisão sempre
 // enxerga o valor atual (sem risco de dessincronização) e os testes passam um ctx falso → funções 100% puras.
 // TILE/TILE_TYPES são constantes (import direto). Consumido pela física (resolveX/resolveY/stepPlayer) no game.js.
-import { TILE, TILE_TYPES, ehPerigo, ehTrampolim } from './constants.js';
+import { TILE, TILE_TYPES, isHazard, isTrampoline } from './constants.js';
 
 // (`TileType` era declarado AQUI, privado, e era por isso que a tabela semântica não era usável de fora.
 //  Mudou de casa para `core/constants`, junto da tabela que ele descreve.)
@@ -47,7 +47,7 @@ export const caneBlockPx = (): number => TILE / _caneDiv();
 // Pelas perguntas e não pelos números 9 e 5: a regra é sobre o que o tile É, e assim ela continua verdadeira
 // num mapa com outra numeração — que é exatamente o que um segundo jogo tem.
 export const isSolidType = (t: number): boolean =>
-  ((_isWheelchair() && (ehPerigo(t) || ehTrampolim(t))) || (_isModoCego() && ehPerigo(t))) ? true : !!TYPES[t]?.solid;
+  ((_isWheelchair() && (isHazard(t) || isTrampoline(t))) || (_isModoCego() && isHazard(t))) ? true : !!TYPES[t]?.solid;
 
 // Tile na posição (fora do mundo = pedra(2), parede natural). Coordenadas em TILES.
 export const tileAt = (tx: number, ty: number): number =>

@@ -7,7 +7,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { VELOCIDADES_DO_JOGO, proximaVelocidade, velocidadeValida } from '../app/js/core/game-speed.js';
+import { GAME_SPEEDS, nextGameSpeed, isGameSpeed } from '../app/js/core/game-speed.js';
 import * as state from '../app/js/core/state.js';
 import { startLoop } from '../app/js/core/loop.js';
 
@@ -26,30 +26,30 @@ function portaFalsa(guardado = {}) {
 
 describe('the game speed steps', () => {
   it('📌 [Right] 100% to 50% in steps of 10%, Celeste\'s Assist Mode', () => {
-    expect(VELOCIDADES_DO_JOGO).toEqual([1, 0.9, 0.8, 0.7, 0.6, 0.5]);
+    expect(GAME_SPEEDS).toEqual([1, 0.9, 0.8, 0.7, 0.6, 0.5]);
   });
 
   it('🔴 [Right] each press moves one step down and wraps back to 100%', () => {
-    expect(proximaVelocidade(1)).toBe(0.9);
-    expect(proximaVelocidade(0.6)).toBe(0.5);
-    expect(proximaVelocidade(0.5), 'the cycle does not wrap').toBe(1);
+    expect(nextGameSpeed(1)).toBe(0.9);
+    expect(nextGameSpeed(0.6)).toBe(0.5);
+    expect(nextGameSpeed(0.5), 'the cycle does not wrap').toBe(1);
   });
 
   it('🎯 [Boundary] a value outside the steps is not a speed — a stored typo lands on 100%, never on zero', () => {
-    expect(velocidadeValida(0.75)).toBe(1);
-    expect(velocidadeValida(0)).toBe(1);
-    expect(velocidadeValida(Number.NaN)).toBe(1);
-    expect(velocidadeValida(0.7)).toBe(0.7);
-    expect(proximaVelocidade(0.75)).toBe(0.9);
+    expect(isGameSpeed(0.75)).toBe(1);
+    expect(isGameSpeed(0)).toBe(1);
+    expect(isGameSpeed(Number.NaN)).toBe(1);
+    expect(isGameSpeed(0.7)).toBe(0.7);
+    expect(nextGameSpeed(0.75)).toBe(0.9);
   });
 });
 
 describe('the stored choice', () => {
-  beforeEach(() => { state.carregarEstado(portaFalsa()); });
+  beforeEach(() => { state.loadState(portaFalsa()); });
 
   it('🔴 [Right] it is loaded from the child\'s storage and written back', () => {
     const p = portaFalsa({ incl_game_speed: 0.6 });
-    state.carregarEstado(p);
+    state.loadState(p);
     expect(state.gameSpeed).toBe(0.6);
     state.setGameSpeedValue(0.5);
     expect(state.gameSpeed).toBe(0.5);
@@ -63,7 +63,7 @@ describe('the stored choice', () => {
 
 describe('the loop applies it', () => {
   it('🔴 [Right] the frame time `startLoop` hands out is the raw time times the speed', () => {
-    state.carregarEstado(portaFalsa({ incl_game_speed: 0.5 }));
+    state.loadState(portaFalsa({ incl_game_speed: 0.5 }));
     let chamar;
     const ticker = { deltaTime: 1, add: (fn) => { chamar = fn; } };
     const recebidos = [];
@@ -75,7 +75,7 @@ describe('the loop applies it', () => {
   });
 
   it('📌 [Boundary] the clamp applies to the raw time, before the speed — a long frame is not stretched past maxDt', () => {
-    state.carregarEstado(portaFalsa({ incl_game_speed: 0.5 }));
+    state.loadState(portaFalsa({ incl_game_speed: 0.5 }));
     let chamar;
     startLoop({ deltaTime: 10, add: (fn) => { chamar = fn; } }, (dt) => { expect(dt).toBe(1); }, 2);
     chamar();

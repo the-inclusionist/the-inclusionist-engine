@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   KEY_YES, KEY_NO, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, PAUSE_COLS,
-  menuKeyIntent, hasIntent, passoNoAnel, selectStep, selectWrap, rangeStep, passoNaPausa,
+  menuKeyIntent, hasIntent, stepInRing, selectStep, selectWrap, rangeStep, passoNaPausa,
 } from '../app/js/ui/menu-nav.js';
 
 const NONE = { yes: false, no: false, up: false, down: false, left: false, right: false };
@@ -63,23 +63,23 @@ describe('passos de lista e de controle', () => {
   // ADR derrubou a regra: com um menu por tela, toda lista é anel, e é isso que põe `quit` a UMA tecla de
   // `resume` sem os dois estarem perto um do outro.
   //
-  // MUTAÇÃO CONFERIDA: voltando `passoNoAnel` ao antigo `Math.max(0, Math.min(len-1, idx+delta))`, o caso
+  // MUTAÇÃO CONFERIDA: voltando `stepInRing` ao antigo `Math.max(0, Math.min(len-1, idx+delta))`, o caso
   // falha em "expected 0 to be 4" — antes do primeiro deixa de haver último.
-  it('passoNoAnel dá a volta nas DUAS pontas — e o `%` de negativo não escapa', () => {
-    expect(passoNoAnel(5, 4, +1), 'depois do último vem o primeiro').toBe(0);
-    expect(passoNoAnel(5, 0, -1), 'antes do primeiro vem o último').toBe(4);
-    expect(passoNoAnel(5, 2, +1)).toBe(3);
-    expect(passoNoAnel(5, 2, -1)).toBe(1);
+  it('stepInRing dá a volta nas DUAS pontas — e o `%` de negativo não escapa', () => {
+    expect(stepInRing(5, 4, +1), 'depois do último vem o primeiro').toBe(0);
+    expect(stepInRing(5, 0, -1), 'antes do primeiro vem o último').toBe(4);
+    expect(stepInRing(5, 2, +1)).toBe(3);
+    expect(stepInRing(5, 2, -1)).toBe(1);
     // O `%` de JavaScript devolve NEGATIVO para operando negativo (`-1 % 5 === -1`), e um índice negativo
     // num array devolve `undefined` — que aqui viraria `undefined.focus()`. O `+ len` extra existe por isso.
-    expect(passoNoAnel(5, 0, -3), 'salto negativo maior que um passo').toBe(2);
+    expect(stepInRing(5, 0, -3), 'salto negativo maior que um passo').toBe(2);
   });
 
   it('[Zero] lista vazia não estoura — anel de tamanho zero devolve 0, não NaN', () => {
     // `% 0` é NaN, e `items[NaN]` é `undefined`. Um menu sem itens acontece de verdade: um painel que
     // renderiza antes de o conteúdo chegar.
-    expect(passoNoAnel(0, 0, +1)).toBe(0);
-    expect(passoNoAnel(0, 3, -1)).toBe(0);
+    expect(stepInRing(0, 0, +1)).toBe(0);
+    expect(stepInRing(0, 3, -1)).toBe(0);
   });
 
   it('AJUSTAR VALOR continua preso nas pontas — a diferença é deliberada', () => {

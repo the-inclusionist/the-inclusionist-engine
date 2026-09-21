@@ -32,19 +32,19 @@
 // coluna 1", e um movimento horizontal que mude a linha faz o anúncio contradizer a direção que a criança
 // apertou. Movimento previsível vale mais que economia de apertos.
 //
-// SEM I/O NO IMPORT, e sem estado de módulo: `criarGrade()` devolve a instância e quem compõe a possui. É a
+// SEM I/O NO IMPORT, e sem estado de módulo: `createLetterGrid()` devolve a instância e quem compõe a possui. É a
 // D13 do `inclusionist-demos`, e é o que permite duas grades na mesma página sem uma pisar na outra.
 
 /** As quatro direções que um direcional produz. Nomes em português porque são vocabulário do jogo, não da web. */
-export type Direcao = 'esquerda' | 'direita' | 'cima' | 'baixo';
+export type Direction = 'esquerda' | 'direita' | 'cima' | 'baixo';
 
 /** Onde o cursor está, em coordenadas de grade — o que a tela desenha e o leitor de tela anuncia. */
-export interface Posicao {
+export interface Position {
   readonly linha: number;
   readonly coluna: number;
 }
 
-export interface GradeDeLetras {
+export interface LetterGrid {
   /** A grade, como dado: quem desenha lê daqui em vez de recontar. */
   readonly simbolos: readonly string[];
   readonly colunas: number;
@@ -55,12 +55,12 @@ export interface GradeDeLetras {
   /** Índice linear do cursor, `0..simbolos.length-1`. */
   indice(): number;
   /** A posição do cursor em linha/coluna, base ZERO — quem anuncia soma 1 se quiser falar "linha 1". */
-  posicao(): Posicao;
+  posicao(): Position;
   /** O símbolo sob o cursor. */
   sob(): string;
 
   /** Move o cursor uma casa, enrolando em toroide. */
-  mover(dir: Direcao): void;
+  mover(dir: Direction): void;
   /** Leva o cursor ao símbolo dado. Devolve `false` — e não move — quando ele não está na grade. */
   irPara(simbolo: string): boolean;
 
@@ -78,7 +78,7 @@ export interface GradeDeLetras {
   completo(): boolean;
 }
 
-export interface OpcoesDaGrade {
+export interface LetterGridOptions {
   /** Os símbolos, em ordem de leitura (esquerda→direita, cima→baixo). */
   simbolos: string;
   /** Largura da grade. As linhas saem da divisão, e a última pode ficar incompleta. */
@@ -95,7 +95,7 @@ export interface OpcoesDaGrade {
  * SELETORES e não prosa — o gate de i18n de engine proíbe frase em qualquer idioma aqui, e o nome do campo
  * que falhou é mais útil que uma frase de qualquer forma.
  */
-export function criarGrade(opcoes: OpcoesDaGrade): GradeDeLetras {
+export function createLetterGrid(opcoes: LetterGridOptions): LetterGrid {
   const simbolos = [...opcoes.simbolos];
   const colunas = opcoes.colunas;
   if (simbolos.length === 0) throw new Error('simbolos');
@@ -126,11 +126,11 @@ export function criarGrade(opcoes: OpcoesDaGrade): GradeDeLetras {
     return cursor; // inalcançável com colunas ≥ 1: a linha 0 sempre tem a coluna 0
   }
 
-  function posicao(): Posicao {
+  function posicao(): Position {
     return { linha: Math.floor(cursor / colunas), coluna: cursor % colunas };
   }
 
-  function mover(dir: Direcao): void {
+  function mover(dir: Direction): void {
     const { linha, coluna } = posicao();
     if (dir === 'esquerda' || dir === 'direita') {
       // Enrola DENTRO da linha, e a linha incompleta enrola no tamanho dela, não no da grade.

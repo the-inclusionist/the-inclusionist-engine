@@ -14,7 +14,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
-import { rotaAte, atravessavel, PAPEIS_ATRAVESSAVEIS } from '../app/js/core/route.js';
+import { routeTo, isWalkable, WALKABLE_ROLES } from '../app/js/core/route.js';
 import { distance } from '../app/js/core/contract.js';
 
 const GRADE = (w, h, move = 'orthogonal') => ({ kind: 'grid', size: [w, h], move, frame: 'compass' });
@@ -31,9 +31,9 @@ function mapa(linhas) {
 
 describe('core/route — o que se atravessa é leitura do contrato, não invenção', () => {
   it('[Right] ar, água, escada e chave deixam passar; parede, portão e espinho não', () => {
-    expect([...PAPEIS_ATRAVESSAVEIS].sort()).toEqual(['climb', 'free', 'key', 'water']);
-    for (const p of ['free', 'water', 'climb', 'key']) expect(atravessavel(p), p).toBe(true);
-    for (const p of ['structure', 'gate', 'hazard', 'goal']) expect(atravessavel(p), p).toBe(false);
+    expect([...WALKABLE_ROLES].sort()).toEqual(['climb', 'free', 'key', 'water']);
+    for (const p of ['free', 'water', 'climb', 'key']) expect(isWalkable(p), p).toBe(true);
+    for (const p of ['structure', 'gate', 'hazard', 'goal']) expect(isWalkable(p), p).toBe(false);
   });
 });
 
@@ -66,33 +66,33 @@ describe('core/route — a rota contorna, a linha reta atravessa', () => {
   });
 
   it('⚠️ [Right] a rota escolhe o alcançável, e não o mais perto', () => {
-    const r = rotaAte(ctx, DE, [PERTO, LONGE]);
+    const r = routeTo(ctx, DE, [PERTO, LONGE]);
     expect(r, 'não achou rota nenhuma').not.toBe(null);
     expect(r.ate).toEqual(LONGE);
   });
 
   it('[Right] `passos` conta o caminho andado, não a reta', () => {
-    const r = rotaAte(ctx, DE, [LONGE]);
+    const r = routeTo(ctx, DE, [LONGE]);
     // Contornar pela esquerda ou pela direita dá o mesmo: 6 de descida + 2 de desvio, ida e volta.
     expect(r.passos).toBeGreaterThan(distance(topo, DE, LONGE));
   });
 
   it('⚠️ [Right] `proximo` é UM passo — é isso que a pista aponta', () => {
-    const r = rotaAte(ctx, DE, [LONGE]);
+    const r = routeTo(ctx, DE, [LONGE]);
     expect(distance(topo, DE, r.proximo)).toBe(1);
     expect(ctx.roleAt(r.proximo), 'o primeiro passo caiu numa parede').not.toBe('structure');
   });
 
   it('[Zero] alvo TOTALMENTE emparedado devolve null — «não sei», e a pista cala-se', () => {
-    expect(rotaAte(ctx, DE, [PERTO])).toBe(null);
+    expect(routeTo(ctx, DE, [PERTO])).toBe(null);
   });
 
   it('[Zero] sem alvo nenhum, null', () => {
-    expect(rotaAte(ctx, DE, [])).toBe(null);
+    expect(routeTo(ctx, DE, [])).toBe(null);
   });
 
   it('[Boundary] estar EM CIMA do alvo é zero passos, e o próximo é o próprio sítio', () => {
-    const r = rotaAte(ctx, LONGE, [LONGE]);
+    const r = routeTo(ctx, LONGE, [LONGE]);
     expect(r).toEqual({ proximo: LONGE, ate: LONGE, passos: 0 });
   });
 });
@@ -109,8 +109,8 @@ describe('core/route — a métrica declarada decide quantos vizinhos um ponto t
     const de = { x: 0, y: 0 }, ate = { x: 2, y: 2 };
     const comDiagonal = { topology: GRADE(3, 3, 'diagonal'), roleAt: mapa(DIAGONAL) };
     const semDiagonal = { topology: GRADE(3, 3, 'orthogonal'), roleAt: mapa(DIAGONAL) };
-    expect(rotaAte(comDiagonal, de, [ate]), 'a diagonal era legal e a rota não a usou').not.toBe(null);
-    expect(rotaAte(semDiagonal, de, [ate]), 'andou na diagonal onde ela não existe').toBe(null);
+    expect(routeTo(comDiagonal, de, [ate]), 'a diagonal era legal e a rota não a usou').not.toBe(null);
+    expect(routeTo(semDiagonal, de, [ate]), 'andou na diagonal onde ela não existe').toBe(null);
   });
 });
 
@@ -119,7 +119,7 @@ describe('core/route — os casos que o contrato manda tratar', () => {
     // Uma bandeira declarada dentro de um portão. Recusar entrar faria a rota nunca chegar.
     const DESENHO = ['...+'];
     const ctx = { topology: GRADE(4, 1), roleAt: mapa(DESENHO) };
-    const r = rotaAte(ctx, { x: 0, y: 0 }, [{ x: 3, y: 0 }]);
+    const r = routeTo(ctx, { x: 0, y: 0 }, [{ x: 3, y: 0 }]);
     expect(r, 'o alvo dentro do portão ficou inalcançável').not.toBe(null);
     expect(r.passos).toBe(3);
   });
@@ -127,26 +127,26 @@ describe('core/route — os casos que o contrato manda tratar', () => {
   it('⚠️ [Boundary] mas NÃO se atravessa o portão para continuar do outro lado', () => {
     const DESENHO = ['..+..'];
     const ctx = { topology: GRADE(5, 1), roleAt: mapa(DESENHO) };
-    expect(rotaAte(ctx, { x: 0, y: 0 }, [{ x: 4, y: 0 }])).toBe(null);
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 4, y: 0 }])).toBe(null);
   });
 
   it('⚠️ [Boundary] nem o espinho — e essa é a escolha declarada no cabeçalho', () => {
     const DESENHO = ['..^..'];
     const ctx = { topology: GRADE(5, 1), roleAt: mapa(DESENHO) };
-    expect(rotaAte(ctx, { x: 0, y: 0 }, [{ x: 4, y: 0 }]),
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 4, y: 0 }]),
       'a rota mandou a criança levar dano').toBe(null);
   });
 
   it('[Right] água e escada deixam passar', () => {
     const ctx = { topology: GRADE(5, 1), roleAt: mapa(['.~L..']) };
-    expect(rotaAte(ctx, { x: 0, y: 0 }, [{ x: 4, y: 0 }])?.passos).toBe(4);
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 4, y: 0 }])?.passos).toBe(4);
   });
 
   it('⚠️ [Zero] `hotspots` não tem espaço, logo não tem rota', () => {
     // Uma lista ordenada não tem geometria: inventar uma direção ali seria mentir, e o `bearing` do contrato
     // já responde `none` pelo mesmo motivo.
     const ctx = { topology: { kind: 'hotspots', order: ['a', 'b', 'c'] }, roleAt: () => 'free' };
-    expect(rotaAte(ctx, { x: 0, y: 0 }, [{ x: 2, y: 0 }])).toBe(null);
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 2, y: 0 }])).toBe(null);
   });
 
   it('⚠️ [Exercise] o ORÇAMENTO corta, e `null` quer dizer «não sei» e não «não há»', () => {
@@ -155,14 +155,14 @@ describe('core/route — os casos que o contrato manda tratar', () => {
     // varrer inteiro, e que com orçamento à altura ela acha.
     const aberto = { topology: GRADE(60, 60), roleAt: () => 'free' };
     const de = { x: 0, y: 0 }, ate = { x: 59, y: 59 };
-    expect(rotaAte({ ...aberto, orcamento: 50 }, de, [ate]), 'varreu o mapa apesar do teto').toBe(null);
-    expect(rotaAte({ ...aberto, orcamento: 20000 }, de, [ate]), 'com folga tinha de achar').not.toBe(null);
+    expect(routeTo({ ...aberto, orcamento: 50 }, de, [ate]), 'varreu o mapa apesar do teto').toBe(null);
+    expect(routeTo({ ...aberto, orcamento: 20000 }, de, [ate]), 'com folga tinha de achar').not.toBe(null);
   });
 
   it('[Boundary] fora da extensão declarada não é caminho', () => {
     // `size` é 3×1: `y = 1` não existe, e um vizinho para lá não pode ser considerado.
     const ctx = { topology: GRADE(3, 1), roleAt: () => 'free' };
-    const r = rotaAte(ctx, { x: 0, y: 0 }, [{ x: 2, y: 0 }]);
+    const r = routeTo(ctx, { x: 0, y: 0 }, [{ x: 2, y: 0 }]);
     expect(r.passos).toBe(2);
     expect(r.proximo).toEqual({ x: 1, y: 0, z: 0 });
   });
@@ -173,7 +173,7 @@ describe('core/route — contínuo: a grelha é uma AMOSTRAGEM, e está declarad
 
   it('[Right] anda em passos de `unit` e chega a meio passo do alvo', () => {
     const ctx = { topology: CONT, roleAt: () => 'free' };
-    const r = rotaAte(ctx, { x: 0, y: 0 }, [{ x: 24, y: 0 }]);
+    const r = routeTo(ctx, { x: 0, y: 0 }, [{ x: 24, y: 0 }]);
     expect(r).not.toBe(null);
     expect(r.proximo.x, 'o primeiro passo não tem o tamanho da unidade').toBe(8);
     expect(r.passos).toBe(3);
@@ -183,17 +183,17 @@ describe('core/route — contínuo: a grelha é uma AMOSTRAGEM, e está declarad
     // 20 não é múltiplo de 8. Sem a tolerância de meio passo a rota nunca «chegaria», e o guia calaria-se
     // num alvo que está mesmo ali — que é o modo de falhar mais cruel: silêncio sobre o que existe.
     const ctx = { topology: CONT, roleAt: () => 'free' };
-    expect(rotaAte(ctx, { x: 0, y: 0 }, [{ x: 20, y: 0 }])).not.toBe(null);
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 20, y: 0 }])).not.toBe(null);
   });
 
   it('[Zero] unidade zero não faz a fila andar — devolve null em vez de rodar para sempre', () => {
     const ctx = { topology: { ...CONT, unit: 0 }, roleAt: () => 'free' };
-    expect(rotaAte(ctx, { x: 0, y: 0 }, [{ x: 24, y: 0 }])).toBe(null);
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 24, y: 0 }])).toBe(null);
   });
 });
 
 // ========================= MUTAÇÕES CONFERIDAS =========================
-//   · tirando `if (!atravessavel(ctx.roleAt(vizinho))) continue;` → reprovam SETE casos, entre eles "[Right]
+//   · tirando `if (!isWalkable(ctx.roleAt(vizinho))) continue;` → reprovam SETE casos, entre eles "[Right]
 //     a rota escolhe o alcançável" (que passa a apontar o alvo EMPAREDADO) e "[Zero] alvo totalmente
 //     emparedado" (que devolve rota em vez de null). É o defeito da #84 reproduzido: a pista atravessa a
 //     parede. ⚠️ Eu tinha registado dois; são sete, e a diferença é boa notícia — a propriedade está presa

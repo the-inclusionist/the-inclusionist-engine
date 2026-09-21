@@ -241,7 +241,7 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     }
   });
 
-  it('🔴 [Right] o IDIOMA QUE CHEGA DEPOIS DO ARRANQUE alcança as LINHAS, e não só a moldura', async () => {
+  it('🔴 [Right] o IDIOMA QUE CHEGA DEPOIS DO ARRANQUE alcança as ROWS, e não só a moldura', async () => {
     // 🔴 ESTE CASO NASCEU DE UM DEFEITO MEDIDO NUM NAVEGADOR, e nenhum teste unitário o apanhava: eles correm
     // todos num idioma só. 📏 No `quiz.html` com `lang="en"`, em 2026-09-12: o título dizia «Hearing
     // accessibility» e a primeira linha dizia «Som», na mesma tela. A moldura já se retraduzia desde que

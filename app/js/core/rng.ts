@@ -37,9 +37,9 @@ export interface Rng {
 }
 
 /** A semente do jogo próprio da engine. Um consumidor externo escolhe a sua. */
-export const SEMENTE_PADRAO = 20260601;
+export const DEFAULT_SEED = 20260601;
 
-export const createRng = (semente: number = SEMENTE_PADRAO): Rng => {
+export const createRng = (semente: number = DEFAULT_SEED): Rng => {
   let _seed = semente >>> 0;
   // `Math.imul` e não `*`: ver o cabeçalho. O `+ 12345` cabe em segurança porque `imul` já devolveu
   // um inteiro de 32 bits com sinal, e a máscara `& 0x7fffffff` desfaz o sinal.
@@ -71,7 +71,7 @@ export const createRng = (semente: number = SEMENTE_PADRAO): Rng => {
 // exatamente o defeito que a fábrica acima conserta. Um segundo jogo na mesma página divide esta corrente
 // com o primeiro. O caminho de saída é o consumidor passar a `createRng(suaSemente)` — e isso é migração
 // dele, com aviso e um major, não uma remoção unilateral daqui.
-const _padrao = createRng(SEMENTE_PADRAO);
+const _padrao = createRng(DEFAULT_SEED);
 export const reseed = _padrao.reseed;
 export const rnd = _padrao.rnd;
 export const randInt = _padrao.randInt;
@@ -84,4 +84,4 @@ export const shuffle = _padrao.shuffle;
 // Enfeite NÃO pode mover o sorteio do jogo. São dois assuntos, e agora são duas correntes.
 // A semente é outra de propósito: se fosse a mesma, as duas correntes andariam em paralelo e o enfeite
 // ficaria correlacionado com o mapa — determinístico, mas visivelmente repetitivo.
-export const rngDecoracao = createRng(SEMENTE_PADRAO ^ 0x5eed);
+export const decorationRng = createRng(DEFAULT_SEED ^ 0x5eed);

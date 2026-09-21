@@ -27,7 +27,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { analisarFlashes, COLUNAS, LINHAS } from '../app/js/core/flash-threshold.js';
+import { analyseFlashes, COLUMNS, ROWS } from '../app/js/core/flash-threshold.js';
 
 // ⚠️ 120 frames/s and a wave by FRAME INDEX: at 60/s a wave computed in ms jitters one frame at its edges, and three flashes
 // can land 983 ms apart — a test that fails by float. At 120/s the half-period of 3, 4 and 10 Hz is a whole number of frames.
@@ -36,43 +36,43 @@ const QPS = 120;
 function quadros(segundos, valor) {
   const out = [];
   for (let f = 0; f < segundos * QPS; f++) {
-    out.push({ t: (f * 1000) / QPS, luminancias: Float32Array.from({ length: COLUNAS * LINHAS }, (_, c) => valor(f, c)) });
+    out.push({ t: (f * 1000) / QPS, luminancias: Float32Array.from({ length: COLUMNS * ROWS }, (_, c) => valor(f, c)) });
   }
   return out;
 }
 /** A square wave with `hz` flashes per second: each flash is one half-period low, one half-period high. */
 const onda = (hz, alto, baixo) => (f) => (Math.floor(f / (QPS / (2 * hz))) % 2 === 0 ? baixo : alto);
 /** Cells (col, row) of the top-left 5×4 window, the first `n` of them. */
-const primeirasDaJanela = (n) => new Set(Array.from({ length: 20 }, (_, k) => (k % 5) + Math.floor(k / 5) * COLUNAS).slice(0, n));
+const primeirasDaJanela = (n) => new Set(Array.from({ length: 20 }, (_, k) => (k % 5) + Math.floor(k / 5) * COLUMNS).slice(0, n));
 
 describe('WCAG 2.3.1 general flash threshold', () => {
   it('🔴 [Right] the whole screen at 4 flashes/s fails, with 4 in the worst second', () => {
-    const r = analisarFlashes(quadros(2, onda(4, 1, 0)));
+    const r = analyseFlashes(quadros(2, onda(4, 1, 0)));
     expect(r.passa).toBe(false);
     expect(r.piorSegundo).toBe(4);
   });
 
   it('🎯 [Boundary] at 3 flashes/s it passes — «no more than three»', () => {
-    const r = analisarFlashes(quadros(2, onda(3, 1, 0)));
+    const r = analyseFlashes(quadros(2, onda(3, 1, 0)));
     expect(r.piorSegundo).toBe(3);
     expect(r.passa).toBe(true);
   });
 
   it('🎯 [Boundary] 10 flashes/s on 4 cells of a field pass — under 25% of it; on 6 cells they fail', () => {
     const quatro = primeirasDaJanela(4);
-    expect(analisarFlashes(quadros(2, (q, c) => (quatro.has(c) ? onda(10, 1, 0)(q) : 0))).passa, 'area under 25% was counted').toBe(true);
+    expect(analyseFlashes(quadros(2, (q, c) => (quatro.has(c) ? onda(10, 1, 0)(q) : 0))).passa, 'area under 25% was counted').toBe(true);
     const seis = primeirasDaJanela(6);
-    const r = analisarFlashes(quadros(2, (q, c) => (seis.has(c) ? onda(10, 1, 0)(q) : 0)));
+    const r = analyseFlashes(quadros(2, (q, c) => (seis.has(c) ? onda(10, 1, 0)(q) : 0)));
     expect(r.passa, 'area over 25% was not counted').toBe(false);
     expect(r.piorSegundo).toBe(10);
   });
 
   it('🎯 [Boundary] a darker image not below 0.80 is no flash', () => {
-    expect(analisarFlashes(quadros(2, onda(10, 1, 0.85))).piorSegundo).toBe(0);
+    expect(analyseFlashes(quadros(2, onda(10, 1, 0.85))).piorSegundo).toBe(0);
   });
 
   it('🎯 [Boundary] a change under 10% of the maximum is no flash', () => {
-    expect(analisarFlashes(quadros(2, onda(10, 0.35, 0.3))).piorSegundo).toBe(0);
+    expect(analyseFlashes(quadros(2, onda(10, 0.35, 0.3))).piorSegundo).toBe(0);
   });
 
   it('🔴 [Right] a change is measured from the PEAK — a fade by small steps that swings 0.12 is a flash', () => {
@@ -81,13 +81,13 @@ describe('WCAG 2.3.1 general flash threshold', () => {
     const subida = [0, 0.12, 0.16, 0.2, 0.24, 0.28, 0.3];
     const ciclo = [0.26, 0.22, 0.18, 0.22, 0.26, 0.3];
     const valor = (q) => (q < subida.length ? subida[q] : ciclo[(q - subida.length) % ciclo.length]);
-    const r = analisarFlashes(quadros(2, valor));
+    const r = analyseFlashes(quadros(2, valor));
     expect(r.passa, 'a swing of 0.12 reached by small steps was not counted').toBe(false);
   });
 
   it('🎯 [Zero] one change and no return is no flash — a flash is a PAIR of opposing changes', () => {
-    expect(analisarFlashes(quadros(2, (q) => (q < 60 ? 0 : 1))).piorSegundo).toBe(0);
-    expect(analisarFlashes([]).passa).toBe(true);
+    expect(analyseFlashes(quadros(2, (q) => (q < 60 ? 0 : 1))).piorSegundo).toBe(0);
+    expect(analyseFlashes([]).passa).toBe(true);
   });
 });
 

@@ -10,7 +10,7 @@ import { PAUSE_ICONS, iconesQueAccionam, computeIconLabel, computeIconVisual } f
 import { DEFAULTS } from '../app/js/core/state.js';
 import { PADRAO } from '../app/js/core/visual-state.js';
 
-const snap = (over = {}) => ({ modoCego: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: PADRAO, privateOutput: true, velocidade: DEFAULTS.gameSpeed, ...over });
+const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: PADRAO, privateOutput: true, velocidade: DEFAULTS.gameSpeed, ...over });
 const todos = { tema: true, correcao: true, seguraTeclas: () => true, tipografia: true };
 
 describe('the hourglass icon', () => {

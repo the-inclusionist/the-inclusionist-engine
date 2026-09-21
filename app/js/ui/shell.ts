@@ -95,7 +95,7 @@ import type { PlayerView } from '../core/entity.js';
 import { PAD_DESIGNS, PAD_GLYPH_SPOKEN } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
 import type { DomQuery } from '../core/dom-query.js';
 import type { PadMap } from '../input/gamepad.js';
-import type { FatosDaCena } from '../core/scenes.js';
+import type { SceneFacts } from '../core/scenes.js';
 // UMA constante, e não um seletor repetido: com o submenu de opções (ADR-0044, item 5) o cartão de pausa passou
 // a ter DUAS listas, e quem varrer `.pm-btn` cru enxerga também a que está escondida.
 import { PM_ITENS_VISIVEIS } from './pause-icons.js';
@@ -132,7 +132,7 @@ interface PadLike { index: number; id: string; mapping: string }
 // ---------------------------------------------------------------------------------------------------------
 
 // (`PHASES` SAIU em 2026-08-26. A casca não sabe mais QUANTAS cenas existem nem como se chamam — ver
-//  `FatosDaCena`, logo abaixo. Quem enumera as cenas deste jogo é a raiz de composição.)
+//  `SceneFacts`, logo abaixo. Quem enumera as cenas deste jogo é a raiz de composição.)
 
 /** Para onde o foco vai ao ENTRAR na fase. `null` = ninguém foca nada (não existe hoje; é o default seguro). */
 export type PhaseFocus = 'game-region' | 'pause-menu' | 'title-button';
@@ -142,7 +142,7 @@ export type PhaseFocus = 'game-region' | 'pause-menu' | 'title-button';
  * sempre foi: uma projeção da fase. Nenhum campo depende de histórico — o único que dependeria
  * (`#touch-controls`) mora em `touchControlsPlan`, separado de propósito.
  */
-export type { FatosDaCena } from '../core/scenes.js'; // reexportado: os consumidores da casca já o pediam daqui
+export type { SceneFacts } from '../core/scenes.js'; // reexportado: os consumidores da casca já o pediam daqui
 
 export interface PhaseView {
   /** `#title-overlay`.hidden — o splash só aparece no título. */
@@ -181,11 +181,11 @@ export interface PhaseView {
   focus: PhaseFocus;
 }
 
-// `FatosDaCena` mora em `core/scenes`, ao lado da pilha que os produz — é tipo de ENGINE, e precisa ser
+// `SceneFacts` mora em `core/scenes`, ao lado da pilha que os produz — é tipo de ENGINE, e precisa ser
 // alcançável também por `game/`, que não pode importar de `ui/`. Ver o cabeçalho de lá.
 
 /** Verbatim das nove perguntas que o `setPhase` do game.js fazia à fase, agora feitas de uma vez só. */
-export function phaseView(f: FatosDaCena): PhaseView {
+export function phaseView(f: SceneFacts): PhaseView {
   return {
     titleOverlayHidden: !f.telaDeTitulo,
     screenPauseHidden: !f.menuDePausa,
@@ -212,7 +212,7 @@ export interface TouchControlsState {
  * Já foi o contrário, e o efeito era que `wasOn` nunca era gravado (o plano via o pad como se já estivesse
  * desligado): pausar no celular sumia com o direcional virtual e retomar não o devolvia.
  */
-export function touchControlsPlan(f: FatosDaCena, st: TouchControlsState, screens: number): TouchControlsState {
+export function touchControlsPlan(f: SceneFacts, st: TouchControlsState, screens: number): TouchControlsState {
   if (f.menuDePausa) {
     if (!st.hidden) return { hidden: true, wasOn: true }; // guarda que estava ligado e esconde
     return st;                                            // já escondido: nada muda (nem `wasOn`)
@@ -350,7 +350,7 @@ export function pickLegendPad(pads: readonly (PadLike | null)[], p1pad: number):
 export interface ShellCtx {
   /** Os três fatos da cena do TOPO, perguntados a cada uso — a raiz é quem tem a pilha e quem nomeia as
    *  cenas. Getter, e não valor: a casca projeta o estado ATUAL, não o do momento em que foi ligada. */
-  fatosDaCena: () => FatosDaCena;
+  fatosDaCena: () => SceneFacts;
   /** VOLTAR AO JOGO. É o que o "Continuar" do menu de pausa faz, e o que a entrada de um jogador novo faz.
    *  Era `setPhase('playing')` daqui mesmo — mas empilhar é da raiz, e "retomar" é o que a casca quer dizer. */
   retomarJogo: () => void;
@@ -537,7 +537,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
   }
 
   /** A metade IMPURA do plano de toque: recebe o estado lido ANTES do hide e grava o plano de volta. */
-  function applyTouchControls(f: FatosDaCena, before: TouchControlsState | null): void {
+  function applyTouchControls(f: SceneFacts, before: TouchControlsState | null): void {
     const tc = ctx.$<HTMLElement>('#touch-controls');
     if (!tc || !before) return;
     const after = touchControlsPlan(f, before, ctx.getNumPlayers());

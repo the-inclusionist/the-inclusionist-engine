@@ -859,6 +859,92 @@ could never start. Nothing outside this repository reads these names (they exist
 **What to do:** nothing, unless you read `PauseIcon.soon` or the key `icon.soon`. An icon that has nothing to act on is
 ABSENT from the bar, which is what ADR-0106 §5 asks for and what `iconesQueAccionam` already did.
 
+## AL · The public surface starts speaking English: the `core` layer (ADR-0219, issue #202)
+
+**What this is.** The first layer of the rename decided in ADR-0219: every public name of `core/**` that carried a Portuguese
+word now has an English one. There are no deprecated aliases — the old names are gone. 📏 Measured: 67 names, 95 files, 927
+occurrences inside this repository, and the Portuguese debt of the tree fell from 1453 identifiers to 1384.
+
+**What to do.** Rename on your side by the table below. Nothing in the games was touched (the Dev, 2026-09-21: «quando eu for
+consertá-los eu adequo o código à nova versão da engine»), so a game keeps working on the engine it already has until it
+upgrades. 📌 Two names in this table are events, not just bindings — `'modoCego'` is the name a listener passes to
+`state.on`, and it is now `'blindMode'`: renaming the binding without the string would cut `emit`/`on` in half.
+
+⚠️ **The table is PRINTED, never typed** (`node scripts/print-rename-table.mjs`): it comes from the same file the engine
+renames itself from, so a name cannot be renamed without appearing here.
+
+**core** — 67 names, applied 2026-09-21
+
+| was | is |
+|---|---|
+| `ALFABETO` | `ALPHABET` |
+| `analisarFlashes` | `analyseFlashes` |
+| `atravessavel` | `isWalkable` |
+| `CampoSenha` | `PasswordField` |
+| `carregarEstado` | `loadState` |
+| `carregarIdioma` | `loadLocale` |
+| `CodecSenha` | `PasswordCodec` |
+| `COLUNAS` | `COLUMNS` |
+| `Correcao` | `Correction` |
+| `criarCodec` | `createPasswordCodec` |
+| `criarGrade` | `createLetterGrid` |
+| `criarPilha` | `createSceneStack` |
+| `Direcao` | `Direction` |
+| `duracaoDaLegenda` | `captionDuration` |
+| `ehPerigo` | `isHazard` |
+| `ehTrampolim` | `isTrampoline` |
+| `ElementoComRotulo` | `LabelledElement` |
+| `escaparHtml` | `escapeHtml` |
+| `EventoDoJogo` | `GameEvent` |
+| `ExtrasDoNivel` | `LevelExtras` |
+| `FatosDaCena` | `SceneFacts` |
+| `formatar` | `formatPassword` |
+| `Genero` | `Genre` |
+| `generoAviso` | `genreWarning` |
+| `generoProblems` | `genreProblems` |
+| `GENEROS` | `GENRES` |
+| `GradeDeLetras` | `LetterGrid` |
+| `idiomaPronto` | `localeReady` |
+| `lacunasDosDicionarios` | `dictionaryGaps` |
+| `LEGENDA_MINIMA_MS` | `CAPTION_MIN_MS` |
+| `LINHAS` | `ROWS` |
+| `modoCego` | `blindMode` |
+| `OpcoesDaGrade` | `LetterGridOptions` |
+| `OpcoesDaRodada` | `RunOptions` |
+| `OpcoesDoLaco` | `LoopOptions` |
+| `palavrasFaladas` | `spokenWords` |
+| `PAPEIS_ATRAVESSAVEIS` | `WALKABLE_ROLES` |
+| `passoNoAnel` | `stepInRing` |
+| `PortaDoEstado` | `StatePort` |
+| `PortaDoIdioma` | `LocalePort` |
+| `Posicao` | `Position` |
+| `proximaVelocidade` | `nextGameSpeed` |
+| `QuadroDeLuminancia` | `LuminanceFrame` |
+| `registrarAvisoDeQueda` | `registerCrashNotice` |
+| `RitmoDaFala` | `SpeechRate` |
+| `ritmoDaFalaValido` | `isSpeechRate` |
+| `RitmoDaLegenda` | `CaptionRate` |
+| `ritmoDaLegendaValido` | `isCaptionRate` |
+| `RITMOS_DA_FALA` | `SPEECH_RATES` |
+| `RITMOS_DA_LEGENDA` | `CAPTION_RATES` |
+| `rngDecoracao` | `decorationRng` |
+| `Rota` | `Route` |
+| `rotaAte` | `routeTo` |
+| `rotuloAcessivel` | `accessibleLabel` |
+| `segundosDeFala` | `speechSeconds` |
+| `SEMENTE_PADRAO` | `DEFAULT_SEED` |
+| `semForca` | `noGripStrength` |
+| `setModoCegoValue` | `setBlindModeValue` |
+| `setSemForcaValue` | `setNoGripStrengthValue` |
+| `Simulacao` | `Simulation` |
+| `TAXA_MAXIMA` | `MAX_PLAYBACK_RATE` |
+| `TAXA_MINIMA` | `MIN_PLAYBACK_RATE` |
+| `taxaDaFala` | `speechPlaybackRate` |
+| `Tema` | `Theme` |
+| `VELOCIDADES_DO_JOGO` | `GAME_SPEEDS` |
+| `velocidadeValida` | `isGameSpeed` |
+| `VeredictoDeFlashes` | `FlashVerdict` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

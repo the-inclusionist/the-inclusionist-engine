@@ -37,7 +37,7 @@ afterEach(() => {
   raiz?.remove();
   document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove());
   CHAVES.forEach((k, i) => { if (guardadas[i] === null) localStorage.removeItem(k); else localStorage.setItem(k, guardadas[i]); });
-  state.carregarEstado(store); // back to the page's storage, as the setup left it
+  state.loadState(store); // back to the page's storage, as the setup left it
 });
 
 describe('the stored settings reach a game through createGame', () => {
@@ -51,9 +51,9 @@ describe('the stored settings reach a game through createGame', () => {
     document.body.appendChild(raiz);
     createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false });
     expect(state.captionsOn, 'the child turned captions off and the game reads them on').toBe(false);
-    expect(state.modoCego, 'the child turned blind mode on and the game reads it off').toBe(true);
+    expect(state.blindMode, 'the child turned blind mode on and the game reads it off').toBe(true);
   });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
-//   R4 createGame without `state.carregarEstado(store)`   🔴 captions off / blind mode on
+//   R4 createGame without `state.loadState(store)`   🔴 captions off / blind mode on

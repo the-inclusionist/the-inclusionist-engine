@@ -30,7 +30,7 @@ describe('the three languages of a cartridge dictionary', () => {
     i18n.registerDict('pt', { 'jogo.x.titulo': 'Título', 'jogo.x.fim': 'Fim' });
     i18n.registerDict('en', { 'jogo.x.titulo': 'Title', 'jogo.x.fim': 'End' });
     i18n.registerDict('es', { 'jogo.x.titulo': 'Título' });
-    const linhas = i18n.lacunasDosDicionarios();
+    const linhas = i18n.dictionaryGaps();
     expect(linhas, 'no line, or more than one').toHaveLength(1);
     expect(linhas[0]).toMatch(/\bes\b/);
     expect(linhas[0]).toContain('jogo.x.fim');
@@ -41,17 +41,17 @@ describe('the three languages of a cartridge dictionary', () => {
     const i18n = await carregarI18n();
     i18n.registerDict('pt', { 'jogo.y.a': 'A' });
     i18n.registerDict('en', { 'jogo.y.a': 'A' });
-    const linhas = i18n.lacunasDosDicionarios();
+    const linhas = i18n.dictionaryGaps();
     expect(linhas.join(' | ')).toMatch(/\bes\b/);
     expect(linhas.join(' | ')).not.toMatch(/\ben\b.*jogo\.y\.a|jogo\.y\.a.*\ben\b/);
   });
 
   it('🎯 [Zero] three complete languages, or no cartridge dictionary at all, say nothing', async () => {
     const vazio = await carregarI18n();
-    expect(vazio.lacunasDosDicionarios(), 'a game that registers nothing was accused').toEqual([]);
+    expect(vazio.dictionaryGaps(), 'a game that registers nothing was accused').toEqual([]);
     const cheio = await carregarI18n();
     for (const l of ['pt', 'en', 'es']) cheio.registerDict(l, { 'jogo.z.a': l, 'jogo.z.b': l });
-    expect(cheio.lacunasDosDicionarios()).toEqual([]);
+    expect(cheio.dictionaryGaps()).toEqual([]);
   });
 
   it('🎯 [Boundary] a long list is cut, and says how many more', async () => {
@@ -60,7 +60,7 @@ describe('the three languages of a cartridge dictionary', () => {
     i18n.registerDict('pt', muitas);
     i18n.registerDict('en', muitas);
     i18n.registerDict('es', { 'jogo.w.k0': 'x' });
-    const [linha] = i18n.lacunasDosDicionarios();
+    const [linha] = i18n.dictionaryGaps();
     expect(linha).toContain('jogo.w.k1');
     expect(linha, 'the line lists every key').not.toContain('jogo.w.k11');
     expect(linha).toMatch(/\b6 more\b/);

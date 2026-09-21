@@ -25,7 +25,7 @@
 import { describe, it, expect } from 'vitest';
 import { screenPauseMarkup, quickBarMarkup } from '../app/js/ui/pause-icons.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from '../app/js/ui/pause-buttons.js';
-import { passoNoAnel } from '../app/js/ui/menu-nav.js';
+import { stepInRing } from '../app/js/ui/menu-nav.js';
 
 const markup = () => screenPauseMarkup({
   player: 0, numPlayers: 1, pmButtons: PM_BTNS, optionsButtons: PM_OPTIONS_BTNS, dynLabel: () => null, t: (k) => k,
@@ -65,8 +65,8 @@ describe('barra rápida · sai do cartão de pausa e vira HUD', () => {
     const n = PM_BTNS.length;
     expect(PM_BTNS[0].act).toBe('resume');
     expect(PM_BTNS[n - 1].act).toBe('quit');
-    expect(passoNoAnel(n, 0, -1), 'para CIMA a partir de `resume` tem de cair em `quit`').toBe(n - 1);
-    expect(passoNoAnel(n, n - 1, 1), 'para BAIXO a partir de `quit` tem de voltar a `resume`').toBe(0);
+    expect(stepInRing(n, 0, -1), 'para CIMA a partir de `resume` tem de cair em `quit`').toBe(n - 1);
+    expect(stepInRing(n, n - 1, 1), 'para BAIXO a partir de `quit` tem de voltar a `resume`').toBe(0);
   });
 
   it('[Zero] a barra é montada UMA vez por chamada e não carrega estado', () => {

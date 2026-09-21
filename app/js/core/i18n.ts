@@ -12,14 +12,14 @@ const AVAILABLE = ['pt', 'en', 'es'];
 const base: LocaleDict = pt;                // dicionário-base (fallback), tipado
 const DICTS: Record<string, LocaleDict> = { pt: base }; // dicionários já carregados (pt embutido)
 /** The port the chosen language is kept through (ADR-0178): `platform/storage` has this shape. */
-export interface PortaDoIdioma {
+export interface LocalePort {
   get(key: string, fallback: string | null): string | null;
   set(key: string, value: string): unknown;
   readonly KEYS: { readonly lang: string };
 }
-let portaDoIdioma: PortaDoIdioma | null = null;
+let portaDoIdioma: LocalePort | null = null;
 /** Gives this module the port for the chosen language; the composition root calls it before `initI18n`. */
-export function carregarIdioma(p: PortaDoIdioma): void { portaDoIdioma = p; }
+export function loadLocale(p: LocalePort): void { portaDoIdioma = p; }
 
 /* ===================== O DICIONÁRIO DE QUEM CONSOME A ENGINE =====================
  *
@@ -71,7 +71,7 @@ export function registerDict(code: string, entries: LocaleDict): string[] {
  * and nothing checked it — a key forgotten in one language shows Portuguese there, and nobody is told.
  * A cartridge that registered nothing is not accused: strings it never gave the engine, the engine cannot see.
  */
-export function lacunasDosDicionarios(): string[] {
+export function dictionaryGaps(): string[] {
   const registadas = new Set<string>();
   for (const code of AVAILABLE) for (const chave in EXTRA[code] ?? {}) registadas.add(chave);
   if (!registadas.size) return [];
@@ -205,7 +205,7 @@ async function ensure(code: string): Promise<LocaleDict> {
 export async function setLocale(code: string): Promise<void> {
   // first, before anything changes: a language switched and then refused would leave the page half moved (ADR-0178)
   const porta = portaDoIdioma;
-  if (!porta) throw new Error('core/i18n: setLocale kept a language before carregarIdioma — the composition root loads the stored settings first (ADR-0178)');
+  if (!porta) throw new Error('core/i18n: setLocale kept a language before loadLocale — the composition root loads the stored settings first (ADR-0178)');
   if (!AVAILABLE.includes(code)) code = 'pt';
   dict = await ensure(code);
   locale = code;
@@ -230,7 +230,7 @@ let pendente: Promise<void> = Promise.resolve();
  * troca — que é assíncrona, porque os outros locales são chunks sob demanda.
  *
  * Continua devolvendo o locale de forma síncrona e NÃO bloqueia por si: quem precisar esperar chama
- * `idiomaPronto()`. Foi essa separação que faltava — ver o comentário lá embaixo.
+ * `localeReady()`. Foi essa separação que faltava — ver o comentário lá embaixo.
  *
  * `root` ENTRA em vez de ser lido do global, e foi o `boot/createGame()` que cobrou (item 13): a raiz de
  * composição recebe o documento do hospedeiro por injeção e não tinha como repassá-lo — esta linha alcançava
@@ -242,7 +242,7 @@ export function initI18n(root: ParentNode = document): string {
   applyDom(root);
   const def = pickDefault();
   // `.catch` mudo de propósito: um chunk de locale que não carrega degrada para pt, e degradar é MUITO melhor
-  // que travar o boot. Sem ele, um `await idiomaPronto()` lá fora derrubaria o jogo inteiro por causa do idioma.
+  // que travar o boot. Sem ele, um `await localeReady()` lá fora derrubaria o jogo inteiro por causa do idioma.
   if (def !== 'pt') pendente = setLocale(def).catch(() => { /* fica em pt */ });
   return locale;
 }
@@ -262,8 +262,8 @@ export function initI18n(root: ParentNode = document): string {
  * que segue com o Dev. Responde à menor, que não tem duas respostas: a interface não se constrói antes de o
  * idioma ser conhecido.
  */
-export function idiomaPronto(): Promise<void> { return pendente; }
+export function localeReady(): Promise<void> { return pendente; }
 
-const i18n = { t, getLocale, availableLocales, applyDom, setLocale, initI18n, idiomaPronto, registerDict };
+const i18n = { t, getLocale, availableLocales, applyDom, setLocale, initI18n, localeReady, registerDict };
 export default i18n;
 if (typeof window !== 'undefined') (window as Window & { __i18n?: unknown }).__i18n = i18n; // exposto p/ teste/preview

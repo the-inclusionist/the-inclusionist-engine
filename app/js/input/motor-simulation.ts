@@ -9,7 +9,7 @@
  *     real release do not reach the game.
  */
 export type DecisaoDeTecla = 'passar' | 'barrar' | 'tocar';
-export interface SimulacaoMotora { readonly umPorVez: boolean; readonly semForca: boolean }
+export interface SimulacaoMotora { readonly umPorVez: boolean; readonly noGripStrength: boolean }
 
 export interface FiltroMotor {
   /** A game key goes down. `tocar`: let it through and release it at once. */
@@ -27,7 +27,7 @@ export function criarFiltroMotor(): FiltroMotor {
     keydown(code, repeat, sim) {
       if (tocadas.has(code) || barradas.has(code)) return 'barrar';
       if (sim.umPorVez && outraSegurada(code)) { barradas.add(code); return 'barrar'; }
-      if (sim.semForca) {
+      if (sim.noGripStrength) {
         if (repeat && aceitas.has(code)) return 'barrar';
         aceitas.delete(code);
         tocadas.add(code);

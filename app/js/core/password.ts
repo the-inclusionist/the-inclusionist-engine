@@ -48,7 +48,7 @@
 //      · trocar UM símbolo por outro, em qualquer posição → SEMPRE detectado (a diferença que ele causa na
 //        soma é (i+1)·d, e |(i+1)·d| < 1021, logo nunca cai em zero por acaso do módulo);
 //      · TROCAR DOIS símbolos DO CORPO de lugar           → SEMPRE detectado ((i−j)·(vj−vi), idem).
-//    Não é probabilidade: é aritmética, e é por isso que `criarCodec` limita o corpo a 32 símbolos — acima
+//    Não é probabilidade: é aritmética, e é por isso que `createPasswordCodec` limita o corpo a 32 símbolos — acima
 //    disso o produto passaria de 1021 e a garantia cairia em silêncio. O que fica de fora da garantia é a
 //    troca de um símbolo do corpo com um dos dois da soma; para essa, e para uma senha forjada ao acaso, a
 //    chance de colar é ~1/1021.
@@ -65,16 +65,16 @@
 //    letras" de "senha errada" sem que este módulo invente vocabulário de interface para isso.
 
 /** Um campo do esquema: um nome e quantos BITS ele ocupa (⇒ valores de 0 a 2^bits − 1). */
-export interface CampoSenha {
+export interface PasswordField {
   readonly nome: string;
   readonly bits: number;
 }
 
-export interface CodecSenha {
+export interface PasswordCodec {
   /** Quantos caracteres a senha tem, sem separadores. Constante: toda senha deste esquema tem este tamanho. */
   readonly comprimento: number;
   /** Os campos, na ordem em que foram declarados (cópia — quem lê não altera o esquema). */
-  readonly campos: readonly CampoSenha[];
+  readonly campos: readonly PasswordField[];
   /** Empacota os valores. Lança se algum campo faltar ou não couber — ver a nota em `codificar`. */
   codificar(valores: Readonly<Record<string, number>>): string;
   /** Desempacota. `null` = senha inválida (comprimento, símbolo, soma ou enchimento). */
@@ -82,7 +82,7 @@ export interface CodecSenha {
 }
 
 /** Crockford base32: sem I, L, O e U. Índice = valor de 5 bits. */
-export const ALFABETO = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+export const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 /** O módulo da soma ponderada. Ver a decisão 2 no topo: é o TAMANHO dele que dá a garantia, e o limite de 32. */
 const MODULO = 1021;
@@ -90,7 +90,7 @@ const MODULO = 1021;
 const MAX_SIMBOLOS = 32;
 
 const VALOR_DE = new Map<string, number>();
-for (let i = 0; i < ALFABETO.length; i++) VALOR_DE.set(ALFABETO[i]!, i);
+for (let i = 0; i < ALPHABET.length; i++) VALOR_DE.set(ALPHABET[i]!, i);
 // A leniência de Crockford, só na LEITURA. Escrever jamais produz estes três.
 VALOR_DE.set('I', 1); VALOR_DE.set('L', 1); VALOR_DE.set('O', 0);
 
@@ -119,7 +119,7 @@ function soma(simbolos: readonly number[]): [number, number] {
 // só me aceitaria subindo o teto global de 76 para 82 no mesmo commit que cria a dívida. Afrouxar o gate para
 // caber nele é o defeito que o gate existe para impedir. Comentário não vai para tela nenhuma e segue em
 // pt-BR, como no resto do repositório; STRING vai, mesmo que só até o console de quem programa.
-export function criarCodec(campos: readonly CampoSenha[]): CodecSenha {
+export function createPasswordCodec(campos: readonly PasswordField[]): PasswordCodec {
   if (campos.length === 0) {
     throw new Error('core/password: empty schema — a password with zero fields carries only its own checksum. Declare at least one field, or skip the codec.');
   }
@@ -165,14 +165,14 @@ export function criarCodec(campos: readonly CampoSenha[]): CodecSenha {
         simbolos.push((bits[i]! << 4) | (bits[i + 1]! << 3) | (bits[i + 2]! << 2) | (bits[i + 3]! << 1) | bits[i + 4]!);
       }
       const [s1, s2] = soma(simbolos);
-      return [...simbolos, s1, s2].map((v) => ALFABETO[v]!).join('');
+      return [...simbolos, s1, s2].map((v) => ALPHABET[v]!).join('');
     },
 
     decodificar(senha) {
       if (typeof senha !== 'string') return null;
       const cru: number[] = [];
       for (const ch of senha.toUpperCase()) {
-        if (ch === ' ' || ch === '-' || ch === '·') continue; // separadores de leitura (ver `formatar`)
+        if (ch === ' ' || ch === '-' || ch === '·') continue; // separadores de leitura (ver `formatPassword`)
         const v = VALOR_DE.get(ch);
         if (v === undefined) return null; // símbolo fora do alfabeto: não vale adivinhar o que ela quis dizer
         cru.push(v);
@@ -208,7 +208,7 @@ export function criarCodec(campos: readonly CampoSenha[]): CodecSenha {
  * copiada perdendo o lugar por quem lê da tela para o caderno. `decodificar` ignora o separador, então a
  * senha agrupada e a senha corrida são a MESMA senha — quem digitar sem o traço não é punido por isso.
  */
-export function formatar(senha: string, grupo = 4, sep = '-'): string {
+export function formatPassword(senha: string, grupo = 4, sep = '-'): string {
   if (grupo < 1) return senha;
   const partes: string[] = [];
   for (let i = 0; i < senha.length; i += grupo) partes.push(senha.slice(i, i + grupo));

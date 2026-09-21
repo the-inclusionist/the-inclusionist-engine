@@ -24,7 +24,7 @@
 // Zero dependências, zero I/O, nenhum `document` global: recebe o elemento e devolve texto.
 
 /** A fatia mínima de `Element` que este módulo lê. Estrutural para o teste de node não precisar de DOM real. */
-export interface ElementoComRotulo {
+export interface LabelledElement {
   getAttribute(nome: string): string | null;
   textContent: string | null;
 }
@@ -42,7 +42,7 @@ const enxuto = (s: string | null | undefined): string => (s || '').replace(/\s+/
  * O texto visível entra quando não há rótulo declarado, que é o caso da maioria dos botões: ali as duas
  * fontes já coincidem por construção.
  */
-export function rotuloAcessivel(el: ElementoComRotulo | null | undefined): string {
+export function accessibleLabel(el: LabelledElement | null | undefined): string {
   if (!el) return '';
   return enxuto(el.getAttribute('aria-label')) || enxuto(el.textContent);
 }

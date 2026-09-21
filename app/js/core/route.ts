@@ -52,11 +52,11 @@ import { distance } from './contract.js';
  * Os papéis que uma rota atravessa. Leitura do `core/contract`, com o `hazard` de fora por decisão declarada
  * no cabeçalho — e `goal` de fora porque ele entra pela regra do último passo, não pela do meio.
  */
-export const PAPEIS_ATRAVESSAVEIS: ReadonlySet<Role> = new Set<Role>(['free', 'water', 'climb', 'key']);
+export const WALKABLE_ROLES: ReadonlySet<Role> = new Set<Role>(['free', 'water', 'climb', 'key']);
 
 /** Este papel deixa passar? */
-export function atravessavel(papel: Role): boolean {
-  return PAPEIS_ATRAVESSAVEIS.has(papel);
+export function isWalkable(papel: Role): boolean {
+  return WALKABLE_ROLES.has(papel);
 }
 
 export interface RouteCtx {
@@ -74,7 +74,7 @@ export interface RouteCtx {
   readonly orcamento?: number;
 }
 
-export interface Rota {
+export interface Route {
   /** O PRÓXIMO ponto a pisar — a um passo de onde se está. É isto que uma pista aponta. */
   readonly proximo: Spot;
   /** Qual dos alvos a rota alcançou. Pode não ser o mais próximo em linha reta, e é esse o ponto. */
@@ -137,7 +137,7 @@ function dentro(topo: Topology, s: Spot): boolean {
  * do outro lado de uma parede está mais LONGE do que um a oito células por um corredor aberto — e é o segundo
  * que a criança consegue alcançar.
  */
-export function rotaAte(ctx: RouteCtx, de: Spot, alvos: readonly Spot[]): Rota | null {
+export function routeTo(ctx: RouteCtx, de: Spot, alvos: readonly Spot[]): Route | null {
   const topo = ctx.topology;
   if (topo.kind === 'hotspots' || alvos.length === 0) return null;
 
@@ -172,7 +172,7 @@ export function rotaAte(ctx: RouteCtx, de: Spot, alvos: readonly Spot[]): Rota |
         // O ÚLTIMO PASSO É SEMPRE PERMITIDO: um alvo pode estar declarado numa célula que não se atravessa.
         const alvo = chegou(vizinho);
         if (alvo) return { proximo: primeiro, ate: alvo, passos: item.passos + 1 };
-        if (!atravessavel(ctx.roleAt(vizinho))) continue;
+        if (!isWalkable(ctx.roleAt(vizinho))) continue;
         proxima.push({ at: vizinho, primeiro, passos: item.passos + 1 });
       }
     }

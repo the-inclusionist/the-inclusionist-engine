@@ -22,7 +22,7 @@
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, simulatesDisability, type VizMode } from './viz-modes.js';
 import {
   migrarVisual, filtroChave, chaveDeTextura, chaveLegada, ehSimulacao, ehBaixaVisao, ehCego, temAltoContraste, PADRAO,
-  type Tema, type Correcao,
+  type Theme, type Correction,
   type VisualState,
 } from './viz-axes.js';
 import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
@@ -33,7 +33,7 @@ import { recusaDaSimulacao } from './viz-refusal.js';
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
 import { lqFilter } from './lq-filter.js';
-import { setVizModeValue, setModoCegoValue } from '../core/state.js';
+import { setVizModeValue, setBlindModeValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { ComFiltro, ComTextura, Visivel, DesenhoComCirculo, AplicarFiltroCss, AlcanceDoFiltro,
@@ -219,8 +219,8 @@ export interface VizSettersApi {
    * inevitavelmente «apagar o outro» — e era o defeito, não a API.
    */
   setVisualDoJogador(i: number, v: VisualState): void;
-  setTemaDoJogador(i: number, tema: Tema): void;
-  setCorrecaoDoJogador(i: number, correcao: Correcao): void;
+  setTemaDoJogador(i: number, tema: Theme): void;
+  setCorrecaoDoJogador(i: number, correcao: Correction): void;
   /** Caminho SOLO: filtro CSS na canvas + texturas globais + overlay DOM + bolinha. */
   applyVizGlobal(v: VisualState): void;
   /** Reaplica tudo depois de uma mudança estrutural (cenário, nº de telas). */
@@ -295,13 +295,13 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   }
 
   /** Muda SÓ o tema deste jogador. A correção e a simulação ficam onde estavam — é o ponto da #104. */
-  function setTemaDoJogador(i: number, tema: Tema): void {
+  function setTemaDoJogador(i: number, tema: Theme): void {
     const p = ctx.getPlayers()[i];
     setVisualDoJogador(i, { ...(p.visual ?? PADRAO), tema });
   }
 
   /** Muda SÓ a correção de cor deste jogador. O tema e a simulação ficam onde estavam. */
-  function setCorrecaoDoJogador(i: number, correcao: Correcao): void {
+  function setCorrecaoDoJogador(i: number, correcao: Correction): void {
     const p = ctx.getPlayers()[i];
     setVisualDoJogador(i, { ...(p.visual ?? PADRAO), correcao });
   }
@@ -315,7 +315,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    *  escritores por eixo e o antigo por chave partilham-nos, e uma cópia a mais seria uma cópia a divergir. */
   function aplicarVisualDoJogador(i: number, v: VisualState): void {
     ctx.invalidateSharedViz();
-    if (ehCego(v)) (ctx.setModoCego ?? setModoCegoValue)(true); // empatia cegueira total liga o modo cego (áudio) por padrão
+    if (ehCego(v)) (ctx.setModoCego ?? setBlindModeValue)(true); // empatia cegueira total liga o modo cego (áudio) por padrão
     if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(v); } else { applyVpFilters(); updateVpDots(); }
     ctx.reflectVizButtons(); ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }
@@ -468,11 +468,11 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       if (!escolha) return; // botão de outro assunto, ou um `data-` editado à mão: não se adivinha
       const i = ctx.getSelVizPlayer();
       if (escolha.eixo === 'tema') {
-        setTemaDoJogador(i, escolha.valor as Tema);
-        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(ROTULO_DO_TEMA[escolha.valor as Tema])));
+        setTemaDoJogador(i, escolha.valor as Theme);
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(ROTULO_DO_TEMA[escolha.valor as Theme])));
       } else {
-        setCorrecaoDoJogador(i, escolha.valor as Correcao);
-        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(ROTULO_DA_CORRECAO[escolha.valor as Correcao])));
+        setCorrecaoDoJogador(i, escolha.valor as Correction);
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(ROTULO_DA_CORRECAO[escolha.valor as Correction])));
       }
     }));
   }

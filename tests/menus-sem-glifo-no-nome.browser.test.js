@@ -12,7 +12,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
-import { rotuloAcessivel } from '../app/js/core/rotulo-acessivel.js';
+import { accessibleLabel } from '../app/js/core/rotulo-acessivel.js';
 
 /** Pictographs, arrows, geometric shapes, dingbats and miscellaneous symbols — what a menu glyph is made of. */
 const GLIFO = /[\p{Extended_Pictographic}←-⇿■-◿✀-➿☀-⛿]/u;
@@ -38,7 +38,7 @@ describe('menu names carry no glyph', () => {
     const nomes = [];
     for (const sub of ['raiz', 'opcoes']) {
       cartao.querySelectorAll('.pause-menu').forEach((m) => { m.hidden = m.dataset.sub !== sub; });
-      for (const b of cartao.querySelectorAll('.pause-menu:not([hidden]) .pm-btn')) nomes.push(rotuloAcessivel(b));
+      for (const b of cartao.querySelectorAll('.pause-menu:not([hidden]) .pm-btn')) nomes.push(accessibleLabel(b));
     }
     expect(nomes.length, 'no items — the case would measure nothing').toBeGreaterThan(10);
     expect(nomes.filter((n) => GLIFO.test(n)), 'item names that speak a symbol').toEqual([]);
@@ -56,7 +56,7 @@ describe('menu names carry no glyph', () => {
     cartao.querySelector('.pm-btn[data-act="som"]').click();
     await esperar();
     const voltar = [...regiao.querySelectorAll('.overlay')].find((o) => !o.hidden).querySelector('.overlay__back');
-    expect(rotuloAcessivel(voltar)).toBe('Voltar');
+    expect(accessibleLabel(voltar)).toBe('Voltar');
     expect(getComputedStyle(voltar, '::before').content, 'the arrow is no longer drawn').toContain('↩');
     for (const ov of regiao.querySelectorAll('.overlay')) ov.hidden = true;
     for (const c of regiao.querySelectorAll('.screen-pause')) c.hidden = true;
@@ -73,7 +73,7 @@ describe('menu names carry no glyph', () => {
       await esperar();
       const painel = [...regiao.querySelectorAll('.overlay')].find((o) => !o.hidden);
       for (const el of painel.querySelectorAll('button, select, input[type=range], [data-passos]')) {
-        if (el.offsetParent) nomes.push(`${painel.id}: ${rotuloAcessivel(el)}`);
+        if (el.offsetParent) nomes.push(`${painel.id}: ${accessibleLabel(el)}`);
       }
       painel.hidden = true;
       cartao.hidden = true;

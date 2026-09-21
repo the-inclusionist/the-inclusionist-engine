@@ -9,7 +9,7 @@ import { PAUSE_ICONS, iconesQueAccionam, computeIconLabel, computeIconVisual } f
 import * as state from '../app/js/core/state.js';
 import { PADRAO } from '../app/js/core/visual-state.js';
 
-const snap = (over = {}) => ({ modoCego: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: PADRAO, privateOutput: true, ...over });
+const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: PADRAO, privateOutput: true, ...over });
 const todos = { tema: true, correcao: true, seguraTeclas: () => true, tipografia: true, relogio: () => true, menus: true };
 function portaFalsa(guardado = {}) {
   const dados = { ...guardado };
@@ -46,13 +46,13 @@ describe('the 📷 icon', () => {
 });
 
 describe('the stored position', () => {
-  beforeEach(() => { state.carregarEstado(portaFalsa()); });
+  beforeEach(() => { state.loadState(portaFalsa()); });
   it('cycles off → hands → face → eyes → off, in the Dev\'s order', () => {
     expect(['off', 'hands', 'face', 'eyes'].map(state.nextCameraControl)).toEqual(['hands', 'face', 'eyes', 'off']);
   });
   it('is one key, loaded from the child\'s storage and written back', () => {
     const p = portaFalsa({ incl_camera_control: 'face' });
-    state.carregarEstado(p);
+    state.loadState(p);
     expect(state.cameraControl).toBe('face');
     state.setCameraControlValue('eyes');
     expect(state.cameraControl).toBe('eyes');
@@ -60,9 +60,9 @@ describe('the stored position', () => {
   });
   it('nothing stored, anything that is not a mode, or the old per-mode keys, is off — the camera never switches itself on', () => {
     expect(state.cameraControl).toBe('off');
-    state.carregarEstado(portaFalsa({ incl_camera_control: 'outlines' }));
+    state.loadState(portaFalsa({ incl_camera_control: 'outlines' }));
     expect(state.cameraControl).toBe('off');
-    state.carregarEstado(portaFalsa({ incl_eye_control: 'hatched', incl_face_control: 'lines' }));
+    state.loadState(portaFalsa({ incl_eye_control: 'hatched', incl_face_control: 'lines' }));
     expect(state.cameraControl).toBe('off');
   });
 });

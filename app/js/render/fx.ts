@@ -7,8 +7,8 @@
 
 // A corrente da DECORACAO, nao a do jogo: uma particula sorteada aqui nao pode mover o sorteio
 // das moedas. Ver o cabecalho de core/rng.ts (issue #107).
-import { rngDecoracao } from '../core/rng.js';
-const rnd = rngDecoracao.rnd;
+import { decorationRng } from '../core/rng.js';
+const rnd = decorationRng.rnd;
 
 import * as store from '../platform/storage.js';
 

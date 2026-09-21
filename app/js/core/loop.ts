@@ -18,7 +18,7 @@ import { gameSpeed } from './state.js';
 
 type Ticker = { add: (fn: () => void) => void; deltaTime: number; remove?: (fn: () => void) => void };
 
-export interface OpcoesDoLaco {
+export interface LoopOptions {
   /**
    * Chamado UMA vez, com o erro, quando o quadro lança. É o canal de quem não enxerga a tela parar.
    *
@@ -35,9 +35,9 @@ export interface OpcoesDoLaco {
  * `unmount`; a caller's own `aoFalhar` still wins. The same shape as `registrarMapeamentoDoTeclado`.
  */
 let avisoRegistrado: ((erro: unknown) => void) | null = null;
-export function registrarAvisoDeQueda(aviso: ((erro: unknown) => void) | null): void { avisoRegistrado = aviso; }
+export function registerCrashNotice(aviso: ((erro: unknown) => void) | null): void { avisoRegistrado = aviso; }
 
-export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, opcoes: OpcoesDoLaco = {}): void {
+export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, opcoes: LoopOptions = {}): void {
   let parado = false;
   const passo = (): void => {
     if (parado) return; // ticker sem `remove` não desregistra — a trava é o que faz o laço parar mesmo assim

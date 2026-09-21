@@ -495,7 +495,7 @@ describe('createGame em execução', () => {
     // de áudio, a simulação de empatia). Sem esta assinatura o ícone ficaria a dizer «desligado» depois de a
     // criança o ligar — a família do `reflectTTS`, que este projeto já pagou duas vezes.
     expect(FONTE, 'a barra montada não se refaz quando o modo cego muda fora dela')
-      .toMatch(/state\.on\('modoCego',\s*\(\)\s*=>\s*\{\s*pauseIcons\.reflectIconsIn\(a11yBar,\s*0\);\s*\}\)/);
+      .toMatch(/state\.on\('blindMode',\s*\(\)\s*=>\s*\{\s*pauseIcons\.reflectIconsIn\(a11yBar,\s*0\);\s*\}\)/);
   });
 
   it('⚠️ [Right] a engine monta o CARTÃO DE PAUSA — e com o id que ela própria procura', async () => {

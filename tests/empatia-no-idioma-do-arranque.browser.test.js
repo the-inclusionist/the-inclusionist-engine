@@ -5,7 +5,7 @@
 // «Simular perda auditiva». The row is built at boot, BEFORE `init` wires its click, so it is built in the gap where
 // `initI18n` has applied the fallback and not yet the preferred language; nothing rewrote it.
 //
-// 📌 OWN FILE with a clean module registry: a file where an earlier case awaited `idiomaPronto()` would have the `en`
+// 📌 OWN FILE with a clean module registry: a file where an earlier case awaited `localeReady()` would have the `en`
 // chunk warm, and the row would be born in English with the fix undone.
 //
 // MUTATIONS CHECKED — at the end of the file.
@@ -19,7 +19,7 @@ afterAll(() => { if (anterior === null) localStorage.removeItem('incl_lang'); el
 describe('the empathy panel speaks the boot language', () => {
   it('🔴 [Zero] with `en` stored, the hearing-loss row opens in English', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { idiomaPronto, getLocale } = await import('../app/js/core/i18n.js');
+    const { localeReady, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = document.createElement('div');
     raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
       + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
@@ -34,7 +34,7 @@ describe('the empathy panel speaks the boot language', () => {
       host: { doc: document, win: window },
       baixarPesados: false,
     });
-    await idiomaPronto();
+    await localeReady();
     expect(getLocale(), 'the en chunk did not load; the case would measure nothing').toBe('en');
     motor.pausa.mostrar(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();

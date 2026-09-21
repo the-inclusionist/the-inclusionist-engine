@@ -9,43 +9,43 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { duracaoDaLegenda, LEGENDA_MINIMA_MS, RITMOS_DA_LEGENDA, ritmoDaLegendaValido } from '../app/js/core/caption-duration.js';
+import { captionDuration, CAPTION_MIN_MS, CAPTION_RATES, isCaptionRate } from '../app/js/core/caption-duration.js';
 import * as state from '../app/js/core/state.js';
 
 const OITO = 'Uma porta de madeira velha rangendo bem devagar';
 
 describe('how long a sound caption stays', () => {
   it('📌 [Right] the rates are the Dev\'s three, and the floor is the games\' 2600 ms', () => {
-    expect(RITMOS_DA_LEGENDA).toEqual([125, 145, 175]);
-    expect(LEGENDA_MINIMA_MS).toBe(2600);
+    expect(CAPTION_RATES).toEqual([125, 145, 175]);
+    expect(CAPTION_MIN_MS).toBe(2600);
   });
 
   it('🔴 [Right] a long caption stays for its words at the chosen rate', () => {
-    expect(duracaoDaLegenda(OITO, 125)).toBe(3840); // 8 × 60 000 / 125
-    expect(duracaoDaLegenda(OITO, 145)).toBe(3310);
-    expect(duracaoDaLegenda(OITO, 175)).toBe(2743);
+    expect(captionDuration(OITO, 125)).toBe(3840); // 8 × 60 000 / 125
+    expect(captionDuration(OITO, 145)).toBe(3310);
+    expect(captionDuration(OITO, 175)).toBe(2743);
   });
 
   it('🔴 [Right] a caption at 125 words a minute stays longer than at 175 (ADR-0183 confirmation)', () => {
-    expect(duracaoDaLegenda(OITO, 125)).toBeGreaterThan(duracaoDaLegenda(OITO, 175));
+    expect(captionDuration(OITO, 125)).toBeGreaterThan(captionDuration(OITO, 175));
   });
 
   it('🎯 [Boundary] a short caption keeps the floor, at any rate', () => {
-    for (const ppm of RITMOS_DA_LEGENDA) expect(duracaoDaLegenda('Sino', ppm)).toBe(2600);
-    expect(duracaoDaLegenda('Porta rangendo devagar lá fora', 175)).toBe(2600); // 5 words = 1714 ms, under the floor
+    for (const ppm of CAPTION_RATES) expect(captionDuration('Sino', ppm)).toBe(2600);
+    expect(captionDuration('Porta rangendo devagar lá fora', 175)).toBe(2600); // 5 words = 1714 ms, under the floor
   });
 
   it('🎯 [Zero] spaces are not words', () => {
-    expect(duracaoDaLegenda('  Gol   do   time  ', 125)).toBe(2600);
-    expect(duracaoDaLegenda('', 125)).toBe(2600);
+    expect(captionDuration('  Gol   do   time  ', 125)).toBe(2600);
+    expect(captionDuration('', 125)).toBe(2600);
   });
 
   it('🎯 [Boundary] a rate outside the three is not a rate — it reads as the slowest, never as a caption that flashes', () => {
-    expect(ritmoDaLegendaValido(999)).toBe(125);
-    expect(ritmoDaLegendaValido(0)).toBe(125);
-    expect(ritmoDaLegendaValido(Number.NaN)).toBe(125);
-    expect(ritmoDaLegendaValido(145)).toBe(145);
-    expect(duracaoDaLegenda(OITO, 0)).toBe(3840);
+    expect(isCaptionRate(999)).toBe(125);
+    expect(isCaptionRate(0)).toBe(125);
+    expect(isCaptionRate(Number.NaN)).toBe(125);
+    expect(isCaptionRate(145)).toBe(145);
+    expect(captionDuration(OITO, 0)).toBe(3840);
   });
 });
 
@@ -63,7 +63,7 @@ function portaFalsa(guardado = {}) {
 }
 
 describe('the stored caption rate', () => {
-  beforeEach(() => { state.carregarEstado(portaFalsa()); });
+  beforeEach(() => { state.loadState(portaFalsa()); });
 
   it('🎯 [Zero] nothing stored is 125, the slowest of the three', () => {
     expect(state.captionPpm).toBe(125);
@@ -71,7 +71,7 @@ describe('the stored caption rate', () => {
 
   it('🔴 [Right] it is loaded from the child\'s storage and written back', () => {
     const p = portaFalsa({ incl_caption_ppm: 175 });
-    state.carregarEstado(p);
+    state.loadState(p);
     expect(state.captionPpm).toBe(175);
     state.setCaptionPpmValue(145);
     expect(state.captionPpm).toBe(145);
@@ -79,7 +79,7 @@ describe('the stored caption rate', () => {
   });
 
   it('🎯 [Boundary] a stored typo lands on 125', () => {
-    state.carregarEstado(portaFalsa({ incl_caption_ppm: 160 }));
+    state.loadState(portaFalsa({ incl_caption_ppm: 160 }));
     expect(state.captionPpm).toBe(125);
   });
 });

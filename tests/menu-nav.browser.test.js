@@ -219,7 +219,7 @@ describe('navDialog — andar dentro de um diálogo', () => {
   // do primeiro?" e tem de receber uma resposta. É o que põe o item mais indesejado a UMA tecla do mais
   // urgente sem os dois estarem perto um do outro.
   //
-  // MUTAÇÃO CONFERIDA: com `passoNoAnel` de volta ao limite antigo, a última asserção falha em
+  // MUTAÇÃO CONFERIDA: com `stepInRing` de volta ao limite antigo, a última asserção falha em
   // "expected 'a-first' to be 'a-close'".
   it('baixo/cima andam entre os itens, e as pontas DÃO A VOLTA', () => {
     const { nav, openAudio } = boot();

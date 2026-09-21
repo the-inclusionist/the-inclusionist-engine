@@ -24,10 +24,10 @@
 // eixos eram um só. Com dois controles, um «padrão» sem dizer padrão de QUÊ é ambíguo em ambos.
 //
 // Módulo puro: devolve HTML e chaves i18n, não toca documento nenhum. Quem monta é o `render/viz-setters`, na mesma camada (issue #167).
-import { TEMAS, CORRECOES, type Tema, type Correcao, type VisualState } from './viz-axes.js';
+import { TEMAS, CORRECOES, type Theme, type Correction, type VisualState } from './viz-axes.js';
 
 /** O rótulo de cada tema. Chave i18n — quem exibe resolve, como todo o resto do menu. */
-export const ROTULO_DO_TEMA: Readonly<Record<Tema, string>> = Object.freeze({
+export const ROTULO_DO_TEMA: Readonly<Record<Theme, string>> = Object.freeze({
   padrao: 'eixo.tema.padrao',
   hc3: 'viz.hc-direto',
   hc45: 'viz.hc-direto-45',
@@ -35,7 +35,7 @@ export const ROTULO_DO_TEMA: Readonly<Record<Tema, string>> = Object.freeze({
 });
 
 /** O rótulo de cada correção de cor. */
-export const ROTULO_DA_CORRECAO: Readonly<Record<Correcao, string>> = Object.freeze({
+export const ROTULO_DA_CORRECAO: Readonly<Record<Correction, string>> = Object.freeze({
   tricro: 'eixo.correcao.tricro',
   protan: 'viz.fix-protan',
   deuter: 'viz.fix-deuter',
@@ -50,10 +50,10 @@ export const ROTULO_DA_CORRECAO: Readonly<Record<Correcao, string>> = Object.fre
  * a ler uma lista — a diferença é de contexto e sobrevive à divisão. Reaproveitar em vez de traduzir de novo
  * é o que mantém a mesma palavra nos dois sítios.
  */
-export const CURTO_DO_TEMA: Readonly<Record<Tema, string>> = Object.freeze({
+export const CURTO_DO_TEMA: Readonly<Record<Theme, string>> = Object.freeze({
   padrao: 'contrast.off', hc3: 'contrast.3', hc45: 'contrast.45', hc7: 'contrast.7',
 });
-export const CURTO_DA_CORRECAO: Readonly<Record<Correcao, string>> = Object.freeze({
+export const CURTO_DA_CORRECAO: Readonly<Record<Correction, string>> = Object.freeze({
   tricro: 'cvd.off', protan: 'cvd.protan', deuter: 'cvd.deuter', tritan: 'cvd.tritan',
 });
 

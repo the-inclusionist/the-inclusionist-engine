@@ -32,22 +32,22 @@ async function estadoFresco() { vi.resetModules(); return import('../app/js/core
 describe('the stored settings, loaded by the root (ADR-0178)', () => {
   it('🔴 [Right] a write before the load throws, naming the setter — the child\'s saved choice is not overwritten', async () => {
     const state = await estadoFresco();
-    expect(() => state.setModoCegoValue(true)).toThrow(/setModoCegoValue.*carregarEstado/);
-    expect(() => state.setLetterCaseValue('mixed')).toThrow(/carregarEstado/);
-    expect(state.modoCego, 'the refused write changed the binding anyway').toBe(false);
+    expect(() => state.setBlindModeValue(true)).toThrow(/setBlindModeValue.*loadState/);
+    expect(() => state.setLetterCaseValue('mixed')).toThrow(/loadState/);
+    expect(state.blindMode, 'the refused write changed the binding anyway').toBe(false);
   });
 
   it('🎯 [Zero] a setter that changes nothing writes nothing, and does not throw', async () => {
     const state = await estadoFresco();
-    expect(() => state.setModoCegoValue(false)).not.toThrow();
+    expect(() => state.setBlindModeValue(false)).not.toThrow();
   });
 
   it('🔴 [Right] before the load the bindings hold what an empty storage gives; the load reads what the child saved', async () => {
     const state = await estadoFresco();
     expect(state.letterCase).toBe('upper');
     const porta = portaGuardada({ incl_modocego: '1', incl_lettercase: 'mixed', incl_captions: '0', incl_cane_div: '4' });
-    state.carregarEstado(porta);
-    expect(state.modoCego).toBe(true);
+    state.loadState(porta);
+    expect(state.blindMode).toBe(true);
     expect(state.letterCase).toBe('mixed');
     expect(state.captionsOn).toBe(false);
     expect(state.caneBlockDiv).toBe(4);
@@ -56,7 +56,7 @@ describe('the stored settings, loaded by the root (ADR-0178)', () => {
   it('🔴 [Right] after the load, a setter writes through the loaded port', async () => {
     const state = await estadoFresco();
     const porta = portaGuardada();
-    state.carregarEstado(porta);
+    state.loadState(porta);
     state.setWheelchairValue(true);
     state.setLetterCaseValue('mixed');
     expect(porta.mapa.get('incl_wheelchair')).toBe('1');
@@ -67,7 +67,7 @@ describe('the stored settings, loaded by the root (ADR-0178)', () => {
     vi.resetModules();
     const i18n = await import('../app/js/core/i18n.js');
     const antes = i18n.getLocale();
-    await expect(i18n.setLocale('en')).rejects.toThrow(/carregarIdioma/);
+    await expect(i18n.setLocale('en')).rejects.toThrow(/loadLocale/);
     expect(i18n.getLocale(), 'the language changed before the refusal').toBe(antes);
   });
 
@@ -81,6 +81,6 @@ describe('the stored settings, loaded by the root (ADR-0178)', () => {
 
 // ============================== MUTATIONS CHECKED ==============================
 //   R1 `armazem` returns an empty port instead of throwing          🔴 write before the load
-//   R2 `carregarEstado` keeps the port and reads nothing             🔴 the load reads what the child saved
+//   R2 `loadState` keeps the port and reads nothing             🔴 the load reads what the child saved
 //   R3 setLocale's guard moved back after the switch                 🔴 nothing has moved
-//   R4 createGame without `state.carregarEstado(store)`              🔴 caixa-alta: opened after capitals were chosen
+//   R4 createGame without `state.loadState(store)`              🔴 caixa-alta: opened after capitals were chosen

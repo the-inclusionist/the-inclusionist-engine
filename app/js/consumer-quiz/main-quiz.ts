@@ -125,11 +125,11 @@
 //          ("próxima" e "confirmar"), não um direcional de plataforma.
 //     Não liguei o `initTouch`: reproduzir doze ids para um conjunto de controles que o quiz não quer seria o
 //     mesmo tipo de mentira do sonar. Usei a metade pura, que é exatamente o que a divisão deveria separar.
-import { escaparHtml } from '../core/escape-html.js'; // #106: enunciado e alternativas sao TEXTO
-import { t, idiomaPronto } from '../core/i18n.js';
+import { escapeHtml } from '../core/escape-html.js'; // #106: enunciado e alternativas sao TEXTO
+import { t, localeReady } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { menuIndexOn } from '../core/state.js';
-import { duracaoDaLegenda } from '../core/caption-duration.js';
+import { captionDuration } from '../core/caption-duration.js';
 import { anunciarItem } from '../ui/item-announcement.js';
 import { createGame, type Engine, type VirtualCommand } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
@@ -160,10 +160,10 @@ const $ = <T extends Element = Element>(sel: string): T | null => document.query
 export function perguntaHtml(p: Pergunta, selecionada: number): string {
   const alts = p.alternativas.map((a, i) =>
     `<button class="mode-btn quiz-alt${i === selecionada ? ' is-on' : ''}" data-alt="${i}" type="button"` +
-    ` role="radio" aria-checked="${i === selecionada}">${escaparHtml(a)}</button>`).join('');
+    ` role="radio" aria-checked="${i === selecionada}">${escapeHtml(a)}</button>`).join('');
   return (
-    `<h2 class="quiz-pergunta">${escaparHtml(p.enunciado)}</h2>` +
-    `<div class="quiz-alts" role="radiogroup" aria-label="${escaparHtml(t('quiz.alternativas'))}">${alts}</div>`
+    `<h2 class="quiz-pergunta">${escapeHtml(p.enunciado)}</h2>` +
+    `<div class="quiz-alts" role="radiogroup" aria-label="${escapeHtml(t('quiz.alternativas'))}">${alts}</div>`
   );
 }
 
@@ -256,7 +256,7 @@ function render(): void {
   const app = $<HTMLElement>('#quiz-app');
   if (!app) return;
   const p = PERGUNTAS[atual];
-  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escaparHtml(fimTexto(acertos, PERGUNTAS.length))}</h2>`; return; }
+  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(fimTexto(acertos, PERGUNTAS.length))}</h2>`; return; }
   app.innerHTML = perguntaHtml(p, foco);
   // a narração é do consumidor: a engine só empresta a voz
   const fala = narracaoAoDesenhar(p, atual, foco, perguntaNarrada);
@@ -292,7 +292,7 @@ function dizerNoEnunciado(texto: string, voltarAoEnunciado = true): void {
   if (voltarAoEnunciado && p) setTimeout(() => {
     const alvo = $<HTMLElement>('#quiz-app .quiz-pergunta');
     if (alvo && !ouvindo) alvo.textContent = p.enunciado;
-  }, duracaoDaLegenda(texto, 125));
+  }, captionDuration(texto, 125));
 }
 
 async function ouvirResposta(): Promise<void> {
@@ -526,7 +526,7 @@ export function bootQuiz(): void {
 
   // The first draw and the welcome wait for the boot language (study item E4): drawn in the gap, the first question was
   // grouped as «Alternativas» and read «Gato, 1 de 4» on an English page (measured). For pt it resolves at once.
-  void idiomaPronto().then(() => {
+  void localeReady().then(() => {
     motor?.cenas.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
     srSay(t('sr.quiz.bemVindo'));
   });

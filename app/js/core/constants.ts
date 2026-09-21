@@ -74,20 +74,20 @@ export const TILE_TYPES: Record<number, TileType> = {
 
 /* ===================== as perguntas, com nome =====================
  * Uma função por propriedade, e não `TILE_TYPES[t]?.hazard` espalhado: o nome é o que torna a intenção legível
- * no ponto de uso (`ehPerigo(t)` contra `t === 9`) e é o que dá UM lugar para mudar no dia em que a resposta
+ * no ponto de uso (`isHazard(t)` contra `t === 9`) e é o que dá UM lugar para mudar no dia em que a resposta
  * deixar de vir de uma tabela global. Todas devolvem `false` para tipo desconhecido — um tile que ninguém
  * declarou não machuca, não é água e não se escala; inventar semântica para o desconhecido é pior que negá-la.
  */
 const prop = (t: number, k: keyof TileType): boolean => !!TILE_TYPES[t]?.[k];
 /** Machuca ao encostar (lava). */
-export const ehPerigo = (t: number): boolean => prop(t, 'hazard');
+export const isHazard = (t: number): boolean => prop(t, 'hazard');
 /** Trampolim: arremessa para cima. */
-export const ehTrampolim = (t: number): boolean => prop(t, 'tramp');
+export const isTrampoline = (t: number): boolean => prop(t, 'tramp');
 
 // ⚠️ `ehAgua`, `ehEscada`, `ehPortao` e `ehSecreto` MUDARAM DE CASA EM 2026-09-07 — foram para
 // `game/tile-flags.ts` do `game-platformer` (issue #63, etapa B). Tinham zero importadores aqui dentro.
 //
-// E as duas que ficaram — `ehPerigo` e `ehTrampolim` — ficaram por um motivo MEDIDO, não por simetria: a
+// E as duas que ficaram — `isHazard` e `isTrampoline` — ficaram por um motivo MEDIDO, não por simetria: a
 // engine lê-as, e não por geometria. O `isSolidType` de `core/collision` torna perigo e trampolim SÓLIDOS
 // no modo cadeira de rodas, e perigo sólido no modo cego. É uma regra de ACESSIBILIDADE — a criança em
 // cadeira de rodas não cai no fosso — e essa é da engine.

@@ -69,7 +69,7 @@ export interface SceneStack {
  * o sintoma apareceria três quadros depois, longe da causa. As chamadas de `update`/`draw`/`input` também
  * propagam: a engine não é o lugar de decidir que o erro de um jogo não importa.
  */
-export function criarPilha(): SceneStack {
+export function createSceneStack(): SceneStack {
   const pilha: Scene[] = [];
 
   return {
@@ -122,7 +122,7 @@ export function criarPilha(): SceneStack {
  * topo nestes três fatos. Uma quarta cena que a casca não conheça responde `false` nos três, e a projeção
  * abaixo continua fazendo sentido: sem splash, sem menu de pausa, som mudo, foco no título.
  */
-export interface FatosDaCena {
+export interface SceneFacts {
   /** O topo é a tela de título (o splash cobre o mundo). */
   telaDeTitulo: boolean;
   /** O topo é o JOGO — o mundo recebe tempo, o som toca, o controle de toque pode aparecer. */

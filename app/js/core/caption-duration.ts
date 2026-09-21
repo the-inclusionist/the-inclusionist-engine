@@ -7,16 +7,16 @@
  * between Burnham's 120 for children and the DCMP's 130; 175 is the Dev's choice, not a measured comfort (ADR-0183).
  * The floor is the 2600 ms the games had measured in play, so a one-word caption keeps its time.
  */
-export const RITMOS_DA_LEGENDA = [125, 145, 175] as const;
-export type RitmoDaLegenda = (typeof RITMOS_DA_LEGENDA)[number];
-export const LEGENDA_MINIMA_MS = 2600;
+export const CAPTION_RATES = [125, 145, 175] as const;
+export type CaptionRate = (typeof CAPTION_RATES)[number];
+export const CAPTION_MIN_MS = 2600;
 
 /** A stored or passed rate that is not one of the three reads as the slowest: a typo must never make a caption flash by. */
-export function ritmoDaLegendaValido(ppm: number): RitmoDaLegenda {
-  return (RITMOS_DA_LEGENDA as readonly number[]).includes(ppm) ? (ppm as RitmoDaLegenda) : RITMOS_DA_LEGENDA[0];
+export function isCaptionRate(ppm: number): CaptionRate {
+  return (CAPTION_RATES as readonly number[]).includes(ppm) ? (ppm as CaptionRate) : CAPTION_RATES[0];
 }
 
-export function duracaoDaLegenda(texto: string, ppm: number): number {
+export function captionDuration(texto: string, ppm: number): number {
   const palavras = texto.split(/\s+/).filter(Boolean).length;
-  return Math.max(LEGENDA_MINIMA_MS, Math.round((palavras * 60_000) / ritmoDaLegendaValido(ppm)));
+  return Math.max(CAPTION_MIN_MS, Math.round((palavras * 60_000) / isCaptionRate(ppm)));
 }

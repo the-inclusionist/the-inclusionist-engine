@@ -75,7 +75,7 @@ describe('the motor empathy simulations', () => {
     abrirEmpatia();
     document.querySelector('#empathy #opt-semforca').click();
     fecharTudo();
-    expect(state.semForca).toBe(true);
+    expect(state.noGripStrength).toBe(true);
     jogo.length = 0;
     tecla('keydown', 'KeyD'); tecla('keydown', 'KeyD', true); tecla('keydown', 'KeyD', true);
     await esperar();
@@ -83,7 +83,7 @@ describe('the motor empathy simulations', () => {
     expect(jogo, 'the tap was not released while the key is still held').toEqual(['down:KeyD', 'up:KeyD']);
     tecla('keyup', 'KeyD');
     expect(jogo, 'holding kept pressing, or the release came twice').toEqual(['down:KeyD', 'up:KeyD']);
-    state.setSemForcaValue(false);
+    state.setNoGripStrengthValue(false);
   });
 
   it('🔴 [Right] with toggle keys on, «sem força para segurar» is refused and says why (ADR-0076)', async () => {
@@ -91,7 +91,7 @@ describe('the motor empathy simulations', () => {
     abrirEmpatia();
     document.querySelector('#empathy #opt-semforca').click();
     await esperar();
-    expect(state.semForca, 'the simulation ran over the accommodation that undoes it').toBe(false);
+    expect(state.noGripStrength, 'the simulation ran over the accommodation that undoes it').toBe(false);
     expect((document.getElementById('sr-status').textContent + document.getElementById('sr-alert').textContent), 'refused in silence').toMatch(/altern/i);
     fecharTudo();
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, players: [{ ctrl: 0 }] });

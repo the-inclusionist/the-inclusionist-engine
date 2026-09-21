@@ -75,7 +75,7 @@ function ficheiros(raiz, dir = raiz, fora = []) {
   return fora;
 }
 
-/** O retrato: `{ 'core/route.ts': ['PAPEIS_ATRAVESSAVEIS', 'atravessavel', …], … }`, ordenado. */
+/** O retrato: `{ 'core/route.ts': ['WALKABLE_ROLES', 'isWalkable', …], … }`, ordenado. */
 export function superficieDe(raizAppJs) {
   const fora = {};
   for (const rel of ficheiros(raizAppJs).sort()) {

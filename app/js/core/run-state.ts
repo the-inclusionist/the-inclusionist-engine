@@ -37,7 +37,7 @@ import type { Player } from './entity.js';
  *
  * `P` é o tipo do power-up, e ele vem de quem cria a instância. Ver a nota do genérico no cabeçalho.
  */
-export interface ExtrasDoNivel<P> {
+export interface LevelExtras<P> {
   /** Os power-ups espalhados pelo nível. `readonly`: quem lê não reordena. */
   powerups: readonly P[];
   /** Os tiles do portão, como chaves `"tx,ty"` — `core/collision` só pergunta `.has()`. */
@@ -52,11 +52,11 @@ export interface ExtrasDoNivel<P> {
  * O estado de RODADA. Hoje são os extras do nível mais o `wcSolid`; os outros campos chegam nos próximos
  * passos da Fase B.
  *
- * O `wcSolid` fica FORA do `ExtrasDoNivel` porque ele não nasce com os outros quatro: a geometria de
+ * O `wcSolid` fica FORA do `LevelExtras` porque ele não nasce com os outros quatro: a geometria de
  * cadeirante é recalculada por conta própria quando o modo liga ou desliga, e tem setter só dela. Juntá-los
  * num objeto só faria a assinatura mentir sobre quando cada um muda.
  */
-export interface RunState<P> extends ExtrasDoNivel<P> {
+export interface RunState<P> extends LevelExtras<P> {
   /** Sólidos que só existem no modo cadeirante — rampas e plataformas, como chaves `"x,y"`. */
   wcSolid: ReadonlySet<string>;
 
@@ -104,7 +104,7 @@ export interface RunState<P> extends ExtrasDoNivel<P> {
    * devolve os quatro de uma vez, e gravá-los separadamente abriria uma janela em que o portão de um nível
    * convive com os tiles de outro.
    */
-  setLevelExtras(x: ExtrasDoNivel<P>): void;
+  setLevelExtras(x: LevelExtras<P>): void;
   /** Abre ou fecha o portão. É o único dos cinco que muda DURANTE a rodada. */
   setGateOpen(v: boolean): void;
   /** Troca os sólidos de cadeirante (recalculados quando a geometria do nível muda). */
@@ -122,7 +122,7 @@ export interface RunState<P> extends ExtrasDoNivel<P> {
   setGrassDensity(v: number): void;
   setSelVizPlayer(i: number): void;
   setPauseActor(i: number): void;
-  /** Troca o número de jogadores e AVISA (ver `OpcoesDaRodada.aoTrocarJogadores`). */
+  /** Troca o número de jogadores e AVISA (ver `RunOptions.aoTrocarJogadores`). */
   setNumPlayers(n: number): void;
 }
 
@@ -137,7 +137,7 @@ export interface RunState<P> extends ExtrasDoNivel<P> {
  * Então o aviso entra por INJEÇÃO, como o cabeçalho deste arquivo prometeu, e é OPCIONAL: uma rodada sem
  * barramento funciona igual. Avisos são para painéis, e um painel ausente não é erro.
  */
-export interface OpcoesDaRodada {
+export interface RunOptions {
   /** Chamado depois de `setNumPlayers`. Na raiz de composição é `(n) => emit('numPlayers', n)`. */
   aoTrocarJogadores?: (n: number) => void;
 }
@@ -150,7 +150,7 @@ export interface OpcoesDaRodada {
  * cerimônia, e mantê-la aqui obrigaria a fábrica a depender do barramento — justo o que a Fase C vai
  * refazer. Quando existir o primeiro assinante, ele entra por injeção, com o barramento já tipado.
  */
-export function createRunState<P>(opcoes: OpcoesDaRodada = {}): RunState<P> {
+export function createRunState<P>(opcoes: RunOptions = {}): RunState<P> {
   const r: RunState<P> = {
     powerups: [],
     gateTiles: new Set<string>(),
@@ -159,7 +159,7 @@ export function createRunState<P>(opcoes: OpcoesDaRodada = {}): RunState<P> {
     wcSolid: new Set<string>(),
     players: [],
     numPlayers: 1,
-    setLevelExtras(x: ExtrasDoNivel<P>): void {
+    setLevelExtras(x: LevelExtras<P>): void {
       r.powerups = x.powerups;
       r.gateTiles = x.gateTiles;
       r.gate = x.gate;

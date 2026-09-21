@@ -18,7 +18,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { startLoop, registrarAvisoDeQueda } from '../app/js/core/loop.js';
+import { startLoop, registerCrashNotice } from '../app/js/core/loop.js';
 
 /** Um ticker mínimo com a forma que `startLoop` pede, e com `remove` para provar que o laço se desregistra. */
 function fakeTicker(deltaTime = 1) {
@@ -98,11 +98,11 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
   it('🔴 [Right] a loop started without `aoFalhar` announces through the one the root REGISTERED', () => {
     const t = fakeTicker();
     const erros = [];
-    registrarAvisoDeQueda((e) => erros.push(e));
+    registerCrashNotice((e) => erros.push(e));
     try {
       startLoop(t, () => { throw new Error('quadro'); }, 2);
       t.tick(); t.tick();
-    } finally { registrarAvisoDeQueda(null); }
+    } finally { registerCrashNotice(null); }
     expect(erros.map((e) => e.message), 'the registered notice was not called exactly once').toEqual(['quadro']);
   });
 
@@ -110,19 +110,19 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     const t = fakeTicker();
     const doRegisto = [];
     const doJogo = [];
-    registrarAvisoDeQueda((e) => doRegisto.push(e));
+    registerCrashNotice((e) => doRegisto.push(e));
     try {
       startLoop(t, () => { throw new Error('x'); }, 2, { aoFalhar: (e) => doJogo.push(e) });
       t.tick();
-    } finally { registrarAvisoDeQueda(null); }
+    } finally { registerCrashNotice(null); }
     expect([doJogo.length, doRegisto.length]).toEqual([1, 0]);
   });
 
   it('🎯 [Zero] with the registration withdrawn, nothing is called — and the loop still stops', () => {
     const t = fakeTicker();
     const erros = [];
-    registrarAvisoDeQueda((e) => erros.push(e));
-    registrarAvisoDeQueda(null);
+    registerCrashNotice((e) => erros.push(e));
+    registerCrashNotice(null);
     startLoop(t, () => { throw new Error('x'); }, 2);
     t.tick();
     expect(erros).toEqual([]);

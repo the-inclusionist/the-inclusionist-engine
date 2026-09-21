@@ -66,7 +66,7 @@ const MODULOS = ficheirosTs(join(RAIZ, 'app', 'js'))
  *
  * ⚠️ O PADRÃO ACEITA `./constants.js` E `../core/constants.js`, e a diferença já custou uma medição errada:
  * a primeira versão exigia `core/constants.js` e por isso não via o `core/collision.ts`, que é vizinho e
- * importa por `./constants.js`. O resultado foi `TILE_TYPES` e `ehPerigo` a aparecerem como sem dono — quer
+ * importa por `./constants.js`. O resultado foi `TILE_TYPES` e `isHazard` a aparecerem como sem dono — quer
  * dizer, um crivo estreito a INVENTAR dívida. O caso `[Zero]` abaixo existe por causa disto.
  */
 function importadoresPorNome() {
@@ -133,7 +133,7 @@ describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa
     // (o vizinho `core/collision.ts`), que foi exactamente o que a primeira versão do padrão não via.
     expect(conta.get('LOGICAL_W'), 'ninguém importa LOGICAL_W? o crivo partiu-se').toBeGreaterThanOrEqual(5);
     expect(conta.get('TILE_TYPES'), 'o import de vizinho (./constants.js) deixou de ser visto').toBeGreaterThanOrEqual(1);
-    expect(conta.get('ehPerigo'), 'o import de vizinho deixou de ser visto').toBeGreaterThanOrEqual(1);
+    expect(conta.get('isHazard'), 'o import de vizinho deixou de ser visto').toBeGreaterThanOrEqual(1);
     // ⚠️ ESTE PISO NÃO MEDE DÍVIDA — mede que o `import` resolveu, e por isso é o único número deste ficheiro
     // que pode DESCER com o corte. Já desceu duas vezes numa tarde (15 → 10 → 5) enquanto a etapa B levava
     // oito exports, e um número que se ajusta a cada passagem não guarda nada: por isso ficou LARGO. Um
@@ -175,7 +175,7 @@ describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa
 //   · pondo `LOGICAL_W` no livro (uma entrada fantasma, que tem dono) → "[Interface]" reprova nomeando-o.
 //   · estreitando o padrão do crivo para `core\/constants\.js` — a primeira versão, e o defeito real que eu
 //     cometi ao medir → reprovam TRÊS casos: "[Zero]" no `TILE_TYPES`, "[Right]" a acusar `TILE_TYPES`,
-//     `ehPerigo` e `ehTrampolim` de estarem fora do livro, e "[Boundary]" com 11 > 8.
+//     `isHazard` e `isTrampoline` de estarem fora do livro, e "[Boundary]" com 11 > 8.
 //     ⚠️ Sem o `[Zero]`, esta mutação teria INVENTADO três dívidas e o livro teria crescido para as
 //     acomodar — um gate a fabricar o problema que existe para medir. Os três nomes são os do
 //     `core/collision.ts`, que importa por `./constants.js` por ser vizinho.

@@ -9,10 +9,10 @@
 import { describe, it, expect } from 'vitest';
 import { criarFiltroMotor } from '../app/js/input/motor-simulation.js';
 
-const DESLIGADAS = { umPorVez: false, semForca: false };
-const UM = { umPorVez: true, semForca: false };
-const FORCA = { umPorVez: false, semForca: true };
-const AMBAS = { umPorVez: true, semForca: true };
+const DESLIGADAS = { umPorVez: false, noGripStrength: false };
+const UM = { umPorVez: true, noGripStrength: false };
+const FORCA = { umPorVez: false, noGripStrength: true };
+const AMBAS = { umPorVez: true, noGripStrength: true };
 
 describe('one button at a time', () => {
   it('🔴 [Right] while one game key is held, a second is never accepted — nor its release', () => {

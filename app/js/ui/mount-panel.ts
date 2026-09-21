@@ -62,7 +62,7 @@ export interface MountPanelSpec {
    * still in the fallback, on the same line.
    *
    * 🎯 AND THE PANEL IS THE ONE PLACE WHERE THAT COSTS NOTHING TO FIX. Nobody reads a hidden dialog, so its
-   * words only have to be right when it opens — no `idiomaPronto()` wiring per panel, and a language changed
+   * words only have to be right when it opens — no `localeReady()` wiring per panel, and a language changed
    * mid-game is right on the next open too.
    */
   readonly rotulos: () => PanelLabels;

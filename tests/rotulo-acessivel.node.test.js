@@ -16,7 +16,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { rotuloAcessivel } from '../app/js/core/rotulo-acessivel.js';
+import { accessibleLabel } from '../app/js/core/rotulo-acessivel.js';
 
 /** Um elemento falso com a fatia que o módulo lê — sem DOM, para rodar no project `node`. */
 const el = (aria, texto) => ({ getAttribute: (n) => (n === 'aria-label' ? aria : null), textContent: texto });
@@ -25,31 +25,31 @@ describe('rótulo acessível · o que o jogo narra é o que o leitor de tela diz
   it('[Right] `aria-label` VENCE o texto visível', () => {
     // A ordem é a decisão: `aria-label` é o que a plataforma de acessibilidade JÁ vai anunciar. Narrar outra
     // coisa não acrescenta informação — cria uma segunda versão do mesmo item.
-    expect(rotuloAcessivel(el('Number of players: 1', '◀ Number of players: 1 ▶'))).toBe('Number of players: 1');
+    expect(accessibleLabel(el('Number of players: 1', '◀ Number of players: 1 ▶'))).toBe('Number of players: 1');
   });
 
   it('[Right] sem `aria-label`, o texto visível é a resposta', () => {
     // O caso da maioria dos botões: as duas fontes já coincidem por construção, e forçar um rótulo declarado
     // em todos eles seria trabalho sem ganho.
-    expect(rotuloAcessivel(el(null, 'Continuar'))).toBe('Continuar');
+    expect(accessibleLabel(el(null, 'Continuar'))).toBe('Continuar');
   });
 
   it('[Zero] `aria-label` VAZIO não engole o texto visível', () => {
     // Um `aria-label=""` num markup gerado é acidente, não decisão. Se ele vencesse, o item ficaria SEM nome
     // — e um item sem nome é pior que um item com dois nomes.
-    expect(rotuloAcessivel(el('', 'Continuar'))).toBe('Continuar');
-    expect(rotuloAcessivel(el('   ', 'Continuar'))).toBe('Continuar');
+    expect(accessibleLabel(el('', 'Continuar'))).toBe('Continuar');
+    expect(accessibleLabel(el('   ', 'Continuar'))).toBe('Continuar');
   });
 
   it('[Interface] espaço em branco de markup não vaza', () => {
     // `textContent` traz quebra de linha e indentação do HTML. Sem isto o TTS lê pausas onde não há nada.
-    expect(rotuloAcessivel(el(null, '\n   Sair do jogo  \n'))).toBe('Sair do jogo');
+    expect(accessibleLabel(el(null, '\n   Sair do jogo  \n'))).toBe('Sair do jogo');
   });
 
   it('[Zero] elemento ausente devolve string vazia, não estoura', () => {
-    expect(rotuloAcessivel(null)).toBe('');
-    expect(rotuloAcessivel(undefined)).toBe('');
-    expect(rotuloAcessivel(el(null, null))).toBe('');
+    expect(accessibleLabel(null)).toBe('');
+    expect(accessibleLabel(undefined)).toBe('');
+    expect(accessibleLabel(el(null, null))).toBe('');
   });
 });
 

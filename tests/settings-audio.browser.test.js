@@ -62,7 +62,7 @@ function fullCtx(over = {}) {
   const audioCat = over.audioCat || freshAudioCat();
   let soundOn = over.soundOn ?? true;
   let volume = over.volume ?? 0.6;
-  let modoCego = over.modoCego ?? false;
+  let blindMode = over.blindMode ?? false;
   let caneBlockDiv = over.caneBlockDiv ?? 1;
   const players = over.players || [{ audioSink: null }];
   const tts = {
@@ -91,13 +91,13 @@ function fullCtx(over = {}) {
     getAudioCat: () => audioCat,
     setCatGain: (k) => { catGainCalls.push(k); },
     tts,
-    getModoCego: () => modoCego,
-    setModoCego: (v) => { modoCego = v; },
+    getModoCego: () => blindMode,
+    setModoCego: (v) => { blindMode = v; },
     getCaneBlockDiv: () => caneBlockDiv,
     setCaneBlockDiv: (v) => { caneBlockDiv = v; },
     ...over.ctxOver,
   };
-  return { ctx, said, store, catGainCalls, audioCat, players, tts, getSoundOn: () => soundOn, getVolume: () => volume, getModoCego: () => modoCego, getCaneBlockDiv: () => caneBlockDiv };
+  return { ctx, said, store, catGainCalls, audioCat, players, tts, getSoundOn: () => soundOn, getVolume: () => volume, getModoCego: () => blindMode, getCaneBlockDiv: () => caneBlockDiv };
 }
 
 const origMediaDevices = navigator.mediaDevices;
@@ -218,7 +218,7 @@ describe('ui/settings-audio — som mestre', () => {
 
 describe('ui/settings-audio — modo cego / bengala', () => {
   it('[Interface] o botão de modo cego delega a ctx.setModoCego e reflete o novo estado', () => {
-    const { ctx, getModoCego } = fullCtx({ modoCego: false });
+    const { ctx, getModoCego } = fullCtx({ blindMode: false });
     initSettingsAudio(ctx);
     const btn = document.querySelector('#opt-modocego');
     btn.click();
@@ -374,7 +374,7 @@ describe('ui/settings-audio — restaurar padrões DESTE menu (ADR-0028)', () =>
     cat.music.on = false; cat.music.vol = 0.1;   // mexido, mas no OUTRO painel desde o ADR-0151
     cat.sonar.vol = 0.2;                          // mexido, e deste painel
     cat.tts.on = true;                            // o TTS nasce DESLIGADO, então isto é desvio
-    const { ctx, said, getModoCego, getCaneBlockDiv } = fullCtx({ audioCat: cat, modoCego: true, caneBlockDiv: 2 });
+    const { ctx, said, getModoCego, getCaneBlockDiv } = fullCtx({ audioCat: cat, blindMode: true, caneBlockDiv: 2 });
     initSettingsAudio(ctx);
     document.querySelector('#audio-reset').click();
     expect(getModoCego()).toBe(false);
@@ -390,7 +390,7 @@ describe('ui/settings-audio — restaurar padrões DESTE menu (ADR-0028)', () =>
     const cat = freshAudioCat();
     cat.music.on = false; cat.music.vol = 0.1;
     cat.sonar.vol = 0.2;
-    const { ctx } = fullCtx({ audioCat: cat, modoCego: true });
+    const { ctx } = fullCtx({ audioCat: cat, blindMode: true });
     initSettingsAudio(ctx);
     document.querySelector('#som-reset').click();
     expect(cat.music).toEqual(defaultAudioCat('music'));
@@ -437,7 +437,7 @@ describe('ui/settings-audio — marca o que saiu do padrão (ADR-0029)', () => {
   });
 
   it('[Right] o reset limpa todas as marcas do menu', () => {
-    montar({ modoCego: true });
+    montar({ blindMode: true });
     document.querySelector('#audio-list button[data-acat="music"]').click();
     expect(document.querySelectorAll('.is-changed').length).toBeGreaterThan(0);
     // cada «repor» limpa o que é seu; os dois juntos limpam o documento
@@ -452,9 +452,9 @@ describe('ui/settings-audio — o painel ASSINA o modo cego (ADR-0106 §4)', () 
     // O defeito que este caso impede é o controlo a MENTIR o estado para o leitor de tela: a criança liga o
     // modo cego pelo ícone da barra rápida, abre este painel, e o botão diz «Desligado» com
     // aria-pressed=false. É o gémeo exacto do defeito do `reflectTTS` já registado no `ui/pause-icons`, e a
-    // saída é a que o `core/state` já tinha escrito ao lado do `setModoCegoValue`: quem reage assina o evento.
+    // saída é a que o `core/state` já tinha escrito ao lado do `setBlindModeValue`: quem reage assina o evento.
     const estado = await import('../app/js/core/state.js');
-    let cego = estado.modoCego;
+    let cego = estado.blindMode;
     const { ctx } = fullCtx({});
     ctx.getModoCego = () => cego;
     initSettingsAudio(ctx);
@@ -463,17 +463,17 @@ describe('ui/settings-audio — o painel ASSINA o modo cego (ADR-0106 §4)', () 
     expect(btn.getAttribute('aria-pressed')).toBe(String(cego));
 
     cego = !cego;
-    estado.setModoCegoValue(cego);          // ninguém tocou no painel — só no estado
+    estado.setBlindModeValue(cego);          // ninguém tocou no painel — só no estado
 
     expect(btn.getAttribute('aria-pressed'), 'o painel não acompanhou o evento').toBe(String(cego));
-    estado.setModoCegoValue(!cego);
+    estado.setBlindModeValue(!cego);
   });
 });
 
 // ========================= MUTACOES CONFERIDAS (ADR-0106 §4, etapa 1b) =========================
-//   · tirando o `state.on('modoCego', …)` do fim de `initSettingsAudio` -> reprova o caso acima. Sem ele, um
+//   · tirando o `state.on('blindMode', …)` do fim de `initSettingsAudio` -> reprova o caso acima. Sem ele, um
 //     jogo que nao injecta o seu proprio `setModoCego` deixa este botao a mentir o estado.
-//   · trocando a assinatura por `state.on('modoCego', () => {})` (assina e nao reage) -> reprova tambem, que
+//   · trocando a assinatura por `state.on('blindMode', () => {})` (assina e nao reage) -> reprova tambem, que
 //     e a medida de que o caso afirma o EFEITO e nao a subscricao.
 
 describe('ui/settings-audio — o modo cego ANUNCIA, como os cinco irmãos deste painel', () => {
@@ -483,7 +483,7 @@ describe('ui/settings-audio — o modo cego ANUNCIA, como os cinco irmãos deste
     // próprio `setModoCego`, e o painel herdava o efeito de graça.
     //
     // ⚠️ E o silêncio ficou ALCANÇÁVEL no mesmo dia: com `setModoCego` a ganhar padrão da engine
-    // (`setModoCegoValue`, que grava/persiste/avisa e não fala), um jogo que não injecta o seu setter ficava
+    // (`setBlindModeValue`, que grava/persiste/avisa e não fala), um jogo que não injecta o seu setter ficava
     // com este botão mudo — a mesma família do `reflectTTS`, que já custou um controlo a mentir o estado.
     let cego = false;
     const { ctx, said } = fullCtx({});

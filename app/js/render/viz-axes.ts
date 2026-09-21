@@ -22,14 +22,14 @@
 // The shapes live in `core/visual-state` (issue #167: `core/entity` holds them and may not import upward); the names
 // stay exported here, where cartridges import them.
 import type {
-  Tema as TemaDoCore, Correcao as CorrecaoDoCore, Simulacao as SimulacaoDoCore, VisualState as VisualStateDoCore,
+  Theme as TemaDoCore, Correction as CorrecaoDoCore, Simulation as SimulacaoDoCore, VisualState as VisualStateDoCore,
 } from '../core/visual-state.js';
 /** O eixo do CONTRASTE (`core/visual-state`). */
-export type Tema = TemaDoCore;
+export type Theme = TemaDoCore;
 /** O eixo da CORREÇÃO DE COR (`core/visual-state`). */
-export type Correcao = CorrecaoDoCore;
+export type Correction = CorrecaoDoCore;
 /** A simulação, que NÃO é eixo (`core/visual-state`). */
-export type Simulacao = SimulacaoDoCore;
+export type Simulation = SimulacaoDoCore;
 /** O estado visual de UM jogador (`core/visual-state`). */
 export type VisualState = VisualStateDoCore;
 
@@ -237,17 +237,17 @@ export function migrarVisual(salvo: unknown): VisualState {
   if (salvo && typeof salvo === 'object') {
     const o = salvo as Partial<VisualState>;
     return {
-      tema: TEMAS.includes(o.tema as Tema) ? (o.tema as Tema) : PADRAO.tema,
-      correcao: CORRECOES.includes(o.correcao as Correcao) ? (o.correcao as Correcao) : PADRAO.correcao,
-      simulacao: SIMULACOES.includes(o.simulacao as Simulacao) ? (o.simulacao as Simulacao) : null,
+      tema: TEMAS.includes(o.tema as Theme) ? (o.tema as Theme) : PADRAO.tema,
+      correcao: CORRECOES.includes(o.correcao as Correction) ? (o.correcao as Correction) : PADRAO.correcao,
+      simulacao: SIMULACOES.includes(o.simulacao as Simulation) ? (o.simulacao as Simulation) : null,
     };
   }
   return PADRAO;
 }
 
-export const TEMAS: readonly Tema[] = ['padrao', 'hc3', 'hc45', 'hc7'];
-export const CORRECOES: readonly Correcao[] = ['tricro', 'protan', 'deuter', 'tritan'];
-export const SIMULACOES: readonly Simulacao[] = [
+export const TEMAS: readonly Theme[] = ['padrao', 'hc3', 'hc45', 'hc7'];
+export const CORRECOES: readonly Correction[] = ['tricro', 'protan', 'deuter', 'tritan'];
+export const SIMULACOES: readonly Simulation[] = [
   null, 'sim-protan', 'sim-deuter', 'sim-tritan',
   'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind',
 ];

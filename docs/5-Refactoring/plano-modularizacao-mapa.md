@@ -36,7 +36,7 @@ Legenda de acoplamento: 🟢 folha (≈zero deps de jogo) · 🟡 subsistema coe
 |---|---|---|---|
 | `core/rng.js` 🟢 | `rnd`/`randInt`/`shuffle` + `_seed` (RNG semeado, determinístico) | 246–249 | — |
 | ~~`core/a11y-sr.js` 🟢~~ **FEITO** | `srSay`/`srAlert` extraídos (+ testes browser). `vlibrasSay` por injeção (`setVlibrasSay`) até `ui/vlibras` sair. | — | ui/dom |
-| ~~`core/collision.js` 🟡~~ **FEITO** | `isSolidType`/`tileAt`/`solidTile`/`solidAt`/`surfTop`/`isWcRampRiser`/`caneBlockPx` + `rampSurfaceY`. Estado `gate`/`gateTiles`/`wcSolid`/`wheelchair`/`modoCego` SEGUE no game.js; a colisão o lê por **closures** no `initCollision(ctx)`. + testes node. | — | WORLD, ctx |
+| ~~`core/collision.js` 🟡~~ **FEITO** | `isSolidType`/`tileAt`/`solidTile`/`solidAt`/`surfTop`/`isWcRampRiser`/`caneBlockPx` + `rampSurfaceY`. Estado `gate`/`gateTiles`/`wcSolid`/`wheelchair`/`blindMode` SEGUE no game.js; a colisão o lê por **closures** no `initCollision(ctx)`. + testes node. | — | WORLD, ctx |
 | ~~`render/crt.js` 🟢~~ **FEITO** | `crtScanVars`/`applyCrt` + `CRT` extraídos (+ testes browser). Auto-contido (recomputa escala do clientHeight; NÃO era cluster). | — | ui/dom, state |
 | ~~`render/minimap.js` 🟡~~ **FEITO** | `markSeen`/`redrawMinimapIfDirty`/`drawMinimapPlayer`/`resetMinimap`/`setMinimapCorner` + `setMinimapVisible`/`getMinimap`/`minimapSeenCount` extraídos (+ testes browser; `initMinimap` cria os objetos PIXI no boot). 11 sites no game.js atualizados. | — | PIXI, constants, collision |
 | `game/attract.js` 🟡 | modo atração/demo: `startAttract`/`stepAttract`/`stopAttract`/`attractRecFor` + `_idleT`/`attract` | 752–806 | input, loop |
@@ -207,7 +207,7 @@ overlay). Os hubs que sobrevivem ao ruido e sustentam o GRUPO C: `_lastSharedViz
 - **`main.js` (composition root):** importa todos, faz o wiring do boot (os vários `initX()` na ordem certa),
   registra listeners. O `game.js` **dissolve** (vira só o `main.js` ou some).
 - **Estado restante → `core/state.js`:** migrar aos poucos os `let` de topo que ainda são estado global
-  (`collected`/`ended`/`MODE`/`letterCase`/`calmMode`/`blindMode`/`hcMode`/`oneButton`/`wheelchair`/`modoCego`…)
+  (`collected`/`ended`/`MODE`/`letterCase`/`calmMode`/`blindMode`/`hcMode`/`oneButton`/`wheelchair`/`blindMode`…)
   conforme cada consumidor sai — cada um com seu setter, como as 8 mega-variáveis já feitas.
 
 ## Ordem sugerida
