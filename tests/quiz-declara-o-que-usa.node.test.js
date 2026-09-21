@@ -18,14 +18,32 @@ import { join } from 'node:path';
 const PASTA = 'app/js/consumer-quiz';
 const ficheiros = () => readdirSync(PASTA).filter((f) => f.endsWith('.ts'));
 const fonte = (f) => readFileSync(join(PASTA, f), 'utf8');
+// 🔴 THE CODE WITHOUT ITS COMMENTS, and the mutation is why: with the declaration DELETED from the demo both cases below stayed
+// green, because the comment beside them quotes `uses: { reading: true }` and `motor.reading.listen()`. A gate that reads a tree as
+// text is satisfied by prose ABOUT the code, which is the one thing prose can always produce.
+const codigo = (f) => fonte(f).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 describe('the quiz demo declares what it uses', () => {
   it('🔴 [Right] it asks for the neural voice in ONE line, with no loader of its own', () => {
-    const quiz = fonte('main-quiz.ts');
+    const quiz = codigo('main-quiz.ts');
     expect(quiz, 'the demo stopped asking for the neural voice and nobody would hear it go')
       .toMatch(/uses:\s*\{[^}]*neuralVoice:\s*true/);
     expect(quiz, 'a loader came back into the game: that is the ~200 lines ADR-0216 deleted')
       .not.toMatch(/carregarKokoro|loadKokoro/);
+  });
+
+  it('🔴 [Right] it asks to HEAR the child in one line too, and answers with the text it gets back', () => {
+    const quiz = codigo('main-quiz.ts');
+    expect(quiz, 'the demo stopped declaring the reading: `listen()` would refuse and a delivery would carry no model')
+      .toMatch(/uses:\s*\{[^}]*reading:\s*true/);
+    expect(quiz, 'nothing in the demo asks the engine to listen — the declaration would be a field with no reader')
+      .toMatch(/reading\.listen\(/);
+  });
+
+  it('🎯 [Zero] and it names no microphone, no model and no language of its own — that is the engine\'s half', () => {
+    // The promise of ADR-0216 read as a measurement: what a game may NOT need to know in order to hear a child.
+    const acusados = ficheiros().filter((f) => /getUserMedia|AudioContext|Float32Array|whisper|moonshine|16000|sampleRate/i.test(fonte(f)));
+    expect(acusados, 'a file of the demo took the microphone or the model back').toEqual([]);
   });
 
   it('🎯 [Zero] no file of the demo names a phonemizer, a runtime or a delivery path', () => {

@@ -129,6 +129,7 @@ import { escaparHtml } from '../core/escape-html.js'; // #106: enunciado e alter
 import { t, idiomaPronto } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { menuIndexOn } from '../core/state.js';
+import { duracaoDaLegenda } from '../core/caption-duration.js';
 import { anunciarItem } from '../ui/item-announcement.js';
 import { createGame, type Engine, type VirtualCommand } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
@@ -202,6 +203,43 @@ export function narracaoAoDesenhar(p: Pergunta, pergunta: number, focoIdx: numbe
 }
 
 /**
+ * THE WORDS OF A SENTENCE, as a comparison can use them: no case, no accents, no punctuation.
+ *
+ * A reading model writes what it hears the way a person writes — «Galinha.», «galinha», «GALINHA» — and a child who says
+ * «é a galinha» said the answer. What is stripped here is everything that is not the word itself.
+ */
+function palavrasDe(frase: string): string[] {
+  return frase.normalize('NFD').replace(/[̀-ͯ]/gu, '').toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean);
+}
+
+/** Are these words, in this order, inside that sentence? Whole words — «dois» is not found inside «doisel». */
+function contemAsPalavras(ditas: readonly string[], alvo: readonly string[]): boolean {
+  if (!alvo.length || alvo.length > ditas.length) return false;
+  for (let i = 0; i + alvo.length <= ditas.length; i++) {
+    if (alvo.every((w, k) => ditas[i + k] === w)) return true;
+  }
+  return false;
+}
+
+/**
+ * WHICH OPTION THE CHILD SAID, or nothing when the answer is not one of them.
+ *
+ * This is the whole of what the demo does with the reading (ADR-0216): it asks the engine to listen, receives TEXT, and the
+ * rest is its own rule. Nothing here knows about a microphone, a model or a language.
+ *
+ * 🔴 TWO MATCHES IS NOT AN ANSWER, and that is why the count is kept instead of the first hit: a child who says «gato ou
+ * galinha» is thinking out loud, and a quiz that picked one of them would answer FOR her — and mark it wrong.
+ */
+export function alternativaOuvida(ouvido: string, alternativas: readonly string[]): number | null {
+  const ditas = palavrasDe(ouvido);
+  if (!ditas.length) return null;
+  const achadas: number[] = [];
+  alternativas.forEach((a, i) => { if (contemAsPalavras(ditas, palavrasDe(a))) achadas.push(i); });
+  return achadas.length === 1 ? achadas[0]! : null;
+}
+
+/**
  * O texto que o leitor de tela ouve ao responder. Separado do DOM porque é o que a criança cega RECEBE.
  * The frame is the dictionary's (study item E4): the right answer crosses as `{certa}`, the words around it translate.
  */
@@ -231,6 +269,53 @@ function render(): void {
   if (alvo) alvo.focus();
 }
 
+/**
+ * ANSWERING BY SPEAKING (ADR-0216, issue #200) — the child says an option out loud and this quiz receives the TEXT.
+ *
+ * 📌 It is the whole cartridge side of the reading port, and it is meant to be read as such: `uses: { reading: true }` above,
+ * `listen()` here, a rule of its own on the words. No microphone, no model, no language, no path — the engine's business.
+ *
+ * ⚠️ NOTHING IS SPOKEN WHILE THE MICROPHONE IS OPEN. The statement is REPLACED by the line on screen instead of narrated,
+ * because the engine's own voice would be recorded as if the child had said it.
+ * ⚠️ And no reading is asked for with a ceiling of its own: how long a child takes to BEGIN is not something a quiz knows,
+ * and a game that shortened it would cut the children this exists for.
+ */
+let ouvindo = false;
+
+/** Puts a line where the statement is — the same box, so nothing below it moves — and gives the statement back after it is read. */
+function dizerNoEnunciado(texto: string, voltarAoEnunciado = true): void {
+  const h2 = $<HTMLElement>('#quiz-app .quiz-pergunta');
+  if (h2) h2.textContent = texto;
+  srAlert(texto);
+  const p = PERGUNTAS[atual];
+  // The engine already knows how long a line stays on screen: 500 ms a word, never under 2600 ms (`core/caption-duration`).
+  if (voltarAoEnunciado && p) setTimeout(() => {
+    const alvo = $<HTMLElement>('#quiz-app .quiz-pergunta');
+    if (alvo && !ouvindo) alvo.textContent = p.enunciado;
+  }, duracaoDaLegenda(texto, 125));
+}
+
+async function ouvirResposta(): Promise<void> {
+  const p = PERGUNTAS[atual];
+  if (!motor || !p || ouvindo) return;
+  const pode = await motor.reading.ready();
+  if (!pode.can) { dizerNoEnunciado(t('quiz.semLeitura')); return; }
+  ouvindo = true;
+  dizerNoEnunciado(t('quiz.ouvindo'), false);
+  try {
+    const ouvido = await motor.reading.listen();
+    ouvindo = false;
+    const escolhida = alternativaOuvida(ouvido.text, p.alternativas);
+    if (escolhida !== null) { responder(escolhida); return; }
+    const texto = ouvido.text.trim();
+    dizerNoEnunciado(texto ? t('quiz.naoEntendi', { texto }) : t('quiz.ouviNada'));
+  } catch {
+    // A reading that refuses says why in `problems`; what the child needs here is a way to go on, which is the arrows.
+    ouvindo = false;
+    dizerNoEnunciado(t('quiz.semLeitura'));
+  }
+}
+
 function responder(i: number): void {
   const p = PERGUNTAS[atual];
   if (!p) return;
@@ -256,6 +341,10 @@ function aoComando(comando: VirtualCommand): void {
   else if (comando.action === 'up') { foco = proximoFoco(foco, -1, total); render(); }
   // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se consumiu.
   else if (comando.action === 'action2') motor?.cenas.input('confirm');
+  // SPEAKING THE ANSWER, and giving the microphone back. ⚠️ The same button that goes back is what stops a reading: a child who
+  // changed her mind should not have to wait out the ceiling with the microphone open.
+  else if (comando.action === 'action1') void ouvirResposta();
+  else if (comando.action === 'action3' && ouvindo) motor?.reading.stop();
   // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). The player's place is `atual`, the QUESTION, not the
   // option under the cursor: pointing at the right option would be cheating.
   else if (comando.action === 'rightShoulder') motor?.sonar.sonar({ i: 0, x: atual, y: 0 });
@@ -332,7 +421,9 @@ export function bootQuiz(): void {
     // THIS GAME READS TO THE CHILD (ADR-0216 §3): one line, and the engine loads the voice from the delivery when she picks it.
     // 📌 It used to be the ~200 lines of `kokoro-porta`/`kokoro-carregar` — the phonemizer, the runtime and the paths — which every
     // game that wanted a voice would have copied. They moved into the engine and were deleted here.
-    uses: { neuralVoice: true },
+    // AND THE CHILD READS TO IT (ADR-0216 §3): one more line, and `motor.reading.listen()` answers with what she said. This
+    // answer is also what puts the reading model of her language into a delivery — `npx inclusionist-pesados dist --reading pt`.
+    uses: { neuralVoice: true, reading: true },
     // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
     isNavigable: () => true,
     /*
@@ -361,6 +452,7 @@ export function bootQuiz(): void {
       up: { get label() { return t('quiz.pos.up'); } },
       down: { get label() { return t('quiz.pos.down'); } },
       action2: { get label() { return t('quiz.pos.confirm'); } },
+      action1: { get label() { return t('quiz.pos.falar'); } },
       action3: { get label() { return t('quiz.pos.back'); } },
       rightShoulder: { get label() { return t('quiz.pos.sonar'); } },
     },

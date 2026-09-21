@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { perguntaHtml, proximoFoco, respostaTexto, fimTexto, narracaoDaPergunta, narracaoAoDesenhar } from '../app/js/consumer-quiz/main-quiz.js';
+import { perguntaHtml, proximoFoco, respostaTexto, fimTexto, narracaoDaPergunta, narracaoAoDesenhar, alternativaOuvida } from '../app/js/consumer-quiz/main-quiz.js';
 
 const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'consumer-quiz', 'main-quiz.ts'), 'utf8');
 
@@ -145,3 +145,58 @@ describe('the voice of a question — the statement, then each option with its p
     expect(narracaoAoDesenhar(galinha, 1, 0, 0).narrada).toBe(1);
   });
 });
+
+describe('alternativaOuvida — what the child SAID, when she answers out loud (ADR-0216, issue #200)', () => {
+  const ANIMAIS = ['Gato', 'Galinha', 'Cavalo', 'Peixe'];
+  const NUMEROS = ['Três', 'Quatro', 'Cinco', 'Dois'];
+
+  it('[Right] the option said by itself is the answer', () => {
+    expect(alternativaOuvida('galinha', ANIMAIS)).toBe(1);
+  });
+
+  it('🔴 [Right] a model writes like a person — case, accent and full stop are not part of the answer', () => {
+    // Whisper gives back «Três.» and «GALINHA», and a child who is right must not be marked wrong by a comma.
+    expect(alternativaOuvida('Três.', NUMEROS)).toBe(0);
+    expect(alternativaOuvida('GALINHA!', ANIMAIS)).toBe(1);
+    // 🔴 AND THE ACCENT ITSELF, which is the case the other two do not reach: a model that writes «tres» is not a child who
+    // answered wrong. Both sides pass through the same rule, so a case with the accent on BOTH sides proves nothing — it took a
+    // surviving mutation to show that the accent was never once exercised.
+    expect(alternativaOuvida('tres', NUMEROS)).toBe(0);
+  });
+
+  it('🔴 [Right] and she is allowed to answer in a sentence — «eu acho que é a galinha»', () => {
+    expect(alternativaOuvida('eu acho que é a galinha', ANIMAIS)).toBe(1);
+  });
+
+  it('🔴 [Right] TWO options heard is not an answer: a child thinking out loud is not choosing', () => {
+    // Answering for her would also MARK IT WRONG, which is the cost this case exists to refuse.
+    expect(alternativaOuvida('gato ou galinha', ANIMAIS)).toBeNull();
+  });
+
+  it('[Zero] nothing heard, and something that is none of them, answer nothing', () => {
+    expect(alternativaOuvida('', ANIMAIS)).toBeNull();
+    expect(alternativaOuvida('   ...  ', ANIMAIS)).toBeNull();
+    expect(alternativaOuvida('elefante', ANIMAIS)).toBeNull();
+    expect(alternativaOuvida('gato', [])).toBeNull();
+  });
+
+  it('🔴 [Boundary] WHOLE words: «doisel» is not «Dois», and an empty option answers nothing', () => {
+    expect(alternativaOuvida('doisel', NUMEROS)).toBeNull();
+    // An option with no words would otherwise be found inside every sentence, and then NOTHING could ever be answered.
+    expect(alternativaOuvida('gato', ['', 'Gato'])).toBe(1);
+  });
+
+  it('🔴 [Boundary] an option of two words is found in ORDER, and only in order', () => {
+    expect(alternativaOuvida('é um cavalo marinho', ['Cavalo marinho', 'Gato'])).toBe(0);
+    expect(alternativaOuvida('marinho cavalo', ['Cavalo marinho', 'Gato'])).toBeNull();
+  });
+});
+
+// MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-ouvir-resposta.py`, 10 of 10 red, each mutant compiled first:
+//   · the accents stop being decomposed (NFD → NFC)   · the case stops being lowered   · punctuation stays inside the word
+//   · the FIRST option heard wins instead of needing exactly one   · part of a word counts   · the word order stops counting
+//   · an empty option is found in every sentence   · the demo stops declaring the reading   · nobody asks to listen
+//   · the demo names the microphone again
+// 🔴 THREE OF THEM SURVIVED FIRST. Two were holes in the GATE — the demo's declaration and its `listen()` could both be deleted
+// with the case still green, because the comment beside each one quotes it, so the gate now strips comments before reading. The
+// third was a hole in the CASES: every accent case had the accent on BOTH sides, where the rule is symmetric and proves nothing.
