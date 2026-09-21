@@ -359,6 +359,8 @@ const es: Record<string, string> = {
   'motor.espera': 'Esperar entre pulsaciones',
   'motora.camera': 'Jugar con la cámara',
   'motora.camera.dica': 'La cámara se queda en el aparato: nada de lo que ve sale de aquí. Elige qué juega — las manos, la cara o los ojos.',
+  'motora.voz': 'Jugar hablando',
+  'motora.voz.dica': 'El micrófono se queda en el aparato: lo que la niña dice se oye aquí y no sale de aquí. Di el nombre de lo que quieres — «arriba», «confirma» — o el nombre del ítem del menú que está a la vista.',
   'motor.espera.dica': 'Después de un toque, espera medio segundo antes de aceptar el siguiente — para cuando la mano tiembla y el toque sale doble.',
   'motor.altmove.dica': 'Un toque lo activa y otro lo desactiva, en vez de mantener el botón pulsado.',
   'motor.togglerun': 'Alternancia de correr',

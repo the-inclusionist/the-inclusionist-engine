@@ -134,9 +134,8 @@ describe('the sticky-keys row a child can read', () => {
    * until the 📷 existed there was nothing to put in it. It is the SAME stored value the bar cycles — the panel's job is to say
    * what each position does, which a bar of icons cannot.
    *
-   * 📌 The microphone row of that same list is deliberately absent: the engine has no voice-command transport yet (issue #184),
-   * so it would switch nothing. The bar already says «em construção» with 👄, and a second surface saying it would be a second
-   * promise. This case holds that absence, so it stays a decision and not an oversight.
+   * 📌 The microphone row of that same list was deliberately absent until 2026-09-21, because with no voice-command transport it
+   * would switch nothing; the transport landed (issue #184) and the row is measured just below.
    */
   it('🔴 [Right] the camera is offered in the panel, as the SAME setting the 📷 cycles', async () => {
     const state = await import('../app/js/core/state.js');
@@ -151,8 +150,50 @@ describe('the sticky-keys row a child can read', () => {
     expect(passos.getAttribute('aria-valuetext'), 'the bar changed it and the panel went on showing the old one')
       .toBe(pt['camera.face']);
     state.setCameraControlValue('off');
-    expect(document.querySelector('#motora #opt-microphone'), 'a row that would switch nothing (issue #184)').toBeNull();
     fechar();
+  });
+
+  /**
+   * 🔴 THE MICROPHONE ROW (the last of issue #182's motor list; ADR-0189): the same stored answer the bar's 👄 writes, on the
+   * surface that has room to say what it does — including the sentence that matters most to a family, which is that the
+   * microphone stays on the device.
+   *
+   * ⚠️ AND THE TWO SURFACES FOLLOW EACH OTHER IN BOTH DIRECTIONS. It is the correction ADR-0218 had just made to the ☝️: one
+   * setting with two surfaces cannot have them naming — or showing — different things. Here the panel is checked against a
+   * change made from OUTSIDE it, which is exactly what `ui/voice-control` does when nothing can start.
+   */
+  it('🔴 [Right] the microphone is offered in the panel, as the SAME setting the 👄 switches', async () => {
+    const state = await import('../app/js/core/state.js');
+    await abrirMotora();
+    try {
+      const botao = document.querySelector('#motora #opt-voice');
+      expect(botao, 'the microphone row the Dev listed in #182').not.toBeNull();
+      // ⚠️ e VISÍVEL: este navegador tem microfone por onde pedir, logo uma linha escondida aqui seria o caso a medir nada
+      expect(botao.closest('.ctrl-row').hidden).toBe(false);
+      // ⚠️ PELA MESMA FUNÇÃO QUE A ENGINE USA (`toggleLabel`), e não pelo dicionário cru: o rótulo do interruptor entra com a
+      // primeira letra maiúscula, e comparar com a chave crua media a capitalização em vez do estado.
+      const { toggleLabel } = await import('../app/js/ui/dom.js');
+      expect(botao.textContent, 'a linha nasceu a dizer o contrário do valor guardado').toBe(toggleLabel(false));
+      // ⚠️ A EXPLICAÇÃO NÃO MORA NA LINHA, mora no RODAPÉ do painel e só aparece quando a linha é alcançada — é a regra de menu
+      // do `CLAUDE.md` §4. Por isso o caso a ALCANÇA: o que ele prende é que a frase existe e diz à família a única coisa que
+      // decide se o microfone é ligado — que o que a criança diz não sai do aparelho.
+      botao.closest('.ctrl-row').dispatchEvent(new Event('focusin', { bubbles: true }));
+      expect(document.querySelector('#motora .opt-explain')?.textContent,
+        'alcançar a linha não disse à família que o microfone fica no aparelho').toContain('fica no aparelho');
+      state.setVoiceControlValue(true);
+      expect(botao.textContent, 'o 👄 mudou e o painel continuou a mostrar o valor antigo').toBe(toggleLabel(true));
+      state.setVoiceControlValue(false);
+      expect(botao.textContent).toBe(toggleLabel(false));
+      // 🔴 E O OUTRO SENTIDO, que é onde uma mutação sobreviveu: o clique escreve A MESMA chave que o 👄 escreve, e não uma
+      // segunda de sua lavra. Sem esta metade, a linha podia ligar a varredura e o caso acima continuava verde.
+      botao.click();
+      expect(state.voiceControl, 'o clique na linha não escreveu a resposta da criança').toBe(true);
+      expect(localStorage.getItem('incl_voice_control'), 'a escolha não foi guardada para o dia seguinte').toBe('1');
+      expect(state.switchScan, 'a linha da voz mexeu num ajuste que não é o dela').toBe(false);
+    } finally {
+      state.setVoiceControlValue(false);
+      fechar();
+    }
   });
 
   /**
@@ -185,6 +226,11 @@ describe('the sticky-keys row a child can read', () => {
       const passos = outro.querySelector('#motora #opt-camera');
       expect(passos, 'the row must be BUILT even here — hidden, so the panel does not change shape between devices').not.toBeNull();
       expect(passos.closest('.ctrl-row').hidden, 'a device with no camera was offered playing with one').toBe(true);
+      // 📌 E A MESMA PORTA RESPONDE PELAS DUAS: `getUserMedia` é o que se pede à câmera E ao microfone, então um aparelho que
+      // não a tem não é oferecido nem uma nem outra. Sem esta linha, uma mutação que mostrasse sempre a linha da voz passava.
+      const voz = outro.querySelector('#motora #opt-voice');
+      expect(voz, 'a linha da voz não é construída neste aparelho').not.toBeNull();
+      expect(voz.closest('.ctrl-row').hidden, 'um aparelho sem microfone foi convidado a jogar falando').toBe(true);
     } finally {
       segundo.unmount?.();
     }

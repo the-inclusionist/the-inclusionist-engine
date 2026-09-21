@@ -3511,9 +3511,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * ⚠️ HIDDEN WHERE THERE IS NO CAMERA TO ASK FOR, the same rule the icon uses: a row that offers a device the browser does
      * not have is the dead button of ADR-0106 §5, and a child who picks it waits for a permission dialog that never comes.
      *
-     * 📌 THE MICROPHONE ROW OF THE SAME LIST IS NOT HERE, and its absence is a decision: the engine has no voice-command
-     * transport yet (issue #184, waiting on the Vosk models), so a «microfone» row would switch nothing. The bar says as much
-     * with 👄 marked «em construção»; a second surface repeating it would be a second promise.
+     * 📌 AND THE MICROPHONE ROW IS RIGHT BELOW, since 2026-09-21: it used to be missing on purpose, because with no voice-command
+     * transport a «microfone» row would switch nothing. The transport landed (issue #184), so the row has a subject.
      */
     const CAMERA_MODES: readonly CameraControl[] = ['off', 'hands', 'face', 'eyes'];
     const CAMERA_MODE_WORD: { readonly [M in CameraControl]: string } = {
@@ -3554,9 +3553,39 @@ export function createGame(o: CreateGameOptions): Engine {
     state.on('cameraControl', () => { reflectCamera(); });
     reflectCamera();
 
+    /*
+     * PLAYING BY SPEAKING, IN THE PANEL (issue #182's «microfone» row; ADR-0189): the same stored answer the bar's 👄 writes
+     * (`incl_voice_control`), on the surface that has room to say what it does. Two surfaces of one setting, and neither may
+     * name it differently — which is the correction ADR-0218 had just made to the ☝️.
+     *
+     * ⚠️ HIDDEN WHERE THERE IS NO MICROPHONE TO ASK FOR, the rule the 📷 above follows and the one ADR-0106 §5 states: a row
+     * that offers a device this browser cannot even ask for is a dead control, and a child who picks it waits for a permission
+     * dialog that never comes. What happens when the microphone EXISTS and is refused is another matter and is already
+     * answered: `ui/voice-control` says why and puts the answer back to off, and this row follows it like the icon does.
+     */
+    const voiceRowSpec = () => ({ id: 'opt-voice', rotulo: t('motora.voz'), dica: t('motora.voz.dica') });
+    const { linha: voiceRow, controle: voiceButton } = linhaDeControle(ctxDaMotora, voiceRowSpec());
+    painelDaMotora.casca.lista.appendChild(voiceRow);
+    const reflectVoice = (): void => {
+      rotularLinha(voiceRow, voiceRowSpec());
+      toggleBtn(voiceButton, state.voiceControl);
+      voiceButton.textContent = toggleLabel(state.voiceControl);
+      markChanged(voiceRow, state.voiceControl !== state.DEFAULTS.voiceControl);
+      voiceRow.hidden = !canCaptureMedia;
+    };
+    voiceButton.addEventListener('click', () => {
+      state.setVoiceControlValue(!state.voiceControl);
+      // ⚠️ THE ANNOUNCEMENT READS THE STATE AFTER THE WRITE, and not the value it meant to write: what cannot start puts the
+      // answer back to off inside the same click, and announcing the intention would tell the child the opposite of what is true.
+      reflectVoice();
+      srSay(`${t('motora.voz')}: ${t(state.voiceControl ? 'state.on' : 'state.off')}`);
+    });
+    state.on('voiceControl', () => { reflectVoice(); });
+    reflectVoice();
+
     refletirTeclado = () => {
       refletirLinhasDoTeclado(); refletirLinhaDoControle(); refletirLinhaDoToque(); reflectCooldown();
-      reflectCamera();
+      reflectCamera(); reflectVoice();
     };
   }
   /*

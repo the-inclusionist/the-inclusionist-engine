@@ -360,6 +360,8 @@ const en: Record<string, string> = {
   'motor.espera': 'Wait between presses',
   'motora.camera': 'Play with the camera',
   'motora.camera.dica': 'The camera stays on this device: nothing it sees leaves. Choose what plays — the hands, the face or the eyes.',
+  'motora.voz': 'Play by speaking',
+  'motora.voz.dica': 'The microphone stays on the device: what the child says is heard here and does not leave. Say the name of what you want — «up», «confirm» — or the name of the menu item in sight.',
   'motor.espera.dica': 'After a press, waits half a second before taking the next one — for when a hand shakes and one press arrives twice.',
   'motor.altmove.dica': 'One tap turns it on and another turns it off, instead of keeping the button pressed.',
   'motor.togglerun': 'Run toggle',
