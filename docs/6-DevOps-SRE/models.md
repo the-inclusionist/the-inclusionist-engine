@@ -46,6 +46,14 @@ mirror serves it under is `platform/heavy-mirror`, written once. **The sha256 ch
 bytes writes nothing and the build fails naming the address — which is what makes pointing elsewhere safe, and why the base is
 not something anyone has to trust. The delivery path never changes, because it is what the child's page asks for.
 
+📏 **Measured on 2026-09-21, against the project's own mirror**: `npx inclusionist-pesados <dir> --base
+https://lfs-oinclusionista.jrocha.dev.br` fetched the six vision files — 30.7 MiB — in 5.1 s, every one checked against its
+sha256, and wrote them under `pesados/cdn.jsdelivr.net/…` and `pesados/storage.googleapis.com/…`. That is the whole point in one
+line: **the bytes came from Cloudflare and the paths are still the upstream ones**, so a page built this way asks for exactly
+what a page built from upstream asks for. 📌 It also answers the older plan of «putting the project's addresses in the catalogue
+in place of the upstream ones»: nothing in the catalogue has to move, and it should not — the upstream address is the provenance
+of the bytes, and the sha256 beside it is what makes any mirror of them safe to use.
+
 Files **the project builds** (the Vosk worker and wasm, the repacked Vosk models, the Spanish Moonshine ONNX) have no upstream: they
 are staged in `the-inclusionist-lfs/` (one folder per artefact, laid out as its future Hugging Face repository, with `SHA256SUMS`),
 uploaded by the Dev to the project's **Cloudflare**, and move to **Hugging Face** after the city's permission. The catalogue names the
