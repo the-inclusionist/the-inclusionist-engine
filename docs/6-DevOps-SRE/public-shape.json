@@ -1273,6 +1273,40 @@
       "digest?"
     ]
   },
+  "platform/reading.ts": {
+    "interface ListeningSession": [
+      "onend",
+      "onerror",
+      "onresult",
+      "start",
+      "stop"
+    ],
+    "interface Heard": [
+      "ended",
+      "route",
+      "text"
+    ],
+    "interface ReadingDeps": [
+      "api?",
+      "createSession?",
+      "every",
+      "language",
+      "model?",
+      "now",
+      "report",
+      "route?",
+      "stopEvery"
+    ],
+    "interface ListenOptions": [
+      "maxMs?",
+      "silenceMs?"
+    ],
+    "interface Reading": [
+      "listen",
+      "ready",
+      "stop"
+    ]
+  },
   "platform/speech-recognition.ts": {
     "interface ApiDeReconhecimento": [
       "available?",
