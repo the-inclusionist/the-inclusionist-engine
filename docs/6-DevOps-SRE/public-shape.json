@@ -1293,6 +1293,29 @@
       "digest?"
     ]
   },
+  "platform/reading-model.ts": {
+    "interface ReadingModelPlan": [
+      "decoder",
+      "decoderPast?",
+      "encoder",
+      "generation",
+      "input",
+      "language",
+      "preprocessor?",
+      "tokenizer"
+    ],
+    "interface TokenizerFile": [
+      "added_tokens?",
+      "decoder?",
+      "model?"
+    ],
+    "interface GenerationConfig": [
+      "begin_suppress_tokens?",
+      "decoder_start_token_id?",
+      "eos_token_id?",
+      "suppress_tokens?"
+    ]
+  },
   "platform/reading.ts": {
     "interface ListeningSession": [
       "onend",

@@ -828,6 +828,21 @@
     "pesoPorBaixar",
     "sha256Hex"
   ],
+  "platform/reading-model.ts": [
+    "GenerationConfig",
+    "READING_MODELS",
+    "READING_RATE",
+    "ReadingModelPlan",
+    "TokenizerFile",
+    "WHISPER_BANDS",
+    "WHISPER_FRAMES",
+    "WHISPER_SAMPLES",
+    "logMel",
+    "nextToken",
+    "readingModelFor",
+    "readingTextOf",
+    "suppressedTokens"
+  ],
   "platform/reading.ts": [
     "Heard",
     "ListenOptions",
