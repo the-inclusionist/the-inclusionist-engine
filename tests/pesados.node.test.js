@@ -228,6 +228,22 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
     }
   });
 
+  /**
+   * 🔴 A GAME THAT ONLY LISTENS STILL NEEDS SOMETHING TO OPEN THE MODEL WITH. The graph runtime is named `voz:runtime:onnx`
+   * because the voice asked for it first, and that name made the filter treat it as the voice's: a delivery built for a game
+   * that only listens carried 378 MiB of Whisper and nothing able to run it, and the first `listen()` asked for a file the
+   * build had never written. Measured on 2026-09-21 while building the delivery for the Dev's round.
+   */
+  it('🔴 [Right] a game that only LISTENS gets the graph runtime — and neither the phonemizer nor the voice', () => {
+    const ids = pesadosDoArranque({ kokoro: false, reading: 'pt-BR' });
+    const grafos = PESADOS.map((p) => p.id).filter((id) => id.startsWith('voz:runtime:onnx'));
+    expect(grafos.length, 'the catalogue has no graph runtime: the case would pass empty').toBeGreaterThan(0);
+    for (const id of grafos) expect(ids, `${id} left out — the reading would ask the delivery for a file nobody wrote`).toContain(id);
+    expect(ids.filter((id) => id.startsWith('voz:runtime:fonemas')),
+      'the phonemizer came along: 18.7 MiB of turning letters into sounds, which a game that only listens never runs').toEqual([]);
+    expect(ids.filter((id) => id.startsWith('voz:kokoro:')), 'the voice model came with a game that does not speak').toEqual([]);
+  });
+
   it('📌 [Boundary] the region is not the language: `es-MX` asks for the Spanish model', () => {
     expect(pesadosDoArranque({ kokoro: false, reading: 'es-MX' }).filter((id) => id.startsWith('reading:'))).toEqual(doIdioma('es'));
   });

@@ -59,12 +59,18 @@ export interface OpcoesDosPesados {
  *   school's link and a child's device for nothing.
  * · The reading models: 850 MiB for the three languages, so `reading` is not a yes or no but a LANGUAGE — the child's, known at
  *   boot. A delivery may carry more than one; a device downloads the one being read in. A game that never listens gets none.
+ * · 🔴 THE GRAPH RUNTIME IS NOT THE VOICE'S, and its `voz:` name said otherwise. `platform/onnx-runtime` runs Kokoro AND the
+ *   reading models, so a game that only LISTENS needs it: without this line its delivery carried a 378 MiB model and nothing
+ *   able to open it, and the first `listen()` asked for a file the build never wrote. Measured on 2026-09-21, building the
+ *   very delivery this exists to serve. The PHONEMIZER (`voz:runtime:fonemas`, 18.7 MiB) stays the voice's — nothing else
+ *   turns letters into sounds.
  */
 export function pesadosDoArranque(portas: { readonly kokoro: boolean; readonly reading?: string | null }): readonly string[] {
   const reading = portas.reading ? portas.reading.split('-')[0]!.toLowerCase() : null;
   return PESADOS.filter((p) => {
     const language = readingLanguageOf(p.id);
     if (language) return language === reading;
+    if (p.id.startsWith('voz:runtime:onnx')) return portas.kokoro || !!reading;
     return portas.kokoro || !(p.id.startsWith('voz:kokoro:') || p.id.startsWith('voz:runtime:'));
   }).map((p) => p.id);
 }
