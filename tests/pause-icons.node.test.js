@@ -819,6 +819,34 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(api.getCalmMode()).toBe(0);
   });
 
+  /*
+   * 🔴 O CICLO INTEIRO PELO ACTO, num jogo que segura tecla e num aparelho que não exige nada — que é o caso comum, o teclado,
+   * e o único que nenhum caso media. `nextInputMode` é puro e está medido; o que falta provar é que APERTAR o ícone três vezes
+   * percorre as três posições e volta. 📌 Escrito depois de o Dev relatar «só cicla entre padrão e não precisa segurar».
+   */
+  it('🔴 [Right] três toques no ☝️ percorrem as TRÊS posições e voltam ao padrão', () => {
+    setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
+    const { ctx, state } = buildCtx();
+    ctx.seguraTeclas = () => true;
+    const api = initPauseIcons(ctx);
+    const posicao = () => api.iconLabel('altmove', 0);
+
+    expect(posicao()).toBe('Jeito de apertar: padrão');
+    api.iconAct('altmove', 0);
+    expect(state.toggleMoveCalls, 'o primeiro toque não escreveu a aderência').toEqual([[0, true]]);
+    rodada.players[0].toggleMove = true; // o escritor do ctx é um espião; o assento que ele escreveria é este
+    expect(posicao()).toBe('Jeito de apertar: não precisa segurar');
+
+    api.iconAct('altmove', 0);
+    expect(estado.switchScan, 'o segundo toque não chegou a «um botão só»').toBe(true);
+    expect(posicao()).toBe('Jeito de apertar: um botão só');
+
+    api.iconAct('altmove', 0);
+    expect(estado.switchScan).toBe(false);
+    rodada.players[0].toggleMove = false;
+    expect(posicao(), 'a terceira posição não voltou ao padrão').toBe('Jeito de apertar: padrão');
+  });
+
   it('teclas de alternância invertem a flag do jogador CERTO', () => {
     // 📌 Os dois assentos partem do PADRÃO: desde o ADR-0218 uma pressão sobre um assento que já está na aderência leva-o para
     // «um botão só», que não escreve aderência nenhuma — e o caso deixaria de medir o assento, que é o que ele existe para medir.

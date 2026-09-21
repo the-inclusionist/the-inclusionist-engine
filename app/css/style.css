@@ -597,7 +597,10 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    ela espera tem de estar à vista. As MESMAS letras brancas contornadas da pausa rápida, sem caixa, e no ALTO da
    região, abaixo da faixa da barra (`--barra-a11y-h`), que é a zona que nenhum jogo usa. Sem ponteiro: é aviso, não
    controle — quem o aciona é o único botão dela, onde quer que ele esteja. */
-.scan-now{position:absolute;left:50%;top:var(--barra-a11y-h,0px);transform:translateX(-50%);z-index:12;
+/* ⚠️ `--scan-top` e NÃO `--barra-a11y-h`: esta etiqueta faz a faixa crescer, e posicioná-la pela faixa criava um laço — ela
+   empurrava a faixa, a faixa empurrava-a, e ela descia a tela a cada medição (apanhado por um caso). `--scan-top` é onde a
+   barra acaba, e não depende dela. */
+.scan-now{position:absolute;left:50%;top:var(--scan-top,0px);transform:translateX(-50%);z-index:12;
   pointer-events:none;color:#fff;-webkit-text-stroke:.06em #000;paint-order:stroke fill;
   text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px 2px #000,2px -2px #000,-2px -2px #000;
   font-family:var(--font);font-weight:800;font-size:calc(var(--ui-fs,16px)*1.5);letter-spacing:var(--ls);white-space:nowrap}

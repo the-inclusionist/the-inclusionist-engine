@@ -15,6 +15,9 @@ import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
 import pt from '../app/js/i18n/pt.js';
 import * as estado from '../app/js/core/state.js';
 import { SWITCH_SCAN_DEFAULTS } from '../app/js/input/switch-scan.js';
+// ⚠️ A FOLHA DA ENGINE ENTRA, e sem ela este ficheiro mediria outra coisa: o aviso da varredura é posicionado POR CSS, logo sem
+// a folha ele nasce no topo da região e o caso do espaço reservado não teria o que ver.
+import css from '../app/css/style.css?raw';
 
 let motor;
 let raiz;
@@ -48,9 +51,12 @@ const chip = () => document.querySelector('#game-region .scan-now');
 
 beforeAll(async () => {
   localStorage.removeItem('incl_switch_scan');
+  const folha = document.createElement('style');
+  folha.textContent = css;
+  document.head.appendChild(folha);
   raiz = document.createElement('div');
   raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
-    + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
+    + '<div id="game-region" tabindex="-1" style="position:relative;width:640px;height:360px"><div id="title-icons"></div></div>';
   document.body.appendChild(raiz);
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
@@ -131,6 +137,25 @@ describe('with one button only, every press takes what is showing', () => {
     estado.setSwitchScanValue(true);
     const e = apertar(TECLA.down);
     expect(e.defaultPrevented, 'the key went on to mean something else as well').toBe(true);
+  });
+
+  /*
+   * 🔴 ACHADO NO NAVEGADOR, NÃO AQUI: no quiz construído o aviso «DIZER A RESPOSTA» caiu EM CIMA do enunciado. Ele é HUD, e HUD
+   * que não reserva o seu espaço é a engine a escrever por cima do jogo — a mesma regra que o ADR-0148 impõe ao contrário, e o
+   * mesmo conserto que a linha do nome do ícone já tinha levado (issue #160): a faixa do topo cresce com o que está lá.
+   */
+  it('🔴 [Right] o aviso RESERVA o espaço que ocupa, e devolve-o ao sair', async () => {
+    const regiao = document.getElementById('game-region');
+    const faixa = () => parseFloat(regiao.style.getPropertyValue('--barra-a11y-h')) || 0;
+    estado.setSwitchScanValue(false);
+    const sem = faixa();
+    estado.setSwitchScanValue(true);
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    expect(faixa(), 'a faixa do topo não cresceu: o aviso é desenhado onde o jogo desenha').toBeGreaterThan(sem);
+    expect(chip().getBoundingClientRect().bottom, 'o aviso termina fora da faixa que ele mesmo reservou')
+      .toBeLessThanOrEqual(regiao.getBoundingClientRect().top + faixa() + 1);
+    estado.setSwitchScanValue(false);
+    expect(faixa(), 'o espaço do aviso não voltou para o jogo').toBe(sem);
   });
 
   it('🔴 [Zero] turning it off takes the chip away and gives the key back', async () => {

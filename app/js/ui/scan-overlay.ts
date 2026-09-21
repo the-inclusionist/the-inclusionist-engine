@@ -18,8 +18,12 @@ export function scanItemText(item: ScanItem, label: (a: Action) => string | null
 }
 
 export interface ScanOverlay {
-  /** Puts the item on screen. The same item twice does not rewrite the node — a live region that repeats itself says it twice. */
-  showing(text: string): void;
+  /**
+   * Puts the item on screen, and answers whether the words CHANGED. The same item twice does not rewrite the node — a live
+   * region that repeats itself says it twice — and the answer is what lets the caller re-measure the room only when a word of
+   * a different length arrives, instead of every frame.
+   */
+  showing(text: string): boolean;
   /** Takes the chip off screen; the scan is off. */
   hide(): void;
   remove(): void;
@@ -40,10 +44,12 @@ export function mountScanOverlay(doc: Document, host: HTMLElement): ScanOverlay 
   let last: string | null = null;
   return {
     showing(text) {
+      const appeared = el.hidden;
       el.hidden = false;
-      if (text === last) return;
+      if (text === last) return appeared;
       last = text;
       el.textContent = text;
+      return true;
     },
     hide() { el.hidden = true; last = null; el.textContent = ''; },
     remove() { el.remove(); },

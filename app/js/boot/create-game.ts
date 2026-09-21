@@ -2492,6 +2492,20 @@ export function createGame(o: CreateGameOptions): Engine {
         sala = Math.max(sala, direita.getBoundingClientRect().bottom - topo + folga);
       }
     }
+    /*
+     * 🔴 AND THE SCAN'S CHIP TAKES ROOM TOO (ADR-0218), for the same reason the icon's name line does (issue #160): it is HUD,
+     * and a HUD that does not reserve its room is the engine writing over the game — measured in the quiz demo, where «DIZER A
+     * RESPOSTA» landed on top of the question.
+     *
+     * ⚠️ IT IS PLACED BY `--scan-top` AND NOT BY THE BAND IT FEEDS. A first version put it at `--barra-a11y-h` and added its
+     * bottom to that same variable: the chip pushed the band, the band pushed the chip, and it walked down the screen on every
+     * measure. The case caught it. `--scan-top` is where the bar ends and does not depend on the chip; only the band does.
+     */
+    const scanChipEl = regiao.querySelector<HTMLElement>('.scan-now');
+    if (mede) regiao.style.setProperty('--scan-top', `${Math.ceil(Math.max(0, sala - respiro))}px`);
+    if (scanChipEl && !scanChipEl.hidden && mede) {
+      sala = Math.max(0, sala - respiro) + scanChipEl.getBoundingClientRect().height + respiro;
+    }
     regiao.style.setProperty('--barra-a11y-h', `${Math.ceil(sala)}px`);
   }
   /*
@@ -3789,7 +3803,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   let scanFrame = 0;
   const scanWord = (item: ScanItem): string =>
     scanItemText(item, (a) => (cartucho.preset ? labellerFrom(cartucho.preset)(a) : null), t('scan.nothing'));
-  const scanShow = (item: ScanItem): void => { scanChip?.showing(scanWord(item)); };
+  // A word of a different length is a different amount of room to keep free, so the band is measured again — and only then.
+  const scanShow = (item: ScanItem): void => { if (scanChip?.showing(scanWord(item))) reservarFaixaDaBarra(); };
   const scanTick = (): void => {
     if (!scanner) return;
     scanShow(scanner(win.performance.now()).showing.item);
@@ -3798,6 +3813,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   const stopScan = (): void => {
     if (scanFrame) win.cancelAnimationFrame(scanFrame);
     scanFrame = 0; scanner = null; scanChip?.hide();
+    reservarFaixaDaBarra(); // the room the chip was keeping goes back to the game
   };
   const startScan = (): void => {
     if (scanner) return;
