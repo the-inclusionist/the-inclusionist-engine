@@ -79,7 +79,7 @@ import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
 import { createTts } from '../platform/tts.js';
-import { createReading, type Reading } from '../platform/reading.js';
+import { createReading, type Reading, type ListenOptions } from '../platform/reading.js';
 import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain, setHearingLossGraph } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
@@ -3074,7 +3074,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * um painel NOVO (`#motora`), e o antigo continua a servir quem o monta com markup próprio.
    *
    * 📌 NASCE COM UMA LINHA, a primeira da lista do Dev: o TAMANHO DO CONTROLE em quatro passos, um por persona. As
-   * outras linhas da lista (mapear toque, controle e teclado; microfone; webcam) são portas para painéis que a engine
+   * outras linhas da lista (mapear toque, controle e teclado; microphone; webcam) são portas para painéis que a engine
    * ainda não monta, e uma porta para uma sala que não existe é o botão morto do ADR-0106 §5 — entram com as salas.
    *
    * ⚠️ SÓ EXISTE ONDE HÁ PAD: sem hospedeiro de toque não há tamanho para escolher, e a porta do submenu cai sozinha
@@ -3577,6 +3577,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    */
   const reading: Reading = (() => {
     const browserApis = win as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    let microphone: { record(o: ListenOptions): Promise<Float32Array>; stop(): void } | null = null;
     const listener = createReading({
       language: () => bcp47(),
       api: (browserApis.SpeechRecognition ?? browserApis.webkitSpeechRecognition ?? null) as never,
@@ -3593,6 +3594,17 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
         ? async (language) => {
           const { loadReadingRuntime } = await import('../platform/reading-runtime.js');
           return loadReadingRuntime({ base: doc.baseURI, language });
+        }
+        : undefined,
+      /**
+       * AND THE MICROPHONE, for the model route only: the browser's own recogniser opens one itself. It is built at the first
+       * reading and let go at the end of each — a track left running is a browser still saying «this page is listening».
+       */
+      record: o.uses?.reading
+        ? async (options) => {
+          const { createMicrophone } = await import('../platform/microphone.js');
+          microphone ??= createMicrophone({});
+          return microphone.record(options);
         }
         : undefined,
     });

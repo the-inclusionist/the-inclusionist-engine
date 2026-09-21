@@ -1264,6 +1264,37 @@
     ],
     "type LoadKokoro": "() => Promise<KokoroModule>"
   },
+  "platform/microphone.ts": {
+    "interface AudioNodeLike": [
+      "connect"
+    ],
+    "interface ProcessorNode": [
+      "onaudioprocess"
+    ],
+    "interface AudioContextLike": [
+      "close",
+      "createMediaStreamSource",
+      "createScriptProcessor",
+      "destination",
+      "sampleRate"
+    ],
+    "interface StreamLike": [
+      "getTracks"
+    ],
+    "interface MicrophoneDeps": [
+      "createContext?",
+      "getUserMedia?",
+      "now?"
+    ],
+    "interface RecordOptions": [
+      "maxMs?",
+      "silenceMs?"
+    ],
+    "interface Microphone": [
+      "record",
+      "stop"
+    ]
+  },
   "platform/onnx-runtime.ts": {
     "interface OnnxTensor": [
       "data"

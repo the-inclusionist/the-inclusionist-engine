@@ -811,6 +811,17 @@
     "urlDaVozKokoro",
     "wavDe"
   ],
+  "platform/microphone.ts": [
+    "AudioContextLike",
+    "AudioNodeLike",
+    "Microphone",
+    "MicrophoneDeps",
+    "ProcessorNode",
+    "READING_RATE",
+    "RecordOptions",
+    "StreamLike",
+    "createMicrophone"
+  ],
   "platform/onnx-runtime.ts": [
     "OnnxRuntime",
     "OnnxRuntimeDeps",
