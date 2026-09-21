@@ -180,6 +180,48 @@ export function readingLanguageOf(id: string): string | null {
   return parts[0] === 'reading' && parts[1] ? parts[1] : null;
 }
 
+/**
+ * THE COMMAND MODELS (ADR-0189, ADR-0193, ADR-0194; issue #184): what hears a child SAY A WORD OF THE GAME. Not the same job as
+ * the reading above, and not the same tool: a command is heard against a CLOSED GRAMMAR — the names the menu is showing right
+ * now — which is why 32 MiB answer in 0.25 s what 378 MiB of Whisper answered in seconds and, on single words, wrongly (📏 lab:
+ * Vosk 7/7 commands, Whisper base 1/7).
+ *
+ * 🎯 THE RUNTIME IS THE PROJECT'S OWN BUILD, and that is the whole reason it exists: every published `vosk-browser` evaluates
+ * text as code, which this engine's Content-Security-Policy refuses (ADR-0193 — never `'unsafe-eval'`, never a patch). It was
+ * rebuilt from lichess-org/vosk-browser with `-s DYNAMIC_EXECUTION=0` and runs under the policy as it is (`models.md`).
+ * The models are alphacephei's small ones, repacked deterministically as the `.tar.gz` that build loads.
+ *
+ * ⚠️ ONE MODEL PER LANGUAGE, like the reading: pt 30.9 MiB, en 39.2, es 37.9. The start asks for the child's, and a delivery
+ * carries the ones it was built with (`inclusionist-pesados --commands pt`). 📌 Unlike the reading, NO GAME DECLARES THIS: a
+ * child who speaks instead of pressing is using a transport, and a cartridge does not get to deny her one (ADR-0111).
+ *
+ * ⚠️ sha256 MEASURED on the mirror's own files (2026-09-21), each checked against the `SHA256SUMS` its folder publishes.
+ */
+const COMMANDS: readonly Pesado[] = Object.freeze([
+  { id: 'commands:runtime', url: `${READING_MIRROR}/vosk-browser-dynamic-execution-0/vosk.wasm.js`, bytes: 10_288,
+    sha256: 'a7ab48dcf72660ec79a493c37b9fd1d0b3c09c46968c6a1ebd06adb4d9a35ca6' },
+  { id: 'commands:runtime:worker', url: `${READING_MIRROR}/vosk-browser-dynamic-execution-0/vosk.worker.js`, bytes: 194_710,
+    sha256: 'cf84a33820a1634d6a8d11194f2bd04f871901bf630ba1423c24f6be13086b6a' },
+  { id: 'commands:runtime:wasm', url: `${READING_MIRROR}/vosk-browser-dynamic-execution-0/vosk.wasm`, bytes: 2_992_690,
+    sha256: 'e2a33196eacd6cd7d863392f877b9360664d7614ce97cddf9de5b5e637e2ccf9' },
+  { id: 'commands:model:pt', url: `${READING_MIRROR}/vosk-models/vosk-model-small-pt-0.3.tar.gz`, bytes: 32_358_733,
+    sha256: '4885a09d9cd3063bf991e2ae280f24eeee789410aaa05277a2e082cff0cf837d' },
+  { id: 'commands:model:en', url: `${READING_MIRROR}/vosk-models/vosk-model-small-en-us-0.15.tar.gz`, bytes: 41_116_539,
+    sha256: '61cf40721d255cccb9fe29bb059c6b3376b164c31f449d8143455ffbb86018cc' },
+  { id: 'commands:model:es', url: `${READING_MIRROR}/vosk-models/vosk-model-small-es-0.42.tar.gz`, bytes: 39_748_927,
+    sha256: '4ed16b681698db764ecb11996b1b4f74dd68f602213b36c17806a1398b26b162' },
+]);
+
+/**
+ * The language a command MODEL serves, or `null` for anything else — including the runtime, which serves every language.
+ * ⚠️ The middle word is read on purpose: `id.split(':')[1]` would call the runtime a language of its own and leave the three
+ * models behind it out of the start of every delivery.
+ */
+export function commandsLanguageOf(id: string): string | null {
+  const parts = id.split(':');
+  return parts[0] === 'commands' && parts[1] === 'model' && parts[2] ? parts[2] : null;
+}
+
 const KOKORO: readonly Pesado[] = Object.freeze([
   { id: 'voz:kokoro:modelo', url: URL_DO_MODELO_KOKORO, bytes: BYTES_DO_MODELO_KOKORO, sha256: SHA256_DO_MODELO_KOKORO },
   { id: 'voz:kokoro:tokenizador', url: URL_DO_TOKENIZADOR_KOKORO, bytes: BYTES_DO_TOKENIZADOR_KOKORO, sha256: SHA256_DO_TOKENIZADOR_KOKORO },
@@ -192,6 +234,9 @@ export const PESADOS: readonly Pesado[] = Object.freeze([
 
   // what hears a child read aloud, one model per language (ADR-0216 §2); the runtime that runs them is the voice's, above
   ...READING,
+
+  // what hears a child SAY a word of the game, one model per language, with a runtime of its own (issue #184)
+  ...COMMANDS,
 
   // the vision runtime and its models: eye control reads the face (ADR-0213); WebGazer left (ADR-0214)
   ...MEDIAPIPE,

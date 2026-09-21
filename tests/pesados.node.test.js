@@ -91,7 +91,7 @@ describe('o buscador das coisas pesadas', () => {
     //
     // ⚠️ THIS IS THE WHOLE CATALOGUE AND NOBODY EVER DOWNLOADS IT: it is the number a `problems` line would be lying about. What
     // a device actually fetches is `pesadosDoArranque`, which asks for one language and for what the game declared.
-    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1252);
+    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1363);
     const f = cacheFalsa();
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
     expect(pesoPorBaixar(r), 'depois de tudo descer não falta nada').toBe(0);
@@ -199,13 +199,13 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
     // model. A game of shapes that downloaded 45.5 MiB of phonemizer would be the cost this filter exists to refuse.
     const ids = pesadosDoArranque({ kokoro: false });
     expect(ids.filter((id) => id.startsWith('voz:')), 'a game that cannot speak Kokoro downloads its model or its runtime').toEqual([]);
-    expect(ids).toEqual(PESADOS.map((p) => p.id).filter((id) => !id.startsWith('voz:') && !id.startsWith('reading:')));
+    expect(ids).toEqual(PESADOS.map((p) => p.id).filter((id) => !id.startsWith('voz:') && !id.startsWith('reading:') && !id.startsWith('commands:')));
     expect(ids.length).toBeGreaterThan(0);
   });
 
   it('🔴 [Right] with the neural voice declared, the whole voice — the model, the tokenizer and every voice', () => {
     expect(pesadosDoArranque({ kokoro: true }))
-      .toEqual(PESADOS.map((p) => p.id).filter((id) => !id.startsWith('reading:')));
+      .toEqual(PESADOS.map((p) => p.id).filter((id) => !id.startsWith('reading:') && !id.startsWith('commands:')));
   });
 
   /**
@@ -244,6 +244,36 @@ describe('what a game\'s start fetches (ADR-0216 §3)', () => {
     expect(ids.filter((id) => id.startsWith('voz:kokoro:')), 'the voice model came with a game that does not speak').toEqual([]);
   });
 
+  /**
+   * 🔴 THE COMMAND MODELS ARE NOT A GAME'S TO DECLARE (issue #184; ADR-0111). Saying «menu» instead of pressing it is a way INTO
+   * the controller, like the camera and the gaze, and a cartridge does not get to close one. What decides is the DELIVERY, which
+   * says which languages it serves — 31–39 MiB each, so not all three.
+   */
+  it('🔴 [Right] the command model of the child\'s language, with the runtime that loads it, and no other language', () => {
+    const ids = pesadosDoArranque({ kokoro: false, commands: 'pt-BR' });
+    expect(ids).toContain('commands:model:pt');
+    for (const outra of ['en', 'es']) expect(ids, `a child commanding in Portuguese downloaded the ${outra} model`).not.toContain(`commands:model:${outra}`);
+    const runtime = PESADOS.map((p) => p.id).filter((id) => id.startsWith('commands:runtime'));
+    expect(runtime.length, 'the catalogue has no command runtime: the case would pass empty').toBeGreaterThan(0);
+    for (const id of runtime) expect(ids, `${id} left out — 32 MiB of model and nothing to load it with`).toContain(id);
+  });
+
+  it('🔴 [Zero] a delivery that serves no spoken language downloads neither a model nor the runtime', () => {
+    // The runtime alone is 3.1 MiB that could never hear a word: it is only useful beside a model.
+    for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, commands: null }, { kokoro: false, reading: 'pt' }]) {
+      expect(pesadosDoArranque(portas).filter((id) => id.startsWith('commands:')), `asked with ${JSON.stringify(portas)}`).toEqual([]);
+    }
+  });
+
+  // MUTATIONS CHECKED for the command models (2026-09-21) — `scratchpad/mutar-comandos-no-catalogo.py`, 7 of 8 red: the child's
+  // model left out · all three languages fetched at once (112 MiB instead of 32) · the runtime left out · the runtime fetched
+  // with no language at all · the language read at `id.split(':')[1]`, which calls the runtime a language · the mirror folder
+  // removed · `--commands` not consuming its value, so the language was taken for the delivery folder (the trap `--base`
+  // already had, and it needed the case with the flag FIRST to see it).
+  // ⚠️ THE EIGHTH SURVIVED AND IS NOT COVERED HERE: one digit changed in a sha256. No case can see it, because what checks a
+  // hash is the thing that USES it — the delivery run refuses to write bytes that do not match. 📏 So it was measured instead:
+  // on 2026-09-21 all six files were written into `dist` from the staging tree, which is the six hashes proved against the
+  // real bytes. A case that asserted the constant against itself would be the gate reading its own answer.
   it('📌 [Boundary] the region is not the language: `es-MX` asks for the Spanish model', () => {
     expect(pesadosDoArranque({ kokoro: false, reading: 'es-MX' }).filter((id) => id.startsWith('reading:'))).toEqual(doIdioma('es'));
   });

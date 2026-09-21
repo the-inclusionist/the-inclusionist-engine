@@ -21,7 +21,7 @@
 //     arranque de um jogo por causa de um recurso que ele nem usa hoje.
 //  3. **IDEMPOTENTE.** O que já está na Cache Storage não é buscado outra vez — é o que torna isto seguro de
 //     chamar em todo arranque em vez de só «no primeiro», que ninguém sabe detectar com honestidade.
-import { CACHE_PESADOS, PESADOS, readingLanguageOf, type Pesado } from './pesados-catalogo.js';
+import { CACHE_PESADOS, PESADOS, readingLanguageOf, commandsLanguageOf, type Pesado } from './pesados-catalogo.js';
 
 export { CACHE_PESADOS, PESADOS };
 export type { Pesado };
@@ -64,12 +64,24 @@ export interface OpcoesDosPesados {
  *   able to open it, and the first `listen()` asked for a file the build never wrote. Measured on 2026-09-21, building the
  *   very delivery this exists to serve. The PHONEMIZER (`voz:runtime:fonemas`, 18.7 MiB) stays the voice's — nothing else
  *   turns letters into sounds.
+ * · The command models (issue #184): one per language too, 112 MiB for the three, and the runtime that loads them. Nothing in
+ *   the game decides this — speaking instead of pressing is a way INTO the controller, and a cartridge does not get to close
+ *   one (ADR-0111). What decides is the delivery: `inclusionist-pesados --commands pt` puts Portuguese in it.
  */
-export function pesadosDoArranque(portas: { readonly kokoro: boolean; readonly reading?: string | null }): readonly string[] {
+export function pesadosDoArranque(
+  portas: { readonly kokoro: boolean; readonly reading?: string | null; readonly commands?: string | null },
+): readonly string[] {
   const reading = portas.reading ? portas.reading.split('-')[0]!.toLowerCase() : null;
+  const commands = portas.commands ? portas.commands.split('-')[0]!.toLowerCase() : null;
   return PESADOS.filter((p) => {
     const language = readingLanguageOf(p.id);
     if (language) return language === reading;
+    // 📌 THE COMMAND MODELS ARE A TRANSPORT'S, not a game's: no cartridge declares them, because a child who speaks instead of
+    // pressing is reaching the controller, and a cartridge does not get to deny her a way in (ADR-0111). The LANGUAGE is still
+    // asked — 112 MiB for the three — and the runtime comes with whichever one does.
+    const commanded = commandsLanguageOf(p.id);
+    if (commanded) return commanded === commands;
+    if (p.id.startsWith('commands:runtime')) return !!commands;
     if (p.id.startsWith('voz:runtime:onnx')) return portas.kokoro || !!reading;
     return portas.kokoro || !(p.id.startsWith('voz:kokoro:') || p.id.startsWith('voz:runtime:'));
   }).map((p) => p.id);

@@ -26,6 +26,10 @@ export const MIRROR_FOLDERS: ReadonlyArray<readonly [string, string]> = [
   ['https://lfs-oinclusionista.jrocha.dev.br/whisper-small-onnx', 'whisper-small-onnx'],
   ['https://lfs-oinclusionista.jrocha.dev.br/moonshine-streaming-small-onnx', 'moonshine-streaming-small-onnx'],
   ['https://lfs-oinclusionista.jrocha.dev.br/moonshine-streaming-small-es-onnx', 'moonshine-streaming-small-es-onnx'],
+  // The command models and the runtime that loads them (issue #184). The runtime has no upstream either — every published
+  // `vosk-browser` evaluates text as code, so this one was rebuilt with `-s DYNAMIC_EXECUTION=0` to run under the policy.
+  ['https://lfs-oinclusionista.jrocha.dev.br/vosk-browser-dynamic-execution-0', 'vosk-browser-dynamic-execution-0'],
+  ['https://lfs-oinclusionista.jrocha.dev.br/vosk-models', 'vosk-models'],
 ];
 
 /**

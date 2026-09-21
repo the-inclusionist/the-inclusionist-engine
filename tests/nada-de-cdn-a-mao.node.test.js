@@ -75,7 +75,8 @@ const BUSCAS_A_MAO = {
       + 'them at `pesados/`. A second host here would be a mirror chosen in silence',
   },
   'platform/heavy-mirror.ts': {
-    urls: 8,
+    // 8 → 10 with the command models and their runtime (issue #184): two more FOLDERS of the same mirror, not two more suppliers.
+    urls: 10,
     porque:
       'ENDEREÇOS DECLARADOS, not fetches: the table that maps each address the catalogue already names to the folder a mirror '
       + 'serves it under (the Dev, 2026-09-21: a base for local testing, for the project\'s bucket, or for a school\'s own '

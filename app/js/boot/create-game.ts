@@ -3621,7 +3621,10 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ THE READING MODEL IS ASKED FOR BY LANGUAGE and not by a yes: the three together are 850 MiB, and the child is reading in
     // one of them. `bcp47()` is already the language the interface booted in (ADR-0031), so nothing new has to be decided here.
     void baixarPesados({
-      apenas: pesadosDoArranque({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null }),
+      // 📌 AND THE COMMAND MODEL IS ASKED FOR WITHOUT ASKING THE GAME (issue #184): a child who says «menu» instead of pressing
+      // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). A delivery built without
+      // `--commands` simply has none, this background fetch fails quietly, and the transport says so when she turns it on.
+      apenas: pesadosDoArranque({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47() }),
       aoProgredir: o.aoProgredirPesados,
     })
       .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });

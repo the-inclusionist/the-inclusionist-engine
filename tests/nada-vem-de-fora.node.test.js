@@ -90,6 +90,13 @@ const DECLARADAS = {
     + 'reason',
   'https://lfs-oinclusionista.jrocha.dev.br/moonshine-streaming-small-es-onnx': 'THE MIRROR ABOVE, the Spanish model\'s folder, '
     + 'same reason',
+  'https://lfs-oinclusionista.jrocha.dev.br/vosk-browser-dynamic-execution-0': 'THE MIRROR ABOVE, and it holds a build that '
+    + 'exists NOWHERE ELSE (issue #184): every published `vosk-browser` evaluates text as code, which this engine\'s policy '
+    + 'refuses (ADR-0193 — never `unsafe-eval`, never a patch), so it was rebuilt with `-s DYNAMIC_EXECUTION=0`. Fetched by the '
+    + 'BUILD into the delivery with its sha256',
+  'https://lfs-oinclusionista.jrocha.dev.br/vosk-models': 'THE MIRROR ABOVE, the three command models — alphacephei\'s small '
+    + 'ones (Apache-2.0) repacked deterministically as the `.tar.gz` that build loads. 31–39 MiB a language, and a device asks '
+    + 'for the child\'s',
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1': 'O RUNTIME DE VISÃO (ADR-0124), fixado na versão e descido na INSTALAÇÃO pelo `platform/pesados`. Não é busca preguiçosa: é a instalação do PWA, que o ADR-0116 declarou ser um acto de rede legítimo. 📏 Medido: os três ficheiros respondem 200 com CORS aberto',
   'https://storage.googleapis.com/mediapipe-models': 'OS MODELOS `.task` do MediaPipe — rosto+íris, gestos e mãos. ⚠️ Host diferente do runtime porque é assim que o Google os publica, e sem eles os 11,7 MB de WebAssembly não reconhecem coisa nenhuma: é o `.onnx` sem o `.onnx.json` outra vez. 📏 Medidos em 2026-09-09, `float16`',
 };
