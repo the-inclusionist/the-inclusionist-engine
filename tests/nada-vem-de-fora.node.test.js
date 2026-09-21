@@ -123,6 +123,10 @@ const REDE = /\bfetch\b|\bimport\s*\(|\.src\s*=|XMLHttpRequest|navigator\.sendBe
  * que deixe de tocar na rede também — que é como o inventário ENCOLHE quando a #129 for resolvida.
  */
 const TOCAM_NA_REDE = {
+  'boot/create-game.ts': 'LOCAL. `import(\'../platform/reading-runtime.js\')` — a chunk of this same package, cut by Vite and '
+    + 'loaded at the FIRST `listen()` of a game that declared `uses: { reading: true }` (ADR-0216 §5). It is here and not inside '
+    + 'the reading because the root is what knows the page\'s address and the game\'s answers; the module it loads is what names '
+    + 'the model files, so a game that never listens never reaches them',
   'platform/kokoro-port.ts': 'LOCAL. `fetch` of the model, the tokenizer and the voice tables at `pesados/` on the page\'s own '
     + 'origin (ADR-0177) — paths built by `caminhoNaEntrega`, never an upstream host. It was the quiz demo\'s port until ADR-0216 '
     + 'moved it into the engine, so no game has to copy it',
@@ -130,6 +134,10 @@ const TOCAM_NA_REDE = {
     + '(ADR-0216): the addresses come from the catalogue, the build put the files in the delivery, and a school with no network '
     + 'has them or the voice refuses. Nothing is imported from npm, so a game that never speaks neurally carries none of it. The '
     + 'graph runner is `platform/onnx-runtime`\'s, below',
+  'platform/reading-runtime.ts': 'LOCAL. `fetch` of the reading model of ONE language — the encoder, the decoders, the tokenizer '
+    + 'and the two configs — at `pesados/` on the page\'s own origin (ADR-0216 §2): the addresses come from the catalogue, the '
+    + 'build put them in the delivery, and a school with no network has them or the reading refuses by name. The child\'s voice '
+    + 'never becomes a request: it is heard here, on her machine (ADR-0200 erratum)',
   'platform/onnx-runtime.ts': 'LOCAL. `import()` of onnxruntime-web at `pesados/` on the page\'s own origin, and the ONE place '
     + 'that points its worker threads at the delivery too (ADR-0216): a worker left to itself asks the CDN the library was '
     + 'published at, finds nothing in a school with no network, and the session never opens — measured in the quiz demo (#181). '

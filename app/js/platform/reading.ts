@@ -42,8 +42,17 @@ export interface ReadingDeps {
   readonly stopEvery: (h: unknown) => void;
   /** A line for `problems`, written once per reason (ADR-0169). */
   readonly report: (line: string) => void;
-  /** The engine's own recogniser, when there is one to load — the models of ADR-0201, lazily. Absent: the refusal below. */
-  readonly model?: (language: string) => Promise<{ hear(): Promise<string> }>;
+  /**
+   * The engine's own recogniser, when there is one to load — the models of ADR-0201, lazily (`platform/reading-runtime`).
+   * Absent: the refusal below.
+   */
+  readonly model?: (language: string) => Promise<{ transcribe(samples: Float32Array): Promise<string> }>;
+  /**
+   * The microphone, as 16 kHz mono samples. The model route needs sound, and the browser route does not: the browser's own
+   * recogniser opens the microphone itself. ⚠️ Absent with a model present is a reading that REFUSES and says which half is
+   * missing — never one that answers an empty sentence, which a game would show a child as «you read nothing».
+   */
+  readonly record?: (options: ListenOptions) => Promise<Float32Array>;
   readonly route?: typeof rotaDoReconhecimento;
   readonly createSession?: (api: ApiDeReconhecimento, language: string) => ListeningSession;
 }
@@ -134,7 +143,16 @@ export function createReading(d: ReadingDeps): Reading {
             + 'install the language in the browser, or build a delivery that carries the reading model for this language');
           throw new Error(`reading is not available here: ${state}`);
         }
-        inFlight = d.model(d.language()).then(async (m) => ({ text: (await m.hear()).trim(), route: 'model' as const, ended: 'silence' as const }));
+        if (!d.record) {
+          once('sem-microfone', `reading: the model for ${d.language()} is here and nothing captures the child's voice — `
+            + 'the reading cannot run; pass `record`, the 16 kHz samples the model reads');
+          throw new Error('reading has no microphone here');
+        }
+        const capture = d.record;
+        inFlight = (async () => {
+          const [transcriber, samples] = await Promise.all([d.model!(d.language()), capture(options)]);
+          return { text: (await transcriber.transcribe(samples)).trim(), route: 'model' as const, ended: 'silence' as const };
+        })();
       } else {
         inFlight = byBrowser(d.api!, options);
       }

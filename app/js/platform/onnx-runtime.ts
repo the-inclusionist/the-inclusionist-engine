@@ -15,7 +15,7 @@
 import { caminhoNaEntrega } from './pesados.js';
 import { PESADOS } from './pesados-catalogo.js';
 
-interface OnnxTensor { readonly data: unknown }
+export interface OnnxTensor { readonly data: unknown; readonly dims?: readonly number[] }
 /** An open graph: the names it answers with, and one run. */
 export interface OnnxSession {
   readonly inputNames?: readonly string[];
@@ -24,7 +24,12 @@ export interface OnnxSession {
 }
 /** The part of onnxruntime the engine uses — small on purpose: what is not named here cannot be depended on. */
 export interface OnnxRuntime {
-  readonly Tensor: new (type: 'int64' | 'float32', data: BigInt64Array | Float32Array, shape: readonly number[]) => OnnxTensor;
+  // `bool` is here for one input of one graph: the flag a MERGED decoder is told which pass it is on by (`use_cache_branch`).
+  readonly Tensor: new (
+    type: 'int64' | 'float32' | 'bool',
+    data: BigInt64Array | Float32Array | Uint8Array,
+    shape: readonly number[],
+  ) => OnnxTensor;
   readonly InferenceSession: {
     create(model: Uint8Array, options: { executionProviders: readonly string[] }): Promise<OnnxSession>;
   };

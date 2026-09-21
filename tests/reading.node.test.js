@@ -36,14 +36,14 @@ const theSession = async (sessions, n = 1) => { for (let i = 0; i < 50 && sessio
 
 const heard = (session, text, final = false) => session.onresult({ results: Object.assign([[{ transcript: text }]], { isFinal: final }) });
 
-function build({ state = 'available', model, language = 'pt-BR' } = {}) {
+function build({ state = 'available', model, record, language = 'pt-BR' } = {}) {
   const { Rec } = browserApi(state);
   const r = ticker();
   const reports = [];
   const sessions = [];
   const reading = createReading({
     language: () => language, api: Rec, now: r.now, every: r.every, stopEvery: r.stopEvery,
-    report: (l) => reports.push(l), model,
+    report: (l) => reports.push(l), model, record,
     createSession: () => {
       const s = { lang: language, start() { this.started = true; }, stop() { this.stopped = true; }, onresult: null, onerror: null, onend: null };
       sessions.push(s);
@@ -132,20 +132,33 @@ describe('a device that cannot hear this child', () => {
 
   it('🔴 [Right] with the engine\'s own model, the same request is answered by it', async () => {
     const asked = [];
+    const ouvido = [];
     const { reading } = build({
       state: 'unavailable',
-      model: async (language) => { asked.push(language); return { hear: async () => '  o menino  ' }; },
+      model: async (language) => { asked.push(language); return { transcribe: async (s) => { ouvido.push(s.length); return '  o menino  '; } }; },
+      record: async (options) => new Float32Array(options.maxMs === 5000 ? 8 : 16),
     });
     expect(await reading.ready()).toEqual({ can: true, why: 'unavailable' });
-    expect(await reading.listen()).toEqual({ text: 'o menino', route: 'model', ended: 'silence' });
+    expect(await reading.listen({ maxMs: 5000 })).toEqual({ text: 'o menino', route: 'model', ended: 'silence' });
     expect(asked, 'the model was not asked for the child\'s language').toEqual(['pt-BR']);
+    expect(ouvido, 'the model read something other than what was recorded for THIS request').toEqual([8]);
+  });
+
+  /**
+   * ⚠️ A READING WITH A MODEL AND NO MICROPHONE IS NOT A READING OF NOTHING. Answering an empty sentence would reach a child as
+   * «you read nothing» — the two failures look identical to a game, and only one of them is about her.
+   */
+  it('⚠️ [Error] the model is here and nothing captures her voice: it REFUSES, and says which half is missing', async () => {
+    const { reading, reports } = build({ state: 'unavailable', model: async () => ({ transcribe: async () => 'x' }) });
+    await expect(reading.listen()).rejects.toThrow(/microphone/);
+    expect(reports.some((l) => /nothing captures the child's voice/.test(l)), 'the missing half was not named').toBe(true);
   });
 
   it('📌 [Boundary] the browser is only the route when it says «available» — «downloading» is not «works»', async () => {
     // ⚠️ A language the browser is still DOWNLOADING would hear nothing today, and a mutation that read it as working survived
     // until `ready()` was asked about it too — `listen()` alone could not see it, because it falls back either way.
     for (const state of ['downloadable', 'downloading', 'unavailable']) {
-      const { reading } = build({ state, model: async () => ({ hear: async () => 'x' }) });
+      const { reading } = build({ state, model: async () => ({ transcribe: async () => 'x' }), record: async () => new Float32Array(16) });
       expect((await reading.listen()).route, `${state} was taken for a working recogniser`).toBe('model');
       expect(await reading.ready(), `${state} answered as if the browser could hear`).toEqual({ can: true, why: state });
       const withoutModel = build({ state }).reading;

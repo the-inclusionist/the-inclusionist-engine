@@ -3584,6 +3584,17 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       every: (fn, ms) => win.setInterval(fn, ms),
       stopEvery: (h) => win.clearInterval(h as number),
       report: (linha) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
+      /**
+       * THE ENGINE'S OWN RECOGNISER, and it arrives late on purpose (ADR-0216 §5): `platform/reading-runtime` is what names the
+       * model files, so a game that never listens — and a child of a game that does, until the first `listen()` — loads none of
+       * it. Only reached where the device's own recogniser cannot serve the language (ADR-0200 erratum).
+       */
+      model: o.uses?.reading
+        ? async (language) => {
+          const { loadReadingRuntime } = await import('../platform/reading-runtime.js');
+          return loadReadingRuntime({ base: doc.baseURI, language });
+        }
+        : undefined,
     });
     const notDeclared = 'reading: this game called `reading.listen()` without declaring `uses: { reading: true }` — the child '
       + 'speaks and nothing answers, because a delivery built from this declaration carries no reading model; declare it';

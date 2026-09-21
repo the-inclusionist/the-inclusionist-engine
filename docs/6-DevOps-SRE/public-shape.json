@@ -1265,6 +1265,9 @@
     "type LoadKokoro": "() => Promise<KokoroModule>"
   },
   "platform/onnx-runtime.ts": {
+    "interface OnnxTensor": [
+      "data"
+    ],
     "interface OnnxSession": [
       "inputNames?",
       "outputNames",
@@ -1272,7 +1275,10 @@
     ],
     "interface OnnxRuntime": [
       "InferenceSession",
-      "Tensor"
+      "Tensor",
+      "data",
+      "shape",
+      "type"
     ],
     "interface OnnxRuntimeDeps": [
       "base",
@@ -1306,6 +1312,7 @@
   },
   "platform/reading-model.ts": {
     "interface ReadingModelPlan": [
+      "config",
       "decoder",
       "decoderPast?",
       "encoder",
@@ -1325,6 +1332,19 @@
       "decoder_start_token_id?",
       "eos_token_id?",
       "suppress_tokens?"
+    ]
+  },
+  "platform/reading-runtime.ts": {
+    "interface ReadingTranscriber": [
+      "transcribe"
+    ],
+    "interface ReadingRuntimeDeps": [
+      "base",
+      "fetch?",
+      "importModule?",
+      "language",
+      "maxTokens?",
+      "ort?"
     ]
   },
   "platform/reading.ts": {
@@ -1347,6 +1367,7 @@
       "language",
       "model?",
       "now",
+      "record?",
       "report",
       "route?",
       "stopEvery"

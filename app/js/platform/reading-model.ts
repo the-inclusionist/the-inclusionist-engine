@@ -26,6 +26,8 @@ export interface ReadingModelPlan {
   readonly decoderPast?: string;
   readonly tokenizer: string;
   readonly generation: string;
+  /** How many heads the caches hold and how wide each is — what a merged decoder needs to be handed empty ones. */
+  readonly config: string;
   /** Only the mel front end needs one. */
   readonly preprocessor?: string;
 }
@@ -43,17 +45,18 @@ export const READING_MODELS: readonly ReadingModelPlan[] = Object.freeze([
   {
     language: 'pt', input: 'log-mel',
     encoder: 'reading:pt:encoder', decoder: 'reading:pt:decoder', decoderPast: 'reading:pt:decoder:past',
-    tokenizer: 'reading:pt:tokenizer', generation: 'reading:pt:generation', preprocessor: 'reading:pt:preprocessor',
+    tokenizer: 'reading:pt:tokenizer', generation: 'reading:pt:generation', config: 'reading:pt:config',
+    preprocessor: 'reading:pt:preprocessor',
   },
   {
     language: 'en', input: 'waveform',
     encoder: 'reading:en:encoder', decoder: 'reading:en:decoder',
-    tokenizer: 'reading:en:tokenizer', generation: 'reading:en:generation',
+    tokenizer: 'reading:en:tokenizer', generation: 'reading:en:generation', config: 'reading:en:config',
   },
   {
     language: 'es', input: 'waveform',
     encoder: 'reading:es:encoder', decoder: 'reading:es:decoder', decoderPast: 'reading:es:decoder:past',
-    tokenizer: 'reading:es:tokenizer', generation: 'reading:es:generation',
+    tokenizer: 'reading:es:tokenizer', generation: 'reading:es:generation', config: 'reading:es:config',
   },
 ]);
 
@@ -224,6 +227,13 @@ export function suppressedTokens(config: GenerationConfig, atStart: boolean): Re
   const out = new Set<number>(config.suppress_tokens ?? []);
   if (atStart) for (const id of config.begin_suppress_tokens ?? []) out.add(id);
   return out;
+}
+
+/** The id of a named token (`<|pt|>`, `<|transcribe|>`), or `null` — a model that does not have it must be SAID, not guessed. */
+export function tokenIdOf(tokenizer: TokenizerFile, content: string): number | null {
+  for (const added of tokenizer.added_tokens ?? []) if (added.content === content) return added.id;
+  const fromVocab = tokenizer.model?.vocab?.[content];
+  return fromVocab ?? null;
 }
 
 /** The next token: the biggest logit that is not refused. Greedy, because a child reading a known text needs no imagination. */

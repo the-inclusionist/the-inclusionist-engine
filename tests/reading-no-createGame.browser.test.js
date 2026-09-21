@@ -86,7 +86,9 @@ describe('motor.reading, as a game sees it', () => {
     Servidor.available = async () => 'available';
     window.SpeechRecognition = Servidor;
     const motor = montar({ uses: { reading: true } });
-    expect(await motor.reading.ready()).toMatchObject({ can: false });
+    // 📌 `ready()` says YES since ADR-0216, and the reason is the whole decision: the engine has a model of its own, so a child
+    // on a browser that would only hear her through a server is still heard — on her machine. Before it, this answered «no».
+    expect(await motor.reading.ready()).toMatchObject({ can: true });
     await expect(motor.reading.listen()).rejects.toThrow();
     expect(sessions, 'the child\'s voice would have gone to a server').toHaveLength(0);
     motor.unmount?.();

@@ -815,6 +815,7 @@
     "OnnxRuntime",
     "OnnxRuntimeDeps",
     "OnnxSession",
+    "OnnxTensor",
     "atDelivery",
     "loadOnnxRuntime"
   ],
@@ -847,7 +848,13 @@
     "nextToken",
     "readingModelFor",
     "readingTextOf",
-    "suppressedTokens"
+    "suppressedTokens",
+    "tokenIdOf"
+  ],
+  "platform/reading-runtime.ts": [
+    "ReadingRuntimeDeps",
+    "ReadingTranscriber",
+    "loadReadingRuntime"
   ],
   "platform/reading.ts": [
     "Heard",

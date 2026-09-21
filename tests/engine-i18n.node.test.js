@@ -316,6 +316,12 @@ const CRU_CONHECIDO = {
                                    // the heavy catalogue is asked for and is not there. A child never reaches it: it fires before
                                    // a voice or a reading exists, and the engine turns it into the refusal the caller reports
                                    // (ADR-0169). It lived in `kokoro-runtime` until the graph runner became one module for both.
+  'platform/reading-runtime.ts': 2, // «the project has no model for …» e «this model has no token for … transcription» —
+                                   // os dois são erros para quem CONSTRÓI um jogo: uma língua fora das três, e um modelo
+                                   // cujo tokenizador não tem a instrução de transcrever. A criança não os alcança: o `listen()`
+                                   // dela vira a recusa que o chamador reporta (ADR-0169), e é essa linha que é traduzida.
+  'platform/reading.ts': 1,        // «reading has no microphone here» — dito a quem MONTA a engine sem a captura de som; a
+                                   // linha que a criança e o adulto leem é a de `problems`, que nomeia a metade que falta.
   'platform/pesados.ts': 1,        // «sem Cache Storage ou sem fetch» — o estado de um ambiente sem as duas
                                    // primitivas, que em produção é um navegador antigo e no gate é o caso do
                                    // vácuo. Vai no campo `erro` de um relatório, que a engine não mostra a
@@ -399,8 +405,12 @@ describe('texto cru em português nas camadas de ENGINE (o buraco do gate do ite
     // ⚠️ 79 → 82 no mesmo dia: a linha da barra de acessibilidade tapada (ADR-0148 §3). É dívida a crescer,
     // dita como tal — e o que a compra é o que ela paga: um defeito que não falhava em lado nenhum passou a
     // ter uma linha que nomeia os nós invasores e a variável que os tira de lá.
+    // ⚠️ 82 → 85 com a leitura (ADR-0216 §2): três linhas ditas a quem CONSTRÓI um jogo ou MONTA a engine — uma língua fora das
+    // três, um tokenizador sem a instrução de transcrever, e uma captura de som que não foi passada. Nenhuma delas chega a uma
+    // criança: o `listen()` dela devolve a recusa que o chamador reporta, e é essa que passa por `t()`. Pôr diagnóstico de
+    // integração nos três dicionários seria pedir a pt, en e es que carregassem o manual de quem instala.
     const total = Object.values(CRU_CONHECIDO).reduce((a, b) => a + b, 0);
-    expect(total).toBeLessThanOrEqual(82);
+    expect(total).toBeLessThanOrEqual(85);
     expect(Object.keys(CRU_CONHECIDO).length).toBeLessThanOrEqual(20);
   });
 
