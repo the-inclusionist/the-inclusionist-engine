@@ -67,6 +67,11 @@ const PUBLICADOS = {
     + 'the eye control is a transport, and a transport is the engine\'s',
   'gaze-relative': 'where the gaze went, measured from its own rest (ADR-0213, issue #194); pure, and to be read by the eye control '
     + 'inside the engine. Published by the wildcard, with no external consumer — and it should not gain one: a transport is the engine\'s',
+  'switch-scan': 'the scan of «one button only» (ADR-0218, issue #201): it offers the game\'s declared positions one at a time '
+    + 'and a single press takes the one showing. Pure, and to be wired by the engine behind the virtual controller, like the gaze '
+    + 'cycle below it. Published by the wildcard, with no external consumer — and it should not gain one: a way INTO the '
+    + 'controller is the engine\'s, and a cartridge that scanned by itself would be offering a child positions the engine did not '
+    + 'say it has',
   'gaze-cycle': 'twelve actions and START from four gaze zones (ADR-0213, issue #194); pure, and to be wired by the engine to stamped '
     + 'keys. Published by the wildcard, with no external consumer — and it should not gain one: a transport is the engine\'s',
   'virtual-controller': 'the engine carrying the virtual button to the game (ADR-0111 erratum, issue #197); wired by `boot/create-game`, '
