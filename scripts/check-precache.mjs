@@ -114,22 +114,40 @@ if (congelados.length > 0) {
  *
  * So the rule is stated positively and checked here: EVERY precached page other than the shell must be in
  * `navigateFallbackDenylist`. Written as a rule and not as a list, so a third page gets the protection or
- * this gate goes red. */
+ * this gate goes red.
+ *
+ * 🔴 AND SINCE `e56554a` THERE IS NO FALLBACK LEFT TO SURVIVE, which made this gate RED AT HEAD — it asked for a denylist
+ * protecting against a route the build no longer registers. `navigateFallback: null` went in because the plugin's default
+ * (`index.html`) THROWS inside the worker's `define(...)` promise when that page is not precached, and a throw there is a
+ * silent rejection that kills every runtime route after it. The engine emits no `index.html` since `b55b88e`.
+ *
+ * 📏 MEASURED on the built worker, 2026-09-21: zero `NavigationRoute`, zero `createHandlerBoundToURL`, zero `denylist`.
+ *
+ * So the question is put to the WORKER and not to a list: where no navigation route exists, nothing can shadow a page and
+ * there is nothing to protect; where one exists, every page but the shell must be in its denylist — the protection issue #73
+ * bought, kept whole for the day somebody sets a fallback again. ⚠️ Deleting the check instead would have thrown that away to
+ * make a red gate green, which is the one repair this file exists to refuse.
+ *
+ * 📌 The fallback's own value — null, or a page the build emits — is not this gate's: it belongs to
+ * `tests/service-worker-regista-as-rotas.node`, which reads the config. This one reads the OUTPUT. */
 const SHELL = 'index.html';
 const paginas = entradas.map((e) => e.url).filter((u) => u.endsWith('.html') && u !== SHELL);
+const temRotaDeNavegacao = /NavigationRoute|createHandlerBoundToURL/.test(fonte);
 
-const denylist = (fonte.match(/denylist:\[([^\]]*)\]/) || [, ''])[1];
-// Compara o NOME CRU do arquivo dentro do texto do denylist. A regex do denylist escapa o ponto
-// (`quiz\.html`), então procurar `quiz` e `.html` separadamente é o que sobrevive a qualquer escape.
-const desprotegidas = paginas.filter((u) => { const base = u.replace(/\.html$/, ''); return !(denylist.includes(base) && denylist.includes('html')); });
+if (temRotaDeNavegacao) {
+  const denylist = (fonte.match(/denylist:\[([^\]]*)\]/) || [, ''])[1];
+  // Compara o NOME CRU do arquivo dentro do texto do denylist. A regex do denylist escapa o ponto
+  // (`quiz\.html`), então procurar `quiz` e `.html` separadamente é o que sobrevive a qualquer escape.
+  const desprotegidas = paginas.filter((u) => { const base = u.replace(/\.html$/, ''); return !(denylist.includes(base) && denylist.includes('html')); });
 
-if (desprotegidas.length > 0) {
-  console.error(`precache gate: ${desprotegidas.length} page(s) precached but NOT excluded from the SPA fallback:`);
-  for (const u of desprotegidas) console.error(`  · ${u}`);
-  console.error('');
-  console.error('A navigation to these can be answered with index.html — the page is built and then invisible.');
-  console.error('Add it to `navigateFallbackDenylist` in vite.config.ts (see issue #73).');
-  process.exit(1);
+  if (desprotegidas.length > 0) {
+    console.error(`precache gate: ${desprotegidas.length} page(s) precached but NOT excluded from the SPA fallback:`);
+    for (const u of desprotegidas) console.error(`  · ${u}`);
+    console.error('');
+    console.error('A navigation to these can be answered with index.html — the page is built and then invisible.');
+    console.error('Add it to `navigateFallbackDenylist` in vite.config.ts (see issue #73).');
+    process.exit(1);
+  }
 }
 
 /* ===================== THIRD QUESTION: is the FLOOR actually a floor? =====================
@@ -317,7 +335,11 @@ if (emFalta.length > 0) {
  * sentido mais vazio — e essa é a metade que o pilar 1 realmente compra. */
 
 const semHash = entradas.filter((e) => e.revisao !== null).length;
-const nota = paginas.length ? ` ${paginas.length} extra page(s) excluded from the SPA fallback.` : '';
+// ⚠️ THE SUMMARY SAYS WHAT WAS MEASURED, and with no navigation route nothing was excluded from anything: reporting
+// «1 page excluded from the SPA fallback» where no fallback exists is a gate describing a check it did not run.
+const nota = !paginas.length ? ''
+  : temRotaDeNavegacao ? ` ${paginas.length} extra page(s) excluded from the SPA fallback.`
+    : ` ${paginas.length} extra page(s), and no navigation route to shadow them.`;
 const piso = ` Floor complete: ${noDisco.length} file(s) emitted, ${FORA_DO_PRECACHE.length} excused by name.`;
 const dia = ` First day: ${kibTotal.toFixed(1)} KiB (measured, no ceiling — the Dev removed it on 2026-09-09).`;
 console.log(`precache gate: ${entradas.length} entries — ${semHash} with a content revision, ${entradas.length - semHash} hash-named. None frozen.${nota}${piso}${dia}`);
