@@ -163,6 +163,7 @@ const es: Record<string, string> = {
   'icon.altmove': 'Cómo pulsar',
   'input.standard': 'estándar',
   'input.sticky': 'no hace falta mantener',
+  'scan.nothing': 'cancelar',
   'input.scan': 'un botón solo',
   'icon.contrast': 'Alto contraste',
   'icon.cvd': 'Corrección de daltonismo',

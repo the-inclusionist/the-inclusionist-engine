@@ -67,10 +67,7 @@ import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
 import { createHandControl } from '../ui/hand-control.js';
 import { followCameraMode } from '../ui/camera-control.js';
-import {
-  initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS,
-  inputModeOf, inputModeOrder, applyInputMode, INPUT_MODE_NAME, type InputMode,
-} from '../ui/pause-icons.js';
+import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from '../ui/pause-icons.js';
 import { anunciarItem } from '../ui/item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { itensNavegaveis } from '../ui/menu-items.js';
@@ -103,11 +100,13 @@ import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { duracaoDaLegenda, RITMOS_DA_LEGENDA } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
-import { recusaDaAlternancia } from '../ui/latch-refusal.js';
-import { definirAlternanciaDeMarcha } from '../ui/settings-motor.js';
+// 📌 `recusaDaAlternancia` e `definirAlternanciaDeMarcha` saíram destes imports com a linha do painel (2026-09-21): quem escreve
+// a aderência agora é o ☝️ da barra, e é ele que já resolvia as duas coisas — a recusa do aparelho e as duas chaves guardadas.
 import { carimbarOrigem, origemDoEvento } from '../input/origem-sintetica.js';
 import type { Transporte } from '../input/transporte-em-uso.js';
 import { createVirtualController, type VirtualCommand } from '../input/virtual-controller.js';
+import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem } from '../input/switch-scan.js';
+import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 export type { VirtualCommand } from '../input/virtual-controller.js';
 import { montarPassos, atualizarPassos, passoSeguinte, linhaDeControle, rotularLinha } from '../ui/panel-widgets.js';
 import { PERSONAS_DO_PAD, personaMaisProxima } from '../input/touch.js';
@@ -2240,6 +2239,36 @@ export function createGame(o: CreateGameOptions): Engine {
   //
   // Instalar aqui é seguro antes de o jogo acabar de arrancar: sem diálogo aberto e sem menu de pausa,
   // `menuNavKey` não consome tecla nenhuma e a deixa seguir para quem for o dono.
+  /*
+   * 🔴 ONE BUTTON ONLY TAKES THE KEY BEFORE EVERYONE ELSE (ADR-0218, issue #201), and that is why this listener is registered
+   * HERE, above `nav.attach()`, instead of beside the cool-down and the simulations further down.
+   *
+   * With the scan on, the child has ONE input in the world, and every press of it means the same thing: take what is showing.
+   * It must not also move a menu, reach the game or feed the motor filters — so the press is stopped dead (`barrar`) and the
+   * scan decides what happens. Listeners on one node run in the order they were registered, and `stopImmediatePropagation`
+   * only reaches the ones after it: registered below the menu navigation, this would have let the menu move AND the scan take,
+   * which is one press doing two things.
+   *
+   * ⚠️ `scanPress` is filled in much later, where the virtual controller exists. Until then, and whenever the scan is off,
+   * this listener answers nothing — the same hoisting the pause card's host uses, and for the same reason: what has to run
+   * first is not what can be built first.
+   */
+  const blockKey = (e: Event): void => { e.preventDefault(); e.stopImmediatePropagation(); };
+  let scanPress: ((source: Transporte) => void) | null = null;
+  win.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (!state.switchScan || !scanPress || keyboard.whichPlayer(e.code) < 0) return;
+    // A HELD KEY IS ONE PRESS, not one a frame: a child who cannot let go would otherwise take an item every repeat.
+    if (!e.repeat) scanPress(origemDoEvento(e) ?? 'teclado');
+    blockKey(e);
+  }, true);
+  win.addEventListener('keyup', (e: KeyboardEvent) => {
+    if (state.switchScan && scanPress && keyboard.whichPlayer(e.code) >= 0) blockKey(e);
+  }, true);
+
+  // ⚠️ E AGORA A NAVEGAÇÃO DE MENUS LIGA — depois do bloco acima, e a ORDEM É O COMPORTAMENTO: ouvintes de um mesmo nó correm
+  // pela ordem de registo, logo a varredura vê a tecla primeiro e pode pará-la. Ao contrário, uma pressão moveria o menu E
+  // levaria um item (ADR-0218). 🔴 Esta chamada desapareceu por um instante ao escrever o bloco acima e nenhum tipo o viu: uma
+  // chamada perdida não é um nome por resolver. Seis casos de navegador a apanharam — os menus respondiam só ao rato.
   nav.attach();
 
   // ⚠️ E A ARMADILHA DE FOCO, que não existia em lado nenhum — os outros dois fios eram montados e deixados
@@ -3415,95 +3444,14 @@ export function createGame(o: CreateGameOptions): Engine {
     refletirLinhaDoToque();
 
     /*
-     * «NÃO PRECISA SEGURAR» (ADR-0211; the Dev, 2026-09-21: «falta oferecê-la como opção para teclado e toque, com nome que a
-     * criança entenda»). The setting is not new — a tap holds the button down instead of a hand that cannot (`input/latch`), and
-     * the quick bar's ☝️ already writes it. What was missing is HERE: the place a child goes to read what an option does, where
-     * the bar can only say on or off.
+     * 🔴 A LINHA «JEITO DE APERTAR» SAIU DESTE PAINEL (the Dev, 2026-09-21: «Tire a linha de acessibilidade motora»), no mesmo dia em
+     * que entrou. Ela nasceu como «Não precisa segurar» a pedido dele — «falta oferecê-la como opção para teclado e toque» — e, quando
+     * o ☝️ ganhou a terceira posição (ADR-0218), passou a ser o MESMO ciclo em duas superfícies. Ele decidiu que o ícone basta.
      *
-     * ⚠️ IT WRITES THROUGH THE SAME DOOR AS THE ICON (`setToggleMove` of the bar's context), because two surfaces of one setting
-     * that write it in two ways are two surfaces that disagree — and the child would see the bar and the panel say different
-     * things about the same thing.
-     *
-     * · HIDDEN where the game holds no key at all (`seguraTeclas`, ADR-0115): there is nothing to hold, so there is nothing to
-     *   relieve, and an option that changes nothing teaches a child that the setting she depends on is broken (ADR-0106 §5).
-     * · LOCKED WITH THE REASON on a device that can only ever send one command at a time — the eyes, the face, gestures, speech.
-     *   It is on there and cannot be turned off (ADR-0104 §C), and `hidden` would hide why (ADR-0113 clause 3).
+     * ⚠️ E COM ELA SAIU O ÚNICO SÍTIO QUE DIZIA O MOTIVO da trava num aparelho que manda um comando de cada vez (ADR-0113 cláusula 3).
+     * Fica honesto porque o ciclo deixou de OFERECER o que estava trancado: onde a aderência é obrigatória, «padrão» não aparece, e não
+     * há o que explicar. A linha «Esperar entre toques» (ADR-0217) fica: é outro ajuste, e ninguém a tirou.
      */
-    // 📌 SEAT 0, like the rest of this panel and for the reason already written in `problems`: the panel edits the first child's
-    // controls, and a game with more than one child passes `setPauseActor` so the bar knows who pressed. The bar is the surface
-    // that follows the actor; this one follows the panel.
-    const PANEL_SEAT = 0;
-    const stickyOnForSeat = (): boolean => !!(players()[PANEL_SEAT] as { toggleMove?: boolean } | undefined)?.toggleMove;
-    /*
-     * 🔴 AND SINCE ADR-0218 THE ROW IS THE SAME CYCLE AS THE BAR'S ☝️: standard · no holding needed · one button only. It was a
-     * switch for the latch alone, and the moment the icon grew a third position the two surfaces would have been naming
-     * different things — which is the defect the case above this row exists to refuse («one setting, one name»).
-     * 📌 The ORDER and the WRITE come from `ui/pause-icons`, not from a second copy here: the positions a device or a game takes
-     * away are decided once, and both surfaces read that decision.
-     */
-    const latchRefusedNow = (): ReturnType<typeof recusaDaAlternancia> => recusaDaAlternancia(entradaDe(PANEL_SEAT).emUso);
-    const inputModes = (): readonly InputMode[] => inputModeOrder(cartucho.declaration.seguraTeclas(), latchRefusedNow() !== null);
-    const inputModeNow = (): InputMode => inputModeOf({ toggleMove: stickyOnForSeat(), switchScan: state.switchScan });
-    const stickySpec = () => ({
-      rotulo: t('motor.altmove'),
-      valores: inputModes().map((m) => t(INPUT_MODE_NAME[m])),
-      atual: Math.max(0, inputModes().indexOf(inputModeNow())),
-    });
-    // A row of STEPS is built by hand, like the caption rate's above: `linhaDeControle` always makes a control of its own, and a
-    // row with two of them would give the menu cursor two stops for one setting.
-    const stickyRow = doc.createElement('div');
-    stickyRow.className = 'ctrl-row ctrl-row--passos';
-    const stickyWrap = doc.createElement('span');
-    const stickyHint = doc.createElement('span');
-    stickyHint.className = 'opt-hint';
-    stickyHint.textContent = t('motor.altmove.dica');
-    stickyWrap.appendChild(stickyHint);
-    stickyRow.appendChild(stickyWrap);
-    const stickySteps = montarPassos(ctxDaMotora, stickySpec());
-    stickySteps.id = 'opt-sticky';
-    stickyRow.appendChild(stickySteps);
-    painelDaMotora.casca.lista.appendChild(stickyRow);
-    const reflectSticky = (): void => {
-      stickyHint.textContent = t('motor.altmove.dica');
-      atualizarPassos(stickySteps, stickySpec());
-      const refusal = latchRefusedNow();
-      // 📌 The reason is still SAID here, and it is the only surface that can say it now: the cycle simply has no «standard» on
-      // such a device (ADR-0113 clause 3), and a position that is not offered explains nothing by itself.
-      if (refusal) stickySteps.setAttribute('title', t(refusal.chave));
-      else stickySteps.removeAttribute('title');
-      // ⚠️ HIDDEN ONLY WHERE THERE IS NOTHING AT ALL TO OFFER. It used to hide wherever the game holds no key, because the latch
-      // was all it held; one-button play has a subject in every game that declares a position (ADR-0218).
-      stickyRow.hidden = !cartucho.declaration.seguraTeclas() && !(cartucho.preset && presetActions(cartucho.preset).length > 0);
-    };
-    stickySteps.addEventListener('passo', (ev) => {
-      const order = inputModes();
-      const current = stickySpec().atual;
-      const chosen = passoSeguinte(current, order.length, (ev as CustomEvent<number>).detail);
-      if (chosen === current) return;
-      const target = order[chosen]!;
-      applyInputMode(target, {
-        latched: stickyOnForSeat(),
-        setScan: state.setSwitchScanValue,
-        setLatch: (on) => definirAlternanciaDeMarcha(
-          {
-            // ⚠️ The same cast the quick bar makes, and for the same reason: the contract types a seat as `{ ctrl }` (ADR-0143),
-            // and the motor fields are seeded onto it at boot. A second shape here would be a second opinion about one object.
-            players: players() as unknown as Parameters<typeof definirAlternanciaDeMarcha>[0]['players'],
-            store,
-            srSay,
-            getNumPlayers: () => players().length,
-            transporteEmUso: (i) => entradaDe(i).emUso,
-          },
-          PANEL_SEAT,
-          on,
-        ),
-      });
-      reflectSticky();
-      srSay(`${t('motor.altmove')}: ${t(INPUT_MODE_NAME[target])}`);
-      if (a11yBar) pauseIcons.reflectIconsIn(a11yBar, 0); // the ☝️ and this row say the same thing about the same setting
-    });
-    reflectSticky();
-
     /*
      * «ESPERAR ENTRE TOQUES» (ADR-0217; GAG Advanced/Motor, issue #182). The row beside the sticky keys, and the other half of
      * the same problem: that one is for a hand that cannot HOLD, this one for a hand that cannot press ONCE.
@@ -3583,7 +3531,7 @@ export function createGame(o: CreateGameOptions): Engine {
     reflectCamera();
 
     refletirTeclado = () => {
-      refletirLinhasDoTeclado(); refletirLinhaDoControle(); refletirLinhaDoToque(); reflectSticky(); reflectCooldown();
+      refletirLinhasDoTeclado(); refletirLinhaDoControle(); refletirLinhaDoToque(); reflectCooldown();
       reflectCamera();
     };
   }
@@ -3830,6 +3778,49 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * reads positions presses the controller directly.
    */
   const entregar = (comando: VirtualCommand): void => { cartucho.onCommand?.(comando); };
+  /*
+   * THE SCAN ITSELF (ADR-0218): the list is the positions this cartridge declared AND NAMED, because the chip says the game's
+   * own words and a position nobody named would cost the child a pass of silence (ADR-0074). It is rebuilt every time the scan
+   * starts, so a `mount()` of another cartridge scans ITS positions and not the ones that booted first (ADR-0142).
+   */
+  const gameRegion = $<HTMLElement>('#game-region');
+  const scanChip = gameRegion ? mountScanOverlay(doc, gameRegion) : null;
+  let scanner: SwitchScan | null = null;
+  let scanFrame = 0;
+  const scanWord = (item: ScanItem): string =>
+    scanItemText(item, (a) => (cartucho.preset ? labellerFrom(cartucho.preset)(a) : null), t('scan.nothing'));
+  const scanShow = (item: ScanItem): void => { scanChip?.showing(scanWord(item)); };
+  const scanTick = (): void => {
+    if (!scanner) return;
+    scanShow(scanner(win.performance.now()).showing.item);
+    scanFrame = win.requestAnimationFrame(scanTick);
+  };
+  const stopScan = (): void => {
+    if (scanFrame) win.cancelAnimationFrame(scanFrame);
+    scanFrame = 0; scanner = null; scanChip?.hide();
+  };
+  const startScan = (): void => {
+    if (scanner) return;
+    const names = cartucho.preset ? labellerFrom(cartucho.preset) : null;
+    const offered = (cartucho.preset ? presetActions(cartucho.preset) : []).filter((a) => !!names?.(a));
+    scanner = createSwitchScan(offered);
+    scanTick();
+  };
+  scanPress = (source) => {
+    if (!scanner) return;
+    // 📌 THE CHIP IS NOT REDRAWN HERE, and a surviving mutation is why: the frame loop above draws every frame, so a second
+    // drawing path only saved the sixteen milliseconds until the next one — a line that could disagree with the loop and could
+    // never be seen doing it.
+    const out = scanner(win.performance.now(), { press: true });
+    const action = out.commanded;
+    if (!action) return;
+    // 📌 THROUGH THE VIRTUAL CONTROLLER, like every other transport (ADR-0111): in a menu it becomes that menu's key, in play it
+    // holds the child's key and reaches the cartridge. The scan decides WHICH position; it does not decide what a position does.
+    controleVirtual.press(action, source, 0);
+    win.setTimeout(() => controleVirtual.release(action, source, 0), SWITCH_SCAN_DEFAULTS.pulseMs);
+  };
+  state.on('switchScan', (on) => { if (on) startScan(); else stopScan(); });
+  if (state.switchScan) startScan();
   const controleVirtual = createVirtualController({
     scheme: (i) => keyboard.kbFor(i), menuOpen: menuComDirecional,
     holdKey: marcarTecla, releaseKey: soltarTecla, menuKey: teclaAoMenu, deliver: entregar,

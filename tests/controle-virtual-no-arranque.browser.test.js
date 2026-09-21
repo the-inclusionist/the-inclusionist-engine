@@ -347,12 +347,10 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
     expect(cooldown, '#opt-cooldown is not in the motor panel').not.toBeNull();
     expect(cooldown.closest('.ctrl-row').hidden, 'a game nobody presses twice was offered the cool-down').toBe(true);
 
-    const jeito = painel.querySelector('#opt-sticky');
-    expect(jeito, '#opt-sticky is not in the motor panel').not.toBeNull();
-    expect(jeito.closest('.ctrl-row').hidden, 'a game that declares positions was not offered «um botão só»').toBe(false);
-    // and the position that has no subject here is simply not among the ones offered
-    expect(jeito.getAttribute('aria-valuetext'), 'it did not open on the standard position').toBe('padrão');
-    expect(jeito.getAttribute('aria-valuemax'), 'the latch was offered in a game that holds no key').toBe('1');
+    // 🔴 E O «JEITO DE APERTAR» NÃO É LINHA DE PAINEL NENHUM (o Dev, 2026-09-21: «Tire a linha de acessibilidade motora»): o
+    // ajuste, com as três posições, mora no ☝️ da barra rápida. A ausência é medida aqui porque uma linha removida que volta
+    // por acidente daria de novo duas superfícies ao mesmo ajuste.
+    expect(painel.querySelector('#opt-sticky'), 'a linha voltou ao painel motora').toBeNull();
     fechar();
   });
 

@@ -55,8 +55,11 @@ const CAMERA_MODE_NAME: { readonly [M in CameraControl]: string } = { off: 'stat
  * the game's positions one at a time and lets any press take the one showing.
  */
 export type InputMode = 'standard' | 'sticky' | 'scan';
-/** The word for each position, for the bar and for the panel row — one setting, one set of words. */
-export const INPUT_MODE_NAME: { readonly [M in InputMode]: string } = { standard: 'input.standard', sticky: 'input.sticky', scan: 'input.scan' };
+/**
+ * The word for each position. Private again since 2026-09-21: it was exported for the motor panel's row, and the Dev took that
+ * row out («Tire a linha de acessibilidade motora») — the icon is the only surface of this setting now.
+ */
+const INPUT_MODE_NAME: { readonly [M in InputMode]: string } = { standard: 'input.standard', sticky: 'input.sticky', scan: 'input.scan' };
 
 /**
  * Which of the three is showing. The SCAN WINS over the latch on purpose: with one button there is nothing to hold, so a stored
@@ -76,7 +79,7 @@ export function inputModeOf(s: { readonly toggleMove?: boolean; readonly switchS
  *   `standard` is unreachable there. 🔴 That used to grey the whole icon out, and with three positions that would have cost a
  *   child playing with her eyes the one-button scan as well — the lock is the latch's, not the scan's.
  */
-export function inputModeOrder(holdsKeys: boolean, latchRequired = false): readonly InputMode[] {
+function inputModeOrder(holdsKeys: boolean, latchRequired = false): readonly InputMode[] {
   if (!holdsKeys) return ['standard', 'scan'];
   return latchRequired ? ['sticky', 'scan'] : ['standard', 'sticky', 'scan'];
 }
@@ -87,23 +90,9 @@ export function nextInputMode(m: InputMode, holdsKeys: boolean, latchRequired = 
   return order[(i < 0 ? 0 : i + 1) % order.length]!;
 }
 
-/**
- * WRITES A POSITION, through the two values behind it. Both surfaces of this setting call it — the bar's ☝️ and the motor
- * panel's row — because two surfaces that write one setting in two ways are two surfaces that will disagree, which is the
- * defect ADR-0113 and this file's own comments name over and over.
- *
- * 📌 Entering the scan LEAVES THE LATCH WHERE IT IS: `inputModeOf` gives the scan priority, so the position shown is never
- * ambiguous, and a child who comes back out finds the choice she had made.
- */
-export function applyInputMode(next: InputMode, w: {
-  readonly latched: boolean;
-  readonly setLatch: (on: boolean) => void;
-  readonly setScan: (on: boolean) => void;
-}): void {
-  w.setScan(next === 'scan');
-  if (next === 'scan') return;
-  if (w.latched !== (next === 'sticky')) w.setLatch(next === 'sticky');
-}
+// 📌 `applyInputMode` VIVEU AQUI e saiu no mesmo dia (2026-09-21). Ele existia para que as DUAS superfícies deste ajuste — o ☝️
+// e a linha do painel motora — escrevessem pela mesma porta; o Dev tirou a linha, ficou um chamador só, e uma porta partilhada
+// por um é uma indireção a mais para quem lê. A regra que ele guardava está escrita no acto do ícone, onde acontece.
 import { proximaVelocidade } from '../core/game-speed.js';
 // ⚠️ IMPORT DIRETO DE `platform/storage`, e não uma peça a mais no `ctx`, e a escolha é sobre quem pode
 // esquecer: `initPauseIcons` é chamado pela raiz de composição de CADA jogo, e um `store` injetado é um
@@ -1225,23 +1214,21 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       // verbatim: `players[i].toggleMove` with no `||{}` guard (unlike contrast/cvd below).
       const latched = !!P()[i].toggleMove;
       const next = nextInputMode(inputModeOf({ toggleMove: latched, switchScan }), ctx.seguraTeclas(), recusaAgora(i) !== null);
-      // The latch writer speaks for itself, so the position is announced only when nothing spoke: otherwise the child would hear
-      // «no holding needed, off» when what ended was the scan.
-      let spoken = false;
-      applyInputMode(next, {
-        latched,
-        setScan: setSwitchScanValue,
-        setLatch: (on) => {
-          spoken = true;
-          // ⚠️ THE REFUSAL, kept where it always belonged: over the WRITE. The cycle above already skips `standard` on a device
-          // that always latches, so this should be unreachable — and it stays because `iconAct` is exported and the two rules
-          // could drift apart, which is the same reason the guards below give for not being belt and braces.
-          const recusa = recusaAgora(i);
-          if (recusa) { ctx.srAlert(t(recusa.chave)); return; }
-          setToggleMove(i, on);
-        },
-      });
-      if (!spoken) ctx.srSay(t('sr.icon.inputMode', { v: t(INPUT_MODE_NAME[next]) }));
+      setSwitchScanValue(next === 'scan');
+      // 📌 ENTERING THE SCAN LEAVES THE LATCH WHERE SHE PUT IT — the scan wins in `inputModeOf`, so the position shown is never
+      // ambiguous and coming back out returns her to the choice she had made. Leaving it writes the position she walked to.
+      // ⚠️ And the latch writer ANNOUNCES BY ITSELF, so it is called only where it changes something: otherwise the child would
+      // hear «não precisa segurar, desligado» when what ended was the scan.
+      if (next !== 'scan' && latched !== (next === 'sticky')) {
+        // ⚠️ THE REFUSAL, over the WRITE, which is the only thing it ever meant. The cycle above already skips `standard` on a
+        // device that always latches, so this should be unreachable — and it stays because `iconAct` is exported and the two
+        // rules could drift apart, which is the same reason the guards below give for not being belt and braces.
+        const recusa = recusaAgora(i);
+        if (recusa) { ctx.srAlert(t(recusa.chave)); return; }
+        setToggleMove(i, next === 'sticky');
+        return;
+      }
+      ctx.srSay(t('sr.icon.inputMode', { v: t(INPUT_MODE_NAME[next]) }));
     },
     // ⚠️ OS DOIS ÍCONES DEIXARAM DE SE APAGAR UM AO OUTRO (#104). Eles SEMPRE ciclaram dentro do seu eixo —
     // `nextContrast` e `nextCvd` existem separados desde sempre —, mas escreviam os dois no mesmo campo, e

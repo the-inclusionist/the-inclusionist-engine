@@ -162,6 +162,7 @@ const en: Record<string, string> = {
   'icon.altmove': 'How you press',
   'input.standard': 'standard',
   'input.sticky': 'no holding needed',
+  'scan.nothing': 'cancel',
   'input.scan': 'one button only',
   'icon.contrast': 'High contrast',
   'icon.cvd': 'Colour-blindness correction',

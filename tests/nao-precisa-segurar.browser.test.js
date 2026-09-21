@@ -69,55 +69,25 @@ const fechar = () => {
 };
 
 describe('the sticky-keys row a child can read', () => {
-  it('🔴 [Right] it is offered, by the name the child reads — not by the mechanism\'s name', async () => {
+  /*
+   * 🔴 A LINHA SAIU DESTE PAINEL (o Dev, 2026-09-21: «Tire a linha de acessibilidade motora»), no mesmo dia em que entrou, e o
+   * que este caso mede é a AUSÊNCIA — porque uma linha removida que volta por acidente é exactamente o tipo de regresso que
+   * ninguém nota. O ajuste existe, com as três posições, no ☝️ da barra rápida: é essa a superfície que ele desenhou.
+   */
+  it('🎯 [Zero] o «jeito de apertar» NÃO é uma linha do painel motora — ele mora no ☝️ da barra', async () => {
     const botao = await abrirMotora();
-    expect(botao, 'a game that holds keys was not offered the option').not.toBeNull();
-    const linha = botao.closest('.ctrl-row');
-    expect(linha.hidden, 'a game that holds keys had the option hidden').toBe(false);
-    // 🔴 THE ROW IS A CYCLE OF THREE SINCE ADR-0218 — standard · no holding needed · one button only — so the name is on the
-    // control (`aria-label`) and the POSITION is what the child reads beside it. A `<strong>` with the name would say the
-    // subject twice to whoever listens, which is what `atualizarPassos` exists to avoid.
-    expect(botao.getAttribute('aria-label')).toBe(pt['motor.altmove']);
-    expect(botao.getAttribute('aria-valuemax'), 'a game that holds keys was not offered the three positions').toBe('2');
-    expect(botao.getAttribute('aria-valuetext')).toBe(pt['input.standard']);
-    // 🔴 ONE SETTING, ONE NAME. The bar and the panel writing the same value under two names is how a child learns they are two
-    // different things — and it was the state of this repository until today («Teclas de alternância» × «Movimento por
-    // alternância»), both of them the mechanism's name and neither one hers.
-    expect(pt['motor.altmove']).toBe(pt['icon.altmove']);
-    expect(pt['motor.altmove'], 'the name is still the mechanism\'s').not.toMatch(/altern/i);
-    fechar();
-  });
-
-  it('🔴 [Right] walking the cycle writes the SAME two values the bar\'s ☝️ writes', async () => {
-    const state = await import('../app/js/core/state.js');
-    const botao = await abrirMotora();
-    const avancar = () => botao.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
-
-    avancar(); // padrão → não precisa segurar
-    expect(botao.getAttribute('aria-valuetext')).toBe(pt['input.sticky']);
-    // the two halves the bar writes too: the seat the cartridge passed, and the key that survives to tomorrow
-    expect(assentos[0].toggleMove, 'the seat the cartridge passed did not receive the choice').toBe(true);
-    expect(localStorage.getItem('incl_togglemove_p0'), 'the choice was not kept for the next day').toBe('1');
-
-    avancar(); // não precisa segurar → um botão só
-    expect(botao.getAttribute('aria-valuetext')).toBe(pt['input.scan']);
-    expect(state.switchScan, 'the row did not enter one-button play').toBe(true);
-    expect(localStorage.getItem('incl_switch_scan'), 'one-button play was not kept for the next day').toBe('1');
-    // 📌 AND THE LATCH IS LEFT WHERE SHE PUT IT: the scan wins in the reading, so her choice is still there when she comes back.
-    expect(assentos[0].toggleMove, 'entering the scan threw away the latch she had chosen').toBe(true);
-
-    botao.dispatchEvent(new CustomEvent('passo', { detail: -1, bubbles: true })); // and the arrows walk both ways
-    expect(botao.getAttribute('aria-valuetext')).toBe(pt['input.sticky']);
-    expect(state.switchScan).toBe(false);
+    expect(botao, 'a linha voltou ao painel: o ajuste passou a ter duas superfícies outra vez').toBeNull();
+    // e o par, senão «ausente» passaria por um painel que não abriu: a linha vizinha (ADR-0217) continua lá
+    expect(document.querySelector('#motora #opt-cooldown'), 'o painel motora não abriu — o caso acima não mediria nada').not.toBeNull();
     fechar();
   });
 
   /**
-   * 🔴 THE OTHER HALF OF THE SAME PROBLEM (ADR-0217): the row above is for a hand that cannot HOLD, this one for a hand that
-   * cannot press ONCE. It is off from the factory — for a child with no tremor it would be half a second lost between every two
+   * 🔴 «ESPERAR ENTRE TOQUES» (ADR-0217): a linha que FICA — é outro ajuste, e ninguém a tirou. Ela é para a mão que não
+   * consegue apertar UMA vez, e sai de fábrica desligada, porque para quem não treme seria meio segundo perdido entre duas
    * presses — and what it refuses is measured in `input-cooldown.node`; here it is that she can find it and that it is kept.
    */
-  it('🔴 [Right] «Esperar entre toques» is offered beside it, off, and the choice survives to the next day', async () => {
+  it('🔴 [Right] «Esperar entre toques» is offered, off, and the choice survives to the next day', async () => {
     const state = await import('../app/js/core/state.js'); // a module of bindings, not a default export
     await abrirMotora();
     const botao = document.querySelector('#motora #opt-cooldown');
@@ -220,25 +190,9 @@ describe('the sticky-keys row a child can read', () => {
     }
   });
 
-  /**
-   * ⚠️ ON THE EYES, THE FACE, GESTURES AND SPEECH IT CANNOT BE TURNED OFF (ADR-0104 §C): those devices send one command at a
-   * time, so the latch is not a preference — it is the only way the control works. The row stays VISIBLE and locked with the
-   * reason, because hiding it would hide why (ADR-0113 clause 3).
-   */
-  it('🔴 [Right] on a device that sends one command at a time it is locked, and the reason is there to read', async () => {
-    const { arestaDoJogador, habilitarAssistidaDe, entradaDe } = await import('../app/js/input/state.js');
-    habilitarAssistidaDe(0);
-    arestaDoJogador(0, 'olhos');
-    expect(entradaDe(0).emUso, 'the eyes did not become the transport in use: the case would measure nothing').toBe('olhos');
-    const botao = await abrirMotora();
-    // 🔴 THE LOCK IS NOW TOLD BY THE CYCLE (ADR-0218): “standard” is not among the positions on a device that always latches, so
-    // the child cannot walk to a place the device would not let her stay in. Disabling the whole row instead would have taken
-    // «um botão só» with it — and the child playing with her eyes is the likeliest of all to need it.
-    expect(botao.getAttribute('aria-valuemax'), 'the standard position was offered on a device that always latches').toBe('1');
-    expect(botao.getAttribute('aria-valuetext'), 'it did not open on the position the device forces').toBe(pt['input.sticky']);
-    expect(botao.getAttribute('title'), 'locked without a reason is worse than not offering it').toBe(pt['alt.exigida.olhos']);
-    fechar();
-  });
+  // ⚠️ O CASO DA TRAVA DO APARELHO SAIU COM A LINHA (2026-09-21). Ele media que, nos olhos, no rosto, nos gestos e na fala, a
+  // linha ficava VISÍVEL e trancada com o motivo (ADR-0113 cláusula 3). Sem linha não há o que trancar: o ☝️ simplesmente não
+  // oferece o «padrão» nesses aparelhos, e essa regra é medida em `pause-icons.node`, onde o ciclo vive.
 });
 
 // MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-nao-precisa-segurar.py`:

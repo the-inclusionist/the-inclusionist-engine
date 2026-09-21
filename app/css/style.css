@@ -593,6 +593,15 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
   text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px 2px #000,2px -2px #000,-2px -2px #000;
   font-family:var(--font);font-weight:800;font-size:calc(var(--ui-fs,16px)*2);letter-spacing:var(--ls);white-space:nowrap}
 .pausa-rapida[hidden]{display:none}
+/* O QUE A VARREDURA ESTÁ A OFERECER (ADR-0218, #201): com «um botão só», a criança não escolhe — ela espera, e o que
+   ela espera tem de estar à vista. As MESMAS letras brancas contornadas da pausa rápida, sem caixa, e no ALTO da
+   região, abaixo da faixa da barra (`--barra-a11y-h`), que é a zona que nenhum jogo usa. Sem ponteiro: é aviso, não
+   controle — quem o aciona é o único botão dela, onde quer que ele esteja. */
+.scan-now{position:absolute;left:50%;top:var(--barra-a11y-h,0px);transform:translateX(-50%);z-index:12;
+  pointer-events:none;color:#fff;-webkit-text-stroke:.06em #000;paint-order:stroke fill;
+  text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px 2px #000,2px -2px #000,-2px -2px #000;
+  font-family:var(--font);font-weight:800;font-size:calc(var(--ui-fs,16px)*1.5);letter-spacing:var(--ls);white-space:nowrap}
+.scan-now[hidden]{display:none}
 /* A LEGENDA DO RODAPÉ da pausa rápida (errata do ADR-0155): as mesmas letras brancas contornadas, sem caixa, logo
    ACIMA da pílula START do pad — que continua à vista, porque é a saída de quem só tem dedo. ⚠️ `left`/`right` e não
    `left:50%` + `translate`: com ele a caixa encolhia para METADE da região (medido: 271 px, três linhas, por cima do

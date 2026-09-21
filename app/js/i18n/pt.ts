@@ -252,6 +252,7 @@ const pt: Record<string, string> = {
   'icon.altmove': 'Jeito de apertar',
   'input.standard': 'padrão',
   'input.sticky': 'não precisa segurar',
+  'scan.nothing': 'cancelar',
   'input.scan': 'um botão só',
   'icon.contrast': 'Alto contraste',
   'icon.cvd': 'Correção de daltonismo',
