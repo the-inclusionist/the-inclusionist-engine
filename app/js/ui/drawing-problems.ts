@@ -32,8 +32,8 @@ export interface DrawingProblemsCtx {
 /**
  * A node named the way a developer finds it: `tag#id.firstClass`.
  *
- * 📌 NÃO é exportada, e o portão `exports-sem-consumidor` é que o disse: exportá-la publicava um nome que só este ficheiro usa,
- * e um export sem consumidor é superfície que alguém terá de manter sem ninguém precisar (ADR-0170 §3).
+ * 📌 It is NOT exported, and the `exports-without-consumer` gate is what said so: exporting it would publish a name only this
+ * file uses, and an export with no consumer is surface somebody has to maintain with nobody needing it (ADR-0170 §3).
  */
 function nodeName(el: Element): string {
   return el.tagName.toLowerCase() + (el.id ? `#${el.id}` : '')

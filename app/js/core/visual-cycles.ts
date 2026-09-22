@@ -1,40 +1,41 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/visual-cycles — OS DOIS CICLOS DA ACESSIBILIDADE VISUAL, e a assimetria entre eles (ADR-0221; issue #203).
+// core/visual-cycles — THE TWO CYCLES OF VISUAL ACCESSIBILITY, and the asymmetry between them (ADR-0221; issue #203).
 //
-// O alto contraste e a correcção de cor são duas escolhas que a criança percorre pela barra rápida, e viviam em dois módulos
-// diferentes: a lista dos níveis em `ui/settings-visual`, os passos e os nomes em `ui/pause-icons`. 🔴 Estão aqui juntos porque
-// só juntos se lê a coisa que mais custa a quem os mantém — a ASSIMETRIA deles, que está escrita a seguir e é deliberada.
+// High contrast and colour correction are two choices a child steps through from the quick bar, and they used to live in two
+// different modules: the list of levels in `ui/settings-visual`, the steps and the names in `ui/pause-icons`. 🔴 They are here
+// together because the thing that costs most to maintain only reads when both are in sight — their ASYMMETRY, written below
+// and deliberate.
 //
-// ⚠️ MÓDULO-FOLHA: zero imports, zero DOM, zero armazenamento. São listas e duas contas.
+// ⚠️ A LEAF MODULE: zero imports, zero DOM, zero storage. Two lists and two small sums.
 //
-// 📌 O que ele NÃO decide: qual ciclo a barra oferece, nem quando. Isso é do ícone (`ui/pause-icons`) e do painel
-// (`ui/settings-visual`), que são as duas superfícies por onde a mesma escolha se pede.
+// 📌 What it does NOT decide: which cycle the bar offers, or when. That belongs to the icon (`ui/pause-icons`) and to the panel
+// (`ui/settings-visual`), the two surfaces through which the same choice is asked for.
 
-/** Os níveis de alto contraste, em valores de `player.viz`. O primeiro é «desligado». */
+/** The high-contrast levels, as `player.viz` values. The first one is «off». */
 export const CONTRAST_LEVELS: readonly string[] = ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7'];
 
-/** O ciclo da correcção de cor, em valores de `player.viz`. */
+/** The colour-correction cycle, as `player.viz` values. */
 export const CVD_SEQ: readonly string[] = ['normal', 'fix-protan', 'fix-deuter', 'fix-tritan'];
 
 /**
- * As chaves i18n dos nomes anunciados da correcção de cor, indexadas como o `CVD_SEQ`.
+ * The i18n keys of the announced colour-correction names, indexed like `CVD_SEQ`.
  *
- * ⚠️ A POSIÇÃO 0 É `cvd.tricro` E NÃO `cvd.off`, E AS DUAS CHAVES NÃO SE TROCAM. Esta lista nomeia as quatro ESCOLHAS do
- * ciclo, logo a posição 0 é um jeito de ver — a visão tricromática, a que não precisa de correcção — e diz-se como tal. O
- * `cvd.off` é o RECUO para valores de `viz` que não são correcção nenhuma, e 13 dos 16 modos são exactamente isso: as três
- * simulações, os três níveis de contraste, os cinco de baixa visão e o modo cego. Anunciar «visão tricromática» ali seria o
- * software afirmar o que a criança vê enquanto ela simula não ver. A escolha é nomeada; o recuo é desligado.
+ * ⚠️ POSITION 0 IS `cvd.tricro` AND NOT `cvd.off`, AND THE TWO KEYS DO NOT SWAP. This list names the four CHOICES of the
+ * cycle, so position 0 is a way of seeing — trichromatic vision, the one that needs no correction — and it says so. `cvd.off`
+ * is the FALLBACK for `viz` values that are no correction at all, and 13 of the 16 modes are exactly that: the three
+ * simulations, the three contrast levels, the five low-vision ones and blind mode. Announcing «trichromatic vision» there
+ * would be the software asserting what the child sees while she simulates not seeing. The choice is named; the fallback is off.
  */
 export const CVD_NAMES: readonly string[] = ['cvd.tricro', 'cvd.protan', 'cvd.deuter', 'cvd.tritan'];
 
 /*
- * 🔴 O `CVD_LABELS` NÃO VEIO, E FOI APAGADO. Ele estava na dívida declarada de `ui/pause-icons`
- * (`docs/6-DevOps-SRE/exports-without-consumer.json`) — publicado e sem consumidor nenhum, medido —, e o comentário dele dizia
- * «o rótulo que o `iconLabel` usa», o que deixou de ser verdade em algum momento sem ninguém reparar. Um livro-razão de dívida
- * existe para ENCOLHER: mudá-lo de casa era carregar com ele mais um ano. O que o `iconLabel` usa é o `CVD_NAMES`.
+ * 🔴 `CVD_LABELS` DID NOT COME ALONG — IT WAS DELETED. It sat in the declared debt of `ui/pause-icons`
+ * (`docs/6-DevOps-SRE/exports-without-consumer.json`) — published and measured to have no consumer anywhere — and its own
+ * comment called it «the label `iconLabel` uses», which had stopped being true at some point with nobody noticing. A debt
+ * ledger exists to SHRINK: moving it house would have carried it another year. What `iconLabel` uses is `CVD_NAMES`.
  */
 
-/** O passo seguinte do contraste. Um `viz` que não está na lista — um filtro de correcção, por exemplo — conta como índice 0. */
+/** The next contrast step. A `viz` that is not in the list — a correction filter, say — counts as index 0. */
 export function nextContrast(cur: string | undefined): string {
   let idx = CONTRAST_LEVELS.indexOf(cur as string);
   idx = idx < 0 ? 0 : idx;
@@ -42,12 +43,13 @@ export function nextContrast(cur: string | undefined): string {
 }
 
 /**
- * O passo seguinte da correcção de cor.
+ * The next colour-correction step.
  *
- * 🔴 NOTE A ASSIMETRIA COM O `nextContrast`, e ela é o motivo de os dois viverem no mesmo ficheiro: um `viz` desconhecido cai
- * no índice **1** (`fix-protan`) e não no 0. É literal do `game.js` (`idx = idx<0 ? 1 : (idx+1)%seq.length`), e o efeito para
- * a criança é concreto: partindo de um modo que não é correcção, o contraste liga-se no primeiro nível e a correcção salta o
- * «normal» e entra logo na protanopia. Separados, um leitor corrige um pelo outro e apaga uma decisão sem saber que existia.
+ * 🔴 NOTE THE ASYMMETRY WITH `nextContrast`, and it is the reason the two live in one file: an unknown `viz` lands on index
+ * **1** (`fix-protan`) and not on 0. It is verbatim from `game.js` (`idx = idx<0 ? 1 : (idx+1)%seq.length`), and the effect on
+ * the child is concrete: starting from a mode that is not a correction, contrast switches on at its first level while
+ * correction skips «normal» and goes straight into protanopia. Apart, a reader fixes one by the other and deletes a decision
+ * without knowing it existed.
  */
 export function nextCvd(cur: string | undefined): { idx: number; mode: string } {
   let idx = CVD_SEQ.indexOf(cur as string);

@@ -31,15 +31,15 @@ import type { NavKeys } from '../input/edges.js'; // a MESMA intenção que tecl
 import { t, getLocale, setLocale } from '../core/i18n.js';
 import { flagOf, nextLocale, LANGUAGE_NAME, type CycleLocale } from './locale-flags.js';
 /*
- * 🔴 OS DOIS CICLOS VISUAIS MUDARAM DE CASA para `core/visual-cycles` (ADR-0221, issue #203). Estavam em DOIS módulos — a
- * lista dos níveis no painel, os passos e os nomes aqui — e a coisa que mais custa a quem os mantém é a ASSIMETRIA entre
- * eles, que só se lê com os dois à vista. Ver o cabeçalho de lá.
+ * 🔴 THE TWO VISUAL CYCLES MOVED HOUSE to `core/visual-cycles` (ADR-0221, issue #203). They lived in TWO modules — the list of
+ * levels in the panel, the steps and the names here — and the thing that costs most to maintain is the ASYMMETRY between them,
+ * which only reads with both in sight. See the header there.
  */
 import { SHORT_THEME, SHORT_CORRECTION } from './visual-axes-panel.js';
 /*
- * 🔴 O MODO CALMO MUDOU DE CASA (ADR-0221, issue #203). Ele não é sobre ÍCONES: é sobre o que uma criança que não suporta
- * ruído precisa que a engine cale, e o ícone é só uma das superfícies por onde ela o pede. Vive em `core/calm-mode`, que é
- * módulo-folha — zero imports, zero DOM —, e por isso o clamp destrutivo do nível 1 se consegue medir sem montar nada.
+ * 🔴 CALM MODE MOVED HOUSE (ADR-0221, issue #203). It is not about ICONS: it is about what a child who cannot bear noise needs
+ * the engine to silence, and the icon is only one of the surfaces she asks through. It lives in `core/calm-mode`, a leaf
+ * module — zero imports, zero DOM — which is why the destructive clamp of level 1 can be measured without mounting anything.
  */
 import { CALM_NAMES, CALM_AUDIO_CATS, nextCalmMode, sanitiseTeaLevel, calmAudioPlan, calmMotionPlan } from '../core/calm-mode.js';
 /*
