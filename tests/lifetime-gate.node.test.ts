@@ -117,7 +117,7 @@ describe('ADR-0038 · PÁGINA — o que mora em core/state sobrevive a fechar o 
 
   it('[Right] e persiste em chave COMPARTILHADA, nunca no escopo do jogo', () => {
     // A distinção é de acessibilidade, não de arrumação: prefixar por jogo faria a criança cega reconfigurar
-    // modo cego, bengala e voz nos 35 jogos do catálogo. `tests/storage-escopos` guarda a TABELA de chaves;
+    // modo cego, bengala e voz nos 35 jogos do catálogo. `tests/storage-scopes` guarda a TABELA de chaves;
     // este caso guarda o CAMINHO — o que o setter de fato escreve quando roda.
     const foraDeEscopo: string[] = [];
     for (const nome of settersDoModulo()) {

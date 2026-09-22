@@ -424,7 +424,7 @@ const FIXTURES_CONHECIDOS = {
   // texto. Agora declara 'alvo' com uma CHAVE que nem existe no dicionário — `t()` devolve a própria chave
   // quando não acha, então o caso afirma o que interessa (a legenda sai) sem depender de idioma nenhum.
   'i18n-dicts.node.test.js': 3,        // `sr.quiz.*`: 253 chaves das quais um 2º jogo usa um punhado (achado 2)
-  'storage-escopos.node.test.js': 2,   // `quizlevel` no registro de chaves — é a chave que o namespace isola
+  'storage-scopes.node.test.js': 2,   // `quizlevel` no registro de chaves — é a chave que o namespace isola
 };
 
 /**
@@ -543,7 +543,7 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
     //   · `activities-menu.*` saiu com o próprio menu, que é do platformer (ADR-0174, issue #171).
     //   · `i18n-dicts` (3)          — as chaves `sr.quiz.*`. É o ACHADO 2 do segundo consumidor (peso morto
     //     no dicionário), e não acoplamento: um segundo jogo herda 253 chaves e usa um punhado.
-    //   · `storage-escopos` (2)     — a chave `quizlevel`, pelo mesmo motivo de `platform/storage`: `gameKey()`
+    //   · `storage-scopes` (2)     — a chave `quizlevel`, pelo mesmo motivo de `platform/storage`: `gameKey()`
     //     É o mecanismo de escopo de jogo, e a palavra é que chama a atenção do casador.
     // As duas últimas são o casador notando uma PALAVRA, não a fronteira notando um vazamento.
     expect(Object.keys(FIXTURES_CONHECIDOS)).toHaveLength(2);

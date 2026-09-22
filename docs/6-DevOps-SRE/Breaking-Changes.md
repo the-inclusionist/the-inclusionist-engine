@@ -1611,6 +1611,27 @@ means the «185 files» measured on the morning of 2026-09-22 was a LOWER BOUND,
 | `tools/auditar-historico.py` | `tools/audit-history-for-secrets.py` |
 | `tools/migrar-issues-para-github.py` | `tools/migrate-issues-to-github.py` |
 
+## AY · The 136 test names, in four batches — NOT breaking (ADR-0219 phase 3, issue #202)
+
+⚠️ **Nothing to migrate, and this note exists so nobody looks for something to migrate.** No test is published: the package
+ships `dist-pkg`, the stylesheet, the fonts, the licences and one script. One note for the four batches, as promised when the
+first one landed — four notes saying «nothing to migrate» would have been four notes too many.
+
+📏 **With this, phase 3's file names are done for everything that is code.** Of the 185 file names measured on the morning of
+2026-09-22, **21 are left, and all 21 are documents** — which is phase 5, and a different question: a document's name is read by
+a person looking for it, not by an import.
+
+🎯 **The rule the four batches were named by: A TEST'S NAME IS A CLAIM, NOT A LABEL.** `nada-vem-de-fora` asserts that nothing
+reaches the device at run time — pillar 8 — so it is `nothing-comes-from-outside`; `estado-nao-so-por-cor` asserts that a state
+is never shown by colour alone, so it is `state-never-by-colour-alone`. The old names often said the SUBJECT; the new ones say
+what is guaranteed, which is what the file is for.
+
+📌 **What kept its stem on purpose:** `exports-sem-consumidor` → `exports-without-consumer`, because that is what the script and
+the ledger beside it are already called; and `revisao-das-paginas` → `page-revisions`, the same stem as `scripts/page-revisions.mjs`.
+A gate whose name disagrees with its own ledger makes a reader look for a third thing.
+
+The tables are printed from the map: `node scripts/print-rename-table.mjs --files tests-1` (and `-2`, `-3`, `-4`).
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

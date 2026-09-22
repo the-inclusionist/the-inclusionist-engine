@@ -145,7 +145,7 @@ export default defineConfig({
         // `createHandlerBoundToURL` throws for a page not in the precache, and the generated `sw.js` runs inside a promise —
         // so the throw was silent, the precache still worked, and NO runtime route below was ever registered (measured
         // 2026-09-13: the models' `CacheOnly` route let a request reach Hugging Face). A cartridge that builds its own
-        // single-page shell sets its own fallback. Gate: `tests/service-worker-regista-as-rotas.node.test.js`.
+        // single-page shell sets its own fallback. Gate: `tests/service-worker-registers-its-routes.node.test.js`.
         navigateFallback: null,
       },
       // PWA fica DESLIGADA no dev (default) — sem SW/cache atrapalhando o HMR; testar via `npm run build` + `preview`.

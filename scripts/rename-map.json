@@ -661,6 +661,42 @@
         "tests/quiz-le-as-opcoes.browser.test.js": "tests/the-quiz-reads-its-options.browser.test.js",
         "tests/quiz-no-idioma-do-arranque.browser.test.js": "tests/quiz-in-the-boot-language.browser.test.js"
       }
+    },
+    "tests-4": {
+      "done": "2026-09-22",
+      "files": {
+        "tests/reconhecimento-de-fala.node.test.js": "tests/speech-recognition.node.test.js",
+        "tests/relatorio-anual.node.test.js": "tests/annual-report.node.test.js",
+        "tests/resolucao-imposta.browser.test.js": "tests/forced-resolution.browser.test.js",
+        "tests/revisao-das-paginas.node.test.js": "tests/page-revisions.node.test.js",
+        "tests/ritmo-da-fala.browser.test.js": "tests/speech-rate.browser.test.js",
+        "tests/ritmo-da-fala.node.test.js": "tests/speech-rate.node.test.js",
+        "tests/ritmo-da-legenda.browser.test.js": "tests/caption-rate.browser.test.js",
+        "tests/rng-fabrica-e-aritmetica.node.test.js": "tests/rng-factory-and-arithmetic.node.test.js",
+        "tests/rodape-do-painel.browser.test.js": "tests/the-panel-footer-is-the-screens.browser.test.js",
+        "tests/rota-dos-modelos.node.test.js": "tests/model-routes.node.test.js",
+        "tests/rotulos-sem-parenteses.node.test.js": "tests/labels-without-parentheses.node.test.js",
+        "tests/scene-parallax-predios.node.test.js": "tests/scene-parallax-buildings.node.test.js",
+        "tests/scene-parallax-silhuetas.node.test.js": "tests/scene-parallax-silhouettes.node.test.js",
+        "tests/segurar-posiciona-o-cursor.browser.test.js": "tests/holding-places-the-cursor.browser.test.js",
+        "tests/service-worker-regista-as-rotas.node.test.js": "tests/service-worker-registers-its-routes.node.test.js",
+        "tests/simulacao-so-no-jogo.browser.test.js": "tests/simulation-only-in-the-game.browser.test.js",
+        "tests/simulacoes-de-campo-visual.browser.test.js": "tests/field-of-vision-simulations.browser.test.js",
+        "tests/simulacoes-motoras.browser.test.js": "tests/empathy-simulations-mounted.browser.test.js",
+        "tests/sonda-personagem.node.test.js": "tests/character-probe.node.test.js",
+        "tests/storage-escopos.node.test.js": "tests/storage-scopes.node.test.js",
+        "tests/storage-legado.node.test.js": "tests/storage-legacy-keys.node.test.js",
+        "tests/teclado-duas-tabelas.node.test.js": "tests/the-two-keyboard-tables-agree.node.test.js",
+        "tests/texto-cresce-com-a-escala.browser.test.js": "tests/text-grows-with-the-scale.browser.test.js",
+        "tests/texto-nunca-abaixo-de-16.node.test.js": "tests/no-text-under-16px.node.test.js",
+        "tests/um-botao-so.browser.test.js": "tests/one-button-only.browser.test.js",
+        "tests/uma-regua-de-alvo.node.test.js": "tests/one-target-ruler.node.test.js",
+        "tests/validador-sem-deriva.node.test.js": "tests/the-validator-does-not-drift.node.test.js",
+        "tests/velocidade-do-jogo.node.test.js": "tests/game-speed.node.test.js",
+        "tests/voz-do-navegador-primeiro.browser.test.js": "tests/browser-voice-first.browser.test.js",
+        "tests/voz-por-idioma.node.test.js": "tests/voice-per-language.node.test.js",
+        "tests/vozes-fora-do-pacote.node.test.js": "tests/no-voice-model-in-the-package.node.test.js"
+      }
     }
   }
 }
