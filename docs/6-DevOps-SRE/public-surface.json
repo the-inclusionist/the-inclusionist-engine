@@ -5,7 +5,6 @@
     "Declinios",
     "Engine",
     "EngineHost",
-    "FlashMeasurement",
     "createGame"
   ],
   "consumer-quiz/main-quiz.ts": [
@@ -791,6 +790,11 @@
     "tonePan",
     "volume"
   ],
+  "platform/flash-sampler.ts": [
+    "FlashMeasurement",
+    "FlashSamplerCtx",
+    "sampleFlashes"
+  ],
   "platform/guide-intensity.ts": [
     "FAR_CUT",
     "FAR_VOL",
@@ -1472,6 +1476,11 @@
     "toggleAria",
     "toggleBtn",
     "toggleLabel"
+  ],
+  "ui/drawing-problems.ts": [
+    "DrawingProblemsCtx",
+    "barIntruderProblems",
+    "drawnBelowTheFloor"
   ],
   "ui/eye-control.ts": [
     "CameraFeed",

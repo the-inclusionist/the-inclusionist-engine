@@ -23,8 +23,8 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2140,
-      "decisionNodes": 319,
+      "codeLines": 2092,
+      "decisionNodes": 309,
       "maxDepth": 4,
       "fanOut": 78,
       "fanIn": 1
@@ -581,6 +581,13 @@
       "maxDepth": 2,
       "fanOut": 1,
       "fanIn": 3
+    },
+    "platform/flash-sampler.ts": {
+      "codeLines": 65,
+      "decisionNodes": 11,
+      "maxDepth": 3,
+      "fanOut": 1,
+      "fanIn": 1
     },
     "platform/guide-intensity.ts": {
       "codeLines": 17,

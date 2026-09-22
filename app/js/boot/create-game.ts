@@ -52,7 +52,7 @@ import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
 import { createCrashNotice } from '../ui/loop-crash.js';
 import { registerCrashNotice } from '../core/loop.js';
-import { analyseFlashes, COLUMNS, ROWS, type LuminanceFrame } from '../core/flash-threshold.js';
+import { sampleFlashes, type FlashMeasurement } from '../platform/flash-sampler.js';
 import { initFocusTrap, focusablesInDom } from '../ui/focus-trap.js';
 import { showReachNotice, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { reach, defaultTransports, type Reach, type Availability } from '../input/transports.js';
@@ -445,13 +445,12 @@ export interface CreateGameOptions {
   readonly setCorrecaoDoJogador?: (i: number, correcao: Correction) => void;
 }
 
-/** What `Engine.medirFlashes` found. `passa` and `piorSegundo` exist only when the canvas was read. */
-export interface FlashMeasurement {
-  readonly lido: boolean;
-  readonly motivo?: string;
-  readonly passa?: boolean;
-  readonly piorSegundo?: number;
-}
+/*
+ * ⚠️ O TIPO MUDOU DE CASA E O NOME FICOU. `FlashMeasurement` passou a ser declarado em `platform/flash-sampler`, junto de quem
+ * o produz, e é REEXPORTADO daqui porque é superfície pública desta raiz desde a nota AR: um jogo que o importa de
+ * `boot/create-game` continua a poder. Mover o nome sem isto seria uma quebra que ninguém declarou.
+ */
+export type { FlashMeasurement };
 
 export interface Engine {
   readonly declaration: GameDeclaration;
@@ -3948,59 +3947,20 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     state.on('menuIndexOn', () => { voice.refreshGrammar(); });
     void voice.apply(state.voiceControl);
   }
-  const AMOSTRA_C = COLUMNS * 10;
-  const AMOSTRA_L = ROWS * 10;
-  const linear = (v: number): number => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
-  function medirFlashes(ms: number): Promise<FlashMeasurement> {
-    const mundo = cartucho.declaration.world();
-    const alvo = mundo.kind === 'element' ? $<HTMLElement>(mundo.selector) : null;
-    const canvas = alvo?.tagName === 'CANVAS' ? alvo as HTMLCanvasElement : alvo?.querySelector('canvas') ?? null;
-    if (!canvas) return Promise.resolve({ lido: false, motivo: 'the world is not a canvas and contains none to read' });
-    const copia = doc.createElement('canvas');
-    copia.width = AMOSTRA_C;
-    copia.height = AMOSTRA_L;
-    const ctx = copia.getContext('2d', { willReadFrequently: true });
-    if (!ctx || typeof win.requestAnimationFrame !== 'function') return Promise.resolve({ lido: false, motivo: 'this host cannot sample canvases' });
-    return new Promise((resolver) => {
-      const quadros: LuminanceFrame[] = [];
-      let inicio = -1;
-      let algumPixel = false;
-      const passo = (agora: number): void => {
-        if (inicio < 0) inicio = agora;
-        let px: Uint8ClampedArray;
-        try {
-          ctx.clearRect(0, 0, AMOSTRA_C, AMOSTRA_L);
-          ctx.drawImage(canvas, 0, 0, AMOSTRA_C, AMOSTRA_L);
-          px = ctx.getImageData(0, 0, AMOSTRA_C, AMOSTRA_L).data;
-        } catch {
-          resolver({ lido: false, motivo: 'the page may not read the world\'s canvas (an image from another origin drew on it)' });
-          return;
-        }
-        const grade = new Float32Array(COLUMNS * ROWS);
-        for (let y = 0; y < AMOSTRA_L; y++) {
-          for (let x = 0; x < AMOSTRA_C; x++) {
-            const i = (y * AMOSTRA_C + x) * 4;
-            if (px[i + 3]) algumPixel = true;
-            const l = 0.2126 * linear(px[i]!) + 0.7152 * linear(px[i + 1]!) + 0.0722 * linear(px[i + 2]!);
-            grade[Math.floor(y / 10) * COLUMNS + Math.floor(x / 10)] += l / 100;
-          }
-        }
-        quadros.push({ t: agora - inicio, luminancias: grade });
-        if (agora - inicio < ms) { win.requestAnimationFrame(passo); return; }
-        if (!algumPixel) {
-          resolver({ lido: false, motivo: 'the world\'s canvas read transparent in every frame (WebGL canvases need preserveDrawingBuffer)' });
-          return;
-        }
-        const { passa, piorSegundo } = analyseFlashes(quadros);
-        if (!passa) {
-          problemasMedidos.push(`the world's canvas flashed ${piorSegundo} times in one second within a 10-degree field `
-            + '(WCAG 2.3.1 allows 3): it can trigger a seizure in a child with photosensitive epilepsy — slow or dim it');
-        }
-        resolver({ lido: true, passa, piorSegundo });
-      };
-      win.requestAnimationFrame(passo);
-    });
-  }
+  /*
+   * O AMOSTRADOR DE FLASHES MORA EM `platform/flash-sampler` (ADR-0221, issue #203), e o que fica aqui é o que só a raiz sabe:
+   * qual é o canvas do mundo DESTE cartucho, e para onde vai uma falha. 📏 Eram 53 linhas e 12 ramos nesta função.
+   */
+  const medirFlashes = (ms: number): Promise<FlashMeasurement> => sampleFlashes({
+    canvas: () => {
+      const mundo = cartucho.declaration.world();
+      const alvo = mundo.kind === 'element' ? $<HTMLElement>(mundo.selector) : null;
+      return alvo?.tagName === 'CANVAS' ? alvo as HTMLCanvasElement : alvo?.querySelector('canvas') ?? null;
+    },
+    scratch: () => doc.createElement('canvas'),
+    frame: typeof win.requestAnimationFrame === 'function' ? (cb) => { win.requestAnimationFrame(cb); } : undefined,
+    report: (linha) => { problemasMedidos.push(linha); },
+  }, ms);
 
   function desmontar(): void {
     closeReadingThread();
