@@ -30,17 +30,26 @@ export const MIRROR_FOLDERS: ReadonlyArray<readonly [string, string]> = [
   // `vosk-browser` evaluates text as code, so this one was rebuilt with `-s DYNAMIC_EXECUTION=0` to run under the policy.
   ['https://lfs-oinclusionista.jrocha.dev.br/vosk-browser-dynamic-execution-0', 'vosk-browser-dynamic-execution-0'],
   ['https://lfs-oinclusionista.jrocha.dev.br/vosk-models', 'vosk-models'],
+  // The neural voice's phonemizer and the graph runtime it shares with the reading models (issue #192, the Dev on 2026-09-22).
+  // ⚠️ espeak-ng is GPL-3.0-or-later: the folder must carry the matching SOURCE beside the binary, and `docs/CREDITS.md` says
+  // where. The version is in the folder name on purpose — a mirror that drops it cannot serve two versions during an upgrade.
+  ['https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2', 'espeak-ng-1.0.2'],
+  ['https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0', 'onnxruntime-web-1.27.0'],
 ];
 
 /**
  * Addresses the project does NOT mirror, each with why — they go on being fetched upstream even when a base is set.
- * ⚠️ espeak-ng is GPL-3.0-or-later: mirroring the binary obliges the project to publish the matching SOURCE beside it
- * (ADR-0203 erratum), which is a decision of issue #192 and not a side effect of adding a base.
+ *
+ * ✅ EMPTY since 2026-09-22, and that is the Dev's decision («Ok, vamos espelhar»): the two that were here — the neural
+ * voice's phonemizer and the graph runtime it and the reading models share — were the last files a school still fetched from
+ * a third party. 📏 They are five files: `espeak-ng.js` + `espeak-ng.wasm` (18.7 MiB) and the three of `onnxruntime-web`.
+ *
+ * ⚠️ AND ONE OF THEM CARRIES AN OBLIGATION, which is why it waited for a decision instead of following a convenience:
+ * espeak-ng is GPL-3.0-or-later, so mirroring the binary obliges this project to publish the matching SOURCE beside it
+ * (ADR-0203 erratum, issue #192). onnxruntime-web is MIT and obliges nothing. The list stays here, empty, because an empty
+ * list with a reason is a decision a reader can find; a deleted one is a question nobody knows was asked.
  */
-export const NOT_MIRRORED: ReadonlyArray<readonly [string, string]> = [
-  ['https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2', 'GPL: a mirror obliges the project to publish the source beside it (issue #192)'],
-  ['https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0', 'MIT, and mirrorable — it waits for the same decision as its neighbour, so the voice runtime moves as one'],
-];
+export const NOT_MIRRORED: ReadonlyArray<readonly [string, string]> = [];
 
 /** The path a mirror serves this upstream address under, or `null` when no mirror of this project holds it. */
 export function mirrorPathOf(url: string): string | null {

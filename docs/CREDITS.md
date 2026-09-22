@@ -56,6 +56,10 @@ Credit follows what was used. Until that date neural narration relied on:
   **Fangjun Kuang** ([@csukuangfj](https://github.com/csukuangfj)), who packaged Piper voices in the sherpa format.
 - **[Piper](https://github.com/rhasspy/piper)** (Michael Hansen / rhasspy, **MIT**) and the `@mintplex-labs/piper-tts-web` runtime (MIT).
 - **[eSpeak NG](https://github.com/espeak-ng/espeak-ng)** (**GPL-3.0**) — the voices' phonemization (`piper_phonemize`).
+  ⚠️ **Mirrored since 2026-09-22** (issue #192), and the GPL obliges what follows: the project serves the WebAssembly build
+  of `espeak-ng` 1.0.2 from its own bucket, under `espeak-ng-1.0.2/`, and the **matching source** is published beside it in
+  the same folder (`espeak-ng-1.0.2/source/`). A binary served without its source would breach the licence, and a mirror is
+  distribution.
 - **The voices and their dataset licences**, read on 2026-09-14: `pt_BR-faber-medium` (NabuCasa/voice-datasets, CC0),
   `es_MX-claude-high` (HirCoir/Piper-TTS-Spanish, Apache-2.0), `en_US-amy-medium` (MycroftAI/mimic3-voices, «See URL»),
   `en_US-ryan-medium` (roholazandie/ryanspeech, CC BY-NC-SA 4.0). The Dev's answer on Ryan — «nosso projeto não tem fins

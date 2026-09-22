@@ -33,11 +33,21 @@ describe('the base of the heavy files', () => {
     }
   });
 
-  it('🔴 [Zero] what is NOT mirrored goes on being fetched upstream, base or no base', () => {
-    // ⚠️ espeak-ng is GPL: serving the binary from the project's bucket obliges publishing the source beside it (issue #192).
+  it('🔴 [Right] NOTHING is left outside the mirror any more — with a base, no school reaches a third party', () => {
+    /*
+     * ✅ A DECISÃO MUDOU EM 2026-09-22 («Ok, vamos espelhar»), e este caso mudou com ela. Ele afirmava o contrário: que o
+     * `espeak-ng` continuava a ser buscado no jsDelivr mesmo com base, porque é GPL e espelhá-lo obriga a publicar a FONTE
+     * ao lado (issue #192). A obrigação continua a existir — o que mudou foi a resposta a ela.
+     *
+     * ⚠️ E O QUE ESTE CASO PRENDE AGORA É A LISTA VAZIA, que sem ele seria cobertura falsa: com `NOT_MIRRORED` vazio, o
+     * laço do caso acima não corre nenhuma vez e deixaria de exigir o que exigia. A afirmação passa a ser a forte: TODO
+     * ficheiro do catálogo tem caminho no espelho, logo com uma base nenhuma escola toca num terceiro.
+     */
+    expect(NOT_MIRRORED, 'algo voltou a ficar fora do espelho — se é decisão, ela precisa de estar escrita').toEqual([]);
+    const foraDoEspelho = HEAVY_FILES.filter((p) => p.url && !mirrorPathOf(p.url)).map((p) => p.id);
+    expect(foraDoEspelho, 'um pesado sem caminho no espelho').toEqual([]);
     const espeak = HEAVY_FILES.find((p) => p.id === 'voz:runtime:fonemas').url;
-    expect(mirrorPathOf(espeak)).toBeNull();
-    expect(heavySourceOf(espeak, BASE)).toBe(espeak);
+    expect(heavySourceOf(espeak, BASE)).toBe(`${BASE}/espeak-ng-1.0.2/dist/espeak-ng.js`);
   });
 
   it('🔴 [Right] the path is the one the staging tree uses, folder by folder', () => {
