@@ -58,7 +58,7 @@ function buildCtx(over = {}) {
   let phase = 'playing';
   const players = over.players ?? [];
   const naBarra = over.naBarra || new Set();
-  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], hideTouchControls: 0, stopAttract: 0, navBar: [], arestas: [] };
+  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], hideTouchControls: 0, stopAttract: 0, navBar: [], arestas: [], pressionadas: [], soltas: [] };
   return {
     $: (sel) => dom.get(sel) ?? null,
     getGamepads: () => pads,
@@ -97,6 +97,15 @@ function buildCtx(over = {}) {
     // A aresta por jogador (ADR-0113 cláusula 4). Guarda a LISTA e não um contador: a pergunta «que aparelho
     // produz as arestas» é por assento, e um número não distingue dois controles de dois jogadores.
     playerEdge: (jogador, origem) => calls.arestas.push([jogador, origem]),
+    /*
+     * 🔴 O DUBLE DO CONTROLE VIRTUAL, desde 22/09 (ADR-0223). O pad deixou de levantar só arestas: ele APERTA uma
+     * POSIÇÃO no assento dele, e quem decide o que isso significa — ir ao menu, segurar a tecla da criança, entregar o
+     * comando ao cartucho — é o controle, uma vez, para os seis transportes.
+     * 📌 `emMenu` é do duble e não do pad: a resposta de `press` é o que diz se a pressão chegou ao JOGO, e é dela que
+     * depende a aresta. Um duble que respondesse sempre `true` deixaria essa leitura sem nada a segurá-la.
+     */
+    press: (action, source, player) => { calls.pressionadas.push([action, source, player]); return !over.emMenu; },
+    release: (action, source, player) => calls.soltas.push([action, source, player]),
     // UMA entrada onde havia quatro (ADR-0033). O pad e o teclado tinham CÓPIAS da mesma decisão — a grade
     // de três colunas e o desvio de Braille — e duas cópias de uma regra são duas chances de divergir.
     modalInput: (p, intent) => calls.modalInput.push([p, intent]),
@@ -522,6 +531,93 @@ describe('initGamepad — pollPads', () => {
     api.pollPads();
     expect(p.runEdge, 'o Fácil devia ter filtrado a bandeira').toBe(false);
     expect(ctx.calls.arestas, 'o aparelho em uso passou a depender do Modo Fácil').toEqual([[0, 'gamepad']]);
+  });
+
+  /* ===================== A PORTA ÚNICA (ADR-0223) ===================== */
+  // 🔴 O pad era um dos DOIS transportes que não passavam por porta nenhuma: levantava arestas no jogador e mais
+  // nada, logo um cartucho que ouve só `onCommand` — o que a errata do ADR-0111 pediu a todos — não respondia a um
+  // controle na mão da criança. Estes casos prendem as três metades do conserto: a pressão, a resposta e a soltura.
+
+  it('🔴 [Right] o botão APERTA o controle virtual, com a origem e com o ASSENTO', () => {
+    // 📌 O SEGUNDO ASSENTO, e é ele que separa «diz o assento certo» de «diz sempre 0»: o controle 0 está na mão do
+    // jogador 2, então a posição tem de chegar ao controle virtual com o assento 1.
+    const ctx = buildCtx({ players: [makePlayer({ pad: -1 }), makePlayer({ pad: 0, easy: false })] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]); // acção 2 (pulo)
+    api.pollPads();
+    expect(ctx.calls.pressionadas, 'a posição não chegou à porta única, ou chegou ao assento errado')
+      .toEqual([['action2', 'gamepad', 1]]);
+  });
+
+  it('🔴 [CrossCheck] as OITO posições apertam, e não só as seis que têm aresta', () => {
+    // 📏 `EDGE_BY_ACTION` tem seis; cima e baixo sempre andaram por tecla segurada e nunca levantaram bandeira.
+    // Ao cartucho chegam as oito — a aresta é um subconjunto do que a porta leva, e não o contrário.
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [12] })]); // D-pad para cima
+    api.pollPads();
+    expect(ctx.calls.pressionadas.map((c) => c[0]), 'uma posição sem aresta não chegou ao cartucho').toEqual(['up']);
+  });
+
+  it('🔴 [CrossCheck] com um MENU a levar a pressão, a aresta NÃO sobe — a resposta do controle é lida', () => {
+    // 🎯 É a razão de `press` responder um booleano (ADR-0223): o transporte deixa de adivinhar se a pressão chegou
+    // ao jogo. Sem esta leitura, uma criança a navegar um menu com o controle levantaria a aresta de pulo, que a
+    // física consome no quadro em que o jogo volta.
+    const p = makePlayer({ pad: 0, easy: false });
+    const ctx = buildCtx({ players: [p], emMenu: true });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]);
+    api.pollPads();
+    expect(ctx.calls.pressionadas, 'a posição nem chegou a ser apertada').toHaveLength(1);
+    expect(p.jumpEdge, 'o menu levou a pressão e mesmo assim a aresta subiu').toBe(false);
+    expect(ctx.calls.arestas, 'o autómato foi avisado de uma aresta que não houve').toEqual([]);
+  });
+
+  it('🔴 [Right] soltar o botão SOLTA a posição — senão o jogo fica a acreditar que ele continua em baixo', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]);
+    api.pollPads();
+    // ⚠️ A METADE QUE FALTAVA, e uma mutação mostrou-a: com o botão ainda EM BAIXO não há soltura nenhuma. Sem esta
+    // linha, uma borda calculada ao contrário (`!prev && cur`) soltava a posição no instante em que ela era premida
+    // e o caso ficava verde — as duas leituras acabam com a mesma lista, e o que as separa é QUANDO.
+    expect(ctx.calls.soltas, 'soltou uma posição que continua premida').toEqual([]);
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [] })]);
+    api.pollPads();
+    expect(ctx.calls.soltas, 'o dedo saiu do botão e a posição ficou premida para sempre')
+      .toEqual([['action2', 'gamepad', 0]]);
+  });
+
+  it('🔴 [Boundary] e a soltura é INCONDICIONAL: abrir a pausa com o botão premido não deixa a tecla segurada', () => {
+    // ⚠️ A pressão só nasce no ramo de JOGO, mas o dedo sai do botão onde quiser. Se a soltura dependesse do ramo,
+    // uma criança que abre o cartão de pausa com o pulo premido voltaria ao jogo a pular sozinha.
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]);
+    api.pollPads();
+    ctx.setPhaseValue('paused');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [] })]);
+    api.pollPads();
+    expect(ctx.calls.soltas, 'a soltura ficou presa ao ramo de jogo').toEqual([['action2', 'gamepad', 0]]);
+  });
+
+  it('🔴 [Invariant] o Modo Fácil filtra a ARESTA e não a porta: o cartucho ouve o botão na mesma', () => {
+    // 📌 É o que mantém os três transportes a concordar: a entrega ao cartucho nunca passou pelo `edgeAllowed` no
+    // teclado, e não passa aqui. O Fácil decide o que a FÍSICA faz com o botão, não se o jogo soube dele.
+    const p = makePlayer({ pad: 0, easy: true });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [2] })]); // acção 1 (correr)
+    api.pollPads();
+    expect(p.runEdge, 'o Fácil devia ter filtrado a bandeira').toBe(false);
+    expect(ctx.calls.pressionadas, 'o Fácil silenciou o botão para o cartucho, e isso não é o que ele é')
+      .toEqual([['action1', 'gamepad', 0]]);
   });
 
   it('[Right] fase "title": navTitle recebe as teclas quando algum jogador aciona', () => {

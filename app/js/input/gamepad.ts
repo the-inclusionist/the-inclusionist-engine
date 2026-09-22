@@ -337,6 +337,22 @@ export interface GamepadCtx {
    */
   playerEdge: (jogador: number, origem: 'gamepad') => void;
   /**
+   * A PORTA ÚNICA PARA O CARTUCHO (ADR-0223): apertar uma POSIÇÃO no assento deste controle. Responde se a
+   * pressão chegou ao JOGO — `false` quer dizer que um menu a levou.
+   *
+   * 🔴 O PAD NÃO PASSAVA POR PORTA NENHUMA, e isso estava medido: ele levantava arestas no jogador e mais nada,
+   * logo um cartucho que ouve só `onCommand` — o que a errata do ADR-0111 pediu a todos — não respondia a um
+   * controle. As arestas ficam (a física de um cartucho aprende por elas que houve um toque), mas deixam de ser
+   * a única saída: passam a ser CONSEQUÊNCIA de uma pressão que chegou ao jogo.
+   *
+   * 📌 OBRIGATÓRIO, e a errata do ADR-0223 diz porquê: quem monta este transporte é o CARTUCHO, não a raiz, logo
+   * a porta chega por aqui — e uma porta opcional é mais um campo que um jogo pode esquecer, e esquecê-lo devolve
+   * o silêncio que este trabalho existe para acabar. Passe `motor.controller.press`.
+   */
+  press: (action: ActionKey, source: 'gamepad', player: number) => boolean;
+  /** Soltar a POSIÇÃO. O controle solta a tecla que segurou e entrega a soltura — e só para uma pressão que o jogo ouviu. */
+  release: (action: ActionKey, source: 'gamepad', player: number) => void;
+  /**
    * MODAL do PRÓPRIO jogador: a engine entrega a INTENÇÃO, o jogo decide (ADR-0033).
    *
    * Eram quatro — `quizMove(p, delta)`, `quizConfirm`, `quizErase`, `announceBraille` — e as quatro existiam
@@ -398,9 +414,24 @@ interface PadFrame {
   /** Só o START que subiu — pausa e retoma. */
   readonly pauseEdge: boolean;
   readonly edge: (k: ActionKey) => boolean;
+  /**
+   * A BORDA DE DESCIDA: o botão que estava em baixo no quadro anterior e não está agora.
+   *
+   * 🔴 Nasceu com o ADR-0223 e é o que torna a porta única HONESTA neste transporte: o controle virtual guarda
+   * um mapa de `held` para nunca deixar um jogo a acreditar que um botão continua premido, e sem esta metade o
+   * pad apertava e nunca soltava. O pad é o único transporte que lê ESTADO por quadro em vez de receber eventos,
+   * logo a soltura não lhe chega — calcula-se.
+   */
+  readonly released: (k: ActionKey) => boolean;
   /** As seis intenções de menu. `comStart` só no título, onde o START é «começar» e não «sair». */
   readonly navKeys: (comStart?: boolean) => NavKeys;
 }
+
+/** As oito posições que ESTE transporte lê: o direcional e as quatro acções. Os ombros e os gatilhos que um
+ *  cartucho pode declarar não têm leitura no pad (medido em 2026-09-22) — a lista diz o que é verdade hoje. */
+const PAD_POSITIONS: readonly ActionKey[] = Object.freeze(
+  ['left', 'right', 'up', 'down', 'action1', 'action2', 'action3', 'action4'] as const,
+);
 
 export function initGamepad(ctx: GamepadCtx): GamepadApi {
   let padWizAutoResume = false; // wizard aberto automaticamente no meio do jogo -> retoma a fase ao fechar
@@ -492,6 +523,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     const startEdge = cur._start && !padPrevStart[gi]; padPrevStart[gi] = cur._start;
     const pauseEdge = cur._pause && !prev._pause;
     const edge = (k: ActionKey): boolean => cur[k] && !prev[k];
+    const released = (k: ActionKey): boolean => !!prev[k] && !cur[k];
     padCur[gi] = cur; padPrevAct[gi] = cur;
     // 📌 O START conta como «sim» APENAS no título: lá ele é o botão que começa o jogo, e no cartão de pausa ou na barra
     // ele é a SAÍDA (ADR-0044 item 7). Um parâmetro em vez de três listas iguais a menos de um termo.
@@ -499,7 +531,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       yes: edge('action2') || (comStart && startEdge), no: edge('action3'),
       up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right'),
     });
-    return { gp, gi, owner, players, cur, startEdge, pauseEdge, edge, navKeys };
+    return { gp, gi, owner, players, cur, startEdge, pauseEdge, edge, released, navKeys };
   }
 
   /** Aconteceu alguma das seis intenções de menu neste quadro? */
@@ -557,6 +589,34 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     ctx.srSay(t('sr.pad.assigned', { n: free + 1 }));
   }
 
+  /**
+   * A METADE QUE APERTA da porta única (ADR-0223): toda posição que DESCEU neste quadro vai ao controle virtual,
+   * com o carimbo `gamepad` e o assento deste controle. Devolve as que chegaram ao JOGO — a resposta do controle,
+   * que é o que separa uma pressão de jogo de uma que um menu levou.
+   *
+   * ⚠️ As OITO posições e não as seis com aresta: quem tem aresta é um subconjunto (`EDGE_BY_ACTION`), e cima e
+   * baixo sempre andaram por tecla segurada. Ao cartucho chegam as oito.
+   */
+  function pressWhatWentDown(f: PadFrame): ReadonlySet<ActionKey> {
+    const reached = new Set<ActionKey>();
+    for (const act of PAD_POSITIONS) if (f.edge(act) && ctx.press(act, 'gamepad', f.owner)) reached.add(act);
+    return reached;
+  }
+
+  /**
+   * A METADE QUE SOLTA, e ela é INCONDICIONAL de propósito (ADR-0223). A pressão só nasce no ramo de JOGO, mas o
+   * dedo sai do botão onde quiser — uma criança que abre a pausa com o pulo premido deixaria a tecla segurada para
+   * sempre se a soltura dependesse do ramo. O controle ignora a soltura de uma pressão que o jogo nunca ouviu, que
+   * é exactamente a memória que ele existe para ter.
+   *
+   * 📌 O pad é o único transporte que lê ESTADO por quadro em vez de receber eventos, logo a soltura não lhe chega:
+   * calcula-se contra o quadro anterior.
+   */
+  function releaseWhatCameUp(f: PadFrame): void {
+    if (f.owner < 0) return; // controle sem assento nunca apertou nada
+    for (const act of PAD_POSITIONS) if (f.released(act)) ctx.release(act, 'gamepad', f.owner);
+  }
+
   /** O jogo a sério: o START pausa, o modal come o direcional, e o resto vira bandeira de acção. */
   function playRound(f: PadFrame, p: GamepadPlayer): void {
     if (f.pauseEdge) { ctx.pausar(); ctx.setPauseActor(f.owner); return; } // START pausa (todos pausam; cada tela navega a sua)
@@ -572,10 +632,17 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     }
     // A tabela e a guarda do Fácil vêm de input/edges.ts, as MESMAS que keydown e touch usam. Antes eram
     // seis `if` à mão aqui, seis lá e seis no toque — e o do toque tinha esquecido o `!p.easy`.
+    // 🔴 A PORTA ÚNICA PRIMEIRO (ADR-0223): a posição vai ao controle virtual, que segura a tecla da criança com o
+    // carimbo `gamepad` e entrega o comando ao cartucho. Só depois disto é que se levanta aresta — e só para uma
+    // pressão que CHEGOU ao jogo, que é a resposta do controle. Antes, o pad não passava por porta nenhuma.
+    // ⚠️ As oito posições, e não as seis com aresta: quem tem aresta é um subconjunto (`EDGE_BY_ACTION`), e as
+    // outras duas — cima e baixo — sempre andaram por tecla segurada. Ao cartucho chegam as oito.
+    const reachedPlay = pressWhatWentDown(f);
     let algumaAresta = false;
     for (const [act, flag] of EDGE_BY_ACTION) {
-      if (f.edge(act)) algumaAresta = true;
-      if (edgeAllowed(act, p.easy) && f.edge(act)) p[flag] = true;
+      if (!reachedPlay.has(act)) continue;
+      algumaAresta = true;
+      if (edgeAllowed(act, p.easy)) p[flag] = true;
     }
     // 📌 A ARESTA DO CONTROLE, e ela conta MESMO QUANDO O FÁCIL A FILTRA (ADR-0113 cláusula 4): a
     // criança carregou no botão — que a regra do Modo Fácil não levante a bandeira do jogo não muda
@@ -621,6 +688,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       // ⚠️ `getPlayers()` É LIDO AQUI, um por controle, e não uma vez antes do laço: o ramo do assento ESCREVE na lista
       // (`players[free].pad = gi`), e lê-la uma vez só mudaria o que o controle seguinte vê.
       const f = readPad(gp, ctx.getPlayers());
+      releaseWhatCameUp(f); // antes de todo ramo: o dedo sai do botão onde quiser (ADR-0223)
       if (ctx.isTouchMode() && (f.cur.left || f.cur.right || f.cur.up || f.cur.down
         || f.cur.action2 || f.cur.action1 || f.cur.action4 || f.cur.action3 || f.cur._start)) {
         ctx.hideTouchControls(); // botão físico usado -> some o gamepad virtual (mesma regra do teclado)

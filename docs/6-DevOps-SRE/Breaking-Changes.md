@@ -1965,6 +1965,50 @@ not to the keyboard (ADR-0111), so a position the cartridge declared arrives eve
 📌 **And the touch door takes no SEAT.** The multiplayer of this engine is on separate screens (pillar 7), so a device
 with a pad has one finger and one seat. An argument nobody can exercise is a capability nobody can prove.
 
+## BN · The gamepad presses the same door, and the engine hands the cartridge the control object (ADR-0223, ADR-0216, issue #197)
+
+**What this is.** `input/gamepad` stopped raising edges as its only output. Every position that goes down is pressed on
+`input/virtual-controller` with the source `gamepad` and the SEAT of that controller; every position that comes up is
+released. The edge still rises — the physics of a cartridge learns from it that a button was tapped — but now only for a
+press that reached PLAY, which is what the controller answers.
+
+| before | after |
+|---|---|
+| `GamepadCtx` had no door to the cartridge | **`press(action, source, player): boolean`** and **`release(action, source, player): void`**, both REQUIRED |
+| the engine kept the virtual controller private | **`Engine.controller`** is published |
+| six positions reached the player, as edge flags | **eight positions reach the cartridge**, as commands |
+
+🎯 **Why the ctx and not the root.** `createGame` mounts the touch pad, the eyes, the face, the hands, the voice and the
+scan — and does NOT mount the gamepad: the CARTRIDGE calls `initGamepad`. So the door has to arrive through the ctx, and it
+is REQUIRED rather than optional because an optional door is a field a game can forget, and forgetting it returns exactly
+the silence this work removes. The errata of ADR-0223 records the measurement.
+
+📌 **And the engine offering the control object is not new policy** — it is ADR-0216 in the Dev's own words: «Assim como a
+engine oferece o objeto de controle, ela deve oferecer objetos de leitura e TTS.» `Engine.controller` sits beside
+`keyboard`, `nav`, `overlays`, `sonar` and `scenes`.
+
+⚠️ **What to change.** Wherever you call `initGamepad`, add two members to the ctx you pass:
+
+```js
+const motor = createGame({ /* … */ });
+const pad = initGamepad({
+  /* … everything you already pass … */
+  press: motor.controller.press,
+  release: motor.controller.release,
+});
+```
+
+📌 **Easy Mode did not change, and that is deliberate.** It filters the EDGE, never the door: the cartridge hears the
+button in Easy Mode exactly as the keyboard has always delivered it. The accommodation decides what the physics does with
+the button, not whether the game knew the child pressed it.
+
+📌 **Two positions that never had an edge now reach the cartridge**: `up` and `down` always travelled as a held key, and a
+cartridge listening to `onCommand` hears them for the first time.
+
+⚠️ **What the gamepad still does not read**: the shoulders and the triggers. A cartridge may declare `leftShoulder`,
+`rightTrigger` and the rest, and this transport has no reading for them — measured, and named here so it is not mistaken
+for something this change broke.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

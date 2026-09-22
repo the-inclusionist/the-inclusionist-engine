@@ -115,7 +115,7 @@ import { mountPanel } from '../ui/mount-panel.js';
 // a aderência agora é o ☝️ da barra, e é ele que já resolvia as duas coisas — a recusa do aparelho e as duas chaves guardadas.
 import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
 import type { TransportName } from '../input/transport-in-use.js';
-import { createVirtualController, type VirtualCommand } from '../input/virtual-controller.js';
+import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
 import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem } from '../input/switch-scan.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 import { createVoiceControl } from '../ui/voice-control.js';
@@ -512,6 +512,19 @@ export interface Engine {
   readonly overlays: SettingsPanelApi;
   readonly nav: MenuNavApi;
   readonly keyboard: KeyboardRuntime;
+  /**
+   * O OBJETO DE CONTROLE, oferecido ao cartucho (ADR-0216, nas palavras do Dev: «Assim como a engine oferece o objeto de
+   * controle, ela deve oferecer objetos de leitura e TTS»).
+   *
+   * 🔴 Existe porque há um transporte que a RAIZ não monta: `initGamepad` é chamado pelo CARTUCHO, e a porta única do
+   * ADR-0223 tem de lhe chegar às mãos para ele a passar adiante — `press: motor.controller.press`. Todos os outros
+   * transportes (toque, olhos, rosto, mãos, voz, varredura) são montados aqui e ligam-se sozinhos.
+   *
+   * ⚠️ O que ele NÃO é: uma segunda forma de o jogo receber entrada. O jogo recebe por `onCommand`. Isto é o que um
+   * jogo usa para LIGAR um transporte que ele próprio monta, e apertar uma posição à mão é dizer à engine que o
+   * aparelho da criança produziu aquela posição — com a origem, que o ADR-0109 exige.
+   */
+  readonly controller: VirtualController;
   /**
    * APLICA O FILTRO DE VISÃO NO MUNDO QUE ESTE JOGO DECLAROU (ADR-0087).
    *
@@ -3969,6 +3982,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     overlays,
     nav,
     keyboard,
+    controller: controleVirtual,
     sonar,
     aplicarFiltroDeVisao,
     cenas: cenasDaRaiz,

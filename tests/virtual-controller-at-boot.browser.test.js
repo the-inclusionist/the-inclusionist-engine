@@ -480,6 +480,63 @@ describe('the START pill, with the real stylesheet', () => {
   });
 });
 
+/* ===================== THE ENGINE OFFERS THE CONTROL OBJECT (ADR-0223 erratum, ADR-0216) ===================== */
+// 🔴 There is one transport the ROOT does not mount: `initGamepad` is called by the CARTRIDGE. So the single door
+// has to reach the cartridge's hands, and the Dev already decided the shape of that in ADR-0216 — «assim como a
+// engine oferece o objeto de controle, ela deve oferecer objetos de leitura e TTS». These cases hold the offer:
+// the object is there, it is the REAL one, and pressing it reaches `onCommand` with the source and the seat.
+describe('the engine offers the control object to the cartridge', () => {
+  let hospedeiro; let recebidos; let segundo;
+
+  beforeAll(async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    hospedeiro = document.createElement('div');
+    hospedeiro.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
+      + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
+    document.body.appendChild(hospedeiro);
+    recebidos = [];
+    segundo = createGame({
+      acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
+      downloadHeavy: false, preset: PLATAFORMA, setPhase: () => {},
+      onCommand: (c) => recebidos.push(c),
+    });
+  });
+
+  it('🔴 [Right] `motor.controller` exists — a cartridge that mounts its own transport has a door to pass it', () => {
+    expect(typeof segundo.controller?.press, 'no control object: `initGamepad` has nothing to be given').toBe('function');
+    expect(typeof segundo.controller?.release).toBe('function');
+  });
+
+  it('🔴 [Right] pressing it reaches `onCommand` with the SOURCE and the SEAT, and answers that it reached play', () => {
+    recebidos.length = 0;
+    const chegou = segundo.controller.press('action1', 'gamepad', 1);
+    expect(chegou, 'the press did not reach play, and there is no menu open').toBe(true);
+    expect(recebidos, 'the cartridge heard nothing — this is the silence the single door exists to end')
+      .toEqual([{ action: 'action1', pressed: true, source: 'gamepad', player: 1 }]);
+    segundo.controller.release('action1', 'gamepad', 1);
+    expect(recebidos.at(-1), 'the release never reached the game, which is left believing the button is down')
+      .toEqual({ action: 'action1', pressed: false, source: 'gamepad', player: 1 });
+  });
+
+  it('🔴 [CrossCheck] it is the REAL controller, not a stub: the key the child bound is held underneath', () => {
+    // 📌 Driver D5 of ADR-0223: a game that asks what key is down keeps getting an answer. A control object that
+    // only delivered commands would pass the case above and silently break every cartridge that reads keys.
+    recebidos.length = 0;
+    segundo.controller.press('left', 'gamepad', 0);
+    const codigo = segundo.keyboard.kbFor(0).left?.[0];
+    expect(codigo, 'the seat has no key bound to `left`: the case would measure nothing').toBeTruthy();
+    expect(keys.has(codigo), 'the position was delivered and the key was not held').toBe(true);
+    segundo.controller.release('left', 'gamepad', 0);
+    expect(keys.has(codigo), 'the key stayed held after the release').toBe(false);
+  });
+
+  it('[Zero] a release for a press the game never heard is not delivered', () => {
+    recebidos.length = 0;
+    segundo.controller.release('action4', 'gamepad', 0);
+    expect(recebidos, 'a release with no press hands the cartridge half of an event that never happened').toEqual([]);
+  });
+});
+
 // ============================== MUTATIONS CHECKED ==============================
 // Twelve, twelve red — applied by script from a copy, occurrence count checked before each:
 //   P1 the pad is never drawn at boot                        🔴 6 cases
