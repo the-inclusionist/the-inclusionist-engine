@@ -63,6 +63,16 @@ describe('a change of context says where the child is', () => {
   it('🔴 [Right] opening a panel says the PANEL\'s title; closing it says where the child is back to', async () => {
     const cartao = document.querySelector('.screen-pause:not([hidden])');
     const porta = cartao.querySelector('.pm-btn[data-act="som"]');
+    /*
+     * 📌 O CURSOR VAI ATÉ À PORTA COM SETAS, e não é cerimónia: abrir o painel com um clique deixa a marca no PRIMEIRO
+     * item, e ao voltar «o item marcado» e «o primeiro» são o mesmo — o caso não conseguiria distingui-los. Uma criança
+     * que navega chega ali com setas, e é essa a situação em que dizer-lhe o primeiro item a manda procurar onde ela
+     * não está. 📏 Medido: sem estas setas a marca voltava em 0 e a asserção de baixo não media nada.
+     */
+    for (let i = 0; i < 12 && cartao.querySelector('.pause-menu:not([hidden]) .pm-sel') !== porta; i++) {
+      await depoisDe(() => tecla('ArrowDown'));
+    }
+    expect(cartao.querySelector('.pause-menu:not([hidden]) .pm-sel'), 'the cursor never reached the panel\'s door').toBe(porta);
     const aberta = await depoisDe(() => porta.click());
     const painel = [...regiao.querySelectorAll('.overlay')].find((o) => !o.hidden);
     const titulo = painel.querySelector('h2').textContent.trim();
@@ -72,6 +82,21 @@ describe('a change of context says where the child is', () => {
     const submenu = cartao.querySelector('.pm-btn[data-act="options"]');
     const nomeDoSubmenu = submenu.getAttribute('aria-label') || submenu.textContent.trim();
     expect(fechada.startsWith(`${nomeDoSubmenu}. `), `back from the panel said «${fechada}», not where the child is`).toBe(true);
+    /*
+     * 🔴 E DIZ O ITEM ONDE A CRIANÇA ESTÁ, e não o primeiro da lista — a metade que faltava, achada por sonda em
+     * 2026-09-22: trocar «o item marcado» por «o primeiro» deixava a suíte verde. Ao VOLTAR de um painel o cursor está
+     * no item que o abriu, que é quase nunca o primeiro; dizer-lhe o primeiro manda-a procurar onde ela não está.
+     */
+    const marcado = cartao.querySelector('.pause-menu:not([hidden]) .pm-sel');
+    expect(marcado, 'nothing is marked on the card — the case would measure nothing').not.toBeNull();
+    const itens = [...cartao.querySelectorAll('.pause-menu:not([hidden]) .pm-btn:not([hidden])')];
+    expect(itens.indexOf(marcado), 'the cursor came back to the FIRST item, so the case cannot tell the two apart')
+      .toBeGreaterThan(0);
+    const nomeDoItem = marcado.getAttribute('aria-label') || marcado.textContent.trim();
+    expect(fechada, `back from the panel announced «${fechada}» instead of the item the cursor is on, «${nomeDoItem}»`)
+      .toContain(nomeDoItem);
+    expect(fechada, 'the announced position is not the marked item\'s')
+      .toMatch(new RegExp(`, ${itens.indexOf(marcado) + 1} de ${itens.length}$`));
   });
 
   it('🔴 [Right] back to the root says the card\'s title; closing the card says the game is back', async () => {
@@ -96,6 +121,48 @@ describe('a change of context says where the child is', () => {
     expect(repetida, 'the same screen was announced again').toBe('');
     await depoisDe(() => tecla('Escape'));
   });
+
+  it('🔴 [CrossCheck] going from ONE panel to ANOTHER is a change of place, and is announced', async () => {
+    /*
+     * 🔴 A SONDA ACHOU ISTO CEGO em 2026-09-22: a chave de um painel podia deixar de dizer QUAL painel, e dois painéis
+     * passavam a ler-se como o mesmo sítio — com a suíte verde. Todos os outros casos deste ficheiro atravessam o
+     * cartão entre um painel e outro, e aí a chave muda por causa do cartão; só painel→painel directo os separa.
+     * 📌 E o caminho existe de verdade: a linha «mapear teclado» do painel motora abre o `#ctrl` POR CIMA dele.
+     */
+    await depoisDe(() => tecla('KeyF'));
+    document.querySelector('.screen-pause:not([hidden]) .pm-btn[data-act="options"]').click();
+    await esperar();
+    const motora = document.querySelector('.screen-pause:not([hidden]) .pm-btn[data-act="motora"]');
+    expect(motora, 'no motor panel on the card — the case would measure nothing').not.toBeNull();
+    const aberta = await depoisDe(() => motora.click());
+    const painelMotora = [...regiao.querySelectorAll('.overlay')].find((o) => !o.hidden);
+    const tituloMotora = painelMotora.querySelector('h2').textContent.trim();
+    expect(aberta.startsWith(`${tituloMotora}. `), `the motor panel opened saying «${aberta}»`).toBe(true);
+
+    const porta = document.getElementById('opt-teclado-1');
+    expect(porta, 'no «map the keyboard» row — the case would measure nothing').not.toBeNull();
+    const segunda = await depoisDe(() => porta.click());
+    const painelCtrl = document.getElementById('ctrl');
+    expect(painelCtrl.hidden, 'the controls panel did not open').toBe(false);
+    const tituloCtrl = painelCtrl.querySelector('h2').textContent.trim();
+    expect(tituloCtrl, 'the two panels have the same title — the case cannot tell them apart').not.toBe(tituloMotora);
+    expect(segunda.startsWith(`${tituloCtrl}. `),
+      `moving from one panel to another said «${segunda}» instead of naming «${tituloCtrl}»`).toBe(true);
+    /*
+     * 📏 E ESTA LINHA É O QUE TORNA HONESTA UMA MUTAÇÃO QUE SOBREVIVE, em vez de a deixar sem explicação: ler o item
+     * FOCADO de um painel ou ler sempre o primeiro dá o mesmo resultado, porque no instante em que um painel passa a
+     * ser o sítio da criança o foco está no primeiro item dele. A sonda de 22/09 mediu-o e este caso mede-o de novo —
+     * o dia em que um painel abrir com o foco noutro sítio, esta asserção cai e a mutação deixa de ser equivalente.
+     */
+    const itensDoCtrl = [...painelCtrl.querySelectorAll('.overlay__card button:not([hidden]), .overlay__card [tabindex]:not([hidden])')]
+      .filter((el) => el.offsetParent !== null);
+    expect(itensDoCtrl.indexOf(document.activeElement),
+      'a panel opened with focus somewhere other than its first item: reading the focused item is no longer the same as reading the first')
+      .toBeLessThanOrEqual(0);
+    await depoisDe(() => tecla('Escape'));
+    await depoisDe(() => tecla('Escape'));
+    await depoisDe(() => tecla('Escape'));
+  });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
@@ -106,3 +173,16 @@ describe('a change of context says where the child is', () => {
 //   C5 the panel title missing                           🔴 two cases
 //   C6 no word on going back to play                     🔴
 //   C7 every observer batch speaks (no comparison)      🔴 the [Zero] case (after its second step was added)
+//
+// ---- PROBED AGAIN ON 2026-09-22, before `ondeEsta` is cut out of the composition root (ADR-0221 step 7c) ----
+// Nine decisions of `ondeEsta` disabled one at a time. FOUR were blind, and all four cost the child who plays by ear:
+//   P3 the FOCUSED item of a panel ignored            ⚠️ EQUIVALENT TODAY — see the measurement in the last case:
+//                                                        a panel becomes the child's place with focus on its first item
+//   P4 `comIndice` replaced by `true`                 ⚠️ NOT held anywhere: 📏 both tests that pass `comIndice` pass
+//                                                        `() => true`, so ADR-0167's «the cartridge can silence the
+//                                                        index» has no case at all. Wider than this file; named, not faked
+//   P8 the card's SELECTED item ignored               🔴 now red — the cursor is walked to the door with arrows first,
+//                                                        because opening by click leaves the mark on the first item and
+//                                                        the two readings coincide
+//   P9 a panel's key not saying WHICH panel           🔴 now red — panel→panel, which every other case here crosses the
+//                                                        card to reach, and the card is what was hiding it
