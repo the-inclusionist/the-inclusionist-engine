@@ -37,7 +37,7 @@
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import '../app/css/style.css';
-import { screenPauseMarkup } from '../app/js/ui/pause-icons.js';
+import { screenPauseMarkup } from '../app/js/ui/pause-markup.js';
 import { PM_BTNS, PM_OPTIONS_BTNS } from '../app/js/ui/pause-buttons.js';
 import { minimumTarget } from '../app/js/ui/layout.js';
 

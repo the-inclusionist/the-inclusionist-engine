@@ -26,7 +26,8 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { screenPauseMarkup, PM_VISIBLE_ITEMS, rootThatActs } from '../app/js/ui/pause-icons.js';
+import { PM_VISIBLE_ITEMS, rootThatActs } from '../app/js/ui/pause-icons.js';
+import { screenPauseMarkup } from '../app/js/ui/pause-markup.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from '../app/js/ui/pause-buttons.js';
 import { t } from '../app/js/core/i18n.js';
 

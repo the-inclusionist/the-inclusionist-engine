@@ -1686,6 +1686,27 @@ the bottom, drawing above it, and the next cut becomes possible.
 consumer anywhere — and the consumer it lacked was in the same file: `computeIconLabel` read the private map directly instead
 of calling the lookup published beside it. It now calls it. The debt ledger for that module goes from 7 names to 6.
 
+## BC · The markup leaves the icon module: `ui/pause-markup` (ADR-0221, issue #203)
+
+**What this is.** Eight names move from `ui/pause-icons` to a new module, `ui/pause-markup`: the `PauseMenuButton` and
+`ScreenPauseMarkupOpts` shapes, the `PauseSub` union, and `iconBtnMarkup`, `iconsMarkup`, `pmBtnMarkup`, `quickBarMarkup` and
+`screenPauseMarkup`. The spelling of each is unchanged; only the module is. 📏 Measured in all seven games before moving: none
+of the eight is imported by any of them, and inside the engine the only consumer outside the icon module was
+`boot/create-game`, which asks for `iconsMarkup`.
+
+🔴 **And TWO names stopped being published rather than moving house: `ITEM_GLYPH` and `pauseMenuHtml`.** Both were in the
+declared debt of `ui/pause-icons` — published with no importer anywhere — and both have their only reader in the new module,
+one screen away. Moving a published name with no consumer is carrying the debt to a new address; they are now internal. The
+ledger for that module goes from 6 names to 4.
+
+🎯 **What each half is for.** `ui/pause-markup` BUILDS strings and touches nothing else: no `document`, no injected ctx, no
+state, which is what lets a node test read the pause card without a browser. `ui/pause-icons` keeps the other job — wiring the
+elements the browser made from those strings, reflecting their state, and moving the cursor through them.
+
+📌 **No alias was left behind**, for the reason note BB gives: a re-export would keep a path alive for nobody and would make
+the public-surface portrait lie, since it does not see re-exports (issue #204). If you import one of the eight, change
+`ui/pause-icons.js` to `ui/pause-markup.js` in that import and nothing else.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

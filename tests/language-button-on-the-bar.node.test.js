@@ -5,7 +5,8 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { iconsThatAct, computeIconLabel, quickBarMarkup } from '../app/js/ui/pause-icons.js';
+import { iconsThatAct, computeIconLabel } from '../app/js/ui/pause-icons.js';
+import { quickBarMarkup } from '../app/js/ui/pause-markup.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { getLocale } from '../app/js/core/i18n.js';
 import { LOCALE_CYCLE, nextLocale, FLAG_SVG, flagOf, LANGUAGE_NAME } from '../app/js/ui/locale-flags.js';

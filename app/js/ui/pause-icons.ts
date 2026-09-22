@@ -43,6 +43,15 @@ import { SHORT_THEME, SHORT_CORRECTION } from './visual-axes-panel.js';
  */
 import { CALM_NAMES, CALM_AUDIO_CATS, nextCalmMode, sanitiseTeaLevel, calmAudioPlan, calmMotionPlan } from '../core/calm-mode.js';
 /*
+ * 🔴 THE MARKUP MOVED HOUSE to `ui/pause-markup` (ADR-0221, issue #203). Building the strings and wiring the elements the
+ * browser makes from them are two jobs that do not need each other; what is left in this file is the second one. See the
+ * header there for why the icon catalogue had to leave before the markup could.
+ */
+import {
+  type PauseMenuButton, type PauseSub,
+  quickBarMarkup, screenPauseMarkup,
+} from './pause-markup.js';
+/*
  * 🔴 THE ICON CATALOGUE MOVED HOUSE to `core/pause-icon-catalogue` (ADR-0221, issue #203): WHICH icons exist and in what order
  * is DATA, and this file is about what they DO. See the header there for why the data had to leave first.
  */
@@ -195,17 +204,6 @@ function lerNivelTea(): number {
  */
 export type PausePlayer = PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>;
 
-/** One `.pm-btn` descriptor — the shape of game.js's PM_BTNS (owned by ui/pause-buttons). */
-export interface PauseMenuButton {
-  act: string;
-  /** Só é lido quando o botão tem rótulo dinâmico; ver a nota em `PauseBtnDef` (ui/activities-menu). */
-  lbl?: string;
-  /** Dynamic label (the ABC cycle) — rendered from `lbl`, not from i18n, and NOT given `data-i18n`. */
-  letra?: boolean;
-  /** Dynamic label (the literacy level) — rendered from quizLevel + qlName. Currently dormant: no PM_BTNS
-   *  entry sets it, but the branch is live code and is ported verbatim. */
-  nivel?: boolean;
-}
 
 // ---------------------------------------------------------------------------------------------
 // PURE LOGIC — no `document`, no ctx. This is the half that carries the accessibility contract.
@@ -334,15 +332,6 @@ export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
 /** The CSS classes reflectIconBtn clears before applying a fresh visual — in the original order. */
 export const ICON_STATE_CLASSES: readonly string[] = ['pi-calm', 'pi-cvd-protan', 'pi-cvd-deuter', 'pi-cvd-tritan'];
 
-// --- markup (pure string builders; the DOM shell below just assigns them) ---
-
-/** One `.pi-btn`. The label is the RESTING one: reflectIconBtn overwrites it with the stateful label as soon as the bar is
- *  reflected. `ic.n` is an i18n key, so it must be resolved here too — the markup is rendered once at build
- *  time and would otherwise ship the raw key to a screen reader. */
-export function iconBtnMarkup(ic: PauseIcon): string {
-  return '<button class="pi-btn" type="button" data-pi="' + ic.k +
-    '" aria-label="' + t(ic.n) + '">' + (ic.k === 'idioma' ? flagOf(getLocale()) : ic.e) + '</button>';
-}
 
 /**
  * OS ÍCONES QUE ESTE JOGO CONSEGUE MESMO ACCIONAR (ADR-0106 §5).
@@ -513,65 +502,6 @@ export function rootThatActs(
   return viva;
 }
 
-/** The whole icon bar. Used by the pause screen AND by the splash `#title-icons` (which built the same string
- *  by hand in game.js — that duplication dies with this export).
- *  O parâmetro é ADITIVO e o padrão é a lista inteira: quem já chamava sem argumentos não muda de resultado. */
-export function iconsMarkup(icones: readonly PauseIcon[] = PAUSE_ICONS): string {
-  return icones.map(iconBtnMarkup).join('');
-}
-
-/** One `.pm-btn`. Dynamic labels (`letra`/`nivel`) are rendered eagerly and carry NO `data-i18n`, so
- *  i18n.applyDom() cannot overwrite them. */
-/**
- * ⚠️ O RÓTULO DINÂMICO ENTRA PRONTO (item 19), e a mudança conserta DUAS coisas de uma vez.
- *
- * A linha era `'📚 Nível ' + level + ' · ' + qlName[level]` — e ela tinha dois defeitos que só se enxergam
- * juntos:
- *
- *   1. FRONTEIRA. `level` vinha de `core/state.quizLevel` e `qlName` de uma tabela do jogo. Um menu de pausa
- *      da ENGINE montava o rótulo de uma atividade de alfabetização — conteúdo pedagógico, não mecânica.
- *   2. IDIOMA. "Nível" é pt-BR CRU dentro de um módulo de engine. O gate do item 14 vigia o `main.js` e não
- *      alcança `ui/`, então esta linha atravessou a i18n inteira sem ser vista. Num build em inglês, o menu
- *      de pausa de uma criança dizia "📚 Nível 2 · …".
- *
- * Agora o jogo entrega a frase montada (`dynLabel`), e a engine só a coloca no botão. O jogo é quem sabe o
- * que é um nível, quem sabe o nome dele e quem sabe em que idioma dizê-lo.
- */
-export function pmBtnMarkup(
-  b: PauseMenuButton, dynLabel: (b: PauseMenuButton) => string | null, tr: (key: string) => string,
-): string {
-  const dyn = b.letra || b.nivel;
-  const lbl = dynLabel(b) ?? (dyn ? (b.lbl ?? '') : tr('pause.' + b.act));
-  const glifo = ITEM_GLYPH[b.act];
-  return '<button class="pm-btn' + (b.letra ? ' pm-letra' : '') + (b.nivel ? ' pm-nivel' : '') +
-    '" role="menuitem" type="button" data-act="' + b.act + '"' +
-    (glifo ? ' data-glifo="' + glifo + '"' : '') +
-    (dyn ? '' : (' data-i18n="pause.' + b.act + '"')) + '>' + lbl + '</button>';
-}
-
-/**
- * THE GLYPH OF EACH PAUSE ITEM, drawn by the stylesheet and never part of the name (ADR-0159 rule 12: «An emoji or
- * symbol in a menu is decorative and hidden from narration»). It lived at the start of each dictionary value, so the
- * engine's narration and a screen reader both said «⚙ Inclusion settings». The glyph is the same in every language;
- * the words stay in the dictionary.
- */
-export const ITEM_GLYPH: Readonly<Record<string, string>> = {
-  resume: '▶', acessibilidade: '♿', options: '⚙', opcoesdojogo: '🎮', pmback: '↩', tipo: '🔤', addplayer: '👥',
-  audio: '🦻', som: '🔊', motora: '♿', anim: '🎞', visual: '🎨', empatia: '🫂', ajuda: '❓', print: '📷', quit: '🚪',
-  caa: '🔠',
-};
-
-/**
- * Qual das duas listas o cartão de pausa está mostrando.
- *
- * DUAS listas no markup, UMA visível — e a escondida carrega `hidden`, que a tira da árvore de acessibilidade
- * inteira. É o que faz "um menu por tela" (ADR-0044 §5) valer para quem escuta e não só para quem vê, e é o
- * que permite o anel dar a volta DENTRO da lista visível sem nunca atravessar para a outra.
- */
-// ⚠️ TRÊS desde 2026-09-12 (ADR-0146): `jogo` é a lista do que é DESTE jogo, ao lado da lista do que a
-// criança carrega entre jogos. A regra de cima não muda por serem três — UMA visível, as outras `hidden`,
-// que é o que tira as escondidas da árvore de acessibilidade inteira.
-export type PauseSub = 'raiz' | 'opcoes' | 'jogo';
 
 /**
  * Os itens navegáveis de um cartão de pausa — os da lista VISÍVEL, e só eles.
@@ -585,14 +515,6 @@ export type PauseSub = 'raiz' | 'opcoes' | 'jogo';
 // and without it the ring stepped onto «Ajuda» hidden in the quiz — measured in dist — and «N de M» counted it.
 export const PM_VISIBLE_ITEMS = '.pause-menu:not([hidden]) .pm-btn:not([hidden])';
 
-/** O innerHTML de UMA `.pause-menu`: a lista, e só ela. */
-export function pauseMenuHtml(
-  bs: readonly PauseMenuButton[], sub: PauseSub, dynLabel: (b: PauseMenuButton) => string | null,
-  tr: (key: string) => string,
-): string {
-  return '<div class="pause-menu" role="menu" data-sub="' + sub + '"' + (sub === 'raiz' ? '' : ' hidden') + '>' +
-    bs.map((b) => pmBtnMarkup(b, dynLabel, tr)).join('') + '</div>';
-}
 
 /**
  * Troca a lista visível de UM cartão de pausa, e põe o cursor no PRIMEIRO item da lista que entrou.
@@ -609,21 +531,6 @@ export function showPauseOptions(sp: HTMLElement, sub: PauseSub): HTMLElement | 
   return primeiro;
 }
 
-/**
- * A BARRA RÁPIDA DE ACESSIBILIDADE — dez alternadores e a legenda que os explica (ADR-0044, item 7).
- *
- * Saiu do cartão de pausa e passou a viver no HUD. O motivo é de uso, não de arrumação: é DURANTE a partida
- * que uma criança precisa mudar um ajuste que está a atrapalhando, e não depois de pausar. E o motivo
- * secundário é estrutural — sem ela, o cartão deixa de ter duas zonas e vira uma LISTA, o que é o que
- * finalmente autoriza o anel (a XAG 106 permite laço para menu linear e o proíbe para grade).
- *
- * A LEGENDA VIAJA JUNTO. Ela é a dica que substitui, para quem não vê, o `title` que só o mouse revela;
- * deixá-la no cartão tornaria a barra do HUD muda.
- */
-export function quickBarMarkup(icones: readonly PauseIcon[] = PAUSE_ICONS): string {
-  return '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup(icones) +
-    '</div><p class="pause-icons-cap" aria-live="polite"></p>';
-}
 
 /**
  * O QUE UMA INTENÇÃO SIGNIFICA DENTRO DO MODO `accessibility` (ADR-0044, item 7).
@@ -648,47 +555,6 @@ export function barAction(k: NavKeys, temStart: boolean): BarAction {
   return 'nada';
 }
 
-export interface ScreenPauseMarkupOpts {
-  /** Screen/player index (0-based); the dialog label and the "· Jogador N" suffix are 1-based. */
-  player: number;
-  /** Live player count — the suffix only appears in multiplayer. */
-  numPlayers: number;
-  /** A lista RAIZ: os sete itens do ADR-0044, `resume` primeiro e `quit` último. */
-  pmButtons: readonly PauseMenuButton[];
-  /** O submenu de opções: os sete painéis de ajuste, com o "Voltar" na frente. */
-  optionsButtons: readonly PauseMenuButton[];
-  /** O submenu do JOGO (ADR-0146). Ausente = só o «voltar», que é o caso de um jogo que não declara nada. */
-  jogoButtons?: readonly PauseMenuButton[];
-  /** Rótulo pronto de um botão DINÂMICO, ou `null` se aquele botão não tem um. Quem monta a frase é o jogo. */
-  dynLabel: (b: PauseMenuButton) => string | null;
-  t: (key: string) => string;
-}
-
-/** The full innerHTML of a `.screen-pause`. Pure — every input is a parameter. */
-export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
-  // O NOME ACESSÍVEL DO DIÁLOGO passa pelo dicionário. Era texto cru, e MEDIDO num jogo em inglês o efeito
-  // era este: o título visível dizia "Paused" e o nome do diálogo, "Menu de pausa do jogador 1". Quem enxerga
-  // lia em inglês; quem escuta recebia o menu anunciado em português — a mesma assimetria do item 4 do
-  // ADR-0044, um nível acima. E `aria-label`, não `aria-labelledby`: o `<h2>` é rótulo VISUAL, e é por isso
-  // que escondê-lo num quadro apertado não tira o nome do diálogo de quem escuta.
-  return '<div class="pause-card" role="dialog" aria-modal="true" aria-label="' + t('pause.cardAria', { n: o.player + 1 }) + '">' +
-    '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>'
-    // ⚠️ O SUFIXO DO ASSENTO ERA `' · Jogador ' + (o.player + 1)` — PORTUGUÊS CRU dentro de um módulo de
-    // engine, e num jogo em inglês lia-se «Paused · Jogador 2». Agora é chave, e vive num `<span>` próprio
-    // porque o `refrescarItensDaPausa` precisa de um sítio para o REPINTAR: como `pause.cardSeat` leva um
-    // parâmetro, o `data-i18n` de `applyDom` — que chama `t(k)` sem parâmetros — não serve aqui.
-    // 📌 `t` do módulo e não `o.t`, pela mesma razão que a linha do `aria-label` acima já usa: a porta
-    // injectada é `(key) => string` e não atravessa parâmetros.
-    + '<span class="pause-seat">' + (o.numPlayers > 1 ? t('pause.cardSeat', { n: o.player + 1 }) : '') + '</span></h2>' +
-    pauseMenuHtml(o.pmButtons, 'raiz', o.dynLabel, o.t) +
-    pauseMenuHtml(o.optionsButtons, 'opcoes', o.dynLabel, o.t) +
-    // ⚠️ A TERCEIRA LISTA ENTRA SEMPRE NO MARKUP, mesmo com um jogo que não declare nada — e não é desperdício:
-    // é a mesma razão pela qual as outras duas são montadas inteiras e escondidas depois (ver a nota do
-    // `buildScreenPause`). A tabela do jogo chega TARDE, e uma lista filtrada na montagem apagava para sempre
-    // o que só passou a existir depois do boot. Quem decide o que se VÊ é o `refrescarItensDaPausa`.
-    pauseMenuHtml(o.jogoButtons ?? PM_GAME_BTNS, 'jogo', o.dynLabel, o.t) +
-    '<p class="pause-legend"></p></div>';
-}
 
 // ---------------------------------------------------------------------------------------------
 // Injection contract

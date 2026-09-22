@@ -23,7 +23,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { screenPauseMarkup, quickBarMarkup } from '../app/js/ui/pause-icons.js';
+import { screenPauseMarkup, quickBarMarkup } from '../app/js/ui/pause-markup.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from '../app/js/ui/pause-buttons.js';
 import { stepInRing } from '../app/js/ui/menu-nav.js';
 

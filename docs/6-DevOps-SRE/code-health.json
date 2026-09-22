@@ -24,10 +24,10 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2092,
+      "codeLines": 2093,
       "decisionNodes": 309,
       "maxDepth": 4,
-      "fanOut": 78,
+      "fanOut": 79,
       "globalReach": 0,
       "fanIn": 1
     },
@@ -176,7 +176,7 @@
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 3,
-      "fanIn": 35,
+      "fanIn": 36,
       "reached": [
         "document",
         "navigator",
@@ -221,7 +221,7 @@
       "maxDepth": 0,
       "fanOut": 0,
       "globalReach": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "core/ring.ts": {
       "codeLines": 4,
@@ -1402,7 +1402,7 @@
       "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "ui/loop-crash.ts": {
       "codeLines": 24,
@@ -1477,15 +1477,23 @@
       "maxDepth": 0,
       "fanOut": 0,
       "globalReach": 0,
-      "fanIn": 1
+      "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 645,
-      "decisionNodes": 122,
+      "codeLines": 590,
+      "decisionNodes": 114,
       "maxDepth": 11,
-      "fanOut": 20,
+      "fanOut": 21,
       "globalReach": 0,
       "fanIn": 3
+    },
+    "ui/pause-markup.ts": {
+      "codeLines": 63,
+      "decisionNodes": 8,
+      "maxDepth": 1,
+      "fanOut": 4,
+      "globalReach": 0,
+      "fanIn": 2
     },
     "ui/reach-notice.ts": {
       "codeLines": 55,

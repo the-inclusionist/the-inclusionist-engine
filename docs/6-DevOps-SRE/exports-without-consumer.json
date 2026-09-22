@@ -107,12 +107,10 @@
       "ITEM_SELECTOR"
     ],
     "ui/pause-icons.ts": [
-      "ITEM_GLYPH",
       "ENGINE_ITEMS",
       "itemsThatAct",
       "iconCaption",
-      "itemReason",
-      "pauseMenuHtml"
+      "itemReason"
     ],
     "ui/settings-controls.ts": [
       "actionAlreadyBound"

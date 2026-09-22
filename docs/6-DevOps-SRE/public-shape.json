@@ -2657,12 +2657,6 @@
     ]
   },
   "ui/pause-icons.ts": {
-    "interface PauseMenuButton": [
-      "act",
-      "lbl?",
-      "letra?",
-      "nivel?"
-    ],
     "interface IconStateSnapshot": [
       "alternanciaExigida?",
       "blindMode",
@@ -2696,15 +2690,6 @@
       "seguraTeclas",
       "tema",
       "tipografia?"
-    ],
-    "interface ScreenPauseMarkupOpts": [
-      "dynLabel",
-      "jogoButtons?",
-      "numPlayers",
-      "optionsButtons",
-      "player",
-      "pmButtons",
-      "t"
     ],
     "interface PauseIconsCtx": [
       "abrirMenus?",
@@ -2769,8 +2754,25 @@
     "type InputMode": "'standard' | 'sticky' | 'scan'",
     "type PausePlayer": "PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>",
     "type VisualWriters": "ActionableIcons",
-    "type PauseSub": "'raiz' | 'opcoes' | 'jogo'",
     "type BarAction": "'sair' | 'ativar' | 'andar' | 'nada'"
+  },
+  "ui/pause-markup.ts": {
+    "interface PauseMenuButton": [
+      "act",
+      "lbl?",
+      "letra?",
+      "nivel?"
+    ],
+    "interface ScreenPauseMarkupOpts": [
+      "dynLabel",
+      "jogoButtons?",
+      "numPlayers",
+      "optionsButtons",
+      "player",
+      "pmButtons",
+      "t"
+    ],
+    "type PauseSub": "'raiz' | 'opcoes' | 'jogo'"
   },
   "ui/reach-notice.ts": {
     "interface ReachNoticeCtx": [

@@ -67,7 +67,10 @@ import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
 import { createHandControl } from '../ui/hand-control.js';
 import { followCameraMode } from '../ui/camera-control.js';
-import { initPauseIcons, iconsMarkup, wireBarCaption, showPauseOptions, PM_VISIBLE_ITEMS } from '../ui/pause-icons.js';
+import { initPauseIcons, wireBarCaption, showPauseOptions, PM_VISIBLE_ITEMS } from '../ui/pause-icons.js';
+// 📌 The bar's markup is a pure string builder and lives with the rest of the pause markup (ADR-0221, issue #203); what this
+// root asks `ui/pause-icons` for is the WIRING — the icons this game can actually act on, and the reflection of their state.
+import { iconsMarkup } from '../ui/pause-markup.js';
 import { announceItem } from '../ui/item-announcement.js';
 import { accessibleLabel } from '../core/accessible-label.js';
 import { navigableItems } from '../ui/menu-items.js';
