@@ -19,14 +19,14 @@ Este documento é também matéria-prima do **relatório anual** (ADR-0053), que
 |---|---|---|
 | **1.3.1** Info and Relationships | a estrutura chega ao leitor de tela | `tests/menu-nav.browser.test.js` |
 | **1.4.1** Use of Color | cor nunca é o único portador | `tests/estado-nao-so-por-cor.browser.test.js` (os dois gates do menu de título foram com ele para o `game-platformer`, ADR-0174) |
-| **1.4.11** Non-text Contrast (3:1) | indicador não-textual visível | `tests/contraste-menu.node.test.js`, `tests/marca-alterado-contraste.node.test.js` |
+| **1.4.11** Non-text Contrast (3:1) | indicador não-textual visível | `tests/menu-contrast-measured.node.test.js`, `tests/marca-alterado-contraste.node.test.js` |
 | **2.2.2** Pause, Stop, Hide | movimento automático pode parar | `tests/weather.node.test.js` |
 | **2.3.3** Animation from Interactions | movimento de interação é desligável | `tests/settings-motion.browser.test.js`, `tests/state.node.test.js` |
 | **2.4.1** Bypass Blocks | o *skip-link* é alcançável | `tests/z-order-css.node.test.js`, `tests/layers.node.test.js` |
 | **2.4.3** Focus Order | a ordem de foco segue a leitura | `tests/menu-nav.browser.test.js` |
 | **2.5.5** Target Size (Enhanced, AAA) | 44 px onde a tela permite | `tests/pausa-44px.browser.test.js`, `tests/touch.browser.test.js` |
 | **2.5.8** Target Size (Minimum, AA) | 24 px de piso, e o espaçamento que o substitui | `tests/pausa-44px.browser.test.js` |
-| **1.4.6** Contrast (Enhanced, AAA) | menus a 7:1, não só 4,5:1 | `tests/contraste-menu.node.test.js` |
+| **1.4.6** Contrast (Enhanced, AAA) | menus a 7:1, não só 4,5:1 | `tests/menu-contrast-measured.node.test.js` |
 
 E o gate que corre contra a aplicação CONSTRUÍDA, cobrindo A/AA em bloco: `scripts/axe-check.mjs`, no job
 `a11y` do `.github/workflows/ci.yml`.

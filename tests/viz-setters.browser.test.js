@@ -292,7 +292,7 @@ describe('renderVizGroup — fiação no DOM real', () => {
 // ALTO CONTRASTE NO DOM (issue #83). Ele NÃO é filtro: é Renderização Direta, e repinta as TEXTURAS da canvas.
 // O DOM não tem textura, então o conserto da #82 — propagar o filtro — não o alcançava. O que atravessa é uma
 // CLASSE, e o desenho (véu opaco, cursor invertido) mora no `style.css`, com as razões medidas em
-// `tests/contraste-menu.node.test.js`.
+// `tests/menu-contrast-measured.node.test.js`.
 //
 // Estes casos vivem AQUI e não no teste de node porque o caminho `hcnew` chama `worldTexFor`, que precisa de
 // uma canvas de verdade para repintar — a mesma razão pela qual o desvio de Renderização Direta já era testado

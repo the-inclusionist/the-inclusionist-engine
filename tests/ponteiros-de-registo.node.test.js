@@ -79,9 +79,21 @@ const MORTOS = {
   'tests/main-i18n.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`, #111): testava o `main.js`, que deixou de viver aqui',
   'tests/alternancia-do-correr.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`): mecânica de plataforma, não de engine',
   'scripts/check-types.mjs': 'APOSENTADO DE PROPÓSITO (`f622221`) quando a dívida de tipos chegou a ZERO. Era um tecto que só descia; chegado ao fundo, um tecto deixa de ter função',
-  'tests/lcp-quarantine.node.test.js': 'MUDOU DE NOME COM A DECISÃO (2026-09-09): virou `tests/arte-licencas-aceites.node.test.js` quando o ADR-0133 recusou share-alike e a quarentena deixou de ter o que segurar. ⚠️ O ADR-0133 nomeia-o para dizer que foi APOSENTADO, e essa frase é história — o gate não morreu, virou-se do avesso',
-  'scripts/medir-forma-do-menu.py': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): virou `scripts/measure-menu-shape.py`, e faz exactamente o que fazia. ⚠️ A prosa do registo que o nomeia diz como a medição foi FEITA naquele dia, e uma prosa que se reescreve deixa de ser história (ADR-0057) — quem a ler encontra o caminho de hoje aqui',
+  // ⚠️ DUAS DATAS NUMA FRASE SÓ, e a segunda entrou porque a ferramenta da fase 3 reescreveu a primeira: em 09/09 este ficheiro
+  // virou `arte-licencas-aceites`, e foi esse o nome que ele teve. Dizer que virou o nome de HOJE é falso para aquele dia — e um
+  // livro de ponteiros que mente sobre a data deixa de servir para o que existe. Ficam os dois: o que foi, e onde está.
+  'tests/lcp-quarantine.node.test.js': 'MUDOU DE NOME DUAS VEZES. Em 2026-09-09 virou `tests/arte-licencas-aceites.node.test.js`, quando o ADR-0133 recusou share-alike e a quarentena deixou de ter o que segurar; em 2026-09-22 a fase 3 do ADR-0219 pô-lo em inglês, e hoje é `tests/art-licences-accepted.node.test.js`. ⚠️ O ADR-0133 nomeia o primeiro para dizer que foi APOSENTADO, e essa frase é história — o gate não morreu, virou-se do avesso',
+  'scripts/medir-forma-do-menu.py': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `scripts/measure-menu-shape.py`, e faz exactamente o que fazia',
+  'tests/barra-rapida-no-hud.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/quick-bar-in-the-hud.node.test.js`',
+  'tests/contract-topologia-e-funcao.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/contract-topology-is-a-function.node.test.js`',
 };
+/*
+ * 🔴 AS ENTRADAS DA FASE 3 SÃO DE UMA QUARTA CAUSA, e ela não existia quando este ficheiro nasceu: o ficheiro NÃO MORREU, mudou
+ * de nome. A prosa de um registo que o cita continua certa para o dia em que foi escrita (ADR-0057), e por isso não se toca —
+ * o que faltava era o sítio onde se diz para onde ele foi, e é esta lista. ⚠️ Por isso mesmo este ficheiro está FORA da
+ * varredura do `scripts/apply-file-rename.mjs`: ele é dado SOBRE caminhos, e uma ferramenta que o reescrevesse transformaria
+ * «X virou Y» em «Y virou Y». Aconteceu duas vezes em 22/09 antes de a exclusão entrar.
+ */
 // ========================= O QUE JÁ SAIU, E COMO =========================
 // A lista nasceu com SETE entradas e está em TRÊS. Nenhuma foi apagada; cada uma saiu por uma via diferente, e
 // as vias é que são o assunto.

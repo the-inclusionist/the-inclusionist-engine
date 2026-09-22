@@ -102,7 +102,7 @@ ficheiro tabular ao lado do apontador em prosa, porque um livro-razão que cresc
 
 ⚠️ **Atribuição aqui é condição de uso, não linha de crédito.** Três das quatro licenças exigem-na, e um recurso
 sem autor conhecido **não entra** — «não consegui descobrir» não é licença. O gate
-`tests/arte-licencas-aceites.node.test.js` reprova a entrada vazia, a entrada órfã, o recurso sem entrada, a fonte
+`tests/art-licences-accepted.node.test.js` reprova a entrada vazia, a entrada órfã, o recurso sem entrada, a fonte
 sem URL e **qualquer licença fora das quatro** — com ND, NC e share-alike recusados por nome e com o motivo de
 cada um, que o [`LICENSES.md`](LICENSES.md) §3 e o **ADR-0133** explicam.
 

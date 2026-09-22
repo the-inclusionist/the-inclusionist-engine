@@ -546,7 +546,7 @@ describe('markup dos ícones e do menu', () => {
     // ⚠️ ESTE CASO MEDE A FORMA, E O IDIOMA MEDE-SE NOUTRO SÍTIO. Aqui o dicionário activo é o pt, onde a
     // chave e o literal antigo produzem a MESMA string — uma asserção «não contém Jogador» estaria a medir
     // o dicionário e não o mecanismo, e ficaria verde com o literal de volta. Quem distingue literal de
-    // chave é o ARRANQUE EM `en`: `tests/barra-no-idioma-do-arranque.browser.test.js`.
+    // chave é o ARRANQUE EM `en`: `tests/bar-in-the-boot-language.browser.test.js`.
     const h = screenPauseMarkup({ player: 1, numPlayers: 2, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
     // O `<span>` próprio é o que o `refrescarItensDaPausa` precisa para REPINTAR o sufixo quando a pausa
     // abre — sem um sítio nomeado, o conserto do idioma não tem onde pousar.

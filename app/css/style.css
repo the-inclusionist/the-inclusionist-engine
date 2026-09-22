@@ -422,7 +422,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
       coisas de uma vez, e é o padrão de alto contraste de qualquer sistema operacional.
 
    Resultado: o pior par do menu vai de 5,11:1 para 10,29:1 (`--ink-soft` sobre botão). Margem de +47% sobre
-   o 7:1. `tests/contraste-menu.node.test.js` afirma isso a cada rodada, com as razões calculadas do próprio
+   o 7:1. `tests/menu-contrast-measured.node.test.js` afirma isso a cada rodada, com as razões calculadas do próprio
    CSS — não copiadas para dentro do teste.
 
    ⚠️ VALE PARA OS TRÊS NÍVEIS, e não só para o 7:1: nos outros dois o menu já passava, mas passava POR SORTE

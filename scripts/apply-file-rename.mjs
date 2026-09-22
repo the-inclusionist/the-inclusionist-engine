@@ -32,10 +32,21 @@ const ROOT = process.cwd().endsWith('app') ? join(process.cwd(), '..') : process
 const posix = (p) => p.split('\\').join('/');
 
 /** Every tracked text file a path may be written in. The map and this tool are left out: they QUOTE the old paths on purpose. */
-const LEFT_OUT = [MAP, 'scripts/apply-file-rename.mjs', 'docs/6-DevOps-SRE/Breaking-Changes.md', 'CHANGELOG.md'];
+/*
+ * ⚠️ AND THE LEDGER OF DEAD POINTERS IS LEFT OUT, learned by damaging it twice in one afternoon.
+ * `tests/ponteiros-de-registo.node.test.js` exists to say «this path no longer exists, and here is where it went»: rewriting
+ * the old half of that sentence turns «X became Y» into «Y became Y», and rewriting the KEY declares a dead pointer for a file
+ * that is alive. Its entries are data ABOUT paths, exactly as `word-lists.json` is data about words — the same mistake phase 2
+ * made when it rewrote the gate's own dictionary into English.
+ */
+const LEFT_OUT = [MAP, 'scripts/apply-file-rename.mjs', 'docs/6-DevOps-SRE/Breaking-Changes.md', 'CHANGELOG.md',
+  'tests/ponteiros-de-registo.node.test.js'];
 const filesToTouch = () => execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
   .trim().split(/\r?\n/)
-  .filter((f) => /\.(ts|js|mjs|cjs|md|json|html|py|yaml|yml)$/.test(f))
+  // 📌 `.css` IS IN THE LIST BECAUSE A STYLESHEET NAMES ITS GATE. Measured on the first tests batch: `app/css/style.css`
+  // cites `tests/contraste-menu.node.test.js` in a comment, and the file type was not being read at all — the gate of this
+  // phase caught it, which is the whole reason that gate scans the tracked tree rather than only the imports.
+  .filter((f) => /\.(ts|js|mjs|cjs|md|json|html|py|yaml|yml|css)$/.test(f))
   .filter((f) => !LEFT_OUT.includes(f));
 
 /**

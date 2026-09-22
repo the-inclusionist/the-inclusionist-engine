@@ -541,6 +541,46 @@
         "tests/fixtures/contraste-wcag.js": "tests/fixtures/wcag-contrast.js",
         "tests/fixtures/respostas-de-acomodacao.js": "tests/fixtures/accommodation-answers.js"
       }
+    },
+    "tests-1": {
+      "done": "2026-09-22",
+      "files": {
+        "tests/abaixo-do-piso.node.test.js": "tests/below-the-floor.node.test.js",
+        "tests/acomodacoes-montam-pela-resposta.browser.test.js": "tests/rows-follow-the-answer.browser.test.js",
+        "tests/alternancia-por-transporte.node.test.js": "tests/latching-per-transport.node.test.js",
+        "tests/alto-contraste-recorte.browser.test.js": "tests/high-contrast-clipping.browser.test.js",
+        "tests/ampulheta-na-barra.browser.test.js": "tests/hourglass-on-the-bar.browser.test.js",
+        "tests/ampulheta-na-barra.node.test.js": "tests/hourglass-on-the-bar.node.test.js",
+        "tests/anuncio-do-ajuste.node.test.js": "tests/a-setting-announces-itself.node.test.js",
+        "tests/armazenamento-fora-do-escopo.browser.test.js": "tests/storage-outside-the-scope.browser.test.js",
+        "tests/arte-licencas-aceites.node.test.js": "tests/art-licences-accepted.node.test.js",
+        "tests/aviso-de-queda-registrado.browser.test.js": "tests/crash-notice-registered.browser.test.js",
+        "tests/barra-a11y-e-hud.node.test.js": "tests/the-a11y-bar-is-hud.node.test.js",
+        "tests/barra-legenda-e-rodape.browser.test.js": "tests/bar-caption-and-footer.browser.test.js",
+        "tests/barra-no-idioma-do-arranque.browser.test.js": "tests/bar-in-the-boot-language.browser.test.js",
+        "tests/barra-rapida-no-hud.node.test.js": "tests/quick-bar-in-the-hud.node.test.js",
+        "tests/caixa-alta-da-comunicacao.browser.test.js": "tests/communication-in-capital-letters.browser.test.js",
+        "tests/camera-na-barra.node.test.js": "tests/camera-on-the-bar.node.test.js",
+        "tests/cartao-de-pausa-nao-come-teclas.browser.test.js": "tests/the-pause-card-does-not-eat-keys.browser.test.js",
+        "tests/categorias-de-audio-padrao.node.test.js": "tests/audio-category-defaults.node.test.js",
+        "tests/ciclo-de-tipografia.node.test.js": "tests/typography-cycle.node.test.js",
+        "tests/ciclos-da-barra-sem-jogadores.browser.test.js": "tests/bar-cycles-with-no-players.browser.test.js",
+        "tests/comentario-nao-come-codigo.node.test.js": "tests/a-comment-does-not-eat-code.node.test.js",
+        "tests/constantes-do-cartucho.node.test.js": "tests/cartridge-constants.node.test.js",
+        "tests/contract-topologia-e-funcao.node.test.js": "tests/contract-topology-is-a-function.node.test.js",
+        "tests/contraste-dos-menus.browser.test.js": "tests/menu-contrast-floors.browser.test.js",
+        "tests/contraste-menu.node.test.js": "tests/menu-contrast-measured.node.test.js",
+        "tests/controle-virtual-no-arranque.browser.test.js": "tests/virtual-controller-at-boot.browser.test.js",
+        "tests/crt-no-arranque.browser.test.js": "tests/crt-at-boot.browser.test.js",
+        "tests/dicionario-do-cartucho-em-problems.browser.test.js": "tests/cartridge-dictionary-in-problems.browser.test.js",
+        "tests/dicionario-do-cartucho-nas-tres-linguas.node.test.js": "tests/cartridge-dictionary-in-three-languages.node.test.js",
+        "tests/direcao-das-dependencias.node.test.js": "tests/dependencies-point-downward.node.test.js",
+        "tests/dom-sem-documento.node.test.js": "tests/dom-with-no-document.node.test.js",
+        "tests/dono-e-contornos.browser.test.js": "tests/owner-colours-and-outlines.browser.test.js",
+        "tests/duracao-da-legenda.node.test.js": "tests/a-caption-lasts-its-words.node.test.js",
+        "tests/edges-modo-facil.node.test.js": "tests/easy-mode-edges.node.test.js",
+        "tests/empatia-no-idioma-do-arranque.browser.test.js": "tests/empathy-in-the-boot-language.browser.test.js"
+      }
     }
   }
 }

@@ -120,7 +120,7 @@ export const PADRAO: InputState = Object.freeze({ emUso: 'teclado', assistidaLig
  *
  * **A resposta certa é `latch-scope.latchOf(estado.emUso, leitura)`.** O papel que sobra a este
  * módulo é o que o nome dele diz: QUAL transporte está em uso — que é o que alimenta aquele primeiro
- * argumento. `tests/alternancia-por-transporte.node.test.js` afirma que esta função continua sem consumidor.
+ * argumento. `tests/latching-per-transport.node.test.js` afirma que esta função continua sem consumidor.
  */
 export function latchNow(estado: InputState): boolean {
   if (estado.assistidaLigada) return true;

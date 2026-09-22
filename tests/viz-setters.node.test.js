@@ -726,7 +726,7 @@ describe('até onde o filtro alcança (issue #82)', () => {
 // ALTO CONTRASTE NO DOM (issue #83). Ele NÃO é filtro: é Renderização Direta, e repinta as texturas da canvas.
 // O DOM não tem textura, então o conserto da #82 — propagar o filtro — não o alcançava. O que atravessa é uma
 // CLASSE, e o desenho (véu opaco, cursor invertido) mora no `style.css`, com as razões medidas em
-// `tests/contraste-menu.node.test.js`.
+// `tests/menu-contrast-measured.node.test.js`.
 //
 // MUTAÇÃO CONFERIDA: trocando `m.kind === 'hcnew'` por `false` em `applyVizGlobal`, o [Right] falha em
 // "expected [] to deeply equal [ true ]".

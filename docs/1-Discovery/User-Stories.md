@@ -59,7 +59,7 @@ said so. A document that describes the code has to be able to notice when it sto
   `app/js/ui/fonts.ts` · `tests/fontes-carregam.node.test.js`
 - ✅ As a **player with low vision**, I want **high contrast** that keeps the cursor findable, so that reading
   better does not cost me my place. `app/js/render/high-contrast.ts` · `tests/high-contrast.browser.test.js`,
-  `tests/contraste-menu.node.test.js`
+  `tests/menu-contrast-measured.node.test.js`
 - ✅ As a **colour-blind player**, I want a **correction**, and I want it applied last so nothing re-tints it.
   `app/js/render/cvd-matrices.ts`, `app/js/core/layers.ts` · `tests/viz-modes.node.test.js`,
   `tests/layers.node.test.js`

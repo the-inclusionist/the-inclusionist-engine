@@ -44,7 +44,7 @@ Estas quatro entram **antes de qualquer arte do próprio projeto**:
 
 ## O livro-razão
 
-`ATTRIBUTION.csv` — uma linha por recurso, e o gate `tests/arte-licencas-aceites.node.test.js` reprova um
+`ATTRIBUTION.csv` — uma linha por recurso, e o gate `tests/art-licences-accepted.node.test.js` reprova um
 ficheiro sem linha e uma linha sem ficheiro.
 
 | coluna | o que carrega |
