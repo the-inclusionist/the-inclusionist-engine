@@ -42,6 +42,11 @@ import { SHORT_THEME, SHORT_CORRECTION } from './visual-axes-panel.js';
  * módulo-folha — zero imports, zero DOM —, e por isso o clamp destrutivo do nível 1 se consegue medir sem montar nada.
  */
 import { CALM_NAMES, CALM_AUDIO_CATS, nextCalmMode, sanitiseTeaLevel, calmAudioPlan, calmMotionPlan } from '../core/calm-mode.js';
+/*
+ * 🔴 THE ICON CATALOGUE MOVED HOUSE to `core/pause-icon-catalogue` (ADR-0221, issue #203): WHICH icons exist and in what order
+ * is DATA, and this file is about what they DO. See the header there for why the data had to leave first.
+ */
+import { type PauseIcon, PAUSE_ICONS, pauseIcon } from '../core/pause-icon-catalogue.js';
 import {
   nextTheme, nextCorrection, hasHighContrast, PADRAO,
   type Theme, type Correction, type VisualState,
@@ -165,64 +170,6 @@ export function iconCaption(barra: ParentNode, el: HTMLElement): string {
   );
 }
 
-// ---------------------------------------------------------------------------------------------
-// Data
-// ---------------------------------------------------------------------------------------------
-
-export interface PauseIcon {
-  /** `data-pi` key — the dispatch key of iconAct/iconLabel/reflectIconBtn. */
-  k: string;
-  /** The emoji glyph rendered inside the button. */
-  e: string;
-  /** i18n KEY of the base name; also the `aria-label` when the icon carries no state. */
-  n: string;
-  // 📌 `soon` LEFT THIS INTERFACE on 2026-09-21 (issue #184): the 👄 was the last icon using it, and a mechanism nobody uses is
-  // debt wearing the clothes of a feature. What remains is the narrower rule of ADR-0106 §5 — an icon is only mounted where
-  // something acts on it. Whoever needs «under construction» again takes it back out of git, with that day's reason written down.
-}
-
-/** The accessibility shortcut bar at the top of every pause screen (and of the splash `#title-icons`).
- *  Sound-bound icons (blind/TTS) require a private audio output; the webcam and the voice require the device to have one.
- *  VERBATIM from game.js in order and behaviour; the names became i18n keys in the Fase-5 pass. */
-// `n` é a CHAVE i18n do nome do ícone (o emoji `e` não traduz — é o mesmo glifo em toda língua).
-export const PAUSE_ICONS: readonly PauseIcon[] = [
-  // FIRST, the menus (the Dev, 2026-09-16: «Menu deve ser o primeiro ícone»): the SELECT door as an icon, for a hand with no
-  // SELECT under it. Mounted only where there is a card to open (`abrirMenus`).
-  { k: 'menu', e: '☰', n: 'icon.menu' },
-  { k: 'blind', e: '🦯', n: 'icon.blind' },
-  { k: 'tts', e: '🗨️', n: 'icon.tts' },
-  { k: 'libras', e: '🦻', n: 'icon.libras' }, // 🦻 (the Dev, 2026-09-16): 🤟 is playing by hand gestures
-  { k: 'tea', e: '🧩', n: 'icon.tea' },
-  { k: 'altmove', e: '☝️', n: 'icon.altmove' }, // ☝️ e não 🦾: o gesto é UM DEDO tocando, que é o que a alternância pede (pedido do Dev)
-  { k: 'contrast', e: '🌗', n: 'icon.contrast' },
-  { k: 'cvd', e: '🚥', n: 'icon.cvd' },
-  // playing through the webcam, ONE icon (ADR-0215): off · hands · face · eyes, each with its lines; where 🧑 and 👀 were
-  { k: 'camera', e: '📷', n: 'icon.camera' },
-  // playing by SPEAKING (ADR-0189, issue #184): it left «em construção» on 2026-09-21, when the words, the recogniser, the
-  // microphone and the wiring existed — not a day before, because an icon that announces itself and changes nothing is the
-  // defect ADR-0106 §5 names.
-  { k: 'voice', e: '👄', n: 'icon.voice' },
-  /*
-   * O DÉCIMO PRIMEIRO (ADR-0149 §1), e ele entra no FIM por uma razão de ordem e não de importância: quem
-   * navega a barra por teclado já aprendeu onde estão os dez, e inserir no meio deslocaria todos eles — o
-   * mesmo custo que o §2 do ADR-0044 recusa pagar no cartão de pausa.
-   *
-   * 📌 UM CICLO E NÃO UMA PORTA. O painel de tipografia continua a existir nas Configurações com as suas
-   * trinta faces; este botão é a escolha que se faz SEM sair da tela, numa pressão, e por isso é uma lista
-   * curta e curada em vez de um menu.
-   */
-  { k: 'tipografia', e: '🔤', n: 'icon.tipografia' },
-  // THE TWELFTH (ADR-0180): the game speed, its own button beside toggle keys, at the end for the same reason as the eleventh.
-  // An hourglass and no animal: a snail, a turtle or a hare can read as an insult to the child who needs the slower game.
-  { k: 'velocidade', e: '⏳', n: 'icon.velocidade' },
-  // THE LAST BUTTON, the language (the Dev, 2026-09-16): Brazil → United States → Mexico, each press; menus, the footer, speech and
-  // recognition follow it. Its glyph is a DRAWN flag (`ui/locale-flags`), since flag emoji show as letters on Windows.
-  { k: 'idioma', e: '🇧🇷', n: 'icon.idioma' },
-];
-
-const ICON_BY_KEY: ReadonlyMap<string, PauseIcon> = new Map(PAUSE_ICONS.map((ic) => [ic.k, ic]));
-export function pauseIcon(k: string): PauseIcon | undefined { return ICON_BY_KEY.get(k); }
-
 /** Lê o nível TEA do armazenamento, saneado. Chamado no `init`, nunca no import. */
 function lerNivelTea(): number {
   return sanitiseTeaLevel(store.getNum(store.KEYS.tea, DEFAULTS.calmMode), DEFAULTS.calmMode);
@@ -323,7 +270,7 @@ export function hasPrivateOutputIn(list: readonly PausePlayer[], count: number, 
 /** The `aria-label` of one icon — it MUST reflect the current state, on/off or level. This is the whole
  *  point of the function: a toggle that looks pressed but does not say so is invisible to a screen reader. */
 export function computeIconLabel(k: string, s: IconStateSnapshot): string {
-  const ic = ICON_BY_KEY.get(k);
+  const ic = pauseIcon(k);
   if (!ic) return '';
   // O estado vira SEMPRE um parâmetro (`{v}`), nunca uma concatenação: 'on'/'off' eram palavras inglesas
   // presas numa frase em português, e uma língua que anteponha o estado ao nome precisa do dicionário para

@@ -14,13 +14,15 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
 import pt from '../app/js/i18n/pt.js';
 import {
-  PAUSE_ICONS,
   hasPrivateOutputIn,
   computeIconLabel, computeIconVisual, ICON_STATE_CLASSES, inputModeOf, nextInputMode,
   iconBtnMarkup, iconsMarkup, pmBtnMarkup, screenPauseMarkup,
   iconsThatAct,
   initPauseIcons,
 } from '../app/js/ui/pause-icons.js';
+// 📌 O catálogo mudou de casa para `core/pause-icon-catalogue` (ADR-0221, issue #203): QUAIS ícones existem e por que ordem é
+// dado, e este ficheiro mede o que eles FAZEM. Os casos ficam aqui porque é aqui que a barra se monta.
+import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 // 📌 O modo calmo mudou de casa para `core/calm-mode` (ADR-0221, issue #203): ele não é sobre ícones, é sobre o que uma
 // criança que não suporta ruído precisa que a engine cale. Os casos ficam aqui porque é aqui que o ciclo do ☺ é exercido.
 import { nextCalmMode, calmAudioPlan, calmMotionPlan, CALM_AUDIO_CATS } from '../app/js/core/calm-mode.js';

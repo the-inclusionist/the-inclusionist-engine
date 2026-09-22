@@ -203,6 +203,11 @@
     "createPasswordCodec",
     "formatPassword"
   ],
+  "core/pause-icon-catalogue.ts": [
+    "PAUSE_ICONS",
+    "PauseIcon",
+    "pauseIcon"
+  ],
   "core/ring.ts": [
     "stepInRing"
   ],
@@ -1732,9 +1737,7 @@
     "IconStateSnapshot",
     "IconVisual",
     "InputMode",
-    "PAUSE_ICONS",
     "PM_VISIBLE_ITEMS",
-    "PauseIcon",
     "PauseIconsApi",
     "PauseIconsCtx",
     "PauseMenuButton",
@@ -1755,7 +1758,6 @@
     "itemReason",
     "itemsThatAct",
     "nextInputMode",
-    "pauseIcon",
     "pauseMenuHtml",
     "pmBtnMarkup",
     "quickBarMarkup",

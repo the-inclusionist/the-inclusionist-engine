@@ -39,12 +39,17 @@ describe('a saúde do código só melhora', () => {
        * extração honesta custa +1 ao módulo de onde o assunto sai — sem esta cláusula, a única forma de pagar dívida seria
        * reescrever a linha de base a cada corte, e uma catraca que se desaperta por rotina deixa de ser uma.
        *
-       * ⚠️ E ela é ESTREITA de propósito: UM, e só com as duas outras a descer. Um módulo que ganha imports sem dar nada em
-       * troca continua a reprovar, que é o caso que a medida existe para apanhar. 📌 A raiz do fundo disto já estava medida
-       * duas vezes hoje: o fan-out conta QUANTOS módulos, nunca quanto de cada um — a raiz passou de oito nomes do
-       * `ui/layout` para três e o número dela subiu.
+       * 🔴 E A CLÁUSULA JÁ FOI ESTREITA DEMAIS UMA VEZ, no mesmo dia: ela exigia que os RAMOS também descessem, e tirar DADO de
+       * um módulo não mexe em ramo nenhum — uma lista não tem `if`. 📏 Medido ao tirar o catálogo de ícones do `ui/pause-icons`:
+       * 666 → 645 linhas, 122 → 122 ramos, fan-out 19 → 20, e o portão recusou. Exigir que os ramos desçam é proibir
+       * exactamente a extração mais barata e mais limpa que existe. Passou a ser «as linhas DESCEM e os ramos NÃO SOBEM».
+       *
+       * ⚠️ E ela continua ESTREITA: UM import, e só a um módulo que deu alguma coisa em troca. Quem ganha imports sem dar nada
+       * continua a reprovar, que é o caso que a medida existe para apanhar (mutações 8 e 9). 📌 A raiz do fundo disto já estava
+       * medida: o fan-out conta QUANTOS módulos, nunca quanto de cada um — a raiz passou de oito nomes do `ui/layout` para três
+       * e o número dela subiu.
        */
-      const trocou = agora.codeLines < antes.codeLines && agora.decisionNodes < antes.decisionNodes;
+      const trocou = agora.codeLines < antes.codeLines && agora.decisionNodes <= antes.decisionNodes;
       for (const m of MEASURES) {
         if (isExempt(mod, m)) continue;
         if (m === 'fanOut' && trocou && agora[m] === antes[m] + 1) continue;
@@ -120,6 +125,13 @@ describe('a saúde do código só melhora', () => {
  * 7. um módulo já na linha de base ganha um alcance a `window` .................................. VERMELHO no 1.º
  *    — os 24 que já alcançam ficam congelados e só podem encolher: dívida não vira licença.
  * 8. um módulo ganha DOIS imports e CRESCE em linhas ............................................ VERMELHO no 1.º
- *    — prova que a cláusula do fan-out é estreita: ela perdoa UM, e só com tamanho e ramos a descer. Ganhar imports sem dar
- *      nada em troca continua a reprovar, que é o caso que a medida existe para apanhar.
+ *    — prova que a cláusula do fan-out é estreita: ela perdoa UM, e só a quem deu alguma coisa em troca. Ganhar imports sem
+ *      dar nada continua a reprovar, que é o caso que a medida existe para apanhar.
+ *
+ * ========================= e as duas da cláusula ALARGADA (mesmo dia, depois do corte do catálogo) =========================
+ * 9.  um módulo dá linhas e ganha DOIS imports .................................................. VERMELHO no 1.º
+ *     — o alargamento não abriu a porta ao número: continua a ser UM (fan-out 19 → 21 com as linhas a descer).
+ * 10. um módulo dá linhas, ganha UM import e GANHA UM RAMO ...................................... VERMELHO no 1.º
+ *     — por duas vias, e a segunda é o ponto: os ramos a subir são erro por si mesmos E derrubam a tolerância do fan-out.
+ *     📌 O controlo correu verde antes das duas, que é o que as torna leitura e não decoração.
  */

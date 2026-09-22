@@ -316,6 +316,13 @@
       "decodificar"
     ]
   },
+  "core/pause-icon-catalogue.ts": {
+    "interface PauseIcon": [
+      "e",
+      "k",
+      "n"
+    ]
+  },
   "core/rng.ts": {
     "interface Rng": [
       "randInt",
@@ -2650,11 +2657,6 @@
     ]
   },
   "ui/pause-icons.ts": {
-    "interface PauseIcon": [
-      "e",
-      "k",
-      "n"
-    ],
     "interface PauseMenuButton": [
       "act",
       "lbl?",

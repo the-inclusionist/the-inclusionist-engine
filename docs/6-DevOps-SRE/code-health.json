@@ -215,6 +215,14 @@
       "globalReach": 0,
       "fanIn": 0
     },
+    "core/pause-icon-catalogue.ts": {
+      "codeLines": 22,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "globalReach": 0,
+      "fanIn": 1
+    },
     "core/ring.ts": {
       "codeLines": 4,
       "decisionNodes": 1,
@@ -1472,10 +1480,10 @@
       "fanIn": 1
     },
     "ui/pause-icons.ts": {
-      "codeLines": 666,
+      "codeLines": 645,
       "decisionNodes": 122,
       "maxDepth": 11,
-      "fanOut": 19,
+      "fanOut": 20,
       "globalReach": 0,
       "fanIn": 3
     },

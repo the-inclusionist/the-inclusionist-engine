@@ -112,7 +112,6 @@
       "itemsThatAct",
       "iconCaption",
       "itemReason",
-      "pauseIcon",
       "pauseMenuHtml"
     ],
     "ui/settings-controls.ts": [

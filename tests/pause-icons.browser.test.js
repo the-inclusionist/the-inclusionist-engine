@@ -7,7 +7,8 @@
 // `players`/`numPlayers` são os módulos REAIS (core/state.ts) — os mesmos bindings vivos que o
 // game.js usa; o resto do ctx é falso (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PAUSE_ICONS, initPauseIcons } from '../app/js/ui/pause-icons.js';
+import { initPauseIcons } from '../app/js/ui/pause-icons.js';
+import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
 import { createRunState } from '../app/js/core/run-state.js';
 // A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de

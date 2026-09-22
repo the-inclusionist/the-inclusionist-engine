@@ -5,7 +5,8 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PAUSE_ICONS, iconsThatAct, computeIconLabel, computeIconVisual } from '../app/js/ui/pause-icons.js';
+import { iconsThatAct, computeIconLabel, computeIconVisual } from '../app/js/ui/pause-icons.js';
+import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import * as state from '../app/js/core/state.js';
 import { PADRAO } from '../app/js/core/visual-state.js';
 

@@ -1667,6 +1667,25 @@ and measured to have no consumer anywhere — and its own comment said it was «
 being true without anybody noticing. A debt ledger exists to SHRINK; carrying it to a new house would have carried it another
 year. What `iconLabel` uses is `CVD_NAMES`.
 
+## BB · The icon catalogue leaves the icon module: `core/pause-icon-catalogue` (ADR-0221, issue #203)
+
+**What this is.** Three names move from `ui/pause-icons` to a new leaf, `core/pause-icon-catalogue`: the `PauseIcon`
+interface, the `PAUSE_ICONS` list and the `pauseIcon(key)` lookup. The spelling of each is unchanged; only the module is.
+📏 Measured in all seven games before moving: none of the three is imported by any of them.
+
+📌 **No alias was left behind.** A re-export would have kept the old path working for nobody — and it would have made the
+public-surface portrait lie, because the portrait does not see re-exports (issue #204). If you do import one of the three,
+change `ui/pause-icons.js` to `core/pause-icon-catalogue.js` in that import and nothing else.
+
+🎯 **Why the DATA had to leave first, before the markup it belongs to.** The cut this step wanted is the markup —
+`iconBtnMarkup`, `iconsMarkup`, `quickBarMarkup`, `screenPauseMarkup` — and the markup needs the catalogue. With both in one
+file, moving the markup alone would have made the two modules import each other, which is the cycle ADR-0173 forbids. Data at
+the bottom, drawing above it, and the next cut becomes possible.
+
+✅ **And `pauseIcon` was PAID rather than carried.** It sat in the declared debt of `ui/pause-icons` — published with no
+consumer anywhere — and the consumer it lacked was in the same file: `computeIconLabel` read the private map directly instead
+of calling the lookup published beside it. It now calls it. The debt ledger for that module goes from 7 names to 6.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |
