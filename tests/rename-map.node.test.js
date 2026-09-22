@@ -8,7 +8,8 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { renameInText, readMap } from '../scripts/apply-rename.mjs';
 
@@ -43,6 +44,63 @@ describe('o mapa é declaração, não adivinhação', () => {
     expect(colisoes, 'o nome novo já é de outra coisa').toEqual([]);
     const destinos = pares.map(([, novo]) => novo);
     expect(new Set(destinos).size, 'dois nomes velhos apontam para o mesmo nome novo').toBe(destinos.length);
+  });
+});
+
+/*
+ * ========================= FASE 3: O NOME DO FICHEIRO TAMBÉM É SUPERFÍCIE =========================
+ * Um jogo escreve `from '@the-inclusionist/engine/core/anel.js'`, logo um CAMINHO é contrato tanto quanto um nome. O que muda
+ * face à fase 2 é o que se pode medir: um nome vive no retrato da superfície, mas um ficheiro vive no DISCO — e por isso estes
+ * casos perguntam ao sistema de ficheiros, que é a única testemunha que não repete o que o mapa diz.
+ */
+describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
+  const fileLayers = () => Object.entries(readMap().fileLayers ?? {});
+
+  it('🔴 [Right] o que uma camada aplicada moveu ESTÁ movido: o novo existe, o velho não', () => {
+    const feitas = fileLayers().filter(([, l]) => l.done);
+    expect(feitas.length, 'nenhuma camada de ficheiros foi aplicada ainda — este caso não mede nada').toBeGreaterThan(0);
+    const errados = [];
+    for (const [camada, l] of feitas) {
+      for (const [velho, novo] of Object.entries(l.files)) {
+        if (existsSync(join(RAIZ, velho))) errados.push(`${camada}: ${velho} continua lá`);
+        if (!existsSync(join(RAIZ, novo))) errados.push(`${camada}: ${novo} não existe`);
+      }
+    }
+    expect(errados, 'o mapa diz que moveu e o disco diz que não').toEqual([]);
+  });
+
+  it('🔴 [Right] o caminho novo é inglês, e nenhum ficheiro velho aponta para dois sítios', () => {
+    const todas = fileLayers().flatMap(([, l]) => Object.entries(l.files));
+    const pt = new Set(JSON.parse(readFileSync(join(RAIZ, 'scripts/word-lists.json'), 'utf8')).portuguese);
+    // O nome do ficheiro parte-se como um identificador se parte: por `-`, `.` e `_`, e o que sobra é palavra.
+    const palavras = (p) => p.split('/').pop().replace(/\.[a-z.]+$/i, '').split(/[-._]/).map((w) => w.toLowerCase());
+    const aindaPortugues = todas.filter(([, novo]) => palavras(novo).some((w) => pt.has(w)));
+    expect(aindaPortugues, 'um caminho «novo» que continua português move para o mesmo problema').toEqual([]);
+    const destinos = todas.map(([, novo]) => novo);
+    expect(new Set(destinos).size, 'dois ficheiros velhos apontam para o mesmo ficheiro novo').toBe(destinos.length);
+  });
+
+  it('🎯 [Zero] e NINGUÉM na árvore ainda importa um caminho que já não existe', () => {
+    /*
+     * ⚠️ ESTE É O CASO QUE O `tsc` NÃO FAZ, e é por isso que ele está aqui: um `import` de um ficheiro que sumiu é erro de
+     * tipos, sim — mas um caminho escrito numa CADEIA (um crivo que nomeia o módulo que guarda, um livro-razão chaveado por
+     * caminho, um `.md`) não é lido por compilador nenhum. Foi assim que o inventário da dívida ficou a falar de
+     * `core/anel.ts` depois de `core/anel.ts` já não existir.
+     */
+    const movidos = fileLayers().filter(([, l]) => l.done).flatMap(([, l]) => Object.keys(l.files));
+    expect(movidos.length, 'nada movido — este caso não mede nada').toBeGreaterThan(0);
+    const rastreados = execFileSync('git', ['ls-files'], { cwd: RAIZ, encoding: 'utf8' }).trim().split(/\r?\n/);
+    const sobras = [];
+    for (const f of rastreados) {
+      if (f === 'scripts/rename-map.json' || f === 'scripts/apply-file-rename.mjs') continue; // CITAM os velhos de propósito
+      if (f === 'docs/6-DevOps-SRE/Breaking-Changes.md' || f === 'CHANGELOG.md') continue;    // a tabela de migração vive deles
+      if (f === 'tests/rename-map.node.test.js') continue;                                     // e este ficheiro também os cita
+      const texto = readFileSync(join(RAIZ, f), 'utf8');
+      for (const velho of movidos) {
+        for (const forma of [velho, velho.replace(/\.ts$/, '.js')]) if (texto.includes(forma)) sobras.push(`${f} → ${forma}`);
+      }
+    }
+    expect(sobras, 'alguém ainda escreve um caminho que foi movido').toEqual([]);
   });
 });
 
@@ -101,3 +159,21 @@ describe('a renomeação não estraga prosa', () => {
     expect(counted).toEqual({ LINHAS: 2, modoCego: 1 });
   });
 });
+
+/*
+ * ========================= MUTAÇÕES CONFERIDAS =========================
+ * ⚠️ O cabeçalho deste ficheiro prometia esta secção desde que ele nasceu e ela não existia. As da FASE 2 estão escritas nas
+ * mensagens dos oito commits das camadas, que é onde nasceram; as da FASE 3 ficam aqui, onde foram prometidas (2026-09-22).
+ *
+ * FASE 3 — os três casos dos nomes de FICHEIRO:
+ *   1. o mapa diz que moveu e o disco discorda (`ring.ts` devolvido a `anel.ts`) ......... 2 VERMELHOS (o do disco e o das sobras)
+ *   2. um caminho «novo» que continua português (`anel-novo.ts`) ........................ 3 VERMELHOS
+ *   3. uma referência obsoleta deixada escrita num ficheiro rastreado ................... 1 VERMELHO, e é SÓ o caso das sobras
+ *      — é a mutação que mais importa, porque é a única que o `tsc` nunca veria: um caminho dentro de uma CADEIA (um crivo que
+ *        nomeia o módulo que guarda, um livro-razão chaveado por caminho, um `.md`) não é lido por compilador nenhum.
+ *   4. dois ficheiros velhos a apontar para o mesmo ficheiro novo ...................... 3 VERMELHOS
+ *
+ * 🔴 E O PRÓPRIO SCRIPT DE MUTAÇÃO ESTRAGOU A ÁRVORE à primeira volta: o «desfazer» apagava o ficheiro reposto sem perguntar se
+ * ele existia, e com a mutação 1 aplicada (o novo já não existe) apagou-o de vez. Reposto à mão, e o guarda entrou no script.
+ * Uma ferramenta de mutação sem rede é pior do que mutação nenhuma — ela mede e destrói na mesma passagem.
+ */

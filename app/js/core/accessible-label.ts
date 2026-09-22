@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/rotulo-acessivel — COMO SE CHAMA UM CONTROLE, e uma resposta só para quem vê e para quem escuta.
+// core/accessible-label — COMO SE CHAMA UM CONTROLE, e uma resposta só para quem vê e para quem escuta.
 //
 // ========================= O DEFEITO QUE ISTO FECHA =========================
 // MEDIDO no jogo construído, pousando o cursor no botão de número de jogadores do menu inicial:
@@ -18,7 +18,7 @@
 // ========================= POR QUE UM MÓDULO-FOLHA =========================
 // Três consumidores em camadas diferentes (`ui/activities-menu`, `ui/menu-nav`, `ui/pause-icons`), e
 // `ui/menu-nav` já importa `ui/pause-icons` — pôr a regra num deles fecharia ciclo ou obrigaria alguém a
-// importar de quem não devia. Mesma lição de `core/anel`, e ela é recente: ciclo em ESM não estoura na hora,
+// importar de quem não devia. Mesma lição de `core/ring`, e ela é recente: ciclo em ESM não estoura na hora,
 // estoura no boot em TDZ, uma vez, em produção.
 //
 // Zero dependências, zero I/O, nenhum `document` global: recebe o elemento e devolve texto.

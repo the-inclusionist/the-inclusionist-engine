@@ -1461,6 +1461,33 @@ that reason, and a case in `tests/a-disposed-root-stops-listening.browser.test.j
 **What to do.** Nothing, unless you wrote an object typed `Engine` by hand: then add `dispose()`. And if your page drops a root
 without dropping the document — a menu that swaps games, a test that opens several — call `motor.dispose()` when you drop it.
 
+## AT · The FILE names speak English too — `core` (ADR-0219 phase 3, issue #202)
+
+**What this is.** Phase 2 renamed what a module exports; this renames what a module IS CALLED. A game writes
+`from '@the-inclusionist/engine/core/anel.js'`, so a path is a contract exactly as a name is, and note AR said this phase was
+next. It lands in the SAME major as AL–AS on purpose: a consumer should edit an import once, not twice.
+
+**What to do.** Change the path in your imports by the table. The names inside them did not change in this commit — `stepInRing`
+and `accessibleLabel` are what they were called after phase 2; only the file they come from moved.
+
+📌 **The new name is the one the module already said out loud.** `anel.ts` exported `stepInRing` and nothing else, and
+`rotulo-acessivel.ts` exported `accessibleLabel` — a file whose name disagrees with its only export makes a reader look twice
+for a second thing that is not there. And the test moved with its module: a test still called `rotulo-acessivel` would have been
+the last place the old word survived.
+
+⚠️ **`git mv`, not a rewrite**, so `git blame` still answers for every line — the reason a line exists is the most expensive
+thing in this repository, and a moved file that was retyped loses all of it.
+
+<!-- printed by `node scripts/print-rename-table.mjs --files core` -->
+
+**core** — 3 files, moved 2026-09-22
+
+| was | is |
+|---|---|
+| `app/js/core/anel.ts` | `app/js/core/ring.ts` |
+| `app/js/core/rotulo-acessivel.ts` | `app/js/core/accessible-label.ts` |
+| `tests/rotulo-acessivel.node.test.js` | `tests/accessible-label.node.test.js` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

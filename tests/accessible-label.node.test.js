@@ -16,7 +16,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { accessibleLabel } from '../app/js/core/rotulo-acessivel.js';
+import { accessibleLabel } from '../app/js/core/accessible-label.js';
 
 /** Um elemento falso com a fatia que o módulo lê — sem DOM, para rodar no project `node`. */
 const el = (aria, texto) => ({ getAttribute: (n) => (n === 'aria-label' ? aria : null), textContent: texto });

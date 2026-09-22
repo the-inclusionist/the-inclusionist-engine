@@ -73,6 +73,12 @@
     ],
     "type CartridgeHooks": "Omit<MetadeDoJogo, 'declaration'>"
   },
+  "core/accessible-label.ts": {
+    "interface LabelledElement": [
+      "getAttribute",
+      "textContent"
+    ]
+  },
   "core/accommodation-subjects.ts": {
     "interface SubjectInputs": [
       "actions",
@@ -322,12 +328,6 @@
       "reseed",
       "rnd",
       "shuffle"
-    ]
-  },
-  "core/rotulo-acessivel.ts": {
-    "interface LabelledElement": [
-      "getAttribute",
-      "textContent"
     ]
   },
   "core/route.ts": {

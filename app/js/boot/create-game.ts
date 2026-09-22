@@ -69,7 +69,7 @@ import { createHandControl } from '../ui/hand-control.js';
 import { followCameraMode } from '../ui/camera-control.js';
 import { initPauseIcons, iconsMarkup, wireBarCaption, showPauseOptions, PM_VISIBLE_ITEMS } from '../ui/pause-icons.js';
 import { announceItem } from '../ui/item-announcement.js';
-import { accessibleLabel } from '../core/rotulo-acessivel.js';
+import { accessibleLabel } from '../core/accessible-label.js';
 import { navigableItems } from '../ui/menu-items.js';
 import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, type HowToPlaySlide } from '../ui/help-panel.js';
 import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';

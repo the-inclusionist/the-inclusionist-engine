@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/anel — A CONTA DO ANEL, e nada mais.
+// core/ring — A CONTA DO ANEL, e nada mais.
 //
 // Ela morava em `ui/menu-nav`, e saiu de lá quando o item 7 do ADR-0044 fez `ui/pause-icons` precisar dela
 // também: `menu-nav` já importava `pause-icons` (por `showPauseOptions` e `PM_VISIBLE_ITEMS`), e a volta

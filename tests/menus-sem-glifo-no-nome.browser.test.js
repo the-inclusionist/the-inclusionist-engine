@@ -12,7 +12,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
-import { accessibleLabel } from '../app/js/core/rotulo-acessivel.js';
+import { accessibleLabel } from '../app/js/core/accessible-label.js';
 
 /** Pictographs, arrows, geometric shapes, dingbats and miscellaneous symbols — what a menu glyph is made of. */
 const GLIFO = /[\p{Extended_Pictographic}←-⇿■-◿✀-➿☀-⛿]/u;

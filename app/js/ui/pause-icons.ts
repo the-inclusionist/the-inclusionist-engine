@@ -39,8 +39,8 @@ import {
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
 import type { AudioCatState } from './settings-audio.js';
 import { announceItem } from './item-announcement.js';
-import { accessibleLabel } from '../core/rotulo-acessivel.js';
-import { stepInRing } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
+import { accessibleLabel } from '../core/accessible-label.js';
+import { stepInRing } from '../core/ring.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
 import { menuIndexOn, DEFAULTS, setBlindModeValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, voiceControl, setVoiceControlValue, switchScan, setSwitchScanValue, type CameraControl } from '../core/state.js';
 
@@ -146,7 +146,7 @@ export function wireBarCaption(bar: HTMLElement, explicar: (k: string | null) =>
 
 export function iconCaption(barra: ParentNode, el: HTMLElement): string {
   const icones = [...barra.querySelectorAll<HTMLElement>('.pi-btn')];
-  // A regra "rótulo declarado vence" nasceu AQUI e valia só para os dez ícones. Virou `core/rotulo-acessivel`
+  // A regra "rótulo declarado vence" nasceu AQUI e valia só para os dez ícones. Virou `core/accessible-label`
   // e agora vale para o menu inicial e para a lista de pausa também — uma resposta para "como se chama este
   // controle", e não três.
   return announceItem(

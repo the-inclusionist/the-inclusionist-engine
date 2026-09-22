@@ -25,6 +25,10 @@
     "srAlert",
     "srSay"
   ],
+  "core/accessible-label.ts": [
+    "LabelledElement",
+    "accessibleLabel"
+  ],
   "core/accommodation-subjects.ts": [
     "ContractKeyedAccommodation",
     "SubjectInputs",
@@ -65,9 +69,6 @@
     "selectClaimProblem",
     "shortLabellerFrom",
     "startClaimProblem"
-  ],
-  "core/anel.ts": [
-    "stepInRing"
   ],
   "core/caption-duration.ts": [
     "CAPTION_MIN_MS",
@@ -195,6 +196,9 @@
     "createPasswordCodec",
     "formatPassword"
   ],
+  "core/ring.ts": [
+    "stepInRing"
+  ],
   "core/rng.ts": [
     "DEFAULT_SEED",
     "Rng",
@@ -204,10 +208,6 @@
     "reseed",
     "rnd",
     "shuffle"
-  ],
-  "core/rotulo-acessivel.ts": [
-    "LabelledElement",
-    "accessibleLabel"
   ],
   "core/route.ts": [
     "Route",

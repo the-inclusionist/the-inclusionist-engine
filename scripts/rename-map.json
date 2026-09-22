@@ -476,5 +476,15 @@
         "MedicaoDeFlashes": "FlashMeasurement"
       }
     }
+  },
+  "fileLayers": {
+    "core": {
+      "done": "2026-09-22",
+      "files": {
+        "app/js/core/anel.ts": "app/js/core/ring.ts",
+        "app/js/core/rotulo-acessivel.ts": "app/js/core/accessible-label.ts",
+        "tests/rotulo-acessivel.node.test.js": "tests/accessible-label.node.test.js"
+      }
+    }
   }
 }

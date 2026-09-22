@@ -160,17 +160,17 @@ import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de
 import type { DomQuery } from '../core/dom-query.js';
 import { showPauseOptions, PM_VISIBLE_ITEMS } from './pause-icons.js';
 import { announceItem } from './item-announcement.js';
-import { accessibleLabel } from '../core/rotulo-acessivel.js';
-import { stepInRing } from '../core/anel.js';
+import { accessibleLabel } from '../core/accessible-label.js';
+import { stepInRing } from '../core/ring.js';
 import { navigableItems } from './menu-items.js';
 import { t } from '../core/i18n.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
-// A CONTA DO ANEL mudou de casa para `core/anel` no item 7 do ADR-0044: `ui/pause-icons` passou a precisar
+// A CONTA DO ANEL mudou de casa para `core/ring` no item 7 do ADR-0044: `ui/pause-icons` passou a precisar
 // dela, e como ESTE módulo já importa aquele, a volta fecharia um ciclo de importação — que em ESM não
 // estoura na hora, estoura no boot em TDZ. O nome público fica: é daqui que os menus e os testes já a
 // importavam, e mudar isso seria pedir uma edição em cada um deles para não ganhar nada.
-export { stepInRing } from '../core/anel.js';
+export { stepInRing } from '../core/ring.js';
 
 /** `select` com esquerda/direita: um passo, SEM dar a volta — ajustar VALOR não é navegar lista (ver acima). */
 export function selectStep(selectedIndex: number, optionsLen: number, delta: number): number {
