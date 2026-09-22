@@ -39,7 +39,13 @@ async function voltarAoJogo() {
 
 beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
-    + '<div id="game-region" tabindex="-1"><div id="conteudo-do-jogo">a pergunta</div><button id="porta-do-cartucho" data-incl-menu>Menu</button><div id="title-icons"></div></div>';
+    // 📌 `#caixa-com-porta` É UM FILHO QUE CONTÉM UM MENU, e existe para a RECURSÃO ter assunto: sem ele o mundo deste
+    // teste só tinha filhos que ou eram menus ou não continham nenhum, e o ramo que desce mais um nível nunca corria.
+    // 📏 Medido por sonda em 2026-09-22: filtrar um filho que contém um menu em vez de o percorrer passava com a suíte
+    // verde — e é literalmente o defeito do ADR-0187, a simulação a apagar a porta onde ela se desliga.
+    + '<div id="game-region" tabindex="-1"><div id="conteudo-do-jogo">a pergunta</div>'
+    + '<div id="caixa-com-porta"><span id="texto-ao-lado-da-porta">ao lado</span><button id="porta-aninhada" data-incl-menu>Ajustes</button></div>'
+    + '<button id="porta-do-cartucho" data-incl-menu>Menu</button><div id="title-icons"></div></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
@@ -54,6 +60,22 @@ describe('a simulation runs in the game, never in a menu', () => {
     // the cartridge's own door to the menus (the quiz's «Menu» button): hidden by the simulation, a touch child could not turn it off
     expect(document.querySelector('#porta-do-cartucho'), 'the case would measure nothing').not.toBeNull();
     expect(filtrado(document.querySelector('#porta-do-cartucho')), 'the cartridge\'s door to the menus is darkened').toBe(false);
+  });
+
+  it('🔴 [Right] a child that CONTAINS a door is walked INTO, not darkened with the game', async () => {
+    /*
+     * 🔴 THIS IS ADR-0187's DEFECT ITSELF, and until this case it had a rule and no gate: «a simulated blindness blacked
+     * out the empathy panel where it is turned off». A filter reaches every descendant and clearing it on the child does
+     * not undo it, so a box that HOLDS a door must be descended into — its ordinary contents darken, the door does not.
+     * 📏 Measured by probe on 2026-09-22: filtering such a box instead of walking into it passed with the suite green,
+     * because this fixture had no child that held a menu for the branch to run on.
+     */
+    await simular('blind');
+    await voltarAoJogo();
+    expect(filtrado(document.getElementById('texto-ao-lado-da-porta')),
+      'what sits beside the door is not simulated: the child gets no simulation at all there').toBe(true);
+    expect(filtrado(document.getElementById('porta-aninhada')),
+      'a door INSIDE the game was darkened with it — the child cannot see the control that turns this off').toBe(false);
   });
 
   it('🔴 [Right] with the pause card open, nothing is simulated — and back in play it returns', async () => {
