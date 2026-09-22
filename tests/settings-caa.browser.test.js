@@ -49,6 +49,30 @@ describe('ui/settings-caa — escolher', () => {
     expect(ctx.said.at(-1)).toContain('caixa alta');
   });
 
+  it('[Right] o interruptor LIGADO parece ligado, e o desligado não', () => {
+    // ADR-0029 e a regra de que estado não se diz só por cor: o `is-on` é a faixa que a criança vê. Sem ele o
+    // botão diz «▶ Ligado» no texto e continua com a aparência de desligado — dois sinais contrários na mesma
+    // linha, e o que ela lê primeiro é a forma. Achado por sonda em 22/09: nada prendia esta classe.
+    const ctx = fullCtx();
+    initSettingsCaa(ctx).render();
+    expect($('#caa-caixa-alta').classList.contains('is-on')).toBe(true);
+    $('#caa-caixa-alta').click();
+    expect($('#caa-caixa-alta').classList.contains('is-on')).toBe(false);
+  });
+
+  it('[Right] a explicação vai ao rodapé a CADA render, e não só ao abrir', () => {
+    // 🔴 O COMENTÁRIO DO MÓDULO JÁ CONTAVA ESTE DEFEITO — «sem esta chamada a explicação volta para dentro das
+    // linhas, e foi exatamente o que aconteceu: o menu virou manual de novo ao primeiro clique» — e nenhum
+    // caso o prendia (sonda de 22/09). Uma lição escrita num comentário e não num crivo volta a ser aprendida.
+    let chamadas = 0;
+    const ctx = fullCtx({ fillExplain: () => { chamadas += 1; } });
+    const api = initSettingsCaa(ctx);
+    api.render();
+    expect(chamadas).toBe(1);
+    $('#caa-caixa-alta').click(); // o clique RECONSTRÓI as linhas: a prosa volta para dentro delas
+    expect(chamadas, 'cada reconstrução devolve a prosa às linhas; só o fillExplain a tira de lá').toBe(2);
+  });
+
   it('[Interface] clicar num conjunto INDISPONÍVEL não muda nada e não anuncia', () => {
     // A guarda existe para o dia em que alguém tirar o `disabled` "só para testar": um conjunto que não está
     // no jogo não pode virar a escolha da criança por acidente, deixando a tela sem nada para desenhar.
@@ -105,13 +129,19 @@ describe('ui/settings-caa — restaurar padrões (ADR-0028) e marca (ADR-0029)',
 });
 
 describe('ui/settings-caa — abrir e fechar', () => {
-  it('[Right] open mostra o overlay e foca o primeiro botão; close o esconde', () => {
+  it('[Right] open mostra o overlay e foca o primeiro botão; close o esconde e DEVOLVE o foco', () => {
+    // 🔴 O NOME DESTE CASO PROMETIA O FOCO E O CASO NÃO O MEDIA (achado por sonda em 22/09: apagar o
+    // `f.focus()` deixava-o verde). Quem abre um painel pelo teclado e fica com o foco atrás dele não tem como
+    // alcançar o que acabou de abrir — e quem o fecha e não o recebe de volta perde o lugar na lista.
     const ctx = fullCtx();
-    const api = initSettingsCaa(ctx);
+    const devolvido = [];
+    const api = initSettingsCaa({ ...ctx, restoreFocus: (id) => { devolvido.push(id); return true; } });
     api.open();
     expect($('#caa').hidden).toBe(false);
+    expect(document.activeElement).toBe($('#caa').querySelector('button'));
     api.close();
     expect($('#caa').hidden).toBe(true);
+    expect(devolvido).toEqual(['caa']);
   });
 
   it('[Right] o botão Fechar fecha', () => {
