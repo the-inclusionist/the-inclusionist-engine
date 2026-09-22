@@ -3266,5 +3266,17 @@
       "reflectTts",
       "render"
     ]
+  },
+  "ui/where-the-child-is.ts": {
+    "interface WhereTheChildIsCtx": [
+      "focused",
+      "pauseCard",
+      "topVisibleOverlay",
+      "withIndex"
+    ],
+    "interface Place": [
+      "key",
+      "sentence"
+    ]
   }
 }

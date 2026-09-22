@@ -25,10 +25,10 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2121,
-      "decisionNodes": 301,
+      "codeLines": 2103,
+      "decisionNodes": 292,
       "maxDepth": 4,
-      "fanOut": 84,
+      "fanOut": 83,
       "globalReach": 0,
       "worstFunction": 69,
       "fanIn": 1
@@ -61,7 +61,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 3
+      "fanIn": 4
     },
     "core/accommodation-subjects.ts": {
       "codeLines": 27,
@@ -400,7 +400,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 624,
+      "codeLines": 630,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -409,7 +409,7 @@
       "fanIn": 0
     },
     "i18n/es.ts": {
-      "codeLines": 624,
+      "codeLines": 630,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -418,7 +418,7 @@
       "fanIn": 0
     },
     "i18n/pt.ts": {
-      "codeLines": 624,
+      "codeLines": 630,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -1634,7 +1634,7 @@
       "fanOut": 9,
       "globalReach": 0,
       "worstFunction": 19,
-      "fanIn": 1
+      "fanIn": 2
     },
     "ui/motion-scene.ts": {
       "codeLines": 39,
@@ -1691,7 +1691,7 @@
       "fanOut": 21,
       "globalReach": 0,
       "worstFunction": 21,
-      "fanIn": 3
+      "fanIn": 4
     },
     "ui/pause-markup.ts": {
       "codeLines": 63,
@@ -1898,6 +1898,15 @@
       "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 12,
+      "fanIn": 1
+    },
+    "ui/where-the-child-is.ts": {
+      "codeLines": 41,
+      "decisionNodes": 9,
+      "maxDepth": 2,
+      "fanOut": 5,
+      "globalReach": 0,
+      "worstFunction": 9,
       "fanIn": 1
     }
   }

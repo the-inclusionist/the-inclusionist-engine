@@ -2035,5 +2035,10 @@
     "VoiceSettings",
     "VoiceSettingsCtx",
     "createVoiceSettings"
+  ],
+  "ui/where-the-child-is.ts": [
+    "Place",
+    "WhereTheChildIsCtx",
+    "whereTheChildIs"
   ]
 }

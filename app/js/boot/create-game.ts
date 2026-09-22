@@ -69,13 +69,11 @@ import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
 import { createHandControl } from '../ui/hand-control.js';
 import { followCameraMode } from '../ui/camera-control.js';
-import { initPauseIcons, wireBarCaption, showPauseOptions, PM_VISIBLE_ITEMS } from '../ui/pause-icons.js';
+import { initPauseIcons, wireBarCaption, showPauseOptions } from '../ui/pause-icons.js';
 // 📌 The bar's markup is a pure string builder and lives with the rest of the pause markup (ADR-0221, issue #203); what this
 // root asks `ui/pause-icons` for is the WIRING — the icons this game can actually act on, and the reflection of their state.
 import { iconsMarkup } from '../ui/pause-markup.js';
-import { announceItem } from '../ui/item-announcement.js';
 import { accessibleLabel } from '../core/accessible-label.js';
-import { navigableItems } from '../ui/menu-items.js';
 import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, type HowToPlaySlide } from '../ui/help-panel.js';
 import { initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 import { keyName } from '../ui/control-choices.js';
@@ -139,10 +137,11 @@ import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
 import { gameOptionsProblems, drawGameOptions, type GameOption } from '../ui/game-options.js';
 import * as store from '../platform/storage.js';
-import { initMenuNav, controlParts, type MenuNavApi } from '../ui/menu-nav.js';
+import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
 // 🔴 O COMANDO É MONTADO AQUI DESDE O ADR-0224 — era o único dos seis transportes montado pelo cartucho.
 import { initGamepad, padGameAnswers, seatEveryPlayer, type GamepadGameHooks } from '../input/gamepad.js';
+import { whereTheChildIs, type Place } from '../ui/where-the-child-is.js';
 export type { GamepadGameHooks } from '../input/gamepad.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registerKeyboardMapping, saveKB, setKB, factoryWithGame, type KBDefaults } from '../input/keyboard.js';
@@ -2726,36 +2725,26 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   let telaAnunciada = 'jogo';
   const comIndiceDaRaiz = (): boolean => (cartucho.comIndice ?? (() => true))();
-  function ondeEsta(): { chave: string; frase: string | null } {
-    const painel = overlays.topVisibleOverlay();
-    if (painel) {
-      const titulo = painel.querySelector('h2')?.textContent?.trim() ?? '';
-      const itens = navigableItems(painel.querySelector<HTMLElement>('.overlay__card') ?? painel);
-      const focado = itens.indexOf(doc.activeElement as HTMLElement);
-      const n = focado >= 0 ? focado : 0;
-      const item = itens[n] ? announceItem({ ...controlParts(itens[n]!), posicao: n + 1, total: itens.length }, comIndiceDaRaiz()) : '';
-      return { chave: `painel:${painel.id}`, frase: [titulo, item].filter(Boolean).join('. ') };
-    }
-    const cartao = $<HTMLElement>('.screen-pause:not([hidden])');
-    if (cartao) {
-      const sub = cartao.querySelector<HTMLElement>('.pause-menu:not([hidden])')?.dataset.sub ?? 'raiz';
-      // a submenu is named by the item that opens it; the root by the card's title
-      const porta = sub === 'opcoes' ? 'options' : sub === 'jogo' ? 'opcoesdojogo' : null;
-      const botao = porta ? cartao.querySelector<HTMLElement>(`.pm-btn[data-act="${porta}"]`) : null;
-      const titulo = botao ? accessibleLabel(botao) : (cartao.querySelector('h2')?.textContent?.trim() ?? '');
-      const itens = [...cartao.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
-      const sel = cartao.querySelector<HTMLElement>('.pm-sel') ?? itens[0];
-      const item = sel ? announceItem({ rotulo: accessibleLabel(sel), posicao: itens.indexOf(sel) + 1, total: itens.length }, comIndiceDaRaiz()) : '';
-      return { chave: `cartao:${cartao.id}:${sub}`, frase: [titulo, item].filter(Boolean).join('. ') };
-    }
-    return { chave: 'jogo', frase: null };
-  }
+  /*
+   * 🔴 A PERGUNTA MUDOU-SE PARA `ui/where-the-child-is` (ADR-0221 passo 7c), e o que fica aqui é responder de onde ela
+   * lê o documento. 📏 Era a função mais densa deste ficheiro depois do corpo da própria raiz — 19 ramos em 24 linhas
+   * — e nenhum deles era fiação: «isto é um painel, uma lista do cartão ou o jogo, e como se chama» é uma regra com
+   * razão, e a errata do ADR-0221 mede a dívida de uma raiz em RAMOS.
+   * 🎯 Sondada ANTES de sair, que é a ordem, e a sonda achou QUATRO ramos cegos de nove — dois presos em
+   * `engine:e75a54ea`, um medido como equivalente hoje e um nomeado como trabalho (o `comIndice` do ADR-0167).
+   */
+  const ondeEsta = (): Place => whereTheChildIs({
+    topVisibleOverlay: overlays.topVisibleOverlay,
+    pauseCard: () => $<HTMLElement>('.screen-pause:not([hidden])'),
+    focused: () => doc.activeElement,
+    withIndex: comIndiceDaRaiz,
+  });
   function anunciarContexto(): void {
     const agora = ondeEsta();
-    if (agora.chave === telaAnunciada) return;
+    if (agora.key === telaAnunciada) return;
     const vinhaDeUmMenu = telaAnunciada !== 'jogo';
-    telaAnunciada = agora.chave;
-    if (agora.frase) srSay(agora.frase);
+    telaAnunciada = agora.key;
+    if (agora.sentence) srSay(agora.sentence);
     // back in play from a menu — the quick pause says its own exit
     else if (vinhaDeUmMenu && !emPausaRapida.size) srSay(t('sr.a11y.barExit'));
   }
