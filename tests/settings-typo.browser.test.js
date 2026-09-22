@@ -217,12 +217,102 @@ describe('ui/settings-typo', () => {
       'voltou para a face de leitura e ficou sem o espaçamento da BDA').toBeUndefined();
   });
 
+  it('🔴 [Right] cada linha é desenhada NA PRÓPRIA face — é assim que se escolhe uma tipografia', () => {
+    // Achado por sonda em 22/09: apagar o `font-family` do rótulo deixava a suíte inteira verde. É o
+    // comportamento central deste menu — uma lista de dezassete NOMES não deixa ninguém escolher uma face, e
+    // quem mais precisa de escolher é quem não lê bem a que está a ver.
+    const api = initSettingsTypo(fullCtx());
+    api.render();
+    for (const linha of $('#typo-list').querySelectorAll('.ctrl-row')) {
+      const nome = linha.querySelector('strong').textContent;
+      const rotulo = linha.querySelector('span');
+      expect(rotulo.style.fontFamily.replace(/["']/g, ''), nome).toBe(nome);
+    }
+  });
+
+  it('🔴 [Right] a escolhida traz ● e as outras ○ — porque COR não é estado', () => {
+    // O comentário do módulo argumenta isto por extenso (emenda do ADR-0012: «the state in TWO forms, and
+    // neither of them is colour»), e nada o prendia: pôr a mesma marca nas dezassete passava verde. Quem não
+    // distingue o amarelo do `is-on` fica sem saber qual fonte está activa.
+    const api = initSettingsTypo(fullCtx());
+    api.render();
+    const botoes = [...$('#typo-list').querySelectorAll('button[data-font]')];
+    const escolhida = botoes.filter((b) => b.dataset.font === api.getFontKey());
+    expect(escolhida).toHaveLength(1);
+    expect(escolhida[0].textContent.trim()).toBe('●');
+    for (const b of botoes.filter((b) => b.dataset.font !== api.getFontKey())) {
+      expect(b.textContent.trim(), b.dataset.font).toBe('○');
+    }
+  });
+
+  it('🔴 [Right] uma face que a lista mostra cinzenta vem TRAVADA, e a nota vai no nome acessível', () => {
+    // Duas coisas que a sonda achou verdes na mesma linha. Um botão travado que não vem `disabled` é um botão
+    // que não faz nada com aparência de vivo (ADR-0106 §5); e a nota é o que diz ao educador PARA QUEM aquela
+    // face serve — sem ela no `aria-label`, quem não vê a linha ouve só um nome estranho.
+    // A `ronde` é a única face OFERECIDA que depende de instalação (ADR-0012 §«enquanto»): sem detector, ou
+    // com um que diga que não, ela aparece na lista e não responde.
+    const api = initSettingsTypo(fullCtx());
+    api.render();
+    const cinzenta = $('#typo-list').querySelector('button[data-font="ronde"]');
+    expect(cinzenta, 'a ronde tem de estar na lista, cinzenta e não escondida').not.toBeNull();
+    expect(cinzenta.disabled).toBe(true);
+    const comNota = [...$('#typo-list').querySelectorAll('.ctrl-row')]
+      .find((l) => l.querySelector('.opt-hint'));
+    expect(comNota, 'alguma linha tem nota — senão este caso não mede nada').toBeTruthy();
+    const nota = comNota.querySelector('.opt-hint').textContent;
+    expect(comNota.querySelector('button').getAttribute('aria-label')).toContain(nota);
+  });
+
+  it('🔴 [Right] as três famílias anunciam-se, e o grupo de rádio é UM só através delas', () => {
+    // O cabeçalho some sem ninguém reparar (sonda de 22/09), e com ele some a informação de que a lista tem
+    // famílias. ⚠️ E o radiogroup é um SÓ de propósito: a exclusividade é do menu inteiro — uma fonte activa —,
+    // e três grupos diriam a quem escuta que dá para ter uma sans E uma serif ao mesmo tempo.
+    initSettingsTypo(fullCtx()).render();
+    expect($('#typo-list').querySelectorAll('.panel-sub').length).toBeGreaterThanOrEqual(3);
+    expect($('#typo-list').querySelectorAll('[role="radiogroup"]')).toHaveLength(1);
+  });
+
+  it('🔴 [Boundary] uma face que a lista recusa também é recusada por setFont — uma resposta, não três', () => {
+    // O comentário do módulo diz-o: «três respostas à mesma pergunta divergem». Apagar o `faceAvailable` do
+    // `setFont` passava verde, e a criança acabaria com uma face escolhida que o aparelho não tem.
+    const ctx = fullCtx();
+    const api = initSettingsTypo(ctx);
+    const antes = api.getFontKey();
+    api.setFont('ronde', true);
+    expect(api.getFontKey(), 'a face indisponível não pode virar a escolha').toBe(antes);
+    expect(ctx.store.map.get('incl_font_k') ?? antes).toBe(antes);
+  });
+
   it('[Cross-check] render() sincroniza a família do #typo-preview com a fonte ativa', () => {
     const ctx = fullCtx();
     const api = initSettingsTypo(ctx);
     api.setFont('lexend', false);
     api.render();
     expect($('#typo-preview').style.fontFamily).toBe('Lexend'); // o browser normaliza e tira as aspas do valor computado
+  });
+
+  it('[Boundary] `setFont` SOZINHO já move a pré-visualização — quem cicla pela barra não chama render', () => {
+    // 📏 As duas escritas da pré-visualização (no `setFont` e no `render`) cobriam-se uma à outra na suíte, e
+    // cada uma parecia a inerte quando a outra corria. Nenhuma é: o ciclo do 11.º botão da barra chama
+    // `setFont` sem redesenhar o painel, e é esta linha que faz a amostra seguir a escolha.
+    const api = initSettingsTypo(fullCtx());
+    api.setFont('lexend', false);
+    expect($('#typo-preview').style.fontFamily.replace(/["']/g, '')).toBe('Lexend');
+  });
+
+  it('[Boundary] a pré-visualização que NASCE depois do arranque também é alcançada pelo render', () => {
+    // 📌 A sonda de 22/09 deixou esta linha verde e eu ia apagá-la como inerte — o `setFont` já escreve a
+    // pré-visualização, e o caso acima chama `setFont` antes do `render`. Medido: ela NÃO é inerte. Quando o
+    // nó nasce depois do arranque — que é como um painel montado em duas etapas se comporta — o `setFont` já
+    // correu contra um documento onde ele não existia, e o `render` é o único que ainda o alcança.
+    document.body.innerHTML = '<div id="typo"><div id="typo-list"></div></div>';
+    const api = initSettingsTypo(fullCtx());
+    api.setFont('lexend', false);
+    const pv = document.createElement('span');
+    pv.id = 'typo-preview';
+    $('#typo').appendChild(pv);
+    api.render();
+    expect(pv.style.fontFamily.replace(/["']/g, '')).toBe('Lexend');
   });
 
   it('[Zero] sem #typo-list no DOM, render() não lança (só não desenha)', () => {
