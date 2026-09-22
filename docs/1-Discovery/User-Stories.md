@@ -101,7 +101,7 @@ said so. A document that describes the code has to be able to notice when it sto
   since ADR-0174 (in `game-platformer`); the per-child assignment is
   **#92**/**#96**.
 - 🟡 As a **teacher**, I want to **set the difficulty per player**, so that children at different levels play
-  together. `app/js/ui/settings-motor.ts` · `tests/settings-motor.browser.test.js` — "Modo Fácil" is per
+  together. `app/js/ui/settings-mobility.ts` · `tests/settings-mobility.browser.test.js` — "Modo Fácil" is per
   player; a graded difficulty is **#92**.
 - ⬜ As a **teacher**, I want a **room code** children can enter, so that a class shares a session without
   anyone logging in. Blocked on the same screen as the letter grid. **#77**

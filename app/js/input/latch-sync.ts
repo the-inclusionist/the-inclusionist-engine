@@ -23,7 +23,7 @@
 //
 // 🔴 E A LINHA QUE MAIS IMPORTA AQUI É O `walkDir = 0`. Desligar a alternância sem parar quem anda por
 // travamento deixa a personagem a andar sozinha com a criança a largar tudo — sem erro, sem aviso, e no
-// aparelho de quem tem menos alternativas. O `ui/settings-motor` já tinha esta regra para o ícone; ter uma
+// aparelho de quem tem menos alternativas. O `ui/settings-mobility` já tinha esta regra para o ícone; ter uma
 // segunda cópia dela aqui seria a terceira tabela do `DomQuery` outra vez, então a regra passou a morar numa
 // função só (`applyLatch`) e o painel chama-a.
 import type { PlayerView } from '../core/entity.js';
@@ -36,7 +36,7 @@ import { storedLatch, type LatchStore } from './latch-store.js';
  * tipo largo aqui faria um gate precisar de um jogador inteiro de mentira para afirmar duas linhas.
  *
  * ⚠️ E ELE MUDOU DE CASA EM VEZ DE NASCER SEGUNDO. Esta linha existia, palavra por palavra, no
- * `ui/settings-motor` — e escrevê-la aqui outra vez seria a segunda cópia de um tipo, que é o defeito que
+ * `ui/settings-mobility` — e escrevê-la aqui outra vez seria a segunda cópia de um tipo, que é o defeito que
  * este repositório já pagou dezasseis vezes com o `DomQuery`. O painel passou a publicá-la por ALIAS, para o
  * retrato de nomes não a ler como removida.
  */

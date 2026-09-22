@@ -48,7 +48,7 @@
     "render/world-tex.ts initWorldTex": "game-platformer app/js/main.ts",
     "render/world-tex.ts worldCanvas": "game-platformer app/js/main.ts",
     "ui/layout.ts initLayout": "game-2048 app/js/boot/main.ts",
-    "ui/settings-motor.ts playerPrefix": "game-platformer app/js/main.ts",
+    "ui/settings-mobility.ts playerPrefix": "game-platformer app/js/main.ts",
     "ui/title.ts TITLE_MENU_IDS_ORDERED": "game-platformer app/js/ui/activities-menu.ts",
     "ui/vlibras.ts vlibrasSay": "game-platformer app/js/main.ts"
   },

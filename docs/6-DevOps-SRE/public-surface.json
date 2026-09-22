@@ -1026,18 +1026,6 @@
     "pixelTexture",
     "tex"
   ],
-  "render/cenario-data.ts": [
-    "BuildingBand",
-    "BuildingsTheme",
-    "DEFAULT_SCENERY",
-    "Flora",
-    "HillsTheme",
-    "SCENERIES",
-    "SceneryTheme",
-    "THEME_FLORA",
-    "hexN",
-    "normaliseScenery"
-  ],
   "render/city-tex.ts": [
     "ADULT_COL",
     "ADULT_H",
@@ -1262,6 +1250,18 @@
     "createSceneSky",
     "screenClouds"
   ],
+  "render/scenery-data.ts": [
+    "BuildingBand",
+    "BuildingsTheme",
+    "DEFAULT_SCENERY",
+    "Flora",
+    "HillsTheme",
+    "SCENERIES",
+    "SceneryTheme",
+    "THEME_FLORA",
+    "hexN",
+    "normaliseScenery"
+  ],
   "render/screen-pipeline.ts": [
     "CameraLike",
     "ContainerLike",
@@ -1284,7 +1284,7 @@
     "initScreenPipeline",
     "planScreens"
   ],
-  "render/set-cenario.ts": [
+  "render/set-scenery.ts": [
     "SetSceneryApi",
     "SetSceneryCtx",
     "ThemeTiles",
@@ -1820,6 +1820,27 @@
     "EmpathySettingsCtx",
     "initSettingsEmpathy"
   ],
+  "ui/settings-mobility.ts": [
+    "LatchPlayer",
+    "LatchWriteCtx",
+    "MobilityPlayer",
+    "MobilityStore",
+    "SettingsMobilityApi",
+    "SettingsMobilityCtx",
+    "anyMobilityActive",
+    "clampSelPlayer",
+    "easyAnnouncement",
+    "easyKey",
+    "initSettingsMobility",
+    "mountMobilityInside",
+    "onOffLabel",
+    "playerPrefix",
+    "playerTabsHTML",
+    "setMoveLatch",
+    "setRunLatch",
+    "toggleMoveKey",
+    "toggleRunKey"
+  ],
   "ui/settings-motion.ts": [
     "MotionCharDef",
     "MotionCharProp",
@@ -1846,27 +1867,6 @@
     "sceneMotionAnnouncement",
     "setSelectedPlayer",
     "stopResumeAllAnnouncement"
-  ],
-  "ui/settings-motor.ts": [
-    "LatchPlayer",
-    "LatchWriteCtx",
-    "MobilityPlayer",
-    "MobilityStore",
-    "SettingsMobilityApi",
-    "SettingsMobilityCtx",
-    "anyMobilityActive",
-    "clampSelPlayer",
-    "easyAnnouncement",
-    "easyKey",
-    "initSettingsMobility",
-    "mountMobilityInside",
-    "onOffLabel",
-    "playerPrefix",
-    "playerTabsHTML",
-    "setMoveLatch",
-    "setRunLatch",
-    "toggleMoveKey",
-    "toggleRunKey"
   ],
   "ui/settings-panel.ts": [
     "EXPLAIN_IDLE",

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/set-cenario — a ORQUESTRAÇÃO da troca de mundo visual (project node). ZOMBIES + Right-BICEP.
+// Testes de render/set-scenery — a ORQUESTRAÇÃO da troca de mundo visual (project node). ZOMBIES + Right-BICEP.
 //
 // `setCenario` não desenha nada: ela decide QUEM é avisado e EM QUE ORDEM. É por isso que quase todos os casos
 // daqui são sobre SEQUÊNCIA e sobre TEMPO, e não sobre valor:
@@ -16,8 +16,8 @@
 //    continua sendo o terceiro: pintar `worldSprite` direto.
 import { describe, it, expect } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
-import { SCENERIES } from '../app/js/render/cenario-data.js';
-import { createSetScenery } from '../app/js/render/set-cenario.js';
+import { SCENERIES } from '../app/js/render/scenery-data.js';
+import { createSetScenery } from '../app/js/render/set-scenery.js';
 
 /* ===================== dublês ===================== */
 
@@ -29,7 +29,7 @@ function ambiente(over = {}) {
     setCenarioValue: (t) => { log.push(['setCenarioValue', t]); estado.cenario = t; },
     getCenario: () => estado.cenario,
     // Registra `T.nome` para provar que o TEMA INTEIRO atravessa, não só o id. Desde a Fase 5 `nome` é a
-    // CHAVE i18n do cenário (render/cenario-data), então as asserções abaixo passam pelo dicionário — assim
+    // CHAVE i18n do cenário (render/scenery-data), então as asserções abaixo passam pelo dicionário — assim
     // continuam afirmando o nome que a criança lê, e não apenas que alguma string chegou.
     aplicarTemaParallax: (theme, T) => log.push(['parallax', theme, T.nome]),
     // Os tiles do tema, síncronos. `semTiles` simula um tema sem arte própria — o caminho dos blocos v3.

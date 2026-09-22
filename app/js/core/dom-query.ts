@@ -5,7 +5,7 @@
 // A mesma declaração de `DomQuery` — uma seta genérica sobre `Element`, devolvendo `T | null` — estava
 // escrita em DEZESSEIS módulos: `game/coin-spawning`, `game/quiz`, `input/gamepad`, `input/keydown`,
 // `input/touch`, `input/touch-bindings`, `ui/activities-menu`, `ui/hud`, `ui/map-hub`, `ui/menu-nav`,
-// `ui/settings-audio`, `ui/settings-controls`, `ui/settings-motor`, `ui/settings-typo`, `ui/shell` e
+// `ui/settings-audio`, `ui/settings-controls`, `ui/settings-mobility`, `ui/settings-typo`, `ui/shell` e
 // `ui/title`.
 //
 // Dezesseis cópias de uma verdade, que é o defeito do ADR-0039 um degrau acima: lá era um CAMPO descrito

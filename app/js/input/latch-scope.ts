@@ -69,7 +69,7 @@ export function latchIsOptional(transporte: string): boolean {
  *
  * ⚠️ FUNÇÃO, e não concatenação no ponto de uso, pela razão que o `platform/storage` já escreveu sobre as
  * chaves por jogador: «virar função aqui é o que impede que um deles escreva num nome torto». Não é
- * hipótese — o `ui/settings-motor` reescrevia `'incl_togglerun_p' + i` à mão, com um comentário ao lado a
+ * hipótese — o `ui/settings-mobility` reescrevia `'incl_togglerun_p' + i` à mão, com um comentário ao lado a
  * dizer «== toggleRunP de platform/storage». Duas cópias de um nome mudam uma de cada vez.
  *
  * `base` é `togglemove` ou `togglerun`, os dois nomes que já existem no armazenamento da criança.

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-motor — render/reflect/setEasy (project BROWSER: usa document). Contrato: DI por
+// Testes de ui/settings-mobility — render/reflect/setEasy (project BROWSER: usa document). Contrato: DI por
 // closure (ctx.$/srSay/store/players/getNumPlayers/setToggleMove/rebuildCoins), nenhum acesso a globais fora
-// do ctx. A lógica pura (clamp/predicado/anúncio/HTML das abas) está coberta em settings-motor.node.test.js.
+// do ctx. A lógica pura (clamp/predicado/anúncio/HTML das abas) está coberta em settings-mobility.node.test.js.
 // Modelo: tests/a11y-sr.browser.test.js, tests/settings-typo.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // os anúncios vêm do dicionário desde o item 14
-import { initSettingsMobility } from '../app/js/ui/settings-motor.js';
+import { initSettingsMobility } from '../app/js/ui/settings-mobility.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -53,7 +53,7 @@ function mountDom() {
     '<button id="opt-eyes" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button>';
 }
 
-describe('ui/settings-motor', () => {
+describe('ui/settings-mobility', () => {
   beforeEach(() => {
     mountDom();
   });
@@ -303,7 +303,7 @@ describe('ui/settings-motor', () => {
   });
 });
 
-describe('ui/settings-motor — restaurar padrões DESTE menu (ADR-0028)', () => {
+describe('ui/settings-mobility — restaurar padrões DESTE menu (ADR-0028)', () => {
   beforeEach(() => { mountDom(); });
 
   it('[Right] devolve Modo Fácil e alternância de TODOS os jogadores, não só o selecionado', () => {
@@ -344,7 +344,7 @@ describe('ui/settings-motor — restaurar padrões DESTE menu (ADR-0028)', () =>
   });
 });
 
-describe('ui/settings-motor — marca o que saiu do padrão (ADR-0029)', () => {
+describe('ui/settings-mobility — marca o que saiu do padrão (ADR-0029)', () => {
   beforeEach(() => { mountDom(); });
 
   const linha = (id) => $(id).closest('.ctrl-row');

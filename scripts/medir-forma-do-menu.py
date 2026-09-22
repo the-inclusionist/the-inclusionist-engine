@@ -20,7 +20,7 @@ RAIZ = "app/js"
 MENUS = [
     "ui/activities-menu.ts", "ui/pause-icons.ts", "ui/map-hub.ts", "ui/menu-nav.ts",
     "ui/settings-panel.ts", "ui/settings-audio.ts", "ui/settings-caa.ts", "ui/settings-controls.ts",
-    "ui/settings-motion.ts", "ui/settings-motor.ts", "ui/settings-typo.ts", "ui/settings-visual.ts",
+    "ui/settings-motion.ts", "ui/settings-mobility.ts", "ui/settings-typo.ts", "ui/settings-visual.ts",
     "ui/settings-empathy.ts", "ui/shell.ts", "ui/title.ts", "input/touch.ts",
     "render/viz-setters.ts",
 ]

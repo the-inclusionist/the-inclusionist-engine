@@ -58,7 +58,7 @@ function ambiente(over = {}) {
 
 const TEMA_V3 = { nome: 'Campo', fundo: 'gerado', sky: ['#86c5e8', '#cfeecb'], cloud: ['#fff', '#eee'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens'] };
 // A Cidade como o `render/parallax` a vê: gerada, com uma faixa de prédios por camada. Os números não
-// precisam ser os medidos — o `cenario-data.node.test.js` é quem guarda os de verdade; aqui só a FORMA
+// precisam ser os medidos — o `scenery-data.node.test.js` é quem guarda os de verdade; aqui só a FORMA
 // importa, e usar valores diferentes dos reais é de propósito, para nenhum caso passar por coincidência.
 const TEMA_CIDADE = {
   nome: 'Cidade', fundo: 'predios', sky: ['#5d6f8e', '#374866'],

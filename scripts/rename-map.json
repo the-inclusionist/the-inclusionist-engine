@@ -505,6 +505,23 @@
         "tests/simulacao-motora.node.test.js": "tests/empathy-filter.node.test.js",
         "tests/transporte-em-uso.node.test.js": "tests/transport-in-use.node.test.js"
       }
+    },
+    "render": {
+      "done": "2026-09-22",
+      "files": {
+        "app/js/render/cenario-data.ts": "app/js/render/scenery-data.ts",
+        "app/js/render/set-cenario.ts": "app/js/render/set-scenery.ts",
+        "tests/cenario-data.node.test.js": "tests/scenery-data.node.test.js",
+        "tests/set-cenario.node.test.js": "tests/set-scenery.node.test.js"
+      }
+    },
+    "ui": {
+      "done": "2026-09-22",
+      "files": {
+        "app/js/ui/settings-motor.ts": "app/js/ui/settings-mobility.ts",
+        "tests/settings-motor.browser.test.js": "tests/settings-mobility.browser.test.js",
+        "tests/settings-motor.node.test.js": "tests/settings-mobility.node.test.js"
+      }
     }
   }
 }

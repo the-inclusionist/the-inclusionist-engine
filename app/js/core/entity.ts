@@ -10,11 +10,11 @@
 //   · `quiz` tem QUATRO formas: `unknown` (physics, session, touch), `Quiz | null` (quiz),
 //     `{ kind: string } | null` (gamepad) e `{ kind?: string } | null` (keydown). O `kind` é obrigatório numa
 //     e opcional na outra, para o MESMO objeto.
-//   · `easy` é obrigatório em physics, gamepad e settings-motor; opcional em session, keydown, touch-bindings
+//   · `easy` é obrigatório em physics, gamepad e settings-mobility; opcional em session, keydown, touch-bindings
 //     e draw. Um jogador sem `easy` é aceito por metade do programa e rejeitado pela outra.
 //   · `jumpEdge`, idem: obrigatório em physics/gamepad/attract, opcional em session/keydown/touch-bindings.
 //   · `quit` é obrigatório em gamepad e hud, opcional em session. `toggleMove` é obrigatório em
-//     settings-motor, opcional em pause-icons. `viz` é obrigatório em draw, opcional em pause-icons.
+//     settings-mobility, opcional em pause-icons. `viz` é obrigatório em draw, opcional em pause-icons.
 //   · `KeyScheme` (= `Record<string, string[]>`) está declarado três vezes: em input/keyboard-runtime,
 //     input/keyboard e input/keydown.
 //

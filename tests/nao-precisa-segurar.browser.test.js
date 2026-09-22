@@ -10,7 +10,7 @@
 // ⚠️ TWO THINGS THIS FILE LEARNED BY BEING WRONG FIRST, and both are why it looks like this:
 //   · The engine's motor panel exists only where the game has a PAD (`controleNaTela`) — without one there is no size to choose
 //     and the panel is not mounted. A first version measured, for three green cases, the row of the LEGACY panel a cartridge
-//     mounts: `ui/settings-motor` builds an `#opt-altmove` too, so the id alone proved nothing. The engine's row has its own id.
+//     mounts: `ui/settings-mobility` builds an `#opt-altmove` too, so the id alone proved nothing. The engine's row has its own id.
 //   · A case that says «if the device did not change, return» measures nothing and tells nobody. The lock case asserts the
 //     transport FIRST, and that is what showed that enabling an assisted transport is an explicit act (ADR-0109 rule 4).
 //

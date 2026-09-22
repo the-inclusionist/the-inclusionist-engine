@@ -8,8 +8,8 @@
 // 📏 MEDIDO EM 2026-09-08, e o estado é «decidido e não entregue», que é o que este ficheiro afirma:
 //
 //   · A CHAVE POR JOGADOR — `KEYS.toggleMoveP(i)`, o modelo antigo — tem **exactamente UM escritor** em toda
-//     a engine: `ui/settings-motor.setToggleMove`. Ela é tocada por DOIS ficheiros ao todo.
-//   · O MODELO NOVO tem **DOIS** participantes: `input/latch-store` (o adaptador) e `ui/settings-motor` (o
+//     a engine: `ui/settings-mobility.setToggleMove`. Ela é tocada por DOIS ficheiros ao todo.
+//   · O MODELO NOVO tem **DOIS** participantes: `input/latch-store` (o adaptador) e `ui/settings-mobility` (o
 //     painel, que escreve através dele). Era zero quando este ficheiro nasceu, no mesmo dia.
 //
 // ========================= POR QUE DUAS METADES, E NÃO UMA PROIBIÇÃO =========================
@@ -43,7 +43,7 @@ const AINDA_NA_CHAVE_ANTIGA = {
   'platform/storage.ts':
     'declara `toggleMoveP(i)` e `toggleMoveLegacy`. ⚠️ O legado NÃO sai com a migração: o `latch-scope` lê-o ' +
     'de propósito, para que nenhuma criança perca o ajuste que já tem. O que sai é `toggleMoveP`',
-  'ui/settings-motor.ts':
+  'ui/settings-mobility.ts':
     'o ÚNICO escritor — `setToggleMove` grava `toggleMoveKey(i)`, que é a chave por JOGADOR. É este ponto ' +
     'que passa a escrever `chaveDaAlternancia(base, jogador, transporte)`, e é por isso que o inventário ' +
     'tem um alvo e não uma intenção',
@@ -55,7 +55,7 @@ const AINDA_NA_CHAVE_ANTIGA = {
  * 🎯 O primeiro foi `input/latch-store`, o adaptador entre a regra e o armazenamento, e o modo como ele
  * entrou é o gate a funcionar como desenhado: o caso reprovou, nomeou o ficheiro, e exigiu a revisão.
  *
- * ⚠️ O SEGUNDO — `ui/settings-motor`, o painel — quase NÃO foi contado, e a falha era do detector: ele
+ * ⚠️ O SEGUNDO — `ui/settings-mobility`, o painel — quase NÃO foi contado, e a falha era do detector: ele
  * procurava só quem chama `latchKey(`, e o painel escreve através do `writeLatch`, que é
  * a forma certa. Um piso assim mede quem improvisa em vez de quem migra. Alargado, e dito aqui em vez de
  * corrigido em silêncio.
@@ -95,7 +95,7 @@ function tocamNaChaveAntiga() {
  * Ficheiros que PARTICIPAM no modelo novo — a definição da regra não conta.
  *
  * ⚠️ O DETECTOR FOI ALARGADO EM 2026-09-08, E O MOTIVO É UM FALSO NEGATIVO MEU. Ele procurava só
- * `latchKey(`, e quando o `ui/settings-motor` passou a escrever a chave nova — através do
+ * `latchKey(`, e quando o `ui/settings-mobility` passou a escrever a chave nova — através do
  * `writeLatch`, que é a forma CERTA — o piso não subiu. Um piso que só conta quem chama o
  * construtor da chave mede a arquitectura errada: mede quem improvisa, e não quem migrou.
  *
@@ -127,7 +127,7 @@ describe('a alternância migra para a chave por transporte · o tecto que só de
 
   // 📌 O PAR que impede o detector de aprovar por cegueira: o escritor que a lista NOMEIA tem de estar mesmo lá.
   it('[Fronteira] o único escritor continua a ser o que o inventário nomeia', () => {
-    const motor = fonte('ui/settings-motor.ts');
+    const motor = fonte('ui/settings-mobility.ts');
     expect(motor, 'o escritor da chave por jogador mudou de forma — releia o inventário')
       .toMatch(/setBool\(\s*toggleMoveKey\(/);
   });
@@ -202,7 +202,7 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
 });
 
 // ===== MUTAÇÕES CONFERIDAS (2026-09-08, por script, com contagem de ocorrências) =====
-// 1. tirar `ui/settings-motor.ts` do inventário          → reprovam o [Feliz] **e** a saída (a chave renomeada
+// 1. tirar `ui/settings-mobility.ts` do inventário          → reprovam o [Feliz] **e** a saída (a chave renomeada
 //    deixa de aparecer nos achados). Previ só o [Feliz]; fica o medido, como nos gates irmãos
 // 2. acrescentar um ficheiro já migrado ao inventário    → [Fronteira] da saída reprova
 // 3. `tocamNaChaveAntiga` a devolver `[]`                → [Fronteira] da saída reprova; o [Feliz] fica VERDE,

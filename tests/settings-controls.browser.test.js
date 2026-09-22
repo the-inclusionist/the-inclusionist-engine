@@ -224,7 +224,7 @@ describe('ui/settings-controls', () => {
     const ctx = buildCtx();
     initSettingsControls(ctx).render(0);
     for (const a of ['action1', 'action2', 'left']) expect(marcada(linhaDe(a)), `${a} marcado sem ter mudado`).toBe(false);
-    // 📌 A marca do BOTÃO que abre este ecrã não é daqui: quem desenha o `#map-hub` é o `ui/settings-motor`, e
+    // 📌 A marca do BOTÃO que abre este ecrã não é daqui: quem desenha o `#map-hub` é o `ui/settings-mobility`, e
     // marcá-lo de dois sítios seria a segunda resposta à mesma pergunta. Aqui marcam-se as LINHAS.
   });
 

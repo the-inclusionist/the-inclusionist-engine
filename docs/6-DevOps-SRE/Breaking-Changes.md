@@ -1542,6 +1542,42 @@ a different thing. The length is what keeps the two apart.
 | `tests/simulacao-motora.node.test.js` | `tests/empathy-filter.node.test.js` |
 | `tests/transporte-em-uso.node.test.js` | `tests/transport-in-use.node.test.js` |
 
+## AW · The FILE names speak English too — `render` and `ui`, and the ten modules are done (ADR-0219 phase 3, issue #202)
+
+**What this is.** The last three modules that carried a Portuguese word in their name. With them, **all ten modules measured on
+2026-09-22 have moved** — the rest of the 185 file names are 145 tests, 6 scripts and the docs, which break nobody and can
+follow at any time.
+
+As in AT, AU and AV, no exported name changes: `cenario-data.ts` already exported `SceneryTheme`, `SCENERIES` and
+`DEFAULT_SCENERY`; `set-cenario.ts` already exported `createSetScenery`; and `settings-motor.ts` already exported
+`MobilityStore`, `MobilityPlayer` and `SettingsMobilityCtx` — phase 2 moved that family to MOBILITY for the same reason the
+empathy filter left «motor» behind, and the file was the last holdout.
+
+📌 **The two layers are one note and one commit on purpose.** The map marks a layer as applied, and the gate reads the map
+against the disk; committing `render` by itself would have left a commit in the history whose own gate was red about `ui`.
+
+⚠️ **`docs/art-ref/cenarios/**` and `docs/game-design/plano-cenario-cidade.md` did NOT move**: the first is art reference the
+Dev owns and the second is a document — phase 5 — and neither is a path anybody imports.
+
+<!-- printed by `node scripts/print-rename-table.mjs --files render` and `… --files ui` -->
+
+**render** — 4 files, moved 2026-09-22
+
+| was | is |
+|---|---|
+| `app/js/render/cenario-data.ts` | `app/js/render/scenery-data.ts` |
+| `app/js/render/set-cenario.ts` | `app/js/render/set-scenery.ts` |
+| `tests/cenario-data.node.test.js` | `tests/scenery-data.node.test.js` |
+| `tests/set-cenario.node.test.js` | `tests/set-scenery.node.test.js` |
+
+**ui** — 3 files, moved 2026-09-22
+
+| was | is |
+|---|---|
+| `app/js/ui/settings-motor.ts` | `app/js/ui/settings-mobility.ts` |
+| `tests/settings-motor.browser.test.js` | `tests/settings-mobility.browser.test.js` |
+| `tests/settings-motor.node.test.js` | `tests/settings-mobility.node.test.js` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

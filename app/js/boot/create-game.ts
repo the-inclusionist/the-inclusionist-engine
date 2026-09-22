@@ -3155,7 +3155,7 @@ export function createGame(o: CreateGameOptions): Engine {
   /*
    * ===================== ACESSIBILIDADE MOTORA — o painel da engine (ADR-0151 §2 item 5) =====================
    *
-   * 🔴 O PAINEL ANTIGO NÃO SERVE, e não é por gosto: o `ui/settings-motor` monta Modo Fácil e as duas alternâncias, e o
+   * 🔴 O PAINEL ANTIGO NÃO SERVE, e não é por gosto: o `ui/settings-mobility` monta Modo Fácil e as duas alternâncias, e o
    * ADR-0151 tirou os três deste painel («dificuldade é opção do jogo»; as alternâncias ficam no ☝️). Por isso este é
    * um painel NOVO (`#motora`), e o antigo continua a servir quem o monta com markup próprio.
    *

@@ -89,7 +89,7 @@ export function storedLatch(
  * jogo continuaria a ignorá-lo — um controle que mente sobre ter funcionado.
  */
 // ⚠️ RECEBE O ESCRITOR E NÃO UM ARMAZÉM, e a mudança é de 2026-09-08, quando o painel foi ligar-se a isto.
-// O `ui/settings-motor` já tem um `store: { setBool }` injectado — exigir-lhe um objecto com `get`/`set`
+// O `ui/settings-mobility` já tem um `store: { setBool }` injectado — exigir-lhe um objecto com `get`/`set`
 // crus obrigaria a inventar um adaptador no ponto de uso, e um adaptador ali é onde uma segunda forma de
 // escrever a mesma chave nasce. Uma função é o mínimo que a escrita precisa.
 export function writeLatch(

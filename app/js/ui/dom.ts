@@ -36,7 +36,7 @@ export function toggleBtn(b: Element | null, on: boolean): void {
  * Mora aqui pelo mesmo motivo do `toggleBtn` logo acima — os dois são as duas metades do mesmo gesto, e a
  * nota daquela função diz que elas "não podem se separar". Elas tinham se separado em TREZE cópias, em nove
  * arquivos, e dois deles declaravam um helper que se chamava compartilhado e servia um chamador só
- * (`settings-empathy.toggleLabel` e `settings-motor.onOffLabel`, ambos apagados agora).
+ * (`settings-empathy.toggleLabel` e `settings-mobility.onOffLabel`, ambos apagados agora).
  *
  * O custo dessa dispersão não era estético: com o texto em treze lugares, traduzir o jogo exigiria achar os
  * treze, e esquecer um deixaria um botão em português no meio do inglês — sem erro, sem teste vermelho.

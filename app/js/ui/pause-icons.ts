@@ -100,7 +100,7 @@ import { nextGameSpeed } from '../core/game-speed.js';
 // exactamente no jogo que se esqueceu. É a mesma forma que `ui/fonts` usa, e `ui/` depender de `platform/`
 // não inverte camada nenhuma.
 import * as store from '../platform/storage.js';
-import { setMoveLatch } from './settings-motor.js';
+import { setMoveLatch } from './settings-mobility.js';
 import { latchRefusal } from './latch-refusal.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from './pause-buttons.js';
 import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from './motion-scene.js';

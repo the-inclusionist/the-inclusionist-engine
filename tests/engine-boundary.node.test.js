@@ -256,7 +256,7 @@ const MOEDA_CONHECIDA = new Set([
   // A tabela inteira foi para `game/earcons`; a SÍNTESE (oscilador, envelope, ruído, roteamento) ficou.
   // `ui/settings-motion.ts` SAIU (2026-08-25): a única menção era o rótulo 'Animação de itens (moedas)', que
   // foi para o dicionário no item 14. Ganho lateral da i18n — texto que sai do código sai também da fronteira.
-  // `ui/settings-motor.ts` SAIU (2026-08-25): a única menção era 'moedas no chão', dentro do anúncio do Modo
+  // `ui/settings-mobility.ts` SAIU (2026-08-25): a única menção era 'moedas no chão', dentro do anúncio do Modo
   // Fácil, que foi para o dicionário no item 14. Segundo módulo que a i18n tira daqui de carona.
   // ---- OITO MÓDULOS que só ficaram VISÍVEIS quando o casador foi unificado (2026-08-25). A dívida deles é
   //      antiga; o que era novo é o gate conseguir vê-la. A maioria já tinha o par dela na lista de FIXTURES
@@ -343,13 +343,13 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
 //    tentando usá-lo. O fixture é onde a exigência aparece escrita.
 //
 //    A REGRA É ESTREITA DE PROPÓSITO: só MOEDA e QUIZ. Não entra "cenário", e vale dizer por quê — o catálogo
-//    de temas (`render/cenario-data` e quem o consome) é engine de verdade, e pôr `cenario` na regra produziria
+//    de temas (`render/scenery-data` e quem o consome) é engine de verdade, e pôr `cenario` na regra produziria
 //    uma lista de "dívida" que ninguém pode pagar porque não há nada de errado com ela. Um gate que aponta
 //    para o lugar certo pela razão errada é pior que gate nenhum: ele treina a pessoa a ignorá-lo.
 //
 //    ISSO CONTINUA VALENDO DEPOIS DA FASE B (2026-08-26), e a distinção ficou mais nítida: o VALOR escolhido
 //    (`cenario`) mudou-se para `game/state`, porque é persistido em chave `gameKey()` e viaja com o cartucho;
-//    o CATÁLOGO (`render/cenario-data.SCENERIES`) ficou onde estava, porque descrever céus e morros é trabalho
+//    o CATÁLOGO (`render/scenery-data.SCENERIES`) ficou onde estava, porque descrever céus e morros é trabalho
 //    de motor. Duas coisas com o mesmo nome e camadas diferentes — e é por isso que a regra fala de moeda e
 //    quiz, que não têm essa ambiguidade.
 // ---------------------------------------------------------------------------------------------------------
@@ -430,7 +430,7 @@ const FIXTURES_CONHECIDOS = {
 /**
  * ESTA LISTA ESVAZIOU, e o caminho até aqui é o registro. Ela existia para um único caso: "moedas no chão",
  * dentro do anúncio do Modo Fácil, era uma FRASE EM PORTUGUÊS que descrevia o jogo para a criança — os dois
- * testes de `settings-motor` comparavam o texto do anúncio e não precisavam de moeda nenhuma para rodar.
+ * testes de `settings-mobility` comparavam o texto do anúncio e não precisavam de moeda nenhuma para rodar.
  *
  * O item 14 levou a frase para o dicionário, os testes passaram a comparar contra `t()`, e a exceção deixou
  * de ter do que excetuar. Fica VAZIA em vez de apagada porque a distinção continua valendo: prosa que

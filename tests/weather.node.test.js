@@ -12,7 +12,7 @@ import {
 // `setCenarioValue` SAIU deste arquivo: desde a Fase B (ADR-0038) o `render/weather` não lê o cenário —
 // ele recebe a PERGUNTA `temChuva` por injeção, e o catálogo é de quem compõe. O teste ficou melhor por
 // isso: passou a controlar diretamente a condição que exercita, em vez de montá-la por estado global.
-import { SCENERIES } from '../app/js/render/cenario-data.js';
+import { SCENERIES } from '../app/js/render/scenery-data.js';
 
 describe('rainLevelTarget (curva L5: bom 30s → loop de 60s garoa/chuva/garoa/bom)', () => {
   it('[Zero] antes de 30s: sempre seco, mesmo num tema que tem chuva', () => {

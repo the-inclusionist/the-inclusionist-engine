@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/cenario-data — O CATÁLOGO DE CENÁRIOS: os quatro temas do jogo como DADO, e nada além disso.
+// render/scenery-data — O CATÁLOGO DE CENÁRIOS: os quatro temas do jogo como DADO, e nada além disso.
 //
 // Este é o módulo-FOLHA da etapa D2-b: zero imports, zero PIXI, zero DOM, zero I/O. Ele responde a uma única
 // pergunta — "quais são os cenários, e de que cor é cada um?" — e é justamente por não responder a mais
@@ -17,7 +17,7 @@
 //
 // Separar o dado da máquina que o consome é o corte mais barato e mais duradouro desta região: um tema novo
 // (uma estação, um bioma) passa a ser uma linha AQUI, e as invariantes que os leitores presumem viram
-// asserção em `tests/cenario-data.node.test.js` — em particular a mais silenciosa de todas, "todo tema `v3`
+// asserção em `tests/scenery-data.node.test.js` — em particular a mais silenciosa de todas, "todo tema `v3`
 // tem `sky`, `cloud`, `hills`, `decor` E uma entrada em `THEME_FLORA`". Quebrar essa correspondência não
 // derruba nada: `scene-sky` faz `const fl = THEME_FLORA[cenario]` e simplesmente não desenha grama. O tema
 // novo nasceria careca, e ninguém saberia dizer por quê.

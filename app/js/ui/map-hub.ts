@@ -14,7 +14,7 @@
 // deste `index.html`, das classes `ctrl-row`/`mode-btn`/`row-off` desta folha de estilo, e de dois painéis
 // concretos (`openOptions`, `openPadWiz`). O que É engine já está extraído e mora noutro lugar:
 // `input/keyboard.ts` (o esquema), `input/gamepad.ts` (o assistente de mapeamento), `core/screens.ts` (a
-// grade). Aqui sobra a VITRINE — e vitrine é do jogo. Daí `ui/`, ao lado de `ui/settings-motor.ts`, que é o
+// grade). Aqui sobra a VITRINE — e vitrine é do jogo. Daí `ui/`, ao lado de `ui/settings-mobility.ts`, que é o
 // resto do mesmo menu de Movimento.
 //
 // ======================= DECIDIR ≠ EXECUTAR =======================

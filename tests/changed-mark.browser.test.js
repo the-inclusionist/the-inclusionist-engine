@@ -10,7 +10,7 @@
 // silêncio — o pior jeito de uma marca de acessibilidade falhar, porque nada na tela denuncia a falta.
 //
 // O terceiro é o rótulo VISÍVEL, e ele entrou aqui por um teste alheio ter caído. A primeira versão pendurava
-// um `<span class="sr-only">` dentro do botão, e um caso de settings-motor que aferia `textContent` acusou:
+// um `<span class="sr-only">` dentro do botão, e um caso de settings-mobility que aferia `textContent` acusou:
 // os painéis reescrevem o conteúdo inteiro a cada reflect, então o sufixo dependia da ordem das chamadas para
 // sobreviver. O sufixo agora mora só no `aria-label`, e o texto visível é intocado.
 import { describe, it, expect, beforeEach } from 'vitest';

@@ -5,7 +5,7 @@
 // O `ui/panel-shell` curou o contrato invisível da MOLDURA: o painel exigia `#typo`, `#typo-list`,
 // `#typo-reset`… e nada no tipo o dizia. 📏 Medido em 2026-09-11, o mesmo contrato invisível existe no
 // INTERIOR: `ui/settings-audio` alcança TREZE controles que ele não cria, cada um com a tag certa
-// (`#cane-div` tem de ser `<select>`, `#tts-vol` um `<input>`), e `ui/settings-motor` alcança três. Nada no
+// (`#cane-div` tem de ser `<select>`, `#tts-vol` um `<input>`), e `ui/settings-mobility` alcança três. Nada no
 // tipo diz isso também, e o modo de falhar é o mesmo — o painel abre e a linha simplesmente não está lá.
 //
 // Esse markup vivia no `app/index.html`, que saiu com o cartucho (#111). Desde então cada `settings-*` procura

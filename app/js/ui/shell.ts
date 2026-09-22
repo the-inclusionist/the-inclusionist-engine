@@ -425,7 +425,7 @@ export interface ShellCtx {
   joinPlayer: (padIdx: number | null) => boolean;
   /** ui/hud.ts: crachá "aperte um botão para entrar" na tela do jogador novo. */
   showWaitingBadge: (i: number) => void;
-  /** ui/settings-motor.ts: escopa o painel Movimento no jogador que abriu. */
+  /** ui/settings-mobility.ts: escopa o painel Movimento no jogador que abriu. */
   setMotorPlayer: (i: number) => void;
   /** ui/settings-motion.ts `setSelectedPlayer`: idem para o painel Animação. */
   setMotionPlayer: (i: number) => void;

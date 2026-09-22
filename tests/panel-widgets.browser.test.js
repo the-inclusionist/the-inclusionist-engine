@@ -10,7 +10,7 @@
 // MUTAÇÕES CONFERIDAS no fim do ficheiro.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { controlRow, labelRow } from '../app/js/ui/panel-widgets.js';
-import { mountMobilityInside } from '../app/js/ui/settings-motor.js';
+import { mountMobilityInside } from '../app/js/ui/settings-mobility.js';
 import { mountAudioInside, mountSoundInside } from '../app/js/ui/settings-audio.js';
 import { mountShell } from '../app/js/ui/panel-shell.js';
 
@@ -103,7 +103,7 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
   }
 
   it('🎯 [Right] cria os QUATRO ids que o painel alcança e nunca criava', () => {
-    // 📏 `settings-motor` procura `#movement-players`, `#opt-facil`, `#opt-altmove` e `#opt-togglerun`. O
+    // 📏 `settings-mobility` procura `#movement-players`, `#opt-facil`, `#opt-altmove` e `#opt-togglerun`. O
     // markup deles vivia no `app/index.html`, que saiu com o cartucho — desde então o painel abria com o
     // cartão, o título e o botão de repor, e NENHUMA das três escolhas.
     const c = casca();

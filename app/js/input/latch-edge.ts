@@ -8,7 +8,7 @@
 // controle, e o jogo continua a andar com a alternância do teclado. Sem erro, e só ela dá por isso.
 //
 // 📌 É o mesmo movimento do `consumir` no `ui/menu-nav` («uma função só para o par nunca se separar») e da
-// escrita dupla no `ui/settings-motor`.
+// escrita dupla no `ui/settings-mobility`.
 //
 // ⚠️ E É UMA FÁBRICA, NÃO UM CAMPO NOVO NO CONTEXTO DE CADA MÓDULO DE ENTRADA. O `input/keydown` e o
 // `input/touch-bindings` já recebem `playerEdge(jogador, origem)`; esta função devolve uma com essa

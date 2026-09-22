@@ -25,7 +25,7 @@ function armazem(inicial = {}) {
     get: (k) => (k in dados ? dados[k] : null),
     set,
     // ⚠️ A FORMA QUE `writeLatch` PEDE desde que o painel se ligou a ela: um ESCRITOR, e não um
-    // armazém. O `ui/settings-motor` já tem um `store.setBool` injectado, e exigir-lhe um objecto com
+    // armazém. O `ui/settings-mobility` já tem um `store.setBool` injectado, e exigir-lhe um objecto com
     // `get`/`set` crus obrigaria a inventar um adaptador no ponto de uso — que é onde uma segunda forma de
     // escrever a mesma chave nasce.
     _escrever: (k, on) => set(k, on ? '1' : '0'),

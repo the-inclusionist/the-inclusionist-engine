@@ -28,11 +28,11 @@
 //     deslizamento que a opção existe para eliminar, para a pessoa que pediu para não ver deslizamento.
 //
 // ======================= POR QUE A FRONTEIRA CAIU AQUI, E NÃO ANTES NEM DEPOIS =======================
-// ANTES (o dado dos temas) saiu para render/cenario-data.ts: as cores não são geometria de câmera, e são
+// ANTES (o dado dos temas) saiu para render/scenery-data.ts: as cores não são geometria de câmera, e são
 // lidas por scene-sky e pelo attract, que não têm nada a ver com rolagem. `PARALLAX` FICOU aqui, e não lá,
 // porque os fatores não variam por tema — são a definição de "o que é fundo" — e porque a conta que os
 // consome é a deste arquivo.
-// DEPOIS (a orquestração da troca de cenário) ficou em render/set-cenario.ts. `setCenario` faz TRÊS coisas:
+// DEPOIS (a orquestração da troca de cenário) ficou em render/set-scenery.ts. `setCenario` faz TRÊS coisas:
 // repinta o fundo, RECONSTRÓI A TEXTURA DO MUNDO a partir dos PNG de tile do tema, e avisa a vida ambiente e
 // o alto contraste. Só a primeira é parallax. Trazer as outras duas para cá daria a este módulo a textura do
 // tileset — que não é fundo, é a Camada 1 — e o ciclo de vida do alto contraste. Por isso `aplicarTemaParallax`
@@ -79,7 +79,7 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D2-b).
 
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
-import type { SceneryTheme, HillsTheme, BuildingsTheme, BuildingBand } from './cenario-data.js';
+import type { SceneryTheme, HillsTheme, BuildingsTheme, BuildingBand } from './scenery-data.js';
 import type { CreateTile } from './port.js';
 
 /* ===================== os fatores de profundidade (dado) ===================== */

@@ -17,7 +17,7 @@
 // O que se afirma agora é o que faz a arte ler como cidade — vãos, luz quente calibrada e eventos de topo.
 import { describe, it, expect } from 'vitest';
 import { drawBuildings } from '../app/js/render/scene-parallax.js';
-import { SCENERIES } from '../app/js/render/cenario-data.js';
+import { SCENERIES } from '../app/js/render/scenery-data.js';
 
 const W = 1280, H = 180;
 const FAIXAS = SCENERIES.cidade.predios;

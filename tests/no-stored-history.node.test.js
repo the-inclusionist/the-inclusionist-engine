@@ -78,7 +78,7 @@ const INVENTARIO = {
   'ui/motion-scene.ts': 'criança · os quatro interruptores de movimento reduzido de cena (parallax, decor, itens, partículas)',
   'ui/settings-audio.ts': 'criança · a saída de áudio por jogador, o motor e a voz de TTS',
   'ui/settings-motion.ts': 'criança · as reduções de movimento, por jogador',
-  'ui/settings-motor.ts': 'criança · o modo fácil por jogador',
+  'ui/settings-mobility.ts': 'criança · o modo fácil por jogador',
   'ui/vlibras.ts': 'criança · a janela de Libras aberta ou fechada',
 };
 

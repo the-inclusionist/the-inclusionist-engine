@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-motor — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
+// Testes de ui/settings-mobility — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
 // Cobre: clamp do jogador selecionado (Boundary: sel >= numPlayers), o predicado "algum jogador ativo"
 // (liga a barra), o texto do anúncio de Modo Fácil e a construção das abas por jogador (mantidas `hidden`,
-// decisão E3). O render()/reflect() em si (toca DOM) fica no settings-motor.browser.test.js.
+// decisão E3). O render()/reflect() em si (toca DOM) fica no settings-mobility.browser.test.js.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel é alias dele desde o item 14
@@ -11,7 +11,7 @@ import { latchKey } from '../app/js/input/latch-scope.js'; // os anúncios vêm 
 import {
   easyKey, toggleRunKey, toggleMoveKey, setMoveLatch, setRunLatch,
   clampSelPlayer, anyMobilityActive, onOffLabel, playerTabsHTML, easyAnnouncement,
-} from '../app/js/ui/settings-motor.js';
+} from '../app/js/ui/settings-mobility.js';
 import { KEYS } from '../app/js/platform/storage.js';
 
 describe('easyKey', () => {

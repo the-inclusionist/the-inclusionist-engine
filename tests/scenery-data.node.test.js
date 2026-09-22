@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/cenario-data — o CATÁLOGO de cenários (project node). ZOMBIES + Right-BICEP.
+// Testes de render/scenery-data — o CATÁLOGO de cenários (project node). ZOMBIES + Right-BICEP.
 //
 // Estas duas tabelas eram, até a etapa D2-b, o dado mais lido e menos protegido do jogo: `render/scene-sky`,
 // `game/attract`, o splash e o `setCenario` liam de todas as quatro, e nenhuma linha de teste dizia qual é a
@@ -17,7 +17,7 @@
 // O último bloco PREGA um defeito herdado do monólito (validação por herança de protótipo). Ele NÃO é um
 // teste de que a coisa está certa: é um teste de que ela está como está, para que o conserto seja visível.
 import { describe, it, expect } from 'vitest';
-import { SCENERIES, THEME_FLORA, DEFAULT_SCENERY, hexN, normaliseScenery } from '../app/js/render/cenario-data.js';
+import { SCENERIES, THEME_FLORA, DEFAULT_SCENERY, hexN, normaliseScenery } from '../app/js/render/scenery-data.js';
 
 const IDS = ['cidade', 'campo', 'cemiterio', 'espaco', 'floresta'];
 const MORROS = IDS.filter((k) => SCENERIES[k].fundo === 'morros');
@@ -210,7 +210,7 @@ describe('normaliseScenery', () => {
     for (const v of ['campo', 'praia', '']) expect(normaliseScenery(normaliseScenery(v))).toBe(normaliseScenery(v));
   });
 
-  // ⚠️ PREGO DE DEFEITO — não é "certo", é "como está". Ver o cabeçalho de render/cenario-data.ts.
+  // ⚠️ PREGO DE DEFEITO — não é "certo", é "como está". Ver o cabeçalho de render/scenery-data.ts.
   // `SCENERIES` é objeto literal, logo `SCENERIES['toString']` é a função herdada do Object.prototype: truthy,
   // e portanto aprovada como tema. Só alcançável por valor forjado (localStorage adulterado, __incl), nunca
   // pela UI — que monta o seletor de Object.keys(CENARIOS). Quando for consertado, ESTE teste é que muda.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/set-cenario — TROCAR DE CENÁRIO: a única porta por onde o jogo muda de mundo visual.
+// render/set-scenery — TROCAR DE CENÁRIO: a única porta por onde o jogo muda de mundo visual.
 //
 // `setCenario(tema)` é chamado de quatro lugares muito diferentes — o splash (a criança escolhe antes de
 // começar), a demonstração automática (game/attract.ts sorteia), o console de testes (`window.__incl`) e o
@@ -23,7 +23,7 @@
 //     não quebra nada visível e desarma a guarda inteira, silenciosamente.
 //  3. A VALIDAÇÃO. "Tema desconhecido → 'cidade'" é a rede que segura um `incl_cenario` de uma versão antiga
 //     (e o boot ainda migra a chave 'noite' → 'espaco', do lado do game.js). Ela virou
-//     `normaliseScenery` em render/cenario-data.ts, com o comportamento atual PREGADO por teste, defeito de
+//     `normaliseScenery` em render/scenery-data.ts, com o comportamento atual PREGADO por teste, defeito de
 //     herança de protótipo incluído — ver o cabeçalho de lá.
 //
 // ======================= OS CINCO PASSOS, E POR QUE NESTA ORDEM =======================
@@ -37,7 +37,7 @@
 // mudou — os dois `reapplyVizAll` não são duplicação, são dois momentos.
 //
 // ======================= O QUE FICOU DE FORA, E POR QUÊ =======================
-//  · O DADO dos temas → render/cenario-data.ts (folha, sem dependência). Importado aqui, não injetado: é um
+//  · O DADO dos temas → render/scenery-data.ts (folha, sem dependência). Importado aqui, não injetado: é um
 //    módulo sem efeito nenhum, então importá-lo não cria risco de ordem de boot.
 //  · A geometria e a pintura das 3 camadas de fundo → render/parallax.ts. Este módulo só chama
 //    `aplicarTemaParallax` e não sabe o que é `tilePosition`.
@@ -69,7 +69,7 @@
 // `render/city-tiles`. O corpo do módulo não pede nada, e a troca de cenário virou síncrona.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D2-b).
 
-import { SCENERIES, normaliseScenery, type SceneryTheme } from './cenario-data.js';
+import { SCENERIES, normaliseScenery, type SceneryTheme } from './scenery-data.js';
 import type { Tileset } from './world-tex.js';
 
 /* ===================== interfaces estruturais (DOM/PIXI sem importá-los) ===================== */

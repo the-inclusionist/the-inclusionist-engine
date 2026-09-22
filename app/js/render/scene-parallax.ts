@@ -6,7 +6,7 @@
 
 import { makeCanvas, tex } from './canvas.js';
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
-import type { SceneryTheme, HillsTheme, BuildingsTheme, BuildingBand } from './cenario-data.js';
+import type { SceneryTheme, HillsTheme, BuildingsTheme, BuildingBand } from './scenery-data.js';
 
 /** Um sol baixo com leque de raios, assado na textura do céu. Ver `paintSun`. */
 export interface Sol {

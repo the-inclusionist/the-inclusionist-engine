@@ -13,7 +13,7 @@
 //
 // O QUE ISSO COMPRA, além de tirar dois PNG do pacote: o desenho passa a ser recolorível (o alto contraste e
 // as paletas seguras para daltonismo mexem em cores, não em bitmaps), some o carregamento assíncrono — e com
-// ele a guarda de corrida de `set-cenario` e os 404 de boot dos temas que não têm arte própria.
+// ele a guarda de corrida de `set-scenery` e os 404 de boot dos temas que não têm arte própria.
 import { pixelCanvas, type PixelPainter } from './canvas.js';
 
 /** O TILE do miolo da parede: alvenaria em fiada alternada. 51 retângulos, 9 cores, fiel ao pixel. */

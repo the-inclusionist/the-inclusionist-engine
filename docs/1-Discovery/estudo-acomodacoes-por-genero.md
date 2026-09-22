@@ -390,7 +390,7 @@ que viaja por gênero é a tradução e o efeito.
 5. A cauda (2–11%), quando o gênero correspondente chegar.
 
 ⚠️ **E há uma coisa a fazer ANTES de qualquer uma delas**, que este estudo torna urgente: o
-`ui/settings-motor` monta Modo Fácil, alternância de marcha e alternância do correr **para qualquer jogo**, e
+`ui/settings-mobility` monta Modo Fácil, alternância de marcha e alternância do correr **para qualquer jogo**, e
 os três medem 30%, 34% e 11%. Ele ainda não está ligado ao `createGame`; **ligá-lo antes da classificação
 entregaria três interruptores sem assunto a dois terços do catálogo.**
 
