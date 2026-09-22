@@ -1667,7 +1667,7 @@ and measured to have no consumer anywhere — and its own comment said it was «
 being true without anybody noticing. A debt ledger exists to SHRINK; carrying it to a new house would have carried it another
 year. What `iconLabel` uses is `CVD_NAMES`.
 
-## AZ · Sensory comfort leaves the icon module: `core/calm-mode` (ADR-0221, issue #203)
+## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |
 |---|---|
