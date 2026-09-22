@@ -150,25 +150,88 @@ docs/
 > (git is the archive). `docs/` root now holds only the four canonical top-level docs (ARCHITECTURE, ROADMAP, PILARES,
 > REGISTRO) + the phase/layer folders.
 
-## 3. Code layout (`app/js/`)
+## 3. Code layout (`app/js/`) — the layers, and where to go to change something
 
-*Where* the code lives, by folder (ES modules, TypeScript). The architecture **rules** behind this layout (cohesion,
-dependency injection, adapters) and the **system design** (C4, backend) belong in `2-Architecture/` — **not here**.
-This file is structure only.
+⚠️ **This section used to be an inventory of module names, and it had stopped being true.** 📏 Measured on 2026-09-22: of the
+181 modules in `app/js` it listed **81**; it still named `webcam`, deleted six days earlier, and a `game/` folder that no longer
+exists; and `boot/`, `i18n/` and `consumer-quiz/` had no row at all. An inventory kept by hand loses to `git ls-files app/js/ui`,
+which is always right — so the inventory is gone, and what replaced it is the part a listing cannot give: **which files you touch
+to change a thing.**
 
-| Folder | Modules |
+### 3.1 The layers, and what each may import
+
+The direction is `i18n → core → platform → input/render → ui → boot`: a module imports its own layer or below, never above, and
+never in a cycle. That rule is **ADR-0173** and it is enforced by `tests/dependencies-point-downward.node.test.js` — this table
+does not repeat it, it says what kind of thing lives where.
+
+| layer | what lives there |
 |---|---|
-| `core/` | a11y-sr · collision · constants · **entity** · i18n · layers · loop · rng · screens · state · tiles · world |
-| `platform/` | audio · audio-ambient · audio-earcons · audio-jingles · audio-mixer · audio-nav · speech · storage · tts |
-| `input/` | devices · edges · gamepad · keyboard · keyboard-runtime · keydown · **latch** · state · touch · touch-bindings |
-| `render/` | canvas · city-tex · crt · cvd-matrices · draw · fx · hc-role-data · high-contrast · lq-filter · minimap · parallax · player-anim · props · scene-city · scene-parallax · scene-sky · scenery-data · screen-pipeline · set-scenery · sprite-fx · sprites · textures · title-scene · viewports · viz-modes · viz-setters · weather · wheelchair-sprites · world-tex |
-| `ui/` | debug-panel · dom · fonts · hud · layout · map-hub · menu-nav · pause-buttons · pause-icons · settings-audio · settings-controls · settings-empathy · settings-mobility · settings-motion · settings-panel · settings-typo · settings-visual · shell · title · vlibras |
-| `game/` | activities-registry · activity-content · attract · braille · coin-spawning · coins · elevators · fractions · level-geometry · life · literacy-distractors · physics · player · powerups · quiz · secret-areas · session · traffic |
-| (root) | `main.js` — composition root: builds the instances, wires them together, registers the listeners. Was `game.js` until D2; typing it as `main.ts` is the step that remains. |
+| `i18n/` | The three dictionaries: every sentence a child reads or hears, in pt-BR, English and Spanish. Data, no logic. |
+| `core/` | What the engine IS, with no browser: the contract, the accommodation catalogue, the scene stack, the stored state, the ring, geometry and constants. Imports nothing above it. |
+| `platform/` | The browser, wrapped: storage, audio, speech, the heavy delivery, the vision and speech runtimes, the window a root listens on. |
+| `input/` | What a press MEANS: the transports (keyboard, gamepad, touch, camera, voice), the maps a game declares, latching, the virtual controller that carries a command to the cartridge. |
+| `render/` | What the world looks like: the canvas, the scenery, the sprites, the colour-blindness and high-contrast filters, the Z-order. |
+| `ui/` | What the child operates: the pause card, the quick bar, the settings panels, menu navigation, the HUD, layout and typography. |
+| `boot/` | `create-game` — the composition root. It builds everything above, wires it and hands the game an engine. One module, on purpose. |
+| `educational/` | The curriculum in code: the adaptive engine, the learning bands. Outside the stack — it imports nothing and nothing but a game imports it (ADR-0032). |
+| `consumer-quiz/` | The demo cartridge. Not the engine: it is what exercises the contract from outside. |
+
+### 3.2 Two rules that hold everywhere
+
+📏 Both were measured from the history, not decided: they are what nearly every commit does.
+
+- **What the child READS touches the three dictionaries.** `i18n/pt`, `en` and `es` move as one — 100% and 99% of each other's
+  commits — and travel in ~37% of all commits. A key added to one and missing from another is caught by `problems`
+  (`lacunasDosDicionarios`), not by review.
+- **What the engine MOUNTS touches the root.** `boot/create-game.ts` is the most-edited file in the tree (155 commits). If you
+  are adding something the child can see or operate, expect to pass through it.
+
+### 3.3 Where do I go to change…
+
+📏 **Measured, not designed.** Each row is the set of files that are edited in the SAME commit as the first one, over the whole
+history, ignoring sweeps (commits touching more than 25 files, which say nothing about what belongs together). The percentage is
+how often the second file came along. The two rules of §3.2 are left out of every row — otherwise every answer would be «the
+dictionaries and the root».
+
+| to change… | go to | and usually also |
+|---|---|---|
+| **the pause card, the quick bar and menu navigation** | `ui/pause-icons.ts` | `ui/menu-nav.ts` 35% · `app/css/style.css` 21% · `ui/pause-buttons.ts` for the card's own buttons |
+| **a setting the child keeps** | `core/state.ts` | `platform/storage.ts` 31% — and the lifetime rule of ADR-0038, gated in `tests/lifetime-gate.node.test.ts` |
+| **what a key, a button, a finger does** | `input/keydown.ts` | `input/gamepad.ts` 53% · `input/touch-bindings.ts` 47% · `input/touch.ts` 40% · `ui/shell.ts` 27% — ⚠️ see the debt in §3.4 |
+| **a row in a settings panel** | `ui/settings-audio.ts`, `-motion`, `-mobility`, `-visual`, `-typo`, `-empathy`, `-caa`, `-controls` | `ui/mount-panel.ts` and `ui/panel-widgets.ts` build the row — ⚠️ see the debt in §3.4 |
+| **which face the text is drawn in** | `ui/fonts.ts` | `app/public/vendor/fonts.css` 47% · `ui/settings-typo.ts` 46% · the catalogue `research/catalogo_tipografico.json` (the Dev's) |
+| **how the engine speaks** | `platform/tts.ts` | `ui/settings-audio.ts` 35% · `platform/kokoro-runtime.ts` for the neural voice |
+| **what gets downloaded, and from where** | `platform/heavy-catalogue.ts` | `platform/heavy.ts` 60% · `platform/heavy-mirror.ts` 30% · `scripts/heavy-into-the-delivery.mjs` fills a delivery |
+| **playing through the camera or by voice** | `ui/eye-control.ts`, `ui/face-control.ts`, `ui/hand-control.ts`, `ui/voice-control.ts` | `input/virtual-controller.ts` 50% · `input/face-map.ts`, `input/hand-map.ts`, `input/voice-map.ts` · `platform/vision.ts` |
+| **the size of the screen and of a target** | `ui/layout.ts` | `app/css/style.css` 23% — ADR-0001 (whole multiples of 320×180) and ADR-0163 (≥640×360, text ≥16 px) |
+| **what the contract asks a cartridge** | `core/contract.ts` | `consumer-quiz/main-quiz.ts` 50% — the demo is what exercises the contract, and a field with no reader is a field nobody keeps |
+
+📌 **`render/draw.ts` and `render/viz-setters.ts` are not in the table, and that is information**: they have no neighbour above
+25%. They are changed alone.
+
+### 3.4 Two lines that are long because something is missing
+
+A row above with many files is a HYPOTHESIS: either the subject genuinely has several faces, or the same decision is written
+down more than once. Two of them are the second kind, and naming them here is cheaper than pretending the spread is the design.
+
+- 🔴 **There are two doors to the cartridge.** `input/virtual-controller` exists to be the only one (ADR-0111, erratum), and
+  📏 measured on 2026-09-22 it is imported by `boot/create-game` and by the four newest transports —
+  `ui/eye-control`, `ui/face-control`, `ui/hand-control`, `ui/voice-control`. The keyboard, the gamepad and the touch pad still
+  arrive as synthesised KEYS (`markKey`/`releaseKey`), which is why `keydown`, `gamepad` and `touch-bindings` still change
+  together 40–53% of the time. Whether to unify is a decision, not a cleanup.
+- 🔴 **Four of the nine settings panels use the panel kit.** `ui/mount-panel` and `ui/panel-widgets` exist so that a menu row is
+  written once; 📏 `settings-audio`, `-mobility`, `-motion` and `-visual` use them, and `-controls`, `-typo`, `-empathy`, `-caa`
+  and `-panel` do not. `settings-audio` is 837 lines.
+
+⚠️ **The experiment that will settle both is already running, and its criterion is fixed before the answer exists:** when an
+abstraction is adopted, the files it unifies must stop changing together. 📏 Today it cannot be evaluated — of the 51 commits
+since the virtual controller landed, none touched a transport or a panel. The one group with enough data confirmed the opposite
+case: the three dictionaries were 100% together before and after, which is what an IRREDUCIBLE spread looks like.
 
 Engine constants (TILE_TYPES, TUNE, dimensions) live only in `app/js/core/constants.ts` — never duplicated in docs.
 The **canonical render Z-order** (named layers, world + overlay scopes; PIXI `zIndex` + DOM `z-index`) and the
 **post-process filter chain** (`POST_FX_ORDER`, a11y-correction-last) live only in `app/js/core/layers.ts` — see ADR-0020.
+
 > ⚠️ **Contested by ADR-0027**: a measured flash limiter (WCAG 2.3.1) must run AFTER `A11Y_CORRECTION`,
 > because the correction *increases* inter-frame luminance delta and nothing measures downstream of it. Today 2.3.1
 > is met by content discipline, which does not scale to 35 games. ADR-0020 needs an amendment.

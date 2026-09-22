@@ -91,7 +91,6 @@ const MORTOS = {
   'tests/nada-de-cdn-a-mao.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/no-hand-written-cdn.node.test.js`',
   'tests/nada-vem-de-fora.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/nothing-comes-from-outside.node.test.js`',
   'tests/pausa-44px.browser.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/pause-target-44px.browser.test.js`',
-  'tests/pausa-abre-pelo-start.browser.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/the-two-doors-of-the-pause.browser.test.js`',
   'tests/pausa-sete-itens.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/the-pause-items-and-their-order.node.test.js`',
 };
 /*
