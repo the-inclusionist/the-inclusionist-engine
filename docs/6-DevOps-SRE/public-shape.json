@@ -3154,6 +3154,17 @@
     "type PhaseFocus": "'game-region' | 'pause-menu' | 'title-button'",
     "type PauseActs": "Record<string, () => void>"
   },
+  "ui/simulation-over-the-world.ts": {
+    "interface SimulationOverTheWorldCtx": [
+      "createCanvas",
+      "find",
+      "world"
+    ],
+    "interface SimulationOverTheWorld": [
+      "drawLayer",
+      "onlyInPlay"
+    ]
+  },
   "ui/simulation-refusal.ts": {
     "type Refusal": "RecusaDeRender"
   },

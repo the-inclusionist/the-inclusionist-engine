@@ -25,8 +25,8 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2103,
-      "decisionNodes": 292,
+      "codeLines": 2057,
+      "decisionNodes": 274,
       "maxDepth": 4,
       "fanOut": 83,
       "globalReach": 0,
@@ -133,7 +133,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 1,
-      "fanIn": 12
+      "fanIn": 13
     },
     "core/contract.ts": {
       "codeLines": 182,
@@ -142,7 +142,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 53,
-      "fanIn": 7
+      "fanIn": 8
     },
     "core/dom-query.ts": {
       "codeLines": 4,
@@ -1345,7 +1345,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 5
+      "fanIn": 6
     },
     "render/viz-refusal.ts": {
       "codeLines": 17,
@@ -1814,6 +1814,15 @@
       "globalReach": 0,
       "worstFunction": 10,
       "fanIn": 0
+    },
+    "ui/simulation-over-the-world.ts": {
+      "codeLines": 74,
+      "decisionNodes": 16,
+      "maxDepth": 2,
+      "fanOut": 4,
+      "globalReach": 0,
+      "worstFunction": 10,
+      "fanIn": 1
     },
     "ui/simulation-refusal.ts": {
       "codeLines": 8,

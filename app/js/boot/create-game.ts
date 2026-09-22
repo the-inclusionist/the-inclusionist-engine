@@ -93,7 +93,6 @@ import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform
 import { isBlind, isLowVision, PADRAO, filterKey, simulationUnavailable, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
 import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
-import { drawLowVision } from '../render/low-vision-drawing.js';
 import { createPadWizard } from '../input/pad-wizard.js';
 import { typographyCycle, CYCLE_START, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
@@ -106,7 +105,7 @@ import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import { drawnBelowTheFloor, barIntruderProblems, type DrawingProblemsCtx } from '../ui/drawing-problems.js';
 import { createListenerScope } from '../platform/listener-scope.js';
 import type { FilterReach } from '../render/port.js';
-import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
+import { LOGICAL_W } from '../core/constants.js';
 import { captionDuration, CAPTION_RATES } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { mountPanel } from '../ui/mount-panel.js';
@@ -142,6 +141,7 @@ import type { NavKeys } from '../input/edges.js';
 // 🔴 O COMANDO É MONTADO AQUI DESDE O ADR-0224 — era o único dos seis transportes montado pelo cartucho.
 import { initGamepad, padGameAnswers, seatEveryPlayer, type GamepadGameHooks } from '../input/gamepad.js';
 import { whereTheChildIs, type Place } from '../ui/where-the-child-is.js';
+import { createSimulationOverTheWorld } from '../ui/simulation-over-the-world.js';
 export type { GamepadGameHooks } from '../input/gamepad.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registerKeyboardMapping, saveKB, setKB, factoryWithGame, type KBDefaults } from '../input/keyboard.js';
@@ -907,76 +907,28 @@ export function createGame(o: CreateGameOptions): Engine {
    *     where it is turned off. So the filter goes on the world's parts that hold no menu, down to the world itself when
    *     it holds none (a canvas world).
    */
-  // `[data-incl-menu]` is the cartridge's own door to the menus (ADR-0187): the engine cannot tell which of a game's buttons
-  // opens the pause card, and a simulation over that door is the one a touch child cannot turn off.
-  const MENUS_DA_ENGINE = '.overlay, .screen-pause, .screen-a11y, #title-icons, .rodape-da-tela, .pausa-rapida, .touch, #viz-overlay, [data-incl-menu]';
   /** Assigned once the menus exist (below): until then no menu can be open. */
   let simulacaoSuspensa = (): boolean => false;
-  let simulados: HTMLElement[] = [];
-  function simularSoNoJogo(css: string, melhoria: string): void {
-    for (const n of simulados) n.style.filter = '';
-    simulados = [];
-    const mundo = cartucho.declaration.world();
-    if (!css || mundo.kind !== 'element') return;
-    const el = $<HTMLElement>(mundo.selector);
-    if (!el) return;
-    const semMenus = (n: HTMLElement): boolean => typeof n.querySelector !== 'function' || !n.querySelector(MENUS_DA_ENGINE);
-    if (semMenus(el)) {
-      el.style.filter = [melhoria, css].filter(Boolean).join(' '); // the world itself, over what helps
-      return; // recomposed from `melhoria` on the next call, so it is not tracked here
-    }
-    const partes = (pai: HTMLElement): void => {
-      for (const filho of Array.from(pai.children) as HTMLElement[]) {
-        if (filho.matches(MENUS_DA_ENGINE)) continue;
-        if (semMenus(filho)) { filho.style.filter = css; simulados.push(filho); } else partes(filho);
-      }
-    };
-    partes(el);
-  }
   /*
-   * THE DRAWN SIMULATIONS (ADR-0151 §2 item 2; issue #182): tunnel vision, a central scotoma and scattered scotomas are a
-   * drawing over the declared world — the colour filter only blurs for them. A 320×180 layer stretched over the world, inside
-   * it, or beside it when the world is a canvas (which cannot hold children); `#viz-overlay` takes no click (style.css).
+   * 🔴 ONDE A SIMULAÇÃO VAI PARAR MUDOU-SE PARA `ui/simulation-over-the-world` (ADR-0221 passo 7c). Eram ~30 ramos
+   * desta raiz e nenhum deles fiação: «descer para dentro de uma caixa que contém uma porta», «um canvas não tem filhos,
+   * logo a camada vai para o pai dele», «o que AJUDA fica por baixo do que SIMULA» são regras com razão.
+   * 🎯 Sondada ANTES de sair, e CINCO de onze decisões estavam cegas — três delas o caminho inteiro do mundo CANVAS,
+   * que nenhum caso da árvore conduzia. Ganharam casos em `engine:9ee07d3c`, antes de uma linha se mexer.
    */
-  const DESENHADAS: ReadonlySet<string> = new Set(['tunnel', 'macular', 'diabetic']);
-  function desenharCamadaDoMundo(chave: string | null): void {
-    const lv = chave ? VIZ_BY_KEY[chave]?.lv : undefined;
-    let camada = $<HTMLCanvasElement>('#viz-overlay');
-    if (!lv || !DESENHADAS.has(lv)) { if (camada) camada.hidden = true; return; }
-    const mundo = cartucho.declaration.world();
-    if (mundo.kind !== 'element') return;
-    const el = $<HTMLElement>(mundo.selector);
-    if (!el) return; // already in `problems`
-    const eCanvas = el.tagName === 'CANVAS';
-    const hospedeiro = eCanvas ? el.parentElement : el;
-    if (!hospedeiro) return;
-    if (!camada) {
-      camada = doc.createElement('canvas');
-      camada.id = 'viz-overlay';
-      camada.setAttribute('aria-hidden', 'true');
-      // inline and not only in style.css: a page without the stylesheet must still let the clicks through to the game
-      // z 4: over the game, under the quick bar (5), the pause card (6) and the panels (60) — a simulation is never over a menu
-      Object.assign(camada.style, { position: 'absolute', inset: '0', pointerEvents: 'none', zIndex: '4' });
-      camada.width = LOGICAL_W;
-      camada.height = LOGICAL_H;
-    }
-    if (camada.parentElement !== hospedeiro) hospedeiro.appendChild(camada);
-    if (eCanvas) Object.assign(camada.style, { inset: 'auto', left: `${el.offsetLeft}px`, top: `${el.offsetTop}px`, width: `${el.offsetWidth}px`, height: `${el.offsetHeight}px` });
-    else Object.assign(camada.style, { width: '100%', height: '100%' });
-    const c = camada.getContext('2d');
-    if (!c) return;
-    c.clearRect(0, 0, camada.width, camada.height);
-    drawLowVision(c, lv, camada.width, camada.height);
-    camada.hidden = false;
-  }
+  const simulacaoNoMundo = createSimulationOverTheWorld({
+    world: () => cartucho.declaration.world(),
+    find: <T extends Element>(sel: string) => $<T>(sel),
+    createCanvas: () => doc.createElement('canvas'),
+  });
   function recomporFiltroDoMundo(): void {
     // what HELPS (the colour correction, the contrast enhancement) stays on the world as before; the SIMULATION is laid apart
     const chaveDaMelhoria = filterKey({ ...estadoDoMundo, simulacao: null });
     const melhoria = [chaveDaMelhoria ? (VIZ_FILTER[chaveDaMelhoria] ?? '') : '', lqFilter()].filter(Boolean).join(' ');
     aplicarFiltroDeVisao(melhoria, 'mundo');
     const simulacao = simulacaoSuspensa() ? null : estadoDoMundo.simulacao;
-    simularSoNoJogo(simulacao ? (VIZ_FILTER[simulacao] ?? '') : '', melhoria);
-    desenharCamadaDoMundo(simulacao);
+    simulacaoNoMundo.onlyInPlay(simulacao ? (VIZ_FILTER[simulacao] ?? '') : '', melhoria);
+    simulacaoNoMundo.drawLayer(simulacao);
     applyCrt(); // the decorative CRT yields to every visual mode, and comes back when none is on (ADR-0047)
   }
   /*
@@ -1928,7 +1880,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * 📌 O MÓDULO É O DO JOGO DE PLATAFORMA (`ui/settings-empathy`), com o que a engine SABE fazer:
      *   · as SIMULAÇÕES que são um filtro no mundo — as três de daltonismo (as matrizes do `installCvdFilters`), o
      *     desfoque, a névoa e a cegueira; and the three DRAWN ones — tunnel vision, a central scotoma, scattered scotomas —
-     *     whose filter is only a blur: `desenharCamadaDoMundo` lays their drawing over the world (issue #182);
+     *     whose filter is only a blur: `ui/simulation-over-the-world` lays their drawing over the world (issue #182);
      *   · a PERDA AUDITIVA (`platform/audio.setHearingLossGraph`, que já é da engine).
      *   · the two MOTOR simulations (ADR-0181): «um botão por vez» and «sem força para segurar», applied to game keys by
      *     the filter at the end of the boot, before any cartridge hears them.

@@ -1966,6 +1966,11 @@
     "touchActionGlyphs",
     "touchControlsPlan"
   ],
+  "ui/simulation-over-the-world.ts": [
+    "SimulationOverTheWorld",
+    "SimulationOverTheWorldCtx",
+    "createSimulationOverTheWorld"
+  ],
   "ui/simulation-refusal.ts": [
     "REASON_KEY",
     "Refusal",
