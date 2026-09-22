@@ -4,7 +4,7 @@
 //
 // The quiz demo is where the neural voice is tried (ADR-0198 erratum: «Apenas teste neste quiz demo»), so it is also where the
 // promise is measurable: one line asks for the voice, and NOTHING in the demo names the phonemizer, the runtime or a path under
-// `pesados/`. 📏 Until this commit it named all three — `kokoro-porta.ts` and `kokoro-carregar.ts`, ~200 lines every game that
+// `heavy/`. 📏 Until this commit it named all three — `kokoro-porta.ts` and `kokoro-carregar.ts`, ~200 lines every game that
 // wanted a voice would have copied, and 45 MiB of espeak-ng and onnxruntime in its bundle (precache 55.9 → 10.9 MiB).
 //
 // ⚠️ IT READS THE SOURCE, and that is the point: the demo boots a browser, PIXI and a camera, so a case that ran it would measure
@@ -48,7 +48,7 @@ describe('the quiz demo declares what it uses', () => {
 
   it('🎯 [Zero] no file of the demo names a phonemizer, a runtime or a delivery path', () => {
     // The three shapes the old port had: the npm packages, the `?url` assets only a Vite build understands, and the path under
-    // `pesados/` that the engine alone is allowed to build (ADR-0177).
+    // `heavy/` that the engine alone is allowed to build (ADR-0177).
     const acusados = ficheiros().filter((f) => /espeak-ng|onnxruntime|\?url|deliveryPath/.test(fonte(f)));
     expect(acusados, 'the delivery and the runtime are the engine\'s business, and a file of the demo took them back').toEqual([]);
   });

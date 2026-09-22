@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // THE BUILD PUTS THE HEAVY FILES INTO THE DELIVERY, CHECKED (ADR-0177, issue #173).
 //
-// 📌 The upstream hosts are contacted by the BUILD, once; the child's device reads `pesados/` from the game's own origin. A
+// 📌 The upstream hosts are contacted by the BUILD, once; the child's device reads `heavy/` from the game's own origin. A
 // file whose sha256 differs is not written, and the run reports failure — a delivery never carries an unchecked file.
 // No network here: the fetch is injected.
 //
@@ -113,13 +113,13 @@ describe('the heavy files, put into the delivery by the build', () => {
   });
 });
 
-// A CARTRIDGE'S BUILD RUNS IT FROM THE INSTALLED PACKAGE (issue #173): `npx inclusionist-pesados dist` after its own build.
+// A CARTRIDGE'S BUILD RUNS IT FROM THE INSTALLED PACKAGE (issue #173): `npx inclusionist-heavy dist` after its own build.
 describe('the script, reachable by a cartridge', () => {
   const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
 
   it('🔴 [Right] the package publishes the script and names it as a command', () => {
     expect(pkg.files, 'the script is not published: a cartridge has no way to put the heavy files into its delivery').toContain('scripts/pesados-na-entrega.mjs');
-    expect(pkg.bin?.['inclusionist-pesados']).toBe('scripts/pesados-na-entrega.mjs');
+    expect(pkg.bin?.['inclusionist-heavy']).toBe('scripts/pesados-na-entrega.mjs');
   });
 
   it('🔴 [Right] it finds the catalogue beside itself, not in the caller\'s folder', () => {
@@ -187,7 +187,7 @@ describe('the script, reachable by a cartridge', () => {
       try { execFileSync(process.execPath, [join(process.cwd(), 'scripts', 'pesados-na-entrega.mjs')], { cwd: fora, encoding: 'utf8', stdio: 'pipe' }); }
       catch (e) { status = e.status; stderr = e.stderr; }
       expect(status, 'the script did not run as a program').toBe(2);
-      expect(stderr).toMatch(/usage: inclusionist-pesados/);
+      expect(stderr).toMatch(/usage: inclusionist-heavy/);
     } finally { rmSync(fora, { recursive: true, force: true }); }
   });
 });

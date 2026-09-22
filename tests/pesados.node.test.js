@@ -161,7 +161,13 @@ describe('what comes from outside is checked before it is kept (issue #168; STRI
   });
 
   it('📌 [Right] what was cached before the check is not trusted: the cache has a new name', () => {
-    expect(CACHE_HEAVY).toBe('incl-pesados-v2');
+    /*
+     * 🔴 O NOME DA CACHE FICA EM PORTUGUÊS, e é uma decisão e não um esquecimento (ADR-0219): renomear a PASTA muda um
+     * caminho, mas renomear a CACHE órfã tudo o que está lá dentro — 814 MiB que uma escola já baixou e que ela voltaria a
+     * baixar no primeiro arranque depois da actualização. O registro deixa as chaves guardadas de fora por esta razão exacta,
+     * e o nome de uma cache é uma delas.
+     */
+    expect(CACHE_HEAVY, 'a cache mudou de nome: a escola volta a baixar os 814 MiB').toBe('incl-pesados-v2');
   });
 });
 
@@ -187,7 +193,7 @@ describe('the heavy files come from the delivery\'s own origin (ADR-0177, issue 
   it('📌 [Right] a delivery path keeps the upstream host and path, so two files never share one', () => {
     const caminhos = HEAVY_FILES.filter((p) => p.url).map((p) => deliveryPath(p.url));
     expect(new Set(caminhos).size).toBe(caminhos.length);
-    for (const c of caminhos) expect(c).toMatch(/^pesados\/[\w.-]+\//);
+    for (const c of caminhos) expect(c).toMatch(/^heavy\/[\w.-]+\//);
   });
 });
 

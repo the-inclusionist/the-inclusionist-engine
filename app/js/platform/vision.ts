@@ -2,7 +2,7 @@
 // platform/vision — THE FACE LANDMARKER AND THE CAMERA, FROM THE GAME'S OWN ORIGIN (ADR-0213, ADR-0177; issue #196).
 //
 // · MediaPipe `tasks-vision` and the face model are the files the install already fetched and checked by sha256 (`platform/pesados`).
-//   They are asked for at `pesados/<host><path>` beside the page, so no third-party host is contacted, and a file that is not in the
+//   They are asked for at `heavy/<host><path>` beside the page, so no third-party host is contacted, and a file that is not in the
 //   checked cache is never loaded: the reader says which ones are missing instead, so the child hears why the eyes do not work.
 // · The bundle is imported by an ABSOLUTE address: a relative one resolves against this module, not against the page.
 // · GPU first; a GPU that fails to create the landmarker, or fails on a frame, gives way to the CPU once. The frame that failed reads

@@ -28,7 +28,7 @@ const hostsDe = (fontes) => fontes.filter((f) => /^https:\/\//.test(f)).map((f) 
 
 /**
  * The hosts a library on the page requests by itself, each with its requester. None since ADR-0207: the voice provider that
- * hardcoded its models' host left the engine, and every heavy file is asked at the delivery's own `pesados/`.
+ * hardcoded its models' host left the engine, and every heavy file is asked at the delivery's own `heavy/`.
  */
 const PEDIDOS_PELAS_BIBLIOTECAS = new Map();
 

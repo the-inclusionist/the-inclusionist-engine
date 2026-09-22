@@ -90,7 +90,7 @@ export interface Tts {
 
 // 📌 The only neural engine is Kokoro (ADR-0207): the engine's earlier neural engine left when the licence chain of its voices came
 // to light. 📌 And ADR-0094's fear — «a provider named here lands its runtime in every consumer's `node_modules`» — is answered by the
-// delivery and not by a port: the runtime is catalogued, fetched by the build and read from `pesados/`, never imported from npm.
+// delivery and not by a port: the runtime is catalogued, fetched by the build and read from `heavy/`, never imported from npm.
 /** An engine the child may have stored before it left the engine (ADR-0207): read as no explicit choice, so the voice in use speaks. */
 const MOTORES_QUE_SAIRAM: readonly string[] = ['piper'];
 export function createTts(ctx: TtsCtx): Tts {

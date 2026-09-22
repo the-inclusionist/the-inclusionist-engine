@@ -67,7 +67,7 @@ function urlsEmCodigo() {
 const DECLARADAS = {
   'https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main': 'KOKORO (ADR-0186, ADR-0198): the fp32 model, its tokenizer '
     + 'and the voice tables, named once in `platform/kokoro` and fetched by the BUILD into the delivery with their sha256 (ADR-0177); '
-    + 'the page asks for them at `pesados/` on its own origin. An address, not a fetch: the module is pure',
+    + 'the page asks for them at `heavy/` on its own origin. An address, not a fetch: the module is pure',
   'http://www.w3.org/2000/svg': 'NAMESPACE XML, não um endereço: o `createElementNS` exige-o para criar nós SVG, e ele nunca sai da máquina. Aparece no `render/cvd-matrices` e no `render/lq-filter`, que montam os filtros de daltonismo',
   'https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2': 'THE PHONEMIZER OF THE NEURAL VOICE (ADR-0216, issue #200): espeak-ng turns a '
     + 'sentence into phonemes in every language the project speaks. Fetched at BUILD time into the delivery like the vision runtime '
@@ -80,7 +80,7 @@ const DECLARADAS = {
     + 'party: the reading models (ADR-0201 erratum, issue #185) — Whisper small for pt, Moonshine streaming small for en and es. '
     + 'Both ONNX exports were made by this project, so there is no upstream to point at: the ready-made Whisper export states no '
     + 'licence and the Spanish Moonshine ships no ONNX. Fetched by the BUILD into the delivery with their sha256, and only for the '
-    + 'languages the build is told to carry; the page asks for them at `pesados/` on its own origin, never here. 850 MiB for the '
+    + 'languages the build is told to carry; the page asks for them at `heavy/` on its own origin, never here. 850 MiB for the '
     + 'three, which is why nothing downloads more than one',
   // The same supplier, written folder by folder in `platform/heavy-mirror`: that is what lets a build read the 850 MiB from the
   // staging tree on disk instead of over the link (`--base`), and each folder is one model.
@@ -134,28 +134,28 @@ const TOCAM_NA_REDE = {
     + 'loaded at the FIRST `listen()` of a game that declared `uses: { reading: true }` (ADR-0216 §5). It is here and not inside '
     + 'the reading because the root is what knows the page\'s address and the game\'s answers; the module it loads is what names '
     + 'the model files, so a game that never listens never reaches them',
-  'platform/vosk-runtime.ts': 'LOCAL. A `<script src>` of the recogniser bundle and the model it fetches, both at `pesados/` on '
+  'platform/vosk-runtime.ts': 'LOCAL. A `<script src>` of the recogniser bundle and the model it fetches, both at `heavy/` on '
     + 'the page\'s own origin (ADR-0177) — addresses built by `deliveryPath`, never an upstream host, and neither is loaded '
     + 'unless the install already checked it by sha256. ⚠️ A SCRIPT TAG and not an `import()`: the build is a UMD bundle that '
     + 'defines a global and finds its worker and its wasm beside itself, which is also why the three files travel together into '
     + 'one folder. It is the project\'s own build — every published `vosk-browser` evaluates text as code and the policy refuses '
     + 'it (ADR-0193)',
-  'platform/kokoro-port.ts': 'LOCAL. `fetch` of the model, the tokenizer and the voice tables at `pesados/` on the page\'s own '
+  'platform/kokoro-port.ts': 'LOCAL. `fetch` of the model, the tokenizer and the voice tables at `heavy/` on the page\'s own '
     + 'origin (ADR-0177) — paths built by `deliveryPath`, never an upstream host. It was the quiz demo\'s port until ADR-0216 '
     + 'moved it into the engine, so no game has to copy it',
-  'platform/kokoro-runtime.ts': 'LOCAL. `import()` of espeak-ng and `fetch` of its wasm, at `pesados/` on the page\'s own origin '
+  'platform/kokoro-runtime.ts': 'LOCAL. `import()` of espeak-ng and `fetch` of its wasm, at `heavy/` on the page\'s own origin '
     + '(ADR-0216): the addresses come from the catalogue, the build put the files in the delivery, and a school with no network '
     + 'has them or the voice refuses. Nothing is imported from npm, so a game that never speaks neurally carries none of it. The '
     + 'graph runner is `platform/onnx-runtime`\'s, below',
   'platform/reading-runtime.ts': 'LOCAL. `fetch` of the reading model of ONE language — the encoder, the decoders, the tokenizer '
-    + 'and the two configs — at `pesados/` on the page\'s own origin (ADR-0216 §2): the addresses come from the catalogue, the '
+    + 'and the two configs — at `heavy/` on the page\'s own origin (ADR-0216 §2): the addresses come from the catalogue, the '
     + 'build put them in the delivery, and a school with no network has them or the reading refuses by name. The child\'s voice '
     + 'never becomes a request: it is heard here, on her machine (ADR-0200 erratum)',
-  'platform/onnx-runtime.ts': 'LOCAL. `import()` of onnxruntime-web at `pesados/` on the page\'s own origin, and the ONE place '
+  'platform/onnx-runtime.ts': 'LOCAL. `import()` of onnxruntime-web at `heavy/` on the page\'s own origin, and the ONE place '
     + 'that points its worker threads at the delivery too (ADR-0216): a worker left to itself asks the CDN the library was '
     + 'published at, finds nothing in a school with no network, and the session never opens — measured in the quiz demo (#181). '
     + 'The voice and the reading both load it from here, so the rule is written once',
-  'platform/vision.ts': 'LOCAL. `import()` of MediaPipe\'s `vision_bundle.mjs` (and, inside it, its wasm and the face model) at `pesados/` '
+  'platform/vision.ts': 'LOCAL. `import()` of MediaPipe\'s `vision_bundle.mjs` (and, inside it, its wasm and the face model) at `heavy/` '
     + 'on the page\'s own origin (ADR-0177, ADR-0213, #196) — addresses built by `deliveryPath`, never an upstream host, and only '
     + 'after the checked cache holds every file',
   'platform/tts.ts': 'LOCAL. Two, and neither leaves the machine: `el.src = som.url`, a `blob:` URL of the WAV the neural voice just '

@@ -1018,6 +1018,24 @@ with a rename of identifiers would put two different migrations under one headin
 | `VozKokoro` | `KokoroVoice` |
 | `VozNeural` | `NeuralVoice` |
 
+## AN · The delivery folder is `heavy/` and the command is `inclusionist-heavy` (ADR-0219, issue #202)
+
+**What changed.** The heavy files are served from `heavy/<host><path>` beside the page instead of `pesados/<host><path>`,
+and the published command that writes them into a delivery is `npx inclusionist-heavy <folder>` instead of
+`npx inclusionist-pesados`.
+
+**What a school does NOT pay.** 📏 Measured before the change: the verified cache keeps every entry under its UPSTREAM address
+(`deliveryCacheKey`), so nothing is downloaded again — and the cache's own name stays `incl-pesados-v2` for exactly that
+reason. Renaming the cache would orphan 814 MiB a school already has, and stored keys are out of this release by the record's
+own words.
+
+**What to do.** After bumping the engine, **build the delivery again** with the new command. A `dist` written by the old
+command has its files under `pesados/` and the new engine asks for `heavy/` — the page gets a 404 for every model, and the
+child meets a game with no voice, no reading and no camera. Nothing else changes: the catalogue, the sha256 of each file and
+the upstream addresses are the same.
+
+⚠️ One name stays in Portuguese on purpose, and it is not the folder: `incl-pesados-v2`, the cache. See above.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

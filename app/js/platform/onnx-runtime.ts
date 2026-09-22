@@ -7,7 +7,7 @@
 //
 // ⚠️ THE THREADS LOOK FOR THEIR OWN FILES. Left alone, onnxruntime's workers import their glue and their wasm from the address
 // the library was published at — a CDN — and in a school with no network they find nothing, never answer, and the page waits for
-// a session that never opens. Measured in the quiz demo (#181). So the paths are pointed at `pesados/` on the page's own origin.
+// a session that never opens. Measured in the quiz demo (#181). So the paths are pointed at `heavy/` on the page's own origin.
 //
 // ⚠️ NOTHING HERE IS IMPORTED FROM npm: `import(url)` of an address on our own origin needs no bundler and puts no megabyte in
 // the chunk of a game that runs no graph at all.
@@ -56,7 +56,7 @@ function heavyUrlOf(id: string): string {
 export const atDelivery = (id: string, base: string): string => new URL(deliveryPath(heavyUrlOf(id)), base).href;
 
 export interface OnnxRuntimeDeps {
-  /** The page's address, which `pesados/` is resolved against. */
+  /** The page's address, which `heavy/` is resolved against. */
   readonly base: string;
   /** `import()`, injected so a case can hand in a module without a network or a wasm engine. */
   readonly importModule?: (url: string) => Promise<unknown>;

@@ -9,7 +9,7 @@
 # CONTENT-SECURITY-POLICY (issue #170; narrowed by ADR-0177, issue #173): which hosts may run script and be fetched.
 #  • script-src: this origin; `'wasm-unsafe-eval'` — the
 #    voice and vision runtimes compile WebAssembly. No third-party host: the game bundles its runtimes.
-#  • connect-src: this origin only. The heavy files come from the delivery's own `pesados/` (ADR-0177), so the catalogue's
+#  • connect-src: this origin only. The heavy files come from the delivery's own `heavy/` (ADR-0177), so the catalogue's
 #    hosts are contacted by the build alone; no library left in the engine requests a third party by itself (ADR-0207).
 #  • style-src 'unsafe-inline': eight panel modules write `style="…"` through innerHTML (measured 2026-09-13).
 # CROSS-ORIGIN ISOLATION (ADR-0192, issue #186): onnxruntime's WASM runs the voices on threads only in an isolated page — a 3 s

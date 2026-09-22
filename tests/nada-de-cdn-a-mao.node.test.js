@@ -72,7 +72,7 @@ const BUSCAS_A_MAO = {
     porque:
       'ENDEREÇO DECLARADO, not a fetch: the Kokoro model repository (ADR-0186, ADR-0198), named once so the catalogue and a game\'s '
       + 'port build the same paths; the module is pure. The build fetches the files into the delivery (ADR-0177); the page asks for '
-      + 'them at `pesados/`. A second host here would be a mirror chosen in silence',
+      + 'them at `heavy/`. A second host here would be a mirror chosen in silence',
   },
   'platform/heavy-mirror.ts': {
     // 8 → 10 with the command models and their runtime (issue #184): two more FOLDERS of the same mirror, not two more suppliers.

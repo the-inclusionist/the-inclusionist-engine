@@ -5,7 +5,7 @@
 // deve precisar saber como isso funciona». It moved into the engine unchanged in behaviour and rewritten in English.
 //
 // The phonemizer and the ONNX runtime are INJECTED, so this half runs with no browser and no wasm: `platform/kokoro-runtime` hands
-// in the real ones, loaded from `pesados/` on the page's own origin, where the delivery put them (ADR-0177) and the service worker
+// in the real ones, loaded from `heavy/` on the page's own origin, where the delivery put them (ADR-0177) and the service worker
 // answers from the checked cache.
 import type { KokoroModule, KokoroSession } from './kokoro.js';
 import type { OnnxRuntime } from './onnx-runtime.js';
@@ -28,7 +28,7 @@ export interface KokoroPortDeps {
   readonly espeak: EspeakFactory;
   readonly ort: OnnxRuntime;
   readonly fetch: (url: string) => Promise<Response>;
-  /** The page's address `pesados/` is resolved against. */
+  /** The page's address `heavy/` is resolved against. */
   readonly base: string;
 }
 
@@ -39,7 +39,7 @@ export function createKokoroPort(d: KokoroPortDeps): KokoroModule {
   const fromDelivery = async (url: string): Promise<Response> => {
     const path = deliveryPath(url);
     const r = await d.fetch(new URL(path, d.base).href);
-    if (!r.ok) throw new Error(`Kokoro: HTTP ${r.status} for ${path} — the delivery does not carry it (inclusionist-pesados --kokoro)`);
+    if (!r.ok) throw new Error(`Kokoro: HTTP ${r.status} for ${path} — the delivery does not carry it (inclusionist-heavy --kokoro)`);
     return r;
   };
   let vocabulary: Promise<Readonly<{ [symbol: string]: number }>> | null = null;

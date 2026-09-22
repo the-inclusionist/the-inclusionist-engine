@@ -123,8 +123,8 @@ describe('what the start fetches (ADR-0198 §5)', () => {
       // ⚠️ The command model is asked for WITHOUT the game declaring anything (issue #184), so the expected list is the boot's own
       // question, language included — a number written here by hand would have to be rewritten every time the catalogue grows.
       const esperados = heavyAtBoot({ kokoro: false, commands: bcp47() }).filter((id) => HEAVY_FILES.find((p) => p.id === id).url).length; // an entry without a source is reported, not asked for
-      for (let i = 0; i < 400 && pedidos.filter((u) => u.includes('/pesados/')).length < esperados; i++) await new Promise((r) => setTimeout(r, 25));
-      const daEntrega = pedidos.filter((u) => u.includes('/pesados/'));
+      for (let i = 0; i < 400 && pedidos.filter((u) => u.includes('/heavy/')).length < esperados; i++) await new Promise((r) => setTimeout(r, 25));
+      const daEntrega = pedidos.filter((u) => u.includes('/heavy/'));
       expect(daEntrega.length, 'the start did not ask for the catalogue').toBe(esperados);
       expect(daEntrega.filter((u) => u.includes('Kokoro-82M'))).toEqual([]);
     } finally {

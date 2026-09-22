@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { readFileSync } from 'node:fs';
-import { deliveryCacheKey } from './app/js/platform/pesados.js'; // the `pesados/` route's cache key (issue #173)
+import { deliveryCacheKey } from './app/js/platform/pesados.js'; // the `heavy/` route's cache key (issue #173)
 // a page's precache revision carries the hash of `_headers`, so a header change refreshes it (issue #186)
 import { hashDosCabecalhos, revisarPaginasPelosCabecalhos } from './scripts/revisao-das-paginas.mjs';
 // Plugin em .mjs puro (sem tipos): é ferramenta de BUILD, e tipá-la exigiria um segundo tsconfig para o
@@ -92,7 +92,7 @@ export default defineConfig({
         // identico ao de antes. A troca e consciente: o precache passa de ~2 MB para ~28 MB, e a primeira visita
         // online passa a baixar tudo — que e exatamente o contrato de um PWA que precisa funcionar sem rede depois.
         // `mjs`: a module a worker loads by URL. onnxruntime's thread script is no longer one of them — since ADR-0216 it comes
-        // from `pesados/`, which the delivery fills and the rule below caches — but the extension stays: a page that emits one and
+        // from `heavy/`, which the delivery fills and the rule below caches — but the extension stays: a page that emits one and
         // leaves it outside the precache loses it offline, and the symptom is a feature that simply never starts.
         globPatterns: ['**/*.{js,mjs,css,html,png,svg,woff2,txt,json,webmanifest,wasm}'],
         maximumFileSizeToCacheInBytes: 32 * 1024 * 1024, // 32 MB: cabe o runtime de 25,6 MB com folga
@@ -101,16 +101,16 @@ export default defineConfig({
         // its revision hashed only the file, so a changed `_headers` never reached an install (ADR-0192, issue #186).
         manifestTransforms: [async (entradas) => revisarPaginasPelosCabecalhos(entradas, hashDosCabecalhos(readFileSync(join(RAIZ_REPO, 'app', 'public', '_headers'), 'utf8')))],
         runtimeCaching: [
-          // The delivery's own `pesados/` (ADR-0177, issue #173): what a page asks at the delivery path — Kokoro's model
+          // The delivery's own `heavy/` (ADR-0177, issue #173): what a page asks at the delivery path — Kokoro's model
           // and voices, and the runtime that speaks them (ADR-0216) — is answered from the checked cache, where the fetcher keeps it under the upstream address. On a miss
           // the request goes to this origin, never a third party; the fetcher's own download passes through the same way.
           {
-            urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.includes('/pesados/'),
+            urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.includes('/heavy/'),
             handler: 'CacheFirst',
             options: {
               cacheName: 'incl-pesados-v2',
               cacheableResponse: { statuses: [200] },
-              // the key is never null here: the pattern above already admits `pesados/` paths only
+              // the key is never null here: the pattern above already admits `heavy/` paths only
               plugins: [{ cacheWillUpdate: async () => null, cacheKeyWillBeUsed: deliveryCacheKey as unknown as (p: { request: Request }) => Promise<string> }],
             },
           },

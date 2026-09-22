@@ -56,13 +56,13 @@ const fakeVision = ({ gpuCreate = true, gpuFrame = true, cpuCreate = true } = {}
 const all = async () => true;
 
 describe('loading the face reader', () => {
-  it('asks for every file at pesados/<host><path> beside the PAGE, by an absolute address', async () => {
+  it('asks for every file at heavy/<host><path> beside the PAGE, by an absolute address', async () => {
     const v = fakeVision();
     const r = await loadFaceTracker({ base: BASE, hasFile: all, importBundle: v.importBundle });
     expect(r.ok).toBe(true);
-    expect(v.log.imported).toBe('https://game.example/play/pesados/cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs');
-    expect(v.log.wasmBase).toBe('https://game.example/play/pesados/cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
-    expect(v.log.created[0].model).toBe('https://game.example/play/pesados/storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task');
+    expect(v.log.imported).toBe('https://game.example/play/heavy/cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs');
+    expect(v.log.wasmBase).toBe('https://game.example/play/heavy/cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
+    expect(v.log.created[0].model).toBe('https://game.example/play/heavy/storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task');
   });
   it('asks for blendshapes and the pose matrix, one face, in video mode', async () => {
     const v = fakeVision();
@@ -132,11 +132,11 @@ describe('GPU first, CPU as the way out', () => {
 });
 
 describe('the hands', () => {
-  it('load the Gesture Recognizer from pesados/, one hand, in video mode, and read a frame', async () => {
+  it('load the Gesture Recognizer from heavy/, one hand, in video mode, and read a frame', async () => {
     const v = fakeVision();
     const r = await loadHandTracker({ base: BASE, hasFile: all, importBundle: v.importBundle });
     expect(r.ok).toBe(true);
-    expect(v.log.created[0]).toMatchObject({ hands: true, model: 'https://game.example/play/pesados/storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task' });
+    expect(v.log.created[0]).toMatchObject({ hands: true, model: 'https://game.example/play/heavy/storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task' });
     expect(v.log.created[0].options).toMatchObject({ runningMode: 'VIDEO', numHands: 1 });
     expect(r.tracker.detect('f', 1).gestures[0][0].categoryName).toBe('Victory');
     expect(r.tracker.handLines).toEqual([{ start: 0, end: 1 }]);

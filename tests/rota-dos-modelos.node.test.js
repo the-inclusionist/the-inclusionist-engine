@@ -73,7 +73,7 @@ describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
     // ADR-0177: CacheOnly — the files come from the delivery into the cache; a library request never reaches the upstream host.
     expect(CONFIG_LIMPA, 'a rota pode buscar na rede do terceiro').toMatch(/handler:\s*'CacheOnly'/);
     // Each route on the checked cache, split at its `urlPattern`. A third-party address is `CacheOnly`; only a route that
-    // matches this origin alone (the delivery's `pesados/`, issue #173) may fall back to the network — its own origin's.
+    // matches this origin alone (the delivery's `heavy/`, issue #173) may fall back to the network — its own origin's.
     const rotas = CONFIG_LIMPA.split(/(?=urlPattern:)/).slice(1).map((r) => r.slice(0, r.indexOf('cacheName')));
     expect(rotas.length, 'no route was split out — the case would measure nothing').toBeGreaterThan(1);
     for (const r of rotas) {

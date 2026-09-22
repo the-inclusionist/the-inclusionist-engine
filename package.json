@@ -111,14 +111,14 @@
     "scripts/pesados-na-entrega.mjs"
   ],
   "bin": {
-    "inclusionist-pesados": "scripts/pesados-na-entrega.mjs"
+    "inclusionist-heavy": "scripts/pesados-na-entrega.mjs"
   },
   "comment:no-dependencies": [
     "⚠️ ESTE PACOTE NÃO TEM `dependencies`, E ISSO É UMA DECISÃO MEDIDA (ADR-0094), não um acaso.",
     "Embedded code that names a package the consumer's npm does not install publishes an engine that does not compile (ADR-0093);",
     "a neural provider in `dependencies` lands its runtime in every consumer, a game that never speaks neurally included.",
     "The engine now LOADS that voice itself (ADR-0216) and still declares nothing: espeak-ng and onnxruntime-web are catalogued heavy",
-    "files, fetched by the build into `pesados/` and read from the page's own origin — so they are in nobody's `node_modules`, here",
+    "files, fetched by the build into `heavy/` and read from the page's own origin — so they are in nobody's `node_modules`, here",
     "included. A game says `uses: { neuralVoice: true }`, and a game that does not say it downloads none of it.",
     "`tests/engine-package.node.test.js` holds both directions: no embedded module names an undeclared package, and nothing declared",
     "is left without a module naming it."

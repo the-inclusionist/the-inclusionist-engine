@@ -53,7 +53,7 @@ describe('the neural voice, loaded by the engine', () => {
     await kokoro.vocabulario();
     for (const url of [...imported, ...fetched]) {
       expect(url.startsWith(BASE), `${url} was not asked of the page's own origin`).toBe(true);
-      expect(url).toContain('/pesados/');
+      expect(url).toContain('/heavy/');
     }
     expect(fetched).toContain(naEntrega(URL_DO_TOKENIZADOR_KOKORO));
   });
@@ -64,7 +64,7 @@ describe('the neural voice, loaded by the engine', () => {
     const { deps, ort } = build();
     await loadKokoroRuntime(deps);
     expect(ort.env.wasm.wasmPaths.mjs.startsWith(BASE), 'the thread glue would come from a CDN').toBe(true);
-    expect(ort.env.wasm.wasmPaths.wasm).toContain('/pesados/');
+    expect(ort.env.wasm.wasmPaths.wasm).toContain('/heavy/');
   });
 
   it('📌 [Boundary] the phonemizer\'s wasm is compiled ONCE, however many sentences are spoken', async () => {
@@ -81,7 +81,7 @@ describe('the neural voice, loaded by the engine', () => {
       const { deps, ort } = build({ ortExport });
       await loadKokoroRuntime(deps);
       expect(ort.env.wasm.wasmPaths?.wasm, `as ${ortExport}: the runtime was not found, so its threads were never pointed`)
-        .toContain('/pesados/');
+        .toContain('/heavy/');
     }
   });
 

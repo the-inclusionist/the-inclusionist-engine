@@ -29,7 +29,7 @@ export interface EyeControlDeps {
   readonly doc: Document;
   /** Where the regions are drawn: `#game-region`. */
   readonly region: HTMLElement;
-  /** The page's address, to reach `pesados/`. */
+  /** The page's address, to reach `heavy/`. */
   readonly base: string;
   readonly loop: VisionLoopDeps;
   /** Where the presses go: seat 0's virtual controller. */

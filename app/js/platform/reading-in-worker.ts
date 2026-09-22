@@ -20,7 +20,7 @@ export interface ReadingWorkerLike {
 }
 
 export interface ReadingInWorkerDeps {
-  /** The page's address: the worker resolves `pesados/` against it, because IT is who fetches the model. */
+  /** The page's address: the worker resolves `heavy/` against it, because IT is who fetches the model. */
   readonly base: string;
   readonly language: string;
   /** Injected by the gate; by default the module beside this one, started as a module worker. */

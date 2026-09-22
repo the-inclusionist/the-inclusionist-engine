@@ -2,7 +2,7 @@
 // THE SERVICE WORKER REGISTERS ITS RUNTIME ROUTES — its navigation fallback names a page the build emits.
 //
 // 🔴 Measured on 2026-09-13 in the engine's dist: a request to a missing Hugging Face model reached Hugging Face (their 404,
-// their headers) instead of failing in the `CacheOnly` route, and the delivery's `pesados/` route never answered from the
+// their headers) instead of failing in the `CacheOnly` route, and the delivery's `heavy/` route never answered from the
 // cache. The generated `sw.js` runs its routes inside the `define(...)` promise: `precacheAndRoute`, then
 // `createHandlerBoundToURL("index.html")` — the plugin's default fallback — which THROWS when `index.html` is not precached.
 // Inside a promise the throw is a silent rejection: the worker installs, the precache works, and every runtime route after it

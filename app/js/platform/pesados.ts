@@ -48,7 +48,7 @@ export interface HeavyOptions {
   readonly digest?: ((corpo: ArrayBuffer) => Promise<string>) | null;
   /** Só estas ids, se dado. Serve ao consumidor que quer as vozes e não o resto. */
   readonly apenas?: readonly string[];
-  /** The page's address the delivery's `pesados/` folder is resolved against. By default the page's own (`location.href`). */
+  /** The page's address the delivery's `heavy/` folder is resolved against. By default the page's own (`location.href`). */
   readonly base?: string;
 }
 
@@ -66,7 +66,7 @@ export interface HeavyOptions {
  *   turns letters into sounds.
  * · The command models (issue #184): one per language too, 112 MiB for the three, and the runtime that loads them. Nothing in
  *   the game decides this — speaking instead of pressing is a way INTO the controller, and a cartridge does not get to close
- *   one (ADR-0111). What decides is the delivery: `inclusionist-pesados --commands pt` puts Portuguese in it.
+ *   one (ADR-0111). What decides is the delivery: `inclusionist-heavy --commands pt` puts Portuguese in it.
  */
 export function heavyAtBoot(
   portas: { readonly kokoro: boolean; readonly reading?: string | null; readonly commands?: string | null },
@@ -88,26 +88,36 @@ export function heavyAtBoot(
 }
 
 /**
- * WHERE THE DELIVERY SERVES A HEAVY FILE (ADR-0177, issue #173): `pesados/<host><path>` beside the page. The child's device
+ * WHERE THE DELIVERY SERVES A HEAVY FILE (ADR-0177, issue #173): `heavy/<host><path>` beside the page. The child's device
  * reads it from the game's own origin; the upstream address is only where the build fetched it from.
  * 📌 The upstream address stays the CACHE KEY: it is what the voice and vision libraries ask for, and the service worker answers
  * them from the checked cache without a network request.
+ *
+ * 🔴 THE FOLDER WAS CALLED «pesados» UNTIL 2026-09-21 (ADR-0219). 📏 What that costs a school was measured before it changed:
+ * the entries are kept under the UPSTREAM address, so nothing is re-downloaded — what breaks is a delivery built by the old
+ * `bin` under a new engine, which asks for `heavy/…` and gets a 404 until the delivery is built again.
  */
 export function deliveryPath(url: string): string {
   const u = new URL(url);
-  return `pesados/${u.host}${u.pathname}`;
+  return `heavy/${u.host}${u.pathname}`;
 }
 
 /**
- * The inverse, for the service worker: a request for `…/pesados/<host><path>` is answered from the entry kept under
+ * The inverse, for the service worker: a request for `…/heavy/<host><path>` is answered from the entry kept under
  * `https://<host><path>`; any other address has no key (`null`). It is the route's `cacheKeyWillBeUsed` itself, so it also
  * takes Workbox's `{ request }`. Self-contained on purpose — the PWA plugin copies this function's SOURCE into `sw.js`, where
  * nothing else from this module exists.
+ *
+ * ⚠️ THE OFFSET COMES FROM THE FOLDER'S OWN LENGTH, and it is written this way because of what a blind rename would have done
+ * here: the old code advanced by 9, the length of the old folder's name with its slashes, and `/heavy/` is 7 — a text
+ * replacement of the name alone would
+ * have left every cache key with two characters of the host eaten, and the only symptom would be a cache that never hits.
  */
 export function deliveryCacheKey(pedido: string | { readonly request: { readonly url: string } }): string | null {
+  const folder = '/heavy/';
   const caminho = new URL(typeof pedido === 'string' ? pedido : pedido.request.url).pathname;
-  const i = caminho.indexOf('/pesados/');
-  return i < 0 ? null : 'https://' + caminho.slice(i + 9);
+  const i = caminho.indexOf(folder);
+  return i < 0 ? null : 'https://' + caminho.slice(i + folder.length);
 }
 
 /**

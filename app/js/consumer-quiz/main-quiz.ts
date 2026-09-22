@@ -422,7 +422,7 @@ export function bootQuiz(): void {
     // 📌 It used to be the ~200 lines of `kokoro-porta`/`kokoro-carregar` — the phonemizer, the runtime and the paths — which every
     // game that wanted a voice would have copied. They moved into the engine and were deleted here.
     // AND THE CHILD READS TO IT (ADR-0216 §3): one more line, and `motor.reading.listen()` answers with what she said. This
-    // answer is also what puts the reading model of her language into a delivery — `npx inclusionist-pesados dist --reading pt`.
+    // answer is also what puts the reading model of her language into a delivery — `npx inclusionist-heavy dist --reading pt`.
     uses: { neuralVoice: true, reading: true },
     // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
     isNavigable: () => true,

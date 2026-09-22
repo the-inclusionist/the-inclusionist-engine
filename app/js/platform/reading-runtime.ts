@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/reading-runtime — THE READING, RUN (ADR-0216 §2; issues #185, #200): sound in, the child's words out.
 //
-// The model of the child's language is opened from the delivery (`pesados/` on the page's own origin, ADR-0177) and run here:
+// The model of the child's language is opened from the delivery (`heavy/` on the page's own origin, ADR-0177) and run here:
 // the encoder once, then the decoder token by token until it says it is done. What each graph is called, what it takes and what
 // comes back is not guessed — `scratchpad/leitura-de-referencia-3.py` ran the real files and its trace is what
 // `tests/reading-runtime.node.test.js` replays.
@@ -29,7 +29,7 @@ export interface ReadingTranscriber {
 }
 
 export interface ReadingRuntimeDeps {
-  /** The page's address, which `pesados/` is resolved against. */
+  /** The page's address, which `heavy/` is resolved against. */
   readonly base: string;
   /** The child's language tag (`pt-BR`). A language the project has no model for is refused BY NAME. */
   readonly language: string;

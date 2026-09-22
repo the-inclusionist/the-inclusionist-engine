@@ -56,7 +56,7 @@ describe('nada é carregado sem ter sido conferido', () => {
     expect(r.ok).toBe(true);
     expect(r.model).toBe(api.modelo);
     const [bundle, model] = api.pedidos;
-    // 📌 A ENTREGA, e não o endereço de origem: `pesados/<host><path>` ao lado da página, que é o que o service worker responde
+    // 📌 A ENTREGA, e não o endereço de origem: `heavy/<host><path>` ao lado da página, que é o que o service worker responde
     // da cache conferida. Um endereço de terceiro aqui seria a criança a contactar um servidor para poder falar.
     expect(bundle[1]).toBe(BASE + deliveryPath(urlOf('commands:runtime')));
     expect(model[1]).toBe(BASE + deliveryPath(urlOf('commands:model:pt')));
