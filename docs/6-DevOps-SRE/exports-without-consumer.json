@@ -107,7 +107,6 @@
       "ITEM_SELECTOR"
     ],
     "ui/pause-icons.ts": [
-      "CVD_LABELS",
       "ITEM_GLYPH",
       "ENGINE_ITEMS",
       "itemsThatAct",

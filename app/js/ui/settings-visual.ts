@@ -9,6 +9,7 @@
 
 import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
+import { CONTRAST_LEVELS } from '../core/visual-cycles.js';
 import { mountSteps, updateSteps, nextStep } from './panel-widgets.js';
 import { escapeHtml } from '../core/escape-html.js';
 
@@ -29,7 +30,8 @@ type RoleKey = HcRoleKey;
 export type RGB = readonly [number, number, number];
 
 /** Contrast levels, in cycle order — mirrors game.js's HC_SEQ (also used there by the physical contrast-cycle button). */
-export const CONTRAST_LEVELS: readonly string[] = ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7'];
+// 📌 A LISTA MUDOU DE CASA para `core/visual-cycles`, junto do passo que a percorre (ADR-0221). Continua a ser lida aqui
+// porque o `VISUAL_MODES` a compõe com as correcções — o painel usa-a, não a possui.
 
 /**
  * TUDO que este menu escreve em `p.viz`: os 4 níveis de contraste MAIS as 3 correções de daltonismo, que

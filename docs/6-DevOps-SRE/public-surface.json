@@ -314,6 +314,13 @@
     "parseLevel",
     "selfTest"
   ],
+  "core/visual-cycles.ts": [
+    "CONTRAST_LEVELS",
+    "CVD_NAMES",
+    "CVD_SEQ",
+    "nextContrast",
+    "nextCvd"
+  ],
   "core/visual-state.ts": [
     "Correction",
     "Simulation",
@@ -1719,9 +1726,6 @@
   "ui/pause-icons.ts": [
     "ActionableIcons",
     "BarAction",
-    "CVD_LABELS",
-    "CVD_NAMES",
-    "CVD_SEQ",
     "ENGINE_ITEMS",
     "ICON_STATE_CLASSES",
     "ITEM_GLYPH",
@@ -1750,8 +1754,6 @@
     "inputModeOf",
     "itemReason",
     "itemsThatAct",
-    "nextContrast",
-    "nextCvd",
     "nextInputMode",
     "pauseIcon",
     "pauseMenuHtml",
@@ -1906,7 +1908,6 @@
   ],
   "ui/settings-visual.ts": [
     "CONTRAST_LABELS",
-    "CONTRAST_LEVELS",
     "LQ_STEPS",
     "RGB",
     "ROLE_KEYS",

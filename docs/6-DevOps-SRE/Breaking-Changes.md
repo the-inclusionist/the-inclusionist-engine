@@ -1650,7 +1650,24 @@ about what a child who cannot bear noise needs the engine to silence — the ico
 panel row is another. A module that answers «what does level 2 do to the audio?» should not require reading a file about the
 accessibility bar to be found.
 
-## E · What is ADDITIVE, listed so nobody migrates for nothing
+## BA · The two visual cycles leave the panel and the icon: `core/visual-cycles` (ADR-0221, issue #203)
+
+**What this is.** High contrast and colour correction are two choices a child steps through from the quick bar, and they lived
+in TWO modules: the list of levels in `ui/settings-visual`, the steps and the names in `ui/pause-icons`. Five names move to a
+new leaf, `core/visual-cycles`: `CONTRAST_LEVELS`, `CVD_SEQ`, `CVD_NAMES`, `nextContrast` and `nextCvd`. The spelling of each
+is unchanged; only the module is. 📏 None of the five is imported by any of the seven games.
+
+📌 **They are together because of the ASYMMETRY between them, which is the expensive thing to maintain.** An unknown `viz`
+sends `nextContrast` to index 0 and `nextCvd` to index **1** — so from a mode that is not a correction, contrast switches on at
+its first level while colour correction skips «normal» and lands straight in protanopia. It is verbatim from `game.js`. Apart,
+a reader fixes one by the other and deletes a decision without knowing it existed.
+
+🔴 **And one name was DELETED rather than moved: `CVD_LABELS`.** It was in the declared debt of `ui/pause-icons` — published,
+and measured to have no consumer anywhere — and its own comment said it was «the label `iconLabel` uses», which had stopped
+being true without anybody noticing. A debt ledger exists to SHRINK; carrying it to a new house would have carried it another
+year. What `iconLabel` uses is `CVD_NAMES`.
+
+## AZ · Sensory comfort leaves the icon module: `core/calm-mode` (ADR-0221, issue #203)
 
 | | |
 |---|---|

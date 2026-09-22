@@ -7,10 +7,11 @@ import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o it
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import {
-  CONTRAST_LEVELS, CONTRAST_LABELS, ROLE_KEYS, ROLE_LABELS,
+  CONTRAST_LABELS, ROLE_KEYS, ROLE_LABELS,
   resolveVisualMode, VISUAL_MODES, VISUAL_MODE_LIST, contrastLabel, clamp01, lqLabel, lqPercent, lqFromPercent, LQ_STEPS, lqPosition,
   clampSelectedPlayer, rgbToHex, onOffLabel, renderVisualPanelHtml,
 } from '../app/js/ui/settings-visual.js';
+import { CONTRAST_LEVELS } from '../app/js/core/visual-cycles.js';
 
 const baseSettings = () => ({
   lq: 0, ownerColors: true, cbSafe: false, outlineFg: 0, outlineBg: 0,

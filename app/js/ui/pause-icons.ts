@@ -30,7 +30,11 @@ import type { PlayerView } from '../core/entity.js';
 import type { NavKeys } from '../input/edges.js'; // a MESMA intenção que teclado, controle, olhar e fala montam
 import { t, getLocale, setLocale } from '../core/i18n.js';
 import { flagOf, nextLocale, LANGUAGE_NAME, type CycleLocale } from './locale-flags.js';
-import { CONTRAST_LEVELS } from './settings-visual.js';
+/*
+ * 🔴 OS DOIS CICLOS VISUAIS MUDARAM DE CASA para `core/visual-cycles` (ADR-0221, issue #203). Estavam em DOIS módulos — a
+ * lista dos níveis no painel, os passos e os nomes aqui — e a coisa que mais custa a quem os mantém é a ASSIMETRIA entre
+ * eles, que só se lê com os dois à vista. Ver o cabeçalho de lá.
+ */
 import { SHORT_THEME, SHORT_CORRECTION } from './visual-axes-panel.js';
 /*
  * 🔴 O MODO CALMO MUDOU DE CASA (ADR-0221, issue #203). Ele não é sobre ÍCONES: é sobre o que uma criança que não suporta
@@ -223,22 +227,6 @@ export function pauseIcon(k: string): PauseIcon | undefined { return ICON_BY_KEY
 function lerNivelTea(): number {
   return sanitiseTeaLevel(store.getNum(store.KEYS.tea, DEFAULTS.calmMode), DEFAULTS.calmMode);
 }
-/** Colour-vision-deficiency cycle, in `player.viz` values. */
-export const CVD_SEQ: readonly string[] = ['normal', 'fix-protan', 'fix-deuter', 'fix-tritan'];
-/** i18n keys of the CVD announcement names, indexed the same as CVD_SEQ.
- *
- * ⚠️ POSITION 0 IS `cvd.tricro` AND NOT `cvd.off`, AND THE TWO KEYS ARE NOT INTERCHANGEABLE.
- * This list names the four CHOICES of the cycle, so position 0 is a way of seeing — trichromatic
- * vision, the one that needs no correction — and it is said as one. `cvd.off` below is a FALLBACK
- * for `s.viz` values that are not corrections at all, and 13 of the 16 viz modes are exactly that:
- * the three simulations, the three contrast levels, the five low-vision modes and blind mode.
- * Announcing "trichromatic vision" there would have the software assert what the child sees, while
- * she is simulating not seeing it. The choice is named; the fallback is switched off. */
-export const CVD_NAMES: readonly string[] = ['cvd.tricro', 'cvd.protan', 'cvd.deuter', 'cvd.tritan'];
-/** `player.viz` → i18n key of the label used by iconLabel (anything else falls back to the 'off' key). */
-export const CVD_LABELS: Readonly<Record<string, string>> = {
-  'fix-protan': 'cvd.protan', 'fix-deuter': 'cvd.deuter', 'fix-tritan': 'cvd.tritan',
-};
 
 // ---------------------------------------------------------------------------------------------
 // Shapes this module reads but does not own
@@ -330,21 +318,6 @@ export function hasPrivateOutputIn(list: readonly PausePlayer[], count: number, 
   const p = list[i];
   if (!p || !p.audioSink) return false;
   return !list.some((q, j) => j !== i && q && q.audioSink === p.audioSink);
-}
-
-/** Next high-contrast level. An unlisted `viz` (e.g. a CVD filter) is treated as index 0 ⇒ jumps to 'hc-direto'. */
-export function nextContrast(cur: string | undefined): string {
-  let idx = CONTRAST_LEVELS.indexOf(cur as string);
-  idx = idx < 0 ? 0 : idx;
-  return CONTRAST_LEVELS[(idx + 1) % CONTRAST_LEVELS.length];
-}
-
-/** Next CVD filter. NOTE the asymmetry with nextContrast: an unlisted `viz` maps to index 1 ('fix-protan'),
- *  not 0 — verbatim from game.js (`idx = idx<0 ? 1 : (idx+1)%seq.length`). */
-export function nextCvd(cur: string | undefined): { idx: number; mode: string } {
-  let idx = CVD_SEQ.indexOf(cur as string);
-  idx = idx < 0 ? 1 : (idx + 1) % CVD_SEQ.length;
-  return { idx, mode: CVD_SEQ[idx] };
 }
 
 /** The `aria-label` of one icon — it MUST reflect the current state, on/off or level. This is the whole

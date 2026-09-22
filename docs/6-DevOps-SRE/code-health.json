@@ -290,6 +290,14 @@
       "globalReach": 0,
       "fanIn": 1
     },
+    "core/visual-cycles.ts": {
+      "codeLines": 13,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "globalReach": 0,
+      "fanIn": 1
+    },
     "core/visual-state.ts": {
       "codeLines": 9,
       "decisionNodes": 0,
@@ -1464,10 +1472,10 @@
       "fanIn": 1
     },
     "ui/pause-icons.ts": {
-      "codeLines": 682,
-      "decisionNodes": 124,
+      "codeLines": 666,
+      "decisionNodes": 122,
       "maxDepth": 11,
-      "fanOut": 20,
+      "fanOut": 19,
       "globalReach": 0,
       "fanIn": 3
     },
@@ -1560,9 +1568,9 @@
       "codeLines": 219,
       "decisionNodes": 31,
       "maxDepth": 2,
-      "fanOut": 10,
+      "fanOut": 11,
       "globalReach": 0,
-      "fanIn": 2
+      "fanIn": 1
     },
     "ui/shell.ts": {
       "codeLines": 270,
