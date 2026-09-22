@@ -581,6 +581,47 @@
         "tests/edges-modo-facil.node.test.js": "tests/easy-mode-edges.node.test.js",
         "tests/empatia-no-idioma-do-arranque.browser.test.js": "tests/empathy-in-the-boot-language.browser.test.js"
       }
+    },
+    "tests-2": {
+      "done": "2026-09-22",
+      "files": {
+        "tests/entrada-por-jogador.node.test.js": "tests/transport-per-player.node.test.js",
+        "tests/escala-fracionaria.node.test.js": "tests/fractional-scale.node.test.js",
+        "tests/escolha-da-voz.browser.test.js": "tests/voice-choice.browser.test.js",
+        "tests/escolha-da-voz.node.test.js": "tests/voice-choice.node.test.js",
+        "tests/espacamento-na-escrita.browser.test.js": "tests/bda-spacing-follows-the-text.browser.test.js",
+        "tests/estado-carregado-no-arranque.browser.test.js": "tests/state-loaded-at-boot.browser.test.js",
+        "tests/estado-carregado-pela-raiz.node.test.js": "tests/state-loaded-by-the-root.node.test.js",
+        "tests/estado-nao-so-por-cor.browser.test.js": "tests/state-never-by-colour-alone.browser.test.js",
+        "tests/exports-sem-consumidor.node.test.js": "tests/exports-without-consumer.node.test.js",
+        "tests/fala-sem-voz.browser.test.js": "tests/a-language-with-no-voice.browser.test.js",
+        "tests/foco-visivel.browser.test.js": "tests/visible-focus.browser.test.js",
+        "tests/folha-de-estilo-ausente.browser.test.js": "tests/missing-stylesheet.browser.test.js",
+        "tests/fonte-arcade.browser.test.js": "tests/the-face-can-draw-the-letters.browser.test.js",
+        "tests/fronteira-de-entrada.node.test.js": "tests/input-boundary.node.test.js",
+        "tests/generos.node.test.js": "tests/genres.node.test.js",
+        "tests/hud-montado-pela-engine.browser.test.js": "tests/hud-mounted-by-the-engine.browser.test.js",
+        "tests/i18n-sem-markup.node.test.js": "tests/i18n-without-markup.node.test.js",
+        "tests/idioma-em-execucao.browser.test.js": "tests/language-changed-mid-game.browser.test.js",
+        "tests/idioma-na-barra.node.test.js": "tests/language-button-on-the-bar.node.test.js",
+        "tests/instrucao-do-botao-falada.node.test.js": "tests/spoken-button-instruction.node.test.js",
+        "tests/interruptor-de-legendas.browser.test.js": "tests/captions-switch.browser.test.js",
+        "tests/isolamento-entre-origens.node.test.js": "tests/cross-origin-isolation.node.test.js",
+        "tests/itens-sem-numero.browser.test.js": "tests/items-without-numbers.browser.test.js",
+        "tests/keyboard-migracao-vocabulario.node.test.js": "tests/keyboard-vocabulary-migration.node.test.js",
+        "tests/kokoro-na-voz.browser.test.js": "tests/kokoro-in-the-voice.browser.test.js",
+        "tests/legenda-de-som-no-rodape.browser.test.js": "tests/sound-caption-in-the-footer.browser.test.js",
+        "tests/link-pular-no-arranque.browser.test.js": "tests/skip-link-at-boot.browser.test.js",
+        "tests/mapeamento-do-jogo.node.test.js": "tests/the-game-declares-its-keyboard.node.test.js",
+        "tests/mapeamento-do-pad.node.test.js": "tests/the-game-declares-its-pad.node.test.js",
+        "tests/mapear-controle.browser.test.js": "tests/map-the-gamepad.browser.test.js",
+        "tests/mapear-teclado-por-modo.browser.test.js": "tests/map-the-keyboard-per-mode.browser.test.js",
+        "tests/mapear-toque.browser.test.js": "tests/map-the-touch-pad.browser.test.js",
+        "tests/marca-alterado-contraste.node.test.js": "tests/changed-mark-contrast.node.test.js",
+        "tests/medir-flashes.browser.test.js": "tests/measure-flashes.browser.test.js",
+        "tests/menu-cresce-com-a-letra.browser.test.js": "tests/menus-grow-with-their-text.browser.test.js",
+        "tests/menus-anunciam-contexto.browser.test.js": "tests/menus-announce-context.browser.test.js"
+      }
     }
   }
 }

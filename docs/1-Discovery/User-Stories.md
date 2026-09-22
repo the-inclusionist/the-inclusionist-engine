@@ -43,14 +43,14 @@ said so. A document that describes the code has to be able to notice when it sto
   `tests/settings-controls.browser.test.js`
 - ✅ As a **player**, I want my old saved mapping to keep working after the engine renames its actions, so that
   an update never silently kills my keys. `app/js/input/vocabulary-migration.ts` ·
-  `tests/keyboard-migracao-vocabulario.node.test.js`
+  `tests/keyboard-vocabulary-migration.node.test.js`
 - ✅ As a **player using a screen reader**, I want **every announcement to reach me in order**, so that I do not
   miss what happened. `app/js/core/a11y-sr.ts` · `tests/a11y-sr.browser.test.js`
 - ✅ As a **deaf player**, I want **sound events captioned**, so that an earcon is never the only carrier of
   information. `app/js/platform/audio-earcons.ts` · `tests/audio-earcons.node.test.js`
 - ✅ As a **player**, I want to **see which settings I changed**, so that I can undo what I did without resetting
   what I did not. `app/js/ui/changed-mark.ts` · `tests/changed-mark.browser.test.js`,
-  `tests/marca-alterado-contraste.node.test.js`
+  `tests/changed-mark-contrast.node.test.js`
 - ✅ As a **player**, I want **every settings menu to restore its own defaults**, so that a wrong turn is always
   one button from undone. `app/js/ui/settings-panel.ts` · `tests/settings-panel.browser.test.js`
 - ✅ As a **player on a small screen**, I want touch targets **big enough to hit and far enough apart**, without

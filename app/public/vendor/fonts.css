@@ -97,7 +97,7 @@
    ignorada para aquele caractere em silêncio.
 
    O ficheiro aqui é o subconjunto LATINO, copiado daquele repositório já verificado, e o gate que o mede
-   é `tests/fonte-arcade.browser.test.js` — pela LARGURA DE AVANÇO, que vem do glifo e portanto do ficheiro. */
+   é `tests/the-face-can-draw-the-letters.browser.test.js` — pela LARGURA DE AVANÇO, que vem do glifo e portanto do ficheiro. */
 @font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/pressstart-400.woff2') format('woff2');}
 
 

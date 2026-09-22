@@ -91,7 +91,7 @@ export function dictionaryGaps(): string[] {
  * A string traz marcação?
  *
  * ⚠️ POR QUE ISTO EXISTE AQUI, E NÃO NOS ~15 SINKS QUE CONSOMEM i18n. O gate
- * `tests/i18n-sem-markup.node.test.js` varre os dicionários DESTA árvore e prova que nenhuma entrada tem
+ * `tests/i18n-without-markup.node.test.js` varre os dicionários DESTA árvore e prova que nenhuma entrada tem
  * tag. Ele não alcança — e não tem como alcançar — o `EXTRA`: são strings que um JOGO regista em tempo de
  * execução, de outro repositório (ADR-0083), e um teste desta árvore não as vê.
  *

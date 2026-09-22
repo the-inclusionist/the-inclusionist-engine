@@ -86,6 +86,7 @@ const MORTOS = {
   'scripts/medir-forma-do-menu.py': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `scripts/measure-menu-shape.py`, e faz exactamente o que fazia',
   'tests/barra-rapida-no-hud.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/quick-bar-in-the-hud.node.test.js`',
   'tests/contract-topologia-e-funcao.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/contract-topology-is-a-function.node.test.js`',
+  'tests/instrucao-do-botao-falada.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/spoken-button-instruction.node.test.js`',
 };
 /*
  * 🔴 AS ENTRADAS DA FASE 3 SÃO DE UMA QUARTA CAUSA, e ela não existia quando este ficheiro nasceu: o ficheiro NÃO MORREU, mudou

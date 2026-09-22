@@ -4,7 +4,7 @@
 // Which exported names does nothing import — no engine module, no engine test, no cartridge (ADR-0170 §3, issue #164)?
 //
 // Two uses:
-//  • `tests/exports-sem-consumidor.node.test.js` calls `semImportadorNoRepositorio()`: the half that runs in CI, where
+//  • `tests/exports-without-consumer.node.test.js` calls `semImportadorNoRepositorio()`: the half that runs in CI, where
 //    the sibling game repositories are not checked out.
 //  • `node scripts/exports-without-consumer.mjs --catalogue ..` measures the sibling repositories too and rewrites
 //    `docs/6-DevOps-SRE/exports-without-consumer.json`: the names a cartridge imports (named, with the place) and the
@@ -117,7 +117,7 @@ if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'exports-without-consumer.m
       else (debt[mod] ??= []).push(n);
     }
   }
-  const sobre = 'Exports no engine module, test or script imports (ADR-0170 §3, issue #164). cartridgeConsumers: the ones a sibling game repository imports, with the place. debt: the ones nothing imports — candidates to become internal; the list only shrinks. A new export with no importer in this repository names its cartridge here. Rewritten by `node scripts/exports-without-consumer.mjs --catalogue ..`; held by tests/exports-sem-consumidor.node.test.js.';
+  const sobre = 'Exports no engine module, test or script imports (ADR-0170 §3, issue #164). cartridgeConsumers: the ones a sibling game repository imports, with the place. debt: the ones nothing imports — candidates to become internal; the list only shrinks. A new export with no importer in this repository names its cartridge here. Rewritten by `node scripts/exports-without-consumer.mjs --catalogue ..`; held by tests/exports-without-consumer.node.test.js.';
   writeFileSync(join(raiz, LISTA_DE_CONSUMIDORES), JSON.stringify({ about: sobre, cartridgeConsumers, debt }, null, 2) + '\n');
   const nDebt = Object.values(debt).reduce((t, v) => t + v.length, 0);
   console.log(`cartridge consumers: ${Object.keys(cartridgeConsumers).length} · debt: ${nDebt} names in ${Object.keys(debt).length} modules`);

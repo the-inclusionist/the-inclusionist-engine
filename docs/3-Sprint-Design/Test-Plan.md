@@ -68,7 +68,7 @@ written down, and the same repository paid for it twice.
    installed on the machine**. If it is installed, `font-family` resolves from the SYSTEM, the vendored
    `@font-face` is never consulted, and renaming that declaration so it can never match leaves the file GREEN.
    📌 The second leg is a property of the MACHINE and cannot be asserted from inside the test: it only shows up
-   by breaking the `@font-face` on purpose and seeing whether anything fails. `tests/fonte-arcade.browser.test.js`
+   by breaking the `@font-face` on purpose and seeing whether anything fails. `tests/the-face-can-draw-the-letters.browser.test.js`
    in this repository carries the method with both legs documented; `game-whackwhack` copied it with one.
 
 📌 `document.fonts.ready` and `fonts.load` are NOT this defect — they wait for a DECLARED face and are correct.

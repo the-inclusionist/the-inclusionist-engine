@@ -132,7 +132,7 @@ describe('core/i18n aceita o dicionário de um CONSUMIDOR (achado 2, de fora do 
 describe('A FRONTEIRA DAS STRINGS DE UM JOGO — marcacao nao entra (issue #106)', () => {
   // ⚠️ POR QUE ESTE GATE EXISTE, e ele fecha um buraco que so apareceu quando a engine virou PACOTE.
   //
-  // `tests/i18n-sem-markup.node.test.js` varre os dicionarios DESTA arvore e prova que nenhuma entrada tem
+  // `tests/i18n-without-markup.node.test.js` varre os dicionarios DESTA arvore e prova que nenhuma entrada tem
   // tag. Ele nao alcanca o `EXTRA` — as strings que um JOGO regista em tempo de execucao, de outro
   // repositorio (ADR-0083). Um teste desta arvore nao as ve, e nao tem como ver.
   //
