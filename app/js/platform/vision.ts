@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/vision — THE FACE LANDMARKER AND THE CAMERA, FROM THE GAME'S OWN ORIGIN (ADR-0213, ADR-0177; issue #196).
 //
-// · MediaPipe `tasks-vision` and the face model are the files the install already fetched and checked by sha256 (`platform/pesados`).
+// · MediaPipe `tasks-vision` and the face model are the files the install already fetched and checked by sha256 (`platform/heavy`).
 //   They are asked for at `heavy/<host><path>` beside the page, so no third-party host is contacted, and a file that is not in the
 //   checked cache is never loaded: the reader says which ones are missing instead, so the child hears why the eyes do not work.
 // · The bundle is imported by an ABSOLUTE address: a relative one resolves against this module, not against the page.
@@ -11,7 +11,7 @@
 //   kept on purpose — nothing about the child's camera leaves the device.
 // · The camera is video only, 640×480: the lab's readings were measured at that size, and a larger capture changed them.
 
-import { HEAVY_FILES, CACHE_HEAVY, deliveryPath } from './pesados.js';
+import { HEAVY_FILES, CACHE_HEAVY, deliveryPath } from './heavy.js';
 
 /** The files the face reader needs, by catalogue id. */
 export const FACE_VISION_FILES = ['visao:runtime', 'visao:runtime:cola', 'visao:runtime:wasm', 'visao:modelo:rosto'] as const;

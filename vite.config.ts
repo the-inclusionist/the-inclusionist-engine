@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { readFileSync } from 'node:fs';
-import { deliveryCacheKey } from './app/js/platform/pesados.js'; // the `heavy/` route's cache key (issue #173)
+import { deliveryCacheKey } from './app/js/platform/heavy.js'; // the `heavy/` route's cache key (issue #173)
 // a page's precache revision carries the hash of `_headers`, so a header change refreshes it (issue #186)
 import { hashDosCabecalhos, revisarPaginasPelosCabecalhos } from './scripts/revisao-das-paginas.mjs';
 // Plugin em .mjs puro (sem tipos): é ferramenta de BUILD, e tipá-la exigiria um segundo tsconfig para o
@@ -123,7 +123,7 @@ export default defineConfig({
             options: {
               cacheName: 'incl-pesados-v2',
               cacheableResponse: { statuses: [200] },
-              // #168: the route READS the checked cache and never WRITES it — only `platform/pesados` writes, after the sha256.
+              // #168: the route READS the checked cache and never WRITES it — only `platform/heavy` writes, after the sha256.
               // Without this a library request that came first would be cached unchecked, and the fetcher would then trust it.
               plugins: [{ cacheWillUpdate: async () => null }],
             },

@@ -10,7 +10,7 @@
 import type { KokoroModule, KokoroSession } from './kokoro.js';
 import type { OnnxRuntime } from './onnx-runtime.js';
 import { KOKORO_MODEL_URL, URL_DO_TOKENIZADOR_KOKORO, kokoroVoiceUrl } from './kokoro.js';
-import { deliveryPath } from './pesados.js';
+import { deliveryPath } from './heavy.js';
 
 /** The file system espeak-ng's Emscripten module exposes — only what this uses. */
 export interface EspeakFileSystem {

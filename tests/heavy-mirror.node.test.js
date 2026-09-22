@@ -8,7 +8,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { HEAVY_FILES } from '../app/js/platform/pesados-catalogo.js';
+import { HEAVY_FILES } from '../app/js/platform/heavy-catalogue.js';
 import { MIRROR_FOLDERS, NOT_MIRRORED, mirrorPathOf, heavySourceOf, baseIsRemote } from '../app/js/platform/heavy-mirror.js';
 
 const BASE = 'https://lfs-oinclusionista.jrocha.dev.br';

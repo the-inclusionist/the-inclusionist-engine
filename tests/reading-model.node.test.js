@@ -19,7 +19,7 @@ import {
   READING_MODELS, READING_RATE, WHISPER_BANDS, WHISPER_FRAMES, WHISPER_SAMPLES,
   logMel, nextToken, readingModelFor, readingTextOf, suppressedTokens,
 } from '../app/js/platform/reading-model.js';
-import { HEAVY_FILES } from '../app/js/platform/pesados-catalogo.js';
+import { HEAVY_FILES } from '../app/js/platform/heavy-catalogue.js';
 
 const truth = JSON.parse(readFileSync('tests/fixtures/reading-ground-truth.json', 'utf8'));
 

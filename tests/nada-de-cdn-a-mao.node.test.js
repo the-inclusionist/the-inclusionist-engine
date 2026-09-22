@@ -87,7 +87,7 @@ const BUSCAS_A_MAO = {
       + 'the project does NOT mirror and why (the voice runtime: espeak-ng is GPL and a mirror obliges publishing its source, '
       + 'issue #192) — named so that «fetched upstream even with a base» is a written decision and not an omission',
   },
-  'platform/pesados-catalogo.ts': {
+  'platform/heavy-catalogue.ts': {
     urls: 5,
     porque:
       'OS RUNTIMES QUE A ENGINE PASSOU A DESCER NA INSTALAÇÃO (ADR-0124, ADR-0132, decisões do Dev ' +

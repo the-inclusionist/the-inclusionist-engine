@@ -5,7 +5,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { loadFaceTracker, loadHandTracker, openCamera, closeCamera, FACE_VISION_FILES, HAND_VISION_FILES } from '../app/js/platform/vision.js';
-import { HEAVY_FILES } from '../app/js/platform/pesados.js';
+import { HEAVY_FILES } from '../app/js/platform/heavy.js';
 
 const BASE = 'https://game.example/play/index.html';
 const upstream = (id) => HEAVY_FILES.find((p) => p.id === id).url;

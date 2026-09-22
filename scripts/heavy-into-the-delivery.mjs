@@ -5,7 +5,7 @@
 // BUILD time, checked against its pinned sha256, and written to `<destination>/heavy/<host><path>` — where the page asks for
 // it. A file whose hash differs stops the build: nothing unchecked reaches a delivery.
 //
-// Usage (after `npm run build`): `npm run pesados:entrega` — builds the package, then `node scripts/pesados-na-entrega.mjs dist`.
+// Usage (after `npm run build`): `npm run heavy:delivery` — builds the package, then `node scripts/heavy-into-the-delivery.mjs dist`.
 // A cartridge, after its own build, runs the published command: `npx inclusionist-heavy dist`. The catalogue is read from the
 // package beside this script, never from the caller's folder.
 // ⚠️ It downloads about 300 MB from Hugging Face, jsDelivr and Google Storage: the build machine
@@ -23,7 +23,7 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 
 /** The compiled catalogue of the package this script ships in — beside it, whatever folder the build runs from. */
 export function moduloDoPacote() {
-  return new URL('../dist-pkg/platform/pesados.js', import.meta.url).href;
+  return new URL('../dist-pkg/platform/heavy.js', import.meta.url).href;
 }
 
 const sha256DoNode = (buf) => createHash('sha256').update(Buffer.from(buf)).digest('hex');
@@ -102,7 +102,7 @@ if (executado) {
   const { destino, kokoro, reading, commands, base } = argumentosDaEntrega(process.argv.slice(2));
   if (!destino) { console.error('usage: inclusionist-heavy <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es]…'); process.exit(2); }
   const modulo = moduloDoPacote();
-  if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/pesados.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
+  if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/heavy.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
   const { HEAVY_FILES, deliveryPath, heavyAtBoot } = await import(modulo);
   const { heavySourceOf } = await import(new URL('../dist-pkg/platform/heavy-mirror.js', import.meta.url).href);
   // one pass per language, because the start asks for ONE and the delivery may hold several

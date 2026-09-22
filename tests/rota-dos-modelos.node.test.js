@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { CACHE_HEAVY } from '../app/js/platform/pesados.js';
+import { CACHE_HEAVY } from '../app/js/platform/heavy.js';
 
 const CONFIG = readFileSync(fileURLToPath(new URL('../vite.config.ts', import.meta.url)), 'utf8');
 

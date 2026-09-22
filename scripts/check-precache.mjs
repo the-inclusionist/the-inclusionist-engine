@@ -326,7 +326,7 @@ if (emFalta.length > 0) {
  * IMPRESSO em toda corrida — o que deixou de existir é a reprovação.
  *
  * 📌 E O TECTO NUNCA FOI O QUE TRAVAVA OS RUNTIMES. ADR-0124 has MediaPipe arrive through
- * `platform/pesados`, na INSTALAÇÃO, e não pelo manifesto de precache: 11,21 MB nunca iam caber aqui e nunca
+ * `platform/heavy`, na INSTALAÇÃO, e não pelo manifesto de precache: 11,21 MB nunca iam caber aqui e nunca
  * precisaram de caber. O sujeito deste ficheiro é a DEMO (o quiz da engine); a unidade que uma criança instala
  * é o `the-inclusionist-site` (ADR-0117), e o primeiro dia do PRODUTO é um número que ainda não existe.
  *

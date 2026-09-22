@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { downloadHeavy, bytesLeftToDownload, HEAVY_FILES, CACHE_HEAVY, sha256Hex, deliveryPath, heavyAtBoot } from '../app/js/platform/pesados.js';
+import { downloadHeavy, bytesLeftToDownload, HEAVY_FILES, CACHE_HEAVY, sha256Hex, deliveryPath, heavyAtBoot } from '../app/js/platform/heavy.js';
 
 /** Uma Cache Storage de mentira, que CONTA o que lhe pedem. */
 function cacheFalsa(jaTem = []) {

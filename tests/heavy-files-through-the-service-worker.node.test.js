@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { HEAVY_FILES, deliveryPath, deliveryCacheKey } from '../app/js/platform/pesados.js';
+import { HEAVY_FILES, deliveryPath, deliveryCacheKey } from '../app/js/platform/heavy.js';
 
 const CONFIG = readFileSync(join(process.cwd(), 'vite.config.ts'), 'utf8');
 const CONFIG_LIMPA = CONFIG.split(/\r?\n/).filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');

@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { HEAVY_FILES } from '../app/js/platform/pesados.js';
+import { HEAVY_FILES } from '../app/js/platform/heavy.js';
 
 const HEADERS = readFileSync(join(process.cwd(), 'app', 'public', '_headers'), 'utf8');
 

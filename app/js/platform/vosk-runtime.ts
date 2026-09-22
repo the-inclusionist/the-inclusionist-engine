@@ -2,7 +2,7 @@
 // platform/vosk-runtime — THE RECOGNISER THAT HEARS COMMANDS, FROM THE GAME'S OWN ORIGIN (ADR-0189, ADR-0193; issue #184).
 //
 // The same shape as `platform/vision`, and for the same reasons: the runtime and the model are the files the install already
-// fetched and checked by sha256 (`platform/pesados`), they are asked for at `heavy/<host><path>` beside the page, and a file
+// fetched and checked by sha256 (`platform/heavy`), they are asked for at `heavy/<host><path>` beside the page, and a file
 // that is not in the checked cache is never loaded — the loader answers WHICH ones are missing, so the child hears why speaking
 // does not work instead of meeting a button that does nothing.
 //
@@ -21,8 +21,8 @@
 // neighbours by itself») had seven red mutations against a double built in the image of that belief. A double can only measure
 // the contract you think you have; the one that exists was three lines of the served file away.
 
-import { HEAVY_FILES, CACHE_HEAVY, deliveryPath } from './pesados.js';
-import { commandsLanguageOf } from './pesados-catalogo.js';
+import { HEAVY_FILES, CACHE_HEAVY, deliveryPath } from './heavy.js';
+import { commandsLanguageOf } from './heavy-catalogue.js';
 
 /** The three files of the runtime. The model is chosen by language, below. */
 export const VOICE_RUNTIME_FILES = ['commands:runtime', 'commands:runtime:worker', 'commands:runtime:wasm'] as const;

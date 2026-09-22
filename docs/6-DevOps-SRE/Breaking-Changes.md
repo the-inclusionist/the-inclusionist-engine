@@ -1488,6 +1488,36 @@ thing in this repository, and a moved file that was retyped loses all of it.
 | `app/js/core/rotulo-acessivel.ts` | `app/js/core/accessible-label.ts` |
 | `tests/rotulo-acessivel.node.test.js` | `tests/accessible-label.node.test.js` |
 
+## AU · The FILE names speak English too — `platform`, and the delivery's last Portuguese words (ADR-0219 phase 3, issue #202)
+
+**What this is.** The two modules of the heavy delivery change path, and with them the script a cartridge runs after its own
+build. The names inside them were already English — `HEAVY_FILES`, `CACHE_HEAVY`, `downloadHeavy`, `heavyAtBoot` — so the files
+were the last place the old word lived. 📏 The house spells it **catalogue**, 159 times against 36; that was measured, not picked.
+
+🔴 **AND TWO THINGS NOTE AN RENAMED AND NEVER FOLLOWED THROUGH, fixed here.** `docs/6-DevOps-SRE/models.md` still told a school
+to run **`npx inclusionist-pesados`**, a command that stopped existing on 2026-09-21, and still described the delivery folder as
+`pesados/` when it has been `heavy/` since the same day. A page that names a command nobody can run is worse than no page.
+`package-lock.json` carried the same stale `bin` name and was regenerated.
+
+**What to do.** Change the path in your imports by the table. If you script the delivery, the npm script inside this repository
+is now `npm run heavy:delivery`; the published command has been `npx inclusionist-heavy` since note AN and does not change here.
+
+⚠️ **What did NOT change, and is not an oversight:** the cache is still called `incl-pesados-v2`. Note AN already said why —
+renaming it orphans every byte a school has already downloaded, and 814 MiB is not a thing to make a school fetch twice for a
+spelling.
+
+<!-- printed by `node scripts/print-rename-table.mjs --files platform` -->
+
+**platform** — 5 files, moved 2026-09-22
+
+| was | is |
+|---|---|
+| `app/js/platform/pesados-catalogo.ts` | `app/js/platform/heavy-catalogue.ts` |
+| `app/js/platform/pesados.ts` | `app/js/platform/heavy.ts` |
+| `scripts/pesados-na-entrega.mjs` | `scripts/heavy-into-the-delivery.mjs` |
+| `tests/pesados-na-entrega.node.test.js` | `tests/heavy-into-the-delivery.node.test.js` |
+| `tests/pesados.node.test.js` | `tests/heavy.node.test.js` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

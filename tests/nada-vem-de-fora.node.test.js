@@ -10,7 +10,7 @@
 // transporte assistido — o `ui/webcam` carrega o WebGazer de `webgazer.cs.brown.edu`. Ou seja: o único
 // subsistema que exigia internet era o que serve a criança que menos pode ir buscar outra coisa.
 //
-// ⚠️ E EM 2026-09-09 PASSARAM A SER DUAS, POR DECISÃO E NÃO POR DERIVA. O `platform/pesados` desce as quatro
+// ⚠️ E EM 2026-09-09 PASSARAM A SER DUAS, POR DECISÃO E NÃO POR DERIVA. O `platform/heavy` desce as quatro
 // vozes neurais no primeiro carregamento (ADR-0110 (b), pedido do Dev). A distinção que este ficheiro tem de
 // fazer deixou de ser «há busca ou não há» e passou a ser QUANDO: uma busca na INSTALAÇÃO cumpre o pilar 8
 // («primeiro dia online, depois offline-first», errata ditada pelo Dev); uma busca PREGUIÇOSA no primeiro uso
@@ -97,7 +97,7 @@ const DECLARADAS = {
   'https://lfs-oinclusionista.jrocha.dev.br/vosk-models': 'THE MIRROR ABOVE, the three command models — alphacephei\'s small '
     + 'ones (Apache-2.0) repacked deterministically as the `.tar.gz` that build loads. 31–39 MiB a language, and a device asks '
     + 'for the child\'s',
-  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1': 'O RUNTIME DE VISÃO (ADR-0124), fixado na versão e descido na INSTALAÇÃO pelo `platform/pesados`. Não é busca preguiçosa: é a instalação do PWA, que o ADR-0116 declarou ser um acto de rede legítimo. 📏 Medido: os três ficheiros respondem 200 com CORS aberto',
+  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1': 'O RUNTIME DE VISÃO (ADR-0124), fixado na versão e descido na INSTALAÇÃO pelo `platform/heavy`. Não é busca preguiçosa: é a instalação do PWA, que o ADR-0116 declarou ser um acto de rede legítimo. 📏 Medido: os três ficheiros respondem 200 com CORS aberto',
   'https://storage.googleapis.com/mediapipe-models': 'OS MODELOS `.task` do MediaPipe — rosto+íris, gestos e mãos. ⚠️ Host diferente do runtime porque é assim que o Google os publica, e sem eles os 11,7 MB de WebAssembly não reconhecem coisa nenhuma: é o `.onnx` sem o `.onnx.json` outra vez. 📏 Medidos em 2026-09-09, `float16`',
 };
 
@@ -109,7 +109,7 @@ const DECLARADAS = {
  * como um gate é desligado antes de apanhar o verdadeiro.
  */
 // 🔴 ERA `\bfetch\s*\(` ATÉ 2026-09-09, E O BUSCADOR DAS COISAS PESADAS PASSOU-LHE AO LADO. O
-// `platform/pesados.ts` RECEBE o `fetch` (`readonly buscar?: typeof fetch`, com
+// `platform/heavy.ts` RECEBE o `fetch` (`readonly buscar?: typeof fetch`, com
 // `opcoes.buscar ?? fetch`) e chama-o por outro nome — `buscar(p.url)`. A primitiva está lá, o nome
 // dela desapareceu do sítio onde ela é usada.
 // ⚠️ E ISSO NÃO FOI EVASÃO, FOI BOM DESENHO: injectar a primitiva é o que torna o buscador testável sem
@@ -169,7 +169,7 @@ const TOCAM_NA_REDE = {
     + 'por caminho relativo. ⚠️ Um cartucho que ponha uma URL absoluta em `spriteBase` transforma isto numa '
     + 'busca sem tocar na engine; o crivo não o alcança porque o literal viveria no jogo, e fica escrito aqui '
     + 'para não ser descoberto numa escola',
-  'platform/pesados.ts': '🎯 A SEGUNDA BUSCA EXTERNA DA ENGINE, e é DECIDIDA — ADR-0110 (b): os quatro '
+  'platform/heavy.ts': '🎯 A SEGUNDA BUSCA EXTERNA DA ENGINE, e é DECIDIDA — ADR-0110 (b): os quatro '
     + 'modelos de voz não viajam no pacote e descem no primeiro carregamento. ⚠️ NÃO VIOLA O PILAR 8, e a '
     + 'diferença é a errata que o próprio Dev ditou: «primeiro uso não pode ser considerado rede porque o '
     + 'próprio sistema está sendo baixado». O que o pilar proíbe é depender da rede DEPOIS do primeiro dia — '
@@ -254,7 +254,7 @@ describe('pilar 8 · nada chega de fora sem estar declarado', () => {
 //      regressao.
 //
 //   5. 🎯 O DISCRIMINADOR DE VOLTA A `\bfetch\s*\(` (2026-09-09) -> reprova o inventario, e e a mutacao que
-//      prova o conserto do dia: com ela, o `platform/pesados` — que RECEBE o `fetch` e o chama por outro
+//      prova o conserto do dia: com ela, o `platform/heavy` — que RECEBE o `fetch` e o chama por outro
 //      nome — desaparece do conjunto medido e a engine volta a parecer ter tres modulos de rede em vez de
 //      quatro. ⚠️ Ela nao apanha um descuido: apanha BOM DESENHO a cegar um crivo, que e o buraco mais caro
 //      porque ninguem fez nada de errado.

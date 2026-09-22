@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/pesados.ts — AS COISAS PESADAS, BAIXADAS NO PRIMEIRO CARREGAMENTO (ADR-0110, ADR-0116, ADR-0119).
+// platform/heavy.ts — AS COISAS PESADAS, BAIXADAS NO PRIMEIRO CARREGAMENTO (ADR-0110, ADR-0116, ADR-0119).
 //
 // ========================= O QUE ISTO É =========================
 // O pilar 8 diz «PWA no primeiro dia ONLINE, depois OFFLINE-FIRST», e o ADR-0116 tirou a contradição que
@@ -21,7 +21,7 @@
 //     arranque de um jogo por causa de um recurso que ele nem usa hoje.
 //  3. **IDEMPOTENTE.** O que já está na Cache Storage não é buscado outra vez — é o que torna isto seguro de
 //     chamar em todo arranque em vez de só «no primeiro», que ninguém sabe detectar com honestidade.
-import { CACHE_HEAVY, HEAVY_FILES, readingLanguageOf, commandsLanguageOf, type HeavyFile } from './pesados-catalogo.js';
+import { CACHE_HEAVY, HEAVY_FILES, readingLanguageOf, commandsLanguageOf, type HeavyFile } from './heavy-catalogue.js';
 
 export { CACHE_HEAVY, HEAVY_FILES };
 export type { HeavyFile };

@@ -133,7 +133,7 @@ import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registerKeyboardMapping, saveKB, setKB, factoryWithGame, type KBDefaults } from '../input/keyboard.js';
 import { registerPadMapping } from '../input/pad-defaults.js';
-import { downloadHeavy, heavyAtBoot, type HeavyReport } from '../platform/pesados.js';
+import { downloadHeavy, heavyAtBoot, type HeavyReport } from '../platform/heavy.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 
 /** O que o jogo empresta do documento. Tudo opcional menos `doc`/`win`: o que faltar vira `problems`. */

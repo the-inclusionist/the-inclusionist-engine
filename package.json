@@ -108,10 +108,10 @@
     "README.md",
     "docs/LICENSES.md",
     "docs/CREDITS.md",
-    "scripts/pesados-na-entrega.mjs"
+    "scripts/heavy-into-the-delivery.mjs"
   ],
   "bin": {
-    "inclusionist-heavy": "scripts/pesados-na-entrega.mjs"
+    "inclusionist-heavy": "scripts/heavy-into-the-delivery.mjs"
   },
   "comment:no-dependencies": [
     "⚠️ ESTE PACOTE NÃO TEM `dependencies`, E ISSO É UMA DECISÃO MEDIDA (ADR-0094), não um acaso.",
@@ -142,7 +142,7 @@
     "build:pkg": "node scripts/clean-dist-pkg.mjs && tsc -p tsconfig.pkg.json && node scripts/stamp-license.mjs dist-pkg",
     "prepare": "npm run build:pkg",
     "prepack": "npm run build:pkg",
-    "pesados:entrega": "npm run build:pkg && node scripts/pesados-na-entrega.mjs dist --kokoro",
+    "heavy:delivery": "npm run build:pkg && node scripts/heavy-into-the-delivery.mjs dist --kokoro",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "validate": "npm run typecheck && vitest run && npm run build:pkg && vite build",

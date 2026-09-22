@@ -799,12 +799,29 @@
     "STEPS_TO_FLOOR",
     "guideIntensity"
   ],
+  "platform/heavy-catalogue.ts": [
+    "CACHE_HEAVY",
+    "HEAVY_FILES",
+    "HeavyFile",
+    "commandsLanguageOf",
+    "readingLanguageOf"
+  ],
   "platform/heavy-mirror.ts": [
     "MIRROR_FOLDERS",
     "NOT_MIRRORED",
     "baseIsRemote",
     "heavySourceOf",
     "mirrorPathOf"
+  ],
+  "platform/heavy.ts": [
+    "HeavyOptions",
+    "HeavyReport",
+    "bytesLeftToDownload",
+    "deliveryCacheKey",
+    "deliveryPath",
+    "downloadHeavy",
+    "heavyAtBoot",
+    "sha256Hex"
   ],
   "platform/interruptible-speech.ts": [
     "InterruptibleSpeech",
@@ -865,23 +882,6 @@
     "OnnxTensor",
     "atDelivery",
     "loadOnnxRuntime"
-  ],
-  "platform/pesados-catalogo.ts": [
-    "CACHE_HEAVY",
-    "HEAVY_FILES",
-    "HeavyFile",
-    "commandsLanguageOf",
-    "readingLanguageOf"
-  ],
-  "platform/pesados.ts": [
-    "HeavyOptions",
-    "HeavyReport",
-    "bytesLeftToDownload",
-    "deliveryCacheKey",
-    "deliveryPath",
-    "downloadHeavy",
-    "heavyAtBoot",
-    "sha256Hex"
   ],
   "platform/reading-in-worker.ts": [
     "ReadingInWorker",

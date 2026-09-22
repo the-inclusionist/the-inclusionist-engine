@@ -1248,6 +1248,31 @@
       "volume"
     ]
   },
+  "platform/heavy-catalogue.ts": {
+    "interface HeavyFile": [
+      "bytes?",
+      "id",
+      "porQueNaoTemFonte?",
+      "sha256?",
+      "url"
+    ]
+  },
+  "platform/heavy.ts": {
+    "interface HeavyReport": [
+      "bytes?",
+      "erro?",
+      "estado",
+      "id"
+    ],
+    "interface HeavyOptions": [
+      "aoProgredir?",
+      "apenas?",
+      "base?",
+      "buscar?",
+      "cacheStorage?",
+      "digest?"
+    ]
+  },
   "platform/interruptible-speech.ts": {
     "interface SpeechEngine": [
       "parar",
@@ -1355,31 +1380,6 @@
     "interface OnnxRuntimeDeps": [
       "base",
       "importModule?"
-    ]
-  },
-  "platform/pesados-catalogo.ts": {
-    "interface HeavyFile": [
-      "bytes?",
-      "id",
-      "porQueNaoTemFonte?",
-      "sha256?",
-      "url"
-    ]
-  },
-  "platform/pesados.ts": {
-    "interface HeavyReport": [
-      "bytes?",
-      "erro?",
-      "estado",
-      "id"
-    ],
-    "interface HeavyOptions": [
-      "aoProgredir?",
-      "apenas?",
-      "base?",
-      "buscar?",
-      "cacheStorage?",
-      "digest?"
     ]
   },
   "platform/reading-in-worker.ts": {

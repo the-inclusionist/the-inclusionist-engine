@@ -117,7 +117,7 @@ describe('what the start fetches (ADR-0198 §5)', () => {
     try {
       document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p><div id="game-region" tabindex="-1"></div>';
       const { createGame } = await import('../app/js/boot/create-game.js');
-      const { heavyAtBoot, HEAVY_FILES } = await import('../app/js/platform/pesados.js');
+      const { heavyAtBoot, HEAVY_FILES } = await import('../app/js/platform/heavy.js');
       const { bcp47 } = await import('../app/js/core/i18n.js');
       createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, players: [{ ctrl: 0 }] });
       // ⚠️ The command model is asked for WITHOUT the game declaring anything (issue #184), so the expected list is the boot's own

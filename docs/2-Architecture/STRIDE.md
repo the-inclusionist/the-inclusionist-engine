@@ -13,11 +13,11 @@ executable code and models from four third-party hosts, by default, on the child
 
 | # | Boundary | What crosses | Where in the code |
 |---|---|---|---|
-| B1 | device → Hugging Face | the four neural voices (~241 MB of `.onnx` + `.onnx.json`) | `platform/voice-plan`, `platform/pesados` |
-| B2 | device → jsDelivr | `@mintplex-labs/piper-tts-web@1.0.5` (JavaScript) and `onnxruntime-web@1.20.1` (JavaScript + WebAssembly), `@mediapipe/tasks-vision@1.0.1` (JavaScript + WebAssembly) | `platform/pesados-catalogo` |
-| B3 | device → Google Storage | the MediaPipe `.task` models | `platform/pesados-catalogo` |
+| B1 | device → Hugging Face | the four neural voices (~241 MB of `.onnx` + `.onnx.json`) | `platform/voice-plan`, `platform/heavy` |
+| B2 | device → jsDelivr | `@mintplex-labs/piper-tts-web@1.0.5` (JavaScript) and `onnxruntime-web@1.20.1` (JavaScript + WebAssembly), `@mediapipe/tasks-vision@1.0.1` (JavaScript + WebAssembly) | `platform/heavy-catalogue` |
+| B3 | device → Google Storage | the MediaPipe `.task` models | `platform/heavy-catalogue` |
 | B5 | author → page | activity text written by adults (ADR-0052) reaching the DOM | the `innerHTML` sinks |
-| B6 | page ↔ device storage | the child's settings (`incl_*`) and each game's data (`incl.<game>.*`) in `localStorage` / Cache Storage | `platform/storage`, `platform/pesados` |
+| B6 | page ↔ device storage | the child's settings (`incl_*`) and each game's data (`incl.<game>.*`) in `localStorage` / Cache Storage | `platform/storage`, `platform/heavy` |
 | B7 | host → page | the bundle and its service worker | Cloudflare Pages, `vite-plugin-pwa` |
 
 📌 **B1–B3 run by default at every boot** (`createGame`'s `downloadHeavy`, idempotent: what is cached is not fetched

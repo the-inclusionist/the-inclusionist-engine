@@ -8,7 +8,7 @@
 
 | piece | where | state |
 |---|---|---|
-| MediaPipe `tasks-vision` 1.0.1 runtime (bundle, glue, 11.8 MB wasm) | `platform/pesados-catalogo` | catalogued with sha256; **nothing reads it** (`tests/o-que-desce-tem-quem-leia` declares the debt) |
+| MediaPipe `tasks-vision` 1.0.1 runtime (bundle, glue, 11.8 MB wasm) | `platform/heavy-catalogue` | catalogued with sha256; **nothing reads it** (`tests/o-que-desce-tem-quem-leia` declares the debt) |
 | face landmarker model (float16, 3.8 MB) | same | catalogued; unread |
 | gesture recogniser model (float16, 8.4 MB) and hand landmarker (7.8 MB) | same | catalogued; unread |
 | WebGazer (1.9 MB) | same; `ui/webcam.ts` runs it from the checked cache (#169) | **wired, but to the platformer's keys**: gaze left/right/up → synthetic `KeyA`/`KeyD`/`Space` — a game's keys inside the engine |
@@ -48,7 +48,7 @@ camera on by itself at the next boot.
 
 ## What has to be measured before building, with the Dev's permission for the downloads
 
-1. The runtime and each model load under the engine's CSP from the delivery (`pesados/`).
+1. The runtime and each model load under the engine's CSP from the delivery (`heavy/`).
 2. Frames per second of the face landmarker and the gesture recogniser on the weakest school device available — a Chromebook or
    Positivo — since both run on the CPU.
 3. A camera is needed to measure any of it; the preview pane has none.

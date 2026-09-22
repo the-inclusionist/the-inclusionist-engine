@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { HEAVY_FILES } from '../app/js/platform/pesados-catalogo.js';
+import { HEAVY_FILES } from '../app/js/platform/heavy-catalogue.js';
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 const ficheiros = (dir = RAIZ) => readdirSync(dir).flatMap((n) => {

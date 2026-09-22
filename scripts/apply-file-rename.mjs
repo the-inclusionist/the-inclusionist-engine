@@ -68,14 +68,55 @@ export function rewriteReferences(text, fromFile, moves) {
     return `${head}${quote}${novo.startsWith('.') ? novo : `./${novo}`}${quote}`;
   });
   // Pass 2: the path written as DATA. Longest first, so `a/b/c.ts` is not half-replaced by a rule about `a/b`.
-  for (const [velho, novo] of Object.entries(moves).sort(([a], [b]) => b.length - a.length)) {
-    for (const [de, para] of [[velho, novo], [velho.replace(/\.ts$/, '.js'), novo.replace(/\.ts$/, '.js')]]) {
-      if (de === para || !out.includes(de)) continue;
-      changed += out.split(de).length - 1;
-      out = out.split(de).join(para);
+  for (const [de, para] of dataForms(moves)) {
+    if (de instanceof RegExp) {
+      // ⚠️ COUNTED BY MATCHING, not by picking the literal head out of `source`: V8 ESCAPES THE SLASH in the source of a
+      // `RegExp` built from a string, so `platform/pesados` comes back as `platform\/pesados` and a text search for it finds
+      // nothing. The count was zero, the caller reads the count to decide whether to write, and the file was silently skipped —
+      // a rewrite that happened and was thrown away.
+      changed += out.match(de)?.length ?? 0;
+      out = out.replace(de, para);
+      continue;
     }
+    if (de === para || !out.includes(de)) continue;
+    changed += out.split(de).length - 1;
+    out = out.split(de).join(para);
   }
   return { text: out, changed };
+}
+
+/*
+ * THE THREE SHAPES A PATH IS WRITTEN IN HERE, and the third one was learned the expensive way — by nearly shipping a broken
+ * `bin`. Renaming `app/js/platform/pesados.ts` left `scripts/…` asking for `../dist-pkg/platform/pesados.js`, which is the
+ * COMPILED MIRROR of the same file: the tool had never heard of it, the typecheck cannot see inside a string, and the published
+ * command would have died on a school's machine at the one moment it matters.
+ *
+ *   1. `app/js/platform/pesados.ts` — the repo-relative path, as a ledger keyed by path writes it;
+ *   2. `platform/pesados.ts` — the same without the `app/js/` prefix, which is how the surface portrait, the i18n ceiling and
+ *      the CDN gate key a module, AND how the `dist-pkg/` mirror is reached;
+ *   3. `platform/pesados` — extensionless, which is how PROSE names a module, in backticks.
+ *
+ * ⚠️ The extensionless form is the one that can bite: `core/ring` is a prefix of a `core/ring-buffer` that does not exist today
+ * but could tomorrow. So it is the only one matched by expression rather than by text, and it refuses to match when what follows
+ * is a letter, a digit, a dash or a dot — it renames a NAME, never the head of a longer one.
+ */
+export function dataForms(moves) {
+  const pares = [];
+  for (const [velho, novo] of Object.entries(moves)) {
+    const curtos = velho.startsWith('app/js/')
+      ? [[velho, novo], [velho.slice('app/js/'.length), novo.slice('app/js/'.length)]]
+      : [[velho, novo]];
+    for (const [v, n] of curtos) {
+      pares.push([v, n]);
+      pares.push([v.replace(/\.ts$/, '.js'), n.replace(/\.ts$/, '.js')]);
+      const semExt = v.replace(/\.[a-z.]+$/i, '');
+      pares.push([new RegExp(`${semExt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w.-])`, 'g'), n.replace(/\.[a-z.]+$/i, '')]);
+    }
+  }
+  // Longest first, and a literal before the expression that contains it, so a short rule never eats a long one's prefix.
+  return pares
+    .filter(([de, para]) => de instanceof RegExp || de !== para)
+    .sort(([a], [b]) => (b instanceof RegExp ? b.source.length : b.length) - (a instanceof RegExp ? a.source.length : a.length));
 }
 
 if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'apply-file-rename.mjs') {

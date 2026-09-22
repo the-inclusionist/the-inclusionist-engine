@@ -485,6 +485,16 @@
         "app/js/core/rotulo-acessivel.ts": "app/js/core/accessible-label.ts",
         "tests/rotulo-acessivel.node.test.js": "tests/accessible-label.node.test.js"
       }
+    },
+    "platform": {
+      "done": "2026-09-22",
+      "files": {
+        "app/js/platform/pesados.ts": "app/js/platform/heavy.ts",
+        "app/js/platform/pesados-catalogo.ts": "app/js/platform/heavy-catalogue.ts",
+        "scripts/pesados-na-entrega.mjs": "scripts/heavy-into-the-delivery.mjs",
+        "tests/pesados.node.test.js": "tests/heavy.node.test.js",
+        "tests/pesados-na-entrega.node.test.js": "tests/heavy-into-the-delivery.node.test.js"
+      }
     }
   }
 }

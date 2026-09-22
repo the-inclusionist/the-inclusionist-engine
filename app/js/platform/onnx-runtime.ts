@@ -12,8 +12,8 @@
 // ⚠️ NOTHING HERE IS IMPORTED FROM npm: `import(url)` of an address on our own origin needs no bundler and puts no megabyte in
 // the chunk of a game that runs no graph at all.
 
-import { deliveryPath } from './pesados.js';
-import { HEAVY_FILES } from './pesados-catalogo.js';
+import { deliveryPath } from './heavy.js';
+import { HEAVY_FILES } from './heavy-catalogue.js';
 
 export interface OnnxTensor { readonly data: unknown; readonly dims?: readonly number[] }
 /** An open graph: the names it answers with, and one run. */

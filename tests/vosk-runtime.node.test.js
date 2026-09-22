@@ -8,7 +8,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { loadVoskRuntime, commandModelId, VOICE_RUNTIME_FILES } from '../app/js/platform/vosk-runtime.js';
-import { HEAVY_FILES, deliveryPath } from '../app/js/platform/pesados.js';
+import { HEAVY_FILES, deliveryPath } from '../app/js/platform/heavy.js';
 
 const BASE = 'https://escola.exemplo/jogo/';
 const urlOf = (id) => HEAVY_FILES.find((p) => p.id === id).url;

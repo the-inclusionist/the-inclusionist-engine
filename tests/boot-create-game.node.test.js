@@ -874,7 +874,7 @@ describe('createGame em execução', () => {
    */
   it('🔴 [Right] o arranque só baixa a voz neural do jogo que a pediu', async () => {
     const pedidos = [];
-    vi.doMock('../app/js/platform/pesados.js', async (original) => ({
+    vi.doMock('../app/js/platform/heavy.js', async (original) => ({
       ...(await original()),
       downloadHeavy: async ({ apenas }) => { pedidos.push(apenas); },
     }));
@@ -891,7 +891,7 @@ describe('createGame em execução', () => {
       expect(semVoz.concat(comVoz).filter((id) => id.startsWith('reading:')),
         'nenhum destes dois jogos escuta, e um modelo de leitura desceu').toEqual([]);
     } finally {
-      vi.doUnmock('../app/js/platform/pesados.js');
+      vi.doUnmock('../app/js/platform/heavy.js');
       vi.resetModules();
     }
   });
@@ -903,7 +903,7 @@ describe('createGame em execução', () => {
    */
   it('🔴 [Right] o jogo que ESCUTA baixa o modelo de uma língua só, e é a da interface', async () => {
     const pedidos = [];
-    vi.doMock('../app/js/platform/pesados.js', async (original) => ({
+    vi.doMock('../app/js/platform/heavy.js', async (original) => ({
       ...(await original()),
       downloadHeavy: async ({ apenas }) => { pedidos.push(apenas); },
     }));
@@ -917,7 +917,7 @@ describe('createGame em execução', () => {
       const linguas = new Set(leitura.map((id) => id.split(':')[1]));
       expect([...linguas], 'desceu mais de uma língua, ou a língua errada').toEqual([bcp47().split('-')[0].toLowerCase()]);
     } finally {
-      vi.doUnmock('../app/js/platform/pesados.js');
+      vi.doUnmock('../app/js/platform/heavy.js');
       vi.resetModules();
     }
   });

@@ -19,15 +19,15 @@ send the child's voice to a server is never built.
 
 ## Where the files live (ADR-0177, ADR-0203)
 
-Every heavy file is in `app/js/platform/pesados-catalogo.ts` with its upstream address and sha256. The **build** fetches it into the
-delivery; the page asks for it at `pesados/<host><path>` on its own origin and the service worker answers from the checked cache.
+Every heavy file is in `app/js/platform/heavy-catalogue.ts` with its upstream address and sha256. The **build** fetches it into the
+delivery; the page asks for it at `heavy/<host><path>` on its own origin and the service worker answers from the checked cache.
 
 **What goes into a delivery is what the game declared** (ADR-0216 §3), said to the build as flags:
 
 ```powershell
-npx inclusionist-pesados dist                              # a game that neither speaks nor listens: vision only
-npx inclusionist-pesados dist --kokoro                     # uses: { neuralVoice: true }  → +372 MiB
-npx inclusionist-pesados dist --reading pt --reading en    # uses: { reading: true }      → +378 MiB, +162 MiB
+npx inclusionist-heavy dist                                # a game that neither speaks nor listens: vision only
+npx inclusionist-heavy dist --kokoro                       # uses: { neuralVoice: true }  → +372 MiB
+npx inclusionist-heavy dist --reading pt --reading en    # uses: { reading: true }      → +378 MiB, +162 MiB
 ```
 
 `--reading` takes a language and repeats, because a reading model is **per language** (pt 378 MiB, en 162, es 310) and a school
@@ -37,7 +37,7 @@ reads in one or two of them, not three. At run time the start asks for the one t
 mirror — the project's Cloudflare, a school's own server, or a folder on the build machine, which needs no network at all:
 
 ```powershell
-npx inclusionist-pesados dist --base https://lfs-oinclusionista.jrocha.dev.br
+npx inclusionist-heavy dist --base https://lfs-oinclusionista.jrocha.dev.br
 $env:INCLUSIONIST_HEAVY_BASE = 'C:\Users\<you>\Claude\the-inclusionist-lfs'   # or a .env beside the build (.env.example)
 ```
 
@@ -46,9 +46,9 @@ mirror serves it under is `platform/heavy-mirror`, written once. **The sha256 ch
 bytes writes nothing and the build fails naming the address — which is what makes pointing elsewhere safe, and why the base is
 not something anyone has to trust. The delivery path never changes, because it is what the child's page asks for.
 
-📏 **Measured on 2026-09-21, against the project's own mirror**: `npx inclusionist-pesados <dir> --base
+📏 **Measured on 2026-09-21, against the project's own mirror**: `npx inclusionist-heavy <dir> --base
 https://lfs-oinclusionista.jrocha.dev.br` fetched the six vision files — 30.7 MiB — in 5.1 s, every one checked against its
-sha256, and wrote them under `pesados/cdn.jsdelivr.net/…` and `pesados/storage.googleapis.com/…`. That is the whole point in one
+sha256, and wrote them under `heavy/cdn.jsdelivr.net/…` and `heavy/storage.googleapis.com/…`. That is the whole point in one
 line: **the bytes came from Cloudflare and the paths are still the upstream ones**, so a page built this way asks for exactly
 what a page built from upstream asks for. 📌 It also answers the older plan of «putting the project's addresses in the catalogue
 in place of the upstream ones»: nothing in the catalogue has to move, and it should not — the upstream address is the provenance

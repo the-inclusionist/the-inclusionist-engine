@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { KOKORO_VOICES, tokenizar, sentenceStyle, eFala, wavDe, MAX_KOKORO_TOKENS, STYLE_DIMENSION } from '../app/js/platform/kokoro.js';
 import { voicesForLocale } from '../app/js/platform/voice-plan.js';
-import { HEAVY_FILES } from '../app/js/platform/pesados-catalogo.js';
+import { HEAVY_FILES } from '../app/js/platform/heavy-catalogue.js';
 
 describe('the Kokoro catalogue', () => {
   it('🔴 [Right] Portuguese and Spanish hold three voices each; English twenty-eight, American and British', () => {

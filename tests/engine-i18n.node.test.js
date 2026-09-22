@@ -311,7 +311,7 @@ const CRU_CONHECIDO = {
                                      // «o bundle carregou e não definiu o global — a entrega tem o ficheiro errado». Nenhuma
                                      // criança a lê; quem a lê é quem construiu a entrega, e é a única pessoa que a pode
                                      // consertar. O crivo é por FORMA e não distingue as duas.
-  'platform/pesados-catalogo.ts': 6, // ⚠️ AS RAZÕES DE UMA COISA PESADA NÃO TER FONTE, e uma criança nunca as
+  'platform/heavy-catalogue.ts': 6, // ⚠️ AS RAZÕES DE UMA COISA PESADA NÃO TER FONTE, e uma criança nunca as
                                    // lê: elas dizem a QUEM MONTA UM JOGO que o runtime de visão espera pela
                                    // #129 e que a arte do LCP espera pela quarentena. São o mecanismo inteiro
                                    // do ADR-0119 — a diferença entre «este subsistema ainda não tem de onde
@@ -335,7 +335,7 @@ const CRU_CONHECIDO = {
                                    // dela vira a recusa que o chamador reporta (ADR-0169), e é essa linha que é traduzida.
   'platform/reading.ts': 1,        // «reading has no microphone here» — dito a quem MONTA a engine sem a captura de som; a
                                    // linha que a criança e o adulto leem é a de `problems`, que nomeia a metade que falta.
-  'platform/pesados.ts': 1,        // «sem Cache Storage ou sem fetch» — o estado de um ambiente sem as duas
+  'platform/heavy.ts': 1,        // «sem Cache Storage ou sem fetch» — o estado de um ambiente sem as duas
                                    // primitivas, que em produção é um navegador antigo e no gate é o caso do
                                    // vácuo. Vai no campo `erro` de um relatório, que a engine não mostra a
                                    // ninguém: quem decide se aquilo chega a uma tela é o jogo, e aí é ELE que
@@ -392,7 +392,7 @@ describe('texto cru em português nas camadas de ENGINE (o buraco do gate do ite
     //
     // ⚠️ 76 → 79 em 2026-09-12, E ISTO É CRESCIMENTO DE DÍVIDA, dito como tal. As três entradas são as linhas
     // de `touchGaps` (ADR-0143 §4), e a razão de elas não passarem por `t()` é a que o
-    // `platform/pesados-catalogo` já escreveu: são mensagens que quem INTEGRA a engine lê, e pô-las no
+    // `platform/heavy-catalogue` já escreveu: são mensagens que quem INTEGRA a engine lê, e pô-las no
     // dicionário seria pedir aos três idiomas que carregassem diagnóstico de integração.
     //
     // 📌 O que compra a subida é o que ela paga: elas existem para acabar com um silêncio TOTAL —

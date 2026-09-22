@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { loadKokoroRuntime } from '../app/js/platform/kokoro-runtime.js';
 import { URL_DO_TOKENIZADOR_KOKORO } from '../app/js/platform/kokoro.js';
-import { deliveryPath } from '../app/js/platform/pesados.js';
+import { deliveryPath } from '../app/js/platform/heavy.js';
 
 const BASE = 'https://escola.exemplo/jogo/';
 

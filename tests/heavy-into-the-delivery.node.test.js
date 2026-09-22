@@ -13,8 +13,8 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { levarPesadosParaEntrega, argumentosDaEntrega } from '../scripts/pesados-na-entrega.mjs';
-import { deliveryPath } from '../app/js/platform/pesados.js';
+import { levarPesadosParaEntrega, argumentosDaEntrega } from '../scripts/heavy-into-the-delivery.mjs';
+import { deliveryPath } from '../app/js/platform/heavy.js';
 
 const hash = (s) => createHash('sha256').update(s).digest('hex');
 const ENTRADAS = [
@@ -107,9 +107,9 @@ describe('the heavy files, put into the delivery by the build', () => {
   });
 
   it('🎯 [Zero] package.json runs it after building the package', () => {
-    const script = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')).scripts['pesados:entrega'];
+    const script = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')).scripts['heavy:delivery'];
     // `--kokoro`: the engine's quiz demo fills the Kokoro port (ADR-0198 erratum)
-    expect(script).toBe('npm run build:pkg && node scripts/pesados-na-entrega.mjs dist --kokoro');
+    expect(script).toBe('npm run build:pkg && node scripts/heavy-into-the-delivery.mjs dist --kokoro');
   });
 });
 
@@ -118,17 +118,17 @@ describe('the script, reachable by a cartridge', () => {
   const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
 
   it('🔴 [Right] the package publishes the script and names it as a command', () => {
-    expect(pkg.files, 'the script is not published: a cartridge has no way to put the heavy files into its delivery').toContain('scripts/pesados-na-entrega.mjs');
-    expect(pkg.bin?.['inclusionist-heavy']).toBe('scripts/pesados-na-entrega.mjs');
+    expect(pkg.files, 'the script is not published: a cartridge has no way to put the heavy files into its delivery').toContain('scripts/heavy-into-the-delivery.mjs');
+    expect(pkg.bin?.['inclusionist-heavy']).toBe('scripts/heavy-into-the-delivery.mjs');
   });
 
   it('🔴 [Right] it finds the catalogue beside itself, not in the caller\'s folder', () => {
     // run from a folder with no `dist-pkg`, as a cartridge's build does: the module comes from the package's own install
     const fora = mkdtempSync(join(tmpdir(), 'cartucho-'));
     try {
-      const url = pathToFileURL(join(process.cwd(), 'scripts', 'pesados-na-entrega.mjs')).href;
+      const url = pathToFileURL(join(process.cwd(), 'scripts', 'heavy-into-the-delivery.mjs')).href;
       const saida = execFileSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(url)}); console.log(m.moduloDoPacote());`], { cwd: fora, encoding: 'utf8' }).trim();
-      expect(fileURLToPath(saida)).toBe(join(process.cwd(), 'dist-pkg', 'platform', 'pesados.js'));
+      expect(fileURLToPath(saida)).toBe(join(process.cwd(), 'dist-pkg', 'platform', 'heavy.js'));
     } finally { rmSync(fora, { recursive: true, force: true }); }
   });
 
@@ -184,7 +184,7 @@ describe('the script, reachable by a cartridge', () => {
     const fora = mkdtempSync(join(tmpdir(), 'cartucho-'));
     try {
       let status = 0, stderr = '';
-      try { execFileSync(process.execPath, [join(process.cwd(), 'scripts', 'pesados-na-entrega.mjs')], { cwd: fora, encoding: 'utf8', stdio: 'pipe' }); }
+      try { execFileSync(process.execPath, [join(process.cwd(), 'scripts', 'heavy-into-the-delivery.mjs')], { cwd: fora, encoding: 'utf8', stdio: 'pipe' }); }
       catch (e) { status = e.status; stderr = e.stderr; }
       expect(status, 'the script did not run as a program').toBe(2);
       expect(stderr).toMatch(/usage: inclusionist-heavy/);
