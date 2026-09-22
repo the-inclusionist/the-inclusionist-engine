@@ -563,6 +563,88 @@ describe('initGamepad — pollPads', () => {
     api.pollPads();
     expect(ctx.calls.joinPlayer).toEqual([3]);
   });
+
+  /*
+   * ============== OS CINCO RAMOS QUE NINGUÉM VIA (2026-09-22, ADR-0221 passo 7c) ==============
+   *
+   * 🔴 ESTES CASOS NASCERAM DE UMA MEDIÇÃO E NÃO DE UMA LEITURA. O `pollPads` tem profundidade 11 e ia ser reestruturado; antes
+   * de lhe tocar, cada um dos nove ramos de topo foi DESLIGADO, um de cada vez, para perguntar à suíte se ela reparava.
+   * 📏 Quatro reprovaram (assistente, título, controle sem assento, modal) e **cinco ficaram VERDES**: o modo de demonstração,
+   * o modal de vitória, a navegação do cartão de pausa, a barra rápida e o START que pausa. Cinco ramos que se podiam apagar
+   * inteiros com a suíte verde — e um deles, a barra, é o que impede o botão de virar acção de jogo.
+   *
+   * 📌 Reestruturar código que nenhum caso vê não é refactor, é reescrita às cegas. Estes cinco vêm primeiro, e é por isso que
+   * eles afirmam o EFEITO de cada ramo e não a forma dele: a seguir a forma vai mudar.
+   */
+  it('🔴 [Right] na DEMONSTRAÇÃO, um botão de controle encerra a demo e mais nada acontece', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], isAttractActive: () => true });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('title');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]);
+    api.pollPads();
+    expect(ctx.calls.stopAttract, 'o botão do controle não encerrou a demonstração').toBe(1);
+    expect(ctx.calls.navTitle, 'a demo encerrou E o menu andou: a criança perdeu uma escolha que não viu').toHaveLength(0);
+  });
+
+  it('🔴 [Right] com a tela de VITÓRIA aberta, o START carrega «jogar de novo» e não chega ao jogo', () => {
+    const p = makePlayer({ pad: 0 });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.dom.get('#win-overlay').hidden = false;
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [9] })]); // START
+    api.pollPads();
+    expect(ctx.dom.get('#btn-again').clicked, 'o START não fechou a tela de vitória').toBe(1);
+    expect(ctx.calls.setPhase, 'o mesmo START que fechou a vitória também pausou o jogo por baixo dela').toEqual([]);
+  });
+
+  it('🔴 [Right] no CARTÃO DE PAUSA, o direcional navega o menu do próprio assento', () => {
+    const menu = { hidden: false };
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], getPauseMenu: () => menu });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('paused');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [13] })]); // D-pad baixo
+    api.pollPads();
+    expect(ctx.calls.navPause, 'o cartão de pausa ficou surdo ao controle').toHaveLength(1);
+    expect(ctx.calls.navPause[0][0]).toBe(menu);
+    expect(ctx.calls.navPause[0][1], 'o menu navegado não é o do assento deste controle').toBe(0);
+    expect(ctx.calls.navPause[0][2].down).toBe(true);
+  });
+
+  it('🔴 [Right] no cartão de pausa, o START retoma o jogo', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('paused');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [9] })]);
+    api.pollPads();
+    expect(ctx.calls.setPhase, 'o START não retomou — a pausa aberta pelo controle não fecha pelo controle').toEqual(['playing']);
+  });
+
+  it('🔴 [Right] na BARRA RÁPIDA, o botão dirige a barra e NÃO vira acção de jogo (ADR-0044 item 7)', () => {
+    // ⚠️ É a segunda expectativa que carrega o assunto: enquanto o modo está ligado, nada deste controle é de jogo. Sem ela,
+    // uma barra que navegasse e deixasse o personagem saltar ao mesmo tempo passaria.
+    const p = makePlayer({ pad: 0 });
+    const ctx = buildCtx({ players: [p], naBarra: new Set([0]) });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]); // o botão de pular
+    api.pollPads();
+    expect(ctx.calls.navBar, 'a barra rápida não recebeu o controle').toHaveLength(1);
+    expect(ctx.calls.navBar[0][0]).toBe(0);
+    expect(ctx.calls.navBar[0][1].yes).toBe(true);
+    expect(p.jumpEdge, 'o mesmo botão dirigiu a barra E fez o personagem saltar').toBe(false);
+  });
+
+  it('🔴 [Right] a jogar, o START pausa e diz QUEM pausou', () => {
+    const p = makePlayer({ pad: 0 });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [9] })]);
+    api.pollPads();
+    expect(ctx.calls.setPhase, 'o START do controle não pausa').toEqual(['paused']);
+    expect(ctx.calls.setPauseActor, 'pausou sem dizer de quem é o cartão que abre').toEqual([0]);
+  });
 });
 
 describe('initGamepad — padMapFor', () => {
