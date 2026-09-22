@@ -1928,6 +1928,43 @@ lie, because it does not see re-exports (#204).
 game's words inside the engine, waiting for that cartridge's help screen to ask the cartridge instead. Carrying it to a new
 module would be moving the debt to a new address.
 
+## BM · One door to the cartridge: the touch pad presses the virtual controller (ADR-0223, issue #197)
+
+**What this is.** The finger stopped writing KEYS. `input/touch-bindings` now presses a POSITION on
+`input/virtual-controller` — the same door the eyes, the face, the hands, the voice and the scan already press — and
+`VirtualController.press` answers whether the press reached PLAY.
+
+| before | after |
+|---|---|
+| `TouchBindingsCtx.markKey(code, source)` | **gone** — `press(action, source): boolean` |
+| `TouchBindingsCtx.releaseKey(code)` | **gone** — `release(action, source): void` |
+| `TouchBindingsCtx.emMenu(): boolean` | **gone** — the controller answers it, once |
+| `TouchBindingsCtx.teclaDeMenu(code, source)` | **gone** — the controller sends it |
+| `VirtualController.press(...): void` | `press(...): boolean` — `false` means a menu took it |
+| `TouchDecision` carried `code: string` | carries `action: Action` |
+
+🎯 **Why, and it is measured, not argued.** A cartridge that listens only to `onCommand` — which is what the erratum of
+ADR-0111 asked every cartridge to do — **received nothing from the finger**. Touch wrote keys, and the root's window
+listener excludes the source `toque` explicitly, with a comment claiming those "come as commands already" — true of the
+eyes, false of the finger. So the quiz, written after that erratum, did not answer the touch pad at all.
+
+📏 **And the two doors disagreed in three measured places**: with a menu open, door 1 delivered nothing while door 2
+delivered the `keyup`; door 1 keeps a `held` map so a game is never left believing a button is still down, and door 2 had
+no memory, so a press a menu swallowed followed by a release delivered a release with no press; and door 2 delivered for
+a synthetic event nobody signed. With one door, the menu rule, the `held` memory and the source stamp are written once
+and hold for every transport.
+
+⚠️ **What to change.** If you only call `createGame`, nothing — the root does the wiring. If you build
+`initTouchBindings` yourself, replace the four members above with the two; if you read `TouchDecision`, read `action`
+instead of `code`; if you implement something against `VirtualController`, `press` now returns a boolean, and a
+transport that raises an edge, hides its tips or announces something should act only when it answers `true`.
+
+📌 **A position with NO key bound now reaches the cartridge.** It used to be silence. The map belongs to the GAME and
+not to the keyboard (ADR-0111), so a position the cartridge declared arrives even where the child has no key for it.
+
+📌 **And the touch door takes no SEAT.** The multiplayer of this engine is on separate screens (pillar 7), so a device
+with a pad has one finger and one seat. An argument nobody can exercise is a capability nobody can prove.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

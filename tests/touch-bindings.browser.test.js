@@ -54,11 +54,24 @@ function wire(over = {}) {
     // origem passa a viajar. O duplo carimba num `Map` para que um caso possa afirmar o APARELHO, e não só a
     // tecla — que é a coisa que a erasão do §C tornava impossível.
     heldKeys,
-    markKey: (code, origem) => { heldKeys.add(code); calls.origens.set(code, origem); },
+    /*
+     * 🔴 O DUBLE DO CONTROLE VIRTUAL desde 22/09 (ADR-0223): o pad aperta uma POSIÇÃO e quem a leva à tecla, ao menu
+     * ou ao cartucho é o controle. O duble resolve a posição no esquema e segura a tecla com o carimbo, que é o que
+     * estes casos afirmam — e devolve `true`, porque aqui não há menu aberto.
+     */
+    press: (action, source) => {
+      const code = SOLO[action]?.[0];
+      if (code) { heldKeys.add(code); calls.origens.set(code, source); }
+      return true;
+    },
+    release: (action, source) => {
+      const code = SOLO[action]?.[0];
+      if (code) { heldKeys.delete(code); calls.origens.delete(code); }
+      void source;
+    },
     // A aresta por jogador (ADR-0113 cláusula 4). Aqui basta existir: quem afirma o assento é o caso do
     // project node, onde os dois esquemas cabem sem um ecrã.
     playerEdge: () => {},
-    releaseKey: (code) => { heldKeys.delete(code); calls.origens.delete(code); },
     attractOnInput: () => false,
     showTouchControls: () => { calls.show++; },
     hideTips: () => { calls.hideTips++; },

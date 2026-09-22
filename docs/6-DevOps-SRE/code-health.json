@@ -652,12 +652,12 @@
       "fanIn": 2
     },
     "input/touch-bindings.ts": {
-      "codeLines": 260,
+      "codeLines": 257,
       "decisionNodes": 38,
       "maxDepth": 3,
       "fanOut": 6,
       "globalReach": 0,
-      "worstFunction": 11,
+      "worstFunction": 10,
       "fanIn": 3
     },
     "input/touch.ts": {
@@ -691,7 +691,7 @@
       "fanIn": 2
     },
     "input/virtual-controller.ts": {
-      "codeLines": 41,
+      "codeLines": 42,
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 3,

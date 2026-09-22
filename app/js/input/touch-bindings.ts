@@ -94,7 +94,7 @@ import type { KeyScheme } from '../core/entity.js';
 // `isAction` guarda a porta: o `act` chega como string de um `data-` do markup de toque, e desde a #118 o
 // esquema só aceita as quatorze posições. Uma string que não é posição devolve `null` — o toque não faz nada,
 // que é exactamente o que o cabeçalho desta função já prometia.
-import { isAction } from '../core/actions.js';
+import { isAction, type Action } from '../core/actions.js';
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
 // módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
 export type { DomQuery } from '../core/dom-query.js';
@@ -146,17 +146,27 @@ export interface DirSet { left: boolean; right: boolean; up: boolean; down: bool
 /** Um evento de ponteiro, reduzido ao que este módulo lê (`PointerEvent` real é atribuível a isto). */
 export interface PointerLike { pointerId: number; clientX: number; clientY: number; preventDefault(): void }
 
-/** A resposta única: o que este toque SIGNIFICA. */
+/**
+ * A resposta única: o que este toque SIGNIFICA.
+ *
+ * 🔴 A MOEDA DESTA DECISÃO PASSOU A SER A POSIÇÃO E NÃO A TECLA, em 2026-09-22 (ADR-0223). O botão da tela «fingia ser o
+ * teclado», e o preço estava medido: a raiz exclui a origem `toque` da escuta de janela, logo um cartucho que ouve
+ * `onCommand` — o quiz é um — não respondia ao dedo. Agora o toque APERTA o controle virtual, que é a porta única, e a
+ * tecla volta a ser o que sempre devia ter sido: um efeito da pressão, escrito num sítio só.
+ *
+ * ⚠️ E UMA POSIÇÃO SEM TECLA MAPEADA DEIXOU DE SER `noop`. O mapa é do JOGO e não do teclado (ADR-0111), então uma posição
+ * que o cartucho declarou chega-lhe mesmo que a criança não tenha tecla para ela — o que antes era silêncio.
+ */
 export type TouchDecision =
-  /** ação sem tecla mapeada, slot vazio, ou SOLTAR de `pause` — nada acontece. */
+  /** slot vazio, ação que não existe, ou SOLTAR de `pause` — nada acontece. */
   | { kind: 'noop' }
-  /** `pause` é o único caso especial: não vira tecla, chama `togglePause()` direto (e só no APERTAR). */
+  /** `pause` é o único caso especial: não é uma posição, chama `togglePause()` direto (e só no APERTAR). */
   | { kind: 'pause' }
-  /** apertar. `addKey=false` = a tecla JÁ estava segurada (outro dedo, ou o teclado): não re-injeta nem
-   *  levanta borda de novo — é isso que faz disto uma BORDA e não um estado. `hideTips` é independente. */
-  | { kind: 'press'; code: string; addKey: boolean; edges: EdgeRaise[]; hideTips: boolean }
-  /** soltar: some com o código do conjunto. NÃO abaixa borda nenhuma (quem zera as bordas é a física). */
-  | { kind: 'release'; code: string };
+  /** apertar. `addKey=false` = a tecla JÁ estava segurada (outro dedo, ou o teclado): não levanta borda de
+   *  novo — é isso que faz disto uma BORDA e não um estado. `hideTips` é independente. */
+  | { kind: 'press'; action: Action; addKey: boolean; edges: EdgeRaise[]; hideTips: boolean }
+  /** soltar. NÃO abaixa borda nenhuma (quem zera as bordas é a física). */
+  | { kind: 'release'; action: Action };
 
 /* ===================== PURO (sem DOM — project node) ===================== */
 
@@ -222,15 +232,18 @@ export function touchEdgesFor(act: string, code: string, players: readonly Touch
  */
 export function decideTouch(act: string | undefined | null, on: boolean, s: TouchBindSnapshot): TouchDecision {
   if (act === 'start') return on ? { kind: 'pause' } : { kind: 'noop' }; // SOLTAR o START não despausa
+  // ⚠️ O SLOT PODE ESTAR VAZIO OU TRAZER UMA STRING QUE NÃO É POSIÇÃO: o valor vem de um `data-` do markup, e desde a
+  // #118 o esquema só aceita as catorze. Aí sim não há nada a apertar — o que mudou é que uma posição VÁLIDA sem tecla
+  // mapeada já não cai aqui.
+  if (!act || !isAction(act)) return { kind: 'noop' };
+  if (!on) return { kind: 'release', action: act };
   const code = codeForAction(act, s.controls);
-  if (!code) return { kind: 'noop' };
-  if (!on) return { kind: 'release', code };
   // BORDA: só a PRIMEIRA vez que o código entra em `keys`. Se o teclado (ou o outro polegar) já o segurava,
-  // o toque não re-levanta as bordas — mas `hideTips` roda igual, verbatim.
-  const fresh = !s.heldKeys.has(code);
+  // o toque não re-levanta as bordas — mas `hideTips` roda igual, verbatim. Sem tecla não há borda a levantar.
+  const fresh = !!code && !s.heldKeys.has(code);
   return {
-    kind: 'press', code, addKey: fresh,
-    edges: fresh ? touchEdgesFor(act as string, code, s.players) : [],
+    kind: 'press', action: act, addKey: fresh,
+    edges: fresh && code ? touchEdgesFor(act, code, s.players) : [],
     hideTips: act === 'action2',
   };
 }
@@ -329,7 +342,24 @@ export interface TouchBindingsCtx {
    * 📌 Recebido e não importado, pela razão de sempre neste módulo: um consumidor pode montar o toque sem o
    * estado global da engine (um teste, um segundo consumidor), e o par é o que ele injecta.
    */
-  markKey: (code: string, origem: TransportName) => void;
+  /**
+   * A PORTA ÚNICA PARA O CARTUCHO (ADR-0223): apertar uma POSIÇÃO. Responde se a pressão chegou ao JOGO — `false` quer
+   * dizer que um menu a levou.
+   *
+   * 🔴 SUBSTITUI O `markKey` E O PAR `emMenu`/`teclaDeMenu`, e os três eram a mesma decisão escrita aqui uma segunda
+   * vez. O que o controle faz é o que já fazia pelos olhos e pela voz, e é o que o ADR-0111 decidiu: com um menu aberto
+   * a posição vira a tecla do menu, no jogo segura a tecla da criança E entrega o comando ao cartucho.
+   *
+   * 📏 O preço de não ser assim estava medido: a escuta de janela da raiz exclui a origem `toque`, então um cartucho
+   * que ouve `onCommand` — o quiz é um — não respondia ao dedo.
+   *
+   * 📌 SEM ASSENTO, e a ausência é a afirmação: o multiplayer desta engine é em telas SEPARADAS (pilar 7), logo um
+   * aparelho com pad tem UM dedo e UM assento — o do controle. Uma assinatura que aceitasse assento ofereceria uma
+   * capacidade que este transporte não tem, e ninguém poderia exercê-la para a provar.
+   */
+  press: (action: Action, source: TransportName) => boolean;
+  /** Soltar a POSIÇÃO. O controle solta a tecla que segurou e entrega a soltura — e só para uma pressão que o jogo ouviu. */
+  release: (action: Action, source: TransportName) => void;
   /**
    * ESTA ARESTA É DESTE JOGADOR, E VEIO DO TOQUE (ADR-0113 cláusula 4, issue #127) —
    * `input/state.playerEdge`.
@@ -340,7 +370,6 @@ export interface TouchBindingsCtx {
    * (`main.ts:1695`) é o remendo que existe hoje exactamente para compensar esta falta.
    */
   playerEdge: (jogador: number, origem: TransportName) => void;
-  releaseKey: (code: string) => void;
   /**
    * O conjunto para LER — a decisão pura pergunta que teclas já estão seguradas.
    *
@@ -359,14 +388,6 @@ export interface TouchBindingsCtx {
   togglePause: () => void;
   /** A pílula SELECT abre os menus da pausa (ADR-0155). Ausente, a pílula não faz nada — só a raiz que a desenha a liga. */
   abrirMenus?: () => void;
-  /**
-   * HÁ UM MENU COM O DIRECCIONAL? (ADR-0157) — o cartão, um painel ou a barra da pausa rápida. Enquanto sim, uma
-   * pressão no pad NÃO segura tecla nenhuma: vira `teclaDeMenu`, que é o que a navegação de menus ouve. Ausente, o
-   * pad faz o que sempre fez — e nenhum menu anda por toque.
-   */
-  emMenu?: () => boolean;
-  /** Entrega o código da tecla da acção ao menu como uma pressão de teclado. Ver `emMenu`. */
-  teclaDeMenu?: (code: string) => void;
   /** `input/touch.ts:getTouchMap()` — slot → ação, remapeável. Lido A CADA evento, verbatim: remapear no
    *  painel passa a valer no toque seguinte, sem re-amarrar ouvinte nenhum. */
   getTouchMap: () => Record<string, string>;
@@ -419,14 +440,21 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
   function apply(d: TouchDecision): void {
     if (d.kind === 'noop') return;
     if (d.kind === 'pause') { ctx.togglePause(); return; }
-    if (d.kind === 'release') { ctx.releaseKey(d.code); return; }
-    // 🔴 COM UM MENU ABERTO, A PRESSÃO VAI AO MENU (ADR-0157). Até aqui ela só marcava a tecla como segurada, sem evento
-    // de teclado nenhum — e a navegação de menus só ouve eventos: o direccional do pad nunca movia um menu.
-    if (ctx.emMenu?.() && ctx.teclaDeMenu) { ctx.teclaDeMenu(d.code); return; }
+    if (d.kind === 'release') { ctx.release(d.action, 'toque'); return; }
+    /*
+     * 🔴 O TOQUE APERTA O CONTROLE VIRTUAL (ADR-0223). Era ele que decidia aqui o que a pressão significa — ir ao menu,
+     * marcar a tecla, entregar nada — e essa é exactamente a decisão que o `input/virtual-controller` existe para tomar
+     * UMA vez. O que ele faz agora é o que já fazia pelos olhos e pela voz: com um menu aberto a posição vira a tecla do
+     * menu (ADR-0157), no jogo segura a tecla da criança E entrega o comando ao cartucho.
+     *
+     * 📌 A RESPOSTA DELE É O QUE DIZ SE HOUVE JOGO. A pergunta «há um menu aberto?» tinha duas respostas — a dele e o
+     * `emMenu()` daqui — e duas respostas para uma pergunta é como as duas portas vieram a discordar. Agora há uma.
+     *
+     * ⚠️ `'toque'` continua a ser o carimbo, e é a regra 2 do ADR-0109 a manter-se executável: é ESTE transporte cuja
+     * alternância liga, e é o controle quem o leva à tecla e ao comando.
+     */
+    if (!ctx.press(d.action, 'toque')) return; // um menu levou a pressão: não há borda nem dica a mexer
     if (d.addKey) {
-      // ⚠️ `'toque'` é o carimbo, e é a regra 2 do ADR-0109 a tornar-se executável: é ESTE transporte cuja
-      // alternância liga. Enquanto o código entrava cru no conjunto, a regra não tinha como se aplicar.
-      ctx.markKey(d.code, 'toque');
       const players = ctx.getPlayers();
       for (const { playerIndex, edge } of d.edges) {
         const p = players[playerIndex];

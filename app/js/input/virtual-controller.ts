@@ -32,7 +32,15 @@ export interface VirtualControllerDeps {
 }
 
 export interface VirtualController {
-  press(action: Action, source: TransportName, player?: number): void;
+  /**
+   * Presses a position. Answers whether it reached PLAY — `false` means a menu took it.
+   *
+   * 🔴 THE ANSWER EXISTS BECAUSE EVERY TRANSPORT NEEDS IT AND EACH WAS GUESSING IT (ADR-0223). The touch pad asked its own
+   * `emMenu()` before deciding what to do, which is the same question this function has just answered — and two answers to
+   * one question is how the two doors came to disagree about what happens with a menu open. A transport that raises an edge,
+   * or hides its tips, or announces something, does it only when the press reached the game; now it is told.
+   */
+  press(action: Action, source: TransportName, player?: number): boolean;
   release(action: Action, source: TransportName, player?: number): void;
 }
 
@@ -43,10 +51,11 @@ export function createVirtualController(d: VirtualControllerDeps): VirtualContro
   return {
     press(action, source, player = 0) {
       const code = d.scheme(player)[action]?.[0];
-      if (d.menuOpen()) { if (code) d.menuKey(code, source); return; }
+      if (d.menuOpen()) { if (code) d.menuKey(code, source); return false; }
       if (code) d.holdKey(code, source);
       held.set(`${player}:${action}`, code ?? null);
       d.deliver({ action, pressed: true, source, player });
+      return true;
     },
     release(action, source, player = 0) {
       const key = `${player}:${action}`;

@@ -141,13 +141,15 @@ describe('modo Fácil e `run`: os três caminhos de entrada têm de CONCORDAR', 
 /* ===================== 4. decideTouch — o despacho ===================== */
 
 describe('decideTouch — apertar, soltar e o caso especial `pause`', () => {
-  it('[Right] apertar uma ação mapeada: injeta a tecla e traz as bordas', () => {
+  it('[Right] apertar uma ação mapeada: devolve a POSIÇÃO e traz as bordas', () => {
+    // 🔴 A MOEDA DESTA DECISÃO É A POSIÇÃO E NÃO A TECLA desde 22/09 (ADR-0223): o toque aperta o controle virtual,
+    // que é a porta única, e a tecla volta a ser um EFEITO da pressão, escrito num sítio só.
     const d = decideTouch('action2', true, snap());
-    expect(d).toEqual({ kind: 'press', code: 'KeyJ', addKey: true, edges: [{ playerIndex: 0, edge: 'jumpEdge' }], hideTips: true });
+    expect(d).toEqual({ kind: 'press', action: 'action2', addKey: true, edges: [{ playerIndex: 0, edge: 'jumpEdge' }], hideTips: true });
   });
 
-  it('[Right] soltar devolve só o código a apagar — NÃO abaixa borda (quem zera bordas é a física)', () => {
-    expect(decideTouch('action2', false, snap())).toEqual({ kind: 'release', code: 'KeyJ' });
+  it('[Right] soltar devolve a posição — NÃO abaixa borda (quem zera bordas é a física)', () => {
+    expect(decideTouch('action2', false, snap())).toEqual({ kind: 'release', action: 'action2' });
   });
 
   it('[Right] `pause` é o único que não vira tecla: apertar pausa, SOLTAR não faz nada', () => {
@@ -172,14 +174,24 @@ describe('decideTouch — apertar, soltar e o caso especial `pause`', () => {
     }
   });
 
-  it('[Zero] slot vazio ou ação sem tecla no esquema: noop nos dois sentidos', () => {
+  it('[Zero] slot vazio ou string que não é posição: noop nos dois sentidos', () => {
     expect(decideTouch(undefined, true, snap())).toEqual({ kind: 'noop' });
     expect(decideTouch(undefined, false, snap())).toEqual({ kind: 'noop' });
-    expect(decideTouch('action2', false, snap({ controls: { ...SOLO, action2: [] } }))).toEqual({ kind: 'noop' });
+    expect(decideTouch('acao99', true, snap()), 'uma string que não é posição não aperta nada').toEqual({ kind: 'noop' });
   });
 
-  it('[Right] `up`/`down` viram tecla sem borda: sobem escada por `keys`, não por flag', () => {
-    expect(decideTouch('up', true, snap())).toEqual({ kind: 'press', code: 'KeyW', addKey: true, edges: [], hideTips: false });
+  it('🔴 [Boundary] uma posição SEM TECLA mapeada chega na mesma ao cartucho', () => {
+    // 🔴 ERA `noop` ATÉ 22/09, e o silêncio era do lado errado da fronteira: o mapa é do JOGO e não do teclado
+    // (ADR-0111), então uma posição que o cartucho declarou tem de lhe chegar mesmo que a criança não tenha tecla
+    // para ela. ⚠️ Sem tecla não há borda a levantar — `addKey` é falso —, mas a POSIÇÃO viaja.
+    const semTecla = snap({ controls: { ...SOLO, action2: [] } });
+    expect(decideTouch('action2', true, semTecla))
+      .toEqual({ kind: 'press', action: 'action2', addKey: false, edges: [], hideTips: true });
+    expect(decideTouch('action2', false, semTecla)).toEqual({ kind: 'release', action: 'action2' });
+  });
+
+  it('[Right] `up`/`down` viram posição sem borda: sobem escada por `keys`, não por flag', () => {
+    expect(decideTouch('up', true, snap())).toEqual({ kind: 'press', action: 'up', addKey: true, edges: [], hideTips: false });
   });
 });
 
@@ -300,7 +312,10 @@ describe('wantsForcedTouch', () => {
 
 /** ctx mínimo: `initTouchBindings` não toca em DOM nenhum enquanto `attach()` não for chamado. */
 function makeCtx(over = {}) {
-  const calls = { pause: 0, hideTips: 0, show: 0, defer: [], origens: new Map(), arestas: [] };
+  const calls = {
+    pause: 0, hideTips: 0, show: 0, defer: [], origens: new Map(), arestas: [],
+    aoMenu: [],
+  };
   const players = over.players || [mkPlayer(SOLO)];
   const heldKeys = over.heldKeys || new Set();
   const ctx = {
@@ -309,15 +324,29 @@ function makeCtx(over = {}) {
     getSearch: () => '',
     getControls: () => over.controls || SOLO,
     getPlayers: () => players,
-    // ⚠️ O PAR de `input/state` (ADR-0109). O duplo mantém o conjunto — a decisão pura LÊ dele — e acrescenta
-    // as duas escritas, que é onde a origem passa a viajar. `origens` guarda o carimbo para os casos que
-    // querem afirmar QUE APARELHO produziu a tecla, e não só que ela entrou.
     heldKeys,
-    markKey: (code, origem) => { heldKeys.add(code); calls.origens.set(code, origem); },
+    /*
+     * 🔴 O DUBLE DO CONTROLE VIRTUAL, desde 22/09 (ADR-0223). O pad já não escreve teclas: ele APERTA uma posição, e
+     * quem decide o que isso significa — ir ao menu, segurar a tecla da criança, entregar o comando — é o controle.
+     * O duble faz o mínimo que o controle real faz para estes casos poderem continuar a afirmar o que afirmavam:
+     * resolve a posição no esquema, segura a tecla com o carimbo, e devolve se a pressão chegou ao JOGO.
+     *
+     * 📌 `emMenu` é do duble e não do pad: a pergunta «há um menu aberto?» passou a ter UMA resposta, a do controle.
+     */
+    press: (action, source) => {
+      if (over.emMenu) { calls.aoMenu.push([action, source]); return false; }
+      const code = (over.controls || SOLO)[action]?.[0];
+      if (code) { heldKeys.add(code); calls.origens.set(code, source); }
+      return true;
+    },
+    release: (action, source) => {
+      void source;
+      const code = (over.controls || SOLO)[action]?.[0];
+      if (code) { heldKeys.delete(code); calls.origens.delete(code); }
+    },
     // 📌 O duplo GUARDA A LISTA em vez de contar: a pergunta «que aparelho está a produzir as arestas» é POR
     // JOGADOR, e um contador não distinguiria dois toques do jogador 1 de um toque de cada assento.
     playerEdge: (jogador, origem) => { calls.arestas.push([jogador, origem]); },
-    releaseKey: (code) => { heldKeys.delete(code); calls.origens.delete(code); },
     attractOnInput: () => false,
     showTouchControls: () => { calls.show++; },
     hideTips: () => { calls.hideTips++; },
@@ -375,6 +404,22 @@ describe('doTouch — a decisão carimbada no mundo', () => {
     const dois = makeCtx({ controls: P2B, players: [mkPlayer(SOLO), mkPlayer(P2B)] });
     dois.api.doTouch('action2', true);
     expect(dois.calls.arestas, 'o toque do segundo assento foi contado no primeiro').toEqual([[1, 'toque']]);
+  });
+
+  // 🔴 A RESPOSTA DO CONTROLE É LIDA, E ESTE É O CASO QUE A SEGURA (ADR-0223). O pad tinha a própria pergunta
+  // `emMenu()`, e o que ele fazia com a resposta estava escrito aqui uma segunda vez. Agora quem responde é o
+  // controle, e o pad PARA: com um menu aberto a posição move o menu e mais nada acontece deste lado — nenhuma
+  // aresta a dizer que o jogador apertou, nenhuma dica a desaparecer, nenhuma tecla segurada.
+  // 📏 Medido por mutação: sem a leitura da resposta (ou com a resposta a mentir), um dedo no pad enquanto o
+  // cartão de pausa está aberto levanta a aresta de pulo — e a física consome-a no quadro em que o jogo volta.
+  it('🔴 [CrossCheck] com um MENU aberto o toque para: sem aresta, sem dica, sem tecla — só o menu anda', () => {
+    const { api, calls, players, heldKeys } = makeCtx({ emMenu: true });
+    api.doTouch('action2', true);
+    expect(calls.aoMenu, 'a posição não chegou ao menu').toEqual([['action2', 'toque']]);
+    expect(calls.arestas, 'o menu levou a pressão e mesmo assim uma aresta subiu no jogador').toEqual([]);
+    expect(players[0].jumpEdge, 'o jogo vai consumir um pulo que ninguém pediu').toBe(false);
+    expect(calls.hideTips, 'as dicas sumiram por uma pressão que o jogo nunca ouviu').toBe(0);
+    expect(heldKeys.size, 'ficou uma tecla segurada de uma pressão que foi para o menu').toBe(0);
   });
 
   it('[Boundary] apertar com a tecla já segurada não re-levanta a borda', () => {

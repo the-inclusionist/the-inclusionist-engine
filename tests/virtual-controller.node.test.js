@@ -48,6 +48,13 @@ describe('in play', () => {
     vc.press('rightShoulder', 'olhos'); vc.release('rightShoulder', 'olhos');
     expect(log.map((l) => l[0])).toEqual(['deliver', 'deliver']);
   });
+  // 🔴 THE ANSWER, and it is the reason `press` stopped returning nothing (ADR-0223). Every transport was asking
+  // this question for itself — the touch pad had its own `emMenu()` — and two answers to one question is how the
+  // two doors came to disagree. A transport that raises an edge, hides its tips or announces something now reads it.
+  it('a press that reached play ANSWERS true', () => {
+    const { vc } = make();
+    expect(vc.press('down', 'toque')).toBe(true);
+  });
 });
 
 describe('with a menu open', () => {
@@ -55,6 +62,15 @@ describe('with a menu open', () => {
     const { vc, log } = make({ menu: true });
     vc.press('down', 'olhos'); vc.release('down', 'olhos');
     expect(log).toEqual([['menu', 'KeyS', 'olhos']]);
+  });
+  it('the press ANSWERS false — a menu took it, and the transport is told instead of guessing', () => {
+    const { vc } = make({ menu: true });
+    expect(vc.press('down', 'toque')).toBe(false);
+  });
+  it('...and it answers false even for a position with no key, which moves no menu at all', () => {
+    const { vc, log } = make({ menu: true });
+    expect(vc.press('rightShoulder', 'toque')).toBe(false);
+    expect(log).toEqual([]);
   });
   it('a press the game heard is released to it even if a menu opened meanwhile', () => {
     const { vc, log, setMenu } = make();

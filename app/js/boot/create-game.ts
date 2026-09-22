@@ -3022,7 +3022,17 @@ export function createGame(o: CreateGameOptions): Engine {
     getSearch: () => win.location?.search ?? '',
     getControls: () => keyboard.controlsState().controls,
     getPlayers: () => players(),
-    markKey, playerEdge, releaseKey,
+    /*
+     * 🔴 O TOQUE APERTA O CONTROLE VIRTUAL (ADR-0223), e por isso já não recebe `markKey`, `releaseKey`, `emMenu` nem
+     * `teclaDeMenu`: os quatro eram esta mesma decisão escrita uma segunda vez dentro do pad. 📏 O preço de a ter
+     * escrita duas vezes estava medido — esta raiz exclui a origem `toque` da escuta de janela, logo um cartucho que
+     * ouve `onCommand` não respondia ao dedo.
+     * 📌 Setas e não referências directas: o `controleVirtual` nasce mais abaixo, e é a mesma zona morta temporal que o
+     * `getPlayers` já ensinou a este ficheiro.
+     */
+    press: (action, source) => controleVirtual.press(action, source),
+    release: (action, source) => controleVirtual.release(action, source),
+    playerEdge,
     heldKeys: keys,
     attractOnInput: () => false,
     // a touch inside a menu does not bring the pad over it; it only remembers that the child is on touch (ADR-0166)
@@ -3034,12 +3044,10 @@ export function createGame(o: CreateGameOptions): Engine {
      * jogadores nem às configurações — o SELECT era tecla. ⚠️ O PAD ESCONDE-SE ao abrir o cartão, como o START
      * fazia: por cima do cartão ele taparia os botões que agora são a saída dela («Voltar ao jogo»).
      */
-    // O pad FICA à vista com o cartão aberto (ADR-0157): é o direccional dele que anda no cartão.
+    // O pad FICA à vista com o cartão aberto (ADR-0157): é o direccional dele que anda no cartão, e quem o leva lá é
+    // agora o controle virtual — ele já carimba a origem (ADR-0109), que é o que o «teclado esconde o pad» pergunta;
+    // sem o carimbo o pad sumiria a cada seta que ele próprio entregou.
     abrirMenus: () => { abrirMenusDoAssento(0); },
-    emMenu: menuComDirecional,
-    // CARIMBADA como toque (ADR-0109): quem ouve sabe que não foi um teclado — o «teclado esconde o pad» logo abaixo
-    // pergunta exactamente isso, e sem o carimbo o pad sumiria a cada seta que ele próprio entregou.
-    teclaDeMenu: (code) => teclaAoMenu(code, 'toque'),
     getTouchMap: () => toque.getTouchMap(),
     // ✅ O DEFEITO QUE O `TouchBindingsCtx` GUARDAVA MORRE AQUI: no cartucho a linha era `touchMap.start` num
     // escopo onde `touchMap` não existia, e o START da tela estava quebrado. Esta raiz TEM o mapa.
