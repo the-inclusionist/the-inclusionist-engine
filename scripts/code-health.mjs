@@ -217,9 +217,11 @@ if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'code-health.mjs') {
 
   if (process.argv.includes('--write')) {
     writeFileSync(join(ROOT, BASELINE), `${JSON.stringify({
-      about: 'ADR-0221 — the four measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a '
-        + 'module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID or a module is '
-        + 'legitimately split — rewriting it to green a red build is the ratchet being unscrewed.',
+      about: 'ADR-0221 — the six measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a '
+        + 'module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID, a module is '
+        + 'legitimately split, or the growth BUYS something no measure here can see — and in that third case the commit has to '
+        + 'name the purchase and the falsifiable criterion that will show it landed (ADR-0221 point 6: the criterion is the '
+        + 'co-change falling, not the number). Rewriting it to green a red build is the ratchet being unscrewed.',
       takenOn: new Date().toISOString().slice(0, 10),
       ceiling, exempt: EXEMPT, modules,
     }, null, 2)}\n`);

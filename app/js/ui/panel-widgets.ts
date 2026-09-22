@@ -159,6 +159,35 @@ function criarControle(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
   return b;
 }
 
+/* ===================== O CABEÇALHO DE SECÇÃO — «de quem é a vez de agir» ===================== */
+
+/**
+ * O cabeçalho de uma secção de painel: um título e uma etiqueta que o qualifica.
+ *
+ * 📏 Entra no kit porque QUATRO sítios o escreviam à mão como cadeia — `ui/map-hub`, `ui/settings-motion`
+ * (duas vezes), `ui/settings-typo` e o `ui/settings-caa` que os trouxe aqui —, e a marcação de `.panel-sub__tag`
+ * estava copiada em todos. É a mesma razão do `controlRow`: uma regra repetida em quatro ficheiros é uma regra
+ * que diverge.
+ *
+ * ⚠️ E ELE RECUSA-SE A EXISTIR SOBRE O VAZIO, que é o comportamento pelo qual vale ser uma função. Um
+ * «Aguardando negociação» sem uma linha por baixo conta a quem lê que há algo ali e não há, e a pessoa procura
+ * o que o título promete. `rows` é o NÚMERO de linhas que a secção vai ter — passá-lo é o que torna esta
+ * regra exercível por um caso, em vez de um `if` que nenhuma árvore fixa alcança.
+ *
+ * 📌 O título e a etiqueta chegam JÁ TRADUZIDOS, como no `controlRow`: o kit não decide língua, monta forma.
+ */
+export function sectionHeader(ctx: PanelShellCtx, title: string, tag: string, rows: number): HTMLElement | null {
+  if (rows === 0) return null;
+  const h = ctx.criar('h3');
+  h.className = 'panel-sub';
+  h.textContent = title + ' ';
+  const mark = ctx.criar('span');
+  mark.className = 'panel-sub__tag';
+  mark.textContent = tag;
+  h.appendChild(mark);
+  return h;
+}
+
 /* ===================== OS PASSOS ⯇ ⯈ — escolher entre posições com esquerda e direita (ADR-0151) ===================== */
 
 /**

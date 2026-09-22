@@ -101,7 +101,6 @@ const SEGUROS = [
   // agora o `ui/voice-settings`. A classificação não muda com o ficheiro — o que entra continua a ser uma cadeia vazia.
   ['ui/voice-settings.ts', "sel.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-audio.ts', "el.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
-  ['ui/settings-caa.ts', 'el.innerHTML = caaListHtml(', 'i18n + caixa enumerada'],
   ['ui/settings-motion.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-mobility.ts', 'tabs.innerHTML = playerTabsHTML(', 'números (quantos jogadores, qual selecionado)'],
   ['ui/settings-panel.ts', 'span.innerHTML = strong.outerHTML', 'DOM de volta ao DOM: nenhum texto novo entra'],

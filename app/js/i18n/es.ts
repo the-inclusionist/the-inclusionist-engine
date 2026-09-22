@@ -446,6 +446,9 @@ const es: Record<string, string> = {
   'a11y.changed': 'modificado',
   'sr.visual.reset': 'Accesibilidad visual restaurada a sus valores predeterminados: contraste, realce, colores y contornos. Los subtítulos y los demás menús no cambiaron.',
   'sr.motion.reset': 'Sensibilidad visual restaurada a sus valores predeterminados: animaciones y estética CRT. Las animaciones vuelven a lo que pide su sistema.',
+  'caa.letras': 'Letras mayúsculas',
+  'caa.letras.dica': 'Encendido: todo el juego en mayúsculas, como suele empezar la alfabetización. '
+    + 'Apagado: mayúsculas y minúsculas, la escritura de cada día.',
   'caa.emPreparo': 'en preparación',
   'caa.aguardandoNegociacao': 'esperando negociación',
   'caa.secao.agora': 'Disponible ahora',

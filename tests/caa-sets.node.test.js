@@ -6,7 +6,7 @@
 // integrar, o catálogo terá deixado de ser verdadeiro, e é aqui que isso precisa doer.
 import { describe, it, expect } from 'vitest';
 import { CAA_SETS, CAA_BY_KEY, caaAvailable, caaReason, caaLabel } from '../app/js/ui/caa-sets.js';
-import { upperCaseOn, lettersRowHtml, caaRowHtml, caaListHtml } from '../app/js/ui/settings-caa.js';
+import { upperCaseOn, lettersRowSpec, caaRowSpec, caaControlId, CAA_SECTIONS } from '../app/js/ui/settings-caa.js';
 
 describe('CAA_SETS — o catálogo', () => {
   it('[Zero] NENHUM conjunto está disponível hoje, e o menu não finge o contrário', () => {
@@ -79,53 +79,49 @@ describe('o interruptor das letras', () => {
     expect(upperCaseOn('mixed')).toBe(false);
   });
 
-  it('[Right] a linha reflete o estado no botão e no aria-pressed', () => {
-    expect(lettersRowHtml(true)).toContain('aria-pressed="true"');
-    expect(lettersRowHtml(false)).toContain('aria-pressed="false"');
-  });
-
   it('[Interface] a linha explica o DESLIGADO — senão "off" fica sem significado', () => {
     // O off não é "sem letras": é maiúsculas E minúsculas. Um interruptor cujo desligado não se explica
     // deixa a criança adivinhando o que ela perde ao desligá-lo.
-    expect(lettersRowHtml(false)).toContain('minúsculas');
+    expect(lettersRowSpec().dica).toContain('minúsculas');
   });
 
-  it('[Interface] o interruptor NUNCA vem disabled — é o piso, e não depende de arquivo nenhum', () => {
-    expect(lettersRowHtml(true)).not.toContain('disabled');
+  it('[Interface] o interruptor das letras é o piso: sem motivo, porque não depende de arquivo nenhum', () => {
+    // Todo conjunto de pictograma carrega um motivo de não servir; este não tem nenhum a carregar. Se um dia
+    // tiver, é porque virou dependente de algo — e aí o motivo aparece aqui antes de aparecer na tela.
+    expect(lettersRowSpec().rotuloAria).toBeUndefined();
   });
 });
 
-describe('caaRowHtml / caaListHtml — a montagem', () => {
-  it('[Right] o indisponível vem `disabled`: nunca um botão que não faz nada', () => {
-    const html = caaRowHtml(CAA_BY_KEY.widgit, false);
-    expect(html).toContain('disabled');
-    expect(html).toContain('data-caa="widgit"');
-  });
-
-  it('[Right] o disponível NÃO vem disabled — o dia em que um conjunto entrar, esta linha muda sozinha', () => {
-    expect(caaRowHtml({ ...CAA_BY_KEY.mulberry, disponivel: true }, true)).not.toContain('disabled');
-  });
-
-  it('[Interface] o motivo entra também no NOME ACESSÍVEL — quem não vê a linha ouve por que ela não serve', () => {
-    const html = caaRowHtml(CAA_BY_KEY.sclera, false);
-    expect(html).toMatch(/aria-label="Sclera, [^"]*negocia/);
-  });
-
-  it('[Interface] a lista traz o interruptor mais os 8 conjuntos, em três seções', () => {
-    const html = caaListHtml('upper');
-    expect(html).toContain('id="caa-caixa-alta"');
-    for (const s of CAA_SETS) expect(html).toContain(`data-caa="${s.key}"`);
-    expect(html.match(/panel-sub"/g)).toHaveLength(3);
-  });
-
-  it('[Right] o interruptor reflete a caixa atual', () => {
-    expect(caaListHtml('upper')).toMatch(/id="caa-caixa-alta"[^>]*aria-pressed="true"/);
-    expect(caaListHtml('mixed')).toMatch(/id="caa-caixa-alta"[^>]*aria-pressed="false"/);
+describe('caaRowSpec — o que a linha de um conjunto DIZ, antes de existir nó nenhum', () => {
+  it('[Interface] o motivo entra no NOME ACESSÍVEL — quem não vê a linha ouve por que ela não serve', () => {
+    expect(caaRowSpec(CAA_BY_KEY.sclera).rotuloAria).toMatch(/^Sclera, .*negocia/);
   });
 
   it('[Interface] Tawasol carrega a nota sobre cultura — é o que muda o significado da escolha', () => {
     // Um pictograma não é neutro: é desenhado por e para uma cultura. Sem a nota, "Tawasol" é só um nome
     // estranho na lista, e o educador não tem como saber para qual criança ele é a escolha certa.
-    expect(caaRowHtml(CAA_BY_KEY.tawasol, false)).toContain('árabe');
+    expect(caaRowSpec(CAA_BY_KEY.tawasol).dica).toContain('árabe');
+  });
+
+  it('[Interface] a licença vai na MESMA dica, não numa segunda linha de prosa', () => {
+    // A regra de menu do CLAUDE.md §4: um único `.opt-hint` por linha. Dois davam duas descrições ao mesmo
+    // controle, e o rodapé mostrava a primeira — a outra ficava na linha, virando o manual que a regra proíbe.
+    expect(caaRowSpec(CAA_BY_KEY.mulberry).dica).toContain('Licença: ');
+  });
+
+  it('[Right] o id sai do key do catálogo, que é único por construção', () => {
+    const ids = CAA_SETS.map((s) => caaRowSpec(s).id);
+    expect(new Set(ids).size).toBe(CAA_SETS.length);
+    expect(ids).toContain(caaControlId('widgit'));
+  });
+});
+
+describe('CAA_SECTIONS — três seções, e a primeira NÃO sai do catálogo', () => {
+  it('[Right] o interruptor das letras é a seção «agora»; os 8 conjuntos dividem-se nas outras duas', () => {
+    const [agora, preparo, negociacao] = CAA_SECTIONS.map((s) => s.rows());
+    expect(agora.map((l) => l.id)).toEqual(['caa-caixa-alta']);
+    expect(preparo.length + negociacao.length).toBe(CAA_SETS.length);
+    expect(negociacao.map((l) => l.id))
+      .toEqual(['sclera', 'pcs', 'symbolstix', 'widgit'].map(caaControlId));
   });
 });

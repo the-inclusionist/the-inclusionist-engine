@@ -556,6 +556,9 @@ const pt: Record<string, string> = {
   'a11y.changed': 'alterado',
   'sr.visual.reset': 'Acessibilidade visual restaurada aos padrões: contraste, realce, cores e contornos. As legendas e os outros menus não mudaram.',
   'sr.motion.reset': 'Sensibilidade visual restaurada aos padrões: animações e estética CRT. As animações voltam ao que o seu sistema pede.',
+  'caa.letras': 'Letras maiúsculas',
+  'caa.letras.dica': 'Ligado: o jogo inteiro em caixa alta, como a alfabetização brasileira costuma começar. '
+    + 'Desligado: maiúsculas e minúsculas, a escrita do dia a dia.',
   'caa.emPreparo': 'em preparação',
   'caa.aguardandoNegociacao': 'aguardando negociação',
   'caa.secao.agora': 'Disponível agora',

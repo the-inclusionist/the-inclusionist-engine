@@ -1742,6 +1742,7 @@
     "labelRow",
     "mountSteps",
     "nextStep",
+    "sectionHeader",
     "updateSteps"
   ],
   "ui/pause-buttons.ts": [
@@ -1810,12 +1811,14 @@
     "mountSoundInside"
   ],
   "ui/settings-caa.ts": [
+    "CAA_SECTIONS",
     "SettingsCaaApi",
     "SettingsCaaCtx",
-    "caaListHtml",
-    "caaRowHtml",
+    "caaControlId",
+    "caaRowSpec",
     "initSettingsCaa",
-    "lettersRowHtml",
+    "lettersRowSpec",
+    "mountCaaInside",
     "upperCaseOn"
   ],
   "ui/settings-controls.ts": [

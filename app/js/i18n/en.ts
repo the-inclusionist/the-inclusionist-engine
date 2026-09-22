@@ -447,6 +447,9 @@ const en: Record<string, string> = {
   'a11y.changed': 'changed',
   'sr.visual.reset': 'Visual accessibility restored to its defaults: contrast, enhancement, colours and outlines. Captions and the other menus did not change.',
   'sr.motion.reset': 'Visual sensitivity restored to its defaults: animations and CRT look. Animations go back to what your system asks for.',
+  'caa.letras': 'Capital letters',
+  'caa.letras.dica': 'On: the whole game in capitals, the way early literacy usually starts. '
+    + 'Off: capitals and lower case, everyday writing.',
   'caa.emPreparo': 'in preparation',
   'caa.aguardandoNegociacao': 'awaiting negotiation',
   'caa.secao.agora': 'Available now',

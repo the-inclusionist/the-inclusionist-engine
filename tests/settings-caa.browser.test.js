@@ -2,7 +2,9 @@
 // Testes de ui/settings-caa — o painel (project BROWSER: usa document). ADR-0028 (7º menu) + ADR-0029 (marca).
 // A lógica pura (catálogo, motivos, montagem) está em caa-sets.node.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { initSettingsCaa } from '../app/js/ui/settings-caa.js';
+import { initSettingsCaa, mountCaaInside } from '../app/js/ui/settings-caa.js';
+import { sectionHeader } from '../app/js/ui/panel-widgets.js';
+import { CAA_SETS } from '../app/js/ui/caa-sets.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -125,6 +127,59 @@ describe('ui/settings-caa — restaurar padrões (ADR-0028) e marca (ADR-0029)',
 
     $('#caa-reset').click();
     expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
+  });
+});
+
+describe('ui/settings-caa — a montagem pelo kit (ADR-0129)', () => {
+  const kit = () => ({ procurar: (sel) => document.querySelector(sel), criar: (tag) => document.createElement(tag) });
+
+  it('[Zero] uma seção sem nenhuma linha NÃO desenha o cabeçalho dela', () => {
+    // Um «Aguardando negociação» sobre o vazio conta ao educador que há algo ali e não há: ele procura a linha
+    // que o título promete. 📌 Em cadeia este ramo era inalcançável pela API pública — o catálogo é fixo e
+    // nenhuma seção fica vazia hoje —, e era por isso que a sonda de 22/09 o achava e não podia prendê-lo. Com
+    // o número de linhas como ARGUMENTO ele passa a ser exercível, que é o que uma regra precisa para ser uma.
+    expect(sectionHeader(kit(), 'Aguardando negociação', 'a permissão não é nossa', 0)).toBeNull();
+    expect(sectionHeader(kit(), 'Aguardando negociação', 'a permissão não é nossa', 1)).not.toBeNull();
+  });
+
+  it('[Right] a lista traz o interruptor mais os 8 conjuntos, em três seções', () => {
+    initSettingsCaa(fullCtx()).render();
+    expect($('#caa-caixa-alta')).not.toBeNull();
+    for (const s of CAA_SETS) expect($(`#caa-list button[data-caa="${s.key}"]`), s.key).not.toBeNull();
+    expect(document.querySelectorAll('#caa-list .panel-sub')).toHaveLength(3);
+  });
+
+  it('[Right] toda linha nasce com a regra de menu por construção: um `.opt-hint` só, dentro do `<span>`', () => {
+    // É esta a razão de a conversão se pagar. Em cadeia a regra do CLAUDE.md §4 valia por convenção repetida
+    // em quatro ficheiros; agora é o `controlRow` que a escreve, e um quinto painel não pode divergir dela.
+    initSettingsCaa(fullCtx()).render();
+    for (const linha of document.querySelectorAll('#caa-list .ctrl-row')) {
+      expect(linha.querySelectorAll('.opt-hint').length, linha.textContent).toBeLessThanOrEqual(1);
+      const dica = linha.querySelector('.opt-hint');
+      if (dica) expect(dica.parentElement.tagName).toBe('SPAN');
+    }
+  });
+
+  it('[Right] o indisponível vem travado, e o disponível não — nunca um botão que não faz nada', () => {
+    initSettingsCaa(fullCtx()).render();
+    for (const s of CAA_SETS) {
+      expect($(`#caa-list button[data-caa="${s.key}"]`).disabled, s.key).toBe(!s.disponivel);
+    }
+    // O interruptor das letras é o piso offline: nunca depende de ficheiro nenhum, logo nunca vem travado.
+    expect($('#caa-caixa-alta').disabled).toBe(false);
+  });
+
+  it('[Many] montar duas vezes REETIQUETA em vez de duplicar — senão cada render deixaria linhas órfãs', () => {
+    // ⚠️ E reetiquetar não é economia: refazer a linha deixaria um controle no documento e SEM escuta — um
+    // botão morto com aparência de vivo (ADR-0106 §5). É o que o `labelRow` do kit existe para fazer.
+    const lista = $('#caa-list');
+    mountCaaInside(kit(), lista);
+    const antes = lista.querySelectorAll('.ctrl-row').length;
+    const botao = $('#caa-caixa-alta');
+    mountCaaInside(kit(), lista);
+    expect(lista.querySelectorAll('.ctrl-row')).toHaveLength(antes);
+    expect(lista.querySelectorAll('.panel-sub')).toHaveLength(3);
+    expect($('#caa-caixa-alta'), 'o MESMO nó, ou a escuta ligada nele ficou para trás').toBe(botao);
   });
 });
 

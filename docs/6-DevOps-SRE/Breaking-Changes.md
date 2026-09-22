@@ -1790,6 +1790,34 @@ from `ui/switchable-control.js` instead — `VoiceControl` still exists for the 
 📌 The voice is in the family and NOT in the camera cycle: it answers to the 👄, not to the 📷. That is why the interface is
 not called «camera» anything.
 
+## BH · The CAA panel builds NODES: its three string builders leave (ADR-0129, issue #135)
+
+**What this is.** `ui/settings-caa` adopted the panel kit, so the three functions that returned HTML strings leave, and
+three that return DATA arrive in their place.
+
+| gone | in its place |
+|---|---|
+| `ui/settings-caa.lettersRowHtml(on)` | `lettersRowSpec()` → a `ControlRowSpec` the kit turns into a row |
+| `ui/settings-caa.caaRowHtml(set, selected)` | `caaRowSpec(set)` → a `ControlRowSpec`; the selection is reflected, not built |
+| `ui/settings-caa.caaListHtml(letterCase)` | `mountCaaInside(ctx, list)` — it APPENDS nodes instead of returning a string |
+| — | `caaControlId(key)`, `CAA_SECTIONS` — the id rule and the three sections, now readable from outside |
+| — | `ui/panel-widgets.sectionHeader(ctx, title, tag, rows)` — ADDITIVE, and the piece four modules were writing by hand |
+
+🎯 **Why.** The rule of `CLAUDE.md` §4 — short label in sight, ALL the prose in a single `.opt-hint` inside the `<span>` —
+was enforced by construction in the kit and by convention in the string panels. 📏 A convention copied into four files is a
+convention that drifts, and the same was true of `.panel-sub__tag`, hand-written in four modules. Now `controlRow` and
+`sectionHeader` write both rules once.
+
+⚠️ **What to change.** If you mount the panel through `initSettingsCaa`, nothing: the ctx is unchanged, the ids are
+unchanged (`#caa-caixa-alta`, `#caa-letras`, `button[data-caa="<key>"]`), and the markup a stylesheet sees is the same. If
+you called one of the three builders to render the CAA list yourself, call `mountCaaInside(ctx, list)` with a
+`{ procurar, criar }` ctx — the same shape the other kit panels take.
+
+📌 **And the panel stopped rebuilding itself.** It used to replace the whole list on every render; now it mounts once and
+REFLECTS, which is why `labelRow` exists (rebuilding a row leaves a control in the document with no listener — a dead
+button that looks alive, ADR-0106 §5). Practical consequence for a consumer: the nodes in `#caa-list` are now stable
+across renders, so a reference you hold stays valid.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |
