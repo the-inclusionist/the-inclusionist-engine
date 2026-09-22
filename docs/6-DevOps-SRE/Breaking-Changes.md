@@ -1844,6 +1844,33 @@ button now also carries an `id` of `typo-font-<key>` — additive. If you render
 falls when a font is chosen. The `radiogroup` is still ONE across the three family headings, because the exclusivity belongs
 to the menu and not to each family.
 
+## BJ · What a typography CHOICE is moves out: `ui/typo-choices` (ADR-0221, issue #203)
+
+**What this is.** Nine names leave `ui/settings-typo` and arrive, unchanged, in `ui/typo-choices`. No behaviour changes.
+
+| gone from `ui/settings-typo` | now in `ui/typo-choices` |
+|---|---|
+| `isSelectableFont`, `fontCssTarget`, `FontCssTarget` | same names, same signatures |
+| `fontRow`, `typoGroups`, `TypoRow`, `TypoGroupView` | same |
+| `typoRowSpec`, `typoControlId` | same |
+
+🎯 **Why.** The module had two jobs and its name only ever described one. `ui/typo-choices` answers what a choice IS — which
+faces can be chosen, what CSS each one drives, what shape the row offering it has — with no DOM, no ctx and no state;
+`ui/settings-typo` keeps the work the name always meant: find the nodes it reaches but never created, wire them, and reflect
+the choice. 📌 It is the same cut `ui/audio-choices` got from `ui/settings-audio` (note BD), and the same thing marked it: the
+test files had already split along that seam, the pure cases in the node project and the markup ones in the browser.
+
+📏 **And the ratchet pointed at it.** Adopting the panel kit (note BI) left `ui/settings-typo` at 183 code lines against a
+p90 ceiling of 187 — it had spent its headroom. After the cut it is **134 lines and 20 branches**, below where it stood
+*before* the kit adoption (137 and 24), and `ui/typo-choices` is 53 lines with a fan-out of 3.
+
+⚠️ **What to change.** If you only call `initSettingsTypo`, nothing. If you imported any of the nine, change the module path
+to `@the-inclusionist/engine/ui/typo-choices.js` — the names and signatures are identical. 📌 No alias was left behind on
+purpose: a re-export would keep a path alive that nothing uses and would make the public-surface portrait lie, because it
+does not see re-exports (#204).
+
+📌 `resolveFontKey` and `persistFontKey` stay re-exported from `ui/settings-typo`, because that is where their consumer is.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

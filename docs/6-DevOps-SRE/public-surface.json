@@ -1898,20 +1898,11 @@
     "topByZ"
   ],
   "ui/settings-typo.ts": [
-    "FontCssTarget",
     "SettingsTypoApi",
     "SettingsTypoCtx",
-    "TypoGroupView",
-    "TypoRow",
     "TypoStore",
-    "fontCssTarget",
-    "fontRow",
     "initSettingsTypo",
-    "isSelectableFont",
-    "mountTypoInside",
-    "typoControlId",
-    "typoGroups",
-    "typoRowSpec"
+    "mountTypoInside"
   ],
   "ui/settings-visual.ts": [
     "CONTRAST_LABELS",
@@ -1980,6 +1971,17 @@
     "computeTitleMenuView",
     "initTitle",
     "isTitleMenuId"
+  ],
+  "ui/typo-choices.ts": [
+    "FontCssTarget",
+    "TypoGroupView",
+    "TypoRow",
+    "fontCssTarget",
+    "fontRow",
+    "isSelectableFont",
+    "typoControlId",
+    "typoGroups",
+    "typoRowSpec"
   ],
   "ui/visual-axes-panel.ts": [
     "AxisChoice",

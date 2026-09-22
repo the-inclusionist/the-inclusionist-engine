@@ -5,7 +5,7 @@
     "codeLines": 187,
     "decisionNodes": 37,
     "maxDepth": 4,
-    "fanOut": 6,
+    "fanOut": 7,
     "globalReach": 0,
     "worstFunction": 10
   },
@@ -196,7 +196,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 38
+      "fanIn": 39
     },
     "core/layers.ts": {
       "codeLines": 40,
@@ -1484,7 +1484,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 7,
-      "fanIn": 2
+      "fanIn": 3
     },
     "ui/game-options.ts": {
       "codeLines": 130,
@@ -1652,7 +1652,7 @@
       "fanOut": 1,
       "globalReach": 1,
       "worstFunction": 8,
-      "fanIn": 8,
+      "fanIn": 9,
       "reached": [
         "CSS"
       ]
@@ -1771,10 +1771,10 @@
       "fanIn": 1
     },
     "ui/settings-typo.ts": {
-      "codeLines": 183,
-      "decisionNodes": 32,
+      "codeLines": 134,
+      "decisionNodes": 20,
       "maxDepth": 3,
-      "fanOut": 6,
+      "fanOut": 7,
       "globalReach": 0,
       "worstFunction": 7,
       "fanIn": 1
@@ -1823,6 +1823,15 @@
       "globalReach": 0,
       "worstFunction": 7,
       "fanIn": 0
+    },
+    "ui/typo-choices.ts": {
+      "codeLines": 53,
+      "decisionNodes": 12,
+      "maxDepth": 2,
+      "fanOut": 3,
+      "globalReach": 0,
+      "worstFunction": 6,
+      "fanIn": 1
     },
     "ui/visual-axes-panel.ts": {
       "codeLines": 17,

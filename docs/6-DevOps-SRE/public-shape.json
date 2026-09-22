@@ -3005,22 +3005,6 @@
       "getFontKey",
       "render",
       "setFont"
-    ],
-    "interface FontCssTarget": [
-      "cursiva",
-      "customFamily",
-      "fonte"
-    ],
-    "interface TypoRow": [
-      "disabled",
-      "fam",
-      "key",
-      "note",
-      "selected"
-    ],
-    "interface TypoGroupView": [
-      "g",
-      "rows"
     ]
   },
   "ui/settings-visual.ts": {
@@ -3159,6 +3143,24 @@
       "titleBlockDisplay"
     ],
     "type TitleMenuId": "'tm-main' | 'tm-alf' | 'tm-mat' | 'tm-tab' | 'tm-fr' | 'tm-cen'"
+  },
+  "ui/typo-choices.ts": {
+    "interface FontCssTarget": [
+      "cursiva",
+      "customFamily",
+      "fonte"
+    ],
+    "interface TypoRow": [
+      "disabled",
+      "fam",
+      "key",
+      "note",
+      "selected"
+    ],
+    "interface TypoGroupView": [
+      "g",
+      "rows"
+    ]
   },
   "ui/visual-axes-panel.ts": {
     "type VisualAxis": "EixoVisualDeRender",

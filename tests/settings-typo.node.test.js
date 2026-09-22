@@ -5,9 +5,12 @@
 // settings-typo.browser.test.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // o catálogo de fontes guarda CHAVE desde o item 14
+import { resolveFontKey, persistFontKey } from '../app/js/ui/settings-typo.js';
+// 📌 A metade PURA saiu para `ui/typo-choices` em 22/09 (nota BJ) — e foi este ficheiro que marcou a costura
+// antes de ela existir: os casos que ele já tinha eram todos sobre o que uma ESCOLHA é, nenhum sobre um nó.
 import {
-  isSelectableFont, resolveFontKey, persistFontKey, fontCssTarget, typoGroups, fontRow, typoRowSpec, typoControlId,
-} from '../app/js/ui/settings-typo.js';
+  isSelectableFont, fontCssTarget, typoGroups, fontRow, typoRowSpec, typoControlId,
+} from '../app/js/ui/typo-choices.js';
 import { FONT_BY_KEY, FONT_GROUPS, fontRole, faceScale, BASE_EM_PX } from '../app/js/ui/fonts.js';
 
 // Fake de platform/storage.ts: um Map em memória, mesma forma (get/set) do módulo real.
