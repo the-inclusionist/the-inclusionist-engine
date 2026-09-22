@@ -245,3 +245,93 @@ describe('ui/voice-control — nothing keeps listening after she turns it off', 
     expect(b.log.loads).toBe(0);
   });
 });
+
+/* ===================== THE LANGUAGE CHANGED (ADR-0225) ===================== */
+// 🔴 The recogniser used to choose its language ONCE, when the 👄 was switched on. A child who changed language while
+// listening went on being heard in the old one — and that is worse than being heard by nobody, because the grammar DOES
+// follow the open menu (ADR-0194), so the new language's words were fed to the old language's model and a closed grammar
+// answers with the nearest candidate. Measured in the lab on 2026-09-14: «configurações de inclusão» came back as «quatro».
+describe('the language changed', () => {
+  /** A bench whose language a case can change, the way the icon bar's flag button does. */
+  const benchWithLanguage = (first, over = {}) => {
+    let lang = first;
+    const b = bench({ language: () => lang, ...over });
+    return { ...b, setLanguage: (l) => { lang = l; } };
+  };
+
+  it('🔴 [Right] while it is LISTENING, the model and the vocabulary are chosen again', async () => {
+    const b = benchWithLanguage('pt-BR');
+    await b.control.apply(true);
+    expect(b.log.lastLoad.language, 'it did not open the language it booted in').toBe('pt-BR');
+    b.setLanguage('es-MX');
+    await b.control.languageChanged();
+    expect(b.log.loads, 'the recogniser was not opened again for the new language').toBe(2);
+    expect(b.log.lastLoad.language, 'it went on listening in the old language').toBe('es-MX');
+    expect(b.log.stopped, 'the old recogniser was left running underneath the new one').toBe(1);
+    expect(b.log.listens).toBe(2);
+  });
+
+  it('🔴 [Right] and the GRAMMAR that reaches the microphone is the new language\'s', async () => {
+    // 📌 It is the half that made the defect worse than stopping: the words followed and the model did not.
+    const b = benchWithLanguage('pt-BR');
+    await b.control.apply(true);
+    b.setLanguage('en-US');
+    await b.control.languageChanged();
+    expect(b.log.lastListen.grammar, 'the new model was fed the old language\'s words')
+      .toEqual([...voiceGrammar('en-US', [])]);
+  });
+
+  it('🎯 [Zero] while it is OFF there is nothing to do — the next start already reads the new language', async () => {
+    const b = benchWithLanguage('pt-BR');
+    b.setLanguage('es-MX');
+    await b.control.languageChanged();
+    expect(b.log.loads, 'a recogniser nobody asked for was opened by a language change').toBe(0);
+    expect(b.log.stopped).toBe(0);
+    await b.control.apply(true);
+    expect(b.log.lastLoad.language, 'the start after the change read the old language').toBe('es-MX');
+  });
+
+  it('🔴 [Zero] a language whose model is NOT in the delivery is SAID, and the icon goes back to off', async () => {
+    // ⚠️ ADR-0169, and this is the path a change reaches: the heavy files are chosen at BOOT for the boot language, so a
+    // child who switches may be asking for a model that never arrived. A microphone listening in the wrong language would
+    // be the silent answer; this is the loud one.
+    let lang = 'pt-BR';
+    const b = bench({
+      language: () => lang,
+      loadRuntime: async (d) => { b.log.loads += 1; b.log.lastLoad = d; return d.language === 'pt-BR' ? { ok: true, model: MODEL } : { ok: false, missing: ['vosk-model-small-es'] }; },
+    });
+    await b.control.apply(true);
+    expect(b.log.reported).toEqual([]);
+    lang = 'es-MX';
+    await b.control.languageChanged();
+    expect(b.log.reported, 'the missing model was not said anywhere').toHaveLength(1);
+    expect(b.log.reported[0]).toMatch(/vosk-model-small-es/);
+    expect(b.log.off, 'the 👄 stayed lit over a recogniser that never opened').toBe(1);
+    expect(b.log.listens, 'a microphone was opened for a model that is not there').toBe(1);
+  });
+
+  it('⚠️ [Boundary] a change WHILE IT IS STARTING replaces the start in flight, and does not race it', async () => {
+    // 📌 The start in flight is in the OLD language. Letting it finish and replacing it costs one opening; skipping the
+    // wait would let it install the old model on top of the new one.
+    let arrive;
+    let lang = 'pt-BR';
+    // 📌 Só a PRIMEIRA abertura fica pendurada: é a que está em voo quando a língua muda. A segunda responde logo, senão o
+    // caso mediria o duble a não responder em vez do controle a substituir o arranque.
+    const b = bench({
+      language: () => lang,
+      listen: (d) => {
+        b.log.listens += 1; b.log.lastListen = d;
+        if (b.log.listens > 1) return Promise.resolve(b.listener);
+        return new Promise((r) => { arrive = r; });
+      },
+    });
+    const starting = b.control.apply(true);
+    await new Promise((r) => { setTimeout(r, 0); });
+    lang = 'es-MX';
+    const changed = b.control.languageChanged();
+    arrive(b.listener);
+    await Promise.all([starting, changed]);
+    expect(b.log.lastLoad.language, 'the old language won the race').toBe('es-MX');
+    expect(b.log.stopped, 'the start in flight was left listening underneath').toBe(1);
+  });
+});

@@ -502,6 +502,17 @@ describe('createGame em execução', () => {
       .toMatch(/state\.on\('blindMode',\s*\(\)\s*=>\s*\{\s*pauseIcons\.reflectIconsIn\(a11yBar,\s*0\);\s*\}\)/);
   });
 
+  it('🔴 [Right] trocar de idioma avisa o RECONHECIMENTO DE FALA, e não só o que se desenha (ADR-0225)', () => {
+    // 🔴 O `ui/voice-control` tem os casos do que ele FAZ quando lhe dizem que a língua mudou; o que não tinha nada a
+    // segurá-lo era a raiz DIZER-LHO — uma mutação que apagava esta linha passava com a suíte inteira verde.
+    // ⚠️ LIDO DA FONTE, e é a mesma razão dos dois crivos acima: o 👄 só nasce onde há microfone por onde pedir, e num
+    // arranque de teste ele nunca chega a estar LIGADO no instante da troca (o modelo não está na entrega, então ele
+    // falha a começar e apaga-se). Uma afirmação que não se consegue fazer de fora é melhor dita assim do que fingida
+    // com um duplo que aceita tudo. O que ela prende é a LIGAÇÃO; o comportamento está preso em `voice-control`.
+    expect(FONTE, 'a troca de idioma deixou de alcançar o reconhecimento de fala: a criança passa a ser ouvida na língua velha')
+      .toMatch(/win\.addEventListener\('i18n:change'[\s\S]{0,2000}?voiceControl\?\.languageChanged\(\)/);
+  });
+
   it('⚠️ [Right] a engine monta o CARTÃO DE PAUSA — e com o id que ela própria procura', async () => {
     // 📏 O LAÇO QUE ISTO FECHA, medido nos seis jogos: `#vp-pause-0` é procurado pelo `getPauseMenu` desta
     // raiz e NENHUM jogo o cria (`git grep vp-pause` devolve zero nos seis). A engine inventou uma convenção,

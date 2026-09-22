@@ -119,7 +119,7 @@ import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand, type VirtualController } from '../input/virtual-controller.js';
 import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem } from '../input/switch-scan.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
-import { createVoiceControl } from '../ui/voice-control.js';
+import { createVoiceControl, type VoiceControl } from '../ui/voice-control.js';
 export type { VirtualCommand } from '../input/virtual-controller.js';
 import { mountSteps, updateSteps, nextStep, controlRow, labelRow } from '../ui/panel-widgets.js';
 import { PERSONAS_DO_PAD, closestPersona } from '../input/touch.js';
@@ -3106,6 +3106,11 @@ export function createGame(o: CreateGameOptions): Engine {
    * through `setLocale` (measured in the `dist`: «Cima/Baixo» on an English page). This listener replaced the
    * `localeReady()` repaints that did it for the boot alone.
    */
+  /**
+   * O 👄, quando existe. Declarado AQUI porque a troca de idioma — logo abaixo — tem de o alcançar, e ele nasce lá em baixo:
+   * é a mesma zona morta temporal que o `getPlayers` e o `lacunasDoPad` já ensinaram a este ficheiro.
+   */
+  let voiceControl: VoiceControl | null = null;
   if (typeof win.addEventListener === 'function') {
     win.addEventListener('i18n:change', () => {
       pauseIcons.reflectPauseIcons();
@@ -3113,6 +3118,13 @@ export function createGame(o: CreateGameOptions): Engine {
       if (palavraPausado && !palavraPausado.hidden) palavraPausado.textContent = t('pause.quick');
       desenharPad();
       ligacoesDoToque.rewire();
+      /*
+       * 🔴 E O QUE A ENGINE OUVE TAMBÉM MUDA (ADR-0225). O que ela DESENHA já seguia desde o item C6; o que ela FALA segue
+       * sozinho (o `tts` lê `bcp47()` a cada fala) e o que ela LÊ também (a cada `listen()`). O reconhecimento de comandos era
+       * o único que escolhia a língua UMA vez — e ficar a ouvir na língua velha é pior do que parar, porque a gramática segue o
+       * menu e as palavras novas iam alimentar o modelo antigo.
+       */
+      void voiceControl?.languageChanged();
     });
   }
 
@@ -4065,18 +4077,18 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
         .map((el) => accessibleLabel(el))
         .filter((s) => s.length > 1);
     };
-    const voice = createVoiceControl({
+    voiceControl = createVoiceControl({
       base: doc.baseURI, language: () => bcp47(), controller: controleVirtual, menuWords,
       say: srSay, alert: srAlert,
       report: (line) => { if (!problemasMedidos.includes(line)) problemasMedidos.push(line); },
       turnOff: () => { state.setVoiceControlValue(false); },
       after: (fn, ms) => { win.setTimeout(fn, ms); },
     });
-    state.on('voiceControl', (on) => { void voice.apply(on); });
+    state.on('voiceControl', (on) => { void voiceControl?.apply(on); });
     // the words change with the menu that is open, and a menu opens on a key or a touch — so they are re-read on every draw of
     // the bar, which is what already happens whenever a card or a panel appears (ADR-0106 §5)
-    state.on('menuIndexOn', () => { voice.refreshGrammar(); });
-    void voice.apply(state.voiceControl);
+    state.on('menuIndexOn', () => { voiceControl?.refreshGrammar(); });
+    void voiceControl.apply(state.voiceControl);
   }
   /*
    * O AMOSTRADOR DE FLASHES MORA EM `platform/flash-sampler` (ADR-0221, issue #203), e o que fica aqui é o que só a raiz sabe:

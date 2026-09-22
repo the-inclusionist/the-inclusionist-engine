@@ -48,6 +48,13 @@ export interface VoiceControlDeps {
 export interface VoiceControl extends SwitchableControl {
   /** The open menu changed: the words it shows join the grammar, or leave it. */
   refreshGrammar(): void;
+  /**
+   * THE CHILD'S LANGUAGE CHANGED (ADR-0225): the model, the vocabulary and the grammar are chosen again.
+   *
+   * 📌 A listening recogniser is restarted, which costs the model being opened once more; one that is off has nothing to do,
+   * because the next start already reads the new language.
+   */
+  languageChanged(): Promise<void>;
 }
 
 export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
@@ -122,7 +129,7 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     d.say(t('sr.voice.ready'));
   };
 
-  return {
+  const api: VoiceControl = {
     async apply(next) {
       on = next;
       if (!next) { stop(); return; }
@@ -133,5 +140,24 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     refreshGrammar() {
       listener?.setGrammar(grammarNow());
     },
+    async languageChanged() {
+      /*
+       * 🔴 THE RECOGNISER STOPS CHOOSING ITS LANGUAGE ONCE (ADR-0225). `start()` reads `d.language()` for the MODEL and for the
+       * vocabulary, and it used to read it only at the moment the 👄 was switched on — so a child who changed language while
+       * listening went on being heard in the old one.
+       * ⚠️ AND THAT IS WORSE THAN STOPPING, which is why this is not cosmetic: the grammar DOES follow, because it is rebuilt
+       * whenever a menu opens (ADR-0194). So after a change the new language's words were fed to the old language's model, and
+       * a closed grammar answers with the nearest candidate — measured in the lab on 2026-09-14, where «configurações de
+       * inclusão» came back as «quatro». A microphone that acts on a word the child did not say is the defect here.
+       * 📌 OFF IS ALREADY RIGHT: the next start reads the language then. This only has work to do while it is listening.
+       */
+      if (!on) return;
+      // ⚠️ A START IN FLIGHT IS IN THE OLD LANGUAGE. Letting it finish and replacing it costs one opening; skipping it would
+      // leave `starting` to install the old model on top of the new one, which is the race the `if (!on)` in `start` exists for.
+      await starting;
+      stop();
+      await api.apply(true);
+    },
   };
+  return api;
 }

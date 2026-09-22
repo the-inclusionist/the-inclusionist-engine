@@ -25,7 +25,7 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2119,
+      "codeLines": 2121,
       "decisionNodes": 301,
       "maxDepth": 4,
       "fanOut": 84,
@@ -1883,8 +1883,8 @@
       ]
     },
     "ui/voice-control.ts": {
-      "codeLines": 93,
-      "decisionNodes": 9,
+      "codeLines": 101,
+      "decisionNodes": 10,
       "maxDepth": 2,
       "fanOut": 7,
       "globalReach": 0,

@@ -84,6 +84,11 @@
     "captionDuration",
     "isCaptionRate"
   ],
+  "core/cartridge-problems.ts": [
+    "DeclaredCartridgeFacts",
+    "MeasuredCartridgeProblems",
+    "cartridgeProblems"
+  ],
   "core/collision.ts": [
     "CollisionCtx",
     "caneBlockPx",

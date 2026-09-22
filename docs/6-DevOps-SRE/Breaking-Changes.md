@@ -2087,6 +2087,30 @@ root did not mount. The root mounts it now, so it arrives.
 roots on one page poll the SAME controller and the first to run consumes the edge. There is one root in a page that
 plays; it is the same family as ADR-0142, one floor down.
 
+## BQ · The recogniser stops choosing its language once (ADR-0225, issue #184)
+
+**What this is.** `VoiceControl` gains a required member, `languageChanged(): Promise<void>`, and the root calls it on
+`i18n:change`. A listening recogniser is restarted so the model, the vocabulary and the grammar are chosen again; one
+that is off has nothing to do, because its next start already reads the new language.
+
+🎯 **Why it is worse than a recogniser that simply stops.** The grammar already followed the language, because it is
+rebuilt whenever a menu opens (ADR-0194) — the MODEL and the vocabulary did not. So after a change the new language's
+words were fed to the old language's model, and a closed grammar answers with the nearest candidate: measured in the
+lab on 2026-09-14, «configurações de inclusão» came back as «quatro». A microphone that acts on a word the child did
+not say is the defect this closes.
+
+📏 **What already followed, and still does** — measured before the work so it could not be quietly lost: `platform/tts`
+reads the language when it lists voices and again when it speaks, and the voice in use falls back to the new language's
+first voice; `platform/reading` reads it at every `listen()`.
+
+⚠️ **What to change.** If you only call `createGame`, nothing. If you implement `VoiceControl` yourself, add
+`languageChanged()`. 📌 And if your cartridge draws its own text, the engine cannot repaint it: `i18n:change` is
+dispatched for exactly that, and `dictionaryGaps` says in `problems` when a registered dictionary has holes.
+
+📌 **A language whose model never reached the delivery is SAID** (ADR-0169). The heavy files are chosen at boot for the
+boot language, so a child who switches may be asking for something that is not there — that becomes a line in
+`problems` and the 👄 goes back to off, not a microphone listening in the wrong language.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

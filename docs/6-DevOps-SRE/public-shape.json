@@ -107,6 +107,23 @@
   "core/caption-duration.ts": {
     "type CaptionRate": "(typeof CAPTION_RATES)[number]"
   },
+  "core/cartridge-problems.ts": {
+    "interface MeasuredCartridgeProblems": [
+      "drawnBelowFloor",
+      "genreWarning",
+      "padGaps",
+      "resizedRegion"
+    ],
+    "interface DeclaredCartridgeFacts": [
+      "declinesNeuralVoice",
+      "declinesPauseActor",
+      "seats",
+      "setsPauseActor",
+      "wantsNeuralVoice",
+      "worldIsInPage",
+      "worldSelector"
+    ]
+  },
   "core/collision.ts": {
     "type CollisionCtx": "{ world: number[][]"
   },
@@ -1430,6 +1447,7 @@
     "interface ReadingInWorkerDeps": [
       "base",
       "language",
+      "report?",
       "spawn?"
     ],
     "interface ReadingInWorker": [
@@ -3205,6 +3223,7 @@
       "turnOff"
     ],
     "interface VoiceControl": [
+      "languageChanged",
       "refreshGrammar"
     ]
   },
