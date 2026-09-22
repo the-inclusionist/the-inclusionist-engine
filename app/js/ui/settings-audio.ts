@@ -15,12 +15,11 @@
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 import { toggleLabel } from './dom.js';
-import { t, bcp47 } from '../core/i18n.js';
+import { t } from '../core/i18n.js';
 import { DEFAULTS } from '../core/state.js';
 // O módulo INTEIRO, e não os nomes soltos: `menuIndexOn` é ligação viva e `setMenuIndexOnValue` a muda — ler
 // pelo namespace deixa isso à vista em cada uso, em vez de parecer uma constante importada.
 import * as state from '../core/state.js';
-import { SPEECH_RATES } from '../core/speech-rate.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
@@ -28,6 +27,12 @@ import type { PlayerAudioOut } from '../platform/audio-sonar.js'; // ADR-0039: o
 import type { DomQuery } from '../core/dom-query.js';
 import type { PanelShellCtx } from './panel-shell.js';
 import { controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
+/*
+ * 🔴 A SECÇÃO DA VOZ MUDOU DE CASA para `ui/voice-settings` (ADR-0221, issue #203): metade deste ficheiro era sobre FALA — o
+ * interruptor da narração, o motor, a voz, o ritmo, o índice falado e o botão de teste — e a outra metade sobre categorias de
+ * som, bengala, modo cego e saídas. As duas nunca precisaram uma da outra.
+ */
+import { createVoiceSettings, type TtsPanel } from './voice-settings.js';
 
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
 // módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
@@ -48,51 +53,8 @@ export interface AudioStore {
 import {
   type AudioCatDef, type AudioCatState,
   NAV_CATS, GEN_CATS, volPercent, catsListHTML, navMasterVolume, parseCaneDiv, caneDivMessage,
-  voiceEngineOptions, pickVoicesFor, voiceLabel, sinksSupported, sinkOptionLabel, sinkSelectValue,
+  sinksSupported, sinkOptionLabel, sinkSelectValue,
 } from './audio-choices.js';
-
-export interface TtsPanelEngine { id: string; speak: (text: string) => void; }
-/** Minimal shape of the injected `tts` (platform/tts.ts's createTts() instance) this panel drives. */
-export interface TtsPanel {
-  getEngineSel: () => string;
-  setEngineSel: (v: string) => void;
-  getEngine: () => TtsPanelEngine | null;
-  getVoiceObj: () => SpeechSynthesisVoice | null;
-  setVoiceObj: (v: SpeechSynthesisVoice | null) => void;
-  loadTTS: () => void;
-  narrate: (text: string) => void;
-  /**
-   * Does this assembly have a neural engine (the game's Kokoro port, ADR-0198)? Optional, absent reads `true`: a panel test
-   * fake written before this field has no opinion on neural engines.
-   */
-  neuralDisponivel?: boolean;
-  /** The voices of the language (ADR-0185). Optional: a panel driven without them offers no «Voz» list and locks nothing. */
-  vozes?: () => readonly PanelVoice[];
-  vozAtual?: () => PanelVoice | null;
-  setVoz?: (id: string) => boolean;
-}
-
-/** A voice as this panel lists it: `webspeech:<name>` for the browser's, `xx_name` for Kokoro's. */
-export interface PanelVoice { readonly voice: string; readonly engine?: string; readonly boa?: boolean }
-
-/** The name a child sees for a voice: the browser's name, or the name in a Kokoro identifier — `pf_dora` is «Dora». */
-function nomeDaVoz(v: PanelVoice): string {
-  // a browser voice is named by the browser (ADR-0200); Kokoro ids read `xx_name` (`pf_dora`)
-  // («Microsoft Maria - Portuguese (Brazil)» is «Microsoft Maria»: the language is already the list's, and no parentheses, ADR-0158)
-  if (v.voice.startsWith('webspeech:')) return v.voice.slice('webspeech:'.length).replace(/\s*\([^)]*\)/g, '').split(' - ')[0]!.trim();
-  const nome = v.voice.split('_')[1] ?? v.voice;
-  return nome.charAt(0).toUpperCase() + nome.slice(1);
-}
-/**
- * What the list SHOWS: Kokoro's two good voices, Heart and Bella, carry a heart (ADR-0198 §3). Only shown: what is said is the
- * name alone (ADR-0159 rule 12, no glyph in a spoken name).
- */
-function rotuloDaVoz(v: PanelVoice): string {
-  return (v.boa ? '❤️ ' : '') + nomeDaVoz(v);
-}
-
-/** The rows a missing voice locks (ADR-0185 §4): narration, its volume and rate, the spoken index, and the voice. */
-const LINHAS_DA_FALA: readonly string[] = ['#opt-tts', '#tts-vol', '#tts-ppm', '#opt-menuindex', '#tts-voz'];
 
 /**
  * Saída de áudio dedicada de um jogador: o id do dispositivo e o AudioContext/ganho que ele abriu.
@@ -300,6 +262,33 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
 
   let audioDevices: MediaDeviceInfo[] = [];
 
+  /*
+   * ⚠️ O NAVEGADOR VIAJA COMO QUATRO FUNÇÕES, e não como um global alcançado lá dentro: um módulo NOVO que alcança
+   * `document` ou `window` é recusado pela catraca do passo 7d (o tecto do alcance é ZERO). Este ficheiro continua a
+   * alcançá-los — é dívida declarada dele —, e o que passa para baixo são portas.
+   */
+  const voice = createVoiceSettings(ctx, {
+    newOption: () => document.createElement('option'),
+    systemVoices: () => {
+      try { return (window.speechSynthesis && window.speechSynthesis.getVoices()) || []; } catch (e) { return []; }
+    },
+    speakSample: (sample, chosen) => {
+      try {
+        const ss = window.speechSynthesis;
+        if (!ss) return;
+        ss.cancel();
+        const u = new SpeechSynthesisUtterance(sample);
+        u.lang = 'pt-BR';
+        if (chosen) u.voice = chosen;
+        u.rate = 1; u.volume = 1;
+        ss.speak(u);
+      } catch (e) { /* noop */ }
+    },
+    whenVoicesChange: (again) => {
+      try { if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = again; } catch (e) { /* noop */ }
+    },
+  });
+
   function reflectMaster(): void {
     const b = ctx.$<HTMLButtonElement>('#audio-master');
     if (b) {
@@ -355,100 +344,6 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     const m = ctx.$<HTMLInputElement>('#navsound-master');
     const state = ctx.getAudioCat();
     if (m && state) m.value = String(navMasterVolume(state, NAV_CATS));
-  }
-
-  function reflectTts(): void {
-    const b = ctx.$<HTMLButtonElement>('#opt-tts');
-    const state = ctx.getAudioCat();
-    const on = !!(state && state.tts && state.tts.on);
-    if (b) { ctx.toggleBtn(b, on); b.textContent = toggleLabel(on); }
-    const e = ctx.$<HTMLSelectElement>('#tts-engine');
-    if (e) e.value = ctx.tts.getEngineSel();
-  }
-
-  /**
-   * O alternador do ÍNDICE "6 de 10" (ADR-0044, item 3).
-   *
-   * Ele mora ao lado da narração por voz e não num painel de visual, porque é a NARRAÇÃO que ele muda: quem
-   * desliga o índice está encurtando o que ouve a cada passo, e é aqui que essa pessoa vem quando o que ouve
-   * incomoda.
-   */
-  function reflectMenuIndex(): void {
-    const b = ctx.$<HTMLButtonElement>('#opt-menuindex');
-    if (b) { ctx.toggleBtn(b, state.menuIndexOn); b.textContent = toggleLabel(state.menuIndexOn); }
-  }
-
-  function populateTtsEngines(): void {
-    const sel = ctx.$<HTMLSelectElement>('#tts-engine');
-    if (!sel || sel.dataset.filled) return;
-    sel.dataset.filled = '1';
-    voiceEngineOptions(ctx.tts.neuralDisponivel !== false).forEach(([v, l]) => {
-      const o = document.createElement('option'); o.value = v; o.textContent = t(l); sel.appendChild(o);
-    });
-    sel.value = ctx.tts.getEngineSel();
-  }
-
-  function populateTtsVoices(): void {
-    const sel = ctx.$<HTMLSelectElement>('#tts-voice');
-    if (!sel) return;
-    let voices: SpeechSynthesisVoice[] = [];
-    try { voices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || []; } catch (e) { /* noop */ }
-    const list = pickVoicesFor(voices, bcp47());
-    sel.innerHTML = '';
-    if (!list.length) {
-      const o = document.createElement('option'); o.textContent = t('audio.noSystemVoices'); sel.appendChild(o);
-      ctx.tts.setVoiceObj(null);
-      return;
-    }
-    list.forEach((v) => {
-      const o = document.createElement('option'); o.value = v.name; o.textContent = voiceLabel(v); sel.appendChild(o);
-    });
-    const saved = ctx.store.get('incl_tts_voice', null);
-    const pick = list.find((v) => v.name === saved) || list[0];
-    sel.value = pick.name;
-    ctx.tts.setVoiceObj(pick);
-  }
-
-  const semVoz = (): boolean => !!ctx.tts.vozes && ctx.tts.vozes().length === 0;
-
-  /** The speech rate list: each step «N PPM», the stored one selected (ADR-0183 §1). */
-  function renderRitmo(): void {
-    const sel = ctx.$<HTMLSelectElement>('#tts-ppm');
-    if (!sel) return;
-    while (sel.firstChild) sel.removeChild(sel.firstChild);
-    for (const ppm of SPEECH_RATES) {
-      const o = document.createElement('option'); o.value = String(ppm); o.textContent = t('visual.legenda.ppm', { n: ppm }); sel.appendChild(o);
-    }
-    sel.value = String(state.speechPpm);
-  }
-
-  function renderVozes(): void {
-    const sel = ctx.$<HTMLSelectElement>('#tts-voz');
-    if (!sel || !ctx.tts.vozes) return;
-    const lista = ctx.tts.vozes();
-    sel.replaceChildren(); // options built node by node: no markup sink
-    if (!lista.length) {
-      const o = document.createElement('option'); o.textContent = t('audio.voz.nenhuma'); sel.appendChild(o);
-      return;
-    }
-    for (const v of lista) {
-      const o = document.createElement('option'); o.value = v.voice; o.textContent = rotuloDaVoz(v); sel.appendChild(o);
-    }
-    sel.value = ctx.tts.vozAtual?.()?.voice ?? lista[0]!.voice;
-  }
-
-  /**
-   * No voice speaks the language (ADR-0185 §4): the four speech rows are LOCKED with the reason, never hidden (ADR-0161).
-   * `aria-disabled` and not `disabled`, so the keyboard still reaches the row and hears why.
-   */
-  function travarFala(): void {
-    const travar = semVoz();
-    for (const id of LINHAS_DA_FALA) {
-      const el = ctx.$<HTMLElement>(id);
-      if (!el) continue;
-      if (travar) { el.setAttribute('aria-disabled', 'true'); el.dataset.motivo = t('audio.semVoz'); }
-      else { el.removeAttribute('aria-disabled'); delete el.dataset.motivo; }
-    }
   }
 
   function hasEnumerateDevices(): boolean {
@@ -522,15 +417,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     renderCategoryList('#audio-list', GEN_CATS);
     renderNavSound();
     reflectModoCego();
-    reflectTts();
-    // 🔴 FALTAVA, e só o caso do painel montado pela engine o viu (2026-09-12): o índice nasce LIGADO, o botão nascia
-    // sem estado, e o painel abria a dizer «desligado» — o controle a mentir para o leitor de tela outra vez.
-    reflectMenuIndex();
-    populateTtsEngines();
-    populateTtsVoices();
-    renderVozes();
-    renderRitmo();
-    travarFala();
+    voice.render();
     const cd = ctx.$<HTMLSelectElement>('#cane-div');
     if (cd) cd.value = String(ctx.getCaneBlockDiv());
     void enumerateSinks(); // sem await no original: dispara e segue (lista assíncrona atualiza sozinha)
@@ -633,104 +520,6 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     });
   }
 
-  /*
-   * A LOCKED SPEECH ROW DOES NOTHING AND SAYS WHY (ADR-0185 §4). In the CAPTURE phase on the control itself, so it runs
-   * before the row's own listener and stops it; a moved range goes back to the stored volume, a changed list to the voice in use.
-   * The footer shows the reason when the row takes focus: the card hears `focusin` after the row's own explanation.
-   */
-  for (const id of LINHAS_DA_FALA) {
-    const el = ctx.$<HTMLElement>(id);
-    if (!el) continue;
-    const recusar = (e: Event): void => {
-      if (el.getAttribute('aria-disabled') !== 'true') return;
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      if (id === '#tts-vol') { const cat = ctx.getAudioCat(); if (cat?.tts) (el as HTMLInputElement).value = String(volPercent(cat.tts.vol)); }
-      if (id === '#tts-voz') renderVozes();
-      if (id === '#tts-ppm') renderRitmo();
-      ctx.srSay(el.dataset.motivo ?? t('audio.semVoz'));
-    };
-    for (const tipo of ['click', 'input', 'change']) el.addEventListener(tipo, recusar, true);
-    el.closest<HTMLElement>('.overlay__card')?.addEventListener('focusin', (e) => {
-      if (e.target !== el || el.getAttribute('aria-disabled') !== 'true') return;
-      const rodape = el.closest<HTMLElement>('.overlay__card')?.querySelector<HTMLElement>('.opt-explain');
-      if (rodape) rodape.textContent = el.dataset.motivo ?? '';
-    });
-  }
-
-  const vozSel = ctx.$<HTMLSelectElement>('#tts-voz');
-  if (vozSel) vozSel.addEventListener('change', () => {
-    if (!ctx.tts.setVoz?.(vozSel.value)) { renderVozes(); return; }
-    const v = ctx.tts.vozAtual?.();
-    if (v) ctx.srSay(t('sr.audio.voz', { nome: nomeDaVoz(v) }));
-  });
-
-  const ritmoSel = ctx.$<HTMLSelectElement>('#tts-ppm');
-  if (ritmoSel) ritmoSel.addEventListener('change', () => {
-    state.setSpeechPpmValue(Number(ritmoSel.value));
-    renderRitmo();
-    ctx.srSay(`${t('audio.ttsPpm')}: ${t('visual.legenda.ppm', { n: state.speechPpm })}`);
-  });
-
-  const ttsBtn = ctx.$<HTMLButtonElement>('#opt-tts');
-  if (ttsBtn) ttsBtn.addEventListener('click', () => {
-    const state = ctx.getAudioCat(); if (!state) return;
-    state.tts.on = !state.tts.on;
-    ctx.setCatGain('tts');
-    reflectTts();
-    ctx.srSay(t(state.tts.on ? 'sr.audio.ttsOn' : 'sr.audio.ttsOff'));
-    if (state.tts.on) ctx.tts.narrate(t('sr.audio.ttsOnSpoken'));
-  });
-  const idxBtn = ctx.$<HTMLButtonElement>('#opt-menuindex');
-  if (idxBtn) idxBtn.addEventListener('click', () => {
-    state.setMenuIndexOnValue(!state.menuIndexOn);
-    reflectMenuIndex();
-    // O anúncio da troca NÃO leva índice: ele não é item de lista nenhuma, e um "1 de 1" aqui seria ruído
-    // justamente no momento em que a criança está julgando se o ruído incomoda.
-    ctx.srSay(t(state.menuIndexOn ? 'sr.menu.indexOn' : 'sr.menu.indexOff'));
-  });
-
-  const ttsEngSel = ctx.$<HTMLSelectElement>('#tts-engine');
-  if (ttsEngSel) ttsEngSel.addEventListener('change', () => {
-    ctx.tts.setEngineSel(ttsEngSel.value);
-    ctx.store.set('incl_tts_engine', ttsEngSel.value);
-    if (ttsEngSel.value !== 'webspeech') ctx.tts.loadTTS();
-    const opt = ttsEngSel.options[ttsEngSel.selectedIndex];
-    ctx.tts.narrate(t('sr.audio.engineSet', { motor: opt ? opt.text : '' }));
-  });
-  const ttsVoiceSel = ctx.$<HTMLSelectElement>('#tts-voice');
-  if (ttsVoiceSel) ttsVoiceSel.addEventListener('change', () => {
-    try {
-      const vs = window.speechSynthesis.getVoices();
-      ctx.tts.setVoiceObj(vs.find((v) => v.name === ttsVoiceSel.value) || null);
-      ctx.store.set('incl_tts_voice', ttsVoiceSel.value);
-    } catch (e) { /* noop */ }
-    ctx.tts.narrate(t('sr.audio.voicePicked'));
-  });
-  const ttsTestBtn = ctx.$<HTMLButtonElement>('#opt-tts-test');
-  if (ttsTestBtn) ttsTestBtn.addEventListener('click', () => {
-    const txt = t('audio.voiceSample');
-    const engine = ctx.tts.getEngine();
-    if (ctx.tts.getEngineSel() !== 'webspeech' && engine && engine.speak) {
-      try { engine.speak(txt); } catch (e) { /* noop */ } // motor neural já carregado
-    } else {
-      try {
-        const ss = window.speechSynthesis;
-        if (ss) {
-          ss.cancel();
-          const u = new SpeechSynthesisUtterance(txt);
-          u.lang = 'pt-BR';
-          const vo = ctx.tts.getVoiceObj();
-          if (vo) u.voice = vo;
-          u.rate = 1; u.volume = 1;
-          ss.speak(u);
-        }
-      } catch (e) { /* noop */ } // fallback audível (volume 1) + dispara download do neural
-      if (ctx.tts.getEngineSel() !== 'webspeech') ctx.tts.loadTTS();
-    }
-    ctx.srSay(t('sr.audio.testingVoice'));
-  });
-  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
   //
   // A regra dura é o escopo: este botão restaura o que o menu AUDITIVO contém e nada mais. Um reset que
   // alcançasse fora de si seria pior que a armadilha que ele existe para desfazer — a criança que desfaz um
@@ -757,7 +546,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     // 🔴 DESDE O ADR-0151 ESTE MENU NÃO TEM A MÚSICA: repor aqui a música seria alcançar fora de si — a regra do
     // escopo, acima. Tudo o que não é das categorias de gosto é deste painel.
     reporCategorias(ctx.audioCats.map((c) => c.k).filter((k) => !(GEN_CATS as readonly string[]).includes(k)));
-    renderAudio(); reflectModoCego(); reflectTts(); reflectMenuIndex();
+    renderAudio(); reflectModoCego();
     ctx.srSay(t('sr.audio.reset'));
   });
   // O «repor» do painel ÁUDIO: as categorias de gosto e nada mais.
@@ -766,17 +555,6 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     reporCategorias(GEN_CATS);
     renderAudio();
     ctx.srSay(t('sr.audio.reset'));
-  });
-
-  try { if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = populateTtsVoices; } catch (e) { /* noop */ }
-
-  const ttsVolEl = ctx.$<HTMLInputElement>('#tts-vol');
-  if (ttsVolEl) ttsVolEl.addEventListener('input', () => {
-    const state = ctx.getAudioCat(); if (!state) return;
-    state.tts.vol = (+ttsVolEl.value) / 100;
-    state.tts.on = true;
-    ctx.setCatGain('tts');
-    reflectTts();
   });
 
   const audioDetectBtn = ctx.$<HTMLButtonElement>('#audio-detect');
@@ -800,5 +578,5 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    */
   state.on('blindMode', () => { reflectModoCego(); });
 
-  return { renderAudio, reflectModoCego, reflectTts };
+  return { renderAudio, reflectModoCego, reflectTts: voice.reflectTts };
 }

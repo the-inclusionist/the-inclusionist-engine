@@ -128,7 +128,7 @@
       "maxDepth": 0,
       "fanOut": 0,
       "globalReach": 0,
-      "fanIn": 17
+      "fanIn": 18
     },
     "core/entity.ts": {
       "codeLines": 83,
@@ -176,7 +176,7 @@
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 3,
-      "fanIn": 37,
+      "fanIn": 38,
       "reached": [
         "document",
         "navigator",
@@ -285,7 +285,7 @@
       "maxDepth": 3,
       "fanOut": 3,
       "globalReach": 1,
-      "fanIn": 16,
+      "fanIn": 17,
       "reached": [
         "window"
       ]
@@ -732,7 +732,7 @@
       "fanIn": 3
     },
     "platform/heavy-mirror.ts": {
-      "codeLines": 25,
+      "codeLines": 24,
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 0,
@@ -1240,7 +1240,7 @@
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 0,
-      "fanIn": 2
+      "fanIn": 3
     },
     "ui/caa-sets.ts": {
       "codeLines": 37,
@@ -1284,7 +1284,7 @@
       "maxDepth": 1,
       "fanOut": 2,
       "globalReach": 0,
-      "fanIn": 9
+      "fanIn": 10
     },
     "ui/drawing-problems.ts": {
       "codeLines": 61,
@@ -1520,8 +1520,8 @@
       "fanIn": 1
     },
     "ui/settings-audio.ts": {
-      "codeLines": 517,
-      "decisionNodes": 107,
+      "codeLines": 339,
+      "decisionNodes": 59,
       "maxDepth": 4,
       "fanOut": 12,
       "globalReach": 3,
@@ -1644,6 +1644,14 @@
       "codeLines": 93,
       "decisionNodes": 9,
       "maxDepth": 2,
+      "fanOut": 6,
+      "globalReach": 0,
+      "fanIn": 1
+    },
+    "ui/voice-settings.ts": {
+      "codeLines": 221,
+      "decisionNodes": 47,
+      "maxDepth": 3,
       "fanOut": 6,
       "globalReach": 0,
       "fanIn": 1

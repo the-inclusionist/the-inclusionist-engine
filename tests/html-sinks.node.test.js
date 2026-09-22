@@ -97,7 +97,9 @@ const SEGUROS = [
   // ⚠️ O argumento entrou em 2026-09-08 (ADR-0106 §5) e NÃO muda a classificação: `iconesDoJogo` é uma
   // sub-lista do `PAUSE_ICONS`, constante de `core/pause-icon-catalogue` — nada de fora do repositório alcança este sink.
   ['ui/pause-icons.ts', 'bar.innerHTML = quickBarMarkup(iconesDoJogo);', 'markup da engine + i18n'],
-  ['ui/settings-audio.ts', "sel.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
+  // A lista de vozes do sistema mudou de casa com a secção da voz (ADR-0221, issue #203): quem limpa este `<select>` é
+  // agora o `ui/voice-settings`. A classificação não muda com o ficheiro — o que entra continua a ser uma cadeia vazia.
+  ['ui/voice-settings.ts', "sel.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-audio.ts', "el.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-caa.ts', 'el.innerHTML = caaListHtml(', 'i18n + caixa enumerada'],
   ['ui/settings-motion.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],

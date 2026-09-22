@@ -2809,25 +2809,6 @@
       "get",
       "set"
     ],
-    "interface TtsPanelEngine": [
-      "id"
-    ],
-    "interface TtsPanel": [
-      "getEngine",
-      "getEngineSel",
-      "getVoiceObj",
-      "loadTTS",
-      "narrate",
-      "neuralDisponivel?",
-      "setEngineSel",
-      "setVoiceObj",
-      "setVoz?",
-      "vozAtual?",
-      "vozes?"
-    ],
-    "interface PanelVoice": [
-      "voice"
-    ],
     "interface SettingsAudioCtx": [
       "$",
       "audioCats",
@@ -3202,6 +3183,46 @@
     "interface VoiceControl": [
       "apply",
       "refreshGrammar"
+    ]
+  },
+  "ui/voice-settings.ts": {
+    "interface TtsPanelEngine": [
+      "id"
+    ],
+    "interface TtsPanel": [
+      "getEngine",
+      "getEngineSel",
+      "getVoiceObj",
+      "loadTTS",
+      "narrate",
+      "neuralDisponivel?",
+      "setEngineSel",
+      "setVoiceObj",
+      "setVoz?",
+      "vozAtual?",
+      "vozes?"
+    ],
+    "interface PanelVoice": [
+      "voice"
+    ],
+    "interface VoicePorts": [
+      "newOption",
+      "speakSample",
+      "systemVoices",
+      "whenVoicesChange"
+    ],
+    "interface VoiceSettingsCtx": [
+      "$",
+      "getAudioCat",
+      "setCatGain",
+      "srSay",
+      "store",
+      "toggleBtn",
+      "tts"
+    ],
+    "interface VoiceSettings": [
+      "reflectTts",
+      "render"
     ]
   }
 }

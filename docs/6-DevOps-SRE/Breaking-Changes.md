@@ -1724,6 +1724,25 @@ chose. 📏 That module was 568 lines and 112 decision nodes, the third largest 
 exactly these names and nothing else, while `settings-audio.browser.test.js` drove the DOM half. The file was two modules
 wearing one name, and the only place that said so out loud was the test folder.
 
+## BE · The voice section leaves the hearing panel: `ui/voice-settings` (ADR-0221, issue #203)
+
+**What this is.** Three shapes move from `ui/settings-audio` to a new module, `ui/voice-settings`: `TtsPanel`,
+`TtsPanelEngine` and `PanelVoice`. The spelling of each is unchanged; only the module is. If you import one of them, change
+`ui/settings-audio.js` to `ui/voice-settings.js` and nothing else. `SettingsAudioCtx.tts` still takes the same `TtsPanel`.
+
+🎯 **What moved with them.** The narration switch, the engine list, the system-voice list, the speech rate, the spoken index,
+the sample button and the rule that locks the five speech rows when no voice speaks the language — the whole VOICE half of
+the hearing panel. 📏 `ui/settings-audio.ts` goes from **568 lines and 112 decision nodes to 339 and 59** across today's two
+cuts; `ui/voice-settings.ts` is 221 and 47.
+
+⚠️ **And it receives the browser instead of reaching it.** `document.createElement`, `speechSynthesis.getVoices`, the sample
+utterance and the `onvoiceschanged` subscription arrive as four ports (`VoicePorts`). That is not taste: the health ratchet
+refuses a NEW module that reaches a global, where the ceiling is zero and not a p90 (ADR-0178, ADR-0221 step 7d). A consumer
+that mounts the panel through `initSettingsAudio` passes nothing new — the panel builds the four ports itself.
+
+📌 **A caller that only wanted `reflectTts` is unaffected**: `initSettingsAudio(...).reflectTts` still exists and still does
+the same thing, which is what the quick bar's icon calls.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

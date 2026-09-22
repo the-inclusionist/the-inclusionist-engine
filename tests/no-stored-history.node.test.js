@@ -76,7 +76,10 @@ const INVENTARIO = {
   // essa a pergunta: os quatro interruptores de movimento reduzido de CENA são preferência da CRIANÇA — eram
   // guardados por cada cartucho na MESMA chave da engine, e cinco jogos não os guardavam de todo.
   'ui/motion-scene.ts': 'criança · os quatro interruptores de movimento reduzido de cena (parallax, decor, itens, partículas)',
-  'ui/settings-audio.ts': 'criança · a saída de áudio por jogador, o motor e a voz de TTS',
+  'ui/settings-audio.ts': 'criança · a saída de áudio por jogador',
+  // O motor e a voz de TTS foram com a secção da voz (ADR-0221, issue #203). A coisa guardada é a MESMA e mudou de ficheiro:
+  // é escolha da criança sobre como ela quer ouvir, e não desempenho dela (ADR-0103).
+  'ui/voice-settings.ts': 'criança · o motor e a voz de TTS que ela escolheu',
   'ui/settings-motion.ts': 'criança · as reduções de movimento, por jogador',
   'ui/settings-mobility.ts': 'criança · o modo fácil por jogador',
   'ui/vlibras.ts': 'criança · a janela de Libras aberta ou fechada',

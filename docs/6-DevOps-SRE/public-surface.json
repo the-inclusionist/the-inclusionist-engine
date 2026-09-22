@@ -1801,12 +1801,9 @@
   ],
   "ui/settings-audio.ts": [
     "AudioStore",
-    "PanelVoice",
     "SettingsAudioApi",
     "SettingsAudioCtx",
     "SinkPlayer",
-    "TtsPanel",
-    "TtsPanelEngine",
     "initSettingsAudio",
     "mountAudioInside",
     "mountSoundInside"
@@ -2000,5 +1997,14 @@
     "VoiceControl",
     "VoiceControlDeps",
     "createVoiceControl"
+  ],
+  "ui/voice-settings.ts": [
+    "PanelVoice",
+    "TtsPanel",
+    "TtsPanelEngine",
+    "VoicePorts",
+    "VoiceSettings",
+    "VoiceSettingsCtx",
+    "createVoiceSettings"
   ]
 }
