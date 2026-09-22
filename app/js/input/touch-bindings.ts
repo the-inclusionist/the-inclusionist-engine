@@ -86,8 +86,8 @@
 
 /** `ui/dom.ts` `$` — injetado; o módulo nunca alcança `document`. */
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
-import type { Transporte } from './transporte-em-uso.js';
-import { doCentro, type RectLike } from './pointer-space.js';
+import type { TransportName } from './transporte-em-uso.js';
+import { fromCentre, type RectLike } from './pointer-space.js';
 import type { PlayerView } from '../core/entity.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
@@ -251,7 +251,7 @@ export const CROSS_DEAD_FRACTION = 0.18;
  * vertical ficaria proporcionalmente maior ou menor que o horizontal. Anotado, não consertado.
  */
 export function crossDirsAt(px: number, py: number, rect: RectLike): DirSet {
-  const { dx, dy } = doCentro(px, py, rect);
+  const { dx, dy } = fromCentre(px, py, rect);
   const dead = rect.width * CROSS_DEAD_FRACTION;
   return { left: dx < -dead, right: dx > dead, up: dy < -dead, down: dy > dead };
 }
@@ -261,7 +261,7 @@ export function crossDirsAt(px: number, py: number, rect: RectLike): DirSet {
  * configuráveis — A12e motora), não de uma fração do elemento.
  */
 export function stickDirsAt(px: number, py: number, rect: RectLike, deadPx: number): DirSet {
-  const { dx, dy } = doCentro(px, py, rect);
+  const { dx, dy } = fromCentre(px, py, rect);
   return { left: dx < -deadPx, right: dx > deadPx, up: dy < -deadPx, down: dy > deadPx };
 }
 
@@ -271,7 +271,7 @@ export function stickDirsAt(px: number, py: number, rect: RectLike, deadPx: numb
  * O `|| 1` do original evita divisão por zero quando o dedo cai no centro exato.
  */
 export function stickKnobOffset(px: number, py: number, rect: RectLike, travelPx: number): { x: number; y: number } {
-  const { dx, dy } = doCentro(px, py, rect);
+  const { dx, dy } = fromCentre(px, py, rect);
   const m = Math.hypot(dx, dy) || 1;
   const f = m > travelPx ? travelPx / m : 1;
   return { x: dx * f, y: dy * f };
@@ -329,18 +329,18 @@ export interface TouchBindingsCtx {
    * 📌 Recebido e não importado, pela razão de sempre neste módulo: um consumidor pode montar o toque sem o
    * estado global da engine (um teste, um segundo consumidor), e o par é o que ele injecta.
    */
-  marcarTecla: (code: string, origem: Transporte) => void;
+  markKey: (code: string, origem: TransportName) => void;
   /**
    * ESTA ARESTA É DESTE JOGADOR, E VEIO DO TOQUE (ADR-0113 cláusula 4, issue #127) —
-   * `input/state.arestaDoJogador`.
+   * `input/state.playerEdge`.
    *
    * 🔴 OBRIGATÓRIO, e é aqui que a troca de aparelho fica VISÍVEL: o toque é o transporte que a criança usa
    * ao lado do teclado, e sem esta linha o autómato responde `teclado` mesmo com o dedo no ecrã — logo a
    * alternância lida seria a do teclado, no aparelho errado. 📌 O `onTouchControlsShown` do cartucho
    * (`main.ts:1695`) é o remendo que existe hoje exactamente para compensar esta falta.
    */
-  arestaDoJogador: (jogador: number, origem: Transporte) => void;
-  soltarTecla: (code: string) => void;
+  playerEdge: (jogador: number, origem: TransportName) => void;
+  releaseKey: (code: string) => void;
   /**
    * O conjunto para LER — a decisão pura pergunta que teclas já estão seguradas.
    *
@@ -419,14 +419,14 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
   function apply(d: TouchDecision): void {
     if (d.kind === 'noop') return;
     if (d.kind === 'pause') { ctx.togglePause(); return; }
-    if (d.kind === 'release') { ctx.soltarTecla(d.code); return; }
+    if (d.kind === 'release') { ctx.releaseKey(d.code); return; }
     // 🔴 COM UM MENU ABERTO, A PRESSÃO VAI AO MENU (ADR-0157). Até aqui ela só marcava a tecla como segurada, sem evento
     // de teclado nenhum — e a navegação de menus só ouve eventos: o direccional do pad nunca movia um menu.
     if (ctx.emMenu?.() && ctx.teclaDeMenu) { ctx.teclaDeMenu(d.code); return; }
     if (d.addKey) {
       // ⚠️ `'toque'` é o carimbo, e é a regra 2 do ADR-0109 a tornar-se executável: é ESTE transporte cuja
       // alternância liga. Enquanto o código entrava cru no conjunto, a regra não tinha como se aplicar.
-      ctx.marcarTecla(d.code, 'toque');
+      ctx.markKey(d.code, 'toque');
       const players = ctx.getPlayers();
       for (const { playerIndex, edge } of d.edges) {
         const p = players[playerIndex];
@@ -435,7 +435,7 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
         // pode pertencer a mais de um assento (`d.edges` é construído com `includes` sobre o esquema de cada
         // um), e o transporte em uso é uma pergunta POR CRIANÇA. Marcar só o jogador 0 daria a alternância do
         // primeiro assento a quem joga no segundo.
-        if (p) ctx.arestaDoJogador(playerIndex, 'toque');
+        if (p) ctx.playerEdge(playerIndex, 'toque');
       }
     }
     if (d.hideTips) ctx.hideTips();

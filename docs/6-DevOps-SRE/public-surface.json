@@ -361,7 +361,7 @@
     "KEYBOARD_DUO",
     "KEYBOARD_SOLO",
     "bindingProblems",
-    "conflitosEntreTabelas",
+    "conflictsBetweenTables",
     "unreachable"
   ],
   "input/devices.ts": [
@@ -430,9 +430,9 @@
     "WizState",
     "bindActive",
     "initGamepad",
+    "oneButtonAtOnce",
     "padActions",
-    "stdDirs",
-    "umBotaoPorVez"
+    "stdDirs"
   ],
   "input/gaze-cycle.ts": [
     "CANCEL",
@@ -485,12 +485,12 @@
     "KBDefaults",
     "KB_DEFAULTS",
     "KB_SCHEMES4",
-    "MapeamentoDoTeclado",
-    "fabricaComOJogo",
+    "KeyboardMapping",
+    "factoryWithGame",
     "initKB",
     "kb",
     "loadKB",
-    "registrarMapeamentoDoTeclado",
+    "registerKeyboardMapping",
     "resetKB",
     "saveKB",
     "setKB"
@@ -520,30 +520,30 @@
     "titleNavOf"
   ],
   "input/latch-edge.ts": [
-    "ArestaComAlternanciaOpts",
-    "criarArestaComAlternancia"
+    "LatchedEdgeOptions",
+    "createLatchedEdge"
   ],
   "input/latch-scope.ts": [
-    "LeituraDaAlternancia",
-    "UM_COMANDO_DE_CADA_VEZ",
-    "alternanciaDe",
-    "alternanciaEhEscolha",
-    "alternanciaSempreLigada",
-    "chaveDaAlternancia",
-    "chaveLegadaDaAlternancia"
+    "LatchReading",
+    "ONE_COMMAND_AT_A_TIME",
+    "latchAlwaysOn",
+    "latchIsOptional",
+    "latchKey",
+    "latchOf",
+    "legacyLatchKey"
   ],
   "input/latch-store.ts": [
-    "ArmazemDaAlternancia",
-    "alternanciaGuardada",
-    "gravarAlternancia",
-    "leituraDaAlternancia",
-    "lerTriEstado"
+    "LatchStore",
+    "readLatch",
+    "readTriState",
+    "storedLatch",
+    "writeLatch"
   ],
   "input/latch-sync.ts": [
     "BASE_DA_MARCHA",
-    "JogadorDaAlternancia",
-    "aplicarAlternancia",
-    "sincronizarAlternancia"
+    "LatchPlayer",
+    "applyLatch",
+    "syncLatch"
   ],
   "input/latch.ts": [
     "LATCH_HELD",
@@ -553,64 +553,64 @@
     "nextLatchedDir"
   ],
   "input/motor-simulation.ts": [
-    "DecisaoDeTecla",
-    "FiltroMotor",
-    "SimulacaoMotora",
-    "criarFiltroMotor"
+    "EmpathyFilter",
+    "EmpathySimulation",
+    "KeyDecision",
+    "createEmpathyFilter"
   ],
   "input/origem-sintetica.ts": [
-    "CHAVE_DE_ORIGEM",
-    "EventoDeTeclaLike",
-    "carimbarOrigem",
-    "origemDoEvento"
+    "KeyEventLike",
+    "SOURCE_KEY",
+    "sourceOfEvent",
+    "stampSource"
   ],
   "input/pad-defaults.ts": [
-    "MapeamentoDoPad",
-    "TabelaDoPad",
-    "registrarMapeamentoDoPad",
-    "tabelaDoPad"
+    "PadMapping",
+    "PadTable",
+    "padTable",
+    "registerPadMapping"
   ],
   "input/pad-wizard.ts": [
     "PADWIZ_ORDER",
     "PadWizard",
     "PadWizardCtx",
-    "criarAssistenteDoPad",
-    "mapaDoPad"
+    "createPadWizard",
+    "padMap"
   ],
   "input/pointer-space.ts": [
-    "DoCentro",
-    "EmFracao",
+    "AsFraction",
+    "FromCentre",
     "RectLike",
-    "doCentro",
-    "emFracao"
+    "asFraction",
+    "fromCentre"
   ],
   "input/pointer.ts": [
-    "AmostraDoPonteiro",
-    "BordaDoAperto",
     "PADRAO",
-    "bordaDoAperto",
-    "dentro",
-    "prender",
-    "trocouDeTransporte"
+    "PointerSample",
+    "PressEdge",
+    "clampInside",
+    "isInside",
+    "pressEdge",
+    "switchedTransport"
   ],
   "input/state.ts": [
     "PAD_DEAD",
-    "arestaDoJogador",
-    "desabilitarAssistidaDe",
-    "entradaDe",
-    "esquecerEntradas",
-    "habilitarAssistidaDe",
+    "disableAssistedFor",
+    "enableAssistedFor",
+    "forgetInputs",
     "held",
+    "inputOf",
+    "keySource",
     "keys",
-    "marcarTecla",
-    "marcarTeclaSemOrigem",
-    "origemDaTecla",
-    "origemDe",
+    "markKey",
+    "markKeyWithoutSource",
     "padCur",
     "padPrevAct",
     "padPrevStart",
-    "soltarTecla",
-    "soltarTodas"
+    "playerEdge",
+    "releaseAllKeys",
+    "releaseKey",
+    "sourceOf"
   ],
   "input/switch-scan.ts": [
     "SCAN_CANCEL",
@@ -646,7 +646,6 @@
     "wantsForcedTouch"
   ],
   "input/touch.ts": [
-    "ChaveDaPersona",
     "HandTag",
     "IPHONE16_LONG_MM",
     "IPHONE16_LONG_PX",
@@ -658,6 +657,7 @@
     "PadMmPatch",
     "PadPhysicalPx",
     "PersonaDoPad",
+    "PersonaKey",
     "TOUCH_ACTS",
     "TOUCH_SLOTS",
     "TouchApi",
@@ -665,43 +665,43 @@
     "TouchMarkupCtx",
     "TouchMarkupSpec",
     "TouchStore",
+    "buttonName",
+    "closestPersona",
     "computePadPhysicalPx",
     "initTouch",
-    "lacunasDoToque",
-    "montarControleDeToque",
-    "nomeDoBotao",
+    "mountTouchControls",
     "normalizeTouchMap",
     "padHandTag",
     "padKind",
     "padLayoutFromId",
     "padPxPerMm",
-    "personaMaisProxima"
+    "touchGaps"
   ],
   "input/transporte-em-uso.ts": [
-    "COM_ALTERNANCIA_PROPRIA",
-    "EXIGEM_HABILITACAO",
-    "EstadoDaEntrada",
+    "InputState",
+    "LATCH_OF_THEIR_OWN",
+    "NEED_ENABLING",
     "PADRAO",
-    "TRANSPORTES",
-    "Transporte",
-    "alternanciaAgora",
-    "aposAresta",
-    "desabilitarAssistida",
-    "ehTransporte",
-    "habilitarAssistida"
+    "TRANSPORT_NAMES",
+    "TransportName",
+    "afterEdge",
+    "disableAssisted",
+    "enableAssisted",
+    "isTransportName",
+    "latchNow"
   ],
   "input/transports.ts": [
-    "Alcance",
-    "Disponibilidade",
-    "LUGARES",
-    "SEGURA_TOQUE",
+    "Availability",
+    "HOLDS_TOUCH",
+    "Reach",
+    "SLOTS",
     "Transport",
-    "alcance",
     "carriedBy",
     "carries",
+    "defaultTransports",
     "holds",
-    "reachable",
-    "transportesPadrao"
+    "reach",
+    "reachable"
   ],
   "input/virtual-controller.ts": [
     "VirtualCommand",
@@ -710,13 +710,13 @@
     "createVirtualController"
   ],
   "input/vocabulary-migration.ts": [
-    "EsquemaSalvo",
+    "OLD_VOCABULARY",
     "SavedKB",
-    "VOCABULARIO_ANTIGO",
-    "migrarEsquema",
-    "migrarMapaDeControle",
-    "migrarMapaDeToque",
-    "migrarSalvo"
+    "SavedScheme",
+    "migrateControlMap",
+    "migrateSaved",
+    "migrateScheme",
+    "migrateTouchMap"
   ],
   "input/voice-map.ts": [
     "VoiceCommands",
@@ -1008,9 +1008,9 @@
     "CameraObj",
     "Tamanho",
     "ZonaMorta",
+    "clampInside",
     "criarCamera",
     "enquadrar",
-    "prender",
     "tremer"
   ],
   "render/canvas.ts": [
@@ -1845,7 +1845,7 @@
   ],
   "ui/settings-motor.ts": [
     "EscritaDaAlternanciaCtx",
-    "JogadorDaAlternancia",
+    "LatchPlayer",
     "MotorPlayer",
     "MotorStore",
     "SettingsMotorApi",

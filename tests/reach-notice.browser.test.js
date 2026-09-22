@@ -9,15 +9,15 @@
 // botão «jogar assim mesmo» é o mais importante deste ficheiro.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../app/js/ui/reach-notice.js';
-import { alcance, transportesPadrao } from '../app/js/input/transports.js';
+import { reach, defaultTransports } from '../app/js/input/transports.js';
 import { focaveisNoDom } from '../app/js/ui/focus-trap.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import pt from '../app/js/i18n/pt.js';
 
 const sempre = () => true, nunca = () => false;
 /** O caso da issue: só o toque, e ele é curto para as catorze. */
-const TABLET = () => alcance(transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca }), ACTIONS);
-const DESKTOP = () => alcance(transportesPadrao({ gamepad: nunca, teclado: sempre, toque: nunca, rato: sempre }), ACTIONS);
+const TABLET = () => reach(defaultTransports({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca }), ACTIONS);
+const DESKTOP = () => reach(defaultTransports({ gamepad: nunca, teclado: sempre, toque: nunca, rato: sempre }), ACTIONS);
 
 const traduz = (k, p) => {
   let s = pt[k] ?? k;

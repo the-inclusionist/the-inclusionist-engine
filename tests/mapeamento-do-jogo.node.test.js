@@ -18,7 +18,7 @@
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
-  fabricaComOJogo, loadKB, resetKB, registrarMapeamentoDoTeclado, KB_DEFAULTS,
+  factoryWithGame, loadKB, resetKB, registerKeyboardMapping, KB_DEFAULTS,
 } from '../app/js/input/keyboard.js';
 import * as store from '../app/js/platform/storage.js';
 
@@ -42,17 +42,17 @@ function comArmazenamento(inicial = {}) {
   return dados;
 }
 
-beforeEach(() => { registrarMapeamentoDoTeclado(null); comArmazenamento(); });
-afterEach(() => { registrarMapeamentoDoTeclado(null); delete globalThis.localStorage; });
+beforeEach(() => { registerKeyboardMapping(null); comArmazenamento(); });
+afterEach(() => { registerKeyboardMapping(null); delete globalThis.localStorage; });
 
 describe('o padrão do jogo entra entre a fábrica e a criança', () => {
   it('[Zero] sem declaração, a fábrica da engine fica intacta', () => {
-    expect(fabricaComOJogo().solo.action1).toEqual(KB_DEFAULTS.solo.action1);
+    expect(factoryWithGame().solo.action1).toEqual(KB_DEFAULTS.solo.action1);
   });
 
   it('[Right] o jogo troca UMA posição e o resto continua a ser da engine', () => {
-    registrarMapeamentoDoTeclado(() => ({ action1: ['KeyQ'] }));
-    const d = fabricaComOJogo();
+    registerKeyboardMapping(() => ({ action1: ['KeyQ'] }));
+    const d = factoryWithGame();
     expect(d.solo.action1, 'o padrão do jogo não chegou').toEqual(['KeyQ']);
     expect(d.solo.action2, 'parcial virou substituição: o resto da fábrica desapareceu').toEqual(KB_DEFAULTS.solo.action2);
   });
@@ -61,11 +61,11 @@ describe('o padrão do jogo entra entre a fábrica e a criança', () => {
     // ⚠️ O defeito que isto prende: um padrão que não soubesse o assento daria as mesmas teclas a duas
     // crianças sentadas ao mesmo teclado, e nenhuma das duas jogaria.
     const vistos = [];
-    registrarMapeamentoDoTeclado((jogadores, assento) => {
+    registerKeyboardMapping((jogadores, assento) => {
       vistos.push([jogadores, assento]);
       return { action1: [`J${jogadores}A${assento}`] };
     });
-    const d = fabricaComOJogo();
+    const d = factoryWithGame();
     expect(vistos, 'a fábrica não perguntou por cada arranjo e assento').toEqual([
       [1, 0], [2, 0], [2, 1], [3, 0], [3, 1], [3, 2], [4, 0], [4, 1], [4, 2], [4, 3],
     ]);
@@ -74,8 +74,8 @@ describe('o padrão do jogo entra entre a fábrica e a criança', () => {
   });
 
   it('📌 devolver `null` para um arranjo deixa esse arranjo com a fábrica', () => {
-    registrarMapeamentoDoTeclado((jogadores) => (jogadores === 1 ? { action1: ['KeyQ'] } : null));
-    const d = fabricaComOJogo();
+    registerKeyboardMapping((jogadores) => (jogadores === 1 ? { action1: ['KeyQ'] } : null));
+    const d = factoryWithGame();
     expect(d.solo.action1).toEqual(['KeyQ']);
     expect(d.p2[0].action1).toEqual(KB_DEFAULTS.p2[0].action1);
   });
@@ -83,13 +83,13 @@ describe('o padrão do jogo entra entre a fábrica e a criança', () => {
 
 describe('a precedência, e o botão que a punha em causa', () => {
   it('[Right] o remapeamento da CRIANÇA vence o padrão do jogo', () => {
-    registrarMapeamentoDoTeclado(() => ({ action1: ['KeyQ'] }));
+    registerKeyboardMapping(() => ({ action1: ['KeyQ'] }));
     store.setJSON(CKEY, { solo: { action1: ['KeyZ'] } });
     expect(loadKB().solo.action1, 'o que ela gravou tem de vir por último').toEqual(['KeyZ']);
   });
 
   it('🔴 «restaurar padrões» volta ao padrão do JOGO, não ao da ENGINE', () => {
-    registrarMapeamentoDoTeclado(() => ({ action1: ['KeyQ'] }));
+    registerKeyboardMapping(() => ({ action1: ['KeyQ'] }));
     store.setJSON(CKEY, { solo: { action1: ['KeyZ'] } });
 
     const d = resetKB();
@@ -104,9 +104,9 @@ describe('a precedência, e o botão que a punha em causa', () => {
   });
 
   it('⚠️ [Interface] a fábrica devolve CÓPIAS: mexer no resultado não contamina o `KB_DEFAULTS`', () => {
-    const d = fabricaComOJogo();
+    const d = factoryWithGame();
     d.solo.action1 = ['KeyX'];
-    expect(fabricaComOJogo().solo.action1, 'a fábrica foi mutada por quem a leu').toEqual(KB_DEFAULTS.solo.action1);
+    expect(factoryWithGame().solo.action1, 'a fábrica foi mutada por quem a leu').toEqual(KB_DEFAULTS.solo.action1);
   });
 });
 
@@ -153,7 +153,7 @@ function declaracaoMinima() {
 // 1. `resetKB` a voltar a `JSON.parse(JSON.stringify(KB_DEFAULTS))` → 🔴 o caso do «restaurar padrões»
 //    reprova. É a armadilha inteira, e a única mutação desta lista que descreve um defeito que uma criança
 //    encontra com um clique.
-// 2. `fabricaComOJogo` a chamar o jogo só para o `solo` → o caso do ASSENTO reprova, na lista de perguntas.
+// 2. `factoryWithGame` a chamar o jogo só para o `solo` → o caso do ASSENTO reprova, na lista de perguntas.
 // 3. `Object.assign(alvo, parcial)` → `alvo = parcial` (substituir em vez de fundir) → o caso do parcial
 //    reprova: o resto da fábrica desaparecia e o jogo passava a ter de declarar as catorze posições.
 // 4. o padrão do jogo aplicado DEPOIS do dado salvo, no `loadKB` → o caso da precedência reprova: o

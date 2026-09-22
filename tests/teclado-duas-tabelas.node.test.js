@@ -39,7 +39,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { KB_DEFAULTS } from '../app/js/input/keyboard.js';
-import { KEYBOARD_SOLO, KEYBOARD_DUO, conflitosEntreTabelas } from '../app/js/input/default-bindings.js';
+import { KEYBOARD_SOLO, KEYBOARD_DUO, conflictsBetweenTables } from '../app/js/input/default-bindings.js';
 import { initKeyboardRuntime } from '../app/js/input/keyboard-runtime.js';
 
 /** As posições que as DUAS tabelas declaram. Lidas da tabela viva, não escritas aqui: se ela crescer, o
@@ -97,11 +97,11 @@ describe('as duas tabelas de teclado concordam nas oito posições partilhadas (
   });
 
   it('⚠️ [Right] o crivo cruzado corre sobre o conjunto VIVO — p2, p3 e p4', () => {
-    // A issue pede isto em tantas palavras: «é para isso que existe `conflitosEntreTabelas`, e ele tem de
+    // A issue pede isto em tantas palavras: «é para isso que existe `conflictsBetweenTables`, e ele tem de
     // correr sobre o conjunto que ficar vivo». Até hoje ele só corria sobre a tabela REGISTADA, que não é a
     // que o jogo usa — quer dizer, o crivo existia e não guardava nada.
     for (const grupo of ['p2', 'p3', 'p4']) {
-      expect(conflitosEntreTabelas(KB_DEFAULTS[grupo]), `${grupo}: dois jogadores disputam a mesma tecla`)
+      expect(conflictsBetweenTables(KB_DEFAULTS[grupo]), `${grupo}: dois jogadores disputam a mesma tecla`)
         .toEqual([]);
     }
   });

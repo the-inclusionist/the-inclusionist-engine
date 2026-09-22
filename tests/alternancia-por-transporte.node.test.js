@@ -27,8 +27,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { alternanciaAgora } from '../app/js/input/transporte-em-uso.js';
-import { alternanciaDe } from '../app/js/input/latch-scope.js';
+import { latchNow } from '../app/js/input/transporte-em-uso.js';
+import { latchOf } from '../app/js/input/latch-scope.js';
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
@@ -56,7 +56,7 @@ const AINDA_NA_CHAVE_ANTIGA = {
  * entrou é o gate a funcionar como desenhado: o caso reprovou, nomeou o ficheiro, e exigiu a revisão.
  *
  * ⚠️ O SEGUNDO — `ui/settings-motor`, o painel — quase NÃO foi contado, e a falha era do detector: ele
- * procurava só quem chama `chaveDaAlternancia(`, e o painel escreve através do `gravarAlternancia`, que é
+ * procurava só quem chama `latchKey(`, e o painel escreve através do `writeLatch`, que é
  * a forma certa. Um piso assim mede quem improvisa em vez de quem migra. Alargado, e dito aqui em vez de
  * corrigido em silêncio.
  *
@@ -95,15 +95,15 @@ function tocamNaChaveAntiga() {
  * Ficheiros que PARTICIPAM no modelo novo — a definição da regra não conta.
  *
  * ⚠️ O DETECTOR FOI ALARGADO EM 2026-09-08, E O MOTIVO É UM FALSO NEGATIVO MEU. Ele procurava só
- * `chaveDaAlternancia(`, e quando o `ui/settings-motor` passou a escrever a chave nova — através do
- * `gravarAlternancia`, que é a forma CERTA — o piso não subiu. Um piso que só conta quem chama o
+ * `latchKey(`, e quando o `ui/settings-motor` passou a escrever a chave nova — através do
+ * `writeLatch`, que é a forma CERTA — o piso não subiu. Um piso que só conta quem chama o
  * construtor da chave mede a arquitectura errada: mede quem improvisa, e não quem migrou.
  *
  * 📌 Agora conta os três pontos de entrada do modelo novo. Um ficheiro que use qualquer um deles está do
  * lado novo da migração, que é o que o piso diz medir.
  */
 function chamamAChaveNova() {
-  const entradas = /chaveDaAlternancia\s*\(|gravarAlternancia\s*\(|alternanciaGuardada\s*\(/;
+  const entradas = /latchKey\s*\(|writeLatch\s*\(|storedLatch\s*\(/;
   return ficheiros().filter((f) => f !== 'input/latch-scope.ts' && entradas.test(fonte(f)));
 }
 
@@ -111,7 +111,7 @@ describe('a alternância migra para a chave por transporte · o tecto que só de
   it('[Vácuo] a varredura lê a árvore e ainda acha o módulo da regra', () => {
     expect(ficheiros().length).toBeGreaterThan(100);
     expect(ficheiros()).toContain('input/latch-scope.ts');
-    expect(fonte('input/latch-scope.ts')).toContain('export function chaveDaAlternancia');
+    expect(fonte('input/latch-scope.ts')).toContain('export function latchKey');
   });
 
   it('[Feliz] nenhum ficheiro NOVO passou a tocar na chave por jogador', () => {
@@ -146,8 +146,8 @@ describe('a alternância migra para a chave por transporte · o piso que só sob
 
   it('[Interface] a regra que a fiação vai consumir continua exportada e completa', () => {
     const src = fonte('input/latch-scope.ts');
-    for (const nome of ['chaveDaAlternancia', 'chaveLegadaDaAlternancia', 'alternanciaDe',
-      'alternanciaSempreLigada', 'alternanciaEhEscolha']) {
+    for (const nome of ['latchKey', 'legacyLatchKey', 'latchOf',
+      'latchAlwaysOn', 'latchIsOptional']) {
       expect(src, `${nome} deixou de ser exportado e a fiação ficaria sem alvo`).toContain(`export function ${nome}`);
     }
   });
@@ -155,8 +155,8 @@ describe('a alternância migra para a chave por transporte · o piso que só sob
 
 describe('a alternância migra para a chave por transporte · o modelo superado não pode ser escolhido por engano', () => {
   // 🔴 O CÓDIGO TEM DUAS FUNÇÕES QUE RESPONDEM «há alternância?», E UMA DELAS É A QUE O ADR-0113 RETIROU.
-  // `transporte-em-uso.alternanciaAgora` decide SÓ PELO APARELHO (a regra do ADR-0109);
-  // `latch-scope.alternanciaDe` lê o que a criança gravou (a regra do ADR-0113). Nenhuma tem consumidor
+  // `transporte-em-uso.latchNow` decide SÓ PELO APARELHO (a regra do ADR-0109);
+  // `latch-scope.latchOf` lê o que a criança gravou (a regra do ADR-0113). Nenhuma tem consumidor
   // hoje, então nada está partido — mas quem for ligar a fiação escolhe uma, e escolher a primeira
   // implementa o modelo aposentado sem que nada o diga.
   //
@@ -167,26 +167,26 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
     const gravado = { doTransporte: true, doLegado: null, padrao: false };
 
     // O modelo do ADR-0109: o teclado não tem alternância própria, logo NÃO.
-    expect(alternanciaAgora(estado), 'o modelo superado deixou de dizer o que dizia').toBe(false);
+    expect(latchNow(estado), 'o modelo superado deixou de dizer o que dizia').toBe(false);
     // O modelo do ADR-0113: ela gravou, logo SIM. É o controle que a leitura literal lhe tirava.
-    expect(alternanciaDe(estado.emUso, gravado), 'a regra do ADR-0113 deixou de ler o valor gravado').toBe(true);
+    expect(latchOf(estado.emUso, gravado), 'a regra do ADR-0113 deixou de ler o valor gravado').toBe(true);
   });
 
   it('⚠️ [Fronteira] e no TOQUE também divergem — a cláusula do toque caiu com a mesma frase', () => {
     const estado = { emUso: 'toque', assistidaLigada: false };
     const desligadoPelaCrianca = { doTransporte: false, doLegado: null, padrao: false };
 
-    expect(alternanciaAgora(estado), 'o toque deixou de estar em COM_ALTERNANCIA_PROPRIA').toBe(true);
-    expect(alternanciaDe(estado.emUso, desligadoPelaCrianca), 'o toque deixou de ser escolha').toBe(false);
+    expect(latchNow(estado), 'o toque deixou de estar em COM_ALTERNANCIA_PROPRIA').toBe(true);
+    expect(latchOf(estado.emUso, desligadoPelaCrianca), 'o toque deixou de ser escolha').toBe(false);
   });
 
   // 📌 E ONDE AS DUAS CONCORDAM, que é o que impede este bloco de parecer uma acusação geral: nos quatro
   // assistidos a alternância é obrigatória nos DOIS modelos, por razões diferentes e com o mesmo resultado.
   it('[Feliz] nos quatro assistidos as duas concordam — obrigatória, e ninguém a desliga', () => {
     for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
-      expect(alternanciaDe(t, { doTransporte: false, doLegado: false, padrao: false }), `${t} pôde ser desligado`)
+      expect(latchOf(t, { doTransporte: false, doLegado: false, padrao: false }), `${t} pôde ser desligado`)
         .toBe(true);
-      expect(alternanciaAgora({ emUso: t, assistidaLigada: true }), `${t} habilitado deixou de forçar`).toBe(true);
+      expect(latchNow({ emUso: t, assistidaLigada: true }), `${t} habilitado deixou de forçar`).toBe(true);
     }
   });
 
@@ -196,7 +196,7 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
   it('🎯 [Zero] a função superada continua SEM CONSUMIDOR na engine', () => {
     const usam = ficheiros()
       .filter((f) => f !== 'input/transporte-em-uso.ts')
-      .filter((f) => /alternanciaAgora\s*\(/.test(fonte(f)));
+      .filter((f) => /latchNow\s*\(/.test(fonte(f)));
     expect(usam, `alguém passou a chamar o modelo que o ADR-0113 retirou: ${usam.join(', ')}`).toEqual([]);
   });
 });
@@ -215,9 +215,9 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
 //    exactamente este defeito que fez a varredura irmã devolver zero, e ele não morde aqui por sorte
 //
 // ----- e as do bloco da DIVERGÊNCIA, uma por caso e sem sobreposição nenhuma -----
-// 6. `alternanciaDe` deixa de ler `doTransporte`          → o caso da criança do TECLADO reprova
-// 7. `alternanciaDe` deixa de forçar nos assistidos       → o caso do acordo nos quatro reprova
-// 8. `input/keydown` passa a chamar `alternanciaAgora`    → 🎯 o [Zero] do consumidor reprova, que é a guarda
+// 6. `latchOf` deixa de ler `doTransporte`          → o caso da criança do TECLADO reprova
+// 7. `latchOf` deixa de forçar nos assistidos       → o caso do acordo nos quatro reprova
+// 8. `input/keydown` passa a chamar `latchNow`    → 🎯 o [Zero] do consumidor reprova, que é a guarda
 //    que transforma «documentação da divergência» em «decisão obrigatória» no dia em que alguém a ligar
 // 9. o modelo superado deixa de responder pelo TOQUE      → o caso da divergência no toque reprova
 //    📌 As quatro batem em casos DIFERENTES e nenhuma se sobrepõe — é a medida de que os quatro casos deste

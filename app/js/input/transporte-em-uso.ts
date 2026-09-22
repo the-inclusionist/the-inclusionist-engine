@@ -25,14 +25,14 @@
 // momentâneo; lembrado por aparelho; trocar de aparelho não apaga o que o outro lembra.
 
 /** Os aparelhos por onde uma criança joga. Fechado: um transporte novo tem de decidir a sua regra aqui. */
-export type Transporte = 'teclado' | 'gamepad' | 'toque' | 'olhos' | 'rosto' | 'gestos' | 'fala';
+export type TransportName = 'teclado' | 'gamepad' | 'toque' | 'olhos' | 'rosto' | 'gestos' | 'fala';
 
 /**
  * A UNIÃO COMO VALOR, porque há um sítio onde ela tem de ser verificada em runtime.
  *
  * ⚠️ EXISTE POR CAUSA DE UMA FRONTEIRA, e é a única razão que a justifica: o `input/origem-sintetica` lê o
  * transporte de um EXPANDO pendurado num `KeyboardEvent` — um objecto que este código não construiu e que
- * qualquer script da página pode construir. Um valor que atravessa essa fronteira não é um `Transporte` por
+ * qualquer script da página pode construir. Um valor que atravessa essa fronteira não é um `TransportName` por
  * o TypeScript o dizer; é uma `string` até alguém a conferir. Sem lista, `'olho'` entrava no mapa de origens
  * como transporte fantasma, e nada o diria.
  *
@@ -40,12 +40,12 @@ export type Transporte = 'teclado' | 'gamepad' | 'toque' | 'olhos' | 'rosto' | '
  * rótulos de movimento reduzido, as chaves de armazenamento), porque a guarda abaixo é do COMPILADOR: as duas
  * não podem divergir. Uma cópia que não pode divergir é uma projecção, não uma segunda fonte.
  */
-export const TRANSPORTES = ['teclado', 'gamepad', 'toque', 'olhos', 'rosto', 'gestos', 'fala'] as const;
+export const TRANSPORT_NAMES = ['teclado', 'gamepad', 'toque', 'olhos', 'rosto', 'gestos', 'fala'] as const;
 
 // `[X] extends [never]` e não `X extends never`: o condicional distribui sobre `never` e daria `never` em vez
 // de responder à pergunta. Mesma forma do `_COBRE_A_UNIAO` do `ui/motion-scene`.
-type _FaltouTransporte = Exclude<Transporte, (typeof TRANSPORTES)[number]>;
-type _SobrouTransporte = Exclude<(typeof TRANSPORTES)[number], Transporte>;
+type _FaltouTransporte = Exclude<TransportName, (typeof TRANSPORT_NAMES)[number]>;
+type _SobrouTransporte = Exclude<(typeof TRANSPORT_NAMES)[number], TransportName>;
 const _COBRE_OS_TRANSPORTES: [_FaltouTransporte] extends [never]
   ? ([_SobrouTransporte] extends [never] ? true : false)
   : false = true;
@@ -56,28 +56,28 @@ void _COBRE_OS_TRANSPORTES;
  *
  * ⚠️ A pergunta não é de segurança — os scripts desta página são todos da casa, e quem quisesse mentir usaria
  * um valor VÁLIDO. É de correcção: impede que um carimbo errado ou ausente vire uma entrada silenciosa no
- * `origemDaTecla`, que é a estrutura de que a alternância inteira depende.
+ * `keySource`, que é a estrutura de que a alternância inteira depende.
  */
-export function ehTransporte(v: unknown): v is Transporte {
-  return typeof v === 'string' && (TRANSPORTES as readonly string[]).includes(v);
+export function isTransportName(v: unknown): v is TransportName {
+  return typeof v === 'string' && (TRANSPORT_NAMES as readonly string[]).includes(v);
 }
 
 /**
  * OS QUATRO QUE EXIGEM HABILITAÇÃO EXPLÍCITA e, uma vez habilitados, mandam em todos (regra 4).
  *
- * ⚠️ É a mesma lista do `UM_COMANDO_DE_CADA_VEZ` do `input/latch-scope`, e a coincidência não é acaso: são
+ * ⚠️ É a mesma lista do `ONE_COMMAND_AT_A_TIME` do `input/latch-scope`, e a coincidência não é acaso: são
  * os transportes de quem NÃO CONSEGUE SEGURAR NADA. O que o ADR-0109 acrescenta é que eles não ligam a
  * alternância só para si — ligam-na para o resto, porque quem usa a webcam pode também tocar na tela, e uma
  * alternância que se desliga ao mudar de aparelho é uma armadilha para exactamente essa pessoa.
  */
-export const EXIGEM_HABILITACAO: ReadonlySet<Transporte> = new Set(['olhos', 'rosto', 'gestos', 'fala']);
+export const NEED_ENABLING: ReadonlySet<TransportName> = new Set(['olhos', 'rosto', 'gestos', 'fala']);
 
 /** O transporte que liga a alternância por si só, sem prioridade nenhuma envolvida (regra 2). */
-export const COM_ALTERNANCIA_PROPRIA: ReadonlySet<Transporte> = new Set(['toque']);
+export const LATCH_OF_THEIR_OWN: ReadonlySet<TransportName> = new Set(['toque']);
 
-export interface EstadoDaEntrada {
+export interface InputState {
   /** Qual aparelho está a ser usado AGORA por este jogador. */
-  readonly emUso: Transporte;
+  readonly emUso: TransportName;
   /**
    * A câmera/microfone foi habilitada? ⚠️ Uma vez `true`, NUNCA volta a `false` por uma aresta — só uma
    * decisão explícita a desliga, e o ADR-0109 §4 diz que a criança não tem essa decisão. Ver `desabilitar`.
@@ -93,7 +93,7 @@ export interface EstadoDaEntrada {
  * O `emUso` só passa a distingui-los quando alguém quiser MOSTRAR o aparelho corrente, que é outra questão
  * e o ADR-0109 deixa-a explicitamente por decidir.
  */
-export const PADRAO: EstadoDaEntrada = Object.freeze({ emUso: 'teclado', assistidaLigada: false });
+export const PADRAO: InputState = Object.freeze({ emUso: 'teclado', assistidaLigada: false });
 
 /**
  * HÁ ALTERNÂNCIA AGORA? — ⚠️ **NÃO PERGUNTE ISTO A ESTA FUNÇÃO.** Ver o parágrafo abaixo.
@@ -111,20 +111,20 @@ export const PADRAO: EstadoDaEntrada = Object.freeze({ emUso: 'teclado', assisti
  *
  * 🔴 A DIVERGÊNCIA TEM UMA CRIANÇA CONCRETA, e é a que motivou o registo: quem tem dificuldade motora, joga
  * no TECLADO e gravou a alternância ligada. Esta função devolve `false` para ela — `teclado` não está em
- * `COM_ALTERNANCIA_PROPRIA` — e é exactamente o controle que lhe seria retirado. O `latch-scope.alternanciaDe`
+ * `LATCH_OF_THEIR_OWN` — e é exactamente o controle que lhe seria retirado. O `latch-scope.latchOf`
  * devolve `true`, porque lê o que ela gravou.
  *
  * ⚠️ E A CLÁUSULA DO TOQUE TAMBÉM CAIU: sob o ADR-0113 o toque é um transporte como os outros — o valor dele
  * é escolha e fica guardado. Só olhos, rosto, gestos e fala podem recusar-se a DESLIGAR, e essa metade vive
- * em `latch-scope.alternanciaSempreLigada`, com um conjunto diferente deste e a responder a outra pergunta.
+ * em `latch-scope.latchAlwaysOn`, com um conjunto diferente deste e a responder a outra pergunta.
  *
- * **A resposta certa é `latch-scope.alternanciaDe(estado.emUso, leitura)`.** O papel que sobra a este
+ * **A resposta certa é `latch-scope.latchOf(estado.emUso, leitura)`.** O papel que sobra a este
  * módulo é o que o nome dele diz: QUAL transporte está em uso — que é o que alimenta aquele primeiro
  * argumento. `tests/alternancia-por-transporte.node.test.js` afirma que esta função continua sem consumidor.
  */
-export function alternanciaAgora(estado: EstadoDaEntrada): boolean {
+export function latchNow(estado: InputState): boolean {
   if (estado.assistidaLigada) return true;
-  return COM_ALTERNANCIA_PROPRIA.has(estado.emUso);
+  return LATCH_OF_THEIR_OWN.has(estado.emUso);
 }
 
 /**
@@ -134,13 +134,13 @@ export function alternanciaAgora(estado: EstadoDaEntrada): boolean {
  * ser habilitados»), e deixar uma aresta fazê-lo significaria que um falso positivo da webcam — uma sombra,
  * um segundo rosto a passar — trancava a alternância de toda a gente sem ninguém ter pedido.
  */
-export function aposAresta(estado: EstadoDaEntrada, origem: Transporte): EstadoDaEntrada {
+export function afterEdge(estado: InputState, origem: TransportName): InputState {
   if (estado.emUso === origem) return estado; // sem mudança: devolve o MESMO objecto, não uma cópia
   return { emUso: origem, assistidaLigada: estado.assistidaLigada };
 }
 
 /** A criança (ou quem a acompanha) habilitou câmera/microfone. Daqui em diante a alternância é lei. */
-export function habilitarAssistida(estado: EstadoDaEntrada): EstadoDaEntrada {
+export function enableAssisted(estado: InputState): InputState {
   return estado.assistidaLigada ? estado : { emUso: estado.emUso, assistidaLigada: true };
 }
 
@@ -152,6 +152,6 @@ export function habilitarAssistida(estado: EstadoDaEntrada): EstadoDaEntrada {
  * Uma função que existe e não é oferecida é diferente de uma função que não existe: a primeira diz onde a
  * decisão mora.
  */
-export function desabilitarAssistida(estado: EstadoDaEntrada): EstadoDaEntrada {
+export function disableAssisted(estado: InputState): InputState {
   return estado.assistidaLigada ? { emUso: estado.emUso, assistidaLigada: false } : estado;
 }

@@ -9,7 +9,7 @@
 // extração é deliberadamente sem mudança nenhuma (é o prefixo comum de todas as opções de câmera na mesa).
 // O que eles afirmam é que ela está no LUGAR CERTO, e o lugar certo é uma conta.
 import { describe, it, expect } from 'vitest';
-import { prender, enquadrar, tremer, criarCamera } from '../app/js/render/camera.js';
+import { clampInside, enquadrar, tremer, criarCamera } from '../app/js/render/camera.js';
 
 const TELA = { w: 320, h: 180 };
 // O mapa de hoje, MEDIDO NO JOGO (`__incl.WORLD_W/H`) e não contado no arquivo: 56×62 tiles de 16px. A
@@ -37,25 +37,25 @@ describe('enquadrar — o alvo no centro da tela', () => {
 
 describe('prender — a câmera não sai do mundo', () => {
   it('[Boundary] encosta nas quatro bordas e não passa', () => {
-    expect(prender({ camX: -999, camY: -999 }, MUNDO, TELA)).toEqual({ camX: 0, camY: 0 });
-    expect(prender({ camX: 9999, camY: 9999 }, MUNDO, TELA)).toEqual({ camX: 576, camY: 812 });
+    expect(clampInside({ camX: -999, camY: -999 }, MUNDO, TELA)).toEqual({ camX: 0, camY: 0 });
+    expect(clampInside({ camX: 9999, camY: 9999 }, MUNDO, TELA)).toEqual({ camX: 576, camY: 812 });
   });
 
   it('[Boundary] o limite é `mundo - tela`, e não `mundo` — senão sobra vazio na direita', () => {
     // O erro clássico é prender em `mundo.w`: a câmera passa a poder ir até a borda direita do mundo e a
     // tela mostra meia fase e meio nada. Aqui o último x válido é 896-320.
-    expect(prender({ camX: 896, camY: 0 }, MUNDO, TELA).camX).toBe(576);
+    expect(clampInside({ camX: 896, camY: 0 }, MUNDO, TELA).camX).toBe(576);
   });
 
   it('[Zero] MUNDO MENOR QUE A TELA: encosta no canto e sobra vazio — comportamento preservado', () => {
     // `mundo.w - tela.w` fica negativo, o `min` devolve o negativo e o `max(0, …)` o zera. É o que o
     // `placeCam` já fazia; está aqui escrito para que a próxima pessoa ache o caso em vez de descobri-lo.
     // O mapa de hoje nunca chega lá; uma fase pequena chegaria.
-    expect(prender({ camX: 50, camY: 50 }, { w: 100, h: 100 }, TELA)).toEqual({ camX: 0, camY: 0 });
+    expect(clampInside({ camX: 50, camY: 50 }, { w: 100, h: 100 }, TELA)).toEqual({ camX: 0, camY: 0 });
   });
 
   it('[One] uma câmera já dentro do mundo passa intacta', () => {
-    expect(prender({ camX: 10, camY: 20 }, MUNDO, TELA)).toEqual({ camX: 10, camY: 20 });
+    expect(clampInside({ camX: 10, camY: 20 }, MUNDO, TELA)).toEqual({ camX: 10, camY: 20 });
   });
 });
 

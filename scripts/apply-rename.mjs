@@ -36,13 +36,26 @@ export const readMap = () => JSON.parse(readFileSync(join(ROOT, MAP), 'utf8'));
  *   · the map, the tool and its gate — they QUOTE the old names on purpose, and renaming a quotation erases the evidence;
  *   · `docs/6-DevOps-SRE/Breaking-Changes.md` — the migration table is where the old names have to survive.
  */
-const LEFT_OUT = [MAP, 'scripts/apply-rename.mjs', 'tests/rename-map.node.test.js', 'docs/6-DevOps-SRE/Breaking-Changes.md'];
+/*
+ * 🔴 AND THE GATE'S OWN DICTIONARY, which the third layer caught being rewritten: `scripts/word-lists.json` is a list of
+ * WORDS — `alcance`, `dentro`, `prender` — and the rename turned three of them into English names inside the Portuguese list.
+ * A dictionary that renames itself stops being able to say what Portuguese is: `reach` became a «Portuguese» word, and the
+ * map's own gate then refused `Alcance → Reach` for being Portuguese. The words there are data ABOUT names, never names.
+ */
+const LEFT_OUT = [
+  MAP, 'scripts/apply-rename.mjs', 'tests/rename-map.node.test.js', 'docs/6-DevOps-SRE/Breaking-Changes.md',
+  'scripts/word-lists.json', 'docs/6-DevOps-SRE/language-debt.json',
+  // 🔴 THE DEV'S OWN FILES AND THE PUBLISHED HISTORY. `research/catalogo_tipografico.json` is his and is not to be edited from
+  // here at all; `CHANGELOG.md` is what was released, and a released line does not get a new spelling.
+  'CHANGELOG.md', '.release-it.json',
+];
+const LEFT_OUT_FOLDERS = ['app/js/i18n/', 'research/'];
 
 export function filesToRename() {
   return execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
     .trim().split(/\r?\n/)
     .filter((f) => /\.(ts|js|mjs|cjs|md|json|html)$/.test(f))
-    .filter((f) => !f.startsWith('app/js/i18n/'))
+    .filter((f) => !LEFT_OUT_FOLDERS.some((d) => f.startsWith(d)))
     .filter((f) => !LEFT_OUT.includes(f));
 }
 
@@ -64,35 +77,42 @@ const wholeWord = (name) => new RegExp(`(?<![\\w$])${name.replace(/[.*+?^${}()|[
  * characters of real code — so `chaveDaEntrega` on the line below was left behind while its import was renamed, and only the
  * typecheck caught it. A file where that happened in code TypeScript does not check would have shipped broken.
  */
-function commentRanges(text) {
-  const ranges = [];
-  let i = 0, quote = '';
+/*
+ * 🔴 AND A STRING THAT IS PROSE IS NOT A NAME. Measured on the third layer: `dentro` is the name of a pointer predicate AND the
+ * Portuguese word inside an assertion message, and the rename turned «o modelo compilado lá dentro» into «lá isInside».
+ * The rule that separates them is the one the code itself already obeys: a name has no spaces. So inside a string literal a
+ * replacement happens only when the whole string is a single word — which is what an event name («modoCego»), an id or a key
+ * is, and what a sentence never is.
+ */
+function scan(text) {
+  const comments = [], strings = [];
+  let i = 0, quote = '', start = 0;
   while (i < text.length) {
     const c = text[i], d = text[i + 1];
     if (quote) {
       if (c === '\\') { i += 2; continue; }
-      if (c === quote) quote = '';
+      if (c === quote) { strings.push([start, i + 1, /\s/.test(text.slice(start + 1, i))]); quote = ''; }
       i += 1;
       continue;
     }
-    if (c === '"' || c === "'" || c === '`') { quote = c; i += 1; continue; }
+    if (c === '"' || c === "'" || c === '`') { quote = c; start = i; i += 1; continue; }
     if (c === '/' && d === '/') {
       const nl = text.indexOf('\n', i);
       const stop = nl < 0 ? text.length : nl;
-      ranges.push([i, stop]);
+      comments.push([i, stop]);
       i = stop;
       continue;
     }
     if (c === '/' && d === '*') {
       const end = text.indexOf('*/', i + 2);
       const stop = end < 0 ? text.length : end + 2;
-      ranges.push([i, stop]);
+      comments.push([i, stop]);
       i = stop;
       continue;
     }
     i += 1;
   }
-  return ranges;
+  return { comments, strings };
 }
 
 const inside = (ranges, i) => ranges.some(([a, b]) => i >= a && i < b);
@@ -107,12 +127,16 @@ export function renameInText(text, names, { prose = false } = {}) {
   const counted = {};
   let out = text;
   for (const [old, fresh] of Object.entries(names)) {
-    const ranges = prose ? [[0, out.length]] : commentRanges(out);
+    const { comments, strings } = scan(out);
+    const ranges = prose ? [[0, out.length]] : comments;
     const backticks = [];
     for (const m of out.matchAll(/`[^`\n]*`/g)) backticks.push([m.index, m.index + m[0].length]);
+    // a string that carries whitespace is a SENTENCE, and a sentence is prose wherever it lives
+    const sentences = strings.filter(([, , hasSpace]) => hasSpace);
     let n = 0;
     out = out.replace(wholeWord(old), (found, i) => {
-      if (inside(ranges, i) && !inside(backticks, i)) return found; // prose: left alone
+      if (inside(ranges, i) && !inside(backticks, i)) return found; // prose in a comment: left alone
+      if (!prose && inside(sentences, i)) return found;             // prose in a string: the same
       n += 1;
       return fresh;
     });

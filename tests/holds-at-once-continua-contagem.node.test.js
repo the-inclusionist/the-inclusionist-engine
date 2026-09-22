@@ -48,7 +48,7 @@ describe('`holdsAtOnce` é uma CONTAGEM e o piso é 1', () => {
   });
 
   // 🔴 ZERO CONTINUA RECUSADO, e a razão importa mais do que a recusa: ela é sobre a aritmética do alcance.
-  // Deixar zero passar faria `alcance()` aprovar por VACUIDADE — o mesmo defeito que o `reachable` recusa —
+  // Deixar zero passar faria `reach()` aprovar por VACUIDADE — o mesmo defeito que o `reachable` recusa —
   // e o cartão que avisa a criança de que o aparelho dela não carrega o jogo nunca apareceria.
   it('🔴 [Zero] zero é RECUSADO, e não passa a significar «não segura nada»', () => {
     expect(problemasDoCampo(0), 'zero passou a ser aceite — o alcance passa a aprovar por vacuidade').toHaveLength(1);
@@ -74,21 +74,21 @@ describe('o número é usado como MAGNITUDE, e não como bandeira', () => {
   // «segura / não segura», 1 e 3 comportam-se igual — e nada mais nesta suíte nota. Aqui a diferença é
   // observável: um aparelho que segura DOIS serve quem pede dois e não serve quem pede três.
   it('🎯 [Right] pedir 3 e pedir 1 dão respostas DIFERENTES no alcance', async () => {
-    const { alcance } = await import('../app/js/input/transports.js');
+    const { reach } = await import('../app/js/input/transports.js');
     const acoes = ['up', 'down', 'left', 'right'];
     // Um transporte com lugares de sobra e um tecto de DOIS ao mesmo tempo — a forma do toque (SEGURA_TOQUE).
     const doisDedos = [{ id: 'toque', slots: 14, holds: 2, available: () => true }];
 
-    expect(alcance(doisDedos, acoes, 1).ok, 'quem pede um deixou de ser servido por dois dedos').toBe(true);
-    expect(alcance(doisDedos, acoes, 2).ok, 'quem pede dois deixou de ser servido por dois dedos').toBe(true);
-    expect(alcance(doisDedos, acoes, 3).ok, 'quem pede TRÊS passou a ser servido por dois dedos').toBe(false);
+    expect(reach(doisDedos, acoes, 1).ok, 'quem pede um deixou de ser servido por dois dedos').toBe(true);
+    expect(reach(doisDedos, acoes, 2).ok, 'quem pede dois deixou de ser servido por dois dedos').toBe(true);
+    expect(reach(doisDedos, acoes, 3).ok, 'quem pede TRÊS passou a ser servido por dois dedos').toBe(false);
   });
 
   // 📌 E o par: a recusa nomeia o transporte que não segura, em vez de dizer só «não». É o que a tela da #112
   // mostra à criança, e sem ele o `ok: false` seria um beco.
   it('📌 [Right] quem não segura o bastante é NOMEADO, com o número dele', async () => {
-    const { alcance } = await import('../app/js/input/transports.js');
-    const a = alcance([{ id: 'toque', slots: 14, holds: 2, available: () => true }], ['up', 'down'], 3);
+    const { reach } = await import('../app/js/input/transports.js');
+    const a = reach([{ id: 'toque', slots: 14, holds: 2, available: () => true }], ['up', 'down'], 3);
     expect(a.naoSeguram).toEqual([{ id: 'toque', holds: 2 }]);
   });
 });

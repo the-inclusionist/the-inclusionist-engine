@@ -305,7 +305,7 @@ export interface GameDeclaration {
    *
    * ⚠️ É UM EIXO DIFERENTE DE «QUANTAS AÇÕES», e é por não serem o mesmo que existia um ponto cego onde o
    * aviso nunca disparava. Medido: a plataforma declara NOVE ações e o controle de tela tem NOVE lugares,
-   * então o `alcance().ok` era verdadeiro e o cartão da #112 nunca aparecia — mas correr, andar e pular ao
+   * então o `reach().ok` era verdadeiro e o cartão da #112 nunca aparecia — mas correr, andar e pular ao
    * mesmo tempo são três dedos, e num telemóvel de dois a criança simplesmente não consegue, sem nada em
    * lado nenhum a dizer porquê. Alcançar uma ação e segurá-la junto com outra são perguntas distintas.
    *

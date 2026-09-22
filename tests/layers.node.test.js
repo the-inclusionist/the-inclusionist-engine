@@ -81,7 +81,7 @@ describe('Z — a ordem-z canônica', () => {
     // colidiria com o terceiro ou quarto nível de menu — e só em runtime, num submenu fundo que raramente abre.
     expect(Z.MENU_MAX - Z.MENU).toBe(9999);
     expect(Z.TRANSITION).toBeGreaterThan(Z.MENU_MAX);
-    const dentro = nomes.filter((k) => k !== 'MENU' && k !== 'MENU_MAX' && Z[k] >= Z.MENU && Z[k] <= Z.MENU_MAX);
-    expect(dentro, 'camada dentro da faixa reservada aos menus').toEqual([]);
+    const isInside = nomes.filter((k) => k !== 'MENU' && k !== 'MENU_MAX' && Z[k] >= Z.MENU && Z[k] <= Z.MENU_MAX);
+    expect(isInside, 'camada dentro da faixa reservada aos menus').toEqual([]);
   });
 });

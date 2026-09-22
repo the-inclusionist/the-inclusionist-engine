@@ -12,8 +12,8 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
-import { aplicarAlternancia, sincronizarAlternancia, BASE_DA_MARCHA } from '../app/js/input/latch-sync.js';
-import { chaveDaAlternancia, chaveLegadaDaAlternancia } from '../app/js/input/latch-scope.js';
+import { applyLatch, syncLatch, BASE_DA_MARCHA } from '../app/js/input/latch-sync.js';
+import { latchKey, legacyLatchKey } from '../app/js/input/latch-scope.js';
 
 /** Um armazém de mentira que CONTA as escritas — é a contagem que prova a cláusula 1. */
 function armazemFalso(inicial = {}) {
@@ -27,14 +27,14 @@ function armazemFalso(inicial = {}) {
 }
 
 const jogador = () => ({ toggleMove: false, walkDir: 0 });
-const chave = (i, transporte) => chaveDaAlternancia(BASE_DA_MARCHA, i, transporte);
-const legada = (i) => chaveLegadaDaAlternancia(BASE_DA_MARCHA, i);
+const chave = (i, transporte) => latchKey(BASE_DA_MARCHA, i, transporte);
+const legada = (i) => legacyLatchKey(BASE_DA_MARCHA, i);
 
 describe('a alternância resolvida para o transporte em uso', () => {
   it('[Zero] nada guardado e sem legado: fica o padrão de fábrica, e ninguém escreve', () => {
     const a = armazemFalso();
     const p = jogador();
-    expect(sincronizarAlternancia(p, a, 0, 'teclado', false), 'não havia o que mudar').toBe(false);
+    expect(syncLatch(p, a, 0, 'teclado', false), 'não havia o que mudar').toBe(false);
     expect(p.toggleMove).toBe(false);
     expect(a.escritas, 'resolver não é gravar').toEqual([]);
   });
@@ -43,10 +43,10 @@ describe('a alternância resolvida para o transporte em uso', () => {
     const a = armazemFalso({ [chave(0, 'gamepad')]: '1', [chave(0, 'teclado')]: '0' });
     const p = jogador();
 
-    expect(sincronizarAlternancia(p, a, 0, 'gamepad', false), 'ligou ao pegar no controle').toBe(true);
+    expect(syncLatch(p, a, 0, 'gamepad', false), 'ligou ao pegar no controle').toBe(true);
     expect(p.toggleMove, 'o valor do GAMEPAD não chegou').toBe(true);
 
-    expect(sincronizarAlternancia(p, a, 0, 'teclado', false), 'a troca tinha de mudar a resposta').toBe(true);
+    expect(syncLatch(p, a, 0, 'teclado', false), 'a troca tinha de mudar a resposta').toBe(true);
     expect(p.toggleMove, 'o teclado herdou o estado do gamepad').toBe(false);
 
     expect(a.escritas, 'trocar de aparelho GRAVOU — a escolha do outro controle seria apagada').toEqual([]);
@@ -55,14 +55,14 @@ describe('a alternância resolvida para o transporte em uso', () => {
   it('⚠️ [Boundary] o `false` guardado é um VALOR: não deixa o legado ligado passar por cima', () => {
     const a = armazemFalso({ [chave(0, 'teclado')]: '0', [legada(0)]: '1' });
     const p = jogador();
-    sincronizarAlternancia(p, a, 0, 'teclado', false);
+    syncLatch(p, a, 0, 'teclado', false);
     expect(p.toggleMove, 'o legado atropelou uma escolha explícita deste aparelho').toBe(false);
   });
 
   it('📌 a criança que já jogava não perde o ajuste: só o legado, e ele vale para o aparelho novo', () => {
     const a = armazemFalso({ [legada(0)]: '1' });
     const p = jogador();
-    sincronizarAlternancia(p, a, 0, 'gamepad', false);
+    syncLatch(p, a, 0, 'gamepad', false);
     expect(p.toggleMove, 'o ajuste guardado antes da divisão desapareceu').toBe(true);
   });
 
@@ -70,7 +70,7 @@ describe('a alternância resolvida para o transporte em uso', () => {
     for (const transporte of ['olhos', 'rosto', 'gestos', 'fala']) {
       const a = armazemFalso({ [chave(0, transporte)]: '0', [legada(0)]: '0' });
       const p = jogador();
-      sincronizarAlternancia(p, a, 0, transporte, false);
+      syncLatch(p, a, 0, transporte, false);
       expect(p.toggleMove, `${transporte} ficou sem a alternância de que depende`).toBe(true);
     }
   });
@@ -78,8 +78,8 @@ describe('a alternância resolvida para o transporte em uso', () => {
   it('[Muitos] jogadores diferentes não partilham a chave', () => {
     const a = armazemFalso({ [chave(0, 'teclado')]: '1', [chave(1, 'teclado')]: '0' });
     const p0 = jogador(); const p1 = jogador();
-    sincronizarAlternancia(p0, a, 0, 'teclado', false);
-    sincronizarAlternancia(p1, a, 1, 'teclado', false);
+    syncLatch(p0, a, 0, 'teclado', false);
+    syncLatch(p1, a, 1, 'teclado', false);
     expect([p0.toggleMove, p1.toggleMove]).toEqual([true, false]);
   });
 });
@@ -87,19 +87,19 @@ describe('a alternância resolvida para o transporte em uso', () => {
 describe('a regra que acompanha o desligar', () => {
   it('🔴 desligar PARA quem anda por travamento — senão a personagem anda sozinha, sem erro nenhum', () => {
     const p = { toggleMove: true, walkDir: -1 };
-    expect(aplicarAlternancia(p, false)).toBe(true);
+    expect(applyLatch(p, false)).toBe(true);
     expect(p.walkDir, 'a criança largou tudo e a personagem continuou a andar').toBe(0);
   });
 
   it('⚠️ LIGAR não mexe na direcção — zerá-la a cada aresta seria o defeito ao contrário, e mais frequente', () => {
     const p = { toggleMove: false, walkDir: 1 };
-    aplicarAlternancia(p, true);
+    applyLatch(p, true);
     expect(p.walkDir, 'ligar tirou a direcção a quem estava a andar').toBe(1);
   });
 
   it('[Um] a segunda chamada com o mesmo valor não muda nada, e diz que não mudou', () => {
     const p = { toggleMove: true, walkDir: 2 };
-    expect(aplicarAlternancia(p, true), 'idempotência: quem anuncia por aresta repetiria a frase').toBe(false);
+    expect(applyLatch(p, true), 'idempotência: quem anuncia por aresta repetiria a frase').toBe(false);
     expect(p.walkDir).toBe(2);
   });
 });
@@ -160,12 +160,12 @@ describe('quem escreve a alternância no jogador', () => {
 });
 
 // ================================ MUTAÇÕES CONFERIDAS ================================
-// 1. `sincronizarAlternancia` a gravar o valor resolvido (`armazem.set(...)`) → 🎯 a [Sequência] reprova pela
+// 1. `syncLatch` a gravar o valor resolvido (`armazem.set(...)`) → 🎯 a [Sequência] reprova pela
 //    contagem de escritas, e SÓ por ela: todos os casos de valor continuariam verdes. É a mutação que separa
 //    «a alternância segue o controle» de «a alternância segue o último controle e apaga os outros».
 // 2. ignorar o argumento `transporte` (fixar `'teclado'`) → a [Sequência] reprova na segunda asserção.
 // 3. tirar o `if (!ligada) p.walkDir = 0` → o caso do desligar reprova, com a frase do defeito escrita.
 // 4. `p.walkDir = 0` incondicional → o caso do LIGAR reprova. As duas mutações juntas são a razão de a linha
 //    ser condicional, e nenhuma delas sozinha o mostrava.
-// 5. `lerTriEstado` a colapsar «nunca escrito» em `false` (o `getBool` que o `latch-store` recusa) → o caso do
+// 5. `readTriState` a colapsar «nunca escrito» em `false` (o `getBool` que o `latch-store` recusa) → o caso do
 //    LEGADO reprova: a criança que já jogava perde o ajuste no primeiro arranque depois da actualização.

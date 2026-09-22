@@ -50,7 +50,7 @@ describe('ui/dom sem documento nenhum (project node)', () => {
 //   · 🎯 `$` a voltar a ler o global cru (`document.querySelector(...)`) -> reprovam TRES: os dois casos
 //     directos e o do consumidor a jusante. E nao e uma mutacao inventada — e o codigo que estava aqui.
 //   · `$$` a voltar ao global cru -> reprova o caso dele. Os dois separados de proposito: consertar um e
-//     esquecer o outro e a forma de defeito que este repositorio ja pagou (o `soltarTodas` que limpava meia
+//     esquecer o outro e a forma de defeito que este repositorio ja pagou (o `releaseAllKeys` que limpava meia
 //     rede), e uma mutacao por funcao e o que a apanha.
 //   · ⚠️ O caso da PREMISSA (`typeof globalThis.document === 'undefined'`) nao se muta: ele existe para o
 //     ficheiro nao passar por engano num ambiente COM DOM, onde os outros tres seriam verdes sem provar nada.

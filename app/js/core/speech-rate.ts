@@ -48,10 +48,10 @@ export function speechPlaybackRate(
   mediaDaVoz: number | null,
 ): { readonly taxa: number; readonly ppmDaVoz: number | null } {
   const alvo = isSpeechRate(ppm);
-  const prender = (x: number): number => Math.min(MAX_PLAYBACK_RATE, Math.max(MIN_PLAYBACK_RATE, +x.toFixed(6)));
+  const clampInside = (x: number): number => Math.min(MAX_PLAYBACK_RATE, Math.max(MIN_PLAYBACK_RATE, +x.toFixed(6)));
   if (palavras >= PALAVRAS_PARA_MEDIR && segundos >= SEGUNDOS_PARA_MEDIR) {
     const ppmDaVoz = (palavras / segundos) * 60;
-    return { taxa: prender(alvo / ppmDaVoz), ppmDaVoz };
+    return { taxa: clampInside(alvo / ppmDaVoz), ppmDaVoz };
   }
-  return { taxa: mediaDaVoz ? prender(alvo / mediaDaVoz) : 1, ppmDaVoz: null };
+  return { taxa: mediaDaVoz ? clampInside(alvo / mediaDaVoz) : 1, ppmDaVoz: null };
 }

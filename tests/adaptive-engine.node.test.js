@@ -128,7 +128,7 @@ describe('as três faixas, na fronteira exata de cada uma (ADR-0048 §5)', () =>
     // 6/10 é EXACTAMENTE o piso de 0,60. A tabela do registo diz «≤ 6 das últimas 10» e é ela que manda; a
     // prosa da mesma issue diz «abaixo do piso», que é resumo. Seguir a prosa deixaria a criança um nível
     // acima com um desempenho que o chute reproduz.
-    expect(faixaDe(historico(0, 7), 0.6)).toEqual({ faixa: 'zona', motivo: 'dentro-da-zona', efeito: 0 });
+    expect(faixaDe(historico(0, 7), 0.6)).toEqual({ faixa: 'zona', motivo: 'isInside-da-zona', efeito: 0 });
     expect(faixaDe(historico(0, 6), 0.6)).toEqual({
       faixa: 'frustracao', motivo: 'resolvidas-no-piso', efeito: -1,
     });
@@ -150,7 +150,7 @@ describe('as três faixas, na fronteira exata de cada uma (ADR-0048 §5)', () =>
     expect(h.filter((r) => r === 'mediada')).toHaveLength(3);
     expect(h.filter((r) => r === 'falhou')).toHaveLength(1);
     expect(faixaDe(h, 0.6), '6 de primeira + 3 mediadas subiu — a mediação foi contada como autonomia')
-      .toEqual({ faixa: 'zona', motivo: 'dentro-da-zona', efeito: 0 });
+      .toEqual({ faixa: 'zona', motivo: 'isInside-da-zona', efeito: 0 });
   });
 });
 

@@ -48,7 +48,7 @@ export type Motivo =
   | 'acertos-de-primeira'   // subiu: ≥ 80% de primeira
   | 'quatro-seguidas'       // desceu na hora: o evento de 2,56%
   | 'resolvidas-no-piso'    // desceu: as resolvidas não passam do que o chute produziria
-  | 'dentro-da-zona'        // manteve: resolve com apoio
+  | 'isInside-da-zona'        // manteve: resolve com apoio
   | 'janela-incompleta';    // manteve: ainda não há questões que cheguem para julgar
 
 export interface Veredicto {
@@ -146,5 +146,5 @@ export function faixaDe(
 
   if (dePrimeira >= ALVO_DE_SUBIDA) return { faixa: 'proficiente', motivo: 'acertos-de-primeira', efeito: 1 };
   if (resolvidas <= piso) return { faixa: 'frustracao', motivo: 'resolvidas-no-piso', efeito: -1 };
-  return { faixa: 'zona', motivo: 'dentro-da-zona', efeito: 0 };
+  return { faixa: 'zona', motivo: 'isInside-da-zona', efeito: 0 };
 }

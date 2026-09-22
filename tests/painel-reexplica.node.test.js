@@ -100,8 +100,8 @@ describe('painel que reconstrói linhas repõe a prosa no rodapé (CLAUDE.md §4
     // é preciso exigir que o que ele nomeia continue a ser o que era.
     const VIZ = join(RAIZ_REPO, 'app', 'js', 'render', 'viz-setters.ts');
     const corpo = readFileSync(VIZ, 'utf8').split(CR).join('');
-    const dentro = corpo.slice(corpo.indexOf('function renderVizGroup('));
-    expect(dentro, 'renderVizGroup deixou de reconstruir; rever RECONSTRUTORES_INJETADOS')
+    const isInside = corpo.slice(corpo.indexOf('function renderVizGroup('));
+    expect(isInside, 'renderVizGroup deixou de reconstruir; rever RECONSTRUTORES_INJETADOS')
       .toMatch(/\.innerHTML\s*=/);
   });
 

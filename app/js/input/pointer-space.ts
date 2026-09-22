@@ -25,10 +25,10 @@
 export interface RectLike { left: number; top: number; width: number; height: number }
 
 /** Um ponto em px, relativo ao CENTRO do elemento. É a forma que um direcional lê. */
-export interface DoCentro { dx: number; dy: number }
+export interface FromCentre { dx: number; dy: number }
 
 /** Um ponto em FRAÇÃO do elemento: `0,0` é o canto superior esquerdo e `1,1` o inferior direito. */
-export interface EmFracao { fx: number; fy: number }
+export interface AsFraction { fx: number; fy: number }
 
 /**
  * O ponto relativo ao CENTRO, em px do elemento.
@@ -38,7 +38,7 @@ export interface EmFracao { fx: number; fy: number }
  * escrita dentro de cada uma, não havia como um consumidor NOVO (um ponteiro, um olhar) obter o ponto sem
  * passar por uma função que já o transformou em direções.
  */
-export function doCentro(px: number, py: number, rect: RectLike): DoCentro {
+export function fromCentre(px: number, py: number, rect: RectLike): FromCentre {
   return { dx: px - (rect.left + rect.width / 2), dy: py - (rect.top + rect.height / 2) };
 }
 
@@ -54,7 +54,7 @@ export function doCentro(px: number, py: number, rect: RectLike): DoCentro {
  * quadro) dá `width: 0`, e um `NaN`/`Infinity` a partir daqui viajaria para dentro da física antes de alguém
  * o ver. O `onGaze` já se protegia disso com um `if (!r.width) return`; a proteção passa a ser da conta.
  */
-export function emFracao(px: number, py: number, rect: RectLike): EmFracao {
+export function asFraction(px: number, py: number, rect: RectLike): AsFraction {
   return {
     fx: rect.width ? (px - rect.left) / rect.width : 0,
     fy: rect.height ? (py - rect.top) / rect.height : 0,

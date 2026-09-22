@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { ACTIONS } from '../app/js/core/actions.js';
 import {
-  KEYBOARD_SOLO, KEYBOARD_DUO, GAMEPAD_STANDARD, bindingProblems, conflitosEntreTabelas, unreachable,
+  KEYBOARD_SOLO, KEYBOARD_DUO, GAMEPAD_STANDARD, bindingProblems, conflictsBetweenTables, unreachable,
 } from '../app/js/input/default-bindings.js';
 // Só o último bloco os usa. Estão aqui porque a pergunta que ele faz atravessa os dois ficheiros: uma tecla
 // pode estar livre nas TABELAS e já ser reclamada por uma constante de módulo do `input/keydown`.
@@ -50,7 +50,7 @@ describe('o esquema de DOIS jogadores (ADR-0096)', () => {
   });
 
   it('⚠️ [Right] e os DOIS não se atropelam — nenhuma tecla tem dois donos', () => {
-    expect(conflitosEntreTabelas(KEYBOARD_DUO)).toEqual([]);
+    expect(conflictsBetweenTables(KEYBOARD_DUO)).toEqual([]);
   });
 
   it('⚠️ [Boundary] as SETAS saem do jogador 1 — é a única diferença obrigatória para o solo', () => {
@@ -66,7 +66,7 @@ describe('o esquema de DOIS jogadores (ADR-0096)', () => {
 
   it('⚠️ [Interface] o crivo cruzado PEGA a seta repetida — senão ele não prova nada', () => {
     const p1ComSeta = { ...P1, up: ['KeyW', 'ArrowUp'] };
-    const achados = conflitosEntreTabelas([p1ComSeta, P2]);
+    const achados = conflictsBetweenTables([p1ComSeta, P2]);
     expect(achados).toHaveLength(1);
     expect(achados[0]).toContain('ArrowUp');
     expect(achados[0]).toContain('p1.up');
@@ -79,7 +79,7 @@ describe('o esquema de DOIS jogadores (ADR-0096)', () => {
     // coisa — e com Num Lock desligado o bloco numérico chega ainda por outro nome.
     expect(P1.leftShoulder).toEqual(['Digit7']);
     expect(P2.leftTrigger).toEqual(['Numpad7']);
-    expect(conflitosEntreTabelas(KEYBOARD_DUO)).toEqual([]);
+    expect(conflictsBetweenTables(KEYBOARD_DUO)).toEqual([]);
     // ⚠️ ESTE CRIVO ERA UMA LISTA BRANCA DO QUE A TABELA JÁ TINHA, e não do que é um `code` válido: aceitava
     // `Key|Digit|Numpad|Arrow|Space|Enter` e mais nada. Em 2026-09-07 a #122 acrescentou `ShiftRight` — um
     // código legítimo da especificação — e ele reprovou. Um gate que recusa mudança CORRETA não protege
@@ -257,7 +257,7 @@ describe('input/default-bindings — toda cadeira tem porta para o remapeamento 
   });
 
   it('[Boundary] e a porta nova nao tira tecla de ninguem', () => {
-    expect(conflitosEntreTabelas(KEYBOARD_DUO), 'a porta nova colide com outra cadeira').toEqual([]);
+    expect(conflictsBetweenTables(KEYBOARD_DUO), 'a porta nova colide com outra cadeira').toEqual([]);
     expect(bindingProblems(KEYBOARD_DUO[1]), 'a porta nova repete uma tecla dentro do proprio esquema').toEqual([]);
   });
 

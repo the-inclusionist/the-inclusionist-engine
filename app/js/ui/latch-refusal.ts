@@ -17,7 +17,7 @@
 // trocava a frase por uma mais curta, mais clara e mais útil — que reprovava na mesma.
 //
 // Módulo-folha: importa só a regra pura da alternância.
-import { alternanciaEhEscolha, UM_COMANDO_DE_CADA_VEZ } from '../input/latch-scope.js';
+import { latchIsOptional, ONE_COMMAND_AT_A_TIME } from '../input/latch-scope.js';
 
 /** Uma linha pronta a traduzir. `null` = há escolha, e não há nada a dizer. */
 export interface RecusaDaAlternancia {
@@ -47,7 +47,7 @@ export const CHAVE_DA_RECUSA: Readonly<Record<string, string>> = Object.freeze({
  * `null` = pode; a interface não mostra nada, porque um aviso que aparece sempre deixa de ser lido.
  */
 export function recusaDaAlternancia(transporte: string): RecusaDaAlternancia | null {
-  if (alternanciaEhEscolha(transporte)) return null;
+  if (latchIsOptional(transporte)) return null;
   const chave = CHAVE_DA_RECUSA[transporte];
   // 📌 Um transporte que exija alternância e não tenha frase seria um botão desabilitado SEM motivo — pior do
   // que o defeito que isto conserta, porque a criança deixa de saber sequer que há uma razão. O gate afirma
@@ -67,4 +67,4 @@ export function mostraMesmoExigida(): boolean {
 }
 
 /** Os transportes que exigem alternância, para quem precisa de os enumerar. Vem da REGRA, não de uma cópia. */
-export const EXIGEM_ALTERNANCIA: ReadonlySet<string> = UM_COMANDO_DE_CADA_VEZ;
+export const EXIGEM_ALTERNANCIA: ReadonlySet<string> = ONE_COMMAND_AT_A_TIME;

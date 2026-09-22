@@ -14,8 +14,8 @@ import { describe, it, expect } from 'vitest';
 import {
   recusaDaAlternancia, mostraMesmoExigida, CHAVE_DA_RECUSA, EXIGEM_ALTERNANCIA,
 } from '../app/js/ui/latch-refusal.js';
-import { UM_COMANDO_DE_CADA_VEZ } from '../app/js/input/latch-scope.js';
-import { TRANSPORTES } from '../app/js/input/transporte-em-uso.js';
+import { ONE_COMMAND_AT_A_TIME } from '../app/js/input/latch-scope.js';
+import { TRANSPORT_NAMES } from '../app/js/input/transporte-em-uso.js';
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';
@@ -45,19 +45,19 @@ describe('latch-refusal · a lista vem da REGRA, e não de uma cópia', () => {
   // divergem uma entrada de cada vez. Aqui o custo seria um aparelho que exige alternância e cujo botão
   // continua a desligá-la.
   it('🎯 [Interface] os transportes que exigem alternância são EXACTAMENTE os da regra', () => {
-    expect([...EXIGEM_ALTERNANCIA].sort()).toEqual([...UM_COMANDO_DE_CADA_VEZ].sort());
-    expect(EXIGEM_ALTERNANCIA, 'a lista foi copiada em vez de reexportada').toBe(UM_COMANDO_DE_CADA_VEZ);
+    expect([...EXIGEM_ALTERNANCIA].sort()).toEqual([...ONE_COMMAND_AT_A_TIME].sort());
+    expect(EXIGEM_ALTERNANCIA, 'a lista foi copiada em vez de reexportada').toBe(ONE_COMMAND_AT_A_TIME);
   });
 
   // ⚠️ E O PAR: todo transporte que a regra exige TEM frase. Sem isto, um aparelho novo entraria na regra e o
   // botão dele ficaria desabilitado SEM motivo — pior do que o defeito que este módulo conserta, porque a
   // criança deixa de saber que existe uma razão.
   it('⚠️ [Interface] todo transporte exigente tem chave, e nenhuma chave sobra', () => {
-    expect(Object.keys(CHAVE_DA_RECUSA).sort()).toEqual([...UM_COMANDO_DE_CADA_VEZ].sort());
+    expect(Object.keys(CHAVE_DA_RECUSA).sort()).toEqual([...ONE_COMMAND_AT_A_TIME].sort());
   });
 
   it('[Vácuo] os sete transportes do catálogo estão cobertos: ou há escolha, ou há motivo', () => {
-    for (const t of TRANSPORTES) {
+    for (const t of TRANSPORT_NAMES) {
       const r = recusaDaAlternancia(t);
       expect(r === null || typeof r.chave === 'string', `${t} caiu entre as duas respostas`).toBe(true);
     }

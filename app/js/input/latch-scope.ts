@@ -26,7 +26,7 @@
 // ser, porque nestes transportes ela nunca foi um valor salvo — é uma propriedade do transporte.
 //
 // ⚠️ OS QUATRO AINDA NÃO EXISTEM COMO TRANSPORTE, e a regra fica escrita à mesma. Medido em 2026-09-08: o
-// `transportesPadrao` devolve três (gamepad, teclado, toque), e a webcam de então sintetizava `KeyboardEvent` — do
+// `defaultTransports` devolve três (gamepad, teclado, toque), e a webcam de então sintetizava `KeyboardEvent` — do
 // ponto de vista da engine, ela ERA o teclado (os olhos passaram a apertar o controle virtual: ADR-0111, #197). Os três ícones da barra rápida dizem-no: `face`, `eyes` e
 // `voice` estão marcados `soon`. Escrever a regra agora custa nada e faz com que eles cheguem COBERTOS, em
 // vez de chegarem a uma excepção que alguém terá de se lembrar de abrir.
@@ -38,30 +38,30 @@
  *
  * Os nomes são os que a barra rápida já usa para os ícones (`face`, `eyes`, `voice`), mais `gestos`, que é o
  * quarto que o ADR-0104 §C nomeia. Ficam em português como o resto do vocabulário de transporte
- * (`teclado`, `toque`) — `transportesPadrao` já mistura, e mudar isso é outra conversa.
+ * (`teclado`, `toque`) — `defaultTransports` já mistura, e mudar isso é outra conversa.
  */
-export const UM_COMANDO_DE_CADA_VEZ: ReadonlySet<string> = new Set(['olhos', 'rosto', 'gestos', 'fala']);
+export const ONE_COMMAND_AT_A_TIME: ReadonlySet<string> = new Set(['olhos', 'rosto', 'gestos', 'fala']);
 
 /**
  * Neste transporte a alternância está sempre ligada?
  *
  * ⚠️ «Sempre ligada» e «ligada por omissão» são coisas diferentes, e a diferença é a que o ADR-0104 §C faz:
  * um padrão pode ser mudado, e mudá-lo aqui deixaria o controle inutilizável. Por isso o valor guardado nem
- * chega a ser lido nestes transportes — ver `alternanciaDe`.
+ * chega a ser lido nestes transportes — ver `latchOf`.
  */
-export function alternanciaSempreLigada(transporte: string): boolean {
-  return UM_COMANDO_DE_CADA_VEZ.has(transporte);
+export function latchAlwaysOn(transporte: string): boolean {
+  return ONE_COMMAND_AT_A_TIME.has(transporte);
 }
 
 /**
  * A opção deve ser OFERECIDA para este transporte?
  *
- * O contrário de `alternanciaSempreLigada`, e existe com nome próprio porque quem pergunta é outro: um
+ * O contrário de `latchAlwaysOn`, e existe com nome próprio porque quem pergunta é outro: um
  * chama para decidir o estado, o outro para decidir se desenha o botão. Um painel que desenhasse o botão e
  * ignorasse o clique seria pior do que não o desenhar.
  */
-export function alternanciaEhEscolha(transporte: string): boolean {
-  return !alternanciaSempreLigada(transporte);
+export function latchIsOptional(transporte: string): boolean {
+  return !latchAlwaysOn(transporte);
 }
 
 /**
@@ -74,7 +74,7 @@ export function alternanciaEhEscolha(transporte: string): boolean {
  *
  * `base` é `togglemove` ou `togglerun`, os dois nomes que já existem no armazenamento da criança.
  */
-export function chaveDaAlternancia(base: string, jogador: number, transporte: string): string {
+export function latchKey(base: string, jogador: number, transporte: string): string {
   return `incl_${base}_p${jogador}_${transporte}`;
 }
 
@@ -91,12 +91,12 @@ export function chaveDaAlternancia(base: string, jogador: number, transporte: st
  * desde a migração anterior, e a nota do `platform/storage` diz porquê — «a chave velha fica onde está: é
  * dado da criança, não meu para apagar, e a sua permanência é o que torna um retorno possível».
  */
-export function chaveLegadaDaAlternancia(base: string, jogador: number): string {
+export function legacyLatchKey(base: string, jogador: number): string {
   return `incl_${base}_p${jogador}`;
 }
 
 /** O que se sabe ao resolver a alternância de um transporte. */
-export interface LeituraDaAlternancia {
+export interface LatchReading {
   /** O que está guardado para ESTE transporte. `null` = nunca foi escrito. */
   readonly doTransporte: boolean | null;
   /** O que está guardado na chave antiga, sem transporte. `null` = nunca foi escrito. */
@@ -115,8 +115,8 @@ export interface LeituraDaAlternancia {
  * criança que tivesse desligado a alternância no teclado herdaria esse `false` pelo legado e ficaria com um
  * controle de olhar que não responde — o pior defeito possível, no controle de quem tem menos alternativas.
  */
-export function alternanciaDe(transporte: string, l: LeituraDaAlternancia): boolean {
-  if (alternanciaSempreLigada(transporte)) return true;
+export function latchOf(transporte: string, l: LatchReading): boolean {
+  if (latchAlwaysOn(transporte)) return true;
   if (l.doTransporte !== null) return l.doTransporte;
   if (l.doLegado !== null) return l.doLegado;
   return l.padrao;

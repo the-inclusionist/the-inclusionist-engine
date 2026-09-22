@@ -173,7 +173,7 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
       const suas = BUSCAS.filter((a) => a.f === f).map((a) => a.url);
       if (suas.length > urls) aMais.push(`${f}: ${urls} declarada(s), ${suas.length} achada(s) → ${suas.join(' · ')}`);
     }
-    expect(aMais, `URL nova dentro de um ficheiro já desculpado: ${aMais.join(' | ')}`).toEqual([]);
+    expect(aMais, `URL nova isInside de um ficheiro já desculpado: ${aMais.join(' | ')}`).toEqual([]);
   });
 
   // ⚠️ A SAÍDA, e agora ela tem DUAS metades. Sem elas a lista vira monumento: a entrada do WebGazer

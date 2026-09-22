@@ -2,7 +2,7 @@
 // input/latch-store.ts — A ALTERNÂNCIA, LIDA E ESCRITA NO ARMAZENAMENTO (ADR-0113).
 //
 // ========================= O QUE ESTE MÓDULO É, E POR QUE É SEPARADO =========================
-// O `input/latch-scope` é a REGRA e não toca em nada: recebe uma `LeituraDaAlternancia` já feita e responde.
+// O `input/latch-scope` é a REGRA e não toca em nada: recebe uma `LatchReading` já feita e responde.
 // Este módulo é a única coisa que faltava entre ela e o mundo — quem vai ao armazenamento buscar os três
 // valores que a regra pede, e quem grava o que a criança escolhe.
 //
@@ -15,13 +15,13 @@
 // aqui como argumento. Um módulo de armazenamento que adivinhasse o transporte escreveria a escolha de uma
 // criança na chave de outro aparelho — em silêncio, que é o defeito que o ADR-0113 existe para evitar.
 import {
-  chaveDaAlternancia, chaveLegadaDaAlternancia, alternanciaDe, alternanciaEhEscolha,
-  type LeituraDaAlternancia,
+  latchKey, legacyLatchKey, latchOf, latchIsOptional,
+  type LatchReading,
 } from './latch-scope.js';
 
 /** O mínimo do `platform/storage` que isto precisa. Injectado, para o gate não precisar de um navegador. */
-export interface ArmazemDaAlternancia {
-  /** ⚠️ O CRU, e não `getBool`. Ver `lerTriEstado`. */
+export interface LatchStore {
+  /** ⚠️ O CRU, e não `getBool`. Ver `readTriState`. */
   get(chave: string, padrao?: null): string | null;
   set(chave: string, valor: string): void;
 }
@@ -37,7 +37,7 @@ export interface ArmazemDaAlternancia {
  * ⚠️ É por isso que o `latch-scope` tipa os dois campos como `boolean | null` e tem um caso próprio a dizer
  * que «`false` guardado é um VALOR, e não uma ausência». Este é o lado do armazenamento da mesma frase.
  */
-export function lerTriEstado(armazem: ArmazemDaAlternancia, chave: string): boolean | null {
+export function readTriState(armazem: LatchStore, chave: string): boolean | null {
   const v = armazem.get(chave, null);
   return v == null ? null : v === '1';
 }
@@ -47,16 +47,16 @@ export function lerTriEstado(armazem: ArmazemDaAlternancia, chave: string): bool
  *
  * `base` é `togglemove` ou `togglerun` — os dois nomes que já existem no armazenamento da criança.
  */
-export function leituraDaAlternancia(
-  armazem: ArmazemDaAlternancia,
+export function readLatch(
+  armazem: LatchStore,
   base: string,
   jogador: number,
   transporte: string,
   padrao: boolean,
-): LeituraDaAlternancia {
+): LatchReading {
   return {
-    doTransporte: lerTriEstado(armazem, chaveDaAlternancia(base, jogador, transporte)),
-    doLegado: lerTriEstado(armazem, chaveLegadaDaAlternancia(base, jogador)),
+    doTransporte: readTriState(armazem, latchKey(base, jogador, transporte)),
+    doLegado: readTriState(armazem, legacyLatchKey(base, jogador)),
     padrao,
   };
 }
@@ -67,14 +67,14 @@ export function leituraDaAlternancia(
  * 📌 TROCAR DE TRANSPORTE TROCA A RESPOSTA SEM ESCREVER NADA, que é a cláusula 1 do ADR-0113 em código: o
  * valor pertence ao mapeamento do controle, como um caps-lock, e mudar de controle é mudar de mapeamento.
  */
-export function alternanciaGuardada(
-  armazem: ArmazemDaAlternancia,
+export function storedLatch(
+  armazem: LatchStore,
   base: string,
   jogador: number,
   transporte: string,
   padrao: boolean,
 ): boolean {
-  return alternanciaDe(transporte, leituraDaAlternancia(armazem, base, jogador, transporte, padrao));
+  return latchOf(transporte, readLatch(armazem, base, jogador, transporte, padrao));
 }
 
 /**
@@ -92,14 +92,14 @@ export function alternanciaGuardada(
 // O `ui/settings-motor` já tem um `store: { setBool }` injectado — exigir-lhe um objecto com `get`/`set`
 // crus obrigaria a inventar um adaptador no ponto de uso, e um adaptador ali é onde uma segunda forma de
 // escrever a mesma chave nasce. Uma função é o mínimo que a escrita precisa.
-export function gravarAlternancia(
+export function writeLatch(
   escrever: (chave: string, ligada: boolean) => void,
   base: string,
   jogador: number,
   transporte: string,
   ligada: boolean,
 ): boolean {
-  if (!alternanciaEhEscolha(transporte)) return false;
-  escrever(chaveDaAlternancia(base, jogador, transporte), ligada);
+  if (!latchIsOptional(transporte)) return false;
+  escrever(latchKey(base, jogador, transporte), ligada);
   return true;
 }

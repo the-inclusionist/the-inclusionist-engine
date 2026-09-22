@@ -295,11 +295,11 @@ export function titleNavOf(code: string, s: KeydownSnapshot, action2: boolean): 
 import { hasNavIntent as hasTitleIntent } from './edges.js';
 import type { EventTargetLike } from './touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
-import type { Transporte } from './transporte-em-uso.js';
+import type { TransportName } from './transporte-em-uso.js';
 // ⚠️ IMPORTADA E NÃO INJECTADA, ao contrário dos três escritores logo abaixo, e a linha que separa os dois é
-// esta: `origemDoEvento` é uma função PURA do evento — não toca estado nenhum que o cartucho possua. Os
+// esta: `sourceOfEvent` é uma função PURA do evento — não toca estado nenhum que o cartucho possua. Os
 // escritores tocam o `input/state`, que é mutado in-place e partilhado, e é por isso que continuam a entrar.
-import { origemDoEvento } from './origem-sintetica.js';
+import { sourceOfEvent } from './origem-sintetica.js';
 export { hasNavIntent as hasTitleIntent } from './edges.js';
 
 /**
@@ -449,19 +449,19 @@ export interface KeydownCtx {
    */
   readonly heldKeys: ReadonlySet<string>;
   /** Uma tecla foi segurada, e sabe-se por quem. */
-  marcarTecla: (code: string, origem: Transporte) => void;
+  markKey: (code: string, origem: TransportName) => void;
   /**
    * Uma tecla foi segurada e NÃO se sabe por quem — o evento sintético que ninguém assinou.
    *
    * ⚠️ Está no ctx a par das outras duas de propósito: se fosse importada, um consumidor não teria como ver
    * que ela existe, e é justamente ele quem produz os eventos que caem aqui.
    */
-  marcarTeclaSemOrigem: (code: string) => void;
+  markKeyWithoutSource: (code: string) => void;
   /**
-   * ESTA ARESTA É DESTE JOGADOR, E VEIO DAQUI (ADR-0113 cláusula 4, issue #127) — `input/state.arestaDoJogador`.
+   * ESTA ARESTA É DESTE JOGADOR, E VEIO DAQUI (ADR-0113 cláusula 4, issue #127) — `input/state.playerEdge`.
    *
    * 🔴 CAMPO OBRIGATÓRIO, e a medição é a razão: em 2026-09-09 o autómato do ADR-0109 tinha ZERO alimentadores
-   * em produção, logo `entradaDe(i).emUso` respondia `teclado` a toda a gente — para sempre, e sem erro
+   * em produção, logo `inputOf(i).emUso` respondia `teclado` a toda a gente — para sempre, e sem erro
    * nenhum. Com isso, a recusa da cláusula 3 nunca dispara: a criança que joga por webcam consegue desligar a
    * alternância de que a entrada dela depende, e nada o diz.
    *
@@ -469,8 +469,8 @@ export interface KeydownCtx {
    * chega carimbado (`input/origem-sintetica`), então é por esta linha que `olhos`/`rosto`/`gestos`/`fala`
    * passam a ser o transporte em uso. Uma tecla premida a sério devolve o teclado, que é a regra 3 do ADR-0109.
    */
-  arestaDoJogador: (jogador: number, origem: Transporte) => void;
-  soltarTecla: (code: string) => void;
+  playerEdge: (jogador: number, origem: TransportName) => void;
+  releaseKey: (code: string) => void;
   /** `let oneButton` do game.js (empatia motora) → getter. */
   isOneButton: () => boolean;
   actionOf: (code: string, playerIndex: number) => string | null;
@@ -542,7 +542,7 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
   }
 
   /** A metade IMPURA: pega a decisão pronta e a carimba no mundo. */
-  function apply(d: KeydownDecision, code: string, origem: Transporte | undefined): void {
+  function apply(d: KeydownDecision, code: string, origem: TransportName | undefined): void {
     switch (d.kind) {
       case 'overlay': if (d.closeId) ctx.closeOverlayById(d.closeId); return;
       case 'touchcfg': { if (!d.close) return; const t = ctx.$<HTMLElement>('#touchcfg'); if (t) t.hidden = true; return; }
@@ -570,17 +570,17 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
           p.waiting = false; ctx.clearWaitingBadge(p.i); ctx.srSay(t('sr.player.entered', { n: p.i + 1 }));
         }
         for (const { playerIndex, edge } of d.edges) { const p = players[playerIndex]; if (p) p[edge] = true; }
-        for (const k of d.releaseKeys) ctx.soltarTecla(k);
+        for (const k of d.releaseKeys) ctx.releaseKey(k);
         // ⚠️ A ORIGEM CHEGA DO EVENTO E NÃO É INVENTADA AQUI (ADR-0109). `origem` é `undefined` só para o
         // evento sintético que ninguém assinou — e nesse caso a porta estreita APAGA a entrada anterior, em
-        // vez de deixar a tecla herdar de quem a segurou da última vez. Ver `marcarTeclaSemOrigem`.
-        if (origem) ctx.marcarTecla(code, origem); else ctx.marcarTeclaSemOrigem(code);
+        // vez de deixar a tecla herdar de quem a segurou da última vez. Ver `markKeyWithoutSource`.
+        if (origem) ctx.markKey(code, origem); else ctx.markKeyWithoutSource(code);
         // 📌 A ARESTA ALIMENTA O AUTÓMATO NO MESMO PONTO E SOB A MESMA CONDIÇÃO em que a origem é gravada na
         // tecla — origem desconhecida não é aresta de aparelho nenhum, e inventar-lhe `teclado` faria uma
         // tecla do toque desligar a alternância de quem joga por olhar, sem erro e no meio da partida.
         // ⚠️ Tecla genérica (sem dono) conta para o jogador 1, que é a mesma convenção do `ui/menu-nav`: quem
         // carrega numa tecla que não é de assento nenhum está a jogar no primeiro assento.
-        if (origem) { const dono = ctx.whichPlayer(code); ctx.arestaDoJogador(dono < 0 ? 0 : dono, origem); }
+        if (origem) { const dono = ctx.whichPlayer(code); ctx.playerEdge(dono < 0 ? 0 : dono, origem); }
         return;
       }
     }
@@ -591,12 +591,12 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
     if (ctx.handleCaptureKeydown(e)) return;                  // remap: a próxima tecla vira o controle
     const d = decideKeydown(e, snapshot());
     if (d.preventDefault) e.preventDefault();
-    apply(d, e.code, origemDoEvento(e));
+    apply(d, e.code, sourceOfEvent(e));
   }
 
   // ⚠️ SOLTA NOS DOIS. Um `keys.delete` cru deixava a origem para trás, e um mapa que descreve teclas que já
   // ninguém segura responde à alternância com o aparelho errado — sem erro, e só na aresta seguinte.
-  function onKeyup(e: KeyupEventLike): void { ctx.soltarTecla(e.code); }
+  function onKeyup(e: KeyupEventLike): void { ctx.releaseKey(e.code); }
 
   function attach(): void {
     ctx.win.addEventListener('keydown', onKeydown);

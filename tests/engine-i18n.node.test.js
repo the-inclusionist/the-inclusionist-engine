@@ -220,7 +220,7 @@ const CRU_CONHECIDO = {
 
   /* --- FORA de `ui/`: menos, e cada um por um motivo próprio. --- */
   'input/touch.ts': 8,             // 'mão de criança' / 'mão de adulto' — classificação, mas VAI para a tela
-                                   // ⚠️ 3 → 8 em 2026-09-12: as DUAS linhas de `lacunasDoToque` (ADR-0143 §4),
+                                   // ⚠️ 3 → 8 em 2026-09-12: as DUAS linhas de `touchGaps` (ADR-0143 §4),
                                    // partidas em cinco literais por caberem na largura. Mesma classe de todas
                                    // as do `boot/create-game`: é lacuna lida por quem INTEGRA a engine, e não
                                    // texto que chegue a uma criança — o crivo é por FORMA e não distingue os
@@ -391,7 +391,7 @@ describe('texto cru em português nas camadas de ENGINE (o buraco do gate do ite
     // 75 em 19 módulos. Não é decoração: é a diferença entre "o pilar 3 vale" e "o pilar 3 vale no main.js".
     //
     // ⚠️ 76 → 79 em 2026-09-12, E ISTO É CRESCIMENTO DE DÍVIDA, dito como tal. As três entradas são as linhas
-    // de `lacunasDoToque` (ADR-0143 §4), e a razão de elas não passarem por `t()` é a que o
+    // de `touchGaps` (ADR-0143 §4), e a razão de elas não passarem por `t()` é a que o
     // `platform/pesados-catalogo` já escreveu: são mensagens que quem INTEGRA a engine lê, e pô-las no
     // dicionário seria pedir aos três idiomas que carregassem diagnóstico de integração.
     //

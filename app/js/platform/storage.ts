@@ -169,7 +169,7 @@ export const KEYS = {
    * ligá-la no controle de tela, onde ninguém segura um botão virtual com conforto, ligava-a também no
    * teclado, onde segurar uma tecla é exactamente o que a criança sabe fazer.
    *
-   * ⚠️ E A CHAVE NOVA NÃO MORA AQUI, de propósito. Ela é `chaveDaAlternancia`, em `input/latch-scope` — este
+   * ⚠️ E A CHAVE NOVA NÃO MORA AQUI, de propósito. Ela é `latchKey`, em `input/latch-scope` — este
    * ficheiro é módulo-FOLHA e `platform/` não importa de `input/`, que é a camada acima. Montá-la aqui
    * exigiria ou uma aresta ao contrário ou uma segunda cópia do nome, e a segunda cópia é exactamente o que
    * o comentário do bloco acima existe para impedir. O dono do nome é quem conhece a regra do transporte.

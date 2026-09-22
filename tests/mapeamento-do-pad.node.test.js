@@ -14,7 +14,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { registrarMapeamentoDoPad, tabelaDoPad } from '../app/js/input/pad-defaults.js';
+import { registerPadMapping, padTable } from '../app/js/input/pad-defaults.js';
 import { padActions } from '../app/js/input/gamepad.js';
 import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
 
@@ -25,43 +25,43 @@ const pad = (...premidos) => ({
   axes: [0, 0, 0, 0],
 });
 
-beforeEach(() => { registrarMapeamentoDoPad(null); });
-afterEach(() => { registrarMapeamentoDoPad(null); });
+beforeEach(() => { registerPadMapping(null); });
+afterEach(() => { registerPadMapping(null); });
 
 describe('a tabela de botões deste jogo', () => {
   it('[Zero] sem declaração, é a fábrica da engine — e é o MESMO objecto, não uma cópia', () => {
-    expect(tabelaDoPad(1, 0)).toBe(GAMEPAD_STANDARD);
+    expect(padTable(1, 0)).toBe(GAMEPAD_STANDARD);
   });
 
   it('[Right] o jogo troca UMA posição e o resto continua a ser da engine', () => {
-    registrarMapeamentoDoPad(() => ({ action1: 3 }));
-    const t = tabelaDoPad(1, 0);
+    registerPadMapping(() => ({ action1: 3 }));
+    const t = padTable(1, 0);
     expect(t.action1, 'o padrão do jogo não chegou').toBe(3);
     expect(t.action2, 'parcial virou substituição').toBe(GAMEPAD_STANDARD.action2);
   });
 
   it('🎯 [Boundary] o ASSENTO chega ao jogo — dois assentos podem querer arranjos diferentes', () => {
-    registrarMapeamentoDoPad((jogadores, assento) => ({ action1: jogadores * 10 + assento }));
-    expect(tabelaDoPad(2, 0).action1).toBe(20);
-    expect(tabelaDoPad(2, 1).action1).toBe(21);
+    registerPadMapping((jogadores, assento) => ({ action1: jogadores * 10 + assento }));
+    expect(padTable(2, 0).action1).toBe(20);
+    expect(padTable(2, 1).action1).toBe(21);
   });
 
   it('📌 `null` para um arranjo deixa esse arranjo com a fábrica', () => {
-    registrarMapeamentoDoPad((jogadores) => (jogadores === 1 ? { action1: 3 } : null));
-    expect(tabelaDoPad(1, 0).action1).toBe(3);
-    expect(tabelaDoPad(2, 0)).toBe(GAMEPAD_STANDARD);
+    registerPadMapping((jogadores) => (jogadores === 1 ? { action1: 3 } : null));
+    expect(padTable(1, 0).action1).toBe(3);
+    expect(padTable(2, 0)).toBe(GAMEPAD_STANDARD);
   });
 
   it('⚠️ registar de novo APAGA a memória — senão o jogo seguinte lia a tabela do anterior', () => {
-    registrarMapeamentoDoPad(() => ({ action1: 3 }));
-    expect(tabelaDoPad(1, 0).action1).toBe(3);
-    registrarMapeamentoDoPad(() => ({ action1: 7 }));
-    expect(tabelaDoPad(1, 0).action1, 'a memória sobreviveu ao registo').toBe(7);
+    registerPadMapping(() => ({ action1: 3 }));
+    expect(padTable(1, 0).action1).toBe(3);
+    registerPadMapping(() => ({ action1: 7 }));
+    expect(padTable(1, 0).action1, 'a memória sobreviveu ao registo').toBe(7);
   });
 
   it('[Interface] a mesma pergunta duas vezes devolve o MESMO objecto — isto corre por quadro', () => {
-    registrarMapeamentoDoPad(() => ({ action1: 3 }));
-    expect(tabelaDoPad(1, 0)).toBe(tabelaDoPad(1, 0));
+    registerPadMapping(() => ({ action1: 3 }));
+    expect(padTable(1, 0)).toBe(padTable(1, 0));
   });
 });
 
@@ -87,9 +87,9 @@ describe('a leitura dos botões, com a tabela do jogo', () => {
 });
 
 // ================================ MUTAÇÕES CONFERIDAS ================================
-// 1. `tabelaDoPad` a ignorar o `assento` (chave só com `jogadores`) → o caso do ASSENTO reprova, e é o que
+// 1. `padTable` a ignorar o `assento` (chave só com `jogadores`) → o caso do ASSENTO reprova, e é o que
 //    justifica ter subido o `owner` no laço de sondagem.
-// 2. `registrarMapeamentoDoPad` sem o `memo.clear()` → o caso do registo repetido reprova. Sem ele, o segundo
+// 2. `registerPadMapping` sem o `memo.clear()` → o caso do registo repetido reprova. Sem ele, o segundo
 //    jogo montado na mesma página lê a tabela do primeiro — e a leitura está certa em toda parte menos no
 //    valor.
 // 3. `padActions` a ler `GAMEPAD_STANDARD` em vez do parâmetro → o primeiro caso da segunda secção reprova.

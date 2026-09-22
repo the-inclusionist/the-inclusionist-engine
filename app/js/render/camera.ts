@@ -30,7 +30,7 @@
 /** Um tamanho em pixels de mundo ou de tela. Só isto: a câmera não precisa saber de mais nada. */
 export interface Tamanho { w: number; h: number }
 
-/** Onde a câmera está, ANTES de arredondar. O arredondamento é do desenho, não da conta — ver `prender`. */
+/** Onde a câmera está, ANTES de arredondar. O arredondamento é do desenho, não da conta — ver `clampInside`. */
 export interface Camera { camX: number; camY: number }
 
 /**
@@ -41,7 +41,7 @@ export interface Camera { camX: number; camY: number }
  * que já existia e está preservado de propósito; o mapa de hoje (896×992 contra 320×180) nunca chega lá, mas
  * uma fase pequena chegaria, e é melhor que o caso esteja escrito do que descoberto.
  */
-export function prender(cam: Camera, mundo: Tamanho, tela: Tamanho): Camera {
+export function clampInside(cam: Camera, mundo: Tamanho, tela: Tamanho): Camera {
   return {
     camX: Math.max(0, Math.min(cam.camX, mundo.w - tela.w)),
     camY: Math.max(0, Math.min(cam.camY, mundo.h - tela.h)),
@@ -50,7 +50,7 @@ export function prender(cam: Camera, mundo: Tamanho, tela: Tamanho): Camera {
 
 /** Põe `(alvoX, alvoY)` no CENTRO da tela e prende no mundo. O alvo é um ponto — quem tem corpo o converte. */
 export function enquadrar(alvoX: number, alvoY: number, mundo: Tamanho, tela: Tamanho): Camera {
-  return prender({ camX: alvoX - tela.w / 2, camY: alvoY - tela.h / 2 }, mundo, tela);
+  return clampInside({ camX: alvoX - tela.w / 2, camY: alvoY - tela.h / 2 }, mundo, tela);
 }
 
 /**
@@ -65,7 +65,7 @@ export function enquadrar(alvoX: number, alvoY: number, mundo: Tamanho, tela: Ta
  */
 export function tremer(cam: Camera, mundo: Tamanho, tela: Tamanho, amp: number, rx: number, ry: number): Camera {
   if (!(amp > 0)) return cam;
-  return prender({ camX: cam.camX + rx * amp, camY: cam.camY + ry * amp }, mundo, tela);
+  return clampInside({ camX: cam.camX + rx * amp, camY: cam.camY + ry * amp }, mundo, tela);
 }
 
 /* ===================== M2 · A CÂMERA COMO OBJETO ===================== */
@@ -128,7 +128,7 @@ export function criarCamera(mundo: Tamanho, tela: Tamanho, zona: ZonaMorta = { w
     get base() { return base; },
 
     seguir(alvoX, alvoY) {
-      base = prender({
+      base = clampInside({
         camX: base.camX + correcao(alvoX, base.camX, t.w, zona.w),
         camY: base.camY + correcao(alvoY, base.camY, t.h, zona.h),
       }, m, t);
@@ -147,7 +147,7 @@ export function criarCamera(mundo: Tamanho, tela: Tamanho, zona: ZonaMorta = { w
     redimensionar(novoMundo, novaTela) {
       if (novoMundo) m = novoMundo;
       if (novaTela) t = novaTela;
-      base = prender(base, m, t);
+      base = clampInside(base, m, t);
       return base;
     },
   };

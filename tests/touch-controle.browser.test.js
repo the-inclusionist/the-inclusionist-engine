@@ -12,7 +12,7 @@
 //
 // MUTAÇÕES CONFERIDAS no fim do ficheiro.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { montarControleDeToque, lacunasDoToque } from '../app/js/input/touch.js';
+import { mountTouchControls, touchGaps } from '../app/js/input/touch.js';
 import { TOUCH_DEFAULT } from '../app/js/input/devices.js';
 
 const ctx = {
@@ -28,7 +28,7 @@ beforeEach(() => {
 afterEach(() => { hospedeiro.remove(); });
 
 const montar = (acoes, extra = {}) => {
-  const raiz = montarControleDeToque(ctx, {
+  const raiz = mountTouchControls(ctx, {
     mapa: TOUCH_DEFAULT,
     acoesDoJogo: new Set(acoes),
     rotuloDoSlot: (s) => 'rótulo de ' + s,
@@ -64,7 +64,7 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
     // pelo cartucho.» Measured before: the quiz's pad wrote «Confirm» and «Back» on the faces of 2 and 3.
     const slotDe = (acao) => Object.keys(TOUCH_DEFAULT).find((s) => TOUCH_DEFAULT[s] === acao);
     const FUNCOES = { action2: 'Confirm', action3: 'Back', leftShoulder: 'Page', up: 'Climb' };
-    const raiz = montarControleDeToque(ctx, {
+    const raiz = mountTouchControls(ctx, {
       mapa: TOUCH_DEFAULT,
       acoesDoJogo: new Set(Object.keys(FUNCOES)),
       rotuloDoSlot: (s) => FUNCOES[TOUCH_DEFAULT[s]] ?? (s === 'start' ? 'START' : s === 'select' ? 'SELECT' : ''),
@@ -139,7 +139,7 @@ describe('ADR-0143 §4 · o silêncio acaba', () => {
     expect(raiz.querySelectorAll('.touch-arm')).toHaveLength(0);
     expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(0);
     expect(raiz.querySelector('#touch-start')).not.toBeNull();
-    const linhas = lacunasDoToque({ mapa: TOUCH_DEFAULT, acoesDoJogo: new Set() });
+    const linhas = touchGaps({ mapa: TOUCH_DEFAULT, acoesDoJogo: new Set() });
     expect(linhas).toHaveLength(1);
     expect(linhas[0], 'a linha não nomeia a saída').toMatch(/preset/);
     expect(linhas[0], 'a linha não diz o que a criança perde').toMatch(/tablet/);
@@ -148,13 +148,13 @@ describe('ADR-0143 §4 · o silêncio acaba', () => {
   it('🎯 [Zero] com o preset do platformer, `problems` não inventa lacuna nenhuma', () => {
     // O par do caso acima. Sem ele, o crivo aprovaria uma engine que acusa sempre — tão inútil quanto uma
     // que nunca acusa.
-    expect(lacunasDoToque({ mapa: TOUCH_DEFAULT, acoesDoJogo: new Set(OITO_ACOES) })).toEqual([]);
+    expect(touchGaps({ mapa: TOUCH_DEFAULT, acoesDoJogo: new Set(OITO_ACOES) })).toEqual([]);
   });
 
   it('🔴 [Boundary] uma acção declarada que NENHUM slot dispara também vira linha', () => {
     // ⚠️ A lacuna PARCIAL, que hoje não aparece em lado nenhum: a acção existe no teclado e não existe no
     // toque. Quem joga por toque simplesmente não a tem, e ninguém lhe diz.
-    const linhas = lacunasDoToque({
+    const linhas = touchGaps({
       mapa: TOUCH_DEFAULT,
       // ⚠️ `select` e não `leftShoulder`: desde o ADR-0160 os ombros TÊM slot, e o exemplo deixaria de ser exemplo
       acoesDoJogo: new Set(['action1', 'select']),

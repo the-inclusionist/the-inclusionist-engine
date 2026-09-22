@@ -7,7 +7,7 @@
 // ./devices.js (not reimplemented). Reading the real Gamepad API (polling, mapping wizard) is input/gamepad's
 // territory, not this module's — see the header note on padKind() for the one deliberate exception.
 import { PAD_DESIGNS, TOUCH_DEFAULT } from './devices.js';
-import { migrarMapaDeToque } from './vocabulary-migration.js';
+import { migrateTouchMap } from './vocabulary-migration.js';
 import { t } from '../core/i18n.js';
 import { KEYS } from '../platform/storage.js'; // só as CHAVES (constantes) — leitura/escrita passam por ctx.store (DI)
 import type { DomQuery } from '../core/dom-query.js';
@@ -182,7 +182,7 @@ export function normalizeTouchMap(stored: unknown): Record<string, string> {
   // guardado VENCER o padrão, então um `b0: 'jump'` de antes do ADR-0086 sobrescreveria o `b0: 'action2'`
   // correto e o botão da tela deixaria de fazer nada — sem erro nenhum. Aqui o nome da ação está no VALOR,
   // não na chave, e por isso precisa de um tradutor próprio. Ver `input/vocabulary-migration.ts`.
-  const migrado = migrarMapaDeToque(stored && typeof stored === 'object' ? (stored as Record<string, string>) : null);
+  const migrado = migrateTouchMap(stored && typeof stored === 'object' ? (stored as Record<string, string>) : null);
   return Object.assign({}, TOUCH_DEFAULT, migrado || {});
 }
 
@@ -484,7 +484,7 @@ const NOME_DA_POSICAO: Readonly<Record<string, string>> = {
   leftShoulder: 'L1', leftTrigger: 'L2', rightShoulder: 'R1', rightTrigger: 'R2',
   select: 'SELECT', start: 'START',
 };
-export function nomeDoBotao(acao: string): string | null {
+export function buttonName(acao: string): string | null {
   if (NOME_DA_POSICAO[acao]) return NOME_DA_POSICAO[acao]!;
   return acao === 'up' || acao === 'down' || acao === 'left' || acao === 'right' ? t(`touch.nome.${acao}`) : null;
 }
@@ -510,7 +510,7 @@ const OMBROS = [['esq', ['bl2', 'bl1']], ['dir', ['br2', 'br1']]] as const;
  *
  * Idempotente: montar duas vezes devolve o mesmo nó, com o conteúdo refeito para o mapa de agora.
  */
-export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): HTMLElement {
+export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): HTMLElement {
   const raiz = ctx.procurar('#touch-controls') ?? ctx.criar('div');
   raiz.id = 'touch-controls';
   raiz.className = 'touch';
@@ -521,7 +521,7 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
   // se o jogo os nomeia.» Um botão na tela é uma promessa de que ele faz alguma coisa, e quem sabe isso é o jogo.
   const nomeado = (slot: string): boolean => spec.acoesDoJogo.has(spec.mapa[slot] ?? '');
   // ADR-0165: the face is the NAME of the position the slot fires; the accessible name is «name, function».
-  const nomeDe = (slot: string): string => nomeDoBotao(spec.mapa[slot] ?? slot) ?? spec.rotuloDoSlot(slot);
+  const nomeDe = (slot: string): string => buttonName(spec.mapa[slot] ?? slot) ?? spec.rotuloDoSlot(slot);
   const acessivel = (slot: string): string => {
     const nome = nomeDe(slot);
     const funcao = spec.rotuloDoSlot(slot);
@@ -625,7 +625,7 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
  * 📌 Devolve LINHAS e não lança: uma lacuna do hospedeiro nunca derruba o boot, pela mesma regra que o resto
  * de `problems` já segue. As frases vão para o consumidor que INTEGRA a engine, e não para uma criança.
  */
-export function lacunasDoToque(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo'>): string[] {
+export function touchGaps(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo'>): string[] {
   // ⚠️ SEM `preset` O PAD SÓ TEM SELECT E START (ADR-0162): nenhuma direção, nenhum botão — nem para andar nos menus.
   // É lacuna de quem integra, e diz-se.
   if (!spec.acoesDoJogo.size) {
@@ -669,10 +669,10 @@ export function lacunasDoToque(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo
 // 12.5, gap 3, stick 18, travel 4.5, cross 12 mm — `input/touch`), because no source measures them per age.
 // That is stated rather than hidden: they are the part of this table that is proportion, not measurement.
 
-export type ChaveDaPersona = 'crianca-pequena' | 'crianca-grande' | 'adulto-pequeno' | 'adulto-maos-grandes';
+export type PersonaKey = 'crianca-pequena' | 'crianca-grande' | 'adulto-pequeno' | 'adulto-maos-grandes';
 
 export interface PersonaDoPad {
-  readonly chave: ChaveDaPersona;
+  readonly chave: PersonaKey;
   /** The i18n key of the persona's name. */
   readonly rotulo: string;
   readonly mm: Readonly<PadMm>;
@@ -705,7 +705,7 @@ export const PERSONAS_DO_PAD: readonly PersonaDoPad[] = Object.freeze([
  * the personas existed (the factory 12.5 mm reads as «small adult»). Ties go to the LARGER button: when in doubt,
  * the easier target.
  */
-export function personaMaisProxima(btnMm: number): number {
+export function closestPersona(btnMm: number): number {
   let melhor = 0;
   PERSONAS_DO_PAD.forEach((p, i) => {
     const d = Math.abs(p.mm.btn - btnMm);

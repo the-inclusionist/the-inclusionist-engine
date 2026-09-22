@@ -41,7 +41,7 @@ import { ACTIONS, type Action } from '../core/actions.js';
  * escrito à mão de propósito — quando o vocabulário crescer (foi de nove para catorze em 2026-09-06), este
  * número cresce com ele e nunca passa a mentir.
  */
-export const LUGARES = Object.freeze({ gamepad: 17, toque: 13, teclado: ACTIONS.length });
+export const SLOTS = Object.freeze({ gamepad: 17, toque: 13, teclado: ACTIONS.length });
 
 /**
  * QUANTAS POSIÇÕES O CONTROLE DE TELA SEGURA AO MESMO TEMPO. Dois, e é uma DECLARAÇÃO (ADR-0104 §B).
@@ -60,10 +60,10 @@ export const LUGARES = Object.freeze({ gamepad: 17, toque: 13, teclado: ACTIONS.
  * conhecido», não «segura uma». Um registo de tetos para teclado e controle é uma mudança maior, e nada
  * precisa dela hoje.
  */
-export const SEGURA_TOQUE = 2;
+export const HOLDS_TOUCH = 2;
 
 /** Como se descobre que cada transporte está aqui AGORA. Injetado: nenhuma destas perguntas é pura. */
-export interface Disponibilidade {
+export interface Availability {
   gamepad: () => boolean;
   toque: () => boolean;
   teclado: () => boolean;
@@ -71,7 +71,7 @@ export interface Disponibilidade {
    * Há um RATO aqui? (ADR-0112)
    *
    * ⚠️ ELE NÃO É UM TRANSPORTE À PARTE, e é por isso que entra como uma pergunta e não como uma quarta linha
-   * do `transportesPadrao`: um rato sozinho não carrega as catorze posições. Ele é o SINAL CONTÍNUO ao lado
+   * do `defaultTransports`: um rato sozinho não carrega as catorze posições. Ele é o SINAL CONTÍNUO ao lado
    * do teclado — a frase do Dev, «no caso do teclado, o sinal contínuo passa a ser o mouse» —, e é o que dá
    * fundação aos transportes 8 e 9 do ADR-0074, que aquele registo declarava como não tendo nenhuma.
    */
@@ -87,17 +87,17 @@ export interface Disponibilidade {
  * responde «toque» a isso. Se a tela barrasse, esse tablet levaria uma recusa falsa num jogo que ele joga.
  * Como ela apenas diz o que falta e deixa continuar, o erro custa uma frase a mais e nunca uma porta fechada.
  */
-export function transportesPadrao(d: Disponibilidade): Transport[] {
+export function defaultTransports(d: Availability): Transport[] {
   return [
     // ⚠️ O GAMEPAD NÃO DECLARA PONTEIRO, e a ausência é medida e não esquecimento: o stick tem o sinal
     // contínuo e a engine deita-o fora na fonte (`PAD_DEAD = 0.5`, `PadState = Record<string, boolean>`).
     // Ligá-lo ao ponteiro é possível e traz de volta uma pergunta que o ADR-0112 já deixou nomeada — metade
     // do curso morta é ergonomia certa para um BOTÃO e errada para um CURSOR.
-    { id: 'gamepad', slots: LUGARES.gamepad, available: d.gamepad },
+    { id: 'gamepad', slots: SLOTS.gamepad, available: d.gamepad },
     // O teclado aponta QUANDO HÁ RATO — a cláusula do Dev, e a fundação dos transportes 8 e 9 do ADR-0074.
-    { id: 'teclado', slots: LUGARES.teclado, available: d.teclado, aponta: d.rato },
+    { id: 'teclado', slots: SLOTS.teclado, available: d.teclado, aponta: d.rato },
     // O toque aponta por natureza: a superfície É o ponteiro, e é o mesmo dedo que carrega nos botões.
-    { id: 'toque', slots: LUGARES.toque, holds: SEGURA_TOQUE, available: d.toque, aponta: d.toque },
+    { id: 'toque', slots: SLOTS.toque, holds: HOLDS_TOUCH, available: d.toque, aponta: d.toque },
   ];
 }
 
@@ -112,7 +112,7 @@ export interface Transport {
    * controle de tela tem nove lugares e segura dois.
    *
    * ⚠️ AUSENTE SIGNIFICA «NÃO HÁ TECTO CONHECIDO», e não «segura uma». Hoje só o toque declara um número
-   * (`SEGURA_TOQUE`), porque só sobre ele há decisão — ver a nota lá. Ler a ausência como zero faria todo
+   * (`HOLDS_TOUCH`), porque só sobre ele há decisão — ver a nota lá. Ler a ausência como zero faria todo
    * transporte sem número reprovar de repente, que é o oposto do que um campo opcional deve fazer.
    */
   readonly holds?: number;
@@ -173,7 +173,7 @@ export function reachable(lista: readonly Transport[], acoes: readonly Action[])
 }
 
 /** O que a tela de seleção precisa dizer, e o que ela precisa saber para o dizer. */
-export interface Alcance {
+export interface Reach {
   /**
    * Verdadeiro = pelo menos um transporte disponível carrega o conjunto **e segura quantas o jogo pede ao
    * mesmo tempo**.
@@ -217,12 +217,12 @@ export interface Alcance {
  * ⚠️ Devolve DADO e não texto. A frase é da interface e tem de passar por `t()`; devolver português daqui
  * repetiria o defeito que o `PADWIZ_STEPS` acabou de deixar de cometer.
  */
-export function alcance(
+export function reach(
   lista: readonly Transport[],
   acoes: readonly Action[],
   seguraPedidas: number,
   pedePonteiro = false,
-): Alcance {
+): Reach {
   const disponiveis = lista.filter((t) => t.available());
   /**
    * ⚠️ PADRÃO `false` E NÃO PARÂMETRO OBRIGATÓRIO: os trezentos jogos que não desenham não podem sentir esta

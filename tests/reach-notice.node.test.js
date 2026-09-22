@@ -10,9 +10,9 @@ import { describe, it, expect } from 'vitest';
 import { linhasDoAviso } from '../app/js/ui/reach-notice.js';
 // ⚠️ `presetActions` e o preset do jogo SAÍRAM destes imports em 2026-09-07 (issue #111): as duas asserções
 // que os usavam eram sobre o JOGO — liam o fonte de `main.ts` e afirmavam que o preset da plataforma tem
-// nove ações — e mudaram para `game-platformer`. `alcance`/`transportesPadrao` FICAM: são da engine, e é
+// nove ações — e mudaram para `game-platformer`. `reach`/`defaultTransports` FICAM: são da engine, e é
 // com elas que se monta o alcance de que este ficheiro fala.
-import { alcance, transportesPadrao } from '../app/js/input/transports.js';
+import { reach, defaultTransports } from '../app/js/input/transports.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import pt from '../app/js/i18n/pt.js';
 
@@ -28,56 +28,56 @@ const real = (k, p) => {
 };
 
 const sempre = () => true, nunca = () => false;
-const TABLET = transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca });
-const DESKTOP = transportesPadrao({ gamepad: nunca, teclado: sempre, toque: nunca, rato: sempre });
+const TABLET = defaultTransports({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca });
+const DESKTOP = defaultTransports({ gamepad: nunca, teclado: sempre, toque: nunca, rato: sempre });
 
 describe('quando NÃO há o que dizer, não se diz nada', () => {
   it('[Zero] alcance ok devolve zero linhas — um aviso que aparece sempre deixa de ser lido', () => {
-    expect(linhasDoAviso(alcance(DESKTOP, ACTIONS, 1), cru)).toEqual([]);
+    expect(linhasDoAviso(reach(DESKTOP, ACTIONS, 1), cru)).toEqual([]);
   });
 
   it('[Boundary] e um jogo cujas ações CABEM no toque, e que segura UMA de cada vez, também não avisa', () => {
     const nove = ACTIONS.slice(0, 9);
-    expect(linhasDoAviso(alcance(TABLET, nove, 1), cru)).toEqual([]);
+    expect(linhasDoAviso(reach(TABLET, nove, 1), cru)).toEqual([]);
   });
 });
 
 describe('⚠️ O PONTO CEGO DO ADR-0104: cabe nas ações e ainda assim não dá para jogar', () => {
   // Este bloco é a razão de existir do segundo eixo, e o caso acima é o que ele corrige. Enquanto o
-  // `alcance` só media «chega às ações», a plataforma passava: nove ações, nove lugares no controle de tela,
+  // `reach` só media «chega às ações», a plataforma passava: nove ações, nove lugares no controle de tela,
   // `ok` verdadeiro, cartão nunca mostrado. Mas correr, andar e pular ao mesmo tempo são TRÊS DEDOS, e o
   // aparelho barato reconhece dois — a criança tentava, não acontecia nada, e não havia nada em lado nenhum
   // a dizer porquê. O `ok` estava a afirmar «dá para jogar» sobre um jogo que não dava.
   const nove = ACTIONS.slice(0, 9);
 
   it('⚠️ [Right] nove ações cabem nos nove lugares do toque, e SEGURAR três reprova na mesma', () => {
-    const a = alcance(TABLET, nove, 3);
+    const a = reach(TABLET, nove, 3);
     expect(a.curtos, 'apareceu como curto de LUGARES — não é esse o defeito').toEqual([]);
     expect(a.ok, 'o `ok` continua a dizer que dá para jogar').toBe(false);
     expect(a.naoSeguram).toEqual([{ id: 'toque', holds: 2 }]);
   });
 
   it('⚠️ [Right] e a frase diz os DOIS números, que é o que a torna acionável', () => {
-    const linhas = linhasDoAviso(alcance(TABLET, nove, 3), real);
+    const linhas = linhasDoAviso(reach(TABLET, nove, 3), real);
     expect(linhas).toContain('O controle de tela segura 2 botões de cada vez, e este jogo pede 3 ao mesmo tempo.');
   });
 
   it('[Boundary] segurar DOIS ainda passa — o piso é dois, e o piso é para ser usado', () => {
-    expect(alcance(TABLET, nove, 2).ok).toBe(true);
-    expect(alcance(TABLET, nove, 2).naoSeguram).toEqual([]);
+    expect(reach(TABLET, nove, 2).ok).toBe(true);
+    expect(reach(TABLET, nove, 2).naoSeguram).toEqual([]);
   });
 
   it('⚠️ [Interface] um transporte SEM tecto declarado não reprova por falta de medida', () => {
     // O teclado e o controle não declaram `holds`. Ausente quer dizer «não medimos isto», e recusar por falta
     // de medida transformaria uma ignorância numa acusação: eles reprovariam TODOS os jogos.
-    expect(alcance(DESKTOP, nove, 9).ok, 'o teclado reprovou por não ter número').toBe(true);
-    expect(alcance(DESKTOP, nove, 9).naoSeguram).toEqual([]);
+    expect(reach(DESKTOP, nove, 9).ok, 'o teclado reprovou por não ter número').toBe(true);
+    expect(reach(DESKTOP, nove, 9).naoSeguram).toEqual([]);
   });
 
   it('⚠️ [Interface] o transporte que já está CURTO de lugares não aparece duas vezes', () => {
     // Um transporte nas duas listas faria o cartão dizer dois problemas onde há um, e a criança leria uma
     // parede em vez de uma diferença.
-    const a = alcance(TABLET, ACTIONS, 3); // 14 ações num transporte de 13 lugares (nove até os ombros do ADR-0160), e ainda pede 3 dedos
+    const a = reach(TABLET, ACTIONS, 3); // 14 ações num transporte de 13 lugares (nove até os ombros do ADR-0160), e ainda pede 3 dedos
     expect(a.curtos.map((c) => c.id)).toEqual(['toque']);
     expect(a.naoSeguram, 'o toque foi acusado duas vezes pelo mesmo aparelho').toEqual([]);
   });
@@ -85,7 +85,7 @@ describe('⚠️ O PONTO CEGO DO ADR-0104: cabe nas ações e ainda assim não d
 
 describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»', () => {
   it('[Right] diz quantas o jogo pede, quem está curto com quantos lugares, e o que resolveria', () => {
-    const linhas = linhasDoAviso(alcance(TABLET, ACTIONS, 1), cru);
+    const linhas = linhasDoAviso(reach(TABLET, ACTIONS, 1), cru);
     expect(linhas).toEqual([
       `reach.titulo(pedidas=${ACTIONS.length})`,
       'reach.curto(transporte=reach.nome.toque,lugares=13)',
@@ -94,7 +94,7 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
   });
 
   it('[Right] e em português sai uma frase que uma criança consegue seguir', () => {
-    const linhas = linhasDoAviso(alcance(TABLET, ACTIONS, 1), real);
+    const linhas = linhasDoAviso(reach(TABLET, ACTIONS, 1), real);
     expect(linhas[0]).toBe('Este jogo usa 14 ações.');
     expect(linhas[1]).toBe('O controle de tela tem 13 lugares — não chegam para todas.');
     expect(linhas[2]).toBe('Ligue controle ou teclado e você joga com todas.');
@@ -104,7 +104,7 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
     // O jogo pede mais posições do que qualquer transporte deste aparelho oferece. Aqui o problema é do JOGO,
     // e dizer «ligue um controle» mandaria a criança procurar uma coisa que não conserta nada.
     const demais = [...ACTIONS, ...ACTIONS, ...ACTIONS]; // 42 posições: acima até do gamepad
-    const linhas = linhasDoAviso(alcance(transportesPadrao({ gamepad: sempre, teclado: sempre, toque: sempre, rato: sempre }), demais), cru);
+    const linhas = linhasDoAviso(reach(defaultTransports({ gamepad: sempre, teclado: sempre, toque: sempre, rato: sempre }), demais), cru);
     expect(linhas).toContain('reach.semSaida');
     expect(linhas.some((l) => l.startsWith('reach.ligue'))).toBe(false);
   });
@@ -112,8 +112,8 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
   it('[Interface] todas as chaves usadas EXISTEM no dicionário base', () => {
     // O tradutor `real` lança em chave ausente, então isto é a asserção. Uma chave que falta não dá erro no
     // navegador — dá a chave crua na tela, ou uma frase vazia num leitor de tela, que é pior.
-    expect(() => linhasDoAviso(alcance(TABLET, ACTIONS, 1), real)).not.toThrow();
-    expect(() => linhasDoAviso(alcance(transportesPadrao({ gamepad: sempre, teclado: sempre, toque: sempre, rato: sempre }),
+    expect(() => linhasDoAviso(reach(TABLET, ACTIONS, 1), real)).not.toThrow();
+    expect(() => linhasDoAviso(reach(defaultTransports({ gamepad: sempre, teclado: sempre, toque: sempre, rato: sempre }),
       [...ACTIONS, ...ACTIONS, ...ACTIONS]), real)).not.toThrow();
   });
 });
@@ -132,7 +132,7 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
 //   · `holds()` a ler a ausencia como ZERO -> reprovam QUATRO, e tres deles sao casos ANTIGOS: o teclado e o
 //     controle, que nao declaram tecto, passariam a reprovar TODOS os jogos. Ausencia de medida nao pode
 //     virar acusacao, e o estrago de a ler assim e' muito maior do que o caso novo que a nomeia.
-//   · `SEGURA_TOQUE` de 2 para 5 — que e' exactamente o que o `maxTouchPoints` costuma anunciar -> reprovam
+//   · `HOLDS_TOUCH` de 2 para 5 — que e' exactamente o que o `maxTouchPoints` costuma anunciar -> reprovam
 //     DOIS. E a mutacao que representa a decisao inteira do ADR-0104 §B: cinco e' o numero que o aparelho
 //     DIZ, dois e' o que ele FAZ.
 //   · `ok` de volta a `reachable(lista, acoes)` -> reprovam DOIS. Ele voltaria a dizer «da para jogar» sobre

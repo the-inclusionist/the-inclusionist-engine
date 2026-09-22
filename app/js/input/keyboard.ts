@@ -80,7 +80,7 @@ export const KB_DEFAULTS: KBDefaults = {
 // dado salvo (parcial): sobrepõe os defaults; p34 é o formato ANTIGO (migra p/ p3+p4).
 // A FORMA vem de `vocabulary-migration`, que é quem a traduz — declarar aqui outra vez seria a
 // cópia que o `core/entity` passou o mês a eliminar.
-import { migrarSalvo, type SavedKB } from './vocabulary-migration.js';
+import { migrateSaved, type SavedKB } from './vocabulary-migration.js';
 
 // ⚠️ A MIGRAÇÃO DE VOCABULÁRIO MORA NOUTRO FICHEIRO, e a separação é deliberada:
 // `input/vocabulary-migration.ts` é o ÚNICO sítio da engine autorizado a dizer `jump`, porque traduzir o
@@ -91,9 +91,9 @@ import { migrarSalvo, type SavedKB } from './vocabulary-migration.js';
  * O PADRÃO QUE O JOGO QUER, por número de jogadores e por assento (ADR-0115). Parcial: o que ele não disser
  * fica como a fábrica da engine o deixou.
  */
-export type MapeamentoDoTeclado = (jogadores: number, assento: number) => Partial<KeyScheme> | null;
+export type KeyboardMapping = (jogadores: number, assento: number) => Partial<KeyScheme> | null;
 
-let mapeamentoDoJogo: MapeamentoDoTeclado | null = null;
+let mapeamentoDoJogo: KeyboardMapping | null = null;
 
 /**
  * REGISTA O PADRÃO DO JOGO. Chamado uma vez pelo arranque (`boot/create-game`), a partir da declaração.
@@ -108,7 +108,7 @@ let mapeamentoDoJogo: MapeamentoDoTeclado | null = null;
  * 📌 É a mesma forma que o `kb` deste ficheiro já tem, e pela mesma justificação: o dono é evidente, e as
  * funções que o gerem vivem todas aqui.
  */
-export function registrarMapeamentoDoTeclado(f: MapeamentoDoTeclado | null): void { mapeamentoDoJogo = f; }
+export function registerKeyboardMapping(f: KeyboardMapping | null): void { mapeamentoDoJogo = f; }
 
 /**
  * A FÁBRICA COM O PADRÃO DO JOGO POR CIMA — a **única** resolução, usada pelo `loadKB` E pelo `resetKB`.
@@ -116,7 +116,7 @@ export function registrarMapeamentoDoTeclado(f: MapeamentoDoTeclado | null): voi
  * ⚠️ Uma função só, e é o ponto inteiro: enquanto eram duas cópias do `JSON.parse(JSON.stringify(...))`, a do
  * `resetKB` não conhecia o jogo e a diferença só aparecia quando uma criança carregava em «restaurar».
  */
-export function fabricaComOJogo(): KBDefaults {
+export function factoryWithGame(): KBDefaults {
   const d: KBDefaults = JSON.parse(JSON.stringify(KB_DEFAULTS));
   if (!mapeamentoDoJogo) return d;
   const aplicar = (alvo: KeyScheme, jogadores: number, assento: number): void => {
@@ -134,13 +134,13 @@ export function fabricaComOJogo(): KBDefaults {
 export function loadKB(): KBDefaults {
   // ⚠️ A PRECEDÊNCIA É ESTA E ESTÁ ESCRITA UMA VEZ: fábrica da engine → padrão do JOGO → remapeamento da
   // CRIANÇA. O que a criança gravou vem sempre por último, porque é a única das três que ela escolheu.
-  const d: KBDefaults = fabricaComOJogo();
+  const d: KBDefaults = factoryWithGame();
   // ⚠️ O DADO SALVO ATRAVESSA O TRADUTOR ANTES DE TOCAR NOS PADRÕES. Sem esta linha, um esquema gravado com
   // as chaves antigas (`run`, `jump`, `swap`, `especial`) seria fundido sobre defaults que já usam
   // `action1`..`action4`: o objeto ficaria com AS DUAS famílias de chaves, os transportes leriam só as novas,
   // e o remapeamento da criança viraria dado morto no navegador dela. Nada erraria em voz alta — as teclas
   // dela simplesmente parariam de responder. Ver `input/vocabulary-migration.ts`.
-  const s = migrarSalvo(store.getJSON<SavedKB>(CKEY, null));
+  const s = migrateSaved(store.getJSON<SavedKB>(CKEY, null));
   if (s) {
     if (s.solo) Object.assign(d.solo, s.solo);
     if (Array.isArray(s.p34)) { s.p34.forEach((m, i) => { if (m) { if (d.p4[i]) Object.assign(d.p4[i], m); if (i < 3 && d.p3[i]) Object.assign(d.p3[i], m); } }); }
@@ -177,4 +177,4 @@ export function setKB(next: KBDefaults): void { kb = next; }
  * 🔴 Esta linha era `JSON.parse(JSON.stringify(KB_DEFAULTS))`, e com o campo do jogo a existir isso passaria
  * a apagar em silêncio o mapeamento que o jogo escolheu. A criança espera voltar ao que o jogo lhe deu.
  */
-export function resetKB(): KBDefaults { store.remove(CKEY); return fabricaComOJogo(); }
+export function resetKB(): KBDefaults { store.remove(CKEY); return factoryWithGame(); }

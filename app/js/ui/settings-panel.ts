@@ -216,8 +216,8 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
     // global de DOM nenhum. O que se pede do abridor é só o que se vai usar dele — saber receber foco.
     const opener = ctx.doc.activeElement as HTMLElement | null;
     const focavel = !!opener && typeof opener.focus === 'function';
-    const dentro = !!opener && typeof el.contains === 'function' && el.contains(opener);
-    if (focavel && opener !== el && !dentro) openerOf.set(el.id, opener as HTMLElement);
+    const isInside = !!opener && typeof el.contains === 'function' && el.contains(opener);
+    if (focavel && opener !== el && !isInside) openerOf.set(el.id, opener as HTMLElement);
     el.style.zIndex = String(++ovZ);
     const card = el.querySelector<HTMLElement>('.overlay__card');
     if (card) fillExplain(card);

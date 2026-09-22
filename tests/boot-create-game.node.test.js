@@ -395,7 +395,7 @@ describe('createGame em execução', () => {
   });
 
   // ===================== O PONTEIRO DECLARADO (ADR-0112) =====================
-  // ⚠️ SEM ESTA FIAÇÃO, A DECISÃO É UM PARÂMETRO QUE NINGUÉM CONSEGUE PÔR. O `alcance()` aceita a pergunta
+  // ⚠️ SEM ESTA FIAÇÃO, A DECISÃO É UM PARÂMETRO QUE NINGUÉM CONSEGUE PÔR. O `reach()` aceita a pergunta
   // desde `7ddb857` e tem gate próprio, mas o quarto argumento chegava sempre `false` porque a
   // `GameDeclaration` não tinha por onde dizê-lo — um jogo de desenho não conseguia declarar que desenha.
   const TRES_PALAVRAS = { up: { label: 'Subir' }, down: { label: 'Descer' }, action1: { label: 'Confirmar' } };
@@ -412,9 +412,9 @@ describe('createGame em execução', () => {
       declaration: { ...declaracaoValida(), needsPointer: () => true },
       host: { doc, win }, preset: TRES_PALAVRAS, disponibilidade: soTeclado(false),
     });
-    expect(motor.alcance.pedePonteiro, 'a declaração não chegou ao alcance').toBe(true);
-    expect(motor.alcance.ok, 'disse sim a um jogo que esta criança não consegue jogar').toBe(false);
-    expect(motor.alcance.naoApontam).toEqual(['teclado']);
+    expect(motor.reach.pedePonteiro, 'a declaração não chegou ao alcance').toBe(true);
+    expect(motor.reach.ok, 'disse sim a um jogo que esta criança não consegue jogar').toBe(false);
+    expect(motor.reach.naoApontam).toEqual(['teclado']);
   });
 
   it('⚠️ [Right] o MESMO jogo com RATO passa — «no caso do teclado, o sinal contínuo é o mouse»', async () => {
@@ -424,8 +424,8 @@ describe('createGame em execução', () => {
       declaration: { ...declaracaoValida(), needsPointer: () => true },
       host: { doc, win }, preset: TRES_PALAVRAS, disponibilidade: soTeclado(true),
     });
-    expect(motor.alcance.ok).toBe(true);
-    expect(motor.alcance.naoApontam).toEqual([]);
+    expect(motor.reach.ok).toBe(true);
+    expect(motor.reach.naoApontam).toEqual([]);
   });
 
   it('⚠️ [Zero] quem NÃO declara nada não pede ponteiro — o campo é opcional de propósito', async () => {
@@ -439,8 +439,8 @@ describe('createGame em execução', () => {
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win }, preset: TRES_PALAVRAS, disponibilidade: soTeclado(false),
     });
-    expect(motor.alcance.pedePonteiro).toBe(false);
-    expect(motor.alcance.ok).toBe(true);
+    expect(motor.reach.pedePonteiro).toBe(false);
+    expect(motor.reach.ok).toBe(true);
   });
 
   it('⚠️ [Right] a engine MONTA a barra de acessibilidade da primeira tela (ADR-0106 etapa 2)', async () => {
@@ -748,10 +748,10 @@ describe('createGame em execução', () => {
 
     const focados = [];
     const botao = (n) => ({ n, hidden: false, getClientRects: () => [{}], focus() { focados.push(n); } });
-    const dentro = [botao('primeiro'), botao('ultimo')];
+    const isInside = [botao('primeiro'), botao('ultimo')];
     const overlay = {
       hidden: false, style: { zIndex: '61' },
-      querySelectorAll: () => dentro,
+      querySelectorAll: () => isInside,
     };
     const { doc, win, ouvintes } = domFalso({ listas: { '#game-region .overlay': [overlay] } });
     doc.activeElement = { n: 'o tabuleiro por baixo' }; // o foco esta FORA do dialogo: o caso realista
@@ -810,24 +810,24 @@ describe('createGame em execução', () => {
     // esta DENTRO de `#game-region` e o filtro CSS herda. Aqui o codigo PERGUNTA ao DOM em vez de assumir a
     // forma, e por isso serve tanto a marcacao da engine quanto a de um jogo que nao aninha nada.
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const dentro = { style: { filter: 'brightness(0)' } };
+    const isInside = { style: { filter: 'brightness(0)' } };
     const fora = { style: { filter: 'brightness(0)' } };
-    const mundo = { style: {}, contains: (el) => el === dentro };
-    const { doc, win } = domFalso({ mapa: { '#meu-mundo': mundo }, listas: { '#game-region .overlay': [dentro, fora] } });
+    const mundo = { style: {}, contains: (el) => el === isInside };
+    const { doc, win } = domFalso({ mapa: { '#meu-mundo': mundo }, listas: { '#game-region .overlay': [isInside, fora] } });
     const d = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#meu-mundo' }) };
     createGame({ acomodacoes: SEM_ASSUNTO, declaration: d, host: { doc, win } }).aplicarFiltroDeVisao('brightness(0)', 'mundo');
-    expect(dentro.style.filter, 'o menu dentro do mundo tem de sair da simulacao').toBe('');
+    expect(isInside.style.filter, 'o menu dentro do mundo tem de sair da simulacao').toBe('');
     expect(fora.style.filter, 'um overlay fora do mundo nao e assunto desta funcao').toBe('brightness(0)');
   });
 
   it('com alcance `mundo-e-menus` o overlay de dentro MANTEM o filtro', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const dentro = { style: { filter: 'contrast(2)' } };
+    const isInside = { style: { filter: 'contrast(2)' } };
     const mundo = { style: {}, contains: () => true };
-    const { doc, win } = domFalso({ mapa: { '#meu-mundo': mundo }, listas: { '#game-region .overlay': [dentro] } });
+    const { doc, win } = domFalso({ mapa: { '#meu-mundo': mundo }, listas: { '#game-region .overlay': [isInside] } });
     const d = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#meu-mundo' }) };
     createGame({ acomodacoes: SEM_ASSUNTO, declaration: d, host: { doc, win } }).aplicarFiltroDeVisao('contrast(2)', 'mundo-e-menus');
-    expect(dentro.style.filter, 'melhoria alcanca os menus; so a EMPATIA os poupa').toBe('contrast(2)');
+    expect(isInside.style.filter, 'melhoria alcanca os menus; so a EMPATIA os poupa').toBe('contrast(2)');
   });
 
   it('⚠️ `none` NAO pinta nada — atividade sem espaco nao tem mundo para simular', async () => {
@@ -1029,10 +1029,10 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
    * OS DOIS MAPEAMENTOS DEPOIS DO `unmount()`.
    *
    * ⚠️ ESTE PAR QUASE NÃO FOI ESCRITO, e vale contar porquê: a confirmação do ADR-0142 afirmava que ele era
-   * impossível sem alargar a superfície pública, porque `registrarMapeamentoDoTeclado` e
-   * `registrarMapeamentoDoPad` são só de escrita e não há leitor do campo. A primeira metade é verdade e a
+   * impossível sem alargar a superfície pública, porque `registerKeyboardMapping` e
+   * `registerPadMapping` são só de escrita e não há leitor do campo. A primeira metade é verdade e a
    * conclusão não era: não há leitor do CAMPO, mas há duas funções exportadas cujo RESULTADO muda conforme
-   * ele esteja registado — `fabricaComOJogo()` e `tabelaDoPad()`.
+   * ele esteja registado — `factoryWithGame()` e `padTable()`.
    *
    * 🎯 E o crivo por comportamento é o melhor dos dois: «o campo interno está nulo» mede a implementação;
    * «depois de soltar o cartucho, as teclas voltam a ser as da engine» mede o que a criança encontra.
@@ -1045,32 +1045,32 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
 
   it('🎯 [Right] `unmount` devolve o TECLADO à fábrica da engine — o mapa do cartucho sai com ele', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { fabricaComOJogo } = await import('../app/js/input/keyboard.js');
+    const { factoryWithGame } = await import('../app/js/input/keyboard.js');
     const { doc, win } = domFalso();
 
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: comTeclas(), host: { doc, win } });
-    expect(fabricaComOJogo().solo.up, 'o mapa do jogo nem chegou a valer').toEqual(['KeyZ']);
+    expect(factoryWithGame().solo.up, 'o mapa do jogo nem chegou a valer').toEqual(['KeyZ']);
 
     motor.unmount();
-    expect(fabricaComOJogo().solo.up, 'as teclas do cartucho anterior ficaram a valer depois de ele sair')
+    expect(factoryWithGame().solo.up, 'as teclas do cartucho anterior ficaram a valer depois de ele sair')
       .toEqual(['KeyW', 'ArrowUp']);
   });
 
   it('🎯 [Right] e o PAD volta à tabela padrão — inclusive a memória que o registo limpa', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const { tabelaDoPad } = await import('../app/js/input/pad-defaults.js');
+    const { padTable } = await import('../app/js/input/pad-defaults.js');
     // 📌 A constante mora em `default-bindings`, e o `pad-defaults` importa-a — não a reexporta.
     const { GAMEPAD_STANDARD } = await import('../app/js/input/default-bindings.js');
     const { doc, win } = domFalso();
 
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: comTeclas(), host: { doc, win } });
-    expect(tabelaDoPad(1, 0).up, 'o mapa de pad do jogo nem chegou a valer').not.toEqual(GAMEPAD_STANDARD.up);
+    expect(padTable(1, 0).up, 'o mapa de pad do jogo nem chegou a valer').not.toEqual(GAMEPAD_STANDARD.up);
 
     motor.unmount();
     // ⚠️ IDENTIDADE E NÃO IGUALDADE: sem mapeamento registado a função devolve a PRÓPRIA constante, e é isso
     // que prova também que a memória por `jogadores:assento` foi limpa — uma tabela fundida em cache seria
     // igual em valor a nada e diferente em identidade da constante.
-    expect(tabelaDoPad(1, 0), 'o pad ficou com a tabela do cartucho anterior em cache').toBe(GAMEPAD_STANDARD);
+    expect(padTable(1, 0), 'o pad ficou com a tabela do cartucho anterior em cache').toBe(GAMEPAD_STANDARD);
   });
 });
 

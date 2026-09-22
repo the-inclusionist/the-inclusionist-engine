@@ -46,8 +46,8 @@ beforeAll(async () => {
   });
 });
 afterAll(async () => {
-  const { desabilitarAssistidaDe } = await import('../app/js/input/state.js');
-  desabilitarAssistidaDe(0);
+  const { disableAssistedFor } = await import('../app/js/input/state.js');
+  disableAssistedFor(0);
   for (const k of CHAVES) { if (guardadas[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, guardadas[k]); }
   motor?.unmount?.();
   raiz?.remove();

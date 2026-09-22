@@ -13,48 +13,48 @@
 // Enquanto a conta vivia dentro de cada uma delas, um consumidor NOVO — um ponteiro, um olhar que quisesse
 // desenhar — não tinha como obter o ponto sem passar por uma função que já o tinha transformado em direções.
 import { describe, it, expect } from 'vitest';
-import { doCentro, emFracao } from '../app/js/input/pointer-space.js';
+import { fromCentre, asFraction } from '../app/js/input/pointer-space.js';
 import { crossDirsAt, stickDirsAt, stickKnobOffset } from '../app/js/input/touch-bindings.js';
 
 const R = { left: 100, top: 200, width: 80, height: 40 }; // centro em (140, 220)
 
 describe('doCentro — o ponto relativo ao CENTRO, que é o que um direcional lê', () => {
   it('[Right] o centro do elemento é a origem', () => {
-    expect(doCentro(140, 220, R)).toEqual({ dx: 0, dy: 0 });
+    expect(fromCentre(140, 220, R)).toEqual({ dx: 0, dy: 0 });
   });
 
   it('[Right] os sinais seguem a tela: x cresce para a direita, y para BAIXO', () => {
-    expect(doCentro(180, 200, R)).toEqual({ dx: 40, dy: -20 });
-    expect(doCentro(100, 240, R)).toEqual({ dx: -40, dy: 20 });
+    expect(fromCentre(180, 200, R)).toEqual({ dx: 40, dy: -20 });
+    expect(fromCentre(100, 240, R)).toEqual({ dx: -40, dy: 20 });
   });
 
   it('[Boundary] fora do elemento continua a valer — é o que a captura de ponteiro existe para permitir', () => {
     // Um dedo (ou um rato) que sai do elemento com o gesto ainda a decorrer produz pontos de fora. Saturar
     // aqui apagaria a diferença entre «na borda» e «muito para lá dela», que é o que um arrasto precisa.
-    expect(doCentro(1000, 220, R).dx).toBe(860);
+    expect(fromCentre(1000, 220, R).dx).toBe(860);
   });
 });
 
 describe('emFracao — o ponto como fração do elemento, que é o que o olhar lê', () => {
   it('[Right] canto superior esquerdo é 0,0; inferior direito é 1,1; centro é 0,5', () => {
-    expect(emFracao(100, 200, R)).toEqual({ fx: 0, fy: 0 });
-    expect(emFracao(180, 240, R)).toEqual({ fx: 1, fy: 1 });
-    expect(emFracao(140, 220, R)).toEqual({ fx: 0.5, fy: 0.5 });
+    expect(asFraction(100, 200, R)).toEqual({ fx: 0, fy: 0 });
+    expect(asFraction(180, 240, R)).toEqual({ fx: 1, fy: 1 });
+    expect(asFraction(140, 220, R)).toEqual({ fx: 0.5, fy: 0.5 });
   });
 
   it('[Zero] ⚠️ elemento de largura ZERO devolve zero, e não Infinity', () => {
     // Um elemento ainda não medido (display:none, primeiro quadro) dá `width: 0`. Um `Infinity` ou `NaN` a
     // sair daqui viajaria para dentro da física antes de alguém o ver — e `NaN < 0.4` é `false`, de modo que
     // o defeito apareceria como «o olhar parou de funcionar», sem erro nenhum.
-    expect(emFracao(50, 50, { left: 0, top: 0, width: 0, height: 0 })).toEqual({ fx: 0, fy: 0 });
+    expect(asFraction(50, 50, { left: 0, top: 0, width: 0, height: 0 })).toEqual({ fx: 0, fy: 0 });
   });
 
   it('[Boundary] e também não satura — quem quiser saturar, satura; quem saturasse aqui não voltaria atrás', () => {
     // ⚠️ OS DOIS EIXOS, e a primeira versão só afirmava `fx`. Uma mutação que saturasse `fy` passava verde —
     // e a propriedade é da FUNÇÃO, não de um eixo dela. É a mesma armadilha de sempre: a asserção tem de
     // estar do lado onde a mudança se veria.
-    expect(emFracao(20, 200, R)).toEqual({ fx: -1, fy: 0 });
-    expect(emFracao(260, 320, R)).toEqual({ fx: 2, fy: 3 });
+    expect(asFraction(20, 200, R)).toEqual({ fx: -1, fy: 0 });
+    expect(asFraction(260, 320, R)).toEqual({ fx: 2, fy: 3 });
   });
 });
 

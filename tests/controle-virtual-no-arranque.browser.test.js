@@ -2,7 +2,7 @@
 // THE VIRTUAL PAD IS MOUNTED BY THE ENGINE (ADR-0143, plan phase 4).
 //
 // ========================= WHY THIS FILE EXISTS =========================
-// 🔴 MEASURED on 2026-09-12: `montarControleDeToque`, `initTouch` and `initTouchBindings` had tests and NO
+// 🔴 MEASURED on 2026-09-12: `mountTouchControls`, `initTouch` and `initTouchBindings` had tests and NO
 // production caller — `git grep` found them only in their own modules. A school whose device is a tablet with
 // no keyboard had no way to play any game started by `createGame`, and nothing said so.
 //

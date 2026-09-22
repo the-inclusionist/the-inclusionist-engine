@@ -21,9 +21,9 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  keys, origemDaTecla, marcarTecla, marcarTeclaSemOrigem, soltarTecla, soltarTodas, origemDe, held,
+  keys, keySource, markKey, markKeyWithoutSource, releaseKey, releaseAllKeys, sourceOf, held,
 } from '../app/js/input/state.js';
-import { carimbarOrigem, origemDoEvento, CHAVE_DE_ORIGEM } from '../app/js/input/origem-sintetica.js';
+import { stampSource, sourceOfEvent, SOURCE_KEY } from '../app/js/input/origem-sintetica.js';
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
@@ -67,29 +67,29 @@ const POR_MIGRAR = {
 // o carimbo viaja NO EVENTO, e `isTrusted` responde por quem não carimbou. Ver os casos lá em baixo.
 
 describe('ADR-0109 · a origem da tecla viaja com ela', () => {
-  beforeEach(() => { soltarTodas(); });
+  beforeEach(() => { releaseAllKeys(); });
 
   it('[Right] marcar escreve NOS DOIS, e o `held` continua a ver a tecla', () => {
-    marcarTecla('KeyA', 'toque');
+    markKey('KeyA', 'toque');
     expect(keys.has('KeyA')).toBe(true);
-    expect(origemDe('KeyA')).toBe('toque');
+    expect(sourceOf('KeyA')).toBe('toque');
     expect(held({ ctrl: { jump: ['KeyA'] }, pad: -1 }, 'jump')).toBe(true);
   });
 
   it('⚠️ [Right] soltar limpa NOS DOIS — um mapa que sobrevive à tecla descreve quem já ninguém segura', () => {
-    marcarTecla('KeyA', 'toque');
-    soltarTecla('KeyA');
+    markKey('KeyA', 'toque');
+    releaseKey('KeyA');
     expect(keys.has('KeyA')).toBe(false);
-    expect(origemDe('KeyA')).toBeUndefined();
-    expect(origemDaTecla.size).toBe(0);
+    expect(sourceOf('KeyA')).toBeUndefined();
+    expect(keySource.size).toBe(0);
   });
 
   it('⚠️ [Zero] `soltarTodas` limpa os dois — é a rede do `blur`, e meia rede não é rede', () => {
-    marcarTecla('KeyA', 'toque');
-    marcarTecla('KeyB', 'teclado');
-    soltarTodas();
+    markKey('KeyA', 'toque');
+    markKey('KeyB', 'teclado');
+    releaseAllKeys();
     expect(keys.size).toBe(0);
-    expect(origemDaTecla.size).toBe(0);
+    expect(keySource.size).toBe(0);
   });
 
   it('⚠️ [Zero] uma tecla de origem DESCONHECIDA responde `undefined`, e não um padrão', () => {
@@ -98,14 +98,14 @@ describe('ADR-0109 · a origem da tecla viaja com ela', () => {
     // sozinha e nada o diria. Não saber é uma resposta; fingir que se sabe não é.
     keys.add('KeyZ'); // o caminho antigo, que ainda existe enquanto os escritores migram
     expect(keys.has('KeyZ')).toBe(true);
-    expect(origemDe('KeyZ')).toBeUndefined();
+    expect(sourceOf('KeyZ')).toBeUndefined();
   });
 
   it('[Boundary] marcar duas vezes com origens diferentes fica com a ÚLTIMA', () => {
     // A tecla é a mesma, o aparelho mudou — e o que interessa é quem a segura AGORA.
-    marcarTecla('KeyA', 'teclado');
-    marcarTecla('KeyA', 'toque');
-    expect(origemDe('KeyA')).toBe('toque');
+    markKey('KeyA', 'teclado');
+    markKey('KeyA', 'toque');
+    expect(sourceOf('KeyA')).toBe('toque');
     expect(keys.size).toBe(1);
   });
 
@@ -147,10 +147,10 @@ describe('ADR-0109 · a origem da tecla viaja com ela', () => {
     // O defeito que esta linha impede é caro e silencioso: a criança joga por olhar, larga a tecla, e um
     // despacho sintético de fora repete o mesmo código. Sem o `delete`, a alternância continuaria a responder
     // «olhos» a uma aresta que já não é dela. Um mapa que guarda a resposta certa de ontem é pior que um vazio.
-    marcarTecla('KeyA', 'olhos');
-    marcarTeclaSemOrigem('KeyA');
+    markKey('KeyA', 'olhos');
+    markKeyWithoutSource('KeyA');
     expect(keys.has('KeyA')).toBe(true);   // a tecla FUNCIONA: não saber quem a produziu não a invalida
-    expect(origemDe('KeyA')).toBeUndefined();
+    expect(sourceOf('KeyA')).toBeUndefined();
   });
 });
 
@@ -163,36 +163,36 @@ describe('ADR-0109 · quem despachou este evento', () => {
   const ev = (over = {}) => ({ code: 'KeyA', ...over });
 
   it('[Right] um carimbo válido responde o transporte declarado', () => {
-    expect(origemDoEvento(carimbarOrigem(ev(), 'olhos'))).toBe('olhos');
+    expect(sourceOfEvent(stampSource(ev(), 'olhos'))).toBe('olhos');
   });
 
   it('[Right] sem carimbo, um evento DE CONFIANÇA é o teclado — a única inferência do módulo', () => {
     // `isTrusted` é a propriedade que um script não forja: significa que o navegador viu a pessoa carregar.
-    expect(origemDoEvento(ev({ isTrusted: true }))).toBe('teclado');
+    expect(sourceOfEvent(ev({ isTrusted: true }))).toBe('teclado');
   });
 
   it('⚠️ [Zero] sem carimbo e SEM confiança responde `undefined`, e não `teclado`', () => {
     // ⚠️ É AQUI QUE A ERASÃO TENTARIA VOLTAR. Um sintético que ninguém assinou é código de fora que não
     // declarou; responder `'teclado'` seria pior do que a erasão original, porque teria forma de resposta.
-    expect(origemDoEvento(ev({ isTrusted: false }))).toBeUndefined();
-    expect(origemDoEvento(ev())).toBeUndefined(); // e a AUSÊNCIA de `isTrusted` não é um `true` por omissão
+    expect(sourceOfEvent(ev({ isTrusted: false }))).toBeUndefined();
+    expect(sourceOfEvent(ev())).toBeUndefined(); // e a AUSÊNCIA de `isTrusted` não é um `true` por omissão
   });
 
   it('⚠️ [Boundary] um carimbo INVÁLIDO não vira transporte fantasma', () => {
-    // O valor vem de um expando num objecto que este código não construiu. Sem `ehTransporte`, um `'olho'`
-    // mal escrito entrava no `origemDaTecla` e a alternância passava a decidir sobre um aparelho que não existe.
+    // O valor vem de um expando num objecto que este código não construiu. Sem `isTransportName`, um `'olho'`
+    // mal escrito entrava no `keySource` e a alternância passava a decidir sobre um aparelho que não existe.
     const mau = ev({ isTrusted: true });
-    mau[CHAVE_DE_ORIGEM] = 'olho';
-    expect(origemDoEvento(mau)).toBe('teclado'); // cai na regra seguinte, em vez de aceitar o lixo
+    mau[SOURCE_KEY] = 'olho';
+    expect(sourceOfEvent(mau)).toBe('teclado'); // cai na regra seguinte, em vez de aceitar o lixo
     const naoString = ev();
-    naoString[CHAVE_DE_ORIGEM] = { emUso: 'olhos' };
-    expect(origemDoEvento(naoString)).toBeUndefined();
+    naoString[SOURCE_KEY] = { emUso: 'olhos' };
+    expect(sourceOfEvent(naoString)).toBeUndefined();
   });
 
   it('⚠️ [Boundary] o carimbo GANHA de `isTrusted` — declaração vence inferência', () => {
     // A ordem das duas linhas é a regra. Um evento REAL que alguém reatribuiu (um pedal, um interruptor de
     // sopro que emite teclas de verdade) tem de ficar com o que quem carimbou se deu ao trabalho de declarar.
-    expect(origemDoEvento(carimbarOrigem(ev({ isTrusted: true }), 'gestos'))).toBe('gestos');
+    expect(sourceOfEvent(stampSource(ev({ isTrusted: true }), 'gestos'))).toBe('gestos');
   });
 
   it('⚠️ [Interface] NADA nesta engine despacha tecla sintética sem carimbar', () => {
@@ -202,7 +202,7 @@ describe('ADR-0109 · quem despachou este evento', () => {
     for (const p of ficheirosTs()) {
       for (const ln of readFileSync(p, 'utf8').split(/\r?\n/)) {
         if (/^\s*(\/\/|\*|\/\*)/.test(ln)) continue;
-        if (/new KeyboardEvent\s*\(/.test(ln) && !/carimbarOrigem\s*\(/.test(ln)) {
+        if (/new KeyboardEvent\s*\(/.test(ln) && !/stampSource\s*\(/.test(ln)) {
           semCarimbo.push(relative(RAIZ, p).split('\\').join('/'));
         }
       }
@@ -218,17 +218,17 @@ describe('ADR-0109 · quem despachou este evento', () => {
     // Vácuo ao contrário do outro: aqui o perigo é a regex morrer e o caso acima passar por não achar nada. The webcam that used to
     // anchor this left with WebGazer (ADR-0214); the one synthetic key left is the menu key the pad and the controller hand to menus.
     const fonte = readFileSync(join(RAIZ, 'boot/create-game.ts'), 'utf8');
-    expect(fonte, 'a raiz deixou de despachar a tecla de menu, ou o carimbo saiu').toMatch(/carimbarOrigem\([^\n]*KeyboardEvent/);
+    expect(fonte, 'a raiz deixou de despachar a tecla de menu, ou o carimbo saiu').toMatch(/stampSource\([^\n]*KeyboardEvent/);
   });
 });
 
 // ========================= MUTACOES CONFERIDAS =========================
-//   · `marcarTecla` a escrever so em `keys` (sem o mapa) -> reprova "marcar escreve NOS DOIS". E a divergencia
+//   · `markKey` a escrever so em `keys` (sem o mapa) -> reprova "marcar escreve NOS DOIS". E a divergencia
 //     silenciosa: o jogo anda na mesma e so a alternancia fica errada.
-//   · `soltarTecla` a nao apagar do mapa -> reprova "soltar limpa NOS DOIS". O mapa passaria a descrever
+//   · `releaseKey` a nao apagar do mapa -> reprova "soltar limpa NOS DOIS". O mapa passaria a descrever
 //     teclas que ja ninguem segura, e a origem lida seria a de um toque que acabou.
-//   · `soltarTodas` a nao limpar o mapa -> reprova o caso do `blur`. Meia rede de ciclo de vida nao e rede.
-//   · ⚠️ `origemDe` a devolver `'teclado'` em vez de `undefined` -> reprova o caso da origem DESCONHECIDA.
+//   · `releaseAllKeys` a nao limpar o mapa -> reprova o caso do `blur`. Meia rede de ciclo de vida nao e rede.
+//   · ⚠️ `sourceOf` a devolver `'teclado'` em vez de `undefined` -> reprova o caso da origem DESCONHECIDA.
 //     E a mutacao mais perigosa das seis: e a leitura "razoavel" que faz a erasao voltar por outra porta.
 //   · matando a regex `ESCREVE_CRU` -> reprovam DOIS, e o que interessa e o do VACUO: sem ele, o inventario
 //     passaria por nao ter nada que examinar.

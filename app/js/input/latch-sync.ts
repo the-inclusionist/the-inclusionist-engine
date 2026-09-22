@@ -10,7 +10,7 @@
 //   · `input/latch-store`      — o ARMAZENAMENTO (os três estados, e a chave com o transporte no nome);
 //   · `input/transporte-em-uso` — o AUTÓMATO (que aparelho produziu as arestas deste jogador).
 //
-// 📏 E MEDIDO EM 2026-09-09: `alternanciaGuardada` tinha ZERO chamadores em produção. A regra estava escrita,
+// 📏 E MEDIDO EM 2026-09-09: `storedLatch` tinha ZERO chamadores em produção. A regra estava escrita,
 // aferida, e ninguém a lia — quem decidia a alternância continuava a ser `p.toggleMove`, escrito só pelo
 // ícone. Este módulo é a junção: pergunta ao autómato QUEM está a jogar, ao armazenamento O QUE está guardado
 // para esse aparelho, e escreve a resposta onde a física a lê.
@@ -25,9 +25,9 @@
 // travamento deixa a personagem a andar sozinha com a criança a largar tudo — sem erro, sem aviso, e no
 // aparelho de quem tem menos alternativas. O `ui/settings-motor` já tinha esta regra para o ícone; ter uma
 // segunda cópia dela aqui seria a terceira tabela do `DomQuery` outra vez, então a regra passou a morar numa
-// função só (`aplicarAlternancia`) e o painel chama-a.
+// função só (`applyLatch`) e o painel chama-a.
 import type { PlayerView } from '../core/entity.js';
-import { alternanciaGuardada, type ArmazemDaAlternancia } from './latch-store.js';
+import { storedLatch, type LatchStore } from './latch-store.js';
 
 /**
  * O MÍNIMO DO JOGADOR que a alternância toca — dois campos, e nenhum deles é do contrato do jogo.
@@ -40,7 +40,7 @@ import { alternanciaGuardada, type ArmazemDaAlternancia } from './latch-store.js
  * este repositório já pagou dezasseis vezes com o `DomQuery`. O painel passou a publicá-la por ALIAS, para o
  * retrato de nomes não a ler como removida.
  */
-export type JogadorDaAlternancia = PlayerView<'toggleMove' | 'walkDir'>;
+export type LatchPlayer = PlayerView<'toggleMove' | 'walkDir'>;
 
 /**
  * A base com que a alternância de MARCHA vive no armazenamento da criança.
@@ -62,7 +62,7 @@ export const BASE_DA_MARCHA = 'togglemove';
  * 📌 Devolver «mudou» não é conveniência: quem chama na aresta corre isto muitas vezes por segundo, e anunciar
  * ou reflectir a cada chamada encheria o leitor de tela com a mesma frase.
  */
-export function aplicarAlternancia(p: JogadorDaAlternancia, ligada: boolean): boolean {
+export function applyLatch(p: LatchPlayer, ligada: boolean): boolean {
   if (p.toggleMove === ligada) return false;
   p.toggleMove = ligada;
   if (!ligada) p.walkDir = 0;
@@ -80,12 +80,12 @@ export function aplicarAlternancia(p: JogadorDaAlternancia, ligada: boolean): bo
  * está lá: em olhos, rosto, gestos e fala a alternância é o que faz a entrada funcionar, e herdar um `false`
  * que a criança escolheu no teclado deixá-la-ia com um controle de olhar que não responde.
  */
-export function sincronizarAlternancia(
-  p: JogadorDaAlternancia,
-  armazem: ArmazemDaAlternancia,
+export function syncLatch(
+  p: LatchPlayer,
+  armazem: LatchStore,
   jogador: number,
   transporte: string,
   padrao: boolean,
 ): boolean {
-  return aplicarAlternancia(p, alternanciaGuardada(armazem, BASE_DA_MARCHA, jogador, transporte, padrao));
+  return applyLatch(p, storedLatch(armazem, BASE_DA_MARCHA, jogador, transporte, padrao));
 }

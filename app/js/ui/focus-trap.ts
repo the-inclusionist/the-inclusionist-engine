@@ -74,7 +74,7 @@ export interface FocusTrapCtx {
   /** Quem tem o foco agora — `() => document.activeElement`. Injetado: o project node não tem documento. */
   focoAtual: () => Element | null;
   /** Os focáveis DENTRO do diálogo, na ordem do documento e já filtrados por visibilidade. */
-  focaveisDe: (dentro: HTMLElement) => HTMLElement[];
+  focaveisDe: (isInside: HTMLElement) => HTMLElement[];
   win: AlvoDeEvento;
 }
 
@@ -131,7 +131,7 @@ export function initFocusTrap(ctx: FocusTrapCtx): FocusTrapApi {
  * o que cobre `display:none` em QUALQUER ancestral, elementos de tamanho zero e o caso do contêiner fixo —
  * sem que quem lê precise de saber em que casos `offsetParent` tem buracos.
  */
-export function focaveisNoDom(dentro: HTMLElement): HTMLElement[] {
-  const todos = [...dentro.querySelectorAll<HTMLElement>(SELETOR_FOCAVEL)];
+export function focaveisNoDom(isInside: HTMLElement): HTMLElement[] {
+  const todos = [...isInside.querySelectorAll<HTMLElement>(SELETOR_FOCAVEL)];
   return todos.filter((el) => !el.hidden && el.getClientRects().length > 0);
 }

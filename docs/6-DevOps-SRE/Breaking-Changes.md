@@ -1036,6 +1036,112 @@ the upstream addresses are the same.
 
 ⚠️ One name stays in Portuguese on purpose, and it is not the folder: `incl-pesados-v2`, the cache. See above.
 
+## AO · The public surface of `input` speaks English (ADR-0219, issue #202)
+
+**What this is.** The third layer. 📏 84 names, 85 files, 1206 occurrences; the tree's Portuguese debt falls from 1328
+identifiers in 104 files to 1238 in 99. The table below is printed from the map the engine renames itself from.
+
+**What to do.** Rename on your side by the table. 📌 The ones a game is most likely to hold: `marcarTecla`/`soltarTecla` are
+`markKey`/`releaseKey`, `carimbarOrigem` is `stampSource`, `entradaDe` is `inputOf`, and the whole «alternância»
+family is now the LATCH — `alternanciaDe` → `latchOf`, `chaveDaAlternancia` → `latchKey`,
+`criarArestaComAlternancia` → `createLatchedEdge`.
+
+📌 **Two names did not take the obvious English word, and the reason is written here rather than guessed later.**
+`Transporte` became `TransportName` and not `Transport`, because `Transport` already exists in `input/transports` as
+something else — what a transport CAN do, not what it is called. And `SimulacaoMotora`/`FiltroMotor` became
+`EmpathySimulation`/`EmpathyFilter`: «motor» is the same word in both languages with different meanings — the engine
+itself is «o motor» in this repository — so the name would have read as «the engine's filter» to half its readers. The panel
+already calls these the empathy simulations (ADR-0181).
+
+**input** — 84 names, applied 2026-09-21
+
+| was | is |
+|---|---|
+| `alcance` | `reach` |
+| `Alcance` | `Reach` |
+| `alternanciaAgora` | `latchNow` |
+| `alternanciaDe` | `latchOf` |
+| `alternanciaEhEscolha` | `latchIsOptional` |
+| `alternanciaGuardada` | `storedLatch` |
+| `alternanciaSempreLigada` | `latchAlwaysOn` |
+| `AmostraDoPonteiro` | `PointerSample` |
+| `aplicarAlternancia` | `applyLatch` |
+| `aposAresta` | `afterEdge` |
+| `ArestaComAlternanciaOpts` | `LatchedEdgeOptions` |
+| `arestaDoJogador` | `playerEdge` |
+| `ArmazemDaAlternancia` | `LatchStore` |
+| `bordaDoAperto` | `pressEdge` |
+| `BordaDoAperto` | `PressEdge` |
+| `carimbarOrigem` | `stampSource` |
+| `CHAVE_DE_ORIGEM` | `SOURCE_KEY` |
+| `chaveDaAlternancia` | `latchKey` |
+| `ChaveDaPersona` | `PersonaKey` |
+| `chaveLegadaDaAlternancia` | `legacyLatchKey` |
+| `COM_ALTERNANCIA_PROPRIA` | `LATCH_OF_THEIR_OWN` |
+| `conflitosEntreTabelas` | `conflictsBetweenTables` |
+| `criarArestaComAlternancia` | `createLatchedEdge` |
+| `criarAssistenteDoPad` | `createPadWizard` |
+| `criarFiltroMotor` | `createEmpathyFilter` |
+| `DecisaoDeTecla` | `KeyDecision` |
+| `dentro` | `isInside` |
+| `desabilitarAssistida` | `disableAssisted` |
+| `desabilitarAssistidaDe` | `disableAssistedFor` |
+| `Disponibilidade` | `Availability` |
+| `doCentro` | `fromCentre` |
+| `DoCentro` | `FromCentre` |
+| `ehTransporte` | `isTransportName` |
+| `emFracao` | `asFraction` |
+| `EmFracao` | `AsFraction` |
+| `entradaDe` | `inputOf` |
+| `esquecerEntradas` | `forgetInputs` |
+| `EsquemaSalvo` | `SavedScheme` |
+| `EstadoDaEntrada` | `InputState` |
+| `EventoDeTeclaLike` | `KeyEventLike` |
+| `EXIGEM_HABILITACAO` | `NEED_ENABLING` |
+| `fabricaComOJogo` | `factoryWithGame` |
+| `FiltroMotor` | `EmpathyFilter` |
+| `gravarAlternancia` | `writeLatch` |
+| `habilitarAssistida` | `enableAssisted` |
+| `habilitarAssistidaDe` | `enableAssistedFor` |
+| `JogadorDaAlternancia` | `LatchPlayer` |
+| `lacunasDoToque` | `touchGaps` |
+| `leituraDaAlternancia` | `readLatch` |
+| `LeituraDaAlternancia` | `LatchReading` |
+| `lerTriEstado` | `readTriState` |
+| `LUGARES` | `SLOTS` |
+| `mapaDoPad` | `padMap` |
+| `MapeamentoDoPad` | `PadMapping` |
+| `MapeamentoDoTeclado` | `KeyboardMapping` |
+| `marcarTecla` | `markKey` |
+| `marcarTeclaSemOrigem` | `markKeyWithoutSource` |
+| `migrarEsquema` | `migrateScheme` |
+| `migrarMapaDeControle` | `migrateControlMap` |
+| `migrarMapaDeToque` | `migrateTouchMap` |
+| `migrarSalvo` | `migrateSaved` |
+| `montarControleDeToque` | `mountTouchControls` |
+| `nomeDoBotao` | `buttonName` |
+| `origemDaTecla` | `keySource` |
+| `origemDe` | `sourceOf` |
+| `origemDoEvento` | `sourceOfEvent` |
+| `personaMaisProxima` | `closestPersona` |
+| `prender` | `clampInside` |
+| `registrarMapeamentoDoPad` | `registerPadMapping` |
+| `registrarMapeamentoDoTeclado` | `registerKeyboardMapping` |
+| `SEGURA_TOQUE` | `HOLDS_TOUCH` |
+| `SimulacaoMotora` | `EmpathySimulation` |
+| `sincronizarAlternancia` | `syncLatch` |
+| `soltarTecla` | `releaseKey` |
+| `soltarTodas` | `releaseAllKeys` |
+| `tabelaDoPad` | `padTable` |
+| `TabelaDoPad` | `PadTable` |
+| `Transporte` | `TransportName` |
+| `TRANSPORTES` | `TRANSPORT_NAMES` |
+| `transportesPadrao` | `defaultTransports` |
+| `trocouDeTransporte` | `switchedTransport` |
+| `UM_COMANDO_DE_CADA_VEZ` | `ONE_COMMAND_AT_A_TIME` |
+| `umBotaoPorVez` | `oneButtonAtOnce` |
+| `VOCABULARIO_ANTIGO` | `OLD_VOCABULARY` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

@@ -86,11 +86,11 @@ export function paradasDoCeu(cores: readonly string[], h: number = LOGICAL_H): {
  * outro lado a cada repetição do azulejo, e essa emenda é o defeito mais visível que um céu pode ter.
  */
 export function pintarSol(c: CanvasRenderingContext2D, w: number, h: number, sol: Sol): void {
-  const sx = w * sol.x, sy = h * sol.y, alcance = h * 0.85;
+  const sx = w * sol.x, sy = h * sol.y, reach = h * 0.85;
   // O fim do gradiente é A MESMA COR com alfa 0, e não `transparent`/branco transparente: o canvas interpola
   // os quatro canais, então desbotar para branco-transparente passa por um branco leitoso a meio caminho — um
   // halo pálido em volta do sol, que é o oposto do que um pôr do sol faz.
-  const halo = c.createRadialGradient(sx, sy, 0, sx, sy, alcance);
+  const halo = c.createRadialGradient(sx, sy, 0, sx, sy, reach);
   halo.addColorStop(0, sol.cor); halo.addColorStop(1, rgba0(sol.cor));
   c.save();
   c.globalAlpha = 0.10; c.fillStyle = halo;
@@ -99,8 +99,8 @@ export function pintarSol(c: CanvasRenderingContext2D, w: number, h: number, sol
     // bicicleta. A irregularidade é o que os faz parecer luz atravessando nuvem.
     const meio = -Math.PI / 2 + (i - 4) * (Math.PI * 70 / 180) / 8, meia = (i % 2 ? 0.9 : 2.2) * Math.PI / 180;
     c.beginPath(); c.moveTo(sx, sy);
-    c.lineTo(sx + Math.cos(meio - meia) * alcance, sy + Math.sin(meio - meia) * alcance);
-    c.lineTo(sx + Math.cos(meio + meia) * alcance, sy + Math.sin(meio + meia) * alcance);
+    c.lineTo(sx + Math.cos(meio - meia) * reach, sy + Math.sin(meio - meia) * reach);
+    c.lineTo(sx + Math.cos(meio + meia) * reach, sy + Math.sin(meio + meia) * reach);
     c.closePath(); c.fill();
   }
   // Brilho em volta do disco e o disco: é o disco que ancora os raios: sem ele o leque não tem de onde sair.

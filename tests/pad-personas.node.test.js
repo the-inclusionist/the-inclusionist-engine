@@ -3,7 +3,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { PERSONAS_DO_PAD, personaMaisProxima } from '../app/js/input/touch.js';
+import { PERSONAS_DO_PAD, closestPersona } from '../app/js/input/touch.js';
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';
@@ -40,18 +40,18 @@ describe('PERSONAS_DO_PAD', () => {
   });
 });
 
-describe('personaMaisProxima', () => {
+describe('closestPersona', () => {
   it('🎯 [Right] each persona\'s own size answers itself', () => {
-    PERSONAS_DO_PAD.forEach((p, i) => expect(personaMaisProxima(p.mm.btn)).toBe(i));
+    PERSONAS_DO_PAD.forEach((p, i) => expect(closestPersona(p.mm.btn)).toBe(i));
   });
 
   it('[Boundary] the factory pad (12.5 mm), sized before the personas, reads as «small adult»', () => {
-    expect(PERSONAS_DO_PAD[personaMaisProxima(12.5)].chave).toBe('adulto-pequeno');
+    expect(PERSONAS_DO_PAD[closestPersona(12.5)].chave).toBe('adulto-pequeno');
   });
 
   it('[Boundary] a tie goes to the LARGER button — when in doubt, the easier target', () => {
     // 15.5 is 0.5 from 15 (large hands) and 0.5 from 16 (small child)
-    expect(PERSONAS_DO_PAD[personaMaisProxima(15.5)].chave).toBe('crianca-pequena');
+    expect(PERSONAS_DO_PAD[closestPersona(15.5)].chave).toBe('crianca-pequena');
   });
 });
 

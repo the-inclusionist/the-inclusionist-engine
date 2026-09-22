@@ -220,13 +220,13 @@ console.log(`GAG: ${slugs.size} directrizes (${lidas.length} entradas por eixo) 
 const porRazao = {};
 for (const v of Object.values(D)) { const r = Array.isArray(v) ? 'acomodação' : v.razao; porRazao[r] = (porRazao[r] ?? 0) + 1; }
 console.log('classificação: ' + Object.entries(porRazao).map(([r, n]) => `${r} ${n}`).join(' · ') + '\n');
-console.log('nível  acomodação               tem?  alcance  directrizes  eixos GAG (M/C/V/H/S/G × B/I/A)');
+console.log('nível  acomodação               tem?  reach  directrizes  eixos GAG (M/C/V/H/S/G × B/I/A)');
 console.log('─'.repeat(100));
 for (const t of tabela) {
   const n = t.nivel === 9 ? '  —  ' : NIVEIS[t.nivel].slice(0, 5).padEnd(5);
   console.log(`${n}  ${t.k.padEnd(24)} ${t.tem ? ' sim' : ' NÃO'}  ${pct(t.nJogos).padStart(6)}  ${String(t.nDir || '').padStart(6)}       ${t.eixosGag.join(' ')}`);
 }
-console.log('\n=== 🎯 A INTERSECÇÃO: Basic × a engine NÃO tem, por alcance ===');
+console.log('\n=== 🎯 A INTERSECÇÃO: Basic × a engine NÃO tem, por reach ===');
 for (const t of tabela.filter((x) => x.nivel === 0 && !x.tem)) console.log(`  ${t.k.padEnd(24)} ${pct(t.nJogos).padStart(5)}  — ${t.o}`);
 console.log('\n=== fora da GAG (nenhuma directriz as pede) ===');
 console.log('  ' + tabela.filter((x) => x.nivel === 9).map((x) => x.k).join(', '));

@@ -7,7 +7,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { criarFiltroMotor } from '../app/js/input/motor-simulation.js';
+import { createEmpathyFilter } from '../app/js/input/motor-simulation.js';
 
 const DESLIGADAS = { umPorVez: false, noGripStrength: false };
 const UM = { umPorVez: true, noGripStrength: false };
@@ -16,7 +16,7 @@ const AMBAS = { umPorVez: true, noGripStrength: true };
 
 describe('one button at a time', () => {
   it('🔴 [Right] while one game key is held, a second is never accepted — nor its release', () => {
-    const f = criarFiltroMotor();
+    const f = createEmpathyFilter();
     expect(f.keydown('KeyD', false, UM)).toBe('passar');
     expect(f.keydown('Space', false, UM), 'the second key got through').toBe('barrar');
     expect(f.keyup('Space'), 'the release of a key the game never saw got through').toBe('barrar');
@@ -24,7 +24,7 @@ describe('one button at a time', () => {
   });
 
   it('📌 [Right] once the first is released, another is accepted — and the held key\'s own repeats go on', () => {
-    const f = criarFiltroMotor();
+    const f = createEmpathyFilter();
     f.keydown('KeyD', false, UM);
     expect(f.keydown('KeyD', true, UM), 'the held key\'s repeat was taken as a second button').toBe('passar');
     f.keyup('KeyD');
@@ -32,7 +32,7 @@ describe('one button at a time', () => {
   });
 
   it('🎯 [Zero] off, two keys together both pass', () => {
-    const f = criarFiltroMotor();
+    const f = createEmpathyFilter();
     expect(f.keydown('KeyD', false, DESLIGADAS)).toBe('passar');
     expect(f.keydown('Space', false, DESLIGADAS)).toBe('passar');
   });
@@ -40,7 +40,7 @@ describe('one button at a time', () => {
 
 describe('no strength to hold', () => {
   it('🔴 [Right] a held key reads as one tap: the press passes and is released at once; its repeats and real release do not', () => {
-    const f = criarFiltroMotor();
+    const f = createEmpathyFilter();
     expect(f.keydown('KeyD', false, FORCA), 'the press is not a tap').toBe('tocar');
     expect(f.keydown('KeyD', true, FORCA), 'holding kept pressing').toBe('barrar');
     expect(f.keyup('KeyD'), 'the real release came after the engine already released it').toBe('barrar');
@@ -48,7 +48,7 @@ describe('no strength to hold', () => {
   });
 
   it('📌 [Right] with both on, a second key while the first is physically held is still refused', () => {
-    const f = criarFiltroMotor();
+    const f = createEmpathyFilter();
     expect(f.keydown('KeyD', false, AMBAS)).toBe('tocar');
     expect(f.keydown('Space', false, AMBAS)).toBe('barrar');
     expect(f.keyup('Space')).toBe('barrar');
@@ -57,7 +57,7 @@ describe('no strength to hold', () => {
   });
 
   it('🎯 [Zero] a key pressed with the simulations off is released normally after they turn on', () => {
-    const f = criarFiltroMotor();
+    const f = createEmpathyFilter();
     f.keydown('KeyD', false, DESLIGADAS);
     expect(f.keyup('KeyD')).toBe('passar');
   });

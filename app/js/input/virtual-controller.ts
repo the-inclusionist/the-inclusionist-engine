@@ -11,29 +11,29 @@
 
 import type { Action } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
-import type { Transporte } from './transporte-em-uso.js';
+import type { TransportName } from './transporte-em-uso.js';
 
 export interface VirtualCommand {
   readonly action: Action;
   readonly pressed: boolean;
   /** Who produced it (ADR-0111 §2); `undefined` when nobody said. */
-  readonly source: Transporte | undefined;
+  readonly source: TransportName | undefined;
   readonly player: number;
 }
 
 export interface VirtualControllerDeps {
   readonly scheme: (player: number) => KeyScheme;
   readonly menuOpen: () => boolean;
-  readonly holdKey: (code: string, source: Transporte) => void;
+  readonly holdKey: (code: string, source: TransportName) => void;
   readonly releaseKey: (code: string) => void;
   /** A menu is moved by its key, as the touch pad does, stamped with the transport that pressed it. */
-  readonly menuKey: (code: string, source: Transporte) => void;
+  readonly menuKey: (code: string, source: TransportName) => void;
   readonly deliver: (command: VirtualCommand) => void;
 }
 
 export interface VirtualController {
-  press(action: Action, source: Transporte, player?: number): void;
-  release(action: Action, source: Transporte, player?: number): void;
+  press(action: Action, source: TransportName, player?: number): void;
+  release(action: Action, source: TransportName, player?: number): void;
 }
 
 export function createVirtualController(d: VirtualControllerDeps): VirtualController {

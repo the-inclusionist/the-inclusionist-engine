@@ -16,18 +16,18 @@
 // repetida aqui.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { actionForCode } from '../app/js/input/keyboard-runtime.js';
-// ⚠️ O PAR VERDADEIRO, E NÃO UM DUPLO DELE (ADR-0109). Escrever um `marcarTecla` de mentira aqui seria uma
+// ⚠️ O PAR VERDADEIRO, E NÃO UM DUPLO DELE (ADR-0109). Escrever um `markKey` de mentira aqui seria uma
 // SEGUNDA implementação da regra, e então o caso afirmaria que a minha cópia concorda com a minha asserção —
 // as duas mexem-se juntas e nenhuma falha. Com o par a sério, o `heldKeys` que o caso lê é o conjunto que o
 // jogo lê, e o mapa de origens ao lado dele é o que a alternância vai perguntar.
 import {
-  keys as keysReais, origemDaTecla, marcarTecla, marcarTeclaSemOrigem, soltarTecla, soltarTodas,
-  // 📌 O AUTÓMATO TAMBÉM ENTRA A SÉRIO, e pela mesma razão do parágrafo acima: um `arestaDoJogador` de mentira
-  // aqui afirmaria que a minha cópia concorda com a minha asserção. Com o par verdadeiro, o `entradaDe` que o
+  keys as keysReais, keySource, markKey, markKeyWithoutSource, releaseKey, releaseAllKeys,
+  // 📌 O AUTÓMATO TAMBÉM ENTRA A SÉRIO, e pela mesma razão do parágrafo acima: um `playerEdge` de mentira
+  // aqui afirmaria que a minha cópia concorda com a minha asserção. Com o par verdadeiro, o `inputOf` que o
   // caso lê é o mesmo que a alternância vai perguntar.
-  arestaDoJogador, entradaDe, esquecerEntradas,
+  playerEdge, inputOf, forgetInputs,
 } from '../app/js/input/state.js';
-import { carimbarOrigem } from '../app/js/input/origem-sintetica.js';
+import { stampSource } from '../app/js/input/origem-sintetica.js';
 import {
   decideKeydown, initKeydown, isJumpKey, isGameKeyCode, isEasyShortcut,
   titleNavOf, hasTitleIntent, modalOwnerIndex, modalIntentOf, edgesFor,
@@ -480,11 +480,11 @@ function mkCtx(over = {}) {
   const els = over.els || {};
   const players = over.players || [mkPlayer(0, SOLO)];
   const schemes = players.map((p) => p.ctrl || {});
-  // O conjunto é o do módulo — `soltarTodas()` no `beforeEach` é o que o mantém limpo entre casos. As teclas
+  // O conjunto é o do módulo — `releaseAllKeys()` no `beforeEach` é o que o mantém limpo entre casos. As teclas
   // semeadas entram pelo par, com origem `'teclado'`: um caso que semeia está a dizer «isto já estava
   // segurado», e no mundo real algo o segurou.
-  soltarTodas();
-  for (const k of (over.heldKeys || [])) marcarTecla(k, 'teclado');
+  releaseAllKeys();
+  for (const k of (over.heldKeys || [])) markKey(k, 'teclado');
   const heldKeys = keysReais;
   const calls = [];
   const spy = (name) => (...args) => { calls.push([name, ...args]); };
@@ -498,10 +498,10 @@ function mkCtx(over = {}) {
     getPlayers: () => players,
     getControls: () => controlsFrom(schemes),
     heldKeys,
-    marcarTecla,
-    marcarTeclaSemOrigem,
-    arestaDoJogador,
-    soltarTecla,
+    markKey,
+    markKeyWithoutSource,
+    playerEdge,
+    releaseKey,
     isOneButton: () => !!over.oneButton,
     actionOf: (code, i) => actionForCode(schemes[i] || {}, code),
     whichPlayer: (code) => { for (let i = 0; i < schemes.length; i++) if (actionForCode(schemes[i], code)) return i; return -1; },
@@ -522,7 +522,7 @@ function mkCtx(over = {}) {
     clearWaitingBadge: spy('clearWaitingBadge'),
     win: { addEventListener: spy('addEventListener') },
   };
-  return { ctx, calls, players, heldKeys, origens: origemDaTecla, names: () => calls.map((c) => c[0]) };
+  return { ctx, calls, players, heldKeys, origens: keySource, names: () => calls.map((c) => c[0]) };
 }
 
 const fire = (api, code, mods = {}) => {
@@ -673,7 +673,7 @@ describe('initKeydown — o efeito de cada ramo', () => {
     // sem erro e sem nada na tela. O `ui/webcam` carimba, e é o carimbo que atravessa até aqui.
     const { ctx, heldKeys, origens } = mkCtx();
     const api = initKeydown(ctx);
-    api.onKeydown(carimbarOrigem(
+    api.onKeydown(stampSource(
       { code: 'KeyJ', altKey: false, ctrlKey: false, isTrusted: false, preventDefault: () => {} },
       'olhos',
     ));
@@ -683,38 +683,38 @@ describe('initKeydown — o efeito de cada ramo', () => {
 
   it('🎯 [Sequência] o carimbo ALIMENTA o autómato: olhar vira o transporte em uso, e uma tecla premida devolve o teclado', () => {
     // 🔴 O CASO QUE FALTAVA À FIAÇÃO INTEIRA, e a medição que o pediu é dura: até 2026-09-09 o
-    // `arestaDoJogador` tinha ZERO chamadores em produção, logo `entradaDe(i).emUso` respondia `teclado` a
+    // `playerEdge` tinha ZERO chamadores em produção, logo `inputOf(i).emUso` respondia `teclado` a
     // toda a gente, para sempre. Com isso a recusa da cláusula 3 do ADR-0113 NUNCA dispara — a criança que
     // joga por webcam consegue desligar a alternância de que a entrada dela depende, e nada o diz.
     //
     // ⚠️ É SEQUÊNCIA E NÃO UMA CHAMADA: «apertar uma tecla devolve o teclado» (regra 3 do ADR-0109) não quer
     // dizer nada sem se ter saído dele.
-    esquecerEntradas();
+    forgetInputs();
     const { ctx } = mkCtx();
     const api = initKeydown(ctx);
 
-    api.onKeydown(carimbarOrigem(
+    api.onKeydown(stampSource(
       { code: 'KeyJ', altKey: false, ctrlKey: false, isTrusted: false, preventDefault: () => {} },
       'olhos',
     ));
-    expect(entradaDe(0).emUso, 'o carimbo não chegou ao autómato: a webcam continua a ser lida como teclado').toBe('olhos');
+    expect(inputOf(0).emUso, 'o carimbo não chegou ao autómato: a webcam continua a ser lida como teclado').toBe('olhos');
 
     fire(api, 'KeyJ');
-    expect(entradaDe(0).emUso, 'uma tecla premida a sério tinha de devolver o teclado').toBe('teclado');
-    esquecerEntradas();
+    expect(inputOf(0).emUso, 'uma tecla premida a sério tinha de devolver o teclado').toBe('teclado');
+    forgetInputs();
   });
 
   it('⚠️ o sintético SEM assinatura não move o autómato — inventar-lhe `teclado` desligaria a alternância de quem joga por olhar', () => {
-    esquecerEntradas();
+    forgetInputs();
     const { ctx } = mkCtx();
     const api = initKeydown(ctx);
-    api.onKeydown(carimbarOrigem(
+    api.onKeydown(stampSource(
       { code: 'KeyJ', altKey: false, ctrlKey: false, isTrusted: false, preventDefault: () => {} },
       'olhos',
     ));
     fire(api, 'KeyJ', { isTrusted: false });     // ninguém assinou: origem desconhecida
-    expect(entradaDe(0).emUso, 'uma aresta sem origem foi contada como teclado').toBe('olhos');
-    esquecerEntradas();
+    expect(inputOf(0).emUso, 'uma aresta sem origem foi contada como teclado').toBe('olhos');
+    forgetInputs();
   });
 
   it('⚠️ um sintético que NINGUÉM assinou funciona, mas não finge saber de onde veio', () => {

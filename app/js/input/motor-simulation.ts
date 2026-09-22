@@ -8,17 +8,17 @@
  *   · «sem força para segurar»: a held key reads as one tap — the press passes and is released at once; its repeats and its
  *     real release do not reach the game.
  */
-export type DecisaoDeTecla = 'passar' | 'barrar' | 'tocar';
-export interface SimulacaoMotora { readonly umPorVez: boolean; readonly noGripStrength: boolean }
+export type KeyDecision = 'passar' | 'barrar' | 'tocar';
+export interface EmpathySimulation { readonly umPorVez: boolean; readonly noGripStrength: boolean }
 
-export interface FiltroMotor {
+export interface EmpathyFilter {
   /** A game key goes down. `tocar`: let it through and release it at once. */
-  keydown(code: string, repeat: boolean, sim: SimulacaoMotora): DecisaoDeTecla;
+  keydown(code: string, repeat: boolean, sim: EmpathySimulation): KeyDecision;
   /** A game key comes up. */
-  keyup(code: string): DecisaoDeTecla;
+  keyup(code: string): KeyDecision;
 }
 
-export function criarFiltroMotor(): FiltroMotor {
+export function createEmpathyFilter(): EmpathyFilter {
   const aceitas = new Set<string>();   // held, and the game saw them go down
   const tocadas = new Set<string>();   // physically held, already released to the game as a tap
   const barradas = new Set<string>();  // held, and the game never saw them

@@ -116,7 +116,7 @@ function vizinhos(topo: Topology, passo: number): Spot[] {
 }
 
 /** O ponto cabe na extensão declarada? Grade conta células 0..n−1; contínuo conta unidades 0..n. */
-function dentro(topo: Topology, s: Spot): boolean {
+function isInside(topo: Topology, s: Spot): boolean {
   if (topo.kind === 'hotspots') return false;
   const eixo = [s.x, s.y, s.z ?? 0];
   for (let i = 0; i < topo.size.length; i++) {
@@ -163,7 +163,7 @@ export function routeTo(ctx: RouteCtx, de: Spot, alvos: readonly Spot[]): Route 
     for (const item of fila) {
       for (const d of saltos) {
         const vizinho: Spot = { x: item.at.x + d.x, y: item.at.y + d.y, z: (item.at.z ?? 0) + (d.z ?? 0) };
-        if (!dentro(topo, vizinho)) continue;
+        if (!isInside(topo, vizinho)) continue;
         const k = chave(vizinho, casas);
         if (vistos.has(k)) continue;
         vistos.add(k);

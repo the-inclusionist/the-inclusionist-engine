@@ -131,7 +131,7 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
     expect(nivel.size).toBe(ENGINE.length);
   });
 
-  it('[Interface] dentro de um lote, nenhum módulo depende de outro do MESMO lote', () => {
+  it('[Interface] isInside de um lote, nenhum módulo depende de outro do MESMO lote', () => {
     // É a propriedade que faz um lote ser movível DE UMA VEZ. Sem ela, "lote" seria só um agrupamento de
     // nome, e a mudança teria de descer a módulo por módulo de qualquer jeito.
     const { nivel } = niveis();
@@ -139,7 +139,7 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
     for (const m of ENGINE) {
       for (const d of DENTRO.get(m)) if (nivel.get(d) === nivel.get(m)) conflitos.push(`${m} → ${d}`);
     }
-    expect(conflitos, 'dependência dentro do mesmo lote').toEqual([]);
+    expect(conflitos, 'dependência isInside do mesmo lote').toEqual([]);
   });
 
   it('[Boundary] os lotes são CONTÍGUOS a partir de 0 e nenhum é vazio', () => {

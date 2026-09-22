@@ -24,9 +24,9 @@ import type { DomQuery } from '../core/dom-query.js';
 // `platform/storage`: um nome de chave injetado é um campo que um consumidor pode omitir, e omiti-lo aqui
 // faria o painel escrever num nome torto — que é o defeito que este import acaba de fechar.
 import { KEYS } from '../platform/storage.js';
-import { gravarAlternancia } from '../input/latch-store.js';
+import { writeLatch } from '../input/latch-store.js';
 import {
-  aplicarAlternancia, BASE_DA_MARCHA, type JogadorDaAlternancia as JogadorDaAlternanciaDaAresta,
+  applyLatch, BASE_DA_MARCHA, type LatchPlayer as JogadorDaAlternanciaDaAresta,
 } from '../input/latch-sync.js';
 import { recusaDaAlternancia } from './latch-refusal.js';
 import type { PanelShellCtx } from './panel-shell.js';
@@ -156,7 +156,7 @@ export function easyKey(i: number): string {
  *
  * ⚠️ E É A CHAVE LEGADA. O ADR-0104 §C pôs o TRANSPORTE no nome, porque a alternância é do aparelho e não da
  * pessoa; esta continua a ser lida para herdar o que a criança já tinha, e não é escrita. A chave nova é
- * `chaveDaAlternancia`, em `input/latch-scope`.
+ * `latchKey`, em `input/latch-scope`.
  */
 export function toggleRunKey(i: number): string {
   return KEYS.toggleRunP(i);
@@ -186,16 +186,16 @@ export function toggleMoveKey(i: number): string {
  * o retrato de nomes deixa re-exports de fora e leria a mudança de casa como remoção, que é a lição da etapa
  * 1a do ADR-0106.
  */
-export type JogadorDaAlternancia = JogadorDaAlternanciaDaAresta;
+export type LatchPlayer = JogadorDaAlternanciaDaAresta;
 
 /** O que a escrita precisa de saber. Tudo o que está aqui já vive no `SettingsMotorCtx` e no `PauseIconsCtx`. */
 export interface EscritaDaAlternanciaCtx {
-  readonly players: readonly JogadorDaAlternancia[];
+  readonly players: readonly LatchPlayer[];
   readonly store: { setBool(key: string, on: boolean): void };
   readonly srSay: (msg: string) => void;
   readonly getNumPlayers: () => number;
   /**
-   * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113). `input/state.entradaDe(i).emUso` é quem responde.
+   * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113). `input/state.inputOf(i).emUso` é quem responde.
    *
    * ⚠️ OPCIONAL DE PROPÓSITO, e a razão é o que acontece sem ele: a escrita cai exactamente no que já fazia
    * hoje — só a chave por jogador. Torná-lo obrigatório quebraria todo consumidor que constrói este ctx,
@@ -220,23 +220,23 @@ export interface EscritaDaAlternanciaCtx {
 export function definirAlternanciaDeMarcha(ctx: EscritaDaAlternanciaCtx, i: number, on: boolean): void {
   const p = ctx.players[i];
   if (!p) return;
-  // 📌 A REGRA DE DESLIGAR MORA NUM SÍTIO SÓ desde a issue #127: `aplicarAlternancia` põe o valor E pára quem
+  // 📌 A REGRA DE DESLIGAR MORA NUM SÍTIO SÓ desde a issue #127: `applyLatch` põe o valor E pára quem
   // anda por travamento. Ela era duas linhas aqui, e passou a ser partilhada com a sincronização da aresta
   // (`input/latch-sync`) — que resolve a MESMA pergunta ao trocar de aparelho. Duas cópias do «senão a
   // personagem anda sozinha» divergiriam no dia em que uma delas mudasse.
-  aplicarAlternancia(p, on);
+  applyLatch(p, on);
   // ⚠️ AS DUAS CHAVES, E A ANTIGA NÃO SAI AINDA — é a forma do `p.visual` ao lado do `p.viz` (#104 etapa 1a),
   // e pela mesma razão: quem LÊ ainda é o cartucho, por `KEYS.toggleMoveP(i)` (`main.ts:540`). Parar de a
   // escrever agora faria a criança perder a escolha no arranque seguinte — o defeito que o ADR-0113 nomeia
   // como a cláusula que decide se a decisão custa um ajuste real no dia em que sai.
   ctx.store.setBool(toggleMoveKey(i), on);
-  // 📌 E a chave NOVA, quando se sabe o aparelho. `gravarAlternancia` recusa-se nos quatro assistidos, onde
+  // 📌 E a chave NOVA, quando se sabe o aparelho. `writeLatch` recusa-se nos quatro assistidos, onde
   // não há escolha a guardar (ADR-0113 cláusula 3) — e devolve `false` para quem chama desabilitar o
   // controle com o motivo dito. Aqui a recusa não muda mais nada: o valor em memória continua a ser o que
   // a regra resolve, e é ela que responde `true` naqueles quatro.
   const transporte = ctx.transporteEmUso ? ctx.transporteEmUso(i) : null;
-  if (transporte) gravarAlternancia((chave, ligada) => ctx.store.setBool(chave, ligada), BASE_DA_MARCHA, i, transporte, on);
-  // 📌 O ANÚNCIO É INCONDICIONAL, ao contrário do `aplicarAlternancia`, que devolve «mudou». A criança
+  if (transporte) writeLatch((chave, ligada) => ctx.store.setBool(chave, ligada), BASE_DA_MARCHA, i, transporte, on);
+  // 📌 O ANÚNCIO É INCONDICIONAL, ao contrário do `applyLatch`, que devolve «mudou». A criança
   // carregou no ícone: calar-se porque o valor já era esse deixaria o botão sem resposta para quem ouve.
   ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
 }
@@ -250,7 +250,7 @@ export function definirAlternanciaDeMarcha(ctx: EscritaDaAlternanciaCtx, i: numb
  * único efeito de jogo a injectar**, e por isso `SettingsMotorCtx.setToggleRun` deixa de ser obrigatório: um
  * jogo que não o forneça deixa de ficar sem a linha do correr, em vez de a ter morta.
  *
- * ⚠️ E NÃO CHAMA `aplicarAlternancia`, ao contrário da irmã. Aquela pára quem anda por travamento ao desligar,
+ * ⚠️ E NÃO CHAMA `applyLatch`, ao contrário da irmã. Aquela pára quem anda por travamento ao desligar,
  * porque a alternância de MARCHA deixa a personagem a andar sozinha; a do correr governa uma trava de
  * velocidade, que não tem como deixar ninguém em movimento. Copiar a linha «por simetria» seria mexer em
  * `walkDir` por causa de um botão que não lhe toca.

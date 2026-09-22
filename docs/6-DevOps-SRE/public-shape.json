@@ -49,7 +49,6 @@
       "piorSegundo?"
     ],
     "interface Engine": [
-      "alcance",
       "aoFalhar",
       "aplicarFiltroDeVisao",
       "cenas",
@@ -64,6 +63,7 @@
       "overlays",
       "pausa",
       "problems",
+      "reach",
       "reading",
       "sonar",
       "tts",
@@ -475,7 +475,7 @@
     ],
     "type ResultadoDaQuestao": "| 'primeira' | 'mediada' | 'falhou'",
     "type Faixa": "'proficiente' | 'zona' | 'frustracao'",
-    "type Motivo": "| 'acertos-de-primeira' | 'quatro-seguidas' | 'resolvidas-no-piso' | 'dentro-da-zona' | 'janela-incompleta'"
+    "type Motivo": "| 'acertos-de-primeira' | 'quatro-seguidas' | 'resolvidas-no-piso' | 'isInside-da-zona' | 'janela-incompleta'"
   },
   "educational/segment-bar.ts": {
     "interface VeredictoLido": [
@@ -573,7 +573,6 @@
     ],
     "interface GamepadCtx": [
       "$",
-      "arestaDoJogador",
       "clearWaitingBadge",
       "frontOverlay",
       "getGamepads",
@@ -594,6 +593,7 @@
       "navPause",
       "navTitle",
       "pausar",
+      "playerEdge",
       "respawnPlayer",
       "retomar",
       "rotuloDaAcao",
@@ -731,7 +731,7 @@
   },
   "input/keyboard.ts": {
     "type KBDefaults": "{ solo: KeyScheme",
-    "type MapeamentoDoTeclado": "(jogadores: number, assento: number) => Partial<KeyScheme> | null"
+    "type KeyboardMapping": "(jogadores: number, assento: number) => Partial<KeyScheme> | null"
   },
   "input/keydown.ts": {
     "interface KeydownEventLike": [
@@ -771,7 +771,6 @@
       "$",
       "actionOf",
       "activateScreens",
-      "arestaDoJogador",
       "attractOnInput",
       "clearWaitingBadge",
       "closeOverlayById",
@@ -787,11 +786,12 @@
       "isEmJogo",
       "isOneButton",
       "isTelaDeTitulo",
-      "marcarTecla",
-      "marcarTeclaSemOrigem",
+      "markKey",
+      "markKeyWithoutSource",
       "modalInput",
       "navTitle",
-      "soltarTecla",
+      "playerEdge",
+      "releaseKey",
       "srSay",
       "togglePause",
       "whichPlayer",
@@ -808,48 +808,48 @@
     "type KeydownDecision": "| { kind: 'overlay'"
   },
   "input/latch-edge.ts": {
-    "interface ArestaComAlternanciaOpts": [
+    "interface LatchedEdgeOptions": [
       "armazem?",
       "padrao?"
     ]
   },
   "input/latch-scope.ts": {
-    "interface LeituraDaAlternancia": [
+    "interface LatchReading": [
       "doLegado",
       "doTransporte",
       "padrao"
     ]
   },
   "input/latch-store.ts": {
-    "interface ArmazemDaAlternancia": [
+    "interface LatchStore": [
       "get",
       "set"
     ]
   },
   "input/latch-sync.ts": {
-    "type JogadorDaAlternancia": "PlayerView<'toggleMove' | 'walkDir'>"
+    "type LatchPlayer": "PlayerView<'toggleMove' | 'walkDir'>"
   },
   "input/latch.ts": {
     "type LatchDir": "-1 | 0 | 1"
   },
   "input/motor-simulation.ts": {
-    "interface SimulacaoMotora": [
+    "interface EmpathySimulation": [
       "umPorVez"
     ],
-    "interface FiltroMotor": [
+    "interface EmpathyFilter": [
       "keydown",
       "keyup"
     ],
-    "type DecisaoDeTecla": "'passar' | 'barrar' | 'tocar'"
+    "type KeyDecision": "'passar' | 'barrar' | 'tocar'"
   },
   "input/origem-sintetica.ts": {
-    "interface EventoDeTeclaLike": [
+    "interface KeyEventLike": [
       "isTrusted?"
     ]
   },
   "input/pad-defaults.ts": {
-    "type MapeamentoDoPad": "(jogadores: number, assento: number) => Partial<Record<Action, number | null>> | null",
-    "type TabelaDoPad": "Readonly<Record<Action, Binding<number>>>"
+    "type PadMapping": "(jogadores: number, assento: number) => Partial<Record<Action, number | null>> | null",
+    "type PadTable": "Readonly<Record<Action, Binding<number>>>"
   },
   "input/pad-wizard.ts": {
     "interface PadWizardCtx": [
@@ -874,21 +874,21 @@
     "interface RectLike": [
       "left"
     ],
-    "interface DoCentro": [
+    "interface FromCentre": [
       "dx"
     ],
-    "interface EmFracao": [
+    "interface AsFraction": [
       "fx"
     ]
   },
   "input/pointer.ts": {
-    "interface AmostraDoPonteiro": [
+    "interface PointerSample": [
       "apertado",
       "fx",
       "fy",
       "origem"
     ],
-    "type BordaDoAperto": "'desceu' | 'subiu' | null"
+    "type PressEdge": "'desceu' | 'subiu' | null"
   },
   "input/switch-scan.ts": {
     "interface SwitchScanOptions": [
@@ -930,7 +930,6 @@
     "interface TouchBindingsCtx": [
       "$",
       "abrirMenus?",
-      "arestaDoJogador",
       "attractOnInput",
       "defer?",
       "emMenu?",
@@ -943,9 +942,10 @@
       "getTouchMap",
       "heldKeys",
       "hideTips",
-      "marcarTecla",
+      "markKey",
+      "playerEdge",
+      "releaseKey",
       "showTouchControls",
-      "soltarTecla",
       "teclaDeMenu?",
       "togglePause",
       "win"
@@ -1028,17 +1028,17 @@
     "type HandTag": "'crianca' | 'adulto' | 'inter'",
     "type PadLayout": "'sony' | 'nintendo' | 'microsoft' | 'generic'",
     "type PadKind": "'kb' | 'x' | 'd'",
-    "type ChaveDaPersona": "'crianca-pequena' | 'crianca-grande' | 'adulto-pequeno' | 'adulto-maos-grandes'"
+    "type PersonaKey": "'crianca-pequena' | 'crianca-grande' | 'adulto-pequeno' | 'adulto-maos-grandes'"
   },
   "input/transporte-em-uso.ts": {
-    "interface EstadoDaEntrada": [
+    "interface InputState": [
       "assistidaLigada",
       "emUso"
     ],
-    "type Transporte": "'teclado' | 'gamepad' | 'toque' | 'olhos' | 'rosto' | 'gestos' | 'fala'"
+    "type TransportName": "'teclado' | 'gamepad' | 'toque' | 'olhos' | 'rosto' | 'gestos' | 'fala'"
   },
   "input/transports.ts": {
-    "interface Disponibilidade": [
+    "interface Availability": [
       "gamepad",
       "rato",
       "teclado",
@@ -1051,7 +1051,7 @@
       "id",
       "slots"
     ],
-    "interface Alcance": [
+    "interface Reach": [
       "curtos",
       "naoApontam",
       "naoSeguram",
@@ -1090,7 +1090,7 @@
       "p4?",
       "solo?"
     ],
-    "type EsquemaSalvo": "Record<string, readonly string[]>"
+    "type SavedScheme": "Record<string, readonly string[]>"
   },
   "input/voice-map.ts": {
     "interface VoiceCommands": [
@@ -1910,7 +1910,7 @@
     "type CriarSprite": "(textura: unknown) => T",
     "type CriarAzulejo": "(textura: unknown, largura: number, altura: number) => T",
     "type CriarDesenho": "() => T",
-    "type AplicarFiltroCss": "(css: string, alcance: AlcanceDoFiltro) => void",
+    "type AplicarFiltroCss": "(css: string, reach: AlcanceDoFiltro) => void",
     "type AlcanceDoFiltro": "'mundo' | 'mundo-e-menus'",
     "type AplicarAltoContrasteNoDom": "(ligado: boolean) => void"
   },
@@ -2960,7 +2960,7 @@
       "transporteEmUso?"
     ],
     "type MotorPlayer": "PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>",
-    "type JogadorDaAlternancia": "JogadorDaAlternanciaDaAresta"
+    "type LatchPlayer": "JogadorDaAlternanciaDaAresta"
   },
   "ui/settings-panel.ts": {
     "interface SettingsPanelCtx": [

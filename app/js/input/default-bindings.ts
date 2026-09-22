@@ -96,7 +96,7 @@ export const KEYBOARD_SOLO: Readonly<Record<Action, Binding<readonly string[]>>>
  * ⚠️ O JOGADOR 1 AQUI NÃO É O `KEYBOARD_SOLO`, e a diferença é UMA e obrigatória: as SETAS saem dele. No solo
  * elas são um segundo caminho para o direcional; em dupla são o direcional DO OUTRO. Deixá-las nos dois faria
  * os dois bonecos andarem juntos — um defeito que não dá erro em lado nenhum e que só se vê jogando a dois.
- * `conflitosEntreTabelas` existe por causa desta linha.
+ * `conflictsBetweenTables` existe por causa desta linha.
  *
  * ⚠️ E A GEOMETRIA DO JOGADOR 2 É A MESMA DO JOGADOR 1, TRANSPOSTA PARA O TECLADO NUMÉRICO — o que faz a
  * memória muscular atravessar de um lado da mesa para o outro:
@@ -239,7 +239,7 @@ export function bindingProblems<T>(tabela: Readonly<Record<Action, Binding<T | r
  *
  * A mensagem nomeia os dois donos, porque «tecla repetida» manda procurar o que a função já sabe.
  */
-export function conflitosEntreTabelas<T>(
+export function conflictsBetweenTables<T>(
   tabelas: readonly Readonly<Record<Action, Binding<T | readonly T[]>>>[],
 ): string[] {
   const p: string[] = [];

@@ -12,8 +12,8 @@ import type { Action } from '../core/actions.js';
 // desaparecem no build. A terceira entra pela mesma razão que as outras duas: o vocabulário mora com quem
 // tem as REGRAS sobre ele (`input/transporte-em-uso`), e repeti-lo aqui seria a segunda cópia de uma união.
 import {
-  PADRAO, aposAresta, habilitarAssistida, desabilitarAssistida,
-  type Transporte, type EstadoDaEntrada,
+  PADRAO, afterEdge, enableAssisted, disableAssisted,
+  type TransportName, type InputState,
 } from './transporte-em-uso.js';
 
 export const keys = new Set<string>();
@@ -27,14 +27,14 @@ export const keys = new Set<string>();
  * responde já não há como saber QUEM carregou. O único transporte que sobrevivia identificável era o
  * gamepad, e só porque passa por `padCur` em vez do conjunto.
  *
- * ⚠️ CAMPO NOVO AO LADO DO VELHO, sincronizado num ponto só (`marcarTecla`/`soltarTecla`), com os leitores a
+ * ⚠️ CAMPO NOVO AO LADO DO VELHO, sincronizado num ponto só (`markKey`/`releaseKey`), com os leitores a
  * migrar um a um — é a forma que este repositório já usou no `p.visual` ao lado do `p.viz` (#104), e a razão
  * é a mesma: uma troca de uma vez não tem estado verde onde parar, e isto é a espinha da entrada.
  *
  * 📌 Um código SEM entrada aqui não é um erro de dados — é uma tecla que entrou por um escritor que ainda não
- * migrou. `origemDe` devolve `undefined` e quem pergunta decide; ver a nota lá.
+ * migrou. `sourceOf` devolve `undefined` e quem pergunta decide; ver a nota lá.
  */
-export const origemDaTecla = new Map<string, Transporte>();
+export const keySource = new Map<string, TransportName>();
 
 /**
  * Uma tecla FOI SEGURADA, e sabe-se por quem. É o único sítio que escreve nos dois.
@@ -43,16 +43,16 @@ export const origemDaTecla = new Map<string, Transporte>();
  * silenciosa — o jogo continua a andar e só a alternância fica errada. Por isso não há `keys.add` público
  * neste módulo: quem escreve, escreve por aqui.
  */
-export function marcarTecla(code: string, origem: Transporte): void {
+export function markKey(code: string, origem: TransportName): void {
   keys.add(code);
-  origemDaTecla.set(code, origem);
+  keySource.set(code, origem);
 }
 
 /**
  * A tecla foi segurada e NÃO SE SABE por quem. A porta estreita, e ela é estreita de propósito.
  *
- * ⚠️ POR QUE UMA FUNÇÃO COM OUTRO NOME E NÃO UM SEGUNDO PARÂMETRO OPCIONAL. `marcarTecla(code)` com a origem
- * omitida é o que se escreve quando não se pensou; `marcarTeclaSemOrigem(code)` é o que se escreve quando se
+ * ⚠️ POR QUE UMA FUNÇÃO COM OUTRO NOME E NÃO UM SEGUNDO PARÂMETRO OPCIONAL. `markKey(code)` com a origem
+ * omitida é o que se escreve quando não se pensou; `markKeyWithoutSource(code)` é o que se escreve quando se
  * pensou e a resposta é «não sei». O tipo não distingue as duas, mas o nome distingue — e é o nome que
  * aparece na revisão. Um parâmetro esquecido não se lê; uma função assim chamada lê-se de longe.
  *
@@ -65,21 +65,21 @@ export function marcarTecla(code: string, origem: Transporte): void {
  * migração nada nesta engine produz um; quem produz é código de consumidor, e é para ele que esta porta fica
  * aberta. Fechá-la faria a tecla dele simplesmente não funcionar, o que é uma quebra pior do que não saber.
  */
-export function marcarTeclaSemOrigem(code: string): void {
+export function markKeyWithoutSource(code: string): void {
   keys.add(code);
-  origemDaTecla.delete(code);
+  keySource.delete(code);
 }
 
 /** A outra metade. Solta nos dois, pela mesma razão. */
-export function soltarTecla(code: string): void {
+export function releaseKey(code: string): void {
   keys.delete(code);
-  origemDaTecla.delete(code);
+  keySource.delete(code);
 }
 
 /** Solta TUDO — o `blur` da janela. Os dois, ou o mapa fica a descrever teclas que já ninguém segura. */
-export function soltarTodas(): void {
+export function releaseAllKeys(): void {
   keys.clear();
-  origemDaTecla.clear();
+  keySource.clear();
 }
 
 /**
@@ -89,8 +89,8 @@ export function soltarTodas(): void {
  * toque que entrasse por um escritor não migrado seria lida como teclado, a alternância desligava-se, e nada
  * o diria. Não saber é uma resposta; fingir que se sabe não é.
  */
-export function origemDe(code: string): Transporte | undefined {
-  return origemDaTecla.get(code);
+export function sourceOf(code: string): TransportName | undefined {
+  return keySource.get(code);
 }
 
 // ===================== O TRANSPORTE EM USO, POR JOGADOR (ADR-0109 · ADR-0113) =====================
@@ -102,48 +102,48 @@ export function origemDe(code: string): Transporte | undefined {
 //
 // 📌 O que o jogador CARREGA é a alternância resolvida (`toggleMove`), que é o que a física lê. Este mapa é
 // o que está a montante dela: com ele e com o `input/latch-store`, a resposta do ADR-0113 fica completa.
-const entradaPorJogador: Record<number, EstadoDaEntrada> = {};
+const entradaPorJogador: Record<number, InputState> = {};
 
 /**
  * O ESTADO DA ENTRADA DESTE JOGADOR. Nunca `undefined`: quem nunca produziu uma aresta está no PADRÃO.
  *
- * ⚠️ `PADRAO` E NÃO `undefined`, pela mesma razão que o `origemDe` faz o contrário: ali «não sei» é uma
+ * ⚠️ `PADRAO` E NÃO `undefined`, pela mesma razão que o `sourceOf` faz o contrário: ali «não sei» é uma
  * resposta honesta sobre uma tecla que já existe; aqui a pergunta é sobre um JOGADOR, e um jogador que
  * ainda não tocou em nada está mesmo no teclado sem assistida — que é o que `PADRAO` diz.
  */
-export function entradaDe(jogador: number): EstadoDaEntrada {
+export function inputOf(jogador: number): InputState {
   return entradaPorJogador[jogador] ?? PADRAO;
 }
 
 /**
  * UMA ARESTA DESTE JOGADOR CHEGOU, com a sua origem.
  *
- * 📌 O `aposAresta` devolve o MESMO objecto quando nada muda, então guardar de volta não aloca por quadro.
- * ⚠️ E uma aresta de um transporte assistido NÃO o habilita — essa regra vive no `aposAresta` e a razão
+ * 📌 O `afterEdge` devolve o MESMO objecto quando nada muda, então guardar de volta não aloca por quadro.
+ * ⚠️ E uma aresta de um transporte assistido NÃO o habilita — essa regra vive no `afterEdge` e a razão
  * está lá: um falso positivo da webcam trancaria a alternância de toda a gente sem ninguém ter pedido.
  */
-export function arestaDoJogador(jogador: number, origem: Transporte): void {
-  entradaPorJogador[jogador] = aposAresta(entradaDe(jogador), origem);
+export function playerEdge(jogador: number, origem: TransportName): void {
+  entradaPorJogador[jogador] = afterEdge(inputOf(jogador), origem);
 }
 
 /** Habilitar a assistida é um ACTO EXPLÍCITO (ADR-0109 regra 4), e por isso tem porta própria. */
-export function habilitarAssistidaDe(jogador: number): void {
-  entradaPorJogador[jogador] = habilitarAssistida(entradaDe(jogador));
+export function enableAssistedFor(jogador: number): void {
+  entradaPorJogador[jogador] = enableAssisted(inputOf(jogador));
 }
 
-export function desabilitarAssistidaDe(jogador: number): void {
-  entradaPorJogador[jogador] = desabilitarAssistida(entradaDe(jogador));
+export function disableAssistedFor(jogador: number): void {
+  entradaPorJogador[jogador] = disableAssisted(inputOf(jogador));
 }
 
 /**
- * ⚠️ ESQUECER É UMA PORTA SEPARADA, E O `soltarTodas` NÃO A CHAMA — de propósito.
+ * ⚠️ ESQUECER É UMA PORTA SEPARADA, E O `releaseAllKeys` NÃO A CHAMA — de propósito.
  *
  * O `blur` da janela solta as teclas porque elas deixaram mesmo de estar premidas. Mas a criança não trocou
  * de aparelho por mudar de separador: zerar o transporte em uso ali devolveria toda a gente ao teclado, e
  * quem joga por olhar perderia a alternância no meio da partida sem nada o dizer. Existe para o fim de uma
  * PARTIDA, onde a pergunta se põe de novo.
  */
-export function esquecerEntradas(): void {
+export function forgetInputs(): void {
   for (const k of Object.keys(entradaPorJogador)) delete entradaPorJogador[Number(k)];
 }
 

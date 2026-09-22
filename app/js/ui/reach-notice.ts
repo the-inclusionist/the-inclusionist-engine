@@ -15,7 +15,7 @@
 //
 // ⚠️ E O TEXTO É MOLDADO À PARTE DO DOM de propósito: as frases são a coisa que precisa de ser lida com
 // cuidado e traduzida para três idiomas, e o project node consegue afereri-las sem navegador nenhum.
-import type { Alcance } from '../input/transports.js';
+import type { Reach } from '../input/transports.js';
 
 /** `core/i18n.t` — injetado para o núcleo continuar puro e para o teste poder ver as chaves cruas. */
 export type Tradutor = (chave: string, params?: Record<string, string | number>) => string;
@@ -30,7 +30,7 @@ export type Tradutor = (chave: string, params?: Record<string, string | number>)
  *     Nesse caso o problema é do JOGO, que pede mais posições do que qualquer transporte deste aparelho
  *     oferece, e a frase honesta é outra.
  */
-export function linhasDoAviso(a: Alcance, t: Tradutor): string[] {
+export function linhasDoAviso(a: Reach, t: Tradutor): string[] {
   if (a.ok) return [];
 
   const nome = (id: string): string => t('reach.nome.' + id);
@@ -76,12 +76,12 @@ export const REACH_NOTICE_ID = 'reach-notice';
  * passar por revisão de código — é exatamente a fronteira que a issue #106 mapeia. `textContent` fecha a
  * questão sem precisar de escapar nada.
  */
-export function mostrarAvisoDeAlcance(ctx: ReachNoticeCtx, a: Alcance): boolean {
+export function mostrarAvisoDeAlcance(ctx: ReachNoticeCtx, a: Reach): boolean {
   const linhas = linhasDoAviso(a, ctx.t);
   if (linhas.length === 0) return false;
 
-  const dentro = ctx.procurar('#game-region');
-  if (!dentro) return false; // sem a marcação do hospedeiro não há onde mostrar; o `problems` já o denuncia
+  const isInside = ctx.procurar('#game-region');
+  if (!isInside) return false; // sem a marcação do hospedeiro não há onde mostrar; o `problems` já o denuncia
 
   const fora = ctx.criar('div');
   fora.id = REACH_NOTICE_ID;
@@ -110,7 +110,7 @@ export function mostrarAvisoDeAlcance(ctx: ReachNoticeCtx, a: Alcance): boolean 
   cartao.appendChild(seguir);
 
   fora.appendChild(cartao);
-  dentro.appendChild(fora);
+  isInside.appendChild(fora);
 
   // O foco vai para o cartão, não para o botão: a criança tem de OUVIR o motivo antes de encontrar a saída.
   // (Se fosse para o botão, o leitor de tela leria «Jogar assim mesmo» e o resto ficaria para quem procurasse.)

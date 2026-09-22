@@ -47,15 +47,15 @@
 // O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
 import { initI18n, dictionaryGaps, loadLocale } from '../core/i18n.js';
-import { entradaDe, keys, marcarTecla, soltarTecla, arestaDoJogador } from '../input/state.js';
-import { initTouch, montarControleDeToque, lacunasDoToque } from '../input/touch.js';
+import { inputOf, keys, markKey, releaseKey, playerEdge } from '../input/state.js';
+import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
 import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { registerCrashNotice } from '../core/loop.js';
 import { analyseFlashes, COLUMNS, ROWS, type LuminanceFrame } from '../core/flash-threshold.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
-import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
+import { reach, defaultTransports, type Reach, type Availability } from '../input/transports.js';
 import { accommodationAnswersProblems, subjectWord, type AccommodationAnswers } from '../core/accommodations.js';
 import { genreProblems, genreWarning } from '../core/genres.js';
 import { contractSubjects } from '../core/accommodation-subjects.js';
@@ -89,7 +89,7 @@ import { ehCego, ehBaixaVisao, PADRAO, filtroChave, simulacaoIndisponivel, type 
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
 import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
 import { desenharBaixaVisao } from '../render/low-vision-drawing.js';
-import { criarAssistenteDoPad } from '../input/pad-wizard.js';
+import { createPadWizard } from '../input/pad-wizard.js';
 import { cicloDeTipografia, INICIO_DO_CICLO, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
 import { invasoresDaBarra, escalaDoPalco, aplicarEscala, abaixoDoPiso, alvoMinimo, type Caixa, type Escala, type MedidaDeNo } from '../ui/layout.js';
@@ -102,15 +102,15 @@ import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.j
 import { montarPainel } from '../ui/mount-panel.js';
 // 📌 `recusaDaAlternancia` e `definirAlternanciaDeMarcha` saíram destes imports com a linha do painel (2026-09-21): quem escreve
 // a aderência agora é o ☝️ da barra, e é ele que já resolvia as duas coisas — a recusa do aparelho e as duas chaves guardadas.
-import { carimbarOrigem, origemDoEvento } from '../input/origem-sintetica.js';
-import type { Transporte } from '../input/transporte-em-uso.js';
+import { stampSource, sourceOfEvent } from '../input/origem-sintetica.js';
+import type { TransportName } from '../input/transporte-em-uso.js';
 import { createVirtualController, type VirtualCommand } from '../input/virtual-controller.js';
 import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem } from '../input/switch-scan.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 import { createVoiceControl } from '../ui/voice-control.js';
 export type { VirtualCommand } from '../input/virtual-controller.js';
 import { montarPassos, atualizarPassos, passoSeguinte, linhaDeControle, rotularLinha } from '../ui/panel-widgets.js';
-import { PERSONAS_DO_PAD, personaMaisProxima } from '../input/touch.js';
+import { PERSONAS_DO_PAD, closestPersona } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
 import { initSettingsVisual } from '../ui/settings-visual.js';
@@ -121,7 +121,7 @@ import { initCrt, applyCrt, crtScanVars } from '../render/crt.js';
 import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type SettingsAudioApi } from '../ui/settings-audio.js';
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn, toggleLabel } from '../ui/dom.js';
-import { criarFiltroMotor } from '../input/motor-simulation.js';
+import { createEmpathyFilter } from '../input/motor-simulation.js';
 import { createInputCooldown, COOLDOWN_MS } from '../input/input-cooldown.js';
 import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
@@ -130,8 +130,8 @@ import * as store from '../platform/storage.js';
 import { initMenuNav, partesDoControle, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
-import { kb, initKB, registrarMapeamentoDoTeclado, saveKB, setKB, fabricaComOJogo, type KBDefaults } from '../input/keyboard.js';
-import { registrarMapeamentoDoPad } from '../input/pad-defaults.js';
+import { kb, initKB, registerKeyboardMapping, saveKB, setKB, factoryWithGame, type KBDefaults } from '../input/keyboard.js';
+import { registerPadMapping } from '../input/pad-defaults.js';
 import { downloadHeavy, heavyAtBoot, type HeavyReport } from '../platform/pesados.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 
@@ -394,7 +394,7 @@ export interface CreateGameOptions {
    * Injetável porque «há um controle ligado?» e «isto é uma tela de toque?» são perguntas ao navegador, e um
    * teste que não as possa responder não consegue exercitar a tela que depende delas.
    */
-  readonly disponibilidade?: Disponibilidade;
+  readonly disponibilidade?: Availability;
   /**
    * O QUE CADA ITEM DO CARTÃO DE PAUSA FAZ NESTE JOGO — «continuar», «sair», «ajuda», o que o jogo ligar.
    *
@@ -511,7 +511,7 @@ export interface Engine {
    * estarem DENTRO do mundo, ele é desfeito neles. Uma cegueira que apagasse o menu de pausa trancaria a
    * criança dentro da simulação (#82).
    */
-  readonly aplicarFiltroDeVisao: (css: string, alcance: AlcanceDoFiltro) => void;
+  readonly aplicarFiltroDeVisao: (css: string, reach: AlcanceDoFiltro) => void;
   /**
    * A NAVEGAÇÃO SONORA, pronta e ligada à declaração deste jogo (item 19).
    *
@@ -558,7 +558,7 @@ export interface Engine {
    * mais (esconder uma fase que exige doze ações, por exemplo), e porque `ok: false` é o tipo de facto que
    * tem de poder ser auditado em vez de ficar só numa tela que já fechou.
    */
-  readonly alcance: Alcance;
+  readonly reach: Reach;
   /**
    * TORNA ESTE CARTUCHO O CORRENTE (ADR-0142). Uma raiz de composição, vários jogos.
    *
@@ -566,7 +566,7 @@ export interface Engine {
    * diagnóstico, tal como no arranque. Um cartucho mau não chega a ser montado.
    *
    * 📌 O que ele refaz é só o que não se conserta lendo de novo: os dois registos de mapeamento, que são
-   * efeito global, e o alcance com o seu aviso, que escreve DOM. `problems` e `alcance` passam a descrever
+   * efeito global, e o alcance com o seu aviso, que escreve DOM. `problems` e `reach` passam a descrever
    * o cartucho montado porque são derivados, não porque `mount` os copie.
    */
   mount(declaration: GameDeclaration, ganchos?: GanchosDoCartucho): void;
@@ -810,13 +810,13 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ `{kind:'none'}` NÃO APLICA NADA. Uma atividade sem espaço não tem mundo para simular, e pintar um
    * filtro sobre ela seria a mentira que o ADR-0087 existe para impedir, só que ao contrário.
    */
-  function aplicarFiltroDeVisao(css: string, alcance: AlcanceDoFiltro): void {
+  function aplicarFiltroDeVisao(css: string, reach: AlcanceDoFiltro): void {
     const mundo = cartucho.declaration.world();
     if (mundo.kind !== 'element') return;
     const el = $<HTMLElement>(mundo.selector);
     if (!el) return; // já reportado em `problems`; não se inventa superfície
     el.style.filter = css;
-    if (alcance === 'mundo') {
+    if (reach === 'mundo') {
       // Os menus vivem POR CIMA da simulação e são o instrumento de sair dela: se herdaram o filtro por
       // estarem dentro do mundo, desfaz-se neles.
       for (const ov of $$<HTMLElement>(OVERLAY_SCOPE_SELECTOR)) {
@@ -1243,13 +1243,13 @@ export function createGame(o: CreateGameOptions): Engine {
     setCatGain,
     /*
      * ⚠️ QUEM RESPONDE PELO APARELHO EM USO É A RAIZ, e é aqui que o autómato do ADR-0109 ganha o primeiro
-     * leitor. `input/state.entradaDe(i)` devolve `PADRAO` para quem nunca produziu uma aresta, logo isto
+     * leitor. `input/state.inputOf(i)` devolve `PADRAO` para quem nunca produziu uma aresta, logo isto
      * nunca é `undefined` e o ícone nunca escreve numa chave torta.
      *
      * 📌 E é a RAIZ que o passa, não o ícone que o importa: `ui/` a ler estado de módulo de `input/` seria
      * uma aresta nova entre camadas para poupar um argumento. A composição é o trabalho deste ficheiro.
      */
-    transporteEmUso: (i: number) => entradaDe(i).emUso,
+    transporteEmUso: (i: number) => inputOf(i).emUso,
     // ✅ O guarda morto do monólito volta a valer — ver a nota em `audio`, acima.
     reflectTtsPanel: () => { audio?.reflectTts(); },
     reflectTtsPanelEnabled: true,
@@ -2165,7 +2165,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 `null` é o valor honesto de «este jogo não tem opinião», e é também o que o `desmontar()` escreve.
    */
   function registrarMapeamentosDoCartucho(): void {
-    registrarMapeamentoDoTeclado(
+    registerKeyboardMapping(
       cartucho.declaration.mapeamentoDoTeclado
         ? (jogadores, assento) => cartucho.declaration.mapeamentoDoTeclado!(jogadores, assento)
         : null,
@@ -2173,7 +2173,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ E O DO CONTROLE REGISTA-SE AQUI AINDA QUE ESTA RAIZ NÃO MONTE GAMEPAD NENHUM. Não é descuido: quem
     // chama `initGamepad` é o cartucho, e é exactamente por isso que o registo não pode viver lá — seria mais
     // um campo que um jogo pode esquecer, e esquecê-lo devolve o mapa da ENGINE a quem declarou outro, calado.
-    registrarMapeamentoDoPad(
+    registerPadMapping(
       cartucho.declaration.mapeamentoDoPad
         ? (jogadores, assento) => cartucho.declaration.mapeamentoDoPad!(jogadores, assento)
         : null,
@@ -2264,11 +2264,11 @@ export function createGame(o: CreateGameOptions): Engine {
    * first is not what can be built first.
    */
   const blockKey = (e: Event): void => { e.preventDefault(); e.stopImmediatePropagation(); };
-  let scanPress: ((source: Transporte) => void) | null = null;
+  let scanPress: ((source: TransportName) => void) | null = null;
   win.addEventListener('keydown', (e: KeyboardEvent) => {
     if (!state.switchScan || !scanPress || keyboard.whichPlayer(e.code) < 0) return;
     // A HELD KEY IS ONE PRESS, not one a frame: a child who cannot let go would otherwise take an item every repeat.
-    if (!e.repeat) scanPress(origemDoEvento(e) ?? 'teclado');
+    if (!e.repeat) scanPress(sourceOfEvent(e) ?? 'teclado');
     blockKey(e);
   }, true);
   win.addEventListener('keyup', (e: KeyboardEvent) => {
@@ -2299,7 +2299,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * `pointer:coarse && hover:none` é toque, e o contrário é teclado. Ela erra num tablet COM teclado — e o
    * erro só é tolerável porque a tela INFORMA em vez de recusar. Ver o cabeçalho de `ui/reach-notice`.
    */
-  const disponibilidade: Disponibilidade = o.disponibilidade ?? {
+  const disponibilidade: Availability = o.disponibilidade ?? {
     gamepad: () => { try { return [...(win.navigator?.getGamepads?.() ?? [])].some(Boolean); } catch { return false; } },
     toque: () => { try { return win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches; } catch { return false; } },
     teclado: () => { try { return !(win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches); } catch { return true; } },
@@ -2340,10 +2340,10 @@ export function createGame(o: CreateGameOptions): Engine {
     if (typeof aviso.remove === 'function') aviso.remove();
     else aviso.parentNode?.removeChild(aviso);
   }
-  function derivarAlcance(): Alcance {
+  function derivarAlcance(): Reach {
     const acoes = cartucho.preset ? presetActions(cartucho.preset) : [];
-    const a = alcance(
-      transportesPadrao(disponibilidade),
+    const a = reach(
+      defaultTransports(disponibilidade),
       acoes,
       cartucho.declaration.holdsAtOnce(),
       cartucho.declaration.needsPointer?.() ?? false,
@@ -2966,7 +2966,7 @@ export function createGame(o: CreateGameOptions): Engine {
   /*
    * ===================== O CONTROLE VIRTUAL (ADR-0143, fase 4 do plano) =====================
    *
-   * 🔴 MEDIDO em 2026-09-12: `montarControleDeToque`, `initTouch` e `initTouchBindings` tinham testes e ZERO
+   * 🔴 MEDIDO em 2026-09-12: `mountTouchControls`, `initTouch` e `initTouchBindings` tinham testes e ZERO
    * chamadores em produção — `git grep` achava-os só nos próprios módulos. Numa escola onde o aparelho é um
    * tablet sem teclado, um jogo arrancado por esta raiz não tinha por onde ser jogado, e nada o dizia.
    *
@@ -2976,7 +2976,7 @@ export function createGame(o: CreateGameOptions): Engine {
    *
    * 📌 O PAD MONTA SEMPRE, com ou sem `preset`: sem acções ele fica só com o START, porque a pausa não é
    * declinável (ADR-0122) e num tablet sem teclado o START é a única porta para ela. O que falta diz-se em
-   * `problems` (`lacunasDoToque`).
+   * `problems` (`touchGaps`).
    */
   const hospedeiroDoToque = o.host.touchHost ?? $('#game-region');
   const toqueUsavel = !!hospedeiroDoToque && typeof (hospedeiroDoToque as HTMLElement).appendChild === 'function';
@@ -2987,9 +2987,9 @@ export function createGame(o: CreateGameOptions): Engine {
   /** A menu the directional moves is open: an overlay, the seat-0 card, or the quick pause (ADR-0157). */
   const menuComDirecional = (): boolean => !!overlays.topVisibleOverlay() || cartaoDoAssento0Aberto() || emPausaRapida.has(0);
   /** A position's key handed to the menus, which read keys — stamped with who produced it (ADR-0109). */
-  const teclaAoMenu = (code: string, origem: Transporte): void => {
+  const teclaAoMenu = (code: string, origem: TransportName): void => {
     const alvo = $<HTMLElement>('#game-region') ?? doc.body;
-    alvo.dispatchEvent(carimbarOrigem(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origem));
+    alvo.dispatchEvent(stampSource(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origem));
   };
   const acoesDoPreset = (): readonly { acao: string; rotulo: string }[] => {
     const preset = cartucho.preset;
@@ -3043,7 +3043,7 @@ export function createGame(o: CreateGameOptions): Engine {
     }
     const mapa = toque.getTouchMap();
     const curto = cartucho.preset ? shortLabellerFrom(cartucho.preset) : (): null => null;
-    const pad = montarControleDeToque(
+    const pad = mountTouchControls(
       { procurar: (sel) => $<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) },
       {
         mapa,
@@ -3060,7 +3060,7 @@ export function createGame(o: CreateGameOptions): Engine {
   }
 
   lacunasDoPad = () => (!cartucho.controleNaTela ? [] : toqueUsavel
-    ? lacunasDoToque({ mapa: toque.getTouchMap(), acoesDoJogo: acoesDoCartucho() })
+    ? touchGaps({ mapa: toque.getTouchMap(), acoesDoJogo: acoesDoCartucho() })
     : ['the virtual pad has nowhere to mount: set `host.touchHost`, or give #game-region room for children. '
       + 'Without it, a child on a keyboardless tablet cannot play, nor reach the pause']);
 
@@ -3082,7 +3082,7 @@ export function createGame(o: CreateGameOptions): Engine {
     getSearch: () => win.location?.search ?? '',
     getControls: () => keyboard.controlsState().controls,
     getPlayers: () => players(),
-    marcarTecla, arestaDoJogador, soltarTecla,
+    markKey, playerEdge, releaseKey,
     heldKeys: keys,
     attractOnInput: () => false,
     // a touch inside a menu does not bring the pad over it; it only remembers that the child is on touch (ADR-0166)
@@ -3154,7 +3154,7 @@ export function createGame(o: CreateGameOptions): Engine {
     let linhaDoPad: HTMLElement | null = null;
     /** Reflecte as linhas do mapeamento de teclado (definido mais abaixo, com o painel `#ctrl`). */
     let refletirTeclado = (): void => {};
-    let personaAtual = personaMaisProxima(store.getNum(store.KEYS.padBtnMm, 12.5));
+    let personaAtual = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
     const specDoPad = () => ({
       rotulo: t('motora.pad'),
       valores: PERSONAS_DO_PAD.map((p) => t(p.rotulo)),
@@ -3170,7 +3170,7 @@ export function createGame(o: CreateGameOptions): Engine {
       }),
       // Relido a cada abertura: o tamanho pode ter mudado noutro sítio, e os rótulos seguem o idioma de agora.
       render: () => {
-        personaAtual = personaMaisProxima(store.getNum(store.KEYS.padBtnMm, 12.5));
+        personaAtual = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
         // ADR-0166 + ADR-0106 §5: the pad's size is offered only to a cartridge that has a pad — hidden, not locked, because
         // there is nothing to unlock. Read at each opening: `mount()` may have swapped the cartridge.
         if (linhaDoPad) linhaDoPad.hidden = !cartucho.controleNaTela;
@@ -3288,7 +3288,7 @@ export function createGame(o: CreateGameOptions): Engine {
         saveKB: (conf) => { if (modoDoTeclado === 4) sincronizarTres(conf); saveKB(conf); },
         // ⚠️ «RESTAURAR» DESTE MODO, e não do teclado inteiro: quem repõe o teclado de dois não apaga o de um.
         resetKB: () => {
-          const fabrica = fabricaComOJogo();
+          const fabrica = factoryWithGame();
           if (modoDoTeclado === 1) kb.solo = fabrica.solo;
           else if (modoDoTeclado === 2) kb.p2 = fabrica.p2;
           else { kb.p4 = fabrica.p4; kb.p3 = fabrica.p3; }
@@ -3299,7 +3299,7 @@ export function createGame(o: CreateGameOptions): Engine {
       kb,
       setKB,
       kbFor: (i) => esquemaDoModo(kb, i),
-      kbPadraoFor: (i) => esquemaDoModo(fabricaComOJogo(), i),
+      kbPadraoFor: (i) => esquemaDoModo(factoryWithGame(), i),
       getNumPlayers: () => modoDoTeclado,
       applyControls: () => { keyboard.refreshControls(); },
       assignControls: () => { keyboard.assignControls(); },
@@ -3352,7 +3352,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * while it is open. «Voltar» cancels; the last named position saves and closes. The shell's «restore» is hidden: a pad's
      * map is replaced by mapping again.
      */
-    let assistenteDoPad: ReturnType<typeof criarAssistenteDoPad> | null = null;
+    let assistenteDoPad: ReturnType<typeof createPadWizard> | null = null;
     /** One closer for «Voltar» and Escape: a running wizard is cancelled (and its close hides the panel); an idle one just hides. */
     const fecharControle = (): void => {
       if (assistenteDoPad?.estado()) { assistenteDoPad.fechar(false); return; }
@@ -3380,7 +3380,7 @@ export function createGame(o: CreateGameOptions): Engine {
     progressoDoControle.className = 'opt-hint';
     painelDoControle.casca.card.insertBefore(fraseDoControle, painelDoControle.casca.lista);
     painelDoControle.casca.card.insertBefore(progressoDoControle, painelDoControle.casca.lista);
-    assistenteDoPad = criarAssistenteDoPad({
+    assistenteDoPad = createPadWizard({
       getGamepads: () => {
         const nav = win.navigator as Navigator | undefined;
         return typeof nav?.getGamepads === 'function' ? nav.getGamepads() : null;
@@ -3593,7 +3593,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * its own, and before any cartridge hears a game key. A refused key and its release stop here; a tapped key passes and is
    * released at once by a synthetic keyup, which this filter lets through.
    */
-  const filtroMotor = criarFiltroMotor();
+  const filtroMotor = createEmpathyFilter();
   /*
    * AND THE COOL-DOWN, WHICH IS THE OPPOSITE OF THEM (ADR-0217): the simulations above make play harder so an adult can feel
    * what a motor disability costs; this refuses the SECOND press of a hand that shakes, which is a child losing a turn she did
@@ -3616,7 +3616,7 @@ export function createGame(o: CreateGameOptions): Engine {
       const alvo = e.target ?? win;
       setTimeout(() => {
         // a release the keyboard's own press produced
-        const solta = carimbarOrigem(new KeyboardEvent('keyup', { code: e.code, key: e.key, bubbles: true, cancelable: true }), 'teclado');
+        const solta = stampSource(new KeyboardEvent('keyup', { code: e.code, key: e.key, bubbles: true, cancelable: true }), 'teclado');
         soltasPeloFiltro.add(solta);
         alvo.dispatchEvent(solta);
       }, 0);
@@ -3633,7 +3633,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // ouvinte de bolha nunca a ouvia — num menu, a criança passava ao teclado e o pad ficava por cima do cartão (medido
   // pelo Dev). `stopPropagation` não cala outro ouvinte do MESMO nó, logo a ordem de registo não importa.
   win.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (origemDoEvento(e) === 'toque') return; // a tecla que o próprio pad entregou a um menu
+    if (sourceOfEvent(e) === 'toque') return; // a tecla que o próprio pad entregou a um menu
     if (keyboard.whichPlayer(e.code) >= 0) { toque.hideTouchControls(); padAntesDoMenu = false; } // on the keyboard now
   }, true);
 
@@ -3680,7 +3680,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * `pausa`, `tts`, `overlays`, `nav`, `keyboard` e o sonar são da PÁGINA e existem uma vez só, que é a
    * decisão inteira do ADR-0117 §2 — e é por isso que eles ficam como estão.
    *
-   * 📌 `problems` e `alcance` ainda são fixos, e ainda descrevem o arranque. É a dívida que o ADR-0142
+   * 📌 `problems` e `reach` ainda são fixos, e ainda descrevem o arranque. É a dívida que o ADR-0142
    * nomeia e que o `mount()` fecha.
    */
   /*
@@ -3905,12 +3905,12 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   if (state.switchScan) startScan();
   const controleVirtual = createVirtualController({
     scheme: (i) => keyboard.kbFor(i), menuOpen: menuComDirecional,
-    holdKey: marcarTecla, releaseKey: soltarTecla, menuKey: teclaAoMenu, deliver: entregar,
+    holdKey: markKey, releaseKey: releaseKey, menuKey: teclaAoMenu, deliver: entregar,
   });
   for (const tipo of ['keydown', 'keyup'] as const) {
     win.addEventListener(tipo, (e: KeyboardEvent) => {
       if (e.repeat || !cartucho.onCommand) return;
-      const origem = origemDoEvento(e);
+      const origem = sourceOfEvent(e);
       if (origem === 'toque' || origem === 'olhos' || origem === 'rosto' || origem === 'gestos') return; // those come as commands already, or went to a menu
       const jogador = keyboard.whichPlayer(e.code);
       if (jogador < 0 || (tipo === 'keydown' && menuComDirecional())) return;
@@ -4028,8 +4028,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
 
   function desmontar(): void {
     closeReadingThread();
-    registrarMapeamentoDoTeclado(null);
-    registrarMapeamentoDoPad(null);
+    registerKeyboardMapping(null);
+    registerPadMapping(null);
     registerCrashNotice(null);
     retirarAvisoDeAlcance();
     hudMontado?.remove();
@@ -4060,6 +4060,6 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     cvdFilters,
     get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho(), ...dictionaryGaps(), ...problemasMedidos, ...armazenamentoForaDoEscopo()]; },
     aoFalhar,
-    get alcance() { return alcanceAtual; },
+    get reach() { return alcanceAtual; },
   };
 }

@@ -49,8 +49,8 @@ describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
     // VERDE, porque o caso original só encostava em Y. Um crivo que prende uma fronteira e não a outra
     // autoriza metade do defeito.
     expect(invasoresDaBarra(BARRA, [no('div#.abaixo', { x: 100, y: 54, w: 300, h: 20 })])).toEqual([]);
-    expect(invasoresDaBarra(BARRA, [no('div#.um-px-dentro', { x: 100, y: 53, w: 300, h: 20 })]))
-      .toEqual(['div#.um-px-dentro']);
+    expect(invasoresDaBarra(BARRA, [no('div#.um-px-isInside', { x: 100, y: 53, w: 300, h: 20 })]))
+      .toEqual(['div#.um-px-isInside']);
     expect(invasoresDaBarra(BARRA, [no('div#.a-direita', { x: 400, y: 10, w: 50, h: 44 })])).toEqual([]);
     expect(invasoresDaBarra(BARRA, [no('div#.a-esquerda', { x: 50, y: 10, w: 50, h: 44 })])).toEqual([]);
     expect(invasoresDaBarra(BARRA, [no('div#.um-px-a-direita', { x: 399, y: 10, w: 50, h: 44 })]))

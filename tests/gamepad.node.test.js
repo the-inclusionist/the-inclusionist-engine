@@ -10,7 +10,7 @@ import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  stdDirs, bindActive, padActions, PADWIZ_ORDER, initGamepad, umBotaoPorVez,
+  stdDirs, bindActive, padActions, PADWIZ_ORDER, initGamepad, oneButtonAtOnce,
 } from '../app/js/input/gamepad.js';
 import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
 // `oneButton` e' binding vivo de `core/state` (nao do ctx): estes casos ligam-no e desligam-no de verdade.
@@ -96,7 +96,7 @@ function buildCtx(over = {}) {
     setPauseActor: (i) => calls.setPauseActor.push(i),
     // A aresta por jogador (ADR-0113 cláusula 4). Guarda a LISTA e não um contador: a pergunta «que aparelho
     // produz as arestas» é por assento, e um número não distingue dois controles de dois jogadores.
-    arestaDoJogador: (jogador, origem) => calls.arestas.push([jogador, origem]),
+    playerEdge: (jogador, origem) => calls.arestas.push([jogador, origem]),
     // UMA entrada onde havia quatro (ADR-0033). O pad e o teclado tinham CÓPIAS da mesma decisão — a grade
     // de três colunas e o desvio de Braille — e duas cópias de uma regra são duas chances de divergir.
     modalInput: (p, intent) => calls.modalInput.push([p, intent]),
@@ -491,7 +491,7 @@ describe('initGamepad — pollPads', () => {
     expect(p.runEdge).toBe(true);
   });
   it('🎯 a aresta do CONTROLE chega ao autómato, por assento (ADR-0113 cláusula 4)', () => {
-    // 🔴 Medido em 2026-09-09: `arestaDoJogador` tinha ZERO chamadores em produção, logo a alternância lida
+    // 🔴 Medido em 2026-09-09: `playerEdge` tinha ZERO chamadores em produção, logo a alternância lida
     // era a do TECLADO mesmo com o controle na mão. ⚠️ E o gamepad era o único transporte que já sobrevivia
     // identificável (passa por `padCur`, não pelo conjunto de teclas) — o que tornava esta falta invisível:
     // o módulo sabe de que controle veio a aresta, e o autómato não sabia.
@@ -629,12 +629,12 @@ describe('empatia motora no CONTROLE: um botão por vez (issue #120)', () => {
 
   it('[Zero] com o modo DESLIGADO nada é filtrado — duas posições continuam a valer', () => {
     const atual = { ...nada, right: true, action2: true };
-    expect(ligadas(umBotaoPorVez(nada, atual, false))).toEqual(['action2', 'right']);
+    expect(ligadas(oneButtonAtOnce(nada, atual, false))).toEqual(['action2', 'right']);
   });
 
   it('⚠️ [Right] com o modo ligado, duas ao mesmo tempo viram UMA', () => {
     const atual = { ...nada, right: true, action2: true };
-    expect(ligadas(umBotaoPorVez(nada, atual, true))).toHaveLength(1);
+    expect(ligadas(oneButtonAtOnce(nada, atual, true))).toHaveLength(1);
   });
 
   it('⚠️ [Right] a que já estava em baixo MANTÉM-SE — a nova não a rouba', () => {
@@ -643,30 +643,30 @@ describe('empatia motora no CONTROLE: um botão por vez (issue #120)', () => {
     // porque o polegar encostou noutro — e é a leitura que o ADR-0077 dá ao segurar.
     const antes = { ...nada, action2: true };
     const atual = { ...nada, action2: true, right: true };
-    expect(ligadas(umBotaoPorVez(antes, atual, true))).toEqual(['action2']);
+    expect(ligadas(oneButtonAtOnce(antes, atual, true))).toEqual(['action2']);
   });
 
   it('⚠️ [Right] quando a activa solta, a próxima em baixo assume', () => {
     const antes = { ...nada, action2: true };
     const atual = { ...nada, right: true };
-    expect(ligadas(umBotaoPorVez(antes, atual, true))).toEqual(['right']);
+    expect(ligadas(oneButtonAtOnce(antes, atual, true))).toEqual(['right']);
   });
 
   it('⚠️ [Interface] as DIREÇÕES contam — andar e pular não coexistem', () => {
     const atual = { ...nada, left: true, action2: true };
-    const saida = umBotaoPorVez(nada, atual, true);
+    const saida = oneButtonAtOnce(nada, atual, true);
     expect(ligadas(saida), 'um filtro que poupe as direções simula outra deficiência').toHaveLength(1);
   });
 
   it('[Zero] nada apertado continua nada apertado', () => {
-    expect(ligadas(umBotaoPorVez(nada, { ...nada }, true))).toEqual([]);
+    expect(ligadas(oneButtonAtOnce(nada, { ...nada }, true))).toEqual([]);
   });
 
   it('[Interface] START e SELECT NÃO são cortados — pausar é a saída, não uma jogada', () => {
     // Cortar o START prenderia a criança dentro da partida: é o mesmo raciocínio do ADR-0044 («a saída
     // primeiro») e da armadilha de foco do ADR-0090. Uma acomodação que tranca não é acomodação.
     const atual = { ...nada, action2: true, start: true, select: true };
-    const saida = umBotaoPorVez(nada, atual, true);
+    const saida = oneButtonAtOnce(nada, atual, true);
     expect(saida.start).toBe(true);
     expect(saida.select).toBe(true);
   });
@@ -674,7 +674,7 @@ describe('empatia motora no CONTROLE: um botão por vez (issue #120)', () => {
   it('[Interface] não muta o retrato que recebeu', () => {
     const atual = { ...nada, right: true, action2: true };
     const copia = { ...atual };
-    umBotaoPorVez(nada, atual, true);
+    oneButtonAtOnce(nada, atual, true);
     expect(atual).toEqual(copia);
   });
 });

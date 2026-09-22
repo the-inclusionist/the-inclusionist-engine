@@ -313,11 +313,11 @@ function makeCtx(over = {}) {
     // as duas escritas, que é onde a origem passa a viajar. `origens` guarda o carimbo para os casos que
     // querem afirmar QUE APARELHO produziu a tecla, e não só que ela entrou.
     heldKeys,
-    marcarTecla: (code, origem) => { heldKeys.add(code); calls.origens.set(code, origem); },
+    markKey: (code, origem) => { heldKeys.add(code); calls.origens.set(code, origem); },
     // 📌 O duplo GUARDA A LISTA em vez de contar: a pergunta «que aparelho está a produzir as arestas» é POR
     // JOGADOR, e um contador não distinguiria dois toques do jogador 1 de um toque de cada assento.
-    arestaDoJogador: (jogador, origem) => { calls.arestas.push([jogador, origem]); },
-    soltarTecla: (code) => { heldKeys.delete(code); calls.origens.delete(code); },
+    playerEdge: (jogador, origem) => { calls.arestas.push([jogador, origem]); },
+    releaseKey: (code) => { heldKeys.delete(code); calls.origens.delete(code); },
     attractOnInput: () => false,
     showTouchControls: () => { calls.show++; },
     hideTips: () => { calls.hideTips++; },
@@ -364,7 +364,7 @@ describe('doTouch — a decisão carimbada no mundo', () => {
   it('🎯 a aresta do TOQUE é por JOGADOR, e só chega a quem tem o código (ADR-0113 cláusula 4)', () => {
     // 🔴 O defeito que isto prende: marcar sempre o jogador 0 daria ao segundo assento a alternância do
     // primeiro — e a alternância é o ajuste de quem não consegue manter uma tecla premida, logo o erro cai
-    // exactamente sobre quem depende dela. Medido em 2026-09-09: até esta linha, `arestaDoJogador` tinha ZERO
+    // exactamente sobre quem depende dela. Medido em 2026-09-09: até esta linha, `playerEdge` tinha ZERO
     // chamadores em produção e o autómato respondia `teclado` a toda a gente.
     const { api, calls } = makeCtx({ players: [mkPlayer(SOLO), mkPlayer(P2B)] });
     api.doTouch('action2', true);

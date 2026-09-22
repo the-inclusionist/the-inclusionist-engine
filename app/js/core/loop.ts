@@ -32,7 +32,7 @@ export interface LoopOptions {
  * THE NOTICE A LOOP USES WHEN ITS CALLER PASSED NONE (study item D1; ADR-0054: «stops the loop and says so»).
  * 📏 Measured on 2026-09-13: `game-soccer` calls `startLoop` without `aoFalhar`, so its frame would stop in silence — the
  * announcement depended on each game remembering it. `createGame` registers its own notice here and withdraws it on
- * `unmount`; a caller's own `aoFalhar` still wins. The same shape as `registrarMapeamentoDoTeclado`.
+ * `unmount`; a caller's own `aoFalhar` still wins. The same shape as `registerKeyboardMapping`.
  */
 let avisoRegistrado: ((erro: unknown) => void) | null = null;
 export function registerCrashNotice(aviso: ((erro: unknown) => void) | null): void { avisoRegistrado = aviso; }

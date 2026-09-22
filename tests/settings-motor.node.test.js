@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel é alias dele desde o item 14
 import { t } from '../app/js/core/i18n.js';
-import { chaveDaAlternancia } from '../app/js/input/latch-scope.js'; // os anúncios vêm do dicionário desde o item 14
+import { latchKey } from '../app/js/input/latch-scope.js'; // os anúncios vêm do dicionário desde o item 14
 import {
   easyKey, toggleRunKey, toggleMoveKey, definirAlternanciaDeMarcha, definirAlternanciaDeCorrida,
   clampSelPlayer, anyMotorActive, onOffLabel, playerTabsHTML, easyAnnouncement,
@@ -143,7 +143,7 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
     definirAlternanciaDeMarcha(c.ctx, 0, true);
     expect(c.escrito[KEYS.toggleMoveP(0)], 'a chave legada deixou de ser escrita e a criança perde a escolha')
       .toBe(true);
-    expect(c.escrito[chaveDaAlternancia('togglemove', 0, 'gamepad')], 'a chave por transporte não foi escrita')
+    expect(c.escrito[latchKey('togglemove', 0, 'gamepad')], 'a chave por transporte não foi escrita')
       .toBe(true);
   });
 
@@ -216,7 +216,7 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
 
   it('🔴 [Inverse] DESLIGAR a do correr NÃO mexe em `walkDir` — ela não governa quem anda', () => {
     // ⚠️ A DIFERENÇA ENTRE AS DUAS IRMÃS, e é por isso que este caso existe. A de MARCHA chama
-    // `aplicarAlternancia`, que pára quem anda por travamento: sem isso a personagem anda sozinha. A do CORRER
+    // `applyLatch`, que pára quem anda por travamento: sem isso a personagem anda sozinha. A do CORRER
     // governa uma trava de VELOCIDADE e não tem como deixar ninguém em movimento — copiar aquela linha «por
     // simetria» mexeria em `walkDir` por causa de um botão que não lhe toca.
     const c = cenario([{ toggleRun: true, walkDir: -1 }]);

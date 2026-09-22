@@ -59,16 +59,16 @@ simulation for a platformer. Chess has no clock to stop.»* ADR-0122 names it as
 | `game-platformer` | `initKeydown` · `initTouchBindings` · `initGamepad` | `app/js/main.ts:479` · `:2018` · imported at `:163` |
 | `game-soccer` | `initGamepad` only | `app/js/boot/main.ts:246` |
 
-**Both contexts gain a required `arestaDoJogador`.** Pass the SAME instance to all of them:
+**Both contexts gain a required `playerEdge`.** Pass the SAME instance to all of them:
 
 ```js
 import { criarArestaComAlternancia } from '@the-inclusionist/engine/input/latch-edge.js';
 
 const arestaDoJogador = criarArestaComAlternancia(() => players);
-// … then hand `arestaDoJogador` to initKeydown, initTouchBindings and initGamepad.
+// … then hand `playerEdge` to initKeydown, initTouchBindings and initGamepad.
 ```
 
-⚠️ **Do not pass the raw `arestaDoJogador` from `input/state.js`.** It compiles, it feeds the automaton, and
+⚠️ **Do not pass the raw `playerEdge` from `input/state.js`.** It compiles, it feeds the automaton, and
 it leaves `p.toggleMove` frozen on the keyboard's value — which is the half of ADR-0113 that a child actually
 feels. See §6.
 

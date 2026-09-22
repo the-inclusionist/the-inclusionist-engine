@@ -207,13 +207,13 @@ describe('createGame num documento de verdade', () => {
    */
   // 🎯 A RAIZ RESPONDE PELO APARELHO EM USO (ADR-0113), e este é o único caso que o mede de ponta a ponta.
   // Os casos do `ui/pause-icons` injectam o `transporteEmUso` deles, então a LINHA DA RAIZ — a que lê o
-  // `input/state.entradaDe(i)` — ficava sem ninguém a afirmar. Duas mutações sobreviveram por isso, e é este
+  // `input/state.inputOf(i)` — ficava sem ninguém a afirmar. Duas mutações sobreviveram por isso, e é este
   // caso que as mata: sem ele, a raiz podia responder «teclado» a toda a gente e nada reprovava.
   it('🎯 [Right] a raiz lê o aparelho do jogador, e o ícone escreve na chave DELE', async () => {
-    const { arestaDoJogador, esquecerEntradas } = await import('../app/js/input/state.js');
-    esquecerEntradas();
+    const { playerEdge, forgetInputs } = await import('../app/js/input/state.js');
+    forgetInputs();
     try {
-      arestaDoJogador(0, 'gamepad');           // a criança pegou no controle
+      playerEdge(0, 'gamepad');           // a criança pegou no controle
       // ⚠️ `seguraTeclas: true` E A RAZÃO É O PONTO DO CASO: desde o ADR-0115 a raiz só monta o `altmove`
       // num jogo que segura alguma tecla, e o fixture padrão daqui é de hotspots (declara `false`). Sem esta
       // linha o caso passaria a medir a ausência do ícone em vez da fiação do aparelho — verde pela razão
@@ -231,7 +231,7 @@ describe('createGame num documento de verdade', () => {
       expect(localStorage.getItem('incl_togglemove_p0_gamepad'),
         'a raiz não levou o aparelho em uso até à escrita').toBe('1');
     } finally {
-      esquecerEntradas();
+      forgetInputs();
       localStorage.removeItem('incl_togglemove_p0_gamepad');
       localStorage.removeItem('incl_togglemove_p0');
     }
@@ -240,10 +240,10 @@ describe('createGame num documento de verdade', () => {
   // 📌 O PAR: com OUTRO aparelho, a chave é outra. Sem ele, «escrever sempre no gamepad» passaria no caso
   // acima — que é exactamente a forma da mutação que sobreviveu antes de este bloco existir.
   it('📌 [Right] com outro aparelho, a chave é a desse aparelho', async () => {
-    const { arestaDoJogador, esquecerEntradas } = await import('../app/js/input/state.js');
-    esquecerEntradas();
+    const { playerEdge, forgetInputs } = await import('../app/js/input/state.js');
+    forgetInputs();
     try {
-      arestaDoJogador(0, 'toque');
+      playerEdge(0, 'toque');
       // `seguraTeclas: true` pela mesma razão do caso acima — sem o ícone não há clique para medir.
       abrir({
         declaration: { ...declaracaoValida(), seguraTeclas: () => true },
@@ -255,7 +255,7 @@ describe('createGame num documento de verdade', () => {
       expect(localStorage.getItem('incl_togglemove_p0_toque'), 'escreveu na chave do aparelho errado').toBe('1');
       expect(localStorage.getItem('incl_togglemove_p0_gamepad'), 'escreveu numa chave que ninguém usou').toBeNull();
     } finally {
-      esquecerEntradas();
+      forgetInputs();
       localStorage.removeItem('incl_togglemove_p0_toque');
       localStorage.removeItem('incl_togglemove_p0');
     }

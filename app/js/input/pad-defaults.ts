@@ -22,12 +22,12 @@ import type { Action } from '../core/actions.js';
 import { GAMEPAD_STANDARD, type Binding } from './default-bindings.js';
 
 /** O que o jogo declara: só o que ele quer mudar. `null` num botão é «esta posição não existe neste jogo». */
-export type MapeamentoDoPad = (jogadores: number, assento: number) => Partial<Record<Action, number | null>> | null;
+export type PadMapping = (jogadores: number, assento: number) => Partial<Record<Action, number | null>> | null;
 
-export type TabelaDoPad = Readonly<Record<Action, Binding<number>>>;
+export type PadTable = Readonly<Record<Action, Binding<number>>>;
 
-let mapeamentoDoJogo: MapeamentoDoPad | null = null;
-const memo = new Map<string, TabelaDoPad>();
+let mapeamentoDoJogo: PadMapping | null = null;
+const memo = new Map<string, PadTable>();
 
 /**
  * REGISTA O PADRÃO DO JOGO. Chamado uma vez pelo arranque; `null` limpa (é o que um jogo sem opinião produz).
@@ -36,7 +36,7 @@ const memo = new Map<string, TabelaDoPad>();
  * jogo na mesma página, um teste a seguir a outro — leria a tabela do jogo anterior, e a leitura estaria
  * certa em toda parte menos no valor.
  */
-export function registrarMapeamentoDoPad(f: MapeamentoDoPad | null): void {
+export function registerPadMapping(f: PadMapping | null): void {
   mapeamentoDoJogo = f;
   memo.clear();
 }
@@ -48,13 +48,13 @@ export function registrarMapeamentoDoPad(f: MapeamentoDoPad | null): void {
  * sessenta vezes por segundo por jogador é lixo que nenhuma criança vê e que o coletor paga. A chave é
  * `arranjo:assento`, e o registo limpa-a — que é o único momento em que a resposta pode mudar.
  */
-export function tabelaDoPad(jogadores: number, assento: number): TabelaDoPad {
+export function padTable(jogadores: number, assento: number): PadTable {
   if (!mapeamentoDoJogo) return GAMEPAD_STANDARD;
   const chave = `${jogadores}:${assento}`;
   const guardada = memo.get(chave);
   if (guardada) return guardada;
   const parcial = mapeamentoDoJogo(jogadores, assento);
-  const tabela: TabelaDoPad = parcial ? Object.freeze({ ...GAMEPAD_STANDARD, ...parcial }) : GAMEPAD_STANDARD;
+  const tabela: PadTable = parcial ? Object.freeze({ ...GAMEPAD_STANDARD, ...parcial }) : GAMEPAD_STANDARD;
   memo.set(chave, tabela);
   return tabela;
 }

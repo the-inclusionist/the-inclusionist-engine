@@ -24,14 +24,14 @@
  * ⚠️ O DADO SALVO NÃO É UM `KeyScheme`, e a issue #118 tornou isso um erro de compilação em vez de uma
  * suposição. Um `KeyScheme` é FECHADO nas quatorze posições e completo; o que está no navegador da criança é
  * uma SOBREPOSIÇÃO — parcial por construção (`loadKB` funde-a sobre os padrões com `Object.assign`) e capaz
- * de carregar chaves que este código não conhece, o que o cabeçalho de `migrarEsquema` já dizia com todas as
+ * de carregar chaves que este código não conhece, o que o cabeçalho de `migrateScheme` já dizia com todas as
  * letras: «chave desconhecida atravessa intacta».
  *
  * Dar-lhe o tipo fechado obrigaria este ficheiro a inventar as posições que faltam no dado antigo — quer
  * dizer, a escrever teclas que a criança nunca escolheu, no exacto módulo que existe para não lhe perder o
  * remapeamento. O tipo aberto é o honesto aqui, e é só aqui.
  */
-export type EsquemaSalvo = Record<string, readonly string[]>;
+export type SavedScheme = Record<string, readonly string[]>;
 
 /**
  * Nome de plataforma → posição abstrata. **ADR-0086 §2**, e não o ADR-0074.
@@ -41,7 +41,7 @@ export type EsquemaSalvo = Record<string, readonly string[]>;
  * leitura CONSERVADORA — ela deixa cada verbo na tecla e no botão que já ocupava. Traduzir por engano pela
  * tabela do 0074 não daria erro nenhum: moveria o pulo de `J` para `U` em silêncio.
  */
-export const VOCABULARIO_ANTIGO: Readonly<Record<string, string>> = Object.freeze({
+export const OLD_VOCABULARY: Readonly<Record<string, string>> = Object.freeze({
   run: 'action1',
   jump: 'action2',
   especial: 'action3',
@@ -66,11 +66,11 @@ export const VOCABULARIO_ANTIGO: Readonly<Record<string, string>> = Object.freez
  * Foi um teste de NAVEGADOR que o encontrou (`tests/touch.browser.test.js`), depois de a suíte `node` já
  * estar verde — o que é o argumento para os dois projetos existirem.
  */
-export function migrarMapaDeToque(mapa: Record<string, string> | null | undefined): Record<string, string> | null {
+export function migrateTouchMap(mapa: Record<string, string> | null | undefined): Record<string, string> | null {
   if (!mapa) return null;
   const saida: Record<string, string> = {};
   for (const [slot, acao] of Object.entries(mapa)) {
-    saida[slot] = VOCABULARIO_ANTIGO[acao] ?? acao;
+    saida[slot] = OLD_VOCABULARY[acao] ?? acao;
   }
   return saida;
 }
@@ -88,22 +88,22 @@ export function migrarMapaDeToque(mapa: Record<string, string> | null | undefine
  *
  * `_skip` e qualquer chave desconhecida atravessam, pela mesma razão das outras duas migrações.
  */
-export function migrarMapaDeControle<T>(mapa: Record<string, T> | null | undefined): Record<string, T> | null {
+export function migrateControlMap<T>(mapa: Record<string, T> | null | undefined): Record<string, T> | null {
   if (!mapa) return null;
   const saida: Record<string, T> = {};
   for (const [chave, valor] of Object.entries(mapa)) {
-    saida[VOCABULARIO_ANTIGO[chave] ?? chave] = valor;
+    saida[OLD_VOCABULARY[chave] ?? chave] = valor;
   }
   return saida;
 }
 
 /** O objeto salvo, tal como `input/keyboard` o persiste. `p34` é o formato mais antigo de todos. */
 export interface SavedKB {
-  solo?: EsquemaSalvo;
-  p2?: EsquemaSalvo[];
-  p3?: EsquemaSalvo[];
-  p4?: EsquemaSalvo[];
-  p34?: (EsquemaSalvo | null)[];
+  solo?: SavedScheme;
+  p2?: SavedScheme[];
+  p3?: SavedScheme[];
+  p4?: SavedScheme[];
+  p34?: (SavedScheme | null)[];
 }
 
 /**
@@ -115,11 +115,11 @@ export interface SavedKB {
  * sumirem. É também o que torna esta função IDEMPOTENTE: aplicada sobre um esquema já migrado, nenhuma chave
  * casa e o resultado é igual à entrada, o que importa porque `loadKB` pode correr mais de uma vez na sessão.
  */
-export function migrarEsquema(esquema: EsquemaSalvo | null | undefined): EsquemaSalvo | null {
+export function migrateScheme(esquema: SavedScheme | null | undefined): SavedScheme | null {
   if (!esquema) return null;
-  const saida: EsquemaSalvo = {};
+  const saida: SavedScheme = {};
   for (const [chave, teclas] of Object.entries(esquema)) {
-    const nova = VOCABULARIO_ANTIGO[chave] ?? chave;
+    const nova = OLD_VOCABULARY[chave] ?? chave;
     // ⚠️ Esquema MEIO migrado (as duas chaves presentes): a UNIÃO, nunca a sobreposição. Perder uma tecla é
     // o dano que este módulo existe para impedir; ter a mesma tecla duas vezes não é dano nenhum.
     saida[nova] = saida[nova] ? [...new Set([...saida[nova], ...teclas])] : [...teclas];
@@ -128,12 +128,12 @@ export function migrarEsquema(esquema: EsquemaSalvo | null | undefined): Esquema
 }
 
 /** Traduz o objeto salvo inteiro — o esquema solo e as listas por contagem de jogadores. */
-export function migrarSalvo(s: SavedKB | null | undefined): SavedKB | null {
+export function migrateSaved(s: SavedKB | null | undefined): SavedKB | null {
   if (!s) return null;
-  const lista = (arr: (EsquemaSalvo | null)[] | undefined): EsquemaSalvo[] | undefined =>
-    (Array.isArray(arr) ? arr.map((m) => migrarEsquema(m) as EsquemaSalvo) : undefined);
+  const lista = (arr: (SavedScheme | null)[] | undefined): SavedScheme[] | undefined =>
+    (Array.isArray(arr) ? arr.map((m) => migrateScheme(m) as SavedScheme) : undefined);
   const out: SavedKB = {};
-  const solo = migrarEsquema(s.solo);
+  const solo = migrateScheme(s.solo);
   if (solo) out.solo = solo;
   for (const g of ['p2', 'p3', 'p4'] as const) {
     const v = lista(s[g]);
@@ -141,6 +141,6 @@ export function migrarSalvo(s: SavedKB | null | undefined): SavedKB | null {
   }
   // `p34` migra de VOCABULÁRIO aqui e de FORMA em `loadKB`, que já o fazia antes deste módulo existir.
   // Sem esta linha, o dado mais velho de todos seria o único a perder-se.
-  if (Array.isArray(s.p34)) out.p34 = s.p34.map((m) => migrarEsquema(m));
+  if (Array.isArray(s.p34)) out.p34 = s.p34.map((m) => migrateScheme(m));
   return out;
 }

@@ -157,7 +157,7 @@ export interface DesenhoComCirculo extends DesenhoComLinha {
  *
  * Mesma lição do `RenderizarEm` e do `CriarSprite`: pedir o VERBO cabe onde emprestar o objeto não cabe.
  */
-export type AplicarFiltroCss = (css: string, alcance: AlcanceDoFiltro) => void;
+export type AplicarFiltroCss = (css: string, reach: AlcanceDoFiltro) => void;
 
 /**
  * ONDE o filtro de acessibilidade cai — e a distinção é de PRODUTO, decidida pelo Dev em 2026-08-26.

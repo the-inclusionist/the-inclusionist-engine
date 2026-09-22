@@ -10,9 +10,9 @@
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
-import { criarAssistenteDoPad, mapaDoPad, PADWIZ_ORDER as ORDEM_DO_ASSISTENTE } from './pad-wizard.js';
+import { createPadWizard, padMap, PADWIZ_ORDER as ORDEM_DO_ASSISTENTE } from './pad-wizard.js';
 import { GAMEPAD_STANDARD } from './default-bindings.js';
-import { tabelaDoPad, type TabelaDoPad } from './pad-defaults.js';
+import { padTable, type PadTable } from './pad-defaults.js';
 import type { Action } from '../core/actions.js';
 import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
 // ⚠️ O `oneButton` ENTRA POR IMPORT, e não pelo `ctx` — ao contrário de `input/keydown`, que o recebe por
@@ -107,7 +107,7 @@ export function bindActive(gp: PadLike, bd: PadBinding | null | undefined): bool
 /** Ações do frame para este gamepad. `custom` = mapa salvo pelo wizard para este `gp.id` (null/`_skip` = usa o
  *  mapa PADRÃO da Gamepad API "standard": 0=pulo · 1=especial · 2/5/7=correr · 3=troca · 9=START). Direções
  *  custom caem de volta em stdDirs quando o binding do usuário não está ativo (D-pad/stick continuam vivos). */
-export function padActions(gp: PadLike, custom: PadMap | null, tabela: TabelaDoPad = GAMEPAD_STANDARD): PadActions {
+export function padActions(gp: PadLike, custom: PadMap | null, tabela: PadTable = GAMEPAD_STANDARD): PadActions {
   if (custom && !custom._skip) {
     const A = (k: string): boolean => bindActive(gp, bindingAt(custom, k));
     const sd = stdDirs(gp);
@@ -200,7 +200,7 @@ const FORA_DO_CORTE = new Set(['start', 'select', '_start', '_pause']);
  * estado diferem — lá é um `Set` de códigos de tecla, aqui é um retrato de booleanos por posição. Unificar
  * as duas é trabalho à parte, e escrevê-lo aqui é a alternativa a fingir que não há duas.
  */
-export function umBotaoPorVez(
+export function oneButtonAtOnce(
   // ⚠️ O ANTERIOR É TIPADO PELO QUE ESTA FUNÇÃO LÊ, e não por `PadActions`: o `padPrevAct[gi]` do laço é
   // `PadState`, mais frouxo, e exigir a forma completa obrigaria o chamador a um molde que não descreve o
   // que se passa aqui — só se pergunta «esta chave estava em baixo?».
@@ -326,16 +326,16 @@ export interface GamepadCtx {
   /**
    * ESTA ARESTA É DESTE JOGADOR, E VEIO DO CONTROLE (ADR-0113 cláusula 4, issue #127).
    *
-   * 🔴 OBRIGATÓRIO, e a razão foi medida em 2026-09-09: `input/state.arestaDoJogador` tinha ZERO chamadores
-   * em produção, logo `entradaDe(i).emUso` respondia `teclado` a toda a gente — e a alternância lida era a do
-   * teclado mesmo com o controle na mão. 📌 Passe `criarArestaComAlternancia(() => players)` de
+   * 🔴 OBRIGATÓRIO, e a razão foi medida em 2026-09-09: `input/state.playerEdge` tinha ZERO chamadores
+   * em produção, logo `inputOf(i).emUso` respondia `teclado` a toda a gente — e a alternância lida era a do
+   * teclado mesmo com o controle na mão. 📌 Passe `createLatchedEdge(() => players)` de
    * `input/latch-edge`, e não o cru: é ela que também resolve a alternância deste aparelho no jogador.
    *
    * ⚠️ O gamepad era o ÚNICO transporte que sobrevivia identificável sem isto — ele nunca passou pelo
    * conjunto de teclas, passa por `padCur` —, e é exactamente por isso que a falta aqui era invisível: o
    * módulo sabe de que controle veio a aresta, e o autómato não.
    */
-  arestaDoJogador: (jogador: number, origem: 'gamepad') => void;
+  playerEdge: (jogador: number, origem: 'gamepad') => void;
   /**
    * MODAL do PRÓPRIO jogador: a engine entrega a INTENÇÃO, o jogo decide (ADR-0033).
    *
@@ -380,8 +380,8 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   let padWizAnim: { seq: string[]; hold: number; t: number } | null = null;
 
   // the page's one cache of stored maps (input/pad-wizard): a map saved by the engine's own wizard is read here next frame
-  const padMapFor = (id: string): PadMap | null => mapaDoPad(id);
-  function actionsFor(gp: PadLike, tabela?: TabelaDoPad): PadActions { return padActions(gp, padMapFor(gp.id), tabela); }
+  const padMapFor = (id: string): PadMap | null => padMap(id);
+  function actionsFor(gp: PadLike, tabela?: PadTable): PadActions { return padActions(gp, padMapFor(gp.id), tabela); }
 
   // ----- wizard: the demonstration is THIS module's host's (the platformer's sprites), not the wizard's -----
   function wizDemo(k: string | null): void {
@@ -407,7 +407,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     if (img) img.src = ctx.spriteBase + a.seq[Math.floor(a.t / a.hold) % a.seq.length] + '.png';
   }
 
-  const assistente = criarAssistenteDoPad({
+  const assistente = createPadWizard({
     getGamepads: () => ctx.getGamepads(),
     rotuloDaAcao: (acao) => ctx.rotuloDaAcao(acao),
     dizer: (frase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = frase; ctx.srSay(frase); },
@@ -474,9 +474,9 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       // arestas na tela do título, e um mapa vazio ali deixaria a criança sem como escolher o próprio jogo.
       // A EMPATIA MOTORA APLICADA AO CONTROLE (issue #120). Sem esta linha, uma criança com o modo de
       // um botão ligado e um pad na mão NÃO ESTAVA no modo — e nada em lado nenhum o dizia.
-      const cur = umBotaoPorVez(
+      const cur = oneButtonAtOnce(
         prev,
-        actionsFor(gp, tabelaDoPad(ctx.getNumPlayers(), owner < 0 ? 0 : owner)),
+        actionsFor(gp, padTable(ctx.getNumPlayers(), owner < 0 ? 0 : owner)),
         estadoDoJogo.oneButton,
       );
       if (ctx.isTouchMode() && (cur.left || cur.right || cur.up || cur.down || cur.action2 || cur.action1 || cur.action4 || cur.action3 || cur._start)) {
@@ -568,7 +568,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
           // Modo Fácil ficar com a alternância do teclado enquanto joga no controle.
           // ⚠️ E É AQUI, no ramo de JOGO, e não nos de menu: `naBarraDe`, o título e a pausa são navegação, e
           // a pergunta que isto alimenta — que alternância vale AGORA — é sobre jogar.
-          if (algumaAresta) ctx.arestaDoJogador(owner, 'gamepad');
+          if (algumaAresta) ctx.playerEdge(owner, 'gamepad');
         }
       }
     }

@@ -74,10 +74,10 @@
       "TOUCH_FORCE_RE"
     ],
     "input/touch.ts": [
-      "nomeDoBotao"
+      "buttonName"
     ],
     "input/transports.ts": [
-      "SEGURA_TOQUE",
+      "HOLDS_TOUCH",
       "holds"
     ],
     "platform/audio-sonar.ts": [

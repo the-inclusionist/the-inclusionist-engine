@@ -54,11 +54,11 @@ function wire(over = {}) {
     // origem passa a viajar. O duplo carimba num `Map` para que um caso possa afirmar o APARELHO, e não só a
     // tecla — que é a coisa que a erasão do §C tornava impossível.
     heldKeys,
-    marcarTecla: (code, origem) => { heldKeys.add(code); calls.origens.set(code, origem); },
+    markKey: (code, origem) => { heldKeys.add(code); calls.origens.set(code, origem); },
     // A aresta por jogador (ADR-0113 cláusula 4). Aqui basta existir: quem afirma o assento é o caso do
     // project node, onde os dois esquemas cabem sem um ecrã.
-    arestaDoJogador: () => {},
-    soltarTecla: (code) => { heldKeys.delete(code); calls.origens.delete(code); },
+    playerEdge: () => {},
+    releaseKey: (code) => { heldKeys.delete(code); calls.origens.delete(code); },
     attractOnInput: () => false,
     showTouchControls: () => { calls.show++; },
     hideTips: () => { calls.hideTips++; },

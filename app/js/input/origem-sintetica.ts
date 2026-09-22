@@ -14,13 +14,13 @@
 // injectada é um estado GLOBAL, e a entrada não é global: uma criança que joga por olhar e tem um adulto a
 // carregar numa tecla ao lado produz as duas arestas no mesmo instante, e o estado global carimbaria as duas
 // como olhar. O evento não se confunde consigo próprio — a origem anda com a aresta a que pertence, que é a
-// mesma razão por que o `origemDaTecla` é um mapa por CÓDIGO e não um campo só.
+// mesma razão por que o `keySource` é um mapa por CÓDIGO e não um campo só.
 //
 // 📌 E é aditivo por construção: um evento sem carimbo continua a funcionar. Foi isso que permitiu migrar os
 // escritores um a um sem nenhum commit vermelho pelo meio.
 
-import type { Transporte } from './transporte-em-uso.js';
-import { ehTransporte } from './transporte-em-uso.js';
+import type { TransportName } from './transporte-em-uso.js';
+import { isTransportName } from './transporte-em-uso.js';
 
 /**
  * A propriedade pendurada no evento.
@@ -28,7 +28,7 @@ import { ehTransporte } from './transporte-em-uso.js';
  * 📌 Prefixada e feia de propósito: é um expando num objecto que não é nosso, e um nome curto («origem»)
  * podia colidir com o de outra biblioteca sem que nada o dissesse.
  */
-export const CHAVE_DE_ORIGEM = '__vpOrigem';
+export const SOURCE_KEY = '__vpOrigem';
 
 /**
  * O mínimo que este módulo lê de um evento de tecla — ESTRUTURAL, para um `KeyboardEvent` real e um duplo de
@@ -36,9 +36,9 @@ export const CHAVE_DE_ORIGEM = '__vpOrigem';
  *
  * ⚠️ `isTrusted` é OPCIONAL, e a ausência dele não é o mesmo que `false` por acaso: um duplo que não o declara
  * está a dizer «não afirmei nada sobre isto», e a resposta certa a isso é `undefined` e não `'teclado'`. É a
- * mesma regra do `origemDe` do `input/state`, aplicada uma camada acima.
+ * mesma regra do `sourceOf` do `input/state`, aplicada uma camada acima.
  */
-export interface EventoDeTeclaLike {
+export interface KeyEventLike {
   readonly isTrusted?: boolean;
 }
 
@@ -48,8 +48,8 @@ export interface EventoDeTeclaLike {
  * ⚠️ Carimba-se ANTES de despachar. Depois de `dispatchEvent` os ouvintes já correram, e o carimbo chegaria
  * a um evento que ninguém mais vai ler.
  */
-export function carimbarOrigem<T extends object>(ev: T, origem: Transporte): T {
-  (ev as unknown as Record<string, unknown>)[CHAVE_DE_ORIGEM] = origem;
+export function stampSource<T extends object>(ev: T, origem: TransportName): T {
+  (ev as unknown as Record<string, unknown>)[SOURCE_KEY] = origem;
   return ev;
 }
 
@@ -69,8 +69,8 @@ export function carimbarOrigem<T extends object>(ev: T, origem: Transporte): T {
  *      inteiro existe para fechar — e seria pior do que a erasão original, porque teria a forma de uma
  *      resposta.
  */
-export function origemDoEvento(ev: EventoDeTeclaLike): Transporte | undefined {
-  const declarada = (ev as unknown as Record<string, unknown>)[CHAVE_DE_ORIGEM];
-  if (ehTransporte(declarada)) return declarada;
+export function sourceOfEvent(ev: KeyEventLike): TransportName | undefined {
+  const declarada = (ev as unknown as Record<string, unknown>)[SOURCE_KEY];
+  if (isTransportName(declarada)) return declarada;
   return ev.isTrusted ? 'teclado' : undefined;
 }

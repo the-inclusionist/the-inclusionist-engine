@@ -10,7 +10,7 @@
 // ⚠️ ONE CACHE of stored maps for the whole page: a map saved by the engine's wizard is the one `initGamepad` reads on the next
 // frame, not a copy it cached before.
 import { t } from '../core/i18n.js';
-import { migrarMapaDeControle } from './vocabulary-migration.js';
+import { migrateControlMap } from './vocabulary-migration.js';
 import * as store from '../platform/storage.js';
 
 // ⚠️ THE SHAPES ARE WRITTEN HERE, not imported from `input/gamepad`: gamepad imports this module, and a type import back would
@@ -57,8 +57,8 @@ const mapas = new Map<string, PadMap | null>();
  * The stored map of pad `id`, or `null`. Read through the vocabulary translator: a map saved before ADR-0086 has the old
  * action keys, and a custom pad would otherwise stop answering with no word said.
  */
-export function mapaDoPad(id: string): PadMap | null {
-  if (!mapas.has(id)) mapas.set(id, migrarMapaDeControle(store.getJSON<PadMap>(CHAVE(id), null)));
+export function padMap(id: string): PadMap | null {
+  if (!mapas.has(id)) mapas.set(id, migrateControlMap(store.getJSON<PadMap>(CHAVE(id), null)));
   return mapas.get(id) ?? null;
 }
 /** Stores the map of pad `id` and makes it the one read from now on. */
@@ -98,7 +98,7 @@ export interface PadWizard {
   estado(): WizState | null;
 }
 
-export function criarAssistenteDoPad(ctx: PadWizardCtx): PadWizard {
+export function createPadWizard(ctx: PadWizardCtx): PadWizard {
   let padWiz: WizState | null = null;
 
   /**
