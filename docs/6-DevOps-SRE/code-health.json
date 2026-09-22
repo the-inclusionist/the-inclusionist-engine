@@ -25,10 +25,10 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2096,
-      "decisionNodes": 309,
+      "codeLines": 2059,
+      "decisionNodes": 298,
       "maxDepth": 4,
-      "fanOut": 81,
+      "fanOut": 82,
       "globalReach": 0,
       "worstFunction": 68,
       "fanIn": 1
@@ -1832,6 +1832,15 @@
       "globalReach": 0,
       "worstFunction": 7,
       "fanIn": 0
+    },
+    "ui/top-band.ts": {
+      "codeLines": 59,
+      "decisionNodes": 11,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "globalReach": 0,
+      "worstFunction": 10,
+      "fanIn": 1
     },
     "ui/typo-choices.ts": {
       "codeLines": 53,

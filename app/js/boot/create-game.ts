@@ -78,6 +78,7 @@ import { navigableItems } from '../ui/menu-items.js';
 import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, type HowToPlaySlide } from '../ui/help-panel.js';
 import { initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 import { keyName } from '../ui/control-choices.js';
+import { reserveTopBand } from '../ui/top-band.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
 import * as state from '../core/state.js';
 import type { CameraControl } from '../core/state.js';
@@ -2483,61 +2484,12 @@ export function createGame(o: CreateGameOptions): Engine {
    * when either reaches lower than the bar's room; each is narrowed so it never reaches the bar.
    */
   function reservarFaixaDaBarra(): void {
-    const regiao = $<HTMLElement>('#game-region');
-    if (!regiao || typeof regiao.style?.setProperty !== 'function') return;
-    const barra = a11yBar as HTMLElement | null;
-    const mede = typeof regiao.getBoundingClientRect === 'function';
-    let sala = 0;
-    let respiro = 4;
-    const topo = mede ? regiao.getBoundingClientRect().top : 0;
-    if (barra && mede && typeof barra.getBoundingClientRect === 'function') {
-      let fundo = barra.getBoundingClientRect().bottom;
-      respiro = 0;
-      const nome = barra.querySelector<HTMLElement>('.pause-icons-cap');
-      if (nome && typeof win.getComputedStyle === 'function') {
-        const cs = win.getComputedStyle(nome);
-        const fs = parseFloat(cs.fontSize) || 16;
-        const linha = (parseFloat(cs.lineHeight) || fs * 1.2) + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
-        fundo = nome.getBoundingClientRect().top + linha;
-        // A quarter of the scale's base size, not of the name's, and yielding like the bar's offset above it: a face with a
-        // higher floor grows its text, not this gap (#172). Resolved by the stylesheet through a probe, so the rule has one home.
-        const sonda = regiao.ownerDocument.createElement('div');
-        sonda.style.cssText = 'position:absolute;visibility:hidden;height:calc(var(--ui-fs,16px) / 4 * var(--espaco-fixo,1))';
-        regiao.appendChild(sonda);
-        respiro = sonda.getBoundingClientRect().height || fs / 4;
-        sonda.remove();
-      }
-      sala = fundo - topo + respiro;
-    }
-    if (hudMontado && mede) {
-      const caixaDaRegiao = regiao.getBoundingClientRect();
-      const caixaDaBarra = barra && typeof barra.getBoundingClientRect === 'function' ? barra.getBoundingClientRect() : null;
-      const { left: esquerda, right: direita } = hudMontado;
-      const folga = Math.max(respiro, 4);
-      if (!esquerda.hidden) {
-        esquerda.style.maxWidth = caixaDaBarra ? `${Math.max(0, Math.floor(caixaDaBarra.left - caixaDaRegiao.left - 2 * folga))}px` : '';
-        sala = Math.max(sala, esquerda.getBoundingClientRect().bottom - topo + folga);
-      }
-      if (!direita.hidden) {
-        direita.style.maxWidth = caixaDaBarra ? `${Math.max(0, Math.floor(caixaDaRegiao.right - caixaDaBarra.right - 2 * folga))}px` : '';
-        sala = Math.max(sala, direita.getBoundingClientRect().bottom - topo + folga);
-      }
-    }
-    /*
-     * 🔴 AND THE SCAN'S CHIP TAKES ROOM TOO (ADR-0218), for the same reason the icon's name line does (issue #160): it is HUD,
-     * and a HUD that does not reserve its room is the engine writing over the game — measured in the quiz demo, where «DIZER A
-     * RESPOSTA» landed on top of the question.
-     *
-     * ⚠️ IT IS PLACED BY `--scan-top` AND NOT BY THE BAND IT FEEDS. A first version put it at `--barra-a11y-h` and added its
-     * bottom to that same variable: the chip pushed the band, the band pushed the chip, and it walked down the screen on every
-     * measure. The case caught it. `--scan-top` is where the bar ends and does not depend on the chip; only the band does.
-     */
-    const scanChipEl = regiao.querySelector<HTMLElement>('.scan-now');
-    if (mede) regiao.style.setProperty('--scan-top', `${Math.ceil(Math.max(0, sala - respiro))}px`);
-    if (scanChipEl && !scanChipEl.hidden && mede) {
-      sala = Math.max(0, sala - respiro) + scanChipEl.getBoundingClientRect().height + respiro;
-    }
-    regiao.style.setProperty('--barra-a11y-h', `${Math.ceil(sala)}px`);
+    reserveTopBand({
+      region: $<HTMLElement>('#game-region'),
+      bar: a11yBar as HTMLElement | null,
+      hud: hudMontado,
+      ...(typeof win.getComputedStyle === 'function' ? { computedStyle: (el: HTMLElement) => win.getComputedStyle(el) } : {}),
+    });
   }
   /*
    * THE HUD the engine mounts from the cartridge's `hud` (ADR-0168; issue #162). Read on every animation frame while mounted —

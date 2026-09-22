@@ -1976,6 +1976,10 @@
     "initTitle",
     "isTitleMenuId"
   ],
+  "ui/top-band.ts": [
+    "TopBandCtx",
+    "reserveTopBand"
+  ],
   "ui/typo-choices.ts": [
     "FontCssTarget",
     "TypoGroupView",

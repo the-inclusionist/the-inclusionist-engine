@@ -3144,6 +3144,14 @@
     ],
     "type TitleMenuId": "'tm-main' | 'tm-alf' | 'tm-mat' | 'tm-tab' | 'tm-fr' | 'tm-cen'"
   },
+  "ui/top-band.ts": {
+    "interface TopBandCtx": [
+      "bar",
+      "computedStyle?",
+      "hud",
+      "region"
+    ]
+  },
   "ui/typo-choices.ts": {
     "interface FontCssTarget": [
       "cursiva",
