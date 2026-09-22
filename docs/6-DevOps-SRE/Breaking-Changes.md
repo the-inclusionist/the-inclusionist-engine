@@ -2040,6 +2040,53 @@ does — `holdKey` and `menuKey` now receive `TransportName | undefined`; wire `
 which chooses between `markKey` and `markKeyWithoutSource` for you. An unsigned key ERASES the previous producer: it
 does not inherit it, and `teclado` is not invented for it (ADR-0109).
 
+## BP · The engine mounts the gamepad (ADR-0224, issue #197)
+
+**What this is.** `createGame` now mounts the controller itself, the way it already mounts the touch pad, the eyes, the
+face, the hands, the voice and the scan. A cartridge stops calling `initGamepad` and declares, in one optional field,
+only what nothing in the engine can know.
+
+| before | after |
+|---|---|
+| the CARTRIDGE called `initGamepad` and wired ~25 ctx members | the engine mounts it; the cartridge declares up to ten answers |
+| the cartridge polled `pollPads()` from its own frame loop | the engine polls, while a controller is connected |
+| the cartridge's players needed `pad` / `waiting` / `quit` | the engine seeds them on the objects you passed |
+
+⚠️ **What to change.** Delete your `initGamepad` call and your `pollPads()` from the frame loop — leaving them mounts a
+second controller over the engine's, and both will read the same pad. Move the handful of answers only you have into
+`CreateGameOptions.gamepad`:
+
+```js
+createGame({
+  /* … */
+  gamepad: {
+    worldRunning: () => phase === 'playing',
+    navTitle: (k) => titleMenu.move(k),
+    hasModal: (i) => !!challenges[i],
+    modalInput: (i, intent) => challenges[i].take(intent),
+    joinPlayer, respawnPlayer, clearWaitingBadge,
+    attractActive: () => attract.on, stopAttract: attract.stop,
+    spriteBase: 'assets/sprites/',
+  },
+});
+```
+
+📌 **Every absence is an answer, and it is written down** (in `GamepadGameHooks`): no title screen to navigate, no demo
+to end, no modal to feed, no seat to join or respawn, no badge to clear, no wizard art — and a world that is running
+whenever the pause card is not open. **Declare nothing and the controller still works**: it plays, and the parts that
+depend on your world do not happen. A field you write as `undefined` is an absence like any other, not a hole.
+
+📌 **`initGamepad` stays published** and its `press`/`release` (note BN) keep working: a game that assembles a transport
+of its own still needs the door, and `Engine.controller` is how it gets one.
+
+✅ **And a half-wired thing finished on the way**: the quick bar's second exit. `navBar`'s third argument — the START
+edge, which is the other way out of the bar (ADR-0044 item 7) — arrived through a route the cartridge owned and the
+root did not mount. The root mounts it now, so it arrives.
+
+⚠️ **Measured and named rather than fixed**: `padCur` / `padPrevAct` are module state in `input/state`, so two engine
+roots on one page poll the SAME controller and the first to run consumes the edge. There is one root in a page that
+plays; it is the same family as ADR-0142, one floor down.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

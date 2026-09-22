@@ -269,6 +269,94 @@ export type GamepadPlayer = PlayerView<
   'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'
 >;
 
+/**
+ * O QUE SÓ O CARTUCHO SABE SOBRE O MUNDO DELE (ADR-0224). A engine monta este transporte — como já monta o toque, os
+ * olhos, o rosto, as mãos, a voz e a varredura —, e 📏 das 25 portas do `GamepadCtx` a raiz responde a 23 com o que já
+ * tem. Estas são as que sobram, e são as que nada na engine pode saber.
+ *
+ * 🎯 **TODAS OPCIONAIS, E CADA AUSÊNCIA TEM UM SIGNIFICADO ESCRITO** — nunca adivinhado (ADR-0113 cláusula 3, ADR-0169).
+ * Um cartucho que não declara nada tem um controle a funcionar; o que depende do mundo dele simplesmente não acontece.
+ * Recusar o arranque por falta destas partiria todo jogo com controle e sem tela de título, por uma declaração que tem
+ * um significado seguro — que é recusar onde se devia relatar.
+ *
+ * 📌 UM CAMPO SÓ no `CreateGameOptions`, e não nove soltos: nove campos são nove coisas que todo jogo tem de aprender
+ * num contrato cujo custo é uma porta de mão única (ADR-0172), e o transporte seguinte que precisasse do mesmo trato
+ * traria mais nove. Agrupá-los também diz algo verdadeiro — pertencem juntos porque são «o que o pad precisa do jogo».
+ */
+export interface GamepadGameHooks {
+  /** O mundo está a andar? **Ausente: está**, sempre que o cartão de pausa não estiver aberto. */
+  readonly worldRunning?: () => boolean;
+  /** A tela de título deste jogo. **Ausente: não há título a navegar** — o pad não faz nada fora do jogo e da pausa. */
+  readonly navTitle?: (k: NavKeys) => void;
+  /** A demonstração que roda sozinha. **Ausentes: não há demo**, logo nada a encerrar. */
+  readonly attractActive?: () => boolean;
+  readonly stopAttract?: () => void;
+  /** O desafio aberto deste jogador. **Ausentes: não há modal**, e o direcional é do jogo. */
+  readonly hasModal?: (playerIndex: number) => boolean;
+  readonly modalInput?: (playerIndex: number, intent: ModalIntent) => void;
+  /** Entrar num jogo a andar com uma tela nova. **Ausente: ninguém entra a meio** (devolve `false`). */
+  readonly joinPlayer?: (padIndex: number) => boolean;
+  /** Recomeçar só a tela deste jogador. **Ausente: nada acontece** — uma tela abandonada fica abandonada. */
+  readonly respawnPlayer?: (playerIndex: number) => void;
+  /** O selo «aguardando» do HUD do jogo. **Ausente: não há selo** a tirar. */
+  readonly clearWaitingBadge?: (playerIndex: number) => void;
+  /** A arte da demonstração animada do assistente de mapeamento. **Ausente: o assistente fala, sem desenho.** */
+  readonly spriteBase?: string;
+}
+
+/** As mesmas respostas, todas presentes: é isto que o `GamepadCtx` consome, e o que a tabela abaixo garante. */
+export type PadGameAnswers = Required<Omit<GamepadGameHooks, 'worldRunning'>> & { readonly worldRunning: () => boolean };
+
+/**
+ * O QUE CADA AUSÊNCIA SIGNIFICA, COMO DADO (ADR-0224). Uma tabela e não dez `??` espalhados por quem monta: o
+ * significado de uma ausência é uma DECISÃO, e uma raiz de composição só deve conter fiação — dez decisões dentro
+ * dela são dez ramos numa função que a catraca já acompanha (ADR-0221, errata).
+ *
+ * ⚠️ `worldRunning` não está aqui porque a sua ausência não tem resposta universal: depende de quem monta saber que
+ * menus tem abertos. Ele entra por parâmetro, o que também o torna a única ausência que um hospedeiro pode responder.
+ */
+const SILENT_PAD_ANSWERS: Omit<PadGameAnswers, 'worldRunning'> = Object.freeze({
+  navTitle: () => {},             // não há tela de título a navegar
+  attractActive: () => false,     // não há demonstração a correr
+  stopAttract: () => {},          // logo não há nada a encerrar
+  hasModal: () => false,          // não há desafio aberto: o direcional é do jogo
+  modalInput: () => {},           // e portanto nada a alimentar
+  joinPlayer: () => false,        // ninguém entra a meio de um jogo a andar
+  respawnPlayer: () => {},        // uma tela abandonada fica abandonada
+  clearWaitingBadge: () => {},    // o selo de espera é HUD do jogo; sem jogo a declará-lo, não existe
+  spriteBase: '',                 // o assistente de mapeamento fala, sem desenho
+});
+
+/**
+ * As respostas do cartucho com toda ausência já resolvida. 📌 Um campo DECLARADO como `undefined` é uma ausência como
+ * outra qualquer — espalhar o objecto cru por cima da tabela apagaria a resposta com um `undefined`, que é o defeito
+ * silencioso que esta função existe para não ter.
+ */
+export function padGameAnswers(hooks: GamepadGameHooks | undefined, worldRunningWhenSilent: () => boolean): PadGameAnswers {
+  const declared: Record<string, unknown> = {};
+  for (const [name, answer] of Object.entries(hooks ?? {})) if (answer !== undefined) declared[name] = answer;
+  return { worldRunning: worldRunningWhenSilent, ...SILENT_PAD_ANSWERS, ...declared } as PadGameAnswers;
+}
+
+/**
+ * OS CAMPOS DE ASSENTO, SEMEADOS PELA ENGINE (ADR-0224; a mesma saída que a fase 4 do plano já tinha escrito para o
+ * toque). 📏 Medido: os jogadores que um cartucho declara são `{ ctrl, audioSink? }`, e este transporte precisa de
+ * saber de quem é cada controle (`pad`), quem ainda espera (`waiting`) e quem largou a tela (`quit`).
+ *
+ * 🔴 SEMEIA NO PRÓPRIO OBJECTO e devolve a MESMA lista — copiar perderia o assento no quadro seguinte, porque é neste
+ * objecto que `takeSeat` escreve. É também por isso que não se faz `.map`: a identidade é o que carrega o estado.
+ * 📌 Só toca em quem ainda não tem os campos, logo um cartucho que os declare fica com os dele.
+ */
+export function seatEveryPlayer(list: readonly object[]): GamepadPlayer[] {
+  for (const p of list) {
+    const seat = p as { pad?: number; waiting?: boolean; quit?: boolean };
+    seat.pad ??= -1;
+    seat.waiting ??= false;
+    seat.quit ??= false;
+  }
+  return list as GamepadPlayer[];
+}
+
 export interface GamepadCtx {
   /** Adaptador da Gamepad API (substitui `navigator.getGamepads()`) — o ponto de DI para testar sem browser. */
   getGamepads: GetGamepads;

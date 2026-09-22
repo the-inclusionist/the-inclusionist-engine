@@ -489,8 +489,12 @@ describe('createGame em execução', () => {
     // ⚠️ ESTES DOIS CRIVOS LEEM O TEXTO DA FONTE, logo estão presos ao NOME de quem guarda a metade do jogo.
     // Era `o.` até 2026-09-11 e passou a `cartucho.` quando essa metade ganhou um detentor próprio (ADR-0142).
     // Um rename futuro reprova aqui com a mensagem certa — o que se quer — mas a causa é o nome, não a regra.
-    expect(FONTE, 'a barra montada voltou a ser inalcançável por teclado').toMatch(/naBarraDe:\s*cartucho\.naBarraDe\s*\?\?\s*\(\(i\)\s*=>\s*pauseIcons\.naBarraDe\(i\)\)/);
-    expect(FONTE).toMatch(/navBar:\s*cartucho\.navBar\s*\?\?\s*\(\(i,\s*k\)\s*=>\s*pauseIcons\.navBar\(i,\s*k\)\)/);
+    // 📌 A resposta mudou de FORMA em 22/09 e não de conteúdo: o `??` deixou de estar escrito dentro do `ctx` e passou
+    // a um `const` só, porque desde o ADR-0224 a raiz monta também o comando e as duas ligações liam a mesma decisão —
+    // escrevê-la duas vezes é a forma de defeito que este ficheiro já pagou noutras três.
+    expect(FONTE, 'a barra montada voltou a ser inalcançável por teclado')
+      .toMatch(/const naBarraDe = cartucho\.naBarraDe \?\? \(\(i: number\) => pauseIcons\.naBarraDe\(i\)\)/);
+    expect(FONTE).toMatch(/const navBar = cartucho\.navBar \?\? \(\(i: number, k: NavKeys, withStart\?: boolean\) => pauseIcons\.navBar\(i, k, withStart\)\)/);
     // ⚠️ E a barra montada tem de continuar a DIZER A VERDADE quando o modo cego muda noutro sítio (o painel
     // de áudio, a simulação de empatia). Sem esta assinatura o ícone ficaria a dizer «desligado» depois de a
     // criança o ligar — a família do `reflectTTS`, que este projeto já pagou duas vezes.

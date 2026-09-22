@@ -442,6 +442,7 @@
     "Dirs",
     "GamepadApi",
     "GamepadCtx",
+    "GamepadGameHooks",
     "GamepadPlayer",
     "GetGamepads",
     "PADWIZ_ANIM",
@@ -449,6 +450,7 @@
     "PadActions",
     "PadBinding",
     "PadButtonLike",
+    "PadGameAnswers",
     "PadLike",
     "PadMap",
     "WizAnimDef",
@@ -457,6 +459,8 @@
     "initGamepad",
     "oneButtonAtOnce",
     "padActions",
+    "padGameAnswers",
+    "seatEveryPlayer",
     "stdDirs"
   ],
   "input/gaze-cycle.ts": [
@@ -616,6 +620,7 @@
     "keySource",
     "keys",
     "markKey",
+    "markKeyFrom",
     "markKeyWithoutSource",
     "padCur",
     "padPrevAct",

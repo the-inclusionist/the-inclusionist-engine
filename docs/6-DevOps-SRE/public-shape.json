@@ -23,6 +23,7 @@
       "disponibilidade?",
       "downloadHeavy?",
       "gameOptions?",
+      "gamepad?",
       "genero?",
       "getPauseActs?",
       "host",
@@ -586,6 +587,18 @@
       "step",
       "timer"
     ],
+    "interface GamepadGameHooks": [
+      "attractActive?",
+      "clearWaitingBadge?",
+      "hasModal?",
+      "joinPlayer?",
+      "modalInput?",
+      "navTitle?",
+      "respawnPlayer?",
+      "spriteBase?",
+      "stopAttract?",
+      "worldRunning?"
+    ],
     "interface GamepadCtx": [
       "$",
       "clearWaitingBadge",
@@ -633,7 +646,8 @@
     "type GetGamepads": "() => readonly (PadLike | null | undefined)[] | null | undefined",
     "type PadMap": "Record<string, PadBinding | boolean | undefined>",
     "type ActionKey": "'left' | 'right' | 'up' | 'down' | 'action2' | 'action1' | 'action4' | 'action3'",
-    "type GamepadPlayer": "PlayerView< 'pad' | 'quit' | 'waiting' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge' >"
+    "type GamepadPlayer": "PlayerView< 'pad' | 'quit' | 'waiting' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge' >",
+    "type PadGameAnswers": "Required<Omit<GamepadGameHooks, 'worldRunning'>> & { readonly worldRunning: () => boolean }"
   },
   "input/gaze-cycle.ts": {
     "interface GazeCycleOptions": [

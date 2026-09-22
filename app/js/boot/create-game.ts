@@ -140,6 +140,9 @@ import { gameOptionsProblems, drawGameOptions, type GameOption } from '../ui/gam
 import * as store from '../platform/storage.js';
 import { initMenuNav, controlParts, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
+// 🔴 O COMANDO É MONTADO AQUI DESDE O ADR-0224 — era o único dos seis transportes montado pelo cartucho.
+import { initGamepad, padGameAnswers, seatEveryPlayer, type GamepadGameHooks } from '../input/gamepad.js';
+export type { GamepadGameHooks } from '../input/gamepad.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registerKeyboardMapping, saveKB, setKB, factoryWithGame, type KBDefaults } from '../input/keyboard.js';
 import { registerPadMapping } from '../input/pad-defaults.js';
@@ -338,6 +341,15 @@ export interface CreateGameOptions {
    * has the directional. Absent = the game hears commands only through what it reads itself.
    */
   readonly onCommand?: (command: VirtualCommand) => void;
+  /**
+   * O QUE SÓ ESTE JOGO SABE SOBRE O COMANDO (ADR-0224). A engine monta o transporte; isto são as poucas respostas que
+   * nada nela pode saber — a tela de título, a demonstração, o modal, entrar e recomeçar um assento, o selo de espera,
+   * a arte do assistente e «o mundo está a andar?».
+   *
+   * 🎯 **Ausente por inteiro é uma resposta**, não um esquecimento: o controle funciona, e o que depende do mundo do
+   * cartucho simplesmente não acontece. Cada ausência está escrita em `GamepadGameHooks`.
+   */
+  readonly gamepad?: GamepadGameHooks;
   /**
    * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO — a resposta do cartucho, OBRIGATÓRIA (ADR-0153).
    *
@@ -715,7 +727,7 @@ const SELETOR_BARRA_A11Y = '#title-icons';
 type MetadeDoJogo = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
-  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud' | 'gameOptions' | 'howToPlay' | 'onCommand'>;
+  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud' | 'gameOptions' | 'howToPlay' | 'onCommand' | 'gamepad'>;
 
 export function createGame(o: CreateGameOptions): Engine {
   /*
@@ -2244,6 +2256,15 @@ export function createGame(o: CreateGameOptions): Engine {
   let controlesDoTeclado: SettingsControlsApi | null = null;
   keyboard.assignControls();
 
+  /*
+   * AS TRÊS RESPOSTAS QUE O CARTUCHO PODE SUBSTITUIR, resolvidas UMA vez. Elas alimentam a navegação de menu e, desde
+   * o ADR-0224, também o comando — e escrever o mesmo `??` em dois sítios é escrever a mesma decisão duas vezes, que é
+   * a forma de defeito que este ficheiro já pagou noutras três.
+   */
+  const naBarraDe = cartucho.naBarraDe ?? ((i: number) => pauseIcons.naBarraDe(i));
+  const navBar = cartucho.navBar ?? ((i: number, k: NavKeys, withStart?: boolean) => pauseIcons.navBar(i, k, withStart));
+  const setPauseActor = cartucho.setPauseActor ?? ((): void => {});
+
   // 6. Navegação de menu. Os três declínios entram como AUSÊNCIA DECLARADA, não como getter que devolve null.
   const nav = initMenuNav({
     $, getActiveElement: () => doc.activeElement,
@@ -2254,7 +2275,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // então num jogo sem o gancho o Escape não fechava a pausa que o ADR-0144 agora abre. Passa pelo mesmo
     // `mudarDeFase` que o item «continuar»: uma saída só, seja qual for a porta por que a criança sai.
     setPhase: mudarDeFase,
-    setPauseActor: cartucho.setPauseActor ?? (() => {}),
+    setPauseActor,
     srSay,
     // Sem opinião declarada, o índice fica LIGADO: quem precisa dele para se orientar não tem como saber
     // que ele existe se vier desligado (a mesma razão de o modo cego nascer com TTS e sonar).
@@ -2278,8 +2299,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * modo (ADR-0044 item 7). No cartucho ela chega por outra rota (o encaminhador do gamepad, `main.ts:1470`)
      * que esta raiz ainda não monta. Logo: o direcional navega a barra; sair por START, por enquanto, não.
      */
-    naBarraDe: cartucho.naBarraDe ?? ((i) => pauseIcons.naBarraDe(i)),
-    navBar: cartucho.navBar ?? ((i, k) => pauseIcons.navBar(i, k)),
+    naBarraDe,
+    navBar,
     // ⚠️ ERA `() => false`: sem painel de remapeamento não havia captura. Agora há (ADR-0151), e com isto a falso a
     // seta que a criança quer gravar navegava o menu em vez de ficar na tecla.
     isCapturing: () => controlesDoTeclado?.isCapturing() ?? false,
@@ -3910,6 +3931,88 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     }, true);
   }
 
+  /*
+   * 🔴 O CONTROLE, MONTADO PELA ENGINE (ADR-0224). Era o único dos seis transportes montado de FORA — quem chamava
+   * `initGamepad` era o cartucho —, e foi isso que quase deixou a porta única (ADR-0223) sem lhe chegar: o controle
+   * virtual é um local desta função. Um comando físico funciona porque a criança ligou um, não porque um jogo se
+   * lembrou de pedir.
+   *
+   * 📏 Das 25 portas do `GamepadCtx`, VINTE E TRÊS são respondidas aqui com o que esta raiz já tem. As que sobram são
+   * o mundo do cartucho e chegam num campo só (`GamepadGameHooks`), com **cada ausência a ter um significado escrito**
+   * — nunca adivinhado. Um cartucho que não declara nada tem um controle a funcionar.
+   */
+  // 📌 As ausências resolvem-se em `input/gamepad`, numa tabela: o que uma ausência SIGNIFICA é decisão, e uma raiz
+  // de composição carrega fiação (ADR-0221, errata). Só a de `worldRunning` é daqui, porque só quem monta sabe que
+  // menus tem abertos.
+  const gameHooks = padGameAnswers(cartucho.gamepad, () => !menuComDirecional());
+  const gamepad = initGamepad({
+    $,
+    getGamepads: () => win.navigator?.getGamepads?.() ?? [],
+    // A PALAVRA DO JOGO para uma posição (a fronteira do corte de 2026-09-06): a engine sabe que a posição existe, só
+    // o cartucho sabe como ela se chama — e ele já a declarou no `preset` para existir.
+    rotuloDaAcao: (action) => (cartucho.preset ? labellerFrom(cartucho.preset)(action as Action) : null),
+    srSay, srAlert,
+    frontOverlay: overlays.frontOverlay,
+    // ⚠️ «MENU DE PAUSA» AQUI É TODO MENU COM DIRECIONAL, e não só o cartão: o `steerPause` do transporte já trata o
+    // diálogo partilhado antes do cartão, que é o painel aberto por cima. A mesma pergunta que o controle virtual faz.
+    menuDePausa: menuComDirecional,
+    mundoRodando: gameHooks.worldRunning,
+    // O START do comando é a PAUSA RÁPIDA (ADR-0155), como o da tela; e a saída reusa a decisão já escrita para o dedo,
+    // que sabe distinguir sair da pausa rápida de fechar o cartão.
+    pausar: () => { entrarNaPausaRapida(0); },
+    retomar: alternarPausaPeloToque,
+    isAttractActive: gameHooks.attractActive,
+    stopAttract: gameHooks.stopAttract,
+    // Um botão FÍSICO faz sumir o pad da tela — a mesma alternância por modalidade do teclado.
+    isTouchMode: () => { const p = $<HTMLElement>('#touch-controls'); return !!p && !p.hidden; },
+    hideTouchControls: () => { toque.hideTouchControls(); padAntesDoMenu = false; },
+    // ⚠️ SEMEADO A CADA LEITURA e não uma vez: o cartucho repovoa a lista a cada recomeço, e um assento semeado só no
+    // arranque deixaria os jogadores novos sem `pad` — invisíveis para o transporte, sem erro em lado nenhum.
+    getPlayers: () => seatEveryPlayer(players()),
+    getNumPlayers: () => players().length,
+    navTitle: gameHooks.navTitle,
+    naBarraDe,
+    // ✅ E A METADE QUE FICAVA POR LIGAR NA BARRA LIGA-SE AQUI: o `navBar` do `ui/menu-nav` recebe `(i, k)` e nunca o
+    // terceiro argumento, que é a borda do START — a SEGUNDA saída do modo (ADR-0044 item 7). Ela chegava por uma rota
+    // do cartucho que esta raiz não montava; agora a raiz monta o comando, e ela chega por aqui.
+    navBar,
+    sharedDialogOpen: nav.sharedDialogOpen,
+    navDialog: nav.navDialog,
+    getPauseMenu: (i) => $<HTMLElement>(`#vp-pause-${i}`),
+    navPause: nav.navPause,
+    setPauseActor,
+    playerEdge,
+    press: (action, source, player) => controleVirtual.press(action, source, player),
+    release: (action, source, player) => controleVirtual.release(action, source, player),
+    modalInput: gameHooks.modalInput,
+    hasModal: gameHooks.hasModal,
+    joinPlayer: gameHooks.joinPlayer,
+    respawnPlayer: gameHooks.respawnPlayer,
+    clearWaitingBadge: gameHooks.clearWaitingBadge,
+    spriteBase: gameHooks.spriteBase,
+  });
+  /*
+   * E A ENGINE PASSA A SONDAR, porque quem monta sonda. ⚠️ O laço do jogo é do CARTUCHO (`core/loop.startLoop` é
+   * chamado por ele), logo a raiz não tem onde pendurar um quadro — abre o próprio, como já faz para a varredura e
+   * para a câmera. Um comando lido a cada quadro é o preço escrito na consequência negativa do ADR-0224.
+   */
+  let padFrameHandle = 0;
+  const anyPadConnected = (): boolean => (win.navigator?.getGamepads?.() ?? []).some(Boolean);
+  const pollPad = (): void => { gamepad.pollPads(); padFrameHandle = win.requestAnimationFrame(pollPad); };
+  const stopPollingPad = (): void => { if (padFrameHandle) win.cancelAnimationFrame(padFrameHandle); padFrameHandle = 0; };
+  /*
+   * ⚠️ O LAÇO SÓ EXISTE ENQUANTO HÁ UM COMANDO LIGADO, e isto é o pilar 1 a decidir: um `requestAnimationFrame` que
+   * nunca dorme custa bateria no Chromebook de escola, e a esmagadora maioria das máquinas nunca verá um controle.
+   * 📌 `gamepadconnected` é o evento que a própria especificação exige que chegue antes de o pad aparecer na lista, e
+   * a consulta ao arranque cobre a raiz que nasce com um já ligado (um `mount()` de outro cartucho, por exemplo).
+   * 📌 Um hospedeiro SEM quadros — o projecto node é um — é capacidade do ambiente e cala-se (ADR-0169): sem quadros
+   * não há jogo a andar para o comando conduzir.
+   */
+  const startPollingPad = (): void => { if (padFrameHandle || typeof win.requestAnimationFrame !== 'function') return; padFrameHandle = win.requestAnimationFrame(pollPad); };
+  win.addEventListener('gamepadconnected', startPollingPad);
+  win.addEventListener('gamepaddisconnected', () => { if (!anyPadConnected()) stopPollingPad(); });
+  if (anyPadConnected()) startPollingPad();
+
   const regiaoDoOlhar = $<HTMLElement>('#game-region');
   if (canCaptureMedia && regiaoDoOlhar) {
     // PLAYING THROUGH THE WEBCAM (ADR-0215): one stored position, off · hands · face · eyes; `ui/camera-control` starts only the control at
@@ -3994,6 +4097,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
 
   function dispose(): void {
     desmontar();
+    // 📌 O laço de sondagem do comando é da RAIZ desde o ADR-0224, logo morre com ela: um `requestAnimationFrame` que
+    // sobrevive a `dispose()` lê a Gamepad API para sempre, numa raiz que já não tem jogadores (ADR-0220).
+    stopPollingPad();
     listeners.releaseAll();
   }
 

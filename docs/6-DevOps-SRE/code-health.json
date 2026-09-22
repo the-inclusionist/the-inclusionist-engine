@@ -25,12 +25,12 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2065,
-      "decisionNodes": 300,
+      "codeLines": 2115,
+      "decisionNodes": 305,
       "maxDepth": 4,
-      "fanOut": 82,
+      "fanOut": 83,
       "globalReach": 0,
-      "worstFunction": 68,
+      "worstFunction": 69,
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
@@ -472,13 +472,13 @@
       "fanIn": 2
     },
     "input/gamepad.ts": {
-      "codeLines": 377,
-      "decisionNodes": 93,
+      "codeLines": 415,
+      "decisionNodes": 96,
       "maxDepth": 7,
       "fanOut": 11,
       "globalReach": 0,
       "worstFunction": 25,
-      "fanIn": 1
+      "fanIn": 2
     },
     "input/gaze-cycle.ts": {
       "codeLines": 92,

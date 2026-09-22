@@ -10,7 +10,7 @@ import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  stdDirs, bindActive, padActions, PADWIZ_ORDER, initGamepad, oneButtonAtOnce,
+  stdDirs, bindActive, padActions, PADWIZ_ORDER, initGamepad, oneButtonAtOnce, padGameAnswers,
 } from '../app/js/input/gamepad.js';
 import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
 // `oneButton` e' binding vivo de `core/state` (nao do ctx): estes casos ligam-no e desligam-no de verdade.
@@ -740,6 +740,61 @@ describe('initGamepad — pollPads', () => {
     api.pollPads();
     expect(ctx.calls.setPhase, 'o START do controle não pausa').toEqual(['paused']);
     expect(ctx.calls.setPauseActor, 'pausou sem dizer de quem é o cartão que abre').toEqual([0]);
+  });
+});
+
+/* ===================== O QUE UMA AUSÊNCIA SIGNIFICA (ADR-0224) ===================== */
+// 🔴 A engine passou a MONTAR este transporte, e o que só o cartucho sabe chega num campo opcional. O valor destes
+// casos não é a tabela — é que cada ausência tem UM significado escrito, em vez de ser adivinhada no sítio onde faz
+// falta. Um cartucho que não declara nada tem um controle a funcionar, e é isso que o primeiro caso afirma.
+describe('padGameAnswers — a ausência é uma resposta, não um esquecimento', () => {
+  const SEMPRE_A_ANDAR = () => true;
+
+  it('🔴 [Zero] um cartucho que declara NADA responde a tudo, e nada explode', () => {
+    const a = padGameAnswers(undefined, SEMPRE_A_ANDAR);
+    expect(a.worldRunning(), 'o mundo parou porque ninguém o declarou').toBe(true);
+    expect(a.attractActive(), 'inventou-se uma demonstração que não existe').toBe(false);
+    expect(a.hasModal(0), 'inventou-se um desafio aberto').toBe(false);
+    expect(a.joinPlayer(1), 'deixou entrar alguém num jogo que não sabe receber').toBe(false);
+    expect(a.spriteBase, 'inventou-se um caminho de arte').toBe('');
+    // 📌 As quatro que não devolvem nada: o que se afirma é que EXISTEM e não estouram — uma porta em falta
+    // rebentaria no meio de um quadro, que é o pior sítio possível para descobrir uma declaração esquecida.
+    expect(() => { a.navTitle({}); a.stopAttract(); a.modalInput(0, 'confirm'); a.respawnPlayer(0); a.clearWaitingBadge(0); })
+      .not.toThrow();
+  });
+
+  it('🔴 [Right] o que o cartucho DECLARA é o que vale — a tabela é piso, não tecto', () => {
+    const vistos = [];
+    const a = padGameAnswers({
+      hasModal: (i) => i === 1,
+      modalInput: (i, intent) => vistos.push([i, intent]),
+      joinPlayer: () => true,
+      spriteBase: 'art/',
+    }, SEMPRE_A_ANDAR);
+    expect(a.hasModal(1)).toBe(true);
+    expect(a.hasModal(0)).toBe(false);
+    a.modalInput(1, 'erase');
+    expect(vistos).toEqual([[1, 'erase']]);
+    expect(a.joinPlayer(0)).toBe(true);
+    expect(a.spriteBase).toBe('art/');
+    expect(a.attractActive(), 'declarar uma coisa apagou as outras').toBe(false);
+  });
+
+  it('🔴 [Boundary] um campo escrito como `undefined` é uma AUSÊNCIA, e não um buraco', () => {
+    // ⚠️ É o defeito silencioso que a função existe para não ter: espalhar o objecto cru por cima da tabela
+    // sobrescreve a resposta com `undefined`, e o primeiro quadro que a chame estoura. Um cartucho escreve
+    // `{ hasModal: temModal ? f : undefined }` sem pensar duas vezes.
+    const a = padGameAnswers({ hasModal: undefined, spriteBase: undefined }, SEMPRE_A_ANDAR);
+    expect(typeof a.hasModal, 'a resposta da tabela foi apagada por um `undefined` declarado').toBe('function');
+    expect(a.hasModal(0)).toBe(false);
+    expect(a.spriteBase).toBe('');
+  });
+
+  it('🔴 [CrossCheck] `worldRunning` é a única ausência que quem MONTA responde', () => {
+    // 📌 E a razão está escrita: as outras nove têm uma resposta universal, esta depende de saber que menus estão
+    // abertos — coisa que só o hospedeiro sabe. Declarada, ganha ao hospedeiro como qualquer outra.
+    expect(padGameAnswers(undefined, () => false).worldRunning()).toBe(false);
+    expect(padGameAnswers({ worldRunning: () => true }, () => false).worldRunning()).toBe(true);
   });
 });
 
