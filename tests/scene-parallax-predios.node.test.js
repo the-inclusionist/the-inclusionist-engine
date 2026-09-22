@@ -16,11 +16,11 @@
 //
 // O que se afirma agora é o que faz a arte ler como cidade — vãos, luz quente calibrada e eventos de topo.
 import { describe, it, expect } from 'vitest';
-import { desenharPredios } from '../app/js/render/scene-parallax.js';
-import { CENARIOS } from '../app/js/render/cenario-data.js';
+import { drawBuildings } from '../app/js/render/scene-parallax.js';
+import { SCENERIES } from '../app/js/render/cenario-data.js';
 
 const W = 1280, H = 180;
-const FAIXAS = CENARIOS.cidade.predios;
+const FAIXAS = SCENERIES.cidade.predios;
 
 /** Contexto 2D falso: guarda cada retângulo pintado com a cor que estava valendo. */
 function ctxFalso() {
@@ -35,7 +35,7 @@ function ctxFalso() {
 /** Pinta a faixa e devolve os retângulos. */
 function pintar(faixa, semente = 977) {
   const c = ctxFalso();
-  desenharPredios(c, W, H, faixa, semente);
+  drawBuildings(c, W, H, faixa, semente);
   return c.rects;
 }
 

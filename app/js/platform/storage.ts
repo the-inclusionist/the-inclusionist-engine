@@ -156,7 +156,7 @@ export const KEYS = {
    *
    * ⚠️ CHAVE NOVA AO LADO DA VELHA, e não a mesma chave com conteúdo novo. É o mesmo desenho que o campo
    * `visual` usa ao lado do `viz`: as duas formas coexistem enquanto houver leitores das duas, cada um lê a
-   * que entende, e a velha só morre quando não sobrar quem a leia. `migrarVisual` aceita as duas, então o
+   * que entende, e a velha só morre quando não sobrar quem a leia. `migrateVisual` aceita as duas, então o
    * recuo — chave nova ausente, chave velha presente — devolve exactamente o que a criança escolheu.
    */
   visualP: (i: number): string => 'incl_visual_p' + i,

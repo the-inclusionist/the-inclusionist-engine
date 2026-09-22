@@ -44,8 +44,8 @@ function lab([r, g, b]) {
   return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
 }
 const deltaE = (a, b, m) => { const x = lab(simular(a, m)), y = lab(simular(b, m)); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
-const SIMULACOES = ['sim-protan', 'sim-deuter', 'sim-tritan'];
-const piorCaso = (p) => Math.min(...SIMULACOES.map((k) => deltaE(p.accent, p.good, CVD_MATRIX[k])));
+const SIMULATIONS = ['sim-protan', 'sim-deuter', 'sim-tritan'];
+const piorCaso = (p) => Math.min(...SIMULATIONS.map((k) => deltaE(p.accent, p.good, CVD_MATRIX[k])));
 
 describe('the Okabe-Ito palette for menus and HUD', () => {
   it('⚠️ [Interface] the gate reads REAL tokens — both blocks parse, and the palette changes both meanings', () => {
@@ -60,7 +60,7 @@ describe('the Okabe-Ito palette for menus and HUD', () => {
   it('🔴 [Right] «selected» and «right answer» stay FAR APART under protan, deutan AND tritan', () => {
     // 📏 The default pair measures ΔE 48 (protan) and 55 (deutan). 60 is the floor this palette promises, and
     // the pair chosen measures 101 / 111 / 87.
-    for (const k of SIMULACOES) {
+    for (const k of SIMULATIONS) {
       const d = deltaE(OKABE.accent, OKABE.good, CVD_MATRIX[k]);
       expect(d, `${k}: the two meanings are ΔE ${d.toFixed(0)} apart`).toBeGreaterThanOrEqual(60);
     }

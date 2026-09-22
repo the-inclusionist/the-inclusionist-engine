@@ -10,19 +10,19 @@
 import { describe, it, expect } from 'vitest';
 import { caneColor } from '../app/js/render/wheelchair-sprites.js';
 import { VIZ_BY_KEY } from '../app/js/render/viz-modes.js';
-import { migrarVisual, PADRAO } from '../app/js/render/viz-axes.js';
+import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
 
 describe('caneColor', () => {
   it('baixa visão → bengala VERDE (0x35d06a)', () => {
     const lowKey = Object.keys(VIZ_BY_KEY).find((k) => VIZ_BY_KEY[k].kind === 'lowvision');
     expect(lowKey).toBeTruthy(); // o catálogo tem um modo de baixa visão
-    expect(caneColor({ visual: migrarVisual(lowKey) })).toBe(0x35d06a);
+    expect(caneColor({ visual: migrateVisual(lowKey) })).toBe(0x35d06a);
   });
 
   it('cego / demais → bengala BRANCA (0xf2f2f2)', () => {
     const blindKey = Object.keys(VIZ_BY_KEY).find((k) => VIZ_BY_KEY[k].kind === 'blind');
-    if (blindKey) expect(caneColor({ visual: migrarVisual(blindKey) })).toBe(0xf2f2f2);
-    expect(caneColor({ visual: migrarVisual('__inexistente__') })).toBe(0xf2f2f2); // desconhecida cai no branco
+    if (blindKey) expect(caneColor({ visual: migrateVisual(blindKey) })).toBe(0xf2f2f2);
+    expect(caneColor({ visual: migrateVisual('__inexistente__') })).toBe(0xf2f2f2); // desconhecida cai no branco
     expect(caneColor({ visual: PADRAO })).toBe(0xf2f2f2);
   });
 

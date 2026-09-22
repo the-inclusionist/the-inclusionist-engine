@@ -8,7 +8,7 @@
 // game.js usa; o resto do ctx é falso (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PAUSE_ICONS, initPauseIcons } from '../app/js/ui/pause-icons.js';
-import { migrarVisual, PADRAO } from '../app/js/render/viz-axes.js';
+import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
 import { createRunState } from '../app/js/core/run-state.js';
 // A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
 // ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
@@ -69,7 +69,7 @@ function makeCtx(over = {}) {
     toggleLibras: () => { state.libras = !state.libras; },
     rm: state.rm, rmKeys: RM_KEYS, rmChar: RM_CHAR, saveRM: () => {},
     setToggleMove: (i, on) => { if (players[i]) players[i].toggleMove = on; },
-    setPlayerViz: (i, mode) => { if (players[i]) { players[i].viz = mode; players[i].visual = migrarVisual(mode); } },
+    setPlayerViz: (i, mode) => { if (players[i]) { players[i].viz = mode; players[i].visual = migrateVisual(mode); } },
     // Os escritores POR EIXO (#104): cada icone escreve no seu, e o outro fica onde estava.
     setTemaDoJogador: (i, tema) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), tema }; },
     setCorrecaoDoJogador: (i, correcao) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), correcao }; },
@@ -93,7 +93,7 @@ function setPlayers(list) {
   players.length = 0;
   // DERIVA o estado de dois eixos da chave antiga — mesma regra do espelho que a producao mantem (#104).
   list.forEach((p) => players.push(
-    p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrarVisual(p.viz) } : p,
+    p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrateVisual(p.viz) } : p,
   ));
   setNumPlayersValue(list.length || 1);
 }

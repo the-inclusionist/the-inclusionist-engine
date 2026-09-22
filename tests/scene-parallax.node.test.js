@@ -3,7 +3,7 @@
 // Os geradores de textura usam canvas/PIXI (verificados no boot); aqui testamos o helper puro hillHeight.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, render/scene-parallax).
 import { describe, it, expect } from 'vitest';
-import { hillHeight, paradasDoCeu, larguraDoCeu, pintarSol } from '../app/js/render/scene-parallax.js';
+import { hillHeight, skyStops, skyWidth, paintSun } from '../app/js/render/scene-parallax.js';
 
 // Réplica da fórmula (v3 drawHillBand) para validar o valor exato num ponto.
 const ref = (x, near) => {
@@ -43,19 +43,19 @@ describe('paradasDoCeu — onde cada cor do céu cai, em pixels', () => {
   it('[Right] duas cores continuam significando topo e rodapé, exatamente como antes', () => {
     // O céu era um PAR, e três temas ainda são. Se este caso reprovar, a mudança para lista quebrou o que já
     // existia — o que seria pior do que não ter feito a mudança.
-    expect(paradasDoCeu(['#000000', '#ffffff'], 180)).toEqual([
+    expect(skyStops(['#000000', '#ffffff'], 180)).toEqual([
       { y: 0, cor: '#000000' }, { y: 180, cor: '#ffffff' },
     ]);
   });
 
   it('[Right] sete cores caem de 30 em 30 px — é o que põe o vermelho da Floresta no horizonte', () => {
-    const ys = paradasDoCeu(['a', 'b', 'c', 'd', 'e', 'f', 'g'], 180).map((p) => p.y);
+    const ys = skyStops(['a', 'b', 'c', 'd', 'e', 'f', 'g'], 180).map((p) => p.y);
     expect(ys).toEqual([0, 30, 60, 90, 120, 150, 180]);
   });
 
   it('[Boundary] a primeira parada é sempre 0 e a última é sempre a altura inteira', () => {
     for (const n of [2, 3, 5, 7, 13]) {
-      const ps = paradasDoCeu(Array.from({ length: n }, (_v, i) => 'c' + i), 180);
+      const ps = skyStops(Array.from({ length: n }, (_v, i) => 'c' + i), 180);
       expect(ps[0].y, 'n=' + n).toBe(0);
       expect(ps[ps.length - 1].y, 'n=' + n).toBe(180);
       expect(ps).toHaveLength(n);
@@ -65,19 +65,19 @@ describe('paradasDoCeu — onde cada cor do céu cai, em pixels', () => {
   it('[Zero] uma cor só não divide por zero — vira um céu chapado', () => {
     // `i/(n-1)` com n=1 é 0/0 = NaN, e `addColorStop(NaN)` LANÇA. Um tema com uma cor só é um erro de dado,
     // mas o erro que ele merece é um céu feio, não um cenário que não abre.
-    expect(paradasDoCeu(['#123456'], 180)).toEqual([{ y: 0, cor: '#123456' }]);
+    expect(skyStops(['#123456'], 180)).toEqual([{ y: 0, cor: '#123456' }]);
   });
 });
 
 describe('larguraDoCeu — 64 px de gradiente, ou a tela inteira quando há sol', () => {
   it('[Right] sem sol, a textura é estreita: o gradiente é constante em x, repetir 64 px basta', () => {
-    expect(larguraDoCeu({ sky: ['#000', '#fff'], hills: ['#111', '#222'] })).toBe(64);
+    expect(skyWidth({ sky: ['#000', '#fff'], hills: ['#111', '#222'] })).toBe(64);
   });
 
   it('[Interface] com sol, a textura tem a largura do viewport', () => {
     // Um sol numa textura de 64 px apareceria CINCO vezes lado a lado na tela. A largura não é decoração: é o
     // que impede o azulejamento de multiplicar o sol.
-    expect(larguraDoCeu({ sky: ['#000', '#fff'], hills: ['#111', '#222'], sol: { cor: '#fff', x: 0.3, y: 0.46 } })).toBe(320);
+    expect(skyWidth({ sky: ['#000', '#fff'], hills: ['#111', '#222'], sol: { cor: '#fff', x: 0.3, y: 0.46 } })).toBe(320);
   });
 });
 
@@ -100,10 +100,10 @@ describe('pintarSol — o leque de raios', () => {
   const SOL = { cor: '#ffe9a8', x: 0.30, y: 0.46 };
 
   it('[Right] desenha o leque e o disco, e devolve o contexto como o encontrou', () => {
-    // `save`/`restore` porque `pintarSol` mexe em `globalAlpha` e `fillStyle`. Sem o par, o próximo a pintar
+    // `save`/`restore` porque `paintSun` mexe em `globalAlpha` e `fillStyle`. Sem o par, o próximo a pintar
     // neste contexto herdaria alfa 1 e a cor do sol — e o sintoma seria em OUTRO desenho, não neste.
     const c = ctxFalso();
-    pintarSol(c, 320, 180, SOL);
+    paintSun(c, 320, 180, SOL);
     expect(c.ops[0]).toBe('save');
     expect(c.ops[c.ops.length - 1]).toBe('restore');
     expect(c.ops.filter((o) => o === 'fill').length).toBeGreaterThanOrEqual(9); // 9 raios + brilho + disco
@@ -113,7 +113,7 @@ describe('pintarSol — o leque de raios', () => {
     // Um raio cortado na borda reaparece do outro lado a cada repetição, e o olho lê isso como uma cicatriz
     // vertical no céu. A abertura de ±35° e o alcance de 0,85·h existem para isso; este caso é quem cobra.
     const c = ctxFalso();
-    pintarSol(c, 320, 180, SOL);
+    paintSun(c, 320, 180, SOL);
     const xs = c.pontos.map((p) => p[0]);
     expect(Math.min(...xs)).toBeGreaterThan(0);
     expect(Math.max(...xs)).toBeLessThan(320);
@@ -121,7 +121,7 @@ describe('pintarSol — o leque de raios', () => {
 
   it('[Interface] o leque aponta para CIMA — luz que desce do céu, não um sol de meio-dia', () => {
     const c = ctxFalso();
-    pintarSol(c, 320, 180, SOL);
+    paintSun(c, 320, 180, SOL);
     const sy = 180 * SOL.y;
     // Todo ponto do leque (moveTo/lineTo) está na altura do sol ou ACIMA dela. Os arcos do disco entram nesta
     // lista pelos cantos, e por isso a folga: o disco tem raio, o leque não desce.

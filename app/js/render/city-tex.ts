@@ -49,24 +49,24 @@ export type Frame = 0 | 1;
 /* ===================== bichos: pombo, pombo voando, gato, cão ===================== */
 
 /** Pombo no chão 7×6 — corpo cinza, bico laranja, pés. f alterna cabeça alta ↔ bicando. */
-export const paintPombo = (f: Frame): PixelPainter => (px) => {
+export const paintPigeon = (f: Frame): PixelPainter => (px) => {
   px(1, 2, 4, 2, '#9aa3b2'); px(0, 3, 2, 1, '#7d8695');
   if (f === 0) { px(4, 1, 2, 2, '#b9c2d0'); px(6, 2, 1, 1, '#e0a23c'); } else { px(4, 3, 2, 2, '#b9c2d0'); px(6, 4, 1, 1, '#e0a23c'); } // cabeça alta / bicando
   px(2, 5, 1, 1, '#c96a2e'); px(4, 5, 1, 1, '#c96a2e');
 };
 /** Pombo em revoada 8×7 — mesmo corpo, asa batendo. */
-export const paintPomboFly = (f: Frame): PixelPainter => (px) => {
+export const paintPigeonFly = (f: Frame): PixelPainter => (px) => {
   px(2, 3, 4, 2, '#9aa3b2'); px(6, 2, 2, 2, '#b9c2d0'); px(7, 3, 1, 1, '#e0a23c');
   if (f === 0) px(1, 0, 4, 2, '#c8d0dc'); else px(1, 5, 4, 2, '#c8d0dc');                             // asa cima/baixo
 };
 /** Gato 12×8 — corpo/cabeça/orelhas/rabo escuros, olho verde; f alterna as patas. */
-export const paintGato = (f: Frame): PixelPainter => (px) => {
+export const paintCat = (f: Frame): PixelPainter => (px) => {
   px(1, 3, 8, 3, '#454b58'); px(8, 1, 3, 3, '#454b58'); px(8, 0, 1, 1, '#454b58'); px(10, 0, 1, 1, '#454b58');
   px(0, 2, 1, 3, '#454b58'); px(9, 2, 1, 1, '#9fe07a');
   if (f === 0) { px(2, 6, 1, 2, '#454b58'); px(7, 6, 1, 2, '#454b58'); } else { px(3, 6, 1, 2, '#454b58'); px(6, 6, 1, 2, '#454b58'); }
 };
 /** Cão 13×9 — corpo marrom, focinho escuro, orelha; f alterna as patas. */
-export const paintCao = (f: Frame): PixelPainter => (px) => {
+export const paintDog = (f: Frame): PixelPainter => (px) => {
   px(1, 3, 9, 4, '#8a6a44'); px(9, 1, 4, 4, '#8a6a44'); px(12, 2, 1, 2, '#3a2d1c'); px(9, 0, 2, 2, '#6d5334');
   px(0, 2, 1, 3, '#8a6a44');
   if (f === 0) { px(2, 7, 1, 2, '#6d5334'); px(8, 7, 1, 2, '#6d5334'); } else { px(3, 7, 1, 2, '#6d5334'); px(7, 7, 1, 2, '#6d5334'); }
@@ -75,10 +75,10 @@ export const paintCao = (f: Frame): PixelPainter => (px) => {
 /** Catálogo dos bichos: tamanho do canvas + painter por quadro. Fonte única que `createCityTextures` percorre
  *  e que o teste de regressão de arte itera — as chaves são as MESMAS que `game/life` lê em `LifeTexAtlas`. */
 export const CREATURE_ART = {
-  pombo: { w: 7, h: 6, paint: paintPombo },
-  pomboFly: { w: 8, h: 7, paint: paintPomboFly },
-  gato: { w: 12, h: 8, paint: paintGato },
-  cao: { w: 13, h: 9, paint: paintCao },
+  pombo: { w: 7, h: 6, paint: paintPigeon },
+  pomboFly: { w: 8, h: 7, paint: paintPigeonFly },
+  gato: { w: 12, h: 8, paint: paintCat },
+  cao: { w: 13, h: 9, paint: paintDog },
 } as const;
 export type CreatureKey = keyof typeof CREATURE_ART;
 

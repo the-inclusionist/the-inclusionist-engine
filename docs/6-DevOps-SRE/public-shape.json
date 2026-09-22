@@ -1643,13 +1643,13 @@
     "type VoskLoad": "| { readonly ok: true"
   },
   "render/camera.ts": {
-    "interface Tamanho": [
+    "interface Size": [
       "w"
     ],
     "interface Camera": [
       "camX"
     ],
-    "interface ZonaMorta": [
+    "interface DeadZone": [
       "w"
     ],
     "interface CameraObj": [
@@ -1673,7 +1673,7 @@
       "petals",
       "top"
     ],
-    "interface FaixaDePredios": [
+    "interface BuildingBand": [
       "aceso?",
       "base",
       "corpo",
@@ -1682,15 +1682,15 @@
       "topo",
       "topoFundo"
     ],
-    "interface TemaMorros": [
+    "interface HillsTheme": [
       "fundo",
       "hills"
     ],
-    "interface TemaPredios": [
+    "interface BuildingsTheme": [
       "fundo",
       "predios"
     ],
-    "type CenarioTema": "TemaMorros | TemaPredios"
+    "type SceneryTheme": "HillsTheme | BuildingsTheme"
   },
   "render/city-tex.ts": {
     "interface CityTextures": [
@@ -1797,7 +1797,7 @@
     ]
   },
   "render/low-vision-drawing.ts": {
-    "type DesenhoDeBaixaVisao": "'haze' | 'tunnel' | 'macular' | 'diabetic'"
+    "type LowVisionDrawing": "'haze' | 'tunnel' | 'macular' | 'diabetic'"
   },
   "render/lq-filter.ts": {
     "interface LqFilterCtx": [
@@ -1805,12 +1805,12 @@
     ]
   },
   "render/parallax.ts": {
-    "interface CamadaParallax": [
+    "interface ParallaxLayer": [
       "factor",
       "fy",
       "key"
     ],
-    "interface PosicaoParallax": [
+    "interface ParallaxPosition": [
       "x"
     ],
     "interface TilingSpriteLike": [
@@ -1870,49 +1870,49 @@
     "type AnimPlayer": "Pick<ControlledPlayer, 'vx' | 'vy' | 'onGround' | 'onLadder' | 'inWater' | 'clinging' | 'clingN' | 'flying' | 'airTime' | 'runCane' | 'rmWalk' | 'rmBreath' | 'rmFlavor' | 'anim' | 'walkAnim' | 'climbFrame' | 'idleNow' | 'idleTime' | 'flavor' | 'flavorT' | 'walking' | 'running' | '_tx' | 'ctrl' | 'pad' >"
   },
   "render/port.ts": {
-    "interface Desenho": [
+    "interface Drawing": [
       "beginFill",
       "clear",
       "drawRect",
       "endFill"
     ],
-    "interface DesenhoComLinha": [
+    "interface DrawingWithLine": [
       "lineStyle",
       "lineTo",
       "moveTo"
     ],
-    "interface Visivel": [
+    "interface Visible": [
       "visible"
     ],
-    "interface Camada": [
+    "interface Layer": [
       "addChild",
       "removeChild"
     ],
-    "interface ComTextura": [
+    "interface WithTexture": [
       "texture"
     ],
-    "interface Tingivel": [
+    "interface Tintable": [
       "tint"
     ],
-    "interface Descartavel": [
+    "interface Disposable": [
       "destroy"
     ],
-    "interface CamadaEsvaziavel": [
+    "interface ClearableLayer": [
       "removeChildren"
     ],
-    "interface ComFiltro": [
+    "interface WithFilter": [
       "filters"
     ],
-    "interface DesenhoComCirculo": [
+    "interface DrawingWithCircle": [
       "drawCircle"
     ],
-    "type RenderizarEm": "(objeto: unknown, alvo: unknown, limpar: boolean) => void",
-    "type CriarSprite": "(textura: unknown) => T",
-    "type CriarAzulejo": "(textura: unknown, largura: number, altura: number) => T",
-    "type CriarDesenho": "() => T",
-    "type AplicarFiltroCss": "(css: string, reach: AlcanceDoFiltro) => void",
-    "type AlcanceDoFiltro": "'mundo' | 'mundo-e-menus'",
-    "type AplicarAltoContrasteNoDom": "(ligado: boolean) => void"
+    "type RenderInto": "(objeto: unknown, alvo: unknown, limpar: boolean) => void",
+    "type CreateSprite": "(textura: unknown) => T",
+    "type CreateTile": "(textura: unknown, largura: number, altura: number) => T",
+    "type CreateDrawing": "() => T",
+    "type ApplyCssFilter": "(css: string, reach: FilterReach) => void",
+    "type FilterReach": "'mundo' | 'mundo-e-menus'",
+    "type ApplyHighContrastToDom": "(ligado: boolean) => void"
   },
   "render/recycling-tex.ts": {
     "interface RecyclingTextures": [
@@ -1921,7 +1921,7 @@
       "placa"
     ],
     "type Material": "'papel' | 'plastico' | 'metal' | 'vidro'",
-    "type Lixeira": "'azul' | 'vermelha' | 'amarela' | 'verde'"
+    "type Bin": "'azul' | 'vermelha' | 'amarela' | 'verde'"
   },
   "render/scene-city.ts": {
     "interface SceneCityCtx": [
@@ -1948,15 +1948,15 @@
     ]
   },
   "render/scene-sky.ts": {
-    "interface NuvemDeTela": [
+    "interface ScreenCloud": [
       "x"
     ],
     "interface SceneSkyCtx": [
-      "CENARIOS",
       "CLOUD_TEX",
+      "SCENERIES",
       "WORLD_PX_W",
-      "getAglomeracao",
       "getCenario",
+      "getCrowding",
       "getDecorSeed",
       "getGrassDensity",
       "hexN",
@@ -2027,10 +2027,10 @@
     "interface ScreenPipelineApi": [
       "configureRender"
     ],
-    "type SpriteLike": "DisplayLike & ComFiltro"
+    "type SpriteLike": "DisplayLike & WithFilter"
   },
   "render/set-cenario.ts": {
-    "interface SetCenarioCtx": [
+    "interface SetSceneryCtx": [
       "aplicarTemaParallax",
       "applyCenarioVida",
       "clearWorldTexCache",
@@ -2045,10 +2045,10 @@
       "tex",
       "worldCanvas"
     ],
-    "interface SetCenarioApi": [
+    "interface SetSceneryApi": [
       "setCenario"
     ],
-    "type TilesDoTema": "Tileset"
+    "type ThemeTiles": "Tileset"
   },
   "render/textures.ts": {
     "interface TexturesCtx": [
@@ -2099,15 +2099,15 @@
     ]
   },
   "render/viz-axes-labels.ts": {
-    "interface EscolhaDeEixo": [
+    "interface AxisChoice": [
       "eixo",
       "valor"
     ],
-    "type EixoVisual": "'tema' | 'correcao'",
-    "type Tradutor": "(chave: string, params?: Record<string, string | number>) => string"
+    "type VisualAxis": "'tema' | 'correcao'",
+    "type Translator": "(chave: string, params?: Record<string, string | number>) => string"
   },
   "render/viz-axes.ts": {
-    "interface Aplicacao": [
+    "interface HowItApplies": [
       "direto",
       "filtro"
     ],
@@ -2115,13 +2115,13 @@
     "type Correction": "CorrecaoDoCore",
     "type Simulation": "SimulacaoDoCore",
     "type VisualState": "VisualStateDoCore",
-    "type MotivoIndisponivel": "'tema' | 'correcao' | 'ambos'"
+    "type UnavailableReason": "'tema' | 'correcao' | 'ambos'"
   },
   "render/viz-modes.ts": {
     "type VizMode": "{ key: string"
   },
   "render/viz-refusal.ts": {
-    "interface Recusa": [
+    "interface Refusal": [
       "chave",
       "eixo"
     ]
@@ -2754,7 +2754,7 @@
       "srAlert",
       "t"
     ],
-    "type Tradutor": "(chave: string, params?: Record<string, string | number>) => string"
+    "type Translator": "(chave: string, params?: Record<string, string | number>) => string"
   },
   "ui/scan-overlay.ts": {
     "interface ScanOverlay": [
@@ -3134,7 +3134,7 @@
     "type PauseActs": "Record<string, () => void>"
   },
   "ui/simulation-refusal.ts": {
-    "type Recusa": "RecusaDeRender"
+    "type Refusal": "RecusaDeRender"
   },
   "ui/title.ts": {
     "interface TitleCtx": [
@@ -3152,9 +3152,9 @@
     "type TitleMenuId": "'tm-main' | 'tm-alf' | 'tm-mat' | 'tm-tab' | 'tm-fr' | 'tm-cen'"
   },
   "ui/visual-axes-panel.ts": {
-    "type EixoVisual": "EixoVisualDeRender",
-    "type Tradutor": "TradutorDeRender",
-    "type EscolhaDeEixo": "EscolhaDeEixoDeRender"
+    "type VisualAxis": "EixoVisualDeRender",
+    "type Translator": "TradutorDeRender",
+    "type AxisChoice": "EscolhaDeEixoDeRender"
   },
   "ui/voice-control.ts": {
     "interface VoiceControlDeps": [

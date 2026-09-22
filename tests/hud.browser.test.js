@@ -310,7 +310,7 @@ describe('ui/hud · showWaitingBadge / clearWaitingBadge', () => {
 // ⚠️ MEDIÇÃO DE 07/09: das quatro cláusulas da issue, esta secção paga UMA — e as outras três não
 // desapareceram por acaso:
 //
-//   · a cláusula 4 (`alcanceDoModo`: simulação → 'mundo', correção → 'mundo-e-menus') JÁ TEM gate, em
+//   · a cláusula 4 (`reachOfMode`: simulação → 'mundo', correção → 'mundo-e-menus') JÁ TEM gate, em
 //     `viz-setters.node.test.js:687-711`, com mutação conferida. Escrevê-la aqui seria uma segunda opinião
 //     sobre a mesma coisa, e duas fontes que se copiam divergem.
 //   · as cláusulas 2 e 3 (`#touch-start`, `#caption`, `#touch-controls`) nomeiam marcação que vivia no

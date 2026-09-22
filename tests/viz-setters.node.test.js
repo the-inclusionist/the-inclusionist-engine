@@ -8,7 +8,7 @@
 // applySharedTextures/applyVpFilters/updateVpDots/_rebakeDirect/updateVizIndicator/renderVizGroup).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js';
-import { migrarVisual } from '../app/js/render/viz-axes.js'; // VIZ_MODES guarda CHAVE desde o item 14
+import { migrateVisual } from '../app/js/render/viz-axes.js'; // VIZ_MODES guarda CHAVE desde o item 14
 
 // localStorage de mentira ANTES de qualquer coisa do jogo tocar em persistência: platform/storage engole a
 // exceção (try/catch), então sem este shim `store.set` vira no-op e o teste de persistência não poderia falhar.
@@ -24,7 +24,7 @@ const { VIZ_MODES, VIZ_BY_KEY } = await import('../app/js/render/viz-modes.js');
 const { initHighContrast } = await import('../app/js/render/high-contrast.js');
 const {
   initVizSetters, resolveViz, isDirectMode, cssFilterFor, vizDotFor, vizIndicatorFor,
-  lvOverlayClassFor, vizGroupHtml, vizGroupSay, alcanceDoModo,
+  lvOverlayClassFor, vizGroupHtml, vizGroupSay, reachOfMode,
 } = await import('../app/js/render/viz-setters.js');
 
 // worldTexFor/spriteTexFor exigem o ctx do high-contrast. Nos modos NÃO-diretos elas devolvem a textura normal
@@ -89,7 +89,7 @@ function setup(over = {}) {
   // nenhum corpo de caso precisou de mudar quando os leitores migraram. Quando o `viz` sair de vez, sai
   // desta linha e os casos passam a declarar `visual` directamente.
   const players = (over.players || [{ viz: 'normal', sprite: null, _tx: null }])
-    .map((p) => (p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrarVisual(p.viz) } : p));
+    .map((p) => (p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrateVisual(p.viz) } : p));
   const env = {
     players,
     numPlayers: over.numPlayers === undefined ? players.length : over.numPlayers,
@@ -381,7 +381,7 @@ describe('applyVpFilters — filtro PIXI por viewport', () => {
     // em produção NINGUÉM faz — quem muda o modo passa pelo setter, e o setter mantém o espelho. Um teste
     // que contorna a API acaba a medir um estado que o programa nunca produz.
     env.players[0].viz = 'lv-haze';
-    env.players[0].visual = migrarVisual('lv-haze');
+    env.players[0].visual = migrateVisual('lv-haze');
     api.applyVpFilters();
     expect(env.vpSpr[0].filters).toBe('FILTER:lv-haze');
     expect(antigo.filters).toBe('FILTER:blind'); // o array velho não é mais tocado
@@ -449,18 +449,18 @@ describe('applySharedTextures — texturas estáticas do multiplayer (memo por m
 describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
   it('[Right] compõe o filtro CSS da canvas com o modo ativo', () => {
     const { env, api } = setup();
-    api.applyVizGlobal(migrarVisual('sim-tritan'));
+    api.applyVizGlobal(migrateVisual('sim-tritan'));
     expect(env.app.view.style.filter).toBe('url(#cvd-tritan)');
   });
   it('[Error] modo desconhecido cai em normal — e é o `normal` que persiste/aplica', () => {
     const { env, api } = setup();
-    api.applyVizGlobal(migrarVisual('inexistente'));
+    api.applyVizGlobal(migrateVisual('inexistente'));
     expect(env.app.view.style.filter).toBe('');
     expect(localStorage.getItem('incl_viz')).toBe('normal');
   });
   it('[Right] baixa visão: classe no body + overlay visível com a classe da variante', () => {
     const { env, api } = setup();
-    api.applyVizGlobal(migrarVisual('lv-tunnel'));
+    api.applyVizGlobal(migrateVisual('lv-tunnel'));
     expect(env.bodyClasses.has('lowvision-mode')).toBe(true);
     expect(env.bodyClasses.has('blind-mode')).toBe(false);
     expect(env.els['#viz-overlay'].hidden).toBe(false);
@@ -469,15 +469,15 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
   });
   it('[Right] cegueira: classe no body, overlay escondido e controles de toque ocultos com o motivo', () => {
     const { env, api } = setup();
-    api.applyVizGlobal(migrarVisual('blind'));
+    api.applyVizGlobal(migrateVisual('blind'));
     expect(env.bodyClasses.has('blind-mode')).toBe(true);
     expect(env.els['#viz-overlay'].hidden).toBe(true);
     expect(env.log.hideTouch).toEqual(['cegueira']);
   });
   it('[Inverse] voltar a normal desfaz classes, overlay e bolinha', () => {
     const { env, api } = setup();
-    api.applyVizGlobal(migrarVisual('lv-haze'));
-    api.applyVizGlobal(migrarVisual('normal'));
+    api.applyVizGlobal(migrateVisual('lv-haze'));
+    api.applyVizGlobal(migrateVisual('normal'));
     expect(env.bodyClasses.size).toBe(0);
     expect(env.els['#viz-overlay'].hidden).toBe(true);
     expect(env.els['#viz-overlay'].className).toBe('');
@@ -486,13 +486,13 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
   });
   it('[Zero] modo não-direto NÃO põe filtro na câmera nem escurece a frente', () => {
     const { env, api } = setup();
-    api.applyVizGlobal(migrarVisual('fix-deuter'));
+    api.applyVizGlobal(migrateVisual('fix-deuter'));
     expect(env.camera.filters).toBeNull();
     expect(env.log.frontDim).toEqual([false]);
   });
   it('[Right] refaz extras e itens e repinta os painéis a cada aplicação', () => {
     const { env, api } = setup();
-    api.applyVizGlobal(migrarVisual('normal'));
+    api.applyVizGlobal(migrateVisual('normal'));
     expect(env.log.rebuildExtras).toBe(1);
     expect(env.log.rebuildCoins).toBe(1);
     expect(env.log.reflect).toBe(1);
@@ -508,7 +508,7 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
   // módulo, `filtrosCss` fica vazio e o caso falha em "expected [] to have a length of 1".
   it('[Null] sem canvas montada, o módulo AINDA pede o filtro — a guarda é da raiz', () => {
     const { env, api } = setup({ app: { view: null } });
-    expect(() => api.applyVizGlobal(migrarVisual('blind'))).not.toThrow();
+    expect(() => api.applyVizGlobal(migrateVisual('blind'))).not.toThrow();
     expect(env.bodyClasses.has('blind-mode')).toBe(true);
     expect(env.log.filtrosCss).toHaveLength(1);
     expect(env.log.filtrosCss[0]).toBe('brightness(0)');
@@ -694,18 +694,18 @@ describe('renderVizGroup — grupo de rádios nos painéis', () => {
 // E o catálogo já sabia disto antes de a regra ser escrita: `sim: true` marca exatamente os nove modos de
 // empatia. Derivar dali, e não de uma segunda lista, é o que impede as duas de divergirem.
 //
-// MUTAÇÃO CONFERIDA: invertendo o `?` de `alcanceDoModo`, o [Right] falha em "normal" —
+// MUTAÇÃO CONFERIDA: invertendo o `?` de `reachOfMode`, o [Right] falha em "normal" —
 // "expected 'mundo' to be 'mundo-e-menus'".
 describe('até onde o filtro alcança (issue #82)', () => {
   const MELHORIAS = ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7', 'fix-protan', 'fix-deuter', 'fix-tritan'];
   const EMPATIA = ['sim-deuter', 'sim-protan', 'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind'];
 
   it('[Right] MELHORIA alcança os menus', () => {
-    for (const m of MELHORIAS) expect(alcanceDoModo(m), m).toBe('mundo-e-menus');
+    for (const m of MELHORIAS) expect(reachOfMode(m), m).toBe('mundo-e-menus');
   });
 
   it('[Inverse] EMPATIA fica no mundo — o menu segue legível para sair dela', () => {
-    for (const m of EMPATIA) expect(alcanceDoModo(m), m).toBe('mundo');
+    for (const m of EMPATIA) expect(reachOfMode(m), m).toBe('mundo');
   });
 
   it('[Interface] as duas listas juntas são o catálogo INTEIRO — nenhum modo fica sem regra', () => {
@@ -718,7 +718,7 @@ describe('até onde o filtro alcança (issue #82)', () => {
     // `simulatesDisability` devolve `false` para chave inexistente, então o desconhecido alcança o menu. É o
     // lado seguro: um modo que ninguém declarou não deve poder DEIXAR o menu sem correção. Travado aqui para
     // a escolha ser deliberada se alguém a inverter.
-    expect(alcanceDoModo('inventado')).toBe('mundo-e-menus');
+    expect(reachOfMode('inventado')).toBe('mundo-e-menus');
   });
 });
 
@@ -737,7 +737,7 @@ describe('alto contraste alcança o DOM por CLASSE, não por filtro (issue #83)'
   it('[Inverse] modo que não é alto contraste DESLIGA a classe — inclusive os de empatia', () => {
     for (const m of ['normal', 'fix-deuter', 'sim-deuter', 'lv-blur', 'blind']) {
       const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
-      api.applyVizGlobal(migrarVisual(m));
+      api.applyVizGlobal(migrateVisual(m));
       expect(env.log.hcNoDom.at(-1), m).toBe(false);
     }
   });
@@ -759,7 +759,7 @@ describe('alto contraste alcança o DOM por CLASSE, não por filtro (issue #83)'
 // aí que ele sai — junto com este bloco.
 describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existirem', () => {
   it('⚠️ [Right] toda escrita por `setPlayerViz` deixa os dois campos a dizer a MESMA coisa', async () => {
-    const { migrarVisual, aplicacao } = await import('../app/js/render/viz-axes.js');
+    const { migrateVisual, howItApplies } = await import('../app/js/render/viz-axes.js');
     const { VIZ_FILTER, needsCanvas } = await import('../app/js/render/viz-modes.js');
     // Os modos DIRETOS ficam de fora aqui porque repintam textura e exigem canvas — o
     // `viz-setters.browser.test.js` é quem os cobre. O que se afirma é o espelho, e ele não depende disso.
@@ -769,10 +769,10 @@ describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existir
       api.setPlayerViz(0, k);
       const p = env.players[0];
       expect(p.viz, k).toBe(k);
-      expect(p.visual, `o espelho de «${k}» ficou para trás`).toEqual(migrarVisual(k));
+      expect(p.visual, `o espelho de «${k}» ficou para trás`).toEqual(migrateVisual(k));
       // E o par que o render vai aplicar continua a ser o de hoje — a mesma afirmação da rede da etapa 0,
       // agora sobre o valor que REALMENTE foi escrito no jogador e não sobre uma chave de fixture.
-      expect(aplicacao(p.visual), k).toEqual({
+      expect(howItApplies(p.visual), k).toEqual({
         direto: needsCanvas(k) ? k : null,
         filtro: k in VIZ_FILTER ? k : null,
       });
@@ -796,13 +796,13 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
   // toda criança que já jogou tem uma string na chave velha, e a primeira sessão depois da actualização ou
   // a lê, ou apaga o modo visual que ela escolheu.
   it('⚠️ [Right] só a chave VELHA presente: o ajuste dela sobrevive à actualização', async () => {
-    const { lerVisualGuardado } = await import('../app/js/render/viz-setters.js');
-    const { migrarVisual } = await import('../app/js/render/viz-axes.js');
+    const { readStoredVisual } = await import('../app/js/render/viz-setters.js');
+    const { migrateVisual } = await import('../app/js/render/viz-axes.js');
     const { VIZ_CYCLE } = await import('../app/js/render/viz-modes.js');
     for (const k of VIZ_CYCLE) {
       mem.clear();
       mem.set('incl_viz_p0', k); // exactamente o que está no navegador dela hoje
-      expect(lerVisualGuardado(0), `«${k}» perdeu-se na actualização`).toEqual(migrarVisual(k));
+      expect(readStoredVisual(0), `«${k}» perdeu-se na actualização`).toEqual(migrateVisual(k));
     }
   });
 
@@ -812,49 +812,49 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
     mem.clear();
     mem.set('incl_viz_p0', 'normal');
     mem.set('incl_visual_p0', JSON.stringify({ tema: 'hc7', correcao: 'deuter', simulacao: null }));
-    return import('../app/js/render/viz-setters.js').then(({ lerVisualGuardado }) => {
-      expect(lerVisualGuardado(0)).toEqual({ tema: 'hc7', correcao: 'deuter', simulacao: null });
+    return import('../app/js/render/viz-setters.js').then(({ readStoredVisual }) => {
+      expect(readStoredVisual(0)).toEqual({ tema: 'hc7', correcao: 'deuter', simulacao: null });
     });
   });
 
   it('[Zero] nenhuma das duas: o padrão, e sem estourar', async () => {
-    const { lerVisualGuardado } = await import('../app/js/render/viz-setters.js');
+    const { readStoredVisual } = await import('../app/js/render/viz-setters.js');
     const { PADRAO } = await import('../app/js/render/viz-axes.js');
     mem.clear();
-    expect(lerVisualGuardado(0)).toEqual(PADRAO);
+    expect(readStoredVisual(0)).toEqual(PADRAO);
   });
 
   it('⚠️ [Zero] JSON corrompido na chave nova cai na VELHA em vez de no padrão', async () => {
     // O dado vem do navegador de uma criança e pode estar truncado. Cair no padrão aqui seria descartar o
     // ajuste que a chave velha ainda tem, guardado e íntegro, ao lado.
-    const { lerVisualGuardado } = await import('../app/js/render/viz-setters.js');
-    const { migrarVisual } = await import('../app/js/render/viz-axes.js');
+    const { readStoredVisual } = await import('../app/js/render/viz-setters.js');
+    const { migrateVisual } = await import('../app/js/render/viz-axes.js');
     mem.clear();
     mem.set('incl_viz_p0', 'fix-deuter');
     mem.set('incl_visual_p0', '{"tema":"hc7"');  // truncado
-    expect(lerVisualGuardado(0)).toEqual(migrarVisual('fix-deuter'));
+    expect(readStoredVisual(0)).toEqual(migrateVisual('fix-deuter'));
   });
 
   it('⚠️ [Interface] `setPlayerViz` escreve as DUAS chaves, e o que ele escreve volta igual', async () => {
-    const { lerVisualGuardado } = await import('../app/js/render/viz-setters.js');
+    const { readStoredVisual } = await import('../app/js/render/viz-setters.js');
     for (const k of ['fix-deuter', 'lv-tunnel', 'blind', 'normal']) {
       mem.clear();
       const { api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
       api.setPlayerViz(0, k);
       expect(mem.get('incl_viz_p0'), `a chave legada de «${k}» não foi escrita`).toBe(k);
       expect(mem.get('incl_visual_p0'), `a chave nova de «${k}» não foi escrita`).toBeTruthy();
-      expect(lerVisualGuardado(0), `«${k}» não sobreviveu à ida e volta pelo armazenamento`)
+      expect(readStoredVisual(0), `«${k}» não sobreviveu à ida e volta pelo armazenamento`)
         .toEqual(JSON.parse(mem.get('incl_visual_p0')));
     }
   });
 });
 
 // ========================= MUTACOES CONFERIDAS (o espelho da #104) =========================
-//   · apagando a escrita `p.visual = migrarVisual(m.key)` -> reprovam os DOIS casos. E o defeito que o bloco
+//   · apagando a escrita `p.visual = migrateVisual(m.key)` -> reprovam os DOIS casos. E o defeito que o bloco
 //     existe para impedir: os leitores migrariam um a um para um campo que ninguem mantem, e o primeiro a
 //     migrar passaria a ler o padrao para toda a gente — sem erro, sem aviso, com a arvore verde.
-//   · ⚠️ trocando `migrarVisual(m.key)` por `migrarVisual(mode)` -> NAO reprova, e a mutacao e' EQUIVALENTE,
-//     nao um buraco. `resolveViz` manda chave desconhecida para `normal` e `migrarVisual` manda-a para
+//   · ⚠️ trocando `migrateVisual(m.key)` por `migrateVisual(mode)` -> NAO reprova, e a mutacao e' EQUIVALENTE,
+//     nao um buraco. `resolveViz` manda chave desconhecida para `normal` e `migrateVisual` manda-a para
 //     `PADRAO`, que sao o mesmo estado; para chave conhecida `m.key === mode`. Nao ha entrada que as separe.
 //     Fica `m.key` na mesma, porque a linha acima ja resolveu e ler duas vezes da mesma resolucao e' o que
 //     impede a terceira de divergir. Registado aqui em vez de apagado: uma mutacao sobrevivente que se

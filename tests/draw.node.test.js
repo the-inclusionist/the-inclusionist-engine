@@ -6,7 +6,7 @@
 // transformada dos sprites, a escolha ENTRE os dois caminhos de câmera (tela única × multi-tela) e a
 // visibilidade por dono no multi-tela. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C1).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { migrarVisual, PADRAO } from '../app/js/render/viz-axes.js';
+import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
 import { initDraw } from '../app/js/render/draw.js';
 import { LOGICAL_W, LOGICAL_H } from '../app/js/core/constants.js';
 import { BOX_FALSO as BOX, jogadorFalso as makePlayer } from './fixtures/cartucho-falso.js';
@@ -304,7 +304,7 @@ describe('render/draw — tela única × multi-tela', () => {
     // ⚠️ «DIFERENTES» PASSOU A QUERER DIZER «DIFERENTES PARA A TEXTURA» (#104), e este caso teve de escolher
     // um par que de facto difere: uma simulação de baixa visão contra o padrão. O par antigo — `normal` e
     // uma CORREÇÃO de daltonismo — deixou de contar como diferente, e o caso abaixo é quem regista porquê.
-    setPlayers(2, (i) => ({ visual: migrarVisual(i === 0 ? 'normal' : 'lv-tunnel') }));
+    setPlayers(2, (i) => ({ visual: migrateVisual(i === 0 ? 'normal' : 'lv-tunnel') }));
     const { api, log } = makeCtx();
     api.drawFrame();
     expect(log.shared).toEqual(['normal', 'lv-tunnel']);
@@ -316,7 +316,7 @@ describe('render/draw — tela única × multi-tela', () => {
     // dois jogadores em `normal` e `fix-protan` disparavam DUAS re-aplicações que produziam exactamente as
     // mesmas texturas. A correção continua a ser aplicada, e continua a ser aplicada onde ela mora: no
     // FILTRO, que é outro caminho.
-    setPlayers(2, (i) => ({ visual: migrarVisual(i === 0 ? 'normal' : 'fix-protan') }));
+    setPlayers(2, (i) => ({ visual: migrateVisual(i === 0 ? 'normal' : 'fix-protan') }));
     const { api, log } = makeCtx();
     api.drawFrame();
     expect(log.shared, 'a correção voltou a forçar uma troca de texturas que não muda textura nenhuma')
@@ -327,7 +327,7 @@ describe('render/draw — tela única × multi-tela', () => {
     const semLv = makeCtx(); semLv.api.drawFrame();
     expect(semLv.log.overlay).toEqual([]);
 
-    setPlayers(2, (i) => ({ visual: migrarVisual(i === 0 ? 'lv-tunnel' : 'normal') }));
+    setPlayers(2, (i) => ({ visual: migrateVisual(i === 0 ? 'lv-tunnel' : 'normal') }));
     const comLv = makeCtx(); comLv.api.drawFrame();
     expect(comLv.log.overlay).toEqual([[0, 'lv-tunnel'], [1, 'normal']]);
   });
@@ -392,7 +392,7 @@ describe('render/draw — tela única × multi-tela', () => {
 
 describe('render/draw — animatePlayer', () => {
   it('escolhe o quadro (player-anim), grava em _tx e aplica no sprite PASSANDO pelo recolor do modo', () => {
-    setPlayers(1, () => ({ visual: migrarVisual('blind'), walkAnim: 0 }));
+    setPlayers(1, () => ({ visual: migrateVisual('blind'), walkAnim: 0 }));
     const pl = players[0];
     const { api } = makeCtx({ playerVizTex: (base, viz) => `${viz}:${base}` });
     const tx = api.animatePlayer(pl, 1, 1); // com direção → quadro de andar

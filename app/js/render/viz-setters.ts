@@ -21,32 +21,32 @@
 
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, simulatesDisability, type VizMode } from './viz-modes.js';
 import {
-  migrarVisual, filtroChave, chaveDeTextura, chaveLegada, ehSimulacao, ehBaixaVisao, ehCego, temAltoContraste, PADRAO,
+  migrateVisual, filterKey, textureKey, legacyKey, isSimulation, isLowVision, isBlind, hasHighContrast, PADRAO,
   type Theme, type Correction,
   type VisualState,
 } from './viz-axes.js';
 import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
 import {
-  eixosHtml, escolhaDoBotao, ROTULO_DO_TEMA, ROTULO_DA_CORRECAO,
+  axesHtml, buttonChoice, THEME_LABEL, CORRECTION_LABEL,
 } from './viz-axes-labels.js';
-import { recusaDaSimulacao } from './viz-refusal.js';
+import { simulationRefusal } from './viz-refusal.js';
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
 import { lqFilter } from './lq-filter.js';
 import { setVizModeValue, setBlindModeValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
 import type { DomQuery } from '../core/dom-query.js';
-import type { ComFiltro, ComTextura, Visivel, DesenhoComCirculo, AplicarFiltroCss, AlcanceDoFiltro,
-  AplicarAltoContrasteNoDom } from './port.js';
+import type { WithFilter, WithTexture, Visible, DrawingWithCircle, ApplyCssFilter, FilterReach,
+  ApplyHighContrastToDom } from './port.js';
 
 /* ===================== PURO (sem PIXI, sem DOM) — o que rende teste de verdade ===================== */
 
 /**
- * Até onde o filtro deste modo vai. MELHORIA alcança os menus; EMPATIA fica no mundo (ver `AlcanceDoFiltro`).
+ * Até onde o filtro deste modo vai. MELHORIA alcança os menus; EMPATIA fica no mundo (ver `FilterReach`).
  * Derivado de `sim`, do catálogo — a mesma flag que já distingue os dois, e não uma segunda lista para
  * alguém esquecer de atualizar.
  */
-export function alcanceDoModo(mode: string): AlcanceDoFiltro {
+export function reachOfMode(mode: string): FilterReach {
   return simulatesDisability(mode) ? 'mundo' : 'mundo-e-menus';
 }
 
@@ -70,12 +70,12 @@ export function resolveViz(key: string | null | undefined): VizMode {
  * escolheu — e quem escolheu `fix-deuter` ou `hc-direto-7` escolheu-o porque enxerga assim. É a diferença
  * entre migrar e recomeçar.
  *
- * `migrarVisual` aceita as duas formas e é idempotente, então isto pode correr quantas vezes for preciso.
+ * `migrateVisual` aceita as duas formas e é idempotente, então isto pode correr quantas vezes for preciso.
  */
-export function lerVisualGuardado(i: number): VisualState {
+export function readStoredVisual(i: number): VisualState {
   const novo = store.getJSON<unknown>(store.KEYS.visualP(i), null);
-  if (novo !== null) return migrarVisual(novo);
-  return migrarVisual(store.get(store.KEYS.vizP(i), null));
+  if (novo !== null) return migrateVisual(novo);
+  return migrateVisual(store.get(store.KEYS.vizP(i), null));
 }
 
 /** É um dos três níveis de Renderização Direta (alto contraste)? Mesmo teste do original: `!!DIRECT_CFG[mode]`. */
@@ -125,10 +125,10 @@ export function vizGroupSay(numPlayers: number, sel: number, nome: string): stri
 // `Filtered`, `Textured` e `DotGfx` vêm de `render/port` desde 2026-08-26. Eram três descrições locais
 // do mesmo PixiJS, e a do `DotGfx` divergia das outras cópias de `Graphics` da árvore no retorno de cada
 // método (`unknown` aqui, `this` lá) — foi assim que as cinco cópias de `Gfx` divergiram antes.
-type Filtered = ComFiltro;
-type Textured = ComTextura;
+type Filtered = WithFilter;
+type Textured = WithTexture;
 /** PIXI.Graphics da bolinha por viewport — só o que updateVpDots realmente usa. */
-type DotGfx = Visivel & DesenhoComCirculo;
+type DotGfx = Visible & DrawingWithCircle;
 interface ClassListHost { classList: { toggle(token: string, force?: boolean): unknown; remove(...tokens: string[]): unknown } }
 // ⚠️ `visual` OPCIONAL AQUI, e `viz` não: esta é a fatia ESTRUTURAL que o módulo lê, e ela é satisfeita
 // também por fixtures de teste escritos antes da #104. Torná-lo obrigatório nesta interface local obrigaria
@@ -148,9 +148,9 @@ export interface VizSettersCtx {
   srSay: (s: string) => void;                       // leitor de tela (região aria-live)
 
   /* --- objetos PIXI criados no game.js (z-order soldado lá) --- */
-  aplicarFiltroCss: AplicarFiltroCss;               // era `app: AppLike|null` + `app.view.style.filter`; ver a porta
+  aplicarFiltroCss: ApplyCssFilter;               // era `app: AppLike|null` + `app.view.style.filter`; ver a porta
   /** Alto contraste no DOM — o filtro não o alcança porque ele não É filtro. Issue #83. */
-  aplicarAltoContrasteNoDom: AplicarAltoContrasteNoDom;
+  aplicarAltoContrasteNoDom: ApplyHighContrastToDom;
   camera: Filtered;                                 // solo: alto contraste = filtro GPU na câmera
   worldSprite: Textured;                            // mundo recolorido por modo
   parallaxLayers: Textured[];                       // camadas de fundo (const; elementos só têm .texture trocada)
@@ -263,13 +263,13 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   function applyVpFilters(): void {
     const spr = ctx.getVpSpr(), players = ctx.getPlayers();
-    // ⚠️ `filtroChave` E NÃO `p.viz` (#104). É a outra metade do par que a etapa 0 mediu: o TEMA vai pela
+    // ⚠️ `filterKey` E NÃO `p.viz` (#104). É a outra metade do par que a etapa 0 mediu: o TEMA vai pela
     // textura (`playerVizTex`/`applySharedTextures`) e a CORREÇÃO ou SIMULAÇÃO vai pelo FILTRO — e é
     // exactamente por serem dois caminhos que os dois eixos podem coexistir. `null` (sem filtro) entra como
     // `'normal'`, que é a chave que o `pixiFilterFor` já usa para «nenhum», e ele cacheia por ela.
     for (let i = 0; i < ctx.getNumPlayers(); i++) {
       const p = players[i];
-      if (spr[i]) spr[i].filters = ctx.pixiFilterFor((p.visual && filtroChave(p.visual)) || 'normal');
+      if (spr[i]) spr[i].filters = ctx.pixiFilterFor((p.visual && filterKey(p.visual)) || 'normal');
     }
   }
 
@@ -288,7 +288,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   function setVisualDoJogador(i: number, v: VisualState): void {
     const p = ctx.getPlayers()[i];
     p.visual = v;
-    p.viz = chaveLegada(v);
+    p.viz = legacyKey(v);
     store.set(store.KEYS.vizP(i), p.viz);        // legada: um leitor antigo faria `VIZ_BY_KEY[v]` e recusaria JSON
     store.setJSON(store.KEYS.visualP(i), v);     // nova: os dois eixos, que a chave velha não sabe dizer
     aplicarVisualDoJogador(i, v);
@@ -308,14 +308,14 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   /** A API antiga, por chave única. Continua a valer: um jogo que escolhe um modo inteiro passa por aqui. */
   function setPlayerViz(i: number, mode: string): void {
-    setVisualDoJogador(i, migrarVisual(resolveViz(mode).key));
+    setVisualDoJogador(i, migrateVisual(resolveViz(mode).key));
   }
 
   /** Os efeitos colaterais de ter mudado o visual de um jogador. Separados do ESCREVER de propósito: os dois
    *  escritores por eixo e o antigo por chave partilham-nos, e uma cópia a mais seria uma cópia a divergir. */
   function aplicarVisualDoJogador(i: number, v: VisualState): void {
     ctx.invalidateSharedViz();
-    if (ehCego(v)) (ctx.setModoCego ?? setBlindModeValue)(true); // empatia cegueira total liga o modo cego (áudio) por padrão
+    if (isBlind(v)) (ctx.setModoCego ?? setBlindModeValue)(true); // empatia cegueira total liga o modo cego (áudio) por padrão
     if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(v); } else { applyVpFilters(); updateVpDots(); }
     ctx.reflectVizButtons(); ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }
@@ -327,8 +327,8 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    * resposta tinha de ser uma. Com dois eixos, as mesmas linhas dividem-se em três grupos que nunca se
    * tocaram — e essa é a razão de a composição já ser mecanicamente possível, como o `viz-axes` regista:
    *
-   *   · TEMA (contraste) → textura e classe de DOM. `chaveDeTextura` e `temAltoContraste`.
-   *   · CORREÇÃO ou SIMULAÇÃO → filtro CSS. `filtroChave`.
+   *   · TEMA (contraste) → textura e classe de DOM. `textureKey` e `hasHighContrast`.
+   *   · CORREÇÃO ou SIMULAÇÃO → filtro CSS. `filterKey`.
    *   · SIMULAÇÃO → as classes do corpo, o overlay, os controles de toque, a bolinha.
    *
    * ⚠️ E O ALCANCE DO FILTRO CONTINUA A DEPENDER DE SIMULAR OU CORRIGIR, que é a distinção do ADR-0046: uma
@@ -340,34 +340,34 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    * sério são os dois eixos, e esta linha sai quando o último leitor da chave velha sair.
    */
   function applyVizGlobal(v: VisualState): void {
-    const filtro = filtroChave(v);
-    const textura = chaveDeTextura(v);
-    // ⚠️ `chaveLegada` E NÃO `textura`: a de textura devolve `normal` para uma correção de cor, e escrevê-la
-    // aqui faria um leitor antigo da chave global perder a correção da criança. Ver a nota em `chaveLegada`.
-    setVizModeValue(chaveLegada(v)); // core/state: valor + persistência (incl_viz) + evento — espelho legado
+    const filtro = filterKey(v);
+    const textura = textureKey(v);
+    // ⚠️ `legacyKey` E NÃO `textura`: a de textura devolve `normal` para uma correção de cor, e escrevê-la
+    // aqui faria um leitor antigo da chave global perder a correção da criança. Ver a nota em `legacyKey`.
+    setVizModeValue(legacyKey(v)); // core/state: valor + persistência (incl_viz) + evento — espelho legado
     // ANTES daqui saía também `ctx.setHcMode(m.kind === 'hcnew')`, alimentando um `let hcMode` no game.js cujo
     // único leitor era o gancho window.__incl. Era `vizMode` reescrito com outro nome: derivar de VIZ_BY_KEY
     // custa uma comparação e não pode divergir. (O inicializador daquele `let` usava OUTRA fórmula,
     // `vizMode!=='normal'`, e discordava do setter — sem efeito, porque applyVizGlobal roda no boot antes de
     // o gancho existir, mas é o sintoma clássico de cópia de estado.)
     // --- eixo CORREÇÃO/SIMULAÇÃO: o filtro CSS ---
-    ctx.aplicarFiltroCss(cssFilterFor(filtro ?? '', lqFilter()), ehSimulacao(v) ? 'mundo' : 'mundo-e-menus');
-    // --- eixo TEMA: DOM e textura. Não é filtro (ver `AplicarAltoContrasteNoDom`), e é por isso que compõe.
-    ctx.aplicarAltoContrasteNoDom(temAltoContraste(v));
-    ctx.camera.filters = temAltoContraste(v) ? ctx.pixiFilterFor(textura) : null; // solo: alto contraste na câmera
-    ctx.setFrontDim(temAltoContraste(v)); // HC: frente (carros/placas/semáforo) escurece como fundo
+    ctx.aplicarFiltroCss(cssFilterFor(filtro ?? '', lqFilter()), isSimulation(v) ? 'mundo' : 'mundo-e-menus');
+    // --- eixo TEMA: DOM e textura. Não é filtro (ver `ApplyHighContrastToDom`), e é por isso que compõe.
+    ctx.aplicarAltoContrasteNoDom(hasHighContrast(v));
+    ctx.camera.filters = hasHighContrast(v) ? ctx.pixiFilterFor(textura) : null; // solo: alto contraste na câmera
+    ctx.setFrontDim(hasHighContrast(v)); // HC: frente (carros/placas/semáforo) escurece como fundo
     ctx.worldSprite.texture = worldTexFor(textura);         // alto contraste direto = Renderização Direta · resto=normal
     ctx.parallaxLayers.forEach((ts, i) => { ts.texture = ctx.parallaxTexFor(i, textura); });
     ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(textura); });
     ctx.rebuildExtras(); ctx.rebuildCoins();
     // --- SIMULAÇÃO: baixa visão = névoa+manchas (overlay) + bolinha verde; cegueira = tela preta + esconde
     //     controles + bolinha branca. Nenhuma delas olha para o tema, e é por isso que o tema não as apaga.
-    ctx.body.classList.toggle('lowvision-mode', ehBaixaVisao(v));
-    ctx.body.classList.toggle('blind-mode', ehCego(v));
+    ctx.body.classList.toggle('lowvision-mode', isLowVision(v));
+    ctx.body.classList.toggle('blind-mode', isBlind(v));
     const ov = ctx.$('#viz-overlay');
-    if (ov) { ov.hidden = !ehBaixaVisao(v); ov.className = ehBaixaVisao(v) ? 'lv-' + String(v.simulacao).slice(3) : ''; }
-    if (ehCego(v)) { ctx.hideTouchControls('cegueira'); }
-    updateVizIndicator(ehCego(v) ? 'blind' : ehBaixaVisao(v) ? 'lowvision' : 'normal');
+    if (ov) { ov.hidden = !isLowVision(v); ov.className = isLowVision(v) ? 'lv-' + String(v.simulacao).slice(3) : ''; }
+    if (isBlind(v)) { ctx.hideTouchControls('cegueira'); }
+    updateVizIndicator(isBlind(v) ? 'blind' : isLowVision(v) ? 'lowvision' : 'normal');
     ctx.reflectVizButtons(); // (a guarda `typeof ...==='function'` do original morreu: era declaração de função, sempre verdadeira)
     ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }
@@ -415,7 +415,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     }
     const players = ctx.getPlayers(), sel = ctx.getSelVizPlayer();
     const v = players[sel]?.visual ?? PADRAO;
-    const cur = chaveLegada(v);
+    const cur = legacyKey(v);
     el.innerHTML = vizGroupHtml(modes, cur);
     // ⚠️ A RECUSA DA SIMULAÇÃO (#104, ADR-0076 §4). Com qualquer dos dois eixos fora do padrão, uma
     // demonstração não mostra a deficiência — mostra o AJUSTE por cima do qual ela corre, e isso ensina uma
@@ -428,7 +428,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     // ⚠️ SÓ AS LINHAS QUE SIMULAM. Esta função desenha hoje a lista de simulações (o painel visual passou a
     // usar o `renderEixosVisuais`), mas ela continua a receber os modos por parâmetro — e uma correção de
     // cor nesta lista não deve ser recusada por causa do eixo dela própria.
-    const recusa = recusaDaSimulacao(v);
+    const recusa = simulationRefusal(v);
     el.querySelectorAll<HTMLElement>('button[data-viz]').forEach((btn) => {
       const key = btn.dataset.viz as string;
       if (recusa && simulatesDisability(key)) {
@@ -462,17 +462,17 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     const tabs = ctx.$(tabsSel); if (tabs) { tabs.hidden = true; tabs.innerHTML = ''; }
     const sel = ctx.getSelVizPlayer();
     const v = ctx.getPlayers()[sel]?.visual ?? PADRAO;
-    el.innerHTML = eixosHtml(v, t);
+    el.innerHTML = axesHtml(v, t);
     el.querySelectorAll<HTMLElement>('button[data-eixo]').forEach((btn) => btn.addEventListener('click', () => {
-      const escolha = escolhaDoBotao(btn.dataset);
+      const escolha = buttonChoice(btn.dataset);
       if (!escolha) return; // botão de outro assunto, ou um `data-` editado à mão: não se adivinha
       const i = ctx.getSelVizPlayer();
       if (escolha.eixo === 'tema') {
         setTemaDoJogador(i, escolha.valor as Theme);
-        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(ROTULO_DO_TEMA[escolha.valor as Theme])));
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(THEME_LABEL[escolha.valor as Theme])));
       } else {
         setCorrecaoDoJogador(i, escolha.valor as Correction);
-        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(ROTULO_DA_CORRECAO[escolha.valor as Correction])));
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(CORRECTION_LABEL[escolha.valor as Correction])));
       }
     }));
   }

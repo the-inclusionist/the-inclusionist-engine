@@ -95,7 +95,7 @@ export const MAPA = {
   'Estratégia': { generos: ['7'], perspectiva: ['topo'], jogadores: ['solo'], proposito: [] },
   'Ritmo / Música': { generos: ['1.7'], perspectiva: ['plana', 'lado'], jogadores: ['solo'], proposito: [] },
   'Digitação': { generos: ['10.12'], perspectiva: ['plana'], jogadores: ['solo', 'local'], proposito: [] },
-  'Desenho / Criativo': { generos: ['12.2'], perspectiva: ['plana'], jogadores: ['solo'], proposito: [] },
+  'Drawing / Criativo': { generos: ['12.2'], perspectiva: ['plana'], jogadores: ['solo'], proposito: [] },
   'Educativo / Quiz': { generos: ['10.11'], nota: 'half GENRE (quiz), half PURPOSE (educational)', perspectiva: ['plana'], jogadores: ['solo'], proposito: ['11.5'] },
   'Reação / Reflexo': { generos: ['1'], naoE: 'mecanica', nota: 'reacting fast is a MECHANIC that crosses genres', perspectiva: ['plana', 'primeira-pessoa'], jogadores: ['solo'], proposito: [] },
   'Party / Microgames': { generos: ['10.8'], perspectiva: ['plana', 'topo', 'lado'], jogadores: ['solo', 'local'], proposito: [] },

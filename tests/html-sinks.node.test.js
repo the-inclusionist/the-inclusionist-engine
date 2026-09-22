@@ -75,10 +75,10 @@ const SEGUROS = [
   ['render/viz-setters.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/pause-icons.ts', "if (k === 'idioma') { const flag = flagOf(getLocale", 'the language flag: one of three SVG constants of `ui/locale-flags`, chosen by the locale — nothing typed or fetched enters'],
   ['render/viz-setters.ts', 'el.innerHTML = vizGroupHtml(modes, cur)', 'modos enumerados + i18n'],
-  // ⚠️ OS DOIS EIXOS (#104). Mesma classe do de cima e pelo mesmo motivo: o `eixosHtml` interpola só valores
-  // ENUMERADOS (`TEMAS`/`CORRECOES`, congelados no `viz-axes`) e texto que passou por `t()`. Nada aqui vem
+  // ⚠️ OS DOIS EIXOS (#104). Mesma classe do de cima e pelo mesmo motivo: o `axesHtml` interpola só valores
+  // ENUMERADOS (`THEMES`/`CORRECTIONS`, congelados no `viz-axes`) e texto que passou por `t()`. Nada aqui vem
   // de armazenamento, de URL ou do que uma criança digitou — que é a fronteira que este censo guarda.
-  ['render/viz-setters.ts', 'el.innerHTML = eixosHtml(v, t)', 'eixos enumerados + i18n'],
+  ['render/viz-setters.ts', 'el.innerHTML = axesHtml(v, t);', 'eixos enumerados + i18n'],
   ['render/viz-setters.ts', 'const tabs = ctx.$(tabsSel); if (tabs) { tabs.hidden', 'string vazia: limpa o elemento, nada entra'],
   ['ui/debug-panel.ts', "p.innerHTML = '<strong>", 'literal inteiro: o titulo do painel de ?debug'],
   ['ui/hud.ts', "gameHudEl.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],

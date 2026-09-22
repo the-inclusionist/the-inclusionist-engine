@@ -1142,6 +1142,127 @@ already calls these the empathy simulations (ADR-0181).
 | `umBotaoPorVez` | `oneButtonAtOnce` |
 | `VOCABULARIO_ANTIGO` | `OLD_VOCABULARY` |
 
+## AP · The public surface of `render` speaks English (ADR-0219, issue #202)
+
+**What this is.** The fourth layer. 📏 103 names, 60 files, 1047 occurrences; the tree's Portuguese debt falls from 1238
+identifiers in 99 files to 1123 in 95.
+
+**What to do.** Rename on your side by the table. 📌 The heaviest for a cartridge is the RENDER PORT — the shapes a game
+implements to let the engine draw: `Desenho`→`Drawing`, `Camada`→`Layer`, `CriarSprite`→`CreateSprite`,
+`Tingivel`→`Tintable`, `Visivel`→`Visible`, `Descartavel`→`Disposable`. A game that implements the port renames
+its own types; nothing else about the port changed.
+
+📌 **One line disappeared rather than being renamed**: `render/scene-sky` carried `type Layer = Camada` — an alias whose
+only job was to translate the imported name. With the import renamed, the alias was the name pointing at itself.
+
+**render** — 103 names, applied 2026-09-21
+
+| was | is |
+|---|---|
+| `aglomeracaoAlvo` | `targetCrowding` |
+| `AlcanceDoFiltro` | `FilterReach` |
+| `alcanceDoModo` | `reachOfMode` |
+| `aplicacao` | `howItApplies` |
+| `Aplicacao` | `HowItApplies` |
+| `AplicarAltoContrasteNoDom` | `ApplyHighContrastToDom` |
+| `AplicarFiltroCss` | `ApplyCssFilter` |
+| `ARQUIVO_POR_CAMADA` | `FILE_PER_LAYER` |
+| `Camada` | `Layer` |
+| `CamadaEsvaziavel` | `ClearableLayer` |
+| `CamadaParallax` | `ParallaxLayer` |
+| `CENARIO_PADRAO` | `DEFAULT_SCENERY` |
+| `CENARIOS` | `SCENERIES` |
+| `CenarioTema` | `SceneryTheme` |
+| `CHAVE_DO_MOTIVO` | `REASON_KEY` |
+| `chaveDeTextura` | `textureKey` |
+| `chaveLegada` | `legacyKey` |
+| `CHAVES_ANTIGAS` | `LEGACY_KEYS` |
+| `ComFiltro` | `WithFilter` |
+| `ComTextura` | `WithTexture` |
+| `COR_DA_LIXEIRA` | `BIN_COLOUR` |
+| `CORRECOES` | `CORRECTIONS` |
+| `createSetCenario` | `createSetScenery` |
+| `CriarAzulejo` | `CreateTile` |
+| `criarCamera` | `createCamera` |
+| `CriarDesenho` | `CreateDrawing` |
+| `CriarSprite` | `CreateSprite` |
+| `CURTO_DA_CORRECAO` | `SHORT_CORRECTION` |
+| `CURTO_DO_TEMA` | `SHORT_THEME` |
+| `Descartavel` | `Disposable` |
+| `desenharBaixaVisao` | `drawLowVision` |
+| `desenharPredios` | `drawBuildings` |
+| `Desenho` | `Drawing` |
+| `DesenhoComCirculo` | `DrawingWithCircle` |
+| `DesenhoComLinha` | `DrawingWithLine` |
+| `DesenhoDeBaixaVisao` | `LowVisionDrawing` |
+| `ehBaixaVisao` | `isLowVision` |
+| `ehCego` | `isBlind` |
+| `ehSimulacao` | `isSimulation` |
+| `eixosHtml` | `axesHtml` |
+| `EixoVisual` | `VisualAxis` |
+| `enquadrar` | `frameOn` |
+| `EscolhaDeEixo` | `AxisChoice` |
+| `escolhaDoBotao` | `buttonChoice` |
+| `FaixaDePredios` | `BuildingBand` |
+| `faseDoClima` | `weatherPhase` |
+| `filtroChave` | `filterKey` |
+| `getAglomeracao` | `getCrowding` |
+| `larguraDoCeu` | `skyWidth` |
+| `lerVisualGuardado` | `readStoredVisual` |
+| `linhasDoEixo` | `axisRows` |
+| `Lixeira` | `Bin` |
+| `LIXEIRA_H` | `BIN_H` |
+| `LIXEIRA_W` | `BIN_W` |
+| `LIXO_ART` | `LITTER_ART` |
+| `migrarVisual` | `migrateVisual` |
+| `mostraMesmoIndisponivel` | `showsEvenWhenUnavailable` |
+| `MotivoIndisponivel` | `UnavailableReason` |
+| `normalizarCenario` | `normaliseScenery` |
+| `NUVEM_H` | `CLOUD_H` |
+| `NUVEM_W` | `CLOUD_W` |
+| `NuvemDeTela` | `ScreenCloud` |
+| `nuvensDeTela` | `screenClouds` |
+| `paintCaixaDePapelao` | `paintCardboardBox` |
+| `paintCao` | `paintDog` |
+| `paintGarrafaPet` | `paintPetBottle` |
+| `paintGato` | `paintCat` |
+| `paintLatinha` | `paintCan` |
+| `paintLixeira` | `paintBin` |
+| `paintPlaca` | `paintSign` |
+| `paintPombo` | `paintPigeon` |
+| `paintPomboFly` | `paintPigeonFly` |
+| `paintPoteDeVidro` | `paintGlassJar` |
+| `paradasDoCeu` | `skyStops` |
+| `pintarSol` | `paintSun` |
+| `PLACA_H` | `SIGN_H` |
+| `PLACA_W` | `SIGN_W` |
+| `PosicaoParallax` | `ParallaxPosition` |
+| `posicoesParallax` | `parallaxPositions` |
+| `proximaCorrecao` | `nextCorrection` |
+| `proximoTema` | `nextTheme` |
+| `Recusa` | `Refusal` |
+| `recusaDaSimulacao` | `simulationRefusal` |
+| `RenderizarEm` | `RenderInto` |
+| `ROTULO_DA_CORRECAO` | `CORRECTION_LABEL` |
+| `ROTULO_DO_TEMA` | `THEME_LABEL` |
+| `SetCenarioApi` | `SetSceneryApi` |
+| `SetCenarioCtx` | `SetSceneryCtx` |
+| `SILHUETAS` | `SILHOUETTES` |
+| `simulacaoIndisponivel` | `simulationUnavailable` |
+| `SIMULACOES` | `SIMULATIONS` |
+| `Tamanho` | `Size` |
+| `temaDireto` | `directTheme` |
+| `temAltoContraste` | `hasHighContrast` |
+| `TemaMorros` | `HillsTheme` |
+| `TemaPredios` | `BuildingsTheme` |
+| `TEMAS` | `THEMES` |
+| `TilesDoTema` | `ThemeTiles` |
+| `Tingivel` | `Tintable` |
+| `Tradutor` | `Translator` |
+| `tremer` | `shake` |
+| `Visivel` | `Visible` |
+| `ZonaMorta` | `DeadZone` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

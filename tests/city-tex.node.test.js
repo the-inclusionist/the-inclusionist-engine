@@ -24,7 +24,7 @@ vi.mock('pixi.js', () => ({
 
 const { pixelCanvas, pixelTexture } = await import('../app/js/render/canvas.js');
 const {
-  paintPombo, paintPomboFly, paintGato, paintCao, CREATURE_ART,
+  paintPigeon, paintPigeonFly, paintCat, paintDog, CREATURE_ART,
   ADULT_W, ADULT_H, ADULT_COL, ADULT_SHAPES,
   CAR_W, CAR_H, CAR_PALETTES, paintCar,
   createCityTextures,
@@ -126,7 +126,7 @@ const CREATURE_EXPECT = { pombo: POMBO, pomboFly: POMBO_FLY, gato: GATO, cao: CA
 const CREATURE_SIZE = { pombo: [7, 6], pomboFly: [8, 7], gato: [12, 8], cao: [13, 9] };
 
 describe('arte dos bichos (retângulo a retângulo, verbatim do main.js)', () => {
-  it.each([['pombo', paintPombo], ['pomboFly', paintPomboFly], ['gato', paintGato], ['cao', paintCao]])(
+  it.each([['pombo', paintPigeon], ['pomboFly', paintPigeonFly], ['gato', paintCat], ['cao', paintDog]])(
     '%s: os dois quadros batem com a lista original', (k, painter) => {
       expect(record(painter(0))).toEqual(CREATURE_EXPECT[k][0]);
       expect(record(painter(1))).toEqual(CREATURE_EXPECT[k][1]);

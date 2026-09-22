@@ -84,6 +84,18 @@ const wholeWord = (name) => new RegExp(`(?<![\\w$])${name.replace(/[.*+?^${}()|[
  * replacement happens only when the whole string is a single word — which is what an event name («modoCego»), an id or a key
  * is, and what a sentence never is.
  */
+/*
+ * 🔴 AND A REGEX IS NEITHER A STRING NOR A COMMENT, which the fourth layer found the expensive way: the literal
+ * `/aria-checked="true"/g` carries a quote, the scanner took it for the start of a string, and from there the REST OF THE FILE
+ * was «inside a string» — so half a test file kept its old names while its imports were renamed, and the failure surfaced as
+ * «TEMAS is not defined» in a file nobody had touched by hand.
+ *
+ * Telling a regex from a division is the classic ambiguity, and the classic heuristic settles it: a `/` starts a regex when
+ * the last thing before it is not a VALUE. After `)`, an identifier, a number or a closing bracket, `/` divides; after `(`,
+ * `,`, `=`, `:`, `[`, `!`, `&`, `|`, `?`, `{`, `}`, `;`, `return` — or at the start of the file — it opens a pattern.
+ */
+const VALUE_BEFORE = /[\w$)\]]$/;
+
 function scan(text) {
   const comments = [], strings = [];
   let i = 0, quote = '', start = 0;
@@ -96,6 +108,21 @@ function scan(text) {
       continue;
     }
     if (c === '"' || c === "'" || c === '`') { quote = c; start = i; i += 1; continue; }
+    if (c === '/' && d !== '/' && d !== '*' && !VALUE_BEFORE.test(text.slice(0, i).trimEnd())) {
+      // a regex literal: skip it whole, character class included, so a quote inside it opens nothing
+      let j = i + 1, inClass = false;
+      while (j < text.length) {
+        const ch = text[j];
+        if (ch === '\\') { j += 2; continue; }
+        if (ch === '\n') break;                       // unterminated: it was a division after all
+        if (ch === '[') inClass = true;
+        else if (ch === ']') inClass = false;
+        else if (ch === '/' && !inClass) { j += 1; break; }
+        j += 1;
+      }
+      i = j;
+      continue;
+    }
     if (c === '/' && d === '/') {
       const nl = text.indexOf('\n', i);
       const stop = nl < 0 ? text.length : nl;

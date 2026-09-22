@@ -21,13 +21,13 @@
 // deixou de cometer. E, sendo puro, o desenho da recusa é conferível no project `node`, sem documento.
 //
 // Módulo-folha: importa só os tipos e o predicado do modelo de dois eixos.
-import { simulacaoIndisponivel, type MotivoIndisponivel, type VisualState } from './viz-axes.js';
+import { simulationUnavailable, type UnavailableReason, type VisualState } from './viz-axes.js';
 
 /** Uma linha pronta a traduzir: a chave e o que ela precisa. `null` = não há nada a dizer. */
-export interface Recusa {
+export interface Refusal {
   readonly chave: string;
   /** O que a criança tem de desfazer para a demonstração ser honesta. Entra na frase por `{eixo}`. */
-  readonly eixo: MotivoIndisponivel;
+  readonly eixo: UnavailableReason;
 }
 
 /**
@@ -38,7 +38,7 @@ export interface Recusa {
  * com `{eixo}` obrigaria cada idioma a montar concordância a partir de um substantivo solto — que é
  * exactamente o defeito que o `sr.nav.clockOne` já registou para «às 1 horas».
  */
-export const CHAVE_DO_MOTIVO: Readonly<Record<MotivoIndisponivel, string>> = Object.freeze({
+export const REASON_KEY: Readonly<Record<UnavailableReason, string>> = Object.freeze({
   tema: 'sim.indisponivel.tema',
   correcao: 'sim.indisponivel.correcao',
   ambos: 'sim.indisponivel.ambos',
@@ -49,19 +49,19 @@ export const CHAVE_DO_MOTIVO: Readonly<Record<MotivoIndisponivel, string>> = Obj
  *
  * `null` = pode; a interface não mostra nada, porque um aviso que aparece sempre deixa de ser lido.
  */
-export function recusaDaSimulacao(v: VisualState): Recusa | null {
-  const motivo = simulacaoIndisponivel(v);
-  return motivo === null ? null : { chave: CHAVE_DO_MOTIVO[motivo], eixo: motivo };
+export function simulationRefusal(v: VisualState): Refusal | null {
+  const motivo = simulationUnavailable(v);
+  return motivo === null ? null : { chave: REASON_KEY[motivo], eixo: motivo };
 }
 
 /**
  * A simulação deve aparecer DESABILITADA em vez de sumir?
  *
  * ⚠️ SEMPRE, E É A METADE «never silently removed» DO ADR-0076. Existe como função com nome próprio, e não
- * como um `!recusa` no ponto de uso, porque ela responde a uma pergunta diferente: `recusaDaSimulacao` diz
+ * como um `!recusa` no ponto de uso, porque ela responde a uma pergunta diferente: `simulationRefusal` diz
  * *por que* não dá; esta diz *que a linha continua na tela*. Quem desenha precisa das duas, e juntá-las numa
  * só faria a resposta «não há motivo» parecer «não desenhe a linha».
  */
-export function mostraMesmoIndisponivel(): boolean {
+export function showsEvenWhenUnavailable(): boolean {
   return true;
 }

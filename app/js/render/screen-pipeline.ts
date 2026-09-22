@@ -70,7 +70,7 @@
 
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { screenGrid } from '../core/screens.js';
-import type { CriarSprite, CriarDesenho, ComFiltro, DesenhoComCirculo } from './port.js';
+import type { CreateSprite, CreateDrawing, WithFilter, DrawingWithCircle } from './port.js';
 
 /* ===================== a parte PURA: o plano da grade ===================== */
 
@@ -153,11 +153,11 @@ export interface DisplayLike { x: number; y: number; visible: boolean; destroy()
  *  O `filters` NÃO é tocado aqui: quem põe filtro de GPU por tela é `render/viz-setters`, e é para lá que
  *  estes sprites vão (`getVpSpr`). A INVERSÃO DA FATIA MÍNIMA de novo — em posição de entrega, a fatia que
  *  vale é a de quem RECEBE, não a de quem lê. Ver o cabeçalho de `render/port`. */
-export type SpriteLike = DisplayLike & ComFiltro;
+export type SpriteLike = DisplayLike & WithFilter;
 /** `PIXI.Graphics` — a moldura desenha; as bolinhas só são posicionadas (quem as pinta é viz-setters).
  *  E é por serem pintadas LÁ que a declaração inclui o desenho inteiro: as bolinhas saem daqui por
  *  `getVpDots` e o `viz-setters` chama `clear`/`beginFill`/`drawCircle` nelas. */
-export interface GraphicsLike extends DisplayLike, DesenhoComCirculo {}
+export interface GraphicsLike extends DisplayLike, DrawingWithCircle {}
 /** `PIXI.Container` no papel de pai de cena. */
 export interface ContainerLike {
   addChild(child: unknown): unknown;
@@ -173,9 +173,9 @@ export interface ScreenPipelineCtx {
   /* --- PIXI por interface estrutural --- */
   RenderTexture: RenderTextureFactory;                    // PIXI.RenderTexture
   /** Fábricas, não construtores (Fase D): `new (texture: unknown)` não recebe o `PIXI.Sprite` real, cujo
-   *  construtor só aceita `Texture`. Ver `CriarSprite` no cabeçalho de `render/port`. */
-  criarSprite: CriarSprite<SpriteLike>;
-  criarDesenho: CriarDesenho<GraphicsLike>;
+   *  construtor só aceita `Texture`. Ver `CreateSprite` no cabeçalho de `render/port`. */
+  criarSprite: CreateSprite<SpriteLike>;
+  criarDesenho: CreateDrawing<GraphicsLike>;
   NEAREST: number;                                         // PIXI.SCALE_MODES.NEAREST
 
   /* --- a cena --- */

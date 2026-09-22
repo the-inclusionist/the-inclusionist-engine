@@ -85,17 +85,17 @@ import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, au
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
 // responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
-import { ehCego, ehBaixaVisao, PADRAO, filtroChave, simulacaoIndisponivel, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
+import { isBlind, isLowVision, PADRAO, filterKey, simulationUnavailable, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
 import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
-import { desenharBaixaVisao } from '../render/low-vision-drawing.js';
+import { drawLowVision } from '../render/low-vision-drawing.js';
 import { createPadWizard } from '../input/pad-wizard.js';
 import { cicloDeTipografia, INICIO_DO_CICLO, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
 import { invasoresDaBarra, escalaDoPalco, aplicarEscala, abaixoDoPiso, alvoMinimo, type Caixa, type Escala, type MedidaDeNo } from '../ui/layout.js';
 import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
-import type { AlcanceDoFiltro } from '../render/port.js';
+import type { FilterReach } from '../render/port.js';
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { captionDuration, CAPTION_RATES } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
@@ -511,7 +511,7 @@ export interface Engine {
    * estarem DENTRO do mundo, ele é desfeito neles. Uma cegueira que apagasse o menu de pausa trancaria a
    * criança dentro da simulação (#82).
    */
-  readonly aplicarFiltroDeVisao: (css: string, reach: AlcanceDoFiltro) => void;
+  readonly aplicarFiltroDeVisao: (css: string, reach: FilterReach) => void;
   /**
    * A NAVEGAÇÃO SONORA, pronta e ligada à declaração deste jogo (item 19).
    *
@@ -810,7 +810,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ `{kind:'none'}` NÃO APLICA NADA. Uma atividade sem espaço não tem mundo para simular, e pintar um
    * filtro sobre ela seria a mentira que o ADR-0087 existe para impedir, só que ao contrário.
    */
-  function aplicarFiltroDeVisao(css: string, reach: AlcanceDoFiltro): void {
+  function aplicarFiltroDeVisao(css: string, reach: FilterReach): void {
     const mundo = cartucho.declaration.world();
     if (mundo.kind !== 'element') return;
     const el = $<HTMLElement>(mundo.selector);
@@ -831,7 +831,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * tinha posto. Cada escritor guarda a sua parte e pede a composição.
    */
   // O estado visual que o MUNDO mostra: a correcção (🚥) e a simulação (modo empatia) são dois campos dele, e
-  // `filtroChave` já sabe que a simulação só corre com a correcção no padrão (ADR-0076).
+  // `filterKey` já sabe que a simulação só corre com a correcção no padrão (ADR-0076).
   let estadoDoMundo: VisualState = PADRAO;
   /*
    * A DISABILITY SIMULATION RUNS IN THE GAME, NEVER IN A MENU (issue #182). The Dev: «Simulação de deficiência não pode
@@ -901,12 +901,12 @@ export function createGame(o: CreateGameOptions): Engine {
     const c = camada.getContext('2d');
     if (!c) return;
     c.clearRect(0, 0, camada.width, camada.height);
-    desenharBaixaVisao(c, lv, camada.width, camada.height);
+    drawLowVision(c, lv, camada.width, camada.height);
     camada.hidden = false;
   }
   function recomporFiltroDoMundo(): void {
     // what HELPS (the colour correction, the contrast enhancement) stays on the world as before; the SIMULATION is laid apart
-    const chaveDaMelhoria = filtroChave({ ...estadoDoMundo, simulacao: null });
+    const chaveDaMelhoria = filterKey({ ...estadoDoMundo, simulacao: null });
     const melhoria = [chaveDaMelhoria ? (VIZ_FILTER[chaveDaMelhoria] ?? '') : '', lqFilter()].filter(Boolean).join(' ');
     aplicarFiltroDeVisao(melhoria, 'mundo');
     const simulacao = simulacaoSuspensa() ? null : estadoDoMundo.simulacao;
@@ -922,7 +922,7 @@ export function createGame(o: CreateGameOptions): Engine {
   initCrt({
     // `cartucho` and not `players()`: this runs at boot, above the `players` declaration (temporal dead zone)
     numJogadores: () => Math.max(1, (cartucho.players ?? []).length),
-    a11yVisualAtiva: () => filtroChave(estadoDoMundo) !== null || getLqT() > 0,
+    a11yVisualAtiva: () => filterKey(estadoDoMundo) !== null || getLqT() > 0,
   });
   initLqFilter({ onChange: recomporFiltroDoMundo });
   if (getLqT() > 0) recomporFiltroDoMundo(); // o realce guardado vale desde o arranque
@@ -1329,17 +1329,17 @@ export function createGame(o: CreateGameOptions): Engine {
       ? { setCorrecaoDoJogador: comPaletaSegura(cartucho.setCorrecaoDoJogador) }
       : cvdFilters
         /*
-         * ⚠️ `filtroChave` E NÃO `VIZ_FILTER[correcao]`, e a primeira versão desta linha errou aqui: os dois
+         * ⚠️ `filterKey` E NÃO `VIZ_FILTER[correcao]`, e a primeira versão desta linha errou aqui: os dois
          * vocabulários são DIFERENTES. O eixo diz `protan`; o `VIZ_FILTER` conhece `fix-protan`. Escrita à
          * mão, a tradução dava `undefined`, o filtro saía vazio e o ícone ANUNCIAVA uma correcção que não
          * acontecia — que é exactamente o controle a mentir o estado.
-         * 📌 E `filtroChave` faz mais do que colar um prefixo: ela põe a SIMULAÇÃO à frente da correcção
+         * 📌 E `filterKey` faz mais do que colar um prefixo: ela põe a SIMULAÇÃO à frente da correcção
          * quando há uma, que é a regra que este módulo não teria de reinventar.
          */
         ? { setCorrecaoDoJogador: comPaletaSegura((i: number, correcao: Correction) => {
           /*
            * 🔴 GUARDA ANTES DE APLICAR, e a primeira versão desta linha só aplicava — o que fazia o ciclo
-           * ficar PRESO na primeira posição. Quem calcula o passo seguinte é `proximaCorrecao(p.visual)`, em
+           * ficar PRESO na primeira posição. Quem calcula o passo seguinte é `nextCorrection(p.visual)`, em
            * `ui/pause-icons`; sem escrever de volta, toda pressão relia o padrão e devolvia `protan`.
            * ⚠️ Não dava erro nenhum: o ícone anunciava a correcção certa, o filtro mudava na primeira vez, e
            * a criança carregava mais duas vezes a ver a mesma tela. Apanhado por uma MUTAÇÃO sobrevivente —
@@ -1911,7 +1911,7 @@ export function createGame(o: CreateGameOptions): Engine {
       const simulacao = (chave === 'normal' ? null : chave) as VisualState['simulacao'];
       const jogador = players()[i] as { visual?: VisualState; viz?: string } | undefined;
       const base = jogador?.visual ?? estadoDoMundo;
-      const motivo = simulacao ? simulacaoIndisponivel(base) : null;
+      const motivo = simulacao ? simulationUnavailable(base) : null;
       if (motivo) { srSay(t(`sim.indisponivel.${motivo}`)); return false; } // refusal VISÍVEL e explicada (ADR-0076)
       const estado: VisualState = { ...base, simulacao };
       if (jogador) { jogador.visual = estado; jogador.viz = chave; }
@@ -2134,7 +2134,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // camada que conhece os dois eixos E pode importar de `render/`.
     visaoComprometida: (pl) => {
       const v = (pl as { visual?: VisualState }).visual;
-      return !!v && (ehCego(v) || ehBaixaVisao(v));
+      return !!v && (isBlind(v) || isLowVision(v));
     },
     getModoCego: lerModoCego, LOGICAL_W,
     // O jogador DERIVADO do foco: campo 4 respondendo "onde a criança está". Um jogo que não fornece lista

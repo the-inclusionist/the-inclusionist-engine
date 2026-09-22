@@ -98,7 +98,7 @@ describe('latch-refusal · o controle não some', () => {
 
 // ===== MUTAÇÕES CONFERIDAS (2026-09-08, por script, com contagem de ocorrências) =====
 // 1. `recusaDaAlternancia` a devolver `null` sempre        → o caso dos quatro assistidos reprova
-// 2. tirar a guarda `alternanciaEhEscolha` de `recusaDaAlternancia` → SOBREVIVEU, e é EQUIVALÊNCIA MEDIDA
+// 2. tirar a guarda `latchIsOptional` de `recusaDaAlternancia` → SOBREVIVEU, e é EQUIVALÊNCIA MEDIDA
 //    com mecanismo nomeado: sem ela, `CHAVE_DA_RECUSA['teclado']` é `undefined` e o `chave ? … : null` já
 //    devolve `null`. Os dois caminhos concordam por construção — e é o caso «todo exigente tem chave, e
 //    nenhuma chave sobra» que os obriga a concordar. ⚠️ Fica registada e a guarda FICA: ela é a regra

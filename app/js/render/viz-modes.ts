@@ -19,7 +19,7 @@
  * Só os 9 modos marcados simulam. Os 3 `fix-*` corrigem, os 3 `hc-direto*` corrigem, e `normal` não faz nada.
  */
 /**
- * Um modo de visão. `nome` e `desc` guardam CHAVE i18n, não texto — mesma decisão de `CenarioTema.nome` e
+ * Um modo de visão. `nome` e `desc` guardam CHAVE i18n, não texto — mesma decisão de `SceneryTheme.nome` e
  * `RM_LABEL`, e pelo mesmo motivo: uma tabela de `const` com texto resolve UMA vez, no import, e fica
  * congelada no idioma do boot. Este menu é o que uma criança de baixa visão ou daltônica lê para configurar o
  * PRÓPRIO jogo; deixá-lo em português numa build em inglês tira dela a única página que ela precisava ler.

@@ -5,8 +5,8 @@
 // próprio game.js usa). DI por closure — modelo: tests/debug-panel.browser.test.js.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, ui/settings-visual).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { eixosHtml } from '../app/js/ui/visual-axes-panel.js';
-import { PADRAO, migrarVisual } from '../app/js/render/viz-axes.js';
+import { axesHtml } from '../app/js/ui/visual-axes-panel.js';
+import { PADRAO, migrateVisual } from '../app/js/render/viz-axes.js';
 import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
 import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
 import { createRunState } from '../app/js/core/run-state.js';
@@ -52,13 +52,13 @@ function makeCtx(overrides = {}) {
     setPlayerViz: (i, mode) => calls.setPlayerViz.push([i, mode]),
     // ⚠️ DUBLÊ DOS DOIS EIXOS (#104). Este painel deixou de usar o `renderVizGroup` — que fica com o menu de
     // EMPATIA, cuja lista de simulações continua a ser mesmo exclusiva — e passou a montar dois rádios, um
-    // por eixo. O dublê usa o gerador DE VERDADE (`eixosHtml`), e não uma imitação: um dublê que inventa o
+    // por eixo. O dublê usa o gerador DE VERDADE (`axesHtml`), e não uma imitação: um dublê que inventa o
     // markup deixa de reprovar quando o markup real muda.
     renderEixosVisuais: (listSel, tabsSel) => {
       calls.renderEixosVisuais.push([listSel, tabsSel]);
       const el = document.querySelector(listSel);
       if (!el) return;
-      el.innerHTML = eixosHtml(players[selected]?.visual ?? PADRAO, t);
+      el.innerHTML = axesHtml(players[selected]?.visual ?? PADRAO, t);
     },
     // Dublê do renderizador de linhas compartilhado com o painel de empatia (render/viz-setters). Ele desenha
     // as MESMAS linhas de rádio nos dois menus — é por isso que as correções de daltonismo mantêm a aparência
@@ -162,7 +162,7 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     // A regra estava escrita no comentário do `refreshMarks` e vinha do `resolveVisualMode`. Com os dois
     // eixos ela deixa de ser derivada e passa a ser ESTRUTURAL: a simulação vive noutro campo do
     // `VisualState`, então perguntar pelo tema e pela correcção nunca a alcança.
-    players.push({ viz: 'sim-deuter', visual: migrarVisual('sim-deuter') });
+    players.push({ viz: 'sim-deuter', visual: migrateVisual('sim-deuter') });
     initSettingsVisual(makeCtx().ctx).render();
     expect(marcada(linhaDoEixo('tema')), 'a simulação marcou o menu errado').toBe(false);
     expect(marcada(linhaDoEixo('correcao')), 'a simulação marcou o menu errado').toBe(false);
@@ -202,7 +202,7 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     // criança podia estar a olhar para ele justamente para saber onde estava. Agora a simulação é coisa à
     // parte, e os dois eixos dizem o que dizem: estão no padrão — que é exactamente a condição que o
     // ADR-0076 exige para uma simulação poder correr.
-    players.push({ viz: 'sim-deuter', visual: migrarVisual('sim-deuter') });
+    players.push({ viz: 'sim-deuter', visual: migrateVisual('sim-deuter') });
     const { ctx } = makeCtx();
     initSettingsVisual(ctx).render();
     const marcadas = [...document.querySelectorAll('#visual-modes button[aria-checked="true"]')]
@@ -328,11 +328,11 @@ describe('ui/settings-visual — restaurar padrões DESTE menu (ADR-0028) + marc
   // O beforeEach zera `players` — ele é o array VIVO de core/state, compartilhado com o resto da suíte —,
   // então cada caso planta o jogador de que precisa em vez de assumir que existe um.
   // ⚠️ ESCREVE OS DOIS CAMPOS, como o `setPlayerViz` de produção faz — e derivando o novo pelo MESMO
-// `migrarVisual`, que é o que impede a tradução de existir em duas versões. O fixture criava um jogador só com
+// `migrateVisual`, que é o que impede a tradução de existir em duas versões. O fixture criava um jogador só com
 // o `viz` obsoleto, e a #104 etapa 1a tornou o `visual` OBRIGATÓRIO: era um jogador que o programa não
 // consegue produzir, e um teste que contorna a API mede um estado que o jogo nunca alcança. Mesmo defeito que
 // a etapa 2b já tinha apanhado em três fixtures.
-const comViz = (viz) => { players.length = 0; players.push({ viz, visual: migrarVisual(viz) }); };
+const comViz = (viz) => { players.length = 0; players.push({ viz, visual: migrateVisual(viz) }); };
 
   it('[Right] devolve realce, cores de dono, paleta segura, contornos e cores de papel', () => {
     const { ctx, calls, state } = makeCtx();

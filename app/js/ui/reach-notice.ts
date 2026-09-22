@@ -18,7 +18,7 @@
 import type { Reach } from '../input/transports.js';
 
 /** `core/i18n.t` — injetado para o núcleo continuar puro e para o teste poder ver as chaves cruas. */
-export type Tradutor = (chave: string, params?: Record<string, string | number>) => string;
+export type Translator = (chave: string, params?: Record<string, string | number>) => string;
 
 /**
  * AS FRASES DO AVISO, na ordem em que são lidas. Vazio = não há nada a dizer, e é o caso comum.
@@ -30,7 +30,7 @@ export type Tradutor = (chave: string, params?: Record<string, string | number>)
  *     Nesse caso o problema é do JOGO, que pede mais posições do que qualquer transporte deste aparelho
  *     oferece, e a frase honesta é outra.
  */
-export function linhasDoAviso(a: Reach, t: Tradutor): string[] {
+export function linhasDoAviso(a: Reach, t: Translator): string[] {
   if (a.ok) return [];
 
   const nome = (id: string): string => t('reach.nome.' + id);
@@ -61,7 +61,7 @@ export interface ReachNoticeCtx {
   procurar: (sel: string) => HTMLElement | null;
   /** `document.createElement`. Injetado como tudo o mais que toca o documento. */
   criar: (tag: string) => HTMLElement;
-  t: Tradutor;
+  t: Translator;
   /** Anúncio assertivo. Uma criança cega tem de OUVIR isto — ela não vai ver o cartão. */
   srAlert: (texto: string) => void;
 }

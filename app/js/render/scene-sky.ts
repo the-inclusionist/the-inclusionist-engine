@@ -5,8 +5,8 @@
 // render-graph (parallax/worldSprite/lifeLayer/carLayer) — e são INJETADAS aqui; movemos só a LÓGICA. Fórmulas copiadas
 // verbatim da v3.1.100. Injeção por closure. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (#43).
 
-import type { Desenho, Camada } from './port.js';
-import type { CriarSprite } from './port.js';
+import type { Drawing, Layer } from './port.js';
+import type { CreateSprite } from './port.js';
 /**
  * Posição horizontal de uma nuvem à deriva, com wrap SUB-PIXEL e pelo CORPO INTEIRO. Corrige #21:
  * (a) NÃO arredonda → deriva suave mesmo a <1px/frame; (b) só reentra quando a nuvem inteira saiu.
@@ -47,10 +47,10 @@ export function cloudWrapX(phase: number, enterAt: number, span: number): number
 // no resto — e aí choveria ao lado da criança, não sobre ela.
 
 /** Uma nuvem de tela neste quadro. `esc` multiplica o desenho base; `alpha`, a opacidade. */
-export interface NuvemDeTela { x: number; y: number; esc: number; alpha: number }
+export interface ScreenCloud { x: number; y: number; esc: number; alpha: number }
 
 /** Largura e altura do cúmulo base, antes de `esc`. Quem mede cobertura precisa das duas. */
-export const NUVEM_W = 26, NUVEM_H = 13;
+export const CLOUD_W = 26, CLOUD_H = 13;
 
 /** Quantas fileiras a manta fechada tem. É o que a faz cobrir do topo ao horizonte em vez de só o topo. */
 const FILEIRAS = 3;
@@ -67,12 +67,12 @@ const FILEIRAS = 3;
  * @param n quantas nuvens no total (a fileira 0, ~n/3, é a que aparece no tempo bom)
  * @param junta 0 = poucas e altas (o pôr do sol aparece) · 1 = as três fileiras cobrindo o céu inteiro
  */
-export function nuvensDeTela(t: number, vw: number, n: number, junta: number): NuvemDeTela[] {
-  const j = Math.max(0, Math.min(1, junta)), nuvens: NuvemDeTela[] = [];
+export function screenClouds(t: number, vw: number, n: number, junta: number): ScreenCloud[] {
+  const j = Math.max(0, Math.min(1, junta)), nuvens: ScreenCloud[] = [];
   for (let i = 0; i < n; i++) {
     const sp = 0.05 + ((i * 7) % 4) * 0.021;          // velocidades diferentes: elas se alcançam e se abrem
     const esc = (1.15 + ((i * 37) % 5) * 0.18) * (1 + 0.6 * j); // crescem ao fechar até uma encostar na outra
-    const larg = NUVEM_W * esc;
+    const larg = CLOUD_W * esc;
     const x = cloudWrapX(t * sp + (i * (vw + larg)) / Math.max(1, n), -larg, vw + larg);
     const aberto = 4 + ((i * 37) % 26);               // altura de repouso: a faixa alta do céu
     const fechado = (i % FILEIRAS) * 27 + ((i * 13) % 7); // altura de manta: a fileira desta nuvem
@@ -96,12 +96,13 @@ const CUMULO: readonly (readonly [number, number, number, number])[] = [
 /** A sombra sob a base — uma linha só. Na Floresta ela é alaranjada: a luz baixa bate por baixo. */
 const CUMULO_SOMBRA: readonly [number, number, number, number] = [1, 12, 24, 1];
 
-type Gfx = Desenho;
+type Gfx = Drawing;
 interface Sprite { x: number; y: number; alpha: number; texture: unknown; scale: { x: number }; _v?: number; destroy(): void; }
-type Layer = Camada;
+// 📌 O ALIAS LOCAL SAIU COM A RENOMEAÇÃO (ADR-0219): ele existia só para traduzir o nome importado — 	ype Layer = Camada —
+// e depois de Camada passar a chamar-se Layer ele era o nome a apontar para si próprio.
 // O construtor virou FÁBRICA (Fase D): `new (tex: unknown)` não recebe o `PIXI.Sprite` real, cujo
 // construtor só aceita `Texture`. Por contravariância, prometer aceitar qualquer coisa é o que impede.
-// Ver `CriarSprite` no cabeçalho de `render/port`.
+// Ver `CreateSprite` no cabeçalho de `render/port`.
 interface Bird { s: Sprite; dir: number; f: number; t: number; }
 interface Flora { base: string; top: string; bDk: string; bLt: string; petals: string[]; center: string; }
 interface Theme { v3?: boolean; decor?: string[]; cloud?: [string, string]; nuvens?: number }
@@ -113,15 +114,15 @@ export interface SceneSkyCtx {
    *  esconde o sol) e ATRÁS das duas bandas de morro (por isso as árvores do fundo passam à frente dela).
    *  `skyDecoG`, onde moram os pássaros e as nuvens dos outros temas, está à frente dos morros e não serve. */
   nuvemG: Gfx;
-  CLOUD_TEX: unknown[]; BIRD_TEX: unknown[]; criarSprite: CriarSprite<Sprite>; // texturas + a fábrica
+  CLOUD_TEX: unknown[]; BIRD_TEX: unknown[]; criarSprite: CreateSprite<Sprite>; // texturas + a fábrica
   hexN: (s: string) => number; rnd: () => number; randInt: (a: number, b: number) => number;
   WORLD_PX_W: number; WORLD_PX_H: number; WORLD_W: number; WORLD_H: number; TILE: number; LOGICAL_W: number; LOGICAL_H: number; BOX: { h: number };
-  CENARIOS: Record<string, Theme>; THEME_FLORA: Record<string, Flora | undefined>; DIRECT_CFG: Record<string, unknown>;
+  SCENERIES: Record<string, Theme>; THEME_FLORA: Record<string, Flora | undefined>; DIRECT_CFG: Record<string, unknown>;
   solidAt: (x: number, y: number) => boolean; tileAt: (x: number, y: number) => number;
   getCenario: () => string; getVizMode: () => string; getPlayers: () => Pl[]; getFxClock: () => number; getRm: () => { decor?: boolean; parallax?: boolean };
   /** 0..1 — o quanto as nuvens estão fechadas neste quadro (render/weather.getAglomeracao). Um só relógio
    *  para a chuva e para as nuvens: dois desandariam um do outro depois de alguns minutos. */
-  getAglomeracao: () => number;
+  getCrowding: () => number;
   getGrassDensity: () => number; // 0..1: fração das superfícies com flora (grama/flores). 1 = todas; 0.6 = 60%. Base p/ estações.
   getDecorSeed: () => number;    // semente por FASE: quais superfícies são escolhidas na densidade (randômico no load).
 }
@@ -154,7 +155,7 @@ export function createSceneSky(ctx: SceneSkyCtx): SceneSky {
     g.beginFill(ctx.hexN(col[1])).drawRect(x + 1, y + 11, 22, 1).endFill();
   }
 
-  function drawCumulo(g: Gfx, nv: NuvemDeTela, col: [string, string]): void { // cúmulo escalável (ver CUMULO)
+  function drawCumulo(g: Gfx, nv: ScreenCloud, col: [string, string]): void { // cúmulo escalável (ver CUMULO)
     const e = nv.esc, R = (r: readonly [number, number, number, number]): void => {
       g.drawRect(Math.round(nv.x + r[0] * e), Math.round(nv.y + r[1] * e), Math.round(r[2] * e), Math.round(r[3] * e));
     };
@@ -180,7 +181,7 @@ export function createSceneSky(ctx: SceneSkyCtx): SceneSky {
   }
 
   function stepV3Decor(): void {
-    const T = ctx.CENARIOS[ctx.getCenario()] || {};
+    const T = ctx.SCENERIES[ctx.getCenario()] || {};
     ctx.starsG.clear(); ctx.skyDecoG.clear(); ctx.nuvemG.clear(); ctx.fogG.clear(); ctx.grassG.clear(); ctx.themeFxG.clear(); ctx.themeFxBackG.clear();
     // A pergunta é "este tema tem decoração viva?", e ela se responde OLHANDO A DECORAÇÃO. Antes era
     // `!T.v3`, que respondia "este tema não é a Cidade" — o mesmo resultado por acidente, enquanto a Cidade
@@ -197,9 +198,9 @@ export function createSceneSky(ctx: SceneSkyCtx): SceneSky {
     //    o Dev pediu o céu novo para a Floresta, e mudar a aparência dos outros três de carona seria alargar
     //    o pedido por conta própria. Quando ele quiser, é trocar um número na tabela de cenários.
     if (d.includes('nuvens') && T.cloud && T.nuvens) {
-      const col = T.cloud, junta = reduzido ? 0 : ctx.getAglomeracao();
+      const col = T.cloud, junta = reduzido ? 0 : ctx.getCrowding();
       // `nuvemG` e não `skyDecoG`: a manta fica ATRÁS das bandas de morro (ver a nota no ctx).
-      for (const nv of nuvensDeTela(reduzido ? 0 : t, vw, T.nuvens, junta)) drawCumulo(ctx.nuvemG, nv, col);
+      for (const nv of screenClouds(reduzido ? 0 : t, vw, T.nuvens, junta)) drawCumulo(ctx.nuvemG, nv, col);
     } else if (d.includes('nuvens') && T.cloud) { const col = T.cloud, defs = [{ y: 6, sp: 0.08, off: 0 }, { y: 20, sp: 0.05, off: 130 }, { y: 12, sp: 0.11, off: 250 }];
       for (const c0 of defs) { const x = cloudWrapX((reduzido ? 0 : t) * c0.sp + c0.off, -44, vw + 64); drawV3Cloud(ctx.skyDecoG, x, c0.y, col); } }
     if (!reduzido && d.includes('passaros')) { ctx.skyDecoG.beginFill(0x282837, 0.7);

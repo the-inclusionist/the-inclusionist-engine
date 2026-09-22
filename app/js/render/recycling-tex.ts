@@ -26,19 +26,19 @@ import type { PixelPainter } from './canvas.js';
 import { pixelTexture } from './canvas.js';
 
 // ⚠️ ESTE MÓDULO NÃO IMPORTA DE `game/`, E ISSO É A DECISÃO E NÃO UM DETALHE. A primeira versão puxava
-// `Material`, `Lixeira` e `LIXEIRA_DE` de `game/recycling`, e o gate de fronteira reprovou na hora — com razão:
+// `Material`, `Bin` e `LIXEIRA_DE` de `game/recycling`, e o gate de fronteira reprovou na hora — com razão:
 // arte é da ENGINE e regra de acerto é do JOGO, e uma aresta daqui para lá faria a engine saber o que é reciclar.
 // Os nomes são declarados aqui de novo, e QUEM PROVA QUE AS DUAS LISTAS CONCORDAM É O TESTE, que pode importar
 // os dois lados sem criar dependência nenhuma no produto.
 export type Material = 'papel' | 'plastico' | 'metal' | 'vidro';
-export type Lixeira = 'azul' | 'vermelha' | 'amarela' | 'verde';
+export type Bin = 'azul' | 'vermelha' | 'amarela' | 'verde';
 
 /* ===================== os quatro objetos ===================== */
 // Miúdos de propósito: ficam no chão, ao lado de moedas, num mundo de 320×180. Grandes demais viram obstáculo
 // visual; pequenos demais somem para quem tem baixa visão — a faixa útil aqui é 6 a 11 px de largura.
 
 /** Latinha de alumínio 6×9 — corpo prateado, tampa e base mais escuras, brilho de uma coluna. */
-export const paintLatinha: PixelPainter = (px) => {
+export const paintCan: PixelPainter = (px) => {
   px(1, 1, 4, 7, '#b9c2cc');            // corpo
   px(1, 0, 4, 1, '#8b949e');            // tampa
   px(1, 8, 4, 1, '#8b949e');            // base
@@ -47,7 +47,7 @@ export const paintLatinha: PixelPainter = (px) => {
 };
 
 /** Garrafa PET 6×11 — gargalo estreito, tampa, corpo translúcido esverdeado. */
-export const paintGarrafaPet: PixelPainter = (px) => {
+export const paintPetBottle: PixelPainter = (px) => {
   px(2, 0, 2, 1, '#2f6fd0');            // tampa azul
   px(2, 1, 2, 2, '#bfe6d8');            // gargalo
   px(1, 3, 4, 7, '#a8dcc9');            // corpo
@@ -56,7 +56,7 @@ export const paintGarrafaPet: PixelPainter = (px) => {
 };
 
 /** Pote de vidro 8×9 — boca larga, tampa metálica, corpo azulado transparente. */
-export const paintPoteDeVidro: PixelPainter = (px) => {
+export const paintGlassJar: PixelPainter = (px) => {
   px(1, 0, 6, 1, '#8b949e');            // tampa
   px(1, 1, 6, 1, '#6f7883');            // aro
   px(1, 2, 6, 6, '#a9cfe0');            // corpo
@@ -65,7 +65,7 @@ export const paintPoteDeVidro: PixelPainter = (px) => {
 };
 
 /** Caixa de papelão 10×9 — papelão liso, aba superior e fita no meio. */
-export const paintCaixaDePapelao: PixelPainter = (px) => {
+export const paintCardboardBox: PixelPainter = (px) => {
   px(0, 1, 10, 8, '#c39a63');           // corpo
   px(0, 0, 10, 1, '#a37f4f');           // aba de cima
   px(4, 0, 2, 9, '#d9bb90');            // fita vertical
@@ -73,19 +73,19 @@ export const paintCaixaDePapelao: PixelPainter = (px) => {
 };
 
 /** Catálogo dos objetos: tamanho do canvas + pintor. As chaves são os `Material` de `game/recycling`. */
-export const LIXO_ART: Readonly<Record<Material, { w: number; h: number; paint: PixelPainter }>> = Object.freeze({
-  metal: { w: 6, h: 9, paint: paintLatinha },
-  plastico: { w: 6, h: 11, paint: paintGarrafaPet },
-  vidro: { w: 8, h: 9, paint: paintPoteDeVidro },
-  papel: { w: 10, h: 9, paint: paintCaixaDePapelao },
+export const LITTER_ART: Readonly<Record<Material, { w: number; h: number; paint: PixelPainter }>> = Object.freeze({
+  metal: { w: 6, h: 9, paint: paintCan },
+  plastico: { w: 6, h: 11, paint: paintPetBottle },
+  vidro: { w: 8, h: 9, paint: paintGlassJar },
+  papel: { w: 10, h: 9, paint: paintCardboardBox },
 });
 
 /* ===================== as quatro lixeiras ===================== */
 
-export const LIXEIRA_W = 12, LIXEIRA_H = 15;
+export const BIN_W = 12, BIN_H = 15;
 
 /** A cor de cada lixeira, na CONAMA 275/2001. Corpo e um tom escuro para tampa, aro e sombra. */
-export const COR_DA_LIXEIRA: Readonly<Record<Lixeira, { corpo: string; escuro: string }>> = Object.freeze({
+export const BIN_COLOUR: Readonly<Record<Bin, { corpo: string; escuro: string }>> = Object.freeze({
   azul: { corpo: '#2f6fd0', escuro: '#1e4a8c' },
   vermelha: { corpo: '#c8372d', escuro: '#8d251e' },
   amarela: { corpo: '#e0b423', escuro: '#a07d13' },
@@ -99,8 +99,8 @@ export const COR_DA_LIXEIRA: Readonly<Record<Lixeira, { corpo: string; escuro: s
  * distingue as quatro lixeiras é a cor do corpo, e um símbolo colorido competiria com ela. Claro sobre escuro
  * sobrevive a qualquer um dos dezesseis modos de visão.
  */
-export const paintLixeira = (cor: Lixeira): PixelPainter => (px) => {
-  const { corpo, escuro } = COR_DA_LIXEIRA[cor];
+export const paintBin = (cor: Bin): PixelPainter => (px) => {
+  const { corpo, escuro } = BIN_COLOUR[cor];
   px(1, 3, 10, 11, corpo);              // corpo
   px(0, 1, 12, 2, escuro);              // tampa
   px(5, 0, 2, 1, escuro);               // alça
@@ -129,7 +129,7 @@ export const paintLixeira = (cor: Lixeira): PixelPainter => (px) => {
  * modos de visão; a barra vermelha vem por último, por cima de tudo, porque é ela que transforma "uma pessoa
  * jogando lixo" em "não jogue lixo". Trocar essa ordem inverte o sentido do desenho. */
 
-export const PLACA_W = 20, PLACA_H = 28;
+export const SIGN_W = 20, SIGN_H = 28;
 
 /** Disco Ø18: `[recuo, largura]` por linha. Mesma técnica da roda do carro. */
 const DISCO: readonly (readonly [number, number])[] = [
@@ -151,7 +151,7 @@ const VERMELHO = '#d42a1e', CLARO = '#f2f5f7', PRETO = '#1a1d24', POSTE = '#6f78
  * passa daqui. A placa existe para que a criança saiba POR QUE não passou — sem ela, a barreira seria um bug
  * aos olhos de quem joga.
  */
-export const paintPlaca: PixelPainter = (px) => {
+export const paintSign: PixelPainter = (px) => {
   px(1, 0, 18, 20, CLARO);                                  // prancha
   px(0, 0, 20, 1, PRETO); px(0, 19, 20, 1, PRETO);          // moldura: topo e base
   px(0, 1, 1, 18, PRETO); px(19, 1, 1, 18, PRETO);          // moldura: laterais
@@ -172,21 +172,21 @@ export const paintPlaca: PixelPainter = (px) => {
 
 export interface RecyclingTextures {
   lixo: Record<Material, unknown>;
-  lixeira: Record<Lixeira, unknown>;
+  lixeira: Record<Bin, unknown>;
   placa: unknown;
 }
 
 /** Assa tudo uma vez. Chamada pela raiz de composição no boot — nunca no import (ver o cabeçalho). */
 export function createRecyclingTextures(): RecyclingTextures {
   const lixo = {} as Record<Material, unknown>;
-  for (const m of Object.keys(LIXO_ART) as Material[]) {
-    const a = LIXO_ART[m];
+  for (const m of Object.keys(LITTER_ART) as Material[]) {
+    const a = LITTER_ART[m];
     lixo[m] = pixelTexture(a.w, a.h, a.paint);
   }
-  const lixeira = {} as Record<Lixeira, unknown>;
-  for (const c of Object.keys(COR_DA_LIXEIRA) as Lixeira[]) {
-    lixeira[c] = pixelTexture(LIXEIRA_W, LIXEIRA_H, paintLixeira(c));
+  const lixeira = {} as Record<Bin, unknown>;
+  for (const c of Object.keys(BIN_COLOUR) as Bin[]) {
+    lixeira[c] = pixelTexture(BIN_W, BIN_H, paintBin(c));
   }
-  return { lixo, lixeira, placa: pixelTexture(PLACA_W, PLACA_H, paintPlaca) };
+  return { lixo, lixeira, placa: pixelTexture(SIGN_W, SIGN_H, paintSign) };
 }
 

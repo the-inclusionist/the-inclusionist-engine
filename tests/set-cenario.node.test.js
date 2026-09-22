@@ -16,8 +16,8 @@
 //    continua sendo o terceiro: pintar `worldSprite` direto.
 import { describe, it, expect } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
-import { CENARIOS } from '../app/js/render/cenario-data.js';
-import { createSetCenario } from '../app/js/render/set-cenario.js';
+import { SCENERIES } from '../app/js/render/cenario-data.js';
+import { createSetScenery } from '../app/js/render/set-cenario.js';
 
 /* ===================== dublês ===================== */
 
@@ -44,7 +44,7 @@ function ambiente(over = {}) {
     isVidaReady: () => estado.vidaReady,
     applyCenarioVida: () => log.push(['applyCenarioVida']),
   };
-  return { ctx, log, temasPedidos, estado, worldSprite, api: createSetCenario(ctx) };
+  return { ctx, log, temasPedidos, estado, worldSprite, api: createSetScenery(ctx) };
 }
 
 /* ===================== carregarTilesDoTema ===================== */
@@ -54,7 +54,7 @@ describe('setCenario — validação', () => {
     const { api, log } = ambiente();
     api.setCenario('floresta');
     expect(log[0]).toEqual(['setCenarioValue', 'floresta']);
-    expect(log[1]).toEqual(['parallax', 'floresta', CENARIOS.floresta.nome]);
+    expect(log[1]).toEqual(['parallax', 'floresta', SCENERIES.floresta.nome]);
     expect(pt[log[1][2]]).toBe('Floresta');
   });
 
@@ -62,7 +62,7 @@ describe('setCenario — validação', () => {
     const { api, log, temasPedidos } = ambiente();
     api.setCenario('praia');
     expect(log[0]).toEqual(['setCenarioValue', 'cidade']);
-    expect(log[1]).toEqual(['parallax', 'cidade', CENARIOS.cidade.nome]);
+    expect(log[1]).toEqual(['parallax', 'cidade', SCENERIES.cidade.nome]);
     expect(pt[log[1][2]]).toBe('Cidade');
     expect(temasPedidos).toEqual(['cidade']); // os tiles pedidos são os da Cidade, e não os de 'praia'
   });

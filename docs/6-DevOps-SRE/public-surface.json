@@ -1006,12 +1006,12 @@
   "render/camera.ts": [
     "Camera",
     "CameraObj",
-    "Tamanho",
-    "ZonaMorta",
+    "DeadZone",
+    "Size",
     "clampInside",
-    "criarCamera",
-    "enquadrar",
-    "tremer"
+    "createCamera",
+    "frameOn",
+    "shake"
   ],
   "render/canvas.ts": [
     "PixelBrush",
@@ -1023,16 +1023,16 @@
     "tex"
   ],
   "render/cenario-data.ts": [
-    "CENARIOS",
-    "CENARIO_PADRAO",
-    "CenarioTema",
-    "FaixaDePredios",
+    "BuildingBand",
+    "BuildingsTheme",
+    "DEFAULT_SCENERY",
     "Flora",
+    "HillsTheme",
+    "SCENERIES",
+    "SceneryTheme",
     "THEME_FLORA",
-    "TemaMorros",
-    "TemaPredios",
     "hexN",
-    "normalizarCenario"
+    "normaliseScenery"
   ],
   "render/city-tex.ts": [
     "ADULT_COL",
@@ -1048,11 +1048,11 @@
     "Frame",
     "TexPair",
     "createCityTextures",
-    "paintCao",
     "paintCar",
-    "paintGato",
-    "paintPombo",
-    "paintPomboFly"
+    "paintCat",
+    "paintDog",
+    "paintPigeon",
+    "paintPigeonFly"
   ],
   "render/city-tiles.ts": [
     "cityTiles",
@@ -1131,8 +1131,8 @@
     "worldToTextureDirect"
   ],
   "render/low-vision-drawing.ts": [
-    "DesenhoDeBaixaVisao",
-    "desenharBaixaVisao"
+    "LowVisionDrawing",
+    "drawLowVision"
   ],
   "render/lq-filter.ts": [
     "LqFilterCtx",
@@ -1156,15 +1156,15 @@
     "setMinimapVisible"
   ],
   "render/parallax.ts": [
-    "ARQUIVO_POR_CAMADA",
-    "CamadaParallax",
+    "FILE_PER_LAYER",
     "PARALLAX",
     "ParallaxApi",
     "ParallaxCtx",
-    "PosicaoParallax",
+    "ParallaxLayer",
+    "ParallaxPosition",
     "TilingSpriteLike",
     "createParallax",
-    "posicoesParallax"
+    "parallaxPositions"
   ],
   "render/player-anim.ts": [
     "AnimPlayer",
@@ -1176,41 +1176,41 @@
     "choosePlayerFrame"
   ],
   "render/port.ts": [
-    "AlcanceDoFiltro",
-    "AplicarAltoContrasteNoDom",
-    "AplicarFiltroCss",
-    "Camada",
-    "CamadaEsvaziavel",
-    "ComFiltro",
-    "ComTextura",
-    "CriarAzulejo",
-    "CriarDesenho",
-    "CriarSprite",
-    "Descartavel",
-    "Desenho",
-    "DesenhoComCirculo",
-    "DesenhoComLinha",
-    "RenderizarEm",
-    "Tingivel",
-    "Visivel"
+    "ApplyCssFilter",
+    "ApplyHighContrastToDom",
+    "ClearableLayer",
+    "CreateDrawing",
+    "CreateSprite",
+    "CreateTile",
+    "Disposable",
+    "Drawing",
+    "DrawingWithCircle",
+    "DrawingWithLine",
+    "FilterReach",
+    "Layer",
+    "RenderInto",
+    "Tintable",
+    "Visible",
+    "WithFilter",
+    "WithTexture"
   ],
   "render/recycling-tex.ts": [
-    "COR_DA_LIXEIRA",
-    "LIXEIRA_H",
-    "LIXEIRA_W",
-    "LIXO_ART",
-    "Lixeira",
+    "BIN_COLOUR",
+    "BIN_H",
+    "BIN_W",
+    "Bin",
+    "LITTER_ART",
     "Material",
-    "PLACA_H",
-    "PLACA_W",
     "RecyclingTextures",
+    "SIGN_H",
+    "SIGN_W",
     "createRecyclingTextures",
-    "paintCaixaDePapelao",
-    "paintGarrafaPet",
-    "paintLatinha",
-    "paintLixeira",
-    "paintPlaca",
-    "paintPoteDeVidro"
+    "paintBin",
+    "paintCan",
+    "paintCardboardBox",
+    "paintGlassJar",
+    "paintPetBottle",
+    "paintSign"
   ],
   "render/scene-city.ts": [
     "CORAL_COLORS",
@@ -1234,29 +1234,29 @@
     "waterBedKind"
   ],
   "render/scene-parallax.ts": [
-    "SILHUETAS",
+    "SILHOUETTES",
     "Sol",
-    "desenharPredios",
+    "drawBuildings",
     "hash01",
     "hillHeight",
-    "larguraDoCeu",
-    "paradasDoCeu",
+    "paintSun",
     "parallaxPlaceholder",
-    "pintarSol",
+    "skyStops",
+    "skyWidth",
     "themeCitySkyTexture",
     "themeHillsTexture",
     "themeSkyTexture",
     "themeSkylineTexture"
   ],
   "render/scene-sky.ts": [
-    "NUVEM_H",
-    "NUVEM_W",
-    "NuvemDeTela",
+    "CLOUD_H",
+    "CLOUD_W",
     "SceneSky",
     "SceneSkyCtx",
+    "ScreenCloud",
     "cloudWrapX",
     "createSceneSky",
-    "nuvensDeTela"
+    "screenClouds"
   ],
   "render/screen-pipeline.ts": [
     "CameraLike",
@@ -1281,10 +1281,10 @@
     "planScreens"
   ],
   "render/set-cenario.ts": [
-    "SetCenarioApi",
-    "SetCenarioCtx",
-    "TilesDoTema",
-    "createSetCenario"
+    "SetSceneryApi",
+    "SetSceneryCtx",
+    "ThemeTiles",
+    "createSetScenery"
   ],
   "render/sprite-fx.ts": [
     "outlineCanvas",
@@ -1333,43 +1333,43 @@
     "initViewports"
   ],
   "render/viz-axes-labels.ts": [
-    "CURTO_DA_CORRECAO",
-    "CURTO_DO_TEMA",
-    "EixoVisual",
-    "EscolhaDeEixo",
-    "ROTULO_DA_CORRECAO",
-    "ROTULO_DO_TEMA",
-    "Tradutor",
-    "eixosHtml",
-    "escolhaDoBotao",
-    "linhasDoEixo"
+    "AxisChoice",
+    "CORRECTION_LABEL",
+    "SHORT_CORRECTION",
+    "SHORT_THEME",
+    "THEME_LABEL",
+    "Translator",
+    "VisualAxis",
+    "axesHtml",
+    "axisRows",
+    "buttonChoice"
   ],
   "render/viz-axes.ts": [
-    "Aplicacao",
-    "CHAVES_ANTIGAS",
-    "CORRECOES",
+    "CORRECTIONS",
     "Correction",
-    "MotivoIndisponivel",
+    "HowItApplies",
+    "LEGACY_KEYS",
     "PADRAO",
-    "SIMULACOES",
+    "SIMULATIONS",
     "Simulation",
-    "TEMAS",
+    "THEMES",
     "Theme",
+    "UnavailableReason",
     "VisualState",
-    "aplicacao",
-    "chaveDeTextura",
-    "chaveLegada",
-    "ehBaixaVisao",
-    "ehCego",
-    "ehSimulacao",
-    "filtroChave",
-    "migrarVisual",
+    "directTheme",
+    "filterKey",
+    "hasHighContrast",
+    "howItApplies",
+    "isBlind",
+    "isLowVision",
+    "isSimulation",
+    "legacyKey",
+    "migrateVisual",
+    "nextCorrection",
+    "nextTheme",
     "nosPadroes",
-    "proximaCorrecao",
-    "proximoTema",
-    "simulacaoIndisponivel",
-    "temAltoContraste",
-    "temaDireto"
+    "simulationUnavailable",
+    "textureKey"
   ],
   "render/viz-modes.ts": [
     "VIZ_BY_KEY",
@@ -1384,20 +1384,20 @@
     "simulatesDisability"
   ],
   "render/viz-refusal.ts": [
-    "CHAVE_DO_MOTIVO",
-    "Recusa",
-    "mostraMesmoIndisponivel",
-    "recusaDaSimulacao"
+    "REASON_KEY",
+    "Refusal",
+    "showsEvenWhenUnavailable",
+    "simulationRefusal"
   ],
   "render/viz-setters.ts": [
     "VizSettersApi",
     "VizSettersCtx",
-    "alcanceDoModo",
     "cssFilterFor",
     "initVizSetters",
     "isDirectMode",
-    "lerVisualGuardado",
     "lvOverlayClassFor",
+    "reachOfMode",
+    "readStoredVisual",
     "resolveViz",
     "vizDotFor",
     "vizGroupHtml",
@@ -1408,10 +1408,8 @@
     "RainDrop",
     "ThunderStep",
     "WeatherCtx",
-    "aglomeracaoAlvo",
     "drawWeather",
-    "faseDoClima",
-    "getAglomeracao",
+    "getCrowding",
     "getRainLevel",
     "getWeatherT",
     "initWeather",
@@ -1421,7 +1419,9 @@
     "setWeatherT",
     "stepRainDrop",
     "stepThunder",
-    "updateWeather"
+    "targetCrowding",
+    "updateWeather",
+    "weatherPhase"
   ],
   "render/wheelchair-sprites.ts": [
     "DrawGraphics",
@@ -1750,7 +1750,7 @@
   "ui/reach-notice.ts": [
     "REACH_NOTICE_ID",
     "ReachNoticeCtx",
-    "Tradutor",
+    "Translator",
     "linhasDoAviso",
     "mostrarAvisoDeAlcance"
   ],
@@ -1939,10 +1939,10 @@
     "touchControlsPlan"
   ],
   "ui/simulation-refusal.ts": [
-    "CHAVE_DO_MOTIVO",
-    "Recusa",
-    "mostraMesmoIndisponivel",
-    "recusaDaSimulacao"
+    "REASON_KEY",
+    "Refusal",
+    "showsEvenWhenUnavailable",
+    "simulationRefusal"
   ],
   "ui/title.ts": [
     "TITLE_MENU_IDS",
@@ -1956,16 +1956,16 @@
     "isTitleMenuId"
   ],
   "ui/visual-axes-panel.ts": [
-    "CURTO_DA_CORRECAO",
-    "CURTO_DO_TEMA",
-    "EixoVisual",
-    "EscolhaDeEixo",
-    "ROTULO_DA_CORRECAO",
-    "ROTULO_DO_TEMA",
-    "Tradutor",
-    "eixosHtml",
-    "escolhaDoBotao",
-    "linhasDoEixo"
+    "AxisChoice",
+    "CORRECTION_LABEL",
+    "SHORT_CORRECTION",
+    "SHORT_THEME",
+    "THEME_LABEL",
+    "Translator",
+    "VisualAxis",
+    "axesHtml",
+    "axisRows",
+    "buttonChoice"
   ],
   "ui/vlibras.ts": [
     "librasOpen",

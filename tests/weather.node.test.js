@@ -12,7 +12,7 @@ import {
 // `setCenarioValue` SAIU deste arquivo: desde a Fase B (ADR-0038) o `render/weather` não lê o cenário —
 // ele recebe a PERGUNTA `temChuva` por injeção, e o catálogo é de quem compõe. O teste ficou melhor por
 // isso: passou a controlar diretamente a condição que exercita, em vez de montá-la por estado global.
-import { CENARIOS } from '../app/js/render/cenario-data.js';
+import { SCENERIES } from '../app/js/render/cenario-data.js';
 
 describe('rainLevelTarget (curva L5: bom 30s → loop de 60s garoa/chuva/garoa/bom)', () => {
   it('[Zero] antes de 30s: sempre seco, mesmo num tema que tem chuva', () => {
@@ -43,7 +43,7 @@ describe('quem tem chuva é o TEMA, e não um `if` dentro do clima', () => {
     // Era `cenario === 'cidade'` dentro de render/weather: verdade enquanto a Cidade fosse o único tema
     // molhado, e invisível para quem fosse dar chuva a um tema novo — a pessoa abre a tabela de cenários e não
     // acha nada para mudar, porque não havia nada lá. Este caso é o que trava a volta daquele `if`.
-    const comChuva = Object.keys(CENARIOS).filter((id) => CENARIOS[id].chuva);
+    const comChuva = Object.keys(SCENERIES).filter((id) => SCENERIES[id].chuva);
     expect(comChuva.sort()).toEqual(['cidade', 'floresta']);
   });
 });

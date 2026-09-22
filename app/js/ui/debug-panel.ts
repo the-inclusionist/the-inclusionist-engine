@@ -17,7 +17,7 @@ type Juice = JuiceFlags;
  * UMA FOTO DO PERSONAGEM num quadro — DADOS, e nenhum objeto do PixiJS.
  *
  * A raiz de composição, que é o único lugar onde o PixiJS já é conhecido, tira a foto e entrega strings. É a
- * mesma escolha de `RenderizarEm` e `CriarSprite` em render/port: pedir o VERBO cabe onde emprestar o objeto
+ * mesma escolha de `RenderInto` e `CreateSprite` em render/port: pedir o VERBO cabe onde emprestar o objeto
  * não cabe — e aqui ela paga duas vezes, porque mantém `ui/debug-panel` testável no project `node`.
  */
 export interface AmostraDoPersonagem {

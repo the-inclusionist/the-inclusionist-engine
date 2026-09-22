@@ -9,7 +9,7 @@
 // afirmar que a função não lançou. O que ele NÃO consegue dizer é se está bonito — isso continua precisando
 // de olho, e está declarado como não verificado no commit.
 import { describe, it, expect } from 'vitest';
-import { hash01, SILHUETAS } from '../app/js/render/scene-parallax.js';
+import { hash01, SILHOUETTES } from '../app/js/render/scene-parallax.js';
 
 /** Contexto 2D de mentira: registra as chamadas em vez de pintar. */
 function ctxFalso() {
@@ -62,28 +62,28 @@ describe('hash01 — a sujeira reprodutível que substitui Math.random', () => {
 describe('SILHUETAS — o catálogo por tema', () => {
   it('[Right] os quatro temas de fundo gerado têm silhueta nas DUAS faixas', () => {
     for (const id of ['campo', 'cemiterio', 'espaco', 'floresta']) {
-      expect(SILHUETAS[id], id).toBeTruthy();
-      expect(SILHUETAS[id].far, id + '.far').toBeTruthy();
-      expect(SILHUETAS[id].near, id + '.near').toBeTruthy();
+      expect(SILHOUETTES[id], id).toBeTruthy();
+      expect(SILHOUETTES[id].far, id + '.far').toBeTruthy();
+      expect(SILHOUETTES[id].near, id + '.near').toBeTruthy();
     }
   });
 
   it('[Interface] campo, cemitério e espaço COMPARTILHAM a silhueta — é a mesma terra em três horas', () => {
     // "Cemitério" e "espaço" são ids que MENTEM: os temas viraram "Amanhecer no Campo" e "Noite no Campo".
     // Se alguém der silhuetas próprias a eles, ou renomeou os ids (bom) ou voltou a acreditar neles (ruim).
-    expect(SILHUETAS.cemiterio).toBe(SILHUETAS.campo);
-    expect(SILHUETAS.espaco).toBe(SILHUETAS.campo);
+    expect(SILHOUETTES.cemiterio).toBe(SILHOUETTES.campo);
+    expect(SILHOUETTES.espaco).toBe(SILHOUETTES.campo);
   });
 
   it('[Boundary] a MATA DISTANTE da floresta é densa; a do campo é rala — é aí que a diferença mora', () => {
     // Escrevi "a floresta é mais densa nas DUAS faixas" e ver na tela mostrou que isso é falso e indesejável:
     // a faixa da FRENTE da floresta é de troncos individuais, ESPARSOS, e são eles que dão escala. A mata
     // fechada é a de trás. Densidade nas duas faixas produziria uma parede verde sem profundidade nenhuma.
-    expect(SILHUETAS.floresta.far.passo).toBeLessThan(SILHUETAS.campo.far.passo);
+    expect(SILHOUETTES.floresta.far.passo).toBeLessThan(SILHOUETTES.campo.far.passo);
   });
 
   it('[Interface] na floresta a frente é ESPARSA e ALTA — troncos, não parede', () => {
-    const f = SILHUETAS.floresta;
+    const f = SILHOUETTES.floresta;
     expect(f.near.passo).toBeGreaterThan(f.far.passo);   // menos elementos
     expect(f.near.alt[0]).toBeGreaterThan(f.far.alt[1]); // e cada um bem maior que qualquer um do fundo
   });
@@ -93,20 +93,20 @@ describe('SILHUETAS — o catálogo por tema', () => {
     // Lá a frente é uma CERCA (7–9 px) e o fundo são ÁRVORES (10–16), e uma cerca mais baixa que as árvores
     // atrás dela é exatamente o certo. A profundidade no campo vem do TIPO de elemento, não da altura.
     // A regra só vale onde o elemento se repete, que é a floresta: conífera perto é maior que conífera longe.
-    const f = SILHUETAS.floresta;
+    const f = SILHOUETTES.floresta;
     expect(f.near.el).toBe(f.far.el);
     expect(f.near.alt[0]).toBeGreaterThan(f.far.alt[0]);
     expect(f.near.alt[1]).toBeGreaterThan(f.far.alt[1]);
   });
 
   it('[Interface] no campo a profundidade vem do TIPO: cerca na frente, árvore no fundo', () => {
-    expect(SILHUETAS.campo.near.el).not.toBe(SILHUETAS.campo.far.el);
+    expect(SILHOUETTES.campo.near.el).not.toBe(SILHOUETTES.campo.far.el);
   });
 });
 
 describe('os elementos desenham algo, e desenham para CIMA', () => {
-  const casos = [['campo far', SILHUETAS.campo.far], ['campo near', SILHUETAS.campo.near],
-    ['floresta far', SILHUETAS.floresta.far], ['floresta near', SILHUETAS.floresta.near]];
+  const casos = [['campo far', SILHOUETTES.campo.far], ['campo near', SILHOUETTES.campo.near],
+    ['floresta far', SILHOUETTES.floresta.far], ['floresta near', SILHOUETTES.floresta.near]];
 
   for (const [nome, sil] of casos) {
     it(`[Right] ${nome}: pede desenho e nada desce abaixo da linha do morro`, () => {

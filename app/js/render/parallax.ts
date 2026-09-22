@@ -10,7 +10,7 @@
 // `updateParallax` era MATEMÁTICA PURA DISFARÇADA DE EFEITO. Dado (camX, camY) e os fatores de profundidade,
 // existe UMA posição determinada para cada camada — mas no monólito essa posição só existia como o lado
 // esquerdo de quatro atribuições dentro de um `for`, e a única forma de conferi-la era subir o jogo inteiro e
-// olhar. Aqui a conta é `posicoesParallax(camX, camY, camadas, reduzido)`, uma função pura que devolve
+// olhar. Aqui a conta é `parallaxPositions(camX, camY, camadas, reduzido)`, uma função pura que devolve
 // `{x, y, tileX, tileY}` por camada, e o `updateParallax` virou o carimbo dela nos sprites.
 //
 // O que essa separação torna verificável — e o que quebraria em SILÊNCIO sem ela:
@@ -79,13 +79,13 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D2-b).
 
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
-import type { CenarioTema, TemaMorros, TemaPredios, FaixaDePredios } from './cenario-data.js';
-import type { CriarAzulejo } from './port.js';
+import type { SceneryTheme, HillsTheme, BuildingsTheme, BuildingBand } from './cenario-data.js';
+import type { CreateTile } from './port.js';
 
 /* ===================== os fatores de profundidade (dado) ===================== */
 
 /** Uma camada de fundo: `factor` = quanto do movimento horizontal da câmera ela reproduz; `fy`, o vertical. */
-export interface CamadaParallax {
+export interface ParallaxLayer {
   key: string;    // nome de leitura ('sky'/'far'/'near') — documentação, não é usado no cálculo
   factor: number; // 0 = imóvel (infinitamente distante) · 1 = colada no mundo
   fy: number;     // 0 = parallax horizontal clássico (a textura tem a altura do viewport → sem repetição vertical)
@@ -96,19 +96,19 @@ export interface CamadaParallax {
    PixelLab. Vivem DENTRO do camera (contra-posicionadas p/ ficarem fixas na tela) para também aparecerem nas
    render-textures do multiplayer. tilePosition faz o scroll fracionado → ilusão de profundidade.
    A ORDEM do array é a ordem-z: índice 0 no fundo. */
-export const PARALLAX: readonly CamadaParallax[] = [
+export const PARALLAX: readonly ParallaxLayer[] = [
   { key: 'sky',  factor: 0.10, fy: 0 }, // Camada 4 — mais distante (céu/horizonte), maior imagem
   { key: 'far',  factor: 0.28, fy: 0 }, // Camada 3
   { key: 'near', factor: 0.52, fy: 0 }, // Camada 2 — mais próxima do tileset
 ];
 
 /** Índice da camada → número do arquivo PNG da Cidade (`c4.png`, `c3.png`, `c2.png`). */
-export const ARQUIVO_POR_CAMADA: readonly number[] = [4, 3, 2];
+export const FILE_PER_LAYER: readonly number[] = [4, 3, 2];
 
 /* ===================== a conta (pura) ===================== */
 
 /** Onde uma camada fica neste quadro. `x`/`y` = posição DENTRO do camera; `tileX`/`tileY` = rolagem da textura. */
-export interface PosicaoParallax { x: number; y: number; tileX: number; tileY: number }
+export interface ParallaxPosition { x: number; y: number; tileX: number; tileY: number }
 
 /**
  * A matemática do parallax, sem sprite nenhum.
@@ -120,12 +120,12 @@ export interface PosicaoParallax { x: number; y: number; tileX: number; tileY: n
  * parede; a contra-posição CONTINUA valendo, senão o fundo passaria a deslizar junto com o mundo — o oposto
  * exato do que a opção existe para dar.
  */
-export function posicoesParallax(
+export function parallaxPositions(
   camX: number,
   camY: number,
-  camadas: readonly CamadaParallax[] = PARALLAX,
+  camadas: readonly ParallaxLayer[] = PARALLAX,
   reduzido = false,
-): PosicaoParallax[] {
+): ParallaxPosition[] {
   return camadas.map((p) => ({
     x: camX,
     y: camY,
@@ -150,7 +150,7 @@ export interface TilingSpriteLike {
 }
 // O construtor virou FÁBRICA (Fase D): `new (tex: unknown)` não recebe o `PIXI.Azulejo` real, cujo
 // construtor só aceita `Texture`. Por contravariância, prometer aceitar qualquer coisa é o que impede.
-// Ver `CriarAzulejo` no cabeçalho de `render/port`.
+// Ver `CreateTile` no cabeçalho de `render/port`.
 /** `camera` — só a inserção em posição de z fixa. */
 interface ContainerLike { addChildAt(child: unknown, index: number): unknown }
 /** `starsG`/`skyDecoG`/`fogG`: contra-posicionados junto com o parallax. */
@@ -159,18 +159,18 @@ interface PosicionavelLike { position: { set(x: number, y: number): void } }
 export interface ParallaxCtx {
   /* --- render-graph (criados no game.js; a ordem-z é soldada lá) --- */
   camera: ContainerLike;          // container do mundo — as 3 camadas entram nos índices 0,1,2
-  criarAzulejo: CriarAzulejo<TilingSpriteLike>; // era `TilingSprite: TilingSpriteCtor`
+  criarAzulejo: CreateTile<TilingSpriteLike>; // era `TilingSprite: TilingSpriteCtor`
 
   /* --- geradores de textura (render/scene-parallax): injetados, não importados, p/ rodar no project node --- */
   placeholderTex: (i: number) => unknown;                       // parallaxPlaceholder — fundo da Cidade sem PNG
-  skyTex: (T: CenarioTema) => unknown;                          // themeSkyTexture — gradiente do céu do tema
+  skyTex: (T: SceneryTheme) => unknown;                          // themeSkyTexture — gradiente do céu do tema
   /** themeHillsTexture — banda de morros. O `tema` escolhe a SILHUETA plantada em cima (árvores, cerca). */
-  hillsTex: (T: TemaMorros, near: boolean, tema: string) => unknown;
+  hillsTex: (T: HillsTheme, near: boolean, tema: string) => unknown;
 
   /** themeCitySkyTexture — céu + prédios distantes da Cidade, a única camada opaca dela. */
-  citySkyTex: (T: TemaPredios) => unknown;
+  citySkyTex: (T: BuildingsTheme) => unknown;
   /** themeSkylineTexture — uma faixa de prédios sobre transparência. */
-  skylineTex: (faixa: FaixaDePredios, semente: number) => unknown;
+  skylineTex: (faixa: BuildingBand, semente: number) => unknown;
 
   /* --- estado vivo --- */
   rm: { parallax?: boolean };        // `const` mutado in place (movimento reduzido) → VALOR
@@ -186,7 +186,7 @@ export interface ParallaxApi {
   layers: TilingSpriteLike[];  // os 3 TilingSprite, na ordem-z
   texNormal: unknown[];        // as texturas CRUAS (fonte do recolor) — array ESTÁVEL, elementos trocados in place
   updateParallax(camX: number, camY: number): void;
-  aplicarTemaParallax(theme: string, T: CenarioTema): void;
+  aplicarTemaParallax(theme: string, T: SceneryTheme): void;
 }
 
 /* ===================== a montagem + o carimbo (impuro) ===================== */
@@ -202,7 +202,7 @@ export function createParallax(ctx: ParallaxCtx): ParallaxApi {
   const texNormal: unknown[] = layers.map((ts) => ts.texture);
 
   function updateParallax(camX: number, camY: number): void {
-    const pos = posicoesParallax(camX, camY, PARALLAX, !!ctx.rm.parallax);
+    const pos = parallaxPositions(camX, camY, PARALLAX, !!ctx.rm.parallax);
     for (let i = 0; i < layers.length; i++) {
       const ts = layers[i]!, q = pos[i]!;
       ts.x = q.x; ts.y = q.y;              // anula o camera → fixa na tela
@@ -228,7 +228,7 @@ export function createParallax(ctx: ParallaxCtx): ParallaxApi {
    * podia ter trocado de cenário no meio. Isso sumiu com os arquivos — não há mais o que baixar, e portanto
    * não há mais corrida que possa perder.
    */
-  function aplicarTemaParallax(theme: string, T: CenarioTema): void {
+  function aplicarTemaParallax(theme: string, T: SceneryTheme): void {
     const texs = T.fundo === 'predios'
       ? [ctx.citySkyTex(T), ctx.skylineTex(T.predios[1], 977), ctx.skylineTex(T.predios[2], 131)]
       : [ctx.skyTex(T), ctx.hillsTex(T, false, theme), ctx.hillsTex(T, true, theme)];

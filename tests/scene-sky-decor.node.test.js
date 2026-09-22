@@ -20,12 +20,12 @@ function setup(over = {}) {
     skyLayer, ...layers, CLOUD_TEX: [{}, {}], BIRD_TEX: [{}, {}], criarSprite: (t) => new Sprite(t),
     hexN: (s) => parseInt(String(s).slice(1), 16), rnd: () => 0.9, randInt: () => 0,
     WORLD_PX_W: 100, WORLD_PX_H: 100, WORLD_W: 10, WORLD_H: 10, TILE: 16, LOGICAL_W: 320, LOGICAL_H: 180, BOX: { h: 24 },
-    CENARIOS: over.CENARIOS || { campo: { v3: true, decor: ['sparkles', 'nuvens'], cloud: ['#ffffff', '#dddddd'] }, cidade: { v3: false, decor: [] } },
+    SCENERIES: over.SCENERIES || { campo: { v3: true, decor: ['sparkles', 'nuvens'], cloud: ['#ffffff', '#dddddd'] }, cidade: { v3: false, decor: [] } },
     THEME_FLORA: {}, DIRECT_CFG: over.DIRECT_CFG || {},
     solidAt: () => false, tileAt: () => 0,
     getCenario: () => over.cenario || 'campo', getVizMode: () => over.vizMode || 'normal',
     getPlayers: () => over.players || [], getFxClock: () => over.t || 0, getRm: () => over.rm || {},
-    getAglomeracao: () => over.junta || 0,
+    getCrowding: () => over.junta || 0,
   };
   return { sky: createSceneSky(ctx), skyLayer, layers };
 }
@@ -93,15 +93,15 @@ const TEMA_LAJE = { campo: { decor: ['nuvens'], cloud: ['#ffffff', '#dddddd'] } 
 
 describe('nuvens de tela: manta (tema com `nuvens`) vs. as 3 lajes da v3', () => {
   it('[Interface] tema SEM `nuvens` desenha exatamente 3 lajes, como sempre desenhou', () => {
-    const { sky, layers } = setup({ CENARIOS: TEMA_LAJE });
+    const { sky, layers } = setup({ SCENERIES: TEMA_LAJE });
     sky.stepV3Decor();
     expect(layers.skyDecoG._rec.fills).toBe(6); // 3 nuvens × (corpo + sombra)
   });
 
   it('[Interface] tema COM `nuvens: 27` desenha as 27, e consulta a aglomeração para saber como', () => {
-    // Se `getAglomeracao` sumir do ctx do game.js, este caso reprova com TypeError em vez de o jogo abrir com
+    // Se `getCrowding` sumir do ctx do game.js, este caso reprova com TypeError em vez de o jogo abrir com
     // um céu quebrado — que foi como a ligação quase passou despercebida.
-    const { sky, layers } = setup({ CENARIOS: TEMA_MANTA, junta: 1 });
+    const { sky, layers } = setup({ SCENERIES: TEMA_MANTA, junta: 1 });
     expect(() => sky.stepV3Decor()).not.toThrow();
     expect(layers.nuvemG._rec.fills).toBe(54); // 27 nuvens × (corpo + sombra)
   });
@@ -110,7 +110,7 @@ describe('nuvens de tela: manta (tema com `nuvens`) vs. as 3 lajes da v3', () =>
     // A ordem-z é o pedido: a manta fica na frente do céu (é assim que ela esconde o sol) e ATRÁS das bandas
     // de morro (é assim que as árvores do fundo passam na frente dela). `skyDecoG`, onde moram os pássaros,
     // está à FRENTE dos morros — desenhar a manta lá poria nuvem na frente de árvore.
-    const { sky, layers } = setup({ CENARIOS: TEMA_MANTA, junta: 1 });
+    const { sky, layers } = setup({ SCENERIES: TEMA_MANTA, junta: 1 });
     sky.stepV3Decor();
     expect(layers.nuvemG._rec.rects.length).toBeGreaterThan(0);
     expect(layers.skyDecoG._rec.rects).toEqual([]);
@@ -119,7 +119,7 @@ describe('nuvens de tela: manta (tema com `nuvens`) vs. as 3 lajes da v3', () =>
   it('[Boundary] a camada da manta é limpa a cada quadro, mesmo em tema que não a usa', () => {
     // Trocar da Floresta para o Campo sem limpar deixaria a última manta congelada no céu do Campo. A limpeza
     // vem ANTES de qualquer decisão de tema, e é por isso que este caso usa o tema que não desenha nada lá.
-    const { sky, layers } = setup({ CENARIOS: TEMA_LAJE });
+    const { sky, layers } = setup({ SCENERIES: TEMA_LAJE });
     sky.stepV3Decor();
     expect(layers.nuvemG._rec.clears).toBe(1);
     expect(layers.nuvemG._rec.rects).toEqual([]);
@@ -130,8 +130,8 @@ describe('nuvens de tela: manta (tema com `nuvens`) vs. as 3 lajes da v3', () =>
     // opção existe para eliminar. Fechada, a manta tem nuvens visivelmente maiores; aqui elas não podem estar.
     const larguraMaxima = (over) => { const { sky, layers } = setup(over); sky.stepV3Decor();
       return Math.max(...layers.nuvemG._rec.rects.map((r) => r[2])); };
-    const fechada = larguraMaxima({ CENARIOS: TEMA_MANTA, junta: 1 });
-    const reduzida = larguraMaxima({ CENARIOS: TEMA_MANTA, junta: 1, rm: { decor: true } });
+    const fechada = larguraMaxima({ SCENERIES: TEMA_MANTA, junta: 1 });
+    const reduzida = larguraMaxima({ SCENERIES: TEMA_MANTA, junta: 1, rm: { decor: true } });
     expect(reduzida).toBeLessThan(fechada);
   });
 });

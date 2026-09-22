@@ -11,7 +11,7 @@
 // quando o estado muda, e um ícone `em construção` nunca se declara ligado.
 // ZOMBIES (Zero/One/Many/Boundary/Interface/Exception/Simple) + Right-BICEP.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { migrarVisual, PADRAO } from '../app/js/render/viz-axes.js';
+import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
 import pt from '../app/js/i18n/pt.js';
 import {
   PAUSE_ICONS, CALM_AUDIO_CATS, CVD_SEQ, CVD_NAMES,
@@ -145,7 +145,7 @@ function buildCtx(over = {}) {
     rmChar: RM_CHAR,
     saveRM: () => { state.saved++; },
     setToggleMove: (i, on) => { state.toggleMoveCalls.push([i, on]); const p = players[i]; if (p) p.toggleMove = on; },
-    setPlayerViz: (i, mode) => { state.vizCalls.push([i, mode]); const p = players[i]; if (p) { p.viz = mode; p.visual = migrarVisual(mode); } },
+    setPlayerViz: (i, mode) => { state.vizCalls.push([i, mode]); const p = players[i]; if (p) { p.viz = mode; p.visual = migrateVisual(mode); } },
     // Os escritores POR EIXO (#104): mexer num nao apaga o outro, e e' isso que os casos afirmam.
     setTemaDoJogador: (i, tema) => { state.vizCalls.push([i, 'tema:' + tema]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? PADRAO), tema }; },
     setCorrecaoDoJogador: (i, correcao) => { state.vizCalls.push([i, 'correcao:' + correcao]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? PADRAO), correcao }; },
@@ -161,7 +161,7 @@ function setPlayers(list) {
   // continuarem a declarar o modo pelo nome — que é como eles falam. Quem precisa dos DOIS eixos ao mesmo
   // tempo passa `visual` directamente, e é isso que o distingue.
   list.forEach((p) => players.push(
-    p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrarVisual(p.viz) } : p,
+    p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrateVisual(p.viz) } : p,
   ));
   setNumPlayersValue(list.length || 1);
 }
@@ -302,7 +302,7 @@ function snap(over = {}) {
     blindMode: false, ttsOn: false, librasOn: false, calmMode: 0,
     toggleMove: false, viz: 'normal', privateOutput: true, ...over,
   };
-  return { ...base, visual: base.visual ?? migrarVisual(base.viz) };
+  return { ...base, visual: base.visual ?? migrateVisual(base.viz) };
 }
 
 describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
@@ -690,7 +690,7 @@ describe('initPauseIcons — ações dos ícones', () => {
 
       initPauseIcons(ctx).iconAct('altmove', 0);
 
-      // ⚠️ Literais, e não `chaveDaAlternancia(...)`: afirmar a chave chamando a mesma função que a escreve
+      // ⚠️ Literais, e não `latchKey(...)`: afirmar a chave chamando a mesma função que a escreve
       // mediria a ida e a volta pela mesma tabela, e as duas mover-se-iam juntas. É a mesma nota que o caso
       // do modo cego já carrega sobre a codificação `1`/`0`.
       expect(guardado['incl_togglemove_p0_gamepad'], 'o ícone não escreveu a chave do aparelho em uso')
@@ -1078,7 +1078,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     const b = fakeIconBtn('cvd');
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-cvd-protan')).toBe(true);
-    players[0].visual = migrarVisual('fix-tritan');
+    players[0].visual = migrateVisual('fix-tritan');
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-cvd-protan')).toBe(false);
     expect(b.classList.contains('pi-cvd-tritan')).toBe(true);

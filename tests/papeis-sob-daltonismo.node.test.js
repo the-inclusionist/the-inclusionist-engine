@@ -42,7 +42,7 @@ import { CVD_MATRIX } from '../app/js/render/cvd-matrices.js';
 import { razaoDeContraste } from './fixtures/contraste-wcag.js';
 
 /** As três SIMULAÇÕES — é o que uma pessoa daltónica vê. As `fix-*` são correcções e não entram aqui. */
-const SIMULACOES = ['sim-protan', 'sim-deuter', 'sim-tritan'];
+const SIMULATIONS = ['sim-protan', 'sim-deuter', 'sim-tritan'];
 
 /**
  * Aplica uma `feColorMatrix` (4 linhas de 5: R,G,B,A,offset) a um RGB 0-255.
@@ -103,13 +103,13 @@ describe('color-blocking sobrevive ao daltonismo (ADR-0011, issue #12)', () => {
   it('[Zero] a paleta e as matrizes existem, e o crivo vê os quatro papéis', () => {
     expect(HC_ROLE_KEYS.length).toBe(4);
     for (const k of HC_ROLE_KEYS) expect(HC_ROLE_DEF[k], `${k} sem cor`).toHaveLength(3);
-    for (const s of SIMULACOES) expect(CVD_MATRIX[s], `${s} sem matriz`).toHaveLength(20);
+    for (const s of SIMULATIONS) expect(CVD_MATRIX[s], `${s} sem matriz`).toHaveLength(20);
     expect(paresDe(null)).toHaveLength(6); // 4 papéis = 6 pares
   });
 
   it('⚠️ [Right] nenhum par de papéis colapsa, em NENHUMA das três visões', () => {
     const apertados = [];
-    for (const sim of [null, ...SIMULACOES]) {
+    for (const sim of [null, ...SIMULATIONS]) {
       const rotulo = sim ?? 'visão típica';
       for (const { nome, de } of paresDe(sim ? CVD_MATRIX[sim] : null)) {
         if (de < PISO_DE_SEPARACAO) apertados.push(`${rotulo}: ${nome} ΔE ${de.toFixed(1)}`);

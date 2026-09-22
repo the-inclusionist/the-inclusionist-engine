@@ -31,9 +31,9 @@ import type { NavKeys } from '../input/edges.js'; // a MESMA intenção que tecl
 import { t, getLocale, setLocale } from '../core/i18n.js';
 import { flagOf, nextLocale, LANGUAGE_NAME, type CycleLocale } from './locale-flags.js';
 import { CONTRAST_LEVELS } from './settings-visual.js';
-import { CURTO_DO_TEMA, CURTO_DA_CORRECAO } from './visual-axes-panel.js';
+import { SHORT_THEME, SHORT_CORRECTION } from './visual-axes-panel.js';
 import {
-  proximoTema, proximaCorrecao, temAltoContraste, PADRAO,
+  nextTheme, nextCorrection, hasHighContrast, PADRAO,
   type Theme, type Correction, type VisualState,
 } from '../render/viz-axes.js';
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
@@ -387,8 +387,8 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   // Era assim antes da conversão, com o texto curto embutido — preservado, não reinventado.
   if (k === 'tea') return t('icon.state', { nome: t('icon.tea.short'), v: t(CALM_NAMES[s.calmMode]!) });
   if (k === 'altmove') return rotulo(INPUT_MODE_NAME[inputModeOf(s)]);
-  if (k === 'contrast') return rotulo(CURTO_DO_TEMA[s.visual.tema]);
-  if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CURTO_DA_CORRECAO[s.visual.correcao]) });
+  if (k === 'contrast') return rotulo(SHORT_THEME[s.visual.tema]);
+  if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(SHORT_CORRECTION[s.visual.correcao]) });
   if (k === 'camera') return rotulo(CAMERA_MODE_NAME[s.camera ?? 'off']);
   if (k === 'voice') return rotulo(s.voz ? 'state.on' : 'state.off');
   if (k === 'idioma') return t('icon.state', { nome: t(ic.n), v: LANGUAGE_NAME[(s.idioma ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt });
@@ -421,7 +421,7 @@ export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   // cannot be turned off (ADR-0113 clause 3) — which is now told by the CYCLE, where `standard` simply does not appear. Greying
   // the icon would have taken the one-button scan away from the child playing with her eyes, who is the likeliest to need it.
   else if (k === 'altmove') { on = inputModeOf(s) !== 'standard'; }
-  else if (k === 'contrast') { on = temAltoContraste(s.visual); }
+  else if (k === 'contrast') { on = hasHighContrast(s.visual); }
   else if (k === 'velocidade') { on = (s.velocidade ?? 1) < 1; }
   else if (k === 'camera') { on = (s.camera ?? 'off') !== 'off'; }
   else if (k === 'voice') { on = !!s.voz; }
@@ -1254,9 +1254,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // nada e não anuncia — que é o mesmo que dizer a verdade: este jogo não tem por onde.
     contrast: (i) => {
       if (!ctx.setTemaDoJogador) return;
-      const v = proximoTema((P()[i] || {}).visual ?? PADRAO);
+      const v = nextTheme((P()[i] || {}).visual ?? PADRAO);
       ctx.setTemaDoJogador(i, v.tema);
-      ctx.srSay(t('sr.visual.contrast', { v: t(CURTO_DO_TEMA[v.tema]) }));
+      ctx.srSay(t('sr.visual.contrast', { v: t(SHORT_THEME[v.tema]) }));
     },
     /*
      * O CICLO DE TIPOGRAFIA (ADR-0149 §1): uma pressão muda a CAIXA e a FACE de uma vez.
@@ -1300,9 +1300,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     cvd: (i) => {
       if (!ctx.setCorrecaoDoJogador) return;
-      const v = proximaCorrecao((P()[i] || {}).visual ?? PADRAO);
+      const v = nextCorrection((P()[i] || {}).visual ?? PADRAO);
       ctx.setCorrecaoDoJogador(i, v.correcao);
-      ctx.srSay(t('sr.icon.cvd', { v: t(CURTO_DA_CORRECAO[v.correcao]) }));
+      ctx.srSay(t('sr.icon.cvd', { v: t(SHORT_CORRECTION[v.correcao]) }));
     },
   };
 

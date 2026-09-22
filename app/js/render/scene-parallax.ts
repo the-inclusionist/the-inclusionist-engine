@@ -6,20 +6,20 @@
 
 import { makeCanvas, tex } from './canvas.js';
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
-import type { CenarioTema, TemaMorros, TemaPredios, FaixaDePredios } from './cenario-data.js';
+import type { SceneryTheme, HillsTheme, BuildingsTheme, BuildingBand } from './cenario-data.js';
 
-/** Um sol baixo com leque de raios, assado na textura do céu. Ver `pintarSol`. */
+/** Um sol baixo com leque de raios, assado na textura do céu. Ver `paintSun`. */
 export interface Sol {
   cor: string;   // a cor dos raios e do disco (a mesma; o que os separa é a opacidade)
   x: number;     // centro do disco, em fração da LARGURA da textura
   y: number;     // centro do disco, em fração da ALTURA (0.5 = a linha do horizonte)
 }
 
-// `ParallaxTheme` SAIU (ADR-0039). Era uma redescrição de `CenarioTema` — a terceira vítima do mesmo padrão
+// `ParallaxTheme` SAIU (ADR-0039). Era uma redescrição de `SceneryTheme` — a terceira vítima do mesmo padrão
 // no repositório —, e ela NARROWED em vez de generalizar: declarava `sky` e `hills` obrigatórios enquanto o
 // dono os tinha opcionais, então o tema real não entrava na função que existia para desenhá-lo, e o erro
 // caía no `main.ts` falando de duas funções em vez da causa. O dono agora é uma união discriminada e este
-// módulo a importa: quem desenha morro pede `TemaMorros`, quem desenha prédio pede `FaixaDePredios`, e o
+// módulo a importa: quem desenha morro pede `HillsTheme`, quem desenha prédio pede `BuildingBand`, e o
 // compilador cobra o `fundo` no ponto de chamada.
 
 /** Hill silhouette height at column `x` (v3 drawHillBand: double sine). `near` = the front (taller) band. */
@@ -53,21 +53,21 @@ export function parallaxPlaceholder(i: number): unknown {
 // que permite ESCOLHER a altura de uma cor pela quantidade de paradas, e é assim que o vermelho da Floresta
 // foi posto na linha do horizonte (y=90) em vez de no rodapé invisível.
 
-/** `'#rrggbb'` → o mesmo tom com alfa ZERO. É o fim de todo gradiente radial daqui — ver `pintarSol`. */
+/** `'#rrggbb'` → o mesmo tom com alfa ZERO. É o fim de todo gradiente radial daqui — ver `paintSun`. */
 function rgba0(hex: string): string {
   const n = parseInt(hex.slice(1), 16);
   return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',0)';
 }
 
 /** Largura da textura do céu. 64 basta para um gradiente (ele é constante em x); um SOL precisa da tela toda. */
-export function larguraDoCeu(T: CenarioTema): number { return T.sol ? LOGICAL_W : 64; }
+export function skyWidth(T: SceneryTheme): number { return T.sol ? LOGICAL_W : 64; }
 
 /**
  * Onde cada cor do céu cai, em PIXELS de altura. Separado do desenho porque é a parte que se pode AFERIR: o
  * desenho precisa de um canvas, esta conta não, e é ela que decide se o vermelho do pôr do sol vai parar na
  * linha do horizonte ou atrás dos morros.
  */
-export function paradasDoCeu(cores: readonly string[], h: number = LOGICAL_H): { y: number; cor: string }[] {
+export function skyStops(cores: readonly string[], h: number = LOGICAL_H): { y: number; cor: string }[] {
   const n = cores.length;
   return cores.map((cor, i) => ({ y: n === 1 ? 0 : (h * i) / (n - 1), cor }));
 }
@@ -85,7 +85,7 @@ export function paradasDoCeu(cores: readonly string[], h: number = LOGICAL_H): {
  * duas coisas juntas mantêm o desenho longe das bordas da textura: um raio cortado na borda reapareceria do
  * outro lado a cada repetição do azulejo, e essa emenda é o defeito mais visível que um céu pode ter.
  */
-export function pintarSol(c: CanvasRenderingContext2D, w: number, h: number, sol: Sol): void {
+export function paintSun(c: CanvasRenderingContext2D, w: number, h: number, sol: Sol): void {
   const sx = w * sol.x, sy = h * sol.y, reach = h * 0.85;
   // O fim do gradiente é A MESMA COR com alfa 0, e não `transparent`/branco transparente: o canvas interpola
   // os quatro canais, então desbotar para branco-transparente passa por um branco leitoso a meio caminho — um
@@ -112,12 +112,12 @@ export function pintarSol(c: CanvasRenderingContext2D, w: number, h: number, sol
 }
 
 /** Theme sky: vertical gradient over `T.sky` (evenly spaced stops), plus the theme's sun when it has one. */
-export function themeSkyTexture(T: CenarioTema): unknown {
-  const w = larguraDoCeu(T), h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
+export function themeSkyTexture(T: SceneryTheme): unknown {
+  const w = skyWidth(T), h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
   const g = c.createLinearGradient(0, 0, 0, h);
-  for (const p of paradasDoCeu(T.sky, h)) g.addColorStop(p.y / h, p.cor);
+  for (const p of skyStops(T.sky, h)) g.addColorStop(p.y / h, p.cor);
   c.fillStyle = g; c.fillRect(0, 0, w, h);
-  if (T.sol) pintarSol(c, w, h, T.sol);
+  if (T.sol) paintSun(c, w, h, T.sol);
   return tex(cv);
 }
 
@@ -185,7 +185,7 @@ interface Silhueta { el: Elemento; passo: number; alt: [number, number] }
 const CAMPO = { far: { el: frondosa, passo: 96, alt: [10, 16] as [number, number] },
                 near: { el: cerca, passo: 46, alt: [7, 9] as [number, number] } };
 
-export const SILHUETAS: Readonly<Record<string, { far?: Silhueta; near?: Silhueta }>> = {
+export const SILHOUETTES: Readonly<Record<string, { far?: Silhueta; near?: Silhueta }>> = {
   campo: CAMPO,      // Dia no Campo
   cemiterio: CAMPO,  // Amanhecer no Campo — mesmo campo, outra luz
   espaco: CAMPO,     // Noite no Campo — idem
@@ -224,7 +224,7 @@ export const SILHUETAS: Readonly<Record<string, { far?: Silhueta; near?: Silhuet
 type Telhado = (c: CanvasRenderingContext2D, x: number, larg: number, topo: number, r: (n: number) => number) => void;
 
 /**
- * O vocabulário de topos, como TABELA — mesma forma do `SILHUETAS` dos morros.
+ * O vocabulário de topos, como TABELA — mesma forma do `SILHOUETTES` dos morros.
  *
  * A distribuição importa mais que os desenhos: `reto` precisa ser o comum, senão a linha do horizonte vira
  * uma serra de brinquedo. Ver `TELHADO_POR_SORTE` abaixo.
@@ -410,10 +410,10 @@ function desenharPaineis(
  * As duas profundidades são o que o original tem e a primeira versão não tinha — sem elas a camada é uma
  * fileira só, e a cidade perde o ar de cidade.
  *
- * Exportada para o teste: o contexto entra por parâmetro, como em `pintarSol`, e um contexto falso que grava
+ * Exportada para o teste: o contexto entra por parâmetro, como em `paintSun`, e um contexto falso que grava
  * os `fillRect` deixa afirmar as propriedades da faixa sem navegador nenhum.
  */
-export function desenharPredios(c: CanvasRenderingContext2D, w: number, h: number, faixa: FaixaDePredios, semente: number): void {
+export function drawBuildings(c: CanvasRenderingContext2D, w: number, h: number, faixa: BuildingBand, semente: number): void {
   desenharBanda(c, w, h, faixa.corpo[0]!, faixa.topoFundo, faixa.largura, faixa.base,
     semente + 4517, faixa.luz, (faixa.aceso ?? 0) * 0.45);
   desenharBanda(c, w, h, faixa.corpo[1]!, faixa.topo, faixa.largura, faixa.base,
@@ -425,30 +425,30 @@ export function desenharPredios(c: CanvasRenderingContext2D, w: number, h: numbe
  *
  * É a única camada OPACA das três, e é assim no original — o `c4.png` não tinha transparência nenhuma.
  */
-export function themeCitySkyTexture(T: TemaPredios): unknown {
+export function themeCitySkyTexture(T: BuildingsTheme): unknown {
   const w = 1280, h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
   const g = c.createLinearGradient(0, 0, 0, h);
-  for (const p of paradasDoCeu(T.sky, h)) g.addColorStop(p.y / h, p.cor);
+  for (const p of skyStops(T.sky, h)) g.addColorStop(p.y / h, p.cor);
   c.fillStyle = g; c.fillRect(0, 0, w, h);
-  desenharPredios(c, w, h, T.predios[0], 311);
+  drawBuildings(c, w, h, T.predios[0], 311);
   return tex(cv);
 }
 
 /** Camadas 1 e 2 da Cidade: prédios sobre TRANSPARÊNCIA, para o céu da camada 0 aparecer atrás. */
-export function themeSkylineTexture(faixa: FaixaDePredios, semente: number): unknown {
+export function themeSkylineTexture(faixa: BuildingBand, semente: number): unknown {
   const w = 1280, h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
-  desenharPredios(c, w, h, faixa, semente);
+  drawBuildings(c, w, h, faixa, semente);
   return tex(cv);
 }
 
-export function themeHillsTexture(T: TemaMorros, near: boolean, tema = ''): unknown {
+export function themeHillsTexture(T: HillsTheme, near: boolean, tema = ''): unknown {
   const w = 1280, h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
   const horizon = Math.round(h * 0.5), baseY = horizon + (near ? 16 : 4);
   const linha = (x: number): number => Math.round(baseY - hillHeight(x, near));
   c.fillStyle = T.hills[near ? 1 : 0];
   for (let x = 0; x < w; x++) { const top = linha(x); c.fillRect(x, top, 1, h - top); }
 
-  const sil = SILHUETAS[tema]?.[near ? 'near' : 'far'];
+  const sil = SILHOUETTES[tema]?.[near ? 'near' : 'far'];
   if (!sil) return tex(cv);
   // Planta na MESMA cor da faixa: o elemento não é um objeto pintado, é o próprio morro subindo.
   for (let x = 0; x < w; x += sil.passo) {

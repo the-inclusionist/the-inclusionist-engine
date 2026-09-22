@@ -235,7 +235,7 @@ export type Announcement =
 // que a pilha de acessibilidade já teve.
 //
 // ========================= O DEFEITO, MEDIDO =========================
-// `render/viz-setters.alcanceDoModo` dá às nove simulações de empatia o alcance `mundo`, e a raiz implementa
+// `render/viz-setters.reachOfMode` dá às nove simulações de empatia o alcance `mundo`, e a raiz implementa
 // `mundo` como a canvas do PixiJS, limpando o filtro no `#dom-layer`. O RACIOCÍNIO ESTÁ CERTO e está escrito:
 // o menu é o instrumento de SAIR da simulação, e uma cegueira que apagasse o menu de pausa trancaria a
 // criança dentro dela (issue #82).

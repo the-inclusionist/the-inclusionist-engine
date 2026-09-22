@@ -26,8 +26,8 @@ import {
   VIZ_CYCLE, VIZ_FILTER, VIZ_BY_KEY, needsCanvas, simulatesDisability,
 } from '../app/js/render/viz-modes.js';
 import {
-  migrarVisual, aplicacao, chaveDeTextura, chaveLegada, ehSimulacao, ehCego, ehBaixaVisao, temAltoContraste,
-  nosPadroes, PADRAO, CHAVES_ANTIGAS,
+  migrateVisual, howItApplies, textureKey, legacyKey, isSimulation, isBlind, isLowVision, hasHighContrast,
+  nosPadroes, PADRAO, LEGACY_KEYS,
 } from '../app/js/render/viz-axes.js';
 
 /** O que a tabela ANTIGA fazia com esta chave, derivado dela e não escrito à mão. */
@@ -40,14 +40,14 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
   it('⚠️ [Interface] os 16 modos de hoje estão TODOS cobertos pela migração', () => {
     // Se um modo ficasse de fora, a criança que o escolheu cairia no padrão sem que nada avisasse — e o
     // padrão é precisamente a tela que ela não consegue usar.
-    const semCobertura = VIZ_CYCLE.filter((k) => !CHAVES_ANTIGAS.includes(k));
+    const semCobertura = VIZ_CYCLE.filter((k) => !LEGACY_KEYS.includes(k));
     expect(semCobertura, 'modo antigo sem tradução: a escolha desta criança seria descartada').toEqual([]);
-    expect(CHAVES_ANTIGAS.length).toBe(VIZ_CYCLE.length);
+    expect(LEGACY_KEYS.length).toBe(VIZ_CYCLE.length);
   });
 
   it('⚠️ [Right] cada modo produz o MESMO par (direto, filtro) que produzia', () => {
     for (const k of VIZ_CYCLE) {
-      expect(aplicacao(migrarVisual(k)), `o modo «${k}» mudou de comportamento na migração`)
+      expect(howItApplies(migrateVisual(k)), `o modo «${k}» mudou de comportamento na migração`)
         .toEqual(comportamentoAntigo(k));
     }
   });
@@ -56,7 +56,7 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
     // `playerVizTex` só age quando o modo tem `DIRECT_CFG`, isto é, quando `needsCanvas`. A chave nova pode
     // ser outra palavra desde que caia do mesmo lado dessa pergunta.
     for (const k of VIZ_CYCLE) {
-      expect(needsCanvas(chaveDeTextura(migrarVisual(k))), `a textura do modo «${k}» trocou de caminho`)
+      expect(needsCanvas(textureKey(migrateVisual(k))), `a textura do modo «${k}» trocou de caminho`)
         .toBe(needsCanvas(k));
     }
   });
@@ -66,17 +66,17 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
     // ele passaria a desligar uma CORREÇÃO — tirar de uma criança daltônica a única correção que ela tem, a
     // partir do menu que existe para quem não tem a deficiência.
     for (const k of VIZ_CYCLE) {
-      expect(ehSimulacao(migrarVisual(k)), `«${k}» trocou de lado entre simular e corrigir`)
+      expect(isSimulation(migrateVisual(k)), `«${k}» trocou de lado entre simular e corrigir`)
         .toBe(simulatesDisability(k));
     }
   });
 
   it('[Right] cegueira e baixa visão continuam a ser reconhecidas pelo `kind` que já as reconhecia', () => {
     for (const k of VIZ_CYCLE) {
-      const v = migrarVisual(k);
-      expect(ehCego(v), k).toBe(VIZ_BY_KEY[k].kind === 'blind');
-      expect(ehBaixaVisao(v), k).toBe(VIZ_BY_KEY[k].kind === 'lowvision');
-      expect(temAltoContraste(v), k).toBe(needsCanvas(k));
+      const v = migrateVisual(k);
+      expect(isBlind(v), k).toBe(VIZ_BY_KEY[k].kind === 'blind');
+      expect(isLowVision(v), k).toBe(VIZ_BY_KEY[k].kind === 'lowvision');
+      expect(hasHighContrast(v), k).toBe(needsCanvas(k));
     }
   });
 
@@ -84,7 +84,7 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
     // É o que libera a simulação (ADR-0076): uma demonstração por cima de uma adaptação ensina uma coisa
     // falsa. Depois da migração, todo modo antigo que não era tema tem de continuar a permitir simular.
     for (const k of VIZ_CYCLE) {
-      const v = migrarVisual(k);
+      const v = migrateVisual(k);
       const eraTema = needsCanvas(k);
       const eraCorrecao = k.startsWith('fix-');
       expect(nosPadroes(v), `«${k}» passou a bloquear a simulação`).toBe(!eraTema && !eraCorrecao);
@@ -94,7 +94,7 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
   it('[Zero] lixo, ausência e uma chave de outra versão caem no padrão em vez de estourar', () => {
     // O dado vem do navegador de uma criança: pode ser de outra máquina, de uma versão futura, ou corrompido.
     for (const mau of [undefined, null, '', 'modo-de-2030', 42, [], { tema: 'roxo' }]) {
-      expect(migrarVisual(mau), String(mau)).toEqual(PADRAO);
+      expect(migrateVisual(mau), String(mau)).toEqual(PADRAO);
     }
   });
 
@@ -102,9 +102,9 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
     // A leitura acontece por jogador, e o valor já migrado volta a passar por aqui. Se a segunda passagem
     // mudasse alguma coisa, o ajuste da criança derivaria sozinho entre duas leituras.
     for (const k of VIZ_CYCLE) {
-      const uma = migrarVisual(k);
-      expect(migrarVisual(uma), `«${k}» não sobreviveu à segunda migração`).toEqual(uma);
-      expect(migrarVisual(JSON.parse(JSON.stringify(uma))), `«${k}» não sobreviveu a ida e volta por JSON`).toEqual(uma);
+      const uma = migrateVisual(k);
+      expect(migrateVisual(uma), `«${k}» não sobreviveu à segunda migração`).toEqual(uma);
+      expect(migrateVisual(JSON.parse(JSON.stringify(uma))), `«${k}» não sobreviveu a ida e volta por JSON`).toEqual(uma);
     }
   });
 });
@@ -115,18 +115,18 @@ describe('#104 · e o que a divisão TORNA POSSÍVEL, que é o ponto da issue', 
     // precise de alto contraste não podia ter os dois. Nenhuma chave antiga consegue exprimir este estado —
     // é por isso que o caso o constrói à mão.
     const os_dois = { tema: 'hc7', correcao: 'deuter', simulacao: null };
-    expect(aplicacao(os_dois)).toEqual({ direto: 'hc-direto-7', filtro: 'fix-deuter' });
+    expect(howItApplies(os_dois)).toEqual({ direto: 'hc-direto-7', filtro: 'fix-deuter' });
     expect(nosPadroes(os_dois), 'com um eixo fora do padrão a simulação tem de ficar travada').toBe(false);
   });
 
   it('⚠️ [Right] a chave LEGADA preserva TODO ajuste que já existia — ida e volta pelos 16 modos', () => {
     // ⚠️ ESTE CASO NASCEU DE UM GATE VERMELHO, e o defeito que ele apanhou é o pior tipo: silencioso e a
-    // custo da criança. A primeira escrita usava a `chaveDeTextura` como espelho — e ela devolve `normal`
+    // custo da criança. A primeira escrita usava a `textureKey` como espelho — e ela devolve `normal`
     // para uma correção de cor, porque correção não muda textura nenhuma. Uma criança em `fix-deuter`
     // passaria a gravar `'normal'` na chave velha, e um leitor antigo (o cartucho publicado) perderia a
     // correção dela sem nada dizer.
     for (const k of VIZ_CYCLE) {
-      expect(chaveLegada(migrarVisual(k)), `o modo «${k}» não sobrevive à chave legada`).toBe(k);
+      expect(legacyKey(migrateVisual(k)), `o modo «${k}» não sobrevive à chave legada`).toBe(k);
     }
   });
 
@@ -134,15 +134,15 @@ describe('#104 · e o que a divisão TORNA POSSÍVEL, que é o ponto da issue', 
     // `hc7 + fix-deuter` só cabe como uma das duas metades no vocabulário antigo. Não há regressão possível
     // nisso: o estado é NOVO, e um leitor de uma chave só nunca soube exprimi-lo. Quem quiser as duas
     // metades lê a chave nova, que existe para isso.
-    expect(chaveLegada({ tema: 'hc7', correcao: 'deuter', simulacao: null })).toBe('hc-direto-7');
+    expect(legacyKey({ tema: 'hc7', correcao: 'deuter', simulacao: null })).toBe('hc-direto-7');
     // E a simulação vence as duas, porque é a que apaga a tela inteira.
-    expect(chaveLegada({ tema: 'hc7', correcao: 'deuter', simulacao: 'blind' })).toBe('blind');
+    expect(legacyKey({ tema: 'hc7', correcao: 'deuter', simulacao: 'blind' })).toBe('blind');
   });
 
   it('[Right] mexer num eixo não mexe no outro — uma asserção em cada sentido', () => {
     const base = { tema: 'hc45', correcao: 'protan', simulacao: null };
-    expect(aplicacao({ ...base, tema: 'padrao' }).filtro, 'tirar o tema apagou a correção').toBe('fix-protan');
-    expect(aplicacao({ ...base, correcao: 'tricro' }).direto, 'tirar a correção apagou o tema').toBe('hc-direto-45');
+    expect(howItApplies({ ...base, tema: 'padrao' }).filtro, 'tirar o tema apagou a correção').toBe('fix-protan');
+    expect(howItApplies({ ...base, correcao: 'tricro' }).direto, 'tirar a correção apagou o tema').toBe('hc-direto-45');
   });
 });
 
@@ -158,11 +158,11 @@ describe('#104 · e o que a divisão TORNA POSSÍVEL, que é o ponto da issue', 
 //   · fazendo `fix-protan` migrar para a SIMULACAO `sim-protan` -> reprovam TRES, e o do meio e' o que
 //     interessa: o «restaurar padroes» do menu de empatia desliga simulacoes, entao esta troca fa-lo-ia
 //     desligar a correcao de uma crianca daltonica — a partir do menu que existe para quem NAO e' daltonico.
-//   · tirando o ramo de objeto do `migrarVisual` (fica nao-idempotente) -> reprova a idempotencia. A leitura
+//   · tirando o ramo de objeto do `migrateVisual` (fica nao-idempotente) -> reprova a idempotencia. A leitura
 //     acontece por jogador e mais de uma vez por sessao; o ajuste derivaria sozinho entre duas leituras.
-//   · `filtroChave` a devolver sempre `null` -> reprovam TRES, incluindo os dois casos do que a divisao TORNA
+//   · `filterKey` a devolver sempre `null` -> reprovam TRES, incluindo os dois casos do que a divisao TORNA
 //     POSSIVEL. O eixo da correcao ficaria mudo.
-//   · `temaDireto` a devolver `null` para todo tema -> reprovam DOIS: o par e a textura do sprite.
-//   · `migrarVisual` a ESTOURAR em chave desconhecida -> reprova o caso do lixo. O dado vem do navegador de
+//   · `directTheme` a devolver `null` para todo tema -> reprovam DOIS: o par e a textura do sprite.
+//   · `migrateVisual` a ESTOURAR em chave desconhecida -> reprova o caso do lixo. O dado vem do navegador de
 //     uma crianca e pode ser de outra maquina ou de uma versao futura; um `throw` ali tira o jogo do ar por
 //     causa de uma preferencia.

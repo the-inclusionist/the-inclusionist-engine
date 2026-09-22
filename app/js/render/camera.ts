@@ -28,7 +28,7 @@
 // sorteia é `render/draw`, com o `rnd` compartilhado de core/rng — a semente continua sendo uma só.
 
 /** Um tamanho em pixels de mundo ou de tela. Só isto: a câmera não precisa saber de mais nada. */
-export interface Tamanho { w: number; h: number }
+export interface Size { w: number; h: number }
 
 /** Onde a câmera está, ANTES de arredondar. O arredondamento é do desenho, não da conta — ver `clampInside`. */
 export interface Camera { camX: number; camY: number }
@@ -41,7 +41,7 @@ export interface Camera { camX: number; camY: number }
  * que já existia e está preservado de propósito; o mapa de hoje (896×992 contra 320×180) nunca chega lá, mas
  * uma fase pequena chegaria, e é melhor que o caso esteja escrito do que descoberto.
  */
-export function clampInside(cam: Camera, mundo: Tamanho, tela: Tamanho): Camera {
+export function clampInside(cam: Camera, mundo: Size, tela: Size): Camera {
   return {
     camX: Math.max(0, Math.min(cam.camX, mundo.w - tela.w)),
     camY: Math.max(0, Math.min(cam.camY, mundo.h - tela.h)),
@@ -49,7 +49,7 @@ export function clampInside(cam: Camera, mundo: Tamanho, tela: Tamanho): Camera 
 }
 
 /** Põe `(alvoX, alvoY)` no CENTRO da tela e prende no mundo. O alvo é um ponto — quem tem corpo o converte. */
-export function enquadrar(alvoX: number, alvoY: number, mundo: Tamanho, tela: Tamanho): Camera {
+export function frameOn(alvoX: number, alvoY: number, mundo: Size, tela: Size): Camera {
   return clampInside({ camX: alvoX - tela.w / 2, camY: alvoY - tela.h / 2 }, mundo, tela);
 }
 
@@ -63,7 +63,7 @@ export function enquadrar(alvoX: number, alvoY: number, mundo: Tamanho, tela: Ta
  * @param rx deslocamento horizontal já sorteado, em [-1, 1]
  * @param ry idem, vertical
  */
-export function tremer(cam: Camera, mundo: Tamanho, tela: Tamanho, amp: number, rx: number, ry: number): Camera {
+export function shake(cam: Camera, mundo: Size, tela: Size, amp: number, rx: number, ry: number): Camera {
   if (!(amp > 0)) return cam;
   return clampInside({ camX: cam.camX + rx * amp, camY: cam.camY + ry * amp }, mundo, tela);
 }
@@ -90,7 +90,7 @@ export function tremer(cam: Camera, mundo: Tamanho, tela: Tamanho, amp: number, 
 // que não aparece num quadro isolado e some quando se vai procurar. A base só muda em `seguir` e `pular`.
 
 /** A zona-morta, em pixels de TELA. `{w:0,h:0}` = sem zona: a câmera cola no alvo, que é o de hoje. */
-export interface ZonaMorta { readonly w: number; readonly h: number }
+export interface DeadZone { readonly w: number; readonly h: number }
 
 export interface CameraObj {
   /** Onde a câmera está, sem tremor, pré-arredondamento. */
@@ -102,17 +102,17 @@ export interface CameraObj {
   /** Base + tremor, preso no mundo. NÃO altera a base — ver o cabeçalho. */
   quadro(amp: number, rx: number, ry: number): Camera;
   /** Mundo e/ou tela mudaram (fase nova, viewport dividido). Reprende a base no que passou a valer. */
-  redimensionar(mundo?: Tamanho, tela?: Tamanho): Camera;
+  redimensionar(mundo?: Size, tela?: Size): Camera;
 }
 
 /**
  * Cria uma câmera com alvo, zona-morta, prisão no mundo e tremor.
  *
  * ⚠️ ZONA ZERO É O COMPORTAMENTO DE HOJE, e não por coincidência: com `w = h = 0` a correção de `seguir` vira
- * `alvo - tela/2`, que é `enquadrar` letra por letra. É o que permite trocar o `placeCam` por esta câmera sem
+ * `alvo - tela/2`, que é `frameOn` letra por letra. É o que permite trocar o `placeCam` por esta câmera sem
  * mudar um pixel do que a criança vê, e escolher um valor de zona depois, como decisão separada.
  */
-export function criarCamera(mundo: Tamanho, tela: Tamanho, zona: ZonaMorta = { w: 0, h: 0 }): CameraObj {
+export function createCamera(mundo: Size, tela: Size, zona: DeadZone = { w: 0, h: 0 }): CameraObj {
   let m = mundo, t = tela;
   let base: Camera = { camX: 0, camY: 0 };
 
@@ -136,12 +136,12 @@ export function criarCamera(mundo: Tamanho, tela: Tamanho, zona: ZonaMorta = { w
     },
 
     pular(alvoX, alvoY) {
-      base = enquadrar(alvoX, alvoY, m, t);
+      base = frameOn(alvoX, alvoY, m, t);
       return base;
     },
 
     quadro(amp, rx, ry) {
-      return tremer(base, m, t, amp, rx, ry);
+      return shake(base, m, t, amp, rx, ry);
     },
 
     redimensionar(novoMundo, novaTela) {

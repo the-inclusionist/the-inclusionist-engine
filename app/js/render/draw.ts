@@ -67,14 +67,14 @@ import type { PlayerView } from '../core/entity.js';
 import { decorationRng } from '../core/rng.js';
 const rnd = decorationRng.rnd;
 import { JUICE, easeOut3, shakeAmp, drawFx } from './fx.js';
-import { criarCamera, type CameraObj } from './camera.js';
+import { createCamera, type CameraObj } from './camera.js';
 import { drawCane, drawRunCane, drawChair } from './wheelchair-sprites.js';
-import { chaveDeTextura, ehBaixaVisao } from './viz-axes.js';
+import { textureKey, isLowVision } from './viz-axes.js';
 // (`game/powerups` e `game/coin-spawning` SAÍRAM daqui no item 19 — ver o bloco "ITENS DECLARADOS" abaixo.)
 import { drawWeather } from './weather.js';
 
 import { choosePlayerFrame, type AnimPlayer, type Frame, type PlayerTextures } from './player-anim.js';
-import type { RenderizarEm } from './port.js';
+import type { RenderInto } from './port.js';
 
 /* ===================== interfaces estruturais (PIXI sem importar PIXI) ===================== */
 
@@ -101,7 +101,7 @@ export interface PlayerSprite {
 export interface CameraLike { x: number; y: number }
 
 /** `app.renderer` — só a passada em render-texture do caminho multi-tela. */
-// `RendererLike` SAIU (Fase D). A porta pede a CAPACIDADE `RenderizarEm`, não o objeto renderizador:
+// `RendererLike` SAIU (Fase D). A porta pede a CAPACIDADE `RenderInto`, não o objeto renderizador:
 // o `render` do PixiJS pede `IRenderableObject`, e um parâmetro declarado `unknown` não cabe ali por
 // contravariância. Ver o cabeçalho de `render/port`.
 
@@ -173,7 +173,7 @@ export interface DrawCtx {
   getPlayers: () => readonly unknown[];
   /* --- render-graph criado no game.js (estável: entra por valor) --- */
   camera: CameraLike;           // container do mundo; `placeCam` o move, o multi-tela o renderiza N vezes
-  renderizarEm: RenderizarEm;       // `app.renderer`
+  renderizarEm: RenderInto;       // `app.renderer`
   caneLayer: GraphicsLike;      // bengala (modo cego)
   chairLayer: GraphicsLike;     // cadeira de rodas (empatia motora)
   /**
@@ -253,7 +253,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
   // ========================= UMA CÂMERA POR JOGADOR, E POR QUÊ AGORA =========================
   // O caminho multi-tela chama `placeCam(PLS[i])` para CADA jogador dentro do MESMO quadro. Com uma câmera
   // só, a posição do jogador i entraria como ponto de partida da do jogador i+1. Hoje isso não daria em
-  // nada — com zona-morta 0×0 a câmera é sem memória e `seguir` equivale a `enquadrar`, letra por letra
+  // nada — com zona-morta 0×0 a câmera é sem memória e `seguir` equivale a `frameOn`, letra por letra
   // (`tests/camera.node.test.js` prende essa igualdade). No dia em que a zona deixar de ser zero, daria: as
   // câmeras dos jogadores se puxariam. É mais barato separar antes de o defeito existir do que depois, e
   // separar agora não muda um pixel do que a criança vê.
@@ -265,7 +265,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
   const cams = new Map<number, CameraObj>();
   const camDe = (i: number): CameraObj => {
     let c = cams.get(i);
-    if (!c) { c = criarCamera({ w: ctx.WORLD_PX_W(), h: ctx.WORLD_PX_H() }, { w: LOGICAL_W, h: LOGICAL_H }); cams.set(i, c); }
+    if (!c) { c = createCamera({ w: ctx.WORLD_PX_W(), h: ctx.WORLD_PX_H() }, { w: LOGICAL_W, h: LOGICAL_H }); cams.set(i, c); }
     // O mundo muda de tamanho ao trocar de fase, e a câmera não é avisada por ninguém — reprender todo quadro
     // custa duas contas e dispensa um evento que hoje não existe.
     else c.redimensionar({ w: ctx.WORLD_PX_W(), h: ctx.WORLD_PX_H() }, { w: LOGICAL_W, h: LOGICAL_H });
@@ -293,10 +293,10 @@ export function initDraw(ctx: DrawCtx): DrawApi {
       dt, dir, wheelchair: ctx.isWheelchair(), held: ctx.held, rnd, tex: ctx.playerTextures(),
     });
     // solo/default; no MP o drawFrame troca a textura por viewport (applySharedTextures)
-    // ⚠️ `chaveDeTextura` E NÃO A ASSINATURA DE `playerVizTex`. Medido na etapa 0 da #104: aquela função só
+    // ⚠️ `textureKey` E NÃO A ASSINATURA DE `playerVizTex`. Medido na etapa 0 da #104: aquela função só
     // age quando existe `DIRECT_CFG[mode]`, e devolve a textura como veio para todo o resto. Então o que
     // muda é o CHAMADOR — a metade do estado que interessa à textura — e a porta fica onde estava.
-    if (pl.sprite) pl.sprite.texture = ctx.playerVizTex(tx, chaveDeTextura(pl.visual));
+    if (pl.sprite) pl.sprite.texture = ctx.playerVizTex(tx, textureKey(pl.visual));
     return tx;
   }
 
@@ -351,12 +351,12 @@ export function initDraw(ctx: DrawCtx): DrawApi {
       // está em `DIRECT_CFG` — conferido em `high-contrast.worldTexFor`. Antes, dois jogadores em `normal` e
       // `fix-deuter` contavam como modos DIFERENTES e disparavam uma re-aplicação de texturas que produzia
       // exactamente as mesmas texturas. Agora contam como iguais, porque para a textura eles são.
-      const v0 = chaveDeTextura(PLS[0].visual);
-      const allSame = PLS.every((p) => chaveDeTextura(p.visual) === v0);
-      const anyOverlay = PLS.some((p) => ehBaixaVisao(p.visual));
+      const v0 = textureKey(PLS[0].visual);
+      const allSame = PLS.every((p) => textureKey(p.visual) === v0);
+      const anyOverlay = PLS.some((p) => isLowVision(p.visual));
       if (allSame) ctx.applySharedTextures(v0);
       for (let i = 0, n = ctx.getNumPlayers(); i < n; i++) {
-        const viz = chaveDeTextura(PLS[i].visual);
+        const viz = textureKey(PLS[i].visual);
         if (!allSame) ctx.applySharedTextures(viz);            // só troca por viewport quando os modos diferem
         const itens2 = ctx.getItemSprites();
         for (let j = 0; j < itens2.length; j++) {

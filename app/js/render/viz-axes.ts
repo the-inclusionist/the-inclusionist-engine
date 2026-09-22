@@ -53,8 +53,8 @@ export function nosPadroes(v: VisualState): boolean {
  * silenciosamente removida, nunca aceita e depois ignorada. E o motivo é um FACTO SOBRE A DEMONSTRAÇÃO, não
  * uma repreensão a quem escolheu: quem ligou o alto contraste ligou-o porque precisa.
  */
-export type MotivoIndisponivel = 'tema' | 'correcao' | 'ambos';
-export function simulacaoIndisponivel(v: VisualState): MotivoIndisponivel | null {
+export type UnavailableReason = 'tema' | 'correcao' | 'ambos';
+export function simulationUnavailable(v: VisualState): UnavailableReason | null {
   const t = v.tema !== 'padrao';
   const c = v.correcao !== 'tricro';
   if (t && c) return 'ambos';
@@ -71,7 +71,7 @@ export function simulacaoIndisponivel(v: VisualState): MotivoIndisponivel | null
 // máquina — era o campo único que só cabia um valor.
 
 /** A chave de modo DIRETO que este tema usa, ou `null` para o tema padrão. */
-export function temaDireto(v: VisualState): string | null {
+export function directTheme(v: VisualState): string | null {
   return v.tema === 'hc3' ? 'hc-direto'
     : v.tema === 'hc45' ? 'hc-direto-45'
       : v.tema === 'hc7' ? 'hc-direto-7'
@@ -82,11 +82,11 @@ export function temaDireto(v: VisualState): string | null {
  * A chave de FILTRO CSS que este estado usa, ou `null`.
  *
  * ⚠️ SIMULAÇÃO VENCE CORREÇÃO AQUI, e não é uma regra de precedência escondida: as duas não podem coexistir
- * porque `simulacaoIndisponivel` já as separa — uma simulação só corre com a correção no padrão. Este `??`
+ * porque `simulationUnavailable` já as separa — uma simulação só corre com a correção no padrão. Este `??`
  * é o que acontece quando alguém constrói um estado à mão que a interface não deixaria montar, e escolher a
  * simulação é o menos errado dos dois: ela é a intenção mais recente e mais visível.
  */
-export function filtroChave(v: VisualState): string | null {
+export function filterKey(v: VisualState): string | null {
   if (v.simulacao) return v.simulacao;
   return v.correcao === 'tricro' ? null : 'fix-' + (v.correcao === 'deuter' ? 'deuter' : v.correcao);
 }
@@ -97,14 +97,14 @@ export function filtroChave(v: VisualState): string | null {
  * ⚠️ Devolver os dois JUNTOS é o ponto da issue #104: enquanto eram um campo, aplicar um apagava o outro.
  * Aqui um estado com tema `hc7` e correção `deuter` devolve os dois preenchidos, e é o que o gate afirma.
  */
-export interface Aplicacao {
+export interface HowItApplies {
   /** A chave do modo direto (alto contraste), ou `null`. */
   readonly direto: string | null;
   /** A chave do filtro CSS (correção ou simulação), ou `null`. */
   readonly filtro: string | null;
 }
-export function aplicacao(v: VisualState): Aplicacao {
-  return { direto: temaDireto(v), filtro: filtroChave(v) };
+export function howItApplies(v: VisualState): HowItApplies {
+  return { direto: directTheme(v), filtro: filterKey(v) };
 }
 
 /* ===================== O QUE OS LEITORES DE FACTO PERGUNTAM ===================== */
@@ -119,29 +119,29 @@ export function aplicacao(v: VisualState): Aplicacao {
 // colapsava num campo. As funções de ciclo abaixo são as mesmas duas, agora com onde guardar o resultado.
 
 /** Há uma simulação a correr? É a pergunta que `simulatesDisability` fazia à string. */
-export function ehSimulacao(v: VisualState): boolean {
+export function isSimulation(v: VisualState): boolean {
   return v.simulacao !== null;
 }
 
 /** É a simulação de CEGUEIRA? O quiz e o sonar perguntam isto para se comportarem sem tela. */
-export function ehCego(v: VisualState): boolean {
+export function isBlind(v: VisualState): boolean {
   return v.simulacao === 'blind';
 }
 
 /** É uma das cinco simulações de BAIXA VISÃO? Elas pedem o overlay como textura, e não só um filtro. */
-export function ehBaixaVisao(v: VisualState): boolean {
+export function isLowVision(v: VisualState): boolean {
   return v.simulacao !== null && v.simulacao.startsWith('lv-');
 }
 
 /** O tema está fora do padrão? Era o `/^hc-direto/.test(s.viz)` espalhado pela interface. */
-export function temAltoContraste(v: VisualState): boolean {
+export function hasHighContrast(v: VisualState): boolean {
   return v.tema !== 'padrao';
 }
 
 /** Próximo TEMA no ciclo do ícone da barra rápida. Anda só no seu eixo, e não toca na correção. */
-export function proximoTema(v: VisualState): VisualState {
-  const i = TEMAS.indexOf(v.tema);
-  return { ...v, tema: TEMAS[(i < 0 ? 0 : i + 1) % TEMAS.length]! };
+export function nextTheme(v: VisualState): VisualState {
+  const i = THEMES.indexOf(v.tema);
+  return { ...v, tema: THEMES[(i < 0 ? 0 : i + 1) % THEMES.length]! };
 }
 
 /**
@@ -153,9 +153,9 @@ export function proximoTema(v: VisualState): VisualState {
  * exatamente o caso em que não se sabe o que a criança queria — e o padrão é a única resposta que não
  * escolhe por ela.
  */
-export function proximaCorrecao(v: VisualState): VisualState {
-  const i = CORRECOES.indexOf(v.correcao);
-  return { ...v, correcao: CORRECOES[(i < 0 ? 0 : i + 1) % CORRECOES.length]! };
+export function nextCorrection(v: VisualState): VisualState {
+  const i = CORRECTIONS.indexOf(v.correcao);
+  return { ...v, correcao: CORRECTIONS[(i < 0 ? 0 : i + 1) % CORRECTIONS.length]! };
 }
 
 /**
@@ -164,14 +164,14 @@ export function proximaCorrecao(v: VisualState): VisualState {
  * ⚠️ É a SIMULAÇÃO quando há uma, e o TEMA quando não há — nesta ordem porque é a ordem do que a criança vê:
  * uma cegueira simulada apaga a tela inteira, e nesse instante o tema não muda nada do que ela percebe.
  */
-export function chaveDeTextura(v: VisualState): string {
-  return v.simulacao ?? temaDireto(v) ?? 'normal';
+export function textureKey(v: VisualState): string {
+  return v.simulacao ?? directTheme(v) ?? 'normal';
 }
 
 /**
  * A CHAVE ÚNICA que melhor descreve este estado no vocabulário ANTIGO — para quem só sabe ler uma.
  *
- * ⚠️ NÃO É A `chaveDeTextura`, e a diferença custou um gate vermelho para aparecer. A de textura devolve
+ * ⚠️ NÃO É A `textureKey`, e a diferença custou um gate vermelho para aparecer. A de textura devolve
  * `normal` para uma correção de cor, porque correção não muda textura nenhuma — e usá-la como espelho faria
  * uma criança em `fix-deuter` passar a gravar `'normal'` na chave legada. **Um leitor antigo perderia a
  * correção dela**, que é exactamente o estrago que a migração inteira existe para não cometer.
@@ -184,8 +184,8 @@ export function chaveDeTextura(v: VisualState): string {
  * chave nunca soube exprimi-lo. Quem quiser as duas metades lê a chave nova, que existe precisamente para
  * isso.
  */
-export function chaveLegada(v: VisualState): string {
-  return v.simulacao ?? temaDireto(v) ?? filtroChave(v) ?? 'normal';
+export function legacyKey(v: VisualState): string {
+  return v.simulacao ?? directTheme(v) ?? filterKey(v) ?? 'normal';
 }
 
 /* ===================== A MIGRAÇÃO ===================== */
@@ -232,25 +232,25 @@ const DE_CHAVE_UNICA: Readonly<Record<string, VisualState>> = Object.freeze({
  * uma versão futura, de outra máquina, ou lixo. Um `throw` aqui tiraria o jogo do ar por causa de uma
  * preferência; o padrão apenas devolve o jogo como ele nasce.
  */
-export function migrarVisual(salvo: unknown): VisualState {
+export function migrateVisual(salvo: unknown): VisualState {
   if (typeof salvo === 'string') return DE_CHAVE_UNICA[salvo] ?? PADRAO;
   if (salvo && typeof salvo === 'object') {
     const o = salvo as Partial<VisualState>;
     return {
-      tema: TEMAS.includes(o.tema as Theme) ? (o.tema as Theme) : PADRAO.tema,
-      correcao: CORRECOES.includes(o.correcao as Correction) ? (o.correcao as Correction) : PADRAO.correcao,
-      simulacao: SIMULACOES.includes(o.simulacao as Simulation) ? (o.simulacao as Simulation) : null,
+      tema: THEMES.includes(o.tema as Theme) ? (o.tema as Theme) : PADRAO.tema,
+      correcao: CORRECTIONS.includes(o.correcao as Correction) ? (o.correcao as Correction) : PADRAO.correcao,
+      simulacao: SIMULATIONS.includes(o.simulacao as Simulation) ? (o.simulacao as Simulation) : null,
     };
   }
   return PADRAO;
 }
 
-export const TEMAS: readonly Theme[] = ['padrao', 'hc3', 'hc45', 'hc7'];
-export const CORRECOES: readonly Correction[] = ['tricro', 'protan', 'deuter', 'tritan'];
-export const SIMULACOES: readonly Simulation[] = [
+export const THEMES: readonly Theme[] = ['padrao', 'hc3', 'hc45', 'hc7'];
+export const CORRECTIONS: readonly Correction[] = ['tricro', 'protan', 'deuter', 'tritan'];
+export const SIMULATIONS: readonly Simulation[] = [
   null, 'sim-protan', 'sim-deuter', 'sim-tritan',
   'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind',
 ];
 
 /** As chaves antigas que a migração conhece — exportada para o gate poder exigir que TODAS estejam cobertas. */
-export const CHAVES_ANTIGAS: readonly string[] = Object.keys(DE_CHAVE_UNICA);
+export const LEGACY_KEYS: readonly string[] = Object.keys(DE_CHAVE_UNICA);

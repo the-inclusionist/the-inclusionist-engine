@@ -349,7 +349,7 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
 //
 //    ISSO CONTINUA VALENDO DEPOIS DA FASE B (2026-08-26), e a distinção ficou mais nítida: o VALOR escolhido
 //    (`cenario`) mudou-se para `game/state`, porque é persistido em chave `gameKey()` e viaja com o cartucho;
-//    o CATÁLOGO (`render/cenario-data.CENARIOS`) ficou onde estava, porque descrever céus e morros é trabalho
+//    o CATÁLOGO (`render/cenario-data.SCENERIES`) ficou onde estava, porque descrever céus e morros é trabalho
 //    de motor. Duas coisas com o mesmo nome e camadas diferentes — e é por isso que a regra fala de moeda e
 //    quiz, que não têm essa ambiguidade.
 // ---------------------------------------------------------------------------------------------------------

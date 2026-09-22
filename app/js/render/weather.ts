@@ -13,8 +13,8 @@
 import { decorationRng } from '../core/rng.js';
 const rnd = decorationRng.rnd;
 
-import type { DesenhoComLinha } from './port.js';
-// `cenario` e `CENARIOS` SAÍRAM (Fase B, ADR-0038): o cenário virou estado do JOGO (`game/state`), e este
+import type { DrawingWithLine } from './port.js';
+// `cenario` e `SCENERIES` SAÍRAM (Fase B, ADR-0038): o cenário virou estado do JOGO (`game/state`), e este
 // módulo é engine — o gate de fronteira proíbe a importação. Em vez do VALOR, entra a PERGUNTA: `temChuva`.
 // Ficou melhor do que era: o módulo perguntava "qual tema, e o dado dele diz chuva?"; agora pergunta "chove
 // aqui?", que é a única coisa que ele precisa saber.
@@ -30,7 +30,7 @@ export interface RainDrop { x: number; y: number; len: number; spd: number; }
  * L5 (rotina do José): tempo bom nos primeiros 30s; depois LOOP de 60s = garoa 5s → chuva 5s → garoa 5s → bom 45s.
  * Skipped when scene decor is reduced-motion.
  *
- * QUEM TEM CHUVA É DADO DO TEMA (`CENARIOS[...].chuva`), e não uma condição escrita aqui. Era
+ * QUEM TEM CHUVA É DADO DO TEMA (`SCENERIES[...].chuva`), e não uma condição escrita aqui. Era
  * `cenario === 'cidade'` — verdade enquanto a Cidade era o único tema com chuva, e mentira no dia em que o Dev
  * pediu chuva na Floresta. O defeito de uma condição dessas não é estar errada, é ser INVISÍVEL de onde a
  * pessoa procura: quem abre a tabela de cenários para dar chuva a um tema novo não encontra nada para mudar.
@@ -47,7 +47,7 @@ export function rainLevelTarget(sec: number, temChuva: boolean, reduceDecor: boo
 }
 
 /** Onde estamos DENTRO do ciclo de 60s, em segundos. 0 = a primeira gota; 59 = um segundo antes dela. */
-export function faseDoClima(sec: number): number { return (((sec - 30) % 60) + 60) % 60; }
+export function weatherPhase(sec: number): number { return (((sec - 30) % 60) + 60) % 60; }
 
 /**
  * AGLOMERAÇÃO DAS NUVENS: 0 = espalhadas e altas, com o céu aparecendo entre elas; 1 = fechadas numa manta.
@@ -57,13 +57,13 @@ export function faseDoClima(sec: number): number { return (((sec - 30) % 60) + 6
  * fecha OITO SEGUNDOS ANTES da primeira gota. Se fechasse junto, a chuva pareceria vir do nada e as nuvens
  * pareceriam reagir a ela; fechando antes, é a nuvem que traz a chuva, que é o que uma criança já sabe.
  *
- * Anda no MESMO ciclo da chuva (`faseDoClima`), e não num relógio próprio, porque dois relógios independentes
+ * Anda no MESMO ciclo da chuva (`weatherPhase`), e não num relógio próprio, porque dois relógios independentes
  * desandam um do outro — não de imediato, mas depois de alguns minutos, e aí ninguém liga o defeito à causa.
  * Devolve uma rampa contínua: não precisa de suavização depois.
  */
-export function aglomeracaoAlvo(sec: number, temChuva: boolean, reduceDecor: boolean): number {
+export function targetCrowding(sec: number, temChuva: boolean, reduceDecor: boolean): number {
   if (!(sec >= 22 && !reduceDecor && temChuva)) return 0; // 22s = exatamente a fase 52, onde a rampa começa
-  const f = faseDoClima(sec);
+  const f = weatherPhase(sec);
   if (f >= 52) return (f - 52) / 8;     // 8s juntando, antes da primeira gota
   if (f < 12) return 1;                 // fechado durante a garoa e a chuva
   if (f < 22) return 1 - (f - 12) / 10; // 10s abrindo — é aqui que o pôr do sol reaparece
@@ -112,9 +112,9 @@ export function stepRainDrop(d: RainDrop, W: number, H: number, moving: boolean,
 // PIXI drawing (weatherLayer injected — kept structural so the module still runs in node tests)
 // ---------------------------------------------------------------------------------------------
 
-// `Gfx` vem de `render/port`. A chuva traça linha, então é o `DesenhoComLinha`; o `parent` é lido para
+// `Gfx` vem de `render/port`. A chuva traça linha, então é o `DrawingWithLine`; o `parent` é lido para
 // saber se a camada está no `stage` informado antes de reposicioná-la.
-type Gfx = DesenhoComLinha & { parent: unknown };
+type Gfx = DrawingWithLine & { parent: unknown };
 interface StageLike {
   children: { length: number };
   setChildIndex(child: unknown, index: number): void;
@@ -168,7 +168,7 @@ export function updateWeather(): void {
   const temChuva = _temChuva ? _temChuva() : false;
   const target = rainLevelTarget(sec, temChuva, !!rm.decor);
   _rainLevel = rampRainLevel(_rainLevel, target, 1 / 30); // rampa ~1s
-  _aglomeracao = aglomeracaoAlvo(sec, temChuva, !!rm.decor); // já é rampa: nada a suavizar aqui
+  _aglomeracao = targetCrowding(sec, temChuva, !!rm.decor); // já é rampa: nada a suavizar aqui
   const step = stepThunder(_rainLevel, _thunderCD, _flash, rnd, (inten) => { if (_thunder) _thunder(inten); });
   _thunderCD = step.thunderCD; _flash = step.flash;
 }
@@ -195,7 +195,7 @@ export function drawWeather(): void {
 /** The clima→áudio bridge: platform/audio-ambient.ts reads this (never the raw value) so its rain track follows the visual. */
 export function getRainLevel(): number { return _rainLevel; }
 /** A ponte clima→céu: render/scene-sky lê isto para juntar e separar as nuvens no compasso da chuva. */
-export function getAglomeracao(): number { return _aglomeracao; }
+export function getCrowding(): number { return _aglomeracao; }
 /** Weather-clock read/write — the game.js `window.__incl.weatherT` debug hook fast-forwards the cycle via this. */
 export function getWeatherT(): number { return _weatherT; }
 export function setWeatherT(v: number): void { _weatherT = v; }

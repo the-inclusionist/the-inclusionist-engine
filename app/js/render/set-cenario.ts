@@ -23,11 +23,11 @@
 //     não quebra nada visível e desarma a guarda inteira, silenciosamente.
 //  3. A VALIDAÇÃO. "Tema desconhecido → 'cidade'" é a rede que segura um `incl_cenario` de uma versão antiga
 //     (e o boot ainda migra a chave 'noite' → 'espaco', do lado do game.js). Ela virou
-//     `normalizarCenario` em render/cenario-data.ts, com o comportamento atual PREGADO por teste, defeito de
+//     `normaliseScenery` em render/cenario-data.ts, com o comportamento atual PREGADO por teste, defeito de
 //     herança de protótipo incluído — ver o cabeçalho de lá.
 //
 // ======================= OS CINCO PASSOS, E POR QUE NESTA ORDEM =======================
-//   1. valida o tema           → `normalizarCenario`
+//   1. valida o tema           → `normaliseScenery`
 //   2. grava e persiste        → `setCenarioValue` (core/state.js). ANTES do resto: arma as guardas de corrida.
 //   3. veste o FUNDO           → `aplicarTemaParallax` (render/parallax.ts) — síncrono nos temas v3, PNG na Cidade
 //   4. pede os TILES do tema   → assíncrono; ao chegar, refaz a textura do MUNDO e reaplica os modos de visão
@@ -69,7 +69,7 @@
 // `render/city-tiles`. O corpo do módulo não pede nada, e a troca de cenário virou síncrona.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D2-b).
 
-import { CENARIOS, normalizarCenario, type CenarioTema } from './cenario-data.js';
+import { SCENERIES, normaliseScenery, type SceneryTheme } from './cenario-data.js';
 import type { Tileset } from './world-tex.js';
 
 /* ===================== interfaces estruturais (DOM/PIXI sem importá-los) ===================== */
@@ -82,7 +82,7 @@ import type { Tileset } from './world-tex.js';
  * descrição que apenas SE PARECE com a real, que é o que o ADR-0039 proíbe. O `unknown` não protegia
  * nada — só empurrava a conversão para quem recebesse.
  */
-export type TilesDoTema = Tileset;
+export type ThemeTiles = Tileset;
 /** `worldSprite` — só a troca de textura. */
 interface SpriteComTextura { texture: unknown }
 
@@ -94,13 +94,13 @@ interface SpriteComTextura { texture: unknown }
  * arte é um caminho normal (a Cidade não tem tileset próprio), não um erro, e uma rejeição aqui derrubaria a
  * troca de cenário inteira. Nunca pendura: os dois lados de cada imagem estão cobertos.
  */
-export interface SetCenarioCtx {
+export interface SetSceneryCtx {
   /* --- estado (core/state.js) --- */
   setCenarioValue: (theme: string) => void; // grava + persiste `incl_cenario` + dispara o evento
   getCenario: () => string;                 // REATRIBUÍDO → getter; é o que arma a guarda de corrida
 
   /* --- fundo (render/parallax.ts) --- */
-  aplicarTemaParallax: (theme: string, T: CenarioTema) => void;
+  aplicarTemaParallax: (theme: string, T: SceneryTheme) => void;
 
   /* --- textura do MUNDO (render/world-tex + render/canvas + render/high-contrast) --- */
   /**
@@ -108,10 +108,10 @@ export interface SetCenarioCtx {
    * (render/city-tiles) e os outros temas devolvem `null`, que é o caminho dos blocos v3 — o mesmo `null` de
    * antes, agora imediato em vez de prometido.
    */
-  getTiles: (tema: string) => TilesDoTema | null;
+  getTiles: (tema: string) => ThemeTiles | null;
   /** Builder da canvas do nível. `HTMLCanvasElement` e não `unknown`: é o que o `render/world-tex`
    *  devolve, e o `unknown` só adiava a conversão até o `main.ts`, onde ela virava erro (ADR-0039). */
-  worldCanvas: (tiles: TilesDoTema | null) => HTMLCanvasElement;
+  worldCanvas: (tiles: ThemeTiles | null) => HTMLCanvasElement;
   // `HTMLCanvasElement` e não `unknown`: o único argumento que passa por aqui é o retorno de
   // `worldCanvas()`, logo acima. Declarar o parâmetro mais LARGO do que se usa era o que impedia a
   // raiz de entregar o `tex` real dela — por contravariância, quem promete aceitar tudo não cabe.
@@ -129,16 +129,16 @@ export interface SetCenarioCtx {
   applyCenarioVida: () => void;                           // render/scene-city
 }
 
-export interface SetCenarioApi {
+export interface SetSceneryApi {
   /** Troca o cenário. Valida, persiste, repinta o fundo, refaz o mundo e avisa quem depende. */
   setCenario(theme: string): void;
 }
 
-export function createSetCenario(ctx: SetCenarioCtx): SetCenarioApi {
+export function createSetScenery(ctx: SetSceneryCtx): SetSceneryApi {
   function setCenario(theme: string): void {
-    const tema = normalizarCenario(theme);
+    const tema = normaliseScenery(theme);
     ctx.setCenarioValue(tema); // ANTES do trabalho de textura: é o valor com que as guardas de corrida comparam
-    const T = CENARIOS[tema]!;
+    const T = SCENERIES[tema]!;
     ctx.aplicarTemaParallax(tema, T); // as 3 camadas de fundo (render/parallax.ts)
 
     // TILES do tema: SÍNCRONOS. v3: blocos Clarity SEM recolor (o `worldCanvas` cai no desenho da v3 com null).

@@ -28,7 +28,7 @@
 // continuar encadeando sem redeclarar cada método — foi o que fez as cinco cópias divergirem.
 
 /** O MÍNIMO de uma camada de desenho vetorial: limpar, preencher, retangular. */
-export interface Desenho {
+export interface Drawing {
   clear(): this;
   beginFill(color: number, alpha?: number): this;
   drawRect(x: number, y: number, w: number, h: number): this;
@@ -36,25 +36,25 @@ export interface Desenho {
 }
 
 /** Desenho que também traça linha — chuva, cabos, tracinhos de lava. */
-export interface DesenhoComLinha extends Desenho {
+export interface DrawingWithLine extends Drawing {
   lineStyle(width: number, color?: number, alpha?: number): this;
   moveTo(x: number, y: number): this;
   lineTo(x: number, y: number): this;
 }
 
-/** O que se pode esconder. Separado de `Desenho` porque nem toda camada é escondida por quem a desenha. */
-export interface Visivel {
+/** O que se pode esconder. Separado de `Drawing` porque nem toda camada é escondida por quem a desenha. */
+export interface Visible {
   visible: boolean;
 }
 
 /** Um contêiner do grafo de cena, do ponto de vista de quem só adiciona e remove filhos. */
-export interface Camada {
+export interface Layer {
   addChild(c: unknown): unknown;
   removeChild(c: unknown): unknown;
 }
 
 /** O que tem textura trocável — o recolor do alto contraste escreve aqui. */
-export interface ComTextura {
+export interface WithTexture {
   texture: unknown;
 }
 
@@ -80,12 +80,12 @@ export interface ComTextura {
  * visual — nenhum teste de lógica o vê. Tornar o parâmetro obrigatório faz o compilador cobrar a intenção de
  * cada chamador, uma vez, e para sempre.
  */
-export type RenderizarEm = (objeto: unknown, alvo: unknown, limpar: boolean) => void;
+export type RenderInto = (objeto: unknown, alvo: unknown, limpar: boolean) => void;
 
 /**
  * CRIAR UM SPRITE a partir de uma textura, e um AZULEJO a partir dela.
  *
- * Fábricas, não construtores — e pelo mesmo motivo do `RenderizarEm` acima. Três módulos pediam
+ * Fábricas, não construtores — e pelo mesmo motivo do `RenderInto` acima. Três módulos pediam
  * `interface SpriteCtor { new (tex: unknown): Sprite }`, e o `PIXI.Sprite` real não cabe: o construtor dele
  * aceita `Texture | undefined`, e um parâmetro declarado `unknown` é MAIS LARGO — por contravariância, quem
  * promete aceitar qualquer coisa é quem não pode receber um construtor que só aceita textura.
@@ -93,13 +93,13 @@ export type RenderizarEm = (objeto: unknown, alvo: unknown, limpar: boolean) => 
  * Uma função apaga o problema: quem chama passa a textura que já tem, e quem compõe fecha a diferença uma
  * vez. `T` é o que o módulo espera de volta — cada um sabe qual fatia do sprite ele vai tocar.
  */
-export type CriarSprite<T> = (textura: unknown) => T;
+export type CreateSprite<T> = (textura: unknown) => T;
 
 /** Idem para o azulejo do parallax, que também recebe largura e altura. */
-export type CriarAzulejo<T> = (textura: unknown, largura: number, altura: number) => T;
+export type CreateTile<T> = (textura: unknown, largura: number, altura: number) => T;
 
 /** E o desenho vetorial vazio (`new PIXI.Graphics()`), pela mesma razão. */
-export type CriarDesenho<T> = () => T;
+export type CreateDrawing<T> = () => T;
 
 /**
  * O QUE SE TINGE — um sprite do ponto de vista de quem só ESCREVE a cor nele.
@@ -114,34 +114,34 @@ export type CriarDesenho<T> = () => T;
  * pequeno: quem escreve aqui não é mais conferido pelo compilador — mas as duas únicas escritas da
  * árvore são constantes hexadecimais literais, e o `ColorSource` aceitaria todas elas de qualquer jeito.
  */
-export interface Tingivel {
+export interface Tintable {
   tint: unknown;
 }
 
 /** O que se descarta. `DisplayObject.destroy(options?)` do PixiJS satisfaz — o opcional não atrapalha. */
-export interface Descartavel {
+export interface Disposable {
   destroy(): void;
 }
 
 /**
  * Camada que também ESVAZIA, devolvendo o que saiu para quem precisa destruir os filhos removidos.
  *
- * Separada de `Camada` porque só um consumidor esvazia, e porque o retorno é a parte delicada: quem
+ * Separada de `Layer` porque só um consumidor esvazia, e porque o retorno é a parte delicada: quem
  * declarava `removeChildren(): CoinSprite[]` pedia de volta algo mais ESPECÍFICO do que o PixiJS
  * entrega (`DisplayObject[]`) — e retorno é covariante, então o pedido específico é o que não cabe.
- * `Descartavel` é o que o chamador de fato usa.
+ * `Disposable` é o que o chamador de fato usa.
  */
-export interface CamadaEsvaziavel extends Camada {
-  removeChildren(): Descartavel[];
+export interface ClearableLayer extends Layer {
+  removeChildren(): Disposable[];
 }
 
 /** O que tem filtro de GPU — a câmera e cada sprite de saída do multi-tela. */
-export interface ComFiltro {
+export interface WithFilter {
   filters: unknown;
 }
 
 /** Desenho que também traça CÍRCULO — a bolinha indicadora de cada viewport. */
-export interface DesenhoComCirculo extends DesenhoComLinha {
+export interface DrawingWithCircle extends DrawingWithLine {
   drawCircle(x: number, y: number, r: number): this;
 }
 
@@ -155,9 +155,9 @@ export interface DesenhoComCirculo extends DesenhoComLinha {
  * onde não há CSS). Em produção o `view` é um `HTMLCanvasElement` de verdade e o campo existe — mas isso
  * é uma coisa que só a raiz de composição sabe, e é lá que a conversão pertence.
  *
- * Mesma lição do `RenderizarEm` e do `CriarSprite`: pedir o VERBO cabe onde emprestar o objeto não cabe.
+ * Mesma lição do `RenderInto` e do `CreateSprite`: pedir o VERBO cabe onde emprestar o objeto não cabe.
  */
-export type AplicarFiltroCss = (css: string, reach: AlcanceDoFiltro) => void;
+export type ApplyCssFilter = (css: string, reach: FilterReach) => void;
 
 /**
  * ONDE o filtro de acessibilidade cai — e a distinção é de PRODUTO, decidida pelo Dev em 2026-08-26.
@@ -175,7 +175,7 @@ export type AplicarFiltroCss = (css: string, reach: AlcanceDoFiltro) => void;
  * O catálogo já sabia disto antes de a regra ser escrita: `VIZ_MODES` traz `sim: true` exatamente nos nove
  * modos de empatia, e `simulatesDisability(chave)` é a pergunta pronta. Nada de taxonomia nova.
  */
-export type AlcanceDoFiltro = 'mundo' | 'mundo-e-menus';
+export type FilterReach = 'mundo' | 'mundo-e-menus';
 
 /**
  * LIGAR/DESLIGAR O ALTO CONTRASTE NO DOM — a metade que o filtro não alcança.
@@ -184,4 +184,4 @@ export type AlcanceDoFiltro = 'mundo' | 'mundo-e-menus';
  * tem textura, então não há o que propagar — há que escrever o equivalente, e ele mora no `style.css` sob
  * `#dom-layer.hc`. Aqui só se diz SE está ligado; o desenho é do CSS, com as razões medidas (issue #83).
  */
-export type AplicarAltoContrasteNoDom = (ligado: boolean) => void;
+export type ApplyHighContrastToDom = (ligado: boolean) => void;

@@ -7,9 +7,9 @@
 // motor junto.
 //
 // ======================= POR QUE A FRONTEIRA CAIU AQUI =======================
-// `CENARIOS` e `THEME_FLORA` são as duas tabelas mais LIDAS e menos PROTEGIDAS do monólito. Antes desta
+// `SCENERIES` e `THEME_FLORA` são as duas tabelas mais LIDAS e menos PROTEGIDAS do monólito. Antes desta
 // extração elas eram `const` no meio do `game.js` e chegavam aos módulos por INJEÇÃO — `render/scene-sky.ts`
-// as recebe inteiras no `SceneSkyCtx` (`CENARIOS`, `THEME_FLORA`), `game/attract.ts` recebe `CENARIOS` para
+// as recebe inteiras no `SceneSkyCtx` (`SCENERIES`, `THEME_FLORA`), `game/attract.ts` recebe `SCENERIES` para
 // sortear o tema da demo, o splash recebe a lista reduzida a `{id,nome}`, e `setCenario` as consulta para
 // validar e para pintar. Cinco leitores, nenhum teste, e nenhum lugar onde a FORMA de um tema estivesse
 // escrita: cada leitor descobria por acidente que `T.cloud` só existe quando `T.v3` é verdadeiro, e que
@@ -23,7 +23,7 @@
 // novo nasceria careca, e ninguém saberia dizer por quê.
 //
 // ======================= O QUE ESTÁ AQUI, E POR QUÊ ESTÁ JUNTO =======================
-//  · `CENARIOS`     — os quatro temas + a Cidade. `v3:false` (Cidade) significa "meu fundo vem de PNG e eu
+//  · `SCENERIES`     — os quatro temas + a Cidade. `v3:false` (Cidade) significa "meu fundo vem de PNG e eu
 //                     tenho o céu/tráfego próprios de render/scene-city"; `v3:true` significa "meu fundo é
 //                     GERADO pelas fórmulas da v3.1.100 (render/scene-parallax) a partir destas cores".
 //                     Nenhum tema tem chuva — chuva é da Cidade, e é decisão de render/weather.
@@ -36,7 +36,7 @@
 //                     tinha UM chamador: o `SceneSkyCtx`. É função da TABELA, não do parallax — todas as
 //                     cores que ele converte estão neste arquivo — e por isso veio para cá, e não para
 //                     render/parallax.
-//  · `normalizarCenario` — a validação de `setCenario` ("tema desconhecido → 'cidade'"), isolada do efeito.
+//  · `normaliseScenery` — a validação de `setCenario` ("tema desconhecido → 'cidade'"), isolada do efeito.
 //
 // ======================= O QUE NÃO VEIO =======================
 //  · As FÓRMULAS que transformam estas cores em pixel (`themeSkyTexture`, `themeHillsTexture`,
@@ -47,16 +47,16 @@
 //    não variam por tema — descrevem a GEOMETRIA do fundo, e vivem ao lado da conta que os usa, em
 //    render/parallax.ts. Uma tabela de tema aqui, uma tabela de câmera lá.
 //
-// ======================= ⚠️ COMPORTAMENTO PRESERVADO: `normalizarCenario` ACEITA CHAVE HERDADA =======================
-// O monólito valida com `if(!CENARIOS[theme])theme='cidade'`. `CENARIOS` é um objeto literal, logo herda de
-// `Object.prototype`: `CENARIOS['toString']` é uma FUNÇÃO, e portanto truthy, e portanto 'toString' passa na
+// ======================= ⚠️ COMPORTAMENTO PRESERVADO: `normaliseScenery` ACEITA CHAVE HERDADA =======================
+// O monólito valida com `if(!SCENERIES[theme])theme='cidade'`. `SCENERIES` é um objeto literal, logo herda de
+// `Object.prototype`: `SCENERIES['toString']` é uma FUNÇÃO, e portanto truthy, e portanto 'toString' passa na
 // validação como se fosse um tema. O `setCenario` então persiste 'toString' em `incl_cenario`, tenta baixar
 // `assets/cenarios/toString/c4.png` e o jogo fica sem fundo. Só é alcançável por um valor forjado (chave de
 // localStorage adulterada; `window.__incl.setCenario('constructor')`), nunca pela UI — que monta o seletor a
-// partir de `Object.keys(CENARIOS)`.
+// partir de `Object.keys(SCENERIES)`.
 // ISTO É O COMPORTAMENTO ATUAL E FOI COPIADO TAL E QUAL, de propósito: esta etapa é uma EXTRAÇÃO, e trocar a
 // checagem por `hasOwnProperty` aqui seria consertar às escondidas, dentro de um movimento cuja garantia é
-// justamente "nada mudou". O teste PREGA a falha (`normalizarCenario('toString') === 'toString'`), para que o
+// justamente "nada mudou". O teste PREGA a falha (`normaliseScenery('toString') === 'toString'`), para que o
 // conserto — quando vier — seja uma mudança visível de asserção e não uma surpresa.
 //
 // SEM I/O NO IMPORT: o corpo do módulo só declara literais. Não há `init`, não há factory, não há efeito —
@@ -103,7 +103,7 @@ export interface Flora {
  * pilar 1 existe para comprar: o alto contraste repinta um dado e não repinta um PNG. E a Cidade é a maior
  * superfície da tela — sob PNG, era a única coisa que o modo de alto contraste jamais alcançava.
  */
-export interface FaixaDePredios {
+export interface BuildingBand {
   /** y a partir do qual a faixa é SÓLIDA: abaixo desta linha é tudo prédio, sem buraco. */
   base: number;
   /**
@@ -154,17 +154,17 @@ interface TemaBase {
 }
 
 /** Fundo de MORROS: céu em gradiente + duas bandas de morro. Os quatro temas da v3. */
-export interface TemaMorros extends TemaBase {
+export interface HillsTheme extends TemaBase {
   fundo: 'morros';
   /** As duas bandas de morro: `[fundo, frente]`. */
   hills: readonly [string, string];
 }
 
 /** Fundo de PRÉDIOS: céu em gradiente + três faixas de skyline. A Cidade, e só ela por enquanto. */
-export interface TemaPredios extends TemaBase {
+export interface BuildingsTheme extends TemaBase {
   fundo: 'predios';
   /** Uma faixa por camada de parallax, do mais distante ao mais próximo. */
-  predios: readonly [FaixaDePredios, FaixaDePredios, FaixaDePredios];
+  predios: readonly [BuildingBand, BuildingBand, BuildingBand];
 }
 
 /**
@@ -176,10 +176,10 @@ export interface TemaPredios extends TemaBase {
  * nunca faltavam. Agora o compilador cobra, e `render/scene-parallax` deixou de precisar redescrever isto
  * como `ParallaxTheme` — o que era o defeito do ADR-0039 outra vez, numa terceira vítima.
  */
-export type CenarioTema = TemaMorros | TemaPredios;
+export type SceneryTheme = HillsTheme | BuildingsTheme;
 
 /** O tema para o qual todo valor desconhecido cai. */
-export const CENARIO_PADRAO = 'cidade';
+export const DEFAULT_SCENERY = 'cidade';
 
 /* L6 (REFEITO — fiel à v3.1.100): os 4 temas usam EXATAMENTE o céu, as nuvens, as montanhas, a grama
    e a decoração viva de lá (fórmulas copiadas). BLOCOS = Clarity SEM recolor (a v3 não recoloria tiles
@@ -195,7 +195,7 @@ export const CENARIO_PADRAO = 'cidade';
 // SE UM DIA HOUVER TEMA DE ESPAÇO OU DE HALLOWEEN (decisão do Dev, 2026-08-25): no de espaço, os BLOCOS do
 // nível viram partes de estação espacial — não é só trocar o céu. E o de Halloween é uma FESTA de Halloween,
 // não um cemitério: abóboras, fantasias e doces, não túmulos.
-export const CENARIOS: Record<string, CenarioTema> = {
+export const SCENERIES: Record<string, SceneryTheme> = {
   // `chuva` estava ESCRITA NO CÓDIGO do clima, como `cenario === 'cidade'`. Era verdade e virou mentira no dia
   // em que o Dev pediu chuva na Floresta — e o pior de uma condição dessas é que ela não avisa: quem lê
   // `render/weather` não tem como saber que existe uma lista de temas, porque não existe lista, existe um `if`.
@@ -258,7 +258,7 @@ export const hexN = (s: string): number => parseInt(String(s).slice(1), 16);
  * A validação de `setCenario`, sem o efeito: tema conhecido passa, o resto vira 'cidade'.
  * ⚠️ Cópia FIEL do monólito, herança do `Object.prototype` inclusive — ver o cabeçalho.
  */
-export function normalizarCenario(theme: string): string {
-  if (!CENARIOS[theme]) return CENARIO_PADRAO;
+export function normaliseScenery(theme: string): string {
+  if (!SCENERIES[theme]) return DEFAULT_SCENERY;
   return theme;
 }

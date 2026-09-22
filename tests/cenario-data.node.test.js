@@ -17,24 +17,24 @@
 // O último bloco PREGA um defeito herdado do monólito (validação por herança de protótipo). Ele NÃO é um
 // teste de que a coisa está certa: é um teste de que ela está como está, para que o conserto seja visível.
 import { describe, it, expect } from 'vitest';
-import { CENARIOS, THEME_FLORA, CENARIO_PADRAO, hexN, normalizarCenario } from '../app/js/render/cenario-data.js';
+import { SCENERIES, THEME_FLORA, DEFAULT_SCENERY, hexN, normaliseScenery } from '../app/js/render/cenario-data.js';
 
 const IDS = ['cidade', 'campo', 'cemiterio', 'espaco', 'floresta'];
-const MORROS = IDS.filter((k) => CENARIOS[k].fundo === 'morros');
-const PREDIOS = IDS.filter((k) => CENARIOS[k].fundo === 'predios');
+const MORROS = IDS.filter((k) => SCENERIES[k].fundo === 'morros');
+const PREDIOS = IDS.filter((k) => SCENERIES[k].fundo === 'predios');
 const HEX = /^#[0-9a-f]{6}$/;
 // O vocabulário que render/scene-sky.stepV3Decor sabe interpretar (um `d.includes(...)` por item).
 const DECOR_CONHECIDO = ['nuvens', 'passaros', 'borboletas', 'sparkles', 'minhocas', 'nevoa', 'vagalumes'];
 
 describe('CENARIOS — o catálogo', () => {
   it('tem exatamente os cinco cenários do jogo, e a Cidade é o padrão', () => {
-    expect(Object.keys(CENARIOS).sort()).toEqual([...IDS].sort());
-    expect(CENARIO_PADRAO).toBe('cidade');
-    expect(CENARIOS[CENARIO_PADRAO]).toBeTruthy();
+    expect(Object.keys(SCENERIES).sort()).toEqual([...IDS].sort());
+    expect(DEFAULT_SCENERY).toBe('cidade');
+    expect(SCENERIES[DEFAULT_SCENERY]).toBeTruthy();
   });
 
   it('todo tema tem nome legível e não vazio (é o rótulo do splash)', () => {
-    for (const id of IDS) expect(CENARIOS[id].nome.length).toBeGreaterThan(0);
+    for (const id of IDS) expect(SCENERIES[id].nome.length).toBeGreaterThan(0);
   });
 
   it('a Cidade é o único tema de PRÉDIOS, e traz uma faixa por camada de parallax', () => {
@@ -42,13 +42,13 @@ describe('CENARIOS — o catálogo', () => {
     // dela é skyline e não morro —, e por isso ela ganhou `sky` e perdeu a exceção.
     expect(PREDIOS).toEqual(['cidade']);
     expect(MORROS).toHaveLength(4);
-    expect(CENARIOS.cidade.predios).toHaveLength(3); // uma por camada de parallax
-    expect(CENARIOS.cidade.hills).toBeUndefined();   // prédio não é morro
-    expect(CENARIOS.cidade.sky.length).toBeGreaterThanOrEqual(2);
+    expect(SCENERIES.cidade.predios).toHaveLength(3); // uma por camada de parallax
+    expect(SCENERIES.cidade.hills).toBeUndefined();   // prédio não é morro
+    expect(SCENERIES.cidade.sky.length).toBeGreaterThanOrEqual(2);
   });
 
   it('CONTRATO das faixas de prédio: base na tela, topos crescentes, DUAS profundidades, cores em #rrggbb', () => {
-    for (const [i, f] of CENARIOS.cidade.predios.entries()) {
+    for (const [i, f] of SCENERIES.cidade.predios.entries()) {
       expect(f.base, `faixa ${i} base`).toBeGreaterThan(0);
       expect(f.base).toBeLessThan(180);
       // `topo` é em y, então o PRIMEIRO número é o mais ALTO na tela e portanto o MENOR.
@@ -70,7 +70,7 @@ describe('CENARIOS — o catálogo', () => {
     // de MASSA por "janela acesa/apagada". Separando por temperatura, luz é o que tem R maior que B.
     const rgb = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
     const acesos = [];
-    for (const [i, f] of CENARIOS.cidade.predios.entries()) {
+    for (const [i, f] of SCENERIES.cidade.predios.entries()) {
       expect(f.luz, `faixa ${i} sem luz`).toBeTruthy();
       for (const c of f.luz) {
         const [r, , b] = rgb(c);
@@ -89,7 +89,7 @@ describe('CENARIOS — o catálogo', () => {
 
   it('CONTRATO: todo tema de fundo GERADO traz cloud/hills como PARES de #rrggbb e decor não vazio', () => {
     for (const id of MORROS) {
-      const T = CENARIOS[id];
+      const T = SCENERIES[id];
       for (const campo of ['cloud', 'hills']) {
         expect(T[campo], id + '.' + campo).toBeDefined();
         expect(T[campo], id + '.' + campo).toHaveLength(2);
@@ -105,7 +105,7 @@ describe('CENARIOS — o catálogo', () => {
     // mudado. Um par continua sendo válido (é o que os outros três temas são), mas "par" deixou de ser a
     // regra — o que a regra sempre quis dizer é "cores de verdade, e mais de uma".
     for (const id of MORROS) {
-      const ceu = CENARIOS[id].sky;
+      const ceu = SCENERIES[id].sky;
       expect(ceu, id + '.sky').toBeDefined();
       expect(ceu.length, id + '.sky').toBeGreaterThanOrEqual(2);
       for (const c of ceu) expect(c, id + '.sky').toMatch(HEX);
@@ -117,7 +117,7 @@ describe('CENARIOS — o catálogo', () => {
     // igualmente espaçadas, a de índice i cai em y = 180·i/(N-1); com sete, o índice 3 é y=90 — a linha do
     // horizonte — e o índice 2 é y=60. Trocar a quantidade de paradas sem refazer a conta desloca o pôr do
     // sol inteiro para fora da tela, em silêncio, porque nada além disto confere onde uma cor cai.
-    const ceu = CENARIOS.floresta.sky, n = ceu.length;
+    const ceu = SCENERIES.floresta.sky, n = ceu.length;
     const y = (i) => 180 * i / (n - 1);
     const vermelho = ceu.indexOf('#e0392c'), amarelo = ceu.indexOf('#ffd166');
     expect(y(vermelho)).toBe(90);
@@ -128,22 +128,22 @@ describe('CENARIOS — o catálogo', () => {
   it('a Floresta é o único tema com SOL, e ele fica na altura do horizonte', () => {
     // `y` acima de 0.5 esconderia o disco inteiro atrás dos morros e o leque de raios sairia do nada; muito
     // abaixo e ele vira um sol de meio-dia, que é o oposto do que foi pedido.
-    expect(CENARIOS.floresta.sol).toBeDefined();
-    expect(CENARIOS.floresta.sol.cor).toMatch(HEX);
-    expect(CENARIOS.floresta.sol.y).toBeGreaterThan(0.40);
-    expect(CENARIOS.floresta.sol.y).toBeLessThanOrEqual(0.50);
-    expect(MORROS.filter((id) => CENARIOS[id].sol)).toEqual(['floresta']);
+    expect(SCENERIES.floresta.sol).toBeDefined();
+    expect(SCENERIES.floresta.sol.cor).toMatch(HEX);
+    expect(SCENERIES.floresta.sol.y).toBeGreaterThan(0.40);
+    expect(SCENERIES.floresta.sol.y).toBeLessThanOrEqual(0.50);
+    expect(MORROS.filter((id) => SCENERIES[id].sol)).toEqual(['floresta']);
   });
 
   it('CONTRATO: todo nome de decor é do vocabulário que scene-sky sabe interpretar', () => {
-    for (const id of MORROS) for (const d of CENARIOS[id].decor) expect(DECOR_CONHECIDO, id + ' → ' + d).toContain(d);
+    for (const id of MORROS) for (const d of SCENERIES[id].decor) expect(DECOR_CONHECIDO, id + ' → ' + d).toContain(d);
   });
 
   // `stepV3Decor` desenha nuvem com `if (d.includes('nuvens') && T.cloud)`: pedir nuvem sem paleta não estoura,
   // só não desenha. É este o par que importa — o inverso ("todo tema TEM de usar nuvens") seria uma amarra
   // gratuita contra um tema futuro de céu limpo.
   it('CONTRATO: quem pede "nuvens" no decor tem a paleta cloud (senão a nuvem some sem erro)', () => {
-    for (const id of MORROS) if (CENARIOS[id].decor.includes('nuvens')) expect(CENARIOS[id].cloud, id).toBeDefined();
+    for (const id of MORROS) if (SCENERIES[id].decor.includes('nuvens')) expect(SCENERIES[id].cloud, id).toBeDefined();
   });
 });
 
@@ -152,7 +152,7 @@ describe('THEME_FLORA — a tabela irmã', () => {
     // Ancorado em `decor`, não em `fundo`. Se estivesse ancorado no fundo, dar arte raster à Floresta
     // quebraria este caso sem que nada de errado tivesse acontecido — e o jeito rápido de "consertar" seria
     // tirar a flora dela, que é exatamente o estrago que a separação do antigo `v3` existe para evitar.
-    const comDecor = IDS.filter((k) => (CENARIOS[k].decor ?? []).length > 0);
+    const comDecor = IDS.filter((k) => (SCENERIES[k].decor ?? []).length > 0);
     expect(Object.keys(THEME_FLORA).sort()).toEqual([...comDecor].sort());
     for (const id of comDecor) expect(THEME_FLORA[id], id).toBeTruthy();
   });
@@ -183,11 +183,11 @@ describe('hexN', () => {
   });
   it('Boundary: toda cor das duas tabelas cabe em 24 bits', () => {
     const todas = [];
-    for (const id of MORROS) { const T = CENARIOS[id], fl = THEME_FLORA[id];
+    for (const id of MORROS) { const T = SCENERIES[id], fl = THEME_FLORA[id];
       todas.push(...T.sky, ...T.cloud, ...T.hills, fl.base, fl.top, fl.bLt, fl.bDk, fl.center, ...fl.petals); }
     // A Cidade entra pelas cores DELA — o céu e os seis tons de prédio. Antes ela não entrava neste caso
     // nenhum, porque não tinha cor: era um PNG.
-    for (const id of PREDIOS) { const T = CENARIOS[id];
+    for (const id of PREDIOS) { const T = SCENERIES[id];
       todas.push(...T.sky);
       for (const f of T.predios) todas.push(...f.corpo, ...(f.luz || [])); }
     expect(todas.length).toBeGreaterThan(40);
@@ -195,28 +195,28 @@ describe('hexN', () => {
   });
 });
 
-describe('normalizarCenario', () => {
+describe('normaliseScenery', () => {
   it('deixa passar todo tema do catálogo, sem tocar', () => {
-    for (const id of IDS) expect(normalizarCenario(id)).toBe(id);
+    for (const id of IDS) expect(normaliseScenery(id)).toBe(id);
   });
   it('tema desconhecido cai para a Cidade', () => {
-    for (const lixo of ['praia', 'noite', 'CAMPO', 'campo ', '']) expect(normalizarCenario(lixo)).toBe('cidade');
+    for (const lixo of ['praia', 'noite', 'CAMPO', 'campo ', '']) expect(normaliseScenery(lixo)).toBe('cidade');
   });
   it('Zero/nulo: undefined e null também caem para a Cidade', () => {
-    expect(normalizarCenario(undefined)).toBe('cidade');
-    expect(normalizarCenario(null)).toBe('cidade');
+    expect(normaliseScenery(undefined)).toBe('cidade');
+    expect(normaliseScenery(null)).toBe('cidade');
   });
   it('é idempotente (normalizar duas vezes não muda nada)', () => {
-    for (const v of ['campo', 'praia', '']) expect(normalizarCenario(normalizarCenario(v))).toBe(normalizarCenario(v));
+    for (const v of ['campo', 'praia', '']) expect(normaliseScenery(normaliseScenery(v))).toBe(normaliseScenery(v));
   });
 
   // ⚠️ PREGO DE DEFEITO — não é "certo", é "como está". Ver o cabeçalho de render/cenario-data.ts.
-  // `CENARIOS` é objeto literal, logo `CENARIOS['toString']` é a função herdada do Object.prototype: truthy,
+  // `SCENERIES` é objeto literal, logo `SCENERIES['toString']` é a função herdada do Object.prototype: truthy,
   // e portanto aprovada como tema. Só alcançável por valor forjado (localStorage adulterado, __incl), nunca
   // pela UI — que monta o seletor de Object.keys(CENARIOS). Quando for consertado, ESTE teste é que muda.
   it('DEFEITO PREGADO: chave herdada do Object.prototype passa na validação como se fosse tema', () => {
-    expect(normalizarCenario('toString')).toBe('toString');
-    expect(normalizarCenario('constructor')).toBe('constructor');
-    expect(Object.prototype.hasOwnProperty.call(CENARIOS, 'toString')).toBe(false); // e não é tema de verdade
+    expect(normaliseScenery('toString')).toBe('toString');
+    expect(normaliseScenery('constructor')).toBe('constructor');
+    expect(Object.prototype.hasOwnProperty.call(SCENERIES, 'toString')).toBe(false); // e não é tema de verdade
   });
 });

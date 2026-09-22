@@ -17,7 +17,7 @@
 // GUARDA DE CORRIDA do PNG da Cidade (tema trocado enquanto a imagem baixava) e a regra de que o sprite só é
 // pintado no modo 'normal' — nos modos acessíveis quem pinta é render/viz-setters, lendo a textura crua.
 import { describe, it, expect } from 'vitest';
-import { PARALLAX, ARQUIVO_POR_CAMADA, posicoesParallax, createParallax } from '../app/js/render/parallax.js';
+import { PARALLAX, FILE_PER_LAYER, parallaxPositions, createParallax } from '../app/js/render/parallax.js';
 import { LOGICAL_W, LOGICAL_H } from '../app/js/core/constants.js';
 
 /* ===================== dublês ===================== */
@@ -86,8 +86,8 @@ describe('PARALLAX — os fatores de profundidade', () => {
     for (const p of PARALLAX) expect(p.fy).toBe(0);
   });
   it('cada camada tem o seu PNG da Cidade, na ordem c4/c3/c2', () => {
-    expect(ARQUIVO_POR_CAMADA).toEqual([4, 3, 2]);
-    expect(ARQUIVO_POR_CAMADA).toHaveLength(PARALLAX.length);
+    expect(FILE_PER_LAYER).toEqual([4, 3, 2]);
+    expect(FILE_PER_LAYER).toHaveLength(PARALLAX.length);
   });
 });
 
@@ -96,51 +96,51 @@ describe('PARALLAX — os fatores de profundidade', () => {
 describe('posicoesParallax — a conta', () => {
   it('CONTRA-POSIÇÃO: x/y são EXATAMENTE camX/camY (o camera está em -camX → soma zero na tela)', () => {
     for (const [cx, cy] of [[0, 0], [37, 12], [1280, 180], [-40, -7], [0.5, 0.25]]) {
-      for (const q of posicoesParallax(cx, cy)) { expect(q.x).toBe(cx); expect(q.y).toBe(cy); }
+      for (const q of parallaxPositions(cx, cy)) { expect(q.x).toBe(cx); expect(q.y).toBe(cy); }
     }
   });
 
   it('ROLAGEM: tileX = -camX * fator, camada a camada', () => {
     const camX = 200;
-    const pos = posicoesParallax(camX, 0);
+    const pos = parallaxPositions(camX, 0);
     PARALLAX.forEach((p, i) => expect(pos[i].tileX).toBeCloseTo(-camX * p.factor, 10));
   });
 
   it('tileY = -camY * fy — com fy=0 nas três, a rolagem vertical é sempre zero', () => {
-    for (const q of posicoesParallax(0, 999)) expect(Math.abs(q.tileY)).toBe(0);
+    for (const q of parallaxPositions(0, 999)) expect(Math.abs(q.tileY)).toBe(0);
   });
 
   it('PROFUNDIDADE: a camada mais distante (sky) se move MENOS que as da frente', () => {
-    const pos = posicoesParallax(500, 0);
+    const pos = parallaxPositions(500, 0);
     expect(Math.abs(pos[0].tileX)).toBeLessThan(Math.abs(pos[1].tileX));
     expect(Math.abs(pos[1].tileX)).toBeLessThan(Math.abs(pos[2].tileX));
   });
 
   it('PROPORCIONALIDADE: a razão entre duas camadas é a razão dos fatores, em qualquer camX', () => {
     for (const camX of [1, 33, 640, 5000]) {
-      const pos = posicoesParallax(camX, 0);
+      const pos = parallaxPositions(camX, 0);
       expect(pos[2].tileX / pos[0].tileX).toBeCloseTo(PARALLAX[2].factor / PARALLAX[0].factor, 10);
       expect(pos[1].tileX / pos[0].tileX).toBeCloseTo(PARALLAX[1].factor / PARALLAX[0].factor, 10);
     }
   });
 
   it('LINEARIDADE: dobrar camX dobra a rolagem (Right-BICEP: relação inversa)', () => {
-    const a = posicoesParallax(150, 0), b = posicoesParallax(300, 0);
+    const a = parallaxPositions(150, 0), b = parallaxPositions(300, 0);
     PARALLAX.forEach((_p, i) => expect(b[i].tileX).toBeCloseTo(2 * a[i].tileX, 10));
   });
 
   it('Zero: camera na origem → tudo zerado', () => {
-    for (const q of posicoesParallax(0, 0)) { expect(q.x).toBe(0); expect(q.y).toBe(0); expect(Math.abs(q.tileX)).toBe(0); expect(Math.abs(q.tileY)).toBe(0); }
+    for (const q of parallaxPositions(0, 0)) { expect(q.x).toBe(0); expect(q.y).toBe(0); expect(Math.abs(q.tileX)).toBe(0); expect(Math.abs(q.tileY)).toBe(0); }
   });
 
   it('SENTIDO: câmera indo para a DIREITA rola a textura para a esquerda (tileX negativo)', () => {
-    for (const q of posicoesParallax(100, 0)) expect(q.tileX).toBeLessThan(0);
-    for (const q of posicoesParallax(-100, 0)) expect(q.tileX).toBeGreaterThan(0);
+    for (const q of parallaxPositions(100, 0)) expect(q.tileX).toBeLessThan(0);
+    for (const q of parallaxPositions(-100, 0)) expect(q.tileX).toBeGreaterThan(0);
   });
 
   it('MOVIMENTO REDUZIDO: a rolagem trava em ZERO e a contra-posição CONTINUA valendo', () => {
     const camX = 640, camY = 90;
-    for (const q of posicoesParallax(camX, camY, PARALLAX, true)) {
+    for (const q of parallaxPositions(camX, camY, PARALLAX, true)) {
       expect(q.tileX).toBe(0); expect(q.tileY).toBe(0);
       expect(q.x).toBe(camX); expect(q.y).toBe(camY); // <- o fundo continua PARADO na tela, não grudado no mundo
     }
@@ -148,13 +148,13 @@ describe('posicoesParallax — a conta', () => {
 
   it('é determinística e não muta a tabela de camadas', () => {
     const antes = JSON.stringify(PARALLAX);
-    expect(posicoesParallax(77, 3)).toEqual(posicoesParallax(77, 3));
+    expect(parallaxPositions(77, 3)).toEqual(parallaxPositions(77, 3));
     expect(JSON.stringify(PARALLAX)).toBe(antes);
   });
 
   it('devolve uma posição por camada, respeitando uma tabela sob medida', () => {
     const custom = [{ key: 'a', factor: 0.5, fy: 0.25 }];
-    const pos = posicoesParallax(10, 8, custom);
+    const pos = parallaxPositions(10, 8, custom);
     expect(pos).toHaveLength(1);
     expect(pos[0]).toEqual({ x: 10, y: 8, tileX: -5, tileY: -2 });
   });
@@ -181,7 +181,7 @@ describe('updateParallax — o carimbo nos sprites', () => {
   it('escreve nos sprites exatamente o que posicoesParallax devolve', () => {
     const { api } = ambiente();
     api.updateParallax(320, 45);
-    const esperado = posicoesParallax(320, 45, PARALLAX, false);
+    const esperado = parallaxPositions(320, 45, PARALLAX, false);
     api.layers.forEach((ts, i) => {
       expect(ts.x).toBe(esperado[i].x); expect(ts.y).toBe(esperado[i].y);
       expect(ts.tilePosition.x).toBeCloseTo(esperado[i].tileX, 10);

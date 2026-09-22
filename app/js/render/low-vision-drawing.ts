@@ -7,10 +7,10 @@
 // the declared world for the empathy panel (issue #182). Written once so the two cannot show different simulations under one name.
 
 /** The simulations drawn rather than filtered. `haze` is also a filter under `createGame`, which draws only the other three. */
-export type DesenhoDeBaixaVisao = 'haze' | 'tunnel' | 'macular' | 'diabetic';
+export type LowVisionDrawing = 'haze' | 'tunnel' | 'macular' | 'diabetic';
 
 /** Draws simulation `lv` on a `w`×`h` context, over transparency. An unknown key draws nothing. */
-export function desenharBaixaVisao(c: CanvasRenderingContext2D, lv: string, w: number, h: number): void {
+export function drawLowVision(c: CanvasRenderingContext2D, lv: string, w: number, h: number): void {
   const cx = w / 2, cy = h / 2;
   if (lv === 'haze') { c.fillStyle = 'rgba(244,246,250,0.42)'; c.fillRect(0, 0, w, h); }
   else if (lv === 'tunnel') { const g = c.createRadialGradient(cx, cy, h * 0.12, cx, cy, h * 0.6); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.5, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,.99)'); c.fillStyle = g; c.fillRect(0, 0, w, h); }
