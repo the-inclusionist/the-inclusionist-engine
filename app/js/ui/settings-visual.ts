@@ -240,7 +240,10 @@ const TODAS_AS_LINHAS: VisualRowsOffered = { dono: true, papeis: true };
 export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings, oferecer: VisualRowsOffered = TODAS_AS_LINHAS): string {
   const roleInputs = ROLE_KEYS.map(
     (k) =>
-      `<input type="color" id="opt-role-${k}" value="${rgbToHex(s.roleColors[k])}" aria-label="Cor de ${ROLE_LABELS[k]}" style="inline-size:2.2em;block-size:1.8em;padding:0;border:1px solid #666;border-radius:4px;background:none">`,
+      // 📌 A MOLDURA TRADUZ, O NOME DO PAPEL ATRAVESSA (`CLAUDE.md` §A FRONTEIRA, reafirmado pelo Dev em 22/09): «Cor de»
+      // é da engine e passa por `t()`; «perigo (lava)» é a palavra do JOGO que monta este painel, e a engine não a
+      // traduz nem a inventa. ⚠️ E ela continua a ser dívida DECLARADA por outro motivo, dito abaixo em `ROLE_LABELS`.
+      `<input type="color" id="opt-role-${k}" value="${rgbToHex(s.roleColors[k])}" aria-label="${escapeHtml(t('visual.papel.cor', { papel: ROLE_LABELS[k] }))}" style="inline-size:2.2em;block-size:1.8em;padding:0;border:1px solid #666;border-radius:4px;background:none">`,
   ).join('');
   return (
     // 🔴 O REALCE DE CONTRASTE, EM PASSOS E COM A PROSA NO SÍTIO CERTO (ADR-0151). O Dev viu a explicação DENTRO da
@@ -250,8 +253,12 @@ export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings,
     // no seu `.opt-hint`, que o rodapé recolhe.
     '<div class="ctrl-row ctrl-row--passos"><span><span class="opt-hint">' +
     escapeHtml(t('visual.lq.dica')) + '</span></span><span data-passos-lugar="lq"></span></div>' +
+    // 🔴 AS DUAS ÚLTIMAS FRASES CRUAS DESTE PAINEL PASSARAM PELO DICIONÁRIO (ADR-0225). O comentário da paleta segura,
+    // logo abaixo, descreve este mesmo conserto feito a ELA e deixou estas duas para trás: eram português escrito em
+    // linha, com a explicação colada ao rótulo depois de um travessão, num módulo da ENGINE que um cartucho monta em
+    // página de qualquer língua. A explicação vai agora para o seu `.opt-hint` (`CLAUDE.md` §4), que o rodapé recolhe.
     (oferecer.dono
-      ? '<div class="ctrl-row"><span><strong>Itens na cor do dono</strong> — no multiplayer, cada jogador vê os próprios itens na cor dele. Desligado: itens na cor original para todos.</span>' +
+      ? `<div class="ctrl-row"><span><strong>${escapeHtml(t('visual.dono'))}</strong><span class="opt-hint">${escapeHtml(t('visual.dono.dica'))}</span></span>` +
         `<button id="opt-ownercolors" class="mode-btn${s.ownerColors ? ' is-on' : ''}" type="button" aria-pressed="${s.ownerColors}">${onOffLabel(s.ownerColors)}</button></div>`
       : '') +
     // 🔴 The safe palette's words through the dictionary, the explanation in `.opt-hint` (`CLAUDE.md` §4): it was raw
@@ -259,10 +266,13 @@ export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings,
     `<div class="ctrl-row"><span><strong>${escapeHtml(t('visual.cbsafe'))}</strong><span class="opt-hint">${escapeHtml(t('visual.cbsafe.dica'))}</span></span>` +
     `<button id="opt-cbsafe" class="mode-btn${s.cbSafe ? ' is-on' : ''}" type="button" aria-pressed="${s.cbSafe}">${onOffLabel(s.cbSafe)}</button></div>` +
     (oferecer.papeis
-      ? '<div class="ctrl-row"><span><strong>Cores do color-blocking</strong> — nos modos de alto contraste, escolha a cor de cada papel: perigo, escalável, água e portão. ↺ restaura o padrão.</span>' +
+      // 📌 E A LISTA DOS QUATRO PAPÉIS SAIU DA FRASE, que é a segunda metade do conserto: «perigo, escalável, água e
+      // portão» são as palavras de UM jogo, e a engine não descreve um jogo. Quem os nomeia é o `aria-label` de cada
+      // cor, onde eles atravessam por `{param}` — logo a frase continua verdadeira num cartucho com outros papéis.
+      ? `<div class="ctrl-row"><span><strong>${escapeHtml(t('visual.papeis'))}</strong><span class="opt-hint">${escapeHtml(t('visual.papeis.dica'))}</span></span>` +
         '<span style="display:flex;gap:.35rem;align-items:center">' +
         roleInputs +
-        '<button id="opt-role-reset" class="mode-btn" type="button" aria-label="Restaurar cores padrão">↺</button></span></div>'
+        `<button id="opt-role-reset" class="mode-btn" type="button" aria-label="${escapeHtml(t('visual.papel.repor'))}">↺</button></span></div>`
       : '')
   );
 }

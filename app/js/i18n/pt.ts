@@ -327,6 +327,14 @@ const pt: Record<string, string> = {
   'visual.grupo.rotulo': 'Ajustes visuais',
   'visual.cbsafe': 'Paleta segura para daltonismo',
   'visual.cbsafe.dica': 'Troca as cores dos menus e do HUD por uma paleta que se distingue em qualquer tipo de daltonismo (Okabe-Ito).',
+  'visual.dono': 'Itens na cor do dono',
+  'visual.dono.dica': 'No multiplayer, cada jogador vê os próprios itens na cor dele. Desligado: itens na cor original para todos.',
+  'visual.papeis': 'Cores do color-blocking',
+  'visual.papeis.dica': 'Nos modos de alto contraste, escolha a cor de cada papel. ↺ restaura o padrão.',
+  // 📌 A MOLDURA NA CHAVE, O CONTEÚDO POR `{param}` (`CLAUDE.md` §A FRONTEIRA): o nome de um papel é a palavra do JOGO
+  // que monta este painel, e a engine não a traduz nem a inventa — ela traduz o «Cor de» que a envolve.
+  'visual.papel.cor': 'Cor de {papel}',
+  'visual.papel.repor': 'Restaurar cores padrão',
   'lq.off': 'desligado',
   'lq.linear': 'linear',
   'lq.mixed': 'misto',

@@ -171,6 +171,51 @@ describe('ui/settings-visual — renderVisualPanelHtml (montagem pura do HTML)',
     expect(html).not.toContain('opt-contrast');
     expect(html).not.toContain('<select');
   });
+  /* ----- as duas linhas que falavam português cru (ADR-0225) ----- */
+  // 🔴 A SONDA ACHOU A DAS CORES DE PAPEL CEGA: trocar o rótulo dela inteiro por «x» deixava a suíte verde. Era
+  // também a linha com a frase portuguesa escrita em linha, logo NADA a segurava — nem o que ela diz, nem a língua
+  // em que o dizia. As duas passaram pelo dicionário e estes casos são o que as prende agora.
+
+  it('🔴 [Right] a linha das CORES DE PAPEL diz o que o dicionário diz, e a explicação vai para o `.opt-hint`', () => {
+    const html = renderVisualPanelHtml('normal', baseSettings());
+    expect(html, 'o rótulo da linha não é o do dicionário').toContain(`<strong>${pt['visual.papeis']}</strong>`);
+    expect(html, 'a explicação não está no `.opt-hint` que o rodapé recolhe (CLAUDE.md §4)')
+      .toContain(`<span class="opt-hint">${pt['visual.papeis.dica']}</span>`);
+    // 📌 E a lista dos quatro papéis SAIU da frase: «perigo, escalável, água e portão» são as palavras de um jogo, e
+    // a engine não descreve um jogo. Quem os nomeia é o `aria-label` de cada cor, por `{param}`.
+    expect(pt['visual.papeis.dica'], 'a frase voltou a nomear os papéis de UM jogo').not.toMatch(/lava|escada|trampolim/);
+  });
+
+  it('🔴 [Right] a linha dos ITENS NA COR DO DONO idem — e as duas falam a língua da página', () => {
+    const html = renderVisualPanelHtml('normal', baseSettings());
+    expect(html).toContain(`<strong>${pt['visual.dono']}</strong>`);
+    expect(html).toContain(`<span class="opt-hint">${pt['visual.dono.dica']}</span>`);
+    // ⚠️ O par que prova que é TRADUZÍVEL e não só «uma cadeia diferente»: as mesmas chaves existem em inglês, e em
+    // inglês dizem outra coisa. Sem esta metade, um `t()` que devolvesse sempre o português passaria.
+    for (const k of ['visual.dono', 'visual.dono.dica', 'visual.papeis', 'visual.papeis.dica', 'visual.papel.cor', 'visual.papel.repor']) {
+      expect(en[k], `a chave ${k} não existe em inglês: a criança numa página inglesa lê português`).toBeTruthy();
+      expect(en[k], `a chave ${k} é a MESMA cadeia nas duas línguas`).not.toBe(pt[k]);
+    }
+  });
+
+  it('🔴 [Right] o nome de cada papel ATRAVESSA a moldura traduzida, em vez de ser traduzido', () => {
+    // 📌 `CLAUDE.md` §A FRONTEIRA, reafirmado pelo Dev em 22/09: a moldura mora na chave, o conteúdo atravessa por
+    // `{param}`. «Cor de» é da engine; «perigo (lava)» é a palavra do jogo que monta este painel.
+    const html = renderVisualPanelHtml('normal', baseSettings());
+    expect(html, 'o nome do papel deixou de chegar ao nome acessível da cor')
+      .toContain(t('visual.papel.cor', { papel: ROLE_LABELS.hazard }));
+    expect(html, 'o ↺ voltou a ter o nome acessível escrito em português cru')
+      .toContain(`aria-label="${pt['visual.papel.repor']}"`);
+    // ⚠️ E ESTA ÚLTIMA AFIRMAÇÃO NÃO CONSEGUE SEPARAR O `t()` DE UM LITERAL IGUAL, dito aqui em vez de fingido: uma
+    // mutação que troque `t('visual.papel.repor')` pela mesma frase escrita à mão produz o MESMO html em português,
+    // e o português é a única língua que um caso deste projecto consegue desenhar sem montar o porto do ADR-0178.
+    // 📏 E não há caminho de navegador que a apanhe: as duas linhas de papéis só existem para um hospedeiro que as
+    // OFEREÇA, e o painel que a engine monta declara `oferecer.papeis` falso — não há escritor para elas (ADR-0188).
+    // 📌 O que ESTA linha prende é que a chave existe e é traduzível nas três línguas; o que fica por prender é a
+    // ligação entre o módulo e a chave, e prendê-la pede o painel montado por quem o oferece.
+    expect(en['visual.papel.repor'], 'a chave do ↺ deixou de ser traduzível').not.toBe(pt['visual.papel.repor']);
+  });
+
   it('[Interface] reflete ownerColors/cbSafe ligados em class+aria-pressed', () => {
     const html = renderVisualPanelHtml('normal', { ...baseSettings(), ownerColors: true, cbSafe: true });
     expect(html).toMatch(/id="opt-ownercolors" class="mode-btn is-on"[^>]*aria-pressed="true"/);

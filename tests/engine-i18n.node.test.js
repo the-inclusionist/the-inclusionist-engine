@@ -192,7 +192,13 @@ const CRU_CONHECIDO = {
                                // gerado, atravessa o livro-razão inteiro sem ser vista.
                                // 📌 Os dois «Jogador N» que o Dev nomeou em 2026-09-12 estavam AMBOS nesta
                                // forma, e nenhum dos dois estava contado em lado nenhum.
-  'ui/settings-visual.ts': 7,
+  // ⚠️ 7 → 3 em 2026-09-22, e é PAGAMENTO e não mudança de morada: as duas linhas de português cru deste painel — os
+  // itens na cor do dono e as cores do color-blocking — passaram pelo dicionário (ADR-0225), com a explicação no seu
+  // `.opt-hint`, e com elas foram os dois `aria-label` (a cor de cada papel e o ↺). 📌 E o número é 3 e não 2 porque
+  // há DOIS casos a contar coisas diferentes: um relata o que passa do tecto, o outro é a catraca por módulo — foi
+  // ela que recusou o 2 que eu tinha escrito, com o número medido ao lado. Descer até ao medido é o que impede a
+  // folga de virar licença; parar acima dele seria deixar a porta entreaberta.
+  'ui/settings-visual.ts': 3,
   'ui/settings-caa.ts': 5,
   'ui/caa-sets.ts': 3,
   'ui/locale-flags.ts': 2,       // each language named IN ITSELF, beside its flag: a child who cannot read the current language still finds theirs             // descrições dos conjuntos de pictogramas (licença, origem cultural)
