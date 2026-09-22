@@ -1828,6 +1828,8 @@
     "SettingsControlsApi",
     "SettingsControlsCtx",
     "actionAlreadyBound",
+    "ctrlControlId",
+    "drawKeys",
     "initSettingsControls",
     "keyName",
     "keyUsedByOther"

@@ -1871,6 +1871,34 @@ does not see re-exports (#204).
 
 📌 `resolveFontKey` and `persistFontKey` stay re-exported from `ui/settings-typo`, because that is where their consumer is.
 
+## BK · The remapping panel shows the KEY on the button (ADR-0129, issue #135)
+
+**What this is.** `ui/settings-controls` adopted the panel kit, and the row changed shape on screen. Nothing was removed from
+the module's exports — this note exists because the INTERFACE changed, which a consumer's CSS or tests may target.
+
+| before | now |
+|---|---|
+| `<span><b class="ctrl-nome">Esquerda</b>: <kbd>A</kbd></span>` + `<button>Alterar</button>` | `<span><strong>Esquerda</strong></span>` + `<button id="ctrl-act-left"><kbd>A</kbd></button>` |
+| the word «Alterar» is the button's face | the CURRENT KEY is the button's face; «Alterar» appears only where a position has no key |
+| `.ctrl-nome` holds the game's word | the kit's `<strong>` holds it; `.ctrl-nome` is gone |
+| the button had no `id` | `id="ctrl-act-<action>"`, from the abstract position name — ADDITIVE |
+| — | `ControlShape` gains `'button'`: a control that DOES something instead of holding a value — ADDITIVE to the union |
+
+🔴 **Why the value moved, and it was measured rather than preferred.** The old row carried the keys INSIDE the label's
+`<span>`, with a `<b>` where the kit emits `<strong>` — and it was the `<b>` that made the row invisible to `fillExplain`,
+which gives up on any row without a short label. With a `<strong>` there, `fillExplain` acts, and what it does is
+`span.innerHTML = strong.outerHTML`: 📏 measured in a browser probe, **zero of the two `<kbd>` survive**, and «: A Seta
+esquerda» goes to the footer as if it were an explanation. The panel would stop showing what is mapped.
+
+📌 **The house had already answered this once.** `mountSteps` has the same problem — label plus live value — and solves it by
+putting the value INSIDE the control («◀ Cantos arredondados: pequeno ▶»). Here the value is the key and the control is the
+button that changes it. The Dev decided it in those terms, asked whether «Alterar» was worth keeping on screen: «Não vale».
+
+⚠️ **What to change.** If you mount through `initSettingsControls`, nothing: the ids (`#ctrl-list`, `#ctrl-players`,
+`button[data-act="<action>"]`), the ctx and the behaviour are the same, and the accessible name is still «Alterar tecla de
+X do Jogador N». If your CSS or your tests targeted `.ctrl-nome`, target `.ctrl-row > span > strong` — 📏 measured: that
+class carried no styling in this engine, only two test selectors.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

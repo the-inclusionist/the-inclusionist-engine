@@ -32,7 +32,7 @@ import type { PanelShellCtx } from './panel-shell.js';
  * `escolha` três (`#cane-div`, `#tts-engine`, `#tts-voice`) e `cursor` três (`#audio-master-vol`,
  * `#navsound-master`, `#tts-vol`). Uma quarta forma entra quando um painel a exigir, e não antes.
  */
-export type ControlShape = 'interruptor' | 'escolha' | 'cursor' | 'radio';
+export type ControlShape = 'interruptor' | 'escolha' | 'cursor' | 'radio' | 'button';
 
 export interface ControlRowSpec {
   /** O id do CONTROLE — `opt-facil`, `cane-div`. É por ele que o `settings-*` o encontra. */
@@ -148,6 +148,22 @@ function criarControle(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
     i.setAttribute('max', '100');
     i.setAttribute('step', '1');
     return i;
+  }
+  if (forma === 'button') {
+    /*
+     * 🎯 A QUINTA FORMA, e é a única que NÃO GUARDA um valor: as outras quatro respondem «em que posição
+     * estou», esta FAZ uma coisa. O `ui/settings-controls` é o primeiro a exigi-la — o botão dele abre a
+     * captura de uma tecla —, e a regra escrita no topo deste ficheiro é essa: uma forma entra quando um
+     * painel a pede, e não antes.
+     *
+     * 📌 Sem `aria-pressed` e sem `role`: um botão que executa já É um botão para quem ouve, e um estado
+     * anunciado que não existe é pior do que estado nenhum. Quem põe a CARA nele é o painel — no caso do
+     * remapeamento, as teclas de agora —, porque só ele sabe o que o botão mostra.
+     */
+    const a = ctx.criar('button');
+    a.className = 'mode-btn';
+    a.setAttribute('type', 'button');
+    return a;
   }
   if (forma === 'radio') {
     /*

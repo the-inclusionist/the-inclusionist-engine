@@ -18,6 +18,8 @@ import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
 import { ACTIONS, isAction, type Action } from '../core/actions.js';
 import { markChanged } from './changed-mark.js';
+import { controlRow } from './panel-widgets.js';
+import type { PanelShellCtx } from './panel-shell.js';
 import type { KBDefaults } from '../input/keyboard.js';
 import type { KeydownEventLike } from '../input/keydown.js';
 
@@ -223,6 +225,28 @@ export function actionAlreadyBound(code: string, mapRef: KeyScheme, exceto: Acti
 
 interface CaptureState { action: Action; mapRef: KeyScheme; player: number }
 
+/** O id do botão de uma posição. Sai do nome ABSTRATO da acção, que é único por construção (`core/actions`). */
+export const ctrlControlId = (action: string): string => `ctrl-act-${action}`;
+
+/**
+ * A CARA DO BOTÃO: as teclas de agora, uma `<kbd>` cada.
+ *
+ * ⚠️ Sem nenhuma tecla o botão ficaria com a cara vazia — um alvo de 44 px sem nada a dizer —, e aí volta a
+ * palavra «Mudar», que é onde ela ainda significa alguma coisa: não há tecla para mostrar, há uma para pôr.
+ *
+ * 📌 Por API do DOM e não por cadeia: `keyName` devolve o nome LEGÍVEL de um código, e quem o lê amanhã pode
+ * traduzi-lo — texto traduzido interpolado em markup é a porta que a issue #106 fechou.
+ */
+export function drawKeys(button: HTMLElement, codes: readonly string[]): void {
+  button.textContent = '';
+  if (!codes.length) { button.textContent = t('ctrl.change'); return; }
+  for (const code of codes) {
+    const key = button.ownerDocument.createElement('kbd');
+    key.textContent = keyName(code);
+    button.appendChild(key);
+  }
+}
+
 export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControlsApi {
   let kb = ctx.kb;
   let capture: CaptureState | null = null;
@@ -286,37 +310,42 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     }
 
     const map = ctx.kbFor(player);
-    // ⚠️ O `rotulo` SAIU DO MARKUP (issue #106) e entra logo abaixo por `textContent`. Ele é a PALAVRA do
-    // jogo — vem do preset —, e um jogo vive noutro repositório (ADR-0083): esta árvore não revê esse texto.
-    // `data-act="${a}"` fica, e a diferença é a razão: `a` é o nome ABSTRATO da ação, que a engine enumera em
-    // `core/actions`. É separação que o ADR-0086 fez, e é ela que torna um dos dois seguro e o outro não.
-    el.innerHTML = ctx.acoesDoJogo().map(({ acao: a }) =>
-      `<div class="ctrl-row"><span><b class="ctrl-nome"></b>: ${(map[a] || []).map(keyName).map((k) => `<kbd>${k}</kbd>`).join(' ')}</span>` +
-      `<button class="mode-btn" data-act="${a}" type="button">${t('ctrl.change')}</button></div>`
-    ).join('');
-
-    // As palavras do jogo, por API do DOM — que escapa por construção. A ordem casa porque é a mesma lista.
-    //
-    // ⚠️ O `aria-label` DESCEU PARA CÁ, E É A CORREÇÃO DA #125. Ele era montado no template acima a partir do
-    // `ACT_LABEL`, que ficou a ser a tabela do JOGO DE PLATAFORMA quando a #106 mudou o rótulo visível para o
-    // `acoesDoJogo()`. Medido no `game-soccer`: **«Alterar tecla de undefined do Jogador 1» em seis de doze
-    // botões**, enquanto uma criança que vê lia «Conter» na mesma linha. E um `aria-label` SOBREPÕE-SE ao
-    // texto visível, então quem depende do leitor de tela ouvia a palavra errada nos outros seis — que é pior
-    // do que não ter `aria-label` nenhum, e invisível de dentro da engine, porque a plataforma é o único
-    // consumidor para o qual a tabela está certa.
-    //
-    // ⚠️ E DESCEU POR `setAttribute` E NÃO PARA O TEMPLATE, de propósito: o `rotulo` é TEXTO DO JOGO. Metê-lo
-    // num `aria-label="…"` dentro de um template literal seria interpolar texto de fora em markup — o mesmo
-    // motivo pelo qual o `.ctrl-nome` já entrava por `textContent`.
-    {
-      const linhas = el.querySelectorAll<HTMLElement>('.ctrl-row');
-      const palavras = ctx.acoesDoJogo();
-      for (let i = 0; i < linhas.length && i < palavras.length; i++) {
-        const nome = linhas[i]!.querySelector<HTMLElement>('.ctrl-nome');
-        if (nome) nome.textContent = palavras[i]!.rotulo;
-        const botao = linhas[i]!.querySelector<HTMLElement>('button[data-act]');
-        if (botao) botao.setAttribute('aria-label', t('ctrl.changeKeyAria', { acao: palavras[i]!.rotulo, n: player + 1 }));
-      }
+    /*
+     * 🎯 AS LINHAS VÊM DO KIT desde 2026-09-22 (ADR-0129, nota BK), e as TECLAS mudaram de lugar: a cara do
+     * botão passou a ser a tecla de agora, e a palavra «Mudar» saiu da tela. Decisão do Dev, perguntado em
+     * tantas palavras se «Mudar» valia ser mantido: «Não vale, vamos de B».
+     *
+     * 🔴 E O MOTIVO NÃO FOI GOSTO, FOI UMA COLISÃO MEDIDA. A linha antiga carregava as teclas DENTRO do
+     * `<span>` do rótulo, com um `<b>` no lugar do `<strong>` — e era o `<b>` que a tornava invisível ao
+     * `fillExplain`, que desiste de qualquer linha sem rótulo curto. Com o `<strong>` que o kit emite, o
+     * `fillExplain` passa a agir, e o que ele faz é `span.innerHTML = strong.outerHTML`: 📏 medido numa sonda
+     * de navegador, das duas `<kbd>` sobreviviam ZERO, e o «: A Seta esquerda» ia para o rodapé como se fosse
+     * explicação. O painel de remapeamento deixaria de mostrar o que está mapeado.
+     *
+     * 📌 E a saída é a que esta casa já tinha dado uma vez: o `mountSteps` tem o mesmo problema — rótulo mais
+     * valor vivo — e resolve-o pondo o valor DENTRO do controle. Aqui o valor é a tecla, e o controle é o
+     * botão que a troca.
+     *
+     * ⚠️ A palavra do jogo continua a entrar por `textContent` (o `controlRow` escreve o `rotulo` assim) e o
+     * nome acessível por `setAttribute` (o kit escreve o `rotuloAria` assim). São as duas correcções que as
+     * issues #106 e #125 custaram, e o kit preserva-as por construção em vez de por lembrança: `rotulo` é
+     * TEXTO DO JOGO, que esta árvore não revê, e um `aria-label` errado SOBREPÕE-SE ao texto visível — foi o
+     * «Alterar tecla de undefined do Jogador 1» medido em seis de doze botões do `game-soccer`.
+     */
+    const panelCtx: PanelShellCtx = { procurar: (sel) => ctx.$<HTMLElement>(sel), criar: (tag) => el.ownerDocument.createElement(tag) };
+    el.textContent = '';
+    for (const { acao: a, rotulo: label } of ctx.acoesDoJogo()) {
+      const { linha: row, controle: control } = controlRow(panelCtx, {
+        id: ctrlControlId(a),
+        rotulo: label,
+        forma: 'button',
+        rotuloAria: t('ctrl.changeKeyAria', { acao: label, n: player + 1 }),
+      });
+      // `data-act` fica, e a diferença com o `rotulo` é a razão: `a` é o nome ABSTRATO da posição, que a
+      // engine enumera em `core/actions`, e o `rotulo` é a palavra do JOGO (ADR-0086).
+      control.dataset.act = a;
+      drawKeys(control, map[a] ?? []);
+      el.appendChild(row);
     }
 
     /**

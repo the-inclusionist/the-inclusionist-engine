@@ -106,7 +106,6 @@ const SEGUROS = [
   ['ui/settings-panel.ts', 'span.innerHTML = strong.outerHTML', 'DOM de volta ao DOM: nenhum texto novo entra'],
   ['ui/settings-visual.ts', 'el.innerHTML = renderVisualPanelHtml(', 'i18n + valores enumerados'],
   ['ui/shell.ts', 'el.innerHTML = legendHtml(l1, l2)', 'so i18n, e o dicionario tem gate proprio'],
-  ['ui/settings-controls.ts', 'el.innerHTML = ctx.acoesDoJogo().map(', '⚠️ CONSERTADO 2026-09-06: a palavra do jogo saiu do markup e entra por `textContent`'],
   ['input/touch.ts', 'el.innerHTML = TOUCH_SLOTS.map((s) =>', '⚠️ CONSERTADO 2026-09-06: idem — o `<option>` nasce vazio e recebe o rótulo por texto'],
   ['consumer-quiz/main-quiz.ts', 'app.innerHTML = questionHtml(p, foco);', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escapeHtml`, com gate hostil em `consumer-quiz`'],
   ['ui/settings-audio.ts', "el.innerHTML = '<p class=\"opt-hint\">' +", 'uma única chave de i18n, escolhida por um booleano'],

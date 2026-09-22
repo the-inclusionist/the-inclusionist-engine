@@ -86,7 +86,7 @@ describe('the mapping panel, in the mode of the row that opened it', () => {
     const assento = document.getElementById('ctrl-assento');
     expect(assento.closest('.ctrl-row').hidden, 'no seat step in a two-player mode').toBe(false);
     expect(assento.querySelector('.passo-valor').textContent).toBe('Teclado de: Jogador 1');
-    const nomes = [...document.querySelectorAll('#ctrl-list .ctrl-nome')].map((n) => n.textContent);
+    const nomes = [...document.querySelectorAll('#ctrl-list .ctrl-row strong')].map((n) => n.textContent);
     expect(nomes).toEqual(['Confirm', 'Back']);
   });
 

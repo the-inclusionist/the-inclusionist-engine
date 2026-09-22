@@ -4,7 +4,7 @@
 // acesso a globais fora do ctx. A lógica pura (keyName/keyUsedByOther) está coberta em settings-controls.node.test.js.
 // Modelo: tests/a11y-sr.browser.test.js, tests/settings-typo.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { initSettingsControls, keyUsedByOther } from '../app/js/ui/settings-controls.js';
+import { initSettingsControls, keyUsedByOther, drawKeys, ctrlControlId } from '../app/js/ui/settings-controls.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -138,7 +138,7 @@ describe('ui/settings-controls', () => {
 
     const lista = $('#ctrl-list');
     expect(lista.querySelector('#fugiu-do-jogo'), 'a palavra do jogo foi ANALISADA como marcação').toBe(null);
-    expect(lista.querySelector('.ctrl-nome').textContent).toBe(FUGA);
+    expect(lista.querySelector('.ctrl-row strong').textContent).toBe(FUGA);
     expect(lista.querySelector('button[data-act]').dataset.act).toBe('action2'); // o nome abstrato fica
   });
 
@@ -169,7 +169,9 @@ describe('ui/settings-controls', () => {
     const consumed = api.handleCaptureKeydown(e);
     expect(consumed).toBe(true);
     expect(api.isCapturing()).toBe(false);
-    expect($('#ctrl-list').querySelector('button[data-act="action2"]').textContent).toBe('Alterar');
+    // 📌 A cara do botão volta a ser a TECLA DE AGORA, não a palavra «Alterar» — decisão do Dev em 22/09, ao
+    // escolher a opção B: o valor vive dentro do controle, como nos passos. `action2` do jogador 0 é `KeyJ`.
+    expect($('#ctrl-list').querySelector('button[data-act="action2"]').textContent).toBe('J');
   });
 
   it('[Right] handleCaptureKeydown com tecla livre associa, persiste e propaga', () => {
@@ -185,7 +187,74 @@ describe('ui/settings-controls', () => {
     expect(ctx.store.saved).toHaveLength(1);
     expect(ctx.applyCalls.applyControls).toBe(1);
     expect(ctx.applyCalls.assignControls).toBe(1);
-    expect($('#ctrl-list').querySelector('button[data-act="action2"]').innerHTML).toBe('Alterar');
+    // 🎯 E A TECLA NOVA APARECE NO BOTÃO SEM MAIS NADA ACONTECER: a cara dele É o valor, então remapear
+    // mostra-se no mesmo sítio onde se remapeia. Antes era preciso ler a linha ao lado para saber se pegou.
+    expect($('#ctrl-list').querySelector('button[data-act="action2"]').innerHTML).toBe('<kbd>P</kbd>');
+  });
+
+  it('🔴 [Many] a cara do botão é REESCRITA, não acrescentada — duas teclas não viram quatro', () => {
+    // `drawKeys` é chamada a cada render e a cada captura. Se ela acrescentasse em vez de reescrever, o botão
+    // acumularia as teclas de todas as vezes que a criança abriu o menu — e o alvo cresceria até partir a linha.
+    const b = document.createElement('button');
+    drawKeys(b, ['KeyA', 'ArrowLeft']);
+    expect([...b.querySelectorAll('kbd')].map((k) => k.textContent)).toEqual(['A', '↔Left']);
+    drawKeys(b, ['KeyP']);
+    expect([...b.querySelectorAll('kbd')].map((k) => k.textContent), 'as teclas antigas ficaram').toEqual(['P']);
+  });
+
+  it('[Right] o id de um botão sai do nome ABSTRATO da posição, e é o mesmo que a lista usa', () => {
+    const ctx = buildCtx();
+    initSettingsControls(ctx).render(0);
+    expect(ctrlControlId('action2')).toBe('ctrl-act-action2');
+    expect($('#ctrl-list').querySelector(`#${ctrlControlId('action2')}`).dataset.act).toBe('action2');
+  });
+
+  it('🔴 [Zero] uma posição SEM tecla mostra a palavra — um botão sem cara é um alvo que não diz nada', () => {
+    // A cara do botão é a tecla de agora; sem nenhuma, ele ficaria com 44 px de nada. Aí volta «Alterar», que
+    // é onde a palavra ainda significa alguma coisa: não há tecla para mostrar, há uma para pôr.
+    const ctx = buildCtx();
+    ctx.kbFor = () => ({ action2: [] });
+    ctx.acoesDoJogo = () => [{ acao: 'action2', rotulo: 'Pular' }];
+    initSettingsControls(ctx).render(0);
+    const b = $('#ctrl-list').querySelector('button[data-act="action2"]');
+    expect(b.textContent).toBe('Alterar');
+    expect(b.querySelector('kbd'), 'sem tecla não há caixinha para desenhar').toBeNull();
+  });
+
+  it('🔴 [Right] o nome acessível diz A ACÇÃO E O JOGADOR — e não só a palavra do jogo', () => {
+    // 🔴 BURACO QUE A CONVERSÃO CRIOU, achado por sonda em 22/09: sem o `rotuloAria`, o kit cai no `rotulo`, e
+    // o botão passa a anunciar-se «Pular» — plausível e errado. Quem ouve deixa de saber que aquilo ALTERA a
+    // tecla, e em dois jogadores deixa de saber de QUEM. É pior do que antes da conversão, onde o atributo era
+    // escrito à mão, e é a mesma família da #125: um `aria-label` errado SOBREPÕE-SE ao texto visível.
+    const ctx = buildCtx();
+    initSettingsControls(ctx).render(1);
+    const b = $('#ctrl-list').querySelector('button[data-act="action2"]');
+    expect(b.getAttribute('aria-label')).toBe('Alterar tecla de Pular do Jogador 2');
+    expect(b.getAttribute('aria-label'), 'o rótulo nu não diz o que o botão faz').not.toBe('Pular');
+  });
+
+  it('🔴 [Zero] cada botão tem um id PRÓPRIO — dois nós com o mesmo id é um documento inválido', () => {
+    // Achado por sonda: trocar o id por uma constante passava verde, e ficavam oito nós com `id="ctrl-act"`.
+    // O id sai do nome ABSTRATO da posição, que `core/actions` garante único.
+    const ctx = buildCtx();
+    initSettingsControls(ctx).render(0);
+    const ids = [...$('#ctrl-list').querySelectorAll('button[data-act]')].map((b) => b.id);
+    expect(ids.filter(Boolean), 'algum botão ficou sem id').toHaveLength(ids.length);
+    expect(new Set(ids).size, 'dois botões partilham o mesmo id').toBe(ids.length);
+  });
+
+  it('🔴 [Right] o `fillExplain` não come a linha — o `<span>` traz o nome e mais nada', () => {
+    // 📏 A colisão que decidiu a forma desta linha, medida numa sonda em 22/09: com as teclas DENTRO do
+    // `<span>`, o `fillExplain` faz `span.innerHTML = strong.outerHTML` e das duas `<kbd>` sobrevivem ZERO —
+    // o painel de remapeamento deixaria de mostrar o que está mapeado. Com o valor no CONTROLE, a descrição
+    // que ele calcula é vazia e a linha fica intacta. Este caso é o que impede o valor de voltar ao `<span>`.
+    const ctx = buildCtx();
+    initSettingsControls(ctx).render(0);
+    for (const linha of $('#ctrl-list').querySelectorAll('.ctrl-row')) {
+      const span = linha.querySelector(':scope > span');
+      expect(span.querySelectorAll('kbd'), 'a tecla voltou para dentro do rótulo').toHaveLength(0);
+      expect(span.textContent, 'o span traz o nome e mais nada').toBe(span.querySelector('strong').textContent);
+    }
   });
 
   it('[Boundary] handleCaptureKeydown com tecla já usada por OUTRO jogador alerta e mantém a captura', () => {

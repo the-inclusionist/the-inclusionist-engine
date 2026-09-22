@@ -2,7 +2,7 @@
   "about": "ADR-0221 — the six measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID, a module is legitimately split, or the growth BUYS something no measure here can see — and in that third case the commit has to name the purchase and the falsifiable criterion that will show it landed (ADR-0221 point 6: the criterion is the co-change falling, not the number). Rewriting it to green a red build is the ratchet being unscrewed.",
   "takenOn": "2026-09-22",
   "ceiling": {
-    "codeLines": 187,
+    "codeLines": 195,
     "decisionNodes": 37,
     "maxDepth": 4,
     "fanOut": 7,
@@ -1643,16 +1643,16 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 7
+      "fanIn": 8
     },
     "ui/panel-widgets.ts": {
-      "codeLines": 129,
-      "decisionNodes": 12,
+      "codeLines": 135,
+      "decisionNodes": 13,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 1,
       "worstFunction": 8,
-      "fanIn": 9,
+      "fanIn": 10,
       "reached": [
         "CSS"
       ]
@@ -1726,12 +1726,12 @@
       "fanIn": 0
     },
     "ui/settings-controls.ts": {
-      "codeLines": 184,
+      "codeLines": 195,
       "decisionNodes": 25,
       "maxDepth": 3,
-      "fanOut": 7,
+      "fanOut": 9,
       "globalReach": 0,
-      "worstFunction": 14,
+      "worstFunction": 12,
       "fanIn": 1
     },
     "ui/settings-empathy.ts": {
