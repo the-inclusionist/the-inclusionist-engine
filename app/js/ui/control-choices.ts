@@ -16,18 +16,43 @@ import { ACTIONS, type Action } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 
 /**
+ * AS QUATRO SETAS, uma por direcção.
+ *
+ * 🔴 ELAS ERAM `↔Up`, `↔Down`, `↔Left` e `↔Right` ATÉ 2026-09-22, e o Dev viu-o numa captura: «Por que está
+ * escrevendo "↔Up", "↔Down" etc ao invés de simplesmente "↑", "↓", "←" e "→"? Não escolha poluir a UI.»
+ * O defeito vinha da FORMA da função — uma cadeia de substituições sobre o código físico, onde `Arrow` virava
+ * uma seta BIDIRECCIONAL e o resto do nome sobrava colado a ela. Uma cadeia de `replace` é uma tabela
+ * escondida, e uma tabela escondida escreve o que ninguém escolheu.
+ *
+ * 📌 E não há o que traduzir aqui: uma seta é a mesma em pt, en e es, o que é justamente a razão de ser um
+ * glifo e não uma palavra. A criança que remapeia vê a tecla que tem na mão.
+ */
+const GLYPH: Readonly<Record<string, string>> = {
+  ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+};
+
+/**
  * Physical key code → short readable label.
  *
- * Only `Space` has a word to translate; the rest are glyphs and bare letters, identical in every language —
- * and that is why this is a chain of replaces and not a table.
+ * `Space` is the only one with a word to translate; the arrows are glyphs and the rest are the bare letter or
+ * digit, identical in every language.
+ *
+ * ⚠️ UMA TABELA E UMA ESCADA, e não uma cadeia de substituições. A cadeia produzia o nome da MÁQUINA sempre
+ * que um prefixo não estava previsto — `Digit1` saía `Digit1` e `Numpad5` saía `Numpad5`, que é a mesma
+ * poluição das setas, um teclado mais adiante. O que não é reconhecido continua a passar intacto de
+ * propósito: `Comma` é feio e é honesto, e inventar um nome para ele seria adivinhar.
  */
 export function keyName(code: string): string {
-  return String(code)
-    .replace('Arrow', '↔')
-    .replace('Key', '')
-    .replace('Space', t('key.space'))
-    .replace('ShiftLeft', 'Shift')
-    .replace('ShiftRight', 'Shift');
+  const c = String(code);
+  if (GLYPH[c]) return GLYPH[c];
+  if (c === 'Space') return t('key.space');
+  if (c.startsWith('Shift')) return 'Shift';
+  if (c.startsWith('Key')) return c.slice(3);
+  if (c.startsWith('Digit')) return c.slice(5);
+  // «Num 5», «Num Add»: o teclado numérico é um lugar FÍSICO diferente, e dizer só «5» faria duas teclas
+  // distintas mostrarem o mesmo rótulo na mesma lista.
+  if (c.startsWith('Numpad')) return `Num ${c.slice(6)}`;
+  return c;
 }
 
 /**

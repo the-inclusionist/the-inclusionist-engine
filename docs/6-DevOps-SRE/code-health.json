@@ -1420,12 +1420,12 @@
       "fanIn": 9
     },
     "ui/control-choices.ts": {
-      "codeLines": 26,
-      "decisionNodes": 7,
+      "codeLines": 31,
+      "decisionNodes": 13,
       "maxDepth": 3,
       "fanOut": 3,
       "globalReach": 0,
-      "worstFunction": 6,
+      "worstFunction": 7,
       "fanIn": 2
     },
     "ui/debug-panel.ts": {

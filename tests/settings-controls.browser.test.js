@@ -147,7 +147,7 @@ describe('ui/settings-controls', () => {
     const ctx = buildCtx();
     const api = initSettingsControls(ctx);
     api.render(1);
-    expect($('#ctrl-list').innerHTML).toContain('↔Left'); // ArrowLeft do jogador 1
+    expect($('#ctrl-list').innerHTML).toContain('←'); // ArrowLeft do jogador 1
   });
 
   it('[Right] clicar em "Alterar" inicia a captura: isCapturing()=true, texto vira "Pressione…" e srAlert soa', () => {
@@ -198,7 +198,7 @@ describe('ui/settings-controls', () => {
     // acumularia as teclas de todas as vezes que a criança abriu o menu — e o alvo cresceria até partir a linha.
     const b = document.createElement('button');
     drawKeys(b, ['KeyA', 'ArrowLeft']);
-    expect([...b.querySelectorAll('kbd')].map((k) => k.textContent)).toEqual(['A', '↔Left']);
+    expect([...b.querySelectorAll('kbd')].map((k) => k.textContent)).toEqual(['A', '←']);
     drawKeys(b, ['KeyP']);
     expect([...b.querySelectorAll('kbd')].map((k) => k.textContent), 'as teclas antigas ficaram').toEqual(['P']);
   });

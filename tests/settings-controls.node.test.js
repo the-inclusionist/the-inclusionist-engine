@@ -16,9 +16,28 @@ describe('keyName', () => {
     expect(keyName('KeyA')).toBe('A');
     expect(keyName('KeyZ')).toBe('Z');
   });
-  it('[Right] ArrowX -> ↔X (prefixo "Arrow" vira a seta bidirecional)', () => {
-    expect(keyName('ArrowLeft')).toBe('↔Left');
-    expect(keyName('ArrowUp')).toBe('↔Up');
+  it('🔴 [Right] cada seta é A SUA seta, e mais nada', () => {
+    // 🔴 O Dev viu `↔Up` numa captura em 22/09: «Por que está escrevendo "↔Up", "↔Down" etc ao invés de
+    // simplesmente "↑", "↓", "←" e "→"? Não escolha poluir a UI.» O defeito vinha da FORMA: uma cadeia de
+    // substituições em que `Arrow` virava uma seta BIDIRECCIONAL e o resto do nome sobrava colado a ela.
+    expect(keyName('ArrowUp')).toBe('↑');
+    expect(keyName('ArrowDown')).toBe('↓');
+    expect(keyName('ArrowLeft')).toBe('←');
+    expect(keyName('ArrowRight')).toBe('→');
+    // ⚠️ E as quatro são DISTINTAS: uma tabela com a mesma seta em duas direcções passaria os casos acima
+    // escritos um a um, e a criança veria duas teclas diferentes com o mesmo rótulo.
+    const setas = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].map(keyName);
+    expect(new Set(setas).size).toBe(4);
+    for (const s of setas) expect(s, 'uma seta é UM glifo, não um nome de código').toHaveLength(1);
+  });
+
+  it('🔴 [Right] o TECLADO NUMÉRICO e os dígitos também não mostram o nome da máquina', () => {
+    // A mesma poluição, um teclado adiante: `Digit1` e `Numpad5` saíam intactos. 📌 E `Num 5` não é `5`
+    // porque são teclas FÍSICAS diferentes — o esquema de dois jogadores usa as duas, e dois rótulos iguais
+    // na mesma lista mandariam a criança apertar a errada.
+    expect(keyName('Digit1')).toBe('1');
+    expect(keyName('Numpad5')).toBe('Num 5');
+    expect(keyName('Numpad5')).not.toBe(keyName('Digit5'));
   });
   it('[Right] Space -> a palavra traduzida (pt-BR base: Espaço) — a única do mapa que tem tradução', () => {
     expect(keyName('Space')).toBe(pt['key.space']);
@@ -28,9 +47,10 @@ describe('keyName', () => {
     expect(keyName('ShiftLeft')).toBe('Shift');
     expect(keyName('ShiftRight')).toBe('Shift');
   });
-  it('[Boundary] código sem nenhum prefixo conhecido passa intacto', () => {
+  it('[Boundary] código sem nenhum prefixo conhecido passa intacto — e isso é honestidade, não descuido', () => {
+    // `Comma` é feio e é verdadeiro. Inventar um nome para ele seria adivinhar, e uma adivinha na tela de
+    // remapeamento manda a criança apertar a tecla errada.
     expect(keyName('Comma')).toBe('Comma');
-    expect(keyName('Numpad4')).toBe('Numpad4');
     expect(keyName('Semicolon')).toBe('Semicolon');
   });
   it('[Zero] string vazia não lança e retorna vazio', () => {
