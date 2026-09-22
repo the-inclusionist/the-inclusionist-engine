@@ -71,6 +71,25 @@ export const declaredNames = (src) => colher(src, (n) => ts.isVariableDeclaratio
  */
 export const parameterNames = (src) => colher(src, (n) => ts.isParameter(n) || ts.isBindingElement(n));
 
+/**
+ * THE MEMBERS A FILE DECLARES — the second half of the Dev's «Parâmetros e membros no plano, por favor».
+ *
+ * 📌 These are the 310 he left out of the renaming release (ADR-0219): `CreateGameOptions.baixarPesados`,
+ * `Declinios.semVozNeural`, the ctx fields a cartridge fills. MEASURING them is a commit; RENAMING them is phase 7, and the
+ * split is what keeps this cheap.
+ *
+ * ⚠️ AND MANY MEMBERS ARE NOT NAMES THIS TREE CHOSE, which was measured and not supposed: `clientX`, `getChannelData`,
+ * `num_attention_heads`, `webkitRequestFullscreen` are foreign API surfaces this engine merely MIRRORS in an interface so
+ * the type checker can see them. They are counted anyway, and that is the honest answer rather than a carve-out: the debt
+ * this file reports is «identifiers carrying a PORTUGUESE word», and a foreign API contributes zero to it — the only cost
+ * of counting them is that their words had to be classified, and `client`, `channel` and `attention` ARE English. A rule
+ * that tried to exclude them would need to guess which interface mirrors what, and a guess in a sieve is worse than a
+ * number that is merely larger.
+ */
+export const memberNames = (src) => colher(src, (n) => ts.isPropertySignature(n) || ts.isPropertyDeclaration(n)
+  || ts.isMethodSignature(n) || ts.isMethodDeclaration(n) || ts.isGetAccessorDeclaration(n)
+  || ts.isSetAccessorDeclaration(n) || ts.isEnumMember(n));
+
 /** The identifier names of every node the predicate accepts, at any depth. One walk, one rule. */
 function colher(src, aceita) {
   const sf = ts.createSourceFile('m.ts', src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
@@ -132,18 +151,20 @@ export function inventory(lists = readLists()) {
   };
   for (const f of source()) {
     const src = readFileSync(join(raiz, f), 'utf8');
-    const decl = conta(declaredNames(src));
-    const param = conta(parameterNames(src));
-    if (decl || param) debt[f] = { decl, param };
+    const d = { decl: conta(declaredNames(src)), param: conta(parameterNames(src)), membro: conta(memberNames(src)) };
+    if (CATEGORIES.some((c) => d[c])) debt[f] = d;
   }
   return { debt, unknown: [...unknown.keys()].sort() };
 }
 
-/** The two categories a file's debt is counted in. A third (`membro`) arrives with the second half of step 7h. */
-export const CATEGORIES = ['decl', 'param'];
+/** The three categories a file's debt is counted in, each holding its own line in the ratchet. */
+export const CATEGORIES = ['decl', 'param', 'membro'];
 
-/** The debt of one file in the shape the baseline stores, tolerating the number the baseline used to hold. */
-export const debtOf = (entrada) => (typeof entrada === 'number' ? { decl: entrada, param: 0 } : (entrada ?? { decl: 0, param: 0 }));
+/** The debt of one file in the shape the baseline stores, tolerating the shapes the baseline used to hold. */
+export const debtOf = (entrada) => {
+  const base = { decl: 0, param: 0, membro: 0 };
+  return typeof entrada === 'number' ? { ...base, decl: entrada } : { ...base, ...(entrada ?? {}) };
+};
 
 export const readBaseline = () => JSON.parse(readFileSync(BASELINE, 'utf8'));
 
@@ -165,9 +186,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     writeFileSync(BASELINE, `${JSON.stringify({
       measured: new Date().toISOString().slice(0, 10),
       what: 'Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, '
-        + 'classes, interfaces, type aliases, enums) and `param` (parameters and destructured bindings). The gate refuses any '
-        + 'increase IN EITHER, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a '
-        + 'decrease. Members are not counted yet — they are the 310 of phase 7, and the second half of step 7h.',
+        + 'classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, '
+        + 'methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter '
+        + 'cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of '
+        + 'the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.',
       total,
       totals,
       files: Object.fromEntries(Object.entries(debt).sort(([a], [b]) => a.localeCompare(b))),

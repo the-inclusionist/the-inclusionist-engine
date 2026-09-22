@@ -3,7 +3,7 @@
 // colocando?»).
 //
 // The project's rule is English artefacts, and the debt is old. This gate renames nothing. It holds two lines:
-//   · no file may carry MORE than the baseline IN EITHER CATEGORY, and a file that has none may not start;
+//   · no file may carry MORE than the baseline IN ANY CATEGORY, and a file that has none may not start;
 //   · every word a name uses is classified English or Portuguese — an unknown word fails, which is what stops a
 //     Portuguese word nobody has listed yet from entering quietly.
 //
@@ -11,15 +11,18 @@
 // then this gate read DECLARATIONS only, and `sanitiseTeaLevel(bruto, padrao)` lived a whole day inside a module the gate
 // itself had required to be born at zero. 📏 Every number it ever reported was a LOWER BOUND.
 //
-// 📏 What the widening cost, said before it ran: the debt goes from **1002 in 89 files to 1480 in 103** — 976 declarations
-// and 504 parameters — and **107 new words had to be classified**, each one read at the declaration where it is born. It is
-// not payment and it is not new debt: it is the measure catching up with what already existed.
+// 📏 What the widening cost, in the two halves it was done in: from **1002 in 89 files to 1480 in 103** with the parameters,
+// and to **1908 in 115** with the members — 976 declarations, 504 parameters, 428 members. It is not payment and it is not
+// new debt: it is the measure catching up with what already existed. **310 words had to be classified**, 107 for the
+// parameters and 203 for the members, each one read at the declaration where it is born.
 //
-// 📌 TWO NUMBERS PER FILE AND NOT ONE, and that is a decision: on a blended total a new Portuguese declaration hides behind
-// a renamed parameter, and the ratchet would report progress while the surface got worse.
+// 📌 THREE NUMBERS PER FILE AND NOT ONE, and that is a decision: on a blended total a new Portuguese declaration hides
+// behind a renamed parameter, and the ratchet would report progress while the surface got worse.
 //
-// ⏸ MEMBERS ARE STILL OUT — the 310 the Dev left for phase 7, and the second half of this step. Splitting 7h in two was to
-// keep the classification honest: 310 words in one sitting is how a dictionary gets poisoned, and this one already was once.
+// 📌 `membro` is what phase 7 of the English plan renames (ADR-0219). ⚠️ And 428 is not the «310 public members» the plan
+// measured: this counts every member the tree declares, public or not, including the ones that merely MIRROR a foreign API
+// so the type checker can see it (`clientX`, `getChannelData`). Those contribute ZERO to the Portuguese count — see the
+// note at `memberNames` for why they are counted rather than carved out.
 // When a file drops below its number, `node scripts/language-inventory.mjs --bootstrap` writes the smaller number back: the
 // baseline only shrinks, like the one of `exports-sem-consumidor`.
 //
@@ -29,7 +32,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import {
-  inventory, readBaseline, readLists, words, source, declaredNames, parameterNames, EXCEPTIONS, CATEGORIES, debtOf,
+  inventory, readBaseline, readLists, words, source, declaredNames, parameterNames, memberNames, EXCEPTIONS, CATEGORIES, debtOf,
 } from '../scripts/language-inventory.mjs';
 
 const { debt, unknown } = inventory();
@@ -37,7 +40,7 @@ const baseline = readBaseline();
 const soma = (mapa, cat) => Object.values(mapa).reduce((a, d) => a + debtOf(d)[cat], 0);
 
 describe('Portuguese in the engine only shrinks', () => {
-  it('🔴 [Right] no file carries more Portuguese identifiers than its baseline, in EITHER category', () => {
+  it('🔴 [Right] no file carries more Portuguese identifiers than its baseline, in ANY category', () => {
     const piorou = [];
     for (const [f, d] of Object.entries(debt)) {
       const base = debtOf(baseline.files[f]);
@@ -64,6 +67,24 @@ describe('Portuguese in the engine only shrinks', () => {
     expect(parameterNames('const g = ({ raiz, filhos }) => raiz + filhos;').sort()).toEqual(['filhos', 'raiz']);
     expect(parameterNames('const naoEParametro = 1;'), 'uma declaração não é um parâmetro').toEqual([]);
     expect(declaredNames('export function f(bruto: number): void {}'), 'e um parâmetro não é uma declaração').toEqual(['f']);
+  });
+
+  it('🔴 [Right] a MEMBER counts — o campo, o método e a posição de um enum', () => {
+    // 📌 São os que a fase 7 do plano do inglês renomeia (ADR-0219): `CreateGameOptions.baixarPesados`,
+    // `Declinios.semVozNeural`, os campos do ctx que um cartucho preenche. Medir é este commit; renomear é uma release.
+    const fonte = [
+      'export interface Opcoes { baixarPesados: boolean; aoProgredir(n: number): void; }',
+      'export enum Estado { ligado = 1 }',
+      'class C { private guardado = 1; get valorAtual(): number { return this.guardado; } }',
+    ].join('\n');
+    expect(memberNames(fonte).sort())
+      .toEqual(['aoProgredir', 'baixarPesados', 'guardado', 'ligado', 'valorAtual']);
+    expect(memberNames('export function f(x: number): void {}'), 'nem parâmetro nem declaração é membro').toEqual([]);
+    // ⚠️ E as três categorias são DISJUNTAS: se não fossem, o mesmo nome contava duas vezes e a catraca de uma
+    // esconderia a da outra — que é exactamente o que três números por ficheiro existem para impedir.
+    const misto = 'export interface I { campo: number } export const v = 1; export function g(p: number): void {}';
+    expect([declaredNames(misto), parameterNames(misto), memberNames(misto)].map((l) => l.sort()))
+      .toEqual([['I', 'g', 'v'], ['p'], ['campo']]);
   });
 
   it('📌 [Boundary] the baseline is the tree, not a wish: its totals match what the files add up to', () => {
@@ -131,3 +152,12 @@ describe('Portuguese in the engine only shrinks', () => {
 //   · the parameter total raised by hand              → «the baseline is the tree»
 //   · a classified word taken out of the lists        → «every word a name uses is classified»
 //   · `parameterNames` blinded to return nothing      → «a PARAMETER counts»
+//
+// MUTATIONS CHECKED (2026-09-22, the members half of step 7h) — `scratchpad/mutar-7h-membros.mjs`, 7 of 7 red:
+//   · a Portuguese FIELD in a measured file           → «no file carries more … in ANY category»
+//   · a Portuguese METHOD                             → same case (the other shape of a member)
+//   · a Portuguese ENUM MEMBER                        → same case (the third shape)
+//   · a new file born with a Portuguese member        → «a file the baseline does not name»
+//   · `memberNames` blinded to return nothing         → «a MEMBER counts»
+//   · the `membro` category dropped from the ratchet  → «a MEMBER counts» (the category has to be HELD, not just read)
+//   · the member total raised by hand                 → «the baseline is the tree, not a wish»
