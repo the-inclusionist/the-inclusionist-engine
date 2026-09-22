@@ -219,9 +219,19 @@ down more than once. Two of them are the second kind, and naming them here is ch
   `ui/eye-control`, `ui/face-control`, `ui/hand-control`, `ui/voice-control`. The keyboard, the gamepad and the touch pad still
   arrive as synthesised KEYS (`markKey`/`releaseKey`), which is why `keydown`, `gamepad` and `touch-bindings` still change
   together 40–53% of the time. Whether to unify is a decision, not a cleanup.
-- 🔴 **Four of the nine settings panels use the panel kit.** `ui/mount-panel` and `ui/panel-widgets` exist so that a menu row is
-  written once; 📏 `settings-audio`, `-mobility`, `-motion` and `-visual` use them, and `-controls`, `-typo`, `-empathy`, `-caa`
-  and `-panel` do not. `settings-audio` is 837 lines.
+- 🔴 **Four of the nine settings panels use the panel kit — but only THREE of the other five have anything to adopt.**
+  `ui/mount-panel` and `ui/panel-widgets` exist so that a menu row is written once; 📏 `settings-audio`, `-mobility`, `-motion`
+  and `-visual` use them, and `-controls`, `-typo`, `-empathy`, `-caa` and `-panel` do not.
+  ⚠️ **Re-measured on 2026-09-22, and the plain count was sending the work to the wrong place.** Of those five, `-controls`,
+  `-typo` and `-caa` DO build rows — as HTML STRINGS (`'<div class="ctrl-row">…'`), which is the duplication the kit exists to
+  end. `-empathy` builds none: it wires `#opt-hearing`, `#opt-onebtn` and `#opt-wheelchair`, which the composition root already
+  builds WITH the kit, and delegates its list to `ctx.renderVizGroup`. `-panel` is not a panel at all — it is the shared
+  overlay infrastructure (`fillExplain`, `topVisibleOverlay`). Adopting the kit in those two would convert nothing.
+  📌 And the three that do build rows build them by `innerHTML` over a whole list, while the kit builds NODES — so the
+  conversion is not mechanical: it trades string rebuilds for node building, and the listeners change shape with it.
+  ⏸ `-caa` is also the one nothing mounts today («`ui/settings-caa` continues in the engine for whoever wants to mount it»),
+  which is worth weighing before it is converted.
+  📏 `settings-audio` was 837 lines when this row was written and is **339** after the cuts of ADR-0221 step 7c.
 
 ⚠️ **The experiment that will settle both is already running, and its criterion is fixed before the answer exists:** when an
 abstraction is adopted, the files it unifies must stop changing together. 📏 Today it cannot be evaluated — of the 51 commits
