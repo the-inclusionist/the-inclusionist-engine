@@ -14,13 +14,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
 import pt from '../app/js/i18n/pt.js';
 import {
-  PAUSE_ICONS, CALM_AUDIO_CATS, CVD_SEQ, CVD_NAMES,
-  hasPrivateOutputIn, nextCalmMode, nextContrast, nextCvd, calmAudioPlan, calmMotionPlan,
+  PAUSE_ICONS, CVD_SEQ, CVD_NAMES,
+  hasPrivateOutputIn, nextContrast, nextCvd,
   computeIconLabel, computeIconVisual, ICON_STATE_CLASSES, inputModeOf, nextInputMode,
   iconBtnMarkup, iconsMarkup, pmBtnMarkup, screenPauseMarkup,
   iconsThatAct,
   initPauseIcons,
 } from '../app/js/ui/pause-icons.js';
+// 📌 O modo calmo mudou de casa para `core/calm-mode` (ADR-0221, issue #203): ele não é sobre ícones, é sobre o que uma
+// criança que não suporta ruído precisa que a engine cale. Os casos ficam aqui porque é aqui que o ciclo do ☺ é exercido.
+import { nextCalmMode, calmAudioPlan, calmMotionPlan, CALM_AUDIO_CATS } from '../app/js/core/calm-mode.js';
 import { CONTRAST_LEVELS } from '../app/js/ui/settings-visual.js';
 import { createRunState } from '../app/js/core/run-state.js';
 // ☝️ keeps ONE value for the whole engine (ADR-0218), so it is read and reset here as the module state it is.

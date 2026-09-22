@@ -82,6 +82,14 @@
       "globalReach": 0,
       "fanIn": 24
     },
+    "core/calm-mode.ts": {
+      "codeLines": 14,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "globalReach": 0,
+      "fanIn": 1
+    },
     "core/caption-duration.ts": {
       "codeLines": 10,
       "decisionNodes": 1,
@@ -1456,10 +1464,10 @@
       "fanIn": 1
     },
     "ui/pause-icons.ts": {
-      "codeLines": 695,
-      "decisionNodes": 127,
+      "codeLines": 682,
+      "decisionNodes": 124,
       "maxDepth": 11,
-      "fanOut": 19,
+      "fanOut": 20,
       "globalReach": 0,
       "fanIn": 3
     },

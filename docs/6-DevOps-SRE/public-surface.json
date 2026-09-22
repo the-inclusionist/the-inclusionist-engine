@@ -69,6 +69,14 @@
     "shortLabellerFrom",
     "startClaimProblem"
   ],
+  "core/calm-mode.ts": [
+    "CALM_AUDIO_CATS",
+    "CALM_NAMES",
+    "calmAudioPlan",
+    "calmMotionPlan",
+    "nextCalmMode",
+    "sanitiseTeaLevel"
+  ],
   "core/caption-duration.ts": [
     "CAPTION_MIN_MS",
     "CAPTION_RATES",
@@ -1711,8 +1719,6 @@
   "ui/pause-icons.ts": [
     "ActionableIcons",
     "BarAction",
-    "CALM_AUDIO_CATS",
-    "CALM_NAMES",
     "CVD_LABELS",
     "CVD_NAMES",
     "CVD_SEQ",
@@ -1733,8 +1739,6 @@
     "ScreenPauseMarkupOpts",
     "VisualWriters",
     "barAction",
-    "calmAudioPlan",
-    "calmMotionPlan",
     "computeIconLabel",
     "computeIconVisual",
     "hasPrivateOutputIn",
@@ -1746,7 +1750,6 @@
     "inputModeOf",
     "itemReason",
     "itemsThatAct",
-    "nextCalmMode",
     "nextContrast",
     "nextCvd",
     "nextInputMode",
@@ -1755,7 +1758,6 @@
     "pmBtnMarkup",
     "quickBarMarkup",
     "rootThatActs",
-    "sanitiseTeaLevel",
     "screenPauseMarkup",
     "showPauseOptions",
     "wireBarCaption"

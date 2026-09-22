@@ -32,6 +32,12 @@ import { t, getLocale, setLocale } from '../core/i18n.js';
 import { flagOf, nextLocale, LANGUAGE_NAME, type CycleLocale } from './locale-flags.js';
 import { CONTRAST_LEVELS } from './settings-visual.js';
 import { SHORT_THEME, SHORT_CORRECTION } from './visual-axes-panel.js';
+/*
+ * 🔴 O MODO CALMO MUDOU DE CASA (ADR-0221, issue #203). Ele não é sobre ÍCONES: é sobre o que uma criança que não suporta
+ * ruído precisa que a engine cale, e o ícone é só uma das superfícies por onde ela o pede. Vive em `core/calm-mode`, que é
+ * módulo-folha — zero imports, zero DOM —, e por isso o clamp destrutivo do nível 1 se consegue medir sem montar nada.
+ */
+import { CALM_NAMES, CALM_AUDIO_CATS, nextCalmMode, sanitiseTeaLevel, calmAudioPlan, calmMotionPlan } from '../core/calm-mode.js';
 import {
   nextTheme, nextCorrection, hasHighContrast, PADRAO,
   type Theme, type Correction, type VisualState,
@@ -213,23 +219,10 @@ export const PAUSE_ICONS: readonly PauseIcon[] = [
 const ICON_BY_KEY: ReadonlyMap<string, PauseIcon> = new Map(PAUSE_ICONS.map((ic) => [ic.k, ic]));
 export function pauseIcon(k: string): PauseIcon | undefined { return ICON_BY_KEY.get(k); }
 
-/** TEA cycle: 0 = normal · 1 = calmo (reduces) · 2 = silencioso (switches off). Never touches TTS/blind mode. */
-export const CALM_NAMES: readonly string[] = ['calm.off', 'calm.quiet', 'calm.silent'];
-
-/**
- * O nível TEA guardado, saneado. Fora de 0..2 devolve o padrão — dado do navegador é dado de fora, e um
- * nível inventado escolheria `CALM_NAMES[3]`, que é `undefined`, e o anúncio ao leitor de tela sairia vazio.
- */
-export function sanitiseTeaLevel(bruto: number): number {
-  return Number.isInteger(bruto) && bruto >= 0 && bruto < CALM_NAMES.length ? bruto : DEFAULTS.calmMode;
-}
-
-/** Lê o nível TEA do armazenamento. Chamado no `init`, nunca no import. */
+/** Lê o nível TEA do armazenamento, saneado. Chamado no `init`, nunca no import. */
 function lerNivelTea(): number {
-  return sanitiseTeaLevel(store.getNum(store.KEYS.tea, DEFAULTS.calmMode));
+  return sanitiseTeaLevel(store.getNum(store.KEYS.tea, DEFAULTS.calmMode), DEFAULTS.calmMode);
 }
-/** The audio categories `applyCalm` governs. TTS/sonar/guarda/guia stay untouched — a calm player still needs them. */
-export const CALM_AUDIO_CATS: readonly string[] = ['ambient', 'music', 'earcons', 'interact'];
 /** Colour-vision-deficiency cycle, in `player.viz` values. */
 export const CVD_SEQ: readonly string[] = ['normal', 'fix-protan', 'fix-deuter', 'fix-tritan'];
 /** i18n keys of the CVD announcement names, indexed the same as CVD_SEQ.
@@ -339,9 +332,6 @@ export function hasPrivateOutputIn(list: readonly PausePlayer[], count: number, 
   return !list.some((q, j) => j !== i && q && q.audioSink === p.audioSink);
 }
 
-/** TEA cycle step. */
-export function nextCalmMode(cur: number): number { return (cur + 1) % 3; }
-
 /** Next high-contrast level. An unlisted `viz` (e.g. a CVD filter) is treated as index 0 ⇒ jumps to 'hc-direto'. */
 export function nextContrast(cur: string | undefined): string {
   let idx = CONTRAST_LEVELS.indexOf(cur as string);
@@ -355,19 +345,6 @@ export function nextCvd(cur: string | undefined): { idx: number; mode: string } 
   let idx = CVD_SEQ.indexOf(cur as string);
   idx = idx < 0 ? 1 : (idx + 1) % CVD_SEQ.length;
   return { idx, mode: CVD_SEQ[idx] };
-}
-
-/** What `applyCalm` does to ONE audio category, given the TEA level. Extracted so the (destructive) volume
- *  clamp at level 1 is visible and testable — see the report. */
-export function calmAudioPlan(calmMode: number, vol: number): { on: boolean; vol: number } {
-  if (calmMode === 0) return { on: true, vol };
-  if (calmMode === 1) return { on: true, vol: Math.min(vol, 0.3) };
-  return { on: false, vol };
-}
-
-/** What `applyCalm` does to the scene/character reduced-motion flags. */
-export function calmMotionPlan(calmMode: number): { sceneReduced: boolean; charFrozen: boolean } {
-  return { sceneReduced: calmMode >= 1, charFrozen: calmMode === 2 };
 }
 
 /** The `aria-label` of one icon — it MUST reflect the current state, on/off or level. This is the whole
@@ -1687,7 +1664,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // pior do defeito: o ajuste parece ter pegado e some depois.
     applyCalm,
     getCalmMode: () => calmMode,
-    setCalmMode: (n) => { calmMode = sanitiseTeaLevel(n); store.set(store.KEYS.tea, calmMode); },
+    setCalmMode: (n) => { calmMode = sanitiseTeaLevel(n, DEFAULTS.calmMode); store.set(store.KEYS.tea, calmMode); },
     iconState,
   };
 }

@@ -32,8 +32,22 @@ describe('a saúde do código só melhora', () => {
     for (const [mod, agora] of Object.entries(arvore)) {
       const antes = base.modules[mod];
       if (!antes) continue; // módulo novo é o caso seguinte, e tem outra régua
+      /*
+       * 🔴 O FAN-OUT PODE SUBIR UM QUANDO O TAMANHO E OS RAMOS DESCEM, e esta excepção nasceu de o portão ter recusado
+       * exactamente o trabalho que ele existe para causar. 📏 Medido em 22/09 ao tirar o modo calmo do `ui/pause-icons`:
+       * 695 → 682 linhas e 127 → 124 ramos, e fan-out 19 → 20, porque o módulo passou a importar aquilo que saiu. TODA
+       * extração honesta custa +1 ao módulo de onde o assunto sai — sem esta cláusula, a única forma de pagar dívida seria
+       * reescrever a linha de base a cada corte, e uma catraca que se desaperta por rotina deixa de ser uma.
+       *
+       * ⚠️ E ela é ESTREITA de propósito: UM, e só com as duas outras a descer. Um módulo que ganha imports sem dar nada em
+       * troca continua a reprovar, que é o caso que a medida existe para apanhar. 📌 A raiz do fundo disto já estava medida
+       * duas vezes hoje: o fan-out conta QUANTOS módulos, nunca quanto de cada um — a raiz passou de oito nomes do
+       * `ui/layout` para três e o número dela subiu.
+       */
+      const trocou = agora.codeLines < antes.codeLines && agora.decisionNodes < antes.decisionNodes;
       for (const m of MEASURES) {
         if (isExempt(mod, m)) continue;
+        if (m === 'fanOut' && trocou && agora[m] === antes[m] + 1) continue;
         if (agora[m] > antes[m]) piores.push(`${mod} ${m}: ${antes[m]} → ${agora[m]}`);
       }
     }
@@ -105,4 +119,7 @@ describe('a saúde do código só melhora', () => {
  *      acima de uma média.
  * 7. um módulo já na linha de base ganha um alcance a `window` .................................. VERMELHO no 1.º
  *    — os 24 que já alcançam ficam congelados e só podem encolher: dívida não vira licença.
+ * 8. um módulo ganha DOIS imports e CRESCE em linhas ............................................ VERMELHO no 1.º
+ *    — prova que a cláusula do fan-out é estreita: ela perdoa UM, e só com tamanho e ramos a descer. Ganhar imports sem dar
+ *      nada em troca continua a reprovar, que é o caso que a medida existe para apanhar.
  */

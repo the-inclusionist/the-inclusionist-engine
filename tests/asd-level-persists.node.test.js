@@ -29,7 +29,7 @@
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import { DEFAULTS } from '../app/js/core/state.js';
-import { sanitiseTeaLevel, CALM_NAMES } from '../app/js/ui/pause-icons.js';
+import { sanitiseTeaLevel, CALM_NAMES } from '../app/js/core/calm-mode.js';
 import { KEYS } from '../app/js/platform/storage.js';
 import { VIZ_MODES } from '../app/js/render/viz-modes.js';
 
@@ -57,7 +57,7 @@ describe('os padrões que faltavam ao DEFAULTS (#61)', () => {
 
 describe('o nível TEA saneado — dado do navegador é dado de fora', () => {
   it('[Right] os três níveis válidos atravessam intactos', () => {
-    for (let n = 0; n < CALM_NAMES.length; n++) expect(sanitiseTeaLevel(n)).toBe(n);
+    for (let n = 0; n < CALM_NAMES.length; n++) expect(sanitiseTeaLevel(n, DEFAULTS.calmMode)).toBe(n);
     expect(CALM_NAMES).toHaveLength(3); // normal · calmo · silencioso
   });
 
@@ -66,7 +66,7 @@ describe('o nível TEA saneado — dado do navegador é dado de fora', () => {
     // ao leitor de tela. Um nível fora da lista sairia como anúncio vazio — a criança cega carregaria no
     // botão e não ouviria nada, que é a forma mais silenciosa de um controlo de acessibilidade falhar.
     for (const lixo of [3, -1, 1.5, NaN, Infinity]) {
-      expect(sanitiseTeaLevel(lixo), `${lixo} passou como nível`).toBe(DEFAULTS.calmMode);
+      expect(sanitiseTeaLevel(lixo, DEFAULTS.calmMode), `${lixo} passou como nível`).toBe(DEFAULTS.calmMode);
     }
   });
 });

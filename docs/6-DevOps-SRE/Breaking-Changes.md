@@ -1632,6 +1632,24 @@ A gate whose name disagrees with its own ledger makes a reader look for a third 
 
 The tables are printed from the map: `node scripts/print-rename-table.mjs --files tests-1` (and `-2`, `-3`, `-4`).
 
+## AZ · Sensory comfort leaves the icon module: `core/calm-mode` (ADR-0221, issue #203)
+
+**What this is.** Six names move from `ui/pause-icons` to a new leaf module, `core/calm-mode`: `CALM_NAMES`,
+`CALM_AUDIO_CATS`, `nextCalmMode`, `sanitiseTeaLevel`, `calmAudioPlan` and `calmMotionPlan`. The spelling of each is unchanged;
+only the module is.
+
+📏 **Measured before moving: none of the six is imported by any of the seven games** — the surface gate is what asks for this
+note, and it asks by shape, not by whether anybody is on the other side. If you do import one, change the path.
+
+⚠️ **One signature changed**: `sanitiseTeaLevel(raw)` is now `sanitiseTeaLevel(raw, fallback)`. The module is a LEAF — zero
+imports, no DOM, no storage — which is what makes the destructive volume clamp of level 1 measurable without mounting
+anything; and a leaf cannot reach into `core/state` for the default.
+
+📌 **Why it moved at all:** `ui/pause-icons` is 695 lines and 127 decision nodes, and this group is not about ICONS. It is
+about what a child who cannot bear noise needs the engine to silence — the icon is one of the surfaces she asks through, the
+panel row is another. A module that answers «what does level 2 do to the audio?» should not require reading a file about the
+accessibility bar to be found.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |
