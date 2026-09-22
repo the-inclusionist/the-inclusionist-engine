@@ -70,10 +70,10 @@ export function pmBtnMarkup(
 ): string {
   const dyn = b.letra || b.nivel;
   const lbl = dynLabel(b) ?? (dyn ? (b.lbl ?? '') : tr('pause.' + b.act));
-  const glifo = ITEM_GLYPH[b.act];
+  const glyph = ITEM_GLYPH[b.act];
   return '<button class="pm-btn' + (b.letra ? ' pm-letra' : '') + (b.nivel ? ' pm-nivel' : '') +
     '" role="menuitem" type="button" data-act="' + b.act + '"' +
-    (glifo ? ' data-glifo="' + glifo + '"' : '') +
+    (glyph ? ' data-glifo="' + glyph + '"' : '') +
     (dyn ? '' : (' data-i18n="pause.' + b.act + '"')) + '>' + lbl + '</button>';
 }
 

@@ -15,7 +15,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { inventory, readBaseline, readLists, words, source, EXCEPTIONS } from '../scripts/language-inventory.mjs';
+import { inventory, readBaseline, readLists, words, source, declaredNames, EXCEPTIONS } from '../scripts/language-inventory.mjs';
 
 const { debt, unknown } = inventory();
 const baseline = readBaseline();
@@ -61,6 +61,25 @@ describe('Portuguese in the engine only shrinks', () => {
   it('⚠️ [Boundary] the lists do not disagree: no word is both English and Portuguese', () => {
     const { pt, en } = readLists();
     expect([...pt].filter((w) => en.has(w))).toEqual([]);
+  });
+
+  /*
+   * 🔴 PROSE IS NOT A DECLARATION, and this case exists because the absence of it cost a red commit on 2026-09-22: the
+   * sentence «Every function here takes what it needs», in a module header, was read as a declaration named `here`, and the
+   * gate asked for an English word to be classified that no code had ever declared. 📏 It was not one word: 558 of the 1001
+   * «Portuguese identifiers» reported that morning were prose.
+   *
+   * ⚠️ The nested `const` in the last expectation is the other half, and it is what stops the fix from being a subtraction:
+   * a declaration INSIDE a function is still a name a reader has to read, and the expression that came before never saw one.
+   */
+  it('🔴 [Right] a name comes from the parser, not from prose or from a string', () => {
+    const fonte = [
+      '// Every function here takes what it needs — and `const aqui` in a comment is still prose.',
+      "const real = 'const dentroDaCadeia = 1; function tambemNao() {}';",
+      '/** @example type ExemploNoComentario = 1 */',
+      'export function aFuncao(): void { const dentroDaFuncao = 1; return dentroDaFuncao; }',
+    ].join('\n');
+    expect(declaredNames(fonte).sort()).toEqual(['aFuncao', 'dentroDaFuncao', 'real']);
   });
 });
 

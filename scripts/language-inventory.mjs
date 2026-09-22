@@ -23,6 +23,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import ts from 'typescript';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -30,14 +31,38 @@ const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const LISTS = join(raiz, 'scripts/word-lists.json');
 export const BASELINE = join(raiz, 'docs/6-DevOps-SRE/language-debt.json');
 
-/** A declaration's name: what a reader of this repository has to read in English. */
-const DECL = /\b(?:const|let|var|function|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/g;
 /**
- * ⚠️ IMPORTS ARE NOT DECLARATIONS, and this was measured: `import { type OnDeviceAvailability }` matched `type X` and made
- * `platform/reading` — written entirely in English — carry three Portuguese names belonging to the module it imports from.
- * A file answers for the names it CREATES; the neighbour's names are the neighbour's debt.
+ * THE NAMES A FILE DECLARES, asked of the PARSER and not of a regular expression.
+ *
+ * 🔴 IT TOOK A RED BUILD TO PROVE THIS FILE NEEDED IT. The rule was `/(const|let|var|function|class|interface|type|enum)\s+
+ * (\w+)/`, and the sentence «Every function here takes what it needs», in a module header, made this script report an
+ * identifier called `here`. 📏 And the damage was not one word: measured on the day, **558 of the 1001 «Portuguese
+ * identifiers» it reported were PROSE** — `boot/create-game.ts` alone went from 367 to 20 — because a repository whose
+ * comments are half in Portuguese and quote code in backticks feeds that expression all day long.
+ *
+ * 🎯 It is the same family of defect the rename tool hit five times in phase 2 — not telling a NAME from a WORD — and the
+ * answer is the one that ended it there: the repository ships a parser, and a parser knows what a declaration is.
+ *
+ * ⚠️ IMPORTS ARE NOT DECLARATIONS, and that was measured before: `import { type OnDeviceAvailability }` matched `type X` and
+ * made `platform/reading` — written entirely in English — carry three Portuguese names belonging to the module it imports
+ * from. With the parser it falls out for free: an import clause is not a declaration node.
+ *
+ * 📌 What counts, and it is the same set the expression tried to cover: variables, functions, classes, interfaces, type
+ * aliases and enums, at any depth. Parameters and members do NOT count — they are the debt the Dev left out of this release
+ * (310 public members), and widening this is a decision, not a fix.
  */
-const semImports = (src) => src.replace(/^\s*import\b[^;]*;/gms, '');
+export const declaredNames = (src) => {
+  const sf = ts.createSourceFile('m.ts', src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const nomes = [];
+  const anda = (n) => {
+    const declara = ts.isVariableDeclaration(n) || ts.isFunctionDeclaration(n) || ts.isClassDeclaration(n)
+      || ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n) || ts.isEnumDeclaration(n);
+    if (declara && n.name && ts.isIdentifier(n.name)) nomes.push(n.name.text);
+    n.forEachChild(anda);
+  };
+  sf.forEachChild(anda);
+  return nomes;
+};
 
 export const EXCEPTIONS = [
   ['app/js/i18n/', 'the dictionaries ARE Portuguese, English and Spanish — pilar 3 of ADR-0010'],
@@ -45,8 +70,19 @@ export const EXCEPTIONS = [
   ['app/js/consumer-quiz/', 'the demo cartridge: it is a game, and games are not this package'],
 ];
 
-export const source = () => execFileSync('git', ['ls-files', 'app/js'], { cwd: raiz }).toString()
-  .split(/\r?\n/).filter((f) => f.endsWith('.ts') && !EXCEPTIONS.some(([p]) => f.startsWith(p)));
+/*
+ * 🔴 TRACKED **AND** UNTRACKED, and this gate is where the defect was first paid for. `git ls-files` alone answers «what is
+ * already stored», and the question here is «what exists»: on 21/09 six Portuguese identifiers passed because the suite ran
+ * with the module still outside the index, and on 22/09 it happened AGAIN — `ui/pause-markup.ts` was born with a Portuguese
+ * name and a sentence this script read as a declaration, the suite was green while the file was untracked, and the commit
+ * went in red. A module has to be measured the minute it is born, which is when renaming it is still free.
+ *
+ * ⚠️ `--exclude-standard` keeps `.gitignore` in force, so `dist/` and temporaries stay out. `code-health.mjs` was given the
+ * same treatment at birth for the same reason; this file is the one that taught it.
+ */
+const listar = (...args) => execFileSync('git', args, { cwd: raiz }).toString().split(/\r?\n/).filter(Boolean);
+export const source = () => [...new Set([...listar('ls-files', 'app/js'), ...listar('ls-files', '--others', '--exclude-standard', 'app/js')])]
+  .filter((f) => f.endsWith('.ts') && !EXCEPTIONS.some(([p]) => f.startsWith(p)));
 
 /** camelCase, PascalCase and snake_case into the words a reader actually reads; anything under three letters is noise. */
 export const words = (identifier) => identifier
@@ -62,11 +98,10 @@ export function readLists() {
 export function inventory(lists = readLists()) {
   const debt = {}, unknown = new Map();
   for (const f of source()) {
-    const src = semImports(readFileSync(join(raiz, f), 'utf8'));
     const nomes = [];
-    for (const m of src.matchAll(DECL)) {
-      const ws = words(m[1]);
-      if (ws.some((w) => lists.pt.has(w))) nomes.push(m[1]);
+    for (const nome of declaredNames(readFileSync(join(raiz, f), 'utf8'))) {
+      const ws = words(nome);
+      if (ws.some((w) => lists.pt.has(w))) nomes.push(nome);
       for (const w of ws) if (!lists.pt.has(w) && !lists.en.has(w)) unknown.set(w, (unknown.get(w) ?? 0) + 1);
     }
     if (nomes.length) debt[f] = nomes.length;
@@ -82,7 +117,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   if (arranque) {
     // every word a declaration uses and the Portuguese list does not claim is English, once — after that, a new word is unknown
     const todas = new Set();
-    for (const f of source()) for (const m of semImports(readFileSync(join(raiz, f), 'utf8')).matchAll(DECL)) for (const w of words(m[1])) todas.add(w);
+    for (const f of source()) for (const nome of declaredNames(readFileSync(join(raiz, f), 'utf8'))) for (const w of words(nome)) todas.add(w);
     const en = [...todas].filter((w) => !lists.pt.has(w)).sort();
     const atual = JSON.parse(readFileSync(LISTS, 'utf8'));
     writeFileSync(LISTS, `${JSON.stringify({ ...atual, english: en }, null, 2)}\n`);
