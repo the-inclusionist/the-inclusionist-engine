@@ -219,24 +219,32 @@ down more than once. Two of them are the second kind, and naming them here is ch
   `ui/eye-control`, `ui/face-control`, `ui/hand-control`, `ui/voice-control`. The keyboard, the gamepad and the touch pad still
   arrive as synthesised KEYS (`markKey`/`releaseKey`), which is why `keydown`, `gamepad` and `touch-bindings` still change
   together 40–53% of the time. Whether to unify is a decision, not a cleanup.
-- 🔴 **Four of the nine settings panels use the panel kit — but only THREE of the other five have anything to adopt.**
-  `ui/mount-panel` and `ui/panel-widgets` exist so that a menu row is written once; 📏 `settings-audio`, `-mobility`, `-motion`
-  and `-visual` use them, and `-controls`, `-typo`, `-empathy`, `-caa` and `-panel` do not.
-  ⚠️ **Re-measured on 2026-09-22, and the plain count was sending the work to the wrong place.** Of those five, `-controls`,
-  `-typo` and `-caa` DO build rows — as HTML STRINGS (`'<div class="ctrl-row">…'`), which is the duplication the kit exists to
-  end. `-empathy` builds none: it wires `#opt-hearing`, `#opt-onebtn` and `#opt-wheelchair`, which the composition root already
-  builds WITH the kit, and delegates its list to `ctx.renderVizGroup`. `-panel` is not a panel at all — it is the shared
-  overlay infrastructure (`fillExplain`, `topVisibleOverlay`). Adopting the kit in those two would convert nothing.
-  📌 And the three that do build rows build them by `innerHTML` over a whole list, while the kit builds NODES — so the
-  conversion is not mechanical: it trades string rebuilds for node building, and the listeners change shape with it.
-  ⏸ `-caa` is also the one nothing mounts today («`ui/settings-caa` continues in the engine for whoever wants to mount it»),
-  which is worth weighing before it is converted.
-  📏 `settings-audio` was 837 lines when this row was written and is **339** after the cuts of ADR-0221 step 7c.
+- ✅ **THE PANEL LINE IS PAID, on 2026-09-22.** `ui/mount-panel` and `ui/panel-widgets` exist so that a menu row is written
+  once, and now **every panel that builds rows builds them through the kit**. The work took the shape the measurement gave
+  it rather than the shape the plain count suggested: of the five that were outside, only `-controls`, `-typo` and `-caa`
+  BUILT rows — as HTML STRINGS (`'<div class="ctrl-row">…'`), which is the duplication the kit exists to end. `-empathy`
+  builds none (it wires `#opt-hearing`, `#opt-onebtn` and `#opt-wheelchair`, which the composition root already builds WITH
+  the kit) and `-panel` is not a panel at all — it is the shared overlay infrastructure. Converting those two would have
+  converted nothing.
+  📌 **The kit grew by what the panels asked for, and only that** — the rule written at the top of `ui/panel-widgets`:
+  `sectionHeader` (four modules were hand-writing `.panel-sub`), and two `ControlShape`s, `'radio'` for the font menu (a
+  choice is not a toggle, ADR-0012 erratum) and `'button'` for the remapping panel (a control that DOES something instead
+  of holding a value).
+  📏 What it cost and bought, per module: `settings-audio` 837 → **339** lines across the cuts of ADR-0221 step 7c;
+  `settings-typo` 137 → 183 with the adoption and then **134** once `ui/typo-choices` took its pure half;
+  `settings-controls` 184 → 195 and then **173** once `ui/control-choices` took its. Both times the ratchet was what pointed
+  at the cut — the module landed one line under the ceiling, and the answer was to split rather than to ask for an exception.
+  📌 **And «does anything mount it» stopped being a criterion**, by the Dev's correction of the same day: «E nem é pra medir
+  se alguém monta ou não! Se eu vou fazer um cartucho que monta será após isso estar funcionando!»
 
-⚠️ **The experiment that will settle both is already running, and its criterion is fixed before the answer exists:** when an
-abstraction is adopted, the files it unifies must stop changing together. 📏 Today it cannot be evaluated — of the 51 commits
-since the virtual controller landed, none touched a transport or a panel. The one group with enough data confirmed the opposite
-case: the three dictionaries were 100% together before and after, which is what an IRREDUCIBLE spread looks like.
+⚠️ **The experiment that will settle the remaining line is running, and its criterion was fixed before the answer existed:**
+when an abstraction is adopted, the files it unifies must stop changing together (`node scripts/co-change.mjs --group …`).
+📏 Measured on 2026-09-22, right after the panel work landed: the `panels` group is together in **6 of the 34 commits that
+touch it (18%)**, and that number is the BASELINE of the adoption, not its verdict — the commits that converted them
+necessarily touch them. Whoever reads this in a month reads the answer. The `transports` group is 25% before the virtual
+controller and 50% after, over **four commits**, which is not a result and the script says so. The one group with enough
+data confirmed the opposite case: the three dictionaries were 100% together before and after, which is what an IRREDUCIBLE
+spread looks like.
 
 Engine constants (TILE_TYPES, TUNE, dimensions) live only in `app/js/core/constants.ts` — never duplicated in docs.
 The **canonical render Z-order** (named layers, world + overlay scopes; PIXI `zIndex` + DOM `z-index`) and the
