@@ -9,7 +9,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initSettingsAudio } from '../app/js/ui/settings-audio.js';
 import { NAV_CATS, GEN_CATS } from '../app/js/ui/audio-choices.js';
 import { defaultAudioCat } from '../app/js/platform/audio-mixer.js';
-import { menuIndexOn, setMenuIndexOnValue } from '../app/js/core/state.js';
+import { menuIndexOn, setMenuIndexOnValue, speechPpm, setSpeechPpmValue } from '../app/js/core/state.js';
+import { SPEECH_RATES } from '../app/js/core/speech-rate.js';
 
 const AUDIO_HTML = `
   <div id="audio">
@@ -23,6 +24,7 @@ const AUDIO_HTML = `
     <select id="tts-voice"></select>
     <button id="opt-tts-test" type="button">Testar</button>
     <input id="tts-vol" type="range" min="0" max="100" step="5">
+    <select id="tts-ppm"></select>
     <div class="ctrl-row"><span><strong>Voz</strong></span><select id="tts-voz"></select></div>
     <div id="audio-sinks"></div>
     <button id="audio-detect" type="button">Detectar</button>
@@ -602,5 +604,49 @@ describe('ui/settings-audio — the voice choice (ADR-0185)', () => {
     expect(audioCat.tts.vol, 'the narration volume moved').toBe(volAntes);
     expect(said.at(-1) ?? '', 'refused in silence').toMatch(/voz/i);
     setMenuIndexOnValue(indice);
+  });
+});
+
+/*
+ * ============== AS DUAS PEÇAS DA VOZ QUE NINGUÉM VIA (2026-09-22, ADR-0221 passo 7c) ==============
+ *
+ * 🔴 MEDIDO ANTES DE MEXER, como no `pollPads`: as sete peças do bloco da voz foram desligadas, uma de cada vez, e a suíte
+ * respondeu por cinco delas. Ficaram VERDES o `reflectTts` — o espelho do interruptor da narração e do motor escolhido, que
+ * a barra de ícones chama de fora por `reflectTtsPanel` — e o `renderRitmo`, a lista de ritmo da fala.
+ *
+ * ⚠️ E O SEGUNDO ESTAVA CEGO POR UM MOTIVO QUE VALE ESCREVER: a fixture desta suíte não tinha `#tts-ppm`, logo o
+ * `renderRitmo` saía no primeiro `if (!sel) return` e não havia o que medir. Um controle que o painel constrói e que o
+ * cenário de teste não tem é um buraco que nenhuma contagem de casos mostra.
+ */
+describe('ui/settings-audio — o que a voz reflecte', () => {
+  it('🔴 [Right] o interruptor da narração e o motor escolhido DIZEM o estado guardado', () => {
+    const { ctx, audioCat, tts } = fullCtx();
+    const api = initSettingsAudio(ctx);
+    api.renderAudio();
+    audioCat.tts.on = true;
+    tts.setEngineSel('kokoro');
+    api.reflectTts();
+    expect(document.querySelector('#opt-tts').getAttribute('aria-pressed'), 'o botão não diz que a narração está ligada').toBe('true');
+    expect(document.querySelector('#tts-engine').value, 'o motor escolhido não aparece na lista').toBe('kokoro');
+  });
+
+  it('⚠️ [Inverse] e desligada, ele diz isso — é a mesma função a responder as duas coisas', () => {
+    const { ctx, audioCat } = fullCtx();
+    const api = initSettingsAudio(ctx);
+    api.renderAudio();
+    audioCat.tts.on = false;
+    api.reflectTts();
+    expect(document.querySelector('#opt-tts').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('🔴 [Right] a lista de ritmo da fala nasce com os passos do ADR-0196 e com o valor guardado escolhido', () => {
+    const antes = speechPpm;
+    setSpeechPpmValue(SPEECH_RATES[2]);
+    const { ctx } = fullCtx();
+    initSettingsAudio(ctx).renderAudio();
+    const sel = document.querySelector('#tts-ppm');
+    expect([...sel.options].map((o) => Number(o.value)), 'a lista de ritmo não é a do registo').toEqual([...SPEECH_RATES]);
+    expect(Number(sel.value), 'a lista abriu num ritmo que a criança não escolheu').toBe(SPEECH_RATES[2]);
+    setSpeechPpmValue(antes);
   });
 });
