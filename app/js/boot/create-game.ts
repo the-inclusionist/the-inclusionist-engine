@@ -76,7 +76,8 @@ import { announceItem } from '../ui/item-announcement.js';
 import { accessibleLabel } from '../core/accessible-label.js';
 import { navigableItems } from '../ui/menu-items.js';
 import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, type HowToPlaySlide } from '../ui/help-panel.js';
-import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
+import { initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
+import { keyName } from '../ui/control-choices.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
 import * as state from '../core/state.js';
 import type { CameraControl } from '../core/state.js';

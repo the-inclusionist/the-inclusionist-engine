@@ -1899,6 +1899,35 @@ button that changes it. The Dev decided it in those terms, asked whether «Alter
 X do Jogador N». If your CSS or your tests targeted `.ctrl-nome`, target `.ctrl-row > span > strong` — 📏 measured: that
 class carried no styling in this engine, only two test selectors.
 
+## BL · What a KEY is, and whose it already is, moves out: `ui/control-choices` (ADR-0221, issue #203)
+
+**What this is.** Three names leave `ui/settings-controls` and arrive, unchanged, in `ui/control-choices`. No behaviour
+changes.
+
+| gone from `ui/settings-controls` | now in `ui/control-choices` |
+|---|---|
+| `keyName(code)` | same name, same signature |
+| `keyUsedByOther(code, mapRef, schemes)` | same |
+| `actionAlreadyBound(code, mapRef, except)` | same (the third parameter was renamed `exceto` → `except`; positional, so nothing changes for a caller) |
+
+🎯 **Why.** Third module to take this cut, after `ui/audio-choices` (note BD) and `ui/typo-choices` (note BJ), and marked by
+the same thing: `tests/settings-controls.node.test.js` already exercised exactly these functions in a project WITHOUT a
+document, while the browser file drove the rest. `ui/control-choices` answers what a key is CALLED and whose it already is;
+`ui/settings-controls` keeps drawing the screen, wiring the clicks and driving the capture.
+
+📏 **And the ratchet pointed at it.** Adopting the panel kit (note BK) left `ui/settings-controls` at 195 code lines against
+a p90 ceiling of 195 — no headroom at all. After the cut it is **173 lines**, its worst function went **14 → 12**, and
+`ui/control-choices` is 26 lines with a fan-out of 3.
+
+⚠️ **What to change.** If you only call `initSettingsControls`, nothing. If you imported any of the three, change the path
+to `@the-inclusionist/engine/ui/control-choices.js` — names and signatures are identical. 📌 No alias was left behind, for
+the reason the pause-icon cut wrote down: a re-export keeps alive a path nothing uses and makes the public-surface portrait
+lie, because it does not see re-exports (#204).
+
+📌 `ACT_LABEL` did NOT move, and that is a decision: it is declared debt with a migration of its own written above it — one
+game's words inside the engine, waiting for that cartridge's help screen to ask the cartridge instead. Carrying it to a new
+module would be moving the debt to a new address.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

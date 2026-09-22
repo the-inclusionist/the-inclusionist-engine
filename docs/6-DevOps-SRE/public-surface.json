@@ -1508,6 +1508,11 @@
     "markChanged",
     "markMenuChanged"
   ],
+  "ui/control-choices.ts": [
+    "actionAlreadyBound",
+    "keyName",
+    "keyUsedByOther"
+  ],
   "ui/debug-panel.ts": [
     "CharacterSample",
     "DebugPanelCtx",
@@ -1827,12 +1832,9 @@
     "KeyboardConfig",
     "SettingsControlsApi",
     "SettingsControlsCtx",
-    "actionAlreadyBound",
     "ctrlControlId",
     "drawKeys",
-    "initSettingsControls",
-    "keyName",
-    "keyUsedByOther"
+    "initSettingsControls"
   ],
   "ui/settings-empathy.ts": [
     "EMPATHY_VIZ_MODES",

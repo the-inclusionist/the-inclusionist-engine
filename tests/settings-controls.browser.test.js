@@ -4,7 +4,8 @@
 // acesso a globais fora do ctx. A lógica pura (keyName/keyUsedByOther) está coberta em settings-controls.node.test.js.
 // Modelo: tests/a11y-sr.browser.test.js, tests/settings-typo.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { initSettingsControls, keyUsedByOther, drawKeys, ctrlControlId } from '../app/js/ui/settings-controls.js';
+import { initSettingsControls, drawKeys, ctrlControlId } from '../app/js/ui/settings-controls.js';
+import { keyUsedByOther } from '../app/js/ui/control-choices.js';
 
 const $ = (sel) => document.querySelector(sel);
 

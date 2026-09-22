@@ -120,9 +120,6 @@
       "itemReason",
       "itemsThatAct"
     ],
-    "ui/settings-controls.ts": [
-      "actionAlreadyBound"
-    ],
     "ui/settings-mobility.ts": [
       "playerPrefix"
     ],

@@ -16,7 +16,8 @@
 import { t } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
-import { ACTIONS, isAction, type Action } from '../core/actions.js';
+import { isAction, type Action } from '../core/actions.js';
+import { keyName, keyUsedByOther, actionAlreadyBound } from './control-choices.js';
 import { markChanged } from './changed-mark.js';
 import { controlRow } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
@@ -167,57 +168,18 @@ export const ACT_LABEL: Record<string, string> = {
  * só o que sobra para o consumidor que ainda não migrou. Quando `openHelp` perguntar ao jogo, ela sai.
  */
 
-/** Physical key code -> short readable label. Only 'Space' has a word to translate; the rest are glyphs and
- *  bare letters, identical in every language (that is why this is a chain of replaces and not a table). */
-export function keyName(code: string): string {
-  return String(code)
-    .replace('Arrow', '↔')
-    .replace('Key', '')
-    .replace('Space', t('key.space'))
-    .replace('ShiftLeft', 'Shift')
-    .replace('ShiftRight', 'Shift');
-}
-
-/**
- * Which OTHER player already owns `code`, among `schemes` (one entry per player, same order as player index) —
- * or -1 if free. `mapRef` (the scheme currently being edited) is excluded by reference, mirroring the original
- * `keyUsedByOther(code, mapRef)` closing over `kbFor`/numPlayers in game.js. Built over a Map (code -> owner
- * index) so a scheme with many bound keys doesn't cost a full re-scan per lookup.
+/*
+ * 🎯 O QUE UMA TECLA É E DE QUEM ELA JÁ É mora em `./control-choices.js` desde 2026-09-22 (nota BL) —
+ * `keyName`, `keyUsedByOther` e `actionAlreadyBound`. Este ficheiro ficou com o trabalho que o nome dele
+ * sempre descreveu: desenhar a tela, ligar os cliques e conduzir a captura. Sem apelido deixado para trás,
+ * pela razão que o corte dos ícones já escreveu: um re-export mantém vivo um caminho que nada aqui usa e faz
+ * o retrato da superfície MENTIR, porque ele não vê re-exports (#204).
+ *
+ * 📌 O `ACT_LABEL` NÃO foi junto, e isso é decisão: ele é dívida DECLARADA com uma migração própria escrita
+ * acima (as palavras de UM jogo dentro do motor, à espera de que a tela de ajuda pergunte ao cartucho).
+ * Levá-lo para um módulo novo seria mudar a dívida de morada, que é o que os três cortes anteriores
+ * recusaram fazer.
  */
-export function keyUsedByOther(code: string, mapRef: KeyScheme, schemes: readonly KeyScheme[]): number {
-  const owners = new Map<string, number>();
-  schemes.forEach((m, i) => {
-    if (m === mapRef) return;
-    for (const a of ACTIONS) for (const c of m[a] || []) if (!owners.has(c)) owners.set(c, i);
-  });
-  return owners.get(code) ?? -1;
-}
-
-/**
- * Qual OUTRA ação DO MESMO esquema já tem `code` — ou `null` se nenhuma.
- *
- * ⚠️ O IRMÃO QUE FALTAVA AO `keyUsedByOther`, E A FALTA ERA INVISÍVEL NUM JOGO DE UM JOGADOR (#126). Aquele
- * exclui o esquema em edição **por referência**; com um jogador só, `schemesFor()` devolve exatamente esse
- * esquema, então a guarda varre uma lista vazia e **nunca pode disparar**. A criança que põe `W` numa ação
- * nova continua com `W` na antiga, e passa o jogo inteiro com as duas a disparar juntas.
- *
- * ⚠️ E O DEFEITO É O PIOR FEITIO POSSÍVEL, escrito no cabeçalho do `input/default-bindings` desde sempre:
- * «as duas ações disparam juntas, e a criança vê uma ação dupla intermitente que ninguém consegue reproduzir
- * de propósito». Numa tela que ela abriu **porque** não conseguia usar os controles padrão.
- *
- * ⚠️ A guarda entre JOGADORES não estava partida — estava inalcançável. Medido na auditoria: com dois
- * assentos ela funciona e recusa certo. O que faltava era a verificação dentro do mesmo esquema.
- *
- * Devolve a AÇÃO e não um booleano, porque o anúncio tem de dizer qual — «essa tecla já está em uso» manda a
- * criança procurar o que a função já sabe.
- */
-export function actionAlreadyBound(code: string, mapRef: KeyScheme, exceto: Action): Action | null {
-  for (const a of ACTIONS) {
-    if (a === exceto) continue;
-    if ((mapRef[a] || []).includes(code)) return a;
-  }
-  return null;
-}
 
 // ---------------------------------------------------------------------------------------------
 // DOM-facing (thin) — requires `document`/injected ctx

@@ -5,7 +5,10 @@
 // O render()/handleCaptureKeydown() (tocam DOM) ficam em settings-controls.browser.test.js.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
-import { keyName, keyUsedByOther, ACT_LABEL } from '../app/js/ui/settings-controls.js';
+import { ACT_LABEL } from '../app/js/ui/settings-controls.js';
+// 📌 A metade PURA saiu para `ui/control-choices` em 22/09 (nota BL), e foi este ficheiro que marcou a costura
+// antes de ela existir: os casos que ele já tinha eram todos sobre o que uma TECLA é, nenhum sobre um nó.
+import { keyName, keyUsedByOther } from '../app/js/ui/control-choices.js';
 import pt from '../app/js/i18n/pt.js';
 
 describe('keyName', () => {

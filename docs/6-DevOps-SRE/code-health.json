@@ -2,7 +2,7 @@
   "about": "ADR-0221 — the six measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID, a module is legitimately split, or the growth BUYS something no measure here can see — and in that third case the commit has to name the purchase and the falsifiable criterion that will show it landed (ADR-0221 point 6: the criterion is the co-change falling, not the number). Rewriting it to green a red build is the ratchet being unscrewed.",
   "takenOn": "2026-09-22",
   "ceiling": {
-    "codeLines": 195,
+    "codeLines": 187,
     "decisionNodes": 37,
     "maxDepth": 4,
     "fanOut": 7,
@@ -25,10 +25,10 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2095,
+      "codeLines": 2096,
       "decisionNodes": 309,
       "maxDepth": 4,
-      "fanOut": 80,
+      "fanOut": 81,
       "globalReach": 0,
       "worstFunction": 68,
       "fanIn": 1
@@ -88,7 +88,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 24
+      "fanIn": 25
     },
     "core/calm-mode.ts": {
       "codeLines": 14,
@@ -151,7 +151,7 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 0,
-      "fanIn": 21
+      "fanIn": 22
     },
     "core/escape-html.ts": {
       "codeLines": 5,
@@ -196,7 +196,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 39
+      "fanIn": 40
     },
     "core/layers.ts": {
       "codeLines": 40,
@@ -1419,6 +1419,15 @@
       "worstFunction": 5,
       "fanIn": 9
     },
+    "ui/control-choices.ts": {
+      "codeLines": 26,
+      "decisionNodes": 7,
+      "maxDepth": 3,
+      "fanOut": 3,
+      "globalReach": 0,
+      "worstFunction": 6,
+      "fanIn": 2
+    },
     "ui/debug-panel.ts": {
       "codeLines": 187,
       "decisionNodes": 15,
@@ -1726,10 +1735,10 @@
       "fanIn": 0
     },
     "ui/settings-controls.ts": {
-      "codeLines": 195,
-      "decisionNodes": 25,
-      "maxDepth": 3,
-      "fanOut": 9,
+      "codeLines": 173,
+      "decisionNodes": 18,
+      "maxDepth": 2,
+      "fanOut": 10,
       "globalReach": 0,
       "worstFunction": 12,
       "fanIn": 1
