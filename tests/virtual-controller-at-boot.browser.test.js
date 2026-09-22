@@ -12,7 +12,8 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
-import { keys } from '../app/js/input/state.js';
+import { keys, sourceOf } from '../app/js/input/state.js';
+import { stampSource } from '../app/js/input/synthetic-source.js';
 
 let motor;
 let raiz;
@@ -534,6 +535,86 @@ describe('the engine offers the control object to the cartridge', () => {
     recebidos.length = 0;
     segundo.controller.release('action4', 'gamepad', 0);
     expect(recebidos, 'a release with no press hands the cartridge half of an event that never happened').toEqual([]);
+  });
+
+  /* ----- and the KEYBOARD reaches the cartridge through the same door (ADR-0223 item 2) ----- */
+  // 🔴 The root's window listener USED to deliver commands itself — the second door. It now resolves the action and
+  // presses the same controller, so there is one `deliver`, called from one place. These cases hold the three
+  // disagreements that having two doors had already produced, each one measured before the change.
+  const tecla = (tipo, code, origem) => {
+    const e = new KeyboardEvent(tipo, { code, key: code, bubbles: true, cancelable: true });
+    if (origem) stampSource(e, origem);
+    (document.getElementById('game-region') ?? document.body).dispatchEvent(e);
+  };
+  const cartao = () => document.getElementById('vp-pause-0');
+
+  it('🔴 [Right] a real key press reaches `onCommand` as its POSITION, and the release with it', () => {
+    recebidos.length = 0;
+    const code = segundo.keyboard.kbFor(0).up?.[0];
+    expect(code, 'the seat has no key bound to `up`: the case would measure nothing').toBeTruthy();
+    tecla('keydown', code);
+    tecla('keyup', code);
+    expect(recebidos.map((c) => `${c.action}:${c.pressed}`), 'the keyboard no longer reaches the cartridge')
+      .toEqual(['up:true', 'up:false']);
+    // 📌 A real key carries no stamp — nobody said who produced it, and `undefined` is the honest answer (ADR-0111 §2).
+    expect(recebidos[0].source, 'a source was invented for an event nobody signed').toBeUndefined();
+  });
+
+  it('🔴 [CrossCheck] with a MENU open the press is not delivered — AND the menu is not navigated twice', () => {
+    // ⚠️ The second half is the trap of routing the keyboard through the controller: with a menu open the controller
+    // turns a position into that menu's key. The keyboard's key is ALREADY in the world, so re-dispatching it would
+    // move the cursor twice on one press. The host's `teclaAoMenu` refuses it, and this counts the events to say so.
+    recebidos.length = 0;
+    const code = segundo.keyboard.kbFor(0).down?.[0];
+    let vistos = 0;
+    const conta = (e) => { if (e.code === code) vistos++; };
+    window.addEventListener('keydown', conta, true);
+    const escondido = cartao().hidden;
+    cartao().hidden = false;
+    try {
+      tecla('keydown', code);
+      expect(recebidos, 'a menu took the press and the cartridge heard it anyway').toEqual([]);
+      expect(vistos, 'the key was re-dispatched to the menu: one press, two cursor moves').toBe(1);
+    } finally {
+      window.removeEventListener('keydown', conta, true);
+      cartao().hidden = escondido;
+    }
+  });
+
+  it('🔴 [Boundary] and the RELEASE of that press is not delivered either — the door that had no memory did', () => {
+    // 📏 One of the three measured disagreements between the two doors: the window listener delivered the `keyup`
+    // with a menu open while the controller delivered nothing, so a cartridge got a release with no press.
+    recebidos.length = 0;
+    const code = segundo.keyboard.kbFor(0).down?.[0];
+    const escondido = cartao().hidden;
+    cartao().hidden = false;
+    try { tecla('keydown', code); } finally { cartao().hidden = escondido; }
+    tecla('keyup', code);
+    expect(recebidos, 'the cartridge was handed the release of a press it never heard').toEqual([]);
+  });
+
+  it('🔴 [Boundary] an UNSIGNED key ERASES the previous producer — it does not inherit it, and none is invented', () => {
+    // 🔴 The trap this closes is written in `input/state`: a child plays by GAZE, lets the key go, and something
+    // outside dispatches the same code. Inheriting leaves the automaton answering «olhos» to an edge that is no
+    // longer hers; inventing `teclado` is the same defect with the other sign — it would switch a gaze player to
+    // the keyboard mid-game, with no error anywhere. Nobody said who pressed it, so the answer is nobody.
+    const code = segundo.keyboard.kbFor(0).right?.[0];
+    expect(code, 'the seat has no key bound to `right`: the case would measure nothing').toBeTruthy();
+    segundo.controller.press('right', 'olhos', 0);
+    expect(sourceOf(code), 'the gaze press did not stamp the key: the case would measure nothing').toBe('olhos');
+    tecla('keydown', code); // a real, unsigned key on the same code
+    expect(sourceOf(code), 'an unsigned key kept, or invented, a producer').toBeUndefined();
+    segundo.controller.release('right', undefined, 0);
+  });
+
+  it('🔴 [CrossCheck] a key STAMPED by another transport is not delivered twice — the list is now the inverse', () => {
+    // 🔴 The old exclusion named four transports by hand, so it aged with the list: the voice and the scan arrived
+    // later and were never added. The question is now «is this the keyboard?», which cannot go stale.
+    recebidos.length = 0;
+    const code = segundo.keyboard.kbFor(0).left?.[0];
+    tecla('keydown', code, 'fala');
+    expect(recebidos, 'a position the voice already pressed was delivered a second time by the keyboard driver')
+      .toEqual([]);
   });
 });
 

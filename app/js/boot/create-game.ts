@@ -48,7 +48,7 @@
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
 import i18nObject, { initI18n, dictionaryGaps, loadLocale, applyDom } from '../core/i18n.js';
 import { localeHostHooks, exposeI18n } from '../platform/locale-host.js';
-import { inputOf, keys, markKey, releaseKey, playerEdge } from '../input/state.js';
+import { inputOf, keys, markKeyFrom, releaseKey, playerEdge } from '../input/state.js';
 import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
 import { createCrashNotice } from '../ui/loop-crash.js';
@@ -2940,7 +2940,13 @@ export function createGame(o: CreateGameOptions): Engine {
   /** A menu the directional moves is open: an overlay, the seat-0 card, or the quick pause (ADR-0157). */
   const menuComDirecional = (): boolean => !!overlays.topVisibleOverlay() || cartaoDoAssento0Aberto() || emPausaRapida.has(0);
   /** A position's key handed to the menus, which read keys — stamped with who produced it (ADR-0109). */
-  const teclaAoMenu = (code: string, origem: TransportName): void => {
+  const teclaAoMenu = (code: string, origem: TransportName | undefined): void => {
+    // 🔴 A TECLA DO TECLADO JÁ ESTÁ NO MUNDO (ADR-0223). Esta função é o tradutor POSIÇÃO → tecla, e existe para os
+    // transportes que não produzem teclas: o dedo, os olhos, o rosto, as mãos, a voz, a varredura. O teclado produz —
+    // o evento que chegou aqui É a tecla —, logo redespachá-la navegaria o menu DUAS vezes.
+    // 📌 É por estar escrito aqui que o condutor do teclado não precisa de perguntar «há um menu aberto?»: essa
+    // pergunta tem UMA resposta, a do controle, e esta linha é o que a torna verdadeira também para ele.
+    if (!origem || origem === 'teclado') return;
     const alvo = $<HTMLElement>('#game-region') ?? doc.body;
     alvo.dispatchEvent(stampSource(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origem));
   };
@@ -3866,17 +3872,41 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   if (state.switchScan) startScan();
   const controleVirtual = createVirtualController({
     scheme: (i) => keyboard.kbFor(i), menuOpen: menuComDirecional,
-    holdKey: markKey, releaseKey: releaseKey, menuKey: teclaAoMenu, deliver: entregar,
+    // ⚠️ `markKeyFrom` E NÃO `markKey` CRU: uma tecla que chega SEM origem — que é todo evento de teclado de verdade —
+    // tem de APAGAR quem a segurou da última vez em vez de a herdar (ADR-0109). A escolha entre as duas portas vive
+    // em `input/state`, onde o `input/keydown` já fazia a mesma.
+    holdKey: markKeyFrom,
+    releaseKey: releaseKey, menuKey: teclaAoMenu, deliver: entregar,
   });
+  /*
+   * 🔴 O CONDUTOR DO TECLADO, E SÓ ISSO (ADR-0223). Esta escuta ERA a segunda porta ao cartucho: resolvia a acção e
+   * entregava o comando ela própria. Agora resolve a acção e APERTA o controle virtual, como os outros cinco
+   * transportes — e depois disto há UM `deliver`, chamado de um sítio.
+   *
+   * 📏 O que a mudança conserta, e estava medido antes de ser escrita (ADR-0223, contexto):
+   *   · com um menu aberto esta porta entregava o `keyup` e a outra não entregava nada — agora a soltura só é
+   *     entregue para uma pressão que o jogo OUVIU, que é a memória de `held`;
+   *   · uma pressão engolida por um menu seguida de soltura entregava uma soltura sem pressão — já não;
+   *   · e a lista de exclusão enumerava quatro transportes, o que a deixava a envelhecer com a lista: a voz e a
+   *     varredura entraram depois e nunca lá foram postas. Agora a pergunta é a INVERSA e não envelhece — o que não
+   *     é teclado não é deste condutor.
+   *
+   * 📌 E ele já não pergunta «há um menu aberto?». Essa pergunta tem UMA resposta, a do controle; o que a torna
+   * verdadeira para o teclado é o `teclaAoMenu` acima, que não redespacha uma tecla que já está no mundo.
+   */
   for (const tipo of ['keydown', 'keyup'] as const) {
     win.addEventListener(tipo, (e: KeyboardEvent) => {
       if (e.repeat || !cartucho.onCommand) return;
-      const origem = sourceOfEvent(e);
-      if (origem === 'toque' || origem === 'olhos' || origem === 'rosto' || origem === 'gestos') return; // those come as commands already, or went to a menu
-      const jogador = keyboard.whichPlayer(e.code);
-      if (jogador < 0 || (tipo === 'keydown' && menuComDirecional())) return;
-      const acao = keyboard.actionOf(e.code, jogador) as Action | null;
-      if (acao) entregar({ action: acao, pressed: tipo === 'keydown', source: origem, player: jogador });
+      const source = sourceOfEvent(e);
+      // ⚠️ SEM CARIMBO É O TECLADO DE VERDADE: um evento que a criança produziu não traz expando nenhum. O único
+      // carimbo que pertence a este condutor é `teclado`, e ele existe para a soltura que o filtro motor sintetiza.
+      if (source && source !== 'teclado') return;
+      const seat = keyboard.whichPlayer(e.code);
+      if (seat < 0) return;
+      const action = keyboard.actionOf(e.code, seat) as Action | null;
+      if (!action) return;
+      if (tipo === 'keydown') controleVirtual.press(action, source, seat);
+      else controleVirtual.release(action, source, seat);
     }, true);
   }
 

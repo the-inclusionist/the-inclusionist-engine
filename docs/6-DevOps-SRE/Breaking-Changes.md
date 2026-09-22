@@ -2009,6 +2009,37 @@ cartridge listening to `onCommand` hears them for the first time.
 `rightTrigger` and the rest, and this transport has no reading for them — measured, and named here so it is not mistaken
 for something this change broke.
 
+## BO · The keyboard goes through the same door, and there is one `deliver` left (ADR-0223, issue #197)
+
+**What this is.** The root's window listener was the SECOND door to the cartridge: it resolved the action and delivered
+the command itself. It now resolves the action and presses `input/virtual-controller`, like the other five transports.
+After this, `deliver` is called from one place.
+
+| before | after |
+|---|---|
+| the listener called `onCommand` directly | it calls `controller.press` / `controller.release` |
+| a `keyup` with a menu open was delivered | nothing is delivered for a press the game never heard |
+| the exclusion list NAMED four transports | the question is the inverse: is this the keyboard? |
+| `VirtualControllerDeps.holdKey` / `menuKey` took `TransportName` | they take `TransportName \| undefined` |
+
+🎯 **Three measured disagreements between the two doors are gone**, and they were measured before the work (ADR-0223's
+context). With a menu open one door delivered the `keyup` and the other delivered nothing. One kept a `held` map so a
+release only reaches a press the game heard, and the other had no memory — a press a menu swallowed, followed by a
+release, handed the cartridge half of an event that never happened. And the enumerated exclusion list aged with the
+list: the voice and the scan arrived after it was written and were never added to it, so a position they had already
+pressed could be delivered a second time by the keyboard's driver.
+
+📌 **The keyboard's key is already in the world, and that is why the driver does not ask about menus.** The controller
+turns a POSITION into a menu's key for transports that do not produce keys; the keyboard produces them. The host's
+`menuKey` implementation refuses to re-dispatch a keyboard key, so one press stays one cursor move — and the menu
+question keeps having exactly one answer, the controller's.
+
+⚠️ **What to change.** A cartridge that only listens to `onCommand` gets fewer, more honest events: no release without
+a press, and nothing while a menu has the key. If you implement `VirtualControllerDeps` yourself — which only a host
+does — `holdKey` and `menuKey` now receive `TransportName | undefined`; wire `holdKey` to `input/state.markKeyFrom`,
+which chooses between `markKey` and `markKeyWithoutSource` for you. An unsigned key ERASES the previous producer: it
+does not inherit it, and `teclado` is not invented for it (ADR-0109).
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

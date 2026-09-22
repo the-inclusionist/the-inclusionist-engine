@@ -24,10 +24,23 @@ export interface VirtualCommand {
 export interface VirtualControllerDeps {
   readonly scheme: (player: number) => KeyScheme;
   readonly menuOpen: () => boolean;
-  readonly holdKey: (code: string, source: TransportName) => void;
+  /**
+   * Holds the child's key for this position.
+   *
+   * ⚠️ `source` CAN BE UNDEFINED, and that is not sloppiness: a real key press carries no stamp, so the keyboard —
+   * the one transport whose native currency IS the key — arrives unsigned. `input/state` already has the narrow
+   * door for exactly that (`markKeyWithoutSource`), and the host wires this to it: a key whose producer nobody
+   * declared must ERASE the previous producer rather than inherit it (ADR-0109).
+   */
+  readonly holdKey: (code: string, source: TransportName | undefined) => void;
   readonly releaseKey: (code: string) => void;
-  /** A menu is moved by its key, as the touch pad does, stamped with the transport that pressed it. */
-  readonly menuKey: (code: string, source: TransportName) => void;
+  /**
+   * A menu is moved by its key, as the touch pad does, stamped with the transport that pressed it.
+   *
+   * 📌 This is the POSITION → KEY translator, and it exists for transports that do not produce keys. The keyboard
+   * does, so its key is already in the world before this is reached — the host's implementation says so.
+   */
+  readonly menuKey: (code: string, source: TransportName | undefined) => void;
   readonly deliver: (command: VirtualCommand) => void;
 }
 
@@ -40,8 +53,8 @@ export interface VirtualController {
    * one question is how the two doors came to disagree about what happens with a menu open. A transport that raises an edge,
    * or hides its tips, or announces something, does it only when the press reached the game; now it is told.
    */
-  press(action: Action, source: TransportName, player?: number): boolean;
-  release(action: Action, source: TransportName, player?: number): void;
+  press(action: Action, source: TransportName | undefined, player?: number): boolean;
+  release(action: Action, source: TransportName | undefined, player?: number): void;
 }
 
 export function createVirtualController(d: VirtualControllerDeps): VirtualController {

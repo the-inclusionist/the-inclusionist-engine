@@ -70,6 +70,24 @@ export function markKeyWithoutSource(code: string): void {
   keySource.delete(code);
 }
 
+/**
+ * A tecla foi segurada e o CHAMADOR PODE NÃO SABER por quem — escolhe a porta certa das duas acima.
+ *
+ * ⚠️ NÃO É `markKey` COM A ORIGEM OPCIONAL, e a diferença é a que o comentário do `markKeyWithoutSource` defende: um
+ * parâmetro esquecido não se lê, e esta assinatura exige a união EXPLÍCITA. Quem sabe quem apertou continua a chamar
+ * `markKey`; esta é para quem recebe a resposta de outro e não pode fingir que a tem.
+ *
+ * 🔴 Existe porque essa escolha estava escrita DUAS vezes com a mesma frase ao lado — no `input/keydown` (o evento
+ * sintético que ninguém assinou) e, desde a porta única do ADR-0223, na raiz, onde o controle virtual segura a tecla
+ * de todo transporte. Duas cópias de uma regra são duas hipóteses de divergir, e esta já tem um lado caro: herdar a
+ * origem de ontem responde «olhos» a uma aresta que já não é dela.
+ * 📌 O `input/keydown` recebe as duas portas pelo ctx dele, logo adopta esta quando esse ctx mudar por outra razão —
+ * mudá-lo só por isto seria uma quebra para todo cartucho que monta o teclado.
+ */
+export function markKeyFrom(code: string, source: TransportName | undefined): void {
+  if (source) markKey(code, source); else markKeyWithoutSource(code);
+}
+
 /** A outra metade. Solta nos dois, pela mesma razão. */
 export function releaseKey(code: string): void {
   keys.delete(code);
