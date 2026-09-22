@@ -1743,6 +1743,29 @@ that mounts the panel through `initSettingsAudio` passes nothing new — the pan
 📌 **A caller that only wanted `reflectTts` is unaffected**: `initSettingsAudio(...).reflectTts` still exists and still does
 the same thing, which is what the quick bar's icon calls.
 
+## BF · `core/i18n` stops reaching the browser: the page arrives through the port (ADR-0221 step 7g)
+
+**What this is.** Three changes to `core/i18n`, all of them the same decision: the module decides the language and the HOST
+does what a page does about it.
+
+| | |
+|---|---|
+| `LocalePort` | gains two OPTIONAL members: `applied(locale, tag)` — what the page does once a language is kept (`<html lang>`, re-translating the markup, dispatching `i18n:change`) — and `preferred()`, the browser's `navigator.language`. `platform/locale-host.localeHostHooks(doc, win, applyDom)` builds both |
+| `setLocale(code)` | no longer writes `<html lang>`, no longer calls `applyDom`, no longer dispatches on `window`. It calls `port.applied?.(…)`. **A host that passes no hooks gets no page effects** — which is what a node process, a worker or a second engine wants |
+| `applyDom(root)` · `initI18n(root)` | `root` is REQUIRED. It used to default to the global `document`, which is the reach this step removes |
+| `window.__i18n` | no longer set by importing `core/i18n`. `platform/locale-host.exposeI18n(win, i18n)` does it, and `createGame` calls it with the window it was given |
+
+📏 **The result, measured:** `core/i18n` goes from **three global reaches to zero**, and `platform/locale-host` — the module
+that holds them — has zero of its own, because it receives the document and the window as parameters.
+
+⚠️ **What to change.** If you call `createGame`, nothing: the root wires the hooks. If you drive `core/i18n` yourself —
+`loadLocale(store)` and then `setLocale('es')` — pass the hooks too, or the page will not follow the language:
+`loadLocale({ ...store, ...localeHostHooks(document, window, applyDom) })`. And pass the root to `applyDom`/`initI18n`.
+
+🔴 **This was caught by a case and not by reasoning**: `tests/tts.browser` asserts that `<html lang>` and the spoken language
+are the same tag, and it went red the moment the cut landed, because the shared test setup wires the port and had no hooks.
+It was right: a setup is a composition root, and this one was no longer telling the page anything.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

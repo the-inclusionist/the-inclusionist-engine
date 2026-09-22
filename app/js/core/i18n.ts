@@ -11,11 +11,26 @@ type LocaleDict = Record<string, string>;
 const AVAILABLE = ['pt', 'en', 'es'];
 const base: LocaleDict = pt;                // dicionário-base (fallback), tipado
 const DICTS: Record<string, LocaleDict> = { pt: base }; // dicionários já carregados (pt embutido)
-/** The port the chosen language is kept through (ADR-0178): `platform/storage` has this shape. */
+/**
+ * The port the chosen language is kept through (ADR-0178): `platform/storage` has this shape.
+ *
+ * 🔴 AND IT CARRIES THE BROWSER TOO, since 2026-09-22 (ADR-0221 step 7g). This module used to write
+ * `document.documentElement.lang`, dispatch on `window` and read `navigator.language` — three reaches into globals from
+ * `core`, the layer ADR-0173 defines as «what the engine IS, without a browser». The health ratchet measured them (step 7d)
+ * and the Dev chose to split rather than to move the module: the decisions stay here, the page effects arrive as two
+ * optional hooks that `platform/locale-host` builds and the composition root passes in.
+ *
+ * ⚠️ Both are OPTIONAL, and absent they mean «no page to tell»: a node test, a worker, a second engine in the same process.
+ * Before this split those three lines threw there instead.
+ */
 export interface LocalePort {
   get(key: string, fallback: string | null): string | null;
   set(key: string, value: string): unknown;
   readonly KEYS: { readonly lang: string };
+  /** What the HOST does once a language is kept: `<html lang>`, re-translating the markup, telling the page. */
+  readonly applied?: (locale: string, tag: string) => void;
+  /** The language the host prefers when nothing is stored (the browser's `navigator.language`). */
+  readonly preferred?: () => string | null;
 }
 let portaDoIdioma: LocalePort | null = null;
 /** Gives this module the port for the chosen language; the composition root calls it before `initI18n`. */
@@ -187,7 +202,7 @@ export function bcp47(code: string = locale): string { return REGION_OF[code] ??
 export function availableLocales(): string[] { return AVAILABLE.slice(); }
 
 // Aplica as traduções declarativas do HTML: [data-i18n] → textContent; [data-i18n-aria] → aria-label.
-export function applyDom(root: ParentNode = document): void {
+export function applyDom(root: ParentNode): void {
   root.querySelectorAll('[data-i18n]').forEach((el) => { const k = el.getAttribute('data-i18n'); if (k) el.textContent = t(k); });
   root.querySelectorAll('[data-i18n-aria]').forEach((el) => { const k = el.getAttribute('data-i18n-aria'); if (k) el.setAttribute('aria-label', t(k)); });
 }
@@ -210,15 +225,15 @@ export async function setLocale(code: string): Promise<void> {
   dict = await ensure(code);
   locale = code;
   porta.set(porta.KEYS.lang, code);
-  document.documentElement.lang = bcp47(code);
-  applyDom(document);
-  window.dispatchEvent(new CustomEvent('i18n:change', { detail: { locale } }));
+  // 📌 The three page effects — `<html lang>`, re-translating the markup, telling the page — in ONE call to the host, which
+  // is what keeps this module free of `document` and `window` (ADR-0173, ADR-0221 step 7g).
+  porta.applied?.(locale, bcp47(code));
 }
 
 function pickDefault(): string {
   const saved = portaDoIdioma ? portaDoIdioma.get(portaDoIdioma.KEYS.lang, null) : null;
   if (saved && AVAILABLE.includes(saved)) return saved;
-  const nav = ((navigator.language || 'pt').slice(0, 2)).toLowerCase();
+  const nav = ((portaDoIdioma?.preferred?.() || 'pt').slice(0, 2)).toLowerCase();
   return AVAILABLE.includes(nav) ? nav : 'pt';
 }
 
@@ -238,7 +253,7 @@ let pendente: Promise<void> = Promise.resolve();
  * bootar contra um DOM de mentira e não bootar. O padrão continua sendo o global, então nenhum chamador
  * muda: é a mesma regra do `applyDom` logo acima.
  */
-export function initI18n(root: ParentNode = document): string {
+export function initI18n(root: ParentNode): string {
   applyDom(root);
   const def = pickDefault();
   // `.catch` mudo de propósito: um chunk de locale que não carrega degrada para pt, e degradar é MUITO melhor
@@ -266,4 +281,6 @@ export function localeReady(): Promise<void> { return pendente; }
 
 const i18n = { t, getLocale, availableLocales, applyDom, setLocale, initI18n, localeReady, registerDict };
 export default i18n;
-if (typeof window !== 'undefined') (window as Window & { __i18n?: unknown }).__i18n = i18n; // exposto p/ teste/preview
+// 🔴 A EXPOSIÇÃO EM `window.__i18n` SAIU DAQUI (ADR-0221 passo 7g): ela era o quarto alcance a um global neste módulo, e
+// pendurar-se numa janela é trabalho de quem TEM uma. Quem o faz agora é `platform/locale-host.exposeI18n`, que a raiz
+// chama — o objecto exposto é exactamente este `default`.

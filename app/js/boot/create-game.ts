@@ -46,7 +46,8 @@
 // exige seis coisas de plataforma. Não substitui o boot do `main.js`, que tem catorze anos de ordem própria.
 // O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
-import { initI18n, dictionaryGaps, loadLocale } from '../core/i18n.js';
+import i18nObject, { initI18n, dictionaryGaps, loadLocale, applyDom } from '../core/i18n.js';
+import { localeHostHooks, exposeI18n } from '../platform/locale-host.js';
 import { inputOf, keys, markKey, releaseKey, playerEdge } from '../input/state.js';
 import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
@@ -735,7 +736,15 @@ export function createGame(o: CreateGameOptions): Engine {
   const win = listeners.win;
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
   state.loadState(store);
-  loadLocale(store);
+  /*
+   * 🔴 O IDIOMA GUARDADO **E** O NAVEGADOR (ADR-0221 passo 7g). O `core/i18n` escrevia o `<html lang>`, despachava no
+   * `window` e lia o `navigator.language` por baixo de quem o chamasse — três alcances a globais a partir de `core`, que é
+   * «o que a engine É, SEM navegador». Agora as decisões ficam lá e os efeitos de página entram por estas duas funções, que
+   * é o hospedeiro DESTA raiz a falar: o documento e a janela que ela recebeu, nunca os globais.
+   */
+  loadLocale({ ...store, ...localeHostHooks(doc as Document, win, applyDom) });
+  // 📌 E a exposição de depuração, que era a última linha do core/i18n: quem TEM uma janela é esta raiz.
+  exposeI18n(win, i18nObject);
   /*
    * ⚠️ LEITOR E NÃO INSTANTÂNEO — terceira vez que este ficheiro comete e conserta o mesmo padrão, depois do
    * `seguraTeclas` e do `players`. `declines` é da metade do JOGO (ADR-0139, errata de 2026-09-11: é o

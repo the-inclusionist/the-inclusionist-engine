@@ -888,6 +888,11 @@
     "ListenerScope",
     "createListenerScope"
   ],
+  "platform/locale-host.ts": [
+    "LocaleHostHooks",
+    "exposeI18n",
+    "localeHostHooks"
+  ],
   "platform/microphone.ts": [
     "AudioContextLike",
     "AudioNodeLike",

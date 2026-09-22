@@ -24,10 +24,10 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2093,
+      "codeLines": 2095,
       "decisionNodes": 309,
       "maxDepth": 4,
-      "fanOut": 79,
+      "fanOut": 80,
       "globalReach": 0,
       "fanIn": 1
     },
@@ -171,17 +171,12 @@
       "fanIn": 1
     },
     "core/i18n.ts": {
-      "codeLines": 109,
-      "decisionNodes": 27,
+      "codeLines": 108,
+      "decisionNodes": 26,
       "maxDepth": 2,
       "fanOut": 1,
-      "globalReach": 3,
-      "fanIn": 38,
-      "reached": [
-        "document",
-        "navigator",
-        "window"
-      ]
+      "globalReach": 0,
+      "fanIn": 38
     },
     "core/layers.ts": {
       "codeLines": 40,
@@ -789,6 +784,14 @@
       "codeLines": 45,
       "decisionNodes": 7,
       "maxDepth": 1,
+      "fanOut": 0,
+      "globalReach": 0,
+      "fanIn": 1
+    },
+    "platform/locale-host.ts": {
+      "codeLines": 17,
+      "decisionNodes": 0,
+      "maxDepth": 0,
       "fanOut": 0,
       "globalReach": 0,
       "fanIn": 1

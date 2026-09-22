@@ -41,7 +41,11 @@ const nomesDe = (lista) => lista.split(',').map((s) => s.trim().replace(/^type\s
 export function importacoesDoTexto(txt, resolver) {
   const fora = [];
   const pares = (lista, esp) => { const mod = resolver(esp); if (mod) for (const n of nomesDe(lista)) fora.push(`${mod} ${n}`); };
-  for (const m of txt.matchAll(/(?:import|export)\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g)) pares(m[1], m[2]);
+  // 🔴 O LIGAMENTO PADRÃO ANTES DAS CHAVES ESCONDIA A LISTA INTEIRA, medido em 2026-09-22: `import i18n, { initI18n,
+  // dictionaryGaps } from …` não casava, porque a expressão exigia a chaveta colada ao `import` — e os dois nomes
+  // apareceram como «sem consumidor» no instante em que a raiz passou a importar também o objecto. Um livro que perde
+  // importadores por causa da FORMA de escrever o import deixa apagar nomes que alguém usa.
+  for (const m of txt.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[A-Za-z_$][\w$]*\s*,\s*)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g)) pares(m[1], m[2]);
   for (const m of txt.matchAll(/const\s*\{([^}]*)\}\s*=\s*await\s+import\(\s*['"]([^'"]+)['"]\s*\)/g)) pares(m[1], m[2]);
   const espacos = [
     ...[...txt.matchAll(/import\s+\*\s+as\s+(\w+)\s+from\s*['"]([^'"]+)['"]/g)].map((m) => [m[1], m[2]]),

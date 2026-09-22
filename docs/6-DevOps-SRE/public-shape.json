@@ -262,7 +262,9 @@
   "core/i18n.ts": {
     "interface LocalePort": [
       "KEYS",
+      "applied?",
       "get",
+      "preferred?",
       "set"
     ]
   },
@@ -1343,6 +1345,12 @@
     "interface ListenerScope": [
       "releaseAll",
       "win"
+    ]
+  },
+  "platform/locale-host.ts": {
+    "interface LocaleHostHooks": [
+      "applied",
+      "preferred"
     ]
   },
   "platform/microphone.ts": {

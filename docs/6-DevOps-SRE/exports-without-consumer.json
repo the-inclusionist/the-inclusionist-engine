@@ -61,9 +61,6 @@
     "core/contract.ts": [
       "dimension"
     ],
-    "core/i18n.ts": [
-      "applyDom"
-    ],
     "input/gamepad.ts": [
       "PADWIZ_ANIM"
     ],
