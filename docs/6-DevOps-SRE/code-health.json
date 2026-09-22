@@ -1,0 +1,1328 @@
+{
+  "about": "ADR-0221 — the four measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID or a module is legitimately split — rewriting it to green a red build is the ratchet being unscrewed.",
+  "takenOn": "2026-09-22",
+  "ceiling": {
+    "codeLines": 187,
+    "decisionNodes": 37,
+    "maxDepth": 4,
+    "fanOut": 6
+  },
+  "exempt": {
+    "boot/create-game.ts": [
+      "fanOut"
+    ],
+    "i18n/pt.ts": [
+      "*"
+    ],
+    "i18n/en.ts": [
+      "*"
+    ],
+    "i18n/es.ts": [
+      "*"
+    ]
+  },
+  "modules": {
+    "boot/create-game.ts": {
+      "codeLines": 2185,
+      "decisionNodes": 330,
+      "maxDepth": 4,
+      "fanOut": 77,
+      "fanIn": 1
+    },
+    "consumer-quiz/main-quiz.ts": {
+      "codeLines": 227,
+      "decisionNodes": 39,
+      "maxDepth": 6,
+      "fanOut": 8,
+      "fanIn": 0
+    },
+    "core/a11y-sr.ts": {
+      "codeLines": 5,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 2
+    },
+    "core/accessible-label.ts": {
+      "codeLines": 9,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 3
+    },
+    "core/accommodation-subjects.ts": {
+      "codeLines": 27,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 3,
+      "fanIn": 1
+    },
+    "core/accommodations.ts": {
+      "codeLines": 102,
+      "decisionNodes": 17,
+      "maxDepth": 3,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "core/actions.ts": {
+      "codeLines": 75,
+      "decisionNodes": 16,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 24
+    },
+    "core/caption-duration.ts": {
+      "codeLines": 10,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 3
+    },
+    "core/collision.ts": {
+      "codeLines": 46,
+      "decisionNodes": 6,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 3
+    },
+    "core/constants.ts": {
+      "codeLines": 21,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 12
+    },
+    "core/contract.ts": {
+      "codeLines": 182,
+      "decisionNodes": 55,
+      "maxDepth": 7,
+      "fanOut": 1,
+      "fanIn": 7
+    },
+    "core/dom-query.ts": {
+      "codeLines": 4,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 17
+    },
+    "core/entity.ts": {
+      "codeLines": 83,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 2,
+      "fanIn": 21
+    },
+    "core/escape-html.ts": {
+      "codeLines": 5,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 3
+    },
+    "core/flash-threshold.ts": {
+      "codeLines": 69,
+      "decisionNodes": 18,
+      "maxDepth": 7,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "core/game-speed.ts": {
+      "codeLines": 8,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "core/genres.ts": {
+      "codeLines": 42,
+      "decisionNodes": 6,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "core/i18n.ts": {
+      "codeLines": 109,
+      "decisionNodes": 27,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 35
+    },
+    "core/layers.ts": {
+      "codeLines": 40,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "core/letter-grid.ts": {
+      "codeLines": 85,
+      "decisionNodes": 11,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "core/loop.ts": {
+      "codeLines": 21,
+      "decisionNodes": 3,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "core/password.ts": {
+      "codeLines": 95,
+      "decisionNodes": 27,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "core/ring.ts": {
+      "codeLines": 4,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "core/rng.ts": {
+      "codeLines": 28,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 3
+    },
+    "core/route.ts": {
+      "codeLines": 81,
+      "decisionNodes": 27,
+      "maxDepth": 4,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "core/run-state.ts": {
+      "codeLines": 61,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 2,
+      "fanIn": 0
+    },
+    "core/scenes.ts": {
+      "codeLines": 50,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "core/screens.ts": {
+      "codeLines": 8,
+      "decisionNodes": 3,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 5
+    },
+    "core/speech-rate.ts": {
+      "codeLines": 32,
+      "decisionNodes": 6,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 3
+    },
+    "core/state.ts": {
+      "codeLines": 239,
+      "decisionNodes": 29,
+      "maxDepth": 3,
+      "fanOut": 3,
+      "fanIn": 16
+    },
+    "core/tiles.ts": {
+      "codeLines": 48,
+      "decisionNodes": 5,
+      "maxDepth": 3,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "core/visual-state.ts": {
+      "codeLines": 9,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "core/world.ts": {
+      "codeLines": 32,
+      "decisionNodes": 18,
+      "maxDepth": 4,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "educational/activities-registry.ts": {
+      "codeLines": 58,
+      "decisionNodes": 2,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "educational/adaptive-engine.ts": {
+      "codeLines": 53,
+      "decisionNodes": 9,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "educational/segment-bar.ts": {
+      "codeLines": 41,
+      "decisionNodes": 6,
+      "maxDepth": 3,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "env.d.ts": {
+      "codeLines": 26,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "i18n/en.ts": {
+      "codeLines": 621,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "i18n/es.ts": {
+      "codeLines": 621,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "i18n/pt.ts": {
+      "codeLines": 621,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "input/default-bindings.ts": {
+      "codeLines": 109,
+      "decisionNodes": 12,
+      "maxDepth": 3,
+      "fanOut": 1,
+      "fanIn": 3
+    },
+    "input/devices.ts": {
+      "codeLines": 11,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "input/edges.ts": {
+      "codeLines": 20,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 6
+    },
+    "input/empathy-filter.ts": {
+      "codeLines": 32,
+      "decisionNodes": 6,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "input/face-map.ts": {
+      "codeLines": 159,
+      "decisionNodes": 36,
+      "maxDepth": 5,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "input/face-signals.ts": {
+      "codeLines": 44,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "input/gamepad.ts": {
+      "codeLines": 331,
+      "decisionNodes": 87,
+      "maxDepth": 11,
+      "fanOut": 11,
+      "fanIn": 1
+    },
+    "input/gaze-cycle.ts": {
+      "codeLines": 92,
+      "decisionNodes": 19,
+      "maxDepth": 5,
+      "fanOut": 2,
+      "fanIn": 2
+    },
+    "input/gaze-relative.ts": {
+      "codeLines": 112,
+      "decisionNodes": 24,
+      "maxDepth": 3,
+      "fanOut": 1,
+      "fanIn": 3
+    },
+    "input/hand-map.ts": {
+      "codeLines": 63,
+      "decisionNodes": 20,
+      "maxDepth": 3,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "input/input-cooldown.ts": {
+      "codeLines": 20,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "input/keyboard-runtime.ts": {
+      "codeLines": 91,
+      "decisionNodes": 11,
+      "maxDepth": 3,
+      "fanOut": 3,
+      "fanIn": 1
+    },
+    "input/keyboard.ts": {
+      "codeLines": 54,
+      "decisionNodes": 10,
+      "maxDepth": 4,
+      "fanOut": 4,
+      "fanIn": 3
+    },
+    "input/keydown.ts": {
+      "codeLines": 248,
+      "decisionNodes": 60,
+      "maxDepth": 3,
+      "fanOut": 7,
+      "fanIn": 2
+    },
+    "input/latch-edge.ts": {
+      "codeLines": 22,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 6,
+      "fanIn": 0
+    },
+    "input/latch-scope.ts": {
+      "codeLines": 24,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "input/latch-store.ts": {
+      "codeLines": 45,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 3
+    },
+    "input/latch-sync.ts": {
+      "codeLines": 19,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "fanIn": 2
+    },
+    "input/latch.ts": {
+      "codeLines": 13,
+      "decisionNodes": 5,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "input/pad-defaults.ts": {
+      "codeLines": 20,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "fanIn": 2
+    },
+    "input/pad-wizard.ts": {
+      "codeLines": 157,
+      "decisionNodes": 31,
+      "maxDepth": 4,
+      "fanOut": 3,
+      "fanIn": 2
+    },
+    "input/pointer-space.ts": {
+      "codeLines": 12,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "input/pointer.ts": {
+      "codeLines": 24,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "fanIn": 0
+    },
+    "input/state.ts": {
+      "codeLines": 51,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 3,
+      "fanIn": 3
+    },
+    "input/switch-scan.ts": {
+      "codeLines": 38,
+      "decisionNodes": 4,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 2
+    },
+    "input/synthetic-source.ts": {
+      "codeLines": 15,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 2
+    },
+    "input/touch-bindings.ts": {
+      "codeLines": 260,
+      "decisionNodes": 38,
+      "maxDepth": 3,
+      "fanOut": 6,
+      "fanIn": 3
+    },
+    "input/touch.ts": {
+      "codeLines": 407,
+      "decisionNodes": 68,
+      "maxDepth": 3,
+      "fanOut": 5,
+      "fanIn": 1
+    },
+    "input/transport-in-use.ts": {
+      "codeLines": 32,
+      "decisionNodes": 4,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 8
+    },
+    "input/transports.ts": {
+      "codeLines": 69,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 1,
+      "fanIn": 2
+    },
+    "input/virtual-controller.ts": {
+      "codeLines": 41,
+      "decisionNodes": 5,
+      "maxDepth": 2,
+      "fanOut": 3,
+      "fanIn": 5
+    },
+    "input/vocabulary-migration.ts": {
+      "codeLines": 54,
+      "decisionNodes": 13,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 3
+    },
+    "input/voice-map.ts": {
+      "codeLines": 70,
+      "decisionNodes": 10,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "platform/audio-ambient.ts": {
+      "codeLines": 56,
+      "decisionNodes": 13,
+      "maxDepth": 3,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "platform/audio-earcons.ts": {
+      "codeLines": 58,
+      "decisionNodes": 13,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "platform/audio-jingles.ts": {
+      "codeLines": 45,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "platform/audio-mixer.ts": {
+      "codeLines": 29,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 3
+    },
+    "platform/audio-nav.ts": {
+      "codeLines": 76,
+      "decisionNodes": 15,
+      "maxDepth": 4,
+      "fanOut": 2,
+      "fanIn": 0
+    },
+    "platform/audio-sonar.ts": {
+      "codeLines": 198,
+      "decisionNodes": 38,
+      "maxDepth": 3,
+      "fanOut": 4,
+      "fanIn": 3
+    },
+    "platform/audio.ts": {
+      "codeLines": 52,
+      "decisionNodes": 41,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 3
+    },
+    "platform/guide-intensity.ts": {
+      "codeLines": 17,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "platform/heavy-catalogue.ts": {
+      "codeLines": 122,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 3
+    },
+    "platform/heavy-mirror.ts": {
+      "codeLines": 25,
+      "decisionNodes": 5,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 0
+    },
+    "platform/heavy.ts": {
+      "codeLines": 91,
+      "decisionNodes": 25,
+      "maxDepth": 3,
+      "fanOut": 1,
+      "fanIn": 5
+    },
+    "platform/interruptible-speech.ts": {
+      "codeLines": 39,
+      "decisionNodes": 9,
+      "maxDepth": 3,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "platform/kokoro-port.ts": {
+      "codeLines": 62,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 3,
+      "fanIn": 1
+    },
+    "platform/kokoro-runtime.ts": {
+      "codeLines": 39,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 3,
+      "fanIn": 0
+    },
+    "platform/kokoro.ts": {
+      "codeLines": 110,
+      "decisionNodes": 9,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 4
+    },
+    "platform/listener-scope.ts": {
+      "codeLines": 45,
+      "decisionNodes": 7,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "platform/microphone.ts": {
+      "codeLines": 103,
+      "decisionNodes": 13,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "platform/onnx-runtime.ts": {
+      "codeLines": 40,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "fanIn": 3
+    },
+    "platform/reading-in-worker.ts": {
+      "codeLines": 57,
+      "decisionNodes": 7,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "platform/reading-model.ts": {
+      "codeLines": 172,
+      "decisionNodes": 41,
+      "maxDepth": 3,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "platform/reading-runtime.ts": {
+      "codeLines": 115,
+      "decisionNodes": 22,
+      "maxDepth": 3,
+      "fanOut": 2,
+      "fanIn": 1
+    },
+    "platform/reading-worker.ts": {
+      "codeLines": 43,
+      "decisionNodes": 6,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "platform/reading.ts": {
+      "codeLines": 115,
+      "decisionNodes": 18,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "platform/speech-recognition.ts": {
+      "codeLines": 72,
+      "decisionNodes": 13,
+      "maxDepth": 3,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "platform/speech.ts": {
+      "codeLines": 14,
+      "decisionNodes": 6,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "platform/storage.ts": {
+      "codeLines": 68,
+      "decisionNodes": 15,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 17
+    },
+    "platform/tts.ts": {
+      "codeLines": 200,
+      "decisionNodes": 38,
+      "maxDepth": 3,
+      "fanOut": 6,
+      "fanIn": 1
+    },
+    "platform/vision-loop.ts": {
+      "codeLines": 52,
+      "decisionNodes": 9,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 3
+    },
+    "platform/vision.ts": {
+      "codeLines": 125,
+      "decisionNodes": 12,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 4
+    },
+    "platform/voice-listener.ts": {
+      "codeLines": 56,
+      "decisionNodes": 12,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "fanIn": 1
+    },
+    "platform/voice-plan.ts": {
+      "codeLines": 9,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "platform/vosk-runtime.ts": {
+      "codeLines": 69,
+      "decisionNodes": 9,
+      "maxDepth": 2,
+      "fanOut": 2,
+      "fanIn": 2
+    },
+    "render/camera.ts": {
+      "codeLines": 56,
+      "decisionNodes": 4,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "render/canvas.ts": {
+      "codeLines": 12,
+      "decisionNodes": 4,
+      "maxDepth": 4,
+      "fanOut": 0,
+      "fanIn": 9
+    },
+    "render/city-tex.ts": {
+      "codeLines": 93,
+      "decisionNodes": 9,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "render/city-tiles.ts": {
+      "codeLines": 111,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "render/crt.ts": {
+      "codeLines": 41,
+      "decisionNodes": 16,
+      "maxDepth": 6,
+      "fanOut": 3,
+      "fanIn": 3
+    },
+    "render/cvd-matrices.ts": {
+      "codeLines": 38,
+      "decisionNodes": 4,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "render/draw.ts": {
+      "codeLines": 155,
+      "decisionNodes": 32,
+      "maxDepth": 4,
+      "fanOut": 10,
+      "fanIn": 0
+    },
+    "render/fx.ts": {
+      "codeLines": 96,
+      "decisionNodes": 22,
+      "maxDepth": 3,
+      "fanOut": 2,
+      "fanIn": 2
+    },
+    "render/hc-role-data.ts": {
+      "codeLines": 6,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 3
+    },
+    "render/high-contrast.ts": {
+      "codeLines": 171,
+      "decisionNodes": 37,
+      "maxDepth": 4,
+      "fanOut": 6,
+      "fanIn": 2
+    },
+    "render/low-vision-drawing.ts": {
+      "codeLines": 8,
+      "decisionNodes": 5,
+      "maxDepth": 5,
+      "fanOut": 0,
+      "fanIn": 2
+    },
+    "render/lq-filter.ts": {
+      "codeLines": 68,
+      "decisionNodes": 8,
+      "maxDepth": 3,
+      "fanOut": 1,
+      "fanIn": 3
+    },
+    "render/minimap.ts": {
+      "codeLines": 49,
+      "decisionNodes": 16,
+      "maxDepth": 5,
+      "fanOut": 2,
+      "fanIn": 0
+    },
+    "render/parallax.ts": {
+      "codeLines": 88,
+      "decisionNodes": 7,
+      "maxDepth": 2,
+      "fanOut": 3,
+      "fanIn": 0
+    },
+    "render/player-anim.ts": {
+      "codeLines": 93,
+      "decisionNodes": 26,
+      "maxDepth": 9,
+      "fanOut": 2,
+      "fanIn": 1
+    },
+    "render/port.ts": {
+      "codeLines": 43,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 10
+    },
+    "render/recycling-tex.ts": {
+      "codeLines": 97,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "render/scene-city.ts": {
+      "codeLines": 115,
+      "decisionNodes": 32,
+      "maxDepth": 8,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "render/scene-parallax.ts": {
+      "codeLines": 241,
+      "decisionNodes": 47,
+      "maxDepth": 4,
+      "fanOut": 3,
+      "fanIn": 0
+    },
+    "render/scene-sky.ts": {
+      "codeLines": 154,
+      "decisionNodes": 57,
+      "maxDepth": 6,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "render/scenery-data.ts": {
+      "codeLines": 73,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 3
+    },
+    "render/screen-pipeline.ts": {
+      "codeLines": 114,
+      "decisionNodes": 9,
+      "maxDepth": 2,
+      "fanOut": 3,
+      "fanIn": 0
+    },
+    "render/set-scenery.ts": {
+      "codeLines": 42,
+      "decisionNodes": 4,
+      "maxDepth": 2,
+      "fanOut": 2,
+      "fanIn": 0
+    },
+    "render/sprite-fx.ts": {
+      "codeLines": 15,
+      "decisionNodes": 8,
+      "maxDepth": 3,
+      "fanOut": 1,
+      "fanIn": 2
+    },
+    "render/textures.ts": {
+      "codeLines": 150,
+      "decisionNodes": 21,
+      "maxDepth": 3,
+      "fanOut": 2,
+      "fanIn": 1
+    },
+    "render/title-scene.ts": {
+      "codeLines": 66,
+      "decisionNodes": 5,
+      "maxDepth": 2,
+      "fanOut": 3,
+      "fanIn": 0
+    },
+    "render/viewports.ts": {
+      "codeLines": 103,
+      "decisionNodes": 19,
+      "maxDepth": 6,
+      "fanOut": 7,
+      "fanIn": 0
+    },
+    "render/viz-axes-labels.ts": {
+      "codeLines": 52,
+      "decisionNodes": 6,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 2
+    },
+    "render/viz-axes.ts": {
+      "codeLines": 100,
+      "decisionNodes": 16,
+      "maxDepth": 3,
+      "fanOut": 1,
+      "fanIn": 8
+    },
+    "render/viz-modes.ts": {
+      "codeLines": 33,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 5
+    },
+    "render/viz-refusal.ts": {
+      "codeLines": 17,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 2
+    },
+    "render/viz-setters.ts": {
+      "codeLines": 268,
+      "decisionNodes": 44,
+      "maxDepth": 3,
+      "fanOut": 12,
+      "fanIn": 0
+    },
+    "render/weather.ts": {
+      "codeLines": 112,
+      "decisionNodes": 28,
+      "maxDepth": 3,
+      "fanOut": 2,
+      "fanIn": 1
+    },
+    "render/wheelchair-sprites.ts": {
+      "codeLines": 37,
+      "decisionNodes": 5,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "fanIn": 1
+    },
+    "render/world-tex.ts": {
+      "codeLines": 39,
+      "decisionNodes": 11,
+      "maxDepth": 8,
+      "fanOut": 3,
+      "fanIn": 1
+    },
+    "ui/caa-sets.ts": {
+      "codeLines": 37,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "ui/camera-control.ts": {
+      "codeLines": 7,
+      "decisionNodes": 4,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "ui/changed-mark.ts": {
+      "codeLines": 35,
+      "decisionNodes": 5,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 9
+    },
+    "ui/debug-panel.ts": {
+      "codeLines": 187,
+      "decisionNodes": 15,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "ui/dom.ts": {
+      "codeLines": 15,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "fanIn": 9
+    },
+    "ui/eye-control.ts": {
+      "codeLines": 133,
+      "decisionNodes": 21,
+      "maxDepth": 2,
+      "fanOut": 9,
+      "fanIn": 3
+    },
+    "ui/face-control.ts": {
+      "codeLines": 125,
+      "decisionNodes": 25,
+      "maxDepth": 3,
+      "fanOut": 8,
+      "fanIn": 1
+    },
+    "ui/focus-trap.ts": {
+      "codeLines": 57,
+      "decisionNodes": 9,
+      "maxDepth": 2,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "ui/fonts.ts": {
+      "codeLines": 132,
+      "decisionNodes": 6,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 2
+    },
+    "ui/game-options.ts": {
+      "codeLines": 130,
+      "decisionNodes": 22,
+      "maxDepth": 3,
+      "fanOut": 3,
+      "fanIn": 1
+    },
+    "ui/gaze-overlay.ts": {
+      "codeLines": 102,
+      "decisionNodes": 26,
+      "maxDepth": 5,
+      "fanOut": 4,
+      "fanIn": 3
+    },
+    "ui/hand-control.ts": {
+      "codeLines": 104,
+      "decisionNodes": 19,
+      "maxDepth": 2,
+      "fanOut": 8,
+      "fanIn": 1
+    },
+    "ui/help-panel.ts": {
+      "codeLines": 167,
+      "decisionNodes": 24,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "ui/hud-bands.ts": {
+      "codeLines": 112,
+      "decisionNodes": 15,
+      "maxDepth": 2,
+      "fanOut": 2,
+      "fanIn": 1
+    },
+    "ui/hud.ts": {
+      "codeLines": 133,
+      "decisionNodes": 15,
+      "maxDepth": 2,
+      "fanOut": 5,
+      "fanIn": 0
+    },
+    "ui/item-announcement.ts": {
+      "codeLines": 17,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 4
+    },
+    "ui/latch-refusal.ts": {
+      "codeLines": 20,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 2
+    },
+    "ui/layout.ts": {
+      "codeLines": 69,
+      "decisionNodes": 10,
+      "maxDepth": 2,
+      "fanOut": 3,
+      "fanIn": 1
+    },
+    "ui/locale-flags.ts": {
+      "codeLines": 20,
+      "decisionNodes": 1,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "ui/loop-crash.ts": {
+      "codeLines": 24,
+      "decisionNodes": 5,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "ui/map-hub.ts": {
+      "codeLines": 78,
+      "decisionNodes": 11,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "ui/menu-items.ts": {
+      "codeLines": 4,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 3
+    },
+    "ui/menu-nav.ts": {
+      "codeLines": 278,
+      "decisionNodes": 63,
+      "maxDepth": 3,
+      "fanOut": 9,
+      "fanIn": 1
+    },
+    "ui/motion-scene.ts": {
+      "codeLines": 39,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 3,
+      "fanIn": 2
+    },
+    "ui/mount-panel.ts": {
+      "codeLines": 60,
+      "decisionNodes": 7,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "fanIn": 1
+    },
+    "ui/panel-shell.ts": {
+      "codeLines": 80,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "fanIn": 5
+    },
+    "ui/panel-widgets.ts": {
+      "codeLines": 110,
+      "decisionNodes": 10,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 6
+    },
+    "ui/pause-buttons.ts": {
+      "codeLines": 26,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "fanIn": 1
+    },
+    "ui/pause-icons.ts": {
+      "codeLines": 695,
+      "decisionNodes": 127,
+      "maxDepth": 11,
+      "fanOut": 19,
+      "fanIn": 3
+    },
+    "ui/reach-notice.ts": {
+      "codeLines": 55,
+      "decisionNodes": 8,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "ui/scan-overlay.ts": {
+      "codeLines": 30,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "fanIn": 1
+    },
+    "ui/settings-audio.ts": {
+      "codeLines": 568,
+      "decisionNodes": 112,
+      "maxDepth": 4,
+      "fanOut": 11,
+      "fanIn": 2
+    },
+    "ui/settings-caa.ts": {
+      "codeLines": 106,
+      "decisionNodes": 19,
+      "maxDepth": 2,
+      "fanOut": 5,
+      "fanIn": 0
+    },
+    "ui/settings-controls.ts": {
+      "codeLines": 184,
+      "decisionNodes": 25,
+      "maxDepth": 3,
+      "fanOut": 7,
+      "fanIn": 1
+    },
+    "ui/settings-empathy.ts": {
+      "codeLines": 95,
+      "decisionNodes": 17,
+      "maxDepth": 2,
+      "fanOut": 6,
+      "fanIn": 1
+    },
+    "ui/settings-mobility.ts": {
+      "codeLines": 248,
+      "decisionNodes": 34,
+      "maxDepth": 3,
+      "fanOut": 12,
+      "fanIn": 1
+    },
+    "ui/settings-motion.ts": {
+      "codeLines": 247,
+      "decisionNodes": 33,
+      "maxDepth": 3,
+      "fanOut": 8,
+      "fanIn": 2
+    },
+    "ui/settings-panel.ts": {
+      "codeLines": 128,
+      "decisionNodes": 23,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "ui/settings-typo.ts": {
+      "codeLines": 137,
+      "decisionNodes": 24,
+      "maxDepth": 2,
+      "fanOut": 4,
+      "fanIn": 1
+    },
+    "ui/settings-visual.ts": {
+      "codeLines": 219,
+      "decisionNodes": 31,
+      "maxDepth": 2,
+      "fanOut": 10,
+      "fanIn": 2
+    },
+    "ui/shell.ts": {
+      "codeLines": 270,
+      "decisionNodes": 43,
+      "maxDepth": 3,
+      "fanOut": 7,
+      "fanIn": 0
+    },
+    "ui/simulation-refusal.ts": {
+      "codeLines": 8,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "ui/title.ts": {
+      "codeLines": 49,
+      "decisionNodes": 7,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "fanIn": 0
+    },
+    "ui/visual-axes-panel.ts": {
+      "codeLines": 17,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 1,
+      "fanIn": 1
+    },
+    "ui/vlibras.ts": {
+      "codeLines": 31,
+      "decisionNodes": 10,
+      "maxDepth": 3,
+      "fanOut": 2,
+      "fanIn": 1
+    },
+    "ui/voice-control.ts": {
+      "codeLines": 93,
+      "decisionNodes": 9,
+      "maxDepth": 2,
+      "fanOut": 6,
+      "fanIn": 1
+    }
+  }
+}
