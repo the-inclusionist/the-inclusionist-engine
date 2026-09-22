@@ -32,7 +32,7 @@ import type { PanelShellCtx } from './panel-shell.js';
  * `escolha` três (`#cane-div`, `#tts-engine`, `#tts-voice`) e `cursor` três (`#audio-master-vol`,
  * `#navsound-master`, `#tts-vol`). Uma quarta forma entra quando um painel a exigir, e não antes.
  */
-export type ControlShape = 'interruptor' | 'escolha' | 'cursor';
+export type ControlShape = 'interruptor' | 'escolha' | 'cursor' | 'radio';
 
 export interface ControlRowSpec {
   /** O id do CONTROLE — `opt-facil`, `cane-div`. É por ele que o `settings-*` o encontra. */
@@ -148,6 +148,25 @@ function criarControle(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
     i.setAttribute('max', '100');
     i.setAttribute('step', '1');
     return i;
+  }
+  if (forma === 'radio') {
+    /*
+     * 🔴 UMA ESCOLHA NÃO É UM INTERRUPTOR, e a diferença é o que a emenda do ADR-0012 diz em tantas palavras:
+     * «THE MENU IS A CHOICE, NOT A TOGGLE […] One font is active; the others are alternatives, not switches.»
+     * Daí as três diferenças: sem a classe `switch` (que desenha uma chave de 52×28 px com bolinha, o desenho
+     * de um estado que não existe), `role="radio"` em vez de nada, e `aria-checked` em vez de `aria-pressed` —
+     * dezassete interruptores independentes anunciariam «Ligado/Desligado» para escolher UMA coisa.
+     *
+     * 📌 A quarta forma entra agora porque um painel a EXIGIU, que é a regra escrita no topo deste ficheiro. O
+     * `ui/settings-typo` é o primeiro; quem agrupar os `role="radio"` num `role="radiogroup"` é o painel, e
+     * não o kit, porque é o painel que sabe se a exclusividade é de uma secção ou do menu inteiro.
+     */
+    const r = ctx.criar('button');
+    r.className = 'mode-btn';
+    r.setAttribute('type', 'button');
+    r.setAttribute('role', 'radio');
+    r.setAttribute('aria-checked', 'false');
+    return r;
   }
   const b = ctx.criar('button');
   // `switch` é a classe que o CSS deste projeto já dá aos interruptores, e `aria-pressed` é o que diz o estado

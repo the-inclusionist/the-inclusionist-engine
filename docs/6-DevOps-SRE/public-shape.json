@@ -2654,7 +2654,7 @@
       "rotulo",
       "valores"
     ],
-    "type ControlShape": "'interruptor' | 'escolha' | 'cursor'"
+    "type ControlShape": "'interruptor' | 'escolha' | 'cursor' | 'radio'"
   },
   "ui/pause-buttons.ts": {
     "interface PauseBtnDef": [

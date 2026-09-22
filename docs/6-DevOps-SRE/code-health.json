@@ -1643,16 +1643,16 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 6
+      "fanIn": 7
     },
     "ui/panel-widgets.ts": {
-      "codeLines": 121,
-      "decisionNodes": 11,
+      "codeLines": 129,
+      "decisionNodes": 12,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 1,
       "worstFunction": 8,
-      "fanIn": 7,
+      "fanIn": 8,
       "reached": [
         "CSS"
       ]
@@ -1771,10 +1771,10 @@
       "fanIn": 1
     },
     "ui/settings-typo.ts": {
-      "codeLines": 137,
-      "decisionNodes": 24,
-      "maxDepth": 2,
-      "fanOut": 4,
+      "codeLines": 183,
+      "decisionNodes": 32,
+      "maxDepth": 3,
+      "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 7,
       "fanIn": 1

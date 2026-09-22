@@ -1818,6 +1818,32 @@ REFLECTS, which is why `labelRow` exists (rebuilding a row leaves a control in t
 button that looks alive, ADR-0106 §5). Practical consequence for a consumer: the nodes in `#caa-list` are now stable
 across renders, so a reference you hold stays valid.
 
+## BI · The font menu builds nodes, and the kit learns a fourth shape (ADR-0129, ADR-0012, issue #135)
+
+**What this is.** `ui/settings-typo` adopted the panel kit, so the function that returned the whole list as an HTML string
+leaves.
+
+| gone | in its place |
+|---|---|
+| `ui/settings-typo.typoListHTML(fontKey, installed)` | `mountTypoInside(ctx, list, fontKey, installed)` — it APPENDS nodes |
+| — | `typoRowSpec(row)`, `typoControlId(key)` — the row DATA and the id rule, ADDITIVE |
+| — | `ui/panel-widgets.ControlShape` gains `'radio'` — ADDITIVE to the union, but see below |
+
+⚠️ **The `ControlShape` union GREW, and a union that grows is only breaking in one direction.** If you accept a
+`ControlShape` you are fine; if you produce an exhaustive `switch` over it, or assign one to a narrower type of your own,
+TypeScript will now tell you about `'radio'`. 🎯 It exists because a choice is not a toggle: `'radio'` builds a `<button>`
+with `role="radio"` and `aria-checked`, WITHOUT the `switch` class — which draws a 52×28 px key with a knob, the picture of
+a state that does not exist here. That is the ADR-0012 amendment in a shape: «THE MENU IS A CHOICE, NOT A TOGGLE».
+
+⚠️ **What to change.** Mounting through `initSettingsTypo` needs nothing: the ids the page could already target
+(`#typo-list`, `#typo-preview`, `button[data-font="<key>"]`) are unchanged and the `.ctrl-row` markup is the same. Each font
+button now also carries an `id` of `typo-font-<key>` — additive. If you rendered the list yourself with `typoListHTML`, call
+`mountTypoInside(ctx, list, fontKey, installed)` with a `{ procurar, criar }` ctx.
+
+📌 **And the panel stopped rebuilding itself**, so the seventeen buttons are stable across renders and the focus no longer
+falls when a font is chosen. The `radiogroup` is still ONE across the three family headings, because the exclusivity belongs
+to the menu and not to each family.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

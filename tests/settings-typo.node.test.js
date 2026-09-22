@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // o catálogo de fontes guarda CHAVE desde o item 14
 import {
-  isSelectableFont, resolveFontKey, persistFontKey, fontCssTarget, typoGroups, typoListHTML, fontRow,
+  isSelectableFont, resolveFontKey, persistFontKey, fontCssTarget, typoGroups, fontRow, typoRowSpec, typoControlId,
 } from '../app/js/ui/settings-typo.js';
 import { FONT_BY_KEY, FONT_GROUPS, fontRole, faceScale, BASE_EM_PX } from '../app/js/ui/fonts.js';
 
@@ -223,43 +223,31 @@ describe('typoGroups — view-model das linhas', () => {
 // ⚠️ E O ESTADO VAI EM DUAS FORMAS, NENHUMA DELAS COR — é a regra que `ui/activities-menu.ts:656` já
 // carrega por escrito: `aria-checked` para quem escuta, uma marca para quem vê. O fundo amarelo do
 // `.mode-btn.is-on` continua, porque é o que a emenda pede; o que ele não pode ser é o ÚNICO sinal.
-describe('typoListHTML — uma escolha exclusiva, não oito interruptores', () => {
-  // ⚠️ `?.[0] ?? null` e não `[0]`: desde a issue #87 há faces que o menu NÃO oferece (as caligráficas), e
-// «não está lá» passou a ser uma resposta legítima a perguntar. Com o `[0]` cru, o caso que afirma a ausência
-// rebentava com `TypeError` em vez de falhar com a sua própria mensagem.
-const botaoDe = (html, chave) => html.match(new RegExp(`<button[^>]*data-font="${chave}"[^>]*>`))?.[0] ?? null;
+describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptores', () => {
+  // 📌 ESTE BLOCO DESCEU DE NÍVEL em 22/09, e é a conversão do painel para o kit que o permite. Ele lia
+  // atributos numa CADEIA de HTML; agora a lista são NÓS, então a metade que é marcação mudou-se para
+  // `settings-typo.browser.test.js`, onde há documento, e a metade que é CATÁLOGO — quem entra na lista e
+  // quem não entra — fica aqui, que é onde ela sempre pertenceu.
+  const chaves = (fontKey) => typoGroups(fontKey).flatMap((g) => g.rows.map((r) => r.key));
 
-  it('⚠️ [Right] a fonte ativa é `aria-checked=true`, e NENHUM botão é um interruptor', () => {
-    const html = typoListHTML('andika');
-    const btn = botaoDe(html, 'andika');
-    expect(btn).toContain('aria-checked="true"');
-    expect(btn, 'aria-pressed é vocabulário de INTERRUPTOR').not.toContain('aria-pressed');
-    expect(html, 'a classe `switch` desenha um interruptor (style.css:427)').not.toContain('switch');
+  it('[Interface] a linha é uma ESCOLHA, e diz isso na forma antes de virar nó nenhum', () => {
+    const spec = typoRowSpec(fontRow(FONT_BY_KEY.andika, 'atkinson'));
+    expect(spec.forma, 'aria-pressed é vocabulário de interruptor; isto é um rádio').toBe('radio');
+    expect(spec.id).toBe(typoControlId('andika'));
+    expect(spec.rotulo).toBe('Andika');
   });
 
-  it('⚠️ [Right] as outras são `aria-checked=false` — alternativas, não desligadas', () => {
-    const html = typoListHTML('andika');
-    expect(botaoDe(html, 'atkinson')).toContain('aria-checked="false"');
+  it('[Interface] a nota entra na DICA e também no nome acessível', () => {
+    // A dica vai ao rodapé pelo `fillExplain`; o nome acessível fica no botão. Quem não vê a linha ouve para
+    // quem aquela face serve sem ir caçar o rodapé — as duas metades dizem a mesma coisa em dois canais.
+    const spec = typoRowSpec(fontRow(FONT_BY_KEY.ronde, 'atkinson'));
+    expect(spec.dica, 'a ronde traz a mensagem do que instalar').toBeTruthy();
+    expect(spec.rotuloAria).toContain(spec.dica);
   });
 
-  it('[Interface] a lista é UM grupo de rádio — uma fonte activa no total, não uma por secção', () => {
-    // Sem o grupo, um leitor de tela anuncia rádios soltos e não diz «1 de 17». E o grupo é ÚNICO
-    // atravessando as três secções, porque a exclusividade é do menu inteiro e não de cada família.
-    const html = typoListHTML('andika');
-    expect((html.match(/role="radiogroup"/g) || []).length).toBe(1);
-    expect((html.match(/role="radio"/g) || []).length).toBeGreaterThan(5);
-  });
-
-  it('[Interface] o fundo amarelo FICA — a emenda pede-o por extenso', () => {
-    expect(botaoDe(typoListHTML('andika'), 'andika')).toContain('is-on');
-  });
-
-  it('⚠️ [Interface] e o estado também é VISÍVEL sem cor — a marca de seleção', () => {
-    // `.mode-btn.is-on` pinta com `var(--accent)`. Cor sozinha falha para quem não a distingue, e é a
-    // razão de `activities-menu` já emitir ☑/☐ ao lado do `aria-checked`.
-    const html = typoListHTML('andika');
-    const conteudo = html.match(/data-font="andika"[^>]*>([^<]*)</)[1];
-    expect(conteudo.trim(), 'o botão da fonte activa não mostra marca nenhuma').not.toBe('');
+  it('[Right] o id sai da CHAVE do catálogo, que é única por construção', () => {
+    const ids = typoGroups('atkinson').flatMap((g) => g.rows.map((r) => typoRowSpec(r).id));
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('⚠️ [Boundary] nenhuma CALIGRÁFICA aparece no menu — a emenda do ADR-0012, aferida', () => {
@@ -267,16 +255,22 @@ const botaoDe = (html, chave) => html.match(new RegExp(`<button[^>]*data-font="$
     // atividades, em botões próprios. Oferecê-las aqui dá-lhe a matéria como obstáculo em todo lugar onde
     // ela só quer navegar o menu — e uma criança que escolhesse `ufmag` ficava com a interface inteira em
     // gótico, incluindo o menu de onde teria de sair.
-    const html = typoListHTML('atkinson');
+    const oferecidas = chaves('atkinson');
     for (const k of ['pinyon', 'ufmag']) {
-      expect(botaoDe(html, k), `a caligráfica ${k} voltou ao menu`).toBe(null);
+      expect(oferecidas, `a caligráfica ${k} voltou ao menu`).not.toContain(k);
     }
     // E o contrapeso: `pwbr` está no MESMO grupo e é a face geral dele (ADR-0176) — tirá-la seria cortar pelo grupo, não pelo papel.
-    expect(botaoDe(html, 'pwbr'), 'a Playwrite BR saiu do menu por estar no grupo `hand`').not.toBe(null);
+    expect(oferecidas, 'a Playwrite BR saiu do menu por estar no grupo `hand`').toContain('pwbr');
   });
 
-  it('[Error] chave desconhecida não derruba a geração (nenhuma linha fica selected)', () => {
-    expect(() => typoListHTML('nao-existe')).not.toThrow();
-    expect(typoListHTML('nao-existe')).not.toContain('is-on');
+  it('[Right] uma face da lista é a escolhida, e SÓ uma', () => {
+    const escolhidas = typoGroups('andika').flatMap((g) => g.rows.filter((r) => r.selected));
+    expect(escolhidas.map((r) => r.key)).toEqual(['andika']);
+  });
+
+  it('[Error] chave desconhecida não derruba a lista — ela sai inteira, sem nenhuma escolhida', () => {
+    expect(() => typoGroups('nao-existe')).not.toThrow();
+    expect(chaves('nao-existe').length).toBe(chaves('atkinson').length);
+    expect(typoGroups('nao-existe').flatMap((g) => g.rows.filter((r) => r.selected))).toHaveLength(0);
   });
 });

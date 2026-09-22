@@ -94,6 +94,8 @@ export function isSelectableFont(k: string, instalada?: (familia: string) => boo
 export { resolveFontKey, persistFontKey } from './fonts.js';
 import { resolveFontKey, persistFontKey } from './fonts.js';
 import type { DomQuery } from '../core/dom-query.js';
+import { controlRow, labelRow, sectionHeader, type ControlRowSpec } from './panel-widgets.js';
+import type { PanelShellCtx } from './panel-shell.js';
 
 export interface FontCssTarget {
   /** Value written to root.dataset.fonte. */
@@ -188,37 +190,102 @@ export function typoGroups(fontKey: string, instalada?: (familia: string) => boo
 const MARCA_ESCOLHIDA = '●';
 const MARCA_ALTERNATIVA = '○';
 
-function rowHTML(row: TypoRow): string {
-  const noteHTML = row.note
-    ? `<br><span class="opt-hint" style="margin:0;font-family:var(--font)">${row.note}</span>`
-    : '';
-  const ariaLabel = row.fam + (row.note ? ' — ' + row.note : '');
-  return (
-    `<div class="ctrl-row"><span style="font-family:'${row.fam}'"><strong>${row.fam}</strong>${noteHTML}</span>` +
-    `<button class="mode-btn${row.selected ? ' is-on' : ''}" data-font="${row.key}" type="button" role="radio"` +
-    `${row.disabled ? ' disabled' : ''} aria-checked="${row.selected}" aria-label="${ariaLabel}">` +
-    `${row.selected ? MARCA_ESCOLHIDA : MARCA_ALTERNATIVA}</button></div>`
-  );
+/** O id do botão de uma face. Sai da CHAVE do catálogo, que é única por construção (`FONT_BY_KEY`). */
+export const typoControlId = (key: string): string => `typo-font-${key}`;
+
+/**
+ * O que uma linha de fonte DIZ, antes de existir nó nenhum — a forma que o kit consome.
+ *
+ * ⚠️ `forma: 'radio'` e não `interruptor`, e isso foi decidido em 2026-09-07: eram dezassete interruptores
+ * independentes anunciando «Ligado»/«Desligado» para escolher UMA fonte. A emenda do ADR-0012 diz o contrário
+ * em tantas palavras: «THE MENU IS A CHOICE, NOT A TOGGLE […] One font is active; the others are
+ * alternatives, not switches.»
+ *
+ * 📌 A nota entra na DICA — que o `fillExplain` leva ao rodapé — e TAMBÉM no nome acessível, porque quem não
+ * vê a linha precisa de ouvir para quem aquela face serve sem ir caçar o rodapé.
+ */
+export function typoRowSpec(row: TypoRow): ControlRowSpec {
+  return {
+    id: typoControlId(row.key),
+    rotulo: row.fam,
+    ...(row.note ? { dica: row.note } : {}),
+    forma: 'radio',
+    rotuloAria: row.fam + (row.note ? ' — ' + row.note : ''),
+  };
 }
 
 /**
- * Full innerHTML for #typo-list, given the currently selected key. Pure string building — no DOM.
+ * Monta a lista UMA VEZ, dentro de um grupo de rádio só. Chamada de novo, REETIQUETA em vez de reconstruir.
  *
- * ⚠️ É UM GRUPO DE RÁDIO SÓ, ATRAVESSANDO AS TRÊS SECÇÕES, e isso é a decisão e não um detalhe de
- * marcação: a exclusividade é do MENU inteiro — uma fonte activa no total —, não de cada família. Três
- * grupos diriam a quem escuta que dá para ter uma sans E uma serif ao mesmo tempo.
+ * ⚠️ É UM GRUPO DE RÁDIO SÓ, ATRAVESSANDO AS TRÊS SECÇÕES, e isso é a decisão e não um detalhe de marcação: a
+ * exclusividade é do MENU inteiro — uma fonte activa no total —, não de cada família. Três grupos diriam a
+ * quem escuta que dá para ter uma sans E uma serif ao mesmo tempo. Por isso o `radiogroup` é do PAINEL e não
+ * do kit: só o painel sabe onde a exclusividade acaba.
  *
- * ⚠️ E ISTO DEIXOU DE SER UM INTERRUPTOR EM 2026-09-07. Era `class="mode-btn switch"` + `aria-pressed` +
- * `toggleLabel()`, ou seja dezassete interruptores independentes anunciando «Ligado»/«Desligado» para
- * escolher UMA fonte. A emenda do ADR-0012 diz o contrário em tantas palavras: «THE MENU IS A CHOICE, NOT
- * A TOGGLE […] One font is active; the others are alternatives, not switches.» O `switch` do
- * `style.css:427` desenha uma chave de 52×28 px com bolinha — era o desenho de um estado que não existe.
+ * 🔴 E O RÓTULO DE CADA LINHA É DESENHADO NA PRÓPRIA FACE, que é o comportamento central deste menu: uma lista
+ * de dezassete NOMES não deixa ninguém escolher uma tipografia, e quem mais precisa de escolher é quem lê mal
+ * a face que está a ver. A nota ao lado fica na face de LEITURA de propósito — ela explica a escolha, não é a
+ * escolha. (Quando há `fillExplain`, ela nem chega a ficar na linha: vai para o rodapé.)
  */
-export function typoListHTML(fontKey: string, instalada?: (familia: string) => boolean): string {
-  const grupos = typoGroups(fontKey, instalada)
-    .map((group) => `<h3 class="panel-sub">${group.g}</h3>` + group.rows.map(rowHTML).join(''))
-    .join('');
-  return `<div role="radiogroup" aria-label="${t('font.grupo.rotulo')}">${grupos}</div>`;
+export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
+  fontKey: string, instalada?: (familia: string) => boolean): void {
+  let radios = list.querySelector<HTMLElement>('[role="radiogroup"]');
+  if (!radios) {
+    radios = ctx.criar('div');
+    radios.setAttribute('role', 'radiogroup');
+    list.appendChild(radios);
+  }
+  radios.setAttribute('aria-label', t('font.grupo.rotulo'));
+  for (const group of typoGroups(fontKey, instalada)) {
+    const head = radios.querySelector(`[data-typo-group="${group.g}"]`)
+      ? null
+      : sectionHeader(ctx, group.g, '', group.rows.length);
+    if (head) {
+      head.setAttribute('data-typo-group', group.g);
+      radios.appendChild(head);
+    }
+    for (const row of group.rows) {
+      const spec = typoRowSpec(row);
+      const old = ctx.procurar('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
+      if (old) { labelRow(old, spec); dressRow(old, row); continue; }
+      const { linha, controle } = controlRow(ctx, spec);
+      controle.dataset.font = row.key;
+      dressRow(linha, row);
+      radios.appendChild(linha);
+    }
+  }
+}
+
+/** O que o kit não sabe sobre uma face: a própria face no rótulo, e a nota na face de leitura. */
+function dressRow(where: HTMLElement, row: TypoRow): void {
+  const label = where.querySelector<HTMLElement>(':scope > span');
+  if (label) label.style.fontFamily = `'${row.fam}'`;
+  const note = where.querySelector<HTMLElement>('.opt-hint');
+  if (note) { note.style.fontFamily = 'var(--font)'; note.style.margin = '0'; }
+}
+
+/**
+ * Reflecte a escolha sobre as linhas que já existem: a marca, o estado falado e a trava.
+ *
+ * 🔴 A MARCA ● / ○ EXISTE PORQUE COR NÃO É ESTADO. O `.mode-btn.is-on` pinta o botão com `var(--accent)` — o
+ * fundo amarelo que a emenda do ADR-0012 pede por extenso —, mas quem não distingue a cor não vê estado
+ * nenhum. É a mesma razão pela qual o menu de actividades já emite ☑/☐ ao lado do `aria-checked`: «o estado em
+ * DUAS formas, e nenhuma delas é cor».
+ *
+ * 📌 A TRAVA é reflectida e não construída, porque ela pode MUDAR: a `ronde` só fica disponível no instante em
+ * que o adulto instala uma das faces que a mensagem nomeia (ADR-0012, a palavra «enquanto»).
+ */
+function reflectTypo(list: HTMLElement, fontKey: string, instalada?: (familia: string) => boolean): void {
+  // Percorre o que EXISTE na lista, e não o catálogo: reflectir é sobre os nós que já lá estão, e perguntar
+  // ao catálogo outra vez seria montar a lista uma segunda vez só para a ler.
+  for (const b of list.querySelectorAll<HTMLButtonElement>('button[data-font]')) {
+    const it = FONT_BY_KEY[b.dataset.font ?? ''];
+    const escolhida = b.dataset.font === fontKey;
+    b.classList.toggle('is-on', escolhida);
+    b.setAttribute('aria-checked', String(escolhida));
+    b.textContent = escolhida ? MARCA_ESCOLHIDA : MARCA_ALTERNATIVA;
+    b.disabled = !it || !faceAvailable(it, instalada);
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -227,6 +294,16 @@ export function typoListHTML(fontKey: string, instalada?: (familia: string) => b
 
 export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
   let fontKey = resolveFontKey(ctx.store);
+
+  /*
+   * 📌 O CTX DO KIT SAI DO PRÓPRIO NÓ DA LISTA: `ownerDocument` é o documento onde ela VIVE, que é onde as
+   * linhas têm de nascer. Assim o alcance global deste módulo continua zero (ADR-0221 passo 7d) e
+   * `SettingsTypoCtx`, que é superfície publicada, não ganha membro obrigatório (ADR-0172).
+   */
+  const panelCtx = (list: HTMLElement): PanelShellCtx => ({
+    procurar: (sel) => ctx.$<HTMLElement>(sel),
+    criar: (tag) => list.ownerDocument.createElement(tag),
+  });
 
   function setFont(k: string, announce = false): void {
     const it = FONT_BY_KEY[k];
@@ -257,18 +334,29 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     if (announce) ctx.srSay(t('sr.typo.font', { fam: it.fam }));
   }
 
+  /*
+   * As escutas ligam-se UMA VEZ, na lista, por delegação — e é a montagem única que o permite. Antes cada
+   * render refazia os nós, logo cada render religava as dezassete; agora a lista é a mesma e o clique sobe
+   * dela. ⚠️ Um botão `disabled` não emite clique, então a trava continua a ser o que protege a face que o
+   * aparelho não tem — e não um guarda aqui, que seria a segunda resposta à mesma pergunta.
+   */
+  let listening = false;
+
   function render(): void {
     const el = ctx.$<HTMLElement>('#typo-list');
     if (!el) return;
-    el.innerHTML = typoListHTML(fontKey, ctx.fonteInstalada);
-    el.querySelectorAll<HTMLButtonElement>('button[data-font]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const k = b.dataset.font;
+    mountTypoInside(panelCtx(el), el, fontKey, ctx.fonteInstalada);
+    reflectTypo(el, fontKey, ctx.fonteInstalada);
+    if (!listening) {
+      listening = true;
+      el.addEventListener('click', (ev) => {
+        const b = (ev.target as HTMLElement | null)?.closest<HTMLElement>('button[data-font]');
+        const k = b?.dataset.font;
         if (!k) return;
         setFont(k, true);
         render();
       });
-    });
+    }
     const cur = FONT_BY_KEY[fontKey];
     const pv = ctx.$<HTMLElement>('#typo-preview');
     if (pv && cur) pv.style.fontFamily = `'${cur.fam}'`;

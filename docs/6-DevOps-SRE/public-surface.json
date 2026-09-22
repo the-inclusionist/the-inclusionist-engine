@@ -1908,8 +1908,10 @@
     "fontRow",
     "initSettingsTypo",
     "isSelectableFont",
+    "mountTypoInside",
+    "typoControlId",
     "typoGroups",
-    "typoListHTML"
+    "typoRowSpec"
   ],
   "ui/settings-visual.ts": [
     "CONTRAST_LABELS",

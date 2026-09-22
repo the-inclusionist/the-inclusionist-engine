@@ -116,7 +116,6 @@ const SEGUROS = [
   // `faceAvailable` (ADR-0012 «enquanto nenhuma estiver presente»). A entrada continua SEGURA pela mesma
   // razão — o conteúdo sai do catálogo da engine, não de dado de fora — e o detector é uma FUNÇÃO, que não
   // chega a virar markup.
-  ['ui/settings-typo.ts', 'el.innerHTML = typoListHTML(fontKey, ctx.fonteInstal', 'as 19 fontes são tabela da engine; os grupos e rótulos saem dela'],
   ['ui/settings-audio.ts', 'el.innerHTML = catsListHTML(', '⚠️ DECIDIDO 2026-09-06 pelo Dev: as categorias de áudio são DA ENGINE. `c.lbl` entra em dois `aria-label`, e `ctx.audioCats` é injetado — mas categoria de áudio é vocabulário de MISTURA (voz, guia, sonar, efeitos), não conteúdo de jogo. Um jogo que precisasse de uma categoria própria estaria a pedir um canal de mixer novo, o que é decisão de arquitetura e entraria por um caminho declarado, com o escape junto'],
 ];
 

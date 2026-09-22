@@ -4,7 +4,7 @@
 // está coberta em settings-typo.node.test.js. Modelo: tests/a11y-sr.browser.test.js, tests/debug-panel.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
 import cssDoJogo from '../app/css/style.css?raw'; // a folha do jogo, para o caso do espaçamento medir o computado
-import { initSettingsTypo } from '../app/js/ui/settings-typo.js';
+import { initSettingsTypo, mountTypoInside } from '../app/js/ui/settings-typo.js';
 
 // Fake de platform/storage.ts (mesma forma get/set), em memória.
 function fakeStore(seed = {}) {
@@ -261,6 +261,39 @@ describe('ui/settings-typo', () => {
     expect(comNota, 'alguma linha tem nota — senão este caso não mede nada').toBeTruthy();
     const nota = comNota.querySelector('.opt-hint').textContent;
     expect(comNota.querySelector('button').getAttribute('aria-label')).toContain(nota);
+  });
+
+  it('[Many] montar duas vezes REETIQUETA em vez de duplicar — e os nós ficam os MESMOS', () => {
+    // ⚠️ A razão não é economia: refazer a linha deixaria um controle no documento e SEM escuta — um botão
+    // morto com aparência de vivo (ADR-0106 §5). A escuta deste painel liga-se uma vez, na lista, por
+    // delegação; se os nós trocassem, ela sobreviveria, mas o foco cairia a cada clique.
+    const kit = { procurar: (s) => document.querySelector(s), criar: (tag) => document.createElement(tag) };
+    const lista = $('#typo-list');
+    mountTypoInside(kit, lista, 'atkinson');
+    const antes = lista.querySelectorAll('.ctrl-row').length;
+    const primeiro = lista.querySelector('button[data-font]');
+    mountTypoInside(kit, lista, 'andika');
+    expect(lista.querySelectorAll('.ctrl-row')).toHaveLength(antes);
+    expect(lista.querySelectorAll('[role="radiogroup"]')).toHaveLength(1);
+    expect(lista.querySelector('button[data-font]'), 'o MESMO nó, ou a escuta perde o foco').toBe(primeiro);
+  });
+
+  it('⚠️ [Right] nenhum botão da lista é um INTERRUPTOR — o vocabulário todo é de escolha', () => {
+    // 📌 Desceu do `settings-typo.node.test.js` em 22/09, quando a lista deixou de ser cadeia e passou a ser
+    // nós: a pergunta é a mesma, o sítio onde ela se responde é que mudou. `aria-pressed` é vocabulário de
+    // interruptor, e a classe `switch` desenha uma chave de 52×28 px com bolinha — o desenho de um estado
+    // que não existe aqui (emenda do ADR-0012).
+    const api = initSettingsTypo(fullCtx());
+    api.render();
+    const lista = $('#typo-list');
+    const activa = lista.querySelector(`button[data-font="${api.getFontKey()}"]`);
+    expect(activa.getAttribute('aria-checked')).toBe('true');
+    for (const b of lista.querySelectorAll('button[data-font]')) {
+      expect(b.hasAttribute('aria-pressed'), b.dataset.font).toBe(false);
+      expect(b.classList.contains('switch'), b.dataset.font).toBe(false);
+      expect(b.getAttribute('role')).toBe('radio');
+      if (b !== activa) expect(b.getAttribute('aria-checked'), b.dataset.font).toBe('false');
+    }
   });
 
   it('🔴 [Right] as três famílias anunciam-se, e o grupo de rádio é UM só através delas', () => {
