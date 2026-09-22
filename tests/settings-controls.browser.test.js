@@ -83,6 +83,39 @@ describe('ui/settings-controls', () => {
     expect($('#ctrl-list').innerHTML).toContain('<kbd>A</kbd>'); // KeyA do jogador 0 -> "A"
   });
 
+  it('🔴 [Boundary] uma posição INVENTADA não inicia captura — e o comentário já dizia porquê', () => {
+    // O módulo escreve, ao lado do guarda: «uma captura iniciada sobre uma posição inventada gravaria uma
+    // tecla numa chave que transporte nenhum lê — a criança carregaria a tecla nova e nada aconteceria».
+    // O valor vem de um ATRIBUTO do DOM, e desde a #118 o esquema só aceita as catorze posições.
+    //
+    // ⚠️ HONESTIDADE SOBRE O QUE ESTE CASO PRENDE, medido por sonda em 22/09: há DOIS guardas neste caminho —
+    // o `isAction` e a falta de PALAVRA para uma acção que o jogo não declara — e apagar qualquer um deles
+    // sozinho ainda passa aqui. Ele prende o COMPORTAMENTO, não um guarda específico, e isso é o que se pode
+    // afirmar: a mutação do `isAction` sozinha é EQUIVALENTE hoje. Ela deixa de ser no dia em que uma posição
+    // fora do esquema tiver palavra — e é aí que este caso passa a segurar o primeiro guarda sozinho.
+    const ctx = buildCtx();
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    const falso = $('#ctrl-list').querySelector('button[data-act]');
+    const rotuloAntes = falso.textContent;
+    falso.dataset.act = 'action99';
+    falso.click();
+    expect(api.isCapturing(), 'a captura começou sobre uma posição que não existe').toBe(false);
+    expect(ctx.alerted, 'nada foi anunciado: não há acção a mapear').toHaveLength(0);
+    expect(falso.textContent, 'o botão não pode dizer «aperte» sem estar a capturar').toBe(rotuloAntes);
+  });
+
+  it('🔴 [Right] a linha «você edita o SEU controle» aparece — um painel que não diz de quem é confunde', () => {
+    // Achado por sonda em 22/09: manter o `#ctrl-players` escondido passava verde. Num jogo de dois, quem
+    // abre este menu precisa de saber que está a mexer no próprio controle e não no do colega — sem isso a
+    // criança remapeia, testa no controle errado e conclui que o menu não funciona.
+    const ctx = buildCtx();
+    initSettingsControls(ctx).render(0);
+    const linha = $('#ctrl-players');
+    expect(linha.hidden, 'a linha existe no documento mas ninguém a vê').toBe(false);
+    expect(linha.textContent).toContain('2 jogadores');
+  });
+
   it('[Right] ⚠️ a PALAVRA DO JOGO entra por texto, nunca por markup (issue #106)', () => {
     // `acoesDoJogo()` devolve os rótulos do PRESET — as palavras deste jogo —, e um jogo vive hoje noutro
     // repositório e consome a engine como pacote (ADR-0083). Esta árvore não revê esse texto.
