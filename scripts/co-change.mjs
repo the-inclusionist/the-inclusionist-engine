@@ -30,8 +30,18 @@ const git = (...a) => execFileSync('git', a, { encoding: 'utf8', maxBuffer: 1 <<
  */
 export const GROUPS = {
   transports: {
-    what: 'the four transports that should speak one virtual controller (ADR-0111 erratum)',
-    landed: 'de2e77a', // `input/virtual-controller` landed here
+    what: 'the transports that should speak one virtual controller (ADR-0111 erratum, ADR-0223)',
+    /*
+     * 🔴 THE LINE MOVED ON 2026-09-22, and the reason is that the abstraction did. `de2e77a` is where
+     * `input/virtual-controller` was BORN, and reading against it measured a door that four of six transports did
+     * not use: the touch pad wrote keys, the gamepad raised edges, and the window listener delivered on its own.
+     * 📏 What that line said before it moved, so nothing is lost: 20 of 55 commits before (36%), 2 of 7 after (29%),
+     * and the script itself called the window too short.
+     * The line is now where the door became SINGLE — the keyboard half, after which `deliver` is called from one
+     * place. ⚠️ And the first readings after it will be pessimistic by construction: the three commits of the
+     * unification touch several of these files at once, which is exactly what the abstraction exists to stop.
+     */
+    landed: '04b61db6', // one `deliver`, called from one place (ADR-0223 item 2)
     files: ['input/keydown.ts', 'input/gamepad.ts', 'input/touch-bindings.ts', 'input/touch.ts'],
   },
   panels: {
