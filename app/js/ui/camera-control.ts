@@ -5,12 +5,15 @@
 // mode at a time holds by construction (ADR-0197). The ones turning off are told first, so a camera is let go before the next mode asks.
 
 import type { CameraControl } from '../core/state.js';
+/*
+ * 🔴 A FORMA DE UM CONTROLE PASSOU A TER NOME PRÓPRIO (ADR-0221 passo 7f): era o `CameraModeControl`, declarado aqui, e os
+ * quatro membros da família — olhos, rosto, mãos e voz — tinham a mesma forma sem nunca o dizerem. O `SwitchableControl` é
+ * essa forma, e a VOZ também a declara: ela responde ao 👄 e não ao 📷, logo o nome da família não podia ser «câmera».
+ */
+import type { SwitchableControl } from './switchable-control.js';
 
-/** What a camera control needs from the root: be on, or let everything go. */
-export interface CameraModeControl { apply(on: boolean): Promise<void> }
-
-export function followCameraMode(mode: CameraControl, controls: { readonly [M in Exclude<CameraControl, 'off'>]: CameraModeControl }): void {
-  const all = Object.entries(controls) as [Exclude<CameraControl, 'off'>, CameraModeControl][];
+export function followCameraMode(mode: CameraControl, controls: { readonly [M in Exclude<CameraControl, 'off'>]: SwitchableControl }): void {
+  const all = Object.entries(controls) as [Exclude<CameraControl, 'off'>, SwitchableControl][];
   for (const [m, c] of all) if (m !== mode) void c.apply(false);
   for (const [m, c] of all) if (m === mode) void c.apply(true);
 }

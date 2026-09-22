@@ -21,6 +21,7 @@ import type { VirtualController } from '../input/virtual-controller.js';
 import { loadFaceTracker, openCamera, closeCamera, type FaceTracker, type FaceTrackerLoad, type VisionDeps } from '../platform/vision.js';
 import { createVisionLoop, type VisionLoopDeps, type LoopHealth } from '../platform/vision-loop.js';
 import { drawGazeOverlay } from './gaze-overlay.js';
+import type { SwitchableControl } from './switchable-control.js';
 
 /** A camera picture the tracker can read. */
 export interface CameraFeed { readonly frame: unknown; ready(): boolean; close(): void }
@@ -44,10 +45,9 @@ export interface EyeControlDeps {
   readonly openFeed?: () => Promise<CameraFeed>;
 }
 
-export interface EyeControl {
-  /** Follow the 📷: on at its eyes position starts the camera and the drawing; off lets everything go. */
-  apply(on: boolean): Promise<void>;
-}
+// 📌 A FORMA É A DA FAMÍLIA (ADR-0221 passo 7f): este módulo declarava um EyeControl que era a mesma linha dos outros três.
+// O que ele devolve É um SwitchableControl — seguir o 📷: ligado na posição dos olhos abre a câmera e o desenho, desligado
+// solta tudo.
 
 export function videoFeed(doc: Document, media: MediaDevices): () => Promise<CameraFeed> {
   return async () => {
@@ -59,7 +59,7 @@ export function videoFeed(doc: Document, media: MediaDevices): () => Promise<Cam
   };
 }
 
-export function createEyeControl(d: EyeControlDeps): EyeControl {
+export function createEyeControl(d: EyeControlDeps): SwitchableControl {
   const loadTracker = d.loadTracker ?? loadFaceTracker;
   const openFeed = d.openFeed ?? videoFeed(d.doc, d.doc.defaultView!.navigator.mediaDevices);
   const said = new Set<string>();
@@ -154,7 +154,7 @@ export function createEyeControl(d: EyeControlDeps): EyeControl {
   };
 
   return {
-    async apply(next) {
+    async apply(next: boolean) {
       on = next;
       if (starting) await starting;
       if (!on) { if (running) stop(); return; }

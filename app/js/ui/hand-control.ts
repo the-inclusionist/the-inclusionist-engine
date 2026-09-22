@@ -16,6 +16,7 @@ import { loadHandTracker, type HandTracker, type HandTrackerLoad, type VisionDep
 import { createVisionLoop, type VisionLoopDeps, type LoopHealth } from '../platform/vision-loop.js';
 import { gazeFontPx } from './gaze-overlay.js';
 import type { CameraFeed } from './eye-control.js';
+import type { SwitchableControl } from './switchable-control.js';
 
 export interface HandControlDeps {
   readonly doc: Document;
@@ -31,9 +32,9 @@ export interface HandControlDeps {
   readonly loadTracker?: (deps: VisionDeps) => Promise<HandTrackerLoad>;
 }
 
-export interface HandControl { apply(on: boolean): Promise<void> }
+// 📌 A FORMA É A DA FAMÍLIA (ADR-0221 passo 7f): o HandControl era a mesma linha dos outros três, escrita uma quarta vez.
 
-export function createHandControl(d: HandControlDeps): HandControl {
+export function createHandControl(d: HandControlDeps): SwitchableControl {
   const loadTracker = d.loadTracker ?? loadHandTracker;
   const said = new Set<string>();
   const once = (kind: string, line: string, spoken: string): void => { if (!said.has(kind)) { said.add(kind); d.report(line); } d.alert(spoken); };

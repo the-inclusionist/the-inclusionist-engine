@@ -19,6 +19,7 @@ import { voiceGrammar, createVoiceCommands, type VoiceCommands } from '../input/
 import type { VirtualController } from '../input/virtual-controller.js';
 import { loadVoskRuntime, type VoskDeps, type VoskLoad } from '../platform/vosk-runtime.js';
 import { startVoiceListening, type VoiceListener, type VoiceListenerDeps } from '../platform/voice-listener.js';
+import type { SwitchableControl } from './switchable-control.js';
 
 /** How long a spoken position stays pressed. The same pulse the scan uses: long enough for a game to see a press and a release. */
 export const VOICE_PULSE_MS = 400;
@@ -40,8 +41,11 @@ export interface VoiceControlDeps {
   readonly listen?: (deps: VoiceListenerDeps) => Promise<VoiceListener>;
 }
 
-export interface VoiceControl {
-  apply(on: boolean): Promise<void>;
+/**
+ * 🎯 A VOZ ESTÁ NA FAMÍLIA E NÃO NO CICLO DA CÂMERA (ADR-0221 passo 7f): ela responde ao 👄 e não ao 📷, e tem um método a
+ * mais. Declarar a família é o que faz o compilador ver que ela se liga e desliga como as outras três.
+ */
+export interface VoiceControl extends SwitchableControl {
   /** The open menu changed: the words it shows join the grammar, or leave it. */
   refreshGrammar(): void;
 }

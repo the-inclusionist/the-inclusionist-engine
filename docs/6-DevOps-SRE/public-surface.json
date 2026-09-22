@@ -1501,7 +1501,6 @@
     "caaReason"
   ],
   "ui/camera-control.ts": [
-    "CameraModeControl",
     "followCameraMode"
   ],
   "ui/changed-mark.ts": [
@@ -1530,13 +1529,11 @@
   ],
   "ui/eye-control.ts": [
     "CameraFeed",
-    "EyeControl",
     "EyeControlDeps",
     "createEyeControl",
     "videoFeed"
   ],
   "ui/face-control.ts": [
-    "FaceControl",
     "FaceControlDeps",
     "createFaceControl"
   ],
@@ -1596,7 +1593,6 @@
     "whatRegionShows"
   ],
   "ui/hand-control.ts": [
-    "HandControl",
     "HandControlDeps",
     "createHandControl"
   ],
@@ -1965,6 +1961,9 @@
     "Refusal",
     "showsEvenWhenUnavailable",
     "simulationRefusal"
+  ],
+  "ui/switchable-control.ts": [
+    "SwitchableControl"
   ],
   "ui/title.ts": [
     "TITLE_MENU_IDS",

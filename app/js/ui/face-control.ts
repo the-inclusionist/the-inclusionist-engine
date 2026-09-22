@@ -18,6 +18,7 @@ import { loadFaceTracker, type FaceTracker, type FaceTrackerLoad, type VisionDep
 import { createVisionLoop, type VisionLoopDeps, type LoopHealth } from '../platform/vision-loop.js';
 import { gazeFontPx } from './gaze-overlay.js';
 import type { CameraFeed } from './eye-control.js';
+import type { SwitchableControl } from './switchable-control.js';
 
 export interface FaceControlDeps {
   readonly doc: Document;
@@ -33,7 +34,8 @@ export interface FaceControlDeps {
   readonly loadTracker?: (deps: VisionDeps) => Promise<FaceTrackerLoad>;
 }
 
-export interface FaceControl { apply(on: boolean): Promise<void> }
+// 📌 A FORMA É A DA FAMÍLIA (ADR-0221 passo 7f): este módulo deixou de declarar um `FaceControl` próprio, que era a mesma
+// linha escrita numa quarta cópia. O que ele devolve É um `SwitchableControl`, e agora o compilador vê isso.
 
 const REST_MS = 3000;
 
@@ -59,7 +61,7 @@ function draw(ctx: CanvasRenderingContext2D, w: number, h: number, restLeftMs: n
   }
 }
 
-export function createFaceControl(d: FaceControlDeps): FaceControl {
+export function createFaceControl(d: FaceControlDeps): SwitchableControl {
   const loadTracker = d.loadTracker ?? loadFaceTracker;
   const said = new Set<string>();
   const once = (kind: string, line: string, spoken: string): void => { if (!said.has(kind)) { said.add(kind); d.report(line); } d.alert(spoken); };

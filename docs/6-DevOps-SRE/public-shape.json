@@ -2266,11 +2266,6 @@
     ],
     "type CaaTier": "| 'bundled' | 'fetched' | 'negotiating'"
   },
-  "ui/camera-control.ts": {
-    "interface CameraModeControl": [
-      "apply"
-    ]
-  },
   "ui/debug-panel.ts": {
     "interface CharacterSample": [
       "base",
@@ -2324,9 +2319,6 @@
       "report",
       "say",
       "turnOff"
-    ],
-    "interface EyeControl": [
-      "apply"
     ]
   },
   "ui/face-control.ts": {
@@ -2342,9 +2334,6 @@
       "report",
       "say",
       "turnOff"
-    ],
-    "interface FaceControl": [
-      "apply"
     ]
   },
   "ui/focus-trap.ts": {
@@ -2413,9 +2402,6 @@
       "report",
       "say",
       "turnOff"
-    ],
-    "interface HandControl": [
-      "apply"
     ]
   },
   "ui/help-panel.ts": {
@@ -3154,6 +3140,11 @@
   "ui/simulation-refusal.ts": {
     "type Refusal": "RecusaDeRender"
   },
+  "ui/switchable-control.ts": {
+    "interface SwitchableControl": [
+      "apply"
+    ]
+  },
   "ui/title.ts": {
     "interface TitleCtx": [
       "$"
@@ -3189,7 +3180,6 @@
       "turnOff"
     ],
     "interface VoiceControl": [
-      "apply",
       "refreshGrammar"
     ]
   },

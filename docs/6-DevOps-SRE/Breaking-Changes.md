@@ -1766,6 +1766,30 @@ that holds them — has zero of its own, because it receives the document and th
 are the same tag, and it went red the moment the cut landed, because the shared test setup wires the port and had no hooks.
 It was right: a setup is a composition root, and this one was no longer telling the page anything.
 
+## BG · The four ways of playing with the body get a family name: `SwitchableControl` (ADR-0221 step 7f)
+
+**What this is.** Four interfaces that were the same line leave, and one shared interface arrives.
+
+| gone | in its place |
+|---|---|
+| `ui/camera-control.CameraModeControl` | `ui/switchable-control.SwitchableControl` — same shape, a name that also fits the voice |
+| `ui/eye-control.EyeControl` | `createEyeControl` returns `SwitchableControl` |
+| `ui/face-control.FaceControl` | `createFaceControl` returns `SwitchableControl` |
+| `ui/hand-control.HandControl` | `createHandControl` returns `SwitchableControl` |
+| `ui/voice-control.VoiceControl` | KEPT — it has `refreshGrammar` too, and now `extends SwitchableControl` |
+
+🎯 **Why.** The eyes, the face, the hands and the voice are four ways into the same virtual controller, and they had the same
+shape without saying so: 📏 four modules, four interfaces, `apply(on: boolean): Promise<void>` in all four. The abstraction
+was not missing — it was unnamed, which is worse, because only the co-change of the four files said it existed. With the
+family named, a member that drifts fails where it is WRITTEN instead of where it is combined by `followCameraMode`.
+
+⚠️ **What to change.** If you only call `createEyeControl` / `createFaceControl` / `createHandControl` /
+`createVoiceControl`, nothing: the objects are identical. If you named one of the four types, import `SwitchableControl`
+from `ui/switchable-control.js` instead — `VoiceControl` still exists for the one that has a method more.
+
+📌 The voice is in the family and NOT in the camera cycle: it answers to the 👄, not to the 📷. That is why the interface is
+not called «camera» anything.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

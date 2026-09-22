@@ -1257,7 +1257,7 @@
       "codeLines": 7,
       "decisionNodes": 4,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 2,
       "globalReach": 0,
       "fanIn": 1
     },
@@ -1298,10 +1298,10 @@
       "fanIn": 1
     },
     "ui/eye-control.ts": {
-      "codeLines": 133,
+      "codeLines": 131,
       "decisionNodes": 21,
       "maxDepth": 2,
-      "fanOut": 9,
+      "fanOut": 10,
       "globalReach": 0,
       "fanIn": 3
     },
@@ -1309,7 +1309,7 @@
       "codeLines": 125,
       "decisionNodes": 25,
       "maxDepth": 3,
-      "fanOut": 8,
+      "fanOut": 9,
       "globalReach": 0,
       "fanIn": 1
     },
@@ -1349,7 +1349,7 @@
       "codeLines": 104,
       "decisionNodes": 19,
       "maxDepth": 2,
-      "fanOut": 8,
+      "fanOut": 9,
       "globalReach": 0,
       "fanIn": 1
     },
@@ -1615,6 +1615,14 @@
       "globalReach": 0,
       "fanIn": 0
     },
+    "ui/switchable-control.ts": {
+      "codeLines": 3,
+      "decisionNodes": 0,
+      "maxDepth": 0,
+      "fanOut": 0,
+      "globalReach": 0,
+      "fanIn": 5
+    },
     "ui/title.ts": {
       "codeLines": 49,
       "decisionNodes": 7,
@@ -1647,7 +1655,7 @@
       "codeLines": 93,
       "decisionNodes": 9,
       "maxDepth": 2,
-      "fanOut": 6,
+      "fanOut": 7,
       "globalReach": 0,
       "fanIn": 1
     },
