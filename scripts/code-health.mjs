@@ -44,7 +44,19 @@ export const EXEMPT = {
   'i18n/pt.ts': ['*'], 'i18n/en.ts': ['*'], 'i18n/es.ts': ['*'],
 };
 
-export const MEASURES = ['codeLines', 'decisionNodes', 'maxDepth', 'fanOut'];
+export const MEASURES = ['codeLines', 'decisionNodes', 'maxDepth', 'fanOut', 'globalReach'];
+
+/*
+ * 🔴 A QUINTA MEDIDA É O QUE UM MÓDULO ALCANÇA, e ela entrou porque as outras quatro não a viam (ADR-0221, passo 7d, issue
+ * #203). O artigo lista a INJECÇÃO DE DEPENDÊNCIA entre as dimensões que pesa, e esta engine pratica-a — o hospedeiro é
+ * injectado (ADR-0178), o relógio é injectado, o `fetch` é injectado. O defeito que VOLTA é o alcance directo: `rotularLinha`
+ * a ler `CSS.escape` foi exactamente isso, em 21/09.
+ *
+ * ⚠️ E O PORTÃO DAS CAMADAS NÃO O APANHA, que é a razão de esta medida existir: o `dependencies-point-downward` confere
+ * IMPORTS, e um módulo que não importa ninguém e toca no `document` passa verde. 📏 Medido em 22/09: 23 de 188 módulos
+ * alcançam um global — e dois deles estão em `core/`, a camada que o ADR-0173 descreve como «o que a engine É, SEM navegador».
+ */
+const BROWSER_GLOBALS = ['document', 'window', 'localStorage', 'sessionStorage', 'navigator', 'performance', 'fetch', 'CSS'];
 
 /** Is this module exempt from this measure? */
 export const isExempt = (mod, measure) => {
@@ -79,8 +91,28 @@ export function measureModule(text) {
   };
   sf.forEachChild((n) => walk(n, 0));
 
+  /*
+   * ⚠️ LIDO PELO PARSER E NÃO POR GREP, e a diferença é o que torna a medida utilizável: `document` aparece em comentários,
+   * em nomes de propriedade (`o.document`), em parâmetros (`doc = document`) e em cadeias. O que conta é um IDENTIFICADOR NU
+   * que se resolve no global — o resto é prosa ou é injecção, que é precisamente o contrário do defeito.
+   */
+  const reached = new Set();
+  const look = (node) => {
+    if (ts.isIdentifier(node) && BROWSER_GLOBALS.includes(node.text)) {
+      const p = node.parent;
+      const isPropertyName = p && ts.isPropertyAccessExpression(p) && p.name === node;
+      const isDeclared = p && (ts.isParameter(p) || ts.isPropertySignature(p) || ts.isPropertyAssignment(p) || ts.isBindingElement(p));
+      if (!isPropertyName && !isDeclared) reached.add(node.text);
+    }
+    node.forEachChild(look);
+  };
+  sf.forEachChild(look);
+
   const codeLines = text.split('\n').filter((l) => l.trim() && !/^\s*(\/\/|\*|\/\*)/.test(l)).length;
-  return { codeLines, decisionNodes, maxDepth, fanOut: imports.size, imports: [...imports] };
+  return {
+    codeLines, decisionNodes, maxDepth, fanOut: imports.size, globalReach: reached.size,
+    imports: [...imports], reached: [...reached].sort(),
+  };
 }
 
 /** The whole tree: `{ 'core/ring.ts': {codeLines, decisionNodes, maxDepth, fanOut, fanIn} }`, keyed as the portrait keys. */
@@ -111,7 +143,10 @@ export function measureTree() {
     const key = f.replace('app/js/', '');
     out[key] = {
       codeLines: m.codeLines, decisionNodes: m.decisionNodes, maxDepth: m.maxDepth, fanOut: m.fanOut,
-      fanIn: fanIn.get(f) ?? 0,
+      globalReach: m.globalReach, fanIn: fanIn.get(f) ?? 0,
+      // 📌 QUAIS os globais, e não só quantos: uma catraca sobre um número diz que piorou, e esta linha diz o que muda para o
+      // pagar. Só aparece onde há algum, para a linha de base não engordar com listas vazias.
+      ...(m.reached.length ? { reached: m.reached } : {}),
     };
   }
   return out;
@@ -121,6 +156,13 @@ export function measureTree() {
 export function ceilingFrom(modules) {
   const teto = {};
   for (const measure of MEASURES) {
+    /*
+     * ⚠️ O ALCANCE A GLOBAIS NÃO TEM p90: o tecto é ZERO, e por uma razão que não vem da literatura nem de um percentil. Esta
+     * engine DECIDIU que o hospedeiro é injectado (ADR-0178) e que `core` não conhece navegador (ADR-0173); um módulo novo que
+     * alcança o `document` está a desfazer uma decisão, não a ficar acima de uma média. 📏 Os 23 que já o fazem ficam
+     * congelados pela catraca e só podem encolher — é dívida, e dívida não vira licença.
+     */
+    if (measure === 'globalReach') { teto[measure] = 0; continue; }
     const vals = Object.entries(modules).filter(([m]) => !isExempt(m, measure)).map(([, v]) => v[measure]).sort((a, b) => a - b);
     teto[measure] = vals[Math.min(vals.length - 1, Math.floor(vals.length * 0.9))];
   }

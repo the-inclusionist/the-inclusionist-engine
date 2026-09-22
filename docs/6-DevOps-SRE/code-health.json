@@ -5,7 +5,8 @@
     "codeLines": 187,
     "decisionNodes": 37,
     "maxDepth": 4,
-    "fanOut": 6
+    "fanOut": 6,
+    "globalReach": 0
   },
   "exempt": {
     "boot/create-game.ts": [
@@ -27,6 +28,7 @@
       "decisionNodes": 309,
       "maxDepth": 4,
       "fanOut": 78,
+      "globalReach": 0,
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
@@ -34,13 +36,18 @@
       "decisionNodes": 39,
       "maxDepth": 6,
       "fanOut": 8,
-      "fanIn": 0
+      "globalReach": 1,
+      "fanIn": 0,
+      "reached": [
+        "document"
+      ]
     },
     "core/a11y-sr.ts": {
       "codeLines": 5,
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 2
     },
     "core/accessible-label.ts": {
@@ -48,6 +55,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 3
     },
     "core/accommodation-subjects.ts": {
@@ -55,6 +63,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 1
     },
     "core/accommodations.ts": {
@@ -62,6 +71,7 @@
       "decisionNodes": 17,
       "maxDepth": 3,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "core/actions.ts": {
@@ -69,6 +79,7 @@
       "decisionNodes": 16,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 24
     },
     "core/caption-duration.ts": {
@@ -76,6 +87,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 3
     },
     "core/collision.ts": {
@@ -83,6 +95,7 @@
       "decisionNodes": 6,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 3
     },
     "core/constants.ts": {
@@ -90,6 +103,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 12
     },
     "core/contract.ts": {
@@ -97,6 +111,7 @@
       "decisionNodes": 55,
       "maxDepth": 7,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 7
     },
     "core/dom-query.ts": {
@@ -104,6 +119,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 17
     },
     "core/entity.ts": {
@@ -111,6 +127,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 21
     },
     "core/escape-html.ts": {
@@ -118,6 +135,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 3
     },
     "core/flash-threshold.ts": {
@@ -125,6 +143,7 @@
       "decisionNodes": 18,
       "maxDepth": 7,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "core/game-speed.ts": {
@@ -132,6 +151,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "core/genres.ts": {
@@ -139,6 +159,7 @@
       "decisionNodes": 6,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "core/i18n.ts": {
@@ -146,13 +167,20 @@
       "decisionNodes": 27,
       "maxDepth": 2,
       "fanOut": 1,
-      "fanIn": 35
+      "globalReach": 3,
+      "fanIn": 35,
+      "reached": [
+        "document",
+        "navigator",
+        "window"
+      ]
     },
     "core/layers.ts": {
       "codeLines": 40,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "core/letter-grid.ts": {
@@ -160,6 +188,7 @@
       "decisionNodes": 11,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "core/loop.ts": {
@@ -167,6 +196,7 @@
       "decisionNodes": 3,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "core/password.ts": {
@@ -174,6 +204,7 @@
       "decisionNodes": 27,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "core/ring.ts": {
@@ -181,6 +212,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "core/rng.ts": {
@@ -188,6 +220,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 3
     },
     "core/route.ts": {
@@ -195,6 +228,7 @@
       "decisionNodes": 27,
       "maxDepth": 4,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "core/run-state.ts": {
@@ -202,6 +236,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 0
     },
     "core/scenes.ts": {
@@ -209,6 +244,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "core/screens.ts": {
@@ -216,6 +252,7 @@
       "decisionNodes": 3,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 5
     },
     "core/speech-rate.ts": {
@@ -223,6 +260,7 @@
       "decisionNodes": 6,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 3
     },
     "core/state.ts": {
@@ -230,13 +268,18 @@
       "decisionNodes": 29,
       "maxDepth": 3,
       "fanOut": 3,
-      "fanIn": 16
+      "globalReach": 1,
+      "fanIn": 16,
+      "reached": [
+        "window"
+      ]
     },
     "core/tiles.ts": {
       "codeLines": 48,
       "decisionNodes": 5,
       "maxDepth": 3,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "core/visual-state.ts": {
@@ -244,6 +287,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "core/world.ts": {
@@ -251,6 +295,7 @@
       "decisionNodes": 18,
       "maxDepth": 4,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 0
     },
     "educational/activities-registry.ts": {
@@ -258,6 +303,7 @@
       "decisionNodes": 2,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "educational/adaptive-engine.ts": {
@@ -265,6 +311,7 @@
       "decisionNodes": 9,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "educational/segment-bar.ts": {
@@ -272,6 +319,7 @@
       "decisionNodes": 6,
       "maxDepth": 3,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "env.d.ts": {
@@ -279,6 +327,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "i18n/en.ts": {
@@ -286,6 +335,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "i18n/es.ts": {
@@ -293,6 +343,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "i18n/pt.ts": {
@@ -300,6 +351,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "input/default-bindings.ts": {
@@ -307,6 +359,7 @@
       "decisionNodes": 12,
       "maxDepth": 3,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 3
     },
     "input/devices.ts": {
@@ -314,6 +367,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/edges.ts": {
@@ -321,6 +375,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 6
     },
     "input/empathy-filter.ts": {
@@ -328,6 +383,7 @@
       "decisionNodes": 6,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "input/face-map.ts": {
@@ -335,6 +391,7 @@
       "decisionNodes": 36,
       "maxDepth": 5,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "input/face-signals.ts": {
@@ -342,6 +399,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/gamepad.ts": {
@@ -349,6 +407,7 @@
       "decisionNodes": 87,
       "maxDepth": 11,
       "fanOut": 11,
+      "globalReach": 0,
       "fanIn": 1
     },
     "input/gaze-cycle.ts": {
@@ -356,6 +415,7 @@
       "decisionNodes": 19,
       "maxDepth": 5,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/gaze-relative.ts": {
@@ -363,6 +423,7 @@
       "decisionNodes": 24,
       "maxDepth": 3,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 3
     },
     "input/hand-map.ts": {
@@ -370,6 +431,7 @@
       "decisionNodes": 20,
       "maxDepth": 3,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "input/input-cooldown.ts": {
@@ -377,6 +439,7 @@
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "input/keyboard-runtime.ts": {
@@ -384,6 +447,7 @@
       "decisionNodes": 11,
       "maxDepth": 3,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 1
     },
     "input/keyboard.ts": {
@@ -391,6 +455,7 @@
       "decisionNodes": 10,
       "maxDepth": 4,
       "fanOut": 4,
+      "globalReach": 0,
       "fanIn": 3
     },
     "input/keydown.ts": {
@@ -398,6 +463,7 @@
       "decisionNodes": 60,
       "maxDepth": 3,
       "fanOut": 7,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/latch-edge.ts": {
@@ -405,6 +471,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 6,
+      "globalReach": 0,
       "fanIn": 0
     },
     "input/latch-scope.ts": {
@@ -412,6 +479,7 @@
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/latch-store.ts": {
@@ -419,6 +487,7 @@
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 3
     },
     "input/latch-sync.ts": {
@@ -426,6 +495,7 @@
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/latch.ts": {
@@ -433,6 +503,7 @@
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "input/pad-defaults.ts": {
@@ -440,6 +511,7 @@
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/pad-wizard.ts": {
@@ -447,6 +519,7 @@
       "decisionNodes": 31,
       "maxDepth": 4,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/pointer-space.ts": {
@@ -454,6 +527,7 @@
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/pointer.ts": {
@@ -461,6 +535,7 @@
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 0
     },
     "input/state.ts": {
@@ -468,6 +543,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 3
     },
     "input/switch-scan.ts": {
@@ -475,6 +551,7 @@
       "decisionNodes": 4,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/synthetic-source.ts": {
@@ -482,6 +559,7 @@
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/touch-bindings.ts": {
@@ -489,6 +567,7 @@
       "decisionNodes": 38,
       "maxDepth": 3,
       "fanOut": 6,
+      "globalReach": 0,
       "fanIn": 3
     },
     "input/touch.ts": {
@@ -496,13 +575,18 @@
       "decisionNodes": 68,
       "maxDepth": 3,
       "fanOut": 5,
-      "fanIn": 1
+      "globalReach": 1,
+      "fanIn": 1,
+      "reached": [
+        "navigator"
+      ]
     },
     "input/transport-in-use.ts": {
       "codeLines": 32,
       "decisionNodes": 4,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 8
     },
     "input/transports.ts": {
@@ -510,6 +594,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 2
     },
     "input/virtual-controller.ts": {
@@ -517,6 +602,7 @@
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 5
     },
     "input/vocabulary-migration.ts": {
@@ -524,6 +610,7 @@
       "decisionNodes": 13,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 3
     },
     "input/voice-map.ts": {
@@ -531,6 +618,7 @@
       "decisionNodes": 10,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "platform/audio-ambient.ts": {
@@ -538,6 +626,7 @@
       "decisionNodes": 13,
       "maxDepth": 3,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "platform/audio-earcons.ts": {
@@ -545,6 +634,7 @@
       "decisionNodes": 13,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 0
     },
     "platform/audio-jingles.ts": {
@@ -552,6 +642,7 @@
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "platform/audio-mixer.ts": {
@@ -559,6 +650,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 3
     },
     "platform/audio-nav.ts": {
@@ -566,6 +658,7 @@
       "decisionNodes": 15,
       "maxDepth": 4,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 0
     },
     "platform/audio-sonar.ts": {
@@ -573,20 +666,29 @@
       "decisionNodes": 38,
       "maxDepth": 3,
       "fanOut": 4,
-      "fanIn": 3
+      "globalReach": 1,
+      "fanIn": 3,
+      "reached": [
+        "window"
+      ]
     },
     "platform/audio.ts": {
       "codeLines": 52,
       "decisionNodes": 41,
       "maxDepth": 2,
       "fanOut": 1,
-      "fanIn": 3
+      "globalReach": 1,
+      "fanIn": 3,
+      "reached": [
+        "window"
+      ]
     },
     "platform/flash-sampler.ts": {
       "codeLines": 65,
       "decisionNodes": 11,
       "maxDepth": 3,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "platform/guide-intensity.ts": {
@@ -594,6 +696,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "platform/heavy-catalogue.ts": {
@@ -601,6 +704,7 @@
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 3
     },
     "platform/heavy-mirror.ts": {
@@ -608,6 +712,7 @@
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 0
     },
     "platform/heavy.ts": {
@@ -615,13 +720,18 @@
       "decisionNodes": 25,
       "maxDepth": 3,
       "fanOut": 1,
-      "fanIn": 5
+      "globalReach": 1,
+      "fanIn": 5,
+      "reached": [
+        "fetch"
+      ]
     },
     "platform/interruptible-speech.ts": {
       "codeLines": 39,
       "decisionNodes": 9,
       "maxDepth": 3,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "platform/kokoro-port.ts": {
@@ -629,6 +739,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 1
     },
     "platform/kokoro-runtime.ts": {
@@ -636,13 +747,18 @@
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 3,
-      "fanIn": 0
+      "globalReach": 1,
+      "fanIn": 0,
+      "reached": [
+        "fetch"
+      ]
     },
     "platform/kokoro.ts": {
       "codeLines": 110,
       "decisionNodes": 9,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 4
     },
     "platform/listener-scope.ts": {
@@ -650,6 +766,7 @@
       "decisionNodes": 7,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "platform/microphone.ts": {
@@ -657,13 +774,19 @@
       "decisionNodes": 13,
       "maxDepth": 2,
       "fanOut": 0,
-      "fanIn": 1
+      "globalReach": 2,
+      "fanIn": 1,
+      "reached": [
+        "navigator",
+        "performance"
+      ]
     },
     "platform/onnx-runtime.ts": {
       "codeLines": 40,
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 3
     },
     "platform/reading-in-worker.ts": {
@@ -671,6 +794,7 @@
       "decisionNodes": 7,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 0
     },
     "platform/reading-model.ts": {
@@ -678,20 +802,29 @@
       "decisionNodes": 41,
       "maxDepth": 3,
       "fanOut": 0,
-      "fanIn": 1
+      "globalReach": 1,
+      "fanIn": 1,
+      "reached": [
+        "window"
+      ]
     },
     "platform/reading-runtime.ts": {
       "codeLines": 115,
       "decisionNodes": 22,
       "maxDepth": 3,
       "fanOut": 2,
-      "fanIn": 1
+      "globalReach": 1,
+      "fanIn": 1,
+      "reached": [
+        "fetch"
+      ]
     },
     "platform/reading-worker.ts": {
       "codeLines": 43,
       "decisionNodes": 6,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "platform/reading.ts": {
@@ -699,6 +832,7 @@
       "decisionNodes": 18,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "platform/speech-recognition.ts": {
@@ -706,6 +840,7 @@
       "decisionNodes": 13,
       "maxDepth": 3,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "platform/speech.ts": {
@@ -713,27 +848,42 @@
       "decisionNodes": 6,
       "maxDepth": 1,
       "fanOut": 1,
-      "fanIn": 0
+      "globalReach": 1,
+      "fanIn": 0,
+      "reached": [
+        "window"
+      ]
     },
     "platform/storage.ts": {
       "codeLines": 68,
       "decisionNodes": 15,
       "maxDepth": 1,
       "fanOut": 0,
-      "fanIn": 17
+      "globalReach": 1,
+      "fanIn": 17,
+      "reached": [
+        "localStorage"
+      ]
     },
     "platform/tts.ts": {
       "codeLines": 200,
       "decisionNodes": 38,
       "maxDepth": 3,
       "fanOut": 6,
-      "fanIn": 1
+      "globalReach": 3,
+      "fanIn": 1,
+      "reached": [
+        "document",
+        "performance",
+        "window"
+      ]
     },
     "platform/vision-loop.ts": {
       "codeLines": 52,
       "decisionNodes": 9,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 3
     },
     "platform/vision.ts": {
@@ -741,6 +891,7 @@
       "decisionNodes": 12,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 4
     },
     "platform/voice-listener.ts": {
@@ -748,13 +899,18 @@
       "decisionNodes": 12,
       "maxDepth": 1,
       "fanOut": 2,
-      "fanIn": 1
+      "globalReach": 1,
+      "fanIn": 1,
+      "reached": [
+        "navigator"
+      ]
     },
     "platform/voice-plan.ts": {
       "codeLines": 9,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "platform/vosk-runtime.ts": {
@@ -762,6 +918,7 @@
       "decisionNodes": 9,
       "maxDepth": 2,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 2
     },
     "render/camera.ts": {
@@ -769,6 +926,7 @@
       "decisionNodes": 4,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "render/canvas.ts": {
@@ -776,13 +934,18 @@
       "decisionNodes": 4,
       "maxDepth": 4,
       "fanOut": 0,
-      "fanIn": 9
+      "globalReach": 1,
+      "fanIn": 9,
+      "reached": [
+        "document"
+      ]
     },
     "render/city-tex.ts": {
       "codeLines": 93,
       "decisionNodes": 9,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/city-tiles.ts": {
@@ -790,6 +953,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/crt.ts": {
@@ -797,13 +961,18 @@
       "decisionNodes": 16,
       "maxDepth": 6,
       "fanOut": 3,
-      "fanIn": 3
+      "globalReach": 1,
+      "fanIn": 3,
+      "reached": [
+        "window"
+      ]
     },
     "render/cvd-matrices.ts": {
       "codeLines": 38,
       "decisionNodes": 4,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "render/draw.ts": {
@@ -811,6 +980,7 @@
       "decisionNodes": 32,
       "maxDepth": 4,
       "fanOut": 10,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/fx.ts": {
@@ -818,6 +988,7 @@
       "decisionNodes": 22,
       "maxDepth": 3,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 2
     },
     "render/hc-role-data.ts": {
@@ -825,6 +996,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 3
     },
     "render/high-contrast.ts": {
@@ -832,6 +1004,7 @@
       "decisionNodes": 37,
       "maxDepth": 4,
       "fanOut": 6,
+      "globalReach": 0,
       "fanIn": 2
     },
     "render/low-vision-drawing.ts": {
@@ -839,6 +1012,7 @@
       "decisionNodes": 5,
       "maxDepth": 5,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 2
     },
     "render/lq-filter.ts": {
@@ -846,13 +1020,18 @@
       "decisionNodes": 8,
       "maxDepth": 3,
       "fanOut": 1,
-      "fanIn": 3
+      "globalReach": 1,
+      "fanIn": 3,
+      "reached": [
+        "document"
+      ]
     },
     "render/minimap.ts": {
       "codeLines": 49,
       "decisionNodes": 16,
       "maxDepth": 5,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/parallax.ts": {
@@ -860,6 +1039,7 @@
       "decisionNodes": 7,
       "maxDepth": 2,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/player-anim.ts": {
@@ -867,6 +1047,7 @@
       "decisionNodes": 26,
       "maxDepth": 9,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 1
     },
     "render/port.ts": {
@@ -874,6 +1055,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 10
     },
     "render/recycling-tex.ts": {
@@ -881,6 +1063,7 @@
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/scene-city.ts": {
@@ -888,6 +1071,7 @@
       "decisionNodes": 32,
       "maxDepth": 8,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/scene-parallax.ts": {
@@ -895,6 +1079,7 @@
       "decisionNodes": 47,
       "maxDepth": 4,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/scene-sky.ts": {
@@ -902,6 +1087,7 @@
       "decisionNodes": 57,
       "maxDepth": 6,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "render/scenery-data.ts": {
@@ -909,6 +1095,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 3
     },
     "render/screen-pipeline.ts": {
@@ -916,6 +1103,7 @@
       "decisionNodes": 9,
       "maxDepth": 2,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/set-scenery.ts": {
@@ -923,6 +1111,7 @@
       "decisionNodes": 4,
       "maxDepth": 2,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/sprite-fx.ts": {
@@ -930,6 +1119,7 @@
       "decisionNodes": 8,
       "maxDepth": 3,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 2
     },
     "render/textures.ts": {
@@ -937,6 +1127,7 @@
       "decisionNodes": 21,
       "maxDepth": 3,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 1
     },
     "render/title-scene.ts": {
@@ -944,6 +1135,7 @@
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/viewports.ts": {
@@ -951,6 +1143,7 @@
       "decisionNodes": 19,
       "maxDepth": 6,
       "fanOut": 7,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/viz-axes-labels.ts": {
@@ -958,6 +1151,7 @@
       "decisionNodes": 6,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 2
     },
     "render/viz-axes.ts": {
@@ -965,6 +1159,7 @@
       "decisionNodes": 16,
       "maxDepth": 3,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 8
     },
     "render/viz-modes.ts": {
@@ -972,6 +1167,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 5
     },
     "render/viz-refusal.ts": {
@@ -979,6 +1175,7 @@
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 2
     },
     "render/viz-setters.ts": {
@@ -986,6 +1183,7 @@
       "decisionNodes": 44,
       "maxDepth": 3,
       "fanOut": 12,
+      "globalReach": 0,
       "fanIn": 0
     },
     "render/weather.ts": {
@@ -993,6 +1191,7 @@
       "decisionNodes": 28,
       "maxDepth": 3,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 1
     },
     "render/wheelchair-sprites.ts": {
@@ -1000,6 +1199,7 @@
       "decisionNodes": 5,
       "maxDepth": 1,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 1
     },
     "render/world-tex.ts": {
@@ -1007,6 +1207,7 @@
       "decisionNodes": 11,
       "maxDepth": 8,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/caa-sets.ts": {
@@ -1014,6 +1215,7 @@
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/camera-control.ts": {
@@ -1021,6 +1223,7 @@
       "decisionNodes": 4,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/changed-mark.ts": {
@@ -1028,6 +1231,7 @@
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 9
     },
     "ui/debug-panel.ts": {
@@ -1035,13 +1239,19 @@
       "decisionNodes": 15,
       "maxDepth": 2,
       "fanOut": 1,
-      "fanIn": 0
+      "globalReach": 2,
+      "fanIn": 0,
+      "reached": [
+        "document",
+        "window"
+      ]
     },
     "ui/dom.ts": {
       "codeLines": 15,
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 9
     },
     "ui/drawing-problems.ts": {
@@ -1049,6 +1259,7 @@
       "decisionNodes": 12,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/eye-control.ts": {
@@ -1056,6 +1267,7 @@
       "decisionNodes": 21,
       "maxDepth": 2,
       "fanOut": 9,
+      "globalReach": 0,
       "fanIn": 3
     },
     "ui/face-control.ts": {
@@ -1063,6 +1275,7 @@
       "decisionNodes": 25,
       "maxDepth": 3,
       "fanOut": 8,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/focus-trap.ts": {
@@ -1070,6 +1283,7 @@
       "decisionNodes": 9,
       "maxDepth": 2,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/fonts.ts": {
@@ -1077,6 +1291,7 @@
       "decisionNodes": 6,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 2
     },
     "ui/game-options.ts": {
@@ -1084,6 +1299,7 @@
       "decisionNodes": 22,
       "maxDepth": 3,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/gaze-overlay.ts": {
@@ -1091,6 +1307,7 @@
       "decisionNodes": 26,
       "maxDepth": 5,
       "fanOut": 4,
+      "globalReach": 0,
       "fanIn": 3
     },
     "ui/hand-control.ts": {
@@ -1098,6 +1315,7 @@
       "decisionNodes": 19,
       "maxDepth": 2,
       "fanOut": 8,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/help-panel.ts": {
@@ -1105,6 +1323,7 @@
       "decisionNodes": 24,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/hud-bands.ts": {
@@ -1112,6 +1331,7 @@
       "decisionNodes": 15,
       "maxDepth": 2,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/hud.ts": {
@@ -1119,13 +1339,18 @@
       "decisionNodes": 15,
       "maxDepth": 2,
       "fanOut": 5,
-      "fanIn": 0
+      "globalReach": 1,
+      "fanIn": 0,
+      "reached": [
+        "document"
+      ]
     },
     "ui/item-announcement.ts": {
       "codeLines": 17,
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 4
     },
     "ui/latch-refusal.ts": {
@@ -1133,6 +1358,7 @@
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 2
     },
     "ui/layout.ts": {
@@ -1140,13 +1366,18 @@
       "decisionNodes": 10,
       "maxDepth": 2,
       "fanOut": 3,
-      "fanIn": 2
+      "globalReach": 1,
+      "fanIn": 2,
+      "reached": [
+        "window"
+      ]
     },
     "ui/locale-flags.ts": {
       "codeLines": 20,
       "decisionNodes": 1,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/loop-crash.ts": {
@@ -1154,6 +1385,7 @@
       "decisionNodes": 5,
       "maxDepth": 1,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/map-hub.ts": {
@@ -1161,6 +1393,7 @@
       "decisionNodes": 11,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 0
     },
     "ui/menu-items.ts": {
@@ -1168,6 +1401,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 3
     },
     "ui/menu-nav.ts": {
@@ -1175,6 +1409,7 @@
       "decisionNodes": 63,
       "maxDepth": 3,
       "fanOut": 9,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/motion-scene.ts": {
@@ -1182,6 +1417,7 @@
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 3,
+      "globalReach": 0,
       "fanIn": 2
     },
     "ui/mount-panel.ts": {
@@ -1189,6 +1425,7 @@
       "decisionNodes": 7,
       "maxDepth": 1,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/panel-shell.ts": {
@@ -1196,6 +1433,7 @@
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 5
     },
     "ui/panel-widgets.ts": {
@@ -1203,13 +1441,18 @@
       "decisionNodes": 10,
       "maxDepth": 2,
       "fanOut": 1,
-      "fanIn": 6
+      "globalReach": 1,
+      "fanIn": 6,
+      "reached": [
+        "CSS"
+      ]
     },
     "ui/pause-buttons.ts": {
       "codeLines": 26,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/pause-icons.ts": {
@@ -1217,6 +1460,7 @@
       "decisionNodes": 127,
       "maxDepth": 11,
       "fanOut": 19,
+      "globalReach": 0,
       "fanIn": 3
     },
     "ui/reach-notice.ts": {
@@ -1224,6 +1468,7 @@
       "decisionNodes": 8,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/scan-overlay.ts": {
@@ -1231,6 +1476,7 @@
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 2,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/settings-audio.ts": {
@@ -1238,13 +1484,20 @@
       "decisionNodes": 112,
       "maxDepth": 4,
       "fanOut": 11,
-      "fanIn": 2
+      "globalReach": 3,
+      "fanIn": 2,
+      "reached": [
+        "document",
+        "navigator",
+        "window"
+      ]
     },
     "ui/settings-caa.ts": {
       "codeLines": 106,
       "decisionNodes": 19,
       "maxDepth": 2,
       "fanOut": 5,
+      "globalReach": 0,
       "fanIn": 0
     },
     "ui/settings-controls.ts": {
@@ -1252,6 +1505,7 @@
       "decisionNodes": 25,
       "maxDepth": 3,
       "fanOut": 7,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/settings-empathy.ts": {
@@ -1259,6 +1513,7 @@
       "decisionNodes": 17,
       "maxDepth": 2,
       "fanOut": 6,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/settings-mobility.ts": {
@@ -1266,6 +1521,7 @@
       "decisionNodes": 34,
       "maxDepth": 3,
       "fanOut": 12,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/settings-motion.ts": {
@@ -1273,6 +1529,7 @@
       "decisionNodes": 33,
       "maxDepth": 3,
       "fanOut": 8,
+      "globalReach": 0,
       "fanIn": 2
     },
     "ui/settings-panel.ts": {
@@ -1280,6 +1537,7 @@
       "decisionNodes": 23,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/settings-typo.ts": {
@@ -1287,6 +1545,7 @@
       "decisionNodes": 24,
       "maxDepth": 2,
       "fanOut": 4,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/settings-visual.ts": {
@@ -1294,6 +1553,7 @@
       "decisionNodes": 31,
       "maxDepth": 2,
       "fanOut": 10,
+      "globalReach": 0,
       "fanIn": 2
     },
     "ui/shell.ts": {
@@ -1301,6 +1561,7 @@
       "decisionNodes": 43,
       "maxDepth": 3,
       "fanOut": 7,
+      "globalReach": 0,
       "fanIn": 0
     },
     "ui/simulation-refusal.ts": {
@@ -1308,6 +1569,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 0
     },
     "ui/title.ts": {
@@ -1315,6 +1577,7 @@
       "decisionNodes": 7,
       "maxDepth": 2,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 0
     },
     "ui/visual-axes-panel.ts": {
@@ -1322,6 +1585,7 @@
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 1,
+      "globalReach": 0,
       "fanIn": 1
     },
     "ui/vlibras.ts": {
@@ -1329,13 +1593,19 @@
       "decisionNodes": 10,
       "maxDepth": 3,
       "fanOut": 2,
-      "fanIn": 1
+      "globalReach": 2,
+      "fanIn": 1,
+      "reached": [
+        "document",
+        "window"
+      ]
     },
     "ui/voice-control.ts": {
       "codeLines": 93,
       "decisionNodes": 9,
       "maxDepth": 2,
       "fanOut": 6,
+      "globalReach": 0,
       "fanIn": 1
     }
   }

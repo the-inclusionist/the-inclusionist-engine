@@ -27,7 +27,7 @@ const arvore = measureTree();
 const base = readBaseline();
 
 describe('a saúde do código só melhora', () => {
-  it('🔴 [Right] nenhum módulo piorou em nenhuma das quatro medidas', () => {
+  it('🔴 [Right] nenhum módulo piorou em nenhuma das cinco medidas', () => {
     const piores = [];
     for (const [mod, agora] of Object.entries(arvore)) {
       const antes = base.modules[mod];
@@ -99,6 +99,10 @@ describe('a saúde do código só melhora', () => {
  * 2. criar um módulo novo com 300 linhas e 60 ramos .............................................. VERMELHO no 2.º
  * 3. apagar um módulo sem reescrever a linha de base ............................................. VERMELHO no 3.º
  * 4. pôr uma isenção para um módulo que não existe ............................................... VERMELHO no 4.º
- * 5. tirar o `if (isExempt(...)) continue;` do 1.º caso .......................................... VERMELHO no 1.º
- *    — porque o `create-game` tem fan-out 77 e o tecto é 6: a isenção não é enfeite, é o que separa fiação de dívida.
+ * 5. a raiz passa a ser isenta de TUDO, e não só da fiação ...................................... VERMELHO no caso da isenção
+ * 6. um módulo NOVO que alcança o `document` (passo 7d) .......................................... VERMELHO no 2.º
+ *    — o tecto do alcance é ZERO, e não um p90: um módulo novo que toca num global desfaz uma decisão (ADR-0178), não fica
+ *      acima de uma média.
+ * 7. um módulo já na linha de base ganha um alcance a `window` .................................. VERMELHO no 1.º
+ *    — os 24 que já alcançam ficam congelados e só podem encolher: dívida não vira licença.
  */
