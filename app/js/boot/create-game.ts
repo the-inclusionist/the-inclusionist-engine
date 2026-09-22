@@ -103,8 +103,8 @@ import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.j
 import { mountPanel } from '../ui/mount-panel.js';
 // 📌 `latchRefusal` e `setMoveLatch` saíram destes imports com a linha do painel (2026-09-21): quem escreve
 // a aderência agora é o ☝️ da barra, e é ele que já resolvia as duas coisas — a recusa do aparelho e as duas chaves guardadas.
-import { stampSource, sourceOfEvent } from '../input/origem-sintetica.js';
-import type { TransportName } from '../input/transporte-em-uso.js';
+import { stampSource, sourceOfEvent } from '../input/synthetic-source.js';
+import type { TransportName } from '../input/transport-in-use.js';
 import { createVirtualController, type VirtualCommand } from '../input/virtual-controller.js';
 import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem } from '../input/switch-scan.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
@@ -122,7 +122,7 @@ import { initCrt, applyCrt, crtScanVars } from '../render/crt.js';
 import { initSettingsAudio, mountAudioInside, mountSoundInside, type SettingsAudioApi } from '../ui/settings-audio.js';
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn, toggleLabel } from '../ui/dom.js';
-import { createEmpathyFilter } from '../input/motor-simulation.js';
+import { createEmpathyFilter } from '../input/empathy-filter.js';
 import { createInputCooldown, COOLDOWN_MS } from '../input/input-cooldown.js';
 import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';

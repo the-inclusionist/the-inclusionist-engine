@@ -28,7 +28,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { isInside, clampInside, pressEdge, switchedTransport, PADRAO } from '../app/js/input/pointer.js';
-import { TRANSPORT_NAMES } from '../app/js/input/transporte-em-uso.js';
+import { TRANSPORT_NAMES } from '../app/js/input/transport-in-use.js';
 import { reach } from '../app/js/input/transports.js';
 
 const FONTE_PONTEIRO = readFileSync(fileURLToPath(new URL('../app/js/input/pointer.ts', import.meta.url)), 'utf8');

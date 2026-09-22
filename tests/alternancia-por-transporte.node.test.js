@@ -27,7 +27,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { latchNow } from '../app/js/input/transporte-em-uso.js';
+import { latchNow } from '../app/js/input/transport-in-use.js';
 import { latchOf } from '../app/js/input/latch-scope.js';
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
@@ -155,7 +155,7 @@ describe('a alternância migra para a chave por transporte · o piso que só sob
 
 describe('a alternância migra para a chave por transporte · o modelo superado não pode ser escolhido por engano', () => {
   // 🔴 O CÓDIGO TEM DUAS FUNÇÕES QUE RESPONDEM «há alternância?», E UMA DELAS É A QUE O ADR-0113 RETIROU.
-  // `transporte-em-uso.latchNow` decide SÓ PELO APARELHO (a regra do ADR-0109);
+  // `transport-in-use.latchNow` decide SÓ PELO APARELHO (a regra do ADR-0109);
   // `latch-scope.latchOf` lê o que a criança gravou (a regra do ADR-0113). Nenhuma tem consumidor
   // hoje, então nada está partido — mas quem for ligar a fiação escolhe uma, e escolher a primeira
   // implementa o modelo aposentado sem que nada o diga.
@@ -195,7 +195,7 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
   // acontecer.
   it('🎯 [Zero] a função superada continua SEM CONSUMIDOR na engine', () => {
     const usam = ficheiros()
-      .filter((f) => f !== 'input/transporte-em-uso.ts')
+      .filter((f) => f !== 'input/transport-in-use.ts')
       .filter((f) => /latchNow\s*\(/.test(fonte(f)));
     expect(usam, `alguém passou a chamar o modelo que o ADR-0113 retirou: ${usam.join(', ')}`).toEqual([]);
   });

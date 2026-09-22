@@ -12,7 +12,7 @@
 | face landmarker model (float16, 3.8 MB) | same | catalogued; unread |
 | gesture recogniser model (float16, 8.4 MB) and hand landmarker (7.8 MB) | same | catalogued; unread |
 | WebGazer (1.9 MB) | same; `ui/webcam.ts` runs it from the checked cache (#169) | **wired, but to the platformer's keys**: gaze left/right/up → synthetic `KeyA`/`KeyD`/`Space` — a game's keys inside the engine |
-| the transports' latch rule | `input/transporte-em-uso` (ADR-0113) | built: camera enabled ⇒ the move and hold latches are the law |
+| the transports' latch rule | `input/transport-in-use` (ADR-0113) | built: camera enabled ⇒ the move and hold latches are the law |
 | the quick bar's 🧑 👀 👄 | `ui/pause-icons` | «under construction» |
 
 ## What each runtime gives (sources)

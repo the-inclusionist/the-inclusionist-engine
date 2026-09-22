@@ -5,7 +5,7 @@
 // who could not avoid the second one loses the turn. After a key is accepted, this refuses a press that STARTS for as long as
 // the cool-down runs.
 //
-// ⚠️ IT IS AN ACCOMMODATION AND NOT A SIMULATION, which is why it is not in `input/motor-simulation`: that module's first
+// ⚠️ IT IS AN ACCOMMODATION AND NOT A SIMULATION, which is why it is not in `input/empathy-filter`: that module's first
 // paragraph draws the line — a simulation makes play harder on purpose, to show an adult what a disability costs — and a rule
 // that HELPS living beside them would blur it for whoever reads either one.
 //

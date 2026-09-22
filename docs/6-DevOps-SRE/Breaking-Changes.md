@@ -1518,6 +1518,30 @@ spelling.
 | `tests/pesados-na-entrega.node.test.js` | `tests/heavy-into-the-delivery.node.test.js` |
 | `tests/pesados.node.test.js` | `tests/heavy.node.test.js` |
 
+## AV · The FILE names speak English too — `input` (ADR-0219 phase 3, issue #202)
+
+**What this is.** Three modules of the input layer change path. As in AT and AU, the names inside them do not change: each new
+file name is the one the module already exported. `motor-simulation.ts` exports `EmpathySimulation`, `EmpathyFilter` and
+`createEmpathyFilter` — phase 2 moved that family to EMPATHY on purpose, because «motor» is the same word in both languages
+with different meanings and here the engine itself is «o motor» — so the file was the last thing still calling it motor.
+
+📌 `transport-in-use.ts` keeps the longer name rather than becoming `transport.ts`: `input/transports.ts` already exists and is
+a different thing. The length is what keeps the two apart.
+
+**What to do.** Change the path in your imports by the table.
+
+<!-- printed by `node scripts/print-rename-table.mjs --files input` -->
+
+**input** — 5 files, moved 2026-09-22
+
+| was | is |
+|---|---|
+| `app/js/input/motor-simulation.ts` | `app/js/input/empathy-filter.ts` |
+| `app/js/input/origem-sintetica.ts` | `app/js/input/synthetic-source.ts` |
+| `app/js/input/transporte-em-uso.ts` | `app/js/input/transport-in-use.ts` |
+| `tests/simulacao-motora.node.test.js` | `tests/empathy-filter.node.test.js` |
+| `tests/transporte-em-uso.node.test.js` | `tests/transport-in-use.node.test.js` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

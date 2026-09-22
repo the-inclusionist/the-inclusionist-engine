@@ -114,7 +114,7 @@ export interface KeydownEventLike {
    *
    * ⚠️ Torná-lo obrigatório partiria todos os duplos de teste que já existem, e partiria-os por uma razão
    * falsa: eles descrevem a decisão de teclado, que não depende disto. O que a ausência significa está
-   * escrito no `input/origem-sintetica` — «não afirmei nada», cuja resposta é `undefined` e não `'teclado'`.
+   * escrito no `input/synthetic-source` — «não afirmei nada», cuja resposta é `undefined` e não `'teclado'`.
    */
   isTrusted?: boolean;
 }
@@ -295,11 +295,11 @@ export function titleNavOf(code: string, s: KeydownSnapshot, action2: boolean): 
 import { hasNavIntent as hasTitleIntent } from './edges.js';
 import type { EventTargetLike } from './touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
-import type { TransportName } from './transporte-em-uso.js';
+import type { TransportName } from './transport-in-use.js';
 // ⚠️ IMPORTADA E NÃO INJECTADA, ao contrário dos três escritores logo abaixo, e a linha que separa os dois é
 // esta: `sourceOfEvent` é uma função PURA do evento — não toca estado nenhum que o cartucho possua. Os
 // escritores tocam o `input/state`, que é mutado in-place e partilhado, e é por isso que continuam a entrar.
-import { sourceOfEvent } from './origem-sintetica.js';
+import { sourceOfEvent } from './synthetic-source.js';
 export { hasNavIntent as hasTitleIntent } from './edges.js';
 
 /**
@@ -466,7 +466,7 @@ export interface KeydownCtx {
    * alternância de que a entrada dela depende, e nada o diz.
    *
    * ⚠️ E É AQUI QUE ELE VALE, e não no teclado que já é o padrão: o evento sintético que a webcam despacha
-   * chega carimbado (`input/origem-sintetica`), então é por esta linha que `olhos`/`rosto`/`gestos`/`fala`
+   * chega carimbado (`input/synthetic-source`), então é por esta linha que `olhos`/`rosto`/`gestos`/`fala`
    * passam a ser o transporte em uso. Uma tecla premida a sério devolve o teclado, que é a regra 3 do ADR-0109.
    */
   playerEdge: (jogador: number, origem: TransportName) => void;

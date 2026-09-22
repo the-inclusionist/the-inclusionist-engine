@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import {
   keys, keySource, markKey, markKeyWithoutSource, releaseKey, releaseAllKeys, sourceOf, held,
 } from '../app/js/input/state.js';
-import { stampSource, sourceOfEvent, SOURCE_KEY } from '../app/js/input/origem-sintetica.js';
+import { stampSource, sourceOfEvent, SOURCE_KEY } from '../app/js/input/synthetic-source.js';
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
@@ -63,7 +63,7 @@ const POR_MIGRAR = {
 // um escritor novo que ninguém reparou que entrou.
 //
 // ⚠️ O `keydown` saiu resolvendo o ponto difícil que esta lista carregava escrito na própria entrada dele — a
-// webcam despachava `KeyboardEvent` sintético e seria carimbada `teclado`. A saída foi `input/origem-sintetica`:
+// webcam despachava `KeyboardEvent` sintético e seria carimbada `teclado`. A saída foi `input/synthetic-source`:
 // o carimbo viaja NO EVENTO, e `isTrusted` responde por quem não carimbou. Ver os casos lá em baixo.
 
 describe('ADR-0109 · a origem da tecla viaja com ela', () => {
@@ -154,7 +154,7 @@ describe('ADR-0109 · a origem da tecla viaja com ela', () => {
   });
 });
 
-// ========================= O CARIMBO NO EVENTO (input/origem-sintetica) =========================
+// ========================= O CARIMBO NO EVENTO (input/synthetic-source) =========================
 // ⚠️ ISTO É O PONTO DIFÍCIL QUE A LISTA ACIMA CARREGOU DESDE O PRIMEIRO DIA. A webcam despacha `KeyboardEvent`
 // sintético, entra pelo `keydown` e seria carimbada `teclado` — e a regra 3 do ADR-0109 diz que apertar uma
 // tecla devolve o teclado SEM alternância, logo o olhar da criança desligaria sozinho a alternância de que ela
@@ -210,7 +210,7 @@ describe('ADR-0109 · quem despachou este evento', () => {
     expect(
       semCarimbo,
       'despacho de tecla sintética sem declarar o transporte. Envolva em `carimbarOrigem(…, transporte)` de '
-      + '`input/origem-sintetica` — sem isso o evento chega ao `keydown` indistinguível de uma tecla premida.',
+      + '`input/synthetic-source` — sem isso o evento chega ao `keydown` indistinguível de uma tecla premida.',
     ).toEqual([]);
   });
 

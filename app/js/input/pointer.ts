@@ -16,7 +16,7 @@
 // um evento sintético, então «não sei» é uma resposta honesta. Uma amostra de ponteiro é construída PELO
 // transporte que a produziu — ele sabe sempre o que é, porque é ele próprio.
 
-import type { TransportName } from './transporte-em-uso.js';
+import type { TransportName } from './transport-in-use.js';
 import type { AsFraction } from './pointer-space.js';
 
 /**
@@ -34,7 +34,7 @@ export interface PointerSample {
   readonly apertado: boolean;
 }
 
-/** O repouso: centro da região, sem aperto, teclado — o mesmo padrão que o `transporte-em-uso` assume. */
+/** O repouso: centro da região, sem aperto, teclado — o mesmo padrão que o `transport-in-use` assume. */
 export const PADRAO: PointerSample = Object.freeze({ fx: 0.5, fy: 0.5, origem: 'teclado', apertado: false });
 
 /**

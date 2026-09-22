@@ -11,7 +11,7 @@
 
 import type { Action } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
-import type { TransportName } from './transporte-em-uso.js';
+import type { TransportName } from './transport-in-use.js';
 
 export interface VirtualCommand {
   readonly action: Action;

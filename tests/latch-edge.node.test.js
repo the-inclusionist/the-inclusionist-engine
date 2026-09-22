@@ -3,7 +3,7 @@
 //
 // ========================= O QUE ESTE FICHEIRO FECHA =========================
 // Os outros três gates desta cadeia afirmam cada um a sua peça: a REGRA (`latch-scope`), o ARMAZENAMENTO
-// (`latch-store`), o AUTÓMATO (`transporte-em-uso`) e a RESOLUÇÃO (`latch-sync`). Todos verdes, e durante um
+// (`latch-store`), o AUTÓMATO (`transport-in-use`) e a RESOLUÇÃO (`latch-sync`). Todos verdes, e durante um
 // dia inteiro a cadeia não existia — medido em 2026-09-09, `playerEdge` e `storedLatch` tinham
 // ZERO chamadores em produção. Peças aferidas não são uma fiação.
 //

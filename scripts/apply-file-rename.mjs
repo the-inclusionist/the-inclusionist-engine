@@ -99,6 +99,12 @@ export function rewriteReferences(text, fromFile, moves) {
  * ⚠️ The extensionless form is the one that can bite: `core/ring` is a prefix of a `core/ring-buffer` that does not exist today
  * but could tomorrow. So it is the only one matched by expression rather than by text, and it refuses to match when what follows
  * is a letter, a digit, a dash or a dot — it renames a NAME, never the head of a longer one.
+ *
+ * 🔴 AND THERE IS A FOURTH SHAPE THIS TOOL REFUSES TO HANDLE, deliberately: the BARE BASENAME, `transporte-em-uso` with no
+ * folder in front of it, which is how a comment sometimes names a module and how one gate keys its ledger. It is refused
+ * because it cannot be told apart from anything else with that name, and this tree has two `port.ts`, two `state.ts` and two
+ * `vision.ts` — a rule about `state` would rewrite the wrong half of the engine and nothing would fail until much later. Those
+ * are found by reading the report of what is left and changed by hand, which costs minutes and cannot be silently wrong.
  */
 export function dataForms(moves) {
   const pares = [];

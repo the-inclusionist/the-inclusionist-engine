@@ -20,7 +20,7 @@ import { DEFAULTS } from '../core/state.js';
 import { playerEdge, inputOf } from './state.js';
 import { syncLatch, type LatchPlayer } from './latch-sync.js';
 import type { LatchStore } from './latch-store.js';
-import type { TransportName } from './transporte-em-uso.js';
+import type { TransportName } from './transport-in-use.js';
 
 export interface LatchedEdgeOptions {
   /**
@@ -44,7 +44,7 @@ export interface LatchedEdgeOptions {
  * EQUIVALENTE — está registada como tal no gate, em vez de fingir cobertura. O que a escolha compra é o
  * futuro: quem decide que aparelho está em uso é o autómato, e o dia em que ele ganhar uma regra que RECUSE
  * uma aresta (um falso positivo da webcam a ser filtrado, por exemplo) esta linha segue-o sem ser editada.
- * Ler `origem` seria uma segunda resposta à pergunta que o `input/transporte-em-uso` existe para responder.
+ * Ler `origem` seria uma segunda resposta à pergunta que o `input/transport-in-use` existe para responder.
  */
 export function createLatchedEdge(
   getPlayers: () => readonly (LatchPlayer | null | undefined)[],

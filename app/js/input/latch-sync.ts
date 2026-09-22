@@ -8,7 +8,7 @@
 //
 //   · `input/latch-scope`      — a REGRA (assistido sempre ligado · valor do transporte · legado · fábrica);
 //   · `input/latch-store`      — o ARMAZENAMENTO (os três estados, e a chave com o transporte no nome);
-//   · `input/transporte-em-uso` — o AUTÓMATO (que aparelho produziu as arestas deste jogador).
+//   · `input/transport-in-use` — o AUTÓMATO (que aparelho produziu as arestas deste jogador).
 //
 // 📏 E MEDIDO EM 2026-09-09: `storedLatch` tinha ZERO chamadores em produção. A regra estava escrita,
 // aferida, e ninguém a lia — quem decidia a alternância continuava a ser `p.toggleMove`, escrito só pelo

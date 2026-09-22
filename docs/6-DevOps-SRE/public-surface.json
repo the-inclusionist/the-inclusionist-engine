@@ -377,6 +377,12 @@
     "edgeAllowed",
     "hasNavIntent"
   ],
+  "input/empathy-filter.ts": [
+    "EmpathyFilter",
+    "EmpathySimulation",
+    "KeyDecision",
+    "createEmpathyFilter"
+  ],
   "input/face-map.ts": [
     "ExpressionLevels",
     "FACE_BLENDSHAPES",
@@ -552,18 +558,6 @@
     "latchedDrive",
     "nextLatchedDir"
   ],
-  "input/motor-simulation.ts": [
-    "EmpathyFilter",
-    "EmpathySimulation",
-    "KeyDecision",
-    "createEmpathyFilter"
-  ],
-  "input/origem-sintetica.ts": [
-    "KeyEventLike",
-    "SOURCE_KEY",
-    "sourceOfEvent",
-    "stampSource"
-  ],
   "input/pad-defaults.ts": [
     "PadMapping",
     "PadTable",
@@ -622,6 +616,12 @@
     "SwitchScanOptions",
     "createSwitchScan"
   ],
+  "input/synthetic-source.ts": [
+    "KeyEventLike",
+    "SOURCE_KEY",
+    "sourceOfEvent",
+    "stampSource"
+  ],
   "input/touch-bindings.ts": [
     "CROSS_DEAD_FRACTION",
     "DirSet",
@@ -677,7 +677,7 @@
     "padPxPerMm",
     "touchGaps"
   ],
-  "input/transporte-em-uso.ts": [
+  "input/transport-in-use.ts": [
     "InputState",
     "LATCH_OF_THEIR_OWN",
     "NEED_ENABLING",

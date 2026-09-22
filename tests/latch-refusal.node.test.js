@@ -15,7 +15,7 @@ import {
   latchRefusal, showsEvenWhenRequired, REFUSAL_KEY, NEED_LATCH,
 } from '../app/js/ui/latch-refusal.js';
 import { ONE_COMMAND_AT_A_TIME } from '../app/js/input/latch-scope.js';
-import { TRANSPORT_NAMES } from '../app/js/input/transporte-em-uso.js';
+import { TRANSPORT_NAMES } from '../app/js/input/transport-in-use.js';
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';

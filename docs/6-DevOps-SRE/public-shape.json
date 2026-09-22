@@ -511,6 +511,16 @@
     "type EdgeFlag": "'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'",
     "type EdgeAction": "'action2' | 'action1' | 'left' | 'right' | 'action4' | 'action3'"
   },
+  "input/empathy-filter.ts": {
+    "interface EmpathySimulation": [
+      "umPorVez"
+    ],
+    "interface EmpathyFilter": [
+      "keydown",
+      "keyup"
+    ],
+    "type KeyDecision": "'passar' | 'barrar' | 'tocar'"
+  },
   "input/face-map.ts": {
     "interface FaceRest": [
       "scores"
@@ -833,21 +843,6 @@
   "input/latch.ts": {
     "type LatchDir": "-1 | 0 | 1"
   },
-  "input/motor-simulation.ts": {
-    "interface EmpathySimulation": [
-      "umPorVez"
-    ],
-    "interface EmpathyFilter": [
-      "keydown",
-      "keyup"
-    ],
-    "type KeyDecision": "'passar' | 'barrar' | 'tocar'"
-  },
-  "input/origem-sintetica.ts": {
-    "interface KeyEventLike": [
-      "isTrusted?"
-    ]
-  },
   "input/pad-defaults.ts": {
     "type PadMapping": "(jogadores: number, assento: number) => Partial<Record<Action, number | null>> | null",
     "type PadTable": "Readonly<Record<Action, Binding<number>>>"
@@ -906,6 +901,11 @@
     ],
     "interface SwitchScan": [],
     "type ScanItem": "Action | typeof SCAN_CANCEL"
+  },
+  "input/synthetic-source.ts": {
+    "interface KeyEventLike": [
+      "isTrusted?"
+    ]
   },
   "input/touch-bindings.ts": {
     "interface EdgeRaise": [
@@ -1031,7 +1031,7 @@
     "type PadKind": "'kb' | 'x' | 'd'",
     "type PersonaKey": "'crianca-pequena' | 'crianca-grande' | 'adulto-pequeno' | 'adulto-maos-grandes'"
   },
-  "input/transporte-em-uso.ts": {
+  "input/transport-in-use.ts": {
     "interface InputState": [
       "assistidaLigada",
       "emUso"

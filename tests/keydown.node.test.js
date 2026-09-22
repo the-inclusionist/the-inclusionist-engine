@@ -27,7 +27,7 @@ import {
   // caso lê é o mesmo que a alternância vai perguntar.
   playerEdge, inputOf, forgetInputs,
 } from '../app/js/input/state.js';
-import { stampSource } from '../app/js/input/origem-sintetica.js';
+import { stampSource } from '../app/js/input/synthetic-source.js';
 import {
   decideKeydown, initKeydown, isJumpKey, isGameKeyCode, isEasyShortcut,
   titleNavOf, hasTitleIntent, modalOwnerIndex, modalIntentOf, edgesFor,

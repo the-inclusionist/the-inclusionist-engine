@@ -10,11 +10,11 @@ import type { Action } from '../core/actions.js';
 // ⚠️ O cabeçalho deste módulo dizia «ZERO deps», e ele já tinha DUAS de tipo (`ControlledPlayer`, `Action`) —
 // a frase queria dizer «nada em tempo de execução», que continua verdade: os três imports são `type` e
 // desaparecem no build. A terceira entra pela mesma razão que as outras duas: o vocabulário mora com quem
-// tem as REGRAS sobre ele (`input/transporte-em-uso`), e repeti-lo aqui seria a segunda cópia de uma união.
+// tem as REGRAS sobre ele (`input/transport-in-use`), e repeti-lo aqui seria a segunda cópia de uma união.
 import {
   PADRAO, afterEdge, enableAssisted, disableAssisted,
   type TransportName, type InputState,
-} from './transporte-em-uso.js';
+} from './transport-in-use.js';
 
 export const keys = new Set<string>();
 

@@ -2,7 +2,7 @@
 // O TRANSPORTE EM USO, POR JOGADOR — a metade que faltava entre o autómato e a alternância (ADR-0109/0113).
 //
 // ========================= O QUE ESTA PEÇA É, E ONDE ELA MORA =========================
-// O `input/transporte-em-uso` é o autómato PURO: recebe um estado e uma aresta, devolve o estado novo, e não
+// O `input/transport-in-use` é o autómato PURO: recebe um estado e uma aresta, devolve o estado novo, e não
 // guarda nada. O `input/latch-store` sabe ler e gravar a alternância DE UM TRANSPORTE. Faltava quem soubesse
 // QUAL transporte é o de cada jogador — e é isto.
 //
@@ -19,7 +19,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   inputOf, playerEdge, enableAssistedFor, disableAssistedFor, forgetInputs, releaseAllKeys,
 } from '../app/js/input/state.js';
-import { PADRAO } from '../app/js/input/transporte-em-uso.js';
+import { PADRAO } from '../app/js/input/transport-in-use.js';
 
 beforeEach(() => { forgetInputs(); });
 

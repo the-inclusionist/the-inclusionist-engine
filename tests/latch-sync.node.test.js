@@ -3,7 +3,7 @@
 //
 // ========================= O QUE ESTE FICHEIRO AFIRMA, E POR QUE É EM SEQUÊNCIAS =========================
 // «Trocar de controle troca a alternância» não quer dizer nada sem se ter trocado. É a lição que os casos do
-// `input/transporte-em-uso` já tinham escrito: um caso que chama uma função uma vez mede a função; o que faz
+// `input/transport-in-use` já tinham escrito: um caso que chama uma função uma vez mede a função; o que faz
 // a criança tropeçar é a ORDEM. Então os casos daqui são sequências — o mesmo jogador, dois aparelhos.
 //
 // 🎯 E A PROPRIEDADE MAIS IMPORTANTE É NEGATIVA: o armazenamento CONTA as escritas, e a troca de transporte

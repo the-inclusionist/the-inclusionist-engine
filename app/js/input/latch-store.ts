@@ -11,7 +11,7 @@
 // não depende dele. É a mesma divisão que o `render/viz-axes` (modelo) e o `render/viz-setters` (escrita)
 // já fazem neste repositório.
 //
-// ⚠️ E O QUE ELE NÃO FAZ: não sabe QUAL transporte está em uso. Isso é do `input/transporte-em-uso`, e chega
+// ⚠️ E O QUE ELE NÃO FAZ: não sabe QUAL transporte está em uso. Isso é do `input/transport-in-use`, e chega
 // aqui como argumento. Um módulo de armazenamento que adivinhasse o transporte escreveria a escolha de uma
 // criança na chave de outro aparelho — em silêncio, que é o defeito que o ADR-0113 existe para evitar.
 import {

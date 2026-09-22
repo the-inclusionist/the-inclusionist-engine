@@ -6,7 +6,7 @@
 
 ## What the transport is
 
-The engine already names the voice as a transport (`input/transporte-em-uso`, ADR-0074, ADR-0113): once the camera or the
+The engine already names the voice as a transport (`input/transport-in-use`, ADR-0074, ADR-0113): once the camera or the
 microphone is enabled, the move and hold latches become the law for every transport, because a spoken command cannot be
 «held». The transport itself does not exist: nothing listens.
 

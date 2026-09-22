@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/origem-sintetica.ts — QUEM DESPACHOU ESTA TECLA, quando não foi um dedo num teclado (ADR-0109).
+// input/synthetic-source.ts — QUEM DESPACHOU ESTA TECLA, quando não foi um dedo num teclado (ADR-0109).
 //
 // ========================= O PONTO DIFÍCIL DA ARESTA, E ELE ESTAVA NOMEADO =========================
 // O crivo `tests/origem-da-tecla` carrega esta frase na entrada do `input/keydown` desde que o
@@ -19,8 +19,8 @@
 // 📌 E é aditivo por construção: um evento sem carimbo continua a funcionar. Foi isso que permitiu migrar os
 // escritores um a um sem nenhum commit vermelho pelo meio.
 
-import type { TransportName } from './transporte-em-uso.js';
-import { isTransportName } from './transporte-em-uso.js';
+import type { TransportName } from './transport-in-use.js';
+import { isTransportName } from './transport-in-use.js';
 
 /**
  * A propriedade pendurada no evento.

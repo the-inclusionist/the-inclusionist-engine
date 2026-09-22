@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/transporte-em-uso — A ALTERNÂNCIA SEGUE O APARELHO EM USO (ADR-0109), na metade pura.
+// input/transport-in-use — A ALTERNÂNCIA SEGUE O APARELHO EM USO (ADR-0109), na metade pura.
 //
 // ========================= O QUE ESTE MÓDULO É =========================
 // O autómato das quatro regras do ADR-0109 §1, sem DOM, sem armazenamento e sem eventos. Recebe ARESTAS com
@@ -30,7 +30,7 @@ export type TransportName = 'teclado' | 'gamepad' | 'toque' | 'olhos' | 'rosto' 
 /**
  * A UNIÃO COMO VALOR, porque há um sítio onde ela tem de ser verificada em runtime.
  *
- * ⚠️ EXISTE POR CAUSA DE UMA FRONTEIRA, e é a única razão que a justifica: o `input/origem-sintetica` lê o
+ * ⚠️ EXISTE POR CAUSA DE UMA FRONTEIRA, e é a única razão que a justifica: o `input/synthetic-source` lê o
  * transporte de um EXPANDO pendurado num `KeyboardEvent` — um objecto que este código não construiu e que
  * qualquer script da página pode construir. Um valor que atravessa essa fronteira não é um `TransportName` por
  * o TypeScript o dizer; é uma `string` até alguém a conferir. Sem lista, `'olho'` entrava no mapa de origens

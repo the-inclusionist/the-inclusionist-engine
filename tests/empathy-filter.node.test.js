@@ -7,7 +7,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { createEmpathyFilter } from '../app/js/input/motor-simulation.js';
+import { createEmpathyFilter } from '../app/js/input/empathy-filter.js';
 
 const DESLIGADAS = { umPorVez: false, noGripStrength: false };
 const UM = { umPorVez: true, noGripStrength: false };

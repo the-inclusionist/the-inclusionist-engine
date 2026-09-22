@@ -86,7 +86,7 @@
 
 /** `ui/dom.ts` `$` — injetado; o módulo nunca alcança `document`. */
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
-import type { TransportName } from './transporte-em-uso.js';
+import type { TransportName } from './transport-in-use.js';
 import { fromCentre, type RectLike } from './pointer-space.js';
 import type { PlayerView } from '../core/entity.js';
 import type { DomQuery } from '../core/dom-query.js';

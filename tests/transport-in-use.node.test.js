@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest';
 import {
   PADRAO, latchNow, afterEdge, enableAssisted, disableAssisted,
   NEED_ENABLING, LATCH_OF_THEIR_OWN,
-} from '../app/js/input/transporte-em-uso.js';
+} from '../app/js/input/transport-in-use.js';
 
 /** Corre uma sequência de arestas a partir do padrão, e devolve o estado final. */
 const correr = (...origens) => origens.reduce(afterEdge, PADRAO);
