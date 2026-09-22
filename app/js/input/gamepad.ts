@@ -375,6 +375,33 @@ export interface GamepadApi {
   getPadWiz(): WizState | null;
 }
 
+/**
+ * O QUE UM QUADRO SABE SOBRE UM CONTROLE: as acções agora, as arestas contra o quadro anterior, e de quem é o assento.
+ *
+ * 🔴 EXISTE PORQUE O `pollPads` TINHA PROFUNDIDADE 11 (ADR-0221, passo 7c). A leitura de um pad e os cinco destinos
+ * possíveis dela viviam aninhados uns dentro dos outros, e o ramo mais fundo — o jogo a sério — estava a nove níveis da
+ * primeira chaveta. Com a leitura num VALOR, cada destino é uma função ao lado das outras e nenhuma passa de quatro.
+ *
+ * 📌 E não é só a medida: o nome de cada destino passou a existir. «O que acontece quando a criança está na barra rápida»
+ * era um `if` no meio de duzentas linhas e agora é `steerGame` a chamar uma coisa chamada assim.
+ */
+interface PadFrame {
+  readonly gp: PadLike;
+  readonly gi: number;
+  /** O assento deste controle, ou −1 enquanto ninguém o tomou. */
+  readonly owner: number;
+  /** A lista VIVA dos jogadores: o ramo do assento escreve nela. */
+  readonly players: GamepadPlayer[];
+  readonly cur: PadActions;
+  /** O START (ou o pulo) que SUBIU neste quadro — fecha diálogos e telas de vitória. */
+  readonly startEdge: boolean;
+  /** Só o START que subiu — pausa e retoma. */
+  readonly pauseEdge: boolean;
+  readonly edge: (k: ActionKey) => boolean;
+  /** As seis intenções de menu. `comStart` só no título, onde o START é «começar» e não «sair». */
+  readonly navKeys: (comStart?: boolean) => NavKeys;
+}
+
 export function initGamepad(ctx: GamepadCtx): GamepadApi {
   let padWizAutoResume = false; // wizard aberto automaticamente no meio do jogo -> retoma a fase ao fechar
   let padWizAnim: { seq: string[]; hold: number; t: number } | null = null;
@@ -445,6 +472,140 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
 
   // ----- poll (chamado a cada frame do loop) -----
 
+  /** A leitura deste quadro para UM controle: as acções agora, as arestas contra o quadro anterior e o assento. */
+  function readPad(gp: PadLike, players: GamepadPlayer[]): PadFrame {
+    const gi = gp.index;
+    const prev = padPrevAct[gi] || {};
+    // ⚠️ O ASSENTO É LIDO ANTES DAS ACÇÕES, e a razão é o ADR-0115: a tabela de botões deste jogo é declarada POR
+    // ASSENTO, e ela é lida dentro do `actionsFor`. Enquanto o `owner` só se resolvia lá em baixo, por ramo, a
+    // leitura acontecia antes de se saber de quem era o controle — e um padrão por assento chegava tarde.
+    const owner = players.findIndex((p) => p.pad === gi);
+    // ⚠️ E O CONTROLE AINDA NÃO ATRIBUÍDO (`owner < 0`) LÊ O ASSENTO 0, e não «nenhum»: ele está a produzir
+    // arestas na tela do título, e um mapa vazio ali deixaria a criança sem como escolher o próprio jogo.
+    // A EMPATIA MOTORA APLICADA AO CONTROLE (issue #120). Sem esta linha, uma criança com o modo de
+    // um botão ligado e um pad na mão NÃO ESTAVA no modo — e nada em lado nenhum o dizia.
+    const cur = oneButtonAtOnce(
+      prev,
+      actionsFor(gp, padTable(ctx.getNumPlayers(), owner < 0 ? 0 : owner)),
+      estadoDoJogo.oneButton,
+    );
+    const startEdge = cur._start && !padPrevStart[gi]; padPrevStart[gi] = cur._start;
+    const pauseEdge = cur._pause && !prev._pause;
+    const edge = (k: ActionKey): boolean => cur[k] && !prev[k];
+    padCur[gi] = cur; padPrevAct[gi] = cur;
+    // 📌 O START conta como «sim» APENAS no título: lá ele é o botão que começa o jogo, e no cartão de pausa ou na barra
+    // ele é a SAÍDA (ADR-0044 item 7). Um parâmetro em vez de três listas iguais a menos de um termo.
+    const navKeys = (comStart = false): NavKeys => ({
+      yes: edge('action2') || (comStart && startEdge), no: edge('action3'),
+      up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right'),
+    });
+    return { gp, gi, owner, players, cur, startEdge, pauseEdge, edge, navKeys };
+  }
+
+  /** Aconteceu alguma das seis intenções de menu neste quadro? */
+  // 📌 O `!!` é o que o `NavKeys` pede: os seis campos são OPCIONAIS lá, porque nem todo transporte os produz todos.
+  const anyIntent = (k: NavKeys): boolean => !!(k.yes || k.no || k.up || k.down || k.left || k.right);
+
+  /** Controle fora do padrão (DirectInput) SEM mapa guardado que apertou algo: pausa geral e o assistente abre nele. */
+  function wizardTookOver(gp: PadLike): boolean {
+    if (gp.mapping === 'standard' || padMapFor(gp.id) || !gp.buttons.some((b) => b && b.pressed)) return false;
+    padWizAutoResume = ctx.mundoRodando();
+    if (ctx.mundoRodando()) ctx.pausar();
+    openPadWizFor(gp);
+    return true;
+  }
+
+  /** Vitória: START/pulo fecham o modal (Jogar de novo), e nada deste controle chega ao jogo por baixo dele. */
+  function winOverlayTook(f: PadFrame): boolean {
+    const winOv = ctx.$<HTMLElement & { hidden: boolean }>('#win-overlay');
+    if (!winOv || winOv.hidden) return false;
+    if (f.startEdge) { const b = ctx.$<HTMLElement>('#btn-again'); if (b) b.click(); }
+    return true;
+  }
+
+  /** Menu inicial: o pad navega, e num jogo de vários só o J1 escolhe. */
+  function steerTitle(f: PadFrame): void {
+    const k = f.navKeys(true);
+    if (!anyIntent(k)) return;
+    if (ctx.getNumPlayers() > 1 && f.owner > 0) { ctx.srSay(t('sr.title.waitP1')); return; } // só o J1 escolhe
+    ctx.navTitle(k); // menu inicial navegável pelo pad
+  }
+
+  /** Cartão de pausa: o START retoma, e o direcional navega o diálogo partilhado ou o menu do próprio assento. */
+  function steerPause(f: PadFrame): void {
+    if (f.pauseEdge) { ctx.retomar(); return; } // START retoma
+    const k = f.navKeys();
+    if (!anyIntent(k)) return;
+    const dlg = ctx.sharedDialogOpen();
+    if (dlg) { ctx.navDialog(dlg, k); return; }
+    const pi = f.owner < 0 ? 0 : f.owner;
+    const menu = ctx.getPauseMenu(pi);
+    if (menu && !menu.hidden) ctx.navPause(menu, pi, k);
+  }
+
+  /** Atribuição POR ORDEM DE AÇÃO: qualquer botão associa -> 1º controle a agir -> 1º jogador sem pad. */
+  function takeSeat(f: PadFrame): void {
+    const anyEdge = f.edge('action2') || f.edge('action1') || f.edge('action4') || f.edge('action3') || f.startEdge
+      || f.edge('left') || f.edge('right') || f.edge('up') || f.edge('down');
+    if (!anyEdge) return;
+    const waitI = f.players.findIndex((p) => p && p.waiting);
+    const free = waitI >= 0 ? waitI : f.players.findIndex((p) => p && p.pad < 0 && !p.quit);
+    if (free < 0) { ctx.joinPlayer(f.gi); return; }
+    const seated = f.players[free]!;
+    seated.pad = f.gi;
+    if (seated.waiting) { seated.waiting = false; ctx.clearWaitingBadge(free); }
+    ctx.srSay(t('sr.pad.assigned', { n: free + 1 }));
+  }
+
+  /** O jogo a sério: o START pausa, o modal come o direcional, e o resto vira bandeira de acção. */
+  function playRound(f: PadFrame, p: GamepadPlayer): void {
+    if (f.pauseEdge) { ctx.pausar(); ctx.setPauseActor(f.owner); return; } // START pausa (todos pausam; cada tela navega a sua)
+    if (ctx.hasModal(f.owner)) { // o pad navega o modal do PRÓPRIO jogador (o jogo dos outros segue)
+      // A ORDEM é a do original: esquerda, direita, cima, baixo, confirmar, apagar. O que saiu foi o
+      // SIGNIFICADO — o ±1/±3 da grade e o desvio de Braille, que agora são decisão do jogo.
+      const intent: ModalIntent | null =
+        f.edge('left') ? 'left' : f.edge('right') ? 'right'
+        : f.edge('up') ? 'up' : f.edge('down') ? 'down'
+        : f.edge('action2') ? 'confirm' : f.edge('action3') ? 'erase' : null;
+      if (intent) ctx.modalInput(f.owner, intent);
+      return;
+    }
+    // A tabela e a guarda do Fácil vêm de input/edges.ts, as MESMAS que keydown e touch usam. Antes eram
+    // seis `if` à mão aqui, seis lá e seis no toque — e o do toque tinha esquecido o `!p.easy`.
+    let algumaAresta = false;
+    for (const [act, flag] of EDGE_BY_ACTION) {
+      if (f.edge(act)) algumaAresta = true;
+      if (edgeAllowed(act, p.easy) && f.edge(act)) p[flag] = true;
+    }
+    // 📌 A ARESTA DO CONTROLE, e ela conta MESMO QUANDO O FÁCIL A FILTRA (ADR-0113 cláusula 4): a
+    // criança carregou no botão — que a regra do Modo Fácil não levante a bandeira do jogo não muda
+    // o facto de o aparelho em uso ser este. Ler a mesma condição do `p[flag]` faria uma criança em
+    // Modo Fácil ficar com a alternância do teclado enquanto joga no controle.
+    // ⚠️ E É AQUI, no ramo de JOGO, e não nos de menu: `naBarraDe`, o título e a pausa são navegação, e
+    // a pergunta que isto alimenta — que alternância vale AGORA — é sobre jogar.
+    if (algumaAresta) ctx.playerEdge(f.owner, 'gamepad');
+  }
+
+  /** Com o mundo a andar: a barra rápida primeiro, depois o assento, a tela abandonada, e por fim o jogo. */
+  function steerGame(f: PadFrame): void {
+    // ===================== O MODO `accessibility` (ADR-0044, item 7) =====================
+    // Com o jogo ANDANDO, o direcional deste jogador dirige a BARRA RÁPIDA e não o personagem. Vem antes
+    // de tudo o que é de jogo, porque enquanto o modo está ligado nada mais deste controle é de jogo.
+    //
+    // Both exits arrive together: `especial` (action 3) is the project's BACK — the east button: B on Xbox, ◯ on
+    // PlayStation, A on Nintendo — and `startEdge` is the button that opens the pause, where this was entered. A child
+    // who is lost goes back the way they came, one who knows the game tries the usual back; both work.
+    if (f.owner >= 0 && ctx.naBarraDe(f.owner)) {
+      const k = f.navKeys();
+      if (f.startEdge || anyIntent(k)) ctx.navBar(f.owner, k, !!f.startEdge);
+      return;
+    }
+    if (f.owner < 0) { takeSeat(f); return; }
+    const p = f.players[f.owner]!;
+    if (p.quit) { if (f.startEdge) ctx.respawnPlayer(f.owner); return; } // tela abandonada -> recomeça SÓ ela
+    playRound(f, p);
+  }
+
   function pollPads(): void {
     if (assistente.estado()) return; // durante o wizard, os pads falam só com ele
     const pads = ctx.getGamepads();
@@ -455,122 +616,23 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     }
     for (const gp of pads) {
       if (!gp) continue;
-      const gi = gp.index;
       // controle fora do padrão (DirectInput) SEM mapa salvo apertou algo -> pausa geral + wizard direto
-      if (gp.mapping !== 'standard' && !padMapFor(gp.id) && gp.buttons.some((b) => b && b.pressed)) {
-        padWizAutoResume = ctx.mundoRodando();
-        if (ctx.mundoRodando()) ctx.pausar();
-        openPadWizFor(gp);
-        return;
-      }
-      const prev = padPrevAct[gi] || {};
-      // ⚠️ O ASSENTO SUBIU PARA AQUI, e a razão é o ADR-0115: a tabela de botões deste jogo é declarada POR
-      // ASSENTO, e ela é lida dentro do `actionsFor`. Enquanto o `owner` só se resolvia lá em baixo, por ramo,
-      // a leitura acontecia antes de se saber de quem era o controle — e um padrão por assento chegava tarde.
-      // 📌 Os ramos abaixo passaram a usar esta constante em vez de recalcularem a mesma linha três vezes.
-      const players = ctx.getPlayers();
-      const owner = players.findIndex((p) => p.pad === gi);
-      // ⚠️ E O CONTROLE AINDA NÃO ATRIBUÍDO (`owner < 0`) LÊ O ASSENTO 0, e não «nenhum»: ele está a produzir
-      // arestas na tela do título, e um mapa vazio ali deixaria a criança sem como escolher o próprio jogo.
-      // A EMPATIA MOTORA APLICADA AO CONTROLE (issue #120). Sem esta linha, uma criança com o modo de
-      // um botão ligado e um pad na mão NÃO ESTAVA no modo — e nada em lado nenhum o dizia.
-      const cur = oneButtonAtOnce(
-        prev,
-        actionsFor(gp, padTable(ctx.getNumPlayers(), owner < 0 ? 0 : owner)),
-        estadoDoJogo.oneButton,
-      );
-      if (ctx.isTouchMode() && (cur.left || cur.right || cur.up || cur.down || cur.action2 || cur.action1 || cur.action4 || cur.action3 || cur._start)) {
+      if (wizardTookOver(gp)) return;
+      // ⚠️ `getPlayers()` É LIDO AQUI, um por controle, e não uma vez antes do laço: o ramo do assento ESCREVE na lista
+      // (`players[free].pad = gi`), e lê-la uma vez só mudaria o que o controle seguinte vê.
+      const f = readPad(gp, ctx.getPlayers());
+      if (ctx.isTouchMode() && (f.cur.left || f.cur.right || f.cur.up || f.cur.down
+        || f.cur.action2 || f.cur.action1 || f.cur.action4 || f.cur.action3 || f.cur._start)) {
         ctx.hideTouchControls(); // botão físico usado -> some o gamepad virtual (mesma regra do teclado)
       }
-      const startEdge = cur._start && !padPrevStart[gi]; padPrevStart[gi] = cur._start;
-      const pauseEdge = cur._pause && !prev._pause;
-      const edge = (k: ActionKey): boolean => cur[k] && !prev[k];
-      padCur[gi] = cur; padPrevAct[gi] = cur;
-
-      const winOv = ctx.$<HTMLElement & { hidden: boolean }>('#win-overlay');
-      if (winOv && !winOv.hidden) { // Vitória: START/pulo fecham o modal (Jogar de novo)
-        if (startEdge) { const b = ctx.$<HTMLElement>('#btn-again'); if (b) b.click(); }
-        continue;
-      }
-
-      // Os três ramos abaixo pediam a FASE; hoje pedem os fatos. O `telaDeTitulo` é derivado por exclusão
-      // de propósito: numa cena que este módulo não conheça (um mapa, uma tela de resultados), o controle
-      // deve navegar como no título — que é o comportamento seguro — em vez de não fazer nada.
+      if (winOverlayTook(f)) continue;
+      // Os três destinos abaixo pediam a FASE; hoje pedem os fatos. O título é derivado por exclusão de propósito:
+      // numa cena que este módulo não conheça (um mapa, uma tela de resultados), o controle deve navegar como no
+      // título — que é o comportamento seguro — em vez de não fazer nada.
       const rodando = ctx.mundoRodando(), pausado = ctx.menuDePausa();
-
-      if (!rodando && !pausado) {
-        const k: NavKeys = { yes: edge('action2') || startEdge, no: edge('action3'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
-        const any = k.yes || k.no || k.up || k.down || k.left || k.right;
-        if (ctx.getNumPlayers() > 1 && owner > 0) { if (any) ctx.srSay(t('sr.title.waitP1')); continue; } // só o J1 escolhe
-        if (any) ctx.navTitle(k); // menu inicial navegável pelo pad
-        continue;
-      }
-      if (pausado) {
-        const pi = owner < 0 ? 0 : owner;
-        if (pauseEdge) { ctx.retomar(); continue; } // START retoma
-        const k: NavKeys = { yes: edge('action2'), no: edge('action3'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
-        if (k.yes || k.no || k.up || k.down || k.left || k.right) {
-          const dlg = ctx.sharedDialogOpen();
-          if (dlg) ctx.navDialog(dlg, k);
-          else { const menu = ctx.getPauseMenu(pi); if (menu && !menu.hidden) ctx.navPause(menu, pi, k); }
-        }
-        continue;
-      }
-      if (rodando) {
-        // ===================== O MODO `accessibility` (ADR-0044, item 7) =====================
-        // Com o jogo ANDANDO, o direcional deste jogador dirige a BARRA RÁPIDA e não o personagem. Vem antes
-        // de tudo o que é de jogo, porque enquanto o modo está ligado nada mais deste controle é de jogo.
-        //
-        // Both exits arrive together: `especial` (action 3) is the project's BACK — the east button: B on Xbox, ◯ on
-        // PlayStation, A on Nintendo — and `startEdge` is the button that opens the pause, where this was entered. A child
-        // who is lost goes back the way they came, one who knows the game tries the usual back; both work.
-        if (owner >= 0 && ctx.naBarraDe(owner)) {
-          const k: NavKeys = { yes: edge('action2'), no: edge('action3'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
-          if (startEdge || k.yes || k.no || k.up || k.down || k.left || k.right) ctx.navBar(owner, k, !!startEdge);
-          continue;
-        }
-        if (owner < 0) { // atribuição POR ORDEM DE AÇÃO: qualquer botão associa -> 1º controle a agir -> 1º jogador sem pad
-          const anyEdge = edge('action2') || edge('action1') || edge('action4') || edge('action3') || startEdge || edge('left') || edge('right') || edge('up') || edge('down');
-          if (anyEdge) {
-            const waitI = players.findIndex((p) => p && p.waiting);
-            const free = waitI >= 0 ? waitI : players.findIndex((p) => p && p.pad < 0 && !p.quit);
-            if (free >= 0) {
-              players[free].pad = gi;
-              if (players[free].waiting) { players[free].waiting = false; ctx.clearWaitingBadge(free); }
-              ctx.srSay(t('sr.pad.assigned', { n: free + 1 }));
-            } else { ctx.joinPlayer(gi); }
-          }
-        } else if (players[owner].quit) {
-          if (startEdge) ctx.respawnPlayer(owner); // tela abandonada -> recomeça SÓ ela
-        } else {
-          const p = players[owner];
-          if (pauseEdge) { ctx.pausar(); ctx.setPauseActor(owner); continue; } // START pausa (todos pausam; cada tela navega a sua)
-          if (ctx.hasModal(owner)) { // o pad navega o modal do PRÓPRIO jogador (o jogo dos outros segue)
-            // A ORDEM é a do original: esquerda, direita, cima, baixo, confirmar, apagar. O que saiu foi o
-            // SIGNIFICADO — o ±1/±3 da grade e o desvio de Braille, que agora são decisão do jogo.
-            const intent: ModalIntent | null =
-              edge('left') ? 'left' : edge('right') ? 'right'
-              : edge('up') ? 'up' : edge('down') ? 'down'
-              : edge('action2') ? 'confirm' : edge('action3') ? 'erase' : null;
-            if (intent) ctx.modalInput(owner, intent);
-            continue;
-          }
-          // A tabela e a guarda do Fácil vêm de input/edges.ts, as MESMAS que keydown e touch usam. Antes eram
-          // seis `if` à mão aqui, seis lá e seis no toque — e o do toque tinha esquecido o `!p.easy`.
-          let algumaAresta = false;
-          for (const [act, flag] of EDGE_BY_ACTION) {
-            if (edge(act)) algumaAresta = true;
-            if (edgeAllowed(act, p.easy) && edge(act)) p[flag] = true;
-          }
-          // 📌 A ARESTA DO CONTROLE, e ela conta MESMO QUANDO O FÁCIL A FILTRA (ADR-0113 cláusula 4): a
-          // criança carregou no botão — que a regra do Modo Fácil não levante a bandeira do jogo não muda
-          // o facto de o aparelho em uso ser este. Ler a mesma condição do `p[flag]` faria uma criança em
-          // Modo Fácil ficar com a alternância do teclado enquanto joga no controle.
-          // ⚠️ E É AQUI, no ramo de JOGO, e não nos de menu: `naBarraDe`, o título e a pausa são navegação, e
-          // a pergunta que isto alimenta — que alternância vale AGORA — é sobre jogar.
-          if (algumaAresta) ctx.playerEdge(owner, 'gamepad');
-        }
-      }
+      if (!rodando && !pausado) { steerTitle(f); continue; }
+      if (pausado) { steerPause(f); continue; }
+      if (rodando) steerGame(f);
     }
   }
 
