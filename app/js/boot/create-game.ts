@@ -3797,7 +3797,19 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
           if (typeof (win as unknown as { Worker?: unknown }).Worker === 'function') {
             const { createReadingInWorker } = await import('../platform/reading-in-worker.js');
             readingThread?.close();
-            readingThread = createReadingInWorker({ base: doc.baseURI, language });
+            readingThread = createReadingInWorker({
+              base: doc.baseURI,
+              language,
+              // 📌 A FRASE É ESCRITA AQUI e o módulo só entrega o MOTIVO: uma thread que não abre quando ninguém está à
+              // espera da resposta não tinha como ser dita a lado nenhum (ADR-0169), e quem sabe o que a criança perde
+              // é o canal de diagnóstico, não o protocolo de uma thread.
+              report: (reason) => {
+                const line = `reading: the transcription thread could not open — ${reason}; a child who reads aloud `
+                  + 'gets no answer, and nothing else in the page will say so — check that the reading model for this '
+                  + 'language reached `heavy/` (npx inclusionist-heavy --reading <language>)';
+                if (!problemasMedidos.includes(line)) problemasMedidos.push(line);
+              },
+            });
             closeReadingThread = () => { readingThread?.close(); readingThread = null; };
             return readingThread;
           }

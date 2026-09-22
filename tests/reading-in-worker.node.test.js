@@ -78,6 +78,53 @@ describe('o cliente e o worker falam a mesma língua', () => {
     await expect(leitura.transcribe(amostras())).rejects.toThrow(/does not carry/);
   });
 
+  /* ===================== A ABERTURA TEM DONO DESDE QUE NASCE ===================== */
+  // 🔴 O caso acima mede a thread que não abre com ALGUÉM à espera. Este mede o contrário, e é onde estava o defeito:
+  // ninguém espera pela abertura até à primeira `transcribe()`, logo um modelo que não carrega rejeitava PARA NADA.
+  // 📏 Medido em 22/09: o projecto de navegador acabava com os 1140 casos verdes e o código de saída a dizer FALHA,
+  // por causa desta rejeição sozinha. Uma suíte que reprova enquanto passa ensina toda a gente a parar de ler o
+  // código de saída, e esta casa já pagou por isso — o CI do ramo publicado esteve vermelho oito dias.
+
+  it('🔴 [Zero] uma thread que não abre SEM NINGUÉM À ESPERA não vira rejeição órfã — e é dita em `problems`', async () => {
+    const ditas = [];
+    const t = fio({ load: async () => { throw new Error('the delivery does not carry this language\'s model'); } });
+    createReadingInWorker({ base: 'b/', language: 'fr', spawn: t.spawn, report: (l) => ditas.push(l) });
+    await new Promise((r) => setTimeout(r, 0)); // a falha chega no microtask seguinte, como na página
+    expect(ditas, 'a thread não abriu e nada em lado nenhum o disse').toHaveLength(1);
+    // 📌 O MOTIVO e não a frase: quem escreve o que a criança perde e o que se conserta é o canal de diagnóstico
+    // (a raiz), porque um módulo que é o protocolo de uma thread não tem nada que carregar prosa de interface.
+    expect(ditas[0], 'o motivo da falha não atravessou').toBe('the delivery does not carry this language\'s model');
+  });
+
+  it('🔴 [Zero] e SEM porta de relato a falha continua a ter dono — o silêncio é escolha, a rejeição órfã não', async () => {
+    // ⚠️ O caso é o próprio corredor: se a abertura não tiver dono, o Vitest reprova a RODADA por rejeição não
+    // apanhada, com este caso verde. É a mesma forma do defeito que ele existe para prender.
+    const t = fio({ load: async () => { throw new Error('nada disto existe'); } });
+    createReadingInWorker({ base: 'b/', language: 'fr', spawn: t.spawn });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(true).toBe(true);
+  });
+
+  it('🔴 [CrossCheck] relatar NÃO engole o motivo: quem pede uma leitura continua a saber porquê', async () => {
+    const ditas = [];
+    const t = fio({ load: async () => { throw new Error('the delivery does not carry this language\'s model'); } });
+    const leitura = createReadingInWorker({ base: 'b/', language: 'fr', spawn: t.spawn, report: (l) => ditas.push(l) });
+    await expect(leitura.transcribe(amostras()), 'a linha em `problems` roubou a resposta de quem perguntou')
+      .rejects.toThrow(/does not carry/);
+    expect(ditas).toHaveLength(1);
+  });
+
+  it('🎯 [Boundary] LARGAR a thread antes de ela abrir não é falha — e não vira linha nenhuma', async () => {
+    // 📌 Uma criança que troca de jogo antes de o modelo abrir não é um defeito a relatar. O `close()` rejeita a
+    // abertura para libertar quem esperava, e é exactamente essa rejeição que não pode passar por diagnóstico.
+    const t = fio({ load: () => new Promise(() => {}), adiar: true }); // nunca responde
+    const ditas = [];
+    const leitura = createReadingInWorker({ base: 'b/', language: 'pt', spawn: t.spawn, report: (l) => ditas.push(l) });
+    leitura.close();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(ditas, 'largar a thread foi relatado como se fosse uma avaria').toEqual([]);
+  });
+
   it('🎯 [Zero] e uma transcrição que rebenta na thread volta como erro, não como silêncio', async () => {
     const t = fio({ load: async () => ({ transcribe: async () => { throw new Error('wasm out of memory'); } }) });
     const leitura = createReadingInWorker({ base: 'b/', language: 'pt', spawn: t.spawn });

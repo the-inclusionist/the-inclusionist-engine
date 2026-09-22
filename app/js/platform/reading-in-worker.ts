@@ -25,6 +25,18 @@ export interface ReadingInWorkerDeps {
   readonly language: string;
   /** Injected by the gate; by default the module beside this one, started as a module worker. */
   readonly spawn?: () => ReadingWorkerLike;
+  /**
+   * WHY THE THREAD COULD NOT OPEN, WHEN NOBODY IS THERE TO BE TOLD (ADR-0169).
+   *
+   * 🔴 The opening is awaited by `transcribe()`, and only by it. A game that declares `uses: { reading: true }` and has
+   * not listened yet — or one whose child never will — has nobody awaiting the answer, so a model that does not load
+   * used to reject into NOTHING: an unhandled rejection in a browser's console, and silence in `problems`.
+   * 📌 THE REASON AND NOT THE SENTENCE: what this hands over is the failure's own words, and the line a human reads —
+   * what the child loses, what to do about it — is written by whoever owns the diagnostic channel. A module that is
+   * one thread's protocol has no business holding interface prose, and the raw-prose ledger is where that shows.
+   * 📌 Optional, and the absence is answered: without it the failure is still owned, it is just not reported.
+   */
+  readonly report?: (reason: string) => void;
 }
 
 export interface ReadingInWorker {
@@ -49,6 +61,22 @@ export function createReadingInWorker(d: ReadingInWorkerDeps): ReadingInWorker {
   let closed = false;
 
   const openedPromise = new Promise<void>((resolve, reject) => { opened = { resolve, reject }; });
+  /*
+   * 🔴 THE OPENING HAS AN OWNER FROM BIRTH, and giving it one is the whole job of this line. Nothing awaits
+   * `openedPromise` until the first `transcribe()`, so a thread that cannot open — a model file the delivery never
+   * wrote, a wasm that will not compile — rejected into nothing.
+   * 📏 Measured 2026-09-22: the browser project ended with every one of its 1140 cases green and an exit code of
+   * FAILURE, from this rejection alone. A suite that reports failure while passing teaches everyone to stop reading
+   * the exit code, and this house has already paid for that once — the published branch's CI was red for eight days.
+   * ⚠️ AND IT DOES NOT SWALLOW THE REASON: `transcribe()` awaits this same promise and still throws it, so whoever
+   * asked for a reading is told what went wrong. This line is for when NOBODY asks.
+   * 📌 Letting the thread go is not a failure: `close()` rejects the opening to release whoever was waiting, and a
+   * child who changed games is not a defect to report.
+   */
+  openedPromise.catch((e: Error) => {
+    if (closed) return;
+    d.report?.(e.message);
+  });
 
   /** Everything pending gives up with the SAME reason — a promise nobody ever settles is how a game freezes politely. */
   const giveUp = (message: string): void => {
