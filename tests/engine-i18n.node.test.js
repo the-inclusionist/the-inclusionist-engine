@@ -248,7 +248,15 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'boot/create-game.ts': 23,       // a mensagem do `throw` e as lacunas do hospedeiro
+  // ⚠️ 23 → 20 em 2026-09-22, e a descida é MUDANÇA DE MORADA e não pagamento: as linhas que o
+  // `problemasDoCartucho` escrevia saíram com ele para `core/cartridge-problems` (ADR-0221 passo 7c). Um teto que
+  // ficasse em 23 seria uma porta aberta — e o caso `[Interface]` abaixo, que exige o número CONTADO e não um
+  // orçamento, foi quem o disse: ele recusou 21 contra 20 reais.
+  'boot/create-game.ts': 20,       // a mensagem do `throw` e as lacunas do hospedeiro
+  // ⚠️ AS DUAS QUE VIERAM DA RAIZ, e a razão de ficarem cruas não mudou com a mudança de casa: quem as lê é quem
+  // INTEGRA a engine — a que diz que não há voz neural e a que diz que o ator de pausa não foi passado nomeiam
+  // ambas o campo a declarar. `problems` é canal de diagnóstico em inglês por decisão (ADR-0169).
+  'core/cartridge-problems.ts': 2,
                                    // ⚠️ 20 → 23 em 2026-09-12: a linha que diz que o JOGO desenha por cima
                                    // da barra de acessibilidade (ADR-0148 §3). Mesma classe das outras deste
                                    // módulo — quem a lê é quem INTEGRA a engine —, e ela nomeia os nós que
@@ -422,9 +430,14 @@ describe('texto cru em português nas camadas de ENGINE (o buraco do gate do ite
     // três, um tokenizador sem a instrução de transcrever, e uma captura de som que não foi passada. Nenhuma delas chega a uma
     // criança: o `listen()` dela devolve a recusa que o chamador reporta, e é essa que passa por `t()`. Pôr diagnóstico de
     // integração nos três dicionários seria pedir a pt, en e es que carregassem o manual de quem instala.
+    // ⚠️ 85 → 84 e 20 → 21 ENTRADAS em 2026-09-22, e as duas metades dizem a mesma coisa: `problemasDoCartucho` saiu
+    // da raiz para `core/cartridge-problems` (ADR-0221 passo 7c). O TOTAL desceu — três linhas saíram da raiz e duas
+    // voltaram a ser contadas na casa nova —, e o que subiu foi o número de MORADAS. 🔴 E o teto de entradas existe
+    // justamente para isso doer: uma lista de excepções que cresce sem o total crescer ainda é uma lista maior para
+    // quem a lê. Sobe aqui porque um módulo se PARTIU, e a prova é o total no mesmo commit.
     const total = Object.values(CRU_CONHECIDO).reduce((a, b) => a + b, 0);
-    expect(total).toBeLessThanOrEqual(85);
-    expect(Object.keys(CRU_CONHECIDO).length).toBeLessThanOrEqual(20);
+    expect(total).toBeLessThanOrEqual(84);
+    expect(Object.keys(CRU_CONHECIDO).length).toBeLessThanOrEqual(21);
   });
 
   it('[Cross-check] o crivo ainda pega o que os DOIS achados de hoje eram', () => {

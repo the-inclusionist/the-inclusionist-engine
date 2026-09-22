@@ -59,6 +59,7 @@ import { showReachNotice, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { reach, defaultTransports, type Reach, type Availability } from '../input/transports.js';
 import { accommodationAnswersProblems, subjectWord, type AccommodationAnswers } from '../core/accommodations.js';
 import { genreProblems, genreWarning } from '../core/genres.js';
+import { cartridgeProblems } from '../core/cartridge-problems.js';
 import { contractSubjects } from '../core/accommodation-subjects.js';
 import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
@@ -819,35 +820,34 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   let lacunasDoPad: () => string[] = () => [];
 
+  /*
+   * 🔴 AS REGRAS SAÍRAM PARA `core/cartridge-problems` (ADR-0221 passo 7c). O que fica aqui é MEDIR a página e
+   * responder ao módulo; o que era decisão — as três regras, a ordem das linhas, quando calar — mora onde uma frase
+   * pode ser lida inteira. Uma raiz de composição é grande de propósito e carrega FIAÇÃO; os nove ramos que estavam
+   * nesta função eram lógica, e é isso que a errata do ADR-0221 mede quando diz que a dívida da raiz são os RAMOS.
+   * 📏 Sondado antes de mexer, que é a ordem: as sete linhas desta função foram desligadas uma a uma e a suíte
+   * reprovou nas sete — logo o corte é de FORMA e não muda comportamento nenhum, e há como o provar.
+   */
   function problemasDoCartucho(): string[] {
-    const p: string[] = [...lacunasDoPad()];
-    const tamanho = regiaoRedimensionadaPeloCartucho();
-    if (tamanho) p.push(tamanho);
-    const piso = drawnBelowTheFloor(contextoDoDesenho);
-    if (piso) p.push(piso);
-    const avisoDoGenero = genreWarning(cartucho.genero);
-    if (avisoDoGenero) p.push(avisoDoGenero);
-    // O mundo declarado tem de existir na página — e quem o declara é o jogo, não o hospedeiro.
     const mundo = cartucho.declaration.world();
-    if (mundo.kind === 'element' && !$(mundo.selector)) {
-      p.push(`the declared world ${mundo.selector} is not in the page: the colour correction and vision filters a child turns on reach nothing — fix \`world()\``);
-    }
-    // ⚠️ MIXED, and it lives on this side for its second half: the answer is the host's (`uses.neuralVoice`), but the decline is
-    // the CARTRIDGE's — so the line can appear or go quiet when the game changes under the same host.
-    if (!o.uses?.neuralVoice && !declines().semVozNeural) {
-      p.push(
-        'there is no neural voice: a child who cannot read gets the system voice, which a school Chromebook may not have '
-        + 'for the child\'s language — declare `uses: { neuralVoice: true }` (ADR-0216) or `declines.semVozNeural`',
-      );
-    }
-    const assentos = (cartucho.players ?? []).length;
-    if (assentos > 1 && !declines().semAtorDePausa && !cartucho.setPauseActor) {
-      p.push(
-        `${assentos} players are declared and the pause actor is not set: the controls panel always edits seat 0, so `
-        + 'no child but the first can remap — pass `setPauseActor`, or declare `declines.semAtorDePausa` if on purpose',
-      );
-    }
-    return p;
+    const seletorDoMundo = mundo.kind === 'element' ? mundo.selector : null;
+    return cartridgeProblems(
+      {
+        padGaps: lacunasDoPad(),
+        resizedRegion: regiaoRedimensionadaPeloCartucho(),
+        drawnBelowFloor: drawnBelowTheFloor(contextoDoDesenho),
+        genreWarning: genreWarning(cartucho.genero),
+      },
+      {
+        worldSelector: seletorDoMundo,
+        worldIsInPage: !!seletorDoMundo && !!$(seletorDoMundo),
+        wantsNeuralVoice: !!o.uses?.neuralVoice,
+        declinesNeuralVoice: !!declines().semVozNeural,
+        seats: (cartucho.players ?? []).length,
+        setsPauseActor: !!cartucho.setPauseActor,
+        declinesPauseActor: !!declines().semAtorDePausa,
+      },
+    );
   }
 
   // 1. IDIOMA ANTES DE TUDO. A interface não pode ser construída antes de a língua ser conhecida — foi o que

@@ -25,10 +25,10 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2115,
-      "decisionNodes": 305,
+      "codeLines": 2110,
+      "decisionNodes": 300,
       "maxDepth": 4,
-      "fanOut": 83,
+      "fanOut": 84,
       "globalReach": 0,
       "worstFunction": 69,
       "fanIn": 1
@@ -107,6 +107,15 @@
       "globalReach": 0,
       "worstFunction": 2,
       "fanIn": 3
+    },
+    "core/cartridge-problems.ts": {
+      "codeLines": 41,
+      "decisionNodes": 3,
+      "maxDepth": 1,
+      "fanOut": 0,
+      "globalReach": 0,
+      "worstFunction": 8,
+      "fanIn": 1
     },
     "core/collision.ts": {
       "codeLines": 46,
