@@ -305,28 +305,46 @@ export interface IconVisual {
   active: boolean;
 }
 
-/** Pure form of reflectIconBtn's branching. */
-export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
-  let on = false, dis = false, calm = false, cvd = '';
-  if (k === 'blind') { on = s.blindMode; dis = !s.privateOutput; }
-  else if (k === 'tts') { on = s.ttsOn; dis = !s.privateOutput || !!s.semVoz; }
-  else if (k === 'libras') { on = s.librasOn; }
-  else if (k === 'tea') { on = s.calmMode === 2; calm = s.calmMode === 1; }
+/**
+ * O QUE CADA ÍCONE MOSTRA, COMO TABELA — uma regra por ícone, e cada uma devolve só o que ela decide.
+ *
+ * 🔴 ERA UMA ESCADA DE DEZ `else if`, e a escada é o que dava a este módulo a PROFUNDIDADE 11 contra um tecto de 4: a
+ * maior da árvore inteira. ⚠️ E a régua não estava a exagerar por engano — na árvore de sintaxe uma escada de `else if`
+ * É dez `if` encaixados uns nos outros. O que ela mede mal é o custo de LER, que numa escada é plano; o conserto
+ * honesto é tirar a escada, e não ensinar a régua a não a ver, que seria mudar o metro para caber o móvel.
+ * 📌 É a forma que esta casa já usa onde uma decisão é um mapeamento: o glifo de uma tecla, a aresta de uma acção, o
+ * que cada ausência significa no comando. Acrescentar um ícone passa a ser acrescentar uma LINHA.
+ */
+type IconVisualRule = (s: IconStateSnapshot) => Partial<IconVisual>;
+
+const ICON_VISUAL: Readonly<Record<string, IconVisualRule>> = Object.freeze({
+  blind: (s) => ({ on: s.blindMode, dis: !s.privateOutput }),
+  tts: (s) => ({ on: s.ttsOn, dis: !s.privateOutput || !!s.semVoz }),
+  libras: (s) => ({ on: s.librasOn }),
+  tea: (s) => ({ on: s.calmMode === 2, calm: s.calmMode === 1 }),
   // ⚠️ AND IT IS NEVER GREYED OUT ANY MORE. `alternanciaExigida` says the DEVICE in use sends one command at a time and the latch
   // cannot be turned off (ADR-0113 clause 3) — which is now told by the CYCLE, where `standard` simply does not appear. Greying
   // the icon would have taken the one-button scan away from the child playing with her eyes, who is the likeliest to need it.
-  else if (k === 'altmove') { on = inputModeOf(s) !== 'standard'; }
-  else if (k === 'contrast') { on = hasHighContrast(s.visual); }
-  else if (k === 'velocidade') { on = (s.velocidade ?? 1) < 1; }
-  else if (k === 'camera') { on = (s.camera ?? 'off') !== 'off'; }
-  else if (k === 'voice') { on = !!s.voz; }
-  else if (k === 'cvd') {
-    // ⚠️ O FUNDO DE DUAS CORES É O SINAL DE LIGADO deste ícone, e agora ele lê o EIXO da correção — que
-    // continua a dizer o mesmo quando o tema também está ligado, coisa que a chave única não conseguia: com
-    // `hc-direto-7` no campo, a correção da criança desaparecia do ícone que existe para a mostrar.
-    if (s.visual.correcao !== 'tricro') cvd = 'pi-cvd-' + s.visual.correcao;
-  }
-  return { on, dis, calm, cvd, active: on || calm || !!cvd };
+  altmove: (s) => ({ on: inputModeOf(s) !== 'standard' }),
+  contrast: (s) => ({ on: hasHighContrast(s.visual) }),
+  velocidade: (s) => ({ on: (s.velocidade ?? 1) < 1 }),
+  camera: (s) => ({ on: (s.camera ?? 'off') !== 'off' }),
+  voice: (s) => ({ on: !!s.voz }),
+  // ⚠️ O FUNDO DE DUAS CORES É O SINAL DE LIGADO deste ícone, e agora ele lê o EIXO da correção — que
+  // continua a dizer o mesmo quando o tema também está ligado, coisa que a chave única não conseguia: com
+  // `hc-direto-7` no campo, a correção da criança desaparecia do ícone que existe para a mostrar.
+  cvd: (s) => ({ cvd: s.visual.correcao !== 'tricro' ? `pi-cvd-${s.visual.correcao}` : '' }),
+});
+
+/** O repouso: um ícone que a tabela não nomeia não mostra nada, que é o que a escada também fazia. */
+const ICON_VISUAL_AT_REST: IconVisual = Object.freeze({ on: false, dis: false, calm: false, cvd: '', active: false });
+
+/** Pure form of reflectIconBtn's branching. */
+export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
+  const v = { ...ICON_VISUAL_AT_REST, ...ICON_VISUAL[k]?.(s) };
+  // 📌 O `active` é DERIVADO e não declarado por regra nenhuma: ele é o `aria-pressed`, e nenhum ícone deve poder
+  // dizer que está premido sem mostrar por que é que está.
+  return { ...v, active: v.on || v.calm || !!v.cvd };
 }
 
 /** The CSS classes reflectIconBtn clears before applying a fresh visual — in the original order. */
@@ -406,32 +424,45 @@ export interface ActionableIcons {
  */
 export type VisualWriters = ActionableIcons;
 
+/**
+ * QUEM ACCIONA CADA ÍCONE — uma pergunta por ícone, e um ícone que ninguém tranca é oferecido.
+ *
+ * ⚠️ POR ÍCONE, e não um booleano para os dois — e foi uma MUTAÇÃO SOBREVIVENTE que o mostrou. Com uma única bandeira,
+ * `&&` e `||` produziam o mesmo resultado nos casos que eu tinha escrito, porque todos tiravam os DOIS escritores. O
+ * `&&` escondia um ícone que FUNCIONA quando só um escritor falta, e o `||` mostrava um que NÃO funciona. Os dois
+ * erram, em direcções opostas, e a pergunta certa nunca foi «este jogo tem escritores visuais» — é «este ÍCONE tem
+ * quem o accione».
+ * 🔴 E ISTO ERA UMA ESCADA DE OITO TERNÁRIOS ANINHADOS, pela mesma razão que a do visual de um ícone: cada ramo novo
+ * entrava por dentro do anterior, e a indentação já tinha desistido de acompanhar. Um mapeamento `ícone → pergunta` é
+ * uma TABELA, e acrescentar um ícone passa a ser acrescentar uma linha em vez de encaixar mais um nível.
+ */
+const ICON_IS_ACTIONABLE: Readonly<Record<string, (w: ActionableIcons) => boolean>> = Object.freeze({
+  contrast: (w) => w.tema,
+  cvd: (w) => w.correcao,
+  // 📌 «este jogo segura teclas?» é a mesma pergunta que «este ícone tem quem o accione», feita a um campo do contrato
+  // em vez de a um escritor injectado — um ramo, e não uma regra nova.
+  // 🔴 AND IT GREW A SECOND HALF (ADR-0218): the icon used to exist only where the game HOLDS a key, because the latch
+  // was all it held. «One button only» has a subject wherever the game declares a position to scan — which is why the
+  // quiz demo, holding no key, had no ☝️ at all. A game that declares nothing still has none: there would be nothing to
+  // offer, and a scan of one item is the dead button of ADR-0106 §5 paid for in seconds.
+  altmove: (w) => w.seguraTeclas() || (w.declaredPositions?.() ?? 0) > 0,
+  // 📌 A mesma pergunta feita ao ciclo de tipografia (ADR-0149): o ícone existe quando alguém sabe andar nele. Sem
+  // isso seria um botão que anuncia e não muda nada.
+  // 📌 `Boolean(...)` e não o campo cru: ele é opcional, e o ternário antigo entregava-o à verdade de um `filter`.
+  // A conversão é o que a escada fazia em silêncio — aqui está escrita, e o tipo deixa de aceitar a ambiguidade.
+  tipografia: (w) => Boolean(w.tipografia),
+  // the hourglass exists where time runs by itself (ADR-0180): a turn game has nothing to slow
+  velocidade: (w) => Boolean(w.relogio?.()),
+  camera: (w) => Boolean(w.camera),
+  // 👄 exists where there is a MICROPHONE to ask for, the same rule as the camera's (ADR-0106 §5)
+  voice: (w) => Boolean(w.microfone),
+  menu: (w) => Boolean(w.menus),
+});
+
 export function iconsThatAct(escritores: ActionableIcons): readonly PauseIcon[] {
-  // ⚠️ POR ÍCONE, e não um booleano para os dois — e foi uma MUTAÇÃO SOBREVIVENTE que o mostrou. Com uma
-  // única bandeira, `&&` e `||` produziam o mesmo resultado nos casos que eu tinha escrito, porque todos
-  // tiravam os DOIS escritores. O `&&` escondia um ícone que FUNCIONA quando só um escritor falta, e o `||`
-  // mostrava um que NÃO funciona. Os dois erram, em direcções opostas, e a pergunta certa nunca foi «este
-  // jogo tem escritores visuais» — é «este ÍCONE tem quem o accione».
-  // 📌 E o `altmove` entra pela MESMA porta, que é o achado: «este jogo segura teclas?» é a mesma pergunta
-  // que «este ícone tem quem o accione», feita a um campo do contrato em vez de a um escritor injectado.
-  // Um terceiro ramo, e não uma regra nova.
-  return PAUSE_ICONS.filter((ic) => (ic.k === 'contrast' ? escritores.tema
-    : ic.k === 'cvd' ? escritores.correcao
-      // 🔴 AND THE THIRD BRANCH GREW A SECOND HALF (ADR-0218): the icon used to exist only where the game HOLDS a key, because
-      // the latch was all it held. «One button only» has a subject wherever the game declares a position to scan — which is why
-      // the quiz demo, holding no key, had no ☝️ at all. A game that declares nothing still has none: there would be nothing to
-      // offer, and a scan of one item is the dead button of ADR-0106 §5 paid for in seconds.
-      : ic.k === 'altmove' ? (escritores.seguraTeclas() || (escritores.declaredPositions?.() ?? 0) > 0)
-        // 📌 O QUARTO RAMO, e é a mesma pergunta feita ao ciclo de tipografia (ADR-0149): o ícone existe
-        // quando alguém sabe andar nele. Sem isso seria um botão que anuncia e não muda nada.
-        : ic.k === 'tipografia' ? escritores.tipografia
-          // the hourglass exists where time runs by itself (ADR-0180): a turn game has nothing to slow
-          : ic.k === 'velocidade' ? Boolean(escritores.relogio?.())
-              : ic.k === 'camera' ? Boolean(escritores.camera)
-                // 👄 exists where there is a MICROPHONE to ask for, the same rule as the camera's (ADR-0106 §5)
-                : ic.k === 'voice' ? Boolean(escritores.microfone)
-                : ic.k === 'menu' ? Boolean(escritores.menus)
-            : true));
+  // 📌 A AUSÊNCIA NA TABELA É «SIM»: um ícone que nenhuma regra tranca não depende de ninguém para funcionar, e
+  // escondê-lo por falta de linha seria tirar à criança um caminho que existe.
+  return PAUSE_ICONS.filter((ic) => ICON_IS_ACTIONABLE[ic.k]?.(escritores) ?? true);
 }
 
 /**

@@ -1685,9 +1685,9 @@
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 590,
-      "decisionNodes": 114,
-      "maxDepth": 11,
+      "codeLines": 594,
+      "decisionNodes": 96,
+      "maxDepth": 3,
       "fanOut": 21,
       "globalReach": 0,
       "worstFunction": 21,
