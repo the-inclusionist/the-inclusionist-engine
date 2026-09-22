@@ -1,96 +1,423 @@
 {
   "measured": "2026-09-22",
-  "what": "Declared identifiers carrying a Portuguese word, per file. The gate refuses any increase; run --bootstrap to record a decrease.",
-  "total": 1002,
+  "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums) and `param` (parameters and destructured bindings). The gate refuses any increase IN EITHER, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. Members are not counted yet — they are the 310 of phase 7, and the second half of step 7h.",
+  "total": 1480,
+  "totals": {
+    "decl": 976,
+    "param": 504
+  },
   "files": {
-    "app/js/boot/create-game.ts": 343,
-    "app/js/core/accessible-label.ts": 1,
-    "app/js/core/accommodation-subjects.ts": 6,
-    "app/js/core/actions.ts": 4,
-    "app/js/core/caption-duration.ts": 1,
-    "app/js/core/collision.ts": 1,
-    "app/js/core/contract.ts": 5,
-    "app/js/core/flash-threshold.ts": 19,
-    "app/js/core/i18n.ts": 16,
-    "app/js/core/letter-grid.ts": 11,
-    "app/js/core/loop.ts": 4,
-    "app/js/core/password.ts": 13,
-    "app/js/core/route.ts": 20,
-    "app/js/core/scenes.ts": 3,
-    "app/js/core/speech-rate.ts": 4,
-    "app/js/core/state.ts": 8,
-    "app/js/env.d.ts": 1,
-    "app/js/input/default-bindings.ts": 10,
-    "app/js/input/empathy-filter.ts": 4,
-    "app/js/input/gamepad.ts": 9,
-    "app/js/input/keyboard-runtime.ts": 2,
-    "app/js/input/keyboard.ts": 5,
-    "app/js/input/keydown.ts": 1,
-    "app/js/input/latch-edge.ts": 1,
-    "app/js/input/pad-defaults.ts": 5,
-    "app/js/input/pad-wizard.ts": 14,
-    "app/js/input/state.ts": 1,
-    "app/js/input/synthetic-source.ts": 1,
-    "app/js/input/touch.ts": 28,
-    "app/js/input/transport-in-use.ts": 3,
-    "app/js/input/transports.ts": 2,
-    "app/js/input/vocabulary-migration.ts": 5,
-    "app/js/platform/audio-mixer.ts": 1,
-    "app/js/platform/audio-nav.ts": 1,
-    "app/js/platform/audio-sonar.ts": 22,
-    "app/js/platform/guide-intensity.ts": 2,
-    "app/js/platform/heavy-catalogue.ts": 1,
-    "app/js/platform/heavy.ts": 7,
-    "app/js/platform/interruptible-speech.ts": 6,
-    "app/js/platform/kokoro.ts": 9,
-    "app/js/platform/speech-recognition.ts": 9,
-    "app/js/platform/storage.ts": 2,
-    "app/js/platform/tts.ts": 33,
-    "app/js/platform/voice-plan.ts": 1,
-    "app/js/render/camera.ts": 2,
-    "app/js/render/city-tex.ts": 2,
-    "app/js/render/crt.ts": 2,
-    "app/js/render/draw.ts": 2,
-    "app/js/render/high-contrast.ts": 3,
-    "app/js/render/parallax.ts": 4,
-    "app/js/render/recycling-tex.ts": 8,
-    "app/js/render/scene-city.ts": 1,
-    "app/js/render/scene-parallax.ts": 30,
-    "app/js/render/scene-sky.ts": 10,
-    "app/js/render/scenery-data.ts": 1,
-    "app/js/render/set-scenery.ts": 3,
-    "app/js/render/viz-axes-labels.ts": 1,
-    "app/js/render/viz-axes.ts": 1,
-    "app/js/render/viz-refusal.ts": 1,
-    "app/js/render/viz-setters.ts": 11,
-    "app/js/render/weather.ts": 4,
-    "app/js/ui/caa-sets.ts": 1,
-    "app/js/ui/debug-panel.ts": 12,
-    "app/js/ui/focus-trap.ts": 6,
-    "app/js/ui/fonts.ts": 6,
-    "app/js/ui/game-options.ts": 9,
-    "app/js/ui/help-panel.ts": 24,
-    "app/js/ui/hud.ts": 1,
-    "app/js/ui/item-announcement.ts": 3,
-    "app/js/ui/latch-refusal.ts": 1,
-    "app/js/ui/layout.ts": 7,
-    "app/js/ui/loop-crash.ts": 4,
-    "app/js/ui/menu-nav.ts": 20,
-    "app/js/ui/motion-scene.ts": 5,
-    "app/js/ui/mount-panel.ts": 8,
-    "app/js/ui/panel-shell.ts": 5,
-    "app/js/ui/panel-widgets.ts": 14,
-    "app/js/ui/pause-icons.ts": 37,
-    "app/js/ui/reach-notice.ts": 6,
-    "app/js/ui/settings-audio.ts": 35,
-    "app/js/ui/settings-caa.ts": 7,
-    "app/js/ui/settings-controls.ts": 12,
-    "app/js/ui/settings-empathy.ts": 4,
-    "app/js/ui/settings-mobility.ts": 11,
-    "app/js/ui/settings-motion.ts": 8,
-    "app/js/ui/settings-panel.ts": 4,
-    "app/js/ui/settings-typo.ts": 5,
-    "app/js/ui/settings-visual.ts": 10,
-    "app/js/ui/shell.ts": 6
+    "app/js/boot/create-game.ts": {
+      "decl": 343,
+      "param": 72
+    },
+    "app/js/core/accessible-label.ts": {
+      "decl": 1,
+      "param": 1
+    },
+    "app/js/core/accommodation-subjects.ts": {
+      "decl": 6,
+      "param": 0
+    },
+    "app/js/core/actions.ts": {
+      "decl": 4,
+      "param": 0
+    },
+    "app/js/core/caption-duration.ts": {
+      "decl": 1,
+      "param": 1
+    },
+    "app/js/core/collision.ts": {
+      "decl": 1,
+      "param": 0
+    },
+    "app/js/core/contract.ts": {
+      "decl": 5,
+      "param": 4
+    },
+    "app/js/core/flash-threshold.ts": {
+      "decl": 19,
+      "param": 1
+    },
+    "app/js/core/genres.ts": {
+      "decl": 0,
+      "param": 5
+    },
+    "app/js/core/i18n.ts": {
+      "decl": 16,
+      "param": 2
+    },
+    "app/js/core/letter-grid.ts": {
+      "decl": 11,
+      "param": 7
+    },
+    "app/js/core/loop.ts": {
+      "decl": 4,
+      "param": 5
+    },
+    "app/js/core/password.ts": {
+      "decl": 13,
+      "param": 8
+    },
+    "app/js/core/rng.ts": {
+      "decl": 0,
+      "param": 1
+    },
+    "app/js/core/route.ts": {
+      "decl": 20,
+      "param": 6
+    },
+    "app/js/core/run-state.ts": {
+      "decl": 0,
+      "param": 1
+    },
+    "app/js/core/scenes.ts": {
+      "decl": 3,
+      "param": 0
+    },
+    "app/js/core/speech-rate.ts": {
+      "decl": 4,
+      "param": 7
+    },
+    "app/js/core/state.ts": {
+      "decl": 8,
+      "param": 0
+    },
+    "app/js/env.d.ts": {
+      "decl": 1,
+      "param": 3
+    },
+    "app/js/input/default-bindings.ts": {
+      "decl": 10,
+      "param": 4
+    },
+    "app/js/input/empathy-filter.ts": {
+      "decl": 4,
+      "param": 0
+    },
+    "app/js/input/gamepad.ts": {
+      "decl": 9,
+      "param": 15
+    },
+    "app/js/input/keyboard-runtime.ts": {
+      "decl": 2,
+      "param": 0
+    },
+    "app/js/input/keyboard.ts": {
+      "decl": 5,
+      "param": 8
+    },
+    "app/js/input/keydown.ts": {
+      "decl": 1,
+      "param": 4
+    },
+    "app/js/input/latch-edge.ts": {
+      "decl": 1,
+      "param": 4
+    },
+    "app/js/input/latch-scope.ts": {
+      "decl": 0,
+      "param": 6
+    },
+    "app/js/input/latch-store.ts": {
+      "decl": 0,
+      "param": 17
+    },
+    "app/js/input/latch-sync.ts": {
+      "decl": 0,
+      "param": 4
+    },
+    "app/js/input/pad-defaults.ts": {
+      "decl": 5,
+      "param": 4
+    },
+    "app/js/input/pad-wizard.ts": {
+      "decl": 14,
+      "param": 9
+    },
+    "app/js/input/pointer.ts": {
+      "decl": 0,
+      "param": 4
+    },
+    "app/js/input/state.ts": {
+      "decl": 1,
+      "param": 6
+    },
+    "app/js/input/synthetic-source.ts": {
+      "decl": 1,
+      "param": 1
+    },
+    "app/js/input/touch-bindings.ts": {
+      "decl": 0,
+      "param": 3
+    },
+    "app/js/input/touch.ts": {
+      "decl": 28,
+      "param": 3
+    },
+    "app/js/input/transport-in-use.ts": {
+      "decl": 3,
+      "param": 5
+    },
+    "app/js/input/transports.ts": {
+      "decl": 2,
+      "param": 10
+    },
+    "app/js/input/vocabulary-migration.ts": {
+      "decl": 5,
+      "param": 8
+    },
+    "app/js/platform/audio-mixer.ts": {
+      "decl": 1,
+      "param": 0
+    },
+    "app/js/platform/audio-nav.ts": {
+      "decl": 1,
+      "param": 0
+    },
+    "app/js/platform/audio-sonar.ts": {
+      "decl": 22,
+      "param": 2
+    },
+    "app/js/platform/flash-sampler.ts": {
+      "decl": 0,
+      "param": 2
+    },
+    "app/js/platform/guide-intensity.ts": {
+      "decl": 2,
+      "param": 1
+    },
+    "app/js/platform/heavy-catalogue.ts": {
+      "decl": 1,
+      "param": 0
+    },
+    "app/js/platform/heavy.ts": {
+      "decl": 7,
+      "param": 6
+    },
+    "app/js/platform/interruptible-speech.ts": {
+      "decl": 6,
+      "param": 7
+    },
+    "app/js/platform/kokoro.ts": {
+      "decl": 9,
+      "param": 11
+    },
+    "app/js/platform/speech-recognition.ts": {
+      "decl": 9,
+      "param": 11
+    },
+    "app/js/platform/storage.ts": {
+      "decl": 2,
+      "param": 19
+    },
+    "app/js/platform/tts.ts": {
+      "decl": 33,
+      "param": 14
+    },
+    "app/js/platform/voice-plan.ts": {
+      "decl": 1,
+      "param": 2
+    },
+    "app/js/render/camera.ts": {
+      "decl": 2,
+      "param": 26
+    },
+    "app/js/render/city-tex.ts": {
+      "decl": 2,
+      "param": 0
+    },
+    "app/js/render/crt.ts": {
+      "decl": 2,
+      "param": 0
+    },
+    "app/js/render/draw.ts": {
+      "decl": 2,
+      "param": 0
+    },
+    "app/js/render/high-contrast.ts": {
+      "decl": 3,
+      "param": 0
+    },
+    "app/js/render/parallax.ts": {
+      "decl": 4,
+      "param": 5
+    },
+    "app/js/render/port.ts": {
+      "decl": 0,
+      "param": 8
+    },
+    "app/js/render/recycling-tex.ts": {
+      "decl": 8,
+      "param": 3
+    },
+    "app/js/render/scene-city.ts": {
+      "decl": 1,
+      "param": 0
+    },
+    "app/js/render/scene-parallax.ts": {
+      "decl": 30,
+      "param": 34
+    },
+    "app/js/render/scene-sky.ts": {
+      "decl": 10,
+      "param": 1
+    },
+    "app/js/render/scenery-data.ts": {
+      "decl": 1,
+      "param": 0
+    },
+    "app/js/render/set-scenery.ts": {
+      "decl": 3,
+      "param": 2
+    },
+    "app/js/render/viz-axes-labels.ts": {
+      "decl": 1,
+      "param": 8
+    },
+    "app/js/render/viz-axes.ts": {
+      "decl": 1,
+      "param": 1
+    },
+    "app/js/render/viz-refusal.ts": {
+      "decl": 1,
+      "param": 0
+    },
+    "app/js/render/viz-setters.ts": {
+      "decl": 11,
+      "param": 5
+    },
+    "app/js/render/weather.ts": {
+      "decl": 4,
+      "param": 2
+    },
+    "app/js/ui/audio-choices.ts": {
+      "decl": 0,
+      "param": 1
+    },
+    "app/js/ui/caa-sets.ts": {
+      "decl": 1,
+      "param": 0
+    },
+    "app/js/ui/debug-panel.ts": {
+      "decl": 12,
+      "param": 1
+    },
+    "app/js/ui/dom.ts": {
+      "decl": 0,
+      "param": 1
+    },
+    "app/js/ui/drawing-problems.ts": {
+      "decl": 0,
+      "param": 2
+    },
+    "app/js/ui/focus-trap.ts": {
+      "decl": 6,
+      "param": 7
+    },
+    "app/js/ui/fonts.ts": {
+      "decl": 6,
+      "param": 3
+    },
+    "app/js/ui/game-options.ts": {
+      "decl": 9,
+      "param": 5
+    },
+    "app/js/ui/help-panel.ts": {
+      "decl": 24,
+      "param": 3
+    },
+    "app/js/ui/hud.ts": {
+      "decl": 1,
+      "param": 4
+    },
+    "app/js/ui/item-announcement.ts": {
+      "decl": 3,
+      "param": 1
+    },
+    "app/js/ui/latch-refusal.ts": {
+      "decl": 1,
+      "param": 1
+    },
+    "app/js/ui/layout.ts": {
+      "decl": 7,
+      "param": 2
+    },
+    "app/js/ui/loop-crash.ts": {
+      "decl": 4,
+      "param": 3
+    },
+    "app/js/ui/menu-nav.ts": {
+      "decl": 20,
+      "param": 7
+    },
+    "app/js/ui/motion-scene.ts": {
+      "decl": 5,
+      "param": 0
+    },
+    "app/js/ui/mount-panel.ts": {
+      "decl": 8,
+      "param": 0
+    },
+    "app/js/ui/panel-shell.ts": {
+      "decl": 5,
+      "param": 3
+    },
+    "app/js/ui/panel-widgets.ts": {
+      "decl": 14,
+      "param": 3
+    },
+    "app/js/ui/pause-icons.ts": {
+      "decl": 37,
+      "param": 18
+    },
+    "app/js/ui/pause-markup.ts": {
+      "decl": 0,
+      "param": 2
+    },
+    "app/js/ui/reach-notice.ts": {
+      "decl": 6,
+      "param": 3
+    },
+    "app/js/ui/settings-audio.ts": {
+      "decl": 18,
+      "param": 2
+    },
+    "app/js/ui/settings-caa.ts": {
+      "decl": 0,
+      "param": 1
+    },
+    "app/js/ui/settings-controls.ts": {
+      "decl": 12,
+      "param": 3
+    },
+    "app/js/ui/settings-empathy.ts": {
+      "decl": 4,
+      "param": 0
+    },
+    "app/js/ui/settings-mobility.ts": {
+      "decl": 11,
+      "param": 5
+    },
+    "app/js/ui/settings-motion.ts": {
+      "decl": 8,
+      "param": 1
+    },
+    "app/js/ui/settings-panel.ts": {
+      "decl": 4,
+      "param": 0
+    },
+    "app/js/ui/settings-typo.ts": {
+      "decl": 3,
+      "param": 6
+    },
+    "app/js/ui/settings-visual.ts": {
+      "decl": 10,
+      "param": 2
+    },
+    "app/js/ui/shell.ts": {
+      "decl": 6,
+      "param": 5
+    }
   }
 }

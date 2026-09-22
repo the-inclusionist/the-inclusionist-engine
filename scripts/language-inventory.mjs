@@ -48,21 +48,40 @@ export const BASELINE = join(raiz, 'docs/6-DevOps-SRE/language-debt.json');
  * from. With the parser it falls out for free: an import clause is not a declaration node.
  *
  * 📌 What counts, and it is the same set the expression tried to cover: variables, functions, classes, interfaces, type
- * aliases and enums, at any depth. Parameters and members do NOT count — they are the debt the Dev left out of this release
- * (310 public members), and widening this is a decision, not a fix.
+ * aliases and enums, at any depth. MEMBERS still do not count — they are the 310 the Dev left out of this release, and they
+ * enter with the second half of step 7h; PARAMETERS entered on 2026-09-22 and live in `parameterNames` below.
  */
-export const declaredNames = (src) => {
+export const declaredNames = (src) => colher(src, (n) => ts.isVariableDeclaration(n) || ts.isFunctionDeclaration(n)
+  || ts.isClassDeclaration(n) || ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n) || ts.isEnumDeclaration(n));
+
+/**
+ * THE NAMES A FILE'S PARAMETERS USE — the Dev's «Parâmetros e membros no plano, por favor» (2026-09-22), first half.
+ *
+ * 🔴 IT TOOK A NAME LIVING A WHOLE DAY IN A FILE THE GATE CALLED CLEAN. `sanitiseTeaLevel(bruto, padrao)` was written into a
+ * module this very gate had required to be born at zero, and the gate saw neither word: it read DECLARATIONS, and a parameter
+ * is not one. 📏 Which means every number this file ever reported was a LOWER BOUND, the same way the «185 file names» of
+ * phase 3 turned out to be.
+ *
+ * 📌 Destructuring counts too (`({ raiz, filhos })`): each binding element is a name a reader reads, and leaving them out
+ * would reopen the same hole one syntax down.
+ *
+ * ⚠️ MEASURED AND COUNTED APART from the declarations, and that is a decision rather than bookkeeping: on one blended number
+ * a new Portuguese declaration hides behind a renamed parameter, and the ratchet would report progress while the surface got
+ * worse. Each category holds its own line.
+ */
+export const parameterNames = (src) => colher(src, (n) => ts.isParameter(n) || ts.isBindingElement(n));
+
+/** The identifier names of every node the predicate accepts, at any depth. One walk, one rule. */
+function colher(src, aceita) {
   const sf = ts.createSourceFile('m.ts', src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const nomes = [];
   const anda = (n) => {
-    const declara = ts.isVariableDeclaration(n) || ts.isFunctionDeclaration(n) || ts.isClassDeclaration(n)
-      || ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n) || ts.isEnumDeclaration(n);
-    if (declara && n.name && ts.isIdentifier(n.name)) nomes.push(n.name.text);
+    if (aceita(n) && n.name && ts.isIdentifier(n.name)) nomes.push(n.name.text);
     n.forEachChild(anda);
   };
   sf.forEachChild(anda);
   return nomes;
-};
+}
 
 export const EXCEPTIONS = [
   ['app/js/i18n/', 'the dictionaries ARE Portuguese, English and Spanish — pilar 3 of ADR-0010'],
@@ -94,45 +113,67 @@ export function readLists() {
   return { pt: new Set(l.portuguese), en: new Set(l.english) };
 }
 
-/** Per file: the identifiers with a Portuguese word, and the words no list knows. */
+/**
+ * Per file: how many identifiers carry a Portuguese word, SPLIT by what kind of name it is, and the words no list knows.
+ *
+ * 📌 `{ decl, param }` and not one number, for the reason written at `parameterNames`: a blended total lets a new Portuguese
+ * declaration hide behind a renamed parameter.
+ */
 export function inventory(lists = readLists()) {
   const debt = {}, unknown = new Map();
-  for (const f of source()) {
-    const nomes = [];
-    for (const nome of declaredNames(readFileSync(join(raiz, f), 'utf8'))) {
+  const conta = (nomes) => {
+    let n = 0;
+    for (const nome of nomes) {
       const ws = words(nome);
-      if (ws.some((w) => lists.pt.has(w))) nomes.push(nome);
+      if (ws.some((w) => lists.pt.has(w))) n += 1;
       for (const w of ws) if (!lists.pt.has(w) && !lists.en.has(w)) unknown.set(w, (unknown.get(w) ?? 0) + 1);
     }
-    if (nomes.length) debt[f] = nomes.length;
+    return n;
+  };
+  for (const f of source()) {
+    const src = readFileSync(join(raiz, f), 'utf8');
+    const decl = conta(declaredNames(src));
+    const param = conta(parameterNames(src));
+    if (decl || param) debt[f] = { decl, param };
   }
   return { debt, unknown: [...unknown.keys()].sort() };
 }
+
+/** The two categories a file's debt is counted in. A third (`membro`) arrives with the second half of step 7h. */
+export const CATEGORIES = ['decl', 'param'];
+
+/** The debt of one file in the shape the baseline stores, tolerating the number the baseline used to hold. */
+export const debtOf = (entrada) => (typeof entrada === 'number' ? { decl: entrada, param: 0 } : (entrada ?? { decl: 0, param: 0 }));
 
 export const readBaseline = () => JSON.parse(readFileSync(BASELINE, 'utf8'));
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const arranque = process.argv.includes('--bootstrap');
   const lists = readLists();
-  if (arranque) {
-    // every word a declaration uses and the Portuguese list does not claim is English, once — after that, a new word is unknown
-    const todas = new Set();
-    for (const f of source()) for (const nome of declaredNames(readFileSync(join(raiz, f), 'utf8'))) for (const w of words(nome)) todas.add(w);
-    const en = [...todas].filter((w) => !lists.pt.has(w)).sort();
-    const atual = JSON.parse(readFileSync(LISTS, 'utf8'));
-    writeFileSync(LISTS, `${JSON.stringify({ ...atual, english: en }, null, 2)}\n`);
-    lists.en = new Set(en);
-  }
+  /*
+   * ⚠️ `--bootstrap` NÃO VOLTA A CLASSIFICAR NADA DESDE 22/09, e a linha que o fazia está apagada em vez de comentada.
+   * Ela declarava inglesa toda palavra que a lista portuguesa não reclamasse — e foi assim que a PROSA lida como declaração
+   * ensinou ao portão que `cor`, `ela`, `derivada`, `trampolim` e `ojogo` eram inglesas. Um identificador chamado `cor`
+   * teria passado. Classificar é acto de LER a declaração onde a palavra nasce, e por isso é à mão: o `--bootstrap` agora
+   * só escreve a linha de base, que é contagem e não juízo.
+   */
   const { debt, unknown } = inventory(lists);
-  const total = Object.values(debt).reduce((a, b) => a + b, 0);
+  const somaDe = (cat) => Object.values(debt).reduce((a, d) => a + d[cat], 0);
+  const totals = Object.fromEntries(CATEGORIES.map((c) => [c, somaDe(c)]));
+  const total = CATEGORIES.reduce((a, c) => a + totals[c], 0);
   if (arranque) {
     writeFileSync(BASELINE, `${JSON.stringify({
       measured: new Date().toISOString().slice(0, 10),
-      what: 'Declared identifiers carrying a Portuguese word, per file. The gate refuses any increase; run --bootstrap to record a decrease.',
+      what: 'Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, '
+        + 'classes, interfaces, type aliases, enums) and `param` (parameters and destructured bindings). The gate refuses any '
+        + 'increase IN EITHER, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a '
+        + 'decrease. Members are not counted yet — they are the 310 of phase 7, and the second half of step 7h.',
       total,
+      totals,
       files: Object.fromEntries(Object.entries(debt).sort(([a], [b]) => a.localeCompare(b))),
     }, null, 2)}\n`);
   }
   console.log(`${source().length} files · ${total} identifiers with a Portuguese word in ${Object.keys(debt).length} files`);
-  if (unknown.length) console.log(`unknown words (classify them in scripts/word-lists.json): ${unknown.join(' ')}`);
+  console.log(`   ${CATEGORIES.map((c) => `${c} ${totals[c]}`).join(' · ')}`);
+  if (unknown.length) console.log(`unknown words (classify them in scripts/word-lists.json, by READING where each is born): ${unknown.join(' ')}`);
 }
