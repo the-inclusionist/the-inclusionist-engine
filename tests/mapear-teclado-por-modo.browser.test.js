@@ -6,7 +6,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 let motor;
 const CKEY = 'inclusionist.kbcontrols.v3';

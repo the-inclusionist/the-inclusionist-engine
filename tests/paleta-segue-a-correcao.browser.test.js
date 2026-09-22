@@ -9,7 +9,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 let state;
 const jogadores = [{ ctrl: {} }];

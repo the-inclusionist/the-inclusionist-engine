@@ -12,7 +12,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
 import css from '../app/css/style.css?raw';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 let raiz;
 const barra = () => raiz.querySelector('#title-icons');

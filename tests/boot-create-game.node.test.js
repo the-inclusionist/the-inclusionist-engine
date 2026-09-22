@@ -15,7 +15,7 @@
 // A segunda EXECUTA, num DOM de mentira. Ela existe porque a primeira metade é cega para o que importa
 // depois: se a ordem obrigatória é mesmo obrigatória, se declarar mal explode, se faltar marcação não explode.
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 

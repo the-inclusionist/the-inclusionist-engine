@@ -39,7 +39,7 @@
 import { describe, it, expect } from 'vitest';
 import { HC_ROLE_DEF, HC_ROLE_KEYS } from '../app/js/render/hc-role-data.js';
 import { CVD_MATRIX } from '../app/js/render/cvd-matrices.js';
-import { razaoDeContraste } from './fixtures/contraste-wcag.js';
+import { razaoDeContraste } from './fixtures/wcag-contrast.js';
 
 /** As três SIMULAÇÕES — é o que uma pessoa daltónica vê. As `fix-*` são correcções e não entram aqui. */
 const SIMULATIONS = ['sim-protan', 'sim-deuter', 'sim-tritan'];

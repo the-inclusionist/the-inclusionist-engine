@@ -151,7 +151,7 @@
     "test:node": "vitest run --project node",
     "test:browser": "vitest run --project browser",
     "check:precache": "node scripts/check-precache.mjs",
-    "censo:issues": "node scripts/censo-de-issues.mjs",
+    "issues:census": "node scripts/issue-census.mjs",
     "check:annual-report": "node scripts/check-annual-report.mjs",
     "test:a11y": "node scripts/axe-check.mjs",
     "release": "release-it"

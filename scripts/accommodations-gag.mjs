@@ -6,7 +6,7 @@
 // WCAG. O catálogo saiu do que a engine já tinha mais o que eu inferi dos géneros — e lida a GAG, faltavam
 // acomodações e uma estava mal priorizada (`velocidadeDoTexto` é Basic, o estudo pusera-a na cauda).
 //
-// 🎯 DUAS COLUNAS, E AMBAS CONTAM: o ALCANCE (medido pelas chaves de `lib/acomodacoes.mjs`) e o NÍVEL GAG
+// 🎯 DUAS COLUNAS, E AMBAS CONTAM: o ALCANCE (medido pelas chaves de `lib/accommodations.mjs`) e o NÍVEL GAG
 // (Basic → Intermediate → Advanced). O que entra primeiro é a intersecção: **Basic × alcance alto**.
 //
 // ⚠️ O TEXTO DA GAG NÃO ENTRA NESTE REPOSITÓRIO. A página não declara licença, e por isso aqui ficam só os
@@ -21,11 +21,11 @@
 //   slug que a página não tem · 4. uma acomodação citada que não existe no catálogo · 5. uma razão desconhecida
 //   6. uma directriz que não vira acomodação e NÃO diz porquê
 //
-//   node scripts/acomodacoes-gag.mjs [--gag copia-da-full-list.html] [caminho-do-catalogo.html]
+//   node scripts/accommodations-gag.mjs [--gag copia-da-full-list.html] [caminho-do-catalogo.html]
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { CATALOGO_PADRAO, lerCatalogo } from './lib/taxonomia.mjs';
-import { ACOM, medir } from './lib/acomodacoes.mjs';
+import { CATALOGO_PADRAO, lerCatalogo } from './lib/taxonomy.mjs';
+import { ACOM, medir } from './lib/accommodations.mjs';
 
 const GAG_URL = 'https://gameaccessibilityguidelines.com/full-list/';
 const FIXADA = { lida: '2026-09-12', sha256: '88c0a63738192e514d07ddb98cee57b7ebe1098d00d2df82518467d8280743f1' };
@@ -196,7 +196,7 @@ for (const [s, v] of Object.entries(D)) {
     if (!v.nota) problemas.push(`${s}: não vira acomodação e NÃO diz porquê`);
   }
 }
-const categorias = lerCatalogo(args[0] ?? CATALOGO_PADRAO, 'node scripts/acomodacoes-gag.mjs [--gag copia.html] <catalogo.html>');
+const categorias = lerCatalogo(args[0] ?? CATALOGO_PADRAO, 'node scripts/accommodations-gag.mjs [--gag copia.html] <catalogo.html>');
 const medida = medir(categorias);
 problemas.push(...medida.problemas);
 if (problemas.length) { for (const p of problemas) console.error('⚠️ ' + p); process.exit(1); }

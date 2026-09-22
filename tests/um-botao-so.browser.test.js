@@ -11,7 +11,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import pt from '../app/js/i18n/pt.js';
 import * as estado from '../app/js/core/state.js';
 import { SWITCH_SCAN_DEFAULTS } from '../app/js/input/switch-scan.js';

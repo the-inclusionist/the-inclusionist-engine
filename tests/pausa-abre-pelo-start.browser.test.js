@@ -17,7 +17,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 let motor;
 let raiz;

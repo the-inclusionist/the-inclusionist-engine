@@ -109,9 +109,16 @@ export function rewriteReferences(text, fromFile, moves) {
 export function dataForms(moves) {
   const pares = [];
   for (const [velho, novo] of Object.entries(moves)) {
-    const curtos = velho.startsWith('app/js/')
-      ? [[velho, novo], [velho.slice('app/js/'.length), novo.slice('app/js/'.length)]]
-      : [[velho, novo]];
+    /*
+     * EVERY SUFFIX OF THE PATH THAT STILL CARRIES A SLASH, and the generalisation was earned twice. First `app/js/…` was
+     * stripped, because that is how a ledger and the `dist-pkg/` mirror name a module (`platform/heavy.ts`). Then the scripts
+     * layer showed the same thing one folder in: a comment says «a tabela mora em `lib/taxonomia.mjs`» and a test says the
+     * WCAG count moved to `fixtures/contraste-wcag.js`. One slash is what keeps this safe — a suffix with no slash is the bare
+     * basename, which this tool refuses for the reason written below.
+     */
+    const pedacos = velho.split('/');
+    const curtos = pedacos.map((_, i) => [pedacos.slice(i).join('/'), novo.split('/').slice(i).join('/')])
+      .filter(([v]) => v.includes('/'));
     for (const [v, n] of curtos) {
       pares.push([v, n]);
       pares.push([v.replace(/\.ts$/, '.js'), n.replace(/\.ts$/, '.js')]);

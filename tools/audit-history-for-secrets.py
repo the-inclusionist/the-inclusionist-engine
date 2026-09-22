@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Varre TODO o histórico atrás de segredo e dado pessoal, antes de o repositório ficar público.
 
-    python tools/auditar-historico.py            # todos os refs locais
-    python tools/auditar-historico.py --ref main # só um ref
+    python tools/audit-history-for-secrets.py            # todos os refs locais
+    python tools/audit-history-for-secrets.py --ref main # só um ref
 
 O ADR-0066 §3 lista isto como condição para qualquer repositório virar público, e diz por que:
 em 2026-09-04 conferiram-se NOMES DE ARQUIVO e caminhos absolutos, e o CONTEÚDO não.

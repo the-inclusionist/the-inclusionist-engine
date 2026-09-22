@@ -5,7 +5,7 @@
 // directBgTexture (dessaturação assíncrona), directSprite{Canvas,Texture} (contorno de 1º plano) e o cache
 // de worldTexFor/spriteTexFor. ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeAll } from 'vitest';
-import { roleOfFalso as roleOf } from './fixtures/cartucho-falso.js'; // a tabela tile→papel é do JOGO (ADR-0080); a engine a RECEBE, e o gate prova que a cor sai do PAPEL
+import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // a tabela tile→papel é do JOGO (ADR-0080); a engine a RECEBE, e o gate prova que a cor sai do PAPEL
 import { initCollision } from '../app/js/core/collision.js';
 import { TILE } from '../app/js/core/constants.js';
 import {

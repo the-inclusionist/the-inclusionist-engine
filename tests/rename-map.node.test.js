@@ -95,6 +95,14 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
       if (f === 'scripts/rename-map.json' || f === 'scripts/apply-file-rename.mjs') continue; // CITAM os velhos de propósito
       if (f === 'docs/6-DevOps-SRE/Breaking-Changes.md' || f === 'CHANGELOG.md') continue;    // a tabela de migração vive deles
       if (f === 'tests/rename-map.node.test.js') continue;                                     // e este ficheiro também os cita
+      /*
+       * ⚠️ E O LIVRO DOS PONTEIROS MORTOS, que é o caso mais interessante desta lista porque nasceu de DOIS PORTÕES EM
+       * CONFLITO. O `ponteiros-de-registo` exige que um caminho citado por um registo e já inexistente seja DECLARADO pelo
+       * nome, com o motivo; este caso proíbe escrever um caminho movido. Os dois têm razão, e quem cede é este: um livro que
+       * regista o que morreu tem de poder nomear o que morreu. A prosa de um registo é história e não se reescreve (ADR-0057),
+       * logo alguém tem de dizer, em algum sítio, para onde o ficheiro foi — e esse sítio é aquele livro.
+       */
+      if (f === 'tests/ponteiros-de-registo.node.test.js') continue;
       const texto = readFileSync(join(RAIZ, f), 'utf8');
       for (const velho of movidos) {
         for (const forma of [velho, velho.replace(/\.ts$/, '.js')]) if (texto.includes(forma)) sobras.push(`${f} → ${forma}`);

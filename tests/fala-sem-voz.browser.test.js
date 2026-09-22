@@ -4,7 +4,7 @@
 //
 // 📌 The engine's three languages all have a voice, and in the browser project `core/i18n` is loaded by the setup before any`n// `vi.mock` could replace it. So the engine's own `tts` object — the one the root and the panel both ask — is told it has no`n// voice for the language, before the pause opens. The narration's side of the lock is in `fala-sem-voz.node`.
 import { describe, it, expect, beforeAll } from 'vitest';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 
 let motor;

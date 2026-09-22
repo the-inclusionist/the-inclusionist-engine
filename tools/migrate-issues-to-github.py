@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Migra as issues do GitLab para o GitHub PRESERVANDO OS NÚMEROS.
 
-    python tools/migrar-issues-para-github.py            # ensaio: não escreve nada
-    python tools/migrar-issues-para-github.py --go       # cria de verdade
+    python tools/migrate-issues-to-github.py            # ensaio: não escreve nada
+    python tools/migrate-issues-to-github.py --go       # cria de verdade
 
 POR QUE OS NÚMEROS SOBREVIVEM, e por que isso é frágil
 ------------------------------------------------------

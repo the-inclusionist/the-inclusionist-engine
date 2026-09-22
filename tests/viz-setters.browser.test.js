@@ -7,7 +7,7 @@
 // ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
-import { roleOfFalso as roleOf } from './fixtures/cartucho-falso.js'; // a tabela tile→papel e do JOGO (ADR-0080); a engine a RECEBE
+import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // a tabela tile→papel e do JOGO (ADR-0080); a engine a RECEBE
 
 // lqT é lido no IMPORT de render/lq-filter → zerar antes do import dinâmico, senão um resíduo de 'incl_lq'
 // entraria compondo o filtro CSS e as asserções de string exata ficariam dependentes de outro teste.

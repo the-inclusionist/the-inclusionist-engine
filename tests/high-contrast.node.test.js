@@ -4,7 +4,7 @@
 // persistida) + a guarda de DI de initHighContrast + o desvio "normal" de worldTexFor/spriteTexFor (não toca
 // canvas). ZOMBIES + Right-BICEP. Ver docs/2-Architecture/adr/ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect } from 'vitest';
-import { roleOfFalso as roleOf } from './fixtures/cartucho-falso.js'; // a tabela tile→papel é do JOGO (ADR-0080); a engine a RECEBE, e o gate prova que a cor sai do PAPEL
+import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // a tabela tile→papel é do JOGO (ADR-0080); a engine a RECEBE, e o gate prova que a cor sai do PAPEL
 import {
   DIRECT_CFG, dcfg, HC_ROLE_DEF, HC_ROLE, saveHcRole,
   initHighContrast, worldTexFor, spriteTexFor,

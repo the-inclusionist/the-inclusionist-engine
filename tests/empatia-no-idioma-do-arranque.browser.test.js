@@ -10,7 +10,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 let anterior = null;
 beforeAll(() => { anterior = localStorage.getItem('incl_lang'); localStorage.setItem('incl_lang', 'en'); });

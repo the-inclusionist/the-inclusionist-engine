@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
 import { setLocale } from '../app/js/core/i18n.ts';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 const tom = (n = 24000) => Float32Array.from({ length: n }, (_, i) => Math.sin(i / 8) * 0.4);
 const ruido = () => { const o = tom(2400); o[9] = -20_561_670; return o; };

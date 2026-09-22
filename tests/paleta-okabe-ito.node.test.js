@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { CVD_MATRIX } from '../app/js/render/cvd-matrices.js';
-import { razaoDeContraste, hex } from './fixtures/contraste-wcag.js';
+import { razaoDeContraste, hex } from './fixtures/wcag-contrast.js';
 
 const CSS = readFileSync(new URL('../app/css/style.css', import.meta.url), 'utf8');
 

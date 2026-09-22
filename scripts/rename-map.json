@@ -522,6 +522,25 @@
         "tests/settings-motor.browser.test.js": "tests/settings-mobility.browser.test.js",
         "tests/settings-motor.node.test.js": "tests/settings-mobility.node.test.js"
       }
+    },
+    "scripts": {
+      "done": "2026-09-22",
+      "files": {
+        "scripts/acomodacoes-gag.mjs": "scripts/accommodations-gag.mjs",
+        "scripts/acomodacoes-por-genero.mjs": "scripts/accommodations-by-genre.mjs",
+        "scripts/censo-de-issues.mjs": "scripts/issue-census.mjs",
+        "scripts/lib/acomodacoes.mjs": "scripts/lib/accommodations.mjs",
+        "scripts/lib/taxonomia.mjs": "scripts/lib/taxonomy.mjs",
+        "scripts/medir-camadas.py": "scripts/measure-layers.py",
+        "scripts/medir-forma-do-menu.py": "scripts/measure-menu-shape.py",
+        "scripts/revisao-das-paginas.mjs": "scripts/page-revisions.mjs",
+        "scripts/taxonomia-de-generos.mjs": "scripts/genre-taxonomy.mjs",
+        "tools/auditar-historico.py": "tools/audit-history-for-secrets.py",
+        "tools/migrar-issues-para-github.py": "tools/migrate-issues-to-github.py",
+        "tests/fixtures/cartucho-falso.js": "tests/fixtures/fake-cartridge.js",
+        "tests/fixtures/contraste-wcag.js": "tests/fixtures/wcag-contrast.js",
+        "tests/fixtures/respostas-de-acomodacao.js": "tests/fixtures/accommodation-answers.js"
+      }
     }
   }
 }

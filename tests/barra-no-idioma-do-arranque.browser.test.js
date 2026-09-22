@@ -22,7 +22,7 @@
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 const CHAVE_LANG = 'incl_lang';
 let anterior = null;

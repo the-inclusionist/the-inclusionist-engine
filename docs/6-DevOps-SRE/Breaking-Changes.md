@@ -1578,6 +1578,39 @@ Dev owns and the second is a document — phase 5 — and neither is a path anyb
 | `tests/settings-motor.browser.test.js` | `tests/settings-mobility.browser.test.js` |
 | `tests/settings-motor.node.test.js` | `tests/settings-mobility.node.test.js` |
 
+## AX · The scripts, the tools and the fixtures — NOT breaking (ADR-0219 phase 3, issue #202)
+
+⚠️ **This note breaks nothing, and it is here so nobody goes looking.** None of these files is published: the package ships
+`dist-pkg`, the stylesheet, the fonts, the licences and one script (`heavy-into-the-delivery.mjs`, which already moved in AU).
+Fourteen internal file names stopped being Portuguese. The only thing a contributor notices is one npm script:
+**`npm run censo:issues` is now `npm run issues:census`**.
+
+📌 **Chosen by READING the folders, not by asking the dictionary — and that is a finding worth writing down.** The word lists
+classify the words of IDENTIFIERS, so a word that only ever appeared in a FILE NAME was never put in either list:
+`acomodacoes`, `taxonomia`, `censo`, `auditar`, `respostas`. 📏 A measurement that trusts them reads those files as clean, which
+means the «185 files» measured on the morning of 2026-09-22 was a LOWER BOUND, and so is every number derived from it.
+
+<!-- printed by `node scripts/print-rename-table.mjs --files scripts` -->
+
+**scripts** — 14 files, moved 2026-09-22
+
+| was | is |
+|---|---|
+| `scripts/acomodacoes-gag.mjs` | `scripts/accommodations-gag.mjs` |
+| `scripts/acomodacoes-por-genero.mjs` | `scripts/accommodations-by-genre.mjs` |
+| `scripts/censo-de-issues.mjs` | `scripts/issue-census.mjs` |
+| `scripts/lib/acomodacoes.mjs` | `scripts/lib/accommodations.mjs` |
+| `scripts/lib/taxonomia.mjs` | `scripts/lib/taxonomy.mjs` |
+| `scripts/medir-camadas.py` | `scripts/measure-layers.py` |
+| `scripts/medir-forma-do-menu.py` | `scripts/measure-menu-shape.py` |
+| `scripts/revisao-das-paginas.mjs` | `scripts/page-revisions.mjs` |
+| `scripts/taxonomia-de-generos.mjs` | `scripts/genre-taxonomy.mjs` |
+| `tests/fixtures/cartucho-falso.js` | `tests/fixtures/fake-cartridge.js` |
+| `tests/fixtures/contraste-wcag.js` | `tests/fixtures/wcag-contrast.js` |
+| `tests/fixtures/respostas-de-acomodacao.js` | `tests/fixtures/accommodation-answers.js` |
+| `tools/auditar-historico.py` | `tools/audit-history-for-secrets.py` |
+| `tools/migrar-issues-para-github.py` | `tools/migrate-issues-to-github.py` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

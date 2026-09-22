@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // O CATÁLOGO DE ACOMODAÇÕES — cada uma com a sua chave —, as declarações por categoria e a medição do alcance.
-// Partilhado por `acomodacoes-por-genero.mjs` (a tabela de alcance) e `acomodacoes-gag.mjs` (a prioridade
+// Partilhado por `accommodations-by-genre.mjs` (a tabela de alcance) e `accommodations-gag.mjs` (a prioridade
 // pela Game Accessibility Guidelines). O raciocínio das chaves está no cabeçalho do primeiro.
-import { MAPA, EIXOS_DA_TAXONOMIA, SECOES } from './taxonomia.mjs';
+import { MAPA, EIXOS_DA_TAXONOMIA, SECOES } from './taxonomy.mjs';
 
 /* ===================== OS EIXOS DA DECLARAÇÃO =====================
  * `fonte` diz de onde vem o eixo: um campo do contrato que já existe, ou nenhum (⚠️ ainda por declarar).
@@ -149,7 +149,7 @@ export const ACOM = {
   naipesDistinguiveis: { tem: false, o: 'naipes distinguíveis sem depender de cor', chave: { eixo: 'pecas', valores: ['baralho'] } },
   janelaDeAcerto: { tem: false, o: 'quanto tempo conta como «no tempo certo»', chave: { eixo: 'precisao', valores: ['precisa'] } },
 
-  // ============ AS QUE A GAG TROUXE (`acomodacoes-gag.mjs`) — o estudo não as tinha ============
+  // ============ AS QUE A GAG TROUXE (`accommodations-gag.mjs`) — o estudo não as tinha ============
   // 📌 `tem` foi conferido no código, e cada `true` diz onde; um `false` que a engine já tivesse mentiria sobre a prioridade.
   entradaRepetida: { tem: false, o: 'trocar martelar/QTE por segurar ou por um toque', chave: { eixo: 'repeticao', valores: ['sim'] } },
   intervaloEntreEntradas: { tem: false, o: 'ignorar a segunda entrada dentro de N ms (tremor)', chave: { eixo: 'entrada', valores: ['acoes'] } },

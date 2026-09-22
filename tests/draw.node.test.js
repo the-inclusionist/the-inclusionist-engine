@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
 import { initDraw } from '../app/js/render/draw.js';
 import { LOGICAL_W, LOGICAL_H } from '../app/js/core/constants.js';
-import { BOX_FALSO as BOX, jogadorFalso as makePlayer } from './fixtures/cartucho-falso.js';
+import { BOX_FALSO as BOX, jogadorFalso as makePlayer } from './fixtures/fake-cartridge.js';
 import { createRunState } from '../app/js/core/run-state.js';
 // A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
 // ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste

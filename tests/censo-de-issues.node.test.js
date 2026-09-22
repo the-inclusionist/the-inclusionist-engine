@@ -2,7 +2,7 @@
 // O CENSO DAS ISSUES CONTINUA VIVO — um crivo que não acha nada não prova a árvore, prova o detector.
 //
 // ========================= POR QUE UM RELATÓRIO PRECISA DE GATE =========================
-// O `scripts/censo-de-issues.mjs` REPORTA e nunca reprova, de propósito (ADR-0126): a forma de um tracker não
+// O `scripts/issue-census.mjs` REPORTA e nunca reprova, de propósito (ADR-0126): a forma de um tracker não
 // é coisa que um build vermelho conserte. ⚠️ **E é precisamente por isso que ele precisa deste ficheiro.** Um
 // gate que reprova é lido no dia em que fica vermelho; um relatório que morre em silêncio imprime «0
 // suspeitas» para sempre e ninguém volta a olhar. Foi o que aconteceu com o tira-comentários do
@@ -13,7 +13,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
-import { PISTAS, contarCaixas, pistaDoTitulo } from '../scripts/censo-de-issues.mjs';
+import { PISTAS, contarCaixas, pistaDoTitulo } from '../scripts/issue-census.mjs';
 
 describe('o censo das issues', () => {
   it('🎯 [Vácuo] o detector de caixas ACHA uma caixa — é a metade que era o propósito do tracker', () => {

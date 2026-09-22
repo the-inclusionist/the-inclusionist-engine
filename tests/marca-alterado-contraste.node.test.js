@@ -43,7 +43,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { razaoDeContraste, hex, lerToken } from './fixtures/contraste-wcag.js';
+import { razaoDeContraste, hex, lerToken } from './fixtures/wcag-contrast.js';
 
 const CSS = readFileSync(join(process.cwd(), 'app', 'css', 'style.css'), 'utf8');
 

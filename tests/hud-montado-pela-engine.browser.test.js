@@ -12,7 +12,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import css from '../app/css/style.css?raw';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 const esperar = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 const cruza = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;

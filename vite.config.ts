@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { deliveryCacheKey } from './app/js/platform/heavy.js'; // the `heavy/` route's cache key (issue #173)
 // a page's precache revision carries the hash of `_headers`, so a header change refreshes it (issue #186)
-import { hashDosCabecalhos, revisarPaginasPelosCabecalhos } from './scripts/revisao-das-paginas.mjs';
+import { hashDosCabecalhos, revisarPaginasPelosCabecalhos } from './scripts/page-revisions.mjs';
 // Plugin em .mjs puro (sem tipos): é ferramenta de BUILD, e tipá-la exigiria um segundo tsconfig para o
 // Node. O contrato dele é uma função que devolve o objeto de plugin, e o Vite valida isso na hora de usar.
 // ⚠️ O PLUGIN DO ATLAS SAIU COM O CARTUCHO (issue #111). Ele gera `virtual:sprite-atlas`, que so'

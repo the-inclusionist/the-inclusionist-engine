@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// tests/fixtures/respostas-de-acomodacao — the cartridge's answer to its accommodations (ADR-0153), for tests.
+// tests/fixtures/accommodation-answers — the cartridge's answer to its accommodations (ADR-0153), for tests.
 //
 // Since ADR-0153 `createGame` and `mount()` REFUSE a cartridge that does not answer the sixteen game-keyed
 // accommodations. Most boot tests measure something else, so they answer the plainest true thing: no subject

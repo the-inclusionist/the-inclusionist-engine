@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// tests/fixtures/contraste-wcag — A CONTA DA WCAG, escrita aqui e em nenhum outro lugar.
+// tests/fixtures/wcag-contrast — A CONTA DA WCAG, escrita aqui e em nenhum outro lugar.
 //
 // Saiu de dentro de `contraste-menu.node.test.js` em 2026-09-07, quando um SEGUNDO gate passou a precisar
 // dela (a marca de "saiu do padrão", ADR-0029 / issue #61). O ficheiro de origem já dizia «escrita aqui e em

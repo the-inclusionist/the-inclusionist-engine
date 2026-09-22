@@ -5,7 +5,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { SEM_ASSUNTO, comAssunto } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO, comAssunto } from './fixtures/accommodation-answers.js';
 
 let motor, state;
 const CHAVES = ['incl_ownercolors', 'incl_outfg', 'incl_outbg'];

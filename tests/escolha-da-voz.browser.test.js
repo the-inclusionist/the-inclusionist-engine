@@ -6,7 +6,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file (shared with `escolha-da-voz.node` and the panel cases in `settings-audio.browser`).
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 vi.mock('../app/js/platform/kokoro-runtime.js', () => ({
   loadKokoroRuntime: async () => ({

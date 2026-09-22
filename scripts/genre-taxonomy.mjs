@@ -9,7 +9,7 @@
 //
 // 📌 AS 35 CATEGORIAS PASSAM A SER A PROVA DE COBERTURA, e não a chave: os 380 jogos têm de caber na taxonomia.
 //
-// ⚠️ A TABELA MORA EM `lib/taxonomia.mjs`, partilhada com `acomodacoes-por-genero.mjs`: os dois scripts têm de
+// ⚠️ A TABELA MORA EM `lib/taxonomy.mjs`, partilhada com `accommodations-by-genre.mjs`: os dois scripts têm de
 // ler o catálogo e chavear as categorias da mesma forma. Aqui ficam as GUARDAS e a contagem.
 //
 // ⚠️ SEIS GUARDAS, e nenhuma é zelo — cada uma é uma forma de uma célula esquecida parecer uma decisão:
@@ -20,10 +20,10 @@
 //   5. um eixo (perspectiva, jogadores) VAZIO ou com um valor que não é dos conhecidos
 //   6. uma categoria cujo NOME é um eixo e cujo eixo não o diz — «Isométrico» com duas perspectivas
 //
-//   node scripts/taxonomia-de-generos.mjs [caminho-do-catalogo.html]
-import { CATALOGO_PADRAO, lerCatalogo, REVISAO, SECOES, RAZOES, EIXOS_DA_TAXONOMIA, MAPA } from './lib/taxonomia.mjs';
+//   node scripts/genre-taxonomy.mjs [caminho-do-catalogo.html]
+import { CATALOGO_PADRAO, lerCatalogo, REVISAO, SECOES, RAZOES, EIXOS_DA_TAXONOMIA, MAPA } from './lib/taxonomy.mjs';
 
-const categorias = lerCatalogo(process.argv[2] ?? CATALOGO_PADRAO, 'node scripts/taxonomia-de-generos.mjs <catalogo.html>');
+const categorias = lerCatalogo(process.argv[2] ?? CATALOGO_PADRAO, 'node scripts/genre-taxonomy.mjs <catalogo.html>');
 
 /* ===================== as seis guardas ===================== */
 const nomes = categorias.map((c) => c.nome);

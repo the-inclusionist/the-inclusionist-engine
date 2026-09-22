@@ -11,7 +11,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { stageScale } from '../app/js/ui/layout.js';
-import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 describe('ADR-0001 as a pure function', () => {
   it('🔴 [Zero] a space smaller than 640×360 still gets 640×360 — never less', () => {

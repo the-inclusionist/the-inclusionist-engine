@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { hashDosCabecalhos, revisarPaginasPelosCabecalhos } from '../scripts/revisao-das-paginas.mjs';
+import { hashDosCabecalhos, revisarPaginasPelosCabecalhos } from '../scripts/page-revisions.mjs';
 
 const ENTRADAS = [
   { url: 'quiz.html', revision: 'abc' },

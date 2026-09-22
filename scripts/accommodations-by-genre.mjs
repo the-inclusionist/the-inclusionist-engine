@@ -13,7 +13,7 @@
 // construção — não há segunda célula onde escrever uma resposta diferente.
 //
 // 📌 E OS EIXOS SÃO DE DUAS ESPÉCIES, o que é o achado desta versão:
-//   · os da TAXONOMIA (`lib/taxonomia.mjs`) — género, perspectiva, jogadores: o que o jogo É;
+//   · os da TAXONOMIA (`lib/taxonomy.mjs`) — género, perspectiva, jogadores: o que o jogo É;
 //   · os da DECLARAÇÃO — tick, segura, entrada, mundo, topologia: o que o contrato JÁ PERGUNTA a todo jogo
 //     (`core/contract.ts`: `tick`, `seguraTeclas()`, `needsPointer()`, `world()`, `topology()`). Para estes, a acomodação
 //     não precisa de género nenhum: a engine pode filtrar pelo que o jogo já declarou.
@@ -25,11 +25,11 @@
 //   4. acomodação sem chave · 5. chave num eixo que não existe · 6. chave com um valor que o eixo não tem
 //      (casaria ZERO categorias, em silêncio) · 7. acomodação chaveada que não alcança categoria nenhuma
 //
-//   node scripts/acomodacoes-por-genero.mjs [caminho-do-catalogo.html]
-import { CATALOGO_PADRAO, lerCatalogo } from './lib/taxonomia.mjs';
-import { U, EIXOS_DA_DECLARACAO, EIXOS_DERIVADOS, medir } from './lib/acomodacoes.mjs';
+//   node scripts/accommodations-by-genre.mjs [caminho-do-catalogo.html]
+import { CATALOGO_PADRAO, lerCatalogo } from './lib/taxonomy.mjs';
+import { U, EIXOS_DA_DECLARACAO, EIXOS_DERIVADOS, medir } from './lib/accommodations.mjs';
 
-const categorias = lerCatalogo(process.argv[2] ?? CATALOGO_PADRAO, 'node scripts/acomodacoes-por-genero.mjs <minigames-catalog-v2.html>');
+const categorias = lerCatalogo(process.argv[2] ?? CATALOGO_PADRAO, 'node scripts/accommodations-by-genre.mjs <minigames-catalog-v2.html>');
 const { linhas, TOTAL, problemas } = medir(categorias);
 if (problemas.length) { for (const p of problemas) console.error('⚠️ ' + p); process.exit(1); }
 

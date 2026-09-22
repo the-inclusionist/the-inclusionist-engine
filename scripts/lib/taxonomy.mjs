@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// THE GENRE TAXONOMY AND THE CATALOGUE READER, shared by `taxonomia-de-generos.mjs` and
-// `acomodacoes-por-genero.mjs` (ADR-0145, the Dev's correction of 2026-09-12).
+// THE GENRE TAXONOMY AND THE CATALOGUE READER, shared by `genre-taxonomy.mjs` and
+// `accommodations-by-genre.mjs` (ADR-0145, the Dev's correction of 2026-09-12).
 //
 // Both scripts must read the catalogue the same way and key the same categories the same way; a copy in each
 // would let one count 380 games and the other 379 with nothing saying which is right.

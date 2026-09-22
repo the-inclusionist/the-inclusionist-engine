@@ -34,10 +34,10 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-// A conta da WCAG SAIU daqui em 2026-09-07 para `fixtures/contraste-wcag.js`, sem mudar de forma: um segundo
+// A conta da WCAG SAIU daqui em 2026-09-07 para `fixtures/wcag-contrast.js`, sem mudar de forma: um segundo
 // gate (a marca do ADR-0029, issue #61) passou a precisar dela, e a exportação que já existia aqui não tinha
 // importador possível — importar um ficheiro `.test.js` correria os `describe` dele duas vezes.
-import { razaoDeContraste, hex, lerToken } from './fixtures/contraste-wcag.js';
+import { razaoDeContraste, hex, lerToken } from './fixtures/wcag-contrast.js';
 
 const CSS = readFileSync(join(process.cwd(), 'app', 'css', 'style.css'), 'utf8');
 

@@ -34,7 +34,7 @@ concordar consigo mesma sem nada que o diga.
 
 ### As 35 categorias passam a ser a PROVA DE COBERTURA, e cabem
 
-📏 `node scripts/taxonomia-de-generos.mjs` — **35 de 35 mapeadas, 380 jogos**:
+📏 `node scripts/genre-taxonomy.mjs` — **35 de 35 mapeadas, 380 jogos**:
 
 | género de topo (Wikipédia) | categorias | jogos* |
 |---|---|---|
@@ -80,7 +80,7 @@ tem sujeito nelas **pelo género**, e terá de o ter pelo eixo.
 
 ## 0.1 · As acomodações re-chaveadas — UMA chave cada
 
-📏 `node scripts/acomodacoes-por-genero.mjs`. A primeira versão guardava **35 listas escritas à mão**, uma por
+📏 `node scripts/accommodations-by-genre.mjs`. A primeira versão guardava **35 listas escritas à mão**, uma por
 categoria, e por isso a mesma pergunta era respondida muitas vezes e podia sê-lo de formas diferentes. Agora
 **cada acomodação tem uma chave — um eixo e os valores onde tem assunto —, e cada categoria declara uma vez os
 valores que os jogos dela cobrem.** A divergência deixa de ser possível por construção: não há segunda célula
@@ -146,7 +146,7 @@ entrarem como campos, entram pela rubrica do `holdsAtOnce` (sem padrão seguro �
 
 ## 0.2 · A segunda coluna: o nível da GAG
 
-📏 `node scripts/acomodacoes-gag.mjs` — lê a [lista completa](https://gameaccessibilityguidelines.com/full-list/)
+📏 `node scripts/accommodations-gag.mjs` — lê a [lista completa](https://gameaccessibilityguidelines.com/full-list/)
 ao vivo (ou `--gag <cópia.html>`), classifica **as 105 directrizes** (122 entradas: há directrizes listadas
 em mais de um eixo, e cada uma vale pelo MELHOR nível em que aparece) e cruza cada acomodação com o alcance da 0.1.
 
@@ -401,15 +401,15 @@ entregaria três interruptores sem assunto a dois terços do catálogo.**
 O cruzamento não é prosa: ele está escrito célula a célula, e a contagem é derivada. Para o repetir depois de
 o catálogo mudar, ou para discordar de uma célula e ver o efeito, há cinco ficheiros:
 
-- `scripts/lib/taxonomia.mjs` — o leitor do catálogo, a revisão fixada da Wikipédia e, por categoria, os
+- `scripts/lib/taxonomy.mjs` — o leitor do catálogo, a revisão fixada da Wikipédia e, por categoria, os
   géneros, a perspectiva, os jogadores e o propósito;
-- `scripts/taxonomia-de-generos.mjs` — as guardas da taxonomia e a cobertura (secção 0);
-- `scripts/lib/acomodacoes.mjs` — por categoria, os eixos da declaração (`DECL`); por acomodação, a sua
+- `scripts/genre-taxonomy.mjs` — as guardas da taxonomia e a cobertura (secção 0);
+- `scripts/lib/accommodations.mjs` — por categoria, os eixos da declaração (`DECL`); por acomodação, a sua
   chave (`ACOM`); as guardas e a medição do alcance;
-- `scripts/acomodacoes-por-genero.mjs` — a tabela da secção 0.1;
-- `scripts/acomodacoes-gag.mjs` — a classificação das directrizes da GAG por slug e a tabela da secção 0.2.
+- `scripts/accommodations-by-genre.mjs` — a tabela da secção 0.1;
+- `scripts/accommodations-gag.mjs` — a classificação das directrizes da GAG por slug e a tabela da secção 0.2.
 
 ⚠️ Discordar de uma célula é editar **uma linha**: a declaração de uma categoria, ou a chave de uma
 acomodação. ⚠️ **As guardas conferem FORMA, não verdade** — um eixo esquecido, um valor que casaria zero, uma
 chave com dois eixos reprovam; uma categoria declarada com o valor errado passa, e é por isso que a coluna
-«porquê» da 0.1 existe. A primeira versão (o mapa `EXTRA`, secções 1–9) está no histórico de `scripts/acomodacoes-por-genero.mjs` (`git log -p`).
+«porquê» da 0.1 existe. A primeira versão (o mapa `EXTRA`, secções 1–9) está no histórico de `scripts/accommodations-by-genre.mjs` (`git log -p`).

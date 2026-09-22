@@ -5,7 +5,7 @@
 // 🎯 THE FAMILIES ARE THE STUDY'S FINDING, HELD AS TYPES. Whether an accommodation has a subject in a game is
 // answered in three different places — always, by the contract, or by the game — and a family that drifts
 // from the study is an accommodation the engine would derive wrongly. So one case reads the study's own
-// catalogue (`scripts/lib/acomodacoes.mjs`) and compares family sizes: the two lists cannot silently part.
+// catalogue (`scripts/lib/accommodations.mjs`) and compares family sizes: the two lists cannot silently part.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
@@ -13,7 +13,7 @@ import {
   ACCOMMODATIONS, GENERAL, CONTRACT_KEYED, GAME_KEYED, isAccommodation, presetAccommodations,
   accommodationLabellerFrom, accommodationPresetProblems, accommodationAnswersProblems, subjectWord, isGameKeyed,
 } from '../app/js/core/accommodations.js';
-import { ACOM, U } from '../scripts/lib/acomodacoes.mjs';
+import { ACOM, U } from '../scripts/lib/accommodations.mjs';
 
 describe('the catalogue and its three families', () => {
   it('🎯 [Right] no id repeats', () => {
