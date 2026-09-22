@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A SAÚDE DO CÓDIGO SÓ MELHORA — a catraca das quatro medidas (ADR-0221, issue #203).
+// A SAÚDE DO CÓDIGO SÓ MELHORA — a catraca das SEIS medidas (ADR-0221, issue #203).
 //
 // ========================= POR QUE ISTO EXISTE, E É RESPOSTA A UMA PERGUNTA DO DEV =========================
 // Em 22/09 o Dev releu o artigo que orientou a modularização desta engine (arXiv:2409.15152) e disse que os problemas curados
@@ -21,13 +21,13 @@
 //
 // MUTAÇÕES CONFERIDAS no fim do ficheiro.
 import { describe, it, expect } from 'vitest';
-import { measureTree, readBaseline, isExempt, MEASURES, BASELINE } from '../scripts/code-health.mjs';
+import { measureTree, readBaseline, isExempt, ceilingFrom, MEASURES, BASELINE } from '../scripts/code-health.mjs';
 
 const arvore = measureTree();
 const base = readBaseline();
 
 describe('a saúde do código só melhora', () => {
-  it('🔴 [Right] nenhum módulo piorou em nenhuma das cinco medidas', () => {
+  it('🔴 [Right] nenhum módulo piorou em nenhuma das seis medidas', () => {
     const piores = [];
     for (const [mod, agora] of Object.entries(arvore)) {
       const antes = base.modules[mod];
@@ -103,6 +103,31 @@ describe('a saúde do código só melhora', () => {
     for (const m of MEASURES) expect(isExempt('i18n/pt.ts', m), 'um dicionário deixou de ser dado').toBe(true);
   });
 
+  /*
+   * 🔴 A SEXTA MEDIDA TEM LIMIAR DE FORA, e é a única. O Dev leu a proposta de um tecto de LINHAS para a raiz e recusou-a pela
+   * razão certa: «isso é arbitrário, precisamos de uma referência melhor». 📏 A literatura não tem nenhuma para tamanho de
+   * ficheiro — o que ela tem é a complexidade ciclomática de McCabe (1976), com limiar 10 por FUNÇÃO, codificada no NIST SP
+   * 500-235 (Watson & McCabe, 1996), que admite 15 com justificação escrita.
+   *
+   * 🎯 E é por isso que este caso existe: um p90 desta árvore seria tirar o limiar do próprio defeito, e a primeira pressa
+   * mudaria o 10 para «o que já temos». O número está preso a uma fonte, não a um percentil.
+   *
+   * ⚠️ E A RAIZ NÃO É ISENTA DELE, que é a outra metade da decisão: a literatura de injecção de dependência descreve uma
+   * raiz de composição como um lugar que se espera GRANDE e que contém apenas FIAÇÃO — e fiação não decide. 📏 O `createGame`
+   * tem 68 ramos numa função só, e é isso que a medida vê e o tecto de linhas nunca viu.
+   */
+  it('🔴 [Right] o tecto da pior função é 10, vem de FORA da árvore, e a raiz não é isenta dele', () => {
+    /*
+     * 🔴 A REGRA E NÃO SÓ O NÚMERO GRAVADO, e a diferença foi medida: a primeira versão deste caso lia apenas
+     * `base.ceiling`, que vem do FICHEIRO — e a mutação «o tecto passa a ser o p90 da árvore» ficou VERDE, porque mudar o
+     * script não mexe no JSON até alguém correr `--write`. Um caso que só lê o registo não vê a regra mudar.
+     */
+    expect(ceilingFrom(arvore).worstFunction, 'a REGRA do tecto mudou: ele deixou de ser o 10 de McCabe').toBe(10);
+    expect(base.ceiling.worstFunction, 'o tecto GRAVADO deixou de ser 10 — se é decisão, ela precisa de fonte').toBe(10);
+    expect(isExempt('boot/create-game.ts', 'worstFunction'), 'a raiz ficou isenta da medida que mede a LÓGICA dela').toBe(false);
+    expect(arvore['boot/create-game.ts'].worstFunction, 'a raiz deixou de ser medida por função').toBeGreaterThan(0);
+  });
+
   it('📌 [Interface] toda isenção nomeia um módulo que existe, e o tecto cobre as quatro medidas', () => {
     // Uma isenção órfã é a forma mais silenciosa de a lista crescer: ninguém a lê, e ela autoriza o que já não existe.
     const isencoesOrfas = Object.keys(base.exempt).filter((m) => !arvore[m]);
@@ -134,4 +159,12 @@ describe('a saúde do código só melhora', () => {
  * 10. um módulo dá linhas, ganha UM import e GANHA UM RAMO ...................................... VERMELHO no 1.º
  *     — por duas vias, e a segunda é o ponto: os ramos a subir são erro por si mesmos E derrubam a tolerância do fan-out.
  *     📌 O controlo correu verde antes das duas, que é o que as torna leitura e não decoração.
+ *
+ * ========================= e as três da SEXTA medida (McCabe por função, 22/09) =========================
+ * 11. um módulo da linha de base ganha uma função de 13 ramos ................................... VERMELHO no 1.º
+ * 12. um módulo NOVO nasce com uma função de 13 ramos ........................................... VERMELHO no 2.º
+ * 13. o tecto da pior função passa a ser o p90 da própria árvore ................................ VERMELHO no caso do tecto
+ *     🔴 E ESTA SOBREVIVEU NA PRIMEIRA VOLTA, o que mudou o caso: ele lia só `base.ceiling`, que vem do FICHEIRO, e mudar a
+ *     regra no script não mexe no JSON até alguém correr `--write`. Um caso que lê o registo não vê a regra mudar. Agora ele
+ *     chama o `ceilingFrom` e confere os dois — a regra e o que ficou gravado.
  */

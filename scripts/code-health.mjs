@@ -44,7 +44,7 @@ export const EXEMPT = {
   'i18n/pt.ts': ['*'], 'i18n/en.ts': ['*'], 'i18n/es.ts': ['*'],
 };
 
-export const MEASURES = ['codeLines', 'decisionNodes', 'maxDepth', 'fanOut', 'globalReach'];
+export const MEASURES = ['codeLines', 'decisionNodes', 'maxDepth', 'fanOut', 'globalReach', 'worstFunction'];
 
 /*
  * 🔴 A QUINTA MEDIDA É O QUE UM MÓDULO ALCANÇA, e ela entrou porque as outras quatro não a viam (ADR-0221, passo 7d, issue
@@ -108,9 +108,41 @@ export function measureModule(text) {
   };
   sf.forEachChild(look);
 
+  /*
+   * 🔴 A COMPLEXIDADE CICLOMÁTICA DA PIOR FUNÇÃO, e é a única medida deste ficheiro com limiar EMPRESTADO em vez de tirado da
+   * própria árvore: McCabe (1976) propôs 10 por função, e o NIST SP 500-235 (Watson & McCabe, 1996) codificou-o, admitindo
+   * até 15 com justificação escrita. 📌 O Dev pediu uma referência melhor do que um tecto de linhas inventado, e a literatura
+   * não tem nenhuma para tamanho de ficheiro — tem esta, por FUNÇÃO.
+   *
+   * ⚠️ POR FUNÇÃO, e os ramos de uma função ANINHADA não contam para a de fora: uma função que devolve um objecto de dez
+   * métodos não é complexa por os ter, e somá-los faria toda fábrica desta árvore parecer o pior módulo dela.
+   * 📏 Medido em 22/09: 2496 funções, 71 acima de 10 e 36 acima de 15, em 46 módulos — logo isto é CATRACA e não portão, como
+   * tudo o resto aqui. A pior é o próprio `createGame`, com 68.
+   */
+  const ehFuncao = (n) => ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isArrowFunction(n) || ts.isMethodDeclaration(n);
+  let worstFunction = 0;
+  const porFuncao = (n) => {
+    if (ehFuncao(n)) {
+      let ramos = 1; // a complexidade ciclomática é ramos + 1: um caminho existe sempre
+      const conta = (x) => {
+        if (x !== n && ehFuncao(x)) return; // o que está dentro de uma função aninhada é dela
+        if (ts.isIfStatement(x) || ts.isForStatement(x) || ts.isForOfStatement(x) || ts.isForInStatement(x)
+          || ts.isWhileStatement(x) || ts.isDoStatement(x) || ts.isCaseClause(x) || ts.isCatchClause(x)
+          || ts.isConditionalExpression(x)) ramos += 1;
+        if (ts.isBinaryExpression(x) && [ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken,
+          ts.SyntaxKind.QuestionQuestionToken].includes(x.operatorToken.kind)) ramos += 1;
+        x.forEachChild(conta);
+      };
+      n.forEachChild(conta);
+      worstFunction = Math.max(worstFunction, ramos);
+    }
+    n.forEachChild(porFuncao);
+  };
+  sf.forEachChild(porFuncao);
+
   const codeLines = text.split('\n').filter((l) => l.trim() && !/^\s*(\/\/|\*|\/\*)/.test(l)).length;
   return {
-    codeLines, decisionNodes, maxDepth, fanOut: imports.size, globalReach: reached.size,
+    codeLines, decisionNodes, maxDepth, fanOut: imports.size, globalReach: reached.size, worstFunction,
     imports: [...imports], reached: [...reached].sort(),
   };
 }
@@ -143,7 +175,7 @@ export function measureTree() {
     const key = f.replace('app/js/', '');
     out[key] = {
       codeLines: m.codeLines, decisionNodes: m.decisionNodes, maxDepth: m.maxDepth, fanOut: m.fanOut,
-      globalReach: m.globalReach, fanIn: fanIn.get(f) ?? 0,
+      globalReach: m.globalReach, worstFunction: m.worstFunction, fanIn: fanIn.get(f) ?? 0,
       // 📌 QUAIS os globais, e não só quantos: uma catraca sobre um número diz que piorou, e esta linha diz o que muda para o
       // pagar. Só aparece onde há algum, para a linha de base não engordar com listas vazias.
       ...(m.reached.length ? { reached: m.reached } : {}),
@@ -163,6 +195,12 @@ export function ceilingFrom(modules) {
      * congelados pela catraca e só podem encolher — é dívida, e dívida não vira licença.
      */
     if (measure === 'globalReach') { teto[measure] = 0; continue; }
+    /*
+     * ⚠️ E A PIOR FUNÇÃO TAMBÉM NÃO TEM p90, por uma razão oposta à do alcance: o limiar vem de FORA e tem fonte — McCabe
+     * (1976), codificado no NIST SP 500-235, que admite 15 com justificação escrita. 📌 Foi o Dev que pediu uma referência
+     * melhor do que um número inventado, e um p90 desta árvore seria exactamente isso: tirar o limiar do próprio defeito.
+     */
+    if (measure === 'worstFunction') { teto[measure] = 10; continue; }
     const vals = Object.entries(modules).filter(([m]) => !isExempt(m, measure)).map(([, v]) => v[measure]).sort((a, b) => a - b);
     teto[measure] = vals[Math.min(vals.length - 1, Math.floor(vals.length * 0.9))];
   }
