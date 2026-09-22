@@ -55,6 +55,7 @@
       "cvdFilters",
       "declaration",
       "declines",
+      "dispose",
       "keyboard",
       "legendarSom",
       "medirFlashes",
@@ -1297,6 +1298,12 @@
       "espeak"
     ],
     "type LoadKokoro": "() => Promise<KokoroModule>"
+  },
+  "platform/listener-scope.ts": {
+    "interface ListenerScope": [
+      "releaseAll",
+      "win"
+    ]
   },
   "platform/microphone.ts": {
     "interface AudioNodeLike": [

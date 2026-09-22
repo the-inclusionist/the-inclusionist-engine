@@ -54,11 +54,25 @@ const declaracaoValida = () => ({
   targetsOf: () => [{ x: 0, y: 0 }],
 });
 
-const abrir = (extra = {}) => createGame({ acomodacoes: SEM_ASSUNTO,
-  declaration: declaracaoValida(),
-  host: { doc: document, win: window }, downloadHeavy: false,
-  ...extra,
-});
+/*
+ * 🔴 AS RAÍZES ABERTAS POR UM CASO SÃO ENCERRADAS NO FIM DELE, e isto não é arrumação — é o conserto de um defeito que fazia
+ * casos deste ficheiro mudarem de resultado conforme os vizinhos. Uma raiz instala ~30 escutas na JANELA e, até existir o
+ * `dispose()`, nada as tirava: tirar o hospedeiro do documento não cala ninguém, e como toda a busca de uma raiz é no documento
+ * inteiro (`getPauseMenu` é `doc.querySelector('#vp-pause-0')`), a raiz morta passava a navegar o cartão da raiz VIVA.
+ * 📏 Medido neste navegador: uma seta para baixo andava um item com uma raiz, DOIS com duas, TRÊS com três — e por isso o caso
+ * «a locked item SAYS WHY», que conta setas, parava noutro item assim que um vizinho abrisse mais uma raiz.
+ * O portão do mecanismo é `tests/a-disposed-root-stops-listening.browser.test.js`; aqui fica só a consequência.
+ */
+const raizesAbertas = [];
+const abrir = (extra = {}) => {
+  const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    declaration: declaracaoValida(),
+    host: { doc: document, win: window }, downloadHeavy: false,
+    ...extra,
+  });
+  raizesAbertas.push(motor);
+  return motor;
+};
 
 describe('createGame num documento de verdade', () => {
   let raiz;
@@ -75,7 +89,12 @@ describe('createGame num documento de verdade', () => {
     raiz = montarHospedeiro();
   });
 
-  afterEach(() => { raiz.remove(); document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove()); });
+  afterEach(() => {
+    // ⚠️ `dispose()` e não `unmount()`: o segundo solta o CARTUCHO e deixa a raiz a ouvir (ADR-0142), que é exactamente o que
+    // acumulava. Ver a nota do `abrir`.
+    for (const motor of raizesAbertas.splice(0)) motor.dispose();
+    raiz.remove(); document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove());
+  });
 
   it('⚠️ [Right] a marcação da barra PARSEIA — o duplo só sabia que uma string foi atribuída', () => {
     // ⚠️ O `domFalso` guarda `innerHTML` como texto. Num documento a sério, atribuir `innerHTML` ANALISA a
@@ -1274,10 +1293,10 @@ describe('createGame num documento de verdade', () => {
    * ⚠️ E O CAMINHO DO CLIQUE NÃO COBRE ISTO: o `iconAct` reflecte logo a seguir a si próprio. O que faltava era a subscrição,
    * que é por onde chega uma mudança vinda de FORA da barra — a mesma linha que o 📷 tem desde o ADR-0215.
    *
-   * 📌 ESTÁ NO FIM DO FICHEIRO DE PROPÓSITO, e a razão é um achado sobre a SUÍTE e não sobre a voz: 📏 medido em 2026-09-21,
-   * acrescentar QUALQUER caso que abra mais uma raiz antes do «a locked item SAYS WHY» faz o cursor dele parar noutro item —
-   * as raízes acumulam-se dentro do ficheiro e o número delas mexe em quantos passos uma seta dá. Um caso cujo resultado
-   * depende de quantas raízes os vizinhos abriram não mede o que diz; fica NOMEADO aqui, e consertá-lo é trabalho à parte.
+   * 📌 NASCEU NO FIM DO FICHEIRO POR UM DEFEITO DA SUÍTE QUE JÁ NÃO EXISTE, e fica escrito porque a causa vale mais do que a
+   * posição: 📏 em 2026-09-21 acrescentar QUALQUER caso que abrisse mais uma raiz antes do «a locked item SAYS WHY» fazia o
+   * cursor dele parar noutro item — as raízes acumulavam-se e cada uma somava um passo à seta. A causa era a raiz não ter fim
+   * (`dispose()`, 22/09); o `afterEach` fecha-as agora, e a posição deste caso deixou de importar.
    */
   it('🔴 [Zero] ligado o 👄 onde nada consegue começar, o botão VOLTA a dizer desligado', async () => {
     const estado = await import('../app/js/core/state.js');

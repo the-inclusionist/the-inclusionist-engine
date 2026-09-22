@@ -1440,6 +1440,27 @@ module and reach nobody outside it. What this release promised was the SURFACE, 
 | `GanchosDoCartucho` | `CartridgeHooks` |
 | `MedicaoDeFlashes` | `FlashMeasurement` |
 
+## AS · A root now has an END: `Engine.dispose()` (issue #201 neighbourhood; the case the Dev asked about on 2026-09-21)
+
+**What this is.** `Engine` gains a REQUIRED member, `dispose()`, which releases the current cartridge — everything `unmount()`
+does — and then **stops the root listening to the window**. It is a breaking change only for code that *implements* the `Engine`
+type (a hand-written double in a game's tests); for everybody who merely receives what `createGame` returns, it is an addition.
+
+**Why a root needed an end, and it is measured and not tidiness.** `createGame` installs about thirty listeners on the window —
+the scan interception, START, SELECT, `action4`, the resize, the language change, and the five that `ui/menu-nav.attach()` puts
+there — and **nothing could ever take them off**. Removing the host element from the document does not silence a root, and every
+query a root makes is document-wide (`getPauseMenu` is `doc.querySelector('#vp-pause-0')`), so a root that was finished went on
+driving the pause card of whatever root came next. 📏 Measured in the browser with the real engine: **one ArrowDown moved the
+cursor one item with one root alive, two with a second, three with a third** — the child presses down once and the cursor jumps.
+
+⚠️ **And the cure is NOT in `unmount()`, which is where it first looks like it belongs.** `unmount()` releases the CARTRIDGE
+(ADR-0142), and a `mount()` after it must find a root that still hears the keyboard — taking the listeners off there would leave
+the child who swaps cartridges with no keyboard at all, a worse defect than the one being cured. The two are separate methods for
+that reason, and a case in `tests/a-disposed-root-stops-listening.browser.test.js` holds the separation.
+
+**What to do.** Nothing, unless you wrote an object typed `Engine` by hand: then add `dispose()`. And if your page drops a root
+without dropping the document — a menu that swaps games, a test that opens several — call `motor.dispose()` when you drop it.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

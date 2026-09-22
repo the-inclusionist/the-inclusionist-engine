@@ -95,6 +95,7 @@ import { bcp47 } from '../core/i18n.js';
 import { barIntruders, stageScale, applyScale, belowFloor, minimumTarget, type Box, type Scale, type NodeMeasure } from '../ui/layout.js';
 import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
+import { createListenerScope } from '../platform/listener-scope.js';
 import type { FilterReach } from '../render/port.js';
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { captionDuration, CAPTION_RATES } from '../core/caption-duration.js';
@@ -578,6 +579,20 @@ export interface Engine {
    * Um `clear()` que os saltasse seria o conserto errado.
    */
   unmount(): void;
+  /**
+   * ENDS THIS ROOT: it releases the current cartridge, like `unmount()`, AND STOPS LISTENING TO THE WINDOW.
+   *
+   * 🔴 The two are separate on purpose, and the separation is the whole point. `unmount()` releases the CARTRIDGE (ADR-0142) and
+   * a `mount()` after it must find a root that still hears the keyboard — so `unmount()` may not take the listeners off. But a
+   * page that is finished with a root had, until this method existed, no way to say so: the root kept its ~30 window listeners
+   * for the lifetime of the document, and since every query it makes is document-wide, it went on driving the pause card of
+   * whatever root came after it. 📏 Measured: one ArrowDown moved the cursor one item with one root, two with a second root
+   * alive, three with a third.
+   *
+   * ⚠️ A disposed root is not to be used again: it no longer hears anything. Call it when the page drops the root, not between
+   * cartridges — that is what `unmount()` is for.
+   */
+  dispose(): void;
 }
 
 /** A metade do jogo SEM a declaração — o que `mount` recebe ao lado dela. */
@@ -702,7 +717,16 @@ export function createGame(o: CreateGameOptions): Engine {
   recusarSeOpcoesMalformadas('createGame', cartucho.gameOptions);
   recusarSeComoJogarMalformado('createGame', cartucho.howToPlay);
 
-  const { doc, win } = o.host;
+  const { doc } = o.host;
+  /*
+   * 🔴 THE WINDOW THIS ROOT LISTENS ON IS A SCOPED ONE, and it is not plumbing: a root installs about thirty listeners on the
+   * window and, until this line existed, NOTHING COULD TAKE THEM OFF. A root whose host was removed from the document kept
+   * listening, and because every query it makes is document-wide (`getPauseMenu` below is `doc.querySelector('#vp-pause-0')`) it
+   * drove the NEXT root's pause card: measured in the browser, one ArrowDown moved the cursor one item with one root, two with a
+   * second, three with a third. `dispose()` is the end of life this had never had. See `platform/listener-scope`.
+   */
+  const listeners = createListenerScope(o.host.win);
+  const win = listeners.win;
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
   state.loadState(store);
   loadLocale(store);
@@ -4040,11 +4064,17 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     while (cenasDaRaiz.pop()) { /* o `exit()` de cada cena É o teardown dela */ }
   }
 
+  function dispose(): void {
+    desmontar();
+    listeners.releaseAll();
+  }
+
   return {
     get declaration() { return cartucho.declaration; },
     get declines() { return declines(); },
     mount: montar,
     unmount: desmontar,
+    dispose,
     pausa,
     tts,
     reading,

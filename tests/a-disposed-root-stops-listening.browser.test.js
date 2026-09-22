@@ -1,0 +1,155 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// A ROOT THAT WAS DISPOSED STOPS LISTENING — AND ONE THAT WAS ONLY UNMOUNTED DOES NOT.
+//
+// 🔴 THE DEFECT THIS EXISTS FOR, AND IT WAS FOUND BY A TEST THAT CHANGED ANSWER DEPENDING ON ITS NEIGHBOURS. Adding a case to
+// `boot-create-game.browser.test.js` moved the pause cursor of a case written days earlier: «a locked item SAYS WHY» counts
+// ArrowDown presses, and with one more root opened before it the six presses ended somewhere else. A case whose result depends on
+// its neighbours does not measure what it says.
+//
+// 📏 THE CAUSE, MEASURED IN THIS BROWSER WITH THE REAL ENGINE, before a line was written: one ArrowDown moved the cursor ONE item
+// with one root, TWO with a second root alive, THREE with a third. `createGame` installs ~30 listeners on the window — the five
+// of `ui/menu-nav.attach()` among them — and nothing ever took them off. Removing the host element from the document does not
+// silence a root: every query it makes is document-wide (`getPauseMenu` is `doc.querySelector('#vp-pause-0')`), so the dead root
+// finds THE LIVE ROOT'S card and navigates it too. And `stopPropagation()` cannot help, because all of them sit on the same node
+// in the same phase — siblings there are only stopped by `stopImmediatePropagation()`, which would mean the first root ever built
+// silences all the others.
+//
+// 🔴 AND THE SECOND CASE IS WHY THE CURE IS NOT IN `unmount()`, which is where it first looks like it belongs. `unmount()`
+// releases the CURRENT CARTRIDGE (ADR-0142) and a `mount()` after it must find a root that still hears the keyboard. Take the
+// listeners off there and the child who swapped cartridges has no keyboard, which is a worse defect than the one being cured —
+// and one that no case in the tree would have caught.
+//
+// MUTATIONS CONFIRMED at the end of the file.
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+
+let createGame;
+
+function montarHospedeiro() {
+  const raiz = document.createElement('div');
+  raiz.id = 'raiz-de-teste';
+  raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
+    + '<div id="game-region"></div><div id="title-icons"></div>';
+  document.body.appendChild(raiz);
+  return raiz;
+}
+
+const declaracaoValida = () => ({
+  topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
+  holdsAtOnce: () => 1,
+  seguraTeclas: () => false,
+  tick: 'player',
+  world: () => ({ kind: 'element', selector: '#game-region' }),
+  roleAt: () => 'goal',
+  nameAt: () => ({ text: 'primeira pergunta', gender: 'f', plural: false }),
+  focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'none' }),
+  objectiveOf: () => ({ name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 3 }),
+  targetsOf: () => [{ x: 0, y: 0 }],
+});
+
+describe('o tempo de vida de uma raiz', () => {
+  let raiz;
+  const vivos = [];
+
+  const abrir = () => {
+    const motor = createGame({
+      acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(),
+      host: { doc: document, win: window }, downloadHeavy: false,
+    });
+    vivos.push(motor);
+    return motor;
+  };
+
+  /** Uma seta para baixo, pelo caminho por onde a criança a manda: a região do jogo, em bolha até à janela. */
+  const seta = () => {
+    const regiao = document.getElementById('game-region') ?? document.body;
+    regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', bubbles: true, cancelable: true }));
+  };
+
+  /** Quantos itens o cursor andou com UMA seta, no cartão de pausa aberto. */
+  const passosDeUmaSeta = (motor) => {
+    motor.pausa.mostrar(0);
+    const cartao = document.querySelector('#vp-pause-0');
+    const itens = [...cartao.querySelectorAll('.pause-menu[data-sub="raiz"] .pm-btn:not([hidden])')];
+    const antes = itens.indexOf(cartao.querySelector('.pm-sel'));
+    seta();
+    const depois = itens.indexOf(cartao.querySelector('.pm-sel'));
+    motor.pausa.esconder(0);
+    return depois - antes;
+  };
+
+  beforeEach(async () => {
+    if (!createGame) ({ createGame } = await import('../app/js/boot/create-game.js'));
+    raiz = montarHospedeiro();
+  });
+
+  afterEach(() => {
+    for (const m of vivos.splice(0)) m.dispose?.();
+    raiz.remove();
+    document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove());
+  });
+
+  it('🔴 [Right] uma raiz encerrada não mexe mais no cursor da raiz seguinte', () => {
+    // A raiz que acabou: o `dispose()` é o fim dela, e o documento dela sai como sairia numa página a sério.
+    const velha = abrir();
+    velha.dispose();
+
+    expect(passosDeUmaSeta(abrir()), 'uma seta para baixo andou mais de um item — há outra raiz a navegar o mesmo cartão').toBe(1);
+  });
+
+  it('🔴 [Right] e com DUAS raízes encerradas continua a andar um item só', () => {
+    // Duas, porque uma só não distingue «encerrei a raiz certa» de «encerrei uma raiz qualquer»: com o defeito, o número de
+    // passos É a contagem das raízes vivas, e a terceira medição é a que o mostra a crescer.
+    abrir().dispose();
+    abrir().dispose();
+
+    expect(passosDeUmaSeta(abrir()), 'cada raiz por encerrar soma um passo à seta').toBe(1);
+  });
+
+  it('🔴 [Right] mas `unmount()` NÃO cala a raiz — ela volta do `mount()` com teclado', () => {
+    // ⚠️ ESTE É O CASO QUE IMPEDE O CONSERTO ERRADO. `unmount()` solta o CARTUCHO (ADR-0142), não a raiz: uma engine que
+    // largasse as escutas aqui deixaria a criança que troca de cartucho sem teclado nenhum, e nada no resto da árvore o veria.
+    const motor = abrir();
+    motor.unmount();
+    // ⚠️ Os ganchos vão aqui, e não são opcionais como a interface diz: `mount` lê `ganchos.preset` sem guarda, logo
+    // `mount(declaration)` estoura com um `TypeError` em vez da frase da própria engine. Está dito ao Dev; não é deste conserto.
+    motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
+
+    expect(passosDeUmaSeta(motor), 'depois de `unmount()` + `mount()` a raiz deixou de ouvir a seta').toBe(1);
+  });
+
+  it('⚠️ [Boundary] encerrar duas vezes não estoura e não desfaz nada de quem está vivo', () => {
+    const velha = abrir();
+    velha.dispose();
+    velha.dispose();
+
+    expect(passosDeUmaSeta(abrir()), 'o segundo `dispose()` estragou a raiz viva').toBe(1);
+  });
+});
+
+/*
+ * ========================= MUTAÇÕES CONFERIDAS (2026-09-22) =========================
+ * Corridas sobre ESTE ficheiro e sobre `reading-no-createGame.browser.test.js`, que é quem mede a metade do Proxy que não é a
+ * das escutas. Os quatro casos deste ficheiro chamam-se aqui 1, 2, 3 (o do `unmount`) e 4 (o [Boundary]).
+ *
+ * 1. `platform/listener-scope`: `releaseAll` não remove nada (só esvazia a lista) ............. os 4 VERMELHOS
+ *    — é o próprio defeito: a raiz encerrada continua a navegar o cartão da viva.
+ * 2. `platform/listener-scope`: `listen` não guarda a escuta (o `push` sai) ................... os 4 VERMELHOS
+ *    — lista vazia, nada para soltar; a mesma falha por outro caminho.
+ * 3. `boot/create-game`: `dispose` só chama `desmontar()` (o `releaseAll` sai) ................ os 4 VERMELHOS
+ *    — prova que quem cala a raiz é o escopo de escutas, e não o teardown do cartucho.
+ * 4. `boot/create-game`: `desmontar` passa a chamar `listeners.releaseAll()` .................. 1 VERMELHO, o caso 3
+ *    — O CONSERTO NO SÍTIO ERRADO, e é a mutação que mais importa: é a única que só o caso do `unmount()` apanha. Sem ele,
+ *      calar a raiz no teardown do cartucho ficaria verde na árvore inteira e a criança que troca de cartucho perdia o teclado.
+ * 5. `platform/listener-scope`: o Proxy manda o PROXY por receiver ao `Reflect.get` ........... os 7 VERMELHOS
+ *    — «Illegal invocation»: um getter da janela (`innerWidth`) não corre com o proxy por `this`.
+ * 6. `platform/listener-scope`: o Proxy devolve a função crua, sem `bind` nem excepção ........ 6 VERMELHOS
+ *    — «Illegal invocation» de novo, agora no primeiro `getComputedStyle`.
+ * 7. `platform/listener-scope`: o Proxy liga TODA função, inclusive as construtoras ........... 2 VERMELHOS, os da leitura
+ *    — `bind` apaga o `prototype`, e o `platform/speech-recognition` pergunta `'processLocally' in api.prototype` antes de
+ *      abrir o microfone. Foi a suíte que achou isto, não eu: a criança que lê em voz alta ficava sem microfone nenhum.
+ *
+ * ⚠️ E UMA SOBREVIVEU PRIMEIRO, e era código inerte meu: o `Reflect.get(real, prop, real)` da primeira escrita passava o
+ * receiver que a linguagem já usa por omissão dentro de um trap. O comentário ao lado afirmava que aquela linha decidia tudo,
+ * e não decidia nada. O argumento saiu e a mutação passou a ser a de verdade — mandar o PROXY —, que é a 5 acima.
+ */

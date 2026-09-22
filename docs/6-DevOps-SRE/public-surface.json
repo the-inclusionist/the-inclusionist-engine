@@ -843,6 +843,10 @@
     "tokenizar",
     "wavDe"
   ],
+  "platform/listener-scope.ts": [
+    "ListenerScope",
+    "createListenerScope"
+  ],
   "platform/microphone.ts": [
     "AudioContextLike",
     "AudioNodeLike",
