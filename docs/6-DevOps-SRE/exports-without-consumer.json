@@ -1,65 +1,26 @@
 {
-  "about": "Exports no engine module, test or script imports (ADR-0170 §3, issue #164). cartridgeConsumers: the ones a sibling game repository imports, with the place. debt: the ones nothing imports — candidates to become internal; the list only shrinks. A new export with no importer in this repository names its cartridge here. Rewritten by `node scripts/exports-without-consumer.mjs --catalogue ..`; held by tests/exports-without-consumer.node.test.js.",
-  "cartridgeConsumers": {
-    "core/collision.ts isWcRampRiser": "game-platformer app/js/game/physics.ts",
-    "render/recycling-tex.ts BIN_H": "game-platformer app/js/main.ts",
-    "render/recycling-tex.ts SIGN_H": "game-platformer app/js/main.ts",
-    "core/i18n.ts availableLocales": "game-soccer tests/i18n.node.test.ts",
-    "core/state.ts emit": "game-platformer app/js/game/state.ts",
-    "core/state.ts hcOutlineBg": "game-platformer app/js/main.ts",
-    "core/state.ts hcOutlineFg": "game-platformer app/js/main.ts",
-    "core/state.ts initVizMode": "game-platformer app/js/main.ts",
-    "core/state.ts ownerColors": "game-platformer app/js/main.ts",
-    "core/state.ts setOutlineBgValue": "game-platformer app/js/main.ts",
-    "core/state.ts setOutlineFgValue": "game-platformer app/js/main.ts",
-    "core/state.ts setOwnerColorsValue": "game-platformer app/js/main.ts",
-    "core/state.ts setWheelchairValue": "game-platformer app/js/main.ts",
-    "core/state.ts vizMode": "game-platformer app/js/game/coin-spawning.ts",
-    "core/state.ts wheelchair": "game-platformer app/js/main.ts",
-    "platform/audio.ts _footCount": "game-platformer app/js/main.ts",
-    "platform/audio.ts noiseBuffer": "game-platformer app/js/main.ts",
-    "platform/audio.ts noiseHit": "game-platformer app/js/main.ts",
-    "platform/audio.ts setMasterMuted": "game-platformer app/js/main.ts",
-    "platform/audio.ts tone": "game-platformer app/js/main.ts",
-    "render/city-tiles.ts cityTiles": "game-platformer app/js/main.ts",
-    "render/fx.ts burstSparkle": "game-platformer app/js/main.ts",
-    "render/fx.ts getShakeT": "game-platformer app/js/main.ts",
-    "render/fx.ts initFx": "game-platformer app/js/main.ts",
-    "render/fx.ts puffDust": "game-platformer app/js/main.ts",
-    "render/fx.ts saveJuice": "game-platformer app/js/main.ts",
-    "render/player-anim.ts COYOTE": "game-platformer tests/player-anim.node.test.js",
-    "render/recycling-tex.ts BIN_COLOUR": "game-platformer tests/recycling-tex.node.test.js",
-    "render/recycling-tex.ts BIN_W": "game-platformer app/js/main.ts",
-    "render/recycling-tex.ts LITTER_ART": "game-platformer app/js/main.ts",
-    "render/recycling-tex.ts SIGN_W": "game-platformer tests/recycling-tex.node.test.js",
-    "render/recycling-tex.ts createRecyclingTextures": "game-platformer app/js/main.ts",
-    "render/recycling-tex.ts paintCardboardBox": "game-platformer tests/recycling-tex.node.test.js",
-    "render/recycling-tex.ts paintPetBottle": "game-platformer tests/recycling-tex.node.test.js",
-    "render/recycling-tex.ts paintCan": "game-platformer tests/recycling-tex.node.test.js",
-    "render/recycling-tex.ts paintBin": "game-platformer tests/recycling-tex.node.test.js",
-    "render/recycling-tex.ts paintSign": "game-platformer tests/recycling-tex.node.test.js",
-    "render/recycling-tex.ts paintGlassJar": "game-platformer tests/recycling-tex.node.test.js",
-    "render/scene-parallax.ts parallaxPlaceholder": "game-platformer app/js/main.ts",
-    "render/scene-parallax.ts themeCitySkyTexture": "game-platformer app/js/main.ts",
-    "render/scene-parallax.ts themeHillsTexture": "game-platformer app/js/main.ts",
-    "render/scene-parallax.ts themeSkyTexture": "game-platformer app/js/main.ts",
-    "render/scene-parallax.ts themeSkylineTexture": "game-platformer app/js/main.ts",
-    "render/weather.ts getCrowding": "game-platformer app/js/main.ts",
-    "render/world-tex.ts initWorldTex": "game-platformer app/js/main.ts",
-    "render/world-tex.ts worldCanvas": "game-platformer app/js/main.ts",
-    "ui/layout.ts initLayout": "game-2048 app/js/boot/main.ts",
-    "ui/settings-mobility.ts playerPrefix": "game-platformer app/js/main.ts",
-    "ui/title.ts TITLE_MENU_IDS_ORDERED": "game-platformer app/js/ui/activities-menu.ts",
-    "ui/vlibras.ts vlibrasSay": "game-platformer app/js/main.ts"
-  },
+  "about": "Published names nothing in THIS repository imports — no engine module, no test, no script (ADR-0170 §3, issue #164). Each one is DEBT: make it internal, delete it, or give it a consumer here. The list only shrinks, and it is regenerated with `node scripts/exports-without-consumer.mjs`; the gate is `tests/exports-without-consumer.node.test.js`. 🔴 It used to excuse a name because a sibling GAME imported it, and that ended on 2026-09-22 by the Dev's correction: an engine is published without its consumers in sight, so what a cartridge reaches for cannot define legitimate surface — and waiting for those repositories is what made this file un-regenerable (issue #205).",
   "debt": {
     "consumer-quiz/main-quiz.ts": [
       "bootQuiz",
       "declareQuiz",
       "spokenOption"
     ],
+    "core/collision.ts": [
+      "isWcRampRiser"
+    ],
     "core/contract.ts": [
       "dimension"
+    ],
+    "core/i18n.ts": [
+      "availableLocales"
+    ],
+    "core/state.ts": [
+      "emit",
+      "initVizMode",
+      "setWheelchairValue",
+      "vizMode",
+      "wheelchair"
     ],
     "input/gamepad.ts": [
       "PADWIZ_ANIM"
@@ -79,16 +40,63 @@
     ],
     "platform/audio-sonar.ts": [
       "GUIDE_HZ",
-      "ROUTE_BUDGET",
-      "GUIDE_TAU"
+      "GUIDE_TAU",
+      "ROUTE_BUDGET"
+    ],
+    "platform/audio.ts": [
+      "_footCount",
+      "noiseBuffer",
+      "noiseHit",
+      "setMasterMuted",
+      "tone"
+    ],
+    "render/city-tiles.ts": [
+      "cityTiles"
+    ],
+    "render/fx.ts": [
+      "burstSparkle",
+      "getShakeT",
+      "initFx",
+      "puffDust",
+      "saveJuice"
     ],
     "render/minimap.ts": [
       "setMinimapCorner"
     ],
+    "render/player-anim.ts": [
+      "COYOTE"
+    ],
+    "render/recycling-tex.ts": [
+      "BIN_COLOUR",
+      "BIN_H",
+      "BIN_W",
+      "LITTER_ART",
+      "SIGN_H",
+      "SIGN_W",
+      "createRecyclingTextures",
+      "paintBin",
+      "paintCan",
+      "paintCardboardBox",
+      "paintGlassJar",
+      "paintPetBottle",
+      "paintSign"
+    ],
+    "render/scene-parallax.ts": [
+      "parallaxPlaceholder",
+      "themeCitySkyTexture",
+      "themeHillsTexture",
+      "themeSkyTexture",
+      "themeSkylineTexture"
+    ],
     "render/viz-axes.ts": [
       "directTheme"
     ],
+    "render/weather.ts": [
+      "getCrowding"
+    ],
     "render/world-tex.ts": [
+      "initWorldTex",
+      "worldCanvas",
       "worldToTexture"
     ],
     "ui/fonts.ts": [
@@ -96,6 +104,9 @@
       "FONT_KEY_LEGACY",
       "loadFontKey",
       "saveFontKey"
+    ],
+    "ui/layout.ts": [
+      "initLayout"
     ],
     "ui/loop-crash.ts": [
       "CRASH_NOTICE_ID"
@@ -105,15 +116,24 @@
     ],
     "ui/pause-icons.ts": [
       "ENGINE_ITEMS",
-      "itemsThatAct",
       "iconCaption",
-      "itemReason"
+      "itemReason",
+      "itemsThatAct"
     ],
     "ui/settings-controls.ts": [
       "actionAlreadyBound"
     ],
+    "ui/settings-mobility.ts": [
+      "playerPrefix"
+    ],
     "ui/settings-visual.ts": [
       "sameRgb"
+    ],
+    "ui/title.ts": [
+      "TITLE_MENU_IDS_ORDERED"
+    ],
+    "ui/vlibras.ts": [
+      "vlibrasSay"
     ]
   }
 }

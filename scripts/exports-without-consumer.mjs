@@ -1,21 +1,27 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Which exported names does nothing import — no engine module, no engine test, no cartridge (ADR-0170 §3, issue #164)?
+// Which exported names does nothing in THIS repository import — no engine module, no engine test, no script
+// (ADR-0170 §3, issue #164)?
 //
-// Two uses:
-//  • `tests/exports-without-consumer.node.test.js` calls `semImportadorNoRepositorio()`: the half that runs in CI, where
-//    the sibling game repositories are not checked out.
-//  • `node scripts/exports-without-consumer.mjs --catalogue ..` measures the sibling repositories too and rewrites
-//    `docs/6-DevOps-SRE/exports-without-consumer.json`: the names a cartridge imports (named, with the place) and the
-//    debt of names nobody imports, which only shrinks.
+// 🔴 IT STOPPED ASKING THE GAMES ON 2026-09-22, and the correction is the Dev's, in his own words: «ESQUEÇA QUE VOCÊ VÊ
+// CONSUMIDORES! NENHUMA ENGINE É FEITA COM REPOSITÓRIOS DE CONSUMIDORES VISÍVEIS! SE ESSA ENGINE SOBE NUM REPOSITÓRIO,
+// NEM VERÍAMOS QUEM A CONSOME!» He is right, and the price of the old rule is measured: the ledger could not be
+// regenerated while a sibling repository lagged behind, so it was edited BY HAND three times in two days, and that is
+// what issue #205 was about.
+//
+// 🎯 The rule is now internal: a published name that nothing inside the engine imports is DEBT — declared here, or
+// deleted. Whoever consumes the engine adapts to the new version, which is how every published engine works.
+//
+// ⚠️ And the 50 names that used to be excused by «a cartridge imports it» were not the intended API — they were reach:
+// `platform/audio._footCount`, `core/collision.isWcRampRiser`, `render/recycling-tex.BIN_H`. Letting a consumer's reach
+// define legitimate surface is exactly what the Dev's correction removes.
 //
 // ⚠️ An export used by an engine test counts as consumed: the pure halves are exported to be tested in node, and the
 // ADR asks that a name be NEEDED, not that only games need it.
 
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join, relative, dirname, posix } from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { join, relative, dirname } from 'node:path';
 import { superficieDe } from './snapshot-public-surface.mjs';
 
 export const LISTA_DE_CONSUMIDORES = 'docs/6-DevOps-SRE/exports-without-consumer.json';
@@ -90,39 +96,17 @@ export function semImportadorNoRepositorio(raiz) {
   return fora;
 }
 
-/** What the sibling repositories import from the package, as `module name` → `repo file`. */
-export function importadoresNoCatalogo(pastaDosIrmaos) {
-  const fora = {};
-  for (const repo of readdirSync(pastaDosIrmaos)) {
-    const dir = join(pastaDosIrmaos, repo);
-    if (repo === 'the-inclusionist-engine' || !existsSync(join(dir, 'package.json'))) continue;
-    if (!/@the-inclusionist\/engine/.test(readFileSync(join(dir, 'package.json'), 'utf8'))) continue;
-    let rastreados;
-    try { rastreados = execFileSync('git', ['ls-files'], { cwd: dir, encoding: 'utf8' }).split('\n'); } catch { continue; }
-    for (const rel of rastreados.filter((r) => /\.(ts|tsx|js|mjs)$/.test(r) && !r.startsWith('dist'))) {
-      const resolver = (esp) => { const m = esp.match(/^@the-inclusionist\/engine(?:\/(.+))?$/); return m ? (m[1] ? m[1].replace(/\.js$/, '.ts') : 'boot/create-game.ts') : null; };
-      for (const k of importacoesDoTexto(readFileSync(join(dir, rel), 'utf8'), resolver)) fora[k] ??= `${repo} ${rel}`;
-    }
-  }
-  return fora;
-}
-
 if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'exports-without-consumer.mjs') {
-  const i = process.argv.indexOf('--catalogue');
-  if (i < 0) { console.error('usage: node scripts/exports-without-consumer.mjs --catalogue <folder holding the game repositories>'); process.exit(2); }
   const raiz = process.cwd();
-  const catalogo = importadoresNoCatalogo(process.argv[i + 1]);
-  const cartridgeConsumers = {};
-  const debt = {};
-  for (const [mod, nomes] of Object.entries(semImportadorNoRepositorio(raiz))) {
-    for (const n of nomes) {
-      const onde = catalogo[`${mod} ${n}`];
-      if (onde) cartridgeConsumers[`${mod} ${n}`] = onde;
-      else (debt[mod] ??= []).push(n);
-    }
-  }
-  const sobre = 'Exports no engine module, test or script imports (ADR-0170 §3, issue #164). cartridgeConsumers: the ones a sibling game repository imports, with the place. debt: the ones nothing imports — candidates to become internal; the list only shrinks. A new export with no importer in this repository names its cartridge here. Rewritten by `node scripts/exports-without-consumer.mjs --catalogue ..`; held by tests/exports-without-consumer.node.test.js.';
-  writeFileSync(join(raiz, LISTA_DE_CONSUMIDORES), JSON.stringify({ about: sobre, cartridgeConsumers, debt }, null, 2) + '\n');
+  const debt = semImportadorNoRepositorio(raiz);
+  const sobre = 'Published names nothing in THIS repository imports — no engine module, no test, no script '
+    + '(ADR-0170 §3, issue #164). Each one is DEBT: make it internal, delete it, or give it a consumer here. '
+    + 'The list only shrinks, and it is regenerated with `node scripts/exports-without-consumer.mjs`; the gate is '
+    + '`tests/exports-without-consumer.node.test.js`. 🔴 It used to excuse a name because a sibling GAME imported it, '
+    + 'and that ended on 2026-09-22 by the Dev\'s correction: an engine is published without its consumers in sight, '
+    + 'so what a cartridge reaches for cannot define legitimate surface — and waiting for those repositories is what '
+    + 'made this file un-regenerable (issue #205).';
+  writeFileSync(join(raiz, LISTA_DE_CONSUMIDORES), JSON.stringify({ about: sobre, debt }, null, 2) + '\n');
   const nDebt = Object.values(debt).reduce((t, v) => t + v.length, 0);
-  console.log(`cartridge consumers: ${Object.keys(cartridgeConsumers).length} · debt: ${nDebt} names in ${Object.keys(debt).length} modules`);
+  console.log(`debt: ${nDebt} names in ${Object.keys(debt).length} modules`);
 }

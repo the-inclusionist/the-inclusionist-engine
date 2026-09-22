@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A NEW EXPORT SAYS WHO NEEDS IT (issue #164, ADR-0170 §3).
+// A NEW EXPORT SAYS WHO NEEDS IT — AND «WHO» MEANS SOMEONE IN THIS REPOSITORY (issue #164, ADR-0170 §3).
 //
-// 📏 Measured on 2026-09-13 with `node scripts/exports-without-consumer.mjs --catalogue ..`: of the exported values, 43
-// are imported by no engine module, test or script and by no sibling game repository — and `numerarItens` had been one
-// of them until its removal cost a `BREAKING CHANGE` that broke nobody. 48 more are imported only by a cartridge.
+// 🔴 THE GATE STOPPED ASKING THE GAMES ON 2026-09-22, by the Dev's correction: «ESQUEÇA QUE VOCÊ VÊ CONSUMIDORES!
+// NENHUMA ENGINE É FEITA COM REPOSITÓRIOS DE CONSUMIDORES VISÍVEIS!» A published name that nothing inside the engine
+// imports is DEBT, declared or deleted; whoever consumes adapts to the new version.
 //
-// 📌 CI has no sibling repositories, so the catalogue half is measured locally and written to
-// `docs/6-DevOps-SRE/exports-without-consumer.json`; this gate holds the list against the tree. Types are out of scope
-// (see the script).
+// 📏 What that cost while it lasted, measured rather than remembered: 50 names were excused because one sibling game
+// imported them, the ledger could not be regenerated while any of those repositories lagged, and it was edited BY HAND
+// three times in two days (issue #205). And the 50 were not the intended API — they were reach: `platform/audio.
+// _footCount`, `core/collision.isWcRampRiser`, `render/recycling-tex.BIN_H`.
+//
+// 📌 The whole measurement now runs in CI, because it needs nothing outside this tree. Types stay out of scope (see the
+// script). The debt is the ONE list, and it only shrinks.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
@@ -19,7 +23,6 @@ const RAIZ = process.cwd();
 const LISTA = JSON.parse(readFileSync(join(RAIZ, LISTA_DE_CONSUMIDORES), 'utf8'));
 const semImportador = new Set(Object.entries(semImportadorNoRepositorio(RAIZ)).flatMap(([m, ns]) => ns.map((n) => `${m} ${n}`)));
 const divida = new Set(Object.entries(LISTA.debt).flatMap(([m, ns]) => ns.map((n) => `${m} ${n}`)));
-const doCartucho = LISTA.cartridgeConsumers;
 
 describe('exports without a consumer (issue #164, ADR-0170 §3)', () => {
   it('🎯 [Zero] the scanner sees imports of every form, or every export would look unused', () => {
@@ -36,20 +39,26 @@ describe('exports without a consumer (issue #164, ADR-0170 §3)', () => {
     expect(semImportador.has('boot/create-game.ts createGame'), 'createGame is imported by tests; the scan is blind').toBe(false);
   });
 
-  it('🔴 [Right] every export nothing here imports is either the debt or names the cartridge that imports it', () => {
-    const semDono = [...semImportador].filter((k) => !divida.has(k) && !(k in doCartucho));
-    expect(semDono, 'a new export with no consumer: import it, make it internal, or name its cartridge in ' +
-      `${LISTA_DE_CONSUMIDORES} (cartridgeConsumers) — measured with \`node scripts/exports-without-consumer.mjs --catalogue ..\``).toEqual([]);
+  it('🔴 [Right] every export nothing here imports is in the debt — there is no other excuse', () => {
+    const semDono = [...semImportador].filter((k) => !divida.has(k));
+    expect(semDono, 'a new export with no consumer IN THIS REPOSITORY: import it, make it internal, or delete it. '
+      + `Declaring it in ${LISTA_DE_CONSUMIDORES} is the last resort and says the name waits for a consumer — `
+      + 'regenerate with `node scripts/exports-without-consumer.mjs`').toEqual([]);
   });
 
   it('🎯 [Zero] the debt only shrinks — a name that gained an importer or left the package leaves the list', () => {
-    expect(divida.size, 'the debt is empty; was the list rewritten without the catalogue?').toBeGreaterThan(0);
+    expect(divida.size, 'the debt is empty; was the list rewritten over a broken measurement?').toBeGreaterThan(0);
     expect([...divida].filter((k) => !semImportador.has(k)), 'paid debt still listed').toEqual([]);
   });
 
-  it('🔴 [Right] a cartridge consumer names a repository and a file', () => {
-    const malformados = Object.entries(doCartucho).filter(([, onde]) => !/^[\w.-]+ \S+\.(ts|tsx|js|mjs)$/.test(onde)).map(([k]) => k);
-    expect(malformados).toEqual([]);
+  it('🔴 [Zero] the ledger has no memory of the games — a repository we cannot see cannot excuse a name', () => {
+    // A correcção do Dev em 22/09, presa e não só escrita: enquanto a chave existir, um nome volta a ser perdoado por
+    // um repositório que esta árvore não controla — e o livro volta a ser irregenerável quando esse repositório ficar
+    // para trás. O crivo afirma a AUSÊNCIA, que é a forma que o plano exige para uma decisão deste tipo.
+    expect(LISTA.cartridgeConsumers, 'a chave `cartridgeConsumers` voltou ao livro').toBeUndefined();
+    const fonte = readFileSync(join(RAIZ, 'scripts/exports-without-consumer.mjs'), 'utf8');
+    expect(/--catalogue/.test(fonte), 'a bandeira `--catalogue` voltou ao script').toBe(false);
+    expect(/importadoresNoCatalogo/.test(fonte), 'o leitor dos repositórios irmãos voltou').toBe(false);
   });
 });
 
@@ -59,4 +68,5 @@ describe('exports without a consumer (issue #164, ADR-0170 §3)', () => {
 //   E3 types no longer left out                             🔴 [Right] no consumer
 //   E4 the debt emptied                                     🔴 [Zero] shrinks
 //   E5 a debt name gains an importer, list untouched        🔴 [Zero] shrinks
-//   E6 a cartridge consumer without its file                🔴 [Right] names a repository
+//   E6 `cartridgeConsumers` back in the ledger              🔴 [Zero] no memory of the games   (22/09)
+//   E7 `--catalogue` back in the script                     🔴 [Zero] no memory of the games   (22/09)
