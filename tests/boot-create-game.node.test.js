@@ -274,7 +274,7 @@ describe('createGame em execução', () => {
     // escrita `if (preset) throw` ficaria verde acima e tiraria o vocabulário a todo o catálogo.
     expect(() => createGame({ acomodacoes: SEM_ASSUNTO, ...base(), preset: { action2: { label: 'Confirmar' } } })).not.toThrow();
 
-    // E O `mount()` RECUSA PELA MESMA REGRA. `GanchosDoCartucho` carrega `preset`, logo um SEGUNDO cartucho
+    // E O `mount()` RECUSA PELA MESMA REGRA. `CartridgeHooks` carrega `preset`, logo um SEGUNDO cartucho
     // podia tomar o «start» que o primeiro respeitou — e a pausa ficava inalcançável a meio da sessão.
     const motor = createGame(base());
     expect(() => motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO, preset: { start: { label: 'Turbo' } } }))

@@ -117,7 +117,7 @@ describe('nuvensDeTela — o que "fechado" e "aberto" querem dizer em pixels', (
     // O pedido do Dev, na letra: "escondendo o Sol". Não em 100% dos quadros de propósito — as fileiras
     // andam em velocidades diferentes, e é isso que abre e fecha as frestas por onde ele espia. Um céu que
     // tampasse o sol o tempo todo seria uma chapa branca, não tempo fechado.
-    const solX = 0.30 * 320, solY = 0.46 * 180; // onde a Floresta põe o sol (ver CENARIOS.floresta.sol)
+    const solX = 0.30 * 320, solY = 0.46 * 180; // onde a Floresta põe o sol (ver SCENERIES.floresta.sol)
     let tampado = 0, total = 0;
     for (let t = 0; t < 3000; t += 17) { total++; if (cobre(screenClouds(t, VW, N, 1), solX, solY)) tampado++; }
     expect(tampado / total).toBeGreaterThan(0.75);

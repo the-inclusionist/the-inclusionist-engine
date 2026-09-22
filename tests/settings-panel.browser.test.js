@@ -262,7 +262,7 @@ describe('Escape fecha UM diálogo — e é o primeiro da cadeia, não o de cima
 
 describe('fillExplain no DOM real — ordem de leitura', () => {
   function cardWithRow(inner) {
-    $('#animation').hidden = false; // um diálogo escondido é display:none — nada dentro dele é focável
+    $('#animation').hidden = false; // um diálogo escondido é display:none — nada isInside dele é focável
     const card = $('#animation .overlay__card');
     const row = document.createElement('div');
     row.className = 'ctrl-row';

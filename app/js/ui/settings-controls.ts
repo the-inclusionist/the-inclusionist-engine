@@ -363,7 +363,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
         const palavra = palavraDaAcao(act);
         if (!palavra) return;
         capture = { action: act, mapRef: map, player };
-        b.textContent = t('ctrl.pressing'); // estava cravado em português dentro do motor (#125)
+        b.textContent = t('ctrl.pressing'); // estava cravado em português isInside do motor (#125)
         ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: palavra, n: player + 1 }));
       });
     });

@@ -150,14 +150,14 @@ const PERGUNTAS: readonly Pergunta[] = [
 let atual = 0;
 let foco = 0;
 let acertos = 0;
-/** The question whose statement and options were last narrated — see `narracaoAoDesenhar`. */
+/** The question whose statement and options were last narrated — see `narrationOnDraw`. */
 let perguntaNarrada = -1;
 let motor: Engine | null = null;
 
 const $ = <T extends Element = Element>(sel: string): T | null => document.querySelector<T>(sel);
 
 /** Marcação de uma pergunta. Pura: recebe estado, devolve texto — testável sem DOM. */
-export function perguntaHtml(p: Pergunta, selecionada: number): string {
+export function questionHtml(p: Pergunta, selecionada: number): string {
   const alts = p.alternativas.map((a, i) =>
     `<button class="mode-btn quiz-alt${i === selecionada ? ' is-on' : ''}" data-alt="${i}" type="button"` +
     ` role="radio" aria-checked="${i === selecionada}">${escapeHtml(a)}</button>`).join('');
@@ -168,7 +168,7 @@ export function perguntaHtml(p: Pergunta, selecionada: number): string {
 }
 
 /** O próximo índice do foco, com as pontas dando a volta. Puro — é a regra que o teclado e o pad compartilham. */
-export function proximoFoco(atualIdx: number, delta: number, total: number): number {
+export function nextFocus(atualIdx: number, delta: number, total: number): number {
   if (total <= 0) return 0;
   return ((atualIdx + delta) % total + total) % total;
 }
@@ -180,13 +180,13 @@ export function proximoFoco(atualIdx: number, delta: number, total: number): num
  * A question is not answerable by ear until its options are heard. The place is said the way every menu item says it:
  * the Dev asked for «uma única função que capture a posição de item e a totalidade de itens», and it is the engine's.
  */
-export function narracaoDaPergunta(p: Pergunta): string {
-  const opcoes = p.alternativas.map((_, i) => opcaoFalada(p, i)).join('. ');
+export function questionNarration(p: Pergunta): string {
+  const opcoes = p.alternativas.map((_, i) => spokenOption(p, i)).join('. ');
   return opcoes ? `${p.enunciado} ${opcoes}` : p.enunciado;
 }
 
 /** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
-export function opcaoFalada(p: Pergunta, i: number): string {
+export function spokenOption(p: Pergunta, i: number): string {
   return announceItem({ rotulo: p.alternativas[i] ?? '', posicao: i + 1, total: p.alternativas.length }, menuIndexOn);
 }
 
@@ -196,10 +196,10 @@ export function opcaoFalada(p: Pergunta, i: number): string {
  * The whole question only when it OPENS; a draw on the same question is the cursor moving, and then only the option
  * under it is said. 🔴 Before this, every arrow press re-read the statement and never said which option was reached.
  */
-export function narracaoAoDesenhar(p: Pergunta, pergunta: number, focoIdx: number, jaNarrada: number): { texto: string; narrada: number } {
+export function narrationOnDraw(p: Pergunta, pergunta: number, focoIdx: number, jaNarrada: number): { texto: string; narrada: number } {
   return pergunta === jaNarrada
-    ? { texto: opcaoFalada(p, focoIdx), narrada: jaNarrada }
-    : { texto: narracaoDaPergunta(p), narrada: pergunta };
+    ? { texto: spokenOption(p, focoIdx), narrada: jaNarrada }
+    : { texto: questionNarration(p), narrada: pergunta };
 }
 
 /**
@@ -231,7 +231,7 @@ function contemAsPalavras(ditas: readonly string[], alvo: readonly string[]): bo
  * 🔴 TWO MATCHES IS NOT AN ANSWER, and that is why the count is kept instead of the first hit: a child who says «gato ou
  * galinha» is thinking out loud, and a quiz that picked one of them would answer FOR her — and mark it wrong.
  */
-export function alternativaOuvida(ouvido: string, alternativas: readonly string[]): number | null {
+export function heardAlternative(ouvido: string, alternativas: readonly string[]): number | null {
   const ditas = palavrasDe(ouvido);
   if (!ditas.length) return null;
   const achadas: number[] = [];
@@ -243,12 +243,12 @@ export function alternativaOuvida(ouvido: string, alternativas: readonly string[
  * O texto que o leitor de tela ouve ao responder. Separado do DOM porque é o que a criança cega RECEBE.
  * The frame is the dictionary's (study item E4): the right answer crosses as `{certa}`, the words around it translate.
  */
-export function respostaTexto(acertou: boolean, certa: string): string {
+export function answerText(acertou: boolean, certa: string): string {
   return t(acertou ? 'quiz.resposta.certa' : 'quiz.resposta.errada', { certa });
 }
 
 /** The closing line — how many were right out of how many — in the child's language. */
-export function fimTexto(acertou: number, total: number): string {
+export function endText(acertou: number, total: number): string {
   return t('quiz.fim', { n: acertou, m: total });
 }
 
@@ -256,10 +256,10 @@ function render(): void {
   const app = $<HTMLElement>('#quiz-app');
   if (!app) return;
   const p = PERGUNTAS[atual];
-  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(fimTexto(acertos, PERGUNTAS.length))}</h2>`; return; }
-  app.innerHTML = perguntaHtml(p, foco);
+  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(endText(acertos, PERGUNTAS.length))}</h2>`; return; }
+  app.innerHTML = questionHtml(p, foco);
   // a narração é do consumidor: a engine só empresta a voz
-  const fala = narracaoAoDesenhar(p, atual, foco, perguntaNarrada);
+  const fala = narrationOnDraw(p, atual, foco, perguntaNarrada);
   perguntaNarrada = fala.narrada;
   motor?.tts.narrate(fala.texto);
   app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {
@@ -305,7 +305,7 @@ async function ouvirResposta(): Promise<void> {
   try {
     const ouvido = await motor.reading.listen();
     ouvindo = false;
-    const escolhida = alternativaOuvida(ouvido.text, p.alternativas);
+    const escolhida = heardAlternative(ouvido.text, p.alternativas);
     if (escolhida !== null) { responder(escolhida); return; }
     const texto = ouvido.text.trim();
     dizerNoEnunciado(texto ? t('quiz.naoEntendi', { texto }) : t('quiz.ouviNada'));
@@ -321,7 +321,7 @@ function responder(i: number): void {
   if (!p) return;
   const acertou = i === p.certa;
   if (acertou) acertos++;
-  srAlert(respostaTexto(acertou, p.alternativas[p.certa] ?? ''));
+  srAlert(answerText(acertou, p.alternativas[p.certa] ?? ''));
   atual++;
   foco = 0;
   setTimeout(render, 900); // deixa o anúncio ser lido antes de a tela mudar
@@ -337,8 +337,8 @@ function aoComando(comando: VirtualCommand): void {
   const p = PERGUNTAS[atual];
   if (!p || !comando.pressed) return;
   const total = p.alternativas.length;
-  if (comando.action === 'down') { foco = proximoFoco(foco, 1, total); render(); }
-  else if (comando.action === 'up') { foco = proximoFoco(foco, -1, total); render(); }
+  if (comando.action === 'down') { foco = nextFocus(foco, 1, total); render(); }
+  else if (comando.action === 'up') { foco = nextFocus(foco, -1, total); render(); }
   // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se consumiu.
   else if (comando.action === 'action2') motor?.cenas.input('confirm');
   // SPEAKING THE ANSWER, and giving the microphone back. ⚠️ The same button that goes back is what stops a reading: a child who
@@ -361,7 +361,7 @@ function aoComando(comando: VirtualCommand): void {
  * UM jogo. Mas é a primeira declaração escrita por um consumidor de verdade, que boota e roda — e é o que
  * mostra que os sete campos cabem num jogo que não tem mundo.
  */
-export function declararQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
+export function declareQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
   const ordem = perguntas.map((_, i) => `q${i + 1}`);
   return {
     topology: () => ({ kind: 'hotspots', order: ordem }),
@@ -410,7 +410,7 @@ export function bootQuiz(): void {
   // achado 3 revelava — e o consumidor tinha de acertá-la sozinho. O que sobrou aqui embaixo é o que é
   // realmente DESTE jogo: a ergonomia do toque e o desenho das perguntas.
   motor = createGame({
-    declaration: declararQuiz(PERGUNTAS),
+    declaration: declareQuiz(PERGUNTAS),
     host: { doc: document, win: window, cvdHost: $<SVGElement>('#q-cvd') },
     // Um quiz não tem pausa, nem assistente de pad, nem ator de pausa. Declarado, e não deduzido de getters
     // que devolvem null — ver o achado 10 e o cabeçalho do `boot/create-game`.

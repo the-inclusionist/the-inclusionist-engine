@@ -1385,6 +1385,61 @@ store; «mobility» is the accessibility term with no such double.
 | `SettingsMotorCtx` | `SettingsMobilityCtx` |
 | `VozDoPainel` | `PanelVoice` |
 
+## AR · The last three layers, and the public surface is English (ADR-0219, issue #202)
+
+**What this is.** `educational` (15 names), `consumer-quiz` (9) and `boot` (2) — and with them the rename decided in
+ADR-0219 is complete. 📏 The tree's Portuguese debt falls from 1022 identifiers to 1020, and the measurement that closes the
+phase is the other one: **zero of the 1620 public names carries a Portuguese word**, down from 454 of 1612 when this started.
+
+**What to do.** Rename on your side by the table. 📌 The two that a cartridge holds are in `boot`:
+`GanchosDoCartucho`→`CartridgeHooks` (the half of a game `mount` receives) and `MedicaoDeFlashes`→`FlashMeasurement`.
+
+⚠️ **What did NOT change, and is not an oversight:** the i18n dictionaries and their keys, the `incl_*` stored keys, the
+cache name `incl-pesados-v2`, the FILE names (`app/js/platform/pesados.ts` is still called that — renaming files is the
+next phase, and doing it here would make two histories to follow instead of one), and 1020 identifiers that are internal to a
+module and reach nobody outside it. What this release promised was the SURFACE, and the surface is done.
+
+**educational** — 15 names, applied 2026-09-21
+
+| was | is |
+|---|---|
+| `ALVO_DE_SUBIDA` | `LEVEL_UP_TARGET` |
+| `aposSinalizar` | `afterSignalling` |
+| `Barra` | `Bar` |
+| `barraDe` | `barOf` |
+| `Contexto` | `Context` |
+| `CorDaBarra` | `BarColour` |
+| `Faixa` | `Band` |
+| `faixaDe` | `bandOf` |
+| `FALHAS_SEGUIDAS_QUE_DESCEM` | `MISSES_IN_A_ROW_THAT_DROP` |
+| `JANELA` | `WINDOW` |
+| `Motivo` | `Reason` |
+| `pisoDeChute` | `guessFloor` |
+| `SEGMENTOS_DA_BARRA` | `BAR_SEGMENTS` |
+| `Veredicto` | `Verdict` |
+| `VeredictoLido` | `ReadVerdict` |
+
+**consumer-quiz** — 9 names, applied 2026-09-21
+
+| was | is |
+|---|---|
+| `alternativaOuvida` | `heardAlternative` |
+| `declararQuiz` | `declareQuiz` |
+| `fimTexto` | `endText` |
+| `narracaoAoDesenhar` | `narrationOnDraw` |
+| `narracaoDaPergunta` | `questionNarration` |
+| `opcaoFalada` | `spokenOption` |
+| `perguntaHtml` | `questionHtml` |
+| `proximoFoco` | `nextFocus` |
+| `respostaTexto` | `answerText` |
+
+**boot** — 2 names, applied 2026-09-21
+
+| was | is |
+|---|---|
+| `GanchosDoCartucho` | `CartridgeHooks` |
+| `MedicaoDeFlashes` | `FlashMeasurement` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

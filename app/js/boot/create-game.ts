@@ -300,7 +300,7 @@ export interface CreateGameOptions {
   /**
    * THE NUMBERS THIS GAME SHOWS, each in the band of what it is about (ADR-0168, ADR-0175; issue #162). The engine mounts
    * the HUD and places them: `identity` top left and `mission` under it, `power` top right (under the clock), `learning` bars (one to three, as
-   * `educational/segment-bar.barraDe` returns them) centred in the footer, under the explanation; the room the game leaves free at the
+   * `educational/segment-bar.barOf` returns them) centred in the footer, under the explanation; the room the game leaves free at the
    * top (`--barra-a11y-h`) grows by what they take. Absent = no HUD mounted, and the game keeps drawing its own.
    * 📏 Measured on 2026-09-13: six sibling games, six HUDs of their own, none in the bands.
    * A malformed list is refused at boot and at `mount`, like the declaration.
@@ -441,7 +441,7 @@ export interface CreateGameOptions {
 }
 
 /** What `Engine.medirFlashes` found. `passa` and `piorSegundo` exist only when the canvas was read. */
-export interface MedicaoDeFlashes {
+export interface FlashMeasurement {
   readonly lido: boolean;
   readonly motivo?: string;
   readonly passa?: boolean;
@@ -498,7 +498,7 @@ export interface Engine {
    * the page may not read, or one that reads transparent, as a WebGL canvas without `preserveDrawingBuffer` does) — never a
    * pass by silence. The red flash is not measured.
    */
-  readonly medirFlashes: (ms: number) => Promise<MedicaoDeFlashes>;
+  readonly medirFlashes: (ms: number) => Promise<FlashMeasurement>;
   readonly overlays: SettingsPanelApi;
   readonly nav: MenuNavApi;
   readonly keyboard: KeyboardRuntime;
@@ -569,7 +569,7 @@ export interface Engine {
    * efeito global, e o alcance com o seu aviso, que escreve DOM. `problems` e `reach` passam a descrever
    * o cartucho montado porque são derivados, não porque `mount` os copie.
    */
-  mount(declaration: GameDeclaration, ganchos?: GanchosDoCartucho): void;
+  mount(declaration: GameDeclaration, ganchos?: CartridgeHooks): void;
   /**
    * SOLTA O CORRENTE: mapeamentos a `null`, aviso de alcance retirado, pilha de cenas esvaziada.
    *
@@ -581,7 +581,7 @@ export interface Engine {
 }
 
 /** A metade do jogo SEM a declaração — o que `mount` recebe ao lado dela. */
-export type GanchosDoCartucho = Omit<MetadeDoJogo, 'declaration'>;
+export type CartridgeHooks = Omit<MetadeDoJogo, 'declaration'>;
 
 /*
  * UMA FRASE SÓ PARA AS DUAS RECUSAS, e o gate do pilar 3 é que a pediu.
@@ -3691,14 +3691,14 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // ⚠️ SEM PADRÃO `{}` desde o ADR-0153: os ganchos carregam a resposta obrigatória às acomodações, e um padrão vazio
   // seria o cartucho que não respondeu — o arranque recusá-lo-ia de qualquer forma, com uma mensagem pior.
-  function montar(declaration: GameDeclaration, ganchos: GanchosDoCartucho): void {
+  function montar(declaration: GameDeclaration, ganchos: CartridgeHooks): void {
     // ⚠️ LANÇA, NÃO DIAGNOSTICA — a mesma regra do arranque, e por isso a mesma frase. Uma declaração
     // malformada é pré-condição: `problems` é para lacunas com que se consegue jogar, e isto não é uma.
     const malformada = conformanceProblems(declaration);
     if (malformada.length) {
       recusarDeclaracao('mount', malformada);
     }
-    // ⚠️ E O `mount()` RECUSA PELA MESMA REGRA, antes de escrever em `cartucho`. `GanchosDoCartucho` é
+    // ⚠️ E O `mount()` RECUSA PELA MESMA REGRA, antes de escrever em `cartucho`. `CartridgeHooks` é
     // `Omit<MetadeDoJogo, 'declaration'>`, logo carrega `preset` — um segundo cartucho podia tomar o «start»
     // que o primeiro respeitou, e a raiz ficava com a pausa inalcançável a meio da sessão.
     recusarSeTomaOStart('mount', ganchos.preset);
@@ -3975,7 +3975,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   const AMOSTRA_C = COLUMNS * 10;
   const AMOSTRA_L = ROWS * 10;
   const linear = (v: number): number => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
-  function medirFlashes(ms: number): Promise<MedicaoDeFlashes> {
+  function medirFlashes(ms: number): Promise<FlashMeasurement> {
     const mundo = cartucho.declaration.world();
     const alvo = mundo.kind === 'element' ? $<HTMLElement>(mundo.selector) : null;
     const canvas = alvo?.tagName === 'CANVAS' ? alvo as HTMLCanvasElement : alvo?.querySelector('canvas') ?? null;

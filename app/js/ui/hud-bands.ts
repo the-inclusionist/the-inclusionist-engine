@@ -25,7 +25,7 @@ const MAX_BARS = 3;
 const SEGMENTS = 10;
 
 /**
- * A skill's bar, as `educational/segment-bar.barraDe` returns it — the same field names and values, so its `Barra` passes
+ * A skill's bar, as `educational/segment-bar.barOf` returns it — the same field names and values, so its `Bar` passes
  * straight in. Written again here because `ui` does not import `educational` (ADR-0173).
  */
 export interface HudBar {

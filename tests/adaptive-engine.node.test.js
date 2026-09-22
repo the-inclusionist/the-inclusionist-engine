@@ -15,8 +15,8 @@
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import {
-  pisoDeChute, resultadoDaQuestao, falhasSeguidas, faixaDe,
-  JANELA, ALVO_DE_SUBIDA, FALHAS_SEGUIDAS_QUE_DESCEM,
+  guessFloor, resultadoDaQuestao, falhasSeguidas, bandOf,
+  WINDOW, LEVEL_UP_TARGET, MISSES_IN_A_ROW_THAT_DROP,
 } from '../app/js/educational/adaptive-engine.js';
 
 /**
@@ -28,7 +28,7 @@ import {
  * fixture e não do módulo, mas ensina o mesmo: uma sequência de falhas no fim não é «40% de falhas», é o
  * evento de 2,56% — e um ajudante de teste que as empilhe mede outra coisa sem avisar.
  */
-function historico(p, m, f = JANELA - p - m) {
+function historico(p, m, f = WINDOW - p - m) {
   const bons = [...Array(p).fill('primeira'), ...Array(m).fill('mediada')];
   const total = bons.length + f;
   const saida = [];
@@ -44,33 +44,33 @@ describe('a aritmética que justifica os cortes (issue #92)', () => {
   it('⚠️ [Right] chutar com 3 tentativas em 5 alternativas resolve 60% das questões', () => {
     // 1 − (4/5 · 3/4 · 2/3) = 1 − 0,4 = 0,60. É este número que torna «8 de 10 RESOLVIDAS» inútil como prova
     // de proficiência: o chute puro produz quase isso sozinho.
-    expect(pisoDeChute(5, 3)).toBeCloseTo(0.6, 10);
+    expect(guessFloor(5, 3)).toBeCloseTo(0.6, 10);
     expect(1 - (4 / 5) * (3 / 4) * (2 / 3)).toBeCloseTo(0.6, 10);
   });
 
   it('⚠️ [Right] falhar quatro QUESTÕES seguidas tem 2,56% de probabilidade — abaixo do corte de 5%', () => {
-    const falharUma = 1 - pisoDeChute(5, 3);           // 0,40
-    expect(falharUma ** FALHAS_SEGUIDAS_QUE_DESCEM).toBeCloseTo(0.0256, 10);
-    expect(falharUma ** FALHAS_SEGUIDAS_QUE_DESCEM).toBeLessThan(0.05);
+    const falharUma = 1 - guessFloor(5, 3);           // 0,40
+    expect(falharUma ** MISSES_IN_A_ROW_THAT_DROP).toBeCloseTo(0.0256, 10);
+    expect(falharUma ** MISSES_IN_A_ROW_THAT_DROP).toBeLessThan(0.05);
     // E TRÊS seguidas ainda NÃO passa o corte: 0,064 > 5%. É o que impede o número de ser 3.
     expect(falharUma ** 3).toBeGreaterThan(0.05);
   });
 
   it('[Interface] o piso é do TIPO de questão, e não uma constante embutida', () => {
-    expect(pisoDeChute(2, 1)).toBeCloseTo(0.5, 10);    // verdadeiro/falso
-    expect(pisoDeChute(10, 1)).toBeCloseTo(0.1, 10);   // dez alternativas, uma tentativa
-    expect(pisoDeChute(4, 2)).toBeCloseTo(0.5, 10);    // 1 − (3/4 · 2/3)
-    expect(pisoDeChute(5, 1)).toBeCloseTo(0.2, 10);
+    expect(guessFloor(2, 1)).toBeCloseTo(0.5, 10);    // verdadeiro/falso
+    expect(guessFloor(10, 1)).toBeCloseTo(0.1, 10);   // dez alternativas, uma tentativa
+    expect(guessFloor(4, 2)).toBeCloseTo(0.5, 10);    // 1 − (3/4 · 2/3)
+    expect(guessFloor(5, 1)).toBeCloseTo(0.2, 10);
   });
 
   it('[Boundary] mais tentativas do que alternativas−1 não passa de certeza, e lixo devolve 0', () => {
     // Com 5 alternativas e 4 tentativas a criança esgota as erradas: o piso é 1. Pedir 9 tentativas não pode
     // devolver mais do que 1, e um `alternativas` inválido não pode devolver NaN para dentro da faixa.
-    expect(pisoDeChute(5, 4)).toBeCloseTo(0.8, 10);   // sobra UMA por eliminar: falha com 1/5
-    expect(pisoDeChute(5, 5)).toBeCloseTo(1, 10);     // esgotou as cinco: certeza
-    expect(pisoDeChute(5, 9)).toBeCloseTo(1, 10);     // pedir mais não passa da certeza
-    expect(pisoDeChute(1, 3)).toBe(0);
-    expect(pisoDeChute(NaN, 3)).toBe(0);
+    expect(guessFloor(5, 4)).toBeCloseTo(0.8, 10);   // sobra UMA por eliminar: falha com 1/5
+    expect(guessFloor(5, 5)).toBeCloseTo(1, 10);     // esgotou as cinco: certeza
+    expect(guessFloor(5, 9)).toBeCloseTo(1, 10);     // pedir mais não passa da certeza
+    expect(guessFloor(1, 3)).toBe(0);
+    expect(guessFloor(NaN, 3)).toBe(0);
   });
 });
 
@@ -91,10 +91,10 @@ describe('⚠️ a unidade é a QUESTÃO, nunca a tentativa', () => {
 
     expect(umaQuestaoDificil).toEqual(['mediada']);
     expect(falhasSeguidas(umaQuestaoDificil)).toBe(0);
-    expect(faixaDe(umaQuestaoDificil, 0.6).efeito, 'uma questão difícil rebaixou a criança').toBe(0);
+    expect(bandOf(umaQuestaoDificil, 0.6).efeito, 'uma questão difícil rebaixou a criança').toBe(0);
 
     expect(falhasSeguidas(quatroQuestoesFalhadas)).toBe(4);
-    expect(faixaDe(quatroQuestoesFalhadas, 0.6)).toEqual({
+    expect(bandOf(quatroQuestoesFalhadas, 0.6)).toEqual({
       faixa: 'frustracao', motivo: 'quatro-seguidas', efeito: -1,
     });
   });
@@ -104,32 +104,32 @@ describe('⚠️ a unidade é a QUESTÃO, nunca a tentativa', () => {
     expect(falhasSeguidas(['primeira', 'falhou', 'falhou', 'falhou'])).toBe(3);
     expect(falhasSeguidas([])).toBe(0);
     // TRÊS seguidas ainda não descem — é a fronteira exata do corte.
-    expect(faixaDe(['falhou', 'falhou', 'falhou'], 0.6).efeito).toBe(0);
+    expect(bandOf(['falhou', 'falhou', 'falhou'], 0.6).efeito).toBe(0);
   });
 });
 
 describe('as três faixas, na fronteira exata de cada uma (ADR-0048 §5)', () => {
   it('⚠️ [Boundary] 8 de 10 DE PRIMEIRA sobe; 7 de primeira não sobe', () => {
-    expect(faixaDe(historico(8, 2), 0.6)).toEqual({
+    expect(bandOf(historico(8, 2), 0.6)).toEqual({
       faixa: 'proficiente', motivo: 'acertos-de-primeira', efeito: 1,
     });
-    expect(faixaDe(historico(7, 3), 0.6).faixa, '7 de primeira subiu de nível').toBe('zona');
-    expect(ALVO_DE_SUBIDA).toBe(0.8);
+    expect(bandOf(historico(7, 3), 0.6).faixa, '7 de primeira subiu de nível').toBe('zona');
+    expect(LEVEL_UP_TARGET).toBe(0.8);
   });
 
   it('⚠️ [Boundary] 8 de 10 RESOLVIDAS não sobe — é quase o que o chute puro produz', () => {
     // A afirmação inteira da issue, numa linha: o mesmo 8/10, lido pela medida errada, promoveria por sorte.
     const oitoResolvidasMasSoTresDePrimeira = historico(3, 5);
     expect(oitoResolvidasMasSoTresDePrimeira.filter((r) => r !== 'falhou')).toHaveLength(8);
-    expect(faixaDe(oitoResolvidasMasSoTresDePrimeira, 0.6).faixa).toBe('zona');
+    expect(bandOf(oitoResolvidasMasSoTresDePrimeira, 0.6).faixa).toBe('zona');
   });
 
   it('[Boundary] 7 de 10 resolvidas mantém, 6 de 10 desce — o corte é `≤`, não `<`', () => {
     // 6/10 é EXACTAMENTE o piso de 0,60. A tabela do registo diz «≤ 6 das últimas 10» e é ela que manda; a
     // prosa da mesma issue diz «abaixo do piso», que é resumo. Seguir a prosa deixaria a criança um nível
     // acima com um desempenho que o chute reproduz.
-    expect(faixaDe(historico(0, 7), 0.6)).toEqual({ faixa: 'zona', motivo: 'isInside-da-zona', efeito: 0 });
-    expect(faixaDe(historico(0, 6), 0.6)).toEqual({
+    expect(bandOf(historico(0, 7), 0.6)).toEqual({ faixa: 'zona', motivo: 'dentro-da-zona', efeito: 0 });
+    expect(bandOf(historico(0, 6), 0.6)).toEqual({
       faixa: 'frustracao', motivo: 'resolvidas-no-piso', efeito: -1,
     });
   });
@@ -138,8 +138,8 @@ describe('as três faixas, na fronteira exata de cada uma (ADR-0048 §5)', () =>
     // Cinco resolvidas de dez: acima do piso de uma questão de dez alternativas (0,10), no piso de uma de
     // verdadeiro/falso (0,50). O mesmo desempenho, dois veredictos, e é o que «o piso é parâmetro» significa.
     const cincoResolvidas = historico(0, 5);
-    expect(faixaDe(cincoResolvidas, 0.1).faixa).toBe('zona');
-    expect(faixaDe(cincoResolvidas, 0.5).faixa).toBe('frustracao');
+    expect(bandOf(cincoResolvidas, 0.1).faixa).toBe('zona');
+    expect(bandOf(cincoResolvidas, 0.5).faixa).toBe('frustracao');
   });
 
   it('[Right] a tabela completa de resultados por questão sobrevive ao trajeto', () => {
@@ -149,14 +149,14 @@ describe('as três faixas, na fronteira exata de cada uma (ADR-0048 §5)', () =>
     expect(h.filter((r) => r === 'primeira')).toHaveLength(6);
     expect(h.filter((r) => r === 'mediada')).toHaveLength(3);
     expect(h.filter((r) => r === 'falhou')).toHaveLength(1);
-    expect(faixaDe(h, 0.6), '6 de primeira + 3 mediadas subiu — a mediação foi contada como autonomia')
-      .toEqual({ faixa: 'zona', motivo: 'isInside-da-zona', efeito: 0 });
+    expect(bandOf(h, 0.6), '6 de primeira + 3 mediadas subiu — a mediação foi contada como autonomia')
+      .toEqual({ faixa: 'zona', motivo: 'dentro-da-zona', efeito: 0 });
   });
 });
 
 describe('⚠️ a janela incompleta, que é decisão minha e está declarada', () => {
   it('[Zero] sem histórico nenhum não há veredicto — mantém, e diz por quê', () => {
-    expect(faixaDe([], 0.6)).toEqual({ faixa: 'zona', motivo: 'janela-incompleta', efeito: 0 });
+    expect(bandOf([], 0.6)).toEqual({ faixa: 'zona', motivo: 'janela-incompleta', efeito: 0 });
   });
 
   it('[Zero] e os fixtures deste ficheiro não escondem uma sequência de quatro', () => {
@@ -165,9 +165,9 @@ describe('⚠️ a janela incompleta, que é decisão minha e está declarada', 
     // este ficheiro, em três casos de uma vez.
     for (const [p, m] of [[8, 2], [7, 3], [3, 5], [0, 7], [0, 6], [0, 5], [6, 3]]) {
       const h = historico(p, m);
-      expect(h).toHaveLength(JANELA);
+      expect(h).toHaveLength(WINDOW);
       expect(falhasSeguidas(h), `o fixture (${p},${m}) empilhou falhas no fim`)
-        .toBeLessThan(FALHAS_SEGUIDAS_QUE_DESCEM);
+        .toBeLessThan(MISSES_IN_A_ROW_THAT_DROP);
     }
   });
 
@@ -175,7 +175,7 @@ describe('⚠️ a janela incompleta, que é decisão minha e está declarada', 
     // A regra não está na issue #92 e está escrita no módulo como decisão minha. O motivo é o mesmo da
     // unidade-questão: com três respondidas, «resolvidas ≤ piso» dispararia com duas falhas, e rebaixar por
     // duas questões é o erro que o resto do ficheiro existe para não cometer.
-    expect(faixaDe(['falhou', 'mediada', 'falhou'], 0.6)).toEqual({
+    expect(bandOf(['falhou', 'mediada', 'falhou'], 0.6)).toEqual({
       faixa: 'zona', motivo: 'janela-incompleta', efeito: 0,
     });
   });
@@ -185,15 +185,15 @@ describe('⚠️ a janela incompleta, que é decisão minha e está declarada', 
     // criança ter respondido poucas. Esperar a janela fechar seria deixá-la mais seis questões num nível
     // que já se sabe alto.
     const quatro = ['falhou', 'falhou', 'falhou', 'falhou'];
-    expect(quatro.length).toBeLessThan(JANELA);
-    expect(faixaDe(quatro, 0.6).efeito).toBe(-1);
+    expect(quatro.length).toBeLessThan(WINDOW);
+    expect(bandOf(quatro, 0.6).efeito).toBe(-1);
   });
 
   it('[Exercise] a janela olha as ÚLTIMAS, e o passado sai dela', () => {
     // Dez falhas antigas seguidas de dez acertos de primeira: a criança subiu, e o histórico antigo não a
     // segura. Sem o `slice(-janela)` a mesma lista devolveria frustração para sempre.
     const h = [...Array(10).fill('falhou'), ...Array(10).fill('primeira')];
-    expect(faixaDe(h, 0.6)).toEqual({ faixa: 'proficiente', motivo: 'acertos-de-primeira', efeito: 1 });
+    expect(bandOf(h, 0.6)).toEqual({ faixa: 'proficiente', motivo: 'acertos-de-primeira', efeito: 1 });
   });
 });
 
@@ -203,7 +203,7 @@ describe('⚠️ a janela incompleta, que é decisão minha e está declarada', 
 //   · trocando `resolvidas <= piso` por `resolvidas < piso` → reprovam DOIS: "[Boundary] o corte é `≤`" em
 //     6 de 10 — a criança que fica um nível acima com o desempenho do chute — e "[Interface] o piso muda o
 //     corte", porque a fronteira do verdadeiro/falso é exactamente 0,50.
-//   · trocando `>= ALVO_DE_SUBIDA` por `> ALVO_DE_SUBIDA` → "[Boundary] 8 de 10 DE PRIMEIRA sobe" reprova.
+//   · trocando `>= LEVEL_UP_TARGET` por `> LEVEL_UP_TARGET` → "[Boundary] 8 de 10 DE PRIMEIRA sobe" reprova.
 //   · exigindo janela cheia ANTES da regra de quatro seguidas → reprovam DOIS, e são os dois que descrevem
 //     o evento de 2,56%: "QUATRO tentativas ≠ QUATRO questões" e "quatro seguidas descem mesmo com a janela
 //     incompleta". A ordem das perguntas É a decisão.
@@ -214,7 +214,7 @@ describe('⚠️ a janela incompleta, que é decisão minha e está declarada', 
 //     «resolvidas» onde a decisão diz «de primeira» promove por sorte, e três casos independentes dizem-no.
 //
 // ⚠️ E DOIS DEFEITOS APANHADOS AO ESCREVER ISTO, ambos meus e ambos instrutivos:
-//   1. `pisoDeChute(5, 4)` é 0,80 e não 1 — com quatro tentativas em cinco alternativas sobra UMA por
+//   1. `guessFloor(5, 4)` é 0,80 e não 1 — com quatro tentativas em cinco alternativas sobra UMA por
 //      eliminar, e falha-se com 1/5. Eu tinha escrito a expectativa errada e o módulo estava certo; o tecto
 //      de tentativas passou a ser `alternativas` (aí sim, certeza) em vez de `alternativas − 1`.
 //   2. o ajudante `historico` empilhava as falhas NO FIM, e por isso qualquer fixture com quatro ou mais

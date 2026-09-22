@@ -71,7 +71,7 @@ describe('e os três consumidores de toque continuam a responder o mesmo', () =>
 
   it('[Right] o analógico usa a zona morta em px que lhe passam', () => {
     expect(stickDirsAt(150, 220, R, 5).right).toBe(true);
-    expect(stickDirsAt(143, 220, R, 5).right).toBe(false); // dx=3, dentro da zona morta de 5
+    expect(stickDirsAt(143, 220, R, 5).right).toBe(false); // dx=3, isInside da zona morta de 5
   });
 
   it('[Right] a manopla recorta pelo RAIO e mantém o ângulo', () => {

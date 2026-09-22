@@ -80,6 +80,22 @@ describe('a renomeação não estraga prosa', () => {
       .toBe('const LINHAS_DO_RODAPE = 2; const x = modoCegoDica; const y = ROWS;\n');
   });
 
+  /*
+   * 🔴 O CASO QUE FALTAVA, e ele custou um valor de DADOS já commitado: `'dentro-da-zona'` — o motivo que o motor adaptativo
+   * dá para manter o nível — saiu como `'isInside-da-zona'`, metade em inglês, numa cadeia que nenhuma tabela de migração
+   * menciona e que um jogo pode ter guardado. A regra de então dizia «cadeia sem espaços é um nome»; a regra certa é mais
+   * estreita: renomeia-se uma cadeia quando ela É o nome, inteira. É o que distingue o nome de um evento («modoCego», que a
+   * superfície publica) de um pedaço de um valor composto.
+   */
+  it('🔴 [Zero] numa cadeia só se renomeia o nome INTEIRO — um valor composto é dado, não nome', () => {
+    const nomes = { dentro: 'isInside', modoCego: 'blindMode' };
+    expect(renameInText("const m = 'dentro-da-zona';", nomes).text,
+      'um pedaço de um valor composto foi renomeado').toBe("const m = 'dentro-da-zona';");
+    expect(renameInText("state.on('modoCego', f);", nomes).text,
+      'o nome de um evento É a superfície pública, e ficou por renomear').toBe("state.on('blindMode', f);");
+    expect(renameInText('if (dentro(f)) return;', nomes).text).toBe('if (isInside(f)) return;');
+  });
+
   it('📌 [Interface] e a conta do que mudou é por nome — é ela que diz se um nome do mapa não existe na árvore', () => {
     const { counted } = renameInText('LINHAS + LINHAS + modoCego', nomes);
     expect(counted).toEqual({ LINHAS: 2, modoCego: 1 });

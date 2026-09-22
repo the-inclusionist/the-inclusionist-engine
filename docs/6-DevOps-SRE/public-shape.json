@@ -42,7 +42,7 @@
       "sonarPlayers?",
       "uses?"
     ],
-    "interface MedicaoDeFlashes": [
+    "interface FlashMeasurement": [
       "lido",
       "motivo?",
       "passa?",
@@ -70,7 +70,7 @@
       "unmount",
       "velocidadeDoJogo"
     ],
-    "type GanchosDoCartucho": "Omit<MetadeDoJogo, 'declaration'>"
+    "type CartridgeHooks": "Omit<MetadeDoJogo, 'declaration'>"
   },
   "core/accommodation-subjects.ts": {
     "interface SubjectInputs": [
@@ -468,32 +468,32 @@
     "type GameMode": "'ludico' | 'somasub' | 'silabas'"
   },
   "educational/adaptive-engine.ts": {
-    "interface Veredicto": [
+    "interface Verdict": [
       "efeito",
       "faixa",
       "motivo"
     ],
     "type ResultadoDaQuestao": "| 'primeira' | 'mediada' | 'falhou'",
-    "type Faixa": "'proficiente' | 'zona' | 'frustracao'",
-    "type Motivo": "| 'acertos-de-primeira' | 'quatro-seguidas' | 'resolvidas-no-piso' | 'isInside-da-zona' | 'janela-incompleta'"
+    "type Band": "'proficiente' | 'zona' | 'frustracao'",
+    "type Reason": "| 'acertos-de-primeira' | 'quatro-seguidas' | 'resolvidas-no-piso' | 'dentro-da-zona' | 'janela-incompleta'"
   },
   "educational/segment-bar.ts": {
-    "interface VeredictoLido": [
+    "interface ReadVerdict": [
       "efeito",
       "motivo"
     ],
-    "interface Barra": [
+    "interface Bar": [
       "cor",
       "segmentos",
       "skill",
       "veredicto"
     ],
-    "interface Contexto": [
+    "interface Context": [
       "copiouAResposta?"
     ],
     "type Resultado": "'primeira' | 'mediada' | 'falhou'",
     "type Segmento": "| 'azul' | 'verde' | 'vermelho'",
-    "type CorDaBarra": "'nenhuma' | 'laranja' | 'roxa'"
+    "type BarColour": "'nenhuma' | 'laranja' | 'roxa'"
   },
   "input/default-bindings.ts": {
     "type Binding": "T | null"

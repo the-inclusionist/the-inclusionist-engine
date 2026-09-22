@@ -434,6 +434,47 @@
         "lqPosicao": "lqPosition",
         "glifoFalado": "spokenGlyph"
       }
+    },
+    "educational": {
+      "done": "2026-09-21",
+      "names": {
+        "ALVO_DE_SUBIDA": "LEVEL_UP_TARGET",
+        "FALHAS_SEGUIDAS_QUE_DESCEM": "MISSES_IN_A_ROW_THAT_DROP",
+        "Faixa": "Band",
+        "JANELA": "WINDOW",
+        "Motivo": "Reason",
+        "Veredicto": "Verdict",
+        "faixaDe": "bandOf",
+        "pisoDeChute": "guessFloor",
+        "Barra": "Bar",
+        "Contexto": "Context",
+        "CorDaBarra": "BarColour",
+        "SEGMENTOS_DA_BARRA": "BAR_SEGMENTS",
+        "VeredictoLido": "ReadVerdict",
+        "aposSinalizar": "afterSignalling",
+        "barraDe": "barOf"
+      }
+    },
+    "consumer-quiz": {
+      "done": "2026-09-21",
+      "names": {
+        "alternativaOuvida": "heardAlternative",
+        "declararQuiz": "declareQuiz",
+        "fimTexto": "endText",
+        "narracaoAoDesenhar": "narrationOnDraw",
+        "narracaoDaPergunta": "questionNarration",
+        "opcaoFalada": "spokenOption",
+        "perguntaHtml": "questionHtml",
+        "proximoFoco": "nextFocus",
+        "respostaTexto": "answerText"
+      }
+    },
+    "boot": {
+      "done": "2026-09-21",
+      "names": {
+        "GanchosDoCartucho": "CartridgeHooks",
+        "MedicaoDeFlashes": "FlashMeasurement"
+      }
     }
   }
 }

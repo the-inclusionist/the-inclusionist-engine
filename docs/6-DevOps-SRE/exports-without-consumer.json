@@ -55,8 +55,8 @@
   "debt": {
     "consumer-quiz/main-quiz.ts": [
       "bootQuiz",
-      "declararQuiz",
-      "opcaoFalada"
+      "declareQuiz",
+      "spokenOption"
     ],
     "core/contract.ts": [
       "dimension"

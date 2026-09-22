@@ -39,33 +39,33 @@ export type ResultadoDaQuestao =
   | 'falhou';    // além da zona
 
 /** A faixa em que a criança está, e o que ela manda fazer com o nível. */
-export type Faixa = 'proficiente' | 'zona' | 'frustracao';
+export type Band = 'proficiente' | 'zona' | 'frustracao';
 
 /** Por que a faixa é essa. Existe para o anúncio ao leitor de tela e para a barra do ADR-0049 poderem dizer
  *  a razão em vez de só o resultado — e para um teste poder distinguir duas faixas iguais por motivos
  *  diferentes, que é onde um motor adaptativo erra sem dar sinal. */
-export type Motivo =
+export type Reason =
   | 'acertos-de-primeira'   // subiu: ≥ 80% de primeira
   | 'quatro-seguidas'       // desceu na hora: o evento de 2,56%
   | 'resolvidas-no-piso'    // desceu: as resolvidas não passam do que o chute produziria
-  | 'isInside-da-zona'        // manteve: resolve com apoio
+  | 'dentro-da-zona'        // manteve: resolve com apoio
   | 'janela-incompleta';    // manteve: ainda não há questões que cheguem para julgar
 
-export interface Veredicto {
-  faixa: Faixa;
-  motivo: Motivo;
+export interface Verdict {
+  faixa: Band;
+  motivo: Reason;
   /** −1 desce, 0 mantém, +1 sobe. O ADR-0048 §5 chama a isto o efeito da faixa. */
   efeito: -1 | 0 | 1;
 }
 
 /** Quantas questões a janela olha. Dez é o número do registo. */
-export const JANELA = 10;
+export const WINDOW = 10;
 
 /** A fração de acertos DE PRIMEIRA a partir da qual se sobe. 0,80 = 8 em 10, e vale para qualquer tipo. */
-export const ALVO_DE_SUBIDA = 0.8;
+export const LEVEL_UP_TARGET = 0.8;
 
 /** Quantas QUESTÕES falhadas seguidas descem o nível na hora. Quatro, porque 0,40⁴ < 5%. */
-export const FALHAS_SEGUIDAS_QUE_DESCEM = 4;
+export const MISSES_IN_A_ROW_THAT_DROP = 4;
 
 /**
  * O piso de chute de um tipo de questão: a fração de questões que a sorte pura resolve.
@@ -78,7 +78,7 @@ export const FALHAS_SEGUIDAS_QUE_DESCEM = 4;
  * com uma tentativa tem 0,10. Embutir o 0,60 do caso de cinco faria o motor julgar todas as outras pela
  * aritmética da errada.
  */
-export function pisoDeChute(alternativas: number, tentativas: number): number {
+export function guessFloor(alternativas: number, tentativas: number): number {
   if (!Number.isFinite(alternativas) || alternativas < 2) return 0;
   // O tecto é o número de ALTERNATIVAS, não uma a menos: com tantas tentativas quantas alternativas a
   // criança esgota todas as erradas e a certeza é 1. Pedir mais não pode passar disso.
@@ -128,12 +128,12 @@ export function falhasSeguidas(historico: readonly ResultadoDaQuestao[]): number
  * «abaixo do piso», que é o resumo e não a regra. Quem seguir a prosa deixa a criança um nível acima com um
  * desempenho que o chute puro reproduz.
  */
-export function faixaDe(
+export function bandOf(
   historico: readonly ResultadoDaQuestao[],
   piso: number,
-  janela: number = JANELA,
-): Veredicto {
-  if (falhasSeguidas(historico) >= FALHAS_SEGUIDAS_QUE_DESCEM) {
+  janela: number = WINDOW,
+): Verdict {
+  if (falhasSeguidas(historico) >= MISSES_IN_A_ROW_THAT_DROP) {
     return { faixa: 'frustracao', motivo: 'quatro-seguidas', efeito: -1 };
   }
   if (historico.length < janela) {
@@ -144,7 +144,7 @@ export function faixaDe(
   const dePrimeira = ultimas.filter((r) => r === 'primeira').length / janela;
   const resolvidas = ultimas.filter((r) => r !== 'falhou').length / janela;
 
-  if (dePrimeira >= ALVO_DE_SUBIDA) return { faixa: 'proficiente', motivo: 'acertos-de-primeira', efeito: 1 };
+  if (dePrimeira >= LEVEL_UP_TARGET) return { faixa: 'proficiente', motivo: 'acertos-de-primeira', efeito: 1 };
   if (resolvidas <= piso) return { faixa: 'frustracao', motivo: 'resolvidas-no-piso', efeito: -1 };
-  return { faixa: 'zona', motivo: 'isInside-da-zona', efeito: 0 };
+  return { faixa: 'zona', motivo: 'dentro-da-zona', efeito: 0 };
 }

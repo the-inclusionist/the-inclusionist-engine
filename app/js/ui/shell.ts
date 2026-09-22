@@ -470,7 +470,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
 
   function updateTitleLegend(): void {
     const el = ctx.$<HTMLElement>('#title-legend');
-    if (!el) return; // 2 LINHAS, com o que está CONFIGURADO p/ o jogador da tela
+    if (!el) return; // 2 ROWS, com o que está CONFIGURADO p/ o jogador da tela
     let l1: string, l2: string;
     if (ctx.isTouchMode()) {                       // joystick VIRTUAL: 0/1/2/3 + START
       l1 = legendRow1('✜', 'START');

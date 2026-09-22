@@ -3,8 +3,8 @@
 //
 // ========================= O QUE ESTES CASOS PROTEGEM =========================
 // A leitura literal da issue («8 azuis sobem, 4 vermelhos seguidos ou 5 espalhados descem») produz uma
-// segunda implementação de uma decisão que já vive no `faixaDe`. A arquitectura impede-a — o `educational/`
-// não importa nada, logo a barra não alcança o `faixaDe` nem o `piso` —, e estes casos afirmam que a
+// segunda implementação de uma decisão que já vive no `bandOf`. A arquitectura impede-a — o `educational/`
+// não importa nada, logo a barra não alcança o `bandOf` nem o `piso` —, e estes casos afirmam que a
 // projecção que sobrou é fiel. O do PISO é o que prova que a cópia já estaria errada hoje.
 //
 // ⚠️ ESTE FICHEIRO É O TESTE E PODE IMPORTAR OS DOIS, que é justamente o que o módulo não pode. É por isso
@@ -14,17 +14,17 @@
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import {
-  barraDe, corDoSegmento, aposSinalizar, SEGMENTOS_DA_BARRA,
+  barOf, corDoSegmento, afterSignalling, BAR_SEGMENTS,
 } from '../app/js/educational/segment-bar.js';
 import {
-  faixaDe, resultadoDaQuestao, JANELA, ALVO_DE_SUBIDA, FALHAS_SEGUIDAS_QUE_DESCEM,
+  bandOf, resultadoDaQuestao, WINDOW, LEVEL_UP_TARGET, MISSES_IN_A_ROW_THAT_DROP,
 } from '../app/js/educational/adaptive-engine.js';
 
 const PISO5 = 0.6; // o piso do chute de uma questão de cinco alternativas — o caso do ADR-0048
 const rep = (r, n) => Array.from({ length: n }, () => r);
 // A COSTURA, num sítio só: quem chama corre o motor e entrega o veredicto. A barra não tem como o fazer.
 const barra = (hist, over = {}) =>
-  barraDe('mat.fracoes', hist, faixaDe(hist, over.piso ?? PISO5), over);
+  barOf('mat.fracoes', hist, bandOf(hist, over.piso ?? PISO5), over);
 
 describe('educational/segment-bar · a cor de um segmento é UMA QUESTÃO, nunca uma tentativa', () => {
   it('[Right] primeira→azul, mediada→verde, falhou→vermelho', () => {
@@ -36,7 +36,7 @@ describe('educational/segment-bar · a cor de um segmento é UMA QUESTÃO, nunca
   it('[Boundary] a barra mostra as ÚLTIMAS dez, da mais antiga para a mais nova', () => {
     const hist = [...rep('falhou', 4), ...rep('primeira', 10)];
     const b = barra(hist);
-    expect(b.segmentos.length).toBe(SEGMENTOS_DA_BARRA);
+    expect(b.segmentos.length).toBe(BAR_SEGMENTS);
     expect(b.segmentos.every((s) => s === 'azul'), 'as falhas velhas não saíram da janela').toBe(true);
   });
 
@@ -58,7 +58,7 @@ describe('educational/segment-bar · a cor da BARRA é o veredicto, e não uma s
     for (let n = 0; n < 100; n++) {
       const hist = Array.from({ length: 1 + Math.floor(prox() * 20) }, () => RES[Math.floor(prox() * 3)]);
       const b = barra(hist);
-      const esperada = faixaDe(hist, PISO5).efeito;
+      const esperada = bandOf(hist, PISO5).efeito;
       const dita = b.cor === 'roxa' ? 1 : b.cor === 'laranja' ? -1 : 0;
       expect(dita, `a barra disse ${b.cor} e o motor disse ${esperada} em [${hist.join(',')}]`).toBe(esperada);
     }
@@ -78,15 +78,15 @@ describe('educational/segment-bar · a cor da BARRA é o veredicto, e não uma s
     expect(barra(quatro, { piso: 0.3 }).cor, 'a barra ignorou o piso — está a contar sozinha').toBe('nenhuma');
   });
 
-  it('[Right] oito de primeira em dez sobem, e é o `ALVO_DE_SUBIDA` que o diz', () => {
+  it('[Right] oito de primeira em dez sobem, e é o `LEVEL_UP_TARGET` que o diz', () => {
     const oito = [...rep('primeira', 8), 'mediada', 'mediada'];
-    expect(oito.filter((r) => r === 'primeira').length / JANELA).toBeGreaterThanOrEqual(ALVO_DE_SUBIDA);
+    expect(oito.filter((r) => r === 'primeira').length / WINDOW).toBeGreaterThanOrEqual(LEVEL_UP_TARGET);
     expect(barra(oito).cor).toBe('roxa');
     expect(barra(oito).veredicto.motivo).toBe('acertos-de-primeira');
   });
 
   it('[Right] quatro falhas SEGUIDAS descem na hora, mesmo sem a janela cheia', () => {
-    const b = barra(rep('falhou', FALHAS_SEGUIDAS_QUE_DESCEM));
+    const b = barra(rep('falhou', MISSES_IN_A_ROW_THAT_DROP));
     expect(b.cor).toBe('laranja');
     expect(b.veredicto.motivo).toBe('quatro-seguidas');
   });
@@ -129,16 +129,16 @@ describe('educational/segment-bar · o que ela NÃO faz', () => {
 
   it('[Right] sinalizar ZERA a contagem; não sinalizar deixa o histórico intacto', () => {
     const oito = [...rep('primeira', 8), 'mediada', 'mediada'];
-    expect(aposSinalizar(oito, barra(oito))).toEqual([]);
-    const quatro = rep('falhou', FALHAS_SEGUIDAS_QUE_DESCEM);
-    expect(aposSinalizar(quatro, barra(quatro)), 'o laranja não zerou: desceria de nível a cada questão nova').toEqual([]);
+    expect(afterSignalling(oito, barra(oito))).toEqual([]);
+    const quatro = rep('falhou', MISSES_IN_A_ROW_THAT_DROP);
+    expect(afterSignalling(quatro, barra(quatro)), 'o laranja não zerou: desceria de nível a cada questão nova').toEqual([]);
     const meio = ['primeira', 'mediada', 'falhou'];
-    expect(aposSinalizar(meio, barra(meio))).toBe(meio);
+    expect(afterSignalling(meio, barra(meio))).toBe(meio);
   });
 
   it('[Interface] a barra tem tantos segmentos quanto a JANELA que o motor julga', () => {
     // Uma barra de doze mostraria duas questões que o veredicto não olhou.
-    expect(SEGMENTOS_DA_BARRA).toBe(JANELA);
+    expect(BAR_SEGMENTS).toBe(WINDOW);
   });
 });
 
@@ -150,9 +150,9 @@ describe('educational/segment-bar · o que ela NÃO faz', () => {
 //     da issue produz, e ela discorda do motor em quatro frentes.
 //   · tirando o `ctx.copiouAResposta` do inicio da expressao → reprova "COPIAR A RESPOSTA fica laranja de
 //     imediato". O nivel desceria so tres questoes depois, quando o ADR-0049 diz «sem esperar».
-//   · fazendo o `aposSinalizar` zerar so no roxo → reprova o caso do zerar. Os quatro vermelhos ficariam na
+//   · fazendo o `afterSignalling` zerar so no roxo → reprova o caso do zerar. Os quatro vermelhos ficariam na
 //     janela e a barra mandaria descer a CADA questao nova — quatro descidas onde a decisao foi uma.
-//   · `SEGMENTOS_DA_BARRA` de 10 para 12 → reprovam DOIS: a barra mostraria duas questoes que o veredicto
+//   · `BAR_SEGMENTS` de 10 para 12 → reprovam DOIS: a barra mostraria duas questoes que o veredicto
 //     nao olhou.
 //   · `mediada` a devolver `azul` → reprovam DOIS. Mediacao passaria a parecer desempenho sem apoio, que e
 //     precisamente a distincao que o ADR-0048 §5 usa para julgar.

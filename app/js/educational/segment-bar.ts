@@ -4,10 +4,10 @@
 // ========================= A BARRA NÃO PODE CONTAR, E ISSO É ESTRUTURAL =========================
 // A leitura literal da issue #93 produz um módulo com contadores próprios: «oito azuis → roxa, cinco
 // vermelhos → laranja». Escrevê-lo assim seria pôr no repositório uma SEGUNDA implementação de uma decisão
-// que já existe no `faixaDe` do motor adaptativo:
+// que já existe no `bandOf` do motor adaptativo:
 //
-//   · «oito azuis sobem»            é o `ALVO_DE_SUBIDA = 0.8` — 8 de primeira em 10;
-//   · «quatro vermelhos seguidos»   é o `FALHAS_SEGUIDAS_QUE_DESCEM = 4`;
+//   · «oito azuis sobem»            é o `LEVEL_UP_TARGET = 0.8` — 8 de primeira em 10;
+//   · «quatro vermelhos seguidos»   é o `MISSES_IN_A_ROW_THAT_DROP = 4`;
 //   · «cinco vermelhos espalhados»  é `resolvidas <= piso` — 5 falhadas em 10 dá 0,50, abaixo do piso 0,60.
 //
 // O próprio ADR-0049 diz isto em voz alta: «That is what makes every number in ADR-0048 §5 line up.»
@@ -19,7 +19,7 @@
 //
 // ⚠️ POR ISSO O VEREDICTO ENTRA PRONTO, e é a arquitectura que o obriga em vez de a disciplina. O `educational/`
 // não importa NADA — nem os seus vizinhos (ADR-0032; a camada é DADO e viaja sozinha para o
-// `the-inclusionist-knowledge-tree` do ADR-0058). Este módulo não tem, portanto, como chamar o `faixaDe`; e
+// `the-inclusionist-knowledge-tree` do ADR-0058). Este módulo não tem, portanto, como chamar o `bandOf`; e
 // como também não recebe o `piso`, não tem sequer os números com que recalcular a regra. Ele SÓ pode
 // projectar o que lhe deram. Um gate consegue afirmar que duas implementações concordam; esta forma torna a
 // segunda implementação impossível de escrever aqui dentro.
@@ -59,16 +59,16 @@ export type Segmento =
  * `nenhuma` não é «apagada» — é a barra a mostrar os seus segmentos, que é o estado normal. Laranja e roxa
  * cobrem-nos porque são a única coisa que interessa naquele instante.
  */
-export type CorDaBarra = 'nenhuma' | 'laranja' | 'roxa';
+export type BarColour = 'nenhuma' | 'laranja' | 'roxa';
 
 /**
- * O VEREDICTO, visto daqui: a fatia mínima do que o `faixaDe` devolve.
+ * O VEREDICTO, visto daqui: a fatia mínima do que o `bandOf` devolve.
  *
  * Só `efeito` e `motivo`, e nem sequer a `faixa` — a barra não precisa de saber que a criança está «na zona»,
  * precisa de saber se subiu, desceu ou ficou. `motivo` existe para o anúncio ao leitor de tela poder dizer a
  * RAZÃO: «desceu porque quatro seguidas» é informação; «ficou laranja» é decoração.
  */
-export interface VeredictoLido {
+export interface ReadVerdict {
   readonly efeito: -1 | 0 | 1;
   readonly motivo: string;
 }
@@ -76,24 +76,24 @@ export interface VeredictoLido {
 /**
  * Quantos segmentos a barra tem.
  *
- * Dez, e tem de ser a mesma `JANELA` que o motor adaptativo julga: uma barra que mostrasse doze questões
+ * Dez, e tem de ser a mesma `WINDOW` que o motor adaptativo julga: uma barra que mostrasse doze questões
  * enquanto o motor julga dez estaria a mostrar duas que não contam para o veredicto que a colore. O gate
  * afirma a igualdade, porque este ficheiro não pode importar a constante.
  */
-export const SEGMENTOS_DA_BARRA = 10;
+export const BAR_SEGMENTS = 10;
 
 /** Uma barra pronta a desenhar. Tudo aqui é derivado; não há nada para mutar. */
-export interface Barra {
+export interface Bar {
   /** A árvore de habilidade desta barra. O ADR-0049 §5 manda uma barra POR habilidade, de uma a três, e o
    *  segmento cai na barra da habilidade que a questão exercitou — sem isto, duas habilidades ligadas ao
    *  mesmo tempo partilhariam um histórico e as faixas mediriam a média de duas crianças diferentes. */
   readonly skill: string;
-  /** Os segmentos, do mais ANTIGO para o mais novo, no máximo `SEGMENTOS_DA_BARRA`. Menos do que isso no
+  /** Os segmentos, do mais ANTIGO para o mais novo, no máximo `BAR_SEGMENTS`. Menos do que isso no
    *  começo da sessão: a barra enche-se, e não nasce cheia de espaços que pareçam erros. */
   readonly segmentos: readonly Segmento[];
-  readonly cor: CorDaBarra;
+  readonly cor: BarColour;
   /** O veredicto que produziu a cor, tal como entrou. */
-  readonly veredicto: VeredictoLido;
+  readonly veredicto: ReadVerdict;
 }
 
 /**
@@ -109,7 +109,7 @@ export function corDoSegmento(r: Resultado): Segmento {
 }
 
 /** O que se sabe além do histórico e do veredicto. */
-export interface Contexto {
+export interface Context {
   /**
    * ⚠️ A CRIANÇA CHEGOU A COPIAR A RESPOSTA (ADR-0049): falhou as três tentativas, falhou as três da
    * explicação, e a resposta apareceu para ela copiar. Aí «o nível desce IMEDIATAMENTE, sem esperar por
@@ -131,16 +131,16 @@ export interface Contexto {
  * medir a média de duas crianças diferentes. Quem chama separa; este módulo não tem como saber que não
  * separou — nem tem como julgar, que é precisamente o ponto.
  */
-export function barraDe(
+export function barOf(
   skill: string,
   historico: readonly Resultado[],
-  veredicto: VeredictoLido,
-  ctx: Contexto = {},
-): Barra {
-  const segmentos = historico.slice(-SEGMENTOS_DA_BARRA).map(corDoSegmento);
+  veredicto: ReadVerdict,
+  ctx: Context = {},
+): Bar {
+  const segmentos = historico.slice(-BAR_SEGMENTS).map(corDoSegmento);
   // A rendição vence o veredicto porque ela É uma descida, decidida antes e por outro caminho. Escrevê-la
   // como `|| efeito < 0` em vez de a testar primeiro daria o mesmo resultado hoje e mentiria sobre a ordem.
-  const cor: CorDaBarra = ctx.copiouAResposta ? 'laranja'
+  const cor: BarColour = ctx.copiouAResposta ? 'laranja'
     : veredicto.efeito > 0 ? 'roxa'
       : veredicto.efeito < 0 ? 'laranja' : 'nenhuma';
   return { skill, segmentos, cor, veredicto };
@@ -158,9 +158,9 @@ export function barraDe(
  *
  * Fica como pergunta para o Dev; enquanto ele não a responder, esta é a leitura que não produz um defeito.
  */
-export function aposSinalizar(
+export function afterSignalling(
   historico: readonly Resultado[],
-  barra: Barra,
+  barra: Bar,
 ): readonly Resultado[] {
   return barra.cor === 'nenhuma' ? historico : [];
 }

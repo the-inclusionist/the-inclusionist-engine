@@ -107,7 +107,7 @@ const SEGUROS = [
   ['ui/shell.ts', 'el.innerHTML = legendHtml(l1, l2)', 'so i18n, e o dicionario tem gate proprio'],
   ['ui/settings-controls.ts', 'el.innerHTML = ctx.acoesDoJogo().map(', '⚠️ CONSERTADO 2026-09-06: a palavra do jogo saiu do markup e entra por `textContent`'],
   ['input/touch.ts', 'el.innerHTML = TOUCH_SLOTS.map((s) =>', '⚠️ CONSERTADO 2026-09-06: idem — o `<option>` nasce vazio e recebe o rótulo por texto'],
-  ['consumer-quiz/main-quiz.ts', 'app.innerHTML = perguntaHtml(p, foco)', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escapeHtml`, com gate hostil em `consumer-quiz`'],
+  ['consumer-quiz/main-quiz.ts', 'app.innerHTML = questionHtml(p, foco);', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escapeHtml`, com gate hostil em `consumer-quiz`'],
   ['ui/settings-audio.ts', "el.innerHTML = '<p class=\"opt-hint\">' +", 'uma única chave de i18n, escolhida por um booleano'],
   ['ui/settings-controls.ts', "tabs.innerHTML = '<span class=\"opt-hint\" style=\"widt", '⚠️ CONSERTADO 2026-09-07 (#125): era um literal em português cravado COM o `<strong>` e o plural à mão. Agora o sink é só ESQUELETO — zero dado, zero interpolação — e as três partes do texto entram por `textContent`, com o molde partido no marcador `{modo}` antes da substituição. O dicionário continua sem markup, que é o que o `i18n-sem-markup` exige'],
   ['ui/settings-motion.ts', 'el.innerHTML =', 'literais + o índice do jogador + linhas montadas de tabelas da engine'],

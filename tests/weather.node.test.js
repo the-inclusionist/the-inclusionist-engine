@@ -159,7 +159,7 @@ describe('initWeather + updateWeather + drawWeather (integração)', () => {
 
   it('[Interface] cenário COM chuva, após 30s: chove (rain overlay desenhado)', () => {
     const { weatherLayer } = setup({ chuva: true });
-    for (let i = 0; i < 60 * 32; i++) updateWeather(); // 32s → dentro da janela de garoa/chuva
+    for (let i = 0; i < 60 * 32; i++) updateWeather(); // 32s → isInside da janela de garoa/chuva
     expect(getRainLevel()).toBeGreaterThan(0);
     drawWeather();
     expect(weatherLayer._rec.fills.length).toBeGreaterThan(0); // céu escurecido desenhado

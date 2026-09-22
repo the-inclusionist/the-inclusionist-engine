@@ -93,31 +93,42 @@ const wholeWord = (name) => new RegExp(`(?<![\\w$])${name.replace(/[.*+?^${}()|[
  *
  * What is still ours is the POLICY, and it is the part worth writing down:
  *   · a comment is prose — only what is between backticks inside it is a name;
- *   · a string with whitespace is a sentence, and a sentence is prose wherever it lives;
- *   · a string without whitespace IS a name («modoCego» is an event's name, and renaming the binding without it cuts
- *     `emit`/`on` in half);
+ *   · a string is renamed only when the WHOLE of it is the name. 🔴 «A string without whitespace is a name» was the earlier
+ *     rule and it was too generous: `'dentro-da-zona'` — the reason the adaptive engine gives for keeping a level — came out
+ *     as `'isInside-da-zona'`, half English and a DATA value no migration table ever mentioned. An event's name («modoCego»)
+ *     is the whole string, which is what makes renaming it right and renaming a fragment wrong;
  *   · a regex is neither.
  */
 function scan(text) {
-  const comments = [], strings = [];
-  const scanner = ts.createScanner(ts.ScriptTarget.Latest, /* skipTrivia */ false, ts.LanguageVariant.Standard, text);
-  let token = scanner.scan();
-  while (token !== ts.SyntaxKind.EndOfFileToken) {
-    const a = scanner.getTokenStart(), b = scanner.getTextPos();
-    if (token === ts.SyntaxKind.SingleLineCommentTrivia || token === ts.SyntaxKind.MultiLineCommentTrivia) {
-      comments.push([a, b]);
-    } else if (
-      token === ts.SyntaxKind.StringLiteral
-      || token === ts.SyntaxKind.NoSubstitutionTemplateLiteral
-      || token === ts.SyntaxKind.TemplateHead || token === ts.SyntaxKind.TemplateMiddle
-      || token === ts.SyntaxKind.TemplateTail
-      || token === ts.SyntaxKind.RegularExpressionLiteral
+  const sf = ts.createSourceFile('file.ts', text, ts.ScriptTarget.Latest, /* setParentNodes */ true, ts.ScriptKind.TS);
+  const comments = [], strings = [], seen = new Set();
+
+  const literals = (node) => {
+    if (
+      ts.isStringLiteralLike(node) || ts.isRegularExpressionLiteral(node)
+      || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)
     ) {
-      // the quotes and the `${` are part of the token; what matters is whether the TEXT it carries is a sentence
-      strings.push([a, b, /\s/.test(scanner.getTokenValue() ?? '')]);
+      strings.push([node.getStart(sf), node.end, node.text ?? '']);
     }
-    token = scanner.scan();
-  }
+    node.forEachChild(literals);
+  };
+  sf.forEachChild(literals);
+
+  const trivia = (node) => {
+    const kids = node.getChildren(sf);
+    if (!kids.length) {
+      for (const c of ts.getLeadingCommentRanges(text, node.pos) ?? []) {
+        const key = `${c.pos}:${c.end}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        comments.push([c.pos, c.end]);
+      }
+      return;
+    }
+    for (const kid of kids) trivia(kid);
+  };
+  trivia(sf);
+
   return { comments, strings };
 }
 
@@ -131,23 +142,29 @@ const inside = (ranges, i) => ranges.some(([a, b]) => i >= a && i < b);
  */
 export function renameInText(text, names, { prose = false } = {}) {
   const counted = {};
-  let out = text;
-  for (const [old, fresh] of Object.entries(names)) {
-    const { comments, strings } = scan(out);
-    const ranges = prose ? [[0, out.length]] : comments;
-    const backticks = [];
-    for (const m of out.matchAll(/`[^`\n]*`/g)) backticks.push([m.index, m.index + m[0].length]);
-    // a string that carries whitespace is a SENTENCE, and a sentence is prose wherever it lives
-    const sentences = strings.filter(([, , hasSpace]) => hasSpace);
-    let n = 0;
-    out = out.replace(wholeWord(old), (found, i) => {
-      if (inside(ranges, i) && !inside(backticks, i)) return found; // prose in a comment: left alone
-      if (!prose && inside(sentences, i)) return found;             // prose in a string: the same
-      n += 1;
-      return fresh;
-    });
-    if (n) counted[old] = n;
-  }
+  const keys = Object.keys(names);
+  if (!keys.length) return { text, counted };
+  /*
+   * ⚠️ ONE PASS FOR THE WHOLE MAP, and not one per name: parsing a file is what tells code from text, and parsing it a
+   * hundred times — once per name of a layer — turned a two-second run into minutes. The ranges are computed ONCE, against
+   * the text as it is, and a single sweep decides every name against them.
+   */
+  const { comments, strings } = prose ? { comments: [[0, text.length]], strings: [] } : scan(text);
+  const backticks = [];
+  for (const m of text.matchAll(/`[^`\n]*`/g)) backticks.push([m.index, m.index + m[0].length]);
+  const escaped = keys.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const all = new RegExp(`(?<![\\w$])(${escaped})(?![\\w$])`, 'g');
+
+  const out = text.replace(all, (found, name, i) => {
+    if (inside(comments, i) && !inside(backticks, i)) return found;   // prose in a comment: left alone
+    if (!prose) {
+      // a string is renamed only when the WHOLE of it is this name — a fragment of one is data, not a name
+      const literal = strings.find(([a, b]) => i >= a && i < b);
+      if (literal && literal[2] !== name) return found;
+    }
+    counted[name] = (counted[name] ?? 0) + 1;
+    return names[name];
+  });
   return { text: out, counted };
 }
 

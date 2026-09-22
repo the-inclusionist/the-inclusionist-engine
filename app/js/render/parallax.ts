@@ -97,9 +97,9 @@ export interface ParallaxLayer {
    render-textures do multiplayer. tilePosition faz o scroll fracionado → ilusão de profundidade.
    A ORDEM do array é a ordem-z: índice 0 no fundo. */
 export const PARALLAX: readonly ParallaxLayer[] = [
-  { key: 'sky',  factor: 0.10, fy: 0 }, // Camada 4 — mais distante (céu/horizonte), maior imagem
-  { key: 'far',  factor: 0.28, fy: 0 }, // Camada 3
-  { key: 'near', factor: 0.52, fy: 0 }, // Camada 2 — mais próxima do tileset
+  { key: 'sky',  factor: 0.10, fy: 0 }, // Layer 4 — mais distante (céu/horizonte), maior imagem
+  { key: 'far',  factor: 0.28, fy: 0 }, // Layer 3
+  { key: 'near', factor: 0.52, fy: 0 }, // Layer 2 — mais próxima do tileset
 ];
 
 /** Índice da camada → número do arquivo PNG da Cidade (`c4.png`, `c3.png`, `c2.png`). */

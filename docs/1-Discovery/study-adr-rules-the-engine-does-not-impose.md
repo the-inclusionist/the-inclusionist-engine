@@ -71,7 +71,7 @@ and **no computed font size under 16 px** in engine UI. The 18 sub-1em declarati
 | E1 | ADR-0006, 0049, 0098 | No compulsion loop; every reward deterministic; points change nothing | 🔴 **Not enforceable at runtime.** Could only be a declaration plus review. Nothing today. | NOT MEASURED in cartridges. |
 | E2 | ADR-0037, 0080, 0103 | No child data stored; nothing kept per game beyond the declared namespace; the bar does not persist | 🟡 **Gated for ENGINE modules** (`no-stored-history` inventory), not for a cartridge's own storage writes. | Test inventory. |
 | E3 | ADR-0141 | A cartridge owns its random stream | 🔴 **Not built** (the lint the ADR names). | ADR status. |
-| E4 | Pillar 3 (ADR-0010) | Every UI string in pt, en and es | 🔴 **Not imposed on cartridge strings.** The i18n gates cover engine modules; the quiz's questions and feedback are Portuguese only. | MEASURED in dist: English page, Portuguese questions; grep: `respostaTexto` writes «Certo!» / «Ainda não» as literals. |
+| E4 | Pillar 3 (ADR-0010) | Every UI string in pt, en and es | 🔴 **Not imposed on cartridge strings.** The i18n gates cover engine modules; the quiz's questions and feedback are Portuguese only. | MEASURED in dist: English page, Portuguese questions; grep: `answerText` writes «Certo!» / «Ainda não» as literals. |
 | E5 | ADR-0116, 0140 | Offline after the first day; the standalone build is not a delivery route | 🔴 **Build-level, not checked for a cartridge** (ADR-0140's gate not built). | ADR status. |
 
 ## F. Already imposed — for contrast
