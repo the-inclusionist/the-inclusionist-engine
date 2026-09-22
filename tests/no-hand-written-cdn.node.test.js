@@ -76,7 +76,10 @@ const BUSCAS_A_MAO = {
   },
   'platform/heavy-mirror.ts': {
     // 8 → 10 with the command models and their runtime (issue #184): two more FOLDERS of the same mirror, not two more suppliers.
-    urls: 10,
+    // 🔴 10 → 11 on 2026-09-22 and the extra one is the SAME address twice, which is the point: `espeak-ng@1.0.2` is in the
+    // mirror table AND in `NOT_MIRRORED`, because the folder exists in the staging tree and is ON HOLD until the GPL source is
+    // published beside the build. The duplicate IS the decision — mirrored in principle, upstream until the obligation is met.
+    urls: 11,
     porque:
       'ENDEREÇOS DECLARADOS, not fetches: the table that maps each address the catalogue already names to the folder a mirror '
       + 'serves it under (the Dev, 2026-09-21: a base for local testing, for the project\'s bucket, or for a school\'s own '

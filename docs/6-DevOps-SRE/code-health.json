@@ -727,7 +727,7 @@
       "fanIn": 3
     },
     "platform/heavy-mirror.ts": {
-      "codeLines": 24,
+      "codeLines": 27,
       "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 0,

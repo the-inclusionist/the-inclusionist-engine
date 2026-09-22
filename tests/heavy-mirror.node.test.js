@@ -43,11 +43,26 @@ describe('the base of the heavy files', () => {
      * laço do caso acima não corre nenhuma vez e deixaria de exigir o que exigia. A afirmação passa a ser a forte: TODO
      * ficheiro do catálogo tem caminho no espelho, logo com uma base nenhuma escola toca num terceiro.
      */
-    expect(NOT_MIRRORED, 'algo voltou a ficar fora do espelho — se é decisão, ela precisa de estar escrita').toEqual([]);
-    const foraDoEspelho = HEAVY_FILES.filter((p) => p.url && !mirrorPathOf(p.url)).map((p) => p.id);
-    expect(foraDoEspelho, 'um pesado sem caminho no espelho').toEqual([]);
+    /*
+     * 🔴 E ESTE CASO MUDOU DUAS VEZES NO MESMO DIA, o que é o próprio assunto dele. Afirmava que o `espeak-ng` ia ao
+     * jsDelivr; passou a afirmar que NADA fica fora do espelho, quando o Dev decidiu espelhar os dois; e voltou, porque
+     * 📏 medir o balde depois do envio mostrou o `espeak-ng` a responder **404** enquanto os três do `onnxruntime-web`
+     * respondem 200 com os bytes exactos do catálogo. A pasta dele está «🔴 ON HOLD» e o script de envio salta-a — a GPL
+     * obriga a publicar a FONTE ao lado do binário, e espelhar é distribuir.
+     *
+     * 🎯 O que o caso prende agora é a REGRA e não o número: quem fica fora do espelho fica com uma RAZÃO escrita, e tudo
+     * o que não está nessa lista tem de ter caminho no espelho. Uma lista vazia teria apontado toda escola para um 404.
+     */
+    expect(NOT_MIRRORED.map(([prefixo]) => prefixo), 'a lista de quem fica fora mudou sem a razão mudar com ela')
+      .toEqual(['https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2']);
+    for (const [, porque] of NOT_MIRRORED) expect(porque.length, 'um ficheiro fora do espelho sem razão é um buraco').toBeGreaterThan(20);
+    const foraDoEspelho = HEAVY_FILES.filter((p) => p.url && !mirrorPathOf(p.url))
+      .filter((p) => !NOT_MIRRORED.some(([prefixo]) => p.url.startsWith(prefixo))).map((p) => p.id);
+    expect(foraDoEspelho, 'um pesado sem caminho no espelho e sem razão para isso').toEqual([]);
+    const ort = HEAVY_FILES.find((p) => p.id === 'voz:runtime:onnx').url;
+    expect(heavySourceOf(ort, BASE)).toBe(`${BASE}/onnxruntime-web-1.27.0/dist/ort.webgpu.bundle.min.mjs`);
     const espeak = HEAVY_FILES.find((p) => p.id === 'voz:runtime:fonemas').url;
-    expect(heavySourceOf(espeak, BASE)).toBe(`${BASE}/espeak-ng-1.0.2/dist/espeak-ng.js`);
+    expect(heavySourceOf(espeak, BASE), 'o espeak foi ao espelho antes de a fonte estar publicada').toBe(espeak);
   });
 
   it('🔴 [Right] the path is the one the staging tree uses, folder by folder', () => {

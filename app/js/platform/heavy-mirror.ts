@@ -40,16 +40,20 @@ export const MIRROR_FOLDERS: ReadonlyArray<readonly [string, string]> = [
 /**
  * Addresses the project does NOT mirror, each with why — they go on being fetched upstream even when a base is set.
  *
- * ✅ EMPTY since 2026-09-22, and that is the Dev's decision («Ok, vamos espelhar»): the two that were here — the neural
- * voice's phonemizer and the graph runtime it and the reading models share — were the last files a school still fetched from
- * a third party. 📏 They are five files: `espeak-ng.js` + `espeak-ng.wasm` (18.7 MiB) and the three of `onnxruntime-web`.
+ * 🔴 AND THE ENTRY BELOW CAME BACK THE SAME DAY IT LEFT, which is worth writing rather than hiding. The Dev decided to mirror
+ * both of the last two third-party addresses («Ok, vamos espelhar»), so this list was emptied — and 📏 measuring the bucket
+ * after the upload showed `espeak-ng` answering **404** while the three `onnxruntime-web` files answer 200 with exactly the
+ * catalogued byte counts. Nothing failed: the staging folder is marked «🔴 ON HOLD» and `upload-to-r2.ps1` skips it, because
+ * espeak-ng is GPL-3.0-or-later and serving the binary obliges publishing the matching SOURCE beside it (ADR-0203 erratum,
+ * issue #192). Emptying the list without checking what the bucket serves would have pointed every school at a 404.
  *
- * ⚠️ AND ONE OF THEM CARRIES AN OBLIGATION, which is why it waited for a decision instead of following a convenience:
- * espeak-ng is GPL-3.0-or-later, so mirroring the binary obliges this project to publish the matching SOURCE beside it
- * (ADR-0203 erratum, issue #192). onnxruntime-web is MIT and obliges nothing. The list stays here, empty, because an empty
- * list with a reason is a decision a reader can find; a deleted one is a question nobody knows was asked.
+ * ⚠️ So it stays upstream until `espeak-ng-1.0.2/source/` exists. The decision to mirror it is unchanged; what is missing is
+ * the obligation that decision carries, and a mirror is distribution.
  */
-export const NOT_MIRRORED: ReadonlyArray<readonly [string, string]> = [];
+export const NOT_MIRRORED: ReadonlyArray<readonly [string, string]> = [
+  ['https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2',
+    'GPL: the mirror folder is ON HOLD until the matching source is published beside the build (issue #192)'],
+];
 
 /** The path a mirror serves this upstream address under, or `null` when no mirror of this project holds it. */
 export function mirrorPathOf(url: string): string | null {
