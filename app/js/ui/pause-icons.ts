@@ -61,7 +61,7 @@ import {
   type Theme, type Correction, type VisualState,
 } from '../render/viz-axes.js';
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
-import type { AudioCatState } from './settings-audio.js';
+import type { AudioCatState } from './audio-choices.js';
 import { announceItem } from './item-announcement.js';
 import { accessibleLabel } from '../core/accessible-label.js';
 import { stepInRing } from '../core/ring.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá

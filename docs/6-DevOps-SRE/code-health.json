@@ -176,7 +176,7 @@
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 3,
-      "fanIn": 36,
+      "fanIn": 37,
       "reached": [
         "document",
         "navigator",
@@ -1234,6 +1234,14 @@
       "globalReach": 0,
       "fanIn": 1
     },
+    "ui/audio-choices.ts": {
+      "codeLines": 57,
+      "decisionNodes": 5,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "globalReach": 0,
+      "fanIn": 2
+    },
     "ui/caa-sets.ts": {
       "codeLines": 37,
       "decisionNodes": 3,
@@ -1512,12 +1520,12 @@
       "fanIn": 1
     },
     "ui/settings-audio.ts": {
-      "codeLines": 568,
-      "decisionNodes": 112,
+      "codeLines": 517,
+      "decisionNodes": 107,
       "maxDepth": 4,
-      "fanOut": 11,
+      "fanOut": 12,
       "globalReach": 3,
-      "fanIn": 2,
+      "fanIn": 1,
       "reached": [
         "document",
         "navigator",

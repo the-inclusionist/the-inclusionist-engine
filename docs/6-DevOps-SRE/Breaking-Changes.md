@@ -1707,6 +1707,23 @@ elements the browser made from those strings, reflecting their state, and moving
 the public-surface portrait lie, since it does not see re-exports (issue #204). If you import one of the eight, change
 `ui/pause-icons.js` to `ui/pause-markup.js` in that import and nothing else.
 
+## BD · The audio panel's pure half leaves: `ui/audio-choices` (ADR-0221, issue #203)
+
+**What this is.** Nineteen names move from `ui/settings-audio` to a new module, `ui/audio-choices`: the `AudioCatDef`,
+`AudioCatState`, `VoiceLike` and `SinkDeviceLike` shapes, the `NAV_CATS` and `GEN_CATS` lists, `TTS_ENGINE_OPTIONS`, and
+`volPercent`, `catRowHTML`, `catsListHTML`, `navMasterVolume`, `parseCaneDiv`, `caneDivMessage`, `voiceEngineOptions`,
+`pickVoicesFor`, `voiceLabel`, `sinksSupported`, `sinkOptionLabel` and `sinkSelectValue`. The spelling of each is unchanged;
+only the module is. If you import one of them, change `ui/settings-audio.js` to `ui/audio-choices.js` and nothing else.
+
+🎯 **What each half is for.** `ui/audio-choices` answers what a choice IS — the categories, the volume arithmetic, the engine
+catalogue, the voice filter, the label of an output — with no `document`, no ctx and no state. `ui/settings-audio` keeps the
+other job: finding the thirteen controls the panel reaches and never created, wiring them, and reflecting what the child
+chose. 📏 That module was 568 lines and 112 decision nodes, the third largest in the engine, and goes to **517 and 107**.
+
+🔴 **And the suite had already made this cut, which is what made it obvious.** `tests/settings-audio.node.test.js` imported
+exactly these names and nothing else, while `settings-audio.browser.test.js` drove the DOM half. The file was two modules
+wearing one name, and the only place that said so out loud was the test folder.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

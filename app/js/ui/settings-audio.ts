@@ -39,9 +39,17 @@ export interface AudioStore {
   set(key: string, value: string | number | boolean): boolean;
 }
 
-/** `lbl` is an i18n key (a key missing from the dictionaries is shown as written). */
-export interface AudioCatDef { k: string; lbl: string; }
-export interface AudioCatState { on: boolean; vol: number; }
+/*
+ * 🔴 A METADE PURA MUDOU DE CASA para `ui/audio-choices` (ADR-0221, issue #203): o que uma escolha É — a lista de
+ * categorias, a conta do volume, o catálogo de motores, o filtro de vozes, o rótulo de uma saída — não precisa de documento
+ * nenhum, e este ficheiro é sobre ENCONTRAR os treze controles e ligá-los. Quem já tinha feito o corte era a suíte: o teste
+ * node importava exactamente aqueles nomes e o de navegador conduzia este resto.
+ */
+import {
+  type AudioCatDef, type AudioCatState,
+  NAV_CATS, GEN_CATS, volPercent, catsListHTML, navMasterVolume, parseCaneDiv, caneDivMessage,
+  voiceEngineOptions, pickVoicesFor, voiceLabel, sinksSupported, sinkOptionLabel, sinkSelectValue,
+} from './audio-choices.js';
 
 export interface TtsPanelEngine { id: string; speak: (text: string) => void; }
 /** Minimal shape of the injected `tts` (platform/tts.ts's createTts() instance) this panel drives. */
@@ -153,116 +161,6 @@ export interface SettingsAudioApi {
   /** Refreshes the #opt-tts button + #tts-engine selection. Exported because the pause-menu icon bar's
    *  iconAct('tts', …) toggles audioCat.tts.on itself and then calls this. */
   reflectTts: () => void;
-}
-
-// ---------------------------------------------------------------------------------------------
-// Pure logic (no `document`, testable in node)
-// ---------------------------------------------------------------------------------------------
-
-/** Categorias de NAVEGAÇÃO SONORA (bengala/sonar/guarda/guia) — volume geral separado do som do jogo. */
-export const NAV_CATS = ['sonar', 'guard', 'guide'] as const;
-/** Categorias GERAIS do jogo (TTS fica na seção Voz, fora desta lista). */
-// ⚠️ SÃO DO PAINEL «ÁUDIO» desde o ADR-0151, e não do auditivo: o que é gosto (música, ambiente) não mora ao lado
-// do que é acessibilidade (sonar, guarda, guia). E `other` saiu — não controlava som nenhum.
-export const GEN_CATS = ['music', 'ambient', 'interact', 'earcons'] as const;
-
-/** 0..1 -> 0..100 rounded (slider display value). */
-export function volPercent(v: number): number {
-  return Math.round(v * 100);
-}
-
-/** One category row's markup (volume slider + on/off switch). Pure — resolves label/state from the given data,
- *  never from a global. Returns '' for an unknown/missing category (defensive; never hit with real catalogs). */
-export function catRowHTML(k: string, cats: readonly AudioCatDef[], state: Readonly<Record<string, AudioCatState>>): string {
-  const c = cats.find((x) => x.k === k);
-  const a = state[k];
-  if (!c || !a) return '';
-  const rotulo = t(c.lbl);
-  return `<div class="ctrl-row"><span><strong>${rotulo}</strong></span><span style="display:flex;gap:.5rem;align-items:center;flex-shrink:0">` +
-    `<input class="vol" type="range" min="0" max="100" step="5" value="${volPercent(a.vol)}" data-avol="${k}" aria-label="${t('audio.cat.volumeDe', { c: rotulo })}">` +
-    `<button class="mode-btn switch${a.on ? ' is-on' : ''}" data-acat="${k}" type="button" aria-pressed="${a.on}" aria-label="${rotulo}"></button></span></div>`;
-}
-
-/** Full innerHTML for a category list (#audio-list or #navsound-list). Pure string building — no DOM. */
-export function catsListHTML(keys: readonly string[], cats: readonly AudioCatDef[], state: Readonly<Record<string, AudioCatState>>): string {
-  return keys.map((k) => catRowHTML(k, cats, state)).join('');
-}
-
-/** #navsound-master's value: the loudest of the nav categories, as a 0..100 slider value. */
-export function navMasterVolume(state: Readonly<Record<string, AudioCatState>>, navCats: readonly string[] = NAV_CATS): number {
-  return volPercent(Math.max(...navCats.map((k) => state[k].vol)));
-}
-
-/** Cane-hit spacing select -> validated int (garbage/empty -> 1, "a batida por bloco"). */
-export function parseCaneDiv(raw: string): number {
-  return (+raw) || 1;
-}
-
-/** srSay text for a cane-hit spacing choice. The two halves are ONE sentence per case, not a shared prefix
- *  plus a tail: a language that renders this as "One tap per block (cane)" needs to move the word "cane". */
-export function caneDivMessage(div: number): string {
-  return t(div === 2 ? 'sr.audio.caneHalfBlock' : 'sr.audio.canePerBlock');
-}
-
-/** #tts-engine's option catalog: (value, i18n KEY of the label). The engine NAMES are proper nouns and stay
- *  put; what translates is the parenthetical that explains each one. Keys, not text — see input/devices. */
-export const TTS_ENGINE_OPTIONS: readonly (readonly [string, string])[] = [
-  ['webspeech', 'tts.engine.webspeech'],
-  ['kokoro', 'tts.engine.kokoro'],
-  ['kitten', 'tts.engine.kitten'],
-  ['espeak', 'tts.engine.espeak'],
-];
-
-/**
- * The engines THIS assembly can offer (ADR-0094): the neural one arrives through the game's Kokoro port (ADR-0198, ADR-0207), so
- * without it Kokoro is not offered — a choice that cannot work leaves whoever picks it waiting for a download that never starts.
- * `kitten`/`espeak` are not built and stay as they were.
- */
-export function voiceEngineOptions(neuralDisponivel: boolean): readonly (readonly [string, string])[] {
-  return neuralDisponivel ? TTS_ENGINE_OPTIONS : TTS_ENGINE_OPTIONS.filter(([v]) => v !== 'kokoro');
-}
-
-export interface VoiceLike { name: string; lang: string; }
-
-/**
- * As vozes do sistema no idioma pedido; sem nenhuma, a lista inteira.
- *
- * Chamava-se `pickPtVoices` e filtrava `/^pt/i` fixo, de modo que o jogo em inglês oferecia à pessoa uma
- * lista de vozes PORTUGUESAS para ler texto em inglês. O nome dizia a verdade sobre o que fazia e mentia
- * sobre o que devia fazer.
- *
- * A comparação é pelo PREFIXO de idioma, não pela etiqueta inteira: quem joga em pt-BR também deve poder
- * escolher uma voz pt-PT se for a única instalada, e o navegador de uma escola raramente tem a variante
- * exata. O recuo para a lista inteira fica: uma lista vazia seria pior que uma lista no idioma errado, que
- * ao menos a pessoa pode ouvir e rejeitar.
- */
-export function pickVoicesFor<T extends VoiceLike>(voices: readonly T[], lang: string): readonly T[] {
-  const pref = lang.slice(0, 2).toLowerCase();
-  const iguais = voices.filter((v) => v.lang.slice(0, 2).toLowerCase() === pref);
-  return iguais.length ? iguais : voices;
-}
-
-/** "<name> (<lang>)" option label. */
-export function voiceLabel(v: VoiceLike): string {
-  return v.name + ' (' + v.lang + ')';
-}
-
-/** Whether the browser can list/switch audio outputs at all (gates the #audio-sinks hint copy). */
-export function sinksSupported(hasEnumerateDevices: boolean, hasAudioContextCtor: boolean): boolean {
-  return hasEnumerateDevices && hasAudioContextCtor;
-}
-
-export interface SinkDeviceLike { deviceId: string; label?: string; }
-
-/** A device's option label, falling back to a 1-based "Saída N" when the browser withholds the real label
- *  (no getUserMedia permission granted yet). */
-export function sinkOptionLabel(d: SinkDeviceLike, index: number): string {
-  return d.label || t('audio.sinkFallback', { n: index + 1 });
-}
-
-/** A player's current sink select value ('' = default/shared). */
-export function sinkSelectValue(p: { audioSink?: string | null } | undefined): string {
-  return (p && p.audioSink) || '';
 }
 
 /**

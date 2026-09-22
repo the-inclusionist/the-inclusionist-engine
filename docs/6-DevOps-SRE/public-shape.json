@@ -2233,6 +2233,20 @@
       "fill"
     ]
   },
+  "ui/audio-choices.ts": {
+    "interface AudioCatDef": [
+      "k"
+    ],
+    "interface AudioCatState": [
+      "on"
+    ],
+    "interface VoiceLike": [
+      "name"
+    ],
+    "interface SinkDeviceLike": [
+      "deviceId"
+    ]
+  },
   "ui/caa-sets.ts": {
     "interface CaaSet": [
       "disponivel",
@@ -2795,12 +2809,6 @@
       "get",
       "set"
     ],
-    "interface AudioCatDef": [
-      "k"
-    ],
-    "interface AudioCatState": [
-      "on"
-    ],
     "interface TtsPanelEngine": [
       "id"
     ],
@@ -2845,12 +2853,6 @@
       "reflectModoCego",
       "reflectTts",
       "renderAudio"
-    ],
-    "interface VoiceLike": [
-      "name"
-    ],
-    "interface SinkDeviceLike": [
-      "deviceId"
     ],
     "type SinkPlayer": "PlayerView<'audioSink'> & PlayerAudioOut"
   },

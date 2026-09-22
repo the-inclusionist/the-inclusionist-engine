@@ -9,7 +9,7 @@ import {
   NAV_CATS, GEN_CATS, volPercent, catRowHTML, catsListHTML, navMasterVolume,
   parseCaneDiv, caneDivMessage, TTS_ENGINE_OPTIONS, voiceEngineOptions, pickVoicesFor, voiceLabel,
   sinksSupported, sinkOptionLabel, sinkSelectValue,
-} from '../app/js/ui/settings-audio.js';
+} from '../app/js/ui/audio-choices.js';
 
 const CATS = [
   { k: 'music', lbl: 'Música' },

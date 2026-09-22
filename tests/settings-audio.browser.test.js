@@ -6,7 +6,8 @@
 // áudio populam <select> a partir de APIs de navegador (stubadas aqui). Ver docs/5-Refactoring/plano-
 // modularizacao-mapa.md (Estágio 4, ui/settings-audio) e tests/a11y-sr.browser.test.js (modelo de injeção).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { initSettingsAudio, NAV_CATS, GEN_CATS } from '../app/js/ui/settings-audio.js';
+import { initSettingsAudio } from '../app/js/ui/settings-audio.js';
+import { NAV_CATS, GEN_CATS } from '../app/js/ui/audio-choices.js';
 import { defaultAudioCat } from '../app/js/platform/audio-mixer.js';
 import { menuIndexOn, setMenuIndexOnValue } from '../app/js/core/state.js';
 
