@@ -11,42 +11,42 @@
 //
 // A REGRA é pura e mora aqui; o que precisa de navegador é só ler quem está focado e chamar `.focus()`.
 import { describe, it, expect } from 'vitest';
-import { proximoNaArmadilha, initFocusTrap, SELETOR_FOCAVEL } from '../app/js/ui/focus-trap.js';
+import { nextInTrap, initFocusTrap, FOCUSABLE_SELECTOR } from '../app/js/ui/focus-trap.js';
 
 const LISTA = ['a', 'b', 'c'];
 
 describe('proximoNaArmadilha — o ciclo fecha nas BORDAS, e o meio é do navegador', () => {
   it('[Right] do último para a frente volta ao primeiro; do primeiro para trás vai ao último', () => {
-    expect(proximoNaArmadilha(LISTA, 'c', false)).toBe('a');
-    expect(proximoNaArmadilha(LISTA, 'a', true)).toBe('c');
+    expect(nextInTrap(LISTA, 'c', false)).toBe('a');
+    expect(nextInTrap(LISTA, 'a', true)).toBe('c');
   });
 
   it('[Right] ⚠️ o foco que está FORA do diálogo é trazido de volta', () => {
     // É o caso que os outros não cobrem, e o mais provável na prática: o foco pode já ter escapado antes de
     // esta armadilha existir, ou por um clique no tabuleiro, ou porque o diálogo abriu sem focar nada. Sem
     // isto a armadilha só serviria a quem já estava dentro — ou seja, a quem não precisava dela.
-    expect(proximoNaArmadilha(LISTA, 'zzz', false)).toBe('a');
-    expect(proximoNaArmadilha(LISTA, 'zzz', true)).toBe('c');
-    expect(proximoNaArmadilha(LISTA, null, false)).toBe('a');
+    expect(nextInTrap(LISTA, 'zzz', false)).toBe('a');
+    expect(nextInTrap(LISTA, 'zzz', true)).toBe('c');
+    expect(nextInTrap(LISTA, null, false)).toBe('a');
   });
 
   it('[Right] no MEIO devolve null — reimplementar a ordem de tabulação seria errar onde já se acerta', () => {
     // O navegador já resolve `tabindex` positivo, ordem do DOM e o que fica focável por `contenteditable`.
     // Uma armadilha que caminha pelo meio tem como errar; uma que só fecha as pontas não toca no meio.
-    expect(proximoNaArmadilha(LISTA, 'b', false)).toBe(null);
-    expect(proximoNaArmadilha(LISTA, 'b', true)).toBe(null);
+    expect(nextInTrap(LISTA, 'b', false)).toBe(null);
+    expect(nextInTrap(LISTA, 'b', true)).toBe(null);
   });
 
   it('[Zero] ⚠️ diálogo SEM nada focável deixa sair, e é deliberado', () => {
     // Prender o foco num diálogo mudo deixaria a criança sem saída nenhuma. Um diálogo assim é defeito DELE;
     // a armadilha não conserta isso, e trancar seria trocar um defeito por um pior.
-    expect(proximoNaArmadilha([], 'a', false)).toBe(null);
-    expect(proximoNaArmadilha([], null, true)).toBe(null);
+    expect(nextInTrap([], 'a', false)).toBe(null);
+    expect(nextInTrap([], null, true)).toBe(null);
   });
 
   it('[Boundary] com UM focável só, o ciclo é ele mesmo nos dois sentidos', () => {
-    expect(proximoNaArmadilha(['só'], 'só', false)).toBe('só');
-    expect(proximoNaArmadilha(['só'], 'só', true)).toBe('só');
+    expect(nextInTrap(['só'], 'só', false)).toBe('só');
+    expect(nextInTrap(['só'], 'só', true)).toBe('só');
   });
 });
 
@@ -127,7 +127,7 @@ describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
 describe('o SELETOR do que é focável', () => {
   it('[Right] cobre os controles que os diálogos desta engine usam', () => {
     for (const parte of ['button:not([disabled])', 'select:not([disabled])', 'input:not([disabled])']) {
-      expect(SELETOR_FOCAVEL, parte).toContain(parte);
+      expect(FOCUSABLE_SELECTOR, parte).toContain(parte);
     }
   });
 
@@ -135,7 +135,7 @@ describe('o SELETOR do que é focável', () => {
     // É o erro clássico: `[tabindex]` sozinho apanha os `-1`, que existem justamente para receber foco por
     // programa e NUNCA por tabulação. Um card de diálogo com `tabindex="-1"` entraria no ciclo, e a criança
     // tabularia para um contêiner que não faz nada.
-    expect(SELETOR_FOCAVEL).toContain('[tabindex]:not([tabindex="-1"])');
-    expect(SELETOR_FOCAVEL).not.toMatch(/(^|,)\s*\[tabindex\]\s*(,|$)/);
+    expect(FOCUSABLE_SELECTOR).toContain('[tabindex]:not([tabindex="-1"])');
+    expect(FOCUSABLE_SELECTOR).not.toMatch(/(^|,)\s*\[tabindex\]\s*(,|$)/);
   });
 });

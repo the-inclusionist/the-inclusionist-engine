@@ -7,13 +7,13 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { abaixoDoPiso } from '../app/js/ui/layout.js';
+import { belowFloor } from '../app/js/ui/layout.js';
 
 const no = (nome, o = {}) => ({ nome, daEngine: false, fontePx: null, alvo: null, ...o });
 
 describe('abaixoDoPiso — text under 8·k and targets under 22·k, the cartridge\'s only', () => {
   it('🔴 [Boundary] at 640×360 (k = 2): 16 px of text and 44 px of target pass, one less does not', () => {
-    const r = abaixoDoPiso([
+    const r = belowFloor([
       no('p.ok', { fontePx: 16 }), no('p.baixo', { fontePx: 15 }),
       no('button.ok', { alvo: { w: 44, h: 44 } }), no('button.baixo', { alvo: { w: 120, h: 43 } }),
     ], 2);
@@ -22,18 +22,18 @@ describe('abaixoDoPiso — text under 8·k and targets under 22·k, the cartridg
   });
 
   it('🎯 [Right] the floor grows with the scale — 16 px of text is under it at 1280×720', () => {
-    const r = abaixoDoPiso([no('p', { fontePx: 16 }), no('button', { alvo: { w: 60, h: 60 } })], 4);
+    const r = belowFloor([no('p', { fontePx: 16 }), no('button', { alvo: { w: 60, h: 60 } })], 4);
     expect(r.texto).toEqual(['p']);
     expect(r.alvos).toEqual(['button']);
   });
 
   it('🔴 [Right] a target is measured on its SMALLER side — a wide, short button is still short', () => {
-    expect(abaixoDoPiso([no('button', { alvo: { w: 300, h: 30 } })], 2).alvos).toEqual(['button']);
-    expect(abaixoDoPiso([no('button', { alvo: { w: 30, h: 300 } })], 2).alvos).toEqual(['button']);
+    expect(belowFloor([no('button', { alvo: { w: 300, h: 30 } })], 2).alvos).toEqual(['button']);
+    expect(belowFloor([no('button', { alvo: { w: 30, h: 300 } })], 2).alvos).toEqual(['button']);
   });
 
   it('⚠️ [Zero] the engine\'s own nodes, and nodes with no measure or no area, accuse nothing', () => {
-    const r = abaixoDoPiso([
+    const r = belowFloor([
       no('span.pi', { daEngine: true, fontePx: 10, alvo: { w: 10, h: 10 } }),
       no('div'),
       no('button.escondido', { alvo: { w: 0, h: 0 } }),
@@ -42,7 +42,7 @@ describe('abaixoDoPiso — text under 8·k and targets under 22·k, the cartridg
   });
 
   it('⚠️ [Boundary] a k under 2 does not lower the floor — there is no screen under 640×360', () => {
-    expect(abaixoDoPiso([no('p', { fontePx: 15 })], 1).texto).toEqual(['p']);
+    expect(belowFloor([no('p', { fontePx: 15 })], 1).texto).toEqual(['p']);
   });
 });
 

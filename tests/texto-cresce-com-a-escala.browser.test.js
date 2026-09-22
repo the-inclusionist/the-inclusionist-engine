@@ -86,4 +86,4 @@ describe('text inside the game region follows the scale', () => {
 //   T1 no font size on the region                         🔴 the proportion case
 //   T2 region size without `--fonte-escala`                🔴 the type-scale case
 //   T3 region size fixed at 16 px                          🔴 the proportion case
-//   T4 `aplicarEscala` writes no `--ui-fs`                 🔴 the proportion case
+//   T4 `applyScale` writes no `--ui-fs`                 🔴 the proportion case

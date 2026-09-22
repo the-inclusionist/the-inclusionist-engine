@@ -19,7 +19,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { montarCasca, idsDaCasca } from '../app/js/ui/panel-shell.js';
+import { mountShell, shellIds } from '../app/js/ui/panel-shell.js';
 
 const ctx = {
   procurar: (sel) => document.querySelector(sel),
@@ -38,9 +38,9 @@ beforeEach(() => { document.body.innerHTML = ''; });
 
 describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   it('[Right] monta os cinco ids que o painel precisa, e devolve-os', () => {
-    const casca = montarCasca(ctx, SPEC);
+    const casca = mountShell(ctx, SPEC);
     document.body.appendChild(casca.overlay);
-    const ids = idsDaCasca('audio');
+    const ids = shellIds('audio');
     for (const [papel, id] of Object.entries(ids)) {
       expect(document.getElementById(id), `${papel} (#${id}) não foi montado`).not.toBe(null);
     }
@@ -51,7 +51,7 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
     // The Dev, on a panel ending in «Restore» and «Close»: «Não pode haver botão "close" no final, mas sim o
     // primeiro item deve ser o botão "voltar"». The order a keyboard walks is the DOM order, so the DOM order is
     // what this case reads.
-    const casca = montarCasca(ctx, SPEC);
+    const casca = mountShell(ctx, SPEC);
     document.body.appendChild(casca.overlay);
     const item = document.createElement('button');
     casca.lista.appendChild(item);
@@ -64,7 +64,7 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   it('⚠️ [Right] o cartão é um diálogo NOMEADO pelo próprio título', () => {
     // O `aria-labelledby` a apontar para o `<h2>` é o que faz o leitor de tela anunciar QUAL painel abriu.
     // Sem ele a criança ouve «diálogo» e tem de adivinhar em qual dos oito entrou.
-    const { card, overlay } = montarCasca(ctx, SPEC);
+    const { card, overlay } = mountShell(ctx, SPEC);
     document.body.appendChild(overlay);
     expect(card.getAttribute('role')).toBe('dialog');
     expect(card.getAttribute('aria-modal')).toBe('true');
@@ -73,7 +73,7 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   });
 
   it('⚠️ [Right] a lista é um GRUPO com nome — e nasce vazia, porque o interior é do painel', () => {
-    const { lista } = montarCasca(ctx, SPEC);
+    const { lista } = mountShell(ctx, SPEC);
     expect(lista.getAttribute('role')).toBe('group');
     expect(lista.getAttribute('aria-label')).toBe(SPEC.rotuloDaLista);
     expect(lista.children.length, 'a casca desenhou conteúdo que é do settings-*').toBe(0);
@@ -82,7 +82,7 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   it('⚠️ [Boundary] ZERO prosa no topo — a introdução só cabe no `data-explain-idle`', () => {
     // O caso da #62. A casca não tem parâmetro para um parágrafo no topo, então a única forma de a
     // introdução existir é como texto de REPOUSO do rodapé — que é o que o `fillExplain` lê.
-    const { card } = montarCasca(ctx, { ...SPEC, introducao: 'Ajuste como o jogo soa.' });
+    const { card } = mountShell(ctx, { ...SPEC, introducao: 'Ajuste como o jogo soa.' });
     expect(card.getAttribute('data-explain-idle')).toBe('Ajuste como o jogo soa.');
     expect(card.querySelectorAll('p').length, 'apareceu prosa no topo do cartão').toBe(0);
     // E o primeiro filho é o título: nada se intromete entre o cartão e o `<h2>`.
@@ -92,13 +92,13 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   it('[Zero] sem introdução o atributo não existe — ausência é ausência, não cadeia vazia', () => {
     // Um `data-explain-idle=""` faria o `fillExplain` pôr uma região viva com texto vazio, que o leitor de
     // tela anuncia como nada. «Este painel não tem introdução» é uma resposta legítima.
-    const { card } = montarCasca(ctx, SPEC);
+    const { card } = mountShell(ctx, SPEC);
     expect(card.hasAttribute('data-explain-idle')).toBe(false);
   });
 
   it('⚠️ [Interface] o rótulo entra por `textContent` — markup de dicionário não vira markup', () => {
     // Um rótulo traduzido é dado de fora, e um dicionário de consumidor pode trazer o que quiser dentro.
-    const { fechar } = montarCasca(ctx, { ...SPEC, rotuloFechar: '<img src=x onerror=alert(1)>Fechar' });
+    const { fechar } = mountShell(ctx, { ...SPEC, rotuloFechar: '<img src=x onerror=alert(1)>Fechar' });
     document.body.appendChild(document.createElement('div')).appendChild(fechar);
     expect(fechar.querySelector('img'), 'o rótulo foi ANALISADO como marcação').toBe(null);
     expect(fechar.textContent).toContain('Fechar');
@@ -107,8 +107,8 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   it('⚠️ [Exercise] montar duas vezes NÃO duplica o véu — a grade de telas remonta', () => {
     // A raiz remonta os painéis quando a contagem de jogadores muda. Dois véus com o mesmo id é o defeito
     // que o `.pause-menu[hidden]` já pagou noutra camada: dois nós, um deles invisível ao `querySelector`.
-    document.body.appendChild(montarCasca(ctx, SPEC).overlay);
-    const segunda = montarCasca(ctx, { ...SPEC, titulo: 'Outro título' });
+    document.body.appendChild(mountShell(ctx, SPEC).overlay);
+    const segunda = mountShell(ctx, { ...SPEC, titulo: 'Outro título' });
     expect(document.querySelectorAll('#audio').length).toBe(1);
     expect(document.querySelectorAll('#audio-title').length).toBe(1);
     expect(document.getElementById('audio-title').textContent).toBe('Outro título');
@@ -116,7 +116,7 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   });
 
   it('[Right] a casca nasce ESCONDIDA — um painel que abre sozinho é um painel que interrompe', () => {
-    expect(montarCasca(ctx, SPEC).overlay.hidden).toBe(true);
+    expect(mountShell(ctx, SPEC).overlay.hidden).toBe(true);
   });
 });
 

@@ -30,7 +30,7 @@ export type Translator = (chave: string, params?: Record<string, string | number
  *     Nesse caso o problema é do JOGO, que pede mais posições do que qualquer transporte deste aparelho
  *     oferece, e a frase honesta é outra.
  */
-export function linhasDoAviso(a: Reach, t: Translator): string[] {
+export function noticeRows(a: Reach, t: Translator): string[] {
   if (a.ok) return [];
 
   const nome = (id: string): string => t('reach.nome.' + id);
@@ -76,8 +76,8 @@ export const REACH_NOTICE_ID = 'reach-notice';
  * passar por revisão de código — é exatamente a fronteira que a issue #106 mapeia. `textContent` fecha a
  * questão sem precisar de escapar nada.
  */
-export function mostrarAvisoDeAlcance(ctx: ReachNoticeCtx, a: Reach): boolean {
-  const linhas = linhasDoAviso(a, ctx.t);
+export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
+  const linhas = noticeRows(a, ctx.t);
   if (linhas.length === 0) return false;
 
   const isInside = ctx.procurar('#game-region');

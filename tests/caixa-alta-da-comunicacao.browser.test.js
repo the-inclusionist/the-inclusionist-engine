@@ -31,7 +31,7 @@ const abrir = () => createGame({ acomodacoes: SEM_ASSUNTO, declaration: declarac
 const icone = () => document.querySelector('#title-icons [data-pi="tipografia"]');
 /**
  * Presses the communication button as a child does, from the default position (c), until the case turns to capitals:
- * position (a), the only one in capitals (`ui/fonts.cicloDeTipografia`). The face itself is not read — a test page has no
+ * position (a), the only one in capitals (`ui/fonts.typographyCycle`). The face itself is not read — a test page has no
  * font files, and the typography panel refuses a face it cannot show.
  */
 async function ateAPrimeiraPosicao() {

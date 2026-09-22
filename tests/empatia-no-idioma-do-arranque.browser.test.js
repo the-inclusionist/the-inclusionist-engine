@@ -46,4 +46,4 @@ describe('the empathy panel speaks the boot language', () => {
 });
 
 // ===== MUTATIONS CHECKED (2026-09-12) =====
-// 1. the panel's `render` without `rotularLinha(linhaDaAudicao, …)`  → red: «Simular perda auditiva» on an English page
+// 1. the panel's `render` without `labelRow(linhaDaAudicao, …)`  → red: «Simular perda auditiva» on an English page

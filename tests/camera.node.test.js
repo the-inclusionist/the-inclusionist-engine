@@ -119,7 +119,7 @@ describe('a extração é FIEL — as fórmulas do placeCam, na mesma ordem', ()
 // gruda por nunca sair da zona, teleporta por prender fora de hora. Cada caso abaixo persegue um desses.
 
 describe('criarCamera — zona zero é, letra por letra, o comportamento de hoje', () => {
-  it('[Right] com zona 0×0, `seguir` dá o MESMO que `enquadrar`', () => {
+  it('[Right] com zona 0×0, `seguir` dá o MESMO que `frameOn`', () => {
     // É a garantia que autoriza trocar o `placeCam` por esta câmera sem mudar um pixel. Se este caso cair, a
     // troca deixou de ser sem-mudança e vira decisão de jogo — que é do Dev, não minha.
     const cam = createCamera(MUNDO, TELA);
@@ -145,7 +145,7 @@ describe('criarCamera — a zona-morta', () => {
     const partida = cam.pular(400, 544);
     // centro da tela = 400,544; a zona vai de ±40 em x e ±20 em y
     for (const [dx, dy] of [[0, 0], [39, 19], [-39, -19], [40, 20], [-40, -20]]) {
-      expect(cam.seguir(400 + dx, 544 + dy), `${dx},${dy} deveria estar dentro`).toEqual(partida);
+      expect(cam.seguir(400 + dx, 544 + dy), `${dx},${dy} deveria estar isInside`).toEqual(partida);
     }
   });
 

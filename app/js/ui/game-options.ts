@@ -7,7 +7,7 @@
 // A cartridge draws its own options only where the rows cannot express what it needs (ADR-0182 §3).
 //
 // No I/O on import: `gameOptionsProblems` runs in node.
-import { linhaDeControle, montarPassos, atualizarPassos, passoSeguinte } from './panel-widgets.js';
+import { controlRow, mountSteps, updateSteps, nextStep } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
 import { toggleLabel } from './dom.js';
 
@@ -91,12 +91,12 @@ export interface GameOptionsDrawCtx extends PanelShellCtx {
  * Draws the rows into `lista`, replacing what was there — the rows are the CURRENT cartridge's, and `mount()` may have
  * swapped it (ADR-0142). Every value shown is READ from the cartridge, at drawing and after each write.
  */
-export function desenharOpcoesDoJogo(ctx: GameOptionsDrawCtx, lista: HTMLElement, options: readonly GameOption[]): void {
+export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, options: readonly GameOption[]): void {
   while (lista.firstChild) lista.removeChild(lista.firstChild); // node by node: no markup sink, and a host without `replaceChildren` still clears
   for (const o of options) {
     const id = `game-option-${o.id}`;
     if (o.kind === 'switch') {
-      const { linha, controle } = linhaDeControle(ctx, { id, rotulo: o.label, dica: o.hint });
+      const { linha, controle } = controlRow(ctx, { id, rotulo: o.label, dica: o.hint });
       const refletir = (): boolean => {
         const on = o.read();
         controle.classList.toggle('is-on', on);
@@ -114,7 +114,7 @@ export function desenharOpcoesDoJogo(ctx: GameOptionsDrawCtx, lista: HTMLElement
     }
     const rotuloDe = (valor: string): string => o.values.find((v) => v.value === valor)?.label ?? valor;
     if (o.kind === 'list') {
-      const { linha, controle } = linhaDeControle(ctx, { id, rotulo: o.label, dica: o.hint, forma: 'escolha' });
+      const { linha, controle } = controlRow(ctx, { id, rotulo: o.label, dica: o.hint, forma: 'escolha' });
       const sel = controle as HTMLSelectElement;
       for (const v of o.values) {
         const op = ctx.criar('option') as HTMLOptionElement;
@@ -144,15 +144,15 @@ export function desenharOpcoesDoJogo(ctx: GameOptionsDrawCtx, lista: HTMLElement
       envelope.appendChild(dica);
     }
     linha.appendChild(envelope);
-    const passos = montarPassos(ctx, spec());
+    const passos = mountSteps(ctx, spec());
     passos.id = id;
     linha.appendChild(passos);
     passos.addEventListener('passo', (ev) => {
       const atual = indice();
-      const nova = passoSeguinte(atual, o.values.length, (ev as CustomEvent<number>).detail);
+      const nova = nextStep(atual, o.values.length, (ev as CustomEvent<number>).detail);
       if (nova === atual) return; // at the wall nothing moved, and nothing is said
       o.write(o.values[nova]!.value);
-      atualizarPassos(passos, spec());
+      updateSteps(passos, spec());
       ctx.dizer(`${o.label}: ${rotuloDe(o.read())}`);
     });
     lista.appendChild(linha);

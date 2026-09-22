@@ -7,7 +7,7 @@
 // 📏 Measured on 2026-09-11, against a game that calls only `createGame`: the pause card mounts with ONE
 // surviving button, and ZERO settings panels open.
 //
-// 🔴 AND THE CAUSE IS A CHAIN, NOT AN OVERSIGHT. `ui/panel-shell.montarCasca` builds a panel's SHELL and no
+// 🔴 AND THE CAUSE IS A CHAIN, NOT AN OVERSIGHT. `ui/panel-shell.mountShell` builds a panel's SHELL and no
 // engine module ever called it — the only caller was `consumer-quiz/main-quiz.ts:320`. Each `ui/settings-*`
 // module fills the INTERIOR of ids that nothing creates, so the failure mode was the worst available: the
 // quiz recorded it as finding 6 — «the panel opens EMPTY, with no error».
@@ -21,8 +21,8 @@
 // panel whose writers the engine cannot supply must not be mounted at all — «an icon is mounted when its
 // action works, and not before». That judgement belongs to the composition root, which knows what it has.
 import type { PanelLabels, PanelShell, PanelShellCtx } from './panel-shell.js';
-import { aplicarRotulos, montarCasca } from './panel-shell.js';
-import { itensNavegaveis } from './menu-items.js';
+import { applyLabels, mountShell } from './panel-shell.js';
+import { navigableItems } from './menu-items.js';
 
 /**
  * The latest redraw of each mounted overlay. A panel mounted twice (two cartridges on one page, ADR-0139) keeps ONE
@@ -104,11 +104,11 @@ export interface MountedPanel {
 /**
  * Builds a panel's shell, puts it in the document, and wires open/close/Escape.
  *
- * Idempotent through `montarCasca`, which reuses an overlay that already carries the id — so mounting twice
+ * Idempotent through `mountShell`, which reuses an overlay that already carries the id — so mounting twice
  * leaves one panel, which is what ADR-0139's third gate asks of two cartridges on one page.
  */
-export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPanel {
-  const casca = montarCasca(ctx, { id: spec.id, idDaLista: spec.idDaLista, ...spec.rotulos() });
+export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPanel {
+  const casca = mountShell(ctx, { id: spec.id, idDaLista: spec.idDaLista, ...spec.rotulos() });
   // Appending an element that is already a child moves it; it never duplicates. Guarding on `parentNode`
   // would be the same operation written twice.
   ctx.host.appendChild(casca.overlay);
@@ -124,7 +124,7 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
   const abrir = (): void => {
     // ⚠️ OS RÓTULOS ANTES DO `render()`, e a ordem tem consequência: `ui/settings-panel.fillExplain` lê o
     // `data-explain-idle` do cartão para montar o rodapé, e quem o chama é o render de cada painel.
-    aplicarRotulos(casca, spec.rotulos());
+    applyLabels(casca, spec.rotulos());
     spec.render();
     casca.overlay.hidden = false;
     ctx.overlays.frontOverlay(casca.overlay);
@@ -142,11 +142,11 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
     if (casca.overlay.hidden) return;
     const doc = casca.card.ownerDocument;
     const focado = doc.activeElement as HTMLElement | null;
-    const lugar = focado && casca.card.contains(focado) ? itensNavegaveis(casca.card).indexOf(focado) : -1;
-    aplicarRotulos(casca, spec.rotulos());
+    const lugar = focado && casca.card.contains(focado) ? navigableItems(casca.card).indexOf(focado) : -1;
+    applyLabels(casca, spec.rotulos());
     spec.render();
     if (lugar < 0 || !focado) return;
-    const destino = focado.isConnected ? focado : itensNavegaveis(casca.card)[lugar];
+    const destino = focado.isConnected ? focado : navigableItems(casca.card)[lugar];
     if (destino && destino !== doc.activeElement) destino.focus();
   });
   const janela = casca.overlay.ownerDocument?.defaultView;

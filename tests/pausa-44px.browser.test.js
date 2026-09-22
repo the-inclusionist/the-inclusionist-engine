@@ -39,7 +39,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import '../app/css/style.css';
 import { screenPauseMarkup } from '../app/js/ui/pause-icons.js';
 import { PM_BTNS, PM_OPTIONS_BTNS } from '../app/js/ui/pause-buttons.js';
-import { alvoMinimo } from '../app/js/ui/layout.js';
+import { minimumTarget } from '../app/js/ui/layout.js';
 
 /** O alvo do ADR-0044 §6, em CSS px. */
 const ALVO_PX = 44;
@@ -179,19 +179,19 @@ describe('menu de pausa · 44 px, centrado e mais largo (ADR-0044, item 6)', () 
 // o alvo: 44 px («44px é o correto, eu errei quando disse 42px»). Não sobra tela menor para encolher; sobra o
 // cartão ter de CABER com itens de 44 px.
 describe('o alvo de toque é 44 px a 640×360 e cresce com a escala (ADR-0163)', () => {
-  /** Monta o cartão com a variável que `aplicarEscala` escreve para a escala `k` — o caminho de produção. */
+  /** Monta o cartão com a variável que `applyScale` escreve para a escala `k` — o caminho de produção. */
   function montarNaEscala(k) {
     const sp = montar(320 * k, 180 * k);
-    palco.style.setProperty('--alvo-min', alvoMinimo(k) + 'px');
+    palco.style.setProperty('--alvo-min', minimumTarget(k) + 'px');
     return sp;
   }
 
   it('[Interface] o piso é do CÓDIGO, não deste teste — 44 px no mínimo, e cresce com k', () => {
-    expect(alvoMinimo(2)).toBe(44);
-    expect(alvoMinimo(4)).toBe(88);
+    expect(minimumTarget(2)).toBe(44);
+    expect(minimumTarget(4)).toBe(88);
     // abaixo de k=2 não há tela (ADR-0163), e um k inválido não inventa um alvo menor
-    expect(alvoMinimo(1)).toBe(44);
-    expect(alvoMinimo(NaN)).toBe(44);
+    expect(minimumTarget(1)).toBe(44);
+    expect(minimumTarget(NaN)).toBe(44);
   });
 
   it('🔴 [Right] a 640×360 todo item da raiz e do submenu mede pelo menos 44 px', () => {

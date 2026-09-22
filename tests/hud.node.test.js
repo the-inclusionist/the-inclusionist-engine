@@ -6,7 +6,7 @@
 // ZOMBIES + Right-BICEP. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import {
-  screenGrid, screenRect, screenCount, vphudHtml, waitBadgeHtml, hudRowView, contadorLabel, aplicarRotuloDoContador,
+  screenGrid, screenRect, screenCount, vphudHtml, waitBadgeHtml, hudRowView, counterLabel, applyCounterLabel,
 } from '../app/js/ui/hud.js';
 
 // O `COIN_TARGET` SAIU DAQUI, e a ausência é o assunto do item 19. O fixture não conhece mais a constante do
@@ -170,7 +170,7 @@ describe('ui/hud · vphudHtml', () => {
     const alvo = { setAttribute: (k, v) => posto.push([k, v]) };
     const raiz = { querySelector: (sel) => (sel === '.vphud-obj' ? alvo : null) };
 
-    aplicarRotuloDoContador(raiz, OBJ(3, 10, 'palavras'));
+    applyCounterLabel(raiz, OBJ(3, 10, 'palavras'));
     expect(posto).toHaveLength(1);
     expect(posto[0][0]).toBe('aria-label');
     expect(posto[0][1]).toContain('palavras');
@@ -193,8 +193,8 @@ describe('ui/hud · vphudHtml', () => {
   });
 
   it('[Zero] sem o elemento do contador, aplicar o rótulo não lança', () => {
-    expect(() => aplicarRotuloDoContador(null, OBJ(1, 2))).not.toThrow();
-    expect(() => aplicarRotuloDoContador({ querySelector: () => null }, OBJ(1, 2))).not.toThrow();
+    expect(() => applyCounterLabel(null, OBJ(1, 2))).not.toThrow();
+    expect(() => applyCounterLabel({ querySelector: () => null }, OBJ(1, 2))).not.toThrow();
   });
 
   it('[Interface] a classe do contador é a do OBJETIVO, não a do que este jogo junta', () => {
@@ -221,19 +221,19 @@ describe('ui/hud · vphudHtml', () => {
 
 describe('ui/hud · contadorLabel', () => {
   it('[Right] nomeia o que se junta, e o nome vem do JOGO — não de uma tabela da engine', () => {
-    expect(contadorLabel(OBJ(3, 10, 'palavras'))).toContain('palavras');
-    expect(contadorLabel(OBJ(3, 10, 'contas'))).toContain('contas');
-    expect(contadorLabel(OBJ(3, 10, 'estrelas'))).toContain('estrelas');
+    expect(counterLabel(OBJ(3, 10, 'palavras'))).toContain('palavras');
+    expect(counterLabel(OBJ(3, 10, 'contas'))).toContain('contas');
+    expect(counterLabel(OBJ(3, 10, 'estrelas'))).toContain('estrelas');
   });
 
   it('[Right] os dois números aparecem', () => {
-    const txt = contadorLabel(OBJ(3, 10));
+    const txt = counterLabel(OBJ(3, 10));
     expect(txt).toContain('3');
     expect(txt).toContain('10');
   });
 
   it('[Zero] objetivo zerado ainda produz frase, e não "undefined de undefined"', () => {
-    expect(contadorLabel(OBJ(0, 0, 'itens'))).toMatch(/0.*0.*itens/);
+    expect(counterLabel(OBJ(0, 0, 'itens'))).toMatch(/0.*0.*itens/);
   });
 });
 

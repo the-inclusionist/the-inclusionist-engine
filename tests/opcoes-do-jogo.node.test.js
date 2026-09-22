@@ -5,7 +5,7 @@
 // MUTATIONS CHECKED — at the end of `opcoes-do-jogo.browser.test.js`.
 import { describe, it, expect } from 'vitest';
 import { gameOptionsProblems } from '../app/js/ui/game-options.js';
-import { raizQueAcciona } from '../app/js/ui/pause-icons.js';
+import { rootThatActs } from '../app/js/ui/pause-icons.js';
 
 const nada = () => {};
 const dificuldade = () => ({
@@ -52,7 +52,7 @@ describe('a game options declaration', () => {
 describe('the «Opções do jogo» door', () => {
   const raiz = [{ act: 'resume' }, { act: 'opcoesdojogo' }, { act: 'quit' }];
   const opcoes = [{ act: 'pmback' }, { act: 'audio' }];
-  const vivo = (acts) => raizQueAcciona(raiz, opcoes, { audio: nada, ...acts }, [{ act: 'pmback' }]).map((b) => b.act);
+  const vivo = (acts) => rootThatActs(raiz, opcoes, { audio: nada, ...acts }, [{ act: 'pmback' }]).map((b) => b.act);
 
   it('🎯 [Zero] with nothing behind it, the door is not live', () => {
     expect(vivo({})).not.toContain('opcoesdojogo');

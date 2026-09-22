@@ -25,7 +25,7 @@
 
 | # | ADR | Rule | Under `createGame` today | Evidence |
 |---|---|---|---|---|
-| A1 | ADR-0001, pillar 5 (ADR-0010) | Pixel art at 320×180, shown at an **integer multiple of REAL pixels** that fits the space, with a crop tolerance of **≤5 logical px per side** | 🔴 **Not imposed.** The rule exists as `ui/layout.layout()` (`kDev = floor(avail·dpr/(base−10))`), but `createGame` never calls `initLayout`/`layout`. | MEASURED: `#game-region` of the quiz is **569×395** at dpr 1 — not a multiple of 320×180. `git grep` finds only `invasoresDaBarra` imported from `ui/layout`. |
+| A1 | ADR-0001, pillar 5 (ADR-0010) | Pixel art at 320×180, shown at an **integer multiple of REAL pixels** that fits the space, with a crop tolerance of **≤5 logical px per side** | 🔴 **Not imposed.** The rule exists as `ui/layout.layout()` (`kDev = floor(avail·dpr/(base−10))`), but `createGame` never calls `initLayout`/`layout`. | MEASURED: `#game-region` of the quiz is **569×395** at dpr 1 — not a multiple of 320×180. `git grep` finds only `barIntruders` imported from `ui/layout`. |
 | A2 | ADR-0001 (`MIN_K = 2`) | Each viewport is **at least 640×360** | 🔴 **Not imposed** (same cause). | MEASURED: 569×395 — below 640 wide. |
 | A3 | `ui/layout` (`--ui-fs = 8·k`) | UI text **at least 16 px** at 640×360, growing with k | 🟡 **Partly.** `:root{--ui-fs:16px}` gives 16 px by default, but it never grows with the scale, and **18 declarations** in `style.css` go below 1em. | MEASURED: pause items and quiz options 16 px; the quick bar's name caption **13.6 px**; panel hints and footer `.9em` (14.4 px). |
 | A4 | ADR-0095 | Touch target floor by viewport **height** (24 / 34 / 44 px) | 🔴 **Not imposed** (written by `layout()`). | MEASURED: `--alvo-min` empty; items fall back to 44 px; in 569×395 the settings submenu scrolls 8 px and the visual panel 37 px. |
@@ -60,7 +60,7 @@ and **no computed font size under 16 px** in engine UI. The 18 sub-1em declarati
 
 | # | ADR | Rule | Under `createGame` today | Evidence |
 |---|---|---|---|---|
-| D1 | ADR-0054 | A frame that throws **stops the loop and says so** | 🔴 **Not imposed.** The engine offers `criarAvisoDeQueda`, but the game owns `startLoop`; nothing checks a cartridge uses it. | grep. |
+| D1 | ADR-0054 | A frame that throws **stops the loop and says so** | 🔴 **Not imposed.** The engine offers `createCrashNotice`, but the game owns `startLoop`; nothing checks a cartridge uses it. | grep. |
 | D2 | ADR-0050 (and WCAG 2.2.1) | The clock belongs to the adult; `tick` declares who drives time | 🔴 **Declared, never read.** `tick` is validated and has no reader (plan phase 5a). | grep (known). |
 | D3 | ADR-0014 | Sounds that carry information have captions | 🔴 **Not imposed.** Captions exist only through `createAudioEarcons`, which the game creates; `createGame` mounts no caption host. | grep. |
 

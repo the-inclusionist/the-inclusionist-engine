@@ -17,9 +17,9 @@ export const ITEM_SELECTOR = 'button:not([disabled]), select:not([disabled]), in
  * `offsetParent === null` = out of the layout flow (hidden, `display:none`, or inside a hidden tab). Without it the
  * cursor lands on an invisible control and the screen reader announces something nobody sees.
  */
-export function itensNavegaveis(card: ParentNode): HTMLElement[] {
+export function navigableItems(card: ParentNode): HTMLElement[] {
   return [...card.querySelectorAll<HTMLElement>(ITEM_SELECTOR)].filter((el) => el.offsetParent !== null);
 }
 
 // 🔴 `numerarItens` AND `ATRIBUTO_DO_NUMERO` LEFT (ADR-0167): no stop shows a number. The list above still gives the
-// spoken index its position — «…, 2 de 7» after the name, from `ui/item-announcement.anunciarItem`.
+// spoken index its position — «…, 2 de 7» after the name, from `ui/item-announcement.announceItem`.

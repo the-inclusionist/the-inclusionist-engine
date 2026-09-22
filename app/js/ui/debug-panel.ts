@@ -20,7 +20,7 @@ type Juice = JuiceFlags;
  * mesma escolha de `RenderInto` e `CreateSprite` em render/port: pedir o VERBO cabe onde emprestar o objeto
  * não cabe — e aqui ela paga duas vezes, porque mantém `ui/debug-panel` testável no project `node`.
  */
-export interface AmostraDoPersonagem {
+export interface CharacterSample {
   /** Identidade da textura DENTRO desta gravação. Não é geometria: os quatro quadros de idle têm a mesma. */
   texturaId: number;
   /** O recorte, "x,y LxA". */
@@ -38,7 +38,7 @@ export interface AmostraDoPersonagem {
 }
 
 /** O que a sonda responde. Três perguntas, porque são elas que separam as causas que sobraram. */
-export interface ResumoDaSonda {
+export interface ProbeSummary {
   quadros: number;
   texturas: number;
   maxIrmaos: number;
@@ -60,7 +60,7 @@ const MAIOR_QUADRO = 64;
  * limpas o veredito NÃO diz "está tudo bem": ele diz ONDE procurar em seguida. Ausência de prova nas três
  * não é prova de ausência, e encerrar a busca aqui a encerraria no lugar errado.
  */
-export function resumirSonda(amostras: readonly AmostraDoPersonagem[]): ResumoDaSonda {
+export function summariseProbe(amostras: readonly CharacterSample[]): ProbeSummary {
   if (!amostras.length) {
     return { quadros: 0, texturas: 0, maxIrmaos: 0, exemploIrmaos: '', sangramento: [], escalas: [], veredito: 'não gravou nada — o personagem existia?' };
   }
@@ -92,7 +92,7 @@ export interface DebugPanelCtx {
    * OPCIONAL: um hospedeiro sem personagem (o quiz) não a fornece, e a sonda simplesmente não aparece. O
    * painel continua sem conhecer o PixiJS.
    */
-  amostrarPersonagem?: () => AmostraDoPersonagem | null;
+  amostrarPersonagem?: () => CharacterSample | null;
   /** Chama `fn` a cada quadro e devolve como cancelar. É o relógio do render, injetado como verbo. */
   aoQuadro?: (fn: () => void) => () => void;
   /** Override for tests; defaults to location.search. */
@@ -216,7 +216,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
       btn.disabled = true;
-      const amostras: AmostraDoPersonagem[] = [];
+      const amostras: CharacterSample[] = [];
       let n = 0;
       saida.textContent = 'gravando… PULE agora';
       const parar = aoQuadro(() => {
@@ -225,7 +225,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
         if (++n < 180) return;
         parar();
         btn.disabled = false;
-        const r = resumirSonda(amostras);
+        const r = summariseProbe(amostras);
         saida.textContent = [
           'quadros: ' + r.quadros + '  texturas: ' + r.texturas,
           'irmãos desenhando: ' + r.maxIrmaos + (r.exemploIrmaos ? ' em ' + r.exemploIrmaos : ''),

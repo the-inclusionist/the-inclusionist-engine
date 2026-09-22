@@ -6,7 +6,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { PAUSE_ICONS, iconesQueAccionam, computeIconLabel, computeIconVisual } from '../app/js/ui/pause-icons.js';
+import { PAUSE_ICONS, iconsThatAct, computeIconLabel, computeIconVisual } from '../app/js/ui/pause-icons.js';
 import { DEFAULTS } from '../app/js/core/state.js';
 import { PADRAO } from '../app/js/core/visual-state.js';
 
@@ -25,9 +25,9 @@ describe('the hourglass icon', () => {
   });
 
   it('🔴 [Right] it mounts in a game whose time runs by itself, and not in a turn game', () => {
-    expect(iconesQueAccionam({ ...todos, relogio: () => true }).map((ic) => ic.k)).toContain('velocidade');
-    expect(iconesQueAccionam({ ...todos, relogio: () => false }).map((ic) => ic.k)).not.toContain('velocidade');
-    expect(iconesQueAccionam(todos).map((ic) => ic.k), 'no clock answer is no hourglass').not.toContain('velocidade');
+    expect(iconsThatAct({ ...todos, relogio: () => true }).map((ic) => ic.k)).toContain('velocidade');
+    expect(iconsThatAct({ ...todos, relogio: () => false }).map((ic) => ic.k)).not.toContain('velocidade');
+    expect(iconsThatAct(todos).map((ic) => ic.k), 'no clock answer is no hourglass').not.toContain('velocidade');
   });
 
   it('🔴 [Right] its name says the speed', () => {

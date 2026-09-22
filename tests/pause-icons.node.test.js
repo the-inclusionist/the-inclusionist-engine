@@ -18,7 +18,7 @@ import {
   hasPrivateOutputIn, nextCalmMode, nextContrast, nextCvd, calmAudioPlan, calmMotionPlan,
   computeIconLabel, computeIconVisual, ICON_STATE_CLASSES, inputModeOf, nextInputMode,
   iconBtnMarkup, iconsMarkup, pmBtnMarkup, screenPauseMarkup,
-  iconesQueAccionam,
+  iconsThatAct,
   initPauseIcons,
 } from '../app/js/ui/pause-icons.js';
 import { CONTRAST_LEVELS } from '../app/js/ui/settings-visual.js';
@@ -563,7 +563,7 @@ describe('markup dos ícones e do menu', () => {
     expect(h).toContain('class="pause-card" role="dialog" aria-modal="true"');
     // A BARRA e a LEGENDA saíram do cartão no item 7 do ADR-0044 — vivem no HUD, em `quickBarMarkup`. Este
     // caso passa a AFIRMAR a ausência: se elas voltarem para cá, a pausa volta a ser grade de duas zonas e o
-    // anel do `passoNaPausa` volta a ser proibido pela XAG 106.
+    // anel do `stepInPause` volta a ser proibido pela XAG 106.
     expect(h).not.toContain('pause-icons');
     expect(h).not.toContain('pi-btn');
     // DUAS listas desde o item 5 do ADR-0044: a raiz visível e as opções escondidas.
@@ -605,7 +605,7 @@ describe('markup dos ícones e do menu', () => {
 
   it('o menu monta um .pm-btn por entrada de PM_BTNS, na ordem recebida — e o submenu depois dele', () => {
     // A ordem das DUAS listas no markup importa para quem lê o documento em sequência: a raiz vem primeiro,
-    // e é ela que está visível. A ordem de NAVEGAÇÃO, essa, sai de `PM_ITENS_VISIVEIS` e nunca mistura as duas.
+    // e é ela que está visível. A ordem de NAVEGAÇÃO, essa, sai de `PM_VISIBLE_ITEMS` e nunca mistura as duas.
     const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: PM_BTNS, optionsButtons: PM_OPTS, dynLabel: SEM_DIN, t: (k) => k });
     const acts = [...h.matchAll(/data-act="([^"]+)"/g)].map((m) => m[1]);
     // ⚠️ E a TERCEIRA lista vem no fim (ADR-0146): sem `jogoButtons` ela é o padrão, só o «voltar».
@@ -1224,7 +1224,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // 📌 	ipografia: true desde 2026-09-12 (ADR-0149): o 11.o icone tem a mesma regra dos dois visuais, e
     // deixa-lo de fora aqui mediria DUAS ausencias em vez da que o caso nomeia.
     // `relogio: () => true` from ADR-0180 on: the hourglass mounts only in a clock game, and each case here measures its own absence.
-    const chaves = iconesQueAccionam({ relogio: () => true, tema: false, correcao: false, seguraTeclas: () => true, tipografia: true, camera: true, microfone: true, menus: true }).map((ic) => ic.k);
+    const chaves = iconsThatAct({ relogio: () => true, tema: false, correcao: false, seguraTeclas: () => true, tipografia: true, camera: true, microfone: true, menus: true }).map((ic) => ic.k);
     expect(chaves).not.toContain('contrast');
     expect(chaves).not.toContain('cvd');
     expect(chaves).toContain('blind');
@@ -1233,7 +1233,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   });
 
   it('[Right] COM escritor visual, a barra é a lista inteira e na mesma ordem', () => {
-    expect(iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => true, tipografia: true, camera: true, microfone: true, menus: true })).toEqual(PAUSE_ICONS);
+    expect(iconsThatAct({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => true, tipografia: true, camera: true, microfone: true, menus: true })).toEqual(PAUSE_ICONS);
   });
 
   it('⚠️ [Boundary] com UM escritor só, aparece UM ícone só — e é o que funciona', () => {
@@ -1242,11 +1242,11 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // `&&` por `||` não reprovava nada — porque todos os casos tiravam os DOIS. E os dois operadores erram,
     // em direcções opostas: o `&&` esconde um ícone que FUNCIONA, o `||` mostra um que NÃO funciona. A
     // pergunta certa é por ÍCONE.
-    const soTema = iconesQueAccionam({ tema: true, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
+    const soTema = iconsThatAct({ tema: true, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
     expect(soTema).toContain('contrast');
     expect(soTema).not.toContain('cvd');
 
-    const soCor = iconesQueAccionam({ tema: false, correcao: true, seguraTeclas: () => true }).map((ic) => ic.k);
+    const soCor = iconsThatAct({ tema: false, correcao: true, seguraTeclas: () => true }).map((ic) => ic.k);
     expect(soCor).not.toContain('contrast');
     expect(soCor).toContain('cvd');
   });
@@ -1256,7 +1256,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // contraste está construído. O que falta é este jogo ter por onde o aplicar — e a resposta a isso é a ausência.
     // 📌 O mecanismo saiu inteiro em 2026-09-21 (issue #184); o que este caso guarda é que a ausência NÃO foi
     // substituída por um botão apagado a dizer-se por construir.
-    const ficaram = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true });
+    const ficaram = iconsThatAct({ tema: false, correcao: false, seguraTeclas: () => true });
     for (const ic of ficaram) expect(ic, `${ic.k} voltou a anunciar-se em construção`).not.toHaveProperty('soon');
     expect(ficaram.map((ic) => ic.k), 'o contraste sem escritor ficou na barra').not.toContain('contrast');
   });
@@ -1272,7 +1272,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
    * DESABILITADO com o motivo, porque o aparelho EXIGE a alternância. Aqui não há nada a travar, e explicar
    * por que um controle não faz nada continua a ser entregar um controle que não faz nada. */
   it('🎯 [Zero] um jogo que não segura teclas NEM declara posição não recebe o ícone `altmove`', () => {
-    const chaves = iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, tipografia: true, camera: true, microfone: true, menus: true }).map((ic) => ic.k);
+    const chaves = iconsThatAct({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, tipografia: true, camera: true, microfone: true, menus: true }).map((ic) => ic.k);
     expect(chaves, 'o `altmove` foi montado num jogo que não segura nada').not.toContain('altmove');
     expect(chaves).toHaveLength(PAUSE_ICONS.length - 1);
   });
@@ -1283,7 +1283,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
    * não tem o que segurar lá; «um botão só» tem o que varrer.
    */
   it('🔴 [Right] mas um jogo que DECLARA POSIÇÃO recebe-o, mesmo sem segurar tecla — é o caso do quiz', () => {
-    const chaves = iconesQueAccionam({
+    const chaves = iconsThatAct({
       relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, declaredPositions: () => 5,
       tipografia: true, camera: true, microfone: true, menus: true,
     }).map((ic) => ic.k);
@@ -1294,7 +1294,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   it('⚠️ [Right] e o PAR: um jogo que segura recebe-o — senão «ausente» passaria por nunca montar nada', () => {
     // Sem este caso, uma implementação que devolvesse lista vazia satisfaria o de cima. É a mesma razão pela
     // qual o [Zero] dos escritores visuais tem o seu par logo acima.
-    const chaves = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
+    const chaves = iconsThatAct({ tema: true, correcao: true, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
     expect(chaves).toContain('altmove');
   });
 
@@ -1304,7 +1304,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // o par tema/correcção.
     // ⚠️ 	ipografia FICA DE FORA aqui de propósito, e o número abaixo conta QUATRO ausências: este caso mede
     // que os ramos do filtro sao INDEPENDENTES, e o quarto ramo entrou em 2026-09-12 (ADR-0149).
-    const semNada = iconesQueAccionam({ relogio: () => true, tema: false, correcao: false, seguraTeclas: () => false }).map((ic) => ic.k);
+    const semNada = iconsThatAct({ relogio: () => true, tema: false, correcao: false, seguraTeclas: () => false }).map((ic) => ic.k);
     expect(semNada).not.toContain('contrast');
     expect(semNada).not.toContain('cvd');
     expect(semNada).not.toContain('altmove');
@@ -1314,13 +1314,13 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     expect(semNada).not.toContain('menu');
     expect(semNada).toHaveLength(PAUSE_ICONS.length - 7);
 
-    const soAlternancia = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
+    const soAlternancia = iconsThatAct({ tema: false, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
     expect(soAlternancia).toContain('altmove');
     expect(soAlternancia).not.toContain('contrast');
   });
 
   it('📌 [Interface] e o ☝️ que FICA não se anuncia em construção — ele tem as três posições', () => {
-    const alt = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true }).find((ic) => ic.k === 'altmove');
+    const alt = iconsThatAct({ tema: true, correcao: true, seguraTeclas: () => true }).find((ic) => ic.k === 'altmove');
     expect(alt, 'o ☝️ sumiu de um jogo que segura teclas').toBeTruthy();
     expect(alt, 'a alternância passou a anunciar-se como em construção').not.toHaveProperty('soon');
   });

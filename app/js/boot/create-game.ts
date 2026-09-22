@@ -50,11 +50,11 @@ import { initI18n, dictionaryGaps, loadLocale } from '../core/i18n.js';
 import { inputOf, keys, markKey, releaseKey, playerEdge } from '../input/state.js';
 import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
-import { criarAvisoDeQueda } from '../ui/loop-crash.js';
+import { createCrashNotice } from '../ui/loop-crash.js';
 import { registerCrashNotice } from '../core/loop.js';
 import { analyseFlashes, COLUMNS, ROWS, type LuminanceFrame } from '../core/flash-threshold.js';
-import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
-import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
+import { initFocusTrap, focusablesInDom } from '../ui/focus-trap.js';
+import { showReachNotice, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { reach, defaultTransports, type Reach, type Availability } from '../input/transports.js';
 import { accommodationAnswersProblems, subjectWord, type AccommodationAnswers } from '../core/accommodations.js';
 import { genreProblems, genreWarning } from '../core/genres.js';
@@ -67,11 +67,11 @@ import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
 import { createHandControl } from '../ui/hand-control.js';
 import { followCameraMode } from '../ui/camera-control.js';
-import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from '../ui/pause-icons.js';
-import { anunciarItem } from '../ui/item-announcement.js';
+import { initPauseIcons, iconsMarkup, wireBarCaption, showPauseOptions, PM_VISIBLE_ITEMS } from '../ui/pause-icons.js';
+import { announceItem } from '../ui/item-announcement.js';
 import { accessibleLabel } from '../core/rotulo-acessivel.js';
-import { itensNavegaveis } from '../ui/menu-items.js';
-import { helpRows, montarSlides, mostrarSlide, animarFigura, howToPlayProblems, type HowToPlaySlide } from '../ui/help-panel.js';
+import { navigableItems } from '../ui/menu-items.js';
+import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, type HowToPlaySlide } from '../ui/help-panel.js';
 import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
 import * as state from '../core/state.js';
@@ -90,17 +90,17 @@ import { isBlind, isLowVision, PADRAO, filterKey, simulationUnavailable, type Vi
 import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
 import { drawLowVision } from '../render/low-vision-drawing.js';
 import { createPadWizard } from '../input/pad-wizard.js';
-import { cicloDeTipografia, INICIO_DO_CICLO, FONT_BY_KEY } from '../ui/fonts.js';
+import { typographyCycle, CYCLE_START, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
-import { invasoresDaBarra, escalaDoPalco, aplicarEscala, abaixoDoPiso, alvoMinimo, type Caixa, type Escala, type MedidaDeNo } from '../ui/layout.js';
+import { barIntruders, stageScale, applyScale, belowFloor, minimumTarget, type Box, type Scale, type NodeMeasure } from '../ui/layout.js';
 import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { FilterReach } from '../render/port.js';
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { captionDuration, CAPTION_RATES } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
-import { montarPainel } from '../ui/mount-panel.js';
-// 📌 `recusaDaAlternancia` e `definirAlternanciaDeMarcha` saíram destes imports com a linha do painel (2026-09-21): quem escreve
+import { mountPanel } from '../ui/mount-panel.js';
+// 📌 `latchRefusal` e `setMoveLatch` saíram destes imports com a linha do painel (2026-09-21): quem escreve
 // a aderência agora é o ☝️ da barra, e é ele que já resolvia as duas coisas — a recusa do aparelho e as duas chaves guardadas.
 import { stampSource, sourceOfEvent } from '../input/origem-sintetica.js';
 import type { TransportName } from '../input/transporte-em-uso.js';
@@ -109,7 +109,7 @@ import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem 
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
 import { createVoiceControl } from '../ui/voice-control.js';
 export type { VirtualCommand } from '../input/virtual-controller.js';
-import { montarPassos, atualizarPassos, passoSeguinte, linhaDeControle, rotularLinha } from '../ui/panel-widgets.js';
+import { mountSteps, updateSteps, nextStep, controlRow, labelRow } from '../ui/panel-widgets.js';
 import { PERSONAS_DO_PAD, closestPersona } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
@@ -118,16 +118,16 @@ import { initSettingsEmpathy } from '../ui/settings-empathy.js';
 import { HC_ROLE_DEF } from '../render/hc-role-data.js';
 import { initLqFilter, setLq, getLqT, lqFilter } from '../render/lq-filter.js';
 import { initCrt, applyCrt, crtScanVars } from '../render/crt.js';
-import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type SettingsAudioApi } from '../ui/settings-audio.js';
+import { initSettingsAudio, mountAudioInside, mountSoundInside, type SettingsAudioApi } from '../ui/settings-audio.js';
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn, toggleLabel } from '../ui/dom.js';
 import { createEmpathyFilter } from '../input/motor-simulation.js';
 import { createInputCooldown, COOLDOWN_MS } from '../input/input-cooldown.js';
 import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
-import { gameOptionsProblems, desenharOpcoesDoJogo, type GameOption } from '../ui/game-options.js';
+import { gameOptionsProblems, drawGameOptions, type GameOption } from '../ui/game-options.js';
 import * as store from '../platform/storage.js';
-import { initMenuNav, partesDoControle, type MenuNavApi } from '../ui/menu-nav.js';
+import { initMenuNav, controlParts, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registerKeyboardMapping, saveKB, setKB, factoryWithGame, type KBDefaults } from '../input/keyboard.js';
@@ -264,7 +264,7 @@ export interface CreateGameOptions {
    * mexer em som, TTS ou modo cego num fone partilhado mudaria o áudio de toda a gente.
    *
    * 📌 E É SÓ ESTE CAMPO. Os campos MOTORES (`easy`, `toggleMove`, `toggleRun`) não entram: eles são
-   * obrigatórios em `MotorPlayer` — o painel LÊ-OS para desenhar o estado —, e torná-los exigíveis aqui
+   * obrigatórios em `MobilityPlayer` — o painel LÊ-OS para desenhar o estado —, e torná-los exigíveis aqui
    * obrigaria todo jogo a carregá-los. Essa é uma decisão de contrato por tomar, e ela não se toma de
    * passagem por um cast que faria o compilador calar-se.
    */
@@ -402,7 +402,7 @@ export interface CreateGameOptions {
    * aceita `getPauseActs` desde que existe; esta raiz não o passava e não tinha campo para ele, logo
    * **nenhum jogo montado por `createGame`** conseguia ligar um item. O `refrescarItensDaPausa` esconde o
    * que não acciona — o §5 do ADR-0106, que proíbe botão morto — e o resultado era um cartão com os TRÊS
-   * itens que a engine acciona sozinha (`ITENS_DA_ENGINE`) e nada mais, em todo o catálogo.
+   * itens que a engine acciona sozinha (`ENGINE_ITEMS`) e nada mais, em todo o catálogo.
    *
    * ⚠️ E O CUSTO MAIOR NÃO ERA O CARTÃO, ERA A BARRA. O `entrarNaBarra` chama `acts.resume?.()` para sair
    * do cartão antes de entregar as direcções à barra de acessibilidade; com a tabela vazia esse `resume` era
@@ -426,7 +426,7 @@ export interface CreateGameOptions {
   /**
    * COMO ESTE JOGO REPINTA PARA ALTO CONTRASTE, e como corrige daltonismo — os dois eixos do ADR-0104.
    *
-   * 🔴 SEM ELES OS ÍCONES ⚫ E 🚥 NÃO SÃO MONTÁVEIS POR NENHUM JOGO. O `iconesQueAccionam` só os monta
+   * 🔴 SEM ELES OS ÍCONES ⚫ E 🚥 NÃO SÃO MONTÁVEIS POR NENHUM JOGO. O `iconsThatAct` só os monta
    * para quem entrega quem os escreve, e essa regra está certa — um ícone que não acciona é pior que um
    * ícone a menos. O que estava errado era não haver PORTA: o consumidor externo que mediu isto leu a
    * ausência como «este jogo tem os seus próprios controles», o que é verdade sobre o resultado e falso
@@ -986,8 +986,8 @@ export function createGame(o: CreateGameOptions): Engine {
    * O QUE A ENGINE SABE ACCIONAR SOZINHA NO MENU DE PAUSA — preenchido pelo bloco 4f, lido quando a pausa abre.
    *
    * 🔴 O CARTÃO DE PAUSA TINHA UM BOTÃO. 📏 Medido em 2026-09-11 contra um jogo que chama só `createGame`:
-   * sem `getPauseActs` a tabela é vazia (`ui/pause-icons:879`), `itensQueAccionam` guarda só os três de
-   * `ITENS_DA_ENGINE`, e `raizQueAcciona` tira também o `options` — «uma porta para uma sala vazia». O que
+   * sem `getPauseActs` a tabela é vazia (`ui/pause-icons:879`), `itemsThatAct` guarda só os três de
+   * `ENGINE_ITEMS`, e `rootThatActs` tira também o `options` — «uma porta para uma sala vazia». O que
    * sobrevive é `acessibilidade`. Um menu de pausa com um item não é um menu de pausa.
    *
    * ⚠️ MUTÁVEL E LIDO TARDE, de propósito, e é para isto que a preguiça do campo existe: `initPauseIcons`
@@ -1006,9 +1006,9 @@ export function createGame(o: CreateGameOptions): Engine {
   /*
    * ===================== A SAÍDA, QUE TINHA DE NASCER COM A ENTRADA (ADR-0144, errata) =====================
    *
-   * 🔴 MEDIDO ao construir o ADR-0144, e é a metade que aquele registo não viu: `ITENS_DA_ENGINE` é
+   * 🔴 MEDIDO ao construir o ADR-0144, e é a metade que aquele registo não viu: `ENGINE_ITEMS` é
    * `{options, pmback, acessibilidade}` — **`resume` não está lá** —, e esta tabela não o definia. Logo
-   * `itensQueAccionam` cortava o «continuar» do cartão de TODO jogo que só chame `createGame`. E o Escape
+   * `itemsThatAct` cortava o «continuar» do cartão de TODO jogo que só chame `createGame`. E o Escape
    * também não fechava: `ui/menu-nav:403` faz `ctx.setPhase('playing')`, que aqui era
    * `cartucho.setPhase ?? (() => {})` — um no-op. Antes disto ninguém reparava, porque nada ABRIA o cartão.
    *
@@ -1110,7 +1110,7 @@ export function createGame(o: CreateGameOptions): Engine {
 
   /*
    * ⚠️ IÇADOS PARA CIMA DO `initPauseIcons` em 2026-09-12, e o motivo é de ORDEM e não de arrumação: a barra
-   * decide QUE ÍCONES monta no arranque (`iconesQueAccionam`, resolvido uma vez), e o 11.º — o ciclo de
+   * decide QUE ÍCONES monta no arranque (`iconsThatAct`, resolvido uma vez), e o 11.º — o ciclo de
    * tipografia — só existe se o painel de tipografia existir. O painel nasce dentro de
    * `if (hospedeiroDaPausa && pausaUsavel)`, ~250 linhas abaixo; lidos lá, a barra já tinha decidido.
    *
@@ -1126,7 +1126,7 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   let typo: SettingsTypoApi | null = null;
   /** A posição corrente do ciclo de tipografia. Ver a nota em `ciclarTipografia`, logo abaixo. */
-  let passoDaTipografia = INICIO_DO_CICLO;
+  let passoDaTipografia = CYCLE_START;
 
   /*
    * 🔴 OS JOGADORES SOBEM PARA AQUI (issue #147), e a razão é uma medição de ordem de arranque: `initPauseIcons`
@@ -1287,7 +1287,7 @@ export function createGame(o: CreateGameOptions): Engine {
       // ⚠️ `typo` é lido AQUI e não na condição: ele nasce ~250 linhas abaixo, e a condição corre agora.
       // Quem decide se o ícone existe é `pausaUsavel`, que é a MESMA pergunta que decide se o painel nasce.
       if (!typo) return null;
-      const ciclo = cicloDeTipografia(bcp47());
+      const ciclo = typographyCycle(bcp47());
       passoDaTipografia = (passoDaTipografia + 1) % ciclo.length;
       const passo = ciclo[passoDaTipografia]!;
       state.setLetterCaseValue(passo.caixa);
@@ -1308,7 +1308,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * 🚥 A CORREÇÃO DE DALTONISMO PASSA A TER PADRÃO DA ENGINE (ADR-0148 §1), e o ícone deixa de faltar.
      *
      * 📏 MEDIDO no `dist/quiz.html`: a barra servia sete ícones — três deles a dizer «em construção» — e o
-     * 🚥 ficava de fora, porque `iconesQueAccionam` pergunta «este ícone tem quem o accione» e esta raiz não
+     * 🚥 ficava de fora, porque `iconsThatAct` pergunta «este ícone tem quem o accione» e esta raiz não
      * passava escritor nenhum. E não passava tendo tudo à mão: `installCvdFilters` já montou os seis
      * `<filter>` e `aplicarFiltroDeVisao` já sabe pô-los no elemento do mundo.
      *
@@ -1381,7 +1381,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // 🔴 COM A LEGENDA DO NOME, debaixo da fileira: a barra montada pela engine não a tinha, e o Dev viu-a muda ao
     // navegar e ao passar o rato. `aria-hidden` porque o nome já é DITO (`srSay` no cursor, o `aria-label` no foco).
     a11yBar.innerHTML = iconsMarkup(pauseIcons.iconesMontados) + '<p class="pause-icons-cap" aria-hidden="true"></p>';
-    ligarLegendaDaBarra(a11yBar as HTMLElement, explicarIconeNoRodape);
+    wireBarCaption(a11yBar as HTMLElement, explicarIconeNoRodape);
     a11yBar.addEventListener('click', (e) => {
       const botao = (e.target as Element | null)?.closest<HTMLElement>('.pi-btn');
       if (!botao) return;
@@ -1472,7 +1472,7 @@ export function createGame(o: CreateGameOptions): Engine {
   /*
    * 4f. OS PAINÉIS DE AJUSTES — e este é o buraco que o ADR-0106 §1 deixou aberto por mais tempo.
    *
-   * 🔴 `ui/panel-shell.montarCasca` CONSTRÓI a casca de um painel e NENHUM módulo da engine a chamava: o único
+   * 🔴 `ui/panel-shell.mountShell` CONSTRÓI a casca de um painel e NENHUM módulo da engine a chamava: o único
    * chamador da árvore era o `consumer-quiz/main-quiz.ts:320`. Cada `ui/settings-*` preenche o INTERIOR de ids
    * que ninguém cria, então a falha tomava a pior forma disponível — o quiz registou-a como achado 6, «o painel
    * abre VAZIO, sem erro». Um jogo que chama só `createGame` tinha ZERO painéis.
@@ -1546,7 +1546,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * AJUDA — qual botão faz o quê, NESTE jogo, no teclado DESTA criança (ADR-0147 §4).
      *
      * 🔴 O item `ajuda` está na lista de pausa desde o ADR-0044 e a engine nunca o soube accionar, logo
-     * `itensQueAccionam` escondia-o em todo jogo. A tela que o preenchia saiu com o cartucho (#111) e vive
+     * `itemsThatAct` escondia-o em todo jogo. A tela que o preenchia saiu com o cartucho (#111) e vive
      * hoje no `game-platformer`; deixá-la lá era pedir a trezentos jogos que a escrevessem cada um.
      *
      * ⚠️ NÃO SE MONTA SEM `preset`, e a ausência é a resposta certa: sem as palavras do jogo, a tabela só
@@ -1559,7 +1559,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // The cartridge's «how to play» slides come first (ADR-0195; issue #188); the help stands with them, with the buttons, or both.
     if (cartucho.preset || cartucho.howToPlay?.length) {
       let pararFigura = (): void => {};
-      const painelDeAjuda = montarPainel(ctxDoPainel, {
+      const painelDeAjuda = mountPanel(ctxDoPainel, {
         id: 'help',
         rotulos: () => ({
           titulo: t('menu.help'),
@@ -1577,7 +1577,7 @@ export function createGame(o: CreateGameOptions): Engine {
           while (lista.firstChild) lista.removeChild(lista.firstChild);
           const linhas = [...(cartucho.howToPlay ?? []), ...helpRows(cartucho.preset, (a) => keyboard.kbFor(0)[a], keyName)];
           const ctxDoSlide = { criar: (tag: string) => doc.createElement(tag), t, titulo: t('menu.help') };
-          const slides = montarSlides(ctxDoSlide);
+          const slides = mountSlides(ctxDoSlide);
           lista.appendChild(slides);
           const relogio = {
             requestFrame: (cb: (ms: number) => void) => win.requestAnimationFrame(cb),
@@ -1586,14 +1586,14 @@ export function createGame(o: CreateGameOptions): Engine {
           };
           const mostrar = (i: number): { indice: number; falado: string } => {
             pararFigura();
-            const mostrado = mostrarSlide(slides, linhas, i, ctxDoSlide);
+            const mostrado = showSlide(slides, linhas, i, ctxDoSlide);
             const slide = linhas[mostrado.indice];
-            if (slide && 'text' in slide) pararFigura = animarFigura(slides, slide, relogio);
+            if (slide && 'text' in slide) pararFigura = animateFigure(slides, slide, relogio);
             return mostrado;
           };
           let atual = mostrar(0).indice;
           slides.addEventListener('passo', (ev) => {
-            const nova = passoSeguinte(atual, linhas.length, (ev as CustomEvent<number>).detail);
+            const nova = nextStep(atual, linhas.length, (ev as CustomEvent<number>).detail);
             if (nova === atual) return;
             const mostrado = mostrar(nova);
             atual = mostrado.indice;
@@ -1618,7 +1618,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * The shell's «restore defaults» is hidden: a cartridge declares no defaults, and a button that does nothing is the
      * dead control ADR-0106 §5 forbids.
      */
-    const painelDoJogo = montarPainel(ctxDoPainel, {
+    const painelDoJogo = mountPanel(ctxDoPainel, {
       id: 'game-options',
       rotulos: () => ({
         titulo: t('pause.opcoesdojogo'),
@@ -1630,7 +1630,7 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     painelDoJogo.casca.reset.hidden = true;
     redesenharOpcoesDoJogo = () => {
-      desenharOpcoesDoJogo({ ...ctxDoPainel, dizer: srSay }, painelDoJogo.casca.lista, cartucho.gameOptions ?? []);
+      drawGameOptions({ ...ctxDoPainel, dizer: srSay }, painelDoJogo.casca.lista, cartucho.gameOptions ?? []);
       if (!painelDoJogo.casca.overlay.hidden) overlays.fillExplain(painelDoJogo.casca.card);
     };
     abrirOpcoesDoJogo = painelDoJogo.abrir;
@@ -1648,7 +1648,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * renomear seria mexer no contrato com markup de consumidores que este repositório não pode medir.
      */
     let motion: SettingsMotionApi | null = null;
-    const painelDeAnim = montarPainel(ctxDoPainel, {
+    const painelDeAnim = mountPanel(ctxDoPainel, {
       id: 'animation',
       idDaLista: 'motion-list',
       rotulos: () => ({
@@ -1700,7 +1700,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * ⚠️ Os escritores das linhas não oferecidas são inertes DE PROPÓSITO: o `reset` só os chama quando o valor lido
      * difere do padrão, e o valor devolvido aqui É o padrão.
      */
-    const painelVisual = montarPainel(ctxDoPainel, {
+    const painelVisual = mountPanel(ctxDoPainel, {
       id: 'visual',
       rotulos: () => ({
         titulo: t('menu.visual'),
@@ -1714,7 +1714,7 @@ export function createGame(o: CreateGameOptions): Engine {
         contornoBg.escreverDica();
         visual.render();
         oferecerDonoEContornos();
-        rotularLinha(linhaDasLegendas, specDasLegendas()); // in the language of the opening
+        labelRow(linhaDasLegendas, specDasLegendas()); // in the language of the opening
         refletirLegendas();
         refletirRitmoDaLegenda();
       },
@@ -1725,7 +1725,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * rewrites by markup; built once, so its listener is not lost.
      */
     const specDasLegendas = () => ({ id: 'opt-captions', rotulo: t('visual.captions'), dica: t('visual.captions.dica') });
-    const { linha: linhaDasLegendas, controle: botaoDasLegendas } = linhaDeControle(ctxDoPainel, specDasLegendas());
+    const { linha: linhaDasLegendas, controle: botaoDasLegendas } = controlRow(ctxDoPainel, specDasLegendas());
     painelVisual.casca.card.insertBefore(linhaDasLegendas, painelVisual.casca.lista.nextSibling);
     const refletirLegendas = (): void => {
       toggleBtn(botaoDasLegendas, state.captionsOn);
@@ -1748,21 +1748,21 @@ export function createGame(o: CreateGameOptions): Engine {
     dicaDoRitmo.textContent = t('visual.legenda.ritmo.dica');
     envelopeDoRitmo.appendChild(dicaDoRitmo);
     linhaDoRitmo.appendChild(envelopeDoRitmo);
-    const passosDoRitmo = montarPassos(ctxDoPainel, specDoRitmo());
+    const passosDoRitmo = mountSteps(ctxDoPainel, specDoRitmo());
     passosDoRitmo.id = 'opt-legenda-ppm';
     linhaDoRitmo.appendChild(passosDoRitmo);
     painelVisual.casca.card.insertBefore(linhaDoRitmo, linhaDasLegendas.nextSibling);
     passosDoRitmo.addEventListener('passo', (ev) => {
       const atual = specDoRitmo().atual;
-      const nova = passoSeguinte(atual, CAPTION_RATES.length, (ev as CustomEvent<number>).detail);
+      const nova = nextStep(atual, CAPTION_RATES.length, (ev as CustomEvent<number>).detail);
       if (nova === atual) return;
       state.setCaptionPpmValue(CAPTION_RATES[nova]!);
-      atualizarPassos(passosDoRitmo, specDoRitmo());
+      updateSteps(passosDoRitmo, specDoRitmo());
       markChanged(linhaDoRitmo, state.captionPpm !== state.DEFAULTS.captionPpm);
       srSay(`${t('visual.legenda.ritmo')}: ${t('visual.legenda.ppm', { n: state.captionPpm })}`);
     });
     const refletirRitmoDaLegenda = (): void => {
-      atualizarPassos(passosDoRitmo, specDoRitmo());
+      updateSteps(passosDoRitmo, specDoRitmo());
       dicaDoRitmo.textContent = t('visual.legenda.ritmo.dica');
       markChanged(linhaDoRitmo, state.captionPpm !== state.DEFAULTS.captionPpm);
     };
@@ -1781,7 +1781,7 @@ export function createGame(o: CreateGameOptions): Engine {
       const palavra = subjectWord(cartucho.acomodacoes, 'ownerColors');
       return { id: 'opt-dono', rotulo: palavra?.label ?? '', dica: palavra?.hint };
     };
-    const { linha: linhaDoDono, controle: botaoDoDono } = linhaDeControle(ctxDoPainel, specDoDono());
+    const { linha: linhaDoDono, controle: botaoDoDono } = controlRow(ctxDoPainel, specDoDono());
     const refletirDono = (): void => {
       toggleBtn(botaoDoDono, state.ownerColors);
       botaoDoDono.textContent = toggleLabel(state.ownerColors);
@@ -1804,14 +1804,14 @@ export function createGame(o: CreateGameOptions): Engine {
       dica.className = 'opt-hint';
       envelope.appendChild(dica);
       linhaC.appendChild(envelope);
-      const passos = montarPassos(ctxDoPainel, spec());
+      const passos = mountSteps(ctxDoPainel, spec());
       passos.id = `opt-contorno-${plano}`;
       linhaC.appendChild(passos);
       passos.addEventListener('passo', (ev) => {
-        const nova = passoSeguinte(ler(), NIVEIS_DE_CONTORNO.length, (ev as CustomEvent<number>).detail);
+        const nova = nextStep(ler(), NIVEIS_DE_CONTORNO.length, (ev as CustomEvent<number>).detail);
         if (nova === ler()) return;
         escrever(nova);
-        atualizarPassos(passos, spec());
+        updateSteps(passos, spec());
         srSay(`${t(`visual.contorno.${plano}`)}: ${t(NIVEIS_DE_CONTORNO[nova]!)}`);
       });
       // the hint is written BEFORE the panel's render, which runs `fillExplain`: written after, it stays inside the row
@@ -1819,14 +1819,14 @@ export function createGame(o: CreateGameOptions): Engine {
         dica.textContent = subjectWord(cartucho.acomodacoes, 'contrastOutlines')?.hint ?? t(`visual.contorno.${plano}.dica`);
       };
       escreverDica();
-      const refletir = (): void => { atualizarPassos(passos, spec()); };
+      const refletir = (): void => { updateSteps(passos, spec()); };
       return { linha: linhaC, refletir, escreverDica };
     };
     const contornoFg = contorno('fg');
     const contornoBg = contorno('bg');
     const oferecerDonoEContornos = (): void => {
       linhaDoDono.hidden = subjectWord(cartucho.acomodacoes, 'ownerColors') === null;
-      if (!linhaDoDono.hidden) { rotularLinha(linhaDoDono, specDoDono()); refletirDono(); }
+      if (!linhaDoDono.hidden) { labelRow(linhaDoDono, specDoDono()); refletirDono(); }
       const semContornos = subjectWord(cartucho.acomodacoes, 'contrastOutlines') === null;
       for (const c of [contornoFg, contornoBg]) { c.linha.hidden = semContornos; if (!semContornos) c.refletir(); }
     };
@@ -1871,7 +1871,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * ⚠️ E a simulação respeita o ADR-0076: com uma correcção de cor ligada ela não corre, e DIZ porquê.
      */
     const SIMULACOES_DO_MUNDO = ['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind'];
-    const painelDeEmpatia = montarPainel(ctxDoPainel, {
+    const painelDeEmpatia = mountPanel(ctxDoPainel, {
       id: 'empathy',
       rotulos: () => ({
         titulo: t('menu.empathy'),
@@ -1881,21 +1881,21 @@ export function createGame(o: CreateGameOptions): Engine {
       }),
       // a linha da perda auditiva nasceu no idioma de recuo: reetiquetada a cada abertura, como o interior auditivo
       render: () => {
-        rotularLinha(linhaDaAudicao, specDaAudicao());
-        rotularLinha(linhaUmPorVez, specUmPorVez());
-        rotularLinha(linhaSemForca, specSemForca());
+        labelRow(linhaDaAudicao, specDaAudicao());
+        labelRow(linhaUmPorVez, specUmPorVez());
+        labelRow(linhaSemForca, specSemForca());
         empatia.render();
       },
     });
     // A linha da perda auditiva nasce ANTES do `init`, que liga o clique dela uma vez (a regra de ordem do `#typo-reset`).
     const specDaAudicao = () => ({ id: 'opt-hearing', rotulo: t('empathy.hearing'), dica: t('empathy.hearing.dica') });
-    const linhaDaAudicao = linhaDeControle(ctxDoPainel, specDaAudicao()).linha;
+    const linhaDaAudicao = controlRow(ctxDoPainel, specDaAudicao()).linha;
     painelDeEmpatia.casca.card.insertBefore(linhaDaAudicao, painelDeEmpatia.casca.lista);
     // THE TWO MOTOR SIMULATIONS (ADR-0181), before the `init`, which wires `#opt-onebtn` once (the same order rule).
     const specUmPorVez = () => ({ id: 'opt-onebtn', rotulo: t('empathy.onebtn'), dica: t('empathy.onebtn.dica') });
     const specSemForca = () => ({ id: 'opt-semforca', rotulo: t('empathy.semforca'), dica: t('empathy.semforca.dica') });
-    const linhaUmPorVez = linhaDeControle(ctxDoPainel, specUmPorVez()).linha;
-    const linhaSemForca = linhaDeControle(ctxDoPainel, specSemForca()).linha;
+    const linhaUmPorVez = controlRow(ctxDoPainel, specUmPorVez()).linha;
+    const linhaSemForca = controlRow(ctxDoPainel, specSemForca()).linha;
     painelDeEmpatia.casca.card.insertBefore(linhaUmPorVez, painelDeEmpatia.casca.lista);
     painelDeEmpatia.casca.card.insertBefore(linhaSemForca, painelDeEmpatia.casca.lista);
     const refletirSimulacoesMotoras = (): void => {
@@ -2001,7 +2001,7 @@ export function createGame(o: CreateGameOptions): Engine {
     /*
      * ACESSIBILIDADE AUDITIVA — o maior dos oito, e o que mais tinha a perder por não existir.
      *
-     * 📏 Quinze nós que o painel alcançava e nunca criava; quem os constrói é `montarInteriorDoAudio`, ao lado
+     * 📏 Quinze nós que o painel alcançava e nunca criava; quem os constrói é `mountAudioInside`, ao lado
      * dele. ⚠️ E o interior entra ANTES do `init`, pela regra de ordem que os três painéis anteriores já
      * pagaram: `initSettingsAudio` liga TREZE cliques uma vez, no arranque.
      *
@@ -2009,7 +2009,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * todos da engine, e `SinkPlayer` tem os campos todos opcionais — logo os jogadores do cartucho servem
      * como estão. Era o painel mais caro de montar e o menos dependente de quem o monta.
      */
-    const painelDeAudio = montarPainel(ctxDoPainel, {
+    const painelDeAudio = mountPanel(ctxDoPainel, {
       id: 'audio',
       // 📌 A LISTA DA CASCA É A DA NAVEGAÇÃO SONORA desde o ADR-0151: as categorias de gosto foram para o «Áudio».
       // O id `navsound-list` é o que `initSettingsAudio` já preenche com sonar, guarda e guia.
@@ -2026,23 +2026,23 @@ export function createGame(o: CreateGameOptions): Engine {
        * tela. A moldura já se retraduzia (`MountPanelSpec.rotulos`); o interior corria uma vez e capturava o
        * texto do intervalo de arranque, onde o idioma ainda é o de recuo.
        *
-       * 📌 `montarInteriorDoAudio` REETIQUETA o que já existe em vez de o refazer — refazer deixaria treze
+       * 📌 `mountAudioInside` REETIQUETA o que já existe em vez de o refazer — refazer deixaria treze
        * controles no documento e sem escuta. E nenhum teste unitário apanhava isto: todos correm num idioma
        * só. Foi preciso o passo do plano que eu ainda não tinha dado.
        */
       render: () => {
-        montarInteriorDoAudio(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
+        mountAudioInside(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
         esconderLinhasSemAssunto();
         audio?.renderAudio();
       },
     });
-    montarInteriorDoAudio(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
+    mountAudioInside(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
     /*
      * ÁUDIO — o som geral e as quatro categorias de gosto (ADR-0151 §2 item 4), separado da acessibilidade auditiva.
      * ⚠️ MONTADO ANTES do `initSettingsAudio`, pela regra de ordem dos irmãos: o interruptor geral, o volume e o
      * «repor» deste painel são ligados UMA vez, no arranque.
      */
-    const painelDeSom = montarPainel(ctxDoPainel, {
+    const painelDeSom = mountPanel(ctxDoPainel, {
       id: 'som',
       idDaLista: 'audio-list',
       rotulos: () => ({
@@ -2052,11 +2052,11 @@ export function createGame(o: CreateGameOptions): Engine {
         rotuloFechar: t('pause.pmback'),
       }),
       render: () => {
-        montarInteriorDoSom(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
+        mountSoundInside(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
         audio?.renderAudio();
       },
     });
-    montarInteriorDoSom(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
+    mountSoundInside(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
     /*
      * A BENGALA SÓ SE OFERECE A QUEM ANDA A PÉ (ADR-0153, `caneSpacing`).
      *
@@ -2070,7 +2070,7 @@ export function createGame(o: CreateGameOptions): Engine {
       const palavraDaBengala = subjectWord(cartucho.acomodacoes, 'caneSpacing');
       if (linha) {
         linha.hidden = palavraDaBengala === null;
-        // What applies carries the GAME's word (ADR-0153 confirmation). `montarInteriorDoAudio` re-labels in the engine's
+        // What applies carries the GAME's word (ADR-0153 confirmation). `mountAudioInside` re-labels in the engine's
         // words on every open, and this runs after it; the game's hint, when given, goes where the footer reads it.
         const rotulo = linha.querySelector<HTMLElement>('strong');
         if (palavraDaBengala && rotulo) rotulo.textContent = palavraDaBengala.label;
@@ -2288,7 +2288,7 @@ export function createGame(o: CreateGameOptions): Engine {
   initFocusTrap({
     overlayDeCima: overlays.topVisibleOverlay,
     focoAtual: () => doc.activeElement,
-    focaveisDe: focaveisNoDom,
+    focaveisDe: focusablesInDom,
     win,
   }).attach();
 
@@ -2324,7 +2324,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * O ALCANCE E O SEU AVISO, numa função, porque os dois dependem do cartucho e o segundo CRIA DOM.
    *
    * ⚠️ O aviso é o único sítio desta raiz que escreve um elemento a partir de uma resposta do jogo, e por
-   * isso é o único que precisa de ser RETIRADO antes de ser reescrito: `mostrarAvisoDeAlcance` cria um `div`
+   * isso é o único que precisa de ser RETIRADO antes de ser reescrito: `showReachNotice` cria um `div`
    * com `id` fixo, então chamá-lo duas vezes deixaria dois — e o segundo cartucho ficaria com o aviso do
    * primeiro por baixo do seu.
    *
@@ -2352,7 +2352,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ SÓ APARECE QUANDO HÁ O QUE DIZER. Um aviso que aparece sempre deixa de ser lido, e um jogo cujas
     // ações cabem no toque não tem nada a avisar — que é o caso comum e tem de continuar silencioso.
     if (acoes.length) {
-      mostrarAvisoDeAlcance({
+      showReachNotice({
         procurar: (sel) => $<HTMLElement>(sel),
         criar: (tag) => doc.createElement(tag),
         t,
@@ -2393,7 +2393,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ O PALCO é a casca `#stage-wrap`/`.stage-wrap` quando existe; sem ela, o pai da região — o espaço que ela tem.
    * ⚠️ POR CAPACIDADE, como o resto: um duplo sem `style.setProperty` não é redimensionado, e o boot não cai por isso.
    */
-  let escalaAplicada: Escala | null = null;
+  let escalaAplicada: Scale | null = null;
   /**
    * What departs is SAID (ADR-0163 rule 4): the region's measured size against the one the engine gave it, read when
    * `problems` is read — a cartridge that resizes the region after boot is seen then, and the line goes when it stops.
@@ -2419,7 +2419,7 @@ export function createGame(o: CreateGameOptions): Engine {
   function desenhadoAbaixoDoPiso(): string | null {
     const regiao = $<HTMLElement>('#game-region');
     if (!escalaAplicada || !regiao || typeof regiao.querySelectorAll !== 'function' || typeof win.getComputedStyle !== 'function') return null;
-    const nos: MedidaDeNo[] = [...regiao.querySelectorAll<HTMLElement>('*')].map((el) => {
+    const nos: NodeMeasure[] = [...regiao.querySelectorAll<HTMLElement>('*')].map((el) => {
       const b = el.getBoundingClientRect();
       const temTexto = [...el.childNodes].some((c) => c.nodeType === 3 && (c.textContent ?? '').trim() !== '');
       return {
@@ -2429,9 +2429,9 @@ export function createGame(o: CreateGameOptions): Engine {
         alvo: el.matches(ALVO_DE_TOQUE) ? { w: b.width, h: b.height } : null,
       };
     });
-    const { texto, alvos } = abaixoDoPiso(nos, escalaAplicada.k);
+    const { texto, alvos } = belowFloor(nos, escalaAplicada.k);
     if (!texto.length && !alvos.length) return null;
-    const k = alvoMinimo(escalaAplicada.k) / 22;
+    const k = minimumTarget(escalaAplicada.k) / 22;
     const partes = [
       texto.length ? `text under ${8 * k} px (${texto.slice(0, 4).join(', ')})` : '',
       alvos.length ? `targets under ${22 * k} px (${alvos.slice(0, 4).join(', ')})` : '',
@@ -2445,8 +2445,8 @@ export function createGame(o: CreateGameOptions): Engine {
     const palco = $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap') ?? (regiao?.parentElement ?? null);
     if (!regiao || !palco || typeof regiao.style?.setProperty !== 'function') return;
     const { w, h } = screenBaseSize(Math.max(1, players().length));
-    escalaAplicada = escalaDoPalco(palco.clientWidth || w, palco.clientHeight || h, win.devicePixelRatio || 1, w, h);
-    aplicarEscala(regiao, escalaAplicada);
+    escalaAplicada = stageScale(palco.clientWidth || w, palco.clientHeight || h, win.devicePixelRatio || 1, w, h);
+    applyScale(regiao, escalaAplicada);
     crtScanVars(); // the scanline period is one art pixel in REAL pixels, so it follows the scale (study item A5)
     reservarFaixaDaBarra();
   }
@@ -2581,7 +2581,7 @@ export function createGame(o: CreateGameOptions): Engine {
   function medirInvasoresDaBarra(): string[] {
     const regiao = $<HTMLElement>('#game-region');
     if (!a11yBar || !regiao || typeof (a11yBar as HTMLElement).getBoundingClientRect !== 'function') return [];
-    const caixaDe = (el: Element): Caixa => {
+    const caixaDe = (el: Element): Box => {
       const b = el.getBoundingClientRect();
       return { x: b.x, y: b.y, w: b.width, h: b.height };
     };
@@ -2605,7 +2605,7 @@ export function createGame(o: CreateGameOptions): Engine {
       // the engine's HUD bands are placed by the engine: if one reaches the bar, that is the engine's defect, not the game's
       daBarra: el === a11yBar || a11yBar.contains(el) || el.closest('.hud-faixa') !== null,
     }));
-    return invasoresDaBarra(barra, nos);
+    return barIntruders(barra, nos);
   }
   {
     // the reserved room itself (`--barra-a11y-h`, next to `--tap` and `--alvo-min`) is written by `reservarFaixaDaBarra`,
@@ -2619,7 +2619,7 @@ export function createGame(o: CreateGameOptions): Engine {
     }
   }
 
-  const aoFalhar = criarAvisoDeQueda({
+  const aoFalhar = createCrashNotice({
     procurar: (sel) => $<HTMLElement>(sel),
     criar: (tag) => doc.createElement(tag),
     narrar: (texto) => tts.narrate(texto),
@@ -2641,7 +2641,7 @@ export function createGame(o: CreateGameOptions): Engine {
       atualizarLegenda();
       // 🔴 O CURSOR POUSA NO ITEM 1, na raiz (ADR-0158: «a saída é onde o cursor cai ao abrir»). Medido no `dist`: aberto
       // pelo SELECT nenhum item ficava marcado, e a primeira seta saltava para o item 2.
-      mostrarSubmenuDaPausa(cartao, 'raiz');
+      showPauseOptions(cartao, 'raiz');
     },
     esconder: (i: number) => {
       const cartao = $<HTMLElement>(`#vp-pause-${i}`);
@@ -2756,10 +2756,10 @@ export function createGame(o: CreateGameOptions): Engine {
     const painel = overlays.topVisibleOverlay();
     if (painel) {
       const titulo = painel.querySelector('h2')?.textContent?.trim() ?? '';
-      const itens = itensNavegaveis(painel.querySelector<HTMLElement>('.overlay__card') ?? painel);
+      const itens = navigableItems(painel.querySelector<HTMLElement>('.overlay__card') ?? painel);
       const focado = itens.indexOf(doc.activeElement as HTMLElement);
       const n = focado >= 0 ? focado : 0;
-      const item = itens[n] ? anunciarItem({ ...partesDoControle(itens[n]!), posicao: n + 1, total: itens.length }, comIndiceDaRaiz()) : '';
+      const item = itens[n] ? announceItem({ ...controlParts(itens[n]!), posicao: n + 1, total: itens.length }, comIndiceDaRaiz()) : '';
       return { chave: `painel:${painel.id}`, frase: [titulo, item].filter(Boolean).join('. ') };
     }
     const cartao = $<HTMLElement>('.screen-pause:not([hidden])');
@@ -2769,9 +2769,9 @@ export function createGame(o: CreateGameOptions): Engine {
       const porta = sub === 'opcoes' ? 'options' : sub === 'jogo' ? 'opcoesdojogo' : null;
       const botao = porta ? cartao.querySelector<HTMLElement>(`.pm-btn[data-act="${porta}"]`) : null;
       const titulo = botao ? accessibleLabel(botao) : (cartao.querySelector('h2')?.textContent?.trim() ?? '');
-      const itens = [...cartao.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
+      const itens = [...cartao.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
       const sel = cartao.querySelector<HTMLElement>('.pm-sel') ?? itens[0];
-      const item = sel ? anunciarItem({ rotulo: accessibleLabel(sel), posicao: itens.indexOf(sel) + 1, total: itens.length }, comIndiceDaRaiz()) : '';
+      const item = sel ? announceItem({ rotulo: accessibleLabel(sel), posicao: itens.indexOf(sel) + 1, total: itens.length }, comIndiceDaRaiz()) : '';
       return { chave: `cartao:${cartao.id}:${sub}`, frase: [titulo, item].filter(Boolean).join('. ') };
     }
     return { chave: 'jogo', frase: null };
@@ -3160,7 +3160,7 @@ export function createGame(o: CreateGameOptions): Engine {
       valores: PERSONAS_DO_PAD.map((p) => t(p.rotulo)),
       atual: personaAtual,
     });
-    const painelDaMotora = montarPainel(ctxDaMotora, {
+    const painelDaMotora = mountPanel(ctxDaMotora, {
       id: 'motora',
       rotulos: () => ({
         titulo: t('menu.motora'),
@@ -3174,7 +3174,7 @@ export function createGame(o: CreateGameOptions): Engine {
         // ADR-0166 + ADR-0106 §5: the pad's size is offered only to a cartridge that has a pad — hidden, not locked, because
         // there is nothing to unlock. Read at each opening: `mount()` may have swapped the cartridge.
         if (linhaDoPad) linhaDoPad.hidden = !cartucho.controleNaTela;
-        if (passosDoPad) atualizarPassos(passosDoPad, specDoPad());
+        if (passosDoPad) updateSteps(passosDoPad, specDoPad());
         // ⚠️ A DICA NO IDIOMA DE AGORA, antes de o rodapé a recolher: escrita no arranque, saía no idioma de recuo
         // (medido no `dist` com a página em inglês — o rodapé em português).
         if (dicaDoPad) dicaDoPad.textContent = t('motora.pad.dica');
@@ -3190,16 +3190,16 @@ export function createGame(o: CreateGameOptions): Engine {
     const envelope = doc.createElement('span');
     envelope.appendChild(dica);
     linha.appendChild(envelope);
-    passosDoPad = montarPassos(ctxDaMotora, specDoPad());
+    passosDoPad = mountSteps(ctxDaMotora, specDoPad());
     passosDoPad.id = 'opt-pad-persona';
     linha.appendChild(passosDoPad);
     painelDaMotora.casca.lista.appendChild(linha);
     passosDoPad.addEventListener('passo', (ev) => {
-      const nova = passoSeguinte(personaAtual, PERSONAS_DO_PAD.length, (ev as CustomEvent<number>).detail);
+      const nova = nextStep(personaAtual, PERSONAS_DO_PAD.length, (ev as CustomEvent<number>).detail);
       if (nova === personaAtual) return; // na ponta não se anuncia um passo que não aconteceu
       personaAtual = nova;
       toque.setPadMm(PERSONAS_DO_PAD[nova]!.mm);
-      atualizarPassos(passosDoPad!, specDoPad());
+      updateSteps(passosDoPad!, specDoPad());
       srSay(`${t('motora.pad')}: ${t(PERSONAS_DO_PAD[nova]!.rotulo)}`);
     });
     acoesDaEngine.motora = painelDaMotora.abrir;
@@ -3240,7 +3240,7 @@ export function createGame(o: CreateGameOptions): Engine {
       valores: Array.from({ length: modoDoTeclado }, (_, i) => t('ctrl.jogador', { n: i + 1 })),
       atual: assentoNoMapa,
     });
-    const painelDoTeclado = montarPainel(ctxDaMotora, {
+    const painelDoTeclado = mountPanel(ctxDaMotora, {
       id: 'ctrl',
       rotulos: () => ({
         titulo: rotuloDoModo(modoDoTeclado),
@@ -3251,7 +3251,7 @@ export function createGame(o: CreateGameOptions): Engine {
       render: () => {
         if (passosDoAssento) {
           assentoNoMapa = Math.min(assentoNoMapa, modoDoTeclado - 1);
-          atualizarPassos(passosDoAssento, specDoAssento());
+          updateSteps(passosDoAssento, specDoAssento());
           (passosDoAssento.closest('.ctrl-row') as HTMLElement).hidden = modoDoTeclado === 1;
         }
         controlesDoTeclado?.render(assentoNoMapa);
@@ -3261,15 +3261,15 @@ export function createGame(o: CreateGameOptions): Engine {
       // O ASSENTO, por passos — só nos modos de mais de um: «◀ Teclado de: Jogador 2 ▶».
       const linhaDoAssento = doc.createElement('div');
       linhaDoAssento.className = 'ctrl-row ctrl-row--passos';
-      passosDoAssento = montarPassos(ctxDaMotora, specDoAssento());
+      passosDoAssento = mountSteps(ctxDaMotora, specDoAssento());
       passosDoAssento.id = 'ctrl-assento';
       linhaDoAssento.appendChild(passosDoAssento);
       painelDoTeclado.casca.card.insertBefore(linhaDoAssento, painelDoTeclado.casca.lista);
       passosDoAssento.addEventListener('passo', (ev) => {
-        const novo = passoSeguinte(assentoNoMapa, modoDoTeclado, (ev as CustomEvent<number>).detail);
+        const novo = nextStep(assentoNoMapa, modoDoTeclado, (ev as CustomEvent<number>).detail);
         if (novo === assentoNoMapa) return;
         assentoNoMapa = novo;
-        atualizarPassos(passosDoAssento!, specDoAssento());
+        updateSteps(passosDoAssento!, specDoAssento());
         controlesDoTeclado?.render(assentoNoMapa);
         srSay(`${t('ctrl.assento')}: ${t('ctrl.jogador', { n: novo + 1 })}`);
       });
@@ -3359,7 +3359,7 @@ export function createGame(o: CreateGameOptions): Engine {
       painelDoControle.casca.overlay.hidden = true;
       overlays.restoreFocus?.('padwiz');
     };
-    const painelDoControle = montarPainel(ctxDaMotora, {
+    const painelDoControle = mountPanel(ctxDaMotora, {
       id: 'padwiz',
       rotulos: () => ({
         titulo: t('motora.controle'),
@@ -3424,7 +3424,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * and only for the buttons the pad DRAWS — a slot whose function the game does not name is not drawn (ADR-0162), so its
      * row would change nothing on screen. The pad is redrawn with every choice.
      */
-    const painelDoToque = montarPainel(ctxDaMotora, {
+    const painelDoToque = mountPanel(ctxDaMotora, {
       id: 'touchcfg',
       idDaLista: 'touchmap-list',
       rotulos: () => ({
@@ -3485,10 +3485,10 @@ export function createGame(o: CreateGameOptions): Engine {
      * second press, and a game nobody presses twice has none to refuse.
      */
     const cooldownRowSpec = () => ({ id: 'opt-cooldown', rotulo: t('motor.espera'), dica: t('motor.cooldown.dica') });
-    const { linha: cooldownRow, controle: cooldownButton } = linhaDeControle(ctxDaMotora, cooldownRowSpec());
+    const { linha: cooldownRow, controle: cooldownButton } = controlRow(ctxDaMotora, cooldownRowSpec());
     painelDaMotora.casca.lista.appendChild(cooldownRow);
     const reflectCooldown = (): void => {
-      rotularLinha(cooldownRow, cooldownRowSpec());
+      labelRow(cooldownRow, cooldownRowSpec());
       const on = state.inputCooldown > 0;
       toggleBtn(cooldownButton, on);
       cooldownButton.textContent = toggleLabel(on);
@@ -3530,17 +3530,17 @@ export function createGame(o: CreateGameOptions): Engine {
     const cameraWrap = doc.createElement('span');
     cameraWrap.appendChild(cameraHint);
     cameraRow.appendChild(cameraWrap);
-    const cameraSteps = montarPassos(ctxDaMotora, cameraRowSpec());
+    const cameraSteps = mountSteps(ctxDaMotora, cameraRowSpec());
     cameraSteps.id = 'opt-camera';
     cameraRow.appendChild(cameraSteps);
     painelDaMotora.casca.lista.appendChild(cameraRow);
     const reflectCamera = (): void => {
-      atualizarPassos(cameraSteps, cameraRowSpec());
+      updateSteps(cameraSteps, cameraRowSpec());
       cameraHint.textContent = t('motora.camera.dica');
       cameraRow.hidden = !canCaptureMedia;
     };
     cameraSteps.addEventListener('passo', (ev) => {
-      const next = passoSeguinte(
+      const next = nextStep(
         Math.max(0, CAMERA_MODES.indexOf(state.cameraControl)), CAMERA_MODES.length, (ev as CustomEvent<number>).detail,
       );
       const mode = CAMERA_MODES[next]!;
@@ -3564,10 +3564,10 @@ export function createGame(o: CreateGameOptions): Engine {
      * answered: `ui/voice-control` says why and puts the answer back to off, and this row follows it like the icon does.
      */
     const voiceRowSpec = () => ({ id: 'opt-voice', rotulo: t('motora.voz'), dica: t('motora.voz.dica') });
-    const { linha: voiceRow, controle: voiceButton } = linhaDeControle(ctxDaMotora, voiceRowSpec());
+    const { linha: voiceRow, controle: voiceButton } = controlRow(ctxDaMotora, voiceRowSpec());
     painelDaMotora.casca.lista.appendChild(voiceRow);
     const reflectVoice = (): void => {
-      rotularLinha(voiceRow, voiceRowSpec());
+      labelRow(voiceRow, voiceRowSpec());
       toggleBtn(voiceButton, state.voiceControl);
       voiceButton.textContent = toggleLabel(state.voiceControl);
       markChanged(voiceRow, state.voiceControl !== state.DEFAULTS.voiceControl);

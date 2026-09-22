@@ -29,7 +29,7 @@
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import { DEFAULTS } from '../app/js/core/state.js';
-import { saneiaNivelTea, CALM_NAMES } from '../app/js/ui/pause-icons.js';
+import { sanitiseTeaLevel, CALM_NAMES } from '../app/js/ui/pause-icons.js';
 import { KEYS } from '../app/js/platform/storage.js';
 import { VIZ_MODES } from '../app/js/render/viz-modes.js';
 
@@ -57,7 +57,7 @@ describe('os padrões que faltavam ao DEFAULTS (#61)', () => {
 
 describe('o nível TEA saneado — dado do navegador é dado de fora', () => {
   it('[Right] os três níveis válidos atravessam intactos', () => {
-    for (let n = 0; n < CALM_NAMES.length; n++) expect(saneiaNivelTea(n)).toBe(n);
+    for (let n = 0; n < CALM_NAMES.length; n++) expect(sanitiseTeaLevel(n)).toBe(n);
     expect(CALM_NAMES).toHaveLength(3); // normal · calmo · silencioso
   });
 
@@ -66,7 +66,7 @@ describe('o nível TEA saneado — dado do navegador é dado de fora', () => {
     // ao leitor de tela. Um nível fora da lista sairia como anúncio vazio — a criança cega carregaria no
     // botão e não ouviria nada, que é a forma mais silenciosa de um controlo de acessibilidade falhar.
     for (const lixo of [3, -1, 1.5, NaN, Infinity]) {
-      expect(saneiaNivelTea(lixo), `${lixo} passou como nível`).toBe(DEFAULTS.calmMode);
+      expect(sanitiseTeaLevel(lixo), `${lixo} passou como nível`).toBe(DEFAULTS.calmMode);
     }
   });
 });
@@ -77,6 +77,6 @@ describe('o nível TEA saneado — dado do navegador é dado de fora', () => {
 //   · trocando `DEFAULTS.viz` para `'hc-direto'` → "[Interface] o padrão é um modo que NÃO FAZ NADA" reprova
 //     no `kind`. É a mutação que importa: `'hc-direto'` É um modo real, então um caso que só verificasse
 //     «existe em VIZ_MODES» ficaria verde a pôr toda a criança em alto contraste por omissão.
-//   · trocando o `>= 0 && < CALM_NAMES.length` de `saneiaNivelTea` por `>= 0` → "[Error]" reprova no 3, que
+//   · trocando o `>= 0 && < CALM_NAMES.length` de `sanitiseTeaLevel` por `>= 0` → "[Error]" reprova no 3, que
 //     é exactamente o valor que produz o anúncio vazio.
 //   · trocando `Number.isInteger` por `typeof === 'number'` → "[Error]" reprova no 1.5 e no NaN.

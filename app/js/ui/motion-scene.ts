@@ -50,7 +50,7 @@ export type MotionPlayer = PlayerView<'rmWalk' | 'rmBreath' | 'rmFlavor'>;
 export type MotionSceneFlags = Record<MotionSceneKey, boolean>;
 
 /** As quatro animações de CENA. São a união inteira, e o compilador prova-o logo abaixo. */
-export const CHAVES_DE_CENA = ['parallax', 'decor', 'items', 'particles'] as const;
+export const SCENE_KEYS = ['parallax', 'decor', 'items', 'particles'] as const;
 
 /**
  * ⚠️ A PROVA DE QUE A LISTA COBRE A UNIÃO, feita pelo COMPILADOR e não por um teste.
@@ -62,27 +62,27 @@ export const CHAVES_DE_CENA = ['parallax', 'decor', 'items', 'particles'] as con
  * `[X] extends [never]` e não `X extends never`: o condicional distribui sobre `never` e daria `never` em vez
  * de `true`, o que faria a guarda passar sempre — uma guarda que não pode falhar não é uma guarda.
  */
-type _Faltou = Exclude<MotionSceneKey, (typeof CHAVES_DE_CENA)[number]>;
+type _Faltou = Exclude<MotionSceneKey, (typeof SCENE_KEYS)[number]>;
 const _COBRE_A_UNIAO: [_Faltou] extends [never] ? true : false = true;
 void _COBRE_A_UNIAO;
 
 /** As três animações do PERSONAGEM, com as chaves que o `RM_LABEL` desta mesma camada já traduz. */
-export const ANIMACOES_DO_PERSONAGEM = Object.freeze([
+export const CHARACTER_ANIMATIONS = Object.freeze([
   { prop: 'rmWalk', lbl: 'rm.walk' },
   { prop: 'rmBreath', lbl: 'rm.breath' },
   { prop: 'rmFlavor', lbl: 'rm.flavor' },
 ] as const) satisfies readonly MotionCharDef[];
 
 /** A mesma prova, para as três do personagem: falta uma na lista e isto deixa de compilar. */
-type _FaltouChar = Exclude<MotionCharProp, (typeof ANIMACOES_DO_PERSONAGEM)[number]['prop']>;
+type _FaltouChar = Exclude<MotionCharProp, (typeof CHARACTER_ANIMATIONS)[number]['prop']>;
 const _COBRE_O_PERSONAGEM: [_FaltouChar] extends [never] ? true : false = true;
 void _COBRE_O_PERSONAGEM;
 
 /** Os quatro interruptores no padrão do sistema — `prefers-reduced-motion`, por `defaultReducedMotion()`. */
-export function padraoDeCena(): MotionSceneFlags {
+export function sceneDefault(): MotionSceneFlags {
   const o = {} as MotionSceneFlags;
   const padrao = defaultReducedMotion();
-  for (const k of CHAVES_DE_CENA) o[k] = padrao;
+  for (const k of SCENE_KEYS) o[k] = padrao;
   return o;
 }
 
@@ -94,15 +94,15 @@ export function padraoDeCena(): MotionSceneFlags {
  * chaves a menos por preencher, e uma chave em falta lê-se como `undefined` — que é «não reduzido» para quem
  * pediu redução. O laço garante exactamente as quatro.
  */
-export function lerCenaGuardada(): MotionSceneFlags {
+export function readStoredScene(): MotionSceneFlags {
   const guardado = store.getJSON<Record<string, unknown> | null>(store.KEYS.reducedMotion, null);
-  if (!guardado || typeof guardado !== 'object') return padraoDeCena();
+  if (!guardado || typeof guardado !== 'object') return sceneDefault();
   const o = {} as MotionSceneFlags;
-  for (const k of CHAVES_DE_CENA) o[k] = !!guardado[k];
+  for (const k of SCENE_KEYS) o[k] = !!guardado[k];
   return o;
 }
 
 /** Guarda os quatro interruptores. Chamada depois de cada mudança, como o `saveRM` do cartucho fazia. */
-export function guardarCena(rm: MotionSceneFlags): void {
+export function storeScene(rm: MotionSceneFlags): void {
   store.setJSON(store.KEYS.reducedMotion, rm);
 }

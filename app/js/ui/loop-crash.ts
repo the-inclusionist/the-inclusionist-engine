@@ -26,9 +26,9 @@
 import { t } from '../core/i18n.js';
 
 /** O id da caixa do aviso. Estável porque a folha de estilo e o teste a procuram. */
-export const AVISO_DE_QUEDA_ID = 'incl-parou';
+export const CRASH_NOTICE_ID = 'incl-parou';
 
-export interface AvisoDeQuedaCtx {
+export interface CrashNoticeCtx {
   /** `querySelector` do documento deste jogo. Injetado: a engine recebe o dela, `main.ts` passa o `$` global. */
   procurar: (sel: string) => HTMLElement | null;
   /** `document.createElement` — a caixa do aviso é um elemento de verdade, não um pseudo-elemento. */
@@ -48,7 +48,7 @@ export interface AvisoDeQuedaCtx {
  * Cada canal é isolado do seguinte: se a narração lançar, o aviso escrito já saiu. Um aviso que falha pela
  * metade tem de entregar a outra metade — é a mesma regra que o `startLoop` aplica a este próprio callback.
  */
-export function criarAvisoDeQueda(ctx: AvisoDeQuedaCtx): (erro: unknown) => void {
+export function createCrashNotice(ctx: CrashNoticeCtx): (erro: unknown) => void {
   return (erro: unknown): void => {
     try { console.error('[inclusionist] the frame threw; the loop stopped.', erro); } catch { /* noop */ }
 
@@ -75,9 +75,9 @@ export function criarAvisoDeQueda(ctx: AvisoDeQuedaCtx): (erro: unknown) => void
     // ela chega traduzida e escapada. O que muda é o recipiente.
     const regiao = ctx.procurar('#game-region');
     if (!regiao) return;
-    const anterior = ctx.procurar('#' + AVISO_DE_QUEDA_ID);
+    const anterior = ctx.procurar('#' + CRASH_NOTICE_ID);
     const caixa = anterior ?? ctx.criar('div');
-    caixa.id = AVISO_DE_QUEDA_ID;
+    caixa.id = CRASH_NOTICE_ID;
     caixa.setAttribute('role', 'alert');
     caixa.textContent = msg;
     if (!anterior) regiao.appendChild(caixa);

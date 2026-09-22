@@ -9,7 +9,7 @@
 
 // (`toggleLabel` saiu daqui em 2026-09-07: ele devolve «Ligado»/«Desligado», e este menu é uma ESCOLHA.)
 import { t } from '../core/i18n.js';
-import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, papelDaFonte, faceDisponivel, escalaDaFace, type FontItem } from './fonts.js';
+import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, fontRole, faceAvailable, faceScale, type FontItem } from './fonts.js';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
@@ -86,7 +86,7 @@ export interface SettingsTypoApi {
  */
 export function isSelectableFont(k: string, instalada?: (familia: string) => boolean): boolean {
   const it = FONT_BY_KEY[k];
-  return !!it && faceDisponivel(it, instalada) && papelDaFonte(it) === 'geral';
+  return !!it && faceAvailable(it, instalada) && fontRole(it) === 'geral';
 }
 
 // A semantica da chave (validacao + migracao da chave antiga) mora em ui/fonts.ts, que e o dono do
@@ -152,11 +152,11 @@ export interface TypoGroupView {
  * três faces estiver instalada, porque duas delas são gratuitas apenas para uso pessoal e não podem ser
  * empacotadas.
  */
-export function linhaDaFonte(it: FontItem, fontKey: string, instalada?: (familia: string) => boolean): TypoRow {
+export function fontRow(it: FontItem, fontKey: string, instalada?: (familia: string) => boolean): TypoRow {
   // ⚠️ A MESMA pergunta que o `isSelectableFont` faz, pela MESMA função. Duas respostas dariam uma linha
   // clicável que o clique recusa — ou, pior, uma linha cinzenta que o `resolveFontKey` aceita por outro
   // caminho. «Não está disponível» e «não pode ser escolhida» têm de ser a mesma afirmação.
-  const disabled = !faceDisponivel(it, instalada);
+  const disabled = !faceAvailable(it, instalada);
   // `d` e `off` também guardam CHAVE. O travessão que junta os dois é pontuação, não frase — as duas
   // metades são independentes e cada uma traduz por si.
   const desc = it.d ? t(it.d) : '', motivo = it.off ? t(it.off) : '';
@@ -173,7 +173,7 @@ export function typoGroups(fontKey: string, instalada?: (familia: string) => boo
   // Um grupo que fique sem nenhuma face geral desaparece da lista, em vez de aparecer como título vazio.
   return FONT_GROUPS.map((g) => ({
     g: t(g.g),  // `g` guarda CHAVE i18n desde o item 14 (ver ui/fonts)
-    rows: g.items.filter((it) => papelDaFonte(it) === 'geral').map((it) => linhaDaFonte(it, fontKey, instalada)),
+    rows: g.items.filter((it) => fontRole(it) === 'geral').map((it) => fontRow(it, fontKey, instalada)),
   })).filter((grupo) => grupo.rows.length > 0);
 }
 
@@ -232,7 +232,7 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     const it = FONT_BY_KEY[k];
     // A MESMA função das outras duas leituras: uma face que a lista mostra clicável tem de ser aceite aqui,
     // e uma que ela mostra cinzenta tem de ser recusada. Três respostas à mesma pergunta divergem.
-    if (!it || !faceDisponivel(it, ctx.fonteInstalada)) return;
+    if (!it || !faceAvailable(it, ctx.fonteInstalada)) return;
     fontKey = k;
     persistFontKey(ctx.store, k);
     const target = fontCssTarget(k, it);
@@ -251,7 +251,7 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     if (target.customFamily) ctx.root.style.setProperty('--font-custom', target.customFamily);
     else ctx.root.style.removeProperty('--font-custom');
     // drawn at its floor, never under it (ADR-0176 §4): a face asking 20 px makes the text 25% larger; the others give it back
-    ctx.root.style.setProperty('--fonte-escala', String(escalaDaFace(it)));
+    ctx.root.style.setProperty('--fonte-escala', String(faceScale(it)));
     const pv = ctx.$<HTMLElement>('#typo-preview');
     if (pv) pv.style.fontFamily = `'${it.fam}'`;
     if (announce) ctx.srSay(t('sr.typo.font', { fam: it.fam }));

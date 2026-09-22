@@ -8,7 +8,7 @@ import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import {
   CONTRAST_LEVELS, CONTRAST_LABELS, ROLE_KEYS, ROLE_LABELS,
-  resolveVisualMode, VISUAL_MODES, VISUAL_MODE_LIST, contrastLabel, clamp01, lqLabel, lqPercent, lqFromPercent, LQ_PASSOS, lqPosicao,
+  resolveVisualMode, VISUAL_MODES, VISUAL_MODE_LIST, contrastLabel, clamp01, lqLabel, lqPercent, lqFromPercent, LQ_STEPS, lqPosition,
   clampSelectedPlayer, rgbToHex, onOffLabel, renderVisualPanelHtml,
 } from '../app/js/ui/settings-visual.js';
 
@@ -91,15 +91,15 @@ describe('ui/settings-visual — lqLabel', () => {
 
 describe('ui/settings-visual — LQ_PASSOS / lqPosicao (os passos do realce, ADR-0151)', () => {
   it('🔴 [Right] cada posição cai na faixa do SEU nome — e «linear» não é zero, que desligaria', () => {
-    expect(LQ_PASSOS.map((v) => lqLabel(v))).toEqual(['lq.off', 'lq.linear', 'lq.mixed', 'lq.quadratic']);
-    expect(LQ_PASSOS[1]).toBeGreaterThan(0);
+    expect(LQ_STEPS.map((v) => lqLabel(v))).toEqual(['lq.off', 'lq.linear', 'lq.mixed', 'lq.quadratic']);
+    expect(LQ_STEPS[1]).toBeGreaterThan(0);
   });
   it('🔴 [Boundary] um valor GUARDADO pelo cursor antigo é lido na posição do nome que a criança ouviu', () => {
-    expect(lqPosicao(0)).toBe(0);
-    expect(lqPosicao(0.2)).toBe(1);
-    expect(lqPosicao(0.35)).toBe(2);
-    expect(lqPosicao(0.7)).toBe(3);
-    for (let i = 0; i < LQ_PASSOS.length; i++) expect(lqPosicao(LQ_PASSOS[i])).toBe(i);
+    expect(lqPosition(0)).toBe(0);
+    expect(lqPosition(0.2)).toBe(1);
+    expect(lqPosition(0.35)).toBe(2);
+    expect(lqPosition(0.7)).toBe(3);
+    for (let i = 0; i < LQ_STEPS.length; i++) expect(lqPosition(LQ_STEPS[i])).toBe(i);
   });
 });
 

@@ -1263,6 +1263,128 @@ only job was to translate the imported name. With the import renamed, the alias 
 | `Visivel` | `Visible` |
 | `ZonaMorta` | `DeadZone` |
 
+## AQ · The public surface of `ui` speaks English (ADR-0219, issue #202)
+
+**What this is.** The fifth layer, and the largest. 📏 101 names, 92 files, 1102 occurrences; the tree's Portuguese debt falls
+from 1123 identifiers in 95 files to 1022 in 93.
+
+**What to do.** Rename on your side by the table. 📌 What a cartridge holds most of is the PANEL KIT — `montarPainel`
+→ `mountPanel`, `linhaDeControle` → `controlRow`, `montarPassos`/`atualizarPassos`/`passoSeguinte` →
+`mountSteps`/`updateSteps`/`nextStep`, `rotularLinha` → `labelRow` — and the quick bar's own vocabulary:
+`iconesQueAccionam` → `iconsThatAct`, `ITENS_DA_ENGINE` → `ENGINE_ITEMS`, `anunciarItem` → `announceItem`.
+
+📌 **Two names avoided a word that means different things in the two languages.** `mostrarSubmenuDaPausa` became
+`showPauseOptions` («submenu» is the same word in both), and the motor panel's family became the MOBILITY one —
+`MotorPlayer` → `MobilityPlayer`, `initSettingsMotor` → `initSettingsMobility`, `montarInteriorDoMotor` →
+`mountMobilityInside`. In this repository «o motor» is the engine itself, so `MotorStore` would have read as the engine's
+store; «mobility» is the accessibility term with no such double.
+
+**ui** — 101 names, applied 2026-09-21
+
+| was | is |
+|---|---|
+| `abaixoDoPiso` | `belowFloor` |
+| `acaoNaBarra` | `barAction` |
+| `AcaoNaBarra` | `BarAction` |
+| `acaoQueJaTem` | `actionAlreadyBound` |
+| `AccionaveisDoJogo` | `ActionableIcons` |
+| `alvoMinimo` | `minimumTarget` |
+| `AmostraDoPersonagem` | `CharacterSample` |
+| `ANIMACOES_DO_PERSONAGEM` | `CHARACTER_ANIMATIONS` |
+| `animarFigura` | `animateFigure` |
+| `anunciarItem` | `announceItem` |
+| `anyMotorActive` | `anyMobilityActive` |
+| `aplicarEscala` | `applyScale` |
+| `aplicarRotuloDoContador` | `applyCounterLabel` |
+| `aplicarRotulos` | `applyLabels` |
+| `atualizarPassos` | `updateSteps` |
+| `AVISO_DE_QUEDA_ID` | `CRASH_NOTICE_ID` |
+| `AvisoDeQuedaCtx` | `CrashNoticeCtx` |
+| `caaDisponiveis` | `caaAvailable` |
+| `caaMotivo` | `caaReason` |
+| `caaRotulo` | `caaLabel` |
+| `Caixa` | `Box` |
+| `caixaAltaLigada` | `upperCaseOn` |
+| `CaixaNomeada` | `NamedBox` |
+| `CHAVE_DA_RECUSA` | `REFUSAL_KEY` |
+| `CHAVES_DE_CENA` | `SCENE_KEYS` |
+| `cicloDeTipografia` | `typographyCycle` |
+| `contadorLabel` | `counterLabel` |
+| `criarAvisoDeQueda` | `createCrashNotice` |
+| `definirAlternanciaDeCorrida` | `setRunLatch` |
+| `definirAlternanciaDeMarcha` | `setMoveLatch` |
+| `desenharOpcoesDoJogo` | `drawGameOptions` |
+| `Escala` | `Scale` |
+| `ESCALA_DA_MAO` | `HANDWRITING_SCALE` |
+| `escalaDaFace` | `faceScale` |
+| `escalaDoPalco` | `stageScale` |
+| `EscritaDaAlternanciaCtx` | `LatchWriteCtx` |
+| `EscritoresVisuais` | `VisualWriters` |
+| `EXIGEM_ALTERNANCIA` | `NEED_LATCH` |
+| `faceDisponivel` | `faceAvailable` |
+| `familiasDaFace` | `faceFamilies` |
+| `focaveisNoDom` | `focusablesInDom` |
+| `FormaDoControle` | `ControlShape` |
+| `GLIFO_DO_ITEM` | `ITEM_GLYPH` |
+| `glifoFalado` | `spokenGlyph` |
+| `guardarCena` | `storeScene` |
+| `iconesQueAccionam` | `iconsThatAct` |
+| `idsDaCasca` | `shellIds` |
+| `INICIO_DO_CICLO` | `CYCLE_START` |
+| `initSettingsMotor` | `initSettingsMobility` |
+| `invasoresDaBarra` | `barIntruders` |
+| `ITENS_DA_ENGINE` | `ENGINE_ITEMS` |
+| `itensNavegaveis` | `navigableItems` |
+| `itensQueAccionam` | `itemsThatAct` |
+| `legendaDoIcone` | `iconCaption` |
+| `lerCenaGuardada` | `readStoredScene` |
+| `letrasRowHtml` | `lettersRowHtml` |
+| `ligarLegendaDaBarra` | `wireBarCaption` |
+| `linhaDaFonte` | `fontRow` |
+| `linhaDeControle` | `controlRow` |
+| `linhasDoAviso` | `noticeRows` |
+| `LQ_PASSOS` | `LQ_STEPS` |
+| `lqPosicao` | `lqPosition` |
+| `maosDaEtiqueta` | `handsForTag` |
+| `MedidaDeNo` | `NodeMeasure` |
+| `montarCasca` | `mountShell` |
+| `montarInteriorDoAudio` | `mountAudioInside` |
+| `montarInteriorDoMotor` | `mountMobilityInside` |
+| `montarInteriorDoSom` | `mountSoundInside` |
+| `montarPainel` | `mountPanel` |
+| `montarPassos` | `mountSteps` |
+| `montarSlides` | `mountSlides` |
+| `mostraMesmoExigida` | `showsEvenWhenRequired` |
+| `mostrarAvisoDeAlcance` | `showReachNotice` |
+| `mostrarSlide` | `showSlide` |
+| `mostrarSubmenuDaPausa` | `showPauseOptions` |
+| `motivoDoItem` | `itemReason` |
+| `MotorPlayer` | `MobilityPlayer` |
+| `MotorStore` | `MobilityStore` |
+| `opcoesDeMotor` | `voiceEngineOptions` |
+| `padraoDeCena` | `sceneDefault` |
+| `papelDaFonte` | `fontRole` |
+| `partesDoControle` | `controlParts` |
+| `PassoDeTipografia` | `TypographyStep` |
+| `passoNaPausa` | `stepInPause` |
+| `passoSeguinte` | `nextStep` |
+| `PassosSpec` | `StepsSpec` |
+| `PM_ITENS_VISIVEIS` | `PM_VISIBLE_ITEMS` |
+| `PM_JOGO_BTNS` | `PM_GAME_BTNS` |
+| `proximoNaArmadilha` | `nextInTrap` |
+| `raizQueAcciona` | `rootThatActs` |
+| `recusaDaAlternancia` | `latchRefusal` |
+| `RecusaDaAlternancia` | `LatchRefusal` |
+| `resumirSonda` | `summariseProbe` |
+| `ResumoDaSonda` | `ProbeSummary` |
+| `rotularLinha` | `labelRow` |
+| `saneiaNivelTea` | `sanitiseTeaLevel` |
+| `SELETOR_FOCAVEL` | `FOCUSABLE_SELECTOR` |
+| `SEM_TECLA` | `NO_KEY` |
+| `SettingsMotorApi` | `SettingsMobilityApi` |
+| `SettingsMotorCtx` | `SettingsMobilityCtx` |
+| `VozDoPainel` | `PanelVoice` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

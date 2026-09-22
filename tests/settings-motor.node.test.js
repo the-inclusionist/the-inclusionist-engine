@@ -9,8 +9,8 @@ import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel é alias dele d
 import { t } from '../app/js/core/i18n.js';
 import { latchKey } from '../app/js/input/latch-scope.js'; // os anúncios vêm do dicionário desde o item 14
 import {
-  easyKey, toggleRunKey, toggleMoveKey, definirAlternanciaDeMarcha, definirAlternanciaDeCorrida,
-  clampSelPlayer, anyMotorActive, onOffLabel, playerTabsHTML, easyAnnouncement,
+  easyKey, toggleRunKey, toggleMoveKey, setMoveLatch, setRunLatch,
+  clampSelPlayer, anyMobilityActive, onOffLabel, playerTabsHTML, easyAnnouncement,
 } from '../app/js/ui/settings-motor.js';
 import { KEYS } from '../app/js/platform/storage.js';
 
@@ -35,18 +35,18 @@ describe('clampSelPlayer', () => {
   });
 });
 
-describe('anyMotorActive', () => {
+describe('anyMobilityActive', () => {
   it('[Zero] nenhum jogador ativo -> false', () => {
-    expect(anyMotorActive([{ easy: false, toggleMove: false }])).toBe(false);
+    expect(anyMobilityActive([{ easy: false, toggleMove: false }])).toBe(false);
   });
   it('[Right] true quando QUALQUER jogador tem Fácil ligado', () => {
-    expect(anyMotorActive([{ easy: false, toggleMove: false }, { easy: true, toggleMove: false }])).toBe(true);
+    expect(anyMobilityActive([{ easy: false, toggleMove: false }, { easy: true, toggleMove: false }])).toBe(true);
   });
   it('[Right] true quando QUALQUER jogador tem alternância ligada', () => {
-    expect(anyMotorActive([{ easy: false, toggleMove: true }])).toBe(true);
+    expect(anyMobilityActive([{ easy: false, toggleMove: true }])).toBe(true);
   });
   it('[Boundary] lista vazia -> false (Array#some em [] é sempre false)', () => {
-    expect(anyMotorActive([])).toBe(false);
+    expect(anyMobilityActive([])).toBe(false);
   });
 });
 
@@ -140,7 +140,7 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
   it('🎯 [Right] com o aparelho conhecido, escreve NAS DUAS chaves — a nova e a legada', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
     c.ctx.transporteEmUso = () => 'gamepad';
-    definirAlternanciaDeMarcha(c.ctx, 0, true);
+    setMoveLatch(c.ctx, 0, true);
     expect(c.escrito[KEYS.toggleMoveP(0)], 'a chave legada deixou de ser escrita e a criança perde a escolha')
       .toBe(true);
     expect(c.escrito[latchKey('togglemove', 0, 'gamepad')], 'a chave por transporte não foi escrita')
@@ -150,7 +150,7 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
   // 📌 SEM O APARELHO, o comportamento é EXACTAMENTE o de hoje — que é o que torna o campo opcional seguro.
   it('📌 [Zero] sem `transporteEmUso`, escreve só a legada, como antes', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
-    definirAlternanciaDeMarcha(c.ctx, 0, true);
+    setMoveLatch(c.ctx, 0, true);
     expect(Object.keys(c.escrito)).toEqual([KEYS.toggleMoveP(0)]);
   });
 
@@ -160,13 +160,13 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
   it('⚠️ [Zero] em `olhos` a chave nova não é escrita, e a legada é', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
     c.ctx.transporteEmUso = () => 'olhos';
-    definirAlternanciaDeMarcha(c.ctx, 0, true);
+    setMoveLatch(c.ctx, 0, true);
     expect(Object.keys(c.escrito), 'gravou uma escolha que o jogo vai ignorar').toEqual([KEYS.toggleMoveP(0)]);
   });
 
   it('[Right] ligar escreve o campo, persiste na chave da engine e anuncia', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
-    definirAlternanciaDeMarcha(c.ctx, 0, true);
+    setMoveLatch(c.ctx, 0, true);
     expect(c.ctx.players[0].toggleMove).toBe(true);
     expect(c.escrito[KEYS.toggleMoveP(0)]).toBe(true);
     expect(c.ditos).toEqual([t('sr.motor.toggleMoveOn')]);
@@ -176,7 +176,7 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
     // O sintoma que este caso impede não dá erro nenhum: a criança desliga o modo, larga tudo, e a
     // personagem continua a andar sem tecla nenhuma premida.
     const c = cenario([{ toggleMove: true, walkDir: -1 }]);
-    definirAlternanciaDeMarcha(c.ctx, 0, false);
+    setMoveLatch(c.ctx, 0, false);
     expect(c.ctx.players[0].toggleMove).toBe(false);
     expect(c.ctx.players[0].walkDir).toBe(0);
     expect(c.ditos).toEqual([t('sr.motor.toggleMoveOff')]);
@@ -184,19 +184,19 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
 
   it('[Right] LIGAR não mexe em `walkDir` — quem já andava continua a andar', () => {
     const c = cenario([{ toggleMove: false, walkDir: 1 }]);
-    definirAlternanciaDeMarcha(c.ctx, 0, true);
+    setMoveLatch(c.ctx, 0, true);
     expect(c.ctx.players[0].walkDir).toBe(1);
   });
 
   it('[Interface] com mais de um jogador, o anúncio leva o prefixo daquele assento', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }, { toggleMove: false, walkDir: 0 }]);
-    definirAlternanciaDeMarcha(c.ctx, 1, true);
+    setMoveLatch(c.ctx, 1, true);
     expect(c.ditos).toEqual([t('sr.player.prefix', { n: 2 }) + t('sr.motor.toggleMoveOn')]);
   });
 
   it('[Zero] um assento que não existe não escreve, não anuncia e não rebenta', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
-    definirAlternanciaDeMarcha(c.ctx, 7, true);
+    setMoveLatch(c.ctx, 7, true);
     expect(Object.keys(c.escrito)).toEqual([]);
     expect(c.ditos).toEqual([]);
   });
@@ -208,7 +208,7 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
   // `sr.motor.toggleRun*`. NÃO HÁ um efeito de jogo a injectar, e é isso que torna o campo do ctx opcional.
   it('[Right] a do CORRER escreve o campo, persiste na chave da engine e anuncia', () => {
     const c = cenario([{ toggleRun: false, walkDir: 0 }]);
-    definirAlternanciaDeCorrida(c.ctx, 0, true);
+    setRunLatch(c.ctx, 0, true);
     expect(c.ctx.players[0].toggleRun).toBe(true);
     expect(c.escrito[KEYS.toggleRunP(0)], 'não persistiu: a escolha some no arranque seguinte').toBe(true);
     expect(c.ditos).toEqual([t('sr.motor.toggleRunOn')]);
@@ -220,7 +220,7 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
     // governa uma trava de VELOCIDADE e não tem como deixar ninguém em movimento — copiar aquela linha «por
     // simetria» mexeria em `walkDir` por causa de um botão que não lhe toca.
     const c = cenario([{ toggleRun: true, walkDir: -1 }]);
-    definirAlternanciaDeCorrida(c.ctx, 0, false);
+    setRunLatch(c.ctx, 0, false);
     expect(c.ctx.players[0].toggleRun).toBe(false);
     expect(c.ctx.players[0].walkDir, 'parou quem andava por causa de um botão que não governa o andar').toBe(-1);
     expect(c.ditos).toEqual([t('sr.motor.toggleRunOff')]);
@@ -228,13 +228,13 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
 
   it('[Interface] com mais de um jogador, a do correr leva o prefixo do assento', () => {
     const c = cenario([{ toggleRun: false }, { toggleRun: false }]);
-    definirAlternanciaDeCorrida(c.ctx, 1, true);
+    setRunLatch(c.ctx, 1, true);
     expect(c.ditos).toEqual([t('sr.player.prefix', { n: 2 }) + t('sr.motor.toggleRunOn')]);
   });
 
   it('[Zero] assento inexistente: a do correr também não escreve, não anuncia e não rebenta', () => {
     const c = cenario([{ toggleRun: false }]);
-    definirAlternanciaDeCorrida(c.ctx, 7, true);
+    setRunLatch(c.ctx, 7, true);
     expect(Object.keys(c.escrito)).toEqual([]);
     expect(c.ditos).toEqual([]);
   });

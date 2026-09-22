@@ -26,8 +26,8 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { screenPauseMarkup, PM_ITENS_VISIVEIS, raizQueAcciona } from '../app/js/ui/pause-icons.js';
-import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from '../app/js/ui/pause-buttons.js';
+import { screenPauseMarkup, PM_VISIBLE_ITEMS, rootThatActs } from '../app/js/ui/pause-icons.js';
+import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from '../app/js/ui/pause-buttons.js';
 import { t } from '../app/js/core/i18n.js';
 
 const SEM_DIN = () => null;
@@ -96,7 +96,7 @@ describe('menu de pausa · seis itens na raiz, os ajustes num submenu', () => {
   it('[Interface] o seletor de itens navegáveis IGNORA a lista escondida', () => {
     // Sem isto o anel daria a volta atravessando para a lista invisível, e a criança ouviria itens de um menu
     // que não está na tela. É a única linha que impede as duas listas de virarem uma só para a navegação.
-    expect(PM_ITENS_VISIVEIS).toContain(':not([hidden])');
+    expect(PM_VISIBLE_ITEMS).toContain(':not([hidden])');
   });
 
   it('[Right] o NOME ACESSÍVEL do diálogo passa pelo dicionário', () => {
@@ -125,10 +125,10 @@ describe('menu de pausa · seis itens na raiz, os ajustes num submenu', () => {
     // ADR-0106 chama de pior do que a ausência; e a ausência sozinha passaria com uma porta que nunca aparece.
     const fn = () => {};
     const acts = { resume: fn, ajuda: fn, addplayer: fn, quit: fn, audio: fn, tabuleiro: fn };
-    const semNada = raizQueAcciona(PM_BTNS, PM_OPTIONS_BTNS, acts, PM_JOGO_BTNS).map((b) => b.act);
+    const semNada = rootThatActs(PM_BTNS, PM_OPTIONS_BTNS, acts, PM_GAME_BTNS).map((b) => b.act);
     expect(semNada, 'a porta abriu para uma sala vazia').not.toContain('opcoesdojogo');
     expect(semNada, 'o caso mediria uma raiz vazia').toContain('options');
-    const comAlgo = raizQueAcciona(PM_BTNS, PM_OPTIONS_BTNS, acts, [...PM_JOGO_BTNS, { act: 'tabuleiro' }]).map((b) => b.act);
+    const comAlgo = rootThatActs(PM_BTNS, PM_OPTIONS_BTNS, acts, [...PM_GAME_BTNS, { act: 'tabuleiro' }]).map((b) => b.act);
     expect(comAlgo, 'o jogo declarou algo seu e a porta não apareceu').toContain('opcoesdojogo');
   });
 
@@ -145,4 +145,4 @@ describe('menu de pausa · seis itens na raiz, os ajustes num submenu', () => {
 //   · pondo `quit` antes de `print` em PM_BTNS → "[Right] a lista raiz é EXATAMENTE" e "a saída é o PRIMEIRO"
 //     reprovam, a segunda nomeando o item errado no fim.
 //   · tirando o `hidden` da lista de opções → "[Right] só UMA lista é visível" reprova.
-//   · trocando `PM_ITENS_VISIVEIS` por '.pm-btn' → "[Interface] o seletor IGNORA a lista escondida" reprova.
+//   · trocando `PM_VISIBLE_ITEMS` por '.pm-btn' → "[Interface] o seletor IGNORA a lista escondida" reprova.

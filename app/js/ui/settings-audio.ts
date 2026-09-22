@@ -27,7 +27,7 @@ import type { PlayerView } from '../core/entity.js';
 import type { PlayerAudioOut } from '../platform/audio-sonar.js'; // ADR-0039: o dono declara `_ac`/`_acOut`
 import type { DomQuery } from '../core/dom-query.js';
 import type { PanelShellCtx } from './panel-shell.js';
-import { linhaDeControle, rotularLinha, type ControlRowSpec } from './panel-widgets.js';
+import { controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
 
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
 // módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
@@ -59,16 +59,16 @@ export interface TtsPanel {
    */
   neuralDisponivel?: boolean;
   /** The voices of the language (ADR-0185). Optional: a panel driven without them offers no «Voz» list and locks nothing. */
-  vozes?: () => readonly VozDoPainel[];
-  vozAtual?: () => VozDoPainel | null;
+  vozes?: () => readonly PanelVoice[];
+  vozAtual?: () => PanelVoice | null;
   setVoz?: (id: string) => boolean;
 }
 
 /** A voice as this panel lists it: `webspeech:<name>` for the browser's, `xx_name` for Kokoro's. */
-export interface VozDoPainel { readonly voice: string; readonly engine?: string; readonly boa?: boolean }
+export interface PanelVoice { readonly voice: string; readonly engine?: string; readonly boa?: boolean }
 
 /** The name a child sees for a voice: the browser's name, or the name in a Kokoro identifier — `pf_dora` is «Dora». */
-function nomeDaVoz(v: VozDoPainel): string {
+function nomeDaVoz(v: PanelVoice): string {
   // a browser voice is named by the browser (ADR-0200); Kokoro ids read `xx_name` (`pf_dora`)
   // («Microsoft Maria - Portuguese (Brazil)» is «Microsoft Maria»: the language is already the list's, and no parentheses, ADR-0158)
   if (v.voice.startsWith('webspeech:')) return v.voice.slice('webspeech:'.length).replace(/\s*\([^)]*\)/g, '').split(' - ')[0]!.trim();
@@ -79,7 +79,7 @@ function nomeDaVoz(v: VozDoPainel): string {
  * What the list SHOWS: Kokoro's two good voices, Heart and Bella, carry a heart (ADR-0198 §3). Only shown: what is said is the
  * name alone (ADR-0159 rule 12, no glyph in a spoken name).
  */
-function rotuloDaVoz(v: VozDoPainel): string {
+function rotuloDaVoz(v: PanelVoice): string {
   return (v.boa ? '❤️ ' : '') + nomeDaVoz(v);
 }
 
@@ -218,7 +218,7 @@ export const TTS_ENGINE_OPTIONS: readonly (readonly [string, string])[] = [
  * without it Kokoro is not offered — a choice that cannot work leaves whoever picks it waiting for a download that never starts.
  * `kitten`/`espeak` are not built and stay as they were.
  */
-export function opcoesDeMotor(neuralDisponivel: boolean): readonly (readonly [string, string])[] {
+export function voiceEngineOptions(neuralDisponivel: boolean): readonly (readonly [string, string])[] {
   return neuralDisponivel ? TTS_ENGINE_OPTIONS : TTS_ENGINE_OPTIONS.filter(([v]) => v !== 'kokoro');
 }
 
@@ -289,7 +289,7 @@ export function sinkSelectValue(p: { audioSink?: string | null } | undefined): s
  *
  * Idempotente: chamar duas vezes reaproveita o que já existe em vez de o duplicar.
  */
-export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
+export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
   // Cada entrada: ou uma linha de controle, ou um CONTENTOR que o painel preenche por `innerHTML`.
   const pecas: (ControlRowSpec | { readonly contentor: string; readonly rotulo?: string })[] = [
     /*
@@ -299,7 +299,7 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
      *   · a BENGALA ao lado dele (e só num jogo que responde que alguém anda, ADR-0153);
      *   · o SONAR, a GUARDA e a GUIA, cada um com o seu interruptor e o seu volume: são a lista da casca;
      *   · a NARRAÇÃO e o seu volume, com o ÍNDICE FALADO logo a seguir, porque é a narração que ele encurta.
-     * 🔴 O SOM e o VOLUME GERAIS MUDARAM-SE para o painel «Áudio» (`montarInteriorDoSom`): o Dev primeiro tirou-os
+     * 🔴 O SOM e o VOLUME GERAIS MUDARAM-SE para o painel «Áudio» (`mountSoundInside`): o Dev primeiro tirou-os
      * («Volume geral é o do computador») e no mesmo dia devolveu-os — «toggle + barra para som geral voltam» —, e
      * voltam para o painel do som, não para o da acessibilidade. SAIU o VOLUME DA NAVEGAÇÃO, que era um segundo
      * lugar para os três volumes da lista (um lugar por escolha, D2 do registo).
@@ -357,10 +357,10 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
     const jaExiste = ctx.procurar('#' + peca.id);
     if (jaExiste) {
       const linha = jaExiste.closest<HTMLElement>('.ctrl-row');
-      if (linha) rotularLinha(linha, peca);
+      if (linha) labelRow(linha, peca);
       continue;
     }
-    card.insertBefore(linhaDeControle(ctx, peca).linha, acoes);
+    card.insertBefore(controlRow(ctx, peca).linha, acoes);
   }
 }
 
@@ -372,7 +372,7 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
  * painel mudou de sítio e o contrato invisível não. E a mesma regra de ordem: montar ANTES do `init`.
  * Idempotente e reetiquetável, como o irmão auditivo.
  */
-export function montarInteriorDoSom(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
+export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
   const acoes = card.querySelector<HTMLElement>(':scope > .overlay__actions');
   const linhas: ControlRowSpec[] = [
     { id: 'audio-master', rotulo: t('audio.som'), dica: t('audio.som.dica') },
@@ -382,10 +382,10 @@ export function montarInteriorDoSom(ctx: PanelShellCtx, card: HTMLElement, lista
     const jaExiste = ctx.procurar('#' + peca.id);
     if (jaExiste) {
       const linha = jaExiste.closest<HTMLElement>('.ctrl-row');
-      if (linha) rotularLinha(linha, peca);
+      if (linha) labelRow(linha, peca);
       continue;
     }
-    card.insertBefore(linhaDeControle(ctx, peca).linha, lista.parentNode === card ? lista : acoes);
+    card.insertBefore(controlRow(ctx, peca).linha, lista.parentNode === card ? lista : acoes);
   }
   if (lista.parentNode !== card) card.insertBefore(lista, acoes);
 }
@@ -484,7 +484,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     const sel = ctx.$<HTMLSelectElement>('#tts-engine');
     if (!sel || sel.dataset.filled) return;
     sel.dataset.filled = '1';
-    opcoesDeMotor(ctx.tts.neuralDisponivel !== false).forEach(([v, l]) => {
+    voiceEngineOptions(ctx.tts.neuralDisponivel !== false).forEach(([v, l]) => {
       const o = document.createElement('option'); o.value = v; o.textContent = t(l); sel.appendChild(o);
     });
     sel.value = ctx.tts.getEngineSel();

@@ -25,7 +25,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { resumirSonda } from '../app/js/ui/debug-panel.js';
+import { summariseProbe } from '../app/js/ui/debug-panel.js';
 
 /** Uma amostra limpa: um recorte que ocupa a base inteira, sem irmãos. */
 const limpa = (tex, pos) => ({
@@ -35,14 +35,14 @@ const limpa = (tex, pos) => ({
 
 describe('sonda do personagem · o resumo que separa as causas', () => {
   it('[Zero] sem amostras, diz que não gravou nada — e não inventa diagnóstico', () => {
-    const r = resumirSonda([]);
+    const r = summariseProbe([]);
     expect(r.quadros).toBe(0);
     expect(r.veredito).toContain('nada');
   });
 
   it('[Right] quadros limpos → nenhum suspeito, e o veredito diz onde procurar em seguida', () => {
     const as = [limpa(0, '10,20'), limpa(1, '10,20'), limpa(2, '11,18'), limpa(3, '11,18')];
-    const r = resumirSonda(as);
+    const r = summariseProbe(as);
     expect(r.quadros).toBe(4);
     expect(r.texturas).toBe(4);
     expect(r.maxIrmaos).toBe(0);
@@ -54,7 +54,7 @@ describe('sonda do personagem · o resumo que separa as causas', () => {
 
   it('[Right] IRMÃO desenhando o personagem é apontado, com quantos e onde', () => {
     const as = [limpa(0, '10,20'), { ...limpa(1, '10,20'), irmaosDesenhando: 2, posIrmaos: '40,20 70,20' }];
-    const r = resumirSonda(as);
+    const r = summariseProbe(as);
     expect(r.maxIrmaos).toBe(2);
     expect(r.veredito).toMatch(/duas vezes|irmão/i);
     expect(r.exemploIrmaos).toBe('40,20 70,20');
@@ -66,7 +66,7 @@ describe('sonda do personagem · o resumo que separa as causas', () => {
     // heurística é a que a sonda consegue ver do lado de fora: recorte maior que a base é impossível, e
     // recorte que cobre a base inteira quando a base é grande demais para um quadro é suspeito.
     const as = [{ ...limpa(0, '10,20'), recorte: '0,0 256x207', base: '256x207' }];
-    const r = resumirSonda(as);
+    const r = summariseProbe(as);
     expect(r.sangramento).toHaveLength(1);
     expect(r.sangramento[0]).toContain('256x207');
     expect(r.veredito).toMatch(/recorte|atlas/i);
@@ -74,7 +74,7 @@ describe('sonda do personagem · o resumo que separa as causas', () => {
 
   it('[Boundary] escalas distintas são listadas — o squash deforma sem duplicar', () => {
     const as = [limpa(0, '10,20'), { ...limpa(1, '10,20'), escala: '1.20,0.80' }];
-    const r = resumirSonda(as);
+    const r = summariseProbe(as);
     expect(r.escalas).toEqual(['1.00,1.00', '1.20,0.80']);
   });
 
@@ -82,7 +82,7 @@ describe('sonda do personagem · o resumo que separa as causas', () => {
     // Quando os dois aparecem, o que interessa primeiro é "alguém desenha duas vezes": é a causa que produz
     // cópias INTEIRAS em posições diferentes, que é exatamente o que foi relatado.
     const as = [{ ...limpa(0, '10,20'), recorte: '0,0 256x207', base: '256x207', irmaosDesenhando: 1, posIrmaos: '40,20' }];
-    expect(resumirSonda(as).veredito).toMatch(/duas vezes|irmão/i);
+    expect(summariseProbe(as).veredito).toMatch(/duas vezes|irmão/i);
   });
 });
 

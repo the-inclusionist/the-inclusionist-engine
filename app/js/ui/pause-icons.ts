@@ -38,7 +38,7 @@ import {
 } from '../render/viz-axes.js';
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
 import type { AudioCatState } from './settings-audio.js';
-import { anunciarItem } from './item-announcement.js';
+import { announceItem } from './item-announcement.js';
 import { accessibleLabel } from '../core/rotulo-acessivel.js';
 import { stepInRing } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
@@ -100,10 +100,10 @@ import { nextGameSpeed } from '../core/game-speed.js';
 // exactamente no jogo que se esqueceu. É a mesma forma que `ui/fonts` usa, e `ui/` depender de `platform/`
 // não inverte camada nenhuma.
 import * as store from '../platform/storage.js';
-import { definirAlternanciaDeMarcha } from './settings-motor.js';
-import { recusaDaAlternancia } from './latch-refusal.js';
-import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from './pause-buttons.js';
-import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena } from './motion-scene.js';
+import { setMoveLatch } from './settings-motor.js';
+import { latchRefusal } from './latch-refusal.js';
+import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from './pause-buttons.js';
+import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from './motion-scene.js';
 
 /**
  * A LEGENDA de um ícone da barra de acessibilidade — uma função, e não três cópias da mesma expressão.
@@ -124,7 +124,7 @@ import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena }
  * cursor. Leaving an icon falls back to the CURSOR of the bar's mode when there is one (`.pi-sel`): it is the only
  * thing saying where that cursor is.
  */
-export function ligarLegendaDaBarra(bar: HTMLElement, explicar: (k: string | null) => void): void {
+export function wireBarCaption(bar: HTMLElement, explicar: (k: string | null) => void): void {
   const cap = bar.querySelector('.pause-icons-cap');
   const mostrar = (b: HTMLElement): void => {
     if (cap) cap.textContent = accessibleLabel(b); // name and state only: «N de M» is spoken, never written (ADR-0167)
@@ -144,12 +144,12 @@ export function ligarLegendaDaBarra(bar: HTMLElement, explicar: (k: string | nul
   });
 }
 
-export function legendaDoIcone(barra: ParentNode, el: HTMLElement): string {
+export function iconCaption(barra: ParentNode, el: HTMLElement): string {
   const icones = [...barra.querySelectorAll<HTMLElement>('.pi-btn')];
   // A regra "rótulo declarado vence" nasceu AQUI e valia só para os dez ícones. Virou `core/rotulo-acessivel`
   // e agora vale para o menu inicial e para a lista de pausa também — uma resposta para "como se chama este
   // controle", e não três.
-  return anunciarItem(
+  return announceItem(
     { rotulo: accessibleLabel(el), posicao: icones.indexOf(el) + 1, total: icones.length },
     menuIndexOn,
   );
@@ -220,13 +220,13 @@ export const CALM_NAMES: readonly string[] = ['calm.off', 'calm.quiet', 'calm.si
  * O nível TEA guardado, saneado. Fora de 0..2 devolve o padrão — dado do navegador é dado de fora, e um
  * nível inventado escolheria `CALM_NAMES[3]`, que é `undefined`, e o anúncio ao leitor de tela sairia vazio.
  */
-export function saneiaNivelTea(bruto: number): number {
+export function sanitiseTeaLevel(bruto: number): number {
   return Number.isInteger(bruto) && bruto >= 0 && bruto < CALM_NAMES.length ? bruto : DEFAULTS.calmMode;
 }
 
 /** Lê o nível TEA do armazenamento. Chamado no `init`, nunca no import. */
 function lerNivelTea(): number {
-  return saneiaNivelTea(store.getNum(store.KEYS.tea, DEFAULTS.calmMode));
+  return sanitiseTeaLevel(store.getNum(store.KEYS.tea, DEFAULTS.calmMode));
 }
 /** The audio categories `applyCalm` governs. TTS/sonar/guarda/guia stay untouched — a calm player still needs them. */
 export const CALM_AUDIO_CATS: readonly string[] = ['ambient', 'music', 'earcons', 'interact'];
@@ -463,7 +463,7 @@ export function iconBtnMarkup(ic: PauseIcon): string {
  * ⚠️ Isto é «este jogo não tem por onde», e
  * um botão que anuncia «em breve» diria a coisa errada.
  */
-export interface AccionaveisDoJogo {
+export interface ActionableIcons {
   /** Há quem escreva o TEMA (o alto contraste)? Sem ele, o ícone `contrast` não é montado. */
   readonly tema: boolean;
   /** Há quem escreva a CORREÇÃO de cor? Sem ela, o ícone `cvd` não é montado. */
@@ -515,12 +515,12 @@ export interface AccionaveisDoJogo {
 
 /**
  * @deprecated O nome dizia «escritores VISUAIS» e a pergunta deixou de ser só visual quando o `seguraTeclas`
- * entrou (ADR-0115). Use `AccionaveisDoJogo`. O alias fica para o consumidor não pagar duas quebras no mesmo
+ * entrou (ADR-0115). Use `ActionableIcons`. O alias fica para o consumidor não pagar duas quebras no mesmo
  * major — uma pelo campo novo e outra pelo nome.
  */
-export type EscritoresVisuais = AccionaveisDoJogo;
+export type VisualWriters = ActionableIcons;
 
-export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly PauseIcon[] {
+export function iconsThatAct(escritores: ActionableIcons): readonly PauseIcon[] {
   // ⚠️ POR ÍCONE, e não um booleano para os dois — e foi uma MUTAÇÃO SOBREVIVENTE que o mostrou. Com uma
   // única bandeira, `&&` e `||` produziam o mesmo resultado nos casos que eu tinha escrito, porque todos
   // tiravam os DOIS escritores. O `&&` escondia um ícone que FUNCIONA quando só um escritor falta, e o `||`
@@ -558,7 +558,7 @@ export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly Pause
 // ⚠️ QUATRO desde 2026-09-12: `opcoesdojogo` entra pela MESMA razão que `options` já estava — ele não faz
 // nada ao jogo, troca qual lista está no cartão, e é tratado neste módulo antes de a tabela do jogo ser
 // consultada. Não é a engine a reclamar um item do jogo: o que é do jogo é o CONTEÚDO da lista que ele abre.
-export const ITENS_DA_ENGINE: ReadonlySet<string> = new Set(['options', 'opcoesdojogo', 'pmback', 'acessibilidade']);
+export const ENGINE_ITEMS: ReadonlySet<string> = new Set(['options', 'opcoesdojogo', 'pmback', 'acessibilidade']);
 
 /**
  * OS ITENS DO MENU QUE ESTE JOGO CONSEGUE MESMO ACCIONAR (ADR-0106 §5).
@@ -575,15 +575,15 @@ export const ITENS_DA_ENGINE: ReadonlySet<string> = new Set(['options', 'opcoesd
  * refresh, so it follows the language of the moment the card opens.
  */
 const MOTIVOS_PROPRIOS: ReadonlySet<string> = new Set(['ajuda', 'addplayer', 'opcoesdojogo']);
-export function motivoDoItem(act: string): string {
+export function itemReason(act: string): string {
   return t(MOTIVOS_PROPRIOS.has(act) ? `pause.motivo.${act}` : 'pause.motivo');
 }
 
-export function itensQueAccionam(
+export function itemsThatAct(
   botoes: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
 ): readonly PauseMenuButton[] {
-  return botoes.filter((b) => ITENS_DA_ENGINE.has(b.act) || typeof acts[b.act] === 'function');
+  return botoes.filter((b) => ENGINE_ITEMS.has(b.act) || typeof acts[b.act] === 'function');
 }
 
 /**
@@ -595,7 +595,7 @@ export function itensQueAccionam(
  * A criança atravessa uma porta e fica presa num submenu vazio, cuja única saída é o `pmback` que também
  * sumiu com ele.
  */
-export function raizQueAcciona(
+export function rootThatActs(
   raiz: readonly PauseMenuButton[],
   opcoes: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
@@ -605,8 +605,8 @@ export function raizQueAcciona(
   doJogo: readonly PauseMenuButton[] = [],
 ): readonly PauseMenuButton[] {
   const vivas = (bs: readonly PauseMenuButton[]): number =>
-    itensQueAccionam(bs, acts).filter((b) => b.act !== 'pmback').length;
-  let viva = itensQueAccionam(raiz, acts);
+    itemsThatAct(bs, acts).filter((b) => b.act !== 'pmback').length;
+  let viva = itemsThatAct(raiz, acts);
   if (vivas(opcoes) === 0) viva = viva.filter((b) => b.act !== 'options');
   // 📌 A MESMA REGRA PARA A PORTA NOVA, e é o gate que o ADR-0146 nomeia: um jogo sem nada seu não recebe
   // «opções do jogo». Afirmar a ausência é o caso; oferecer a porta e abrir uma sala vazia é o que o §5 do
@@ -645,7 +645,7 @@ export function pmBtnMarkup(
 ): string {
   const dyn = b.letra || b.nivel;
   const lbl = dynLabel(b) ?? (dyn ? (b.lbl ?? '') : tr('pause.' + b.act));
-  const glifo = GLIFO_DO_ITEM[b.act];
+  const glifo = ITEM_GLYPH[b.act];
   return '<button class="pm-btn' + (b.letra ? ' pm-letra' : '') + (b.nivel ? ' pm-nivel' : '') +
     '" role="menuitem" type="button" data-act="' + b.act + '"' +
     (glifo ? ' data-glifo="' + glifo + '"' : '') +
@@ -658,7 +658,7 @@ export function pmBtnMarkup(
  * engine's narration and a screen reader both said «⚙ Inclusion settings». The glyph is the same in every language;
  * the words stay in the dictionary.
  */
-export const GLIFO_DO_ITEM: Readonly<Record<string, string>> = {
+export const ITEM_GLYPH: Readonly<Record<string, string>> = {
   resume: '▶', acessibilidade: '♿', options: '⚙', opcoesdojogo: '🎮', pmback: '↩', tipo: '🔤', addplayer: '👥',
   audio: '🦻', som: '🔊', motora: '♿', anim: '🎞', visual: '🎨', empatia: '🫂', ajuda: '❓', print: '📷', quit: '🚪',
   caa: '🔠',
@@ -686,7 +686,7 @@ export type PauseSub = 'raiz' | 'opcoes' | 'jogo';
  */
 // 🔴 `:not([hidden])` ON THE ITEM TOO (2026-09-12): the engine hides an item with no actuator (`refrescarItensDaPausa`),
 // and without it the ring stepped onto «Ajuda» hidden in the quiz — measured in dist — and «N de M» counted it.
-export const PM_ITENS_VISIVEIS = '.pause-menu:not([hidden]) .pm-btn:not([hidden])';
+export const PM_VISIBLE_ITEMS = '.pause-menu:not([hidden]) .pm-btn:not([hidden])';
 
 /** O innerHTML de UMA `.pause-menu`: a lista, e só ela. */
 export function pauseMenuHtml(
@@ -704,9 +704,9 @@ export function pauseMenuHtml(
  * opções à raiz, e não tem acesso às tabelas de botões. Como as duas listas já existem no markup, a troca é
  * só DOM — nada a re-renderizar, nada a injetar.
  */
-export function mostrarSubmenuDaPausa(sp: HTMLElement, sub: PauseSub): HTMLElement | null {
+export function showPauseOptions(sp: HTMLElement, sub: PauseSub): HTMLElement | null {
   sp.querySelectorAll<HTMLElement>('.pause-menu').forEach((m) => { m.hidden = m.dataset.sub !== sub; });
-  const primeiro = sp.querySelector<HTMLElement>(PM_ITENS_VISIVEIS);
+  const primeiro = sp.querySelector<HTMLElement>(PM_VISIBLE_ITEMS);
   sp.querySelectorAll<HTMLElement>('.pm-sel,.pi-sel').forEach((b) => b.classList.remove('pm-sel', 'pi-sel'));
   if (primeiro) primeiro.classList.add('pm-sel');
   return primeiro;
@@ -743,8 +743,8 @@ export function quickBarMarkup(icones: readonly PauseIcon[] = PAUSE_ICONS): stri
  * E a precedência é decisão também: um controle registra mais de uma borda no mesmo quadro (dedos apertam
  * junto), e nesse quadro `sair` não pode ficar atrás de `ativar`.
  */
-export type AcaoNaBarra = 'sair' | 'ativar' | 'andar' | 'nada';
-export function acaoNaBarra(k: NavKeys, temStart: boolean): AcaoNaBarra {
+export type BarAction = 'sair' | 'ativar' | 'andar' | 'nada';
+export function barAction(k: NavKeys, temStart: boolean): BarAction {
   if (temStart || k.no) return 'sair';
   if (k.yes) return 'ativar';
   if (k.up || k.down || k.left || k.right) return 'andar';
@@ -789,7 +789,7 @@ export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
     // é a mesma razão pela qual as outras duas são montadas inteiras e escondidas depois (ver a nota do
     // `buildScreenPause`). A tabela do jogo chega TARDE, e uma lista filtrada na montagem apagava para sempre
     // o que só passou a existir depois do boot. Quem decide o que se VÊ é o `refrescarItensDaPausa`.
-    pauseMenuHtml(o.jogoButtons ?? PM_JOGO_BTNS, 'jogo', o.dynLabel, o.t) +
+    pauseMenuHtml(o.jogoButtons ?? PM_GAME_BTNS, 'jogo', o.dynLabel, o.t) +
     '<p class="pause-legend"></p></div>';
 }
 
@@ -858,7 +858,7 @@ export interface PauseIconsCtx {
    */
   /** PM_OPTIONS_BTNS — o submenu de opções. Mesma dona, mesmo motivo: ninguém tem duas cópias de uma lista. */
   optionsButtons?: readonly PauseMenuButton[];
-  /** A lista do JOGO (ADR-0146). Ausente = `PM_JOGO_BTNS`, que é só o «voltar» — e a porta cai sozinha. */
+  /** A lista do JOGO (ADR-0146). Ausente = `PM_GAME_BTNS`, que é só o «voltar» — e a porta cai sozinha. */
   jogoButtons?: readonly PauseMenuButton[];
   /** PM_BTNS — the `.pm-btn` list. Owned by ui/activities-menu; injected, never copied. */
   pmButtons?: readonly PauseMenuButton[];
@@ -976,7 +976,7 @@ export interface PauseIconsCtx {
    * só é visível para um cartucho que chame `initPauseIcons` por fora — e é exactamente esse que não pode
    * ficar em silêncio.
    *
-   * ⚠️ FUNÇÃO, não valor — ver a nota no campo homónimo de `EscritoresVisuais`. Um cartucho que monte isto
+   * ⚠️ FUNÇÃO, não valor — ver a nota no campo homónimo de `VisualWriters`. Um cartucho que monte isto
    * por fora passa `() => this.declaration.seguraTeclas()` e não o resultado dela.
    */
   seguraTeclas: () => boolean;
@@ -1065,7 +1065,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * torto.
    */
   const setToggleMove = ctx.setToggleMove
-    ?? ((i: number, on: boolean) => definirAlternanciaDeMarcha(
+    ?? ((i: number, on: boolean) => setMoveLatch(
       {
         players: P(), store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers,
         // ⚠️ ATRAVESSA, e não se resolve aqui: o ícone e o painel têm de escrever a MESMA coisa. Resolver
@@ -1097,7 +1097,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * Decidido uma vez, no arranque, e não a cada montagem de barra: o conjunto de escritores de um consumidor
    * não muda a meio de uma partida, e recalcular por tela faria as telas discordarem entre si.
    */
-  const iconesDoJogo = iconesQueAccionam({
+  const iconesDoJogo = iconsThatAct({
     tema: Boolean(ctx.setTemaDoJogador),
     correcao: Boolean(ctx.setCorrecaoDoJogador),
     // 📌 Sem `Boolean(...)`: os dois de cima perguntam «existe escritor?» a um campo opcional; este é uma
@@ -1122,10 +1122,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * 📌 O `getPauseActs` fica FUNÇÃO e não valor, porque a laziness dele é a razão de ele existir assim: no
    * cartucho a tabela é um `const` declarado ~1200 linhas abaixo, e lê-la aqui cairia na zona morta temporal.
    */
-  const rm: MotionSceneFlags = ctx.rm ?? lerCenaGuardada();
-  const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? CHAVES_DE_CENA;
-  const rmChar: readonly MotionCharDef[] = ctx.rmChar ?? ANIMACOES_DO_PERSONAGEM;
-  const saveRM: () => void = ctx.saveRM ?? (() => guardarCena(rm));
+  const rm: MotionSceneFlags = ctx.rm ?? readStoredScene();
+  const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? SCENE_KEYS;
+  const rmChar: readonly MotionCharDef[] = ctx.rmChar ?? CHARACTER_ANIMATIONS;
+  const saveRM: () => void = ctx.saveRM ?? (() => storeScene(rm));
   /*
    * ⚠️ ESTES TRÊS SÃO LIDOS A CADA CHAMADA, e não resolvidos uma vez como o `rm` acima. A diferença é
    * deliberada e um teste apanhou-me a errá-la: congelar `ctx.getPauseActs` no arranque partiu um caso que
@@ -1144,7 +1144,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
   /** A recusa da alternância para este jogador agora, ou `null`. Recalculada: o aparelho em uso muda. */
-  function recusaAgora(i: number) { return ctx.transporteEmUso ? recusaDaAlternancia(ctx.transporteEmUso(i)) : null; }
+  function recusaAgora(i: number) { return ctx.transporteEmUso ? latchRefusal(ctx.transporteEmUso(i)) : null; }
 
   function iconState(i: number): IconStateSnapshot {
     const p = P()[i] || {};
@@ -1424,11 +1424,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const acts = getPauseActs();
     const raiz = ctx.pmButtons ?? PM_BTNS;
     const opcoes = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
-    const doJogo = ctx.jogoButtons ?? PM_JOGO_BTNS;
+    const doJogo = ctx.jogoButtons ?? PM_GAME_BTNS;
     const vivos = new Set([
-      ...raizQueAcciona(raiz, opcoes, acts, doJogo).map((b) => b.act),
-      ...itensQueAccionam(opcoes, acts).map((b) => b.act),
-      ...itensQueAccionam(doJogo, acts).map((b) => b.act),
+      ...rootThatActs(raiz, opcoes, acts, doJogo).map((b) => b.act),
+      ...itemsThatAct(opcoes, acts).map((b) => b.act),
+      ...itemsThatAct(doJogo, acts).map((b) => b.act),
     ]);
     // ⚠️ `filter(Boolean)` VIROU ÍNDICE EXPLÍCITO, e a razão é a linha do nome logo abaixo: os cartões são
     // indexados por JOGADOR, montar só a tela 2 deixa um buraco no índice 0 — e `filter` fechava o buraco,
@@ -1448,7 +1448,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
           delete btn.dataset.motivo;
         } else {
           btn.setAttribute('aria-disabled', 'true');
-          btn.dataset.motivo = motivoDoItem(act);
+          btn.dataset.motivo = itemReason(act);
         }
       }
     }
@@ -1469,10 +1469,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * que diz de quantos itens é a lista nova.
    */
   function anunciarLista(sp: HTMLElement, sub: PauseSub): void {
-    const primeiro = mostrarSubmenuDaPausa(sp, sub);
+    const primeiro = showPauseOptions(sp, sub);
     if (!primeiro) return;
-    const itens = [...sp.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
-    ctx.srSay(anunciarItem(
+    const itens = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
+    ctx.srSay(announceItem(
       { rotulo: primeiro.textContent || '', posicao: 1, total: itens.length }, menuIndexOn,
     ));
   }
@@ -1499,7 +1499,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     el.classList.add('pi-sel');
     const cap = bar.querySelector('.pause-icons-cap');
     if (cap) cap.textContent = accessibleLabel(el);
-    ctx.srSay(legendaDoIcone(bar, el)); // the spoken one carries the place (ADR-0167)
+    ctx.srSay(iconCaption(bar, el)); // the spoken one carries the place (ADR-0167)
     ctx.explicarIcone?.(i, el.dataset.pi ?? null);
   }
 
@@ -1559,7 +1559,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (!naBarra.has(i)) return;
     const bar = ctx.getA11yBars()[i];
     if (!bar) return;
-    const acao = acaoNaBarra(k, temStart);
+    const acao = barAction(k, temStart);
     if (acao === 'sair') { sairDaBarra(i); return; }
     const icones = [...bar.querySelectorAll<HTMLElement>('.pi-btn')];
     if (!icones.length) return;
@@ -1594,7 +1594,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       numPlayers: ctx.getNumPlayers(),
       pmButtons: ctx.pmButtons ?? PM_BTNS,
       optionsButtons: ctx.optionsButtons ?? PM_OPTIONS_BTNS,
-      jogoButtons: ctx.jogoButtons ?? PM_JOGO_BTNS,
+      jogoButtons: ctx.jogoButtons ?? PM_GAME_BTNS,
       dynLabel: dynLabel, t,
     });
     cartoes[i] = sp;
@@ -1674,7 +1674,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     //
     // A EXCEÇÃO É O CURSOR DO MODO `accessibility`: quando ele está pousado num ícone, a legenda é a única
     // coisa que diz onde ele está, e apagá-la ao mexer o mouse cegaria o modo. Daí a pergunta pelo `.pi-sel`.
-    ligarLegendaDaBarra(bar, (k) => ctx.explicarIcone?.(i, k));
+    wireBarCaption(bar, (k) => ctx.explicarIcone?.(i, k));
     return bar;
   }
 
@@ -1687,7 +1687,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // pior do defeito: o ajuste parece ter pegado e some depois.
     applyCalm,
     getCalmMode: () => calmMode,
-    setCalmMode: (n) => { calmMode = saneiaNivelTea(n); store.set(store.KEYS.tea, calmMode); },
+    setCalmMode: (n) => { calmMode = sanitiseTeaLevel(n); store.set(store.KEYS.tea, calmMode); },
     iconState,
   };
 }

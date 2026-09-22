@@ -2228,7 +2228,7 @@
     ]
   },
   "ui/debug-panel.ts": {
-    "interface AmostraDoPersonagem": [
+    "interface CharacterSample": [
       "base",
       "escala",
       "irmaosDesenhando",
@@ -2237,7 +2237,7 @@
       "recorte",
       "texturaId"
     ],
-    "interface ResumoDaSonda": [
+    "interface ProbeSummary": [
       "escalas",
       "exemploIrmaos",
       "maxIrmaos",
@@ -2309,7 +2309,7 @@
     ]
   },
   "ui/fonts.ts": {
-    "interface PassoDeTipografia": [
+    "interface TypographyStep": [
       "caixa",
       "escala",
       "fonte"
@@ -2448,25 +2448,25 @@
     ]
   },
   "ui/latch-refusal.ts": {
-    "interface RecusaDaAlternancia": [
+    "interface LatchRefusal": [
       "chave",
       "transporte"
     ]
   },
   "ui/layout.ts": {
-    "interface MedidaDeNo": [
+    "interface NodeMeasure": [
       "alvo",
       "daEngine",
       "fontePx",
       "nome"
     ],
-    "interface CaixaNomeada": [
+    "interface NamedBox": [
       "nome"
     ],
-    "interface Caixa": [
+    "interface Box": [
       "x"
     ],
-    "interface Escala": [
+    "interface Scale": [
       "kDev"
     ]
   },
@@ -2474,7 +2474,7 @@
     "type CycleLocale": "(typeof LOCALE_CYCLE)[number]"
   },
   "ui/loop-crash.ts": {
-    "interface AvisoDeQuedaCtx": [
+    "interface CrashNoticeCtx": [
       "criar",
       "narrar?",
       "procurar"
@@ -2611,12 +2611,12 @@
       "controle",
       "linha"
     ],
-    "interface PassosSpec": [
+    "interface StepsSpec": [
       "atual",
       "rotulo",
       "valores"
     ],
-    "type FormaDoControle": "'interruptor' | 'escolha' | 'cursor'"
+    "type ControlShape": "'interruptor' | 'escolha' | 'cursor'"
   },
   "ui/pause-buttons.ts": {
     "interface PauseBtnDef": [
@@ -2661,7 +2661,7 @@
       "dis",
       "on"
     ],
-    "interface AccionaveisDoJogo": [
+    "interface ActionableIcons": [
       "camera?",
       "correcao",
       "declaredPositions?",
@@ -2743,9 +2743,9 @@
     ],
     "type InputMode": "'standard' | 'sticky' | 'scan'",
     "type PausePlayer": "PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>",
-    "type EscritoresVisuais": "AccionaveisDoJogo",
+    "type VisualWriters": "ActionableIcons",
     "type PauseSub": "'raiz' | 'opcoes' | 'jogo'",
-    "type AcaoNaBarra": "'sair' | 'ativar' | 'andar' | 'nada'"
+    "type BarAction": "'sair' | 'ativar' | 'andar' | 'nada'"
   },
   "ui/reach-notice.ts": {
     "interface ReachNoticeCtx": [
@@ -2790,7 +2790,7 @@
       "vozAtual?",
       "vozes?"
     ],
-    "interface VozDoPainel": [
+    "interface PanelVoice": [
       "voice"
     ],
     "interface SettingsAudioCtx": [
@@ -2926,11 +2926,11 @@
     "type MotionSceneFlags": "BandeirasDeCenaLeaf"
   },
   "ui/settings-motor.ts": {
-    "interface MotorStore": [
+    "interface MobilityStore": [
       "get",
       "setBool"
     ],
-    "interface SettingsMotorCtx": [
+    "interface SettingsMobilityCtx": [
       "$",
       "fillExplain?",
       "getNumPlayers",
@@ -2943,7 +2943,7 @@
       "store",
       "transporteEmUso?"
     ],
-    "interface SettingsMotorApi": [
+    "interface SettingsMobilityApi": [
       "getSelPlayer",
       "reflectAltMove",
       "reflectFacil",
@@ -2952,14 +2952,14 @@
       "setEasy",
       "setSelPlayer"
     ],
-    "interface EscritaDaAlternanciaCtx": [
+    "interface LatchWriteCtx": [
       "getNumPlayers",
       "players",
       "srSay",
       "store",
       "transporteEmUso?"
     ],
-    "type MotorPlayer": "PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>",
+    "type MobilityPlayer": "PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>",
     "type LatchPlayer": "JogadorDaAlternanciaDaAresta"
   },
   "ui/settings-panel.ts": {

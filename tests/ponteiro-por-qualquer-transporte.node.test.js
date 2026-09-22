@@ -56,8 +56,8 @@ describe('ADR-0112 · as operações do ponteiro são cegas à origem', () => {
         const a = amostra(fx, fy, false, origem);
         expect(isInside(a), `«dentro» mudou por ser ${origem}`).toBe(refDentro);
         const preso = clampInside(a);
-        expect(preso.fx, `«prender» mudou por ser ${origem}`).toBe(refPreso.fx);
-        expect(preso.fy, `«prender» mudou por ser ${origem}`).toBe(refPreso.fy);
+        expect(preso.fx, `«clampInside» mudou por ser ${origem}`).toBe(refPreso.fx);
+        expect(preso.fy, `«clampInside» mudou por ser ${origem}`).toBe(refPreso.fy);
       }
     }
   });
@@ -78,7 +78,7 @@ describe('ADR-0112 · as operações do ponteiro são cegas à origem', () => {
   // transporte passaria nos casos acima (eles enumeram as operações de hoje) e tiraria o desenho ao olhar em
   // silêncio. Só `switchedTransport` pode ler `.origem` — e lê-a para RESPONDER sobre ela, não para decidir
   // outra coisa.
-  it('[Fronteira] só `trocouDeTransporte` lê `.origem` neste módulo', () => {
+  it('[Fronteira] só `switchedTransport` lê `.origem` neste módulo', () => {
     const semComentarios = FONTE_PONTEIRO.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n\r]*/g, '');
     const partes = semComentarios.split(/export function /);
     const leitores = partes

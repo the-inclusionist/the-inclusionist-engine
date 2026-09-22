@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   NAV_CATS, GEN_CATS, volPercent, catRowHTML, catsListHTML, navMasterVolume,
-  parseCaneDiv, caneDivMessage, TTS_ENGINE_OPTIONS, opcoesDeMotor, pickVoicesFor, voiceLabel,
+  parseCaneDiv, caneDivMessage, TTS_ENGINE_OPTIONS, voiceEngineOptions, pickVoicesFor, voiceLabel,
   sinksSupported, sinkOptionLabel, sinkSelectValue,
 } from '../app/js/ui/settings-audio.js';
 
@@ -111,18 +111,18 @@ describe('ui/settings-audio — TTS_ENGINE_OPTIONS', () => {
   // ⚠️ THE CATALOGUE IS THE ENGINE'S; WHAT CAN BE OFFERED IS THE ASSEMBLY'S (ADR-0094). The neural engine comes through the GAME's
   // Kokoro port (ADR-0198), and a panel offering it without the port leaves whoever picks it waiting for a download that never starts.
   it('[Right] without a neural engine Kokoro is not OFFERED, and the rest of the catalogue stays intact', () => {
-    const sem = opcoesDeMotor(false).map(([v]) => v);
+    const sem = voiceEngineOptions(false).map(([v]) => v);
     expect(sem).not.toContain('kokoro');
     expect(sem[0]).toBe('webspeech');
     expect(sem).toEqual(['webspeech', 'kitten', 'espeak']);
   });
 
   it('[Right] com motor neural o catálogo sai inteiro — a porta ADICIONA, não substitui', () => {
-    expect(opcoesDeMotor(true)).toEqual(TTS_ENGINE_OPTIONS);
+    expect(voiceEngineOptions(true)).toEqual(TTS_ENGINE_OPTIONS);
   });
 
   it('[Zero] a filtragem não muda o catálogo original', () => {
-    opcoesDeMotor(false);
+    voiceEngineOptions(false);
     expect(TTS_ENGINE_OPTIONS).toHaveLength(4);
   });
 });

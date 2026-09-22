@@ -12,7 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { FONT_GROUPS, OFERECIVEIS, papelDaFonte, escalaDaFace, BASE_EM_PX } from '../app/js/ui/fonts.js';
+import { FONT_GROUPS, OFERECIVEIS, fontRole, faceScale, BASE_EM_PX } from '../app/js/ui/fonts.js';
 
 const CATALOGO = JSON.parse(readFileSync(join(process.cwd(), 'research', 'catalogo_tipografico.json'), 'utf8'));
 const POR_ID = new Map(CATALOGO.fontes.map((f) => [f.id, f]));
@@ -57,7 +57,7 @@ describe('the engine\'s faces and the typographic catalogue (ADR-0176)', () => {
       if (typeof piso !== 'number') continue;
       const minimo = it.minPx ?? BASE_EM_PX;
       if (minimo < piso) abaixo.push(`${it.k}: minimum ${minimo} px under the floor ${piso}`);
-      if (papelDaFonte(it) === 'geral' && BASE_EM_PX * escalaDaFace(it) < piso) abaixo.push(`${it.k}: offered at ${BASE_EM_PX * escalaDaFace(it)} px under ${piso}`);
+      if (fontRole(it) === 'geral' && BASE_EM_PX * faceScale(it) < piso) abaixo.push(`${it.k}: offered at ${BASE_EM_PX * faceScale(it)} px under ${piso}`);
     }
     expect(abaixo).toEqual([]);
   });
@@ -79,7 +79,7 @@ describe('the engine\'s faces and the typographic catalogue (ADR-0176)', () => {
 
   it('🔴 [Right] Playwrite BR is the handwriting group\'s general face (the Dev)', () => {
     const mao = FONT_GROUPS.find((g) => g.g === 'font.group.hand');
-    const gerais = mao.items.filter((it) => papelDaFonte(it) === 'geral' && !it.off).map((it) => it.k);
+    const gerais = mao.items.filter((it) => fontRole(it) === 'geral' && !it.off).map((it) => it.k);
     expect(gerais).toEqual(['pwbr']);
   });
 });
@@ -87,7 +87,7 @@ describe('the engine\'s faces and the typographic catalogue (ADR-0176)', () => {
 // ============================== MUTATIONS CHECKED ==============================
 //   T1 Comic Neue back in the handwriting group                     🔴 status/id · general face
 //   T2 Sora without its floor (`minPx:20` removed)                   🔴 floor
-//   T3 `escalaDaFace` returns 1 always                               🔴 floor (offered size)
+//   T3 `faceScale` returns 1 always                               🔴 floor (offered size)
 //   T4 Press Start 2P offered in the menu (papel geral)              🔴 layer A only
 //   T5 a face given an id of another family                         🔴 status/id
 //   T6 Quattro taken off the not-verified list                       🔴 coverage

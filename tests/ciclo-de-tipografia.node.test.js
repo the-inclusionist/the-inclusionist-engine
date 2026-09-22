@@ -12,63 +12,63 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
-import { cicloDeTipografia, maosDaEtiqueta, INICIO_DO_CICLO, ESCALA_DA_MAO, BASE_EM_PX, FONT_BY_KEY } from '../app/js/ui/fonts.js';
+import { typographyCycle, handsForTag, CYCLE_START, HANDWRITING_SCALE, BASE_EM_PX, FONT_BY_KEY } from '../app/js/ui/fonts.js';
 
 describe('maosDaEtiqueta — a mão do país, e o recuo do colonizador', () => {
   it('🎯 [Right] a REGIÃO decide primeiro', () => {
-    expect(maosDaEtiqueta('pt-BR')).toEqual(['pwbr']);
-    expect(maosDaEtiqueta('es-MX')).toEqual(['pwmx']);
-    expect(maosDaEtiqueta('es-PE')).toEqual(['pwpe']);
-    expect(maosDaEtiqueta('es-CU')).toEqual(['pwcu']);
+    expect(handsForTag('pt-BR')).toEqual(['pwbr']);
+    expect(handsForTag('es-MX')).toEqual(['pwmx']);
+    expect(handsForTag('es-PE')).toEqual(['pwpe']);
+    expect(handsForTag('es-CU')).toEqual(['pwcu']);
   });
 
   it('🔴 [Right] onde o país ensina DUAS mãos, devolve as duas — na ordem do Dev', () => {
     // A tradicional primeiro. Escolher uma seria escolher pela criança, que é o argumento do ADR-0108 §2.
-    expect(maosDaEtiqueta('en-US')).toEqual(['pwustrad', 'pwusmod']);
-    expect(maosDaEtiqueta('en-GB')).toEqual(['pwgbj', 'pwgbs']);
-    expect(maosDaEtiqueta('es-ES')).toEqual(['pwes', 'pwesdeco']);
+    expect(handsForTag('en-US')).toEqual(['pwustrad', 'pwusmod']);
+    expect(handsForTag('en-GB')).toEqual(['pwgbj', 'pwgbs']);
+    expect(handsForTag('es-ES')).toEqual(['pwes', 'pwesdeco']);
   });
 
   it('🔴 [Boundary] SEM REGIÃO cai no recuo por LÍNGUA — o caso que mais se esquece', () => {
     // ⚠️ Uma etiqueta sem região não é um erro: é uma criança cujo navegador não disse onde ela está.
-    expect(maosDaEtiqueta('pt')).toEqual(['pwpt']);
-    expect(maosDaEtiqueta('es')).toEqual(['pwes', 'pwesdeco']);
-    expect(maosDaEtiqueta('en')).toEqual(['pwgbj', 'pwgbs']);
+    expect(handsForTag('pt')).toEqual(['pwpt']);
+    expect(handsForTag('es')).toEqual(['pwes', 'pwesdeco']);
+    expect(handsForTag('en')).toEqual(['pwgbj', 'pwgbs']);
   });
 
   it('🔴 [Right] um país SEM mão própria recebe a do COLONIZADOR, e não a dos EUA', () => {
     // É a correcção que o Dev fez ao ADR-0149 §5, e é o coração do ADR-0150. Angola e Moçambique recebem
     // Portugal; Bolívia e Paraguai recebem Espanha; Irlanda e Nigéria recebem Inglaterra.
-    expect(maosDaEtiqueta('pt-AO')).toEqual(['pwpt']);
-    expect(maosDaEtiqueta('pt-MZ')).toEqual(['pwpt']);
-    expect(maosDaEtiqueta('es-BO')).toEqual(['pwes', 'pwesdeco']);
-    expect(maosDaEtiqueta('en-IE')).toEqual(['pwgbj', 'pwgbs']);
-    expect(maosDaEtiqueta('en-NG')).toEqual(['pwgbj', 'pwgbs']);
+    expect(handsForTag('pt-AO')).toEqual(['pwpt']);
+    expect(handsForTag('pt-MZ')).toEqual(['pwpt']);
+    expect(handsForTag('es-BO')).toEqual(['pwes', 'pwesdeco']);
+    expect(handsForTag('en-IE')).toEqual(['pwgbj', 'pwgbs']);
+    expect(handsForTag('en-NG')).toEqual(['pwgbj', 'pwgbs']);
     // 📌 O PAR que prova que o recuo MUDOU: nenhum deles cai nos Estados Unidos.
     for (const tag of ['pt-AO', 'es-BO', 'en-IE']) {
-      expect(maosDaEtiqueta(tag), `${tag} caiu na mão dos EUA`).not.toContain('pwusmod');
+      expect(handsForTag(tag), `${tag} caiu na mão dos EUA`).not.toContain('pwusmod');
     }
   });
 
   it('[Zero] língua fora do repertório, ou etiqueta vazia, devolve VAZIO', () => {
     // O repertório está limitado a inglês, português e espanhol (ADR-0012). Vazio é dizível: quem chama tira
     // a posição do ciclo em vez de mostrar uma mão que não é de ninguém.
-    expect(maosDaEtiqueta('fr-FR')).toEqual([]);
-    expect(maosDaEtiqueta('de')).toEqual([]);
-    expect(maosDaEtiqueta('')).toEqual([]);
-    expect(maosDaEtiqueta(null)).toEqual([]);
+    expect(handsForTag('fr-FR')).toEqual([]);
+    expect(handsForTag('de')).toEqual([]);
+    expect(handsForTag('')).toEqual([]);
+    expect(handsForTag(null)).toEqual([]);
   });
 
   it('📌 [Boundary] a região é lida sem depender de MAIÚSCULAS nem da posição', () => {
     // `pt-br`, `pt-BR`, `pt-Latn-BR` — as três nomeiam o mesmo país, e o navegador entrega qualquer uma.
-    expect(maosDaEtiqueta('pt-br')).toEqual(['pwbr']);
-    expect(maosDaEtiqueta('pt-Latn-BR')).toEqual(['pwbr']);
+    expect(handsForTag('pt-br')).toEqual(['pwbr']);
+    expect(handsForTag('pt-Latn-BR')).toEqual(['pwbr']);
   });
 });
 
 describe('cicloDeTipografia — as cinco posições, ou seis', () => {
   it('🎯 [Right] as quatro primeiras são fixas, e a CAIXA anda com a FACE', () => {
-    const c = cicloDeTipografia('pt-BR');
+    const c = typographyCycle('pt-BR');
     expect(c.slice(0, 4)).toEqual([
       { caixa: 'upper', fonte: 'andika', escala: 1 },
       { caixa: 'mixed', fonte: 'andika', escala: 1 },
@@ -78,25 +78,25 @@ describe('cicloDeTipografia — as cinco posições, ou seis', () => {
   });
 
   it('🔴 [Right] o ciclo COMEÇA na Atkinson, que é a posição (c) e o padrão do projeto', () => {
-    expect(cicloDeTipografia('pt-BR')[INICIO_DO_CICLO]).toEqual({ caixa: 'mixed', fonte: 'atkinson', escala: 1 });
+    expect(typographyCycle('pt-BR')[CYCLE_START]).toEqual({ caixa: 'mixed', fonte: 'atkinson', escala: 1 });
   });
 
   it('🔴 [Boundary] SEIS posições onde o país ensina duas mãos, CINCO onde ensina uma', () => {
-    expect(cicloDeTipografia('pt-BR')).toHaveLength(5);
-    expect(cicloDeTipografia('en-US')).toHaveLength(6);
-    expect(cicloDeTipografia('en-US')[5]).toEqual({ caixa: 'mixed', fonte: 'pwusmod', escala: ESCALA_DA_MAO });
+    expect(typographyCycle('pt-BR')).toHaveLength(5);
+    expect(typographyCycle('en-US')).toHaveLength(6);
+    expect(typographyCycle('en-US')[5]).toEqual({ caixa: 'mixed', fonte: 'pwusmod', escala: HANDWRITING_SCALE });
   });
 
   it('🔴 [Zero] sem mão nenhuma o ciclo tem QUATRO — e isso é a resposta certa', () => {
     // ⚠️ Melhor uma posição a menos do que uma que mostre a mão de um país que não é o daquela criança.
-    const c = cicloDeTipografia('fr-FR');
+    const c = typographyCycle('fr-FR');
     expect(c).toHaveLength(4);
     expect(c.some((p) => p.fonte.startsWith('pw')), 'entrou uma mão de país sem país').toBe(false);
   });
 
   it('📌 [Right] a POSIÇÃO (a) é a única em caixa alta — é o par da alfabetização', () => {
     // Sem isto, um ciclo que pusesse tudo em `mixed` passaria os casos de face acima.
-    const c = cicloDeTipografia('pt-BR');
+    const c = typographyCycle('pt-BR');
     expect(c.filter((p) => p.caixa === 'upper')).toEqual([{ caixa: 'upper', fonte: 'andika', escala: 1 }]);
   });
 });
@@ -107,7 +107,7 @@ describe('o ciclo de COMUNICAÇÃO PULA ARASAAC e PCS (ADR-0155 §3)', () => {
     // desabilitada, nem anunciada. ⚠️ Este caso MUDA no dia em que a licença chegar: não é para o apagar calado,
     // é para o substituir pelo que a posição passar a fazer.
     for (const tag of ['pt-BR', 'en-US', 'es-ES', 'es', 'fr-FR', null]) {
-      const ciclo = cicloDeTipografia(tag);
+      const ciclo = typographyCycle(tag);
       expect(ciclo.length, `o ciclo de ${tag} veio vazio — o caso mediria nada`).toBeGreaterThanOrEqual(4);
       const pictos = ciclo.filter((p) => /arasaac|pcs|picto/i.test(p.fonte));
       expect(pictos, `o ciclo de ${tag} oferece uma posição sem licença`).toEqual([]);
@@ -127,7 +127,7 @@ describe('a ESCALA da mão do país — 25% maior, e o piso não é gosto', () =
      * subir a escala, este caso reprova — que é exactamente o dia em que a criança perderia a legibilidade.
      */
     for (const tag of ['pt-BR', 'en-US', 'es-ES', 'pt-AO']) {
-      for (const passo of cicloDeTipografia(tag).filter((p) => p.escala !== 1)) {
+      for (const passo of typographyCycle(tag).filter((p) => p.escala !== 1)) {
         const piso = FONT_BY_KEY[passo.fonte]?.minPx;
         expect(piso, `a mão ${passo.fonte} não declara piso de tamanho`).toBeGreaterThan(0);
         expect(BASE_EM_PX * passo.escala,
@@ -140,7 +140,7 @@ describe('a ESCALA da mão do país — 25% maior, e o piso não é gosto', () =
   it('🔴 [Zero] só a mão do país é AUMENTADA — as faces de leitura ficam em 1', () => {
     // O par. Sem ele, uma escala aplicada a tudo passaria o caso de cima e daria a toda a interface um
     // tamanho que só uma das posições justifica.
-    const c = cicloDeTipografia('en-US');
+    const c = typographyCycle('en-US');
     expect(c.filter((p) => p.escala !== 1).map((p) => p.fonte)).toEqual(['pwustrad', 'pwusmod']);
     expect(c.slice(0, 4).every((p) => p.escala === 1), 'uma face de leitura foi aumentada').toBe(true);
   });

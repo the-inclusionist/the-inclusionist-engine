@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   KEY_YES, KEY_NO, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, PAUSE_COLS,
-  menuKeyIntent, hasIntent, stepInRing, selectStep, selectWrap, rangeStep, passoNaPausa,
+  menuKeyIntent, hasIntent, stepInRing, selectStep, selectWrap, rangeStep, stepInPause,
 } from '../app/js/ui/menu-nav.js';
 
 const NONE = { yes: false, no: false, up: false, down: false, left: false, right: false };
@@ -120,28 +120,28 @@ describe('passoNaPausa — a pausa virou LISTA, e a lista virou anel', () => {
   const N = 7; // os sete itens da pausa (ADR-0044 §2)
 
   it('[Right] baixo e direita andam para a frente; cima e esquerda, para trás', () => {
-    expect(passoNaPausa(N, 0, only('down'))).toBe(1);
-    expect(passoNaPausa(N, 0, only('right'))).toBe(1);
-    expect(passoNaPausa(N, 3, only('up'))).toBe(2);
-    expect(passoNaPausa(N, 3, only('left'))).toBe(2);
+    expect(stepInPause(N, 0, only('down'))).toBe(1);
+    expect(stepInPause(N, 0, only('right'))).toBe(1);
+    expect(stepInPause(N, 3, only('up'))).toBe(2);
+    expect(stepInPause(N, 3, only('left'))).toBe(2);
   });
 
   it('[Right] a PROMESSA do ADR-0044: `quit` a uma tecla de `resume`', () => {
     // `resume` é o item 0 e `quit` é o 6. Uma tecla para CIMA no primeiro chega no último — longe na leitura,
     // vizinho no dedo. É a frase que abriu o registro, e é este caso que a torna verdadeira ou falsa.
-    expect(passoNaPausa(N, 0, only('up')), 'para cima em `resume` tem de cair em `quit`').toBe(N - 1);
-    expect(passoNaPausa(N, N - 1, only('down')), 'para baixo em `quit` tem de voltar a `resume`').toBe(0);
+    expect(stepInPause(N, 0, only('up')), 'para cima em `resume` tem de cair em `quit`').toBe(N - 1);
+    expect(stepInPause(N, N - 1, only('down')), 'para baixo em `quit` tem de voltar a `resume`').toBe(0);
   });
 
   it('[Boundary] cursor perdido (índice negativo) entra como 0 — verbatim do `if(idx<0)idx=0`', () => {
     // Preservado do comportamento antigo: um menu que acabou de abrir sem seleção não pode fazer o cursor
     // aparecer no meio da lista. Ele entra pelo começo, ande-se para onde se andar.
-    expect(passoNaPausa(N, -1, only('down'))).toBe(1);
-    expect(passoNaPausa(N, -1, only('up'))).toBe(N - 1);
+    expect(stepInPause(N, -1, only('down'))).toBe(1);
+    expect(stepInPause(N, -1, only('up'))).toBe(N - 1);
   });
 
   it('[Zero] lista vazia não estoura e não inventa índice', () => {
-    expect(passoNaPausa(0, 0, only('down'))).toBe(0);
+    expect(stepInPause(0, 0, only('down'))).toBe(0);
   });
 
   it('[Many] TODO item é alcançável a partir de `resume` só com baixo — e a volta fecha', () => {
@@ -150,7 +150,7 @@ describe('passoNaPausa — a pausa virou LISTA, e a lista virou anel', () => {
     // estrutura que a criança precisa explorar às cegas para aprender.
     const vistos = new Set();
     let i = 0;
-    for (let passo = 0; passo < N; passo++) { vistos.add(i); i = passoNaPausa(N, i, only('down')); }
+    for (let passo = 0; passo < N; passo++) { vistos.add(i); i = stepInPause(N, i, only('down')); }
     expect(vistos.size).toBe(N);
     expect(i, 'depois de N passos o cursor tem de estar de volta no começo').toBe(0);
   });

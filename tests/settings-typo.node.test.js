@@ -6,9 +6,9 @@
 import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // o catálogo de fontes guarda CHAVE desde o item 14
 import {
-  isSelectableFont, resolveFontKey, persistFontKey, fontCssTarget, typoGroups, typoListHTML, linhaDaFonte,
+  isSelectableFont, resolveFontKey, persistFontKey, fontCssTarget, typoGroups, typoListHTML, fontRow,
 } from '../app/js/ui/settings-typo.js';
-import { FONT_BY_KEY, FONT_GROUPS, papelDaFonte, escalaDaFace, BASE_EM_PX } from '../app/js/ui/fonts.js';
+import { FONT_BY_KEY, FONT_GROUPS, fontRole, faceScale, BASE_EM_PX } from '../app/js/ui/fonts.js';
 
 // Fake de platform/storage.ts: um Map em memória, mesma forma (get/set) do módulo real.
 function fakeStore(seed = {}) {
@@ -113,7 +113,7 @@ describe('fontCssTarget', () => {
 // ===================================================================================================
 describe('as caligráficas: papel declarado e tamanho mínimo', () => {
   const TODAS = FONT_GROUPS.flatMap((g) => g.items);
-  const CALIGRAFICAS = TODAS.filter((it) => papelDaFonte(it) === 'caligrafica');
+  const CALIGRAFICAS = TODAS.filter((it) => fontRole(it) === 'caligrafica');
 
   it('[Zero] há caligráficas no catálogo — senão os casos abaixo não medem nada', () => {
     expect(CALIGRAFICAS.length).toBeGreaterThan(0);
@@ -153,16 +153,16 @@ describe('as caligráficas: papel declarado e tamanho mínimo', () => {
   it('⚠️ [Interface] uma GERAL que declara `minPx` é desenhada nele — a escala da face leva a base até lá (ADR-0176 §4)', () => {
     // The catalogue's floor replaced the old mark («only a calligraphic face declares a minimum»): seven sans and serif faces
     // of the menu ask 20 px, and so does Playwrite BR. They stay offered, drawn at their floor, never under it.
-    const gerais = TODAS.filter((it) => papelDaFonte(it) === 'geral' && it.minPx !== undefined);
+    const gerais = TODAS.filter((it) => fontRole(it) === 'geral' && it.minPx !== undefined);
     expect(gerais.length, 'no general face with a floor — the case measures nothing').toBeGreaterThan(0);
-    for (const it of gerais) expect(BASE_EM_PX * escalaDaFace(it), `${it.k} is drawn under its floor`).toBeGreaterThanOrEqual(it.minPx);
-    expect(escalaDaFace(FONT_BY_KEY.atkinson), 'a face with no floor above the base is drawn larger').toBe(1);
+    for (const it of gerais) expect(BASE_EM_PX * faceScale(it), `${it.k} is drawn under its floor`).toBeGreaterThanOrEqual(it.minPx);
+    expect(faceScale(FONT_BY_KEY.atkinson), 'a face with no floor above the base is drawn larger').toBe(1);
   });
 
   it('[Boundary] a Playwrite BR está no grupo `hand` e é GERAL — o corte é por papel, não por grupo', () => {
     const hand = FONT_GROUPS.find((g) => g.g === 'font.group.hand');
     expect(hand.items.map((it) => it.k)).toContain('pwbr');
-    expect(papelDaFonte(FONT_BY_KEY.pwbr)).toBe('geral');
+    expect(fontRole(FONT_BY_KEY.pwbr)).toBe('geral');
   });
 });
 
@@ -186,7 +186,7 @@ describe('typoGroups — view-model das linhas', () => {
     // continuar a ter uma desligada. Um teste que depende da composição do roster reprova sempre que o
     // roster muda — que foi exactamente o que aconteceu aqui.
     const falsa = { k: 'x', fam: 'Fonte de Mentira', fb: 'sans', d: 'font.desc.pinyon', off: 'font.off.pending' };
-    const linha = linhaDaFonte(falsa, 'atkinson');
+    const linha = fontRow(falsa, 'atkinson');
     expect(linha.disabled).toBe(true);
     expect(linha.note, 'a nota de uma face desligada tem de dizer o MOTIVO').not.toBe('');
     expect(linha.note).toContain('—'); // descrição — motivo, as duas metades

@@ -19,6 +19,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
+import ts from 'typescript';
 
 const ROOT = process.cwd().endsWith('app') ? join(process.cwd(), '..') : process.cwd();
 export const MAP = 'scripts/rename-map.json';
@@ -85,59 +86,37 @@ const wholeWord = (name) => new RegExp(`(?<![\\w$])${name.replace(/[.*+?^${}()|[
  * is, and what a sentence never is.
  */
 /*
- * 🔴 AND A REGEX IS NEITHER A STRING NOR A COMMENT, which the fourth layer found the expensive way: the literal
- * `/aria-checked="true"/g` carries a quote, the scanner took it for the start of a string, and from there the REST OF THE FILE
- * was «inside a string» — so half a test file kept its old names while its imports were renamed, and the failure surfaced as
- * «TEMAS is not defined» in a file nobody had touched by hand.
+ * 🔴 AND IN THE END THE SCANNER IS TYPESCRIPT'S OWN. Four hand-rolled versions of this, each fixed after it damaged or missed
+ * something real — a glob read as a comment, a regex read as a string, a sentence read as a name, a nested template read out
+ * of phase — and the fifth failure was always going to be the same shape: telling code from text is LEXING, and this
+ * repository already ships a lexer. `ts.createScanner` answers exactly and for free what a heuristic can only approximate.
  *
- * Telling a regex from a division is the classic ambiguity, and the classic heuristic settles it: a `/` starts a regex when
- * the last thing before it is not a VALUE. After `)`, an identifier, a number or a closing bracket, `/` divides; after `(`,
- * `,`, `=`, `:`, `[`, `!`, `&`, `|`, `?`, `{`, `}`, `;`, `return` — or at the start of the file — it opens a pattern.
+ * What is still ours is the POLICY, and it is the part worth writing down:
+ *   · a comment is prose — only what is between backticks inside it is a name;
+ *   · a string with whitespace is a sentence, and a sentence is prose wherever it lives;
+ *   · a string without whitespace IS a name («modoCego» is an event's name, and renaming the binding without it cuts
+ *     `emit`/`on` in half);
+ *   · a regex is neither.
  */
-const VALUE_BEFORE = /[\w$)\]]$/;
-
 function scan(text) {
   const comments = [], strings = [];
-  let i = 0, quote = '', start = 0;
-  while (i < text.length) {
-    const c = text[i], d = text[i + 1];
-    if (quote) {
-      if (c === '\\') { i += 2; continue; }
-      if (c === quote) { strings.push([start, i + 1, /\s/.test(text.slice(start + 1, i))]); quote = ''; }
-      i += 1;
-      continue;
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, /* skipTrivia */ false, ts.LanguageVariant.Standard, text);
+  let token = scanner.scan();
+  while (token !== ts.SyntaxKind.EndOfFileToken) {
+    const a = scanner.getTokenStart(), b = scanner.getTextPos();
+    if (token === ts.SyntaxKind.SingleLineCommentTrivia || token === ts.SyntaxKind.MultiLineCommentTrivia) {
+      comments.push([a, b]);
+    } else if (
+      token === ts.SyntaxKind.StringLiteral
+      || token === ts.SyntaxKind.NoSubstitutionTemplateLiteral
+      || token === ts.SyntaxKind.TemplateHead || token === ts.SyntaxKind.TemplateMiddle
+      || token === ts.SyntaxKind.TemplateTail
+      || token === ts.SyntaxKind.RegularExpressionLiteral
+    ) {
+      // the quotes and the `${` are part of the token; what matters is whether the TEXT it carries is a sentence
+      strings.push([a, b, /\s/.test(scanner.getTokenValue() ?? '')]);
     }
-    if (c === '"' || c === "'" || c === '`') { quote = c; start = i; i += 1; continue; }
-    if (c === '/' && d !== '/' && d !== '*' && !VALUE_BEFORE.test(text.slice(0, i).trimEnd())) {
-      // a regex literal: skip it whole, character class included, so a quote inside it opens nothing
-      let j = i + 1, inClass = false;
-      while (j < text.length) {
-        const ch = text[j];
-        if (ch === '\\') { j += 2; continue; }
-        if (ch === '\n') break;                       // unterminated: it was a division after all
-        if (ch === '[') inClass = true;
-        else if (ch === ']') inClass = false;
-        else if (ch === '/' && !inClass) { j += 1; break; }
-        j += 1;
-      }
-      i = j;
-      continue;
-    }
-    if (c === '/' && d === '/') {
-      const nl = text.indexOf('\n', i);
-      const stop = nl < 0 ? text.length : nl;
-      comments.push([i, stop]);
-      i = stop;
-      continue;
-    }
-    if (c === '/' && d === '*') {
-      const end = text.indexOf('*/', i + 2);
-      const stop = end < 0 ? text.length : end + 2;
-      comments.push([i, stop]);
-      i = stop;
-      continue;
-    }
-    i += 1;
+    token = scanner.scan();
   }
   return { comments, strings };
 }

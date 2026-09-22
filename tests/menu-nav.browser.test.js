@@ -260,11 +260,11 @@ describe('navDialog — andar dentro de um diálogo', () => {
   });
 
   it('🔴 nos PASSOS ⯇ ⯈, esquerda/direita emitem `passo` e NÃO andam de item; e o controle é UM item só (ADR-0151)', async () => {
-    const { montarPassos } = await import('../app/js/ui/panel-widgets.js');
+    const { mountSteps } = await import('../app/js/ui/panel-widgets.js');
     const { nav, openAudio } = boot();
     openAudio();
     const dlg = $('#audio');
-    const passos = montarPassos({ procurar: (s) => $(s), criar: (t) => document.createElement(t) },
+    const passos = mountSteps({ procurar: (s) => $(s), criar: (t) => document.createElement(t) },
       { rotulo: 'Cantos', valores: ['off', 'small', 'large'], atual: 1 });
     $('#a-voz').after(passos);
     const vistos = []; passos.addEventListener('passo', (e) => vistos.push(e.detail));
@@ -335,7 +335,7 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
   it('[Right] a navegação NÃO enxerga a lista escondida (ADR-0044, item 5)', () => {
     // O cartão passou a ter DUAS listas no markup, e só uma visível. Se a navegação varresse `.pm-btn` cru,
     // o cursor entraria nos itens do submenu de opções — e a criança ouviria itens de um menu que não está na
-    // tela. É por isso que `PM_ITENS_VISIVEIS` existe como constante e não como seletor solto.
+    // tela. É por isso que `PM_VISIBLE_ITEMS` existe como constante e não como seletor solto.
     //
     // E AGORA O ANEL DÁ A VOLTA — item 7: com a barra no HUD a pausa virou lista, e a XAG 106 passa a
     // RECOMENDAR o laço em vez de proibi-lo. A volta tem de cair no primeiro da lista VISÍVEL, nunca no
@@ -423,7 +423,7 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
   });
 
   it('🔴 [Right] each control says its TYPE and VALUE after its label (ADR-0159 rule 1, XAG 106)', async () => {
-    const { partesDoControle } = await import('../app/js/ui/menu-nav.js');
+    const { controlParts } = await import('../app/js/ui/menu-nav.js');
     const linha = (html) => {
       const row = document.createElement('div');
       row.className = 'ctrl-row';
@@ -432,10 +432,10 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
       return row.lastElementChild;
     };
     try {
-      expect(partesDoControle(linha('<button aria-pressed="true">Ligado</button>'))).toEqual({ rotulo: 'Som, interruptor', estado: 'ligado' });
-      expect(partesDoControle(linha('<select><option>Baixo</option><option selected>Alto</option></select>'))).toEqual({ rotulo: 'Som, lista', estado: 'Alto' });
-      expect(partesDoControle(linha('<input type="range" min="0" max="10" value="4" aria-label="Volume">'))).toEqual({ rotulo: 'Volume, controle deslizante', estado: '40%' });
-      expect(partesDoControle(linha('<div data-passos aria-label="Tamanho" aria-valuetext="adulto"></div>'))).toEqual({ rotulo: 'Tamanho, seletor', estado: 'adulto' });
+      expect(controlParts(linha('<button aria-pressed="true">Ligado</button>'))).toEqual({ rotulo: 'Som, interruptor', estado: 'ligado' });
+      expect(controlParts(linha('<select><option>Baixo</option><option selected>Alto</option></select>'))).toEqual({ rotulo: 'Som, lista', estado: 'Alto' });
+      expect(controlParts(linha('<input type="range" min="0" max="10" value="4" aria-label="Volume">'))).toEqual({ rotulo: 'Volume, controle deslizante', estado: '40%' });
+      expect(controlParts(linha('<div data-passos aria-label="Tamanho" aria-valuetext="adulto"></div>'))).toEqual({ rotulo: 'Tamanho, seletor', estado: 'adulto' });
     } finally {
       for (const r of document.querySelectorAll('body > .ctrl-row')) r.remove();
     }

@@ -209,7 +209,7 @@ export function keyUsedByOther(code: string, mapRef: KeyScheme, schemes: readonl
  * Devolve a AÇÃO e não um booleano, porque o anúncio tem de dizer qual — «essa tecla já está em uso» manda a
  * criança procurar o que a função já sabe.
  */
-export function acaoQueJaTem(code: string, mapRef: KeyScheme, exceto: Action): Action | null {
+export function actionAlreadyBound(code: string, mapRef: KeyScheme, exceto: Action): Action | null {
   for (const a of ACTIONS) {
     if (a === exceto) continue;
     if ((mapRef[a] || []).includes(code)) return a;
@@ -399,7 +399,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     // mover deixaria a ação antiga com lista vazia — que o `bindingProblems` classifica como problema, e que
     // a criança descobriria no meio do jogo, sem anúncio, com uma ação que deixou de existir. Recusar custa
     // dois passos (soltar a antiga, prender a nova) e não perde nada pelo caminho.
-    const aqui = acaoQueJaTem(e.code, capture.mapRef, capture.action);
+    const aqui = actionAlreadyBound(e.code, capture.mapRef, capture.action);
     if (aqui) {
       // ⚠️ `aqui` VEM DO ESQUEMA, e o esquema liga posições que o jogo pode não nomear — é por aqui que o id
       // abstracto chegava a uma criança. Sem palavra, a frase diz a verdade que INTERESSA («a tecla está

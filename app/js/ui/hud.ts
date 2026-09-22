@@ -72,7 +72,7 @@ export function screenCount(n: number): number { return Math.max(1, n); }
 
 /** O texto que o leitor de tela ouve no contador. A MOLDURA é a chave; o NOME do objetivo atravessa por
  *  parâmetro — a regra do pilar 3 (ADR-0010), a mesma que o currículo segue. */
-export const contadorLabel = (o: Objective): string =>
+export const counterLabel = (o: Objective): string =>
   t('hud.contador', { have: String(o.have), need: String(o.need), nome: o.name.text });
 
 /**
@@ -106,8 +106,8 @@ export function vphudHtml(objetivo: Objective, icone: string): string {
  * `setAttribute` escapa por construção, e é por isso que a resposta é «construir nós» e não «escapar à mão»:
  * um escape esquecido não deixa rasto; um `setAttribute` esquecido tira o rótulo, e há caso a prendê-lo.
  */
-export function aplicarRotuloDoContador(vphud: Element | null, objetivo: Objective): void {
-  vphud?.querySelector('.vphud-obj')?.setAttribute('aria-label', contadorLabel(objetivo));
+export function applyCounterLabel(vphud: Element | null, objetivo: Objective): void {
+  vphud?.querySelector('.vphud-obj')?.setAttribute('aria-label', counterLabel(objetivo));
 }
 
 /**
@@ -161,7 +161,7 @@ export interface HudRowView {
 export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string, objetivo: Objective): HudRowView {
   return {
     have: String(objetivo.have),
-    label: contadorLabel(objetivo),
+    label: counterLabel(objetivo),
     // O `|| '—'` FICA, mesmo com o resolvedor já tratando desconhecido. Não é redundância: é a garantia de
     // que o campo do poder NUNCA aparece em branco no HUD, e ela não pode depender de todo consumidor futuro
     // lembrar de tratar o caso. Um teste meu ia perdê-la nesta mudança e reprovou por isso.
@@ -272,7 +272,7 @@ export function initHud(ctx: HudCtx): HudApi {
       const d = document.createElement('div');
       d.className = 'vphud';
       d.innerHTML = vphudHtml(ctx.hudObjective(i), ctx.hudIcon);
-      aplicarRotuloDoContador(d, ctx.hudObjective(i)); // #106: o nome vem do JOGO — atributo, nunca markup
+      applyCounterLabel(d, ctx.hudObjective(i)); // #106: o nome vem do JOGO — atributo, nunca markup
       exp.appendChild(d); vpHudDom.push(d);
 
       const q = document.createElement('div');

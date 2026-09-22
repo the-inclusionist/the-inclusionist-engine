@@ -21,12 +21,12 @@ import { crtScanVars } from '../render/crt.js';
  * target — «44px é o correto, eu errei quando disse 42px» — so the floor is 44 px at the minimum (k = 2) and
  * grows with the scale, like the text; there is no smaller screen left to shrink for.
  */
-export function alvoMinimo(k: number): number {
+export function minimumTarget(k: number): number {
   return 22 * (Number.isFinite(k) && k > 2 ? k : 2);
 }
 
 /** One node inside the region, as measured by whoever calls: its computed font size if it holds text, its box if it is a target. */
-export interface MedidaDeNo {
+export interface NodeMeasure {
   readonly nome: string;
   readonly daEngine: boolean;
   readonly fontePx: number | null;
@@ -38,14 +38,14 @@ export interface MedidaDeNo {
  * side is under 22·k px (44 at 640×360). The engine's own nodes are not the cartridge's to answer for, and a node with no
  * area is not drawn. Half a pixel of slack absorbs subpixel layout.
  */
-export function abaixoDoPiso(nos: readonly MedidaDeNo[], k: number): { texto: string[]; alvos: string[] } {
-  const escala = alvoMinimo(k) / 22;
+export function belowFloor(nos: readonly NodeMeasure[], k: number): { texto: string[]; alvos: string[] } {
+  const escala = minimumTarget(k) / 22;
   const texto: string[] = [];
   const alvos: string[] = [];
   for (const n of nos) {
     if (n.daEngine) continue;
     if (n.fontePx !== null && n.fontePx > 0 && n.fontePx < 8 * escala - 0.5) texto.push(n.nome);
-    if (n.alvo && n.alvo.w > 0 && n.alvo.h > 0 && Math.min(n.alvo.w, n.alvo.h) < alvoMinimo(k) - 0.5) alvos.push(n.nome);
+    if (n.alvo && n.alvo.w > 0 && n.alvo.h > 0 && Math.min(n.alvo.w, n.alvo.h) < minimumTarget(k) - 0.5) alvos.push(n.nome);
   }
   return { texto, alvos };
 }
@@ -66,10 +66,10 @@ export function abaixoDoPiso(nos: readonly MedidaDeNo[], k: number): { texto: st
  * ⚠️ IGNORA OS DESCENDENTES DA PRÓPRIA BARRA: os botões dela intersectam-na por definição, e contá-los faria
  * o crivo acusar sempre — o defeito que o ADR-0106 §2 chama de afogar o que se pode resolver.
  */
-export interface CaixaNomeada { readonly nome: string; readonly caixa: Caixa; readonly daBarra: boolean; }
-export interface Caixa { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+export interface NamedBox { readonly nome: string; readonly caixa: Box; readonly daBarra: boolean; }
+export interface Box { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
 
-export function invasoresDaBarra(barra: Caixa | null, nos: readonly CaixaNomeada[]): string[] {
+export function barIntruders(barra: Box | null, nos: readonly NamedBox[]): string[] {
   // Uma barra sem área não reserva nada — e acusar contra um rectângulo de zero seria acusar toda a gente.
   if (!barra || barra.w <= 0 || barra.h <= 0) return [];
   // ⚠️ O GUARDA DE ÁREA ZERO FAZ TRABALHO, e eu quase o tirei por uma leitura errada. Uma mutação que o
@@ -113,7 +113,7 @@ function cascaDoPalco(): HTMLElement | null {
  * The scale ADR-0001 gives a stage: the factor in REAL pixels (whole, except at the floor — ADR-0179), the CSS factor, and
  * the region's CSS size.
  */
-export interface Escala { readonly kDev: number; readonly k: number; readonly largura: number; readonly altura: number }
+export interface Scale { readonly kDev: number; readonly k: number; readonly largura: number; readonly altura: number }
 
 /**
  * ADR-0001 AS A PURE FUNCTION — so the engine can apply it to every cartridge (ADR-0163) and a test can pin it.
@@ -123,7 +123,7 @@ export interface Escala { readonly kDev: number; readonly k: number; readonly la
  * targets 44 px: where the whole multiple gives less (a fractional display scale on the minimum window) the scale is exactly
  * 2 CSS px, whole in real pixels or not, because WCAG 2.2 AA decides (ADR-0179).
  */
-export function escalaDoPalco(availW: number, availH: number, dpr: number, baseW: number, baseH: number): Escala {
+export function stageScale(availW: number, availH: number, dpr: number, baseW: number, baseH: number): Scale {
   const MIN_K = 2;
   const inteiro = Math.floor(Math.min(availW * dpr / (baseW - 10), availH * dpr / (baseH - 10)));
   const kDev = inteiro / dpr >= MIN_K ? inteiro : MIN_K * dpr;
@@ -137,14 +137,14 @@ export function escalaDoPalco(availW: number, availH: number, dpr: number, baseW
  * ⚠️ HOST-INJECTED (the region is passed in): `createGame` serves documents that
  * are not the global one — the fault the root's finding 15 names about reaching `document` from under the injection.
  */
-export function aplicarEscala(regiao: HTMLElement, e: Escala): void {
+export function applyScale(regiao: HTMLElement, e: Scale): void {
   regiao.style.width = e.largura + 'px'; regiao.style.height = e.altura + 'px';
   regiao.style.setProperty('--hud-fs', Math.max(9, Math.round(180 * e.k * 0.052)) + 'px');
   regiao.style.setProperty('--ui-fs', (8 * e.k) + 'px');   // base LÓGICA 8px × k (16px em k=2)
   // One ruler (plan phase 5b): `--tap` is the name three sibling games read, `--alvo-min` the engine's (ADR-0163); both come
-  // from `alvoMinimo`, so a display scale that gives k under 2 (Windows 110%) no longer drops `--tap` under 44 px.
-  regiao.style.setProperty('--tap', alvoMinimo(e.k) + 'px');
-  regiao.style.setProperty('--alvo-min', alvoMinimo(e.k) + 'px'); // 44 px at 640×360, growing with k (ADR-0163)
+  // from `minimumTarget`, so a display scale that gives k under 2 (Windows 110%) no longer drops `--tap` under 44 px.
+  regiao.style.setProperty('--tap', minimumTarget(e.k) + 'px');
+  regiao.style.setProperty('--alvo-min', minimumTarget(e.k) + 'px'); // 44 px at 640×360, growing with k (ADR-0163)
 }
 
 export function layout(): void {
@@ -161,15 +161,15 @@ export function layout(): void {
   // ADR-001 (CORRIGIDO 2026-07-04): ESCALA travada em PIXELS REAIS INTEIROS. Cada pixel de arte = kDev pixels
   // FÍSICOS (inteiro) → scanlines SEMPRE regulares e arte uniforme em QUALQUER dpr. Tolera ≤5px lógicos de corte
   // por lado (o −10): base·kDev − avail·dpr ≤ 10·kDev ⇒ kDev ≤ avail·dpr/(base−10). (José escolheu inteiro-REAL.)
-  // A conta mora em `escalaDoPalco` desde o ADR-0163, para a engine a aplicar a todo cartucho.
+  // A conta mora em `stageScale` desde o ADR-0163, para a engine a aplicar a todo cartucho.
   const dpr = window.devicePixelRatio || 1;
-  const escala = escalaDoPalco(availW, availH, dpr, baseW, baseH);
+  const escala = stageScale(availW, availH, dpr, baseW, baseH);
   const { kDev, k } = escala;
   // ESCALA das vars de UI é ESCOPADA ao #game-region: só a UI DENTRO do canvas (menus/HUD/pausa/quiz) escala com o
   // k. Fora do canvas (barra de topo, painel de debug) herda o :root → texto SEMPRE 16px, toque 44px (José).
   const gr = $<HTMLElement>('#game-region'); if (gr) {
-    // `--tap` é o tamanho PREFERIDO (22·k) e `--alvo-min` o CHÃO (22·k, 44 px a 640×360 — ADR-0163), escritos em `aplicarEscala`.
-    aplicarEscala(gr, escala);
+    // `--tap` é o tamanho PREFERIDO (22·k) e `--alvo-min` o CHÃO (22·k, 44 px a 640×360 — ADR-0163), escritos em `applyScale`.
+    applyScale(gr, escala);
   }
   crtScanVars(); // scanlines re-alinham quando a escala k muda
   if (/[?&]debug=true/.test(location.search)) console.info(`[escala] kDev=${kDev}× px REAIS (canvas físico ${baseW * kDev}×${baseH * kDev} = múltiplo INTEIRO de ${baseW}×${baseH}); CSS ${Math.round(baseW * k)}×${Math.round(baseH * k)} (k=${k.toFixed(3)}, dpr=${dpr})`);

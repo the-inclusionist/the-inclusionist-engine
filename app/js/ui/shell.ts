@@ -98,7 +98,7 @@ import type { PadMap } from '../input/gamepad.js';
 import type { SceneFacts } from '../core/scenes.js';
 // UMA constante, e não um seletor repetido: com o submenu de opções (ADR-0044, item 5) o cartão de pausa passou
 // a ter DUAS listas, e quem varrer `.pm-btn` cru enxerga também a que está escondida.
-import { PM_ITENS_VISIVEIS } from './pause-icons.js';
+import { PM_VISIBLE_ITEMS } from './pause-icons.js';
 
 /* ===================== interfaces mínimas ===================== */
 
@@ -239,7 +239,7 @@ export function chip(txt: string, col: string | null, word?: string): string {
  * módulo avaliada uma vez no import — texto já resolvido congelaria o idioma no boot. Quem resolve é aqui, a
  * cada chamada, com o idioma vigente naquele instante.
  */
-export function glifoFalado(g: string): string {
+export function spokenGlyph(g: string): string {
   const k = PAD_GLYPH_SPOKEN[g];
   return k ? t(k) : g;
 }
@@ -261,7 +261,7 @@ export function glifoFalado(g: string): string {
 export function pauseLegendHtml(sim: readonly [string, string], nao: readonly [string, string]): string {
   const mudo = (g: readonly [string, string], palavra: string): string =>
     `<span class="lg" aria-hidden="true"><span class="lg-ico" style="background:${g[1]}">${g[0]}</span> ${palavra}</span>`;
-  const falada = t('menu.legendSpoken', { sim: glifoFalado(sim[0]), nao: glifoFalado(nao[0]) });
+  const falada = t('menu.legendSpoken', { sim: spokenGlyph(sim[0]), nao: spokenGlyph(nao[0]) });
   return mudo(sim, t('menu.yes')) + mudo(nao, t('menu.no')) + `<span class="sr-only">${falada}</span>`;
 }
 
@@ -497,7 +497,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
 
   function pauseSelect(): void {
     ctx.getPauseScreens().forEach((sp) => {
-      const items = [...sp.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
+      const items = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
       items.forEach((b) => b.classList.remove('pm-sel'));
       if (items[0]) items[0].classList.add('pm-sel'); // 1º item (Continuar) selecionado em cada tela
     });

@@ -20,7 +20,7 @@
 import { latchIsOptional, ONE_COMMAND_AT_A_TIME } from '../input/latch-scope.js';
 
 /** Uma linha pronta a traduzir. `null` = há escolha, e não há nada a dizer. */
-export interface RecusaDaAlternancia {
+export interface LatchRefusal {
   readonly chave: string;
   /** O transporte que a exige — fica disponível para quem quiser compor a frase de outro modo. */
   readonly transporte: string;
@@ -34,7 +34,7 @@ export interface RecusaDaAlternancia {
  * substantivo solto. É exactamente o defeito que o `sr.nav.clockOne` registou para «às 1 horas», e que o
  * `ui/simulation-refusal` já recusou pela mesma razão com os três eixos dele.
  */
-export const CHAVE_DA_RECUSA: Readonly<Record<string, string>> = Object.freeze({
+export const REFUSAL_KEY: Readonly<Record<string, string>> = Object.freeze({
   olhos: 'alt.exigida.olhos',
   rosto: 'alt.exigida.rosto',
   gestos: 'alt.exigida.gestos',
@@ -46,9 +46,9 @@ export const CHAVE_DA_RECUSA: Readonly<Record<string, string>> = Object.freeze({
  *
  * `null` = pode; a interface não mostra nada, porque um aviso que aparece sempre deixa de ser lido.
  */
-export function recusaDaAlternancia(transporte: string): RecusaDaAlternancia | null {
+export function latchRefusal(transporte: string): LatchRefusal | null {
   if (latchIsOptional(transporte)) return null;
-  const chave = CHAVE_DA_RECUSA[transporte];
+  const chave = REFUSAL_KEY[transporte];
   // 📌 Um transporte que exija alternância e não tenha frase seria um botão desabilitado SEM motivo — pior do
   // que o defeito que isto conserta, porque a criança deixa de saber sequer que há uma razão. O gate afirma
   // que os dois conjuntos coincidem; aqui a ausência degrada para «não recuso», que mantém o controle vivo.
@@ -59,12 +59,12 @@ export function recusaDaAlternancia(transporte: string): RecusaDaAlternancia | n
  * O controle continua NA TELA quando a alternância é exigida?
  *
  * ⚠️ SEMPRE, e é a metade «não some» da cláusula 3. Existe como função com nome próprio, e não como um
- * `!recusa` no ponto de uso, porque responde a outra pergunta: `recusaDaAlternancia` diz *por que* não dá;
+ * `!recusa` no ponto de uso, porque responde a outra pergunta: `latchRefusal` diz *por que* não dá;
  * esta diz *que a linha continua na tela*. Juntá-las faria «não há motivo» parecer «não desenhe a linha».
  */
-export function mostraMesmoExigida(): boolean {
+export function showsEvenWhenRequired(): boolean {
   return true;
 }
 
 /** Os transportes que exigem alternância, para quem precisa de os enumerar. Vem da REGRA, não de uma cópia. */
-export const EXIGEM_ALTERNANCIA: ReadonlySet<string> = ONE_COMMAND_AT_A_TIME;
+export const NEED_LATCH: ReadonlySet<string> = ONE_COMMAND_AT_A_TIME;

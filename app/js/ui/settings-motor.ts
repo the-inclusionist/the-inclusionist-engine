@@ -9,7 +9,7 @@
 // ⚠️ `setToggleMove` DEIXOU DE ESTAR NESSA LISTA em 2026-09-08 (ADR-0106 §4, etapa 1b), e o que ela dava como
 // razão era o argumento contrário: dizia que ele «fica fora deste módulo porque é PARTILHADO com outra
 // superfície da interface» — o ícone `altmove` da pausa. Ser partilhado por duas superfícies da ENGINE é razão
-// para a engine o possuir. `definirAlternanciaDeMarcha` mora aqui; o campo do `ctx` ficou OPCIONAL, então
+// para a engine o possuir. `setMoveLatch` mora aqui; o campo do `ctx` ficou OPCIONAL, então
 // quem injecta continua a mandar e quem não injecta deixa de ficar sem ele.
 // Overlay open/close plumbing (frontOverlay, #movement hidden toggle,
 // Escape handling, renderMapHub) is the SHARED helper used by every settings panel and stays in game.js.
@@ -28,9 +28,9 @@ import { writeLatch } from '../input/latch-store.js';
 import {
   applyLatch, BASE_DA_MARCHA, type LatchPlayer as JogadorDaAlternanciaDaAresta,
 } from '../input/latch-sync.js';
-import { recusaDaAlternancia } from './latch-refusal.js';
+import { latchRefusal } from './latch-refusal.js';
 import type { PanelShellCtx } from './panel-shell.js';
-import { linhaDeControle, rotularLinha, type ControlRowSpec } from './panel-widgets.js';
+import { controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
@@ -38,7 +38,7 @@ import { linhaDeControle, rotularLinha, type ControlRowSpec } from './panel-widg
 export type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal platform/storage.ts shape this module needs. */
-export interface MotorStore {
+export interface MobilityStore {
   setBool(key: string, on: boolean): void;
   /** Lê a chave crua. Só a marca do ADR-0029 usa, e para uma pergunta precisa: a criança ESCOLHEU isto? */
   get(key: string): string | null;
@@ -46,17 +46,17 @@ export interface MotorStore {
 
 /** Minimal per-player shape this module reads/writes (core/state.ts's `players` entries carry much more). */
 /** As duas escolhas motoras por jogador: modo Fácil e teclas de alternância. */
-export type MotorPlayer = PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>;
+export type MobilityPlayer = PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>;
 
-export interface SettingsMotorCtx {
+export interface SettingsMobilityCtx {
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
   $: DomQuery;
   /** Screen-reader announcement (core/a11y-sr's srSay), injected. */
   srSay: (msg: string) => void;
   /** Persistence (platform/storage.ts), injected. */
-  store: MotorStore;
+  store: MobilityStore;
   /** Live player list (core/state.ts's `players` — mutated in place, same reference every call). */
-  players: MotorPlayer[];
+  players: MobilityPlayer[];
   /** Live player count (core/state.ts's `numPlayers`); a getter because the value is reassigned over time. */
   getNumPlayers: () => number;
   /** SHARED setter (also used by the pause-menu quick icon `altmove`) — stays in game.js, injected. */
@@ -77,7 +77,7 @@ export interface SettingsMotorCtx {
   /**
    * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113) — atravessa daqui para a escrita.
    *
-   * ⚠️ Opcional pela mesma razão que na `EscritaDaAlternanciaCtx`: sem ele a escrita cai no que já fazia,
+   * ⚠️ Opcional pela mesma razão que na `LatchWriteCtx`: sem ele a escrita cai no que já fazia,
    * e exigi-lo quebraria todo consumidor por causa de uma migração a meio.
    */
   transporteEmUso?: (jogador: number) => string;
@@ -85,7 +85,7 @@ export interface SettingsMotorCtx {
    * A ALTERNÂNCIA DO BOTÃO DE CORRER.
    *
    * ⚠️ PASSOU A OPCIONAL (ADR-0106 §1), e a ausência é a notícia: a engine passou a saber respondê-la, por
-   * `definirAlternanciaDeCorrida` — ver o que está escrito lá, e o teste é o mesmo que autorizou a irmã da
+   * `setRunLatch` — ver o que está escrito lá, e o teste é o mesmo que autorizou a irmã da
    * marcha: nenhum dos passos é do jogo. Quem injecta continua a mandar.
    */
   setToggleRun?: (i: number, on: boolean) => void;
@@ -116,7 +116,7 @@ export interface SettingsMotorCtx {
   fillExplain?: (card: HTMLElement | null) => void;
 }
 
-export interface SettingsMotorApi {
+export interface SettingsMobilityApi {
   /** Re-renders #movement-players (kept `hidden`, per E3 — see playerTabsHTML) and (re)wires its buttons. */
   renderMovPlayers: () => void;
   /** Reflects the selected player's Modo Fácil onto #opt-facil (+ the #opt-movement bar light). */
@@ -174,10 +174,10 @@ export function toggleMoveKey(i: number): string {
  * Sem isso, a criança desliga o modo e a personagem continua a andar sozinha, sem tecla nenhuma premida —
  * e não há erro nenhum a dizê-lo.
  *
- * ⚠️ E É FATIA PRÓPRIA, e não o `MotorPlayer`, porque os DOIS chamadores têm fatias diferentes: o painel
+ * ⚠️ E É FATIA PRÓPRIA, e não o `MobilityPlayer`, porque os DOIS chamadores têm fatias diferentes: o painel
  * motor traz `easy`/`toggleRun` que isto não lê, e o `PausePlayer` traz o visual e as três do movimento
  * reduzido. Uma fatia mínima é o que deixa os dois passarem sem que nenhum tenha de carregar o do outro.
- * `MotorPlayer` e `PausePlayer` ganharam `walkDir` — quebra declarada, porque o campo é do `PlayerBase` e
+ * `MobilityPlayer` e `PausePlayer` ganharam `walkDir` — quebra declarada, porque o campo é do `PlayerBase` e
  * todo jogador da engine já o tem.
  *
  * 📌 A DEFINIÇÃO MUDOU DE CASA (issue #127) e o NOME fica publicado aqui. Ela vive em `input/latch-sync`, ao
@@ -188,8 +188,8 @@ export function toggleMoveKey(i: number): string {
  */
 export type LatchPlayer = JogadorDaAlternanciaDaAresta;
 
-/** O que a escrita precisa de saber. Tudo o que está aqui já vive no `SettingsMotorCtx` e no `PauseIconsCtx`. */
-export interface EscritaDaAlternanciaCtx {
+/** O que a escrita precisa de saber. Tudo o que está aqui já vive no `SettingsMobilityCtx` e no `PauseIconsCtx`. */
+export interface LatchWriteCtx {
   readonly players: readonly LatchPlayer[];
   readonly store: { setBool(key: string, on: boolean): void };
   readonly srSay: (msg: string) => void;
@@ -217,7 +217,7 @@ export interface EscritaDaAlternanciaCtx {
  * `platform/storage`, e `sr.motor.toggleMove*` são chaves i18n da engine. Não sobrava efeito de jogo nenhum,
  * o que faz deste o mais limpo dos sete: aqui não há sequer um efeito colateral a injectar.
  */
-export function definirAlternanciaDeMarcha(ctx: EscritaDaAlternanciaCtx, i: number, on: boolean): void {
+export function setMoveLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   const p = ctx.players[i];
   if (!p) return;
   // 📌 A REGRA DE DESLIGAR MORA NUM SÍTIO SÓ desde a issue #127: `applyLatch` põe o valor E pára quem
@@ -242,12 +242,12 @@ export function definirAlternanciaDeMarcha(ctx: EscritaDaAlternanciaCtx, i: numb
 }
 
 /**
- * LIGA OU DESLIGA A ALTERNÂNCIA DO CORRER — a irmã de `definirAlternanciaDeMarcha`, e mais limpa do que ela.
+ * LIGA OU DESLIGA A ALTERNÂNCIA DO CORRER — a irmã de `setMoveLatch`, e mais limpa do que ela.
  *
  * 🎯 A RAZÃO DE EXISTIR É A MESMA, e o teste que a autoriza está escrito no comentário da irmã: «cada passo já
  * era da engine». Aqui é ainda mais verdade — `toggleRun` é campo de `PlayerBase`, a chave é
  * `KEYS.toggleRunP(i)` do `platform/storage`, e `sr.motor.toggleRun*` são chaves i18n da engine. **Não há um
- * único efeito de jogo a injectar**, e por isso `SettingsMotorCtx.setToggleRun` deixa de ser obrigatório: um
+ * único efeito de jogo a injectar**, e por isso `SettingsMobilityCtx.setToggleRun` deixa de ser obrigatório: um
  * jogo que não o forneça deixa de ficar sem a linha do correr, em vez de a ter morta.
  *
  * ⚠️ E NÃO CHAMA `applyLatch`, ao contrário da irmã. Aquela pára quem anda por travamento ao desligar,
@@ -258,7 +258,7 @@ export function definirAlternanciaDeMarcha(ctx: EscritaDaAlternanciaCtx, i: numb
  * 📌 O anúncio é INCONDICIONAL, como o da irmã: a criança carregou no botão, e calar-se porque o valor já era
  * aquele deixa o controle sem resposta para quem ouve em vez de ver.
  */
-export function definirAlternanciaDeCorrida(ctx: EscritaDaAlternanciaCtx, i: number, on: boolean): void {
+export function setRunLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   const p = ctx.players[i] as ({ toggleRun?: boolean } | undefined);
   if (!p) return;
   p.toggleRun = on;
@@ -289,7 +289,7 @@ export function definirAlternanciaDeCorrida(ctx: EscritaDaAlternanciaCtx, i: num
  *
  * Idempotente: chamar duas vezes reaproveita a lista em vez de a duplicar.
  */
-export function montarInteriorDoMotor(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
+export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
   if (!ctx.procurar('#movement-players')) {
     const abas = ctx.criar('div');
     abas.id = 'movement-players';
@@ -307,14 +307,14 @@ export function montarInteriorDoMotor(ctx: PanelShellCtx, card: HTMLElement, lis
     // ⚠️ REETIQUETA EM VEZ DE SALTAR quando a linha já existe, e é por isso que esta função é chamada
     // também do `render()` de cada abertura: o texto foi capturado no intervalo de arranque, onde o idioma
     // ainda é o de recuo. 📏 Medido num navegador com `lang="en"`: o título vinha em inglês e as linhas em
-    // português, na mesma tela. Ver `ui/panel-widgets.rotularLinha`.
+    // português, na mesma tela. Ver `ui/panel-widgets.labelRow`.
     const jaExiste = ctx.procurar('#' + spec.id);
     if (jaExiste) {
       const linha = jaExiste.closest<HTMLElement>('.ctrl-row');
-      if (linha) rotularLinha(linha, spec);
+      if (linha) labelRow(linha, spec);
       continue;
     }
-    lista.appendChild(linhaDeControle(ctx, spec).linha);
+    lista.appendChild(controlRow(ctx, spec).linha);
   }
 }
 
@@ -324,7 +324,7 @@ export function clampSelPlayer(sel: number, numPlayers: number): number {
 }
 
 /** Whether ANY player currently uses Modo Fácil or alternância — lights the #opt-movement bar button. */
-export function anyMotorActive(players: MotorPlayer[]): boolean {
+export function anyMobilityActive(players: MobilityPlayer[]): boolean {
   return players.some((p) => p.easy || p.toggleMove);
 }
 
@@ -362,12 +362,12 @@ export function easyAnnouncement(i: number, numPlayers: number, on: boolean): st
 // DOM-facing (thin) — requires `document`/injected ctx
 // ---------------------------------------------------------------------------------------------
 
-export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
+export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobilityApi {
   // ⚠️ RESOLVIDO UMA VEZ: quem injecta manda, quem não injecta passa a ter. A engine sabe fazê-lo sozinha
   // desde 2026-09-08 — ver definirAlternanciaDeMarcha, e o comentário do campo, que argumentava contra si.
-  const setToggleMove = ctx.setToggleMove ?? ((i: number, on: boolean) => definirAlternanciaDeMarcha(ctx, i, on));
-  // A irmã, pela mesma regra e pela mesma razão — ver `definirAlternanciaDeCorrida`.
-  const setToggleRun = ctx.setToggleRun ?? ((i: number, on: boolean) => definirAlternanciaDeCorrida(ctx, i, on));
+  const setToggleMove = ctx.setToggleMove ?? ((i: number, on: boolean) => setMoveLatch(ctx, i, on));
+  // A irmã, pela mesma regra e pela mesma razão — ver `setRunLatch`.
+  const setToggleRun = ctx.setToggleRun ?? ((i: number, on: boolean) => setRunLatch(ctx, i, on));
   // ⚠️ A REACÇÃO DO MUNDO É DO JOGO, e a ausência dela não é um botão morto: `setEasy` já escreveu, persistiu
   // e anunciou antes de chegar aqui. É o padrão que o `ui/pause-icons` fixou para o modo cego.
   const rebuildCoins = ctx.rebuildCoins ?? ((): void => {});
@@ -402,14 +402,14 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
 
   /** A recusa DESTE jogador agora, ou `null`. Recalculada a cada reflexo: o aparelho em uso muda. */
   function recusaAgora(i: number) {
-    return ctx.transporteEmUso ? recusaDaAlternancia(ctx.transporteEmUso(i)) : null;
+    return ctx.transporteEmUso ? latchRefusal(ctx.transporteEmUso(i)) : null;
   }
   const toggleRunBtn = ctx.$<HTMLElement>('#opt-togglerun');
 
   // barra acende se QUALQUER jogador usa Fácil/alternância
   function reflectMovementBtn(): void {
     const b = ctx.$<HTMLElement>('#opt-movement');
-    if (b) b.classList.toggle('is-on', anyMotorActive(ctx.players));
+    if (b) b.classList.toggle('is-on', anyMobilityActive(ctx.players));
     refreshMarks();
   }
 

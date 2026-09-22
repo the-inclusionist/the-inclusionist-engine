@@ -19,7 +19,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { acaoNaBarra } from '../app/js/ui/pause-icons.js';
+import { barAction } from '../app/js/ui/pause-icons.js';
 
 /** Uma intenção isolada, como os tradutores de teclado e de controle a montam. */
 const so = (...ks) => Object.fromEntries(ks.map((k) => [k, true]));
@@ -28,36 +28,36 @@ describe('modo acessibilidade · o que cada intenção significa dentro da barra
   it('[Right] VOLTAR sai do modo', () => {
     // O `no` do projeto: Escape no teclado, e o botão de voltar no controle (X no PlayStation, B no Xbox,
     // A no Nintendo). É a saída que quem já conhece o jogo vai tentar primeiro, porque é a saída de tudo.
-    expect(acaoNaBarra(so('no'), false)).toBe('sair');
+    expect(barAction(so('no'), false)).toBe('sair');
   });
 
   it('[Right] START também sai — DUAS saídas, e é de propósito', () => {
     // A segunda saída não é redundância: START é o botão que ABRE a pausa, e a pausa é de onde se entrou no
     // modo. Quem se perde tenta voltar por onde veio. Ter só uma das duas seria confiar que a criança
     // adivinhe QUAL das duas o jogo escolheu.
-    expect(acaoNaBarra({}, true)).toBe('sair');
-    expect(acaoNaBarra(so('up'), true), 'START vence a direção — sair nunca fica atrás de andar').toBe('sair');
+    expect(barAction({}, true)).toBe('sair');
+    expect(barAction(so('up'), true), 'START vence a direção — sair nunca fica atrás de andar').toBe('sair');
   });
 
   it('[Right] as quatro direções ANDAM na barra', () => {
-    for (const d of ['up', 'down', 'left', 'right']) expect(acaoNaBarra(so(d), false), d).toBe('andar');
+    for (const d of ['up', 'down', 'left', 'right']) expect(barAction(so(d), false), d).toBe('andar');
   });
 
   it('[Right] confirmar ATIVA o ícone sob o cursor', () => {
-    expect(acaoNaBarra(so('yes'), false)).toBe('ativar');
+    expect(barAction(so('yes'), false)).toBe('ativar');
   });
 
   it('[Boundary] SAIR vence tudo, inclusive confirmar', () => {
     // A ordem de precedência é a decisão. Se `yes` viesse antes, um controle que registrasse os dois no mesmo
     // quadro (acontece: dedos apertam junto) alternaria um ajuste em vez de devolver o jogo.
-    expect(acaoNaBarra(so('no', 'yes'), false)).toBe('sair');
-    expect(acaoNaBarra(so('yes'), true)).toBe('sair');
+    expect(barAction(so('no', 'yes'), false)).toBe('sair');
+    expect(barAction(so('yes'), true)).toBe('sair');
   });
 
   it('[Zero] quadro sem intenção nenhuma não faz nada', () => {
     // O controle é lido A CADA QUADRO. Sem isto, um modo que "faz alguma coisa" por quadro parado viraria
     // sessenta ações por segundo.
-    expect(acaoNaBarra({}, false)).toBe('nada');
+    expect(barAction({}, false)).toBe('nada');
   });
 });
 

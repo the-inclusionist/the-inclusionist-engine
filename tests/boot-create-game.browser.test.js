@@ -318,7 +318,7 @@ describe('createGame num documento de verdade', () => {
 
     it('🔴 [Right] the cursor NEVER lands on a hidden item — the ring walks only what the child sees', () => {
       // 📏 Measured in dist (quiz, 2026-09-12): ArrowDown from «Voltar ao jogo» put the cursor on «Ajuda», which is
-      // hidden without a `preset`. `PM_ITENS_VISIVEIS` excluded hidden LISTS and not hidden ITEMS, so the child pressed
+      // hidden without a `preset`. `PM_VISIBLE_ITEMS` excluded hidden LISTS and not hidden ITEMS, so the child pressed
       // down and saw nothing selected; the count «N of M» counted the invisible ones too.
       // ⚠️ Since ADR-0161 the engine hides nothing, but a game may pass its own lists: the item is hidden by hand here.
       const motor = abrir();
@@ -769,7 +769,7 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('⚠️ [Zero] sem escritores visuais, os ícones de contraste e cor NÃO são montados', () => {
-      // `iconesQueAccionam` monta `contrast` e `cvd` só para quem entrega quem os escreve. É a regra certa:
+      // `iconsThatAct` monta `contrast` e `cvd` só para quem entrega quem os escreve. É a regra certa:
       // um ícone que não acciona é pior que um ícone a menos. O que faltava era a PORTA.
       abrir();
 
@@ -844,7 +844,7 @@ describe('createGame num documento de verdade', () => {
    * ===================== OS PAINÉIS DE AJUSTES (ADR-0106 §1) =====================
    *
    * 🔴 O QUE ESTES CASOS MEDEM JÁ FOI MEDIDO A VALER, e o número é o argumento: um jogo que chama só
-   * `createGame` recebia ZERO painéis. `ui/panel-shell.montarCasca` existe desde 07/09 e nenhum módulo da
+   * `createGame` recebia ZERO painéis. `ui/panel-shell.mountShell` existe desde 07/09 e nenhum módulo da
    * engine a chamava — o único chamador da árvore era o quiz. Cada `ui/settings-*` preenchia o interior de ids
    * que ninguém criava, e o quiz registou o sintoma como achado 6: «o painel abre VAZIO, sem erro».
    *
@@ -969,8 +969,8 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🎯 [Right] o item `anim` SOBREVIVE ao filtro do §5 — a tabela da engine deixou de ser vazia', () => {
-      // 📏 A cascata que produzia um cartão de um botão: sem `getPauseActs` a tabela é `{}`, `itensQueAccionam`
-      // guarda só os três de `ITENS_DA_ENGINE`, e `raizQueAcciona` tira também o `options` porque seria «uma
+      // 📏 A cascata que produzia um cartão de um botão: sem `getPauseActs` a tabela é `{}`, `itemsThatAct`
+      // guarda só os três de `ENGINE_ITEMS`, e `rootThatActs` tira também o `options` porque seria «uma
       // porta para uma sala vazia». Com uma acção de verdade, a porta e a sala existem.
       const motor = abrir();
       motor.pausa.mostrar(0);

@@ -72,7 +72,7 @@ const MAO_POR_LINGUA: Readonly<Record<string, readonly string[]>> = Object.freez
  * ciclo em vez de mostrar uma mão que não é de ninguém.
  */
 /** Uma posição do ciclo de tipografia do 11.º botão: a CAIXA e a FACE, juntas (ADR-0149 §1). */
-export interface PassoDeTipografia {
+export interface TypographyStep {
   /** `upper` = CAIXA ALTA; `mixed` = maiúscula e minúscula. Os valores de `core/state.letterCase`. */
   readonly caixa: 'upper' | 'mixed';
   /** A chave da face no catálogo. */
@@ -89,7 +89,7 @@ export interface PassoDeTipografia {
 }
 
 /** O aumento da mão do país. Nomeado para o crivo o poder afirmar contra o `minPx` em vez de o repetir. */
-export const ESCALA_DA_MAO = 1.25;
+export const HANDWRITING_SCALE = 1.25;
 /** A base do documento, em px — o `font-size` de `html,body`. O piso sai de multiplicá-la pela escala. */
 export const BASE_EM_PX = 16;
 
@@ -111,8 +111,8 @@ export const BASE_EM_PX = 16;
  * como desabilitados, e o ADR-0155 §3 mudou para «Pular» — enquanto a licença não deixa, o ciclo não pára neles nem os
  * anuncia. Uma posição que existisse só para ser saltada seria dado sem leitor; entram no dia em que funcionarem.
  */
-export function cicloDeTipografia(tag: string | null | undefined): readonly PassoDeTipografia[] {
-  const maos = maosDaEtiqueta(tag);
+export function typographyCycle(tag: string | null | undefined): readonly TypographyStep[] {
+  const maos = handsForTag(tag);
   return Object.freeze([
     { caixa: 'upper', fonte: 'andika', escala: 1 } as const,   // (a) o par da alfabetização
     { caixa: 'mixed', fonte: 'andika', escala: 1 } as const,   // (b)
@@ -120,14 +120,14 @@ export function cicloDeTipografia(tag: string | null | undefined): readonly Pass
     { caixa: 'mixed', fonte: 'lexend', escala: 1 } as const,   // (d)
     // (e), e (f) onde o país ensina duas. ⚠️ 25% MAIOR, e o número não é gosto: a base do documento é 16 px,
     // as Playwrite declaram `minPx: 20`, e 16 × 1,25 é exactamente 20. A escala É o piso.
-    ...maos.map((fonte) => ({ caixa: 'mixed', fonte, escala: ESCALA_DA_MAO } as const)),
+    ...maos.map((fonte) => ({ caixa: 'mixed', fonte, escala: HANDWRITING_SCALE } as const)),
   ]);
 }
 
 /** O índice de onde o ciclo COMEÇA — a posição (c). Nomeado para o crivo o poder afirmar sem o recontar. */
-export const INICIO_DO_CICLO = 2;
+export const CYCLE_START = 2;
 
-export function maosDaEtiqueta(tag: string | null | undefined): readonly string[] {
+export function handsForTag(tag: string | null | undefined): readonly string[] {
   if (!tag) return [];
   const partes = String(tag).split('-');
   const lingua = (partes[0] ?? '').toLowerCase();
@@ -253,7 +253,7 @@ export const FONT_GROUPS: FontGroup[] = [
      * sobre uma categoria —, e é por isso que a mensagem nomeia as três.
      *
      * ⚠️ `papel` AUSENTE, logo `geral`, e é deliberado apesar de a ronde ser caligráfica por natureza: as
-     * caligráficas são filtradas do menu (`papelDaFonte === 'geral'`), e uma linha filtrada não pode dizer
+     * caligráficas são filtradas do menu (`fontRole === 'geral'`), e uma linha filtrada não pode dizer
      * nada a ninguém. Marcar o papel «certo» aqui apagaria a única coisa que este item existe para fazer.
      */
     /*
@@ -314,11 +314,11 @@ export const FONT_GROUPS: FontGroup[] = [
 /**
  * How much larger the text is drawn with this face: enough to reach its `minPx` from the document's base, never smaller.
  * A face whose catalogue floor is above the base (a display sans, the handwriting) is offered at that size, not under it
- * (ADR-0176 §4, the catalogue's rule R2). The cycle's hand of the country is the same rule (`ESCALA_DA_MAO`).
+ * (ADR-0176 §4, the catalogue's rule R2). The cycle's hand of the country is the same rule (`HANDWRITING_SCALE`).
  */
-export function escalaDaFace(it: FontItem): number { return Math.max(1, (it.minPx ?? BASE_EM_PX) / BASE_EM_PX); }
+export function faceScale(it: FontItem): number { return Math.max(1, (it.minPx ?? BASE_EM_PX) / BASE_EM_PX); }
 
-export function papelDaFonte(it: FontItem): FontRole { return it.papel ?? 'geral'; }
+export function fontRole(it: FontItem): FontRole { return it.papel ?? 'geral'; }
 
 /**
  * AS FAMÍLIAS QUE UMA FACE ACEITA, do `fam` que pode ser uma PILHA.
@@ -327,7 +327,7 @@ export function papelDaFonte(it: FontItem): FontRole { return it.papel ?? 'geral
  * são três desenhos da mesma letra de mão, e um adulto instala a que encontrar. As outras faces declaram uma
  * só, e para elas isto devolve uma lista de um.
  */
-export function familiasDaFace(it: FontItem): string[] {
+export function faceFamilies(it: FontItem): string[] {
   return it.fam.split(',').map((f) => f.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
 }
 
@@ -346,13 +346,13 @@ export function familiasDaFace(it: FontItem): string[] {
  * o que fazer. O silêncio não decide nada contra a criança — ele mantém o estado que já existia e que é
  * accionável. É o oposto do `seguraTeclas`, onde os dois lados do padrão erravam.
  */
-export function faceDisponivel(it: FontItem, instalada?: (familia: string) => boolean): boolean {
+export function faceAvailable(it: FontItem, instalada?: (familia: string) => boolean): boolean {
   if (!it.off) return true;
-  return !!instalada && familiasDaFace(it).some((f) => instalada(f));
+  return !!instalada && faceFamilies(it).some((f) => instalada(f));
 }
 
 /** As faces que o MENU pode oferecer: só as gerais (emenda do ADR-0012). */
-export const OFERECIVEIS: FontItem[] = FONT_GROUPS.flatMap((g) => g.items).filter((it) => papelDaFonte(it) === 'geral');
+export const OFERECIVEIS: FontItem[] = FONT_GROUPS.flatMap((g) => g.items).filter((it) => fontRole(it) === 'geral');
 export const FONT_BY_KEY: Record<string, FontItem> = {}; FONT_GROUPS.forEach((g) => g.items.forEach((it) => { FONT_BY_KEY[it.k] = it; }));
 
 /** Narrow store shape these need — lets a caller inject a fake without touching real storage. */
@@ -386,7 +386,7 @@ export const DEFAULT_FONT_KEY = 'atkinson';
  */
 export function resolveFontKey(s: FontStore): string {
   const k = s.get(FONT_KEY, null);
-  if (k && FONT_BY_KEY[k] && !FONT_BY_KEY[k].off && papelDaFonte(FONT_BY_KEY[k]) === 'geral') return k;
+  if (k && FONT_BY_KEY[k] && !FONT_BY_KEY[k].off && fontRole(FONT_BY_KEY[k]) === 'geral') return k;
   const leg = s.get(FONT_KEY_LEGACY, null);
   if (leg === 'alfabetizacao') return 'andika';
   if (leg === 'dislexia') return 'lexend';

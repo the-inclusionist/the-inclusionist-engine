@@ -7,7 +7,7 @@
 // criança descobre no meio da partida que não alcança uma ação e conclui que o jogo está partido, sem ter
 // como saber que não está.
 import { describe, it, expect } from 'vitest';
-import { linhasDoAviso } from '../app/js/ui/reach-notice.js';
+import { noticeRows } from '../app/js/ui/reach-notice.js';
 // ⚠️ `presetActions` e o preset do jogo SAÍRAM destes imports em 2026-09-07 (issue #111): as duas asserções
 // que os usavam eram sobre o JOGO — liam o fonte de `main.ts` e afirmavam que o preset da plataforma tem
 // nove ações — e mudaram para `game-platformer`. `reach`/`defaultTransports` FICAM: são da engine, e é
@@ -33,12 +33,12 @@ const DESKTOP = defaultTransports({ gamepad: nunca, teclado: sempre, toque: nunc
 
 describe('quando NÃO há o que dizer, não se diz nada', () => {
   it('[Zero] alcance ok devolve zero linhas — um aviso que aparece sempre deixa de ser lido', () => {
-    expect(linhasDoAviso(reach(DESKTOP, ACTIONS, 1), cru)).toEqual([]);
+    expect(noticeRows(reach(DESKTOP, ACTIONS, 1), cru)).toEqual([]);
   });
 
   it('[Boundary] e um jogo cujas ações CABEM no toque, e que segura UMA de cada vez, também não avisa', () => {
     const nove = ACTIONS.slice(0, 9);
-    expect(linhasDoAviso(reach(TABLET, nove, 1), cru)).toEqual([]);
+    expect(noticeRows(reach(TABLET, nove, 1), cru)).toEqual([]);
   });
 });
 
@@ -58,7 +58,7 @@ describe('⚠️ O PONTO CEGO DO ADR-0104: cabe nas ações e ainda assim não d
   });
 
   it('⚠️ [Right] e a frase diz os DOIS números, que é o que a torna acionável', () => {
-    const linhas = linhasDoAviso(reach(TABLET, nove, 3), real);
+    const linhas = noticeRows(reach(TABLET, nove, 3), real);
     expect(linhas).toContain('O controle de tela segura 2 botões de cada vez, e este jogo pede 3 ao mesmo tempo.');
   });
 
@@ -85,7 +85,7 @@ describe('⚠️ O PONTO CEGO DO ADR-0104: cabe nas ações e ainda assim não d
 
 describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»', () => {
   it('[Right] diz quantas o jogo pede, quem está curto com quantos lugares, e o que resolveria', () => {
-    const linhas = linhasDoAviso(reach(TABLET, ACTIONS, 1), cru);
+    const linhas = noticeRows(reach(TABLET, ACTIONS, 1), cru);
     expect(linhas).toEqual([
       `reach.titulo(pedidas=${ACTIONS.length})`,
       'reach.curto(transporte=reach.nome.toque,lugares=13)',
@@ -94,7 +94,7 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
   });
 
   it('[Right] e em português sai uma frase que uma criança consegue seguir', () => {
-    const linhas = linhasDoAviso(reach(TABLET, ACTIONS, 1), real);
+    const linhas = noticeRows(reach(TABLET, ACTIONS, 1), real);
     expect(linhas[0]).toBe('Este jogo usa 14 ações.');
     expect(linhas[1]).toBe('O controle de tela tem 13 lugares — não chegam para todas.');
     expect(linhas[2]).toBe('Ligue controle ou teclado e você joga com todas.');
@@ -104,7 +104,7 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
     // O jogo pede mais posições do que qualquer transporte deste aparelho oferece. Aqui o problema é do JOGO,
     // e dizer «ligue um controle» mandaria a criança procurar uma coisa que não conserta nada.
     const demais = [...ACTIONS, ...ACTIONS, ...ACTIONS]; // 42 posições: acima até do gamepad
-    const linhas = linhasDoAviso(reach(defaultTransports({ gamepad: sempre, teclado: sempre, toque: sempre, rato: sempre }), demais), cru);
+    const linhas = noticeRows(reach(defaultTransports({ gamepad: sempre, teclado: sempre, toque: sempre, rato: sempre }), demais), cru);
     expect(linhas).toContain('reach.semSaida');
     expect(linhas.some((l) => l.startsWith('reach.ligue'))).toBe(false);
   });
@@ -112,8 +112,8 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
   it('[Interface] todas as chaves usadas EXISTEM no dicionário base', () => {
     // O tradutor `real` lança em chave ausente, então isto é a asserção. Uma chave que falta não dá erro no
     // navegador — dá a chave crua na tela, ou uma frase vazia num leitor de tela, que é pior.
-    expect(() => linhasDoAviso(reach(TABLET, ACTIONS, 1), real)).not.toThrow();
-    expect(() => linhasDoAviso(reach(defaultTransports({ gamepad: sempre, teclado: sempre, toque: sempre, rato: sempre }),
+    expect(() => noticeRows(reach(TABLET, ACTIONS, 1), real)).not.toThrow();
+    expect(() => noticeRows(reach(defaultTransports({ gamepad: sempre, teclado: sempre, toque: sempre, rato: sempre }),
       [...ACTIONS, ...ACTIONS, ...ACTIONS]), real)).not.toThrow();
   });
 });

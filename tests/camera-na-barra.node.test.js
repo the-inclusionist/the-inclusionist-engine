@@ -5,7 +5,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PAUSE_ICONS, iconesQueAccionam, computeIconLabel, computeIconVisual } from '../app/js/ui/pause-icons.js';
+import { PAUSE_ICONS, iconsThatAct, computeIconLabel, computeIconVisual } from '../app/js/ui/pause-icons.js';
 import * as state from '../app/js/core/state.js';
 import { PADRAO } from '../app/js/core/visual-state.js';
 
@@ -31,9 +31,9 @@ describe('the 📷 icon', () => {
     expect([chaves[i - 1], chaves[i + 1]]).toEqual(['cvd', 'voice']);
   });
   it('mounts where the root has a camera to ask for, and not where it has none', () => {
-    expect(iconesQueAccionam({ ...todos, camera: true }).map((ic) => ic.k)).toContain('camera');
-    expect(iconesQueAccionam({ ...todos, camera: false }).map((ic) => ic.k)).not.toContain('camera');
-    expect(iconesQueAccionam(todos).map((ic) => ic.k), 'no answer is no 📷').not.toContain('camera');
+    expect(iconsThatAct({ ...todos, camera: true }).map((ic) => ic.k)).toContain('camera');
+    expect(iconsThatAct({ ...todos, camera: false }).map((ic) => ic.k)).not.toContain('camera');
+    expect(iconsThatAct(todos).map((ic) => ic.k), 'no answer is no 📷').not.toContain('camera');
   });
   it('its name says the mode, and it shows as on in every mode that plays', () => {
     expect(computeIconLabel('camera', snap({ camera: 'off' }))).toBe('Webcam: desligado');

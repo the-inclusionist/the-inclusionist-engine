@@ -61,10 +61,10 @@ export const PM_BTNS: readonly PauseBtnDef[] = [
  * ⚠️ NASCE COM O «VOLTAR» E MAIS NADA, e o vazio é a decisão: a engine não sabe o que um jogo tem de seu — o
  * jogo declara-o. Uma lista que a engine preenchesse seria a cadeira de rodas no xadrez outra vez.
  *
- * 📌 E por isso a porta cai sozinha: `raizQueAcciona` deixa cair uma porta cuja sala está vazia, e com esta
+ * 📌 E por isso a porta cai sozinha: `rootThatActs` deixa cair uma porta cuja sala está vazia, e com esta
  * lista reduzida ao `pmback` é exactamente esse o caso de um jogo que não declara nada.
  */
-export const PM_JOGO_BTNS: readonly PauseBtnDef[] = [
+export const PM_GAME_BTNS: readonly PauseBtnDef[] = [
   { act: 'pmback' },
 ];
 

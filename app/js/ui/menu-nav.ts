@@ -158,11 +158,11 @@ export function menuKeyIntent(code: string, act: string | null): NavKeys {
 import { hasNavIntent as hasIntent } from '../input/edges.js';
 import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
-import { mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from './pause-icons.js';
-import { anunciarItem } from './item-announcement.js';
+import { showPauseOptions, PM_VISIBLE_ITEMS } from './pause-icons.js';
+import { announceItem } from './item-announcement.js';
 import { accessibleLabel } from '../core/rotulo-acessivel.js';
 import { stepInRing } from '../core/anel.js';
-import { itensNavegaveis } from './menu-items.js';
+import { navigableItems } from './menu-items.js';
 import { t } from '../core/i18n.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
@@ -205,7 +205,7 @@ export function rangeStep(value: number, min: number, max: number, step: number,
  * O que se ganha em troca das quatro regras: `quit` fica a UMA tecla para CIMA de `resume`. Último na
  * leitura, vizinho no dedo.
  */
-export function passoNaPausa(len: number, idx: number, k: NavKeys): number {
+export function stepInPause(len: number, idx: number, k: NavKeys): number {
   const d = (k.down || k.right) ? 1 : -1;
   return stepInRing(len, idx < 0 ? 0 : idx, d);
 }
@@ -315,12 +315,12 @@ export interface MenuNavApi {
 // escrito tem de ser o do índice falado — duas cópias do selector eram como «2 de 7» e um «3» escrito divergiriam.
 /**
  * As partes que um controle de painel DIZ (ADR-0159 regra 1, XAG 106: «Gamma, slider, 38%, 6 of 9»): o rótulo com o
- * PAPEL, e o VALOR. O índice junta-se no `anunciarItem`.
+ * PAPEL, e o VALOR. O índice junta-se no `announceItem`.
  *
  * O rótulo é o `<strong>` da linha quando o controle vive numa (é o que se VÊ, e o texto de um interruptor é o estado,
  * não o nome); fora de linha, ou num cursor com nome próprio («Volume de Música»), é o nome acessível.
  */
-export function partesDoControle(el: HTMLElement): { rotulo: string; estado: string } {
+export function controlParts(el: HTMLElement): { rotulo: string; estado: string } {
   const forte = el.closest('.ctrl-row')?.querySelector('strong')?.textContent?.trim() || '';
   const nome = accessibleLabel(el);
   const com = (rotulo: string, papel: string): string => `${rotulo}, ${t(papel)}`;
@@ -358,7 +358,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   function menuItems(menu: HTMLElement): HTMLElement[] {
     const card = menu.querySelector<HTMLElement>(CARD_SELECTOR) || menu;
     // O filtro de VISIBILIDADE (`offsetParent`) mora com o selector em `ui/menu-items` — verbatim do que estava aqui.
-    return itensNavegaveis(card);
+    return navigableItems(card);
   }
 
   function menuFocus(menu: HTMLElement | null): void {
@@ -396,8 +396,8 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   function dizerItem(items: readonly HTMLElement[], n: number): void {
     const el = items[n];
     if (!el) return;
-    const { rotulo, estado } = partesDoControle(el);
-    ctx.srSay(anunciarItem({ rotulo, estado, posicao: n + 1, total: items.length }, ctx.comIndice()));
+    const { rotulo, estado } = controlParts(el);
+    ctx.srSay(announceItem({ rotulo, estado, posicao: n + 1, total: items.length }, ctx.comIndice()));
   }
 
   function focarEDizer(items: readonly HTMLElement[], n: number): void {
@@ -467,11 +467,11 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       // 5). Escrita como estava, a lista nova do ADR-0146 caía no ramo de baixo e o «não» DESPAUSAVA o jogo a
       // partir dela, que é sair do jogo quando a criança pediu para voltar.
       const aberto = menu.querySelector<HTMLElement>('.pause-menu:not([hidden])');
-      if (aberto && aberto.dataset.sub && aberto.dataset.sub !== 'raiz') { mostrarSubmenuDaPausa(menu, 'raiz'); return; }
+      if (aberto && aberto.dataset.sub && aberto.dataset.sub !== 'raiz') { showPauseOptions(menu, 'raiz'); return; }
       ctx.setPhase('playing'); return; // "não" na raiz → volta ao jogo (retoma todos)
     }
 
-    const items = [...menu.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
+    const items = [...menu.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
     const cur = menu.querySelector<HTMLElement>('.pm-sel') || items[0];
 
     // "sim": o jogador que agiu vira o `pauseActor` (o submenu de a11y abre na aba dele) e o item é clicado.
@@ -482,7 +482,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
 
     // UMA LISTA, um anel. A barra de ícones saiu do cartão no item 7 do ADR-0044, e com ela saíram as quatro
     // regras de fronteira que ninguém conseguia descobrir sem esbarrar.
-    const n = passoNaPausa(items.length, items.indexOf(cur), k);
+    const n = stepInPause(items.length, items.indexOf(cur), k);
     selecionarEDizerNaPausa(menu, items, n);
   }
 
@@ -497,7 +497,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // outro pelo leitor de tela, e quem ouve os dois não teria como saber qual é a verdadeira.
     // 🔴 UM ITEM TRAVADO DIZ PORQUÊ ao ser alcançado (ADR-0161): dito a seguir ao nome, e escrito no rodapé.
     const motivo = items[n].getAttribute('aria-disabled') === 'true' ? (items[n].dataset.motivo ?? '') : '';
-    const anuncio = anunciarItem({ rotulo: accessibleLabel(items[n]), posicao: n + 1, total: items.length }, ctx.comIndice());
+    const anuncio = announceItem({ rotulo: accessibleLabel(items[n]), posicao: n + 1, total: items.length }, ctx.comIndice());
     ctx.srSay(motivo ? `${anuncio}. ${motivo}` : anuncio);
     ctx.explicarItem?.(motivo || null);
   }
@@ -587,7 +587,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     }
     const menu = no.closest<HTMLElement>('.screen-pause');
     if (!menu || menu.hidden) return null;
-    const items = [...menu.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
+    const items = [...menu.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
     const n = items.findIndex((el) => el.contains(no));
     return n >= 0 ? { menu, items, n, pausa: true } : null;
   }

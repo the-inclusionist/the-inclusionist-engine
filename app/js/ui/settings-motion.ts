@@ -17,9 +17,9 @@ import { CRT, CRT_DEFAULT, applyCrt } from '../render/crt.js';
 import { defaultReducedMotion } from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { t } from '../core/i18n.js';
-import { montarPassos, atualizarPassos, passoSeguinte } from './panel-widgets.js';
+import { mountSteps, updateSteps, nextStep } from './panel-widgets.js';
 
-import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena } from './motion-scene.js';
+import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from './motion-scene.js';
 import { escapeHtml } from '../core/escape-html.js';
 import type {
   MotionSceneKey as ChaveDeCenaLeaf,
@@ -275,12 +275,12 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
    * interruptor deixaria de alcançar o desenho, e não haveria erro nenhum — o menu diria «reduzido» e a cena
    * continuaria a mexer-se.
    */
-  const rm: MotionSceneFlags = ctx.rm ?? lerCenaGuardada();
-  const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? CHAVES_DE_CENA;
-  const rmCharTodas: readonly MotionCharDef[] = ctx.rmChar ?? ANIMACOES_DO_PERSONAGEM;
+  const rm: MotionSceneFlags = ctx.rm ?? readStoredScene();
+  const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? SCENE_KEYS;
+  const rmCharTodas: readonly MotionCharDef[] = ctx.rmChar ?? CHARACTER_ANIMATIONS;
   /** Os alvos do personagem QUE TÊM ASSUNTO neste jogo — lido a cada uso, porque o cartucho muda no `mount()`. */
   const rmChar = (): readonly MotionCharDef[] => (ctx.comPersonagem?.() === false ? [] : rmCharTodas);
-  const saveRM: () => void = ctx.saveRM ?? (() => guardarCena(rm));
+  const saveRM: () => void = ctx.saveRM ?? (() => storeScene(rm));
 
   function reflectMotionBtn(): void {
     const b = ctx.$<HTMLElement>('#opt-animation');
@@ -350,17 +350,17 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     if (lugarDosCantos) {
       const doc = el.ownerDocument;
       const spec = () => ({ rotulo: t(CRT_LBL.round), valores: [0, 1, 2].map(crtLevelLabel), atual: CRT.round });
-      const passos = montarPassos({ procurar: (sel) => ctx.$<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) }, spec());
+      const passos = mountSteps({ procurar: (sel) => ctx.$<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) }, spec());
       passos.setAttribute('data-crt', 'round');
       lugarDosCantos.replaceWith(passos);
       passos.addEventListener('passo', (ev) => {
-        const novo = passoSeguinte(CRT.round, CRT_ROUND_LEVELS.length, (ev as CustomEvent<number>).detail);
+        const novo = nextStep(CRT.round, CRT_ROUND_LEVELS.length, (ev as CustomEvent<number>).detail);
         // ⚠️ NA PONTA NÃO SE ANUNCIA NADA: repetir «grande» a quem já está no máximo soaria a um passo dado.
         if (novo === CRT.round) return;
         CRT.round = novo;
         applyCrt();
         // Actualiza o controle NO SÍTIO em vez de redesenhar a lista: redesenhar tirava o foco de quem ajusta.
-        atualizarPassos(passos, spec());
+        updateSteps(passos, spec());
         refreshMarks();
         ctx.srSay(crtRoundAnnouncement(t(CRT_LBL.round), CRT.round));
       });

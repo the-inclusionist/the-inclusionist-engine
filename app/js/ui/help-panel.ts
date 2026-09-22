@@ -3,7 +3,7 @@
 //
 // ========================= WHY THIS MODULE EXISTS =========================
 // 🔴 MEASURED 2026-09-12: the pause card carries a `ajuda` item and NOTHING in the engine can action it, so
-// `itensQueAccionam` hides it in every game. The help screen that used to fill it — `openHelp()` — did not
+// `itemsThatAct` hides it in every game. The help screen that used to fill it — `openHelp()` — did not
 // die: it LEFT WITH THE CARTRIDGE (#111) and now lives in `game-platformer/app/js/main.ts`. So each of the
 // three hundred games would have to write its own, which is the arrangement ADR-0139 measured failing in five
 // games of six.
@@ -71,7 +71,7 @@ export function helpRows(
 }
 
 /** What the slide says where the keyboard reaches nothing. A KEY, not a sentence — the caller translates it. */
-export const SEM_TECLA = 'help.noKey';
+export const NO_KEY = 'help.noKey';
 
 /*
  * HELP IS A SLIDE SHOW, NOT A MENU (interface log, 2026-09-13). The Dev: the help screen «se assemelha a um menu e inclusive tem
@@ -133,7 +133,7 @@ export interface FigureClock {
  * Draws the shown slide's figure, and keeps drawing it while the slide show is in the document and the same slide is shown.
  * Returns a stop. A figure that throws is a cartridge defect: it stops drawing and the text stays.
  */
-export function animarFigura(el: HTMLElement, slide: HowToPlaySlide, clock: FigureClock): () => void {
+export function animateFigure(el: HTMLElement, slide: HowToPlaySlide, clock: FigureClock): () => void {
   const tela = el.querySelector<HTMLCanvasElement>('.slide-figura');
   const ctx = tela?.getContext('2d');
   if (!tela || !ctx || !slide.figure) return () => {};
@@ -154,8 +154,8 @@ export function animarFigura(el: HTMLElement, slide: HowToPlaySlide, clock: Figu
   return () => { parado = true; clock.cancelFrame(id); };
 }
 
-/** Builds the slide show's frame: the stop, its two arrows, the slide and the dots. `mostrarSlide` fills it. */
-export function montarSlides(ctx: SlideCtx): HTMLElement {
+/** Builds the slide show's frame: the stop, its two arrows, the slide and the dots. `showSlide` fills it. */
+export function mountSlides(ctx: SlideCtx): HTMLElement {
   const el = ctx.criar('div');
   el.className = 'slides';
   el.setAttribute('role', 'spinbutton');
@@ -196,7 +196,7 @@ export function montarSlides(ctx: SlideCtx): HTMLElement {
  * the index shown, and what a screen reader hears of it. A slide is a button row (`helpRows`) or a cartridge's «how to play» slide
  * (ADR-0195), which the help puts first.
  */
-export function mostrarSlide(
+export function showSlide(
   el: HTMLElement,
   rows: readonly (HelpRow | HowToPlaySlide)[],
   i: number,
@@ -238,13 +238,13 @@ export function mostrarSlide(
     figura.hidden = true;
     tecla.hidden = false;
     palavra.hidden = false;
-    tecla.textContent = r.key ?? ctx.t(SEM_TECLA);
+    tecla.textContent = r.key ?? ctx.t(NO_KEY);
     if (r.key) tecla.removeAttribute('data-sem-tecla');
     else tecla.setAttribute('data-sem-tecla', '1');
     palavra.textContent = r.word;
     texto.textContent = r.hint ?? '';
     texto.hidden = !r.hint;
-    falado = juntar([r.word, r.hint, r.key ? ctx.t('help.slide.tecla', { k: r.key }) : ctx.t(SEM_TECLA)]);
+    falado = juntar([r.word, r.hint, r.key ? ctx.t('help.slide.tecla', { k: r.key }) : ctx.t(NO_KEY)]);
   }
   el.setAttribute('aria-label', ctx.titulo);
   el.setAttribute('aria-valuemin', '0');

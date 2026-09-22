@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
-import { itensNavegaveis } from '../app/js/ui/menu-items.ts';
+import { navigableItems } from '../app/js/ui/menu-items.ts';
 import { setLocale, t } from '../app/js/core/i18n.ts';
 
 let regiao;
@@ -49,12 +49,12 @@ describe('a language changed with a panel open', () => {
     const painel = painelAberto();
     expect(painel, 'no panel open — the case would measure nothing').toBeTruthy();
     const card = painel.querySelector('.overlay__card');
-    const itens = itensNavegaveis(card);
+    const itens = navigableItems(card);
     // a row the panel's own render rebuilds (the category list), so identity cannot survive by accident
     antes.alvo = itens.find((el) => el.closest('#audio-list'));
     expect(antes.alvo, 'no rebuilt row to focus').toBeTruthy();
     antes.alvo.focus();
-    antes.indice = itensNavegaveis(card).indexOf(antes.alvo);
+    antes.indice = navigableItems(card).indexOf(antes.alvo);
     antes.tituloPt = painel.querySelector('h2').textContent.trim();
     antes.barraPt = [...document.querySelectorAll('.pi-btn')].map((b) => b.getAttribute('aria-label'));
 
@@ -63,7 +63,7 @@ describe('a language changed with a panel open', () => {
     const depois = textoDo(card);
     expect(painel.hidden, 'the change closed the panel').toBe(false);
     expect(painel.querySelector('h2').textContent.trim(), 'the title is still the old language').not.toBe(antes.tituloPt);
-    antes.focoIndice = itensNavegaveis(card).indexOf(document.activeElement);
+    antes.focoIndice = navigableItems(card).indexOf(document.activeElement);
     antes.focoConectado = document.activeElement.isConnected;
     antes.focoNaLista = !!document.activeElement.closest('#audio-list');
 

@@ -21,7 +21,7 @@ import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
 import { DEFAULTS } from '../core/state.js';
 import type { LetterCase } from '../core/state.js';
-import { CAA_SETS, CAA_BY_KEY, caaMotivo, type CaaSet } from './caa-sets.js';
+import { CAA_SETS, CAA_BY_KEY, caaReason, type CaaSet } from './caa-sets.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 
 /**
@@ -29,12 +29,12 @@ import { markChanged, markMenuChanged } from './changed-mark.js';
  * maiúsculas e minúsculas. Uma pergunta binária apresentada como duas linhas obriga a criança a comparar as
  * duas para descobrir que são a mesma pergunta.
  */
-export function caixaAltaLigada(caso: LetterCase): boolean {
+export function upperCaseOn(caso: LetterCase): boolean {
   return caso === 'upper';
 }
 
 /** O interruptor das letras. Sempre disponível: é o piso offline, e nunca dependeu de arquivo nenhum. */
-export function letrasRowHtml(ligado: boolean): string {
+export function lettersRowHtml(ligado: boolean): string {
   return (
     '<div class="ctrl-row" id="caa-letras"><span><strong>Letras maiúsculas</strong>' +
     '<span class="opt-hint">Ligado: o jogo inteiro em caixa alta, como a alfabetização brasileira costuma ' +
@@ -56,7 +56,7 @@ export function letrasRowHtml(ligado: boolean): string {
  * navega por teclado ouvir por que a linha não responde sem precisar caçar o rodapé.
  */
 export function caaRowHtml(s: CaaSet, selecionada: boolean): string {
-  const motivo = caaMotivo(s);
+  const motivo = caaReason(s);
   const explica = [s.nota, s.licenca ? `Licença: ${s.licenca}` : '', motivo ? t(motivo) : '']
     .filter(Boolean).join(' · ');
   const hint = explica ? `<span class="opt-hint">${explica}</span>` : '';
@@ -75,7 +75,7 @@ export function caaListHtml(caso: LetterCase): string {
     corpo ? `<h3 class="panel-sub">${titulo} <span class="panel-sub__tag">${tag}</span></h3>${corpo}` : '';
   const sets = (f: (s: CaaSet) => boolean): string => CAA_SETS.filter(f).map((s) => caaRowHtml(s, false)).join('');
   return (
-    bloco(t('caa.secao.agora'), t('caa.secao.agoraTag'), letrasRowHtml(caixaAltaLigada(caso))) +
+    bloco(t('caa.secao.agora'), t('caa.secao.agoraTag'), lettersRowHtml(upperCaseOn(caso))) +
     bloco(t('caa.secao.preparo'), t('caa.secao.preparoTag'), sets((s) => s.tier !== 'negotiating')) +
     bloco(t('caa.secao.negociacao'), t('caa.secao.negociacaoTag'), sets((s) => s.tier === 'negotiating'))
   );
@@ -109,7 +109,7 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
     el.innerHTML = caaListHtml(ctx.getLetterCase());
     const alta = el.querySelector<HTMLButtonElement>('#caa-caixa-alta');
     if (alta) alta.addEventListener('click', () => {
-      const ligar = !caixaAltaLigada(ctx.getLetterCase());
+      const ligar = !upperCaseOn(ctx.getLetterCase());
       ctx.setLetterCase(ligar ? 'upper' : 'mixed');
       render();
       ctx.srSay(t(ligar ? 'sr.caa.caixaAltaOn' : 'sr.caa.caixaAltaOff'));

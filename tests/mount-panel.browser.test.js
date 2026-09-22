@@ -13,7 +13,7 @@
 //
 // MUTATIONS CONFIRMED at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { montarPainel } from '../app/js/ui/mount-panel.js';
+import { mountPanel } from '../app/js/ui/mount-panel.js';
 
 let host;
 let registados;
@@ -60,7 +60,7 @@ afterEach(() => { host.remove(); });
 describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhuma das cinco linhas', () => {
   it('⚠️ [Interface] a casca entra NA ÁRVORE do hospedeiro e nasce escondida', () => {
     // O fixture não consegue responder «está na árvore»: ele regista um `appendChild` e acredita nele.
-    const p = montarPainel(ctx(), spec());
+    const p = mountPanel(ctx(), spec());
     expect(host.contains(p.casca.overlay), 'o overlay não ficou dentro do hospedeiro').toBe(true);
     expect(document.getElementById('fixture'), 'o id da casca não chegou ao documento').toBe(p.casca.overlay);
     expect(p.casca.overlay.hidden, 'um painel que nasce aberto é um painel que ninguém abriu').toBe(true);
@@ -68,7 +68,7 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
 
   it('🎯 [Right] abrir RENDERIZA, revela, traz à frente e põe o foco DENTRO do cartão', () => {
     // As quatro coisas que as vinte e cinco linhas do quiz faziam à mão, numa chamada.
-    const p = montarPainel(ctx(), spec());
+    const p = mountPanel(ctx(), spec());
     const botao = document.createElement('button');
     botao.textContent = 'uma opção';
     p.casca.lista.appendChild(botao);
@@ -86,14 +86,14 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
   it('🔴 [Boundary] sem controle na lista, o foco cai no VOLTAR — nunca num `div` que não o aceita', () => {
     // O defeito que eu escrevi e este caso apanhou: `casca.lista` é `div[role=group]` sem `tabindex`, e
     // `.focus()` nele não faz nada E NÃO DIZ NADA. Num DOM falso isto passava.
-    const p = montarPainel(ctx(), spec());
+    const p = mountPanel(ctx(), spec());
     p.abrir();
     expect(document.activeElement, 'o foco não pousou em elemento nenhum').toBe(p.casca.fechar);
     expect(document.activeElement).not.toBe(p.casca.lista);
   });
 
   it('⚠️ [Right] um clique DE VERDADE no fechar esconde e devolve o foco a quem abriu', () => {
-    const p = montarPainel(ctx(), spec());
+    const p = mountPanel(ctx(), spec());
     p.abrir();
     p.casca.fechar.click();
     expect(p.casca.overlay.hidden, 'o clique no fechar não escondeu o painel').toBe(true);
@@ -103,7 +103,7 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
   it('🎯 [Right] o painel ENTRA na cadeia do Escape — o registo estava vazio sob o `createGame`', () => {
     // Sem isto, `settings-panel.escapeTarget()` percorre um registo vazio: um diálogo modal que tecla
     // nenhuma fecha é a armadilha que o ADR-0044 §2 nomeia sobre a própria pausa.
-    const p = montarPainel(ctx(), spec());
+    const p = mountPanel(ctx(), spec());
     const entrada = registados.get('fixture');
     expect(entrada, 'o painel não se registou na pilha de overlays').toBeTruthy();
     expect(entrada.inEscapeChain, 'registou-se FORA da cadeia do Escape').toBe(true);
@@ -115,8 +115,8 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
   it('⚠️ [Zero] montar DUAS vezes deixa UM painel — é o terceiro gate do ADR-0139', () => {
     // «Two cartridges mounted in sequence leave exactly one accessibility bar in the document.» A mesma
     // afirmação, na superfície mais pequena onde ela se pode medir hoje.
-    montarPainel(ctx(), spec());
-    montarPainel(ctx(), spec());
+    mountPanel(ctx(), spec());
+    mountPanel(ctx(), spec());
     expect(document.querySelectorAll('#fixture').length, 'duas montagens deixaram dois painéis').toBe(1);
   });
 
@@ -124,7 +124,7 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     // O `initI18n` aplica o idioma de recuo de forma síncrona e pede en/es depois. Um painel montado nesse
     // intervalo ficava com o título de recuo — o mesmo defeito que a barra de ícones pagou em 08/09. Aqui a
     // janela é atravessada de propósito: monta em «pt», o idioma chega, e só então a criança abre.
-    const p = montarPainel(ctx(), spec());
+    const p = mountPanel(ctx(), spec());
     expect(p.casca.titulo.textContent).toBe('Fixture pt');
     idioma = 'en';
     p.abrir();
@@ -132,10 +132,10 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
   });
 
   it('⚠️ [Boundary] retraduzir NÃO remonta a casca: a escuta que o painel ligou no repor sobrevive', () => {
-    // `montarCasca` esvazia o cartão, e cada `ui/settings-*` liga o seu `#X-reset` UMA VEZ no `init`. Corrigir
+    // `mountShell` esvazia o cartão, e cada `ui/settings-*` liga o seu `#X-reset` UMA VEZ no `init`. Corrigir
     // o título por remontagem deixaria o botão de repor no documento e sem escuta — um botão morto com
     // aparência de vivo, que é precisamente o que o ADR-0106 §5 proíbe.
-    const p = montarPainel(ctx(), spec());
+    const p = mountPanel(ctx(), spec());
     let reposto = 0;
     p.casca.reset.addEventListener('click', () => { reposto += 1; });
     const mesmoNo = p.casca.reset;
@@ -153,7 +153,7 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
   it('[Boundary] uma introdução que SOME apaga o `data-explain-idle` — não sobrevive ao idioma anterior', () => {
     // Um dicionário sem a chave é uma introdução ausente. Deixar de escrever não chega: o atributo antigo
     // ficaria, e o rodapé descansaria no idioma que a criança acabou de deixar.
-    const p = montarPainel(ctx(), spec({
+    const p = mountPanel(ctx(), spec({
       rotulos: () => ({
         titulo: 'Fixture', rotuloDaLista: 'Lista', rotuloReset: 'Repor', rotuloFechar: 'Fechar',
         ...(idioma === 'pt' ? { introducao: 'Escolha uma fonte.' } : {}),
@@ -171,7 +171,7 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     // Escape usaria o desta casca enquanto o botão usava o do painel — uma saída, dois caminhos.
     let fechou = 0;
     const meuFechar = () => { fechou += 1; };
-    const p = montarPainel(ctx(), spec({ fecharProprio: meuFechar }));
+    const p = mountPanel(ctx(), spec({ fecharProprio: meuFechar }));
     p.abrir();
     p.casca.fechar.click();
     expect(fechou, 'a casca ligou um ouvinte por cima do que o painel já tinha').toBe(0);
@@ -188,7 +188,7 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
   it('[Right] o render corre a CADA abertura, não uma vez na montagem', () => {
     // Um painel que renderiza uma vez mostra estado velho depois de a criança mexer no mesmo ajuste pela
     // barra rápida — e o `fillExplain` tem de correr outra vez ou a prosa volta para dentro das linhas.
-    const p = montarPainel(ctx(), spec());
+    const p = mountPanel(ctx(), spec());
     expect(renderizou, 'montar não devia renderizar').toBe(0);
     p.abrir(); p.fechar(); p.abrir();
     expect(renderizou).toBe(2);
@@ -207,11 +207,11 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
 //   · chamar `spec.render()` na montagem em vez de na abertura -> reprova o último caso (conta 1, não 0).
 //   · tirar o `appendChild` -> reprova o [Interface] PRIMEIRO: a casca existe e não está em lado nenhum,
 //     que é exactamente «o painel abre vazio, sem erro» visto do outro lado.
-//   · resolver os rótulos SÓ na montagem (tirar o `aplicarRotulos` do `abrir`) -> reprova dois: o título fica
+//   · resolver os rótulos SÓ na montagem (tirar o `applyLabels` do `abrir`) -> reprova dois: o título fica
 //     no idioma de recuo, e a introdução do idioma anterior sobrevive. É o defeito que a barra de ícones já
 //     pagou em 08/09, reproduzido num painel.
-//   · retraduzir REMONTANDO a casca (trocar `aplicarRotulos` por `montarCasca`) -> reprova seis, e a que
-//     importa é a do repor: `montarCasca` esvazia o cartão, o botão com a escuta sai da árvore e fica lá um
+//   · retraduzir REMONTANDO a casca (trocar `applyLabels` por `mountShell`) -> reprova seis, e a que
+//     importa é a do repor: `mountShell` esvazia o cartão, o botão com a escuta sai da árvore e fica lá um
 //     homónimo mudo. Um botão morto com aparência de vivo é pior do que um ausente (ADR-0106 §5).
 //   · a introdução ausente deixar de APAGAR o `data-explain-idle` (tirar o `else removeAttribute`) -> reprova
 //     o caso da introdução: deixar de escrever não é apagar, e o rodapé descansa no idioma anterior.

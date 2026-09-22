@@ -1442,9 +1442,9 @@
     "CAA_SETS",
     "CaaSet",
     "CaaTier",
-    "caaDisponiveis",
-    "caaMotivo",
-    "caaRotulo"
+    "caaAvailable",
+    "caaLabel",
+    "caaReason"
   ],
   "ui/camera-control.ts": [
     "CameraModeControl",
@@ -1456,11 +1456,11 @@
     "markMenuChanged"
   ],
   "ui/debug-panel.ts": [
-    "AmostraDoPersonagem",
+    "CharacterSample",
     "DebugPanelCtx",
-    "ResumoDaSonda",
+    "ProbeSummary",
     "initDebugPanel",
-    "resumirSonda"
+    "summariseProbe"
   ],
   "ui/dom.ts": [
     "$",
@@ -1482,17 +1482,17 @@
     "createFaceControl"
   ],
   "ui/focus-trap.ts": [
+    "FOCUSABLE_SELECTOR",
     "FocusTrapApi",
     "FocusTrapCtx",
-    "SELETOR_FOCAVEL",
-    "focaveisNoDom",
+    "focusablesInDom",
     "initFocusTrap",
-    "proximoNaArmadilha"
+    "nextInTrap"
   ],
   "ui/fonts.ts": [
     "BASE_EM_PX",
+    "CYCLE_START",
     "DEFAULT_FONT_KEY",
-    "ESCALA_DA_MAO",
     "FONT_BY_KEY",
     "FONT_GROUPS",
     "FONT_KEY",
@@ -1501,25 +1501,25 @@
     "FontItem",
     "FontRole",
     "FontStore",
-    "INICIO_DO_CICLO",
+    "HANDWRITING_SCALE",
     "OFERECIVEIS",
-    "PassoDeTipografia",
-    "cicloDeTipografia",
-    "escalaDaFace",
-    "faceDisponivel",
-    "familiasDaFace",
+    "TypographyStep",
+    "faceAvailable",
+    "faceFamilies",
+    "faceScale",
+    "fontRole",
+    "handsForTag",
     "loadFontKey",
-    "maosDaEtiqueta",
-    "papelDaFonte",
     "persistFontKey",
     "resolveFontKey",
-    "saveFontKey"
+    "saveFontKey",
+    "typographyCycle"
   ],
   "ui/game-options.ts": [
     "GameOption",
     "GameOptionValue",
     "GameOptionsDrawCtx",
-    "desenharOpcoesDoJogo",
+    "drawGameOptions",
     "gameOptionsProblems"
   ],
   "ui/gaze-overlay.ts": [
@@ -1546,13 +1546,13 @@
     "HelpRow",
     "HowToPlaySlide",
     "HowToPlaySurface",
-    "SEM_TECLA",
+    "NO_KEY",
     "SlideCtx",
-    "animarFigura",
+    "animateFigure",
     "helpRows",
     "howToPlayProblems",
-    "montarSlides",
-    "mostrarSlide"
+    "mountSlides",
+    "showSlide"
   ],
   "ui/hud-bands.ts": [
     "HudBand",
@@ -1568,8 +1568,8 @@
     "HudPlayer",
     "HudRowView",
     "ScreenRect",
-    "aplicarRotuloDoContador",
-    "contadorLabel",
+    "applyCounterLabel",
+    "counterLabel",
     "hudRowView",
     "initHud",
     "screenCount",
@@ -1579,27 +1579,27 @@
   ],
   "ui/item-announcement.ts": [
     "ItemDeMenu",
-    "anunciarItem"
+    "announceItem"
   ],
   "ui/latch-refusal.ts": [
-    "CHAVE_DA_RECUSA",
-    "EXIGEM_ALTERNANCIA",
-    "RecusaDaAlternancia",
-    "mostraMesmoExigida",
-    "recusaDaAlternancia"
+    "LatchRefusal",
+    "NEED_LATCH",
+    "REFUSAL_KEY",
+    "latchRefusal",
+    "showsEvenWhenRequired"
   ],
   "ui/layout.ts": [
-    "Caixa",
-    "CaixaNomeada",
-    "Escala",
-    "MedidaDeNo",
-    "abaixoDoPiso",
-    "alvoMinimo",
-    "aplicarEscala",
-    "escalaDoPalco",
+    "Box",
+    "NamedBox",
+    "NodeMeasure",
+    "Scale",
+    "applyScale",
+    "barIntruders",
+    "belowFloor",
     "initLayout",
-    "invasoresDaBarra",
-    "layout"
+    "layout",
+    "minimumTarget",
+    "stageScale"
   ],
   "ui/locale-flags.ts": [
     "CycleLocale",
@@ -1610,9 +1610,9 @@
     "nextLocale"
   ],
   "ui/loop-crash.ts": [
-    "AVISO_DE_QUEDA_ID",
-    "AvisoDeQuedaCtx",
-    "criarAvisoDeQueda"
+    "CRASH_NOTICE_ID",
+    "CrashNoticeCtx",
+    "createCrashNotice"
   ],
   "ui/map-hub.ts": [
     "MAP_HUB_ROWS",
@@ -1630,7 +1630,7 @@
   ],
   "ui/menu-items.ts": [
     "ITEM_SELECTOR",
-    "itensNavegaveis"
+    "navigableItems"
   ],
   "ui/menu-nav.ts": [
     "KEY_DOWN",
@@ -1642,76 +1642,75 @@
     "MenuNavApi",
     "MenuNavCtx",
     "NavKeyEvent",
+    "controlParts",
     "initMenuNav",
     "menuKeyIntent",
-    "partesDoControle",
-    "passoNaPausa",
     "rangeStep",
     "selectStep",
-    "selectWrap"
+    "selectWrap",
+    "stepInPause"
   ],
   "ui/motion-scene.ts": [
-    "ANIMACOES_DO_PERSONAGEM",
-    "CHAVES_DE_CENA",
+    "CHARACTER_ANIMATIONS",
     "MotionCharDef",
     "MotionCharProp",
     "MotionPlayer",
     "MotionSceneFlags",
     "MotionSceneKey",
-    "guardarCena",
-    "lerCenaGuardada",
-    "padraoDeCena"
+    "SCENE_KEYS",
+    "readStoredScene",
+    "sceneDefault",
+    "storeScene"
   ],
   "ui/mount-panel.ts": [
     "MountPanelCtx",
     "MountPanelSpec",
     "MountedPanel",
     "PanelStack",
-    "montarPainel"
+    "mountPanel"
   ],
   "ui/panel-shell.ts": [
     "PanelLabels",
     "PanelShell",
     "PanelShellCtx",
     "PanelShellSpec",
-    "aplicarRotulos",
-    "idsDaCasca",
-    "montarCasca"
+    "applyLabels",
+    "mountShell",
+    "shellIds"
   ],
   "ui/panel-widgets.ts": [
     "ControlRow",
     "ControlRowSpec",
-    "FormaDoControle",
-    "PassosSpec",
-    "atualizarPassos",
-    "linhaDeControle",
-    "montarPassos",
-    "passoSeguinte",
-    "rotularLinha"
+    "ControlShape",
+    "StepsSpec",
+    "controlRow",
+    "labelRow",
+    "mountSteps",
+    "nextStep",
+    "updateSteps"
   ],
   "ui/pause-buttons.ts": [
     "PM_BTNS",
-    "PM_JOGO_BTNS",
+    "PM_GAME_BTNS",
     "PM_OPTIONS_BTNS",
     "PauseBtnDef"
   ],
   "ui/pause-icons.ts": [
-    "AcaoNaBarra",
-    "AccionaveisDoJogo",
+    "ActionableIcons",
+    "BarAction",
     "CALM_AUDIO_CATS",
     "CALM_NAMES",
     "CVD_LABELS",
     "CVD_NAMES",
     "CVD_SEQ",
-    "EscritoresVisuais",
-    "GLIFO_DO_ITEM",
+    "ENGINE_ITEMS",
     "ICON_STATE_CLASSES",
-    "ITENS_DA_ENGINE",
+    "ITEM_GLYPH",
     "IconStateSnapshot",
     "IconVisual",
     "InputMode",
     "PAUSE_ICONS",
-    "PM_ITENS_VISIVEIS",
+    "PM_VISIBLE_ITEMS",
     "PauseIcon",
     "PauseIconsApi",
     "PauseIconsCtx",
@@ -1719,22 +1718,21 @@
     "PausePlayer",
     "PauseSub",
     "ScreenPauseMarkupOpts",
-    "acaoNaBarra",
+    "VisualWriters",
+    "barAction",
     "calmAudioPlan",
     "calmMotionPlan",
     "computeIconLabel",
     "computeIconVisual",
     "hasPrivateOutputIn",
     "iconBtnMarkup",
-    "iconesQueAccionam",
+    "iconCaption",
     "iconsMarkup",
+    "iconsThatAct",
     "initPauseIcons",
     "inputModeOf",
-    "itensQueAccionam",
-    "legendaDoIcone",
-    "ligarLegendaDaBarra",
-    "mostrarSubmenuDaPausa",
-    "motivoDoItem",
+    "itemReason",
+    "itemsThatAct",
     "nextCalmMode",
     "nextContrast",
     "nextCvd",
@@ -1743,16 +1741,18 @@
     "pauseMenuHtml",
     "pmBtnMarkup",
     "quickBarMarkup",
-    "raizQueAcciona",
-    "saneiaNivelTea",
-    "screenPauseMarkup"
+    "rootThatActs",
+    "sanitiseTeaLevel",
+    "screenPauseMarkup",
+    "showPauseOptions",
+    "wireBarCaption"
   ],
   "ui/reach-notice.ts": [
     "REACH_NOTICE_ID",
     "ReachNoticeCtx",
     "Translator",
-    "linhasDoAviso",
-    "mostrarAvisoDeAlcance"
+    "noticeRows",
+    "showReachNotice"
   ],
   "ui/scan-overlay.ts": [
     "ScanOverlay",
@@ -1765,6 +1765,7 @@
     "AudioStore",
     "GEN_CATS",
     "NAV_CATS",
+    "PanelVoice",
     "SettingsAudioApi",
     "SettingsAudioCtx",
     "SinkDeviceLike",
@@ -1773,20 +1774,19 @@
     "TtsPanel",
     "TtsPanelEngine",
     "VoiceLike",
-    "VozDoPainel",
     "caneDivMessage",
     "catRowHTML",
     "catsListHTML",
     "initSettingsAudio",
-    "montarInteriorDoAudio",
-    "montarInteriorDoSom",
+    "mountAudioInside",
+    "mountSoundInside",
     "navMasterVolume",
-    "opcoesDeMotor",
     "parseCaneDiv",
     "pickVoicesFor",
     "sinkOptionLabel",
     "sinkSelectValue",
     "sinksSupported",
+    "voiceEngineOptions",
     "voiceLabel",
     "volPercent"
   ],
@@ -1795,9 +1795,9 @@
     "SettingsCaaCtx",
     "caaListHtml",
     "caaRowHtml",
-    "caixaAltaLigada",
     "initSettingsCaa",
-    "letrasRowHtml"
+    "lettersRowHtml",
+    "upperCaseOn"
   ],
   "ui/settings-controls.ts": [
     "ACT_LABEL",
@@ -1805,7 +1805,7 @@
     "KeyboardConfig",
     "SettingsControlsApi",
     "SettingsControlsCtx",
-    "acaoQueJaTem",
+    "actionAlreadyBound",
     "initSettingsControls",
     "keyName",
     "keyUsedByOther"
@@ -1844,23 +1844,23 @@
     "stopResumeAllAnnouncement"
   ],
   "ui/settings-motor.ts": [
-    "EscritaDaAlternanciaCtx",
     "LatchPlayer",
-    "MotorPlayer",
-    "MotorStore",
-    "SettingsMotorApi",
-    "SettingsMotorCtx",
-    "anyMotorActive",
+    "LatchWriteCtx",
+    "MobilityPlayer",
+    "MobilityStore",
+    "SettingsMobilityApi",
+    "SettingsMobilityCtx",
+    "anyMobilityActive",
     "clampSelPlayer",
-    "definirAlternanciaDeCorrida",
-    "definirAlternanciaDeMarcha",
     "easyAnnouncement",
     "easyKey",
-    "initSettingsMotor",
-    "montarInteriorDoMotor",
+    "initSettingsMobility",
+    "mountMobilityInside",
     "onOffLabel",
     "playerPrefix",
     "playerTabsHTML",
+    "setMoveLatch",
+    "setRunLatch",
     "toggleMoveKey",
     "toggleRunKey"
   ],
@@ -1883,16 +1883,16 @@
     "TypoRow",
     "TypoStore",
     "fontCssTarget",
+    "fontRow",
     "initSettingsTypo",
     "isSelectableFont",
-    "linhaDaFonte",
     "typoGroups",
     "typoListHTML"
   ],
   "ui/settings-visual.ts": [
     "CONTRAST_LABELS",
     "CONTRAST_LEVELS",
-    "LQ_PASSOS",
+    "LQ_STEPS",
     "RGB",
     "ROLE_KEYS",
     "ROLE_LABELS",
@@ -1908,7 +1908,7 @@
     "initSettingsVisual",
     "lqFromPercent",
     "lqPercent",
-    "lqPosicao",
+    "lqPosition",
     "onOffLabel",
     "renderVisualPanelHtml",
     "resolveVisualMode",
@@ -1926,7 +1926,6 @@
     "ShellWindow",
     "TouchControlsState",
     "chip",
-    "glifoFalado",
     "initShell",
     "legendHtml",
     "legendRow1",
@@ -1935,6 +1934,7 @@
     "pauseLegendHtml",
     "phaseView",
     "pickLegendPad",
+    "spokenGlyph",
     "touchActionGlyphs",
     "touchControlsPlan"
   ],

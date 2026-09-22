@@ -5,7 +5,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { PAUSE_ICONS, iconesQueAccionam, computeIconLabel, quickBarMarkup } from '../app/js/ui/pause-icons.js';
+import { PAUSE_ICONS, iconsThatAct, computeIconLabel, quickBarMarkup } from '../app/js/ui/pause-icons.js';
 import { getLocale } from '../app/js/core/i18n.js';
 import { LOCALE_CYCLE, nextLocale, FLAG_SVG, flagOf, LANGUAGE_NAME } from '../app/js/ui/locale-flags.js';
 import { bcp47 } from '../app/js/core/i18n.js';
@@ -16,7 +16,7 @@ const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, 
 describe('the language button', () => {
   it('is the last button, and mounts in every game', () => {
     expect(PAUSE_ICONS.at(-1).k).toBe('idioma');
-    expect(iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => false }).map((ic) => ic.k)).toContain('idioma');
+    expect(iconsThatAct({ tema: false, correcao: false, seguraTeclas: () => false }).map((ic) => ic.k)).toContain('idioma');
   });
   it('cycles Brazil → United States → Mexico → Brazil, and a locale outside the cycle starts it again', () => {
     expect(LOCALE_CYCLE).toEqual(['pt', 'en', 'es']);

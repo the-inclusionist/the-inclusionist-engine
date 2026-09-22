@@ -39,7 +39,7 @@ const enxuto = (s: string | undefined): string => (s || '').replace(/\s+/g, ' ')
  * visibilidade sai da lista e deixa o índice de quem sobrou fora dela. "0 de 7" ensina uma geografia falsa
  * do menu, e a criança confia nela — número errado é pior que número nenhum.
  */
-export function anunciarItem(item: ItemDeMenu, comIndice: boolean): string {
+export function announceItem(item: ItemDeMenu, comIndice: boolean): string {
   const valeIndice = comIndice && item.total >= 1 && item.posicao >= 1 && item.posicao <= item.total;
   const partes = [
     enxuto(item.rotulo),

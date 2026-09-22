@@ -32,7 +32,7 @@ import type { PanelShellCtx } from './panel-shell.js';
  * `escolha` três (`#cane-div`, `#tts-engine`, `#tts-voice`) e `cursor` três (`#audio-master-vol`,
  * `#navsound-master`, `#tts-vol`). Uma quarta forma entra quando um painel a exigir, e não antes.
  */
-export type FormaDoControle = 'interruptor' | 'escolha' | 'cursor';
+export type ControlShape = 'interruptor' | 'escolha' | 'cursor';
 
 export interface ControlRowSpec {
   /** O id do CONTROLE — `opt-facil`, `cane-div`. É por ele que o `settings-*` o encontra. */
@@ -47,7 +47,7 @@ export interface ControlRowSpec {
    */
   readonly dica?: string;
   /** A forma do controle. Ausente: `interruptor`, que é o caso de onze dos dezassete medidos. */
-  readonly forma?: FormaDoControle;
+  readonly forma?: ControlShape;
   /**
    * O nome que um leitor de tela anuncia, quando ele não é o rótulo.
    *
@@ -72,7 +72,7 @@ export interface ControlRow {
  * A linha NÃO é inserida em lado nenhum — quem a monta decide a ordem, que nos menus deste projeto é parte da
  * decisão (ADR-0044 §2).
  */
-export function linhaDeControle(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow {
+export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow {
   const linha = ctx.criar('div');
   linha.className = 'ctrl-row';
 
@@ -100,7 +100,7 @@ export function linhaDeControle(ctx: PanelShellCtx, spec: ControlRowSpec): Contr
 }
 
 /**
- * REESCREVE AS PALAVRAS DE UMA LINHA QUE JÁ EXISTE — o par do `ui/panel-shell.aplicarRotulos`, um nível
+ * REESCREVE AS PALAVRAS DE UMA LINHA QUE JÁ EXISTE — o par do `ui/panel-shell.applyLabels`, um nível
  * abaixo.
  *
  * 🔴 O DEFEITO QUE ISTO FECHA FOI MEDIDO NUM NAVEGADOR A SÉRIO, em 2026-09-12, com `lang="en"`: o painel
@@ -112,11 +112,11 @@ export function linhaDeControle(ctx: PanelShellCtx, spec: ControlRowSpec): Contr
  * ⚠️ E NENHUM TESTE UNITÁRIO O APANHA, porque todos correm num idioma só. É o mesmo buraco que a barra de
  * ícones já pagou em 08/09, agora um nível mais fundo.
  *
- * ⚠️ REESCREVER E NÃO RECONSTRUIR, pela razão que o `aplicarRotulos` já escreveu: cada `ui/settings-*` liga
+ * ⚠️ REESCREVER E NÃO RECONSTRUIR, pela razão que o `applyLabels` já escreveu: cada `ui/settings-*` liga
  * os cliques dos seus controles UMA VEZ, no arranque. Refazer a linha deixaria um controle no documento e sem
  * escuta — um botão morto com aparência de vivo (ADR-0106 §5).
  */
-export function rotularLinha(linha: HTMLElement, spec: ControlRowSpec): void {
+export function labelRow(linha: HTMLElement, spec: ControlRowSpec): void {
   const forte = linha.querySelector<HTMLElement>('strong');
   if (forte) forte.textContent = spec.rotulo;
   const dica = linha.querySelector<HTMLElement>('.opt-hint');
@@ -173,7 +173,7 @@ function criarControle(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
  * à esquerda e uma caixa «◀ pequeno ▶» à direita, e o Dev: «Não faça essa coisa estranha. Escreva "< Rounded
  * corner: off >"». É a forma de ciclar entre POUCAS posições — até cinco; acima disso, lista suspensa.
  */
-export interface PassosSpec {
+export interface StepsSpec {
   /** O nome falado do controle — vai para o `aria-label`. */
   readonly rotulo: string;
   /** As posições, na ordem, já traduzidas. */
@@ -189,7 +189,7 @@ export interface PassosSpec {
  * ele sem aviso e desligaria o que queria aumentar. Preso, a ponta é uma parede que se sente — o número de
  * jogadores, que é o modelo que o Dev deu, também não dá a volta.
  */
-export function passoSeguinte(atual: number, total: number, delta: number): number {
+export function nextStep(atual: number, total: number, delta: number): number {
   if (total <= 0) return 0;
   return Math.max(0, Math.min(total - 1, atual + Math.sign(delta)));
 }
@@ -204,7 +204,7 @@ export function passoSeguinte(atual: number, total: number, delta: number): numb
  * O controle emite `passo` (`CustomEvent<number>`, -1 ou +1): a seta tocada emite-o daqui, e a esquerda e a
  * direita do teclado e do controle emitem-no pelo `ui/menu-nav`. Quem usa ouve um evento só.
  */
-export function montarPassos(ctx: PanelShellCtx, spec: PassosSpec): HTMLElement {
+export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
   const el = ctx.criar('div');
   el.className = 'passos';
   el.setAttribute('role', 'spinbutton');
@@ -224,12 +224,12 @@ export function montarPassos(ctx: PanelShellCtx, spec: PassosSpec): HTMLElement 
   el.appendChild(seta(-1, '◀'));
   el.appendChild(valor);
   el.appendChild(seta(1, '▶'));
-  atualizarPassos(el, spec);
+  updateSteps(el, spec);
   return el;
 }
 
 /** Reflecte a posição de agora: o valor escrito, o que se ouve, e as pontas que já não andam. */
-export function atualizarPassos(el: HTMLElement, spec: PassosSpec): void {
+export function updateSteps(el: HTMLElement, spec: StepsSpec): void {
   const ultimo = Math.max(0, spec.valores.length - 1);
   const atual = Math.max(0, Math.min(ultimo, spec.atual));
   const texto = spec.valores[atual] ?? '';

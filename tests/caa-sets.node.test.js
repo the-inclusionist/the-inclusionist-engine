@@ -5,14 +5,14 @@
 // LICENÇA dele e por mais nada. No dia em que um conjunto mudar de camada por ser bonito, popular ou fácil de
 // integrar, o catálogo terá deixado de ser verdadeiro, e é aqui que isso precisa doer.
 import { describe, it, expect } from 'vitest';
-import { CAA_SETS, CAA_BY_KEY, caaDisponiveis, caaMotivo, caaRotulo } from '../app/js/ui/caa-sets.js';
-import { caixaAltaLigada, letrasRowHtml, caaRowHtml, caaListHtml } from '../app/js/ui/settings-caa.js';
+import { CAA_SETS, CAA_BY_KEY, caaAvailable, caaReason, caaLabel } from '../app/js/ui/caa-sets.js';
+import { upperCaseOn, lettersRowHtml, caaRowHtml, caaListHtml } from '../app/js/ui/settings-caa.js';
 
 describe('CAA_SETS — o catálogo', () => {
   it('[Zero] NENHUM conjunto está disponível hoje, e o menu não finge o contrário', () => {
     // Os pictogramas são milhares de arquivos que ainda não entraram no repositório. Oferecê-los como
     // escolhíveis seria um botão que não faz nada — pior que a ausência, porque gasta a confiança.
-    expect(caaDisponiveis()).toEqual([]);
+    expect(caaAvailable()).toEqual([]);
   });
 
   it('[Boundary] as LETRAS não estão nesta lista — viraram um interruptor, não um conjunto', () => {
@@ -51,47 +51,47 @@ describe('CAA_SETS — o catálogo', () => {
 
 describe('caaMotivo — duas respostas, porque são duas situações', () => {
   it('[Zero] disponível não tem motivo — não há o que explicar', () => {
-    expect(caaMotivo({ ...CAA_BY_KEY.mulberry, disponivel: true })).toBeNull();
+    expect(caaReason({ ...CAA_BY_KEY.mulberry, disponivel: true })).toBeNull();
   });
 
   it('[Right] "em preparação" quando a licença está resolvida e o trabalho é NOSSO', () => {
-    expect(caaMotivo(CAA_BY_KEY.mulberry)).toBe('caa.emPreparo');
-    expect(caaMotivo(CAA_BY_KEY.arasaac)).toBe('caa.emPreparo');
+    expect(caaReason(CAA_BY_KEY.mulberry)).toBe('caa.emPreparo');
+    expect(caaReason(CAA_BY_KEY.arasaac)).toBe('caa.emPreparo');
   });
 
   it('[Right] "aguardando negociação" quando a permissão é de OUTRA pessoa', () => {
     // A diferença não é de estilo: quem lê a primeira sabe esperar, quem lê a segunda sabe que esperar não
     // adianta. Um educador decide coisas diferentes com cada uma.
     for (const k of ['sclera', 'pcs', 'symbolstix', 'widgit']) {
-      expect(caaMotivo(CAA_BY_KEY[k])).toBe('caa.aguardandoNegociacao');
+      expect(caaReason(CAA_BY_KEY[k])).toBe('caa.aguardandoNegociacao');
     }
   });
 
   it('[Interface] o rótulo carrega o motivo junto do nome — a linha se explica sozinha', () => {
-    expect(caaRotulo(CAA_BY_KEY.pcs)).toContain('PCS');
-    expect(caaRotulo(CAA_BY_KEY.pcs)).toContain('negocia');
+    expect(caaLabel(CAA_BY_KEY.pcs)).toContain('PCS');
+    expect(caaLabel(CAA_BY_KEY.pcs)).toContain('negocia');
   });
 });
 
 describe('o interruptor das letras', () => {
   it('[Right] ligado é `upper`; desligado é `mixed`, que INCLUI as minúsculas', () => {
-    expect(caixaAltaLigada('upper')).toBe(true);
-    expect(caixaAltaLigada('mixed')).toBe(false);
+    expect(upperCaseOn('upper')).toBe(true);
+    expect(upperCaseOn('mixed')).toBe(false);
   });
 
   it('[Right] a linha reflete o estado no botão e no aria-pressed', () => {
-    expect(letrasRowHtml(true)).toContain('aria-pressed="true"');
-    expect(letrasRowHtml(false)).toContain('aria-pressed="false"');
+    expect(lettersRowHtml(true)).toContain('aria-pressed="true"');
+    expect(lettersRowHtml(false)).toContain('aria-pressed="false"');
   });
 
   it('[Interface] a linha explica o DESLIGADO — senão "off" fica sem significado', () => {
     // O off não é "sem letras": é maiúsculas E minúsculas. Um interruptor cujo desligado não se explica
     // deixa a criança adivinhando o que ela perde ao desligá-lo.
-    expect(letrasRowHtml(false)).toContain('minúsculas');
+    expect(lettersRowHtml(false)).toContain('minúsculas');
   });
 
   it('[Interface] o interruptor NUNCA vem disabled — é o piso, e não depende de arquivo nenhum', () => {
-    expect(letrasRowHtml(true)).not.toContain('disabled');
+    expect(lettersRowHtml(true)).not.toContain('disabled');
   });
 });
 

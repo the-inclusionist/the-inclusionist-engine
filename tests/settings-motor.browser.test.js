@@ -5,7 +5,7 @@
 // Modelo: tests/a11y-sr.browser.test.js, tests/settings-typo.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // os anúncios vêm do dicionário desde o item 14
-import { initSettingsMotor } from '../app/js/ui/settings-motor.js';
+import { initSettingsMobility } from '../app/js/ui/settings-motor.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -72,7 +72,7 @@ describe('ui/settings-motor', () => {
     it('🎯 [Zero] com `seguraTeclas: false`, a linha fica AUSENTE — não desabilitada', () => {
       const ctx = fullCtx();
       ctx.seguraTeclas = false;
-      initSettingsMotor(ctx);
+      initSettingsMobility(ctx);
 
       const linha = document.querySelector('#opt-altmove')?.closest('.ctrl-row');
       expect(linha, 'a linha do `#opt-altmove` desapareceu do fixture').not.toBeNull();
@@ -85,7 +85,7 @@ describe('ui/settings-motor', () => {
 
     it('⚠️ [Right] e o PAR: com `seguraTeclas: true` a linha FICA — senão «ausente» passaria por esconder tudo', () => {
       const ctx = fullCtx();
-      initSettingsMotor(ctx);
+      initSettingsMobility(ctx);
       const linha = document.querySelector('#opt-altmove').closest('.ctrl-row');
       expect(linha.hidden, 'a linha sumiu num jogo que segura teclas').toBe(false);
     });
@@ -96,7 +96,7 @@ describe('ui/settings-motor', () => {
       const ctx = fullCtx();
       ctx.seguraTeclas = false;
       ctx.transporteEmUso = () => 'olhos';
-      initSettingsMotor(ctx);
+      initSettingsMobility(ctx);
 
       expect(document.querySelector('#opt-altmove').closest('.ctrl-row').hidden).toBe(true);
     });
@@ -109,7 +109,7 @@ describe('ui/settings-motor', () => {
     it('🔴 [Right] com o olhar em uso, o controle fica `aria-disabled` e a dica diz POR QUÊ', () => {
       const ctx = fullCtx();
       ctx.transporteEmUso = () => 'olhos';
-      initSettingsMotor(ctx);
+      initSettingsMobility(ctx);
 
       expect($('#opt-altmove').getAttribute('aria-disabled'), 'o controle continua a parecer accionável').toBe('true');
       const dica = document.querySelector('#opt-altmove').closest('.ctrl-row').querySelector('.opt-hint');
@@ -124,7 +124,7 @@ describe('ui/settings-motor', () => {
     it('🔴 [Zero] clicar não liga nada, e a recusa é DITA em vez de silenciosa', () => {
       const ctx = fullCtx();
       ctx.transporteEmUso = () => 'olhos';
-      initSettingsMotor(ctx);
+      initSettingsMobility(ctx);
       $('#opt-altmove').click();
 
       expect(ctx.players[0].toggleMove, 'o clique mexeu num ajuste que este aparelho exige').toBe(false);
@@ -140,7 +140,7 @@ describe('ui/settings-motor', () => {
       const ctx = fullCtx();
       let aparelho = 'olhos';
       ctx.transporteEmUso = () => aparelho;
-      const api = initSettingsMotor(ctx);
+      const api = initSettingsMobility(ctx);
 
       aparelho = 'teclado';
       api.reflectAltMove();
@@ -154,7 +154,7 @@ describe('ui/settings-motor', () => {
     // 📌 SEM A RAIZ A RESPONDER, nada disto acontece — o campo é opcional e o painel comporta-se como antes.
     it('📌 [Zero] sem `transporteEmUso`, o controle continua accionável', () => {
       const ctx = fullCtx();
-      initSettingsMotor(ctx);
+      initSettingsMobility(ctx);
       expect($('#opt-altmove').getAttribute('aria-disabled')).toBe(null);
       $('#opt-altmove').click();
       expect(ctx.players[0].toggleMove).toBe(true);
@@ -163,7 +163,7 @@ describe('ui/settings-motor', () => {
 
   it('[Zero] initSettingsMotor reflete o estado inicial (tudo desligado) sem anunciar', () => {
     const ctx = fullCtx();
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     expect($('#opt-facil').classList.contains('is-on')).toBe(false);
     expect($('#opt-altmove').classList.contains('is-on')).toBe(false);
     expect($('#opt-movement').classList.contains('is-on')).toBe(false);
@@ -172,7 +172,7 @@ describe('ui/settings-motor', () => {
 
   it('[Interface] initSettingsMotor reflete Fácil já ligado no jogador 0 ao montar', () => {
     const ctx = fullCtx({ players: [{ easy: true, toggleMove: false }] });
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     expect($('#opt-facil').classList.contains('is-on')).toBe(true);
     expect($('#opt-facil').getAttribute('aria-pressed')).toBe('true');
     expect($('#opt-facil').textContent).toBe('Ligado');
@@ -181,7 +181,7 @@ describe('ui/settings-motor', () => {
 
   it('[Right] clicar em #opt-facil chama setEasy, persiste, reflete e anuncia', () => {
     const ctx = fullCtx();
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     $('#opt-facil').click();
     expect(ctx.players[0].easy).toBe(true);
     expect(ctx.storeMap.get('incl_easy_p0')).toBe('1');
@@ -194,7 +194,7 @@ describe('ui/settings-motor', () => {
 
   it('[Right] clicar de novo em #opt-facil desliga e anuncia a versão curta', () => {
     const ctx = fullCtx({ players: [{ easy: true, toggleMove: false }] });
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     $('#opt-facil').click();
     expect(ctx.players[0].easy).toBe(false);
     expect(ctx.said.at(-1)).toBe('Modo Fácil desligado.');
@@ -205,7 +205,7 @@ describe('ui/settings-motor', () => {
     // declarado e sem marca — falha minha ao entregá-lo.
     const ctx = fullCtx({ players: [{ easy: false, toggleMove: false, toggleRun: true }] });
     ctx.escolhido.add('incl_togglerun_p0'); // a criança mexeu neste controle
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     expect($('#opt-togglerun').closest('.ctrl-row').classList.contains('is-changed')).toBe(true);
     expect($('[data-act="motora"]').classList.contains('is-changed'), 'a marca do MENU também acende').toBe(true);
   });
@@ -216,7 +216,7 @@ describe('ui/settings-motor', () => {
     // nada. Pior: o comentário do reset deste menu já diz que "uma marca errada manda a criança desfazer o
     // que ela nunca mexeu". O que marca é a ESCOLHA guardada, não o estado.
     const ctx = fullCtx({ players: [{ easy: false, toggleMove: false, toggleRun: true }] });
-    initSettingsMotor(ctx); // sem valor guardado: foi o toque que ligou
+    initSettingsMobility(ctx); // sem valor guardado: foi o toque que ligou
     expect($('#opt-togglerun').closest('.ctrl-row').classList.contains('is-changed')).toBe(false);
     expect($('[data-act="motora"]').classList.contains('is-changed')).toBe(false);
   });
@@ -227,7 +227,7 @@ describe('ui/settings-motor', () => {
     // alternância de movimento resolvia METADE — quem toca com um dedo andava sem segurar e continuava sem
     // conseguir CORRER, que ainda exigia manter pressionado.
     const ctx = fullCtx();
-    const api = initSettingsMotor(ctx);
+    const api = initSettingsMobility(ctx);
     $('#opt-togglerun').click();
     expect(ctx.toggleRunCalls).toEqual([[0, true]]);
     expect($('#opt-togglerun').getAttribute('aria-pressed')).toBe('true');
@@ -239,7 +239,7 @@ describe('ui/settings-motor', () => {
 
   it('[Right] clicar em #opt-altmove delega no setToggleMove INJETADO (compartilhado) e reflete', () => {
     const ctx = fullCtx();
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     $('#opt-altmove').click();
     expect(ctx.toggleMoveCalls).toEqual([[0, true]]);
     expect($('#opt-altmove').classList.contains('is-on')).toBe(true);
@@ -248,7 +248,7 @@ describe('ui/settings-motor', () => {
 
   it('[Interface] renderMovPlayers mantém #movement-players hidden mesmo com >1 jogador (decisão E3)', () => {
     const ctx = fullCtx({ players: [{ easy: false, toggleMove: false }, { easy: false, toggleMove: false }] });
-    const api = initSettingsMotor(ctx);
+    const api = initSettingsMobility(ctx);
     api.renderMovPlayers();
     const tabs = $('#movement-players');
     expect(tabs.hidden).toBe(true);
@@ -259,7 +259,7 @@ describe('ui/settings-motor', () => {
     const ctx = fullCtx({
       players: [{ easy: false, toggleMove: false }, { easy: true, toggleMove: true }],
     });
-    const api = initSettingsMotor(ctx);
+    const api = initSettingsMobility(ctx);
     api.renderMovPlayers();
     $('#movement-players').querySelector('button[data-mp="1"]').click();
     expect(api.getSelPlayer()).toBe(1);
@@ -272,7 +272,7 @@ describe('ui/settings-motor', () => {
       players: [{ easy: true, toggleMove: false }, { easy: false, toggleMove: false }],
       numPlayers: 1, // encolheu de 2 para 1 jogador
     });
-    const api = initSettingsMotor(ctx);
+    const api = initSettingsMobility(ctx);
     api.setSelPlayer(1); // seleção antiga, agora fora do intervalo
     api.renderMovPlayers();
     expect(api.getSelPlayer()).toBe(0); // clampou de volta
@@ -282,7 +282,7 @@ describe('ui/settings-motor', () => {
     const ctx = fullCtx({
       players: [{ easy: false, toggleMove: false }, { easy: true, toggleMove: false }],
     });
-    const api = initSettingsMotor(ctx);
+    const api = initSettingsMobility(ctx);
     api.setSelPlayer(1);
     api.reflectFacil();
     expect($('#opt-facil').classList.contains('is-on')).toBe(true);
@@ -290,7 +290,7 @@ describe('ui/settings-motor', () => {
 
   it('[Error] setEasy com índice fora do array não lança (mirrors o guard `if(!p)return`)', () => {
     const ctx = fullCtx();
-    const api = initSettingsMotor(ctx);
+    const api = initSettingsMobility(ctx);
     expect(() => api.setEasy(5, true)).not.toThrow();
     expect(ctx.said).toHaveLength(0); // no-op: não anunciou
   });
@@ -298,7 +298,7 @@ describe('ui/settings-motor', () => {
   it('[Zero] sem os elementos no DOM, render/reflect não lançam (só não desenham)', () => {
     document.body.innerHTML = '';
     const ctx = fullCtx();
-    const api = initSettingsMotor(ctx);
+    const api = initSettingsMobility(ctx);
     expect(() => { api.renderMovPlayers(); api.reflectFacil(); api.reflectAltMove(); }).not.toThrow();
   });
 });
@@ -311,7 +311,7 @@ describe('ui/settings-motor — restaurar padrões DESTE menu (ADR-0028)', () =>
     // aberta era a do jogador 1 daria dois estados diferentes com um só nome.
     const players = [{ easy: true, toggleMove: true }, { easy: true, toggleMove: false }];
     const ctx = fullCtx({ players });
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     $('#movement-reset').click();
     expect(players).toEqual([{ easy: false, toggleMove: false }, { easy: false, toggleMove: false }]);
   });
@@ -320,7 +320,7 @@ describe('ui/settings-motor — restaurar padrões DESTE menu (ADR-0028)', () =>
     // A criança que joga com os olhos aponta com os olhos. Desligar a webcam a deixaria sem como clicar o
     // botão de volta: o reset teria criado a armadilha que existe para desfazer.
     const ctx = fullCtx();
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     $('#opt-eyes').setAttribute('aria-pressed', 'true');
     $('#movement-reset').click();
     expect($('#opt-eyes').getAttribute('aria-pressed')).toBe('true');
@@ -328,7 +328,7 @@ describe('ui/settings-motor — restaurar padrões DESTE menu (ADR-0028)', () =>
 
   it('[Interface] o anúncio DIZ o que ficou de fora — senão a criança conclui que o botão não funcionou', () => {
     const ctx = fullCtx({ players: [{ easy: true, toggleMove: false }] });
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     $('#movement-reset').click();
     expect(ctx.said.at(-1)).toContain('olhos');
     expect(ctx.said.at(-1)).toContain('mapeamento');
@@ -336,7 +336,7 @@ describe('ui/settings-motor — restaurar padrões DESTE menu (ADR-0028)', () =>
 
   it('[Zero] com tudo já no padrão, não escreve nem chama setToggleMove', () => {
     const ctx = fullCtx();
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     ctx.storeMap.clear();
     $('#movement-reset').click();
     expect(ctx.toggleMoveCalls).toEqual([]);
@@ -351,7 +351,7 @@ describe('ui/settings-motor — marca o que saiu do padrão (ADR-0029)', () => {
 
   it('[Right] Modo Fácil ligado marca a linha dele e o botão do menu', () => {
     const ctx = fullCtx({ players: [{ easy: true, toggleMove: false }] });
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     expect(linha('#opt-facil').classList.contains('is-changed')).toBe(true);
     expect(linha('#opt-altmove').classList.contains('is-changed')).toBe(false);
     expect($('[data-act="motora"]').classList.contains('is-changed')).toBe(true);
@@ -362,7 +362,7 @@ describe('ui/settings-motor — marca o que saiu do padrão (ADR-0029)', () => {
     // diz estar intocado, e a criança procuraria em todo lugar menos onde está.
     const players = [{ easy: true, toggleMove: true }];
     const ctx = fullCtx({ players });
-    const api = initSettingsMotor(ctx);
+    const api = initSettingsMobility(ctx);
     api.setEasy(0, false);
     expect($('[data-act="motora"]').classList.contains('is-changed')).toBe(true);
     $('#movement-reset').click();
@@ -371,7 +371,7 @@ describe('ui/settings-motor — marca o que saiu do padrão (ADR-0029)', () => {
 
   it('[Zero] tudo no padrão: nada marcado', () => {
     const ctx = fullCtx();
-    initSettingsMotor(ctx);
+    initSettingsMobility(ctx);
     expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
   });
 });
@@ -385,12 +385,12 @@ describe('o ctx que a ENGINE consegue montar sozinha (ADR-0106 §1)', () => {
     // uma promessa que ninguém verifica — e a promessa aqui é a que decide se a engine pode montar o painel.
     //
     // 📌 As duas ausências significam coisas diferentes, e as duas têm de ficar bem: `setToggleRun` é uma
-    // ESCRITA que a engine agora sabe fazer (`definirAlternanciaDeCorrida`); `rebuildCoins` é a REACÇÃO DO
+    // ESCRITA que a engine agora sabe fazer (`setRunLatch`); `rebuildCoins` é a REACÇÃO DO
     // MUNDO, que continua a ser do jogo — e cuja falta não pode apagar a escolha da criança.
     const players = [{ easy: false, toggleMove: false, toggleRun: false, walkDir: 0 }];
     const guardado = new Map();
     const ditos = [];
-    initSettingsMotor({
+    initSettingsMobility({
       $,
       srSay: (m) => ditos.push(m),
       store: { setBool: (k, on) => guardado.set(k, on ? '1' : '0'), get: () => null },

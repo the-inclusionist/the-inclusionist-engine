@@ -52,7 +52,7 @@ export const CAA_SETS: readonly CaaSet[] = [
   // --- PICTOGRAMA que precisa ser BAIXADO. ---
   { key: 'arasaac', nome: 'ARASAAC', tier: 'fetched', licenca: 'baixado à parte', disponivel: false },
 
-  // --- AGUARDANDO NEGOCIAÇÃO. Ficam visíveis de propósito: ver `caaMotivo`. ---
+  // --- AGUARDANDO NEGOCIAÇÃO. Ficam visíveis de propósito: ver `caaReason`. ---
   { key: 'sclera', nome: 'Sclera', tier: 'negotiating', licenca: null, disponivel: false },
   { key: 'pcs', nome: 'PCS', tier: 'negotiating', licenca: null, disponivel: false },
   { key: 'symbolstix', nome: 'SymbolStix', tier: 'negotiating', licenca: null, disponivel: false },
@@ -63,7 +63,7 @@ export const CAA_BY_KEY: Readonly<Record<string, CaaSet>> = Object.fromEntries(C
 
 /** Quais CONJUNTOS a criança pode escolher hoje: nenhum. O menu não finge o contrário — os pictogramas são
  *  milhares de arquivos que ainda não entraram no repositório, e quatro deles dependem de negociação. */
-export function caaDisponiveis(): CaaSet[] {
+export function caaAvailable(): CaaSet[] {
   return CAA_SETS.filter((s) => s.disponivel);
 }
 
@@ -79,13 +79,13 @@ export function caaDisponiveis(): CaaSet[] {
  * que o jogo não faz — quando o obstáculo é uma licença, não uma capacidade. Esconder responderia a pergunta
  * errada, e responderia errado.
  */
-export function caaMotivo(s: CaaSet): string | null {
+export function caaReason(s: CaaSet): string | null {
   if (s.disponivel) return null;
   return s.tier === 'negotiating' ? 'caa.aguardandoNegociacao' : 'caa.emPreparo';
 }
 
 /** Rótulo pronto para a linha do menu: nome + o motivo, quando há um. */
-export function caaRotulo(s: CaaSet): string {
-  const motivo = caaMotivo(s);
+export function caaLabel(s: CaaSet): string {
+  const motivo = caaReason(s);
   return motivo ? `${s.nome} — ${t(motivo)}` : s.nome;
 }

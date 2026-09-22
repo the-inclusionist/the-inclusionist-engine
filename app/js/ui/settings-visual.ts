@@ -9,7 +9,7 @@
 
 import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
-import { montarPassos, atualizarPassos, passoSeguinte } from './panel-widgets.js';
+import { mountSteps, updateSteps, nextStep } from './panel-widgets.js';
 import { escapeHtml } from '../core/escape-html.js';
 
 import { lqName as lqLabel } from '../render/lq-filter.js';
@@ -150,18 +150,18 @@ export { lqName as lqLabel } from '../render/lq-filter.js';
  * o primeiro passo que o cursor antigo dava — o valor mais linear que ainda liga o filtro. Misto é o meio, e
  * quadrático é a curva S inteira. Cada posição cai na faixa que o `lqName` já dá ao seu nome.
  */
-export const LQ_PASSOS: readonly number[] = [0, 0.05, 0.5, 1];
+export const LQ_STEPS: readonly number[] = [0, 0.05, 0.5, 1];
 
 /**
  * Em que posição está um valor contínuo — incluindo um GUARDADO pelo cursor antigo (0,35, 0,7…). Pela faixa do
  * `lqName`, e não pelo valor mais próximo: é o NOME que a criança ouviu que tem de continuar a ser o de agora.
  */
-export function lqPosicao(amount: number): number {
+export function lqPosition(amount: number): number {
   return Math.max(0, ['lq.off', 'lq.linear', 'lq.mixed', 'lq.quadratic'].indexOf(lqLabel(amount)));
 }
 
 /** t (0..1) -> slider percent (0..100, rounded) — mirrors `Math.round(lqT*100)`.
- *  @deprecated Desde o ADR-0151 o realce é escolhido por PASSOS (`LQ_PASSOS`/`lqPosicao`); fica pelo consumidor. */
+ *  @deprecated Desde o ADR-0151 o realce é escolhido por PASSOS (`LQ_STEPS`/`lqPosition`); fica pelo consumidor. */
 export function lqPercent(t: number): number {
   return Math.round(clamp01(t) * 100);
 }
@@ -317,18 +317,18 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     const lugarLq = ctx.$<HTMLElement>('[data-passos-lugar="lq"]');
     if (lugarLq) {
       const doc = lugarLq.ownerDocument;
-      let posicao = lqPosicao(settings.lq);
-      const spec = () => ({ rotulo: t('visual.lq'), valores: LQ_PASSOS.map((v) => t(lqLabel(v))), atual: posicao });
-      const passos = montarPassos({ procurar: (sel) => ctx.$<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) }, spec());
+      let posicao = lqPosition(settings.lq);
+      const spec = () => ({ rotulo: t('visual.lq'), valores: LQ_STEPS.map((v) => t(lqLabel(v))), atual: posicao });
+      const passos = mountSteps({ procurar: (sel) => ctx.$<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) }, spec());
       passos.id = 'opt-lq';
       lugarLq.replaceWith(passos);
       passos.addEventListener('passo', (ev) => {
-        const nova = passoSeguinte(posicao, LQ_PASSOS.length, (ev as CustomEvent<number>).detail);
+        const nova = nextStep(posicao, LQ_STEPS.length, (ev as CustomEvent<number>).detail);
         if (nova === posicao) return; // na ponta não se anuncia um passo que não aconteceu
         posicao = nova;
-        ctx.setLq(LQ_PASSOS[posicao] as number);
-        atualizarPassos(passos, spec());
-        ctx.srSay(t('sr.visual.lq', { v: t(lqLabel(LQ_PASSOS[posicao] as number)) }));
+        ctx.setLq(LQ_STEPS[posicao] as number);
+        updateSteps(passos, spec());
+        ctx.srSay(t('sr.visual.lq', { v: t(lqLabel(LQ_STEPS[posicao] as number)) }));
       });
     }
 

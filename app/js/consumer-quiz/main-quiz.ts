@@ -45,7 +45,7 @@
 //     `#typo-close` e `#typo-reset`. Nada no tipo dizia isso — descobria-se por tentativa, e o modo de falhar
 //     era o pior possível: o painel abre vazio, sem erro. Uma engine que exige ids fixos e não os declara
 //     está exigindo que cada consumidor redescubra a mesma lista.
-//     AGORA a engine CONSTRÓI a casca: `ui/panel-shell.montarCasca` monta o véu, o cartão, o título, a lista
+//     AGORA a engine CONSTRÓI a casca: `ui/panel-shell.mountShell` monta o véu, o cartão, o título, a lista
 //     e os dois botões, e DEVOLVE os cinco ids. O bloco que estava escrito à mão no `quiz.html` saiu, e este
 //     ficheiro passou a montá-lo — o contrato lê-se no tipo em vez de se descobrir por tentativa.
 //     ⚠️ O `#typo-preview` fica DESTE lado, e a distinção é a que importa: a amostra «Juiz foge e bota fita
@@ -130,7 +130,7 @@ import { t, localeReady } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { menuIndexOn } from '../core/state.js';
 import { captionDuration } from '../core/caption-duration.js';
-import { anunciarItem } from '../ui/item-announcement.js';
+import { announceItem } from '../ui/item-announcement.js';
 import { createGame, type Engine, type VirtualCommand } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
 
@@ -187,7 +187,7 @@ export function narracaoDaPergunta(p: Pergunta): string {
 
 /** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
 export function opcaoFalada(p: Pergunta, i: number): string {
-  return anunciarItem({ rotulo: p.alternativas[i] ?? '', posicao: i + 1, total: p.alternativas.length }, menuIndexOn);
+  return announceItem({ rotulo: p.alternativas[i] ?? '', posicao: i + 1, total: p.alternativas.length }, menuIndexOn);
 }
 
 /**

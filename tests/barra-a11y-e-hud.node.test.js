@@ -14,7 +14,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
-import { invasoresDaBarra } from '../app/js/ui/layout.js';
+import { barIntruders } from '../app/js/ui/layout.js';
 
 const BARRA = { x: 100, y: 10, w: 300, h: 44 };
 const no = (nome, caixa, daBarra = false) => ({ nome, caixa, daBarra });
@@ -25,7 +25,7 @@ describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
     // ⚠️ Os NOMES dos nós são neutros de propósito, e o crivo `engine-boundary` reprovou a primeira versão
     // deles: um fixture de engine não pode precisar do vocabulário de um género para correr. O que este caso
     // afirma é geométrico — um título por cima da barra —, e isso vale para qualquer jogo.
-    const invasores = invasoresDaBarra(BARRA, [
+    const invasores = barIntruders(BARRA, [
       no('h2#.titulo-da-atividade', { x: 90, y: 5, w: 340, h: 60 }),
       no('div#app.raiz-do-jogo', { x: 80, y: 0, w: 420, h: 400 }),
     ]);
@@ -35,7 +35,7 @@ describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
   it('🔴 [Zero] os BOTÕES da própria barra não contam — senão o crivo acusa sempre', () => {
     // ⚠️ Eles intersectam-na por definição. Um crivo que os contasse ficaria vermelho em todo jogo, e um
     // crivo que acusa sempre é o mesmo que crivo nenhum — é o «afogar o que se pode resolver» do ADR-0106 §2.
-    expect(invasoresDaBarra(BARRA, [
+    expect(barIntruders(BARRA, [
       no('button#.pi-btn', { x: 110, y: 15, w: 40, h: 40 }, true),
       no('div#title-icons.pause-icons', BARRA, true),
     ])).toEqual([]);
@@ -48,12 +48,12 @@ describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
     // ⚠️ OS DOIS EIXOS, e o segundo par entrou depois: uma mutação que afrouxava só a comparação em X ficou
     // VERDE, porque o caso original só encostava em Y. Um crivo que prende uma fronteira e não a outra
     // autoriza metade do defeito.
-    expect(invasoresDaBarra(BARRA, [no('div#.abaixo', { x: 100, y: 54, w: 300, h: 20 })])).toEqual([]);
-    expect(invasoresDaBarra(BARRA, [no('div#.um-px-isInside', { x: 100, y: 53, w: 300, h: 20 })]))
+    expect(barIntruders(BARRA, [no('div#.abaixo', { x: 100, y: 54, w: 300, h: 20 })])).toEqual([]);
+    expect(barIntruders(BARRA, [no('div#.um-px-isInside', { x: 100, y: 53, w: 300, h: 20 })]))
       .toEqual(['div#.um-px-isInside']);
-    expect(invasoresDaBarra(BARRA, [no('div#.a-direita', { x: 400, y: 10, w: 50, h: 44 })])).toEqual([]);
-    expect(invasoresDaBarra(BARRA, [no('div#.a-esquerda', { x: 50, y: 10, w: 50, h: 44 })])).toEqual([]);
-    expect(invasoresDaBarra(BARRA, [no('div#.um-px-a-direita', { x: 399, y: 10, w: 50, h: 44 })]))
+    expect(barIntruders(BARRA, [no('div#.a-direita', { x: 400, y: 10, w: 50, h: 44 })])).toEqual([]);
+    expect(barIntruders(BARRA, [no('div#.a-esquerda', { x: 50, y: 10, w: 50, h: 44 })])).toEqual([]);
+    expect(barIntruders(BARRA, [no('div#.um-px-a-direita', { x: 399, y: 10, w: 50, h: 44 })]))
       .toEqual(['div#.um-px-a-direita']);
   });
 
@@ -64,17 +64,17 @@ describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
     // desigualdades estritas já excluíam quem não tem área, e tirei o guarda. É falso — elas excluem o caso
     // DEGENERADO NA FRONTEIRA (a primeira linha), não um em geral. Uma risca de largura zero a atravessar a
     // barra passa nas quatro comparações. O guarda voltou, e esta linha é o que o prende.
-    expect(invasoresDaBarra(BARRA, [no('div#.vazio', { x: 100, y: 10, w: 0, h: 0 })])).toEqual([]);
-    expect(invasoresDaBarra(BARRA, [no('div#.risca', { x: 150, y: 20, w: 0, h: 60 })])).toEqual([]);
+    expect(barIntruders(BARRA, [no('div#.vazio', { x: 100, y: 10, w: 0, h: 0 })])).toEqual([]);
+    expect(barIntruders(BARRA, [no('div#.risca', { x: 150, y: 20, w: 0, h: 60 })])).toEqual([]);
   });
 
   it('🔴 [Zero] sem barra — ou com barra de área zero — NÃO se acusa ninguém', () => {
     // ⚠️ É o par que impede o crivo de ser um acusador universal: contra um rectângulo de zero, tudo
     // «intersecta» pela regra ingénua. Um jogo sem barra montada não tem nada reservado.
     const tudo = [no('div#.qualquer', { x: 0, y: 0, w: 999, h: 999 })];
-    expect(invasoresDaBarra(null, tudo)).toEqual([]);
-    expect(invasoresDaBarra({ x: 100, y: 10, w: 0, h: 44 }, tudo)).toEqual([]);
-    expect(invasoresDaBarra({ x: 100, y: 10, w: 300, h: 0 }, tudo)).toEqual([]);
+    expect(barIntruders(null, tudo)).toEqual([]);
+    expect(barIntruders({ x: 100, y: 10, w: 0, h: 44 }, tudo)).toEqual([]);
+    expect(barIntruders({ x: 100, y: 10, w: 300, h: 0 }, tudo)).toEqual([]);
   });
 });
 

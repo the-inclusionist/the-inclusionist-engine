@@ -15,7 +15,7 @@
 // root`, elementos que ficam focáveis por `contenteditable`. Uma armadilha que se mete no meio erra ao
 // caminhar; uma que só fecha o ciclo nas pontas não tem como errar o meio, porque não o toca.
 //
-// A regra fica em UMA função pura (`proximoNaArmadilha`), testável no project node sem DOM nenhum. O que
+// A regra fica em UMA função pura (`nextInTrap`), testável no project node sem DOM nenhum. O que
 // precisa de navegador é só ler quem está focado e chamar `.focus()`.
 
 /**
@@ -23,7 +23,7 @@
  * existem, mas não aparecem em nenhum diálogo desta engine (conferido), e um seletor que promete mais do que
  * foi verificado é um seletor que mente na próxima revisão.
  */
-export const SELETOR_FOCAVEL = [
+export const FOCUSABLE_SELECTOR = [
   'a[href]',
   'button:not([disabled])',
   'input:not([disabled])',
@@ -47,7 +47,7 @@ export const SELETOR_FOCAVEL = [
  *      abriu sem focar nada. Sem ele a armadilha só funciona para quem já estava dentro.
  *   4. o foco está no MEIO → `null`, e o navegador caminha. Ver o comentário do cabeçalho.
  */
-export function proximoNaArmadilha<T>(
+export function nextInTrap<T>(
   focaveis: readonly T[],
   atual: T | null,
   paraTras: boolean,
@@ -102,7 +102,7 @@ export function initFocusTrap(ctx: FocusTrapCtx): FocusTrapApi {
     const dialogo = ctx.overlayDeCima();
     if (!dialogo) return; // sem diálogo aberto o Tab é do jogo, e tem de continuar a ser
 
-    const alvo = proximoNaArmadilha(ctx.focaveisDe(dialogo), ctx.focoAtual() as HTMLElement | null, e.shiftKey);
+    const alvo = nextInTrap(ctx.focaveisDe(dialogo), ctx.focoAtual() as HTMLElement | null, e.shiftKey);
     if (!alvo) return;
 
     e.preventDefault();
@@ -131,7 +131,7 @@ export function initFocusTrap(ctx: FocusTrapCtx): FocusTrapApi {
  * o que cobre `display:none` em QUALQUER ancestral, elementos de tamanho zero e o caso do contêiner fixo —
  * sem que quem lê precise de saber em que casos `offsetParent` tem buracos.
  */
-export function focaveisNoDom(isInside: HTMLElement): HTMLElement[] {
-  const todos = [...isInside.querySelectorAll<HTMLElement>(SELETOR_FOCAVEL)];
+export function focusablesInDom(isInside: HTMLElement): HTMLElement[] {
+  const todos = [...isInside.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)];
   return todos.filter((el) => !el.hidden && el.getClientRects().length > 0);
 }

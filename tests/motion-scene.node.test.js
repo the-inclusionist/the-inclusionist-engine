@@ -12,7 +12,7 @@
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, afterEach } from 'vitest';
 import {
-  CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, padraoDeCena, lerCenaGuardada, guardarCena,
+  SCENE_KEYS, CHARACTER_ANIMATIONS, sceneDefault, readStoredScene, storeScene,
 } from '../app/js/ui/motion-scene.js';
 import { RM_LABEL } from '../app/js/ui/settings-motion.js';
 import { KEYS } from '../app/js/platform/storage.js';
@@ -33,19 +33,19 @@ afterEach(() => { delete globalThis.localStorage; });
 describe('ADR-0106 · o movimento reduzido de cena pertence à engine', () => {
   it('[Right] sem nada guardado, as QUATRO chaves existem e seguem o padrão do sistema', () => {
     comArmazenamento();
-    const rm = lerCenaGuardada();
+    const rm = readStoredScene();
     // No project `node` não há `window`, então `defaultReducedMotion()` responde `false` — e o que se afirma
     // é que as quatro chaves EXISTEM com esse valor, não que o valor seja falso por si.
     expect(Object.keys(rm).sort()).toEqual(['decor', 'items', 'parallax', 'particles']);
     expect(Object.values(rm).every((v) => v === false)).toBe(true);
-    expect(rm).toEqual(padraoDeCena());
+    expect(rm).toEqual(sceneDefault());
   });
 
   it('⚠️ [Right] um guardado TRUNCADO não deixa chave por preencher — `undefined` seria «não reduzido»', () => {
     // O cartucho tinha esta forma certa; o risco é ela perder-se na mudança de dono. Um objecto com UMA
     // chave é o que um armazenamento truncado ou de versão anterior devolve.
     comArmazenamento({ [KEYS.reducedMotion]: JSON.stringify({ parallax: true }) });
-    const rm = lerCenaGuardada();
+    const rm = readStoredScene();
     expect(rm.parallax).toBe(true);
     expect(rm.decor).toBe(false);
     expect(rm.items).toBe(false);
@@ -55,19 +55,19 @@ describe('ADR-0106 · o movimento reduzido de cena pertence à engine', () => {
 
   it('⚠️ [Right] uma chave A MAIS no guardado NÃO entra — o dado vem do navegador de uma criança', () => {
     comArmazenamento({ [KEYS.reducedMotion]: JSON.stringify({ parallax: true, cintilar: true }) });
-    expect(Object.keys(lerCenaGuardada()).sort()).toEqual(['decor', 'items', 'parallax', 'particles']);
+    expect(Object.keys(readStoredScene()).sort()).toEqual(['decor', 'items', 'parallax', 'particles']);
   });
 
   it('[Right] um guardado corrompido cai no padrão em vez de rebentar', () => {
     comArmazenamento({ [KEYS.reducedMotion]: 'isto não é JSON' });
-    expect(lerCenaGuardada()).toEqual(padraoDeCena());
+    expect(readStoredScene()).toEqual(sceneDefault());
   });
 
   it('[Right] `guardarCena` escreve na chave da ENGINE, que é onde o cartucho já escrevia', () => {
     // A migração silenciosa que este caso impede: guardar noutra chave perderia o ajuste de toda criança que
     // já jogou, sem nada dizer que perdeu.
     const dados = comArmazenamento();
-    guardarCena({ parallax: true, decor: false, items: true, particles: false });
+    storeScene({ parallax: true, decor: false, items: true, particles: false });
     expect(JSON.parse(dados[KEYS.reducedMotion])).toEqual({ parallax: true, decor: false, items: true, particles: false });
   });
 
@@ -75,31 +75,31 @@ describe('ADR-0106 · o movimento reduzido de cena pertence à engine', () => {
     // Cruzamento entre tabelas escritas separadamente, e não espelho: `RM_LABEL` mapeia `walk`→`rm.walk`, e
     // esta lista mapeia `rmWalk`→`rm.walk`. Escrever `rm.andar` num dos lados reprova aqui.
     const producidos = new Set(Object.values(RM_LABEL));
-    for (const a of ANIMACOES_DO_PERSONAGEM) {
+    for (const a of CHARACTER_ANIMATIONS) {
       expect(producidos.has(a.lbl), `${a.prop} usa «${a.lbl}», que o RM_LABEL não produz`).toBe(true);
     }
-    expect(ANIMACOES_DO_PERSONAGEM.map((a) => a.prop)).toEqual(['rmWalk', 'rmBreath', 'rmFlavor']);
+    expect(CHARACTER_ANIMATIONS.map((a) => a.prop)).toEqual(['rmWalk', 'rmBreath', 'rmFlavor']);
   });
 
   it('[Interface] as quatro chaves de cena também são rotuladas pelo `RM_LABEL`', () => {
-    for (const k of CHAVES_DE_CENA) {
+    for (const k of SCENE_KEYS) {
       expect(RM_LABEL[k], `a cena «${k}» não tem rótulo`).toBeTruthy();
     }
   });
 });
 
 // ========================= MUTACOES CONFERIDAS =========================
-//   · ⚠️ trocando o laço por `{ ...guardado }` em `lerCenaGuardada` -> reprovam DOIS: o do TRUNCADO (as tres
+//   · ⚠️ trocando o laço por `{ ...guardado }` em `readStoredScene` -> reprovam DOIS: o do TRUNCADO (as tres
 //     chaves em falta ficam `undefined`, e `undefined` le-se como «nao reduzido» para quem pediu reducao) e o
 //     da chave A MAIS (`cintilar` entra no objecto). E a mutacao mais curta e mais legivel das duas versoes,
 //     que e exactamente porque ela precisa de um caso a prende-la.
 //   · trocando `!!guardado[k]` por `guardado[k]` -> reprova o do TRUNCADO: as chaves ausentes deixam de ser
 //     `false` e passam a `undefined`, e o `toBe(false)` apanha a diferenca que um `if` nao apanharia.
-//   · trocando a chave em `guardarCena` por outra -> reprova "escreve na chave da ENGINE". Sem esse caso, uma
+//   · trocando a chave em `storeScene` por outra -> reprova "escreve na chave da ENGINE". Sem esse caso, uma
 //     mudanca de chave passaria verde e perderia o ajuste de toda crianca que ja jogou.
 //   · tirando o `try/catch` da leitura (via `getJSON`) nao e mutavel daqui — o caso do CORROMPIDO cobre o
 //     comportamento, nao a implementacao: com `JSON.parse` a rebentar sem guarda, ele reprova.
-//   · tirando `'particles'` de `CHAVES_DE_CENA` -> ⚠️ NAO reprova nenhum teste: **nao compila**. O guarda
+//   · tirando `'particles'` de `SCENE_KEYS` -> ⚠️ NAO reprova nenhum teste: **nao compila**. O guarda
 //     `_COBRE_A_UNIAO` e do COMPILADOR, e e de proposito — uma lista escrita a mao ao lado de uma uniao e a
 //     forma de defeito que este ficheiro existe para desfazer, e um teste a repeti-la seria uma terceira
 //     copia. Conferido: `npx tsc --noEmit` da TS2322 na linha do guarda.

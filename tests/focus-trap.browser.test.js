@@ -2,7 +2,7 @@
 // A ARMADILHA DE FOCO NO NAVEGADOR — a linha da issue #109 que só um navegador pode responder:
 // *"Tab não pode alcançar o jogo enquanto um overlay está aberto, aferido num teste de navegador."*
 //
-// O project node afere a REGRA (`proximoNaArmadilha`) sem DOM nenhum. O que precisa de navegador é o resto, e
+// O project node afere a REGRA (`nextInTrap`) sem DOM nenhum. O que precisa de navegador é o resto, e
 // é onde as armadilhas de foco costumam falhar: quem está focado de verdade, o que conta como visível, e se o
 // `preventDefault` chega a tempo.
 //
@@ -15,7 +15,7 @@
 // buracos: um diálogo que não desenha nada não pode oferecer foco a nada. Trocar «o foco escapa» por «o foco
 // desapareceu num botão invisível» seria piorar.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { initFocusTrap, focaveisNoDom } from '../app/js/ui/focus-trap.js';
+import { initFocusTrap, focusablesInDom } from '../app/js/ui/focus-trap.js';
 
 const MARCACAO = `
   <div id="game-region">
@@ -49,7 +49,7 @@ const $ = (s) => document.querySelector(s);
 
 describe('focaveisNoDom — quem entra no ciclo, num documento de verdade', () => {
   it('[Right] pega os habilitados e visíveis, na ordem do documento', () => {
-    const nomes = focaveisNoDom($('#dlg')).map((el) => el.id);
+    const nomes = focusablesInDom($('#dlg')).map((el) => el.id);
     expect(nomes).toEqual(['d-um', 'd-dois', 'd-cinco']);
   });
 
@@ -57,10 +57,10 @@ describe('focaveisNoDom — quem entra no ciclo, num documento de verdade', () =
     // Os três por motivos diferentes, e o terceiro é o mais fácil de errar: o card do diálogo tem
     // `tabindex="-1"` para receber foco POR PROGRAMA. Se entrasse no ciclo, a criança tabularia para um
     // contêiner que não faz nada e pareceria que o Tab tinha parado de funcionar.
-    const nomes = focaveisNoDom($('#dlg')).map((el) => el.id);
+    const nomes = focusablesInDom($('#dlg')).map((el) => el.id);
     expect(nomes).not.toContain('d-tres');   // disabled
     expect(nomes).not.toContain('d-quatro'); // hidden
-    expect(focaveisNoDom($('#dlg')).some((el) => el.matches('.overlay__card'))).toBe(false);
+    expect(focusablesInDom($('#dlg')).some((el) => el.matches('.overlay__card'))).toBe(false);
   });
 
   it('[Boundary] ⚠️ um diálogo ESCONDIDO não oferece foco nenhum — e é assim que o Tab volta a ser do jogo', () => {
@@ -72,10 +72,10 @@ describe('focaveisNoDom — quem entra no ciclo, num documento de verdade', () =
     // tudo em `position: fixed`. Não é: é `null` para o elemento FIXO, e os descendentes devolvem o próprio
     // contêiner. O teste reprovou a afirmação em vez de a acompanhar, que é o serviço que ele presta.
     expect(getComputedStyle($('#dlg')).position).toBe('fixed'); // o diálogo é posicionado, como os reais
-    expect(focaveisNoDom($('#dlg')).length, 'visível, oferece os três').toBe(3);
+    expect(focusablesInDom($('#dlg')).length, 'visível, oferece os três').toBe(3);
 
     $('#dlg').style.display = 'none';
-    expect(focaveisNoDom($('#dlg')), 'escondido, não oferece nenhum').toEqual([]);
+    expect(focusablesInDom($('#dlg')), 'escondido, não oferece nenhum').toEqual([]);
   });
 });
 
@@ -85,7 +85,7 @@ describe('o Tab NÃO alcança o jogo enquanto o diálogo está aberto', () => {
     const api = initFocusTrap({
       overlayDeCima: () => (temDialogo ? $('#dlg') : null),
       focoAtual: () => document.activeElement,
-      focaveisDe: focaveisNoDom,
+      focaveisDe: focusablesInDom,
       win: window,
     });
     api.attach();

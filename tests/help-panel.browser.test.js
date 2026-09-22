@@ -7,7 +7,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { helpRows, montarSlides, mostrarSlide, animarFigura, howToPlayProblems, SEM_TECLA } from '../app/js/ui/help-panel.js';
+import { helpRows, mountSlides, showSlide, animateFigure, howToPlayProblems, NO_KEY } from '../app/js/ui/help-panel.js';
 
 const PRESET = {
   action2: { label: 'Pular', hint: 'Sai do chão e volta.' },
@@ -18,10 +18,10 @@ const ESQUEMA = { action2: ['KeyZ'], left: ['ArrowLeft'], start: null };
 const linhas = helpRows(PRESET, (a) => ESQUEMA[a], (c) => `«${c}»`);
 const ctx = {
   criar: (tag) => document.createElement(tag),
-  t: (k, p) => (k === SEM_TECLA ? 'sem tecla' : k === 'help.slide.tecla' ? `Tecla ${p.k}` : k),
+  t: (k, p) => (k === NO_KEY ? 'sem tecla' : k === 'help.slide.tecla' ? `Tecla ${p.k}` : k),
   titulo: 'Ajuda',
 };
-const novo = () => montarSlides(ctx);
+const novo = () => mountSlides(ctx);
 
 describe('the help slide show', () => {
   it('🔴 [Right] is ONE stop of the cursor, with the page arrows as finger targets and no button inside', () => {
@@ -33,7 +33,7 @@ describe('the help slide show', () => {
 
   it('🔴 [Right] a slide draws the child\'s key, the game\'s word and its sentence', () => {
     const el = novo();
-    mostrarSlide(el, linhas, 1, ctx);
+    showSlide(el, linhas, 1, ctx);
     expect(el.querySelector('.slide').dataset.act).toBe('action2');
     expect(el.querySelector('.slide-tecla').textContent).toBe('«KeyZ»');
     expect(el.querySelector('.slide-palavra').textContent).toBe('Pular');
@@ -43,22 +43,22 @@ describe('the help slide show', () => {
 
   it('📌 [Boundary] a position the keyboard does not reach SAYS so, and is marked — only that one', () => {
     const el = novo();
-    mostrarSlide(el, linhas, 2, ctx);
+    showSlide(el, linhas, 2, ctx);
     const tecla = el.querySelector('.slide-tecla');
     expect([tecla.textContent, tecla.getAttribute('data-sem-tecla')]).toEqual(['sem tecla', '1']);
-    mostrarSlide(el, linhas, 0, ctx);
+    showSlide(el, linhas, 0, ctx);
     expect(el.querySelector('.slide-tecla').hasAttribute('data-sem-tecla'), 'the mark stayed on a slide with a key').toBe(false);
   });
 
   it('⚠️ [Zero] a position without a sentence shows no empty paragraph', () => {
     const el = novo();
-    mostrarSlide(el, linhas, 0, ctx);
+    showSlide(el, linhas, 0, ctx);
     expect(el.querySelector('.slide-texto').hidden).toBe(true);
   });
 
   it('🔴 [Right] one dot per slide, the current one filled — the place without a number (ADR-0167)', () => {
     const el = novo();
-    mostrarSlide(el, linhas, 1, ctx);
+    showSlide(el, linhas, 1, ctx);
     const pontos = [...el.querySelectorAll('.slide-ponto')];
     expect(pontos.map((p) => p.classList.contains('is-on'))).toEqual([false, true, false]);
     expect(el.textContent).not.toMatch(/\d\s*(de|of)\s*\d/);
@@ -66,7 +66,7 @@ describe('the help slide show', () => {
 
   it('🔴 [Right] what is heard: the word, the sentence and the key, and where the show is', () => {
     const el = novo();
-    const { falado } = mostrarSlide(el, linhas, 1, ctx);
+    const { falado } = showSlide(el, linhas, 1, ctx);
     // the sentence's own full stop is not doubled
     expect(falado).toBe('Pular. Sai do chão e volta. Tecla «KeyZ»');
     expect(el.getAttribute('aria-valuetext')).toBe(falado);
@@ -75,9 +75,9 @@ describe('the help slide show', () => {
 
   it('⚠️ [Boundary] held at the ends: the first and last slides are walls, marked as such', () => {
     const el = novo();
-    expect(mostrarSlide(el, linhas, 9, ctx).indice).toBe(2);
+    expect(showSlide(el, linhas, 9, ctx).indice).toBe(2);
     expect(el.querySelector('[data-passo="1"]').classList.contains('no-limite')).toBe(true);
-    expect(mostrarSlide(el, linhas, -3, ctx).indice).toBe(0);
+    expect(showSlide(el, linhas, -3, ctx).indice).toBe(0);
     expect(el.querySelector('[data-passo="-1"]').classList.contains('no-limite')).toBe(true);
   });
 
@@ -101,7 +101,7 @@ describe('a cartridge\'s «how to play» slide (ADR-0195)', () => {
 
   it('🔴 [Right] shows the game\'s text, no key cap and no word, and says the text', () => {
     const el = novo();
-    const { falado } = mostrarSlide(el, todos, 1, ctx);
+    const { falado } = showSlide(el, todos, 1, ctx);
     expect(el.querySelector('.slide').dataset.kind).toBe('play');
     expect(el.querySelector('.slide-texto').textContent).toBe('Escolha a resposta!');
     expect([el.querySelector('.slide-tecla').hidden, el.querySelector('.slide-palavra').hidden]).toEqual([true, true]);
@@ -111,8 +111,8 @@ describe('a cartridge\'s «how to play» slide (ADR-0195)', () => {
 
   it('🔴 [Right] a button slide after it shows the key again — the kinds do not leak into each other', () => {
     const el = novo();
-    mostrarSlide(el, todos, 0, ctx);
-    mostrarSlide(el, todos, 3, ctx);
+    showSlide(el, todos, 0, ctx);
+    showSlide(el, todos, 3, ctx);
     expect(el.querySelector('.slide').dataset.kind).toBe('button');
     expect([el.querySelector('.slide-tecla').hidden, el.querySelector('.slide-figura').hidden]).toEqual([false, true]);
   });
@@ -120,12 +120,12 @@ describe('a cartridge\'s «how to play» slide (ADR-0195)', () => {
   it('🔴 [Right] the figure is shown and drawn on the engine\'s surface; a slide without one hides it', () => {
     const el = novo();
     document.body.appendChild(el);
-    mostrarSlide(el, todos, 0, ctx);
+    showSlide(el, todos, 0, ctx);
     expect(el.querySelector('.slide-figura').hidden).toBe(false);
-    const parar = animarFigura(el, COMO_JOGAR[0], { requestFrame: () => 1, cancelFrame: () => {}, reduced: false });
+    const parar = animateFigure(el, COMO_JOGAR[0], { requestFrame: () => 1, cancelFrame: () => {}, reduced: false });
     parar();
     expect(figurasDesenhadas.at(-1).slice(0, 3)).toEqual([true, true, 'function']);
-    mostrarSlide(el, todos, 1, ctx);
+    showSlide(el, todos, 1, ctx);
     expect(el.querySelector('.slide-figura').hidden).toBe(true);
     el.remove();
   });
@@ -133,13 +133,13 @@ describe('a cartridge\'s «how to play» slide (ADR-0195)', () => {
   it('⚠️ [Boundary] under reduced motion the figure is drawn once, at time 0, and no frame is asked', () => {
     const el = novo();
     document.body.appendChild(el);
-    mostrarSlide(el, todos, 0, ctx);
+    showSlide(el, todos, 0, ctx);
     let pedidos = 0;
     const antes = figurasDesenhadas.length;
-    animarFigura(el, COMO_JOGAR[0], { requestFrame: () => { pedidos++; return 1; }, cancelFrame: () => {}, reduced: true });
+    animateFigure(el, COMO_JOGAR[0], { requestFrame: () => { pedidos++; return 1; }, cancelFrame: () => {}, reduced: true });
     expect([figurasDesenhadas.length - antes, figurasDesenhadas.at(-1)[3], pedidos]).toEqual([1, 0, 0]);
     let quadros = 0;
-    const loop = animarFigura(el, COMO_JOGAR[0], { requestFrame: () => { quadros++; return quadros; }, cancelFrame: () => {}, reduced: false });
+    const loop = animateFigure(el, COMO_JOGAR[0], { requestFrame: () => { quadros++; return quadros; }, cancelFrame: () => {}, reduced: false });
     loop();
     expect(quadros, 'with motion allowed the figure asks for the next frame').toBe(1);
     el.remove();

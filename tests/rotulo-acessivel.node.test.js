@@ -11,7 +11,7 @@
 // duas vezes, de dois jeitos — e a versão do jogo lê os glifos `◀` e `▶`, o mesmo ruído que o item 4 tirou da
 // legenda da pausa. O índice "1 of 4" é do item 3 e está certo; o rótulo é que vinha da fonte errada.
 //
-// A regra já existia escrita UMA vez, em `legendaDoIcone`: ler o `aria-label` para que "passar o mouse ou
+// A regra já existia escrita UMA vez, em `iconCaption`: ler o `aria-label` para que "passar o mouse ou
 // focar diga a MESMA verdade que um leitor de tela anunciaria". Valia para os dez ícones e não para o resto.
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).

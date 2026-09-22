@@ -100,7 +100,7 @@ export type PanelLabels = Omit<PanelShellSpec, 'id'>;
 export interface PanelShell {
   overlay: HTMLElement;
   card: HTMLElement;
-  /** O `<h2>` do cartão. Exposto porque quem retraduz o painel escreve nele — ver `aplicarRotulos`. */
+  /** O `<h2>` do cartão. Exposto porque quem retraduz o painel escreve nele — ver `applyLabels`. */
   titulo: HTMLElement;
   lista: HTMLElement;
   reset: HTMLElement;
@@ -110,7 +110,7 @@ export interface PanelShell {
 }
 
 /** Os ids que um painel de `id` ocupa. Exportado porque um gate e um consumidor precisam de os nomear. */
-export function idsDaCasca(id: string, idDaLista?: string): PanelShell['ids'] {
+export function shellIds(id: string, idDaLista?: string): PanelShell['ids'] {
   return {
     overlay: id,
     title: `${id}-title`,
@@ -127,8 +127,8 @@ export function idsDaCasca(id: string, idDaLista?: string): PanelShell['ids'] {
  * a raiz monte duas vezes não pode acabar com dois véus — e a raiz monta mais do que uma vez, porque a
  * contagem de jogadores muda a grade de telas.
  */
-export function montarCasca(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell {
-  const ids = idsDaCasca(spec.id, spec.idDaLista);
+export function mountShell(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell {
+  const ids = shellIds(spec.id, spec.idDaLista);
   const overlay = ctx.procurar('#' + ids.overlay) ?? ctx.criar('div');
   overlay.id = ids.overlay;
   overlay.className = 'overlay';
@@ -165,7 +165,7 @@ export function montarCasca(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShel
 
   overlay.appendChild(card);
   const casca: PanelShell = { overlay, card, titulo: h2, lista, reset, fechar, ids };
-  aplicarRotulos(casca, spec);
+  applyLabels(casca, spec);
   return casca;
 }
 
@@ -178,14 +178,14 @@ export function montarCasca(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShel
  * recuo e ninguém o reconstrói. 📏 Medido num navegador em 2026-09-08, com `lang="en"`: a barra servia cinco
  * rótulos em inglês e três ainda em português, na mesma linha.
  *
- * ⚠️ E NÃO SERVE RECONSTRUIR A CASCA PARA CORRIGIR O TÍTULO. `montarCasca` esvazia o cartão, e cada
+ * ⚠️ E NÃO SERVE RECONSTRUIR A CASCA PARA CORRIGIR O TÍTULO. `mountShell` esvazia o cartão, e cada
  * `ui/settings-*` liga o seu `#X-reset` UMA VEZ, no `init` — remontar deixa o botão de repor no documento e
  * sem escuta, que é um botão morto com aparência de vivo (ADR-0106 §5). Escrever só as palavras não toca em
  * escuta nenhuma.
  *
  * IDEMPOTENTE: escrever os mesmos rótulos duas vezes é escrever os mesmos rótulos.
  */
-export function aplicarRotulos(casca: PanelShell, r: PanelLabels): void {
+export function applyLabels(casca: PanelShell, r: PanelLabels): void {
   casca.titulo.textContent = r.titulo;
   casca.lista.setAttribute('aria-label', r.rotuloDaLista);
   casca.reset.textContent = r.rotuloReset;
@@ -204,7 +204,7 @@ function botao(ctx: PanelShellCtx, id: string, classe: string): HTMLElement {
   b.id = id;
   b.className = classe;
   b.setAttribute('type', 'button');
-  // O rótulo entra pelo `aplicarRotulos`, por `textContent` e não `innerHTML`: um rótulo traduzido é dado de
+  // O rótulo entra pelo `applyLabels`, por `textContent` e não `innerHTML`: um rótulo traduzido é dado de
   // fora como qualquer outro, e um dicionário de consumidor pode trazer o que quiser dentro dele.
   return b;
 }

@@ -11,7 +11,7 @@
 // narração do jogo ouve o item duas vezes, de dois jeitos — e a versão do jogo lê os glifos `◀` e `▶`, que é
 // exatamente o ruído que o item 4 do ADR-0044 tirou da legenda da pausa.
 //
-// A REGRA JÁ EXISTIA, escrita uma vez: `legendaDoIcone` (ui/pause-icons) lê o `aria-label` do ícone justamente
+// A REGRA JÁ EXISTIA, escrita uma vez: `iconCaption` (ui/pause-icons) lê o `aria-label` do ícone justamente
 // para que "passar o mouse ou focar diga a MESMA verdade que um leitor de tela anunciaria". Ela valia para os
 // dez ícones e não para o resto dos menus. Aqui ela vira uma função, e as três chamadas passam a ser a mesma.
 //

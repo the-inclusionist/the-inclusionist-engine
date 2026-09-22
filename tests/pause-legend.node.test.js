@@ -21,7 +21,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { pauseLegendHtml, glifoFalado } from '../app/js/ui/shell.js';
+import { pauseLegendHtml, spokenGlyph } from '../app/js/ui/shell.js';
 import { PAD_DESIGNS } from '../app/js/input/devices.js';
 
 /** A pad design's (yes, no) pair: the south button (index 0) and the east one (index 1) on every design, no swap (ADR-0013 erratum). */
@@ -66,12 +66,12 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
   it('[Boundary] glifo que já se lê passa INTOCADO — a tradução é só para os quatro que não se leem', () => {
     // Traduzir "A" para "letra A" seria ruído acrescentado em nome de acessibilidade, que é o defeito que
     // este item conserta pelo avesso.
-    expect(glifoFalado('A')).toBe('A');
-    expect(glifoFalado('0')).toBe('0');
-    expect(glifoFalado('✕')).toBe('xis');
-    expect(glifoFalado('○')).toBe('bola');
-    expect(glifoFalado('□')).toBe('quadrado');
-    expect(glifoFalado('△')).toBe('triângulo');
+    expect(spokenGlyph('A')).toBe('A');
+    expect(spokenGlyph('0')).toBe('0');
+    expect(spokenGlyph('✕')).toBe('xis');
+    expect(spokenGlyph('○')).toBe('bola');
+    expect(spokenGlyph('□')).toBe('quadrado');
+    expect(spokenGlyph('△')).toBe('triângulo');
   });
 
   it('[Interface] a cor do chip continua saindo do desenho do controle', () => {
@@ -87,6 +87,6 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
 // ========================= MUTAÇÕES CONFERIDAS =========================
 //   · tirando o `aria-hidden` dos chips → "[Right] os chips visíveis ficam MUDOS" reprova, e o efeito real
 //     seria o leitor lendo o glifo E a frase, em dobro.
-//   · devolvendo o glifo cru à frase falada (sem `glifoFalado`) → "[Right] o glifo do PlayStation" reprova
+//   · devolvendo o glifo cru à frase falada (sem `spokenGlyph`) → "[Right] o glifo do PlayStation" reprova
 //     com "Botão ○ para confirmar".
 //   · trocando a frase por dois `sr-only`, um por chip → "[Zero] uma frase, não uma por chip" reprova.

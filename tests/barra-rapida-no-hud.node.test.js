@@ -24,7 +24,7 @@
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
 import { screenPauseMarkup, quickBarMarkup } from '../app/js/ui/pause-icons.js';
-import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from '../app/js/ui/pause-buttons.js';
+import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from '../app/js/ui/pause-buttons.js';
 import { stepInRing } from '../app/js/ui/menu-nav.js';
 
 const markup = () => screenPauseMarkup({
@@ -53,7 +53,7 @@ describe('barra rápida · sai do cartão de pausa e vira HUD', () => {
   it('[Right] a pausa continua com a lista inteira — só os ícones saíram', () => {
     const h = markup();
     // A terceira lista (ADR-0146) entra no markup sempre, escondida: é só o «voltar» enquanto o jogo não declara nada.
-    expect((h.match(/class="pm-btn/g) || []).length).toBe(PM_BTNS.length + PM_OPTIONS_BTNS.length + PM_JOGO_BTNS.length);
+    expect((h.match(/class="pm-btn/g) || []).length).toBe(PM_BTNS.length + PM_OPTIONS_BTNS.length + PM_GAME_BTNS.length);
     expect(h).toContain('data-act="resume"');
     expect(h).toContain('data-act="quit"');
   });

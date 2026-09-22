@@ -177,7 +177,7 @@ describe('ui/settings-controls', () => {
     // ⚠️ E ESTAVA A UM TOQUE DE DISTÂNCIA, com o esquema PADRÃO da própria engine. Ele liga OITO posições
     // (`left/right/up/down` + `action1..action4`); um quiz nomeia três. A criança abre a tela — que só mostra
     // as três linhas nomeadas —, escolhe «Confirmar», e carrega numa tecla que o padrão tem em `action2`. O
-    // `acaoQueJaTem` procura no ESQUEMA e não na lista do jogo, então devolvia uma posição sem palavra, e o
+    // `actionAlreadyBound` procura no ESQUEMA e não na lista do jogo, então devolvia uma posição sem palavra, e o
     // leitor de tela dizia «Essa tecla já é de action2» — à criança cega, que é quem a regra protege.
     //
     // 📌 O `core/actions.labellerFrom` já tinha decidido a saída certa — devolver `null` e o chamador tratar a
@@ -433,10 +433,10 @@ describe('ui/settings-controls — uma tecla, uma ação, dentro do mesmo esquem
 });
 
 // ========================= MUTACOES CONFERIDAS =========================
-//   · tirando o bloco `const aqui = acaoQueJaTem(...)` de `handleCaptureKeydown` → reprovam DOIS casos:
+//   · tirando o bloco `const aqui = actionAlreadyBound(...)` de `handleCaptureKeydown` → reprovam DOIS casos:
 //     "[Right] remapear para uma tecla que JA e de outra acao" (a captura fecha e `KeyW` fica em `action2` E
 //     em `up`) e "[Interface] o nome vem do JOGO". E o defeito da #126 reproduzido.
-//   · trocando o `if (a === exceto) continue;` de `acaoQueJaTem` por nada → "[Boundary] reapertar a tecla que
+//   · trocando o `if (a === exceto) continue;` de `actionAlreadyBound` por nada → "[Boundary] reapertar a tecla que
 //     a PROPRIA acao ja tem" reprova: a tela recusa a tecla a quem ja a tinha.
 //   · trocando `ctx.acoesDoJogo()...rotulo` por `t(ACT_LABEL[aqui])` → "[Interface] o nome vem do JOGO"
 //     reprova, que e a #125 a nao voltar a entrar por esta porta.

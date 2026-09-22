@@ -8,9 +8,9 @@
 // ele joga. Informando, o erro custa uma frase a mais e nunca uma porta fechada — e é por isso que o caso do
 // botão «jogar assim mesmo» é o mais importante deste ficheiro.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../app/js/ui/reach-notice.js';
+import { showReachNotice, REACH_NOTICE_ID } from '../app/js/ui/reach-notice.js';
 import { reach, defaultTransports } from '../app/js/input/transports.js';
-import { focaveisNoDom } from '../app/js/ui/focus-trap.js';
+import { focusablesInDom } from '../app/js/ui/focus-trap.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import pt from '../app/js/i18n/pt.js';
 
@@ -44,7 +44,7 @@ const cartao = () => document.querySelector('#' + REACH_NOTICE_ID);
 
 describe('o cartão aparece — e só quando há o que dizer', () => {
   it('[Right] com o toque curto, o cartão entra no documento com as três frases', () => {
-    expect(mostrarAvisoDeAlcance(ctx(), TABLET())).toBe(true);
+    expect(showReachNotice(ctx(), TABLET())).toBe(true);
     const ps = [...cartao().querySelectorAll('p')].map((p) => p.textContent);
     expect(ps).toHaveLength(3);
     expect(ps[0]).toBe('Este jogo usa 14 ações.');
@@ -52,20 +52,20 @@ describe('o cartão aparece — e só quando há o que dizer', () => {
   });
 
   it('[Zero] com alcance ok, nada é criado — o caso comum tem de continuar silencioso', () => {
-    expect(mostrarAvisoDeAlcance(ctx(), DESKTOP())).toBe(false);
+    expect(showReachNotice(ctx(), DESKTOP())).toBe(false);
     expect(cartao()).toBe(null);
   });
 
   it('[Zero] sem a marcação do hospedeiro não lança, e também não inventa onde pôr', () => {
     raiz.innerHTML = ''; // sem `#game-region`
-    expect(() => mostrarAvisoDeAlcance(ctx(), TABLET())).not.toThrow();
+    expect(() => showReachNotice(ctx(), TABLET())).not.toThrow();
     expect(cartao()).toBe(null);
   });
 });
 
 describe('quem não vê a tela também recebe o aviso', () => {
   it('[Right] ⚠️ o texto inteiro vai por anúncio ASSERTIVO — o cartão não serve a uma criança cega', () => {
-    mostrarAvisoDeAlcance(ctx(), TABLET());
+    showReachNotice(ctx(), TABLET());
     expect(ditos).toHaveLength(1);
     expect(ditos[0]).toContain('Este jogo usa 14 ações.');
     expect(ditos[0]).toContain('Ligue controle ou teclado');
@@ -74,12 +74,12 @@ describe('quem não vê a tela também recebe o aviso', () => {
   it('[Right] o foco vai para o CARTÃO, e não para o botão de sair', () => {
     // Se fosse para o botão, o leitor de tela leria «Jogar assim mesmo» primeiro e o MOTIVO ficaria para quem
     // fosse procurar. A criança tem de ouvir por que o aviso existe antes de encontrar a saída dele.
-    mostrarAvisoDeAlcance(ctx(), TABLET());
+    showReachNotice(ctx(), TABLET());
     expect(document.activeElement.matches('.overlay__card')).toBe(true);
   });
 
   it('[Interface] o cartão declara-se diálogo modal, como os outros desta engine', () => {
-    mostrarAvisoDeAlcance(ctx(), TABLET());
+    showReachNotice(ctx(), TABLET());
     const card = cartao().querySelector('.overlay__card');
     expect(card.getAttribute('role')).toBe('dialog');
     expect(card.getAttribute('aria-modal')).toBe('true');
@@ -88,7 +88,7 @@ describe('quem não vê a tela também recebe o aviso', () => {
 
 describe('⚠️ e ele NÃO TRANCA — é aviso, não porta fechada', () => {
   it('[Right] o botão «jogar assim mesmo» remove o cartão', () => {
-    mostrarAvisoDeAlcance(ctx(), TABLET());
+    showReachNotice(ctx(), TABLET());
     const botao = cartao().querySelector('button');
     expect(botao.textContent).toBe('Jogar assim mesmo');
     botao.click();
@@ -99,8 +99,8 @@ describe('⚠️ e ele NÃO TRANCA — é aviso, não porta fechada', () => {
     // A armadilha de foco (#109) prende o Tab dentro deste cartão enquanto ele está aberto. Se o único
     // controle dele não fosse focável, ela prenderia a criança num diálogo sem saída — trocar «descobre no
     // meio que não alcança» por «não consegue sair do aviso» seria piorar.
-    mostrarAvisoDeAlcance(ctx(), TABLET());
-    const focaveis = focaveisNoDom(cartao());
+    showReachNotice(ctx(), TABLET());
+    const focaveis = focusablesInDom(cartao());
     expect(focaveis).toHaveLength(1);
     expect(focaveis[0].textContent).toBe('Jogar assim mesmo');
   });

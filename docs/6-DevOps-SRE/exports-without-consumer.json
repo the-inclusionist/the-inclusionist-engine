@@ -101,23 +101,23 @@
       "saveFontKey"
     ],
     "ui/loop-crash.ts": [
-      "AVISO_DE_QUEDA_ID"
+      "CRASH_NOTICE_ID"
     ],
     "ui/menu-items.ts": [
       "ITEM_SELECTOR"
     ],
     "ui/pause-icons.ts": [
       "CVD_LABELS",
-      "GLIFO_DO_ITEM",
-      "ITENS_DA_ENGINE",
-      "itensQueAccionam",
-      "legendaDoIcone",
-      "motivoDoItem",
+      "ITEM_GLYPH",
+      "ENGINE_ITEMS",
+      "itemsThatAct",
+      "iconCaption",
+      "itemReason",
       "pauseIcon",
       "pauseMenuHtml"
     ],
     "ui/settings-controls.ts": [
-      "acaoQueJaTem"
+      "actionAlreadyBound"
     ],
     "ui/settings-visual.ts": [
       "sameRgb"
