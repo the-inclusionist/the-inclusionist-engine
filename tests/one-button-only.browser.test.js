@@ -158,6 +158,26 @@ describe('with one button only, every press takes what is showing', () => {
     expect(faixa(), 'o espaço do aviso não voltou para o jogo').toBe(sem);
   });
 
+  it('🔴 [Many] MEDIR DUAS VEZES não move o aviso — é o laço que o `--scan-top` existe para quebrar', async () => {
+    // 🔴 O COMENTÁRIO DO `style.css` DIZ QUE ISTO FOI «apanhado por um caso», E NÃO ERA VERDADE HOJE: medido por sonda em
+    // 22/09, pôr o aviso pela faixa que ele próprio faz crescer deixava a suíte VERDE. O defeito que o comentário
+    // descreve é um LAÇO — o aviso empurra a faixa, a faixa empurra o aviso, e ele desce a tela a cada medição —, e um
+    // laço não se vê numa medição só. Este caso mede duas vezes e exige o mesmo lugar.
+    const regiao = document.getElementById('game-region');
+    estado.setSwitchScanValue(true);
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    const topo = () => chip().getBoundingClientRect().top - regiao.getBoundingClientRect().top;
+    const primeiro = topo();
+    // ⚠️ A SEGUNDA MEDIÇÃO TEM DE SER A DE VERDADE: a varredura remede a faixa a cada troca de palavra, e é isso
+    // que faz o laço andar. Um `resize` sintético não serve — medido, ele não passa por aqui, e com ele o caso
+    // ficava VERDE sobre a mutação que existe para apanhar.
+    for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, PASSO + 30));
+    expect(topo(), 'o aviso andou entre duas medições: a faixa está a empurrá-lo').toBeCloseTo(primeiro, 0);
+    // e o que o põe ali é o `--scan-top`, que NÃO depende do aviso — só a faixa depende
+    expect(parseFloat(regiao.style.getPropertyValue('--scan-top')), 'o aviso não tem onde se pousar').not.toBeNaN();
+    estado.setSwitchScanValue(false);
+  });
+
   it('🔴 [Zero] turning it off takes the chip away and gives the key back', async () => {
     estado.setSwitchScanValue(true);
     await new Promise((r) => requestAnimationFrame(() => r(null)));
