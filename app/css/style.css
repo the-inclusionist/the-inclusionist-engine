@@ -89,7 +89,7 @@
    resposta certa revelada). O par de sempre, amarelo e verde, é o que protan e deutan confundem: ΔE CIE76 de 48
    e 55 depois da simulação de Machado (2009). Laranja e azul-céu dão 101, 111 e 87 (tritan) — o maior pior caso
    entre os pares Okabe-Ito medidos — e todo contraste fica ≥ 4,5:1 (o mais justo é `--good` sobre o botão
-   selecionado, 4,88:1). O crivo é `tests/paleta-okabe-ito.node.test.js`. */
+   selecionado, 4,88:1). O crivo é `tests/okabe-ito-palette.node.test.js`. */
 :root[data-paleta="okabe-ito"]{ --accent:#E69F00; --focus:#E69F00; --good:#56B4E9; }
 /* Tipografia: qualquer fonte do catálogo (menu próprio na pausa); --font-custom traz a pilha com fallback */
 :root[data-fonte="custom"]{ --font:var(--font-custom,'Atkinson Hyperlegible'),var(--font-fallback); }

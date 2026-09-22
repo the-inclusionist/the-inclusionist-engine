@@ -54,7 +54,7 @@ said so. A document that describes the code has to be able to notice when it sto
 - ✅ As a **player**, I want **every settings menu to restore its own defaults**, so that a wrong turn is always
   one button from undone. `app/js/ui/settings-panel.ts` · `tests/settings-panel.browser.test.js`
 - ✅ As a **player on a small screen**, I want touch targets **big enough to hit and far enough apart**, without
-  the list scrolling out of reach. `app/js/ui/layout.ts` · `tests/pausa-44px.browser.test.js`
+  the list scrolling out of reach. `app/js/ui/layout.ts` · `tests/pause-target-44px.browser.test.js`
 - ✅ As a **player**, I want to **choose the typeface**, and have the choice actually change what I see.
   `app/js/ui/fonts.ts` · `tests/fontes-carregam.node.test.js`
 - ✅ As a **player with low vision**, I want **high contrast** that keeps the cursor findable, so that reading

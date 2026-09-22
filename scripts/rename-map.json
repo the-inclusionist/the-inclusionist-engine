@@ -622,6 +622,45 @@
         "tests/menu-cresce-com-a-letra.browser.test.js": "tests/menus-grow-with-their-text.browser.test.js",
         "tests/menus-anunciam-contexto.browser.test.js": "tests/menus-announce-context.browser.test.js"
       }
+    },
+    "tests-3": {
+      "done": "2026-09-22",
+      "files": {
+        "tests/menus-sem-glifo-no-nome.browser.test.js": "tests/a-glyph-is-not-part-of-the-name.browser.test.js",
+        "tests/modo-acessibilidade.node.test.js": "tests/accessibility-mode.node.test.js",
+        "tests/nada-de-cdn-a-mao.node.test.js": "tests/no-hand-written-cdn.node.test.js",
+        "tests/nada-vem-de-fora.node.test.js": "tests/nothing-comes-from-outside.node.test.js",
+        "tests/nao-precisa-segurar.browser.test.js": "tests/no-need-to-hold.browser.test.js",
+        "tests/nivel-tea-persiste.node.test.js": "tests/asd-level-persists.node.test.js",
+        "tests/nome-abstrato-nao-chega-a-pessoa.node.test.js": "tests/no-abstract-name-reaches-a-person.node.test.js",
+        "tests/nome-do-icone-nao-tapa-o-jogo.browser.test.js": "tests/the-icon-name-does-not-cover-the-game.browser.test.js",
+        "tests/nuvens-manta.node.test.js": "tests/cloud-blanket.node.test.js",
+        "tests/opcoes-do-jogo.browser.test.js": "tests/game-options.browser.test.js",
+        "tests/opcoes-do-jogo.node.test.js": "tests/game-options.node.test.js",
+        "tests/origem-da-tecla.node.test.js": "tests/the-keys-source-survives-the-door.node.test.js",
+        "tests/pacote-sem-modulo-orfao.node.test.js": "tests/package-without-orphan-modules.node.test.js",
+        "tests/pad-no-idioma-do-arranque.browser.test.js": "tests/pad-in-the-boot-language.browser.test.js",
+        "tests/painel-reexplica.node.test.js": "tests/a-panel-re-explains.node.test.js",
+        "tests/painel-veste-o-cartao-de-pausa.browser.test.js": "tests/a-panel-wears-the-pause-card.browser.test.js",
+        "tests/palco-tem-prioridade.browser.test.js": "tests/the-stage-has-priority.browser.test.js",
+        "tests/paleta-okabe-ito.node.test.js": "tests/okabe-ito-palette.node.test.js",
+        "tests/paleta-segue-a-correcao.browser.test.js": "tests/the-palette-follows-the-correction.browser.test.js",
+        "tests/papeis-sob-daltonismo.node.test.js": "tests/roles-under-colour-blindness.node.test.js",
+        "tests/passos.browser.test.js": "tests/step-control.browser.test.js",
+        "tests/pausa-44px.browser.test.js": "tests/pause-target-44px.browser.test.js",
+        "tests/pausa-abre-pelo-start.browser.test.js": "tests/the-two-doors-of-the-pause.browser.test.js",
+        "tests/pausa-fala-o-idioma-do-arranque.browser.test.js": "tests/pause-in-the-boot-language.browser.test.js",
+        "tests/pausa-sete-itens.node.test.js": "tests/the-pause-items-and-their-order.node.test.js",
+        "tests/pausado-sem-caixa.node.test.js": "tests/paused-is-only-the-word.node.test.js",
+        "tests/piso-de-tamanho-da-fonte.node.test.js": "tests/font-size-floor.node.test.js",
+        "tests/ponteiro-por-qualquer-transporte.node.test.js": "tests/pointer-by-any-transport.node.test.js",
+        "tests/prosa-no-rodape.node.test.js": "tests/prose-in-the-footer.node.test.js",
+        "tests/publicado-sem-gate.node.test.js": "tests/published-without-a-gate.node.test.js",
+        "tests/quiz-abaixo-da-barra.browser.test.js": "tests/quiz-below-the-bar.browser.test.js",
+        "tests/quiz-declara-o-que-usa.node.test.js": "tests/the-quiz-declares-what-it-uses.node.test.js",
+        "tests/quiz-le-as-opcoes.browser.test.js": "tests/the-quiz-reads-its-options.browser.test.js",
+        "tests/quiz-no-idioma-do-arranque.browser.test.js": "tests/quiz-in-the-boot-language.browser.test.js"
+      }
     }
   }
 }

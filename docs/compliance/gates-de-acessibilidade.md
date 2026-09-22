@@ -24,8 +24,8 @@ Este documento é também matéria-prima do **relatório anual** (ADR-0053), que
 | **2.3.3** Animation from Interactions | movimento de interação é desligável | `tests/settings-motion.browser.test.js`, `tests/state.node.test.js` |
 | **2.4.1** Bypass Blocks | o *skip-link* é alcançável | `tests/z-order-css.node.test.js`, `tests/layers.node.test.js` |
 | **2.4.3** Focus Order | a ordem de foco segue a leitura | `tests/menu-nav.browser.test.js` |
-| **2.5.5** Target Size (Enhanced, AAA) | 44 px onde a tela permite | `tests/pausa-44px.browser.test.js`, `tests/touch.browser.test.js` |
-| **2.5.8** Target Size (Minimum, AA) | 24 px de piso, e o espaçamento que o substitui | `tests/pausa-44px.browser.test.js` |
+| **2.5.5** Target Size (Enhanced, AAA) | 44 px onde a tela permite | `tests/pause-target-44px.browser.test.js`, `tests/touch.browser.test.js` |
+| **2.5.8** Target Size (Minimum, AA) | 24 px de piso, e o espaçamento que o substitui | `tests/pause-target-44px.browser.test.js` |
 | **1.4.6** Contrast (Enhanced, AAA) | menus a 7:1, não só 4,5:1 | `tests/menu-contrast-measured.node.test.js` |
 
 E o gate que corre contra a aplicação CONSTRUÍDA, cobrindo A/AA em bloco: `scripts/axe-check.mjs`, no job

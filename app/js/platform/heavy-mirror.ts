@@ -14,7 +14,7 @@
 // the base is NOT the upstream host and path — it is the folder the mirror uses. That mapping is here, once.
 
 /** Upstream prefix → the path the mirror serves it under. Measured against the staging tree on 2026-09-21. */
-// ⚠️ Written WITHOUT a trailing slash, exactly as the network inventory (`tests/nada-vem-de-fora`) already declares each of
+// ⚠️ Written WITHOUT a trailing slash, exactly as the network inventory (`tests/nothing-comes-from-outside`) already declares each of
 // them: an address that differs by one character reads as a new supplier entering without a decision.
 export const MIRROR_FOLDERS: ReadonlyArray<readonly [string, string]> = [
   ['https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main', 'kokoro-82m-v1.0-onnx'],

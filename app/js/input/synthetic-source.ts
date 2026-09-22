@@ -2,7 +2,7 @@
 // input/synthetic-source.ts — QUEM DESPACHOU ESTA TECLA, quando não foi um dedo num teclado (ADR-0109).
 //
 // ========================= O PONTO DIFÍCIL DA ARESTA, E ELE ESTAVA NOMEADO =========================
-// O crivo `tests/origem-da-tecla` carrega esta frase na entrada do `input/keydown` desde que o
+// O crivo `tests/the-keys-source-survives-the-door` carrega esta frase na entrada do `input/keydown` desde que o
 // estrangulamento começou: «a webcam despacha `KeyboardEvent` SINTÉTICO, entra pelo `keydown` e seria
 // carimbada `teclado` — a erasão a voltar pela porta da frente». Hoje a única tecla sintética da engine é a de menu que o
 // pad e o controle virtual entregam aos menus (`boot/create-game`, `teclaAoMenu`); a webcam de WebGazer saiu (ADR-0214).
