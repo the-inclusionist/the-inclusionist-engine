@@ -92,9 +92,13 @@ import { drawLowVision } from '../render/low-vision-drawing.js';
 import { createPadWizard } from '../input/pad-wizard.js';
 import { typographyCycle, CYCLE_START, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
-import { barIntruders, stageScale, applyScale, belowFloor, minimumTarget, type Box, type Scale, type NodeMeasure } from '../ui/layout.js';
+// 📏 ERAM OITO NOMES ATÉ 22/09. Os cinco que saíram — `barIntruders`, `belowFloor`, `minimumTarget`, `Box` e `NodeMeasure` —
+// foram com os dois relatores de desenho para `ui/drawing-problems` (ADR-0221, issue #203), e a raiz deixou de os conhecer.
+// Um import que se pode apagar é acoplamento que deixou de existir, e é assim que esta dívida se paga: por assunto.
+import { stageScale, applyScale, type Scale } from '../ui/layout.js';
 import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
+import { drawnBelowTheFloor, barIntruderProblems, type DrawingProblemsCtx } from '../ui/drawing-problems.js';
 import { createListenerScope } from '../platform/listener-scope.js';
 import type { FilterReach } from '../render/port.js';
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
@@ -781,7 +785,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const p: string[] = [...lacunasDoPad()];
     const tamanho = regiaoRedimensionadaPeloCartucho();
     if (tamanho) p.push(tamanho);
-    const piso = desenhadoAbaixoDoPiso();
+    const piso = drawnBelowTheFloor(contextoDoDesenho);
     if (piso) p.push(piso);
     const avisoDoGenero = genreWarning(cartucho.genero);
     if (avisoDoGenero) p.push(avisoDoGenero);
@@ -2433,37 +2437,18 @@ export function createGame(o: CreateGameOptions): Engine {
       + `${Math.round(largura)}×${Math.round(altura)}: text and targets stop following the screen, so a child with low vision `
       + 'gets them small — the resolution is the engine\'s (ADR-0163): lay the game out inside the region and read `--ui-fs` and `--alvo-min`';
   }
-  /**
-   * The engine's own nodes in the region (bar, pause card, panels, pad, footer, PAUSED, crash banner) — its sizes are held
-   * by its own gates — and what is not drawn for the eye at all (`.sr-only`).
+  /*
+   * O CONTEXTO DOS DOIS RELATORES DE DESENHO (`ui/drawing-problems`), e os três leitores são FUNÇÕES de propósito: a região, a
+   * barra e a escala são coisas que esta raiz TROCA — um `mount()` troca o cartucho, a barra nasce depois da raiz, e a escala
+   * muda a cada `resize`. Passá-las por valor congelaria a primeira resposta, e um elemento fora da página continua a
+   * responder `getBoundingClientRect()` sem se queixar.
    */
-  const FORA_DO_CARTUCHO = '#title-icons, .screen-pause, .overlay, #touch-controls, .rodape-da-tela, .pausa-rapida, #incl-parou, .sr-only, .hud-faixa';
-  const ALVO_DE_TOQUE = 'button, a[href], input:not([type="hidden"]), select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])';
-  /** ADR-0163 rule 4, second half: text and targets the CARTRIDGE draws under the floor, named — read when `problems` is. */
-  function desenhadoAbaixoDoPiso(): string | null {
-    const regiao = $<HTMLElement>('#game-region');
-    if (!escalaAplicada || !regiao || typeof regiao.querySelectorAll !== 'function' || typeof win.getComputedStyle !== 'function') return null;
-    const nos: NodeMeasure[] = [...regiao.querySelectorAll<HTMLElement>('*')].map((el) => {
-      const b = el.getBoundingClientRect();
-      const temTexto = [...el.childNodes].some((c) => c.nodeType === 3 && (c.textContent ?? '').trim() !== '');
-      return {
-        nome: nomeDoNo(el),
-        daEngine: el.closest(FORA_DO_CARTUCHO) !== null,
-        fontePx: temTexto && b.width > 0 && b.height > 0 ? parseFloat(win.getComputedStyle(el).fontSize) : null,
-        alvo: el.matches(ALVO_DE_TOQUE) ? { w: b.width, h: b.height } : null,
-      };
-    });
-    const { texto, alvos } = belowFloor(nos, escalaAplicada.k);
-    if (!texto.length && !alvos.length) return null;
-    const k = minimumTarget(escalaAplicada.k) / 22;
-    const partes = [
-      texto.length ? `text under ${8 * k} px (${texto.slice(0, 4).join(', ')})` : '',
-      alvos.length ? `targets under ${22 * k} px (${alvos.slice(0, 4).join(', ')})` : '',
-    ].filter(Boolean);
-    return `the cartridge draws ${partes.join(' and ')} in #game-region: a child with low vision or unsteady hands cannot `
-      + 'read or hit them — text and targets start at 16 and 44 px at 640×360 and grow with the scale (ADR-0163): size them '
-      + 'from `--ui-fs` and `--alvo-min`';
-  }
+  const contextoDoDesenho: DrawingProblemsCtx = {
+    region: () => $<HTMLElement>('#game-region'),
+    bar: () => a11yBar,
+    scale: () => escalaAplicada,
+    computedStyle: typeof win.getComputedStyle === 'function' ? (el) => win.getComputedStyle(el) : undefined,
+  };
   function aplicarResolucao(): void {
     const regiao = $<HTMLElement>('#game-region');
     const palco = $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap') ?? (regiao?.parentElement ?? null);
@@ -2598,43 +2583,10 @@ export function createGame(o: CreateGameOptions): Engine {
   if (store.get(store.KEYS.letterCase, null) !== null) escreverCaixa(state.letterCase);
   state.on('letterCase', escreverCaixa);
 
-  /** A node named the way a developer finds it: `tag#id.firstClass`. */
-  function nomeDoNo(el: Element): string {
-    return el.tagName.toLowerCase() + (el.id ? `#${el.id}` : '') + (el.className ? `.${String(el.className).trim().split(/\s+/)[0]}` : '');
-  }
-  function medirInvasoresDaBarra(): string[] {
-    const regiao = $<HTMLElement>('#game-region');
-    if (!a11yBar || !regiao || typeof (a11yBar as HTMLElement).getBoundingClientRect !== 'function') return [];
-    const caixaDe = (el: Element): Box => {
-      const b = el.getBoundingClientRect();
-      return { x: b.x, y: b.y, w: b.width, h: b.height };
-    };
-    const barra = caixaDe(a11yBar);
-    /*
-     * ONLY WHAT PAINTS. 📏 Measured in dist/quiz.html: the quiz was accused at every boot because `#quiz-app`, a
-     * transparent box the size of the region whose top padding IS the bar's room, intersects the bar's rectangle — and
-     * draws nothing there. A node is counted when it has its own text, is a control or a medium, or paints a background.
-     */
-    const pinta = (el: Element): boolean => {
-      if ([...el.childNodes].some((c) => c.nodeType === 3 && (c.textContent ?? '').trim() !== '')) return true;
-      if (/^(img|canvas|svg|video|input|button|select|textarea)$/i.test(el.tagName)) return true;
-      if (typeof win.getComputedStyle !== 'function') return true; // no way to tell: count it, as before
-      const cs = win.getComputedStyle(el);
-      return (cs.backgroundColor !== '' && cs.backgroundColor !== 'transparent' && cs.backgroundColor !== 'rgba(0, 0, 0, 0)')
-        || (cs.backgroundImage !== '' && cs.backgroundImage !== 'none');
-    };
-    const nos = [...regiao.querySelectorAll('*')].filter((el) => pinta(el)).map((el) => ({
-      nome: nomeDoNo(el),
-      caixa: caixaDe(el),
-      // the engine's HUD bands are placed by the engine: if one reaches the bar, that is the engine's defect, not the game's
-      daBarra: el === a11yBar || a11yBar.contains(el) || el.closest('.hud-faixa') !== null,
-    }));
-    return barIntruders(barra, nos);
-  }
   {
     // the reserved room itself (`--barra-a11y-h`, next to `--tap` and `--alvo-min`) is written by `reservarFaixaDaBarra`,
     // inside `aplicarResolucao`; here the engine says who draws over the bar anyway
-    const invasores = medirInvasoresDaBarra();
+    const invasores = barIntruderProblems(contextoDoDesenho);
     if (invasores.length) {
       problemasDoHospedeiro.push(
         `the game draws over the accessibility bar (${invasores.slice(0, 4).join(', ')}): a child who needs its buttons `

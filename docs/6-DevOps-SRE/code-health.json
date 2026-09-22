@@ -23,10 +23,10 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2185,
-      "decisionNodes": 330,
+      "codeLines": 2140,
+      "decisionNodes": 319,
       "maxDepth": 4,
-      "fanOut": 77,
+      "fanOut": 78,
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
@@ -1037,6 +1037,13 @@
       "fanOut": 2,
       "fanIn": 9
     },
+    "ui/drawing-problems.ts": {
+      "codeLines": 61,
+      "decisionNodes": 12,
+      "maxDepth": 1,
+      "fanOut": 1,
+      "fanIn": 1
+    },
     "ui/eye-control.ts": {
       "codeLines": 133,
       "decisionNodes": 21,
@@ -1126,7 +1133,7 @@
       "decisionNodes": 10,
       "maxDepth": 2,
       "fanOut": 3,
-      "fanIn": 1
+      "fanIn": 2
     },
     "ui/locale-flags.ts": {
       "codeLines": 20,
