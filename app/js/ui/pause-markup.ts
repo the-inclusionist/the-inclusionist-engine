@@ -88,7 +88,12 @@ export function pmBtnMarkup(
  * reader is `pmBtnMarkup`, one screen above.
  */
 const ITEM_GLYPH: Readonly<Record<string, string>> = {
-  resume: '▶', acessibilidade: '♿', options: '⚙', opcoesdojogo: '🎮', pmback: '↩', tipo: '🔤', addplayer: '👥',
+  // 🔴 O `resume` TEM O GLIFO DO VOLTAR desde 2026-09-22, e não uma seta de «tocar»: o Dev perguntou «não seria melhor
+  // usar "↩ Voltar" para o primeiro item do menu pausado também?». O ADR-0158 já fizera de «Voltar» o item 1 de todo
+  // painel; o cartão era a única excepção, e ela não tinha justificação própria. Do ponto de vista da criança é uma
+  // palavra só — sair daqui e voltar ao que eu estava a fazer —, e o destino é sempre o nível anterior: do painel, o
+  // cartão; do submenu, a raiz; da raiz, o jogo. «Voltar ao jogo» nomeava o DESTINO em vez da acção, e era o único.
+  resume: '↩', acessibilidade: '♿', options: '⚙', opcoesdojogo: '🎮', pmback: '↩', tipo: '🔤', addplayer: '👥',
   audio: '🦻', som: '🔊', motora: '♿', anim: '🎞', visual: '🎨', empatia: '🫂', ajuda: '❓', print: '📷', quit: '🚪',
   caa: '🔠',
 };

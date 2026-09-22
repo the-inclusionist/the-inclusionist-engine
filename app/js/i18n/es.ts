@@ -594,7 +594,7 @@ const es: Record<string, string> = {
   'viz.desc.blind': 'Pantalla negra — juega como lo hace una persona ciega (respuesta táctil y sonora). (punto blanco; toca 2 veces para salir)',
   // ===================== LO QUE FALTABA (item 14, ronda final) =====================
   'pause.title': 'En pausa',
-  'pause.resume': 'Volver al juego',
+  'pause.resume': 'Volver',
   'pause.quick': 'EN PAUSA',
   'pause.quick.legenda': '2: confirmar · 3: volver · 4: menú · START: volver al juego',
   'pause.card.legenda': '2: confirmar · 3: volver',

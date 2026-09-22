@@ -86,7 +86,7 @@ const pt: Record<string, string> = {
 
   // Menu de pausa (por tela — buildScreenPause). O botão de letra (ABC/abc/Braille) é dinâmico, fica fora.
   'pause.title': 'Pausado',
-  'pause.resume': 'Voltar ao jogo',
+  'pause.resume': 'Voltar',
   // A palavra da PAUSA RÁPIDA, ao centro da tela congelada (ADR-0155). Curta: é para ler de relance.
   'pause.quick': 'PAUSADO',
   // A legenda do rodapé da pausa rápida (errata do ADR-0155), nas palavras do Dev.

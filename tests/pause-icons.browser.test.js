@@ -236,6 +236,31 @@ describe('buildScreenPause — a árvore construída', () => {
     expect(sp.querySelector('.pm-btn[data-act="resume"]').getAttribute('data-i18n')).toBe('pause.resume');
   });
 
+  it('🔴 [Right] o PRIMEIRO item diz a mesma coisa em todo nível — sair daqui é uma palavra só', () => {
+    // 🔴 O Dev, 22/09: «Não seria melhor usar "↩ Voltar" para o primeiro item do menu pausado também, ao invés de
+    // "Voltar ao Jogo"?» O ADR-0158 já fizera de «Voltar» o item 1 de todo painel, e o cartão era a única excepção.
+    // Do ponto de vista da criança é uma palavra só — sair daqui e voltar ao que eu estava a fazer — e o destino é
+    // sempre o nível anterior: do painel, o cartão; do submenu, a raiz; da raiz, o jogo. «Voltar ao jogo» nomeava o
+    // DESTINO em vez da acção.
+    //
+    // ⚠️ O CASO PRENDE A REGRA E NÃO A CADEIA: ele compara as duas saídas uma com a outra, então uma tradução nova
+    // que mude só uma delas reprova. Um caso escrito contra o texto passaria a verde no dia em que alguém mudasse as
+    // duas de forma diferente, que é exactamente o defeito.
+    const { sp } = mount();
+    const saidaDaRaiz = sp.querySelector('.pm-btn[data-act="resume"]');
+    const saidaDoSubmenu = sp.querySelector('.pm-btn[data-act="pmback"]');
+    expect(saidaDoSubmenu, 'sem submenu não há com que comparar').toBeTruthy();
+    const palavra = (b) => (b.textContent ?? '').replace(/[^\p{L} ]/gu, '').trim();
+    expect(palavra(saidaDaRaiz), 'a saída da raiz deixou de dizer o mesmo que a do submenu')
+      .toBe(palavra(saidaDoSubmenu));
+    // 📌 O glifo vive num `data-glifo` e é desenhado pela folha, fora do nome (ADR-0159 regra 12) — logo é ALI que
+    // se mede, e não no texto. ⚠️ A primeira versão deste caso lia o `textContent` e ficava VERDE com o ▶ de volta:
+    // o glifo não está lá, e comparar duas ausências é comparar nada.
+    expect(saidaDaRaiz.dataset.glifo, 'os dois voltares não mostram o mesmo sinal')
+      .toBe(saidaDoSubmenu.dataset.glifo);
+    expect(saidaDaRaiz.dataset.glifo, 'a saída da raiz ficou sem sinal nenhum').toBeTruthy();
+  });
+
   it('o título traduz pelo i18n REAL (pt) e é marcado para retradução', () => {
     const { sp, bar } = mount();
     const h = sp.querySelector('h2 span[data-i18n="pause.title"]');

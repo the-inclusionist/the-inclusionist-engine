@@ -597,7 +597,7 @@ const en: Record<string, string> = {
   // Estas 18 chaves existiam só em pt e caíam no fallback — e são as MAIS VISTAS do jogo: o menu de pausa
   // inteiro, o título e a tela de vitória. Quem escolhesse inglês via a pausa em português.
   'pause.title': 'Paused',
-  'pause.resume': 'Back to the game',
+  'pause.resume': 'Back',
   'pause.quick': 'PAUSED',
   'pause.quick.legenda': '2: confirm · 3: back · 4: menu · START: back to the game',
   'pause.card.legenda': '2: confirm · 3: back',
