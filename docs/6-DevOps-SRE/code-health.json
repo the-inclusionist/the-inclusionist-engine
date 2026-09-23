@@ -4,7 +4,7 @@
   "ceiling": {
     "codeLines": 200,
     "decisionNodes": 38,
-    "maxDepth": 4,
+    "maxDepth": 3,
     "fanOut": 7,
     "globalReach": 0,
     "worstFunction": 10
@@ -553,12 +553,12 @@
       "fanIn": 2
     },
     "input/pad-wizard.ts": {
-      "codeLines": 157,
+      "codeLines": 159,
       "decisionNodes": 31,
-      "maxDepth": 4,
+      "maxDepth": 2,
       "fanOut": 3,
       "globalReach": 0,
-      "worstFunction": 27,
+      "worstFunction": 8,
       "fanIn": 2
     },
     "input/pointer-space.ts": {

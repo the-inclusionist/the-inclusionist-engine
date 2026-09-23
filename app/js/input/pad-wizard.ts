@@ -25,11 +25,13 @@ interface PadLike {
 type GetGamepads = () => readonly (PadLike | null | undefined)[] | null | undefined;
 interface PadBinding { b?: number; ax?: number; s?: number; av?: number; v?: number; }
 type PadMap = Record<string, PadBinding | boolean | undefined>;
+/** A pose de repouso deste controle: que botões já estavam em baixo e onde cada eixo descansava. */
+interface Baseline { b: boolean[]; a: number[] }
 interface WizState {
   gi: number;
   id: string;
   step: number;
-  base: { b: boolean[]; a: number[] } | null;
+  base: Baseline | null;
   map: PadMap;
   release: boolean;
   baseWait: boolean;
@@ -153,57 +155,83 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     ctx.aoFechar?.(gi, saved);
   }
 
-  function tique(): void {
-    if (!padWiz) return;
-    ctx.aoTique?.();
-    const pads = ctx.getGamepads() ?? [];
-    if (padWiz.gi < 0) {
-      for (const gp of pads) {
-        if (gp && gp.buttons.some((b) => b && b.pressed)) {
-          padWiz.gi = gp.index; padWiz.id = gp.id; padWiz.baseWait = true;
-          ctx.dizer(t('pad.wiz.releaseAll', { id: gp.id }));
-          break;
-        }
+  /* ===================== os cinco momentos de um quadro =====================
+   *
+   * 🔴 Este é um AUTÓMATO, e a ordem abaixo é o que ele é: sem controle adoptado · à espera da pose de repouso · à
+   * espera de a mão largar · com um eixo em observação · a ler o que mexeu. Cada momento é uma função com o nome do
+   * que ele espera, e o `tique` é a lista deles.
+   *
+   * ⚠️ E NÃO É UMA TABELA, ao contrário da cadeia do `input/keydown`, porque os momentos não são simétricos: o
+   * primeiro corre SEM um controle na mão (é ele que o escolhe) e os outros quatro precisam de um. Uma lista de
+   * linhas iguais teria de fingir que o primeiro recebe o que ainda não existe.
+   *
+   * 📌 Cada momento recebe o estado em vez de o alcançar, o que é o que permite lê-los um a um — e o que tira as
+   * asserções de não-nulo que um fecho a olhar para `padWiz` obrigaria.
+   */
+
+  /** 1 · Nenhum controle adoptado: a PRIMEIRA tecla premida de qualquer pad escolhe o pad que a mão segura. */
+  function adoptTheHandsPad(w: WizState, pads: readonly (PadLike | null | undefined)[]): void {
+    for (const gp of pads) {
+      if (gp && gp.buttons.some((b) => b && b.pressed)) {
+        w.gi = gp.index; w.id = gp.id; w.baseWait = true;
+        ctx.dizer(t('pad.wiz.releaseAll', { id: gp.id }));
+        break;
       }
-      return;
     }
-    const gp = pads[padWiz.gi];
-    if (!gp) return; // controle desconectado (ou índice ainda não populado): congela até voltar
-    if (padWiz.baseWait) {
-      if (!gp.buttons.some((b) => b && b.pressed)) {
-        padWiz.baseWait = false;
-        padWiz.base = { b: gp.buttons.map((x) => !!(x && x.pressed)), a: gp.axes.slice() };
-        padWiz.step = 0;
-        ask();
-      }
-      return;
-    }
-    const base = padWiz.base!;
-    if (padWiz.release) {
-      const idle = !gp.buttons.some((b, i) => b && b.pressed && !base.b[i]) && gp.axes.every((v, i) => Math.abs((v || 0) - base.a[i]!) < 0.35);
-      if (idle) { padWiz.release = false; ask(); }
-      return;
-    }
-    // eixo em rastreio (~240ms): classifica pelo COMPORTAMENTO — varia continuamente = analógico (limiar por sinal);
-    // salta e FICA CONSTANTE = D-pad/POV hat (valor exato, ±0.13).
-    if (padWiz.axTrack) {
-      const tr = padWiz.axTrack; const v = gp.axes[tr.i] || 0;
-      if (Math.abs(v - tr.last) > 0.03) tr.changes++;
-      tr.last = v;
-      if (Math.abs(v - base.a[tr.i]!) > Math.abs(tr.v - base.a[tr.i]!)) tr.v = v;
-      if (++tr.ticks >= 8) {
-        const pv = tr.v; padWiz.axTrack = null;
-        wire(tr.changes >= 2 ? { ax: tr.i, s: pv > 0 ? 1 : -1 } : { av: tr.i, v: Math.round(pv * 10000) / 10000 });
-      }
-      return;
-    }
+  }
+
+  /** 2 · A pose de REPOUSO deste controle, medida no único quadro em que nada está premido. */
+  function takeTheRestingPose(w: WizState, gp: PadLike): void {
+    if (gp.buttons.some((b) => b && b.pressed)) return;
+    w.baseWait = false;
+    w.base = { b: gp.buttons.map((x) => !!(x && x.pressed)), a: gp.axes.slice() };
+    w.step = 0;
+    ask();
+  }
+
+  /** 3 · A mão tem de LARGAR antes da pergunta seguinte — e largar são duas metades, os botões e os eixos. */
+  function waitForTheHandToLetGo(w: WizState, gp: PadLike, base: Baseline): void {
+    const idle = !gp.buttons.some((b, i) => b && b.pressed && !base.b[i]) && gp.axes.every((v, i) => Math.abs((v || 0) - base.a[i]!) < 0.35);
+    if (idle) { w.release = false; ask(); }
+  }
+
+  /**
+   * 4 · Eixo em rastreio (~240 ms): classifica pelo COMPORTAMENTO — varia continuamente = analógico (limiar por
+   * sinal); salta e FICA CONSTANTE = D-pad/POV hat (valor exato, ±0.13).
+   */
+  function classifyTheWatchedAxis(w: WizState, gp: PadLike, base: Baseline): void {
+    const tr = w.axTrack!; const v = gp.axes[tr.i] || 0;
+    if (Math.abs(v - tr.last) > 0.03) tr.changes++;
+    tr.last = v;
+    if (Math.abs(v - base.a[tr.i]!) > Math.abs(tr.v - base.a[tr.i]!)) tr.v = v;
+    if (++tr.ticks < 8) return;
+    const pv = tr.v; w.axTrack = null;
+    wire(tr.changes >= 2 ? { ax: tr.i, s: pv > 0 ? 1 : -1 } : { av: tr.i, v: Math.round(pv * 10000) / 10000 });
+  }
+
+  /** 5 · O que mexeu desde o repouso: um botão primeiro, e só depois um eixo que tenha saído de verdade. */
+  function readWhatMoved(w: WizState, gp: PadLike, base: Baseline): void {
     for (let i = 0; i < gp.buttons.length; i++) {
       if (gp.buttons[i] && gp.buttons[i]!.pressed && !base.b[i]) { wire({ b: i }); return; }
     }
     for (let i = 0; i < gp.axes.length; i++) {
       const v = gp.axes[i] || 0;
-      if (Math.abs(v - base.a[i]!) > 0.45) { padWiz.axTrack = { i, v, last: v, changes: 0, ticks: 0 }; return; }
+      if (Math.abs(v - base.a[i]!) > 0.45) { w.axTrack = { i, v, last: v, changes: 0, ticks: 0 }; return; }
     }
+  }
+
+  function tique(): void {
+    if (!padWiz) return;
+    ctx.aoTique?.();
+    const pads = ctx.getGamepads() ?? [];
+    if (padWiz.gi < 0) { adoptTheHandsPad(padWiz, pads); return; }
+    const gp = pads[padWiz.gi];
+    if (!gp) return; // controle desconectado (ou índice ainda não populado): congela até voltar
+    if (padWiz.baseWait) { takeTheRestingPose(padWiz, gp); return; }
+    const base = padWiz.base!;
+    if (padWiz.release) { waitForTheHandToLetGo(padWiz, gp, base); return; }
+    if (padWiz.axTrack) { classifyTheWatchedAxis(padWiz, gp, base); return; }
+    readWhatMoved(padWiz, gp, base);
   }
 
   return { abrir, abrirPara, fechar, tique, estado: () => padWiz };
