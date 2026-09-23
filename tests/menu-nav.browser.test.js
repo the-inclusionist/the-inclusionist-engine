@@ -441,6 +441,45 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     }
   });
 
+  it('🔴 [Right] the OPTION a panel offers says «option» and whether it is the chosen one — probed 2026-09-23, it had no case', async () => {
+    // The typography panel's faces are `role="radio"` (ADR-0149): its whole row — label, role and «selected» — could be undone
+    // with every file green, and a child choosing a face by ear would hear which one is chosen from nothing but the words.
+    const { controlParts } = await import('../app/js/ui/menu-nav.js');
+    const row = document.createElement('div');
+    row.className = 'ctrl-row';
+    row.innerHTML = '<span><strong>Andika</strong></span><button role="radio" aria-checked="true" aria-label="Andika, caixa alta">●</button>'
+      + '<button role="radio" aria-checked="false">○</button>';
+    document.body.appendChild(row);
+    try {
+      const [chosen, other] = row.querySelectorAll('[role="radio"]');
+      expect(controlParts(chosen)).toEqual({ rotulo: 'Andika, opção', estado: 'selecionada' });
+      expect(controlParts(other)).toEqual({ rotulo: 'Andika, opção', estado: '' });
+    } finally {
+      row.remove();
+    }
+  });
+
+  // ⚠️ One more decision of the same probe is EQUIVALENT and has no case: the switch row is read before the option row, and it
+  // would only matter for an element carrying both `aria-pressed` and `role="radio"` — which the kit never builds
+  // (`ui/panel-widgets` gives a radio `aria-checked` INSTEAD of `aria-pressed`, and says why).
+  it('🔴 [Boundary] a slider says a WHOLE percentage, reads a missing maximum as 100, and an empty range as 0% — probed 2026-09-23', async () => {
+    const { controlParts } = await import('../app/js/ui/menu-nav.js');
+    const make = (html) => { const d = document.createElement('div'); d.innerHTML = html; document.body.appendChild(d); return d; };
+    const holders = [
+      make('<input type="range" min="0" max="3" value="1" aria-label="A">'),
+      make('<input type="range" value="40" aria-label="B">'),
+      make('<input type="range" min="5" max="5" value="5" aria-label="C">'),
+    ];
+    try {
+      const [a, b, c] = holders.map((h) => controlParts(h.firstElementChild).estado);
+      expect(a, 'a third was said as 33.333…%').toBe('33%');
+      expect(b, 'a slider with no max was read against another scale').toBe('40%');
+      expect(c, 'a range of zero width divided by zero').toBe('0%');
+    } finally {
+      for (const h of holders) h.remove();
+    }
+  });
+
   it('[Right] andar na lista de pausa FALA o item — senão o menu é mudo para quem o navega por escuta', () => {
     // MEDIDO no jogo construído antes de este caso existir (`?x=84`): a seta movia o cursor de `resume` para
     // `acessibilidade` e o `#sr-status` continuava VAZIO. Não havia foco (a pausa seleciona por CLASSE, não
