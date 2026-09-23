@@ -46,8 +46,8 @@ import { toggleLabel } from './dom.js';
  * maiúsculas e minúsculas. Uma pergunta binária apresentada como duas linhas obriga a criança a comparar as
  * duas para descobrir que são a mesma pergunta.
  */
-export function upperCaseOn(caso: LetterCase): boolean {
-  return caso === 'upper';
+export function upperCaseOn(letterCase: LetterCase): boolean {
+  return letterCase === 'upper';
 }
 
 /** O id do controle de um conjunto. Sai do `key` do catálogo, que é único por construção (`CAA_BY_KEY`). */

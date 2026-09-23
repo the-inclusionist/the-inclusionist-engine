@@ -150,7 +150,7 @@ export interface RunOptions {
  * cerimônia, e mantê-la aqui obrigaria a fábrica a depender do barramento — justo o que a Fase C vai
  * refazer. Quando existir o primeiro assinante, ele entra por injeção, com o barramento já tipado.
  */
-export function createRunState<P>(opcoes: RunOptions = {}): RunState<P> {
+export function createRunState<P>(options: RunOptions = {}): RunState<P> {
   const r: RunState<P> = {
     powerups: [],
     gateTiles: new Set<string>(),
@@ -178,7 +178,7 @@ export function createRunState<P>(opcoes: RunOptions = {}): RunState<P> {
     setGrassDensity(v: number): void { r.grassDensity = Math.max(0, Math.min(1, +v || 0)); },
     setSelVizPlayer(i: number): void { r.selVizPlayer = i; },
     setPauseActor(i: number): void { r.pauseActor = i; },
-    setNumPlayers(n: number): void { r.numPlayers = n; opcoes.aoTrocarJogadores?.(n); },
+    setNumPlayers(n: number): void { r.numPlayers = n; options.aoTrocarJogadores?.(n); },
   };
   return r;
 }

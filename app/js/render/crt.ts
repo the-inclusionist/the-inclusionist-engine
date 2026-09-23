@@ -20,7 +20,7 @@ export const CRT_DEFAULT: Readonly<CrtCfg> = Object.freeze({ scan: 1, vig: 0, ro
 // importado como binding vivo — e um `let` de módulo é compartilhado por qualquer segundo jogo que a
 // mesma página carregue (D13 do `demos`, ADR-0038). O que entra aqui é o GETTER da rodada que a raiz
 // possui; o `let` que sobra guarda a função, não o número.
-let _numJogadores: () => number = () => 1;
+let _playerCount: () => number = () => 1;
 /**
  * ALGUM jogador está num modo de acessibilidade visual? (qualquer coisa que não seja `normal`.)
  *
@@ -33,11 +33,11 @@ let _numJogadores: () => number = () => 1;
  * bordas de meia tela. Se a decoração e a acessibilidade de qualquer criança se contradizem, quem cede é a
  * decoração — que é literalmente o que "precedência a11y > estética" quer dizer.
  */
-let _a11yVisualAtiva: () => boolean = () => false;
+let _a11yVisualActive: () => boolean = () => false;
 /** Liga a contagem de jogadores e a pergunta de a11y. Chamado uma vez pela raiz, antes do 1º `applyCrt()`. */
 export function initCrt(deps: { numJogadores: () => number; a11yVisualAtiva: () => boolean }): void {
-  _numJogadores = deps.numJogadores;
-  _a11yVisualAtiva = deps.a11yVisualAtiva;
+  _playerCount = deps.numJogadores;
+  _a11yVisualActive = deps.a11yVisualAtiva;
 }
 
 export const CRT: CrtCfg = (() => {
@@ -58,7 +58,7 @@ export const CRT: CrtCfg = (() => {
 // Ancora a scanline em px REAIS: 1 linha por pixel de ARTE (kDev inteiro) → espaçamento SEMPRE regular em qualquer dpr.
 export function crtScanVars(): void {
   const g = $<HTMLElement>('#game-region'); if (!g || !CRT.scan) return;
-  const { rows } = screenGrid(_numJogadores()), dpr = window.devicePixelRatio || 1;
+  const { rows } = screenGrid(_playerCount()), dpr = window.devicePixelRatio || 1;
   const perDev = Math.max(2, Math.round((g.clientHeight || 360) * dpr / (180 * rows))); // kDev = px REAIS por linha de arte (INTEIRO)
   g.style.setProperty('--scan-per', (perDev / dpr) + 'px'); // período = kDev px reais (1 linha de arte)
   g.style.setProperty('--scan-line', (Math.max(1, Math.round(dpr)) / dpr) + 'px'); // linha = 1 px REAL
@@ -77,7 +77,7 @@ export function applyCrt(): void {
   // O valor gravado NÃO é alterado: a preferência continua lá e volta a valer sozinha ao sair do modo de
   // acessibilidade. Suprimir não é desligar — é a distinção que impede a criança de perder o que escolheu
   // toda vez que liga o alto contraste.
-  const a11y = _a11yVisualAtiva();
+  const a11y = _a11yVisualActive();
   if (CRT.scan && !a11y) { g.classList.add('crt-scan-' + CRT.scan); crtScanVars(); }
   if (CRT.vig && !a11y) g.classList.add('crt-vig-' + CRT.vig);
   if (CRT.round !== 1) g.classList.add('crt-round-' + CRT.round); // 1 = visual padrão (8px), sem classe

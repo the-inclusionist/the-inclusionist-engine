@@ -57,10 +57,10 @@ export const AUDIO_CATS: AudioCat[] = [
  *    reta para dentro de uma parede. Está registrado como issue; até ela existir, o silêncio é melhor que o
  *    bipe, e a criança que quiser o bipe continua podendo ligá-lo no menu auditivo.
  */
-const NASCEM_DESLIGADAS = new Set(['tts', 'guide']);
+const BORN_OFF = new Set(['tts', 'guide']);
 
 export function defaultAudioCat(k: string): AudioCatState {
-  return { on: !NASCEM_DESLIGADAS.has(k), vol: 0.8 };
+  return { on: !BORN_OFF.has(k), vol: 0.8 };
 }
 
 export function loadAudioCat(): Record<string, AudioCatState> {

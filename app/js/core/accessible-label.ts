@@ -25,12 +25,12 @@
 
 /** A fatia mínima de `Element` que este módulo lê. Estrutural para o teste de node não precisar de DOM real. */
 export interface LabelledElement {
-  getAttribute(nome: string): string | null;
+  getAttribute(name: string): string | null;
   textContent: string | null;
 }
 
 /** Espaço em branco de markup vira UM espaço; pontas somem. */
-const enxuto = (s: string | null | undefined): string => (s || '').replace(/\s+/g, ' ').trim();
+const tidy = (s: string | null | undefined): string => (s || '').replace(/\s+/g, ' ').trim();
 
 /**
  * O nome do controle: `aria-label` quando existe, o texto visível quando não.
@@ -44,5 +44,5 @@ const enxuto = (s: string | null | undefined): string => (s || '').replace(/\s+/
  */
 export function accessibleLabel(el: LabelledElement | null | undefined): string {
   if (!el) return '';
-  return enxuto(el.getAttribute('aria-label')) || enxuto(el.textContent);
+  return tidy(el.getAttribute('aria-label')) || tidy(el.textContent);
 }

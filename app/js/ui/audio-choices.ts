@@ -72,8 +72,8 @@ export const TTS_ENGINE_OPTIONS: readonly (readonly [string, string])[] = [
  * without it Kokoro is not offered — a choice that cannot work leaves whoever picks it waiting for a download that never starts.
  * `kitten`/`espeak` are not built and stay as they were.
  */
-export function voiceEngineOptions(neuralDisponivel: boolean): readonly (readonly [string, string])[] {
-  return neuralDisponivel ? TTS_ENGINE_OPTIONS : TTS_ENGINE_OPTIONS.filter(([v]) => v !== 'kokoro');
+export function voiceEngineOptions(neuralAvailable: boolean): readonly (readonly [string, string])[] {
+  return neuralAvailable ? TTS_ENGINE_OPTIONS : TTS_ENGINE_OPTIONS.filter(([v]) => v !== 'kokoro');
 }
 
 export interface VoiceLike { name: string; lang: string; }

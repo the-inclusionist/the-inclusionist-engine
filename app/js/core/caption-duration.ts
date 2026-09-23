@@ -16,7 +16,7 @@ export function isCaptionRate(ppm: number): CaptionRate {
   return (CAPTION_RATES as readonly number[]).includes(ppm) ? (ppm as CaptionRate) : CAPTION_RATES[0];
 }
 
-export function captionDuration(texto: string, ppm: number): number {
-  const palavras = texto.split(/\s+/).filter(Boolean).length;
-  return Math.max(CAPTION_MIN_MS, Math.round((palavras * 60_000) / isCaptionRate(ppm)));
+export function captionDuration(text: string, ppm: number): number {
+  const words = text.split(/\s+/).filter(Boolean).length;
+  return Math.max(CAPTION_MIN_MS, Math.round((words * 60_000) / isCaptionRate(ppm)));
 }

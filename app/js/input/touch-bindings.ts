@@ -369,7 +369,7 @@ export interface TouchBindingsCtx {
    * alternância lida seria a do teclado, no aparelho errado. 📌 O `onTouchControlsShown` do cartucho
    * (`main.ts:1695`) é o remendo que existe hoje exactamente para compensar esta falta.
    */
-  playerEdge: (jogador: number, origem: TransportName) => void;
+  playerEdge: (player: number, source: TransportName) => void;
   /**
    * O conjunto para LER — a decisão pura pergunta que teclas já estão seguradas.
    *

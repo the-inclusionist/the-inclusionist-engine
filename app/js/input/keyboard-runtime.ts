@@ -41,7 +41,7 @@ export interface KeyboardRuntimeCtx {
 /** Result of the old `applyControls()` mutation, as a value: `controls` + its per-action aliases (game.js's
  *  KJUMP/KLEFT/KRIGHT/KUP/KDOWN/KRUN) + the flattened `GAME_KEYS` list. */
 /** A lista que uma posição SEM ALCANCE devolve. Congelada e partilhada: ninguém deve escrever nela. */
-const VAZIO: readonly string[] = Object.freeze([]);
+const EMPTY: readonly string[] = Object.freeze([]);
 
 export interface ControlsState {
   controls: KeyScheme;
@@ -153,9 +153,9 @@ export function initKeyboardRuntime(ctx: KeyboardRuntimeCtx): KeyboardRuntime {
     // identidade — corretamente: o apelido é o alias do P1, e um teste que afirma «é o mesmo array» está a
     // afirmar que ninguém interpôs uma cópia entre o esquema vivo e quem o lê. Copiar aqui não custaria nada
     // hoje e passaria a custar no dia em que alguém mutasse a lista no lugar.
-    const lista = (a: Action): readonly string[] => controls[a] ?? VAZIO;
-    const action2 = lista('action2'), left = lista('left'), right = lista('right');
-    const up = lista('up'), down = lista('down'), action1 = lista('action1');
+    const list = (a: Action): readonly string[] => controls[a] ?? EMPTY;
+    const action2 = list('action2'), left = list('left'), right = list('right');
+    const up = list('up'), down = list('down'), action1 = list('action1');
     const gameKeySet = new Set<string>();
     ctx.getPlayers().forEach((_, i) => {
       const scheme = kbFor(i);

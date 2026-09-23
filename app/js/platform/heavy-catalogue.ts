@@ -54,7 +54,7 @@ export const CACHE_HEAVY = 'incl-pesados-v2';
  * ⬜ Still to do is the WIRING (issues #11, #189): these bytes come down and the camera reader does not read them yet.
  */
 const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1';
-const MP_MODELOS = 'https://storage.googleapis.com/mediapipe-models';
+const MP_MODELS = 'https://storage.googleapis.com/mediapipe-models';
 
 /**
  * 🔴 A PRIMEIRA VERSÃO DESTA LISTA TRAZIA O RUNTIME E NENHUM MODELO, e o Dev apanhou-o ao perguntar o que
@@ -70,11 +70,11 @@ const MEDIAPIPE: readonly HeavyFile[] = Object.freeze([
     sha256: 'e170ee67dd4e16c1a6fcd8840a206687e5a59b22c20e4a902bc445b095454d73' },
   { id: 'visao:runtime:wasm', url: `${MP}/wasm/vision_wasm_internal.wasm`, bytes: 11_756_954,
     sha256: '8da277a733926eacd0474b8704b36742d6ec3231c57a860c5b889dff8f1df886' },
-  { id: 'visao:modelo:rosto', url: `${MP_MODELOS}/face_landmarker/face_landmarker/float16/1/face_landmarker.task`, bytes: 3_758_596,
+  { id: 'visao:modelo:rosto', url: `${MP_MODELS}/face_landmarker/face_landmarker/float16/1/face_landmarker.task`, bytes: 3_758_596,
     sha256: '64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff' },
-  { id: 'visao:modelo:gestos', url: `${MP_MODELOS}/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task`, bytes: 8_373_440,
+  { id: 'visao:modelo:gestos', url: `${MP_MODELS}/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task`, bytes: 8_373_440,
     sha256: '97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482' },
-  { id: 'visao:modelo:maos', url: `${MP_MODELOS}/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, bytes: 7_819_105,
+  { id: 'visao:modelo:maos', url: `${MP_MODELS}/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, bytes: 7_819_105,
     sha256: 'fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1' },
 ]);
 

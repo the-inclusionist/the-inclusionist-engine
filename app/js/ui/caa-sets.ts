@@ -86,6 +86,6 @@ export function caaReason(s: CaaSet): string | null {
 
 /** Rótulo pronto para a linha do menu: nome + o motivo, quando há um. */
 export function caaLabel(s: CaaSet): string {
-  const motivo = caaReason(s);
-  return motivo ? `${s.nome} — ${t(motivo)}` : s.nome;
+  const reason = caaReason(s);
+  return reason ? `${s.nome} — ${t(reason)}` : s.nome;
 }

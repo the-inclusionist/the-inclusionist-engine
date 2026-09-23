@@ -135,7 +135,7 @@ export interface BuildingBand {
 }
 
 /** O que todo tema tem, independentemente de como o fundo dele nasce. */
-interface TemaBase {
+interface ThemeBase {
   /** CHAVE i18n do nome exibido. Chave e não texto: tabela de módulo resolvida no import congelaria o idioma
    *  no boot (ver a nota em input/devices). Quem exibe resolve com `t()`. */
   nome: string;
@@ -154,14 +154,14 @@ interface TemaBase {
 }
 
 /** Fundo de MORROS: céu em gradiente + duas bandas de morro. Os quatro temas da v3. */
-export interface HillsTheme extends TemaBase {
+export interface HillsTheme extends ThemeBase {
   fundo: 'morros';
   /** As duas bandas de morro: `[fundo, frente]`. */
   hills: readonly [string, string];
 }
 
 /** Fundo de PRÉDIOS: céu em gradiente + três faixas de skyline. A Cidade, e só ela por enquanto. */
-export interface BuildingsTheme extends TemaBase {
+export interface BuildingsTheme extends ThemeBase {
   fundo: 'predios';
   /** Uma faixa por camada de parallax, do mais distante ao mais próximo. */
   predios: readonly [BuildingBand, BuildingBand, BuildingBand];

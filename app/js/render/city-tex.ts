@@ -133,12 +133,12 @@ export const CAR_PALETTES: readonly (readonly [string, string, string])[] = [
  * largura daquela altura. Não é aproximação de matemática em tempo de execução — é o desenho, escrito. */
 
 /** Pneu Ø14: `[recuo, largura]` por linha, de cima para baixo. */
-const PNEU: readonly (readonly [number, number])[] = [
+const TYRE: readonly (readonly [number, number])[] = [
   [5, 4], [3, 8], [2, 10], [1, 12], [1, 12], [0, 14], [0, 14],
   [0, 14], [0, 14], [1, 12], [1, 12], [2, 10], [3, 8], [5, 4],
 ];
 /** Aro Ø8, no mesmo formato — desenhado dentro do pneu. */
-const ARO: readonly (readonly [number, number])[] = [
+const RIM: readonly (readonly [number, number])[] = [
   [2, 4], [1, 6], [0, 8], [0, 8], [0, 8], [0, 8], [1, 6], [2, 4],
 ];
 
@@ -156,8 +156,8 @@ export const paintCar = (body: string, dark: string, top: string): PixelPainter 
   px(0, 17, 3, 5, '#ffd9a0'); px(75, 17, 3, 5, '#ff6a5a');      // farol / lanterna
   const wheel = (wx: number): void => {
     px(wx + 1, 20, 12, 2, dark); px(wx - 1, 21, 16, 1, dark);                       // caixa de roda, em arco
-    PNEU.forEach(([dx, w], i) => px(wx + dx, 22 + i, w, 1, '#10131a'));             // pneu
-    ARO.forEach(([dx, w], i) => px(wx + 3 + dx, 25 + i, w, 1, '#2b3140'));          // aro
+    TYRE.forEach(([dx, w], i) => px(wx + dx, 22 + i, w, 1, '#10131a'));             // pneu
+    RIM.forEach(([dx, w], i) => px(wx + 3 + dx, 25 + i, w, 1, '#2b3140'));          // aro
     px(wx + 6, 28, 2, 2, '#8a93a8');                                                // cubo
   };
   wheel(11); wheel(53);

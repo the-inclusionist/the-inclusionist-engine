@@ -27,7 +27,7 @@ export type CollisionCtx = {
 // closures no-op até initCollision() (evita null-check no caminho quente da física).
 let _world: number[][] = [], _W = 0, _H = 0;
 let _isWheelchair: () => boolean = () => false;
-let _isModoCego: () => boolean = () => false;
+let _isBlindMode: () => boolean = () => false;
 let _caneDiv: () => number = () => 1;
 let _wcSolid: () => ReadonlySet<string> = () => new Set();
 let _gateTiles: () => ReadonlySet<string> = () => new Set();
@@ -36,7 +36,7 @@ let _gateOpen: () => boolean = () => true;
 // Liga a colisão ao mundo + estado vivo. Chamado UMA vez no boot do game.js (após WORLD pronto). Idempotente.
 export function initCollision(ctx: CollisionCtx): void {
   _world = ctx.world; _W = ctx.W; _H = ctx.H;
-  _isWheelchair = ctx.isWheelchair; _isModoCego = ctx.isModoCego; _caneDiv = ctx.caneDiv;
+  _isWheelchair = ctx.isWheelchair; _isBlindMode = ctx.isModoCego; _caneDiv = ctx.caneDiv;
   _wcSolid = ctx.wcSolid; _gateTiles = ctx.gateTiles; _gateOpen = ctx.gateOpen;
 }
 
@@ -47,7 +47,7 @@ export const caneBlockPx = (): number => TILE / _caneDiv();
 // Pelas perguntas e não pelos números 9 e 5: a regra é sobre o que o tile É, e assim ela continua verdadeira
 // num mapa com outra numeração — que é exatamente o que um segundo jogo tem.
 export const isSolidType = (t: number): boolean =>
-  ((_isWheelchair() && (isHazard(t) || isTrampoline(t))) || (_isModoCego() && isHazard(t))) ? true : !!TYPES[t]?.solid;
+  ((_isWheelchair() && (isHazard(t) || isTrampoline(t))) || (_isBlindMode() && isHazard(t))) ? true : !!TYPES[t]?.solid;
 
 // Tile na posição (fora do mundo = pedra(2), parede natural). Coordenadas em TILES.
 export const tileAt = (tx: number, ty: number): number =>

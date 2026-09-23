@@ -195,7 +195,7 @@ export function legacyKey(v: VisualState): string {
 // desses valores escolheu-o porque enxerga assim.
 
 /** O valor único antigo → o estado de dois eixos. Chave desconhecida cai no padrão, e nunca estoura. */
-const DE_CHAVE_UNICA: Readonly<Record<string, VisualState>> = Object.freeze({
+const FROM_SINGLE_KEY: Readonly<Record<string, VisualState>> = Object.freeze({
   normal: PADRAO,
 
   // Os três níveis de contraste viram TEMA, e a correção fica no padrão.
@@ -232,10 +232,10 @@ const DE_CHAVE_UNICA: Readonly<Record<string, VisualState>> = Object.freeze({
  * uma versão futura, de outra máquina, ou lixo. Um `throw` aqui tiraria o jogo do ar por causa de uma
  * preferência; o padrão apenas devolve o jogo como ele nasce.
  */
-export function migrateVisual(salvo: unknown): VisualState {
-  if (typeof salvo === 'string') return DE_CHAVE_UNICA[salvo] ?? PADRAO;
-  if (salvo && typeof salvo === 'object') {
-    const o = salvo as Partial<VisualState>;
+export function migrateVisual(saved: unknown): VisualState {
+  if (typeof saved === 'string') return FROM_SINGLE_KEY[saved] ?? PADRAO;
+  if (saved && typeof saved === 'object') {
+    const o = saved as Partial<VisualState>;
     return {
       tema: THEMES.includes(o.tema as Theme) ? (o.tema as Theme) : PADRAO.tema,
       correcao: CORRECTIONS.includes(o.correcao as Correction) ? (o.correcao as Correction) : PADRAO.correcao,
@@ -253,4 +253,4 @@ export const SIMULATIONS: readonly Simulation[] = [
 ];
 
 /** As chaves antigas que a migração conhece — exportada para o gate poder exigir que TODAS estejam cobertas. */
-export const LEGACY_KEYS: readonly string[] = Object.keys(DE_CHAVE_UNICA);
+export const LEGACY_KEYS: readonly string[] = Object.keys(FROM_SINGLE_KEY);

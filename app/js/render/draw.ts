@@ -338,8 +338,8 @@ export function initDraw(ctx: DrawCtx): DrawApi {
 
     if (ctx.getNumPlayers() <= 1) {
       // O CINTILAR fica: é juice da engine (render/fx), e vale para moeda, estrela ou peça de tabuleiro.
-      const itens = ctx.getItemSprites();
-      for (let j = 0; j < itens.length; j++) { const s = itens[j]; if (s) s.alpha = shimOn ? 0.8 + 0.2 * Math.sin(fxClock * 0.12 + j * 1.7) : 1; }
+      const items = ctx.getItemSprites();
+      for (let j = 0; j < items.length; j++) { const s = items[j]; if (s) s.alpha = shimOn ? 0.8 + 0.2 * Math.sin(fxClock * 0.12 + j * 1.7) : 1; }
       const { camX, camY } = placeCam(PLS[0]);
       ctx.markSeen(camX, camY); ctx.redrawMinimapIfDirty();
       ctx.drawMinimapPlayer(PLS[0].x, PLS[0].y - ctx.BOX.h / 2);

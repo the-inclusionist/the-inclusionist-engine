@@ -39,8 +39,8 @@ export interface Rng {
 /** A semente do jogo próprio da engine. Um consumidor externo escolhe a sua. */
 export const DEFAULT_SEED = 20260601;
 
-export const createRng = (semente: number = DEFAULT_SEED): Rng => {
-  let _seed = semente >>> 0;
+export const createRng = (seed: number = DEFAULT_SEED): Rng => {
+  let _seed = seed >>> 0;
   // `Math.imul` e não `*`: ver o cabeçalho. O `+ 12345` cabe em segurança porque `imul` já devolveu
   // um inteiro de 32 bits com sinal, e a máscara `& 0x7fffffff` desfaz o sinal.
   const rnd = (): number => (_seed = (Math.imul(_seed, 1103515245) + 12345) & 0x7fffffff) / 0x7fffffff;

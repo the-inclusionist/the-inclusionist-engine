@@ -85,8 +85,8 @@ export function createAudioNav(ctx: AudioNavCtx): AudioNav {
   const SURF_MAT: Record<string, string> = { cidade: 'piso', campo: 'grama', floresta: 'grama', cemiterio: 'terra', espaco: 'pedra', classico: 'pedra' }; // chão por tema
   let _caneCount = 0, _waterNavCount = 0;
 
-  const som = ctx.sonar; // a metade que viaja, injetada
-  const playerCtx = (pl: Player): PlayerCtxOut | null => som.playerCtx(pl as unknown as SonarPlayer);
+  const sound = ctx.sonar; // a metade que viaja, injetada
+  const playerCtx = (pl: Player): PlayerCtxOut | null => sound.playerCtx(pl as unknown as SonarPlayer);
 
   function caneProbe(pl: Player): string { // material À FRENTE
     const dir = pl.facing < 0 ? -1 : 1;
@@ -125,13 +125,13 @@ export function createAudioNav(ctx: AudioNavCtx): AudioNav {
     playerCtx, caneProbe, caneTap, waterNav,
     // Delegação PURA para a metade que viajou. Sem lógica no meio: um adaptador que decidisse alguma coisa
     // seria uma terceira implementação escondida entre as duas.
-    panFor: (wx, pl) => som.panFor(wx, pl as unknown as SonarPlayer),
-    needsAudioCues: (pl) => som.needsAudioCues(pl as unknown as SonarPlayer),
-    sonar: (pl) => som.sonar(pl as unknown as SonarPlayer),
-    updateGuide: () => som.updateGuide(),
+    panFor: (wx, pl) => sound.panFor(wx, pl as unknown as SonarPlayer),
+    needsAudioCues: (pl) => sound.needsAudioCues(pl as unknown as SonarPlayer),
+    sonar: (pl) => sound.sonar(pl as unknown as SonarPlayer),
+    updateGuide: () => sound.updateGuide(),
     get caneCount() { return _caneCount; },
     get waterNavCount() { return _waterNavCount; },
-    get sonarCount() { return som.sonarCount; },
-    get guideCount() { return som.guideCount; },
+    get sonarCount() { return sound.sonarCount; },
+    get guideCount() { return sound.guideCount; },
   };
 }

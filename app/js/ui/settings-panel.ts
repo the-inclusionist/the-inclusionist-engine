@@ -243,8 +243,8 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
       if (row.dataset.explainDone) { refreshExplain(row); return; }
       const span = row.querySelector<HTMLElement>(':scope > span');
       const strong = span ? span.querySelector<HTMLElement>('strong') : null;
-      const dicaDosPassos = !strong && span ? span.querySelector<HTMLElement>('.opt-hint') : null;
-      if (span && dicaDosPassos && row.querySelector('[data-passos]')) { wireStepsRow(row, span, dicaDosPassos, footer); return; }
+      const stepsHint = !strong && span ? span.querySelector<HTMLElement>('.opt-hint') : null;
+      if (span && stepsHint && row.querySelector('[data-passos]')) { wireStepsRow(row, span, stepsHint, footer); return; }
       if (!span || !strong) { row.dataset.explainDone = '1'; return; } // linha sem rótulo curto: nada a mover
       wireLabelledRow(row, span, strong, footer);
     });
@@ -263,9 +263,9 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
     // Checagem ESTRUTURAL, e não `instanceof HTMLElement`: este módulo roda no project `node`, onde não existe
     // global de DOM nenhum. O que se pede do abridor é só o que se vai usar dele — saber receber foco.
     const opener = ctx.doc.activeElement as HTMLElement | null;
-    const focavel = !!opener && typeof opener.focus === 'function';
+    const focusable = !!opener && typeof opener.focus === 'function';
     const isInside = !!opener && typeof el.contains === 'function' && el.contains(opener);
-    if (focavel && opener !== el && !isInside) openerOf.set(el.id, opener as HTMLElement);
+    if (focusable && opener !== el && !isInside) openerOf.set(el.id, opener as HTMLElement);
     el.style.zIndex = String(++ovZ);
     const card = el.querySelector<HTMLElement>('.overlay__card');
     if (card) fillExplain(card);

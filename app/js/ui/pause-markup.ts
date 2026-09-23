@@ -45,8 +45,8 @@ export function iconBtnMarkup(ic: PauseIcon): string {
  *  by hand in game.js — that duplication dies with this export).
  *  The parameter is ADDITIVE and the default is the whole list: whoever already called it with no arguments gets the same
  *  string back. */
-export function iconsMarkup(icones: readonly PauseIcon[] = PAUSE_ICONS): string {
-  return icones.map(iconBtnMarkup).join('');
+export function iconsMarkup(icons: readonly PauseIcon[] = PAUSE_ICONS): string {
+  return icons.map(iconBtnMarkup).join('');
 }
 
 /**
@@ -132,8 +132,8 @@ function pauseMenuHtml(
  * THE CAPTION TRAVELS WITH IT. It is the hint that replaces, for whoever does not see, the `title` only a mouse reveals;
  * leaving it behind in the card would have made the HUD bar mute.
  */
-export function quickBarMarkup(icones: readonly PauseIcon[] = PAUSE_ICONS): string {
-  return '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup(icones) +
+export function quickBarMarkup(icons: readonly PauseIcon[] = PAUSE_ICONS): string {
+  return '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup(icons) +
     '</div><p class="pause-icons-cap" aria-live="polite"></p>';
 }
 

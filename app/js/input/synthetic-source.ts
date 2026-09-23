@@ -48,8 +48,8 @@ export interface KeyEventLike {
  * ⚠️ Carimba-se ANTES de despachar. Depois de `dispatchEvent` os ouvintes já correram, e o carimbo chegaria
  * a um evento que ninguém mais vai ler.
  */
-export function stampSource<T extends object>(ev: T, origem: TransportName): T {
-  (ev as unknown as Record<string, unknown>)[SOURCE_KEY] = origem;
+export function stampSource<T extends object>(ev: T, source: TransportName): T {
+  (ev as unknown as Record<string, unknown>)[SOURCE_KEY] = source;
   return ev;
 }
 
@@ -70,7 +70,7 @@ export function stampSource<T extends object>(ev: T, origem: TransportName): T {
  *      resposta.
  */
 export function sourceOfEvent(ev: KeyEventLike): TransportName | undefined {
-  const declarada = (ev as unknown as Record<string, unknown>)[SOURCE_KEY];
-  if (isTransportName(declarada)) return declarada;
+  const declared = (ev as unknown as Record<string, unknown>)[SOURCE_KEY];
+  if (isTransportName(declared)) return declared;
   return ev.isTrusted ? 'teclado' : undefined;
 }

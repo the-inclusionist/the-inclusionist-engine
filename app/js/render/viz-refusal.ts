@@ -50,8 +50,8 @@ export const REASON_KEY: Readonly<Record<UnavailableReason, string>> = Object.fr
  * `null` = pode; a interface não mostra nada, porque um aviso que aparece sempre deixa de ser lido.
  */
 export function simulationRefusal(v: VisualState): Refusal | null {
-  const motivo = simulationUnavailable(v);
-  return motivo === null ? null : { chave: REASON_KEY[motivo], eixo: motivo };
+  const reason = simulationUnavailable(v);
+  return reason === null ? null : { chave: REASON_KEY[reason], eixo: reason };
 }
 
 /**
