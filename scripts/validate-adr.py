@@ -77,7 +77,10 @@ NAO_CONFERIDOS = {}
 # nada a dizer qual estava certo — que é exactamente o defeito do `9d4a5e3`, agora vindo do DADO em vez da
 # ferramenta. 📌 Um caminho sem prefixo passa a significar «o repositório de onde se corre», e isso só é
 # seguro para um registo que vive com o código que ele nomeia; tudo o resto declara-se.
-REPOS_CONHECIDOS = {"engine", "docs"}
+# 📌 `game-platformer` ENTROU EM 2026-09-23 com os seis registos que são dele (ADR-0229): a árvore dele cita
+# registos que ficaram aqui, e o índice daqui aponta para os que foram para lá.
+REPOS_CONHECIDOS = {"engine", "docs", "game-platformer"}
+MOVIDOS_NAO_CONFERIDOS = {}
 
 # ADR-0057 diz como um registo MUDA. `confirmed-by` diz outra coisa, que faltava: se ele foi CONSTRUÍDO.
 #
@@ -267,6 +270,30 @@ def number(path):
     return stem[:8] if stem[:4] == "ADR-" and stem[4:8].isdigit() else None
 
 
+def other_trees(folder):
+    """Every record number another DECLARED repository answers for: its ADR files and its index rows.
+
+    Only `--repo` roots are read, never a guessed sibling folder: a tree the caller did not name is a tree
+    nobody promised is the right one. The folder being validated is skipped, so declaring the repository
+    you run from (`--repo docs=.`) cannot make a record vouch for itself.
+    """
+    here = os.path.abspath(folder) if folder else ""
+    found = {}
+    for repo, root in sorted(RAIZES.items()):
+        tree = os.path.join(root, "docs", "2-Architecture", "adr")
+        if os.path.abspath(tree) == here or not os.path.isdir(tree):
+            continue
+        for path in glob.glob(os.path.join(tree, "ADR-*.yaml")):
+            if number(path):
+                found.setdefault(number(path), repo)
+        index = os.path.join(tree, "README.md")
+        if os.path.exists(index):
+            with open(index, encoding="utf-8") as fh:
+                for mt in re.finditer(r"(?m)^\| \[(ADR-\d{4})\]", fh.read()):
+                    found.setdefault(mt.group(1), repo)
+    return found
+
+
 def pointer_problems(files):
     """Cross-file: a supersession is a PAIR, and half of one is worse than none.
 
@@ -275,6 +302,20 @@ def pointer_problems(files):
     claiming to govern. Both directions are checked (ADR-0057).
     """
     meta, problems = {}, {}
+    folder = os.path.dirname(files[0]) if files else ""
+    # 🔴 UNDER N TREES A CITATION CAN LIVE ELSEWHERE (ADR-0226 §3, ADR-0229). A record that moved to a game still
+    # cites the records that stayed, and the ones that stayed still cite it. Two places answer «where is this
+    # number?»: the ADR tree of every repository the caller DECLARED with `--repo`, and a row of this tree's own
+    # index whose link names another repository — `| [ADR-0062](game-platformer:docs/…/ADR-0062-….yaml) |`, the
+    # same `repo:path` shape a `confirmed-by` already uses, so renaming a repository does not break it.
+    elsewhere = other_trees(folder)
+    index_path = os.path.join(folder, "README.md") if folder else None
+    index_text = ""
+    if index_path and os.path.exists(index_path):
+        with open(index_path, encoding="utf-8") as fh:
+            index_text = fh.read()
+    moved = {mt.group(1): (mt.group(2), mt.group(3))
+             for mt in re.finditer(r"(?m)^\| \[(ADR-\d{4})\]\(([a-z][a-z0-9-]*):([^)]+)\)", index_text)}
     for path in files:
         name = number(path)
         if not name:
@@ -318,9 +359,15 @@ def pointer_problems(files):
         # A reference to a record that does not exist is worse than none: it reads as answered.
         # Found by accident in ADR-0010, which sent the reader to ADR-0052 for the Libras levels
         # decided in ADR-0051 — one digit, and the reader arrives at `professionals author activities`.
+        # ⚠️ A citation found in no tree still FAILS, and never becomes «not checked»: counting it would let the
+        # ADR-0052 typo above live inside the message that says everything is fine. What the caller can do about
+        # it is said in the failure itself.
         for cited in sorted(set(re.findall(r"ADR-\d{4}", open(path, encoding="utf-8").read()))):
-            if cited not in meta and cited != name:
-                note(path, f"cites {cited}, which does not exist")
+            if cited in meta or cited == name or cited in elsewhere or cited in moved:
+                continue
+            declared = ", ".join(sorted(RAIZES)) or "none"
+            note(path, f"cites {cited}, which is in neither this tree nor any tree declared with `--repo` "
+                       f"(declared: {declared}) — a record in another repository is found by declaring it")
 
         for replaced in m.get("supersedes-in-part") or []:
             if replaced not in meta:
@@ -337,10 +384,23 @@ def pointer_problems(files):
     # apareceria a um `grep` e continuaria sem entrada própria — que é como as sete se esconderam.
     # 📌 A pasta sai do PRÓPRIO registo e não de uma variável global: o índice vive ao lado dos ficheiros
     # que indexa, e derivá-lo daqui é o que impede este caso de medir a pasta de onde alguém correu.
-    indice = os.path.join(os.path.dirname(next(iter(meta.values()))[0]), "README.md") if meta else None
-    if indice and os.path.exists(indice):
-        with open(indice, encoding="utf-8") as fh:
-            linhas = {mt.group(1) for mt in re.finditer(r"(?m)^\| \[(ADR-\d{4})\]", fh.read())}
+    # 📌 E UMA LINHA QUE DIZ «MUDOU-SE» É UM PONTEIRO COMO OS OUTROS (ADR-0229): o ficheiro tem de estar do outro
+    # lado, e não pode continuar deste. Sem a raiz daquele repositório a linha é CONTADA, pela regra de cima.
+    for moved_name, (repo, rel) in sorted(moved.items()):
+        if moved_name in meta:
+            note(meta[moved_name][0], f"has a file here AND an index row saying it moved to `{repo}:` — one of the "
+                                      "two is stale, and a reader cannot tell which")
+        elif repo not in REPOS_CONHECIDOS:
+            note(index_path, f"the row for {moved_name} points at `{repo}:`, which is not a declared repository "
+                             f"(known: {', '.join(sorted(REPOS_CONHECIDOS))})")
+        elif repo not in RAIZES:
+            MOVIDOS_NAO_CONFERIDOS[repo] = MOVIDOS_NAO_CONFERIDOS.get(repo, 0) + 1
+        elif number(rel) != moved_name or not os.path.exists(os.path.join(RAIZES[repo], rel)):
+            note(index_path, f"the row for {moved_name} says it moved to {repo}:{rel}, and that file is not "
+                             f"there under {RAIZES[repo]}")
+
+    if meta and index_text:
+        linhas = {mt.group(1) for mt in re.finditer(r"(?m)^\| \[(ADR-\d{4})\]", index_text)}
         for name, (path, _m) in sorted(meta.items()):
             if name not in linhas:
                 note(path, "has no row in the index `README.md` — a record outside the index is reachable "
@@ -383,6 +443,14 @@ def main():
             print(f"FAIL {os.path.basename(path)}")
             for problem in problems:
                 print(f"       {problem}")
+    # The index is not a record, so its failures are printed apart and never counted as one — but they fail
+    # the run all the same: a row pointing at nothing is the same lie as a `confirmed-by` pointing at nothing.
+    index_failed = 0
+    for path in sorted(set(crossed) - set(files)):
+        index_failed += 1
+        print(f"FAIL {os.path.basename(path)}")
+        for problem in crossed[path]:
+            print(f"       {problem}")
     print(f"\n{len(files)} records · {len(files) - failed} sound · {failed} with problems")
     # 🔴 O QUE NÃO FOI CONFERIDO É DITO, SEMPRE. Sem esta linha, um repositório que só tem os registos
     # imprimiria «tudo são» sem ter aberto um único artefacto — e essa é a diferença entre um crivo e um
@@ -390,7 +458,10 @@ def main():
     for repo in sorted(NAO_CONFERIDOS):
         print(f"⚠️  {NAO_CONFERIDOS[repo]} `confirmed-by` paths in `{repo}` NOT checked "
               f"— pass `--repo {repo}=<path>` to check them")
-    return 1 if failed else 0
+    for repo in sorted(MOVIDOS_NAO_CONFERIDOS):
+        print(f"⚠️  {MOVIDOS_NAO_CONFERIDOS[repo]} index rows moved to `{repo}` NOT checked "
+              f"— pass `--repo {repo}=<path>` to check them")
+    return 1 if failed or index_failed else 0
 
 
 if __name__ == "__main__":
