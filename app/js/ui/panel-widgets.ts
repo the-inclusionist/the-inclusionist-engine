@@ -91,7 +91,7 @@ export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow
   }
   linha.appendChild(texto);
 
-  const controle = criarControle(ctx, spec);
+  const controle = buildControl(ctx, spec);
   controle.id = spec.id;
   controle.setAttribute('aria-label', spec.rotuloAria ?? spec.rotulo);
   linha.appendChild(controle);
@@ -131,7 +131,7 @@ export function labelRow(linha: HTMLElement, spec: ControlRowSpec): void {
   if (controle) controle.setAttribute('aria-label', spec.rotuloAria ?? spec.rotulo);
 }
 
-function criarControle(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
+function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
   const forma = spec.forma ?? 'interruptor';
   if (forma === 'escolha') {
     const s = ctx.criar('select');
@@ -274,32 +274,32 @@ export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
   el.setAttribute('role', 'spinbutton');
   el.setAttribute('tabindex', '0');
   el.setAttribute('data-passos', '');
-  const seta = (delta: -1 | 1, glifo: string): HTMLElement => {
+  const arrow = (delta: -1 | 1, glyph: string): HTMLElement => {
     const s = ctx.criar('span');
     s.className = 'passo-seta';
     s.setAttribute('data-passo', String(delta));
     s.setAttribute('aria-hidden', 'true');
-    s.textContent = glifo;
+    s.textContent = glyph;
     s.addEventListener('click', () => el.dispatchEvent(new CustomEvent('passo', { detail: delta, bubbles: true })));
     return s;
   };
   const valor = ctx.criar('span');
   valor.className = 'passo-valor';
-  el.appendChild(seta(-1, '◀'));
+  el.appendChild(arrow(-1, '◀'));
   el.appendChild(valor);
-  el.appendChild(seta(1, '▶'));
+  el.appendChild(arrow(1, '▶'));
   updateSteps(el, spec);
   return el;
 }
 
 /** Reflecte a posição de agora: o valor escrito, o que se ouve, e as pontas que já não andam. */
 export function updateSteps(el: HTMLElement, spec: StepsSpec): void {
-  const ultimo = Math.max(0, spec.valores.length - 1);
-  const atual = Math.max(0, Math.min(ultimo, spec.atual));
+  const lastIndex = Math.max(0, spec.valores.length - 1);
+  const atual = Math.max(0, Math.min(lastIndex, spec.atual));
   const texto = spec.valores[atual] ?? '';
   el.setAttribute('aria-label', spec.rotulo);
   el.setAttribute('aria-valuemin', '0');
-  el.setAttribute('aria-valuemax', String(ultimo));
+  el.setAttribute('aria-valuemax', String(lastIndex));
   el.setAttribute('aria-valuenow', String(atual));
   el.setAttribute('aria-valuetext', texto);
   const valor = el.querySelector<HTMLElement>('.passo-valor');
@@ -308,5 +308,5 @@ export function updateSteps(el: HTMLElement, spec: StepsSpec): void {
   if (valor) valor.textContent = spec.rotulo ? `${spec.rotulo}: ${texto}` : texto;
   // A ponta que já não anda fica marcada — sem isto a seta de uma parede parece um botão avariado.
   el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', atual === 0);
-  el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', atual === ultimo);
+  el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', atual === lastIndex);
 }

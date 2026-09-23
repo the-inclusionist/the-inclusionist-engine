@@ -28,8 +28,8 @@ import { navigableItems } from './menu-items.js';
  * The latest redraw of each mounted overlay. A panel mounted twice (two cartridges on one page, ADR-0139) keeps ONE
  * language listener, and the listener asks this table — so it redraws with the words and render of the last mount.
  */
-const redesenhoDoPainel = new WeakMap<HTMLElement, () => void>();
-const ouvindoIdioma = new WeakSet<HTMLElement>();
+const redrawOf = new WeakMap<HTMLElement, () => void>();
+const alreadyListening = new WeakSet<HTMLElement>();
 
 /** The slice of the overlay stack a panel needs. Narrow on purpose: this file never opens a second panel. */
 export interface PanelStack {
@@ -138,21 +138,21 @@ export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPan
    * position — `render()` rebuilds rows by `innerHTML`, and a redraw that drops focus on «Voltar» loses the child's place.
    * A hidden panel does nothing: its words are resolved when it opens.
    */
-  redesenhoDoPainel.set(casca.overlay, () => {
+  redrawOf.set(casca.overlay, () => {
     if (casca.overlay.hidden) return;
     const doc = casca.card.ownerDocument;
-    const focado = doc.activeElement as HTMLElement | null;
-    const lugar = focado && casca.card.contains(focado) ? navigableItems(casca.card).indexOf(focado) : -1;
+    const focused = doc.activeElement as HTMLElement | null;
+    const focusedIndex = focused && casca.card.contains(focused) ? navigableItems(casca.card).indexOf(focused) : -1;
     applyLabels(casca, spec.rotulos());
     spec.render();
-    if (lugar < 0 || !focado) return;
-    const destino = focado.isConnected ? focado : navigableItems(casca.card)[lugar];
+    if (focusedIndex < 0 || !focused) return;
+    const destino = focused.isConnected ? focused : navigableItems(casca.card)[focusedIndex];
     if (destino && destino !== doc.activeElement) destino.focus();
   });
-  const janela = casca.overlay.ownerDocument?.defaultView;
-  if (janela && typeof janela.addEventListener === 'function' && !ouvindoIdioma.has(casca.overlay)) {
-    ouvindoIdioma.add(casca.overlay);
-    janela.addEventListener('i18n:change', () => { redesenhoDoPainel.get(casca.overlay)?.(); });
+  const win = casca.overlay.ownerDocument?.defaultView;
+  if (win && typeof win.addEventListener === 'function' && !alreadyListening.has(casca.overlay)) {
+    alreadyListening.add(casca.overlay);
+    win.addEventListener('i18n:change', () => { redrawOf.get(casca.overlay)?.(); });
   }
 
   // Só quando o painel NÃO liga o próprio botão. Ver `fecharProprio`: dois ouvintes no mesmo controle são dois

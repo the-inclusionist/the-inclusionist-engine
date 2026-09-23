@@ -26,7 +26,7 @@ export type PadMapping = (jogadores: number, assento: number) => Partial<Record<
 
 export type PadTable = Readonly<Record<Action, Binding<number>>>;
 
-let mapeamentoDoJogo: PadMapping | null = null;
+let gameMapping: PadMapping | null = null;
 const memo = new Map<string, PadTable>();
 
 /**
@@ -37,7 +37,7 @@ const memo = new Map<string, PadTable>();
  * certa em toda parte menos no valor.
  */
 export function registerPadMapping(f: PadMapping | null): void {
-  mapeamentoDoJogo = f;
+  gameMapping = f;
   memo.clear();
 }
 
@@ -49,12 +49,12 @@ export function registerPadMapping(f: PadMapping | null): void {
  * `arranjo:assento`, e o registo limpa-a — que é o único momento em que a resposta pode mudar.
  */
 export function padTable(jogadores: number, assento: number): PadTable {
-  if (!mapeamentoDoJogo) return GAMEPAD_STANDARD;
+  if (!gameMapping) return GAMEPAD_STANDARD;
   const chave = `${jogadores}:${assento}`;
-  const guardada = memo.get(chave);
-  if (guardada) return guardada;
-  const parcial = mapeamentoDoJogo(jogadores, assento);
-  const tabela: PadTable = parcial ? Object.freeze({ ...GAMEPAD_STANDARD, ...parcial }) : GAMEPAD_STANDARD;
-  memo.set(chave, tabela);
-  return tabela;
+  const cached = memo.get(chave);
+  if (cached) return cached;
+  const changes = gameMapping(jogadores, assento);
+  const table: PadTable = changes ? Object.freeze({ ...GAMEPAD_STANDARD, ...changes }) : GAMEPAD_STANDARD;
+  memo.set(chave, table);
+  return table;
 }

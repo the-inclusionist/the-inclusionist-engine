@@ -50,7 +50,7 @@ export interface ProbeSummary {
 }
 
 /** Um recorte maior que isto não é um quadro de personagem: é um pedaço do atlas. O maior real tem 31x35. */
-const MAIOR_QUADRO = 64;
+const MAX_CHARACTER_FRAME_SIDE = 64;
 
 /**
  * Reduz a gravação a três perguntas e um veredito.
@@ -60,25 +60,25 @@ const MAIOR_QUADRO = 64;
  * limpas o veredito NÃO diz "está tudo bem": ele diz ONDE procurar em seguida. Ausência de prova nas três
  * não é prova de ausência, e encerrar a busca aqui a encerraria no lugar errado.
  */
-export function summariseProbe(amostras: readonly CharacterSample[]): ProbeSummary {
-  if (!amostras.length) {
+export function summariseProbe(samples: readonly CharacterSample[]): ProbeSummary {
+  if (!samples.length) {
     return { quadros: 0, texturas: 0, maxIrmaos: 0, exemploIrmaos: '', sangramento: [], escalas: [], veredito: 'não gravou nada — o personagem existia?' };
   }
-  const texturas = new Set(amostras.map((a) => a.texturaId)).size;
-  const comIrmaos = amostras.filter((a) => a.irmaosDesenhando > 0);
-  const maxIrmaos = comIrmaos.reduce((m, a) => Math.max(m, a.irmaosDesenhando), 0);
-  const grande = (r: string): boolean => {
+  const texturas = new Set(samples.map((a) => a.texturaId)).size;
+  const withSiblings = samples.filter((a) => a.irmaosDesenhando > 0);
+  const maxIrmaos = withSiblings.reduce((m, a) => Math.max(m, a.irmaosDesenhando), 0);
+  const isAtlasPiece = (r: string): boolean => {
     const m = /(\d+)x(\d+)$/.exec(r);
-    return !!m && (+m[1] > MAIOR_QUADRO || +m[2] > MAIOR_QUADRO);
+    return !!m && (+m[1] > MAX_CHARACTER_FRAME_SIDE || +m[2] > MAX_CHARACTER_FRAME_SIDE);
   };
-  const sangramento = [...new Set(amostras.filter((a) => grande(a.recorte)).map((a) => a.recorte + ' (base ' + a.base + ')'))];
-  const escalas = [...new Set(amostras.map((a) => a.escala))].sort();
+  const sangramento = [...new Set(samples.filter((a) => isAtlasPiece(a.recorte)).map((a) => a.recorte + ' (base ' + a.base + ')'))];
+  const escalas = [...new Set(samples.map((a) => a.escala))].sort();
   const veredito = maxIrmaos > 0
     ? 'ALGUÉM DESENHA DUAS VEZES: até ' + maxIrmaos + ' irmão(s) da câmera com a textura do personagem'
     : sangramento.length
       ? 'RECORTE GRANDE DEMAIS: o quadro está pegando pedaço do atlas'
       : 'sprite limpo (uma textura por quadro, sem irmão, recorte de quadro) — procure em composição: filtro, pós-efeito ou câmera';
-  return { quadros: amostras.length, texturas, maxIrmaos, exemploIrmaos: comIrmaos.length ? comIrmaos[0].posIrmaos : '', sangramento, escalas, veredito };
+  return { quadros: samples.length, texturas, maxIrmaos, exemploIrmaos: withSiblings.length ? withSiblings[0].posIrmaos : '', sangramento, escalas, veredito };
 }
 
 export interface DebugPanelCtx {
@@ -199,7 +199,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
      Só aparece se o hospedeiro souber tirar a foto: um jogo sem personagem não ganha um botão que não faz
      nada. */
   if (ctx.amostrarPersonagem && ctx.aoQuadro) {
-    const amostrar = ctx.amostrarPersonagem, aoQuadro = ctx.aoQuadro;
+    const sampleCharacter = ctx.amostrarPersonagem, aoQuadro = ctx.aoQuadro;
     const h = document.createElement('div');
     h.textContent = 'Sonda do personagem';
     h.style.cssText = 'margin:.7rem 0 .1rem;font-weight:700;color:#ffd23f;border-bottom:1px solid rgba(255,210,63,.4)';
@@ -216,16 +216,16 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
       btn.disabled = true;
-      const amostras: CharacterSample[] = [];
+      const samples: CharacterSample[] = [];
       let n = 0;
       saida.textContent = 'gravando… PULE agora';
       const parar = aoQuadro(() => {
-        const a = amostrar();
-        if (a) amostras.push(a);
+        const a = sampleCharacter();
+        if (a) samples.push(a);
         if (++n < 180) return;
         parar();
         btn.disabled = false;
-        const r = summariseProbe(amostras);
+        const r = summariseProbe(samples);
         saida.textContent = [
           'quadros: ' + r.quadros + '  texturas: ' + r.texturas,
           'irmãos desenhando: ' + r.maxIrmaos + (r.exemploIrmaos ? ' em ' + r.exemploIrmaos : ''),
@@ -235,7 +235,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
           '→ ' + r.veredito,
         ].join(String.fromCharCode(10));
         // O BRUTO fica alcançável para quem quiser ir além do resumo — sem poluir o painel com 180 linhas.
-        (window as unknown as { __sonda?: unknown }).__sonda = amostras;
+        (window as unknown as { __sonda?: unknown }).__sonda = samples;
       });
     });
     p.appendChild(btn);

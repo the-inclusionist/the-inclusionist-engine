@@ -1,10 +1,10 @@
 {
   "measured": "2026-09-23",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 1123,
+  "total": 1099,
   "totals": {
-    "decl": 345,
-    "param": 350,
+    "decl": 325,
+    "param": 346,
     "membro": 428
   },
   "files": {
@@ -154,7 +154,7 @@
       "membro": 0
     },
     "app/js/input/pad-defaults.ts": {
-      "decl": 5,
+      "decl": 1,
       "param": 4,
       "membro": 0
     },
@@ -374,8 +374,8 @@
       "membro": 4
     },
     "app/js/ui/debug-panel.ts": {
-      "decl": 12,
-      "param": 1,
+      "decl": 7,
+      "param": 0,
       "membro": 16
     },
     "app/js/ui/dom.ts": {
@@ -424,8 +424,8 @@
       "membro": 2
     },
     "app/js/ui/layout.ts": {
-      "decl": 7,
-      "param": 2,
+      "decl": 4,
+      "param": 0,
       "membro": 11
     },
     "app/js/ui/loop-crash.ts": {
@@ -439,7 +439,7 @@
       "membro": 6
     },
     "app/js/ui/mount-panel.ts": {
-      "decl": 8,
+      "decl": 3,
       "param": 0,
       "membro": 6
     },
@@ -449,8 +449,8 @@
       "membro": 13
     },
     "app/js/ui/panel-widgets.ts": {
-      "decl": 14,
-      "param": 3,
+      "decl": 11,
+      "param": 2,
       "membro": 8
     },
     "app/js/ui/pause-buttons.ts": {

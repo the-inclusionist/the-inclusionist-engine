@@ -69,9 +69,9 @@ export function belowFloor(nos: readonly NodeMeasure[], k: number): { texto: str
 export interface NamedBox { readonly nome: string; readonly caixa: Box; readonly daBarra: boolean; }
 export interface Box { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
 
-export function barIntruders(barra: Box | null, nos: readonly NamedBox[]): string[] {
+export function barIntruders(barBox: Box | null, nos: readonly NamedBox[]): string[] {
   // Uma barra sem área não reserva nada — e acusar contra um rectângulo de zero seria acusar toda a gente.
-  if (!barra || barra.w <= 0 || barra.h <= 0) return [];
+  if (!barBox || barBox.w <= 0 || barBox.h <= 0) return [];
   // ⚠️ O GUARDA DE ÁREA ZERO FAZ TRABALHO, e eu quase o tirei por uma leitura errada. Uma mutação que o
   // removia ficou VERDE, e a minha conclusão — «as desigualdades estritas já excluem quem não tem área» —
   // era falsa: elas excluem um nó DEGENERADO NA FRONTEIRA, não um em geral. Uma risca de largura zero
@@ -79,8 +79,8 @@ export function barIntruders(barra: Box | null, nos: readonly NamedBox[]): strin
   // em markup gerado, e acusá-los seria ruído puro — que é como se ensina um consumidor a ignorar a linha.
   return nos
     .filter((n) => !n.daBarra && n.caixa.w > 0 && n.caixa.h > 0)
-    .filter((n) => n.caixa.x < barra.x + barra.w && barra.x < n.caixa.x + n.caixa.w
-      && n.caixa.y < barra.y + barra.h && barra.y < n.caixa.y + n.caixa.h)
+    .filter((n) => n.caixa.x < barBox.x + barBox.w && barBox.x < n.caixa.x + n.caixa.w
+      && n.caixa.y < barBox.y + barBox.h && barBox.y < n.caixa.y + n.caixa.h)
     .map((n) => n.nome);
 }
 
@@ -89,9 +89,9 @@ export function barIntruders(barra: Box | null, nos: readonly NamedBox[]): strin
 // importado como binding vivo — e um `let` de módulo é compartilhado por qualquer segundo jogo que a
 // mesma página carregue (D13 do `demos`, ADR-0038). O que entra aqui é o GETTER da rodada que a raiz
 // possui; o `let` que sobra guarda a função, não o número.
-let _numJogadores: () => number = () => 1;
+let _countPlayers: () => number = () => 1;
 /** Liga a contagem de jogadores. Chamado uma vez pela raiz, antes do primeiro `layout()`. */
-export function initLayout(deps: { numJogadores: () => number }): void { _numJogadores = deps.numJogadores; }
+export function initLayout(deps: { numJogadores: () => number }): void { _countPlayers = deps.numJogadores; }
 
 /**
  * A CASCA QUE DÁ O ESPAÇO DISPONÍVEL — por id OU por classe, e as duas formas valem o mesmo.
@@ -105,7 +105,7 @@ export function initLayout(deps: { numJogadores: () => number }): void { _numJog
  * O consumidor não erra ao usar a classe: um documento pode ter várias telas, e um id é único. Aceitar as
  * duas é o que torna a engine consumível por quem não copiou o markup dela.
  */
-function cascaDoPalco(): HTMLElement | null {
+function findStageWrap(): HTMLElement | null {
   return $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap');
 }
 
@@ -125,8 +125,8 @@ export interface Scale { readonly kDev: number; readonly k: number; readonly lar
  */
 export function stageScale(availW: number, availH: number, dpr: number, baseW: number, baseH: number): Scale {
   const MIN_K = 2;
-  const inteiro = Math.floor(Math.min(availW * dpr / (baseW - 10), availH * dpr / (baseH - 10)));
-  const kDev = inteiro / dpr >= MIN_K ? inteiro : MIN_K * dpr;
+  const integerK = Math.floor(Math.min(availW * dpr / (baseW - 10), availH * dpr / (baseH - 10)));
+  const kDev = integerK / dpr >= MIN_K ? integerK : MIN_K * dpr;
   const k = kDev / dpr;
   return { kDev, k, largura: baseW * k, altura: baseH * k };
 }
@@ -137,23 +137,23 @@ export function stageScale(availW: number, availH: number, dpr: number, baseW: n
  * ⚠️ HOST-INJECTED (the region is passed in): `createGame` serves documents that
  * are not the global one — the fault the root's finding 15 names about reaching `document` from under the injection.
  */
-export function applyScale(regiao: HTMLElement, e: Scale): void {
-  regiao.style.width = e.largura + 'px'; regiao.style.height = e.altura + 'px';
-  regiao.style.setProperty('--hud-fs', Math.max(9, Math.round(180 * e.k * 0.052)) + 'px');
-  regiao.style.setProperty('--ui-fs', (8 * e.k) + 'px');   // base LÓGICA 8px × k (16px em k=2)
+export function applyScale(region: HTMLElement, e: Scale): void {
+  region.style.width = e.largura + 'px'; region.style.height = e.altura + 'px';
+  region.style.setProperty('--hud-fs', Math.max(9, Math.round(180 * e.k * 0.052)) + 'px');
+  region.style.setProperty('--ui-fs', (8 * e.k) + 'px');   // base LÓGICA 8px × k (16px em k=2)
   // One ruler (plan phase 5b): `--tap` is the name three sibling games read, `--alvo-min` the engine's (ADR-0163); both come
   // from `minimumTarget`, so a display scale that gives k under 2 (Windows 110%) no longer drops `--tap` under 44 px.
-  regiao.style.setProperty('--tap', minimumTarget(e.k) + 'px');
-  regiao.style.setProperty('--alvo-min', minimumTarget(e.k) + 'px'); // 44 px at 640×360, growing with k (ADR-0163)
+  region.style.setProperty('--tap', minimumTarget(e.k) + 'px');
+  region.style.setProperty('--alvo-min', minimumTarget(e.k) + 'px'); // 44 px at 640×360, growing with k (ADR-0163)
 }
 
 export function layout(): void {
-  const wrap = cascaDoPalco(); if (!wrap) return;
+  const wrap = findStageWrap(); if (!wrap) return;
   wrap.style.paddingRight = '0px';
   const availW = wrap.clientWidth || 320;
   const availH = wrap.clientHeight || 180;
   // E11: a grade de telas define a base (1=320×180, 2=640×180, 3-4=640×360)
-  const n = _numJogadores();
+  const n = _countPlayers();
   // (`screenGrid(n)` SAIU em 2026-08-26: `cols`/`rows` eram desestruturados e nunca lidos — a escala sai de
   //  `screenBaseSize`, logo abaixo. Era uma chamada paga a cada `layout()` por nada. `noUnusedLocals` achou.)
   const { w: baseW, h: baseH } = screenBaseSize(n);
