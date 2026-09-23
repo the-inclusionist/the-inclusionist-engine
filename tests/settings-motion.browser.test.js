@@ -16,6 +16,8 @@ const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
 import { CRT, applyCrt } from '../app/js/render/crt.js';
+import { t } from '../app/js/core/i18n.js';
+import { RM_LABEL } from '../app/js/ui/settings-motion.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -190,10 +192,14 @@ describe('initSettingsMotion — estética CRT', () => {
     initSettingsMotion(ctx).render();
     const antes = calls.srSay.length;
     const passos = $('#motion-list').querySelector('[data-crt="round"][data-passos]');
-    passos.dispatchEvent(new CustomEvent('passo', { detail: 1 }));
+    // ⚠️ COM BOLHA, como os DOIS produtores reais deste evento o despacham — a seta tocada
+    // (`ui/panel-widgets`) e a esquerda/direita do teclado e do controle (`ui/menu-nav`). A escuta passou do
+    // controle para a lista quando este painel virou nós, porque as linhas vêm e vão com o cartucho; um
+    // despacho sem bolha era uma forma que nenhum caminho real usa.
+    passos.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
     expect(CRT.round).toBe(2);
     expect(calls.srSay.length, 'anunciou um passo que não aconteceu').toBe(antes);
-    passos.dispatchEvent(new CustomEvent('passo', { detail: -1 }));
+    passos.dispatchEvent(new CustomEvent('passo', { detail: -1, bubbles: true }));
     expect(CRT.round).toBe(1);
   });
 });
@@ -349,5 +355,122 @@ describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marc
     const { ctx } = makeCtx();
     initSettingsMotion(ctx).render();
     expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
+  });
+});
+
+
+// ==========================================================================================================
+// AS LINHAS DESTE PAINEL, AGORA EM NÓS (ADR-0129; ADR-0221 passo 7c)
+//
+// 📌 OITO CASOS MUDARAM DE PROJECTO, e não de exigência. Mediam as CADEIAS que o `motionRowHtml`, o
+// `buildCharRowsHtml`, o `buildSceneRowsHtml`, o `crtToggleRowHtml` e o `crtRoundRowHtml` devolviam; o painel
+// passou a construir NÓS com o kit, logo as cadeias deixaram de existir e o que eles afirmam passou a ser
+// observável só num documento.
+//
+// ⚠️ DOIS NÃO VIERAM, e é o certo: mediam o mecanismo «em breve», que saiu com a conversão por não ter assunto
+// — `RM_SOON` era um conjunto vazio desde que o cartucho deixou o repositório, e os únicos que lhe davam um
+// valor eram esses dois casos. Um mecanismo cujo único utilizador é um teste não é um mecanismo.
+// ==========================================================================================================
+describe('initSettingsMotion — o interior montado em nós', () => {
+  const lista = () => $('#motion-list');
+  const linhaDe = (sel) => lista().querySelector(sel)?.closest('.ctrl-row') ?? null;
+
+  it('[Right] ANIMADO: o interruptor está ligado, diz o estado e não leva glifo (ADR-0159 regras 1 e 12)', () => {
+    const { ctx } = makeCtx();
+    players.length = 0;
+    players.push({ rmWalk: false, rmBreath: false, rmFlavor: false });
+    initSettingsMotion(ctx).render();
+    const b = lista().querySelector('[data-rmc="rmWalk"]');
+    expect(b, 'a linha do andar não foi montada').not.toBeNull();
+    expect(b.classList.contains('is-on')).toBe(true);
+    expect(b.getAttribute('aria-pressed')).toBe('true');
+    expect(b.textContent).toBe('Ligado');
+    expect(b.textContent, 'voltou um glifo ao texto do interruptor').not.toMatch(/[▶⏸✓✔]/);
+  });
+
+  it('[Inverse] CONGELADO: sem a classe, sem o estado, e o texto é a palavra do dicionário', () => {
+    const { ctx } = makeCtx();
+    players.length = 0;
+    players.push({ rmWalk: true, rmBreath: false, rmFlavor: false });
+    initSettingsMotion(ctx).render();
+    const b = lista().querySelector('[data-rmc="rmWalk"]');
+    expect(b.classList.contains('is-on')).toBe(false);
+    expect(b.getAttribute('aria-pressed')).toBe('false');
+    expect(b.textContent).toBe('Desligado');
+  });
+
+  it('[Right] uma linha por alvo do PERSONAGEM, reflectindo o jogador escolhido', () => {
+    const { ctx } = makeCtx();
+    players.length = 0;
+    players.push({ rmWalk: true, rmBreath: false, rmFlavor: false });
+    initSettingsMotion(ctx).render();
+    expect(lista().querySelectorAll('[data-rmc]')).toHaveLength(3);
+    expect(lista().querySelector('[data-rmc="rmWalk"]').textContent).toBe('Desligado');
+    expect(lista().querySelector('[data-rmc="rmBreath"]').textContent).toBe('Ligado');
+  });
+
+  it('[Zero] sem jogador, tudo é tratado como ANIMADO — quem não existe não congelou nada', () => {
+    const { ctx } = makeCtx();
+    players.length = 0;
+    initSettingsMotion(ctx).render();
+    const botoes = [...lista().querySelectorAll('[data-rmc]')];
+    expect(botoes).toHaveLength(3);
+    for (const b of botoes) expect(b.textContent, b.dataset.rmc).toBe('Ligado');
+  });
+
+  it('[Right] uma linha por chave de CENA, com o rótulo do dicionário e o estado de `rm`', () => {
+    const { ctx } = makeCtx();
+    ctx.rm.parallax = true;
+    ctx.rm.decor = false;
+    initSettingsMotion(ctx).render();
+    expect(lista().querySelectorAll('[data-rm]')).toHaveLength(4);
+    const linha = linhaDe('[data-rm="parallax"]');
+    expect(linha.textContent, 'a chave i18n vazou para a tela').not.toContain('rm.parallax');
+    expect(linha.querySelector('strong').textContent).toBe(t(RM_LABEL.parallax));
+    expect(lista().querySelector('[data-rm="parallax"]').textContent).toBe('Desligado');
+    expect(lista().querySelector('[data-rm="decor"]').textContent).toBe('Ligado');
+  });
+
+  it('[Right] os dois interruptores CRT levam a chave no `data-crt-tgl` e dizem o estado', () => {
+    const { ctx } = makeCtx();
+    CRT.scan = 1;
+    CRT.vig = 0;
+    initSettingsMotion(ctx).render();
+    const scan = lista().querySelector('[data-crt-tgl="scan"]');
+    const vig = lista().querySelector('[data-crt-tgl="vig"]');
+    expect(scan, 'o interruptor das scanlines não foi montado').not.toBeNull();
+    expect(scan.textContent).toBe('Ligado');
+    expect(scan.classList.contains('is-on')).toBe(true);
+    expect(vig.textContent).toBe('Desligado');
+    expect(vig.classList.contains('is-on')).toBe(false);
+  });
+
+  it('[Boundary] os CANTOS são o controle de passos no nível de agora — e nunca voltaram a ser um `<select>`', () => {
+    const { ctx } = makeCtx();
+    CRT.round = 1;
+    initSettingsMotion(ctx).render();
+    const passos = lista().querySelector('[data-crt="round"][data-passos]');
+    expect(passos, 'os cantos não são um controle de passos').not.toBeNull();
+    expect(lista().querySelector('select'), 'sobrou um `<select>` no interior').toBeNull();
+    expect(passos.getAttribute('aria-valuenow')).toBe('1');
+    // 🔴 E JÁ NÃO HÁ LUGAR VAZIO: a cadeia deixava um `<span data-passos-lugar>` que o render trocava pelo
+    // controle a cada passagem, e era essa troca que tirava o foco de quem ajustava.
+    expect(lista().querySelector('[data-passos-lugar]'), 'sobrou o lugar que a cadeia deixava').toBeNull();
+  });
+
+  it('🔴 [Right] uma linha que perde o assunto é REMOVIDA, e as outras não são refeitas (ADR-0153)', () => {
+    // 📌 O par do caso do foco: montar uma vez só é honesto se o que deixa de ter assunto sair mesmo. Aqui o
+    // cartucho passa a dizer que não tem personagem, e as três linhas dele têm de desaparecer — enquanto as da
+    // cena, que continuam a ter assunto, têm de ser os MESMOS nós.
+    let temPersonagem = true;
+    const { ctx } = makeCtx({ comPersonagem: () => temPersonagem });
+    const api = initSettingsMotion(ctx);
+    api.render();
+    expect(lista().querySelectorAll('[data-rmc]')).toHaveLength(3);
+    const cenaAntes = lista().querySelector('[data-rm="parallax"]');
+    temPersonagem = false;
+    api.render();
+    expect(lista().querySelector('[data-rmc]'), 'a secção do personagem sobreviveu a um jogo que não tem um').toBeNull();
+    expect(lista().querySelector('[data-rm="parallax"]'), 'a linha de cena foi refeita sem precisar').toBe(cenaAntes);
   });
 });

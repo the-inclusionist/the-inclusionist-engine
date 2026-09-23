@@ -17,10 +17,10 @@ import { CRT, CRT_DEFAULT, applyCrt } from '../render/crt.js';
 import { defaultReducedMotion } from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { t } from '../core/i18n.js';
-import { mountSteps, updateSteps, nextStep } from './panel-widgets.js';
+import { mountSteps, updateSteps, nextStep, controlRow, labelRow, sectionHeader } from './panel-widgets.js';
+import type { PanelShellCtx } from './panel-shell.js';
 
 import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from './motion-scene.js';
-import { escapeHtml } from '../core/escape-html.js';
 import type {
   MotionSceneKey as ChaveDeCenaLeaf,
   MotionCharProp as PropDoPersonagemLeaf,
@@ -129,8 +129,16 @@ export const RM_LABEL: Record<string, string> = {
   parallax: 'rm.parallax', decor: 'rm.decor', items: 'rm.items',
   walk: 'rm.walk', breath: 'rm.breath', flavor: 'rm.flavor', particles: 'rm.particles',
 };
-// Alvos de cena "em breve" (hoje nenhum — os 4 já agem).
-export const RM_SOON: ReadonlySet<MotionSceneKey> = new Set([]);
+/*
+ * 🎯 O MECANISMO «EM BREVE» SAIU INTEIRO com a conversão para nós (ADR-0129), e não por caber mal no kit: ele não
+ * tinha assunto. 📏 Medido em 2026-09-23 — `RM_SOON` era um conjunto VAZIO desde que o cartucho deixou este
+ * repositório (`b55b88e7`), o `render` passava-o sempre à mão, e nenhum caminho deixava um cartucho fornecer outro.
+ * Quem o mantinha vivo eram dois casos que passavam `soon: true` directamente ao construtor.
+ *
+ * 📌 É a segunda vez que este mecanismo sai por ter perdido o último utilizador: o gémeo dele, o `soon` da barra de
+ * ícones, saiu em `760faad` pela mesma razão. A chave `ui.soon` fica nos três dicionários — é ela que o crivo dos
+ * rótulos sem parênteses ainda lê, e escrevê-la de novo custa menos do que a decisão de a apagar.
+ */
 
 /** Cabeçalho de seção, com a etiqueta "vale para todos os jogadores".
  *
@@ -138,8 +146,6 @@ export const RM_SOON: ReadonlySet<MotionSceneKey> = new Set([]);
  *  Reunida num ponto só, ela pôde finalmente passar por `t()` — e foi a seção nova que tornou isso urgente: com
  *  o cabeçalho traduzido ao lado de uma etiqueta em português cru, a mistura aparecia na mesma linha da tela.
  *  Os títulos das outras três seções continuam crus; é dívida anterior a esta mudança, contada pelo gate. */
-const secao = (titulo: string): string =>
-  `<h3 class="panel-sub">${titulo} <span class="panel-sub__tag">${t('rm.sec.all')}</span></h3>`;
 
 const CRT_LBL: Record<'scan' | 'vig' | 'round', string> = { scan: 'rm.crt.scan', vig: 'rm.crt.vig', round: 'rm.crt.round' }; // CHAVES i18n (ver RM_LABEL)
 // ⚠️ CHAVES desde 2026-09-12: eram as três palavras em português cru, e o anúncio saía «Rounded corners: grande»
@@ -155,45 +161,140 @@ export function clampSelectedPlayer(selected: number, total: number): number {
   return selected >= total ? 0 : selected;
 }
 
-/** Uma linha de switch "Animado/Congelado" (usada tanto para o personagem quanto para a cena). */
-export function motionRowHtml(label: string, frozen: boolean, attr: string, soon: boolean): string {
-  const on = !frozen;
-  // a tag after the label, from the dictionary and without parentheses (ADR-0159 rule 6)
-  const soonTag = soon ? ` <em style="opacity:.7">${t('ui.soon')}</em>` : '';
-  const cls = 'mode-btn switch' + (on ? ' is-on' : '');
-  // ADR-0159 rules 1 and 12: the switch is named by its row and says its state through `aria-pressed`; its text is the
-  // dictionary's on/off word — no glyph, and no Portuguese literal on a page in another language
-  return `<div class="ctrl-row"><span>${label}${soonTag}</span><button class="${cls}" ${attr} type="button" aria-pressed="${on}" aria-label="${label}">${toggleLabel(on)}</button></div>`;
+/**
+ * O NOME de cada parte deste interior, e é por ele que a montagem reconcilia.
+ *
+ * 📌 Uma chave e não uma posição: as linhas do personagem aparecem e desaparecem com o cartucho (ADR-0153), então a
+ * montagem tem de saber QUAL linha é qual para reetiquetar a que ficou e tirar a que perdeu o assunto.
+ */
+const partOfChar = (prop: string): string => `char:${prop}`;
+const partOfScene = (key: string): string => `scene:${key}`;
+const partOfCrt = (key: string): string => `crt:${key}`;
+
+/** Uma parte do interior: a chave, como se constrói, e como se reescrevem as palavras dela. */
+interface MotionPart {
+  readonly key: string;
+  readonly build: () => HTMLElement;
+  readonly write: (el: HTMLElement) => void;
 }
 
-/** Linhas "Personagem" (por jogador selecionado). */
-export function buildCharRowsHtml(rmChar: readonly MotionCharDef[], player: MotionPlayer | undefined): string {
-  return rmChar.map((c) => motionRowHtml(t(c.lbl), !!(player && player[c.prop]), `data-rmc="${c.prop}"`, false)).join('');
-}
-
-/** Linhas "Cena" (globais, valem para todos os jogadores). */
-export function buildSceneRowsHtml(rmKeys: readonly MotionSceneKey[], rm: MotionSceneFlags, labels: Record<string, string>, soon: ReadonlySet<MotionSceneKey>): string {
-  return rmKeys.map((k) => motionRowHtml(t(labels[k]), !!rm[k], `data-rm="${k}"`, soon.has(k))).join('');
-}
-
-/** Toggle liga/desliga da estética CRT (scanlines/vinheta). */
-export function crtToggleRowHtml(label: string, key: string, on: boolean): string {
-  const cls = 'mode-btn switch' + (on ? ' is-on' : '');
-  return `<div class="ctrl-row"><span>${label}</span><button class="${cls}" data-crt-tgl="${key}" type="button" aria-pressed="${on}" aria-label="${toggleAria(label, on)}">${toggleLabel(on)}</button></div>`;
+/** O que a montagem precisa saber, já traduzido — o kit não decide língua, monta forma. */
+export interface MotionInsideSpec {
+  /** O título da secção do personagem, ou `null` quando este jogo não tem personagem (ADR-0153). */
+  readonly charTitle: string | null;
+  /** ⚠️ A etiqueta do personagem é OUTRA, e não é descuido: as três linhas dele valem por JOGADOR, as das outras duas
+   *  secções valem para todos. Uma etiqueta só diria a mesma coisa de coisas diferentes. */
+  readonly charTag: string;
+  readonly charRows: readonly { readonly prop: string; readonly label: string }[];
+  readonly sceneTitle: string;
+  readonly sceneRows: readonly { readonly key: string; readonly label: string }[];
+  readonly crtTitle: string;
+  /** A etiqueta de «vale para todos», partilhada pelas secções de cena e de CRT. */
+  readonly allTag: string;
+  readonly crtToggles: readonly { readonly key: string; readonly label: string }[];
+  /** O nome e as posições dos cantos, para o controle de passos (ADR-0151). */
+  readonly roundSpec: () => { readonly rotulo: string; readonly valores: readonly string[]; readonly atual: number };
 }
 
 /**
- * Cantos CRT: 3 níveis (0=quadrado · 1=pequeno · 2=grande), escolhidos com ESQUERDA e DIREITA (ADR-0151).
+ * Monta o interior deste painel e reconcilia-o depois — cria o que falta, reescreve o que ficou, tira o que perdeu o
+ * assunto. NUNCA move um nó que já existe.
  *
- * ⚠️ DEVOLVE UM LUGAR, e não o controle: este painel desenha por `innerHTML`, e o controle de passos de
- * `ui/panel-widgets` é construído por DOM — sem marcação crua —, então o `render()` troca o lugar pelo controle.
- * Era um `<select>`: uma lista suspensa esconde as posições até abrir, e o Dev pediu que se escolha «apertando
- * para esquerda e direita».
+ * 🔴 ISTO ERA `innerHTML` A CADA RENDER, e o preço está medido: com o cursor nos cantos arredondados, um clique na
+ * linha vizinha destruía o controle e o foco caía no `<body>` — a criança que navega por teclado perdia o lugar no
+ * painel inteiro. ⚠️ E mover também desfoca, e é por isso que esta função INSERE na posição certa em vez de anexar e
+ * reordenar: um nó que muda de pai é removido e reposto, e o navegador tira-lhe o foco na remoção.
  */
-export function crtRoundRowHtml(_label: string, round: number): string {
-  // ⚠️ SEM O RÓTULO À PARTE (errata do ADR-0130): o controle de passos escreve «◀ Cantos arredondados: pequeno ▶» na
-  // linha inteira. O primeiro argumento fica, para quem já chama com ele; quem dá o nome ao controle é o `spec`.
-  return `<div class="ctrl-row ctrl-row--passos"><span data-passos-lugar="round" data-valor="${round}"></span></div>`;
+export function mountMotionInside(ctx: PanelShellCtx, list: HTMLElement, spec: MotionInsideSpec): void {
+  reconcile(list, motionParts(ctx, spec));
+}
+
+/**
+ * O que este interior TEM, em ordem — e é uma pergunta diferente de «como é que o documento chega lá».
+ *
+ * ⚠️ Separada do `reconcile` porque a catraca mandou: as duas juntas davam 15 caminhos de decisão contra o tecto 10 de
+ * McCabe. Separadas, cada uma é uma frase com nome.
+ */
+function motionParts(ctx: PanelShellCtx, spec: MotionInsideSpec): MotionPart[] {
+  const sectionPart = (key: string, title: string, tag: string, rows: number): MotionPart | null =>
+    (rows === 0 ? null : {
+      key,
+      build: () => sectionHeader(ctx, title, tag, rows) ?? ctx.criar('h3'),
+      write: (el) => {
+        el.textContent = title + ' ';
+        const mark = ctx.criar('span');
+        mark.className = 'panel-sub__tag';
+        mark.textContent = tag;
+        el.appendChild(mark);
+      },
+    });
+
+  const switchPart = (key: string, id: string, label: string, mark: readonly [string, string]): MotionPart => ({
+    key,
+    build: () => {
+      const { linha: newRow, controle } = controlRow(ctx, { id, rotulo: label, rotuloAria: label });
+      controle.setAttribute(mark[0], mark[1]);
+      return newRow;
+    },
+    // ⚠️ SÓ AS PALAVRAS. O estado (classe, `aria-pressed`, o texto do botão) é escrito pelo `reflect` do painel, que é
+    // quem sabe o valor — escrevê-lo aqui daria duas respostas à mesma pergunta.
+    write: (el) => labelRow(el, { id, rotulo: label, rotuloAria: label }),
+  });
+
+  const parts: MotionPart[] = [];
+  const charHeader = sectionPart('sec:char', spec.charTitle ?? '', spec.charTag, spec.charTitle ? spec.charRows.length : 0);
+  if (charHeader) parts.push(charHeader);
+  for (const r of spec.charRows) parts.push(switchPart(partOfChar(r.prop), `motion-char-${r.prop}`, r.label, ['data-rmc', r.prop]));
+  const sceneHeader = sectionPart('sec:scene', spec.sceneTitle, spec.allTag, spec.sceneRows.length);
+  if (sceneHeader) parts.push(sceneHeader);
+  for (const r of spec.sceneRows) parts.push(switchPart(partOfScene(r.key), `motion-scene-${r.key}`, r.label, ['data-rm', r.key]));
+  const crtHeader = sectionPart('sec:crt', spec.crtTitle, spec.allTag, spec.crtToggles.length + 1);
+  if (crtHeader) parts.push(crtHeader);
+  for (const r of spec.crtToggles) parts.push(switchPart(partOfCrt(r.key), `crt-${r.key}`, r.label, ['data-crt-tgl', r.key]));
+  parts.push({
+    key: partOfCrt('round'),
+    build: () => {
+      // ⚠️ SEM RÓTULO À PARTE (errata do ADR-0130): o controle de passos escreve «◀ Cantos arredondados: pequeno ▶» na
+      // linha inteira, e um rótulo ao lado seria o nome dito duas vezes.
+      const row = ctx.criar('div');
+      row.className = 'ctrl-row ctrl-row--passos';
+      const steps = mountSteps(ctx, spec.roundSpec());
+      steps.setAttribute('data-crt', 'round');
+      row.appendChild(steps);
+      return row;
+    },
+    write: (el) => {
+      const steps = el.querySelector<HTMLElement>('[data-passos]');
+      if (steps) updateSteps(steps, spec.roundSpec());
+    },
+  });
+
+  return parts;
+}
+
+/**
+ * O documento posto de acordo com a lista: cria o que falta NA POSIÇÃO CERTA, reescreve o que ficou, tira o que já não
+ * é pedido.
+ *
+ * ⚠️ NUNCA MOVE UM NÓ QUE JÁ EXISTE, e não é economia: um nó que muda de pai é removido e reposto, e o navegador
+ * tira-lhe o foco na remoção — seria o mesmo defeito que a conversão veio consertar, por outra porta.
+ */
+function reconcile(list: HTMLElement, parts: readonly MotionPart[]): void {
+  let previous: HTMLElement | null = null;
+  for (const part of parts) {
+    let el = list.querySelector<HTMLElement>(`[data-motion-part="${part.key}"]`);
+    if (!el) {
+      el = part.build();
+      el.dataset.motionPart = part.key;
+      list.insertBefore(el, previous ? previous.nextSibling : list.firstChild);
+    }
+    part.write(el);
+    previous = el;
+  }
+  const keep = new Set(parts.map((p) => p.key));
+  for (const el of [...list.querySelectorAll<HTMLElement>('[data-motion-part]')]) {
+    if (!keep.has(el.dataset.motionPart ?? '')) el.remove();
+  }
 }
 
 /** true quando TUDO (cena + personagem selecionado) já está com movimento reduzido LIGADO, isto é,
@@ -297,104 +398,119 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     ctx.toggleBtn(m, allFrozen);
   }
 
-  function render(): void {
-    const el = ctx.$<HTMLElement>('#motion-list');
-    if (!el) return;
-    selectedPlayer = clampSelectedPlayer(selectedPlayer, ctx.getNumPlayers());
+  const kitCtx = (list: HTMLElement): PanelShellCtx => ({
+    procurar: (sel) => ctx.$<HTMLElement>(sel),
+    criar: (tag) => list.ownerDocument.createElement(tag),
+  });
 
-    // E3: sem abas — cada jogador edita só o seu. BUG preservado VERBATIM do game.js (não corrigido, ver
-    // retorno da extração): innerHTML='' roda ANTES do querySelectorAll, então o forEach abaixo nunca acha
-    // botões — este bloco de wiring é código morto tanto aqui quanto no original.
-    const tabs = ctx.$<HTMLElement>('#animation-players');
-    if (tabs) {
-      tabs.hidden = true;
-      tabs.innerHTML = '';
-      tabs.querySelectorAll<HTMLButtonElement>('button[data-ap]').forEach((b) => b.addEventListener('click', () => {
-        selectedPlayer = Number(b.dataset.ap);
-        render();
-    // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109).
-    ctx.fillExplain?.(ctx.$<HTMLElement>('#animation .overlay__card'));
-      }));
-    }
+  const roundSpec = () => ({ rotulo: t(CRT_LBL.round), valores: [0, 1, 2].map(crtLevelLabel), atual: CRT.round });
 
+  /** O ESTADO de cada interruptor — o que o kit não escreve, porque é o painel que sabe o valor. */
+  function reflectSwitches(el: HTMLElement): void {
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
-    const charRows = buildCharRowsHtml(rmChar(), player);
-    const sceneRows = buildSceneRowsHtml(rmKeys, rm, RM_LABEL, RM_SOON);
-    const crtRows = crtToggleRowHtml(t(CRT_LBL.scan), 'scan', !!CRT.scan) + crtToggleRowHtml(t(CRT_LBL.vig), 'vig', !!CRT.vig) + crtRoundRowHtml(t(CRT_LBL.round), CRT.round);
+    const writeSwitch = (sel: string, on: boolean, nome: string): void => {
+      const b = el.querySelector<HTMLElement>(sel);
+      if (!b) return;
+      ctx.toggleBtn(b, on);
+      b.textContent = toggleLabel(on);
+      b.setAttribute('aria-label', toggleAria(nome, on));
+    };
+    // ⚠️ «Animado» é o CONTRÁRIO de `rm`/`player[prop]`, que guardam «movimento reduzido». O nome fiel está no
+    // `allMotionFrozen` e a inversão mora aqui, num sítio só.
+    for (const c of rmChar()) writeSwitch(`[data-rmc="${c.prop}"]`, !(player && player[c.prop]), t(c.lbl));
+    for (const k of rmKeys) writeSwitch(`[data-rm="${k}"]`, !rm[k], t(RM_LABEL[k]));
+    writeSwitch('[data-crt-tgl="scan"]', !!CRT.scan, t(CRT_LBL.scan));
+    writeSwitch('[data-crt-tgl="vig"]', !!CRT.vig, t(CRT_LBL.vig));
+  }
 
-    el.innerHTML =
-      // ⚠️ O SUFIXO DO ASSENTO passou a chave em 2026-09-12: era o nome do jogador concatenado aqui, e a
-      // mesma linha existia em `ui/pause-icons`. 📌 Reusa a `pause.cardSeat` em vez de criar uma segunda: é a
-      // MESMA frase para a MESMA pessoa, e duas chaves seriam dois sítios para ela divergir entre idiomas.
-      //
-      // 🔴 E A PRIMEIRA VERSÃO DESTA NOTA CITAVA O LITERAL REMOVIDO, o que o fez voltar a contar: o crivo de
-      // prosa crua lê a FORMA sobre o texto do ficheiro e não distingue código de comentário. O teto
-      // continuou em 6 com o conserto feito. Comentário que cita o que se tirou desfaz a conta.
-      //
-      // 📌 Os outros dois rótulos deste subtítulo continuam crus e estão no livro-razão do módulo — são
-      // outras duas linhas, e consertá-las de passagem misturava duas decisões num commit.
-      // A secção inteira só existe se o jogo tem personagem (ADR-0153): um subtítulo sem linhas seria o mesmo defeito.
-      (charRows ? `<h3 class="panel-sub">${escapeHtml(ctx.rotuloDoPersonagem?.() ?? 'Personagem')}${ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: selectedPlayer + 1 }) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` : '') +
-      `${secao('Cena')}${sceneRows}` +
-      `${secao('Estética CRT')}${crtRows}`;
-
-    el.querySelectorAll<HTMLButtonElement>('button[data-crt-tgl]').forEach((b) => b.addEventListener('click', () => {
-      const k = b.dataset.crtTgl as 'scan' | 'vig';
-      CRT[k] = CRT[k] ? 0 : 1;
-      applyCrt();
-      /*
-       * 🔴 REFLECTE NO SÍTIO EM VEZ DE REDESENHAR, e é a mesma razão que o tratador do passo, logo acima, já tinha
-       * escrito: «redesenhar tirava o foco de quem ajusta». O que desfazia essa intenção era ESTA linha, a vizinha.
-       *
-       * 📏 Medido no `dist` em 2026-09-23 com o service worker morto: com o cursor nos cantos arredondados, um
-       * clique aqui destruía o controle de passos e o foco caía no `<body>` — a criança que navega por teclado
-       * perdia o lugar no painel inteiro, e não só na linha. Nada mais neste painel depende de `CRT.scan`/`CRT.vig`
-       * senão este botão e as marcas, então redesenhar a lista era refazer tudo para actualizar um.
-       */
-      ctx.toggleBtn(b, !!CRT[k]);
-      b.textContent = toggleLabel(!!CRT[k]);
-      b.setAttribute('aria-label', toggleAria(t(CRT_LBL[k]), !!CRT[k]));
-      refreshMarks();
-      ctx.srSay(crtToggleAnnouncement(t(CRT_LBL[k]), !!CRT[k]));
-    }));
-    // OS CANTOS, POR PASSOS ⯇ ⯈ (ADR-0151). O lugar deixado pelo `crtRoundRowHtml` recebe o controle.
-    const lugarDosCantos = el.querySelector<HTMLElement>('[data-passos-lugar="round"]');
-    if (lugarDosCantos) {
-      const doc = el.ownerDocument;
-      const spec = () => ({ rotulo: t(CRT_LBL.round), valores: [0, 1, 2].map(crtLevelLabel), atual: CRT.round });
-      const passos = mountSteps({ procurar: (sel) => ctx.$<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) }, spec());
-      passos.setAttribute('data-crt', 'round');
-      lugarDosCantos.replaceWith(passos);
-      passos.addEventListener('passo', (ev) => {
-        const novo = nextStep(CRT.round, CRT_ROUND_LEVELS.length, (ev as CustomEvent<number>).detail);
-        // ⚠️ NA PONTA NÃO SE ANUNCIA NADA: repetir «grande» a quem já está no máximo soaria a um passo dado.
-        if (novo === CRT.round) return;
-        CRT.round = novo;
+  /** As escutas, UMA VEZ e por delegação: as linhas do personagem vêm e vão com o cartucho (ADR-0153), e ligar
+   *  botão a botão a cada render acumularia uma escuta por passagem em cada um que sobrevivesse. */
+  let wired = false;
+  function wireOnce(el: HTMLElement): void {
+    if (wired) return;
+    wired = true;
+    el.addEventListener('click', (ev) => {
+      const b = (ev.target as HTMLElement | null)?.closest<HTMLElement>('button');
+      if (!b || !el.contains(b)) return;
+      const crt = b.dataset.crtTgl as 'scan' | 'vig' | undefined;
+      if (crt) {
+        CRT[crt] = CRT[crt] ? 0 : 1;
         applyCrt();
-        // Actualiza o controle NO SÍTIO em vez de redesenhar a lista: redesenhar tirava o foco de quem ajusta.
-        updateSteps(passos, spec());
+        reflectSwitches(el);
         refreshMarks();
-        ctx.srSay(crtRoundAnnouncement(t(CRT_LBL.round), CRT.round));
-      });
-    }
-    el.querySelectorAll<HTMLButtonElement>('button[data-rmc]').forEach((b) => b.addEventListener('click', () => {
-      const prop = b.dataset.rmc as MotionCharProp;
-      const p = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
-      p[prop] = !p[prop];
-      ctx.store.setBool('incl_' + prop + '_p' + selectedPlayer, !!p[prop]);
-      render();
-    }));
-    el.querySelectorAll<HTMLButtonElement>('button[data-rm]').forEach((b) => b.addEventListener('click', () => {
-      const k = b.dataset.rm as MotionSceneKey;
+        ctx.srSay(crtToggleAnnouncement(t(CRT_LBL[crt]), !!CRT[crt]));
+        return;
+      }
+      const prop = b.dataset.rmc as MotionCharProp | undefined;
+      if (prop) {
+        const p = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
+        p[prop] = !p[prop];
+        ctx.store.setBool('incl_' + prop + '_p' + selectedPlayer, !!p[prop]);
+        render();
+        return;
+      }
+      const k = b.dataset.rm as MotionSceneKey | undefined;
+      if (!k) return;
       rm[k] = !rm[k];
       saveRM();
       render();
       updateMotionMaster();
       ctx.srSay(sceneMotionAnnouncement(t(RM_LABEL[k]), rm[k]));
-    }));
+    });
+    el.addEventListener('passo', (ev) => {
+      const passos = (ev.target as HTMLElement | null)?.closest<HTMLElement>('[data-crt="round"]');
+      if (!passos) return;
+      const next = nextStep(CRT.round, CRT_ROUND_LEVELS.length, (ev as CustomEvent<number>).detail);
+      // ⚠️ NA PONTA NÃO SE ANUNCIA NADA: repetir «grande» a quem já está no máximo soaria a um passo dado.
+      if (next === CRT.round) return;
+      CRT.round = next;
+      applyCrt();
+      updateSteps(passos, roundSpec());
+      refreshMarks();
+      ctx.srSay(crtRoundAnnouncement(t(CRT_LBL.round), CRT.round));
+    });
+  }
+
+  function render(): void {
+    const el = ctx.$<HTMLElement>('#motion-list');
+    if (!el) return;
+    selectedPlayer = clampSelectedPlayer(selectedPlayer, ctx.getNumPlayers());
+
+    // E3: sem abas — cada jogador edita só o seu. A faixa fica escondida e vazia, como sempre esteve.
+    // 🔴 O BLOCO DE FIAÇÃO QUE VIVIA AQUI ERA CÓDIGO MORTO DECLARADO — `innerHTML=''` corria ANTES do
+    // `querySelectorAll`, logo o `forEach` nunca achava botão nenhum — e levava lá dentro a única chamada de
+    // `ctx.fillExplain` deste painel, que por isso nunca corria. Saiu com ele; a chamada passou para o fim do render,
+    // que é onde as outras sete a fazem.
+    const tabs = ctx.$<HTMLElement>('#animation-players');
+    if (tabs) {
+      tabs.hidden = true;
+      tabs.textContent = '';
+    }
+
+    mountMotionInside(kitCtx(el), el, {
+      // ⚠️ O SUFIXO DO ASSENTO é chave desde 2026-09-12, e reusa a `pause.cardSeat` do cartão: é a MESMA frase para a
+      // MESMA pessoa, e duas chaves seriam dois sítios para ela divergir entre idiomas.
+      charTitle: rmChar().length
+        ? (ctx.rotuloDoPersonagem?.() ?? 'Personagem') + (ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: selectedPlayer + 1 }) : '')
+        : null,
+      // 📌 Os três rótulos de secção continuam crus e estão no livro-razão deste módulo — consertá-los de passagem
+      // misturava duas decisões num commit.
+      charTag: 'por jogador',
+      charRows: rmChar().map((c) => ({ prop: c.prop, label: t(c.lbl) })),
+      sceneTitle: 'Cena',
+      sceneRows: rmKeys.map((k) => ({ key: k, label: t(RM_LABEL[k]) })),
+      crtTitle: 'Estética CRT',
+      allTag: t('rm.sec.all'),
+      crtToggles: [{ key: 'scan', label: t(CRT_LBL.scan) }, { key: 'vig', label: t(CRT_LBL.vig) }],
+      roundSpec,
+    });
+    reflectSwitches(el);
+    wireOnce(el);
 
     updateMotionMaster();
     refreshMarks();
+    // A prosa volta para o rodapé depois de as linhas mudarem (CLAUDE.md §4, #109).
+    ctx.fillExplain?.(ctx.$<HTMLElement>('#animation .overlay__card'));
   }
 
   /**
@@ -410,15 +526,15 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const el = ctx.$<HTMLElement>('#motion-list');
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
     const mudou: boolean[] = [];
-    const marcar = (sel: string, changed: boolean): void => {
+    const markRow = (sel: string, changed: boolean): void => {
       mudou.push(changed);
       markChanged(el?.querySelector<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
     };
-    for (const c of rmChar()) marcar(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== padraoRm);
-    for (const k of rmKeys) marcar(`[data-rm="${k}"]`, !!rm[k] !== padraoRm);
-    marcar('[data-crt-tgl="scan"]', !!CRT.scan !== !!CRT_DEFAULT.scan);
-    marcar('[data-crt-tgl="vig"]', !!CRT.vig !== !!CRT_DEFAULT.vig);
-    marcar('[data-crt="round"]', CRT.round !== CRT_DEFAULT.round);
+    for (const c of rmChar()) markRow(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== padraoRm);
+    for (const k of rmKeys) markRow(`[data-rm="${k}"]`, !!rm[k] !== padraoRm);
+    markRow('[data-crt-tgl="scan"]', !!CRT.scan !== !!CRT_DEFAULT.scan);
+    markRow('[data-crt-tgl="vig"]', !!CRT.vig !== !!CRT_DEFAULT.vig);
+    markRow('[data-crt="round"]', CRT.round !== CRT_DEFAULT.round);
     markMenuChanged(ctx.$<HTMLElement>('[data-act="anim"]'), mudou);
   }
 

@@ -2150,6 +2150,29 @@ is the fourth module to come out this way, after `ui/audio-choices`, `ui/typo-ch
 them. 📌 No alias was left: a re-export would keep alive a path nothing inside the engine uses, and would make the
 public-surface portrait lie, because it does not see re-exports (issue #204).
 
+## BT · The motion panel builds NODES, and the «coming soon» mechanism goes with it (ADR-0129, issue #135)
+
+**What this is.** `ui/settings-motion` no longer exports `motionRowHtml`, `buildCharRowsHtml`, `buildSceneRowsHtml`,
+`crtToggleRowHtml`, `crtRoundRowHtml` or `RM_SOON`. The panel assembled its three row families as HTML strings and
+assigned them to `innerHTML` at every render; it now builds nodes with the panel kit, mounting once and reconciling
+afterwards — creating what is missing, rewriting what stayed, removing what lost its subject.
+
+🎯 **Why it is worth a break.** 📏 Measured in the built `dist` on 2026-09-23: with the cursor on the rounded-corners
+steps control, a click on the scanlines switch DESTROYED it and dropped the focus to `<body>`. A child navigating by
+keyboard lost her place in the whole panel. The steps handler already avoided re-rendering for exactly that reason,
+in a comment beside it; the neighbouring row undid it. Two markup sinks leave the census with the conversion.
+
+⚠️ **What to change.** If you call `initSettingsMotion`, nothing: the ids, the `data-rmc`/`data-rm`/`data-crt-tgl`
+attributes, the rows and the words are the same, and `render()` is still what you call. If you imported one of the
+five builders to draw rows yourself, there is no replacement export — the interior is mounted by
+`initSettingsMotion(ctx).render()`, which needs `#motion-list` in the document.
+
+📌 **`RM_SOON` and the «coming soon» tag are gone because they had no subject**, not because the kit had no slot for
+them. 📏 It was an EMPTY set from the day the cartridge left this repository (`b55b88e7`), `render` always passed that
+same empty set, and no path let a cartridge supply another — the only things giving it a value were two test cases. A
+mechanism whose sole user is a test is not a mechanism. It is the second time this mechanism has gone for losing its
+last user: its twin in the icon bar went in `760faad`. The `ui.soon` dictionary key stays in all three languages.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

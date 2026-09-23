@@ -9,7 +9,7 @@ import {
   clampSelectedPlayer, motionRowHtml, buildCharRowsHtml, buildSceneRowsHtml,
   crtToggleRowHtml, crtRoundRowHtml, allMotionFrozen, motionMasterLabel,
   sceneMotionAnnouncement, crtToggleAnnouncement, crtLevelLabel, crtRoundAnnouncement,
-  stopResumeAllAnnouncement, RM_LABEL, RM_SOON,
+  stopResumeAllAnnouncement, RM_LABEL,
 } from '../app/js/ui/settings-motion.js';
 
 const RM_CHAR = [
@@ -32,80 +32,14 @@ describe('clampSelectedPlayer', () => {
   });
 });
 
-describe('motionRowHtml', () => {
-  it('[Right] animado (frozen=false): switch is-on, aria-pressed=true, texto «Ligado» (sem glifo, ADR-0159 regra 12)', () => {
-    const html = motionRowHtml('Andar', false, 'data-rmc="rmWalk"', false);
-    expect(html).toContain('Andar');
-    expect(html).toContain('is-on');
-    expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain('>Ligado<');
-    expect(html).toContain('data-rmc="rmWalk"');
-  });
-  it('[Inverse] congelado (frozen=true): sem is-on, aria-pressed=false, texto «Desligado» (sem glifo, ADR-0159 regra 12)', () => {
-    const html = motionRowHtml('Andar', true, 'data-rmc="rmWalk"', false);
-    expect(html).not.toContain('is-on');
-    expect(html).toContain('aria-pressed="false"');
-    expect(html).toContain('>Desligado<');
-  });
-  it('[Boundary] soon=true acrescenta a marca "(em breve)"', () => {
-    expect(motionRowHtml('X', true, '', true)).toContain('>em breve<');
-    expect(motionRowHtml('X', true, '', true), 'the tag came back in parentheses (ADR-0159 rule 6)').not.toMatch(/[()]/);
-    expect(motionRowHtml('X', true, '', false)).not.toContain('em breve');
-  });
-});
-
-describe('buildCharRowsHtml', () => {
-  it('[Right] uma linha por alvo de RM_CHAR, refletindo o player selecionado', () => {
-    const player = { rmWalk: true, rmBreath: false, rmFlavor: false };
-    const html = buildCharRowsHtml(RM_CHAR, player);
-    expect((html.match(/ctrl-row/g) || []).length).toBe(3);
-    expect(html).toContain('>Desligado<'); // rmWalk=true (congelado)
-  });
-  it('[Zero] sem player (undefined) trata tudo como não-congelado (animado)', () => {
-    const html = buildCharRowsHtml(RM_CHAR, undefined);
-    expect(html).not.toContain('>Desligado<');
-    expect((html.match(/>Ligado</g) || []).length).toBe(3);
-  });
-});
-
-describe('buildSceneRowsHtml', () => {
-  it('[Right] uma linha por chave de RM_KEYS, usando o rótulo certo e o estado de `rm`', () => {
-    const rm = { parallax: true, decor: false, items: false, particles: false };
-    const html = buildSceneRowsHtml(RM_KEYS, rm, RM_LABEL, RM_SOON);
-    // `RM_LABEL` guarda CHAVE i18n desde o item 14, e o HTML tem de trazer o TEXTO. Este caso comparava com
-    // `RM_LABEL.parallax` cru e reprovou — com razão: se passasse, estaria aceitando `rm.parallax` na tela.
-    expect(html).toContain(t(RM_LABEL.parallax));
-    expect(html).not.toContain('rm.parallax'); // a chave NUNCA vaza para a interface
-    expect((html.match(/ctrl-row/g) || []).length).toBe(4);
-  });
-  it('[Boundary] alvo marcado em RM_SOON aparece com «em breve», sem parênteses', () => {
-    const rm = { parallax: false, decor: false, items: false, particles: false };
-    const html = buildSceneRowsHtml(RM_KEYS, rm, RM_LABEL, new Set(['decor']));
-    expect(html).toContain('>em breve<');
-  });
-});
-
-describe('crtToggleRowHtml / crtRoundRowHtml', () => {
-  it('[Right] toggle ligado usa o rótulo "Ligado" e data-crt-tgl com a chave', () => {
-    const html = crtToggleRowHtml('Scanlines', 'scan', true);
-    expect(html).toContain('data-crt-tgl="scan"');
-    expect(html).toContain('>Ligado<');
-    expect(html).toContain('is-on');
-  });
-  it('[Inverse] toggle desligado usa "Desligado" e não marca is-on', () => {
-    const html = crtToggleRowHtml('Vinheta', 'vig', false);
-    expect(html).toContain('>Desligado<');
-    expect(html).not.toContain('is-on');
-  });
-  it('[Boundary] cantos: a linha deixa o LUGAR dos passos ⯇ ⯈ com o nível de agora — e já não é um <select>', () => {
-    // ADR-0151: «apertando para esquerda e direita». O controle é construído por DOM no render; aqui fica o lugar.
-    for (const round of [0, 1, 2]) {
-      const html = crtRoundRowHtml('Cantos arredondados', round);
-      expect(html).toContain(`data-passos-lugar="round" data-valor="${round}"`);
-      expect(html).not.toContain('<select');
-    }
-  });
-});
+// 📌 OS QUATRO BLOCOS QUE MEDIAM MARCAÇÃO MUDARAM DE PROJECTO, e não de exigência: este painel passou a construir
+// NÓS com o kit (ADR-0129, 2026-09-23), logo as cadeias que o `motionRowHtml`, o `buildCharRowsHtml`, o
+// `buildSceneRowsHtml`, o `crtToggleRowHtml` e o `crtRoundRowHtml` devolviam deixaram de existir. Oito casos estão
+// inteiros em `tests/settings-motion.browser.test.js`, sob «o interior montado em nós».
+//
+// ⚠️ DOIS NÃO FORAM, e é o certo: mediam o mecanismo «em breve», que saiu com a conversão por não ter assunto —
+// `RM_SOON` era um conjunto vazio desde que o cartucho deixou este repositório, e os únicos que lhe davam um valor
+// eram esses dois casos. Um mecanismo cujo único utilizador é um teste não é um mecanismo.
 
 describe('allMotionFrozen', () => {
   // rmWalk/rmBreath/rmFlavor = true SIGNIFICA "movimento reduzido LIGADO" (congelado), não "animação ligada" —

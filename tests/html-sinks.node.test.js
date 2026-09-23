@@ -101,7 +101,6 @@ const SEGUROS = [
   // agora o `ui/voice-settings`. A classificação não muda com o ficheiro — o que entra continua a ser uma cadeia vazia.
   ['ui/voice-settings.ts', "sel.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-audio.ts', "el.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
-  ['ui/settings-motion.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-mobility.ts', 'tabs.innerHTML = playerTabsHTML(', 'números (quantos jogadores, qual selecionado)'],
   ['ui/settings-panel.ts', 'span.innerHTML = strong.outerHTML', 'DOM de volta ao DOM: nenhum texto novo entra'],
   // 🎯 UM SINK A MENOS, e foi PAGO e não movido: `ui/settings-visual` construía o interior por `innerHTML` e
@@ -112,7 +111,10 @@ const SEGUROS = [
   ['consumer-quiz/main-quiz.ts', 'app.innerHTML = questionHtml(p, foco);', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escapeHtml`, com gate hostil em `consumer-quiz`'],
   ['ui/settings-audio.ts', "el.innerHTML = '<p class=\"opt-hint\">' +", 'uma única chave de i18n, escolhida por um booleano'],
   ['ui/settings-controls.ts', "tabs.innerHTML = '<span class=\"opt-hint\" style=\"widt", '⚠️ CONSERTADO 2026-09-07 (#125): era um literal em português cravado COM o `<strong>` e o plural à mão. Agora o sink é só ESQUELETO — zero dado, zero interpolação — e as três partes do texto entram por `textContent`, com o molde partido no marcador `{modo}` antes da substituição. O dicionário continua sem markup, que é o que o `i18n-sem-markup` exige'],
-  ['ui/settings-motion.ts', 'el.innerHTML =', 'literais + o índice do jogador + linhas montadas de tabelas da engine'],
+  // 🎯 DOIS SINKS A MENOS, e os dois PAGOS: o `ui/settings-motion` montava o interior por `innerHTML` e passou a
+  // montá-lo em NÓS com o kit (ADR-0129, 2026-09-23); a faixa de abas, que era limpa com uma cadeia vazia, passou a
+  // `textContent`. O que a conversão tira não é só a interpolação — é a reconstrução, que destruía o controle de
+  // passos e atirava para o `<body>` o foco de quem estivesse a ajustá-lo.
   // ⚠️ A chave mudou em 2026-09-09 porque a LINHA mudou: o `fonteInstalada` passou a atravessar daqui para o
   // `faceAvailable` (ADR-0012 «enquanto nenhuma estiver presente»). A entrada continua SEGURA pela mesma
   // razão — o conteúdo sai do catálogo da engine, não de dado de fora — e o detector é uma FUNÇÃO, que não

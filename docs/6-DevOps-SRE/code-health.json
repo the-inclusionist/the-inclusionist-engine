@@ -3,7 +3,7 @@
   "takenOn": "2026-09-23",
   "ceiling": {
     "codeLines": 182,
-    "decisionNodes": 37,
+    "decisionNodes": 38,
     "maxDepth": 4,
     "fanOut": 6,
     "globalReach": 0,
@@ -169,7 +169,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 1,
-      "fanIn": 2
+      "fanIn": 1
     },
     "core/flash-threshold.ts": {
       "codeLines": 69,
@@ -1670,7 +1670,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 9
+      "fanIn": 10
     },
     "ui/panel-widgets.ts": {
       "codeLines": 135,
@@ -1780,12 +1780,12 @@
       "fanIn": 1
     },
     "ui/settings-motion.ts": {
-      "codeLines": 250,
-      "decisionNodes": 33,
+      "codeLines": 340,
+      "decisionNodes": 52,
       "maxDepth": 3,
       "fanOut": 8,
       "globalReach": 0,
-      "worstFunction": 7,
+      "worstFunction": 9,
       "fanIn": 2
     },
     "ui/settings-panel.ts": {

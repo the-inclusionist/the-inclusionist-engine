@@ -123,6 +123,9 @@
     "ui/settings-mobility.ts": [
       "playerPrefix"
     ],
+    "ui/settings-motion.ts": [
+      "mountMotionInside"
+    ],
     "ui/title.ts": [
       "TITLE_MENU_IDS_ORDERED"
     ],

@@ -2995,6 +2995,17 @@
       "store",
       "toggleBtn"
     ],
+    "interface MotionInsideSpec": [
+      "allTag",
+      "charRows",
+      "charTag",
+      "charTitle",
+      "crtTitle",
+      "crtToggles",
+      "roundSpec",
+      "sceneRows",
+      "sceneTitle"
+    ],
     "interface SettingsMotionApi": [
       "close",
       "open",
