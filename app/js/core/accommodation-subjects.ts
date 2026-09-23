@@ -41,19 +41,19 @@ export interface SubjectInputs {
  */
 export function contractSubjects(i: SubjectInputs): ReadonlySet<ContractKeyedAccommodation> {
   const d = i.declaration;
-  const temMundo = d.world().kind === 'element';
-  const temDirecao = temMundo && d.topology().kind !== 'hotspots';
-  const porAcoes = i.actions.length > 0;
-  const ponteiro = d.needsPointer?.() === true;
+  const hasWorld = d.world().kind === 'element';
+  const hasDirection = hasWorld && d.topology().kind !== 'hotspots';
+  const byActions = i.actions.length > 0;
+  const pointer = d.needsPointer?.() === true;
   const segura = d.seguraTeclas();
-  const regra: Readonly<Record<ContractKeyedAccommodation, boolean>> = {
+  const rule: Readonly<Record<ContractKeyedAccommodation, boolean>> = {
     gameSpeed: d.tick === 'clock',
     moveLatch: segura, holdLatch: segura,
-    virtualPad: porAcoes, oneButton: porAcoes, inputCooldown: porAcoes, macros: porAcoes,
-    pointerSmoothing: ponteiro, pointerSensitivity: ponteiro, pointerStyle: ponteiro,
-    visionSimulation: temMundo, audioDescription: temMundo,
-    blindMode: temDirecao, navigationSound: temDirecao,
+    virtualPad: byActions, oneButton: byActions, inputCooldown: byActions, macros: byActions,
+    pointerSmoothing: pointer, pointerSensitivity: pointer, pointerStyle: pointer,
+    visionSimulation: hasWorld, audioDescription: hasWorld,
+    blindMode: hasDirection, navigationSound: hasDirection,
     perPlayerAudioOutput: i.players > 1,
   };
-  return new Set(CONTRACT_KEYED.filter((k) => regra[k]));
+  return new Set(CONTRACT_KEYED.filter((k) => rule[k]));
 }

@@ -44,12 +44,12 @@ export const TRANSPORT_NAMES = ['teclado', 'gamepad', 'toque', 'olhos', 'rosto',
 
 // `[X] extends [never]` e não `X extends never`: o condicional distribui sobre `never` e daria `never` em vez
 // de responder à pergunta. Mesma forma do `_COBRE_A_UNIAO` do `ui/motion-scene`.
-type _FaltouTransporte = Exclude<TransportName, (typeof TRANSPORT_NAMES)[number]>;
-type _SobrouTransporte = Exclude<(typeof TRANSPORT_NAMES)[number], TransportName>;
-const _COBRE_OS_TRANSPORTES: [_FaltouTransporte] extends [never]
-  ? ([_SobrouTransporte] extends [never] ? true : false)
+type _MissingTransport = Exclude<TransportName, (typeof TRANSPORT_NAMES)[number]>;
+type _ExtraTransport = Exclude<(typeof TRANSPORT_NAMES)[number], TransportName>;
+const _COVERS_THE_TRANSPORTS: [_MissingTransport] extends [never]
+  ? ([_ExtraTransport] extends [never] ? true : false)
   : false = true;
-void _COBRE_OS_TRANSPORTES;
+void _COVERS_THE_TRANSPORTS;
 
 /**
  * Isto que veio de fora é mesmo um transporte?

@@ -16,7 +16,7 @@ export interface NeuralVoice {
  * voice reads Spanish from Spain, and a Brazilian game tagged `pt` is still Portuguese. A voice reading another language
  * is not offered: Portuguese text through English phonemes is noise.
  */
-export function voicesForLocale(etiqueta: string, catalogo: readonly NeuralVoice[]): readonly NeuralVoice[] {
-  const idioma = (etiqueta.split('-')[0] ?? '').toLowerCase();
-  return catalogo.filter((v) => (v.locale.split('-')[0] ?? '').toLowerCase() === idioma);
+export function voicesForLocale(tag: string, catalogue: readonly NeuralVoice[]): readonly NeuralVoice[] {
+  const idioma = (tag.split('-')[0] ?? '').toLowerCase();
+  return catalogue.filter((v) => (v.locale.split('-')[0] ?? '').toLowerCase() === idioma);
 }

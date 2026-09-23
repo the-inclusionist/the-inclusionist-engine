@@ -212,9 +212,9 @@ export function directSpriteTexture(srcTex: DirectTexSource, mode: string): unkn
     // O tapa-costuras é assíncrono, e por isso o idle também aparecia: com alto contraste ligado cedo, o
     // cache `_playerDirect` memoriza a versão baseada no atlas e a guarda para sempre.
     const f = srcTex.frame;
-    const precisaRecortar = !!f && (f.x !== 0 || f.y !== 0 || f.width !== s.width || f.height !== s.height);
+    const needsClipping = !!f && (f.x !== 0 || f.y !== 0 || f.width !== s.width || f.height !== s.height);
     let fonte: HTMLCanvasElement | HTMLImageElement = s;
-    if (precisaRecortar && f) {
+    if (needsClipping && f) {
       const rec = makeCanvas(Math.max(1, f.width), Math.max(1, f.height));
       const rc = rec.getContext('2d')!;
       rc.imageSmoothingEnabled = false; // pixel art: reamostrar aqui borraria o contorno que o modo promete

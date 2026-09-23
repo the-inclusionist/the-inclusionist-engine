@@ -62,10 +62,10 @@ export const BASE_DA_MARCHA = 'togglemove';
  * 📌 Devolver «mudou» não é conveniência: quem chama na aresta corre isto muitas vezes por segundo, e anunciar
  * ou reflectir a cada chamada encheria o leitor de tela com a mesma frase.
  */
-export function applyLatch(p: LatchPlayer, ligada: boolean): boolean {
-  if (p.toggleMove === ligada) return false;
-  p.toggleMove = ligada;
-  if (!ligada) p.walkDir = 0;
+export function applyLatch(p: LatchPlayer, on: boolean): boolean {
+  if (p.toggleMove === on) return false;
+  p.toggleMove = on;
+  if (!on) p.walkDir = 0;
   return true;
 }
 

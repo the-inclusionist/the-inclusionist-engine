@@ -62,9 +62,9 @@ export const SCENE_KEYS = ['parallax', 'decor', 'items', 'particles'] as const;
  * `[X] extends [never]` e não `X extends never`: o condicional distribui sobre `never` e daria `never` em vez
  * de `true`, o que faria a guarda passar sempre — uma guarda que não pode falhar não é uma guarda.
  */
-type _Faltou = Exclude<MotionSceneKey, (typeof SCENE_KEYS)[number]>;
-const _COBRE_A_UNIAO: [_Faltou] extends [never] ? true : false = true;
-void _COBRE_A_UNIAO;
+type _Missing = Exclude<MotionSceneKey, (typeof SCENE_KEYS)[number]>;
+const _COVERS_THE_UNION: [_Missing] extends [never] ? true : false = true;
+void _COVERS_THE_UNION;
 
 /** As três animações do PERSONAGEM, com as chaves que o `RM_LABEL` desta mesma camada já traduz. */
 export const CHARACTER_ANIMATIONS = Object.freeze([
@@ -74,9 +74,9 @@ export const CHARACTER_ANIMATIONS = Object.freeze([
 ] as const) satisfies readonly MotionCharDef[];
 
 /** A mesma prova, para as três do personagem: falta uma na lista e isto deixa de compilar. */
-type _FaltouChar = Exclude<MotionCharProp, (typeof CHARACTER_ANIMATIONS)[number]['prop']>;
-const _COBRE_O_PERSONAGEM: [_FaltouChar] extends [never] ? true : false = true;
-void _COBRE_O_PERSONAGEM;
+type _MissingChar = Exclude<MotionCharProp, (typeof CHARACTER_ANIMATIONS)[number]['prop']>;
+const _COVERS_THE_CHARACTER: [_MissingChar] extends [never] ? true : false = true;
+void _COVERS_THE_CHARACTER;
 
 /** Os quatro interruptores no padrão do sistema — `prefers-reduced-motion`, por `defaultReducedMotion()`. */
 export function sceneDefault(): MotionSceneFlags {
@@ -95,10 +95,10 @@ export function sceneDefault(): MotionSceneFlags {
  * pediu redução. O laço garante exactamente as quatro.
  */
 export function readStoredScene(): MotionSceneFlags {
-  const guardado = store.getJSON<Record<string, unknown> | null>(store.KEYS.reducedMotion, null);
-  if (!guardado || typeof guardado !== 'object') return sceneDefault();
+  const stored = store.getJSON<Record<string, unknown> | null>(store.KEYS.reducedMotion, null);
+  if (!stored || typeof stored !== 'object') return sceneDefault();
   const o = {} as MotionSceneFlags;
-  for (const k of SCENE_KEYS) o[k] = !!guardado[k];
+  for (const k of SCENE_KEYS) o[k] = !!stored[k];
   return o;
 }
 

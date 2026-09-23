@@ -30,7 +30,7 @@ export interface ItemDeMenu {
 }
 
 /** Espaço em branco de markup (quebras de linha, indentação) vira UM espaço; pontas somem. */
-const enxuto = (s: string | undefined): string => (s || '').replace(/\s+/g, ' ').trim();
+const tidy = (s: string | undefined): string => (s || '').replace(/\s+/g, ' ').trim();
 
 /**
  * A frase que o item narra.
@@ -40,11 +40,11 @@ const enxuto = (s: string | undefined): string => (s || '').replace(/\s+/g, ' ')
  * do menu, e a criança confia nela — número errado é pior que número nenhum.
  */
 export function announceItem(item: ItemDeMenu, comIndice: boolean): string {
-  const valeIndice = comIndice && item.total >= 1 && item.posicao >= 1 && item.posicao <= item.total;
-  const partes = [
-    enxuto(item.rotulo),
-    enxuto(item.estado),
-    valeIndice ? t('sr.menu.index', { n: item.posicao, m: item.total }) : '',
+  const indexApplies = comIndice && item.total >= 1 && item.posicao >= 1 && item.posicao <= item.total;
+  const parts = [
+    tidy(item.rotulo),
+    tidy(item.estado),
+    indexApplies ? t('sr.menu.index', { n: item.posicao, m: item.total }) : '',
   ];
-  return partes.filter(Boolean).join(', ');
+  return parts.filter(Boolean).join(', ');
 }

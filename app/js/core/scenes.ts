@@ -70,39 +70,39 @@ export interface SceneStack {
  * propagam: a engine não é o lugar de decidir que o erro de um jogo não importa.
  */
 export function createSceneStack(): SceneStack {
-  const pilha: Scene[] = [];
+  const stack: Scene[] = [];
 
   return {
     push(s) {
-      pilha[pilha.length - 1]?.exit?.();
-      pilha.push(s);
+      stack[stack.length - 1]?.exit?.();
+      stack.push(s);
       s.enter?.();
     },
 
     pop() {
-      const fora = pilha.pop() ?? null;
-      fora?.exit?.();
-      pilha[pilha.length - 1]?.enter?.();
-      return fora;
+      const out = stack.pop() ?? null;
+      out?.exit?.();
+      stack[stack.length - 1]?.enter?.();
+      return out;
     },
 
     replace(s) {
       // NÃO é `this.pop()` seguido de `this.push(s)`: isso daria `enter()` à cena de baixo por um instante,
       // e ela reapareceria no topo entre as duas chamadas. Trocar é UMA transição, não duas.
-      const fora = pilha.pop() ?? null;
-      fora?.exit?.();
-      pilha.push(s);
+      const out = stack.pop() ?? null;
+      out?.exit?.();
+      stack.push(s);
       s.enter?.();
     },
 
-    top() { return pilha[pilha.length - 1] ?? null; },
-    nomes() { return pilha.map((s) => s.nome); },
+    top() { return stack[stack.length - 1] ?? null; },
+    nomes() { return stack.map((s) => s.nome); },
 
-    update(dt) { pilha[pilha.length - 1]?.update?.(dt); },
+    update(dt) { stack[stack.length - 1]?.update?.(dt); },
 
-    draw() { for (const s of pilha) s.draw?.(); },
+    draw() { for (const s of stack) s.draw?.(); },
 
-    input(intent) { return pilha[pilha.length - 1]?.input?.(intent) === true; },
+    input(intent) { return stack[stack.length - 1]?.input?.(intent) === true; },
   };
 }
 

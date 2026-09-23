@@ -75,10 +75,10 @@ export const FAR_VOL = 0.55;
 export function guideIntensity(passos: number): Intensity {
   if (!Number.isFinite(passos) || passos < 0) return { corte: FAR_CUT, volume: FAR_VOL };
   // 0 = em cima do alvo; 1 = no fundo da escala ou além.
-  const longe = Math.min(1, passos / STEPS_TO_FLOOR);
-  const perto = 1 - longe;
+  const far = Math.min(1, passos / STEPS_TO_FLOOR);
+  const near = 1 - far;
   return {
-    corte: FAR_CUT * Math.pow(NEAR_CUT / FAR_CUT, perto),
-    volume: FAR_VOL + (1 - FAR_VOL) * perto,
+    corte: FAR_CUT * Math.pow(NEAR_CUT / FAR_CUT, near),
+    volume: FAR_VOL + (1 - FAR_VOL) * near,
   };
 }

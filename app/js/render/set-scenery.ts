@@ -84,7 +84,7 @@ import type { Tileset } from './world-tex.js';
  */
 export type ThemeTiles = Tileset;
 /** `worldSprite` — só a troca de textura. */
-interface SpriteComTextura { texture: unknown }
+interface SpriteWithTexture { texture: unknown }
 
 /**
  * Baixa `tile_fill.png` + `tile_surface.png` do tema. Resolve com os dois, ou com `null` se QUALQUER um falhar.
@@ -119,12 +119,12 @@ export interface SetSceneryCtx {
   clearWorldTexCache: () => void;                                // invalida o recolor de alto contraste
   /** Escreve `worldCanvasNormal`/`worldTexNormal` (os dois `let` do composition root), sempre em par. A
    *  TEXTURA segue `unknown` de propósito — é objeto do PixiJS, e este módulo roda no project `node`. */
-  setWorldTextures: (canvas: HTMLCanvasElement, textura: unknown) => void;
+  setWorldTextures: (canvas: HTMLCanvasElement, texture: unknown) => void;
 
   /* --- consequências (todas nascem DEPOIS deste ponto no boot → getter/callback) --- */
   isVizReady: () => boolean;                              // `vizReady`: só no fim do boot
   reapplyVizAll: () => void;                              // render/viz-setters
-  getWorldSprite: () => SpriteComTextura | null | undefined; // nasce depois; só tocado no `.then`
+  getWorldSprite: () => SpriteWithTexture | null | undefined; // nasce depois; só tocado no `.then`
   isVidaReady: () => boolean;                             // `_vidaReady`: camadas de vida/tráfego já existem
   applyCenarioVida: () => void;                           // render/scene-city
 }

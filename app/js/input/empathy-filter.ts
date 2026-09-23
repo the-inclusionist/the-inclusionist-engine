@@ -19,27 +19,27 @@ export interface EmpathyFilter {
 }
 
 export function createEmpathyFilter(): EmpathyFilter {
-  const aceitas = new Set<string>();   // held, and the game saw them go down
-  const tocadas = new Set<string>();   // physically held, already released to the game as a tap
-  const barradas = new Set<string>();  // held, and the game never saw them
-  const outraSegurada = (code: string): boolean => [...aceitas, ...tocadas].some((k) => k !== code);
+  const accepted = new Set<string>();   // held, and the game saw them go down
+  const touched = new Set<string>();   // physically held, already released to the game as a tap
+  const blocked = new Set<string>();  // held, and the game never saw them
+  const anotherHeld = (code: string): boolean => [...accepted, ...touched].some((k) => k !== code);
   return {
     keydown(code, repeat, sim) {
-      if (tocadas.has(code) || barradas.has(code)) return 'barrar';
-      if (sim.umPorVez && outraSegurada(code)) { barradas.add(code); return 'barrar'; }
+      if (touched.has(code) || blocked.has(code)) return 'barrar';
+      if (sim.umPorVez && anotherHeld(code)) { blocked.add(code); return 'barrar'; }
       if (sim.noGripStrength) {
-        if (repeat && aceitas.has(code)) return 'barrar';
-        aceitas.delete(code);
-        tocadas.add(code);
+        if (repeat && accepted.has(code)) return 'barrar';
+        accepted.delete(code);
+        touched.add(code);
         return 'tocar';
       }
-      aceitas.add(code);
+      accepted.add(code);
       return 'passar';
     },
     keyup(code) {
-      if (tocadas.delete(code)) return 'barrar';
-      if (barradas.delete(code)) return 'barrar';
-      aceitas.delete(code);
+      if (touched.delete(code)) return 'barrar';
+      if (blocked.delete(code)) return 'barrar';
+      accepted.delete(code);
       return 'passar';
     },
   };

@@ -149,8 +149,8 @@ export function shortLabellerFrom(p: ActionPreset): (a: Action) => string | null
   return (a) => {
     const w = p[a];
     if (!w) return null;
-    const curto = w.short && w.short.trim() ? w.short : w.label;
-    return curto && curto.trim() ? curto : null;
+    const short = w.short && w.short.trim() ? w.short : w.label;
+    return short && short.trim() ? short : null;
   };
 }
 
@@ -164,12 +164,12 @@ export function shortLabellerFrom(p: ActionPreset): (a: Action) => string | null
 export function presetProblems(p: ActionPreset | null | undefined): string[] {
   if (!p) return ['preset: missing'];
   const problemas: string[] = [];
-  const nomeadas = presetActions(p);
-  if (nomeadas.length === 0) problemas.push('preset: names no action - the child would see an unlabelled control');
+  const named = presetActions(p);
+  if (named.length === 0) problemas.push('preset: names no action - the child would see an unlabelled control');
   for (const chave of Object.keys(p)) {
     if (!isAction(chave)) problemas.push(`preset: ${chave} is not an action`);
   }
-  for (const a of nomeadas) {
+  for (const a of named) {
     const w = p[a];
     if (!w || !w.label || !w.label.trim()) {
       problemas.push(`preset: ${a} has an empty label - the remap screen would show a nameless button`);
@@ -230,8 +230,8 @@ export function actionSetProblems(used: readonly string[] | null | undefined): s
   const p: string[] = [];
   if (!used) return ['action set: missing'];
   if (used.length === 0) return ['action set: empty - a game with no action cannot be played'];
-  const desconhecidas = used.filter((a) => !isAction(a));
-  if (desconhecidas.length) p.push(`action set: unknown action(s) ${desconhecidas.join(', ')}`);
+  const unknown = used.filter((a) => !isAction(a));
+  if (unknown.length) p.push(`action set: unknown action(s) ${unknown.join(', ')}`);
   if (new Set(used).size !== used.length) p.push('action set: has a repeated action');
   return p;
 }

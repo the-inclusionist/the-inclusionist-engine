@@ -55,8 +55,8 @@ export function createCrashNotice(ctx: CrashNoticeCtx): (erro: unknown) => void 
     const msg = t('sr.laco.parou');
 
     // O leitor de tela: assertivo, porque interromper é justamente o ponto.
-    const alerta = ctx.procurar('#sr-alert');
-    if (alerta) alerta.textContent = msg;
+    const alert = ctx.procurar('#sr-alert');
+    if (alert) alert.textContent = msg;
 
     try { ctx.narrar?.(msg); } catch { /* noop: a narração falhou; o aviso escrito já saiu */ }
 
@@ -73,13 +73,13 @@ export function createCrashNotice(ctx: CrashNoticeCtx): (erro: unknown) => void 
     //
     // O raciocínio que continua de pé é o da TRADUÇÃO: a frase vem de `t()` e entra por `textContent`, então
     // ela chega traduzida e escapada. O que muda é o recipiente.
-    const regiao = ctx.procurar('#game-region');
-    if (!regiao) return;
+    const region = ctx.procurar('#game-region');
+    if (!region) return;
     const anterior = ctx.procurar('#' + CRASH_NOTICE_ID);
     const caixa = anterior ?? ctx.criar('div');
     caixa.id = CRASH_NOTICE_ID;
     caixa.setAttribute('role', 'alert');
     caixa.textContent = msg;
-    if (!anterior) regiao.appendChild(caixa);
+    if (!anterior) region.appendChild(caixa);
   };
 }

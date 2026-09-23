@@ -117,17 +117,17 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
    * que a faz enxergar o jogo.
    */
   function refreshMarks(): void {
-    const simulando = ctx.getPlayers().some((p) => simulatesDisability(p.viz));
-    const surdez = hearingLoss;
+    const simulating = ctx.getPlayers().some((p) => simulatesDisability(p.viz));
+    const deafness = hearingLoss;
     const um = ctx.getOneButton() !== DEFAULTS.oneButton;
-    const cadeira = ctx.getWheelchair() !== DEFAULTS.wheelchair;
+    const wheelchair = ctx.getWheelchair() !== DEFAULTS.wheelchair;
     const linha = (sel: string): HTMLElement | null =>
       ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null;
-    markChanged(linha('#opt-hearing'), surdez);
+    markChanged(linha('#opt-hearing'), deafness);
     markChanged(linha('#opt-onebtn'), um);
-    markChanged(linha('#opt-wheelchair'), cadeira);
-    markChanged(ctx.$<HTMLElement>('#empathy-list'), simulando);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="empatia"]'), [simulando, surdez, um, cadeira]);
+    markChanged(linha('#opt-wheelchair'), wheelchair);
+    markChanged(ctx.$<HTMLElement>('#empathy-list'), simulating);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="empatia"]'), [simulating, deafness, um, wheelchair]);
   }
 
   function open(): void {
