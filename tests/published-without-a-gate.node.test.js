@@ -38,11 +38,15 @@ const RAIZ_TESTES = fileURLToPath(new URL('./', import.meta.url));
  * ⚠️ Uma entrada NOVA sem razão escrita à mão é a engine a publicar superfície sem alarme, sem ninguém
  * decidir — que foi exactamente como estes chegaram.
  */
-const SEM_GATE = {
-  'render/recycling-tex':
-    'o único teste dele vive no repositório do CARTUCHO (`game-platformer/tests/recycling-tex.node.test.js`), ' +
-    'que a CI da engine nunca corre — é o padrão do canário, e mover o teste é decisão do cartucho e não daqui',
-};
+/*
+ * 🔴 A LISTA ESTÁ VAZIA, E ISSO É UM PAGAMENTO E NÃO UM AFROUXAMENTO. A única entrada era o
+ * `render/recycling-tex`, dispensado porque o único teste dele vivia no repositório do CARTUCHO — o padrão do
+ * canário, com a nota de que mover o teste era decisão do cartucho e não daqui.
+ *
+ * 🎯 O ADR-0228 respondeu essa decisão por inteiro: o módulo É do cartucho, e foi para lá com o teste. A dispensa
+ * desapareceu porque o sujeito dela desapareceu, que é a única forma honesta de uma excepção sair de uma lista.
+ */
+const SEM_GATE = {};
 
 // ===== A varredura =====
 

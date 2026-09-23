@@ -28,7 +28,6 @@
 // As MUTAÇÕES CONFERIDAS estão no fim do arquivo.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as state from '../app/js/core/state.js';
-import { createRunState } from '../app/js/core/run-state.js';
 
 /**
  * Os setters de `core/state` que NÃO persistem, com o motivo de cada um. A lista é curta de propósito: ela é
@@ -137,42 +136,16 @@ describe('ADR-0038 · PÁGINA — o que mora em core/state sobrevive a fechar o 
   });
 });
 
-describe('ADR-0038 · RODADA — o que não sobrevive à partida não é gravado', () => {
-  it('[Zero] criar uma rodada não escreve nada', () => {
-    escritas = [];
-    createRunState();
-    expect(escritas).toEqual([]);
-  });
-
-  it('[Right] NENHUM setter da rodada persiste — nem o grassDensity, que tem faixa e clamp', () => {
-    // O `grassDensity` é o candidato natural a escorregar: ele tem validação, e um campo validado parece uma
-    // preferência. Não é — é a grama DESTA fase, e a fase seguinte sorteia outra.
-    const r = createRunState<{ kind: string }>();
-    escritas = [];
-    r.setLevelExtras({ powerups: [{ kind: 'fly' }], gateTiles: new Set(['1,1']), gate: [{ tx: 1, ty: 1 }], gateOpen: false });
-    r.setGateOpen(true);
-    r.setWcSolid(new Set(['2,2']));
-    r.setEnded(true);
-    r.setDecorSeed(1234);
-    r.setGrassDensity(0.4);
-    r.setSelVizPlayer(2);
-    r.setPauseActor(1);
-    r.setNumPlayers(3);
-    expect(escritas, 'RODADA persistiu: ' + escritas.join(', ')).toEqual([]);
-  });
-
-  it('[Interface] duas rodadas são INDEPENDENTES — é a razão de a fábrica existir', () => {
-    // A casca do `demos` carrega jogo após jogo na mesma página (ADR-0036/D13). Com `export let`, o portão
-    // aberto no jogo anterior continuaria aberto no seguinte, sem erro nenhum.
-    const a = createRunState();
-    const b = createRunState();
-    a.setGateOpen(false); a.setNumPlayers(4); a.players.push({} as never);
-    expect(b.gateOpen).toBe(true);
-    expect(b.numPlayers).toBe(1);
-    expect(b.players).toHaveLength(0);
-  });
-});
-
+/*
+ * 🔴 A SEGUNDA METADE DESTE PORTÃO FOI-SE COM O SEU ASSUNTO (ADR-0228). Ela afirmava que NENHUM campo de
+ * `core/run-state` persiste — a metade que impede o caminho inverso, um estado de partida a ganhar um
+ * `store.set()` «só para não perder ao recarregar» e a virar, sem discussão, uma preferência da criança.
+ *
+ * ⚠️ `core/run-state` saiu para o `game-platformer` com a pilha de mundo-de-tiles, e uma afirmação sobre um
+ * módulo que este repositório já não tem é uma afirmação sobre nada. Ela tem de ser reescrita LÁ, e enquanto
+ * não for, a regra do ADR-0038 está guardada só de um lado. 📌 Isto fica escrito aqui porque a metade que
+ * sobra parece a regra inteira, e é assim que uma cobertura encolhe sem nada ficar vermelho.
+ */
 // ========================= MUTAÇÕES CONFERIDAS =========================
 // Cada uma foi aplicada, o caso foi visto VERMELHO com a mensagem anotada, e a mutação foi desfeita:
 //

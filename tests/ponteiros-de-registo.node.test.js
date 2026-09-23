@@ -96,8 +96,14 @@ const MORTOS = {
   'tests/nada-vem-de-fora.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/nothing-comes-from-outside.node.test.js`',
   'tests/pausa-44px.browser.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/pause-target-44px.browser.test.js`',
   'tests/pausa-sete-itens.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/the-pause-items-and-their-order.node.test.js`',
+  'tests/z-order-css.node.test.js': 'MUDOU DE REPOSITÓRIO (2026-09-23, ADR-0228): a ordem das camadas é `core/layers`, que descreve as camadas de UM jogo — foi com a pilha de mundo-de-tiles para o `game-platformer`, e o gate foi com ela',
 };
 /*
+ * 🔴 E A ENTRADA DA F12 É DE UMA QUINTA CAUSA: o ficheiro não morreu e não mudou de nome — mudou de REPOSITÓRIO. O
+ * ADR-0228 tirou da engine os vinte e nove módulos que descrevem um jogo, e os gates que eram sobre eles foram
+ * com eles para o `game-platformer`. 📌 A distinção importa a quem lê um registo e procura o gate: «morto»
+ * mandaria procurar no histórico, e a verdade é que ele está vivo noutra árvore.
+ *
  * 🔴 AS ENTRADAS DA FASE 3 SÃO DE UMA QUARTA CAUSA, e ela não existia quando este ficheiro nasceu: o ficheiro NÃO MORREU, mudou
  * de nome. A prosa de um registo que o cita continua certa para o dia em que foi escrita (ADR-0057), e por isso não se toca —
  * o que faltava era o sítio onde se diz para onde ele foi, e é esta lista. ⚠️ Por isso mesmo este ficheiro está FORA da

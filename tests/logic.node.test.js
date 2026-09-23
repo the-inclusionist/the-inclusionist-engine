@@ -3,20 +3,31 @@
 // Right-BICEP (rigor). Rótulos no nome do teste. Ver docs/plano-testes.md. Módulos: constants, tiles, world, input/state.
 import { describe, it, expect } from 'vitest';
 import * as C from '../app/js/core/constants.js';
-import * as T from '../app/js/core/tiles.js';
-import * as W from '../app/js/core/world.js';
 import * as S from '../app/js/input/state.js';
 import * as AUDIO from '../app/js/platform/audio.js';
 import { AUDIO_CATS } from '../app/js/platform/audio-mixer.js';
 import * as RNG from '../app/js/core/rng.js';
 
 describe('core/constants', () => {
-  it('[Right] valores afinados do José (TUNE/ANIM/TILE)', () => {
-    // ⚠️ `C.TUNE.jumpVel` saiu daqui em 2026-09-07: a afinação foi para o `game/tuning.ts` do
-    // `game-platformer` (issue #63, etapa B). O que ficou é o que qualquer jogo 2D em pixel usa.
-    expect(C.ANIM.walkHold).toBe(6);
-    expect(C.ANIM.runHold).toBe(8);
+  it('[Right] o que qualquer jogo 2D em pixel usa', () => {
+    // ⚠️ `C.TUNE.jumpVel` saiu daqui em 2026-09-07 (issue #63, etapa B) e o `C.ANIM` saiu em 2026-09-23 na F12
+    // (ADR-0228): cadências de uma personagem que anda, corre, nada e escala são de um jogo. O que ficou é a
+    // grelha, e é a única coisa desta linha que qualquer cartucho partilha.
     expect(C.TILE).toBe(16);
+  });
+  it('⚠️ [Interface] `ANIM`, `EASY` e `TILE_COLOR` SAÍRAM na F12, e voltar por engano reprova aqui', () => {
+    /*
+     * 🎯 A mesma forma do caso abaixo, e pela mesma razão: encolher superfície pública é uma major, e uma
+     * constante que volte sem querer desfá-la em silêncio. 📌 O que NÃO saiu está dito ao lado porque a
+     * distinção custou um portão a apanhar-me: `TILE_TYPES`, `isHazard` e `isTrampoline` ficaram porque o
+     * `core/collision.isSolidType` torna perigo e trampolim sólidos no modo cego e no de cadeira de rodas.
+     */
+    for (const n of ['ANIM', 'EASY', 'TILE_COLOR']) {
+      expect(n in C, `${n} voltou ao catálogo — ele descreve um jogo`).toBe(false);
+    }
+    for (const n of ['TILE_TYPES', 'isHazard', 'isTrampoline']) {
+      expect(n in C, `${n} saiu — o \`isSolidType\` depende dele, e isso é acessibilidade`).toBe(true);
+    }
   });
   it('⚠️ [Interface] `JUMP_BASE` e `ehChave` SAÍRAM, e este caso é o que impede que voltem por engano', () => {
     // O caso que estava aqui verificava `JUMP_BASE === jumpVel * sqrt(8/5)` — isto é, **reafirmava a própria
@@ -36,78 +47,6 @@ describe('core/constants', () => {
   });
 });
 
-describe('core/tiles — legenda glifo↔tipo + parser', () => {
-  it('[Cross-check] selfTest confirma a bijeção (únicos, invertível, sem faltas)', () => {
-    const r = T.selfTest();
-    expect(r.ok).toBe(true);
-    expect(r.missing).toEqual([]);
-  });
-  it('[Zero] texto vazio → grid vazio', () => {
-    expect(T.parseLevel('')).toEqual([]);
-  });
-  it('[One] um glifo → grid 1×1', () => {
-    expect(T.parseLevel(T.TYPE_GLYPH[2])).toEqual([[2]]); // '#' = pedra
-  });
-  it('[Many] várias linhas preservam o comprimento irregular de cada uma', () => {
-    const g = T.parseLevel('..\n.'); // 2ª linha mais curta
-    expect(g.length).toBe(2);
-    expect(g[0].length).toBe(2);
-    expect(g[1].length).toBe(1); // irregular preservado (buildWorld preenche depois)
-  });
-  it('[Inverse] gridToGlyphs ∘ parseLevel = identidade (glifos válidos)', () => {
-    const txt = [T.TYPE_GLYPH[0] + T.TYPE_GLYPH[2] + T.TYPE_GLYPH[9],
-                 T.TYPE_GLYPH[3] + T.TYPE_GLYPH[4] + T.TYPE_GLYPH[5]].join('\n');
-    expect(T.gridToGlyphs(T.parseLevel(txt))).toBe(txt);
-  });
-  it('[Error] glifo desconhecido → AIR (= tipo do ".", ar iluminado)', () => {
-    const g = T.parseLevel('.?.');
-    expect(g[0][1]).toBe(T.GLYPH_TYPE['.']);
-    expect(g[0]).toEqual([T.GLYPH_TYPE['.'], T.GLYPH_TYPE['.'], T.GLYPH_TYPE['.']]);
-  });
-  it('[Boundary/Existence] linha de meta "#!" é ignorada (mas "#" sozinho é parede)', () => {
-    expect(T.parseLevel('#!nome=teste\n' + T.TYPE_GLYPH[2])).toEqual([[2]]);
-  });
-});
-
-describe('core/world — buildWorldFromText', () => {
-  it('[One] mundo mínimo mantém as dimensões', () => {
-    const w = W.buildWorldFromText('...\n...');
-    expect(w.length).toBe(2);
-    expect(w[0].length).toBe(3);
-  });
-  it('[Boundary] linha curta é preenchida à direita com ar escuro (tipo 0)', () => {
-    const g = T.TYPE_GLYPH[2];
-    const w = W.buildWorldFromText(g + g + '\n' + g); // 2ª linha mais curta
-    expect(w[1].length).toBe(2);   // padded à largura máxima
-    expect(w[1][1]).toBe(0);       // preenchimento = ar escuro (não-sólido)
-  });
-  it('[Right] pedra (2) preservada', () => {
-    const g = T.TYPE_GLYPH[2];
-    expect(W.buildWorldFromText(g + '\n' + g)[0][0]).toBe(2);
-  });
-  it('[Right/a11y] passagem de 1 tile é ALARGADA (teto de pedra vira ar p/ o jogador caber)', () => {
-    // '#' teto · '.' ar sobre chão · '#' chão → o teto (pedra=2) é convertido em ar(1); jogador tem 2 tiles.
-    expect(W.buildWorldFromText('#\n.\n#')).toEqual([[1], [1], [2]]);
-  });
-  it('[Boundary/a11y] passagem já com 2 tiles NÃO é alterada (não alarga à toa)', () => {
-    expect(W.buildWorldFromText('#\n.\n.\n#')[0][0]).toBe(2); // teto de pedra preservado
-  });
-  it('[Right] power-up injetado no mapa (super-corrida=12 em x13,y8)', () => {
-    const big = Array.from({ length: 9 }, () => '.'.repeat(14)).join('\n');
-    expect(W.buildWorldFromText(big)[8][13]).toBe(12);
-  });
-});
-
-describe('registro de tiles — consistência cross-módulo (smell: 4 objetos em 2 módulos)', () => {
-  it('[Cross-check] todo tipo 0..14 existe em TILE_TYPES, TILE_COLOR (constants) e TYPE_GLYPH, TILE_NAME (tiles)', () => {
-    for (let t = 0; t <= 14; t++) {
-      expect(C.TILE_TYPES[t], `TILE_TYPES[${t}]`).toBeDefined();
-      expect(C.TILE_COLOR[t], `TILE_COLOR[${t}]`).toBeDefined();
-      expect(T.TYPE_GLYPH[t], `TYPE_GLYPH[${t}]`).toBeDefined();
-      expect(T.TILE_NAME[t], `TILE_NAME[${t}]`).toBeDefined();
-    }
-  });
-});
 
 describe('platform/audio — mixer (import PURO, init explícito; dívida paga Fase 2.25)', () => {
   // [Zero] roda ANTES de qualquer init (é o 1º teste do bloco e nada mais chama initAudioMixer):
@@ -126,6 +65,7 @@ describe('platform/audio — mixer (import PURO, init explícito; dívida paga F
     expect(AUDIO.audioCat.ambient.on).toBe(true);
   });
 });
+
 
 describe('core/rng — LCG semeado (determinístico)', () => {
   it('[Right/reprodutibilidade] mesma semente → mesma sequência', () => {
@@ -150,6 +90,7 @@ describe('core/rng — LCG semeado (determinístico)', () => {
     expect(RNG.shuffle(src).slice().sort((a, b) => a - b)).toEqual(src);
   });
 });
+
 
 describe('input/state — held(pl, act)', () => {
   const mkPlayer = (over = {}) => ({ ctrl: { jump: ['KeyL'], left: ['KeyA'] }, pad: -1, ...over });
@@ -185,3 +126,4 @@ describe('input/state — held(pl, act)', () => {
 // modulo `render/sprites` nao e' engine e o `tsconfig.pkg.json` ja' o excluia do pacote por escrito: ele
 // importa `virtual:sprite-atlas`, que so' existe dentro do plugin de build do JOGO. As tres asseercoes
 // mudaram para `game-platformer/tests/sprites-contrato.node.test.js`, onde o modulo agora vive.
+

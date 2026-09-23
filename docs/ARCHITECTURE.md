@@ -206,8 +206,12 @@ dictionaries and the root».
 | **the size of the screen and of a target** | `ui/layout.ts` | `app/css/style.css` 23% — ADR-0001 (whole multiples of 320×180) and ADR-0163 (≥640×360, text ≥16 px) |
 | **what the contract asks a cartridge** | `core/contract.ts` | `consumer-quiz/main-quiz.ts` 50% — the demo is what exercises the contract, and a field with no reader is a field nobody keeps |
 
-📌 **`render/draw.ts` and `render/viz-setters.ts` are not in the table, and that is information**: they have no neighbour above
-25%. They are changed alone.
+📌 **`render/viz-setters.ts` is not in the table, and that is information**: it has no neighbour above 25%. It is changed alone.
+⚠️ The frame-drawing module used to sit beside it here and **left the repository in the F12 move** (ADR-0228, 2026-09-23):
+drawing a tile world is a game's work, and it is the platformer's now. The co-change reading survives the departure — a module
+nothing changes with is a module nobody else's work touches — but the EXAMPLE does not. 📌 Its path is deliberately not written
+here: this file is a MAP, and a map that names something this tree no longer has sends its reader looking for nothing. Where a
+departed pointer IS named on purpose is the dead-pointer book in `tests/ponteiros-de-registo.node.test.js`.
 
 ### 3.4 Two lines that are long because something is missing
 
@@ -248,7 +252,10 @@ spread looks like.
 
 Engine constants (TILE_TYPES, TUNE, dimensions) live only in `app/js/core/constants.ts` — never duplicated in docs.
 The **canonical render Z-order** (named layers, world + overlay scopes; PIXI `zIndex` + DOM `z-index`) and the
-**post-process filter chain** (`POST_FX_ORDER`, a11y-correction-last) live only in `app/js/core/layers.ts` — see ADR-0020.
+**post-process filter chain** (`POST_FX_ORDER`, a11y-correction-last) lived in the layer-order module, which **left in the F12
+move** (ADR-0228): a z-order is the order of ONE game's layers. ⚠️ The rule of ADR-0020 — the accessibility correction is applied
+LAST — is the ENGINE's and outlives the table it was written in; it is now stated only inside the platformer, and where the
+engine will state it again is the boundary after this one.
 
 > ⚠️ **Contested by ADR-0027**: a measured flash limiter (WCAG 2.3.1) must run AFTER `A11Y_CORRECTION`,
 > because the correction *increases* inter-frame luminance delta and nothing measures downstream of it. Today 2.3.1

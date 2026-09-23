@@ -145,6 +145,11 @@ function setup(over = {}) {
     playerVizTex: (base, mode) => 'PLAYER:' + base + ':' + mode,
     pixiFilterFor: (mode) => 'FILTER:' + mode,
     clearPlayerDirectCache: () => { env.log.clearPlayerDirect++; },
+    // 🔴 AS DUAS PORTAS QUE O ADR-0228 ABRIU: a textura de um power-up vinha de `render/textures`, que saiu
+    // para o cartucho. A REGRA continua a ser da engine — trocar de modo visual repinta o que está na tela — e
+    // ela não precisa de saber o que um power-up é, o que é exactamente o que uma porta compra.
+    pupTexFor: (kind, mode) => ({ kind, mode }),
+    resetPupTexCache: () => { env.log.resetPupTex = (env.log.resetPupTex ?? 0) + 1; },
     setFrontDim: (on) => env.log.frontDim.push(on),
     rebuildExtras: () => { env.log.rebuildExtras++; },
     rebuildCoins: () => { env.log.rebuildCoins++; },

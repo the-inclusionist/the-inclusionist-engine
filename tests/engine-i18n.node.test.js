@@ -177,7 +177,6 @@ const CRU_CONHECIDO = {
   // esta tabela, atualize-a pelo que ESTE arquivo reporta; é a mesma lição do gate de fixtures.
 
   /* --- PAINÉIS DE AJUSTE: rótulos e dicas montados em markup, ainda sem `data-i18n`. --- */
-  'ui/map-hub.ts': 8,
   'ui/settings-motion.ts': 6,   // 7 → 6 em 2026-08-27: a etiqueta "todos os jogadores" das seções, que estava
                                // escrita à mão três vezes, virou uma chamada a `t('rm.sec.all')`
                                // 🔴 FICA EM 6 EM 2026-09-12, e o motivo vale mais que o número: o sufixo do
@@ -241,7 +240,6 @@ const CRU_CONHECIDO = {
                                    // jogo ficava sem pad sem que nada o dissesse. Encurtá-las para pagar menos
                                    // a este livro-razão pagaria com a parte que serve a quem as lê — a frase
                                    // nomeia a saída (`preset`, «remapeie um slot») E o que a criança perde.
-  'core/tiles.ts': 2,
   // ⚠️ `input/gamepad.ts` SAIU DA TABELA em 2026-09-07 (#123), e o que ela contava não era o que estava lá.
   // O teto era 2 — as duas frases COM acento do assistente de mapeamento. Havia CINCO: `' — aperte: '`,
   // `'Mapeados: '` e `'. Agora SOLTE tudo.'` não têm acento nem palavra funcional da lista, e por isso o

@@ -131,7 +131,10 @@ describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa
     // ⚠️ O modo de falhar deste ficheiro é o crivo casar zero e o livro parecer completo. Estes três pares
     // são conhecidos e de FORMAS DIFERENTES de import: `../core/constants.js` (render) e `./constants.js`
     // (o vizinho `core/collision.ts`), que foi exactamente o que a primeira versão do padrão não via.
-    expect(conta.get('LOGICAL_W'), 'ninguém importa LOGICAL_W? o crivo partiu-se').toBeGreaterThanOrEqual(5);
+    // 📌 5 → 4 em 23/09, pela terceira vez e pela mesma razão que o próprio ficheiro escreve abaixo: a F12
+    // (ADR-0228) levou módulos que importavam `LOGICAL_W`, e o que este número afere é que o `import` RESOLVE,
+    // não quantos existem. Descer com o corte é o comportamento correcto dele.
+    expect(conta.get('LOGICAL_W'), 'ninguém importa LOGICAL_W? o crivo partiu-se').toBeGreaterThanOrEqual(4);
     expect(conta.get('TILE_TYPES'), 'o import de vizinho (./constants.js) deixou de ser visto').toBeGreaterThanOrEqual(1);
     expect(conta.get('isHazard'), 'o import de vizinho deixou de ser visto').toBeGreaterThanOrEqual(1);
     // ⚠️ ESTE PISO NÃO MEDE DÍVIDA — mede que o `import` resolveu, e por isso é o único número deste ficheiro

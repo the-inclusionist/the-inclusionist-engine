@@ -61,8 +61,8 @@ said so. A document that describes the code has to be able to notice when it sto
   better does not cost me my place. `app/js/render/high-contrast.ts` · `tests/high-contrast.browser.test.js`,
   `tests/menu-contrast-measured.node.test.js`
 - ✅ As a **colour-blind player**, I want a **correction**, and I want it applied last so nothing re-tints it.
-  `app/js/render/cvd-matrices.ts`, `app/js/core/layers.ts` · `tests/viz-modes.node.test.js`,
-  `tests/layers.node.test.js`
+  `app/js/render/cvd-matrices.ts`, `game-platformer:app/js/core/layers.ts` · `tests/viz-modes.node.test.js`,
+  `game-platformer:tests/layers.node.test.js`
 - ✅ As a **player**, I want the **empathy simulation never to reach my controls**, so that a simulation can
   always be switched off. `app/js/ui/hud.ts` · `tests/hud.browser.test.js`
 - ✅ As a **player**, I want the game to **tell me when it crashed** instead of freezing, so that I know it is
@@ -86,8 +86,8 @@ said so. A document that describes the code has to be able to notice when it sto
   reach. `app/js/ui/reach-notice.ts` · `tests/reach-notice.node.test.js`, `tests/reach-notice.browser.test.js`
   — the notice exists; what it measures is still being settled in **#112** and **#114**.
 - ⬜ As a **player without a keyboard**, I want to **type a room code with the pad**, so that a console-shaped
-  machine can still take text. The mechanics are built and tested — `app/js/core/letter-grid.ts`,
-  `app/js/core/password.ts` · `tests/letter-grid.node.test.js`, `tests/password.node.test.js` — and **no screen
+  machine can still take text. The mechanics are built and tested — `game-platformer:app/js/core/letter-grid.ts`,
+  `game-platformer:app/js/core/password.ts` · `game-platformer:tests/letter-grid.node.test.js`, `game-platformer:tests/password.node.test.js` — and **no screen
   uses them**: neither module has a production importer. **#77**
 - ⬜ As a **player**, I want the game to **notice when I am struggling and adjust**, so that difficulty follows
   me instead of the other way round. **#92**
@@ -138,7 +138,7 @@ said so. A document that describes the code has to be able to notice when it sto
   offers seventeen typefaces can load them. `package.json` — the door promises more than it delivers today:
   **#119**
 - 🎮 As a **game developer**, I want the engine to **carry no game state**, so that two games on one page do
-  not collide. `app/js/core/run-state.ts` · `tests/run-state.node.test.js` — done on the engine's side; each
+  not collide. `game-platformer:app/js/core/run-state.ts` · `game-platformer:tests/run-state.node.test.js` — done on the engine's side; each
   game owns its own round.
 
 ---

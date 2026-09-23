@@ -99,7 +99,6 @@ const DIVIDA = {
 
   /* --- O QUE SOBRA, e nenhum dos dois é acoplamento de ENTRADA. --- */
   'core/constants.ts': 2,       // afinação da plataforma (`TUNE.jumpVel`), que sai com o cartucho (#111)
-  'render/player-anim.ts': 1,   // ⚠️ `tex.run` é NOME DE ANIMAÇÃO — o conjunto de quadros da corrida — e
                                 // NÃO o nome de uma ação. O renomeador da migração trocou-o por engano e
                                 // o teste rebentou com `Cannot read properties of undefined`. Fica como
                                 // lembrete de que um crivo por FORMA não distingue os dois sentidos que a

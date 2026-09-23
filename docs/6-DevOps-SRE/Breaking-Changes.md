@@ -2316,6 +2316,59 @@ to `undefined` with the suite green.
 395 lines, 73 → 66 branches). The root stays at `globalReach 0`, because what it passes down it received from
 its host — the reach changed place, not owner.
 
+
+## BY · The tile-world stack leaves the engine (ADR-0228, issue #203)
+
+**Who is affected:** anyone importing one of the twenty-six paths below. The package's `exports` are wildcards
+(`./render/*.js`, `./core/*.js`, `./ui/*.js`), so every one of them was a published entry point.
+
+📏 **The engine goes from 205 modules to 180, and from 20 597 lines to 18 275.** What leaves describes a game
+rather than serving one — judged by what each module PUBLISHES, which is the only test that survived two
+failed attempts at counting words:
+
+| leaving | what it publishes, and why that settles it |
+|---|---|
+| `render/city-tex` | `paintPigeon`, `paintCat`, `paintDog`, `CAR_PALETTES`, `paintCar` |
+| `render/recycling-tex` | `paintCan`, `paintPetBottle`, `paintGlassJar`, `paintBin`, `paintSign` |
+| `render/scene-city` | `SIGNAGE_COLORS`, `GRAFFITI_COLORS`, `CORAL_COLORS`, `FISH_COLORS` |
+| `render/textures` | `PLAYER_IDLE`, `PLAYER_WALK`, `PLAYER_CLIMB`, `PLAYER_HURT`, `PUP_TEX` |
+| `render/player-anim` | `COYOTE` — coyote time, and the cling/ladder/swim/fly states |
+| `core/tiles`, `core/collision`* | `TYPE_GLYPH`, `TILE_NAME`, `GLYPH_TYPE` |
+| `ui/map-hub` | `MAP_HUB_ROWS` |
+| `render/fx` | `JUICE`, `getHitstopT`, `getShakeT` |
+| and the rest | `draw`, `camera`, `minimap`, `weather`, `parallax`, `scene-parallax`, `scene-sky`, `city-tiles`, `scenery-data`, `set-scenery`, `world-tex`, `title-scene`, `wheelchair-sprites`, `core/world`, `core/run-state`, `core/letter-grid`, `core/password`, `core/layers` |
+
+Also leaving, from `core/constants`: **`ANIM`** (the animation cadences of a character that walks, runs, swims,
+clings and climbs), **`EASY`** (gravity, jump, slow-fall and trampoline multipliers) and **`TILE_COLOR`**.
+
+**Where they went:** `game-platformer`, at the fork point **v9.0.0** — the version that repository already runs.
+Landing the engine's current source broke its typecheck before anything imported it, because those files ask
+the package for names the installed 9.0.0 does not publish; making them compile would have meant migrating the
+whole cartridge, which is other work. It picks up anything newer on its own clock.
+
+🔴 **THREE MODULES WERE TRIED AND CAME BACK, and naming them is the point of this note.** They looked like a
+game's because their only readers were, but what they PUBLISH is accessibility:
+
+- **`core/collision`** — `caneBlockPx` (how far apart a white cane strikes), `isSolidType` (a hazard is SOLID
+  for a blind child and for one in a wheelchair — «a criança em cadeira de rodas não cai no fosso»), and
+  `isWcRampRiser`. A gate stopped the move by naming the rule: *«isHazard saiu: `isSolidType` depende dele no
+  modo cego»*. ⏸ It is genuinely mixed — four of its seven exports are tile geometry — and splitting it means
+  the engine expressing «hazard» without tiles, through `core/contract.roleOf`. That decision is not taken here.
+- **`render/viewports`** — the per-player screen, with the colour-blind correction and low-vision drawing
+  applied to each. That is pillar 7, and its imports are six accessibility modules.
+- **`render/sprite-fx`** — `outlineCanvas` is the dark outline the high-contrast mode draws behind the art.
+
+⚠️ **AND THE MOVE COST CONFORMANCE EVIDENCE, which is worse than code and is recorded rather than swallowed.**
+Two WCAG criteria moved out of the «measured» table of `docs/compliance/gates-de-acessibilidade.md` and into
+the holes: **2.2.2 Pause, Stop, Hide** (proven by the weather gate) and **2.4.1 Bypass Blocks** (proven by the
+layer-order gates). And **2.3.1 Three Flashes** got worse: the module that declared `FLASH_LIMIT` as the
+outermost pass left, so the engine no longer even has a marked address for a flash limiter it never built —
+and that is photosensitive epilepsy, which is safety and not comfort.
+
+📌 **Nothing was deleted before its new home was green.** The platformer received the stack, rewired 48 imports
+and passed 1351 cases BEFORE a single file was removed here — which is ADR-0123's driver 5 applied across two
+repositories.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

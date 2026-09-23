@@ -30,51 +30,12 @@
       "setMasterMuted",
       "tone"
     ],
-    "render/city-tiles.ts": [
-      "cityTiles"
-    ],
-    "render/fx.ts": [
-      "burstSparkle",
-      "getShakeT",
-      "initFx",
-      "puffDust",
-      "saveJuice"
-    ],
-    "render/minimap.ts": [
-      "setMinimapCorner"
-    ],
-    "render/recycling-tex.ts": [
-      "BIN_COLOUR",
-      "BIN_H",
-      "BIN_W",
-      "LITTER_ART",
-      "SIGN_H",
-      "SIGN_W",
-      "createRecyclingTextures",
-      "paintBin",
-      "paintCan",
-      "paintCardboardBox",
-      "paintGlassJar",
-      "paintPetBottle",
-      "paintSign"
-    ],
-    "render/scene-parallax.ts": [
-      "parallaxPlaceholder",
-      "themeCitySkyTexture",
-      "themeHillsTexture",
-      "themeSkyTexture",
-      "themeSkylineTexture"
+    "render/canvas.ts": [
+      "pixelCanvas",
+      "pixelTexture"
     ],
     "render/viz-axes.ts": [
       "directTheme"
-    ],
-    "render/weather.ts": [
-      "getCrowding"
-    ],
-    "render/world-tex.ts": [
-      "initWorldTex",
-      "worldCanvas",
-      "worldToTexture"
     ],
     "ui/layout.ts": [
       "initLayout"

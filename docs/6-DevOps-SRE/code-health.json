@@ -2,10 +2,10 @@
   "about": "ADR-0221 — the six measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID, a module is legitimately split, or the growth BUYS something no measure here can see — and in that third case the commit has to name the purchase and the falsifiable criterion that will show it landed (ADR-0221 point 6: the criterion is the co-change falling, not the number). Rewriting it to green a red build is the ratchet being unscrewed.",
   "takenOn": "2026-09-23",
   "ceiling": {
-    "codeLines": 187,
+    "codeLines": 200,
     "decisionNodes": 38,
     "maxDepth": 4,
-    "fanOut": 6,
+    "fanOut": 7,
     "globalReach": 0,
     "worstFunction": 10
   },
@@ -124,16 +124,16 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 6,
-      "fanIn": 3
+      "fanIn": 1
     },
     "core/constants.ts": {
-      "codeLines": 21,
+      "codeLines": 15,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 1,
-      "fanIn": 13
+      "fanIn": 6
     },
     "core/contract.ts": {
       "codeLines": 213,
@@ -151,7 +151,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 18
+      "fanIn": 17
     },
     "core/entity.ts": {
       "codeLines": 83,
@@ -160,7 +160,7 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 0,
-      "fanIn": 22
+      "fanIn": 18
     },
     "core/escape-html.ts": {
       "codeLines": 5,
@@ -207,24 +207,6 @@
       "worstFunction": 8,
       "fanIn": 42
     },
-    "core/layers.ts": {
-      "codeLines": 40,
-      "decisionNodes": 0,
-      "maxDepth": 0,
-      "fanOut": 0,
-      "globalReach": 0,
-      "worstFunction": 0,
-      "fanIn": 0
-    },
-    "core/letter-grid.ts": {
-      "codeLines": 85,
-      "decisionNodes": 11,
-      "maxDepth": 2,
-      "fanOut": 0,
-      "globalReach": 0,
-      "worstFunction": 7,
-      "fanIn": 0
-    },
     "core/loop.ts": {
       "codeLines": 21,
       "decisionNodes": 3,
@@ -233,15 +215,6 @@
       "globalReach": 0,
       "worstFunction": 5,
       "fanIn": 1
-    },
-    "core/password.ts": {
-      "codeLines": 95,
-      "decisionNodes": 27,
-      "maxDepth": 2,
-      "fanOut": 0,
-      "globalReach": 0,
-      "worstFunction": 16,
-      "fanIn": 0
     },
     "core/pause-icon-catalogue.ts": {
       "codeLines": 22,
@@ -268,7 +241,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 3
+      "fanIn": 0
     },
     "core/route.ts": {
       "codeLines": 81,
@@ -278,15 +251,6 @@
       "globalReach": 0,
       "worstFunction": 20,
       "fanIn": 1
-    },
-    "core/run-state.ts": {
-      "codeLines": 61,
-      "decisionNodes": 0,
-      "maxDepth": 0,
-      "fanOut": 2,
-      "globalReach": 0,
-      "worstFunction": 2,
-      "fanIn": 0
     },
     "core/scenes.ts": {
       "codeLines": 50,
@@ -322,19 +286,10 @@
       "fanOut": 3,
       "globalReach": 1,
       "worstFunction": 4,
-      "fanIn": 17,
+      "fanIn": 16,
       "reached": [
         "window"
       ]
-    },
-    "core/tiles.ts": {
-      "codeLines": 48,
-      "decisionNodes": 5,
-      "maxDepth": 3,
-      "fanOut": 0,
-      "globalReach": 0,
-      "worstFunction": 6,
-      "fanIn": 1
     },
     "core/visual-cycles.ts": {
       "codeLines": 13,
@@ -353,15 +308,6 @@
       "globalReach": 0,
       "worstFunction": 0,
       "fanIn": 2
-    },
-    "core/world.ts": {
-      "codeLines": 32,
-      "decisionNodes": 18,
-      "maxDepth": 4,
-      "fanOut": 1,
-      "globalReach": 0,
-      "worstFunction": 21,
-      "fanIn": 0
     },
     "educational/activities-registry.ts": {
       "codeLines": 58,
@@ -1001,7 +947,7 @@
       "fanOut": 0,
       "globalReach": 1,
       "worstFunction": 3,
-      "fanIn": 16,
+      "fanIn": 15,
       "reached": [
         "localStorage"
       ]
@@ -1068,15 +1014,6 @@
       "worstFunction": 8,
       "fanIn": 2
     },
-    "render/camera.ts": {
-      "codeLines": 56,
-      "decisionNodes": 4,
-      "maxDepth": 1,
-      "fanOut": 0,
-      "globalReach": 0,
-      "worstFunction": 3,
-      "fanIn": 1
-    },
     "render/canvas.ts": {
       "codeLines": 12,
       "decisionNodes": 4,
@@ -1084,28 +1021,10 @@
       "fanOut": 0,
       "globalReach": 1,
       "worstFunction": 6,
-      "fanIn": 9,
+      "fanIn": 3,
       "reached": [
         "document"
       ]
-    },
-    "render/city-tex.ts": {
-      "codeLines": 93,
-      "decisionNodes": 9,
-      "maxDepth": 2,
-      "fanOut": 1,
-      "globalReach": 0,
-      "worstFunction": 4,
-      "fanIn": 0
-    },
-    "render/city-tiles.ts": {
-      "codeLines": 111,
-      "decisionNodes": 0,
-      "maxDepth": 0,
-      "fanOut": 1,
-      "globalReach": 0,
-      "worstFunction": 1,
-      "fanIn": 0
     },
     "render/crt.ts": {
       "codeLines": 41,
@@ -1126,24 +1045,6 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
-      "fanIn": 2
-    },
-    "render/draw.ts": {
-      "codeLines": 155,
-      "decisionNodes": 32,
-      "maxDepth": 4,
-      "fanOut": 10,
-      "globalReach": 0,
-      "worstFunction": 41,
-      "fanIn": 0
-    },
-    "render/fx.ts": {
-      "codeLines": 96,
-      "decisionNodes": 22,
-      "maxDepth": 3,
-      "fanOut": 2,
-      "globalReach": 0,
-      "worstFunction": 7,
       "fanIn": 2
     },
     "render/hc-role-data.ts": {
@@ -1185,33 +1086,6 @@
         "document"
       ]
     },
-    "render/minimap.ts": {
-      "codeLines": 49,
-      "decisionNodes": 16,
-      "maxDepth": 5,
-      "fanOut": 2,
-      "globalReach": 0,
-      "worstFunction": 9,
-      "fanIn": 0
-    },
-    "render/parallax.ts": {
-      "codeLines": 88,
-      "decisionNodes": 7,
-      "maxDepth": 2,
-      "fanOut": 3,
-      "globalReach": 0,
-      "worstFunction": 4,
-      "fanIn": 0
-    },
-    "render/player-anim.ts": {
-      "codeLines": 123,
-      "decisionNodes": 20,
-      "maxDepth": 3,
-      "fanOut": 2,
-      "globalReach": 0,
-      "worstFunction": 8,
-      "fanIn": 1
-    },
     "render/port.ts": {
       "codeLines": 43,
       "decisionNodes": 0,
@@ -1219,52 +1093,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
-      "fanIn": 10
-    },
-    "render/recycling-tex.ts": {
-      "codeLines": 97,
-      "decisionNodes": 3,
-      "maxDepth": 1,
-      "fanOut": 1,
-      "globalReach": 0,
-      "worstFunction": 3,
-      "fanIn": 0
-    },
-    "render/scene-city.ts": {
-      "codeLines": 115,
-      "decisionNodes": 32,
-      "maxDepth": 8,
-      "fanOut": 1,
-      "globalReach": 0,
-      "worstFunction": 21,
-      "fanIn": 0
-    },
-    "render/scene-parallax.ts": {
-      "codeLines": 241,
-      "decisionNodes": 47,
-      "maxDepth": 4,
-      "fanOut": 3,
-      "globalReach": 0,
-      "worstFunction": 11,
-      "fanIn": 0
-    },
-    "render/scene-sky.ts": {
-      "codeLines": 154,
-      "decisionNodes": 57,
-      "maxDepth": 6,
-      "fanOut": 1,
-      "globalReach": 0,
-      "worstFunction": 57,
-      "fanIn": 1
-    },
-    "render/scenery-data.ts": {
-      "codeLines": 73,
-      "decisionNodes": 1,
-      "maxDepth": 1,
-      "fanOut": 0,
-      "globalReach": 0,
-      "worstFunction": 2,
-      "fanIn": 3
+      "fanIn": 4
     },
     "render/screen-pipeline.ts": {
       "codeLines": 114,
@@ -1275,15 +1104,6 @@
       "worstFunction": 7,
       "fanIn": 0
     },
-    "render/set-scenery.ts": {
-      "codeLines": 42,
-      "decisionNodes": 4,
-      "maxDepth": 2,
-      "fanOut": 2,
-      "globalReach": 0,
-      "worstFunction": 5,
-      "fanIn": 0
-    },
     "render/sprite-fx.ts": {
       "codeLines": 15,
       "decisionNodes": 8,
@@ -1291,25 +1111,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 7,
-      "fanIn": 2
-    },
-    "render/textures.ts": {
-      "codeLines": 150,
-      "decisionNodes": 21,
-      "maxDepth": 3,
-      "fanOut": 2,
-      "globalReach": 0,
-      "worstFunction": 7,
       "fanIn": 1
-    },
-    "render/title-scene.ts": {
-      "codeLines": 66,
-      "decisionNodes": 5,
-      "maxDepth": 2,
-      "fanOut": 3,
-      "globalReach": 0,
-      "worstFunction": 5,
-      "fanIn": 0
     },
     "render/viewports.ts": {
       "codeLines": 103,
@@ -1336,7 +1138,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 8
+      "fanIn": 6
     },
     "render/viz-modes.ts": {
       "codeLines": 33,
@@ -1357,40 +1159,13 @@
       "fanIn": 2
     },
     "render/viz-setters.ts": {
-      "codeLines": 268,
+      "codeLines": 269,
       "decisionNodes": 44,
       "maxDepth": 3,
-      "fanOut": 12,
+      "fanOut": 11,
       "globalReach": 0,
       "worstFunction": 9,
       "fanIn": 0
-    },
-    "render/weather.ts": {
-      "codeLines": 112,
-      "decisionNodes": 28,
-      "maxDepth": 3,
-      "fanOut": 2,
-      "globalReach": 0,
-      "worstFunction": 12,
-      "fanIn": 1
-    },
-    "render/wheelchair-sprites.ts": {
-      "codeLines": 37,
-      "decisionNodes": 5,
-      "maxDepth": 1,
-      "fanOut": 2,
-      "globalReach": 0,
-      "worstFunction": 3,
-      "fanIn": 1
-    },
-    "render/world-tex.ts": {
-      "codeLines": 39,
-      "decisionNodes": 11,
-      "maxDepth": 8,
-      "fanOut": 3,
-      "globalReach": 0,
-      "worstFunction": 15,
-      "fanIn": 1
     },
     "ui/audio-choices.ts": {
       "codeLines": 45,
@@ -1447,10 +1222,10 @@
       "fanIn": 2
     },
     "ui/debug-panel.ts": {
-      "codeLines": 187,
+      "codeLines": 186,
       "decisionNodes": 15,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 2,
       "worstFunction": 8,
       "fanIn": 0,
@@ -1617,15 +1392,6 @@
       "globalReach": 0,
       "worstFunction": 7,
       "fanIn": 1
-    },
-    "ui/map-hub.ts": {
-      "codeLines": 78,
-      "decisionNodes": 11,
-      "maxDepth": 2,
-      "fanOut": 1,
-      "globalReach": 0,
-      "worstFunction": 6,
-      "fanIn": 0
     },
     "ui/menu-items.ts": {
       "codeLines": 4,

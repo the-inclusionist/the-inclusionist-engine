@@ -288,54 +288,9 @@
       "set"
     ]
   },
-  "core/layers.ts": {
-    "type LayerName": "keyof typeof Z",
-    "type PostFx": "typeof POST_FX_ORDER[number]"
-  },
-  "core/letter-grid.ts": {
-    "interface Position": [
-      "coluna",
-      "linha"
-    ],
-    "interface LetterGrid": [
-      "apagar",
-      "capacidade",
-      "colunas",
-      "completo",
-      "digitar",
-      "faltam",
-      "indice",
-      "irPara",
-      "limpar",
-      "linhas",
-      "mover",
-      "posicao",
-      "simbolos",
-      "sob",
-      "valor"
-    ],
-    "interface LetterGridOptions": [
-      "capacidade?",
-      "colunas",
-      "simbolos"
-    ],
-    "type Direction": "'esquerda' | 'direita' | 'cima' | 'baixo'"
-  },
   "core/loop.ts": {
     "interface LoopOptions": [
       "aoFalhar?"
-    ]
-  },
-  "core/password.ts": {
-    "interface PasswordField": [
-      "bits",
-      "nome"
-    ],
-    "interface PasswordCodec": [
-      "campos",
-      "codificar",
-      "comprimento",
-      "decodificar"
     ]
   },
   "core/pause-icon-catalogue.ts": {
@@ -363,36 +318,6 @@
       "ate",
       "passos",
       "proximo"
-    ]
-  },
-  "core/run-state.ts": {
-    "interface LevelExtras": [
-      "gate",
-      "gateOpen",
-      "gateTiles",
-      "powerups"
-    ],
-    "interface RunState": [
-      "decorSeed",
-      "ended",
-      "grassDensity",
-      "numPlayers",
-      "pauseActor",
-      "players",
-      "selVizPlayer",
-      "setDecorSeed",
-      "setEnded",
-      "setGateOpen",
-      "setGrassDensity",
-      "setLevelExtras",
-      "setNumPlayers",
-      "setPauseActor",
-      "setSelVizPlayer",
-      "setWcSolid",
-      "wcSolid"
-    ],
-    "interface RunOptions": [
-      "aoTrocarJogadores?"
     ]
   },
   "core/scenes.ts": {
@@ -1706,113 +1631,12 @@
     ],
     "type VoskLoad": "| { readonly ok: true"
   },
-  "render/camera.ts": {
-    "interface Size": [
-      "w"
-    ],
-    "interface Camera": [
-      "camX"
-    ],
-    "interface DeadZone": [
-      "w"
-    ],
-    "interface CameraObj": [
-      "base",
-      "pular",
-      "quadro",
-      "redimensionar",
-      "seguir"
-    ]
-  },
   "render/canvas.ts": {
     "type PixelBrush": "(x: number, y: number, w: number, h: number, col: string) => void",
     "type PixelPainter": "(px: PixelBrush) => void"
   },
-  "render/city-tex.ts": {
-    "interface CityTextures": [
-      "adultTex",
-      "carTex",
-      "lifeTex"
-    ],
-    "type TexPair": "[Tex, Tex]",
-    "type Frame": "0 | 1",
-    "type CreatureKey": "keyof typeof CREATURE_ART"
-  },
   "render/cvd-matrices.ts": {
     "type CvdKey": "'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'fix-protan' | 'fix-deuter' | 'fix-tritan'"
-  },
-  "render/draw.ts": {
-    "interface GraphicsLike": [
-      "beginFill",
-      "clear",
-      "drawCircle",
-      "drawRect",
-      "endFill",
-      "lineStyle",
-      "lineTo",
-      "moveTo"
-    ],
-    "interface PlayerSprite": [
-      "scale",
-      "texture",
-      "x"
-    ],
-    "interface CameraLike": [
-      "x"
-    ],
-    "interface ItemSprite": [
-      "visible"
-    ],
-    "interface ReducedMotion": [
-      "items?"
-    ],
-    "interface DrawCtx": [
-      "BOX",
-      "WORLD_PX_H",
-      "WORLD_PX_W",
-      "applySharedTextures",
-      "camera",
-      "caneLayer",
-      "caneOn",
-      "chairLayer",
-      "drawElevators",
-      "drawMinimapPlayer",
-      "easyHitbox",
-      "getFxClock",
-      "getItemSprites",
-      "getNumPlayers",
-      "getPlayers",
-      "getPowerups",
-      "getVpTex",
-      "held",
-      "isWheelchair",
-      "itemOwnedBy",
-      "itemVisibleTo",
-      "markSeen",
-      "playerTextures",
-      "playerVizTex",
-      "powerupVisibleTo",
-      "redrawMinimapIfDirty",
-      "renderVpOverlay",
-      "renderizarEm",
-      "rm",
-      "updateGameHud",
-      "updateParallax"
-    ],
-    "interface DrawApi": [
-      "animatePlayer",
-      "drawFrame",
-      "placeCam"
-    ],
-    "type DrawPlayer": "AnimPlayer & PlayerView< 'i' | 'x' | 'y' | 'facing' | 'hurtTimer' | 'sq' | 'sqT' | 'easy' | 'visual' | 'sprite' >"
-  },
-  "render/fx.ts": {
-    "interface Particle": [
-      "x"
-    ],
-    "interface JuiceFlags": [
-      "dust"
-    ]
   },
   "render/hc-role-data.ts": {
     "type PaintableRole": "'hazard' | 'climb' | 'water'",
@@ -1839,71 +1663,6 @@
     "interface LqFilterCtx": [
       "onChange"
     ]
-  },
-  "render/parallax.ts": {
-    "interface ParallaxLayer": [
-      "factor",
-      "fy",
-      "key"
-    ],
-    "interface ParallaxPosition": [
-      "x"
-    ],
-    "interface TilingSpriteLike": [
-      "x",
-      "zIndex"
-    ],
-    "interface ParallaxCtx": [
-      "camera",
-      "citySkyTex",
-      "clearParallaxTexCache",
-      "criarAzulejo",
-      "getCenario",
-      "getDecorDeTela",
-      "getVizMode",
-      "hillsTex",
-      "placeholderTex",
-      "rm",
-      "skyTex",
-      "skylineTex"
-    ],
-    "interface ParallaxApi": [
-      "aplicarTemaParallax",
-      "layers",
-      "texNormal",
-      "updateParallax"
-    ]
-  },
-  "render/player-anim.ts": {
-    "interface FlavorLike": [
-      "hold",
-      "seq",
-      "tex"
-    ],
-    "interface PlayerTextures": [
-      "climb",
-      "clingCeil",
-      "clingWall",
-      "flavors",
-      "fly",
-      "idle",
-      "jumpDown",
-      "jumpUp",
-      "run",
-      "swim",
-      "swimIdle",
-      "walk"
-    ],
-    "interface PlayerAnimEnv": [
-      "dir",
-      "dt",
-      "held",
-      "rnd",
-      "tex",
-      "wheelchair"
-    ],
-    "type Frame": "unknown",
-    "type AnimPlayer": "Pick<ControlledPlayer, 'vx' | 'vy' | 'onGround' | 'onLadder' | 'inWater' | 'clinging' | 'clingN' | 'flying' | 'airTime' | 'runCane' | 'rmWalk' | 'rmBreath' | 'rmFlavor' | 'anim' | 'walkAnim' | 'climbFrame' | 'idleNow' | 'idleTime' | 'flavor' | 'flavorT' | 'walking' | 'running' | '_tx' | 'ctrl' | 'pad' >"
   },
   "render/port.ts": {
     "interface Drawing": [
@@ -1949,88 +1708,6 @@
     "type ApplyCssFilter": "(css: string, reach: FilterReach) => void",
     "type FilterReach": "'mundo' | 'mundo-e-menus'",
     "type ApplyHighContrastToDom": "(isOn: boolean) => void"
-  },
-  "render/recycling-tex.ts": {
-    "interface RecyclingTextures": [
-      "lixeira",
-      "lixo",
-      "placa"
-    ],
-    "type Material": "'papel' | 'plastico' | 'metal' | 'vidro'",
-    "type Bin": "'azul' | 'vermelha' | 'amarela' | 'verde'"
-  },
-  "render/scene-city.ts": {
-    "interface SceneCityCtx": [
-      "DIRECT_CFG",
-      "WORLD_PX_W",
-      "WORLD_W",
-      "cityDecoG",
-      "darkRegions",
-      "getCenario",
-      "lifeSurfaceAt",
-      "onCenarioChange?",
-      "skyLayer",
-      "solidAt"
-    ],
-    "interface SceneCity": [
-      "buildCityDeco"
-    ]
-  },
-  "render/scene-parallax.ts": {
-    "interface Sol": [
-      "cor",
-      "x",
-      "y"
-    ]
-  },
-  "render/scene-sky.ts": {
-    "interface ScreenCloud": [
-      "x"
-    ],
-    "interface SceneSkyCtx": [
-      "CLOUD_TEX",
-      "SCENERIES",
-      "WORLD_PX_W",
-      "getCenario",
-      "getCrowding",
-      "getDecorSeed",
-      "getGrassDensity",
-      "hexN",
-      "nuvemG",
-      "skyLayer",
-      "solidAt"
-    ],
-    "interface SceneSky": [
-      "stepSky"
-    ]
-  },
-  "render/scenery-data.ts": {
-    "interface Flora": [
-      "bDk",
-      "bLt",
-      "base",
-      "center",
-      "petals",
-      "top"
-    ],
-    "interface BuildingBand": [
-      "aceso?",
-      "base",
-      "corpo",
-      "largura",
-      "luz?",
-      "topo",
-      "topoFundo"
-    ],
-    "interface HillsTheme": [
-      "fundo",
-      "hills"
-    ],
-    "interface BuildingsTheme": [
-      "fundo",
-      "predios"
-    ],
-    "type SceneryTheme": "HillsTheme | BuildingsTheme"
   },
   "render/screen-pipeline.ts": {
     "interface Rect": [
@@ -2092,52 +1769,6 @@
       "configureRender"
     ],
     "type SpriteLike": "DisplayLike & WithFilter"
-  },
-  "render/set-scenery.ts": {
-    "interface SetSceneryCtx": [
-      "aplicarTemaParallax",
-      "applyCenarioVida",
-      "clearWorldTexCache",
-      "getCenario",
-      "getTiles",
-      "getWorldSprite",
-      "isVidaReady",
-      "isVizReady",
-      "reapplyVizAll",
-      "setCenarioValue",
-      "setWorldTextures",
-      "tex",
-      "worldCanvas"
-    ],
-    "interface SetSceneryApi": [
-      "setCenario"
-    ],
-    "type ThemeTiles": "Tileset"
-  },
-  "render/textures.ts": {
-    "interface TexturesCtx": [
-      "directCfg",
-      "directSpriteCanvas",
-      "disp",
-      "powerups",
-      "shapes"
-    ]
-  },
-  "render/title-scene.ts": {
-    "interface TitleSceneCtx": [
-      "getRm",
-      "screen",
-      "titleG"
-    ],
-    "interface TitleScene": [
-      "draw"
-    ],
-    "interface TitleCloudDef": [
-      "cx"
-    ],
-    "interface TitleGrassRow": [
-      "xStart"
-    ]
   },
   "render/viewports.ts": {
     "interface ViewportsCtx": [
@@ -2214,11 +1845,13 @@
       "parallaxTexFor",
       "pixiFilterFor",
       "playerVizTex",
+      "pupTexFor",
       "rebuildCoins",
       "rebuildExtras",
       "reflectVizButtons",
       "renderEmpathyPanel",
       "renderVisualPanel",
+      "resetPupTexCache",
       "setFrontDim",
       "setModoCego?",
       "setSelVizPlayer",
@@ -2241,38 +1874,6 @@
       "setVisualDoJogador",
       "updateVizIndicator",
       "updateVpDots"
-    ]
-  },
-  "render/weather.ts": {
-    "interface RainDrop": [
-      "x"
-    ],
-    "interface ThunderStep": [
-      "thunderCD"
-    ],
-    "interface WeatherCtx": [
-      "getRm",
-      "mundoRodando",
-      "screen",
-      "stage",
-      "temChuva",
-      "thunder",
-      "weatherLayer"
-    ]
-  },
-  "render/wheelchair-sprites.ts": {
-    "interface DrawGraphics": [
-      "beginFill",
-      "drawCircle",
-      "endFill",
-      "lineStyle",
-      "lineTo",
-      "moveTo"
-    ]
-  },
-  "render/world-tex.ts": {
-    "interface Tileset": [
-      "fill"
     ]
   },
   "ui/audio-choices.ts": {
@@ -2558,29 +2159,6 @@
       "narrar?",
       "procurar"
     ]
-  },
-  "ui/map-hub.ts": {
-    "interface MapHubRow": [
-      "act?",
-      "lbl",
-      "mode?",
-      "soon?"
-    ],
-    "interface MapHubRowState": [
-      "dis",
-      "off"
-    ],
-    "interface MapHubCtx": [
-      "$",
-      "getNumPlayers",
-      "openOptions",
-      "openPadWiz",
-      "srAlert"
-    ],
-    "interface MapHubApi": [
-      "render"
-    ],
-    "type MapHubAction": "'options' | 'padwiz' | null"
   },
   "ui/menu-nav.ts": {
     "interface NavKeyEvent": [

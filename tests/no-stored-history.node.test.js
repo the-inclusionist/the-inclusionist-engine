@@ -67,7 +67,6 @@ const INVENTARIO = {
   'platform/tts.ts': 'criança · a voz escolhida para a narração (ADR-0185)',
   'platform/storage.ts': 'a própria camada — é aqui que o `localStorage.setItem` vive, e só aqui',
   'render/crt.ts': 'criança · os parâmetros do filtro CRT',
-  'render/fx.ts': 'criança · a intensidade dos efeitos de tela',
   'render/high-contrast.ts': 'criança · as cores por papel do alto contraste',
   'render/lq-filter.ts': 'criança · o nível do filtro de baixa qualidade',
   'render/viz-setters.ts': 'criança · a simulação visual escolhida, por jogador',

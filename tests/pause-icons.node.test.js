@@ -29,13 +29,22 @@ import { iconBtnMarkup, iconsMarkup, pmBtnMarkup, screenPauseMarkup } from '../a
 // criança que não suporta ruído precisa que a engine cale. Os casos ficam aqui porque é aqui que o ciclo do ☺ é exercido.
 import { nextCalmMode, calmAudioPlan, calmMotionPlan, CALM_AUDIO_CATS } from '../app/js/core/calm-mode.js';
 import { CVD_SEQ, CVD_NAMES, nextContrast, nextCvd, CONTRAST_LEVELS } from '../app/js/core/visual-cycles.js';
-import { createRunState } from '../app/js/core/run-state.js';
+
 // ☝️ keeps ONE value for the whole engine (ADR-0218), so it is read and reset here as the module state it is.
 import * as estado from '../app/js/core/state.js';
 // A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
 // ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
 // cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
-const rodada = createRunState();
+/*
+ * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` saiu para o `game-platformer` com a pilha
+ * de mundo-de-tiles. Este ficheiro nunca testou a rodada — ele PASSA uma ao cartão de pausa, e o que mede é o
+ * cartão. O mínimo que o cartão lê chega aqui, e o duplo é honesto porque a asserção nunca foi sobre ele.
+ */
+const rodada = {
+  numPlayers: 1,
+  players: [],
+  setNumPlayers(n) { this.numPlayers = n; },
+};
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 const numPlayers = () => rodada.numPlayers; // era binding vivo; virou função (o teste chama `numPlayers()`)

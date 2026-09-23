@@ -53,6 +53,28 @@ describe('o mapa é declaração, não adivinhação', () => {
  * face à fase 2 é o que se pode medir: um nome vive no retrato da superfície, mas um ficheiro vive no DISCO — e por isso estes
  * casos perguntam ao sistema de ficheiros, que é a única testemunha que não repete o que o mapa diz.
  */
+/*
+ * 🔴 O QUE MUDOU DE NOME E DEPOIS MUDOU DE REPOSITÓRIO. O mapa da fase 3 regista «X passou a Y», e para sete
+ * ficheiros o Y deixou de existir aqui — não porque o rename falhou, mas porque o ADR-0228 tirou da engine os
+ * módulos que descrevem um jogo, e estes foram com eles para o `game-platformer`.
+ *
+ * 📌 DECLARADOS COM O MOTIVO, e não apagados do mapa: o mapa é o registo de uma migração que aconteceu, e
+ * reescrevê-lo faria a fase 3 parecer menor do que foi. É a mesma escolha que o livro dos ponteiros mortos faz,
+ * pela mesma razão — «X virou Y» é dado SOBRE caminhos, e um livro que se deixa reescrever deixa de ser livro.
+ *
+ * ⚠️ E a metade VELHA do par continua a ser exigida: o ficheiro com o nome antigo não pode estar de volta aqui.
+ * Só a existência do NOVO é dispensada, e só para estes sete.
+ */
+const SAIRAM = {
+  'app/js/render/scenery-data.ts': 'ADR-0228: os cenários são de um jogo',
+  'app/js/render/set-scenery.ts': 'ADR-0228: idem — quem escolhe o cenário é o cartucho',
+  'tests/scenery-data.node.test.js': 'ADR-0228: foi com o módulo',
+  'tests/set-scenery.node.test.js': 'ADR-0228: foi com o módulo',
+  'tests/cloud-blanket.node.test.js': 'ADR-0228: nuvens são cenário — foi com `render/scene-sky`',
+  'tests/scene-parallax-buildings.node.test.js': 'ADR-0228: foi com `render/scene-parallax`',
+  'tests/scene-parallax-silhouettes.node.test.js': 'ADR-0228: foi com `render/scene-parallax`',
+};
+
 describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
   const fileLayers = () => Object.entries(readMap().fileLayers ?? {});
 
@@ -63,10 +85,20 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
     for (const [camada, l] of feitas) {
       for (const [velho, novo] of Object.entries(l.files)) {
         if (existsSync(join(RAIZ, velho))) errados.push(`${camada}: ${velho} continua lá`);
-        if (!existsSync(join(RAIZ, novo))) errados.push(`${camada}: ${novo} não existe`);
+        if (!existsSync(join(RAIZ, novo)) && !(novo in SAIRAM)) errados.push(`${camada}: ${novo} não existe`);
       }
     }
     expect(errados, 'o mapa diz que moveu e o disco diz que não').toEqual([]);
+  });
+
+  it('⚠️ [Zero] uma entrada de `SAIRAM` que VOLTOU reprova — senão a lista de excepções vira coringa', () => {
+    /*
+     * 🔴 Uma lista de excepções que sobrevive ao facto que a justificava é pior do que não a ter: ela autoriza
+     * de graça. Este caso é o par do de cima, e é o que mantém a dispensa amarrada à realidade — se um destes
+     * sete voltar à árvore, a linha que o dispensa tem de sair com ele.
+     */
+    const voltaram = Object.keys(SAIRAM).filter((p) => existsSync(join(RAIZ, p)));
+    expect(voltaram, 'está de volta na árvore e continua declarado como tendo saído').toEqual([]);
   });
 
   it('🔴 [Right] o caminho novo é inglês, e nenhum ficheiro velho aponta para dois sítios', () => {

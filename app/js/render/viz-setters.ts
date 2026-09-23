@@ -31,7 +31,7 @@ import {
 } from './viz-axes-labels.js';
 import { simulationRefusal } from './viz-refusal.js';
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
-import { pupTexFor, resetPupTexCache } from './textures.js';
+
 import { lqFilter } from './lq-filter.js';
 import { setVizModeValue, setBlindModeValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
@@ -190,6 +190,15 @@ export interface VizSettersCtx {
   playerVizTex: (base: unknown, mode: string) => unknown;
   pixiFilterFor: (mode: string) => unknown;
   clearPlayerDirectCache: () => void;               // zera `_playerDirect` (cache de playerVizTex, mora lá)
+  /**
+   * A TEXTURA DE UM POWER-UP NESTE MODO VISUAL, e o esquecimento dela — por PORTA desde o ADR-0228.
+   *
+   * 🔴 Vinham de `render/textures`, que saiu para o cartucho: um power-up é mobília de um jogo, e o cache das
+   * texturas dele também. O que é da ENGINE é a regra — trocar de modo visual repinta o que está na tela —, e
+   * essa regra não precisa de saber o que um power-up é.
+   */
+  pupTexFor: (kind: string, mode: string) => unknown;
+  resetPupTexCache: () => void;
 
   /* --- efeitos colaterais de outros subsistemas --- */
   setFrontDim: (on: boolean) => void;               // game/traffic: carros/placas/semáforo escurecem como fundo
@@ -245,7 +254,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       ctx.parallaxLayers.forEach((ts, j) => { ts.texture = ctx.parallaxTexFor(j, mode); });
       ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(mode); });
       for (const s of ctx.getItemSprites()) { if (s) s.texture = spriteTexFor(ctx.itemTexId, mode); }
-      for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.texture = pupTexFor(pu.kind, mode); }
+      for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.texture = ctx.pupTexFor(pu.kind, mode); }
     }
     for (const pl of ctx.getPlayers()) { if (pl.sprite && pl._tx) pl.sprite.texture = ctx.playerVizTex(pl._tx, mode); } // player muda de quadro toda frame
   }
@@ -396,7 +405,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   // invalida os caches de textura direta (mundo depende de bg; sprites de fg) e re-renderiza
   function rebakeDirect(): void {
-    clearWorldTexCache(); clearSpriteTexCache(); resetPupTexCache(); ctx.clearPlayerDirectCache(); ctx.invalidateSharedViz();
+    clearWorldTexCache(); clearSpriteTexCache(); ctx.resetPupTexCache(); ctx.clearPlayerDirectCache(); ctx.invalidateSharedViz();
     if (ctx.getNumPlayers() <= 1) applyVizGlobal(ctx.getPlayers()[0].visual ?? PADRAO); else applyVpFilters();
   }
 

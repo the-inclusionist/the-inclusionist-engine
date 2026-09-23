@@ -1,11 +1,11 @@
 {
   "measured": "2026-09-23",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 1049,
+  "total": 868,
   "totals": {
-    "decl": 297,
-    "param": 324,
-    "membro": 428
+    "decl": 247,
+    "param": 274,
+    "membro": 347
   },
   "files": {
     "app/js/boot/create-game.ts": {
@@ -58,30 +58,15 @@
       "param": 2,
       "membro": 0
     },
-    "app/js/core/letter-grid.ts": {
-      "decl": 11,
-      "param": 7,
-      "membro": 24
-    },
     "app/js/core/loop.ts": {
       "decl": 2,
       "param": 4,
       "membro": 1
     },
-    "app/js/core/password.ts": {
-      "decl": 5,
-      "param": 4,
-      "membro": 7
-    },
     "app/js/core/route.ts": {
       "decl": 7,
       "param": 5,
       "membro": 6
-    },
-    "app/js/core/run-state.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 1
     },
     "app/js/core/scenes.ts": {
       "decl": 0,
@@ -268,70 +253,25 @@
       "param": 0,
       "membro": 0
     },
-    "app/js/render/camera.ts": {
-      "decl": 1,
-      "param": 1,
-      "membro": 8
-    },
     "app/js/render/crt.ts": {
       "decl": 0,
       "param": 0,
       "membro": 2
-    },
-    "app/js/render/draw.ts": {
-      "decl": 1,
-      "param": 0,
-      "membro": 1
     },
     "app/js/render/high-contrast.ts": {
       "decl": 2,
       "param": 0,
       "membro": 0
     },
-    "app/js/render/parallax.ts": {
-      "decl": 4,
-      "param": 5,
-      "membro": 4
-    },
     "app/js/render/port.ts": {
       "decl": 0,
       "param": 4,
       "membro": 0
     },
-    "app/js/render/recycling-tex.ts": {
-      "decl": 8,
-      "param": 3,
-      "membro": 5
-    },
-    "app/js/render/scene-city.ts": {
-      "decl": 1,
-      "param": 0,
-      "membro": 3
-    },
-    "app/js/render/scene-parallax.ts": {
-      "decl": 6,
-      "param": 26,
-      "membro": 3
-    },
-    "app/js/render/scene-sky.ts": {
-      "decl": 10,
-      "param": 1,
-      "membro": 4
-    },
-    "app/js/render/scenery-data.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 13
-    },
     "app/js/render/screen-pipeline.ts": {
       "decl": 0,
       "param": 0,
       "membro": 2
-    },
-    "app/js/render/set-scenery.ts": {
-      "decl": 2,
-      "param": 1,
-      "membro": 6
     },
     "app/js/render/viewports.ts": {
       "decl": 0,
@@ -362,11 +302,6 @@
       "decl": 6,
       "param": 5,
       "membro": 7
-    },
-    "app/js/render/weather.ts": {
-      "decl": 1,
-      "param": 2,
-      "membro": 2
     },
     "app/js/ui/caa-sets.ts": {
       "decl": 0,

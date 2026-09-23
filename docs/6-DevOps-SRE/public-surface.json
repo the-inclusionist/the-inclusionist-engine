@@ -102,12 +102,9 @@
     "tileAt"
   ],
   "core/constants.ts": [
-    "ANIM",
-    "EASY",
     "LOGICAL_H",
     "LOGICAL_W",
     "TILE",
-    "TILE_COLOR",
     "TILE_TYPES",
     "TileType",
     "isHazard",
@@ -182,30 +179,10 @@
     "setLocale",
     "t"
   ],
-  "core/layers.ts": [
-    "LayerName",
-    "POST_FX_ORDER",
-    "PostFx",
-    "Z"
-  ],
-  "core/letter-grid.ts": [
-    "Direction",
-    "LetterGrid",
-    "LetterGridOptions",
-    "Position",
-    "createLetterGrid"
-  ],
   "core/loop.ts": [
     "LoopOptions",
     "registerCrashNotice",
     "startLoop"
-  ],
-  "core/password.ts": [
-    "ALPHABET",
-    "PasswordCodec",
-    "PasswordField",
-    "createPasswordCodec",
-    "formatPassword"
   ],
   "core/pause-icon-catalogue.ts": [
     "PAUSE_ICONS",
@@ -231,12 +208,6 @@
     "WALKABLE_ROLES",
     "isWalkable",
     "routeTo"
-  ],
-  "core/run-state.ts": [
-    "LevelExtras",
-    "RunOptions",
-    "RunState",
-    "createRunState"
   ],
   "core/scenes.ts": [
     "Scene",
@@ -315,14 +286,6 @@
     "voiceControl",
     "wheelchair"
   ],
-  "core/tiles.ts": [
-    "GLYPH_TYPE",
-    "TILE_NAME",
-    "TYPE_GLYPH",
-    "gridToGlyphs",
-    "parseLevel",
-    "selfTest"
-  ],
   "core/visual-cycles.ts": [
     "CONTRAST_LEVELS",
     "CVD_NAMES",
@@ -335,9 +298,6 @@
     "Simulation",
     "Theme",
     "VisualState"
-  ],
-  "core/world.ts": [
-    "buildWorldFromText"
   ],
   "educational/activities-registry.ts": [
     "ActivityCat",
@@ -1038,16 +998,6 @@
     "commandModelId",
     "loadVoskRuntime"
   ],
-  "render/camera.ts": [
-    "Camera",
-    "CameraObj",
-    "DeadZone",
-    "Size",
-    "clampInside",
-    "createCamera",
-    "frameOn",
-    "shake"
-  ],
   "render/canvas.ts": [
     "PixelBrush",
     "PixelPainter",
@@ -1056,31 +1006,6 @@
     "pixelCanvas",
     "pixelTexture",
     "tex"
-  ],
-  "render/city-tex.ts": [
-    "ADULT_COL",
-    "ADULT_H",
-    "ADULT_SHAPES",
-    "ADULT_W",
-    "CAR_H",
-    "CAR_PALETTES",
-    "CAR_W",
-    "CREATURE_ART",
-    "CityTextures",
-    "CreatureKey",
-    "Frame",
-    "TexPair",
-    "createCityTextures",
-    "paintCar",
-    "paintCat",
-    "paintDog",
-    "paintPigeon",
-    "paintPigeonFly"
-  ],
-  "render/city-tiles.ts": [
-    "cityTiles",
-    "paintTileFill",
-    "paintTileSurface"
   ],
   "render/crt.ts": [
     "CRT",
@@ -1096,38 +1021,6 @@
     "CvdKey",
     "cvdMatrixValues",
     "installCvdFilters"
-  ],
-  "render/draw.ts": [
-    "CameraLike",
-    "DrawApi",
-    "DrawCtx",
-    "DrawPlayer",
-    "GraphicsLike",
-    "ItemSprite",
-    "PlayerSprite",
-    "ReducedMotion",
-    "initDraw"
-  ],
-  "render/fx.ts": [
-    "JUICE",
-    "JuiceFlags",
-    "Particle",
-    "addHitstop",
-    "addShake",
-    "burstSparkle",
-    "drawFx",
-    "easeOut3",
-    "getHitstopT",
-    "getParticles",
-    "getShakeT",
-    "initFx",
-    "puffDust",
-    "saveJuice",
-    "setSquash",
-    "shakeAmp",
-    "spawnParticle",
-    "stepFx",
-    "tickHitstop"
   ],
   "render/hc-role-data.ts": [
     "HC_ROLE_DEF",
@@ -1167,37 +1060,6 @@
     "lqName",
     "setLq"
   ],
-  "render/minimap.ts": [
-    "drawMinimapPlayer",
-    "getMinimap",
-    "initMinimap",
-    "markSeen",
-    "minimapSeenCount",
-    "redrawMinimapIfDirty",
-    "resetMinimap",
-    "setMinimapCorner",
-    "setMinimapVisible"
-  ],
-  "render/parallax.ts": [
-    "FILE_PER_LAYER",
-    "PARALLAX",
-    "ParallaxApi",
-    "ParallaxCtx",
-    "ParallaxLayer",
-    "ParallaxPosition",
-    "TilingSpriteLike",
-    "createParallax",
-    "parallaxPositions"
-  ],
-  "render/player-anim.ts": [
-    "AnimPlayer",
-    "COYOTE",
-    "FlavorLike",
-    "Frame",
-    "PlayerAnimEnv",
-    "PlayerTextures",
-    "choosePlayerFrame"
-  ],
   "render/port.ts": [
     "ApplyCssFilter",
     "ApplyHighContrastToDom",
@@ -1216,82 +1078,6 @@
     "Visible",
     "WithFilter",
     "WithTexture"
-  ],
-  "render/recycling-tex.ts": [
-    "BIN_COLOUR",
-    "BIN_H",
-    "BIN_W",
-    "Bin",
-    "LITTER_ART",
-    "Material",
-    "RecyclingTextures",
-    "SIGN_H",
-    "SIGN_W",
-    "createRecyclingTextures",
-    "paintBin",
-    "paintCan",
-    "paintCardboardBox",
-    "paintGlassJar",
-    "paintPetBottle",
-    "paintSign"
-  ],
-  "render/scene-city.ts": [
-    "CORAL_COLORS",
-    "FISH_COLORS",
-    "GRAFFITI_COLORS",
-    "SIGNAGE_COLORS",
-    "SceneCity",
-    "SceneCityCtx",
-    "abandonedDecorKind",
-    "coralColor",
-    "fishColor",
-    "fishHash",
-    "fishSpawnsAt",
-    "graffitiColor",
-    "initSceneCity",
-    "isSignageColumn",
-    "isStreetlampColumn",
-    "lavaStreakOffset",
-    "signageColor",
-    "waterBedHash",
-    "waterBedKind"
-  ],
-  "render/scene-parallax.ts": [
-    "SILHOUETTES",
-    "Sol",
-    "drawBuildings",
-    "hash01",
-    "hillHeight",
-    "paintSun",
-    "parallaxPlaceholder",
-    "skyStops",
-    "skyWidth",
-    "themeCitySkyTexture",
-    "themeHillsTexture",
-    "themeSkyTexture",
-    "themeSkylineTexture"
-  ],
-  "render/scene-sky.ts": [
-    "CLOUD_H",
-    "CLOUD_W",
-    "SceneSky",
-    "SceneSkyCtx",
-    "ScreenCloud",
-    "cloudWrapX",
-    "createSceneSky",
-    "screenClouds"
-  ],
-  "render/scenery-data.ts": [
-    "BuildingBand",
-    "BuildingsTheme",
-    "DEFAULT_SCENERY",
-    "Flora",
-    "HillsTheme",
-    "SCENERIES",
-    "SceneryTheme",
-    "THEME_FLORA",
-    "hexN",
-    "normaliseScenery"
   ],
   "render/screen-pipeline.ts": [
     "CameraLike",
@@ -1315,52 +1101,9 @@
     "initScreenPipeline",
     "planScreens"
   ],
-  "render/set-scenery.ts": [
-    "SetSceneryApi",
-    "SetSceneryCtx",
-    "ThemeTiles",
-    "createSetScenery"
-  ],
   "render/sprite-fx.ts": [
     "outlineCanvas",
     "spriteToCanvas"
-  ],
-  "render/textures.ts": [
-    "PIP_H",
-    "PIP_IDLE",
-    "PIP_PAL",
-    "PIP_W",
-    "PIP_WALK",
-    "PLAYER_CLIMB",
-    "PLAYER_HURT",
-    "PLAYER_IDLE",
-    "PLAYER_WALK",
-    "PUP_TEX",
-    "SHAPE_TEX",
-    "TexturesCtx",
-    "buildLegacyPlayerTex",
-    "indexedToCanvas",
-    "initTextures",
-    "isPix",
-    "letterTexture",
-    "pupTexFor",
-    "resetPupTexCache",
-    "shapePoints",
-    "shapeTexture",
-    "silhouetteCanvasIdx"
-  ],
-  "render/title-scene.ts": [
-    "TITLE_CLOUDS",
-    "TitleCloudDef",
-    "TitleGrassRow",
-    "TitleScene",
-    "TitleSceneCtx",
-    "createTitleScene",
-    "titleCloudDriftOffset",
-    "titleCloudX",
-    "titleGrassRows",
-    "titleHorizonY",
-    "titleSkyRowColor"
   ],
   "render/viewports.ts": [
     "ViewportsApi",
@@ -1438,39 +1181,6 @@
     "vizGroupHtml",
     "vizGroupSay",
     "vizIndicatorFor"
-  ],
-  "render/weather.ts": [
-    "RainDrop",
-    "ThunderStep",
-    "WeatherCtx",
-    "drawWeather",
-    "getCrowding",
-    "getRainLevel",
-    "getWeatherT",
-    "initWeather",
-    "makeRainDrops",
-    "rainLevelTarget",
-    "rampRainLevel",
-    "setWeatherT",
-    "stepRainDrop",
-    "stepThunder",
-    "targetCrowding",
-    "updateWeather",
-    "weatherPhase"
-  ],
-  "render/wheelchair-sprites.ts": [
-    "DrawGraphics",
-    "caneColor",
-    "drawCane",
-    "drawChair",
-    "drawRunCane"
-  ],
-  "render/world-tex.ts": [
-    "Tileset",
-    "initWorldTex",
-    "isGroundType",
-    "worldCanvas",
-    "worldToTexture"
   ],
   "ui/audio-choices.ts": [
     "AudioCatDef",
@@ -1672,20 +1382,6 @@
   "ui/loop-crash.ts": [
     "CrashNoticeCtx",
     "createCrashNotice"
-  ],
-  "ui/map-hub.ts": [
-    "MAP_HUB_ROWS",
-    "MapHubAction",
-    "MapHubApi",
-    "MapHubCtx",
-    "MapHubRow",
-    "MapHubRowState",
-    "initMapHub",
-    "mapHubMarkup",
-    "mapHubStates",
-    "soonMessage",
-    "soonName",
-    "wrongModeMessage"
   ],
   "ui/menu-items.ts": [
     "ITEM_SELECTOR",
