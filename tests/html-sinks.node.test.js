@@ -94,9 +94,9 @@ const SEGUROS = [
   ['boot/create-game.ts', 'a11yBar.innerHTML = iconsMarkup(', 'markup da engine + i18n'],
   ['ui/map-hub.ts', 'el.innerHTML = mapHubMarkup(np)', 'só o número de jogadores'],
   ['ui/pause-icons.ts', 'sp.innerHTML = screenPauseMarkup({', 'markup da engine + i18n'],
-  // ⚠️ O argumento entrou em 2026-09-08 (ADR-0106 §5) e NÃO muda a classificação: `iconesDoJogo` é uma
+  // ⚠️ O argumento entrou em 2026-09-08 (ADR-0106 §5) e NÃO muda a classificação: `gameIcons` é uma
   // sub-lista do `PAUSE_ICONS`, constante de `core/pause-icon-catalogue` — nada de fora do repositório alcança este sink.
-  ['ui/pause-icons.ts', 'bar.innerHTML = quickBarMarkup(iconesDoJogo);', 'markup da engine + i18n'],
+  ['ui/pause-icons.ts', 'bar.innerHTML = quickBarMarkup(gameIcons);', 'markup da engine + i18n'],
   // A lista de vozes do sistema mudou de casa com a secção da voz (ADR-0221, issue #203): quem limpa este `<select>` é
   // agora o `ui/voice-settings`. A classificação não muda com o ficheiro — o que entra continua a ser uma cadeia vazia.
   ['ui/voice-settings.ts', "sel.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],

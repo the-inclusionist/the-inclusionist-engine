@@ -182,8 +182,8 @@ export function normalizeTouchMap(stored: unknown): Record<string, string> {
   // guardado VENCER o padrão, então um `b0: 'jump'` de antes do ADR-0086 sobrescreveria o `b0: 'action2'`
   // correto e o botão da tela deixaria de fazer nada — sem erro nenhum. Aqui o nome da ação está no VALOR,
   // não na chave, e por isso precisa de um tradutor próprio. Ver `input/vocabulary-migration.ts`.
-  const migrado = migrateTouchMap(stored && typeof stored === 'object' ? (stored as Record<string, string>) : null);
-  return Object.assign({}, TOUCH_DEFAULT, migrado || {});
+  const migrated = migrateTouchMap(stored && typeof stored === 'object' ? (stored as Record<string, string>) : null);
+  return Object.assign({}, TOUCH_DEFAULT, migrated || {});
 }
 
 export type PadKind = 'kb' | 'x' | 'd';
@@ -265,9 +265,9 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     ).join('');
     // As palavras do jogo, por `textContent` — que escapa por construção. A ordem casa porque é a mesma lista.
     for (const sel of el.querySelectorAll<HTMLSelectElement>('select[data-slot]')) {
-      const palavras = ctx.acoesDoJogo();
-      for (let i = 0; i < sel.options.length && i < palavras.length; i++) {
-        sel.options[i]!.textContent = palavras[i]!.rotulo;
+      const words = ctx.acoesDoJogo();
+      for (let i = 0; i < sel.options.length && i < words.length; i++) {
+        sel.options[i]!.textContent = words[i]!.rotulo;
       }
     }
     el.querySelectorAll<HTMLSelectElement>('select[data-slot]').forEach((sel) => {
@@ -278,16 +278,16 @@ export function initTouch(ctx: TouchCtx): TouchApi {
         const label = sel.previousElementSibling ? sel.previousElementSibling.textContent : null;
         // ⚠️ A palavra falada é a MESMA que a lida: sai da mesma lista que acabou de montar o `<option>`.
         // Antes vinham de tabelas diferentes e nada obrigava as duas a concordar.
-        const escolhida = ctx.acoesDoJogo().find((x) => x.acao === sel.value);
-        const nomeDoSlot = label || t('touch.slot.fallback');
+        const chosen = ctx.acoesDoJogo().find((x) => x.acao === sel.value);
+        const slotName = label || t('touch.slot.fallback');
         // ⚠️ SEM PALAVRA DO JOGO, O ANÚNCIO PERDE A POSIÇÃO — NÃO RECUA PARA O ID. `sel.value` é o nome
         // ABSTRATO (`action3`), e o ADR-0074 diz que ele nunca chega a uma pessoa; o `7742ac0` já pagou este
         // defeito no ecrã de remapeamento e a saída é a mesma: uma chave própria que diz o que importa.
         // 📌 O recuo é alcançável porque `acoesDoJogo()` é FUNÇÃO do cartucho, relida a cada `change`: num hub
         // de atividades a lista muda por baixo e a `<option>` desenhada antes fica órfã.
-        ctx.srSay(escolhida
-          ? t('sr.touch.slotSet', { slot: nomeDoSlot, acao: escolhida.rotulo })
-          : t('sr.touch.slotSetUnnamed', { slot: nomeDoSlot }));
+        ctx.srSay(chosen
+          ? t('sr.touch.slotSet', { slot: slotName, acao: chosen.rotulo })
+          : t('sr.touch.slotSetUnnamed', { slot: slotName }));
       });
     });
   }
@@ -479,22 +479,22 @@ export interface TouchMarkupSpec {
  * A BUTTON'S NAME, from the position it fires (ADR-0165): the same in every game — 1 to 4, L1/L2/R1/R2, SELECT, START,
  * and the four directions by their spoken name. The cartridge's word is the FUNCTION, and it never reaches the face.
  */
-const NOME_DA_POSICAO: Readonly<Record<string, string>> = {
+const SLOT_NAME: Readonly<Record<string, string>> = {
   action1: '1', action2: '2', action3: '3', action4: '4',
   leftShoulder: 'L1', leftTrigger: 'L2', rightShoulder: 'R1', rightTrigger: 'R2',
   select: 'SELECT', start: 'START',
 };
 function buttonName(acao: string): string | null {
-  if (NOME_DA_POSICAO[acao]) return NOME_DA_POSICAO[acao]!;
+  if (SLOT_NAME[acao]) return SLOT_NAME[acao]!;
   return acao === 'up' || acao === 'down' || acao === 'left' || acao === 'right' ? t(`touch.nome.${acao}`) : null;
 }
 
 /** Os quatro slots direcionais, na ordem em que a cruz os desenha. */
-const DIRECOES = ['up', 'left', 'right', 'down'] as const;
+const DIRECTIONS = ['up', 'left', 'right', 'down'] as const;
 /** Os quatro slots de botão de acção, na ordem do losango. */
-const BOTOES = ['b0', 'b1', 'b2', 'b3'] as const;
+const BUTTONS = ['b0', 'b1', 'b2', 'b3'] as const;
 /** Os OMBROS por canto, de cima para baixo (ADR-0160): o gatilho (2) sobre o ombro (1). */
-const OMBROS = [['esq', ['bl2', 'bl1']], ['dir', ['br2', 'br1']]] as const;
+const SHOULDERS = [['esq', ['bl2', 'bl1']], ['dir', ['br2', 'br1']]] as const;
 
 /**
  * Constrói (ou reaproveita) `#touch-controls` e devolve-o.
@@ -511,24 +511,24 @@ const OMBROS = [['esq', ['bl2', 'bl1']], ['dir', ['br2', 'br1']]] as const;
  * Idempotente: montar duas vezes devolve o mesmo nó, com o conteúdo refeito para o mapa de agora.
  */
 export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): HTMLElement {
-  const raiz = ctx.procurar('#touch-controls') ?? ctx.criar('div');
-  raiz.id = 'touch-controls';
-  raiz.className = 'touch';
-  raiz.hidden = true;
-  while (raiz.firstChild) raiz.removeChild(raiz.firstChild);
+  const rootEl = ctx.procurar('#touch-controls') ?? ctx.criar('div');
+  rootEl.id = 'touch-controls';
+  rootEl.className = 'touch';
+  rootEl.hidden = true;
+  while (rootEl.firstChild) rootEl.removeChild(rootEl.firstChild);
 
   // 🔴 SÓ O QUE O JOGO NOMEIA (ADR-0162, supersede o mínimo do ADR-0157): «Vale para todos os botões: somente aparecem
   // se o jogo os nomeia.» Um botão na tela é uma promessa de que ele faz alguma coisa, e quem sabe isso é o jogo.
-  const nomeado = (slot: string): boolean => spec.acoesDoJogo.has(spec.mapa[slot] ?? '');
+  const named = (slot: string): boolean => spec.acoesDoJogo.has(spec.mapa[slot] ?? '');
   // ADR-0165: the face is the NAME of the position the slot fires; the accessible name is «name, function».
-  const nomeDe = (slot: string): string => buttonName(spec.mapa[slot] ?? slot) ?? spec.rotuloDoSlot(slot);
-  const acessivel = (slot: string): string => {
-    const nome = nomeDe(slot);
+  const nameOf = (slot: string): string => buttonName(spec.mapa[slot] ?? slot) ?? spec.rotuloDoSlot(slot);
+  const accessible = (slot: string): string => {
+    const nome = nameOf(slot);
     const funcao = spec.rotuloDoSlot(slot);
     return funcao && funcao !== nome ? `${nome}, ${funcao}` : nome;
   };
-  const direcoesVivas = DIRECOES.filter(nomeado);
-  if (direcoesVivas.length) {
+  const liveDirections = DIRECTIONS.filter(named);
+  if (liveDirections.length) {
     const analogico = spec.direcional === 'analogico';
     const dir = ctx.criar('div');
     dir.id = analogico ? 'touch-stick' : 'touch-cross';
@@ -540,27 +540,27 @@ export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): 
       knob.className = 'touch-knob';
       dir.appendChild(knob);
     } else {
-      for (const d of direcoesVivas) {
-        const braco = ctx.criar('button');
+      for (const d of liveDirections) {
+        const arm = ctx.criar('button');
         // ⚠️ AS TRÊS CLASSES, e cada uma tem um leitor. `touch-arm` é a deste módulo; `dpad-arm` é a que a folha
         // de estilo DESENHA; `dpad-<dir>` é a que o `touch-bindings` ACENDE ao toque (`.dpad-up` & co.). Com só
         // a primeira — que era o que isto escrevia até ser ligado ao `createGame` —, o braço era um botão sem
         // estilo que nunca acendia, e nenhum caso o via, porque nada tinha ainda montado os dois juntos.
-        braco.className = `touch-arm dpad-arm dpad-${d}`;
-        braco.dataset.dir = d;
-        braco.setAttribute('type', 'button');
-        braco.setAttribute('aria-label', acessivel(d));
-        dir.appendChild(braco);
+        arm.className = `touch-arm dpad-arm dpad-${d}`;
+        arm.dataset.dir = d;
+        arm.setAttribute('type', 'button');
+        arm.setAttribute('aria-label', accessible(d));
+        dir.appendChild(arm);
       }
     }
-    raiz.appendChild(dir);
+    rootEl.appendChild(dir);
   }
 
-  const botoesVivos = BOTOES.filter(nomeado);
-  if (botoesVivos.length) {
-    const losango = ctx.criar('div');
-    losango.className = 'touch-pad';
-    for (const b of botoesVivos) {
+  const liveButtons = BUTTONS.filter(named);
+  if (liveButtons.length) {
+    const rhombus = ctx.criar('div');
+    rhombus.className = 'touch-pad';
+    for (const b of liveButtons) {
       const botao = ctx.criar('button');
       botao.className = 'touch-btn';
       // `b2` -> `2`, que é o que `'b' + dataset.btn` volta a compor no despacho. Escrever a ACÇÃO aqui
@@ -570,29 +570,29 @@ export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): 
       // célula do seu número, e um slot remapeado leva o botão para o lugar da acção que passou a disparar.
       botao.dataset.acao = spec.mapa[b] ?? '';
       botao.setAttribute('type', 'button');
-      botao.setAttribute('aria-label', acessivel(b));
-      botao.textContent = nomeDe(b);
-      losango.appendChild(botao);
+      botao.setAttribute('aria-label', accessible(b));
+      botao.textContent = nameOf(b);
+      rhombus.appendChild(botao);
     }
-    raiz.appendChild(losango);
+    rootEl.appendChild(rhombus);
   }
 
   // OS OMBROS, cada par no seu canto superior (ADR-0160), e só os que o jogo nomeia (ADR-0162).
-  for (const [lado, slots] of OMBROS) {
-    const vivos = slots.filter(nomeado);
-    if (!vivos.length) continue;
-    const canto = ctx.criar('div');
-    canto.className = `touch-ombros touch-ombros--${lado}`;
-    for (const s of vivos) {
+  for (const [lado, slots] of SHOULDERS) {
+    const liveOnes = slots.filter(named);
+    if (!liveOnes.length) continue;
+    const corner = ctx.criar('div');
+    corner.className = `touch-ombros touch-ombros--${lado}`;
+    for (const s of liveOnes) {
       const botao = ctx.criar('button');
       botao.className = 'touch-btn touch-ombro';
       botao.dataset.btn = s.slice(1); // `bl1` -> `l1`: o `'b' + dataset.btn` do `touch-bindings` recompõe o slot
       botao.setAttribute('type', 'button');
-      botao.setAttribute('aria-label', acessivel(s));
-      botao.textContent = nomeDe(s);
-      canto.appendChild(botao);
+      botao.setAttribute('aria-label', accessible(s));
+      botao.textContent = nameOf(s);
+      corner.appendChild(botao);
     }
-    raiz.appendChild(canto);
+    rootEl.appendChild(corner);
   }
 
   /*
@@ -600,23 +600,23 @@ export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): 
    * um comando de consola. ⚠️ AMBAS INCONDICIONAIS, pela mesma razão: desde o ADR-0155 são as duas portas da pausa,
    * e a pausa não é declinável (ADR-0122) — um tablet sem teclado não tem outra forma de chegar a «Sair».
    */
-  const sistema = ctx.criar('div');
-  sistema.className = 'touch-sistema';
-  const pilula = (id: string, slot: 'select' | 'start'): HTMLElement => {
+  const system = ctx.criar('div');
+  system.className = 'touch-sistema';
+  const pill = (id: string, slot: 'select' | 'start'): HTMLElement => {
     const b = ctx.criar('button');
     b.id = id;
     b.className = `touch-btn touch-${slot}`;
     b.setAttribute('type', 'button');
-    b.setAttribute('aria-label', acessivel(slot));
+    b.setAttribute('aria-label', accessible(slot));
     // ⚠️ E ESCRITO, não só dito: uma pílula sem texto é um botão que quem vê não sabe ler.
-    b.textContent = nomeDe(slot);
+    b.textContent = nameOf(slot);
     return b;
   };
-  sistema.appendChild(pilula('touch-select', 'select'));
-  sistema.appendChild(pilula('touch-start', 'start'));
-  raiz.appendChild(sistema);
+  system.appendChild(pill('touch-select', 'select'));
+  system.appendChild(pill('touch-start', 'start'));
+  rootEl.appendChild(system);
 
-  return raiz;
+  return rootEl;
 }
 
 /**
@@ -634,10 +634,10 @@ export function touchGaps(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo'>): 
   }
   // ⚠️ E A LACUNA PARCIAL TAMBÉM SE DIZ. Um jogo pode declarar uma acção que nenhum slot dispara: ela existe
   // no teclado e não existe no toque, e hoje isso não aparece em lado nenhum.
-  const alcancadas = new Set(TOUCH_SLOTS.map((s) => spec.mapa[s.k]).filter(Boolean));
-  const foraDoToque = [...spec.acoesDoJogo].filter((a) => !alcancadas.has(a));
-  if (!foraDoToque.length) return [];
-  return [`the virtual pad does not reach ${foraDoToque.join(', ')}: no slot fires them, so a child playing by touch `
+  const reached = new Set(TOUCH_SLOTS.map((s) => spec.mapa[s.k]).filter(Boolean));
+  const outsideTouch = [...spec.acoesDoJogo].filter((a) => !reached.has(a));
+  if (!outsideTouch.length) return [];
+  return [`the virtual pad does not reach ${outsideTouch.join(', ')}: no slot fires them, so a child playing by touch `
     + 'does not have them — remap a slot in the pad panel, or declare fewer actions'];
 }
 
@@ -679,13 +679,13 @@ export interface PersonaDoPad {
 }
 
 /** The factory pad of `input/touch`, the base the non-button sizes are proportioned from. */
-const FABRICA: Readonly<PadMm> = { btn: 12.5, gap: 3, stick: 18, travel: 4.5, dpad: 12 };
+const FACTORY: Readonly<PadMm> = { btn: 12.5, gap: 3, stick: 18, travel: 4.5, dpad: 12 };
 
 /** A persona's pad: the button from the sources, the rest in proportion to the factory pad. */
 function pad(btn: number): PadMm {
-  const k = btn / FABRICA.btn;
+  const k = btn / FACTORY.btn;
   const r = (n: number): number => Math.round(n * k * 10) / 10;
-  return { btn, gap: r(FABRICA.gap), stick: r(FABRICA.stick), travel: r(FABRICA.travel), dpad: r(FABRICA.dpad) };
+  return { btn, gap: r(FACTORY.gap), stick: r(FACTORY.stick), travel: r(FACTORY.travel), dpad: r(FACTORY.dpad) };
 }
 
 /** The four, in the Dev's order. */
@@ -706,11 +706,11 @@ export const PERSONAS_DO_PAD: readonly PersonaDoPad[] = Object.freeze([
  * the easier target.
  */
 export function closestPersona(btnMm: number): number {
-  let melhor = 0;
+  let best = 0;
   PERSONAS_DO_PAD.forEach((p, i) => {
     const d = Math.abs(p.mm.btn - btnMm);
-    const dm = Math.abs(PERSONAS_DO_PAD[melhor]!.mm.btn - btnMm);
-    if (d < dm || (d === dm && p.mm.btn > PERSONAS_DO_PAD[melhor]!.mm.btn)) melhor = i;
+    const dm = Math.abs(PERSONAS_DO_PAD[best]!.mm.btn - btnMm);
+    if (d < dm || (d === dm && p.mm.btn > PERSONAS_DO_PAD[best]!.mm.btn)) best = i;
   });
-  return melhor;
+  return best;
 }

@@ -148,17 +148,17 @@ import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from '.
  * cursor. Leaving an icon falls back to the CURSOR of the bar's mode when there is one (`.pi-sel`): it is the only
  * thing saying where that cursor is.
  */
-export function wireBarCaption(bar: HTMLElement, explicar: (k: string | null) => void): void {
+export function wireBarCaption(bar: HTMLElement, explain: (k: string | null) => void): void {
   const cap = bar.querySelector('.pause-icons-cap');
   const mostrar = (b: HTMLElement): void => {
     if (cap) cap.textContent = accessibleLabel(b); // name and state only: «N de M» is spoken, never written (ADR-0167)
-    explicar(b.dataset.pi ?? null);
+    explain(b.dataset.pi ?? null);
   };
   const largar = (): void => {
     const cursor = bar.querySelector<HTMLElement>('.pi-sel');
     if (cursor) { mostrar(cursor); return; }
     if (cap) cap.textContent = '';
-    explicar(null);
+    explain(null);
   };
   bar.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => {
     b.addEventListener('mouseenter', () => mostrar(b));
@@ -168,19 +168,19 @@ export function wireBarCaption(bar: HTMLElement, explicar: (k: string | null) =>
   });
 }
 
-export function iconCaption(barra: ParentNode, el: HTMLElement): string {
-  const icones = [...barra.querySelectorAll<HTMLElement>('.pi-btn')];
+export function iconCaption(barEl: ParentNode, el: HTMLElement): string {
+  const icons = [...barEl.querySelectorAll<HTMLElement>('.pi-btn')];
   // A regra "rótulo declarado vence" nasceu AQUI e valia só para os dez ícones. Virou `core/accessible-label`
   // e agora vale para o menu inicial e para a lista de pausa também — uma resposta para "como se chama este
   // controle", e não três.
   return announceItem(
-    { rotulo: accessibleLabel(el), posicao: icones.indexOf(el) + 1, total: icones.length },
+    { rotulo: accessibleLabel(el), posicao: icons.indexOf(el) + 1, total: icons.length },
     menuIndexOn,
   );
 }
 
 /** Lê o nível TEA do armazenamento, saneado. Chamado no `init`, nunca no import. */
-function lerNivelTea(): number {
+function readTeaLevel(): number {
   return sanitiseTeaLevel(store.getNum(store.KEYS.tea, DEFAULTS.calmMode), DEFAULTS.calmMode);
 }
 
@@ -459,10 +459,10 @@ const ICON_IS_ACTIONABLE: Readonly<Record<string, (w: ActionableIcons) => boolea
   menu: (w) => Boolean(w.menus),
 });
 
-export function iconsThatAct(escritores: ActionableIcons): readonly PauseIcon[] {
+export function iconsThatAct(writers: ActionableIcons): readonly PauseIcon[] {
   // 📌 A AUSÊNCIA NA TABELA É «SIM»: um ícone que nenhuma regra tranca não depende de ninguém para funcionar, e
   // escondê-lo por falta de linha seria tirar à criança um caminho que existe.
-  return PAUSE_ICONS.filter((ic) => ICON_IS_ACTIONABLE[ic.k]?.(escritores) ?? true);
+  return PAUSE_ICONS.filter((ic) => ICON_IS_ACTIONABLE[ic.k]?.(writers) ?? true);
 }
 
 /**
@@ -491,16 +491,16 @@ export const ENGINE_ITEMS: ReadonlySet<string> = new Set(['options', 'opcoesdojo
  * «Número de jogadores»: the GAME decides how many (ADR-0147) — and one general reason for the rest. Resolved at every
  * refresh, so it follows the language of the moment the card opens.
  */
-const MOTIVOS_PROPRIOS: ReadonlySet<string> = new Set(['ajuda', 'addplayer', 'opcoesdojogo']);
+const OWN_REASONS: ReadonlySet<string> = new Set(['ajuda', 'addplayer', 'opcoesdojogo']);
 function itemReason(act: string): string {
-  return t(MOTIVOS_PROPRIOS.has(act) ? `pause.motivo.${act}` : 'pause.motivo');
+  return t(OWN_REASONS.has(act) ? `pause.motivo.${act}` : 'pause.motivo');
 }
 
 export function itemsThatAct(
-  botoes: readonly PauseMenuButton[],
+  buttons: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
 ): readonly PauseMenuButton[] {
-  return botoes.filter((b) => ENGINE_ITEMS.has(b.act) || typeof acts[b.act] === 'function');
+  return buttons.filter((b) => ENGINE_ITEMS.has(b.act) || typeof acts[b.act] === 'function');
 }
 
 /**
@@ -513,24 +513,24 @@ export function itemsThatAct(
  * sumiu com ele.
  */
 export function rootThatActs(
-  raiz: readonly PauseMenuButton[],
+  rootEl: readonly PauseMenuButton[],
   opcoes: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
   // ⚠️ TERCEIRO ARGUMENTO OPCIONAL, e o padrão é a lista VAZIA de propósito: quem já chamava com três
   // argumentos continua a receber o que recebia, e um jogo que não declare nada do seu é exactamente o caso
   // do vazio — logo o padrão é também a resposta certa, e não um remendo para não partir chamadores.
-  doJogo: readonly PauseMenuButton[] = [],
+  fromGame: readonly PauseMenuButton[] = [],
 ): readonly PauseMenuButton[] {
-  const vivas = (bs: readonly PauseMenuButton[]): number =>
+  const aliveOnes = (bs: readonly PauseMenuButton[]): number =>
     itemsThatAct(bs, acts).filter((b) => b.act !== 'pmback').length;
-  let viva = itemsThatAct(raiz, acts);
-  if (vivas(opcoes) === 0) viva = viva.filter((b) => b.act !== 'options');
+  let alive = itemsThatAct(rootEl, acts);
+  if (aliveOnes(opcoes) === 0) alive = alive.filter((b) => b.act !== 'options');
   // 📌 A MESMA REGRA PARA A PORTA NOVA, e é o gate que o ADR-0146 nomeia: um jogo sem nada seu não recebe
   // «opções do jogo». Afirmar a ausência é o caso; oferecer a porta e abrir uma sala vazia é o que o §5 do
   // ADR-0106 chama de pior do que a ausência.
   // ADR-0182: a door whose room the ENGINE draws from the cartridge's rows is live through its action, with no list behind it
-  if (vivas(doJogo) === 0 && typeof acts.opcoesdojogo !== 'function') viva = viva.filter((b) => b.act !== 'opcoesdojogo');
-  return viva;
+  if (aliveOnes(fromGame) === 0 && typeof acts.opcoesdojogo !== 'function') alive = alive.filter((b) => b.act !== 'opcoesdojogo');
+  return alive;
 }
 
 
@@ -579,8 +579,8 @@ export function showPauseOptions(sp: HTMLElement, sub: PauseSub): HTMLElement | 
  * junto), e nesse quadro `sair` não pode ficar atrás de `ativar`.
  */
 export type BarAction = 'sair' | 'ativar' | 'andar' | 'nada';
-export function barAction(k: NavKeys, temStart: boolean): BarAction {
-  if (temStart || k.no) return 'sair';
+export function barAction(k: NavKeys, hasStart: boolean): BarAction {
+  if (hasStart || k.no) return 'sair';
   if (k.yes) return 'ativar';
   if (k.up || k.down || k.left || k.right) return 'andar';
   return 'nada';
@@ -623,7 +623,7 @@ export interface PauseIconsCtx {
    * Chamado depois de TODA saída do modo barra, com a tela e se foi silenciosa. Ausente, não se faz nada.
    * Existe para a raiz descongelar o jogo pela porta que for (ADR-0155) — a barra não sabe de fases.
    */
-  aoSairDaBarra?: (i: number, silencioso: boolean) => void;
+  aoSairDaBarra?: (i: number, silent: boolean) => void;
   /**
    * The icon screen `i` is pointing at — by the cursor of the bar, or hover/focus — or `null` when nothing is. The
    * root writes that icon's EXPLANATION in the footer (the Dev: the name below the row, what it does in the footer;
@@ -805,11 +805,11 @@ export interface PauseIconsApi {
   /** ENTRA no modo `accessibility` da tela `i` — a metade da barra da pausa rápida (ADR-0155). Não mexe na fase. */
   entrarNaBarra: (i: number) => void;
   /** SAI do modo e devolve o direcional ao personagem. `silencioso` = sai para outro ecrã, não para o jogo. */
-  sairDaBarra: (i: number, silencioso?: boolean) => void;
+  sairDaBarra: (i: number, silent?: boolean) => void;
   /** A tela `i` está com o direcional na BARRA em vez de no personagem? Perguntado a cada quadro. */
   naBarraDe: (i: number) => boolean;
   /** Um passo dentro do modo. `temStart` é a borda do botão de pausa — a segunda saída (ADR-0044, item 7). */
-  navBar: (i: number, k: NavKeys, temStart?: boolean) => void;
+  navBar: (i: number, k: NavKeys, hasStart?: boolean) => void;
   /** Runs the icon `k` for screen `i`. Does NOT reflect — callers reflect after, as game.js always did. */
   iconAct: (k: string, i: number) => void;
   /** The state-reflecting `aria-label` of icon `k` for screen `i`. */
@@ -846,7 +846,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   // ⚠️ LÊ NO INIT, NUNCA NO IMPORT: a regra vale para todo o projeto e aqui tem custo concreto — um teste que
   // importasse este módulo passaria a depender do `localStorage` do ambiente, e um nível herdado de outro
   // caso é uma falha que aparece longe da causa.
-  let calmMode = lerNivelTea();
+  let calmMode = readTeaLevel();
 
   const P = (): readonly PausePlayer[] => ctx.getPlayers() as readonly PausePlayer[];
 
@@ -877,7 +877,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   /** O documento onde se constroi. Resolvido a cada uso, e por globalThis — em node o identificador
    *  document nem existe, e um ?? sobre ele lançaria ReferenceError em vez de cair no padrão. */
-  const docDaMontagem = (): Document => ctx.doc ?? (globalThis as { document?: Document }).document as Document;
+  const mountDoc = (): Document => ctx.doc ?? (globalThis as { document?: Document }).document as Document;
 
   /*
    * ⚠️ O CONTRASTE E A COR SÓ APARECEM SE HOUVER QUEM OS ESCREVA (ADR-0106 §5).
@@ -891,7 +891,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * Decidido uma vez, no arranque, e não a cada montagem de barra: o conjunto de escritores de um consumidor
    * não muda a meio de uma partida, e recalcular por tela faria as telas discordarem entre si.
    */
-  const iconesDoJogo = iconsThatAct({
+  const gameIcons = iconsThatAct({
     tema: Boolean(ctx.setTemaDoJogador),
     correcao: Boolean(ctx.setCorrecaoDoJogador),
     // 📌 Sem `Boolean(...)`: os dois de cima perguntam «existe escritor?» a um campo opcional; este é uma
@@ -938,7 +938,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
   /** A recusa da alternância para este jogador agora, ou `null`. Recalculada: o aparelho em uso muda. */
-  function recusaAgora(i: number) { return ctx.transporteEmUso ? latchRefusal(ctx.transporteEmUso(i)) : null; }
+  function refusalNow(i: number) { return ctx.transporteEmUso ? latchRefusal(ctx.transporteEmUso(i)) : null; }
 
   function iconState(i: number): IconStateSnapshot {
     const p = P()[i] || {};
@@ -961,7 +961,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       camera: cameraControl,
       idioma: getLocale(),
       privateOutput: hasPrivateOutput(i),
-      alternanciaExigida: recusaAgora(i) !== null,
+      alternanciaExigida: refusalNow(i) !== null,
       semVoz: !!ctx.semVoz?.(),
     };
   }
@@ -1021,7 +1021,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     altmove: (i) => {
       // verbatim: `players[i].toggleMove` with no `||{}` guard (unlike contrast/cvd below).
       const latched = !!P()[i].toggleMove;
-      const next = nextInputMode(inputModeOf({ toggleMove: latched, switchScan }), ctx.seguraTeclas(), recusaAgora(i) !== null);
+      const next = nextInputMode(inputModeOf({ toggleMove: latched, switchScan }), ctx.seguraTeclas(), refusalNow(i) !== null);
       setSwitchScanValue(next === 'scan');
       // 📌 ENTERING THE SCAN LEAVES THE LATCH WHERE SHE PUT IT — the scan wins in `inputModeOf`, so the position shown is never
       // ambiguous and coming back out returns her to the choice she had made. Leaving it writes the position she walked to.
@@ -1031,8 +1031,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         // ⚠️ THE REFUSAL, over the WRITE, which is the only thing it ever meant. The cycle above already skips `standard` on a
         // device that always latches, so this should be unreachable — and it stays because `iconAct` is exported and the two
         // rules could drift apart, which is the same reason the guards below give for not being belt and braces.
-        const recusa = recusaAgora(i);
-        if (recusa) { ctx.srAlert(t(recusa.chave)); return; }
+        const refusal = refusalNow(i);
+        if (refusal) { ctx.srAlert(t(refusal.chave)); return; }
         setToggleMove(i, next === 'sticky');
         return;
       }
@@ -1173,7 +1173,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * ele; guardar o que construiu não pede nada a consumidor nenhum, e um campo de ctx é mais uma coisa que
    * cada um dos 300 jogos teria de se lembrar de passar.
    */
-  const cartoes: HTMLElement[] = [];
+  const cards: HTMLElement[] = [];
 
   /**
    * ESCONDE OS ITENS QUE ESTE JOGO NÃO CONSEGUE ACCIONAR — recalculado, e não decidido no arranque.
@@ -1207,37 +1207,37 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * nomeia: para quem vê, o cartão estava inteiro em inglês e nada havia a notar. O canal partido era o
    * único canal de outra criança.
    */
-  function renomearCartao(cartao: HTMLElement, i: number): void {
-    const card = cartao.querySelector<HTMLElement>('.pause-card');
+  function renameCard(cardEl: HTMLElement, i: number): void {
+    const card = cardEl.querySelector<HTMLElement>('.pause-card');
     if (card) card.setAttribute('aria-label', t('pause.cardAria', { n: i + 1 }));
-    const assento = cartao.querySelector<HTMLElement>('h2 .pause-seat');
+    const assento = cardEl.querySelector<HTMLElement>('h2 .pause-seat');
     if (assento) assento.textContent = ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: i + 1 }) : '';
   }
 
-  function refrescarItensDaPausa(): void {
+  function refreshPauseItems(): void {
     const acts = getPauseActs();
-    const raiz = ctx.pmButtons ?? PM_BTNS;
+    const rootEl = ctx.pmButtons ?? PM_BTNS;
     const opcoes = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
-    const doJogo = ctx.jogoButtons ?? PM_GAME_BTNS;
-    const vivos = new Set([
-      ...rootThatActs(raiz, opcoes, acts, doJogo).map((b) => b.act),
+    const fromGame = ctx.jogoButtons ?? PM_GAME_BTNS;
+    const aliveList = new Set([
+      ...rootThatActs(rootEl, opcoes, acts, fromGame).map((b) => b.act),
       ...itemsThatAct(opcoes, acts).map((b) => b.act),
-      ...itemsThatAct(doJogo, acts).map((b) => b.act),
+      ...itemsThatAct(fromGame, acts).map((b) => b.act),
     ]);
     // ⚠️ `filter(Boolean)` VIROU ÍNDICE EXPLÍCITO, e a razão é a linha do nome logo abaixo: os cartões são
     // indexados por JOGADOR, montar só a tela 2 deixa um buraco no índice 0 — e `filter` fechava o buraco,
     // o que renumerava os assentos. O guarda de `undefined` que ele dava fica, escrito à mão.
-    for (let i = 0; i < cartoes.length; i++) {
-      const cartao = cartoes[i];
-      if (!cartao) continue;
-      renomearCartao(cartao, i);
-      for (const btn of cartao.querySelectorAll<HTMLElement>('.pm-btn')) {
+    for (let i = 0; i < cards.length; i++) {
+      const cardEl = cards[i];
+      if (!cardEl) continue;
+      renameCard(cardEl, i);
+      for (const btn of cardEl.querySelectorAll<HTMLElement>('.pm-btn')) {
         // 🔴 TRAVADO COM O MOTIVO, E NÃO ESCONDIDO (ADR-0161, que supersede aqui o §5 do ADR-0106). O Dev achou três
         // itens no quiz em vez de seis: o cartão mudava de forma a cada jogo, e a criança não sabia que a opção
         // existia. O cursor continua a parar no item e o número dele conta; alcançá-lo ou accioná-lo diz o motivo.
         // ⚠️ E NÃO `remove()`: a tabela pode crescer depois (um jogo que liga «sair» só depois da primeira fase).
         const act = btn.dataset.act ?? '';
-        if (vivos.has(act)) {
+        if (aliveList.has(act)) {
           btn.removeAttribute('aria-disabled');
           delete btn.dataset.motivo;
         } else {
@@ -1250,7 +1250,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   function reflectPauseIcons(): void {
     ctx.getA11yBars().forEach((bar, i) => reflectIconsIn(bar, i));
-    refrescarItensDaPausa();
+    refreshPauseItems();
   }
 
   // --- the pause screen ----------------------------------------------------------------------
@@ -1262,7 +1262,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * a fala, a única pista de que a tela mudou seria o silêncio. O índice "N de M" vem junto (item 3), e é ele
    * que diz de quantos itens é a lista nova.
    */
-  function anunciarLista(sp: HTMLElement, sub: PauseSub): void {
+  function announceList(sp: HTMLElement, sub: PauseSub): void {
     const primeiro = showPauseOptions(sp, sub);
     if (!primeiro) return;
     const itens = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
@@ -1280,15 +1280,15 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * modo de entrada que sobrevivesse ao reinício seria a armadilha voltando pela porta dos fundos — a criança
    * abriria o jogo no dia seguinte e o personagem não andaria.
    */
-  const naBarra = new Set<number>();
+  const onBar = new Set<number>();
 
   /** O cursor da barra da tela `i`, ou o primeiro ícone quando ainda não há cursor. */
-  function iconeSelecionado(bar: HTMLElement): HTMLElement | null {
+  function selectedIcon(bar: HTMLElement): HTMLElement | null {
     return bar.querySelector<HTMLElement>('.pi-sel') || bar.querySelector<HTMLElement>('.pi-btn');
   }
 
   /** Põe o cursor num ícone, escreve a legenda e ANUNCIA — a legenda é o canal de quem não vê o ícone. */
-  function selecionarIcone(i: number, bar: HTMLElement, el: HTMLElement): void {
+  function selectIcon(i: number, bar: HTMLElement, el: HTMLElement): void {
     bar.querySelectorAll<HTMLElement>('.pi-sel').forEach((x) => x.classList.remove('pi-sel'));
     el.classList.add('pi-sel');
     const cap = bar.querySelector('.pause-icons-cap');
@@ -1310,11 +1310,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    */
   function entrarNaBarra(i: number): void {
     const bar = ctx.getA11yBars()[i];
-    const primeiro = bar && iconeSelecionado(bar);
+    const primeiro = bar && selectedIcon(bar);
     if (!bar || !primeiro) return;
-    naBarra.add(i);
+    onBar.add(i);
     ctx.srSay(t('sr.a11y.barEnter'));
-    selecionarIcone(i, bar, primeiro);
+    selectIcon(i, bar, primeiro);
   }
 
   /**
@@ -1327,8 +1327,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * descongelar o jogo por qualquer porta. Uma saída que só um caminho conhecesse deixava o outro com a criança
    * de volta ao personagem num mundo parado.
    */
-  function sairDaBarra(i: number, silencioso = false): void {
-    if (!naBarra.delete(i)) return;
+  function sairDaBarra(i: number, silent = false): void {
+    if (!onBar.delete(i)) return;
     const bar = ctx.getA11yBars()[i];
     if (bar) {
       bar.querySelectorAll<HTMLElement>('.pi-sel').forEach((x) => x.classList.remove('pi-sel'));
@@ -1336,12 +1336,12 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       if (cap) cap.textContent = '';
     }
     ctx.explicarIcone?.(i, null);
-    if (!silencioso) ctx.srSay(t('sr.a11y.barExit'));
-    ctx.aoSairDaBarra?.(i, silencioso);
+    if (!silent) ctx.srSay(t('sr.a11y.barExit'));
+    ctx.aoSairDaBarra?.(i, silent);
   }
 
   /** A tela `i` está com o direcional na barra? É o que o roteamento de entrada pergunta a cada quadro. */
-  const naBarraDe = (i: number): boolean => naBarra.has(i);
+  const naBarraDe = (i: number): boolean => onBar.has(i);
 
   /**
    * UM PASSO dentro do modo. `temStart` é a borda do botão que abre a pausa — a segunda saída.
@@ -1349,25 +1349,25 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * A barra é uma fileira, então as QUATRO direções andam nela: para quem navega sem ver, "cima" numa lista
    * de uma linha só não pode ser um beco. E anda em ANEL, como todo menu do jogo desde o item 1.
    */
-  function navBar(i: number, k: NavKeys, temStart = false): void {
-    if (!naBarra.has(i)) return;
+  function navBar(i: number, k: NavKeys, hasStart = false): void {
+    if (!onBar.has(i)) return;
     const bar = ctx.getA11yBars()[i];
     if (!bar) return;
-    const acao = barAction(k, temStart);
+    const acao = barAction(k, hasStart);
     if (acao === 'sair') { sairDaBarra(i); return; }
-    const icones = [...bar.querySelectorAll<HTMLElement>('.pi-btn')];
-    if (!icones.length) return;
-    const cur = iconeSelecionado(bar);
-    const idx = cur ? icones.indexOf(cur) : 0;
+    const icons = [...bar.querySelectorAll<HTMLElement>('.pi-btn')];
+    if (!icons.length) return;
+    const cur = selectedIcon(bar);
+    const idx = cur ? icons.indexOf(cur) : 0;
     if (acao === 'ativar') { setPauseActor(i); if (cur) cur.click(); return; }
     if (acao === 'andar') {
       const d = (k.down || k.right) ? 1 : -1;
-      selecionarIcone(i, bar, icones[stepInRing(icones.length, idx, d)]);
+      selectIcon(i, bar, icons[stepInRing(icons.length, idx, d)]);
     }
   }
 
   function buildScreenPause(i: number): HTMLElement {
-    const sp = docDaMontagem().createElement('div');
+    const sp = mountDoc().createElement('div');
     sp.className = 'screen-pause';
     sp.hidden = true;
     sp.dataset.player = String(i);
@@ -1391,8 +1391,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       jogoButtons: ctx.jogoButtons ?? PM_GAME_BTNS,
       dynLabel: dynLabel, t,
     });
-    cartoes[i] = sp;
-    refrescarItensDaPausa(); // o §5 vale já na montagem, e não só na primeira abertura
+    cards[i] = sp;
+    refreshPauseItems(); // o §5 vale já na montagem, e não só na primeira abertura
 
     sp.addEventListener('click', (e) => {
       const target = e.target as Element | null;
@@ -1411,10 +1411,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         // ao jogo — trocam qual lista está na tela. A tabela vive em `ui/shell`, que não conhece este `sp`.
         // ⚠️ TRÊS PORTAS AGORA, e o `pmback` volta sempre à RAIZ — de qualquer das duas listas. Escrito como
         // tabela e não como encadeado de `if`, porque uma quarta lista seria mais uma linha e não mais um ramo.
-        const PARA: Record<string, PauseSub> = { options: 'opcoes', opcoesdojogo: 'jogo', pmback: 'raiz' };
+        const FOR: Record<string, PauseSub> = { options: 'opcoes', opcoesdojogo: 'jogo', pmback: 'raiz' };
         // «Opções do jogo» with the cartridge's rows opens the engine's panel (ADR-0182), not the list a host may pass
-        const portaComPainel = act === 'opcoesdojogo' && typeof getPauseActs().opcoesdojogo === 'function';
-        if (PARA[act] && !portaComPainel) { anunciarLista(sp, PARA[act]!); return; }
+        const doorWithPanel = act === 'opcoesdojogo' && typeof getPauseActs().opcoesdojogo === 'function';
+        if (FOR[act] && !doorWithPanel) { announceList(sp, FOR[act]!); return; }
         // `acessibilidade` leva o cursor à BARRA RÁPIDA. Enquanto ela mora dentro do cartão, "entrar no modo"
         // é pôr o cursor nela — e a saída continua sendo a saída da pausa, que é a mesma de sempre. Quando o
         // item 7 levar a barra para o HUD, esta linha o segue; o que o item SIGNIFICA não muda.
@@ -1439,10 +1439,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * facilidade não existe —, e degradar o que existe para DAR acesso seria o contrário do que ele serve.
    */
   function buildQuickBar(i: number): HTMLElement {
-    const bar = docDaMontagem().createElement('div');
+    const bar = mountDoc().createElement('div');
     bar.className = 'screen-a11y';
     bar.dataset.player = String(i);
-    bar.innerHTML = quickBarMarkup(iconesDoJogo);
+    bar.innerHTML = quickBarMarkup(gameIcons);
     // FORA DA ORDEM DE TABULAÇÃO durante a partida (ADR-0044, item 7). Dez paradas entre a criança e o jogo
     // seria o preço de deixá-los lá — e o alcance por teclado não se perde: ele passa a ser o modo
     // `accessibility`, que se abre pela pausa. A barra do TÍTULO não é afetada: lá não se está jogando, e o
@@ -1474,7 +1474,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   return {
     buildScreenPause, buildQuickBar, entrarNaBarra, sairDaBarra, naBarraDe, navBar,
-    iconesMontados: iconesDoJogo,
+    iconesMontados: gameIcons,
     iconAct, iconLabel, reflectIconBtn, reflectIconsIn, reflectPauseIcons,
     // ⚠️ O `setCalmMode` PERSISTE TAMBÉM, e sanea. Ele é a outra porta para o mesmo valor — se só o ciclo do
     // ícone gravasse, um nível posto por aqui sobreviveria à sessão e não ao fecho da aba, que é a metade

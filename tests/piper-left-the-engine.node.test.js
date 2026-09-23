@@ -34,7 +34,7 @@ function tree() {
 
 /** The lines allowed to name it, each with its reason: a key a child's device may still hold. */
 const ALLOWED = new Map([
-  ["app/js/platform/tts.ts|const MOTORES_QUE_SAIRAM: readonly string[] = ['piper'];",
+  ["app/js/platform/tts.ts|const ENGINES_THAT_LEFT: readonly string[] = ['piper'];",
     'a stored engine choice from before ADR-0207, read as no choice so the voice in use speaks instead of an alert on every word'],
 ]);
 

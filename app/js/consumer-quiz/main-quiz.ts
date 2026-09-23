@@ -135,7 +135,7 @@ import { createGame, type Engine, type VirtualCommand } from '../boot/create-gam
 import type { GameDeclaration } from '../core/contract.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
-interface Pergunta {
+interface Question {
   readonly enunciado: string;
   readonly alternativas: readonly string[];
   readonly certa: number;
@@ -151,7 +151,7 @@ interface Pergunta {
  * ENUNCIADO SEMPRE TRADUZ». Guardar a frase aqui é guardar uma língua; guardar a chave deixa a frase onde as três
  * línguas vivem juntas e onde o crivo dos dicionários as confere.
  */
-const PERGUNTAS: readonly Pergunta[] = [
+const QUESTIONS: readonly Question[] = [
   { enunciado: 'quiz.p1', alternativas: ['quiz.p1.a', 'quiz.p1.b', 'quiz.p1.c', 'quiz.p1.d'], certa: 1 },
   { enunciado: 'quiz.p2', alternativas: ['quiz.p2.a', 'quiz.p2.b', 'quiz.p2.c', 'quiz.p2.d'], certa: 0 },
   { enunciado: 'quiz.p3', alternativas: ['quiz.p3.a', 'quiz.p3.b', 'quiz.p3.c', 'quiz.p3.d'], certa: 2 },
@@ -159,15 +159,15 @@ const PERGUNTAS: readonly Pergunta[] = [
 
 let atual = 0;
 let foco = 0;
-let acertos = 0;
+let correctCount = 0;
 /** The question whose statement and options were last narrated — see `narrationOnDraw`. */
-let perguntaNarrada = -1;
+let narratedQuestion = -1;
 let motor: Engine | null = null;
 
 const $ = <T extends Element = Element>(sel: string): T | null => document.querySelector<T>(sel);
 
 /** Marcação de uma pergunta. Pura: recebe estado, devolve texto — testável sem DOM. */
-export function questionHtml(p: Pergunta, selecionada: number): string {
+export function questionHtml(p: Question, selecionada: number): string {
   // O enunciado e as alternativas são CHAVES: resolvem-se no instante de desenhar, e é isso que faz a troca de
   // idioma alcançar a atividade e não só a moldura (ADR-0225).
   const alts = p.alternativas.map((a, i) =>
@@ -180,9 +180,9 @@ export function questionHtml(p: Pergunta, selecionada: number): string {
 }
 
 /** O próximo índice do foco, com as pontas dando a volta. Puro — é a regra que o teclado e o pad compartilham. */
-export function nextFocus(atualIdx: number, delta: number, total: number): number {
+export function nextFocus(currentIdx: number, delta: number, total: number): number {
   if (total <= 0) return 0;
-  return ((atualIdx + delta) % total + total) % total;
+  return ((currentIdx + delta) % total + total) % total;
 }
 
 /**
@@ -192,13 +192,13 @@ export function nextFocus(atualIdx: number, delta: number, total: number): numbe
  * A question is not answerable by ear until its options are heard. The place is said the way every menu item says it:
  * the Dev asked for «uma única função que capture a posição de item e a totalidade de itens», and it is the engine's.
  */
-export function questionNarration(p: Pergunta): string {
+export function questionNarration(p: Question): string {
   const opcoes = p.alternativas.map((_, i) => spokenOption(p, i)).join('. ');
   return opcoes ? `${t(p.enunciado)} ${opcoes}` : t(p.enunciado);
 }
 
 /** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
-export function spokenOption(p: Pergunta, i: number): string {
+export function spokenOption(p: Question, i: number): string {
   return announceItem({ rotulo: t(p.alternativas[i] ?? ''), posicao: i + 1, total: p.alternativas.length }, menuIndexOn);
 }
 
@@ -208,10 +208,10 @@ export function spokenOption(p: Pergunta, i: number): string {
  * The whole question only when it OPENS; a draw on the same question is the cursor moving, and then only the option
  * under it is said. 🔴 Before this, every arrow press re-read the statement and never said which option was reached.
  */
-export function narrationOnDraw(p: Pergunta, pergunta: number, focoIdx: number, jaNarrada: number): { texto: string; narrada: number } {
-  return pergunta === jaNarrada
-    ? { texto: spokenOption(p, focoIdx), narrada: jaNarrada }
-    : { texto: questionNarration(p), narrada: pergunta };
+export function narrationOnDraw(p: Question, question: number, focusIdx: number, alreadyNarrated: number): { texto: string; narrada: number } {
+  return question === alreadyNarrated
+    ? { texto: spokenOption(p, focusIdx), narrada: alreadyNarrated }
+    : { texto: questionNarration(p), narrada: question };
 }
 
 /**
@@ -220,13 +220,13 @@ export function narrationOnDraw(p: Pergunta, pergunta: number, focoIdx: number, 
  * A reading model writes what it hears the way a person writes — «Galinha.», «galinha», «GALINHA» — and a child who says
  * «é a galinha» said the answer. What is stripped here is everything that is not the word itself.
  */
-function palavrasDe(frase: string): string[] {
-  return frase.normalize('NFD').replace(/[̀-ͯ]/gu, '').toLowerCase()
+function wordsOf(phrase: string): string[] {
+  return phrase.normalize('NFD').replace(/[̀-ͯ]/gu, '').toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean);
 }
 
 /** Are these words, in this order, inside that sentence? Whole words — «dois» is not found inside «doisel». */
-function contemAsPalavras(ditas: readonly string[], alvo: readonly string[]): boolean {
+function containsTheWords(ditas: readonly string[], alvo: readonly string[]): boolean {
   if (!alvo.length || alvo.length > ditas.length) return false;
   for (let i = 0; i + alvo.length <= ditas.length; i++) {
     if (alvo.every((w, k) => ditas[i + k] === w)) return true;
@@ -243,39 +243,39 @@ function contemAsPalavras(ditas: readonly string[], alvo: readonly string[]): bo
  * 🔴 TWO MATCHES IS NOT AN ANSWER, and that is why the count is kept instead of the first hit: a child who says «gato ou
  * galinha» is thinking out loud, and a quiz that picked one of them would answer FOR her — and mark it wrong.
  */
-export function heardAlternative(ouvido: string, alternativas: readonly string[]): number | null {
-  const ditas = palavrasDe(ouvido);
+export function heardAlternative(heard: string, alternativas: readonly string[]): number | null {
+  const ditas = wordsOf(heard);
   if (!ditas.length) return null;
-  const achadas: number[] = [];
-  alternativas.forEach((a, i) => { if (contemAsPalavras(ditas, palavrasDe(a))) achadas.push(i); });
-  return achadas.length === 1 ? achadas[0]! : null;
+  const found: number[] = [];
+  alternativas.forEach((a, i) => { if (containsTheWords(ditas, wordsOf(a))) found.push(i); });
+  return found.length === 1 ? found[0]! : null;
 }
 
 /**
  * O texto que o leitor de tela ouve ao responder. Separado do DOM porque é o que a criança cega RECEBE.
  * The frame is the dictionary's (study item E4): the right answer crosses as `{certa}`, the words around it translate.
  */
-export function answerText(acertou: boolean, certa: string): string {
-  return t(acertou ? 'quiz.resposta.certa' : 'quiz.resposta.errada', { certa });
+export function answerText(gotItRight: boolean, certa: string): string {
+  return t(gotItRight ? 'quiz.resposta.certa' : 'quiz.resposta.errada', { certa });
 }
 
 /** The closing line — how many were right out of how many — in the child's language. */
-export function endText(acertou: number, total: number): string {
-  return t('quiz.fim', { n: acertou, m: total });
+export function endText(gotItRight: number, total: number): string {
+  return t('quiz.fim', { n: gotItRight, m: total });
 }
 
 function render(): void {
   const app = $<HTMLElement>('#quiz-app');
   if (!app) return;
-  const p = PERGUNTAS[atual];
-  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(endText(acertos, PERGUNTAS.length))}</h2>`; return; }
+  const p = QUESTIONS[atual];
+  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(endText(correctCount, QUESTIONS.length))}</h2>`; return; }
   app.innerHTML = questionHtml(p, foco);
   // a narração é do consumidor: a engine só empresta a voz
-  const fala = narrationOnDraw(p, atual, foco, perguntaNarrada);
-  perguntaNarrada = fala.narrada;
+  const fala = narrationOnDraw(p, atual, foco, narratedQuestion);
+  narratedQuestion = fala.narrada;
   motor?.tts.narrate(fala.texto);
   app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {
-    b.addEventListener('click', () => responder(Number(b.dataset.alt)));
+    b.addEventListener('click', () => answer(Number(b.dataset.alt)));
   });
   /*
    * ⚠️ O FOCO SÓ VOLTA PARA A PERGUNTA SE A CRIANÇA JÁ ESTAVA NELA. Este `focus()` existe para o teclado seguir a
@@ -286,11 +286,11 @@ function render(): void {
    * 📌 É a mesma regra que a conversão dos painéis para nós ensinou, deste lado da fronteira: um redesenho não move
    * o cursor de quem está noutro sítio. `body` e ninguém contam como «não está noutro sítio».
    */
-  const foraDoQuiz = document.activeElement
+  const outsideQuiz = document.activeElement
     && document.activeElement !== document.body
     && !app.contains(document.activeElement);
   const alvo = app.querySelector<HTMLElement>(`button[data-alt="${foco}"]`);
-  if (alvo && !foraDoQuiz) alvo.focus();
+  if (alvo && !outsideQuiz) alvo.focus();
 }
 
 /**
@@ -304,48 +304,48 @@ function render(): void {
  * ⚠️ And no reading is asked for with a ceiling of its own: how long a child takes to BEGIN is not something a quiz knows,
  * and a game that shortened it would cut the children this exists for.
  */
-let ouvindo = false;
+let listening = false;
 
 /** Puts a line where the statement is — the same box, so nothing below it moves — and gives the statement back after it is read. */
-function dizerNoEnunciado(texto: string, voltarAoEnunciado = true): void {
+function sayInStatement(texto: string, backToStatement = true): void {
   const h2 = $<HTMLElement>('#quiz-app .quiz-pergunta');
   if (h2) h2.textContent = texto;
   srAlert(texto);
-  const p = PERGUNTAS[atual];
+  const p = QUESTIONS[atual];
   // The engine already knows how long a line stays on screen: 500 ms a word, never under 2600 ms (`core/caption-duration`).
-  if (voltarAoEnunciado && p) setTimeout(() => {
+  if (backToStatement && p) setTimeout(() => {
     const alvo = $<HTMLElement>('#quiz-app .quiz-pergunta');
-    if (alvo && !ouvindo) alvo.textContent = t(p.enunciado);
+    if (alvo && !listening) alvo.textContent = t(p.enunciado);
   }, captionDuration(texto, 125));
 }
 
-async function ouvirResposta(): Promise<void> {
-  const p = PERGUNTAS[atual];
-  if (!motor || !p || ouvindo) return;
+async function listenForAnswer(): Promise<void> {
+  const p = QUESTIONS[atual];
+  if (!motor || !p || listening) return;
   const pode = await motor.reading.ready();
-  if (!pode.can) { dizerNoEnunciado(t('quiz.semLeitura')); return; }
-  ouvindo = true;
-  dizerNoEnunciado(t('quiz.ouvindo'), false);
+  if (!pode.can) { sayInStatement(t('quiz.semLeitura')); return; }
+  listening = true;
+  sayInStatement(t('quiz.ouvindo'), false);
   try {
-    const ouvido = await motor.reading.listen();
-    ouvindo = false;
-    const escolhida = heardAlternative(ouvido.text, p.alternativas);
-    if (escolhida !== null) { responder(escolhida); return; }
-    const texto = ouvido.text.trim();
-    dizerNoEnunciado(texto ? t('quiz.naoEntendi', { texto }) : t('quiz.ouviNada'));
+    const heard = await motor.reading.listen();
+    listening = false;
+    const chosen = heardAlternative(heard.text, p.alternativas);
+    if (chosen !== null) { answer(chosen); return; }
+    const texto = heard.text.trim();
+    sayInStatement(texto ? t('quiz.naoEntendi', { texto }) : t('quiz.ouviNada'));
   } catch {
     // A reading that refuses says why in `problems`; what the child needs here is a way to go on, which is the arrows.
-    ouvindo = false;
-    dizerNoEnunciado(t('quiz.semLeitura'));
+    listening = false;
+    sayInStatement(t('quiz.semLeitura'));
   }
 }
 
-function responder(i: number): void {
-  const p = PERGUNTAS[atual];
+function answer(i: number): void {
+  const p = QUESTIONS[atual];
   if (!p) return;
-  const acertou = i === p.certa;
-  if (acertou) acertos++;
-  srAlert(answerText(acertou, t(p.alternativas[p.certa] ?? '')));
+  const gotItRight = i === p.certa;
+  if (gotItRight) correctCount++;
+  srAlert(answerText(gotItRight, t(p.alternativas[p.certa] ?? '')));
   atual++;
   foco = 0;
   setTimeout(render, 900); // deixa o anúncio ser lido antes de a tela mudar
@@ -357,21 +357,21 @@ function responder(i: number): void {
  * `preset` names. ⚠️ It used to read raw key codes: its own arrows worked, the scheme's W and S did not, S rang the sonar, and a transport
  * could only reach it by disguising itself as a keyboard.
  */
-function aoComando(comando: VirtualCommand): void {
-  const p = PERGUNTAS[atual];
-  if (!p || !comando.pressed) return;
+function onCommandFn(cmd: VirtualCommand): void {
+  const p = QUESTIONS[atual];
+  if (!p || !cmd.pressed) return;
   const total = p.alternativas.length;
-  if (comando.action === 'down') { foco = nextFocus(foco, 1, total); render(); }
-  else if (comando.action === 'up') { foco = nextFocus(foco, -1, total); render(); }
+  if (cmd.action === 'down') { foco = nextFocus(foco, 1, total); render(); }
+  else if (cmd.action === 'up') { foco = nextFocus(foco, -1, total); render(); }
   // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se consumiu.
-  else if (comando.action === 'action2') motor?.cenas.input('confirm');
+  else if (cmd.action === 'action2') motor?.cenas.input('confirm');
   // SPEAKING THE ANSWER, and giving the microphone back. ⚠️ The same button that goes back is what stops a reading: a child who
   // changed her mind should not have to wait out the ceiling with the microphone open.
-  else if (comando.action === 'action1') void ouvirResposta();
-  else if (comando.action === 'action3' && ouvindo) motor?.reading.stop();
+  else if (cmd.action === 'action1') void listenForAnswer();
+  else if (cmd.action === 'action3' && listening) motor?.reading.stop();
   // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). The player's place is `atual`, the QUESTION, not the
   // option under the cursor: pointing at the right option would be cheating.
-  else if (comando.action === 'rightShoulder') motor?.sonar.sonar({ i: 0, x: atual, y: 0 });
+  else if (cmd.action === 'rightShoulder') motor?.sonar.sonar({ i: 0, x: atual, y: 0 });
 }
 
 /**
@@ -385,10 +385,10 @@ function aoComando(comando: VirtualCommand): void {
  * UM jogo. Mas é a primeira declaração escrita por um consumidor de verdade, que boota e roda — e é o que
  * mostra que os sete campos cabem num jogo que não tem mundo.
  */
-export function declareQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
-  const ordem = perguntas.map((_, i) => `q${i + 1}`);
+export function declareQuiz(questions: readonly Question[]): GameDeclaration {
+  const sequence = questions.map((_, i) => `q${i + 1}`);
   return {
-    topology: () => ({ kind: 'hotspots', order: ordem }),
+    topology: () => ({ kind: 'hotspots', order: sequence }),
     // ⚠️ O MUNDO DESTE JOGO É DOM, e é exatamente o caso que o campo existe para consertar. A engine
     // implementava «mundo» como a canvas do PixiJS; aqui não há canvas nenhuma a olhar, e uma
     // simulação de cegueira apagaria o que ninguém vê deixando as alternativas legíveis — a
@@ -412,19 +412,19 @@ export function declareQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
     // O nome é curto DE PROPÓSITO: quem ouve o sonar quer saber PARA ONDE ir, não o enunciado inteiro. O
     // enunciado a criança já recebe pela narração, ao entrar na pergunta. Confundir os dois faz o sonar ler
     // um parágrafo a cada toque — e o sonar existe para ser tocado muitas vezes.
-    nameAt: (at) => (perguntas[at.x] ? { text: `pergunta ${at.x + 1}`, gender: 'f', plural: false } : null),
+    nameAt: (at) => (questions[at.x] ? { text: `pergunta ${at.x + 1}`, gender: 'f', plural: false } : null),
     // O foco é o do teclado: qual alternativa está sob o cursor. Sem corpo, sem `facing` — daí `heading:'none'`.
     focusOf: () => ({ id: 'p0', at: { x: atual, y: foco }, heading: 'none' }),
     // ESTE É O CAMPO QUE APOSENTA O `coinTarget`: o alvo é "acertos de perguntas", e a engine não sabe
     // (nem precisa saber) o que é uma moeda para montar a mesma frase de progresso.
     objectiveOf: () => ({
       name: { text: 'perguntas', gender: 'f', plural: true },
-      have: acertos, need: perguntas.length,
+      have: correctCount, need: questions.length,
     }),
     // A segunda metade do campo 5: ONDE está o que ainda conta. Num quiz é uma posição só — a pergunta
     // corrente —, e é justamente por ser tão pobre que ela mostra a forma certa da pergunta: a engine não
     // varre nada, ela recebe a lista e compara distâncias na métrica declarada.
-    targetsOf: () => (atual < perguntas.length ? [{ x: atual, y: 0 }] : []),
+    targetsOf: () => (atual < questions.length ? [{ x: atual, y: 0 }] : []),
   };
 }
 
@@ -434,7 +434,7 @@ export function bootQuiz(): void {
   // achado 3 revelava — e o consumidor tinha de acertá-la sozinho. O que sobrou aqui embaixo é o que é
   // realmente DESTE jogo: a ergonomia do toque e o desenho das perguntas.
   motor = createGame({
-    declaration: declareQuiz(PERGUNTAS),
+    declaration: declareQuiz(QUESTIONS),
     host: { doc: document, win: window, cvdHost: $<SVGElement>('#q-cvd') },
     // Um quiz não tem pausa, nem assistente de pad, nem ator de pausa. Declarado, e não deduzido de getters
     // que devolvem null — ver o achado 10 e o cabeçalho do `boot/create-game`.
@@ -461,15 +461,15 @@ export function bootQuiz(): void {
      * HOW TO PLAY THIS QUIZ (ADR-0195): the cartridge tells it, the engine's help shows it before the buttons. The figures are drawn
      * here from shapes — a question bar and four options — and the second one moves the marked option down, which is the game.
      */
-    onCommand: aoComando,
+    onCommand: onCommandFn,
     howToPlay: [
       {
         text: () => t('quiz.comoJogar.ler'),
-        figure: ({ ctx, width, height }) => desenharQuizFigura(ctx, width, height, -1),
+        figure: ({ ctx, width, height }) => drawQuizFigure(ctx, width, height, -1),
       },
       {
         text: () => t('quiz.comoJogar.escolher'),
-        figure: ({ ctx, width, height, time }) => desenharQuizFigura(ctx, width, height, Math.floor(time / 0.9) % 4),
+        figure: ({ ctx, width, height, time }) => drawQuizFigure(ctx, width, height, Math.floor(time / 0.9) % 4),
       },
     ],
     preset: {
@@ -526,7 +526,7 @@ export function bootQuiz(): void {
     draw: () => render(),
     input: (intent) => {
       if (intent !== 'confirm') return false;
-      responder(foco);
+      answer(foco);
       return true;
     },
   });
@@ -574,14 +574,14 @@ export function bootQuiz(): void {
 if (typeof document !== 'undefined' && document.getElementById('quiz-app')) bootQuiz();
 
 /** The quiz drawn small, for its «how to play» slides: the question bar and four options, `marcada` outlined (−1: none). */
-function desenharQuizFigura(ctx: CanvasRenderingContext2D, w: number, h: number, marcada: number): void {
+function drawQuizFigure(ctx: CanvasRenderingContext2D, w: number, h: number, marcada: number): void {
   const m = Math.round(h * 0.06);
-  const barra = Math.round(h * 0.16);
+  const barEl = Math.round(h * 0.16);
   ctx.fillStyle = '#eaf2f8';
-  ctx.fillRect(m, m, w - 2 * m, barra);
-  const altura = Math.floor((h - 3 * m - barra - 3 * m) / 4);
+  ctx.fillRect(m, m, w - 2 * m, barEl);
+  const altura = Math.floor((h - 3 * m - barEl - 3 * m) / 4);
   for (let i = 0; i < 4; i++) {
-    const y = 2 * m + barra + i * (altura + m);
+    const y = 2 * m + barEl + i * (altura + m);
     ctx.fillStyle = '#3a4a6a'; // lighter than the slide's own #1a2740, or the options vanish into it
     ctx.fillRect(m * 3, y, w - 6 * m, altura);
     if (i === marcada) {
