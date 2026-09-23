@@ -2190,6 +2190,32 @@ fifth module to come out this way, after `ui/audio-choices`, `ui/typo-choices`, 
 them. 📌 No alias was left: a re-export would keep alive a path nothing inside the engine uses, and would make the
 public-surface portrait lie, because it does not see re-exports (issue #204).
 
+## BV · The hearing panel builds NODES — the last one outside the kit (ADR-0129, issue #135)
+
+**What this is.** `ui/audio-choices` no longer exports `catRowHTML` or `catsListHTML`, and no alias is left behind.
+The category list of `#audio-list` and `#navsound-list` was an HTML string assigned to `innerHTML` at every render;
+it is now built as nodes and RECONCILED — what is missing is created in place, what stayed is rewritten, and what
+lost its name is removed. The sinks section and the «no output device» sentence went with it, so `ui/settings-audio`
+has no `innerHTML` left at all: three markup sinks leave the census, paid rather than moved.
+
+🎯 **Why it is worth a break.** A category row carries TWO controls — the volume and the on/off of the same
+category — and the kit's `controlRow` mounts one, so this is «string → NODES», not «string → kit»; the same
+conclusion, for the same reason, that left the visual panel's four paper-colour row hand-built. What the conversion
+buys is the reconciliation: the row a child is dragging the volume on is the SAME node after the next render, and a
+row that loses its subject is removed instead of surviving with a stale label. 📏 Measured: with the list rebuilt
+from a string, every render destroyed and recreated all four sliders.
+
+⚠️ **What to change.** If you call `initSettingsAudio`, nothing: the ids, the `data-acat`/`data-avol` attributes,
+the rows and the words are the same, and `renderAudio()` is still what you call. If you imported either builder to
+draw rows yourself, there is no replacement export — the interior is mounted by `initSettingsAudio(ctx).renderAudio()`,
+which needs `#audio-list` and `#navsound-list` in the document. 📌 No alias was left: a re-export would keep alive a
+path nothing inside the engine uses, and would make the public-surface portrait lie (issue #204).
+
+📌 **One decision left the sink census with the list, and it has NOT been revoked.** That entry was the only one in
+that ledger carrying a decision of the Dev's — «audio categories are THE ENGINE's» (2026-09-06) — rather than a
+classification. It still holds, and is still written down, in the module that now builds the row; what stopped being
+necessary is the exception.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

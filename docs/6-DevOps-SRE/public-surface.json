@@ -1489,8 +1489,6 @@
     "TTS_ENGINE_OPTIONS",
     "VoiceLike",
     "caneDivMessage",
-    "catRowHTML",
-    "catsListHTML",
     "navMasterVolume",
     "parseCaneDiv",
     "pickVoicesFor",

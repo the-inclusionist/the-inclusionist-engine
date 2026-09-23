@@ -52,7 +52,7 @@ export interface AudioStore {
  */
 import {
   type AudioCatDef, type AudioCatState,
-  NAV_CATS, GEN_CATS, volPercent, catsListHTML, navMasterVolume, parseCaneDiv, caneDivMessage,
+  NAV_CATS, GEN_CATS, volPercent, navMasterVolume, parseCaneDiv, caneDivMessage,
   sinksSupported, sinkOptionLabel, sinkSelectValue,
 } from './audio-choices.js';
 
@@ -150,7 +150,7 @@ export interface SettingsAudioApi {
  * Idempotente: chamar duas vezes reaproveita o que já existe em vez de o duplicar.
  */
 export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
-  // Cada entrada: ou uma linha de controle, ou um CONTENTOR que o painel preenche por `innerHTML`.
+  // Each entry is either a control row or a CONTAINER the panel fills with rows of its own.
   const pecas: (ControlRowSpec | { readonly contentor: string; readonly rotulo?: string })[] = [
     /*
      * 🔴 A COMPOSIÇÃO DO ADR-0151 E DAS ERRATAS DELE (2026-09-12), na ordem do geral para o particular:
@@ -302,29 +302,132 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (sb) ctx.toggleBtn(sb, ctx.getSoundOn());
   }
 
+  /**
+   * The kit's ctx comes from the LIST NODE itself, not from a global `document` nor from a new contract field —
+   * `ownerDocument` is the document that list lives in, which is where its rows have to be born. Same shape as
+   * `ui/settings-caa`, and it is what removes this file's reach to `document` without touching `SettingsAudioCtx`.
+   */
+  const kitCtx = (list: HTMLElement): PanelShellCtx => ({
+    procurar: (sel) => ctx.$<HTMLElement>(sel),
+    criar: (tag) => list.ownerDocument.createElement(tag),
+  });
+
+  /**
+   * The same document, but KEEPING the element type.
+   *
+   * 📌 `PanelShellCtx.criar` is `string → HTMLElement` on purpose: the shell only ever appends generic nodes, and
+   * widening it would be a one-way door on a published shape (ADR-0172). The sinks section needs a `<select>` that
+   * answers `.value`, so the typed factory lives HERE, over the same `ownerDocument`, instead of the contract
+   * growing a field for one caller.
+   */
+  const makerFor = (host: HTMLElement) =>
+    <K extends keyof HTMLElementTagNameMap>(tag: K): HTMLElementTagNameMap[K] =>
+      host.ownerDocument.createElement(tag);
+
+  /**
+   * ONE CATEGORY ROW, in nodes: label, volume slider and toggle.
+   *
+   * 📌 NOT A KIT ROW, and not by taste: 📏 measured on 2026-09-23, `controlRow` builds «a label, a hint and ONE
+   * control» and this row carries TWO — the volume and the on/off of the same category. Same reason the visual
+   * panel's four paper-colour row stayed hand-built: inventing a shape for it would be giving a second answer to
+   * the question «what is a row».
+   */
+  function buildCatRow(kit: PanelShellCtx, k: string): HTMLElement {
+    const row = kit.criar('div');
+    row.className = 'ctrl-row';
+    const text = kit.criar('span');
+    text.appendChild(kit.criar('strong'));
+    row.appendChild(text);
+    const box = kit.criar('span');
+    box.style.cssText = 'display:flex;gap:.5rem;align-items:center;flex-shrink:0';
+    const vol = kit.criar('input');
+    vol.className = 'vol';
+    vol.setAttribute('type', 'range');
+    vol.setAttribute('min', '0');
+    vol.setAttribute('max', '100');
+    vol.setAttribute('step', '5');
+    vol.setAttribute('data-avol', k);
+    box.appendChild(vol);
+    const toggle = kit.criar('button');
+    toggle.className = 'mode-btn switch';
+    toggle.setAttribute('type', 'button');
+    toggle.setAttribute('aria-pressed', 'false');
+    toggle.setAttribute('data-acat', k);
+    box.appendChild(toggle);
+    row.appendChild(box);
+    return row;
+  }
+
+  /** Creates what is missing IN THE RIGHT POSITION, rewrites the words of what stayed, removes what is no longer asked for. */
+  function mountCatRows(list: HTMLElement, keys: readonly string[]): void {
+    const kit = kitCtx(list);
+    let previous: HTMLElement | null = null;
+    // ⚠️ WHAT SURVIVES IS WHAT THE HOST STILL NAMES, not simply what is in `keys`. A row whose category lost its
+    // name would otherwise stay on screen with the old label — asked for by the key list, offered by nobody.
+    const named = new Set<string>();
+    for (const k of keys) {
+      const c = ctx.audioCats.find((x) => x.k === k);
+      if (!c) continue; // a category this host does not name: what has no name is not offered
+      named.add(k);
+      let row = list.querySelector<HTMLElement>(`[data-acat="${k}"]`)?.closest<HTMLElement>('.ctrl-row') ?? null;
+      if (!row) {
+        row = buildCatRow(kit, k);
+        // ⚠️ INSERTED in place, never appended and reordered: a node that changes parent is removed and put back,
+        // and the browser blurs it on removal — that would take the cursor from whoever is setting the volume.
+        list.insertBefore(row, previous ? previous.nextSibling : list.firstChild);
+      }
+      const label = t(c.lbl);
+      const strong = row.querySelector<HTMLElement>('strong');
+      if (strong) strong.textContent = label;
+      row.querySelector(`[data-avol="${k}"]`)?.setAttribute('aria-label', t('audio.cat.volumeDe', { c: label }));
+      row.querySelector(`[data-acat="${k}"]`)?.setAttribute('aria-label', label);
+      previous = row;
+    }
+    for (const b of [...list.querySelectorAll<HTMLElement>('[data-acat]')]) {
+      if (!named.has(b.dataset.acat ?? '')) b.closest('.ctrl-row')?.remove();
+    }
+  }
+
+  /** The STATE of each row — the volume where it is and the toggle saying what it says. */
+  function reflectCatRows(list: HTMLElement, keys: readonly string[]): void {
+    const state = ctx.getAudioCat();
+    if (!state) return;
+    for (const k of keys) {
+      const a = state[k];
+      if (!a) continue;
+      const vol = list.querySelector<HTMLInputElement>(`input[data-avol="${k}"]`);
+      if (vol) vol.value = String(volPercent(a.vol));
+      const toggle = list.querySelector<HTMLElement>(`button[data-acat="${k}"]`);
+      if (toggle) { toggle.classList.toggle('is-on', a.on); toggle.setAttribute('aria-pressed', String(a.on)); }
+    }
+  }
+
+  /** The listeners, ONCE per list and by delegation — rows come and go, the list stays. */
   function wireCatControls(el: HTMLElement): void {
-    el.querySelectorAll<HTMLButtonElement>('button[data-acat]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const k = b.dataset.acat; if (!k) return;
-        const state = ctx.getAudioCat(); if (!state || !state[k]) return;
-        state[k].on = !state[k].on;
-        ctx.setCatGain(k);
-        b.classList.toggle('is-on', state[k].on);
-        b.setAttribute('aria-pressed', String(state[k].on));
-        refreshMarks(); // a marca acompanha a MUDANÇA, não só o redesenho — ver a nota em refreshMarks
-      });
+    if (el.dataset.catsWired) return;
+    el.dataset.catsWired = '1';
+    el.addEventListener('click', (ev) => {
+      const b = (ev.target as HTMLElement | null)?.closest<HTMLElement>('button[data-acat]');
+      const k = b?.dataset.acat;
+      if (!b || !k) return;
+      const state = ctx.getAudioCat(); if (!state || !state[k]) return;
+      state[k].on = !state[k].on;
+      ctx.setCatGain(k);
+      b.classList.toggle('is-on', state[k].on);
+      b.setAttribute('aria-pressed', String(state[k].on));
+      refreshMarks(); // the mark follows the CHANGE, not only the redraw — see the note in refreshMarks
     });
-    el.querySelectorAll<HTMLInputElement>('input[data-avol]').forEach((s) => {
-      s.addEventListener('input', () => {
-        const k = s.dataset.avol; if (!k) return;
-        const state = ctx.getAudioCat(); if (!state || !state[k]) return;
-        state[k].vol = (+s.value) / 100;
-        state[k].on = true;
-        ctx.setCatGain(k);
-        const bb = el.querySelector<HTMLButtonElement>('button[data-acat="' + k + '"]');
-        if (bb) { bb.classList.add('is-on'); bb.setAttribute('aria-pressed', 'true'); }
-        refreshMarks();
-      });
+    el.addEventListener('input', (ev) => {
+      const s = (ev.target as HTMLElement | null)?.closest<HTMLInputElement>('input[data-avol]');
+      const k = s?.dataset.avol;
+      if (!s || !k) return;
+      const state = ctx.getAudioCat(); if (!state || !state[k]) return;
+      state[k].vol = (+s.value) / 100;
+      state[k].on = true;
+      ctx.setCatGain(k);
+      const bb = el.querySelector<HTMLButtonElement>('button[data-acat="' + k + '"]');
+      if (bb) { bb.classList.add('is-on'); bb.setAttribute('aria-pressed', 'true'); }
+      refreshMarks();
     });
   }
 
@@ -332,10 +435,11 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     const el = ctx.$<HTMLElement>(sel);
     const state = ctx.getAudioCat();
     if (!el || !state) return;
-    el.innerHTML = catsListHTML(keys, ctx.audioCats, state);
+    mountCatRows(el, keys);
+    reflectCatRows(el, keys);
     wireCatControls(el);
-    // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109) — no cartão
-    // de QUEM tem esta lista: desde o ADR-0151 são dois painéis, e o rodapé do outro não é o desta criança.
+    // The prose goes back to the footer after the rows change (CLAUDE.md §4, #109) — in the card of WHOEVER holds
+    // this list: since ADR-0151 there are two panels, and the other one's footer is not this child's.
     ctx.fillExplain?.(el.closest<HTMLElement>('.overlay__card'));
   }
 
@@ -357,24 +461,31 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   function renderSinks(devices: readonly MediaDeviceInfo[]): void {
     const el = ctx.$<HTMLElement>('#audio-sinks');
     if (!el) return;
-    el.innerHTML = '';
+    // 📌 The document comes from the list node, never from the global one — same shape as the rest of this file
+    // since the conversion to nodes, and it is what removes the reach to `document` without asking the contract
+    // for a new field (ADR-0221 step 7d).
+    const make = makerFor(el);
+    while (el.firstChild) el.removeChild(el.firstChild);
     if (!devices.length) {
       const supported = sinksSupported(hasEnumerateDevices(), hasAudioContextCtor());
-      el.innerHTML = '<p class="opt-hint">' +
-        t(supported ? 'audio.sinksHint' : 'audio.sinksUnsupported') +
-        '</p>';
+      // ⚠️ TWO SENTENCES, not one: «this browser CANNOT do it» and «there is no device yet» are different things to
+      // a child who is looking for their own headphones, and the dictionary has always had both.
+      const hint = make('p');
+      hint.className = 'opt-hint';
+      hint.textContent = t(supported ? 'audio.sinksHint' : 'audio.sinksUnsupported');
+      el.appendChild(hint);
       return;
     }
     const players = ctx.getPlayers();
     const n = Math.max(1, ctx.getNumPlayers());
     for (let i = 0; i < n; i++) {
       const p = players[i];
-      const row = document.createElement('div'); row.className = 'ctrl-row';
-      const lbl = document.createElement('label'); lbl.textContent = t('audio.playerN', { n: i + 1 }); lbl.setAttribute('for', 'sink-p' + i);
-      const sel = document.createElement('select'); sel.className = 'vol'; sel.id = 'sink-p' + i;
-      const o0 = document.createElement('option'); o0.value = ''; o0.textContent = t('audio.sinkShared'); sel.appendChild(o0);
+      const row = make('div'); row.className = 'ctrl-row';
+      const lbl = make('label'); lbl.textContent = t('audio.playerN', { n: i + 1 }); lbl.htmlFor = 'sink-p' + i;
+      const sel = make('select'); sel.className = 'vol'; sel.id = 'sink-p' + i;
+      const o0 = make('option'); o0.value = ''; o0.textContent = t('audio.sinkShared'); sel.appendChild(o0);
       devices.forEach((d, k) => {
-        const o = document.createElement('option'); o.value = d.deviceId; o.textContent = sinkOptionLabel(d, k); sel.appendChild(o);
+        const o = make('option'); o.value = d.deviceId; o.textContent = sinkOptionLabel(d, k); sel.appendChild(o);
       });
       sel.value = sinkSelectValue(p);
       sel.addEventListener('change', () => {

@@ -100,7 +100,6 @@ const SEGUROS = [
   // A lista de vozes do sistema mudou de casa com a secção da voz (ADR-0221, issue #203): quem limpa este `<select>` é
   // agora o `ui/voice-settings`. A classificação não muda com o ficheiro — o que entra continua a ser uma cadeia vazia.
   ['ui/voice-settings.ts', "sel.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
-  ['ui/settings-audio.ts', "el.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-mobility.ts', 'tabs.innerHTML = playerTabsHTML(', 'números (quantos jogadores, qual selecionado)'],
   ['ui/settings-panel.ts', 'span.innerHTML = strong.outerHTML', 'DOM de volta ao DOM: nenhum texto novo entra'],
   // 🎯 UM SINK A MENOS, e foi PAGO e não movido: `ui/settings-visual` construía o interior por `innerHTML` e
@@ -109,17 +108,17 @@ const SEGUROS = [
   ['ui/shell.ts', 'el.innerHTML = legendHtml(l1, l2)', 'so i18n, e o dicionario tem gate proprio'],
   ['input/touch.ts', 'el.innerHTML = TOUCH_SLOTS.map((s) =>', '⚠️ CONSERTADO 2026-09-06: idem — o `<option>` nasce vazio e recebe o rótulo por texto'],
   ['consumer-quiz/main-quiz.ts', 'app.innerHTML = questionHtml(p, foco);', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escapeHtml`, com gate hostil em `consumer-quiz`'],
-  ['ui/settings-audio.ts', "el.innerHTML = '<p class=\"opt-hint\">' +", 'uma única chave de i18n, escolhida por um booleano'],
   ['ui/settings-controls.ts', "tabs.innerHTML = '<span class=\"opt-hint\" style=\"widt", '⚠️ CONSERTADO 2026-09-07 (#125): era um literal em português cravado COM o `<strong>` e o plural à mão. Agora o sink é só ESQUELETO — zero dado, zero interpolação — e as três partes do texto entram por `textContent`, com o molde partido no marcador `{modo}` antes da substituição. O dicionário continua sem markup, que é o que o `i18n-sem-markup` exige'],
   // 🎯 DOIS SINKS A MENOS, e os dois PAGOS: o `ui/settings-motion` montava o interior por `innerHTML` e passou a
   // montá-lo em NÓS com o kit (ADR-0129, 2026-09-23); a faixa de abas, que era limpa com uma cadeia vazia, passou a
   // `textContent`. O que a conversão tira não é só a interpolação — é a reconstrução, que destruía o controle de
   // passos e atirava para o `<body>` o foco de quem estivesse a ajustá-lo.
-  // ⚠️ A chave mudou em 2026-09-09 porque a LINHA mudou: o `fonteInstalada` passou a atravessar daqui para o
-  // `faceAvailable` (ADR-0012 «enquanto nenhuma estiver presente»). A entrada continua SEGURA pela mesma
-  // razão — o conteúdo sai do catálogo da engine, não de dado de fora — e o detector é uma FUNÇÃO, que não
-  // chega a virar markup.
-  ['ui/settings-audio.ts', 'el.innerHTML = catsListHTML(', '⚠️ DECIDIDO 2026-09-06 pelo Dev: as categorias de áudio são DA ENGINE. `c.lbl` entra em dois `aria-label`, e `ctx.audioCats` é injetado — mas categoria de áudio é vocabulário de MISTURA (voz, guia, sonar, efeitos), não conteúdo de jogo. Um jogo que precisasse de uma categoria própria estaria a pedir um canal de mixer novo, o que é decisão de arquitetura e entraria por um caminho declarado, com o escape junto'],
+  // 🎯 TRÊS SINKS A MENOS, e os três PAGOS: o `ui/settings-audio` foi o ÚLTIMO painel fora do kit (ADR-0129,
+  // 2026-09-23). Saíram a lista de categorias (que era `catsListHTML`, apagada com a conversão), a frase de
+  // «não há saídas» e a cadeia vazia que limpava a secção — as três viraram nós. E com a lista de categorias
+  // saiu a ÚNICA entrada deste livro que carregava uma decisão do Dev em vez de uma classificação: «as
+  // categorias de áudio são DA ENGINE». A decisão continua a valer e continua escrita, no módulo que agora
+  // monta a linha; o que deixou de ser preciso é a excepção.
 ];
 
 /**

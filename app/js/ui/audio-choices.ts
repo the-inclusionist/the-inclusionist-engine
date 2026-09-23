@@ -32,22 +32,15 @@ export function volPercent(v: number): number {
   return Math.round(v * 100);
 }
 
-/** One category row's markup (volume slider + on/off switch). Pure — resolves label/state from the given data,
- *  never from a global. Returns '' for an unknown/missing category (defensive; never hit with real catalogs). */
-export function catRowHTML(k: string, cats: readonly AudioCatDef[], state: Readonly<Record<string, AudioCatState>>): string {
-  const c = cats.find((x) => x.k === k);
-  const a = state[k];
-  if (!c || !a) return '';
-  const label = t(c.lbl);
-  return `<div class="ctrl-row"><span><strong>${label}</strong></span><span style="display:flex;gap:.5rem;align-items:center;flex-shrink:0">` +
-    `<input class="vol" type="range" min="0" max="100" step="5" value="${volPercent(a.vol)}" data-avol="${k}" aria-label="${t('audio.cat.volumeDe', { c: label })}">` +
-    `<button class="mode-btn switch${a.on ? ' is-on' : ''}" data-acat="${k}" type="button" aria-pressed="${a.on}" aria-label="${label}"></button></span></div>`;
-}
-
-/** Full innerHTML for a category list (#audio-list or #navsound-list). Pure string building — no DOM. */
-export function catsListHTML(keys: readonly string[], cats: readonly AudioCatDef[], state: Readonly<Record<string, AudioCatState>>): string {
-  return keys.map((k) => catRowHTML(k, cats, state)).join('');
-}
+/*
+ * 🔴 `catRowHTML` E `catsListHTML` SAÍRAM (BREAKING, nota BV): a lista de categorias do painel auditivo passou a
+ * ser montada em NÓS (ADR-0129), e uma construtora de markup sem consumidor é dívida publicada — não muda de
+ * morada, apaga-se. O que ela dizia continua dito, num sítio onde a linha também se RECONCILIA em vez de
+ * renascer: `ui/settings-audio.buildCatRow`.
+ *
+ * 📌 E não fica apelido: um re-export manteria vivo um caminho que nada importa e faria o retrato da superfície
+ * mentir, porque ele não vê re-exports (issue #204). É o precedente do corte do `pause-icons`.
+ */
 
 /** #navsound-master's value: the loudest of the nav categories, as a 0..100 slider value. */
 export function navMasterVolume(state: Readonly<Record<string, AudioCatState>>, navCats: readonly string[] = NAV_CATS): number {

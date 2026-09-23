@@ -68,6 +68,10 @@ function fullCtx(over = {}) {
   let blindMode = over.blindMode ?? false;
   let caneBlockDiv = over.caneBlockDiv ?? 1;
   const players = over.players || [{ audioSink: null }];
+  // O catálogo é do HOSPEDEIRO, e passou a ser sobreponível quando a lista virou nós: o que antes se media
+  // dando uma lista de categorias à construtora de markup mede-se agora dizendo ao painel que o hospedeiro
+  // nomeia outras — é a mesma pergunta, feita pelo caminho que existe.
+  const audioCats = over.audioCats || AUDIO_CATS;
   const tts = {
     engineSel: 'webspeech',
     getEngineSel: () => tts.engineSel,
@@ -83,7 +87,7 @@ function fullCtx(over = {}) {
     $: (sel) => document.querySelector(sel),
     srSay: (t) => said.push(t),
     store: { get: (k, fb = null) => (store.has(k) ? store.get(k) : fb), set: (k, v) => { store.set(k, String(v)); return true; } },
-    audioCats: AUDIO_CATS,
+    audioCats,
     toggleBtn: (b, on) => { b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); },
     getNumPlayers: () => players.length,
     getPlayers: () => players,
@@ -143,6 +147,78 @@ describe('ui/settings-audio — renderAudio (categorias)', () => {
     expect(navButtons.length).toBe(NAV_CATS.length);
   });
 
+  /*
+   * 🔴 AS CINCO AFIRMAÇÕES QUE VIVIAM SOBRE A CADEIA (BREAKING, nota BV). Eram casos de node sobre
+   * `catRowHTML`/`catsListHTML`, que liam a marcação como TEXTO; a lista passou a ser montada em NÓS, e o que
+   * elas exigiam passou a ser observável só num documento. Nenhuma exigência caiu: o rótulo, a percentagem do
+   * cursor, o estado do interruptor, a ordem e a chave sem nome continuam presos, agora pelo caminho que existe.
+   *
+   * 🎯 E DUAS SÃO NOVAS, porque só a forma nova as torna possíveis: a linha que FICA é o MESMO nó entre dois
+   * renders (que é o que impede o cursor de cair de quem está a mexer no volume) e a linha que perde o nome é
+   * removida. Uma cadeia rebentava tudo a cada render e nenhuma das duas perguntas fazia sentido.
+   */
+  it('🔴 [Right] a linha leva o rótulo, a percentagem do volume e o estado ligado do interruptor', () => {
+    const cat = freshAudioCat();
+    cat.music.on = true; cat.music.vol = 0.8;
+    const { ctx } = fullCtx({ audioCat: cat });
+    initSettingsAudio(ctx).renderAudio();
+    const row = document.querySelector('#audio-list [data-acat="music"]').closest('.ctrl-row');
+    expect(row.querySelector('strong').textContent).toBe('Música');
+    expect(row.querySelector('input[data-avol="music"]').value).toBe('80');
+    const btn = row.querySelector('button[data-acat="music"]');
+    expect(btn.classList.contains('is-on')).toBe(true);
+    expect(btn.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('⚠️ [Inverse] e uma categoria DESLIGADA não fica `is-on` nem diz que está premida', () => {
+    const cat = freshAudioCat();
+    cat.ambient.on = false; cat.ambient.vol = 0.35;
+    const { ctx } = fullCtx({ audioCat: cat });
+    initSettingsAudio(ctx).renderAudio();
+    const btn = document.querySelector('#audio-list button[data-acat="ambient"]');
+    expect(btn.classList.contains('is-on')).toBe(false);
+    expect(btn.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('🔴 [Error] chave que o hospedeiro NÃO NOMEIA não vira linha — e o painel não lança', () => {
+    // «Não se oferece o que não tem nome»: um interruptor sem rótulo é um botão que a criança não sabe o que faz.
+    const semMusica = AUDIO_CATS.filter((c) => c.k !== 'music');
+    const { ctx } = fullCtx({ audioCats: semMusica });
+    expect(() => initSettingsAudio(ctx).renderAudio()).not.toThrow();
+    expect(document.querySelector('#audio-list [data-acat="music"]')).toBe(null);
+    expect(document.querySelectorAll('#audio-list button[data-acat]').length).toBe(GEN_CATS.length - 1);
+  });
+
+  it('🔴 [Right] as linhas saem na ORDEM das chaves, e não na do catálogo do hospedeiro', () => {
+    const invertido = [...AUDIO_CATS].reverse();
+    const { ctx } = fullCtx({ audioCats: invertido });
+    initSettingsAudio(ctx).renderAudio();
+    const ordem = [...document.querySelectorAll('#audio-list button[data-acat]')].map((b) => b.dataset.acat);
+    expect(ordem).toEqual([...GEN_CATS]);
+  });
+
+  it('🎯 [Right] um segundo render REAPROVEITA os nós — a linha que fica é a mesma, e o cursor não cai', () => {
+    const { ctx } = fullCtx();
+    const api = initSettingsAudio(ctx);
+    api.renderAudio();
+    const antes = document.querySelector('#audio-list input[data-avol="music"]');
+    antes.focus();
+    api.renderAudio();
+    expect(document.querySelector('#audio-list input[data-avol="music"]')).toBe(antes);
+    expect(document.activeElement).toBe(antes);
+  });
+
+  it('🔴 [Right] e a linha cuja categoria PERDE o nome é removida, não fica com o rótulo velho', () => {
+    const cats = [...AUDIO_CATS];
+    const { ctx } = fullCtx({ audioCats: cats });
+    const api = initSettingsAudio(ctx);
+    api.renderAudio();
+    expect(document.querySelector('#audio-list [data-acat="music"]')).not.toBe(null);
+    cats.splice(cats.findIndex((c) => c.k === 'music'), 1);
+    api.renderAudio();
+    expect(document.querySelector('#audio-list [data-acat="music"]')).toBe(null);
+  });
+
   it('[Interface] clicar no botão de uma categoria alterna audioCat[k].on e chama setCatGain', () => {
     const { ctx, audioCat, catGainCalls } = fullCtx();
     const api = initSettingsAudio(ctx);
@@ -161,7 +237,11 @@ describe('ui/settings-audio — renderAudio (categorias)', () => {
     api.renderAudio();
     const slider = document.querySelector('#audio-list input[data-avol="ambient"]');
     slider.value = '25';
-    slider.dispatchEvent(new Event('input'));
+    // ⚠️ COM BOLHA, como um `input` de verdade: a especificação diz que um `input` disparado por interacção
+    // BORBULHA, e a escuta desta lista passou a ser por delegação quando o painel virou nós — as linhas de
+    // categoria vêm e vão com o cartucho, e ligar controle a controle a cada render acumulava escutas. Um
+    // despacho sem bolha era uma forma que nenhum caminho real usa.
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
     expect(audioCat.ambient.vol).toBeCloseTo(0.25);
     expect(audioCat.ambient.on).toBe(true);
     expect(catGainCalls).toContain('ambient');
