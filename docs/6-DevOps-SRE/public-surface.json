@@ -1501,6 +1501,10 @@
     "voiceLabel",
     "volPercent"
   ],
+  "ui/audio-rows-that-apply.ts": [
+    "AudioRowsThatApplyCtx",
+    "showOnlyRowsThatApply"
+  ],
   "ui/caa-sets.ts": [
     "CAA_BY_KEY",
     "CAA_SETS",
@@ -1938,7 +1942,6 @@
     "lqPercent",
     "lqPosition",
     "onOffLabel",
-    "renderVisualPanelHtml",
     "resolveVisualMode",
     "rgbToHex",
     "sameRgb"
@@ -1965,6 +1968,11 @@
     "spokenGlyph",
     "touchActionGlyphs",
     "touchControlsPlan"
+  ],
+  "ui/simulation-list.ts": [
+    "SimulationList",
+    "SimulationListCtx",
+    "createSimulationList"
   ],
   "ui/simulation-over-the-world.ts": [
     "SimulationOverTheWorld",

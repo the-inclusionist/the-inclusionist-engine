@@ -2111,6 +2111,28 @@ dispatched for exactly that, and `dictionaryGaps` says in `problems` when a regi
 boot language, so a child who switches may be asking for something that is not there — that becomes a line in
 `problems` and the 👄 goes back to off, not a microphone listening in the wrong language.
 
+## BR · The visual panel builds NODES, and `renderVisualPanelHtml` is gone (ADR-0129, issue #135)
+
+**What this is.** `ui/settings-visual` no longer exports `renderVisualPanelHtml`. The panel built its interior by
+assembling an HTML string and assigning it to `innerHTML` at every render; it now builds NODES with the panel kit
+(`ui/panel-widgets.controlRow`), mounting once and relabelling afterwards.
+
+🎯 **Why it is worth a break.** Two defects came with the rebuild, and neither was cosmetic. 📏 Measured on
+2026-09-23: the contrast-enhancement STEPS control was constructed anew at every render, so a click on any other row
+of the panel took the cursor off it — the same defect the simulation list's own comment warns about. And the
+composition root had to mount the owner-colours row OUTSIDE this list, under a second id (`#opt-dono`), precisely
+because an `innerHTML` from here would erase any node it inserted. One markup sink leaves the census with it.
+
+⚠️ **What to change.** If you call `initSettingsVisual`, nothing: the ids, the rows and the words are the same, and
+`render()` is still what you call. If you imported `renderVisualPanelHtml` to draw the panel's interior yourself,
+there is no replacement export — the interior is mounted by `initSettingsVisual(ctx).render()`, which needs
+`#visual-list` in the document and nothing else.
+
+📌 **The four role colours stayed a hand-built row, and not for want of a sixth kit shape.** `controlRow` builds «one
+label, one hint, ONE control», and that row has five — four colour swatches and the ↺ that puts them back. Inventing a
+shape for it would be giving a second answer to «what is a row», which is what the kit exists to prevent. It is built
+as nodes like everything else, with the same discipline: mounted once, relabelled after.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

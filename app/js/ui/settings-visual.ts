@@ -10,8 +10,8 @@
 import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
 import { CONTRAST_LEVELS } from '../core/visual-cycles.js';
-import { mountSteps, updateSteps, nextStep } from './panel-widgets.js';
-import { escapeHtml } from '../core/escape-html.js';
+import { mountSteps, updateSteps, nextStep, controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
+import type { PanelShellCtx } from './panel-shell.js';
 
 import { lqName as lqLabel } from '../render/lq-filter.js';
 
@@ -237,44 +237,110 @@ export const VISUAL_MODE_LIST: readonly VizMode[] =
 export interface VisualRowsOffered { readonly dono: boolean; readonly papeis: boolean }
 const TODAS_AS_LINHAS: VisualRowsOffered = { dono: true, papeis: true };
 
-export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings, oferecer: VisualRowsOffered = TODAS_AS_LINHAS): string {
-  const roleInputs = ROLE_KEYS.map(
-    (k) =>
-      // 📌 A MOLDURA TRADUZ, O NOME DO PAPEL ATRAVESSA (`CLAUDE.md` §A FRONTEIRA, reafirmado pelo Dev em 22/09): «Cor de»
-      // é da engine e passa por `t()`; «perigo (lava)» é a palavra do JOGO que monta este painel, e a engine não a
-      // traduz nem a inventa. ⚠️ E ela continua a ser dívida DECLARADA por outro motivo, dito abaixo em `ROLE_LABELS`.
-      `<input type="color" id="opt-role-${k}" value="${rgbToHex(s.roleColors[k])}" aria-label="${escapeHtml(t('visual.papel.cor', { papel: ROLE_LABELS[k] }))}" style="inline-size:2.2em;block-size:1.8em;padding:0;border:1px solid #666;border-radius:4px;background:none">`,
-  ).join('');
-  return (
-    // 🔴 O REALCE DE CONTRASTE, EM PASSOS E COM A PROSA NO SÍTIO CERTO (ADR-0151). O Dev viu a explicação DENTRO da
-    // linha: ela vinha colada ao rótulo e dependia de o hospedeiro passar o `fillExplain` para descer ao rodapé.
-    // Agora mora num `.opt-hint` desde a nascença (`CLAUDE.md` §4), e o cursor virou o lugar dos passos ⯇ ⯈.
-    // E O RÓTULO VAI PARA DENTRO DOS PASSOS — «◀ Realce de contraste: linear ▶» (errata do ADR-0130); a dica fica
-    // no seu `.opt-hint`, que o rodapé recolhe.
-    '<div class="ctrl-row ctrl-row--passos"><span><span class="opt-hint">' +
-    escapeHtml(t('visual.lq.dica')) + '</span></span><span data-passos-lugar="lq"></span></div>' +
-    // 🔴 AS DUAS ÚLTIMAS FRASES CRUAS DESTE PAINEL PASSARAM PELO DICIONÁRIO (ADR-0225). O comentário da paleta segura,
-    // logo abaixo, descreve este mesmo conserto feito a ELA e deixou estas duas para trás: eram português escrito em
-    // linha, com a explicação colada ao rótulo depois de um travessão, num módulo da ENGINE que um cartucho monta em
-    // página de qualquer língua. A explicação vai agora para o seu `.opt-hint` (`CLAUDE.md` §4), que o rodapé recolhe.
-    (oferecer.dono
-      ? `<div class="ctrl-row"><span><strong>${escapeHtml(t('visual.dono'))}</strong><span class="opt-hint">${escapeHtml(t('visual.dono.dica'))}</span></span>` +
-        `<button id="opt-ownercolors" class="mode-btn${s.ownerColors ? ' is-on' : ''}" type="button" aria-pressed="${s.ownerColors}">${onOffLabel(s.ownerColors)}</button></div>`
-      : '') +
-    // 🔴 The safe palette's words through the dictionary, the explanation in `.opt-hint` (`CLAUDE.md` §4): it was raw
-    // Portuguese with its explanation glued after a dash, and the engine now mounts this row on pages in any language.
-    `<div class="ctrl-row"><span><strong>${escapeHtml(t('visual.cbsafe'))}</strong><span class="opt-hint">${escapeHtml(t('visual.cbsafe.dica'))}</span></span>` +
-    `<button id="opt-cbsafe" class="mode-btn${s.cbSafe ? ' is-on' : ''}" type="button" aria-pressed="${s.cbSafe}">${onOffLabel(s.cbSafe)}</button></div>` +
-    (oferecer.papeis
-      // 📌 E A LISTA DOS QUATRO PAPÉIS SAIU DA FRASE, que é a segunda metade do conserto: «perigo, escalável, água e
-      // portão» são as palavras de UM jogo, e a engine não descreve um jogo. Quem os nomeia é o `aria-label` de cada
-      // cor, onde eles atravessam por `{param}` — logo a frase continua verdadeira num cartucho com outros papéis.
-      ? `<div class="ctrl-row"><span><strong>${escapeHtml(t('visual.papeis'))}</strong><span class="opt-hint">${escapeHtml(t('visual.papeis.dica'))}</span></span>` +
-        '<span style="display:flex;gap:.35rem;align-items:center">' +
-        roleInputs +
-        `<button id="opt-role-reset" class="mode-btn" type="button" aria-label="${escapeHtml(t('visual.papel.repor'))}">↺</button></span></div>`
-      : '')
-  );
+/** A linha dos ITENS NA COR DO DONO, já traduzida. Interruptor, que é a forma de onze dos dezassete controles medidos. */
+function ownerRowSpec(): ControlRowSpec {
+  return { id: 'opt-ownercolors', rotulo: t('visual.dono'), dica: t('visual.dono.dica') };
+}
+
+/** A linha da PALETA SEGURA (Okabe-Ito), já traduzida. */
+function cbSafeRowSpec(): ControlRowSpec {
+  return { id: 'opt-cbsafe', rotulo: t('visual.cbsafe'), dica: t('visual.cbsafe.dica') };
+}
+
+/**
+ * Monta o interior deste painel UMA VEZ. Chamada de novo, REETIQUETA em vez de reconstruir.
+ *
+ * 🔴 ISTO ERA `innerHTML` A CADA RENDER, e a reconstrução custava mais do que a duplicação de marcação que o kit
+ * existe para acabar. 📏 Medido em 2026-09-23: o controle de PASSOS do realce de contraste era refeito a cada render
+ * — um clique em qualquer outra linha do painel tirava o cursor de cima dele —, porque o `innerHTML` repunha o lugar
+ * vazio e o `mountSteps` construía um elemento novo. E a raiz teve de montar a linha do dono FORA desta lista, com um
+ * id próprio (`#opt-dono`), justamente porque um `innerHTML` daqui apagaria qualquer nó que ela inserisse.
+ *
+ * ⚠️ Reetiquetar e não reconstruir, pela razão que o `labelRow` já escreve: as escutas ligam-se no arranque, e refazer
+ * a linha deixaria um controle no documento e sem escuta — um botão morto com aparência de vivo (ADR-0106 §5).
+ */
+function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, oferecer: VisualRowsOffered = TODAS_AS_LINHAS): void {
+  /*
+   * 🔴 O REALCE DE CONTRASTE, EM PASSOS E COM A PROSA NO SÍTIO CERTO (ADR-0151). O Dev viu a explicação DENTRO da
+   * linha: ela vinha colada ao rótulo e dependia de o hospedeiro passar o `fillExplain` para descer ao rodapé. Mora
+   * num `.opt-hint` desde a nascença (`CLAUDE.md` §4), e O RÓTULO VAI PARA DENTRO DOS PASSOS — «◀ Realce de
+   * contraste: linear ▶» (errata do ADR-0130). Quem lhe põe o controle é o `render`, que sabe a posição de agora.
+   */
+  let enhanceRow = list.querySelector<HTMLElement>('.ctrl-row--passos');
+  if (!enhanceRow) {
+    enhanceRow = ctx.criar('div');
+    enhanceRow.className = 'ctrl-row ctrl-row--passos';
+    const envelope = ctx.criar('span');
+    const newHint = ctx.criar('span');
+    newHint.className = 'opt-hint';
+    envelope.appendChild(newHint);
+    enhanceRow.appendChild(envelope);
+    const place = ctx.criar('span');
+    place.setAttribute('data-passos-lugar', 'lq');
+    enhanceRow.appendChild(place);
+    list.appendChild(enhanceRow);
+  }
+  const enhanceHint = enhanceRow.querySelector<HTMLElement>('.opt-hint');
+  if (enhanceHint) enhanceHint.textContent = t('visual.lq.dica');
+
+  for (const spec of [...(oferecer.dono ? [ownerRowSpec()] : []), cbSafeRowSpec()]) {
+    const already = ctx.procurar('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
+    if (already) labelRow(already, spec);
+    else list.appendChild(controlRow(ctx, spec).linha);
+  }
+
+  if (oferecer.papeis) mountRoleColoursRow(ctx, list);
+}
+
+/**
+ * A linha dos QUATRO PAPÉIS, e a única deste painel que o kit não constrói.
+ *
+ * 📌 E NÃO POR FALTA DE UMA SEXTA FORMA: o `controlRow` monta «um rótulo, uma dica, UM controle», e esta linha tem
+ * CINCO — quatro amostras de cor e o ↺ que as repõe. Inventar uma forma para ela seria dar uma segunda resposta à
+ * pergunta «o que é uma linha», que é exactamente o que o kit existe para não deixar acontecer. Fica em nós, com a
+ * mesma disciplina do resto: montada uma vez, reetiquetada depois.
+ *
+ * 📌 A MOLDURA TRADUZ, O NOME DO PAPEL ATRAVESSA (`CLAUDE.md` §A FRONTEIRA, reafirmado pelo Dev em 22/09): «Cor de» é
+ * da engine e passa por `t()`; «perigo (lava)» é a palavra do JOGO que monta este painel, e a engine não a traduz nem
+ * a inventa — ela atravessa por `{param}`, logo a frase continua verdadeira num cartucho com outros papéis.
+ */
+function mountRoleColoursRow(ctx: PanelShellCtx, list: HTMLElement): void {
+  let row = ctx.procurar('#opt-role-reset')?.closest<HTMLElement>('.ctrl-row') ?? null;
+  if (!row) {
+    row = ctx.criar('div');
+    row.className = 'ctrl-row';
+    const envelope = ctx.criar('span');
+    envelope.appendChild(ctx.criar('strong'));
+    const newHint = ctx.criar('span');
+    newHint.className = 'opt-hint';
+    envelope.appendChild(newHint);
+    row.appendChild(envelope);
+    const swatches = ctx.criar('span');
+    swatches.style.cssText = 'display:flex;gap:.35rem;align-items:center';
+    for (const k of ROLE_KEYS) {
+      const swatch = ctx.criar('input');
+      swatch.id = 'opt-role-' + k;
+      swatch.setAttribute('type', 'color');
+      swatch.style.cssText = 'inline-size:2.2em;block-size:1.8em;padding:0;border:1px solid #666;border-radius:4px;background:none';
+      swatches.appendChild(swatch);
+    }
+    const resetButton = ctx.criar('button');
+    resetButton.id = 'opt-role-reset';
+    resetButton.className = 'mode-btn';
+    resetButton.setAttribute('type', 'button');
+    resetButton.textContent = '↺';
+    swatches.appendChild(resetButton);
+    row.appendChild(swatches);
+    list.appendChild(row);
+  }
+  const label = row.querySelector<HTMLElement>('strong');
+  if (label) label.textContent = t('visual.papeis');
+  const hint = row.querySelector<HTMLElement>('.opt-hint');
+  if (hint) hint.textContent = t('visual.papeis.dica');
+  for (const k of ROLE_KEYS) {
+    ctx.procurar('#opt-role-' + k)?.setAttribute('aria-label', t('visual.papel.cor', { papel: ROLE_LABELS[k] }));
+  }
+  ctx.procurar('#opt-role-reset')?.setAttribute('aria-label', t('visual.papel.repor'));
 }
 
 /** Duas cores de papel são a mesma? Comparação por componente — `[0,0,0] === [0,0,0]` é `false` em JS, e
@@ -292,6 +358,70 @@ export interface SettingsVisual {
 }
 
 export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
+  /*
+   * 📌 O CTX DO KIT SAI DO PRÓPRIO NÓ DA LISTA, e não de um `document` global nem de um campo novo no contrato.
+   * `ownerDocument` é o documento onde aquela lista VIVE — que é exactamente o documento em que as linhas têm de
+   * nascer —, então o alcance global deste módulo continua ZERO (ADR-0221 passo 7d) e `SettingsVisualCtx`, que é
+   * superfície publicada, não ganha membro obrigatório (ADR-0172). É o mesmo molde do `ui/settings-caa`.
+   */
+  const kitCtx = (list: HTMLElement): PanelShellCtx => ({
+    procurar: (sel) => ctx.$<HTMLElement>(sel),
+    criar: (tag) => list.ownerDocument.createElement(tag),
+  });
+
+  /** A posição do realce é LOCAL ao controle: o `setLq` injectado pode não devolver o valor novo em
+   *  `getVisualSettings` até ao próximo render, e reler dali voltaria a posição para trás. */
+  let enhanceStep = lqPosition(ctx.getVisualSettings().lq);
+  const enhanceSpec = () => ({ rotulo: t('visual.lq'), valores: LQ_STEPS.map((v) => t(lqLabel(v))), atual: enhanceStep });
+
+  /** As escutas ligam-se UMA VEZ. Um segundo `addEventListener` no mesmo botão dá dois cliques por clique. */
+  let wired = false;
+  function wireOnce(list: HTMLElement): void {
+    if (wired) return;
+    wired = true;
+    const lugar = ctx.$<HTMLElement>('[data-passos-lugar="lq"]');
+    if (lugar) {
+      const passos = mountSteps(kitCtx(list), enhanceSpec());
+      passos.id = 'opt-lq';
+      lugar.replaceWith(passos);
+      passos.addEventListener('passo', (ev) => {
+        const nova = nextStep(enhanceStep, LQ_STEPS.length, (ev as CustomEvent<number>).detail);
+        if (nova === enhanceStep) return; // na ponta não se anuncia um passo que não aconteceu
+        enhanceStep = nova;
+        ctx.setLq(LQ_STEPS[enhanceStep] as number);
+        updateSteps(passos, enhanceSpec());
+        ctx.srSay(t('sr.visual.lq', { v: t(lqLabel(LQ_STEPS[enhanceStep] as number)) }));
+      });
+    }
+    const oc = ctx.$<HTMLButtonElement>('#opt-ownercolors');
+    if (oc) oc.addEventListener('click', () => { ctx.setOwnerColors(!ctx.getVisualSettings().ownerColors); render(); });
+    const cb = ctx.$<HTMLButtonElement>('#opt-cbsafe');
+    if (cb) cb.addEventListener('click', () => { ctx.setCbSafe(!ctx.getVisualSettings().cbSafe); render(); });
+    for (const k of ROLE_KEYS) {
+      const inp = ctx.$<HTMLInputElement>('#opt-role-' + k);
+      if (inp) inp.addEventListener('change', () => ctx.setRoleColor(k, inp.value));
+    }
+    const rr = ctx.$<HTMLButtonElement>('#opt-role-reset');
+    if (rr) rr.addEventListener('click', () => { ctx.resetRoleColors(); render(); });
+  }
+
+  /** O que os controles MOSTRAM — o estado, que antes vinha assado na marcação e agora é escrito a cada render. */
+  function reflectControls(s: VisualSettings): void {
+    for (const [sel, on] of [['#opt-ownercolors', s.ownerColors], ['#opt-cbsafe', s.cbSafe]] as const) {
+      const b = ctx.$<HTMLButtonElement>(sel);
+      if (!b) continue;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+      b.textContent = onOffLabel(on);
+    }
+    for (const k of ROLE_KEYS) {
+      const inp = ctx.$<HTMLInputElement>('#opt-role-' + k);
+      if (inp) inp.value = rgbToHex(s.roleColors[k]);
+    }
+    const passos = ctx.$<HTMLElement>('#opt-lq');
+    if (passos) updateSteps(passos, enhanceSpec());
+  }
+
   function reflectOutlines(): void {
     const s = ctx.getVisualSettings();
     const f = ctx.$<HTMLSelectElement>('#opt-outline-fg');
@@ -308,7 +438,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
   reflectOutlines();
 
   function render(): void {
-    const el = ctx.$('#visual-list');
+    const el = ctx.$<HTMLElement>('#visual-list');
     if (!el) return;
 
     const rawSelected = ctx.getSelectedPlayer();
@@ -322,41 +452,10 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     // Trocar o corpo daquela função em vez de acrescentar esta teria posto os dois eixos na lista de
     // simulações — foi o que quase aconteceu, e o que a separação impede.
     ctx.renderEixosVisuais('#visual-modes', '#visual-players');
-    el.innerHTML = renderVisualPanelHtml(contrastValue, settings, ctx.oferecer);
-
-    // OS PASSOS DO REALCE (ADR-0151). A posição é LOCAL ao controle: o `setLq` injectado pode não devolver o valor
-    // novo em `getVisualSettings` até ao próximo render, e reler dali voltaria a posição para trás.
-    const lugarLq = ctx.$<HTMLElement>('[data-passos-lugar="lq"]');
-    if (lugarLq) {
-      const doc = lugarLq.ownerDocument;
-      let posicao = lqPosition(settings.lq);
-      const spec = () => ({ rotulo: t('visual.lq'), valores: LQ_STEPS.map((v) => t(lqLabel(v))), atual: posicao });
-      const passos = mountSteps({ procurar: (sel) => ctx.$<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) }, spec());
-      passos.id = 'opt-lq';
-      lugarLq.replaceWith(passos);
-      passos.addEventListener('passo', (ev) => {
-        const nova = nextStep(posicao, LQ_STEPS.length, (ev as CustomEvent<number>).detail);
-        if (nova === posicao) return; // na ponta não se anuncia um passo que não aconteceu
-        posicao = nova;
-        ctx.setLq(LQ_STEPS[posicao] as number);
-        updateSteps(passos, spec());
-        ctx.srSay(t('sr.visual.lq', { v: t(lqLabel(LQ_STEPS[posicao] as number)) }));
-      });
-    }
-
-    const oc = ctx.$<HTMLButtonElement>('#opt-ownercolors');
-    if (oc) oc.addEventListener('click', () => { ctx.setOwnerColors(!settings.ownerColors); render(); });
-
-    const cb = ctx.$<HTMLButtonElement>('#opt-cbsafe');
-    if (cb) cb.addEventListener('click', () => { ctx.setCbSafe(!settings.cbSafe); render(); });
-
-    for (const k of ROLE_KEYS) {
-      const inp = ctx.$<HTMLInputElement>('#opt-role-' + k);
-      if (inp) inp.addEventListener('change', () => ctx.setRoleColor(k, inp.value));
-    }
-    const rr = ctx.$<HTMLButtonElement>('#opt-role-reset');
-    if (rr) rr.addEventListener('click', () => { ctx.resetRoleColors(); render(); });
-
+    void contrastValue; // lido pelo `refreshMarks`, que compara pelo modelo novo e não por este espelho
+    mountVisualInside(kitCtx(el), el, ctx.oferecer);
+    wireOnce(el);
+    reflectControls(settings);
     reflectOutlines();
     refreshMarks();
     // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109).

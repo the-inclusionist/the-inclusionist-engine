@@ -9,7 +9,7 @@ import en from '../app/js/i18n/en.js';
 import {
   CONTRAST_LABELS, ROLE_KEYS, ROLE_LABELS,
   resolveVisualMode, VISUAL_MODES, VISUAL_MODE_LIST, contrastLabel, clamp01, lqLabel, lqPercent, lqFromPercent, LQ_STEPS, lqPosition,
-  clampSelectedPlayer, rgbToHex, onOffLabel, renderVisualPanelHtml,
+  clampSelectedPlayer, rgbToHex, onOffLabel,
 } from '../app/js/ui/settings-visual.js';
 import { CONTRAST_LEVELS } from '../app/js/core/visual-cycles.js';
 
@@ -162,109 +162,11 @@ describe('ui/settings-visual — dados fixos (ROLE_KEYS/ROLE_LABELS/CONTRAST_LEV
   });
 });
 
-describe('ui/settings-visual — renderVisualPanelHtml (montagem pura do HTML)', () => {
-  it('[Interface] NÃO monta mais o modo visual — ele saiu daqui para uma lista de rádio própria', () => {
-    // O modo visual era um `<select>` dentro deste HTML. Virou `#visual-modes`, desenhado pelo mesmo
-    // renderizador de linhas que o painel de empatia usa, porque as correções de daltonismo precisavam
-    // continuar VISÍVEIS ao mudar de menu — dentro da caixa fechada elas sumiam.
-    const html = renderVisualPanelHtml('hc-direto-45', baseSettings());
-    expect(html).not.toContain('opt-contrast');
-    expect(html).not.toContain('<select');
-  });
-  /* ----- as duas linhas que falavam português cru (ADR-0225) ----- */
-  // 🔴 A SONDA ACHOU A DAS CORES DE PAPEL CEGA: trocar o rótulo dela inteiro por «x» deixava a suíte verde. Era
-  // também a linha com a frase portuguesa escrita em linha, logo NADA a segurava — nem o que ela diz, nem a língua
-  // em que o dizia. As duas passaram pelo dicionário e estes casos são o que as prende agora.
-
-  it('🔴 [Right] a linha das CORES DE PAPEL diz o que o dicionário diz, e a explicação vai para o `.opt-hint`', () => {
-    const html = renderVisualPanelHtml('normal', baseSettings());
-    expect(html, 'o rótulo da linha não é o do dicionário').toContain(`<strong>${pt['visual.papeis']}</strong>`);
-    expect(html, 'a explicação não está no `.opt-hint` que o rodapé recolhe (CLAUDE.md §4)')
-      .toContain(`<span class="opt-hint">${pt['visual.papeis.dica']}</span>`);
-    // 📌 E a lista dos quatro papéis SAIU da frase: «perigo, escalável, água e portão» são as palavras de um jogo, e
-    // a engine não descreve um jogo. Quem os nomeia é o `aria-label` de cada cor, por `{param}`.
-    expect(pt['visual.papeis.dica'], 'a frase voltou a nomear os papéis de UM jogo').not.toMatch(/lava|escada|trampolim/);
-  });
-
-  it('🔴 [Right] a linha dos ITENS NA COR DO DONO idem — e as duas falam a língua da página', () => {
-    const html = renderVisualPanelHtml('normal', baseSettings());
-    expect(html).toContain(`<strong>${pt['visual.dono']}</strong>`);
-    expect(html).toContain(`<span class="opt-hint">${pt['visual.dono.dica']}</span>`);
-    // ⚠️ O par que prova que é TRADUZÍVEL e não só «uma cadeia diferente»: as mesmas chaves existem em inglês, e em
-    // inglês dizem outra coisa. Sem esta metade, um `t()` que devolvesse sempre o português passaria.
-    for (const k of ['visual.dono', 'visual.dono.dica', 'visual.papeis', 'visual.papeis.dica', 'visual.papel.cor', 'visual.papel.repor']) {
-      expect(en[k], `a chave ${k} não existe em inglês: a criança numa página inglesa lê português`).toBeTruthy();
-      expect(en[k], `a chave ${k} é a MESMA cadeia nas duas línguas`).not.toBe(pt[k]);
-    }
-  });
-
-  it('🔴 [Right] a linha da PALETA SEGURA idem — e era a única das três que não tinha caso nenhum', () => {
-    // 📏 Sondado em 2026-09-23, antes da conversão para nós: apagar o rótulo desta linha OU a explicação dela deixava
-    // a suíte inteira verde — 10 de 12 decisões deste painel estavam presas e estas duas não. As palavras passaram
-    // pelo dicionário no dia anterior (ADR-0225) e o caso que as recebe ficou por escrever, o que é a forma mais
-    // silenciosa de um conserto se desfazer: a frase está certa hoje e nada exige que continue.
-    const html = renderVisualPanelHtml('normal', baseSettings());
-    expect(html, 'o rótulo da paleta segura não é o do dicionário').toContain(`<strong>${pt['visual.cbsafe']}</strong>`);
-    expect(html, 'a explicação não está no `.opt-hint` que o rodapé recolhe (CLAUDE.md §4)')
-      .toContain(`<span class="opt-hint">${pt['visual.cbsafe.dica']}</span>`);
-    for (const k of ['visual.cbsafe', 'visual.cbsafe.dica']) {
-      expect(en[k], `a chave ${k} não existe em inglês: a criança numa página inglesa lê português`).toBeTruthy();
-      expect(en[k], `a chave ${k} é a MESMA cadeia nas duas línguas`).not.toBe(pt[k]);
-    }
-  });
-
-  it('🎯 [Cross-check] NENHUMA linha sai com o rótulo ou a explicação vazios — a regra, e não uma linha de cada vez', () => {
-    // 📌 As três afirmações acima nomeiam três linhas, e foi exactamente assim que a paleta segura ficou de fora: uma
-    // quarta linha entra amanhã e ninguém escreve o quarto caso. Esta mede a REGRA do `CLAUDE.md` §4 sobre tudo o que
-    // o construtor emitir, e é ela que a próxima linha herda sem ninguém se lembrar.
-    const html = renderVisualPanelHtml('normal', baseSettings());
-    expect(html, 'uma linha saiu com o rótulo curto vazio').not.toMatch(/<strong>\s*<\/strong>/);
-    expect(html, 'uma linha saiu com a explicação vazia').not.toMatch(/<span class="opt-hint">\s*<\/span>/);
-    // e há mesmo o que medir: um construtor que devolvesse cadeia vazia passaria nas duas afirmações acima
-    expect((html.match(/<strong>/g) ?? []).length, 'o painel deixou de ter linhas com rótulo').toBeGreaterThanOrEqual(3);
-    expect((html.match(/class="opt-hint"/g) ?? []).length, 'o painel deixou de ter explicações').toBeGreaterThanOrEqual(4);
-  });
-
-  it('🔴 [Right] o nome de cada papel ATRAVESSA a moldura traduzida, em vez de ser traduzido', () => {
-    // 📌 `CLAUDE.md` §A FRONTEIRA, reafirmado pelo Dev em 22/09: a moldura mora na chave, o conteúdo atravessa por
-    // `{param}`. «Cor de» é da engine; «perigo (lava)» é a palavra do jogo que monta este painel.
-    const html = renderVisualPanelHtml('normal', baseSettings());
-    expect(html, 'o nome do papel deixou de chegar ao nome acessível da cor')
-      .toContain(t('visual.papel.cor', { papel: ROLE_LABELS.hazard }));
-    expect(html, 'o ↺ voltou a ter o nome acessível escrito em português cru')
-      .toContain(`aria-label="${pt['visual.papel.repor']}"`);
-    // ⚠️ E ESTA ÚLTIMA AFIRMAÇÃO NÃO CONSEGUE SEPARAR O `t()` DE UM LITERAL IGUAL, dito aqui em vez de fingido: uma
-    // mutação que troque `t('visual.papel.repor')` pela mesma frase escrita à mão produz o MESMO html em português,
-    // e o português é a única língua que um caso deste projecto consegue desenhar sem montar o porto do ADR-0178.
-    // 📏 E não há caminho de navegador que a apanhe: as duas linhas de papéis só existem para um hospedeiro que as
-    // OFEREÇA, e o painel que a engine monta declara `oferecer.papeis` falso — não há escritor para elas (ADR-0188).
-    // 📌 O que ESTA linha prende é que a chave existe e é traduzível nas três línguas; o que fica por prender é a
-    // ligação entre o módulo e a chave, e prendê-la pede o painel montado por quem o oferece.
-    expect(en['visual.papel.repor'], 'a chave do ↺ deixou de ser traduzível').not.toBe(pt['visual.papel.repor']);
-  });
-
-  it('[Interface] reflete ownerColors/cbSafe ligados em class+aria-pressed', () => {
-    const html = renderVisualPanelHtml('normal', { ...baseSettings(), ownerColors: true, cbSafe: true });
-    expect(html).toMatch(/id="opt-ownercolors" class="mode-btn is-on"[^>]*aria-pressed="true"/);
-    expect(html).toMatch(/id="opt-cbsafe" class="mode-btn is-on"[^>]*aria-pressed="true"/);
-  });
-  it('[Interface] reflete ownerColors/cbSafe desligados sem a classe is-on', () => {
-    const html = renderVisualPanelHtml('normal', { ...baseSettings(), ownerColors: false, cbSafe: false });
-    expect(html).toMatch(/id="opt-ownercolors" class="mode-btn"[^>]*aria-pressed="false"/);
-    expect(html).toMatch(/id="opt-cbsafe" class="mode-btn"[^>]*aria-pressed="false"/);
-  });
-  it('[Right] gera um <input type=color> por papel, com a cor atual e o rótulo certo', () => {
-    const html = renderVisualPanelHtml('normal', baseSettings());
-    for (const k of ROLE_KEYS) {
-      expect(html).toContain(`id="opt-role-${k}"`);
-      expect(html).toContain(`aria-label="Cor de ${ROLE_LABELS[k]}"`);
-    }
-    expect(html).toContain('value="#ff6e2d"'); // hazard
-  });
-  it('[Zero] inclui o botão de restaurar cores padrão', () => {
-    expect(renderVisualPanelHtml('normal', baseSettings())).toContain('id="opt-role-reset"');
-  });
-});
+// 📌 O BLOCO QUE MEDIA A MARCAÇÃO MUDOU DE PROJECTO, e não de exigência: este painel passou a construir NÓS com o
+// kit (ADR-0129), logo a cadeia que o `renderVisualPanelHtml` devolvia deixou de existir, e o que aqueles casos
+// afirmam passou a ser observável só num documento. Estão inteiros em `tests/settings-visual.browser.test.js`, sob
+// «o interior montado em nós», com duas afirmações A MAIS que a cadeia não conseguia fazer: a linha dos passos
+// SOBREVIVE a um render — era refeita a cada um, e o cursor saía dela — e as escutas ligam-se uma vez só.
 
 describe('ui/settings-visual — VISUAL_MODE_LIST', () => {
   // A lista que o painel DESENHA, em linhas de rádio. Ela existe porque a primeira tentativa de trazer as

@@ -2288,6 +2288,13 @@
       "deviceId"
     ]
   },
+  "ui/audio-rows-that-apply.ts": {
+    "interface AudioRowsThatApplyCtx": [
+      "caneWord",
+      "find",
+      "hasNavigationSound"
+    ]
+  },
   "ui/caa-sets.ts": {
     "interface CaaSet": [
       "disponivel",
@@ -3153,6 +3160,18 @@
     ],
     "type PhaseFocus": "'game-region' | 'pause-menu' | 'title-button'",
     "type PauseActs": "Record<string, () => void>"
+  },
+  "ui/simulation-list.ts": {
+    "interface SimulationListCtx": [
+      "find",
+      "keys",
+      "make",
+      "picked",
+      "running"
+    ],
+    "interface SimulationList": [
+      "render"
+    ]
   },
   "ui/simulation-over-the-world.ts": {
     "interface SimulationOverTheWorldCtx": [

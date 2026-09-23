@@ -104,7 +104,9 @@ const SEGUROS = [
   ['ui/settings-motion.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-mobility.ts', 'tabs.innerHTML = playerTabsHTML(', 'números (quantos jogadores, qual selecionado)'],
   ['ui/settings-panel.ts', 'span.innerHTML = strong.outerHTML', 'DOM de volta ao DOM: nenhum texto novo entra'],
-  ['ui/settings-visual.ts', 'el.innerHTML = renderVisualPanelHtml(', 'i18n + valores enumerados'],
+  // 🎯 UM SINK A MENOS, e foi PAGO e não movido: `ui/settings-visual` construía o interior por `innerHTML` e
+  // passou a construí-lo em NÓS com o kit (ADR-0129, 2026-09-23). O que a conversão tira não é só a interpolação
+  // — é a reconstrução: o controle de passos era refeito a cada render e o cursor saía dele.
   ['ui/shell.ts', 'el.innerHTML = legendHtml(l1, l2)', 'so i18n, e o dicionario tem gate proprio'],
   ['input/touch.ts', 'el.innerHTML = TOUCH_SLOTS.map((s) =>', '⚠️ CONSERTADO 2026-09-06: idem — o `<option>` nasce vazio e recebe o rótulo por texto'],
   ['consumer-quiz/main-quiz.ts', 'app.innerHTML = questionHtml(p, foco);', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escapeHtml`, com gate hostil em `consumer-quiz`'],

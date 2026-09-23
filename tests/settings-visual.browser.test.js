@@ -8,7 +8,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { axesHtml } from '../app/js/ui/visual-axes-panel.js';
 import { PADRAO, migrateVisual } from '../app/js/render/viz-axes.js';
 import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
-import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
+import { initSettingsVisual, ROLE_KEYS, ROLE_LABELS } from '../app/js/ui/settings-visual.js';
+import pt from '../app/js/i18n/pt.js';
 import { createRunState } from '../app/js/core/run-state.js';
 // A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
 // ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
@@ -448,5 +449,130 @@ const comViz = (viz) => { players.length = 0; players.push({ viz, visual: migrat
     const linha = document.querySelector('#opt-role-reset').closest('.ctrl-row');
     expect(linha.classList.contains('is-changed')).toBe(false);
     expect(document.querySelector('[data-act="visual"]').classList.contains('is-changed')).toBe(false);
+  });
+});
+
+
+// ==========================================================================================================
+// AS LINHAS DESTE PAINEL, AGORA EM NÓS (ADR-0129; ADR-0221 passo 7c)
+//
+// 📌 ESTES CASOS MUDARAM DE PROJECTO, e não de exigência. Eles viviam em `settings-visual.node` e mediam a
+// CADEIA que o `renderVisualPanelHtml` devolvia; o painel passou a construir NÓS com o kit, logo a cadeia
+// deixou de existir e o que eles afirmam passou a ser observável só num documento. Cada afirmação está aqui
+// inteira — o rótulo, a dica no `.opt-hint`, o estado nos dois canais, uma amostra por papel com a cor e o
+// nome de cada uma, e o ↺.
+//
+// 🎯 E DUAS DELAS AFIRMAM MAIS DO QUE ANTES, porque em nós há o que a cadeia não tinha: a linha dos passos
+// SOBREVIVE a um render (era refeita a cada um, e o cursor saía dela), e as escutas ligam-se uma vez só.
+// ==========================================================================================================
+describe('ui/settings-visual — o interior montado em nós', () => {
+  const montar = (patch = {}) => {
+    const feito = makeCtx();
+    Object.assign(feito.state, patch);
+    const api = initSettingsVisual(feito.ctx);
+    api.render();
+    return { ...feito, api };
+  };
+  const linhaDe = (sel) => document.querySelector(sel)?.closest('.ctrl-row') ?? null;
+  const dicaDe = (sel) => linhaDe(sel)?.querySelector('.opt-hint')?.textContent ?? null;
+  const rotuloDe = (sel) => linhaDe(sel)?.querySelector('strong')?.textContent ?? null;
+
+  it('[Interface] NÃO monta o modo visual — ele saiu daqui para uma lista de rádio própria', () => {
+    montar();
+    // O modo visual era um `<select>` dentro deste interior. Virou `#visual-modes`, desenhado pelo mesmo
+    // renderizador de linhas que o painel de empatia usa, porque as correções de daltonismo precisavam
+    // continuar VISÍVEIS ao mudar de menu — dentro da caixa fechada elas sumiam.
+    const lista = document.querySelector('#visual-list');
+    expect(lista.querySelector('#opt-contrast')).toBeNull();
+    expect(lista.querySelector('select')).toBeNull();
+  });
+
+  it('🔴 [Right] cada uma das três linhas diz o que o dicionário diz, e a explicação vai para o `.opt-hint`', () => {
+    montar();
+    for (const [sel, rotulo, dica] of [
+      ['#opt-ownercolors', 'visual.dono', 'visual.dono.dica'],
+      ['#opt-cbsafe', 'visual.cbsafe', 'visual.cbsafe.dica'],
+      ['#opt-role-reset', 'visual.papeis', 'visual.papeis.dica'],
+    ]) {
+      expect(rotuloDe(sel), `${sel}: o rótulo não é o do dicionário`).toBe(pt[rotulo]);
+      expect(dicaDe(sel), `${sel}: a explicação não está no .opt-hint que o rodapé recolhe (CLAUDE.md §4)`).toBe(pt[dica]);
+    }
+    // 📌 E a lista dos quatro papéis não voltou para a frase: «perigo, escalável, água e portão» são as palavras
+    // de um jogo, e a engine não descreve um jogo. Quem os nomeia é o nome acessível de cada cor, por `{param}`.
+    expect(pt['visual.papeis.dica']).not.toMatch(/lava|escada|trampolim/);
+  });
+
+  it('🎯 [Cross-check] NENHUMA linha fica com o rótulo ou a explicação vazios — a regra, e não uma linha de cada vez', () => {
+    // As afirmações acima NOMEIAM três linhas, e foi assim que a paleta segura ficou um dia sem caso nenhum.
+    // Esta mede a regra do `CLAUDE.md` §4 sobre tudo o que o painel montar, e a próxima linha herda-a.
+    montar();
+    const linhas = [...document.querySelectorAll('#visual-list .ctrl-row')];
+    expect(linhas.length, 'o painel montou um interior vazio — o caso não mediria nada').toBeGreaterThanOrEqual(4);
+    for (const linha of linhas) {
+      const forte = linha.querySelector('strong');
+      // a linha de PASSOS não tem rótulo curto de propósito: ele mora dentro do controle (errata do ADR-0130)
+      if (forte) expect(forte.textContent, 'uma linha ficou com o rótulo curto vazio').toBeTruthy();
+      const dica = linha.querySelector('.opt-hint');
+      expect(dica, 'uma linha ficou sem `.opt-hint` nenhum').not.toBeNull();
+      expect(dica.textContent, 'uma linha ficou com a explicação vazia').toBeTruthy();
+    }
+  });
+
+  it('[Interface] reflete ownerColors/cbSafe LIGADOS nos dois canais — a classe e o estado falado', () => {
+    montar({ ownerColors: true, cbSafe: true });
+    for (const sel of ['#opt-ownercolors', '#opt-cbsafe']) {
+      const b = document.querySelector(sel);
+      expect(b.classList.contains('is-on'), sel).toBe(true);
+      expect(b.getAttribute('aria-pressed'), sel).toBe('true');
+    }
+  });
+
+  it('[Interface] e DESLIGADOS, sem a classe e sem o estado', () => {
+    montar({ ownerColors: false, cbSafe: false });
+    for (const sel of ['#opt-ownercolors', '#opt-cbsafe']) {
+      const b = document.querySelector(sel);
+      expect(b.classList.contains('is-on'), sel).toBe(false);
+      expect(b.getAttribute('aria-pressed'), sel).toBe('false');
+    }
+  });
+
+  it('[Right] uma amostra de cor por papel, com a cor de agora e o nome de cada uma', () => {
+    montar();
+    for (const k of ROLE_KEYS) {
+      const inp = document.querySelector('#opt-role-' + k);
+      expect(inp, `falta a amostra do papel ${k}`).not.toBeNull();
+      expect(inp.getAttribute('type')).toBe('color');
+      expect(inp.getAttribute('aria-label'), k).toBe(t('visual.papel.cor', { papel: ROLE_LABELS[k] }));
+    }
+    expect(document.querySelector('#opt-role-hazard').value).toBe('#ff6e2d');
+  });
+
+  it('[Zero] e o botão de repor as cores padrão, com nome acessível', () => {
+    montar();
+    const rr = document.querySelector('#opt-role-reset');
+    expect(rr, 'o ↺ não foi montado').not.toBeNull();
+    expect(rr.getAttribute('aria-label')).toBe(pt['visual.papel.repor']);
+  });
+
+  it('🔴 [Right] a linha dos PASSOS sobrevive a um render — o cursor não sai dela quando a criança mexe noutra', () => {
+    // 📏 Medido em 2026-09-23, antes da conversão: o `render()` refazia o interior por `innerHTML`, logo o controle
+    // de passos era CONSTRUÍDO DE NOVO a cada render — um clique em qualquer outra linha tirava o foco de cima dele.
+    const { api } = montar();
+    const antes = document.querySelector('#opt-lq');
+    expect(antes, 'o controle de passos não foi montado').not.toBeNull();
+    antes.focus();
+    api.render();
+    expect(document.querySelector('#opt-lq'), 'o controle de passos foi refeito no render').toBe(antes);
+    expect(document.activeElement, 'o cursor saiu do controle no render').toBe(antes);
+  });
+
+  it('🔴 [Boundary] um clique escreve UMA vez — as escutas não se acumulam a cada render', () => {
+    // O par do caso acima: montar uma vez e reetiquetar depois só é seguro se ligar também acontecer uma vez.
+    const { ctx, calls, api } = montar({ cbSafe: false });
+    api.render();
+    api.render();
+    document.querySelector('#opt-cbsafe').click();
+    expect(calls.setCbSafe, 'o clique escreveu mais de uma vez: as escutas acumularam-se').toHaveLength(1);
+    void ctx;
   });
 });
