@@ -1,0 +1,95 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// ui/simulation-list — THE ONE LIST OF SIMULATIONS THE EMPATHY PANEL OFFERS (ADR-0159 rule 7; ADR-0074; ADR-0129).
+//
+// More than five positions means a dropdown and not a row of buttons (ADR-0159 rule 7), and there are ten of these. The row
+// is built ONCE AND KEPT, which is the decision the whole shape follows from: the child opens this panel to try a
+// simulation, look at the game, come back and try another, and a row rebuilt at every opening would take the focus off the
+// list every time she did.
+//
+// 🎯 AND THAT IS WHY EVERYTHING A READER TAKES FROM IT IS WRITTEN AT EACH OPENING instead of at build time: the row's short
+// label, the list's own accessible name, and the name of every option. What is built once is the SHAPE; what is rewritten is
+// the TEXT. Two of them freeze the language otherwise, and a list that says «Simulações» to a child playing in English is a
+// list she cannot use.
+//
+// ⚠️ PROBED BEFORE IT MOVED, and five of nine decisions were blind — the list could lose its accessible name, pile a second
+// set of options on every opening, and name each option by its KEY. They have cases now
+// (`tests/the-simulation-list-is-read-in-the-language-of-now.browser.test.js`).
+//
+// 🔴 ONE DEFECT IS KNOWN, MEASURED AND NOT FIXED HERE, because the fix is a decision about the panel kit and not about this
+// module: the row's EXPLANATION is written once and stays in the language it was built in. 📏 It is not this list's problem
+// alone — 14 of the 28 explanation-bearing rows of the engine's panels do the same, because `ui/settings-panel.fillExplain`
+// moves the hint out of the row and stamps it done. It is written into the plan under ADR-0225 rather than patched here.
+
+import { t } from '../core/i18n.js';
+import { VIZ_BY_KEY } from '../render/viz-modes.js';
+
+export interface SimulationListCtx {
+  /** The host's DOM query — this module never reaches a global (ADR-0221 step 7d). */
+  readonly find: <T extends Element>(selector: string) => T | null;
+  /** Makes an element. Injected for the same reason: no `document` in here. */
+  readonly make: <K extends keyof HTMLElementTagNameMap>(tag: K) => HTMLElementTagNameMap[K];
+  /**
+   * The simulations offered, in the order the child reads them.
+   *
+   * 📌 DATA AND NOT A CONSTANT OF THIS MODULE: which simulations an engine offers is a decision of whoever composes it, and
+   * a key this module cannot resolve is then something a caller can actually do — which is what lets the guard below be
+   * driven by a case instead of only protecting a future edit of a private list.
+   */
+  readonly keys: readonly string[];
+  /** What is running on the world right now. The list always shows IT, so a refused choice (ADR-0076) comes back by itself. */
+  readonly running: () => string | null;
+  /** The child picked one. */
+  readonly picked: (key: string) => void;
+}
+
+export interface SimulationList {
+  /** Builds the row if it is not there yet, and writes every word of it in the language of now. */
+  render(listSelector: string): void;
+}
+
+export function createSimulationList(ctx: SimulationListCtx): SimulationList {
+  /** The row, once. Everything after this writes into it. */
+  function build(list: HTMLElement): HTMLSelectElement {
+    const row = ctx.make('div');
+    row.className = 'ctrl-row';
+    const envelope = ctx.make('span');
+    envelope.appendChild(ctx.make('strong'));
+    const hint = ctx.make('span');
+    hint.className = 'opt-hint'; // CLAUDE.md §4: the prose belongs to the footer, and this is how it gets there
+    hint.textContent = t('empathy.simulacao.dica');
+    envelope.appendChild(hint);
+    row.appendChild(envelope);
+    const choice = ctx.make('select');
+    choice.id = 'opt-simulacao';
+    choice.className = 'vol';
+    row.appendChild(choice);
+    list.textContent = '';
+    list.appendChild(row);
+    // the render below writes the list back from the world, so a refused choice returns to what runs
+    choice.addEventListener('change', () => { ctx.picked(choice.value); });
+    return choice;
+  }
+
+  return {
+    render(listSelector) {
+      const list = ctx.find<HTMLElement>(listSelector);
+      if (!list) return;
+      const choice = list.querySelector<HTMLSelectElement>('#opt-simulacao') ?? build(list);
+      const label = t('empathy.grupo.rotulo');
+      const strong = choice.closest('.ctrl-row')?.querySelector('strong');
+      if (strong) strong.textContent = label;
+      // a `<select>` whose label is a sibling is announced as «combo box» and nothing else without this
+      choice.setAttribute('aria-label', label);
+      choice.textContent = ''; // rewritten, never appended: twice open would be twice the options
+      for (const key of ctx.keys) {
+        const mode = VIZ_BY_KEY[key];
+        if (!mode) continue; // a key no mode answers for would become a blank option the child can choose
+        const option = ctx.make('option');
+        option.value = key;
+        option.textContent = t(mode.nome); // what it DOES, never the key that stores it (ADR-0074)
+        choice.appendChild(option);
+      }
+      choice.value = ctx.running() ?? 'normal';
+    },
+  };
+}

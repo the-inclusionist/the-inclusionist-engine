@@ -1,6 +1,6 @@
 {
   "about": "ADR-0221 — the six measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID, a module is legitimately split, or the growth BUYS something no measure here can see — and in that third case the commit has to name the purchase and the falsifiable criterion that will show it landed (ADR-0221 point 6: the criterion is the co-change falling, not the number). Rewriting it to green a red build is the ratchet being unscrewed.",
-  "takenOn": "2026-09-22",
+  "takenOn": "2026-09-23",
   "ceiling": {
     "codeLines": 187,
     "decisionNodes": 37,
@@ -25,10 +25,10 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2057,
-      "decisionNodes": 274,
+      "codeLines": 2029,
+      "decisionNodes": 270,
       "maxDepth": 4,
-      "fanOut": 83,
+      "fanOut": 84,
       "globalReach": 0,
       "worstFunction": 69,
       "fanIn": 1
@@ -205,7 +205,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 40
+      "fanIn": 41
     },
     "core/layers.ts": {
       "codeLines": 40,
@@ -400,7 +400,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 630,
+      "codeLines": 631,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -409,7 +409,7 @@
       "fanIn": 0
     },
     "i18n/es.ts": {
-      "codeLines": 630,
+      "codeLines": 631,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -418,7 +418,7 @@
       "fanIn": 0
     },
     "i18n/pt.ts": {
-      "codeLines": 630,
+      "codeLines": 631,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -1345,7 +1345,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 6
+      "fanIn": 7
     },
     "render/viz-refusal.ts": {
       "codeLines": 17,
@@ -1814,6 +1814,15 @@
       "globalReach": 0,
       "worstFunction": 10,
       "fanIn": 0
+    },
+    "ui/simulation-list.ts": {
+      "codeLines": 54,
+      "decisionNodes": 4,
+      "maxDepth": 2,
+      "fanOut": 2,
+      "globalReach": 0,
+      "worstFunction": 7,
+      "fanIn": 1
     },
     "ui/simulation-over-the-world.ts": {
       "codeLines": 74,

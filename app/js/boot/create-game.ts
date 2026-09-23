@@ -92,7 +92,7 @@ import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform
 // responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
 import { isBlind, isLowVision, PADRAO, filterKey, simulationUnavailable, type VisualState, type Theme, type Correction } from '../render/viz-axes.js';
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
-import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
+import { VIZ_FILTER } from '../render/viz-modes.js';
 import { createPadWizard } from '../input/pad-wizard.js';
 import { typographyCycle, CYCLE_START, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
@@ -142,6 +142,7 @@ import type { NavKeys } from '../input/edges.js';
 import { initGamepad, padGameAnswers, seatEveryPlayer, type GamepadGameHooks } from '../input/gamepad.js';
 import { whereTheChildIs, type Place } from '../ui/where-the-child-is.js';
 import { createSimulationOverTheWorld } from '../ui/simulation-over-the-world.js';
+import { createSimulationList } from '../ui/simulation-list.js';
 export type { GamepadGameHooks } from '../input/gamepad.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registerKeyboardMapping, saveKB, setKB, factoryWithGame, type KBDefaults } from '../input/keyboard.js';
@@ -1936,51 +1937,18 @@ export function createGame(o: CreateGameOptions): Engine {
       recomporFiltroDoMundo();
       return true;
     };
+    // ONE LIST, NOT SEVEN BUTTONS (ADR-0159 rule 7) — `ui/simulation-list` says why, and it is not wiring.
+    const listaDeSimulacoes = createSimulationList({
+      find: $,
+      make: (tag) => doc.createElement(tag),
+      keys: SIMULACOES_DO_MUNDO,
+      running: () => estadoDoMundo.simulacao ?? null,
+      // a refused simulation (ADR-0076) is announced by `simular` and the re-render puts the list back on what runs
+      picked: (chave) => { simular(0, chave); empatia.render(); },
+    });
     const empatia = initSettingsEmpathy({
       $, srSay, store,
-      /*
-       * ONE LIST, NOT SEVEN BUTTONS (ADR-0159 rule 7: more than five positions → a dropdown). Built once and kept, so the
-       * focus stays on it while the child adjusts; its label and options are rewritten at each opening, in the language
-       * of now. A refused simulation (ADR-0076) puts the list back and the refusal is the only thing said.
-       */
-      renderVizGroup: (listSel) => {
-        const lista = $<HTMLElement>(listSel);
-        if (!lista) return;
-        let escolha = lista.querySelector<HTMLSelectElement>('#opt-simulacao');
-        if (!escolha) {
-          const linha = doc.createElement('div');
-          linha.className = 'ctrl-row';
-          const envelope = doc.createElement('span');
-          envelope.appendChild(doc.createElement('strong'));
-          const dica = doc.createElement('span');
-          dica.className = 'opt-hint';
-          dica.textContent = t('empathy.simulacao.dica');
-          envelope.appendChild(dica);
-          linha.appendChild(envelope);
-          escolha = doc.createElement('select') as HTMLSelectElement;
-          escolha.id = 'opt-simulacao';
-          escolha.className = 'vol';
-          linha.appendChild(escolha);
-          lista.textContent = '';
-          lista.appendChild(linha);
-          const alvo = escolha;
-          // the render below writes the list back from the world, so a refused choice returns to what runs
-          alvo.addEventListener('change', () => { simular(0, alvo.value); empatia.render(); });
-        }
-        const rotulo = t('empathy.grupo.rotulo');
-        (escolha.closest('.ctrl-row')?.querySelector('strong') as HTMLElement).textContent = rotulo;
-        escolha.setAttribute('aria-label', rotulo);
-        escolha.textContent = '';
-        for (const chave of SIMULACOES_DO_MUNDO) {
-          const modo = VIZ_BY_KEY[chave];
-          if (!modo) continue;
-          const opcao = doc.createElement('option');
-          opcao.value = chave;
-          opcao.textContent = t(modo.nome);
-          escolha.appendChild(opcao);
-        }
-        escolha.value = estadoDoMundo.simulacao ?? 'normal';
-      },
+      renderVizGroup: (listSel) => { listaDeSimulacoes.render(listSel); },
       reflectMotorEmpathy: refletirSimulacoesMotoras,
       reflectVizButtons: semEfeito,
       frontOverlay: overlays.frontOverlay,

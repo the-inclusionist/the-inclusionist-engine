@@ -22,6 +22,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import { setLocale } from '../app/js/core/i18n.ts';
+import { createSimulationList } from '../app/js/ui/simulation-list.ts';
 
 let motor;
 let idiomaGuardado;
@@ -118,6 +119,63 @@ describe('the simulation list, as a child reads it', () => {
       expect(en[i], `option «${chave}» is still in the language it was built in`).not.toBe(pt[i]);
     }
     fechar();
+  });
+});
+
+// ==========================================================================================================
+// THE LIST DRIVEN DIRECTLY, WITHOUT A ROOT — which is what the cut bought.
+//
+// 📌 The guard «a key no mode answers for is skipped» was UNREACHABLE while the ten keys were a private const inside
+// `createGame`: every entry of that const is a known mode, so nothing a caller could do would exercise it. With the keys
+// arriving as data it is a caller's decision, and this is the case the probe could not write.
+// ==========================================================================================================
+describe('the list, given the keys as data', () => {
+  const montar = (keys, running = () => null) => {
+    const hospedeiro = document.createElement('div');
+    hospedeiro.id = 'solta';
+    document.body.appendChild(hospedeiro);
+    const lista = createSimulationList({
+      find: (sel) => document.querySelector(sel),
+      make: (tag) => document.createElement(tag),
+      keys,
+      running,
+      picked: () => {},
+    });
+    lista.render('#solta');
+    return { sel: hospedeiro.querySelector('#opt-simulacao'), hospedeiro };
+  };
+
+  it('🔴 [Boundary] a key no mode answers for is skipped, not shown as a blank option', () => {
+    const { sel, hospedeiro } = montar(['normal', 'nao-existe', 'blind']);
+    expect(chaves(sel), 'the unknown key became an option the child can pick').toEqual(['normal', 'blind']);
+    hospedeiro.remove();
+  });
+
+  it('🔴 [Right] the explanation is put in the row\'s `.opt-hint`, which is how it reaches the footer (CLAUDE.md §4)', () => {
+    // Driven here and not through a panel because `fillExplain` MOVES the hint out on the way to the footer: the only place
+    // the producer's half can be seen is before that happens. Without it the row keeps its prose beside the label, and the
+    // menu becomes the manual the decision of 2026-08-25 forbade.
+    const { sel, hospedeiro } = montar(['normal']);
+    const dica = sel.closest('.ctrl-row').querySelector('.opt-hint');
+    expect(dica, 'the row has no `.opt-hint` for the footer to take').not.toBeNull();
+    expect(dica.textContent.trim().length, 'the hint is there and empty').toBeGreaterThan(10);
+    hospedeiro.remove();
+  });
+
+  it('🔴 [Right] the list shows what is RUNNING, so a refused choice comes back by itself (ADR-0076)', () => {
+    const { sel, hospedeiro } = montar(['normal', 'blind'], () => 'blind');
+    expect(sel.value).toBe('blind');
+    hospedeiro.remove();
+  });
+
+  it('🎯 [Zero] with nothing running the list sits on «normal», and a selector that matches nothing does not throw', () => {
+    const { sel, hospedeiro } = montar(['normal', 'blind']);
+    expect(sel.value).toBe('normal');
+    hospedeiro.remove();
+    const solto = createSimulationList({
+      find: () => null, make: (tag) => document.createElement(tag), keys: ['normal'], running: () => null, picked: () => {},
+    });
+    expect(() => solto.render('#nada')).not.toThrow();
   });
 });
 
