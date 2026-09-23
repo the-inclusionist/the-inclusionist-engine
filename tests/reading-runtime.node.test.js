@@ -15,7 +15,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { loadReadingRuntime } from '../app/js/platform/reading-runtime.js';
-import { READING_MODELS } from '../app/js/platform/reading-model.js';
+import { atDelivery } from '../app/js/platform/onnx-runtime.js';
+import { READING_MODELS, logMel, WHISPER_BANDS, WHISPER_FRAMES } from '../app/js/platform/reading-model.js';
 
 const trace = JSON.parse(readFileSync('tests/fixtures/reading-trace.json', 'utf8'));
 const truth = JSON.parse(readFileSync('tests/fixtures/reading-ground-truth.json', 'utf8'));
@@ -47,6 +48,8 @@ const filtros = () => {
 
 /** A logits row rebuilt from the top the trace kept: everything else is −20, which no top token ever is. */
 function logitsDe(passo, vocab) {
+  // a graph that broke numerically answers NaN everywhere, and NaN is never bigger than anything: no token can be chosen
+  if (passo.broken) return new Float32Array(vocab).fill(NaN);
   const row = new Float32Array(vocab).fill(-20);
   for (const [id, value] of passo.top) row[id] = value;
   return row;
@@ -67,7 +70,12 @@ function ortFalso(lingua, { vocab = 60_000, encoderFrames = 750, steps } = {}) {
     async run(inputs) {
       chamadas.push({
         graph: nome,
+        declared: inputNames,
         inputs: Object.keys(inputs),
+        // what the encoder is handed, whole: the name, the shape and the numbers are all the model has of the sound
+        sound: nome === 'encoder'
+          ? Object.values(inputs).map((t) => ({ type: t.type, dims: [...t.dims], data: t.data }))[0]
+          : null,
         ids: inputs.input_ids ? [...inputs.input_ids.data].map(Number) : null,
         cacheBranch: inputs.use_cache_branch ? inputs.use_cache_branch.data[0] : null,
         pastLengths: Object.fromEntries(Object.entries(inputs)
@@ -95,7 +103,10 @@ function ortFalso(lingua, { vocab = 60_000, encoderFrames = 750, steps } = {}) {
       InferenceSession: {
         create: async (bytes) => {
           const id = new TextDecoder().decode(bytes);
-          if (id.includes('encoder')) return sessao('encoder', ['last_hidden_state'], ['input_features']);
+          // the two families' encoders take different things, named as the real graphs name them (the trace read them)
+          if (id.includes('encoder')) {
+            return sessao('encoder', ['last_hidden_state'], [lingua === 'pt' ? 'input_features' : 'input_values']);
+          }
           if (id.includes('past')) return sessao('decoderPast', decoderOutputs, ['input_ids', 'encoder_hidden_states', ...pastNames]);
           return sessao('decoder', decoderOutputs, ['input_ids', 'encoder_hidden_states', ...pastNames, 'use_cache_branch']);
         },
@@ -104,29 +115,35 @@ function ortFalso(lingua, { vocab = 60_000, encoderFrames = 750, steps } = {}) {
   };
 }
 
-/** The delivery: a JSON file answers from the fixture, a model file answers with its own id, so the fake session knows which it is. */
-function entregaDe(lingua) {
-  const json = ficheiros(lingua);
+/**
+ * The delivery: a JSON file answers from the fixture, a model file answers with its own id, so the fake session knows which it is.
+ * ⚠️ BY THE WHOLE ADDRESS. Matched by a piece of the name, `…/preprocessor_config.json` contains `config` and was answered with the
+ * model's `config.json` — so the engine got no mel filters, and the replay's silent second could not notice.
+ */
+function entregaDe(lingua, base) {
+  const porEndereco = new Map(Object.entries(ficheiros(lingua)).map(([id, corpo]) => [atDelivery(id, base), corpo]));
   const pedidos = [];
   return {
     pedidos,
     fetch: async (url) => {
       pedidos.push(url);
-      const id = Object.keys(json).find((k) => url.includes(k.split(':').slice(1).join('/')) || url.includes(nomeDoFicheiro(k)));
-      if (id) return { ok: true, status: 200, json: async () => json[id] };
+      if (porEndereco.has(url)) return { ok: true, status: 200, json: async () => porEndereco.get(url) };
       return { ok: true, status: 200, arrayBuffer: async () => new TextEncoder().encode(url).buffer };
     },
   };
 }
-const nomeDoFicheiro = (id) => id.split(':').pop();
 
 async function ouvir(lingua, opcoes = {}) {
   const { ort, chamadas } = ortFalso(lingua, opcoes);
-  const { fetch, pedidos } = entregaDe(lingua);
-  const runtime = await loadReadingRuntime({ base: 'https://escola.exemplo/jogo/', language: lingua, fetch, ort, ...opcoes });
-  const texto = await runtime.transcribe(new Float32Array(16_000));
+  const base = 'https://escola.exemplo/jogo/';
+  const { fetch, pedidos } = entregaDe(lingua, base);
+  const runtime = await loadReadingRuntime({ base, language: lingua, fetch, ort, ...opcoes });
+  const texto = await runtime.transcribe(opcoes.samples ?? new Float32Array(16_000));
   return { texto, chamadas, pedidos };
 }
+
+/** One second of a 440 Hz tone: not silence, so the mel filters change what the encoder sees (silence answers the same always). */
+const tom = () => Float32Array.from({ length: 16_000 }, (_, i) => 0.3 * Math.sin((2 * Math.PI * 440 * i) / 16_000));
 
 describe('the reading loop, on the real models\' numbers', () => {
   for (const lingua of ['pt', 'es', 'en']) {
@@ -215,6 +232,73 @@ describe('the reading loop, on the real models\' numbers', () => {
       .rejects.toThrow(/reading:pt:/);
   });
 
+  /**
+   * 🔴 WHAT THE ENCODER HEARS. Whisper eats a log-mel picture of 30 s (80 bands × 3000 frames), Moonshine eats the wave itself.
+   * The replay above cannot see this: its encoder answers the same hidden states whatever it is handed, so a Whisper fed the raw
+   * wave, or a Moonshine fed one sample short, would still «transcribe» the recording. A real session refuses a name it does not
+   * declare, and a real model hears a different sound — in a school, at the child.
+   */
+  it('🔴 [Right] Whisper hears the log-mel picture, 80 bands by 3000 frames', async () => {
+    const { chamadas } = await ouvir('pt');
+    const som = chamadas.find((c) => c.graph === 'encoder');
+    expect(som.inputs, 'Whisper was not handed a spectrogram').toEqual(['input_features']);
+    expect(som.sound.dims).toEqual([1, WHISPER_BANDS, WHISPER_FRAMES]);
+  });
+
+  it('🔴 [Right] Moonshine hears the wave itself, every sample of it', async () => {
+    const samples = tom();
+    for (const lingua of ['es', 'en']) {
+      const { chamadas } = await ouvir(lingua, { samples });
+      const som = chamadas.find((c) => c.graph === 'encoder');
+      expect(som.inputs, `${lingua}: Moonshine was not handed the wave`).toEqual(['input_values']);
+      expect(som.sound.dims, lingua).toEqual([1, 16_000]);
+      expect([...som.sound.data], `${lingua}: the wave reached the encoder changed`).toEqual([...samples]);
+    }
+  });
+
+  it('🔴 [Right] and Whisper\'s picture is drawn with the mel filters the model ships, not with none', async () => {
+    // 📌 The filters come from `preprocessor_config.json` and are the model's own ear. A TONE and not silence, because silence is
+    // answered without reading the filters at all (every bin of zeros is zero) — the replay's silent second could not tell.
+    const samples = tom();
+    const esperado = logMel(samples, filtros());
+    expect(esperado.some((v) => v !== esperado[0]), 'the tone drew a flat picture: the case measures nothing').toBe(true);
+    const { chamadas } = await ouvir('pt', { samples });
+    const visto = chamadas.find((c) => c.graph === 'encoder').sound.data;
+    let diferentes = 0;
+    for (let i = 0; i < esperado.length; i++) if (visto[i] !== esperado[i]) diferentes++;
+    expect(diferentes, 'the encoder saw a picture the model\'s own filters do not draw').toBe(0);
+  });
+
+  it('🔴 [Right] every graph is handed only the names it declares — the answer\'s logits never come back as a cache', async () => {
+    // A decoder answers `logits` beside its `present.*` caches; only the caches are fed back, renamed. Anything else handed to
+    // a real session is refused by name, and the child's reading stops at the second token.
+    for (const lingua of ['pt', 'es', 'en']) {
+      const { chamadas } = await ouvir(lingua);
+      for (const c of chamadas) {
+        const alheios = c.inputs.filter((n) => !c.declared.includes(n));
+        expect(alheios, `${lingua}: ${c.graph} was handed names it does not take`).toEqual([]);
+      }
+    }
+  });
+
+  it('🔴 [Zero] a step that can choose NOTHING ends the answer, and nothing after it is heard', async () => {
+    // A graph that breaks numerically answers NaN, and NaN is never the biggest logit: no token is chosen. Pushing that «no
+    // token» as if it were one would ask the decoder again with an id the vocabulary does not have.
+    // the words the model really chose at its first two steps, so the text is one the tokenizer knows
+    const caso = trace.languages.es;
+    const [primeira, segunda] = caso.steps.map((s) => s.chosen);
+    const peça = caso.pieces[primeira];
+    const { texto, chamadas } = await ouvir('es', {
+      steps: [
+        { top: [[primeira, 9]] },
+        { broken: true },
+        { top: [[segunda, 9]] },
+      ],
+    });
+    expect(chamadas.filter((c) => c.graph !== 'encoder'), 'the decoder was asked again after choosing nothing').toHaveLength(2);
+    expect(texto).toBe(peça.replaceAll('▁', ' ').trim());
+  });
+
   it('📌 [Boundary] a model that never stops is cut, and what it said so far is what the child gets', async () => {
     const { texto } = await ouvir('es', { maxTokens: 3 });
     expect(texto.length, 'the ceiling answered nothing at all').toBeGreaterThan(0);
@@ -240,3 +324,16 @@ describe('the reading loop, on the real models\' numbers', () => {
 //   · the empty caches given the sound's length       → same
 //   · the ceiling ignored                             → «a model that never stops is cut»
 //   · a missing file read as an empty one             → «a delivery without this language says WHICH file is missing»
+//
+// PROBED AGAIN (2026-09-23), seventeen decisions of `transcribe` disabled one at a time — `scratchpad/sonda-reading.py`. Five
+// were green, and all five were about what the replay could not see:
+//   · Whisper handed the wave instead of the spectrogram → «Whisper hears the log-mel picture» (and «every graph is handed only
+//                                                          the names it declares»: the fake encoders now declare their real input)
+//   · Moonshine handed the wave one sample short       → «Moonshine hears the wave itself, every sample of it»
+//   · the mel filters dropped                          → «…drawn with the mel filters the model ships». 🔴 The fixture had never
+//                                                          delivered them: its fetch matched addresses by a PIECE of the name,
+//                                                          and `preprocessor_config.json` contains `config`. The silent second hid
+//                                                          it, because silence is answered without reading any filter.
+//   · the decoder's `logits` fed back as a cache       → «every graph is handed only the names it declares»
+//   · a step that chooses nothing pushed as a token    → «a step that can choose NOTHING ends the answer»
+// 17 of 17 red with them.
