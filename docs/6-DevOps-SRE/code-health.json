@@ -1404,11 +1404,11 @@
     },
     "ui/menu-nav.ts": {
       "codeLines": 278,
-      "decisionNodes": 63,
+      "decisionNodes": 58,
       "maxDepth": 3,
       "fanOut": 9,
       "globalReach": 0,
-      "worstFunction": 19,
+      "worstFunction": 18,
       "fanIn": 2
     },
     "ui/motion-choices.ts": {

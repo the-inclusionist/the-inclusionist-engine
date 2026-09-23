@@ -321,30 +321,40 @@ export interface MenuNavApi {
  * não o nome); fora de linha, ou num cursor com nome próprio («Volume de Música»), é o nome acessível.
  */
 export function controlParts(el: HTMLElement): { rotulo: string; estado: string } {
-  const forte = el.closest('.ctrl-row')?.querySelector('strong')?.textContent?.trim() || '';
-  const nome = accessibleLabel(el);
-  const withIt = (rotulo: string, papel: string): string => `${rotulo}, ${t(papel)}`;
-  if (el.hasAttribute('data-passos')) {
-    return { rotulo: withIt(el.getAttribute('aria-label') || forte, 'sr.papel.passos'), estado: el.getAttribute('aria-valuetext') ?? '' };
-  }
-  if (el.tagName === 'SELECT') {
-    const s = el as HTMLSelectElement;
-    return { rotulo: withIt(forte || nome, 'sr.papel.lista'), estado: s.selectedOptions?.[0]?.textContent?.trim() ?? '' };
-  }
-  if (el.tagName === 'INPUT') {
-    const r = el as HTMLInputElement;
-    const min = +r.min || 0, max = +r.max || 100;
-    const pct = max > min ? Math.round(((+r.value - min) / (max - min)) * 100) : 0;
-    return { rotulo: withIt(el.getAttribute('aria-label') || forte, 'sr.papel.cursor'), estado: `${pct}%` };
-  }
-  if (el.hasAttribute('aria-pressed')) {
-    return { rotulo: withIt(forte || nome, 'sr.papel.interruptor'), estado: t(el.getAttribute('aria-pressed') === 'true' ? 'state.on' : 'state.off') };
-  }
-  if (el.getAttribute('role') === 'radio') {
-    return { rotulo: withIt(forte || nome, 'sr.papel.opcao'), estado: el.getAttribute('aria-checked') === 'true' ? t('sr.estado.selecionado') : '' };
-  }
-  return { rotulo: withIt(nome, 'sr.papel.botao'), estado: '' };
+  const row = el.closest('.ctrl-row')?.querySelector('strong')?.textContent?.trim() || '';
+  const [, role, read] = CONTROL_KINDS.find(([recognises]) => recognises(el))!;
+  const { label, value } = read(el, row, accessibleLabel(el));
+  return { rotulo: `${label}, ${t(role)}`, estado: value };
 }
+
+/** A slider's position as a whole percentage: a missing maximum reads as 100, and a range of zero width as 0. */
+function sliderPercent(r: HTMLInputElement): string {
+  const min = +r.min || 0, max = +r.max || 100;
+  const pct = max > min ? Math.round(((+r.value - min) / (max - min)) * 100) : 0;
+  return `${pct}%`;
+}
+
+/** What a control says: its label and its value. `row` is the `<strong>` of the row it lives in, `name` its accessible name. */
+type ControlReading = (el: HTMLElement, row: string, name: string) => { label: string; value: string };
+
+/**
+ * HOW EACH KIND OF CONTROL IS RECOGNISED AND READ, and the ORDER is the rule: the first row that recognises the element reads
+ * it, and the last — a button — recognises everything. A stepper and a slider prefer their own name (a slider can be «Music
+ * volume» on a row called «Sound»); the others prefer the row's label, because the text of a switch is its state, not its name.
+ */
+const CONTROL_KINDS: readonly (readonly [(el: HTMLElement) => boolean, string, ControlReading])[] = [
+  [(el) => el.hasAttribute('data-passos'), 'sr.papel.passos',
+    (el, row) => ({ label: el.getAttribute('aria-label') || row, value: el.getAttribute('aria-valuetext') ?? '' })],
+  [(el) => el.tagName === 'SELECT', 'sr.papel.lista',
+    (el, row, name) => ({ label: row || name, value: (el as HTMLSelectElement).selectedOptions?.[0]?.textContent?.trim() ?? '' })],
+  [(el) => el.tagName === 'INPUT', 'sr.papel.cursor',
+    (el, row) => ({ label: el.getAttribute('aria-label') || row, value: sliderPercent(el as HTMLInputElement) })],
+  [(el) => el.hasAttribute('aria-pressed'), 'sr.papel.interruptor',
+    (el, row, name) => ({ label: row || name, value: t(el.getAttribute('aria-pressed') === 'true' ? 'state.on' : 'state.off') })],
+  [(el) => el.getAttribute('role') === 'radio', 'sr.papel.opcao',
+    (el, row, name) => ({ label: row || name, value: el.getAttribute('aria-checked') === 'true' ? t('sr.estado.selecionado') : '' })],
+  [() => true, 'sr.papel.botao', (_el, _row, name) => ({ label: name, value: '' })],
+];
 
 /** Onde os itens moram: o card do diálogo (`.overlay__card`) ou o card da pausa (`.pause-card`). */
 const CARD_SELECTOR = '.overlay__card, .pause-card';
