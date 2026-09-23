@@ -17,7 +17,7 @@ const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
 import { CRT, applyCrt } from '../app/js/render/crt.js';
 import { t } from '../app/js/core/i18n.js';
-import { RM_LABEL } from '../app/js/ui/settings-motion.js';
+import { RM_LABEL } from '../app/js/ui/motion-choices.js';
 
 const $ = (sel) => document.querySelector(sel);
 

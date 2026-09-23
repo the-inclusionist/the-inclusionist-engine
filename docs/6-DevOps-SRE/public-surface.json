@@ -1724,6 +1724,19 @@
     "selectWrap",
     "stepInPause"
   ],
+  "ui/motion-choices.ts": [
+    "CRT_LBL",
+    "CRT_ROUND_LEVELS",
+    "RM_LABEL",
+    "allMotionFrozen",
+    "clampSelectedPlayer",
+    "crtLevelLabel",
+    "crtRoundAnnouncement",
+    "crtToggleAnnouncement",
+    "motionMasterLabel",
+    "sceneMotionAnnouncement",
+    "stopResumeAllAnnouncement"
+  ],
   "ui/motion-scene.ts": [
     "CHARACTER_ANIMATIONS",
     "MotionCharDef",
@@ -1884,21 +1897,12 @@
     "MotionPlayer",
     "MotionSceneFlags",
     "MotionSceneKey",
-    "RM_LABEL",
     "SettingsMotionApi",
     "SettingsMotionCtx",
-    "allMotionFrozen",
-    "clampSelectedPlayer",
-    "crtLevelLabel",
-    "crtRoundAnnouncement",
-    "crtToggleAnnouncement",
     "getSelectedPlayer",
     "initSettingsMotion",
-    "motionMasterLabel",
     "mountMotionInside",
-    "sceneMotionAnnouncement",
-    "setSelectedPlayer",
-    "stopResumeAllAnnouncement"
+    "setSelectedPlayer"
   ],
   "ui/settings-panel.ts": [
     "EXPLAIN_IDLE",

@@ -12,7 +12,7 @@ import pt from '../app/js/i18n/pt.ts';
 import en from '../app/js/i18n/en.ts';
 import es from '../app/js/i18n/es.ts';
 import { AUDIO_CATS } from '../app/js/platform/audio-mixer.ts';
-import { RM_LABEL } from '../app/js/ui/settings-motion.ts';
+import { RM_LABEL } from '../app/js/ui/motion-choices.ts';
 import { PERSONAS_DO_PAD } from '../app/js/input/touch.ts';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.ts';
 

@@ -2173,6 +2173,23 @@ same empty set, and no path let a cartridge supply another — the only things g
 mechanism whose sole user is a test is not a mechanism. It is the second time this mechanism has gone for losing its
 last user: its twin in the icon bar went in `760faad`. The `ui.soon` dictionary key stays in all three languages.
 
+## BU · What a movement choice IS leaves the panel that draws it (ADR-0221 step 7c, issue #203)
+
+**What this is.** Eleven names move from `ui/settings-motion` to the new `ui/motion-choices`, with no alias left
+behind: `RM_LABEL`, `CRT_LBL`, `CRT_ROUND_LEVELS`, `clampSelectedPlayer`, `allMotionFrozen`, `motionMasterLabel`,
+`sceneMotionAnnouncement`, `crtToggleAnnouncement`, `crtLevelLabel`, `crtRoundAnnouncement` and
+`stopResumeAllAnnouncement`. `initSettingsMotion`, `getSelectedPlayer`, `setSelectedPlayer` and the five type
+aliases stay where they were.
+
+🎯 **Why the seam is there.** `tests/settings-motion.node.test.js` exercises exactly those names, and the node
+project mounts no document — whoever wrote those cases already knew where the panel stops being a panel. It is the
+fifth module to come out this way, after `ui/audio-choices`, `ui/typo-choices`, `ui/control-choices` and
+`ui/visual-choices`.
+
+⚠️ **What to change.** Change the import path. Nothing about the names, their values or their behaviour moved with
+them. 📌 No alias was left: a re-export would keep alive a path nothing inside the engine uses, and would make the
+public-surface portrait lie, because it does not see re-exports (issue #204).
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

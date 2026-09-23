@@ -205,7 +205,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 41
+      "fanIn": 42
     },
     "core/layers.ts": {
       "codeLines": 40,
@@ -1645,6 +1645,15 @@
       "worstFunction": 19,
       "fanIn": 2
     },
+    "ui/motion-choices.ts": {
+      "codeLines": 33,
+      "decisionNodes": 6,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "globalReach": 0,
+      "worstFunction": 3,
+      "fanIn": 1
+    },
     "ui/motion-scene.ts": {
       "codeLines": 39,
       "decisionNodes": 3,
@@ -1652,7 +1661,7 @@
       "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 4,
-      "fanIn": 2
+      "fanIn": 3
     },
     "ui/mount-panel.ts": {
       "codeLines": 60,
@@ -1780,10 +1789,10 @@
       "fanIn": 1
     },
     "ui/settings-motion.ts": {
-      "codeLines": 340,
-      "decisionNodes": 52,
+      "codeLines": 313,
+      "decisionNodes": 46,
       "maxDepth": 3,
-      "fanOut": 8,
+      "fanOut": 9,
       "globalReach": 0,
       "worstFunction": 9,
       "fanIn": 2

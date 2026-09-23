@@ -5,12 +5,18 @@
 // em tests/settings-motion.browser.test.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (ui/settings-motion).
 import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // RM_LABEL guarda CHAVE desde o item 14; o HTML tem de trazer o TEXTO
+// 🔴 E ESTA LISTA IMPORTAVA SEIS NOMES QUE O MÓDULO JÁ NÃO EXPORTAVA, com a suíte VERDE — medido em 2026-09-23, uma
+// hora depois de os construtores de cadeia serem apagados. Um import NOMEADO de algo que não existe resolve para
+// `undefined` sob o transformador, e enquanto nenhum caso usar o nome, nada falha. É a mesma forma da chave de
+// livro-razão que deixa de casar com ficheiro nenhum: o que não é lido deixa de exigir, em silêncio.
+//
+// 📌 A METADE PURA MUDOU DE MÓDULO no mesmo dia (`ui/motion-choices`, ADR-0221 passo 7c), e foi ESTE ficheiro que
+// apontou a costura: ele exercita exactamente estes nomes, e o projecto node não monta documento.
 import {
-  clampSelectedPlayer, motionRowHtml, buildCharRowsHtml, buildSceneRowsHtml,
-  crtToggleRowHtml, crtRoundRowHtml, allMotionFrozen, motionMasterLabel,
+  clampSelectedPlayer, allMotionFrozen, motionMasterLabel,
   sceneMotionAnnouncement, crtToggleAnnouncement, crtLevelLabel, crtRoundAnnouncement,
   stopResumeAllAnnouncement, RM_LABEL,
-} from '../app/js/ui/settings-motion.js';
+} from '../app/js/ui/motion-choices.js';
 
 const RM_CHAR = [
   { prop: 'rmWalk', lbl: 'Personagem em movimento (andar, escalar, nadar, pular)' },

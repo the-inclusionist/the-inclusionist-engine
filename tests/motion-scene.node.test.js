@@ -14,7 +14,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   SCENE_KEYS, CHARACTER_ANIMATIONS, sceneDefault, readStoredScene, storeScene,
 } from '../app/js/ui/motion-scene.js';
-import { RM_LABEL } from '../app/js/ui/settings-motion.js';
+import { RM_LABEL } from '../app/js/ui/motion-choices.js';
 import { KEYS } from '../app/js/platform/storage.js';
 
 /** Um `localStorage` de mentira, porque o project `node` não tem nenhum e a camada de armazenamento
