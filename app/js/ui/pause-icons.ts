@@ -270,26 +270,38 @@ export function hasPrivateOutputIn(list: readonly PausePlayer[], count: number, 
 export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   const ic = pauseIcon(k);
   if (!ic) return '';
+  const state = STATE_OF_ICON[k];
   // O estado vira SEMPRE um parâmetro (`{v}`), nunca uma concatenação: 'on'/'off' eram palavras inglesas
   // presas numa frase em português, e uma língua que anteponha o estado ao nome precisa do dicionário para
   // reordenar. `nomeDoIcone: estado` é a moldura; o estado é o conteúdo, e ele também é traduzido.
-  const rotulo = (v: string): string => t('icon.state', { nome: t(ic.n), v: t(v) });
-  if (k === 'blind') return rotulo(s.blindMode ? 'state.on' : 'state.off');
-  if (k === 'tts') return rotulo(s.ttsOn ? 'state.on' : 'state.off');
-  if (k === 'libras') return rotulo(s.librasOn ? 'state.on' : 'state.off');
-  // TEA e daltonismo usam um nome CURTO aqui, diferente do nome do botão: o rótulo já diz o nível, e
-  // repetir a lista de níveis do nome ("(calmo / silencioso)", "(protan/deutan/tritan)") a diria duas vezes.
-  // Era assim antes da conversão, com o texto curto embutido — preservado, não reinventado.
-  if (k === 'tea') return t('icon.state', { nome: t('icon.tea.short'), v: t(CALM_NAMES[s.calmMode]!) });
-  if (k === 'altmove') return rotulo(INPUT_MODE_NAME[inputModeOf(s)]);
-  if (k === 'contrast') return rotulo(SHORT_THEME[s.visual.tema]);
-  if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(SHORT_CORRECTION[s.visual.correcao]) });
-  if (k === 'camera') return rotulo(CAMERA_MODE_NAME[s.camera ?? 'off']);
-  if (k === 'voice') return rotulo(s.voz ? 'state.on' : 'state.off');
-  if (k === 'idioma') return t('icon.state', { nome: t(ic.n), v: LANGUAGE_NAME[(s.idioma ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt });
-  if (k === 'velocidade') return t('icon.state', { nome: t(ic.n), v: t('icon.velocidade.valor', { pct: Math.round((s.velocidade ?? 1) * 100) }) });
-  return t(ic.n);
+  return state ? t('icon.state', { nome: t(SHORT_NAME[k] ?? ic.n), v: state(s) }) : t(ic.n);
 }
+
+const onOff = (on: boolean | undefined): string => t(on ? 'state.on' : 'state.off');
+
+/** What each icon with a state says after its name, already in the child's language. An icon not here has no state to say. */
+const STATE_OF_ICON: { readonly [k: string]: (s: IconStateSnapshot) => string } = {
+  blind: (s) => onOff(s.blindMode),
+  tts: (s) => onOff(s.ttsOn),
+  libras: (s) => onOff(s.librasOn),
+  tea: (s) => t(CALM_NAMES[s.calmMode]!),
+  altmove: (s) => t(INPUT_MODE_NAME[inputModeOf(s)]),
+  contrast: (s) => t(SHORT_THEME[s.visual.tema]),
+  cvd: (s) => t(SHORT_CORRECTION[s.visual.correcao]),
+  camera: (s) => t(CAMERA_MODE_NAME[s.camera ?? 'off']),
+  voice: (s) => onOff(s.voz),
+  // a language's own name is not translated: «Español» reads the same in every interface
+  idioma: (s) => LANGUAGE_NAME[(s.idioma ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt,
+  velocidade: (s) => t('icon.velocidade.valor', { pct: Math.round((s.velocidade ?? 1) * 100) }),
+};
+
+/**
+ * TEA e daltonismo têm uma chave de nome CURTO para o rótulo, porque o nome do botão chegou a trazer a lista de níveis
+ * («(calmo / silencioso)», «(protan/deutan/tritan)») e o rótulo já diz o nível. ⚠️ Medido em 2026-09-23: hoje, nos três
+ * dicionários, a chave curta é igual à longa palavra por palavra — a distinção ficou sem assunto, e juntar as chaves é mudança
+ * de dicionário, não deste corte.
+ */
+const SHORT_NAME: { readonly [k: string]: string } = { tea: 'icon.tea.short', cvd: 'icon.cvd.short' };
 
 /** The visual state of one icon button. `active` is what becomes `aria-pressed`. */
 export interface IconVisual {
