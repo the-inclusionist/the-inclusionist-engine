@@ -47,7 +47,7 @@ const SEM_ALCANCE_NO_TECLADO_PARTIDO = Object.freeze({
 });
 
 // 4 esquemas base p/ 3–4 jogadores (modos 3 e 4 têm esquemas SEPARADOS, p3 e p4, editáveis por jogador)
-export const KB_SCHEMES4: KeyScheme[] = [
+const KB_SCHEMES4: KeyScheme[] = [
   { left:['KeyA'],right:['KeyD'],up:['KeyW'],down:['KeyS'], action1:['KeyZ'],action2:['KeyX'],action4:['KeyC'],action3:['KeyV'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },
   { left:['KeyJ'],right:['KeyL'],up:['KeyI'],down:['KeyK'], action1:['KeyM'],action2:['Comma'],action4:['Period'],action3:['Semicolon','Slash'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },
   { left:['ArrowLeft'],right:['ArrowRight'],up:['ArrowUp'],down:['ArrowDown'], action1:['Home'],action2:['End'],action4:['PageUp'],action3:['PageDown'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },

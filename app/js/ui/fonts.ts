@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/fonts.ts — catálogo de fontes (dados) + índice por chave + carga/persistência da escolha. Módulo-folha
-// (só depende de storage). A instância `fontKey` e o setGameFont (aplica família/espaçamento) ficam no game.js.
-import * as store from '../platform/storage.js';
+// SEM IMPORTS: quem guarda entra por parâmetro (`FontStore`), em `resolveFontKey` e `persistFontKey`.
+//
+// ⚠️ ELE IMPORTAVA O ARMAZENAMENTO ATÉ 23/09, e a razão era só os dois atalhos que saíram daqui — eles fechavam
+// o `store` por dentro para poupar um argumento a um chamador que nunca existiu. Tirados eles, a dependência
+// caiu sozinha: o módulo passou a alcançar zero e a decisão de ONDE se guarda voltou inteira para quem chama.
 
 /**
  * Uma fonte do catálogo. `fam` é o NOME DA FONTE — nome próprio, nunca traduzido. `d` guarda CHAVE i18n da
@@ -358,8 +361,8 @@ export const FONT_BY_KEY: Record<string, FontItem> = {}; FONT_GROUPS.forEach((g)
 /** Narrow store shape these need — lets a caller inject a fake without touching real storage. */
 export interface FontStore { get(key: string, fallback: string | null): string | null; set(key: string, v: string): void; }
 
-export const FONT_KEY = 'incl_font_k';
-export const FONT_KEY_LEGACY = 'incl_fonte'; // pre-Fase-2: 'alfabetizacao' | 'dislexia'
+const FONT_KEY = 'incl_font_k';
+const FONT_KEY_LEGACY = 'incl_fonte'; // pre-Fase-2: 'alfabetizacao' | 'dislexia'
 
 /**
  * A fonte de fábrica, com nome. Atkinson Hyperlegible foi desenhada pelo Braille Institute justamente para
@@ -394,6 +397,7 @@ export function resolveFontKey(s: FontStore): string {
 }
 export function persistFontKey(s: FontStore, k: string): void { s.set(FONT_KEY, k); }
 
-// Conveniencia sobre o storage real — mesma logica, sem duplicá-la.
-export function loadFontKey(): string { return resolveFontKey(store); }
-export function saveFontKey(k: string): void { persistFontKey(store, k); }
+// ⚠️ `loadFontKey` AND `saveFontKey` ARE GONE (R3 of the plan, 2026-09-23): they were conveniences over
+// `resolveFontKey` and `persistFontKey` — the same two lines with `store` already filled in — and NOBODY took
+// them, not even a test. A shortcut nobody takes is not a convenience: it is published surface that asks whoever
+// reads it to migrate.

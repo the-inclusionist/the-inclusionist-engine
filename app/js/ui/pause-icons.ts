@@ -492,7 +492,7 @@ export const ENGINE_ITEMS: ReadonlySet<string> = new Set(['options', 'opcoesdojo
  * refresh, so it follows the language of the moment the card opens.
  */
 const MOTIVOS_PROPRIOS: ReadonlySet<string> = new Set(['ajuda', 'addplayer', 'opcoesdojogo']);
-export function itemReason(act: string): string {
+function itemReason(act: string): string {
   return t(MOTIVOS_PROPRIOS.has(act) ? `pause.motivo.${act}` : 'pause.motivo');
 }
 

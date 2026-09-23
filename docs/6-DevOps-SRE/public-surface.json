@@ -172,7 +172,6 @@
   "core/i18n.ts": [
     "LocalePort",
     "applyDom",
-    "availableLocales",
     "bcp47",
     "dictionaryGaps",
     "getLocale",
@@ -450,7 +449,6 @@
     "GamepadGameHooks",
     "GamepadPlayer",
     "GetGamepads",
-    "PADWIZ_ANIM",
     "PADWIZ_ORDER",
     "PadActions",
     "PadBinding",
@@ -518,7 +516,6 @@
   "input/keyboard.ts": [
     "KBDefaults",
     "KB_DEFAULTS",
-    "KB_SCHEMES4",
     "KeyboardMapping",
     "factoryWithGame",
     "initKB",
@@ -659,7 +656,6 @@
     "EventTargetLike",
     "PointerLike",
     "START_TAP_MS",
-    "TOUCH_FORCE_RE",
     "TouchBindPlayer",
     "TouchBindSnapshot",
     "TouchBindingsApi",
@@ -694,7 +690,6 @@
     "TouchMarkupCtx",
     "TouchMarkupSpec",
     "TouchStore",
-    "buttonName",
     "closestPersona",
     "computePadPhysicalPx",
     "initTouch",
@@ -784,15 +779,12 @@
   "platform/audio-sonar.ts": [
     "AudioSonar",
     "FRAMES_BETWEEN_ROUTES",
-    "GUIDE_HZ",
-    "GUIDE_TAU",
     "GUIDE_VOL",
     "GUIDE_WAVE",
     "LiveGuide",
     "PAN_PACES",
     "PlayerAudioOut",
     "PlayerCtxOut",
-    "ROUTE_BUDGET",
     "SinkAC",
     "SonarCtx",
     "SonarPlayer",
@@ -1568,8 +1560,6 @@
     "DEFAULT_FONT_KEY",
     "FONT_BY_KEY",
     "FONT_GROUPS",
-    "FONT_KEY",
-    "FONT_KEY_LEGACY",
     "FontGroup",
     "FontItem",
     "FontRole",
@@ -1582,10 +1572,8 @@
     "faceScale",
     "fontRole",
     "handsForTag",
-    "loadFontKey",
     "persistFontKey",
     "resolveFontKey",
-    "saveFontKey",
     "typographyCycle"
   ],
   "ui/game-options.ts": [
@@ -1682,7 +1670,6 @@
     "nextLocale"
   ],
   "ui/loop-crash.ts": [
-    "CRASH_NOTICE_ID",
     "CrashNoticeCtx",
     "createCrashNotice"
   ],
@@ -1802,7 +1789,6 @@
     "iconsThatAct",
     "initPauseIcons",
     "inputModeOf",
-    "itemReason",
     "itemsThatAct",
     "nextInputMode",
     "rootThatActs",
@@ -1881,7 +1867,6 @@
     "initSettingsMobility",
     "mountMobilityInside",
     "onOffLabel",
-    "playerPrefix",
     "playerTabsHTML",
     "setMoveLatch",
     "setRunLatch",
@@ -1899,7 +1884,6 @@
     "SettingsMotionCtx",
     "getSelectedPlayer",
     "initSettingsMotion",
-    "mountMotionInside",
     "setSelectedPlayer"
   ],
   "ui/settings-panel.ts": [

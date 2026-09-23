@@ -12,9 +12,6 @@
     "core/contract.ts": [
       "dimension"
     ],
-    "core/i18n.ts": [
-      "availableLocales"
-    ],
     "core/state.ts": [
       "emit",
       "initVizMode",
@@ -22,26 +19,9 @@
       "vizMode",
       "wheelchair"
     ],
-    "input/gamepad.ts": [
-      "PADWIZ_ANIM"
-    ],
-    "input/keyboard.ts": [
-      "KB_SCHEMES4"
-    ],
-    "input/touch-bindings.ts": [
-      "TOUCH_FORCE_RE"
-    ],
-    "input/touch.ts": [
-      "buttonName"
-    ],
     "input/transports.ts": [
       "HOLDS_TOUCH",
       "holds"
-    ],
-    "platform/audio-sonar.ts": [
-      "GUIDE_HZ",
-      "GUIDE_TAU",
-      "ROUTE_BUDGET"
     ],
     "platform/audio.ts": [
       "_footCount",
@@ -96,17 +76,8 @@
       "worldCanvas",
       "worldToTexture"
     ],
-    "ui/fonts.ts": [
-      "FONT_KEY",
-      "FONT_KEY_LEGACY",
-      "loadFontKey",
-      "saveFontKey"
-    ],
     "ui/layout.ts": [
       "initLayout"
-    ],
-    "ui/loop-crash.ts": [
-      "CRASH_NOTICE_ID"
     ],
     "ui/menu-items.ts": [
       "ITEM_SELECTOR"
@@ -114,14 +85,7 @@
     "ui/pause-icons.ts": [
       "ENGINE_ITEMS",
       "iconCaption",
-      "itemReason",
       "itemsThatAct"
-    ],
-    "ui/settings-mobility.ts": [
-      "playerPrefix"
-    ],
-    "ui/settings-motion.ts": [
-      "mountMotionInside"
     ],
     "ui/title.ts": [
       "TITLE_MENU_IDS_ORDERED"

@@ -1001,7 +1001,7 @@
       "fanOut": 0,
       "globalReach": 1,
       "worstFunction": 3,
-      "fanIn": 17,
+      "fanIn": 16,
       "reached": [
         "localStorage"
       ]
@@ -1505,10 +1505,10 @@
       "fanIn": 1
     },
     "ui/fonts.ts": {
-      "codeLines": 132,
+      "codeLines": 129,
       "decisionNodes": 6,
       "maxDepth": 1,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 7,
       "fanIn": 3

@@ -195,7 +195,7 @@ export interface MotionInsideSpec {
  * painel inteiro. ⚠️ E mover também desfoca, e é por isso que esta função INSERE na posição certa em vez de anexar e
  * reordenar: um nó que muda de pai é removido e reposto, e o navegador tira-lhe o foco na remoção.
  */
-export function mountMotionInside(ctx: PanelShellCtx, list: HTMLElement, spec: MotionInsideSpec): void {
+function mountMotionInside(ctx: PanelShellCtx, list: HTMLElement, spec: MotionInsideSpec): void {
   reconcile(list, motionParts(ctx, spec));
 }
 

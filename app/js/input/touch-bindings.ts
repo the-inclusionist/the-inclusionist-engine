@@ -179,7 +179,7 @@ export type TouchDecision =
 export { EDGE_BY_ACTION as TOUCH_EDGE_BY_ACTION } from './edges.js'; // MESMA tabela dos outros dois caminhos
 
 /** `?touch=1` na URL força os controles de toque a aparecerem no desktop (atalho de teste do José). */
-export const TOUCH_FORCE_RE = /[?&]touch=1/;
+const TOUCH_FORCE_RE = /[?&]touch=1/;
 
 /** Predicado do `?touch=1`, isolado para o teste não repetir o regex. */
 export function wantsForcedTouch(search: string): boolean {

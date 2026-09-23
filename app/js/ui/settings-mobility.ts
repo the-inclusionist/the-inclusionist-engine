@@ -349,7 +349,7 @@ export function playerTabsHTML(numPlayers: number, selected: number): string {
  * O 'Jogador N: ' que abre um anúncio quando há mais de uma tela. Uma tela só não leva prefixo — dizer
  * "Jogador 1" para quem está sozinho é ruído, e ruído no leitor de tela custa tempo de escuta.
  */
-export function playerPrefix(i: number, numPlayers: number): string {
+function playerPrefix(i: number, numPlayers: number): string {
   return numPlayers > 1 ? t('sr.player.prefix', { n: i + 1 }) : '';
 }
 

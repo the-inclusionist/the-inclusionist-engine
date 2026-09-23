@@ -26,7 +26,7 @@
 import { t } from '../core/i18n.js';
 
 /** O id da caixa do aviso. Estável porque a folha de estilo e o teste a procuram. */
-export const CRASH_NOTICE_ID = 'incl-parou';
+const CRASH_NOTICE_ID = 'incl-parou';
 
 export interface CrashNoticeCtx {
   /** `querySelector` do documento deste jogo. Injetado: a engine recebe o dela, `main.ts` passa o `$` global. */

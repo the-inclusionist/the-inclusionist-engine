@@ -2216,6 +2216,41 @@ that ledger carrying a decision of the Dev's — «audio categories are THE ENGI
 classification. It still holds, and is still written down, in the module that now builds the row; what stopped being
 necessary is the exception.
 
+## BW · Sixteen names that nothing here reads stop being published (ADR-0170 §3, issue #164)
+
+**What this is.** Sixteen names leave the package's surface. Fourteen stop being exported and stay exactly where
+they are, doing exactly what they did — they are implementation details that were published by habit:
+`core/i18n.availableLocales`, `input/gamepad.PADWIZ_ANIM`, `input/keyboard.KB_SCHEMES4`,
+`input/touch-bindings.TOUCH_FORCE_RE`, `input/touch.buttonName`, `platform/audio-sonar.GUIDE_HZ`, `GUIDE_TAU`,
+`ROUTE_BUDGET`, `ui/fonts.FONT_KEY`, `FONT_KEY_LEGACY`, `ui/loop-crash.CRASH_NOTICE_ID`,
+`ui/pause-icons.itemReason`, `ui/settings-mobility.playerPrefix`, `ui/settings-motion.mountMotionInside`. Two are
+DELETED: `ui/fonts.loadFontKey` and `ui/fonts.saveFontKey`.
+
+🎯 **Why now, and why these sixteen and not the seventy.** The ledger of published names nothing in this
+repository reads holds 70 in 29 modules, and the Dev's rule of 2026-09-22 is that such a name is debt — declared
+or removed, with no appeal to what a game outside might import. 📏 Measured before touching any of them: 29 of
+the 70 belong to the tile-world stack, whose place in this repository is an open decision, and most of the rest
+travel by ctx INJECTION into modules the engine's own root never composes. These sixteen are the ones that
+depend on neither question: orphans inside modules the engine itself mounts.
+
+📌 **`tsc` sorted them, not taste.** Every one had its `export` removed; the type checker then named the three it
+could no longer see any reader for. Two were conveniences over `resolveFontKey`/`persistFontKey` with the `store`
+already filled in — the same two lines, for a caller that never existed — and they are gone. 🎯 And removing them
+took `ui/fonts`'s last import with it: the module reached `platform/storage` only to close over it for those two,
+so the catalogue is now a leaf with NO imports and the decision of where a choice is kept went back whole to
+whoever calls.
+
+⚠️ **The third one is NOT here, and that is the finding.** `ui/layout.initLayout` also had no reader, and its own
+comment says «called once by the root, before the first `layout()`» — nobody calls it, so `_numJogadores` stays at
+its default of ONE for ever and `screenBaseSize(n)` answers 320×180 where two to four players need 640×180 or
+640×360. It keeps its `export` and is written down as an open item: deleting it would freeze the lie, and wiring
+it is an API question, because nothing in the engine calls `layout()` either.
+
+⚠️ **What to change.** Nothing, if you import from the engine what the engine's own root imports. If you imported
+one of the fourteen, it is an implementation detail of the module that holds it and there is no replacement; if
+you imported `loadFontKey`/`saveFontKey`, call `resolveFontKey(store)` / `persistFontKey(store, key)`, which are
+the same two lines and are still published.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

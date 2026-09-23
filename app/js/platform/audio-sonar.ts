@@ -124,7 +124,7 @@ export const GUIDE_WAVE: OscillatorType = 'sawtooth';
  * guia também subisse de tom, os dois estariam a dizer a mesma coisa pelo mesmo meio, e quem ouve os dois ao
  * mesmo tempo não teria como separá-los. O guia diz distância por brilho; o sonar, por altura.
  */
-export const GUIDE_HZ = 220;
+const GUIDE_HZ = 220;
 
 /**
  * Quantos quadros entre dois cálculos de rota.
@@ -141,7 +141,7 @@ export const FRAMES_BETWEEN_ROUTES = 12;
  * «uma pista por quadro tolera muito menos do que um cálculo ao carregar a fase». Estourar devolve `null`, que
  * é «não sei» — e o guia cai na reta, que ainda soa.
  */
-export const ROUTE_BUDGET = 1024;
+const ROUTE_BUDGET = 1024;
 
 /**
  * O ganho de base do guia, antes de a intensidade e o volume mestre o multiplicarem.
@@ -154,7 +154,7 @@ export const GUIDE_VOL = 0.06;
 
 /** Constante de tempo do `setTargetAtTime`. Curta o bastante para acompanhar o passo, longa o bastante para
  *  que a mudança seja um deslize e não um degrau — um degrau a cada rota seria um bipe outra vez. */
-export const GUIDE_TAU = 0.08;
+const GUIDE_TAU = 0.08;
 
 /**
  * A SAÍDA DEDICADA de um jogador, e este módulo é o DONO dela: é aqui que os dois campos NASCEM

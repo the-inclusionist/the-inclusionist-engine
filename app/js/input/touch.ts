@@ -484,7 +484,7 @@ const NOME_DA_POSICAO: Readonly<Record<string, string>> = {
   leftShoulder: 'L1', leftTrigger: 'L2', rightShoulder: 'R1', rightTrigger: 'R2',
   select: 'SELECT', start: 'START',
 };
-export function buttonName(acao: string): string | null {
+function buttonName(acao: string): string | null {
   if (NOME_DA_POSICAO[acao]) return NOME_DA_POSICAO[acao]!;
   return acao === 'up' || acao === 'down' || acao === 'left' || acao === 'right' ? t(`touch.nome.${acao}`) : null;
 }

@@ -199,7 +199,7 @@ export function getLocale(): string { return locale; }
  */
 const REGION_OF: Readonly<Record<string, string>> = { pt: 'pt-BR', en: 'en-US', es: 'es-MX' };
 export function bcp47(code: string = locale): string { return REGION_OF[code] ?? code; }
-export function availableLocales(): string[] { return AVAILABLE.slice(); }
+function availableLocales(): string[] { return AVAILABLE.slice(); }
 
 // Aplica as traduções declarativas do HTML: [data-i18n] → textContent; [data-i18n-aria] → aria-label.
 export function applyDom(root: ParentNode): void {

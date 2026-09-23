@@ -224,7 +224,7 @@ export const PADWIZ_ORDER: readonly string[] = ORDEM_DO_ASSISTENTE;
 
 export interface WizAnimDef { seq?: string[]; hold?: number; cls: string; fx?: string; noimg?: number; flip?: number; }
 /** Demonstração animada de cada ação (frames reais do jogo) mostrada durante o passo correspondente do wizard. */
-export const PADWIZ_ANIM: Record<string, WizAnimDef> = {
+const PADWIZ_ANIM: Record<string, WizAnimDef> = {
   up: { seq: ['escada/0', 'escada/1'], hold: 9, cls: 'pw-up' },
   down: { seq: ['escada/1', 'escada/0'], hold: 9, cls: 'pw-down' },
   left: { seq: ['andar/0', 'andar/1', 'andar/2', 'andar/3', 'andar/4', 'andar/5', 'andar/6', 'andar/7'], hold: 4, cls: 'pw-left', flip: 1 },
