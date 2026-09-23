@@ -51,6 +51,91 @@ describe('the regions', () => {
   });
 });
 
+describe('what each region is drawn WITH (probed 2026-09-23)', () => {
+  /*
+   * 🔴 Fourteen of twenty decisions of the drawing could be undone with the pixel cases above green: they measure THAT something is
+   * painted, not its colour, its weight, its size or where the words sit. These cases record every call on the context, with the
+   * style in force at that moment — the colour a child reads as «armed» is the rule, not a decoration.
+   */
+  const recorded = (width = W, height = H) => {
+    const c = document.createElement('canvas'); c.width = width; c.height = height;
+    const real = c.getContext('2d'), calls = [];
+    const ctx = new Proxy(real, {
+      get: (t, k) => (typeof t[k] === 'function'
+        ? (...a) => { calls.push({ k, a, style: t.strokeStyle, width: t.lineWidth, font: t.font }); return t[k](...a); }
+        : t[k]),
+      set: (t, k, v) => { t[k] = v; return true; },
+    });
+    return { ctx, calls, real };
+  };
+  const rectOf = (region, width = W, height = H) => {
+    const [fx, fy, fw, fh] = GAZE_REGIONS[region];
+    return [(fx - fw / 2) * width, (fy - fh / 2) * height, fw * width, fh * height];
+  };
+  const outline = (calls, region) => calls.find((c) => c.k === 'strokeRect' && c.a.every((v, i) => Math.abs(v - rectOf(region)[i]) < 0.01));
+  const texts = (calls) => calls.filter((c) => c.k === 'fillText');
+  const upArmed = (item) => ({ zone: 'up', armed: true, preparing: false, preview: { zone: 'up', item, index: 1 }, restReady: true });
+
+  it('an idle region is faint and thin; the armed one is green and thicker', () => {
+    const { ctx, calls } = recorded();
+    drawGazeOverlay(ctx, W, H, upArmed('up'));
+    expect([outline(calls, 'down').style, outline(calls, 'down').width]).toEqual(['rgba(234, 242, 248, 0.35)', 1]);
+    expect([outline(calls, 'up').style, outline(calls, 'up').width]).toEqual(['#3ddc84', 3]);
+  });
+
+  it('the middle is never green: its count-down is yellow even while a zone is armed', () => {
+    const { ctx, calls } = recorded();
+    drawGazeOverlay(ctx, W, H, { ...upArmed('up'), restReady: false, restLeftMs: 1500 });
+    expect(outline(calls, 'middle').style).toBe('#ffd23f');
+  });
+
+  it('the words grow with the game region — twice the region, twice the letters', () => {
+    const { ctx, calls } = recorded(2 * W, 2 * H);
+    drawGazeOverlay(ctx, 2 * W, 2 * H, { ...idle, restReady: false, restLeftMs: 1500 }, { say: () => 'Olhe aqui' });
+    expect(texts(calls).find((c) => c.a[0] === 'Olhe aqui').font).toMatch(/\b32px\b/);
+  });
+
+  it('only the middle counts down, only while there is time left, and its words step up to make room', () => {
+    const counting = recorded();
+    drawGazeOverlay(counting.ctx, W, H, { ...idle, zone: 'up', preparing: true, restReady: false, restLeftMs: 1500 }, { say: (k) => k });
+    const seconds = texts(counting.calls).filter((c) => / s$/.test(c.a[0]));
+    expect(seconds.map((c) => c.a[0]), 'a count-down in a region that is not the middle').toEqual(['1.5 s']);
+    expect(texts(counting.calls).find((c) => c.a[0] === 'gaze.lookHere').a[2], 'the words did not step up').toBeLessThan(H / 2);
+    const done = recorded();
+    drawGazeOverlay(done.ctx, W, H, { ...idle, restReady: false }, { say: (k) => k });
+    expect(texts(done.calls).some((c) => / s$/.test(c.a[0])), 'a count-down with no time left to count').toBe(false);
+  });
+
+  it('the face button is its Xbox letter AND its PlayStation shape', () => {
+    const { ctx, calls } = recorded();
+    drawGazeOverlay(ctx, W, H, upArmed('action4'));
+    expect(texts(calls).map((c) => c.a[0])).toContain('Y');
+    expect(calls.some((c) => c.k === 'closePath'), 'the triangle was not drawn').toBe(true);
+  });
+
+  it('the shoulder is its label inside a square', () => {
+    const { ctx, calls } = recorded();
+    drawGazeOverlay(ctx, W, H, upArmed('rightShoulder'));
+    expect(texts(calls).map((c) => c.a[0])).toContain('R1');
+    const f = 16, side = f * 2.4;
+    expect(calls.some((c) => c.k === 'strokeRect' && Math.abs(c.a[2] - side) < 0.01 && Math.abs(c.a[3] - side) < 0.01), 'no square').toBe(true);
+  });
+
+  it('a line naming a landmark the face does not have is skipped, and the others still draw', () => {
+    const { ctx, calls } = recorded();
+    const landmarks = [{ x: 0.9, y: 0.5 }, { x: 0.8, y: 0.5 }];
+    expect(() => drawGazeOverlay(ctx, W, H, idle, { face: { landmarks, lines: { eyes: [{ start: 0, end: 7 }, { start: 0, end: 1 }], brows: [] } } }))
+      .not.toThrow();
+    expect(calls.filter((c) => c.k === 'lineTo')).toHaveLength(1);
+  });
+
+  it('the shadow is switched off when the drawing ends — the next thing drawn on this context is not blurred', () => {
+    const { ctx, real } = recorded();
+    drawGazeOverlay(ctx, W, H, upArmed('up'));
+    expect(real.shadowBlur).toBe(0);
+  });
+});
+
 // MUTATIONS CHECKED (2026-09-16), each red before this file counted — `scratchpad/mutar-gaze-overlay.py`:
 //   · not clearing before drawing          → «starts from a clear canvas»
 //   · the regions hatched again            → «never hatched»
