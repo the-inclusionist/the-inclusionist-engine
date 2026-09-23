@@ -187,6 +187,54 @@ describe('the cycle goes round again', () => {
   });
 });
 
+describe('what the probe of 2026-09-23 found unheld', () => {
+  // 🔴 Eleven of thirty-four decisions could be undone with the suite green. Each case below is one rule a child meets.
+  it('eyes that STAY closed press START once — not again every frame after the first', () => {
+    expect(run([[0, null, true], [3000, null, true], [3100, null, true], [4000, null, true], [7000, null, true]]).commanded).toEqual(['start']);
+  });
+
+  it('opening and closing again presses START again — a child who needs it twice is not locked out', () => {
+    expect(run([[0, null, true], [3000, null, true], [3100, null], [3200, null, true], [6200, null, true]]).commanded).toEqual(['start', 'start']);
+  });
+
+  it('the boundaries are inclusive: the opposite window, the pulse and the dead time each at exactly their length', () => {
+    // prepared at 600, the target reached exactly 2000 ms later
+    expect(run([[0, 'down'], [300, 'down'], [600, null], [2600, 'up'], [3500, 'up'], [3600, null]], OPPOSITE).commanded).toEqual(['up']);
+    // commanded at 1000, the 400 ms pulse is over at 1400 and not before
+    const pulse = run([[0, 'right'], [900, 'right'], [1000, null], [1399, null], [1400, null]]).outs;
+    expect([pulse[3].pressed, pulse[4].pressed]).toEqual(['right', null]);
+    // commanded at 1500, a visit that begins exactly 700 ms later may prepare again
+    const dead = run([[0, 'down'], [300, 'down'], [400, null], [500, 'up'], [1400, 'up'], [1500, null], [2200, 'down']], DEAD).outs;
+    expect(dead.at(-1).preparing).toBe(true);
+  });
+
+  it('inside the dead time the overlay does not say «preparing» — it would promise a gesture the cycle will not take', () => {
+    const r = run([[0, 'down'], [300, 'down'], [400, null], [500, 'up'], [1400, 'up'], [1500, null], [1600, 'down']], DEAD);
+    expect(r.commanded).toEqual(['up']);
+    expect(r.outs.at(-1).preparing).toBe(false);
+  });
+
+  it('a zone entered straight from a command shows no preview of its own until it arms', () => {
+    const r = run([[0, 'down'], [300, 'down'], [400, null], [500, 'up'], [1400, 'up'], [2400, 'up'], [2500, 'left'], [2600, 'left']], OPPOSITE);
+    expect(r.commanded).toEqual(['action4']);
+    expect(r.outs.at(-1).armed).toBe(false);
+    expect(r.outs.at(-1).preview, 'the left zone showed the item index of the zone before it').toBeNull();
+  });
+
+  it('cancel disarms at once, and the dead time runs from it — a re-centred reader is not a new gesture', () => {
+    const cycle = createGazeCycle({ ...LAB, ...DEAD });
+    cycle(0, { zone: 'down' }); cycle(300, { zone: 'down' }); cycle(400, { zone: null }); cycle(500, { zone: 'up' });
+    expect(cycle(1400, { zone: 'up' }).armed).toBe(true);
+    expect(cycle(1500, { zone: 'up', cancel: true }).armed, 'the frame that cancelled still said armed').toBe(false);
+    cycle(1600, { zone: 'down' }); cycle(1800, { zone: null });
+    expect(cycle(1900, { zone: 'up' }).armed, 'a visit inside the dead time after a cancel prepared the next').toBe(false);
+  });
+
+  it('before any zone at all, nothing is «preparing»', () => {
+    expect(createGazeCycle({ ...LAB, ...DEAD })(0, { zone: null }).preparing).toBe(false);
+  });
+});
+
 describe('the engine defaults (ADR-0213)', () => {
   it('are the lab\'s: settle 0.8 s, step 1 s, START 2 s, cancel first, repeat, from the opposite within 2 s, 0.7 s dead', () => {
     expect(GAZE_CYCLE_DEFAULTS).toEqual({
