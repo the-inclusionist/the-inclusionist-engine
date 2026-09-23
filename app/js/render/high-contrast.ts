@@ -121,38 +121,52 @@ export function worldToTextureDirect(srcCanvas: HTMLCanvasElement, mode: string)
   dimDesat(c, cv.width, cv.height, cfg.mul, 1.22, cfg.off); // base: estrutura vira cinza-azulado (mais clara = mais contraste)
   for (let y = 0; y < hc.H; y++) for (let x = 0; x < hc.W; x++) {
     const t = hc.tileAt(x, y), role = hc.roleOf(t); if (!role) continue; // repinta tiles não-estruturais pela cor do papel
-    const X = x * TILE, Y = y * TILE;
     // ⚠️ O QUE SOBRA DE PLATAFORMA AQUI. A escada é desenhada com trilhos e degraus porque uma faixa sólida
     // não LÊ como escada — decisão de acessibilidade, que serviria a qualquer jogo com algo escalável. Mas a
     // forma da pergunta injetada ("este tile se desenha como escada?" · "que pintor este papel usa?") ainda
     // não tem evidência que a escolha, e foi um consumidor que mostrou, no menu-nav, que a forma importa mais
     // que a existência da injeção. Declarado em vez de adivinhado. Ver game/tile-roles.
-    if (t === 4) { // ESCADA: preto + trilhos e degraus ciano → lê como escada (não faixa verde sólida)
-      c.fillStyle = '#0a0e14'; c.fillRect(X, Y, TILE, TILE);
-      c.fillStyle = 'rgb(' + HC_ROLE.climb.join(',') + ')'; c.fillRect(X + 1, Y, 2, TILE); c.fillRect(X + TILE - 3, Y, 2, TILE); // trilhos laterais (cor do papel, customizável)
-      for (let ry = 2; ry < TILE - 1; ry += 5) c.fillRect(X + 1, Y + ry, TILE - 2, 2); // degraus
-      continue;
-    }
-    const rc = HC_ROLE[role], img = c.getImageData(X, Y, TILE, TILE), d = img.data, lo = role === 'hazard' ? 0.58 : 0.44;
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] < 8) continue;
-      const g = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, f = lo + (1 - lo) * g;
-      d[i] = Math.min(255, rc[0] * f) | 0; d[i + 1] = Math.min(255, rc[1] * f) | 0; d[i + 2] = Math.min(255, rc[2] * f) | 0;
-    }
-    c.putImageData(img, X, Y);
+    if (t === 4) drawLadder(c, x * TILE, y * TILE);
+    else repaintByRole(c, x * TILE, y * TILE, role);
   }
-  const th = hc.outlineBg(); // contorno de 2º plano: SÓ o perímetro externo (bordas voltadas ao ar) — não em cada bloco
-  if (th > 0) {
-    const air = (x: number, y: number): boolean => { const t = hc.tileAt(x, y); return t === 0 || t === 1; };
-    c.fillStyle = 'rgba(200,222,255,0.97)';
-    for (let y = 0; y < hc.H; y++) for (let x = 0; x < hc.W; x++) {
-      const t = hc.tileAt(x, y); if (t === 0 || t === 1) continue;
-      const X = x * TILE, Y = y * TILE;
-      if (air(x, y - 1)) c.fillRect(X, Y, TILE, th); if (air(x, y + 1)) c.fillRect(X, Y + TILE - th, TILE, th);
-      if (air(x - 1, y)) c.fillRect(X, Y, th, TILE); if (air(x + 1, y)) c.fillRect(X + TILE - th, Y, th, TILE);
-    }
-  }
+  outlineSecondPlane(c, hc, hc.outlineBg());
   return tex(cv);
+}
+
+/** ESCADA: preto + trilhos e degraus na cor do papel → lê como escada, e não como faixa sólida. */
+function drawLadder(c: CanvasRenderingContext2D, X: number, Y: number): void {
+  c.fillStyle = '#0a0e14'; c.fillRect(X, Y, TILE, TILE);
+  c.fillStyle = 'rgb(' + HC_ROLE.climb.join(',') + ')'; c.fillRect(X + 1, Y, 2, TILE); c.fillRect(X + TILE - 3, Y, 2, TILE); // trilhos laterais (cor do papel, customizável)
+  for (let ry = 2; ry < TILE - 1; ry += 5) c.fillRect(X + 1, Y + ry, TILE - 2, 2); // degraus
+}
+
+/** A tile repainted in its role's colour, by the brightness of each pixel (BT.601 luma); a hazard starts from brighter. */
+function repaintByRole(c: CanvasRenderingContext2D, X: number, Y: number, role: PaintableRole): void {
+  const rc = HC_ROLE[role], img = c.getImageData(X, Y, TILE, TILE), d = img.data, lo = role === 'hazard' ? 0.58 : 0.44;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 8) continue;
+    const g = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, f = lo + (1 - lo) * g;
+    d[i] = Math.min(255, rc[0] * f) | 0; d[i + 1] = Math.min(255, rc[1] * f) | 0; d[i + 2] = Math.min(255, rc[2] * f) | 0;
+  }
+  c.putImageData(img, X, Y);
+}
+
+/** Tiles 0 and 1 are this map's air (see the note in the loop above: a platformer's numbering, declared, not generalised). */
+const isAir = (t: number): boolean => t === 0 || t === 1;
+
+/** Contorno de 2º plano: SÓ o perímetro externo — as bordas de um bloco voltadas ao ar —, não cada bloco. */
+function outlineSecondPlane(c: CanvasRenderingContext2D, hc: HighContrastCtx, th: number): void {
+  if (th <= 0) return;
+  const air = (x: number, y: number): boolean => isAir(hc.tileAt(x, y));
+  c.fillStyle = 'rgba(200,222,255,0.97)';
+  for (let y = 0; y < hc.H; y++) for (let x = 0; x < hc.W; x++) {
+    if (air(x, y)) continue;
+    const X = x * TILE, Y = y * TILE;
+    if (air(x, y - 1)) c.fillRect(X, Y, TILE, th);
+    if (air(x, y + 1)) c.fillRect(X, Y + TILE - th, TILE, th);
+    if (air(x - 1, y)) c.fillRect(X, Y, th, TILE);
+    if (air(x + 1, y)) c.fillRect(X + TILE - th, Y, th, TILE);
+  }
 }
 
 /** Superfície mínima de PIXI.Texture que directBgTexture/directSpriteTexture tocam (resource.source pode ser

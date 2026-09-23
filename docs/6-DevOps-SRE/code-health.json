@@ -1057,12 +1057,12 @@
       "fanIn": 4
     },
     "render/high-contrast.ts": {
-      "codeLines": 171,
+      "codeLines": 177,
       "decisionNodes": 37,
-      "maxDepth": 4,
+      "maxDepth": 3,
       "fanOut": 5,
       "globalReach": 0,
-      "worstFunction": 18,
+      "worstFunction": 10,
       "fanIn": 2
     },
     "render/low-vision-drawing.ts": {
