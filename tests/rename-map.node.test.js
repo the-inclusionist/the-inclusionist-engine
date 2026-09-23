@@ -89,6 +89,11 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
      */
     const movidos = fileLayers().filter(([, l]) => l.done).flatMap(([, l]) => Object.keys(l.files));
     expect(movidos.length, 'nada movido — este caso não mede nada').toBeGreaterThan(0);
+    // As duas formas de cada caminho movido (`.ts` no disco, `.js` num import), numa alternação só. O `Set` guarda a
+    // contagem igual à da versão anterior: uma entrada por FORMA distinta encontrada no ficheiro, não por ocorrência.
+    const escapar = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const FORMAS_MOVIDAS = new RegExp(
+      [...new Set(movidos.flatMap((v) => [v, v.replace(/\.ts$/, '.js')]))].map(escapar).join('|'), 'g');
     const rastreados = execFileSync('git', ['ls-files'], { cwd: RAIZ, encoding: 'utf8' }).trim().split(/\r?\n/);
     const sobras = [];
     for (const f of rastreados) {
@@ -104,9 +109,11 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
        */
       if (f === 'tests/ponteiros-de-registo.node.test.js') continue;
       const texto = readFileSync(join(RAIZ, f), 'utf8');
-      for (const velho of movidos) {
-        for (const forma of [velho, velho.replace(/\.ts$/, '.js')]) if (texto.includes(forma)) sobras.push(`${f} → ${forma}`);
-      }
+      // ⚠️ UMA PASSAGEM POR FICHEIRO, e não uma por caminho movido. A primeira versão fazia `includes` para cada uma das
+      // ~320 formas dentro do laço dos ~1050 ficheiros rastreados — ~335 mil varreduras do texto inteiro —, e sob a carga
+      // da suíte o caso estourava o tecto de 5 s em cerca de uma corrida em cinco. Um vermelho que vem da máquina e não
+      // do código invalida o que estiver a ser medido ao lado dele; o conserto é o trabalho encolher, nunca o relógio crescer.
+      for (const forma of new Set([...texto.matchAll(FORMAS_MOVIDAS)].map((m) => m[0]))) sobras.push(`${f} → ${forma}`);
     }
     expect(sobras, 'alguém ainda escreve um caminho que foi movido').toEqual([]);
   });

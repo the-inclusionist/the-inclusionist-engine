@@ -13,13 +13,24 @@
 // the file the catalogue fetches must still be the same bytes.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   READING_MODELS, READING_RATE, WHISPER_BANDS, WHISPER_FRAMES, WHISPER_SAMPLES,
   logMel, nextToken, readingModelFor, readingTextOf, suppressedTokens,
 } from '../app/js/platform/reading-model.js';
 import { HEAVY_FILES } from '../app/js/platform/heavy-catalogue.js';
+
+/*
+ * ⚠️ O TECTO DE TEMPO DESTE FICHEIRO É ESCOLHIDO, e a distinção importa porque levantar um tecto costuma ser o conserto
+ * que adia o erro. 📏 Medido em 2026-09-23: este ficheiro leva 3,73 s de teste numa máquina OCIOSA — o log-mel de 30 s de
+ * áudio conferido ponto a ponto contra o `WhisperFeatureExtractor` é o trabalho, não desperdício —, contra o padrão de
+ * 5 s do Vitest, que ninguém escolheu para ele. Sob a carga da suíte inteira a CPU é partilhada e ele cruzava esse
+ * padrão em cerca de uma corrida em cinco, reprovando por motivo nenhum e levando junto qualquer medição ao lado.
+ * 📌 A janela de silêncio já é RESPONDIDA em vez de calculada (sem isso seriam 250 mil milhões de multiplicações); o que
+ * resta é o custo real da medida.
+ */
+vi.setConfig({ testTimeout: 20_000 });
 
 const truth = JSON.parse(readFileSync('tests/fixtures/reading-ground-truth.json', 'utf8'));
 
