@@ -66,6 +66,16 @@ on:
         required: false
         type: number
         default: 4173
+      adr-records:
+        description: "Validate this game's own ADR tree (ADR-0229). Requires the `records-token` secret."
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      # Read access to `the-inclusionist-docs`, which is private: the game's records cite the ones that stayed
+      # home, and without that tree every such citation fails on purpose (ADR-0229).
+      records-token:
+        required: false
 
 permissions:
   contents: read
@@ -122,3 +132,28 @@ jobs:
           npm run preview -- --port ${{ inputs.preview-port }} &
           for i in $(seq 1 30); do curl -sf http://localhost:${{ inputs.preview-port }}/ >/dev/null && break; sleep 1; done
           AXE_URL=http://localhost:${{ inputs.preview-port }}/ npm run test:a11y
+
+      # 🔴 A GAME'S OWN RECORDS (ADR-0229). Only a game's own decisions move to its tree, and they cite the records
+      # that stayed in `the-inclusionist-docs` — so the check needs that tree beside it, and runs the validator
+      # FROM it: the gate lives once, in the records' home, and this step borrows it instead of copying it.
+      # ⚠️ Off by default and not `if: hashFiles(...)`: the checkout needs a token, and a step that switched itself
+      # on when the folder appeared would go red in every game that has records and no secret yet.
+      - name: checkout the records' home (ADR-0229)
+        if: ${{ inputs.adr-records }}
+        uses: actions/checkout@v7
+        with:
+          repository: the-inclusionist/the-inclusionist-docs
+          token: ${{ secrets.records-token }}
+          path: .records-home
+
+      # The same setup the records' own CI uses: the runner's system Python refuses a global `pip install`.
+      - if: ${{ inputs.adr-records }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - name: adr records (this game's tree, citations resolved against the home tree)
+        if: ${{ inputs.adr-records }}
+        run: |
+          pip install pyyaml
+          python .records-home/scripts/validate-adr.py docs/2-Architecture/adr --repo docs=.records-home --root=.
