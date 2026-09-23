@@ -56,7 +56,10 @@ describe('the caption rate', () => {
     // the Dev: «a explicação no lugar errado» and «Menu não é manual de instruções» — the explanation lives in the footer
     // (CLAUDE.md §4), never inside the row; and the value is short
     const linha = passos.closest('.ctrl-row');
-    expect(linha.querySelector('.opt-hint')?.textContent ?? '', 'the explanation is inside the row').toBe('');
+    // HIDDEN and not emptied — `fillExplain` keeps the node so the producer can write the new language into it (ADR-0225);
+    // `hidden` is what keeps it out of the accessibility tree, which is the rule.
+    const dica = linha.querySelector('.opt-hint');
+    expect(dica === null || dica.hidden, 'the explanation is visible inside the row').toBe(true);
     expect(linha.dataset.explain ?? '', 'the explanation did not go to the footer').not.toBe('');
     expect(passos.querySelector('.passo-valor').textContent).toBe('Ritmo das legendas: 125 PPM');
     fecharTudo();

@@ -365,8 +365,10 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
     try {
       const passos = abrirMotora();
       const linha = passos.closest('.ctrl-row');
-      // `fillExplain` moves the prose to the footer and leaves the node empty in the row
-      expect(linha.querySelector('.opt-hint')?.textContent.trim() ?? '', 'the hint stayed inside the row instead of the footer').toBe('');
+      // `fillExplain` moves the prose to the footer and HIDES the node in the row — keeping it is what gives the producer
+      // somewhere to write the new language (ADR-0225), and `hidden` is what keeps it out of the accessibility tree.
+      const dica = linha.querySelector('.opt-hint');
+      expect(dica === null || dica.hidden, 'the hint is visible inside the row instead of in the footer').toBe(true);
       expect(getComputedStyle(passos).borderTopWidth, 'a box drawn inside the row').toBe('0px');
       const valor = passos.querySelector('.passo-valor');
       const alturaDeUmaLinha = parseFloat(getComputedStyle(valor).lineHeight) || parseFloat(getComputedStyle(valor).fontSize) * 1.5;

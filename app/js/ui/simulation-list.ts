@@ -15,10 +15,10 @@
 // set of options on every opening, and name each option by its KEY. They have cases now
 // (`tests/the-simulation-list-is-read-in-the-language-of-now.browser.test.js`).
 //
-// 🔴 ONE DEFECT IS KNOWN, MEASURED AND NOT FIXED HERE, because the fix is a decision about the panel kit and not about this
-// module: the row's EXPLANATION is written once and stays in the language it was built in. 📏 It is not this list's problem
-// alone — 14 of the 28 explanation-bearing rows of the engine's panels do the same, because `ui/settings-panel.fillExplain`
-// moves the hint out of the row and stamps it done. It is written into the plan under ADR-0225 rather than patched here.
+// 📌 THE EXPLANATION IS A WORD OF THIS ROW LIKE THE OTHERS, and it is written by `render` for the same reason. It used to be
+// written at build time and stayed in the language it was built in — not this list's fault alone, since 14 of the 28
+// explanation-bearing rows of the engine's panels did the same: `ui/settings-panel.fillExplain` DESTROYED the `.opt-hint` on
+// the way to the footer, so every producer's rewrite landed on a node that was no longer there. It now hides it instead.
 
 import { t } from '../core/i18n.js';
 import { VIZ_BY_KEY } from '../render/viz-modes.js';
@@ -56,8 +56,7 @@ export function createSimulationList(ctx: SimulationListCtx): SimulationList {
     envelope.appendChild(ctx.make('strong'));
     const hint = ctx.make('span');
     hint.className = 'opt-hint'; // CLAUDE.md §4: the prose belongs to the footer, and this is how it gets there
-    hint.textContent = t('empathy.simulacao.dica');
-    envelope.appendChild(hint);
+    envelope.appendChild(hint); // the TEXT is written by `render`, like every other word of this row
     row.appendChild(envelope);
     const choice = ctx.make('select');
     choice.id = 'opt-simulacao';
@@ -76,8 +75,13 @@ export function createSimulationList(ctx: SimulationListCtx): SimulationList {
       if (!list) return;
       const choice = list.querySelector<HTMLSelectElement>('#opt-simulacao') ?? build(list);
       const label = t('empathy.grupo.rotulo');
-      const strong = choice.closest('.ctrl-row')?.querySelector('strong');
+      const row = choice.closest('.ctrl-row');
+      const strong = row?.querySelector('strong');
       if (strong) strong.textContent = label;
+      // the explanation is a word of this row like the others, so it is rewritten here and not left at build time —
+      // `ui/settings-panel.fillExplain` hides this node rather than destroying it, so the write reaches the footer
+      const hint = row?.querySelector<HTMLElement>('.opt-hint');
+      if (hint) hint.textContent = t('empathy.simulacao.dica');
       // a `<select>` whose label is a sibling is announced as «combo box» and nothing else without this
       choice.setAttribute('aria-label', label);
       choice.textContent = ''; // rewritten, never appended: twice open would be twice the options

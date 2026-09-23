@@ -80,7 +80,13 @@ describe('owner colours and contrast outlines', () => {
     abrirVisual();
     expect(oferecida('opt-contorno-fg') && oferecida('opt-contorno-bg'), 'no outline rows').toBe(true);
     // the explanation lives in the footer, never inside the row (CLAUDE.md §4)
-    for (const id of ['opt-contorno-fg', 'opt-contorno-bg']) expect(linha(id).querySelector('.opt-hint')?.textContent ?? '', id + ': the explanation is inside the row').toBe('');
+    // 📌 HIDDEN, not emptied: since 2026-09-23 `fillExplain` keeps the node so the producer has somewhere to write the new
+    // language into (ADR-0225), and `hidden` is what takes it out of the accessibility tree — which is the rule this line
+    // has always been about. Emptying it was the old mechanism, and it froze every explanation in the boot language.
+    for (const id of ['opt-contorno-fg', 'opt-contorno-bg']) {
+      const dica = linha(id).querySelector('.opt-hint');
+      expect(dica === null || dica.hidden, id + ': the explanation is visible inside the row').toBe(true);
+    }
     const fg = document.querySelector('#visual #opt-contorno-fg');
     state.setOutlineFgValue(0);
     fecharTudo();

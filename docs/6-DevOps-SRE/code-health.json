@@ -1780,8 +1780,8 @@
       "fanIn": 2
     },
     "ui/settings-panel.ts": {
-      "codeLines": 133,
-      "decisionNodes": 23,
+      "codeLines": 141,
+      "decisionNodes": 25,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
@@ -1816,12 +1816,12 @@
       "fanIn": 0
     },
     "ui/simulation-list.ts": {
-      "codeLines": 54,
-      "decisionNodes": 4,
+      "codeLines": 56,
+      "decisionNodes": 5,
       "maxDepth": 2,
       "fanOut": 2,
       "globalReach": 0,
-      "worstFunction": 7,
+      "worstFunction": 8,
       "fanIn": 1
     },
     "ui/simulation-over-the-world.ts": {

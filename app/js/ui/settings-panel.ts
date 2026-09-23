@@ -128,8 +128,10 @@ export function rowExplainText(spanText: string, strongText: string, hintText: s
  * NOTA (bug do original, preservado): não há escuta de `focusout` — navegando por teclado o rodapé nunca volta ao
  * texto de repouso. Relatado, não corrigido.
  */
-function wireFooter(row: HTMLElement, footer: HTMLElement, desc: string): void {
-  const show = (): void => { footer.textContent = desc; };
+function wireFooter(row: HTMLElement, footer: HTMLElement): void {
+  // 🔴 LIDO NO INSTANTE DE MOSTRAR, e nunca capturado: um fecho guarda a frase do dia em que a linha nasceu, e uma linha
+  // que é construída UMA VEZ E GUARDADA nunca mais a trocava — a explicação ficava na língua do arranque para sempre.
+  const show = (): void => { footer.textContent = row.dataset.explain || (footer.dataset.idle ?? ''); };
   const clear = (): void => { footer.textContent = footer.dataset.idle ?? ''; };
   row.addEventListener('mouseenter', show);
   row.addEventListener('focusin', show);
@@ -148,7 +150,23 @@ function wireStepsRow(row: HTMLElement, span: HTMLElement, hint: HTMLElement, fo
   if (!desc) return;
   row.dataset.explain = desc;
   span.textContent = '';
-  wireFooter(row, footer, desc);
+  span.appendChild(hint); // escondida e não apagada, pelo mesmo motivo da linha comum, abaixo
+  hint.hidden = true;
+  wireFooter(row, footer);
+}
+
+/**
+ * Uma linha JÁ LIGADA, relida: só o TEXTO muda, e nunca a fiação.
+ *
+ * 📌 É a metade que faz a explicação seguir o idioma (ADR-0225). O produtor reescreve o `.opt-hint`, esta função leva o
+ * texto novo para `data-explain`, e o rodapé lê-o no instante de mostrar. Uma dica que fica VAZIA apaga a explicação em
+ * vez de deixar a anterior — que é exactamente a razão que o `labelRow` já escreveu para apagar em vez de não escrever:
+ * numa retradução para um dicionário sem a chave, o texto antigo sobreviveria.
+ */
+function refreshExplain(row: HTMLElement): void {
+  const hint = row.querySelector<HTMLElement>(':scope > span .opt-hint');
+  if (!hint) return; // linha que nunca teve dica, ou que a perdeu: fica com o que tem
+  row.dataset.explain = (hint.textContent ?? '').trim();
 }
 
 /** A linha comum: rótulo curto em `<strong>`, prosa ao lado — e a prosa desce ao rodapé. */
@@ -158,8 +176,20 @@ function wireLabelledRow(row: HTMLElement, span: HTMLElement, strong: HTMLElemen
   row.dataset.explainDone = '1';
   if (!desc) return; // rótulo sem descrição: a linha fica como está
   row.dataset.explain = desc;
-  span.innerHTML = strong.outerHTML; // ORDEM DE LEITURA: a linha passa a ter só o rótulo curto…
-  wireFooter(row, footer, desc); // …e a descrição vai ao rodapé ao focar/passar o mouse
+  span.innerHTML = strong.outerHTML; // ORDEM DE LEITURA: à vista fica só o rótulo curto…
+  /*
+   * ⚠️ …e a dica VOLTA, ESCONDIDA, em vez de ser destruída.
+   *
+   * 🔴 Apagá-la era o que congelava a explicação na língua em que a linha nasceu. O produtor já escrevia a língua nova:
+   * o `labelRow` do kit reescreve `.opt-hint` a cada relabel, com um comentário próprio a dizer porquê. Só que o nó que
+   * ele procura já não existia, logo a escrita não fazia nada. 📏 Medido em 2026-09-23: 17 das 19 linhas com explicação
+   * dos painéis da engine respondiam em português depois de `setLocale('en')`, com o rótulo já em inglês ao lado.
+   *
+   * 📌 `hidden` tira-a da árvore de acessibilidade inteira, logo a ordem de leitura do `CLAUDE.md` §4 fica intacta: o
+   * leitor de tela continua a ler «rótulo curto, controle», e a prosa continua a pertencer só ao rodapé.
+   */
+  if (hint) { hint.hidden = true; span.appendChild(hint); }
+  wireFooter(row, footer); // a descrição vai ao rodapé ao focar/passar o mouse
 }
 
 /**
@@ -208,7 +238,9 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
     if (!card) return;
     const footer = explainFooter(card);
     card.querySelectorAll<HTMLElement>('.ctrl-row').forEach((row) => {
-      if (row.dataset.explainDone) return; // idempotente: render() redesenha o card, mas linha feita não repete
+      // Idempotente na FIAÇÃO e só nela: a linha feita não volta a ser ligada, mas o TEXTO dela é relido, senão uma linha
+      // que é construída uma vez e guardada nunca mais troca de idioma (ADR-0225).
+      if (row.dataset.explainDone) { refreshExplain(row); return; }
       const span = row.querySelector<HTMLElement>(':scope > span');
       const strong = span ? span.querySelector<HTMLElement>('strong') : null;
       const dicaDosPassos = !strong && span ? span.querySelector<HTMLElement>('.opt-hint') : null;

@@ -348,7 +348,14 @@ describe('⚠️ ui/settings-empathy — a lista é reconstruída pelo renderViz
     return { api: initSettingsEmpathy(ctx), ctx, painel };
   }
 
-  const dicasNaLista = () => document.querySelectorAll('#empathy-list .opt-hint').length;
+  /**
+   * As dicas VISÍVEIS dentro da lista.
+   *
+   * 📌 Contava TODAS até 2026-09-23, quando o `fillExplain` deixou de APAGAR a dica e passou a ESCONDÊ-LA: guardar o nó é o
+   * que dá ao produtor onde escrever a língua nova (ADR-0225), e `hidden` é o que a tira da árvore de acessibilidade. A
+   * regra que estes casos sempre mediram é «a prosa não volta para JUNTO do rótulo», e é essa que fica aqui.
+   */
+  const dicasNaLista = () => [...document.querySelectorAll('#empathy-list .opt-hint')].filter((d) => !d.hidden).length;
 
   it('⚠️ [Cross-check] o construtor da lista EMITE `.opt-hint` — sem isto, tudo abaixo seria vazio', () => {
     // Um caso que conta zero `.opt-hint` fica verde de graça se o construtor nunca emitir nenhum. Este ancora
