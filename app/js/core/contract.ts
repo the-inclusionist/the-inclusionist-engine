@@ -422,6 +422,206 @@ export interface GameDeclaration {
 /* ===================== CONFORMIDADE ===================== */
 
 /**
+ * Os problemas de UM campo declarado. VAZIA quer dizer que aquele campo está bem-formado.
+ *
+ * 🎯 UMA VERIFICAÇÃO POR CAMPO, E UMA TABELA A CHAMÁ-LAS, e isto não é arrumação: enquanto as dez verificações
+ * viviam numa função só, ela tinha 53 caminhos de decisão contra o tecto 10 de McCabe (ADR-0221) — e a régua não
+ * estava a exagerar, porque ninguém conseguia ler «o que o contrato exige do campo X» sem percorrer os outros nove.
+ * Acrescentar um campo ao contrato passa a ser acrescentar uma LINHA à tabela, que é a forma que esta casa já usa
+ * para o glifo de uma tecla, a aresta de uma ação, a regra de um ícone e a situação de um quadro.
+ */
+type FieldCheck = (d: Partial<GameDeclaration>) => string[];
+
+function topologyProblems(d: Partial<GameDeclaration>): string[] {
+  const p: string[] = [];
+  // ⚠️ DUAS FALHAS DIFERENTES, E ELAS PRECISAM DE DUAS MENSAGENS. `topology` ausente é um campo que ninguém
+  // escreveu; `topology` que não é função é o campo escrito à moda antiga — um VALOR, que passava no
+  // TypeScript de quem não recompilou e morreria em produção com "topology is not a function". Dizer só
+  // "ausente" mandaria o autor procurar um campo que está lá, à vista.
+  const t = typeof d.topology === 'function' ? d.topology() : undefined;
+  if (d.topology === undefined || d.topology === null) p.push('topology: missing');
+  else if (typeof d.topology !== 'function') p.push('topology: must be a FUNCTION (it was a value until ADR-0084)');
+  else if (!t) p.push('topology: the function returned nothing');
+  else if (t.kind === 'grid' || t.kind === 'continuous') p.push(...sizeProblems(t), ...metricProblems(t), ...frameProblems(t));
+  else if (t.kind === 'hotspots') p.push(...hotspotProblems(t));
+  else p.push('topology: unknown kind');
+  return p;
+}
+
+/**
+ * 🎯 TRÊS PERGUNTAS DIFERENTES A UM ESPAÇO MEDIDO, e separá-las foi a catraca a apontar o corte certo em vez de
+ * lhe ser pedida uma excepção: com as três juntas, a `topologyProblems` ficava em 22 contra o tecto 10 de McCabe.
+ * São mesmo três — QUÃO GRANDE é o espaço, EM QUE UNIDADES a distância se conta, e EM QUE PALAVRAS a direção se
+ * diz — e cada uma tem uma criança do outro lado.
+ */
+type MeasuredSpace = Extract<Topology, { kind: 'grid' | 'continuous' }>;
+
+// ⚠️ A DIMENSÃO É `size.length`, e é por isso que ela é conferida ANTES de tudo: um `size` vazio ou de
+// quatro entradas não é uma medida ruim, é um espaço que `Spot` não sabe representar — e o erro apareceria
+// longe daqui, como um eixo simplesmente ignorado.
+function sizeProblems(t: MeasuredSpace): string[] {
+  if (!Array.isArray(t.size) || t.size.length < 2 || t.size.length > 3) {
+    return ['topology.size: must be [w, h] or [w, h, d] - dimension is 2 or 3, and it is size.length'];
+  }
+  return !t.size.every((n) => n > 0) ? ['topology.size: every extent must be positive'] : [];
+}
+
+function metricProblems(t: MeasuredSpace): string[] {
+  const p: string[] = [];
+  // `move` é o que decide a métrica. Ausente, a distância seria adivinhada — e adivinhar Chebyshev num
+  // quebra-cabeça deslizante sub-relata até 2×, que foi o achado §3 do ADR-0080.
+  if (t.move !== 'orthogonal' && t.move !== 'diagonal' && t.move !== 'free') {
+    p.push('topology.move: must be "orthogonal" (L1), "diagonal" (L8/Chebyshev) or "free" (L2) - it is the metric the sonar counts in');
+  }
+  // `unit` é o que dá MÉTRICA a um espaço contínuo: sem ela, "a dois passos" não tem como ser dito.
+  if (t.kind === 'continuous' && !(t.unit > 0)) {
+    p.push('topology.continuous: unit must be positive (it is the metric the narration counts in)');
+  }
+  return p;
+}
+
+// `frame` é em que PALAVRAS a direção é dita. Sem ele a engine escolheria pela criança, e num jogo de
+// plataforma escolheria mal: norte e sul não querem dizer nada numa vista lateral.
+function frameProblems(t: MeasuredSpace): string[] {
+  return t.frame !== 'compass' && t.frame !== 'clock'
+    ? ['topology.frame: must be "compass" (board, top-down, map, 3D) or "clock" (2D side view)']
+    : [];
+}
+
+function hotspotProblems(t: Extract<Topology, { kind: 'hotspots' }>): string[] {
+  if (!t.order?.length) return ['topology.hotspots: order is empty - there is nowhere to navigate'];
+  return new Set(t.order).size !== t.order.length ? ['topology.hotspots: order has a repeated id'] : [];
+}
+
+function worldProblems(d: Partial<GameDeclaration>): string[] {
+  // ⚠️ TRÊS FALHAS DISTINTAS, e a terceira é a que este campo existe para tornar impossível: um jogo cujo
+  // mundo NÃO foi declarado. Antes deste campo, esquecer e escolher «não tenho espaço» produziam o mesmo
+  // silêncio — e o silêncio era resolvido pela engine a adivinhar que o mundo é a canvas.
+  if (d.world === undefined || d.world === null) {
+    return ['world: missing - declare the element that IS the game, or {kind:"none"} if it has no space'];
+  }
+  if (typeof d.world !== 'function') return ['world: must be a FUNCTION'];
+  const w = d.world();
+  if (!w) return ['world: the function returned nothing'];
+  if (w.kind === 'element') {
+    return !w.selector || !w.selector.trim() ? ['world: kind "element" needs a non-empty selector'] : [];
+  }
+  return w.kind !== 'none' ? ['world: unknown kind'] : [];
+}
+
+function holdsAtOnceProblems(d: Partial<GameDeclaration>): string[] {
+  // ⚠️ A MENSAGEM NOMEIA A SAÍDA, como as outras quatro fazem. Um jogo que não declara isto não recebe um
+  // padrão — recebe uma frase que diz o que perguntar a si próprio, porque a resposta é do jogo e de mais
+  // ninguém. (ADR-0104 §A.)
+  if (typeof d.holdsAtOnce !== 'function') {
+    // ⚠️ A MENSAGEM NÃO NOMEIA GÊNERO, e o gate de fronteira cobrou-o: a primeira escrita dizia «run+walk+jump
+    // is 3, a quiz is 1» e o `engine-boundary` reprovou a palavra «quiz» em linha de CÓDIGO da engine. Ele
+    // tinha razão, e a frase ficou melhor: descreve a FORMA da pergunta, que serve aos 300 jogos, em vez de
+    // dois exemplos que servem a dois.
+    return ['holdsAtOnce: missing - declare how many positions are held AT ONCE (three if three fingers must press together, one if commands arrive one at a time)'];
+  }
+  const n = d.holdsAtOnce();
+  // Zero não é «não usa controle»: um jogo que não segura posição nenhuma não é jogável, e devolver zero
+  // faria a aritmética do alcance passar por vacuidade — o mesmo defeito que o `reachable` recusa.
+  return !Number.isInteger(n) || n < 1
+    ? ['holdsAtOnce: must be an integer >= 1 - a game that holds nothing cannot be played']
+    : [];
+}
+
+function latchingProblems(d: Partial<GameDeclaration>): string[] {
+  // ⚠️ E ESTA É A OUTRA PERGUNTA, que o número acima parecia responder e não responde (ADR-0115). A mensagem
+  // diz o que a ausência CUSTA, e não só o que falta: sem ela, um jogo que nada segura oferece um controle de
+  // acessibilidade que não faz nada, e um que segura tudo pode não o oferecer a quem depende dele.
+  if (typeof d.seguraTeclas !== 'function') {
+    return ['seguraTeclas: missing - declare whether any key is HELD in this game (latching is offered only where something can be held, and a game that holds nothing must not show a control that does nothing)'];
+  }
+  // Um valor não-booleano seria truthy e ofereceria a alternância a toda a gente — o mesmo defeito
+  // silencioso que o `needsPointer` recusa logo abaixo, e pela mesma razão.
+  return typeof d.seguraTeclas() !== 'boolean'
+    ? ['seguraTeclas: must return a boolean - a non-boolean is truthy and would offer latching in a game where nothing is held']
+    : [];
+}
+
+function pointerProblems(d: Partial<GameDeclaration>): string[] {
+  // ⚠️ OPCIONAL, MAS NÃO IMPUNE. Ausente é a resposta `false` e não é problema — ver a nota no campo. O que
+  // se recusa é declará-lo MAL: um `needsPointer: true` (valor em vez de função) seria sempre verdadeiro por
+  // ser um objecto, e um que devolvesse `'sim'` também. Nos dois casos o jogo julgaria ter declarado, o
+  // alcance leria uma coisa diferente do que ele quis dizer, e ninguém saberia — que é o defeito silencioso
+  // que esta função inteira existe para não deixar acontecer.
+  if (d.needsPointer === undefined) return [];
+  if (typeof d.needsPointer !== 'function') {
+    // ⚠️ MENSAGENS SEM A PALAVRA `as`, e o motivo merece uma linha porque volta a morder: o detector de prosa
+    // pt-BR do `engine-i18n` casa palavras funcionais isoladas, e `as` é artigo plural em português. Uma
+    // mensagem INGLESA que diga «declare it as …» é contada como texto cru e faz o tecto do módulo subir.
+    // O cabeçalho daquele gate já admite a aproximação («senão 'mode' casa 'de'»); reescrever a frase custa
+    // nada e afrouxar o detector custaria a razão de ele existir.
+    return ['needsPointer: must be a function - write `needsPointer: () => true`, because a game may draw in one phase and not in another'];
+  }
+  return typeof d.needsPointer() !== 'boolean'
+    ? ['needsPointer: must return a boolean - a non-boolean would be truthy and refuse devices this game can actually use']
+    : [];
+}
+
+/**
+ * UM MAPEAMENTO DECLARADO PELO JOGO, seja ele do teclado ou do controle.
+ *
+ * 🔴 ERA A MESMA VERIFICAÇÃO ESCRITA DUAS VEZES, e as duas cópias não estavam igualmente guardadas: 📏 medido em
+ * 2026-09-23, as duas decisões do teclado tinham caso e as duas do pad eram CEGAS — a assimetria da cobertura é
+ * como uma duplicata se anuncia, porque uma cópia recebe atenção e a outra é presumida.
+ *
+ * ⚠️ Aqui um valor em vez de uma função não seria um erro barulhento, seria um mapeamento SILENCIOSAMENTE
+ * ignorado — a fábrica da engine ficava, e a criança jogava com um controle que o autor do jogo julga ter
+ * mudado. E devolver algo que não é objecto nem `null` atravessaria o `Object.assign` sem escrever nada, que é
+ * a mesma ausência com outra roupa.
+ */
+function mappingProblems(field: string, declared: unknown, example: string, because: string): string[] {
+  if (declared === undefined) return [];
+  if (typeof declared !== 'function') {
+    return [`${field}: must be a function - write \`${field}: ${example}\`, because ${because}`];
+  }
+  // ⚠️ Os nomes DESTA anotação são meus, logo nascem em inglês; os do CAMPO (`jogadores`, `assento`) são
+  // superfície publicada e saem na fase 7 do ADR-0219 — é por isso que a frase de exemplo acima os mantém.
+  const m = (declared as (players: number, seat: number) => unknown)(1, 0);
+  return m !== null && (typeof m !== 'object' || Array.isArray(m))
+    ? [`${field}: must return an object or null - anything else is merged into nothing, and this game keeps the engine factory while its author believes otherwise`]
+    : [];
+}
+
+const keyboardMappingProblems: FieldCheck = (d) => mappingProblems(
+  'mapeamentoDoTeclado', d.mapeamentoDoTeclado,
+  '(jogadores, assento) => ({ action1: ["KeyQ"] })',
+  'the keyboard of two players is not the keyboard of one',
+);
+
+const padMappingProblems: FieldCheck = (d) => mappingProblems(
+  'mapeamentoDoPad', d.mapeamentoDoPad,
+  '(jogadores, assento) => ({ action1: 3 })',
+  'two seats may want different arrangements',
+);
+
+const tickProblems: FieldCheck = (d) => (d.tick !== 'player' && d.tick !== 'clock' ? ['tick: must be "player" or "clock"'] : []);
+
+/** As cinco perguntas que a engine faz ao mundo. Ausente é UM problema, e a mensagem diz QUAL falta. */
+const READERS = ['roleAt', 'nameAt', 'focusOf', 'objectiveOf', 'targetsOf'] as const;
+const readerProblems: FieldCheck = (d) => READERS.filter((f) => typeof d[f] !== 'function').map((f) => `${f}: missing`);
+
+/**
+ * 📌 A ORDEM DESTA TABELA É A ORDEM DAS MENSAGENS, e ela importa a quem lê: um autor que escreve um preset recebe
+ * os problemas na ordem em que os campos aparecem no contrato, em vez de na ordem em que este ficheiro cresceu.
+ */
+const FIELD_CHECKS: readonly FieldCheck[] = [
+  topologyProblems,
+  worldProblems,
+  holdsAtOnceProblems,
+  latchingProblems,
+  pointerProblems,
+  keyboardMappingProblems,
+  padMappingProblems,
+  tickProblems,
+  readerProblems,
+];
+
+/**
  * Uma declaração é bem-formada? Devolve a lista de problemas — VAZIA quer dizer conforme.
  *
  * Existe porque um preset é uma promessa, e promessa sem verificação é comentário. O ADR-0030 diz que um
@@ -432,139 +632,8 @@ export interface GameDeclaration {
  * preset, não deste módulo.
  */
 export function conformanceProblems(d: Partial<GameDeclaration> | null | undefined): string[] {
-  const p: string[] = [];
   if (!d) return ['declaration missing'];
-
-  // ⚠️ DUAS FALHAS DIFERENTES, E ELAS PRECISAM DE DUAS MENSAGENS. `topology` ausente é um campo que ninguém
-  // escreveu; `topology` que não é função é o campo escrito à moda antiga — um VALOR, que passava no
-  // TypeScript de quem não recompilou e morreria em produção com "topology is not a function". Dizer só
-  // "ausente" mandaria o autor procurar um campo que está lá, à vista.
-  const t = typeof d.topology === 'function' ? d.topology() : undefined;
-  if (d.topology === undefined || d.topology === null) p.push('topology: missing');
-  else if (typeof d.topology !== 'function') p.push('topology: must be a FUNCTION (it was a value until ADR-0084)');
-  else if (!t) p.push('topology: the function returned nothing');
-  else if (t.kind === 'grid' || t.kind === 'continuous') {
-    // ⚠️ A DIMENSÃO É `size.length`, e é por isso que ela é conferida ANTES de tudo: um `size` vazio ou de
-    // quatro entradas não é uma medida ruim, é um espaço que `Spot` não sabe representar — e o erro apareceria
-    // longe daqui, como um eixo simplesmente ignorado.
-    if (!Array.isArray(t.size) || t.size.length < 2 || t.size.length > 3) {
-      p.push('topology.size: must be [w, h] or [w, h, d] - dimension is 2 or 3, and it is size.length');
-    } else if (!t.size.every((n) => n > 0)) {
-      p.push('topology.size: every extent must be positive');
-    }
-    // `move` é o que decide a métrica. Ausente, a distância seria adivinhada — e adivinhar Chebyshev num
-    // quebra-cabeça deslizante sub-relata até 2×, que foi o achado §3 do ADR-0080.
-    if (t.move !== 'orthogonal' && t.move !== 'diagonal' && t.move !== 'free') {
-      p.push('topology.move: must be "orthogonal" (L1), "diagonal" (L8/Chebyshev) or "free" (L2) - it is the metric the sonar counts in');
-    }
-    // `frame` é em que PALAVRAS a direção é dita. Sem ele a engine escolheria pela criança, e num jogo de
-    // plataforma escolheria mal: norte e sul não querem dizer nada numa vista lateral.
-    if (t.frame !== 'compass' && t.frame !== 'clock') {
-      p.push('topology.frame: must be "compass" (board, top-down, map, 3D) or "clock" (2D side view)');
-    }
-    // `unit` é o que dá MÉTRICA a um espaço contínuo: sem ela, "a dois passos" não tem como ser dito.
-    if (t.kind === 'continuous' && !(t.unit > 0)) {
-      p.push('topology.continuous: unit must be positive (it is the metric the narration counts in)');
-    }
-  } else if (t.kind === 'hotspots') {
-    if (!t.order?.length) p.push('topology.hotspots: order is empty - there is nowhere to navigate');
-    else if (new Set(t.order).size !== t.order.length) p.push('topology.hotspots: order has a repeated id');
-  } else p.push('topology: unknown kind');
-
-  // ⚠️ TRÊS FALHAS DISTINTAS, e a terceira é a que este campo existe para tornar impossível: um jogo cujo
-  // mundo NÃO foi declarado. Antes deste campo, esquecer e escolher «não tenho espaço» produziam o mesmo
-  // silêncio — e o silêncio era resolvido pela engine a adivinhar que o mundo é a canvas.
-  if (d.world === undefined || d.world === null) {
-    p.push('world: missing - declare the element that IS the game, or {kind:"none"} if it has no space');
-  } else if (typeof d.world !== 'function') {
-    p.push('world: must be a FUNCTION');
-  } else {
-    const w = d.world();
-    if (!w) p.push('world: the function returned nothing');
-    else if (w.kind === 'element') {
-      if (!w.selector || !w.selector.trim()) p.push('world: kind "element" needs a non-empty selector');
-    } else if (w.kind !== 'none') p.push('world: unknown kind');
-  }
-
-  // ⚠️ A MENSAGEM NOMEIA A SAÍDA, como as outras quatro fazem. Um jogo que não declara isto não recebe um
-  // padrão — recebe uma frase que diz o que perguntar a si próprio, porque a resposta é do jogo e de mais
-  // ninguém. (ADR-0104 §A.)
-  if (typeof d.holdsAtOnce !== 'function') {
-    // ⚠️ A MENSAGEM NÃO NOMEIA GÊNERO, e o gate de fronteira cobrou-o: a primeira escrita dizia «run+walk+jump
-    // is 3, a quiz is 1» e o `engine-boundary` reprovou a palavra «quiz» em linha de CÓDIGO da engine. Ele
-    // tinha razão, e a frase ficou melhor: descreve a FORMA da pergunta, que serve aos 300 jogos, em vez de
-    // dois exemplos que servem a dois.
-    p.push('holdsAtOnce: missing - declare how many positions are held AT ONCE (three if three fingers must press together, one if commands arrive one at a time)');
-  } else {
-    const n = d.holdsAtOnce();
-    if (!Number.isInteger(n) || n < 1) {
-      // Zero não é «não usa controle»: um jogo que não segura posição nenhuma não é jogável, e devolver zero
-      // faria a aritmética do alcance passar por vacuidade — o mesmo defeito que o `reachable` recusa.
-      p.push('holdsAtOnce: must be an integer >= 1 - a game that holds nothing cannot be played');
-    }
-  }
-
-  // ⚠️ E ESTA É A OUTRA PERGUNTA, que o número acima parecia responder e não responde (ADR-0115). A mensagem
-  // diz o que a ausência CUSTA, e não só o que falta: sem ela, um jogo que nada segura oferece um controle de
-  // acessibilidade que não faz nada, e um que segura tudo pode não o oferecer a quem depende dele.
-  if (typeof d.seguraTeclas !== 'function') {
-    p.push('seguraTeclas: missing - declare whether any key is HELD in this game (latching is offered only where something can be held, and a game that holds nothing must not show a control that does nothing)');
-  } else if (typeof d.seguraTeclas() !== 'boolean') {
-    // Um valor não-booleano seria truthy e ofereceria a alternância a toda a gente — o mesmo defeito
-    // silencioso que o `needsPointer` recusa logo abaixo, e pela mesma razão.
-    p.push('seguraTeclas: must return a boolean - a non-boolean is truthy and would offer latching in a game where nothing is held');
-  }
-
-  // ⚠️ OPCIONAL, MAS NÃO IMPUNE. Ausente é a resposta `false` e não é problema — ver a nota no campo. O que
-  // se recusa é declará-lo MAL: um `needsPointer: true` (valor em vez de função) seria sempre verdadeiro por
-  // ser um objecto, e um que devolvesse `'sim'` também. Nos dois casos o jogo julgaria ter declarado, o
-  // alcance leria uma coisa diferente do que ele quis dizer, e ninguém saberia — que é o defeito silencioso
-  // que esta função inteira existe para não deixar acontecer.
-  if (d.needsPointer !== undefined) {
-    if (typeof d.needsPointer !== 'function') {
-      // ⚠️ MENSAGENS SEM A PALAVRA `as`, e o motivo merece uma linha porque volta a morder: o detector de prosa
-      // pt-BR do `engine-i18n` casa palavras funcionais isoladas, e `as` é artigo plural em português. Uma
-      // mensagem INGLESA que diga «declare it as …» é contada como texto cru e faz o tecto do módulo subir.
-      // O cabeçalho daquele gate já admite a aproximação («senão 'mode' casa 'de'»); reescrever a frase custa
-      // nada e afrouxar o detector custaria a razão de ele existir.
-      p.push('needsPointer: must be a function - write `needsPointer: () => true`, because a game may draw in one phase and not in another');
-    } else if (typeof d.needsPointer() !== 'boolean') {
-      p.push('needsPointer: must return a boolean - a non-boolean would be truthy and refuse devices this game can actually use');
-    }
-  }
-
-  // ⚠️ E O MESMO PARA O MAPEAMENTO, com uma razão própria: aqui um valor em vez de uma função não seria um
-  // erro barulhento, seria um mapeamento SILENCIOSAMENTE ignorado — a fábrica da engine ficava, e a criança
-  // jogava com um teclado que o autor do jogo julga ter mudado. E devolver algo que não é objecto nem `null`
-  // atravessaria o `Object.assign` sem escrever nada, que é a mesma ausência com outra roupa.
-  if (d.mapeamentoDoTeclado !== undefined) {
-    if (typeof d.mapeamentoDoTeclado !== 'function') {
-      p.push('mapeamentoDoTeclado: must be a function - write `mapeamentoDoTeclado: (jogadores, assento) => ({ action1: ["KeyQ"] })`, because the keyboard of two players is not the keyboard of one');
-    } else {
-      const m = d.mapeamentoDoTeclado(1, 0);
-      if (m !== null && (typeof m !== 'object' || Array.isArray(m))) {
-        p.push('mapeamentoDoTeclado: must return an object or null - anything else is merged into nothing, and this game keeps the engine factory while its author believes otherwise');
-      }
-    }
-  }
-
-  if (d.mapeamentoDoPad !== undefined) {
-    if (typeof d.mapeamentoDoPad !== 'function') {
-      p.push('mapeamentoDoPad: must be a function - write `mapeamentoDoPad: (jogadores, assento) => ({ action1: 3 })`, because two seats may want different arrangements');
-    } else {
-      const m = d.mapeamentoDoPad(1, 0);
-      if (m !== null && (typeof m !== 'object' || Array.isArray(m))) {
-        p.push('mapeamentoDoPad: must return an object or null - anything else is merged into nothing, and this game keeps the engine factory while its author believes otherwise');
-      }
-    }
-  }
-
-  if (d.tick !== 'player' && d.tick !== 'clock') p.push('tick: must be "player" or "clock"');
-
-  for (const f of ['roleAt', 'nameAt', 'focusOf', 'objectiveOf', 'targetsOf'] as const) {
-    if (typeof d[f] !== 'function') p.push(`${f}: missing`);
-  }
-  return p;
+  return FIELD_CHECKS.flatMap((check) => check(d));
 }
 
 /** Um nome falável bem-formado? Texto vazio é o defeito silencioso: o leitor de tela simplesmente cala. */
