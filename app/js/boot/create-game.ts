@@ -3425,7 +3425,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * presses — in a game of reaction, the game. Hidden where the game holds no key, like its neighbour: what it refuses is a
      * second press, and a game nobody presses twice has none to refuse.
      */
-    const cooldownRowSpec = () => ({ id: 'opt-cooldown', rotulo: t('motor.espera'), dica: t('motor.cooldown.dica') });
+    const cooldownRowSpec = () => ({ id: 'opt-cooldown', rotulo: t('motor.espera'), dica: t('motor.espera.dica') });
     const { linha: cooldownRow, controle: cooldownButton } = controlRow(ctxDaMotora, cooldownRowSpec());
     painelDaMotora.casca.lista.appendChild(cooldownRow);
     const reflectCooldown = (): void => {

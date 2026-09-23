@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// EVERY KEY A MODULE ASKS FOR IS DECLARED (ADR-0074; ADR-0169; issue #164).
+//
+// 🔴 WHY THIS GATE EXISTS, and it is a hole this repository could not see. `tests/i18n-dicts.node.test.js` makes the three
+// dictionaries agree WITH EACH OTHER, and `lacunasDosDicionarios` reports a cartridge key registered in one language and not
+// another. Neither can see a key that exists in NONE of them: there is nothing to compare it against. And `t()` falls back to
+// returning the key, so the failure is silent by construction — the child is simply shown `motor.cooldown.dica`.
+//
+// 📏 Measured on 2026-09-23, in a booted engine with the panels open: TWO of them, and both had shipped.
+//   · `boot/create-game` asked for `motor.cooldown.dica`; the dictionaries declare `motor.espera.dica`. The mobility panel's
+//     footer showed the key to a child who focused «Esperar entre toques».
+//   · `ui/vlibras` asked for `sr.libras.on`, which was never added to any dictionary — introduced with the code in
+//     `b0239e91` and broken since. The text goes to the VLibras widget to be SIGNED, so the first thing the interpreter
+//     signed to a deaf child turning the mode on was the identifier.
+//
+// 📌 WHAT IS CHECKED, and what deliberately is not: a `t()` whose first argument is a plain string literal. A key BUILT at
+// runtime (`t('sr.nav.dir.' + r.heading)`, `t(`sim.indisponivel.${motivo}`)`) cannot be resolved by reading the source, and
+// pretending otherwise would make the gate lie. Those live behind their own cases. 📏 Seven such sites today.
+//
+// ⚠️ The source is PARSED, never matched with an expression: this repository learned in phase 2 of the English plan, five
+// times over, that telling code from text is lexing. A `t('…')` inside a comment is not a call.
+//
+// MUTATIONS CHECKED — at the end of the file.
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
+import pt from '../app/js/i18n/pt.js';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * Tracked AND untracked, for the reason the code-health gate already records: `git ls-files` answers «what is stored» and the
+ * question here is «what exists». A module still outside the index is exactly where a key typed yesterday is hiding.
+ */
+function modulesOfTheEngine() {
+  const list = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
+  return [...new Set([...list('ls-files', 'app/js'), ...list('ls-files', '--others', '--exclude-standard', 'app/js')])]
+    .filter((f) => f.endsWith('.ts') && !f.startsWith('app/js/i18n/'));
+}
+
+/** Every `t('key')` in a file, by position — a literal first argument, and nothing else. */
+function literalKeysOf(file) {
+  const text = readFileSync(join(ROOT, file), 'utf8');
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const found = [];
+  const walk = (node) => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 't') {
+      const arg = node.arguments[0];
+      if (arg && ts.isStringLiteral(arg)) {
+        const { line } = sf.getLineAndCharacterOfPosition(arg.getStart(sf));
+        found.push({ key: arg.text, where: `${file}:${line + 1}` });
+      }
+    }
+    ts.forEachChild(node, walk);
+  };
+  walk(sf);
+  return found;
+}
+
+describe('every key a module asks for is declared', () => {
+  it('🔴 [Right] no `t(\'literal\')` in app/js resolves to nothing', () => {
+    const missing = [];
+    for (const file of modulesOfTheEngine()) {
+      for (const { key, where } of literalKeysOf(file)) if (!(key in pt)) missing.push(`${where}  ${key}`);
+    }
+    expect(missing, 'a key with no entry is shown to the child AS THE KEY — `t()` falls back to it').toEqual([]);
+  });
+
+  it('🎯 [Cross-check] the gate is reading real call sites — a case that finds nothing would pass empty', () => {
+    // Without this, a walk that never matched a `t()` would report zero missing keys and look like a clean tree.
+    const all = modulesOfTheEngine().flatMap((f) => literalKeysOf(f));
+    expect(all.length, 'no `t()` call site was found at all — the walk is broken, not the tree clean').toBeGreaterThan(200);
+    expect(all.some(({ key }) => key === 'motor.espera.dica')).toBe(true);
+  });
+
+  it('⚠️ [Boundary] a key BUILT at runtime is not claimed to be checked', () => {
+    // `t('sr.nav.dir.' + r.heading)` passes a BinaryExpression, not a literal, so it never enters the list above — and the
+    // prefix `sr.nav.dir.` is not a key. A gate that counted it would fail on code that is correct.
+    const sonar = literalKeysOf('app/js/platform/audio-sonar.ts').map((x) => x.key);
+    expect(sonar).not.toContain('sr.nav.dir.');
+  });
+});
+
+// ============================== MUTATIONS CHECKED ==============================
+//   K1 the root's key back to `motor.cooldown.dica` (the shipped typo)  🔴 resolves to nothing · Cross-check
+//   K2 `sr.libras.on` removed from pt.ts (the shipped hole)             🔴 resolves to nothing
+//   K3 GATE: `ts.forEachChild` dropped, so the walk stops descending    🔴 Cross-check — 0 call sites found, and that is
+//                                                                          exactly the empty pass the case exists to refuse
+//   K4 GATE: any first argument taken as a key, built ones included     🔴 resolves to nothing
+//
+//   ⚠️ [Boundary] is NOT red under K4, and my prediction that it would be was wrong. Measured: with any argument accepted,
+//   a built key arrives as a BinaryExpression whose `.text` is `undefined` — so it is reported as a missing key and not as
+//   the prefix `sr.nav.dir.`. What that case actually pins is PARSER over expression, and the thing that makes it red is an
+//   implementation that reads the argument's SOURCE instead of a literal's VALUE. 📏 That implementation was written first,
+//   on 2026-09-23, and it reported `sr.nav.dir.`, `pause.` and `reach.nome.` as missing keys — three call sites that are
+//   correct. Left as a boundary the file DECLARES rather than a mutation contrived to make it red.
