@@ -14,7 +14,7 @@ import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // a tabel
 localStorage.clear();
 
 const { TILE } = await import('../app/js/core/constants.js');
-const { initCollision } = await import('../app/js/core/collision.js');
+const { initCollision, tileAt } = await import('../app/js/core/collision.js');
 const { VIZ_BY_KEY } = await import('../app/js/render/viz-modes.js');
 const HC = await import('../app/js/render/high-contrast.js');
 const { initVizSetters } = await import('../app/js/render/viz-setters.js');
@@ -44,7 +44,7 @@ const itemCanvasNormal = flatCanvas(8, 8, 'rgb(240,200,60)');
 const TEX_WORLD_NORMAL = { NORMAL: 'world' };
 const TEX_ITEM_NORMAL = { NORMAL: 'alvo' };
 HC.initHighContrast({ roleOf,
-  W, H, outlineFg: () => 1, outlineBg: () => 1,
+  W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
   getWorldCanvasNormal: () => worldCanvasNormal, getWorldTexNormal: () => TEX_WORLD_NORMAL,
   sprites: () => ({ alvo: { canvas: itemCanvasNormal, tex: TEX_ITEM_NORMAL } }),
 });

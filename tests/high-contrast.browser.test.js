@@ -6,7 +6,7 @@
 // de worldTexFor/spriteTexFor. ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // a tabela tile→papel é do JOGO (ADR-0080); a engine a RECEBE, e o gate prova que a cor sai do PAPEL
-import { initCollision } from '../app/js/core/collision.js';
+import { initCollision, tileAt } from '../app/js/core/collision.js';
 import { TILE } from '../app/js/core/constants.js';
 import {
   dimDesat, worldToTextureDirect, directBgTexture, directSpriteCanvas, directSpriteTexture,
@@ -63,7 +63,7 @@ describe('render/high-contrast — dimDesat (dessaturação/escurecimento)', () 
 describe('render/high-contrast — worldToTextureDirect (repintura por papel + contorno de 2º plano)', () => {
   beforeAll(() => {
     initHighContrast({
-      W, H, outlineFg: () => 1, outlineBg: () => 1,
+      W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
       sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'TEX_NORMAL' } }), roleOf,
@@ -116,7 +116,7 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
 
   it('[Zero] outlineBg=0 → sem contorno de 2º plano (a borda fica só com o tom dessaturado/repintado)', () => {
     initHighContrast({
-      W, H, outlineFg: () => 1, outlineBg: () => 0,
+      W, H, tileAt, outlineFg: () => 1, outlineBg: () => 0,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
       sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'TEX_NORMAL' } }), roleOf,
@@ -128,7 +128,7 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
 
   it('[Right] os 3 níveis de contraste (off crescente) produzem estruturas cada vez mais claras', () => {
     initHighContrast({
-      W, H, outlineFg: () => 1, outlineBg: () => 1,
+      W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
       sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'TEX_NORMAL' } }), roleOf,
@@ -168,7 +168,7 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
   });
   it('[Right] outlineFg>0 → devolve um canvas NOVO (contornado), mesmas dimensões', () => {
     initHighContrast({
-      W, H, outlineFg: () => 1, outlineBg: () => 1,
+      W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
       getWorldTexNormal: () => 'N', sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'N' } }), roleOf,
     });
@@ -203,7 +203,7 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
 describe('render/high-contrast — worldTexFor/spriteTexFor (cache preguiçoso por modo)', () => {
   beforeAll(() => {
     initHighContrast({
-      W, H, outlineFg: () => 1, outlineBg: () => 1,
+      W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
       sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'TEX_NORMAL' } }), roleOf,

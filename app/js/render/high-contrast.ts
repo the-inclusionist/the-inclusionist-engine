@@ -15,7 +15,6 @@
 import { makeCanvas, tex } from './canvas.js';
 import { outlineCanvas } from './sprite-fx.js';
 import { TILE } from '../core/constants.js';
-import { tileAt } from '../core/collision.js';
 import { HC_ROLE_DEF, type HcRoleKey, type PaintableRole } from './hc-role-data.js';
 import * as store from '../platform/storage.js';
 
@@ -64,7 +63,16 @@ export function dimDesat(c: CanvasRenderingContext2D, w: number, h: number, mul:
 
 /* ===================== DI: limites do grid + contornos + canvases/texturas NORMAIS ===================== */
 export interface HighContrastCtx {
-  W: number; H: number; // WORLD_W/WORLD_H — tileAt (core/collision.js) já resolve fora-de-grade; os loops usam W/H como limite
+  W: number; H: number; // WORLD_W/WORLD_H — 	ileAt já resolve fora-de-grade; os loops usam W/H como limite
+  /**
+   * QUE TILE ESTÁ EM (tx,ty) — uma PERGUNTA e não um import, desde 2026-09-23. Este módulo é da engine (o
+   * assunto dele é o alto contraste da WCAG 1.4.6), mas para pintar papel a papel precisa de saber o que há em
+   * cada célula — e isso é a grade de UM jogo. Perguntando, a engine deixa de importar a geometria de tiles e
+   * quem tem uma grade responde; quem não tem nunca monta este módulo.
+   * ⚠️ OBRIGATÓRIA, pelo precedente do ADR-0224: uma porta opcional é mais um campo que um jogo pode esquecer, e
+   * esquecê-la aqui pintaria o mundo inteiro de uma cor só.
+   */
+  tileAt: (tx: number, ty: number) => number;
   outlineFg: () => number; // hcOutlineFg (0/1/2) — mutado por setOutlineFg (game.js)
   outlineBg: () => number; // hcOutlineBg (0/1/2) — mutado por setOutlineBg (game.js)
   getWorldCanvasNormal: () => HTMLCanvasElement; // worldCanvasNormal É `let` (reescrito por setCenario ao trocar tema) → getter
@@ -112,7 +120,7 @@ export function worldToTextureDirect(srcCanvas: HTMLCanvasElement, mode: string)
   c.drawImage(srcCanvas, 0, 0);
   dimDesat(c, cv.width, cv.height, cfg.mul, 1.22, cfg.off); // base: estrutura vira cinza-azulado (mais clara = mais contraste)
   for (let y = 0; y < hc.H; y++) for (let x = 0; x < hc.W; x++) {
-    const t = tileAt(x, y), role = hc.roleOf(t); if (!role) continue; // repinta tiles não-estruturais pela cor do papel
+    const t = hc.tileAt(x, y), role = hc.roleOf(t); if (!role) continue; // repinta tiles não-estruturais pela cor do papel
     const X = x * TILE, Y = y * TILE;
     // ⚠️ O QUE SOBRA DE PLATAFORMA AQUI. A escada é desenhada com trilhos e degraus porque uma faixa sólida
     // não LÊ como escada — decisão de acessibilidade, que serviria a qualquer jogo com algo escalável. Mas a
@@ -135,10 +143,10 @@ export function worldToTextureDirect(srcCanvas: HTMLCanvasElement, mode: string)
   }
   const th = hc.outlineBg(); // contorno de 2º plano: SÓ o perímetro externo (bordas voltadas ao ar) — não em cada bloco
   if (th > 0) {
-    const air = (x: number, y: number): boolean => { const t = tileAt(x, y); return t === 0 || t === 1; };
+    const air = (x: number, y: number): boolean => { const t = hc.tileAt(x, y); return t === 0 || t === 1; };
     c.fillStyle = 'rgba(200,222,255,0.97)';
     for (let y = 0; y < hc.H; y++) for (let x = 0; x < hc.W; x++) {
-      const t = tileAt(x, y); if (t === 0 || t === 1) continue;
+      const t = hc.tileAt(x, y); if (t === 0 || t === 1) continue;
       const X = x * TILE, Y = y * TILE;
       if (air(x, y - 1)) c.fillRect(X, Y, TILE, th); if (air(x, y + 1)) c.fillRect(X, Y + TILE - th, TILE, th);
       if (air(x - 1, y)) c.fillRect(X, Y, th, TILE); if (air(x + 1, y)) c.fillRect(X + TILE - th, Y, th, TILE);

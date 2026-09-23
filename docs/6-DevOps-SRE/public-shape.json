@@ -1655,7 +1655,8 @@
       "outlineBg",
       "outlineFg",
       "roleOf",
-      "sprites"
+      "sprites",
+      "tileAt"
     ]
   },
   "render/low-vision-drawing.ts": {

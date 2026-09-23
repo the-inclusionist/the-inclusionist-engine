@@ -2397,6 +2397,26 @@ path the public-surface portrait cannot see, and this table is what says where e
 hat-step loop of `stdDirs` and the three-way form of `padActions` became named steps. Its measures: 98 lines, 18
 decision nodes, depth 2, fan-out 4, no global reach, worst function 10.
 
+## CA · High contrast ASKS which tile is there instead of importing it (ADR-0228, issue #203)
+
+**Who is affected:** whoever calls `initHighContrast`. 📏 Measured: that is the `game-platformer` and nobody else —
+the engine publishes this module and never mounts it itself.
+
+**The one line to add:** `HighContrastCtx` gains an obligatory `tileAt: (tx: number, ty: number) => number`, next to
+the `W`, `H` and canvases it already receives. The platformer passes its own `core/collision.tileAt`.
+
+🎯 **Why it is a port and not an import.** `render/high-contrast` is the engine's without doubt — it publishes
+`HC_ROLE`, `dimDesat` and the high-contrast textures, and its subject is WCAG 1.4.6. But to repaint role by role it
+has to know what sits in each cell, and **that is the grid of one game**. Importing `core/collision` made the
+engine's contrast renderer depend on tile geometry; asking makes whoever has a grid answer, and whoever has none
+never mounts the module.
+
+⚠️ **Obligatory and not optional**, by the precedent of ADR-0224: an optional port is one more field a game can
+forget, and forgetting this one paints the whole world a single colour.
+
+📏 **And this was the last engine module importing `core/collision`** — `git grep` now finds it only in comments.
+That is what lets the tile-world stack's final piece leave, which is the next note.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |
