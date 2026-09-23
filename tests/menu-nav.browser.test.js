@@ -305,9 +305,51 @@ describe('navDialog — andar dentro de um diálogo', () => {
   it('com o foco FORA do diálogo, o primeiro item recebe o foco antes de qualquer coisa', () => {
     const { nav, openAudio } = boot();
     openAudio();
-    document.body.focus();
+    // 🔴 era `document.body.focus()`, que não move nada (o <body> não é focável): o caso nunca pôs o foco FORA, e passava
+    // com o foco já no primeiro item. Medido em 2026-09-23, ao escrever o caso de baixo.
+    document.activeElement.blur();
+    expect(document.activeElement).toBe(document.body);
     nav.navDialog($('#audio'), K({ down: true }));
     expect(document.activeElement.id).toBe('a-voz'); // entrou no primeiro e desceu um
+  });
+
+  /*
+   * 🔴 Probed 2026-09-23: six of twenty decisions of `navDialog` could be undone with this file green. Four are cases below. The
+   * other two are EQUIVALENT with today's kit, measured, and have no case: «yes» on a slider and on a steps control does nothing,
+   * and without the guards it would CLICK them — a native range ignores a click, and the steps control's clicks live on its two
+   * arrows (`ui/panel-widgets`), not on the element itself.
+   */
+  it('🔴 com o foco FORA, o primeiro item é focado E DITO — mesmo sem tecla de direcção', () => {
+    const { nav, log, openAudio } = boot();
+    openAudio();
+    // ⚠️ `document.body.focus()` moves nothing — the body is not focusable — so the focus has to be LET GO to be outside
+    document.activeElement.blur();
+    expect(document.activeElement, 'the case never put the focus outside').toBe(document.body);
+    nav.navDialog($('#audio'), K({}));
+    expect(document.activeElement.id).toBe('a-first');
+    expect(log.said.at(-1), 'the child was put on an item nobody named').toMatch(/^Primeiro/);
+  });
+
+  it('🔴 um diálogo SEM itens não rebenta com uma seta — não há onde pôr o cursor, e é tudo', () => {
+    const { nav } = boot();
+    document.body.insertAdjacentHTML('beforeend', '<div id="vazio" class="overlay"><div class="overlay__card"><p>só texto</p></div></div>');
+    expect(() => nav.navDialog($('#vazio'), K({ right: true }))).not.toThrow();
+  });
+
+  it('🔴 esquerda/direita num BOTÃO andam no anel, como cima/baixo', () => {
+    const { nav, openAudio } = boot();
+    openAudio();
+    $('#a-first').focus();
+    nav.navDialog($('#audio'), K({ right: true }));
+    expect(document.activeElement.id).toBe('a-voz');
+  });
+
+  it('🔴 «sim» numa lista dá a volta E diz a opção nova — quem confirma de ouvido não tem outra forma de saber onde parou', () => {
+    const { nav, log, openAudio } = boot();
+    openAudio();
+    const sel = $('#a-voz'); sel.selectedIndex = 2; sel.focus();
+    nav.navDialog($('#audio'), K({ yes: true }));
+    expect(log.said.at(-1)).toMatch(/\bum\b/);
   });
 });
 
