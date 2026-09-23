@@ -189,6 +189,12 @@ describe('the crossed look', () => {
     expect(rightButton([...crossing, [600, 0, 0.8], [900, 0, 0.8], [1000, 0, 0.4]]).slice(3)).toEqual([1, 1, 1]);
   });
 
+  it('a crossing inside ONE frame still counts — at 30 frames/s a saccade is faster than a frame', () => {
+    // right held, then in the same frame the right drops and the left arrives: every side is read before any button
+    const left = run(make(), [[0, 0, 0.8], [300, 0, 0.8], [400, 0.8, 0], [700, 0.8, 0]]).map((x) => x.lookRightThenLeft);
+    expect(left.slice(2), 'the button read its first half before that side had been tracked this frame').toEqual([1, 1]);
+  });
+
   it('after a release, looking back to the same side is no press — a new press needs a new crossing', () => {
     expect(rightButton([...crossing, [600, 0, 0.8], [1000, 0, 0.8], [1100, 0, 0], [1300, 0, 0.8], [1700, 0, 0.8]]).slice(5))
       .toEqual([0, 0, 0]);
