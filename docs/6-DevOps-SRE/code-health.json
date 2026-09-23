@@ -778,12 +778,12 @@
       "fanIn": 0
     },
     "platform/heavy.ts": {
-      "codeLines": 91,
+      "codeLines": 104,
       "decisionNodes": 25,
-      "maxDepth": 3,
+      "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 1,
-      "worstFunction": 23,
+      "worstFunction": 8,
       "fanIn": 5,
       "reached": [
         "fetch"

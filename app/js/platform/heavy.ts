@@ -128,53 +128,73 @@ export function deliveryCacheKey(urlOrRequest: string | { readonly request: { re
  * ADR-0119 mediu em falta: a engine PROMETIA quatro coisas e entregava uma, sem nada a dizê-lo.
  */
 export async function downloadHeavy(opcoes: HeavyOptions = {}): Promise<HeavyReport[]> {
-  const cs = opcoes.cacheStorage ?? (typeof caches !== 'undefined' ? caches : undefined);
-  const buscar = opcoes.buscar ?? (typeof fetch !== 'undefined' ? fetch : undefined);
-  const alvos = opcoes.apenas
-    ? HEAVY_FILES.filter((p) => opcoes.apenas!.includes(p.id))
-    : HEAVY_FILES;
-
+  const targets = opcoes.apenas ? HEAVY_FILES.filter((p) => opcoes.apenas!.includes(p.id)) : HEAVY_FILES;
   const out: HeavyReport[] = [];
   const record = (r: HeavyReport): void => { out.push(r); opcoes.aoProgredir?.(r); };
 
-  if (!cs || !buscar) {
-    for (const p of alvos) record({ id: p.id, estado: 'falhou', erro: 'sem Cache Storage ou sem fetch' });
+  const { cacheStorage, fetchFile } = hostOf(opcoes);
+  if (!cacheStorage || !fetchFile) {
+    for (const p of targets) record({ id: p.id, estado: 'falhou', erro: 'sem Cache Storage ou sem fetch' });
     return out;
   }
-
-  const digest = opcoes.digest === undefined ? (canComputeSha256() ? sha256Hex : null) : opcoes.digest;
-  const base = opcoes.base ?? (globalThis as { location?: { href: string } }).location?.href;
-
-  const cache = await cs.open(CACHE_HEAVY);
-  for (const p of alvos) {
-    if (!p.url) { record({ id: p.id, estado: 'sem-fonte', erro: p.porQueNaoTemFonte }); continue; }
-    try {
-      if (await cache.match(p.url)) { record({ id: p.id, estado: 'ja-tinha' }); continue; }
-      // from the delivery's own origin, never from the upstream host (ADR-0177)
-      const pathInDelivery = deliveryPath(p.url);
-      const resp = await buscar(base ? new URL(pathInDelivery, base).href : pathInDelivery);
-      if (!resp.ok) { record({ id: p.id, estado: 'falhou', erro: `HTTP ${resp.status}` }); continue; }
-      /*
-       * CHECKED BEFORE KEPT (issue #168; STRIDE client pass). What is kept runs in the child's page and is served offline
-       * from then on, so a body whose SHA-256 is not the measured one never enters the cache.
-       */
-      if (!p.sha256 || !digest) {
-        record({ id: p.id, estado: 'falhou', erro: !p.sha256 ? 'this entry pins its sha256 nowhere: there is nothing to check it against' : 'this host cannot compute a sha256 (crypto.subtle needs a secure context)' });
-        continue;
-      }
-      const corpo = await resp.arrayBuffer();
-      const obtido = await digest(corpo);
-      if (obtido !== p.sha256) {
-        record({ id: p.id, estado: 'falhou', erro: `sha256 mismatch: expected ${p.sha256}, got ${obtido} — not kept` });
-        continue;
-      }
-      await cache.put(p.url, new Response(corpo, { status: resp.status, statusText: resp.statusText, headers: resp.headers }));
-      record({ id: p.id, estado: 'baixado', bytes: p.bytes });
-    } catch (e) {
-      record({ id: p.id, estado: 'falhou', erro: e instanceof Error ? e.message : String(e) });
-    }
-  }
+  const tools: DownloadTools = { cache: await cacheStorage.open(CACHE_HEAVY), fetchFile, ...checkAndBaseOf(opcoes) };
+  for (const p of targets) record(await fetchOne(p, tools));
   return out;
+}
+
+/** What one download works with: the open cache, the fetch, the hash, and the page the delivery is resolved against. */
+interface DownloadTools {
+  readonly cache: Cache;
+  readonly fetchFile: typeof fetch;
+  readonly digest: ((body: ArrayBuffer) => Promise<string>) | null;
+  readonly base: string | undefined;
+}
+
+/** The host's Cache Storage and fetch, unless injected — either may be missing, and then nothing is attempted. */
+function hostOf(o: HeavyOptions): { cacheStorage: CacheStorage | undefined; fetchFile: typeof fetch | undefined } {
+  return {
+    cacheStorage: o.cacheStorage ?? (typeof caches !== 'undefined' ? caches : undefined),
+    fetchFile: o.buscar ?? (typeof fetch !== 'undefined' ? fetch : undefined),
+  };
+}
+
+/** The hash (an injected `null` means «cannot hash», and wins) and the page the delivery's folder is resolved against. */
+function checkAndBaseOf(o: HeavyOptions): Pick<DownloadTools, 'digest' | 'base'> {
+  return {
+    digest: o.digest === undefined ? (canComputeSha256() ? sha256Hex : null) : o.digest,
+    base: o.base ?? (globalThis as { location?: { href: string } }).location?.href,
+  };
+}
+
+/** One file's fate: already kept, fetched from the delivery and checked, or refused — always with the reason. */
+async function fetchOne(p: HeavyFile, t: DownloadTools): Promise<HeavyReport> {
+  if (!p.url) return { id: p.id, estado: 'sem-fonte', erro: p.porQueNaoTemFonte };
+  try {
+    if (await t.cache.match(p.url)) return { id: p.id, estado: 'ja-tinha' };
+    // from the delivery's own origin, never from the upstream host (ADR-0177)
+    const pathInDelivery = deliveryPath(p.url);
+    const resp = await t.fetchFile(t.base ? new URL(pathInDelivery, t.base).href : pathInDelivery);
+    if (!resp.ok) return { id: p.id, estado: 'falhou', erro: `HTTP ${resp.status}` };
+    return await keepIfChecked(p, p.url, resp, t);
+  } catch (e) {
+    return { id: p.id, estado: 'falhou', erro: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/**
+ * CHECKED BEFORE KEPT (issue #168; STRIDE client pass). What is kept runs in the child's page and is served offline from then
+ * on, so a body whose SHA-256 is not the measured one never enters the cache. It is kept under the UPSTREAM address, which is
+ * what the voice and vision libraries ask for.
+ */
+async function keepIfChecked(p: HeavyFile, url: string, resp: Response, t: DownloadTools): Promise<HeavyReport> {
+  const refused = (reason: string): HeavyReport => ({ id: p.id, estado: 'falhou', erro: reason });
+  if (!p.sha256) return refused('this entry pins its sha256 nowhere: there is nothing to check it against');
+  if (!t.digest) return refused('this host cannot compute a sha256 (crypto.subtle needs a secure context)');
+  const body = await resp.arrayBuffer();
+  const got = await t.digest(body);
+  if (got !== p.sha256) return refused(`sha256 mismatch: expected ${p.sha256}, got ${got} — not kept`);
+  await t.cache.put(url, new Response(body, { status: resp.status, statusText: resp.statusText, headers: resp.headers }));
+  return { id: p.id, estado: 'baixado', bytes: p.bytes };
 }
 
 const canComputeSha256 = (): boolean => !!(globalThis as { crypto?: Crypto }).crypto?.subtle;
