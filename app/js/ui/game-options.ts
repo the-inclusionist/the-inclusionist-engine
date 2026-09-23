@@ -49,37 +49,56 @@ const MAX_STEPS = 5;
 export function gameOptionsProblems(options: unknown): string[] {
   if (options === undefined) return [];
   if (!Array.isArray(options)) return ['gameOptions must be a list of rows'];
-  const out: string[] = [];
+  // a repeated id is only wrong the second time, so the ids seen so far travel from row to row
   const ids = new Set<string>();
-  options.forEach((o: Record<string, unknown> | null, i) => {
-    const at = `gameOptions[${i}]`;
-    if (!o || typeof o !== 'object') { out.push(`${at} must be a row`); return; }
-    if (typeof o.id !== 'string' || !o.id.trim()) out.push(`${at}.id must name the row`);
-    else if (ids.has(o.id)) out.push(`${at}.id «${o.id}» repeats an earlier row's`);
-    else ids.add(o.id);
-    if (!KINDS.includes(o.kind as GameOption['kind'])) out.push(`${at}.kind must be one of ${KINDS.join(', ')}`);
-    if (typeof o.label !== 'string' || !o.label.trim()) out.push(`${at}.label must say what the row is, in the game's words`);
-    if (o.hint !== undefined && typeof o.hint !== 'string') out.push(`${at}.hint must be text`);
-    if (typeof o.read !== 'function') out.push(`${at}.read must be a function returning the value in use`);
-    if (typeof o.write !== 'function') out.push(`${at}.write must be a function taking the new value`);
-    if (o.kind !== 'steps' && o.kind !== 'list') return;
-    const values = o.values;
-    if (!Array.isArray(values) || values.length < 2) { out.push(`${at}.values must hold at least two positions`); return; }
-    if (o.kind === 'steps' && values.length > MAX_STEPS) {
-      out.push(`${at}.values holds ${values.length} steps: steps hold at most five positions — past that, declare a list (ADR-0130)`);
-    }
-    const seenValues = new Set<string>();
-    values.forEach((v: Record<string, unknown> | null, j) => {
-      if (!v || typeof v.value !== 'string' || typeof v.label !== 'string' || !v.label.trim()) {
-        out.push(`${at}.values[${j}] must have a value and a label`);
-      } else if (seenValues.has(v.value)) {
-        out.push(`${at}.values[${j}] «${v.value}» repeats an earlier position`);
-      } else {
-        seenValues.add(v.value);
-      }
-    });
+  return options.flatMap((o: Row | null, i) => rowProblems(o, `gameOptions[${i}]`, ids));
+}
+
+type Row = Record<string, unknown>;
+
+/** What is wrong with one row, in the order a reader of the declaration meets it: the row, its id, its fields, its positions. */
+function rowProblems(o: Row | null, at: string, ids: Set<string>): string[] {
+  if (!o || typeof o !== 'object') return [`${at} must be a row`];
+  const out = [...idProblems(o, at, ids), ...FIELD_CHECKS.filter(([holds]) => !holds(o)).map(([, says]) => `${at}.${says}`)];
+  if (o.kind === 'steps' || o.kind === 'list') out.push(...valuesProblems(o, at));
+  return out;
+}
+
+function idProblems(o: Row, at: string, ids: Set<string>): string[] {
+  if (typeof o.id !== 'string' || !o.id.trim()) return [`${at}.id must name the row`];
+  if (ids.has(o.id)) return [`${at}.id «${o.id}» repeats an earlier row's`];
+  ids.add(o.id);
+  return [];
+}
+
+/** Each field a row must have, and what is said when it does not: a row comes from outside the engine, so its TYPE is checked. */
+const FIELD_CHECKS: readonly (readonly [(o: Row) => boolean, string])[] = [
+  [(o) => KINDS.includes(o.kind as GameOption['kind']), `kind must be one of ${KINDS.join(', ')}`],
+  [(o) => typeof o.label === 'string' && !!o.label.trim(), "label must say what the row is, in the game's words"],
+  [(o) => o.hint === undefined || typeof o.hint === 'string', 'hint must be text'],
+  [(o) => typeof o.read === 'function', 'read must be a function returning the value in use'],
+  [(o) => typeof o.write === 'function', 'write must be a function taking the new value'],
+];
+
+/** The positions of a steps or list row: at least two, at most five for steps, each with a value and a label, none repeated. */
+function valuesProblems(o: Row, at: string): string[] {
+  const values = o.values;
+  if (!Array.isArray(values) || values.length < 2) return [`${at}.values must hold at least two positions`];
+  const out = o.kind === 'steps' && values.length > MAX_STEPS
+    ? [`${at}.values holds ${values.length} steps: steps hold at most five positions — past that, declare a list (ADR-0130)`] : [];
+  const seen = new Set<string>();
+  values.forEach((v: Row | null, j) => {
+    const problem = positionProblem(v, `${at}.values[${j}]`, seen);
+    if (problem) out.push(problem);
   });
   return out;
+}
+
+function positionProblem(v: Row | null, at: string, seen: Set<string>): string | null {
+  if (!v || typeof v.value !== 'string' || typeof v.label !== 'string' || !v.label.trim()) return `${at} must have a value and a label`;
+  if (seen.has(v.value)) return `${at} «${v.value}» repeats an earlier position`;
+  seen.add(v.value);
+  return null;
 }
 
 export interface GameOptionsDrawCtx extends PanelShellCtx {

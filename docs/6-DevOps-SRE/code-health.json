@@ -1289,12 +1289,12 @@
       "fanIn": 3
     },
     "ui/game-options.ts": {
-      "codeLines": 130,
-      "decisionNodes": 22,
+      "codeLines": 139,
+      "decisionNodes": 18,
       "maxDepth": 3,
       "fanOut": 3,
       "globalReach": 0,
-      "worstFunction": 19,
+      "worstFunction": 7,
       "fanIn": 1
     },
     "ui/gaze-overlay.ts": {
