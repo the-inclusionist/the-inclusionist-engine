@@ -96,8 +96,22 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
     const cv = canvasOf(worldToTextureDirect(flatCanvas(W * TILE, H * TILE, '#888888'), 'hc-direto'));
     const centro = pixelAt(cv, 2 * TILE + 8, 0 * TILE + 5); // vão entre degraus (ry=2 e ry=7 não cobrem a linha 5) = fundo #0a0e14
     expect(centro.slice(0, 3)).toEqual([0x0a, 0x0e, 0x14]);
-    const trilho = pixelAt(cv, 2 * TILE + 1, 0 * TILE + 8); // trilho lateral (coluna cheia) = HC_ROLE.climb
-    expect(trilho.slice(0, 3)).toEqual(HC_ROLE.climb);
+    // 🔴 o trilho era lido na linha 8, que é um DEGRAU (os degraus cobrem as linhas 2–3, 7–8, 12–13): o caso via a cor do
+    // papel sem o trilho existir. A linha 5 é vão entre degraus, e ali só o trilho a pinta. Medido na sonda de 2026-09-23.
+    const trilho = pixelAt(cv, 2 * TILE + 1, 0 * TILE + 5);
+    expect(trilho.slice(0, 3), 'no rail on the ladder').toEqual(HC_ROLE.climb);
+    const degrau = pixelAt(cv, 2 * TILE + 8, 0 * TILE + 2);
+    expect(degrau.slice(0, 3), 'no rung on the ladder').toEqual(HC_ROLE.climb);
+  });
+
+  it('[Right] um papel repinta pelo BRILHO de cada pixel (luma BT.601), e o perigo parte de mais claro (0,58) que os outros (0,44)', () => {
+    // The luminance weights and the two floors are the rule: a hazard stays brighter than any other role at the same brightness.
+    const cv = canvasOf(worldToTextureDirect(flatCanvas(W * TILE, H * TILE, '#888888'), 'hc-direto'));
+    const base = pixelAt(cv, 0 * TILE + 8, 0 * TILE + 8); // the stone: the same base, dimmed and never repainted
+    const g = (0.299 * base[0] + 0.587 * base[1] + 0.114 * base[2]) / 255;
+    const paint = (rgb, lo) => rgb.map((v) => Math.min(255, v * (lo + (1 - lo) * g)) | 0);
+    expect(pixelAt(cv, 1 * TILE + 8, 0 * TILE + 8).slice(0, 3), 'the hazard').toEqual(paint(HC_ROLE.hazard, 0.58));
+    expect(pixelAt(cv, 3 * TILE + 8, 0 * TILE + 8).slice(0, 3), 'the water').toEqual(paint(HC_ROLE.water, 0.44));
   });
 
   it('[Inverse] estrutura (pedra=2) NÃO é repintada por papel — só dessaturada (R≈G; sem o vermelho/azul saturado dos papéis)', () => {
@@ -127,7 +141,9 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
     });
     const cv = canvasOf(worldToTextureDirect(flatCanvas(W * TILE, H * TILE, '#888888'), 'hc-direto'));
     const bordaInferior = pixelAt(cv, 0 * TILE + 8, 1 * TILE + TILE - 1);
-    expect(bordaInferior.slice(0, 3)).not.toEqual([200, 222, 255]);
+    // 🔴 era `not.toEqual([200, 222, 255])`, e o contorno COMPÕE-SE a 97% (≈198, 219, 252) — a asserção passava com ou sem
+    // contorno. Medido na sonda de 2026-09-23: desligar a guarda do contorno ficava verde. O limiar é o do caso de cima.
+    expect(bordaInferior[0], 'the outline was drawn with a thickness of zero').toBeLessThan(190);
   });
 
   it('[Right] os 3 níveis de contraste (off crescente) produzem estruturas cada vez mais claras', () => {
@@ -144,6 +160,45 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
     expect(lumaEstrutura('hc-direto-45')).toBeGreaterThan(lumaEstrutura('hc-direto'));
   });
 });
+
+describe('render/high-contrast — the second-plane outline, on all four sides (probed 2026-09-23)', () => {
+  /*
+   * 🔴 Only the BOTTOM edge had a case: removing the top, left or right edge — or outlining the air itself — left every file green.
+   * A block with air on all four sides: tile 1 on its left (the platformer's other air), tile 0 elsewhere.
+   */
+  const G = [
+    [0, 0, 0],
+    [1, 2, 0],
+    [0, 0, 0],
+  ];
+  const at = (tx, ty) => (tx < 0 || tx >= 3 || ty < 0 || ty >= 3 ? 0 : G[ty][tx]);
+  const outlined = (px) => px[0] > 190;
+  let cv;
+  beforeAll(() => {
+    initHighContrast({
+      W: 3, H: 3, tileAt: at, outlineFg: () => 1, outlineBg: () => 2,
+      getWorldCanvasNormal: () => flatCanvas(3 * TILE, 3 * TILE, '#888888'),
+      getWorldTexNormal: () => 'NORMAL_WORLD_TEX', sprites: () => ({}), roleOf,
+    });
+    cv = canvasOf(worldToTextureDirect(flatCanvas(3 * TILE, 3 * TILE, '#888888'), 'hc-direto'));
+  });
+
+  it('every side of a block that faces the air is outlined — tile 1 counts as air too', () => {
+    const X = TILE, Y = TILE;
+    expect(outlined(pixelAt(cv, X + 8, Y)), 'top').toBe(true);
+    expect(outlined(pixelAt(cv, X + 8, Y + TILE - 1)), 'bottom').toBe(true);
+    expect(outlined(pixelAt(cv, X, Y + 8)), 'left, facing tile 1').toBe(true);
+    expect(outlined(pixelAt(cv, X + TILE - 1, Y + 8)), 'right').toBe(true);
+    expect(outlined(pixelAt(cv, X + 8, Y + 8)), 'the inside').toBe(false);
+  });
+
+  it('the air itself is never outlined, even where it touches more air', () => {
+    expect(outlined(pixelAt(cv, 0 * TILE + 8, 0 * TILE)), 'an air tile\'s edge').toBe(false);
+  });
+});
+// ⚠️ Two decisions of the same probe are EQUIVALENT and have no case: a pixel with alpha under 8 is skipped by the repainting, and a
+// canvas cannot keep a colour in a fully transparent pixel anyway — what is read back is [0, 0, 0, 0] either way; and the outline's
+// `th > 0` guard, because an outline of thickness zero is a `fillRect` of zero height, which paints nothing.
 
 describe('render/high-contrast — directBgTexture (fundo/decoração: só dessaturação, sem repintura por papel)', () => {
   it('[Right] pinta de forma síncrona quando baseTexture.valid=true (paint roda na hora)', () => {
