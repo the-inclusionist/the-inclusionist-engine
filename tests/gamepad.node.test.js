@@ -438,7 +438,134 @@ describe('initGamepad — wizard: classificação de eixo (analógico vs D-pad/h
 // initGamepad — pollPads: dispatch por fase (title/paused/playing), auto-wizard, e persistência do mapa
 // ---------------------------------------------------------------------------------------------
 
+describe('o assento: quem dirige qual tela (sondado 2026-09-23)', () => {
+  /*
+   * 🔴 SEIS DAS SETE DECISÕES DESTE BLOCO ESTAVAM SOLTAS, e é o bloco que decide qual criança dirige qual tela.
+   * Errar aqui não quebra nada visível — o jogo continua a responder — e simplesmente põe o controle de uma
+   * criança a mexer no jogo de outra, que é a mesma forma de defeito que o roteamento por dono do teclado tem
+   * escrita no cabeçalho do ficheiro dele.
+   */
+  const jogando = (players, over = {}) => {
+    const ctx = buildCtx({ players, ...over });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    return { ctx, api };
+  };
+
+  it('⚠️ um controle toma assento numa BORDA, e nunca por estar apenas ligado', () => {
+    const p = makePlayer();
+    const { ctx, api } = jogando([p]);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [] })]);
+    api.pollPads();
+    expect(p.pad, 'um controle em repouso tomou a tela de alguém').toBe(-1);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0] })]);
+    api.pollPads();
+    expect(p.pad, 'e a borda de um botão toma-a').toBe(0);
+  });
+
+  it('⚠️ o DIRECIONAL também toma assento — uma criança que só move a alavanca não fica de fora', () => {
+    const p = makePlayer();
+    const { ctx, api } = jogando([p]);
+    ctx.setPads([makePad({ id: 'std', index: 0, axes: [-1, 0, 0, 0, 0, 0, 1.3, 1.3] })]);
+    api.pollPads();
+    expect(p.pad, 'só os botões tomavam assento, e quem joga com a alavanca ficava sem tela').toBe(0);
+  });
+
+  it('⚠️ uma tela À ESPERA tem prioridade sobre um assento livre qualquer', () => {
+    const livre = makePlayer(), esperando = makePlayer({ waiting: true });
+    const { ctx, api } = jogando([livre, esperando]);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0] })]);
+    api.pollPads();
+    expect(esperando.pad, 'o controle foi para uma tela que não estava à espera de ninguém').toBe(0);
+    expect(livre.pad).toBe(-1);
+  });
+
+  it('⚠️ uma tela ABANDONADA não é um assento livre', () => {
+    const saiu = makePlayer({ quit: true }), livre = makePlayer();
+    const { ctx, api } = jogando([saiu, livre]);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0] })]);
+    api.pollPads();
+    expect(saiu.pad, 'o controle foi para uma tela que já tinha sido abandonada').toBe(-1);
+    expect(livre.pad).toBe(0);
+  });
+
+  it('⚠️ sem assento nenhum livre, o controle PEDE para entrar em vez de ficar mudo', () => {
+    const cheio = makePlayer({ pad: 5 });
+    const { ctx, api } = jogando([cheio]);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0] })]);
+    api.pollPads();
+    expect(ctx.calls.joinPlayer, 'um controle a mais não pediu para entrar: apertar não fazia nada').toEqual([0]);
+  });
+
+  it('⚠️ a tela à espera perde o selo e a criança ouve que entrou', () => {
+    const esperando = makePlayer({ waiting: true });
+    const { ctx, api } = jogando([esperando]);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0] })]);
+    api.pollPads();
+    expect(esperando.waiting).toBe(false);
+    expect(ctx.calls.clearWaitingBadge, 'o selo «aguardando» ficou na tela de quem já entrou').toEqual([0]);
+    expect(ctx.said.some((m) => /1/.test(m)), 'e nada foi dito a quem não vê a tela').toBe(true);
+  });
+});
+
 describe('initGamepad — pollPads', () => {
+  it('⚠️ sem gamepads NENHUNS o laço não rebenta — `getGamepads()` responde `null` quando a aba perde o foco', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], getGamepads: () => null });
+    const api = initGamepad(ctx);
+    expect(() => api.pollPads()).not.toThrow();
+  });
+
+  it('⚠️ uma posição VAZIA na lista é saltada — `getGamepads()` devolve um array esparso com buracos', () => {
+    const p = makePlayer({ pad: 1 });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([null, makePad({ id: 'std', index: 1, pressed: [0] })]);
+    expect(() => api.pollPads()).not.toThrow();
+    expect(p.jumpEdge, 'o buraco na lista engoliu o controle que vinha depois dele').toBe(true);
+  });
+
+  it('⚠️ o controle que ABRE o assistente pára o quadro: os outros não são lidos por cima dele', () => {
+    const p = makePlayer({ pad: 1 });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([
+      makePad({ id: 'DirectInput Z', index: 0, mapping: '', pressed: [0] }), // sem mapa: abre o assistente
+      makePad({ id: 'std', index: 1, pressed: [0] }),
+    ]);
+    api.pollPads();
+    expect(api.getPadWiz()).not.toBeNull();
+    expect(p.jumpEdge, 'o segundo controle jogou para dentro de um quadro em que o assistente acabara de abrir').toBe(false);
+    // 📌 E a asserção que MORDE é esta: o segundo controle não chegou a ser LIDO. Sem ela o caso passava com a
+    // guarda desligada, porque abrir o assistente pausa a fase e o segundo pad caía no ramo da pausa, que não
+    // escreve nada visível — um caso verde sobre um controle que foi lido na mesma.
+    expect(padCur[1], 'o segundo controle foi lido dentro do quadro do assistente').toBeUndefined();
+  });
+
+  it('⚠️ um botão FÍSICO faz sumir o controle na tela — a mesma regra do teclado (E13)', () => {
+    const p = makePlayer({ pad: 0 });
+    const ctx = buildCtx({ players: [p], isTouchMode: () => true });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0] })]);
+    api.pollPads();
+    expect(ctx.calls.hideTouchControls, 'o pad virtual ficou na tela por cima do jogo de quem tem um controle na mão').toBeGreaterThan(0);
+  });
+
+  it('⚠️ dentro do modal a ORDEM decide: com esquerda e confirmar no mesmo quadro, ganha esquerda', () => {
+    // 📌 A ordem é a mesma do `input/keydown`, e lá ela tem caso desde que uma mutação passou. Aqui não tinha:
+    // um controle entrega um RETRATO, sem ordem de chegada, então a única coisa que separa duas posições
+    // premidas no mesmo quadro é esta lista — e trocá-la faz a criança confirmar quando queria andar.
+    const p = makePlayer({ pad: 0, modalAberto: true });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0, 14] })]); // action2 e o direcional esquerdo
+    api.pollPads();
+    expect(ctx.calls.modalInput, 'confirmar passou à frente de andar').toEqual([[0, 'left']]);
+  });
+
   it('[Right] controle DirectInput sem mapa salvo, apertando algo em "playing": pausa e abre o wizard sozinho', () => {
     const players = [makePlayer({ pad: 0 })];
     const ctx = buildCtx({ players });
