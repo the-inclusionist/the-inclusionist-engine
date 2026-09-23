@@ -83,6 +83,39 @@ describe('the rows follow the cartridge\'s answer', () => {
     fecharTudo();
   });
 
+  it('🔴 [Right] and the game\'s HINT reaches the footer, which is where an explanation lives (ADR-0153; CLAUDE.md §4)', () => {
+    // 📏 Probed on 2026-09-23: this was the one blind branch of the rule that hides the rows with no subject. A cartridge
+    // could give its own explanation for the cane — «cada batida é um passo do bastão» — and the line that carries it to
+    // the child could be DELETED with the whole suite green. The label had a case; the sentence beside it had none.
+    //
+    // ⚠️ Read from `data-explain` and not from the row, because that is where the explanation ends up: `fillExplain` hides
+    // the `.opt-hint` and the footer reads this attribute when the child points at the row.
+    motor.mount(declaracao(), { acomodacoes: comAssunto({
+      caneSpacing: { label: 'Cane taps', hint: 'Every tap is one step of the stick.' },
+    }) });
+    motor.pausa.mostrar(0);
+    document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
+    document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
+    const linha = linhaDaBengala();
+    expect(linha.hidden, 'the cane row is hidden — the case would measure nothing').toBe(false);
+    expect(linha.dataset.explain, 'the game\'s own explanation never reached the footer')
+      .toBe('Every tap is one step of the stick.');
+    fecharTudo();
+  });
+
+  it('🎯 [Zero] a game that gives a word but NO hint keeps the engine\'s explanation, never an empty footer', () => {
+    // The pair of the case above: an absent hint is a legitimate answer, and it must not erase what the engine says.
+    motor.mount(declaracao(), { acomodacoes: COM_PERSONAGEM_E_BENGALA });
+    motor.pausa.mostrar(0);
+    document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
+    document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
+    const linha = linhaDaBengala();
+    expect(linha.dataset.explain, 'the row lost its explanation because the game gave none').toBeTruthy();
+    expect(linha.dataset.explain, 'the engine\'s explanation was replaced by nothing')
+      .not.toBe('Every tap is one step of the stick.');
+    fecharTudo();
+  });
+
   it('🔴 [Right] and swapping back to «no» hides them again — no leak from the previous cartridge (ADR-0142)', () => {
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
     motor.pausa.mostrar(0);
