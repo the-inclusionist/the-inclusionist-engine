@@ -143,6 +143,7 @@ import { initGamepad, padGameAnswers, seatEveryPlayer, type GamepadGameHooks } f
 import { whereTheChildIs, type Place } from '../ui/where-the-child-is.js';
 import { createSimulationOverTheWorld } from '../ui/simulation-over-the-world.js';
 import { createSimulationList } from '../ui/simulation-list.js';
+import { showOnlyRowsThatApply } from '../ui/audio-rows-that-apply.js';
 export type { GamepadGameHooks } from '../input/gamepad.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registerKeyboardMapping, saveKB, setKB, factoryWithGame, type KBDefaults } from '../input/keyboard.js';
@@ -2042,41 +2043,17 @@ export function createGame(o: CreateGameOptions): Engine {
       },
     });
     mountSoundInside(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
-    /*
-     * A BENGALA SÓ SE OFERECE A QUEM ANDA A PÉ (ADR-0153, `caneSpacing`).
-     *
-     * ⚠️ `hidden` NA LINHA, e não a linha fora do documento, e a razão é medida: o `initSettingsAudio` liga o
-     * `#cane-div` UMA VEZ, no arranque. Uma linha que não existisse no arranque e que um `mount()` posterior trouxesse
-     * chegaria sem ouvinte — um controle morto. `hidden` tira-a da árvore de acessibilidade inteira, que é o
-     * «não se oferece» do ADR-0113 cláusula 3, e deixa o ouvinte vivo para o cartucho que a tiver.
-     */
-    function esconderLinhasSemAssunto(): void {
-      const linha = $<HTMLElement>('#cane-div')?.closest<HTMLElement>('.ctrl-row');
-      const palavraDaBengala = subjectWord(cartucho.acomodacoes, 'caneSpacing');
-      if (linha) {
-        linha.hidden = palavraDaBengala === null;
-        // What applies carries the GAME's word (ADR-0153 confirmation). `mountAudioInside` re-labels in the engine's
-        // words on every open, and this runs after it; the game's hint, when given, goes where the footer reads it.
-        const rotulo = linha.querySelector<HTMLElement>('strong');
-        if (palavraDaBengala && rotulo) rotulo.textContent = palavraDaBengala.label;
-        const dica = linha.querySelector<HTMLElement>('.opt-hint');
-        if (palavraDaBengala?.hint && dica) dica.textContent = palavraDaBengala.hint;
-      }
-      /*
-       * 🔴 A NAVEGAÇÃO SONORA É DERIVADA DO CONTRATO, e não perguntada ao cartucho (ADR-0153): o sonar precisa de um
-       * mundo e de uma DIRECÇÃO, e `bearing` responde `none` em `hotspots`. Num jogo de lista de pontos o volume do
-       * sonar, da guarda e da guia eram três cursores sem assunto. Lido a cada render: a topologia é função, e muda
-       * entre fases (ADR-0084).
-       */
-      const sujeitos = contractSubjects({
+    // As duas linhas do painel auditivo que só existem onde há assunto — `ui/audio-rows-that-apply` diz porquê, e
+    // não é fiação. ⚠️ Lido a cada abertura: a topologia é função, e um jogo muda de exigências entre fases (ADR-0084).
+    const esconderLinhasSemAssunto = (): void => showOnlyRowsThatApply({
+      find: $,
+      caneWord: () => subjectWord(cartucho.acomodacoes, 'caneSpacing'),
+      hasNavigationSound: () => contractSubjects({
         declaration: cartucho.declaration,
         actions: cartucho.preset ? presetActions(cartucho.preset) : [],
         players: players().length,
-      });
-      const semNavegacao = !sujeitos.has('navigationSound');
-      const listaDaNavegacao = $<HTMLElement>('#navsound-list');
-      if (listaDaNavegacao) listaDaNavegacao.hidden = semNavegacao;
-    }
+      }).has('navigationSound'),
+    });
     esconderLinhasSemAssunto();
     audio = initSettingsAudio({
       $, srSay, store,

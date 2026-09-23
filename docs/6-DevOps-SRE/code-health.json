@@ -2,8 +2,8 @@
   "about": "ADR-0221 — the six measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID, a module is legitimately split, or the growth BUYS something no measure here can see — and in that third case the commit has to name the purchase and the falsifiable criterion that will show it landed (ADR-0221 point 6: the criterion is the co-change falling, not the number). Rewriting it to green a red build is the ratchet being unscrewed.",
   "takenOn": "2026-09-23",
   "ceiling": {
-    "codeLines": 187,
-    "decisionNodes": 37,
+    "codeLines": 182,
+    "decisionNodes": 36,
     "maxDepth": 4,
     "fanOut": 7,
     "globalReach": 0,
@@ -25,10 +25,10 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2029,
-      "decisionNodes": 270,
+      "codeLines": 2020,
+      "decisionNodes": 266,
       "maxDepth": 4,
-      "fanOut": 84,
+      "fanOut": 85,
       "globalReach": 0,
       "worstFunction": 69,
       "fanIn": 1
@@ -79,7 +79,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 15,
-      "fanIn": 2
+      "fanIn": 3
     },
     "core/actions.ts": {
       "codeLines": 75,
@@ -1400,6 +1400,15 @@
       "globalReach": 0,
       "worstFunction": 4,
       "fanIn": 3
+    },
+    "ui/audio-rows-that-apply.ts": {
+      "codeLines": 19,
+      "decisionNodes": 4,
+      "maxDepth": 2,
+      "fanOut": 1,
+      "globalReach": 0,
+      "worstFunction": 7,
+      "fanIn": 1
     },
     "ui/caa-sets.ts": {
       "codeLines": 37,
