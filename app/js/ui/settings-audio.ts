@@ -151,7 +151,7 @@ export interface SettingsAudioApi {
  */
 export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
   // Each entry is either a control row or a CONTAINER the panel fills with rows of its own.
-  const pecas: (ControlRowSpec | { readonly contentor: string; readonly rotulo?: string })[] = [
+  const pieces: (ControlRowSpec | { readonly contentor: string; readonly rotulo?: string })[] = [
     /*
      * 🔴 A COMPOSIÇÃO DO ADR-0151 E DAS ERRATAS DELE (2026-09-12), na ordem do geral para o particular:
      *   · o MODO CEGO primeiro, porque é o modo em que os outros sons passam a ser a tela — e SEM a dica: «é
@@ -197,30 +197,30 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
    * chega depois. Nenhum teste unitário o apanhava: todos correm num idioma só.
    */
   // ADR-0158: the rows go BEFORE the reset, never after it — the reset is the panel's last item, and «Voltar» its first.
-  const acoes = card.querySelector<HTMLElement>(':scope > .overlay__actions');
-  for (const peca of pecas) {
-    if ('contentor' in peca) {
-      if (peca.contentor === '@lista') { card.insertBefore(lista, acoes); continue; }
-      const jaHa = ctx.procurar('#' + peca.contentor);
+  const actions = card.querySelector<HTMLElement>(':scope > .overlay__actions');
+  for (const piece of pieces) {
+    if ('contentor' in piece) {
+      if (piece.contentor === '@lista') { card.insertBefore(lista, actions); continue; }
+      const jaHa = ctx.procurar('#' + piece.contentor);
       if (jaHa) {
-        if (peca.rotulo) jaHa.setAttribute('aria-label', peca.rotulo);
+        if (piece.rotulo) jaHa.setAttribute('aria-label', piece.rotulo);
         continue;
       }
       const c = ctx.criar('div');
-      c.id = peca.contentor;
+      c.id = piece.contentor;
       c.className = 'ctrl-list';
       c.setAttribute('role', 'group');
-      if (peca.rotulo) c.setAttribute('aria-label', peca.rotulo);
-      card.insertBefore(c, acoes);
+      if (piece.rotulo) c.setAttribute('aria-label', piece.rotulo);
+      card.insertBefore(c, actions);
       continue;
     }
-    const jaExiste = ctx.procurar('#' + peca.id);
-    if (jaExiste) {
-      const linha = jaExiste.closest<HTMLElement>('.ctrl-row');
-      if (linha) labelRow(linha, peca);
+    const alreadyThere = ctx.procurar('#' + piece.id);
+    if (alreadyThere) {
+      const linha = alreadyThere.closest<HTMLElement>('.ctrl-row');
+      if (linha) labelRow(linha, piece);
       continue;
     }
-    card.insertBefore(controlRow(ctx, peca).linha, acoes);
+    card.insertBefore(controlRow(ctx, piece).linha, actions);
   }
 }
 
@@ -233,21 +233,21 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
  * Idempotente e reetiquetável, como o irmão auditivo.
  */
 export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
-  const acoes = card.querySelector<HTMLElement>(':scope > .overlay__actions');
+  const actions = card.querySelector<HTMLElement>(':scope > .overlay__actions');
   const linhas: ControlRowSpec[] = [
     { id: 'audio-master', rotulo: t('audio.som'), dica: t('audio.som.dica') },
     { id: 'audio-master-vol', rotulo: t('audio.volume'), forma: 'cursor' },
   ];
-  for (const peca of linhas) {
-    const jaExiste = ctx.procurar('#' + peca.id);
-    if (jaExiste) {
-      const linha = jaExiste.closest<HTMLElement>('.ctrl-row');
-      if (linha) labelRow(linha, peca);
+  for (const piece of linhas) {
+    const alreadyThere = ctx.procurar('#' + piece.id);
+    if (alreadyThere) {
+      const linha = alreadyThere.closest<HTMLElement>('.ctrl-row');
+      if (linha) labelRow(linha, piece);
       continue;
     }
-    card.insertBefore(controlRow(ctx, peca).linha, lista.parentNode === card ? lista : acoes);
+    card.insertBefore(controlRow(ctx, piece).linha, lista.parentNode === card ? lista : actions);
   }
-  if (lista.parentNode !== card) card.insertBefore(lista, acoes);
+  if (lista.parentNode !== card) card.insertBefore(lista, actions);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -551,27 +551,27 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    */
   function refreshMarks(): void {
     const state = ctx.getAudioCat();
-    const mudou: boolean[] = [];
-    const marcar = (sel: string, changed: boolean): void => {
-      mudou.push(changed);
+    const didChange: boolean[] = [];
+    const mark = (sel: string, changed: boolean): void => {
+      didChange.push(changed);
       markChanged(ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
     };
-    marcar('#opt-modocego', ctx.getModoCego() !== DEFAULTS.blindMode);
-    marcar('#cane-div', ctx.getCaneBlockDiv() !== DEFAULTS.caneBlockDiv);
+    mark('#opt-modocego', ctx.getModoCego() !== DEFAULTS.blindMode);
+    mark('#cane-div', ctx.getCaneBlockDiv() !== DEFAULTS.caneBlockDiv);
     // ⚠️ DUAS MARCAS DE MENU, uma por painel: a de «Áudio» acesa por um sonar mudado mandaria a criança
     // procurar no painel errado.
-    const doSom: boolean[] = [];
+    const fromSound: boolean[] = [];
     for (const c of ctx.audioCats) {
       const d = defaultAudioCat(c.k);
       const a = state?.[c.k];
-      const mudouAqui = !!a && (a.on !== d.on || a.vol !== d.vol);
+      const changedHere = !!a && (a.on !== d.on || a.vol !== d.vol);
       if ((GEN_CATS as readonly string[]).includes(c.k)) {
-        doSom.push(mudouAqui);
-        markChanged(ctx.$<HTMLElement>(`[data-acat="${c.k}"]`)?.closest<HTMLElement>('.ctrl-row') ?? null, mudouAqui);
-      } else marcar(`[data-acat="${c.k}"]`, mudouAqui);
+        fromSound.push(changedHere);
+        markChanged(ctx.$<HTMLElement>(`[data-acat="${c.k}"]`)?.closest<HTMLElement>('.ctrl-row') ?? null, changedHere);
+      } else mark(`[data-acat="${c.k}"]`, changedHere);
     }
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="audio"]'), mudou);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="som"]'), doSom);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="audio"]'), didChange);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="som"]'), fromSound);
   }
 
   // ----- widgets estáticos (existem sempre no #audio; fiados UMA vez, nunca recriados por renderAudio) -----
@@ -640,7 +640,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   // e a saída de áudio por jogador NÃO entram — são escolha de dispositivo, não preferência restaurável, e
   // zerá-las tiraria da criança o fone que é dela numa sala compartilhada.
   /** Repõe as categorias de `keys` (as que existirem no mixer) no estado de fábrica. */
-  function reporCategorias(keys: readonly string[]): void {
+  function resetCategories(keys: readonly string[]): void {
     const state = ctx.getAudioCat();
     if (!state) return;
     for (const k of keys) {
@@ -656,14 +656,14 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     ctx.setCaneBlockDiv(DEFAULTS.caneBlockDiv);
     // 🔴 DESDE O ADR-0151 ESTE MENU NÃO TEM A MÚSICA: repor aqui a música seria alcançar fora de si — a regra do
     // escopo, acima. Tudo o que não é das categorias de gosto é deste painel.
-    reporCategorias(ctx.audioCats.map((c) => c.k).filter((k) => !(GEN_CATS as readonly string[]).includes(k)));
+    resetCategories(ctx.audioCats.map((c) => c.k).filter((k) => !(GEN_CATS as readonly string[]).includes(k)));
     renderAudio(); reflectModoCego();
     ctx.srSay(t('sr.audio.reset'));
   });
   // O «repor» do painel ÁUDIO: as categorias de gosto e nada mais.
-  const resetDoSom = ctx.$<HTMLButtonElement>('#som-reset');
-  if (resetDoSom) resetDoSom.addEventListener('click', () => {
-    reporCategorias(GEN_CATS);
+  const soundReset = ctx.$<HTMLButtonElement>('#som-reset');
+  if (soundReset) soundReset.addEventListener('click', () => {
+    resetCategories(GEN_CATS);
     renderAudio();
     ctx.srSay(t('sr.audio.reset'));
   });

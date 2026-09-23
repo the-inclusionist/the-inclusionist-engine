@@ -107,7 +107,7 @@ export function bindActive(gp: PadLike, bd: PadBinding | null | undefined): bool
 /** Ações do frame para este gamepad. `custom` = mapa salvo pelo wizard para este `gp.id` (null/`_skip` = usa o
  *  mapa PADRÃO da Gamepad API "standard": 0=pulo · 1=especial · 2/5/7=correr · 3=troca · 9=START). Direções
  *  custom caem de volta em stdDirs quando o binding do usuário não está ativo (D-pad/stick continuam vivos). */
-export function padActions(gp: PadLike, custom: PadMap | null, tabela: PadTable = GAMEPAD_STANDARD): PadActions {
+export function padActions(gp: PadLike, custom: PadMap | null, table: PadTable = GAMEPAD_STANDARD): PadActions {
   if (custom && !custom._skip) {
     const A = (k: string): boolean => bindActive(gp, bindingAt(custom, k));
     const sd = stdDirs(gp);
@@ -131,7 +131,7 @@ export function padActions(gp: PadLike, custom: PadMap | null, tabela: PadTable 
   // argumentos continua a ler exactamente o que lia.
   // ⚠️ E ela só decide neste ramo, que é o certo: o ramo de cima é o mapa que a CRIANÇA gravou no assistente,
   // e o padrão de um jogo não se sobrepõe a uma escolha dela.
-  const B = tabela;
+  const B = table;
   const at = (a: Action): boolean => { const i = B[a]; return typeof i === 'number' ? b(i) : false; };
   return {
     left: sd.left, right: sd.right, up: sd.up, down: sd.down,
@@ -176,7 +176,7 @@ export function padActions(gp: PadLike, custom: PadMap | null, tabela: PadTable 
  * é acomodação. Os derivados (`_start`, `_pause`) também passam: eles descrevem o que a raiz faz com
  * estas duas posições, não uma terceira.
  */
-const FORA_DO_CORTE = new Set(['start', 'select', '_start', '_pause']);
+const OUTSIDE_CUT = new Set(['start', 'select', '_start', '_pause']);
 
 /**
  * O MODO DE UM BOTÃO, APLICADO AO CONTROLE — a metade que faltava da empatia motora (issue #120).
@@ -206,16 +206,16 @@ export function oneButtonAtOnce(
   // que se passa aqui — só se pergunta «esta chave estava em baixo?».
   anterior: Readonly<Record<string, boolean | undefined>>,
   atual: PadActions,
-  ligado: boolean,
+  on: boolean,
 ): PadActions {
-  if (!ligado) return atual;
-  const cortaveis = Object.keys(atual).filter((k) => !FORA_DO_CORTE.has(k));
-  const ativas = cortaveis.filter((k) => atual[k] === true);
-  if (ativas.length <= 1) return atual;
+  if (!on) return atual;
+  const cuttable = Object.keys(atual).filter((k) => !OUTSIDE_CUT.has(k));
+  const active = cuttable.filter((k) => atual[k] === true);
+  if (active.length <= 1) return atual;
   // A que já valia tem prioridade; sem nenhuma, a primeira do retrato assume.
-  const mantida = ativas.find((k) => anterior[k] === true) ?? ativas[0];
+  const kept = active.find((k) => anterior[k] === true) ?? active[0];
   const saida: PadActions = { ...atual };
-  for (const k of ativas) if (k !== mantida) saida[k] = false;
+  for (const k of active) if (k !== kept) saida[k] = false;
   return saida;
 }
 
@@ -401,7 +401,7 @@ export interface GamepadCtx {
   /** A tela `i` está no modo `accessibility`? (ADR-0044, item 7 — o direcional dirige a barra do HUD.) */
   naBarraDe: (i: number) => boolean;
   /** Um passo dentro da barra. `temStart` é a borda do botão de pausa, que é a SEGUNDA saída do modo. */
-  navBar: (i: number, k: NavKeys, temStart: boolean) => void;
+  navBar: (i: number, k: NavKeys, hasStart: boolean) => void;
   sharedDialogOpen: () => HTMLElement | null;
   navDialog: (dlg: HTMLElement, k: NavKeys) => void;
   /** A tela de pausa do jogador. `HTMLElement` e não `{ hidden: boolean }`: o mínimo estrutural funciona
@@ -512,7 +512,7 @@ interface PadFrame {
    */
   readonly released: (k: ActionKey) => boolean;
   /** As seis intenções de menu. `comStart` só no título, onde o START é «começar» e não «sair». */
-  readonly navKeys: (comStart?: boolean) => NavKeys;
+  readonly navKeys: (withStart?: boolean) => NavKeys;
 }
 
 /** As oito posições que ESTE transporte lê: o direcional e as quatro acções. Os ombros e os gatilhos que um
@@ -527,7 +527,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
 
   // the page's one cache of stored maps (input/pad-wizard): a map saved by the engine's own wizard is read here next frame
   const padMapFor = (id: string): PadMap | null => padMap(id);
-  function actionsFor(gp: PadLike, tabela?: PadTable): PadActions { return padActions(gp, padMapFor(gp.id), tabela); }
+  function actionsFor(gp: PadLike, table?: PadTable): PadActions { return padActions(gp, padMapFor(gp.id), table); }
 
   // ----- wizard: the demonstration is THIS module's host's (the platformer's sprites), not the wizard's -----
   function wizDemo(k: string | null): void {
@@ -553,12 +553,12 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     if (img) img.src = ctx.spriteBase + a.seq[Math.floor(a.t / a.hold) % a.seq.length] + '.png';
   }
 
-  const assistente = createPadWizard({
+  const wizard = createPadWizard({
     getGamepads: () => ctx.getGamepads(),
     rotuloDaAcao: (acao) => ctx.rotuloDaAcao(acao),
-    dizer: (frase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = frase; ctx.srSay(frase); },
+    dizer: (phrase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = phrase; ctx.srSay(phrase); },
     progresso: (texto) => { const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = texto; },
-    srAlert: (frase) => ctx.srAlert(frase),
+    srAlert: (phrase) => ctx.srAlert(phrase),
     aoPasso: wizDemo,
     aoTique: wizDemoTick,
     aoFechar: (gi) => {
@@ -575,16 +575,16 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   function openPadWiz(): void {
     const ov = ctx.$<HTMLElement>('#padwiz'); if (!ov) return;
     ov.hidden = false; ctx.frontOverlay(ov);
-    assistente.abrir();
+    wizard.abrir();
   }
   // Wizard aberto AUTOMATICAMENTE (controle DirectInput sem mapa apertou algo): já sabemos qual controle é.
   function openPadWizFor(gp: PadLike): void {
     const ov = ctx.$<HTMLElement>('#padwiz'); if (!ov) return;
     ov.hidden = false; ctx.frontOverlay(ov);
-    assistente.abrirPara(gp);
+    wizard.abrirPara(gp);
   }
-  const closePadWiz = (save: boolean): void => assistente.fechar(save);
-  const padWizTick = (): void => assistente.tique();
+  const closePadWiz = (save: boolean): void => wizard.fechar(save);
+  const padWizTick = (): void => wizard.tique();
 
   const cancelBtn = ctx.$<HTMLButtonElement>('#padwiz-cancel');
   if (cancelBtn) cancelBtn.addEventListener('click', () => closePadWiz(false));
@@ -615,8 +615,8 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     padCur[gi] = cur; padPrevAct[gi] = cur;
     // 📌 O START conta como «sim» APENAS no título: lá ele é o botão que começa o jogo, e no cartão de pausa ou na barra
     // ele é a SAÍDA (ADR-0044 item 7). Um parâmetro em vez de três listas iguais a menos de um termo.
-    const navKeys = (comStart = false): NavKeys => ({
-      yes: edge('action2') || (comStart && startEdge), no: edge('action3'),
+    const navKeys = (withStart = false): NavKeys => ({
+      yes: edge('action2') || (withStart && startEdge), no: edge('action3'),
       up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right'),
     });
     return { gp, gi, owner, players, cur, startEdge, pauseEdge, edge, released, navKeys };
@@ -726,10 +726,10 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     // ⚠️ As oito posições, e não as seis com aresta: quem tem aresta é um subconjunto (`EDGE_BY_ACTION`), e as
     // outras duas — cima e baixo — sempre andaram por tecla segurada. Ao cartucho chegam as oito.
     const reachedPlay = pressWhatWentDown(f);
-    let algumaAresta = false;
+    let hasAnyEdge = false;
     for (const [act, flag] of EDGE_BY_ACTION) {
       if (!reachedPlay.has(act)) continue;
-      algumaAresta = true;
+      hasAnyEdge = true;
       if (edgeAllowed(act, p.easy)) p[flag] = true;
     }
     // 📌 A ARESTA DO CONTROLE, e ela conta MESMO QUANDO O FÁCIL A FILTRA (ADR-0113 cláusula 4): a
@@ -738,7 +738,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     // Modo Fácil ficar com a alternância do teclado enquanto joga no controle.
     // ⚠️ E É AQUI, no ramo de JOGO, e não nos de menu: `naBarraDe`, o título e a pausa são navegação, e
     // a pergunta que isto alimenta — que alternância vale AGORA — é sobre jogar.
-    if (algumaAresta) ctx.playerEdge(f.owner, 'gamepad');
+    if (hasAnyEdge) ctx.playerEdge(f.owner, 'gamepad');
   }
 
   /** Com o mundo a andar: a barra rápida primeiro, depois o assento, a tela abandonada, e por fim o jogo. */
@@ -762,7 +762,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   }
 
   function pollPads(): void {
-    if (assistente.estado()) return; // durante o wizard, os pads falam só com ele
+    if (wizard.estado()) return; // durante o wizard, os pads falam só com ele
     const pads = ctx.getGamepads();
     if (!pads) return;
     if (ctx.isAttractActive()) {
@@ -785,12 +785,12 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       // Os três destinos abaixo pediam a FASE; hoje pedem os fatos. O título é derivado por exclusão de propósito:
       // numa cena que este módulo não conheça (um mapa, uma tela de resultados), o controle deve navegar como no
       // título — que é o comportamento seguro — em vez de não fazer nada.
-      const rodando = ctx.mundoRodando(), pausado = ctx.menuDePausa();
-      if (!rodando && !pausado) { steerTitle(f); continue; }
-      if (pausado) { steerPause(f); continue; }
-      if (rodando) steerGame(f);
+      const running = ctx.mundoRodando(), paused = ctx.menuDePausa();
+      if (!running && !paused) { steerTitle(f); continue; }
+      if (paused) { steerPause(f); continue; }
+      if (running) steerGame(f);
     }
   }
 
-  return { pollPads, openPadWiz, openPadWizFor, closePadWiz, padWizTick, padMapFor, getPadWiz: () => assistente.estado() };
+  return { pollPads, openPadWiz, openPadWizFor, closePadWiz, padWizTick, padMapFor, getPadWiz: () => wizard.estado() };
 }

@@ -32,9 +32,9 @@ export interface LocalePort {
   /** The language the host prefers when nothing is stored (the browser's `navigator.language`). */
   readonly preferred?: () => string | null;
 }
-let portaDoIdioma: LocalePort | null = null;
+let localePort: LocalePort | null = null;
 /** Gives this module the port for the chosen language; the composition root calls it before `initI18n`. */
-export function loadLocale(p: LocalePort): void { portaDoIdioma = p; }
+export function loadLocale(p: LocalePort): void { localePort = p; }
 
 /* ===================== O DICIONÁRIO DE QUEM CONSOME A ENGINE =====================
  *
@@ -63,21 +63,21 @@ const EXTRA: Record<string, LocaleDict> = {};
  * antes de existir texto na tela.
  */
 export function registerDict(code: string, entries: LocaleDict): string[] {
-  const recusadas: string[] = [];
-  const aceites: LocaleDict = {};
+  const refused: string[] = [];
+  const accepted: LocaleDict = {};
   for (const chave in entries) {
-    if (temMarcacao(entries[chave])) recusadas.push(chave);
-    else aceites[chave] = entries[chave]!;
+    if (hasMarkup(entries[chave])) refused.push(chave);
+    else accepted[chave] = entries[chave]!;
   }
-  if (recusadas.length) {
+  if (refused.length) {
     // Alto, e não em silêncio: quem escreveu a string tem de saber que ela não entrou. Descartar calado
     // faria a chave crua aparecer na tela sem nada explicando, e isso lê-se como defeito da engine.
     try {
-      console.error('[inclusionist] i18n: chaves recusadas por conterem marcação — ' + recusadas.join(', '));
+      console.error('[inclusionist] i18n: chaves recusadas por conterem marcação — ' + refused.join(', '));
     } catch { /* noop */ }
   }
-  EXTRA[code] = { ...EXTRA[code], ...aceites };
-  return recusadas;
+  EXTRA[code] = { ...EXTRA[code], ...accepted };
+  return refused;
 }
 
 /**
@@ -87,16 +87,16 @@ export function registerDict(code: string, entries: LocaleDict): string[] {
  * A cartridge that registered nothing is not accused: strings it never gave the engine, the engine cannot see.
  */
 export function dictionaryGaps(): string[] {
-  const registadas = new Set<string>();
-  for (const code of AVAILABLE) for (const chave in EXTRA[code] ?? {}) registadas.add(chave);
-  if (!registadas.size) return [];
-  const MOSTRAR = 5;
+  const registered = new Set<string>();
+  for (const code of AVAILABLE) for (const chave in EXTRA[code] ?? {}) registered.add(chave);
+  if (!registered.size) return [];
+  const SHOW = 5;
   const linhas: string[] = [];
   for (const code of AVAILABLE) {
-    const faltam = [...registadas].filter((chave) => !(chave in (EXTRA[code] ?? {})));
+    const faltam = [...registered].filter((chave) => !(chave in (EXTRA[code] ?? {})));
     if (!faltam.length) continue;
-    const resto = faltam.length > MOSTRAR ? ` (and ${faltam.length - MOSTRAR} more)` : '';
-    linhas.push(`the cartridge's dictionary lacks ${code} for ${faltam.slice(0, MOSTRAR).join(', ')}${resto}: `
+    const resto = faltam.length > SHOW ? ` (and ${faltam.length - SHOW} more)` : '';
+    linhas.push(`the cartridge's dictionary lacks ${code} for ${faltam.slice(0, SHOW).join(', ')}${resto}: `
       + `a child playing in ${code} reads the fallback there (registerDict)`);
   }
   return linhas;
@@ -121,7 +121,7 @@ export function dictionaryGaps(): string[] {
  * `a < b` escrito com espaço? Não: `< ` não casa. Recusa «5<10»? Não, o dígito não casa. O que ele recusa é
  * o que se parece com uma tag, e uma frase de interface que precise disso precisa de outra frase.
  */
-function temMarcacao(valor: string | undefined): boolean {
+function hasMarkup(valor: string | undefined): boolean {
   return typeof valor === 'string' && (/<[a-zA-Z/!?]/.test(valor) || /&[a-zA-Z#][a-zA-Z0-9]*;/.test(valor));
 }
 
@@ -139,12 +139,12 @@ function temMarcacao(valor: string | undefined): boolean {
  * O degrau 2 vir ANTES do 3 é a única ordem defensável: idioma certo da engine vale mais que idioma errado do
  * consumidor. A inversão daria "Potência de 2" numa interface em espanhol que tinha a tradução na mão.
  */
-function resolver(key: string): string {
-  const doJogo = EXTRA[locale];
-  if (doJogo && key in doJogo) return doJogo[key];
+function resolveKey(key: string): string {
+  const fromGame = EXTRA[locale];
+  if (fromGame && key in fromGame) return fromGame[key];
   if (key in dict) return dict[key];
-  const doJogoEmPt = EXTRA.pt;
-  if (doJogoEmPt && key in doJogoEmPt) return doJogoEmPt[key];
+  const fromGameInPt = EXTRA.pt;
+  if (fromGameInPt && key in fromGameInPt) return fromGameInPt[key];
   return key in base ? base[key] : key;
 }
 
@@ -182,7 +182,7 @@ let dict: LocaleDict = base;
 
 // Traduz uma chave; a cadeia de fallback está em `resolver()` logo acima. Interpola {param}.
 export function t(key: string, params?: Record<string, string | number>): string {
-  let s = resolver(key);
+  let s = resolveKey(key);
   if (params) for (const k in params) s = s.replaceAll('{' + k + '}', String(params[k]));
   return s;
 }
@@ -219,26 +219,26 @@ async function ensure(code: string): Promise<LocaleDict> {
 // Troca o idioma (carrega sob demanda), persiste, atualiza <html lang>, reaplica o DOM e avisa a UI.
 export async function setLocale(code: string): Promise<void> {
   // first, before anything changes: a language switched and then refused would leave the page half moved (ADR-0178)
-  const porta = portaDoIdioma;
-  if (!porta) throw new Error('core/i18n: setLocale kept a language before loadLocale — the composition root loads the stored settings first (ADR-0178)');
+  const port = localePort;
+  if (!port) throw new Error('core/i18n: setLocale kept a language before loadLocale — the composition root loads the stored settings first (ADR-0178)');
   if (!AVAILABLE.includes(code)) code = 'pt';
   dict = await ensure(code);
   locale = code;
-  porta.set(porta.KEYS.lang, code);
+  port.set(port.KEYS.lang, code);
   // 📌 The three page effects — `<html lang>`, re-translating the markup, telling the page — in ONE call to the host, which
   // is what keeps this module free of `document` and `window` (ADR-0173, ADR-0221 step 7g).
-  porta.applied?.(locale, bcp47(code));
+  port.applied?.(locale, bcp47(code));
 }
 
 function pickDefault(): string {
-  const saved = portaDoIdioma ? portaDoIdioma.get(portaDoIdioma.KEYS.lang, null) : null;
+  const saved = localePort ? localePort.get(localePort.KEYS.lang, null) : null;
   if (saved && AVAILABLE.includes(saved)) return saved;
-  const nav = ((portaDoIdioma?.preferred?.() || 'pt').slice(0, 2)).toLowerCase();
+  const nav = ((localePort?.preferred?.() || 'pt').slice(0, 2)).toLowerCase();
   return AVAILABLE.includes(nav) ? nav : 'pt';
 }
 
 /** Promessa do carregamento pedido no boot. Resolve na hora quando o idioma é pt (dicionário estático). */
-let pendente: Promise<void> = Promise.resolve();
+let pending: Promise<void> = Promise.resolve();
 
 /**
  * Boot: aplica pt (síncrono, para a página nunca ficar em branco) e, se o idioma preferido for outro, PEDE a
@@ -258,7 +258,7 @@ export function initI18n(root: ParentNode): string {
   const def = pickDefault();
   // `.catch` mudo de propósito: um chunk de locale que não carrega degrada para pt, e degradar é MUITO melhor
   // que travar o boot. Sem ele, um `await localeReady()` lá fora derrubaria o jogo inteiro por causa do idioma.
-  if (def !== 'pt') pendente = setLocale(def).catch(() => { /* fica em pt */ });
+  if (def !== 'pt') pending = setLocale(def).catch(() => { /* fica em pt */ });
   return locale;
 }
 
@@ -277,7 +277,7 @@ export function initI18n(root: ParentNode): string {
  * que segue com o Dev. Responde à menor, que não tem duas respostas: a interface não se constrói antes de o
  * idioma ser conhecido.
  */
-export function localeReady(): Promise<void> { return pendente; }
+export function localeReady(): Promise<void> { return pending; }
 
 const i18n = { t, getLocale, availableLocales, applyDom, setLocale, initI18n, localeReady, registerDict };
 export default i18n;

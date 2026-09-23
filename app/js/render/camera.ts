@@ -41,16 +41,16 @@ export interface Camera { camX: number; camY: number }
  * que já existia e está preservado de propósito; o mapa de hoje (896×992 contra 320×180) nunca chega lá, mas
  * uma fase pequena chegaria, e é melhor que o caso esteja escrito do que descoberto.
  */
-export function clampInside(cam: Camera, mundo: Size, tela: Size): Camera {
+export function clampInside(cam: Camera, world: Size, screen: Size): Camera {
   return {
-    camX: Math.max(0, Math.min(cam.camX, mundo.w - tela.w)),
-    camY: Math.max(0, Math.min(cam.camY, mundo.h - tela.h)),
+    camX: Math.max(0, Math.min(cam.camX, world.w - screen.w)),
+    camY: Math.max(0, Math.min(cam.camY, world.h - screen.h)),
   };
 }
 
 /** Põe `(alvoX, alvoY)` no CENTRO da tela e prende no mundo. O alvo é um ponto — quem tem corpo o converte. */
-export function frameOn(alvoX: number, alvoY: number, mundo: Size, tela: Size): Camera {
-  return clampInside({ camX: alvoX - tela.w / 2, camY: alvoY - tela.h / 2 }, mundo, tela);
+export function frameOn(targetX: number, targetY: number, world: Size, screen: Size): Camera {
+  return clampInside({ camX: targetX - screen.w / 2, camY: targetY - screen.h / 2 }, world, screen);
 }
 
 /**
@@ -63,9 +63,9 @@ export function frameOn(alvoX: number, alvoY: number, mundo: Size, tela: Size): 
  * @param rx deslocamento horizontal já sorteado, em [-1, 1]
  * @param ry idem, vertical
  */
-export function shake(cam: Camera, mundo: Size, tela: Size, amp: number, rx: number, ry: number): Camera {
+export function shake(cam: Camera, world: Size, screen: Size, amp: number, rx: number, ry: number): Camera {
   if (!(amp > 0)) return cam;
-  return clampInside({ camX: cam.camX + rx * amp, camY: cam.camY + ry * amp }, mundo, tela);
+  return clampInside({ camX: cam.camX + rx * amp, camY: cam.camY + ry * amp }, world, screen);
 }
 
 /* ===================== M2 · A CÂMERA COMO OBJETO ===================== */
@@ -96,13 +96,13 @@ export interface CameraObj {
   /** Onde a câmera está, sem tremor, pré-arredondamento. */
   readonly base: Camera;
   /** Segue o alvo respeitando a zona-morta e prende no mundo. Devolve a base nova. */
-  seguir(alvoX: number, alvoY: number): Camera;
+  seguir(targetX: number, targetY: number): Camera;
   /** Centra no alvo AGORA, ignorando a zona-morta: nascimento, renascimento, troca de fase. */
-  pular(alvoX: number, alvoY: number): Camera;
+  pular(targetX: number, targetY: number): Camera;
   /** Base + tremor, preso no mundo. NÃO altera a base — ver o cabeçalho. */
   quadro(amp: number, rx: number, ry: number): Camera;
   /** Mundo e/ou tela mudaram (fase nova, viewport dividido). Reprende a base no que passou a valer. */
-  redimensionar(mundo?: Size, tela?: Size): Camera;
+  redimensionar(world?: Size, screen?: Size): Camera;
 }
 
 /**
@@ -112,31 +112,31 @@ export interface CameraObj {
  * `alvo - tela/2`, que é `frameOn` letra por letra. É o que permite trocar o `placeCam` por esta câmera sem
  * mudar um pixel do que a criança vê, e escolher um valor de zona depois, como decisão separada.
  */
-export function createCamera(mundo: Size, tela: Size, zona: DeadZone = { w: 0, h: 0 }): CameraObj {
-  let m = mundo, t = tela;
+export function createCamera(world: Size, screen: Size, zone: DeadZone = { w: 0, h: 0 }): CameraObj {
+  let m = world, t = screen;
   let base: Camera = { camX: 0, camY: 0 };
 
   /** Quanto a câmera precisa andar num eixo para o alvo voltar para dentro da zona. Zero se já está dentro. */
-  const correcao = (alvo: number, cam: number, telaLado: number, zonaLado: number): number => {
-    const meia = Math.max(0, zonaLado) / 2;
-    const d = alvo - (cam + telaLado / 2); // distância do alvo ao CENTRO da tela
-    if (Math.abs(d) <= meia) return 0;
-    return d - Math.sign(d) * meia; // anda o mínimo: o alvo pousa na BORDA da zona, não no centro
+  const correcao = (alvo: number, cam: number, screenSide: number, zoneSide: number): number => {
+    const half = Math.max(0, zoneSide) / 2;
+    const d = alvo - (cam + screenSide / 2); // distância do alvo ao CENTRO da tela
+    if (Math.abs(d) <= half) return 0;
+    return d - Math.sign(d) * half; // anda o mínimo: o alvo pousa na BORDA da zona, não no centro
   };
 
   return {
     get base() { return base; },
 
-    seguir(alvoX, alvoY) {
+    seguir(targetX, targetY) {
       base = clampInside({
-        camX: base.camX + correcao(alvoX, base.camX, t.w, zona.w),
-        camY: base.camY + correcao(alvoY, base.camY, t.h, zona.h),
+        camX: base.camX + correcao(targetX, base.camX, t.w, zone.w),
+        camY: base.camY + correcao(targetY, base.camY, t.h, zone.h),
       }, m, t);
       return base;
     },
 
-    pular(alvoX, alvoY) {
-      base = frameOn(alvoX, alvoY, m, t);
+    pular(targetX, targetY) {
+      base = frameOn(targetX, targetY, m, t);
       return base;
     },
 
@@ -144,9 +144,9 @@ export function createCamera(mundo: Size, tela: Size, zona: DeadZone = { w: 0, h
       return shake(base, m, t, amp, rx, ry);
     },
 
-    redimensionar(novoMundo, novaTela) {
-      if (novoMundo) m = novoMundo;
-      if (novaTela) t = novaTela;
+    redimensionar(newWorld, newScreen) {
+      if (newWorld) m = newWorld;
+      if (newScreen) t = newScreen;
       base = clampInside(base, m, t);
       return base;
     },

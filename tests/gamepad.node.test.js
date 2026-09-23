@@ -980,11 +980,11 @@ describe('input/pad-wizard — o assistente de mapeamento fala por t(), sem exce
     const falas = CODIGO.filter(([, l]) => /ctx\.dizer\s*\(/.test(l));
     expect(falas.length, 'ninguem fala pelo assistente; rever este caso').toBeGreaterThan(0);
     const crus = falas
-      .filter(([, l]) => !/ctx\.dizer\s*\(\s*t\s*\(/.test(l) && !/ctx\.dizer\s*\(\s*frase\s*\)/.test(l))
+      .filter(([, l]) => !/ctx\.dizer\s*\(\s*t\s*\(/.test(l) && !/ctx\.dizer\s*\(\s*phrase\s*\)/.test(l))
       .map(([n, l]) => `${n}: ${l.trim()}`);
     expect(crus, 'o assistente fala uma frase que nao passa por t()').toEqual([]);
     // the one `ctx.dizer(frase)` is `comecar`'s, and every caller of `comecar` hands it a `t(`
-    const comecos = CODIGO.filter(([, l]) => /comecar\s*\(/.test(l) && !/function comecar/.test(l));
+    const comecos = CODIGO.filter(([, l]) => /begin\s*\(/.test(l) && !/function begin/.test(l));
     expect(comecos.length).toBeGreaterThan(0);
     for (const [n, l] of comecos) expect(l, `linha ${n}`).toMatch(/t\s*\(\s*'pad\.wiz\./);
   });

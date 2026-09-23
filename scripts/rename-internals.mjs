@@ -115,10 +115,23 @@ if (mode === '--list') {
   }
 } else if (mode === '--apply') {
   const jobs = JSON.parse(readFileSync(rest[0], 'utf8'));
+  /*
+   * ⚠️ TODOS OS FICHEIROS SÃO CONFERIDOS ANTES DE UM SÓ SER ESCRITO. A primeira versão aplicava em ordem e parava
+   * na primeira colisão, o que deixava o lote PELA METADE — metade renomeada, metade não, e a correcção seguinte
+   * a bater de novo no guarda 3 por causa do que já tinha aterrado. Um lote é uma decisão só: ou entra inteiro,
+   * ou não entra.
+   */
+  const clashes = [];
+  for (const [file, map] of Object.entries(jobs)) {
+    const src = parse(file);
+    const present = new Set();
+    (function scan(n) { if (ts.isIdentifier(n)) present.add(n.text); n.forEachChild(scan); })(src);
+    for (const [from, to] of Object.entries(map)) if (present.has(to) && from !== to) clashes.push(`${file}: ${from}->${to}`);
+  }
+  if (clashes.length) { console.error(`COLISÕES (nada foi escrito):\n  ${clashes.join('\n  ')}`); process.exit(3); }
   let total = 0;
   for (const [file, map] of Object.entries(jobs)) {
     const r = apply(file, map);
-    if (r.clash) { console.error(`COLISÃO em ${file}: ${r.clash.join(', ')}`); process.exit(3); }
     console.log(`${file}: ${r.renamed}`);
     total += r.renamed;
   }

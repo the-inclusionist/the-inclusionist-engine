@@ -83,11 +83,11 @@ export interface Route {
   readonly passos: number;
 }
 
-const ORCAMENTO_PADRAO = 4096;
+const DEFAULT_BUDGET = 4096;
 
 /** Chave de um ponto na fila. Arredondada, porque no contínuo os pontos nascem de somas de `passo`. */
-const chave = (s: Spot, casas: number): string =>
-  s.x.toFixed(casas) + '|' + s.y.toFixed(casas) + '|' + (s.z ?? 0).toFixed(casas);
+const chave = (s: Spot, cells: number): string =>
+  s.x.toFixed(cells) + '|' + s.y.toFixed(cells) + '|' + (s.z ?? 0).toFixed(cells);
 
 /**
  * Os deslocamentos de UM passo, na métrica declarada.
@@ -98,21 +98,21 @@ const chave = (s: Spot, casas: number): string =>
  * ler uma amostragem, não uma trajetória — e é por isso que `passos` é uma contagem de células e não uma
  * medida física.
  */
-function vizinhos(topo: Topology, passo: number): Spot[] {
+function neighbours(topo: Topology, passo: number): Spot[] {
   if (topo.kind === 'hotspots') return [];
   const dims = topo.size.length;
-  const ortogonal = topo.move === 'orthogonal';
-  const fora: Spot[] = [];
-  const eixos = [-1, 0, 1];
-  for (const dx of eixos) for (const dy of eixos) {
-    for (const dz of dims > 2 ? eixos : [0]) {
+  const orthogonal = topo.move === 'orthogonal';
+  const out: Spot[] = [];
+  const axes = [-1, 0, 1];
+  for (const dx of axes) for (const dy of axes) {
+    for (const dz of dims > 2 ? axes : [0]) {
       const n = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
       if (n === 0) continue;
-      if (ortogonal && n > 1) continue; // L¹: a diagonal não existe
-      fora.push({ x: dx * passo, y: dy * passo, z: dz * passo });
+      if (orthogonal && n > 1) continue; // L¹: a diagonal não existe
+      out.push({ x: dx * passo, y: dy * passo, z: dz * passo });
     }
   }
-  return fora;
+  return out;
 }
 
 /** O ponto cabe na extensão declarada? Grade conta células 0..n−1; contínuo conta unidades 0..n. */
@@ -143,40 +143,40 @@ export function routeTo(ctx: RouteCtx, de: Spot, alvos: readonly Spot[]): Route 
 
   const passo = topo.kind === 'continuous' ? topo.unit : 1;
   if (!(passo > 0)) return null; // uma unidade de zero faria a fila andar sem sair do sítio
-  const casas = topo.kind === 'continuous' ? 4 : 0;
+  const cells = topo.kind === 'continuous' ? 4 : 0;
   // Chegou? Na grade é a mesma célula; no contínuo é meio passo, porque a grelha não cai em cima do alvo.
-  const tolerancia = topo.kind === 'continuous' ? 0.5 : 0;
-  const chegou = (s: Spot): Spot | null =>
-    alvos.find((a) => distance(topo, s, a) <= tolerancia) ?? null;
+  const tolerance = topo.kind === 'continuous' ? 0.5 : 0;
+  const arrived = (s: Spot): Spot | null =>
+    alvos.find((a) => distance(topo, s, a) <= tolerance) ?? null;
 
-  const alvoAqui = chegou(de);
-  if (alvoAqui) return { proximo: de, ate: alvoAqui, passos: 0 };
+  const targetHere = arrived(de);
+  if (targetHere) return { proximo: de, ate: targetHere, passos: 0 };
 
-  const saltos = vizinhos(topo, passo);
-  const teto = ctx.orcamento ?? ORCAMENTO_PADRAO;
-  const vistos = new Set<string>([chave(de, casas)]);
+  const saltos = neighbours(topo, passo);
+  const teto = ctx.orcamento ?? DEFAULT_BUDGET;
+  const seen = new Set<string>([chave(de, cells)]);
   // Cada item leva o PRIMEIRO passo que o originou — é só isso que a pista precisa de saber no fim.
-  let fila: { at: Spot; primeiro: Spot; passos: number }[] = [{ at: de, primeiro: de, passos: 0 }];
+  let queue: { at: Spot; primeiro: Spot; passos: number }[] = [{ at: de, primeiro: de, passos: 0 }];
 
-  while (fila.length) {
-    const proxima: typeof fila = [];
-    for (const item of fila) {
+  while (queue.length) {
+    const next: typeof queue = [];
+    for (const item of queue) {
       for (const d of saltos) {
-        const vizinho: Spot = { x: item.at.x + d.x, y: item.at.y + d.y, z: (item.at.z ?? 0) + (d.z ?? 0) };
-        if (!isInside(topo, vizinho)) continue;
-        const k = chave(vizinho, casas);
-        if (vistos.has(k)) continue;
-        vistos.add(k);
-        if (vistos.size > teto) return null; // «não sei», e é uma resposta
-        const primeiro = item.passos === 0 ? vizinho : item.primeiro;
+        const neighbour: Spot = { x: item.at.x + d.x, y: item.at.y + d.y, z: (item.at.z ?? 0) + (d.z ?? 0) };
+        if (!isInside(topo, neighbour)) continue;
+        const k = chave(neighbour, cells);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        if (seen.size > teto) return null; // «não sei», e é uma resposta
+        const primeiro = item.passos === 0 ? neighbour : item.primeiro;
         // O ÚLTIMO PASSO É SEMPRE PERMITIDO: um alvo pode estar declarado numa célula que não se atravessa.
-        const alvo = chegou(vizinho);
+        const alvo = arrived(neighbour);
         if (alvo) return { proximo: primeiro, ate: alvo, passos: item.passos + 1 };
-        if (!isWalkable(ctx.roleAt(vizinho))) continue;
-        proxima.push({ at: vizinho, primeiro, passos: item.passos + 1 });
+        if (!isWalkable(ctx.roleAt(neighbour))) continue;
+        next.push({ at: neighbour, primeiro, passos: item.passos + 1 });
       }
     }
-    fila = proxima;
+    queue = next;
   }
   return null;
 }

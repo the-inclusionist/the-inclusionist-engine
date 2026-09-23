@@ -78,21 +78,21 @@ export interface PasswordCodec {
   /** Empacota os valores. Lança se algum campo faltar ou não couber — ver a nota em `codificar`. */
   codificar(valores: Readonly<Record<string, number>>): string;
   /** Desempacota. `null` = senha inválida (comprimento, símbolo, soma ou enchimento). */
-  decodificar(senha: string): Record<string, number> | null;
+  decodificar(password: string): Record<string, number> | null;
 }
 
 /** Crockford base32: sem I, L, O e U. Índice = valor de 5 bits. */
 export const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 /** O módulo da soma ponderada. Ver a decisão 2 no topo: é o TAMANHO dele que dá a garantia, e o limite de 32. */
-const MODULO = 1021;
+const MODULUS = 1021;
 /** Símbolos do corpo, no máximo. Acima disso a garantia da soma cairia sem nenhum sintoma visível. */
 const MAX_SIMBOLOS = 32;
 
-const VALOR_DE = new Map<string, number>();
-for (let i = 0; i < ALPHABET.length; i++) VALOR_DE.set(ALPHABET[i]!, i);
+const VALUE_OF = new Map<string, number>();
+for (let i = 0; i < ALPHABET.length; i++) VALUE_OF.set(ALPHABET[i]!, i);
 // A leniência de Crockford, só na LEITURA. Escrever jamais produz estes três.
-VALOR_DE.set('I', 1); VALOR_DE.set('L', 1); VALOR_DE.set('O', 0);
+VALUE_OF.set('I', 1); VALUE_OF.set('L', 1); VALUE_OF.set('O', 0);
 
 /**
  * A soma ponderada pela posição, módulo `MODULO`, como DOIS símbolos.
@@ -100,9 +100,9 @@ VALOR_DE.set('I', 1); VALOR_DE.set('L', 1); VALOR_DE.set('O', 0);
  * O peso `i+1` (e não `i`) é o que faz o primeiro símbolo contar: com peso 0, trocar o primeiro caractere
  * por qualquer outro passaria despercebido — e o primeiro caractere é justamente o que mais se digita errado.
  */
-function soma(simbolos: readonly number[]): [number, number] {
+function sum(simbolos: readonly number[]): [number, number] {
   let c = 0;
-  for (let i = 0; i < simbolos.length; i++) c = (c + (i + 1) * simbolos[i]!) % MODULO;
+  for (let i = 0; i < simbolos.length; i++) c = (c + (i + 1) * simbolos[i]!) % MODULUS;
   return [(c >> 5) & 31, c & 31];
 }
 
@@ -123,12 +123,12 @@ export function createPasswordCodec(campos: readonly PasswordField[]): PasswordC
   if (campos.length === 0) {
     throw new Error('core/password: empty schema — a password with zero fields carries only its own checksum. Declare at least one field, or skip the codec.');
   }
-  const vistos = new Set<string>();
+  const seen = new Set<string>();
   let bitsTotal = 0;
   for (const c of campos) {
     if (!c.nome) throw new Error('core/password: field without a name — the name is the key it gets in the object `decodificar` returns.');
-    if (vistos.has(c.nome)) throw new Error(`core/password: field "${c.nome}" declared twice — the second one would shadow the first when reading.`);
-    vistos.add(c.nome);
+    if (seen.has(c.nome)) throw new Error(`core/password: field "${c.nome}" declared twice — the second one would shadow the first when reading.`);
+    seen.add(c.nome);
     if (!Number.isInteger(c.bits) || c.bits < 1 || c.bits > 30) {
       throw new Error(`core/password: field "${c.nome}" asks for ${c.bits} bits — use an integer from 1 to 30 (a 0-bit field stores nothing; above 30 the bitwise arithmetic in JS stops being exact).`);
     }
@@ -139,18 +139,18 @@ export function createPasswordCodec(campos: readonly PasswordField[]): PasswordC
   if (simbolosCorpo > MAX_SIMBOLOS) {
     throw new Error(`core/password: ${bitsTotal} bits would take ${simbolosCorpo} symbols, and above ${MAX_SIMBOLOS} the weighted checksum stops detecting EVERY transposition (see decision 2 at the top). Store less, or split it into two passwords.`);
   }
-  const listaCampos = campos.map((c) => Object.freeze({ nome: c.nome, bits: c.bits }));
+  const fieldList = campos.map((c) => Object.freeze({ nome: c.nome, bits: c.bits }));
 
   return {
     comprimento: simbolosCorpo + 2,
-    campos: Object.freeze(listaCampos),
+    campos: Object.freeze(fieldList),
 
     codificar(valores) {
       // Bit a bit, do mais significativo ao menos, na ordem declarada. Escrito assim — e não com `<<` sobre
       // um acumulador — porque um esquema de 40 bits estouraria os 32 bits dos operadores do JS, e o sintoma
       // seria uma senha que decodifica errado só nos campos do fim.
       const bits: number[] = [];
-      for (const c of listaCampos) {
+      for (const c of fieldList) {
         const v = valores[c.nome];
         const teto = 2 ** c.bits - 1;
         if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > teto) {
@@ -164,24 +164,24 @@ export function createPasswordCodec(campos: readonly PasswordField[]): PasswordC
       for (let i = 0; i < bits.length; i += 5) {
         simbolos.push((bits[i]! << 4) | (bits[i + 1]! << 3) | (bits[i + 2]! << 2) | (bits[i + 3]! << 1) | bits[i + 4]!);
       }
-      const [s1, s2] = soma(simbolos);
+      const [s1, s2] = sum(simbolos);
       return [...simbolos, s1, s2].map((v) => ALPHABET[v]!).join('');
     },
 
-    decodificar(senha) {
-      if (typeof senha !== 'string') return null;
-      const cru: number[] = [];
-      for (const ch of senha.toUpperCase()) {
+    decodificar(password) {
+      if (typeof password !== 'string') return null;
+      const raw: number[] = [];
+      for (const ch of password.toUpperCase()) {
         if (ch === ' ' || ch === '-' || ch === '·') continue; // separadores de leitura (ver `formatPassword`)
-        const v = VALOR_DE.get(ch);
+        const v = VALUE_OF.get(ch);
         if (v === undefined) return null; // símbolo fora do alfabeto: não vale adivinhar o que ela quis dizer
-        cru.push(v);
+        raw.push(v);
       }
-      if (cru.length !== simbolosCorpo + 2) return null;
+      if (raw.length !== simbolosCorpo + 2) return null;
 
-      const simbolos = cru.slice(0, simbolosCorpo);
-      const [s1, s2] = soma(simbolos);
-      if (s1 !== cru[simbolosCorpo] || s2 !== cru[simbolosCorpo + 1]) return null;
+      const simbolos = raw.slice(0, simbolosCorpo);
+      const [s1, s2] = sum(simbolos);
+      if (s1 !== raw[simbolosCorpo] || s2 !== raw[simbolosCorpo + 1]) return null;
 
       const bits: number[] = [];
       for (const v of simbolos) for (let b = 4; b >= 0; b--) bits.push((v >> b) & 1);
@@ -189,14 +189,14 @@ export function createPasswordCodec(campos: readonly PasswordField[]): PasswordC
       // daqui, e aceitá-la seria aceitar uma senha que este módulo é incapaz de gerar.
       for (let i = bitsTotal; i < bits.length; i++) if (bits[i] !== 0) return null;
 
-      const fora: Record<string, number> = {};
+      const out: Record<string, number> = {};
       let p = 0;
-      for (const c of listaCampos) {
+      for (const c of fieldList) {
         let v = 0;
         for (let b = 0; b < c.bits; b++) v = v * 2 + bits[p++]!;
-        fora[c.nome] = v;
+        out[c.nome] = v;
       }
-      return fora;
+      return out;
     },
   };
 }
@@ -208,9 +208,9 @@ export function createPasswordCodec(campos: readonly PasswordField[]): PasswordC
  * copiada perdendo o lugar por quem lê da tela para o caderno. `decodificar` ignora o separador, então a
  * senha agrupada e a senha corrida são a MESMA senha — quem digitar sem o traço não é punido por isso.
  */
-export function formatPassword(senha: string, grupo = 4, sep = '-'): string {
-  if (grupo < 1) return senha;
-  const partes: string[] = [];
-  for (let i = 0; i < senha.length; i += grupo) partes.push(senha.slice(i, i + grupo));
-  return partes.join(sep);
+export function formatPassword(password: string, group = 4, sep = '-'): string {
+  if (group < 1) return password;
+  const parts: string[] = [];
+  for (let i = 0; i < password.length; i += group) parts.push(password.slice(i, i + group));
+  return parts.join(sep);
 }
