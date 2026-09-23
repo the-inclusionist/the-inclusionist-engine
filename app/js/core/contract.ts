@@ -591,11 +591,11 @@ export function distance(t: Topology, a: Spot, b: Spot): number {
   const d: number[] = [];
   for (let i = 0; i < t.size.length; i++) d.push(Math.abs(eixo(a, i) - eixo(b, i)));
 
-  const bruta = t.move === 'orthogonal' ? d.reduce((s, v) => s + v, 0)  // L¹: cada eixo custa por si
+  const rawDistance = t.move === 'orthogonal' ? d.reduce((s, v) => s + v, 0)  // L¹: cada eixo custa por si
     : t.move === 'diagonal' ? Math.max(...d)                            // L∞: a diagonal custa um passo
       : Math.hypot(...d);                                               // L²: a reta entre os dois
   // Contínuo: dividida pela unidade — o resultado é "quantos passos", não "quantos pixels".
-  return t.kind === 'continuous' ? bruta / t.unit : bruta;
+  return t.kind === 'continuous' ? rawDistance / t.unit : rawDistance;
 }
 
 /**
@@ -625,10 +625,10 @@ export function bearing(t: Topology, from: Spot, to: Spot): Bearing {
 
   if (t.frame === 'clock') {
     // 12 horas é para CIMA e os ponteiros andam no sentido horário — daí `90 - graus`, e não `graus`.
-    const horario = ((90 - (ang * 180) / Math.PI) % 360 + 360) % 360;
-    const h = Math.round(horario / 30) % 12;
+    const clockwiseDegrees = ((90 - (ang * 180) / Math.PI) % 360 + 360) % 360;
+    const h = Math.round(clockwiseDegrees / 30) % 12;
     return { kind: 'clock', hour: h === 0 ? 12 : h };
   }
-  const ROSA: readonly Heading[] = ['e', 'ne', 'n', 'nw', 'w', 'sw', 's', 'se'];
-  return { kind: 'compass', heading: ROSA[(Math.round(ang / (Math.PI / 4)) % 8 + 8) % 8] };
+  const COMPASS_ROSE: readonly Heading[] = ['e', 'ne', 'n', 'nw', 'w', 'sw', 's', 'se'];
+  return { kind: 'compass', heading: COMPASS_ROSE[(Math.round(ang / (Math.PI / 4)) % 8 + 8) % 8] };
 }

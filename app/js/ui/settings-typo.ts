@@ -98,8 +98,8 @@ import { typoGroups, typoRowSpec, fontCssTarget, type TypoRow } from './typo-cho
  * `ui/activities-menu.ts:656` já emite ☑/☐ ao lado do `aria-checked`: «o estado em DUAS formas, e nenhuma
  * delas é cor».
  */
-const MARCA_ESCOLHIDA = '●';
-const MARCA_ALTERNATIVA = '○';
+const CHOSEN_MARK = '●';
+const OFFERED_MARK = '○';
 
 /**
  * Monta a lista UMA VEZ, dentro de um grupo de rádio só. Chamada de novo, REETIQUETA em vez de reconstruir.
@@ -115,7 +115,7 @@ const MARCA_ALTERNATIVA = '○';
  * escolha. (Quando há `fillExplain`, ela nem chega a ficar na linha: vai para o rodapé.)
  */
 export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
-  fontKey: string, instalada?: (familia: string) => boolean): void {
+  fontKey: string, isInstalled?: (familia: string) => boolean): void {
   let radios = list.querySelector<HTMLElement>('[role="radiogroup"]');
   if (!radios) {
     radios = ctx.criar('div');
@@ -123,7 +123,7 @@ export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
     list.appendChild(radios);
   }
   radios.setAttribute('aria-label', t('font.grupo.rotulo'));
-  for (const group of typoGroups(fontKey, instalada)) {
+  for (const group of typoGroups(fontKey, isInstalled)) {
     const head = radios.querySelector(`[data-typo-group="${group.g}"]`)
       ? null
       : sectionHeader(ctx, group.g, '', group.rows.length);
@@ -162,16 +162,16 @@ function dressRow(where: HTMLElement, row: TypoRow): void {
  * 📌 A TRAVA é reflectida e não construída, porque ela pode MUDAR: a `ronde` só fica disponível no instante em
  * que o adulto instala uma das faces que a mensagem nomeia (ADR-0012, a palavra «enquanto»).
  */
-function reflectTypo(list: HTMLElement, fontKey: string, instalada?: (familia: string) => boolean): void {
+function reflectTypo(list: HTMLElement, fontKey: string, isInstalled?: (familia: string) => boolean): void {
   // Percorre o que EXISTE na lista, e não o catálogo: reflectir é sobre os nós que já lá estão, e perguntar
   // ao catálogo outra vez seria montar a lista uma segunda vez só para a ler.
   for (const b of list.querySelectorAll<HTMLButtonElement>('button[data-font]')) {
     const it = FONT_BY_KEY[b.dataset.font ?? ''];
-    const escolhida = b.dataset.font === fontKey;
-    b.classList.toggle('is-on', escolhida);
-    b.setAttribute('aria-checked', String(escolhida));
-    b.textContent = escolhida ? MARCA_ESCOLHIDA : MARCA_ALTERNATIVA;
-    b.disabled = !it || !faceAvailable(it, instalada);
+    const isChosen = b.dataset.font === fontKey;
+    b.classList.toggle('is-on', isChosen);
+    b.setAttribute('aria-checked', String(isChosen));
+    b.textContent = isChosen ? CHOSEN_MARK : OFFERED_MARK;
+    b.disabled = !it || !faceAvailable(it, isInstalled);
   }
 }
 

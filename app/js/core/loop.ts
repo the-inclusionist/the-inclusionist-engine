@@ -34,23 +34,23 @@ export interface LoopOptions {
  * announcement depended on each game remembering it. `createGame` registers its own notice here and withdraws it on
  * `unmount`; a caller's own `aoFalhar` still wins. The same shape as `registerKeyboardMapping`.
  */
-let avisoRegistrado: ((erro: unknown) => void) | null = null;
-export function registerCrashNotice(aviso: ((erro: unknown) => void) | null): void { avisoRegistrado = aviso; }
+let registeredNotice: ((erro: unknown) => void) | null = null;
+export function registerCrashNotice(notice: ((erro: unknown) => void) | null): void { registeredNotice = notice; }
 
 export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, opcoes: LoopOptions = {}): void {
-  let parado = false;
+  let stopped = false;
   const passo = (): void => {
-    if (parado) return; // ticker sem `remove` não desregistra — a trava é o que faz o laço parar mesmo assim
+    if (stopped) return; // ticker sem `remove` não desregistra — a trava é o que faz o laço parar mesmo assim
     try {
       // the game speed (ADR-0180) applies to the clamped time, read each frame: a change is felt on the next one
       frame(Math.min(ticker.deltaTime, maxDt) * gameSpeed);
     } catch (erro) {
-      parado = true;
+      stopped = true;
       ticker.remove?.(passo); // some do ticker quando dá: callback que roda 60×/s para nada custa em hardware fraco
       // O anúncio não pode ressuscitar o problema. Se o próprio aviso quebrar — sem leitor de tela, sem DOM —,
       // uma exceção aqui voltaria a ser invisível dentro do ticker, que é exatamente o defeito que isto fecha.
       // read at the throw, not at the start: a root mounted after the loop began still announces it
-      try { (opcoes.aoFalhar ?? avisoRegistrado)?.(erro); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
+      try { (opcoes.aoFalhar ?? registeredNotice)?.(erro); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
     }
   };
   ticker.add(passo);
