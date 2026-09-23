@@ -206,6 +206,24 @@ describe('the rest follows and re-centres', () => {
     expect(Math.abs(out.rest.v - 0.3)).toBeLessThan(0.03);
     expect(read(ms + 12000, { h: 0.1, v: 0.1, pose: POSE }).zone).toBe('up');
   });
+  it('⚠️ the stillness window FORGETS: a gaze that moved and then held becomes parked, because only the last second counts', () => {
+    /*
+     * 🔴 THE ONE BEHAVIOUR OF THIS MODULE NOTHING HELD, found by disabling each of its nineteen refusals in turn
+     * on 2026-09-23: eighteen went red and the window trim stayed green. Without it the recent samples grow
+     * without bound, so the excursion below would sit in the window for ever and the gaze would never read as
+     * still — a child who looks somewhere and then holds would never get the re-centring that parking buys.
+     *
+     * 📌 The case is built so the trim is the ONLY thing that can make it pass: the excursion's span (0.55) is
+     * far beyond four tremors, so an untrimmed window can never be still, however long the hold lasts.
+     */
+    const read = lab({ parkedMs: 800, parkedFollowMs: 100000 });
+    const { ms } = rest(read);
+    let out = null;
+    for (let i = 1; i <= 5; i++) out = read(ms + i * 100, { h: 0.1, v: -0.05 + i * 0.11, pose: POSE });
+    expect(out.parked, 'parked while still moving').toBe(false);
+    for (let i = 6; i <= 30; i++) out = read(ms + i * 100, { h: 0.1, v: 0.5 + jitter(i) / 8, pose: POSE });
+    expect(out.parked, 'the window kept the old excursion — a gaze that held never gets to park').toBe(true);
+  });
   it('a gaze that keeps moving inside a zone is not parked, and the zone stays', () => {
     const read = lab();
     const { ms } = rest(read);
