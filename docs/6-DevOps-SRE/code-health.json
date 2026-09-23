@@ -1204,12 +1204,12 @@
       "fanIn": 0
     },
     "render/player-anim.ts": {
-      "codeLines": 93,
-      "decisionNodes": 26,
-      "maxDepth": 9,
+      "codeLines": 123,
+      "decisionNodes": 20,
+      "maxDepth": 3,
       "fanOut": 2,
       "globalReach": 0,
-      "worstFunction": 45,
+      "worstFunction": 8,
       "fanIn": 1
     },
     "render/port.ts": {

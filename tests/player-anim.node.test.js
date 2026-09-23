@@ -227,3 +227,8 @@ describe('the idle: breathing, and the flavour that some children turn off', () 
 //     swapping one for the other changed nothing. The clock is now chosen so the two answers disagree.
 //   · nothing asked what a child who plays seated, or one with reduced motion, sees while WALKING.
 // A case file that passes on its first run has proved nothing yet; this is what proving it looks like.
+//
+// 📏 AND THEN THE SAME DECISIONS WERE ASKED AGAIN IN THE NEW HOME, after the chain became a table: 30 red,
+// control green. Twenty-eight are these; two more only a TABLE can be asked — that the last row always answers
+// (a state no row recognises would otherwise draw `undefined`, which does not fail, it keeps the last frame
+// forever), and that the ORDER is the rule and not a coincidence of where each row happens to sit.
