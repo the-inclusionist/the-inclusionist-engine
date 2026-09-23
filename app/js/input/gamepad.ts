@@ -363,6 +363,12 @@ const PAD_POSITIONS: readonly ActionKey[] = Object.freeze(
   ['left', 'right', 'up', 'down', 'action1', 'action2', 'action3', 'action4'] as const,
 );
 
+/** Dentro de um modal a ORDEM é a regra — a do `input/keydown`: um controle entrega um retrato sem ordem de chegada,
+ *  e com esquerda e confirmar no mesmo quadro é esta lista que decide que a criança anda em vez de confirmar. */
+const MODAL_BY_POSITION: readonly (readonly [ActionKey, ModalIntent])[] = Object.freeze([
+  ['left', 'left'], ['right', 'right'], ['up', 'up'], ['down', 'down'], ['action2', 'confirm'], ['action3', 'erase'],
+] as const);
+
 export function initGamepad(ctx: GamepadCtx): GamepadApi {
   let padWizAutoResume = false; // wizard aberto automaticamente no meio do jogo -> retoma a fase ao fechar
   let padWizAnim: { seq: string[]; hold: number; t: number } | null = null;
@@ -507,9 +513,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
 
   /** Atribuição POR ORDEM DE AÇÃO: qualquer botão associa -> 1º controle a agir -> 1º jogador sem pad. */
   function takeSeat(f: PadFrame): void {
-    const anyEdge = f.edge('action2') || f.edge('action1') || f.edge('action4') || f.edge('action3') || f.startEdge
-      || f.edge('left') || f.edge('right') || f.edge('up') || f.edge('down');
-    if (!anyEdge) return;
+    if (!f.startEdge && !PAD_POSITIONS.some((k) => f.edge(k))) return;
     const waitI = f.players.findIndex((p) => p && p.waiting);
     const free = waitI >= 0 ? waitI : f.players.findIndex((p) => p && p.pad < 0 && !p.quit);
     if (free < 0) { ctx.joinPlayer(f.gi); return; }
@@ -551,13 +555,9 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   function playRound(f: PadFrame, p: GamepadPlayer): void {
     if (f.pauseEdge) { ctx.pausar(); ctx.setPauseActor(f.owner); return; } // START pausa (todos pausam; cada tela navega a sua)
     if (ctx.hasModal(f.owner)) { // o pad navega o modal do PRÓPRIO jogador (o jogo dos outros segue)
-      // A ORDEM é a do original: esquerda, direita, cima, baixo, confirmar, apagar. O que saiu foi o
-      // SIGNIFICADO — o ±1/±3 da grade e o desvio de Braille, que agora são decisão do jogo.
-      const intent: ModalIntent | null =
-        f.edge('left') ? 'left' : f.edge('right') ? 'right'
-        : f.edge('up') ? 'up' : f.edge('down') ? 'down'
-        : f.edge('action2') ? 'confirm' : f.edge('action3') ? 'erase' : null;
-      if (intent) ctx.modalInput(f.owner, intent);
+      // O que saiu daqui foi o SIGNIFICADO — o ±1/±3 da grade e o desvio de Braille, que são decisão do jogo.
+      const hit = MODAL_BY_POSITION.find(([position]) => f.edge(position));
+      if (hit) ctx.modalInput(f.owner, hit[1]);
       return;
     }
     // A tabela e a guarda do Fácil vêm de input/edges.ts, as MESMAS que keydown e touch usam. Antes eram
@@ -603,14 +603,33 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     playRound(f, p);
   }
 
+  /** Na demonstração, um botão de controle encerra a demo — e o quadro acaba aqui, com ou sem botão. */
+  function attractTook(pads: readonly (PadLike | null | undefined)[]): boolean {
+    if (!ctx.isAttractActive()) return false;
+    if (pads.some((gp) => gp && gp.buttons.some((b) => b && b.pressed))) ctx.stopAttract();
+    return true;
+  }
+
+  /** Botão físico usado -> some o controle na tela (a mesma regra do teclado): qualquer das nove posições lidas. */
+  function hideTouchPadIfHeld(f: PadFrame): void {
+    if (ctx.isTouchMode() && (f.cur._start || PAD_POSITIONS.some((k) => f.cur[k]))) ctx.hideTouchControls();
+  }
+
+  /**
+   * Para onde vai este quadro. Os destinos pediam a FASE; hoje pedem os fatos. A pausa ganha a um mundo que corre por
+   * baixo dela, e o título é derivado por exclusão de propósito: numa cena que este módulo não conheça (um mapa, uma
+   * tela de resultados), o controle deve navegar como no título — o comportamento seguro — em vez de não fazer nada.
+   */
+  function steerFrame(f: PadFrame): void {
+    if (ctx.menuDePausa()) steerPause(f);
+    else if (ctx.mundoRodando()) steerGame(f);
+    else steerTitle(f);
+  }
+
   function pollPads(): void {
     if (wizard.estado()) return; // durante o wizard, os pads falam só com ele
     const pads = ctx.getGamepads();
-    if (!pads) return;
-    if (ctx.isAttractActive()) {
-      for (const gp of pads) { if (gp && gp.buttons.some((b) => b && b.pressed)) { ctx.stopAttract(); return; } } // botão de pad encerra a demo
-      return;
-    }
+    if (!pads || attractTook(pads)) return;
     for (const gp of pads) {
       if (!gp) continue;
       // controle fora do padrão (DirectInput) SEM mapa salvo apertou algo -> pausa geral + wizard direto
@@ -619,18 +638,8 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       // (`players[free].pad = gi`), e lê-la uma vez só mudaria o que o controle seguinte vê.
       const f = readPad(gp, ctx.getPlayers());
       releaseWhatCameUp(f); // antes de todo ramo: o dedo sai do botão onde quiser (ADR-0223)
-      if (ctx.isTouchMode() && (f.cur.left || f.cur.right || f.cur.up || f.cur.down
-        || f.cur.action2 || f.cur.action1 || f.cur.action4 || f.cur.action3 || f.cur._start)) {
-        ctx.hideTouchControls(); // botão físico usado -> some o gamepad virtual (mesma regra do teclado)
-      }
-      if (winOverlayTook(f)) continue;
-      // Os três destinos abaixo pediam a FASE; hoje pedem os fatos. O título é derivado por exclusão de propósito:
-      // numa cena que este módulo não conheça (um mapa, uma tela de resultados), o controle deve navegar como no
-      // título — que é o comportamento seguro — em vez de não fazer nada.
-      const running = ctx.mundoRodando(), paused = ctx.menuDePausa();
-      if (!running && !paused) { steerTitle(f); continue; }
-      if (paused) { steerPause(f); continue; }
-      if (running) steerGame(f);
+      hideTouchPadIfHeld(f);
+      if (!winOverlayTook(f)) steerFrame(f);
     }
   }
 

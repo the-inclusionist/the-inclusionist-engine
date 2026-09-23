@@ -419,11 +419,11 @@
     },
     "input/gamepad.ts": {
       "codeLines": 333,
-      "decisionNodes": 77,
-      "maxDepth": 7,
+      "decisionNodes": 69,
+      "maxDepth": 3,
       "fanOut": 10,
       "globalReach": 0,
-      "worstFunction": 25,
+      "worstFunction": 16,
       "fanIn": 1
     },
     "input/gaze-cycle.ts": {
