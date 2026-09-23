@@ -120,7 +120,7 @@ export function sourceOf(code: string): TransportName | undefined {
 //
 // 📌 O que o jogador CARREGA é a alternância resolvida (`toggleMove`), que é o que a física lê. Este mapa é
 // o que está a montante dela: com ele e com o `input/latch-store`, a resposta do ADR-0113 fica completa.
-const entradaPorJogador: Record<number, InputState> = {};
+const inputByPlayer: Record<number, InputState> = {};
 
 /**
  * O ESTADO DA ENTRADA DESTE JOGADOR. Nunca `undefined`: quem nunca produziu uma aresta está no PADRÃO.
@@ -130,7 +130,7 @@ const entradaPorJogador: Record<number, InputState> = {};
  * ainda não tocou em nada está mesmo no teclado sem assistida — que é o que `PADRAO` diz.
  */
 export function inputOf(jogador: number): InputState {
-  return entradaPorJogador[jogador] ?? PADRAO;
+  return inputByPlayer[jogador] ?? PADRAO;
 }
 
 /**
@@ -141,16 +141,16 @@ export function inputOf(jogador: number): InputState {
  * está lá: um falso positivo da webcam trancaria a alternância de toda a gente sem ninguém ter pedido.
  */
 export function playerEdge(jogador: number, origem: TransportName): void {
-  entradaPorJogador[jogador] = afterEdge(inputOf(jogador), origem);
+  inputByPlayer[jogador] = afterEdge(inputOf(jogador), origem);
 }
 
 /** Habilitar a assistida é um ACTO EXPLÍCITO (ADR-0109 regra 4), e por isso tem porta própria. */
 export function enableAssistedFor(jogador: number): void {
-  entradaPorJogador[jogador] = enableAssisted(inputOf(jogador));
+  inputByPlayer[jogador] = enableAssisted(inputOf(jogador));
 }
 
 export function disableAssistedFor(jogador: number): void {
-  entradaPorJogador[jogador] = disableAssisted(inputOf(jogador));
+  inputByPlayer[jogador] = disableAssisted(inputOf(jogador));
 }
 
 /**
@@ -162,7 +162,7 @@ export function disableAssistedFor(jogador: number): void {
  * PARTIDA, onde a pergunta se põe de novo.
  */
 export function forgetInputs(): void {
-  for (const k of Object.keys(entradaPorJogador)) delete entradaPorJogador[Number(k)];
+  for (const k of Object.keys(inputByPlayer)) delete inputByPlayer[Number(k)];
 }
 
 // Gamepad (B3/L1): padCur[gi] = ações seguradas neste frame; padPrevAct/padPrevStart = borda do frame anterior.

@@ -1369,6 +1369,7 @@
     "finger",
     "fingers",
     "finish",
+    "finite",
     "firework",
     "first",
     "fish",
@@ -1489,6 +1490,7 @@
     "hex",
     "hidden",
     "hide",
+    "hiding",
     "high",
     "hill",
     "hills",
@@ -1754,6 +1756,7 @@
     "note",
     "notice",
     "now",
+    "null",
     "num",
     "number",
     "numbers",
@@ -1963,6 +1966,7 @@
     "radios",
     "radius",
     "rain",
+    "raining",
     "raise",
     "ramp",
     "rand",
@@ -2490,6 +2494,7 @@
     "wrong",
     "yaw",
     "yes",
+    "zero",
     "zone"
   ]
 }

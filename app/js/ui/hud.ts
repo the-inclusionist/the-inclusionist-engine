@@ -85,9 +85,9 @@ export const counterLabel = (o: Objective): string =>
  * O `aria-label` é a parte que não é renomeação: sem o nome do objetivo não havia o que dizer, e o contador
  * era mudo para quem não vê a tela.
  */
-export function vphudHtml(objetivo: Objective, icone: string): string {
-  return '<span class="vphud-obj"><b class="vphud-ico">' + icone
-    + '</b> <b class="vphud-n">' + numero(objetivo.have) + '</b> / ' + numero(objetivo.need)
+export function vphudHtml(objective: Objective, icon: string): string {
+  return '<span class="vphud-obj"><b class="vphud-ico">' + icon
+    + '</b> <b class="vphud-n">' + finiteOrZero(objective.have) + '</b> / ' + finiteOrZero(objective.need)
     + '</span><span class="vphud-power"><b class="vphud-ico">✨</b> <span class="vphud-pw">—</span></span>';
 }
 
@@ -106,8 +106,8 @@ export function vphudHtml(objetivo: Objective, icone: string): string {
  * `setAttribute` escapa por construção, e é por isso que a resposta é «construir nós» e não «escapar à mão»:
  * um escape esquecido não deixa rasto; um `setAttribute` esquecido tira o rótulo, e há caso a prendê-lo.
  */
-export function applyCounterLabel(vphud: Element | null, objetivo: Objective): void {
-  vphud?.querySelector('.vphud-obj')?.setAttribute('aria-label', counterLabel(objetivo));
+export function applyCounterLabel(vphud: Element | null, objective: Objective): void {
+  vphud?.querySelector('.vphud-obj')?.setAttribute('aria-label', counterLabel(objective));
 }
 
 /**
@@ -118,7 +118,7 @@ export function applyCounterLabel(vphud: Element | null, objetivo: Objective): v
  * categoria de defeito que o nome — só que mais fácil de esquecer, porque «é um número» está escrito no tipo.
  * Um não-número vira `0`, que é falso mas inofensivo; deixar passar seria falso E perigoso.
  */
-function numero(v: number): number {
+function finiteOrZero(v: number): number {
   return Number.isFinite(v) ? v : 0;
 }
 
@@ -158,10 +158,10 @@ export interface HudRowView {
  * `powerShort` é o POWER_SHORT do game.js (injetado — a mesma FUNÇÃO que game/coin-spawning.ts já recebe).
  * Função e não tabela: o texto depende do idioma ATUAL, e uma tabela lida no boot ficaria congelada nele.
  */
-export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string, objetivo: Objective): HudRowView {
+export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string, objective: Objective): HudRowView {
   return {
-    have: String(objetivo.have),
-    label: counterLabel(objetivo),
+    have: String(objective.have),
+    label: counterLabel(objective),
     // O `|| '—'` FICA, mesmo com o resolvedor já tratando desconhecido. Não é redundância: é a garantia de
     // que o campo do poder NUNCA aparece em branco no HUD, e ela não pode depender de todo consumidor futuro
     // lembrar de tratar o caso. Um teste meu ia perdê-la nesta mudança e reprovou por isso.

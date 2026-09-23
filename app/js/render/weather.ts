@@ -144,10 +144,10 @@ let _stage: StageLike | null = null;
 let _screen: { width: number; height: number } | null = null;
 let _getRm: (() => { decor?: boolean }) | null = null;
 let _thunder: ((inten: number) => void) | null = null;
-let _temChuva: (() => boolean) | null = null;
-let _mundoRodando: () => boolean = () => true;
+let _isRaining: (() => boolean) | null = null;
+let _isWorldRunning: () => boolean = () => true;
 
-let _rainLevel = 0, _weatherT = 0, _flash = 0, _thunderCD = 240, _aglomeracao = 0;
+let _rainLevel = 0, _weatherT = 0, _flash = 0, _thunderCD = 240, _crowding = 0;
 let _rainDrops: RainDrop[] | null = null;
 
 export function initWeather(ctx: WeatherCtx): void {
@@ -156,8 +156,8 @@ export function initWeather(ctx: WeatherCtx): void {
   _screen = ctx.screen;
   _getRm = ctx.getRm;
   _thunder = ctx.thunder;
-  _temChuva = ctx.temChuva;
-  _mundoRodando = ctx.mundoRodando;
+  _isRaining = ctx.temChuva;
+  _isWorldRunning = ctx.mundoRodando;
 }
 
 /** Per-frame clima update (game.js calls this only while `phase==='playing'`, same as before). */
@@ -165,10 +165,10 @@ export function updateWeather(): void {
   _weatherT++;
   const sec = _weatherT / 60;
   const rm = _getRm ? _getRm() : {};
-  const temChuva = _temChuva ? _temChuva() : false;
+  const temChuva = _isRaining ? _isRaining() : false;
   const target = rainLevelTarget(sec, temChuva, !!rm.decor);
   _rainLevel = rampRainLevel(_rainLevel, target, 1 / 30); // rampa ~1s
-  _aglomeracao = targetCrowding(sec, temChuva, !!rm.decor); // já é rampa: nada a suavizar aqui
+  _crowding = targetCrowding(sec, temChuva, !!rm.decor); // já é rampa: nada a suavizar aqui
   const step = stepThunder(_rainLevel, _thunderCD, _flash, rnd, (inten) => { if (_thunder) _thunder(inten); });
   _thunderCD = step.thunderCD; _flash = step.flash;
 }
@@ -184,7 +184,7 @@ export function drawWeather(): void {
   if (_rainLevel > 0) {
     g.beginFill(0x0a0e1a, _rainLevel * 0.34); g.drawRect(0, 0, W, H); g.endFill(); // céu mais escuro
     if (!_rainDrops) _rainDrops = makeRainDrops(110, W, H, rnd);
-    const mv = _mundoRodando(); // GAG: gotas congelam na pausa
+    const mv = _isWorldRunning(); // GAG: gotas congelam na pausa
     g.lineStyle(1, 0xaebfe0, 0.5 * _rainLevel);
     for (const d of _rainDrops) { stepRainDrop(d, W, H, mv, rnd); g.moveTo(d.x, d.y); g.lineTo(d.x - 2, d.y + d.len); }
     g.lineStyle(0);
@@ -195,7 +195,7 @@ export function drawWeather(): void {
 /** The clima→áudio bridge: platform/audio-ambient.ts reads this (never the raw value) so its rain track follows the visual. */
 export function getRainLevel(): number { return _rainLevel; }
 /** A ponte clima→céu: render/scene-sky lê isto para juntar e separar as nuvens no compasso da chuva. */
-export function getCrowding(): number { return _aglomeracao; }
+export function getCrowding(): number { return _crowding; }
 /** Weather-clock read/write — the game.js `window.__incl.weatherT` debug hook fast-forwards the cycle via this. */
 export function getWeatherT(): number { return _weatherT; }
 export function setWeatherT(v: number): void { _weatherT = v; }

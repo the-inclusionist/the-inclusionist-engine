@@ -235,7 +235,7 @@ export function setMoveLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   // controle com o motivo dito. Aqui a recusa não muda mais nada: o valor em memória continua a ser o que
   // a regra resolve, e é ela que responde `true` naqueles quatro.
   const transporte = ctx.transporteEmUso ? ctx.transporteEmUso(i) : null;
-  if (transporte) writeLatch((chave, ligada) => ctx.store.setBool(chave, ligada), BASE_DA_MARCHA, i, transporte, on);
+  if (transporte) writeLatch((chave, isOn) => ctx.store.setBool(chave, isOn), BASE_DA_MARCHA, i, transporte, on);
   // 📌 O ANÚNCIO É INCONDICIONAL, ao contrário do `applyLatch`, que devolve «mudou». A criança
   // carregou no ícone: calar-se porque o valor já era esse deixaria o botão sem resposta para quem ouve.
   ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
@@ -308,9 +308,9 @@ export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, lista
     // também do `render()` de cada abertura: o texto foi capturado no intervalo de arranque, onde o idioma
     // ainda é o de recuo. 📏 Medido num navegador com `lang="en"`: o título vinha em inglês e as linhas em
     // português, na mesma tela. Ver `ui/panel-widgets.labelRow`.
-    const jaExiste = ctx.procurar('#' + spec.id);
-    if (jaExiste) {
-      const linha = jaExiste.closest<HTMLElement>('.ctrl-row');
+    const existingRow = ctx.procurar('#' + spec.id);
+    if (existingRow) {
+      const linha = existingRow.closest<HTMLElement>('.ctrl-row');
       if (linha) labelRow(linha, spec);
       continue;
     }
@@ -373,7 +373,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
   const rebuildCoins = ctx.rebuildCoins ?? ((): void => {});
   let selMovPlayer = 0; // jogador selecionado no painel Acessibilidade motora
 
-  const facilBtn = ctx.$<HTMLElement>('#opt-facil');
+  const easyModeButton = ctx.$<HTMLElement>('#opt-facil');
   const altMoveBtn = ctx.$<HTMLElement>('#opt-altmove');
   /**
    * A DICA ORIGINAL DA LINHA, guardada uma vez.
@@ -401,7 +401,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
   if (!ctx.seguraTeclas && altMoveRow) altMoveRow.hidden = true;
 
   /** A recusa DESTE jogador agora, ou `null`. Recalculada a cada reflexo: o aparelho em uso muda. */
-  function recusaAgora(i: number) {
+  function refusalFor(i: number) {
     return ctx.transporteEmUso ? latchRefusal(ctx.transporteEmUso(i)) : null;
   }
   const toggleRunBtn = ctx.$<HTMLElement>('#opt-togglerun');
@@ -432,20 +432,20 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     //
     // Então o que marca é a ESCOLHA GUARDADA. Valor salvo significa que alguém mexeu naquele controle; o
     // ligar automático não salva nada, e por isso não marca.
-    const runEscolhido = ctx.players.some((p, i) => ctx.store.get(toggleRunKey(i)) != null && !!p.toggleRun !== DEFAULTS.toggleRun);
-    markChanged(facilBtn?.closest<HTMLElement>('.ctrl-row') ?? null, easy);
+    const anyRunToggleChosen = ctx.players.some((p, i) => ctx.store.get(toggleRunKey(i)) != null && !!p.toggleRun !== DEFAULTS.toggleRun);
+    markChanged(easyModeButton?.closest<HTMLElement>('.ctrl-row') ?? null, easy);
     markChanged(altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null, alt);
-    markChanged(toggleRunBtn?.closest<HTMLElement>('.ctrl-row') ?? null, runEscolhido);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="motora"]'), [easy, alt, runEscolhido]);
+    markChanged(toggleRunBtn?.closest<HTMLElement>('.ctrl-row') ?? null, anyRunToggleChosen);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="motora"]'), [easy, alt, anyRunToggleChosen]);
   }
 
   function reflectFacil(): void {
     const p = ctx.players[selMovPlayer];
     const on = !!(p && p.easy);
-    if (facilBtn) {
-      facilBtn.classList.toggle('is-on', on);
-      facilBtn.setAttribute('aria-pressed', String(on));
-      facilBtn.textContent = onOffLabel(on);
+    if (easyModeButton) {
+      easyModeButton.classList.toggle('is-on', on);
+      easyModeButton.setAttribute('aria-pressed', String(on));
+      easyModeButton.textContent = onOffLabel(on);
     }
     reflectMovementBtn();
   }
@@ -478,10 +478,10 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
        * quem navega por teclado deixaria de o alcançar — logo deixaria de poder LER o motivo. É a mesma
        * escolha que a #128 nomeia como defeito quando é feita ao contrário (só classe CSS, sem `aria`).
        */
-      const recusa = recusaAgora(selMovPlayer);
-      if (recusa) altMoveBtn.setAttribute('aria-disabled', 'true');
+      const refusal = refusalFor(selMovPlayer);
+      if (refusal) altMoveBtn.setAttribute('aria-disabled', 'true');
       else altMoveBtn.removeAttribute('aria-disabled');
-      if (altMoveHint) altMoveHint.textContent = recusa ? `${dicaOriginal} ${t(recusa.chave)}`.trim() : dicaOriginal;
+      if (altMoveHint) altMoveHint.textContent = refusal ? `${dicaOriginal} ${t(refusal.chave)}`.trim() : dicaOriginal;
     }
     reflectMovementBtn();
   }
@@ -515,8 +515,8 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     ctx.fillExplain?.(ctx.$<HTMLElement>('#movement .overlay__card'));
   }
 
-  if (facilBtn) {
-    facilBtn.addEventListener('click', () => setEasy(selMovPlayer, !ctx.players[selMovPlayer].easy));
+  if (easyModeButton) {
+    easyModeButton.addEventListener('click', () => setEasy(selMovPlayer, !ctx.players[selMovPlayer].easy));
   }
   if (altMoveBtn) {
     altMoveBtn.addEventListener('click', () => {
@@ -526,8 +526,8 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
        * um `return` mudo seria «aceitar o clique e ignorá-lo», que é a outra metade do que o ADR-0076
        * proíbe. Então a recusa FALA: quem carregou fica a saber por quê, mesmo sem ver a dica.
        */
-      const recusa = recusaAgora(selMovPlayer);
-      if (recusa) { ctx.srSay(t(recusa.chave)); return; }
+      const refusal = refusalFor(selMovPlayer);
+      if (refusal) { ctx.srSay(t(refusal.chave)); return; }
       setToggleMove(selMovPlayer, !ctx.players[selMovPlayer].toggleMove);
       reflectAltMove();
     });

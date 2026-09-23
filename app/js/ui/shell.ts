@@ -259,10 +259,10 @@ export function spokenGlyph(g: string): string {
  * (B · ◯ · A) on every design — no design swaps them (the Dev's association, ADR-0013 erratum).
  */
 export function pauseLegendHtml(sim: readonly [string, string], nao: readonly [string, string]): string {
-  const mudo = (g: readonly [string, string], palavra: string): string =>
+  const silentLegend = (g: readonly [string, string], palavra: string): string =>
     `<span class="lg" aria-hidden="true"><span class="lg-ico" style="background:${g[1]}">${g[0]}</span> ${palavra}</span>`;
   const falada = t('menu.legendSpoken', { sim: spokenGlyph(sim[0]), nao: spokenGlyph(nao[0]) });
-  return mudo(sim, t('menu.yes')) + mudo(nao, t('menu.no')) + `<span class="sr-only">${falada}</span>`;
+  return silentLegend(sim, t('menu.yes')) + silentLegend(nao, t('menu.no')) + `<span class="sr-only">${falada}</span>`;
 }
 
 /** Os quatro botões de ação, na ordem fixa da legenda: pular · especial · correr · trocar. */
@@ -293,8 +293,8 @@ export function legendRow1(dirTxt: string, pauseTxt: string): string {
  * `ActionWord.short`), e uma posição que o jogo não nomeia não vira ficha nenhuma.
  */
 export function legendRow2(g: ActionGlyphs, rotulo: (acao: string) => string | null): string {
-  const ORDEM: readonly (keyof ActionGlyphs)[] = ['action2', 'action3', 'action1', 'action4'];
-  return ORDEM.map((a) => {
+  const GLYPH_ORDER: readonly (keyof ActionGlyphs)[] = ['action2', 'action3', 'action1', 'action4'];
+  return GLYPH_ORDER.map((a) => {
     const palavra = rotulo(a);
     return palavra ? chip(g[a][0], g[a][1], palavra) : '';
   }).join('');
@@ -567,12 +567,12 @@ export function initShell(ctx: ShellCtx): ShellApi {
     // em true, então o plano — que rodava depois — via o pad como se ele já estivesse desligado, nunca gravava
     // o `wasOn`, e o ramo que o traz de volta ao retomar era inalcançável. No celular: pausar sumia com o
     // direcional e retomar não o devolvia.
-    const antesDoHide = readTouchControls();
+    const touchStateBeforeHiding = readTouchControls();
     if (v.hideTouchControls) ctx.hideTouchControls(); // menu ativo (título/pausa) = sem controle virtual
     // GAG: na pausa, silencia TODO o som do jogo (loops de ambiente/chuva inclusive) — volta ao retomar.
     ctx.setMasterMuted(v.masterMuted);
     applyPhaseView(v);
-    applyTouchControls(f, antesDoHide); // o estado é o de ANTES do hide — ver o comentário acima
+    applyTouchControls(f, touchStateBeforeHiding); // o estado é o de ANTES do hide — ver o comentário acima
     // ORDEM verbatim: o aria-pressed vem DEPOIS do bloco de toque.
     //
     // No TÍTULO o atributo SAI, em vez de virar `false`. Ali o botão significa "iniciar", e `aria-pressed`

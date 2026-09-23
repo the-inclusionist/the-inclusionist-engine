@@ -24,7 +24,7 @@ export interface StatePort {
 }
 
 /** An empty storage: every read gives its fallback. What the bindings hold until the root loads the child's settings. */
-const VAZIO: StatePort = {
+const NULL_PORT: StatePort = {
   get: (_k, fallback) => fallback,
   set: () => false,
   getBool: (_k, fallback = false) => fallback,
@@ -33,7 +33,7 @@ const VAZIO: StatePort = {
   KEYS: { letterCase: '', captions: '', menuIndex: '', cbsafe: '', ownercolors: '', outfg: '', outbg: '' },
 };
 
-let porta: StatePort | null = null;
+let port: StatePort | null = null;
 
 /**
  * ========================= O BARRAMENTO, TIPADO (Fase C do plano) =========================
@@ -99,17 +99,17 @@ export interface GameEvent {
      tipo do jogo (ADR-0033/0039) —, e não precisa: quem é dono do evento declara o evento. --- */
 }
 
-type Ouvinte<K extends keyof GameEvent> = (val: GameEvent[K]) => void;
+type Listener<K extends keyof GameEvent> = (val: GameEvent[K]) => void;
 const _subs = new Map<keyof GameEvent, Set<(val: never) => void>>();
 
 /** Assina `evt`. Devolve a função que cancela — guardar o retorno é mais barato que lembrar do `off`. */
-export function on<K extends keyof GameEvent>(evt: K, fn: Ouvinte<K>): () => void {
+export function on<K extends keyof GameEvent>(evt: K, fn: Listener<K>): () => void {
   if (!_subs.has(evt)) _subs.set(evt, new Set());
   _subs.get(evt)!.add(fn as (val: never) => void);
   return () => off(evt, fn);
 }
 
-export function off<K extends keyof GameEvent>(evt: K, fn: Ouvinte<K>): void {
+export function off<K extends keyof GameEvent>(evt: K, fn: Listener<K>): void {
   const s = _subs.get(evt);
   if (s) s.delete(fn as (val: never) => void);
 }
@@ -124,7 +124,7 @@ export function off<K extends keyof GameEvent>(evt: K, fn: Ouvinte<K>): void {
  */
 export function emit<K extends keyof GameEvent>(evt: K, val: GameEvent[K]): void {
   const s = _subs.get(evt);
-  if (s) for (const fn of s) { try { (fn as unknown as Ouvinte<K>)(val); } catch (e) { /* noop */ } }
+  if (s) for (const fn of s) { try { (fn as unknown as Listener<K>)(val); } catch (e) { /* noop */ } }
 }
 
 // ========================= `phase` SAIU DAQUI (ADR-0030 C3, passo 3 da Fase B) =========================
@@ -290,7 +290,7 @@ export const DEFAULTS = Object.freeze({
 //     antigo `setModoCego` — refazer os extras do nível, refletir o painel, anunciar ao leitor de tela — NÃO
 //     entram aqui: são reação, e quem reage assina o evento. Um setter que sabe redesenhar a tela é um setter
 //     que nenhum teste consegue chamar. ---
-export let blindMode: boolean = VAZIO.getBool('incl_modocego', DEFAULTS.blindMode);
+export let blindMode: boolean = NULL_PORT.getBool('incl_modocego', DEFAULTS.blindMode);
 export function setBlindModeValue(on: boolean): void {
   if (blindMode === on) return; // a guarda VEM DO ORIGINAL: sem ela o anúncio repetiria a cada clique redundante
   const p = armazem('setBlindModeValue'); p.setBool('incl_modocego', on); blindMode = on; emit('blindMode', on);
@@ -367,13 +367,13 @@ export interface GateTile { readonly tx: number; readonly ty: number }
 //     escolhíveis, uma segunda variável para a mesma pergunta seria o MODE × activity de novo (#54). Quando um
 //     conjunto de pictogramas puder ser escolhido, `caaMode` nasce e `letterCase` passa a derivar dele. ---
 export type LetterCase = 'mixed' | 'upper';
-export let letterCase: LetterCase = VAZIO.get(VAZIO.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
+export let letterCase: LetterCase = NULL_PORT.get(NULL_PORT.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
 export function setLetterCaseValue(c: LetterCase): void {
   if (letterCase === c) return;
   const p = armazem('setLetterCaseValue'); p.set(p.KEYS.letterCase, c); letterCase = c; emit('letterCase', c);
 }
 
-export let captionsOn = VAZIO.getBool(VAZIO.KEYS.captions, DEFAULTS.captionsOn);
+export let captionsOn = NULL_PORT.getBool(NULL_PORT.KEYS.captions, DEFAULTS.captionsOn);
 export function setCaptionsOnValue(on: boolean): void {
   const v = !!on;
   if (captionsOn === v) return;
@@ -387,7 +387,7 @@ export function setCaptionsOnValue(on: boolean): void {
 //     lendo o menu, que e justamente a coisa que essa pessoa consegue fazer.
 //
 //     PERSISTE em `incl_menuindex` (escopo da CRIANCA, ADR-0027): a preferencia segue com ela de jogo em jogo.
-export let menuIndexOn = VAZIO.getBool(VAZIO.KEYS.menuIndex, DEFAULTS.menuIndexOn);
+export let menuIndexOn = NULL_PORT.getBool(NULL_PORT.KEYS.menuIndex, DEFAULTS.menuIndexOn);
 export function setMenuIndexOnValue(on: boolean): void {
   const v = !!on;
   if (menuIndexOn === v) return;
@@ -396,7 +396,7 @@ export function setMenuIndexOnValue(on: boolean): void {
 
 // --- cbSafe: PALETA SEGURA PARA DALTONISMO (Okabe-Ito). Não é um filtro sobre a imagem — é a escolha das
 //     cores de origem, aplicada IN-PLACE em PCOLOR para que todo mundo que já referencia a array veja a troca. ---
-export let cbSafe: boolean = VAZIO.getBool(VAZIO.KEYS.cbsafe, DEFAULTS.cbSafe);
+export let cbSafe: boolean = NULL_PORT.getBool(NULL_PORT.KEYS.cbsafe, DEFAULTS.cbSafe);
 export function setCbSafeValue(on: boolean): void {
   const v = !!on;
   if (cbSafe === v) return;
@@ -405,7 +405,7 @@ export function setCbSafeValue(on: boolean): void {
 
 // --- ownerColors: no multijogador, cada item aparece na cor de QUEM pode pegá-lo. Desligado, todos veem a cor
 //     original — o que é preferível para quem não distingue as cores dos donos. ---
-export let ownerColors: boolean = VAZIO.getBool(VAZIO.KEYS.ownercolors, DEFAULTS.ownerColors);
+export let ownerColors: boolean = NULL_PORT.getBool(NULL_PORT.KEYS.ownercolors, DEFAULTS.ownerColors);
 export function setOwnerColorsValue(on: boolean): void {
   const v = !!on;
   if (ownerColors === v) return;
@@ -414,7 +414,7 @@ export function setOwnerColorsValue(on: boolean): void {
 
 /** Espessura de contorno: 0 nenhum · 1 fino · 2 grosso. Fora da faixa satura, não rejeita. */
 export type OutlineLevel = 0 | 1 | 2;
-const nivelContorno = (v: number): OutlineLevel => Math.max(0, Math.min(2, v | 0)) as OutlineLevel;
+const toOutlineLevel = (v: number): OutlineLevel => Math.max(0, Math.min(2, v | 0)) as OutlineLevel;
 
 // --- hcOutlineFg / hcOutlineBg: CONTORNOS do alto contraste, e são dois porque servem a critérios diferentes.
 //     `fg` contorna o primeiro plano — personagem e itens — e atende a WCAG 2.4.7 (foco visível). `bg` contorna
@@ -424,15 +424,15 @@ const nivelContorno = (v: number): OutlineLevel => Math.max(0, Math.min(2, v | 0
 //     A saturação em 0..2 vem do original e é dupla: no boot (contra um localStorage corrompido) e na escrita
 //     (contra um chamador). No main.js isso obrigava a declarar com um valor provisório e reatribuir na linha
 //     seguinte, porque a leitura saturada não cabia no mesmo `let`; aqui a função a resolve de uma vez. ---
-export let hcOutlineFg: OutlineLevel = nivelContorno(VAZIO.getNum(VAZIO.KEYS.outfg, DEFAULTS.hcOutlineFg));
+export let hcOutlineFg: OutlineLevel = toOutlineLevel(NULL_PORT.getNum(NULL_PORT.KEYS.outfg, DEFAULTS.hcOutlineFg));
 export function setOutlineFgValue(v: number): void {
-  const n = nivelContorno(v);
+  const n = toOutlineLevel(v);
   if (hcOutlineFg === n) return;
   const p = armazem('setOutlineFgValue'); p.set(p.KEYS.outfg, n); hcOutlineFg = n; emit('hcOutlineFg', n);
 }
-export let hcOutlineBg: OutlineLevel = nivelContorno(VAZIO.getNum(VAZIO.KEYS.outbg, DEFAULTS.hcOutlineBg));
+export let hcOutlineBg: OutlineLevel = toOutlineLevel(NULL_PORT.getNum(NULL_PORT.KEYS.outbg, DEFAULTS.hcOutlineBg));
 export function setOutlineBgValue(v: number): void {
-  const n = nivelContorno(v);
+  const n = toOutlineLevel(v);
   if (hcOutlineBg === n) return;
   const p = armazem('setOutlineBgValue'); p.set(p.KEYS.outbg, n); hcOutlineBg = n; emit('hcOutlineBg', n);
 }
@@ -440,7 +440,7 @@ export function setOutlineBgValue(v: number): void {
 // --- caneBlockDiv: espaçamento da batida da BENGALA, em blocos pisados. 1 = uma batida por bloco;
 //     2 = uma batida a cada meio bloco. Não é preferência de som: é a resolução com que uma criança cega
 //     mede a distância que andou, e por isso a colisão a lê a cada passo. ---
-export let caneBlockDiv: number = VAZIO.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
+export let caneBlockDiv: number = NULL_PORT.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
 export function setCaneBlockDivValue(div: number): void {
   const d = (+div) || 1; // o `|| 1` vem do original: um valor corrompido no localStorage viraria NaN e a
   if (caneBlockDiv === d) return; //  bengala pararia de bater, que é o modo de falha mais silencioso possível
@@ -450,7 +450,7 @@ export function setCaneBlockDivValue(div: number): void {
 // --- wheelchair: MODO CADEIRANTE. Muda a geometria do nível inteiro — degraus e escada viram rampas e
 //     elevadores, moedas descem para o chão, lava vira chão, e só voo e super-corrida sobrevivem como poderes.
 //     Por isso a colisão a lê: `isSolidType` responde diferente com ela ligada. ---
-export let wheelchair: boolean = VAZIO.getBool('incl_wheelchair', DEFAULTS.wheelchair);
+export let wheelchair: boolean = NULL_PORT.getBool('incl_wheelchair', DEFAULTS.wheelchair);
 export function setWheelchairValue(on: boolean): void {
   if (wheelchair === on) return;
   const p = armazem('setWheelchairValue'); p.setBool('incl_wheelchair', on); wheelchair = on; emit('wheelchair', on);
@@ -458,7 +458,7 @@ export function setWheelchairValue(on: boolean): void {
 
 // --- oneButton: «um botão por vez», an EMPATHY SIMULATION (ADR-0181): while one game key is held, a second is never
 //     accepted. It was described as an accommodation; the Dev: it simulates a motor difficulty. ---
-export let oneButton: boolean = VAZIO.getBool('incl_onebtn', DEFAULTS.oneButton);
+export let oneButton: boolean = NULL_PORT.getBool('incl_onebtn', DEFAULTS.oneButton);
 export function setOneButtonValue(on: boolean): void {
   if (oneButton === on) return;
   const p = armazem('setOneButtonValue'); p.setBool('incl_onebtn', on); oneButton = on; emit('oneButton', on);
@@ -466,7 +466,7 @@ export function setOneButtonValue(on: boolean): void {
 
 // --- semForca: «sem força para segurar botão», the second motor empathy simulation (ADR-0181): any sustained contact of a
 //     game key reads as one tap. Stored like the other simulations, off by default. ---
-export let noGripStrength: boolean = VAZIO.getBool('incl_sem_forca', DEFAULTS.noGripStrength);
+export let noGripStrength: boolean = NULL_PORT.getBool('incl_sem_forca', DEFAULTS.noGripStrength);
 export function setNoGripStrengthValue(on: boolean): void {
   const v = !!on;
   if (noGripStrength === v) return;
@@ -476,7 +476,7 @@ export function setNoGripStrengthValue(on: boolean): void {
 // --- inputCooldown: a tremor is not a second press (ADR-0217, GAG Advanced/Motor). MILLISECONDS, and 0 is off — the rule reads
 //     the number, so «how long» and «whether» are one value and cannot disagree. Off by default: a child with no tremor would
 //     lose half a second between every two presses, which in a game of reaction is the game. ---
-export let inputCooldown: number = VAZIO.getNum('incl_input_cooldown', DEFAULTS.inputCooldown);
+export let inputCooldown: number = NULL_PORT.getNum('incl_input_cooldown', DEFAULTS.inputCooldown);
 export function setInputCooldownValue(ms: number): void {
   const v = Number.isFinite(ms) && ms > 0 ? Math.round(ms) : 0;
   if (inputCooldown === v) return;
@@ -492,7 +492,7 @@ export function setInputCooldownValue(ms: number): void {
 //     vez» (ADR-0181), which makes play harder on purpose, and this is the ACCOMMODATION of the same catalogue id. The Dev
 //     named the confusion on 2026-09-21; renaming the simulation crosses into a cartridge (`p.oneButton` in game-soccer) and
 //     waits for its own commit. ---
-export let switchScan: boolean = VAZIO.getBool('incl_switch_scan', DEFAULTS.switchScan);
+export let switchScan: boolean = NULL_PORT.getBool('incl_switch_scan', DEFAULTS.switchScan);
 export function setSwitchScanValue(on: boolean): void {
   const v = !!on;
   if (switchScan === v) return;
@@ -503,7 +503,7 @@ export function setSwitchScanValue(on: boolean): void {
 //     game and the position it names is pressed. ONE key for the whole engine, like the camera's: it describes the CHILD, and
 //     a voice she has in one game she has in the next. Off by default, because it opens a MICROPHONE and nothing may do that
 //     by itself; a stored value that is not a yes reads as off. ---
-export let voiceControl: boolean = VAZIO.getBool('incl_voice_control', DEFAULTS.voiceControl);
+export let voiceControl: boolean = NULL_PORT.getBool('incl_voice_control', DEFAULTS.voiceControl);
 export function setVoiceControlValue(on: boolean): void {
   const v = !!on;
   if (voiceControl === v) return;
@@ -518,7 +518,7 @@ const CAMERA_CONTROLS: readonly CameraControl[] = ['off', 'hands', 'face', 'eyes
 const cameraModeOf = (v: string | null): CameraControl => ((CAMERA_CONTROLS as readonly (string | null)[]).includes(v) ? v as CameraControl : 'off');
 /** The next position of the 📷 cycle, wrapping back to off. */
 export const nextCameraControl = (v: CameraControl): CameraControl => CAMERA_CONTROLS[(CAMERA_CONTROLS.indexOf(v) + 1) % CAMERA_CONTROLS.length]!;
-export let cameraControl: CameraControl = cameraModeOf(VAZIO.get('incl_camera_control', DEFAULTS.cameraControl));
+export let cameraControl: CameraControl = cameraModeOf(NULL_PORT.get('incl_camera_control', DEFAULTS.cameraControl));
 export function setCameraControlValue(v: CameraControl): void {
   const valid = cameraModeOf(v);
   if (cameraControl === valid) return;
@@ -527,29 +527,29 @@ export function setCameraControlValue(v: CameraControl): void {
 
 // --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
 //     by it. Stored and carried between games; a stored value outside the steps reads as 100%. ---
-export let gameSpeed: number = isGameSpeed(VAZIO.getNum('incl_game_speed', DEFAULTS.gameSpeed));
+export let gameSpeed: number = isGameSpeed(NULL_PORT.getNum('incl_game_speed', DEFAULTS.gameSpeed));
 export function setGameSpeedValue(v: number): void {
-  const valida = isGameSpeed(v);
-  if (gameSpeed === valida) return;
-  const p = armazem('setGameSpeedValue'); p.set('incl_game_speed', valida); gameSpeed = valida; emit('gameSpeed', valida);
+  const isValidSpeed = isGameSpeed(v);
+  if (gameSpeed === isValidSpeed) return;
+  const p = armazem('setGameSpeedValue'); p.set('incl_game_speed', isValidSpeed); gameSpeed = isValidSpeed; emit('gameSpeed', isValidSpeed);
 }
 
 // --- captionPpm: the child's caption reading rate, words a minute (ADR-0183 §4): how long a sound caption stays. One of
 //     125, 145, 175; anything else reads as 125. ---
-export let captionPpm: number = isCaptionRate(VAZIO.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
+export let captionPpm: number = isCaptionRate(NULL_PORT.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
 export function setCaptionPpmValue(ppm: number): void {
-  const valido = isCaptionRate(ppm);
-  if (captionPpm === valido) return;
-  const p = armazem('setCaptionPpmValue'); p.set('incl_caption_ppm', valido); captionPpm = valido; emit('captionPpm', valido);
+  const isValidRate = isCaptionRate(ppm);
+  if (captionPpm === isValidRate) return;
+  const p = armazem('setCaptionPpmValue'); p.set('incl_caption_ppm', isValidRate); captionPpm = isValidRate; emit('captionPpm', isValidRate);
 }
 
 // --- speechPpm: the child's speech rate, words a minute (ADR-0183 §1; issue #179): each engine measures its voice and plays at
 //     the ratio (`core/speech-rate`). One of 254…504 by 50; anything else reads as 254, the normal speed (ADR-0196). ---
-export let speechPpm: number = isSpeechRate(VAZIO.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
+export let speechPpm: number = isSpeechRate(NULL_PORT.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
 export function setSpeechPpmValue(ppm: number): void {
-  const valido = isSpeechRate(ppm);
-  if (speechPpm === valido) return;
-  const p = armazem('setSpeechPpmValue'); p.set('incl_speech_ppm', valido); speechPpm = valido; emit('speechPpm', valido);
+  const isValidRate = isSpeechRate(ppm);
+  if (speechPpm === isValidRate) return;
+  const p = armazem('setSpeechPpmValue'); p.set('incl_speech_ppm', isValidRate); speechPpm = isValidRate; emit('speechPpm', isValidRate);
 }
 
 /* ===================== THE STORED SETTINGS, LOADED BY THE ROOT (ADR-0178, issue #174) ===================== */
@@ -560,8 +560,8 @@ export function setSpeechPpmValue(ppm: number): void {
  * would see it; the error names the setter, so the root that calls it too early is found the first time it runs.
  */
 function armazem(setter: string): StatePort {
-  if (!porta) throw new Error(`core/state: ${setter} wrote a setting before loadState — it would overwrite the child's stored choice; the composition root loads the settings first (ADR-0178)`);
-  return porta;
+  if (!port) throw new Error(`core/state: ${setter} wrote a setting before loadState — it would overwrite the child's stored choice; the composition root loads the settings first (ADR-0178)`);
+  return port;
 }
 
 /**
@@ -569,15 +569,15 @@ function armazem(setter: string): StatePort {
  * first (`createGame` does); calling it again reads again.
  */
 export function loadState(p: StatePort): void {
-  porta = p;
+  port = p;
   blindMode = p.getBool('incl_modocego', DEFAULTS.blindMode);
   letterCase = p.get(p.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
   captionsOn = p.getBool(p.KEYS.captions, DEFAULTS.captionsOn);
   menuIndexOn = p.getBool(p.KEYS.menuIndex, DEFAULTS.menuIndexOn);
   cbSafe = p.getBool(p.KEYS.cbsafe, DEFAULTS.cbSafe);
   ownerColors = p.getBool(p.KEYS.ownercolors, DEFAULTS.ownerColors);
-  hcOutlineFg = nivelContorno(p.getNum(p.KEYS.outfg, DEFAULTS.hcOutlineFg));
-  hcOutlineBg = nivelContorno(p.getNum(p.KEYS.outbg, DEFAULTS.hcOutlineBg));
+  hcOutlineFg = toOutlineLevel(p.getNum(p.KEYS.outfg, DEFAULTS.hcOutlineFg));
+  hcOutlineBg = toOutlineLevel(p.getNum(p.KEYS.outbg, DEFAULTS.hcOutlineBg));
   caneBlockDiv = p.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
   wheelchair = p.getBool('incl_wheelchair', DEFAULTS.wheelchair);
   oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);

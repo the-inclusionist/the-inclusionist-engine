@@ -315,7 +315,7 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
     // O segundo tempo (item 19) matou o ASSUNTO: entra um `Objective` inteiro, o ícone é injetado, e o HUD
     // deixou até de ler `collected` do jogador. Três asserções, uma por camada da mudança.
     expect(fonte('ui/hud.ts'), 'a dependência').not.toMatch(/from '\.\.\/core\/constants\.js'/);
-    expect(fonte('ui/hud.ts'), 'o assunto').toMatch(/vphudHtml\(objetivo: Objective, icone: string\)/);
+    expect(fonte('ui/hud.ts'), 'o assunto').toMatch(/vphudHtml\(objective: Objective, icon: string\)/);
     // Contra as ROWS DE CÓDIGO, e não contra o arquivo: a prosa deste módulo explica que `collected` saiu,
     // e um crivo que confundisse a explicação com o uso reprovaria justamente quem documentou o conserto. É a
     // mesma armadilha que o `getPhase` já tinha armado uma vez.

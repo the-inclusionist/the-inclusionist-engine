@@ -73,8 +73,8 @@ export function resolveViz(key: string | null | undefined): VizMode {
  * `migrateVisual` aceita as duas formas e é idempotente, então isto pode correr quantas vezes for preciso.
  */
 export function readStoredVisual(i: number): VisualState {
-  const novo = store.getJSON<unknown>(store.KEYS.visualP(i), null);
-  if (novo !== null) return migrateVisual(novo);
+  const storedVisual = store.getJSON<unknown>(store.KEYS.visualP(i), null);
+  if (storedVisual !== null) return migrateVisual(storedVisual);
   return migrateVisual(store.get(store.KEYS.vizP(i), null));
 }
 
@@ -291,7 +291,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     p.viz = legacyKey(v);
     store.set(store.KEYS.vizP(i), p.viz);        // legada: um leitor antigo faria `VIZ_BY_KEY[v]` e recusaria JSON
     store.setJSON(store.KEYS.visualP(i), v);     // nova: os dois eixos, que a chave velha não sabe dizer
-    aplicarVisualDoJogador(i, v);
+    applyPlayerVisual(i, v);
   }
 
   /** Muda SÓ o tema deste jogador. A correção e a simulação ficam onde estavam — é o ponto da #104. */
@@ -313,7 +313,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   /** Os efeitos colaterais de ter mudado o visual de um jogador. Separados do ESCREVER de propósito: os dois
    *  escritores por eixo e o antigo por chave partilham-nos, e uma cópia a mais seria uma cópia a divergir. */
-  function aplicarVisualDoJogador(i: number, v: VisualState): void {
+  function applyPlayerVisual(i: number, v: VisualState): void {
     ctx.invalidateSharedViz();
     if (isBlind(v)) (ctx.setModoCego ?? setBlindModeValue)(true); // empatia cegueira total liga o modo cego (áudio) por padrão
     if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(v); } else { applyVpFilters(); updateVpDots(); }
@@ -341,7 +341,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    */
   function applyVizGlobal(v: VisualState): void {
     const filtro = filterKey(v);
-    const textura = textureKey(v);
+    const textureForMode = textureKey(v);
     // ⚠️ `legacyKey` E NÃO `textura`: a de textura devolve `normal` para uma correção de cor, e escrevê-la
     // aqui faria um leitor antigo da chave global perder a correção da criança. Ver a nota em `legacyKey`.
     setVizModeValue(legacyKey(v)); // core/state: valor + persistência (incl_viz) + evento — espelho legado
@@ -354,11 +354,11 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     ctx.aplicarFiltroCss(cssFilterFor(filtro ?? '', lqFilter()), isSimulation(v) ? 'mundo' : 'mundo-e-menus');
     // --- eixo TEMA: DOM e textura. Não é filtro (ver `ApplyHighContrastToDom`), e é por isso que compõe.
     ctx.aplicarAltoContrasteNoDom(hasHighContrast(v));
-    ctx.camera.filters = hasHighContrast(v) ? ctx.pixiFilterFor(textura) : null; // solo: alto contraste na câmera
+    ctx.camera.filters = hasHighContrast(v) ? ctx.pixiFilterFor(textureForMode) : null; // solo: alto contraste na câmera
     ctx.setFrontDim(hasHighContrast(v)); // HC: frente (carros/placas/semáforo) escurece como fundo
-    ctx.worldSprite.texture = worldTexFor(textura);         // alto contraste direto = Renderização Direta · resto=normal
-    ctx.parallaxLayers.forEach((ts, i) => { ts.texture = ctx.parallaxTexFor(i, textura); });
-    ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(textura); });
+    ctx.worldSprite.texture = worldTexFor(textureForMode);         // alto contraste direto = Renderização Direta · resto=normal
+    ctx.parallaxLayers.forEach((ts, i) => { ts.texture = ctx.parallaxTexFor(i, textureForMode); });
+    ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(textureForMode); });
     ctx.rebuildExtras(); ctx.rebuildCoins();
     // --- SIMULAÇÃO: baixa visão = névoa+manchas (overlay) + bolinha verde; cegueira = tela preta + esconde
     //     controles + bolinha branca. Nenhuma delas olha para o tema, e é por isso que o tema não as apaga.
@@ -428,13 +428,13 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     // ⚠️ SÓ AS LINHAS QUE SIMULAM. Esta função desenha hoje a lista de simulações (o painel visual passou a
     // usar o `renderEixosVisuais`), mas ela continua a receber os modos por parâmetro — e uma correção de
     // cor nesta lista não deve ser recusada por causa do eixo dela própria.
-    const recusa = simulationRefusal(v);
+    const refusal = simulationRefusal(v);
     el.querySelectorAll<HTMLElement>('button[data-viz]').forEach((btn) => {
       const key = btn.dataset.viz as string;
-      if (recusa && simulatesDisability(key)) {
+      if (refusal && simulatesDisability(key)) {
         btn.setAttribute('aria-disabled', 'true');
         const dica = btn.closest('.ctrl-row')?.querySelector<HTMLElement>('.opt-hint');
-        if (dica) dica.textContent = `${dica.textContent} ${t(recusa.chave)}`.trim();
+        if (dica) dica.textContent = `${dica.textContent} ${t(refusal.chave)}`.trim();
         return; // sem ouvinte: aceitar o clique e ignorá-lo é a outra metade do que o ADR proíbe
       }
       btn.addEventListener('click', () => {
@@ -464,15 +464,15 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     const v = ctx.getPlayers()[sel]?.visual ?? PADRAO;
     el.innerHTML = axesHtml(v, t);
     el.querySelectorAll<HTMLElement>('button[data-eixo]').forEach((btn) => btn.addEventListener('click', () => {
-      const escolha = buttonChoice(btn.dataset);
-      if (!escolha) return; // botão de outro assunto, ou um `data-` editado à mão: não se adivinha
+      const choice = buttonChoice(btn.dataset);
+      if (!choice) return; // botão de outro assunto, ou um `data-` editado à mão: não se adivinha
       const i = ctx.getSelVizPlayer();
-      if (escolha.eixo === 'tema') {
-        setTemaDoJogador(i, escolha.valor as Theme);
-        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(THEME_LABEL[escolha.valor as Theme])));
+      if (choice.eixo === 'tema') {
+        setTemaDoJogador(i, choice.valor as Theme);
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(THEME_LABEL[choice.valor as Theme])));
       } else {
-        setCorrecaoDoJogador(i, escolha.valor as Correction);
-        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(CORRECTION_LABEL[escolha.valor as Correction])));
+        setCorrecaoDoJogador(i, choice.valor as Correction);
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(CORRECTION_LABEL[choice.valor as Correction])));
       }
     }));
   }
