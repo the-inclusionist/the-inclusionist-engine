@@ -1253,12 +1253,12 @@
       "fanIn": 1
     },
     "ui/eye-control.ts": {
-      "codeLines": 131,
+      "codeLines": 146,
       "decisionNodes": 21,
       "maxDepth": 2,
       "fanOut": 10,
       "globalReach": 0,
-      "worstFunction": 22,
+      "worstFunction": 7,
       "fanIn": 3
     },
     "ui/face-control.ts": {

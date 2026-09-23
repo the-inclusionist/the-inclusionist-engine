@@ -15,8 +15,8 @@
 import { t } from '../core/i18n.js';
 import type { Action } from '../core/actions.js';
 import { headPoseFromMatrix, scoresFromCategories, eyeGazeFromScores, bothEyesClosed } from '../input/face-signals.js';
-import { createGazeReader, GAZE_DEFAULTS } from '../input/gaze-relative.js';
-import { createGazeCycle } from '../input/gaze-cycle.js';
+import { createGazeReader, GAZE_DEFAULTS, type GazeReading } from '../input/gaze-relative.js';
+import { createGazeCycle, type GazeFrame, type GazeCycleOutput } from '../input/gaze-cycle.js';
 import type { VirtualController } from '../input/virtual-controller.js';
 import { loadFaceTracker, openCamera, closeCamera, type FaceTracker, type FaceTrackerLoad, type VisionDeps } from '../platform/vision.js';
 import { createVisionLoop, type VisionLoopDeps, type LoopHealth } from '../platform/vision-loop.js';
@@ -59,6 +59,47 @@ export function videoFeed(doc: Document, media: MediaDevices): () => Promise<Cam
   };
 }
 
+type Detection = ReturnType<FaceTracker['detect']>;
+type Scores = ReturnType<typeof scoresFromCategories>;
+
+/** What one detection says: the blendshapes (none without a face), the head's pose, and the RIGHT eye's gaze. */
+function readDetection(det: Detection): { scores: Scores | null; pose: ReturnType<typeof headPoseFromMatrix>; eye: { h: number; v: number } | null } {
+  const cats = det?.faceBlendshapes?.[0]?.categories;
+  const scores = cats ? scoresFromCategories(cats) : null;
+  return { scores, pose: headPoseFromMatrix(det?.facialTransformationMatrixes?.[0]?.data), eye: scores ? eyeGazeFromScores(scores).right : null };
+}
+
+/** What the cycle is told: frozen while nothing can be trusted — no rest yet, no face, a head turning fast — and cancelled when
+ *  the reader re-centres under the gaze, because what was held was never a decision. */
+function cycleFrameOf(reading: GazeReading, scores: Scores | null): GazeFrame {
+  return {
+    zone: reading.zone,
+    eyesClosed: !!scores && bothEyesClosed(scores),
+    frozen: !reading.ready || !scores || reading.reason === 'head-moving',
+    cancel: reading.reason === 'recentring',
+  };
+}
+
+/** The reading, written on the drawing's own element: when a child's eyes are not answered, this says at which step it stops. */
+function writeDiagnosis(canvas: HTMLCanvasElement, reading: GazeReading, out: GazeCycleOutput, face: boolean, delegate: string): void {
+  const f2 = (n: number | undefined): string => (n === undefined ? '' : n.toFixed(2));
+  Object.assign(canvas.dataset, {
+    face: String(face), ready: String(reading.ready), reason: reading.reason ?? '', zone: reading.zone ?? '',
+    tremorH: f2(reading.tremor?.h), tremorV: f2(reading.tremor?.v), dh: f2(reading.displacement?.h), dv: f2(reading.displacement?.v),
+    stillMs: String(Math.round(reading.stillMs ?? 0)), armed: String(out.armed), preparing: String(out.preparing), preview: out.preview?.item ?? '',
+    delegate,
+  });
+}
+
+/** The regions over the game at the region's size, the middle counting down while the rest is measured, and the face's lines. */
+function drawFrame(canvas: HTMLCanvasElement, region: HTMLElement, reading: GazeReading, out: GazeCycleOutput, det: Detection, lines: FaceTracker['eyeLines']): void {
+  const w = canvas.width = region.clientWidth, h = canvas.height = region.clientHeight;
+  drawGazeOverlay(canvas.getContext('2d')!, w, h, {
+    zone: reading.zone, armed: out.armed, preparing: out.preparing, preview: out.preview, restReady: reading.ready,
+    restLeftMs: reading.ready ? undefined : Math.max(0, GAZE_DEFAULTS.restMs - (reading.stillMs ?? 0)),
+  }, { face: det?.faceLandmarks?.[0] ? { landmarks: det.faceLandmarks[0], lines } : null });
+}
+
 export function createEyeControl(d: EyeControlDeps): SwitchableControl {
   const loadTracker = d.loadTracker ?? loadFaceTracker;
   const openFeed = d.openFeed ?? videoFeed(d.doc, d.doc.defaultView!.navigator.mediaDevices);
@@ -77,40 +118,25 @@ export function createEyeControl(d: EyeControlDeps): SwitchableControl {
 
   const release = (): void => { if (pressed) d.controller.release(pressed, 'olhos'); pressed = null; };
 
+  /** Only a change reaches the controller: the old action is let go, the new one pressed, from the eyes. */
+  const followPress = (next: Action | null): void => {
+    if (next === pressed) return;
+    if (pressed) d.controller.release(pressed, 'olhos');
+    if (next) d.controller.press(next, 'olhos');
+    pressed = next;
+  };
+
   const frame = (ms: number): void => {
     if (!tracker || !feed || !canvas || !feed.ready()) return;
     const det = tracker.detect(feed.frame, ms);
-    const cats = det?.faceBlendshapes?.[0]?.categories;
-    const scores = cats ? scoresFromCategories(cats) : null;
-    const pose = headPoseFromMatrix(det?.facialTransformationMatrixes?.[0]?.data);
-    const eye = scores ? eyeGazeFromScores(scores).right : null;
+    const { scores, pose, eye } = readDetection(det);
     const reading = reader(ms, { h: eye?.h, v: eye?.v, pose });
     if (reading.ready && !wasReady) d.say(t('sr.eyes.ready'));
     wasReady = reading.ready;
-    const out = cycle(ms, {
-      zone: reading.zone,
-      eyesClosed: !!scores && bothEyesClosed(scores),
-      frozen: !reading.ready || !scores || reading.reason === 'head-moving',
-      cancel: reading.reason === 'recentring',
-    });
-    if (out.pressed !== pressed) {
-      if (pressed) d.controller.release(pressed, 'olhos');
-      if (out.pressed) d.controller.press(out.pressed, 'olhos');
-      pressed = out.pressed;
-    }
-    // the reading, readable on the drawing's own element: when a child's eyes are not answered, this says at which step it stops
-    const f2 = (n: number | undefined): string => (n === undefined ? '' : n.toFixed(2));
-    Object.assign(canvas.dataset, {
-      face: String(!!scores), ready: String(reading.ready), reason: reading.reason ?? '', zone: reading.zone ?? '',
-      tremorH: f2(reading.tremor?.h), tremorV: f2(reading.tremor?.v), dh: f2(reading.displacement?.h), dv: f2(reading.displacement?.v),
-      stillMs: String(Math.round(reading.stillMs ?? 0)), armed: String(out.armed), preparing: String(out.preparing), preview: out.preview?.item ?? '',
-      delegate: tracker.delegate(),
-    });
-    const w = canvas.width = d.region.clientWidth, h = canvas.height = d.region.clientHeight;
-    drawGazeOverlay(canvas.getContext('2d')!, w, h, {
-      zone: reading.zone, armed: out.armed, preparing: out.preparing, preview: out.preview, restReady: reading.ready,
-      restLeftMs: reading.ready ? undefined : Math.max(0, GAZE_DEFAULTS.restMs - (reading.stillMs ?? 0)),
-    }, { face: det?.faceLandmarks?.[0] ? { landmarks: det.faceLandmarks[0], lines: tracker.eyeLines } : null });
+    const out = cycle(ms, cycleFrameOf(reading, scores));
+    followPress(out.pressed);
+    writeDiagnosis(canvas, reading, out, !!scores, tracker.delegate());
+    drawFrame(canvas, d.region, reading, out, det, tracker.eyeLines);
   };
 
   const health = (h: LoopHealth, fps: number): void => {
