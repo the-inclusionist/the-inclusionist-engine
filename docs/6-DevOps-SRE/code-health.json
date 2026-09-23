@@ -1780,12 +1780,12 @@
       "fanIn": 2
     },
     "ui/settings-panel.ts": {
-      "codeLines": 128,
+      "codeLines": 133,
       "decisionNodes": 23,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 17,
+      "worstFunction": 10,
       "fanIn": 1
     },
     "ui/settings-typo.ts": {

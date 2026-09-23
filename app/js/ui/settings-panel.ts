@@ -122,6 +122,47 @@ export function rowExplainText(spanText: string, strongText: string, hintText: s
 }
 
 /**
+ * As três escutas que levam a descrição ao rodapé e o devolvem ao repouso. As DUAS formas de linha usavam-nas
+ * palavra por palavra iguais, e escrevê-las uma vez é o que impede as duas de divergirem.
+ *
+ * NOTA (bug do original, preservado): não há escuta de `focusout` — navegando por teclado o rodapé nunca volta ao
+ * texto de repouso. Relatado, não corrigido.
+ */
+function wireFooter(row: HTMLElement, footer: HTMLElement, desc: string): void {
+  const show = (): void => { footer.textContent = desc; };
+  const clear = (): void => { footer.textContent = footer.dataset.idle ?? ''; };
+  row.addEventListener('mouseenter', show);
+  row.addEventListener('focusin', show);
+  row.addEventListener('mouseleave', clear);
+}
+
+/**
+ * 🔴 A LINHA DE PASSOS NÃO TEM `<strong>`, e isto deixava a dica DENTRO dela: desde a errata do ADR-0130 o rótulo mora
+ * no próprio controle («◀ Tamanho do controle: adulto pequeno ▶»), e esta função desistia de qualquer linha sem rótulo
+ * curto à parte. Medido num print do Dev: a dica ao lado dos passos, a espremê-los até quebrarem em quatro linhas.
+ * Para ela, a descrição é a dica inteira, e o `<span>` fica vazio.
+ */
+function wireStepsRow(row: HTMLElement, span: HTMLElement, hint: HTMLElement, footer: HTMLElement): void {
+  const desc = (hint.textContent ?? '').trim();
+  row.dataset.explainDone = '1';
+  if (!desc) return;
+  row.dataset.explain = desc;
+  span.textContent = '';
+  wireFooter(row, footer, desc);
+}
+
+/** A linha comum: rótulo curto em `<strong>`, prosa ao lado — e a prosa desce ao rodapé. */
+function wireLabelledRow(row: HTMLElement, span: HTMLElement, strong: HTMLElement, footer: HTMLElement): void {
+  const hint = span.querySelector<HTMLElement>('.opt-hint');
+  const desc = rowExplainText(span.textContent ?? '', strong.textContent ?? '', hint ? (hint.textContent ?? '') : null);
+  row.dataset.explainDone = '1';
+  if (!desc) return; // rótulo sem descrição: a linha fica como está
+  row.dataset.explain = desc;
+  span.innerHTML = strong.outerHTML; // ORDEM DE LEITURA: a linha passa a ter só o rótulo curto…
+  wireFooter(row, footer, desc); // …e a descrição vai ao rodapé ao focar/passar o mouse
+}
+
+/**
  * Escolhe o overlay visível de z-index mais alto. Empate: vence o ÚLTIMO da lista (ordem do DOM) — é o efeito
  * do `sort` estável seguido de `ov[ov.length-1]` no game.js. Lista vazia → null.
  */
@@ -144,61 +185,36 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
   // ordem do encadeamento de Escape.
   const registry = new Map<string, OverlayEntry>();
 
+  /** O rodapé do cartão, achado ou criado. */
+  function explainFooter(card: HTMLElement): HTMLElement {
+    const found = card.querySelector<HTMLElement>('.opt-explain');
+    if (found) return found;
+    const f = ctx.doc.createElement('div');
+    f.className = 'opt-explain';
+    f.setAttribute('aria-live', 'polite'); // rodapé anunciado ao mudar (foco/hover na linha)
+    // O texto de repouso pode ser DO PAINEL, via `data-explain-idle` no card. É onde uma introdução de menu
+    // deve morar: um parágrafo de prosa no topo transforma o menu num manual, e o rodapé já é o lugar da
+    // explicação — o painel só passa a ter algo a dizer enquanto ninguém aponta para nenhuma linha.
+    // ⚠️ RESOLVIDO AQUI, e não no topo do módulo: `fillExplain` corre a cada render, logo o texto acompanha
+    // a troca de idioma. Um `t()` numa `const` de módulo congelaria o idioma do arranque.
+    const idle = card.dataset.explainIdle || t(EXPLAIN_IDLE);
+    f.dataset.idle = idle;
+    f.textContent = idle;
+    card.appendChild(f);
+    return f;
+  }
+
   function fillExplain(card: HTMLElement | null): void {
     if (!card) return;
-    let f = card.querySelector<HTMLElement>('.opt-explain');
-    if (!f) {
-      f = ctx.doc.createElement('div');
-      f.className = 'opt-explain';
-      f.setAttribute('aria-live', 'polite'); // rodapé anunciado ao mudar (foco/hover na linha)
-      // O texto de repouso pode ser DO PAINEL, via `data-explain-idle` no card. É onde uma introdução de menu
-      // deve morar: um parágrafo de prosa no topo transforma o menu num manual, e o rodapé já é o lugar da
-      // explicação — o painel só passa a ter algo a dizer enquanto ninguém aponta para nenhuma linha.
-      // ⚠️ RESOLVIDO AQUI, e não no topo do módulo: `fillExplain` corre a cada render, logo o texto acompanha
-      // a troca de idioma. Um `t()` numa `const` de módulo congelaria o idioma do arranque.
-      const idle = card.dataset.explainIdle || t(EXPLAIN_IDLE);
-      f.dataset.idle = idle;
-      f.textContent = idle;
-      card.appendChild(f);
-    }
-    const footer = f; // estreita o tipo para os closures abaixo
+    const footer = explainFooter(card);
     card.querySelectorAll<HTMLElement>('.ctrl-row').forEach((row) => {
       if (row.dataset.explainDone) return; // idempotente: render() redesenha o card, mas linha feita não repete
       const span = row.querySelector<HTMLElement>(':scope > span');
       const strong = span ? span.querySelector<HTMLElement>('strong') : null;
-      /*
-       * 🔴 A LINHA DE PASSOS NÃO TEM `<strong>`, e isto deixava a dica DENTRO dela: desde a errata do ADR-0130 o
-       * rótulo mora no próprio controle («◀ Tamanho do controle: adulto pequeno ▶»), e esta função desistia de
-       * qualquer linha sem rótulo curto à parte. Medido num print do Dev: a dica ao lado dos passos, a espremê-los
-       * até quebrarem em quatro linhas. Para ela, a descrição é a dica inteira, e o `<span>` fica vazio.
-       */
       const dicaDosPassos = !strong && span ? span.querySelector<HTMLElement>('.opt-hint') : null;
-      if (span && dicaDosPassos && row.querySelector('[data-passos]')) {
-        const descDosPassos = (dicaDosPassos.textContent ?? '').trim();
-        row.dataset.explainDone = '1';
-        if (!descDosPassos) return;
-        row.dataset.explain = descDosPassos;
-        span.textContent = '';
-        const mostrar = (): void => { footer.textContent = descDosPassos; };
-        row.addEventListener('mouseenter', mostrar);
-        row.addEventListener('focusin', mostrar);
-        row.addEventListener('mouseleave', (): void => { footer.textContent = footer.dataset.idle ?? ''; });
-        return;
-      }
+      if (span && dicaDosPassos && row.querySelector('[data-passos]')) { wireStepsRow(row, span, dicaDosPassos, footer); return; }
       if (!span || !strong) { row.dataset.explainDone = '1'; return; } // linha sem rótulo curto: nada a mover
-      const hint = span.querySelector<HTMLElement>('.opt-hint');
-      const desc = rowExplainText(span.textContent ?? '', strong.textContent ?? '', hint ? (hint.textContent ?? '') : null);
-      row.dataset.explainDone = '1';
-      if (!desc) return; // rótulo sem descrição: a linha fica como está
-      row.dataset.explain = desc;
-      span.innerHTML = strong.outerHTML; // ORDEM DE LEITURA: a linha passa a ter só o rótulo curto…
-      const show = (): void => { footer.textContent = desc; }; // …e a descrição vai ao rodapé ao focar/passar o mouse
-      const clear = (): void => { footer.textContent = footer.dataset.idle ?? ''; };
-      row.addEventListener('mouseenter', show);
-      row.addEventListener('focusin', show);
-      row.addEventListener('mouseleave', clear);
-      // NOTA (bug do original, preservado): não há listener de 'focusout' — navegando por teclado o rodapé
-      // nunca volta ao texto de repouso. Relatado, não corrigido.
+      wireLabelledRow(row, span, strong, footer);
     });
   }
 
