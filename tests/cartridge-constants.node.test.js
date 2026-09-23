@@ -134,9 +134,13 @@ describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa
     // 📌 5 → 4 em 23/09, pela terceira vez e pela mesma razão que o próprio ficheiro escreve abaixo: a F12
     // (ADR-0228) levou módulos que importavam `LOGICAL_W`, e o que este número afere é que o `import` RESOLVE,
     // não quantos existem. Descer com o corte é o comportamento correcto dele.
+    // 🔴 E o par de VIZINHO saiu em 23/09: o `TILE_TYPES` era importado por `./constants.js` a partir do
+    // `core/collision`, e os dois mudaram de repositório no mesmo passo (ADR-0228). O que fica a aferir a forma
+    // curta é o `TILE`, que o `render/high-contrast` importa como `'../core/constants.js'` — a mesma forma longa
+    // que o `LOGICAL_W` já cobria. ⚠️ Fica NOMEADO que a forma `./constants.js` deixou de ter par nesta árvore:
+    // se um módulo de `core/` voltar a importar o vizinho, esta linha volta a valer.
     expect(conta.get('LOGICAL_W'), 'ninguém importa LOGICAL_W? o crivo partiu-se').toBeGreaterThanOrEqual(4);
-    expect(conta.get('TILE_TYPES'), 'o import de vizinho (./constants.js) deixou de ser visto').toBeGreaterThanOrEqual(1);
-    expect(conta.get('isHazard'), 'o import de vizinho deixou de ser visto').toBeGreaterThanOrEqual(1);
+    expect(conta.get('TILE'), 'ninguém importa TILE? o crivo partiu-se').toBeGreaterThanOrEqual(1);
     // ⚠️ ESTE PISO NÃO MEDE DÍVIDA — mede que o `import` resolveu, e por isso é o único número deste ficheiro
     // que pode DESCER com o corte. Já desceu duas vezes numa tarde (15 → 10 → 5) enquanto a etapa B levava
     // oito exports, e um número que se ajusta a cada passagem não guarda nada: por isso ficou LARGO. Um
@@ -144,7 +148,10 @@ describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa
     //
     // Quem guarda de verdade são as três asserções acima, que pinam nomes CONCRETOS — um módulo vazio ou um
     // crivo estreito reprova por elas primeiro, e o número sozinho nunca é o que prova nada.
-    expect(Object.keys(CONSTANTES).length, 'o módulo deixou de exportar valores').toBeGreaterThanOrEqual(5);
+    // 📏 5 → 3 em 23/09: a `TILE_TYPES`, o `isHazard` e o `isTrampoline` foram para o `game-platformer` com a
+    // geometria que os consultava (ADR-0228). O que fica é `LOGICAL_W`, `LOGICAL_H` e `TILE` — a resolução
+    // lógica e a grade, que é o que qualquer jogo 2D em pixel partilha.
+    expect(Object.keys(CONSTANTES).length, 'o módulo deixou de exportar valores').toBeGreaterThanOrEqual(3);
   });
 
   it('⚠️ [Right] o livro está completo — nenhum export NOVO fica sem dono em silêncio', () => {

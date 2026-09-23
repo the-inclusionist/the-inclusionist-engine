@@ -6,7 +6,7 @@
 // de worldTexFor/spriteTexFor. ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // a tabela tile→papel é do JOGO (ADR-0080); a engine a RECEBE, e o gate prova que a cor sai do PAPEL
-import { initCollision, tileAt } from '../app/js/core/collision.js';
+
 import { TILE } from '../app/js/core/constants.js';
 import {
   dimDesat, worldToTextureDirect, directBgTexture, directSpriteCanvas, directSpriteTexture,
@@ -22,11 +22,15 @@ const WORLD = [
   [2, 2, 2, 2],
   [0, 1, 0, 1],
 ];
-initCollision({
-  world: WORLD, W, H,
-  isWheelchair: () => false, isModoCego: () => false, caneDiv: () => 1,
-  wcSolid: () => new Set(), gateTiles: () => new Set(), gateOpen: () => true,
-});
+/*
+ * 🔴 A GRADE É DO CASO, e não de um módulo da engine, desde 23/09. Este ficheiro montava um `core/collision`
+ * inteiro — mundo, cadeira de rodas, modo cego, portão — só para lhe perguntar `tileAt`. Aquele módulo mudou de
+ * repositório (nota CB) e o alto contraste passou a RECEBER a consulta por porta (nota CA), então o que o caso
+ * precisa de dar é uma função de duas linhas.
+ * 📌 Fora da grade responde PEDRA (2), que é a mesma resposta que o módulo dava: uma parede natural, para o
+ * contorno de perímetro não achar ar onde o mundo acaba.
+ */
+const tileAt = (tx, ty) => (tx < 0 || tx >= W || ty < 0 || ty >= H ? 2 : WORLD[ty][tx]);
 
 function flatCanvas(w, h, css) {
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;

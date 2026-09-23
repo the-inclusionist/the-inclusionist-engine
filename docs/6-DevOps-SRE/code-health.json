@@ -117,23 +117,14 @@
       "worstFunction": 8,
       "fanIn": 1
     },
-    "core/collision.ts": {
-      "codeLines": 46,
-      "decisionNodes": 6,
-      "maxDepth": 2,
-      "fanOut": 1,
-      "globalReach": 0,
-      "worstFunction": 6,
-      "fanIn": 1
-    },
     "core/constants.ts": {
-      "codeLines": 15,
+      "codeLines": 1,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 1,
-      "fanIn": 6
+      "worstFunction": 0,
+      "fanIn": 5
     },
     "core/contract.ts": {
       "codeLines": 213,
@@ -1069,7 +1060,7 @@
       "codeLines": 171,
       "decisionNodes": 37,
       "maxDepth": 4,
-      "fanOut": 6,
+      "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 18,
       "fanIn": 2

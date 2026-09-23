@@ -97,12 +97,13 @@ const DIVIDA = {
   // porque o dado está no navegador de cada criança. Enquanto houver, apagá-lo apaga o remapeamento de
   // quem o fez.
 
-  /* --- O QUE SOBRA, e nenhum dos dois é acoplamento de ENTRADA. --- */
-  'core/constants.ts': 2,       // afinação da plataforma (`TUNE.jumpVel`), que sai com o cartucho (#111)
-                                // NÃO o nome de uma ação. O renomeador da migração trocou-o por engano e
-                                // o teste rebentou com `Cannot read properties of undefined`. Fica como
-                                // lembrete de que um crivo por FORMA não distingue os dois sentidos que a
-                                // mesma palavra tem neste repositório.
+  /* --- O QUE SOBRA. 🔴 E o `core/constants` SAIU desta lista em 2026-09-23: as duas ocorrências que ele tinha
+     eram bandeiras da `TILE_TYPES` (`jump`, `ladder`), e a tabela mudou de casa para o `game-platformer` junto
+     com a geometria que a consultava. O ficheiro publica hoje três constantes: a resolução lógica e a grade. --- */
+  /* 📌 E a lição daquela linha fica escrita, porque ela não saiu com o ficheiro: um crivo por FORMA não
+     distingue os dois sentidos que a mesma palavra tem neste repositório — `jump` como bandeira de um tile e
+     `jump` como nome de uma ação. O renomeador da migração trocou um pelo outro e o teste rebentou com
+     `Cannot read properties of undefined`. */
 };
 
 // ========================= O ESPELHO DESTA FRONTEIRA =========================

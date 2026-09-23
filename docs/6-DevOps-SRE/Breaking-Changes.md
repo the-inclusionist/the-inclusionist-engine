@@ -2417,6 +2417,40 @@ forget, and forgetting this one paints the whole world a single colour.
 📏 **And this was the last engine module importing `core/collision`** — `git grep` now finds it only in comments.
 That is what lets the tile-world stack's final piece leave, which is the next note.
 
+## CB · The grid leaves: `core/collision` and the tile-type table (ADR-0228, issue #63, issue #203)
+
+**Who is affected:** anyone importing `the-inclusionist-engine/core/collision.js`, or `TILE_TYPES`, `TileType`,
+`isHazard` or `isTrampoline` from `core/constants.js`. 📏 Measured: the `game-platformer`, and it already has all
+of them — `game-platformer:e81b0d9` and `de9290a` landed them there before this deletion, and its 1351 tests are
+green on its own copies.
+
+🔴 **These three went and came back once, and that is the finding worth keeping.** When the tile world left in
+note BY, `core/collision` was pulled back into the engine because a gate said its subject was ACCESSIBILITY: the
+cane's tap spacing (`caneBlockPx`), a hazard being SOLID for a child who cannot see and for one in a wheelchair
+(`isSolidType`), and the riser a wheelchair ramp covers (`isWcRampRiser`). That reading was right about the
+subject and wrong about the address — **all three rules are written in the vocabulary of a tile grid**:
+`isWcRampRiser` is `surfTop` three times, `caneBlockPx` is `TILE` over a number, and `isSolidType` reads the
+tile-type table. Keeping them here was keeping the grid here.
+
+📏 And once `core/collision` left, `TILE_TYPES`, `isHazard` and `isTrampoline` had **no reader in the engine at
+all** — the `isSolidType` that justified them was the only one. The engine had written this ending beside the
+table since 2026-09-07: «o fim honesto é a tabela mudar de casa e o jogo declarar os papéis pelo `core/contract`».
+
+🎯 **The engine does not stop knowing what is dangerous.** It asks the CONTRACT, through `roleOf`, which is the
+mechanism that already existed. What it stops having is a table of tile NUMBERS, which is only true of one map:
+`t === 9` in a second game with another numbering would inherit physics, high contrast and sonar all pointing at
+the wrong tile, with no type error and no red test.
+
+| leaving | where it went |
+|---|---|
+| `core/collision.js` — `initCollision`, `caneBlockPx`, `isSolidType`, `tileAt`, `solidTile`, `solidAt`, `surfTop`, `isWcRampRiser`, `rampSurfaceY`, `CollisionCtx` | `game-platformer/app/js/core/collision.ts` |
+| `core/constants.js` — `TILE_TYPES`, `TileType`, `isHazard`, `isTrampoline` | `game-platformer/app/js/core/tiles.ts`, as `ehPerigo`/`ehTrampolim` |
+
+📌 **`core/constants` now publishes three names** — `LOGICAL_W`, `LOGICAL_H`, `TILE` — the logical resolution and
+the pixel grid, which is what any 2D pixel game shares. ⚠️ And four ledgers changed SIDE rather than shrinking:
+`logic`, `superficie-publica`, `cartridge-constants` and `action-vocabulary-boundary` each carried a written
+argument for why these names stayed, and each now carries the measurement that ended it.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

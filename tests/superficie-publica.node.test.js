@@ -97,14 +97,20 @@ describe('a superfície pública do pacote só encolhe por declaração (docs/6-
     // As oito constantes de `core/constants.ts` saíram ANTES deste gate existir, e o retrato foi tirado
     // depois. Este caso afirma que elas continuam fora: se alguém as trouxer de volta sem pensar, o gate
     // acima não diria nada (acrescentar não reprova), e a `Breaking-Changes.md` passaria a mentir.
-    const FORAM = ['JUMP_BASE', 'TUNE', 'COIN_TARGET', 'ehAgua', 'ehEscada', 'ehPortao', 'ehChave', 'ehSecreto'];
+    // 🔴 SÃO ONZE DESDE 23/09, e as três últimas mudaram DE LADO neste mesmo caso: até aí ele EXIGIA que
+    // `TILE_TYPES`, `isHazard` e `isTrampoline` ficassem, «por uma razão de acessibilidade e não por simetria» —
+    // o `core/collision.isSolidType` torna perigo e trampolim sólidos no modo cego e no de cadeira de rodas.
+    // Era verdade, e deixou de ser quando essa regra foi com a geometria que a consulta (ADR-0228): as três
+    // ficaram sem leitor nenhum aqui. 📌 A engine continua a saber o que é perigo — pergunta o PAPEL ao
+    // contrato, pelo `roleOf`; o que ela deixou de ter é uma tabela de NÚMEROS de tile.
+    const FORAM = ['JUMP_BASE', 'TUNE', 'COIN_TARGET', 'ehAgua', 'ehEscada', 'ehPortao', 'ehChave', 'ehSecreto',
+      'TILE_TYPES', 'isHazard', 'isTrampoline'];
     const constantes = new Set(arvore['core/constants.ts'] ?? []);
     for (const n of FORAM) {
       expect(constantes.has(n), `${n} voltou a core/constants.ts; a doc de quebras precisa de ser corrigida`).toBe(false);
     }
-    // E as duas que FICARAM ficaram por uma razão de acessibilidade, não por simetria.
-    expect(constantes.has('isHazard'), 'isHazard saiu: `isSolidType` depende dele no modo cego').toBe(true);
-    expect(constantes.has('isTrampoline'), 'isTrampoline saiu: `isSolidType` depende dele no modo cadeirante').toBe(true);
+    // E o que FICA é a resolução lógica e a grade, que é o que qualquer jogo 2D em pixel partilha.
+    expect(constantes.has('TILE'), 'a grade saiu: sem ela a engine não sabe desenhar em múltiplos inteiros').toBe(true);
   });
 });
 

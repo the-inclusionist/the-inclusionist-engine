@@ -14,7 +14,6 @@ import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // a tabel
 localStorage.clear();
 
 const { TILE } = await import('../app/js/core/constants.js');
-const { initCollision, tileAt } = await import('../app/js/core/collision.js');
 const { VIZ_BY_KEY } = await import('../app/js/render/viz-modes.js');
 const HC = await import('../app/js/render/high-contrast.js');
 const { initVizSetters } = await import('../app/js/render/viz-setters.js');
@@ -26,11 +25,10 @@ const WORLD = [
   [2, 2, 2, 2],
   [0, 1, 0, 1],
 ];
-initCollision({
-  world: WORLD, W, H,
-  isWheelchair: () => false, isModoCego: () => false, caneDiv: () => 1,
-  wcSolid: () => new Set(), gateTiles: () => new Set(), gateOpen: () => true,
-});
+// A grade é do caso desde 23/09, pela mesma razão do `high-contrast.browser`: o módulo que respondia `tileAt`
+// mudou de repositório (nota CB) e o alto contraste recebe a consulta por porta (nota CA). Fora da grade é
+// PEDRA (2), a parede natural que o módulo também devolvia.
+const tileAt = (tx, ty) => (tx < 0 || tx >= W || ty < 0 || ty >= H ? 2 : WORLD[ty][tx]);
 
 function flatCanvas(w, h, css) {
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;

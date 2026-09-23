@@ -89,26 +89,10 @@
     "MeasuredCartridgeProblems",
     "cartridgeProblems"
   ],
-  "core/collision.ts": [
-    "CollisionCtx",
-    "caneBlockPx",
-    "initCollision",
-    "isSolidType",
-    "isWcRampRiser",
-    "rampSurfaceY",
-    "solidAt",
-    "solidTile",
-    "surfTop",
-    "tileAt"
-  ],
   "core/constants.ts": [
     "LOGICAL_H",
     "LOGICAL_W",
-    "TILE",
-    "TILE_TYPES",
-    "TileType",
-    "isHazard",
-    "isTrampoline"
+    "TILE"
   ],
   "core/contract.ts": [
     "Announcement",

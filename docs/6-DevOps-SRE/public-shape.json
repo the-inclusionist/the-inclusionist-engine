@@ -125,12 +125,6 @@
       "worldSelector"
     ]
   },
-  "core/collision.ts": {
-    "type CollisionCtx": "{ world: number[][]"
-  },
-  "core/constants.ts": {
-    "type TileType": "{ solid?: boolean"
-  },
   "core/contract.ts": {
     "interface Speakable": [
       "gender",

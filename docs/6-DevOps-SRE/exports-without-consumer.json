@@ -6,9 +6,6 @@
       "declareQuiz",
       "spokenOption"
     ],
-    "core/collision.ts": [
-      "isWcRampRiser"
-    ],
     "core/contract.ts": [
       "dimension"
     ],

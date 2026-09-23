@@ -15,19 +15,20 @@ describe('core/constants', () => {
     // grelha, e é a única coisa desta linha que qualquer cartucho partilha.
     expect(C.TILE).toBe(16);
   });
-  it('⚠️ [Interface] `ANIM`, `EASY` e `TILE_COLOR` SAÍRAM na F12, e voltar por engano reprova aqui', () => {
+  it('⚠️ [Interface] o que DESCREVE UM MUNDO DE TILES saiu do catálogo, e voltar por engano reprova aqui', () => {
     /*
-     * 🎯 A mesma forma do caso abaixo, e pela mesma razão: encolher superfície pública é uma major, e uma
-     * constante que volte sem querer desfá-la em silêncio. 📌 O que NÃO saiu está dito ao lado porque a
-     * distinção custou um portão a apanhar-me: `TILE_TYPES`, `isHazard` e `isTrampoline` ficaram porque o
-     * `core/collision.isSolidType` torna perigo e trampolim sólidos no modo cego e no de cadeira de rodas.
+     * 🎯 Encolher superfície pública é uma major, e uma constante que volte sem querer desfá-la em silêncio.
+     * 🔴 ESTE CASO MUDOU DE LADO EM 23/09, e a razão vale mais do que a lista: até aí ele EXIGIA que
+     * `TILE_TYPES`, `isHazard` e `isTrampoline` ficassem, «porque o `core/collision.isSolidType` torna perigo e
+     * trampolim sólidos no modo cego e no de cadeira de rodas — e isso é acessibilidade». Era verdade, e deixou
+     * de ser quando essa regra foi com a geometria que a consulta: as três ficaram sem leitor nenhum na engine.
+     * 📌 A engine continua a saber o que é perigo — pergunta o PAPEL ao contrato (`roleOf`), que é o mecanismo
+     * que já existia. O que ela deixou de ter é uma tabela de NÚMEROS de tile, que só é verdade num mapa.
      */
-    for (const n of ['ANIM', 'EASY', 'TILE_COLOR']) {
+    for (const n of ['ANIM', 'EASY', 'TILE_COLOR', 'TILE_TYPES', 'isHazard', 'isTrampoline']) {
       expect(n in C, `${n} voltou ao catálogo — ele descreve um jogo`).toBe(false);
     }
-    for (const n of ['TILE_TYPES', 'isHazard', 'isTrampoline']) {
-      expect(n in C, `${n} saiu — o \`isSolidType\` depende dele, e isso é acessibilidade`).toBe(true);
-    }
+    expect(C.TILE, 'a GRADE em pixels fica: é o que qualquer jogo 2D em pixel partilha').toBe(16);
   });
   it('⚠️ [Interface] `JUMP_BASE` e `ehChave` SAÍRAM, e este caso é o que impede que voltem por engano', () => {
     // O caso que estava aqui verificava `JUMP_BASE === jumpVel * sqrt(8/5)` — isto é, **reafirmava a própria
