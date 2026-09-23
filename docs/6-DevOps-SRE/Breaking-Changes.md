@@ -2133,6 +2133,23 @@ label, one hint, ONE control», and that row has five — four colour swatches a
 shape for it would be giving a second answer to «what is a row», which is what the kit exists to prevent. It is built
 as nodes like everything else, with the same discipline: mounted once, relabelled after.
 
+## BS · What a visual choice IS leaves the panel that draws it (ADR-0221 step 7c, issue #203)
+
+**What this is.** Sixteen names move from `ui/settings-visual` to the new `ui/visual-choices`, with no alias left
+behind: `VISUAL_MODES`, `VISUAL_MODE_LIST`, `CONTRAST_LABELS`, `ROLE_KEYS`, `ROLE_LABELS`, `LQ_STEPS`,
+`resolveVisualMode`, `contrastLabel`, `clamp01`, `lqLabel`, `lqPosition`, `lqPercent`, `lqFromPercent`,
+`clampSelectedPlayer`, `rgbToHex`, `onOffLabel`, plus the types `RGB` and `RoleKey`. `sameRgb` is no longer exported
+at all — it was declared debt and both of its readers live in the panel, a screen apart, so it was paid rather than
+moved. `initSettingsVisual` and `VisualSettings` stay where they were.
+
+🎯 **Why the seam is there.** `tests/settings-visual.node.test.js` imported exactly those names and nothing else, and
+the node project mounts no document — whoever wrote those cases already knew where the panel stops being a panel. It
+is the fourth module to come out this way, after `ui/audio-choices`, `ui/typo-choices` and `ui/control-choices`.
+
+⚠️ **What to change.** Change the import path. Nothing about the names, their values or their behaviour moved with
+them. 📌 No alias was left: a re-export would keep alive a path nothing inside the engine uses, and would make the
+public-surface portrait lie, because it does not see re-exports (issue #204).
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

@@ -3081,8 +3081,7 @@
     ],
     "interface SettingsVisual": [
       "render"
-    ],
-    "type RGB": "readonly [number, number, number]"
+    ]
   },
   "ui/shell.ts": {
     "interface ShellWindow": [
@@ -3237,6 +3236,9 @@
     "type VisualAxis": "EixoVisualDeRender",
     "type Translator": "TradutorDeRender",
     "type AxisChoice": "EscolhaDeEixoDeRender"
+  },
+  "ui/visual-choices.ts": {
+    "type RGB": "readonly [number, number, number]"
   },
   "ui/voice-control.ts": {
     "interface VoiceControlDeps": [

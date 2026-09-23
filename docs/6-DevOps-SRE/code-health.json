@@ -5,7 +5,7 @@
     "codeLines": 182,
     "decisionNodes": 37,
     "maxDepth": 4,
-    "fanOut": 7,
+    "fanOut": 6,
     "globalReach": 0,
     "worstFunction": 10
   },
@@ -1153,7 +1153,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
-      "fanIn": 3
+      "fanIn": 4
     },
     "render/high-contrast.ts": {
       "codeLines": 171,
@@ -1807,10 +1807,10 @@
       "fanIn": 1
     },
     "ui/settings-visual.ts": {
-      "codeLines": 291,
-      "decisionNodes": 44,
+      "codeLines": 251,
+      "decisionNodes": 42,
       "maxDepth": 2,
-      "fanOut": 11,
+      "fanOut": 8,
       "globalReach": 0,
       "worstFunction": 8,
       "fanIn": 1
@@ -1894,6 +1894,15 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 0,
+      "fanIn": 1
+    },
+    "ui/visual-choices.ts": {
+      "codeLines": 45,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 5,
+      "globalReach": 0,
+      "worstFunction": 2,
       "fanIn": 1
     },
     "ui/vlibras.ts": {

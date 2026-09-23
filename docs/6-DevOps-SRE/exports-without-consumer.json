@@ -123,9 +123,6 @@
     "ui/settings-mobility.ts": [
       "playerPrefix"
     ],
-    "ui/settings-visual.ts": [
-      "sameRgb"
-    ],
     "ui/title.ts": [
       "TITLE_MENU_IDS_ORDERED"
     ],

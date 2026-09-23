@@ -8,7 +8,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { axesHtml } from '../app/js/ui/visual-axes-panel.js';
 import { PADRAO, migrateVisual } from '../app/js/render/viz-axes.js';
 import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
-import { initSettingsVisual, ROLE_KEYS, ROLE_LABELS } from '../app/js/ui/settings-visual.js';
+import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
+import { ROLE_KEYS, ROLE_LABELS } from '../app/js/ui/visual-choices.js';
 import pt from '../app/js/i18n/pt.js';
 import { createRunState } from '../app/js/core/run-state.js';
 // A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de

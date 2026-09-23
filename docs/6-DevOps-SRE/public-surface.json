@@ -1923,28 +1923,11 @@
     "mountTypoInside"
   ],
   "ui/settings-visual.ts": [
-    "CONTRAST_LABELS",
-    "LQ_STEPS",
-    "RGB",
-    "ROLE_KEYS",
-    "ROLE_LABELS",
     "SettingsVisual",
     "SettingsVisualCtx",
-    "VISUAL_MODES",
-    "VISUAL_MODE_LIST",
     "VisualRowsOffered",
     "VisualSettings",
-    "clamp01",
-    "clampSelectedPlayer",
-    "contrastLabel",
-    "initSettingsVisual",
-    "lqFromPercent",
-    "lqPercent",
-    "lqPosition",
-    "onOffLabel",
-    "resolveVisualMode",
-    "rgbToHex",
-    "sameRgb"
+    "initSettingsVisual"
   ],
   "ui/shell.ts": [
     "ActionGlyphs",
@@ -2025,6 +2008,24 @@
     "axesHtml",
     "axisRows",
     "buttonChoice"
+  ],
+  "ui/visual-choices.ts": [
+    "CONTRAST_LABELS",
+    "LQ_STEPS",
+    "RGB",
+    "ROLE_KEYS",
+    "ROLE_LABELS",
+    "VISUAL_MODES",
+    "VISUAL_MODE_LIST",
+    "clamp01",
+    "clampSelectedPlayer",
+    "contrastLabel",
+    "lqFromPercent",
+    "lqPercent",
+    "lqPosition",
+    "onOffLabel",
+    "resolveVisualMode",
+    "rgbToHex"
   ],
   "ui/vlibras.ts": [
     "librasOpen",

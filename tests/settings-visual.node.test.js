@@ -6,11 +6,14 @@ import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
+// 📌 A METADE PURA MUDOU DE MÓDULO em 2026-09-23 (`ui/visual-choices`, ADR-0221 passo 7c), e foi ESTE ficheiro que
+// apontou a costura: ele importava exactamente estes nomes e mais nada, e o projecto node não monta documento — logo
+// quem escreveu estes casos já sabia onde o painel deixa de ser um painel.
 import {
   CONTRAST_LABELS, ROLE_KEYS, ROLE_LABELS,
   resolveVisualMode, VISUAL_MODES, VISUAL_MODE_LIST, contrastLabel, clamp01, lqLabel, lqPercent, lqFromPercent, LQ_STEPS, lqPosition,
   clampSelectedPlayer, rgbToHex, onOffLabel,
-} from '../app/js/ui/settings-visual.js';
+} from '../app/js/ui/visual-choices.js';
 import { CONTRAST_LEVELS } from '../app/js/core/visual-cycles.js';
 
 const baseSettings = () => ({

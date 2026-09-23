@@ -198,7 +198,13 @@ const CRU_CONHECIDO = {
   // há DOIS casos a contar coisas diferentes: um relata o que passa do tecto, o outro é a catraca por módulo — foi
   // ela que recusou o 2 que eu tinha escrito, com o número medido ao lado. Descer até ao medido é o que impede a
   // folga de virar licença; parar acima dele seria deixar a porta entreaberta.
-  'ui/settings-visual.ts': 3,
+  // ⚠️ A ENTRADA MUDOU DE MÓDULO em 2026-09-23, e as DUAS metades estão no mesmo commit — é o que separa uma
+  // mudança de morada de uma dívida nova. As três frases são os nomes dos quatro papéis do color-blocking
+  // (`ROLE_LABELS`), que saíram com a metade pura para `ui/visual-choices`. O `ui/settings-visual` desce a ZERO e
+  // sai desta tabela; o total do livro não se move.
+  // 📌 E elas continuam a ser dívida DECLARADA pela razão que já estava escrita: «perigo (lava)» é a palavra de UM
+  // jogo, e quem as nomeia à criança é o nome acessível de cada cor, onde atravessam por `{param}`.
+  'ui/visual-choices.ts': 3,
   'ui/settings-caa.ts': 5,
   'ui/caa-sets.ts': 3,
   'ui/locale-flags.ts': 2,       // each language named IN ITSELF, beside its flag: a child who cannot read the current language still finds theirs             // descrições dos conjuntos de pictogramas (licença, origem cultural)

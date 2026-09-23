@@ -11,7 +11,7 @@
 // que um objeto é igual a si mesmo — passa sempre, prova nada, e ainda dá a impressão de cobertura.
 import { describe, it, expect } from 'vitest';
 import { HC_ROLE_KEYS, HC_ROLE_DEF } from '../app/js/render/hc-role-data.js';
-import { ROLE_LABELS } from '../app/js/ui/settings-visual.js';
+import { ROLE_LABELS } from '../app/js/ui/visual-choices.js';
 
 describe('render/hc-role-data — a lista de papéis', () => {
   it('[Right] tem exatamente os quatro papéis, na ordem em que o painel os desenha', () => {
