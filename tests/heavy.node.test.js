@@ -10,7 +10,7 @@
 // 🎯 Por isso a asserção central não é «baixou»: é que uma entrada SEM FONTE devolve `sem-fonte` com a razão.
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { downloadHeavy, bytesLeftToDownload, HEAVY_FILES, CACHE_HEAVY, sha256Hex, deliveryPath, heavyAtBoot } from '../app/js/platform/heavy.js';
@@ -106,6 +106,74 @@ describe('o buscador das coisas pesadas', () => {
     expect(CACHE_HEAVY).toMatch(/-v\d+$/);
   });
 });
+
+describe('what the report SAYS when a file does not arrive (probed 2026-09-23)', () => {
+  /*
+   * 🔴 The probe before the cut found the same shape ten times: WHETHER a file enters the cache is held; what the report says
+   * when it does not — and what travels with one that does — could be undone with the suite green. The report is what a school
+   * reads to know if the delivery is missing a file, if the host cannot hash, or if the network failed, and each needs a
+   * different fix.
+   */
+  const alvo = HEAVY_FILES.find((p) => p.url);
+
+  it('🔴 [Zero] without Cache Storage EVERY file is reported, with the reason — the case above passed on an empty list', async () => {
+    const r = await downloadHeavy({ cacheStorage: undefined, buscar: buscarOk() });
+    expect(r.length, '`every` on an empty list is true: nothing was reported').toBe(HEAVY_FILES.length);
+    expect(r.every((x) => x.estado === 'falhou' && /Cache Storage/.test(x.erro))).toBe(true);
+  });
+
+  it('🔴 [Zero] without fetch the same — and the cache is never opened', async () => {
+    vi.stubGlobal('fetch', undefined);
+    try {
+      const f = cacheFalsa();
+      const r = await downloadHeavy({ cacheStorage: f.cacheStorage, apenas: [alvo.id] });
+      expect(r).toEqual([{ id: alvo.id, estado: 'falhou', erro: 'sem Cache Storage ou sem fetch' }]);
+      expect(f.cache._nome, 'a cache was opened on a host that cannot fetch into it').toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('🔴 [Right] a file missing from the delivery says HTTP 404 — not a hash mismatch — and its body is never read', async () => {
+    const f = cacheFalsa();
+    let lido = false;
+    const buscar = async () => ({ ok: false, status: 404, statusText: 'Not Found', headers: new Headers(),
+      arrayBuffer: async () => { lido = true; return new ArrayBuffer(0); } });
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id] });
+    expect(r[0]).toEqual({ id: alvo.id, estado: 'falhou', erro: 'HTTP 404' });
+    expect(lido, 'the body of an error page was read and hashed').toBe(false);
+    expect(f.postos).toEqual([]);
+  });
+
+  it('📌 [Right] a thrown error is reported by its MESSAGE, not by its class name', async () => {
+    const f = cacheFalsa();
+    const buscar = async () => { throw new Error('rede caiu'); };
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id] });
+    expect(r[0].erro).toBe('rede caiu');
+  });
+
+  it('📌 [Right] a downloaded file reports its measured size, and progress hears every report as it happens', async () => {
+    const f = cacheFalsa();
+    const ouvidos = [];
+    const [a, b] = HEAVY_FILES.filter((p) => p.url);
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl,
+      apenas: [a.id, b.id], aoProgredir: (x) => ouvidos.push(x) });
+    expect(r[0]).toEqual({ id: a.id, estado: 'baixado', bytes: a.bytes });
+    expect(ouvidos, 'the progress callback did not hear every report, in order').toEqual(r);
+  });
+
+  it('🔴 [Right] what is kept keeps the delivery\'s headers — a WebAssembly file served offline needs its content type', async () => {
+    const guardados = new Map();
+    const cacheStorage = { open: async () => ({ match: async () => undefined, put: async (u, resp) => { guardados.set(u, resp); } }) };
+    const buscar = async (u) => ({ ...resposta(urlDe(u)), headers: new Headers({ 'content-type': 'application/wasm' }) });
+    await downloadHeavy({ cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id] });
+    expect(guardados.get(alvo.url)?.headers.get('content-type')).toBe('application/wasm');
+  });
+});
+
+// Two mutations of the 2026-09-23 probe are EQUIVALENT today and have no case, by construction: the report for an entry with
+// NO pinned sha256 (the guard, and the wording that names it). The catalogue is a constant, and «every entry with a URL carries
+// a measured sha256» below refuses the only input that would reach it — the guard is the second line behind that one.
 
 // ================================ MUTAÇÕES CONFERIDAS ================================
 // 1. `if (!p.url) continue;` (saltar em silêncio em vez de devolver `sem-fonte`) → o [Zero] reprova. É a
