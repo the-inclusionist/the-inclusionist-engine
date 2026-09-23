@@ -12,7 +12,7 @@ import type { NeuralVoice } from './voice-plan.js';
 
 /** A Kokoro inference session on one device: token ids and a style row in, a 24 kHz waveform out. */
 export interface KokoroSession {
-  readonly sintetizar: (ids: readonly number[], estilo: Float32Array) => Promise<Float32Array>;
+  readonly sintetizar: (ids: readonly number[], styleVector: Float32Array) => Promise<Float32Array>;
 }
 /**
  * WHAT SPEAKING NEEDS OF KOKORO — `platform/kokoro-runtime` fills it from the delivery (ADR-0216 §1).
@@ -25,7 +25,7 @@ export interface KokoroSession {
  */
 export interface KokoroModule {
   readonly fonemizar: (texto: string, espeak: string) => Promise<string>;
-  readonly vocabulario: () => Promise<Readonly<{ [simbolo: string]: number }>>;
+  readonly vocabulario: () => Promise<Readonly<{ [symbol: string]: number }>>;
   readonly voz: (id: string) => Promise<Float32Array>;
   readonly sessao: (dispositivo: 'webgpu' | 'wasm') => Promise<KokoroSession>;
 }
@@ -116,13 +116,13 @@ export const BYTES_DO_TOKENIZADOR_KOKORO = 3_497;
 export const MAX_KOKORO_TOKENS = 510;
 /** A voice file is a table of style rows, one per token count, 256 numbers each. */
 export const STYLE_DIMENSION = 256;
-const TAXA_KOKORO = 24_000;
+const KOKORO_SAMPLE_RATE = 24_000;
 
 /** The token ids of a phoneme string: each symbol the vocabulary knows, in order, between two pad tokens (id 0). */
-export function tokenizar(fonemas: string, vocabulario: Readonly<{ [simbolo: string]: number }>): number[] {
+export function tokenizar(phonemes: string, vocabulario: Readonly<{ [symbol: string]: number }>): number[] {
   const ids: number[] = [];
-  for (const simbolo of fonemas) {
-    const id = vocabulario[simbolo];
+  for (const symbol of phonemes) {
+    const id = vocabulario[symbol];
     if (id !== undefined) ids.push(id);
     if (ids.length === MAX_KOKORO_TOKENS) break;
   }
@@ -130,37 +130,37 @@ export function tokenizar(fonemas: string, vocabulario: Readonly<{ [simbolo: str
 }
 
 /** The style row a sentence of `tokens` ids (pads excluded) takes from a voice table. */
-export function sentenceStyle(tabela: Float32Array, tokens: number): Float32Array {
-  const linhas = Math.floor(tabela.length / STYLE_DIMENSION);
+export function sentenceStyle(styleTable: Float32Array, tokens: number): Float32Array {
+  const linhas = Math.floor(styleTable.length / STYLE_DIMENSION);
   const linha = Math.max(0, Math.min(linhas - 1, tokens));
-  return tabela.slice(linha * STYLE_DIMENSION, (linha + 1) * STYLE_DIMENSION);
+  return styleTable.slice(linha * STYLE_DIMENSION, (linha + 1) * STYLE_DIMENSION);
 }
 
 /**
  * Is a synthesis speech? Measured on 2026-09-14: WebGPU on one AMD GPU gave a waveform whose samples ran to 2×10⁷ — noise a child
  * would hear as a burst. A speech waveform stays within ±1 (a sample or two past it is clipping, not noise) and is not silent.
  */
-export function eFala(onda: ArrayLike<number>): boolean {
-  if (onda.length === 0) return false;
-  let fora = 0, energia = 0;
-  for (let i = 0; i < onda.length; i++) {
-    const s = onda[i]!;
+export function eFala(waveform: ArrayLike<number>): boolean {
+  if (waveform.length === 0) return false;
+  let outside = 0, energy = 0;
+  for (let i = 0; i < waveform.length; i++) {
+    const s = waveform[i]!;
     if (!Number.isFinite(s)) return false;
-    if (Math.abs(s) > 1.5) fora++;
-    energia += s * s;
+    if (Math.abs(s) > 1.5) outside++;
+    energy += s * s;
   }
-  return fora === 0 && Math.sqrt(energia / onda.length) > 1e-3;
+  return outside === 0 && Math.sqrt(energy / waveform.length) > 1e-3;
 }
 
 /** A 16-bit mono PCM WAV of a waveform, clipped to ±1 — what the narration's media element plays. */
-export function wavDe(onda: ArrayLike<number>, taxa = TAXA_KOKORO): ArrayBuffer {
-  const n = onda.length;
+export function wavDe(waveform: ArrayLike<number>, taxa = KOKORO_SAMPLE_RATE): ArrayBuffer {
+  const n = waveform.length;
   const buf = new ArrayBuffer(44 + n * 2);
   const v = new DataView(buf);
   const texto = (o: number, s: string): void => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
   texto(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); texto(8, 'WAVE'); texto(12, 'fmt ');
   v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, taxa, true);
   v.setUint32(28, taxa * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); texto(36, 'data'); v.setUint32(40, n * 2, true);
-  for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.round(Math.max(-1, Math.min(1, onda[i]!)) * 32767), true);
+  for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.round(Math.max(-1, Math.min(1, waveform[i]!)) * 32767), true);
   return buf;
 }

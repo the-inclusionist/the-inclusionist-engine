@@ -16,8 +16,8 @@ export const MIN_PLAYBACK_RATE = 1;
 export const MAX_PLAYBACK_RATE = 3;
 
 /** Below this an utterance is too short to measure («Voltar»): its silent ends and one stressed syllable dominate. */
-const PALAVRAS_PARA_MEDIR = 3;
-const SEGUNDOS_PARA_MEDIR = 0.8;
+const WORDS_TO_MEASURE = 3;
+const SECONDS_TO_MEASURE = 0.8;
 
 /** A stored or passed rate that is not a step — the old 150…500 by 35 among them — reads as the normal speed, the first step. */
 export function isSpeechRate(ppm: number): SpeechRate {
@@ -30,10 +30,10 @@ export function spokenWords(texto: string): number {
 }
 
 /** Seconds from the first to the last sample above the silence threshold — the pauses inside stay, the silent ends go. */
-export function speechSeconds(amostras: ArrayLike<number>, taxa: number, limiar = 0.01): number {
-  let a = 0, b = amostras.length - 1;
-  while (a <= b && Math.abs(amostras[a]!) < limiar) a++;
-  while (b >= a && Math.abs(amostras[b]!) < limiar) b--;
+export function speechSeconds(samples: ArrayLike<number>, taxa: number, silenceThreshold = 0.01): number {
+  let a = 0, b = samples.length - 1;
+  while (a <= b && Math.abs(samples[a]!) < silenceThreshold) a++;
+  while (b >= a && Math.abs(samples[b]!) < silenceThreshold) b--;
   return b >= a ? (b - a + 1) / taxa : 0;
 }
 
@@ -42,16 +42,16 @@ export function speechSeconds(amostras: ArrayLike<number>, taxa: number, limiar 
  * Too short, it takes the voice's running average; with none yet, it plays as synthesised.
  */
 export function speechPlaybackRate(
-  palavras: number,
-  segundos: number,
+  words: number,
+  seconds: number,
   ppm: number,
-  mediaDaVoz: number | null,
+  voiceAverage: number | null,
 ): { readonly taxa: number; readonly ppmDaVoz: number | null } {
   const alvo = isSpeechRate(ppm);
   const clampInside = (x: number): number => Math.min(MAX_PLAYBACK_RATE, Math.max(MIN_PLAYBACK_RATE, +x.toFixed(6)));
-  if (palavras >= PALAVRAS_PARA_MEDIR && segundos >= SEGUNDOS_PARA_MEDIR) {
-    const ppmDaVoz = (palavras / segundos) * 60;
+  if (words >= WORDS_TO_MEASURE && seconds >= SECONDS_TO_MEASURE) {
+    const ppmDaVoz = (words / seconds) * 60;
     return { taxa: clampInside(alvo / ppmDaVoz), ppmDaVoz };
   }
-  return { taxa: mediaDaVoz ? clampInside(alvo / mediaDaVoz) : 1, ppmDaVoz: null };
+  return { taxa: voiceAverage ? clampInside(alvo / voiceAverage) : 1, ppmDaVoz: null };
 }

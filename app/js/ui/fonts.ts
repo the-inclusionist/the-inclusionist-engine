@@ -47,7 +47,7 @@ export type FontRole = 'geral' | 'caligrafica' | 'jogo';
  * ⚠️ ONDE O PAÍS ENSINA DUAS MÃOS, DEVOLVE AS DUAS, na ordem do Dev — a tradicional primeiro. É o que faz o
  * ciclo do 11.º botão ter SEIS posições nesses países em vez de cinco.
  */
-const MAO_POR_PAIS: Readonly<Record<string, readonly string[]>> = Object.freeze({
+const HAND_BY_COUNTRY: Readonly<Record<string, readonly string[]>> = Object.freeze({
   BR: ['pwbr'],
   US: ['pwustrad', 'pwusmod'],   // os EUA ensinam duas, e escolher uma seria escolher pela criança
   GB: ['pwgbj', 'pwgbs'],        // joined e semi-joined
@@ -57,7 +57,7 @@ const MAO_POR_PAIS: Readonly<Record<string, readonly string[]>> = Object.freeze(
 });
 
 /** O recuo por LÍNGUA: a mão do colonizador. Três entradas cobrem todo país que o repertório admite. */
-const MAO_POR_LINGUA: Readonly<Record<string, readonly string[]>> = Object.freeze({
+const HAND_BY_LANGUAGE: Readonly<Record<string, readonly string[]>> = Object.freeze({
   es: ['pwes', 'pwesdeco'],
   pt: ['pwpt'],
   en: ['pwgbj', 'pwgbs'],
@@ -115,7 +115,7 @@ export const BASE_EM_PX = 16;
  * anuncia. Uma posição que existisse só para ser saltada seria dado sem leitor; entram no dia em que funcionarem.
  */
 export function typographyCycle(tag: string | null | undefined): readonly TypographyStep[] {
-  const maos = handsForTag(tag);
+  const hands = handsForTag(tag);
   return Object.freeze([
     { caixa: 'upper', fonte: 'andika', escala: 1 } as const,   // (a) o par da alfabetização
     { caixa: 'mixed', fonte: 'andika', escala: 1 } as const,   // (b)
@@ -123,7 +123,7 @@ export function typographyCycle(tag: string | null | undefined): readonly Typogr
     { caixa: 'mixed', fonte: 'lexend', escala: 1 } as const,   // (d)
     // (e), e (f) onde o país ensina duas. ⚠️ 25% MAIOR, e o número não é gosto: a base do documento é 16 px,
     // as Playwrite declaram `minPx: 20`, e 16 × 1,25 é exactamente 20. A escala É o piso.
-    ...maos.map((fonte) => ({ caixa: 'mixed', fonte, escala: HANDWRITING_SCALE } as const)),
+    ...hands.map((fonte) => ({ caixa: 'mixed', fonte, escala: HANDWRITING_SCALE } as const)),
   ]);
 }
 
@@ -132,11 +132,11 @@ export const CYCLE_START = 2;
 
 export function handsForTag(tag: string | null | undefined): readonly string[] {
   if (!tag) return [];
-  const partes = String(tag).split('-');
-  const lingua = (partes[0] ?? '').toLowerCase();
-  const regiao = partes.slice(1).find((p) => /^[A-Za-z]{2}$/.test(p))?.toUpperCase();
-  if (regiao && MAO_POR_PAIS[regiao]) return MAO_POR_PAIS[regiao]!;
-  return MAO_POR_LINGUA[lingua] ?? [];
+  const parts = String(tag).split('-');
+  const language = (parts[0] ?? '').toLowerCase();
+  const region = parts.slice(1).find((p) => /^[A-Za-z]{2}$/.test(p))?.toUpperCase();
+  if (region && HAND_BY_COUNTRY[region]) return HAND_BY_COUNTRY[region]!;
+  return HAND_BY_LANGUAGE[language] ?? [];
 }
 
 export type FontItem = {
@@ -349,9 +349,9 @@ export function faceFamilies(it: FontItem): string[] {
  * o que fazer. O silêncio não decide nada contra a criança — ele mantém o estado que já existia e que é
  * accionável. É o oposto do `seguraTeclas`, onde os dois lados do padrão erravam.
  */
-export function faceAvailable(it: FontItem, instalada?: (familia: string) => boolean): boolean {
+export function faceAvailable(it: FontItem, installed?: (familia: string) => boolean): boolean {
   if (!it.off) return true;
-  return !!instalada && faceFamilies(it).some((f) => instalada(f));
+  return !!installed && faceFamilies(it).some((f) => installed(f));
 }
 
 /** As faces que o MENU pode oferecer: só as gerais (emenda do ADR-0012). */

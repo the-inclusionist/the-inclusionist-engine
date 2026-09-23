@@ -29,7 +29,7 @@
 //   node scripts/rename-internals.mjs --list <file...>        prints the safe names of each file
 //   node scripts/rename-internals.mjs --apply <map.json>      applies { "<file>": { "<from>": "<to>" } }
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import ts from 'typescript';
 
 const APP = 'app/js';
@@ -136,7 +136,20 @@ if (mode === '--list') {
     total += r.renamed;
   }
   console.log(`ocorrências renomeadas: ${total}`);
+} else if (mode === '--count') {
+  // How much of the debt is still renameable WITHOUT a breaking release: the rest is phase 7 (ADR-0219).
+  const phase7 = namesThatArePhase7();
+  let safe = 0;
+  const byFile = [];
+  for (const f of everyTsFile()) {
+    const n = safeNamesOf(f, phase7).length;
+    if (n) { safe += n; byFile.push([relative(APP, f).split('\\').join('/'), n]); }
+  }
+  byFile.sort((a, b) => b[1] - a[1]);
+  console.log(`nomes DISTINTOS ainda renomeáveis sem quebrar: ${safe} em ${byFile.length} ficheiros`);
+  for (const [f, n] of byFile.slice(0, 20)) console.log(`   ${String(n).padStart(3)}  ${f}`);
+  if (byFile.length > 20) console.log(`   … e mais ${byFile.length - 20} ficheiros`);
 } else {
-  console.error('uso: --list <ficheiro...>  |  --apply <mapa.json>');
+  console.error('uso: --list <ficheiro...>  |  --apply <mapa.json>  |  --count');
   process.exit(2);
 }

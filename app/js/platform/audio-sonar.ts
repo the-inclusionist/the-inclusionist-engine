@@ -345,7 +345,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * ⚠️ E O REFERENCIAL É DO JOGO. Num tabuleiro diz-se «a nordeste»; numa plataforma 2D vista de lado, norte
    * não quer dizer nada, e o que se diz é «às 2 horas».
    */
-  function emPalavras(r: Bearing): string {
+  function inWords(r: Bearing): string {
     if (r.kind === 'none') return t('sr.nav.here');
     // Uma chave com `{h}` e não doze — mas a forma do singular é sua, porque «às 1 horas» não é português
     // (nem «a las 1» é espanhol). Em inglês as duas coincidem, e coincidir não é motivo para não a ter.
@@ -353,15 +353,15 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     return t('sr.nav.dir.' + r.heading);
   }
 
-  function alvoMaisProximo(pl: SonarPlayer): { at: Spot; d: number } | null {
+  function nearestSpot(pl: SonarPlayer): { at: Spot; d: number } | null {
     const topo = ctx.topology();
     const aqui: Spot = { x: pl.x, y: pl.y };
-    let melhor: Spot | null = null, bd = Infinity;
+    let nearest: Spot | null = null, bd = Infinity;
     for (const alvo of ctx.targetsOf(pl.i)) {
       const d = distance(topo, aqui, alvo);
-      if (d < bd) { bd = d; melhor = alvo; }
+      if (d < bd) { bd = d; nearest = alvo; }
     }
-    return melhor ? { at: melhor, d: bd } : null;
+    return nearest ? { at: nearest, d: bd } : null;
   }
 
   /**
@@ -371,13 +371,13 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * a mesma de antes, letra por letra; numa grade são quatro e nove casas; num quiz, quatro e nove itens de
    * distância na lista. É a mesma frase para a criança em qualquer gênero, que é o ponto do contrato.
    */
-  const chaveDeDistancia = (d: number): string =>
+  const distanceKey = (d: number): string =>
     d < 4 ? 'sr.nav.veryClose' : d < 9 ? 'sr.nav.close' : 'sr.nav.far';
 
   function sonar(pl: SonarPlayer): void {
     _sonarCount++;
     const pc = playerCtx(pl);
-    const alvo = alvoMaisProximo(pl);
+    const alvo = nearestSpot(pl);
     // A chave era `sr.nav.noCoinNear` — "Nenhuma moeda por perto." Um sonar que não sabe mais o que é o alvo
     // não pode dizer o nome dele no caso em que NÃO HÁ alvo nenhum: virou "Nada por perto.", que é verdade em
     // qualquer gênero. Foi o gate de fixtures que cobrou, ao acusar a palavra dentro do teste novo.
@@ -391,8 +391,8 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     const nome = ctx.nameAt(alvo.at);
     const corpo = t('sr.nav.sonarFound', {
       alvo: nome ? nome.text : t('sr.nav.target'),
-      lado: emPalavras(bearing(ctx.topology(), { x: pl.x, y: pl.y }, alvo.at)),
-      dist: t(chaveDeDistancia(alvo.d)),
+      lado: inWords(bearing(ctx.topology(), { x: pl.x, y: pl.y }, alvo.at)),
+      dist: t(distanceKey(alvo.d)),
     });
     const msg = (ctx.getNumPlayers() > 1 ? t('sr.player.prefix', { n: pl.i + 1 }) : '') + corpo;
     ctx.srSay(msg); ctx.narrate(msg);
@@ -412,7 +412,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * por isso que é recuo e não escolha. Mas é o que o guia já dizia antes desta mudança, e continuar a dizê-lo
    * é estritamente melhor do que calar — calar afirmaria que não há alvo.
    */
-  function passosAteOAlvo(pl: SonarPlayer, alvo: { at: Spot; d: number }): number {
+  function stepsToTarget(pl: SonarPlayer, alvo: { at: Spot; d: number }): number {
     const roleAt = ctx.roleAt;
     if (roleAt) {
       const rota = routeTo(
@@ -425,7 +425,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   }
 
   /** Acende o grafo contínuo deste jogador. `null` = não deu (sem contexto, ou motor sem Web Audio). */
-  function ligarGuia(pl: SonarPlayer): LiveGuide | null {
+  function startGuide(pl: SonarPlayer): LiveGuide | null {
     const pc = playerCtx(pl);
     const ac = pc ? pc.ac : ctx.getAudioCtx();
     if (!ac) return null;
@@ -457,14 +457,14 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * Desce em rampa (não corta) porque um corte seco num oscilador vivo é um clique — um transiente, que é
    * precisamente o que este item existe para tirar do ouvido da criança.
    */
-  function desligarGuia(pl: SonarPlayer): void {
+  function stopGuide(pl: SonarPlayer): void {
     const g = pl._guia;
     if (!g) return;
     pl._guia = null;
     try {
-      const agora = g.ac.currentTime;
-      g.ganho.gain.setTargetAtTime(0, agora, 0.05);
-      g.osc.stop(agora + 0.3);
+      const audioNow = g.ac.currentTime;
+      g.ganho.gain.setTargetAtTime(0, audioNow, 0.05);
+      g.osc.stop(audioNow + 0.3);
     } catch (e) { /* noop */ }
   }
 
@@ -481,10 +481,10 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    */
   function updateGuide(): void {
     const cat = ctx.getAudioCat();
-    const ligado = !!ctx.getAudioCtx() && ctx.getSoundOn() && !!cat && !!cat.guide && cat.guide.on;
+    const guideAudible = !!ctx.getAudioCtx() && ctx.getSoundOn() && !!cat && !!cat.guide && cat.guide.on;
     const vol = ctx.getVolume ? ctx.getVolume() : 1;
     for (const pl of ctx.getPlayers()) {
-      if (!ligado || !needsAudioCues(pl)) { desligarGuia(pl); continue; }
+      if (!guideAudible || !needsAudioCues(pl)) { stopGuide(pl); continue; }
 
       let g = pl._guia;
       if (!g) {
@@ -493,26 +493,26 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
         // POR SEGUNDO. O bipe não tinha este problema porque não tinha nada que durasse; foi a permanência
         // que o trouxe. `alvoMaisProximo` é um laço sobre `targetsOf`, não a BFS: perguntar por quadro custa
         // zero quando a lista está vazia, que é exactamente o caso em questão.
-        if (!alvoMaisProximo(pl)) continue;
-        g = pl._guia = ligarGuia(pl);
+        if (!nearestSpot(pl)) continue;
+        g = pl._guia = startGuide(pl);
         if (!g) continue;
       }
 
       if (++g.desdeARota >= FRAMES_BETWEEN_ROUTES) {
         g.desdeARota = 0;
-        const alvo = alvoMaisProximo(pl);
-        if (!alvo) { desligarGuia(pl); continue; }
-        g.passos = passosAteOAlvo(pl, alvo);
+        const alvo = nearestSpot(pl);
+        if (!alvo) { stopGuide(pl); continue; }
+        g.passos = stepsToTarget(pl, alvo);
         g.pan = panFor(alvo.at.x, pl);
       }
 
       // TODO quadro, e não só quando a rota é nova: é isto que faz a mudança ser um deslize.
       const i = guideIntensity(g.passos);
       try {
-        const agora = g.ac.currentTime;
-        g.filtro.frequency.setTargetAtTime(i.corte, agora, GUIDE_TAU);
-        g.ganho.gain.setTargetAtTime(GUIDE_VOL * i.volume * vol, agora, GUIDE_TAU);
-        g.panner?.pan.setTargetAtTime(g.pan, agora, GUIDE_TAU);
+        const audioNow = g.ac.currentTime;
+        g.filtro.frequency.setTargetAtTime(i.corte, audioNow, GUIDE_TAU);
+        g.ganho.gain.setTargetAtTime(GUIDE_VOL * i.volume * vol, audioNow, GUIDE_TAU);
+        g.panner?.pan.setTargetAtTime(g.pan, audioNow, GUIDE_TAU);
       } catch (e) { /* noop */ }
       _guideCount++;
     }

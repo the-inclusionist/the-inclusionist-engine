@@ -37,19 +37,19 @@ export interface RecognitionRoute {
  * THE ROUTE, measured on the device (ADR-0200 §3). ⚠️ A browser whose recognition object has no `processLocally` would take the
  * flag as an unknown property and recognise on its servers — it is never the route, whatever it says about availability.
  */
-export async function recognitionRoute(lingua: string, api: RecognitionApi | null | undefined): Promise<RecognitionRoute> {
+export async function recognitionRoute(language: string, api: RecognitionApi | null | undefined): Promise<RecognitionRoute> {
   if (!api) return { rota: 'recuo', estado: 'sem-api' };
   if (!('processLocally' in api.prototype) || typeof api.available !== 'function') return { rota: 'recuo', estado: 'sem-processamento-local' };
   let estado: OnDeviceAvailability;
-  try { estado = await api.available({ langs: [lingua], processLocally: true }); } catch { return { rota: 'recuo', estado: 'unavailable' }; }
+  try { estado = await api.available({ langs: [language], processLocally: true }); } catch { return { rota: 'recuo', estado: 'unavailable' }; }
   return { rota: estado === 'available' ? 'webspeech-local' : 'recuo', estado };
 }
 
 /** A recognition object set to recognise on the device, continuously, with partial hypotheses. Refuses a browser that cannot. */
-export function createOnDeviceRecognition(api: RecognitionApi, lingua: string): RecognitionInstance {
+export function createOnDeviceRecognition(api: RecognitionApi, language: string): RecognitionInstance {
   if (!('processLocally' in api.prototype)) throw new Error('speech recognition on the device is not supported here: the voice would leave the device');
   const rec = new api();
-  rec.lang = lingua;
+  rec.lang = language;
   rec.processLocally = true;
   rec.continuous = true;
   rec.interimResults = true;
@@ -72,37 +72,37 @@ export interface CommandReader {
   ler(indice: number, texto: string, final: boolean): readonly HeardCommand[];
 }
 
-export function createCommandReader(palavras: readonly string[]): CommandReader {
-  const direcoes = palavras.map(spokenText);
+export function createCommandReader(vocabulary: readonly string[]): CommandReader {
+  const spokenForms = vocabulary.map(spokenText);
   let itens: readonly string[] = [];
-  const disparadas = new Map<number, number>();
-  const frasesDe = (texto: string): string[] => {
+  const firedCount = new Map<number, number>();
+  const phrasesIn = (texto: string): string[] => {
     const p = spokenText(texto).split(' ').filter(Boolean);
-    const achadas: string[] = [];
+    const found: string[] = [];
     for (let i = 0; i < p.length;) {
-      let achou: string | null = null;
+      let matched: string | null = null;
       for (let n = p.length - i; n >= 1; n--) {
         const f = p.slice(i, i + n).join(' ');
-        if (itens.includes(f) || direcoes.includes(f)) { achou = f; i += n; break; }
+        if (itens.includes(f) || spokenForms.includes(f)) { matched = f; i += n; break; }
       }
-      if (achou) achadas.push(achou); else i++;
+      if (matched) found.push(matched); else i++;
     }
-    return achadas;
+    return found;
   };
   return {
     itens(nomes) { itens = nomes.map(spokenText); },
     ler(indice, texto, final) {
-      const achadas = frasesDe(texto);
-      const ja = disparadas.get(indice) ?? 0;
-      const novos: HeardCommand[] = [];
-      for (let i = ja; i < achadas.length; i++) {
-        const f = achadas[i]!;
-        if (!final && i === achadas.length - 1 && itens.some((o) => o !== f && o.startsWith(f + ' '))) break;
-        novos.push(itens.includes(f) ? { tipo: 'item', nome: f } : { tipo: 'palavra', palavra: f });
-        disparadas.set(indice, i + 1);
+      const found = phrasesIn(texto);
+      const alreadyFired = firedCount.get(indice) ?? 0;
+      const newCommands: HeardCommand[] = [];
+      for (let i = alreadyFired; i < found.length; i++) {
+        const f = found[i]!;
+        if (!final && i === found.length - 1 && itens.some((o) => o !== f && o.startsWith(f + ' '))) break;
+        newCommands.push(itens.includes(f) ? { tipo: 'item', nome: f } : { tipo: 'palavra', palavra: f });
+        firedCount.set(indice, i + 1);
       }
-      if (final) disparadas.delete(indice);
-      return novos;
+      if (final) firedCount.delete(indice);
+      return newCommands;
     },
   };
 }
