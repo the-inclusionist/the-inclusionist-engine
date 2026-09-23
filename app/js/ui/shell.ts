@@ -94,7 +94,7 @@ import type { PlayerView } from '../core/entity.js';
 
 import { PAD_DESIGNS, PAD_GLYPH_SPOKEN } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
 import type { DomQuery } from '../core/dom-query.js';
-import type { PadMap } from '../input/gamepad.js';
+import type { PadMap } from '../input/pad-reading.js';
 import type { SceneFacts } from '../core/scenes.js';
 // UMA constante, e não um seletor repetido: com o submenu de opções (ADR-0044, item 5) o cartão de pausa passou
 // a ter DUAS listas, e quem varrer `.pm-btn` cru enxerga também a que está escondida.

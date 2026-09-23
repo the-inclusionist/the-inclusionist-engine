@@ -402,29 +402,17 @@
     "scoresFromCategories"
   ],
   "input/gamepad.ts": [
-    "ActionKey",
-    "Dirs",
     "GamepadApi",
     "GamepadCtx",
     "GamepadGameHooks",
     "GamepadPlayer",
-    "GetGamepads",
     "PADWIZ_ORDER",
-    "PadActions",
-    "PadBinding",
-    "PadButtonLike",
     "PadGameAnswers",
-    "PadLike",
-    "PadMap",
     "WizAnimDef",
     "WizState",
-    "bindActive",
     "initGamepad",
-    "oneButtonAtOnce",
-    "padActions",
     "padGameAnswers",
-    "seatEveryPlayer",
-    "stdDirs"
+    "seatEveryPlayer"
   ],
   "input/gaze-cycle.ts": [
     "CANCEL",
@@ -548,6 +536,20 @@
     "PadTable",
     "padTable",
     "registerPadMapping"
+  ],
+  "input/pad-reading.ts": [
+    "ActionKey",
+    "Dirs",
+    "GetGamepads",
+    "PadActions",
+    "PadBinding",
+    "PadButtonLike",
+    "PadLike",
+    "PadMap",
+    "bindActive",
+    "oneButtonAtOnce",
+    "padActions",
+    "stdDirs"
   ],
   "input/pad-wizard.ts": [
     "PADWIZ_ORDER",

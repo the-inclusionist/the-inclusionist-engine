@@ -495,27 +495,6 @@
     "type BlendshapeScores": "Partial<Readonly<Record<EyeBlendshape, number>>>"
   },
   "input/gamepad.ts": {
-    "interface PadButtonLike": [
-      "pressed"
-    ],
-    "interface PadLike": [
-      "axes",
-      "buttons",
-      "id",
-      "index",
-      "mapping"
-    ],
-    "interface PadBinding": [
-      "b?"
-    ],
-    "interface Dirs": [
-      "left"
-    ],
-    "interface PadActions": [
-      "_pause",
-      "_start",
-      "action2"
-    ],
     "interface WizAnimDef": [
       "seq?"
     ],
@@ -586,9 +565,6 @@
       "padWizTick",
       "pollPads"
     ],
-    "type GetGamepads": "() => readonly (PadLike | null | undefined)[] | null | undefined",
-    "type PadMap": "Record<string, PadBinding | boolean | undefined>",
-    "type ActionKey": "'left' | 'right' | 'up' | 'down' | 'action2' | 'action1' | 'action4' | 'action3'",
     "type GamepadPlayer": "PlayerView< 'pad' | 'quit' | 'waiting' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge' >",
     "type PadGameAnswers": "Required<Omit<GamepadGameHooks, 'worldRunning'>> & { readonly worldRunning: () => boolean }"
   },
@@ -809,6 +785,32 @@
   "input/pad-defaults.ts": {
     "type PadMapping": "(jogadores: number, assento: number) => Partial<Record<Action, number | null>> | null",
     "type PadTable": "Readonly<Record<Action, Binding<number>>>"
+  },
+  "input/pad-reading.ts": {
+    "interface PadButtonLike": [
+      "pressed"
+    ],
+    "interface PadLike": [
+      "axes",
+      "buttons",
+      "id",
+      "index",
+      "mapping"
+    ],
+    "interface PadBinding": [
+      "b?"
+    ],
+    "interface Dirs": [
+      "left"
+    ],
+    "interface PadActions": [
+      "_pause",
+      "_start",
+      "action2"
+    ],
+    "type GetGamepads": "() => readonly (PadLike | null | undefined)[] | null | undefined",
+    "type PadMap": "Record<string, PadBinding | boolean | undefined>",
+    "type ActionKey": "'left' | 'right' | 'up' | 'down' | 'action2' | 'action1' | 'action4' | 'action3'"
   },
   "input/pad-wizard.ts": {
     "interface PadWizardCtx": [

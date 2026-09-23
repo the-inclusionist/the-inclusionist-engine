@@ -15,7 +15,7 @@
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { registerPadMapping, padTable } from '../app/js/input/pad-defaults.js';
-import { padActions } from '../app/js/input/gamepad.js';
+import { padActions } from '../app/js/input/pad-reading.js';
 import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
 
 /** Um pad de mentira com os botões pedidos premidos. */

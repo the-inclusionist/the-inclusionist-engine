@@ -9,9 +9,8 @@
 import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  stdDirs, bindActive, padActions, PADWIZ_ORDER, initGamepad, oneButtonAtOnce, padGameAnswers,
-} from '../app/js/input/gamepad.js';
+import { PADWIZ_ORDER, initGamepad, padGameAnswers } from '../app/js/input/gamepad.js';
+import { stdDirs, bindActive, padActions, oneButtonAtOnce } from '../app/js/input/pad-reading.js';
 import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
 // `oneButton` e' binding vivo de `core/state` (nao do ctx): estes casos ligam-no e desligam-no de verdade.
 import * as estado from '../app/js/core/state.js';

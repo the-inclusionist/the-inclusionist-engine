@@ -2369,6 +2369,34 @@ and that is photosensitive epilepsy, which is safety and not comfort.
 and passed 1351 cases BEFORE a single file was removed here — which is ADR-0123's driver 5 applied across two
 repositories.
 
+## BZ · What a gamepad is DOING moves to `input/pad-reading` (ADR-0221, issue #203)
+
+**Who is affected:** anyone importing one of the twelve names below from `the-inclusionist-engine/input/gamepad.js`.
+The package's `exports` are wildcards (`./input/*.js`), so both paths are published entry points — **only the path
+changes, and no name, signature or behaviour does.**
+
+📏 `input/gamepad` carried two jobs under one name: the pure reading — buttons and axes in, positions out, no host,
+no state, no clock — and the DI runtime that polls the pads every frame and decides where the reading goes. The
+first is arithmetic over a snapshot and is now its own module; the second stays. The file goes from **415 to 333
+lines** and from **96 to 77 decision nodes**.
+
+| the import to edit | from | to |
+|---|---|---|
+| `padActions`, `stdDirs`, `bindActive`, `oneButtonAtOnce` | `input/gamepad.js` | `input/pad-reading.js` |
+| `PadLike`, `PadButtonLike`, `GetGamepads`, `PadBinding`, `PadMap`, `PadActions`, `ActionKey`, `Dirs` (types) | `input/gamepad.js` | `input/pad-reading.js` |
+
+**What does NOT move, and stays exactly where it was:** `initGamepad`, `GamepadCtx`, `GamepadApi`,
+`GamepadGameHooks`, `PadGameAnswers`, `padGameAnswers`, `seatEveryPlayer`, `GamepadPlayer`, `WizState`,
+`WizAnimDef`, `PADWIZ_ORDER`, and the `NavKeys`/`DomQuery` re-exports.
+
+⚠️ **No alias was left behind**, which is the same choice the five earlier pure-half cuts made (`ui/audio-choices`,
+`ui/typo-choices`, `ui/control-choices`, `ui/visual-choices`, `ui/motion-choices`): a re-export would keep alive a
+path the public-surface portrait cannot see, and this table is what says where each name went.
+
+📌 The move carried one behaviour-preserving change of shape, so that the new module is born under every ceiling: the
+hat-step loop of `stdDirs` and the three-way form of `padActions` became named steps. Its measures: 98 lines, 18
+decision nodes, depth 2, fan-out 4, no global reach, worst function 10.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

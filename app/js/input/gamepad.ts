@@ -11,10 +11,8 @@ import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import { createPadWizard, padMap, PADWIZ_ORDER as ORDEM_DO_ASSISTENTE } from './pad-wizard.js';
-import { GAMEPAD_STANDARD } from './default-bindings.js';
 import { padTable, type PadTable } from './pad-defaults.js';
-import type { Action } from '../core/actions.js';
-import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
+import { padCur, padPrevAct, padPrevStart } from './state.js';
 // ⚠️ O `oneButton` ENTRA POR IMPORT, e não pelo `ctx` — ao contrário de `input/keydown`, que o recebe por
 // getter. A diferença não é de gosto: o `keydown` foi extraído quando o `oneButton` era um `let` do
 // `game.js`, e a regra da casa manda o que o JOGO reatribui entrar por getter. Hoje ele é `core/state`,
@@ -29,131 +27,27 @@ import * as estadoDoJogo from '../core/state.js';
 // Gamepad API surface (minimal, adapter-friendly — mirrors the real Gamepad/GamepadButton shape)
 // ---------------------------------------------------------------------------------------------
 
-export interface PadButtonLike { pressed: boolean; }
-export interface PadLike {
-  id: string;
-  index: number;
-  mapping: string; // 'standard' (XInput) | '' (DirectInput/other)
-  buttons: readonly (PadButtonLike | null | undefined)[];
-  axes: readonly number[];
-}
-/** Adapter for `navigator.getGamepads()` — the DI point that lets tests feed a fake pad without a browser. */
-export type GetGamepads = () => readonly (PadLike | null | undefined)[] | null | undefined;
+// 🔴 O QUE UM CONTROLE ESTÁ A FAZER mudou-se para `input/pad-reading` em 2026-09-23: era a metade PURA deste
+// ficheiro — botões e eixos entram, posições saem —, e ficava ao lado do condutor que sonda os pads a cada quadro
+// e decide para onde a leitura vai. Aqui ficou a fiação, que só se lê com um ctx na mão.
+// ⚠️ SEM APELIDO, como nos cinco cortes de metade pura antes deste: um re-export manteria vivo um caminho que o
+// retrato da superfície não vê, e a nota de migração é o que diz onde cada nome passou a morar.
+import {
+  type PadLike, type GetGamepads, type PadMap, type PadActions, type ActionKey,
+  padActions, oneButtonAtOnce,
+} from './pad-reading.js';
 
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
 // módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
 export type { DomQuery } from '../core/dom-query.js';
 
 // ---------------------------------------------------------------------------------------------
-// Action mapping (button/axis -> game action)
-// ---------------------------------------------------------------------------------------------
-
-/** One binding captured by the wizard: a digital button, a signed analog threshold, or an exact hat/POV value.
- *  Loosely-shaped (all fields optional) rather than a strict union: bindings round-trip through JSON in
- *  localStorage, so `bindActive` must stay defensive against malformed/partial saved data, same as the original. */
-export interface PadBinding { b?: number; ax?: number; s?: number; av?: number; v?: number; }
-/** action -> binding, keyed by the 9 wizard steps (left/right/up/down/jump/run/swap/especial/start), PLUS the
- *  `_skip: true` sentinel meaning "user cancelled the wizard for this model — use the default mapping, don't
- *  ask again this session" (not persisted). A flat index signature (not `Partial<Record<..>> & {_skip}`) so the
- *  boolean `_skip` and the PadBinding action values can coexist under TS's index-signature rule; `bindingAt`
- *  narrows a lookup back down to a PadBinding for `bindActive`. */
-export type PadMap = Record<string, PadBinding | boolean | undefined>;
-function bindingAt(map: PadMap, key: string): PadBinding | undefined {
-  const v = map[key];
-  return typeof v === 'object' && v !== null ? v : undefined;
-}
-
-export type ActionKey = 'left' | 'right' | 'up' | 'down' | 'action2' | 'action1' | 'action4' | 'action3';
-export interface Dirs { left: boolean; right: boolean; up: boolean; down: boolean; }
-export interface PadActions extends Dirs {
-  [key: string]: boolean; // torna PadActions atribuível a PadState (input/state.ts's Record<string,boolean>)
-  action2: boolean; action1: boolean; action4: boolean; action3: boolean;
-  _start: boolean; // pulo OU start (fecha diálogos/telas de vitória)
-  _pause: boolean; // só start (pausa/retoma)
-}
-
-// [axisValue, up, down, left, right] — os 8 passos de um D-pad "POV hat" (eixo alto do DirectInput), repouso ~1.286.
-const HAT_STEPS: readonly [number, 0 | 1, 0 | 1, 0 | 1, 0 | 1][] = [
-  [-1, 1, 0, 0, 0], [-0.7143, 1, 0, 0, 1], [-0.4286, 0, 0, 0, 1], [-0.1429, 0, 1, 0, 1],
-  [0.1429, 0, 1, 0, 0], [0.4286, 0, 1, 1, 0], [0.7143, 0, 0, 1, 0], [1, 1, 0, 1, 0],
-];
-
-/** Direções pelas FONTES PADRÃO: stick 0/1 (zona morta PAD_DEAD), D-pad 12-15, e o "hat" nos eixos >=6 (POV do
- *  DirectInput). Controles com os dois direcionais mapeados ficam com ambos vivos (dedo no stick não mata o D-pad). */
-export function stdDirs(gp: PadLike): Dirs {
-  const b = (i: number): boolean => !!(gp.buttons[i] && gp.buttons[i]!.pressed);
-  const ax = (i: number): number => gp.axes[i] || 0;
-  const d: Dirs = { left: ax(0) < -PAD_DEAD || b(14), right: ax(0) > PAD_DEAD || b(15), up: ax(1) < -PAD_DEAD || b(12), down: ax(1) > PAD_DEAD || b(13) };
-  for (let i = 6; i < gp.axes.length; i++) {
-    const v = gp.axes[i];
-    if (typeof v !== 'number' || Math.abs(v) > 1.001) continue; // fora do repouso do hat
-    for (const [hv, u, dn, l, r] of HAT_STEPS) {
-      if (Math.abs(v - hv) <= 0.09) { if (u) d.up = true; if (dn) d.down = true; if (l) d.left = true; if (r) d.right = true; break; }
-    }
-  }
-  return d;
-}
-
-/** Está o binding `bd` ativo agora neste gamepad? Digital = pressed; analógico ({ax,s}) = limiar por sinal
- *  (metade do curso); hat ({av,v}) = valor exato do passo (±0.13 — os 8 passos distam ~0.286). */
-export function bindActive(gp: PadLike, bd: PadBinding | null | undefined): boolean {
-  if (!bd) return false;
-  if (bd.b != null) return !!(gp.buttons[bd.b] && gp.buttons[bd.b]!.pressed);
-  if (bd.ax != null) return ((gp.axes[bd.ax] || 0) * (bd.s ?? 0)) > 0.5;
-  if (bd.av != null) return Math.abs((gp.axes[bd.av] || 0) - (bd.v ?? 0)) <= 0.13;
-  return false;
-}
-
-/** Ações do frame para este gamepad. `custom` = mapa salvo pelo wizard para este `gp.id` (null/`_skip` = usa o
- *  mapa PADRÃO da Gamepad API "standard": 0=pulo · 1=especial · 2/5/7=correr · 3=troca · 9=START). Direções
- *  custom caem de volta em stdDirs quando o binding do usuário não está ativo (D-pad/stick continuam vivos). */
-export function padActions(gp: PadLike, custom: PadMap | null, table: PadTable = GAMEPAD_STANDARD): PadActions {
-  if (custom && !custom._skip) {
-    const A = (k: string): boolean => bindActive(gp, bindingAt(custom, k));
-    const sd = stdDirs(gp);
-    return {
-      left: A('left') || sd.left, right: A('right') || sd.right, up: A('up') || sd.up, down: A('down') || sd.down,
-      action2: A('action2'), action1: A('action1'), action4: A('action4'), action3: A('action3'), _start: A('action2') || A('start'), _pause: A('start'),
-    };
-  }
-  const b = (i: number): boolean => !!(gp.buttons[i] && gp.buttons[i]!.pressed);
-  const sd = stdDirs(gp);
-  // ⚠️ OS ÍNDICES SAEM DA TABELA DECLARADA, e não de literais aqui. Enquanto eram literais, esta linha e
-  // `input/default-bindings` DISCORDAVAM e nada notava — a mesma forma de defeito que o gate do toque
-  // apanhou: duas tabelas que concordam entre si não provam nada sobre um terceiro que as lê.
-  //
-  // ⚠️ E A DISCORDÂNCIA ERA REAL: aqui estava `action1: b(2) || b(5) || b(7)`, ou seja X, R1 e R2 todos a
-  // correr, enquanto a tabela declara R1 como `rightShoulder` e R2 como `rightTrigger`. O ADR-0086 registrou
-  // esta mudança como o asterisco do seu «zero movimento»: nenhum VERBO muda de botão, mas `run` perde dois
-  // dos seus três. Quem usava R1 para correr sente — e é o preço de os quatro ombros existirem.
-  // 📌 A TABELA CHEGA POR PARÂMETRO desde o ADR-0115: é a fábrica da engine COM o padrão deste jogo por cima,
-  // resolvida em `input/pad-defaults`. O padrão da assinatura é o da engine, então quem chamava com dois
-  // argumentos continua a ler exactamente o que lia.
-  // ⚠️ E ela só decide neste ramo, que é o certo: o ramo de cima é o mapa que a CRIANÇA gravou no assistente,
-  // e o padrão de um jogo não se sobrepõe a uma escolha dela.
-  const B = table;
-  const at = (a: Action): boolean => { const i = B[a]; return typeof i === 'number' ? b(i) : false; };
-  return {
-    left: sd.left, right: sd.right, up: sd.up, down: sd.down,
-    action1: at('action1'), action2: at('action2'), action3: at('action3'), action4: at('action4'),
-    leftShoulder: at('leftShoulder'), leftTrigger: at('leftTrigger'),
-    rightShoulder: at('rightShoulder'), rightTrigger: at('rightTrigger'),
-    // ⚠️ `start` COMO POSIÇÃO, e não só como os derivados abaixo. Faltava, e o gate da tabela foi quem
-    // o encontrou: quem quisesse saber «o START está apertado?» tinha de ler `_start`, que começa por
-    // underscore e quer dizer outra coisa (fecha diálogo, e aceita a ação 2 também).
-    start: at('start'), select: at('select'),
-    // `_start` e `_pause` são DERIVADOS e não posições: «fecha diálogo» aceita a ação 2 ou o START, «pausa»
-    // só o START. Ficam escritos aqui porque descrevem o que a raiz faz com duas posições, não uma terceira.
-    _start: at('action2') || at('start'), _pause: at('start'),
-  };
-}
-
-// ---------------------------------------------------------------------------------------------
 // Wizard data (a ORDEM dos passos + a animação de demonstração; as PALAVRAS vêm do jogo)
 // ---------------------------------------------------------------------------------------------
 
 /**
- * A ORDEM em que o assistente pergunta. SÓ a ordem.
+ * A ORDEM em que o assistente pergunta. SÓ a ordem — a mesma lista que o `input/pad-wizard` percorre, onde ela
+ * vive à parte de qualquer jogo (issue #182).
  *
  * ⚠️ ELA CARREGAVA AS PALAVRAS, EM PORTUGUÊS CRU, DENTRO DA ENGINE: `['action2', 'PULAR']`,
  * `['action1', 'CORRER / INTERAGIR']`. Era o defeito do ADR-0074 na sua forma mais visível — não só
@@ -168,58 +62,6 @@ export function padActions(gp: PadLike, custom: PadMap | null, table: PadTable =
  * posição não tem o que mapear nela — e perguntar produziria um passo mudo, ou pior, um passo a dizer
  * `action7` em voz alta.
  */
-/**
- * AS POSIÇÕES QUE O MODO DE UM BOTÃO NÃO CORTA. Pausar é a SAÍDA, não uma jogada.
- *
- * ⚠️ Cortar o START prenderia a criança dentro da partida — é o mesmo raciocínio que põe «a saída
- * primeiro» no ADR-0044 e que fez a armadilha de foco existir no ADR-0090. Uma acomodação que tranca não
- * é acomodação. Os derivados (`_start`, `_pause`) também passam: eles descrevem o que a raiz faz com
- * estas duas posições, não uma terceira.
- */
-const OUTSIDE_CUT = new Set(['start', 'select', '_start', '_pause']);
-
-/**
- * O MODO DE UM BOTÃO, APLICADO AO CONTROLE — a metade que faltava da empatia motora (issue #120).
- *
- * ⚠️ ELE VALIA SÓ NO TECLADO. `input/keydown.ts:407` solta todas as outras teclas de jogo quando uma nova
- * chega com o modo ligado; `pollPads` não tinha equivalente nenhum, e `grep oneButton` neste ficheiro
- * devolvia zero. Uma criança que ligasse o modo e tivesse um controle na mão **não estava no modo** — sem
- * erro, sem aviso, sem sintoma, porque as definições continuavam a dizer que estava ligado.
- *
- * ⚠️ AS DIREÇÕES CONTAM, e é isso que torna a regra fiel ao teclado: lá, `isGameKeyCode` inclui as teclas
- * de `p.ctrl`, que são as quatro direções — andar e pular não coexistem. Um filtro que poupasse as
- * direções seria mais confortável e estaria a simular outra deficiência.
- *
- * ⚠️ E A ESCOLHA DE QUEM SOBREVIVE É DIFERENTE DA DO TECLADO, POR NECESSIDADE. No teclado a chegada nova
- * ganha, porque HÁ uma chegada: o evento diz qual é. Um controle é lido por SONDAGEM — o que chega é um
- * retrato, sem ordem. Então mantém-se a que já valia, e só quando ela solta é que a próxima assume. É o
- * que impede o botão de correr de ser cortado porque o polegar encostou noutro, e é a mesma leitura de
- * «segurar» que o ADR-0077 dá.
- *
- * A POLÍTICA é a mesma do `keydown`; a IMPLEMENTAÇÃO não pode ser partilhada hoje porque as formas do
- * estado diferem — lá é um `Set` de códigos de tecla, aqui é um retrato de booleanos por posição. Unificar
- * as duas é trabalho à parte, e escrevê-lo aqui é a alternativa a fingir que não há duas.
- */
-export function oneButtonAtOnce(
-  // ⚠️ O ANTERIOR É TIPADO PELO QUE ESTA FUNÇÃO LÊ, e não por `PadActions`: o `padPrevAct[gi]` do laço é
-  // `PadState`, mais frouxo, e exigir a forma completa obrigaria o chamador a um molde que não descreve o
-  // que se passa aqui — só se pergunta «esta chave estava em baixo?».
-  anterior: Readonly<Record<string, boolean | undefined>>,
-  atual: PadActions,
-  on: boolean,
-): PadActions {
-  if (!on) return atual;
-  const cuttable = Object.keys(atual).filter((k) => !OUTSIDE_CUT.has(k));
-  const active = cuttable.filter((k) => atual[k] === true);
-  if (active.length <= 1) return atual;
-  // A que já valia tem prioridade; sem nenhuma, a primeira do retrato assume.
-  const kept = active.find((k) => anterior[k] === true) ?? active[0];
-  const saida: PadActions = { ...atual };
-  for (const k of active) if (k !== kept) saida[k] = false;
-  return saida;
-}
-
-/** The wizard's steps — the same list input/pad-wizard walks, where they live apart from any game (issue #182). */
 export const PADWIZ_ORDER: readonly string[] = ORDEM_DO_ASSISTENTE;
 
 export interface WizAnimDef { seq?: string[]; hold?: number; cls: string; fx?: string; noimg?: number; flip?: number; }

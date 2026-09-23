@@ -427,13 +427,13 @@
       "fanIn": 2
     },
     "input/gamepad.ts": {
-      "codeLines": 415,
-      "decisionNodes": 96,
+      "codeLines": 333,
+      "decisionNodes": 77,
       "maxDepth": 7,
-      "fanOut": 11,
+      "fanOut": 10,
       "globalReach": 0,
       "worstFunction": 25,
-      "fanIn": 2
+      "fanIn": 1
     },
     "input/gaze-cycle.ts": {
       "codeLines": 92,
@@ -550,6 +550,15 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 4,
+      "fanIn": 3
+    },
+    "input/pad-reading.ts": {
+      "codeLines": 98,
+      "decisionNodes": 18,
+      "maxDepth": 2,
+      "fanOut": 4,
+      "globalReach": 0,
+      "worstFunction": 10,
       "fanIn": 2
     },
     "input/pad-wizard.ts": {
@@ -586,7 +595,7 @@
       "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 4,
-      "fanIn": 3
+      "fanIn": 4
     },
     "input/switch-scan.ts": {
       "codeLines": 38,
