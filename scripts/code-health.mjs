@@ -209,26 +209,41 @@ export function ceilingFrom(modules) {
 
 export const readBaseline = () => JSON.parse(readFileSync(join(ROOT, BASELINE), 'utf8'));
 
+/**
+ * The ceiling a baseline carries. 🔴 ADR-0221: the p90 is «written into the baseline file with the date it was taken … and it
+ * moves only when someone re-measures and says so». `--write` is what records a PAID module, so it keeps the recorded ceiling;
+ * only `--remeasure-ceiling` takes a new one. 📏 Before this, every `--write` re-derived it in silence, and between 2026-09-22
+ * and 2026-09-23 it moved in ten commits, in both directions — lines 187 → 182 → 187 → 200, depth 4 → 3 — with nobody saying so.
+ * A ceiling that follows the tree rises when modules grow or small ones leave, which is the ratchet unscrewing itself.
+ */
+export function ceilingToRecord(modules, previous, remeasure) {
+  if (remeasure || !previous?.ceiling) return { ceiling: ceilingFrom(modules), takenOn: new Date().toISOString().slice(0, 10) };
+  return { ceiling: previous.ceiling, takenOn: previous.takenOn };
+}
+
 if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'code-health.mjs') {
   const modules = measureTree();
-  const ceiling = ceilingFrom(modules);
+  const remeasure = process.argv.includes('--remeasure-ceiling');
+  const { ceiling, takenOn } = ceilingToRecord(modules, readBaseline(), remeasure);
   const nomes = Object.keys(modules);
   const soma = (k) => nomes.reduce((a, n) => a + modules[n][k], 0);
 
-  if (process.argv.includes('--write')) {
+  if (process.argv.includes('--write') || remeasure) {
     writeFileSync(join(ROOT, BASELINE), `${JSON.stringify({
       about: 'ADR-0221 — the six measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a '
         + 'module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID, a module is '
         + 'legitimately split, or the growth BUYS something no measure here can see — and in that third case the commit has to '
         + 'name the purchase and the falsifiable criterion that will show it landed (ADR-0221 point 6: the criterion is the '
         + 'co-change falling, not the number). Rewriting it to green a red build is the ratchet being unscrewed.',
-      takenOn: new Date().toISOString().slice(0, 10),
-      ceiling, exempt: EXEMPT, modules,
+      takenOn, ceiling, exempt: EXEMPT, modules,
     }, null, 2)}\n`);
     console.log(`baseline escrita: ${nomes.length} módulos`);
   }
   console.log(`📏 ${nomes.length} módulos · ${soma('codeLines')} linhas de código · ${soma('decisionNodes')} nós de decisão`);
-  console.log(`   tecto (p90): ${MEASURES.map((m) => `${m} ${ceiling[m]}`).join(' · ')}`);
+  console.log(`   tecto (gravado em ${takenOn}): ${MEASURES.map((m) => `${m} ${ceiling[m]}`).join(' · ')}`);
+  const today = ceilingFrom(modules);
+  const drift = MEASURES.filter((m) => today[m] !== ceiling[m]).map((m) => `${m} ${ceiling[m]} → ${today[m]}`);
+  if (drift.length) console.log(`   p90 de hoje difere (só muda com --remeasure-ceiling, e o commit diz porquê): ${drift.join(' · ')}`);
   for (const m of MEASURES) {
     const pior = [...nomes].sort((a, b) => modules[b][m] - modules[a][m]).slice(0, 3);
     console.log(`   ${m.padEnd(14)} ${pior.map((p) => `${p} ${modules[p][m]}`).join(' · ')}`);

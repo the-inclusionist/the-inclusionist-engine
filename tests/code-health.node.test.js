@@ -21,7 +21,7 @@
 //
 // MUTAÇÕES CONFERIDAS no fim do ficheiro.
 import { describe, it, expect } from 'vitest';
-import { measureTree, readBaseline, isExempt, ceilingFrom, MEASURES, BASELINE } from '../scripts/code-health.mjs';
+import { measureTree, readBaseline, isExempt, ceilingFrom, ceilingToRecord, MEASURES, BASELINE } from '../scripts/code-health.mjs';
 
 const arvore = measureTree();
 const base = readBaseline();
@@ -128,6 +128,24 @@ describe('a saúde do código só melhora', () => {
     expect(arvore['boot/create-game.ts'].worstFunction, 'a raiz deixou de ser medida por função').toBeGreaterThan(0);
   });
 
+  /*
+   * 🔴 THE CEILING MOVES ONLY WHEN SOMEONE SAYS SO (ADR-0221: «it moves only when someone re-measures and says so»).
+   * 📏 Until 2026-09-23 every `--write` re-derived it from today's tree, and in two days it moved in ten commits, in both
+   * directions — lines 187 → 182 → 187 → 200, depth 4 → 3 — each time inside a commit that was about something else. A
+   * p90 rises when modules grow or when small ones leave, so a ceiling that follows the tree is the ratchet unscrewing.
+   * 📌 The literal below is how a re-measure «says so»: changing the ceiling means changing THIS line, in the diff, where a
+   * reviewer reads it. A gate on commit messages cannot do it — CI checks out one commit.
+   */
+  it('🔴 [Right] o tecto gravado é o que alguém DISSE, e só `--remeasure-ceiling` o muda', () => {
+    expect({ takenOn: base.takenOn, ...base.ceiling }, 'the recorded ceiling changed without this line changing').toEqual({
+      takenOn: '2026-09-22', codeLines: 187, decisionNodes: 37, maxDepth: 4, fanOut: 6, globalReach: 0, worstFunction: 10,
+    });
+    const previous = { takenOn: '2026-01-01', ceiling: { codeLines: 1 } };
+    expect(ceilingToRecord(arvore, previous, false), 'a plain `--write` re-derived the ceiling').toEqual(
+      { ceiling: previous.ceiling, takenOn: previous.takenOn });
+    expect(ceilingToRecord(arvore, previous, true).ceiling, 'the explicit re-measure did not re-measure').toEqual(ceilingFrom(arvore));
+  });
+
   it('📌 [Interface] toda isenção nomeia um módulo que existe, e o tecto cobre as quatro medidas', () => {
     // Uma isenção órfã é a forma mais silenciosa de a lista crescer: ninguém a lê, e ela autoriza o que já não existe.
     const isencoesOrfas = Object.keys(base.exempt).filter((m) => !arvore[m]);
@@ -167,4 +185,9 @@ describe('a saúde do código só melhora', () => {
  *     🔴 E ESTA SOBREVIVEU NA PRIMEIRA VOLTA, o que mudou o caso: ele lia só `base.ceiling`, que vem do FICHEIRO, e mudar a
  *     regra no script não mexe no JSON até alguém correr `--write`. Um caso que lê o registo não vê a regra mudar. Agora ele
  *     chama o `ceilingFrom` e confere os dois — a regra e o que ficou gravado.
+ *
+ * ========================= e as três do tecto que só muda quando alguém o diz (23/09) =========================
+ * 14. o `--write` volta a derivar o tecto da árvore de hoje ..................................... VERMELHO no caso do tecto
+ * 15. o JSON ganha um tecto novo sem a linha literal mudar ...................................... VERMELHO no caso do tecto
+ * 16. o `--remeasure-ceiling` passa a conservar o antigo ........................................ VERMELHO no caso do tecto
  */
