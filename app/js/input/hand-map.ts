@@ -31,10 +31,80 @@ export const CANNED_GESTURES: { readonly [name: string]: HandGesture } = {
 
 export interface HandPoint { readonly x: number; readonly y: number; readonly z?: number }
 
-const WRIST = 0;
+// The landmark numbers MediaPipe hands out, named where the rules use them: a rule that reads `apart(MIDDLE_TIP,
+// THUMB_TIP)` says what it is looking at, and `dist(m[12], m[4])` makes the reader count on their fingers.
+const WRIST = 0, THUMB_JOINT = 3, THUMB_TIP = 4, INDEX_BASE = 5, INDEX_JOINT = 7, INDEX_TIP = 8;
+const MIDDLE_BASE = 9, MIDDLE_TIP = 12, RING_TIP = 16, LITTLE_TIP = 20;
 const FINGERS = { index: [5, 6, 8], middle: [9, 10, 12], ring: [13, 14, 16], little: [17, 18, 20] } as const;
 type Finger = keyof typeof FINGERS;
 const dist = (a: HandPoint, b: HandPoint): number => Math.hypot(a.x - b.x, a.y - b.y);
+
+type Way = 'Up' | 'Down' | 'Left' | 'Right';
+
+/** Where the index points, as the CHILD sees it: the video a child watches is mirrored, so the child's right is −x. */
+const wayOfTheIndex = (m: readonly HandPoint[]): Way => {
+  const dx = -(m[INDEX_TIP]!.x - m[INDEX_BASE]!.x), dy = m[INDEX_TIP]!.y - m[INDEX_BASE]!.y;
+  return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'Right' : 'Left') : (dy > 0 ? 'Down' : 'Up');
+};
+
+/** What one frame says about the hand, in the terms every rule below is written in. */
+interface HandShape {
+  readonly out: Readonly<Record<Finger, boolean>>;
+  readonly thumbOut: boolean;
+  readonly way: Way;
+  /** How far two landmarks are from each other, IN PALM SIZES — which is the unit every threshold here speaks. */
+  readonly apart: (a: number, b: number) => number;
+  readonly folded: (...fs: Finger[]) => boolean;
+}
+
+const readHand = (m: readonly HandPoint[], palm: number): HandShape => {
+  const out = {} as Record<Finger, boolean>;
+  for (const [name, [base, joint, tip]] of Object.entries(FINGERS) as [Finger, readonly [number, number, number]][]) {
+    // BOTH halves, and each catches a hand the other lets through: a finger curled SIDEWAYS reaches away from its
+    // base without passing its joint, and one pointing AT THE CAMERA passes its joint without reaching anywhere.
+    out[name] = dist(m[tip]!, m[WRIST]!) > dist(m[joint]!, m[WRIST]!) * 1.1 && dist(m[tip]!, m[base]!) > palm * 0.55;
+  }
+  return {
+    out,
+    // far from the index AND leading its own joint: the second half is what tells an out thumb from one tucked
+    // across the palm, which is how a hand rests
+    thumbOut: dist(m[THUMB_TIP]!, m[INDEX_BASE]!) > palm * 0.75
+      && dist(m[THUMB_TIP]!, m[WRIST]!) > dist(m[THUMB_JOINT]!, m[WRIST]!),
+    way: wayOfTheIndex(m),
+    apart: (a, b) => dist(m[a]!, m[b]!) / palm,
+    folded: (...fs) => fs.every((f) => !out[f]),
+  };
+};
+
+/** A fingertip this close to the thumb, in palms, is ON it. */
+const NEAR = 0.35;
+
+/*
+ * ONE ROW PER GESTURE, in the order they are answered — a table because that is what this already was: a gesture is
+ * a predicate over the hand plus the name it gives itself. The six `if`s these rows replace all reached for the same
+ * six locals, which is what made this the worst function of the tree outside the composition root (33 paths against
+ * McCabe's 10). A gesture the Dev adds is now a LINE.
+ */
+const RULES: readonly { readonly name: (h: HandShape) => HandGesture; readonly reads: (h: HandShape) => boolean }[] = [
+  {
+    name: (h) => `index${h.way}` as HandGesture,
+    // the thumb AWAY from the index joint is what keeps a pinch from commanding a direction — the lab dropped the
+    // pinch from the map (ADR-0206), and without this half a pinch would come back in as a direction
+    reads: (h) => h.out.index && h.folded('middle', 'ring', 'little') && h.apart(THUMB_TIP, INDEX_JOINT) >= 0.3,
+  },
+  { name: () => 'victory', reads: (h) => h.out.index && h.out.middle && h.folded('ring', 'little') && h.way === 'Up' },
+  { name: () => 'threeFingers', reads: (h) => h.out.index && h.out.middle && h.out.ring && !h.out.little && !h.thumbOut },
+  { name: () => 'fourFingers', reads: (h) => h.out.index && h.out.middle && h.out.ring && h.out.little && !h.thumbOut },
+  {
+    name: () => 'dog',
+    reads: (h) => h.apart(MIDDLE_TIP, THUMB_TIP) < NEAR && h.apart(RING_TIP, THUMB_TIP) < NEAR && h.out.index && h.out.little,
+  },
+  {
+    name: () => 'zero',
+    reads: (h) => [INDEX_TIP, MIDDLE_TIP, RING_TIP, LITTLE_TIP].every((i) => h.apart(i, THUMB_TIP) < 0.6)
+      && h.apart(INDEX_TIP, THUMB_TIP) < NEAR,
+  },
+];
 
 /** The gestures this module reads from the landmarks (usually none or one). */
 export function customGestures(m: readonly HandPoint[] | null | undefined): HandGesture[] {
@@ -50,26 +120,10 @@ export function customGestures(m: readonly HandPoint[] | null | undefined): Hand
    * it holds only while every rule compares with `<`. The line says the refusal where a reader looks for it, and
    * the mutation that proves it is not decoration is putting the floor back, which goes red.
    */
-  const palm = dist(m[WRIST]!, m[9]!);
+  const palm = dist(m[WRIST]!, m[MIDDLE_BASE]!);
   if (!(palm > 0)) return [];
-  const out = {} as Record<Finger, boolean>;
-  for (const [name, [base, joint, tip]] of Object.entries(FINGERS) as [Finger, readonly [number, number, number]][]) {
-    out[name] = dist(m[tip]!, m[WRIST]!) > dist(m[joint]!, m[WRIST]!) * 1.1 && dist(m[tip]!, m[base]!) > palm * 0.55;
-  }
-  const thumbOut = dist(m[4]!, m[5]!) > palm * 0.75 && dist(m[4]!, m[WRIST]!) > dist(m[3]!, m[WRIST]!);
-  const toThumb = (i: number): number => dist(m[i]!, m[4]!) / palm;
-  // the index's direction as the child sees it (mirrored): its base to its tip
-  const dx = -(m[8]!.x - m[5]!.x), dy = m[8]!.y - m[5]!.y;
-  const way = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'Right' : 'Left') : (dy > 0 ? 'Down' : 'Up');
-  const folded = (...fs: Finger[]): boolean => fs.every((f) => !out[f]);
-  const near = 0.35, g: HandGesture[] = [];
-  if (out.index && folded('middle', 'ring', 'little') && dist(m[4]!, m[7]!) / palm >= 0.3) g.push(`index${way}` as HandGesture);
-  if (out.index && out.middle && folded('ring', 'little') && way === 'Up') g.push('victory');
-  if (out.index && out.middle && out.ring && !out.little && !thumbOut) g.push('threeFingers');
-  if (out.index && out.middle && out.ring && out.little && !thumbOut) g.push('fourFingers');
-  if (toThumb(12) < near && toThumb(16) < near && out.index && out.little) g.push('dog');
-  if ([8, 12, 16, 20].every((i) => toThumb(i) < 0.6) && toThumb(8) < near) g.push('zero');
-  return g;
+  const hand = readHand(m, palm);
+  return RULES.filter((r) => r.reads(hand)).map((r) => r.name(hand));
 }
 
 /** Every gesture seen in a frame: the recognizer's categories plus the landmark rules. */

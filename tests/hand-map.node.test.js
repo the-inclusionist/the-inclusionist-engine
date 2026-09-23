@@ -184,3 +184,10 @@ describe('the reader', () => {
 //     It stays because it is what makes the NAME true — a level is a fraction of the way to the mark — and it would
 //     stop being equivalent the day anything asks the reader how far along a gesture is.
 // 📏 After the cases: 30 of 31 red, control green.
+//
+// 📏 ASKED AGAIN of the shape the cut gave the module (the rules became a table): **30 of 32 red**. The extra question
+// is one only a table lets you ask — does the ORDER of the rows decide anything? — and it is 🟡 EQUIVALENT, because
+// the six predicates are mutually exclusive by construction: the index rule needs the others folded and the V needs
+// the middle out, the dog needs the index and little out and the zero needs every tip on the thumb. Reversing the
+// table changes nothing a hand can produce. ⚠️ It is not equivalent by CONSTRUCTION of the table, though — a seventh
+// row that overlapped an existing one would make the order a rule with nothing holding it.
