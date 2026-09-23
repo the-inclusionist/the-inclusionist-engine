@@ -91,6 +91,66 @@ describe('WCAG 2.3.1 general flash threshold', () => {
   });
 });
 
+describe('the boundaries the probe of 2026-09-23 found unheld', () => {
+  // ⚠️ PLAIN ARRAYS, NOT Float32Array. In 32 bits 0.8 is stored as 0.80000001 and 0.1 as 0.10000000149, so a case about
+  // «below 0.80» or «10% or more» written with the helper above would pass or fail by rounding, not by the rule.
+  const exact = (segundos, valor) =>
+    Array.from({ length: segundos * QPS }, (_, f) => ({
+      t: (f * 1000) / QPS,
+      luminancias: Array.from({ length: COLUMNS * ROWS }, (_, c) => valor(f, c)),
+    }));
+  const within = (cells, v) => (f, c) => (cells.has(c) ? v(f) : 0);
+
+  it('🎯 [Boundary] a change of EXACTLY 10% counts — «10% or more»', () => {
+    expect(analyseFlashes(exact(2, onda(10, 0.1, 0))).passa, 'a swing of exactly 0.10 was not counted').toBe(false);
+  });
+
+  it('🎯 [Boundary] a darker image of EXACTLY 0.80 is no flash — «below 0.80»', () => {
+    expect(analyseFlashes(exact(2, onda(10, 0.95, 0.8))).piorSegundo).toBe(0);
+  });
+
+  it('🎯 [Boundary] 5 cells of a field pass — the area is SIX, not five', () => {
+    expect(analyseFlashes(exact(2, within(primeirasDaJanela(5), onda(10, 1, 0)))).passa).toBe(true);
+  });
+
+  it('🎯 [Boundary] the field is FOUR rows tall — six cells that need all four still count', () => {
+    // Column 0 rows 0–3, and column 1 rows 0 and 3: no three-row window holds more than five of them.
+    const seis = new Set([0, COLUMNS, 2 * COLUMNS, 3 * COLUMNS, 1, 3 * COLUMNS + 1]);
+    expect(analyseFlashes(exact(2, within(seis, onda(10, 1, 0)))).passa, 'a field three rows tall missed this').toBe(false);
+  });
+
+  it('🎯 [Zero] three groups brightening in turn are no flash — a flash is a pair of OPPOSING transitions', () => {
+    // Different cells each time, all rising: a wipe or a fade-in, never a return.
+    const grupo = (k) => Math.floor([...primeirasDaJanela(18)].indexOf(k) / 6);
+    const valor = (f, c) => (primeirasDaJanela(18).has(c) && f >= 10 * (grupo(c) + 1) ? 0.5 : 0);
+    expect(analyseFlashes(exact(1, valor)).piorSegundo, 'two rises in a row were read as a flash').toBe(0);
+  });
+
+  it('🎯 [Right] a completed pair starts afresh — the transition after it opens a new pair and closes nothing', () => {
+    // Group A rises and falls (one flash); then group B, bright from the start, falls. That fall has nothing to pair with.
+    const a = new Set([...primeirasDaJanela(6)]);
+    const b = new Set([...primeirasDaJanela(12)].filter((c) => !a.has(c)));
+    const valor = (f, c) => (a.has(c) ? (f >= 10 && f < 20 ? 0.5 : 0) : b.has(c) ? (f < 30 ? 0.5 : 0) : 0);
+    expect(analyseFlashes(exact(1, valor)).piorSegundo, 'the old pair closed a second time').toBe(1);
+  });
+
+  it('🎯 [Boundary] four flashes 999.9999 ms apart are not «within one second» — frame arithmetic drifts', () => {
+    const at = (t, l) => ({ t, luminancias: Array(COLUMNS * ROWS).fill(l) });
+    const frames = [at(0, 0), at(1, 1), at(10, 0), at(300, 1), at(343.33, 0), at(600, 1), at(676.66, 0), at(900, 1),
+      at(10 + 999.9999, 0)];
+    const r = analyseFlashes(frames);
+    expect(r.piorSegundo, 'a drift of a ten-thousandth of a millisecond made a fourth flash').toBe(3);
+    expect(r.passa).toBe(true);
+  });
+});
+
+// Two mutations of the 2026-09-23 probe are EQUIVALENT and have no case, by measurement:
+//   · dropping `direction[c] !== 0 &&` from the extension test: with no direction yet, the two sides differ only when
+//     `way` is 0, i.e. `l === ref`, and then re-writing the reference with the same value changes nothing — the guard was
+//     inert, and the cut removes it;
+//   · `luminancias[c] ?? 0` without the `?? 0`: it acts only on a frame SHORTER than the grid, which the sampler never
+//     builds (`platform/flash-sampler` always fills `COLUMNS * ROWS`).
+
 // ============================== MUTATIONS CHECKED ==============================
 //   F1 a change of 4% counts                   🔴 under 10%
 //   F2 the darker side may be up to 0.90       🔴 not below 0.80
