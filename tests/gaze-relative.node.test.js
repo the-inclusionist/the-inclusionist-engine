@@ -129,6 +129,20 @@ describe('the zone', () => {
     read.reset();
     expect(read.state().rest).toBeNull();
   });
+  it('⚠️ a blind frame still says whether there IS a rest yet — false while it is being measured, true after', () => {
+    /*
+     * 📌 `ready` is what the overlay asks to decide between «look at the middle» and reading the gaze. A blink during
+     * the three seconds of rest-taking would otherwise answer the same as a blink after them, and the child would be
+     * told the reader was ready over a rest that does not exist.
+     */
+    const read = lab();
+    const early = read(0, { h: null, v: null });
+    expect(early.reason).toBe('no-eyes');
+    expect(early.ready, 'a blink before the rest exists claimed the reader was ready').toBe(false);
+    const { ms } = rest(read);
+    const late = read(ms + 100, { h: null, v: null });
+    expect(late.reason).toBe('no-eyes'); expect(late.ready).toBe(true);
+  });
   it('a gaze sitting between two zones keeps the one it is in, but an axis that clearly wins takes it', () => {
     const read = lab({ axisSwitch: 1.3 });
     const { ms } = rest(read);
@@ -224,6 +238,51 @@ describe('the rest follows and re-centres', () => {
     for (let i = 6; i <= 30; i++) out = read(ms + i * 100, { h: 0.1, v: 0.5 + jitter(i) / 8, pose: POSE });
     expect(out.parked, 'the window kept the old excursion — a gaze that held never gets to park').toBe(true);
   });
+  it('⚠️ stillness is measured over FRAMES: two of them are not a still gaze, however long the reader waits', () => {
+    /*
+     * 📌 One frame has no range at all, so a window that accepts any number of samples reads the very first frame
+     * after the rest as perfectly still and starts counting towards `parkedMs` from it. Parking RE-CENTRES the rest,
+     * so a rest could be moved onto a single sample of a gaze that was merely passing through.
+     */
+    const read = lab({ parkedMs: 300 });
+    const { ms } = rest(read);
+    read(ms + 5000, { h: 0.1, v: -0.05, pose: POSE });
+    const second = read(ms + 5400, { h: 0.1, v: -0.05, pose: POSE });
+    expect(second.parked, 'two samples were enough to call the gaze parked').toBe(false);
+    let out = null;
+    for (let i = 1; i <= 10; i++) out = read(ms + 5400 + i * 100, { h: 0.1, v: -0.05, pose: POSE });
+    expect(out.parked, 'and with a window of frames behind it, it does park').toBe(true);
+  });
+  it('⚠️ a head that keeps turning never lets the gaze park, because those frames are not trusted readings', () => {
+    const read = lab({ parkedMs: 500 });
+    const { ms } = rest(read);
+    let out = null;
+    for (let i = 1; i <= 20; i++) out = read(ms + i * 100, { h: 0.1, v: -0.05, pose: { yaw: 2 + i * 12, pitch: -5 } }); // 120°/s
+    expect(out.parked, 'the eyes sat still while the head swung — frames the reader refuses to read started the parking').toBe(false);
+    for (let i = 21; i <= 40; i++) out = read(ms + i * 100, { h: 0.1, v: -0.05, pose: { yaw: 242, pitch: -5 } });
+    expect(out.parked, 'and once the head settles, the same still eyes do park').toBe(true);
+  });
+  it('⚠️ a frame where the head moved does not drag the rest either — a refused reading must not BECOME the rest', () => {
+    const read = lab({ followMs: 1000 });
+    const { ms } = rest(read);
+    const before = read.state().rest;
+    read(ms + 1000, { h: before.h, v: before.v + 0.02, pose: { yaw: 122, pitch: -5 } }); // 109°/s
+    expect(read.state().rest.v, 'the rest moved onto a frame the reader had just refused to read').toBeCloseTo(before.v, 6);
+    read(ms + 2000, { h: before.h, v: before.v + 0.02, pose: { yaw: 122, pitch: -5 } });
+    expect(read.state().rest.v, 'and with the head settled the rest does follow').toBeGreaterThan(before.v + 0.005);
+  });
+  it('⚠️ a clock that goes BACKWARDS does not drag the rest away from where the child is looking', () => {
+    /*
+     * 📌 The reader is handed the time by its host, and a host clock can step back (a wall clock corrected while the
+     * page is open). A negative frame gap makes the follow factor negative, which moves the rest AWAY from the gaze —
+     * the opposite of what following means, and it leaves a zone marked with the eyes in the middle.
+     */
+    const read = lab({ followMs: 1000 });
+    const { ms } = rest(read);
+    const before = read.state().rest;
+    read(ms - 2000, { h: before.h, v: before.v + 0.02, pose: POSE });
+    expect(read.state().rest.v, 'a negative frame gap pulled the rest away from the gaze').toBeCloseTo(before.v, 6);
+  });
   it('a gaze that keeps moving inside a zone is not parked, and the zone stays', () => {
     const read = lab();
     const { ms } = rest(read);
@@ -256,3 +315,15 @@ describe('the rest follows and re-centres', () => {
 //   · the rest follows even while a zone is held                       → «stays held»
 //   · the follow instant (k = 1)                                       → «walks away in steps»
 //   · defaults 4/8 swapped                                             → «engine defaults»
+//
+// 🔴 AND THE WHOLE MODULE WAS PROBED AGAIN ON 2026-09-23, decision by decision rather than rule by rule, because it is
+// the worst function of this tree (38 paths against McCabe's 10) and a cut has to know what it might drop. Twenty of
+// twenty-five went red; the six added since are the ones that did not, and they cluster:
+//   · the stillness window never forgetting                            → «the window FORGETS»
+//   · a single sample counted as a still gaze                          → «measured over FRAMES»
+//   · `ready` on a blind frame not answering about the rest            → «still says whether there IS a rest»
+//   · a negative frame gap following the rest backwards                → «a clock that goes BACKWARDS»
+//   · 🎯 and TWICE the same rule, held in only one of its three places: **a frame where the head moved is not read.**
+//     The zone refusal was caught; the parking and the rest-following were not — so a head swing could park a gaze
+//     and re-centre the rest onto a reading the module had just declared untrustworthy.
+//                                                                      → «a head that keeps turning», «does not drag the rest»
