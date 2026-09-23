@@ -497,6 +497,18 @@ describe('o assento: quem dirige qual tela (sondado 2026-09-23)', () => {
     expect(ctx.calls.joinPlayer, 'um controle a mais não pediu para entrar: apertar não fazia nada').toEqual([0]);
   });
 
+  // 🔴 Sondado 2026-09-23 (segunda sonda): tirar o START ou o `action1` da lista que toma assento ficava VERDE — só o
+  // botão 0 e a alavanca tinham caso. Uma criança cujo primeiro gesto é o START ficava sem tela e sem aviso.
+  it.each([
+    ['action2', 0], ['action3', 1], ['action1', 2], ['action4', 3], ['START', 9],
+  ])('⚠️ o botão %s sozinho toma assento', (_nome, botao) => {
+    const p = makePlayer();
+    const { ctx, api } = jogando([p]);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [botao] })]);
+    api.pollPads();
+    expect(p.pad, 'este botão foi apertado e a criança ficou sem tela').toBe(0);
+  });
+
   it('⚠️ a tela à espera perde o selo e a criança ouve que entrou', () => {
     const esperando = makePlayer({ waiting: true });
     const { ctx, api } = jogando([esperando]);
@@ -584,6 +596,71 @@ describe('initGamepad — pollPads', () => {
     ctx.setPads([makePad({ id: 'x', index: 0, pressed: [0] })]);
     expect(() => api.pollPads()).not.toThrow();
     expect(ctx.calls.navTitle).toHaveLength(0);
+    // 🔴 Sondado 2026-09-23: a asserção de cima ficava VERDE com a guarda apagada — o quadro seguia para o ramo de
+    // jogo, que não chama `navTitle`. A que morde é esta: o controle nem chegou a ser LIDO.
+    expect(padCur[0], 'o controle foi lido por baixo do assistente').toBeUndefined();
+  });
+
+  it('⚠️ na DEMONSTRAÇÃO sem botão nenhum, o quadro acaba ali — a alavanca não toma assento por baixo da demo', () => {
+    const p = makePlayer();
+    const ctx = buildCtx({ players: [p], isAttractActive: () => true });
+    const api = initGamepad(ctx);
+    ctx.setPads([makePad({ id: 'std', index: 0, axes: [-1, 0, 0, 0, 0, 0, 1.3, 1.3] })]);
+    api.pollPads();
+    expect(ctx.calls.stopAttract, 'uma alavanca não é um botão: a demo não acaba').toBe(0);
+    expect(p.pad, 'a demo corria e um controle tomou assento por baixo dela').toBe(-1);
+    expect(padCur[0]).toBeUndefined();
+  });
+
+  // 🔴 Sondado 2026-09-23: tirar o START ou o `action4` da lista dos botões físicos ficava VERDE — só o botão 0
+  // tinha caso. Qualquer uma das nove posições que o pad lê é um controle na mão, e o pad virtual tem de sair.
+  it.each([
+    ['cima', 12], ['baixo', 13], ['esquerda', 14], ['direita', 15],
+    ['action2', 0], ['action3', 1], ['action1', 2], ['action4', 3], ['START', 9],
+  ])('⚠️ %s sozinho faz sumir o controle na tela', (_nome, botao) => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], isTouchMode: () => true });
+    const api = initGamepad(ctx);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [botao] })]);
+    api.pollPads();
+    expect(ctx.calls.hideTouchControls).toBeGreaterThan(0);
+  });
+
+  it('[Inverse] fora do modo de toque não há pad virtual a esconder, e a porta não é chamada', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], isTouchMode: () => false });
+    const api = initGamepad(ctx);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0] })]);
+    api.pollPads();
+    expect(ctx.calls.hideTouchControls).toBe(0);
+  });
+
+  it('⚠️ com o cartão de pausa aberto SOBRE um mundo que corre, manda a pausa: o START retoma e não volta a pausar', () => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], mundoRodando: () => true, menuDePausa: () => true });
+    const api = initGamepad(ctx);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [9] })]);
+    api.pollPads();
+    expect(ctx.calls.setPhase, 'o controle jogou por baixo de um cartão de pausa aberto').toEqual(['playing']);
+  });
+
+  // 🔴 Sondado 2026-09-23: quatro das seis intenções do modal podiam sumir com a suíte verde — só «esquerda» e
+  // «cima» tinham caso. Cada posição dentro de um modal é uma palavra que a criança monta, e cada uma é uma regra.
+  it.each([
+    ['direita', 15, 'right'], ['baixo', 13, 'down'], ['action2', 0, 'confirm'], ['action3', 1, 'erase'],
+  ])('⚠️ dentro do modal, %s vira a intenção %s', (_nome, botao, intencao) => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0, modalAberto: true })] });
+    const api = initGamepad(ctx);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [botao] })]);
+    api.pollPads();
+    expect(ctx.calls.modalInput).toEqual([[0, intencao]]);
+  });
+
+  it('[Inverse] dentro do modal, um botão SEM intenção não manda nada — nem uma intenção vazia', () => {
+    const p = makePlayer({ pad: 0, modalAberto: true });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [2] })]); // action1: o modal não o lê
+    api.pollPads();
+    expect(ctx.calls.modalInput).toEqual([]);
+    expect(p.runEdge, 'e o modal continua a comer o botão: nada chega ao jogo por baixo dele').toBe(false);
   });
   it('[Right] fase "playing", mapa padrão: pulo do controle marca jumpEdge só na BORDA (subida)', () => {
     const p = makePlayer({ pad: 0 });
