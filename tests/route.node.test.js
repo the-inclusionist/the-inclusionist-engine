@@ -192,6 +192,46 @@ describe('core/route — contínuo: a grelha é uma AMOSTRAGEM, e está declarad
   });
 });
 
+describe('core/route — what the probe of 2026-09-23 found unheld', () => {
+  // 🔴 Eight of nineteen decisions of `routeTo` could be undone with this file green. Each case is one rule the sonar's guide meets.
+  it('⚠️ [Zero] `hotspots` has no route even to the spot the child is already on — a list has no «here»', () => {
+    const ctx = { topology: { kind: 'hotspots', order: ['a', 'b', 'c'] }, roleAt: () => 'free' };
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 0, y: 0 }])).toBe(null);
+  });
+
+  it('[Zero] with no target, the world is not asked about a single cell', () => {
+    let asked = 0;
+    const ctx = { topology: GRADE(20, 20), roleAt: () => { asked += 1; return 'free'; } };
+    expect(routeTo(ctx, { x: 0, y: 0 }, [])).toBe(null);
+    expect(asked, 'the whole map was searched for nothing').toBe(0);
+  });
+
+  it('⚠️ [Boundary] a NEGATIVE unit is refused too — it would walk exactly like a positive one', () => {
+    const ctx = { topology: { kind: 'continuous', size: [64, 16], unit: -8, move: 'free', frame: 'clock' }, roleAt: () => 'free' };
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 24, y: 0 }])).toBe(null);
+  });
+
+  it('⚠️ [Boundary] in a continuous space two points half a unit apart are two points, not one', () => {
+    // with keys rounded to whole numbers, 0.5 and 1 would share a key («1») and the corridor would close
+    const ctx = { topology: { kind: 'continuous', size: [2, 0], unit: 0.5, move: 'free', frame: 'clock' }, roleAt: () => 'free' };
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 2, y: 0 }])?.passos).toBe(4);
+  });
+
+  it('[Boundary] the budget counts the cell the child stands on, and is spent only when EXCEEDED', () => {
+    const ctx = { topology: GRADE(3, 1), roleAt: () => 'free' };
+    // from the middle, the left cell is looked at first and the target second: three cells in all
+    expect(routeTo({ ...ctx, orcamento: 2 }, { x: 1, y: 0 }, [{ x: 2, y: 0 }])).toBe(null);
+    expect(routeTo({ ...ctx, orcamento: 3 }, { x: 1, y: 0 }, [{ x: 2, y: 0 }])?.passos).toBe(1);
+  });
+
+  it('[Right] a three-dimensional grid walks along z too', () => {
+    const ctx = { topology: { kind: 'grid', size: [1, 1, 3], move: 'orthogonal', frame: 'compass' }, roleAt: () => 'free' };
+    const r = routeTo(ctx, { x: 0, y: 0, z: 0 }, [{ x: 0, y: 0, z: 2 }]);
+    expect(r?.passos).toBe(2);
+    expect(r?.proximo).toEqual({ x: 0, y: 0, z: 1 });
+  });
+});
+
 // ========================= MUTAÇÕES CONFERIDAS =========================
 //   · tirando `if (!isWalkable(ctx.roleAt(vizinho))) continue;` → reprovam SETE casos, entre eles "[Right]
 //     a rota escolhe o alcançável" (que passa a apontar o alvo EMPAREDADO) e "[Zero] alvo totalmente
