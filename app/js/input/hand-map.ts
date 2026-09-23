@@ -39,7 +39,19 @@ const dist = (a: HandPoint, b: HandPoint): number => Math.hypot(a.x - b.x, a.y -
 /** The gestures this module reads from the landmarks (usually none or one). */
 export function customGestures(m: readonly HandPoint[] | null | undefined): HandGesture[] {
   if (!m || m.length < 21) return [];
-  const palm = dist(m[WRIST]!, m[9]!) || 1e-6;
+  /*
+   * 🔴 A HAND WITH NO SIZE IS NOT A HAND, and the floor this line used to carry (`|| 1e-6`) got that backwards. It was
+   * there to keep the divisions safe, and it did — but it also gave every ratio an answer: 📏 measured on 2026-09-23,
+   * a frame whose 21 landmarks all collapsed onto one point read as a `zero`, because every fingertip then sits ZERO
+   * palms from the thumb. A detection that failed pressed action4. Refusing the frame is what «not readable» means.
+   *
+   * ⚠️ And the honest note about the line below: with the floor gone it is EQUIVALENT today — a palm of zero makes
+   * every ratio NaN, and `NaN < 0.6` is false, so every rule declines on its own. That is correctness by accident:
+   * it holds only while every rule compares with `<`. The line says the refusal where a reader looks for it, and
+   * the mutation that proves it is not decoration is putting the floor back, which goes red.
+   */
+  const palm = dist(m[WRIST]!, m[9]!);
+  if (!(palm > 0)) return [];
   const out = {} as Record<Finger, boolean>;
   for (const [name, [base, joint, tip]] of Object.entries(FINGERS) as [Finger, readonly [number, number, number]][]) {
     out[name] = dist(m[tip]!, m[WRIST]!) > dist(m[joint]!, m[WRIST]!) * 1.1 && dist(m[tip]!, m[base]!) > palm * 0.55;

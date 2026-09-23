@@ -67,6 +67,16 @@ describe('the gestures read from the landmarks', () => {
     for (const i of [8, 12, 16, 20]) loose[i] = { x: loose[4].x + 0.03, y: loose[4].y + 0.03 }; // 0.42 palms: near, but the index does not touch
     expect(customGestures(loose), 'a loose curl with the index off the thumb is no zero').not.toContain('zero');
   });
+  it('⚠️ a frame that is not a readable hand presses NOTHING — too few landmarks, or a hand with no size', () => {
+    /*
+     * 🔴 The second half is a defect this file did not hold, found by disabling each decision of `customGestures` on
+     * 2026-09-23 and MEASURED before it was believed: with every landmark on one point the module answered `zero`,
+     * which is action4. A detector that failed was pressing a button.
+     */
+    expect(customGestures(hand({ fingers: INDEX }).slice(0, 20)), 'a half-detected hand read gestures out of landmarks that are not there').toEqual([]);
+    const collapsed = Array.from({ length: 21 }, () => ({ x: 0.5, y: 0.7 }));
+    expect(customGestures(collapsed), 'every fingertip sits zero palms from the thumb, so the frame read as a ZERO').toEqual([]);
+  });
   it('no landmarks read nothing; the recognizer\'s names join the landmark rules', () => {
     expect(customGestures(undefined)).toEqual([]);
     expect([...gesturesSeen(hand({ fingers: INDEX }), ['Thumb_Up', 'Pointing_Up'])].sort()).toEqual(['indexUp', 'thumbUp']);
