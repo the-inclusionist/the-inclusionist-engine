@@ -22,7 +22,7 @@ const trace = JSON.parse(readFileSync('tests/fixtures/reading-trace.json', 'utf8
 const truth = JSON.parse(readFileSync('tests/fixtures/reading-ground-truth.json', 'utf8'));
 
 /** The files a language's model needs, answered from the fixture instead of from 378 MiB on a school's link. */
-function ficheiros(lingua) {
+function ficheiros(lingua, { config, generation } = {}) {
   const caso = trace.languages[lingua];
   const plano = READING_MODELS.find((m) => m.language === lingua);
   const tokenizer = { model: { vocab: {} }, added_tokens: [], decoder: { type: caso.tokenizerDecoder } };
@@ -30,8 +30,8 @@ function ficheiros(lingua) {
   for (const [id, content] of Object.entries(caso.specials ?? {})) tokenizer.added_tokens.push({ id: Number(id), content, special: true });
   return {
     [plano.tokenizer]: tokenizer,
-    [plano.generation]: caso.generation,
-    [plano.config]: caso.config,
+    [plano.generation]: generation ?? caso.generation,
+    [plano.config]: config ?? caso.config,
     ...(plano.preprocessor ? { [plano.preprocessor]: { mel_filters: filtros() } } : {}),
   };
 }
@@ -81,6 +81,9 @@ function ortFalso(lingua, { vocab = 60_000, encoderFrames = 750, steps } = {}) {
         pastLengths: Object.fromEntries(Object.entries(inputs)
           .filter(([k]) => k.startsWith('past_key_values.'))
           .map(([k, v]) => [k, v.dims[2]])),
+        pastDims: Object.fromEntries(Object.entries(inputs)
+          .filter(([k]) => k.startsWith('past_key_values.'))
+          .map(([k, v]) => [k, [...v.dims]])),
       });
       if (nome === 'encoder') return { last_hidden_state: tensor('float32', new Float32Array(4), [1, encoderFrames, 620]) };
       const p = caso.steps[passo++];
@@ -120,8 +123,8 @@ function ortFalso(lingua, { vocab = 60_000, encoderFrames = 750, steps } = {}) {
  * ⚠️ BY THE WHOLE ADDRESS. Matched by a piece of the name, `…/preprocessor_config.json` contains `config` and was answered with the
  * model's `config.json` — so the engine got no mel filters, and the replay's silent second could not notice.
  */
-function entregaDe(lingua, base) {
-  const porEndereco = new Map(Object.entries(ficheiros(lingua)).map(([id, corpo]) => [atDelivery(id, base), corpo]));
+function entregaDe(lingua, base, trocas) {
+  const porEndereco = new Map(Object.entries(ficheiros(lingua, trocas)).map(([id, corpo]) => [atDelivery(id, base), corpo]));
   const pedidos = [];
   return {
     pedidos,
@@ -136,7 +139,7 @@ function entregaDe(lingua, base) {
 async function ouvir(lingua, opcoes = {}) {
   const { ort, chamadas } = ortFalso(lingua, opcoes);
   const base = 'https://escola.exemplo/jogo/';
-  const { fetch, pedidos } = entregaDe(lingua, base);
+  const { fetch, pedidos } = entregaDe(lingua, base, { config: opcoes.config, generation: opcoes.generation });
   const runtime = await loadReadingRuntime({ base, language: lingua, fetch, ort, ...opcoes });
   const texto = await runtime.transcribe(opcoes.samples ?? new Float32Array(16_000));
   return { texto, chamadas, pedidos };
@@ -299,6 +302,35 @@ describe('the reading loop, on the real models\' numbers', () => {
     expect(texto).toBe(peça.replaceAll('▁', ' ').trim());
   });
 
+  /**
+   * 🔴 THE SIZE OF THE CACHES A MERGED DECODER IS HANDED EMPTY. They are `[1, heads, length, width]`, where the heads are the
+   * KEY-VALUE heads (a model with grouped attention keeps fewer than it attends with) and the width is `hidden_size / heads`.
+   * ⚠️ The traced English config (8 heads, 512 wide) gives a width of 64, which is also the fallback — so the real numbers could
+   * not tell the rule from its default. These configs are made here for that reason; a real session refuses a wrong shape.
+   */
+  it('🔴 [Right] a merged decoder\'s empty caches have the shape its config names: key-value heads, hidden ÷ heads', async () => {
+    const { chamadas } = await ouvir('en', { config: { num_key_value_heads: 2, num_attention_heads: 8, hidden_size: 320 } });
+    const primeira = chamadas.find((c) => c.graph === 'decoder');
+    expect(primeira.pastDims['past_key_values.0.decoder.key'], 'the self-attention cache').toEqual([1, 2, 0, 40]);
+    expect(primeira.pastDims['past_key_values.0.encoder.key'], 'the sound\'s cache').toEqual([1, 2, 750, 40]);
+  });
+
+  it('📌 [Boundary] a config that names no key-value heads and no width: the attention heads, and 64 wide', async () => {
+    const { chamadas } = await ouvir('en', { config: { num_attention_heads: 4 } });
+    const primeira = chamadas.find((c) => c.graph === 'decoder');
+    expect(primeira.pastDims['past_key_values.0.encoder.key']).toEqual([1, 4, 750, 64]);
+  });
+
+  it('📌 [Boundary] a generation config that names no end has no end token: id 0 is a word like any other', async () => {
+    const caso = trace.languages.es;
+    const primeira = caso.steps[0].chosen;
+    const { chamadas } = await ouvir('es', {
+      generation: { decoder_start_token_id: caso.generation.decoder_start_token_id },
+      steps: [{ top: [[0, 9]] }, { top: [[primeira, 9]] }, { broken: true }],
+    });
+    expect(chamadas.filter((c) => c.graph !== 'encoder'), 'the answer ended at a token no config called the end').toHaveLength(3);
+  });
+
   it('📌 [Boundary] a model that never stops is cut, and what it said so far is what the child gets', async () => {
     const { texto } = await ouvir('es', { maxTokens: 3 });
     expect(texto.length, 'the ceiling answered nothing at all').toBeGreaterThan(0);
@@ -337,3 +369,9 @@ describe('the reading loop, on the real models\' numbers', () => {
 //   · the decoder's `logits` fed back as a cache       → «every graph is handed only the names it declares»
 //   · a step that chooses nothing pushed as a token    → «a step that can choose NOTHING ends the answer»
 // 17 of 17 red with them.
+//
+// And the loader's own ten — `scratchpad/sonda-reading-carga.py`. Five were green, three of them the cache size of a merged
+// decoder (the traced config's width, 64, is also the fallback) and one the missing end token; 8 of 10 red with the cases above.
+// The other two are EQUIVALENT BY THE CATALOGUE, and declared rather than caught: the mel filters are fetched when the model eats
+// log-mel AND ships a preprocessor, and dropping either half changes nothing today — the one log-mel model ships one, and the
+// two that eat the wave ship none.
