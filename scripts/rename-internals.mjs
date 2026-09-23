@@ -31,8 +31,27 @@
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import ts from 'typescript';
+import { EXCEPTIONS } from './language-inventory.mjs';
 
 const APP = 'app/js';
+
+/*
+ * 🔴 THE SAME TREES THE LANGUAGE GATE EXCLUDES, AND THE LIST IS IMPORTED RATHER THAN COPIED. Measured on 2026-09-23: this
+ * tool walked every file under `app/js` and so offered names from `educational/`, which the inventory excludes by decision
+ * (ADR-0032) — and one of the names it offered, `corDoSegmento`, is PUBLISHED. Renaming it emptied a published name out of
+ * a commit that called itself internal, and three gates went red at once. A tool that proposes work the gate beside it does
+ * not measure will keep proposing it; a second copy of the list would drift, which is how this repository's own dictionary
+ * got rewritten in English once.
+ *
+ * ⚠️ IT FILTERS THE OFFER AND NEVER THE SCAN. `everyTsFile` also feeds guard 2, which asks whether a name is a member
+ * ANYWHERE in `app/js` — a member declared under `educational/` has to keep blocking a rename in `ui/`, so narrowing the
+ * walk would quietly widen what this tool is willing to touch. Excluding on the way out is safe; excluding on the way in
+ * is a hole.
+ */
+const isExcluded = (file) => {
+  const p = file.split('\\').join('/');
+  return EXCEPTIONS.some(([prefix]) => p.startsWith(prefix));
+};
 const words = JSON.parse(readFileSync('scripts/word-lists.json', 'utf8'));
 const PORTUGUESE = new Set(words.portuguese);
 const tokens = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase().split(/\s+/).filter(Boolean);
@@ -110,6 +129,7 @@ const [mode, ...rest] = process.argv.slice(2);
 if (mode === '--list') {
   const phase7 = namesThatArePhase7();
   for (const f of rest) {
+    if (isExcluded(f)) { console.log(`\n${f}: FORA DA MEDIÇÃO do idioma — este ficheiro não é oferecido.`); continue; }
     const names = safeNamesOf(f, phase7);
     console.log(`\n${f} (${names.length}): ${names.join('  ')}`);
   }
@@ -141,7 +161,7 @@ if (mode === '--list') {
   const phase7 = namesThatArePhase7();
   let safe = 0;
   const byFile = [];
-  for (const f of everyTsFile()) {
+  for (const f of everyTsFile().filter((f) => !isExcluded(f))) {
     const n = safeNamesOf(f, phase7).length;
     if (n) { safe += n; byFile.push([relative(APP, f).split('\\').join('/'), n]); }
   }

@@ -115,14 +115,14 @@ export interface SavedKB {
  * sumirem. É também o que torna esta função IDEMPOTENTE: aplicada sobre um esquema já migrado, nenhuma chave
  * casa e o resultado é igual à entrada, o que importa porque `loadKB` pode correr mais de uma vez na sessão.
  */
-export function migrateScheme(esquema: SavedScheme | null | undefined): SavedScheme | null {
-  if (!esquema) return null;
+export function migrateScheme(saved: SavedScheme | null | undefined): SavedScheme | null {
+  if (!saved) return null;
   const saida: SavedScheme = {};
-  for (const [chave, teclas] of Object.entries(esquema)) {
-    const nova = OLD_VOCABULARY[chave] ?? chave;
+  for (const [chave, teclas] of Object.entries(saved)) {
+    const newKey = OLD_VOCABULARY[chave] ?? chave;
     // ⚠️ Esquema MEIO migrado (as duas chaves presentes): a UNIÃO, nunca a sobreposição. Perder uma tecla é
     // o dano que este módulo existe para impedir; ter a mesma tecla duas vezes não é dano nenhum.
-    saida[nova] = saida[nova] ? [...new Set([...saida[nova], ...teclas])] : [...teclas];
+    saida[newKey] = saida[newKey] ? [...new Set([...saida[newKey], ...teclas])] : [...teclas];
   }
   return saida;
 }

@@ -111,6 +111,6 @@ export function buttonChoice(dataset: { eixo?: string; valor?: string }): AxisCh
   const { eixo, valor } = dataset;
   if (eixo !== 'tema' && eixo !== 'correcao') return null;
   if (!valor) return null;
-  const validos: readonly string[] = eixo === 'tema' ? THEMES : CORRECTIONS;
-  return validos.includes(valor) ? { eixo, valor } : null;
+  const allowed: readonly string[] = eixo === 'tema' ? THEMES : CORRECTIONS;
+  return allowed.includes(valor) ? { eixo, valor } : null;
 }

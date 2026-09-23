@@ -209,13 +209,13 @@ export const GAMEPAD_STANDARD: Readonly<Record<Action, Binding<number>>> = {
  * ações. Um binding duplicado não dá erro em lado nenhum — as duas ações disparam juntas, e a criança vê uma
  * ação dupla intermitente que ninguém consegue reproduzir de propósito.
  */
-export function bindingProblems<T>(tabela: Readonly<Record<Action, Binding<T | readonly T[]>>>): string[] {
+export function bindingProblems<T>(table: Readonly<Record<Action, Binding<T | readonly T[]>>>): string[] {
   const p: string[] = [];
   const dono = new Map<string, Action>();
 
   for (const acao of ACTIONS) {
-    if (!(acao in tabela)) { p.push(`binding: ${acao} is not declared - write null if the transport cannot reach it`); continue; }
-    const v = tabela[acao];
+    if (!(acao in table)) { p.push(`binding: ${acao} is not declared - write null if the transport cannot reach it`); continue; }
+    const v = table[acao];
     if (v === null) continue;
     const itens = Array.isArray(v) ? v : [v];
     if (itens.length === 0) { p.push(`binding: ${acao} has an empty list - write null instead`); continue; }
@@ -240,13 +240,13 @@ export function bindingProblems<T>(tabela: Readonly<Record<Action, Binding<T | r
  * A mensagem nomeia os dois donos, porque «tecla repetida» manda procurar o que a função já sabe.
  */
 export function conflictsBetweenTables<T>(
-  tabelas: readonly Readonly<Record<Action, Binding<T | readonly T[]>>>[],
+  tables: readonly Readonly<Record<Action, Binding<T | readonly T[]>>>[],
 ): string[] {
   const p: string[] = [];
   const dono = new Map<string, string>();
-  tabelas.forEach((tabela, i) => {
+  tables.forEach((table, i) => {
     for (const acao of ACTIONS) {
-      const v = tabela[acao];
+      const v = table[acao];
       if (v === null || v === undefined) continue;
       for (const item of (Array.isArray(v) ? v : [v]) as readonly T[]) {
         const chave = String(item);
@@ -261,6 +261,6 @@ export function conflictsBetweenTables<T>(
 }
 
 /** As ações que este transporte NÃO alcança. É o que uma tela de seleção precisa dizer ANTES de a criança começar. */
-export function unreachable<T>(tabela: Readonly<Record<Action, Binding<T | readonly T[]>>>): Action[] {
-  return ACTIONS.filter((a) => tabela[a] === null || tabela[a] === undefined);
+export function unreachable<T>(table: Readonly<Record<Action, Binding<T | readonly T[]>>>): Action[] {
+  return ACTIONS.filter((a) => table[a] === null || table[a] === undefined);
 }

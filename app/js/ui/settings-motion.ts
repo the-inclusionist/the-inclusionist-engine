@@ -318,9 +318,9 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
    */
   const rm: MotionSceneFlags = ctx.rm ?? readStoredScene();
   const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? SCENE_KEYS;
-  const rmCharTodas: readonly MotionCharDef[] = ctx.rmChar ?? CHARACTER_ANIMATIONS;
+  const allCharAnimations: readonly MotionCharDef[] = ctx.rmChar ?? CHARACTER_ANIMATIONS;
   /** Os alvos do personagem QUE TÊM ASSUNTO neste jogo — lido a cada uso, porque o cartucho muda no `mount()`. */
-  const rmChar = (): readonly MotionCharDef[] => (ctx.comPersonagem?.() === false ? [] : rmCharTodas);
+  const rmChar = (): readonly MotionCharDef[] => (ctx.comPersonagem?.() === false ? [] : allCharAnimations);
   const saveRM: () => void = ctx.saveRM ?? (() => storeScene(rm));
 
   function reflectMotionBtn(): void {
@@ -465,9 +465,9 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const padraoRm = defaultReducedMotion();
     const el = ctx.$<HTMLElement>('#motion-list');
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
-    const mudou: boolean[] = [];
+    const changedFlags: boolean[] = [];
     const markRow = (sel: string, changed: boolean): void => {
-      mudou.push(changed);
+      changedFlags.push(changed);
       markChanged(el?.querySelector<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
     };
     for (const c of rmChar()) markRow(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== padraoRm);
@@ -475,7 +475,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     markRow('[data-crt-tgl="scan"]', !!CRT.scan !== !!CRT_DEFAULT.scan);
     markRow('[data-crt-tgl="vig"]', !!CRT.vig !== !!CRT_DEFAULT.vig);
     markRow('[data-crt="round"]', CRT.round !== CRT_DEFAULT.round);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="anim"]'), mudou);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="anim"]'), changedFlags);
   }
 
   // ---- restaurar os padrões DESTE menu (ADR-0028) ----

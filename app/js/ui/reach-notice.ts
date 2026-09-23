@@ -83,21 +83,21 @@ export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
   const isInside = ctx.procurar('#game-region');
   if (!isInside) return false; // sem a marcação do hospedeiro não há onde mostrar; o `problems` já o denuncia
 
-  const fora = ctx.criar('div');
-  fora.id = REACH_NOTICE_ID;
-  fora.className = 'overlay';
+  const overlay = ctx.criar('div');
+  overlay.id = REACH_NOTICE_ID;
+  overlay.className = 'overlay';
 
-  const cartao = ctx.criar('div');
-  cartao.className = 'overlay__card';
-  cartao.setAttribute('role', 'dialog');
-  cartao.setAttribute('aria-modal', 'true');
-  cartao.setAttribute('tabindex', '-1');
+  const card = ctx.criar('div');
+  card.className = 'overlay__card';
+  card.setAttribute('role', 'dialog');
+  card.setAttribute('aria-modal', 'true');
+  card.setAttribute('tabindex', '-1');
 
   for (const [i, texto] of linhas.entries()) {
     const p = ctx.criar('p');
     p.textContent = texto;
     if (i === 0) p.className = 'reach-notice__titulo';
-    cartao.appendChild(p);
+    card.appendChild(p);
   }
 
   // ⚠️ O BOTÃO É O QUE FAZ DISTO UM AVISO E NÃO UMA PORTA FECHADA. Ver o cabeçalho: a detecção de teclado
@@ -106,15 +106,15 @@ export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
   seguir.setAttribute('type', 'button');
   seguir.className = 'mode-btn';
   seguir.textContent = ctx.t('reach.continuar');
-  seguir.addEventListener('click', () => fora.remove());
-  cartao.appendChild(seguir);
+  seguir.addEventListener('click', () => overlay.remove());
+  card.appendChild(seguir);
 
-  fora.appendChild(cartao);
-  isInside.appendChild(fora);
+  overlay.appendChild(card);
+  isInside.appendChild(overlay);
 
   // O foco vai para o cartão, não para o botão: a criança tem de OUVIR o motivo antes de encontrar a saída.
   // (Se fosse para o botão, o leitor de tela leria «Jogar assim mesmo» e o resto ficaria para quem procurasse.)
-  cartao.focus();
+  card.focus();
   ctx.srAlert(linhas.join(' '));
   return true;
 }

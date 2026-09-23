@@ -157,11 +157,11 @@ export function mountShell(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell
   lista.setAttribute('role', 'group');
   card.appendChild(lista);
 
-  const acoes = ctx.criar('div');
-  acoes.className = 'overlay__actions';
+  const actionsRow = ctx.criar('div');
+  actionsRow.className = 'overlay__actions';
   const reset = botao(ctx, ids.reset, 'mode-btn');
-  acoes.appendChild(reset);
-  card.appendChild(acoes);
+  actionsRow.appendChild(reset);
+  card.appendChild(actionsRow);
 
   overlay.appendChild(card);
   const casca: PanelShell = { overlay, card, titulo: h2, lista, reset, fechar, ids };
@@ -199,10 +199,10 @@ export function applyLabels(casca: PanelShell, r: PanelLabels): void {
   else casca.card.removeAttribute('data-explain-idle');
 }
 
-function botao(ctx: PanelShellCtx, id: string, classe: string): HTMLElement {
+function botao(ctx: PanelShellCtx, id: string, cssClass: string): HTMLElement {
   const b = ctx.criar('button');
   b.id = id;
-  b.className = classe;
+  b.className = cssClass;
   b.setAttribute('type', 'button');
   // O rótulo entra pelo `applyLabels`, por `textContent` e não `innerHTML`: um rótulo traduzido é dado de
   // fora como qualquer outro, e um dicionário de consumidor pode trazer o que quiser dentro dele.

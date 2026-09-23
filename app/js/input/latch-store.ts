@@ -93,13 +93,13 @@ export function storedLatch(
 // crus obrigaria a inventar um adaptador no ponto de uso, e um adaptador ali é onde uma segunda forma de
 // escrever a mesma chave nasce. Uma função é o mínimo que a escrita precisa.
 export function writeLatch(
-  escrever: (chave: string, ligada: boolean) => void,
+  write: (chave: string, isOn: boolean) => void,
   base: string,
   jogador: number,
   transporte: string,
-  ligada: boolean,
+  isOn: boolean,
 ): boolean {
   if (!latchIsOptional(transporte)) return false;
-  escrever(latchKey(base, jogador, transporte), ligada);
+  write(latchKey(base, jogador, transporte), isOn);
   return true;
 }
