@@ -1298,12 +1298,12 @@
       "fanIn": 1
     },
     "ui/gaze-overlay.ts": {
-      "codeLines": 102,
-      "decisionNodes": 26,
-      "maxDepth": 5,
+      "codeLines": 113,
+      "decisionNodes": 22,
+      "maxDepth": 3,
       "fanOut": 4,
       "globalReach": 0,
-      "worstFunction": 19,
+      "worstFunction": 11,
       "fanIn": 3
     },
     "ui/hand-control.ts": {

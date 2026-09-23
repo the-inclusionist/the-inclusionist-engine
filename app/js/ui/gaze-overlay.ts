@@ -94,44 +94,66 @@ export function drawGazeOverlay(ctx: Ctx, width: number, height: number, view: G
   ctx.clearRect(0, 0, width, height);
   const f = gazeFontPx(width, height);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  for (const region of Object.keys(GAZE_REGIONS) as GazeRegion[]) {
-    const [fx, fy, fw, fh] = GAZE_REGIONS[region];
-    const w = fw * width, h = fh * height, cx = fx * width, cy = fy * height, x = cx - w / 2, y = cy - h / 2;
-    const shows = whatRegionShows(region, view);
-    const active = shows.kind !== 'nothing';
-    const colour = !active ? FAINT : view.armed && region !== 'middle' ? ARMED : PREPARE;
-    ctx.strokeStyle = colour; ctx.lineWidth = active ? 3 : 1; ctx.strokeRect(x, y, w, h);
-    ctx.fillStyle = colour; ctx.lineWidth = Math.max(1.5, f / 8);
-    ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
-    if (shows.kind === 'text') {
-      const counting = region === 'middle' && view.restLeftMs !== undefined;
-      ctx.font = `bold ${f}px system-ui`; ctx.fillText(say(shows.key), cx, counting ? cy - f * 0.7 : cy);
-      if (counting) { ctx.font = `${f * 0.85}px system-ui`; ctx.fillText(`${((view.restLeftMs ?? 0) / 1000).toFixed(1)} s`, cx, cy + f * 0.8); }
-    } else if (shows.kind === 'arrow') {
-      const side = f * 2.6;
-      ctx.save(); ctx.translate(cx - side / 2, cy - side / 2); ctx.scale(side / 24, side / 24); ctx.lineWidth = 2;
-      for (const d of LUCIDE_ARROWS[region as GazeZone]) ctx.stroke(new Path2D(d));
-      ctx.restore();
-    } else if (shows.kind === 'button') {
-      const r = f * 1.15, dx = r * 1.35, [letter, s] = FACE_BUTTON[region as GazeZone];
-      ctx.beginPath(); ctx.arc(cx - dx, cy, r, 0, 2 * Math.PI); ctx.stroke();
-      ctx.font = `bold ${f * 1.1}px system-ui`; ctx.fillText(letter, cx - dx, cy + f * 0.05);
-      ctx.beginPath(); ctx.arc(cx + dx, cy, r, 0, 2 * Math.PI); ctx.stroke();
-      shape(ctx, s, cx + dx, cy, r * 0.55);
-    } else if (shows.kind === 'shoulder') {
-      const side = f * 2.4;
-      ctx.strokeRect(cx - side / 2, cy - side / 2, side, side);
-      ctx.font = `bold ${f * 1.05}px system-ui`; ctx.fillText(shows.label, cx, cy + f * 0.05);
-    }
-    ctx.shadowBlur = 0;
+  for (const region of Object.keys(GAZE_REGIONS) as GazeRegion[]) drawRegion(ctx, region, width, height, f, view, say);
+  if (face) drawFaceLines(ctx, face, width, height, f);
+}
+
+/** Where a region's contents are drawn: its centre, the letter size, and the region itself. */
+interface Place { readonly region: GazeRegion; readonly cx: number; readonly cy: number; readonly f: number }
+
+/** One region: its outline — faint when it shows nothing, green when armed (never the middle), yellow otherwise — and what it shows. */
+function drawRegion(ctx: Ctx, region: GazeRegion, width: number, height: number, f: number, view: GazeView, say: (key: string) => string): void {
+  const [fx, fy, fw, fh] = GAZE_REGIONS[region];
+  const w = fw * width, h = fh * height, cx = fx * width, cy = fy * height;
+  const shows = whatRegionShows(region, view);
+  const active = shows.kind !== 'nothing';
+  const colour = !active ? FAINT : view.armed && region !== 'middle' ? ARMED : PREPARE;
+  ctx.strokeStyle = colour; ctx.lineWidth = active ? 3 : 1; ctx.strokeRect(cx - w / 2, cy - h / 2, w, h);
+  ctx.fillStyle = colour; ctx.lineWidth = Math.max(1.5, f / 8);
+  ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+  (DRAW_SHOWS[shows.kind] as ShowDrawer<RegionShows>)(ctx, { region, cx, cy, f }, shows, view, say);
+  ctx.shadowBlur = 0;
+}
+
+type ShowDrawer<S extends RegionShows> = (ctx: Ctx, p: Place, shows: S, view: GazeView, say: (key: string) => string) => void;
+
+/** How each thing a region can show is drawn — one row per kind, so a new kind is a new row and a missing one does not compile. */
+const DRAW_SHOWS: { readonly [K in RegionShows['kind']]: ShowDrawer<Extract<RegionShows, { kind: K }>> } = {
+  nothing: () => {},
+  // only the middle counts down, and its words step up to make room for the seconds
+  text: (ctx, { region, cx, cy, f }, shows, view, say) => {
+    const counting = region === 'middle' && view.restLeftMs !== undefined;
+    ctx.font = `bold ${f}px system-ui`; ctx.fillText(say(shows.key), cx, counting ? cy - f * 0.7 : cy);
+    if (counting) { ctx.font = `${f * 0.85}px system-ui`; ctx.fillText(`${((view.restLeftMs ?? 0) / 1000).toFixed(1)} s`, cx, cy + f * 0.8); }
+  },
+  arrow: (ctx, { region, cx, cy, f }) => {
+    const side = f * 2.6;
+    ctx.save(); ctx.translate(cx - side / 2, cy - side / 2); ctx.scale(side / 24, side / 24); ctx.lineWidth = 2;
+    for (const d of LUCIDE_ARROWS[region as GazeZone]) ctx.stroke(new Path2D(d));
+    ctx.restore();
+  },
+  // the Xbox letter in one circle, the PlayStation shape in the other
+  button: (ctx, { region, cx, cy, f }) => {
+    const r = f * 1.15, dx = r * 1.35, [letter, s] = FACE_BUTTON[region as GazeZone];
+    ctx.beginPath(); ctx.arc(cx - dx, cy, r, 0, 2 * Math.PI); ctx.stroke();
+    ctx.font = `bold ${f * 1.1}px system-ui`; ctx.fillText(letter, cx - dx, cy + f * 0.05);
+    ctx.beginPath(); ctx.arc(cx + dx, cy, r, 0, 2 * Math.PI); ctx.stroke();
+    shape(ctx, s, cx + dx, cy, r * 0.55);
+  },
+  shoulder: (ctx, { cx, cy, f }, shows) => {
+    const side = f * 2.4;
+    ctx.strokeRect(cx - side / 2, cy - side / 2, side, side);
+    ctx.font = `bold ${f * 1.05}px system-ui`; ctx.fillText(shows.label, cx, cy + f * 0.05);
+  },
+};
+
+/** The eyes and brows from the landmarks, mirrored so they move the way the child moves; a line naming a missing landmark is skipped. */
+function drawFaceLines(ctx: Ctx, face: NonNullable<GazeOverlayOptions['face']>, width: number, height: number, f: number): void {
+  ctx.strokeStyle = LINES; ctx.lineWidth = Math.max(2, f / 8); ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
+  for (const { start, end } of [...face.lines.eyes, ...face.lines.brows]) {
+    const a = face.landmarks[start], b = face.landmarks[end];
+    if (!a || !b) continue;
+    ctx.beginPath(); ctx.moveTo((1 - a.x) * width, a.y * height); ctx.lineTo((1 - b.x) * width, b.y * height); ctx.stroke();
   }
-  if (face) {
-    ctx.strokeStyle = LINES; ctx.lineWidth = Math.max(2, f / 8); ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
-    for (const { start, end } of [...face.lines.eyes, ...face.lines.brows]) {
-      const a = face.landmarks[start], b = face.landmarks[end];
-      if (!a || !b) continue;
-      ctx.beginPath(); ctx.moveTo((1 - a.x) * width, a.y * height); ctx.lineTo((1 - b.x) * width, b.y * height); ctx.stroke();
-    }
-    ctx.shadowBlur = 0;
-  }
+  ctx.shadowBlur = 0;
 }
