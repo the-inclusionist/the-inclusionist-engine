@@ -342,7 +342,19 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       const k = b.dataset.crtTgl as 'scan' | 'vig';
       CRT[k] = CRT[k] ? 0 : 1;
       applyCrt();
-      render();
+      /*
+       * 🔴 REFLECTE NO SÍTIO EM VEZ DE REDESENHAR, e é a mesma razão que o tratador do passo, logo acima, já tinha
+       * escrito: «redesenhar tirava o foco de quem ajusta». O que desfazia essa intenção era ESTA linha, a vizinha.
+       *
+       * 📏 Medido no `dist` em 2026-09-23 com o service worker morto: com o cursor nos cantos arredondados, um
+       * clique aqui destruía o controle de passos e o foco caía no `<body>` — a criança que navega por teclado
+       * perdia o lugar no painel inteiro, e não só na linha. Nada mais neste painel depende de `CRT.scan`/`CRT.vig`
+       * senão este botão e as marcas, então redesenhar a lista era refazer tudo para actualizar um.
+       */
+      ctx.toggleBtn(b, !!CRT[k]);
+      b.textContent = toggleLabel(!!CRT[k]);
+      b.setAttribute('aria-label', toggleAria(t(CRT_LBL[k]), !!CRT[k]));
+      refreshMarks();
       ctx.srSay(crtToggleAnnouncement(t(CRT_LBL[k]), !!CRT[k]));
     }));
     // OS CANTOS, POR PASSOS ⯇ ⯈ (ADR-0151). O lugar deixado pelo `crtRoundRowHtml` recebe o controle.

@@ -1780,7 +1780,7 @@
       "fanIn": 1
     },
     "ui/settings-motion.ts": {
-      "codeLines": 247,
+      "codeLines": 250,
       "decisionNodes": 33,
       "maxDepth": 3,
       "fanOut": 8,

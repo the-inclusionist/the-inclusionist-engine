@@ -159,6 +159,31 @@ describe('initSettingsMotion — estética CRT', () => {
     expect(passos.getAttribute('aria-valuetext')).toBe('grande');
   });
 
+  it('🔴 [Right] e sobrevive ao clique da linha AO LADO — o caso acima só media o próprio passo', () => {
+    // 📏 Medido no `dist` em 2026-09-23, com o SW morto: focar os cantos e clicar no interruptor de scanlines
+    // destruía o controle e atirava o foco para o `BODY` — a criança que navega por teclado perdia o lugar no painel
+    // inteiro, e não só na linha. 🎯 E a intenção estava ESCRITA ao lado: o tratador do passo evita redesenhar
+    // «porque redesenhar tirava o foco de quem ajusta». O que a desfazia era a linha vizinha, que redesenha.
+    const { ctx } = makeCtx();
+    CRT.round = 1;
+    CRT.scan = 1;
+    initSettingsMotion(ctx).render();
+    // ⚠️ O painel do fixture nasce `hidden`, e um descendente de um elemento escondido NÃO aceita foco: sem esta
+    // linha o caso ficava vermelho por não conseguir focar, que é um vermelho pela razão errada.
+    $('#animation').hidden = false;
+    const antes = $('#motion-list').querySelector('[data-crt="round"][data-passos]');
+    expect(antes, 'os cantos não foram montados — o caso não mediria nada').not.toBeNull();
+    antes.focus();
+    expect(document.activeElement, 'o controle não aceitou o foco').toBe(antes);
+
+    $('#motion-list').querySelector('button[data-crt-tgl="scan"]').click();
+
+    const depois = $('#motion-list').querySelector('[data-crt="round"][data-passos]');
+    expect(depois, 'os cantos desapareceram depois do clique vizinho').not.toBeNull();
+    expect(depois, 'a linha vizinha refez o controle dos cantos').toBe(antes);
+    expect(document.activeElement, 'o foco saiu do controle quando a linha vizinha foi clicada').toBe(antes);
+  });
+
   it('🔴 [Boundary] na PONTA o passo não anda e não anuncia — repetir «grande» soaria a um passo dado', () => {
     const { ctx, calls } = makeCtx();
     CRT.round = 2;
