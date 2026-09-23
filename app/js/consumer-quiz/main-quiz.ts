@@ -141,10 +141,20 @@ interface Pergunta {
   readonly certa: number;
 }
 
+/*
+ * 🔴 AS PERGUNTAS SÃO CHAVES, E NÃO FRASES — e antes de 23/09 eram frases cravadas em pt-BR. 📏 Medido no `dist`:
+ * trocar a bandeira levava o `<html lang>`, o rodapé e a moldura inteira da engine para o idioma novo e deixava o
+ * ENUNCIADO e as alternativas em português; a página chegava a abrir com `lang="en-US"` a mostrar uma pergunta em
+ * português. É o ADR-0225 pela metade: a engine seguia, a ATIVIDADE não.
+ *
+ * 📌 E o quiz não é uma disciplina de idioma, logo não há sequer a excepção do `CLAUDE.md` §A FRONTEIRA: «o
+ * ENUNCIADO SEMPRE TRADUZ». Guardar a frase aqui é guardar uma língua; guardar a chave deixa a frase onde as três
+ * línguas vivem juntas e onde o crivo dos dicionários as confere.
+ */
 const PERGUNTAS: readonly Pergunta[] = [
-  { enunciado: 'Qual animal põe ovos e tem bico?', alternativas: ['Gato', 'Galinha', 'Cavalo', 'Peixe'], certa: 1 },
-  { enunciado: 'Quantos lados tem um triângulo?', alternativas: ['Três', 'Quatro', 'Cinco', 'Dois'], certa: 0 },
-  { enunciado: 'Qual destas é uma fruta?', alternativas: ['Alface', 'Cenoura', 'Banana', 'Batata'], certa: 2 },
+  { enunciado: 'quiz.p1', alternativas: ['quiz.p1.a', 'quiz.p1.b', 'quiz.p1.c', 'quiz.p1.d'], certa: 1 },
+  { enunciado: 'quiz.p2', alternativas: ['quiz.p2.a', 'quiz.p2.b', 'quiz.p2.c', 'quiz.p2.d'], certa: 0 },
+  { enunciado: 'quiz.p3', alternativas: ['quiz.p3.a', 'quiz.p3.b', 'quiz.p3.c', 'quiz.p3.d'], certa: 2 },
 ];
 
 let atual = 0;
@@ -158,11 +168,13 @@ const $ = <T extends Element = Element>(sel: string): T | null => document.query
 
 /** Marcação de uma pergunta. Pura: recebe estado, devolve texto — testável sem DOM. */
 export function questionHtml(p: Pergunta, selecionada: number): string {
+  // O enunciado e as alternativas são CHAVES: resolvem-se no instante de desenhar, e é isso que faz a troca de
+  // idioma alcançar a atividade e não só a moldura (ADR-0225).
   const alts = p.alternativas.map((a, i) =>
     `<button class="mode-btn quiz-alt${i === selecionada ? ' is-on' : ''}" data-alt="${i}" type="button"` +
-    ` role="radio" aria-checked="${i === selecionada}">${escapeHtml(a)}</button>`).join('');
+    ` role="radio" aria-checked="${i === selecionada}">${escapeHtml(t(a))}</button>`).join('');
   return (
-    `<h2 class="quiz-pergunta">${escapeHtml(p.enunciado)}</h2>` +
+    `<h2 class="quiz-pergunta">${escapeHtml(t(p.enunciado))}</h2>` +
     `<div class="quiz-alts" role="radiogroup" aria-label="${escapeHtml(t('quiz.alternativas'))}">${alts}</div>`
   );
 }
@@ -182,12 +194,12 @@ export function nextFocus(atualIdx: number, delta: number, total: number): numbe
  */
 export function questionNarration(p: Pergunta): string {
   const opcoes = p.alternativas.map((_, i) => spokenOption(p, i)).join('. ');
-  return opcoes ? `${p.enunciado} ${opcoes}` : p.enunciado;
+  return opcoes ? `${t(p.enunciado)} ${opcoes}` : t(p.enunciado);
 }
 
 /** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
 export function spokenOption(p: Pergunta, i: number): string {
-  return announceItem({ rotulo: p.alternativas[i] ?? '', posicao: i + 1, total: p.alternativas.length }, menuIndexOn);
+  return announceItem({ rotulo: t(p.alternativas[i] ?? ''), posicao: i + 1, total: p.alternativas.length }, menuIndexOn);
 }
 
 /**
@@ -265,8 +277,20 @@ function render(): void {
   app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {
     b.addEventListener('click', () => responder(Number(b.dataset.alt)));
   });
+  /*
+   * ⚠️ O FOCO SÓ VOLTA PARA A PERGUNTA SE A CRIANÇA JÁ ESTAVA NELA. Este `focus()` existe para o teclado seguir a
+   * opção escolhida; mas um desenho pode acontecer por um motivo que não é dela — e desde 23/09 acontece: trocar o
+   * idioma redesenha a atividade (ADR-0225). 📏 Medido: com um painel de ajustes aberto, o redesenho arrancava o
+   * foco do painel e punha-o numa alternativa por trás do véu.
+   *
+   * 📌 É a mesma regra que a conversão dos painéis para nós ensinou, deste lado da fronteira: um redesenho não move
+   * o cursor de quem está noutro sítio. `body` e ninguém contam como «não está noutro sítio».
+   */
+  const foraDoQuiz = document.activeElement
+    && document.activeElement !== document.body
+    && !app.contains(document.activeElement);
   const alvo = app.querySelector<HTMLElement>(`button[data-alt="${foco}"]`);
-  if (alvo) alvo.focus();
+  if (alvo && !foraDoQuiz) alvo.focus();
 }
 
 /**
@@ -291,7 +315,7 @@ function dizerNoEnunciado(texto: string, voltarAoEnunciado = true): void {
   // The engine already knows how long a line stays on screen: 500 ms a word, never under 2600 ms (`core/caption-duration`).
   if (voltarAoEnunciado && p) setTimeout(() => {
     const alvo = $<HTMLElement>('#quiz-app .quiz-pergunta');
-    if (alvo && !ouvindo) alvo.textContent = p.enunciado;
+    if (alvo && !ouvindo) alvo.textContent = t(p.enunciado);
   }, captionDuration(texto, 125));
 }
 
@@ -321,7 +345,7 @@ function responder(i: number): void {
   if (!p) return;
   const acertou = i === p.certa;
   if (acertou) acertos++;
-  srAlert(answerText(acertou, p.alternativas[p.certa] ?? ''));
+  srAlert(answerText(acertou, t(p.alternativas[p.certa] ?? '')));
   atual++;
   foco = 0;
   setTimeout(render, 900); // deixa o anúncio ser lido antes de a tela mudar
@@ -530,6 +554,21 @@ export function bootQuiz(): void {
     motor?.cenas.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
     srSay(t('sr.quiz.bemVindo'));
   });
+
+  /*
+   * 🔴 A ATIVIDADE REDESENHA-SE AO TROCAR DE IDIOMA, e sem esta linha ela não o fazia (ADR-0225).
+   *
+   * 📏 Medido no `dist` em 23/09: clicar na bandeira levava o `<html lang>`, o rodapé, a barra e os painéis para o
+   * idioma novo e deixava o ENUNCIADO e as alternativas onde estavam. A engine tem por onde avisar desde o estudo
+   * C6 — `i18n:change` na janela, que a raiz, o kit de painéis e o cartão já assinam —, e o cartucho não assinava.
+   *
+   * 📌 Quem redesenha é a PILHA e não o `render()` directo, pela mesma razão do primeiro desenho: ela sabe o que
+   * está no topo, e um dia isto pode não ser a tela das perguntas.
+   *
+   * ⚠️ E quem avisa é a ENGINE, não a janela: este cartucho não sabe — nem deve — que o evento se chama
+   * `i18n:change` nem onde ele é disparado (ADR-0216).
+   */
+  motor.onLocaleChange(() => { motor?.cenas.draw(); });
 }
 
 if (typeof document !== 'undefined' && document.getElementById('quiz-app')) bootQuiz();

@@ -25,8 +25,8 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2020,
-      "decisionNodes": 266,
+      "codeLines": 2024,
+      "decisionNodes": 268,
       "maxDepth": 4,
       "fanOut": 85,
       "globalReach": 0,
@@ -34,7 +34,7 @@
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 227,
+      "codeLines": 231,
       "decisionNodes": 39,
       "maxDepth": 6,
       "fanOut": 8,
@@ -400,7 +400,7 @@
       "fanIn": 0
     },
     "i18n/en.ts": {
-      "codeLines": 631,
+      "codeLines": 646,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -409,7 +409,7 @@
       "fanIn": 0
     },
     "i18n/es.ts": {
-      "codeLines": 631,
+      "codeLines": 646,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
@@ -418,7 +418,7 @@
       "fanIn": 0
     },
     "i18n/pt.ts": {
-      "codeLines": 631,
+      "codeLines": 646,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,

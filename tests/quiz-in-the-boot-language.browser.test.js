@@ -42,9 +42,14 @@ describe('the quiz on an English page', () => {
   });
 
   it('🔴 [Right] the first narration says each place in English, and nothing was said in the fallback first', () => {
-    const pergunta = falas.find((f) => /Gato/.test(f));
+    // ⚠️ THIS CASE USED TO LOOK FOR «Gato» ON AN ENGLISH PAGE, and finding it was the point — because the quiz's
+    // options were hardcoded pt-BR literals and only the FRAME around them translated. 📏 Measured in the `dist`
+    // on 2026-09-23: the flag changed `<html lang>`, the footer, the bar and the panels and left the statement and
+    // the options in Portuguese. They are dictionary keys now (ADR-0225, and the quiz is no language subject), so
+    // what this case asks is unchanged — the place is said in English — and the words around it finally agree.
+    const pergunta = falas.find((f) => /Cat/.test(f));
     expect(pergunta, 'the question was never narrated').toBeTruthy();
-    expect(pergunta).toContain('Gato, 1 of 4');
+    expect(pergunta).toContain('Cat, 1 of 4');
     expect(falas.join(' | '), 'something was narrated in Portuguese frames first').not.toMatch(/\d de \d/);
   });
 });

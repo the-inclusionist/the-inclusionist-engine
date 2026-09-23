@@ -57,6 +57,7 @@
       "medirFlashes",
       "mount",
       "nav",
+      "onLocaleChange",
       "overlays",
       "pausa",
       "problems",

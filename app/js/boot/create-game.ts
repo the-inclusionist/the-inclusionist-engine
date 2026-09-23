@@ -569,6 +569,17 @@ export interface Engine {
    * Nasce VAZIA: quem empilha é o jogo, porque quais são as cenas é a única parte disto que é dele.
    */
   readonly cenas: SceneStack;
+  /**
+   * AVISA O CARTUCHO QUE O IDIOMA MUDOU — e é a única coisa que ele precisa de saber sobre o assunto (ADR-0225).
+   *
+   * 📌 A engine já redesenha tudo o que É dela: a barra, a legenda, o cartão, o pad, um painel aberto, a voz que fala e o
+   * modelo que ouve. O que ela não pode redesenhar é a ATIVIDADE — e sem esta porta o cartucho teria de assinar
+   * `i18n:change` na janela, conhecendo o nome do evento e alcançando um global para isso. É a regra que o Dev escreveu
+   * para a leitura e a fala: «o jogo não deve precisar saber como isso funciona» (ADR-0216).
+   *
+   * ⚠️ Chamado DEPOIS de a engine se ter redesenhado, para o cartucho nunca ver uma tela meio traduzida.
+   */
+  readonly onLocaleChange: (fn: () => void) => void;
   /** Quantos filtros de daltonismo foram montados. `0` = não havia host, e o menu visual perde metade. */
   readonly cvdFilters: number;
   /** O que FALTOU no documento do consumidor. Vazia = o hospedeiro cumpriu o contrato de marcação. */
@@ -2997,6 +3008,17 @@ export function createGame(o: CreateGameOptions): Engine {
    * é a mesma zona morta temporal que o `getPlayers` e o `lacunasDoPad` já ensinaram a este ficheiro.
    */
   let voiceControl: VoiceControl | null = null;
+  /*
+   * 🔴 E O CARTUCHO TAMBÉM PRECISA DE SABER, e antes de 23/09 não tinha por onde (ADR-0225). 📏 Medido no `dist`: trocar a
+   * bandeira levava o `<html lang>`, o rodapé, a barra e os painéis para o idioma novo e deixava o ENUNCIADO do quiz em
+   * português — a moldura seguia, a ATIVIDADE não.
+   *
+   * 📌 A porta é da engine e não do evento, pela regra que o Dev já escreveu para a leitura e a fala (ADR-0216): «o jogo não
+   * deve precisar saber como isso funciona». Um cartucho que tivesse de assinar `i18n:change` na JANELA teria de conhecer o
+   * nome do evento, o objecto onde ele é disparado e a ordem em que a engine o trata — e alcançaria um global para o fazer,
+   * que é o que o passo 7d do ADR-0221 recusa a um módulo novo.
+   */
+  const localeListeners: (() => void)[] = [];
   if (typeof win.addEventListener === 'function') {
     win.addEventListener('i18n:change', () => {
       pauseIcons.reflectPauseIcons();
@@ -3011,6 +3033,9 @@ export function createGame(o: CreateGameOptions): Engine {
        * menu e as palavras novas iam alimentar o modelo antigo.
        */
       void voiceControl?.languageChanged();
+      // ⚠️ O CARTUCHO POR ÚLTIMO, e de propósito: quando ele redesenha, a barra, a legenda e o pad já estão na língua nova,
+      // logo ele nunca mede uma tela meio traduzida. E um cartucho que rebente não leva a moldura da engine com ele.
+      for (const listener of localeListeners) { try { listener(); } catch (e) { /* o cartucho falhou, a engine segue */ } }
     });
   }
 
@@ -4032,6 +4057,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     sonar,
     aplicarFiltroDeVisao,
     cenas: cenasDaRaiz,
+    onLocaleChange: (fn) => { localeListeners.push(fn); },
     cvdFilters,
     get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho(), ...dictionaryGaps(), ...problemasMedidos, ...armazenamentoForaDoEscopo()]; },
     aoFalhar,
