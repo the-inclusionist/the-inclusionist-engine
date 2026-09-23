@@ -91,54 +91,84 @@ export function createGazeReader(options: GazeReaderOptions = {}): GazeReader {
   const restH: number[] = [], restV: number[] = [];
   const recentH: number[] = [], recentV: number[] = [], recentT: number[] = [];
 
-  const read = (now: number, { h, v, pose = null }: GazeSample): GazeReading => {
-    if (typeof h !== 'number' || typeof v !== 'number') return { zone: null, ready: !!rest, reason: 'no-eyes' };
+  /*
+   * The reading is SIX QUESTIONS asked in order, and each one is a step below instead of a paragraph inside `read`:
+   * did the head move · is there a rest yet · is the gaze still · is it parked · which zone did it reach · where does
+   * the rest go next. They are steps and not helpers: the order is the reading, and each answer feeds the next.
+   */
+
+  /** What the head did since the last frame. A turn imitates an eye movement, so the frame it happens in is not read. */
+  const headMotion = (now: number, pose: GazeSample['pose']): { dtMs: number; headMoving: boolean } => {
     const dtMs = lastMs === null ? 0 : Math.max(0, now - lastMs);
-    let headMoving = false;
-    if (pose && lastPose && dtMs > 0) {
-      headMoving = Math.hypot(pose.yaw - lastPose.yaw, pose.pitch - lastPose.pitch) / (dtMs / 1000) > o.headMaxDegPerSecond;
-    }
+    const headMoving = pose && lastPose && dtMs > 0
+      ? Math.hypot(pose.yaw - lastPose.yaw, pose.pitch - lastPose.pitch) / (dtMs / 1000) > o.headMaxDegPerSecond
+      : false;
     lastPose = pose; lastMs = now;
+    return { dtMs, headMoving };
+  };
 
-    if (!rest || !tremor) {
-      stillSince ??= now;
-      restH.push(h); restV.push(v);
-      const mh = median(restH), mv = median(restV), sh = spread(restH, mh), sv = spread(restV, mv);
-      if (restH.length > 4 && Math.max(sh, sv) > o.tremorMax) {
-        stillSince = now; restH.length = 0; restV.length = 0;
-        return { zone: null, ready: false, reason: 'gaze-moving', stillMs: 0 };
-      }
-      if (now - stillSince < o.restMs) return { zone: null, ready: false, reason: 'measuring-rest', stillMs: now - stillSince };
-      rest = { h: mh, v: mv };
-      tremor = { h: Math.max(o.tremorFloor, sh), v: Math.max(o.tremorFloor, sv) };
-      return { zone: null, ready: true, reason: 'rest-measured', rest, tremor, stillMs: now - stillSince };
+  /** The rest, while it is still being taken: a gaze that keeps moving restarts the stretch instead of widening it. */
+  const measureRest = (now: number, h: number, v: number): GazeReading => {
+    stillSince ??= now;
+    restH.push(h); restV.push(v);
+    const mh = median(restH), mv = median(restV), sh = spread(restH, mh), sv = spread(restV, mv);
+    if (restH.length > 4 && Math.max(sh, sv) > o.tremorMax) {
+      stillSince = now; restH.length = 0; restV.length = 0;
+      return { zone: null, ready: false, reason: 'gaze-moving', stillMs: 0 };
     }
+    if (now - stillSince < o.restMs) return { zone: null, ready: false, reason: 'measuring-rest', stillMs: now - stillSince };
+    rest = { h: mh, v: mv };
+    tremor = { h: Math.max(o.tremorFloor, sh), v: Math.max(o.tremorFloor, sv) };
+    return { zone: null, ready: true, reason: 'rest-measured', rest, tremor, stillMs: now - stillSince };
+  };
 
+  /** Was the gaze still over the LAST SECOND? The window forgets on purpose — a gaze that moved and then held must be able to settle. */
+  const stillOverTheLastSecond = (now: number, h: number, v: number, scatter: EyeGaze): boolean => {
     recentH.push(h); recentV.push(v); recentT.push(now);
     while (recentT.length && now - recentT[0]! > 1000) { recentH.shift(); recentV.shift(); recentT.shift(); }
-    const still = recentH.length > 5 && range(recentH) <= 4 * tremor.h && range(recentV) <= 4 * tremor.v;
-    if (!still || headMoving) parkedSince = null; else parkedSince ??= now;
-    const parked = parkedSince !== null && now - parkedSince >= o.parkedMs;
+    return recentH.length > 5 && range(recentH) <= 4 * scatter.h && range(recentV) <= 4 * scatter.v;
+  };
 
-    const dhRaw = (h - rest.h) / tremor.h, dv = (v - rest.v) / tremor.v;
-    const dh = dhRaw * (o.vertical / o.sideways);
-    const threshold = zone ? o.vertical * o.exit : o.vertical;
+  /** A gaze still for `parkedMs` is a rest by definition: nothing is pushing it, so the rest may move onto it. */
+  const parkedFor = (now: number, still: boolean, headMoving: boolean): boolean => {
+    if (!still || headMoving) parkedSince = null; else parkedSince ??= now;
+    return parkedSince !== null && now - parkedSince >= o.parkedMs;
+  };
+
+  /** Which axis owns the movement: the one that went further, unless the zone in hand keeps it by `axisSwitch`. */
+  const axisThatWon = (ah: number, av: number, threshold: number, held: GazeZone | null): 'h' | 'v' => {
+    const further: 'h' | 'v' = ah >= av ? 'h' : 'v';
+    if (!held) return further;
+    const mine = AXIS_OF[held] === 'h' ? ah : av, other = AXIS_OF[held] === 'h' ? av : ah;
+    return mine >= threshold && other < mine * o.axisSwitch ? AXIS_OF[held] : further;
+  };
+
+  /** The zone the displacement reached, and how far it went — in vertical units, which is what both axes speak. */
+  const zoneReached = (dh: number, dv: number, headMoving: boolean, held: GazeZone | null): { zone: GazeZone | null; strength: number } => {
+    const threshold = held ? o.vertical * o.exit : o.vertical;
     const strength = Math.max(Math.abs(dh), Math.abs(dv));
-    let next: GazeZone | null = null;
-    if (!headMoving && strength >= threshold) {
-      const ah = Math.abs(dh), av = Math.abs(dv);
-      let axis: 'h' | 'v' = ah >= av ? 'h' : 'v';
-      if (zone) {
-        const mine = AXIS_OF[zone] === 'h' ? ah : av, other = AXIS_OF[zone] === 'h' ? av : ah;
-        if (mine >= threshold && other < mine * o.axisSwitch) axis = AXIS_OF[zone];
-      }
-      next = axis === 'h' ? (dh > 0 ? 'left' : 'right') : (dv > 0 ? 'down' : 'up');
-    }
-    zone = next;
-    if (!headMoving && ((!zone && strength < o.vertical / 2) || parked)) {
-      const k = Math.min(1, dtMs / (parked ? o.parkedFollowMs : o.followMs));
-      rest = { h: rest.h + (h - rest.h) * k, v: rest.v + (v - rest.v) * k };
-    }
+    if (headMoving || strength < threshold) return { zone: null, strength };
+    const axis = axisThatWon(Math.abs(dh), Math.abs(dv), threshold, held);
+    return { zone: axis === 'h' ? (dh > 0 ? 'left' : 'right') : (dv > 0 ? 'down' : 'up'), strength };
+  };
+
+  /** Where the rest goes next: slowly towards a gaze that is near it, quickly onto one that has parked. */
+  const restFollowing = (at: EyeGaze, h: number, v: number, dtMs: number, headMoving: boolean, near: boolean, parked: boolean): EyeGaze => {
+    if (headMoving || (!near && !parked)) return at;
+    const k = Math.min(1, dtMs / (parked ? o.parkedFollowMs : o.followMs));
+    return { h: at.h + (h - at.h) * k, v: at.v + (v - at.v) * k };
+  };
+
+  const read = (now: number, { h, v, pose = null }: GazeSample): GazeReading => {
+    if (typeof h !== 'number' || typeof v !== 'number') return { zone: null, ready: !!rest, reason: 'no-eyes' };
+    const { dtMs, headMoving } = headMotion(now, pose);
+    if (!rest || !tremor) return measureRest(now, h, v);
+
+    const parked = parkedFor(now, stillOverTheLastSecond(now, h, v, tremor), headMoving);
+    const dhRaw = (h - rest.h) / tremor.h, dv = (v - rest.v) / tremor.v;
+    const { zone: reached, strength } = zoneReached(dhRaw * (o.vertical / o.sideways), dv, headMoving, zone);
+    zone = reached;
+    rest = restFollowing(rest, h, v, dtMs, headMoving, !zone && strength < o.vertical / 2, parked);
     return {
       zone, ready: true, displacement: { h: dhRaw, v: dv }, strength, parked, rest, tremor,
       reason: headMoving ? 'head-moving' : parked ? 'recentring' : null,

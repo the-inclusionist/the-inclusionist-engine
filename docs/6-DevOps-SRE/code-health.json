@@ -445,12 +445,12 @@
       "fanIn": 2
     },
     "input/gaze-relative.ts": {
-      "codeLines": 112,
+      "codeLines": 124,
       "decisionNodes": 24,
-      "maxDepth": 3,
+      "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 38,
+      "worstFunction": 8,
       "fanIn": 3
     },
     "input/hand-map.ts": {
