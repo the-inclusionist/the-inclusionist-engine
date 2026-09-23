@@ -42,6 +42,31 @@ describe('a game options declaration', () => {
     }
   });
 
+  /*
+   * 🔴 Probed 2026-09-23: nine of twenty-six checks could be undone with this file green. Almost all are the same gap — every case
+   * above was malformed in VALUE and never in TYPE — and three of the mutations did not fail, they THREW: the validator that exists
+   * to tell a cartridge what is wrong would crash the start instead. A declaration comes from outside the engine; its type is not
+   * given.
+   */
+  it('🔴 [Right] a part of the WRONG TYPE is named, and nothing throws', () => {
+    const casos = [
+      ['a row that is text', ['difficulty'], /gameOptions\[0\] must be a row$/],
+      ['a row that is null', [null], /gameOptions\[0\] must be a row$/],
+      ['an id that is a number', [{ ...dicas(), id: 7 }], /gameOptions\[0\]\.id/],
+      ['a hint that is not text', [{ ...dicas(), hint: 3 }], /gameOptions\[0\]\.hint/],
+      ['a list with no values', [{ ...dicas(), kind: 'list' }], /gameOptions\[0\]\.values .*two/],
+      ['values that are text', [{ ...dificuldade(), values: 'abc' }], /gameOptions\[0\]\.values .*two/],
+      ['a position that is null', [{ ...dificuldade(), values: [{ value: 'a', label: 'a' }, null] }], /gameOptions\[0\]\.values\[1\]/],
+      ['a position whose value is a number', [{ ...dificuldade(), values: [{ value: 'a', label: 'a' }, { value: 2, label: 'b' }] }], /gameOptions\[0\]\.values\[1\]/],
+      ['a position whose label is a number', [{ ...dificuldade(), values: [{ value: 'a', label: 'a' }, { value: 'b', label: 5 }] }], /gameOptions\[0\]\.values\[1\]/],
+    ];
+    for (const [nome, decl, esperado] of casos) {
+      let problems;
+      expect(() => { problems = gameOptionsProblems(decl); }, `${nome}: the validator threw`).not.toThrow();
+      expect(problems.join(' | '), nome).toMatch(esperado);
+    }
+  });
+
   it('🔴 [Right] steps hold at most five positions; more is a list (ADR-0130 erratum)', () => {
     const seis = Array.from({ length: 6 }, (_, i) => ({ value: String(i), label: String(i) }));
     expect(gameOptionsProblems([{ ...dificuldade(), values: seis }]).join(' '), 'six steps accepted').toMatch(/five.*list/);
