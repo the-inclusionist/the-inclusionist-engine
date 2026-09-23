@@ -650,3 +650,99 @@ describe('ui/settings-audio — o que a voz reflecte', () => {
     setSpeechPpmValue(antes);
   });
 });
+
+
+// ==========================================================================================================
+// OS CINCO RAMOS QUE A SONDA ACHOU CEGOS (ADR-0221 passo 7c, 2026-09-23)
+//
+// 📏 As treze decisões deste painel desligadas uma a uma, contra os dez ficheiros que lhe tocam: oito ficaram
+// vermelhas e CINCO verdes. Três das cinco tinham, ao lado, um comentário a argumentar exactamente o que nada
+// segurava — e um comentário que declara uma regra não é um portão.
+// ==========================================================================================================
+describe('ui/settings-audio — o que a sonda achou cego', () => {
+  it('🔴 [Right] trocar a saída FECHA o contexto de áudio antigo — senão o som continua no aparelho anterior', async () => {
+    // 🔴 O MAIS CARO DOS CINCO, e é o que a criança sente sem ver: a linha que fecha o contexto podia ser apagada
+    // com a suíte inteira verde. Sem ela, a escolha aparece feita na lista e o som continua a sair pelo aparelho
+    // de antes — o controle responde e o mundo não, que é a forma mais frustrante de defeito para quem depende
+    // de um fone próprio para ouvir o seu jogo numa sala com outras vinte pessoas.
+    stubMediaDevices({ devices: [{ deviceId: 'd1', kind: 'audiooutput', label: 'Fone USB' }] });
+    let fechado = false;
+    const player = { audioSink: null, _ac: { close: () => { fechado = true; } }, _acOut: {} };
+    const { ctx } = fullCtx({ players: [player] });
+    initSettingsAudio(ctx).renderAudio();
+    await flush();
+    const sel = document.querySelector('#audio-sinks select');
+    sel.value = 'd1';
+    sel.dispatchEvent(new Event('change'));
+    expect(fechado, 'o contexto antigo ficou aberto: o som continua na saída de antes').toBe(true);
+    expect(player._ac, 'o contexto fechado continua pendurado no jogador').toBeNull();
+    expect(player._acOut, 'a saída do contexto antigo continua pendurada no jogador').toBeNull();
+  });
+
+  it('🔴 [Right] um contexto que RECUSA fechar não derruba a troca — a escolha vale na mesma', async () => {
+    // O par do caso acima: `close()` pode lançar num contexto já fechado, e a criança não pode perder a escolha
+    // por causa disso. É por essa razão que o `try` existe, e sem este caso ele podia ser apagado.
+    stubMediaDevices({ devices: [{ deviceId: 'd1', kind: 'audiooutput', label: 'Fone USB' }] });
+    const player = { audioSink: null, _ac: { close: () => { throw new Error('already closed'); } }, _acOut: {} };
+    const { ctx, store } = fullCtx({ players: [player] });
+    initSettingsAudio(ctx).renderAudio();
+    await flush();
+    const sel = document.querySelector('#audio-sinks select');
+    sel.value = 'd1';
+    expect(() => sel.dispatchEvent(new Event('change'))).not.toThrow();
+    expect(player.audioSink).toBe('d1');
+    expect(store.get('incl_sink_p0')).toBe('d1');
+  });
+
+  it('🔴 [Boundary] um navegador que NÃO CONSEGUE ouve outra frase, e não a de «clique em Detectar»', async () => {
+    // 📌 São duas frases no dicionário porque são duas situações: «ainda não procurei» pede uma acção à criança,
+    // «este navegador não faz isso» diz-lhe que não há acção nenhuma. Saíam como uma só, e nada reparava — a
+    // fixture estuba sempre o `mediaDevices`, logo o caminho do «não consegue» nunca era percorrido.
+    const semMediaDevices = Object.getOwnPropertyDescriptor(navigator, 'mediaDevices');
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+    try {
+      const { ctx } = fullCtx();
+      initSettingsAudio(ctx).renderAudio();
+      await flush();
+      const texto = document.querySelector('#audio-sinks').textContent;
+      expect(texto, 'a secção ficou muda num navegador que não consegue').toBeTruthy();
+      expect(texto, 'pede «Detectar» a quem não tem o que detectar').not.toContain('Detectar');
+    } finally {
+      if (semMediaDevices) Object.defineProperty(navigator, 'mediaDevices', semMediaDevices);
+    }
+  });
+
+  it('🔴 [Right] a prosa volta ao rodapé depois de a lista ser reconstruída (CLAUDE.md §4, #109)', () => {
+    // A lista de categorias é refeita a cada render, e as linhas novas voltam com a prosa lá dentro. Sem esta
+    // chamada o menu vira o manual que a decisão de 2026-08-25 proibiu, a partir do primeiro clique.
+    const cartoes = [];
+    const { ctx } = fullCtx({ ctxOver: { fillExplain: (card) => cartoes.push(card) } });
+    initSettingsAudio(ctx).renderAudio();
+    expect(cartoes.length, 'a prosa não foi devolvida ao rodapé depois do redesenho').toBeGreaterThan(0);
+  });
+
+  it('🔴 [Interface] e no rodapé do cartão QUE TEM A LISTA, não no primeiro da página (ADR-0151)', () => {
+    // 📌 São DOIS painéis desde o ADR-0151 — «Conforto auditivo» e «Áudio» —, e o rodapé do outro não é o desta
+    // criança: escrever nele deixa a explicação numa tela que ela não está a ver e a tela onde ela está muda.
+    // O comentário ao lado desta linha dizia isto desde o dia em que foi escrita; nada o segurava.
+    document.body.innerHTML = '<div class="overlay"><div class="overlay__card" id="outro"></div></div>'
+      + '<div class="overlay"><div class="overlay__card" id="oDaLista">' + AUDIO_HTML + '</div></div>';
+    const cartoes = [];
+    const { ctx } = fullCtx({ ctxOver: { fillExplain: (card) => cartoes.push(card) } });
+    initSettingsAudio(ctx).renderAudio();
+    expect(cartoes.length).toBeGreaterThan(0);
+    for (const card of cartoes) {
+      expect(card?.id, 'a prosa foi para o cartão errado — o do outro painel').not.toBe('outro');
+    }
+    expect(cartoes.some((c) => c?.id === 'oDaLista'), 'nenhuma passagem escreveu no cartão que tem a lista').toBe(true);
+  });
+
+  it('🔴 [Right] o volume-mestre da navegação mostra onde está, e não zero', () => {
+    const cat = freshAudioCat();
+    for (const k of NAV_CATS) { cat[k].on = true; cat[k].vol = 0.4; }
+    const { ctx } = fullCtx({ audioCat: cat });
+    initSettingsAudio(ctx).renderAudio();
+    const m = document.querySelector('#navsound-master');
+    expect(m.value, 'o cursor do mestre da navegação não foi posto no valor de agora').toBe('40');
+  });
+});
