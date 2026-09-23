@@ -1403,12 +1403,12 @@
       "fanIn": 3
     },
     "ui/menu-nav.ts": {
-      "codeLines": 278,
-      "decisionNodes": 58,
-      "maxDepth": 3,
+      "codeLines": 283,
+      "decisionNodes": 57,
+      "maxDepth": 2,
       "fanOut": 9,
       "globalReach": 0,
-      "worstFunction": 18,
+      "worstFunction": 14,
       "fanIn": 2
     },
     "ui/motion-choices.ts": {

@@ -415,40 +415,49 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     sayItem(items, n);
   }
 
+  /** Where the cursor is. With the focus outside the dialog (or on its card), it enters by the first item — and says it. */
+  function cursorIn(items: readonly HTMLElement[]): number {
+    const idx = items.indexOf(ctx.getActiveElement() as HTMLElement);
+    if (idx >= 0) return idx;
+    focusAndSay(items, 0);
+    return 0;
+  }
+
+  /**
+   * Left or right: a list, a slider or a steps control is ADJUSTED, and the new value is said — someone adjusting by ear has
+   * no other way to know where it stopped; anything else walks the ring, like up and down.
+   */
+  function sideways(items: readonly HTMLElement[], idx: number, d: 1 | -1): void {
+    const cur = items[idx]!;
+    if (cur.tagName === 'SELECT') {
+      const before = (cur as HTMLSelectElement).value;
+      tweakSelect(cur as HTMLSelectElement, d);
+      // an adjustment its owner refused (and put back) says nothing here: the owner already said why
+      if ((cur as HTMLSelectElement).value !== before) sayItem(items, idx);
+      return;
+    }
+    if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); sayItem(items, idx); return; }
+    // Os PASSOS ⯇ ⯈ (ADR-0151): esquerda e direita são o próprio ajuste, e quem o aplica ouve o `passo` (e anuncia).
+    if (cur.hasAttribute('data-passos')) { cur.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true })); return; }
+    focusAndSay(items, stepInRing(items.length, idx, d));
+  }
+
+  /** «Yes»: a list goes round and says the new option; a slider or a steps control has nothing to confirm; anything else is clicked. */
+  function confirm(items: readonly HTMLElement[], idx: number): void {
+    const cur = items[idx]!;
+    if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, 'wrap'); sayItem(items, idx); return; }
+    if (cur.tagName === 'INPUT' || cur.hasAttribute('data-passos')) return;
+    cur.click();
+  }
+
   function navDialog(menu: HTMLElement, k: NavKeys): void {
     const items = menuItems(menu);
     if (!items.length) return;
-    let idx = items.indexOf(ctx.getActiveElement() as HTMLElement);
-    if (idx < 0) { idx = 0; focusAndSay(items, 0); } // foco fora do diálogo (ou no card): entra pelo primeiro
-    const cur = items[idx];
-
+    const idx = cursorIn(items);
     if (k.no) { dialogBack(menu); return; }
-
-    if (k.left || k.right) {
-      const d = k.right ? 1 : -1;
-      // o VALOR novo é dito: quem ajusta de ouvido não tem outra forma de saber onde parou
-      if (cur.tagName === 'SELECT') {
-        const before = (cur as HTMLSelectElement).value;
-        tweakSelect(cur as HTMLSelectElement, d);
-        // an adjustment its owner refused (and put back) says nothing here: the owner already said why
-        if ((cur as HTMLSelectElement).value !== before) sayItem(items, idx);
-        return;
-      }
-      if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); sayItem(items, idx); return; }
-      // Os PASSOS ⯇ ⯈ (ADR-0151): esquerda e direita são o próprio ajuste, e quem o aplica ouve o `passo` (e anuncia).
-      if (cur.hasAttribute('data-passos')) { cur.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true })); return; }
-      focusAndSay(items, stepInRing(items.length, idx, d));
-      return;
-    }
-
+    if (k.left || k.right) { sideways(items, idx, k.right ? 1 : -1); return; }
     if (k.up || k.down) { focusAndSay(items, stepInRing(items.length, idx, k.down ? 1 : -1)); return; }
-
-    if (k.yes) {
-      if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, 'wrap'); sayItem(items, idx); return; }
-      if (cur.tagName === 'INPUT') return; // slider não tem "confirmar" — só ajuste
-      if (cur.hasAttribute('data-passos')) return; // os passos também não: «sim» num ajuste não significa nada
-      cur.click();
-    }
+    if (k.yes) confirm(items, idx);
   }
 
   /* ===================== menu de pausa (seleção por classe, não por foco) ===================== */
