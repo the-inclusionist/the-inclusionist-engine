@@ -238,6 +238,47 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
     // a conformidade até ela tentar adivinhar o jogo — que é exatamente o defeito que o ADR-0030 cortou.
     expect(conformanceProblems({ ...plataforma(), roleAt: () => 'free' })).toEqual([]);
   });
+
+  it('⚠️ [Interface] `seguraTeclas` tem de devolver um BOOLEANO — truthy oferece a alternância a toda a gente', () => {
+    /*
+     * 🔴 SEM CASO ATÉ 2026-09-23, e o argumento estava escrito ao lado do código o tempo todo: um valor que não
+     * é booleano é truthy, logo um jogo que não segura nada passaria a OFERECER a alternância — um controle de
+     * acessibilidade que não faz nada, que é o §5 do ADR-0106 em pessoa. A sonda dos 29 comportamentos deste
+     * módulo achou três cegos, e este é o primeiro.
+     */
+    for (const mau of ['sim', 1, 0, null, {}]) {
+      expect(conformanceProblems({ ...plataforma(), seguraTeclas: () => mau }), `aceitou ${String(mau)}`).toHaveLength(1);
+    }
+    expect(conformanceProblems({ ...plataforma(), seguraTeclas: () => false }), 'recusou um booleano legítimo').toEqual([]);
+  });
+});
+
+// -----------------------------------------------------------------------------------------------------------
+/*
+ * 🔴 O GÉMEO DO TECLADO, E ELE NÃO TINHA CASO NENHUM. 📏 Medido em 2026-09-23 pela sonda: das 29 decisões do
+ * `conformanceProblems`, as DUAS do `mapeamentoDoTeclado` estavam presas e as DUAS do `mapeamentoDoPad` eram
+ * cegas — a mesma verificação escrita duas vezes, uma guardada e a outra não. É o que a pergunta do Dev («há duas
+ * funções para resolver o mesmo problema?») existe para achar, e a assimetria da cobertura é como ela se nota.
+ *
+ * 📌 Os casos ficam por SUJEITO e não pela função partilhada: quando as duas verificações passarem a ser uma só,
+ * uma mutação nela ficaria vermelha pelo caso do TECLADO e o pad estaria coberto por acidente. Um portão coberto
+ * por dourado não é portão.
+ */
+describe('mapeamentoDoPad — o mapeamento que seria ignorado em silêncio', () => {
+  it('⚠️ um VALOR em vez de função é acusado — senão a fábrica fica e o autor julga tê-la mudado', () => {
+    expect(conformanceProblems({ ...plataforma(), mapeamentoDoPad: { action1: 3 } }).join(' | ')).toContain('mapeamentoDoPad');
+  });
+
+  it('⚠️ e um retorno que não é objecto nem `null` também — a fusão engoli-lo-ia sem escrever nada', () => {
+    expect(conformanceProblems({ ...plataforma(), mapeamentoDoPad: () => 3 }).join(' | ')).toContain('mapeamentoDoPad');
+    expect(conformanceProblems({ ...plataforma(), mapeamentoDoPad: () => [3] }).join(' | ')).toContain('mapeamentoDoPad');
+  });
+
+  it('[Zero] uma declaração correcta — e uma ausente — não acusam nada', () => {
+    expect(conformanceProblems({ ...plataforma(), mapeamentoDoPad: () => ({ action1: 3 }) })).toEqual([]);
+    expect(conformanceProblems({ ...plataforma(), mapeamentoDoPad: () => null })).toEqual([]);
+    expect(conformanceProblems(plataforma())).toEqual([]);
+  });
 });
 
 // -----------------------------------------------------------------------------------------------------------
