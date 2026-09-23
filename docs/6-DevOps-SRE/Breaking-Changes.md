@@ -2251,6 +2251,71 @@ one of the fourteen, it is an implementation detail of the module that holds it 
 you imported `loadFontKey`/`saveFontKey`, call `resolveFontKey(store)` / `persistFontKey(store, key)`, which are
 the same two lines and are still published.
 
+
+## BX · The audio panel receives the browser in three obligatory ports (ADR-0227, issue #203)
+
+**Who is affected:** anyone calling `initSettingsAudio(ctx)` directly. The engine's own root already answers.
+
+`SettingsAudioCtx` gains **three required members**. The code stops compiling until they are answered, and that
+is the point: 📏 this was the last module of step 7d with `globalReach 3` — `document`,
+`window.speechSynthesis` and `navigator.mediaDevices` — against a ceiling of ZERO, and a module that reaches a
+global cannot be driven without a browser, cannot be mounted twice against two documents (ADR-0142), and cannot
+be TOLD by its host that this device has no voices; it finds out by asking a global that may not exist.
+
+```ts
+interface SettingsAudioCtx {
+  // …everything it already required…
+
+  /** Creates an element KEEPING its type. */
+  newElement: <K extends keyof HTMLElementTagNameMap>(tag: K) => HTMLElementTagNameMap[K];
+
+  /** This device's speech synthesis. No voices is an EMPTY LIST, which is an answer. */
+  speech: {
+    voices: () => readonly SpeechSynthesisVoice[];
+    speakSample: (sample: string, chosen: SpeechSynthesisVoice | null) => void;
+    whenVoicesChange: (again: () => void) => void;
+  };
+
+  /** This device's audio outputs, and what it can do with them. */
+  audioOutputs: {
+    canList: () => boolean;    // can this browser enumerate outputs?
+    canRoute: () => boolean;   // can it route sound to a chosen one? (an AudioContext is needed)
+    list: () => Promise<readonly MediaDeviceInfo[]>;    // what is known, without asking permission
+    detect: () => Promise<readonly MediaDeviceInfo[]>;  // ask permission so the outputs have NAMES
+  };
+}
+```
+
+**The migration, and a host on a normal page can copy it verbatim** — this is what the engine's own root now
+passes, built from the `doc` and `win` its `EngineHost` handed it:
+
+```ts
+newElement: (tag) => doc.createElement(tag),
+speech: {
+  voices: () => { try { return win.speechSynthesis?.getVoices() ?? []; } catch (e) { return []; } },
+  speakSample: (sample, chosen) => { /* new SpeechSynthesisUtterance(sample), u.voice = chosen, ss.speak(u) */ },
+  whenVoicesChange: (again) => { if (win.speechSynthesis) win.speechSynthesis.onvoiceschanged = again; },
+},
+audioOutputs: {
+  canList: () => !!win.navigator?.mediaDevices?.enumerateDevices,
+  canRoute: () => typeof (win.AudioContext ?? win.webkitAudioContext) !== 'undefined',
+  list: async () => (await win.navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audiooutput'),
+  detect: async () => { /* getUserMedia({audio:true}), stop the tracks, then enumerate */ },
+},
+```
+
+🎯 **A host with nothing to offer answers so, and is not silent.** A device without speech synthesis answers
+`voices: () => []`, and the panel already knows what to do with an empty list — it says «this browser cannot»
+in the child's language, a sentence the dictionary has carried since ADR-0185. ⚠️ That is the whole reason the
+ports are obligatory instead of optional: **an empty answer is the host SPEAKING, an absent port is the host
+SILENT**, and a field nobody wrote is indistinguishable from a field answered «no». This repository has paid
+for that confusion twice — a cartridge that seeded no seat without saying so, and four named imports resolving
+to `undefined` with the suite green.
+
+📏 **Measured after the change:** `ui/settings-audio` goes `globalReach 3 → 0` and gets SMALLER doing it (412 →
+395 lines, 73 → 66 branches). The root stays at `globalReach 0`, because what it passes down it received from
+its host — the reach changed place, not owner.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

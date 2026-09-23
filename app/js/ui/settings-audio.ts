@@ -72,6 +72,43 @@ export interface SettingsAudioCtx {
   /** Persistence (platform/storage.ts) — only the TTS engine/voice choice and the per-player audio sink live
    *  here; the mixer categories persist through `setCatGain` (platform/audio.ts already saves them). */
   store: AudioStore;
+  /*
+   * 🔴 O NAVEGADOR CHEGA EM TRÊS PORTAS OBRIGATÓRIAS, e não é alcançado (ADR-0227; Dev, 23/09: «(a)»). Este era
+   * o último módulo do passo 7d com `globalReach` acima de zero — `document`, `window.speechSynthesis` e
+   * `navigator.mediaDevices` —, e o `ui/voice-settings`, que saiu deste mesmo ficheiro, mede zero por RECEBER o
+   * navegador em quatro portas.
+   *
+   * ⚠️ OBRIGATÓRIAS, e a distinção que separa isto de «opcionais que não oferecem»: um hospedeiro sem vozes
+   * responde `voices: () => []` e o painel já sabe dizer «este navegador não consegue» na língua da criança —
+   * isso é o hospedeiro a FALAR. Uma porta ausente é o hospedeiro em SILÊNCIO, e um campo esquecido é
+   * indistinguível de um campo respondido «não» (ADR-0224).
+   */
+  /**
+   * Cria um elemento MANTENDO o tipo — o `<select>` das saídas responde `.value`, a lista de vozes precisa de
+   * `<option>`.
+   *
+   * 📌 Chama-se `newElement` e não `criar` como o do `PanelShellCtx`, e a divergência é deliberada: um nome que
+   * NASCE nasce em inglês (ADR-0219), e o do kit é superfície publicada que sai na fase 7. Os dois convergem
+   * nessa release; até lá este casa com o vizinho que já existe, o `newOption` do `ui/voice-settings`.
+   */
+  newElement: <K extends keyof HTMLElementTagNameMap>(tag: K) => HTMLElementTagNameMap[K];
+  /** A síntese de fala DESTE aparelho. Sem vozes, `voices` devolve uma lista vazia — que é uma resposta. */
+  speech: {
+    voices: () => readonly SpeechSynthesisVoice[];
+    speakSample: (sample: string, chosen: SpeechSynthesisVoice | null) => void;
+    whenVoicesChange: (again: () => void) => void;
+  };
+  /** As saídas de áudio deste aparelho, e o que ele consegue fazer com elas. */
+  audioOutputs: {
+    /** Este navegador sabe ENUMERAR saídas? */
+    canList: () => boolean;
+    /** Este navegador sabe ENCAMINHAR som para uma saída escolhida? (precisa de um AudioContext.) */
+    canRoute: () => boolean;
+    /** As saídas já conhecidas, sem pedir permissão — muitas vêm sem nome, e isso é o desenho do navegador. */
+    list: () => Promise<readonly MediaDeviceInfo[]>;
+    /** Pede permissão para que as saídas tenham NOME, e devolve-as. */
+    detect: () => Promise<readonly MediaDeviceInfo[]>;
+  };
   /** Category catalog (platform/audio-mixer.ts's AUDIO_CATS) — pure data, injected like game.js's own import. */
   audioCats: readonly AudioCatDef[];
   /** Shared helper (game.js): toggles a button's .is-on/aria-pressed. Used by many other panels too — not ours. */
@@ -268,25 +305,10 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    * alcançá-los — é dívida declarada dele —, e o que passa para baixo são portas.
    */
   const voice = createVoiceSettings(ctx, {
-    newOption: () => document.createElement('option'),
-    systemVoices: () => {
-      try { return (window.speechSynthesis && window.speechSynthesis.getVoices()) || []; } catch (e) { return []; }
-    },
-    speakSample: (sample, chosen) => {
-      try {
-        const ss = window.speechSynthesis;
-        if (!ss) return;
-        ss.cancel();
-        const u = new SpeechSynthesisUtterance(sample);
-        u.lang = 'pt-BR';
-        if (chosen) u.voice = chosen;
-        u.rate = 1; u.volume = 1;
-        ss.speak(u);
-      } catch (e) { /* noop */ }
-    },
-    whenVoicesChange: (again) => {
-      try { if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = again; } catch (e) { /* noop */ }
-    },
+    newOption: () => ctx.newElement('option'),
+    systemVoices: () => [...ctx.speech.voices()],
+    speakSample: (sample, chosen) => ctx.speech.speakSample(sample, chosen),
+    whenVoicesChange: (again) => ctx.speech.whenVoicesChange(again),
   });
 
   function reflectMaster(): void {
@@ -450,13 +472,11 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (m && state) m.value = String(navMasterVolume(state, NAV_CATS));
   }
 
-  function hasEnumerateDevices(): boolean {
-    return !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices);
-  }
-  function hasAudioContextCtor(): boolean {
-    const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
-    return typeof (w.AudioContext || w.webkitAudioContext) !== 'undefined';
-  }
+  // 📌 As duas perguntas são do HOSPEDEIRO desde o ADR-0227, e continuam DUAS porque produzem frases
+  // diferentes: «este navegador não consegue» e «não há aparelho nenhum» não são a mesma notícia para quem
+  // procura uns auscultadores (era um dos cinco ramos cegos que a sonda deste painel achou em 23/09).
+  const hasEnumerateDevices = (): boolean => ctx.audioOutputs.canList();
+  const hasAudioContextCtor = (): boolean => ctx.audioOutputs.canRoute();
 
   function renderSinks(devices: readonly MediaDeviceInfo[]): void {
     const el = ctx.$<HTMLElement>('#audio-sinks');
@@ -500,21 +520,16 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   }
 
   async function enumerateSinks(): Promise<void> {
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-        const devs = await navigator.mediaDevices.enumerateDevices();
-        audioDevices = devs.filter((d) => d.kind === 'audiooutput');
-      }
-    } catch (e) { /* sem pedir permissão: só lista as saídas já conhecidas */ }
+    // sem pedir permissão: só as saídas já conhecidas
+    try { audioDevices = [...await ctx.audioOutputs.list()]; } catch (e) { /* a porta recusou; a lista fica como está */ }
     renderSinks(audioDevices);
   }
 
   async function detectAudioDevices(): Promise<void> {
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => s.getTracks().forEach((t) => t.stop())).catch(() => {});
-      const devs = await navigator.mediaDevices.enumerateDevices();
-      audioDevices = devs.filter((d) => d.kind === 'audiooutput');
-    } catch (e) { audioDevices = []; }
+    // ⚠️ A LISTA ESVAZIA-SE quando a detecção falha, e o `enumerateSinks` acima NÃO a esvazia: ali um erro é
+    // «não consegui perguntar» e aqui é «a criança pediu e a resposta é nenhuma». As duas frases que o painel
+    // desenha a seguir são diferentes, e por isso os dois `catch` também são.
+    try { audioDevices = [...await ctx.audioOutputs.detect()]; } catch (e) { audioDevices = []; }
     renderSinks(audioDevices);
   }
 

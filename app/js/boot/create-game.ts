@@ -2068,6 +2068,52 @@ export function createGame(o: CreateGameOptions): Engine {
     hideRowsWithoutSubject();
     audio = initSettingsAudio({
       $, srSay, store,
+      /*
+       * 🔴 O NAVEGADOR DO PAINEL DE ÁUDIO VEM DAQUI (ADR-0227). Ele era o último módulo com `globalReach`
+       * acima de zero, e o que o passo 7d pede não é que ninguém toque no navegador — é que quem toca seja
+       * quem o RECEBEU. Esta raiz recebe `doc` e `win` do hospedeiro (`EngineHost`), logo o alcance muda de
+       * sítio e não de dono: sai de um painel que não sabe em que página está para o único módulo da árvore
+       * que legitimamente sabe.
+       */
+      newElement: (tag) => doc.createElement(tag),
+      speech: {
+        voices: () => { try { return win.speechSynthesis?.getVoices() ?? []; } catch (e) { return []; } },
+        speakSample: (sample, chosen) => {
+          try {
+            const ss = win.speechSynthesis;
+            if (!ss) return;
+            ss.cancel();
+            const u = new SpeechSynthesisUtterance(sample);
+            u.lang = 'pt-BR';
+            if (chosen) u.voice = chosen;
+            u.rate = 1; u.volume = 1;
+            ss.speak(u);
+          } catch (e) { /* o aparelho recusou falar; o painel já diz o que consegue */ }
+        },
+        whenVoicesChange: (again) => {
+          try { if (win.speechSynthesis) win.speechSynthesis.onvoiceschanged = again; } catch (e) { /* noop */ }
+        },
+      },
+      audioOutputs: {
+        canList: () => !!(win.navigator?.mediaDevices && win.navigator.mediaDevices.enumerateDevices),
+        canRoute: () => {
+          const w = win as unknown as { AudioContext?: unknown; webkitAudioContext?: unknown };
+          return typeof (w.AudioContext ?? w.webkitAudioContext) !== 'undefined';
+        },
+        list: async () => {
+          const md = win.navigator?.mediaDevices;
+          if (!md?.enumerateDevices) return [];
+          return (await md.enumerateDevices()).filter((d) => d.kind === 'audiooutput');
+        },
+        detect: async () => {
+          const md = win.navigator?.mediaDevices;
+          if (!md?.enumerateDevices) return [];
+          // 📌 A permissão é o que dá NOME às saídas: sem ela o navegador lista aparelhos anónimos, e uma
+          // escolha entre «Saída 1» e «Saída 2» não é uma escolha. A faixa é solta no mesmo instante.
+          await md.getUserMedia?.({ audio: true }).then((s) => s.getTracks().forEach((t) => t.stop())).catch(() => {});
+          return (await md.enumerateDevices()).filter((d) => d.kind === 'audiooutput');
+        },
+      },
       audioCats: AUDIO_CATS,
       toggleBtn,
       getNumPlayers: () => players().length,

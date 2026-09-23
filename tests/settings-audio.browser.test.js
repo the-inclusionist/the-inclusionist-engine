@@ -11,6 +11,8 @@ import { NAV_CATS, GEN_CATS } from '../app/js/ui/audio-choices.js';
 import { defaultAudioCat } from '../app/js/platform/audio-mixer.js';
 import { menuIndexOn, setMenuIndexOnValue, speechPpm, setSpeechPpmValue } from '../app/js/core/state.js';
 import { SPEECH_RATES } from '../app/js/core/speech-rate.js';
+// A frase é pedida ao dicionário e não copiada: uma cópia aqui passaria a medir-se a si própria.
+import { t as tr } from '../app/js/core/i18n.js';
 
 const AUDIO_HTML = `
   <div id="audio">
@@ -102,6 +104,38 @@ function fullCtx(over = {}) {
     setModoCego: (v) => { blindMode = v; },
     getCaneBlockDiv: () => caneBlockDiv,
     setCaneBlockDiv: (v) => { caneBlockDiv = v; },
+    /*
+     * 🔴 O NAVEGADOR CHEGA POR PORTA desde o ADR-0227, e estas três são obrigatórias. Aqui elas delegam para os
+     * mesmos `stubMediaDevices`/`stubSpeech` que este ficheiro já montava, para que os casos existentes
+     * continuem a medir o que mediam. 📌 Um caso que queira um aparelho SEM navegador nenhum passa as suas
+     * próprias portas por `ctxOver`, que é a propriedade que as portas existem para comprar.
+     */
+    newElement: (tag) => document.createElement(tag),
+    speech: {
+      voices: () => (window.speechSynthesis ? window.speechSynthesis.getVoices() : []),
+      speakSample: (sample, chosen) => {
+        const ss = window.speechSynthesis;
+        if (!ss) return;
+        ss.cancel();
+        const u = new SpeechSynthesisUtterance(sample);
+        u.lang = 'pt-BR';
+        if (chosen) u.voice = chosen;
+        ss.speak(u);
+      },
+      whenVoicesChange: (again) => { if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = again; },
+    },
+    audioOutputs: {
+      canList: () => !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices),
+      canRoute: () => typeof (window.AudioContext || window.webkitAudioContext) !== 'undefined',
+      list: async () => (navigator.mediaDevices?.enumerateDevices
+        ? (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audiooutput')
+        : []),
+      detect: async () => {
+        await navigator.mediaDevices.getUserMedia({ audio: true })
+          .then((s) => s.getTracks().forEach((tr) => tr.stop())).catch(() => {});
+        return (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audiooutput');
+      },
+    },
     ...over.ctxOver,
   };
   return { ctx, said, store, catGainCalls, audioCat, players, tts, getSoundOn: () => soundOn, getVolume: () => volume, getModoCego: () => blindMode, getCaneBlockDiv: () => caneBlockDiv };
@@ -824,5 +858,80 @@ describe('ui/settings-audio — o que a sonda achou cego', () => {
     initSettingsAudio(ctx).renderAudio();
     const m = document.querySelector('#navsound-master');
     expect(m.value, 'o cursor do mestre da navegação não foi posto no valor de agora').toBe('40');
+  });
+});
+
+// -----------------------------------------------------------------------------------------------------------
+/*
+ * 🔴 O NAVEGADOR CHEGA POR PORTA, E ISSO TEM DE SER OBSERVÁVEL (ADR-0227; Dev, 23/09: «(a)»).
+ *
+ * 📏 Este era o último módulo do passo 7d com `globalReach 3` — `document`, `window.speechSynthesis` e
+ * `navigator.mediaDevices` — contra um tecto de ZERO. Os dois casos abaixo são a confirmação do registo, e o
+ * segundo é a propriedade que as portas existem para comprar: se o módulo alcançasse um global, ele REBENTAVA.
+ */
+describe('as três portas do navegador (ADR-0227)', () => {
+  it('⚠️ [Zero] um aparelho SEM vozes recebe a frase, e não um controle vazio', async () => {
+    /*
+     * 🎯 É ESTA A DIFERENÇA ENTRE A OPÇÃO (a) E A OPÇÃO (c) DO REGISTO. Uma lista VAZIA é o hospedeiro a
+     * responder «este aparelho não tem vozes», e o painel sabe o que fazer com isso desde o ADR-0185: diz-lo
+     * na língua da criança. Uma porta AUSENTE seria o hospedeiro calado, e um `<select>` sem nada dentro
+     * parece um menu avariado — que é o §5 do ADR-0106.
+     */
+    const { ctx } = fullCtx({ ctxOver: { speech: { voices: () => [], speakSample: () => {}, whenVoicesChange: () => {} } } });
+    initSettingsAudio(ctx).renderAudio();
+    const sel = document.querySelector('#tts-voice');
+    expect(sel, 'o painel não montou o selector de voz').toBeTruthy();
+    expect(sel.options.length, 'uma lista vazia não pode virar um selector vazio').toBeGreaterThan(0);
+    const dito = [...sel.options].map((o) => o.textContent).join(' | ');
+    expect(dito, 'o painel não DISSE que não há vozes — ficou calado').toContain(tr('audio.noSystemVoices'));
+  });
+
+  it('🔴 [Right] o painel desenha com os globais a LANÇAR — se ele os alcançasse, rebentava', async () => {
+    /*
+     * ⚠️ A FORMA DO CASO É O QUE O TORNA UM PORTÃO. «Não alcança o global» não se observa lendo o módulo; o
+     * que se observa é o módulo a funcionar quando tocar no global é um erro. Os três globais passam a atirar,
+     * as portas respondem sem eles, e o que se exige é o painel INTEIRO desenhado: as categorias, a frase das
+     * saídas e o selector de voz.
+     */
+    const explode = () => { throw new Error('o módulo alcançou um global do navegador'); };
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, get: explode });
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, get: explode });
+
+    /*
+     * 🔴 E AS ESPIAS SÃO O QUE FAZ DISTO UM PORTÃO, medido por mutação: fazer os globais LANÇAR apanha o
+     * `window.speechSynthesis` e o `navigator.mediaDevices`, e não apanha mais nada — porque `document` continua
+     * a existir num teste de navegador, e porque o `catch` do `enumerateSinks` engole a diferença entre «a porta
+     * respondeu vazio» e «o global rebentou». 📌 A propriedade que interessa não é «não rebenta»: é que o painel
+     * PERGUNTE à porta, e uma espia observa exactamente isso.
+     */
+    const asked = { elements: [], list: 0, voices: 0 };
+    const { ctx } = fullCtx({
+      ctxOver: {
+        newElement: (tag) => { asked.elements.push(tag); return document.createElement(tag); },
+        speech: {
+          voices: () => { asked.voices++; return []; },
+          speakSample: () => {},
+          whenVoicesChange: () => {},
+        },
+        audioOutputs: {
+          canList: () => true,
+          canRoute: () => true,
+          list: async () => { asked.list++; return []; },
+          detect: async () => [],
+        },
+      },
+    });
+    const api = initSettingsAudio(ctx);
+    expect(() => api.renderAudio(), 'o painel alcançou um global em vez de usar a porta').not.toThrow();
+    await Promise.resolve();
+
+    expect(document.querySelectorAll('#audio-list .ctrl-row').length, 'as categorias não foram desenhadas').toBeGreaterThan(0);
+    expect(document.querySelector('#tts-voice'), 'o selector de voz não foi montado').toBeTruthy();
+    const sinks = document.querySelector('#audio-sinks');
+    expect(sinks && sinks.textContent, 'a secção das saídas ficou muda').toBeTruthy();
+
+    expect(asked.elements, 'o `<option>` não saiu da porta — saiu do `document` global').toContain('option');
+    expect(asked.voices, 'as vozes não foram pedidas à porta').toBeGreaterThan(0);
+    expect(asked.list, 'as saídas não foram pedidas à porta — foram ao `navigator`').toBeGreaterThan(0);
   });
 });
