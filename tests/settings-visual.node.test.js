@@ -198,6 +198,33 @@ describe('ui/settings-visual — renderVisualPanelHtml (montagem pura do HTML)',
     }
   });
 
+  it('🔴 [Right] a linha da PALETA SEGURA idem — e era a única das três que não tinha caso nenhum', () => {
+    // 📏 Sondado em 2026-09-23, antes da conversão para nós: apagar o rótulo desta linha OU a explicação dela deixava
+    // a suíte inteira verde — 10 de 12 decisões deste painel estavam presas e estas duas não. As palavras passaram
+    // pelo dicionário no dia anterior (ADR-0225) e o caso que as recebe ficou por escrever, o que é a forma mais
+    // silenciosa de um conserto se desfazer: a frase está certa hoje e nada exige que continue.
+    const html = renderVisualPanelHtml('normal', baseSettings());
+    expect(html, 'o rótulo da paleta segura não é o do dicionário').toContain(`<strong>${pt['visual.cbsafe']}</strong>`);
+    expect(html, 'a explicação não está no `.opt-hint` que o rodapé recolhe (CLAUDE.md §4)')
+      .toContain(`<span class="opt-hint">${pt['visual.cbsafe.dica']}</span>`);
+    for (const k of ['visual.cbsafe', 'visual.cbsafe.dica']) {
+      expect(en[k], `a chave ${k} não existe em inglês: a criança numa página inglesa lê português`).toBeTruthy();
+      expect(en[k], `a chave ${k} é a MESMA cadeia nas duas línguas`).not.toBe(pt[k]);
+    }
+  });
+
+  it('🎯 [Cross-check] NENHUMA linha sai com o rótulo ou a explicação vazios — a regra, e não uma linha de cada vez', () => {
+    // 📌 As três afirmações acima nomeiam três linhas, e foi exactamente assim que a paleta segura ficou de fora: uma
+    // quarta linha entra amanhã e ninguém escreve o quarto caso. Esta mede a REGRA do `CLAUDE.md` §4 sobre tudo o que
+    // o construtor emitir, e é ela que a próxima linha herda sem ninguém se lembrar.
+    const html = renderVisualPanelHtml('normal', baseSettings());
+    expect(html, 'uma linha saiu com o rótulo curto vazio').not.toMatch(/<strong>\s*<\/strong>/);
+    expect(html, 'uma linha saiu com a explicação vazia').not.toMatch(/<span class="opt-hint">\s*<\/span>/);
+    // e há mesmo o que medir: um construtor que devolvesse cadeia vazia passaria nas duas afirmações acima
+    expect((html.match(/<strong>/g) ?? []).length, 'o painel deixou de ter linhas com rótulo').toBeGreaterThanOrEqual(3);
+    expect((html.match(/class="opt-hint"/g) ?? []).length, 'o painel deixou de ter explicações').toBeGreaterThanOrEqual(4);
+  });
+
   it('🔴 [Right] o nome de cada papel ATRAVESSA a moldura traduzida, em vez de ser traduzido', () => {
     // 📌 `CLAUDE.md` §A FRONTEIRA, reafirmado pelo Dev em 22/09: a moldura mora na chave, o conteúdo atravessa por
     // `{param}`. «Cor de» é da engine; «perigo (lava)» é a palavra do jogo que monta este painel.
