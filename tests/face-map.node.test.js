@@ -149,6 +149,50 @@ describe('the crossed look', () => {
     expect(run(make(), [[0, 0.8, 0, { headLeft: 0.5 }], [300, 0.8, 0, { headLeft: 0.5 }], [400, 0, 0], [600, 0, 0.8], [1000, 0, 0.8]])
       .every((x) => x.lookLeftThenRight === 0)).toBe(true);
   });
+
+  // 🔴 Probed 2026-09-23 before the cut: ten of twenty-five decisions of this reader could be undone with the suite
+  // green. The cases below are the eight that are rules; the other two are one rule written twice (below).
+  const rightButton = (frames) => run(make(), frames).map((x) => x.lookLeftThenRight);
+  const crossing = [[0, 0.8, 0], [300, 0.8, 0], [400, 0, 0]]; // a first side to the left, peaked 0.8, left at 400 ms
+
+  it('a head turned to the RIGHT cancels too, and a turn exactly at the mark counts as turned', () => {
+    expect(rightButton([[0, 0.8, 0, { headRight: 0.5 }], [300, 0.8, 0, { headRight: 0.5 }], [400, 0, 0], [600, 0, 0.8], [1000, 0, 0.8]]))
+      .toEqual([0, 0, 0, 0, 0]);
+    expect(rightButton([[0, 0.8, 0, { headLeft: 0.3 }], [300, 0.8, 0, { headLeft: 0.3 }], [400, 0, 0], [600, 0, 0.8], [1000, 0, 0.8]]))
+      .toEqual([0, 0, 0, 0, 0]);
+  });
+
+  it('the first side counts by its PEAK: a look that reached 0.8 and eased to 0.5 before leaving still starts a crossing', () => {
+    expect(rightButton([[0, 0.8, 0], [200, 0.5, 0], [400, 0, 0], [600, 0, 0.8], [1000, 0, 0.8]]).at(-1)).toBe(1);
+  });
+
+  it('a second, weaker visit to the first side does not inherit the peak of the one before', () => {
+    // left at 0.8 (leaves at 400), then left again only to 0.5 (leaves at 1900): only that fresh exit is inside the window
+    expect(rightButton([...crossing, [1500, 0.5, 0], [1800, 0.5, 0], [1900, 0, 0], [2100, 0, 0.8], [2500, 0, 0.8]]))
+      .toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  it('a head that turns BETWEEN the two sides erases the first one', () => {
+    expect(rightButton([...crossing, [500, 0, 0, { headLeft: 0.5 }], [600, 0, 0.8], [1000, 0, 0.8]]).at(-1)).toBe(0);
+  });
+
+  it('a head that turns in the middle of the second side cancels the press, and it does not come back', () => {
+    expect(rightButton([...crossing, [600, 0, 0.8], [700, 0, 0.8, { headRight: 0.5 }], [1000, 0, 0.8]]).slice(3))
+      .toEqual([1, 0, 0]);
+  });
+
+  it('the window is inclusive: the second side exactly 800 ms after the first left still crosses', () => {
+    expect(rightButton([...crossing, [1200, 0, 0.8], [1500, 0, 0.8]]).at(-1)).toBe(1);
+  });
+
+  it('the hold is inclusive: at exactly 300 ms it is held, so it stays down while the look eases to the mark', () => {
+    expect(rightButton([...crossing, [600, 0, 0.8], [900, 0, 0.8], [1000, 0, 0.4]]).slice(3)).toEqual([1, 1, 1]);
+  });
+
+  it('after a release, looking back to the same side is no press — a new press needs a new crossing', () => {
+    expect(rightButton([...crossing, [600, 0, 0.8], [1000, 0, 0.8], [1100, 0, 0], [1300, 0, 0.8], [1700, 0, 0.8]]).slice(5))
+      .toEqual([0, 0, 0]);
+  });
 });
 
 describe('the whole reader', () => {
