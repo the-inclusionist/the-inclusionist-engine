@@ -95,6 +95,59 @@ export function createGazeCycle(options: GazeCycleOptions = {}): GazeCycle {
   const mayPrepare = (): boolean => since - commandedAt >= o.deadMs;
   const clear = (now: number): void => { zone = null; since = 0; index = -1; frozenSince = null; armed = false; preparation = null; commandedAt = now; };
 
+  /** A frame with no reading: nothing moves, and the moment it began is kept, to give the time back. Returns the closed time. */
+  const holdFrozen = (now: number): number => {
+    frozenSince ??= now;
+    return closedSince === null ? 0 : frozenSince - closedSince;
+  };
+
+  /** The reading is back: the time spent frozen is given back to the zone and to the closed eyes. */
+  const resumeFromFreeze = (now: number): void => {
+    if (frozenSince === null) return;
+    const paused = now - frozenSince;
+    since += paused;
+    if (closedSince !== null) closedSince += paused;
+    frozenSince = null;
+  };
+
+  /** Both eyes closed: the cycle waits, and after `closeMs` presses START — once per closing. Returns the closed time. */
+  const whileClosed = (now: number, command: (a: Action) => void): number => {
+    closedSince ??= now;
+    if (!startGiven && now - closedSince >= o.closeMs) { startGiven = true; command('start'); clear(now); }
+    return now - closedSince;
+  };
+
+  /** The eyes open again: the time they were closed is given back to the zone, and START may come again. */
+  const reopen = (now: number): void => {
+    if (closedSince === null) return;
+    since += now - closedSince;
+    closedSince = null;
+    startGiven = false;
+  };
+
+  /** Leaving a zone: an armed visit commands what its preview showed and spends the preparation; an unarmed one prepares. */
+  const leave = (now: number, command: (a: Action) => void): void => {
+    if (!zone) return;
+    if (!armed) { if (mayPrepare()) preparation = { zone, at: now }; return; }
+    if (index < 0) return; // left before the preview showed anything
+    const item = items(zone)[index]!;
+    if (item !== CANCEL) command(item);
+    preparation = null;
+  };
+
+  /** Entering a zone: it arms from its opposite, prepared inside the window — or at once when that rule is off. */
+  const enter = (next: GazeZone | null, now: number): void => {
+    zone = next; since = now; index = -1;
+    armed = !next || !o.requireOpposite || (!!preparation && preparation.zone === OPPOSITE[next] && now - preparation.at <= o.oppositeMs);
+  };
+
+  /** While an armed gaze stays, the preview walks: −1 while the look settles, then one item every `stepMs`. */
+  const walk = (now: number): void => {
+    if (!zone || !armed) return;
+    const steps = Math.floor((now - since - o.entryMs) / o.stepMs), n = items(zone).length;
+    index = o.repeat ? steps % n : Math.min(n - 1, steps);
+  };
+
   return (now, { zone: next = null, eyesClosed = false, frozen = false, cancel = false }) => {
     let commanded: Action | null = null;
     const command = (action: Action): void => { commanded = action; pressed = action; pressedAt = now; commandedAt = now; };
@@ -104,35 +157,12 @@ export function createGazeCycle(options: GazeCycleOptions = {}): GazeCycle {
     };
 
     if (cancel) { clear(now); return out(0); }
-    if (frozen) {
-      frozenSince ??= now;
-      return out(closedSince === null ? 0 : frozenSince - closedSince);
-    }
-    if (frozenSince !== null) {
-      const paused = now - frozenSince;
-      since += paused; if (closedSince !== null) closedSince += paused;
-      frozenSince = null;
-    }
-    if (eyesClosed) {
-      closedSince ??= now;
-      if (!startGiven && now - closedSince >= o.closeMs) { startGiven = true; command('start'); clear(now); }
-      return out(now - closedSince);
-    }
-    if (closedSince !== null) { since += now - closedSince; closedSince = null; startGiven = false; }
-
-    if (next !== zone) {
-      if (zone) {
-        if (armed) {
-          if (index >= 0) { const item = items(zone)[index]!; if (item !== CANCEL) command(item); preparation = null; }
-        } else if (mayPrepare()) preparation = { zone, at: now };
-      }
-      zone = next; since = now; index = -1;
-      armed = !next || !o.requireOpposite || (!!preparation && preparation.zone === OPPOSITE[next] && now - preparation.at <= o.oppositeMs);
-    }
-    if (zone && armed) {
-      const steps = Math.floor((now - since - o.entryMs) / o.stepMs), n = items(zone).length; // −1 while the look settles
-      index = o.repeat ? steps % n : Math.min(n - 1, steps);
-    }
+    if (frozen) return out(holdFrozen(now));
+    resumeFromFreeze(now);
+    if (eyesClosed) return out(whileClosed(now, command));
+    reopen(now);
+    if (next !== zone) { leave(now, command); enter(next, now); }
+    walk(now);
     return out(0);
   };
 }
