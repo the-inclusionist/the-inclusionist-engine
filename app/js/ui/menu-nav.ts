@@ -323,27 +323,27 @@ export interface MenuNavApi {
 export function controlParts(el: HTMLElement): { rotulo: string; estado: string } {
   const forte = el.closest('.ctrl-row')?.querySelector('strong')?.textContent?.trim() || '';
   const nome = accessibleLabel(el);
-  const com = (rotulo: string, papel: string): string => `${rotulo}, ${t(papel)}`;
+  const withIt = (rotulo: string, papel: string): string => `${rotulo}, ${t(papel)}`;
   if (el.hasAttribute('data-passos')) {
-    return { rotulo: com(el.getAttribute('aria-label') || forte, 'sr.papel.passos'), estado: el.getAttribute('aria-valuetext') ?? '' };
+    return { rotulo: withIt(el.getAttribute('aria-label') || forte, 'sr.papel.passos'), estado: el.getAttribute('aria-valuetext') ?? '' };
   }
   if (el.tagName === 'SELECT') {
     const s = el as HTMLSelectElement;
-    return { rotulo: com(forte || nome, 'sr.papel.lista'), estado: s.selectedOptions?.[0]?.textContent?.trim() ?? '' };
+    return { rotulo: withIt(forte || nome, 'sr.papel.lista'), estado: s.selectedOptions?.[0]?.textContent?.trim() ?? '' };
   }
   if (el.tagName === 'INPUT') {
     const r = el as HTMLInputElement;
     const min = +r.min || 0, max = +r.max || 100;
     const pct = max > min ? Math.round(((+r.value - min) / (max - min)) * 100) : 0;
-    return { rotulo: com(el.getAttribute('aria-label') || forte, 'sr.papel.cursor'), estado: `${pct}%` };
+    return { rotulo: withIt(el.getAttribute('aria-label') || forte, 'sr.papel.cursor'), estado: `${pct}%` };
   }
   if (el.hasAttribute('aria-pressed')) {
-    return { rotulo: com(forte || nome, 'sr.papel.interruptor'), estado: t(el.getAttribute('aria-pressed') === 'true' ? 'state.on' : 'state.off') };
+    return { rotulo: withIt(forte || nome, 'sr.papel.interruptor'), estado: t(el.getAttribute('aria-pressed') === 'true' ? 'state.on' : 'state.off') };
   }
   if (el.getAttribute('role') === 'radio') {
-    return { rotulo: com(forte || nome, 'sr.papel.opcao'), estado: el.getAttribute('aria-checked') === 'true' ? t('sr.estado.selecionado') : '' };
+    return { rotulo: withIt(forte || nome, 'sr.papel.opcao'), estado: el.getAttribute('aria-checked') === 'true' ? t('sr.estado.selecionado') : '' };
   }
-  return { rotulo: com(nome, 'sr.papel.botao'), estado: '' };
+  return { rotulo: withIt(nome, 'sr.papel.botao'), estado: '' };
 }
 
 /** Onde os itens moram: o card do diálogo (`.overlay__card`) ou o card da pausa (`.pause-card`). */
@@ -393,23 +393,23 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
    * falado só existia no cartão de pausa. O foco do navegador move-se, mas a narração da engine (a de quem joga no
    * modo cego) não ouve foco; ouve isto.
    */
-  function dizerItem(items: readonly HTMLElement[], n: number): void {
+  function sayItem(items: readonly HTMLElement[], n: number): void {
     const el = items[n];
     if (!el) return;
     const { rotulo, estado } = controlParts(el);
     ctx.srSay(announceItem({ rotulo, estado, posicao: n + 1, total: items.length }, ctx.comIndice()));
   }
 
-  function focarEDizer(items: readonly HTMLElement[], n: number): void {
+  function focusAndSay(items: readonly HTMLElement[], n: number): void {
     items[n]?.focus();
-    dizerItem(items, n);
+    sayItem(items, n);
   }
 
   function navDialog(menu: HTMLElement, k: NavKeys): void {
     const items = menuItems(menu);
     if (!items.length) return;
     let idx = items.indexOf(ctx.getActiveElement() as HTMLElement);
-    if (idx < 0) { idx = 0; focarEDizer(items, 0); } // foco fora do diálogo (ou no card): entra pelo primeiro
+    if (idx < 0) { idx = 0; focusAndSay(items, 0); } // foco fora do diálogo (ou no card): entra pelo primeiro
     const cur = items[idx];
 
     if (k.no) { dialogBack(menu); return; }
@@ -418,23 +418,23 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       const d = k.right ? 1 : -1;
       // o VALOR novo é dito: quem ajusta de ouvido não tem outra forma de saber onde parou
       if (cur.tagName === 'SELECT') {
-        const antes = (cur as HTMLSelectElement).value;
+        const before = (cur as HTMLSelectElement).value;
         tweakSelect(cur as HTMLSelectElement, d);
         // an adjustment its owner refused (and put back) says nothing here: the owner already said why
-        if ((cur as HTMLSelectElement).value !== antes) dizerItem(items, idx);
+        if ((cur as HTMLSelectElement).value !== before) sayItem(items, idx);
         return;
       }
-      if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); dizerItem(items, idx); return; }
+      if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); sayItem(items, idx); return; }
       // Os PASSOS ⯇ ⯈ (ADR-0151): esquerda e direita são o próprio ajuste, e quem o aplica ouve o `passo` (e anuncia).
       if (cur.hasAttribute('data-passos')) { cur.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true })); return; }
-      focarEDizer(items, stepInRing(items.length, idx, d));
+      focusAndSay(items, stepInRing(items.length, idx, d));
       return;
     }
 
-    if (k.up || k.down) { focarEDizer(items, stepInRing(items.length, idx, k.down ? 1 : -1)); return; }
+    if (k.up || k.down) { focusAndSay(items, stepInRing(items.length, idx, k.down ? 1 : -1)); return; }
 
     if (k.yes) {
-      if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, 'wrap'); dizerItem(items, idx); return; }
+      if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, 'wrap'); sayItem(items, idx); return; }
       if (cur.tagName === 'INPUT') return; // slider não tem "confirmar" — só ajuste
       if (cur.hasAttribute('data-passos')) return; // os passos também não: «sim» num ajuste não significa nada
       cur.click();
@@ -466,8 +466,8 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       // «é a lista de opções?» — é «NÃO é a raiz?»: de qualquer submenu, «não» sobe UM nível (ADR-0044 item
       // 5). Escrita como estava, a lista nova do ADR-0146 caía no ramo de baixo e o «não» DESPAUSAVA o jogo a
       // partir dela, que é sair do jogo quando a criança pediu para voltar.
-      const aberto = menu.querySelector<HTMLElement>('.pause-menu:not([hidden])');
-      if (aberto && aberto.dataset.sub && aberto.dataset.sub !== 'raiz') { showPauseOptions(menu, 'raiz'); return; }
+      const open = menu.querySelector<HTMLElement>('.pause-menu:not([hidden])');
+      if (open && open.dataset.sub && open.dataset.sub !== 'raiz') { showPauseOptions(menu, 'raiz'); return; }
       ctx.setPhase('playing'); return; // "não" na raiz → volta ao jogo (retoma todos)
     }
 
@@ -483,10 +483,10 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // UMA LISTA, um anel. A barra de ícones saiu do cartão no item 7 do ADR-0044, e com ela saíram as quatro
     // regras de fronteira que ninguém conseguia descobrir sem esbarrar.
     const n = stepInPause(items.length, items.indexOf(cur), k);
-    selecionarEDizerNaPausa(menu, items, n);
+    selectAndSayInPause(menu, items, n);
   }
 
-  function selecionarEDizerNaPausa(menu: HTMLElement, items: readonly HTMLElement[], n: number): void {
+  function selectAndSayInPause(menu: HTMLElement, items: readonly HTMLElement[], n: number): void {
     pauseSetSel(menu, items[n]);
     // E O ITEM NOVO É FALADO. Este menu não usa foco do navegador — seleciona por classe, porque é desenhado
     // dentro da tela do jogador —, então nada dispara anúncio sozinho: nem foco, nem `aria-activedescendant`,
@@ -527,11 +527,11 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // No TECLADO a saída é Escape (o `no` do projeto). O START do controle é a segunda saída e entra por
     // `input/gamepad`; aqui ele não tem par próprio, porque Enter já é "confirmar" e roubá-lo tiraria da
     // criança o único jeito de ATIVAR o ícone sob o cursor.
-    const donoTecla = ctx.whichPlayer(e.code);
-    const pTecla = donoTecla < 0 ? 0 : donoTecla;
-    if (ctx.naBarraDe(pTecla)) {
-      const kb = menuKeyIntent(e.code, donoTecla >= 0 ? ctx.actionOf(e.code, pTecla) : null);
-      if (hasIntent(kb)) { consumir(e); ctx.navBar(pTecla, kb); }
+    const keyOwner = ctx.whichPlayer(e.code);
+    const pKey = keyOwner < 0 ? 0 : keyOwner;
+    if (ctx.naBarraDe(pKey)) {
+      const kb = menuKeyIntent(e.code, keyOwner >= 0 ? ctx.actionOf(e.code, pKey) : null);
+      if (hasIntent(kb)) { consumir(e); ctx.navBar(pKey, kb); }
       return; // na barra, tecla de menu é da barra — com ou sem intenção, não desce para o personagem
     }
 
@@ -571,12 +571,12 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
    * 📌 A short press is untouched; after a hold, the ONE click the browser fires on release is swallowed, in capture,
    * before the item's own listener. Threshold: the iOS long-press default, 0.5 s.
    */
-  const SEGURAR_MS = 500;
-  let segurando: { id: number; timer: ReturnType<typeof setTimeout> } | null = null;
+  const HOLD_MS = 500;
+  let holding: { id: number; timer: ReturnType<typeof setTimeout> } | null = null;
   let engolirClique: HTMLElement | null = null;
 
   /** The open menu and the item under `alvo`, when `alvo` is inside one: the top dialog first, else a pause card. */
-  function itemSob(alvo: EventTarget | null): { menu: HTMLElement; items: HTMLElement[]; n: number; pausa: boolean } | null {
+  function itemUnder(alvo: EventTarget | null): { menu: HTMLElement; items: HTMLElement[]; n: number; pausa: boolean } | null {
     const no = alvo as HTMLElement | null;
     if (!no || typeof no.closest !== 'function') return null;
     const dlg = sharedDialogOpen();
@@ -592,30 +592,30 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     return n >= 0 ? { menu, items, n, pausa: true } : null;
   }
 
-  function soltar(): void {
-    if (segurando) clearTimeout(segurando.timer);
-    segurando = null;
+  function release(): void {
+    if (holding) clearTimeout(holding.timer);
+    holding = null;
   }
 
-  function aoPremir(e: PointerEvent): void {
-    soltar();
+  function onPress(e: PointerEvent): void {
+    release();
     engolirClique = null;
-    const sob = itemSob(e.target);
+    const sob = itemUnder(e.target);
     if (!sob) return;
     const id = e.pointerId;
-    segurando = {
+    holding = {
       id,
       timer: setTimeout(() => {
-        segurando = null;
+        holding = null;
         engolirClique = sob.items[sob.n] ?? null;
-        if (sob.pausa) selecionarEDizerNaPausa(sob.menu, sob.items, sob.n);
-        else focarEDizer(sob.items, sob.n);
-      }, SEGURAR_MS),
+        if (sob.pausa) selectAndSayInPause(sob.menu, sob.items, sob.n);
+        else focusAndSay(sob.items, sob.n);
+      }, HOLD_MS),
     };
   }
 
-  function aoSoltar(e: PointerEvent): void {
-    if (segurando && segurando.id === e.pointerId) soltar();
+  function onRelease(e: PointerEvent): void {
+    if (holding && holding.id === e.pointerId) release();
   }
 
   function aoClicar(e: MouseEvent): void {
@@ -626,9 +626,9 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
 
   function attach(): void {
     ctx.win.addEventListener('keydown', menuNavKey, true);
-    ctx.win.addEventListener('pointerdown', aoPremir, true);
-    ctx.win.addEventListener('pointerup', aoSoltar, true);
-    ctx.win.addEventListener('pointercancel', aoSoltar, true);
+    ctx.win.addEventListener('pointerdown', onPress, true);
+    ctx.win.addEventListener('pointerup', onRelease, true);
+    ctx.win.addEventListener('pointercancel', onRelease, true);
     ctx.win.addEventListener('click', aoClicar, true);
   }
 

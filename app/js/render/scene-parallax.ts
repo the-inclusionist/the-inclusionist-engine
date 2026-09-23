@@ -67,9 +67,9 @@ export function skyWidth(T: SceneryTheme): number { return T.sol ? LOGICAL_W : 6
  * desenho precisa de um canvas, esta conta não, e é ela que decide se o vermelho do pôr do sol vai parar na
  * linha do horizonte ou atrás dos morros.
  */
-export function skyStops(cores: readonly string[], h: number = LOGICAL_H): { y: number; cor: string }[] {
-  const n = cores.length;
-  return cores.map((cor, i) => ({ y: n === 1 ? 0 : (h * i) / (n - 1), cor }));
+export function skyStops(colours: readonly string[], h: number = LOGICAL_H): { y: number; cor: string }[] {
+  const n = colours.length;
+  return colours.map((cor, i) => ({ y: n === 1 ? 0 : (h * i) / (n - 1), cor }));
 }
 
 /**
@@ -97,16 +97,16 @@ export function paintSun(c: CanvasRenderingContext2D, w: number, h: number, sol:
   for (let i = 0; i < 9; i++) {
     // Larguras alternadas (largo/estreito): raios de mesma espessura em leque regular leem como uma roda de
     // bicicleta. A irregularidade é o que os faz parecer luz atravessando nuvem.
-    const meio = -Math.PI / 2 + (i - 4) * (Math.PI * 70 / 180) / 8, meia = (i % 2 ? 0.9 : 2.2) * Math.PI / 180;
+    const middle = -Math.PI / 2 + (i - 4) * (Math.PI * 70 / 180) / 8, half = (i % 2 ? 0.9 : 2.2) * Math.PI / 180;
     c.beginPath(); c.moveTo(sx, sy);
-    c.lineTo(sx + Math.cos(meio - meia) * reach, sy + Math.sin(meio - meia) * reach);
-    c.lineTo(sx + Math.cos(meio + meia) * reach, sy + Math.sin(meio + meia) * reach);
+    c.lineTo(sx + Math.cos(middle - half) * reach, sy + Math.sin(middle - half) * reach);
+    c.lineTo(sx + Math.cos(middle + half) * reach, sy + Math.sin(middle + half) * reach);
     c.closePath(); c.fill();
   }
   // Brilho em volta do disco e o disco: é o disco que ancora os raios: sem ele o leque não tem de onde sair.
-  const brilho = c.createRadialGradient(sx, sy, 0, sx, sy, 26);
-  brilho.addColorStop(0, sol.cor); brilho.addColorStop(1, rgba0(sol.cor));
-  c.globalAlpha = 0.55; c.fillStyle = brilho; c.beginPath(); c.arc(sx, sy, 26, 0, Math.PI * 2); c.fill();
+  const glow = c.createRadialGradient(sx, sy, 0, sx, sy, 26);
+  glow.addColorStop(0, sol.cor); glow.addColorStop(1, rgba0(sol.cor));
+  c.globalAlpha = 0.55; c.fillStyle = glow; c.beginPath(); c.arc(sx, sy, 26, 0, Math.PI * 2); c.fill();
   c.globalAlpha = 1; c.fillStyle = sol.cor; c.beginPath(); c.arc(sx, sy, 8, 0, Math.PI * 2); c.fill();
   c.restore();
 }
@@ -140,31 +140,31 @@ export function hash01(n: number): number {
 }
 
 /** Desenha UM elemento de silhueta. `topo` é a linha do morro naquele x; tudo cresce para cima a partir dela. */
-type Elemento = (c: CanvasRenderingContext2D, x: number, topo: number, alt: number) => void;
+type Element = (c: CanvasRenderingContext2D, x: number, topo: number, alt: number) => void;
 
 /** Conífera: tronco fino e três saias triangulares. Lê como "mata fechada" mesmo com 6 px de largura. */
-const conifera: Elemento = (c, x, topo, alt) => {
+const conifer: Element = (c, x, topo, alt) => {
   c.fillRect(x - 1, topo - alt * 0.25, 2, alt * 0.25);
   for (let i = 0; i < 3; i++) {
-    const y = topo - alt * (0.25 + i * 0.25), meia = (alt * 0.30) * (1 - i * 0.22);
-    c.beginPath(); c.moveTo(x, y - alt * 0.30); c.lineTo(x + meia, y); c.lineTo(x - meia, y); c.closePath(); c.fill();
+    const y = topo - alt * (0.25 + i * 0.25), half = (alt * 0.30) * (1 - i * 0.22);
+    c.beginPath(); c.moveTo(x, y - alt * 0.30); c.lineTo(x + half, y); c.lineTo(x - half, y); c.closePath(); c.fill();
   }
 };
 
 /** Árvore redonda: tronco curto e copa em bloco arredondado — o campo, não a mata. */
-const frondosa: Elemento = (c, x, topo, alt) => {
+const broadleaf: Element = (c, x, topo, alt) => {
   c.fillRect(x - 1, topo - alt * 0.45, 2, alt * 0.45);
   c.beginPath(); c.arc(x, topo - alt * 0.68, alt * 0.34, 0, Math.PI * 2); c.fill();
 };
 
 /** Poste de cerca com duas travessas — dá escala humana ao campo, que é o que o diferencia da mata. */
-const cerca: Elemento = (c, x, topo, alt) => {
+const fence: Element = (c, x, topo, alt) => {
   c.fillRect(x - 1, topo - alt, 2, alt);
   c.fillRect(x - 1, topo - alt * 0.75, 14, 1);
   c.fillRect(x - 1, topo - alt * 0.45, 14, 1);
 };
 
-interface Silhueta { el: Elemento; passo: number; alt: [number, number] }
+interface Silhouette { el: Element; passo: number; alt: [number, number] }
 
 /**
  * O MESMO CAMPO EM TRÊS HORAS DO DIA. `campo`, `cemiterio` e `espaco` são "Dia no Campo", "Amanhecer no Campo"
@@ -182,19 +182,19 @@ interface Silhueta { el: Elemento; passo: number; alt: [number, number] }
  * mais juntos — é a que passa mais rápido, e esse contraste de densidade é o que dá profundidade sem custar
  * uma terceira camada.
  */
-const CAMPO = { far: { el: frondosa, passo: 96, alt: [10, 16] as [number, number] },
-                near: { el: cerca, passo: 46, alt: [7, 9] as [number, number] } };
+const FIELD = { far: { el: broadleaf, passo: 96, alt: [10, 16] as [number, number] },
+                near: { el: fence, passo: 46, alt: [7, 9] as [number, number] } };
 
-export const SILHOUETTES: Readonly<Record<string, { far?: Silhueta; near?: Silhueta }>> = {
-  campo: CAMPO,      // Dia no Campo
-  cemiterio: CAMPO,  // Amanhecer no Campo — mesmo campo, outra luz
-  espaco: CAMPO,     // Noite no Campo — idem
+export const SILHOUETTES: Readonly<Record<string, { far?: Silhouette; near?: Silhouette }>> = {
+  campo: FIELD,      // Dia no Campo
+  cemiterio: FIELD,  // Amanhecer no Campo — mesmo campo, outra luz
+  espaco: FIELD,     // Noite no Campo — idem
   // AJUSTADO DEPOIS DE VER NA TELA. Os números antigos (far 14–22, near 22–34) faziam as DUAS faixas
   // terminarem no mesmo y: com `baseY` 12 px mais baixo na da frente, as duas silhuetas encostavam no mesmo
   // topo e liam como UMA. A conta confirmou o que a imagem mostrou — topo 72 nas duas.
   // Agora a de trás é uma MATA FECHADA distante (baixa e densa) e a da frente são TRONCOS individuais
   // (altos e esparsos). A profundidade vem do contraste entre parede e indivíduo, não de 12 px de deslocamento.
-  floresta:  { far: { el: conifera, passo: 18, alt: [8, 13] }, near: { el: conifera, passo: 46, alt: [30, 46] } },
+  floresta:  { far: { el: conifer, passo: 18, alt: [8, 13] }, near: { el: conifer, passo: 46, alt: [30, 46] } },
 };
 
 /**
@@ -221,7 +221,7 @@ export const SILHOUETTES: Readonly<Record<string, { far?: Silhueta; near?: Silhu
 // sem olhar para ela.
 
 /** Um estilo de topo. Desenha ACIMA de `topo`, na cor que já está em `c.fillStyle`. */
-type Telhado = (c: CanvasRenderingContext2D, x: number, larg: number, topo: number, r: (n: number) => number) => void;
+type Roof = (c: CanvasRenderingContext2D, x: number, larg: number, topo: number, r: (n: number) => number) => void;
 
 /**
  * O vocabulário de topos, como TABELA — mesma forma do `SILHOUETTES` dos morros.
@@ -229,7 +229,7 @@ type Telhado = (c: CanvasRenderingContext2D, x: number, larg: number, topo: numb
  * A distribuição importa mais que os desenhos: `reto` precisa ser o comum, senão a linha do horizonte vira
  * uma serra de brinquedo. Ver `TELHADO_POR_SORTE` abaixo.
  */
-const TELHADOS: Record<string, Telhado> = {
+const ROOFS: Record<string, Roof> = {
   /** Laje. O caso comum, e é ele que faz os outros lerem como evento. */
   reto: () => { /* nada acima da laje */ },
 
@@ -244,8 +244,8 @@ const TELHADOS: Record<string, Telhado> = {
   /** Escada: dois a quatro degraus estreitando para cima — o topo piramidal do art déco. */
   escada: (c, x, larg, topo, r) => {
     let ins = 0, y = topo;
-    const degraus = 2 + Math.floor(r(3) * 3), passo = Math.max(1, Math.round(larg * 0.13));
-    for (let i = 0; i < degraus; i++) {
+    const steps = 2 + Math.floor(r(3) * 3), passo = Math.max(1, Math.round(larg * 0.13));
+    for (let i = 0; i < steps; i++) {
       ins += passo;
       const lg = larg - ins * 2;
       if (lg < 2) break;
@@ -284,11 +284,11 @@ const TELHADOS: Record<string, Telhado> = {
 
   /** Cúpula: fatias estreitando, arredondando a laje. */
   domo: (c, x, larg, topo, r) => {
-    const raio = Math.min(5, Math.floor(larg / 3));
+    const radius = Math.min(5, Math.floor(larg / 3));
     void r;
-    if (raio < 2) return;
-    for (let i = 0; i < raio; i++) {
-      c.fillRect(x + Math.floor(larg / 2) - (raio - i), topo - 1 - i, (raio - i) * 2, 1);
+    if (radius < 2) return;
+    for (let i = 0; i < radius; i++) {
+      c.fillRect(x + Math.floor(larg / 2) - (radius - i), topo - 1 - i, (radius - i) * 2, 1);
     }
   },
 };
@@ -298,13 +298,13 @@ const TELHADOS: Record<string, Telhado> = {
  * `mastro` e `domo` são raros de propósito — são os que a vista procura, e um a cada dez prédios já lê como
  * "aquela torre".
  */
-const TELHADO_POR_SORTE: readonly (readonly [number, string])[] = [
+const ROOF_BY_LUCK: readonly (readonly [number, string])[] = [
   [0.44, 'reto'], [0.62, 'recuo'], [0.74, 'escada'], [0.84, 'caixa'], [0.93, 'antenas'], [0.97, 'mastro'], [1.01, 'domo'],
 ];
 
-function telhadoDe(sorte: number): Telhado {
-  for (const [ate, nome] of TELHADO_POR_SORTE) if (sorte < ate) return TELHADOS[nome]!;
-  return TELHADOS.reto!;
+function roofOf(luck: number): Roof {
+  for (const [ate, nome] of ROOF_BY_LUCK) if (luck < ate) return ROOFS[nome]!;
+  return ROOFS.reto!;
 }
 
 /**
@@ -319,10 +319,10 @@ function telhadoDe(sorte: number): Telhado {
  *     parte dos prédios. Espalhar luz por toda a fachada com probabilidade baixa dá ruído; concentrá-la em
  *     painéis dá prédio. A 2a versão fez o primeiro e virou parede de luz.
  */
-function desenharBanda(
+function drawBand(
   c: CanvasRenderingContext2D, w: number, h: number,
-  cor: string, topos: readonly [number, number], largs: readonly [number, number],
-  base: number, semente: number, luz: readonly string[] | undefined, aceso: number,
+  cor: string, tops: readonly [number, number], widths: readonly [number, number],
+  base: number, seed: number, luz: readonly string[] | undefined, aceso: number,
 ): void {
   // A LINHA SÓLIDA, de uma vez só e ANTES dos prédios: abaixo dela o original não tem vão nenhum — é onde a
   // cidade some na bruma do chão. Desenhá-la por prédio, como a versão anterior fazia, tapava os vãos e
@@ -330,24 +330,24 @@ function desenharBanda(
   c.fillStyle = cor;
   c.fillRect(0, base, w, h - base);
 
-  const [topoAlto, topoBaixo] = topos;
-  const [largMin, largMax] = largs;
+  const [topoAlto, topoBaixo] = tops;
+  const [largMin, largMax] = widths;
   let x = 0;
   while (x < w) {
-    const r = (k: number): number => hash01(x * 131 + k * 7919 + semente);
-    const marcante = r(35) < 0.09;
+    const r = (k: number): number => hash01(x * 131 + k * 7919 + seed);
+    const striking = r(35) < 0.09;
     const larg = Math.round(largMin + r(0) * (largMax - largMin));
     const largura = x + larg > w - largMin ? w - x : larg;
-    const topo = marcante
+    const topo = striking
       ? Math.max(6, Math.round(topoAlto - 8 - r(36) * 26))
       : Math.round(topoAlto + r(30) * (topoBaixo - topoAlto));
 
     c.fillStyle = cor;
     c.fillRect(x, topo, largura, h - topo);
     // A torre marcante nunca recebe laje reta: ela existe para ser o evento da silhueta.
-    telhadoDe(marcante ? 0.74 + r(37) * 0.27 : r(31))(c, x, largura, topo, r);
+    roofOf(striking ? 0.74 + r(37) * 0.27 : r(31))(c, x, largura, topo, r);
 
-    if (luz && luz.length > 0) desenharPaineis(c, h, x, largura, topo, base, semente, luz, aceso, r);
+    if (luz && luz.length > 0) drawPanels(c, h, x, largura, topo, base, seed, luz, aceso, r);
 
     // O VÃO, e ele é o que separa prédio de parede. A versão anterior encostava tudo, e por isso a fileira
     // da frente cobria a de trás por inteiro: abaixo da metade a camada virava um bloco só, com as janelas
@@ -364,40 +364,40 @@ function desenharBanda(
  * Dentro de um painel a maioria das células acende — é assim que o original lê, e é o que faz um prédio
  * parecer um prédio com gente dentro em vez de uma textura.
  */
-function desenharPaineis(
+function drawPanels(
   c: CanvasRenderingContext2D, h: number,
   x: number, largura: number, topo: number, base: number,
-  semente: number, luz: readonly string[], aceso: number, r: (n: number) => number,
+  seed: number, luz: readonly string[], aceso: number, r: (n: number) => number,
 ): void {
   if (largura < 8) return;
   // A DENSIDADE É CALIBRADA, não escolhida: a fração de pixel QUENTE de cada camada do original foi medida
   // (5,41% na de perto, 0,28% na do meio, 0,04% na bruma) e `aceso` é ajustado até a textura gerada bater.
   // A primeira calibragem saiu INVERTIDA — luz demais nas distantes e de menos na de perto —, e uma cidade
   // com o brilho no lugar errado perde a profundidade inteira, que é o que a luz está ali para dar.
-  const quantos = aceso <= 0.06
+  const howMany = aceso <= 0.06
     ? (r(40) < aceso * 14 ? 1 : 0)                       // bruma e camada média: um painel raro, ou nenhum
     : 1 + Math.floor(r(40) * (1 + aceso * 4));           // de perto: um a quatro
   const ja = 3 + Math.floor(r(41) * 3);                  // 3..5 px de altura, como no original
-  const passoX = 4 + Math.floor(r(42) * 2);              // 4 ou 5 — muda por prédio
-  const passoY = ja + 2;
-  const colunas = Math.floor((largura - 4) / passoX);
+  const stepX = 4 + Math.floor(r(42) * 2);              // 4 ou 5 — muda por prédio
+  const stepY = ja + 2;
+  const colunas = Math.floor((largura - 4) / stepX);
   if (colunas < 1) return;
 
-  for (let p = 0; p < quantos; p++) {
+  for (let p = 0; p < howMany; p++) {
     const cw = 1 + Math.floor(r(43 + p) * Math.min(colunas, 1 + aceso * 7));
     const ch = 2 + Math.floor(r(46 + p) * (2 + aceso * 9));
     const c0 = Math.floor(r(49 + p) * (colunas - cw + 1));
-    const topoPainel = Math.max(topo + 3, base - 58);
-    const linhas = Math.max(1, Math.floor((h - 4 - topoPainel) / passoY));
+    const panelTop = Math.max(topo + 3, base - 58);
+    const linhas = Math.max(1, Math.floor((h - 4 - panelTop) / stepY));
     const l0 = Math.floor(r(52 + p) * Math.max(1, linhas - ch + 1));
     // Densidade ALTA dentro do painel: é o contrário de espalhar pouca luz por toda a fachada.
-    const densidade = 0.55 + r(55 + p) * 0.4;
+    const density = 0.55 + r(55 + p) * 0.4;
     for (let l = l0; l < Math.min(l0 + ch, linhas); l++) {
       for (let k = c0; k < Math.min(c0 + cw, colunas); k++) {
-        const jx = x + 2 + k * passoX, jy = topoPainel + l * passoY;
+        const jx = x + 2 + k * stepX, jy = panelTop + l * stepY;
         if (jy + ja > h - 2) continue;
-        if (hash01(jx * 3571 + jy * 97 + semente) >= densidade) continue;
-        c.fillStyle = luz[Math.floor(hash01(jx * 17 + jy * 31 + semente) * luz.length) % luz.length]!;
+        if (hash01(jx * 3571 + jy * 97 + seed) >= density) continue;
+        c.fillStyle = luz[Math.floor(hash01(jx * 17 + jy * 31 + seed) * luz.length) % luz.length]!;
         c.fillRect(jx, jy, 2, ja);
       }
     }
@@ -413,11 +413,11 @@ function desenharPaineis(
  * Exportada para o teste: o contexto entra por parâmetro, como em `paintSun`, e um contexto falso que grava
  * os `fillRect` deixa afirmar as propriedades da faixa sem navegador nenhum.
  */
-export function drawBuildings(c: CanvasRenderingContext2D, w: number, h: number, faixa: BuildingBand, semente: number): void {
-  desenharBanda(c, w, h, faixa.corpo[0]!, faixa.topoFundo, faixa.largura, faixa.base,
-    semente + 4517, faixa.luz, (faixa.aceso ?? 0) * 0.45);
-  desenharBanda(c, w, h, faixa.corpo[1]!, faixa.topo, faixa.largura, faixa.base,
-    semente, faixa.luz, faixa.aceso ?? 0);
+export function drawBuildings(c: CanvasRenderingContext2D, w: number, h: number, faixa: BuildingBand, seed: number): void {
+  drawBand(c, w, h, faixa.corpo[0]!, faixa.topoFundo, faixa.largura, faixa.base,
+    seed + 4517, faixa.luz, (faixa.aceso ?? 0) * 0.45);
+  drawBand(c, w, h, faixa.corpo[1]!, faixa.topo, faixa.largura, faixa.base,
+    seed, faixa.luz, faixa.aceso ?? 0);
 }
 
 /**
@@ -435,9 +435,9 @@ export function themeCitySkyTexture(T: BuildingsTheme): unknown {
 }
 
 /** Camadas 1 e 2 da Cidade: prédios sobre TRANSPARÊNCIA, para o céu da camada 0 aparecer atrás. */
-export function themeSkylineTexture(faixa: BuildingBand, semente: number): unknown {
+export function themeSkylineTexture(faixa: BuildingBand, seed: number): unknown {
   const w = 1280, h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
-  drawBuildings(c, w, h, faixa, semente);
+  drawBuildings(c, w, h, faixa, seed);
   return tex(cv);
 }
 

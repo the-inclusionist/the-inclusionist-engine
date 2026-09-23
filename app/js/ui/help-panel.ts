@@ -119,7 +119,7 @@ export function howToPlayProblems(slides: unknown): string[] {
   return out;
 }
 
-const eDoJogo = (s: HelpRow | HowToPlaySlide): s is HowToPlaySlide => typeof (s as HowToPlaySlide).text === 'function';
+const isFromGame = (s: HelpRow | HowToPlaySlide): s is HowToPlaySlide => typeof (s as HowToPlaySlide).text === 'function';
 
 /** What the engine's frame loop gives an animated figure; injected, so the loop is the page's. */
 export interface FigureClock {
@@ -134,24 +134,24 @@ export interface FigureClock {
  * Returns a stop. A figure that throws is a cartridge defect: it stops drawing and the text stays.
  */
 export function animateFigure(el: HTMLElement, slide: HowToPlaySlide, clock: FigureClock): () => void {
-  const tela = el.querySelector<HTMLCanvasElement>('.slide-figura');
-  const ctx = tela?.getContext('2d');
-  if (!tela || !ctx || !slide.figure) return () => {};
-  const figura = slide.figure;
+  const screen = el.querySelector<HTMLCanvasElement>('.slide-figura');
+  const ctx = screen?.getContext('2d');
+  if (!screen || !ctx || !slide.figure) return () => {};
+  const figureFn = slide.figure;
   // the drawing surface is the size it is shown at, in CSS pixels, so a figure's coordinates are the ones the child sees
-  const caixa = tela.getBoundingClientRect();
-  if (caixa.width > 0 && caixa.height > 0) { tela.width = Math.round(caixa.width); tela.height = Math.round(caixa.height); }
-  let id = 0, parado = false, inicio = -1;
-  const desenhar = (ms: number): void => {
-    if (parado || !el.isConnected) return;
-    if (inicio < 0) inicio = ms;
-    const time = clock.reduced ? 0 : (ms - inicio) / 1000;
-    ctx.clearRect(0, 0, tela.width, tela.height);
-    try { figura({ ctx, width: tela.width, height: tela.height, time }); } catch { parado = true; return; }
-    if (!clock.reduced) id = clock.requestFrame(desenhar);
+  const caixa = screen.getBoundingClientRect();
+  if (caixa.width > 0 && caixa.height > 0) { screen.width = Math.round(caixa.width); screen.height = Math.round(caixa.height); }
+  let id = 0, still = false, start = -1;
+  const draw = (ms: number): void => {
+    if (still || !el.isConnected) return;
+    if (start < 0) start = ms;
+    const time = clock.reduced ? 0 : (ms - start) / 1000;
+    ctx.clearRect(0, 0, screen.width, screen.height);
+    try { figureFn({ ctx, width: screen.width, height: screen.height, time }); } catch { still = true; return; }
+    if (!clock.reduced) id = clock.requestFrame(draw);
   };
-  desenhar(0);
-  return () => { parado = true; clock.cancelFrame(id); };
+  draw(0);
+  return () => { still = true; clock.cancelFrame(id); };
 }
 
 /** Builds the slide show's frame: the stop, its two arrows, the slide and the dots. `showSlide` fills it. */
@@ -161,33 +161,33 @@ export function mountSlides(ctx: SlideCtx): HTMLElement {
   el.setAttribute('role', 'spinbutton');
   el.setAttribute('tabindex', '0');
   el.setAttribute('data-passos', '');
-  const seta = (delta: -1 | 1, glifo: string): HTMLElement => {
+  const arrow = (delta: -1 | 1, glyph: string): HTMLElement => {
     const s = ctx.criar('span');
     s.className = 'passo-seta';
     s.setAttribute('data-passo', String(delta));
     s.setAttribute('aria-hidden', 'true');
-    s.textContent = glifo;
+    s.textContent = glyph;
     s.addEventListener('click', () => el.dispatchEvent(new CustomEvent('passo', { detail: delta, bubbles: true })));
     return s;
   };
   const slide = ctx.criar('div');
   slide.className = 'slide';
   slide.setAttribute('aria-hidden', 'true'); // heard through the stop's value, once
-  const figura = ctx.criar('canvas');
-  figura.className = 'slide-figura';
-  figura.hidden = true;
-  const tecla = ctx.criar('kbd');
-  tecla.className = 'slide-tecla';
+  const figureFn = ctx.criar('canvas');
+  figureFn.className = 'slide-figura';
+  figureFn.hidden = true;
+  const keyGlyphOf = ctx.criar('kbd');
+  keyGlyphOf.className = 'slide-tecla';
   const palavra = ctx.criar('p');
   palavra.className = 'slide-palavra';
   const texto = ctx.criar('p');
   texto.className = 'slide-texto';
-  const pontos = ctx.criar('div');
-  pontos.className = 'slide-pontos';
-  for (const filho of [figura, tecla, palavra, texto, pontos]) slide.appendChild(filho);
-  el.appendChild(seta(-1, '◀'));
+  const dots = ctx.criar('div');
+  dots.className = 'slide-pontos';
+  for (const child of [figureFn, keyGlyphOf, palavra, texto, dots]) slide.appendChild(child);
+  el.appendChild(arrow(-1, '◀'));
   el.appendChild(slide);
-  el.appendChild(seta(1, '▶'));
+  el.appendChild(arrow(1, '▶'));
   return el;
 }
 
@@ -202,56 +202,56 @@ export function showSlide(
   i: number,
   ctx: SlideCtx & { readonly t: (k: string, p?: Record<string, string>) => string; readonly titulo: string },
 ): { readonly indice: number; readonly falado: string } {
-  const ultimo = Math.max(0, rows.length - 1);
-  const indice = Math.max(0, Math.min(ultimo, i));
+  const last = Math.max(0, rows.length - 1);
+  const indice = Math.max(0, Math.min(last, i));
   const r = rows[indice];
   const slide = el.querySelector<HTMLElement>('.slide');
-  const figura = el.querySelector<HTMLCanvasElement>('.slide-figura');
-  const tecla = el.querySelector<HTMLElement>('.slide-tecla');
+  const figureFn = el.querySelector<HTMLCanvasElement>('.slide-figura');
+  const keyGlyphOf = el.querySelector<HTMLElement>('.slide-tecla');
   const palavra = el.querySelector<HTMLElement>('.slide-palavra');
   const texto = el.querySelector<HTMLElement>('.slide-texto');
-  const pontos = el.querySelector<HTMLElement>('.slide-pontos');
-  if (!r || !slide || !figura || !tecla || !palavra || !texto || !pontos) return { indice, falado: '' };
-  while (pontos.firstChild) pontos.removeChild(pontos.firstChild);
+  const dots = el.querySelector<HTMLElement>('.slide-pontos');
+  if (!r || !slide || !figureFn || !keyGlyphOf || !palavra || !texto || !dots) return { indice, falado: '' };
+  while (dots.firstChild) dots.removeChild(dots.firstChild);
   rows.forEach((_, n) => {
     const p = ctx.criar('span');
     p.className = n === indice ? 'slide-ponto is-on' : 'slide-ponto';
-    pontos.appendChild(p);
+    dots.appendChild(p);
   });
   // a sentence that already ends in a full stop is not given a second one
-  const juntar = (partes: readonly (string | undefined)[]): string =>
-    partes.filter(Boolean).map((parte) => parte!.replace(/[.!?…]+\s*$/, '')).join('. ');
+  const joinParts = (parts: readonly (string | undefined)[]): string =>
+    parts.filter(Boolean).map((part) => part!.replace(/[.!?…]+\s*$/, '')).join('. ');
   let falado: string;
-  if (eDoJogo(r)) {
+  if (isFromGame(r)) {
     slide.setAttribute('data-kind', 'play');
     slide.removeAttribute('data-act');
-    figura.hidden = !r.figure;
-    tecla.hidden = true;
+    figureFn.hidden = !r.figure;
+    keyGlyphOf.hidden = true;
     palavra.hidden = true;
-    const frase = r.text();
-    texto.textContent = frase;
+    const phrase = r.text();
+    texto.textContent = phrase;
     texto.hidden = false;
-    falado = juntar([frase]);
+    falado = joinParts([phrase]);
   } else {
     slide.setAttribute('data-kind', 'button');
     slide.setAttribute('data-act', r.action);
-    figura.hidden = true;
-    tecla.hidden = false;
+    figureFn.hidden = true;
+    keyGlyphOf.hidden = false;
     palavra.hidden = false;
-    tecla.textContent = r.key ?? ctx.t(NO_KEY);
-    if (r.key) tecla.removeAttribute('data-sem-tecla');
-    else tecla.setAttribute('data-sem-tecla', '1');
+    keyGlyphOf.textContent = r.key ?? ctx.t(NO_KEY);
+    if (r.key) keyGlyphOf.removeAttribute('data-sem-tecla');
+    else keyGlyphOf.setAttribute('data-sem-tecla', '1');
     palavra.textContent = r.word;
     texto.textContent = r.hint ?? '';
     texto.hidden = !r.hint;
-    falado = juntar([r.word, r.hint, r.key ? ctx.t('help.slide.tecla', { k: r.key }) : ctx.t(NO_KEY)]);
+    falado = joinParts([r.word, r.hint, r.key ? ctx.t('help.slide.tecla', { k: r.key }) : ctx.t(NO_KEY)]);
   }
   el.setAttribute('aria-label', ctx.titulo);
   el.setAttribute('aria-valuemin', '0');
-  el.setAttribute('aria-valuemax', String(ultimo));
+  el.setAttribute('aria-valuemax', String(last));
   el.setAttribute('aria-valuenow', String(indice));
   el.setAttribute('aria-valuetext', falado);
   el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', indice === 0);
-  el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', indice === ultimo);
+  el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', indice === last);
   return { indice, falado };
 }
