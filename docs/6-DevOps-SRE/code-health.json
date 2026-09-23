@@ -235,12 +235,12 @@
       "fanIn": 0
     },
     "core/route.ts": {
-      "codeLines": 81,
-      "decisionNodes": 27,
+      "codeLines": 97,
+      "decisionNodes": 26,
       "maxDepth": 4,
       "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 20,
+      "worstFunction": 9,
       "fanIn": 1
     },
     "core/scenes.ts": {

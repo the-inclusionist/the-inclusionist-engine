@@ -140,43 +140,68 @@ function isInside(topo: Topology, s: Spot): boolean {
 export function routeTo(ctx: RouteCtx, de: Spot, alvos: readonly Spot[]): Route | null {
   const topo = ctx.topology;
   if (topo.kind === 'hotspots' || alvos.length === 0) return null;
-
-  const passo = topo.kind === 'continuous' ? topo.unit : 1;
-  if (!(passo > 0)) return null; // uma unidade de zero faria a fila andar sem sair do sítio
-  const cells = topo.kind === 'continuous' ? 4 : 0;
-  // Chegou? Na grade é a mesma célula; no contínuo é meio passo, porque a grelha não cai em cima do alvo.
-  const tolerance = topo.kind === 'continuous' ? 0.5 : 0;
-  const arrived = (s: Spot): Spot | null =>
-    alvos.find((a) => distance(topo, s, a) <= tolerance) ?? null;
+  const walk = walkOf(topo);
+  // a unit of zero would make the queue go nowhere, and a negative one would walk exactly like a positive one
+  if (!(walk.step > 0)) return null;
+  const arrived = (s: Spot): Spot | null => alvos.find((a) => distance(topo, s, a) <= walk.tolerance) ?? null;
 
   const targetHere = arrived(de);
   if (targetHere) return { proximo: de, ate: targetHere, passos: 0 };
 
-  const saltos = neighbours(topo, passo);
-  const teto = ctx.orcamento ?? DEFAULT_BUDGET;
-  const seen = new Set<string>([chave(de, cells)]);
-  // Cada item leva o PRIMEIRO passo que o originou — é só isso que a pista precisa de saber no fim.
-  let queue: { at: Spot; primeiro: Spot; passos: number }[] = [{ at: de, primeiro: de, passos: 0 }];
-
-  while (queue.length) {
-    const next: typeof queue = [];
-    for (const item of queue) {
-      for (const d of saltos) {
-        const neighbour: Spot = { x: item.at.x + d.x, y: item.at.y + d.y, z: (item.at.z ?? 0) + (d.z ?? 0) };
-        if (!isInside(topo, neighbour)) continue;
-        const k = chave(neighbour, cells);
-        if (seen.has(k)) continue;
-        seen.add(k);
-        if (seen.size > teto) return null; // «não sei», e é uma resposta
-        const primeiro = item.passos === 0 ? neighbour : item.primeiro;
-        // O ÚLTIMO PASSO É SEMPRE PERMITIDO: um alvo pode estar declarado numa célula que não se atravessa.
-        const alvo = arrived(neighbour);
-        if (alvo) return { proximo: primeiro, ate: alvo, passos: item.passos + 1 };
-        if (!isWalkable(ctx.roleAt(neighbour))) continue;
-        next.push({ at: neighbour, primeiro, passos: item.passos + 1 });
-      }
-    }
-    queue = next;
+  const search: Search = {
+    ctx, space: topo, arrived, keyDecimals: walk.keyDecimals, jumps: neighbours(topo, walk.step),
+    budget: ctx.orcamento ?? DEFAULT_BUDGET, seen: new Set<string>([chave(de, walk.keyDecimals)]),
+  };
+  let level: Step[] = [{ at: de, first: de, steps: 0 }];
+  while (level.length) {
+    const next = nextLevel(search, level);
+    if (!Array.isArray(next)) return next;
+    level = next;
   }
   return null;
+}
+
+/** How a space is walked: the step, the decimals a point's key keeps, and how close counts as arrived. On a grid it is the
+ *  same cell; in a continuous space half a step, because the sampling grid does not fall on the target. */
+function walkOf(space: Exclude<Topology, { kind: 'hotspots' }>): { step: number; keyDecimals: number; tolerance: number } {
+  return space.kind === 'continuous' ? { step: space.unit, keyDecimals: 4, tolerance: 0.5 } : { step: 1, keyDecimals: 0, tolerance: 0 };
+}
+
+/** One point of the search, carrying the FIRST step that led to it — all the guide needs to know at the end. */
+interface Step { readonly at: Spot; readonly first: Spot; readonly steps: number }
+
+/** What a search holds while it widens: the world, where it may step, how it recognises a target, and what it has seen. */
+interface Search {
+  readonly ctx: RouteCtx;
+  readonly space: Topology;
+  readonly arrived: (s: Spot) => Spot | null;
+  readonly keyDecimals: number;
+  readonly jumps: readonly Spot[];
+  readonly budget: number;
+  readonly seen: Set<string>;
+}
+
+/** Where one jump from a point lands, on every axis the space has. */
+const stepFrom = (at: Spot, d: Spot): Spot => ({ x: at.x + d.x, y: at.y + d.y, z: (at.z ?? 0) + (d.z ?? 0) });
+
+/** One ring further out. A route when a target is reached, `null` when the budget ran out («I cannot say», which is an
+ *  answer), or the next ring. */
+function nextLevel(s: Search, level: readonly Step[]): Route | null | Step[] {
+  const next: Step[] = [];
+  for (const item of level) {
+    for (const d of s.jumps) {
+      const neighbour = stepFrom(item.at, d);
+      if (!isInside(s.space, neighbour)) continue;
+      const k = chave(neighbour, s.keyDecimals);
+      if (s.seen.has(k)) continue;
+      s.seen.add(k);
+      if (s.seen.size > s.budget) return null;
+      const first = item.steps === 0 ? neighbour : item.first;
+      // THE LAST STEP IS ALWAYS ALLOWED: a target may be declared on a cell that cannot be crossed.
+      const target = s.arrived(neighbour);
+      if (target) return { proximo: first, ate: target, passos: item.steps + 1 };
+      if (isWalkable(s.ctx.roleAt(neighbour))) next.push({ at: neighbour, first, steps: item.steps + 1 });
+    }
+  }
+  return next;
 }
