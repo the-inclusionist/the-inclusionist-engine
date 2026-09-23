@@ -68,7 +68,7 @@
       "unmount",
       "velocidadeDoJogo"
     ],
-    "type CartridgeHooks": "Omit<MetadeDoJogo, 'declaration'>"
+    "type CartridgeHooks": "Omit<GameHalf, 'declaration'>"
   },
   "core/accessible-label.ts": {
     "interface LabelledElement": [

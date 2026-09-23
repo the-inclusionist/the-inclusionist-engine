@@ -617,7 +617,7 @@ export interface Engine {
    * efeito global, e o alcance com o seu aviso, que escreve DOM. `problems` e `reach` passam a descrever
    * o cartucho montado porque são derivados, não porque `mount` os copie.
    */
-  mount(declaration: GameDeclaration, ganchos?: CartridgeHooks): void;
+  mount(declaration: GameDeclaration, hooks?: CartridgeHooks): void;
   /**
    * SOLTA O CORRENTE: mapeamentos a `null`, aviso de alcance retirado, pilha de cenas esvaziada.
    *
@@ -643,7 +643,7 @@ export interface Engine {
 }
 
 /** A metade do jogo SEM a declaração — o que `mount` recebe ao lado dela. */
-export type CartridgeHooks = Omit<MetadeDoJogo, 'declaration'>;
+export type CartridgeHooks = Omit<GameHalf, 'declaration'>;
 
 /*
  * UMA FRASE SÓ PARA AS DUAS RECUSAS, e o gate do pilar 3 é que a pediu.
@@ -653,7 +653,7 @@ export type CartridgeHooks = Omit<MetadeDoJogo, 'declaration'>;
  * e reprovou com razão. Duas cópias de uma frase são dois sítios para ela divergir, e é também a segunda
  * tradução a fazer quando o pilar 3 chegar aqui.
  */
-function recusarDeclaracao(quem: string, problemas: readonly string[]): never {
+function refuseDeclaration(quem: string, problemas: readonly string[]): never {
   throw new Error(`${quem}: declaração malformada — ${problemas.join('; ')}`);
 }
 
@@ -668,47 +668,47 @@ function recusarDeclaracao(quem: string, problemas: readonly string[]): never {
  * ⚠️ LANÇA, e a rubrica é a das duas linhas acima: isto é defeito de PROGRAMA — o jogo declarou uma palavra
  * para uma posição que não lhe pertence —, e não lacuna do hospedeiro. `problems` é para o que deixa jogar.
  */
-function recusarSeTomaOStart(quem: string, preset: ActionPreset | undefined): void {
+function refuseIfItClaimsStart(quem: string, preset: ActionPreset | undefined): void {
   // 📌 E O SELECT TAMBÉM, desde o ADR-0155: as duas posições de sistema são as duas portas da pausa.
   const problemas = [startClaimProblem(preset), selectClaimProblem(preset)].filter((x): x is string => x !== null);
-  if (problemas.length) recusarDeclaracao(quem, problemas);
+  if (problemas.length) refuseDeclaration(quem, problemas);
 }
 
 /**
  * O cartucho RESPONDEU às suas acomodações? (ADR-0153.) Mesma rubrica do contrato: resposta ausente ou incompleta é
  * pré-condição, não lacuna — `problems` é para o que deixa jogar, e aqui a engine não saberia que linhas montar.
  */
-function recusarSeNaoResponde(quem: string, acomodacoes: unknown): void {
+function refuseIfNoAnswer(quem: string, acomodacoes: unknown): void {
   const problemas = accommodationAnswersProblems(acomodacoes);
-  if (problemas.length) recusarDeclaracao(quem, problemas);
+  if (problemas.length) refuseDeclaration(quem, problemas);
 }
 
 /** A genre outside the engine's list, or Casino game, refuses the boot (ADR-0156 §2, §4); an absent genre is conformant. */
-function recusarSeGeneroRecusado(quem: string, genero: unknown): void {
+function refuseIfGenreRefused(quem: string, genero: unknown): void {
   const problemas = genreProblems(genero);
-  if (problemas.length) recusarDeclaracao(quem, problemas);
+  if (problemas.length) refuseDeclaration(quem, problemas);
 }
 
 /** A malformed `hud` is a program defect, refused like the declaration (ADR-0169): the engine would not know what to place. */
-function recusarSeHudMalformado(quem: string, hud: unknown): void {
+function refuseIfHudMalformed(quem: string, hud: unknown): void {
   const problemas = hudNumbersProblems(hud);
-  if (problemas.length) recusarDeclaracao(quem, problemas);
+  if (problemas.length) refuseDeclaration(quem, problemas);
 }
 
 /** Malformed game options are a program defect, refused like the declaration (ADR-0169): the engine would not know what to draw. */
-function recusarSeOpcoesMalformadas(quem: string, opcoes: unknown): void {
+function refuseIfOptionsMalformed(quem: string, opcoes: unknown): void {
   const problemas = gameOptionsProblems(opcoes);
-  if (problemas.length) recusarDeclaracao(quem, problemas);
+  if (problemas.length) refuseDeclaration(quem, problemas);
 }
 
 /** A malformed `howToPlay` is a program defect, refused like the declaration (ADR-0169): the help would not know what to show. */
-function recusarSeComoJogarMalformado(quem: string, slides: unknown): void {
+function refuseIfHowToPlayMalformed(quem: string, slides: unknown): void {
   const problemas = howToPlayProblems(slides);
-  if (problemas.length) recusarDeclaracao(quem, problemas);
+  if (problemas.length) refuseDeclaration(quem, problemas);
 }
 
 /** Os ids que os painéis emprestados exigem do documento. Achado 6: sem eles o painel abre VAZIO, sem erro. */
-const MARCACAO_EXIGIDA: readonly string[] = ['#game-region', '#sr-status', '#sr-alert'];
+const REQUIRED_MARKUP: readonly string[] = ['#game-region', '#sr-status', '#sr-alert'];
 
 /**
  * Onde a engine procura a barra de acessibilidade quando o jogo não declara `host.a11yBarHost`.
@@ -737,7 +737,7 @@ const SELETOR_BARRA_A11Y = '#title-icons';
  * O teste que ele próprio dá — «uma PÁGINA conseguiria responder isto sem saber que jogo corre?» — põe os
  * cinco deste lado, e a errata de 2026-09-11 corrigiu a lista.
  */
-type MetadeDoJogo = Pick<CreateGameOptions,
+type GameHalf = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
   | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud' | 'gameOptions' | 'howToPlay' | 'onCommand' | 'gamepad'>;
@@ -751,18 +751,18 @@ export function createGame(o: CreateGameOptions): Engine {
    * (ADR-0142) — sem ele, as trinta e seis leituras da metade do jogo estão presas ao argumento, e uma raiz
    * de composição a servir vários cartuchos ficaria com o primeiro deles para sempre.
    */
-  let cartucho: MetadeDoJogo = o;
+  let cartridge: GameHalf = o;
 
-  const problemasDoContrato = conformanceProblems(cartucho.declaration);
-  if (problemasDoContrato.length) {
-    recusarDeclaracao('createGame', problemasDoContrato);
+  const contractProblems = conformanceProblems(cartridge.declaration);
+  if (contractProblems.length) {
+    refuseDeclaration('createGame', contractProblems);
   }
-  recusarSeTomaOStart('createGame', cartucho.preset);
-  recusarSeNaoResponde('createGame', cartucho.acomodacoes);
-  recusarSeGeneroRecusado('createGame', cartucho.genero);
-  recusarSeHudMalformado('createGame', cartucho.hud);
-  recusarSeOpcoesMalformadas('createGame', cartucho.gameOptions);
-  recusarSeComoJogarMalformado('createGame', cartucho.howToPlay);
+  refuseIfItClaimsStart('createGame', cartridge.preset);
+  refuseIfNoAnswer('createGame', cartridge.acomodacoes);
+  refuseIfGenreRefused('createGame', cartridge.genero);
+  refuseIfHudMalformed('createGame', cartridge.hud);
+  refuseIfOptionsMalformed('createGame', cartridge.gameOptions);
+  refuseIfHowToPlayMalformed('createGame', cartridge.howToPlay);
 
   const { doc } = o.host;
   /*
@@ -794,15 +794,15 @@ export function createGame(o: CreateGameOptions): Engine {
    *
    * 📌 O vazio é uma constante e não um literal por chamada: `declines()` é lido em sítios que comparam.
    */
-  const SEM_DECLINIOS: Declinios = {};
-  const declines = () => cartucho.declines ?? SEM_DECLINIOS;
-  const problemasDoHospedeiro: string[] = [];
+  const NO_DECLINES: Declinios = {};
+  const declines = () => cartridge.declines ?? NO_DECLINES;
+  const hostProblems: string[] = [];
 
   const $ = <T extends Element = Element>(sel: string): T | null => doc.querySelector<T>(sel);
   const $$ = <T extends Element = Element>(sel: string): T[] => [...doc.querySelectorAll<T>(sel)];
 
-  for (const sel of MARCACAO_EXIGIDA) {
-    if (!$(sel)) problemasDoHospedeiro.push(`the page lacks ${sel}: the engine announces and draws into it, and without it a child who listens hears nothing — add it to the page`);
+  for (const sel of REQUIRED_MARKUP) {
+    if (!$(sel)) hostProblems.push(`the page lacks ${sel}: the engine announces and draws into it, and without it a child who listens hears nothing — add it to the page`);
   }
 
   // ⚠️ O MUNDO DECLARADO TEM DE EXISTIR NO DOCUMENTO, e esta é a falha que o ADR-0087 deixaria aberta se
@@ -830,7 +830,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * `problemasDoCartucho` é chamada só no `problems`, depois do arranque, mas ler o pad daqui antes de ele
    * existir cairia na zona morta temporal — o mesmo tropeço que o `getPlayers` já deu neste ficheiro.
    */
-  let lacunasDoPad: () => string[] = () => [];
+  let padGapList: () => string[] = () => [];
 
   /*
    * 🔴 AS REGRAS SAÍRAM PARA `core/cartridge-problems` (ADR-0221 passo 7c). O que fica aqui é MEDIR a página e
@@ -840,23 +840,23 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📏 Sondado antes de mexer, que é a ordem: as sete linhas desta função foram desligadas uma a uma e a suíte
    * reprovou nas sete — logo o corte é de FORMA e não muda comportamento nenhum, e há como o provar.
    */
-  function problemasDoCartucho(): string[] {
-    const mundo = cartucho.declaration.world();
-    const seletorDoMundo = mundo.kind === 'element' ? mundo.selector : null;
+  function cartridgeProblemList(): string[] {
+    const worldEl = cartridge.declaration.world();
+    const worldSelectorSel = worldEl.kind === 'element' ? worldEl.selector : null;
     return cartridgeProblems(
       {
-        padGaps: lacunasDoPad(),
-        resizedRegion: regiaoRedimensionadaPeloCartucho(),
-        drawnBelowFloor: drawnBelowTheFloor(contextoDoDesenho),
-        genreWarning: genreWarning(cartucho.genero),
+        padGaps: padGapList(),
+        resizedRegion: regionResizedByCartridge(),
+        drawnBelowFloor: drawnBelowTheFloor(drawingContext),
+        genreWarning: genreWarning(cartridge.genero),
       },
       {
-        worldSelector: seletorDoMundo,
-        worldIsInPage: !!seletorDoMundo && !!$(seletorDoMundo),
+        worldSelector: worldSelectorSel,
+        worldIsInPage: !!worldSelectorSel && !!$(worldSelectorSel),
         wantsNeuralVoice: !!o.uses?.neuralVoice,
         declinesNeuralVoice: !!declines().semVozNeural,
-        seats: (cartucho.players ?? []).length,
-        setsPauseActor: !!cartucho.setPauseActor,
+        seats: (cartridge.players ?? []).length,
+        setsPauseActor: !!cartridge.setPauseActor,
         declinesPauseActor: !!declines().semAtorDePausa,
       },
     );
@@ -889,9 +889,9 @@ export function createGame(o: CreateGameOptions): Engine {
    * filtro sobre ela seria a mentira que o ADR-0087 existe para impedir, só que ao contrário.
    */
   function aplicarFiltroDeVisao(css: string, reach: FilterReach): void {
-    const mundo = cartucho.declaration.world();
-    if (mundo.kind !== 'element') return;
-    const el = $<HTMLElement>(mundo.selector);
+    const worldEl = cartridge.declaration.world();
+    if (worldEl.kind !== 'element') return;
+    const el = $<HTMLElement>(worldEl.selector);
     if (!el) return; // já reportado em `problems`; não se inventa superfície
     el.style.filter = css;
     if (reach === 'mundo') {
@@ -910,7 +910,7 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   // O estado visual que o MUNDO mostra: a correcção (🚥) e a simulação (modo empatia) são dois campos dele, e
   // `filterKey` já sabe que a simulação só corre com a correcção no padrão (ADR-0076).
-  let estadoDoMundo: VisualState = PADRAO;
+  let worldState: VisualState = PADRAO;
   /*
    * A DISABILITY SIMULATION RUNS IN THE GAME, NEVER IN A MENU (issue #182). The Dev: «Simulação de deficiência não pode
    * funcionar no menu! Só no jogo! Senão fica impossível desabilitar em certos casos.» Two rules make it so:
@@ -921,7 +921,7 @@ export function createGame(o: CreateGameOptions): Engine {
    *     it holds none (a canvas world).
    */
   /** Assigned once the menus exist (below): until then no menu can be open. */
-  let simulacaoSuspensa = (): boolean => false;
+  let simulationSuspended = (): boolean => false;
   /*
    * 🔴 ONDE A SIMULAÇÃO VAI PARAR MUDOU-SE PARA `ui/simulation-over-the-world` (ADR-0221 passo 7c). Eram ~30 ramos
    * desta raiz e nenhum deles fiação: «descer para dentro de uma caixa que contém uma porta», «um canvas não tem filhos,
@@ -929,19 +929,19 @@ export function createGame(o: CreateGameOptions): Engine {
    * 🎯 Sondada ANTES de sair, e CINCO de onze decisões estavam cegas — três delas o caminho inteiro do mundo CANVAS,
    * que nenhum caso da árvore conduzia. Ganharam casos em `engine:9ee07d3c`, antes de uma linha se mexer.
    */
-  const simulacaoNoMundo = createSimulationOverTheWorld({
-    world: () => cartucho.declaration.world(),
+  const simulationOverWorld = createSimulationOverTheWorld({
+    world: () => cartridge.declaration.world(),
     find: <T extends Element>(sel: string) => $<T>(sel),
     createCanvas: () => doc.createElement('canvas'),
   });
-  function recomporFiltroDoMundo(): void {
+  function recomposeWorldFilter(): void {
     // what HELPS (the colour correction, the contrast enhancement) stays on the world as before; the SIMULATION is laid apart
-    const chaveDaMelhoria = filterKey({ ...estadoDoMundo, simulacao: null });
-    const melhoria = [chaveDaMelhoria ? (VIZ_FILTER[chaveDaMelhoria] ?? '') : '', lqFilter()].filter(Boolean).join(' ');
-    aplicarFiltroDeVisao(melhoria, 'mundo');
-    const simulacao = simulacaoSuspensa() ? null : estadoDoMundo.simulacao;
-    simulacaoNoMundo.onlyInPlay(simulacao ? (VIZ_FILTER[simulacao] ?? '') : '', melhoria);
-    simulacaoNoMundo.drawLayer(simulacao);
+    const enhancementKey = filterKey({ ...worldState, simulacao: null });
+    const enhancement = [enhancementKey ? (VIZ_FILTER[enhancementKey] ?? '') : '', lqFilter()].filter(Boolean).join(' ');
+    aplicarFiltroDeVisao(enhancement, 'mundo');
+    const simulacao = simulationSuspended() ? null : worldState.simulacao;
+    simulationOverWorld.onlyInPlay(simulacao ? (VIZ_FILTER[simulacao] ?? '') : '', enhancement);
+    simulationOverWorld.drawLayer(simulacao);
     applyCrt(); // the decorative CRT yields to every visual mode, and comes back when none is on (ADR-0047)
   }
   /*
@@ -951,11 +951,11 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   initCrt({
     // `cartucho` and not `players()`: this runs at boot, above the `players` declaration (temporal dead zone)
-    numJogadores: () => Math.max(1, (cartucho.players ?? []).length),
-    a11yVisualAtiva: () => filterKey(estadoDoMundo) !== null || getLqT() > 0,
+    numJogadores: () => Math.max(1, (cartridge.players ?? []).length),
+    a11yVisualAtiva: () => filterKey(worldState) !== null || getLqT() > 0,
   });
-  initLqFilter({ onChange: recomporFiltroDoMundo });
-  if (getLqT() > 0) recomporFiltroDoMundo(); // o realce guardado vale desde o arranque
+  initLqFilter({ onChange: recomposeWorldFilter });
+  if (getLqT() > 0) recomposeWorldFilter(); // o realce guardado vale desde o arranque
   else applyCrt(); // and the stored CRT too (the recompose above applies it when it runs)
 
   // 3. A pilha de diálogos. O ctx é o mesmo em qualquer jogo — é boilerplate, e boilerplate repetido é onde
@@ -967,14 +967,14 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 4. Daltonismo: a engine ENTREGA o markup em vez de exigir que o consumidor o adivinhe (achado 7).
   const cvdFilters = installCvdFilters(o.host.cvdHost ?? null);
-  if (!cvdFilters) problemasDoHospedeiro.push('there is no filter host (<svg>): colour-vision correction was not mounted, so a colour-blind child cannot turn it on — set `host.cvdHost`');
+  if (!cvdFilters) hostProblems.push('there is no filter host (<svg>): colour-vision correction was not mounted, so a colour-blind child cannot turn it on — set `host.cvdHost`');
 
   // 4c. A BARRA DE ACESSIBILIDADE DA PRIMEIRA TELA. Ver a nota em `EngineHost.a11yBarHost`: cinco dos seis
   //     jogos do catálogo não têm nenhuma, e nada o dizia. Isto não a monta — diz que ela falta, que é o
   //     passo que tira o silêncio. A frase nomeia a saída, como as outras deste bloco fazem.
   const a11yBar = o.host.a11yBarHost ?? $(SELETOR_BARRA_A11Y);
   if (!a11yBar) {
-    problemasDoHospedeiro.push(
+    hostProblems.push(
       `there is no accessibility bar on the first screen: a child cannot reach blind mode, narration or Libras before starting — set \`host.a11yBarHost\` or put a ${SELETOR_BARRA_A11Y} in the page`,
     );
   }
@@ -1010,7 +1010,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * respostas à mesma pergunta divergem, e foi assim que esta divergiu. `import * as state` dá ligação VIVA,
    * então isto lê o valor de agora e não o do arranque.
    */
-  const lerModoCego = cartucho.isBlindMode ?? (() => state.blindMode);
+  const readBlindMode = cartridge.isBlindMode ?? (() => state.blindMode);
 
   /**
    * O QUE A ENGINE SABE ACCIONAR SOZINHA NO MENU DE PAUSA — preenchido pelo bloco 4f, lido quando a pausa abre.
@@ -1028,10 +1028,10 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 E O CARTUCHO SOBREPÕE-SE, não o contrário: um jogo que traga o seu `tipo` ganha ao da engine. O que
    * ADR-0122 torna não-declinável é a pausa EXISTIR, não a engine ser dona de cada item dentro dela.
    */
-  const acoesDaEngine: Record<string, () => void> = {};
+  const engineActions: Record<string, () => void> = {};
   /** Opens the game options panel, once mounted (ADR-0182). Offered as the door's action only while the cartridge declares rows. */
-  let abrirOpcoesDoJogo: (() => void) | null = null;
-  let redesenharOpcoesDoJogo = (): void => {};
+  let openGameOptions: (() => void) | null = null;
+  let redrawGameOptions = (): void => {};
 
   /*
    * ===================== A SAÍDA, QUE TINHA DE NASCER COM A ENTRADA (ADR-0144, errata) =====================
@@ -1055,21 +1055,21 @@ export function createGame(o: CreateGameOptions): Engine {
    * a este. O que a engine garante é que NUNCA falta um.
    */
   // O rodapé da tela (ver `rodapeDaTela`): declarados AQUI, antes do primeiro `mudarDeFase`, que já o limpa.
-  let rodape: HTMLElement | null = null;
-  let explicacaoDaBarra: HTMLElement | null = null;
+  let footer: HTMLElement | null = null;
+  let barExplanation: HTMLElement | null = null;
   // The quick-pause state and the button legend, declared before the first `mudarDeFase` too: its `pausa.esconder`
   // refreshes the legend (ADR-0164 rule 3), and reading them earlier would be a temporal-dead-zone error at boot.
-  const emPausaRapida = new Set<number>();
+  const inQuickPause = new Set<number>();
   // the menus and the quick pause exist from here on: a simulation is suspended while one is open (issue #182)
-  simulacaoSuspensa = () => menuAberto() || emPausaRapida.size > 0;
-  let legendaDaPausa: HTMLElement | null = null;
-  function mudarDeFase(p: 'title' | 'playing' | 'paused'): void {
+  simulationSuspended = () => isMenuOpen() || inQuickPause.size > 0;
+  let pauseCaption: HTMLElement | null = null;
+  function changePhase(p: 'title' | 'playing' | 'paused'): void {
     // ⚠️ A ENGINE FECHA O SEU CARTÃO; O JOGO CONTINUA A DECIDIR O MUNDO. É a simetria exacta do ADR-0144 §2
     // do outro lado: lá a engine revela e PEDE a pausa, aqui esconde e PEDE a retoma.
-    if (p !== 'paused') { pausa.esconder(0); escreverNoRodape(null); } // o motivo de um item não fica sobre o jogo
-    cartucho.setPhase?.(p);
+    if (p !== 'paused') { pausa.esconder(0); writeInFooter(null); } // o motivo de um item não fica sobre o jogo
+    cartridge.setPhase?.(p);
   }
-  acoesDaEngine.resume = () => mudarDeFase('playing');
+  engineActions.resume = () => changePhase('playing');
 
   /*
    * SAIR — «voltar à tela de press start» (decisão do Dev, 2026-09-12; errata do ADR-0144 §5).
@@ -1087,7 +1087,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * salvamento nenhum neste projeto, logo o que se perde é a rodada corrente e não progresso. Um diálogo de
    * confirmação custaria uma parada a mais na varredura de TODA saída para proteger o que não existe.
    */
-  acoesDaEngine.quit = () => mudarDeFase('title');
+  engineActions.quit = () => changePhase('title');
 
   /*
    * PRINT — «ver a tela sem menus», e qualquer botão volta.
@@ -1104,21 +1104,21 @@ export function createGame(o: CreateGameOptions): Engine {
    * é de bolha: o `voltar` revela o cartão na captura, e quando o de bolha chega o guarda do «cartão já
    * aberto» manda-o embora. Medido a ler os dois lado a lado, não assumido.
    */
-  acoesDaEngine.print = () => {
-    const cartao = (): HTMLElement | null => $<HTMLElement>('#vp-pause-0');
-    const alvo = cartao();
+  engineActions.print = () => {
+    const cardEl = (): HTMLElement | null => $<HTMLElement>('#vp-pause-0');
+    const alvo = cardEl();
     if (!alvo) return;
     alvo.hidden = true;
-    const voltar = (e?: Event): void => {
+    const goBack = (e?: Event): void => {
       if (e && typeof e.preventDefault === 'function') { try { e.preventDefault(); } catch { /* noop */ } }
-      win.removeEventListener('keydown', voltar, true);
-      win.removeEventListener('pointerdown', voltar, true);
-      const c = cartao();
+      win.removeEventListener('keydown', goBack, true);
+      win.removeEventListener('pointerdown', goBack, true);
+      const c = cardEl();
       if (c) c.hidden = false;
     };
     win.setTimeout(() => {
-      win.addEventListener('keydown', voltar, true);
-      win.addEventListener('pointerdown', voltar, true);
+      win.addEventListener('keydown', goBack, true);
+      win.addEventListener('pointerdown', goBack, true);
     }, 80);
     srSay(t('sr.print.on'));
   };
@@ -1147,8 +1147,8 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 Içar em vez de duplicar a pergunta: `o.host.pauseHost ?? $('#game-region')` escrito em dois sítios
    * seria a mesma resposta com duas fontes — o defeito que este ficheiro já apanhou no `getPlayers`.
    */
-  const hospedeiroDaPausa = o.host.pauseHost ?? $('#game-region');
-  const pausaUsavel = !!hospedeiroDaPausa && typeof (hospedeiroDaPausa as HTMLElement).appendChild === 'function';
+  const pauseHostEl = o.host.pauseHost ?? $('#game-region');
+  const pauseUsable = !!pauseHostEl && typeof (pauseHostEl as HTMLElement).appendChild === 'function';
   /*
    * ⚠️ O `typo` TAMBÉM SUBIU, e pelo mesmo motivo: ele era `let` DENTRO do bloco que monta os painéis, e
    * o ciclo de tipografia da barra — que é decidido antes — precisa de o alcançar. Continua a ser atribuído
@@ -1156,7 +1156,7 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   let typo: SettingsTypoApi | null = null;
   /** A posição corrente do ciclo de tipografia. Ver a nota em `ciclarTipografia`, logo abaixo. */
-  let passoDaTipografia = CYCLE_START;
+  let typographyStep = CYCLE_START;
 
   /*
    * 🔴 OS JOGADORES SOBEM PARA AQUI (issue #147), e a razão é uma medição de ordem de arranque: `initPauseIcons`
@@ -1170,16 +1170,16 @@ export function createGame(o: CreateGameOptions): Engine {
   // Ele vive um instante — `assignControls()` logo abaixo substitui-o pelo esquema real —, mas enquanto vive
   // é um `KeyScheme` como qualquer outro, e a única forma honesta de um esquema que não alcança nada é
   // catorze ausências declaradas. Um `{}` fazia o tipo mentir sobre estar completo.
-  const semAlcance = Object.fromEntries(ACTIONS.map((a) => [a, null])) as KeyScheme;
+  const withoutReach = Object.fromEntries(ACTIONS.map((a) => [a, null])) as KeyScheme;
   // ⚠️ O FALLBACK É UMA CONSTANTE e não um literal novo a cada chamada: `getPlayers` é lido pelo runtime de
   // teclado a cada leitura de controlo, e devolver um array novo de cada vez faria qualquer comparação de
   // identidade mentir — um defeito que só aparece em quem compara, e tarde.
-  const semJogadores = [{ ctrl: semAlcance }];
+  const withoutPlayers = [{ ctrl: withoutReach }];
   // ⚠️ LÊ `cartucho.players`, E NÃO UM INSTANTÂNEO. Os getters já existiam; o que eles fechavam é que era um `const`
   // tirado no arranque. As linhas de `initPauseIcons` e do sonar, neste mesmo ficheiro, já liam a fonte viva —
   // esta era a que faltava. Com vários cartuchos numa raiz de composição (ADR-0142), o teclado ficava com os
   // jogadores do cartucho que arrancou primeiro.
-  const players = () => cartucho.players ?? semJogadores;
+  const players = () => cartridge.players ?? withoutPlayers;
 
   /*
    * A PALETA SEGURA PARA DALTONISMO NOS MENUS E NO HUD (ADR-0151) — Okabe-Ito, por `:root[data-paleta]`.
@@ -1192,20 +1192,20 @@ export function createGame(o: CreateGameOptions): Engine {
    * deutero e tritanopia e desativada automaticamente quando muda para visão padrão (tricromática). Aqui se
    * permite ativá-la sem usar o filtro.» Logo o estado é UM (`cbSafe`), e a correcção só o empurra.
    */
-  const aplicarPaletaSegura = (on: boolean): void => {
+  const applySafePalette = (on: boolean): void => {
     if (on) doc.documentElement.dataset.paleta = 'okabe-ito';
     else delete doc.documentElement.dataset.paleta;
   };
-  aplicarPaletaSegura(state.cbSafe);
-  state.on('cbSafe', (v) => aplicarPaletaSegura(Boolean(v)));
+  applySafePalette(state.cbSafe);
+  state.on('cbSafe', (v) => applySafePalette(Boolean(v)));
   /**
    * Envolve QUALQUER escritor de correcção — o do cartucho ou o da engine: a paleta segue a correcção seja quem
    * for que a aplica. ⚠️ Envolver só o da engine deixaria um jogo que corrige no próprio render (o `game-pinball`)
    * sem a paleta que a criança pediu ao carregar no mesmo ícone.
    */
-  function comPaletaSegura(escrever: (i: number, correcao: Correction) => void): (i: number, correcao: Correction) => void {
+  function withSafePalette(write: (i: number, correcao: Correction) => void): (i: number, correcao: Correction) => void {
     return (i, correcao) => {
-      escrever(i, correcao);
+      write(i, correcao);
       state.setCbSafeValue(correcao !== 'tricro');
     };
   }
@@ -1230,17 +1230,17 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ A REFERÊNCIA, e não o resultado. Chamar aqui congelava a resposta no arranque, e o
     // `reflectPauseIcons` — que existe porque a tabela de acções muda (ADR-0106 §5) — refrescava a partir
     // dela. Com vários cartuchos numa raiz de composição (ADR-0142) o ícone descrevia o primeiro deles.
-    seguraTeclas: () => cartucho.declaration.seguraTeclas(),
+    seguraTeclas: () => cartridge.declaration.seguraTeclas(),
     // how many positions this cartridge declared — what «one button only» would have to offer (ADR-0218, issue #201)
-    declaredPositions: () => (cartucho.preset ? presetActions(cartucho.preset).length : 0),
+    declaredPositions: () => (cartridge.preset ? presetActions(cartridge.preset).length : 0),
     // the hourglass is offered where time runs by itself (ADR-0180), read per cartridge
-    relogio: () => cartucho.declaration.tick === 'clock',
+    relogio: () => cartridge.declaration.tick === 'clock',
     // the 📷 is offered where there is a camera to ask for (ADR-0215); the three camera controls below follow its position
     camera: canCaptureMedia,
     // and the 👄 where there is a MICROPHONE (issue #184) — the same door as the camera's, so the same answer
     microfone: canCaptureMedia,
     // the ☰, the bar's first icon (interface log 2026-09-16): the SELECT door, where there is a card to open. Hoisted, read at the press.
-    ...(pausaUsavel ? { abrirMenus: (i: number) => { abrirMenusDoAssento(i); } } : {}),
+    ...(pauseUsable ? { abrirMenus: (i: number) => { openSeatMenus(i); } } : {}),
     // no voice speaks the current language: the narration icon locks like the panel's rows (ADR-0185)
     semVoz: () => tts.vozes().length === 0,
     /*
@@ -1259,16 +1259,16 @@ export function createGame(o: CreateGameOptions): Engine {
     getNumPlayers: () => players().length,
     srSay, srAlert,
     // A saída da barra é a saída da pausa rápida, por qualquer porta (ADR-0155). Função içada: lida ao chamar.
-    aoSairDaBarra: (i, silencioso) => terminarPausaRapida(i, silencioso),
+    aoSairDaBarra: (i, silent) => endQuickPause(i, silent),
     // O que o ícone apontado FAZ vai ao rodapé (função içada, lida ao chamar).
-    explicarIcone: (_i, k) => explicarIconeNoRodape(k),
-    explicarItem: (texto) => escreverNoRodape(texto),
+    explicarIcone: (_i, k) => explainIconInFooter(k),
+    explicarItem: (texto) => writeInFooter(texto),
     // ⚠️ NÃO `instanceof HTMLElement`: esse é um GLOBAL DO NAVEGADOR, e lê-lo onde ele não existe LANÇA —
     // não devolve falso. Escrito assim na etapa 2, fazia o `reflectPauseIcons` rebentar em qualquer ambiente
     // sem DOM. É o mesmo erro de forma do ACHADO 15 no cabeçalho deste ficheiro: alcançar o global por baixo
     // de quem injectou o documento. A pergunta certa é a mesma que o `barraUsavel` faz — sabe ser uma barra?
-    getA11yBars: () => (barraUsavel && a11yBar ? [a11yBar as HTMLElement] : []),
-    getModoCego: lerModoCego,
+    getA11yBars: () => (barUsable && a11yBar ? [a11yBar as HTMLElement] : []),
+    getModoCego: readBlindMode,
     getAudioCat: () => audioCat,
     setCatGain,
     /*
@@ -1293,9 +1293,9 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ SEMPRE PASSADO AGORA, e já não só quando o jogo traz o seu. A ausência do cartucho deixou de
     // significar «tabela vazia»: significa «só o que a engine acciona», que é o que ADR-0106 §1 manda.
     getPauseActs: () => ({
-      ...acoesDaEngine,
-      ...(abrirOpcoesDoJogo && cartucho.gameOptions?.length ? { opcoesdojogo: abrirOpcoesDoJogo } : {}),
-      ...(cartucho.getPauseActs ? cartucho.getPauseActs() : {}),
+      ...engineActions,
+      ...(openGameOptions && cartridge.gameOptions?.length ? { opcoesdojogo: openGameOptions } : {}),
+      ...(cartridge.getPauseActs ? cartridge.getPauseActs() : {}),
     }),
     /*
      * O CICLO DE TIPOGRAFIA DO 11.º ÍCONE (ADR-0149 §1, ADR-0150 §2).
@@ -1313,13 +1313,13 @@ export function createGame(o: CreateGameOptions): Engine {
      * lista vazia e o ciclo fica com quatro posições — melhor uma a menos do que a mão de um país que não é
      * o daquela criança.
      */
-    ciclarTipografia: pausaUsavel ? (): string | null => {
+    ciclarTipografia: pauseUsable ? (): string | null => {
       // ⚠️ `typo` é lido AQUI e não na condição: ele nasce ~250 linhas abaixo, e a condição corre agora.
       // Quem decide se o ícone existe é `pausaUsavel`, que é a MESMA pergunta que decide se o painel nasce.
       if (!typo) return null;
-      const ciclo = typographyCycle(bcp47());
-      passoDaTipografia = (passoDaTipografia + 1) % ciclo.length;
-      const passo = ciclo[passoDaTipografia]!;
+      const cycle = typographyCycle(bcp47());
+      typographyStep = (typographyStep + 1) % cycle.length;
+      const passo = cycle[typographyStep]!;
       state.setLetterCaseValue(passo.caixa);
       typo.setFont(passo.fonte, false);
       /*
@@ -1330,10 +1330,10 @@ export function createGame(o: CreateGameOptions): Engine {
        * esta razão multiplica.
        */
       doc.documentElement.style.setProperty('--fonte-escala', String(passo.escala));
-      reservarFaixaDaBarra(); // the name line under the bar grows with the text (issue #160)
+      reserveBarBand(); // the name line under the bar grows with the text (issue #160)
       return FONT_BY_KEY[passo.fonte]?.fam ?? null;
     } : undefined,
-    ...(cartucho.setTemaDoJogador ? { setTemaDoJogador: cartucho.setTemaDoJogador } : {}),
+    ...(cartridge.setTemaDoJogador ? { setTemaDoJogador: cartridge.setTemaDoJogador } : {}),
     /*
      * 🚥 A CORREÇÃO DE DALTONISMO PASSA A TER PADRÃO DA ENGINE (ADR-0148 §1), e o ícone deixa de faltar.
      *
@@ -1355,8 +1355,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * 📌 O CARTUCHO CONTINUA A GANHAR: um jogo que saiba corrigir a cor no seu próprio render — o
      * `game-pinball` corrige num framebuffer há semanas — entrega o seu e a engine sai da frente.
      */
-    ...(cartucho.setCorrecaoDoJogador
-      ? { setCorrecaoDoJogador: comPaletaSegura(cartucho.setCorrecaoDoJogador) }
+    ...(cartridge.setCorrecaoDoJogador
+      ? { setCorrecaoDoJogador: withSafePalette(cartridge.setCorrecaoDoJogador) }
       : cvdFilters
         /*
          * ⚠️ `filterKey` E NÃO `VIZ_FILTER[correcao]`, e a primeira versão desta linha errou aqui: os dois
@@ -1366,7 +1366,7 @@ export function createGame(o: CreateGameOptions): Engine {
          * 📌 E `filterKey` faz mais do que colar um prefixo: ela põe a SIMULAÇÃO à frente da correcção
          * quando há uma, que é a regra que este módulo não teria de reinventar.
          */
-        ? { setCorrecaoDoJogador: comPaletaSegura((i: number, correcao: Correction) => {
+        ? { setCorrecaoDoJogador: withSafePalette((i: number, correcao: Correction) => {
           /*
            * 🔴 GUARDA ANTES DE APLICAR, e a primeira versão desta linha só aplicava — o que fazia o ciclo
            * ficar PRESO na primeira posição. Quem calcula o passo seguinte é `nextCorrection(p.visual)`, em
@@ -1381,11 +1381,11 @@ export function createGame(o: CreateGameOptions): Engine {
           // fica preso na primeira posição — o defeito do `getPlayers` nomeado mais acima, e não deste ramo.
           const jogador = players()[i] as { visual?: VisualState } | undefined;
           // Uma correcção LIGADA pára a demonstração (ADR-0076): a simulação por cima de uma adaptação ensina uma coisa falsa.
-          const antes = jogador?.visual ?? estadoDoMundo;
-          const estado: VisualState = { ...antes, correcao, simulacao: correcao === 'tricro' ? antes.simulacao : null };
+          const before = jogador?.visual ?? worldState;
+          const estado: VisualState = { ...before, correcao, simulacao: correcao === 'tricro' ? before.simulacao : null };
           if (jogador) jogador.visual = estado;
-          estadoDoMundo = estado;
-          recomporFiltroDoMundo();
+          worldState = estado;
+          recomposeWorldFilter();
         }) }
         : {}),
   });
@@ -1398,27 +1398,27 @@ export function createGame(o: CreateGameOptions): Engine {
    *
    * Não sabendo, é `problems` como qualquer outra lacuna do hospedeiro: o consumidor lê e conserta.
    */
-  const barraUsavel = !!a11yBar
+  const barUsable = !!a11yBar
     && typeof (a11yBar as HTMLElement).addEventListener === 'function'
     && 'innerHTML' in a11yBar;
-  if (a11yBar && !barraUsavel) {
-    problemasDoHospedeiro.push(
+  if (a11yBar && !barUsable) {
+    hostProblems.push(
       'the accessibility bar element takes neither content nor clicks: its icons were not mounted, so a child cannot reach them — give `host.a11yBarHost` a real element',
     );
   }
 
-  if (a11yBar && barraUsavel) {
+  if (a11yBar && barUsable) {
     // 🔴 COM A LEGENDA DO NOME, debaixo da fileira: a barra montada pela engine não a tinha, e o Dev viu-a muda ao
     // navegar e ao passar o rato. `aria-hidden` porque o nome já é DITO (`srSay` no cursor, o `aria-label` no foco).
     a11yBar.innerHTML = iconsMarkup(pauseIcons.iconesMontados) + '<p class="pause-icons-cap" aria-hidden="true"></p>';
-    wireBarCaption(a11yBar as HTMLElement, explicarIconeNoRodape);
+    wireBarCaption(a11yBar as HTMLElement, explainIconInFooter);
     a11yBar.addEventListener('click', (e) => {
       const botao = (e.target as Element | null)?.closest<HTMLElement>('.pi-btn');
       if (!botao) return;
       pauseIcons.iconAct(botao.dataset.pi ?? '', 0);
       pauseIcons.reflectIconsIn(a11yBar, 0);
-      const legenda = a11yBar.querySelector('.pause-icons-cap');
-      if (legenda) legenda.textContent = accessibleLabel(botao); // the NEW state, after the reflection; «N de M» is spoken, never written (ADR-0167)
+      const caption = a11yBar.querySelector('.pause-icons-cap');
+      if (caption) caption.textContent = accessibleLabel(botao); // the NEW state, after the reflection; «N de M» is spoken, never written (ADR-0167)
       // O anúncio lê o `aria-label` DEPOIS do reflexo, porque é ele que carrega o estado NOVO — anunciar
       // antes diria o estado que a criança acabou de deixar.
       srSay(botao.getAttribute('aria-label') ?? '');
@@ -1485,18 +1485,18 @@ export function createGame(o: CreateGameOptions): Engine {
   // (`hospedeiroDaPausa` e `pausaUsavel` foram IÇADOS para cima do `initPauseIcons` em 2026-09-12 — ver a
   //  nota lá. Dependem só de `o.host` e do `$`, que existem desde o início, e a barra precisa da resposta
   //  ANTES de decidir que ícones monta.)
-  if (!pausaUsavel) {
-    problemasDoHospedeiro.push(
+  if (!pauseUsable) {
+    hostProblems.push(
       'the pause menu has nowhere to mount: a child cannot reach the settings during play — set `host.pauseHost` or give '
       + '#game-region room for children (the pause is the engine\'s in every game, ADR-0122; the game only says where it fits)',
     );
   }
-  if (hospedeiroDaPausa && pausaUsavel) {
-    const cartao = pauseIcons.buildScreenPause(0);
+  if (pauseHostEl && pauseUsable) {
+    const cardEl = pauseIcons.buildScreenPause(0);
     // ⚠️ O ID É O QUE A PRÓPRIA ENGINE PROCURA, logo abaixo, no `getPauseMenu`. Montar sem o pôr deixaria o
     // laço tão aberto como estava — o cartão existiria e a navegação de menu continuaria a não o achar.
-    cartao.id = 'vp-pause-0';
-    hospedeiroDaPausa.appendChild(cartao);
+    cardEl.id = 'vp-pause-0';
+    pauseHostEl.appendChild(cardEl);
   }
 
   /*
@@ -1512,21 +1512,21 @@ export function createGame(o: CreateGameOptions): Engine {
    * diálogo de cima para andar com as setas. Um painel pendurado fora desse escopo ABRE, fecha com Escape — e
    * **as setas não andam dentro dele**, sem erro nenhum. Daí a linha de `problems` abaixo em vez do silêncio.
    */
-  if (hospedeiroDaPausa && pausaUsavel) {
-    const regiao = $<HTMLElement>('#game-region');
-    const dentroDoEscopo = !!regiao && typeof regiao.contains === 'function'
-      && regiao.contains(hospedeiroDaPausa);
-    if (!dentroDoEscopo) {
-      problemasDoHospedeiro.push(
+  if (pauseHostEl && pauseUsable) {
+    const regionEl = $<HTMLElement>('#game-region');
+    const insideScope = !!regionEl && typeof regionEl.contains === 'function'
+      && regionEl.contains(pauseHostEl);
+    if (!insideScope) {
+      hostProblems.push(
         'the pause host is outside #game-region: settings panels open, but arrows do not move inside them, so a child '
         + 'who plays by keyboard cannot reach the settings — put `host.pauseHost` inside #game-region',
       );
     }
 
-    const ctxDoPainel = {
+    const panelCtx = {
       procurar: (sel: string) => $<HTMLElement>(sel),
       criar: (tag: string) => doc.createElement(tag),
-      host: hospedeiroDaPausa as HTMLElement,
+      host: pauseHostEl as HTMLElement,
       overlays,
     };
 
@@ -1587,9 +1587,9 @@ export function createGame(o: CreateGameOptions): Engine {
      * pela qual o ADR-0144 escuta a acção e não a tecla.
      */
     // The cartridge's «how to play» slides come first (ADR-0195; issue #188); the help stands with them, with the buttons, or both.
-    if (cartucho.preset || cartucho.howToPlay?.length) {
-      let pararFigura = (): void => {};
-      const painelDeAjuda = mountPanel(ctxDoPainel, {
+    if (cartridge.preset || cartridge.howToPlay?.length) {
+      let stopFigure = (): void => {};
+      const helpPanel = mountPanel(panelCtx, {
         id: 'help',
         rotulos: () => ({
           titulo: t('menu.help'),
@@ -1605,7 +1605,7 @@ export function createGame(o: CreateGameOptions): Engine {
           const lista = $<HTMLElement>('#help-list');
           if (!lista) return;
           while (lista.firstChild) lista.removeChild(lista.firstChild);
-          const linhas = [...(cartucho.howToPlay ?? []), ...helpRows(cartucho.preset, (a) => keyboard.kbFor(0)[a], keyName)];
+          const linhas = [...(cartridge.howToPlay ?? []), ...helpRows(cartridge.preset, (a) => keyboard.kbFor(0)[a], keyName)];
           const ctxDoSlide = { criar: (tag: string) => doc.createElement(tag), t, titulo: t('menu.help') };
           const slides = mountSlides(ctxDoSlide);
           lista.appendChild(slides);
@@ -1615,28 +1615,28 @@ export function createGame(o: CreateGameOptions): Engine {
             reduced: state.defaultReducedMotion(),
           };
           const mostrar = (i: number): { indice: number; falado: string } => {
-            pararFigura();
-            const mostrado = showSlide(slides, linhas, i, ctxDoSlide);
-            const slide = linhas[mostrado.indice];
-            if (slide && 'text' in slide) pararFigura = animateFigure(slides, slide, relogio);
-            return mostrado;
+            stopFigure();
+            const shown = showSlide(slides, linhas, i, ctxDoSlide);
+            const slide = linhas[shown.indice];
+            if (slide && 'text' in slide) stopFigure = animateFigure(slides, slide, relogio);
+            return shown;
           };
           let atual = mostrar(0).indice;
           slides.addEventListener('passo', (ev) => {
-            const nova = nextStep(atual, linhas.length, (ev as CustomEvent<number>).detail);
-            if (nova === atual) return;
-            const mostrado = mostrar(nova);
-            atual = mostrado.indice;
-            srSay(mostrado.falado);
+            const fresh = nextStep(atual, linhas.length, (ev as CustomEvent<number>).detail);
+            if (fresh === atual) return;
+            const shown = mostrar(fresh);
+            atual = shown.indice;
+            srSay(shown.falado);
           });
         },
       });
       // A slide show restores nothing: the reset row the panel shell builds does not show here.
-      const acoesDaAjuda = painelDeAjuda.casca.reset.parentElement;
-      if (acoesDaAjuda) acoesDaAjuda.hidden = true;
-      acoesDaEngine.ajuda = painelDeAjuda.abrir;
+      const helpActions = helpPanel.casca.reset.parentElement;
+      if (helpActions) helpActions.hidden = true;
+      engineActions.ajuda = helpPanel.abrir;
     } else {
-      problemasDoHospedeiro.push(
+      hostProblems.push(
         'the help screen was not mounted: it shows how to play and each position, its key and the game\'s word, and without '
         + '`howToPlay` or `preset` it could only show a child `action2` — declare `howToPlay` (ADR-0195) or `preset` (ADR-0085)',
       );
@@ -1648,7 +1648,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * The shell's «restore defaults» is hidden: a cartridge declares no defaults, and a button that does nothing is the
      * dead control ADR-0106 §5 forbids.
      */
-    const painelDoJogo = mountPanel(ctxDoPainel, {
+    const gamePanel = mountPanel(panelCtx, {
       id: 'game-options',
       rotulos: () => ({
         titulo: t('pause.opcoesdojogo'),
@@ -1656,14 +1656,14 @@ export function createGame(o: CreateGameOptions): Engine {
         rotuloReset: t('menu.restoreDefaults'),
         rotuloFechar: t('pause.pmback'),
       }),
-      render: () => redesenharOpcoesDoJogo(),
+      render: () => redrawGameOptions(),
     });
-    painelDoJogo.casca.reset.hidden = true;
-    redesenharOpcoesDoJogo = () => {
-      drawGameOptions({ ...ctxDoPainel, dizer: srSay }, painelDoJogo.casca.lista, cartucho.gameOptions ?? []);
-      if (!painelDoJogo.casca.overlay.hidden) overlays.fillExplain(painelDoJogo.casca.card);
+    gamePanel.casca.reset.hidden = true;
+    redrawGameOptions = () => {
+      drawGameOptions({ ...panelCtx, dizer: srSay }, gamePanel.casca.lista, cartridge.gameOptions ?? []);
+      if (!gamePanel.casca.overlay.hidden) overlays.fillExplain(gamePanel.casca.card);
     };
-    abrirOpcoesDoJogo = painelDoJogo.abrir;
+    openGameOptions = gamePanel.abrir;
 
     /*
      * ANIMAÇÃO — sensibilidade a movimento, e os quatro campos que a engine ganhou na etapa 1 do ADR-0106.
@@ -1678,7 +1678,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * renomear seria mexer no contrato com markup de consumidores que este repositório não pode medir.
      */
     let motion: SettingsMotionApi | null = null;
-    const painelDeAnim = mountPanel(ctxDoPainel, {
+    const animPanel = mountPanel(panelCtx, {
       id: 'animation',
       idDaLista: 'motion-list',
       rotulos: () => ({
@@ -1698,26 +1698,26 @@ export function createGame(o: CreateGameOptions): Engine {
      * 📌 O rótulo entra pelo próprio painel (`motionMasterLabel`), que o troca conforme o estado; pô-lo aqui
      * daria duas mãos a escrever o mesmo texto, e a que ficasse para trás mentiria sobre o estado.
      */
-    const mestreDeAnim = doc.createElement('button');
-    mestreDeAnim.id = 'motion-master';
-    mestreDeAnim.className = 'mode-btn switch';
-    mestreDeAnim.setAttribute('type', 'button');
-    painelDeAnim.casca.card.insertBefore(mestreDeAnim, painelDeAnim.casca.lista);
+    const animMaster = doc.createElement('button');
+    animMaster.id = 'motion-master';
+    animMaster.className = 'mode-btn switch';
+    animMaster.setAttribute('type', 'button');
+    animPanel.casca.card.insertBefore(animMaster, animPanel.casca.lista);
 
     motion = initSettingsMotion({
       $, srSay, store,
-      getNumPlayers: () => (cartucho.players ?? [null]).length,
-      getPlayers: () => cartucho.players ?? [],
+      getNumPlayers: () => (cartridge.players ?? [null]).length,
+      getPlayers: () => cartridge.players ?? [],
       frontOverlay: overlays.frontOverlay,
       restoreFocus: overlays.restoreFocus,
       fillExplain: overlays.fillExplain,
       toggleBtn,
       // A secção «Personagem» só existe se o JOGO disse que tem um (ADR-0153). Lido a cada render: muda no `mount()`.
-      comPersonagem: () => subjectWord(cartucho.acomodacoes, 'reducedCharacterMotion') !== null,
+      comPersonagem: () => subjectWord(cartridge.acomodacoes, 'reducedCharacterMotion') !== null,
       // and its title is the game's word for it (ADR-0153 confirmation)
-      rotuloDoPersonagem: () => subjectWord(cartucho.acomodacoes, 'reducedCharacterMotion')?.label ?? null,
+      rotuloDoPersonagem: () => subjectWord(cartridge.acomodacoes, 'reducedCharacterMotion')?.label ?? null,
     });
-    acoesDaEngine.anim = painelDeAnim.abrir;
+    engineActions.anim = animPanel.abrir;
 
     /*
      * ACESSIBILIDADE VISUAL (ADR-0151) — e o item deixa de estar travado (ADR-0161).
@@ -1730,7 +1730,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * ⚠️ Os escritores das linhas não oferecidas são inertes DE PROPÓSITO: o `reset` só os chama quando o valor lido
      * difere do padrão, e o valor devolvido aqui É o padrão.
      */
-    const painelVisual = mountPanel(ctxDoPainel, {
+    const visualPanel = mountPanel(panelCtx, {
       id: 'visual',
       rotulos: () => ({
         titulo: t('menu.visual'),
@@ -1739,14 +1739,14 @@ export function createGame(o: CreateGameOptions): Engine {
         rotuloFechar: t('pause.pmback'),
       }),
       render: () => {
-        dicaDoRitmo.textContent = t('visual.legenda.ritmo.dica'); // before `visual.render()` runs `fillExplain`
-        contornoFg.escreverDica();
-        contornoBg.escreverDica();
+        rateHint.textContent = t('visual.legenda.ritmo.dica'); // before `visual.render()` runs `fillExplain`
+        fgOutline.escreverDica();
+        bgOutline.escreverDica();
         visual.render();
-        oferecerDonoEContornos();
-        labelRow(linhaDasLegendas, specDasLegendas()); // in the language of the opening
-        refletirLegendas();
-        refletirRitmoDaLegenda();
+        offerOwnerAndOutlines();
+        labelRow(linhaDasLegendas, captionsSpec()); // in the language of the opening
+        reflectCaptions();
+        reflectCaptionRate();
       },
     });
     /*
@@ -1754,51 +1754,51 @@ export function createGame(o: CreateGameOptions): Engine {
      * the sound captions (`legendarSom`) with no row to change it. Placed after the panel's list, which `visual.render()`
      * rewrites by markup; built once, so its listener is not lost.
      */
-    const specDasLegendas = () => ({ id: 'opt-captions', rotulo: t('visual.captions'), dica: t('visual.captions.dica') });
-    const { linha: linhaDasLegendas, controle: botaoDasLegendas } = controlRow(ctxDoPainel, specDasLegendas());
-    painelVisual.casca.card.insertBefore(linhaDasLegendas, painelVisual.casca.lista.nextSibling);
-    const refletirLegendas = (): void => {
+    const captionsSpec = () => ({ id: 'opt-captions', rotulo: t('visual.captions'), dica: t('visual.captions.dica') });
+    const { linha: linhaDasLegendas, controle: botaoDasLegendas } = controlRow(panelCtx, captionsSpec());
+    visualPanel.casca.card.insertBefore(linhaDasLegendas, visualPanel.casca.lista.nextSibling);
+    const reflectCaptions = (): void => {
       toggleBtn(botaoDasLegendas, state.captionsOn);
       botaoDasLegendas.textContent = toggleLabel(state.captionsOn);
       markChanged(linhaDasLegendas, state.captionsOn !== state.DEFAULTS.captionsOn);
     };
     /* THE CAPTION RATE (ADR-0183 §4; issue #179): 125, 145 or 175 words a minute, by steps, right after the captions switch. */
-    const specDoRitmo = () => ({
+    const rateSpec = () => ({
       rotulo: t('visual.legenda.ritmo'),
       valores: CAPTION_RATES.map((n) => t('visual.legenda.ppm', { n })),
       atual: Math.max(0, (CAPTION_RATES as readonly number[]).indexOf(state.captionPpm)),
     });
-    const linhaDoRitmo = doc.createElement('div');
-    linhaDoRitmo.className = 'ctrl-row ctrl-row--passos';
-    const envelopeDoRitmo = doc.createElement('span');
-    const dicaDoRitmo = doc.createElement('span');
-    dicaDoRitmo.className = 'opt-hint';
+    const rateRowEl = doc.createElement('div');
+    rateRowEl.className = 'ctrl-row ctrl-row--passos';
+    const rateEnvelope = doc.createElement('span');
+    const rateHint = doc.createElement('span');
+    rateHint.className = 'opt-hint';
     // ⚠️ WRITTEN NOW, and again before the panel's render: `visual.render()` runs `fillExplain` on the whole card, and a row it
     // meets with an empty hint is marked done and keeps its hint INSIDE — the Dev saw the explanation in the row.
-    dicaDoRitmo.textContent = t('visual.legenda.ritmo.dica');
-    envelopeDoRitmo.appendChild(dicaDoRitmo);
-    linhaDoRitmo.appendChild(envelopeDoRitmo);
-    const passosDoRitmo = mountSteps(ctxDoPainel, specDoRitmo());
-    passosDoRitmo.id = 'opt-legenda-ppm';
-    linhaDoRitmo.appendChild(passosDoRitmo);
-    painelVisual.casca.card.insertBefore(linhaDoRitmo, linhaDasLegendas.nextSibling);
-    passosDoRitmo.addEventListener('passo', (ev) => {
-      const atual = specDoRitmo().atual;
-      const nova = nextStep(atual, CAPTION_RATES.length, (ev as CustomEvent<number>).detail);
-      if (nova === atual) return;
-      state.setCaptionPpmValue(CAPTION_RATES[nova]!);
-      updateSteps(passosDoRitmo, specDoRitmo());
-      markChanged(linhaDoRitmo, state.captionPpm !== state.DEFAULTS.captionPpm);
+    rateHint.textContent = t('visual.legenda.ritmo.dica');
+    rateEnvelope.appendChild(rateHint);
+    rateRowEl.appendChild(rateEnvelope);
+    const rateSteps = mountSteps(panelCtx, rateSpec());
+    rateSteps.id = 'opt-legenda-ppm';
+    rateRowEl.appendChild(rateSteps);
+    visualPanel.casca.card.insertBefore(rateRowEl, linhaDasLegendas.nextSibling);
+    rateSteps.addEventListener('passo', (ev) => {
+      const atual = rateSpec().atual;
+      const fresh = nextStep(atual, CAPTION_RATES.length, (ev as CustomEvent<number>).detail);
+      if (fresh === atual) return;
+      state.setCaptionPpmValue(CAPTION_RATES[fresh]!);
+      updateSteps(rateSteps, rateSpec());
+      markChanged(rateRowEl, state.captionPpm !== state.DEFAULTS.captionPpm);
       srSay(`${t('visual.legenda.ritmo')}: ${t('visual.legenda.ppm', { n: state.captionPpm })}`);
     });
-    const refletirRitmoDaLegenda = (): void => {
-      updateSteps(passosDoRitmo, specDoRitmo());
-      dicaDoRitmo.textContent = t('visual.legenda.ritmo.dica');
-      markChanged(linhaDoRitmo, state.captionPpm !== state.DEFAULTS.captionPpm);
+    const reflectCaptionRate = (): void => {
+      updateSteps(rateSteps, rateSpec());
+      rateHint.textContent = t('visual.legenda.ritmo.dica');
+      markChanged(rateRowEl, state.captionPpm !== state.DEFAULTS.captionPpm);
     };
     botaoDasLegendas.addEventListener('click', () => {
       state.setCaptionsOnValue(!state.captionsOn);
-      refletirLegendas();
+      reflectCaptions();
       srSay(t(state.captionsOn ? 'sr.visual.captionsOn' : 'sr.visual.captionsOff'));
     });
     /*
@@ -1807,85 +1807,85 @@ export function createGame(o: CreateGameOptions): Engine {
      * `#opt-ownercolors` at every render — and shown or hidden at each opening: `mount()` may have swapped the answer.
      * Owner colours carries the game's word; the outlines are two positions of one subject, named by the engine.
      */
-    const specDoDono = () => {
-      const palavra = subjectWord(cartucho.acomodacoes, 'ownerColors');
+    const ownerSpec = () => {
+      const palavra = subjectWord(cartridge.acomodacoes, 'ownerColors');
       return { id: 'opt-dono', rotulo: palavra?.label ?? '', dica: palavra?.hint };
     };
-    const { linha: linhaDoDono, controle: botaoDoDono } = controlRow(ctxDoPainel, specDoDono());
-    const refletirDono = (): void => {
+    const { linha: linhaDoDono, controle: botaoDoDono } = controlRow(panelCtx, ownerSpec());
+    const reflectOwner = (): void => {
       toggleBtn(botaoDoDono, state.ownerColors);
       botaoDoDono.textContent = toggleLabel(state.ownerColors);
       markChanged(linhaDoDono, state.ownerColors !== state.DEFAULTS.ownerColors);
     };
     botaoDoDono.addEventListener('click', () => {
       state.setOwnerColorsValue(!state.ownerColors);
-      refletirDono();
-      srSay(`${specDoDono().rotulo}: ${toggleLabel(state.ownerColors)}`);
+      reflectOwner();
+      srSay(`${ownerSpec().rotulo}: ${toggleLabel(state.ownerColors)}`);
     });
-    const NIVEIS_DE_CONTORNO = ['visual.contorno.0', 'visual.contorno.1', 'visual.contorno.2'] as const;
-    const contorno = (plano: 'fg' | 'bg') => {
+    const OUTLINE_LEVELS = ['visual.contorno.0', 'visual.contorno.1', 'visual.contorno.2'] as const;
+    const outline = (plano: 'fg' | 'bg') => {
       const ler = (): number => (plano === 'fg' ? state.hcOutlineFg : state.hcOutlineBg);
-      const escrever = plano === 'fg' ? state.setOutlineFgValue : state.setOutlineBgValue;
-      const spec = () => ({ rotulo: t(`visual.contorno.${plano}`), valores: NIVEIS_DE_CONTORNO.map((k) => t(k)), atual: ler() });
-      const linhaC = doc.createElement('div');
-      linhaC.className = 'ctrl-row ctrl-row--passos';
+      const write = plano === 'fg' ? state.setOutlineFgValue : state.setOutlineBgValue;
+      const spec = () => ({ rotulo: t(`visual.contorno.${plano}`), valores: OUTLINE_LEVELS.map((k) => t(k)), atual: ler() });
+      const rowC = doc.createElement('div');
+      rowC.className = 'ctrl-row ctrl-row--passos';
       const envelope = doc.createElement('span');
       const dica = doc.createElement('span');
       dica.className = 'opt-hint';
       envelope.appendChild(dica);
-      linhaC.appendChild(envelope);
-      const passos = mountSteps(ctxDoPainel, spec());
+      rowC.appendChild(envelope);
+      const passos = mountSteps(panelCtx, spec());
       passos.id = `opt-contorno-${plano}`;
-      linhaC.appendChild(passos);
+      rowC.appendChild(passos);
       passos.addEventListener('passo', (ev) => {
-        const nova = nextStep(ler(), NIVEIS_DE_CONTORNO.length, (ev as CustomEvent<number>).detail);
-        if (nova === ler()) return;
-        escrever(nova);
+        const fresh = nextStep(ler(), OUTLINE_LEVELS.length, (ev as CustomEvent<number>).detail);
+        if (fresh === ler()) return;
+        write(fresh);
         updateSteps(passos, spec());
-        srSay(`${t(`visual.contorno.${plano}`)}: ${t(NIVEIS_DE_CONTORNO[nova]!)}`);
+        srSay(`${t(`visual.contorno.${plano}`)}: ${t(OUTLINE_LEVELS[fresh]!)}`);
       });
       // the hint is written BEFORE the panel's render, which runs `fillExplain`: written after, it stays inside the row
       const escreverDica = (): void => {
-        dica.textContent = subjectWord(cartucho.acomodacoes, 'contrastOutlines')?.hint ?? t(`visual.contorno.${plano}.dica`);
+        dica.textContent = subjectWord(cartridge.acomodacoes, 'contrastOutlines')?.hint ?? t(`visual.contorno.${plano}.dica`);
       };
       escreverDica();
       const refletir = (): void => { updateSteps(passos, spec()); };
-      return { linha: linhaC, refletir, escreverDica };
+      return { linha: rowC, refletir, escreverDica };
     };
-    const contornoFg = contorno('fg');
-    const contornoBg = contorno('bg');
-    const oferecerDonoEContornos = (): void => {
-      linhaDoDono.hidden = subjectWord(cartucho.acomodacoes, 'ownerColors') === null;
-      if (!linhaDoDono.hidden) { labelRow(linhaDoDono, specDoDono()); refletirDono(); }
-      const semContornos = subjectWord(cartucho.acomodacoes, 'contrastOutlines') === null;
-      for (const c of [contornoFg, contornoBg]) { c.linha.hidden = semContornos; if (!semContornos) c.refletir(); }
+    const fgOutline = outline('fg');
+    const bgOutline = outline('bg');
+    const offerOwnerAndOutlines = (): void => {
+      linhaDoDono.hidden = subjectWord(cartridge.acomodacoes, 'ownerColors') === null;
+      if (!linhaDoDono.hidden) { labelRow(linhaDoDono, ownerSpec()); reflectOwner(); }
+      const withoutOutlines = subjectWord(cartridge.acomodacoes, 'contrastOutlines') === null;
+      for (const c of [fgOutline, bgOutline]) { c.linha.hidden = withoutOutlines; if (!withoutOutlines) c.refletir(); }
     };
     // after the list, owner colours first, then the two outlines (the captions row, built above, follows them)
-    for (const l of [contornoBg.linha, contornoFg.linha, linhaDoDono]) painelVisual.casca.card.insertBefore(l, painelVisual.casca.lista.nextSibling);
-    oferecerDonoEContornos();
-    const semEfeito = (): void => {};
+    for (const l of [bgOutline.linha, fgOutline.linha, linhaDoDono]) visualPanel.casca.card.insertBefore(l, visualPanel.casca.lista.nextSibling);
+    offerOwnerAndOutlines();
+    const noEffect = (): void => {};
     const visual = initSettingsVisual({
       $, srSay,
       getNumPlayers: () => players().length,
-      getPlayers: () => cartucho.players ?? [],
+      getPlayers: () => cartridge.players ?? [],
       getVisualSettings: () => ({
         lq: getLqT(), cbSafe: state.cbSafe,
         ownerColors: state.ownerColors, outlineFg: state.hcOutlineFg, outlineBg: state.hcOutlineBg,
         roleColors: { ...HC_ROLE_DEF },
       }),
       getSelectedPlayer: () => 0,
-      setSelectedPlayer: semEfeito,
-      setPlayerViz: semEfeito,
-      renderEixosVisuais: semEfeito,
+      setSelectedPlayer: noEffect,
+      setPlayerViz: noEffect,
+      renderEixosVisuais: noEffect,
       setLq,
       setCbSafe: state.setCbSafeValue,
       // the panel's «restore» puts these back too (ADR-0188): their rows now exist where the game answered them
       setOwnerColors: state.setOwnerColorsValue, setOutlineFg: state.setOutlineFgValue, setOutlineBg: state.setOutlineBgValue,
-      setRoleColor: semEfeito, resetRoleColors: semEfeito,
+      setRoleColor: noEffect, resetRoleColors: noEffect,
       fillExplain: overlays.fillExplain,
       oferecer: { dono: false, papeis: false },
     });
-    acoesDaEngine.visual = painelVisual.abrir;
+    engineActions.visual = visualPanel.abrir;
 
     /*
      * MODO EMPATIA (ADR-0151) — e o último item travado do submenu destrava (ADR-0161).
@@ -1900,8 +1900,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * ⚠️ Sem cadeira de rodas (cortada pelo ADR-0151).
      * ⚠️ E a simulação respeita o ADR-0076: com uma correcção de cor ligada ela não corre, e DIZ porquê.
      */
-    const SIMULACOES_DO_MUNDO = ['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind'];
-    const painelDeEmpatia = mountPanel(ctxDoPainel, {
+    const WORLD_SIMULATIONS = ['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind'];
+    const empathyPanel = mountPanel(panelCtx, {
       id: 'empathy',
       rotulos: () => ({
         titulo: t('menu.empathy'),
@@ -1911,58 +1911,58 @@ export function createGame(o: CreateGameOptions): Engine {
       }),
       // a linha da perda auditiva nasceu no idioma de recuo: reetiquetada a cada abertura, como o interior auditivo
       render: () => {
-        labelRow(linhaDaAudicao, specDaAudicao());
-        labelRow(linhaUmPorVez, specUmPorVez());
-        labelRow(linhaSemForca, specSemForca());
+        labelRow(hearingRow, hearingSpec());
+        labelRow(oneAtOnceRow, oneAtOnceSpec());
+        labelRow(noStrengthRow, noStrengthSpec());
         empatia.render();
       },
     });
     // A linha da perda auditiva nasce ANTES do `init`, que liga o clique dela uma vez (a regra de ordem do `#typo-reset`).
-    const specDaAudicao = () => ({ id: 'opt-hearing', rotulo: t('empathy.hearing'), dica: t('empathy.hearing.dica') });
-    const linhaDaAudicao = controlRow(ctxDoPainel, specDaAudicao()).linha;
-    painelDeEmpatia.casca.card.insertBefore(linhaDaAudicao, painelDeEmpatia.casca.lista);
+    const hearingSpec = () => ({ id: 'opt-hearing', rotulo: t('empathy.hearing'), dica: t('empathy.hearing.dica') });
+    const hearingRow = controlRow(panelCtx, hearingSpec()).linha;
+    empathyPanel.casca.card.insertBefore(hearingRow, empathyPanel.casca.lista);
     // THE TWO MOTOR SIMULATIONS (ADR-0181), before the `init`, which wires `#opt-onebtn` once (the same order rule).
-    const specUmPorVez = () => ({ id: 'opt-onebtn', rotulo: t('empathy.onebtn'), dica: t('empathy.onebtn.dica') });
-    const specSemForca = () => ({ id: 'opt-semforca', rotulo: t('empathy.semforca'), dica: t('empathy.semforca.dica') });
-    const linhaUmPorVez = controlRow(ctxDoPainel, specUmPorVez()).linha;
-    const linhaSemForca = controlRow(ctxDoPainel, specSemForca()).linha;
-    painelDeEmpatia.casca.card.insertBefore(linhaUmPorVez, painelDeEmpatia.casca.lista);
-    painelDeEmpatia.casca.card.insertBefore(linhaSemForca, painelDeEmpatia.casca.lista);
-    const refletirSimulacoesMotoras = (): void => {
+    const oneAtOnceSpec = () => ({ id: 'opt-onebtn', rotulo: t('empathy.onebtn'), dica: t('empathy.onebtn.dica') });
+    const noStrengthSpec = () => ({ id: 'opt-semforca', rotulo: t('empathy.semforca'), dica: t('empathy.semforca.dica') });
+    const oneAtOnceRow = controlRow(panelCtx, oneAtOnceSpec()).linha;
+    const noStrengthRow = controlRow(panelCtx, noStrengthSpec()).linha;
+    empathyPanel.casca.card.insertBefore(oneAtOnceRow, empathyPanel.casca.lista);
+    empathyPanel.casca.card.insertBefore(noStrengthRow, empathyPanel.casca.lista);
+    const reflectMobilitySimulations = (): void => {
       for (const [id, on] of [['#opt-onebtn', state.oneButton], ['#opt-semforca', state.noGripStrength]] as const) {
         const b = $<HTMLElement>(id);
         if (!b) continue;
         toggleBtn(b, on);
         b.textContent = toggleLabel(on);
       }
-      markChanged(linhaSemForca, state.noGripStrength !== state.DEFAULTS.noGripStrength);
+      markChanged(noStrengthRow, state.noGripStrength !== state.DEFAULTS.noGripStrength);
     };
-    const simular = (i: number, chave: string): boolean => {
+    const simulate = (i: number, chave: string): boolean => {
       const simulacao = (chave === 'normal' ? null : chave) as VisualState['simulacao'];
       const jogador = players()[i] as { visual?: VisualState; viz?: string } | undefined;
-      const base = jogador?.visual ?? estadoDoMundo;
+      const base = jogador?.visual ?? worldState;
       const motivo = simulacao ? simulationUnavailable(base) : null;
       if (motivo) { srSay(t(`sim.indisponivel.${motivo}`)); return false; } // refusal VISÍVEL e explicada (ADR-0076)
       const estado: VisualState = { ...base, simulacao };
       if (jogador) { jogador.visual = estado; jogador.viz = chave; }
-      estadoDoMundo = estado;
-      recomporFiltroDoMundo();
+      worldState = estado;
+      recomposeWorldFilter();
       return true;
     };
     // ONE LIST, NOT SEVEN BUTTONS (ADR-0159 rule 7) — `ui/simulation-list` says why, and it is not wiring.
-    const listaDeSimulacoes = createSimulationList({
+    const simulationsList = createSimulationList({
       find: $,
       make: (tag) => doc.createElement(tag),
-      keys: SIMULACOES_DO_MUNDO,
-      running: () => estadoDoMundo.simulacao ?? null,
+      keys: WORLD_SIMULATIONS,
+      running: () => worldState.simulacao ?? null,
       // a refused simulation (ADR-0076) is announced by `simular` and the re-render puts the list back on what runs
-      picked: (chave) => { simular(0, chave); empatia.render(); },
+      picked: (chave) => { simulate(0, chave); empatia.render(); },
     });
     const empatia = initSettingsEmpathy({
       $, srSay, store,
-      renderVizGroup: (listSel) => { listaDeSimulacoes.render(listSel); },
-      reflectMotorEmpathy: refletirSimulacoesMotoras,
-      reflectVizButtons: semEfeito,
+      renderVizGroup: (listSel) => { simulationsList.render(listSel); },
+      reflectMotorEmpathy: reflectMobilitySimulations,
+      reflectVizButtons: noEffect,
       frontOverlay: overlays.frontOverlay,
       fillExplain: overlays.fillExplain,
       restoreFocus: overlays.restoreFocus,
@@ -1974,26 +1974,26 @@ export function createGame(o: CreateGameOptions): Engine {
       setOneButton: (on) => {
         state.setOneButtonValue(on);
         srSay(t(on ? 'sr.empathy.onebtnOn' : 'sr.empathy.onebtnOff'));
-        refletirSimulacoesMotoras();
+        reflectMobilitySimulations();
       },
-      setWheelchair: semEfeito,
+      setWheelchair: noEffect,
       getOneButton: () => state.oneButton,
       getWheelchair: () => state.DEFAULTS.wheelchair,
-      getPlayers: () => [{ viz: estadoDoMundo.simulacao ?? 'normal' }],
-      setPlayerViz: (i, modo) => { simular(i, modo); },
+      getPlayers: () => [{ viz: worldState.simulacao ?? 'normal' }],
+      setPlayerViz: (i, modo) => { simulate(i, modo); },
     });
     // «sem força para segurar» is wired here: the empathy module predates it. Refused over toggle keys (ADR-0076): a latch
     // would hold what the simulation lets go, and the demonstration would show the accommodation instead of the difficulty.
     $<HTMLElement>('#opt-semforca')?.addEventListener('click', () => {
-      const ligar = !state.noGripStrength;
-      if (ligar && players().some((p) => (p as { toggleMove?: boolean }).toggleMove)) { srAlert(t('sim.indisponivel.alternancia')); return; }
-      state.setNoGripStrengthValue(ligar);
-      srSay(t(ligar ? 'sr.empathy.semforcaOn' : 'sr.empathy.semforcaOff'));
+      const wire = !state.noGripStrength;
+      if (wire && players().some((p) => (p as { toggleMove?: boolean }).toggleMove)) { srAlert(t('sim.indisponivel.alternancia')); return; }
+      state.setNoGripStrengthValue(wire);
+      srSay(t(wire ? 'sr.empathy.semforcaOn' : 'sr.empathy.semforcaOff'));
       empatia.render();
     });
     // and the panel's «restore defaults» turns it off too, after the module's own reset
     $<HTMLElement>('#empathy-reset')?.addEventListener('click', () => { state.setNoGripStrengthValue(false); empatia.render(); });
-    acoesDaEngine.empatia = painelDeEmpatia.abrir;
+    engineActions.empatia = empathyPanel.abrir;
 
     /*
      * ACESSIBILIDADE AUDITIVA — o maior dos oito, e o que mais tinha a perder por não existir.
@@ -2006,7 +2006,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * todos da engine, e `SinkPlayer` tem os campos todos opcionais — logo os jogadores do cartucho servem
      * como estão. Era o painel mais caro de montar e o menos dependente de quem o monta.
      */
-    const painelDeAudio = mountPanel(ctxDoPainel, {
+    const audioPanel = mountPanel(panelCtx, {
       id: 'audio',
       // 📌 A LISTA DA CASCA É A DA NAVEGAÇÃO SONORA desde o ADR-0151: as categorias de gosto foram para o «Áudio».
       // O id `navsound-list` é o que `initSettingsAudio` já preenche com sonar, guarda e guia.
@@ -2028,18 +2028,18 @@ export function createGame(o: CreateGameOptions): Engine {
        * só. Foi preciso o passo do plano que eu ainda não tinha dado.
        */
       render: () => {
-        mountAudioInside(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
-        esconderLinhasSemAssunto();
+        mountAudioInside(panelCtx, audioPanel.casca.card, audioPanel.casca.lista);
+        hideRowsWithoutSubject();
         audio?.renderAudio();
       },
     });
-    mountAudioInside(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
+    mountAudioInside(panelCtx, audioPanel.casca.card, audioPanel.casca.lista);
     /*
      * ÁUDIO — o som geral e as quatro categorias de gosto (ADR-0151 §2 item 4), separado da acessibilidade auditiva.
      * ⚠️ MONTADO ANTES do `initSettingsAudio`, pela regra de ordem dos irmãos: o interruptor geral, o volume e o
      * «repor» deste painel são ligados UMA vez, no arranque.
      */
-    const painelDeSom = mountPanel(ctxDoPainel, {
+    const soundPanel = mountPanel(panelCtx, {
       id: 'som',
       idDaLista: 'audio-list',
       rotulos: () => ({
@@ -2049,29 +2049,29 @@ export function createGame(o: CreateGameOptions): Engine {
         rotuloFechar: t('pause.pmback'),
       }),
       render: () => {
-        mountSoundInside(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
+        mountSoundInside(panelCtx, soundPanel.casca.card, soundPanel.casca.lista);
         audio?.renderAudio();
       },
     });
-    mountSoundInside(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
+    mountSoundInside(panelCtx, soundPanel.casca.card, soundPanel.casca.lista);
     // As duas linhas do painel auditivo que só existem onde há assunto — `ui/audio-rows-that-apply` diz porquê, e
     // não é fiação. ⚠️ Lido a cada abertura: a topologia é função, e um jogo muda de exigências entre fases (ADR-0084).
-    const esconderLinhasSemAssunto = (): void => showOnlyRowsThatApply({
+    const hideRowsWithoutSubject = (): void => showOnlyRowsThatApply({
       find: $,
-      caneWord: () => subjectWord(cartucho.acomodacoes, 'caneSpacing'),
+      caneWord: () => subjectWord(cartridge.acomodacoes, 'caneSpacing'),
       hasNavigationSound: () => contractSubjects({
-        declaration: cartucho.declaration,
-        actions: cartucho.preset ? presetActions(cartucho.preset) : [],
+        declaration: cartridge.declaration,
+        actions: cartridge.preset ? presetActions(cartridge.preset) : [],
         players: players().length,
       }).has('navigationSound'),
     });
-    esconderLinhasSemAssunto();
+    hideRowsWithoutSubject();
     audio = initSettingsAudio({
       $, srSay, store,
       audioCats: AUDIO_CATS,
       toggleBtn,
       getNumPlayers: () => players().length,
-      getPlayers: () => cartucho.players ?? [],
+      getPlayers: () => cartridge.players ?? [],
       getSoundOn: () => soundOn,
       setSoundOn,
       getVolume: () => volume,
@@ -2079,7 +2079,7 @@ export function createGame(o: CreateGameOptions): Engine {
       getAudioCat: () => audioCat,
       setCatGain,
       tts,
-      getModoCego: lerModoCego,
+      getModoCego: readBlindMode,
       // 📌 O padrão do `core/state`: grava, persiste, avisa. Os efeitos de jogo são REACÇÃO, e quem reage
       // assina `on('blindMode', …)` — é a mesma decisão que o `ui/pause-icons` já tomou para o ícone.
       setModoCego: state.setBlindModeValue,
@@ -2087,19 +2087,19 @@ export function createGame(o: CreateGameOptions): Engine {
       setCaneBlockDiv: state.setCaneBlockDivValue,
       fillExplain: overlays.fillExplain,
     });
-    acoesDaEngine.audio = painelDeAudio.abrir;
-    acoesDaEngine.som = painelDeSom.abrir;
+    engineActions.audio = audioPanel.abrir;
+    engineActions.som = soundPanel.abrir;
   }
 
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.
   const sonar = createAudioSonar({
-    topology: () => cartucho.declaration.topology(),
-    targetsOf: (i) => cartucho.declaration.targetsOf(i),
-    nameAt: (at) => cartucho.declaration.nameAt(at),
+    topology: () => cartridge.declaration.topology(),
+    targetsOf: (i) => cartridge.declaration.targetsOf(i),
+    nameAt: (at) => cartridge.declaration.nameAt(at),
     // Campo 2 + o barramento do mixer: o que o GUIA CONTÍNUO precisa e o bipe não precisava (#84 item 2). O
     // `roleAt` é o que deixa a rota contornar parede; o `catNode`/`audioOut`/`getVolume` são o que põem um
     // grafo PERMANENTE no mesmo cursor de volume que todo o resto do áudio usa.
-    roleAt: (at) => cartucho.declaration.roleAt(at),
+    roleAt: (at) => cartridge.declaration.roleAt(at),
     tonePan, srSay, narrate: (texto) => tts.narrate(texto),
     catNode, audioOut, getVolume: () => volume,
     // ⚠️ A RESPOSTA, E NÃO A TABELA (#104). O `platform/audio-sonar` recebia o `VIZ_BY_KEY` e atravessava-o
@@ -2109,14 +2109,14 @@ export function createGame(o: CreateGameOptions): Engine {
       const v = (pl as { visual?: VisualState }).visual;
       return !!v && (isBlind(v) || isLowVision(v));
     },
-    getModoCego: lerModoCego, LOGICAL_W,
+    getModoCego: readBlindMode, LOGICAL_W,
     // O jogador DERIVADO do foco: campo 4 respondendo "onde a criança está". Um jogo que não fornece lista
     // ainda tem sonar, e é isso que faz a pilha de acessibilidade não ser acessório.
-    getPlayers: cartucho.sonarPlayers ?? (() => {
-      const f = cartucho.declaration.focusOf(0);
+    getPlayers: cartridge.sonarPlayers ?? (() => {
+      const f = cartridge.declaration.focusOf(0);
       return f ? [{ i: 0, x: f.at.x, y: f.at.y, visual: PADRAO }] : [];
     }),
-    getNumPlayers: () => (cartucho.players ?? [null]).length,
+    getNumPlayers: () => (cartridge.players ?? [null]).length,
     getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat,
   });
 
@@ -2137,22 +2137,22 @@ export function createGame(o: CreateGameOptions): Engine {
    *
    * 📌 `null` é o valor honesto de «este jogo não tem opinião», e é também o que o `desmontar()` escreve.
    */
-  function registrarMapeamentosDoCartucho(): void {
+  function registerCartridgeMappings(): void {
     registerKeyboardMapping(
-      cartucho.declaration.mapeamentoDoTeclado
-        ? (jogadores, assento) => cartucho.declaration.mapeamentoDoTeclado!(jogadores, assento)
+      cartridge.declaration.mapeamentoDoTeclado
+        ? (jogadores, assento) => cartridge.declaration.mapeamentoDoTeclado!(jogadores, assento)
         : null,
     );
     // ⚠️ E O DO CONTROLE REGISTA-SE AQUI AINDA QUE ESTA RAIZ NÃO MONTE GAMEPAD NENHUM. Não é descuido: quem
     // chama `initGamepad` é o cartucho, e é exactamente por isso que o registo não pode viver lá — seria mais
     // um campo que um jogo pode esquecer, e esquecê-lo devolve o mapa da ENGINE a quem declarou outro, calado.
     registerPadMapping(
-      cartucho.declaration.mapeamentoDoPad
-        ? (jogadores, assento) => cartucho.declaration.mapeamentoDoPad!(jogadores, assento)
+      cartridge.declaration.mapeamentoDoPad
+        ? (jogadores, assento) => cartridge.declaration.mapeamentoDoPad!(jogadores, assento)
         : null,
     );
   }
-  registrarMapeamentosDoCartucho();
+  registerCartridgeMappings();
   initKB();
   // (`semAlcance`, `semJogadores` e `players` SUBIRAM para cima do `initPauseIcons` em 2026-09-12 — issue #147.)
   const keyboard = initKeyboardRuntime({
@@ -2160,7 +2160,7 @@ export function createGame(o: CreateGameOptions): Engine {
   });
   /** O painel «Mapear teclado», quando montado. Declarado aqui porque a navegação de menu, logo abaixo, pergunta-lhe se
    *  está a capturar uma tecla — e ele só nasce com o painel motora, mais adiante. */
-  let controlesDoTeclado: SettingsControlsApi | null = null;
+  let keyboardControls: SettingsControlsApi | null = null;
   keyboard.assignControls();
 
   /*
@@ -2168,9 +2168,9 @@ export function createGame(o: CreateGameOptions): Engine {
    * o ADR-0224, também o comando — e escrever o mesmo `??` em dois sítios é escrever a mesma decisão duas vezes, que é
    * a forma de defeito que este ficheiro já pagou noutras três.
    */
-  const naBarraDe = cartucho.naBarraDe ?? ((i: number) => pauseIcons.naBarraDe(i));
-  const navBar = cartucho.navBar ?? ((i: number, k: NavKeys, withStart?: boolean) => pauseIcons.navBar(i, k, withStart));
-  const setPauseActor = cartucho.setPauseActor ?? ((): void => {});
+  const naBarraDe = cartridge.naBarraDe ?? ((i: number) => pauseIcons.naBarraDe(i));
+  const navBar = cartridge.navBar ?? ((i: number, k: NavKeys, withStart?: boolean) => pauseIcons.navBar(i, k, withStart));
+  const setPauseActor = cartridge.setPauseActor ?? ((): void => {});
 
   // 6. Navegação de menu. Os três declínios entram como AUSÊNCIA DECLARADA, não como getter que devolve null.
   const nav = initMenuNav({
@@ -2181,14 +2181,14 @@ export function createGame(o: CreateGameOptions): Engine {
     // «não» na raiz do cartão faz `setPhase('playing')` (`ui/menu-nav:403`) e mais nada — não esconde nada —,
     // então num jogo sem o gancho o Escape não fechava a pausa que o ADR-0144 agora abre. Passa pelo mesmo
     // `mudarDeFase` que o item «continuar»: uma saída só, seja qual for a porta por que a criança sai.
-    setPhase: mudarDeFase,
+    setPhase: changePhase,
     setPauseActor,
     srSay,
     // Sem opinião declarada, o índice fica LIGADO: quem precisa dele para se orientar não tem como saber
     // que ele existe se vier desligado (a mesma razão de o modo cego nascer com TTS e sonar).
-    comIndice: cartucho.comIndice ?? (() => true),
-    explicarItem: (texto) => escreverNoRodape(texto),
-    isNavigable: cartucho.isNavigable ?? (() => true),
+    comIndice: cartridge.comIndice ?? (() => true),
+    explicarItem: (texto) => writeInFooter(texto),
+    isNavigable: cartridge.isNavigable ?? (() => true),
     /*
      * ⚠️ ESTE PADRÃO ERA `() => false` / `() => {}`, E DESDE HOJE ISSO SERIA UM BURACO QUE EU ABRI. O
      * comentário que estava aqui dizia «um hospedeiro que não tenha barra de acessibilidade responde nunca e
@@ -2210,7 +2210,7 @@ export function createGame(o: CreateGameOptions): Engine {
     navBar,
     // ⚠️ ERA `() => false`: sem painel de remapeamento não havia captura. Agora há (ADR-0151), e com isto a falso a
     // seta que a criança quer gravar navegava o menu em vez de ficar na tecla.
-    isCapturing: () => controlesDoTeclado?.isCapturing() ?? false,
+    isCapturing: () => keyboardControls?.isCapturing() ?? false,
     closePadWiz: () => {},
     whichPlayer: (code) => keyboard.whichPlayer(code),
     actionOf: (code, i) => keyboard.actionOf(code, i),
@@ -2313,27 +2313,27 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 `retirarAvisoDeAlcance()` corre SEMPRE antes, e não só quando há o que mostrar: um cartucho que não
    * tem nada a avisar tem de apagar o aviso do anterior, e é esse o caso que se esquece.
    */
-  function retirarAvisoDeAlcance(): void {
-    const aviso = $<HTMLElement>(`#${REACH_NOTICE_ID}`);
-    if (!aviso) return;
+  function removeReachNotice(): void {
+    const notice = $<HTMLElement>(`#${REACH_NOTICE_ID}`);
+    if (!notice) return;
     // ⚠️ CAPACIDADE E NÃO TIPO, pela mesma razão que este ficheiro já escreve mais acima sobre o
     // `instanceof HTMLElement`: o hospedeiro pode ser um documento falso, e os que estes testes usam têm
     // `parentNode` mas não `remove`. Perguntar pelo método é o que funciona nos dois.
-    if (typeof aviso.remove === 'function') aviso.remove();
-    else aviso.parentNode?.removeChild(aviso);
+    if (typeof notice.remove === 'function') notice.remove();
+    else notice.parentNode?.removeChild(notice);
   }
-  function derivarAlcance(): Reach {
-    const acoes = cartucho.preset ? presetActions(cartucho.preset) : [];
+  function deriveReach(): Reach {
+    const actionList = cartridge.preset ? presetActions(cartridge.preset) : [];
     const a = reach(
       defaultTransports(disponibilidade),
-      acoes,
-      cartucho.declaration.holdsAtOnce(),
-      cartucho.declaration.needsPointer?.() ?? false,
+      actionList,
+      cartridge.declaration.holdsAtOnce(),
+      cartridge.declaration.needsPointer?.() ?? false,
     );
-    retirarAvisoDeAlcance();
+    removeReachNotice();
     // ⚠️ SÓ APARECE QUANDO HÁ O QUE DIZER. Um aviso que aparece sempre deixa de ser lido, e um jogo cujas
     // ações cabem no toque não tem nada a avisar — que é o caso comum e tem de continuar silencioso.
-    if (acoes.length) {
+    if (actionList.length) {
       showReachNotice({
         procurar: (sel) => $<HTMLElement>(sel),
         criar: (tag) => doc.createElement(tag),
@@ -2343,7 +2343,7 @@ export function createGame(o: CreateGameOptions): Engine {
     }
     return a;
   }
-  let alcanceAtual = derivarAlcance();
+  let currentReach = deriveReach();
 
   // O ANÚNCIO DE QUE O LAÇO PAROU (ADR-0054). Entregue e não instalado: quem chama `startLoop` é o JOGO, que
   // é o dono do ticker. Um jogo que monte o laço sem passar isto continua a PARAR — parar não é opcional; o
@@ -2375,17 +2375,17 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ O PALCO é a casca `#stage-wrap`/`.stage-wrap` quando existe; sem ela, o pai da região — o espaço que ela tem.
    * ⚠️ POR CAPACIDADE, como o resto: um duplo sem `style.setProperty` não é redimensionado, e o boot não cai por isso.
    */
-  let escalaAplicada: Scale | null = null;
+  let appliedScale: Scale | null = null;
   /**
    * What departs is SAID (ADR-0163 rule 4): the region's measured size against the one the engine gave it, read when
    * `problems` is read — a cartridge that resizes the region after boot is seen then, and the line goes when it stops.
    */
-  function regiaoRedimensionadaPeloCartucho(): string | null {
-    const regiao = $<HTMLElement>('#game-region');
-    if (!escalaAplicada || !regiao || typeof regiao.getBoundingClientRect !== 'function') return null;
-    const r = regiao.getBoundingClientRect();
+  function regionResizedByCartridge(): string | null {
+    const regionEl = $<HTMLElement>('#game-region');
+    if (!appliedScale || !regionEl || typeof regionEl.getBoundingClientRect !== 'function') return null;
+    const r = regionEl.getBoundingClientRect();
     if (!r.width || !r.height) return null; // not laid out: nothing measured, nothing to accuse
-    const { largura, altura } = escalaAplicada;
+    const { largura, altura } = appliedScale;
     if (Math.abs(r.width - largura) < 1 && Math.abs(r.height - altura) < 1) return null;
     return `the cartridge sized #game-region to ${Math.round(r.width)}×${Math.round(r.height)} over the engine's `
       + `${Math.round(largura)}×${Math.round(altura)}: text and targets stop following the screen, so a child with low vision `
@@ -2397,21 +2397,21 @@ export function createGame(o: CreateGameOptions): Engine {
    * muda a cada `resize`. Passá-las por valor congelaria a primeira resposta, e um elemento fora da página continua a
    * responder `getBoundingClientRect()` sem se queixar.
    */
-  const contextoDoDesenho: DrawingProblemsCtx = {
+  const drawingContext: DrawingProblemsCtx = {
     region: () => $<HTMLElement>('#game-region'),
     bar: () => a11yBar,
-    scale: () => escalaAplicada,
+    scale: () => appliedScale,
     computedStyle: typeof win.getComputedStyle === 'function' ? (el) => win.getComputedStyle(el) : undefined,
   };
-  function aplicarResolucao(): void {
-    const regiao = $<HTMLElement>('#game-region');
-    const palco = $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap') ?? (regiao?.parentElement ?? null);
-    if (!regiao || !palco || typeof regiao.style?.setProperty !== 'function') return;
+  function applyResolution(): void {
+    const regionEl = $<HTMLElement>('#game-region');
+    const stage = $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap') ?? (regionEl?.parentElement ?? null);
+    if (!regionEl || !stage || typeof regionEl.style?.setProperty !== 'function') return;
     const { w, h } = screenBaseSize(Math.max(1, players().length));
-    escalaAplicada = stageScale(palco.clientWidth || w, palco.clientHeight || h, win.devicePixelRatio || 1, w, h);
-    applyScale(regiao, escalaAplicada);
+    appliedScale = stageScale(stage.clientWidth || w, stage.clientHeight || h, win.devicePixelRatio || 1, w, h);
+    applyScale(regionEl, appliedScale);
     crtScanVars(); // the scanline period is one art pixel in REAL pixels, so it follows the scale (study item A5)
-    reservarFaixaDaBarra();
+    reserveBarBand();
   }
   /**
    * THE ROOM THE GAME LEAVES FREE UNDER THE TOP EDGE (ADR-0148 §3, erratum of 2026-09-13; issue #160), written as
@@ -2424,11 +2424,11 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 With a HUD (ADR-0175) the room also holds the two top columns — points and mission on the left, power on the right —
    * when either reaches lower than the bar's room; each is narrowed so it never reaches the bar.
    */
-  function reservarFaixaDaBarra(): void {
+  function reserveBarBand(): void {
     reserveTopBand({
       region: $<HTMLElement>('#game-region'),
       bar: a11yBar as HTMLElement | null,
-      hud: hudMontado,
+      hud: hudMounted,
       ...(typeof win.getComputedStyle === 'function' ? { computedStyle: (el: HTMLElement) => win.getComputedStyle(el) } : {}),
     });
   }
@@ -2437,28 +2437,28 @@ export function createGame(o: CreateGameOptions): Engine {
    * the numbers are functions, so a game never has to say «refresh»; only a changed text is written, and a changed text
    * measures the room again, because a longer number can wrap.
    */
-  let hudMontado: HudBandsMounted | null = null;
-  let quadroDoHud = false;
-  function montarHud(): void {
-    hudMontado?.remove();
-    hudMontado = null;
-    const regiao = $<HTMLElement>('#game-region');
-    const numeros = cartucho.hud ?? [];
-    if (numeros.length && regiao && typeof regiao.appendChild === 'function') hudMontado = mountHudBands(doc, regiao, numeros);
-    reservarFaixaDaBarra();
-    if (hudMontado && !quadroDoHud && typeof win.requestAnimationFrame === 'function') {
-      quadroDoHud = true;
+  let hudMounted: HudBandsMounted | null = null;
+  let hudFrame = false;
+  function mountHud(): void {
+    hudMounted?.remove();
+    hudMounted = null;
+    const regionEl = $<HTMLElement>('#game-region');
+    const numbers = cartridge.hud ?? [];
+    if (numbers.length && regionEl && typeof regionEl.appendChild === 'function') hudMounted = mountHudBands(doc, regionEl, numbers);
+    reserveBarBand();
+    if (hudMounted && !hudFrame && typeof win.requestAnimationFrame === 'function') {
+      hudFrame = true;
       const passo = (): void => {
-        if (!hudMontado) { quadroDoHud = false; return; }
-        if (hudMontado.refresh()) reservarFaixaDaBarra();
+        if (!hudMounted) { hudFrame = false; return; }
+        if (hudMounted.refresh()) reserveBarBand();
         win.requestAnimationFrame(passo);
       };
       win.requestAnimationFrame(passo);
     }
   }
-  montarHud();
-  aplicarResolucao();
-  if (typeof win.addEventListener === 'function') win.addEventListener('resize', aplicarResolucao);
+  mountHud();
+  applyResolution();
+  if (typeof win.addEventListener === 'function') win.addEventListener('resize', applyResolution);
 
   /*
    * THE SKIP LINK, when the page has none (study item C5; WCAG 2.4.1). The stylesheet rule, the dictionary sentence and its
@@ -2482,19 +2482,19 @@ export function createGame(o: CreateGameOptions): Engine {
    * default is `upper` (ADR-0028) while the cycle's default is position (c), natural case (ADR-0149), and writing the default
    * would put every new child's game in capitals.
    */
-  const escreverCaixa = (c: state.LetterCase): void => {
+  const writeBox = (c: state.LetterCase): void => {
     if (doc.documentElement?.dataset) doc.documentElement.dataset.letras = c;
   };
-  if (store.get(store.KEYS.letterCase, null) !== null) escreverCaixa(state.letterCase);
-  state.on('letterCase', escreverCaixa);
+  if (store.get(store.KEYS.letterCase, null) !== null) writeBox(state.letterCase);
+  state.on('letterCase', writeBox);
 
   {
     // the reserved room itself (`--barra-a11y-h`, next to `--tap` and `--alvo-min`) is written by `reservarFaixaDaBarra`,
     // inside `aplicarResolucao`; here the engine says who draws over the bar anyway
-    const invasores = barIntruderProblems(contextoDoDesenho);
-    if (invasores.length) {
-      problemasDoHospedeiro.push(
-        `the game draws over the accessibility bar (${invasores.slice(0, 4).join(', ')}): a child who needs its buttons `
+    const intruders = barIntruderProblems(drawingContext);
+    if (intruders.length) {
+      hostProblems.push(
+        `the game draws over the accessibility bar (${intruders.slice(0, 4).join(', ')}): a child who needs its buttons `
         + 'to start cannot reach them — read `--barra-a11y-h` on #game-region and leave that room free (ADR-0148)',
       );
     }
@@ -2516,18 +2516,18 @@ export function createGame(o: CreateGameOptions): Engine {
   const pausa = {
     mostrar: (i: number) => {
       pauseIcons.reflectPauseIcons();
-      const cartao = $<HTMLElement>(`#vp-pause-${i}`);
-      if (!cartao) return;
-      cartao.hidden = false;
-      atualizarLegenda();
+      const cardEl = $<HTMLElement>(`#vp-pause-${i}`);
+      if (!cardEl) return;
+      cardEl.hidden = false;
+      updateCaption();
       // 🔴 O CURSOR POUSA NO ITEM 1, na raiz (ADR-0158: «a saída é onde o cursor cai ao abrir»). Medido no `dist`: aberto
       // pelo SELECT nenhum item ficava marcado, e a primeira seta saltava para o item 2.
-      showPauseOptions(cartao, 'raiz');
+      showPauseOptions(cardEl, 'raiz');
     },
     esconder: (i: number) => {
-      const cartao = $<HTMLElement>(`#vp-pause-${i}`);
-      if (cartao) cartao.hidden = true;
-      atualizarLegenda();
+      const cardEl = $<HTMLElement>(`#vp-pause-${i}`);
+      if (cardEl) cardEl.hidden = true;
+      updateCaption();
     },
   };
 
@@ -2556,7 +2556,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * propósito — e por isso a segunda metade é um pedido, `setPhase('paused')`, e não uma ordem.
    */
   /** O assento dono de uma tecla, se ela for a posição `acao` DELE; senão `null`. */
-  function assentoDaPosicao(code: string, acao: 'start' | 'select' | 'action4'): number | null {
+  function seatOfPosition(code: string, acao: 'start' | 'select' | 'action4'): number | null {
     // ⚠️ O DONO DA TECLA DECIDE O ASSENTO, como em `menuNavKey`: quem carregou é quem abre a SUA pausa. Uma
     // tecla que não é de ninguém (`-1`) não pode ser «start» de assento nenhum — perguntar por ela ao
     // assento 0 devolveria a pausa do Jogador 1 a quem carregou numa tecla solta.
@@ -2579,7 +2579,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * entrar, e a pausa rápida continua a congelar e a dizer PAUSADO — com o START a sair dela. Perguntar à barra
    * seria prender essa criança num jogo parado.
    */
-  let palavraPausado: HTMLElement | null = null;
+  let pausedWord: HTMLElement | null = null;
   /*
    * A LEGENDA DO RODAPÉ da tela congelada (errata do ADR-0155, «Ambos»): «Ação 2: confirmar · Ação 3: voltar ·
    * Ação 4: menu · START: voltar ao jogo». É a segunda porta dos menus — o `action4` — e é também o que diz à
@@ -2587,21 +2587,21 @@ export function createGame(o: CreateGameOptions): Engine {
    * (`legendaDaPausa` is declared before `mudarDeFase`; see there.)
    */
 
-  function mostrarPausado(): void {
-    const regiao = $<HTMLElement>('#game-region');
-    if (!palavraPausado && regiao && typeof regiao.appendChild === 'function') {
-      palavraPausado = doc.createElement('div');
-      palavraPausado.className = 'pausa-rapida';
+  function showPaused(): void {
+    const regionEl = $<HTMLElement>('#game-region');
+    if (!pausedWord && regionEl && typeof regionEl.appendChild === 'function') {
+      pausedWord = doc.createElement('div');
+      pausedWord.className = 'pausa-rapida';
       // O leitor de tela já ouve a entrada na barra, que diz que o jogo parou e como voltar; a palavra é para
       // os olhos, e dita duas vezes atropelava o anúncio que ensina a sair.
-      palavraPausado.setAttribute('aria-hidden', 'true');
-      regiao.appendChild(palavraPausado);
+      pausedWord.setAttribute('aria-hidden', 'true');
+      regionEl.appendChild(pausedWord);
     }
-    if (!palavraPausado) return;
+    if (!pausedWord) return;
     // resolvidas AO MOSTRAR: o idioma pode ter mudado desde o arranque
-    palavraPausado.textContent = t('pause.quick');
-    palavraPausado.hidden = false;
-    atualizarLegenda();
+    pausedWord.textContent = t('pause.quick');
+    pausedWord.hidden = false;
+    updateCaption();
   }
 
   /**
@@ -2609,20 +2609,20 @@ export function createGame(o: CreateGameOptions): Engine {
    * pause card (SELECT) the menu's — «2: confirmar · 3: voltar» —, and nothing in play. Asked again whenever one of them
    * opens or closes; a card hidden by a path that calls nothing here (the print mode) is seen by the observer below.
    */
-  function atualizarLegenda(): void {
-    const cartaoAberto = !!$<HTMLElement>('.screen-pause:not([hidden])');
-    const texto = emPausaRapida.size ? t('pause.quick.legenda') : cartaoAberto ? t('pause.card.legenda') : null;
-    if (!texto) { if (legendaDaPausa) legendaDaPausa.hidden = true; return; }
-    if (!legendaDaPausa) {
-      const casa = rodapeDaTela($<HTMLElement>('#game-region'));
-      if (!casa) return;
-      legendaDaPausa = doc.createElement('div');
-      legendaDaPausa.className = 'pausa-legenda';
-      legendaDaPausa.setAttribute('aria-hidden', 'true');
-      casa.appendChild(legendaDaPausa);
+  function updateCaption(): void {
+    const cardOpen = !!$<HTMLElement>('.screen-pause:not([hidden])');
+    const texto = inQuickPause.size ? t('pause.quick.legenda') : cardOpen ? t('pause.card.legenda') : null;
+    if (!texto) { if (pauseCaption) pauseCaption.hidden = true; return; }
+    if (!pauseCaption) {
+      const home = screenFooter($<HTMLElement>('#game-region'));
+      if (!home) return;
+      pauseCaption = doc.createElement('div');
+      pauseCaption.className = 'pausa-legenda';
+      pauseCaption.setAttribute('aria-hidden', 'true');
+      home.appendChild(pauseCaption);
     }
-    escreverLegenda(legendaDaPausa, texto); // resolved when shown: the language may have changed since boot
-    legendaDaPausa.hidden = false;
+    writeCaption(pauseCaption, texto); // resolved when shown: the language may have changed since boot
+    pauseCaption.hidden = false;
   }
   /*
    * EVERY CHANGE OF CONTEXT IS ANNOUNCED (ADR-0159 rule 3): «Opening a menu or panel speaks its title; closing it speaks
@@ -2631,8 +2631,8 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 ONE PLACE, by comparison: the observer below asks where the child is now — a panel, a list of the card, or the
    * game — and speaks only when that changed. An arrow changes no `hidden`, so it still says only the item.
    */
-  let telaAnunciada = 'jogo';
-  const comIndiceDaRaiz = (): boolean => (cartucho.comIndice ?? (() => true))();
+  let screenAnnounced = 'jogo';
+  const rootWithIndex = (): boolean => (cartridge.comIndice ?? (() => true))();
   /*
    * 🔴 A PERGUNTA MUDOU-SE PARA `ui/where-the-child-is` (ADR-0221 passo 7c), e o que fica aqui é responder de onde ela
    * lê o documento. 📏 Era a função mais densa deste ficheiro depois do corpo da própria raiz — 19 ramos em 24 linhas
@@ -2641,34 +2641,34 @@ export function createGame(o: CreateGameOptions): Engine {
    * 🎯 Sondada ANTES de sair, que é a ordem, e a sonda achou QUATRO ramos cegos de nove — dois presos em
    * `engine:e75a54ea`, um medido como equivalente hoje e um nomeado como trabalho (o `comIndice` do ADR-0167).
    */
-  const ondeEsta = (): Place => whereTheChildIs({
+  const whereIsTheChild = (): Place => whereTheChildIs({
     topVisibleOverlay: overlays.topVisibleOverlay,
     pauseCard: () => $<HTMLElement>('.screen-pause:not([hidden])'),
     focused: () => doc.activeElement,
-    withIndex: comIndiceDaRaiz,
+    withIndex: rootWithIndex,
   });
-  function anunciarContexto(): void {
-    const agora = ondeEsta();
-    if (agora.key === telaAnunciada) return;
-    const vinhaDeUmMenu = telaAnunciada !== 'jogo';
-    telaAnunciada = agora.key;
-    if (agora.sentence) srSay(agora.sentence);
+  function announceContext(): void {
+    const nowMs = whereIsTheChild();
+    if (nowMs.key === screenAnnounced) return;
+    const cameFromMenu = screenAnnounced !== 'jogo';
+    screenAnnounced = nowMs.key;
+    if (nowMs.sentence) srSay(nowMs.sentence);
     // back in play from a menu — the quick pause says its own exit
-    else if (vinhaDeUmMenu && !emPausaRapida.size) srSay(t('sr.a11y.barExit'));
+    else if (cameFromMenu && !inQuickPause.size) srSay(t('sr.a11y.barExit'));
   }
   {
-    const regiao = $<HTMLElement>('#game-region');
-    const Observador = (win as unknown as { MutationObserver?: typeof MutationObserver }).MutationObserver;
-    if (regiao && Observador && typeof regiao.appendChild === 'function') {
-      new Observador((registos) => {
-        const classes = registos.map((r) => (r.target as Element).classList);
-        if (classes.some((c) => c?.contains('screen-pause'))) atualizarLegenda();
-        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay') || c?.contains('pause-menu'))) anunciarContexto();
+    const regionEl = $<HTMLElement>('#game-region');
+    const Observer = (win as unknown as { MutationObserver?: typeof MutationObserver }).MutationObserver;
+    if (regionEl && Observer && typeof regionEl.appendChild === 'function') {
+      new Observer((records) => {
+        const classes = records.map((r) => (r.target as Element).classList);
+        if (classes.some((c) => c?.contains('screen-pause'))) updateCaption();
+        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay') || c?.contains('pause-menu'))) announceContext();
         // ADR-0166: the pad leaves when the card or a panel opens, and comes back when the last of them closes
-        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) refletirPadNosMenus();
+        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) reflectPadInMenus();
         // a simulation stops while a menu is open and comes back with the game (issue #182)
-        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) recomporFiltroDoMundo();
-      }).observe(regiao, { attributes: true, attributeFilter: ['hidden'], subtree: true });
+        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) recomposeWorldFilter();
+      }).observe(regionEl, { attributes: true, attributeFilter: ['hidden'], subtree: true });
     }
   }
 
@@ -2678,30 +2678,30 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ UMA COLUNA e não duas faixas posicionadas à parte: a pausa rápida já pousa o cursor no primeiro ícone ao entrar,
    * logo as duas aparecem juntas desde o primeiro instante, e duas caixas absolutas tapavam-se quando uma quebrava linha.
    */
-  function rodapeDaTela(regiao: HTMLElement | null): HTMLElement | null {
-    if (rodape || !regiao || typeof regiao.appendChild !== 'function') return rodape;
-    rodape = doc.createElement('div');
-    rodape.className = 'rodape-da-tela';
-    regiao.appendChild(rodape);
-    return rodape;
+  function screenFooter(regionEl: HTMLElement | null): HTMLElement | null {
+    if (footer || !regionEl || typeof regionEl.appendChild !== 'function') return footer;
+    footer = doc.createElement('div');
+    footer.className = 'rodape-da-tela';
+    regionEl.appendChild(footer);
+    return footer;
   }
   /**
    * The button legend as one dark chip per «name: function» (ADR-0164 rule 3) — the dictionary writes the items joined
    * by « · », and each becomes its own element so the background sits behind the words and not across the screen.
    */
-  function escreverLegenda(casa: HTMLElement, texto: string): void {
-    casa.textContent = '';
+  function writeCaption(home: HTMLElement, texto: string): void {
+    home.textContent = '';
     texto.split('·').map((s) => s.trim()).filter(Boolean).forEach((item, i) => {
       // a space between chips, by capability: a host document without createTextNode still gets the chips
-      if (i > 0 && typeof doc.createTextNode === 'function') casa.appendChild(doc.createTextNode(' '));
+      if (i > 0 && typeof doc.createTextNode === 'function') home.appendChild(doc.createTextNode(' '));
       const nome = doc.createElement('span');
       nome.className = 'lg-nome';
       nome.textContent = item;
-      casa.appendChild(nome);
+      home.appendChild(nome);
     });
   }
-  function explicarIconeNoRodape(k: string | null): void {
-    escreverNoRodape(k ? t(`icon.${k}.dica`) : null);
+  function explainIconInFooter(k: string | null): void {
+    writeInFooter(k ? t(`icon.${k}.dica`) : null);
   }
   /*
    * THE SOUND CAPTION (study item D3). In the footer column, above the button legend and the explanation (ADR-0164 rule 4:
@@ -2709,64 +2709,64 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 Its time on screen is a child's reading time for its words, never under the 2600 ms the games had measured in play
    * (`core/caption-duration`, plan phase 5c); a new caption restarts it.
    */
-  let legendaDeSom: HTMLElement | null = null;
-  let apagarLegendaDeSom: ReturnType<typeof setTimeout> | null = null;
+  let soundCaption: HTMLElement | null = null;
+  let clearSoundCaption: ReturnType<typeof setTimeout> | null = null;
   function legendarSom(texto: string): void {
     if (!state.captionsOn || !texto) return;
-    if (!legendaDeSom) {
-      const casa = rodapeDaTela($<HTMLElement>('#game-region'));
-      if (!casa) return;
-      legendaDeSom = doc.createElement('div');
-      legendaDeSom.className = 'legenda-de-som';
-      legendaDeSom.setAttribute('aria-hidden', 'true');
-      casa.appendChild(legendaDeSom);
+    if (!soundCaption) {
+      const home = screenFooter($<HTMLElement>('#game-region'));
+      if (!home) return;
+      soundCaption = doc.createElement('div');
+      soundCaption.className = 'legenda-de-som';
+      soundCaption.setAttribute('aria-hidden', 'true');
+      home.appendChild(soundCaption);
     }
-    const casaDaLegenda = legendaDeSom;
-    casaDaLegenda.textContent = texto;
-    casaDaLegenda.hidden = false;
-    if (apagarLegendaDeSom !== null) clearTimeout(apagarLegendaDeSom);
-    apagarLegendaDeSom = setTimeout(() => { casaDaLegenda.hidden = true; casaDaLegenda.textContent = ''; }, captionDuration(texto, state.captionPpm));
+    const captionHome = soundCaption;
+    captionHome.textContent = texto;
+    captionHome.hidden = false;
+    if (clearSoundCaption !== null) clearTimeout(clearSoundCaption);
+    clearSoundCaption = setTimeout(() => { captionHome.hidden = true; captionHome.textContent = ''; }, captionDuration(texto, state.captionPpm));
   }
   /** O rodapé diz UMA explicação de cada vez: a do ícone apontado, ou o motivo de um item travado (ADR-0161). */
-  function escreverNoRodape(texto: string | null): void {
-    if (!explicacaoDaBarra && texto) {
-      const casa = rodapeDaTela($<HTMLElement>('#game-region'));
-      if (casa) {
-        explicacaoDaBarra = doc.createElement('div');
-        explicacaoDaBarra.className = 'barra-explicacao';
-        explicacaoDaBarra.setAttribute('aria-live', 'polite');
-        casa.insertBefore(explicacaoDaBarra, casa.firstChild);
+  function writeInFooter(texto: string | null): void {
+    if (!barExplanation && texto) {
+      const home = screenFooter($<HTMLElement>('#game-region'));
+      if (home) {
+        barExplanation = doc.createElement('div');
+        barExplanation.className = 'barra-explicacao';
+        barExplanation.setAttribute('aria-live', 'polite');
+        home.insertBefore(barExplanation, home.firstChild);
       }
     }
-    if (!explicacaoDaBarra) return;
-    explicacaoDaBarra.textContent = texto ?? '';
-    explicacaoDaBarra.hidden = !texto;
+    if (!barExplanation) return;
+    barExplanation.textContent = texto ?? '';
+    barExplanation.hidden = !texto;
   }
 
-  function entrarNaPausaRapida(assento: number): void {
-    emPausaRapida.add(assento);
-    recomporFiltroDoMundo(); // the quick pause is a menu: the simulation stops (issue #182)
+  function enterQuickPause(assento: number): void {
+    inQuickPause.add(assento);
+    recomposeWorldFilter(); // the quick pause is a menu: the simulation stops (issue #182)
     pauseIcons.entrarNaBarra(assento);
     if (!pauseIcons.naBarraDe(assento)) srSay(t('sr.a11y.quickPause'));
-    mostrarPausado();
-    mudarDeFase('paused');
+    showPaused();
+    changePhase('paused');
   }
 
   /** Sai por qualquer porta. `para` diz para onde: o jogo (descongela) ou o cartão (fica parado). */
-  function sairDaPausaRapida(assento: number, para: 'jogo' | 'cartao'): void {
-    if (pauseIcons.naBarraDe(assento)) { pauseIcons.sairDaBarra(assento, para === 'cartao'); return; } // o gancho termina
-    if (para === 'jogo') srSay(t('sr.a11y.barExit'));
-    terminarPausaRapida(assento, para === 'cartao');
+  function leaveQuickPause(assento: number, to: 'jogo' | 'cartao'): void {
+    if (pauseIcons.naBarraDe(assento)) { pauseIcons.sairDaBarra(assento, to === 'cartao'); return; } // o gancho termina
+    if (to === 'jogo') srSay(t('sr.a11y.barExit'));
+    endQuickPause(assento, to === 'cartao');
   }
 
-  function terminarPausaRapida(assento: number, paraOutroEcra: boolean): void {
-    if (!emPausaRapida.delete(assento)) return; // the simulation returns through the observer: leaving writes the card's `hidden`
-    if (palavraPausado && emPausaRapida.size === 0) palavraPausado.hidden = true;
-    if (!paraOutroEcra) mudarDeFase('playing');
+  function endQuickPause(assento: number, toOtherScreen: boolean): void {
+    if (!inQuickPause.delete(assento)) return; // the simulation returns through the observer: leaving writes the card's `hidden`
+    if (pausedWord && inQuickPause.size === 0) pausedWord.hidden = true;
+    if (!toOtherScreen) changePhase('playing');
   }
 
-  function alternarPausaRapidaPeloStart(e: KeyboardEvent): void {
-    const assento = assentoDaPosicao(e.code, 'start');
+  function toggleQuickPauseByStart(e: KeyboardEvent): void {
+    const assento = seatOfPosition(e.code, 'start');
     if (assento === null) return;
 
     // GUARDA 1 — HÁ UM PAINEL ABERTO. Medido: com um overlay visível, `menuNavKey` recebe a tecla, não lhe
@@ -2775,20 +2775,20 @@ export function createGame(o: CreateGameOptions): Engine {
     if (overlays.topVisibleOverlay()) return;
 
     // O START OUTRA VEZ SAI — a segunda saída do modo que o item 7 do ADR-0044 já dava ao START.
-    if (emPausaRapida.has(assento)) { sairDaPausaRapida(assento, 'jogo'); e.preventDefault(); return; }
+    if (inQuickPause.has(assento)) { leaveQuickPause(assento, 'jogo'); e.preventDefault(); return; }
 
     // GUARDA 2 — O CARTÃO ESTÁ ABERTO. Com ele aberto e uma tecla de «start» que não seja `Enter`,
     // `menuNavKey` não acha intenção e deixa passar. Fechar o cartão é do «Voltar ao jogo» e do Escape.
-    const cartao = $<HTMLElement>(`#vp-pause-${assento}`);
-    if (cartao && cartao.hidden === false) return;
+    const cardEl = $<HTMLElement>(`#vp-pause-${assento}`);
+    if (cardEl && cardEl.hidden === false) return;
 
-    entrarNaPausaRapida(assento);
+    enterQuickPause(assento);
     // 📌 E SÓ AQUI, depois de a tecla ter sido NOSSA de facto. `Enter` é «start» por omissão
     // (`input/default-bindings`), e sem isto o mesmo carregar pausaria E accionaria o que estivesse focado.
     e.preventDefault();
   }
 
-  win.addEventListener('keydown', alternarPausaRapidaPeloStart);
+  win.addEventListener('keydown', toggleQuickPauseByStart);
 
   /*
    * ===================== O SELECT ABRE OS MENUS (ADR-0155) =====================
@@ -2801,38 +2801,38 @@ export function createGame(o: CreateGameOptions): Engine {
    * num jogo parado.
    */
   /** Abre o cartão do assento, venha a porta de onde vier — a tecla SELECT ou a pílula do toque. Devolve se abriu. */
-  function abrirMenusDoAssento(assento: number): boolean {
+  function openSeatMenus(assento: number): boolean {
     if (overlays.topVisibleOverlay()) return false;
-    const cartao = $<HTMLElement>(`#vp-pause-${assento}`);
-    if (!cartao || cartao.hidden === false) return false;
-    const jaParado = emPausaRapida.has(assento);
-    if (jaParado) sairDaPausaRapida(assento, 'cartao');
+    const cardEl = $<HTMLElement>(`#vp-pause-${assento}`);
+    if (!cardEl || cardEl.hidden === false) return false;
+    const alreadyStopped = inQuickPause.has(assento);
+    if (alreadyStopped) leaveQuickPause(assento, 'cartao');
     // ⚠️ MOSTRAR VEM PRIMEIRO, e a ordem é a defesa: um jogo sem `setPhase` tem de receber o cartão na mesma.
     pausa.mostrar(assento);
-    if (!jaParado) mudarDeFase('paused');
+    if (!alreadyStopped) changePhase('paused');
     return true;
   }
-  function abrirMenusPeloSelect(e: KeyboardEvent): void {
-    const assento = assentoDaPosicao(e.code, 'select');
+  function openMenusBySelect(e: KeyboardEvent): void {
+    const assento = seatOfPosition(e.code, 'select');
     if (assento === null) return;
-    if (abrirMenusDoAssento(assento)) e.preventDefault();
+    if (openSeatMenus(assento)) e.preventDefault();
   }
-  win.addEventListener('keydown', abrirMenusPeloSelect);
+  win.addEventListener('keydown', openMenusBySelect);
 
   /*
    * A SEGUNDA PORTA DOS MENUS: o `action4`, só DENTRO da pausa rápida (errata do ADR-0155). Fora dela o `action4` é
    * do jogo, e a engine não lhe toca — é o par que impede a porta de roubar um verbo a meio da partida.
    * 📏 `menuNavKey` não tem intenção para `action4` e, na barra, deixa-o subir sem o consumir: chega aqui.
    */
-  function abrirMenusPeloAction4(e: KeyboardEvent): void {
-    const assento = assentoDaPosicao(e.code, 'action4');
-    if (assento === null || !emPausaRapida.has(assento)) return;
+  function openMenusByAction4(e: KeyboardEvent): void {
+    const assento = seatOfPosition(e.code, 'action4');
+    if (assento === null || !inQuickPause.has(assento)) return;
     if (overlays.topVisibleOverlay()) return;
-    sairDaPausaRapida(assento, 'cartao');
+    leaveQuickPause(assento, 'cartao');
     pausa.mostrar(assento);
     e.preventDefault();
   }
-  win.addEventListener('keydown', abrirMenusPeloAction4);
+  win.addEventListener('keydown', openMenusByAction4);
 
   /*
    * ===================== O CONTROLE VIRTUAL (ADR-0143, fase 4 do plano) =====================
@@ -2849,16 +2849,16 @@ export function createGame(o: CreateGameOptions): Engine {
    * declinável (ADR-0122) e num tablet sem teclado o START é a única porta para ela. O que falta diz-se em
    * `problems` (`touchGaps`).
    */
-  const hospedeiroDoToque = o.host.touchHost ?? $('#game-region');
-  const toqueUsavel = !!hospedeiroDoToque && typeof (hospedeiroDoToque as HTMLElement).appendChild === 'function';
-  const cartaoDoAssento0Aberto = (): boolean => {
+  const touchHostEl = o.host.touchHost ?? $('#game-region');
+  const touchUsable = !!touchHostEl && typeof (touchHostEl as HTMLElement).appendChild === 'function';
+  const seat0CardOpen = (): boolean => {
     const c = $<HTMLElement>('#vp-pause-0');
     return !!c && c.hidden === false;
   };
   /** A menu the directional moves is open: an overlay, the seat-0 card, or the quick pause (ADR-0157). */
-  const menuComDirecional = (): boolean => !!overlays.topVisibleOverlay() || cartaoDoAssento0Aberto() || emPausaRapida.has(0);
+  const menuWithDpad = (): boolean => !!overlays.topVisibleOverlay() || seat0CardOpen() || inQuickPause.has(0);
   /** A position's key handed to the menus, which read keys — stamped with who produced it (ADR-0109). */
-  const teclaAoMenu = (code: string, origem: TransportName | undefined): void => {
+  const keyToMenu = (code: string, origem: TransportName | undefined): void => {
     // 🔴 A TECLA DO TECLADO JÁ ESTÁ NO MUNDO (ADR-0223). Esta função é o tradutor POSIÇÃO → tecla, e existe para os
     // transportes que não produzem teclas: o dedo, os olhos, o rosto, as mãos, a voz, a varredura. O teclado produz —
     // o evento que chegou aqui É a tecla —, logo redespachá-la navegaria o menu DUAS vezes.
@@ -2868,8 +2868,8 @@ export function createGame(o: CreateGameOptions): Engine {
     const alvo = $<HTMLElement>('#game-region') ?? doc.body;
     alvo.dispatchEvent(stampSource(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origem));
   };
-  const acoesDoPreset = (): readonly { acao: string; rotulo: string }[] => {
-    const preset = cartucho.preset;
+  const presetActionList = (): readonly { acao: string; rotulo: string }[] => {
+    const preset = cartridge.preset;
     if (!preset) return [];
     const nome = labellerFrom(preset);
     return presetActions(preset).flatMap((a) => {
@@ -2879,7 +2879,7 @@ export function createGame(o: CreateGameOptions): Engine {
   };
   const toque = initTouch({
     $, srSay, store, win,
-    acoesDoJogo: acoesDoPreset,
+    acoesDoJogo: presetActionList,
     root: doc.documentElement,
     isMobile: disponibilidade.toque,
     viewport: () => ({ w: win.innerWidth, h: win.innerHeight }),
@@ -2891,53 +2891,53 @@ export function createGame(o: CreateGameOptions): Engine {
   });
 
   /** A menu the child touches directly is open: the pause card or a settings panel (ADR-0166 rule 2). */
-  function menuAberto(): boolean {
+  function isMenuOpen(): boolean {
     return !!overlays.topVisibleOverlay() || !!$<HTMLElement>('.screen-pause:not([hidden])');
   }
   /** The pad was in view (or asked for by a touch) when a menu took the screen — it comes back when the menu goes. */
-  let padAntesDoMenu = false;
-  function refletirPadNosMenus(): void {
+  let padBeforeMenu = false;
+  function reflectPadInMenus(): void {
     const pad = $<HTMLElement>('#touch-controls');
     if (!pad) return;
-    if (menuAberto()) {
-      if (!pad.hidden) { padAntesDoMenu = true; toque.hideTouchControls('menu'); }
-    } else if (padAntesDoMenu) {
-      padAntesDoMenu = false;
+    if (isMenuOpen()) {
+      if (!pad.hidden) { padBeforeMenu = true; toque.hideTouchControls('menu'); }
+    } else if (padBeforeMenu) {
+      padBeforeMenu = false;
       toque.showTouchControls();
     }
   }
 
-  const acoesDoCartucho = (): Set<string> => new Set(cartucho.preset ? presetActions(cartucho.preset) : []);
+  const cartridgeActions = (): Set<string> => new Set(cartridge.preset ? presetActions(cartridge.preset) : []);
 
 
-  function desenharPad(): void {
-    if (!toqueUsavel || !hospedeiroDoToque) return;
+  function drawPad(): void {
+    if (!touchUsable || !touchHostEl) return;
     // ADR-0166: a cartridge that does not ask for the pad gets none — and one swapped in by `mount()` takes the last one away
-    if (!cartucho.controleNaTela) {
-      const velho = $<HTMLElement>('#touch-controls');
-      velho?.parentNode?.removeChild(velho);
+    if (!cartridge.controleNaTela) {
+      const old = $<HTMLElement>('#touch-controls');
+      old?.parentNode?.removeChild(old);
       return;
     }
     const mapa = toque.getTouchMap();
-    const curto = cartucho.preset ? shortLabellerFrom(cartucho.preset) : (): null => null;
+    const short = cartridge.preset ? shortLabellerFrom(cartridge.preset) : (): null => null;
     const pad = mountTouchControls(
       { procurar: (sel) => $<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) },
       {
         mapa,
-        acoesDoJogo: acoesDoCartucho(),
+        acoesDoJogo: cartridgeActions(),
         // The FUNCTION of each slot (ADR-0165): the game's SHORT word, said after the button's name in its accessible
         // name; the face shows the name. `start`/`select` are system positions the engine names itself.
         rotuloDoSlot: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select')
             // só se desenha o que o jogo nomeia (ADR-0162), logo a palavra dele existe sempre
-            : (curto(mapa[slot] as Action) ?? '')),
+            : (short(mapa[slot] as Action) ?? '')),
         direcional: store.get(store.KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
       },
     );
-    if (!pad.parentNode) hospedeiroDoToque.appendChild(pad);
+    if (!pad.parentNode) touchHostEl.appendChild(pad);
   }
 
-  lacunasDoPad = () => (!cartucho.controleNaTela ? [] : toqueUsavel
-    ? touchGaps({ mapa: toque.getTouchMap(), acoesDoJogo: acoesDoCartucho() })
+  padGapList = () => (!cartridge.controleNaTela ? [] : touchUsable
+    ? touchGaps({ mapa: toque.getTouchMap(), acoesDoJogo: cartridgeActions() })
     : ['the virtual pad has nowhere to mount: set `host.touchHost`, or give #game-region room for children. '
       + 'Without it, a child on a keyboardless tablet cannot play, nor reach the pause']);
 
@@ -2947,14 +2947,14 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ O PAD FICA À VISTA, ao contrário do cartão, que o escondia: a pílula START É a saída de quem só tem dedo.
    * Escondê-la deixava a criança num jogo parado sem porta. Com o cartão aberto, o START fecha-o, como fechava.
    */
-  function alternarPausaPeloToque(): void {
+  function togglePauseByTouch(): void {
     if (overlays.topVisibleOverlay()) return;
-    if (emPausaRapida.has(0)) { sairDaPausaRapida(0, 'jogo'); return; }
-    if (cartaoDoAssento0Aberto()) { mudarDeFase('playing'); return; }
-    entrarNaPausaRapida(0);
+    if (inQuickPause.has(0)) { leaveQuickPause(0, 'jogo'); return; }
+    if (seat0CardOpen()) { changePhase('playing'); return; }
+    enterQuickPause(0);
   }
 
-  const ligacoesDoToque = initTouchBindings({
+  const touchBindings = initTouchBindings({
     $, win,
     getSearch: () => win.location?.search ?? '',
     getControls: () => keyboard.controlsState().controls,
@@ -2973,9 +2973,9 @@ export function createGame(o: CreateGameOptions): Engine {
     heldKeys: keys,
     attractOnInput: () => false,
     // a touch inside a menu does not bring the pad over it; it only remembers that the child is on touch (ADR-0166)
-    showTouchControls: () => { if (menuAberto()) { padAntesDoMenu = true; return; } toque.showTouchControls(); },
+    showTouchControls: () => { if (isMenuOpen()) { padBeforeMenu = true; return; } toque.showTouchControls(); },
     hideTips: () => {},
-    togglePause: alternarPausaPeloToque,
+    togglePause: togglePauseByTouch,
     /*
      * A PÍLULA SELECT (ADR-0155): os menus pelo toque. Sem ela, quem só tem dedo não chegava a «Sair», ao número de
      * jogadores nem às configurações — o SELECT era tecla. ⚠️ O PAD ESCONDE-SE ao abrir o cartão, como o START
@@ -2984,7 +2984,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // O pad FICA à vista com o cartão aberto (ADR-0157): é o direccional dele que anda no cartão, e quem o leva lá é
     // agora o controle virtual — ele já carimba a origem (ADR-0109), que é o que o «teclado esconde o pad» pergunta;
     // sem o carimbo o pad sumiria a cada seta que ele próprio entregou.
-    abrirMenus: () => { abrirMenusDoAssento(0); },
+    abrirMenus: () => { openSeatMenus(0); },
     getTouchMap: () => toque.getTouchMap(),
     // ✅ O DEFEITO QUE O `TouchBindingsCtx` GUARDAVA MORRE AQUI: no cartucho a linha era `touchMap.start` num
     // escopo onde `touchMap` não existia, e o START da tela estava quebrado. Esta raiz TEM o mapa.
@@ -2992,8 +2992,8 @@ export function createGame(o: CreateGameOptions): Engine {
     getStickTravelPx: () => toque.getStickTravelPx(),
     getStickDeadPx: () => toque.getStickDeadPx(),
   });
-  desenharPad();
-  ligacoesDoToque.attach();
+  drawPad();
+  touchBindings.attach();
   /*
    * A LANGUAGE CHANGED MID-GAME REACHES WHAT THE ENGINE DREW (study item C6; ADR-0031). 📏 Measured in the quiz: after
    * `setLocale('en')` the icon bar's names, the card's name, the button legend and the PAUSED word stayed in the old
@@ -3022,10 +3022,10 @@ export function createGame(o: CreateGameOptions): Engine {
   if (typeof win.addEventListener === 'function') {
     win.addEventListener('i18n:change', () => {
       pauseIcons.reflectPauseIcons();
-      atualizarLegenda();
-      if (palavraPausado && !palavraPausado.hidden) palavraPausado.textContent = t('pause.quick');
-      desenharPad();
-      ligacoesDoToque.rewire();
+      updateCaption();
+      if (pausedWord && !pausedWord.hidden) pausedWord.textContent = t('pause.quick');
+      drawPad();
+      touchBindings.rewire();
       /*
        * 🔴 E O QUE A ENGINE OUVE TAMBÉM MUDA (ADR-0225). O que ela DESENHA já seguia desde o item C6; o que ela FALA segue
        * sozinho (o `tts` lê `bcp47()` a cada fala) e o que ela LÊ também (a cada `listen()`). O reconhecimento de comandos era
@@ -3053,25 +3053,25 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ SÓ EXISTE ONDE HÁ PAD: sem hospedeiro de toque não há tamanho para escolher, e a porta do submenu cai sozinha
    * (`acoesDaEngine.motora` não é definida).
    */
-  if (hospedeiroDaPausa && pausaUsavel && toqueUsavel) {
-    const ctxDaMotora = {
+  if (pauseHostEl && pauseUsable && touchUsable) {
+    const mobilityCtx = {
       procurar: (sel: string) => $<HTMLElement>(sel),
       criar: (tag: string) => doc.createElement(tag),
-      host: hospedeiroDaPausa as HTMLElement,
+      host: pauseHostEl as HTMLElement,
       overlays,
     };
-    let passosDoPad: HTMLElement | null = null;
-    let dicaDoPad: HTMLElement | null = null;
-    let linhaDoPad: HTMLElement | null = null;
+    let padSteps: HTMLElement | null = null;
+    let padHint: HTMLElement | null = null;
+    let padRowEl: HTMLElement | null = null;
     /** Reflecte as linhas do mapeamento de teclado (definido mais abaixo, com o painel `#ctrl`). */
-    let refletirTeclado = (): void => {};
-    let personaAtual = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
+    let reflectKeyboard = (): void => {};
+    let currentPersona = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
     const specDoPad = () => ({
       rotulo: t('motora.pad'),
       valores: PERSONAS_DO_PAD.map((p) => t(p.rotulo)),
-      atual: personaAtual,
+      atual: currentPersona,
     });
-    const painelDaMotora = mountPanel(ctxDaMotora, {
+    const mobilityPanel = mountPanel(mobilityCtx, {
       id: 'motora',
       rotulos: () => ({
         titulo: t('menu.motora'),
@@ -3081,39 +3081,39 @@ export function createGame(o: CreateGameOptions): Engine {
       }),
       // Relido a cada abertura: o tamanho pode ter mudado noutro sítio, e os rótulos seguem o idioma de agora.
       render: () => {
-        personaAtual = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
+        currentPersona = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
         // ADR-0166 + ADR-0106 §5: the pad's size is offered only to a cartridge that has a pad — hidden, not locked, because
         // there is nothing to unlock. Read at each opening: `mount()` may have swapped the cartridge.
-        if (linhaDoPad) linhaDoPad.hidden = !cartucho.controleNaTela;
-        if (passosDoPad) updateSteps(passosDoPad, specDoPad());
+        if (padRowEl) padRowEl.hidden = !cartridge.controleNaTela;
+        if (padSteps) updateSteps(padSteps, specDoPad());
         // ⚠️ A DICA NO IDIOMA DE AGORA, antes de o rodapé a recolher: escrita no arranque, saía no idioma de recuo
         // (medido no `dist` com a página em inglês — o rodapé em português).
-        if (dicaDoPad) dicaDoPad.textContent = t('motora.pad.dica');
-        refletirTeclado();
+        if (padHint) padHint.textContent = t('motora.pad.dica');
+        reflectKeyboard();
       },
     });
     const linha = doc.createElement('div');
     linha.className = 'ctrl-row ctrl-row--passos';
-    linhaDoPad = linha; // offered or not is decided at each opening (`render` above)
+    padRowEl = linha; // offered or not is decided at each opening (`render` above)
     const dica = doc.createElement('span');
     dica.className = 'opt-hint';
-    dicaDoPad = dica;
+    padHint = dica;
     const envelope = doc.createElement('span');
     envelope.appendChild(dica);
     linha.appendChild(envelope);
-    passosDoPad = mountSteps(ctxDaMotora, specDoPad());
-    passosDoPad.id = 'opt-pad-persona';
-    linha.appendChild(passosDoPad);
-    painelDaMotora.casca.lista.appendChild(linha);
-    passosDoPad.addEventListener('passo', (ev) => {
-      const nova = nextStep(personaAtual, PERSONAS_DO_PAD.length, (ev as CustomEvent<number>).detail);
-      if (nova === personaAtual) return; // na ponta não se anuncia um passo que não aconteceu
-      personaAtual = nova;
-      toque.setPadMm(PERSONAS_DO_PAD[nova]!.mm);
-      updateSteps(passosDoPad!, specDoPad());
-      srSay(`${t('motora.pad')}: ${t(PERSONAS_DO_PAD[nova]!.rotulo)}`);
+    padSteps = mountSteps(mobilityCtx, specDoPad());
+    padSteps.id = 'opt-pad-persona';
+    linha.appendChild(padSteps);
+    mobilityPanel.casca.lista.appendChild(linha);
+    padSteps.addEventListener('passo', (ev) => {
+      const fresh = nextStep(currentPersona, PERSONAS_DO_PAD.length, (ev as CustomEvent<number>).detail);
+      if (fresh === currentPersona) return; // na ponta não se anuncia um passo que não aconteceu
+      currentPersona = fresh;
+      toque.setPadMm(PERSONAS_DO_PAD[fresh]!.mm);
+      updateSteps(padSteps!, specDoPad());
+      srSay(`${t('motora.pad')}: ${t(PERSONAS_DO_PAD[fresh]!.rotulo)}`);
     });
-    acoesDaEngine.motora = painelDaMotora.abrir;
+    engineActions.motora = mobilityPanel.abrir;
 
     /*
      * ===================== MAPEAR TECLADO — para 1, para 2 e para 3–4 jogadores (ADR-0151 §2 item 5) =====================
@@ -3130,88 +3130,88 @@ export function createGame(o: CreateGameOptions): Engine {
      * as quatro posições laterais (errata do ADR-0151). A razão do Dev: no xadrez, quatro crianças contra quatro
      * computadores diferentes — «o modo competitivo deve ser desencorajado».
      */
-    type ModoDoTeclado = 1 | 2 | 4;
-    let modoDoTeclado: ModoDoTeclado = 1;
-    let assentoNoMapa = 0;
-    const esquemaDoModo = (conf: KBDefaults, i: number) => (modoDoTeclado === 1 ? conf.solo
-      : modoDoTeclado === 2 ? (conf.p2[i] ?? conf.p2[0]!) : (conf.p4[i] ?? conf.p4[0]!));
-    const rotuloDoModo = (m: ModoDoTeclado): string => t(m === 1 ? 'motora.teclado.1' : m === 2 ? 'motora.teclado.2' : 'motora.teclado.34');
-    const LATERAIS = ['leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger'] as const;
-    const acoesParaMapear = () => {
-      if (!cartucho.preset) return [];
-      const palavra = labellerFrom(cartucho.preset);
-      return presetActions(cartucho.preset).flatMap((acao) => {
+    type KeyboardMode = 1 | 2 | 4;
+    let keyboardMode: KeyboardMode = 1;
+    let seatInMap = 0;
+    const modeScheme = (conf: KBDefaults, i: number) => (keyboardMode === 1 ? conf.solo
+      : keyboardMode === 2 ? (conf.p2[i] ?? conf.p2[0]!) : (conf.p4[i] ?? conf.p4[0]!));
+    const modeLabel = (m: KeyboardMode): string => t(m === 1 ? 'motora.teclado.1' : m === 2 ? 'motora.teclado.2' : 'motora.teclado.34');
+    const SIDES = ['leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger'] as const;
+    const actionsToMap = () => {
+      if (!cartridge.preset) return [];
+      const palavra = labellerFrom(cartridge.preset);
+      return presetActions(cartridge.preset).flatMap((acao) => {
         const rotulo = palavra(acao);
         return rotulo ? [{ acao, rotulo }] : [];
       });
     };
-    let passosDoAssento: HTMLElement | null = null;
-    const specDoAssento = () => ({
+    let seatSteps: HTMLElement | null = null;
+    const seatSpec = () => ({
       rotulo: t('ctrl.assento'),
-      valores: Array.from({ length: modoDoTeclado }, (_, i) => t('ctrl.jogador', { n: i + 1 })),
-      atual: assentoNoMapa,
+      valores: Array.from({ length: keyboardMode }, (_, i) => t('ctrl.jogador', { n: i + 1 })),
+      atual: seatInMap,
     });
-    const painelDoTeclado = mountPanel(ctxDaMotora, {
+    const keyboardPanel = mountPanel(mobilityCtx, {
       id: 'ctrl',
       rotulos: () => ({
-        titulo: rotuloDoModo(modoDoTeclado),
-        rotuloDaLista: rotuloDoModo(modoDoTeclado),
+        titulo: modeLabel(keyboardMode),
+        rotuloDaLista: modeLabel(keyboardMode),
         rotuloReset: t('menu.restoreDefaults'),
         rotuloFechar: t('pause.pmback'),
       }),
       render: () => {
-        if (passosDoAssento) {
-          assentoNoMapa = Math.min(assentoNoMapa, modoDoTeclado - 1);
-          updateSteps(passosDoAssento, specDoAssento());
-          (passosDoAssento.closest('.ctrl-row') as HTMLElement).hidden = modoDoTeclado === 1;
+        if (seatSteps) {
+          seatInMap = Math.min(seatInMap, keyboardMode - 1);
+          updateSteps(seatSteps, seatSpec());
+          (seatSteps.closest('.ctrl-row') as HTMLElement).hidden = keyboardMode === 1;
         }
-        controlesDoTeclado?.render(assentoNoMapa);
+        keyboardControls?.render(seatInMap);
       },
     });
     {
       // O ASSENTO, por passos — só nos modos de mais de um: «◀ Teclado de: Jogador 2 ▶».
-      const linhaDoAssento = doc.createElement('div');
-      linhaDoAssento.className = 'ctrl-row ctrl-row--passos';
-      passosDoAssento = mountSteps(ctxDaMotora, specDoAssento());
-      passosDoAssento.id = 'ctrl-assento';
-      linhaDoAssento.appendChild(passosDoAssento);
-      painelDoTeclado.casca.card.insertBefore(linhaDoAssento, painelDoTeclado.casca.lista);
-      passosDoAssento.addEventListener('passo', (ev) => {
-        const novo = nextStep(assentoNoMapa, modoDoTeclado, (ev as CustomEvent<number>).detail);
-        if (novo === assentoNoMapa) return;
-        assentoNoMapa = novo;
-        updateSteps(passosDoAssento!, specDoAssento());
-        controlesDoTeclado?.render(assentoNoMapa);
-        srSay(`${t('ctrl.assento')}: ${t('ctrl.jogador', { n: novo + 1 })}`);
+      const seatRow = doc.createElement('div');
+      seatRow.className = 'ctrl-row ctrl-row--passos';
+      seatSteps = mountSteps(mobilityCtx, seatSpec());
+      seatSteps.id = 'ctrl-assento';
+      seatRow.appendChild(seatSteps);
+      keyboardPanel.casca.card.insertBefore(seatRow, keyboardPanel.casca.lista);
+      seatSteps.addEventListener('passo', (ev) => {
+        const freshOne = nextStep(seatInMap, keyboardMode, (ev as CustomEvent<number>).detail);
+        if (freshOne === seatInMap) return;
+        seatInMap = freshOne;
+        updateSteps(seatSteps!, seatSpec());
+        keyboardControls?.render(seatInMap);
+        srSay(`${t('ctrl.assento')}: ${t('ctrl.jogador', { n: freshOne + 1 })}`);
       });
     }
     /** O modo de quatro arrasta os três primeiros assentos do modo de três — ver o cabeçalho acima. */
-    const sincronizarTres = (conf: KBDefaults): void => {
-      conf.p3.forEach((esq, i) => {
+    const syncThree = (conf: KBDefaults): void => {
+      conf.p3.forEach((left, i) => {
         const de = conf.p4[i];
-        if (de) for (const a of ACTIONS) esq[a] = de[a] ? [...de[a]!] : de[a];
+        if (de) for (const a of ACTIONS) left[a] = de[a] ? [...de[a]!] : de[a];
       });
     };
-    controlesDoTeclado = initSettingsControls({
+    keyboardControls = initSettingsControls({
       $, srSay, srAlert,
-      acoesDoJogo: acoesParaMapear,
+      acoesDoJogo: actionsToMap,
       store: {
-        saveKB: (conf) => { if (modoDoTeclado === 4) sincronizarTres(conf); saveKB(conf); },
+        saveKB: (conf) => { if (keyboardMode === 4) syncThree(conf); saveKB(conf); },
         // ⚠️ «RESTAURAR» DESTE MODO, e não do teclado inteiro: quem repõe o teclado de dois não apaga o de um.
         resetKB: () => {
-          const fabrica = factoryWithGame();
-          if (modoDoTeclado === 1) kb.solo = fabrica.solo;
-          else if (modoDoTeclado === 2) kb.p2 = fabrica.p2;
-          else { kb.p4 = fabrica.p4; kb.p3 = fabrica.p3; }
+          const factory = factoryWithGame();
+          if (keyboardMode === 1) kb.solo = factory.solo;
+          else if (keyboardMode === 2) kb.p2 = factory.p2;
+          else { kb.p4 = factory.p4; kb.p3 = factory.p3; }
           saveKB(kb);
           return kb;
         },
       },
       kb,
       setKB,
-      kbFor: (i) => esquemaDoModo(kb, i),
-      kbPadraoFor: (i) => esquemaDoModo(factoryWithGame(), i),
-      getNumPlayers: () => modoDoTeclado,
+      kbFor: (i) => modeScheme(kb, i),
+      kbPadraoFor: (i) => modeScheme(factoryWithGame(), i),
+      getNumPlayers: () => keyboardMode,
       applyControls: () => { keyboard.refreshControls(); },
       assignControls: () => { keyboard.assignControls(); },
       fillExplain: overlays.fillExplain,
@@ -3219,43 +3219,43 @@ export function createGame(o: CreateGameOptions): Engine {
     // A CAPTURA RECEBE A TECLA ANTES DE TUDO O RESTO: em captura a navegação de menu já se afasta, e isto impede que a
     // tecla gravada suba ainda até ao START, ao SELECT ou ao jogo.
     win.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (controlesDoTeclado?.isCapturing() && controlesDoTeclado.handleCaptureKeydown(e)) e.stopPropagation();
+      if (keyboardControls?.isCapturing() && keyboardControls.handleCaptureKeydown(e)) e.stopPropagation();
     }, true);
 
     // AS TRÊS LINHAS no painel motora, cada uma uma PORTA para o `#ctrl` no seu modo.
-    const linhasDoTeclado: { modo: ModoDoTeclado; linha: HTMLElement; forte: HTMLElement; botao: HTMLElement }[] = [];
+    const keyboardRows: { modo: KeyboardMode; linha: HTMLElement; forte: HTMLElement; botao: HTMLElement }[] = [];
     for (const modo of [1, 2, 4] as const) {
-      const linhaT = doc.createElement('div');
-      linhaT.className = 'ctrl-row';
+      const rowT = doc.createElement('div');
+      rowT.className = 'ctrl-row';
       const envelope = doc.createElement('span');
       const forte = doc.createElement('strong');
       envelope.appendChild(forte);
-      linhaT.appendChild(envelope);
+      rowT.appendChild(envelope);
       const botao = doc.createElement('button');
       botao.className = 'mode-btn';
       botao.setAttribute('type', 'button');
       botao.id = `opt-teclado-${modo}`;
       botao.addEventListener('click', () => {
-        modoDoTeclado = modo;
-        assentoNoMapa = 0;
-        painelDoTeclado.abrir();
+        keyboardMode = modo;
+        seatInMap = 0;
+        keyboardPanel.abrir();
       });
-      linhaT.appendChild(botao);
-      painelDaMotora.casca.lista.appendChild(linhaT);
-      linhasDoTeclado.push({ modo, linha: linhaT, forte, botao });
+      rowT.appendChild(botao);
+      mobilityPanel.casca.lista.appendChild(rowT);
+      keyboardRows.push({ modo, linha: rowT, forte, botao });
     }
     /** Rótulos no idioma de agora, e quem aparece: sem posições nomeadas não há o que mapear; «3–4» sem laterais. */
-    const refletirLinhasDoTeclado = (): void => {
-      const acoes = cartucho.preset ? presetActions(cartucho.preset) : [];
-      const temLaterais = acoes.some((a) => (LATERAIS as readonly string[]).includes(a));
-      for (const { modo, linha: l, forte, botao } of linhasDoTeclado) {
-        forte.textContent = rotuloDoModo(modo);
+    const reflectKeyboardRows = (): void => {
+      const actionList = cartridge.preset ? presetActions(cartridge.preset) : [];
+      const hasSides = actionList.some((a) => (SIDES as readonly string[]).includes(a));
+      for (const { modo, linha: l, forte, botao } of keyboardRows) {
+        forte.textContent = modeLabel(modo);
         botao.textContent = t('motora.abrir');
-        botao.setAttribute('aria-label', rotuloDoModo(modo));
-        l.hidden = acoesParaMapear().length === 0 || (modo === 4 && temLaterais);
+        botao.setAttribute('aria-label', modeLabel(modo));
+        l.hidden = actionsToMap().length === 0 || (modo === 4 && hasSides);
       }
     };
-    refletirLinhasDoTeclado();
+    reflectKeyboardRows();
 
     /*
      * MAPEAR CONTROLE (ADR-0151 §2; issue #182): the engine's own wizard (`input/pad-wizard`), asking only the positions this
@@ -3263,14 +3263,14 @@ export function createGame(o: CreateGameOptions): Engine {
      * while it is open. «Voltar» cancels; the last named position saves and closes. The shell's «restore» is hidden: a pad's
      * map is replaced by mapping again.
      */
-    let assistenteDoPad: ReturnType<typeof createPadWizard> | null = null;
+    let padWizard: ReturnType<typeof createPadWizard> | null = null;
     /** One closer for «Voltar» and Escape: a running wizard is cancelled (and its close hides the panel); an idle one just hides. */
-    const fecharControle = (): void => {
-      if (assistenteDoPad?.estado()) { assistenteDoPad.fechar(false); return; }
-      painelDoControle.casca.overlay.hidden = true;
+    const closeControl = (): void => {
+      if (padWizard?.estado()) { padWizard.fechar(false); return; }
+      controlPanel.casca.overlay.hidden = true;
       overlays.restoreFocus?.('padwiz');
     };
-    const painelDoControle = mountPanel(ctxDaMotora, {
+    const controlPanel = mountPanel(mobilityCtx, {
       id: 'padwiz',
       rotulos: () => ({
         titulo: t('motora.controle'),
@@ -3279,55 +3279,55 @@ export function createGame(o: CreateGameOptions): Engine {
         rotuloFechar: t('pause.pmback'),
       }),
       render: () => {},
-      fecharProprio: () => fecharControle(),
+      fecharProprio: () => closeControl(),
     });
-    painelDoControle.casca.reset.hidden = true;
-    painelDoControle.casca.fechar.addEventListener('click', fecharControle); // `fecharProprio` means this panel wires its own button
-    const fraseDoControle = doc.createElement('p');
-    fraseDoControle.id = 'padwiz-prompt';
-    fraseDoControle.setAttribute('aria-live', 'assertive');
-    const progressoDoControle = doc.createElement('p');
-    progressoDoControle.id = 'padwiz-progress';
-    progressoDoControle.className = 'opt-hint';
-    painelDoControle.casca.card.insertBefore(fraseDoControle, painelDoControle.casca.lista);
-    painelDoControle.casca.card.insertBefore(progressoDoControle, painelDoControle.casca.lista);
-    assistenteDoPad = createPadWizard({
+    controlPanel.casca.reset.hidden = true;
+    controlPanel.casca.fechar.addEventListener('click', closeControl); // `fecharProprio` means this panel wires its own button
+    const controlSentence = doc.createElement('p');
+    controlSentence.id = 'padwiz-prompt';
+    controlSentence.setAttribute('aria-live', 'assertive');
+    const controlProgress = doc.createElement('p');
+    controlProgress.id = 'padwiz-progress';
+    controlProgress.className = 'opt-hint';
+    controlPanel.casca.card.insertBefore(controlSentence, controlPanel.casca.lista);
+    controlPanel.casca.card.insertBefore(controlProgress, controlPanel.casca.lista);
+    padWizard = createPadWizard({
       getGamepads: () => {
         const nav = win.navigator as Navigator | undefined;
         return typeof nav?.getGamepads === 'function' ? nav.getGamepads() : null;
       },
-      rotuloDaAcao: (acao) => acoesParaMapear().find((x) => x.acao === acao)?.rotulo ?? null,
-      dizer: (frase) => { fraseDoControle.textContent = frase; srSay(frase); },
-      progresso: (texto) => { progressoDoControle.textContent = texto; },
+      rotuloDaAcao: (acao) => actionsToMap().find((x) => x.acao === acao)?.rotulo ?? null,
+      dizer: (phrase) => { controlSentence.textContent = phrase; srSay(phrase); },
+      progresso: (texto) => { controlProgress.textContent = texto; },
       srAlert,
       aoFechar: () => {
-        painelDoControle.casca.overlay.hidden = true;
+        controlPanel.casca.overlay.hidden = true;
         overlays.restoreFocus?.('padwiz');
       },
     });
-    const linhaDoControle = doc.createElement('div');
-    linhaDoControle.className = 'ctrl-row';
+    const controlRowEl = doc.createElement('div');
+    controlRowEl.className = 'ctrl-row';
     const envelopeDoControle = doc.createElement('span');
-    const forteDoControle = doc.createElement('strong');
-    envelopeDoControle.appendChild(forteDoControle);
-    linhaDoControle.appendChild(envelopeDoControle);
-    const botaoDoControle = doc.createElement('button');
-    botaoDoControle.className = 'mode-btn';
-    botaoDoControle.setAttribute('type', 'button');
-    botaoDoControle.id = 'opt-controle';
-    botaoDoControle.addEventListener('click', () => {
-      painelDoControle.abrir();
-      assistenteDoPad?.abrir();
+    const controlStrong = doc.createElement('strong');
+    envelopeDoControle.appendChild(controlStrong);
+    controlRowEl.appendChild(envelopeDoControle);
+    const controlButton = doc.createElement('button');
+    controlButton.className = 'mode-btn';
+    controlButton.setAttribute('type', 'button');
+    controlButton.id = 'opt-controle';
+    controlButton.addEventListener('click', () => {
+      controlPanel.abrir();
+      padWizard?.abrir();
     });
-    linhaDoControle.appendChild(botaoDoControle);
-    painelDaMotora.casca.lista.appendChild(linhaDoControle);
-    const refletirLinhaDoControle = (): void => {
-      forteDoControle.textContent = t('motora.controle');
-      botaoDoControle.textContent = t('motora.abrir');
-      botaoDoControle.setAttribute('aria-label', t('motora.controle'));
-      linhaDoControle.hidden = acoesParaMapear().length === 0; // nothing named, nothing to map
+    controlRowEl.appendChild(controlButton);
+    mobilityPanel.casca.lista.appendChild(controlRowEl);
+    const reflectControlRow = (): void => {
+      controlStrong.textContent = t('motora.controle');
+      controlButton.textContent = t('motora.abrir');
+      controlButton.setAttribute('aria-label', t('motora.controle'));
+      controlRowEl.hidden = actionsToMap().length === 0; // nothing named, nothing to map
     };
-    refletirLinhaDoControle();
+    reflectControlRow();
 
     /*
      * MAPEAR TOQUE (ADR-0151 §2; issue #182): which function each on-screen pad button carries, with `input/touch`'s own
@@ -3335,7 +3335,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * and only for the buttons the pad DRAWS — a slot whose function the game does not name is not drawn (ADR-0162), so its
      * row would change nothing on screen. The pad is redrawn with every choice.
      */
-    const painelDoToque = mountPanel(ctxDaMotora, {
+    const touchPanel = mountPanel(mobilityCtx, {
       id: 'touchcfg',
       idDaLista: 'touchmap-list',
       rotulos: () => ({
@@ -3344,39 +3344,39 @@ export function createGame(o: CreateGameOptions): Engine {
         rotuloReset: t('menu.restoreDefaults'),
         rotuloFechar: t('pause.pmback'),
       }),
-      render: () => { toque.renderTouchMap(); esconderSlotsSemFuncao(); },
+      render: () => { toque.renderTouchMap(); hideSlotsWithoutAction(); },
     });
-    painelDoToque.casca.reset.hidden = true;
-    const esconderSlotsSemFuncao = (): void => {
-      const nomeadas = acoesDoCartucho();
+    touchPanel.casca.reset.hidden = true;
+    const hideSlotsWithoutAction = (): void => {
+      const named = cartridgeActions();
       const mapa = toque.getTouchMap();
-      for (const sel of Array.from(painelDoToque.casca.lista.querySelectorAll<HTMLSelectElement>('select[data-slot]'))) {
+      for (const sel of Array.from(touchPanel.casca.lista.querySelectorAll<HTMLSelectElement>('select[data-slot]'))) {
         const linha = sel.closest<HTMLElement>('.ctrl-row');
-        if (linha) linha.hidden = !nomeadas.has(mapa[sel.dataset.slot ?? ''] ?? '');
+        if (linha) linha.hidden = !named.has(mapa[sel.dataset.slot ?? ''] ?? '');
       }
     };
     // after the select's own listener (it writes the map), the pad is drawn again with the new function
-    painelDoToque.casca.lista.addEventListener('change', () => { desenharPad(); esconderSlotsSemFuncao(); });
-    const linhaDoToque = doc.createElement('div');
-    linhaDoToque.className = 'ctrl-row';
-    const envelopeDoToque = doc.createElement('span');
-    const forteDoToque = doc.createElement('strong');
-    envelopeDoToque.appendChild(forteDoToque);
-    linhaDoToque.appendChild(envelopeDoToque);
-    const botaoDoToque = doc.createElement('button');
-    botaoDoToque.className = 'mode-btn';
-    botaoDoToque.setAttribute('type', 'button');
-    botaoDoToque.id = 'opt-toque';
-    botaoDoToque.addEventListener('click', () => painelDoToque.abrir());
-    linhaDoToque.appendChild(botaoDoToque);
-    painelDaMotora.casca.lista.appendChild(linhaDoToque);
-    const refletirLinhaDoToque = (): void => {
-      forteDoToque.textContent = t('motora.toque');
-      botaoDoToque.textContent = t('motora.abrir');
-      botaoDoToque.setAttribute('aria-label', t('motora.toque'));
-      linhaDoToque.hidden = !cartucho.controleNaTela || acoesParaMapear().length === 0; // no pad, or nothing named
+    touchPanel.casca.lista.addEventListener('change', () => { drawPad(); hideSlotsWithoutAction(); });
+    const touchRowEl = doc.createElement('div');
+    touchRowEl.className = 'ctrl-row';
+    const touchEnvelope = doc.createElement('span');
+    const touchStrong = doc.createElement('strong');
+    touchEnvelope.appendChild(touchStrong);
+    touchRowEl.appendChild(touchEnvelope);
+    const touchButton = doc.createElement('button');
+    touchButton.className = 'mode-btn';
+    touchButton.setAttribute('type', 'button');
+    touchButton.id = 'opt-toque';
+    touchButton.addEventListener('click', () => touchPanel.abrir());
+    touchRowEl.appendChild(touchButton);
+    mobilityPanel.casca.lista.appendChild(touchRowEl);
+    const reflectTouchRow = (): void => {
+      touchStrong.textContent = t('motora.toque');
+      touchButton.textContent = t('motora.abrir');
+      touchButton.setAttribute('aria-label', t('motora.toque'));
+      touchRowEl.hidden = !cartridge.controleNaTela || actionsToMap().length === 0; // no pad, or nothing named
     };
-    refletirLinhaDoToque();
+    reflectTouchRow();
 
     /*
      * 🔴 A LINHA «JEITO DE APERTAR» SAIU DESTE PAINEL (the Dev, 2026-09-21: «Tire a linha de acessibilidade motora»), no mesmo dia em
@@ -3396,15 +3396,15 @@ export function createGame(o: CreateGameOptions): Engine {
      * second press, and a game nobody presses twice has none to refuse.
      */
     const cooldownRowSpec = () => ({ id: 'opt-cooldown', rotulo: t('motor.espera'), dica: t('motor.espera.dica') });
-    const { linha: cooldownRow, controle: cooldownButton } = controlRow(ctxDaMotora, cooldownRowSpec());
-    painelDaMotora.casca.lista.appendChild(cooldownRow);
+    const { linha: cooldownRow, controle: cooldownButton } = controlRow(mobilityCtx, cooldownRowSpec());
+    mobilityPanel.casca.lista.appendChild(cooldownRow);
     const reflectCooldown = (): void => {
       labelRow(cooldownRow, cooldownRowSpec());
       const on = state.inputCooldown > 0;
       toggleBtn(cooldownButton, on);
       cooldownButton.textContent = toggleLabel(on);
       markChanged(cooldownRow, on !== (state.DEFAULTS.inputCooldown > 0));
-      cooldownRow.hidden = !cartucho.declaration.seguraTeclas();
+      cooldownRow.hidden = !cartridge.declaration.seguraTeclas();
     };
     cooldownButton.addEventListener('click', () => {
       state.setInputCooldownValue(state.inputCooldown > 0 ? 0 : COOLDOWN_MS);
@@ -3441,10 +3441,10 @@ export function createGame(o: CreateGameOptions): Engine {
     const cameraWrap = doc.createElement('span');
     cameraWrap.appendChild(cameraHint);
     cameraRow.appendChild(cameraWrap);
-    const cameraSteps = mountSteps(ctxDaMotora, cameraRowSpec());
+    const cameraSteps = mountSteps(mobilityCtx, cameraRowSpec());
     cameraSteps.id = 'opt-camera';
     cameraRow.appendChild(cameraSteps);
-    painelDaMotora.casca.lista.appendChild(cameraRow);
+    mobilityPanel.casca.lista.appendChild(cameraRow);
     const reflectCamera = (): void => {
       updateSteps(cameraSteps, cameraRowSpec());
       cameraHint.textContent = t('motora.camera.dica');
@@ -3475,8 +3475,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * answered: `ui/voice-control` says why and puts the answer back to off, and this row follows it like the icon does.
      */
     const voiceRowSpec = () => ({ id: 'opt-voice', rotulo: t('motora.voz'), dica: t('motora.voz.dica') });
-    const { linha: voiceRow, controle: voiceButton } = controlRow(ctxDaMotora, voiceRowSpec());
-    painelDaMotora.casca.lista.appendChild(voiceRow);
+    const { linha: voiceRow, controle: voiceButton } = controlRow(mobilityCtx, voiceRowSpec());
+    mobilityPanel.casca.lista.appendChild(voiceRow);
     const reflectVoice = (): void => {
       labelRow(voiceRow, voiceRowSpec());
       toggleBtn(voiceButton, state.voiceControl);
@@ -3494,8 +3494,8 @@ export function createGame(o: CreateGameOptions): Engine {
     state.on('voiceControl', () => { reflectVoice(); });
     reflectVoice();
 
-    refletirTeclado = () => {
-      refletirLinhasDoTeclado(); refletirLinhaDoControle(); refletirLinhaDoToque(); reflectCooldown();
+    reflectKeyboard = () => {
+      reflectKeyboardRows(); reflectControlRow(); reflectTouchRow(); reflectCooldown();
       reflectCamera(); reflectVoice();
     };
   }
@@ -3504,7 +3504,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * its own, and before any cartridge hears a game key. A refused key and its release stop here; a tapped key passes and is
    * released at once by a synthetic keyup, which this filter lets through.
    */
-  const filtroMotor = createEmpathyFilter();
+  const empathyFilter = createEmpathyFilter();
   /*
    * AND THE COOL-DOWN, WHICH IS THE OPPOSITE OF THEM (ADR-0217): the simulations above make play harder so an adult can feel
    * what a motor disability costs; this refuses the SECOND press of a hand that shakes, which is a child losing a turn she did
@@ -3513,29 +3513,29 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const cooldown = createInputCooldown();
   state.on('inputCooldown', () => { cooldown.reset(); }); // turning it off must not leave a press refused by an old wait
-  const soltasPeloFiltro = new WeakSet<Event>();
-  const barrar = (e: Event): void => { e.preventDefault(); e.stopImmediatePropagation(); };
+  const releasedByFilter = new WeakSet<Event>();
+  const block = (e: Event): void => { e.preventDefault(); e.stopImmediatePropagation(); };
   win.addEventListener('keydown', (e: KeyboardEvent) => {
     if (keyboard.whichPlayer(e.code) < 0) return;
     if (cooldown.keydown(e.code, win.performance.now(), state.inputCooldown, e.repeat || keys.has(e.code)) === 'refuse') {
-      barrar(e);
+      block(e);
       return;
     }
-    const decisao = filtroMotor.keydown(e.code, e.repeat, { umPorVez: state.oneButton, noGripStrength: state.noGripStrength });
-    if (decisao === 'barrar') { barrar(e); return; }
-    if (decisao === 'tocar') {
+    const decision = empathyFilter.keydown(e.code, e.repeat, { umPorVez: state.oneButton, noGripStrength: state.noGripStrength });
+    if (decision === 'barrar') { block(e); return; }
+    if (decision === 'tocar') {
       const alvo = e.target ?? win;
       setTimeout(() => {
         // a release the keyboard's own press produced
-        const solta = stampSource(new KeyboardEvent('keyup', { code: e.code, key: e.key, bubbles: true, cancelable: true }), 'teclado');
-        soltasPeloFiltro.add(solta);
-        alvo.dispatchEvent(solta);
+        const released = stampSource(new KeyboardEvent('keyup', { code: e.code, key: e.key, bubbles: true, cancelable: true }), 'teclado');
+        releasedByFilter.add(released);
+        alvo.dispatchEvent(released);
       }, 0);
     }
   }, true);
   win.addEventListener('keyup', (e: KeyboardEvent) => {
-    if (soltasPeloFiltro.has(e) || keyboard.whichPlayer(e.code) < 0) return;
-    if (filtroMotor.keyup(e.code) === 'barrar') barrar(e);
+    if (releasedByFilter.has(e) || keyboard.whichPlayer(e.code) < 0) return;
+    if (empathyFilter.keyup(e.code) === 'barrar') block(e);
   }, true);
 
   // Jogar no teclado ESCONDE o pad — a mesma alternância por modalidade do `input/keydown` do cartucho. Só as
@@ -3545,7 +3545,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // pelo Dev). `stopPropagation` não cala outro ouvinte do MESMO nó, logo a ordem de registo não importa.
   win.addEventListener('keydown', (e: KeyboardEvent) => {
     if (sourceOfEvent(e) === 'toque') return; // a tecla que o próprio pad entregou a um menu
-    if (keyboard.whichPlayer(e.code) >= 0) { toque.hideTouchControls(); padAntesDoMenu = false; } // on the keyboard now
+    if (keyboard.whichPlayer(e.code) >= 0) { toque.hideTouchControls(); padBeforeMenu = false; } // on the keyboard now
   }, true);
 
   /*
@@ -3598,35 +3598,35 @@ export function createGame(o: CreateGameOptions): Engine {
    * A PILHA DE CENAS É DA RAIZ, e não do retorno, porque o `desmontar()` tem de a alcançar. Nasce uma vez
    * (ADR-0117 §2: a página tem uma) e é esvaziada entre cartuchos, nunca substituída.
    */
-  const cenasDaRaiz = createSceneStack();
+  const rootScenes = createSceneStack();
 
   // ⚠️ SEM PADRÃO `{}` desde o ADR-0153: os ganchos carregam a resposta obrigatória às acomodações, e um padrão vazio
   // seria o cartucho que não respondeu — o arranque recusá-lo-ia de qualquer forma, com uma mensagem pior.
-  function montar(declaration: GameDeclaration, ganchos: CartridgeHooks): void {
+  function mountAll(declaration: GameDeclaration, hooks: CartridgeHooks): void {
     // ⚠️ LANÇA, NÃO DIAGNOSTICA — a mesma regra do arranque, e por isso a mesma frase. Uma declaração
     // malformada é pré-condição: `problems` é para lacunas com que se consegue jogar, e isto não é uma.
-    const malformada = conformanceProblems(declaration);
-    if (malformada.length) {
-      recusarDeclaracao('mount', malformada);
+    const malformed = conformanceProblems(declaration);
+    if (malformed.length) {
+      refuseDeclaration('mount', malformed);
     }
     // ⚠️ E O `mount()` RECUSA PELA MESMA REGRA, antes de escrever em `cartucho`. `CartridgeHooks` é
     // `Omit<MetadeDoJogo, 'declaration'>`, logo carrega `preset` — um segundo cartucho podia tomar o «start»
     // que o primeiro respeitou, e a raiz ficava com a pausa inalcançável a meio da sessão.
-    recusarSeTomaOStart('mount', ganchos.preset);
-    recusarSeNaoResponde('mount', ganchos.acomodacoes);
-    recusarSeGeneroRecusado('mount', ganchos.genero);
-    recusarSeHudMalformado('mount', ganchos.hud);
-    recusarSeOpcoesMalformadas('mount', ganchos.gameOptions);
-    recusarSeComoJogarMalformado('mount', ganchos.howToPlay);
-    cartucho = { ...ganchos, declaration };
-    montarHud(); // the numbers are the cartridge's: the new one's replace the old one's, and the room is measured again
-    registrarMapeamentosDoCartucho();
-    redesenharOpcoesDoJogo(); // the rows are the new cartridge's, drawn or cleared before its door is weighed
+    refuseIfItClaimsStart('mount', hooks.preset);
+    refuseIfNoAnswer('mount', hooks.acomodacoes);
+    refuseIfGenreRefused('mount', hooks.genero);
+    refuseIfHudMalformed('mount', hooks.hud);
+    refuseIfOptionsMalformed('mount', hooks.gameOptions);
+    refuseIfHowToPlayMalformed('mount', hooks.howToPlay);
+    cartridge = { ...hooks, declaration };
+    mountHud(); // the numbers are the cartridge's: the new one's replace the old one's, and the room is measured again
+    registerCartridgeMappings();
+    redrawGameOptions(); // the rows are the new cartridge's, drawn or cleared before its door is weighed
     pauseIcons.reflectPauseIcons(); // the bar follows the new cartridge: the hourglass exists only where time runs by itself
-    alcanceAtual = derivarAlcance();
+    currentReach = deriveReach();
     // O pad é da FORMA do preset, logo muda com o cartucho; os ouvintes da janela ficam (`rewire`, e não `attach`).
-    desenharPad();
-    ligacoesDoToque.rewire();
+    drawPad();
+    touchBindings.rewire();
   }
 
   /**
@@ -3635,11 +3635,11 @@ export function createGame(o: CreateGameOptions): Engine {
    * Read when `problems` is read, by the sentinel only that stylesheet declares — a stylesheet loading late is not
    * accused; a host without `getComputedStyle` measures nothing and accuses nothing.
    */
-  function folhaDeEstiloAusente(): string[] {
+  function stylesheetMissing(): string[] {
     if (typeof win.getComputedStyle !== 'function' || !doc.documentElement) return [];
-    const estilo = win.getComputedStyle(doc.documentElement);
-    if (!estilo || typeof estilo.getPropertyValue !== 'function') return [];
-    return estilo.getPropertyValue('--incl-engine-stylesheet').trim() ? [] : [`the page does not link the engine stylesheet \
+    const styleEl = win.getComputedStyle(doc.documentElement);
+    if (!styleEl || typeof styleEl.getPropertyValue !== 'function') return [];
+    return styleEl.getPropertyValue('--incl-engine-stylesheet').trim() ? [] : [`the page does not link the engine stylesheet \
 (package export \`the-inclusionist-engine/style.css\`): panels, the footer band, the target floor and the focus rings are \
 unstyled, so a child who plays by keyboard cannot see where focus is — link that stylesheet`];
   }
@@ -3655,28 +3655,28 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * names the ones that appeared since and sit outside every scope. Only what appeared: on a shared origin (localhost)
    * the keys already there are other pages'. By capability: a host without storage, or one that throws, measures nothing.
    */
-  function chavesDoArmazenamento(): Set<string> {
-    const chaves = new Set<string>();
+  function storageKeys(): Set<string> {
+    const keyList = new Set<string>();
     for (const nome of ['localStorage', 'sessionStorage'] as const) {
       try {
         const area = (win as unknown as Record<string, Storage | undefined>)[nome];
         if (!area || typeof area.key !== 'function') continue;
-        for (let i = 0; i < area.length; i++) { const k = area.key(i); if (k !== null) chaves.add(k); }
+        for (let i = 0; i < area.length; i++) { const k = area.key(i); if (k !== null) keyList.add(k); }
       } catch { /* private mode or a host double: nothing to read */ }
     }
-    return chaves;
+    return keyList;
   }
-  const chavesNoArranque = chavesDoArmazenamento();
-  function armazenamentoForaDoEscopo(): string[] {
-    const novas = [...chavesDoArmazenamento()].filter((k) => !chavesNoArranque.has(k));
-    const fora = store.keysOutsideScopes(novas);
-    if (!fora.length) return [];
-    return [`the cartridge stored keys outside the engine's scopes (${fora.slice(0, 5).join(', ')}): a child's settings `
+  const keysAtBoot = storageKeys();
+  function storageOutsideScope(): string[] {
+    const freshOnes = [...storageKeys()].filter((k) => !keysAtBoot.has(k));
+    const outList = store.keysOutsideScopes(freshOnes);
+    if (!outList.length) return [];
+    return [`the cartridge stored keys outside the engine's scopes (${outList.slice(0, 5).join(', ')}): a child's settings `
       + 'kept there do not follow them to the next game, and a game\'s own collide with other games\' — what belongs to '
       + 'the child goes under incl_* through the engine\'s settings, what belongs to the game under incl.<game>.* (storage.gameKey)'];
   }
 
-  const problemasMedidos: string[] = [];
+  const measuredProblems: string[] = [];
   /*
    * THE CHILD READS ALOUD, AND THE GAME RECEIVES TEXT (ADR-0216, issue #200). The engine owns the microphone, the route and
    * the promise of privacy; the cartridge calls `listen()`. ⚠️ Recognition on the device or nothing: `platform/reading` only
@@ -3702,7 +3702,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       now: () => win.performance.now(),
       every: (fn, ms) => win.setInterval(fn, ms),
       stopEvery: (h) => win.clearInterval(h as number),
-      report: (linha) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
+      report: (linha) => { if (!measuredProblems.includes(linha)) measuredProblems.push(linha); },
       /**
        * THE ENGINE'S OWN RECOGNISER, and it arrives late on purpose (ADR-0216 §5): `platform/reading-runtime` is what names the
        * model files, so a game that never listens — and a child of a game that does, until the first `listen()` — loads none of
@@ -3730,13 +3730,13 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
                 const line = `reading: the transcription thread could not open — ${reason}; a child who reads aloud `
                   + 'gets no answer, and nothing else in the page will say so — check that the reading model for this '
                   + 'language reached `heavy/` (npx inclusionist-heavy --reading <language>)';
-                if (!problemasMedidos.includes(line)) problemasMedidos.push(line);
+                if (!measuredProblems.includes(line)) measuredProblems.push(line);
               },
             });
             closeReadingThread = () => { readingThread?.close(); readingThread = null; };
             return readingThread;
           }
-          problemasMedidos.push('reading: this browser has no `Worker`, so the transcription runs on the same thread that '
+          measuredProblems.push('reading: this browser has no `Worker`, so the transcription runs on the same thread that '
             + 'draws the game and feeds the microphone — measured, that cuts the recording in gaps of seconds and the child '
             + 'loses the words she said meanwhile; serve the game where workers are available');
           const { loadReadingRuntime } = await import('../platform/reading-runtime.js');
@@ -3762,7 +3762,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       stop: () => listener.stop(),
       listen: (options) => {
         if (!o.uses?.reading) {
-          if (!problemasMedidos.includes(notDeclared)) problemasMedidos.push(notDeclared);
+          if (!measuredProblems.includes(notDeclared)) measuredProblems.push(notDeclared);
           return Promise.reject(new Error('reading was not declared by this game: `uses: { reading: true }`'));
         }
         return listener.listen(options);
@@ -3780,7 +3780,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * in the window's capture after the menu navigation and the motor simulations (a key they refused stopped there); a transport that
    * reads positions presses the controller directly.
    */
-  const entregar = (comando: VirtualCommand): void => { cartucho.onCommand?.(comando); };
+  const deliverCommand = (cmd: VirtualCommand): void => { cartridge.onCommand?.(cmd); };
   /*
    * THE SCAN ITSELF (ADR-0218): the list is the positions this cartridge declared AND NAMED, because the chip says the game's
    * own words and a position nobody named would cost the child a pass of silence (ADR-0074). It is rebuilt every time the scan
@@ -3791,9 +3791,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   let scanner: SwitchScan | null = null;
   let scanFrame = 0;
   const scanWord = (item: ScanItem): string =>
-    scanItemText(item, (a) => (cartucho.preset ? labellerFrom(cartucho.preset)(a) : null), t('scan.nothing'));
+    scanItemText(item, (a) => (cartridge.preset ? labellerFrom(cartridge.preset)(a) : null), t('scan.nothing'));
   // A word of a different length is a different amount of room to keep free, so the band is measured again — and only then.
-  const scanShow = (item: ScanItem): void => { if (scanChip?.showing(scanWord(item))) reservarFaixaDaBarra(); };
+  const scanShow = (item: ScanItem): void => { if (scanChip?.showing(scanWord(item))) reserveBarBand(); };
   const scanTick = (): void => {
     if (!scanner) return;
     scanShow(scanner(win.performance.now()).showing.item);
@@ -3802,12 +3802,12 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   const stopScan = (): void => {
     if (scanFrame) win.cancelAnimationFrame(scanFrame);
     scanFrame = 0; scanner = null; scanChip?.hide();
-    reservarFaixaDaBarra(); // the room the chip was keeping goes back to the game
+    reserveBarBand(); // the room the chip was keeping goes back to the game
   };
   const startScan = (): void => {
     if (scanner) return;
-    const names = cartucho.preset ? labellerFrom(cartucho.preset) : null;
-    const offered = (cartucho.preset ? presetActions(cartucho.preset) : []).filter((a) => !!names?.(a));
+    const names = cartridge.preset ? labellerFrom(cartridge.preset) : null;
+    const offered = (cartridge.preset ? presetActions(cartridge.preset) : []).filter((a) => !!names?.(a));
     scanner = createSwitchScan(offered);
     scanTick();
   };
@@ -3827,12 +3827,12 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   state.on('switchScan', (on) => { if (on) startScan(); else stopScan(); });
   if (state.switchScan) startScan();
   const controleVirtual = createVirtualController({
-    scheme: (i) => keyboard.kbFor(i), menuOpen: menuComDirecional,
+    scheme: (i) => keyboard.kbFor(i), menuOpen: menuWithDpad,
     // ⚠️ `markKeyFrom` E NÃO `markKey` CRU: uma tecla que chega SEM origem — que é todo evento de teclado de verdade —
     // tem de APAGAR quem a segurou da última vez em vez de a herdar (ADR-0109). A escolha entre as duas portas vive
     // em `input/state`, onde o `input/keydown` já fazia a mesma.
     holdKey: markKeyFrom,
-    releaseKey: releaseKey, menuKey: teclaAoMenu, deliver: entregar,
+    releaseKey: releaseKey, menuKey: keyToMenu, deliver: deliverCommand,
   });
   /*
    * 🔴 O CONDUTOR DO TECLADO, E SÓ ISSO (ADR-0223). Esta escuta ERA a segunda porta ao cartucho: resolvia a acção e
@@ -3852,7 +3852,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    */
   for (const tipo of ['keydown', 'keyup'] as const) {
     win.addEventListener(tipo, (e: KeyboardEvent) => {
-      if (e.repeat || !cartucho.onCommand) return;
+      if (e.repeat || !cartridge.onCommand) return;
       const source = sourceOfEvent(e);
       // ⚠️ SEM CARIMBO É O TECLADO DE VERDADE: um evento que a criança produziu não traz expando nenhum. O único
       // carimbo que pertence a este condutor é `teclado`, e ele existe para a soltura que o filtro motor sintetiza.
@@ -3879,28 +3879,28 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   // 📌 As ausências resolvem-se em `input/gamepad`, numa tabela: o que uma ausência SIGNIFICA é decisão, e uma raiz
   // de composição carrega fiação (ADR-0221, errata). Só a de `worldRunning` é daqui, porque só quem monta sabe que
   // menus tem abertos.
-  const gameHooks = padGameAnswers(cartucho.gamepad, () => !menuComDirecional());
+  const gameHooks = padGameAnswers(cartridge.gamepad, () => !menuWithDpad());
   const gamepad = initGamepad({
     $,
     getGamepads: () => win.navigator?.getGamepads?.() ?? [],
     // A PALAVRA DO JOGO para uma posição (a fronteira do corte de 2026-09-06): a engine sabe que a posição existe, só
     // o cartucho sabe como ela se chama — e ele já a declarou no `preset` para existir.
-    rotuloDaAcao: (action) => (cartucho.preset ? labellerFrom(cartucho.preset)(action as Action) : null),
+    rotuloDaAcao: (action) => (cartridge.preset ? labellerFrom(cartridge.preset)(action as Action) : null),
     srSay, srAlert,
     frontOverlay: overlays.frontOverlay,
     // ⚠️ «MENU DE PAUSA» AQUI É TODO MENU COM DIRECIONAL, e não só o cartão: o `steerPause` do transporte já trata o
     // diálogo partilhado antes do cartão, que é o painel aberto por cima. A mesma pergunta que o controle virtual faz.
-    menuDePausa: menuComDirecional,
+    menuDePausa: menuWithDpad,
     mundoRodando: gameHooks.worldRunning,
     // O START do comando é a PAUSA RÁPIDA (ADR-0155), como o da tela; e a saída reusa a decisão já escrita para o dedo,
     // que sabe distinguir sair da pausa rápida de fechar o cartão.
-    pausar: () => { entrarNaPausaRapida(0); },
-    retomar: alternarPausaPeloToque,
+    pausar: () => { enterQuickPause(0); },
+    retomar: togglePauseByTouch,
     isAttractActive: gameHooks.attractActive,
     stopAttract: gameHooks.stopAttract,
     // Um botão FÍSICO faz sumir o pad da tela — a mesma alternância por modalidade do teclado.
     isTouchMode: () => { const p = $<HTMLElement>('#touch-controls'); return !!p && !p.hidden; },
-    hideTouchControls: () => { toque.hideTouchControls(); padAntesDoMenu = false; },
+    hideTouchControls: () => { toque.hideTouchControls(); padBeforeMenu = false; },
     // ⚠️ SEMEADO A CADA LEITURA e não uma vez: o cartucho repovoa a lista a cada recomeço, e um assento semeado só no
     // arranque deixaria os jogadores novos sem `pad` — invisíveis para o transporte, sem erro em lado nenhum.
     getPlayers: () => seatEveryPlayer(players()),
@@ -3948,8 +3948,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   win.addEventListener('gamepaddisconnected', () => { if (!anyPadConnected()) stopPollingPad(); });
   if (anyPadConnected()) startPollingPad();
 
-  const regiaoDoOlhar = $<HTMLElement>('#game-region');
-  if (canCaptureMedia && regiaoDoOlhar) {
+  const gazeRegion = $<HTMLElement>('#game-region');
+  if (canCaptureMedia && gazeRegion) {
     // PLAYING THROUGH THE WEBCAM (ADR-0215): one stored position, off · hands · face · eyes; `ui/camera-control` starts only the control at
     // that position. Each control opens the camera itself and lets it go when the position moves on.
     const visionLoop = {
@@ -3957,8 +3957,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       now: () => win.performance.now(), every: (cb: () => void, ms: number) => win.setInterval(cb, ms), stopEvery: (h: number) => win.clearInterval(h),
     };
     const cameraDeps = {
-      doc, region: regiaoDoOlhar, base: doc.baseURI, loop: visionLoop, controller: controleVirtual, say: srSay, alert: srAlert,
-      report: (linha: string) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
+      doc, region: gazeRegion, base: doc.baseURI, loop: visionLoop, controller: controleVirtual, say: srSay, alert: srAlert,
+      report: (linha: string) => { if (!measuredProblems.includes(linha)) measuredProblems.push(linha); },
       turnOff: () => state.setCameraControlValue('off'),
     };
     // the eyes: the relative reading and the four-zone cycle (ADR-0213), presses from `olhos`, the eye lines and the regions' outlines
@@ -3991,7 +3991,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     voiceControl = createVoiceControl({
       base: doc.baseURI, language: () => bcp47(), controller: controleVirtual, menuWords,
       say: srSay, alert: srAlert,
-      report: (line) => { if (!problemasMedidos.includes(line)) problemasMedidos.push(line); },
+      report: (line) => { if (!measuredProblems.includes(line)) measuredProblems.push(line); },
       turnOff: () => { state.setVoiceControlValue(false); },
       after: (fn, ms) => { win.setTimeout(fn, ms); },
     });
@@ -4007,31 +4007,31 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    */
   const medirFlashes = (ms: number): Promise<FlashMeasurement> => sampleFlashes({
     canvas: () => {
-      const mundo = cartucho.declaration.world();
-      const alvo = mundo.kind === 'element' ? $<HTMLElement>(mundo.selector) : null;
+      const worldEl = cartridge.declaration.world();
+      const alvo = worldEl.kind === 'element' ? $<HTMLElement>(worldEl.selector) : null;
       return alvo?.tagName === 'CANVAS' ? alvo as HTMLCanvasElement : alvo?.querySelector('canvas') ?? null;
     },
     scratch: () => doc.createElement('canvas'),
     frame: typeof win.requestAnimationFrame === 'function' ? (cb) => { win.requestAnimationFrame(cb); } : undefined,
-    report: (linha) => { problemasMedidos.push(linha); },
+    report: (linha) => { measuredProblems.push(linha); },
   }, ms);
 
-  function desmontar(): void {
+  function unmountAll(): void {
     closeReadingThread();
     registerKeyboardMapping(null);
     registerPadMapping(null);
     registerCrashNotice(null);
-    retirarAvisoDeAlcance();
-    hudMontado?.remove();
-    hudMontado = null;
-    reservarFaixaDaBarra();
+    removeReachNotice();
+    hudMounted?.remove();
+    hudMounted = null;
+    reserveBarBand();
     // ⚠️ `pop()` E NÃO UM `clear()`: cada `exit()` é a limpeza de DOM daquela cena, e saltá-la deixaria na
     // página o que o cartucho anterior desenhou. O laço tem fim porque `pop()` devolve `null` na pilha vazia.
-    while (cenasDaRaiz.pop()) { /* o `exit()` de cada cena É o teardown dela */ }
+    while (rootScenes.pop()) { /* o `exit()` de cada cena É o teardown dela */ }
   }
 
   function dispose(): void {
-    desmontar();
+    unmountAll();
     // 📌 O laço de sondagem do comando é da RAIZ desde o ADR-0224, logo morre com ela: um `requestAnimationFrame` que
     // sobrevive a `dispose()` lê a Gamepad API para sempre, numa raiz que já não tem jogadores (ADR-0220).
     stopPollingPad();
@@ -4039,10 +4039,10 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   }
 
   return {
-    get declaration() { return cartucho.declaration; },
+    get declaration() { return cartridge.declaration; },
     get declines() { return declines(); },
-    mount: montar,
-    unmount: desmontar,
+    mount: mountAll,
+    unmount: unmountAll,
     dispose,
     pausa,
     tts,
@@ -4056,11 +4056,11 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     controller: controleVirtual,
     sonar,
     aplicarFiltroDeVisao,
-    cenas: cenasDaRaiz,
+    cenas: rootScenes,
     onLocaleChange: (fn) => { localeListeners.push(fn); },
     cvdFilters,
-    get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho(), ...dictionaryGaps(), ...problemasMedidos, ...armazenamentoForaDoEscopo()]; },
+    get problems() { return [...hostProblems, ...stylesheetMissing(), ...cartridgeProblemList(), ...dictionaryGaps(), ...measuredProblems, ...storageOutsideScope()]; },
     aoFalhar,
-    get reach() { return alcanceAtual; },
+    get reach() { return currentReach; },
   };
 }
