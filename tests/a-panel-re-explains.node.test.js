@@ -24,6 +24,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import ts from 'typescript';
 
 const RAIZ_REPO = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const UI = join(RAIZ_REPO, 'app', 'js', 'ui');
@@ -64,8 +65,28 @@ function linhasDeCodigo(texto) {
  * exatamente o caso doente não é um crivo frouxo: é um crivo com o sinal trocado.
  */
 const RECONSTRUTORES_INJETADOS = ['renderVizGroup'];
-const reconstroi = (f) => linhasDeCodigo(fonte(f)).some(([, l]) =>
+const reconstroiPorMarkup = (f) => linhasDeCodigo(fonte(f)).some(([, l]) =>
   /\.innerHTML\s*=/.test(l) || RECONSTRUTORES_INJETADOS.some((n) => new RegExp(n + '\\s*\\(').test(l)));
+
+/**
+ * ⚠️ REBUILDING IS ALSO DONE IN NODES — AND THAT IS HOW THIS SIEVE QUIETLY STOPPED WATCHING FIVE OF EIGHT PANELS.
+ *
+ * 📏 Measured on 2026-09-23, with the kit adoption of ADR-0129 closed: the question above asks only for
+ * `.innerHTML =`, and the conversion replaced exactly that. `-caa`, `-typo`, `-visual`, `-motion` and `-audio`
+ * now build their rows as NODES, so the answer for all five became `false` — and the `[Zero]` case walked past
+ * them asserting nothing, GREEN. Nothing ever went red: the gate simply stopped covering the very panels the
+ * conversion touched, one commit at a time. It is the shape this repository has already met three times in
+ * ledgers — a key that stops matching stops requiring — and the first time it has bitten a PREDICATE.
+ *
+ * 📌 And the requirement did not leave with the markup. A row BORN as a node after `fillExplain` has already run
+ * carries its `.opt-hint` visible exactly like a row born from a string; what changed is only who wrote it,
+ * which is the same mistake the injected-rebuilder note above was written to fix.
+ */
+const CRIADORES_DO_KIT = ['controlRow', 'sectionHeader', 'mountSteps'];
+const constroiNos = (f) => linhasDeCodigo(fonte(f)).some(([, l]) =>
+  /\bcreateElement\s*\(|\bcriar\s*\(/.test(l) || CRIADORES_DO_KIT.some((n) => new RegExp('\\b' + n + '\\s*\\(').test(l)));
+
+const reconstroi = (f) => reconstroiPorMarkup(f) || constroiNos(f);
 
 /**
  * ⚠️ A CHAMADA, E NÃO A MENÇÃO — e a diferença foi medida, não suposta.
@@ -103,6 +124,36 @@ describe('painel que reconstrói linhas repõe a prosa no rodapé (CLAUDE.md §4
     const isInside = corpo.slice(corpo.indexOf('function renderVizGroup('));
     expect(isInside, 'renderVizGroup deixou de reconstruir; rever RECONSTRUTORES_INJETADOS')
       .toMatch(/\.innerHTML\s*=/);
+  });
+
+  it('⚠️ [Interface] os construtores do KIT criam nós mesmo — a segunda afirmação sobre outro módulo', () => {
+    // Same lesson as the case above, applied to the list this commit added: `CRIADORES_DO_KIT` is a claim about
+    // `ui/panel-widgets`, and a claim about another module is the one that rots unnoticed. `labelRow` and
+    // `updateSteps` are deliberately NOT here — they rewrite rows that already exist, and a panel that only
+    // relabels does not undo `fillExplain`.
+    // ⚠️ E O CORPO SAI DO PARSER, não de um `indexOf` até ao próximo `export`. A primeira versão fatiava assim
+    // e a fatia de `labelRow` engolia o `criarControle` privado que vem a seguir — uma mutação que listava o
+    // `labelRow` como criador passou VERDE. É a quinta vez que um varredor à mão erra por não saber onde uma
+    // construção acaba, e a resposta desta casa já está escrita: quem sabe é o `typescript`.
+    const KIT = join(UI, 'panel-widgets.ts');
+    const fonteDoKit = readFileSync(KIT, 'utf8');
+    const arvore = ts.createSourceFile(KIT, fonteDoKit, ts.ScriptTarget.Latest, true);
+    const corpos = new Map();
+    arvore.forEachChild((node) => {
+      if (ts.isFunctionDeclaration(node) && node.name) corpos.set(node.name.text, node.getText(arvore));
+    });
+    for (const n of CRIADORES_DO_KIT) {
+      expect(corpos.has(n), `${n} deixou de ser uma função do kit; rever CRIADORES_DO_KIT`).toBe(true);
+      expect(corpos.get(n), `${n} deixou de criar nós; rever CRIADORES_DO_KIT`).toMatch(/\bcriar\s*\(/);
+    }
+  });
+
+  it('⚠️ [Zero] o crivo ALCANÇA os oito painéis — nenhum sai da vigilância em silêncio', () => {
+    // 📏 Este caso existe porque a cobertura JÁ encolheu de 8 para 3 sem uma única falha, à medida que a
+    // conversão para nós apagava os `innerHTML` que o crivo procurava. Medir a cobertura é o que transforma
+    // esse encolhimento numa falha em vez de num silêncio.
+    const forade = PAINEIS.filter((f) => !reconstroi(f));
+    expect(forade, 'painel que nenhuma das duas formas de reconstrução alcança').toEqual([]);
   });
 
   it('[Boundary] e um painel que NÃO reconstrói não é obrigado a nada', () => {
