@@ -400,12 +400,12 @@
       "fanIn": 1
     },
     "input/face-map.ts": {
-      "codeLines": 159,
-      "decisionNodes": 36,
-      "maxDepth": 5,
+      "codeLines": 174,
+      "decisionNodes": 35,
+      "maxDepth": 3,
       "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 23,
+      "worstFunction": 8,
       "fanIn": 1
     },
     "input/face-signals.ts": {

@@ -107,41 +107,69 @@ export function ownMarks(levels: ExpressionLevels): ExpressionLevels {
   return (levels.pucker ?? 0) < PUCKER_MARK ? { ...levels, pucker: 0 } : levels;
 }
 
+/** The look to the player's left is read under the button that ENDS on the left. */
+type LookButton = 'lookRightThenLeft' | 'lookLeftThenRight';
+const LOOK_BUTTONS: readonly LookButton[] = ['lookRightThenLeft', 'lookLeftThenRight'];
+/** Each button's first half is the other side. */
+const FIRST_SIDE: { readonly [B in LookButton]: LookButton } = { lookRightThenLeft: 'lookLeftThenRight', lookLeftThenRight: 'lookRightThenLeft' };
+/** One side of the look: at the mark or not, its peak since it arrived, and when it last left having peaked. */
+interface LookSide { on: boolean; peak: number; leftAt: number | null }
+/** One button: when its second side started (−1: it started without a valid first half), and since when it is held. */
+interface LookPress { start: number | null; heldSince: number | null }
+
 /**
  * The crossed look. In: the look to each side (in the levels, under the button it ends on). Out: the button levels. A first side counts
  * only if it peaked at `peakMin` and then left the mark; the second must reach `peakMin` within `windowMs` and stay `holdMs`; held, it
  * stays down while the look stays at the mark; a turned head cancels any crossing.
  */
 export function createCrossedLook({ mark, peakMin = 0.6, windowMs = 800, holdMs = 300 }: { mark: number; peakMin?: number; windowMs?: number; holdMs?: number }) {
-  // the look to the player's left is read under the button that ENDS on the left
-  type Button = 'lookRightThenLeft' | 'lookLeftThenRight';
-  const side = { lookRightThenLeft: { on: false, peak: 0, leftAt: null as number | null }, lookLeftThenRight: { on: false, peak: 0, leftAt: null as number | null } };
-  const button = { lookRightThenLeft: { start: null as number | null, heldSince: null as number | null }, lookLeftThenRight: { start: null as number | null, heldSince: null as number | null } };
-  const first: { readonly [B in Button]: Button } = { lookRightThenLeft: 'lookLeftThenRight', lookLeftThenRight: 'lookRightThenLeft' };
+  const side: { readonly [B in LookButton]: LookSide } = {
+    lookRightThenLeft: { on: false, peak: 0, leftAt: null }, lookLeftThenRight: { on: false, peak: 0, leftAt: null },
+  };
+  const press: { readonly [B in LookButton]: LookPress } = {
+    lookRightThenLeft: { start: null, heldSince: null }, lookLeftThenRight: { start: null, heldSince: null },
+  };
+
+  /** A side peaks while it is at the mark; leaving after a peak of `peakMin` leaves a first half for the other button. */
+  function trackSide(s: LookSide, v: number, ms: number, turned: boolean): void {
+    if (v >= mark) {
+      if (!s.on) { s.on = true; s.peak = 0; } // zeroed on arrival, so a weak visit never inherits a strong one's peak
+      s.peak = Math.max(s.peak, v);
+    } else if (s.on) {
+      s.on = false;
+      if (s.peak >= peakMin) s.leftAt = ms;
+    }
+    if (turned) { s.leftAt = null; s.peak = 0; }
+  }
+
+  /** The second side starts a press only if the first left within `windowMs` — and it spends that first half either way. */
+  function startOf(ms: number, before: LookSide): number {
+    if (before.leftAt === null) return -1;
+    const start = ms - before.leftAt <= windowMs ? ms : -1;
+    before.leftAt = null;
+    return start;
+  }
+
+  /** One button's level: held, it stays down while the look stays at the mark; otherwise the second side must reach
+   *  `peakMin` with the head still, and after `holdMs` the press is held. Letting go clears it whole. */
+  function stepPress(st: LookPress, v: number, ms: number, before: LookSide, turned: boolean): number {
+    if (st.heldSince !== null) {
+      if (v >= mark) return 1;
+      st.heldSince = null; st.start = null;
+      return 0;
+    }
+    if (v < peakMin || turned) { st.start = null; return 0; }
+    st.start ??= startOf(ms, before);
+    if (st.start >= 0 && ms - st.start >= holdMs) st.heldSince = st.start;
+    return st.start >= 0 ? 1 : 0;
+  }
+
   return (ms: number, levels: ExpressionLevels): ExpressionLevels => {
     const out: { [E in FaceExpression]?: number } = { ...levels };
     const turned = Math.max(levels.headLeft ?? 0, levels.headRight ?? 0) >= mark;
-    for (const b of ['lookRightThenLeft', 'lookLeftThenRight'] as const) {
-      const s = side[b], v = levels[b] ?? 0;
-      if (v >= mark) { if (!s.on) { s.on = true; s.peak = 0; } s.peak = Math.max(s.peak, v); }
-      else if (s.on) { s.on = false; if (s.peak >= peakMin) s.leftAt = ms; s.peak = 0; }
-      if (turned) { s.leftAt = null; s.peak = 0; }
-    }
-    for (const b of ['lookRightThenLeft', 'lookLeftThenRight'] as const) {
-      const st = button[b], v = levels[b] ?? 0, before = side[first[b]];
-      if (st.heldSince !== null) {
-        if (v >= mark) { out[b] = 1; continue; }
-        st.heldSince = null; st.start = null; out[b] = 0; continue;
-      }
-      if (v >= peakMin && !turned) {
-        if (st.start === null) {
-          if (before.leftAt === null) st.start = -1;
-          else { st.start = ms - before.leftAt <= windowMs ? ms : -1; before.leftAt = null; }
-        }
-        if (st.start >= 0 && ms - st.start >= holdMs) st.heldSince = st.start;
-      } else st.start = null;
-      out[b] = st.start !== null && st.start >= 0 ? 1 : 0;
-    }
+    // every side is tracked before any button reads one: a button's first half is the OTHER side's exit
+    for (const b of LOOK_BUTTONS) trackSide(side[b], levels[b] ?? 0, ms, turned);
+    for (const b of LOOK_BUTTONS) out[b] = stepPress(press[b], levels[b] ?? 0, ms, side[FIRST_SIDE[b]], turned);
     return out;
   };
 }
