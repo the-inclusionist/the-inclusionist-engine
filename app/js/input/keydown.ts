@@ -215,6 +215,14 @@ export type ModalIntent = 'left' | 'right' | 'up' | 'down' | 'confirm' | 'erase'
 export interface EdgeRaise { playerIndex: number; edge: EdgeFlag }
 
 /**
+ * A tecla que acabou de ser premida E QUEM A PREMIU, num valor só — porque a regra do ADR-0109 é sobre o PAR e
+ * nunca sobre a tecla: uma tecla sem transporte não é aresta de aparelho nenhum, e inventar-lhe `teclado` faria
+ * uma tecla do toque desligar a alternância de quem joga por olhar. `transport` é `undefined` só para o evento
+ * sintético que ninguém assinou.
+ */
+interface PressedKey { readonly code: string; readonly transport: TransportName | undefined }
+
+/**
  * A resposta única: o que esta tecla SIGNIFICA. `kind` é o ramo da ordem de precedência que venceu — e é essa
  * palavra, e não o efeito, que os testes de precedência afirmam.
  */
@@ -321,28 +329,32 @@ export function modalOwnerIndex(code: string, s: KeydownSnapshot): number {
  * As seis leituras são as mesmas de antes, letra por letra. O que saiu foi a linha seguinte: a que trocava
  * "cima" por `delta:-3` e "esquerda" por `delta:-1`, e o desvio de Braille. Isso é grade, e grade é do jogo.
  */
+/*
+ * As seis leituras, NESTA ORDEM — e a ordem é a regra: com um esquema em que a mesma tecla é `left` e `jump`,
+ * ganha `left`. Cada linha diz que AÇÃO significa aquela intenção e, para a tecla sem dono, que lista de
+ * apelidos a carrega.
+ * ⚠️ ESPECIAL = apagar a última sílaba/letra, e a leitura genérica dele sai de `pl.ctrl` e NÃO de `controls` —
+ * assimetria do original preservada, porque não existe alias `action3` em `ControlsSnapshot`.
+ */
+const MODAL_READINGS: readonly {
+  readonly intent: ModalIntent;
+  readonly action: string;
+  readonly alias: (s: KeydownSnapshot, pl: KeydownPlayer) => readonly string[];
+}[] = [
+  { intent: 'left', action: 'left', alias: (s) => s.controls.left },
+  { intent: 'right', action: 'right', alias: (s) => s.controls.right },
+  { intent: 'up', action: 'up', alias: (s) => s.controls.up },
+  { intent: 'down', action: 'down', alias: (s) => s.controls.down },
+  { intent: 'confirm', action: 'action2', alias: (s) => s.controls.action2 },
+  { intent: 'erase', action: 'action3', alias: (_s, pl) => pl.ctrl?.action3 || [] },
+];
+
 export function modalIntentOf(code: string, s: KeydownSnapshot, owner: number, generic: boolean): ModalIntent | null {
   const pl = s.players[owner];
   if (!pl) return null;
   const act = generic ? null : s.actionOf(code, pl.i); // `qpl.i`, não a posição — verbatim
-  const K = s.controls;
-  const L = act ? act === 'left' : K.left.includes(code);
-  const R = act ? act === 'right' : K.right.includes(code);
-  const U = act ? act === 'up' : K.up.includes(code);
-  const D = act ? act === 'down' : K.down.includes(code);
-  const J = act ? act === 'action2' : K.action2.includes(code);
-  // ESPECIAL = apagar a última sílaba/letra. A leitura genérica sai de `pl.ctrl`, NÃO de `K` — assimetria do
-  // original preservada (não existe alias `KESPECIAL` em ControlsState; o original alcançava `qpl.ctrl`).
-  const E = act ? act === 'action3' : ((pl.ctrl?.action3 || []).includes(code));
-
-  // A ORDEM é a do original e importa: com um esquema em que a mesma tecla é `left` e `jump`, ganha `left`.
-  if (L) return 'left';
-  if (R) return 'right';
-  if (U) return 'up';
-  if (D) return 'down';
-  if (J) return 'confirm';
-  if (E) return 'erase';
-  return null;
+  const read = MODAL_READINGS.find((r) => (act ? act === r.action : r.alias(s, pl).includes(code)));
+  return read ? read.intent : null;
 }
 
 /**
@@ -366,54 +378,94 @@ export function edgesFor(code: string, s: KeydownSnapshot): EdgeRaise[] {
   return out;
 }
 
-/**
- * A CADEIA. Nove perguntas, nesta ordem — e a ordem É a especificação.
- * O que NÃO está aqui, e vem antes no wrapper: a demo (attract) e a captura de remapeamento. Ver o cabeçalho.
- */
-export function decideKeydown(ev: { code: string; altKey?: boolean; ctrlKey?: boolean }, s: KeydownSnapshot): KeydownDecision {
-  const code = ev.code;
+/** The event as the chain reads it. */
+type KeyEventFacts = { code: string; altKey?: boolean; ctrlKey?: boolean };
 
+/**
+ * The three answers the chain shares. They are computed ONCE, before the first question, and that is the one
+ * difference from the ladder these rows replace: it computed `action2` and `pauseKey` only after the three
+ * dialog rows had declined. The cost is two pure calls per key while a dialog is open — `isJumpKey` asks
+ * `actionOf` once per player and `PAUSE_KEYS.has` is a set lookup — and it is declared here for the same reason
+ * the header declares the four extra `querySelector` of `snapshot()`: measuring it later costs more than
+ * writing it now.
+ */
+interface ChainFacts {
+  readonly code: string;
+  /** Does this key count as JUMP for anybody? */
+  readonly action2: boolean;
+  readonly pauseKey: boolean;
+  readonly anyModal: boolean;
+}
+
+/** One question of the chain: the decision that ENDS this key, or null for «not mine, ask the next». */
+type ChainQuestion = (ev: KeyEventFacts, s: KeydownSnapshot, f: ChainFacts) => KeydownDecision | null;
+
+/*
+ * 🔴 THE CHAIN, AND THE ORDER IS THE SPECIFICATION — which is exactly why it is a LIST and no longer a ladder.
+ * The header of this module says it in as many words: «quem vem antes vence, e mudar a ordem de duas guardas
+ * muda o jogo sem quebrar nada que um build, um `tsc` ou um olho consigam ver». A ladder buries that claim in
+ * indentation; an array states it. Moving two questions is now moving two lines, and reading the precedence is
+ * reading the array from the top.
+ *
+ * ⚠️ Eight questions here and the ninth below, and the asymmetry is the point: the first eight may DECLINE, and
+ * normal play never does. Putting it in the list would give the list a member whose null can never happen, and
+ * would cost every caller a branch for a case that does not exist.
+ *
+ * 📌 The comments are the ones each question always carried, moved with the code they explain — a comment left
+ * behind starts explaining code that is no longer there (ADR-0171).
+ */
+const CHAIN: readonly ChainQuestion[] = [
   // 1..3 · diálogo aberto BLOQUEIA o jogo — mas só se o elemento estiver DE FATO visível (uma flag presa não
   // trava mais o teclado). Os três saem sem `preventDefault`, verbatim: o diálogo é DOM e quer o comportamento
   // nativo do navegador (Tab, digitação num range) por baixo.
-  if (s.escapeTargetId) return { kind: 'overlay', closeId: code === 'Escape' ? s.escapeTargetId : null, preventDefault: false };
-  if (s.touchCfgVisible) return { kind: 'touchcfg', close: code === 'Escape', preventDefault: false };
-  if (s.padWizVisible) return { kind: 'padwiz', close: code === 'Escape', preventDefault: false };
+  (_ev, s, f) => (s.escapeTargetId
+    ? { kind: 'overlay', closeId: f.code === 'Escape' ? s.escapeTargetId : null, preventDefault: false }
+    : null),
+  (_ev, s, f) => (s.touchCfgVisible ? { kind: 'touchcfg', close: f.code === 'Escape', preventDefault: false } : null),
+  (_ev, s, f) => (s.padWizVisible ? { kind: 'padwiz', close: f.code === 'Escape', preventDefault: false } : null),
 
-  // 4..5 · fim de fase / título. O pulo de QUALQUER jogador aciona o botão principal, sem depender do foco do
-  // mouse (clicar na tela tirava o foco do botão e o teclado parava de funcionar — report do José).
-  const action2 = isJumpKey(code, s);
-  const pauseKey = PAUSE_KEYS.has(code);
-  if (s.winVisible) { const again = action2 || pauseKey; return { kind: 'win', again, preventDefault: again }; }
-  if (s.telaDeTitulo) {
+  // 4 · fim de fase. O pulo de QUALQUER jogador aciona o botão principal, sem depender do foco do mouse
+  // (clicar na tela tirava o foco do botão e o teclado parava de funcionar — report do José).
+  (_ev, s, f) => {
+    if (!s.winVisible) return null;
+    const again = f.action2 || f.pauseKey;
+    return { kind: 'win', again, preventDefault: again };
+  },
+
+  // 5 · título.
+  (_ev, s, f) => {
+    if (!s.telaDeTitulo) return null;
     // multi-tela: só o Jogador 1 escolhe o jogo. A tecla de um dos outros é consumida com um aviso falado.
-    if (s.numPlayers > 1 && s.whichPlayer(code) > 0) return { kind: 'title', wait: true, nav: null, preventDefault: true };
-    const nav = titleNavOf(code, s, action2);
+    if (s.numPlayers > 1 && s.whichPlayer(f.code) > 0) return { kind: 'title', wait: true, nav: null, preventDefault: true };
+    const nav = titleNavOf(f.code, s, f.action2);
     const has = hasTitleIntent(nav);
     return { kind: 'title', wait: false, nav: has ? nav : null, preventDefault: has };
-  }
+  },
 
   // 6..7 · número de telas e pausa. As DUAS exigem quiz FECHADO: com um desafio aberto na tela, Alt+3 não pode
   // reconfigurar o jogo por baixo dele, e Enter é a confirmação do quiz, não a pausa.
-  const anyModal = s.modalOpen.some(Boolean);
-  const inGame = s.emJogo;
-  if (ev.altKey && !ev.ctrlKey && SCREEN_DIGITS.test(code) && inGame && !anyModal) {
-    return { kind: 'screens', count: +code.slice(5), preventDefault: true };
-  }
-  if (!anyModal && pauseKey && inGame) return { kind: 'pause', preventDefault: true };
+  (ev, s, f) => (ev.altKey && !ev.ctrlKey && SCREEN_DIGITS.test(f.code) && s.emJogo && !f.anyModal
+    ? { kind: 'screens', count: +f.code.slice(5), preventDefault: true }
+    : null),
+  (_ev, s, f) => (!f.anyModal && f.pauseKey && s.emJogo ? { kind: 'pause', preventDefault: true } : null),
 
   // 8 · modal. A tecla age no modal do DONO dela; genérica cai no P1. `preventDefault` NÃO depende de a
   // tecla ter significado lá dentro: basta ser tecla de jogo — o desafio engole a tecla de qualquer forma.
-  if (anyModal) {
-    const owner = modalOwnerIndex(code, s);
-    if (owner >= 0) {
-      return { kind: 'modal', playerIndex: owner, intent: modalIntentOf(code, s, owner, s.whichPlayer(code) < 0),
-        preventDefault: s.controls.gameKeys.includes(code) };
-    }
+  (_ev, s, f) => {
+    if (!f.anyModal) return null;
+    const owner = modalOwnerIndex(f.code, s);
     // tecla de um jogador SEM modal cai no jogo normal (a partida dele continua) — segue adiante
-  }
+    if (owner < 0) return null;
+    return {
+      kind: 'modal', playerIndex: owner, intent: modalIntentOf(f.code, s, owner, s.whichPlayer(f.code) < 0),
+      preventDefault: s.controls.gameKeys.includes(f.code),
+    };
+  },
+];
 
-  // 9 · jogo normal.
+/** 9 · jogo normal — a única pergunta que responde SEMPRE, e por isso a que fecha a cadeia em vez de estar nela. */
+function playDecision(s: KeydownSnapshot, f: ChainFacts): KeydownDecision {
+  const code = f.code;
   const gameKey = isEasyShortcut(code, s) || isGameKeyCode(code, s);
   const wake = s.players.reduce<number[]>((acc, p, idx) => { if (p.waiting && s.actionOf(code, p.i)) acc.push(idx); return acc; }, []);
   const edges = s.heldKeys.has(code) ? [] : edgesFor(code, s);
@@ -421,6 +473,21 @@ export function decideKeydown(ev: { code: string; altKey?: boolean; ctrlKey?: bo
   // limpeza no wrapper, então a recém-chegada sobrevive mesmo se já estivesse na lista.
   const releaseKeys = s.oneButton && gameKey ? [...s.heldKeys].filter((k) => isGameKeyCode(k, s)) : [];
   return { kind: 'play', gameKey, wake, edges, releaseKeys, preventDefault: gameKey };
+}
+
+/**
+ * A CADEIA. Nove perguntas, nesta ordem — e a ordem É a especificação.
+ * O que NÃO está aqui, e vem antes no wrapper: a demo (attract) e a captura de remapeamento. Ver o cabeçalho.
+ */
+export function decideKeydown(ev: KeyEventFacts, s: KeydownSnapshot): KeydownDecision {
+  const facts: ChainFacts = {
+    code: ev.code, action2: isJumpKey(ev.code, s), pauseKey: PAUSE_KEYS.has(ev.code), anyModal: s.modalOpen.some(Boolean),
+  };
+  for (const ask of CHAIN) {
+    const decided = ask(ev, s, facts);
+    if (decided) return decided;
+  }
+  return playDecision(s, facts);
 }
 
 /* ===================== ctx / api ===================== */
@@ -541,49 +608,67 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
     };
   }
 
-  /** A metade IMPURA: pega a decisão pronta e a carimba no mundo. */
-  function apply(d: KeydownDecision, code: string, origem: TransportName | undefined): void {
-    switch (d.kind) {
-      case 'overlay': if (d.closeId) ctx.closeOverlayById(d.closeId); return;
-      case 'touchcfg': { if (!d.close) return; const t = ctx.$<HTMLElement>('#touchcfg'); if (t) t.hidden = true; return; }
-      case 'padwiz': if (d.close) ctx.closePadWiz(false); return; // wizard de gamepad: Esc CANCELA (não salva)
-      case 'win': { if (!d.again) return; const b = ctx.$<HTMLElement>('#btn-again'); if (b) (b as HTMLElement & { click(): void }).click(); return; }
-      case 'title':
-        ctx.hideTouchControls(); // teclado no splash oculta os controles virtuais — ANTES do aviso, verbatim
-        if (d.wait) { ctx.srSay(t('sr.title.waitP1')); return; }
-        if (d.nav) ctx.navTitle(d.nav);
-        return;
-      case 'screens': ctx.activateScreens(d.count); return;
-      case 'pause': ctx.togglePause(); return;
-      case 'modal': {
-        // A BUSCA DO JOGADOR SAIU DAQUI: este módulo a fazia só para repassar o objeto, e o objeto que ele
-        // sabia descrever não tinha `quiz` — que é justamente o que o outro lado precisa ler. Passa o índice.
-        if (!d.intent) return;
-        ctx.modalInput(d.playerIndex, d.intent);
-        return;
+  /**
+   * ⚠️ A ORIGEM CHEGA DO EVENTO E NÃO É INVENTADA AQUI (ADR-0109). `origem` é `undefined` só para o evento
+   * sintético que ninguém assinou — e nesse caso a porta estreita APAGA a entrada anterior, em vez de deixar a
+   * tecla herdar de quem a segurou da última vez. Ver `markKeyWithoutSource`.
+   *
+   * 📌 A ARESTA ALIMENTA O AUTÓMATO NO MESMO PONTO E SOB A MESMA CONDIÇÃO em que a origem é gravada na tecla —
+   * origem desconhecida não é aresta de aparelho nenhum, e inventar-lhe `teclado` faria uma tecla do toque
+   * desligar a alternância de quem joga por olhar, sem erro e no meio da partida.
+   * ⚠️ Tecla genérica (sem dono) conta para o jogador 1, que é a mesma convenção do `ui/menu-nav`: quem carrega
+   * numa tecla que não é de assento nenhum está a jogar no primeiro assento.
+   */
+  function rememberWhoPressed({ code, transport }: PressedKey): void {
+    if (transport) ctx.markKey(code, transport); else ctx.markKeyWithoutSource(code);
+    if (transport) { const dono = ctx.whichPlayer(code); ctx.playerEdge(dono < 0 ? 0 : dono, transport); }
+  }
+
+  /*
+   * A metade IMPURA, UMA ENTRADA POR `kind` — e a tabela é mais forte do que o `switch` que ela substitui, não
+   * só mais curta: o tipo mapeado exige uma entrada para CADA ramo da decisão, logo um `kind` novo que ninguém
+   * carimbe no mundo deixa de compilar. Um `switch` sem `default` aceitava-o em silêncio, e a tecla passava a
+   * não fazer nada.
+   */
+  type Effect<K extends KeydownDecision['kind']> = (d: Extract<KeydownDecision, { kind: K }>, key: PressedKey) => void;
+
+  const EFFECTS: { readonly [K in KeydownDecision['kind']]: Effect<K> } = {
+    overlay: (d) => { if (d.closeId) ctx.closeOverlayById(d.closeId); },
+    touchcfg: (d) => { if (!d.close) return; const el = ctx.$<HTMLElement>('#touchcfg'); if (el) el.hidden = true; },
+    padwiz: (d) => { if (d.close) ctx.closePadWiz(false); }, // wizard de gamepad: Esc CANCELA (não salva)
+    win: (d) => {
+      if (!d.again) return;
+      const b = ctx.$<HTMLElement>('#btn-again');
+      if (b) (b as HTMLElement & { click(): void }).click();
+    },
+    title: (d) => {
+      ctx.hideTouchControls(); // teclado no splash oculta os controles virtuais — ANTES do aviso, verbatim
+      if (d.wait) { ctx.srSay(t('sr.title.waitP1')); return; }
+      if (d.nav) ctx.navTitle(d.nav);
+    },
+    screens: (d) => ctx.activateScreens(d.count),
+    pause: () => ctx.togglePause(),
+    // A BUSCA DO JOGADOR SAIU DAQUI: este módulo a fazia só para repassar o objeto, e o objeto que ele sabia
+    // descrever não tinha `quiz` — que é justamente o que o outro lado precisa ler. Passa o índice.
+    modal: (d) => { if (d.intent) ctx.modalInput(d.playerIndex, d.intent); },
+    play: (d, key) => {
+      const players = ctx.getPlayers();
+      if (d.gameKey) ctx.hideTouchControls('teclado'); // E13: jogar no teclado oculta os botões de toque
+      for (const idx of d.wake) { // a tecla DAQUELE jogador ativa a tela em espera
+        const p = players[idx]; if (!p) continue;
+        p.waiting = false; ctx.clearWaitingBadge(p.i); ctx.srSay(t('sr.player.entered', { n: p.i + 1 }));
       }
-      case 'play': {
-        const players = ctx.getPlayers();
-        if (d.gameKey) ctx.hideTouchControls('teclado'); // E13: jogar no teclado oculta os botões de toque
-        for (const idx of d.wake) { // a tecla DAQUELE jogador ativa a tela em espera
-          const p = players[idx]; if (!p) continue;
-          p.waiting = false; ctx.clearWaitingBadge(p.i); ctx.srSay(t('sr.player.entered', { n: p.i + 1 }));
-        }
-        for (const { playerIndex, edge } of d.edges) { const p = players[playerIndex]; if (p) p[edge] = true; }
-        for (const k of d.releaseKeys) ctx.releaseKey(k);
-        // ⚠️ A ORIGEM CHEGA DO EVENTO E NÃO É INVENTADA AQUI (ADR-0109). `origem` é `undefined` só para o
-        // evento sintético que ninguém assinou — e nesse caso a porta estreita APAGA a entrada anterior, em
-        // vez de deixar a tecla herdar de quem a segurou da última vez. Ver `markKeyWithoutSource`.
-        if (origem) ctx.markKey(code, origem); else ctx.markKeyWithoutSource(code);
-        // 📌 A ARESTA ALIMENTA O AUTÓMATO NO MESMO PONTO E SOB A MESMA CONDIÇÃO em que a origem é gravada na
-        // tecla — origem desconhecida não é aresta de aparelho nenhum, e inventar-lhe `teclado` faria uma
-        // tecla do toque desligar a alternância de quem joga por olhar, sem erro e no meio da partida.
-        // ⚠️ Tecla genérica (sem dono) conta para o jogador 1, que é a mesma convenção do `ui/menu-nav`: quem
-        // carrega numa tecla que não é de assento nenhum está a jogar no primeiro assento.
-        if (origem) { const dono = ctx.whichPlayer(code); ctx.playerEdge(dono < 0 ? 0 : dono, origem); }
-        return;
-      }
-    }
+      for (const { playerIndex, edge } of d.edges) { const p = players[playerIndex]; if (p) p[edge] = true; }
+      for (const k of d.releaseKeys) ctx.releaseKey(k);
+      rememberWhoPressed(key);
+    },
+  };
+
+  /** Pega a decisão pronta e a carimba no mundo. */
+  function apply(d: KeydownDecision, key: PressedKey): void {
+    // ⚠️ O cast é a única coisa que o tipo mapeado não dá de graça: o TypeScript não estreita `d` e a entrada
+    // da tabela ao mesmo tempo. A exaustividade — que é o que interessa — está garantida acima.
+    (EFFECTS[d.kind] as Effect<KeydownDecision['kind']>)(d, key);
   }
 
   function onKeydown(e: KeydownEventLike): void {
@@ -591,7 +676,7 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
     if (ctx.handleCaptureKeydown(e)) return;                  // remap: a próxima tecla vira o controle
     const d = decideKeydown(e, snapshot());
     if (d.preventDefault) e.preventDefault();
-    apply(d, e.code, sourceOfEvent(e));
+    apply(d, { code: e.code, transport: sourceOfEvent(e) });
   }
 
   // ⚠️ SOLTA NOS DOIS. Um `keys.delete` cru deixava a origem para trás, e um mapa que descreve teclas que já

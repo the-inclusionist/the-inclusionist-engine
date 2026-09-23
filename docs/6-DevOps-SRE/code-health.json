@@ -490,12 +490,12 @@
       "fanIn": 3
     },
     "input/keydown.ts": {
-      "codeLines": 248,
-      "decisionNodes": 60,
-      "maxDepth": 3,
+      "codeLines": 278,
+      "decisionNodes": 51,
+      "maxDepth": 2,
       "fanOut": 7,
       "globalReach": 0,
-      "worstFunction": 28,
+      "worstFunction": 7,
       "fanIn": 2
     },
     "input/latch-edge.ts": {
