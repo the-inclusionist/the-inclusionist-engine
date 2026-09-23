@@ -358,6 +358,28 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     expect(computeIconLabel('altmove', snap({ toggleMove: true, switchScan: true }))).toBe('Jeito de apertar: um botão só');
   });
 
+  /*
+   * 🔴 Probed 2026-09-23: nine of twenty-five decisions of the label could be undone with the suite green — none of them «says the
+   * state». Four are what the label says when a value is MISSING, which is the normal case on a first boot: a screen reader reading
+   * «undefined» is what the child would hear. They are the three cases below.
+   * ⚠️ The other five are EQUIVALENT today, each measured, and have no case:
+   *   · the SHORT names of the autism and colour-blindness icons (`icon.tea.short`, `icon.cvd.short`) — the code says the long name
+   *     carries the list of levels, and it no longer does: in all three dictionaries the short key is the long key, word for word;
+   *   · rounding the speed — the six speeds that exist (1, 0.9 … 0.5) all give a whole number when multiplied by 100, and a stored
+   *     value is sanitised to one of them;
+   *   · the state as a parameter of `icon.state` rather than concatenated — all three dictionaries write `{nome}: {v}`;
+   *   · an absent language read as `pt`, because the fallback right after it answers the same — the two together are held below.
+   */
+  it('🔴 [Zero] um valor AUSENTE diz o que a engine faz sem ele: câmera desligada, português, velocidade a 100%', () => {
+    expect(computeIconLabel('camera', snap())).toBe(computeIconLabel('camera', snap({ camera: 'off' })));
+    expect(computeIconLabel('idioma', snap())).toBe(computeIconLabel('idioma', snap({ idioma: 'pt' })));
+    expect(computeIconLabel('velocidade', snap())).toMatch(/: 100%$/);
+  });
+
+  it('🔴 [Boundary] uma língua fora do ciclo lê-se como português, e não como «undefined»', () => {
+    expect(computeIconLabel('idioma', snap({ idioma: 'fr' }))).toBe(computeIconLabel('idioma', snap({ idioma: 'pt' })));
+  });
+
   it('🔴 [Right] e ele só se acende fora do padrão — as outras duas posições são «ligado»', () => {
     expect(computeIconVisual('altmove', snap({ toggleMove: false })).on).toBe(false);
     expect(computeIconVisual('altmove', snap({ toggleMove: true })).on).toBe(true);
