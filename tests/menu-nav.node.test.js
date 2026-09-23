@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  KEY_YES, KEY_NO, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, PAUSE_COLS,
+  KEY_YES, KEY_NO, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT,
   menuKeyIntent, hasIntent, stepInRing, selectStep, selectWrap, rangeStep, stepInPause,
 } from '../app/js/ui/menu-nav.js';
 

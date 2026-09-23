@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { iconsThatAct, computeIconLabel, computeIconVisual } from '../app/js/ui/pause-icons.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import * as state from '../app/js/core/state.js';
-import { PADRAO } from '../app/js/core/visual-state.js';
+import { PADRAO } from '../app/js/render/viz-axes.js';
 
 const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: PADRAO, privateOutput: true, ...over });
 const todos = { tema: true, correcao: true, seguraTeclas: () => true, tipografia: true, relogio: () => true, menus: true };
