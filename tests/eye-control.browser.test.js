@@ -102,6 +102,102 @@ describe('turning it on', () => {
   });
 });
 
+describe('what the probe of 2026-09-23 found unheld', () => {
+  /*
+   * 🔴 Fifteen of twenty-four decisions of the frame could be undone with this file green: the frame is WIRING, and wiring is only
+   * seen from a page. What reaches the drawing is observed by RECORDING the calls on the canvas's own 2D context — the only way to
+   * see what the frame hands the overlay without comparing pixels.
+   */
+  const recordDrawing = (canvas) => {
+    const calls = [];
+    const real = canvas.getContext.bind(canvas);
+    canvas.getContext = (kind) => new Proxy(real(kind), {
+      get: (target, key) => (typeof target[key] === 'function' ? (...args) => { calls.push([key, ...args]); return target[key](...args); } : target[key]),
+      set: (target, key, value) => { target[key] = value; return true; },
+    });
+    return calls;
+  };
+  const texts = (calls) => calls.filter((c) => c[0] === 'fillText').map((c) => c[1]);
+  const armUp = () => { look({}, 3200); look({ v: 0.3 }, 300); look({ v: -0.3 }, 1900); };
+
+  it('a camera with no frame yet reads nothing — no reading, no diagnosis, no «ready»', async () => {
+    await make({ openFeed: async () => ({ frame: {}, ready: () => false, close: () => {} }) }).apply(true);
+    look({}, 4000);
+    expect(region.querySelector('canvas.gaze-overlay').dataset.face).toBeUndefined();
+    expect(said).toEqual([said[0]]);
+  });
+
+  it('«ready» is said ONCE, when the rest is first measured — not again on every ready frame', async () => {
+    await make().apply(true);
+    look({}, 3200); look({}, 2000);
+    expect(said.filter((s) => s.startsWith('Pronto'))).toHaveLength(1);
+  });
+
+  it('once ready, both eyes closed for two seconds press START', async () => {
+    await make().apply(true);
+    look({}, 3200);
+    look({ closed: true }, 2200);
+    expect(keys[0]).toEqual(['press', 'start', 'olhos']);
+  });
+
+  it('a head that moves fast freezes the cycle: an armed gaze is not taken for one that left', async () => {
+    await make().apply(true);
+    armUp();
+    for (let i = 0; i < 10; i++) { face = detection({ v: -0.3, yaw: i % 2 ? 20 : 0 }); now += 33; frameCb?.(now); }
+    expect(keys, 'a turning head was read as the gaze leaving, and the preview was pressed').toEqual([]);
+  });
+
+  it('a reader re-centring under a held gaze cancels the gesture: what was held was never a decision', async () => {
+    await make().apply(true);
+    const c = region.querySelector('canvas.gaze-overlay');
+    look({}, 3200); look({ v: 0.3 }, 300);
+    look({ v: -0.3 }, 12500); // parked for over 10 s: the reader starts moving its rest under the gaze
+    expect(c.dataset.reason, 'the case never reached the re-centring it is about').toBe('recentring');
+    expect(c.dataset.zone, 'the zone is still in the reader\'s hand while it re-centres').toBe('up');
+    expect(c.dataset.armed, 'a re-centring reader left the gesture armed: leaving would press whatever it showed').toBe('false');
+    expect(keys).toEqual([]);
+  });
+
+  it('the diagnosis says when there is no face, and when the zone in hand is armed', async () => {
+    await make().apply(true);
+    const c = region.querySelector('canvas.gaze-overlay');
+    armUp();
+    expect(c.dataset.armed).toBe('true');
+    face = null; now += 33; frameCb?.(now);
+    expect(c.dataset.face).toBe('false');
+  });
+
+  it('the drawing is the game region\'s size', async () => {
+    await make().apply(true);
+    look({}, 100);
+    const c = region.querySelector('canvas.gaze-overlay');
+    expect([c.width, c.height]).toEqual([720, 360]);
+  });
+
+  it('while the rest is measured the middle counts down, from what is left', async () => {
+    await make().apply(true);
+    const calls = recordDrawing(region.querySelector('canvas.gaze-overlay'));
+    look({}, 1000);
+    const count = texts(calls).filter((s) => / s$/.test(s)).at(-1);
+    expect(Number(count.split(' ')[0])).toBeCloseTo(2.0, 0);
+  });
+
+  it('the drawing gets the zone, the preview and the face\'s lines', async () => {
+    const lined = () => ({ ...tracker(), eyeLines: { eyes: [{ start: 33, end: 133 }], brows: [] } });
+    await make({ loadTracker: async () => ({ ok: true, tracker: lined() }) }).apply(true);
+    const calls = recordDrawing(region.querySelector('canvas.gaze-overlay'));
+    // the synthetic face leaves its landmarks out «until a test draws them»: this one does
+    const marks = Array.from({ length: 478 }, (_, i) => ({ x: 0.3 + (i % 10) / 50, y: 0.4 + (i % 7) / 50 }));
+    for (const end = now + 3200; now < end;) { face = { ...detection({}), faceLandmarks: [marks] }; now += 33; frameCb?.(now); }
+    expect(calls.some((c) => c[0] === 'lineTo'), 'the face\'s lines were not drawn').toBe(true);
+    calls.length = 0; look({ v: 0.3 }, 200);
+    // looking down, unarmed, prepares «up»: the down region tells the child where to go next
+    expect(texts(calls), 'the zone in hand was not drawn as preparing').toContain('Suba!');
+    calls.length = 0; look({ v: -0.3 }, 1900);
+    expect(calls.some((c) => c[0] === 'stroke' && c[1] instanceof Path2D), 'the preview\'s arrow was not drawn').toBe(true);
+  });
+});
+
 describe('what cannot start', () => {
   it('files not on the device: said, reported, 👀 back to off, no camera and nothing drawn', async () => {
     let opened = false;
@@ -138,3 +234,6 @@ describe('turning it off', () => {
 //   · no turnOff on missing files                              → «files not on the device»
 //   · the tracker kept when the camera fails                   → «camera that does not open»
 //   · the held key not released on off                        → «releases a held key»
+// And on 2026-09-23 (`scratchpad/sonda-eyectl.py`), fifteen of twenty-four decisions of the frame were blind; fourteen are held by the
+// block «what the probe found unheld». The fifteenth is EQUIVALENT and has no case: the countdown's `Math.max(0, …)` never acts, because
+// the countdown exists only before the rest is ready, and the rest is ready the moment the still time reaches the rest time.
