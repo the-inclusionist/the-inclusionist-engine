@@ -69,10 +69,10 @@ export interface HeavyOptions {
  *   one (ADR-0111). What decides is the delivery: `inclusionist-heavy --commands pt` puts Portuguese in it.
  */
 export function heavyAtBoot(
-  portas: { readonly kokoro: boolean; readonly reading?: string | null; readonly commands?: string | null },
+  declared: { readonly kokoro: boolean; readonly reading?: string | null; readonly commands?: string | null },
 ): readonly string[] {
-  const reading = portas.reading ? portas.reading.split('-')[0]!.toLowerCase() : null;
-  const commands = portas.commands ? portas.commands.split('-')[0]!.toLowerCase() : null;
+  const reading = declared.reading ? declared.reading.split('-')[0]!.toLowerCase() : null;
+  const commands = declared.commands ? declared.commands.split('-')[0]!.toLowerCase() : null;
   return HEAVY_FILES.filter((p) => {
     const language = readingLanguageOf(p.id);
     if (language) return language === reading;
@@ -82,8 +82,8 @@ export function heavyAtBoot(
     const commanded = commandsLanguageOf(p.id);
     if (commanded) return commanded === commands;
     if (p.id.startsWith('commands:runtime')) return !!commands;
-    if (p.id.startsWith('voz:runtime:onnx')) return portas.kokoro || !!reading;
-    return portas.kokoro || !(p.id.startsWith('voz:kokoro:') || p.id.startsWith('voz:runtime:'));
+    if (p.id.startsWith('voz:runtime:onnx')) return declared.kokoro || !!reading;
+    return declared.kokoro || !(p.id.startsWith('voz:kokoro:') || p.id.startsWith('voz:runtime:'));
   }).map((p) => p.id);
 }
 
@@ -113,11 +113,11 @@ export function deliveryPath(url: string): string {
  * replacement of the name alone would
  * have left every cache key with two characters of the host eaten, and the only symptom would be a cache that never hits.
  */
-export function deliveryCacheKey(pedido: string | { readonly request: { readonly url: string } }): string | null {
+export function deliveryCacheKey(urlOrRequest: string | { readonly request: { readonly url: string } }): string | null {
   const folder = '/heavy/';
-  const caminho = new URL(typeof pedido === 'string' ? pedido : pedido.request.url).pathname;
-  const i = caminho.indexOf(folder);
-  return i < 0 ? null : 'https://' + caminho.slice(i + folder.length);
+  const urlPath = new URL(typeof urlOrRequest === 'string' ? urlOrRequest : urlOrRequest.request.url).pathname;
+  const i = urlPath.indexOf(folder);
+  return i < 0 ? null : 'https://' + urlPath.slice(i + folder.length);
 }
 
 /**
@@ -135,49 +135,49 @@ export async function downloadHeavy(opcoes: HeavyOptions = {}): Promise<HeavyRep
     : HEAVY_FILES;
 
   const out: HeavyReport[] = [];
-  const conta = (r: HeavyReport): void => { out.push(r); opcoes.aoProgredir?.(r); };
+  const record = (r: HeavyReport): void => { out.push(r); opcoes.aoProgredir?.(r); };
 
   if (!cs || !buscar) {
-    for (const p of alvos) conta({ id: p.id, estado: 'falhou', erro: 'sem Cache Storage ou sem fetch' });
+    for (const p of alvos) record({ id: p.id, estado: 'falhou', erro: 'sem Cache Storage ou sem fetch' });
     return out;
   }
 
-  const digest = opcoes.digest === undefined ? (temSubtle() ? sha256Hex : null) : opcoes.digest;
+  const digest = opcoes.digest === undefined ? (canComputeSha256() ? sha256Hex : null) : opcoes.digest;
   const base = opcoes.base ?? (globalThis as { location?: { href: string } }).location?.href;
 
   const cache = await cs.open(CACHE_HEAVY);
   for (const p of alvos) {
-    if (!p.url) { conta({ id: p.id, estado: 'sem-fonte', erro: p.porQueNaoTemFonte }); continue; }
+    if (!p.url) { record({ id: p.id, estado: 'sem-fonte', erro: p.porQueNaoTemFonte }); continue; }
     try {
-      if (await cache.match(p.url)) { conta({ id: p.id, estado: 'ja-tinha' }); continue; }
+      if (await cache.match(p.url)) { record({ id: p.id, estado: 'ja-tinha' }); continue; }
       // from the delivery's own origin, never from the upstream host (ADR-0177)
-      const naEntrega = deliveryPath(p.url);
-      const resp = await buscar(base ? new URL(naEntrega, base).href : naEntrega);
-      if (!resp.ok) { conta({ id: p.id, estado: 'falhou', erro: `HTTP ${resp.status}` }); continue; }
+      const pathInDelivery = deliveryPath(p.url);
+      const resp = await buscar(base ? new URL(pathInDelivery, base).href : pathInDelivery);
+      if (!resp.ok) { record({ id: p.id, estado: 'falhou', erro: `HTTP ${resp.status}` }); continue; }
       /*
        * CHECKED BEFORE KEPT (issue #168; STRIDE client pass). What is kept runs in the child's page and is served offline
        * from then on, so a body whose SHA-256 is not the measured one never enters the cache.
        */
       if (!p.sha256 || !digest) {
-        conta({ id: p.id, estado: 'falhou', erro: !p.sha256 ? 'this entry pins its sha256 nowhere: there is nothing to check it against' : 'this host cannot compute a sha256 (crypto.subtle needs a secure context)' });
+        record({ id: p.id, estado: 'falhou', erro: !p.sha256 ? 'this entry pins its sha256 nowhere: there is nothing to check it against' : 'this host cannot compute a sha256 (crypto.subtle needs a secure context)' });
         continue;
       }
       const corpo = await resp.arrayBuffer();
       const obtido = await digest(corpo);
       if (obtido !== p.sha256) {
-        conta({ id: p.id, estado: 'falhou', erro: `sha256 mismatch: expected ${p.sha256}, got ${obtido} — not kept` });
+        record({ id: p.id, estado: 'falhou', erro: `sha256 mismatch: expected ${p.sha256}, got ${obtido} — not kept` });
         continue;
       }
       await cache.put(p.url, new Response(corpo, { status: resp.status, statusText: resp.statusText, headers: resp.headers }));
-      conta({ id: p.id, estado: 'baixado', bytes: p.bytes });
+      record({ id: p.id, estado: 'baixado', bytes: p.bytes });
     } catch (e) {
-      conta({ id: p.id, estado: 'falhou', erro: e instanceof Error ? e.message : String(e) });
+      record({ id: p.id, estado: 'falhou', erro: e instanceof Error ? e.message : String(e) });
     }
   }
   return out;
 }
 
-const temSubtle = (): boolean => !!(globalThis as { crypto?: Crypto }).crypto?.subtle;
+const canComputeSha256 = (): boolean => !!(globalThis as { crypto?: Crypto }).crypto?.subtle;
 
 /** The SHA-256 of a body as lowercase hex, by `crypto.subtle` (issue #168). Needs a secure context. */
 export async function sha256Hex(corpo: ArrayBuffer): Promise<string> {
@@ -186,7 +186,7 @@ export async function sha256Hex(corpo: ArrayBuffer): Promise<string> {
 }
 
 /** O peso do que ainda falta, em bytes — para um aviso poder dizer «faltam 241 MB» antes de começar. */
-export function bytesLeftToDownload(relatorio: readonly HeavyReport[]): number {
-  const feitos = new Set(relatorio.filter((r) => r.estado === 'ja-tinha' || r.estado === 'baixado').map((r) => r.id));
+export function bytesLeftToDownload(soFar: readonly HeavyReport[]): number {
+  const feitos = new Set(soFar.filter((r) => r.estado === 'ja-tinha' || r.estado === 'baixado').map((r) => r.id));
   return HEAVY_FILES.filter((p) => p.url && !feitos.has(p.id)).reduce((s, p) => s + (p.bytes ?? 0), 0);
 }

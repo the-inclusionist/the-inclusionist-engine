@@ -42,23 +42,23 @@ export type KBDefaults = { solo: KeyScheme; p2: KeyScheme[]; p3: KeyScheme[]; p4
  * O que `null` compra: o aviso de alcance pode dizer, ANTES de a criança começar, quais das ações do jogo o
  * controlo dela não alcança — e o jogo pode decidir não usar essas posições no modo de quatro.
  */
-const SEM_ALCANCE_NO_TECLADO_PARTIDO = Object.freeze({
+const UNREACHABLE_ON_A_SHARED_KEYBOARD = Object.freeze({
   leftShoulder: null, leftTrigger: null, rightShoulder: null, rightTrigger: null, start: null, select: null,
 });
 
 // 4 esquemas base p/ 3–4 jogadores (modos 3 e 4 têm esquemas SEPARADOS, p3 e p4, editáveis por jogador)
 const KB_SCHEMES4: KeyScheme[] = [
-  { left:['KeyA'],right:['KeyD'],up:['KeyW'],down:['KeyS'], action1:['KeyZ'],action2:['KeyX'],action4:['KeyC'],action3:['KeyV'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },
-  { left:['KeyJ'],right:['KeyL'],up:['KeyI'],down:['KeyK'], action1:['KeyM'],action2:['Comma'],action4:['Period'],action3:['Semicolon','Slash'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },
-  { left:['ArrowLeft'],right:['ArrowRight'],up:['ArrowUp'],down:['ArrowDown'], action1:['Home'],action2:['End'],action4:['PageUp'],action3:['PageDown'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },
-  { left:['Numpad4'],right:['Numpad6'],up:['Numpad8'],down:['Numpad5'], action1:['Numpad2'],action2:['Numpad0'],action4:['Numpad3'],action3:['NumpadDecimal'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },
+  { left:['KeyA'],right:['KeyD'],up:['KeyW'],down:['KeyS'], action1:['KeyZ'],action2:['KeyX'],action4:['KeyC'],action3:['KeyV'], ...UNREACHABLE_ON_A_SHARED_KEYBOARD },
+  { left:['KeyJ'],right:['KeyL'],up:['KeyI'],down:['KeyK'], action1:['KeyM'],action2:['Comma'],action4:['Period'],action3:['Semicolon','Slash'], ...UNREACHABLE_ON_A_SHARED_KEYBOARD },
+  { left:['ArrowLeft'],right:['ArrowRight'],up:['ArrowUp'],down:['ArrowDown'], action1:['Home'],action2:['End'],action4:['PageUp'],action3:['PageDown'], ...UNREACHABLE_ON_A_SHARED_KEYBOARD },
+  { left:['Numpad4'],right:['Numpad6'],up:['Numpad8'],down:['Numpad5'], action1:['Numpad2'],action2:['Numpad0'],action4:['Numpad3'],action3:['NumpadDecimal'], ...UNREACHABLE_ON_A_SHARED_KEYBOARD },
 ];
 
 /**
  * Cópia PROFUNDA e MUTÁVEL de uma tabela declarada. O remapeamento escreve dentro do esquema vivo, então ele
  * não pode partilhar objeto com a tabela de `input/default-bindings`, que é congelada e é a declaração.
  */
-const vivo = (t: unknown): KeyScheme => JSON.parse(JSON.stringify(t)) as KeyScheme;
+const mutableCopy = (t: unknown): KeyScheme => JSON.parse(JSON.stringify(t)) as KeyScheme;
 
 /**
  * ⚠️ AS DUAS TABELAS DE TECLADO PASSARAM A SER UMA (issue #118). O solo e a dupla já não são escritos aqui:
@@ -71,10 +71,10 @@ const vivo = (t: unknown): KeyScheme => JSON.parse(JSON.stringify(t)) as KeySche
  * voltar a existir, em vez de a apanhar depois de acontecer.
  */
 export const KB_DEFAULTS: KBDefaults = {
-  solo: vivo(KEYBOARD_SOLO),
-  p2: KEYBOARD_DUO.map(vivo),
-  p3: KB_SCHEMES4.slice(0, 3).map(vivo), // modo 3 jogadores (independente do 4)
-  p4: KB_SCHEMES4.map(vivo),             // modo 4 jogadores
+  solo: mutableCopy(KEYBOARD_SOLO),
+  p2: KEYBOARD_DUO.map(mutableCopy),
+  p3: KB_SCHEMES4.slice(0, 3).map(mutableCopy), // modo 3 jogadores (independente do 4)
+  p4: KB_SCHEMES4.map(mutableCopy),             // modo 4 jogadores
 };
 
 // dado salvo (parcial): sobrepõe os defaults; p34 é o formato ANTIGO (migra p/ p3+p4).
@@ -93,7 +93,7 @@ import { migrateSaved, type SavedKB } from './vocabulary-migration.js';
  */
 export type KeyboardMapping = (jogadores: number, assento: number) => Partial<KeyScheme> | null;
 
-let mapeamentoDoJogo: KeyboardMapping | null = null;
+let gameMapping: KeyboardMapping | null = null;
 
 /**
  * REGISTA O PADRÃO DO JOGO. Chamado uma vez pelo arranque (`boot/create-game`), a partir da declaração.
@@ -108,7 +108,7 @@ let mapeamentoDoJogo: KeyboardMapping | null = null;
  * 📌 É a mesma forma que o `kb` deste ficheiro já tem, e pela mesma justificação: o dono é evidente, e as
  * funções que o gerem vivem todas aqui.
  */
-export function registerKeyboardMapping(f: KeyboardMapping | null): void { mapeamentoDoJogo = f; }
+export function registerKeyboardMapping(f: KeyboardMapping | null): void { gameMapping = f; }
 
 /**
  * A FÁBRICA COM O PADRÃO DO JOGO POR CIMA — a **única** resolução, usada pelo `loadKB` E pelo `resetKB`.
@@ -118,15 +118,15 @@ export function registerKeyboardMapping(f: KeyboardMapping | null): void { mapea
  */
 export function factoryWithGame(): KBDefaults {
   const d: KBDefaults = JSON.parse(JSON.stringify(KB_DEFAULTS));
-  if (!mapeamentoDoJogo) return d;
-  const aplicar = (alvo: KeyScheme, jogadores: number, assento: number): void => {
-    const parcial = mapeamentoDoJogo!(jogadores, assento);
-    if (parcial) Object.assign(alvo, parcial);
+  if (!gameMapping) return d;
+  const overlayGameMapping = (alvo: KeyScheme, jogadores: number, assento: number): void => {
+    const changes = gameMapping!(jogadores, assento);
+    if (changes) Object.assign(alvo, changes);
   };
-  aplicar(d.solo, 1, 0);
-  d.p2.forEach((esq, i) => aplicar(esq, 2, i));
-  d.p3.forEach((esq, i) => aplicar(esq, 3, i));
-  d.p4.forEach((esq, i) => aplicar(esq, 4, i));
+  overlayGameMapping(d.solo, 1, 0);
+  d.p2.forEach((seatScheme, i) => overlayGameMapping(seatScheme, 2, i));
+  d.p3.forEach((seatScheme, i) => overlayGameMapping(seatScheme, 3, i));
+  d.p4.forEach((seatScheme, i) => overlayGameMapping(seatScheme, 4, i));
   return d;
 }
 

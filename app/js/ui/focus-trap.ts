@@ -48,24 +48,24 @@ export const FOCUSABLE_SELECTOR = [
  *   4. o foco está no MEIO → `null`, e o navegador caminha. Ver o comentário do cabeçalho.
  */
 export function nextInTrap<T>(
-  focaveis: readonly T[],
+  focusables: readonly T[],
   atual: T | null,
-  paraTras: boolean,
+  backwards: boolean,
 ): T | null {
-  if (focaveis.length === 0) return null;
-  const primeiro = focaveis[0]!;
-  const ultimo = focaveis[focaveis.length - 1]!;
+  if (focusables.length === 0) return null;
+  const first = focusables[0]!;
+  const last = focusables[focusables.length - 1]!;
 
-  const i = atual === null ? -1 : focaveis.indexOf(atual);
-  if (i < 0) return paraTras ? ultimo : primeiro; // caso 3: o foco estava fora
-  if (!paraTras && i === focaveis.length - 1) return primeiro;
-  if (paraTras && i === 0) return ultimo;
+  const i = atual === null ? -1 : focusables.indexOf(atual);
+  if (i < 0) return backwards ? last : first; // caso 3: o foco estava fora
+  if (!backwards && i === focusables.length - 1) return first;
+  if (backwards && i === 0) return last;
   return null; // caso 4: o meio é do navegador
 }
 
-interface AlvoDeEvento {
-  addEventListener: (tipo: 'keydown', fn: (e: KeyboardEvent) => void, captura?: boolean) => void;
-  removeEventListener?: (tipo: 'keydown', fn: (e: KeyboardEvent) => void, captura?: boolean) => void;
+interface KeydownTarget {
+  addEventListener: (tipo: 'keydown', fn: (e: KeyboardEvent) => void, capture?: boolean) => void;
+  removeEventListener?: (tipo: 'keydown', fn: (e: KeyboardEvent) => void, capture?: boolean) => void;
 }
 
 export interface FocusTrapCtx {
@@ -75,7 +75,7 @@ export interface FocusTrapCtx {
   focoAtual: () => Element | null;
   /** Os focáveis DENTRO do diálogo, na ordem do documento e já filtrados por visibilidade. */
   focaveisDe: (isInside: HTMLElement) => HTMLElement[];
-  win: AlvoDeEvento;
+  win: KeydownTarget;
 }
 
 export interface FocusTrapApi {
@@ -132,6 +132,6 @@ export function initFocusTrap(ctx: FocusTrapCtx): FocusTrapApi {
  * sem que quem lê precise de saber em que casos `offsetParent` tem buracos.
  */
 export function focusablesInDom(isInside: HTMLElement): HTMLElement[] {
-  const todos = [...isInside.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)];
-  return todos.filter((el) => !el.hidden && el.getClientRects().length > 0);
+  const candidates = [...isInside.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)];
+  return candidates.filter((el) => !el.hidden && el.getClientRects().length > 0);
 }

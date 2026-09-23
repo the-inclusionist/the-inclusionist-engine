@@ -66,7 +66,7 @@ export function setJSON(key: string, obj: unknown): void { try { set(key, JSON.s
  * três chaves já terem sido resolvidas — contra vazio, e em silêncio. Quem sabe o próprio id é o JOGO, que o
  * passa como constante sua; o ADR-0080 proíbe a ENGINE de o saber, não o jogo.
  */
-export function gameKey(jogo: string, nome: string): string { return 'incl.' + jogo + '.' + nome; }
+export function gameKey(gameId: string, keyName: string): string { return 'incl.' + gameId + '.' + keyName; }
 
 /**
  * THE KEYS OUTSIDE EVERY ENGINE SCOPE (study item E2): not the child's `incl_*` (and the older `inclusionist.*`), not a
@@ -74,30 +74,30 @@ export function gameKey(jogo: string, nome: string): string { return 'incl.' + j
  * (chess's `incl_chess_*`) is not seen: the engine's own `incl_` keys are not one closed list, so that question would
  * accuse the engine.
  */
-export function keysOutsideScopes(chaves: Iterable<string>): string[] {
-  return [...chaves].filter((k) => !k.startsWith('incl_') && !k.startsWith('inclusionist.') && !k.startsWith('incl.'));
+export function keysOutsideScopes(storedKeys: Iterable<string>): string[] {
+  return [...storedKeys].filter((k) => !k.startsWith('incl_') && !k.startsWith('inclusionist.') && !k.startsWith('incl.'));
 }
 
 /**
  * Lê a chave NOVA; se ela ainda não existe, herda o valor da LEGADA. Só de leitura: quem grava, grava na nova.
  * É o que permite renomear chave sem um passo de migração e sem perder o ajuste de ninguém.
  */
-export function getWithLegacy(nova: string, legada: string, fallback: string): string;
-export function getWithLegacy(nova: string, legada: string, fallback?: null): string | null;
-export function getWithLegacy(nova: string, legada: string, fallback: string | null = null): string | null {
-  const v = get(nova, null);
+export function getWithLegacy(newKey: string, legacyKey: string, fallback: string): string;
+export function getWithLegacy(newKey: string, legacyKey: string, fallback?: null): string | null;
+export function getWithLegacy(newKey: string, legacyKey: string, fallback: string | null = null): string | null {
+  const v = get(newKey, null);
   if (v !== null) return v;
-  const antigo = get(legada, null);
-  return antigo !== null ? antigo : fallback;
+  const inherited = get(legacyKey, null);
+  return inherited !== null ? inherited : fallback;
 }
 
 /** O par de `getWithLegacy` para valor em JSON — a herança tem de valer para os dois formatos, senão metade
  *  das chaves migra e a outra metade some, que é o pior dos dois mundos. */
-export function getJsonWithLegacy<T = unknown>(nova: string, legada: string, fallback: T | null = null): T | null {
-  const v = getJSON<T>(nova, null);
+export function getJsonWithLegacy<T = unknown>(newKey: string, legacyKey: string, fallback: T | null = null): T | null {
+  const v = getJSON<T>(newKey, null);
   if (v !== null) return v;
-  const antigo = getJSON<T>(legada, null);
-  return antigo !== null ? antigo : fallback;
+  const inherited = getJSON<T>(legacyKey, null);
+  return inherited !== null ? inherited : fallback;
 }
 
 // Registro das chaves conhecidas (documentação em UM lugar; a fonte de verdade ainda é o uso). Vai sendo
@@ -113,11 +113,11 @@ export const KEYS = {
   // não há como prefixar por engano uma preferência da criança, porque ela não tem onde receber o id — e não
   // há como esquecer de escopar uma chave da partida, porque sem o argumento não compila. A regra que antes
   // vivia só num comentário passou a viver no tipo.
-  activity: (jogo: string): string => gameKey(jogo, 'activity'), activityLegado: 'incl_activity',
-  quizlevel: (jogo: string): string => gameKey(jogo, 'quizlevel'), quizlevelLegado: 'incl_quizlevel',
-  cenario: (jogo: string): string => gameKey(jogo, 'cenario'), cenarioLegado: 'incl_cenario',
-  tabsel: (jogo: string): string => gameKey(jogo, 'tabsel'), tabselLegado: 'incl_tabsel',
-  fracnot: (jogo: string): string => gameKey(jogo, 'fracnot'), fracnotLegado: 'incl_fracnot',
+  activity: (gameId: string): string => gameKey(gameId, 'activity'), activityLegado: 'incl_activity',
+  quizlevel: (gameId: string): string => gameKey(gameId, 'quizlevel'), quizlevelLegado: 'incl_quizlevel',
+  cenario: (gameId: string): string => gameKey(gameId, 'cenario'), cenarioLegado: 'incl_cenario',
+  tabsel: (gameId: string): string => gameKey(gameId, 'tabsel'), tabselLegado: 'incl_tabsel',
+  fracnot: (gameId: string): string => gameKey(gameId, 'fracnot'), fracnotLegado: 'incl_fracnot',
   // visual / contraste / cor
   viz: 'incl_viz', lq: 'incl_lq', cbsafe: 'incl_cbsafe', ownercolors: 'incl_ownercolors',
   outfg: 'incl_outfg', outbg: 'incl_outbg', hcrole: 'incl_hcrole', juice: 'incl_juice', crt: 'incl_crt2',
@@ -181,6 +181,6 @@ export const KEYS = {
   rmFlavorP: (i: number): string => 'incl_rmFlavor_p' + i,
   // demo/attract: uma gravação por cenário (fn em vez de string — chave parametrizada). ESCOPO DO JOGO: a
   // gravação é de uma fase DESTE jogo e não faz sentido nenhum em outro.
-  attract: (jogo: string, cen: string): string => gameKey(jogo, 'attract_' + cen),
+  attract: (gameId: string, cen: string): string => gameKey(gameId, 'attract_' + cen),
   attractLegado: (cen: string): string => 'incl_attract_' + cen,
 };
