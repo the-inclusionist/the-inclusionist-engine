@@ -139,18 +139,18 @@ export function createPasswordCodec(campos: readonly PasswordField[]): PasswordC
   if (simbolosCorpo > MAX_SIMBOLOS) {
     throw new Error(`core/password: ${bitsTotal} bits would take ${simbolosCorpo} symbols, and above ${MAX_SIMBOLOS} the weighted checksum stops detecting EVERY transposition (see decision 2 at the top). Store less, or split it into two passwords.`);
   }
-  const fieldList = campos.map((c) => Object.freeze({ nome: c.nome, bits: c.bits }));
+  const frozenFields = campos.map((c) => Object.freeze({ nome: c.nome, bits: c.bits }));
 
   return {
     comprimento: simbolosCorpo + 2,
-    campos: Object.freeze(fieldList),
+    campos: Object.freeze(frozenFields),
 
     codificar(valores) {
       // Bit a bit, do mais significativo ao menos, na ordem declarada. Escrito assim — e não com `<<` sobre
       // um acumulador — porque um esquema de 40 bits estouraria os 32 bits dos operadores do JS, e o sintoma
       // seria uma senha que decodifica errado só nos campos do fim.
       const bits: number[] = [];
-      for (const c of fieldList) {
+      for (const c of frozenFields) {
         const v = valores[c.nome];
         const teto = 2 ** c.bits - 1;
         if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > teto) {
@@ -191,7 +191,7 @@ export function createPasswordCodec(campos: readonly PasswordField[]): PasswordC
 
       const out: Record<string, number> = {};
       let p = 0;
-      for (const c of fieldList) {
+      for (const c of frozenFields) {
         let v = 0;
         for (let b = 0; b < c.bits; b++) v = v * 2 + bits[p++]!;
         out[c.nome] = v;

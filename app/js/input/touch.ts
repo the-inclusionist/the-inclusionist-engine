@@ -511,11 +511,11 @@ const SHOULDERS = [['esq', ['bl2', 'bl1']], ['dir', ['br2', 'br1']]] as const;
  * Idempotente: montar duas vezes devolve o mesmo nó, com o conteúdo refeito para o mapa de agora.
  */
 export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): HTMLElement {
-  const rootEl = ctx.procurar('#touch-controls') ?? ctx.criar('div');
-  rootEl.id = 'touch-controls';
-  rootEl.className = 'touch';
-  rootEl.hidden = true;
-  while (rootEl.firstChild) rootEl.removeChild(rootEl.firstChild);
+  const touchControls = ctx.procurar('#touch-controls') ?? ctx.criar('div');
+  touchControls.id = 'touch-controls';
+  touchControls.className = 'touch';
+  touchControls.hidden = true;
+  while (touchControls.firstChild) touchControls.removeChild(touchControls.firstChild);
 
   // 🔴 SÓ O QUE O JOGO NOMEIA (ADR-0162, supersede o mínimo do ADR-0157): «Vale para todos os botões: somente aparecem
   // se o jogo os nomeia.» Um botão na tela é uma promessa de que ele faz alguma coisa, e quem sabe isso é o jogo.
@@ -553,7 +553,7 @@ export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): 
         dir.appendChild(arm);
       }
     }
-    rootEl.appendChild(dir);
+    touchControls.appendChild(dir);
   }
 
   const liveButtons = BUTTONS.filter(named);
@@ -574,16 +574,16 @@ export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): 
       botao.textContent = nameOf(b);
       rhombus.appendChild(botao);
     }
-    rootEl.appendChild(rhombus);
+    touchControls.appendChild(rhombus);
   }
 
   // OS OMBROS, cada par no seu canto superior (ADR-0160), e só os que o jogo nomeia (ADR-0162).
   for (const [lado, slots] of SHOULDERS) {
-    const liveOnes = slots.filter(named);
-    if (!liveOnes.length) continue;
+    const namedSlots = slots.filter(named);
+    if (!namedSlots.length) continue;
     const corner = ctx.criar('div');
     corner.className = `touch-ombros touch-ombros--${lado}`;
-    for (const s of liveOnes) {
+    for (const s of namedSlots) {
       const botao = ctx.criar('button');
       botao.className = 'touch-btn touch-ombro';
       botao.dataset.btn = s.slice(1); // `bl1` -> `l1`: o `'b' + dataset.btn` do `touch-bindings` recompõe o slot
@@ -592,7 +592,7 @@ export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): 
       botao.textContent = nameOf(s);
       corner.appendChild(botao);
     }
-    rootEl.appendChild(corner);
+    touchControls.appendChild(corner);
   }
 
   /*
@@ -614,9 +614,9 @@ export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): 
   };
   system.appendChild(pill('touch-select', 'select'));
   system.appendChild(pill('touch-start', 'start'));
-  rootEl.appendChild(system);
+  touchControls.appendChild(system);
 
-  return rootEl;
+  return touchControls;
 }
 
 /**

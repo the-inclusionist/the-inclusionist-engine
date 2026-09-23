@@ -521,15 +521,15 @@ export function rootThatActs(
   // do vazio — logo o padrão é também a resposta certa, e não um remendo para não partir chamadores.
   fromGame: readonly PauseMenuButton[] = [],
 ): readonly PauseMenuButton[] {
-  const aliveOnes = (bs: readonly PauseMenuButton[]): number =>
+  const howManyAct = (bs: readonly PauseMenuButton[]): number =>
     itemsThatAct(bs, acts).filter((b) => b.act !== 'pmback').length;
   let alive = itemsThatAct(rootEl, acts);
-  if (aliveOnes(opcoes) === 0) alive = alive.filter((b) => b.act !== 'options');
+  if (howManyAct(opcoes) === 0) alive = alive.filter((b) => b.act !== 'options');
   // 📌 A MESMA REGRA PARA A PORTA NOVA, e é o gate que o ADR-0146 nomeia: um jogo sem nada seu não recebe
   // «opções do jogo». Afirmar a ausência é o caso; oferecer a porta e abrir uma sala vazia é o que o §5 do
   // ADR-0106 chama de pior do que a ausência.
   // ADR-0182: a door whose room the ENGINE draws from the cartridge's rows is live through its action, with no list behind it
-  if (aliveOnes(fromGame) === 0 && typeof acts.opcoesdojogo !== 'function') alive = alive.filter((b) => b.act !== 'opcoesdojogo');
+  if (howManyAct(fromGame) === 0 && typeof acts.opcoesdojogo !== 'function') alive = alive.filter((b) => b.act !== 'opcoesdojogo');
   return alive;
 }
 
@@ -1219,7 +1219,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const rootEl = ctx.pmButtons ?? PM_BTNS;
     const opcoes = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
     const fromGame = ctx.jogoButtons ?? PM_GAME_BTNS;
-    const aliveList = new Set([
+    const actingItems = new Set([
       ...rootThatActs(rootEl, opcoes, acts, fromGame).map((b) => b.act),
       ...itemsThatAct(opcoes, acts).map((b) => b.act),
       ...itemsThatAct(fromGame, acts).map((b) => b.act),
@@ -1237,7 +1237,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         // existia. O cursor continua a parar no item e o número dele conta; alcançá-lo ou accioná-lo diz o motivo.
         // ⚠️ E NÃO `remove()`: a tabela pode crescer depois (um jogo que liga «sair» só depois da primeira fase).
         const act = btn.dataset.act ?? '';
-        if (aliveList.has(act)) {
+        if (actingItems.has(act)) {
           btn.removeAttribute('aria-disabled');
           delete btn.dataset.motivo;
         } else {

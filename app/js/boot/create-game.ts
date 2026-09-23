@@ -830,7 +830,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * `problemasDoCartucho` é chamada só no `problems`, depois do arranque, mas ler o pad daqui antes de ele
    * existir cairia na zona morta temporal — o mesmo tropeço que o `getPlayers` já deu neste ficheiro.
    */
-  let padGapList: () => string[] = () => [];
+  let padGapProblems: () => string[] = () => [];
 
   /*
    * 🔴 AS REGRAS SAÍRAM PARA `core/cartridge-problems` (ADR-0221 passo 7c). O que fica aqui é MEDIR a página e
@@ -840,19 +840,19 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📏 Sondado antes de mexer, que é a ordem: as sete linhas desta função foram desligadas uma a uma e a suíte
    * reprovou nas sete — logo o corte é de FORMA e não muda comportamento nenhum, e há como o provar.
    */
-  function cartridgeProblemList(): string[] {
-    const worldEl = cartridge.declaration.world();
-    const worldSelectorSel = worldEl.kind === 'element' ? worldEl.selector : null;
+  function measureCartridgeProblems(): string[] {
+    const declaredWorld = cartridge.declaration.world();
+    const worldCssSelector = declaredWorld.kind === 'element' ? declaredWorld.selector : null;
     return cartridgeProblems(
       {
-        padGaps: padGapList(),
+        padGaps: padGapProblems(),
         resizedRegion: regionResizedByCartridge(),
         drawnBelowFloor: drawnBelowTheFloor(drawingContext),
         genreWarning: genreWarning(cartridge.genero),
       },
       {
-        worldSelector: worldSelectorSel,
-        worldIsInPage: !!worldSelectorSel && !!$(worldSelectorSel),
+        worldSelector: worldCssSelector,
+        worldIsInPage: !!worldCssSelector && !!$(worldCssSelector),
         wantsNeuralVoice: !!o.uses?.neuralVoice,
         declinesNeuralVoice: !!declines().semVozNeural,
         seats: (cartridge.players ?? []).length,
@@ -889,9 +889,9 @@ export function createGame(o: CreateGameOptions): Engine {
    * filtro sobre ela seria a mentira que o ADR-0087 existe para impedir, só que ao contrário.
    */
   function aplicarFiltroDeVisao(css: string, reach: FilterReach): void {
-    const worldEl = cartridge.declaration.world();
-    if (worldEl.kind !== 'element') return;
-    const el = $<HTMLElement>(worldEl.selector);
+    const declaredWorld = cartridge.declaration.world();
+    if (declaredWorld.kind !== 'element') return;
+    const el = $<HTMLElement>(declaredWorld.selector);
     if (!el) return; // já reportado em `problems`; não se inventa superfície
     el.style.filter = css;
     if (reach === 'mundo') {
@@ -1105,15 +1105,15 @@ export function createGame(o: CreateGameOptions): Engine {
    * aberto» manda-o embora. Medido a ler os dois lado a lado, não assumido.
    */
   engineActions.print = () => {
-    const cardEl = (): HTMLElement | null => $<HTMLElement>('#vp-pause-0');
-    const alvo = cardEl();
+    const findPauseCard = (): HTMLElement | null => $<HTMLElement>('#vp-pause-0');
+    const alvo = findPauseCard();
     if (!alvo) return;
     alvo.hidden = true;
     const goBack = (e?: Event): void => {
       if (e && typeof e.preventDefault === 'function') { try { e.preventDefault(); } catch { /* noop */ } }
       win.removeEventListener('keydown', goBack, true);
       win.removeEventListener('pointerdown', goBack, true);
-      const c = cardEl();
+      const c = findPauseCard();
       if (c) c.hidden = false;
     };
     win.setTimeout(() => {
@@ -1147,8 +1147,8 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 Içar em vez de duplicar a pergunta: `o.host.pauseHost ?? $('#game-region')` escrito em dois sítios
    * seria a mesma resposta com duas fontes — o defeito que este ficheiro já apanhou no `getPlayers`.
    */
-  const pauseHostEl = o.host.pauseHost ?? $('#game-region');
-  const pauseUsable = !!pauseHostEl && typeof (pauseHostEl as HTMLElement).appendChild === 'function';
+  const pauseMountPoint = o.host.pauseHost ?? $('#game-region');
+  const pauseUsable = !!pauseMountPoint && typeof (pauseMountPoint as HTMLElement).appendChild === 'function';
   /*
    * ⚠️ O `typo` TAMBÉM SUBIU, e pelo mesmo motivo: ele era `let` DENTRO do bloco que monta os painéis, e
    * o ciclo de tipografia da barra — que é decidido antes — precisa de o alcançar. Continua a ser atribuído
@@ -1491,12 +1491,12 @@ export function createGame(o: CreateGameOptions): Engine {
       + '#game-region room for children (the pause is the engine\'s in every game, ADR-0122; the game only says where it fits)',
     );
   }
-  if (pauseHostEl && pauseUsable) {
-    const cardEl = pauseIcons.buildScreenPause(0);
+  if (pauseMountPoint && pauseUsable) {
+    const findPauseCard = pauseIcons.buildScreenPause(0);
     // ⚠️ O ID É O QUE A PRÓPRIA ENGINE PROCURA, logo abaixo, no `getPauseMenu`. Montar sem o pôr deixaria o
     // laço tão aberto como estava — o cartão existiria e a navegação de menu continuaria a não o achar.
-    cardEl.id = 'vp-pause-0';
-    pauseHostEl.appendChild(cardEl);
+    findPauseCard.id = 'vp-pause-0';
+    pauseMountPoint.appendChild(findPauseCard);
   }
 
   /*
@@ -1512,10 +1512,10 @@ export function createGame(o: CreateGameOptions): Engine {
    * diálogo de cima para andar com as setas. Um painel pendurado fora desse escopo ABRE, fecha com Escape — e
    * **as setas não andam dentro dele**, sem erro nenhum. Daí a linha de `problems` abaixo em vez do silêncio.
    */
-  if (pauseHostEl && pauseUsable) {
+  if (pauseMountPoint && pauseUsable) {
     const regionEl = $<HTMLElement>('#game-region');
     const insideScope = !!regionEl && typeof regionEl.contains === 'function'
-      && regionEl.contains(pauseHostEl);
+      && regionEl.contains(pauseMountPoint);
     if (!insideScope) {
       hostProblems.push(
         'the pause host is outside #game-region: settings panels open, but arrows do not move inside them, so a child '
@@ -1526,7 +1526,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const panelCtx = {
       procurar: (sel: string) => $<HTMLElement>(sel),
       criar: (tag: string) => doc.createElement(tag),
-      host: pauseHostEl as HTMLElement,
+      host: pauseMountPoint as HTMLElement,
       overlays,
     };
 
@@ -1768,8 +1768,8 @@ export function createGame(o: CreateGameOptions): Engine {
       valores: CAPTION_RATES.map((n) => t('visual.legenda.ppm', { n })),
       atual: Math.max(0, (CAPTION_RATES as readonly number[]).indexOf(state.captionPpm)),
     });
-    const rateRowEl = doc.createElement('div');
-    rateRowEl.className = 'ctrl-row ctrl-row--passos';
+    const speechRateRow = doc.createElement('div');
+    speechRateRow.className = 'ctrl-row ctrl-row--passos';
     const rateEnvelope = doc.createElement('span');
     const rateHint = doc.createElement('span');
     rateHint.className = 'opt-hint';
@@ -1777,24 +1777,24 @@ export function createGame(o: CreateGameOptions): Engine {
     // meets with an empty hint is marked done and keeps its hint INSIDE — the Dev saw the explanation in the row.
     rateHint.textContent = t('visual.legenda.ritmo.dica');
     rateEnvelope.appendChild(rateHint);
-    rateRowEl.appendChild(rateEnvelope);
+    speechRateRow.appendChild(rateEnvelope);
     const rateSteps = mountSteps(panelCtx, rateSpec());
     rateSteps.id = 'opt-legenda-ppm';
-    rateRowEl.appendChild(rateSteps);
-    visualPanel.casca.card.insertBefore(rateRowEl, linhaDasLegendas.nextSibling);
+    speechRateRow.appendChild(rateSteps);
+    visualPanel.casca.card.insertBefore(speechRateRow, linhaDasLegendas.nextSibling);
     rateSteps.addEventListener('passo', (ev) => {
       const atual = rateSpec().atual;
       const fresh = nextStep(atual, CAPTION_RATES.length, (ev as CustomEvent<number>).detail);
       if (fresh === atual) return;
       state.setCaptionPpmValue(CAPTION_RATES[fresh]!);
       updateSteps(rateSteps, rateSpec());
-      markChanged(rateRowEl, state.captionPpm !== state.DEFAULTS.captionPpm);
+      markChanged(speechRateRow, state.captionPpm !== state.DEFAULTS.captionPpm);
       srSay(`${t('visual.legenda.ritmo')}: ${t('visual.legenda.ppm', { n: state.captionPpm })}`);
     });
     const reflectCaptionRate = (): void => {
       updateSteps(rateSteps, rateSpec());
       rateHint.textContent = t('visual.legenda.ritmo.dica');
-      markChanged(rateRowEl, state.captionPpm !== state.DEFAULTS.captionPpm);
+      markChanged(speechRateRow, state.captionPpm !== state.DEFAULTS.captionPpm);
     };
     botaoDasLegendas.addEventListener('click', () => {
       state.setCaptionsOnValue(!state.captionsOn);
@@ -1950,7 +1950,7 @@ export function createGame(o: CreateGameOptions): Engine {
       return true;
     };
     // ONE LIST, NOT SEVEN BUTTONS (ADR-0159 rule 7) — `ui/simulation-list` says why, and it is not wiring.
-    const simulationsList = createSimulationList({
+    const simulationPicker = createSimulationList({
       find: $,
       make: (tag) => doc.createElement(tag),
       keys: WORLD_SIMULATIONS,
@@ -1960,7 +1960,7 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     const empatia = initSettingsEmpathy({
       $, srSay, store,
-      renderVizGroup: (listSel) => { simulationsList.render(listSel); },
+      renderVizGroup: (listSelector) => { simulationPicker.render(listSelector); },
       reflectMotorEmpathy: reflectMobilitySimulations,
       reflectVizButtons: noEffect,
       frontOverlay: overlays.frontOverlay,
@@ -2323,17 +2323,17 @@ export function createGame(o: CreateGameOptions): Engine {
     else notice.parentNode?.removeChild(notice);
   }
   function deriveReach(): Reach {
-    const actionList = cartridge.preset ? presetActions(cartridge.preset) : [];
+    const declaredActions = cartridge.preset ? presetActions(cartridge.preset) : [];
     const a = reach(
       defaultTransports(disponibilidade),
-      actionList,
+      declaredActions,
       cartridge.declaration.holdsAtOnce(),
       cartridge.declaration.needsPointer?.() ?? false,
     );
     removeReachNotice();
     // ⚠️ SÓ APARECE QUANDO HÁ O QUE DIZER. Um aviso que aparece sempre deixa de ser lido, e um jogo cujas
     // ações cabem no toque não tem nada a avisar — que é o caso comum e tem de continuar silencioso.
-    if (actionList.length) {
+    if (declaredActions.length) {
       showReachNotice({
         procurar: (sel) => $<HTMLElement>(sel),
         criar: (tag) => doc.createElement(tag),
@@ -2516,17 +2516,17 @@ export function createGame(o: CreateGameOptions): Engine {
   const pausa = {
     mostrar: (i: number) => {
       pauseIcons.reflectPauseIcons();
-      const cardEl = $<HTMLElement>(`#vp-pause-${i}`);
-      if (!cardEl) return;
-      cardEl.hidden = false;
+      const findPauseCard = $<HTMLElement>(`#vp-pause-${i}`);
+      if (!findPauseCard) return;
+      findPauseCard.hidden = false;
       updateCaption();
       // 🔴 O CURSOR POUSA NO ITEM 1, na raiz (ADR-0158: «a saída é onde o cursor cai ao abrir»). Medido no `dist`: aberto
       // pelo SELECT nenhum item ficava marcado, e a primeira seta saltava para o item 2.
-      showPauseOptions(cardEl, 'raiz');
+      showPauseOptions(findPauseCard, 'raiz');
     },
     esconder: (i: number) => {
-      const cardEl = $<HTMLElement>(`#vp-pause-${i}`);
-      if (cardEl) cardEl.hidden = true;
+      const findPauseCard = $<HTMLElement>(`#vp-pause-${i}`);
+      if (findPauseCard) findPauseCard.hidden = true;
       updateCaption();
     },
   };
@@ -2779,8 +2779,8 @@ export function createGame(o: CreateGameOptions): Engine {
 
     // GUARDA 2 — O CARTÃO ESTÁ ABERTO. Com ele aberto e uma tecla de «start» que não seja `Enter`,
     // `menuNavKey` não acha intenção e deixa passar. Fechar o cartão é do «Voltar ao jogo» e do Escape.
-    const cardEl = $<HTMLElement>(`#vp-pause-${assento}`);
-    if (cardEl && cardEl.hidden === false) return;
+    const findPauseCard = $<HTMLElement>(`#vp-pause-${assento}`);
+    if (findPauseCard && findPauseCard.hidden === false) return;
 
     enterQuickPause(assento);
     // 📌 E SÓ AQUI, depois de a tecla ter sido NOSSA de facto. `Enter` é «start» por omissão
@@ -2803,8 +2803,8 @@ export function createGame(o: CreateGameOptions): Engine {
   /** Abre o cartão do assento, venha a porta de onde vier — a tecla SELECT ou a pílula do toque. Devolve se abriu. */
   function openSeatMenus(assento: number): boolean {
     if (overlays.topVisibleOverlay()) return false;
-    const cardEl = $<HTMLElement>(`#vp-pause-${assento}`);
-    if (!cardEl || cardEl.hidden === false) return false;
+    const findPauseCard = $<HTMLElement>(`#vp-pause-${assento}`);
+    if (!findPauseCard || findPauseCard.hidden === false) return false;
     const alreadyStopped = inQuickPause.has(assento);
     if (alreadyStopped) leaveQuickPause(assento, 'cartao');
     // ⚠️ MOSTRAR VEM PRIMEIRO, e a ordem é a defesa: um jogo sem `setPhase` tem de receber o cartão na mesma.
@@ -2868,7 +2868,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const alvo = $<HTMLElement>('#game-region') ?? doc.body;
     alvo.dispatchEvent(stampSource(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origem));
   };
-  const presetActionList = (): readonly { acao: string; rotulo: string }[] => {
+  const labelledActions = (): readonly { acao: string; rotulo: string }[] => {
     const preset = cartridge.preset;
     if (!preset) return [];
     const nome = labellerFrom(preset);
@@ -2879,7 +2879,7 @@ export function createGame(o: CreateGameOptions): Engine {
   };
   const toque = initTouch({
     $, srSay, store, win,
-    acoesDoJogo: presetActionList,
+    acoesDoJogo: labelledActions,
     root: doc.documentElement,
     isMobile: disponibilidade.toque,
     viewport: () => ({ w: win.innerWidth, h: win.innerHeight }),
@@ -2936,7 +2936,7 @@ export function createGame(o: CreateGameOptions): Engine {
     if (!pad.parentNode) touchHostEl.appendChild(pad);
   }
 
-  padGapList = () => (!cartridge.controleNaTela ? [] : touchUsable
+  padGapProblems = () => (!cartridge.controleNaTela ? [] : touchUsable
     ? touchGaps({ mapa: toque.getTouchMap(), acoesDoJogo: cartridgeActions() })
     : ['the virtual pad has nowhere to mount: set `host.touchHost`, or give #game-region room for children. '
       + 'Without it, a child on a keyboardless tablet cannot play, nor reach the pause']);
@@ -3053,16 +3053,16 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ SÓ EXISTE ONDE HÁ PAD: sem hospedeiro de toque não há tamanho para escolher, e a porta do submenu cai sozinha
    * (`acoesDaEngine.motora` não é definida).
    */
-  if (pauseHostEl && pauseUsable && touchUsable) {
+  if (pauseMountPoint && pauseUsable && touchUsable) {
     const mobilityCtx = {
       procurar: (sel: string) => $<HTMLElement>(sel),
       criar: (tag: string) => doc.createElement(tag),
-      host: pauseHostEl as HTMLElement,
+      host: pauseMountPoint as HTMLElement,
       overlays,
     };
     let padSteps: HTMLElement | null = null;
     let padHint: HTMLElement | null = null;
-    let padRowEl: HTMLElement | null = null;
+    let padSizeRow: HTMLElement | null = null;
     /** Reflecte as linhas do mapeamento de teclado (definido mais abaixo, com o painel `#ctrl`). */
     let reflectKeyboard = (): void => {};
     let currentPersona = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
@@ -3084,7 +3084,7 @@ export function createGame(o: CreateGameOptions): Engine {
         currentPersona = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
         // ADR-0166 + ADR-0106 §5: the pad's size is offered only to a cartridge that has a pad — hidden, not locked, because
         // there is nothing to unlock. Read at each opening: `mount()` may have swapped the cartridge.
-        if (padRowEl) padRowEl.hidden = !cartridge.controleNaTela;
+        if (padSizeRow) padSizeRow.hidden = !cartridge.controleNaTela;
         if (padSteps) updateSteps(padSteps, specDoPad());
         // ⚠️ A DICA NO IDIOMA DE AGORA, antes de o rodapé a recolher: escrita no arranque, saía no idioma de recuo
         // (medido no `dist` com a página em inglês — o rodapé em português).
@@ -3094,7 +3094,7 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     const linha = doc.createElement('div');
     linha.className = 'ctrl-row ctrl-row--passos';
-    padRowEl = linha; // offered or not is decided at each opening (`render` above)
+    padSizeRow = linha; // offered or not is decided at each opening (`render` above)
     const dica = doc.createElement('span');
     dica.className = 'opt-hint';
     padHint = dica;
@@ -3177,12 +3177,12 @@ export function createGame(o: CreateGameOptions): Engine {
       seatRow.appendChild(seatSteps);
       keyboardPanel.casca.card.insertBefore(seatRow, keyboardPanel.casca.lista);
       seatSteps.addEventListener('passo', (ev) => {
-        const freshOne = nextStep(seatInMap, keyboardMode, (ev as CustomEvent<number>).detail);
-        if (freshOne === seatInMap) return;
-        seatInMap = freshOne;
+        const nextValue = nextStep(seatInMap, keyboardMode, (ev as CustomEvent<number>).detail);
+        if (nextValue === seatInMap) return;
+        seatInMap = nextValue;
         updateSteps(seatSteps!, seatSpec());
         keyboardControls?.render(seatInMap);
-        srSay(`${t('ctrl.assento')}: ${t('ctrl.jogador', { n: freshOne + 1 })}`);
+        srSay(`${t('ctrl.assento')}: ${t('ctrl.jogador', { n: nextValue + 1 })}`);
       });
     }
     /** O modo de quatro arrasta os três primeiros assentos do modo de três — ver o cabeçalho acima. */
@@ -3246,8 +3246,8 @@ export function createGame(o: CreateGameOptions): Engine {
     }
     /** Rótulos no idioma de agora, e quem aparece: sem posições nomeadas não há o que mapear; «3–4» sem laterais. */
     const reflectKeyboardRows = (): void => {
-      const actionList = cartridge.preset ? presetActions(cartridge.preset) : [];
-      const hasSides = actionList.some((a) => (SIDES as readonly string[]).includes(a));
+      const declaredActions = cartridge.preset ? presetActions(cartridge.preset) : [];
+      const hasSides = declaredActions.some((a) => (SIDES as readonly string[]).includes(a));
       for (const { modo, linha: l, forte, botao } of keyboardRows) {
         forte.textContent = modeLabel(modo);
         botao.textContent = t('motora.abrir');
@@ -3305,12 +3305,12 @@ export function createGame(o: CreateGameOptions): Engine {
         overlays.restoreFocus?.('padwiz');
       },
     });
-    const controlRowEl = doc.createElement('div');
-    controlRowEl.className = 'ctrl-row';
+    const controlMappingRow = doc.createElement('div');
+    controlMappingRow.className = 'ctrl-row';
     const envelopeDoControle = doc.createElement('span');
     const controlStrong = doc.createElement('strong');
     envelopeDoControle.appendChild(controlStrong);
-    controlRowEl.appendChild(envelopeDoControle);
+    controlMappingRow.appendChild(envelopeDoControle);
     const controlButton = doc.createElement('button');
     controlButton.className = 'mode-btn';
     controlButton.setAttribute('type', 'button');
@@ -3319,13 +3319,13 @@ export function createGame(o: CreateGameOptions): Engine {
       controlPanel.abrir();
       padWizard?.abrir();
     });
-    controlRowEl.appendChild(controlButton);
-    mobilityPanel.casca.lista.appendChild(controlRowEl);
+    controlMappingRow.appendChild(controlButton);
+    mobilityPanel.casca.lista.appendChild(controlMappingRow);
     const reflectControlRow = (): void => {
       controlStrong.textContent = t('motora.controle');
       controlButton.textContent = t('motora.abrir');
       controlButton.setAttribute('aria-label', t('motora.controle'));
-      controlRowEl.hidden = actionsToMap().length === 0; // nothing named, nothing to map
+      controlMappingRow.hidden = actionsToMap().length === 0; // nothing named, nothing to map
     };
     reflectControlRow();
 
@@ -3357,24 +3357,24 @@ export function createGame(o: CreateGameOptions): Engine {
     };
     // after the select's own listener (it writes the map), the pad is drawn again with the new function
     touchPanel.casca.lista.addEventListener('change', () => { drawPad(); hideSlotsWithoutAction(); });
-    const touchRowEl = doc.createElement('div');
-    touchRowEl.className = 'ctrl-row';
+    const touchMappingRow = doc.createElement('div');
+    touchMappingRow.className = 'ctrl-row';
     const touchEnvelope = doc.createElement('span');
     const touchStrong = doc.createElement('strong');
     touchEnvelope.appendChild(touchStrong);
-    touchRowEl.appendChild(touchEnvelope);
+    touchMappingRow.appendChild(touchEnvelope);
     const touchButton = doc.createElement('button');
     touchButton.className = 'mode-btn';
     touchButton.setAttribute('type', 'button');
     touchButton.id = 'opt-toque';
     touchButton.addEventListener('click', () => touchPanel.abrir());
-    touchRowEl.appendChild(touchButton);
-    mobilityPanel.casca.lista.appendChild(touchRowEl);
+    touchMappingRow.appendChild(touchButton);
+    mobilityPanel.casca.lista.appendChild(touchMappingRow);
     const reflectTouchRow = (): void => {
       touchStrong.textContent = t('motora.toque');
       touchButton.textContent = t('motora.abrir');
       touchButton.setAttribute('aria-label', t('motora.toque'));
-      touchRowEl.hidden = !cartridge.controleNaTela || actionsToMap().length === 0; // no pad, or nothing named
+      touchMappingRow.hidden = !cartridge.controleNaTela || actionsToMap().length === 0; // no pad, or nothing named
     };
     reflectTouchRow();
 
@@ -3637,9 +3637,9 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   function stylesheetMissing(): string[] {
     if (typeof win.getComputedStyle !== 'function' || !doc.documentElement) return [];
-    const styleEl = win.getComputedStyle(doc.documentElement);
-    if (!styleEl || typeof styleEl.getPropertyValue !== 'function') return [];
-    return styleEl.getPropertyValue('--incl-engine-stylesheet').trim() ? [] : [`the page does not link the engine stylesheet \
+    const rootStyles = win.getComputedStyle(doc.documentElement);
+    if (!rootStyles || typeof rootStyles.getPropertyValue !== 'function') return [];
+    return rootStyles.getPropertyValue('--incl-engine-stylesheet').trim() ? [] : [`the page does not link the engine stylesheet \
 (package export \`the-inclusionist-engine/style.css\`): panels, the footer band, the target floor and the focus rings are \
 unstyled, so a child who plays by keyboard cannot see where focus is — link that stylesheet`];
   }
@@ -3656,22 +3656,22 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * the keys already there are other pages'. By capability: a host without storage, or one that throws, measures nothing.
    */
   function storageKeys(): Set<string> {
-    const keyList = new Set<string>();
+    const keysFound = new Set<string>();
     for (const nome of ['localStorage', 'sessionStorage'] as const) {
       try {
         const area = (win as unknown as Record<string, Storage | undefined>)[nome];
         if (!area || typeof area.key !== 'function') continue;
-        for (let i = 0; i < area.length; i++) { const k = area.key(i); if (k !== null) keyList.add(k); }
+        for (let i = 0; i < area.length; i++) { const k = area.key(i); if (k !== null) keysFound.add(k); }
       } catch { /* private mode or a host double: nothing to read */ }
     }
-    return keyList;
+    return keysFound;
   }
   const keysAtBoot = storageKeys();
   function storageOutsideScope(): string[] {
-    const freshOnes = [...storageKeys()].filter((k) => !keysAtBoot.has(k));
-    const outList = store.keysOutsideScopes(freshOnes);
-    if (!outList.length) return [];
-    return [`the cartridge stored keys outside the engine's scopes (${outList.slice(0, 5).join(', ')}): a child's settings `
+    const keysSinceBoot = [...storageKeys()].filter((k) => !keysAtBoot.has(k));
+    const outsideScopes = store.keysOutsideScopes(keysSinceBoot);
+    if (!outsideScopes.length) return [];
+    return [`the cartridge stored keys outside the engine's scopes (${outsideScopes.slice(0, 5).join(', ')}): a child's settings `
       + 'kept there do not follow them to the next game, and a game\'s own collide with other games\' — what belongs to '
       + 'the child goes under incl_* through the engine\'s settings, what belongs to the game under incl.<game>.* (storage.gameKey)'];
   }
@@ -4007,8 +4007,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    */
   const medirFlashes = (ms: number): Promise<FlashMeasurement> => sampleFlashes({
     canvas: () => {
-      const worldEl = cartridge.declaration.world();
-      const alvo = worldEl.kind === 'element' ? $<HTMLElement>(worldEl.selector) : null;
+      const declaredWorld = cartridge.declaration.world();
+      const alvo = declaredWorld.kind === 'element' ? $<HTMLElement>(declaredWorld.selector) : null;
       return alvo?.tagName === 'CANVAS' ? alvo as HTMLCanvasElement : alvo?.querySelector('canvas') ?? null;
     },
     scratch: () => doc.createElement('canvas'),
@@ -4059,7 +4059,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     cenas: rootScenes,
     onLocaleChange: (fn) => { localeListeners.push(fn); },
     cvdFilters,
-    get problems() { return [...hostProblems, ...stylesheetMissing(), ...cartridgeProblemList(), ...dictionaryGaps(), ...measuredProblems, ...storageOutsideScope()]; },
+    get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...dictionaryGaps(), ...measuredProblems, ...storageOutsideScope()]; },
     aoFalhar,
     get reach() { return currentReach; },
   };

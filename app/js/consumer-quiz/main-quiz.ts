@@ -357,7 +357,7 @@ function answer(i: number): void {
  * `preset` names. ⚠️ It used to read raw key codes: its own arrows worked, the scheme's W and S did not, S rang the sonar, and a transport
  * could only reach it by disguising itself as a keyboard.
  */
-function onCommandFn(cmd: VirtualCommand): void {
+function handleCommand(cmd: VirtualCommand): void {
   const p = QUESTIONS[atual];
   if (!p || !cmd.pressed) return;
   const total = p.alternativas.length;
@@ -461,7 +461,7 @@ export function bootQuiz(): void {
      * HOW TO PLAY THIS QUIZ (ADR-0195): the cartridge tells it, the engine's help shows it before the buttons. The figures are drawn
      * here from shapes — a question bar and four options — and the second one moves the marked option down, which is the game.
      */
-    onCommand: onCommandFn,
+    onCommand: handleCommand,
     howToPlay: [
       {
         text: () => t('quiz.comoJogar.ler'),
@@ -576,12 +576,12 @@ if (typeof document !== 'undefined' && document.getElementById('quiz-app')) boot
 /** The quiz drawn small, for its «how to play» slides: the question bar and four options, `marcada` outlined (−1: none). */
 function drawQuizFigure(ctx: CanvasRenderingContext2D, w: number, h: number, marcada: number): void {
   const m = Math.round(h * 0.06);
-  const barEl = Math.round(h * 0.16);
+  const barHeight = Math.round(h * 0.16);
   ctx.fillStyle = '#eaf2f8';
-  ctx.fillRect(m, m, w - 2 * m, barEl);
-  const altura = Math.floor((h - 3 * m - barEl - 3 * m) / 4);
+  ctx.fillRect(m, m, w - 2 * m, barHeight);
+  const altura = Math.floor((h - 3 * m - barHeight - 3 * m) / 4);
   for (let i = 0; i < 4; i++) {
-    const y = 2 * m + barEl + i * (altura + m);
+    const y = 2 * m + barHeight + i * (altura + m);
     ctx.fillStyle = '#3a4a6a'; // lighter than the slide's own #1a2740, or the options vanish into it
     ctx.fillRect(m * 3, y, w - 6 * m, altura);
     if (i === marcada) {

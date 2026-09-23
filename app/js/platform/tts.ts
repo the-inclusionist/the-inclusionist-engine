@@ -134,8 +134,8 @@ export function createTts(ctx: TtsCtx): Tts {
   };
   function vozAtual(): NeuralVoice | null {
     const lista = vozes();
-    const storedOne = store.get(store.KEYS.ttsVoz, null);
-    return lista.find((v) => v.voice === storedOne) ?? lista[0] ?? null;
+    const storedVoiceId = store.get(store.KEYS.ttsVoz, null);
+    return lista.find((v) => v.voice === storedVoiceId) ?? lista[0] ?? null;
   }
   function setVoz(id: string): boolean {
     if (!vozes().some((v) => v.voice === id)) return false;
