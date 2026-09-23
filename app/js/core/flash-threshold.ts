@@ -37,66 +37,99 @@ export interface FlashVerdict {
   readonly piorSegundo: number;
 }
 
-/**
- * Counts general flashes per 10° field and returns the worst second.
- *
- * Per cell, a TRANSITION is a move of 10% or more away from the last extreme, with the darker side below 0.80; a move
- * further in the same direction extends the extreme instead of counting. Per field, a transition is 6 cells making one in
- * the same direction in the same frame; a FLASH is two opposing field transitions, and the pair then starts afresh.
- */
-export function analyseFlashes(quadros: readonly LuminanceFrame[]): FlashVerdict {
-  const n = COLUMNS * ROWS;
-  const reference = new Float64Array(n).fill(Number.NaN);
-  const direction = new Int8Array(n);
-  const windows = (COLUMNS - WINDOW_C + 1) * (ROWS - WINDOW_L + 1);
-  const lastOfWindow = new Int8Array(windows);
-  const windowFlashes: number[][] = Array.from({ length: windows }, () => []);
-  const transition = new Int8Array(n);
+const CELLS = COLUMNS * ROWS;
+const WINDOWS = (COLUMNS - WINDOW_C + 1) * (ROWS - WINDOW_L + 1);
 
-  for (const quadro of quadros) {
-    for (let c = 0; c < n; c++) {
-      transition[c] = 0;
-      const l = Number(quadro.luminancias[c] ?? 0);
-      const ref = reference[c]!;
-      if (Number.isNaN(ref)) { reference[c] = l; continue; }
-      const way = Math.sign(l - ref);
-      if (direction[c] !== 0 && way === direction[c]) { reference[c] = l; continue; }
-      if (Math.abs(l - ref) >= CHANGE && Math.min(l, ref) < DARK_BELOW) {
-        transition[c] = way;
-        direction[c] = way;
-        reference[c] = l;
-      }
+/** What the analysis carries from one frame to the next. */
+interface Tracking {
+  /** Per cell: the last extreme reached — NaN until the first frame sets it. */
+  readonly reference: Float64Array;
+  /** Per cell: the direction of its last transition, 0 before it has one. */
+  readonly direction: Int8Array;
+  /** Per cell: this frame's transition, −1, 0 or +1. */
+  readonly transition: Int8Array;
+  /** Per field: the direction of the half-pair left open, 0 when none is. */
+  readonly openHalf: Int8Array;
+  /** Per field: the time each flash closed. */
+  readonly flashTimes: number[][];
+}
+
+/**
+ * Per cell, a TRANSITION is a move of 10% or more away from the last extreme, with the darker side below 0.80; a move
+ * further in the same direction extends the extreme instead of counting.
+ */
+function markCellTransitions(frame: LuminanceFrame, s: Tracking): void {
+  for (let c = 0; c < CELLS; c++) {
+    s.transition[c] = 0;
+    const l = Number(frame.luminancias[c] ?? 0);
+    const ref = s.reference[c]!;
+    if (Number.isNaN(ref)) { s.reference[c] = l; continue; }
+    const way = Math.sign(l - ref);
+    if (way === s.direction[c]) { s.reference[c] = l; continue; }
+    if (Math.abs(l - ref) >= CHANGE && Math.min(l, ref) < DARK_BELOW) {
+      s.transition[c] = way;
+      s.direction[c] = way;
+      s.reference[c] = l;
     }
-    let j = 0;
-    for (let lin = 0; lin + WINDOW_L <= ROWS; lin++) {
-      for (let col = 0; col + WINDOW_C <= COLUMNS; col++, j++) {
-        let wentUp = 0;
-        let wentDown = 0;
-        for (let dl = 0; dl < WINDOW_L; dl++) {
-          for (let dc = 0; dc < WINDOW_C; dc++) {
-            const s = transition[(lin + dl) * COLUMNS + col + dc]!;
-            if (s > 0) wentUp++; else if (s < 0) wentDown++;
-          }
-        }
-        const way = wentUp >= CELLS_FOR_AREA ? 1 : wentDown >= CELLS_FOR_AREA ? -1 : 0;
-        if (!way) continue;
-        if (lastOfWindow[j] !== 0 && lastOfWindow[j] !== way) {
-          windowFlashes[j]!.push(quadro.t);
-          lastOfWindow[j] = 0; // the pair is complete: the next transition starts a new one
-        } else {
-          lastOfWindow[j] = way;
-        }
+  }
+}
+
+/** A field makes a transition when 6 of its cells make one in the same direction in the same frame. */
+function fieldTransition(transition: Int8Array, row: number, col: number): number {
+  let wentUp = 0;
+  let wentDown = 0;
+  for (let dr = 0; dr < WINDOW_L; dr++) {
+    for (let dc = 0; dc < WINDOW_C; dc++) {
+      const way = transition[(row + dr) * COLUMNS + col + dc]!;
+      if (way > 0) wentUp++; else if (way < 0) wentDown++;
+    }
+  }
+  return wentUp >= CELLS_FOR_AREA ? 1 : wentDown >= CELLS_FOR_AREA ? -1 : 0;
+}
+
+/** A FLASH is two opposing field transitions, and the pair then starts afresh. */
+function pairFieldTransitions(t: number, s: Tracking): void {
+  let j = 0;
+  for (let row = 0; row + WINDOW_L <= ROWS; row++) {
+    for (let col = 0; col + WINDOW_C <= COLUMNS; col++, j++) {
+      const way = fieldTransition(s.transition, row, col);
+      if (!way) continue;
+      if (s.openHalf[j] !== 0 && s.openHalf[j] !== way) {
+        s.flashTimes[j]!.push(t);
+        s.openHalf[j] = 0;
+      } else {
+        s.openHalf[j] = way;
       }
     }
   }
+}
 
+/** The most flashes any one field showed «within any one-second period». */
+function worstSecond(flashTimes: readonly number[][]): number {
   let worst = 0;
-  for (const times of windowFlashes) {
+  for (const times of flashTimes) {
     for (let i = 0, k = 0; i < times.length; i++) {
-      // «within any one-second period»: flashes less than a second apart; half a millisecond absorbs frame arithmetic
+      // less than a second apart; half a millisecond absorbs frame arithmetic
       while (k < times.length && times[k]! - times[i]! < 1000 - 0.5) k++;
       worst = Math.max(worst, k - i);
     }
   }
+  return worst;
+}
+
+/** Counts general flashes per 10° field and returns the worst second. */
+export function analyseFlashes(frames: readonly LuminanceFrame[]): FlashVerdict {
+  const s: Tracking = {
+    reference: new Float64Array(CELLS).fill(Number.NaN),
+    direction: new Int8Array(CELLS),
+    transition: new Int8Array(CELLS),
+    openHalf: new Int8Array(WINDOWS),
+    flashTimes: Array.from({ length: WINDOWS }, () => []),
+  };
+  for (const frame of frames) {
+    markCellTransitions(frame, s);
+    pairFieldTransitions(frame.t, s);
+  }
+  const worst = worstSecond(s.flashTimes);
   return { passa: worst <= MAX_PER_SECOND, piorSegundo: worst };
 }

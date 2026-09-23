@@ -163,12 +163,12 @@
       "fanIn": 1
     },
     "core/flash-threshold.ts": {
-      "codeLines": 69,
+      "codeLines": 91,
       "decisionNodes": 18,
-      "maxDepth": 7,
+      "maxDepth": 4,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 24,
+      "worstFunction": 7,
       "fanIn": 1
     },
     "core/game-speed.ts": {
