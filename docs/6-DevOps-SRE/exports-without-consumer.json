@@ -63,9 +63,6 @@
     "render/minimap.ts": [
       "setMinimapCorner"
     ],
-    "render/player-anim.ts": [
-      "COYOTE"
-    ],
     "render/recycling-tex.ts": [
       "BIN_COLOUR",
       "BIN_H",
