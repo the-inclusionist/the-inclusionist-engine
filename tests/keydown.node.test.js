@@ -473,6 +473,53 @@ describe('predicados puros', () => {
   });
 });
 
+/* ===================== 9b. what the chain refuses when there is no game (probed 2026-09-23) ===================== */
+
+describe('the guards nothing was holding', () => {
+  it('⚠️ with no title on top AND no game in play, neither Alt+digit nor Escape acts', () => {
+    /*
+     * 🎯 Both rows carry `inGame`, and the header explains the OTHER half of each condition (a modal must be
+     * closed) while this half went unmeasured. The scene reaches this module as two independent booleans, so
+     * «neither» is a state it has to answer for — and answering it with a pause or a screen reconfiguration
+     * would act on a game that is not there.
+     */
+    const idle = { phase: 'loading' };
+    expect(decide('Digit3', idle, { altKey: true }).kind, 'Alt+3 reconfigured the screens of a game that is not running').toBe('play');
+    expect(decide('Escape', idle).kind, 'Escape paused a game that is not running').toBe('play');
+  });
+
+  it('⚠️ a key that only a seat\'s OWN scheme carries is still a game key', () => {
+    /*
+     * 📏 `controls.gameKeys` is the union of the schemes of the ACTIVE screens, while `p.ctrl` is assigned to
+     * every player object there is. With one screen open, seat 2 still holds its scheme — and a key of it has
+     * to be swallowed like any other game key, or it types into the page behind the game.
+     */
+    const s = snap({ players: [mkPlayer(0, P2A), mkPlayer(1, P2B)], numPlayers: 1 });
+    expect(s.controls.gameKeys.includes('Numpad5'), 'the flattened list covers only the active screen').toBe(false);
+    expect(isGameKeyCode('Numpad5', s), 'a key held by a seat stopped counting as a game key').toBe(true);
+  });
+
+  it('⚠️ Ctrl and Shift are the Easy shortcuts only when Easy mode is ON', () => {
+    expect(isEasyShortcut('ControlLeft', snap({ players: [mkPlayer(0, SOLO)] })),
+      'Ctrl became Special for a child who never asked for Easy mode').toBe(false);
+    expect(isEasyShortcut('ControlLeft', snap({ players: [mkPlayer(0, SOLO, { easy: true })] })),
+      'and with Easy mode on it is the shortcut').toBe(true);
+  });
+
+  it('⚠️ inside a modal, a key with NO owner still erases by the player\'s OWN scheme', () => {
+    /*
+     * 📌 There is no `action3` alias in `ControlsSnapshot` — the other five are there and this one is not — so a
+     * generic key has nowhere else to be read from, and the module reaches into `pl.ctrl.action3`. That
+     * asymmetry is argued in the module's header and was held by nothing.
+     * ⚠️ `whichPlayer` is an injected FACT, so the case states it: «this key has no owner». That is the
+     * question the module asks, and the answer is what selects this path.
+     */
+    const s = snap({ players: [mkPlayer(0, SOLO)], modal: [true], whichPlayer: () => -1 });
+    expect(modalOwnerIndex('KeyK', s), 'a key with no owner falls on the modal of seat 1').toBe(0);
+    expect(modalIntentOf('KeyK', s, 0, true), 'a generic Special key stopped erasing inside the modal').toBe('erase');
+  });
+});
+
 /* ===================== 10. o wrapper: as sondas, a ordem e o efeito ===================== */
 
 /** ctx de mentira: nada de DOM real (o `$` devolve objetos simples), tudo espionado. */
@@ -717,6 +764,21 @@ describe('initKeydown — o efeito de cada ramo', () => {
     forgetInputs();
   });
 
+  it('⚠️ a key that belongs to NO seat feeds the automaton of seat 1 — the same convention as ui/menu-nav', () => {
+    // 📌 The module says it in a comment: «quem carrega numa tecla que não é de assento nenhum está a jogar no
+    // primeiro assento». Passing the raw −1 through would feed nobody, and the switching refusal of ADR-0113
+    // clause 3 would go on answering `teclado` for a child who plays by looking.
+    forgetInputs();
+    const { ctx } = mkCtx();
+    const api = initKeydown(ctx);
+    api.onKeydown(stampSource(
+      { code: 'KeyZ', altKey: false, ctrlKey: false, isTrusted: false, preventDefault: () => {} },
+      'olhos',
+    ));
+    expect(inputOf(0).emUso, 'a key of no seat left the automaton of seat 1 untouched').toBe('olhos');
+    forgetInputs();
+  });
+
   it('⚠️ um sintético que NINGUÉM assinou funciona, mas não finge saber de onde veio', () => {
     // Código de consumidor que despacha teclas continua a jogar; o que ele não faz é herdar uma origem alheia.
     const { ctx, heldKeys, origens } = mkCtx();
@@ -764,3 +826,21 @@ describe('initKeydown — o efeito de cada ramo', () => {
     expect(api.snapshot()).toMatchObject({ telaDeTitulo: true, emJogo: false });
   });
 });
+
+// 🔴 PROBED DECISION BY DECISION ON 2026-09-23, before `decideKeydown` (28 paths against McCabe's 10) is cut:
+// fifty-five decisions of this module disabled one at a time, against every node file that imports it.
+// **Forty-four went red**, which is the portrait of a module whose ORDER has been the point since it was written
+// — and eleven did not. One of the eleven is held by `keydown.browser.test.js` (the decision's `preventDefault`
+// reaching the event, measured there), six became the cases above, and **four cannot be held, for one reason**:
+//   · 🟡 the title wait also asking `numPlayers > 1` — 📏 measured in `input/keyboard-runtime`: `whichPlayer`
+//     scans `schemesForActivePlayers()`, which is `Array.from({length: getNumPlayers()})`. With one screen it
+//     can only answer 0 or −1, so the extra half can never be the one that decides.
+//   · 🟡 `isJumpKey` also reading the player 1 alias — the second half already walks every player, seat 1
+//     included, and `actionOf` and the alias list are built from the same schemes.
+//   · 🟡 the modal's `generic` flag — forcing it false makes `act = actionOf(code, pl.i)`, which is `null` for
+//     exactly the keys that have no owner, so both paths end in the same aliases.
+//   · 🟡 `if (!p.ctrl) return;` in `edgesFor` — the line below it already reads `p.ctrl?.[act] || []`, so the
+//     guard is a fast path and not a rule.
+// 🎯 And the four share a shape worth naming: each is a SECOND question whose answer the first already implies.
+// They are not decoration — they hold if the two injected facts ever disagree — but no case can distinguish
+// them today, and writing one would be dressing a double's inconsistency up as a rule.
