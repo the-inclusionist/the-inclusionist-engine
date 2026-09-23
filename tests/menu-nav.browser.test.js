@@ -330,6 +330,16 @@ describe('navDialog — andar dentro de um diálogo', () => {
     expect(log.said.at(-1), 'the child was put on an item nobody named').toMatch(/^Primeiro/);
   });
 
+  it('🔴 um quadro SEM intenção nenhuma não clica o item — só o «sim» confirma', () => {
+    // found by re-probing the cut: with the `yes` guard gone, every frame with no key would press the button under the cursor
+    const { nav, openAudio } = boot();
+    openAudio();
+    let clicks = 0; $('#a-close').addEventListener('click', () => { clicks++; });
+    $('#a-close').focus();
+    nav.navDialog($('#audio'), K({}));
+    expect(clicks).toBe(0);
+  });
+
   it('🔴 um diálogo SEM itens não rebenta com uma seta — não há onde pôr o cursor, e é tudo', () => {
     const { nav } = boot();
     document.body.insertAdjacentHTML('beforeend', '<div id="vazio" class="overlay"><div class="overlay__card"><p>só texto</p></div></div>');
