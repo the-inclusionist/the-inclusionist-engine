@@ -127,7 +127,7 @@ function playerViz(list: readonly unknown[], i: number): string {
  * The default keeps every existing consumer's panel exactly as it was.
  */
 export interface VisualRowsOffered { readonly dono: boolean; readonly papeis: boolean }
-const TODAS_AS_LINHAS: VisualRowsOffered = { dono: true, papeis: true };
+const EVERY_ROW_OFFERED: VisualRowsOffered = { dono: true, papeis: true };
 
 /** A linha dos ITENS NA COR DO DONO, já traduzida. Interruptor, que é a forma de onze dos dezassete controles medidos. */
 function ownerRowSpec(): ControlRowSpec {
@@ -151,7 +151,7 @@ function cbSafeRowSpec(): ControlRowSpec {
  * ⚠️ Reetiquetar e não reconstruir, pela razão que o `labelRow` já escreve: as escutas ligam-se no arranque, e refazer
  * a linha deixaria um controle no documento e sem escuta — um botão morto com aparência de vivo (ADR-0106 §5).
  */
-function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, oferecer: VisualRowsOffered = TODAS_AS_LINHAS): void {
+function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, oferecer: VisualRowsOffered = EVERY_ROW_OFFERED): void {
   /*
    * 🔴 O REALCE DE CONTRASTE, EM PASSOS E COM A PROSA NO SÍTIO CERTO (ADR-0151). O Dev viu a explicação DENTRO da
    * linha: ela vinha colada ao rótulo e dependia de o hospedeiro passar o `fillExplain` para descer ao rodapé. Mora
@@ -167,9 +167,9 @@ function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, oferecer: Visu
     newHint.className = 'opt-hint';
     envelope.appendChild(newHint);
     enhanceRow.appendChild(envelope);
-    const place = ctx.criar('span');
-    place.setAttribute('data-passos-lugar', 'lq');
-    enhanceRow.appendChild(place);
+    const placeholder = ctx.criar('span');
+    placeholder.setAttribute('data-passos-lugar', 'lq');
+    enhanceRow.appendChild(placeholder);
     list.appendChild(enhanceRow);
   }
   const enhanceHint = enhanceRow.querySelector<HTMLElement>('.opt-hint');
@@ -273,15 +273,15 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
   function wireOnce(list: HTMLElement): void {
     if (wired) return;
     wired = true;
-    const lugar = ctx.$<HTMLElement>('[data-passos-lugar="lq"]');
-    if (lugar) {
+    const placeholder = ctx.$<HTMLElement>('[data-passos-lugar="lq"]');
+    if (placeholder) {
       const passos = mountSteps(kitCtx(list), enhanceSpec());
       passos.id = 'opt-lq';
-      lugar.replaceWith(passos);
+      placeholder.replaceWith(passos);
       passos.addEventListener('passo', (ev) => {
-        const nova = nextStep(enhanceStep, LQ_STEPS.length, (ev as CustomEvent<number>).detail);
-        if (nova === enhanceStep) return; // na ponta não se anuncia um passo que não aconteceu
-        enhanceStep = nova;
+        const nextIndex = nextStep(enhanceStep, LQ_STEPS.length, (ev as CustomEvent<number>).detail);
+        if (nextIndex === enhanceStep) return; // na ponta não se anuncia um passo que não aconteceu
+        enhanceStep = nextIndex;
         ctx.setLq(LQ_STEPS[enhanceStep] as number);
         updateSteps(passos, enhanceSpec());
         ctx.srSay(t('sr.visual.lq', { v: t(lqLabel(LQ_STEPS[enhanceStep] as number)) }));
@@ -385,7 +385,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     const visual = playerVisual(ctx.getPlayers(), ctx.getSelectedPlayer());
     const tema = visual.tema !== PADRAO_VISUAL.tema;
     const correcao = visual.correcao !== PADRAO_VISUAL.correcao;
-    const linhaDoEixo = (eixo: string): HTMLElement | null =>
+    const rowOfCheckedAxis = (eixo: string): HTMLElement | null =>
       ctx.$<HTMLElement>(`#visual-modes button[data-eixo="${eixo}"][aria-checked="true"]`)
         ?.closest<HTMLElement>('.ctrl-row') ?? null;
     const lqOff = s.lq !== DEFAULTS.lq;
@@ -396,8 +396,8 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     const papeis = ROLE_KEYS.some((k) => !sameRgb(s.roleColors[k], HC_ROLE_DEF[k]));
     const linha = (sel: string): HTMLElement | null =>
       ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null;
-    markChanged(linhaDoEixo('tema'), tema);
-    markChanged(linhaDoEixo('correcao'), correcao);
+    markChanged(rowOfCheckedAxis('tema'), tema);
+    markChanged(rowOfCheckedAxis('correcao'), correcao);
     markChanged(linha('#opt-lq'), lqOff);
     markChanged(linha('#opt-ownercolors'), owner);
     markChanged(linha('#opt-cbsafe'), cb);

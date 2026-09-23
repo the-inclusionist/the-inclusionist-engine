@@ -237,7 +237,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
    * um passo mudo». Duas respostas à mesma pergunta no mesmo repositório é o defeito que o `DomQuery` já
    * custou dezasseis vezes; agora são uma.
    */
-  function palavraDaAcao(a: Action): string | null {
+  function gameWordFor(a: Action): string | null {
     return ctx.acoesDoJogo().find((x) => x.acao === a)?.rotulo ?? null;
   }
 
@@ -262,13 +262,13 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
       tabs.innerHTML = '<span class="opt-hint" style="width:100%;margin:0">'
         + '<span data-modo="pre"></span><strong data-modo="v"></strong><span data-modo="pos"></span></span>';
       const [antes, depois] = t('ctrl.editingYours').split('{modo}');
-      const posto = (sel: string, txt: string): void => {
+      const setText = (sel: string, txt: string): void => {
         const el2 = tabs.querySelector<HTMLElement>(sel);
         if (el2) el2.textContent = txt;
       };
-      posto('[data-modo="pre"]', antes ?? '');
-      posto('[data-modo="v"]', n === 1 ? t('ctrl.mode.one') : t('ctrl.mode.many', { n }));
-      posto('[data-modo="pos"]', depois ?? '');
+      setText('[data-modo="pre"]', antes ?? '');
+      setText('[data-modo="v"]', n === 1 ? t('ctrl.mode.one') : t('ctrl.mode.many', { n }));
+      setText('[data-modo="pos"]', depois ?? '');
     }
 
     const map = ctx.kbFor(player);
@@ -331,12 +331,12 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     {
       const padrao = ctx.kbPadraoFor(player);
       const atual = ctx.kbFor(player);
-      const mesmas = (a: readonly string[] | null | undefined, b: readonly string[] | null | undefined): boolean =>
+      const sameKeys = (a: readonly string[] | null | undefined, b: readonly string[] | null | undefined): boolean =>
         (a ?? []).length === (b ?? []).length && (a ?? []).every((k, i) => k === (b ?? [])[i]);
       for (const linha of el.querySelectorAll<HTMLElement>('.ctrl-row')) {
         const act = linha.querySelector<HTMLElement>('button[data-act]')?.dataset.act;
         if (!act || !isAction(act)) continue;
-        markChanged(linha, !mesmas(atual[act], padrao[act]));
+        markChanged(linha, !sameKeys(atual[act], padrao[act]));
       }
     }
 
@@ -351,7 +351,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
         // não a usa, não há o que mapear; uma ausência vira menos um passo, nunca um passo mudo». As linhas
         // vêm todas de `acoesDoJogo()`, logo isto não acontece hoje — e é essa garantia que fica escrita em
         // vez de assumida, porque quem a partir amanhã acorda um anúncio sem sujeito.
-        const palavra = palavraDaAcao(act);
+        const palavra = gameWordFor(act);
         if (!palavra) return;
         capture = { action: act, mapRef: map, player };
         b.textContent = t('ctrl.pressing'); // estava cravado em português isInside do motor (#125)
@@ -395,7 +395,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
       // ⚠️ `aqui` VEM DO ESQUEMA, e o esquema liga posições que o jogo pode não nomear — é por aqui que o id
       // abstracto chegava a uma criança. Sem palavra, a frase diz a verdade que INTERESSA («a tecla está
       // ocupada aqui») em vez do nome interno: calar seria o defeito gémeo, e dizer `action2` era o defeito.
-      const palavra = palavraDaAcao(aqui);
+      const palavra = gameWordFor(aqui);
       ctx.srAlert(palavra
         ? t('sr.ctrl.keyTakenHere', { acao: palavra })
         : t('sr.ctrl.keyTakenHereUnnamed'));

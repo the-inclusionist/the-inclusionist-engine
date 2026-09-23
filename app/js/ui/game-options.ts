@@ -68,14 +68,14 @@ export function gameOptionsProblems(options: unknown): string[] {
     if (o.kind === 'steps' && values.length > MAX_STEPS) {
       out.push(`${at}.values holds ${values.length} steps: steps hold at most five positions — past that, declare a list (ADR-0130)`);
     }
-    const vistos = new Set<string>();
+    const seenValues = new Set<string>();
     values.forEach((v: Record<string, unknown> | null, j) => {
       if (!v || typeof v.value !== 'string' || typeof v.label !== 'string' || !v.label.trim()) {
         out.push(`${at}.values[${j}] must have a value and a label`);
-      } else if (vistos.has(v.value)) {
+      } else if (seenValues.has(v.value)) {
         out.push(`${at}.values[${j}] «${v.value}» repeats an earlier position`);
       } else {
-        vistos.add(v.value);
+        seenValues.add(v.value);
       }
     });
   });
@@ -112,7 +112,7 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
       lista.appendChild(linha);
       continue;
     }
-    const rotuloDe = (valor: string): string => o.values.find((v) => v.value === valor)?.label ?? valor;
+    const labelOf = (valor: string): string => o.values.find((v) => v.value === valor)?.label ?? valor;
     if (o.kind === 'list') {
       const { linha, controle } = controlRow(ctx, { id, rotulo: o.label, dica: o.hint, forma: 'escolha' });
       const sel = controle as HTMLSelectElement;
@@ -126,7 +126,7 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
       sel.addEventListener('change', () => {
         o.write(sel.value);
         sel.value = o.read();
-        ctx.dizer(`${o.label}: ${rotuloDe(sel.value)}`);
+        ctx.dizer(`${o.label}: ${labelOf(sel.value)}`);
       });
       lista.appendChild(linha);
       continue;
@@ -149,11 +149,11 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
     linha.appendChild(passos);
     passos.addEventListener('passo', (ev) => {
       const atual = indice();
-      const nova = nextStep(atual, o.values.length, (ev as CustomEvent<number>).detail);
-      if (nova === atual) return; // at the wall nothing moved, and nothing is said
-      o.write(o.values[nova]!.value);
+      const nextIndex = nextStep(atual, o.values.length, (ev as CustomEvent<number>).detail);
+      if (nextIndex === atual) return; // at the wall nothing moved, and nothing is said
+      o.write(o.values[nextIndex]!.value);
       updateSteps(passos, spec());
-      ctx.dizer(`${o.label}: ${rotuloDe(o.read())}`);
+      ctx.dizer(`${o.label}: ${labelOf(o.read())}`);
     });
     lista.appendChild(linha);
   }

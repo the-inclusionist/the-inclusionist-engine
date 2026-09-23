@@ -1,10 +1,10 @@
 {
   "measured": "2026-09-23",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 1088,
+  "total": 1065,
   "totals": {
-    "decl": 317,
-    "param": 343,
+    "decl": 304,
+    "param": 333,
     "membro": 428
   },
   "files": {
@@ -104,8 +104,8 @@
       "membro": 3
     },
     "app/js/env.d.ts": {
-      "decl": 1,
-      "param": 3,
+      "decl": 0,
+      "param": 1,
       "membro": 0
     },
     "app/js/input/default-bindings.ts": {
@@ -189,8 +189,8 @@
       "membro": 2
     },
     "app/js/input/transports.ts": {
-      "decl": 2,
-      "param": 10,
+      "decl": 0,
+      "param": 6,
       "membro": 11
     },
     "app/js/input/vocabulary-migration.ts": {
@@ -295,7 +295,7 @@
     },
     "app/js/render/port.ts": {
       "decl": 0,
-      "param": 8,
+      "param": 4,
       "membro": 0
     },
     "app/js/render/recycling-tex.ts": {
@@ -399,7 +399,7 @@
       "membro": 4
     },
     "app/js/ui/game-options.ts": {
-      "decl": 9,
+      "decl": 6,
       "param": 5,
       "membro": 1
     },
@@ -479,7 +479,7 @@
       "membro": 5
     },
     "app/js/ui/settings-controls.ts": {
-      "decl": 8,
+      "decl": 5,
       "param": 2,
       "membro": 3
     },
@@ -504,7 +504,7 @@
       "membro": 1
     },
     "app/js/ui/settings-visual.ts": {
-      "decl": 10,
+      "decl": 6,
       "param": 2,
       "membro": 8
     },

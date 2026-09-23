@@ -83,9 +83,9 @@ export function guessFloor(alternativas: number, tentativas: number): number {
   // O tecto é o número de ALTERNATIVAS, não uma a menos: com tantas tentativas quantas alternativas a
   // criança esgota todas as erradas e a certeza é 1. Pedir mais não pode passar disso.
   const t = Math.max(0, Math.min(Math.floor(tentativas), Math.floor(alternativas)));
-  let falhaTudo = 1;
-  for (let i = 0; i < t; i++) falhaTudo *= (alternativas - 1 - i) / (alternativas - i);
-  return 1 - falhaTudo;
+  let chanceOfMissingAll = 1;
+  for (let i = 0; i < t; i++) chanceOfMissingAll *= (alternativas - 1 - i) / (alternativas - i);
+  return 1 - chanceOfMissingAll;
 }
 
 /**
@@ -94,9 +94,9 @@ export function guessFloor(alternativas: number, tentativas: number): number {
  * `acertouNaTentativa` é 1-based; `null` quando a criança não acertou em nenhuma. É aqui que quatro tentativas
  * erradas deixam de poder ser confundidas com quatro questões falhadas: elas produzem UM `'falhou'`.
  */
-export function resultadoDaQuestao(acertouNaTentativa: number | null): ResultadoDaQuestao {
-  if (acertouNaTentativa === null || !Number.isFinite(acertouNaTentativa)) return 'falhou';
-  return acertouNaTentativa <= 1 ? 'primeira' : 'mediada';
+export function resultadoDaQuestao(rightOnAttempt: number | null): ResultadoDaQuestao {
+  if (rightOnAttempt === null || !Number.isFinite(rightOnAttempt)) return 'falhou';
+  return rightOnAttempt <= 1 ? 'primeira' : 'mediada';
 }
 
 /** Quantas questões terminaram em falha, contadas do fim para trás até à primeira que não falhou. */
@@ -131,18 +131,18 @@ export function falhasSeguidas(historico: readonly ResultadoDaQuestao[]): number
 export function bandOf(
   historico: readonly ResultadoDaQuestao[],
   piso: number,
-  janela: number = WINDOW,
+  windowSize: number = WINDOW,
 ): Verdict {
   if (falhasSeguidas(historico) >= MISSES_IN_A_ROW_THAT_DROP) {
     return { faixa: 'frustracao', motivo: 'quatro-seguidas', efeito: -1 };
   }
-  if (historico.length < janela) {
+  if (historico.length < windowSize) {
     return { faixa: 'zona', motivo: 'janela-incompleta', efeito: 0 };
   }
 
-  const ultimas = historico.slice(-janela);
-  const dePrimeira = ultimas.filter((r) => r === 'primeira').length / janela;
-  const resolvidas = ultimas.filter((r) => r !== 'falhou').length / janela;
+  const ultimas = historico.slice(-windowSize);
+  const dePrimeira = ultimas.filter((r) => r === 'primeira').length / windowSize;
+  const resolvidas = ultimas.filter((r) => r !== 'falhou').length / windowSize;
 
   if (dePrimeira >= LEVEL_UP_TARGET) return { faixa: 'proficiente', motivo: 'acertos-de-primeira', efeito: 1 };
   if (resolvidas <= piso) return { faixa: 'frustracao', motivo: 'resolvidas-no-piso', efeito: -1 };

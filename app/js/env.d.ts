@@ -20,12 +20,12 @@ declare module 'virtual:sprite-atlas' {
  * shape is `FabricaEspeak` in `consumer-quiz/kokoro-porta`, widened here by the `instantiateWasm` hook the loader passes.
  */
 declare module 'espeak-ng' {
-  const fabrica: (opcoes: {
+  const createEspeak: (opcoes: {
     arguments: readonly string[];
     preRun: readonly ((m: { FS: import('./consumer-quiz/kokoro-porta.js').SistemaDeFicheirosDoEspeak }) => void)[];
-    instantiateWasm?: (importacoes: WebAssembly.Imports, pronto: (i: WebAssembly.Instance, m: WebAssembly.Module) => void) => object;
+    instantiateWasm?: (imports: WebAssembly.Imports, onReady: (i: WebAssembly.Instance, m: WebAssembly.Module) => void) => object;
   }) => Promise<{ FS: import('./consumer-quiz/kokoro-porta.js').SistemaDeFicheirosDoEspeak }>;
-  export default fabrica;
+  export default createEspeak;
 }
 
 /**

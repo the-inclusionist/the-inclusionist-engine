@@ -1942,13 +1942,13 @@
     "interface DrawingWithCircle": [
       "drawCircle"
     ],
-    "type RenderInto": "(objeto: unknown, alvo: unknown, limpar: boolean) => void",
-    "type CreateSprite": "(textura: unknown) => T",
-    "type CreateTile": "(textura: unknown, largura: number, altura: number) => T",
+    "type RenderInto": "(displayObject: unknown, alvo: unknown, limpar: boolean) => void",
+    "type CreateSprite": "(sourceTexture: unknown) => T",
+    "type CreateTile": "(sourceTexture: unknown, largura: number, altura: number) => T",
     "type CreateDrawing": "() => T",
     "type ApplyCssFilter": "(css: string, reach: FilterReach) => void",
     "type FilterReach": "'mundo' | 'mundo-e-menus'",
-    "type ApplyHighContrastToDom": "(ligado: boolean) => void"
+    "type ApplyHighContrastToDom": "(isOn: boolean) => void"
   },
   "render/recycling-tex.ts": {
     "interface RecyclingTextures": [

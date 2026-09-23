@@ -135,8 +135,8 @@ export interface Transport {
 }
 
 /** Este transporte carrega este conjunto de ações? Aritmética, como o ADR-0079 §3 a descreve. */
-export function carries(t: Transport, acoes: readonly Action[]): boolean {
-  return t.slots >= acoes.length;
+export function carries(t: Transport, actions: readonly Action[]): boolean {
+  return t.slots >= actions.length;
 }
 
 /**
@@ -157,8 +157,8 @@ export function holds(t: Transport, pedidas: number): boolean {
  * ⚠️ Disponibilidade e capacidade são conferidas nesta ordem de propósito: um transporte que caberia mas não
  * está ligado não é resposta para uma criança que está à frente do aparelho agora.
  */
-export function carriedBy(lista: readonly Transport[], acoes: readonly Action[]): Transport[] {
-  return lista.filter((t) => t.available() && carries(t, acoes));
+export function carriedBy(lista: readonly Transport[], actions: readonly Action[]): Transport[] {
+  return lista.filter((t) => t.available() && carries(t, actions));
 }
 
 /**
@@ -168,8 +168,8 @@ export function carriedBy(lista: readonly Transport[], acoes: readonly Action[])
  * nenhuma não é um jogo que qualquer transporte serve — é um jogo que ninguém consegue jogar, e
  * `actionSetProblems` já o reprova. Devolver `true` aqui esconderia esse defeito atrás desta função.
  */
-export function reachable(lista: readonly Transport[], acoes: readonly Action[]): boolean {
-  return acoes.length > 0 && carriedBy(lista, acoes).length > 0;
+export function reachable(lista: readonly Transport[], actions: readonly Action[]): boolean {
+  return actions.length > 0 && carriedBy(lista, actions).length > 0;
 }
 
 /** O que a tela de seleção precisa dizer, e o que ela precisa saber para o dizer. */
@@ -219,35 +219,35 @@ export interface Reach {
  */
 export function reach(
   lista: readonly Transport[],
-  acoes: readonly Action[],
+  actions: readonly Action[],
   seguraPedidas: number,
   pedePonteiro = false,
 ): Reach {
-  const disponiveis = lista.filter((t) => t.available());
+  const availableNow = lista.filter((t) => t.available());
   /**
    * ⚠️ PADRÃO `false` E NÃO PARÂMETRO OBRIGATÓRIO: os trezentos jogos que não desenham não podem sentir esta
    * mudança, e um quarto argumento exigido faria cada chamador existente decidir hoje uma coisa que não lhe
    * diz respeito.
    */
-  const apontaSeFor = (t: Transport) => !pedePonteiro || (!!t.aponta && t.aponta());
+  const pointsIfNeeded = (t: Transport) => !pedePonteiro || (!!t.aponta && t.aponta());
   // ⚠️ «Serve» passou a ser TRÊS coisas. Foi DUAS na #114 (o `ok` dizia sim a quem não segurava três dedos), e
   // é três desde o ADR-0112 — pela mesma razão das duas vezes: um `ok` verdadeiro sobre um jogo que a criança
   // não consegue jogar é a pior coisa que este campo pode fazer.
-  const serve = (t: Transport) => carries(t, acoes) && holds(t, seguraPedidas) && apontaSeFor(t);
+  const serve = (t: Transport) => carries(t, actions) && holds(t, seguraPedidas) && pointsIfNeeded(t);
   return {
-    ok: acoes.length > 0 && disponiveis.some(serve),
-    pedidas: acoes.length,
+    ok: actions.length > 0 && availableNow.some(serve),
+    pedidas: actions.length,
     seguraPedidas,
     pedePonteiro,
     serviriamSeLigados: lista.filter((t) => !t.available() && serve(t)).map((t) => t.id),
-    curtos: disponiveis.filter((t) => !carries(t, acoes)).map((t) => ({ id: t.id, slots: t.slots })),
-    naoApontam: disponiveis
-      .filter((t) => carries(t, acoes) && holds(t, seguraPedidas) && !apontaSeFor(t))
+    curtos: availableNow.filter((t) => !carries(t, actions)).map((t) => ({ id: t.id, slots: t.slots })),
+    naoApontam: availableNow
+      .filter((t) => carries(t, actions) && holds(t, seguraPedidas) && !pointsIfNeeded(t))
       .map((t) => t.id),
     // ⚠️ SÓ QUEM CHEGA, e não quem já reprovou por lugares. Um transporte que aparecesse nas duas listas
     // faria o cartão dizer duas coisas sobre o mesmo defeito, e a criança leria dois problemas onde há um.
-    naoSeguram: disponiveis
-      .filter((t) => carries(t, acoes) && !holds(t, seguraPedidas))
+    naoSeguram: availableNow
+      .filter((t) => carries(t, actions) && !holds(t, seguraPedidas))
       .map((t) => ({ id: t.id, holds: t.holds as number })),
   };
 }

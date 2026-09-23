@@ -80,7 +80,7 @@ export interface WithTexture {
  * visual — nenhum teste de lógica o vê. Tornar o parâmetro obrigatório faz o compilador cobrar a intenção de
  * cada chamador, uma vez, e para sempre.
  */
-export type RenderInto = (objeto: unknown, alvo: unknown, limpar: boolean) => void;
+export type RenderInto = (displayObject: unknown, alvo: unknown, limpar: boolean) => void;
 
 /**
  * CRIAR UM SPRITE a partir de uma textura, e um AZULEJO a partir dela.
@@ -93,10 +93,10 @@ export type RenderInto = (objeto: unknown, alvo: unknown, limpar: boolean) => vo
  * Uma função apaga o problema: quem chama passa a textura que já tem, e quem compõe fecha a diferença uma
  * vez. `T` é o que o módulo espera de volta — cada um sabe qual fatia do sprite ele vai tocar.
  */
-export type CreateSprite<T> = (textura: unknown) => T;
+export type CreateSprite<T> = (sourceTexture: unknown) => T;
 
 /** Idem para o azulejo do parallax, que também recebe largura e altura. */
-export type CreateTile<T> = (textura: unknown, largura: number, altura: number) => T;
+export type CreateTile<T> = (sourceTexture: unknown, largura: number, altura: number) => T;
 
 /** E o desenho vetorial vazio (`new PIXI.Graphics()`), pela mesma razão. */
 export type CreateDrawing<T> = () => T;
@@ -184,4 +184,4 @@ export type FilterReach = 'mundo' | 'mundo-e-menus';
  * tem textura, então não há o que propagar — há que escrever o equivalente, e ele mora no `style.css` sob
  * `#dom-layer.hc`. Aqui só se diz SE está ligado; o desenho é do CSS, com as razões medidas (issue #83).
  */
-export type ApplyHighContrastToDom = (ligado: boolean) => void;
+export type ApplyHighContrastToDom = (isOn: boolean) => void;
