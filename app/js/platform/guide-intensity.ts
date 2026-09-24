@@ -1,80 +1,78 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/guide-intensity — QUÃO PERTO SOA, sem bipe (#84 item 2).
+// platform/guide-intensity — HOW NEAR IT SOUNDS, without a beep (#84 item 2).
 //
-// ========================= O QUE ISTO SUBSTITUI =========================
-// O guia tocava um `triangle` de 0,12 s a cada 0,8 s, PARA SEMPRE, sem depender de movimento nem de nada ter
-// mudado. O veredicto do Dev: «um ping é a pior escolha possível, tenebroso para quem tem TEA». Não era a
-// frequência que estava errada — era o bipe. Reduzi-lo a «só andando» deixaria a mesma coisa a doer menos
-// vezes.
+// ========================= WHAT THIS REPLACES =========================
+// The guide used to play a beep at a fixed interval, FOREVER, whether or not anything moved. The Dev's verdict: «um ping
+// é a pior escolha possível, tenebroso para quem tem TEA». It was not the frequency that was wrong — it was the beep.
+// Playing it "only while walking" would have left the same thing hurting less often.
 //
-// O que entra é uma presença CONTÍNUA que fica mais intensa conforme a criança se aproxima, ao longo da rota
-// mapeada (`core/route`). Nada dispara; a coisa apenas fica mais presente.
+// What replaces it is a CONTINUOUS presence that grows more intense as the child approaches, along the mapped route
+// (`core/route`). Nothing fires; the sound simply becomes more present.
 //
-// ========================= O EIXO É O BRILHO, E A DECISÃO É DO DEV =========================
-// Quatro eixos foram postos na mesa — volume, brilho (corte de filtro), camadas e andamento — e a escolha foi
-// **brilho como principal, com uma parcela pequena de volume como secundário**. As razões, para quem reabrir:
+// ========================= THE AXIS IS BRIGHTNESS, AND THE DECISION IS THE DEV'S =========================
+// Four axes were put on the table — volume, brightness (filter cutoff), layers and tempo — and the choice was
+// **brightness as the main one, with a small share of volume as secondary**. The reasons, for whoever reopens it:
 //
-//   · VOLUME SOZINHO colide com o cursor do mixer: a criança que baixou a categoria `guide` perderia o sinal
-//     inteiro, e variação de volume é a mais cansativa das quatro.
-//   · ANDAMENTO lê-se como PRESSA, que é o oposto do que o modo TEA existe para proteger.
-//   · CAMADAS precisa de material composto, e esta engine sintetiza.
-//   · BRILHO é contínuo, sai de um `BiquadFilter` que o Web Audio já tem, e não disputa o cursor.
+//   · VOLUME ALONE collides with the mixer's slider: a child who turned the `guide` category down would lose the whole
+//     signal, and volume change is the most tiring of the four.
+//   · TEMPO reads as HURRY, the opposite of what autism-support mode exists to protect.
+//   · LAYERS needs composed material, and this engine synthesises.
+//   · BRIGHTNESS is continuous, comes from a `BiquadFilter` Web Audio already has, and does not fight the slider.
 //
-// ⚠️ E A PARCELA DE VOLUME NÃO É ENFEITE: para uma criança com perda auditiva o brilho pode cair exatamente na
-// banda que ela não alcança. Dois eixos redundantes significam que nenhum deles sozinho decide.
+// ⚠️ AND THE SHARE OF VOLUME IS NOT DECORATION: for a child with hearing loss the brightness may fall exactly in the band
+// they cannot reach. Two redundant axes mean neither decides alone.
 //
-// ========================= O QUE ESTE MÓDULO NÃO FAZ =========================
-// Não toca nada. Devolve dois números a partir de UM: quantos passos faltam ao longo da rota. Quem monta o
-// grafo é o `platform/audio-sonar`, e quem calcula a rota é o `core/route` — que já sabe contornar parede, e é
-// isso que torna a intensidade honesta: ela cresce com a distância que a criança REALMENTE vai andar.
+// ========================= WHAT THIS MODULE DOES NOT DO =========================
+// It plays nothing. It returns two numbers from ONE: how many steps remain along the route. Whoever builds the graph
+// plays them, and `core/route` computes the route — it already knows how to go round a wall, and that is what makes the
+// intensity honest: it grows with the distance the child will REALLY walk.
 //
-// Módulo-folha: não importa nada.
+// A leaf module: it imports nothing.
 
-/** O que o guia soa, para uma dada distância. */
+/** What the guide sounds like, for a given distance. */
 export interface Intensity {
-  /** Corte do passa-baixo, em hertz. Grave e abafado longe; aberto e brilhante perto. */
+  /** The low-pass cutoff, in hertz. Low and muffled far away; open and bright up close. */
   readonly cutoff: number;
-  /** Fator sobre o volume da categoria `guide`, entre `FAR_VOL` e 1. NUNCA zero. */
+  /** A factor on the `guide` category's volume, between `FAR_VOL` and 1. NEVER zero. */
   readonly volume: number;
 }
 
 /**
- * A partir de quantos passos o guia deixa de escurecer mais.
+ * From how many steps on the guide stops getting darker.
  *
- * Doze, e o número não é novo: o `chaveDeDistancia` do sonar corta «muito perto» em 4 passos e «perto» em 9,
- * e o `PAN_PACES` satura o estéreo em 11. O guia satura logo depois — a informação fina serve para quem já
- * está a chegar, e mais longe do que isso «longe» basta.
+ * Twelve, and the number is not new: the sonar's distance words cut "very near" at 4 steps and "near" at 9, and its pan
+ * saturates the stereo at 11. The guide saturates just after — fine detail serves whoever is arriving, and beyond that
+ * "far" is enough.
  */
 export const STEPS_TO_FLOOR = 12;
 
-/** O corte no fundo da escala: abafado, presente, sem ser um som de alarme. */
+/** The cutoff at the bottom of the scale: muffled, present, never an alarm sound. */
 export const FAR_CUT = 320;
-/** O corte no alvo: aberto. Acima disto o timbre passa a sibilar, e sibilar chama atenção como um bipe. */
+/** The cutoff at the target: open. Above this the timbre starts to hiss, and a hiss draws attention like a beep. */
 export const NEAR_CUT = 3200;
 
 /**
- * O fator de volume mais baixo.
+ * The lowest volume factor.
  *
- * ⚠️ NUNCA ZERO, E É A ASSERÇÃO MAIS IMPORTANTE DESTE FICHEIRO. Se o guia emudecesse ao longe, «longe» ficaria
- * indistinguível de «não há alvo» — e a criança que depende dele concluiria que não há nada para achar,
- * exatamente quando há e está distante. Silêncio é uma afirmação, e aqui seria uma afirmação falsa.
+ * ⚠️ NEVER ZERO, AND IT IS THE MOST IMPORTANT ASSERTION IN THIS FILE. If the guide went mute far away, "far" would be
+ * indistinguishable from "there is no target" — and the child who depends on it would conclude there is nothing to find,
+ * exactly when there is and it is distant. Silence is a statement, and here it would be a false one.
  */
 export const FAR_VOL = 0.55;
 
 /**
- * A intensidade para `stepsAway` de distância ao longo da rota.
+ * The intensity for `stepsAway` steps along the route.
  *
- * ⚠️ A INTERPOLAÇÃO DO CORTE É EXPONENCIAL, e não linear, pelo mesmo motivo do earcon da #124: o ouvido
- * percebe altura e brilho em RAZÃO, não em diferença. Uma rampa linear de 320 a 3200 abriria quase tudo no
- * primeiro terço do caminho e depois pareceria parada — a criança sentiria que chegou quando ainda faltava
- * metade.
+ * ⚠️ THE CUTOFF INTERPOLATES EXPONENTIALLY, not linearly, for the reason of #124's earcon: the ear perceives pitch and
+ * brightness as a RATIO, not a difference. A linear ramp from 320 to 3200 would open almost everything in the first third
+ * of the way and then seem to stand still — the child would feel they had arrived with half the way to go.
  *
- * O volume interpola LINEARMENTE, e a assimetria é deliberada: ele é o eixo secundário, e uma curva também
- * exponencial ali faria os dois acelerarem no mesmo ponto, que é o oposto de ter dois eixos.
+ * The volume interpolates LINEARLY, and the asymmetry is deliberate: it is the secondary axis, and an exponential curve
+ * there too would make both accelerate at the same point, the opposite of having two axes.
  */
 export function guideIntensity(stepsAway: number): Intensity {
   if (!Number.isFinite(stepsAway) || stepsAway < 0) return { cutoff: FAR_CUT, volume: FAR_VOL };
-  // 0 = em cima do alvo; 1 = no fundo da escala ou além.
+  // 0 = right on the target; 1 = at the bottom of the scale or beyond.
   const far = Math.min(1, stepsAway / STEPS_TO_FLOOR);
   const near = 1 - far;
   return {

@@ -1,59 +1,54 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/audio-earcons — earcons (ícones sonoros) do jogo + a ponte com as LEGENDAS visuais (a11y surdez).
-// Tier 2 do áudio, rodada 2. Depende das primitivas de platform/audio (SFX/ensureAC/catNode/audioOut/noiseHit) e,
-// por injeção, do estado de legenda que VIVE no game.js (captionsOn é alternado pela UI; showCaption toca o #caption
-// e é reusado por win()). Injeção por closure (padrão Tier 1).
-//   sfx(name)      — toca o earcon da tabela SFX (oscilador) E, se as legendas estão ON e o earcon tem `.cap`, mostra a
-//                    legenda ANTES de checar o som → um jogador surdo "vê" o som mesmo com o áudio desligado.
-//   doorSound(mat) — porta: rangido (madeira, sawtooth) ou clangor (ferro, square) + baque de ruído (noiseHit).
-// Extraído do game.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, áudio rodada 2).
+// platform/audio-earcons — a game's earcons (sound icons) + the bridge to the visual CAPTIONS (deaf accessibility).
+// It depends on platform/audio's primitives and, by injection, on the host's caption state. Injection by closure.
+//   sfx(name)      — plays the earcon from the table (an oscillator) AND, when captions are ON and the earcon has a `.cap`,
+//                    shows the caption BEFORE checking the sound → a deaf player "sees" the sound even with audio off.
+//   doorSound(mat) — a door: a creak (wood, sawtooth) or a clang (iron, square) + a noise thud (noiseHit).
 
 /**
- * A definição de UM earcon. A tabela é do JOGO (item 19); esta é a forma que a engine sabe tocar.
+ * The definition of ONE earcon. The table is the GAME's; this is the shape the engine knows how to play.
  *
- * ⚠️ EXPORTADA DESDE 2026-09-07 (#124), e a falta era um defeito de interface: o `game-platformer` declarava
- * a sua própria cópia deste tipo, palavra por palavra, porque não tinha como o nomear. Uma forma que cada
- * consumidor redescobre por cópia é uma forma que diverge — foi assim que cinco cópias de `Gfx` divergiram
- * nesta árvore, e está escrito noutro módulo.
+ * ⚠️ EXPORTED (#124), and its absence was an interface defect: a game declared its own copy of this type, word for word,
+ * because it had no way to name it. A shape each consumer rediscovers by copying is a shape that diverges.
  */
 export interface SfxDef {
-  /** O timbre. */
+  /** The timbre. */
   t: OscillatorType;
-  /** A frequência inicial, em hertz. */
+  /** The starting frequency, in hertz. */
   f: number;
-  /** A duração, em segundos. */
+  /** The duration, in seconds. */
   d: number;
-  /** A CHAVE de i18n da legenda (a11y surdez). Quem exibe resolve. */
+  /** The caption's i18n KEY (deaf accessibility). Whoever shows it resolves it. */
   cap?: string;
   /**
-   * A frequência FINAL, em hertz. Ausente = nota parada, que é o que sempre houve.
+   * The FINAL frequency, in hertz. Absent = a held note, which is what there always was.
    *
-   * ⚠️ ELE EXISTE PORQUE UM EARCON PRECISA DE PODER IR PARA ALGUM LADO (#124). Medido ao construir o
-   * `game-soccer`: marcar e sofrer golo têm de ser distinguíveis **só de ouvido** — uma criança cega ouve a
-   * sala reagir e precisa de saber para que lado antes de a narração chegar. O desenho óbvio é uma figura
-   * que SOBE para o golo dela e DESCE para o do outro, e a tabela não o sabia dizer. O que sobrava era
-   * agudo-e-longo contra grave-e-curto: distinguível, e menos informação do que o momento carrega.
+   * ⚠️ IT EXISTS BECAUSE AN EARCON HAS TO BE ABLE TO GO SOMEWHERE (#124). Measured building a football game: scoring and
+   * conceding must be told apart **by ear alone** — a blind child hears the room react and needs to know which way before
+   * the narration arrives. The obvious design is a figure that RISES for their goal and FALLS for the other's, and the
+   * table could not say it. What was left was high-and-long against low-and-short: distinguishable, and less information
+   * than the moment carries.
    *
-   * ⚠️ E A CAPACIDADE JÁ ESTAVA NESTE FICHEIRO, sem ser alcançável da tabela: o `doorSound` faz exatamente
-   * isto, com `frequency.exponentialRampToValueAtTime`. O conserto não é síntese nova — é abrir a porta.
+   * ⚠️ AND THE CAPABILITY WAS ALREADY IN THIS FILE, unreachable from the table: `doorSound` does exactly this with
+   * `frequency.exponentialRampToValueAtTime`. The fix was not new synthesis — it was opening the door.
    *
-   * A rampa é EXPONENCIAL e não linear porque a altura é percebida em razão e não em diferença: uma rampa
-   * linear de 200 a 800 sobe depressa no início e devagar no fim, e ouve-se torta.
+   * The ramp is EXPONENTIAL and not linear because pitch is perceived as a ratio, not a difference: a linear ramp from 200
+   * to 800 rises fast at the start and slowly at the end, and sounds crooked.
    */
   f2?: number;
 }
-import { t } from '../core/i18n.js'; // item 19: `cap` guarda CHAVE, e quem exibe resolve
+import { t } from '../core/i18n.js'; // `cap` holds a KEY, and whoever shows it resolves it
 
 export interface AudioEarconsCtx {
-  SFX: Record<string, SfxDef | undefined>;      // tabela de earcons (de platform/audio)
+  SFX: Record<string, SfxDef | undefined>;      // the earcon table (the game's)
   ensureAC: () => AudioContext | null;
-  catNode: (cat: string) => AudioNode | null;   // barramento por categoria (earcons/interact)
-  audioOut: () => AudioNode | null;             // nó mestre (fallback)
-  noiseHit: (mat: string) => void;              // synth de ruído por material (baque da porta)
-  getSoundOn: () => boolean;                     // bindings vivos (o mixer os reatribui)
+  catNode: (cat: string) => AudioNode | null;   // the per-category bus (earcons/interact)
+  audioOut: () => AudioNode | null;             // the master node (fallback)
+  noiseHit: (mat: string) => void;              // the per-material noise synth (the door's thud)
+  getSoundOn: () => boolean;                     // live bindings (the mixer reassigns them)
   getVolume: () => number;
-  getCaptionsOn: () => boolean;                  // legenda ligada? (a UI alterna no game.js)
-  showCaption: (txt: string) => void;            // desenha a legenda no #caption (DOM, vive no game.js)
+  getCaptionsOn: () => boolean;                  // are captions on? (the panels toggle it)
+  showCaption: (txt: string) => void;            // draws the caption (the host's DOM)
 }
 
 export interface AudioEarcons {
@@ -69,12 +64,11 @@ export function createAudioEarcons(ctx: AudioEarconsCtx): AudioEarcons {
 
   function sfx(name: string): void {
     const c = ctx.SFX[name]; if (!c) return;
-    // LEGENDA primeiro (visual + aria-live via role=status) — e RESOLVIDA no ponto de uso: `cap` guarda a
-    // CHAVE desde o item 19, porque a tabela vive no jogo e uma tabela de `const` com texto congelaria no
-    // idioma do boot. Quem exibe resolve; é a mesma regra de `render/viz-modes`.
+    // The CAPTION first (visual + aria-live through role=status) — and RESOLVED where it is used: `cap` holds the KEY,
+    // because the table lives in the game and a `const` table of text would freeze in the boot's language.
     if (ctx.getCaptionsOn() && c.cap) ctx.showCaption(t(c.cap));
-    if (!audible()) return;    // ...só então o som — surdez: a legenda já saiu
-    try { play(c); } catch (e) { /* Web Audio indisponível */ }
+    if (!audible()) return;    // ...only then the sound — for a deaf player the caption is already out
+    try { play(c); } catch (e) { /* no Web Audio */ }
   }
 
   /** One earcon: its timbre, its figure when the table asks for one, a peak that follows the master volume, and its length. */
@@ -91,12 +85,12 @@ export function createAudioEarcons(ctx: AudioEarconsCtx): AudioEarcons {
   }
 
   /**
-   * A FIGURA, quando a tabela pede uma (#124). `setValueAtTime` antes da rampa como no `doorSound`: sem ele o ponto de
-   * partida da curva fica por conta da implementação, e o glissando começa onde calhar.
+   * THE FIGURE, when the table asks for one (#124). `setValueAtTime` before the ramp as in `doorSound`: without it the
+   * curve's starting point is up to the implementation, and the glissando starts wherever it happens to.
    *
-   * ⚠️ AS DUAS GUARDAS SÃO NECESSÁRIAS E NÃO ZELO. `exponentialRampToValueAtTime` LANÇA com alvo zero ou negativo — uma
-   * tabela com `f2: 0` mataria o earcon inteiro pelo `catch`, em silêncio. E `f2 === f` não é rampa nenhuma: pedi-la ao
-   * navegador seria trabalho para produzir a nota parada que já havia.
+   * ⚠️ THE TWO GUARDS ARE NEEDED, NOT FUSSINESS. `exponentialRampToValueAtTime` THROWS on a zero or negative target — a
+   * table with `f2: 0` would kill the whole earcon through the `catch`, in silence. And `f2 === f` is no ramp at all:
+   * asking the browser for it would be work to produce the held note that was already there.
    */
   function glide(o: OscillatorNode, c: SfxDef, now: number): void {
     if (typeof c.f2 !== 'number' || c.f2 <= 0 || c.f2 === c.f) return;
@@ -107,7 +101,7 @@ export function createAudioEarcons(ctx: AudioEarconsCtx): AudioEarcons {
   function doorSound(mat: string): void {
     if (!audible()) return;
     const ac = ctx.ensureAC(); if (!ac) return;
-    try { // porta: rangido (madeira) ou clangor (ferro) + baque
+    try { // a door: a creak (wood) or a clang (iron) + a thud
       const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime, vol = ctx.getVolume();
       o.type = mat === 'ferro' ? 'square' : 'sawtooth';
       o.frequency.setValueAtTime(mat === 'ferro' ? 520 : 200, t);
@@ -115,7 +109,7 @@ export function createAudioEarcons(ctx: AudioEarconsCtx): AudioEarcons {
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.14 * vol, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
       o.connect(g).connect(busFor('interact', ac));
       o.start(t); o.stop(t + 0.4); ctx.noiseHit(mat === 'ferro' ? 'ferro' : 'madeira');
-    } catch (e) { /* Web Audio indisponível */ }
+    } catch (e) { /* no Web Audio */ }
   }
 
   return { sfx, doorSound };
