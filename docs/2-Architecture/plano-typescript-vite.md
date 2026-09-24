@@ -1,85 +1,87 @@
-# Migração para TypeScript + Vite
+> Historical plan (2026-07-04): kept as a record; the current state lives in [`../ARCHITECTURE.md`](../ARCHITECTURE.md) and [`CI-CD.md`](CI-CD.md).
 
-Decisão do José (2026-07-04): migrar de "ESM cru sem build" para **TypeScript + Vite (com build)**, AGORA (24
-módulos extraídos — mais barato que depois). Muda a *preferência* "sem build step"; os **pilares inegociáveis**
-(PWA offline, runtime enxuto, hardware de escola) são **preservados/melhorados** (bundle/minify/tree-shake =
-payload menor; `vite-plugin-pwa` gera o SW offline). Ver [[project-inclusionist]].
+# Migration to TypeScript + Vite
 
-## Princípios
-- **Incremental, sem big-bang.** `allowJs: true` → `.js` e `.ts` coexistem; converte-se módulo a módulo. A
-  modularização em curso continua, mas cada peça nova/extraída nasce/vira `.ts` com tipos + testes.
-- **strict frouxo no início**, apertando aos poucos (evita 1000 erros no dia 1).
-- **Verificação:** a IA não roda Node → o José roda `npm run dev`/`build`/`vitest`. O preview (python servindo cru)
-  ainda cobre os estágios iniciais; depois do build/PWA, a validação é via Vite.
-- **1 estágio por vez, cada um validado antes do próximo.**
+The Dev's decision (2026-07-04): migrate from "raw ESM with no build" to **TypeScript + Vite (with a build)**, NOW (24
+modules extracted — cheaper than later). It changes the *preference* "no build step"; the **non-negotiable pillars**
+(offline PWA, lean runtime, school hardware) are **preserved/improved** (bundle/minify/tree-shake =
+smaller payload; `vite-plugin-pwa` generates the offline SW). See [[project-inclusionist]].
 
-## Estágios
+## Principles
+- **Incremental, no big-bang.** `allowJs: true` → `.js` and `.ts` coexist; modules are converted one by one. The
+  modularisation under way continues, but every new/extracted piece is born as / becomes `.ts` with types + tests.
+- **Loose strict at first**, tightening gradually (avoids 1000 errors on day 1).
+- **Verification:** the AI does not run Node → the Dev runs `npm run dev`/`build`/`vitest`. The preview (python serving raw files)
+  still covers the early stages; after the build/PWA, validation goes through Vite.
+- **One stage at a time, each validated before the next.**
 
-### Estágio 0 — Vite serve o jogo atual (dev) ✅ FEITO
-Objetivo: provar que o toolchain roda com o mínimo de mudança (PIXI segue global do vendor; nada de TS ainda).
-- `package.json`: devDeps `vite` + `typescript`; scripts `dev`/`build`/`preview`. Vitest alinhado ao major do Vite.
-- `vite.config.ts`: `root: 'app'` (onde está o index.html). Em DEV o Vite serve TUDO sob `app/` (js/css/assets/
-  vendor) → `fetch('assets/…')` e o `<script vendor/pixi.min.js>` funcionam sem mover nada.
-- `tsconfig.json`: `allowJs`, `checkJs:false`, `noEmit` (o Vite emite; o tsc só faz type-check), `strict:false`.
-- O SW artesanal é **desligado no dev** (evita conflito com o Vite) — volta como plugin no Estágio 1.
-- **José valida:** `npm install` → `npm run dev` → o jogo abre em `localhost:5173` igual a hoje.
+## Stages
 
-### Estágio 0b — `vite build` gera `dist/` ✅ FEITO
-- Configurar cópia dos estáticos runtime (`assets/`, `vendor/`, `manifest`, `icon`, `_headers`) para o build —
-  mover para `app/public/` (o Vite copia `public/*` para `dist/` na mesma URL). index.html quase intacto.
-- **José valida:** `npm run build` → `npm run preview` serve o `dist/` funcionando.
+### Stage 0 — Vite serves the current game (dev) ✅ DONE
+Goal: prove the toolchain runs with minimal change (PIXI stays a global from the vendor folder; no TS yet).
+- `package.json`: devDeps `vite` + `typescript`; scripts `dev`/`build`/`preview`. Vitest aligned with Vite's major.
+- `vite.config.ts`: `root: 'app'` (where index.html is). In DEV Vite serves EVERYTHING under `app/` (js/css/assets/
+  vendor) → `fetch('assets/…')` and the `<script vendor/pixi.min.js>` work without moving anything.
+- `tsconfig.json`: `allowJs`, `checkJs:false`, `noEmit` (Vite emits; tsc only type-checks), `strict:false`.
+- The hand-written SW is **switched off in dev** (avoids a conflict with Vite) — it comes back as a plugin in Stage 1.
+- **The Dev validates:** `npm install` → `npm run dev` → the game opens at `localhost:5173` the same as today.
 
-### Estágio 1 — PWA pelo `vite-plugin-pwa` ✅ FEITO (SW Workbox ativo, offline verificado 2026-07-04)
-- Substitui o `sw.js` artesanal + o ritual de bump `INCL_VERSION`: o plugin gera o SW com precache por
-  **content-hash** (cache invalida sozinho). Estratégia offline preservada (precache do shell + assets).
-- Remove `app/sw.js` e o registro inline; o plugin injeta o registro.
-- **José valida:** build + `preview`, testar offline (DevTools → Offline) + atualização.
+### Stage 0b — `vite build` produces `dist/` ✅ DONE
+- Configure copying of the runtime static files (`assets/`, `vendor/`, `manifest`, `icon`, `_headers`) into the build —
+  move them to `app/public/` (Vite copies `public/*` into `dist/` at the same URL). index.html almost untouched.
+- **The Dev validates:** `npm run build` → `npm run preview` serves a working `dist/`.
 
-### Estágio 2 — Vitest alinhado ao Vite ✅ FEITO (Vitest 3.2.6, test.projects, 46 testes verdes)
-- Bump `vitest`/`@vitest/browser` ao major compatível com o Vite instalado. Os dois projects (node/browser) e os
-  testes atuais seguem; só a versão/ço​nfig ajusta. **José valida:** `npx vitest run` verde.
+### Stage 1 — PWA through `vite-plugin-pwa` ✅ DONE (Workbox SW active, offline verified 2026-07-04)
+- Replaces the hand-written `sw.js` + the `INCL_VERSION` bump ritual: the plugin generates the SW with precache by
+  **content-hash** (the cache invalidates itself). Offline strategy preserved (precache of the shell + assets).
+- Removes `app/sw.js` and the inline registration; the plugin injects the registration.
+- **The Dev validates:** build + `preview`, test offline (DevTools → Offline) + update.
 
-### Estágio 3 — Converter para `.ts` (incremental) + PIXI via npm ⬅ EM ANDAMENTO
-- Renomear módulos `.js`→`.ts` e tipar, começando pelos **folha puros**. `strict:true` já ligado (só `.ts` checado).
-  Progresso por **lotes** pequenos (cada um validado pelo José: `build` + `vitest run` + `tsc --noEmit`):
-  - **Lote 1 (FEITO):** `core/constants`, `core/rng`, `core/tiles`.
-  - **Lote 2 (FEITO):** `core/world`, `input/state`, `platform/storage`.
-  - **Lote 3 (FEITO):** `input/devices`, `render/viz-modes`, `core/loop`, `ui/fonts`.
-  - **Lote 4 (FEITO):** `core/i18n`, `input/keyboard`, `platform/audio-mixer`, `platform/speech`.
-  - **Lote 4b (FEITO):** dicionários `i18n/{pt,en,es}` → `.ts`. O `import()` dinâmico "cru" foi trocado por
-    `import.meta.glob('../i18n/*.ts')` (nativo do Vite: casa `.ts` no build explicitamente, sem depender do
-    glob "adivinhado" pelo Rollup). pt segue import **estático** (boot síncrono); en/es entram como chunks
-    sob demanda. **Validar no preview** a troca de idioma (glob só é exercitado em `build` + `preview`).
-  - **Lote 5 (FEITO):** `ui/dom` (`$`/`$$` genéricos), `core/state`, `platform/audio` (grafo Web Audio tipado).
-  - **Lote 6a (FEITO — PIXI global→npm):** `game.js` + `render/{canvas,sprites}` passam a `import * as PIXI from
-    'pixi.js'` (7.4.2); removido o `<script src=vendor/pixi.min.js>` e o próprio arquivo (peso morto). Passo de
-    MAIOR risco (mexe no boot/canvas) → **validar boot real no preview (canvas≥1 + `__incl`) após o build do José.**
-  - **Lote 6b (FEITO — render→.ts):** `render/{canvas,props,sprites,sprite-fx}` tipados com os `@types` do pixi.js.
-  - Resta só o **`game.js`** como `.js` (o grande) → **Estágio 4** (modularização continua, cada extração nasce `.ts`).
-- **Módulos de render** (canvas, props, sprites, sprite-fx): lote dedicado — trocar o `PIXI` global por
-  `import * as PIXI from 'pixi.js'` (dep real, tree-shakeável, tipada). `$` de ui/dom vira helper **tipado** (`$<T>()`).
-- Cada conversão: `tsc --noEmit` limpo + testes verdes.
+### Stage 2 — Vitest aligned with Vite ✅ DONE (Vitest 3.2.6, test.projects, 46 green tests)
+- Bump `vitest`/`@vitest/browser` to the major compatible with the installed Vite. The two projects (node/browser) and the
+  current tests stay; only the version/config changes. **The Dev validates:** `npx vitest run` green.
 
-### Estágio 4 — Retomar a modularização em `.ts`
-- O resto do mapa (`../5-Refactoring/plano-modularizacao-mapa.md`) segue, mas cada extração já nasce `.ts` tipada. O `game.ts`
-  (ex-`game.js`) encolhe até virar `main.ts` (composition root).
+### Stage 3 — Convert to `.ts` (incremental) + PIXI via npm ⬅ IN PROGRESS
+- Rename `.js`→`.ts` modules and type them, starting with the **pure leaves**. `strict:true` already on (only `.ts` checked).
+  Progress in small **batches** (each validated by the Dev: `build` + `vitest run` + `tsc --noEmit`):
+  - **Batch 1 (DONE):** `core/constants`, `core/rng`, `core/tiles`.
+  - **Batch 2 (DONE):** `core/world`, `input/state`, `platform/storage`.
+  - **Batch 3 (DONE):** `input/devices`, `render/viz-modes`, `core/loop`, `ui/fonts`.
+  - **Batch 4 (DONE):** `core/i18n`, `input/keyboard`, `platform/audio-mixer`, `platform/speech`.
+  - **Batch 4b (DONE):** dictionaries `i18n/{pt,en,es}` → `.ts`. The "raw" dynamic `import()` was replaced by
+    `import.meta.glob('../i18n/*.ts')` (native to Vite: matches `.ts` in the build explicitly, without relying on the
+    glob "guessed" by Rollup). pt stays a **static** import (synchronous boot); en/es come in as on-demand
+    chunks. **Validate the language switch in the preview** (the glob is only exercised in `build` + `preview`).
+  - **Batch 5 (DONE):** `ui/dom` (generic `$`/`$$`), `core/state`, `platform/audio` (typed Web Audio graph).
+  - **Batch 6a (DONE — PIXI global→npm):** `game.js` + `render/{canvas,sprites}` switch to `import * as PIXI from
+    'pixi.js'` (7.4.2); removed the `<script src=vendor/pixi.min.js>` and the file itself (dead weight). The
+    HIGHEST-risk step (touches the boot/canvas) → **validate the real boot in the preview (canvas≥1 + `__incl`) after the Dev's build.**
+  - **Batch 6b (DONE — render→.ts):** `render/{canvas,props,sprites,sprite-fx}` typed with the pixi.js `@types`.
+  - Only **`game.js`** remains as `.js` (the big one) → **Stage 4** (the modularisation continues, each extraction born `.ts`).
+- **Render modules** (canvas, props, sprites, sprite-fx): a dedicated batch — replace the global `PIXI` with
+  `import * as PIXI from 'pixi.js'` (a real dependency, tree-shakeable, typed). The `$` of ui/dom becomes a **typed** helper (`$<T>()`).
+- Each conversion: clean `tsc --noEmit` + green tests.
 
-## Deploy (Cloudflare Pages) — ação do José
-O projeto Pages `the-inclusionist` foi criado na era sem-build (servia `app/` cru) e **estava conectado ao
-GitHub**. Com a mudança para o GitLab a origem precisa ser refeita — um projeto Pages não troca de repositório
-no lugar. **Build settings** (na UI atual do dashboard — não cravar caminhos de menu, que mudam):
-- **Root directory:** raiz do repo (onde está o `package.json`) — NÃO `app/`.
-- **Build command:** `npm run build` (ou `npm run test:node && npm run build` p/ um gate de testes).
+### Stage 4 — Resume the modularisation in `.ts`
+- The rest of the map (`../5-Refactoring/plano-modularizacao-mapa.md`) continues, but each extraction is born typed `.ts`. `game.ts`
+  (formerly `game.js`) shrinks until it becomes `main.ts` (composition root).
+
+## Deploy (Cloudflare Pages) — the Dev's action
+The Pages project `the-inclusionist` was created in the no-build era (it served raw `app/`) and **was connected to
+GitHub**. With the move to GitLab the source has to be redone — a Pages project does not switch repository
+in place. **Build settings** (in the dashboard's current UI — do not hard-code menu paths, they change):
+- **Root directory:** the repo root (where `package.json` is) — NOT `app/`.
+- **Build command:** `npm run build` (or `npm run test:node && npm run build` for a test gate).
 - **Build output directory:** `dist`.
 
-O `_headers` sai no `dist/` (via `public/`). Node já existe no build do CF. **Um único caminho de entrega pode
-estar ligado por vez** — ou o CF conectado ao GitLab (ele mesmo builda), ou o job `pages_deploy` do
-`.gitlab-ci.yml` (upload direto por `wrangler`). Os dois juntos deployam duas vezes o mesmo commit.
+`_headers` ends up in `dist/` (via `public/`). Node already exists in the CF build. **Only one delivery path may
+be switched on at a time** — either CF connected to GitLab (it builds by itself), or the `pages_deploy` job of
+`.gitlab-ci.yml` (direct upload through `wrangler`). Both together deploy the same commit twice.
 
-## Riscos / notas
-- **Config de Vite/PWA costuma precisar de 1–2 iterações na máquina real** — mando a config, você roda, me cola o
-  erro, eu ajusto (como foi no browser mode do Vitest).
-- **Alinhamento de versão Vite↔Vitest** é o ponto mais provável de atrito no `npm install` — resolvemos no 1º run.
-- **Preview da IA** perde fidelidade após o Estágio 0b (build/PWA) — a validação passa a ser sua via Vite. Meu
-  graph-check em Python vira redundante (o `tsc` faz melhor).
-- Nada disso muda o jogo em runtime para o usuário além de **melhor** (payload menor, SW mais robusto).
+## Risks / notes
+- **Vite/PWA config usually needs 1–2 iterations on the real machine** — I send the config, you run it, paste me the
+  error, I adjust (as happened with Vitest's browser mode).
+- **Vite↔Vitest version alignment** is the most likely point of friction in `npm install` — we solve it on the 1st run.
+- **The AI's preview** loses fidelity after Stage 0b (build/PWA) — validation becomes yours, through Vite. My
+  Python graph-check becomes redundant (`tsc` does it better).
+- None of this changes the game at runtime for the user other than for the **better** (smaller payload, sturdier SW).
