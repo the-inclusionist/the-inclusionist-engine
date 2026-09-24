@@ -117,6 +117,29 @@ describe('a cartridge\'s «how to play» slide (ADR-0195)', () => {
     expect([el.querySelector('.slide-tecla').hidden, el.querySelector('.slide-figura').hidden]).toEqual([false, true]);
   });
 
+  it('🔴 [Right] and the other way round: a game slide after a button with no sentence shows its text again, and names no action', () => {
+    // The case above goes game → button; this one goes button → game. A button slide with no sentence HIDES the text, and sets
+    // the action it shows — a game slide after it that kept either would show nothing, or say it is a button.
+    const el = novo();
+    showSlide(el, todos, 2, ctx);                                   // a button with no sentence
+    expect(el.querySelector('.slide-texto').hidden).toBe(true);
+    showSlide(el, todos, 1, ctx);                                   // the game's text
+    expect(el.querySelector('.slide-texto').hidden, 'the game\'s text stayed hidden').toBe(false);
+    expect(el.querySelector('.slide').hasAttribute('data-act'), 'a game slide still names the button\'s action').toBe(false);
+  });
+
+  it('🔴 [Right] the slide show is named by the help\'s title — a screen reader says what the control is before its value', () => {
+    const el = novo();
+    showSlide(el, todos, 0, ctx);
+    expect(el.getAttribute('aria-label')).toBe('Ajuda');
+  });
+
+  it('⚠️ [Error] a slide show missing one of its parts draws nothing and does not throw', () => {
+    const el = novo();
+    el.querySelector('.slide-pontos').remove();
+    expect(() => showSlide(el, todos, 1, ctx)).not.toThrow();
+  });
+
   it('🔴 [Right] the figure is shown and drawn on the engine\'s surface; a slide without one hides it', () => {
     const el = novo();
     document.body.appendChild(el);
