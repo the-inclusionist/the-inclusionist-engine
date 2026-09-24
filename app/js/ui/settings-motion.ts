@@ -462,7 +462,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
    * na direção mais cara.
    */
   function refreshMarks(): void {
-    const padraoRm = defaultReducedMotion();
+    const reducedByDefault = defaultReducedMotion();
     const el = ctx.$<HTMLElement>('#motion-list');
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
     const changedFlags: boolean[] = [];
@@ -470,8 +470,8 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       changedFlags.push(changed);
       markChanged(el?.querySelector<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
     };
-    for (const c of rmChar()) markRow(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== padraoRm);
-    for (const k of rmKeys) markRow(`[data-rm="${k}"]`, !!rm[k] !== padraoRm);
+    for (const c of rmChar()) markRow(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== reducedByDefault);
+    for (const k of rmKeys) markRow(`[data-rm="${k}"]`, !!rm[k] !== reducedByDefault);
     markRow('[data-crt-tgl="scan"]', !!CRT.scan !== !!CRT_DEFAULT.scan);
     markRow('[data-crt-tgl="vig"]', !!CRT.vig !== !!CRT_DEFAULT.vig);
     markRow('[data-crt="round"]', CRT.round !== CRT_DEFAULT.round);
@@ -489,13 +489,13 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   // deixar o jogador 2 congelado porque a aba aberta era a do jogador 1 daria dois estados com um nome só.
   const resetBtn = ctx.$<HTMLButtonElement>('#animation-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
-    const padraoRm = defaultReducedMotion();
-    for (const k of rmKeys) rm[k] = padraoRm;
+    const reducedByDefault = defaultReducedMotion();
+    for (const k of rmKeys) rm[k] = reducedByDefault;
     saveRM();
     (ctx.getPlayers() as readonly MotionPlayer[]).forEach((p, i) => {
       for (const c of rmChar()) {
-        p[c.prop] = padraoRm;
-        ctx.store.setBool('incl_' + c.prop + '_p' + i, padraoRm);
+        p[c.prop] = reducedByDefault;
+        ctx.store.setBool('incl_' + c.prop + '_p' + i, reducedByDefault);
       }
     });
     CRT.scan = CRT_DEFAULT.scan; CRT.vig = CRT_DEFAULT.vig; CRT.round = CRT_DEFAULT.round;

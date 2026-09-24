@@ -71,11 +71,11 @@ export const createRng = (seed: number = DEFAULT_SEED): Rng => {
 // exatamente o defeito que a fábrica acima conserta. Um segundo jogo na mesma página divide esta corrente
 // com o primeiro. O caminho de saída é o consumidor passar a `createRng(suaSemente)` — e isso é migração
 // dele, com aviso e um major, não uma remoção unilateral daqui.
-const _padrao = createRng(DEFAULT_SEED);
-export const reseed = _padrao.reseed;
-export const rnd = _padrao.rnd;
-export const randInt = _padrao.randInt;
-export const shuffle = _padrao.shuffle;
+const sharedRng = createRng(DEFAULT_SEED);
+export const reseed = sharedRng.reseed;
+export const rnd = sharedRng.rnd;
+export const randInt = sharedRng.randInt;
+export const shuffle = sharedRng.shuffle;
 
 // ⚠️ A CORRENTE DA DECORAÇÃO, separada da de cima porque a mistura era o defeito CONCRETO.
 // `render/fx` tira um número por partícula, `render/weather` por gota, `render/draw` dois por tremor de
