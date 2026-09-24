@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/storage.ts — Camada única de persistência (localStorage) — módulo-folha. À prova de exceção:
-// localStorage LANÇA em file:// e no modo privado de alguns navegadores, e isso derrubava o boot inteiro (por
-// isso todo acesso é try/catch). Centralizar aqui: um lugar para trocar a estratégia (namespacing, IndexedDB…)
-// sem caçar ~60 pontos. Migração gradual — nem todo game.js usa isto ainda.
+// platform/storage.ts — the single persistence layer (localStorage), a leaf module. Exception-proof: localStorage
+// THROWS on file:// and in some browsers' private mode, and that used to bring the whole boot down (hence every access
+// is try/catch). Centralised here: one place to change the strategy (namespacing, IndexedDB…) without hunting dozens of
+// call sites.
 
-// SOBRECARGAS PORQUE O PADRÃO DECIDE O TIPO DE RETORNO. Com um `fallback: string`, o resultado NÃO pode ser
-// nulo — a assinatura antiga devolvia `string | null` de qualquer jeito, e cada chamador com padrão pagava
-// por um `null` impossível. Isso apareceu como erro em quatro pontos do composition root, todos com padrão.
+// OVERLOADS BECAUSE THE DEFAULT DECIDES THE RETURN TYPE. With a `fallback: string` the result CANNOT be null — a single
+// signature returned `string | null` regardless, and every caller with a default paid for an impossible `null`.
 export function get(key: string, fallback: string): string;
 export function get(key: string, fallback?: null): string | null;
 export function get(key: string, fallback: string | null = null): string | null {
@@ -30,41 +29,37 @@ export function getJSON<T = unknown>(key: string, fallback: T | null = null): T 
 }
 export function setJSON(key: string, obj: unknown): void { try { set(key, JSON.stringify(obj)); } catch { /* noop */ } }
 
-/* ===================== os DOIS escopos (save com namespace, ADR-0027 passo 7) ===================== */
+/* ===================== the TWO scopes (namespaced saves, ADR-0027 step 7) ===================== */
 //
-// O namespacing óbvio — um prefixo por jogo em TUDO — seria um defeito de acessibilidade grave, e vale dizer
-// por quê antes de dizer o que foi feito.
+// The obvious namespacing — a per-game prefix on EVERYTHING — would be a serious accessibility defect, and it is worth
+// saying why before saying what was done.
 //
-// Uma criança cega configura o modo cego, a bengala, a voz, a velocidade da narração. Uma criança daltônica
-// escolhe a correção. Uma criança disléxica escolhe a fonte. Se cada jogo do catálogo tivesse o próprio
-// espaço de nomes, ela teria de REFAZER tudo isso em cada jogo do catálogo — e quem mais depende dos ajustes
-// é justamente quem tem menos margem para refazê-los. (O número que estava aqui era 35, do plano que morreu
-// em 2026-08-28; o catálogo do MVP são 300+ jogos, o que só torna o argumento mais forte.)
+// A blind child sets up blind mode, the cane, the voice, the narration speed. A colour-blind child picks the correction.
+// A dyslexic child picks the font. If every game had its own namespace, they would have to REDO all of that in every
+// game — and whoever depends most on the settings is exactly whoever has the least margin to redo them.
 //
-// Então são DOIS escopos, e a linha entre eles não é técnica, é de quem a coisa pertence:
+// So there are TWO scopes, and the line between them is not technical, it is about whom the thing belongs to:
 //
-//   · COMPARTILHADO (`incl_*`, como sempre foi) — o que pertence à CRIANÇA: acessibilidade, tipografia,
-//     idioma, voz, controles, toque. Segue com ela de jogo em jogo, de propósito. O segundo consumidor (o
-//     quiz) já lê a fonte escolhida no jogo de plataforma, e isso está CERTO.
-//   · DO JOGO (`incl.<jogo>.*`) — o que pertence a ESTA partida: atividade, nível, cenário, gravação da
-//     demonstração. Dois jogos com um "nível 3" não são o mesmo nível 3.
+//   · SHARED (`incl_*`) — what belongs to the CHILD: accessibility, typography, language, voice, controls, touch. It
+//     follows them from game to game, on purpose: a second game reading the font chosen in the first is RIGHT.
+//   · THE GAME'S (`incl.<game>.*`) — what belongs to THIS play-through: activity, level, scenery, the demo recording.
+//     Two games with a "level 3" do not have the same level 3.
 //
-// A LEITURA HERDA DA CHAVE ANTIGA e a escrita vai só para a nova (`getWithLegacy`). Sem passo de migração no
-// boot, porque `core/state` lê no IMPORT — uma migração agendada chegaria tarde. E a chave velha fica onde
-// está: é dado da criança, não meu para apagar, e a sua permanência é o que torna um retorno possível.
+// THE READ INHERITS FROM THE OLD KEY and the write goes to the new one only (`getWithLegacy`). No migration step, because
+// a scheduled migration would arrive after the reads. And the old key stays where it is: it is the child's data, not mine
+// to delete, and keeping it is what makes a way back possible.
 
 /**
- * Nome completo de uma chave do escopo DO JOGO.
+ * The full name of a key in the GAME's scope.
  *
- * ⚠️ O ID ENTRA COMO ARGUMENTO, e ele já foi uma constante aqui (`JOGO_ID = 'inclusionist'`). Pelo teste do
- * ADR-0080 — *um segundo jogo quereria um valor diferente aqui?* — a resposta é sim e é imediata: dois jogos
- * no mesmo perfil de navegador colidiam em `activity`, `quizlevel`, `cenario`, `tabsel`, `fracnot` e em toda
- * gravação `attract_*`. Um sobrescrevia o progresso do outro sem erro nenhum.
+ * ⚠️ THE ID COMES IN AS AN ARGUMENT; it was once a constant here. By ADR-0080's test — *would a second game want a
+ * different value here?* — the answer is yes, at once: two games in the same browser profile collided on every
+ * game-scoped key, and one overwrote the other's progress with no error at all.
  *
- * ⚠️ E O ID NÃO VEM DA DECLARAÇÃO, que era o desenho óbvio. Ele não pode: `game/state` lê o armazenamento no
- * IMPORT, e o import corre antes de qualquer `createGame()`. Um id vindo da declaração chegaria depois de as
- * três chaves já terem sido resolvidas — contra vazio, e em silêncio. Quem sabe o próprio id é o JOGO, que o
- * passa como constante sua; o ADR-0080 proíbe a ENGINE de o saber, não o jogo.
+ * ⚠️ AND THE ID DOES NOT COME FROM THE DECLARATION, the obvious design. It cannot: a game's state is read before any
+ * `createGame()`, so an id from the declaration would arrive after the keys were resolved — against nothing, in silence.
+ * Whoever knows its own id is the GAME, which passes it as its own constant; ADR-0080 forbids the ENGINE from knowing it,
+ * not the game.
  */
 export function gameKey(gameId: string, keyName: string): string { return 'incl.' + gameId + '.' + keyName; }
 
@@ -79,8 +74,8 @@ export function keysOutsideScopes(storedKeys: Iterable<string>): string[] {
 }
 
 /**
- * Lê a chave NOVA; se ela ainda não existe, herda o valor da LEGADA. Só de leitura: quem grava, grava na nova.
- * É o que permite renomear chave sem um passo de migração e sem perder o ajuste de ninguém.
+ * Reads the NEW key; if it does not exist yet, inherits the LEGACY one's value. Read-only: whoever writes, writes to the
+ * new one. It is what lets a key be renamed without a migration step and without anyone losing a setting.
  */
 export function getWithLegacy(newKey: string, legacyKey: string, fallback: string): string;
 export function getWithLegacy(newKey: string, legacyKey: string, fallback?: null): string | null;
@@ -91,8 +86,8 @@ export function getWithLegacy(newKey: string, legacyKey: string, fallback: strin
   return inherited !== null ? inherited : fallback;
 }
 
-/** O par de `getWithLegacy` para valor em JSON — a herança tem de valer para os dois formatos, senão metade
- *  das chaves migra e a outra metade some, que é o pior dos dois mundos. */
+/** `getWithLegacy`'s pair for a JSON value — the inheritance has to hold for both formats, or half the keys migrate and
+ *  the other half vanish, the worst of both worlds. */
 export function getJsonWithLegacy<T = unknown>(newKey: string, legacyKey: string, fallback: T | null = null): T | null {
   const v = getJSON<T>(newKey, null);
   if (v !== null) return v;
@@ -100,87 +95,81 @@ export function getJsonWithLegacy<T = unknown>(newKey: string, legacyKey: string
   return inherited !== null ? inherited : fallback;
 }
 
-// Registro das chaves conhecidas (documentação em UM lugar; a fonte de verdade ainda é o uso). Vai sendo
-// completado à medida que os lotes migram. Chaves com {i}/{cen}/{id} são parametrizadas por jogador/cenário/controle.
+// The register of known keys (documentation in ONE place; the source of truth is still their use). Keys taking an
+// argument are parameterised by player, scenery or game.
 export const KEYS = {
-  // empatia motora/auditiva
+  // motor/hearing empathy
   onebtn: 'incl_onebtn', wheelchair: 'incl_wheelchair', modocego: 'incl_modocego', caneDiv: 'incl_cane_div',
   hearingloss: 'incl_hearingloss',
-  // atividade / quiz / cenário — ESCOPO DO JOGO (ver os dois escopos acima). `*Legado` é o nome antigo, de
-  // onde a leitura herda uma vez; a escrita vai só para o novo.
+  // activity / quiz / scenery — the GAME's SCOPE (see the two scopes above). `*Legado` is the old name, which the read
+  // inherits from once; the write goes to the new one only.
   //
-  // ⚠️ SÃO FUNÇÕES DO ID DO JOGO, e as da criança são strings. A diferença de FORMA é o que impede o engano:
-  // não há como prefixar por engano uma preferência da criança, porque ela não tem onde receber o id — e não
-  // há como esquecer de escopar uma chave da partida, porque sem o argumento não compila. A regra que antes
-  // vivia só num comentário passou a viver no tipo.
+  // ⚠️ THEY ARE FUNCTIONS OF THE GAME'S ID, and the child's are strings. The difference of SHAPE is what prevents the
+  // mistake: a child's preference cannot be prefixed by accident, because it has nowhere to take the id — and a
+  // play-through's key cannot be left unscoped, because without the argument it does not compile. The rule that once
+  // lived only in a comment lives in the type.
   activity: (gameId: string): string => gameKey(gameId, 'activity'), activityLegado: 'incl_activity',
   quizlevel: (gameId: string): string => gameKey(gameId, 'quizlevel'), quizlevelLegado: 'incl_quizlevel',
   cenario: (gameId: string): string => gameKey(gameId, 'cenario'), cenarioLegado: 'incl_cenario',
   tabsel: (gameId: string): string => gameKey(gameId, 'tabsel'), tabselLegado: 'incl_tabsel',
   fracnot: (gameId: string): string => gameKey(gameId, 'fracnot'), fracnotLegado: 'incl_fracnot',
-  // visual / contraste / cor
+  // visual / contrast / colour
   viz: 'incl_viz', lq: 'incl_lq', cbsafe: 'incl_cbsafe', ownercolors: 'incl_ownercolors',
   outfg: 'incl_outfg', outbg: 'incl_outbg', hcrole: 'incl_hcrole', juice: 'incl_juice', crt: 'incl_crt2',
-  crtLegacy: 'incl_crt', // formato antigo (booleano); crt.ts migra p/ incl_crt2 na 1ª leitura (fresh)
-  // áudio / voz / i18n
+  crtLegacy: 'incl_crt', // the old (boolean) format; render/crt migrates it to incl_crt2 on the first read
+  // audio / voice / i18n
   ttsEngine: 'incl_tts_engine', ttsVoice: 'incl_tts_voice', ttsVoz: 'incl_tts_voz', lang: 'incl_lang', // audiocat_{k}
-  // comunicação / legendas (ADR-0028: todo menu persiste)
+  // communication / captions (ADR-0028: every panel persists)
   letterCase: 'incl_lettercase', captions: 'incl_captions',
-  // ⚠️ O NÍVEL TEA (calmo / silencioso) PASSOU A PERSISTIR EM 2026-09-07, e antes não persistia: era um
-  // `let calmMode = 0` em `ui/pause-icons`, com o comentário «deliberately NOT persisted — verbatim: game.js
-  // never wrote it to storage». O «verbatim» é a chave — foi PRESERVADO na extração do monólito, não
-  // decidido. O custo era da criança que mais precisa dele: quem usa o modo silencioso voltava a pô-lo a
-  // cada sessão, e é para quem o barulho inesperado custa mais. O ADR-0028 diz que todo menu persiste.
+  // ⚠️ THE AUTISM-SUPPORT LEVEL (calm / quiet) PERSISTS. It used not to: the extraction from the monolith PRESERVED "never
+  // written to storage" verbatim, which is not the same as deciding it. The cost fell on the child who needs it most —
+  // whoever uses quiet mode set it again every session, and unexpected noise costs them most. ADR-0028: every panel persists.
   tea: 'incl_tea',
-  menuIndex: 'incl_menuindex', // "6 de 10" no fim do anuncio de item (ADR-0044, item 3)
-  // tipografia / controles / toque
+  menuIndex: 'incl_menuindex', // the "6 of 10" at the end of an item's announcement (ADR-0044, item 3)
+  // typography / controls / touch
   fontKey: 'incl_font_k', padDesign: 'incl_paddesign', padDir: 'incl_paddir', touchmap: 'incl_touchmap',
   padBtnMm: 'incl_padbtnmm', padGapMm: 'incl_padgapmm', padStickMm: 'incl_padstickmm',
   padTravelMm: 'incl_padtravelmm', padDpadMm: 'incl_paddpadmm',
-  // movimento reduzido (objeto inteiro num JSON so) + a chave antiga de alternar-movimento, que
-  // loadPlayerA11y ainda le uma vez para migrar quem vinha da versao anterior
+  // reduced motion (the whole object in one JSON) + the old toggle-movement key, still read once to migrate whoever came
+  // from the previous version
   reducedMotion: 'inclusionist.reducedmotion.v1', toggleMoveLegacy: 'inclusionist.togglemove',
-  // POR JOGADOR — parametrizadas pelo indice da tela. Eram sufixos '_p'+i montados a mao em varios
-  // pontos do game.js; virar funcao aqui e o que impede que um deles escreva num nome torto.
+  // PER PLAYER — parameterised by the screen's index. As functions here, no call site can write a crooked name.
   /**
-   * @deprecated ⚠️ A CHAVE LEGADA do modo visual — UM valor, do tempo em que só cabia um (issue #104).
+   * @deprecated ⚠️ THE LEGACY visual-mode KEY — ONE value, from when only one fitted (issue #104).
    *
-   * Continua a ser LIDA, e é isso que impede a criança de perder o que já escolheu; continua a ser ESCRITA
-   * enquanto os controles ainda escreverem um valor de cada vez, porque um leitor antigo (o cartucho na
-   * versão publicada) faz `if (v && VIZ_BY_KEY[v])` e rejeitaria um JSON — escrever a forma nova AQUI
-   * apagaria o ajuste dela em silêncio, que é exactamente o defeito que a migração existe para não cometer.
+   * It is still READ, which is what keeps the child from losing what they chose; it is still WRITTEN while the controls
+   * write one value at a time, because an old reader does `if (v && VIZ_BY_KEY[v])` and would reject a JSON — writing
+   * the new shape HERE would erase their setting in silence, exactly the defect the migration exists not to commit.
    */
   vizP: (i: number): string => 'incl_viz_p' + i,
   /**
-   * O ESTADO VISUAL de dois eixos, em JSON (ADR-0076, issue #104).
+   * The two-axis VISUAL STATE, in JSON (ADR-0076, issue #104).
    *
-   * ⚠️ CHAVE NOVA AO LADO DA VELHA, e não a mesma chave com conteúdo novo. É o mesmo desenho que o campo
-   * `visual` usa ao lado do `viz`: as duas formas coexistem enquanto houver leitores das duas, cada um lê a
-   * que entende, e a velha só morre quando não sobrar quem a leia. `migrateVisual` aceita as duas, então o
-   * recuo — chave nova ausente, chave velha presente — devolve exactamente o que a criança escolheu.
+   * ⚠️ A NEW KEY BESIDE THE OLD ONE, not the same key with new content. The same design as the `visual` field beside
+   * `viz`: both shapes coexist while both have readers, each reads the one it understands, and the old one dies only
+   * when nobody reads it. `migrateVisual` accepts both, so the fallback — new key absent, old key present — returns
+   * exactly what the child chose.
    */
   visualP: (i: number): string => 'incl_visual_p' + i,
   sinkP: (i: number): string => 'incl_sink_p' + i,
   easyP: (i: number): string => 'incl_easy_p' + i,
   /**
-   * ⚠️ AS DUAS DE BAIXO SÃO AS CHAVES LEGADAS desde 2026-09-08 (ADR-0104 §C, issue #114). Continuam a ser
-   * LIDAS — é o ajuste da criança, e a herança dele é o que a impede de o perder — e não voltam a ser
-   * escritas. O que se escreve é a chave COM TRANSPORTE, porque a alternância é do APARELHO e não da pessoa:
-   * ligá-la no controle de tela, onde ninguém segura um botão virtual com conforto, ligava-a também no
-   * teclado, onde segurar uma tecla é exactamente o que a criança sabe fazer.
+   * ⚠️ THE TWO BELOW ARE LEGACY KEYS (ADR-0104 §C, issue #114). They are still READ — it is the child's setting, and
+   * inheriting it keeps them from losing it — and never written again. What is written is the key WITH A TRANSPORT,
+   * because the toggle belongs to the DEVICE and not the person: turning it on for the touch pad, where nobody holds a
+   * virtual button comfortably, turned it on for the keyboard too, where holding a key is exactly what the child can do.
    *
-   * ⚠️ E A CHAVE NOVA NÃO MORA AQUI, de propósito. Ela é `latchKey`, em `input/latch-scope` — este
-   * ficheiro é módulo-FOLHA e `platform/` não importa de `input/`, que é a camada acima. Montá-la aqui
-   * exigiria ou uma aresta ao contrário ou uma segunda cópia do nome, e a segunda cópia é exactamente o que
-   * o comentário do bloco acima existe para impedir. O dono do nome é quem conhece a regra do transporte.
+   * ⚠️ AND THE NEW KEY DOES NOT LIVE HERE, on purpose. It is `latchKey`, in `input/latch-scope` — this is a LEAF module
+   * and `platform/` does not import `input/`, the layer above. Building it here would need either a backwards edge or a
+   * second copy of the name. Whoever owns the name is whoever knows the transport rule.
    */
   toggleMoveP: (i: number): string => 'incl_togglemove_p' + i,
-  toggleRunP: (i: number): string => 'incl_togglerun_p' + i, // alternância do botão de CORRER (irmã da de movimento)
+  toggleRunP: (i: number): string => 'incl_togglerun_p' + i, // the RUN-button toggle (the movement one's sibling)
   rmWalkP: (i: number): string => 'incl_rmWalk_p' + i,
   rmBreathP: (i: number): string => 'incl_rmBreath_p' + i,
   rmFlavorP: (i: number): string => 'incl_rmFlavor_p' + i,
-  // demo/attract: uma gravação por cenário (fn em vez de string — chave parametrizada). ESCOPO DO JOGO: a
-  // gravação é de uma fase DESTE jogo e não faz sentido nenhum em outro.
+  // demo/attract: one recording per scenery (a function, not a string — a parameterised key). The GAME's SCOPE: the
+  // recording is of a level of THIS game and means nothing in another.
   attract: (gameId: string, scenery: string): string => gameKey(gameId, 'attract_' + scenery),
   attractLegado: (scenery: string): string => 'incl_attract_' + scenery,
 };
