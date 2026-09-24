@@ -1024,12 +1024,12 @@
       ]
     },
     "render/crt.ts": {
-      "codeLines": 41,
-      "decisionNodes": 16,
-      "maxDepth": 6,
+      "codeLines": 49,
+      "decisionNodes": 15,
+      "maxDepth": 2,
       "fanOut": 3,
       "globalReach": 1,
-      "worstFunction": 16,
+      "worstFunction": 8,
       "fanIn": 3,
       "reached": [
         "window"

@@ -78,6 +78,11 @@ describe('the stored CRT, read back at boot', () => {
   it('⚠️ [Error] a record that cannot be read starts the factory CRT, never a broken boot', async () => {
     expect(await arrancarCom({ [ATUAL]: 'não é json' })).toEqual({ scan: 1, vig: 0, round: 1 });
   });
+
+  it('⚠️ [Error] and so does a record that reads as a number or a string, which has no settings in it', async () => {
+    expect(await arrancarCom({ [ATUAL]: '5' })).toEqual({ scan: 1, vig: 0, round: 1 });
+    expect(await arrancarCom({ [ATUAL]: json('scan') })).toEqual({ scan: 1, vig: 0, round: 1 });
+  });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
@@ -95,3 +100,9 @@ describe('the stored CRT, read back at boot', () => {
 //   P2 nothing stored parsed as `{}` instead of `null` — an empty object names no key, so the defaults stand either way;
 //   P4 the object check dropped — a stored number or string then throws on `k in s`, and the same `catch` answers the
 //      factory CRT.
+//
+// RE-PROBED IN THE NEW SHAPE (`crtFromStored`, `storedRecord`, `levelOf` — `scratchpad/sonda-crt-3.py`): 17 of 18 red. P4
+// is NOT equivalent there any more: the `catch` now covers only the parse, so the object check alone keeps a stored number or
+// string from throwing at import, and «a record that reads as a number or a string» holds it (green on the old shape too).
+// P2 stays equivalent. Three more only the named steps let one ask: no record means no key is read, the current format is
+// read first, and every stored value goes through its level.

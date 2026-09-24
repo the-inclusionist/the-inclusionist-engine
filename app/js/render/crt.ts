@@ -40,20 +40,39 @@ export function initCrt(deps: { numJogadores: () => number; a11yVisualAtiva: () 
   _a11yVisualActive = deps.a11yVisualAtiva;
 }
 
-export const CRT: CrtCfg = (() => {
+export const CRT: CrtCfg = crtFromStored(store.get(store.KEYS.crt, null), store.get(store.KEYS.crtLegacy, null));
+
+/**
+ * The CRT a machine kept, from the two formats it may hold. The current one wins; the OLD one (all booleans) is migrated:
+ * the vignette and the corners come across, and the scanlines come back ON once, because they became the default after
+ * that format existed. Scanlines and vignette are on/off; only the corners have three levels.
+ */
+function crtFromStored(current: string | null, legacy: string | null): CrtCfg {
   const d: CrtCfg = { ...CRT_DEFAULT };
-  try {
-    const s = JSON.parse(store.get(store.KEYS.crt, null) || store.get(store.KEYS.crtLegacy, null) || 'null');
-    const fresh = !store.get(store.KEYS.crt, null); // migração p/ crt2: herda vig/round; scan volta ao padrão ON uma vez
-    if (s && typeof s === 'object') for (const k in d) if (k in s) {
-      const v = s[k];
-      if (fresh && k === 'scan') continue;
-      (d as Record<string, number>)[k] = v === true ? (k === 'round' ? 2 : 1) : v === false ? (k === 'round' ? 1 : 0) : Math.max(0, Math.min(2, v | 0));
-    }
-  } catch (e) { /* noop: file:// / modo privado */ }
-  d.scan = d.scan ? 1 : 0; d.vig = d.vig ? 1 : 0; // scanlines/vinheta são ON/OFF (só cantos têm 3 níveis)
+  const record = storedRecord(current, legacy);
+  const migrating = !current;
+  for (const k of Object.keys(d) as (keyof CrtCfg)[]) {
+    if (record && k in record && !(migrating && k === 'scan')) d[k] = levelOf(k, record[k]);
+  }
+  d.scan = d.scan ? 1 : 0; d.vig = d.vig ? 1 : 0;
   return d;
-})();
+}
+
+/** The record a machine kept, the current format first — or `null` where there is none a CRT can be read from. */
+function storedRecord(current: string | null, legacy: string | null): Record<string, unknown> | null {
+  try {
+    const s: unknown = JSON.parse(current || legacy || 'null');
+    // a number or a string is not a record: reading keys in it would throw, and the answer is the factory CRT
+    return s && typeof s === 'object' ? s as Record<string, unknown> : null;
+  } catch { return null; } // a record that cannot be read is the factory CRT, never a broken boot
+}
+
+/** One stored value as a level: the old format's `true`/`false` mapped (round corners on are the ROUNDEST), the rest 0–2. */
+function levelOf(k: keyof CrtCfg, v: unknown): number {
+  if (v === true) return k === 'round' ? 2 : 1;
+  if (v === false) return k === 'round' ? 1 : 0;
+  return Math.max(0, Math.min(2, (v as number) | 0));
+}
 
 // Ancora a scanline em px REAIS: 1 linha por pixel de ARTE (kDev inteiro) → espaçamento SEMPRE regular em qualquer dpr.
 export function crtScanVars(): void {
