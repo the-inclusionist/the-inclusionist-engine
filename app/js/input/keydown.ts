@@ -620,8 +620,11 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
    * numa tecla que não é de assento nenhum está a jogar no primeiro assento.
    */
   function rememberWhoPressed({ code, transport }: PressedKey): void {
-    if (transport) ctx.markKey(code, transport); else ctx.markKeyWithoutSource(code);
-    if (transport) { const dono = ctx.whichPlayer(code); ctx.playerEdge(dono < 0 ? 0 : dono, transport); }
+    // one question: a key with no source says so and stops; a key with one marks it and the seat's transport
+    if (!transport) { ctx.markKeyWithoutSource(code); return; }
+    ctx.markKey(code, transport);
+    const dono = ctx.whichPlayer(code);
+    ctx.playerEdge(dono < 0 ? 0 : dono, transport);
   }
 
   /*

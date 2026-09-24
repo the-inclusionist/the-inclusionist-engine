@@ -481,8 +481,8 @@
       "fanIn": 3
     },
     "input/keydown.ts": {
-      "codeLines": 278,
-      "decisionNodes": 51,
+      "codeLines": 280,
+      "decisionNodes": 50,
       "maxDepth": 2,
       "fanOut": 7,
       "globalReach": 0,
