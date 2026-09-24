@@ -1109,6 +1109,31 @@ describe('createGame num documento de verdade', () => {
       }
     });
 
+    it('🔴 [Right] ONE set of reduced-motion flags: the calm mode the quick bar sets is what the motion panel shows and keeps', () => {
+      // The quick bar's calm icon and the motion panel both write the scene flags. Each used to build its own copy from
+      // storage, so the panel showed the scene still animated after the bar reduced it, and its next switch stored its stale
+      // copy over the calm mode — the child's choice undone by a neighbouring row. The root builds ONE object for both.
+      const before = new Map(Object.entries({ ...localStorage }));
+      try {
+        const motor = abrir();
+        document.querySelector('#title-icons [data-pi="tea"]').click(); // calm level 1: the scene's motion is reduced
+        motor.pause.show(0);
+        document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]').click();
+        const scene = [...document.querySelectorAll('#motion-list [data-rm]')];
+        expect(scene.length, 'the motion panel has no scene rows').toBe(4);
+        for (const b of scene) {
+          expect(b.getAttribute('aria-pressed'), `${b.dataset.rm} still shows animated after the calm mode reduced it`).toBe('false');
+        }
+        // one row switched back on keeps the other three where the calm mode put them
+        document.querySelector('#motion-list [data-rm="parallax"]').click();
+        const stored = JSON.parse(localStorage.getItem('inclusionist.reducedmotion.v1'));
+        expect(stored, 'the panel stored its own copy over the calm mode').toEqual({ parallax: false, decor: true, items: true, particles: true });
+      } finally {
+        for (const k of Object.keys({ ...localStorage })) if (!before.has(k)) localStorage.removeItem(k);
+        for (const [k, v] of before) localStorage.setItem(k, v);
+      }
+    });
+
     it('🎯 [Right] o painel AUDITIVO abre com os seus controles, cada um com a tag certa', () => {
       // The biggest panel: nodes it reached and never created. What is measured here is the whole path — pause item,
       // engine table, `open()`, `renderAudio()` — and that the tag survived it.
@@ -1399,3 +1424,7 @@ describe('createGame num documento de verdade', () => {
 //   V2 a node's own text does not count               🔴 the title case
 //   V3 a painted background does not count            🔴 the painted-box case
 //   V4 excluding the engine's own nodes              ✅ SURVIVED: the check runs at boot, cards hidden — the exclusion was removed
+
+// ---- ADR-0232 one set of scene reduced-motion flags, built by the root ----
+//   R1 the shared flags withheld from the motion panel    🔴 the «ONE set of reduced-motion flags» case
+//   R2 the shared flags withheld from the quick bar       🔴 the same case: each writer back on its own copy

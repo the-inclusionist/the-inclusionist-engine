@@ -121,6 +121,7 @@ import { mountSteps, updateSteps, nextStep, controlRow, labelRow } from '../ui/p
 import { PERSONAS_DO_PAD, closestPersona } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
+import { readStoredScene, storeScene } from '../ui/motion-scene.js';
 import { initSettingsVisual } from '../ui/settings-visual.js';
 import { initSettingsEmpathy } from '../ui/settings-empathy.js';
 import { HC_ROLE_DEF } from '../render/hc-role-data.js';
@@ -1149,8 +1150,17 @@ export function createGame(o: CreateGameOptions): Engine {
   // microphone for. It used to be called «temCamera» and the 👄 read it anyway — a name that describes half of what it answers is
   // how a device with a headset and no webcam would have lost the voice for a reason nobody could see in the code.
   const canCaptureMedia = typeof win.navigator?.mediaDevices?.getUserMedia === 'function';
+  /*
+   * ONE SET OF SCENE REDUCED-MOTION FLAGS, built here and handed to BOTH writers — the quick bar's calm icon and the motion
+   * panel (ADR-0232: state is built by the root). Left to themselves each read its own copy from storage, so the panel
+   * showed the scene animated after the calm mode reduced it, and its next switch stored that stale copy over the calm mode.
+   * The object is mutated in place; its identity is what the two share.
+   */
+  const sceneMotion = readStoredScene(defaultReducedMotion(win.matchMedia));
+  const saveSceneMotion = (): void => { storeScene(sceneMotion); };
   const pauseIcons = initPauseIcons({
     doc, matchMedia: win.matchMedia, // the reduced-motion default when nothing is stored (ADR-0232)
+    rm: sceneMotion, saveRM: saveSceneMotion,
     /*
      * THE GAME'S ANSWER, read from the declaration (ADR-0115). Without it the `altmove` icon is not mounted.
      *
@@ -1559,7 +1569,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * 📌 `rm`, `saveRM`, `rmKeys` and `rmChar` are OPTIONAL (ADR-0106 step 1), and the absence is the news: none of them
      * held a choice of the game — `rmKeys` was the `MotionSceneKey` union written by hand and `rm`/`saveRM` read an engine
      * storage key with an engine default. `ui/motion-scene` answers for the four, so this panel needs nothing only the
-     * cartridge knows.
+     * cartridge knows. The root still passes `rm`/`saveRM`: not the game's, but the ONE object the quick bar also writes.
      *
      * ⚠️ AND ITS LIST IS `#motion-list`, NOT `#animation-list` — inherited from the monolith, where the panel was called
      * «motion» and the overlay «animation». See `PanelShellSpec.listId`: renaming would touch the contract with markup of
@@ -1594,6 +1604,8 @@ export function createGame(o: CreateGameOptions): Engine {
 
     motion = initSettingsMotion({
       $, srSay, store, matchMedia: win.matchMedia,
+      // the SAME flags the quick bar's calm icon writes (see `sceneMotion`, above)
+      rm: sceneMotion, saveRM: saveSceneMotion,
       getNumPlayers: () => (cartridge.players ?? [null]).length,
       getPlayers: () => cartridge.players ?? [],
       frontOverlay: overlays.frontOverlay,
