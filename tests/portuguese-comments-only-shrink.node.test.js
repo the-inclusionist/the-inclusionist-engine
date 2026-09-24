@@ -123,3 +123,13 @@ describe('Portuguese in comments only shrinks', () => {
     expect(portugueseCommentLines(JSON.stringify({ 'comment:x': ['The Dev:', `«${PT}`, `${PT}» — so this waits`] }), 'x.json')).toBe(0);
   });
 });
+
+// MUTATIONS CHECKED against the whole-tree baseline, each file restored from a copy afterwards:
+//   · a Portuguese `/* */` in app/css/style.css (0 in the baseline)   → RED  «no file carries more» (0 -> 1)
+//   · a Portuguese `<!-- -->` in app/quiz.html                         → RED  (0 -> 1)
+//   · a Portuguese `#` comment in .github/workflows/ci.yml             → RED  (0 -> 1)
+//   · a Portuguese `//` in the root vite.config.ts                     → RED  (0 -> 1)
+//   · a Portuguese `#` comment in tools/build-hc.py                    → RED  (0 -> 1)
+//   · a Portuguese `//` inside tsconfig.json's compilerOptions         → RED  (0 -> 1)
+//   · the same Portuguese words between «» in app/css/style.css        → GREEN
+//   · the CSS kind removed from the scanner                            → RED  «the WHOLE tree is read» and «CSS»
