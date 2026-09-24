@@ -43,7 +43,7 @@ afterEach(() => { motor?.dispose?.(); motor = null; });
 
 describe('a faixa do topo sem barra', () => {
   it('🔴 [Zero] a engine não reserva faixa nenhuma quando não montou barra', () => {
-    motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(),
+    motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(),
       host: { doc: document, win: window }, downloadHeavy: false });
     const regiao = document.querySelector('#game-region');
     expect(document.querySelector('#title-icons'), 'a barra apareceu — o caso deixou de medir a ausência').toBeNull();

@@ -252,7 +252,7 @@ describe('createGame em execução', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const ruim = { ...declaracaoValida(), topology: undefined };
-    expect(() => createGame({ acomodacoes: SEM_ASSUNTO, declaration: ruim, host: { doc, win } })).toThrow(/malformada/);
+    expect(() => createGame({ accommodations: SEM_ASSUNTO, declaration: ruim, host: { doc, win } })).toThrow(/malformada/);
   });
 
   it('🔴 [Zero] um cartucho que declara «start» no preset é RECUSADO, com o motivo dito (ADR-0144 §4)', async () => {
@@ -265,34 +265,34 @@ describe('createGame em execução', () => {
     // com os quatro painéis montados, no documento, e inalcançáveis, sem uma linha vermelha em lado nenhum.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const base = () => ({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    const base = () => ({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
 
-    expect(() => createGame({ acomodacoes: SEM_ASSUNTO, ...base(), preset: { start: { label: 'Turbo' } } }))
+    expect(() => createGame({ accommodations: SEM_ASSUNTO, ...base(), preset: { start: { label: 'Turbo' } } }))
       .toThrow(/«start» is the position that opens the pause/);
 
     // O PAR QUE IMPEDE UM CRIVO QUE ACUSA SEMPRE: o mesmo preset sem «start» passa. Sem ele, uma recusa
     // escrita `if (preset) throw` ficaria verde acima e tiraria o vocabulário a todo o catálogo.
-    expect(() => createGame({ acomodacoes: SEM_ASSUNTO, ...base(), preset: { action2: { label: 'Confirmar' } } })).not.toThrow();
+    expect(() => createGame({ accommodations: SEM_ASSUNTO, ...base(), preset: { action2: { label: 'Confirmar' } } })).not.toThrow();
 
     // E O `mount()` RECUSA PELA MESMA REGRA. `CartridgeHooks` carrega `preset`, logo um SEGUNDO cartucho
     // podia tomar o «start» que o primeiro respeitou — e a pausa ficava inalcançável a meio da sessão.
     const motor = createGame(base());
-    expect(() => motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO, preset: { start: { label: 'Turbo' } } }))
+    expect(() => motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO, preset: { start: { label: 'Turbo' } } }))
       .toThrow(/«start» is the position that opens the pause/);
   });
 
   it('🔴 [Right] the optional genre (ADR-0156): Casino game refused at createGame and mount; Horror game reported «avoid»', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const base = () => ({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
-    expect(() => createGame({ ...base(), genero: 'Casino game' })).toThrow(/Casino game.*prohibited/);
-    expect(() => createGame({ ...base(), genero: 'Educational game' })).toThrow(/not in the engine's genre list/);
+    const base = () => ({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    expect(() => createGame({ ...base(), genre: 'Casino game' })).toThrow(/Casino game.*prohibited/);
+    expect(() => createGame({ ...base(), genre: 'Educational game' })).toThrow(/not in the engine's genre list/);
     // the pair: no genre, and a listed one, boot
     expect(() => createGame(base())).not.toThrow();
-    const motor = createGame({ ...base(), genero: 'Horror game' });
+    const motor = createGame({ ...base(), genre: 'Horror game' });
     expect(motor.problems.join(' '), 'Horror game boots without its «avoid» mark said').toMatch(/Horror game.*avoid/);
-    expect(createGame({ ...base(), genero: 'Platform games' }).problems.join(' ')).not.toMatch(/genre/i);
-    expect(() => motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO, genero: 'Casino game' })).toThrow(/Casino game.*prohibited/);
+    expect(createGame({ ...base(), genre: 'Platform games' }).problems.join(' ')).not.toMatch(/genre/i);
+    expect(() => motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO, genre: 'Casino game' })).toThrow(/Casino game.*prohibited/);
   });
 
   it('🔴 [Zero] e um cartucho que declara «select» também é RECUSADO — é a porta dos menus (ADR-0155 §4)', async () => {
@@ -300,13 +300,13 @@ describe('createGame em execução', () => {
     // repositórios dos jogos), então só um cartucho CONSTRUÍDO pode pôr este crivo vermelho.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const base = () => ({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    const base = () => ({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     expect(() => createGame({ ...base(), preset: { select: { label: 'Mapa' } } }))
       .toThrow(/«select» is the position that opens the pause menus/);
     // o par: um preset sem posição de sistema passa
     expect(() => createGame({ ...base(), preset: { action1: { label: 'Mapa' } } })).not.toThrow();
     const motor = createGame(base());
-    expect(() => motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO, preset: { select: { label: 'Mapa' } } }))
+    expect(() => motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO, preset: { select: { label: 'Mapa' } } }))
       .toThrow(/«select» is the position that opens the pause menus/);
   });
 
@@ -316,7 +316,7 @@ describe('createGame em execução', () => {
       const { doc, win } = domFalso();
       const ruim = { ...declaracaoValida(), tick: 'turno', roleAt: undefined };
       let msg = '';
-      try { createGame({ acomodacoes: SEM_ASSUNTO, declaration: ruim, host: { doc, win } }); } catch (e) { msg = String(e.message); }
+      try { createGame({ accommodations: SEM_ASSUNTO, declaration: ruim, host: { doc, win } }); } catch (e) { msg = String(e.message); }
       expect(msg).toMatch(/tick/);
       expect(msg).toMatch(/roleAt/);
     });
@@ -328,7 +328,7 @@ describe('createGame em execução', () => {
     // que serve é legítimo — foi assim que ele recusou o pad e o sonar sem mentir.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso({ comMarcacao: false });
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     expect(motor.problems.length).toBeGreaterThan(0);
     expect(motor.problems.join(' ')).toMatch(/game-region/);
     expect(motor.tts, 'a voz tem de existir mesmo com o documento incompleto').toBeTruthy();
@@ -340,7 +340,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso();
     // ⚠️ A declaração da voz neural entra aqui em 2026-09-08 porque um jogo REAL a abre (ADR-0094, uma linha). Sem
     // ela, o `problems` acusaria — correctamente — e este caso deixaria de medir o que diz medir.
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
       uses: { neuralVoice: true },
       // ⚠️ O `preset` ENTRA AQUI em 2026-09-12 pela mesma razão que a declaração da voz neural entrou em 08/09: a
@@ -362,7 +362,7 @@ describe('createGame em execução', () => {
     // funcionalidade da engine que some por falta de UMA declaração, em silêncio, é a mesma classe de defeito.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
       uses: { neuralVoice: true },
     });
@@ -377,19 +377,19 @@ describe('createGame em execução', () => {
     // A game that does not ask for one (ADR-0216 §3) has only the browser's voice, and nothing said so: the line is the warning.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     const linha = motor.problems.find((p) => /neural voice/.test(p));
     expect(linha, 'sem voz neural e a engine não disse nada').toBeTruthy();
     expect(linha, 'the way out is not named').toMatch(/neuralVoice/);
-    expect(linha, 'the decline is not named').toMatch(/semVozNeural/);
+    expect(linha, 'the decline is not named').toMatch(/noNeuralVoice/);
     expect(linha, 'what the child loses is not said').toMatch(/cannot read/);
   });
 
-  it('⚠️ [Right] DECLARAR `semVozNeural` cala a linha — declinar é escolha, não declarar é omissão', async () => {
+  it('⚠️ [Right] DECLARAR `noNeuralVoice` cala a linha — declinar é escolha, não declarar é omissão', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
-      declaration: declaracaoValida(), host: { doc, win }, declines: { semVozNeural: true },
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
+      declaration: declaracaoValida(), host: { doc, win }, declines: { noNeuralVoice: true },
     });
     expect(motor.problems.filter((p) => /neural voice/.test(p))).toEqual([]);
   });
@@ -408,9 +408,9 @@ describe('createGame em execução', () => {
     // antes de a criança começar, e não a meio do primeiro traço.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: { ...declaracaoValida(), needsPointer: () => true },
-      host: { doc, win }, preset: TRES_PALAVRAS, disponibilidade: soTeclado(false),
+      host: { doc, win }, preset: TRES_PALAVRAS, availability: soTeclado(false),
     });
     expect(motor.reach.needsPointer, 'a declaração não chegou ao alcance').toBe(true);
     expect(motor.reach.ok, 'disse sim a um jogo que esta criança não consegue jogar').toBe(false);
@@ -420,9 +420,9 @@ describe('createGame em execução', () => {
   it('⚠️ [Right] o MESMO jogo com RATO passa — «no caso do teclado, o sinal contínuo é o mouse»', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: { ...declaracaoValida(), needsPointer: () => true },
-      host: { doc, win }, preset: TRES_PALAVRAS, disponibilidade: soTeclado(true),
+      host: { doc, win }, preset: TRES_PALAVRAS, availability: soTeclado(true),
     });
     expect(motor.reach.ok).toBe(true);
     expect(motor.reach.cannotPoint).toEqual([]);
@@ -436,8 +436,8 @@ describe('createGame em execução', () => {
     // escrever `needsPointer: () => false` cobraria o preço do `holdsAtOnce` sem o motivo dele.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
-      declaration: declaracaoValida(), host: { doc, win }, preset: TRES_PALAVRAS, disponibilidade: soTeclado(false),
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
+      declaration: declaracaoValida(), host: { doc, win }, preset: TRES_PALAVRAS, availability: soTeclado(false),
     });
     expect(motor.reach.needsPointer).toBe(false);
     expect(motor.reach.ok).toBe(true);
@@ -453,7 +453,7 @@ describe('createGame em execução', () => {
       querySelector: () => null, querySelectorAll: () => [],
     };
     const { doc, win } = domFalso({ map: { '#title-icons': barra } });
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
 
     expect(barra.innerHTML, 'a engine não escreveu ícone nenhum na barra').toContain('pi-btn');
     expect(barra.innerHTML, 'o modo cego não está na primeira tela').toContain('data-pi="blind"');
@@ -474,7 +474,7 @@ describe('createGame em execução', () => {
     // nenhuma — é o «oferece o caminho e depois recusa-o» que o §5 proíbe, com a barra no papel de porta.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
       uses: { neuralVoice: true },
     });
@@ -496,7 +496,7 @@ describe('createGame em execução', () => {
       // ⚠️ `cartucho` virou `cartridge` na passagem de R2 (2026-09-23): este caso ANCORA num literal do fonte, e um
       // literal que muda de nome tem de mudar aqui no mesmo commit — senão o portão deixa de exigir o que exige,
       // em silêncio, que é a forma de defeito que este plano já regista quatro vezes.
-      .toMatch(/const naBarraDe = cartridge\.naBarraDe \?\? \(\(i: number\) => pauseIcons\.onBar\(i\)\)/);
+      .toMatch(/const naBarraDe = cartridge\.onBar \?\? \(\(i: number\) => pauseIcons\.onBar\(i\)\)/);
     expect(FONTE).toMatch(/const navBar = cartridge\.navBar \?\? \(\(i: number, k: NavKeys, withStart\?: boolean\) => pauseIcons\.navBar\(i, k, withStart\)\)/);
     // ⚠️ E a barra montada tem de continuar a DIZER A VERDADE quando o modo cego muda noutro sítio (o painel
     // de áudio, a simulação de empatia). Sem esta assinatura o ícone ficaria a dizer «desligado» depois de a
@@ -523,7 +523,7 @@ describe('createGame em execução', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ map: { '#game-region': regiao } });
-    createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
 
     // ⚠️ PELO ID E NÃO PELA CONTAGEM. Isto dizia `filhos.length === 1`, e a contagem nunca foi a exigência —
     // era um proxy, verdadeiro enquanto o cartão era a única coisa que a engine pendurava ali. Desde
@@ -547,9 +547,9 @@ describe('createGame em execução', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ map: { '#game-region': regiao } });
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      declines: { semMenuDePausa: true, semAtorDePausa: true, semAssistenteDePad: true, semVozNeural: true },
+      declines: { semMenuDePausa: true, noPauseActor: true, noPadAssistant: true, noNeuralVoice: true },
     });
 
     // Pelo id e não pela contagem, pela razão escrita no caso acima.
@@ -573,16 +573,16 @@ describe('createGame em execução', () => {
     };
     const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ map: { '#game-region': regiao, '#vp-pause-0': cartaoMapeado } });
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
       uses: { neuralVoice: true },
     });
 
-    expect(typeof motor.pausa.mostrar, 'a engine monta e não sabe mostrar').toBe('function');
+    expect(typeof motor.pause.show, 'a engine monta e não sabe mostrar').toBe('function');
     expect(cartaoMapeado.hidden, 'o cartão tem de nascer escondido — uma pausa ABRE-SE').toBe(true);
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     expect(cartaoMapeado.hidden, 'mostrar não revelou o cartão').toBe(false);
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
     expect(cartaoMapeado.hidden).toBe(true);
   });
 
@@ -592,7 +592,7 @@ describe('createGame em execução', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ map: { '#game-region': regiao } });
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     // 🔴 VIRADO EM 2026-09-09 (ADR-0120), e o caso mudou de lado inteiro. Ele afirmava «montou pausa a quem a
     // declinou → 0 filhos», e essa era a verdade enquanto a pausa fosse declinável. O Dev aposentou o
     // declínio — «Aposentar.» — porque a razão dele foi construída fora pelo próprio ADR-0106: lista padrão
@@ -610,7 +610,7 @@ describe('createGame em execução', () => {
     const inutil = { id: 'title-icons', querySelector: () => null, querySelectorAll: () => [] };
     const { doc, win } = domFalso({ map: { '#title-icons': inutil } });
     let motor;
-    expect(() => { motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } }); }).not.toThrow();
+    expect(() => { motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } }); }).not.toThrow();
     expect(motor.problems.some((p) => /takes neither content nor clicks/.test(p))).toBe(true);
   });
 
@@ -621,7 +621,7 @@ describe('createGame em execução', () => {
     // de dois assentos montado por `createGame` deixa a criança do SEGUNDO sem como remapear, em silêncio.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(),
       host: { doc, win },
       players: [{ ctrl: {} }, { ctrl: {} }],
@@ -631,29 +631,29 @@ describe('createGame em execução', () => {
     // ⚠️ A frase nomeia a SAÍDA e o que se perde, como as outras deste bloco fazem — uma linha que só diz
     // «faltou algo» manda procurar, e quem procura é quem já não sabia.
     expect(linha).toMatch(/remap/);
-    expect(linha).toMatch(/semAtorDePausa/);
+    expect(linha).toMatch(/noPauseActor/);
   });
 
   it('[Right] UM assento não acusa nada — a frase é sobre o segundo, e não sobre existir', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win }, players: [{ ctrl: {} }],
     });
     expect(motor.problems.filter((p) => /pause actor/.test(p))).toEqual([]);
   });
 
-  it('⚠️ [Right] DECLARAR `semAtorDePausa` cala a linha — ausência declarada é escolha', async () => {
+  it('⚠️ [Right] DECLARAR `noPauseActor` cala a linha — ausência declarada é escolha', async () => {
     // A distinção que este caso guarda: declinar é uma escolha registada; não declinar é uma omissão. O
     // ADR-0106 §2 é inteiro sobre a diferença entre as duas, e um gate que as tratasse igual apagaria a
     // razão de os declínios existirem.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(),
       host: { doc, win },
       players: [{ ctrl: {} }, { ctrl: {} }],
-      declines: { semAtorDePausa: true },
+      declines: { noPauseActor: true },
     });
     expect(motor.problems.filter((p) => /pause actor/.test(p))).toEqual([]);
   });
@@ -675,7 +675,7 @@ describe('createGame em execução', () => {
     // fazia cinco jogos parecerem completos.
     return import('../app/js/boot/create-game.js').then(({ createGame }) => {
       const { doc, win } = domFalso({ ausentes: ['#title-icons'] });
-      const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+      const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
       const linha = motor.problems.find((p) => /accessibility bar/.test(p));
       expect(linha, 'a engine calou-se sobre a barra que falta').toBeTruthy();
       // A frase nomeia a SAÍDA e o que se PERDE — «falta uma coisa» manda procurar sem dizer o quê.
@@ -709,7 +709,7 @@ describe('createGame em execução', () => {
         id: 'outro-lugar', innerHTML: '', addEventListener: () => {},
         querySelector: () => null, querySelectorAll: () => [],
       };
-      const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+      const motor = createGame({ accommodations: SEM_ASSUNTO,
         declaration: declaracaoValida(),
         host: { doc, win, a11yBarHost: meuSitio },
       });
@@ -730,7 +730,7 @@ describe('createGame em execução', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso({ ausentes: ['#gaem-region'] });
     const torto = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#gaem-region' }) };
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: torto, host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: torto, host: { doc, win } });
     expect(motor.problems.join(' ')).toMatch(/declared world \S+ is not in the page/);
     expect(motor.tts, 'o jogo abre mesmo assim').toBeTruthy();
   });
@@ -739,7 +739,7 @@ describe('createGame em execução', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const paint = { ...declaracaoValida(), world: () => ({ kind: 'none' }) };
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: paint, host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: paint, host: { doc, win } });
     expect(motor.problems.join(' ')).not.toMatch(/declared world/);
   });
 
@@ -752,7 +752,7 @@ describe('createGame em execução', () => {
     // por baixo, senao o jogo consome a seta e o dialogo aberto nao navega.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win, ouvintes } = domFalso();
-    createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     const nav = ouvintes.filter((o) => o.type === 'keydown' && o.captura === true);
     expect(nav.length, 'a navegacao de menu voltou a ficar desligada').toBeGreaterThan(0);
   });
@@ -774,7 +774,7 @@ describe('createGame em execução', () => {
     const { doc, win, ouvintes } = domFalso({ listas: { '#game-region .overlay': [overlay] } });
     doc.activeElement = { n: 'o tabuleiro por baixo' }; // o foco esta FORA do dialogo: o caso realista
 
-    createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
 
     let impedido = false;
     const tab = { key: 'Tab', shiftKey: false, preventDefault: () => { impedido = true; } };
@@ -803,10 +803,10 @@ describe('createGame em execução', () => {
       map: { '#sr-alert': alerta, '#game-region': regiao },
       ausentes: ['#incl-parou'],
     });
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
 
-    expect(typeof motor.aoFalhar, 'a engine deixou de entregar o aviso').toBe('function');
-    motor.aoFalhar(new Error('o quadro quebrou'));
+    expect(typeof motor.onFailure, 'a engine deixou de entregar o aviso').toBe('function');
+    motor.onFailure(new Error('o quadro quebrou'));
     expect(alerta.textContent, 'quem nao ve a tela nao foi avisado').toBeTruthy();
     const caixa = regiao.filhos.find((f) => f.id === 'incl-parou');
     expect(caixa, 'quem ve a tela nao foi avisado').toBeTruthy();
@@ -818,8 +818,8 @@ describe('createGame em execução', () => {
     const mundo = { style: {}, contains: () => false };
     const { doc, win } = domFalso({ map: { '#meu-mundo': mundo } });
     const d = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#meu-mundo' }) };
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: d, host: { doc, win } });
-    motor.aplicarFiltroDeVisao('brightness(0)', 'mundo');
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: d, host: { doc, win } });
+    motor.applyVisionFilter('brightness(0)', 'mundo');
     expect(mundo.style.filter).toBe('brightness(0)');
   });
 
@@ -833,7 +833,7 @@ describe('createGame em execução', () => {
     const mundo = { style: {}, contains: (el) => el === isInside };
     const { doc, win } = domFalso({ map: { '#meu-mundo': mundo }, listas: { '#game-region .overlay': [isInside, fora] } });
     const d = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#meu-mundo' }) };
-    createGame({ acomodacoes: SEM_ASSUNTO, declaration: d, host: { doc, win } }).aplicarFiltroDeVisao('brightness(0)', 'mundo');
+    createGame({ accommodations: SEM_ASSUNTO, declaration: d, host: { doc, win } }).applyVisionFilter('brightness(0)', 'mundo');
     expect(isInside.style.filter, 'o menu dentro do mundo tem de sair da simulacao').toBe('');
     expect(fora.style.filter, 'um overlay fora do mundo nao e assunto desta funcao').toBe('brightness(0)');
   });
@@ -844,7 +844,7 @@ describe('createGame em execução', () => {
     const mundo = { style: {}, contains: () => true };
     const { doc, win } = domFalso({ map: { '#meu-mundo': mundo }, listas: { '#game-region .overlay': [isInside] } });
     const d = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#meu-mundo' }) };
-    createGame({ acomodacoes: SEM_ASSUNTO, declaration: d, host: { doc, win } }).aplicarFiltroDeVisao('contrast(2)', 'mundo-e-menus');
+    createGame({ accommodations: SEM_ASSUNTO, declaration: d, host: { doc, win } }).applyVisionFilter('contrast(2)', 'mundo-e-menus');
     expect(isInside.style.filter, 'melhoria alcanca os menus; so a EMPATIA os poupa').toBe('contrast(2)');
   });
 
@@ -853,29 +853,29 @@ describe('createGame em execução', () => {
     const qualquer = { style: {}, contains: () => false };
     const { doc, win } = domFalso({ map: { '#meu-mundo': qualquer } });
     const d = { ...declaracaoValida(), world: () => ({ kind: 'none' }) };
-    createGame({ acomodacoes: SEM_ASSUNTO, declaration: d, host: { doc, win } }).aplicarFiltroDeVisao('brightness(0)', 'mundo');
+    createGame({ accommodations: SEM_ASSUNTO, declaration: d, host: { doc, win } }).applyVisionFilter('brightness(0)', 'mundo');
     expect(qualquer.style.filter, 'pintar um filtro sobre atividade sem espaco e a mentira ao contrario').toBeUndefined();
   });
   it('[Interface] declinar fica NO REGISTRO — um consumidor pode ser auditado pelo que recusou', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
       // ⚠️ ERA `semMenuDePausa` AQUI, e o campo saiu do contrato (ADR-0122). O caso é sobre a TRAVESSIA dos
       // declínios, não sobre qual deles existe — trocado por dois que continuam a descrever ausências que a
       // engine não pode preencher, para o caso não morrer com a decisão que ele nunca mediu.
-      declines: { semVozNeural: true, semAssistenteDePad: true },
+      declines: { noNeuralVoice: true, noPadAssistant: true },
     });
-    expect(motor.declines.semVozNeural).toBe(true);
-    expect(motor.declines.semAssistenteDePad).toBe(true);
-    expect(motor.declines.semAtorDePausa).toBeUndefined();
+    expect(motor.declines.noNeuralVoice).toBe(true);
+    expect(motor.declines.noPadAssistant).toBe(true);
+    expect(motor.declines.noPauseActor).toBeUndefined();
   });
 
   it('[Right] a declaração ATRAVESSA intacta — a engine carrega os sete campos, não uma cópia deles', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const d = declaracaoValida();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: d, host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: d, host: { doc, win } });
     expect(motor.declaration).toBe(d);
     // E o objetivo é legível SEM a engine saber o que é uma moeda: é o campo 5 respondendo.
     expect(motor.declaration.objectiveOf(0)).toEqual({
@@ -899,8 +899,8 @@ describe('createGame em execução', () => {
     vi.resetModules();
     try {
       const { createGame } = await import('../app/js/boot/create-game.js');
-      createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() } });
-      createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() }, uses: { neuralVoice: true } });
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() } });
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() }, uses: { neuralVoice: true } });
       const [semVoz, comVoz] = pedidos;
       expect(semVoz, 'a lista do arranque não foi pedida').toBeTruthy();
       expect(semVoz.some((id) => id.startsWith('voz:')), 'um jogo mudo baixou a voz neural que nunca vai usar').toBe(false);
@@ -929,7 +929,7 @@ describe('createGame em execução', () => {
     try {
       const { createGame } = await import('../app/js/boot/create-game.js');
       const { bcp47 } = await import('../app/js/core/i18n.js');
-      createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() }, uses: { reading: true } });
+      createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() }, uses: { reading: true } });
       const leitura = pedidos[0].filter((id) => id.startsWith('reading:'));
       expect(leitura.length, 'o jogo declarou que escuta e nenhum modelo de leitura desce').toBeGreaterThan(0);
       const linguas = new Set(leitura.map((id) => id.split(':')[1]));
@@ -945,7 +945,7 @@ describe('createGame em execução', () => {
     // os próprios menus. O caso mais simples passou a ser o que não obriga a mentir.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    expect(() => createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } })).not.toThrow();
+    expect(() => createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } })).not.toThrow();
   });
 });
 
@@ -970,20 +970,20 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
   it('🎯 [Right] `problems` passa a descrever o cartucho MONTADO, e não o que arrancou', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = semDom();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: semMundo(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: semMundo(), host: { doc, win } });
     expect(motor.problems.join(' '), 'o arranque devia acusar o mundo que não existe').toMatch(/declared world/);
 
-    motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
     expect(motor.problems.join(' '), 'o diagnóstico ficou a falar do cartucho anterior').not.toMatch(/declared world/);
   });
 
   it('⚠️ [Right] e o PAR: montar um cartucho sem mundo ACUSA — senão «sumiu» passaria por nunca olhar', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = semDom();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     expect(motor.problems.join(' ')).not.toMatch(/declared world/);
 
-    motor.mount(semMundo(), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(semMundo(), { accommodations: SEM_ASSUNTO });
     expect(motor.problems.join(' '), 'montou um mundo inexistente e não disse nada').toMatch(/declared world/);
   });
 
@@ -995,10 +995,10 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     expect(() => createGame({ declaration: declaracaoValida(), host: { doc, win } })).toThrow(/ADR-0153/);
     // UMA chave em falta também — o silêncio de uma só é o mesmo defeito
     const { caneSpacing: _fora, ...incompleta } = SEM_ASSUNTO;
-    expect(() => createGame({ acomodacoes: incompleta, declaration: declaracaoValida(), host: { doc, win } }))
+    expect(() => createGame({ accommodations: incompleta, declaration: declaracaoValida(), host: { doc, win } }))
       .toThrow(/caneSpacing is not answered/);
     // 📌 O PAR: a resposta completa passa — senão um crivo que recusasse sempre ficaria verde acima
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     // e o mount() recusa pela mesma regra: um SEGUNDO cartucho não pode entrar sem responder
     expect(() => motor.mount(declaracaoValida(), {})).toThrow(/ADR-0153/);
   });
@@ -1006,8 +1006,8 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
   it('🔴 [Zero] `mount` LANÇA numa declaração malformada — contrato é pré-condição, não diagnóstico', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
-    expect(() => motor.mount({ ...declaracaoValida(), topology: undefined }, { acomodacoes: SEM_ASSUNTO })).toThrow(/malformada/);
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    expect(() => motor.mount({ ...declaracaoValida(), topology: undefined }, { accommodations: SEM_ASSUNTO })).toThrow(/malformada/);
     // ⚠️ E O CARTUCHO BOM CONTINUA MONTADO: uma recusa não pode deixar a raiz a meio caminho.
     expect(motor.problems.join(' ')).not.toMatch(/declared world/);
   });
@@ -1017,27 +1017,27 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     const { doc, win } = domFalso();
     const primeira = declaracaoValida();
     const segunda = declaracaoValida();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: primeira, host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: primeira, host: { doc, win } });
     expect(motor.declaration).toBe(primeira);
-    motor.mount(segunda, { acomodacoes: SEM_ASSUNTO });
+    motor.mount(segunda, { accommodations: SEM_ASSUNTO });
     expect(motor.declaration, 'a engine devolveu a declaração do cartucho anterior').toBe(segunda);
   });
 
   it('⚠️ [Zero] `unmount` esvazia a pilha de cenas, e cada `exit()` corre — é ele o teardown', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     const saiu = [];
-    motor.cenas.push({ name: 'a', exit: () => saiu.push('a') });
-    motor.cenas.push({ name: 'b', exit: () => saiu.push('b') });
-    expect(motor.cenas.names()).toEqual(['a', 'b']);
+    motor.scenes.push({ name: 'a', exit: () => saiu.push('a') });
+    motor.scenes.push({ name: 'b', exit: () => saiu.push('b') });
+    expect(motor.scenes.names()).toEqual(['a', 'b']);
 
     // ⚠️ `push` JÁ CORRE O `exit()` DA CENA DE BAIXO — medido aqui, e não suposto: empilhar `b` sobre `a`
     // produz um `'a'` antes de o `unmount` existir. Medir só a CAUDA é o que separa o que este caso afirma
     // do que a pilha já fazia sozinha.
     const antes = saiu.length;
     motor.unmount();
-    expect(motor.cenas.names(), 'a pilha guardou cenas do cartucho anterior').toEqual([]);
+    expect(motor.scenes.names(), 'a pilha guardou cenas do cartucho anterior').toEqual([]);
     // A ORDEM É DE CIMA PARA BAIXO: `pop()` desfaz o que foi empilhado por último, que é a única ordem em
     // que uma cena pode contar com o que empilhou por baixo dela ainda estar lá.
     expect(saiu.slice(antes), 'uma cena saiu sem correr o seu `exit()`').toEqual(['b', 'a']);
@@ -1066,7 +1066,7 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     const { factoryWithGame } = await import('../app/js/input/keyboard.js');
     const { doc, win } = domFalso();
 
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: comTeclas(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: comTeclas(), host: { doc, win } });
     expect(factoryWithGame().solo.up, 'o mapa do jogo nem chegou a valer').toEqual(['KeyZ']);
 
     motor.unmount();
@@ -1081,7 +1081,7 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     const { GAMEPAD_STANDARD } = await import('../app/js/input/default-bindings.js');
     const { doc, win } = domFalso();
 
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: comTeclas(), host: { doc, win } });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: comTeclas(), host: { doc, win } });
     expect(padTable(1, 0).up, 'o mapa de pad do jogo nem chegou a valer').not.toEqual(GAMEPAD_STANDARD.up);
 
     motor.unmount();
@@ -1099,7 +1099,7 @@ describe('the shape of a line of `problems` (ADR-0169, issue #163)', () => {
     // gives the most lines at once: no markup, no bar, two seats with no pause actor, no preset, a world not in the page.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso({ comMarcacao: false, ausentes: ['#title-icons', '#missing-world'] });
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#missing-world' }) },
       host: { doc, win }, players: [{ ctrl: 'kb' }, { ctrl: 'kb' }],
     });

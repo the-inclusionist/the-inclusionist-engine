@@ -46,7 +46,7 @@ const BARRAS = () => [
   { band: 'learning', name: nome('Leitura'), value: () => ({ segmentos: ['azul', 'vermelho', 'verde'], cor: 'nenhuma' }) },
 ];
 const abrir = (extra = {}) => createGame({
-  acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, ...extra,
+  accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, ...extra,
 });
 const caixa = (sel) => document.querySelector(sel).getBoundingClientRect();
 
@@ -150,7 +150,7 @@ describe('the HUD the engine mounts (issue #162)', () => {
     await esperar(150);
     expect(document.querySelectorAll('.hud-faixa').length).toBe(0);
     const semHud = parseFloat(document.getElementById('game-region').style.getPropertyValue('--barra-a11y-h'));
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, hud: [...HUD(), { band: 'power', name: nome('Escudo'), value: () => 2 }, { band: 'power', name: nome('Ímã'), value: () => 1 }] });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: [...HUD(), { band: 'power', name: nome('Escudo'), value: () => 2 }, { band: 'power', name: nome('Ímã'), value: () => 1 }] });
     await esperar(80);
     const comHud = parseFloat(document.getElementById('game-region').style.getPropertyValue('--barra-a11y-h'));
     expect(comHud, 'mounting a cartridge with a tall column did not grow the room').toBeGreaterThan(semHud);
@@ -165,7 +165,7 @@ describe('the HUD the engine mounts (issue #162)', () => {
 
   it('🔴 [Right] mount replaces the numbers and unmount takes them away', async () => {
     motor = abrir({ hud: HUD() });
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, hud: [{ band: 'mission', name: nome('bolas'), value: () => 2 }] });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: [{ band: 'mission', name: nome('bolas'), value: () => 2 }] });
     await esperar(80);
     expect(document.querySelectorAll('.hud-numero').length).toBe(1);
     expect(document.querySelector('.hud-esquerda').textContent).toBe('bolas: 2');
@@ -256,7 +256,7 @@ describe('the HUD the engine mounts (issue #162)', () => {
     expect(coberta(), 'the explanation does not cover the learning bars').toBe(true);
     // and not only on top: the band is translucent, and seen in a demo page the segments showed through its words
     expect(getComputedStyle(document.querySelector('.hud-aprendizagem')).visibility, 'the bars show through the explanation').toBe('hidden');
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, hud: BARRAS() });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: BARRAS() });
     await esperar(80);
     expect(coberta(), 'a cartridge mounted after the footer drew its bars over the explanation').toBe(true);
     // the ORDER on its own: the button legend and the sound caption share the footer and do not hide the bars, so the bars
@@ -273,7 +273,7 @@ describe('the HUD the engine mounts (issue #162)', () => {
     expect(() => abrir({ hud: [{ band: 'clock', name: nome('tempo'), value: () => 1 }] })).toThrow(/hud\[0\]\.band/);
     expect(() => abrir({ hud: [{ band: 'round', name: nome('moedas'), value: () => 1 }] }), 'the first cut\'s band name, never published').toThrow(/hud\[0\]\.band/);
     motor = abrir();
-    expect(() => motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, hud: [{ band: 'mission', name: nome(''), value: () => 1 }] }))
+    expect(() => motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, hud: [{ band: 'mission', name: nome(''), value: () => 1 }] }))
       .toThrow(/hud\[0\]\.name/);
   });
 });

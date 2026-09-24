@@ -36,7 +36,7 @@ const declaracaoValida = () => ({
   objectiveOf: () => ({ name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 3 }),
   targetsOf: () => [{ x: 0, y: 0 }],
 });
-const comGancho = () => ({ acomodacoes: SEM_ASSUNTO, setPhase: (p) => fases.push(p) });
+const comGancho = () => ({ accommodations: SEM_ASSUNTO, setPhase: (p) => fases.push(p) });
 
 /** A tecla como a criança a dá: despachada na região do jogo, a subir até quem a quiser. */
 function apertar(code) {
@@ -67,7 +67,7 @@ beforeEach(() => {
   // Um painel que um caso anterior tenha aberto não pode decidir o seguinte: o primeiro guarda dos ouvintes é
   // exactamente «há um painel aberto?».
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
   // ⚠️ E UMA PAUSA RÁPIDA que um caso deixou ligada tem de sair pela PORTA — não há API pública que a desligue,
   // e é de propósito: a criança também só a tem pelo START.
   if (pausadoAVista()) apertar('KeyH');
@@ -131,7 +131,7 @@ describe('o START é a PAUSA RÁPIDA', () => {
   });
 
   it('🔴 [Zero] um cartucho SEM `setPhase` pausa na mesma — e o START tira-o de lá', () => {
-    motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
     try {
       apertar('KeyH');
       expect(pausadoAVista(), 'sem `setPhase` a pausa rápida não apareceu').toBe(true);
@@ -185,7 +185,7 @@ describe('o SELECT abre os MENUS', () => {
   });
 
   it('🔴 o Escape na raiz do cartão também sai — e SEM `setPhase` do jogo ele também tem de sair', () => {
-    motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
     try {
       apertar('KeyF');
       expect(cartao().hidden).toBe(false);
@@ -230,7 +230,7 @@ describe('a SEGUNDA porta dos menus: a legenda no rodapé e o `action4` (ADR-015
     expect(legenda()?.hidden, 'the card has no button legend').toBe(false);
     expect(nomes()).toEqual(['2: confirmar', '3: voltar']);
     // closed through the engine's own door, the legend goes with it
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
     expect(legenda().hidden, 'the card closed and its legend stayed over the game').toBe(true);
     // and closed by a path that calls nothing of the engine (the print mode hides the card by its attribute)
     apertar('KeyF');
@@ -256,7 +256,7 @@ describe('o guarda comum: com um PAINEL aberto, nenhuma das portas é nossa', ()
     apertar('KeyF');
     item('options').click();
     item('audio').click();
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
     const painel = document.querySelector('#audio');
     expect(painel.hidden, 'o painel não abriu; o caso mediria a ausência do painel').toBe(false);
 

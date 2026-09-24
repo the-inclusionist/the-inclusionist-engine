@@ -361,7 +361,7 @@ const ON_BUTTON: Partial<Record<VirtualCommand['action'], (total: number) => voi
   down: (total) => { foco = nextFocus(foco, 1, total); render(); },
   up: (total) => { foco = nextFocus(foco, -1, total); render(); },
   // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se consumiu.
-  action2: () => { motor?.cenas.input('confirm'); },
+  action2: () => { motor?.scenes.input('confirm'); },
   // SPEAKING THE ANSWER, and giving the microphone back. ⚠️ The same button that goes back is what stops a reading: a child who
   // changed her mind should not have to wait out the ceiling with the microphone open.
   action1: () => { void listenForAnswer(); },
@@ -445,7 +445,7 @@ function bootQuiz(): void {
     // ⚠️ O `semMenuDePausa` SAIU daqui em 2026-09-09 (ADR-0120), e este jogo é o motivo de ele ter existido:
     // era o quiz que «não tinha pausa». Passou a ter — a engine monta o cartão e ele só oferece o que este
     // jogo acciona. Um botão a menos para uma criança encontrar é um ajuste a menos que ela alcança.
-    declines: { semAssistenteDePad: true, semAtorDePausa: true },
+    declines: { noPadAssistant: true, noPauseActor: true },
     // THIS GAME READS TO THE CHILD (ADR-0216 §3): one line, and the engine loads the voice from the delivery when she picks it.
     // 📌 It used to be the ~200 lines of `kokoro-porta`/`kokoro-carregar` — the phonemizer, the runtime and the paths — which every
     // game that wanted a voice would have copied. They moved into the engine and were deleted here.
@@ -493,7 +493,7 @@ function bootQuiz(): void {
      *
      * ⚠️ As palavras são resolvidas no arranque, como as outras deste boot; nenhuma linha as mostra ainda.
      */
-    acomodacoes: {
+    accommodations: {
       cameraSway: false, easyMode: false, wheelchairMode: false, detectionLeniency: false, intensity: false,
       hints: { label: t('quiz.acom.hints') },
       reducedCharacterMotion: false, caneSpacing: false,
@@ -525,7 +525,7 @@ function bootQuiz(): void {
   // e é o que o item 22 precisa: que a forma (`nome`/`draw`/`input`) cabe num jogo que NÃO tem fases — sem
   // `title`, sem `paused`, sem nada do enum da plataforma. Um segundo consumidor que precisasse inventar uma
   // fase para usar a pilha seria o achado 10 outra vez.
-  motor.cenas.push({
+  motor.scenes.push({
     name: 'perguntas',
     draw: () => render(),
     input: (intent) => {
@@ -555,7 +555,7 @@ function bootQuiz(): void {
   // The first draw and the welcome wait for the boot language (study item E4): drawn in the gap, the first question was
   // grouped as «Alternativas» and read «Gato, 1 de 4» on an English page (measured). For pt it resolves at once.
   void localeReady().then(() => {
-    motor?.cenas.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
+    motor?.scenes.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
     srSay(t('sr.quiz.bemVindo'));
   });
 
@@ -572,7 +572,7 @@ function bootQuiz(): void {
    * ⚠️ E quem avisa é a ENGINE, não a janela: este cartucho não sabe — nem deve — que o evento se chama
    * `i18n:change` nem onde ele é disparado (ADR-0216).
    */
-  motor.onLocaleChange(() => { motor?.cenas.draw(); });
+  motor.onLocaleChange(() => { motor?.scenes.draw(); });
 }
 
 if (typeof document !== 'undefined' && document.getElementById('quiz-app')) bootQuiz();

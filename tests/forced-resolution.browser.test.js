@@ -62,7 +62,7 @@ describe('createGame applies it — the cartridge has no other', () => {
     palco.innerHTML = '<div id="game-region" tabindex="-1" style="width:569px;height:395px"></div>';
     document.body.append(Object.assign(document.createElement('p'), { id: 'sr-status' }), palco);
     regiao = palco.querySelector('#game-region');
-    motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: {
         topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => false, tick: 'player',
         world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',

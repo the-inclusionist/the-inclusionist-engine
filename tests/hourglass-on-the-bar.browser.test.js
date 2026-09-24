@@ -28,7 +28,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status"></p><div class="stage-wrap" style="width:1280px;height:720px;display:flex;flex:none">'
     + '<div id="game-region" tabindex="-1" style="position:relative"><div id="title-icons"></div></div></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao('clock'), host: { doc: document, win: window }, downloadHeavy: false });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao('clock'), host: { doc: document, win: window }, downloadHeavy: false });
   await new Promise((r) => setTimeout(r, 80));
 });
 afterAll(() => {
@@ -40,23 +40,23 @@ describe('the hourglass on the quick bar', () => {
   it('🔴 [Right] a game whose time runs by itself gets the hourglass, beside and apart from the other icons', () => {
     expect(ampulheta(), 'no hourglass in a clock game').not.toBeNull();
     expect(ampulheta().textContent).toContain('⏳');
-    expect(motor.velocidadeDoJogo(), 'the engine publishes no speed').toBe(1);
+    expect(motor.gameSpeed(), 'the engine publishes no speed').toBe(1);
   });
 
   it('🔴 [Right] a press moves one step down, is stored, said in the name, and published', async () => {
     ampulheta().click();
     await new Promise((r) => setTimeout(r, 30));
-    expect(motor.velocidadeDoJogo()).toBe(0.9);
+    expect(motor.gameSpeed()).toBe(0.9);
     expect(localStorage.getItem('incl_game_speed'), 'the choice was not stored').toBe('0.9');
     expect(ampulheta().getAttribute('aria-label') ?? '', 'the name does not say the speed').toMatch(/90\s?%/);
   });
 
   it('🔴 [Zero] a turn game mounted after it gets no hourglass', async () => {
-    motor.mount(declaracao('player'), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(declaracao('player'), { accommodations: SEM_ASSUNTO });
     await new Promise((r) => setTimeout(r, 30));
     // hidden, which takes it out of sight, the tab order and the accessibility tree (ADR-0113 clause 3: «not offered»)
     expect(ampulheta()?.hidden ?? true, 'an hourglass in a game with nothing to slow').toBe(true);
-    motor.mount(declaracao('clock'), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(declaracao('clock'), { accommodations: SEM_ASSUNTO });
     await new Promise((r) => setTimeout(r, 30));
     expect(ampulheta()?.hidden, 'the hourglass did not come back with a clock game').toBe(false);
   });

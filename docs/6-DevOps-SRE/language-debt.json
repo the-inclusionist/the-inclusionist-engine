@@ -1,17 +1,17 @@
 {
   "measured": "2026-09-24",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 510,
+  "total": 485,
   "totals": {
     "decl": 215,
     "param": 259,
-    "membro": 36
+    "membro": 11
   },
   "files": {
     "app/js/boot/create-game.ts": {
       "decl": 51,
       "param": 56,
-      "membro": 25
+      "membro": 0
     },
     "app/js/core/accommodation-subjects.ts": {
       "decl": 1,

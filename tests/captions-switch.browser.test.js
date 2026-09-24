@@ -15,7 +15,7 @@ const declaracao = () => ({
 });
 const esperar = (ms = 40) => new Promise((r) => setTimeout(r, ms));
 function abrirVisual() {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]').click();
 }
@@ -28,7 +28,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   state = await import('../app/js/core/state.js');
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 afterAll(() => {
   state.setCaptionsOnValue(true);
@@ -52,7 +52,7 @@ describe('the captions switch', () => {
     expect(document.querySelector('#visual #opt-captions').getAttribute('aria-pressed')).toBe('false');
     await esperar(80);
     expect(document.getElementById('sr-status').textContent, 'the change was silent').toMatch(/Legendas/);
-    motor.legendarSom('um sino');
+    motor.captionSound('um sino');
     expect(legendaVisivel(), 'a caption showed with captions off').toBe(false);
   });
 
@@ -60,7 +60,7 @@ describe('the captions switch', () => {
     abrirVisual();
     document.querySelector('#visual #opt-captions').click();
     expect(state.captionsOn).toBe(true);
-    motor.legendarSom('um sino');
+    motor.captionSound('um sino');
     expect(legendaVisivel(), 'no caption with captions on').toBe(true);
   });
 });

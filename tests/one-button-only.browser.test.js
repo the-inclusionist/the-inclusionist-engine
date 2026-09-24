@@ -60,7 +60,7 @@ beforeAll(async () => {
   document.body.appendChild(raiz);
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
-    acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
+    accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
     downloadHeavy: false, players: assentos, preset: PRESET,
     onCommand: (c) => comandos.push(c),
   });

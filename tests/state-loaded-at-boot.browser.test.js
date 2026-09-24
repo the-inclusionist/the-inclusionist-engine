@@ -49,7 +49,7 @@ describe('the stored settings reach a game through createGame', () => {
     raiz = document.createElement('div');
     raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p><section id="game-region"></section><div id="title-icons"></div>';
     document.body.appendChild(raiz);
-    createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+    createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
     expect(state.captionsOn, 'the child turned captions off and the game reads them on').toBe(false);
     expect(state.blindMode, 'the child turned blind mode on and the game reads it off').toBe(true);
   });

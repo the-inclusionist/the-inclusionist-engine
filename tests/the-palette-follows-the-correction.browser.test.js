@@ -24,7 +24,7 @@ beforeAll(async () => {
   raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
-  createGame({ acomodacoes: SEM_ASSUNTO,
+  createGame({ accommodations: SEM_ASSUNTO,
     declaration: {
       topology: () => ({ kind: 'hotspots', order: ['a'] }), holdsAtOnce: () => 1, holdsKeys: () => false,
       tick: 'player', world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
@@ -35,7 +35,7 @@ beforeAll(async () => {
     downloadHeavy: false,
     players: jogadores,
     // The CARTRIDGE corrects colour in its own render — the palette must follow it all the same.
-    setCorrecaoDoJogador: (i, correcao) => {
+    setPlayerCorrection: (i, correcao) => {
       escritas.push(correcao);
       jogadores[i].visual = { ...(jogadores[i].visual ?? {}), correcao };
     },

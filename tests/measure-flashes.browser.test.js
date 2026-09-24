@@ -39,14 +39,14 @@ beforeAll(async () => {
   };
   requestAnimationFrame(desenhar);
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
 });
 afterAll(() => { parar = true; });
 
 describe('measuring what the world flashes', () => {
   it('🔴 [Right] a canvas flashing 6 times a second fails, and `problems` says so', async () => {
     piscando = 6;
-    const r = await motor.medirFlashes(1600);
+    const r = await motor.measureFlashes(1600);
     expect(r.measured, r.reason).toBe(true);
     expect(r.passes, `worst second ${r.worstSecond}`).toBe(false);
     expect(r.worstSecond).toBeGreaterThanOrEqual(5);
@@ -55,7 +55,7 @@ describe('measuring what the world flashes', () => {
 
   it('🎯 [Boundary] a canvas flashing twice a second passes', async () => {
     piscando = 2;
-    const r = await motor.medirFlashes(1600);
+    const r = await motor.measureFlashes(1600);
     expect(r.measured, r.reason).toBe(true);
     expect(r.passes, `worst second ${r.worstSecond}`).toBe(true);
   });
@@ -64,7 +64,7 @@ describe('measuring what the world flashes', () => {
     // sRGB linearised, WCAG's formula: 128 → 0.216, 100 → 0.127. Read as raw values (0.502 → 0.392) it would be 0.11 and fail.
     cores = ['#808080', '#646464'];
     piscando = 6;
-    const r = await motor.medirFlashes(1600);
+    const r = await motor.measureFlashes(1600);
     cores = ['#fff', '#000'];
     expect(r.measured, r.reason).toBe(true);
     expect(r.passes, `worst second ${r.worstSecond}: the colours were read as raw sRGB`).toBe(true);
@@ -73,7 +73,7 @@ describe('measuring what the world flashes', () => {
   it('🎯 [Boundary] a dim flicker #000↔#141414 at 6/s is a change of 0.007 — the cell is an AVERAGE of its pixels', async () => {
     cores = ['#141414', '#000000'];
     piscando = 6;
-    const r = await motor.medirFlashes(1600);
+    const r = await motor.measureFlashes(1600);
     cores = ['#fff', '#000'];
     expect(r.measured, r.reason).toBe(true);
     expect(r.passes, `worst second ${r.worstSecond}: a cell summed its pixels instead of averaging them`).toBe(true);
@@ -82,7 +82,7 @@ describe('measuring what the world flashes', () => {
   it('🎯 [Zero] a canvas that reads transparent is NOT READ — never a pass by silence', async () => {
     piscando = 0;
     await new Promise((res) => setTimeout(res, 50));
-    const r = await motor.medirFlashes(400);
+    const r = await motor.measureFlashes(400);
     expect(r.measured, 'an unreadable canvas was reported as read').toBe(false);
     expect(r.passes, 'an unreadable canvas passed').toBeUndefined();
     expect(r.reason).toMatch(/transparent|preserveDrawingBuffer/);
@@ -91,10 +91,10 @@ describe('measuring what the world flashes', () => {
   it('🎯 [Zero] a world that is not a canvas and holds none is not read, and says why', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const sem = createGame({
-      acomodacoes: SEM_ASSUNTO, declaration: { ...declaracao(), world: () => ({ kind: 'element', selector: '#sr-status' }) },
+      accommodations: SEM_ASSUNTO, declaration: { ...declaracao(), world: () => ({ kind: 'element', selector: '#sr-status' }) },
       host: { doc: document, win: window }, downloadHeavy: false,
     });
-    const r = await sem.medirFlashes(100);
+    const r = await sem.measureFlashes(100);
     expect(r.measured).toBe(false);
     expect(r.reason).toMatch(/not a canvas/);
   });

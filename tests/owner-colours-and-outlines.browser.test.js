@@ -21,13 +21,13 @@ const COM_OS_DOIS = comAssunto({
   contrastOutlines: { label: 'Contornos das plataformas' },
 });
 function abrirVisual() {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]').click();
 }
 function fecharTudo() {
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
 }
 const linha = (id) => document.querySelector(`#visual #${id}`)?.closest('.ctrl-row') ?? null;
 const oferecida = (id) => !!linha(id) && !linha(id).hidden;
@@ -38,7 +38,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   state = await import('../app/js/core/state.js');
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 afterAll(() => {
   state.setOwnerColorsValue(state.DEFAULTS.ownerColors);
@@ -51,8 +51,8 @@ describe('owner colours and contrast outlines', () => {
   it('🔴 [Right] an answer without the two is refused, naming them', () => {
     const { ownerColors, contrastOutlines, ...velha } = SEM_ASSUNTO;
     expect(ownerColors === false && contrastOutlines === false, 'the fixture does not answer the two').toBe(true);
-    expect(() => motor.mount(declaracao(), { acomodacoes: velha, players: [{ ctrl: 0 }] })).toThrow(/ownerColors/);
-    expect(() => motor.mount(declaracao(), { acomodacoes: velha, players: [{ ctrl: 0 }] })).toThrow(/contrastOutlines/);
+    expect(() => motor.mount(declaracao(), { accommodations: velha, players: [{ ctrl: 0 }] })).toThrow(/ownerColors/);
+    expect(() => motor.mount(declaracao(), { accommodations: velha, players: [{ ctrl: 0 }] })).toThrow(/contrastOutlines/);
   });
 
   it('🎯 [Zero] answered «not here», the visual panel offers neither', () => {
@@ -62,7 +62,7 @@ describe('owner colours and contrast outlines', () => {
   });
 
   it('🔴 [Right] answered with a word, owner colours is a row in the game\'s word, and it writes the stored setting', () => {
-    motor.mount(declaracao(), { acomodacoes: COM_OS_DOIS, players: [{ ctrl: 0 }] });
+    motor.mount(declaracao(), { accommodations: COM_OS_DOIS, players: [{ ctrl: 0 }] });
     abrirVisual();
     expect(oferecida('opt-dono'), 'no owner colours row').toBe(true);
     expect(linha('opt-dono').querySelector('strong')?.textContent).toBe('Peças na cor de quem joga');
@@ -101,7 +101,7 @@ describe('owner colours and contrast outlines', () => {
   });
 
   it('🎯 [Zero] a cartridge mounted after, answering «not here», takes the rows away', () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, players: [{ ctrl: 0 }] });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }] });
     abrirVisual();
     for (const id of ['opt-dono', 'opt-contorno-fg', 'opt-contorno-bg']) expect(oferecida(id), id).toBe(false);
     fecharTudo();

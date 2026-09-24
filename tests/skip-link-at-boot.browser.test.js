@@ -21,7 +21,7 @@ describe('the skip link', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { t } = await import('../app/js/core/i18n.js');
     document.body.innerHTML = '<nav><a href="#x">a link before the game</a></nav><p id="sr-status"></p><div id="game-region" tabindex="-1"></div>';
-    createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+    createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
     const links = document.querySelectorAll('.skip-link');
     expect(links, 'no skip link, or more than one').toHaveLength(1);
     expect(document.body.firstElementChild, 'the skip link is not the first thing a keyboard reaches').toBe(links[0]);
@@ -33,7 +33,7 @@ describe('the skip link', () => {
   it('🎯 [Zero] a page that already has one keeps it, and gets no second', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     document.body.innerHTML = '<a class="skip-link" href="#game-region">Da página</a><p id="sr-status"></p><div id="game-region" tabindex="-1"></div>';
-    createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+    createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
     const links = document.querySelectorAll('.skip-link');
     expect(links).toHaveLength(1);
     expect(links[0].textContent).toBe('Da página');

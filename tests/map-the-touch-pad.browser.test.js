@@ -17,7 +17,7 @@ const declaracao = () => ({
 const PRESET = { up: { label: 'Cima' }, down: { label: 'Baixo' }, action2: { label: 'Confirmar' }, action3: { label: 'Voltar' }, action4: { label: 'Menu' } };
 const funcaoDoBotao = (n) => (document.querySelector(`#touch-controls .touch-btn[data-btn="${n}"]`)?.getAttribute('aria-label') ?? '').split(', ').slice(1).join(', ');
 function abrirMotora() {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="motora"]').click();
 }
@@ -28,7 +28,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, controleNaTela: true, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], preset: PRESET });
+  motor = createGame({ accommodations: SEM_ASSUNTO, onScreenPad: true, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], preset: PRESET });
 });
 afterAll(() => { if (antes === null) localStorage.removeItem('incl_touchmap'); else localStorage.setItem('incl_touchmap', antes); });
 
@@ -60,8 +60,8 @@ describe('«Mapear toque»', () => {
 
   it('🎯 [Zero] a game with no on-screen pad has nothing to map: the row is not offered', () => {
     for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-    motor.pausa.esconder(0);
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, players: [{ ctrl: 0 }], preset: PRESET });
+    motor.pause.hide(0);
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }], preset: PRESET });
     abrirMotora();
     expect(document.querySelector('#motora #opt-toque')?.closest('.ctrl-row')?.hidden, 'a touch map for a game without a pad').toBe(true);
   });

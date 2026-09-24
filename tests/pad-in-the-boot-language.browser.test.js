@@ -62,7 +62,7 @@ describe('the virtual pad speaks the boot language', () => {
     // ⚠️ Engine keys stand in for a game's words — what is measured is the LANGUAGE, not the meaning (an engine test may
     // not lean on the quiz's vocabulary, ADR-0027). The quiz's shape: words read through GETTERS, so they follow the language — and the pad was drawn before it came.
     const { t } = await import('../app/js/core/i18n.js');
-    createGame({ acomodacoes: SEM_ASSUNTO, controleNaTela: true,
+    createGame({ accommodations: SEM_ASSUNTO, onScreenPad: true,
       declaration: declaracaoValida(),
       host: { doc: document, win: window },
       downloadHeavy: false,

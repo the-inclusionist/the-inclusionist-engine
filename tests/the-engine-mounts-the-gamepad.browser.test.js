@@ -62,7 +62,7 @@ beforeAll(async () => {
   // da engine, e é meia da afirmação deste ficheiro que ela os semeie nestes objectos.
   jogadores = [{ ctrl: ESQUEMA }];
   motor = createGame({
-    acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
+    accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
     downloadHeavy: false, preset: PLATAFORMA, setPhase: () => {}, players: jogadores,
     onCommand: (c) => recebidos.push(c),
     // 📌 E NADA SOBRE CONTROLES: é isso que este ficheiro mede.

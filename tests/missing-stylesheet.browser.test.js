@@ -20,7 +20,7 @@ beforeAll(async () => {
   const raiz = document.createElement('div');
   raiz.innerHTML = '<p id="sr-status"></p><div id="game-region" tabindex="-1"></div>';
   document.body.appendChild(raiz);
-  motor = createGame({ acomodacoes: SEM_ASSUNTO,
+  motor = createGame({ accommodations: SEM_ASSUNTO,
     declaration: {
       topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => false, tick: 'player',
       world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',

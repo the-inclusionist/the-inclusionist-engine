@@ -23,7 +23,7 @@ const conteudo = () => document.getElementById('conteudo-do-jogo');
 /** Every element whose own filter (or an ancestor's, up to the body) would darken it. */
 const filtrado = (el) => { for (let n = el; n && n !== document.body; n = n.parentElement) if (n.style.filter) return true; return false; };
 async function simular(chave) {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
   const sel = document.querySelector('#empathy #opt-simulacao');
@@ -33,7 +33,7 @@ async function simular(chave) {
 }
 async function voltarAoJogo() {
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
   await esperar();
 }
 
@@ -47,7 +47,7 @@ beforeAll(async () => {
     + '<div id="caixa-com-porta"><span id="texto-ao-lado-da-porta">ao lado</span><button id="porta-aninhada" data-incl-menu>Ajustes</button></div>'
     + '<button id="porta-do-cartucho" data-incl-menu>Menu</button><div id="title-icons"></div></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 afterEach(async () => { await simular('normal'); await voltarAoJogo(); });
 
@@ -81,11 +81,11 @@ describe('a simulation runs in the game, never in a menu', () => {
   it('🔴 [Right] with the pause card open, nothing is simulated — and back in play it returns', async () => {
     await simular('blind');
     await voltarAoJogo();
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     await esperar();
     expect(filtrado(conteudo()), 'the simulation runs behind the open pause card').toBe(false);
     expect(filtrado(document.querySelector('#vp-pause-0')), 'the pause card is simulated').toBe(false);
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
     await esperar();
     expect(filtrado(conteudo()), 'the simulation did not come back with the game').toBe(true);
   });

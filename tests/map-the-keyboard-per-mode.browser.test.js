@@ -21,13 +21,13 @@ const COM_OMBRO = { action1: { label: 'Confirm' }, leftShoulder: { label: 'Previ
 
 const linha = (modo) => document.getElementById(`opt-teclado-${modo}`)?.closest('.ctrl-row');
 function abrirMotora() {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="motora"]').click();
 }
 function fecharTudo() {
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
 }
 function tecla(code) {
   const ev = new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true });
@@ -43,7 +43,7 @@ beforeAll(async () => {
   raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, preset: DUAS_ACOES });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, preset: DUAS_ACOES });
 });
 beforeEach(() => { fecharTudo(); });
 
@@ -54,7 +54,7 @@ describe('the three rows in the motor panel', () => {
   });
 
   it('🔴 [Zero] a preset that names a shoulder or trigger does NOT get the 3–4 row — and keeps 1 and 2', () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: COM_OMBRO });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, preset: COM_OMBRO });
     try {
       abrirMotora();
       expect(linha(4).hidden, 'four keyboard schemes offered to a game that uses a shoulder position').toBe(true);
@@ -62,18 +62,18 @@ describe('the three rows in the motor panel', () => {
       expect(linha(2).hidden).toBe(false);
     } finally {
       fecharTudo();
-      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES });
+      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, preset: DUAS_ACOES });
     }
   });
 
   it('🔴 [Zero] a game with no preset has nothing to map — the three rows are absent', () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO });
     try {
       abrirMotora();
       for (const m of [1, 2, 4]) expect(linha(m).hidden, `mode ${m} offered with no action to map`).toBe(true);
     } finally {
       fecharTudo();
-      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES });
+      motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, preset: DUAS_ACOES });
     }
   });
 });

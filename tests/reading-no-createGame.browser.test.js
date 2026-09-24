@@ -42,7 +42,7 @@ const declaracao = () => ({
 });
 
 const montar = (opcoes = {}) => createGame({
-  acomodacoes: SEM_ASSUNTO,
+  accommodations: SEM_ASSUNTO,
   declaration: declaracao(),
   host: { doc: document, win: window },
   downloadHeavy: false,

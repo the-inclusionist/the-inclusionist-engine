@@ -26,7 +26,7 @@ describe('the loop notice under createGame', () => {
     const { startLoop } = await import('../app/js/core/loop.js');
     const { t } = await import('../app/js/core/i18n.js');
     document.body.innerHTML = '<p id="sr-status"></p><p id="sr-alert" role="alert"></p><div id="game-region" tabindex="-1"></div>';
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+    const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
     const erro = console.error;
     console.error = () => {};
     try {

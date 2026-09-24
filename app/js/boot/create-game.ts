@@ -235,16 +235,16 @@ export interface Declinios {
    * `host.pauseHost`, com `#game-region` de recuo.
    */
   /** Sem assistente de mapeamento de controle. */
-  readonly semAssistenteDePad?: boolean;
+  readonly noPadAssistant?: boolean;
   /** Sem "ator da pausa" — quem apertou o botão que abriu o menu. */
-  readonly semAtorDePausa?: boolean;
+  readonly noPauseActor?: boolean;
   /**
    * No neural voice — this game does not declare `uses: { neuralVoice: true }` (ADR-0216 §3).
    *
    * Exists because the absence is otherwise silent: a game that does not ask for one has only the browser's voice, which a school
    * Chromebook may not have for the child's language. Declining is a choice; not declaring is an omission, and `problems` says so.
    */
-  readonly semVozNeural?: boolean;
+  readonly noNeuralVoice?: boolean;
 }
 
 export interface CreateGameOptions {
@@ -264,8 +264,8 @@ export interface CreateGameOptions {
    * nada é chamado. O jogo de plataforma os fornece; um quiz sem HUD de a11y, não.
    */
   /** O índice "N de M" está ligado? Ausente = sim. Ver `comIndice` em ui/menu-nav. */
-  readonly comIndice?: () => boolean;
-  readonly naBarraDe?: (i: number) => boolean;
+  readonly withIndex?: () => boolean;
+  readonly onBar?: (i: number) => boolean;
   readonly navBar?: (i: number, k: NavKeys) => void;
   /** Jogadores para o teclado remapeável. `Pick<ControlledPlayer,'ctrl'>` — esquema de teclas e nada mais.
    *  ⚠️ `KeyScheme` e não `Record<string, string[]>` desde a #118: era uma CÓPIA ESTRUTURAL do tipo, e uma
@@ -312,7 +312,7 @@ export interface CreateGameOptions {
    * own elements, and every menu, need none on top of them. It leaves the pause card and the panels; it stays on the quick
    * pause.
    */
-  readonly controleNaTela?: boolean;
+  readonly onScreenPad?: boolean;
   /**
    * THE NUMBERS THIS GAME SHOWS, each in the band of what it is about (ADR-0168, ADR-0175; issue #162). The engine mounts
    * the HUD and places them: `identity` top left and `mission` under it, `power` top right (under the clock), `learning` bars (one to three, as
@@ -365,13 +365,13 @@ export interface CreateGameOptions {
    *
    * 📌 As gerais montam sempre e as do contrato derivam-se; nenhuma delas se responde aqui.
    */
-  readonly acomodacoes: AccommodationAnswers;
+  readonly accommodations: AccommodationAnswers;
   /**
    * The game's genre, OPTIONAL (ADR-0153), from the engine's list (`core/genres`, ADR-0156): what the game plays like.
    * The cartridge chooses it and nobody assigns it. Casino game and a name outside the list refuse the boot; Horror game
    * boots and `problems` carries its «avoid» mark.
    */
-  readonly genero?: string;
+  readonly genre?: string;
   /**
    * WHAT THIS GAME USES OF THE VOICE (ADR-0216 §3) — never how. Two answers, and each one is a sentence about the child, not
    * about a library:
@@ -412,14 +412,14 @@ export interface CreateGameOptions {
    * 📌 The engine invents no surface for this: where «N MB left» fits on a game's screen is the game's to know.
    * `bytesLeftToDownload(relatorio)` gives the number for the sentence.
    */
-  readonly aoProgredirPesados?: (r: HeavyReport) => void;
+  readonly onHeavyProgress?: (r: HeavyReport) => void;
   /**
    * Como se descobre que cada transporte está aqui. Ausente = a engine pergunta ao aparelho.
    *
    * Injetável porque «há um controle ligado?» e «isto é uma tela de toque?» são perguntas ao navegador, e um
    * teste que não as possa responder não consegue exercitar a tela que depende delas.
    */
-  readonly disponibilidade?: Availability;
+  readonly availability?: Availability;
   /**
    * O QUE CADA ITEM DO CARTÃO DE PAUSA FAZ NESTE JOGO — «continuar», «sair», «ajuda», o que o jogo ligar.
    *
@@ -461,8 +461,8 @@ export interface CreateGameOptions {
    * como corrigir cor, ou o contrário. O `game-pinball` é o segundo caso — a imagem dele é um framebuffer
    * de 320x180 sem textura para repintar, e o filtro de cor ele aplica há semanas.
    */
-  readonly setTemaDoJogador?: (i: number, tema: Theme) => void;
-  readonly setCorrecaoDoJogador?: (i: number, correcao: Correction) => void;
+  readonly setPlayerTheme?: (i: number, tema: Theme) => void;
+  readonly setPlayerCorrection?: (i: number, correcao: Correction) => void;
 }
 
 /*
@@ -489,11 +489,11 @@ export interface Engine {
    * 📌 A engine OFERECE o mecanismo e não toma a fase. Quando abrir a pausa continua a ser do jogo, porque só
    * ele sabe o que é estar a jogar; o que deixa de ser dele é saber COMO.
    */
-  readonly pausa: {
+  readonly pause: {
     /** Revela o cartão da tela `i` e refaz os itens — o §5 avaliado no instante em que ela abre. */
-    readonly mostrar: (i: number) => void;
+    readonly show: (i: number) => void;
     /** Esconde-o outra vez. */
-    readonly esconder: (i: number) => void;
+    readonly hide: (i: number) => void;
   };
   readonly tts: ReturnType<typeof createTts>;
   /**
@@ -509,12 +509,12 @@ export interface Engine {
    * child has captions on. Pass it as `createAudioEarcons`'s `showCaption`.
    * 📏 Before it, each game wrote its own `#caption` with its own timer (platformer 1300 ms, soccer 2600 ms).
    */
-  readonly legendarSom: (texto: string) => void;
+  readonly captionSound: (texto: string) => void;
   /**
    * The game speed the child chose on the quick bar (ADR-0180): 1 is 100%, down to 0.5. `startLoop` already multiplies the
    * frame time by it; a game that runs its own frames multiplies by this.
    */
-  readonly velocidadeDoJogo: () => number;
+  readonly gameSpeed: () => number;
   /**
    * MEASURES WHAT THE WORLD'S CANVAS FLASHES for `ms`, against the WCAG 2.3.1 general flash threshold (study item B2;
    * `core/flash-threshold`). Only when called — reading pixels every frame costs a school machine (pillar 1), so play never
@@ -522,7 +522,7 @@ export interface Engine {
    * the page may not read, or one that reads transparent, as a WebGL canvas without `preserveDrawingBuffer` does) — never a
    * pass by silence. The red flash is not measured.
    */
-  readonly medirFlashes: (ms: number) => Promise<FlashMeasurement>;
+  readonly measureFlashes: (ms: number) => Promise<FlashMeasurement>;
   readonly overlays: SettingsPanelApi;
   readonly nav: MenuNavApi;
   readonly keyboard: KeyboardRuntime;
@@ -548,7 +548,7 @@ export interface Engine {
    * estarem DENTRO do mundo, ele é desfeito neles. Uma cegueira que apagasse o menu de pausa trancaria a
    * criança dentro da simulação (#82).
    */
-  readonly aplicarFiltroDeVisao: (css: string, reach: FilterReach) => void;
+  readonly applyVisionFilter: (css: string, reach: FilterReach) => void;
   /**
    * A NAVEGAÇÃO SONORA, pronta e ligada à declaração deste jogo (item 19).
    *
@@ -568,7 +568,7 @@ export interface Engine {
    *
    * Nasce VAZIA: quem empilha é o jogo, porque quais são as cenas é a única parte disto que é dele.
    */
-  readonly cenas: SceneStack;
+  readonly scenes: SceneStack;
   /**
    * AVISA O CARTUCHO QUE O IDIOMA MUDOU — e é a única coisa que ele precisa de saber sobre o assunto (ADR-0225).
    *
@@ -598,7 +598,7 @@ export interface Engine {
    * então isto é entregue e não instalado: um jogo que monte o laço sem passar isto continua a PARAR, porque
    * parar não é opcional; o que ele perde é dizer que parou.
    */
-  readonly aoFalhar: (erro: unknown) => void;
+  readonly onFailure: (erro: unknown) => void;
   /**
    * O ALCANCE MEDIDO NO ARRANQUE — a garantia do ADR-0079 §3 como dado, para quem quiser lê-la.
    *
@@ -738,9 +738,9 @@ const SELETOR_BARRA_A11Y = '#title-icons';
  * cinco deste lado, e a errata de 2026-09-11 corrigiu a lista.
  */
 type GameHalf = Pick<CreateGameOptions,
-  'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
+  'declaration' | 'isNavigable' | 'withIndex' | 'onBar' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
-  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud' | 'gameOptions' | 'howToPlay' | 'onCommand' | 'gamepad'>;
+  | 'setPlayerTheme' | 'setPlayerCorrection' | 'accommodations' | 'genre' | 'onScreenPad' | 'hud' | 'gameOptions' | 'howToPlay' | 'onCommand' | 'gamepad'>;
 
 export function createGame(o: CreateGameOptions): Engine {
   /*
@@ -758,8 +758,8 @@ export function createGame(o: CreateGameOptions): Engine {
     refuseDeclaration('createGame', contractProblems);
   }
   refuseIfItClaimsStart('createGame', cartridge.preset);
-  refuseIfNoAnswer('createGame', cartridge.acomodacoes);
-  refuseIfGenreRefused('createGame', cartridge.genero);
+  refuseIfNoAnswer('createGame', cartridge.accommodations);
+  refuseIfGenreRefused('createGame', cartridge.genre);
   refuseIfHudMalformed('createGame', cartridge.hud);
   refuseIfOptionsMalformed('createGame', cartridge.gameOptions);
   refuseIfHowToPlayMalformed('createGame', cartridge.howToPlay);
@@ -848,16 +848,16 @@ export function createGame(o: CreateGameOptions): Engine {
         padGaps: padGapProblems(),
         resizedRegion: regionResizedByCartridge(),
         drawnBelowFloor: drawnBelowTheFloor(drawingContext),
-        genreWarning: genreWarning(cartridge.genero),
+        genreWarning: genreWarning(cartridge.genre),
       },
       {
         worldSelector: worldCssSelector,
         worldIsInPage: !!worldCssSelector && !!$(worldCssSelector),
         wantsNeuralVoice: !!o.uses?.neuralVoice,
-        declinesNeuralVoice: !!declines().semVozNeural,
+        declinesNeuralVoice: !!declines().noNeuralVoice,
         seats: (cartridge.players ?? []).length,
         setsPauseActor: !!cartridge.setPauseActor,
-        declinesPauseActor: !!declines().semAtorDePausa,
+        declinesPauseActor: !!declines().noPauseActor,
       },
     );
   }
@@ -1066,7 +1066,7 @@ export function createGame(o: CreateGameOptions): Engine {
   function changePhase(p: 'title' | 'playing' | 'paused'): void {
     // ⚠️ A ENGINE FECHA O SEU CARTÃO; O JOGO CONTINUA A DECIDIR O MUNDO. É a simetria exacta do ADR-0144 §2
     // do outro lado: lá a engine revela e PEDE a pausa, aqui esconde e PEDE a retoma.
-    if (p !== 'paused') { pausa.esconder(0); writeInFooter(null); } // o motivo de um item não fica sobre o jogo
+    if (p !== 'paused') { pausa.hide(0); writeInFooter(null); } // o motivo de um item não fica sobre o jogo
     cartridge.setPhase?.(p);
   }
   engineActions.resume = () => changePhase('playing');
@@ -1333,7 +1333,7 @@ export function createGame(o: CreateGameOptions): Engine {
       reserveBarBand(); // the name line under the bar grows with the text (issue #160)
       return FONT_BY_KEY[position.font]?.fam ?? null;
     } : undefined,
-    ...(cartridge.setTemaDoJogador ? { setPlayerTheme: cartridge.setTemaDoJogador } : {}),
+    ...(cartridge.setPlayerTheme ? { setPlayerTheme: cartridge.setPlayerTheme } : {}),
     /*
      * 🚥 A CORREÇÃO DE DALTONISMO PASSA A TER PADRÃO DA ENGINE (ADR-0148 §1), e o ícone deixa de faltar.
      *
@@ -1355,8 +1355,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * 📌 O CARTUCHO CONTINUA A GANHAR: um jogo que saiba corrigir a cor no seu próprio render — o
      * `game-pinball` corrige num framebuffer há semanas — entrega o seu e a engine sai da frente.
      */
-    ...(cartridge.setCorrecaoDoJogador
-      ? { setPlayerCorrection: withSafePalette(cartridge.setCorrecaoDoJogador) }
+    ...(cartridge.setPlayerCorrection
+      ? { setPlayerCorrection: withSafePalette(cartridge.setPlayerCorrection) }
       : cvdFilters
         /*
          * ⚠️ `filterKey` E NÃO `VIZ_FILTER[correcao]`, e a primeira versão desta linha errou aqui: os dois
@@ -1713,9 +1713,9 @@ export function createGame(o: CreateGameOptions): Engine {
       fillExplain: overlays.fillExplain,
       toggleBtn,
       // A secção «Personagem» só existe se o JOGO disse que tem um (ADR-0153). Lido a cada render: muda no `mount()`.
-      hasCharacter: () => subjectWord(cartridge.acomodacoes, 'reducedCharacterMotion') !== null,
+      hasCharacter: () => subjectWord(cartridge.accommodations, 'reducedCharacterMotion') !== null,
       // and its title is the game's word for it (ADR-0153 confirmation)
-      characterLabel: () => subjectWord(cartridge.acomodacoes, 'reducedCharacterMotion')?.label ?? null,
+      characterLabel: () => subjectWord(cartridge.accommodations, 'reducedCharacterMotion')?.label ?? null,
     });
     engineActions.anim = animPanel.open;
 
@@ -1808,7 +1808,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * Owner colours carries the game's word; the outlines are two positions of one subject, named by the engine.
      */
     const ownerSpec = () => {
-      const palavra = subjectWord(cartridge.acomodacoes, 'ownerColors');
+      const palavra = subjectWord(cartridge.accommodations, 'ownerColors');
       return { id: 'opt-dono', label: palavra?.label ?? '', hint: palavra?.hint };
     };
     const { row: linhaDoDono, controle: botaoDoDono } = controlRow(panelCtx, ownerSpec());
@@ -1846,22 +1846,22 @@ export function createGame(o: CreateGameOptions): Engine {
       });
       // the hint is written BEFORE the panel's render, which runs `fillExplain`: written after, it stays inside the row
       const escreverDica = (): void => {
-        dica.textContent = subjectWord(cartridge.acomodacoes, 'contrastOutlines')?.hint ?? t(`visual.contorno.${plano}.dica`);
+        dica.textContent = subjectWord(cartridge.accommodations, 'contrastOutlines')?.hint ?? t(`visual.contorno.${plano}.dica`);
       };
       escreverDica();
       const refletir = (): void => { updateSteps(passos, spec()); };
-      return { linha: rowC, refletir, escreverDica };
+      return { row: rowC, refletir, escreverDica };
     };
     const fgOutline = outline('fg');
     const bgOutline = outline('bg');
     const offerOwnerAndOutlines = (): void => {
-      linhaDoDono.hidden = subjectWord(cartridge.acomodacoes, 'ownerColors') === null;
+      linhaDoDono.hidden = subjectWord(cartridge.accommodations, 'ownerColors') === null;
       if (!linhaDoDono.hidden) { labelRow(linhaDoDono, ownerSpec()); reflectOwner(); }
-      const withoutOutlines = subjectWord(cartridge.acomodacoes, 'contrastOutlines') === null;
-      for (const c of [fgOutline, bgOutline]) { c.linha.hidden = withoutOutlines; if (!withoutOutlines) c.refletir(); }
+      const withoutOutlines = subjectWord(cartridge.accommodations, 'contrastOutlines') === null;
+      for (const c of [fgOutline, bgOutline]) { c.row.hidden = withoutOutlines; if (!withoutOutlines) c.refletir(); }
     };
     // after the list, owner colours first, then the two outlines (the captions row, built above, follows them)
-    for (const l of [bgOutline.linha, fgOutline.linha, linhaDoDono]) visualPanel.shell.card.insertBefore(l, visualPanel.shell.list.nextSibling);
+    for (const l of [bgOutline.row, fgOutline.row, linhaDoDono]) visualPanel.shell.card.insertBefore(l, visualPanel.shell.list.nextSibling);
     offerOwnerAndOutlines();
     const noEffect = (): void => {};
     const visual = initSettingsVisual({
@@ -2058,7 +2058,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // não é fiação. ⚠️ Lido a cada abertura: a topologia é função, e um jogo muda de exigências entre fases (ADR-0084).
     const hideRowsWithoutSubject = (): void => showOnlyRowsThatApply({
       find: $,
-      caneWord: () => subjectWord(cartridge.acomodacoes, 'caneSpacing'),
+      caneWord: () => subjectWord(cartridge.accommodations, 'caneSpacing'),
       hasNavigationSound: () => contractSubjects({
         declaration: cartridge.declaration,
         actions: cartridge.preset ? presetActions(cartridge.preset) : [],
@@ -2214,7 +2214,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * o ADR-0224, também o comando — e escrever o mesmo `??` em dois sítios é escrever a mesma decisão duas vezes, que é
    * a forma de defeito que este ficheiro já pagou noutras três.
    */
-  const naBarraDe = cartridge.naBarraDe ?? ((i: number) => pauseIcons.onBar(i));
+  const naBarraDe = cartridge.onBar ?? ((i: number) => pauseIcons.onBar(i));
   const navBar = cartridge.navBar ?? ((i: number, k: NavKeys, withStart?: boolean) => pauseIcons.navBar(i, k, withStart));
   const setPauseActor = cartridge.setPauseActor ?? ((): void => {});
 
@@ -2232,7 +2232,7 @@ export function createGame(o: CreateGameOptions): Engine {
     srSay,
     // Sem opinião declarada, o índice fica LIGADO: quem precisa dele para se orientar não tem como saber
     // que ele existe se vier desligado (a mesma razão de o modo cego nascer com TTS e sonar).
-    withIndex: cartridge.comIndice ?? (() => true),
+    withIndex: cartridge.withIndex ?? (() => true),
     explainItem: (texto) => writeInFooter(texto),
     isNavigable: cartridge.isNavigable ?? (() => true),
     /*
@@ -2327,7 +2327,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * `pointer:coarse && hover:none` é toque, e o contrário é teclado. Ela erra num tablet COM teclado — e o
    * erro só é tolerável porque a tela INFORMA em vez de recusar. Ver o cabeçalho de `ui/reach-notice`.
    */
-  const disponibilidade: Availability = o.disponibilidade ?? {
+  const disponibilidade: Availability = o.availability ?? {
     gamepad: () => { try { return [...(win.navigator?.getGamepads?.() ?? [])].some(Boolean); } catch { return false; } },
     touch: () => { try { return win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches; } catch { return false; } },
     keyboard: () => { try { return !(win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches); } catch { return true; } },
@@ -2560,7 +2560,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * primeiro e refazer depois deixaria um piscar em que ela vê o que não pode usar.
    */
   const pausa = {
-    mostrar: (i: number) => {
+    show: (i: number) => {
       pauseIcons.reflectPauseIcons();
       const findPauseCard = $<HTMLElement>(`#vp-pause-${i}`);
       if (!findPauseCard) return;
@@ -2570,7 +2570,7 @@ export function createGame(o: CreateGameOptions): Engine {
       // pelo SELECT nenhum item ficava marcado, e a primeira seta saltava para o item 2.
       showPauseOptions(findPauseCard, 'raiz');
     },
-    esconder: (i: number) => {
+    hide: (i: number) => {
       const findPauseCard = $<HTMLElement>(`#vp-pause-${i}`);
       if (findPauseCard) findPauseCard.hidden = true;
       updateCaption();
@@ -2678,7 +2678,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * game — and speaks only when that changed. An arrow changes no `hidden`, so it still says only the item.
    */
   let screenAnnounced = 'jogo';
-  const rootWithIndex = (): boolean => (cartridge.comIndice ?? (() => true))();
+  const rootWithIndex = (): boolean => (cartridge.withIndex ?? (() => true))();
   /*
    * 🔴 A PERGUNTA MUDOU-SE PARA `ui/where-the-child-is` (ADR-0221 passo 7c), e o que fica aqui é responder de onde ela
    * lê o documento. 📏 Era a função mais densa deste ficheiro depois do corpo da própria raiz — 19 ramos em 24 linhas
@@ -2854,7 +2854,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const alreadyStopped = inQuickPause.has(assento);
     if (alreadyStopped) leaveQuickPause(assento, 'cartao');
     // ⚠️ MOSTRAR VEM PRIMEIRO, e a ordem é a defesa: um jogo sem `setPhase` tem de receber o cartão na mesma.
-    pausa.mostrar(assento);
+    pausa.show(assento);
     if (!alreadyStopped) changePhase('paused');
     return true;
   }
@@ -2875,7 +2875,7 @@ export function createGame(o: CreateGameOptions): Engine {
     if (assento === null || !inQuickPause.has(assento)) return;
     if (overlays.topVisibleOverlay()) return;
     leaveQuickPause(assento, 'cartao');
-    pausa.mostrar(assento);
+    pausa.show(assento);
     e.preventDefault();
   }
   win.addEventListener('keydown', openMenusByAction4);
@@ -2959,7 +2959,7 @@ export function createGame(o: CreateGameOptions): Engine {
   function drawPad(): void {
     if (!touchUsable || !touchHostEl) return;
     // ADR-0166: a cartridge that does not ask for the pad gets none — and one swapped in by `mount()` takes the last one away
-    if (!cartridge.controleNaTela) {
+    if (!cartridge.onScreenPad) {
       const old = $<HTMLElement>('#touch-controls');
       old?.parentNode?.removeChild(old);
       return;
@@ -2982,7 +2982,7 @@ export function createGame(o: CreateGameOptions): Engine {
     if (!pad.parentNode) touchHostEl.appendChild(pad);
   }
 
-  padGapProblems = () => (!cartridge.controleNaTela ? [] : touchUsable
+  padGapProblems = () => (!cartridge.onScreenPad ? [] : touchUsable
     ? touchGaps({ map: toque.getTouchMap(), gameActions: cartridgeActions() })
     : ['the virtual pad has nowhere to mount: set `host.touchHost`, or give #game-region room for children. '
       + 'Without it, a child on a keyboardless tablet cannot play, nor reach the pause']);
@@ -3130,7 +3130,7 @@ export function createGame(o: CreateGameOptions): Engine {
         currentPersona = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
         // ADR-0166 + ADR-0106 §5: the pad's size is offered only to a cartridge that has a pad — hidden, not locked, because
         // there is nothing to unlock. Read at each opening: `mount()` may have swapped the cartridge.
-        if (padSizeRow) padSizeRow.hidden = !cartridge.controleNaTela;
+        if (padSizeRow) padSizeRow.hidden = !cartridge.onScreenPad;
         if (padSteps) updateSteps(padSteps, specDoPad());
         // ⚠️ A DICA NO IDIOMA DE AGORA, antes de o rodapé a recolher: escrita no arranque, saía no idioma de recuo
         // (medido no `dist` com a página em inglês — o rodapé em português).
@@ -3269,7 +3269,7 @@ export function createGame(o: CreateGameOptions): Engine {
     }, true);
 
     // AS TRÊS LINHAS no painel motora, cada uma uma PORTA para o `#ctrl` no seu modo.
-    const keyboardRows: { modo: KeyboardMode; linha: HTMLElement; forte: HTMLElement; botao: HTMLElement }[] = [];
+    const keyboardRows: { mode: KeyboardMode; row: HTMLElement; strong: HTMLElement; button: HTMLElement }[] = [];
     for (const modo of [1, 2, 4] as const) {
       const rowT = doc.createElement('div');
       rowT.className = 'ctrl-row';
@@ -3288,13 +3288,13 @@ export function createGame(o: CreateGameOptions): Engine {
       });
       rowT.appendChild(botao);
       mobilityPanel.shell.list.appendChild(rowT);
-      keyboardRows.push({ modo, linha: rowT, forte, botao });
+      keyboardRows.push({ mode: modo, row: rowT, strong: forte, button: botao });
     }
     /** Rótulos no idioma de agora, e quem aparece: sem posições nomeadas não há o que mapear; «3–4» sem laterais. */
     const reflectKeyboardRows = (): void => {
       const declaredActions = cartridge.preset ? presetActions(cartridge.preset) : [];
       const hasSides = declaredActions.some((a) => (SIDES as readonly string[]).includes(a));
-      for (const { modo, linha: l, forte, botao } of keyboardRows) {
+      for (const { mode: modo, row: l, strong: forte, button: botao } of keyboardRows) {
         forte.textContent = modeLabel(modo);
         botao.textContent = t('motora.abrir');
         botao.setAttribute('aria-label', modeLabel(modo));
@@ -3420,7 +3420,7 @@ export function createGame(o: CreateGameOptions): Engine {
       touchStrong.textContent = t('motora.toque');
       touchButton.textContent = t('motora.abrir');
       touchButton.setAttribute('aria-label', t('motora.toque'));
-      touchMappingRow.hidden = !cartridge.controleNaTela || actionsToMap().length === 0; // no pad, or nothing named
+      touchMappingRow.hidden = !cartridge.onScreenPad || actionsToMap().length === 0; // no pad, or nothing named
     };
     reflectTouchRow();
 
@@ -3624,7 +3624,7 @@ export function createGame(o: CreateGameOptions): Engine {
       // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). A delivery built without
       // `--commands` simply has none, this background fetch fails quietly, and the transport says so when she turns it on.
       only: heavyAtBoot({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47() }),
-      onProgress: o.aoProgredirPesados,
+      onProgress: o.onHeavyProgress,
     })
       .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });
   }
@@ -3659,8 +3659,8 @@ export function createGame(o: CreateGameOptions): Engine {
     // `Omit<MetadeDoJogo, 'declaration'>`, logo carrega `preset` — um segundo cartucho podia tomar o «start»
     // que o primeiro respeitou, e a raiz ficava com a pausa inalcançável a meio da sessão.
     refuseIfItClaimsStart('mount', hooks.preset);
-    refuseIfNoAnswer('mount', hooks.acomodacoes);
-    refuseIfGenreRefused('mount', hooks.genero);
+    refuseIfNoAnswer('mount', hooks.accommodations);
+    refuseIfGenreRefused('mount', hooks.genre);
     refuseIfHudMalformed('mount', hooks.hud);
     refuseIfOptionsMalformed('mount', hooks.gameOptions);
     refuseIfHowToPlayMalformed('mount', hooks.howToPlay);
@@ -4091,23 +4091,23 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     mount: mountAll,
     unmount: unmountAll,
     dispose,
-    pausa,
+    pause: pausa,
     tts,
     reading,
-    legendarSom,
-    velocidadeDoJogo: () => state.gameSpeed,
-    medirFlashes,
+    captionSound: legendarSom,
+    gameSpeed: () => state.gameSpeed,
+    measureFlashes: medirFlashes,
     overlays,
     nav,
     keyboard,
     controller: controleVirtual,
     sonar,
-    aplicarFiltroDeVisao,
-    cenas: rootScenes,
+    applyVisionFilter: aplicarFiltroDeVisao,
+    scenes: rootScenes,
     onLocaleChange: (fn) => { localeListeners.push(fn); },
     cvdFilters,
     get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...dictionaryGaps(), ...measuredProblems, ...storageOutsideScope()]; },
-    aoFalhar,
+    onFailure: aoFalhar,
     get reach() { return currentReach; },
   };
 }

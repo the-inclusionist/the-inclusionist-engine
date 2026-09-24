@@ -35,12 +35,12 @@ const opcoes = () => [
 ];
 const porta = () => document.querySelector('#vp-pause-0 .pm-btn[data-act="opcoesdojogo"]');
 function abrirOpcoesDoJogo() {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   porta().click();
 }
 function fecharTudo() {
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
 }
 const esperar = (ms = 30) => new Promise((r) => setTimeout(r, ms));
 const dito = () => document.getElementById('sr-status').textContent + document.getElementById('sr-alert').textContent;
@@ -49,12 +49,12 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], gameOptions: opcoes() });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], gameOptions: opcoes() });
 });
 
 describe('the game options panel', () => {
   it('🔴 [Right] the door is live, and opens a panel with «Voltar» first and the rows in the game\'s words', () => {
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     expect(porta().getAttribute('aria-disabled'), 'the door stayed locked with rows declared').toBeNull();
     porta().click();
     const painel = document.querySelector('#game-options');
@@ -107,8 +107,8 @@ describe('the game options panel', () => {
   });
 
   it('🔴 [Right] a cartridge with no options gets the door LOCKED with its reason, and no rows of the one before', async () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, players: [{ ctrl: 0 }] });
-    motor.pausa.mostrar(0);
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }] });
+    motor.pause.show(0);
     expect(porta(), 'the door is gone: the card always shows its six items (ADR-0161)').not.toBeNull();
     expect(porta().getAttribute('aria-disabled'), 'the door is live with no options').toBe('true');
     porta().click();
@@ -119,7 +119,7 @@ describe('the game options panel', () => {
   });
 
   it('🔴 [Right] a mounted cartridge with other options gets ITS rows', () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, players: [{ ctrl: 0 }], gameOptions: [{ id: 'board', kind: 'switch', label: 'Tabuleiro grande', read: () => false, write: () => {} }] });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }], gameOptions: [{ id: 'board', kind: 'switch', label: 'Tabuleiro grande', read: () => false, write: () => {} }] });
     abrirOpcoesDoJogo();
     const rotulos = [...document.querySelectorAll('#game-options-list .ctrl-row strong')].map((s) => s.textContent);
     expect(rotulos).toEqual(['Tabuleiro grande']);
@@ -128,9 +128,9 @@ describe('the game options panel', () => {
 
   it('🔴 [Right] malformed options refuse the boot and the mount, naming the part', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
-    expect(() => motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, players: [{ ctrl: 0 }], gameOptions: [{ id: 'x', kind: 'switch', label: 'X', read: () => true }] }))
+    expect(() => motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }], gameOptions: [{ id: 'x', kind: 'switch', label: 'X', read: () => true }] }))
       .toThrow(/gameOptions\[0\]\.write/);
-    expect(() => createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], gameOptions: 'difficulty' }))
+    expect(() => createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], gameOptions: 'difficulty' }))
       .toThrow(/gameOptions must be a list/);
   });
 });

@@ -5,7 +5,8 @@
     "platform",
     "input",
     "render",
-    "ui"
+    "ui",
+    "boot"
   ],
   "excluded": {
     "core/visual-state.ts VisualState.tema": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6",
@@ -67,7 +68,9 @@
     "tests/loop-crash.node.test.js caixa": "a helper local to the test (it finds the notice box in its fake document)",
     "tests/language-changed-mid-game.browser.test.js indice": "a record local to the test (what it captured before the change)",
     "tests/pause-icons.browser.test.js letra": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name",
-    "tests/shell.browser.test.js nivel": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name"
+    "tests/shell.browser.test.js nivel": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name",
+    "tests/hud.browser.test.js pausa": "a record local to the test (the pieces of a screen it looks up)",
+    "tests/no-text-under-16px.node.test.js linha": "a record local to the test (where in the stylesheet a size was found)"
   },
   "layers": {
     "core": {
@@ -385,6 +388,33 @@
       "ui/shell.ts ShellApi.aplicarCena": "applyScene",
       "ui/typo-choices.ts FontCssTarget.fonte": "font",
       "ui/typo-choices.ts FontCssTarget.cursiva": "cursive"
+    },
+    "boot": {
+      "boot/create-game.ts Declinios.semAssistenteDePad": "noPadAssistant",
+      "boot/create-game.ts Declinios.semAtorDePausa": "noPauseActor",
+      "boot/create-game.ts Declinios.semVozNeural": "noNeuralVoice",
+      "boot/create-game.ts CreateGameOptions.comIndice": "withIndex",
+      "boot/create-game.ts CreateGameOptions.naBarraDe": "onBar",
+      "boot/create-game.ts CreateGameOptions.controleNaTela": "onScreenPad",
+      "boot/create-game.ts CreateGameOptions.acomodacoes": "accommodations",
+      "boot/create-game.ts CreateGameOptions.genero": "genre",
+      "boot/create-game.ts CreateGameOptions.aoProgredirPesados": "onHeavyProgress",
+      "boot/create-game.ts CreateGameOptions.disponibilidade": "availability",
+      "boot/create-game.ts CreateGameOptions.setTemaDoJogador": "setPlayerTheme",
+      "boot/create-game.ts CreateGameOptions.setCorrecaoDoJogador": "setPlayerCorrection",
+      "boot/create-game.ts Engine.pausa": "pause",
+      "boot/create-game.ts Engine.pausa.mostrar": "show",
+      "boot/create-game.ts Engine.pausa.esconder": "hide",
+      "boot/create-game.ts Engine.legendarSom": "captionSound",
+      "boot/create-game.ts Engine.velocidadeDoJogo": "gameSpeed",
+      "boot/create-game.ts Engine.medirFlashes": "measureFlashes",
+      "boot/create-game.ts Engine.aplicarFiltroDeVisao": "applyVisionFilter",
+      "boot/create-game.ts Engine.cenas": "scenes",
+      "boot/create-game.ts Engine.aoFalhar": "onFailure",
+      "boot/create-game.ts keyboardRows.modo": "mode",
+      "boot/create-game.ts keyboardRows.linha": "row",
+      "boot/create-game.ts keyboardRows.forte": "strong",
+      "boot/create-game.ts keyboardRows.botao": "button"
     }
   }
 }

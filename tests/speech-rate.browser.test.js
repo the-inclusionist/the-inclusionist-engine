@@ -44,7 +44,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
-    acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }],
+    accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }],
     uses: { neuralVoice: true },
   });
 });
@@ -58,7 +58,7 @@ describe('the speech rate in the hearing panel', () => {
   it('🔴 [Right] is a list of the six steps, «N PPM», starting at the normal 254 (ADR-0196)', () => {
     const sel = document.querySelector('#audio #tts-ppm');
     expect(sel, 'no «Ritmo da fala» row in the hearing panel').not.toBeNull();
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
     expect(sel.tagName).toBe('SELECT');

@@ -11,7 +11,9 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { leftovers } from '../scripts/apply-member-rename.mjs';
+import ts from 'typescript';
+import { leftovers, isMember, keyOf } from '../scripts/apply-member-rename.mjs';
+import { source, words, readLists } from '../scripts/language-inventory.mjs';
 
 const ROOT = process.cwd();
 const map = JSON.parse(readFileSync(join(ROOT, 'scripts/member-rename-map.json'), 'utf8'));
@@ -28,6 +30,24 @@ describe('a renamed member leaves nothing behind', () => {
       return !existsSync(join(ROOT, file)) || !new RegExp(`\\b${name}\\b`).test(readFileSync(join(ROOT, file), 'utf8'));
     });
     expect(stale).toEqual([]);
+  });
+
+  it('🔴 [Right] PHASE 7 IS DONE: every Portuguese member left in app/js is an EXCLUDED one, and each says why', () => {
+    // The end state ADR-0230 set: «the language gate reports `membro` at the count of the excluded list and nothing
+    // more». Held here as a SET and not a count — a new Portuguese member and a renamed excluded one would cancel out
+    // in a number and stay visible in a set.
+    const lists = readLists();
+    const left = [];
+    for (const f of source()) {
+      const sf = ts.createSourceFile(f, readFileSync(join(ROOT, f), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+      (function walk(n) {
+        if (isMember(n) && n.name && ts.isIdentifier(n.name) && words(n.name.text).some((w) => lists.pt.has(w))) left.push(keyOf(n, f.replace('app/js/', '')));
+        n.forEachChild(walk);
+      })(sf);
+    }
+    expect(left.filter((k) => !map.excluded[k]), 'a Portuguese member outside the excluded list: name it in English').toEqual([]);
+    expect(Object.keys(map.excluded).filter((k) => !left.includes(k)), 'an exclusion whose member is gone: remove it').toEqual([]);
+    expect(Object.values(map.excluded).every((why) => typeof why === 'string' && why.length > 20)).toBe(true);
   });
 
   it('⚠️ [Interface] a stored shape is never both excluded and renamed', () => {

@@ -18,14 +18,14 @@ const declaracao = () => ({
   objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],
 });
 async function escolher(chave) {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
   const sel = document.querySelector('#empathy #opt-simulacao');
   sel.value = chave;
   sel.dispatchEvent(new Event('change', { bubbles: true }));
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
   await new Promise((r) => setTimeout(r, 30)); // a simulation comes back with the game once the menus close (issue #182)
 }
 const camada = () => document.querySelector('#viz-overlay');
@@ -42,19 +42,19 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"><div id="mundo" style="position:relative;width:640px;height:360px"></div></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 afterAll(() => { if (antes === null) localStorage.removeItem('incl_viz'); else localStorage.setItem('incl_viz', antes); });
 
 describe('the field-of-vision simulations', () => {
   it('🔴 [Right] the empathy list offers tunnel vision, a central scotoma and scattered scotomas', () => {
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
     const valores = [...document.querySelectorAll('#empathy #opt-simulacao option')].map((o) => o.value);
     for (const chave of ['lv-tunnel', 'lv-macular', 'lv-diabetic']) expect(valores, chave).toContain(chave);
     for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
   });
 
   it('🔴 [Right] tunnel vision darkens the edge and leaves the centre clear, over the world, taking no click', async () => {

@@ -2970,6 +2970,57 @@ The table is printed from `scripts/member-rename-map.json` by `node scripts/appl
 | `ui/typo-choices.js` | `FontCssTarget` | `fonte` | `font` |
 | `ui/typo-choices.js` | `FontCssTarget` | `cursiva` | `cursive` |
 
+## CN · Published members speak English — the `boot` layer, which is the contract (ADR-0230, issue #206)
+
+**Who is affected: every cartridge.** This is `CreateGameOptions`, `Declinios` and `Engine` — what a game writes to
+`createGame` and what it reads back.
+· **`acomodacoes` is now `accommodations`, and it is REQUIRED**: a game that still passes `acomodacoes` is refused at
+  boot, loudly, by the same check that refused a game with no answer. Also `genero` → `genre`, `controleNaTela` →
+  `onScreenPad`, `comIndice` → `withIndex`, `naBarraDe` → `onBar`, `disponibilidade` → `availability`,
+  `aoProgredirPesados` → `onHeavyProgress`, `setTemaDoJogador`/`setCorrecaoDoJogador` → `setPlayerTheme`/`setPlayerCorrection`.
+· `declines`: `semVozNeural` → `noNeuralVoice`, `semAtorDePausa` → `noPauseActor`, `semAssistenteDePad` → `noPadAssistant`.
+  The problem lines name the new keys.
+· what the engine returns: `engine.pause.show(i)`/`hide(i)` (was `pausa.mostrar`/`esconder`), `captionSound`,
+  `gameSpeed`, `measureFlashes`, `applyVisionFilter`, `scenes`, `onFailure`.
+
+⚠️ **The quiet case is an OPTIONAL option under its old name**: `naBarraDe`, `comIndice`, `setTemaDoJogador` and the
+`declines` compile in plain JavaScript and are simply not read — the bar is not steered by the game, the index is
+spoken, the engine's own writer is used, the decline is not taken. A TypeScript cartridge gets an error on a fresh
+object literal. Search the game for the old names in this table.
+
+📌 **Phase 7 ends here.** Every Portuguese member left in `app/js` is one of eleven exclusions, each with its reason in
+`scripts/member-rename-map.json`, and `tests/member-renames-leave-nothing-behind.node.test.js` holds that as a set.
+
+The table is printed from `scripts/member-rename-map.json` by `node scripts/apply-member-rename.mjs --table boot`.
+
+| module | type | old member | new member |
+|---|---|---|---|
+| `boot/create-game.js` | `Declinios` | `semAssistenteDePad` | `noPadAssistant` |
+| `boot/create-game.js` | `Declinios` | `semAtorDePausa` | `noPauseActor` |
+| `boot/create-game.js` | `Declinios` | `semVozNeural` | `noNeuralVoice` |
+| `boot/create-game.js` | `CreateGameOptions` | `comIndice` | `withIndex` |
+| `boot/create-game.js` | `CreateGameOptions` | `naBarraDe` | `onBar` |
+| `boot/create-game.js` | `CreateGameOptions` | `controleNaTela` | `onScreenPad` |
+| `boot/create-game.js` | `CreateGameOptions` | `acomodacoes` | `accommodations` |
+| `boot/create-game.js` | `CreateGameOptions` | `genero` | `genre` |
+| `boot/create-game.js` | `CreateGameOptions` | `aoProgredirPesados` | `onHeavyProgress` |
+| `boot/create-game.js` | `CreateGameOptions` | `disponibilidade` | `availability` |
+| `boot/create-game.js` | `CreateGameOptions` | `setTemaDoJogador` | `setPlayerTheme` |
+| `boot/create-game.js` | `CreateGameOptions` | `setCorrecaoDoJogador` | `setPlayerCorrection` |
+| `boot/create-game.js` | `Engine` | `pausa` | `pause` |
+| `boot/create-game.js` | `Engine.pausa` | `mostrar` | `show` |
+| `boot/create-game.js` | `Engine.pausa` | `esconder` | `hide` |
+| `boot/create-game.js` | `Engine` | `legendarSom` | `captionSound` |
+| `boot/create-game.js` | `Engine` | `velocidadeDoJogo` | `gameSpeed` |
+| `boot/create-game.js` | `Engine` | `medirFlashes` | `measureFlashes` |
+| `boot/create-game.js` | `Engine` | `aplicarFiltroDeVisao` | `applyVisionFilter` |
+| `boot/create-game.js` | `Engine` | `cenas` | `scenes` |
+| `boot/create-game.js` | `Engine` | `aoFalhar` | `onFailure` |
+| `boot/create-game.js` | `keyboardRows` | `modo` | `mode` |
+| `boot/create-game.js` | `keyboardRows` | `linha` | `row` |
+| `boot/create-game.js` | `keyboardRows` | `forte` | `strong` |
+| `boot/create-game.js` | `keyboardRows` | `botao` | `button` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

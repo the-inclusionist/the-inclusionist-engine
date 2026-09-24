@@ -24,7 +24,7 @@ describe('the empathy panel speaks the boot language', () => {
     raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
       + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
     document.body.appendChild(raiz);
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: {
         topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => false, tick: 'player',
         world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
@@ -36,7 +36,7 @@ describe('the empathy panel speaks the boot language', () => {
     });
     await localeReady();
     expect(getLocale(), 'the en chunk did not load; the case would measure nothing').toBe('en');
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
     const linha = document.getElementById('opt-hearing').closest('.ctrl-row');
     expect(linha.querySelector('strong').textContent).toBe('Simulate hearing loss');

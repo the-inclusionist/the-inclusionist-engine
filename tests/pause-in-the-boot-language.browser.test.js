@@ -71,7 +71,7 @@ describe('o cartão de pausa fala o idioma do arranque', () => {
     const { localeReady, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = palco();
 
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+    const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(),
       host: { doc: document, win: window, a11yBarHost: raiz.querySelector('#title-icons') },
       downloadHeavy: false,
@@ -91,7 +91,7 @@ describe('o cartão de pausa fala o idioma do arranque', () => {
 
     // ⚠️ ABRIR é o que repinta: `pausa.mostrar` chama `reflectPauseIcons()`, e é lá que o nome se refaz. O
     // idioma vale no instante em que a criança abre a pausa, que é o instante certo.
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
 
     const nome = document.querySelector('#vp-pause-0 .pause-card')?.getAttribute('aria-label') || '';
     expect(nome, 'o cartão anuncia-se no idioma de recuo a quem usa leitor de tela').not.toMatch(/Menu de pausa/);

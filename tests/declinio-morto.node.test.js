@@ -43,7 +43,7 @@ const CREATE_GAME = 'boot/create-game.ts';
  * e um consumidor a pensar que decidiu.
  */
 const SEM_LEITOR = {
-  semAssistenteDePad:
+  noPadAssistant:
     'a raiz MONTA o assistente (o painel `#padwiz`, «Mapear controle») e não pergunta a esta declinação se o ' +
     'deve fazer: declinar não muda nada. Ou a raiz passa a lê-la, ou o campo sai do tipo — e sair é quebra de ' +
     'contrato, decidida à parte (medido em 23/09, ao tirar o `spriteBase`)',
@@ -127,7 +127,7 @@ describe('nenhuma declinação está morta · o inventário encolhe', () => {
   it('[Fronteira] os que a engine lê aparecem como vivos', () => {
     // Eram TRÊS até 2026-09-09; o `semMenuDePausa` saiu do contrato inteiro (ADR-0120), e por isso sai daqui
     // em vez de continuar a ser afirmado — um crivo que exige um campo inexistente reprova para sempre.
-    for (const vivo of ['semAtorDePausa', 'semVozNeural']) {
+    for (const vivo of ['noPauseActor', 'noNeuralVoice']) {
       expect(CAMPOS, `${vivo} deixou de ser um declínio`).toContain(vivo);
       expect(leitores(vivo), `${vivo} passou a ser letra morta`).toBeGreaterThan(0);
     }

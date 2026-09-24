@@ -43,7 +43,7 @@ const PAINEIS = ['empatia', 'som', 'audio', 'visual', 'motora', 'sensib'];
 function visitarOsPaineis() {
   const mapa = new Map();
   for (const act of PAINEIS) {
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     const botao = document.querySelector(`#vp-pause-0 .pm-btn[data-act="${act}"]`);
     if (!botao) continue;
@@ -57,7 +57,7 @@ function visitarOsPaineis() {
       });
     }
     for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
   }
   return mapa;
 }
@@ -67,7 +67,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"><div id="mundo" style="position:relative;width:640px;height:360px"></div></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 
 // The stored language lives in this origin's storage, and every browser file of this suite shares it.
@@ -110,7 +110,7 @@ describe('a language changed in play reaches the explanations too', () => {
     // 🎯 THE CASE THAT MAKES THE LATE READ MATTER, and it was missing: the two above read `data-explain`, which a closure
     // captured at wiring time would happily contradict. The footer is `aria-live` and is the only thing a child who cannot
     // see the row has, so what it SAYS is the assertion — not what the row stores.
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="motora"]').click();
     const linha = [...document.querySelectorAll('.overlay:not([hidden]) .ctrl-row[data-explain]')][0];
@@ -122,7 +122,7 @@ describe('a language changed in play reaches the explanations too', () => {
       .toBe(linha.dataset.explain);
     expect(rodape.textContent).not.toBe(antes.pt.get([...antes.pt.keys()].find((k) => k.startsWith('motora')))?.explain);
     for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
   });
 
   it('⚠️ [Boundary] the explanation is HIDDEN in the row, never visible beside the label (CLAUDE.md §4)', () => {

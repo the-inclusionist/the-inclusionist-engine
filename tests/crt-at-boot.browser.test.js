@@ -24,7 +24,7 @@ beforeAll(async () => {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   document.body.append(Object.assign(document.createElement('p'), { id: 'sr-status' }), palco, svg);
   regiao = palco.querySelector('#game-region');
-  createGame({ acomodacoes: SEM_ASSUNTO,
+  createGame({ accommodations: SEM_ASSUNTO,
     declaration: {
       topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => false, tick: 'player',
       world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',

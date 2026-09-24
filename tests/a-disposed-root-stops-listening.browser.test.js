@@ -53,7 +53,7 @@ describe('o tempo de vida de uma raiz', () => {
 
   const abrir = () => {
     const motor = createGame({
-      acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(),
+      accommodations: SEM_ASSUNTO, declaration: declaracaoValida(),
       host: { doc: document, win: window }, downloadHeavy: false,
     });
     vivos.push(motor);
@@ -68,13 +68,13 @@ describe('o tempo de vida de uma raiz', () => {
 
   /** Quantos itens o cursor andou com UMA seta, no cartão de pausa aberto. */
   const passosDeUmaSeta = (motor) => {
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     const cartao = document.querySelector('#vp-pause-0');
     const itens = [...cartao.querySelectorAll('.pause-menu[data-sub="raiz"] .pm-btn:not([hidden])')];
     const antes = itens.indexOf(cartao.querySelector('.pm-sel'));
     seta();
     const depois = itens.indexOf(cartao.querySelector('.pm-sel'));
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
     return depois - antes;
   };
 
@@ -113,7 +113,7 @@ describe('o tempo de vida de uma raiz', () => {
     motor.unmount();
     // ⚠️ Os ganchos vão aqui, e não são opcionais como a interface diz: `mount` lê `ganchos.preset` sem guarda, logo
     // `mount(declaration)` estoura com um `TypeError` em vez da frase da própria engine. Está dito ao Dev; não é deste conserto.
-    motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
 
     expect(passosDeUmaSeta(motor), 'depois de `unmount()` + `mount()` a raiz deixou de ouvir a seta').toBe(1);
   });

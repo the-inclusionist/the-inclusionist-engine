@@ -36,14 +36,14 @@ const declaracao = () => ({
 
 /** The child's path to the list: pause → settings → empathy. */
 function abrirEmpatia() {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
   return document.querySelector('#empathy #opt-simulacao');
 }
 function fechar() {
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
 }
 const textos = (sel) => [...sel.options].map((o) => (o.textContent ?? '').trim());
 const chaves = (sel) => [...sel.options].map((o) => o.value);
@@ -53,7 +53,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"><div id="mundo" style="position:relative;width:640px;height:360px"></div></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 
 // ⚠️ The stored language lives in this origin's storage, which every browser file of this suite SHARES. A file that

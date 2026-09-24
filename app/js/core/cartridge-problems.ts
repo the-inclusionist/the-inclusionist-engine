@@ -76,13 +76,13 @@ function declaredProblems(d: DeclaredCartridgeFacts): string[] {
   if (!d.wantsNeuralVoice && !d.declinesNeuralVoice) {
     lines.push(
       'there is no neural voice: a child who cannot read gets the system voice, which a school Chromebook may not have '
-      + 'for the child\'s language — declare `uses: { neuralVoice: true }` (ADR-0216) or `declines.semVozNeural`',
+      + 'for the child\'s language — declare `uses: { neuralVoice: true }` (ADR-0216) or `declines.noNeuralVoice`',
     );
   }
   if (d.seats > 1 && !d.declinesPauseActor && !d.setsPauseActor) {
     lines.push(
       `${d.seats} players are declared and the pause actor is not set: the controls panel always edits seat 0, so `
-      + 'no child but the first can remap — pass `setPauseActor`, or declare `declines.semAtorDePausa` if on purpose',
+      + 'no child but the first can remap — pass `setPauseActor`, or declare `declines.noPauseActor` if on purpose',
     );
   }
   return lines;

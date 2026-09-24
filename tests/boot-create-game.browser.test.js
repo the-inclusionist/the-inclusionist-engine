@@ -65,7 +65,7 @@ const declaracaoValida = () => ({
  */
 const raizesAbertas = [];
 const abrir = (extra = {}) => {
-  const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+  const motor = createGame({ accommodations: SEM_ASSUNTO,
     declaration: declaracaoValida(),
     host: { doc: document, win: window }, downloadHeavy: false,
     ...extra,
@@ -137,10 +137,10 @@ describe('createGame num documento de verdade', () => {
     const motor = abrir();
     const cartao = document.querySelector('#vp-pause-0');
     expect(cartao.offsetParent, 'o cartão nasceu visível — uma pausa ABRE, não está sempre aberta').toBeNull();
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     expect(cartao.hidden).toBe(false);
     expect(cartao.offsetParent, '`hidden` saiu mas o cartão continua sem ocupar espaço nenhum').not.toBeNull();
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
     expect(cartao.offsetParent).toBeNull();
   });
 
@@ -327,7 +327,7 @@ describe('createGame num documento de verdade', () => {
       // nada. `addplayer` continua a ser do jogo: entrar um segundo jogador é uma decisão que só ele sabe
       // tomar. 📌 Um caso cujo exemplo deixa de ser exemplo mede o oposto do que diz.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
 
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="addplayer"]');
       expect(item, 'o cartão nem sequer desenha o item').not.toBeNull();
@@ -341,7 +341,7 @@ describe('createGame num documento de verdade', () => {
       // down and saw nothing selected; the count «N of M» counted the invisible ones too.
       // ⚠️ Since ADR-0161 the engine hides nothing, but a game may pass its own lists: the item is hidden by hand here.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]').hidden = true;
       const visiveis = [...document.querySelectorAll('#vp-pause-0 .pause-menu:not([hidden]) .pm-btn')].filter((b) => !b.hidden);
       expect(visiveis.length, 'nothing is hidden — the case would measure nothing').toBeLessThan(
@@ -354,38 +354,38 @@ describe('createGame num documento de verdade', () => {
         expect(sel.hidden, `the cursor landed on the hidden «${sel.dataset.act}»`).toBe(false);
       }
       document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]').hidden = false;
-      motor.pausa.esconder(0);
+      motor.pause.hide(0);
     });
 
     it('🔴 [Right] opening the card puts the cursor on item 1 of the ROOT — even if it was closed inside the submenu (ADR-0158)', () => {
       // 📏 Measured in dist: opened by SELECT, no item was marked, and the first ArrowDown jumped to item 2.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       expect(document.querySelector('#vp-pause-0 .pm-sel')?.dataset.act, 'no cursor on open').toBe('resume');
       document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
-      motor.pausa.esconder(0);
-      motor.pausa.mostrar(0);
+      motor.pause.hide(0);
+      motor.pause.show(0);
       expect(document.querySelector('#vp-pause-0 .pause-menu[data-sub="raiz"]').hidden, 'reopened inside the submenu').toBe(false);
       expect(document.querySelector('#vp-pause-0 .pm-sel')?.dataset.act).toBe('resume');
-      motor.pausa.esconder(0);
+      motor.pause.hide(0);
     });
 
     it('🔴 [Right] a game that declares NOTHING still gets the six root items and the seven of the submenu, in order (ADR-0161)', () => {
       // The Dev found three items in the quiz and listed both menus in full. Order is literal, from their list.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       const lista = (sub) => [...document.querySelectorAll(`#vp-pause-0 .pause-menu[data-sub="${sub}"] .pm-btn`)]
         .filter((b) => !b.hidden).map((b) => b.dataset.act);
       expect(lista('raiz')).toEqual(['resume', 'ajuda', 'addplayer', 'options', 'opcoesdojogo', 'quit']);
       expect(lista('opcoes')).toEqual(['pmback', 'empatia', 'audio', 'som', 'motora', 'visual', 'anim']);
       // «Conforto auditivo (era Audio)» — the Dev's rename, on the item and on the panel it opens
       expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="som"]').textContent).toContain('Conforto auditivo');
-      motor.pausa.esconder(0);
+      motor.pause.hide(0);
     });
 
     it('🔴 [Right] a locked item SAYS WHY — reached by the cursor, and activated — and does nothing (ADR-0161)', async () => {
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       const jogadores = document.querySelector('#vp-pause-0 .pm-btn[data-act="addplayer"]');
       expect(jogadores.getAttribute('aria-disabled'), '«Número de jogadores» is not locked in a game that does not act on it').toBe('true');
       // reached: the cursor stops on it, and the reason follows its name
@@ -404,13 +404,13 @@ describe('createGame num documento de verdade', () => {
       opcoes.click();
       expect(document.querySelector('#vp-pause-0 .pause-menu[data-sub="raiz"]').hidden, 'the locked door opened').toBe(false);
       expect([...document.querySelectorAll('#game-region .barra-explicacao')].at(-1)?.textContent).toBe('Este jogo não tem opções próprias.');
-      motor.pausa.esconder(0);
+      motor.pause.hide(0);
     });
 
     it('⚠️ [Right] com `getPauseActs`, o item APARECE e o clique chega ao jogo', () => {
       let entrou = 0;
       const motor = abrir({ getPauseActs: () => ({ addplayer: () => { entrou += 1; } }) });
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
 
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="addplayer"]');
       expect(item.hidden, 'o jogo ligou o item e ele continua escondido').toBe(false);
@@ -432,7 +432,7 @@ describe('createGame num documento de verdade', () => {
         getPauseActs: () => ({ quit: () => { saiuPeloJogo += 1; } }),
         setPhase: (p) => { fase = p; },
       });
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
 
       document.querySelector('#vp-pause-0 .pm-btn[data-act="quit"]').click();
 
@@ -446,7 +446,7 @@ describe('createGame num documento de verdade', () => {
       // raiz recusa montar de propósito — a engine esconde o cartão dela e PEDE a fase.
       const fases = [];
       const motor = abrir({ setPhase: (p) => fases.push(p) });
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       const sair = document.querySelector('#vp-pause-0 .pm-btn[data-act="quit"]');
       expect(sair.hidden, 'a engine oferece `quit` e o item continua escondido').toBe(false);
 
@@ -465,7 +465,7 @@ describe('createGame num documento de verdade', () => {
        * exercite. Dito aqui para ninguém ler a ausência como cobertura.
        */
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="print"]'), 'o print continua na raiz').toBeNull();
       expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="quit"]'), 'o caso mediria um cartão vazio').not.toBeNull();
     });
@@ -597,7 +597,7 @@ describe('createGame num documento de verdade', () => {
       const mundo = document.querySelector('#game-region');
       try {
         document.querySelector('#title-icons [data-pi="cvd"]').click();
-        motor.pausa.mostrar(0);
+        motor.pause.show(0);
         document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]').click();
         const passo = (d) => document.getElementById('opt-lq').dispatchEvent(new CustomEvent('passo', { detail: d }));
         passo(1);
@@ -609,13 +609,13 @@ describe('createGame num documento de verdade', () => {
       } finally {
         setLq(0);
         document.getElementById('visual-close')?.click();
-        motor.pausa.esconder(0);
+        motor.pause.hide(0);
       }
     });
 
     it('🔴 [Right] the VISUAL panel offers the two rows the engine can drive — and none of a game it does not know', () => {
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]');
       expect(item.getAttribute('aria-disabled'), 'the visual item is still locked').toBeNull();
       item.click();
@@ -633,7 +633,7 @@ describe('createGame num documento de verdade', () => {
       document.getElementById('opt-cbsafe').click(); // back (the panel re-rendered the row)
       expect(document.documentElement.dataset.paleta).toBe(antes);
       document.getElementById('visual-close').click();
-      motor.pausa.esconder(0);
+      motor.pause.hide(0);
     });
 
     /** A simulation chosen in the panel's list, the way a mouse or a touch picks an option. */
@@ -647,7 +647,7 @@ describe('createGame num documento de verdade', () => {
       const audio = await import('../app/js/platform/audio.js');
       const motor = abrir();
       const mundo = document.querySelector('#game-region');
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]');
       expect(item.getAttribute('aria-disabled'), 'the empathy item is still locked').toBeNull();
       item.click();
@@ -680,7 +680,7 @@ describe('createGame num documento de verdade', () => {
       } finally {
         if (document.getElementById('opt-simulacao')) escolherSimulacao('normal');
         document.getElementById('empathy-close').click();
-        motor.pausa.esconder(0);
+        motor.pause.hide(0);
       }
     });
 
@@ -691,7 +691,7 @@ describe('createGame num documento de verdade', () => {
       const motor = abrir({ host: { doc: document, win: window, cvdHost: svg } });
       const mundo = document.querySelector('#game-region');
       document.querySelector('#title-icons [data-pi="cvd"]').click();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
       try {
         // by the KEYBOARD, the way a child adjusts a list: the refusal must not be spoken over by the list's new value
@@ -706,7 +706,7 @@ describe('createGame num documento de verdade', () => {
         expect(document.querySelector('#sr-status')?.textContent, 'the refusal was silent').toMatch(/correção de cor/);
       } finally {
         document.getElementById('empathy-close').click();
-        motor.pausa.esconder(0);
+        motor.pause.hide(0);
       }
     });
 
@@ -718,24 +718,24 @@ describe('createGame num documento de verdade', () => {
       // the game's own part of the world: a simulation runs there, never on the menus beside it (issue #182)
       const parte = mundo.appendChild(document.createElement('div'));
       const tick = () => new Promise((r) => setTimeout(r, 20));
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
       try {
         escolherSimulacao('blind');
         document.getElementById('empathy-close').click();
-        motor.pausa.esconder(0);
+        motor.pause.hide(0);
         await tick();
         expect(parte.style.filter, 'the case would measure nothing').toMatch(/brightness\(0\)/);
         document.querySelector('#title-icons [data-pi="cvd"]').click();
         expect(mundo.style.filter, 'the correction did not reach the world').toMatch(/cvd-fix-/);
         expect(parte.style.filter + mundo.style.filter, 'the simulation kept running over the correction').not.toMatch(/brightness\(0\)/);
         // and the panel's list says what runs now, not the simulation that was stopped from outside it
-        motor.pausa.mostrar(0);
+        motor.pause.show(0);
         document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
         expect(document.getElementById('opt-simulacao').value, 'the list still shows the stopped simulation').toBe('normal');
         document.getElementById('empathy-close').click();
       } finally {
-        motor.pausa.esconder(0);
+        motor.pause.hide(0);
       }
     });
 
@@ -769,7 +769,7 @@ describe('createGame num documento de verdade', () => {
       expect(vistos[3], 'a volta ao tricromata deixou a última correcção por cima do jogo').toBe('');
     });
 
-    it('🔴 [Right] o `setCorrecaoDoJogador` do JOGO ganha ao padrão da engine', () => {
+    it('🔴 [Right] o `setPlayerCorrection` do JOGO ganha ao padrão da engine', () => {
       // O padrão é piso, não tomada: um jogo que corrija a cor no seu próprio render — o `game-pinball`
       // fá-lo num framebuffer há semanas — entrega o seu e a engine sai da frente.
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -777,7 +777,7 @@ describe('createGame num documento de verdade', () => {
       const vistas = [];
       abrir({
         host: { doc: document, win: window, cvdHost: svg },
-        setCorrecaoDoJogador: (i, c) => vistas.push(c),
+        setPlayerCorrection: (i, c) => vistas.push(c),
       });
       const mundo = document.querySelector('#game-region');
 
@@ -797,7 +797,7 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('⚠️ [Right] com eles, os dois ícones aparecem — e o §4 do ADR-0044 fica alcançável', () => {
-      abrir({ setTemaDoJogador: () => {}, setCorrecaoDoJogador: () => {} });
+      abrir({ setPlayerTheme: () => {}, setPlayerCorrection: () => {} });
 
       expect(document.querySelector('#title-icons [data-pi="contrast"]'), 'alto contraste').not.toBeNull();
       expect(document.querySelector('#title-icons [data-pi="cvd"]'), 'correcção de cor').not.toBeNull();
@@ -807,7 +807,7 @@ describe('createGame num documento de verdade', () => {
       // O par não é um botão de dois estados: um jogo pode saber repintar para alto contraste e não ter
       // como corrigir daltonismo, ou o contrário — que é exactamente o caso do `game-pinball`, cuja imagem
       // é um framebuffer de 320x180 sem textura para repintar, mas que aplica um filtro de cor há semanas.
-      abrir({ setCorrecaoDoJogador: () => {} });
+      abrir({ setPlayerCorrection: () => {} });
 
       expect(document.querySelector('#title-icons [data-pi="cvd"]'), 'o que ele sabe fazer').not.toBeNull();
       expect(document.querySelector('#title-icons [data-pi="contrast"]'), 'o que ele não sabe').toBeNull();
@@ -847,14 +847,14 @@ describe('createGame num documento de verdade', () => {
     };
     const motor = abrir({
       declaration: { ...declaracaoValida(), needsPointer: () => true },
-      disponibilidade: semNada,
+      availability: semNada,
       preset: { up: { label: 'Cima' }, down: { label: 'Baixo' }, action1: { label: 'Agir' } },
     });
     expect(document.querySelector('#reach-notice'), 'o aviso nem chegou a aparecer — o caso não mede nada')
       .not.toBeNull();
 
     // Sem ganchos: o cartucho novo não declara `preset`, logo não tem ações a avisar.
-    motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
     expect(document.querySelector('#reach-notice'), 'o aviso do cartucho anterior ficou na página')
       .toBeNull();
   });
@@ -906,7 +906,7 @@ describe('createGame num documento de verdade', () => {
           left: { label: 'Alternativa anterior' },
         },
       });
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
 
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]');
       expect(item, 'o item de ajuda nem foi montado').not.toBeNull();
@@ -947,7 +947,7 @@ describe('createGame num documento de verdade', () => {
         preset: { action2: { label: 'Confirmar' } },
         howToPlay: [{ text: () => 'Leia a pergunta.' }, { text: () => 'Escolha a resposta certa.', figure: () => {} }],
       });
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]').click();
       const slides = document.querySelector('#help .slides');
       const slide = () => slides.querySelector('.slide');
@@ -963,7 +963,7 @@ describe('createGame num documento de verdade', () => {
 
     it('⚠️ [Boundary] a cartridge with «how to play» and no preset still has a help — its slides alone', () => {
       const motor = abrir({ howToPlay: [{ text: () => 'Toque na figura certa.' }] });
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]');
       expect(item.getAttribute('aria-disabled'), 'the help is locked though the game tells how to play').not.toBe('true');
       item.click();
@@ -980,7 +980,7 @@ describe('createGame num documento de verdade', () => {
       // O par do caso acima. Sem as palavras do jogo a ajuda não se monta (ADR-0074); desde o ADR-0161 o item fica à
       // vista e travado com o motivo, em vez de sumir. Medir só a presença deixaria passar uma ajuda vazia.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]');
       expect(item.hidden, 'the help item vanished — the card changes shape per game').toBe(false);
       expect(item.getAttribute('aria-disabled'), 'a ajuda acendeu sem o jogo declarar uma palavra sequer').toBe('true');
@@ -992,7 +992,7 @@ describe('createGame num documento de verdade', () => {
       // guarda só os três de `ENGINE_ITEMS`, e `rootThatActs` tira também o `options` porque seria «uma
       // porta para uma sala vazia». Com uma acção de verdade, a porta e a sala existem.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       expect(itemAnim(), 'o item de sensibilidade visual nem foi montado').not.toBeNull();
       expect(itemAnim().hidden, 'o item existe e está escondido: o filtro do §5 não o viu accionar').toBe(false);
       const porta = document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]');
@@ -1003,7 +1003,7 @@ describe('createGame num documento de verdade', () => {
       // O caminho inteiro: botão da pausa -> despacho de `ui/pause-icons` -> tabela da engine -> `abrir()` ->
       // `render()` do painel. Nenhum duplo percorre isto; e é o percurso que a criança faz.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       itemAnim().click();
 
       const painel = document.querySelector('#animation');
@@ -1016,7 +1016,7 @@ describe('createGame num documento de verdade', () => {
 
     it('⚠️ [Right] o painel ENTRA na cadeia do Escape — o registo estava vazio sob o `createGame`', () => {
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       expect(motor.overlays.escapeTarget(), 'com tudo fechado a cadeia não tem alvo').toBeNull();
       itemAnim().click();
       expect(motor.overlays.escapeTarget(), 'o painel abriu e nenhuma tecla o fecha — a armadilha do ADR-0044 §2')
@@ -1028,7 +1028,7 @@ describe('createGame num documento de verdade', () => {
       // jogo que já tenha o seu painel de sensibilidade visual continua a ser quem responde pelo item.
       let meu = 0;
       const motor = abrir({ getPauseActs: () => ({ anim: () => { meu += 1; } }) });
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       itemAnim().click();
       expect(meu, 'a engine ganhou ao jogo na própria mesa dele').toBe(1);
       expect(document.querySelector('#animation').hidden,
@@ -1042,7 +1042,7 @@ describe('createGame num documento de verdade', () => {
       // montar — os casos do comportamento dele saíram com a montagem, e o módulo tem os seus em
       // `settings-caa.browser.test.js`.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       expect(document.querySelector('#caa'), 'o painel de CAA continua montado sem porta').toBeNull();
       expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="caa"]'), 'a porta «Comunicação» continua').toBeNull();
       expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="tipo"]'), 'a porta «Tipografia» continua').toBeNull();
@@ -1067,7 +1067,7 @@ describe('createGame num documento de verdade', () => {
       // `#animation-reset` e `#animation-close`, que casam — e lê a lista em `#motion-list`. A casca que
       // criasse `#animation-list` devolveria um painel que abre VAZIO, sem erro, que é o achado 6 outra vez.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]');
       expect(item, 'o item de sensibilidade visual nem foi montado').not.toBeNull();
       expect(item.hidden).toBe(false);
@@ -1086,7 +1086,7 @@ describe('createGame num documento de verdade', () => {
       // E ele não é conveniência — é a saída de quem sentiu enjoo com a tela a mexer e precisa de parar TUDO
       // num gesto, em vez de percorrer sete linhas uma a uma.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]').click();
 
       const mestre = document.querySelector('#motion-master');
@@ -1106,7 +1106,7 @@ describe('createGame num documento de verdade', () => {
       // O maior dos oito: quinze nós que o painel alcançava e nunca criava. Aqui o que se mede é o percurso
       // inteiro — item da pausa, tabela da engine, `abrir()`, `renderAudio()` — e que a tag sobreviveu a ele.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]');
       expect(item, 'o item de acessibilidade auditiva nem foi montado').not.toBeNull();
       expect(item.hidden).toBe(false);
@@ -1137,7 +1137,7 @@ describe('createGame num documento de verdade', () => {
 
     it('🎯 [Right] o painel ÁUDIO abre pelo submenu, com o SOM GERAL e as quatro categorias de gosto (ADR-0151)', () => {
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="som"]');
       expect(item, 'o item «Áudio» nem foi montado').not.toBeNull();
       expect(item.hidden, 'o item «Áudio» está escondido: a engine não o acciona').toBe(false);
@@ -1160,7 +1160,7 @@ describe('createGame num documento de verdade', () => {
       // between «Voltar» and the first row. The shell alone cannot promise the order; the interiors can break it.
       const motor = abrir();
       for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora'], ['visual', 'visual'], ['empatia', 'empathy']]) {
-        motor.pausa.mostrar(0);
+        motor.pause.show(0);
         const item = document.querySelector(`#vp-pause-0 .pm-btn[data-act="${act}"]`);
         expect(item?.hidden, `the «${act}» item is not live — the case would skip it`).toBe(false);
         item.click();
@@ -1181,7 +1181,7 @@ describe('createGame num documento de verdade', () => {
       const motor = abrir();
       const achados = [];
       for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora'], ['visual', 'visual'], ['empatia', 'empathy']]) {
-        motor.pausa.mostrar(0);
+        motor.pause.show(0);
         document.querySelector(`#vp-pause-0 .pm-btn[data-act="${act}"]`).click();
         for (const linha of document.querySelectorAll(`#${id} .ctrl-row`)) {
           if (!linha.offsetParent) continue;
@@ -1203,7 +1203,7 @@ describe('createGame num documento de verdade', () => {
       // 📌 Sem isto, a criança liga a narração pelo ícone 🗣 e o painel continua a dizer que está desligada —
       // a família do controlo a mentir o estado, que este repositório já pagou com o `#opt-modocego`.
       const motor = abrir();
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
       const botao = document.querySelector('#opt-tts');
       const antes = botao.getAttribute('aria-pressed');
@@ -1240,8 +1240,8 @@ describe('createGame num documento de verdade', () => {
       // «uma barra, um cartão e quatro painéis» — e um `mount()` que um dia passasse a remontá-los deixaria
       // dois de cada, com o segundo a roubar os ids do primeiro.
       const motor = abrir();
-      motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
-      motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
+      motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
+      motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
 
       expect(document.querySelectorAll('#title-icons').length).toBe(1);
       expect(document.querySelectorAll('[id^="vp-pause-"]').length, 'sobrou mais de um cartão de pausa').toBe(1);
@@ -1270,7 +1270,7 @@ describe('createGame num documento de verdade', () => {
         expect(document.getElementById(id), `#${id} saiu com o cartucho`).not.toBeNull();
       }
       // e o que sobra ainda ABRE: um painel que fica no documento e deixa de responder é pior do que um que sai
-      motor.pausa.mostrar(0);
+      motor.pause.show(0);
       // Desde o ADR-0151 a tipografia não tem porta: o painel que ABRE a medir é o de acessibilidade auditiva.
       document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
       expect(document.querySelector('#audio').hidden, 'o painel sobreviveu ao `unmount` e deixou de abrir')

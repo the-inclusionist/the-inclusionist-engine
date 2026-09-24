@@ -29,7 +29,7 @@ beforeAll(async () => {
   localStorage.setItem('fixture-outro-projeto', '1'); // there before boot: another project on the same origin
   document.body.innerHTML = '<p id="sr-status"></p><div id="game-region" tabindex="-1"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
 });
 afterAll(() => { for (const k of CRIADAS) { localStorage.removeItem(k); sessionStorage.removeItem(k); } });
 

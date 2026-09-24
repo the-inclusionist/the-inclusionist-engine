@@ -29,7 +29,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
-    acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false,
+    accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false,
     players: [{ ctrl: 0 }], preset: { left: { label: 'Esquerda' }, action2: { label: 'Pular' } },
   });
 });
@@ -39,7 +39,7 @@ afterAll(() => {
   localStorage.removeItem('incl_padmap_' + pad.id);
 });
 function abrirMotora() {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="motora"]').click();
 }
@@ -93,7 +93,7 @@ describe('«Mapear controle»', () => {
   });
 
   it('🎯 [Zero] a game that names no position has nothing to map: the row is not offered', () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, players: [{ ctrl: 0 }] });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }] });
     abrirMotora();
     expect(document.querySelector('#motora #opt-controle')?.closest('.ctrl-row')?.hidden, 'a row with nothing to map').toBe(true);
   });

@@ -15,20 +15,20 @@ const declaracao = () => ({
 });
 const OITO = 'Uma porta de madeira velha rangendo bem devagar';
 function abrirVisual() {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]').click();
 }
 function fecharTudo() {
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
 }
 /** The delay the caption was given: `legendarSom` schedules its own hiding. */
 function atrasoDaLegenda(texto) {
   const original = window.setTimeout;
   const atrasos = [];
   window.setTimeout = (fn, ms, ...r) => { atrasos.push(ms); return original(fn, ms, ...r); };
-  try { motor.legendarSom(texto); } finally { window.setTimeout = original; }
+  try { motor.captionSound(texto); } finally { window.setTimeout = original; }
   return atrasos.at(-1);
 }
 
@@ -39,7 +39,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   state = await import('../app/js/core/state.js');
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 afterAll(() => {
   state.setCaptionPpmValue(125);

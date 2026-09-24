@@ -41,8 +41,8 @@ beforeAll(async () => {
   document.body.appendChild(raiz);
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
-    acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
-    downloadHeavy: false, controleNaTela: true, players: assentos, preset: PRESET,
+    accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
+    downloadHeavy: false, onScreenPad: true, players: assentos, preset: PRESET,
   });
 });
 afterAll(async () => {
@@ -55,7 +55,7 @@ afterAll(async () => {
 
 /** Opens the engine's motor panel and answers with ITS sticky row. The opening is not synchronous with the click. */
 const abrirMotora = async () => {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="motora"]');
   expect(item?.hidden, 'the engine does not action «Acessibilidade motora»').toBe(false);
@@ -65,7 +65,7 @@ const abrirMotora = async () => {
 };
 const fechar = () => {
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
 };
 
 describe('the sticky-keys row a child can read', () => {
@@ -219,8 +219,8 @@ describe('the sticky-keys row a child can read', () => {
       },
     });
     const segundo = createGame({
-      acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: outro, win: semCamera },
-      downloadHeavy: false, controleNaTela: true, players: [{ ctrl: 0 }], preset: PRESET,
+      accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: outro, win: semCamera },
+      downloadHeavy: false, onScreenPad: true, players: [{ ctrl: 0 }], preset: PRESET,
     });
     try {
       const passos = outro.querySelector('#motora #opt-camera');

@@ -37,7 +37,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status"></p><div class="stage-wrap" style="width:640px;height:360px;display:flex;flex:none">'
     + '<div id="game-region" tabindex="-1" style="position:relative"><div id="title-icons"></div></div></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
   await esperar();
 });
 afterAll(() => {
@@ -46,12 +46,12 @@ afterAll(() => {
 });
 
 describe('the sound caption', () => {
-  it('🔴 [Right] `legendarSom` writes the caption in the screen footer, ABOVE the explanation', async () => {
-    expect(typeof motor.legendarSom, 'the engine offers no caption host').toBe('function');
+  it('🔴 [Right] `captionSound` writes the caption in the screen footer, ABOVE the explanation', async () => {
+    expect(typeof motor.captionSound, 'the engine offers no caption host').toBe('function');
     const icone = document.querySelector('#title-icons .pi-btn');
     icone.focus(); // the explanation of the pointed icon, the footer's lowest line
     await esperar();
-    motor.legendarSom('Porta rangendo');
+    motor.captionSound('Porta rangendo');
     await esperar();
     const caixa = legenda();
     expect(caixa?.textContent, 'no caption in the footer').toBe('Porta rangendo');
@@ -66,7 +66,7 @@ describe('the sound caption', () => {
   });
 
   it('🔴 [Boundary] a long caption takes at most two lines', async () => {
-    motor.legendarSom('Uma porta de madeira muito velha rangendo devagar enquanto o vento sopra forte lá fora e a chuva bate na janela da casa');
+    motor.captionSound('Uma porta de madeira muito velha rangendo devagar enquanto o vento sopra forte lá fora e a chuva bate na janela da casa');
     await esperar();
     const caixa = legenda();
     const cs = getComputedStyle(caixa);
@@ -77,7 +77,7 @@ describe('the sound caption', () => {
   it('🎯 [Boundary] with the explanation showing too, each takes ONE line — the footer does not climb twice as high', async () => {
     const icone = document.querySelector('#title-icons .pi-btn');
     icone.focus();
-    motor.legendarSom('Uma porta de madeira muito velha rangendo devagar enquanto o vento sopra forte lá fora e a chuva bate na janela da casa');
+    motor.captionSound('Uma porta de madeira muito velha rangendo devagar enquanto o vento sopra forte lá fora e a chuva bate na janela da casa');
     await esperar();
     for (const el of [legenda(), document.querySelector('#game-region .rodape-da-tela .barra-explicacao:not([hidden])')]) {
       const cs = getComputedStyle(el);
@@ -88,13 +88,13 @@ describe('the sound caption', () => {
   });
 
   it('🔴 [Right] it leaves on its own', async () => {
-    motor.legendarSom('Sino');
+    motor.captionSound('Sino');
     await esperar(2900);
     expect(legenda().hidden, 'the caption stayed over the game').toBe(true);
   });
 
   it('🔴 [Right] a long caption stays for its words — eight words are still there after the 2600 ms floor (plan phase 5c)', async () => {
-    motor.legendarSom('Uma porta de madeira velha rangendo bem devagar');
+    motor.captionSound('Uma porta de madeira velha rangendo bem devagar');
     await esperar(2900);
     expect(legenda().hidden, 'the long caption left before a child could read it').toBe(false);
     await esperar(1300); // 4000 ms at 500 ms a word
@@ -102,9 +102,9 @@ describe('the sound caption', () => {
   });
 
   it('🎯 [Right] a new caption gets its own time — it does not leave with the previous one\'s', async () => {
-    motor.legendarSom('Sino');
+    motor.captionSound('Sino');
     await esperar(2000);
-    motor.legendarSom('Pulo');
+    motor.captionSound('Pulo');
     await esperar(900); // past the first caption's end, well inside the second's
     expect(legenda().hidden, 'the second caption left with the first one\'s timer').toBe(false);
     expect(legenda().textContent).toBe('Pulo');
@@ -113,7 +113,7 @@ describe('the sound caption', () => {
   it('🎯 [Zero] with captions turned off, nothing is written', async () => {
     const state = await import('../app/js/core/state.js');
     state.setCaptionsOnValue(false);
-    motor.legendarSom('Vento');
+    motor.captionSound('Vento');
     await esperar();
     expect(legenda().textContent, 'a caption was written with captions off').not.toBe('Vento');
     state.setCaptionsOnValue(true);

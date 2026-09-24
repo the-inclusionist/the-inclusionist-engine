@@ -25,13 +25,13 @@ const COM_PERSONAGEM_E_BENGALA = comAssunto({
 
 const linhaDaBengala = () => document.querySelector('#cane-div')?.closest('.ctrl-row');
 function abrirSensibilidade() {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]').click();
 }
 function fecharTudo() {
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
 }
 
 beforeAll(async () => {
@@ -40,7 +40,7 @@ beforeAll(async () => {
   raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
 });
 
 describe('the rows follow the cartridge\'s answer', () => {
@@ -58,11 +58,11 @@ describe('the rows follow the cartridge\'s answer', () => {
   });
 
   it('🎯 [Right] a cartridge mounted AFTER, that says «yes», gets both — read per cartridge, not frozen at boot', () => {
-    motor.mount(declaracao(), { acomodacoes: COM_PERSONAGEM_E_BENGALA });
+    motor.mount(declaracao(), { accommodations: COM_PERSONAGEM_E_BENGALA });
     abrirSensibilidade();
     expect(document.querySelectorAll('#motion-list [data-rmc]').length, 'the character section did not come back').toBe(3);
     fecharTudo();
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
     expect(linhaDaBengala().hidden, 'the cane row stayed hidden for a game that has a walker').toBe(false);
@@ -70,13 +70,13 @@ describe('the rows follow the cartridge\'s answer', () => {
   });
 
   it('🔴 [Right] and what applies carries the GAME\'s word, never the engine\'s (ADR-0153 confirmation)', () => {
-    motor.mount(declaracao(), { acomodacoes: COM_PERSONAGEM_E_BENGALA });
+    motor.mount(declaracao(), { accommodations: COM_PERSONAGEM_E_BENGALA });
     abrirSensibilidade();
     const titulo = [...document.querySelectorAll('#motion-list h3.panel-sub')].find((h) => h.nextElementSibling?.querySelector?.('[data-rmc]') || h.parentElement.querySelector('[data-rmc]'));
     expect(document.querySelector('#motion-list').textContent, 'the character section is not named with the game\'s word').toContain('Character motion');
     expect(titulo?.textContent ?? '', 'the character section still carries the engine\'s own title').not.toMatch(/Personagem/);
     fecharTudo();
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
     expect(linhaDaBengala().querySelector('strong')?.textContent, 'the cane row is not named with the game\'s word').toBe('Cane taps');
@@ -90,10 +90,10 @@ describe('the rows follow the cartridge\'s answer', () => {
     //
     // ⚠️ Read from `data-explain` and not from the row, because that is where the explanation ends up: `fillExplain` hides
     // the `.opt-hint` and the footer reads this attribute when the child points at the row.
-    motor.mount(declaracao(), { acomodacoes: comAssunto({
+    motor.mount(declaracao(), { accommodations: comAssunto({
       caneSpacing: { label: 'Cane taps', hint: 'Every tap is one step of the stick.' },
     }) });
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
     const linha = linhaDaBengala();
@@ -105,8 +105,8 @@ describe('the rows follow the cartridge\'s answer', () => {
 
   it('🎯 [Zero] a game that gives a word but NO hint keeps the engine\'s explanation, never an empty footer', () => {
     // The pair of the case above: an absent hint is a legitimate answer, and it must not erase what the engine says.
-    motor.mount(declaracao(), { acomodacoes: COM_PERSONAGEM_E_BENGALA });
-    motor.pausa.mostrar(0);
+    motor.mount(declaracao(), { accommodations: COM_PERSONAGEM_E_BENGALA });
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
     const linha = linhaDaBengala();
@@ -117,8 +117,8 @@ describe('the rows follow the cartridge\'s answer', () => {
   });
 
   it('🔴 [Right] and swapping back to «no» hides them again — no leak from the previous cartridge (ADR-0142)', () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
-    motor.pausa.mostrar(0);
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO });
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
     expect(linhaDaBengala().hidden, 'the previous cartridge\'s cane leaked into this one').toBe(true);
@@ -130,13 +130,13 @@ describe('and the rows the CONTRACT answers are derived, not asked (ADR-0153)', 
   // 📌 Desde o ADR-0151 não há volume-mestre da navegação: o que se esconde é a LISTA do sonar, guarda e guia.
   const linhaDoSonar = () => document.querySelector('#navsound-list');
   const abrirAuditiva = () => {
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
   };
 
   it('🎯 [Right] a game with a grid world offers navigation sound', () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO });
     abrirAuditiva();
     expect(linhaDoSonar()?.querySelector('[data-acat="sonar"]'), 'the hearing panel has no sonar row — the case would measure nothing').toBeTruthy();
     expect(linhaDoSonar().hidden).toBe(false);
@@ -144,7 +144,7 @@ describe('and the rows the CONTRACT answers are derived, not asked (ADR-0153)', 
   });
 
   it('🔴 [Zero] a game of HOTSPOTS does not — the sonar has no direction there, the contract says so', () => {
-    motor.mount({ ...declaracao(), topology: () => ({ kind: 'hotspots', order: ['q1', 'q2'] }) }, { acomodacoes: SEM_ASSUNTO });
+    motor.mount({ ...declaracao(), topology: () => ({ kind: 'hotspots', order: ['q1', 'q2'] }) }, { accommodations: SEM_ASSUNTO });
     abrirAuditiva();
     expect(linhaDoSonar().hidden, 'sonar, guard and guide volumes offered to a list of points').toBe(true);
     fecharTudo();

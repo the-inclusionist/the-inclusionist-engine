@@ -28,7 +28,7 @@ const declaracao = () => ({
 });
 
 async function simular(chave) {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
   const sel = document.querySelector('#empathy #opt-simulacao');
@@ -36,7 +36,7 @@ async function simular(chave) {
   sel.dispatchEvent(new Event('change', { bubbles: true }));
   await esperar();
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
   await esperar();
 }
 
@@ -47,11 +47,11 @@ beforeAll(async () => {
     + ' style="position:absolute;left:12px;top:7px;width:640px;height:360px"></canvas></div><div id="title-icons"></div></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
-    acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
+    accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
     downloadHeavy: false, players: [{ ctrl: 0 }],
     // 📌 O cartucho DECLARA um escritor de correcção, e é o que faz o 🚥 existir na barra (ADR-0106 §5: um ícone só é
     // montado onde há quem o accione). É por ele que o caso da melhoria liga uma correcção como a criança a liga.
-    setCorrecaoDoJogador: () => {},
+    setPlayerCorrection: () => {},
   });
   await esperar();
 });
@@ -81,7 +81,7 @@ describe('a world that is a canvas', () => {
     await simular('normal');
     // 📌 A melhoria usada é o REALCE DE CONTRASTE, que é estado da própria engine: a correcção de cor depende de o
     // cartucho trazer um escritor, e um duplo vazio escreveria em lado nenhum — o caso mediria o vazio outra vez.
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]').click();
     await esperar();
@@ -90,7 +90,7 @@ describe('a world that is a canvas', () => {
     passos.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
     await esperar();
     for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
     await esperar();
     const melhoria = mundo().style.filter;
     expect(melhoria, 'turning the contrast enhancement on did not reach the world').not.toBe('');
@@ -106,14 +106,14 @@ describe('a world that is a canvas', () => {
      * do `boot-create-game.browser`, que leem o filtro do mundo esperando encontrá-lo limpo. Um teste que muda um ajuste
      * guardado e não o devolve é um teste que escreve nos outros.
      */
-    motor.pausa.mostrar(0);
+    motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]').click();
     await esperar();
     document.getElementById('opt-lq')?.dispatchEvent(new CustomEvent('passo', { detail: -1, bubbles: true }));
     await esperar();
     for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-    motor.pausa.esconder(0);
+    motor.pause.hide(0);
     await esperar();
     expect(mundo().style.filter, 'the contrast enhancement was left on for every other file in this suite').toBe('');
   });

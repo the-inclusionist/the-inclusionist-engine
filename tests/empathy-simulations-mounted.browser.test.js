@@ -22,13 +22,13 @@ const tecla = (tipo, code, repeat = false) => document.getElementById('game-regi
   .dispatchEvent(new KeyboardEvent(tipo, { code, key: code, repeat, bubbles: true, cancelable: true }));
 const esperar = (ms = 30) => new Promise((r) => setTimeout(r, ms));
 function abrirEmpatia() {
-  motor.pausa.mostrar(0);
+  motor.pause.show(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
 }
 function fecharTudo() {
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
-  motor.pausa.esconder(0);
+  motor.pause.hide(0);
 }
 
 beforeAll(async () => {
@@ -39,7 +39,7 @@ beforeAll(async () => {
   document.addEventListener('keyup', (e) => jogo.push(`up:${e.code}`));
   state = await import('../app/js/core/state.js');
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 afterAll(() => {
   for (const k of CHAVES) { if (antes[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, antes[k]); }
@@ -87,14 +87,14 @@ describe('the motor empathy simulations', () => {
   });
 
   it('🔴 [Right] with toggle keys on, «sem força para segurar» is refused and says why (ADR-0076)', async () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, players: [{ ctrl: 0, toggleMove: true }] });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0, toggleMove: true }] });
     abrirEmpatia();
     document.querySelector('#empathy #opt-semforca').click();
     await esperar();
     expect(state.noGripStrength, 'the simulation ran over the accommodation that undoes it').toBe(false);
     expect((document.getElementById('sr-status').textContent + document.getElementById('sr-alert').textContent), 'refused in silence').toMatch(/altern/i);
     fecharTudo();
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, players: [{ ctrl: 0 }] });
+    motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }] });
   });
 });
 // 📌 No case «inside a menu»: `ui/menu-nav` consumes a menu key in the window's capture before this filter hears it, so a
