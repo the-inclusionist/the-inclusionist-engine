@@ -206,6 +206,17 @@ export function padKind(): PadKind {
 
 export interface PadMmPatch { btn?: number; gap?: number; stick?: number; travel?: number; dpad?: number; }
 
+/** The five size sliders a page's touch panel may carry, each writing its own measure (mm). */
+const PAD_SLIDERS: readonly (readonly [string, keyof PadMmPatch])[] = [
+  ['#pad-size', 'btn'], ['#pad-gap', 'gap'], ['#pad-stick', 'stick'], ['#pad-travel', 'travel'], ['#pad-dpad', 'dpad'],
+];
+
+/** The two presets: every size at once, and the sentence that says so — a child who cannot see five sliders move hears it. */
+const PAD_PRESETS: readonly (readonly [string, Required<PadMmPatch>, string])[] = [
+  ['#pad-preset-child', { btn: 12, gap: 2.5, stick: 16.5, travel: 4, dpad: 11.5 }, 'sr.touch.presetChild'],
+  ['#pad-preset-adult', { btn: 14, gap: 4.5, stick: 20, travel: 5.5, dpad: 14 }, 'sr.touch.presetAdult'],
+];
+
 export interface TouchApi {
   /** (Re)desenha #touchmap-list a partir do touchMap atual e prende os <select> de cada slot. */
   renderTouchMap(): void;
@@ -389,29 +400,32 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     return padDesign;
   }
 
-  // --- wiring: #touchcfg (painel "Botões de tela touch") + o botão que o abre/fecha (#opt-touchcfg no painel
-  //     de Movimento) — todo elemento abaixo mora dentro (ou controla) o overlay #touchcfg. ---
-  const touchCfgBtn = ctx.$<HTMLElement>('#opt-touchcfg'); if (touchCfgBtn) touchCfgBtn.addEventListener('click', openTouchCfg);
-  const touchCfgClose = ctx.$<HTMLElement>('#touchcfg-close'); if (touchCfgClose) touchCfgClose.addEventListener('click', closeTouchCfg);
-  const padDirSel = ctx.$<HTMLSelectElement>('#pad-dir');
-  if (padDirSel) {
-    padDirSel.value = padDir;
-    padDirSel.addEventListener('change', () => {
-      padDir = padDirSel.value;
-      ctx.store.set(KEYS.padDir, padDir);
-      applyDirStyle();
-      ctx.srSay(t('sr.touch.dirSet', { tipo: t(padDir === 'cross' ? 'touch.dir.cross' : 'touch.dir.stick') }));
-    });
+  /**
+   * The touch panel's controls, where a PAGE carries them (the engine's own panels do not): open and close, the direction, the
+   * five sizes and the two presets. The selector is not set here — the boot's `applyDirStyle` sets it to the stored direction.
+   */
+  function wirePanel(): void {
+    ctx.$<HTMLElement>('#opt-touchcfg')?.addEventListener('click', openTouchCfg);
+    ctx.$<HTMLElement>('#touchcfg-close')?.addEventListener('click', closeTouchCfg);
+    const padDirSel = ctx.$<HTMLSelectElement>('#pad-dir');
+    if (padDirSel) {
+      padDirSel.addEventListener('change', () => {
+        padDir = padDirSel.value;
+        ctx.store.set(KEYS.padDir, padDir);
+        applyDirStyle();
+        ctx.srSay(t('sr.touch.dirSet', { tipo: t(padDir === 'cross' ? 'touch.dir.cross' : 'touch.dir.stick') }));
+      });
+    }
+    for (const [id, field] of PAD_SLIDERS) {
+      const slider = ctx.$<HTMLInputElement>(id);
+      if (!slider) continue;
+      slider.addEventListener('input', () => { const patch: PadMmPatch = {}; patch[field] = parseFloat(slider.value); setPadMm(patch); });
+    }
+    for (const [id, mm, said] of PAD_PRESETS) {
+      ctx.$<HTMLElement>(id)?.addEventListener('click', () => { setPadMm(mm); ctx.srSay(t(said)); });
+    }
   }
-  const padSizeEl = ctx.$<HTMLInputElement>('#pad-size'); if (padSizeEl) padSizeEl.addEventListener('input', () => setPadMm({ btn: parseFloat(padSizeEl.value) }));
-  const padGapEl = ctx.$<HTMLInputElement>('#pad-gap'); if (padGapEl) padGapEl.addEventListener('input', () => setPadMm({ gap: parseFloat(padGapEl.value) }));
-  const padStickEl = ctx.$<HTMLInputElement>('#pad-stick'); if (padStickEl) padStickEl.addEventListener('input', () => setPadMm({ stick: parseFloat(padStickEl.value) }));
-  const padTravelEl = ctx.$<HTMLInputElement>('#pad-travel'); if (padTravelEl) padTravelEl.addEventListener('input', () => setPadMm({ travel: parseFloat(padTravelEl.value) }));
-  const padDpadEl = ctx.$<HTMLInputElement>('#pad-dpad'); if (padDpadEl) padDpadEl.addEventListener('input', () => setPadMm({ dpad: parseFloat(padDpadEl.value) }));
-  const padPresetChild = ctx.$<HTMLElement>('#pad-preset-child');
-  if (padPresetChild) padPresetChild.addEventListener('click', () => { setPadMm({ btn: 12, gap: 2.5, stick: 16.5, travel: 4, dpad: 11.5 }); ctx.srSay(t('sr.touch.presetChild')); });
-  const padPresetAdult = ctx.$<HTMLElement>('#pad-preset-adult');
-  if (padPresetAdult) padPresetAdult.addEventListener('click', () => { setPadMm({ btn: 14, gap: 4.5, stick: 20, travel: 5.5, dpad: 14 }); ctx.srSay(t('sr.touch.presetAdult')); });
+  wirePanel();
   // Recalcula os px ao girar/redimensionar; os mm são fixos.
   // ⚠️ ERA `addEventListener('resize', …)` NU — o global —, num módulo cujo cabeçalho diz que nunca alcança a
   // janela. Ninguém o via porque ninguém montava isto fora de um navegador; ligado ao `createGame`, derrubou
