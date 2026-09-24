@@ -3142,6 +3142,10 @@ own the same way: `const store = createStorage(window.localStorage)` — or pass
 | `render/lq-filter.js` `LqFilterCtx` · `getLqT()` | gains a REQUIRED `store`; the amount is 0 until `initLqFilter` reads it (it was read at IMPORT) | pass the store to `initLqFilter` |
 | `render/high-contrast.js` `HighContrastCtx` · `HC_ROLE` | gains a REQUIRED `store`; `HC_ROLE` holds the defaults until `initHighContrast` lays the stored colours over them (they were read at IMPORT); `saveHcRole()` keeps them in that store | pass the store to `initHighContrast` |
 | `render/viz-setters.js` `readStoredVisual(i)` · `VizSettersCtx` | `readStoredVisual(store, i)` · `VizSettersCtx.store` REQUIRED | pass the store |
+| `ui/motion-scene.js` `readStoredScene(reducedByDefault)`, `storeScene(rm)` | `readStoredScene(store, reducedByDefault)`, `storeScene(store, rm)` | pass the store first |
+| `ui/pause-icons.js` `PauseIconsCtx` | gains a REQUIRED `store` | pass the store; the calm level, the movement latch and the scene flags' default go through it |
+| `ui/settings-motion.js` `SettingsMotionCtx.store` | widens from `{ setBool }` to `setBool`, `getJSON`, `setJSON` | pass the store itself; the scene flags are read and kept through it when no `rm` is shared |
+| `ui/vlibras.js` `librasOpen` | OFF until the new `initLibras(store)` reads the stored choice (it was read at IMPORT); `toggleLibras` keeps the choice in that store | call `initLibras(store)` at boot — `createGame` does; without it the choice lasts the session only |
 
 Required and not optional, by ADR-0224/0227's precedent: each of these has no safe answer without a store — the child's
 remap, latch or controller map would be read from nowhere and lost in silence.

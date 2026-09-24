@@ -19,6 +19,7 @@ const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
 import { CRT, applyCrt } from '../app/js/render/crt.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { t } from '../app/js/core/i18n.js';
 import { RM_LABEL } from '../app/js/ui/motion-choices.js';
 
@@ -54,7 +55,8 @@ function makeCtx(over = {}) {
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     srSay: (t) => calls.srSay.push(t),
-    store: { setBool: (k, v) => calls.setBool.push([k, v]) },
+    // this ctx's own store (ADR-0232), with the per-player writer recorded
+    store: { ...createStorage(memoryBackend()), setBool: (k, v) => calls.setBool.push([k, v]) },
     // The system asks for no reduction unless a case says otherwise (ADR-0232: the question is injected, not reached).
     matchMedia: () => ({ matches: false }),
     frontOverlay: (el) => calls.frontOverlay.push(el),
@@ -351,10 +353,8 @@ describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marc
   it('[Right] without `rm`, the stored-nothing flags start at what the injected question answers', () => {
     // The panel's own flags, read when the host shares none (ADR-0106): the default is the system's answer, passed in
     // (ADR-0232). A panel that ignored the port and started at `false` would switch the scene back on here.
-    const KEY = 'inclusionist.reducedmotion.v1';
-    const before = localStorage.getItem(KEY);
-    localStorage.removeItem(KEY);
-    try {
+    // The ctx's store is its own and empty: nothing stored, so the default decides.
+    {
       const { ctx } = makeCtx({ rm: undefined, saveRM: undefined, matchMedia: (q) => ({ matches: q.includes('prefers-reduced-motion') }) });
       initSettingsMotion(ctx).render();
       const scene = [...document.querySelectorAll('#motion-list [data-rm]')];
@@ -364,8 +364,6 @@ describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marc
         expect(b.getAttribute('aria-pressed'), b.dataset.rm).toBe('false');
         expect(b.closest('.ctrl-row').classList.contains('is-changed'), `${b.dataset.rm} marked as a change`).toBe(false);
       }
-    } finally {
-      if (before === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, before);
     }
   });
 

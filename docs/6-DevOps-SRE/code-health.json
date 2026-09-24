@@ -66,7 +66,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2088,
+      "codeLines": 2090,
       "decisionNodes": 281,
       "maxDepth": 4,
       "fanOut": 85,
@@ -1262,7 +1262,7 @@
       "globalReach": 0,
       "worstFunction": 1,
       "statefulEdges": 0,
-      "fanIn": 9
+      "fanIn": 11
     },
     "platform/storage.ts": {
       "codeLines": 86,
@@ -1272,7 +1272,7 @@
       "globalReach": 1,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 4,
+      "fanIn": 1,
       "reached": [
         "localStorage"
       ],
@@ -1938,17 +1938,14 @@
       ]
     },
     "ui/motion-scene.ts": {
-      "codeLines": 37,
+      "codeLines": 39,
       "decisionNodes": 3,
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 4,
-      "statefulEdges": 1,
-      "fanIn": 3,
-      "statefulImports": [
-        "platform/storage.ts"
-      ]
+      "statefulEdges": 0,
+      "fanIn": 3
     },
     "ui/mount-panel.ts": {
       "codeLines": 60,
@@ -1995,21 +1992,20 @@
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 595,
+      "codeLines": 598,
       "decisionNodes": 81,
       "maxDepth": 3,
       "fanOut": 19,
       "globalReach": 1,
       "worstFunction": 9,
-      "statefulEdges": 3,
+      "statefulEdges": 2,
       "fanIn": 4,
       "reached": [
         "globalThis"
       ],
       "statefulImports": [
         "core/i18n.ts",
-        "core/state.ts",
-        "platform/storage.ts"
+        "core/state.ts"
       ]
     },
     "ui/pause-markup.ts": {
@@ -2113,7 +2109,7 @@
       ]
     },
     "ui/settings-motion.ts": {
-      "codeLines": 314,
+      "codeLines": 315,
       "decisionNodes": 46,
       "maxDepth": 3,
       "fanOut": 8,
@@ -2284,13 +2280,13 @@
       ]
     },
     "ui/vlibras.ts": {
-      "codeLines": 31,
+      "codeLines": 37,
       "decisionNodes": 10,
       "maxDepth": 3,
-      "fanOut": 2,
+      "fanOut": 1,
       "globalReach": 2,
       "worstFunction": 7,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 1,
       "reached": [
         "document",
@@ -2298,6 +2294,7 @@
       ],
       "holds": [
         "let _onLibrasChange",
+        "let _store",
         "let _vlBusyUntil",
         "let _vlNext",
         "let _vlNode",
@@ -2305,8 +2302,7 @@
         "let librasOpen"
       ],
       "statefulImports": [
-        "core/i18n.ts",
-        "platform/storage.ts"
+        "core/i18n.ts"
       ]
     },
     "ui/voice-control.ts": {

@@ -32,6 +32,7 @@ import { CVD_SEQ, CVD_NAMES, nextContrast, nextCvd, CONTRAST_LEVELS } from '../a
 
 // ☝️ keeps ONE value for the whole engine (ADR-0218), so it is read and reset here as the module state it is.
 import * as estado from '../app/js/core/state.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 /*
  * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0038, ADR-0228): the round's state is not in `core/state` and `core/run-state` left
  * the engine. This file never tested the round — it HANDS one to the pause card, and what it measures is the card. The
@@ -126,6 +127,7 @@ function buildCtx(over = {}) {
     acts: {},
   };
   const ctx = {
+    store: createStorage(memoryBackend()), // each ctx its own store (ADR-0232)
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
@@ -706,14 +708,16 @@ describe('initPauseIcons — ações dos ícones', () => {
   // in silence.
   it('🎯 [Right] o ícone `altmove` escreve as DUAS chaves — a do aparelho em uso e a legada', async () => {
     const guardado = {};
-    globalThis.localStorage = {
+    // the latch is written through the store the ctx hands in (ADR-0232), over this case's own object
+    const backend = {
       getItem: (k) => (k in guardado ? guardado[k] : null),
       setItem: (k, v) => { guardado[k] = String(v); },
       removeItem: (k) => { delete guardado[k]; },
     };
-    try {
+    {
       setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
       const { ctx } = buildCtx();
+      ctx.store = createStorage(backend);
       delete ctx.setToggleMove;                  // the game that forgot
       ctx.transportInUse = () => 'gamepad';     // and the root that knows the device
 
@@ -726,8 +730,6 @@ describe('initPauseIcons — ações dos ícones', () => {
         .toBe('1');
       expect(guardado['incl_togglemove_p0'], 'o ícone deixou de escrever a legada e a criança perde a escolha')
         .toBe('1');
-    } finally {
-      delete globalThis.localStorage;
     }
   });
 
@@ -735,19 +737,19 @@ describe('initPauseIcons — ações dos ícones', () => {
   // safe for a consumer that has not migrated.
   it('📌 [Zero] sem `transporteEmUso`, o ícone escreve só a legada', async () => {
     const guardado = {};
-    globalThis.localStorage = {
+    // the latch is written through the store the ctx hands in (ADR-0232), over this case's own object
+    const backend = {
       getItem: (k) => (k in guardado ? guardado[k] : null),
       setItem: (k, v) => { guardado[k] = String(v); },
       removeItem: (k) => { delete guardado[k]; },
     };
-    try {
+    {
       setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
       const { ctx } = buildCtx();
+      ctx.store = createStorage(backend);
       delete ctx.setToggleMove;
       initPauseIcons(ctx).iconAct('altmove', 0);
       expect(Object.keys(guardado)).toEqual(['incl_togglemove_p0']);
-    } finally {
-      delete globalThis.localStorage;
     }
   });
 

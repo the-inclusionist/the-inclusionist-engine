@@ -14,10 +14,26 @@
 // interpreter engine of our own in zdog. This file gives an honest toggle; the on-demand interpreter is separate
 // work.
 import { t } from '../core/i18n.js';
-import * as store from '../platform/storage.js';
+import type { Store } from '../platform/storage.js';
 
-/** Deaf-mode state. The PERSON's choice, persisted — not an inference about a third-party widget. */
-export let librasOpen = store.getBool('incl_libras', false);
+/** What deaf mode is read and written through: the page's store, built by the root (ADR-0232, issue #207). */
+export type LibrasStore = Pick<Store, 'getBool' | 'setBool'>;
+
+/**
+ * Deaf-mode state. The PERSON's choice, persisted — not an inference about a third-party widget. OFF until `initLibras`
+ * reads the stored choice: at init, never at import (ADR-0232).
+ */
+export let librasOpen = false;
+let _store: LibrasStore | null = null;
+
+/**
+ * Reads the stored choice and keeps the store `toggleLibras` writes to. Called once by the root (`createGame`); a page that
+ * toggles deaf mode without it keeps the choice for the session only.
+ */
+export function initLibras(store: LibrasStore): void {
+  _store = store;
+  librasOpen = store.getBool('incl_libras', false);
+}
 
 let _vlOpen = false, _vlNode: HTMLElement | null = null, _vlBusyUntil = 0, _vlNext: string | null = null;
 let _onLibrasChange: () => void = () => { /* the host registers its reflow here */ };
@@ -46,7 +62,7 @@ export function vlibrasOpen(): boolean { return librasOpen; }
 /** Turns deaf mode on/off. A real toggle: the state is ours, so it always flips. */
 export function toggleLibras(): void {
   librasOpen = !librasOpen; _vlOpen = librasOpen;
-  store.setBool('incl_libras', librasOpen);
+  _store?.setBool('incl_libras', librasOpen);
   // A BEST-EFFORT attempt to wake the VLibras widget, if it is loaded. Failing here must not stop the mode from
   // turning on: the state is the person's choice, and the widget is only one possible translator for them.
   const b = vwBtn();

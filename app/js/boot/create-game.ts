@@ -80,7 +80,7 @@ import { reserveTopBand } from '../ui/top-band.js';
 import * as state from '../core/state.js';
 import { DEFAULTS, defaultReducedMotion } from '../core/setting-defaults.js';
 import { CAMERA_CONTROLS, type CameraControl } from '../core/camera-cycle.js';
-import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
+import { vlibrasOpen, toggleLibras, initLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { createSceneStack, type SceneStack } from '../core/scenes.js';
 import { createTts } from '../platform/tts.js';
@@ -1184,9 +1184,11 @@ export function createGame(o: CreateGameOptions): Engine {
    * showed the scene animated after the calm mode reduced it, and its next switch stored that stale copy over the calm mode.
    * The object is mutated in place; its identity is what the two share.
    */
-  const sceneMotion = readStoredScene(defaultReducedMotion(win.matchMedia));
-  const saveSceneMotion = (): void => { storeScene(sceneMotion); };
+  const sceneMotion = readStoredScene(store, defaultReducedMotion(win.matchMedia));
+  const saveSceneMotion = (): void => { storeScene(store, sceneMotion); };
+  initLibras(store); // deaf mode's stored choice, read before the bar asks `isLibrasOn` (ADR-0232)
   const pauseIcons = initPauseIcons({
+    store,
     doc, matchMedia: win.matchMedia, // the reduced-motion default when nothing is stored (ADR-0232)
     rm: sceneMotion, saveRM: saveSceneMotion,
     /*

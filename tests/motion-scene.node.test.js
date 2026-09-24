@@ -9,44 +9,44 @@
 // which reads as «não reduzido» for a child who asked for reduction.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   SCENE_KEYS, CHARACTER_ANIMATIONS, sceneDefault, readStoredScene, storeScene,
 } from '../app/js/ui/motion-scene.js';
 import { RM_LABEL } from '../app/js/ui/motion-choices.js';
 import { KEYS } from '../app/js/platform/storage-keys.js';
+import { createStorage } from '../app/js/platform/storage.js';
 
-/** A fake `localStorage`, because the `node` project has none and the storage layer degrades silently (every access is
- *  `try/catch`) — without the double, the truncated case would have nothing to read. */
+/** The store the functions receive (ADR-0232), over a backend holding exactly what a case says — `dados` is what a case
+ *  reads back. Without a backend the storage layer degrades silently, and the truncated case would have nothing to read. */
 function comArmazenamento(inicial = {}) {
   const dados = { ...inicial };
-  globalThis.localStorage = {
+  const store = createStorage({
     getItem: (k) => (k in dados ? dados[k] : null),
     setItem: (k, v) => { dados[k] = String(v); },
     removeItem: (k) => { delete dados[k]; },
-  };
-  return dados;
+  });
+  return { dados, store };
 }
-afterEach(() => { delete globalThis.localStorage; });
 
 describe('ADR-0106 · o movimento reduzido de cena pertence à engine', () => {
   it('[Right] sem nada guardado, as QUATRO chaves existem e seguem o padrão do sistema', () => {
-    comArmazenamento();
+    const { store } = comArmazenamento();
     // The system default arrives as a parameter (ADR-0232): the caller asks `defaultReducedMotion(matchMedia)`. Both
     // answers are asserted, so a module that ignored the parameter and wrote `false` would fail the first.
-    const reduced = readStoredScene(true);
+    const reduced = readStoredScene(store, true);
     expect(Object.keys(reduced).sort()).toEqual(['decor', 'items', 'parallax', 'particles']);
     expect(Object.values(reduced).every((v) => v === true)).toBe(true);
     expect(reduced).toEqual(sceneDefault(true));
-    const rm = readStoredScene(false);
+    const rm = readStoredScene(store, false);
     expect(Object.values(rm).every((v) => v === false)).toBe(true);
     expect(rm).toEqual(sceneDefault(false));
   });
 
   it('⚠️ [Right] um guardado TRUNCADO não deixa chave por preencher — `undefined` seria «não reduzido»', () => {
     // An object with ONE key is what a truncated store, or one from an earlier version, returns.
-    comArmazenamento({ [KEYS.reducedMotion]: JSON.stringify({ parallax: true }) });
-    const rm = readStoredScene(false);
+    const { store } = comArmazenamento({ [KEYS.reducedMotion]: JSON.stringify({ parallax: true }) });
+    const rm = readStoredScene(store, false);
     expect(rm.parallax).toBe(true);
     expect(rm.decor).toBe(false);
     expect(rm.items).toBe(false);
@@ -55,20 +55,20 @@ describe('ADR-0106 · o movimento reduzido de cena pertence à engine', () => {
   });
 
   it('⚠️ [Right] uma chave A MAIS no guardado NÃO entra — o dado vem do navegador de uma criança', () => {
-    comArmazenamento({ [KEYS.reducedMotion]: JSON.stringify({ parallax: true, cintilar: true }) });
-    expect(Object.keys(readStoredScene(false)).sort()).toEqual(['decor', 'items', 'parallax', 'particles']);
+    const { store } = comArmazenamento({ [KEYS.reducedMotion]: JSON.stringify({ parallax: true, cintilar: true }) });
+    expect(Object.keys(readStoredScene(store, false)).sort()).toEqual(['decor', 'items', 'parallax', 'particles']);
   });
 
   it('[Right] um guardado corrompido cai no padrão em vez de rebentar', () => {
-    comArmazenamento({ [KEYS.reducedMotion]: 'isto não é JSON' });
-    expect(readStoredScene(false)).toEqual(sceneDefault(false));
+    const { store } = comArmazenamento({ [KEYS.reducedMotion]: 'isto não é JSON' });
+    expect(readStoredScene(store, false)).toEqual(sceneDefault(false));
   });
 
   it('[Right] `guardarCena` escreve na chave da ENGINE, que é onde o cartucho já escrevia', () => {
     // The silent migration this case prevents: storing under another key would lose the setting of every child who
     // already played, with nothing saying it was lost.
-    const dados = comArmazenamento();
-    storeScene({ parallax: true, decor: false, items: true, particles: false });
+    const { dados, store } = comArmazenamento();
+    storeScene(store, { parallax: true, decor: false, items: true, particles: false });
     expect(JSON.parse(dados[KEYS.reducedMotion])).toEqual({ parallax: true, decor: false, items: true, particles: false });
   });
 

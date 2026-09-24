@@ -21,9 +21,13 @@
 //
 // 📌 THE SYSTEM DEFAULT ARRIVES AS A PARAMETER (ADR-0232, issue #207): whoever calls asks the operating system through
 // `core/setting-defaults.defaultReducedMotion(matchMedia)` and passes the answer; this module reaches no global and imports
-// no settings store.
-import * as store from '../platform/storage.js';
+// no settings store. And the storage arrives as a parameter too (ADR-0232 D2b): whoever calls passes the page's store.
+import type { Store } from '../platform/storage.js';
+import { KEYS } from '../platform/storage-keys.js';
 import type { PlayerView } from '../core/entity.js';
+
+/** What the scene flags are read and written through: the page's store, built by the root (ADR-0232, issue #207). */
+export type SceneStore = Pick<Store, 'getJSON' | 'setJSON'>;
 
 /** The four SCENE animations, as a closed vocabulary. */
 export type MotionSceneKey = 'parallax' | 'decor' | 'items' | 'particles';
@@ -85,8 +89,8 @@ export function sceneDefault(reducedByDefault: boolean): MotionSceneFlags {
  * from an earlier version: spreading the object would bring extra keys and leave missing ones unfilled, and a missing
  * key reads as `undefined` — which is "not reduced" for whoever asked for reduction. The loop guarantees exactly four.
  */
-export function readStoredScene(reducedByDefault: boolean): MotionSceneFlags {
-  const stored = store.getJSON<Record<string, unknown> | null>(store.KEYS.reducedMotion, null);
+export function readStoredScene(store: SceneStore, reducedByDefault: boolean): MotionSceneFlags {
+  const stored = store.getJSON<Record<string, unknown> | null>(KEYS.reducedMotion, null);
   if (!stored || typeof stored !== 'object') return sceneDefault(reducedByDefault);
   const o = {} as MotionSceneFlags;
   for (const k of SCENE_KEYS) o[k] = !!stored[k];
@@ -94,6 +98,6 @@ export function readStoredScene(reducedByDefault: boolean): MotionSceneFlags {
 }
 
 /** Stores the four switches. Called after each change. */
-export function storeScene(rm: MotionSceneFlags): void {
-  store.setJSON(store.KEYS.reducedMotion, rm);
+export function storeScene(store: SceneStore, rm: MotionSceneFlags): void {
+  store.setJSON(KEYS.reducedMotion, rm);
 }

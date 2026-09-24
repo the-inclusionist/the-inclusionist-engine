@@ -1429,6 +1429,7 @@
     "MotionSceneFlags",
     "MotionSceneKey",
     "SCENE_KEYS",
+    "SceneStore",
     "readStoredScene",
     "sceneDefault",
     "storeScene"
@@ -1477,6 +1478,7 @@
     "PM_VISIBLE_ITEMS",
     "PauseIconsApi",
     "PauseIconsCtx",
+    "PauseIconsStore",
     "PausePlayer",
     "VisualWriters",
     "barAction",
@@ -1701,6 +1703,8 @@
     "rgbToHex"
   ],
   "ui/vlibras.ts": [
+    "LibrasStore",
+    "initLibras",
     "librasOpen",
     "setOnLibrasChange",
     "toggleLibras",

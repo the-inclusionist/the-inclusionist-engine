@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Tests of ui/vlibras — DEAF PERSON MODE (BROWSER project: uses the DOM and localStorage).
+// Tests of ui/vlibras — DEAF PERSON MODE (BROWSER project: uses the DOM, and a store of each case's own, ADR-0232).
 //
 // THE CONTRACT: the state is the PERSON'S CHOICE, persisted, and the widget is at most a translator that may or may not
 // be present. An accessibility mode whose state depends on the geometry of a third-party library is a mode that turns
@@ -14,18 +14,19 @@
 // between testing what the code does and testing what the person needs it to do.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as V from '../app/js/ui/vlibras.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(r));
 
+let backend;
 beforeEach(() => {
   document.body.innerHTML = '<p id="sr-status"></p><p id="sr-alert"></p>';
-  localStorage.removeItem('incl_libras');
+  backend = memoryBackend(); // each case its own store: nothing stored, so `initLibras` starts it off
+  V.initLibras(createStorage(backend));
   V.setOnLibrasChange(() => {});
-  if (V.librasOpen) V.toggleLibras(); // the state is MODULE state: each case starts off
 });
 afterEach(() => {
-  if (V.librasOpen) V.toggleLibras();
-  localStorage.removeItem('incl_libras');
+  if (V.librasOpen) V.toggleLibras(); // the state is MODULE state
 });
 
 describe('ui/vlibras — o toggle é um toggle', () => {
@@ -49,9 +50,14 @@ describe('ui/vlibras — o toggle é um toggle', () => {
 
   it('[Right] persiste — quem liga o modo o reencontra ligado (ADR-0028)', () => {
     V.toggleLibras();
-    expect(localStorage.getItem('incl_libras')).toBe('1');
+    expect(backend.getItem('incl_libras')).toBe('1');
     V.toggleLibras();
-    expect(localStorage.getItem('incl_libras')).toBe('0');
+    expect(backend.getItem('incl_libras')).toBe('0');
+  });
+
+  it('🔴 [Right] `initLibras` READS the stored choice — at init, never at import (ADR-0232)', () => {
+    V.initLibras(createStorage(memoryBackend([['incl_libras', '1']])));
+    expect(V.vlibrasOpen(), 'the child who left deaf mode on found it off').toBe(true);
   });
 
   it('[Interface] avisa o reflow do layout nas DUAS direções', () => {

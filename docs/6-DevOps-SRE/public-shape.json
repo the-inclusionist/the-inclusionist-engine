@@ -2208,6 +2208,7 @@
       "lbl",
       "prop"
     ],
+    "type SceneStore": "Pick<Store, 'getJSON' | 'setJSON'>",
     "type MotionSceneKey": "'parallax' | 'decor' | 'items' | 'particles'",
     "type MotionCharProp": "'rmWalk' | 'rmBreath' | 'rmFlavor'",
     "type MotionPlayer": "PlayerView<'rmWalk' | 'rmBreath' | 'rmFlavor'>",
@@ -2363,6 +2364,7 @@
       "setToggleMove?",
       "srAlert",
       "srSay",
+      "store",
       "toggleLibras",
       "transportInUse?"
     ],
@@ -2385,6 +2387,7 @@
       "setCalmMode"
     ],
     "type InputMode": "'standard' | 'sticky' | 'scan'",
+    "type PauseIconsStore": "Pick<Store, 'getNum' | 'set' | 'setBool' | 'getJSON' | 'setJSON'>",
     "type PausePlayer": "PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>",
     "type VisualWriters": "ActionableIcons",
     "type BarAction": "'sair' | 'ativar' | 'andar' | 'nada'"
@@ -2839,6 +2842,9 @@
   },
   "ui/visual-choices.ts": {
     "type RGB": "readonly [number, number, number]"
+  },
+  "ui/vlibras.ts": {
+    "type LibrasStore": "Pick<Store, 'getBool' | 'setBool'>"
   },
   "ui/voice-control.ts": {
     "interface VoiceControlDeps": [

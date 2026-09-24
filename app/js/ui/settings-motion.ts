@@ -13,6 +13,7 @@ import { markChanged, markMenuChanged } from './changed-mark.js';
 import { t } from '../core/i18n.js';
 import { mountSteps, updateSteps, nextStep, controlRow, labelRow, sectionHeader } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
+import type { Store } from '../platform/storage.js';
 
 import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from './motion-scene.js';
 /*
@@ -59,8 +60,11 @@ export interface SettingsMotionCtx {
   $: <T extends Element = Element>(sel: string) => T | null;
   /** "Polite" screen-reader announcement (core/a11y-sr.ts). */
   srSay: (text: string) => void;
-  /** Persistence (platform/storage.ts) — only what is needed here: storing the per-player flags. */
-  store: { setBool: (key: string, on: boolean) => void };
+  /**
+   * The page's store (ADR-0232, issue #207) — only what is needed here: storing the per-player flags, and reading and
+   * writing the scene flags when the host does not share its own `rm`.
+   */
+  store: Pick<Store, 'setBool' | 'getJSON' | 'setJSON'>;
   /**
    * The browser's media query (`win.matchMedia`), asked for `prefers-reduced-motion` at every mark and every reset — the
    * default follows the operating system NOW, not at boot. MANDATORY and injected (ADR-0232, ADR-0227): this module
@@ -292,12 +296,12 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
    * the scene; resolving it on every read would create a new object per call, the switch would stop reaching the
    * drawing, and there would be no error at all — the menu would say reduced and the scene would keep moving.
    */
-  const rm: MotionSceneFlags = ctx.rm ?? readStoredScene(defaultReducedMotion(ctx.matchMedia));
+  const rm: MotionSceneFlags = ctx.rm ?? readStoredScene(ctx.store, defaultReducedMotion(ctx.matchMedia));
   const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? SCENE_KEYS;
   const allCharAnimations: readonly MotionCharDef[] = ctx.rmChar ?? CHARACTER_ANIMATIONS;
   /** The character targets that HAVE A SUBJECT in this game — read on every use, because the cartridge changes on `mount()`. */
   const rmChar = (): readonly MotionCharDef[] => (ctx.hasCharacter?.() === false ? [] : allCharAnimations);
-  const saveRM: () => void = ctx.saveRM ?? (() => storeScene(rm));
+  const saveRM: () => void = ctx.saveRM ?? (() => storeScene(ctx.store, rm));
 
   function reflectMotionBtn(): void {
     const b = ctx.$<HTMLElement>('#opt-animation');

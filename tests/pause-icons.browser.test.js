@@ -7,6 +7,7 @@
 // `players`/`numPlayers` come from a local round double (below); the rest of the ctx is fake (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initPauseIcons, showPauseOptions } from '../app/js/ui/pause-icons.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 /*
@@ -73,6 +74,8 @@ function makeCtx(over = {}) {
     toggleLibras: () => { state.libras = !state.libras; },
     rm: state.rm, rmKeys: RM_KEYS, rmChar: RM_CHAR, saveRM: () => {},
     matchMedia: () => ({ matches: false }), // the system asks for no reduction (ADR-0232: injected, not reached)
+    // each ctx its own store (ADR-0232): no level, latch or flag is inherited from another case or another file
+    store: createStorage(memoryBackend()),
     setToggleMove: (i, on) => { if (players[i]) players[i].toggleMove = on; },
     setPlayerViz: (i, mode) => { if (players[i]) { players[i].viz = mode; players[i].visual = migrateVisual(mode); } },
     // The PER-AXIS writers (#104): each icon writes to its own, and the other stays where it was.
@@ -451,10 +454,8 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
   });
 
   it('BORDA do TEA: 3 cliques passam por .pi-calm → .pi-on → base, com a legenda certa em cada passo', () => {
-    // ⚠️ THE ASD LEVEL PERSISTS, and a browser's `localStorage` is shared by the files running in parallel: this case
-    // failed under the whole suite (the first click did not give `.pi-calm`) and passed alone — the starting level came
-    // from another file. It starts from level 0, written before mounting.
-    try { localStorage.setItem('incl_tea', '0'); } catch { /* no storage: the default is already 0 */ }
+    // ⚠️ THE ASD LEVEL PERSISTS, and this case once failed under the whole suite because the starting level came from
+    // another file through the shared `localStorage`. Each ctx now brings its own store (ADR-0232), empty: level 0.
     const { sp, bar } = mount(0);
     const b = bar.querySelector('.pi-btn[data-pi="tea"]');
     b.click();
@@ -792,7 +793,7 @@ describe('reflectIconsIn — a barra do SPLASH (#title-icons) usa a mesma casca'
 });
 
 // ---------------------------------------------------------------------------------------------
-// ⚠️ THE ASD LEVEL PERSISTS (issue #61) — and it is proven here, because it needs a real `localStorage`
+// ⚠️ THE ASD LEVEL PERSISTS (issue #61) — and it is proven here, through a store two instances share, like a reload
 // ---------------------------------------------------------------------------------------------
 //
 // ADR-0028 says every menu setting persists. The cost of not persisting falls on the child who needs it most: whoever
@@ -800,43 +801,44 @@ describe('reflectIconsIn — a barra do SPLASH (#title-icons) usa a mesma casca'
 // is not a setting, it is a daily chore.
 describe('o nível TEA sobrevive ao fecho da aba (#61, ADR-0028)', () => {
   const CHAVE = 'incl_tea';
+  // ONE backend per case, handed to every instance of that case: the page's storage across a reload, and nobody else's.
+  let backend;
+  const ctxOver = () => makeCtx({ store: createStorage(backend) }).ctx;
+  beforeEach(() => { backend = memoryBackend(); });
 
   it('⚠️ [Right] o ciclo do ícone GRAVA, e o arranque seguinte LÊ', () => {
-    localStorage.removeItem(CHAVE);
     setPlayers([{ viz: '', toggleMove: false }]);
 
     // session 1: the child sets «calmo» and then «silencioso»
-    const primeira = initPauseIcons(makeCtx().ctx);
+    const primeira = initPauseIcons(ctxOver());
     expect(primeira.getCalmMode(), 'não começou no padrão').toBe(0);
     primeira.iconAct('tea', 0);
     primeira.iconAct('tea', 0);
     expect(primeira.getCalmMode()).toBe(2);
-    expect(localStorage.getItem(CHAVE), 'o nível não foi gravado').toBe('2');
+    expect(backend.getItem(CHAVE), 'o nível não foi gravado').toBe('2');
 
     // session 2: another instance, like a page reload
-    const segunda = initPauseIcons(makeCtx().ctx);
+    const segunda = initPauseIcons(ctxOver());
     expect(segunda.getCalmMode(), 'o nível não sobreviveu ao recarregamento').toBe(2);
   });
 
   it('[Interface] o `setCalmMode` também grava — é a outra porta para o mesmo valor', () => {
     // If only the icon's cycle stored it, a level set through here would live for the session and die when the tab closed
     // — the worse half of the defect: the setting seems to have taken and vanishes later.
-    localStorage.removeItem(CHAVE);
     setPlayers([{ viz: '', toggleMove: false }]);
-    const api = initPauseIcons(makeCtx().ctx);
+    const api = initPauseIcons(ctxOver());
     api.setCalmMode(1);
-    expect(localStorage.getItem(CHAVE)).toBe('1');
-    expect(initPauseIcons(makeCtx().ctx).getCalmMode()).toBe(1);
+    expect(backend.getItem(CHAVE)).toBe('1');
+    expect(initPauseIcons(ctxOver()).getCalmMode()).toBe(1);
   });
 
   it('⚠️ [Error] um nível inválido guardado no navegador não chega ao anúncio', () => {
     // The screen-reader announcement is `t(CALM_NAMES[calmMode])`. A stored `3` — corrupted data, a future version, a
     // finger in devtools — would give `undefined`, and the blind child would press the button and hear nothing. It falls
     // back to the default, which is audible.
-    localStorage.setItem(CHAVE, '3');
+    backend.setItem(CHAVE, '3');
     setPlayers([{ viz: '', toggleMove: false }]);
-    expect(initPauseIcons(makeCtx().ctx).getCalmMode()).toBe(0);
-    localStorage.removeItem(CHAVE);
+    expect(initPauseIcons(ctxOver()).getCalmMode()).toBe(0);
   });
 });
 
@@ -906,6 +908,8 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
       isLibrasOn: () => false, toggleLibras: () => {},
       // Mandatory (ADR-0232): without `rm`, the reduced-motion default is asked through it.
       matchMedia: () => ({ matches: false }),
+      // Mandatory too (ADR-0232): the calm level and the latch are kept in the page's store.
+      store: createStorage(memoryBackend()),
       ...over,
     };
   }

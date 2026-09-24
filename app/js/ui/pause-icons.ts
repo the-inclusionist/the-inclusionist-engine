@@ -113,10 +113,9 @@ export function nextInputMode(m: InputMode, holdsKeys: boolean, latchRequired = 
 // The rule for applying an input mode is written in the icon's own action, where it happens: the ☝️ is the only surface of
 // this setting.
 import { nextGameSpeed } from '../core/game-speed.js';
-// ⚠️ A DIRECT IMPORT of `platform/storage`, not one more piece of the ctx: an injected `store` is a field a host could
-// omit, and omitting it would make the calm level stop persisting, silently. ADR-0232 moves storage to injection from the
-// root (issue #207), and this import goes with it.
-import * as store from '../platform/storage.js';
+// 📌 The storage arrives in the ctx (`PauseIconsCtx.store`, ADR-0232, issue #207); only the key NAMES are imported.
+import type { Store } from '../platform/storage.js';
+import { KEYS } from '../platform/storage-keys.js';
 import { setMoveLatch } from './settings-mobility.js';
 import { latchRefusal } from './latch-refusal.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from './pause-buttons.js';
@@ -167,9 +166,12 @@ function iconCaption(barEl: ParentNode, el: HTMLElement): string {
 }
 
 /** Reads the calm level from storage, sanitised. Called in `init`, never on import. */
-function readTeaLevel(): number {
-  return sanitiseTeaLevel(store.getNum(store.KEYS.tea, DEFAULTS.calmMode), DEFAULTS.calmMode);
+function readTeaLevel(store: PauseIconsStore): number {
+  return sanitiseTeaLevel(store.getNum(KEYS.tea, DEFAULTS.calmMode), DEFAULTS.calmMode);
 }
+
+/** What the bar reads and writes through: the calm level, the movement latch and the scene flags' default. */
+export type PauseIconsStore = Pick<Store, 'getNum' | 'set' | 'setBool' | 'getJSON' | 'setJSON'>;
 
 // ---------------------------------------------------------------------------------------------
 // Shapes this module reads but does not own
@@ -610,6 +612,13 @@ export interface PauseIconsCtx {
   isLibrasOn: () => boolean;
   toggleLibras: () => void;
 
+  /**
+   * THE PAGE'S STORE, built by the root (ADR-0232, issue #207): the calm level, the movement latch's default writer and the
+   * scene flags' default read and write through it. REQUIRED: a bar that stored nowhere would forget the calm level at every
+   * visit — for the child whom unexpected noise costs most — with no error at all.
+   */
+  store: PauseIconsStore;
+
   // --- TEA / reduced motion (the `rm` object is co-owned with ui/settings-motion — same reference) ---
   /*
    * OPTIONAL, as in `SettingsMotionCtx`: the same four questions in two places must have the same answer. Absent, what
@@ -715,18 +724,18 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   //
   // READ IN INIT, NEVER ON IMPORT: a test importing this module would otherwise depend on the environment's storage, and a
   // level inherited from another case is a failure that shows up far from its cause.
-  let calmMode = readTeaLevel();
+  let calmMode = readTeaLevel(ctx.store);
 
   const P = (): readonly PausePlayer[] => ctx.getPlayers() as readonly PausePlayer[];
 
   /*
    * THE MOVEMENT LATCH HAS AN ENGINE DEFAULT (ADR-0106 §4): a host that injects one still rules; a host that does not is
-   * no longer left without it. The `store` is this module's direct import (see the note at the import).
+   * no longer left without it. The `store` is the page's, from the ctx (ADR-0232).
    */
   const setToggleMove = ctx.setToggleMove
     ?? ((i: number, on: boolean) => setMoveLatch(
       {
-        players: P(), store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers,
+        players: P(), store: ctx.store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers,
         // Passed through, not resolved here: the icon and the panel must write the SAME thing, and resolving the
         // device in one of them only is how two surfaces of the same engine come to disagree.
         transportInUse: ctx.transportInUse,
@@ -771,10 +780,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * the scene, and resolving it on each use would make a new object per call — the switch would stop reaching the drawing,
    * with no error at all.
    */
-  const rm: MotionSceneFlags = ctx.rm ?? readStoredScene(defaultReducedMotion(ctx.matchMedia));
+  const rm: MotionSceneFlags = ctx.rm ?? readStoredScene(ctx.store, defaultReducedMotion(ctx.matchMedia));
   const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? SCENE_KEYS;
   const rmChar: readonly MotionCharDef[] = ctx.rmChar ?? CHARACTER_ANIMATIONS;
-  const saveRM: () => void = ctx.saveRM ?? (() => storeScene(rm));
+  const saveRM: () => void = ctx.saveRM ?? (() => storeScene(ctx.store, rm));
   /*
    * THESE THREE ARE READ ON EACH CALL, not resolved once like `rm` above: a host may replace the action table after `init`
    * (it can arrive late), and a default must not cost that late binding. `rm` is the opposite — what matters there is the
@@ -855,7 +864,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     tea: () => {
       calmMode = nextCalmMode(calmMode);
-      store.set(store.KEYS.tea, calmMode); // ADR-0028: every menu setting persists. See the note at the `let` above.
+      ctx.store.set(KEYS.tea, calmMode); // ADR-0028: every menu setting persists. See the note at the `let` above.
       applyCalm();
       ctx.srSay(t('sr.icon.tea', { v: t(CALM_NAMES[calmMode]!) }));
     },
@@ -1261,7 +1270,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // lasted the session would look applied and then vanish.
     applyCalm,
     getCalmMode: () => calmMode,
-    setCalmMode: (n) => { calmMode = sanitiseTeaLevel(n, DEFAULTS.calmMode); store.set(store.KEYS.tea, calmMode); },
+    setCalmMode: (n) => { calmMode = sanitiseTeaLevel(n, DEFAULTS.calmMode); ctx.store.set(KEYS.tea, calmMode); },
     iconState,
   };
 }
