@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de platform/audio-jingles (project NODE: sem Web Audio real — AudioContext/tone falsos injetados por closure).
-// Contrato: playVictory = 6 tons square + 4 fogos; playPuzzleSolved = 5 tons sine; firework = 6 osciladores (1 assobio
-// + 5 crepitar) e respeita soundOn/volume/when. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, áudio r1).
+// Tests of platform/audio-jingles (NODE project: no real Web Audio — a fake AudioContext/tone injected by closure).
+// Contract: playVictory = 6 square tones + 4 fireworks; playPuzzleSolved = 5 sine tones; firework = 6 oscillators (1
+// whistle + 5 crackles) and respects soundOn/volume/when. See docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, audio r1).
 import { describe, it, expect } from 'vitest';
 import { createAudioJingles } from '../app/js/platform/audio-jingles.js';
 
-// AudioContext falso: conta osciladores e registra o `t` de cada frequency.setValueAtTime (p/ checar o offset `when`).
+// A fake AudioContext: counts oscillators and records the `t` of each frequency.setValueAtTime (to check the `when` offset).
 function fakeAC() {
   const rec = { osc: 0, gain: 0, freqTimes: [] };
-  const chain = { connect: () => chain }; // connect encadeável (o.connect(g).connect(out))
+  const chain = { connect: () => chain }; // a chainable connect (o.connect(g).connect(out))
   const mkOsc = () => { rec.osc++; return {
     type: '', frequency: { setValueAtTime: (_f, t) => rec.freqTimes.push(t), exponentialRampToValueAtTime: () => {} },
     connect: () => chain, start: () => {}, stop: () => {} }; };
@@ -23,7 +23,7 @@ function setup(over = {}) {
   const ctx = {
     tone: (freq, dur, type, when, vol) => toneCalls.push({ freq, dur, type, when, vol }),
     ensureAC: () => ac,
-    catNode: () => null,        // força o fallback audioOut()
+    catNode: () => null,        // forces the audioOut() fallback
     audioOut: () => ({ connect: () => ({}) }),
     getSoundOn: () => true,
     getVolume: () => 0.6,
@@ -78,7 +78,7 @@ describe('platform/audio-jingles', () => {
   it('[Right-BICEP:Cross-check] playVictory com som desligado: tons ainda chamam `tone` (ele guarda), mas 0 fogos', () => {
     const { jingles, toneCalls, rec } = setup({ getSoundOn: () => false });
     jingles.playVictory();
-    expect(toneCalls.length).toBe(6); // tone é responsável por silenciar internamente
-    expect(rec.osc).toBe(0);          // firework guarda aqui → nenhum oscilador cru
+    expect(toneCalls.length).toBe(6); // tone is responsible for muting internally
+    expect(rec.osc).toBe(0);          // firework guards here → no raw oscillator
   });
 });

@@ -1,34 +1,33 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// AS TRÊS PORTAS POR ONDE A ARTE ENTRA — os gates que o ADR-0133 §confirmation deixou em dívida (#140).
+// THE THREE DOORS ART COMES IN BY — the gates ADR-0133 §confirmation left as debt (#140).
 //
-// ========================= O QUE ESTE FICHEIRO AFIRMA, E POR QUE MUDOU DUAS VEZES =========================
-// Ele era `lcp-quarantine.node.test.js` e afirmava que uma PAREDE se aguentava. Depois passou a afirmar que
-// toda licença estava numa LISTA FECHADA de quatro nomes. As duas versões erravam da mesma maneira, e o Dev
-// apanhou-as com o mesmo tipo de caso: **recusavam por um nome não estar na lista**, e não por o projeto não
-// poder usar a obra.
+// ========================= WHAT THIS FILE ASSERTS, AND WHY IT CHANGED TWICE =========================
+// It asserted first that a WALL held, then that every licence was on a CLOSED LIST of four names. Both versions erred the
+// same way, and the Dev caught them with the same kind of case: **they refused because a name was not on the list**, not
+// because the project could not use the work.
 //
-// 🎯 O ADR-0133 passou a decidir por COMPATIBILIDADE COM O PROJETO, em quatro perguntas — pode derivar? pode
-// usar comercialmente? podemos CONVEIAR o ficheiro no que publicamos? algo VIAJA da fonte para a saída? — e
-// três portas: a CONCESSÃO do autor, a LICENÇA que passa as quatro, e a PONTE, por onde o copyleft entra
-// convertido em `GPL-3.0-only` (declaração de compatibilidade da Creative Commons de 08/10/2015 + §13 da
-// GPLv3, que permite combinar obra GPLv3 com obra AGPLv3 num único trabalho).
+// 🎯 ADR-0133 decides by COMPATIBILITY WITH THE PROJECT, in four questions — may we derive? may we use it commercially?
+// may we CONVEY the file in what we publish? does anything TRAVEL from the source to the output? — and three doors: the
+// author's GRANT, the LICENCE that passes the four, and the BRIDGE, through which copyleft comes in converted to
+// `GPL-3.0-only` (the Creative Commons compatibility declaration of 2015-10-08 + §13 of the GPLv3, which allows combining
+// a GPLv3 work with an AGPLv3 work in a single work).
 //
-// ⚠️ E ISSO MUDA O QUE UM GATE CONSEGUE AFIRMAR, o que é o assunto deste ficheiro. Nenhuma máquina responde
-// «esta licença permite uso comercial?» — não é comparação de texto. O que uma máquina consegue afirmar é
-// que **alguém escreveu a resposta**, que a linha declara POR QUE PORTA entrou, e que o que essa porta exige
-// está lá. Um nome novo não é recusado: é REFERIDO, e a linha reprova até um registo dizer que as quatro
-// perguntas foram respondidas para ele. É a diferença entre uma lista e um estrangulamento.
+// ⚠️ AND THAT CHANGES WHAT A GATE CAN ASSERT, which is this file's subject. No machine answers whether a licence allows
+// commercial use — it is not a text comparison. What a machine can assert is that **someone wrote the answer**, that the
+// row declares WHICH DOOR it came in by, and that what that door demands is there. A new name is not refused: it is
+// REFERRED, and the row fails until a record says the four questions were answered for it. That is the difference
+// between a list and a stranglehold.
 //
-// ========================= O QUE ESTE FICHEIRO NÃO CONSEGUE AFIRMAR, DITO À FRENTE =========================
-// 🔴 ELE CONFERE A LINHA, NÃO A CONCESSÃO NA ORIGEM. O ADR-0133 pede mais: que a licença declarada seja
-// conferida contra a página de origem, porque uma declaração a jusante é indício e não autoridade — medido
-// no `ElizaWy/LPC`, que declara tudo CC BY 3.0 ou OGA-BY 3.0 enquanto uma das páginas que ele cita concede
-// só CC-BY-SA 3.0 e GPL 3.0. Essa metade PRECISA DE REDE e fica na #140.
+// ========================= WHAT THIS FILE CANNOT ASSERT, SAID UP FRONT =========================
+// 🔴 IT CHECKS THE ROW, NOT THE GRANT AT THE SOURCE. ADR-0133 asks for more: that the declared licence be checked against
+// the source page, because a downstream declaration is a clue and not an authority — `ElizaWy/LPC` declares everything
+// CC BY 3.0 or OGA-BY 3.0 while one of the pages it cites grants only CC-BY-SA 3.0 and GPL 3.0. That half NEEDS A NETWORK
+// and stays in #140.
 //
-// ⚠️ E O LIVRO ESTÁ VAZIO. Nenhum recurso entrou ainda. Um crivo sobre árvore vazia passa por não ter o que
-// examinar, então as regras vivem em funções PURAS que fixtures conduzem, e o caso do vácuo vem PRIMEIRO.
+// ⚠️ AND THE LEDGER IS EMPTY. No resource has come in yet. A check over an empty tree passes for having nothing to
+// examine, so the rules live in PURE functions that fixtures drive, and the vacuum case comes FIRST.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -36,59 +35,59 @@ import { fileURLToPath } from 'node:url';
 
 const RAIZ = fileURLToPath(new URL('../', import.meta.url));
 
-/** A árvore da arte importada. Já não é uma quarentena: é só onde a arte de fora vive. */
+/** The imported art's tree. It is no longer a quarantine: it is just where outside art lives. */
 const ARTE = 'art/';
-/** O livro-razão por recurso. Atribuição é condição de uso na maioria das portas, não linha de crédito. */
+/** The per-resource ledger. Attribution is a condition of use at most doors, not a credits line. */
 const LIVRO = 'art/ATTRIBUTION.csv';
-/** Os dois ficheiros da própria árvore, que não são recursos e por isso não se declaram a si mesmos. */
+/** The tree's own two files, which are not resources and so do not declare themselves. */
 const NAO_SAO_RECURSO = new Set(['art/README.md', LIVRO]);
 
 /**
- * As licenças que o projeto JÁ MEDIU e registou como passando as quatro perguntas.
+ * The licences the project has ALREADY MEASURED and recorded as passing the four questions.
  *
- * 📌 Isto não é a regra — a regra são as quatro perguntas, e vive no ADR-0133. Isto é a memória das respostas
- * já dadas, que é o que uma máquina consegue conferir. Acrescentar uma linha aqui é declarar que as quatro
- * foram respondidas para aquele nome, e o sítio onde a resposta mora é o registo.
+ * 📌 This is not the rule — the rule is the four questions, and it lives in ADR-0133. This is the memory of the answers
+ * already given, which is what a machine can check. Adding a line here declares that the four were answered for that
+ * name, and the place where the answer lives is the record.
  */
 const MEDIDAS_COMO_PASSANDO = Object.freeze([
   'CC0-1.0', 'CC-BY-3.0', 'CC-BY-4.0', 'OGA-BY-3.0', 'OGA-BY-4.0', 'MIT', 'Apache-2.0',
 ]);
 
 /**
- * 🔴 SEM CAMINHO NENHUM, POR PORTA NENHUMA — e são só duas, desde que a ponte existe.
+ * 🔴 NO WAY IN, BY ANY DOOR — and there are only two, since the bridge exists.
  *
- * A recusa é nomeada em vez de ser «o que não está na lista de cima» por uma razão de MENSAGEM: a diferença
- * entre um erro de escrita («cc-by-3.0» em minúsculas) e uma licença proibida é a coisa mais importante que
- * esta linha pode dizer a quem a lê.
+ * The refusal is named instead of being whatever is not on the list above for a reason of MESSAGE: the difference between
+ * a typo (`cc-by-3.0` in lower case) and a forbidden licence is the most important thing this row can tell whoever reads
+ * it.
  */
 const SEM_PORTA = Object.freeze([
   { padrao: /(^|[-\s])ND([-\s]|$)|NoDeriv/i, porque: 'ND proíbe derivar, e recolorir já é derivar' },
   { padrao: /(^|[-\s])NC([-\s]|$)|NonCommercial/i, porque: 'NC deixaria a arte mais estreita que o código AGPL' },
 ]);
 
-/** As três portas do ADR-0133. A linha declara a sua, e cada uma exige uma coisa diferente. */
+/** ADR-0133's three doors. The row declares its own, and each demands something different. */
 const PORTAS = Object.freeze(['concessao', 'licenca', 'ponte']);
 
 /**
- * 🎯 A ENTREGA, que é a pergunta 3 do ADR-0133 e NÃO é um critério de admissão.
+ * 🎯 THE DELIVERY, which is ADR-0133's question 3 and is NOT an admission criterion.
  *
- * «Podemos conveiar isto?» não aprova nem recusa: ROTEIA. O que podemos conveiar viaja connosco
- * (`repositorio`). O que não podemos é obtido por quem instala, da origem (`pessoa`), e **não entra nesta
- * árvore nem no pacote** — é o que o ADR-0108 já decidiu para a fonte Ronde, que não pode ser empacotada.
+ * Whether we may convey a file neither approves nor refuses: it ROUTES. What we may convey travels with us
+ * (`repositorio`). What we may not is fetched by whoever installs, from the source (`pessoa`), and **enters neither this
+ * tree nor the package** — what ADR-0108 already decided for the Ronde font, which cannot be packaged.
  *
- * ⚠️ E a distinção não é subtil para um pacote de assets: usar arte NUM JOGO é o que uma concessão dessas
- * costuma permitir, enquanto equipar uma engine com o pacote inteiro e entregá-lo a trezentos jogos é
- * REEMPACOTAR. 📌 Medido em 2026-09-09: nem `itch.io` nem `kenney.nl` mandam cabeçalho CORS, logo a versão
- * automática disto nem sequer é possível — só uma pessoa consegue buscar de lá.
+ * ⚠️ And the distinction is not subtle for an asset pack: using art IN A GAME is what such a grant usually allows, while
+ * equipping an engine with the whole pack and handing it to every game is REPACKAGING. 📌 Neither `itch.io` nor
+ * `kenney.nl` sends a CORS header, so an automatic version of this is not even possible — only a person can fetch from
+ * there.
  */
 const ENTREGAS = Object.freeze(['repositorio', 'pessoa']);
-/** A ponte só existe para share-alike da Creative Commons, e só produz esta saída. */
+/** The bridge exists only for Creative Commons share-alike, and produces only this output. */
 const FONTE_DA_PONTE = /^CC-BY-SA-[34]\.0$/;
 const SAIDA_DA_PONTE = 'GPL-3.0-only';
 
-/* ---------- as metades puras: recebem listas, para que os fixtures as possam conduzir ---------- */
+/* ---------- the pure halves: they take lists, so fixtures can drive them ---------- */
 
-/** Lê o livro-razão. Devolve as entradas; a primeira linha é cabeçalho e o vazio final ignora-se. */
+/** Reads the ledger. Returns the entries; the first line is the header and the trailing empty one is ignored. */
 export function lerLivro(texto) {
   return texto.split(/\r?\n/).slice(1).filter((ln) => ln.trim() !== '').map((ln) => {
     const [caminho, autor, fonte, porta, licenca, saida, entrega, derivadoDe] = ln.split(',');
@@ -106,11 +105,11 @@ export function lerLivro(texto) {
 }
 
 /**
- * Tudo o que pode estar errado com o livro, dito por extenso.
+ * Everything that can be wrong with the ledger, spelled out.
  *
- * ⚠️ A ORDEM DAS PERGUNTAS DE LICENÇA É A REGRA: pergunta-se primeiro se está SEM PORTA e só depois se a
- * porta declarada aceita aquele nome. Ao contrário, uma linha `CC-BY-NC-4.0` sairia com «não é uma das
- * medidas», que é verdade e é a metade errada da verdade — quem a ler vai corrigir a grafia.
+ * ⚠️ THE ORDER OF THE LICENCE QUESTIONS IS THE RULE: first whether it has NO DOOR, and only then whether the declared door
+ * accepts that name. The other way round, a `CC-BY-NC-4.0` row would come out as not one of the measured ones, which is
+ * true and the wrong half of the truth — whoever reads it will fix the spelling.
  */
 export function problemasDoLivro(entradas, vivos) {
   const problemas = [];
@@ -120,8 +119,8 @@ export function problemasDoLivro(entradas, vivos) {
     if (!e.caminho.startsWith(ARTE)) problemas.push(`fora de ${ARTE}: ${e.caminho}`);
     if (vistos.has(e.caminho)) problemas.push(`entrada repetida: ${e.caminho}`);
 
-    // 🎯 A entrega decide qual das DUAS afirmações opostas se faz sobre o ficheiro, e é por isso que ela
-    // vem antes do órfão: numa linha `pessoa` o ficheiro estar cá é que é o defeito.
+    // 🎯 The delivery decides which of TWO opposite claims is made about the file, which is why it comes before the
+    // orphan: on a `pessoa` row, the file being here is the defect.
     if (!ENTREGAS.includes(e.entrega)) {
       problemas.push(`entrega inválida em ${e.caminho}: «${e.entrega}» — tem de ser uma de ${ENTREGAS.join(', ')}`);
     } else if (e.entrega === 'pessoa') {
@@ -133,8 +132,8 @@ export function problemasDoLivro(entradas, vivos) {
       problemas.push(`órfão: ${e.caminho} — a entrada nomeia um recurso que não existe`);
     }
 
-    // 🎯 A URL da fonte é a matéria-prima da conferência na origem que a #140 vai construir: sem ela
-    // guardada por recurso, a licença declarada não tem contra o que ser conferida.
+    // 🎯 The source URL is the raw material of the check at the source #140 will build: without it stored per resource,
+    // the declared licence has nothing to be checked against.
     if (!/^https?:\/\/\S+$/.test(e.fonte)) {
       problemas.push(`fonte sem URL em ${e.caminho}: «${e.fonte}» — a licença declarada tem de poder ser conferida na origem`);
     }
@@ -145,8 +144,8 @@ export function problemasDoLivro(entradas, vivos) {
     } else if (!PORTAS.includes(e.porta)) {
       problemas.push(`porta inválida em ${e.caminho}: «${e.porta}» — tem de ser uma de ${PORTAS.join(', ')}`);
     } else if (e.porta === 'licenca' && !MEDIDAS_COMO_PASSANDO.includes(e.licenca)) {
-      // 📌 REFERIDO, não recusado: um nome novo entra assim que um registo disser que as quatro perguntas
-      // foram respondidas para ele. A mensagem tem de dizer isso, senão parece uma porta fechada.
+      // 📌 REFERRED, not refused: a new name comes in as soon as a record says the four questions were answered for it.
+      // The message has to say so, or it looks like a closed door.
       problemas.push(`licença por medir em ${e.caminho}: «${e.licenca}» — responda as quatro perguntas do `
         + `ADR-0133 num registo e acrescente o nome; medidas até hoje: ${MEDIDAS_COMO_PASSANDO.join(', ')}`);
     } else if (e.porta === 'concessao' && !/^https?:\/\/\S+$/.test(e.licenca)) {
@@ -171,13 +170,13 @@ export function problemasDoLivro(entradas, vivos) {
   return problemas;
 }
 
-/** Ficheiros na árvore que ninguém declarou. Entrar sem entrada é entrar sem atribuição. */
+/** Files in the tree that nobody declared. Coming in without an entry is coming in without attribution. */
 export function naoDeclarados(vivos, entradas) {
   const declarados = new Set(entradas.map((e) => e.caminho));
   return [...vivos].filter((f) => !declarados.has(f));
 }
 
-/* ---------- a árvore de verdade ---------- */
+/* ---------- the real tree ---------- */
 
 function ficheirosDe(rel) {
   const abs = join(RAIZ, rel);
@@ -198,7 +197,7 @@ const naArvore = ficheirosDe(ARTE);
 const recursosVivos = new Set(naArvore.filter((f) => !NAO_SAO_RECURSO.has(f)));
 const entradas = existsSync(join(RAIZ, LIVRO)) ? lerLivro(readFileSync(join(RAIZ, LIVRO), 'utf8')) : [];
 
-/** Uma linha sã, para os casos mudarem UM campo de cada vez em vez de repetirem o objecto inteiro. */
+/** A sound row, so the cases change ONE field at a time instead of repeating the whole object. */
 const linha = (extra = {}) => ({
   caminho: `${ARTE}x.png`, autor: 'Alguém', fonte: 'https://opengameart.org/x',
   porta: 'licenca', licenca: 'CC0-1.0', saida: '', entrega: 'repositorio', derivadoDe: [], ...extra,
@@ -207,9 +206,9 @@ const so = (extra) => problemasDoLivro([linha(extra)], new Set([`${ARTE}x.png`])
 
 describe('ADR-0133 · as três portas por onde a arte entra', () => {
   it('⚠️ [Vácuo] a árvore da arte EXISTE e é versionada — sem ela os outros casos passariam por vácuo', () => {
-    // Primeiro e não último, porque a árvore de recursos está VAZIA: as portas foram decididas e nenhuma
-    // arte entrou ainda. É este caso que prova que a varredura continua viva — e ele apanha a armadilha do
-    // `.gitignore` onde ela morde: num clone limpo, uma pasta ignorada não tem nem README nem livro.
+    // First and not last, because the resources tree is EMPTY: the doors were decided and no art has come in yet. This
+    // case proves the scan is still alive — and it catches the `.gitignore` trap where it bites: in a clean clone, an
+    // ignored folder has neither README nor ledger.
     expect(existsSync(join(RAIZ, LIVRO)), `${LIVRO} não existe — o livro-razão é a atribuição, não um extra`).toBe(true);
     expect(naArvore, 'a varredura de `art/` não achou nem o README nem o livro')
       .toEqual(expect.arrayContaining([...NAO_SAO_RECURSO]));
@@ -224,9 +223,8 @@ describe('ADR-0133 · as três portas por onde a arte entra', () => {
   });
 
   it('[Right] as licenças já medidas passam pela porta `licenca` — senão o gate nunca ficaria verde', () => {
-    // ⚠️ A metade que falta a quase todo gate de lista negra: provar que o lado permissivo FUNCIONA. Sem
-    // ela, um padrão de recusa largo demais tornaria o livro impossível de preencher, e um gate que nunca
-    // pode ficar verde é um gate que alguém desliga.
+    // ⚠️ The half almost every blacklist gate lacks: proving the permissive side WORKS. Without it, a refusal pattern too
+    // wide would make the ledger impossible to fill, and a gate that can never go green is a gate someone switches off.
     for (const licenca of MEDIDAS_COMO_PASSANDO) {
       expect(so({ licenca }), `«${licenca}» devia passar e não passou`).toEqual([]);
     }
@@ -245,8 +243,8 @@ describe('ADR-0133 · as três portas por onde a arte entra', () => {
   });
 
   it('🎯 [Right] SHARE-ALIKE já não é recusado: passa PELA PONTE, com saída e adaptação', () => {
-    // O caso que carrega a decisão de hoje, e é o inverso do que este ficheiro afirmava de manhã. A ponte
-    // é a declaração de compatibilidade da Creative Commons de 08/10/2015 mais o §13 da GPLv3.
+    // The case that carries the decision, the inverse of what this file first asserted. The bridge is the Creative
+    // Commons compatibility declaration of 2015-10-08 plus §13 of the GPLv3.
     expect(so({
       porta: 'ponte', licenca: 'CC-BY-SA-3.0', saida: 'GPL-3.0-only', derivadoDe: ['fonte/heroi.png'],
     }), 'a ponte devia deixar passar CC BY-SA adaptada').toEqual([]);
@@ -268,7 +266,7 @@ describe('ADR-0133 · as três portas por onde a arte entra', () => {
   });
 
   it('🎯 [Right] a porta `concessao` exige um PONTEIRO para a concessão, não um nome', () => {
-    // É a porta do Tiny Swords: termos escritos pelo autor, permissivos, sem nome de licença conhecido.
+    // It is Tiny Swords' door: terms written by the author, permissive, with no known licence name.
     expect(so({ porta: 'concessao', licenca: 'https://pixelfrog-assets.itch.io/tiny-swords' }),
       'uma concessão com ponteiro devia passar').toEqual([]);
     const p = so({ porta: 'concessao', licenca: 'o autor deixou' });
@@ -276,8 +274,8 @@ describe('ADR-0133 · as três portas por onde a arte entra', () => {
   });
 
   it('📌 [Boundary] um nome NOVO é REFERIDO, não recusado — a mensagem tem de dizer como o admitir', () => {
-    // A diferença entre uma lista e um estrangulamento. `Zlib` não tem nada de errado; só ainda ninguém
-    // respondeu as quatro perguntas para ele, e a mensagem tem de dizer exactamente isso.
+    // The difference between a list and a stranglehold. `Zlib` has nothing wrong with it; nobody has answered the four
+    // questions for it yet, and the message must say exactly that.
     const p = so({ licenca: 'Zlib' });
     expect(p.filter((s) => s.startsWith('licença por medir'))).toHaveLength(1);
     expect(p[0], 'a mensagem não diz COMO admitir a licença nova').toContain('quatro perguntas');
@@ -285,8 +283,8 @@ describe('ADR-0133 · as três portas por onde a arte entra', () => {
   });
 
   it('🔴 [Right] uma linha de entrega `pessoa` cujo ficheiro ESTÁ na árvore reprova', () => {
-    // O caso do Tiny Swords atual, e é o que o Dev viu: a concessão dele permite usar a arte NUM JOGO, e
-    // equipar a engine com o pacote inteiro é reempacotá-lo. A linha declara-se e o ficheiro NÃO entra.
+    // Tiny Swords' case, the one the Dev saw: its grant allows using the art IN A GAME, and equipping the engine with the
+    // whole pack is repackaging it. The row is declared and the file does NOT come in.
     const p = problemasDoLivro(
       [linha({ porta: 'concessao', licenca: 'https://pixelfrog-assets.itch.io/tiny-swords', entrega: 'pessoa' })],
       new Set([`${ARTE}x.png`]),
@@ -295,8 +293,8 @@ describe('ADR-0133 · as três portas por onde a arte entra', () => {
   });
 
   it('⚠️ [Inverse] e a mesma linha SEM o ficheiro na árvore passa — senão não haveria como a declarar', () => {
-    // A metade oposta, e sem ela a regra não teria saída: o que a entrega `pessoa` afirma é uma AUSÊNCIA,
-    // e uma ausência que também reprovasse tornaria a porta impossível de usar.
+    // The opposite half, and without it the rule would have no way out: what the `pessoa` delivery asserts is an ABSENCE,
+    // and an absence that also failed would make the door impossible to use.
     expect(problemasDoLivro(
       [linha({ porta: 'concessao', licenca: 'https://pixelfrog-assets.itch.io/tiny-swords', entrega: 'pessoa' })],
       new Set(),
@@ -322,14 +320,14 @@ describe('ADR-0133 · as três portas por onde a arte entra', () => {
   });
 
   it('⚠️ [Interface] o `LICENSES.md` nomeia as três portas E as duas recusas', () => {
-    // Sem este caso o ficheiro que um advogado lê pode divergir do que o gate afirma — e é o ficheiro que
-    // o pedido `g` do requerimento manda constar dos autos.
+    // Without this case the file a lawyer reads could diverge from what the gate asserts — and it is the file that item
+    // `g` of the filing asks to be put on record.
     const txt = readFileSync(join(RAIZ, 'docs/LICENSES.md'), 'utf8');
     for (const nome of ['CC0', 'CC BY', 'OGA-BY', 'GPL-3.0-only', 'concess']) {
       expect(txt, `o LICENSES.md não nomeia ${nome}`).toContain(nome);
     }
-    // 🎯 E as recusas, que são metade da decisão: um documento que só lista o permitido lê-se como uma
-    // lista de exemplos, e foi por isso que o ADR-0133 as nomeou em vez de as deixar por dedução.
+    // 🎯 And the refusals, which are half the decision: a document that lists only what is allowed reads as a list of
+    // examples, which is why ADR-0133 named them instead of leaving them to deduction.
     for (const nome of ['ND', 'NC']) {
       expect(txt, `o LICENSES.md não diz que recusamos ${nome}`).toContain(nome);
     }
@@ -341,21 +339,22 @@ describe('ADR-0133 · as três portas por onde a arte entra', () => {
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-// Cada uma aplicada por script a ficheiro e com contagem de ocorrencias antes de aplicar.
-//   · 🎯 tirar a exigencia de `GPL-3.0-only` (aceitar qualquer saida) -> reprova o caso do «or-later». E a
-//     mutacao que mais interessa da ponte: a declaracao da Creative Commons cobre a VERSAO 3 e mais nenhuma,
-//     e um aviso «or-later» reivindica uma compatibilidade que ninguem declarou. Ninguem notaria a olho.
-//   · tirar a exigencia de ADAPTACAO na ponte -> reprova o caso homonimo. Sem ela um ficheiro CC BY-SA
-//     copiado tal e qual sairia como GPL, e o original nunca muda de licenca para ninguem.
-//   · deixar a ponte aceitar qualquer licenca de origem -> reprova o caso do MIT. A ponte nao e um conversor
-//     universal para GPL; ela existe so para o share-alike da Creative Commons.
-//   · trocar a ordem das perguntas (porta antes de SEM_PORTA) -> reprova os casos do ND/NC pela ultima
-//     asseracao: o gate continuaria a reprovar a linha e perderia a RAZAO, que e o que quem le precisa.
-//   · tratar um nome novo como proibicao em vez de «por medir» -> reprova o [Boundary]. E a diferenca entre
-//     uma lista e um estrangulamento, e foi o defeito que o Dev apanhou duas vezes num dia.
-//   · tirar a guarda do PONTEIRO na porta `concessao` -> reprova o caso homonimo. Uma concessao que ninguem
-//     consegue abrir e honrada de memoria, que e onde toda regra deste repositorio ja falhou.
-//   · tirar a guarda da FONTE SEM URL -> reprova o caso homonimo. Sem ela nao ha o que conferir na origem.
-//   · tirar a guarda do AUTOR VAZIO / do ORFAO -> reprovam os casos homonimos.
-//   · esvaziar `art/` -> reprova o [Vacuo] PRIMEIRO, o unico que o pode apanhar com o livro vazio.
+// ========================= MUTATIONS CHECKED =========================
+// Each applied by script to the file, with an occurrence count before applying.
+//   · 🎯 dropping the `GPL-3.0-only` requirement (accepting any output) -> fails the or-later case. It is the bridge
+//     mutation that matters most: the Creative Commons declaration covers VERSION 3 and no other, and an or-later notice
+//     claims a compatibility nobody declared. Nobody would notice by eye.
+//   · dropping the ADAPTATION requirement on the bridge -> fails the case of that name. Without it a CC BY-SA file copied
+//     as is would come out as GPL, and the original never changes licence for anyone.
+//   · letting the bridge accept any source licence -> fails the MIT case. The bridge is not a universal converter to GPL;
+//     it exists only for Creative Commons share-alike.
+//   · swapping the order of the questions (door before SEM_PORTA) -> fails the ND/NC cases on their last assertion: the
+//     gate would go on failing the row and lose the REASON, which is what the reader needs.
+//   · treating a new name as a ban instead of not-yet-measured -> fails the [Boundary]. It is the difference between a
+//     list and a stranglehold, and it was the defect the Dev caught twice in one day.
+//   · dropping the POINTER guard on the `concessao` door -> fails the case of that name. A grant nobody can open is
+//     honoured from memory, which is where every rule of this repository has failed before.
+//   · dropping the SOURCE-WITHOUT-URL guard -> fails the case of that name. Without it there is nothing to check at the
+//     source.
+//   · dropping the EMPTY-AUTHOR / ORPHAN guard -> the cases of those names fail.
+//   · emptying `art/` -> fails the [Vácuo] case FIRST, the only one that can catch it with the ledger empty.

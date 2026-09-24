@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de platform/audio-earcons (project NODE: Web Audio/SFX/showCaption/noiseHit falsos injetados por closure).
-// Contrato-chave de a11y: a LEGENDA sai ANTES da checagem de som → surdo "vê" o earcon mesmo com áudio OFF. sfx toca
-// 1 oscilador; doorSound escolhe timbre por material + dispara noiseHit. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Tests of platform/audio-earcons (NODE project: fake Web Audio/SFX/showCaption/noiseHit injected by closure).
+// The key a11y contract: the CAPTION goes out BEFORE the sound check → a deaf child sees the earcon even with audio OFF.
+// sfx plays 1 oscillator; doorSound picks a timbre by material + fires noiseHit. See docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import { createAudioEarcons } from '../app/js/platform/audio-earcons.js';
 import { t } from '../app/js/core/i18n.js';
@@ -18,9 +18,9 @@ function fakeAC() {
   return { rec, ac: { currentTime: 0, destination: {}, createOscillator: mkOsc, createGain: mkGain } };
 }
 
-// A tabela é do JOGO (item 19) e `cap` guarda a CHAVE, não o texto. O fixture usa uma chave que NÃO existe
-// no dicionário de propósito: `t()` devolve a própria chave quando não acha, então o caso continua podendo
-// afirmar o que interessa — que a legenda sai — sem depender do texto de nenhum idioma.
+// The table is the GAME's (item 19) and `cap` holds the KEY, not the text. The fixture uses a key that does NOT exist in
+// the dictionary on purpose: `t()` returns the key itself when it finds nothing, so the case can still assert what
+// matters — that the caption goes out — without depending on any language's text.
 const SFX = { alvo: { t: 'square', f: 880, d: 0.1, cap: 'sfx.teste' }, plain: { t: 'sine', f: 440, d: 0.1 } };
 
 function setup(over = {}) {
@@ -52,7 +52,7 @@ describe('platform/audio-earcons', () => {
   it('[Cross-check a11y] som OFF mas legendas ON: legenda SAI, mas 0 osciladores', () => {
     const { earcons, rec, caps } = setup({ getSoundOn: () => false });
     earcons.sfx('alvo');
-    expect(caps).toEqual(['sfx.teste']); // surdo vê o earcon mesmo sem áudio
+    expect(caps).toEqual(['sfx.teste']); // a deaf child sees the earcon even with no audio
     expect(rec.osc).toBe(0);
   });
 
@@ -67,7 +67,7 @@ describe('platform/audio-earcons', () => {
     const { earcons, rec, caps } = setup();
     earcons.sfx('plain');
     expect(rec.osc).toBe(1);
-    expect(caps).toEqual([]); // 'plain' não tem cap
+    expect(caps).toEqual([]); // 'plain' has no cap
   });
 
   it('[Boundary] doorSound(ferro)=square + noiseHit(ferro); doorSound(madeira)=sawtooth + noiseHit(madeira)', () => {
@@ -88,20 +88,20 @@ describe('platform/audio-earcons', () => {
 });
 
 // ==========================================================================================================
-// ⚠️ UM EARCON TEM DE PODER IR PARA ALGUM LADO (#124)
+// ⚠️ AN EARCON MUST BE ABLE TO GO SOMEWHERE (#124)
 //
-// Medido ao construir o `game-soccer`: marcar e sofrer golo tem de ser distinguivel **so de ouvido** — uma
-// crianca cega ouve a sala reagir e precisa de saber para que lado ANTES de a narracao chegar. O desenho
-// obvio e uma figura que SOBE para o golo dela e DESCE para o do outro, e a tabela nao o sabia dizer: o
-// `SfxDef` tinha uma frequencia so, e o oscilador ficava parado nela.
+// Measured while building `game-soccer`: scoring and conceding a goal must be distinguishable **by ear alone** — a blind
+// child hears the room react and needs to know which way BEFORE the narration arrives. The obvious design is a figure
+// that RISES for her goal and FALLS for the other's, and the table could not say it: `SfxDef` had one frequency, and the
+// oscillator stood still on it.
 //
-// ⚠️ E A CAPACIDADE JA ESTAVA NO MESMO FICHEIRO, sem ser alcancavel da tabela: o `doorSound` faz exatamente
-// isto com `frequency.exponentialRampToValueAtTime`. O conserto nao e sintese nova — e abrir a porta.
+// ⚠️ AND THE CAPABILITY WAS ALREADY IN THE SAME FILE, unreachable from the table: `doorSound` does exactly this with
+// `frequency.exponentialRampToValueAtTime`. The fix is not new synthesis — it is opening the door.
 //
-// Estes casos precisam de um AudioContext falso mais fino do que o de cima: aquele nao regista NADA do que
-// se faz a `frequency`, entao uma rampa passaria por ele sem deixar rasto. Este anota as chamadas.
+// These cases need a finer fake AudioContext than the one above: that one records NOTHING done to `frequency`, so a ramp
+// would pass through it without a trace. This one notes the calls.
 //
-// MUTACOES CONFERIDAS (no fim do bloco).
+// MUTATIONS CHECKED (at the end of the block).
 // ==========================================================================================================
 describe('platform/audio-earcons — a figura do earcon (#124)', () => {
   function acQueAnota() {
@@ -151,8 +151,8 @@ describe('platform/audio-earcons — a figura do earcon (#124)', () => {
   });
 
   it('⚠️ [Boundary] `f2: 0` NAO rampa — a rampa exponencial lanca com alvo zero', () => {
-    // Sem esta guarda, uma tabela com zero mataria o earcon INTEIRO pelo `catch` do `sfx()`, em silencio:
-    // sem som e sem erro. E o pior modo de falhar que este ficheiro pode ter.
+    // Without this guard, a table with zero would kill the WHOLE earcon through `sfx()`'s `catch`, silently: no sound and
+    // no error. It is the worst way this file can fail.
     const freq = toca({ t: 'sine', f: 440, d: 0.2, f2: 0 });
     expect(freq.rampas, 'pediu rampa para zero').toEqual([]);
   });
@@ -163,8 +163,8 @@ describe('platform/audio-earcons — a figura do earcon (#124)', () => {
   });
 
   it('⚠️ [Interface] o earcon com figura continua a legendar ANTES de olhar para o som', () => {
-    // A ordem que a auditoria mandou registar como o que a engine ACERTOU. Um `f2` novo nao pode ter mexido
-    // nela: quem le legenda recebe a informacao com as colunas mudas.
+    // The order the audit asked to record as what the engine got RIGHT. A new `f2` must not have touched it: whoever
+    // reads captions gets the information with the speakers mute.
     const caps = [];
     const { ac } = acQueAnota();
     const earcons = createAudioEarcons({
@@ -178,19 +178,18 @@ describe('platform/audio-earcons — a figura do earcon (#124)', () => {
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · tirando o bloco `if (typeof c.f2 === 'number' && ...)` → "[Right] com `f2` o earcon SOBE" e "[Right] e
-//     DESCE" reprovam com as duas listas vazias. E a #124 reproduzida: a tabela pede uma figura e o
-//     oscilador fica parado.
-//   · trocando `c.f2 > 0` por `c.f2 >= 0` → "[Boundary] `f2: 0` NAO rampa" reprova, e no navegador de
-//     verdade seria o earcon inteiro a morrer em silencio pelo `catch`.
-//   · tirando o `setValueAtTime` e deixando so a rampa → reprovam as duas de subir/descer. O ponto de
-//     partida da curva nao pode ficar por conta da implementacao.
-//     ⚠️ E esta mutacao ABORTOU a primeira vez, com contagem ZERO: o ficheiro e CRLF e o `\n` do script nao
-//     casou. Sem a contagem de ocorrencias ela teria "sobrevivido" sem nunca ter sido aplicada, e eu tinha
-//     registado uma linha nao aferida como aferida. E o unico motivo de a contagem existir.
-//   · trocando `t + c.d` por `t + 0.3` (o numero cravado do `doorSound`) → as duas de subir/descer reprovam
-//     no instante. A figura tem de caber na duracao que a tabela declara, e nao numa constante emprestada.
+// ========================= MUTATIONS CHECKED =========================
+//   · removing the `if (typeof c.f2 === 'number' && ...)` block → the [Right] rises and falls cases fail with both
+//     lists empty. It is #124 reproduced: the table asks for a figure and the oscillator stands still.
+//   · replacing `c.f2 > 0` with `c.f2 >= 0` → the [Boundary] `f2: 0` case fails, and in a real browser it would be the
+//     whole earcon dying silently through the `catch`.
+//   · removing the `setValueAtTime` and leaving only the ramp → both rise/fall cases fail. The curve's starting point
+//     cannot be left to the implementation.
+//     ⚠️ And this mutation ABORTED the first time, with a count of ZERO: the file was CRLF and the script's `\n` did not
+//     match. Without the occurrence count it would have "survived" without ever being applied, and an unchecked line
+//     would have been recorded as checked. That is the only reason the count exists.
+//   · replacing `t + c.d` with `t + 0.3` (`doorSound`'s hard-coded number) → both rise/fall cases fail at once. The
+//     figure must fit the duration the table declares, not a borrowed constant.
 
 // ==========================================================================================================
 // WHERE AN EARCON GOES, HOW LOUD, FOR HOW LONG — and what the door does (probed 2026-09-23)

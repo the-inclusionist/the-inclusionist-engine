@@ -1,32 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// OS PADRÕES QUE FALTAVAM, E O NÍVEL TEA QUE SE ESQUECIA A CADA SESSÃO (issue #61).
+// THE MISSING DEFAULTS, AND THE ASD LEVEL THAT WAS FORGOTTEN EVERY SESSION (issue #61).
 //
-// ========================= O QUE A MEDIÇÃO ACHOU, E POR QUE ISTO É UM CONSERTO =========================
-// A marca do ADR-0029 lê `DEFAULTS` e mais nada — regra da issue #61, e ela está certa: se lesse duas fontes,
-// o dia em que elas divergissem seria o dia em que a marca mentiria. A consequência é que **um valor sem
-// padrão nomeado em `DEFAULTS` é um valor que a marca não pode marcar**, e cinco dos sete ícones da barra
-// rápida caíam nisso.
+// ========================= WHAT THE MEASUREMENT FOUND, AND WHY THIS IS A FIX =========================
+// ADR-0029's mark reads `DEFAULTS` and nothing else — issue #61's rule, and it is right: if it read two sources, the day
+// they diverged would be the day the mark lied. The consequence is that **a value without a named default in
+// `DEFAULTS` is a value the mark cannot mark**, and most of the quick bar's icons fell into that.
 //
-// ⚠️ AO IR DAR NOME AOS PADRÕES, DOIS DELES ERAM DEFEITOS E NÃO OMISSÕES:
+// ⚠️ WHEN NAMING THE DEFAULTS, TWO OF THEM WERE DEFECTS AND NOT OMISSIONS:
 //
-//   1. O NÍVEL TEA NÃO PERSISTIA. `ui/pause-icons` guardava-o num `let calmMode = 0` com o comentário
-//      «deliberately NOT persisted — **verbatim**: game.js never wrote it to storage». O «verbatim» é o que o
-//      desqualifica como decisão: foi PRESERVADO na extração do monólito, não escolhido. E o ADR-0028 diz
-//      que todo menu persiste.
+//   1. THE ASD LEVEL DID NOT PERSIST. `ui/pause-icons` kept it in a `let` whose comment called that «deliberately NOT
+//      persisted — **verbatim**: game.js never wrote it to storage». The «verbatim» is what disqualifies it as a
+//      decision: it was PRESERVED when extracting the monolith, not chosen. And ADR-0028 says every menu persists.
 //
-//      O custo era da criança que mais precisa dele: quem usa o modo SILENCIOSO voltava a pô-lo a cada
-//      sessão — e é para quem o barulho inesperado custa mais. Um ajuste que se esquece não é um ajuste, é
-//      uma tarefa diária.
+//      The cost fell on the child who needs it most: whoever uses QUIET mode had to set it again every session — and
+//      that is who unexpected noise costs most. A setting that forgets itself is not a setting, it is a daily chore.
 //
-//   2. `p.viz` NÃO TINHA PADRÃO. O snapshot da barra fazia `p.viz || ''`, e funcionava por ACIDENTE: a
-//      cadeia vazia não casa `hc-direto` nem `fix-*`, então os dois ícones ficavam apagados pelo motivo
-//      certo por engano. `render/viz-modes` já declarava o modo `normal` com `kind:'normal'` — o que não faz
-//      nada — e faltava alguém dizer que é ele o padrão.
+//   2. `p.viz` HAD NO DEFAULT. The bar's snapshot did `p.viz || ''`, and it worked by ACCIDENT: the empty string matches
+//      neither `hc-direto` nor `fix-*`, so both icons stayed off for the right reason by mistake. `render/viz-modes`
+//      already declared the `normal` mode with `kind:'normal'` — which does nothing — and nobody had said it was the
+//      default.
 //
-// A persistência propriamente dita (ida ao `localStorage`) prova-se no project BROWSER, em
-// `pause-icons.browser.test.js`; aqui ficam o contrato dos padrões e o saneamento, que são lógica pura.
+// The persistence itself (the trip to `localStorage`) is proved in the BROWSER project, in `pause-icons.browser.test.js`;
+// here stay the contract of the defaults and the sanitising, which are pure logic.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { DEFAULTS } from '../app/js/core/state.js';
 import { sanitiseTeaLevel, CALM_NAMES } from '../app/js/core/calm-mode.js';
@@ -35,16 +32,16 @@ import { VIZ_MODES } from '../app/js/render/viz-modes.js';
 
 describe('os padrões que faltavam ao DEFAULTS (#61)', () => {
   it('⚠️ [Right] o nível TEA e o modo de visão têm padrão NOMEADO', () => {
-    // Sem estes dois nomes, a marca do ADR-0029 não pode marcar cinco dos sete ícones da barra rápida — e
-    // uma barra com dois marcados e cinco não diz «não mexeste nestes cinco», que é falso.
+    // Without these two names, ADR-0029's mark cannot mark most of the quick bar's icons — and a bar with two marked and
+    // the rest not says the child did not touch the rest, which is false.
     expect(DEFAULTS.calmMode, 'o nível TEA voltou a não ter padrão').toBe(0);
     expect(DEFAULTS.viz, 'o modo de visão voltou a não ter padrão').toBe('normal');
   });
 
   it('⚠️ [Interface] o padrão do `viz` é um modo que NÃO FAZ NADA, e é `render/viz-modes` quem o diz', () => {
-    // O padrão não pode ser uma cadeia qualquer que por acaso não case os prefixos: tem de ser um modo real
-    // e neutro. Se alguém puser `DEFAULTS.viz` num modo que corrige ou simula, a criança começa a partida
-    // dentro de um ajuste que não pediu — e este caso reprova.
+    // The default cannot be any string that happens not to match the prefixes: it must be a real, neutral mode. If
+    // someone sets `DEFAULTS.viz` to a mode that corrects or simulates, the child starts the match inside a setting she
+    // did not ask for — and this case fails.
     const modo = VIZ_MODES.find((m) => m.key === DEFAULTS.viz);
     expect(modo, `DEFAULTS.viz não é um modo de viz-modes: ${DEFAULTS.viz}`).toBeTruthy();
     expect(modo.kind, 'o padrão do viz deixou de ser o modo neutro').toBe('normal');
@@ -62,21 +59,21 @@ describe('o nível TEA saneado — dado do navegador é dado de fora', () => {
   });
 
   it('⚠️ [Error] qualquer outra coisa volta ao padrão, e o motivo é o anúncio', () => {
-    // `CALM_NAMES[3]` é `undefined`, e o ciclo do ícone faz `t(CALM_NAMES[calmMode])` para ANUNCIAR o nível
-    // ao leitor de tela. Um nível fora da lista sairia como anúncio vazio — a criança cega carregaria no
-    // botão e não ouviria nada, que é a forma mais silenciosa de um controlo de acessibilidade falhar.
+    // `CALM_NAMES[3]` is `undefined`, and the icon's cycle does `t(CALM_NAMES[calmMode])` to ANNOUNCE the level to the
+    // screen reader. A level outside the list would come out as an empty announcement — the blind child would press the
+    // button and hear nothing, the quietest way for an accessibility control to fail.
     for (const lixo of [3, -1, 1.5, NaN, Infinity]) {
       expect(sanitiseTeaLevel(lixo, DEFAULTS.calmMode), `${lixo} passou como nível`).toBe(DEFAULTS.calmMode);
     }
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · tirando `calmMode: 0` do `DEFAULTS` → "[Right] padrão NOMEADO" reprova (e o `tsc` reprova junto, que é
-//     o melhor dos dois mundos: o gate diz porquê e o compilador impede de chegar ao gate).
-//   · trocando `DEFAULTS.viz` para `'hc-direto'` → "[Interface] o padrão é um modo que NÃO FAZ NADA" reprova
-//     no `kind`. É a mutação que importa: `'hc-direto'` É um modo real, então um caso que só verificasse
-//     «existe em VIZ_MODES» ficaria verde a pôr toda a criança em alto contraste por omissão.
-//   · trocando o `>= 0 && < CALM_NAMES.length` de `sanitiseTeaLevel` por `>= 0` → "[Error]" reprova no 3, que
-//     é exactamente o valor que produz o anúncio vazio.
-//   · trocando `Number.isInteger` por `typeof === 'number'` → "[Error]" reprova no 1.5 e no NaN.
+// ========================= MUTATIONS CHECKED =========================
+//   · removing `calmMode: 0` from `DEFAULTS` → the [Right] named-default case fails (and `tsc` fails with it, the best of
+//     both worlds: the gate says why and the compiler stops you before the gate).
+//   · setting `DEFAULTS.viz` to `'hc-direto'` → the [Interface] does-nothing-mode case fails on `kind`. It is the mutation
+//     that matters: `'hc-direto'` IS a real mode, so a case that only checked that it exists in VIZ_MODES would stay
+//     green while putting every child in high contrast by default.
+//   · replacing `sanitiseTeaLevel`'s `>= 0 && < CALM_NAMES.length` with `>= 0` → the [Error] case fails on 3, exactly
+//     the value that produces the empty announcement.
+//   · replacing `Number.isInteger` with `typeof === 'number'` → the [Error] case fails on 1.5 and on NaN.

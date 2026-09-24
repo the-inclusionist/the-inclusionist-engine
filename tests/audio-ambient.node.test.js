@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de platform/audio-ambient (project NODE: Web Audio falso injetado). Contratos: updateAmbient é gated por
-// audioCat.ambient.on, constrói a trilha UMA vez (lazy), o ganho de chuva segue _rainLevel e o de água segue a
-// proximidade de tiles de água (tipo 3); thunder respeita soundOn/volume. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Tests of platform/audio-ambient (NODE project: a fake Web Audio injected). Contracts: updateAmbient is gated by
+// audioCat.ambient.on, builds the track ONCE (lazily), the rain gain follows _rainLevel and the water gain follows the
+// nearness of water tiles (type 3); thunder respects soundOn/volume. See docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import { createAudioAmbient } from '../app/js/platform/audio-ambient.js';
 
-// AC falso que registra: nº de buffers criados (= nº de builds), nº de bufferSources (thunder) e TODOS os
-// setTargetAtTime {value} (p/ conferir os ganhos de água/chuva).
+// A fake AC that records: the number of buffers created (= number of builds), of bufferSources (thunder) and ALL the
+// setTargetAtTime {value} calls (to check the water/rain gains).
 function fakeAC() {
   const rec = { buffers: 0, sources: 0, targets: [] };
   const chain = { connect: () => chain };
@@ -48,7 +48,7 @@ describe('platform/audio-ambient', () => {
   it('[One] updateAmbient constrói a trilha UMA vez (lazy) em chamadas repetidas', () => {
     const { amb, rec } = setup();
     amb.updateAmbient(); amb.updateAmbient(); amb.updateAmbient();
-    expect(rec.buffers).toBe(1); // buildAmbient rodou só no 1º frame
+    expect(rec.buffers).toBe(1); // buildAmbient ran only on the 1st frame
   });
 
   it('[Interface] ganho de CHUVA segue _rainLevel (0.09 × nível)', () => {
@@ -58,12 +58,12 @@ describe('platform/audio-ambient', () => {
   });
 
   it('[Boundary] ganho de ÁGUA sobe perto de tile de água (tipo 3) e fica 0 longe', () => {
-    const near = setup({ players: [{ x: 80, y: 80 }], tileAt: (x, y) => (x === 5 && y === 5 ? 3 : 0) }); // px=py=5 → água em cima
+    const near = setup({ players: [{ x: 80, y: 80 }], tileAt: (x, y) => (x === 5 && y === 5 ? 3 : 0) }); // px=py=5 → water right there
     near.amb.updateAmbient();
     expect(near.rec.targets).toContain(0.15); // 0.15 × nearWater(=1 na distância 0)
     const far = setup({ players: [{ x: 80, y: 80 }], tileAt: () => 0 });
     far.amb.updateAmbient();
-    expect(far.rec.targets.every((v) => v !== 0.15)).toBe(true); // sem água por perto
+    expect(far.rec.targets.every((v) => v !== 0.15)).toBe(true); // no water nearby
   });
 
   it('[Zero] thunder com som OFF ou volume 0: nenhum bufferSource', () => {

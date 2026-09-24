@@ -1,26 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A BARRA FALA O IDIOMA DO ARRANQUE, e não o de recuo.
+// THE BAR SPEAKS THE BOOT LANGUAGE, not the fallback one.
 //
-// ========================= O DEFEITO, MEDIDO NUM NAVEGADOR ANTES DE SER ESCRITO =========================
-// 🔴 Em 2026-09-08, com o `quiz.html` servido do `dist` e `documentElement.lang === 'en'`, a barra que o
-// `createGame` monta servia CINCO rótulos em inglês («Blind mode (audio navigation): off») e TRÊS ainda em
-// português («Webcam — rosto (em construção)»), na mesma linha de ícones.
+// ========================= THE DEFECT, MEASURED IN A BROWSER BEFORE IT WAS WRITTEN =========================
+// 🔴 With `quiz.html` served from `dist` and `documentElement.lang === 'en'`, the bar `createGame` mounts served FIVE
+// labels in English (`Blind mode (audio navigation): off`) and THREE still in Portuguese (`Webcam — rosto (em
+// construção)`), on the same row of icons.
 //
-// 📏 E A CAUSA NÃO É STRING EM FALTA: as três chaves (`icon.face`/`icon.eyes`/`icon.voice`) existem nos TRÊS
-// dicionários. É ORDEM. O `initI18n` aplica pt de forma síncrona e pede en/es de forma ASSÍNCRONA (são chunks
-// próprios); a marcação da barra nasce nesse intervalo, e depois só os rótulos COM ESTADO se corrigiam,
-// porque o reflexo saltava os `soon` por uma premissa — «same string» — que deixou de ser verdade quando a
-// ENGINE passou a montar a barra (ADR-0106 etapa 2).
+// 📏 AND THE CAUSE IS NOT A MISSING STRING: the three keys (`icon.face`/`icon.eyes`/`icon.voice`) exist in all THREE
+// dictionaries. It is ORDER. `initI18n` applies pt synchronously and asks for en/es ASYNCHRONOUSLY (they are chunks of
+// their own); the bar's markup is born in that interval, and afterwards only the labels WITH STATE were corrected,
+// because the reflection skipped the `soon` ones on a premise — same string — that stopped being true when the ENGINE
+// started mounting the bar (ADR-0106 step 2).
 //
-// 📌 ESTE FICHEIRO É PRÓPRIO E NÃO UM CASO NO `boot-create-game.browser`, e a razão é estado de MÓDULO: o
-// `core/i18n` guarda `locale`/`dict` no topo do ficheiro, e trocar o idioma vazaria para todos os outros
-// casos do ficheiro que o fizesse. Aqui o registo de módulos nasce limpo.
+// 📌 THIS FILE STANDS ALONE AND IS NOT A CASE IN `boot-create-game.browser`, and the reason is MODULE state: `core/i18n`
+// keeps `locale`/`dict` at the top of the file, and changing the language would leak into every other case of the file
+// that did it. Here the module registry is born clean.
 //
-// ⚠️ E ELE EXERCITA O ARRANQUE, não a troca em execução. `setLocale` depois do boot é a pergunta que o próprio
-// `core/i18n` declara como sendo do Dev; o que se afirma aqui é a menor, que aquele comentário diz não ter
-// duas respostas: a interface não se constrói antes de o idioma estar pronto.
+// ⚠️ AND IT EXERCISES THE BOOT, not a change at run time: the smaller claim, which has only one answer — the interface is
+// not built before the language is ready.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
@@ -36,13 +35,13 @@ afterAll(() => {
   else localStorage.setItem(CHAVE_LANG, anterior);
 });
 
-// A MESMA declaração do `boot-create-game.browser` — copiada e não inventada: a minha primeira versão à mão
-// era malformada (`topology` como VALOR, que o ADR-0084 proibiu, e `tick` como função) e o `createGame`
-// recusou-a. O contrato reprovar um fixture meu é o gate do §A a fazer o trabalho dele.
+// THE SAME declaration as `boot-create-game.browser` — copied and not invented: a first hand-written version was
+// malformed (`topology` as a VALUE, which ADR-0084 forbade, and `tick` as a function) and `createGame` refused it. The
+// contract failing a fixture is §A's gate doing its job.
 const declaracaoValida = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   holdsAtOnce: () => 1,
-  // Um fixture de hotspots não segura nada — o par do ADR-0115, ao lado do número que não o diz.
+  // A hotspots fixture holds nothing — ADR-0115's pair, beside the number that does not say so.
   holdsKeys: () => false,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
@@ -75,14 +74,14 @@ describe('a barra da primeira tela fala o idioma do arranque', () => {
       declaration: declaracaoValida(),
       host: { doc: document, win: window, a11yBarHost: raiz.querySelector('#title-icons') },
       downloadHeavy: false,
-      // ⚠️ SEM `semMenuDePausa`: o campo saiu do contrato (ADR-0122). O palco TEM `#game-region`, logo o
-      // cartão de pausa passa a montar-se ali — e este caso continua a medir o que media, porque conta
-      // `#title-icons .pi-btn` e o cartão traz `.pm-btn` noutro hospedeiro.
+      // ⚠️ NO PAUSE-MENU DECLINE: the field left the contract (ADR-0122). The stage HAS `#game-region`, so the pause card
+      // mounts there — and this case still measures what it measured, because it counts `#title-icons .pi-btn` and the card
+      // brings `.pm-btn` into another host.
       declines: { noPauseActor: true, noNeuralVoice: true },
     });
 
-    // ⚠️ O `await` É A METADE QUE FALTAVA NO CÓDIGO, e é por isso que ele está aqui e não num `beforeEach`:
-    // o defeito vive exactamente no intervalo entre montar e o dicionário chegar.
+    // ⚠️ THE `await` IS THE HALF THAT WAS MISSING IN THE CODE, which is why it is here and not in a `beforeEach`: the
+    // defect lives exactly in the interval between mounting and the dictionary arriving.
     await localeReady();
     expect(getLocale(), 'o chunk de en não carregou; o caso mediria o nada').toBe('en');
 
@@ -96,8 +95,8 @@ describe('a barra da primeira tela fala o idioma do arranque', () => {
     expect(encalhados, `ícones encalhados no idioma de recuo: ${encalhados.map((x) => `${x.k}=«${x.label}»`).join(' · ')}`)
       .toEqual([]);
 
-    // 📌 O PAR: exigir «nada em português» passaria se os rótulos ficassem VAZIOS. Toda a barra tem de dizer
-    // alguma coisa — é a mesma armadilha do gémeo silencioso do anúncio de toque.
+    // 📌 THE PAIR: demanding nothing in Portuguese would pass if the labels were EMPTY. The whole bar must say something —
+    // the same trap as the silent twin of the touch announcement.
     for (const b of botoes) {
       expect((b.getAttribute('aria-label') || '').trim().length, `${b.dataset.pi} sem rótulo`).toBeGreaterThan(0);
     }
@@ -106,9 +105,10 @@ describe('a barra da primeira tela fala o idioma do arranque', () => {
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-08) =====
-// 1. tirar o `void localeReady().then(…)` do `create-game`   → reprova, com os OITO ícones encalhados
-// 2. repor o guarda `if (!…soon)` em `reflectIconBtn`         → reprova, com os TRÊS `soon` encalhados
-//    🎯 é o par que mostra que as duas metades do conserto são precisas e nenhuma basta sozinha
-// 3. `reflectIconsIn` a limpar o rótulo em vez de o escrever  → reprova pelo PAR (rótulo vazio), e não pela
-//    regra — que é a razão de o par existir
+// ===== MUTATIONS CHECKED =====
+// Checked when the boot repaint was a `localeReady()` call in `create-game`; today the `i18n:change` listener does it.
+// 1. removing the boot repaint from `create-game`              → fails, with all EIGHT icons stuck
+// 2. putting back the `if (!…soon)` guard in `reflectIconBtn`   → fails, with the THREE `soon` ones stuck
+//    🎯 it is the pair that shows both halves of the fix are needed and neither is enough alone
+// 3. `reflectIconsIn` clearing the label instead of writing it  → fails by the PAIR (empty label), not by the rule — which
+//    is why the pair exists

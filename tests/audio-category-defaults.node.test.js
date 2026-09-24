@@ -1,27 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O QUE NASCE LIGADO E O QUE NASCE DESLIGADO — e por que um default de áudio é decisão de acessibilidade.
+// WHAT IS BORN ON AND WHAT IS BORN OFF — and why an audio default is an accessibility decision.
 //
-// ========================= POR QUE ISTO MERECE UM GATE =========================
-// Um default de som parece detalhe e não é. Ele decide o que a criança OUVE antes de saber que existe um menu
-// — e as duas categorias desligadas estão desligadas por motivos opostos e igualmente concretos:
+// ========================= WHY THIS DESERVES A GATE =========================
+// A sound default looks like a detail and is not. It decides what the child HEARS before she knows there is a menu — and
+// the two categories that are off are off for opposite and equally concrete reasons:
 //
-//   · `tts` — voz robótica irrita e sobrecarrega pessoas com TEA. Quem precisa dela liga.
-//   · `guide` — o beacon do guia auditivo, DESLIGADO em 2026-08-26. Ele tocava um `triangle` de 0,12 s a cada
-//     0,8 s, para sempre, sem depender de movimento nem de nada ter mudado; e no modo cego a condição que o
-//     libera é sempre verdadeira, então a criança que mais precisa de pistas era a que ouvia o bipe a partida
-//     inteira. Veredito do Dev: "um ping é a pior escolha possível, tenebroso para quem tem TEA".
+//   · `tts` — a robotic voice irritates and overloads people with ASD. Whoever needs it turns it on.
+//   · `guide` — the audio guide. As a beacon it played a 0.12 s `triangle` every 0.8 s, forever, regardless of movement
+//     or of anything having changed; and in blind mode the condition that releases it is always true, so the child who
+//     most needs cues was the one who heard the beep the whole match. The Dev's verdict: «um ping é a pior escolha
+//     possível, tenebroso para quem tem TEA».
 //
-// ⚠️ O `guide` DESLIGADO É PROVISÓRIO, e este arquivo existe também para que ele não vire permanente por
-// esquecimento. O substituto decidido é uma música que ganha intensidade conforme a criança se aproxima, e
-// ANTES dela é preciso mapear a rota — preencher o mapa com as direções por onde há ar ou água, para que a
-// pista siga um caminho navegável em vez de apontar em linha reta para dentro de uma parede. Quando essa
-// rota existir, é para cá que se volta.
+// ⚠️ THE `guide` BEING OFF WAS PROVISIONAL, and this file also exists so that it does not become permanent by
+// forgetting. The replacement decided was a sound that grows as the child gets closer, following a navigable route
+// instead of pointing in a straight line into a wall; the continuous guide now follows `core/route` (#84 item 2,
+// `platform/audio-sonar`). Its default is still off, and switching it on goes through this line.
 //
-// ========================= E POR QUE O VALOR SALVO VENCE =========================
-// Um valor salvo significa que alguém MEXEU naquele controle, e a escolha da criança não é nossa para
-// desfazer. Quem já tinha ligado o guia continua com ele ligado — o default só alcança quem nunca escolheu.
+// ========================= AND WHY THE SAVED VALUE WINS =========================
+// A saved value means someone TOUCHED that control, and the child's choice is not ours to undo. Whoever had turned the
+// guide on keeps it on — the default reaches only whoever never chose.
 //
-// MUTAÇÕES CONFERIDAS (no fim do arquivo).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { defaultAudioCat, AUDIO_CATS } from '../app/js/platform/audio-mixer.js';
 
@@ -34,13 +33,13 @@ describe('categorias de áudio · o estado de fábrica é decisão, não acaso',
   });
 
   it('🔴 [Zero] `other` SAIU do mixer (ADR-0151, errata) — não controlava som nenhum', () => {
-    // «O que esta categoria controla? Nada. Então pra que?» (Dev). Um volume sem nada por baixo é botão morto.
+    // «O que esta categoria controla? Nada. Então pra que?» (the Dev). A volume with nothing under it is a dead button.
     expect(AUDIO_CATS.map((c) => c.k)).not.toContain('other');
   });
 
   it('[Right] EXATAMENTE `tts` e `guide` nascem desligadas', () => {
-    // "Exatamente" nos dois sentidos: uma categoria nova que nasça muda sem motivo escrito reprova aqui, e
-    // religar o `guide` sem passar por esta linha também.
+    // Exactly in both directions: a new category born muted without a written reason fails here, and so does switching
+    // `guide` back on without going through this line.
     const desligadas = AUDIO_CATS.map((c) => c.k).filter((k) => !defaultAudioCat(k).on);
     expect(desligadas.sort(), 'mudou quem nasce em silêncio — o motivo está no cabeçalho de audio-mixer').toEqual([...DESLIGADAS].sort());
   });
@@ -54,8 +53,8 @@ describe('categorias de áudio · o estado de fábrica é decisão, não acaso',
   });
 
   it('[Boundary] o volume de fábrica NÃO depende de estar ligada', () => {
-    // Uma categoria desligada com volume 0 seria um segundo desligamento escondido: quem a ligasse no menu
-    // continuaria sem ouvir nada, e procuraria o defeito no lugar errado.
+    // A muted category with volume 0 would be a second, hidden muting: whoever turned it on in the menu would still hear
+    // nothing, and would look for the defect in the wrong place.
     for (const k of DESLIGADAS) expect(defaultAudioCat(k).vol, k).toBe(0.8);
   });
 
@@ -64,7 +63,7 @@ describe('categorias de áudio · o estado de fábrica é decisão, não acaso',
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · devolvendo `{ on: k !== 'tts' }` (o guia religado) → "[Right] EXATAMENTE `tts` e `guide`" reprova.
-//   · pondo `'earcons'` na lista de desligadas → o mesmo caso reprova pelo outro lado.
-//   · dando `vol: 0` às desligadas → "[Boundary] o volume de fábrica" reprova.
+// ========================= MUTATIONS CHECKED =========================
+//   · returning `{ on: k !== 'tts' }` (the guide back on) → the [Right] exactly-`tts`-and-`guide` case fails.
+//   · putting `'earcons'` on the muted list → the same case fails from the other side.
+//   · giving `vol: 0` to the muted ones → the [Boundary] factory-volume case fails.

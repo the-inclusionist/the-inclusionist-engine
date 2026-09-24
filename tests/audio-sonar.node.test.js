@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de platform/audio-sonar — a NAVEGAÇÃO SONORA depois do corte do item 19 (project node).
+// Tests of platform/audio-sonar — NAVIGATION SOUND after the item-19 cut (node project).
 //
-// ========================= O FIXTURE É A PROVA =========================
-// O ADR-0027 chama isto de a heurística decisiva: "um teste de um módulo de ENGINE cujo fixture precisa de uma
-// MOEDA é prova de que o corte não pegou". O fixture antigo do sonar precisava — um array de moedas com
-// `owner` e `taken`, mais `tileAt`, `solidAt`, `BOX`, `TILE` e um cenário, seis coisas de plataforma para
-// perguntar "qual alvo está mais perto".
+// ========================= THE FIXTURE IS THE PROOF =========================
+// ADR-0027 calls this the decisive heuristic: a test of an ENGINE module whose fixture needs a COIN is proof that the cut
+// did not take. The sonar's old fixture needed one — an array of coins with `owner` and `taken`, plus `tileAt`,
+// `solidAt`, `BOX`, `TILE` and a scene, six platformer things to ask which target is nearest.
 //
-// Este não precisa de nenhuma. Ele DECLARA topologia, alvos e nome, que é o que qualquer jogo faz. E os casos
-// abaixo rodam o MESMO sonar sobre três topologias — contínua, grade e lista — porque essa é a única forma de
-// afirmar que ele viaja: se um gênero precisasse de um caso especial, o corte estaria no lugar errado.
+// This one needs none. It DECLARES topology, targets and name, which is what any game does. And the cases below run the
+// SAME sonar over three topologies — continuous, grid and list — because that is the only way to assert that it travels:
+// if a genre needed a special case, the cut would be in the wrong place.
 import { describe, it, expect } from 'vitest';
 import {
   createAudioSonar, worldStep, PAN_PACES, GUIDE_WAVE, GUIDE_VOL, FRAMES_BETWEEN_ROUTES,
@@ -18,16 +17,15 @@ import { FAR_CUT, NEAR_CUT } from '../app/js/platform/guide-intensity.js';
 import { routeTo } from '../app/js/core/route.js';
 import { distance } from '../app/js/core/contract.js';
 
-// ========================= O CONTEXTO DE ÁUDIO FALSO =========================
-// ⚠️ ELE PRECISOU DE EXISTIR, e o motivo é a mudança inteira do #84 item 2. Enquanto o guia era um BIPE, ele
-// saía pelo `tonePan` injectado e o fixture só precisava de um array — o `getAudioCtx: () => ({})` acima
-// bastava, porque ninguém lhe chamava método nenhum. Uma presença CONTÍNUA é um GRAFO que fica, e um grafo
-// não passa por `tonePan`: é `createOscillator` + `createBiquadFilter` + `createGain`, e são esses nós que os
-// casos abaixo interrogam.
+// ========================= THE FAKE AUDIO CONTEXT =========================
+// ⚠️ IT HAD TO EXIST, and the reason is the whole change of #84 item 2. While the guide was a BEEP it went out through the
+// injected `tonePan` and the fixture needed only an array — `getAudioCtx: () => ({})` was enough, because nobody called
+// any method on it. A CONTINUOUS presence is a GRAPH that stays, and a graph does not go through `tonePan`: it is
+// `createOscillator` + `createBiquadFilter` + `createGain`, and those nodes are what the cases below question.
 //
-// ⚠️ E É POR ISSO QUE OS QUATRO CASOS ANTIGOS DESTE BLOCO FORAM REESCRITOS, e não ajustados: três deles
-// afirmavam pelo `tone` (`tonePan`) — e com o guia fora do `tonePan` eles passariam para sempre, a verde,
-// sem tocar no código que dizem cobrir. Um teste que lê pela ligação não falha quando a ligação muda.
+// ⚠️ AND THAT IS WHY THIS BLOCK'S FOUR OLD CASES WERE REWRITTEN, not adjusted: three of them asserted through the `tone`
+// (`tonePan`) — and with the guide out of `tonePan` they would pass forever, green, without touching the code they claim
+// to cover. A test that reads through the binding does not fail when the binding changes.
 function param() {
   return { value: 0, alvos: [], setTargetAtTime(v) { this.value = v; this.alvos.push(v); } };
 }
@@ -50,31 +48,31 @@ function fakeAC() {
 }
 
 const CONTINUO = { kind: 'continuous', size: [896, 992], unit: 16, move: 'free', frame: 'clock' };
-// `move: 'diagonal'` explicito: e a regra que este fixture SEMPRE assumiu, e ela deixou de ser a unica
-// (ADR-0089). Sem o campo, o caso da diagonal estaria a afirmar um padrao em vez de uma declaracao.
+// `move: 'diagonal'` made explicit: it is the rule this fixture ALWAYS assumed, and it is no longer the only one
+// (ADR-0089). Without the field, the diagonal case would be asserting a default instead of a declaration.
 const GRADE = { kind: 'grid', size: [20, 20], move: 'diagonal', frame: 'compass' };
 const LISTA = { kind: 'hotspots', order: ['q1', 'q2', 'q3', 'q4'] };
 
 function setup(over = {}) {
   const tone = [], said = [], narrated = [];
   const ctx = {
-    // `over.topology` e um VALOR (a topologia), e nao uma funcao. Vale dizer: passar `() => GRADE` aqui fez
-    // o ctx devolver a FUNCAO para o modulo, `t.kind` virou undefined, `distance` caiu no ramo continuo e
-    // dividiu por `undefined` — NaN, nenhum alvo escolhido, "nenhuma moeda por perto". Um fixture errado que
-    // falha como se o modulo estivesse errado custa mais caro do que um que quebra.
+    // `over.topology` is a VALUE (the topology), not a function. Worth saying: passing `() => GRADE` here made the ctx
+    // hand the FUNCTION to the module, `t.kind` became undefined, `distance` fell into the continuous branch and divided
+    // by `undefined` — NaN, no target chosen, nothing nearby. A wrong fixture that fails as if the module were wrong costs
+    // more than one that breaks.
     topology: () => over.topology || CONTINUO,
     targetsOf: (i) => (over.targetsOf ? over.targetsOf(i) : (over.alvos || [])),
-    // Nome PADRÃO genérico, e não o do jogo de plataforma: um fixture de sonar que dissesse "moeda" a cada
-    // linha reafirmaria por hábito o que o corte acabou de tirar do módulo. Os casos que precisam de um nome
-    // concreto o declaram, e declaram um diferente cada vez.
+    // A generic DEFAULT name, not the platformer's: a sonar fixture that said coin on every line would reassert by habit
+    // what the cut has just taken out of the module. The cases that need a concrete name declare one, and a different
+    // one each time.
     nameAt: over.nameAt || (() => ({ text: 'alvo', gender: 'm', plural: false })),
     tonePan: (freq, dur, cat, pan) => tone.push({ freq, cat, pan }),
     srSay: (t) => said.push(t), narrate: (t) => narrated.push(t),
-    // ⚠️ A TABELA DE MODOS SAIU DAQUI (#104), e o fixture melhorou com a saída. Ela declarava
-    // `{ normal, cego, baixa }` — três chaves que NÃO EXISTEM no catálogo real (`normal`, `blind`,
-    // `lv-*`) — e o módulo atravessava-a com `pl.viz`. Ou seja: o teste inventava um vocabulário para o
-    // módulo consultar, e passava por isso. Agora o ctx responde a PERGUNTA, e o fixture diz em português
-    // quais jogadores têm a visão comprometida, que é o que os casos sempre quiseram dizer.
+    // ⚠️ THE MODES TABLE LEFT (#104), and the fixture got better for it. It declared `{ normal, cego, baixa }` — three keys
+    // that do NOT EXIST in the real catalogue (`normal`, `blind`, `lv-*`) — and the module went through it with `pl.viz`.
+    // That is: the test invented a vocabulary for the module to consult, and passed because of it. Now the ctx answers
+    // the QUESTION, and the fixture says which players have impaired vision (`vePouco`), which is what the cases always
+    // meant to say.
     visionImpaired: (pl) => (over.visionImpaired ? over.visionImpaired(pl) : !!pl.vePouco),
     getBlindMode: () => over.blindMode || false,
     LOGICAL_W: 320,
@@ -83,21 +81,21 @@ function setup(over = {}) {
     getAudioCtx: () => (over.audioCtx === undefined ? {} : over.audioCtx),
     getSoundOn: () => (over.soundOn === undefined ? true : over.soundOn),
     getAudioCat: () => (over.audioCat === undefined ? { guide: { on: true } } : over.audioCat),
-    // Os quatro do guia. `roleAt` OMITIDO por omissão: o fixture antigo não o tinha, e o módulo tem de
-    // continuar a funcionar sem ele — é a promessa de compatibilidade que o campo opcional faz.
+    // The guide's four. `roleAt` OMITTED by default: the old fixture did not have it, and the module must keep working
+    // without it — the compatibility promise the optional field makes.
     roleAt: over.roleAt,
     catNode: over.catNode, audioOut: over.audioOut, getVolume: over.getVolume,
   };
   return { som: createAudioSonar(ctx), tone, said, narrated };
 }
 
-/** Um setup com contexto de áudio de verdade (o falso) — tudo o que interroga o GRAFO passa por aqui. */
+/** A setup with a real audio context (the fake one) — everything that questions the GRAPH goes through here. */
 function setupGuia(over = {}) {
   const f = fakeAC();
   return { ...setup({ audioCtx: f.ac, ...over }), ...f };
 }
 
-/** Roda `n` quadros, avançando o relógio como um motor real avançaria. */
+/** Runs `n` frames, advancing the clock as a real engine would. */
 function quadros(som, f, n) {
   for (let i = 0; i < n; i++) { f.ac.currentTime += 1 / 60; som.updateGuide(); }
 }
@@ -106,12 +104,12 @@ const pl = (o = {}) => ({ x: 32, y: 32, vePouco: true, i: 0, ...o });
 
 describe('platform/audio-sonar · o que não depende de gênero', () => {
   it('[Boundary] needsAudioCues: o modo cego LIGA para toda a gente; fora dele, quem vê pouco recebe', () => {
-    // ⚠️ A REGRA QUE FICOU NESTE MÓDULO É A PRIMEIRA, e é a única que é mesmo dele: o modo cego vence a
-    // visão declarada, porque ele é uma escolha de quem está a jogar e não uma medida do que ela enxerga.
+    // ⚠️ THE RULE THAT STAYED IN THIS MODULE IS THE FIRST, and it is the only one truly its own: blind mode beats the
+    // declared vision, because it is a choice of whoever is playing and not a measure of what she sees.
     expect(setup({ blindMode: true }).som.needsAudioCues(pl({ vePouco: false }))).toBe(true);
     expect(setup().som.needsAudioCues(pl({ vePouco: true }))).toBe(true);
     expect(setup().som.needsAudioCues(pl({ vePouco: false }))).toBe(false);
-    // E a metade visual é INJECTADA: o módulo não a calcula, e um ctx que responda outra coisa manda.
+    // And the visual half is INJECTED: the module does not compute it, and a ctx that answers otherwise rules.
     expect(setup({ visionImpaired: () => true }).som.needsAudioCues(pl({ vePouco: false }))).toBe(true);
   });
 
@@ -125,13 +123,13 @@ describe('platform/audio-sonar · o que não depende de gênero', () => {
 
 describe('platform/audio-sonar · o alvo vem do CONTRATO, não de um array de moedas', () => {
   it('[Many] escolhe o mais próximo entre os alvos DECLARADOS, e conta', () => {
-    // O filtro por dono e por "já coletada" SUMIU daqui, e é essa ausência que interessa: quem decide o que
-    // ainda conta é o jogo, em `targetsOf`. O sonar recebe uma lista e compara distâncias.
+    // The filter by owner and by already-collected is GONE from here, and that absence is what matters: what still
+    // counts is the game's decision, in `targetsOf`. The sonar receives a list and compares distances.
     const { som, said, narrated } = setup({ alvos: [{ x: 300, y: 32 }, { x: 48, y: 32 }] });
     som.sonar(pl());
     expect(som.sonarCount).toBe(1);
-    // «as 3 horas» e não «à direita»: o fixture declara `frame: 'clock'`, que é o referencial de uma
-    // plataforma 2D vista de lado. A palavra vem do JOGO, e não de uma conta sobre `x` cru (ADR-0089).
+    // `às 3 horas` and not `à direita`: the fixture declares `frame: 'clock'`, the frame of reference of a 2D platformer
+    // seen from the side. The word comes from the GAME, not from arithmetic on raw `x` (ADR-0089).
     expect(said[0]).toContain('às 3 horas');
     expect(narrated.length).toBe(1);
   });
@@ -140,8 +138,8 @@ describe('platform/audio-sonar · o alvo vem do CONTRATO, não de um array de mo
     const { som, said } = setup({ targetsOf: (i) => (i === 0 ? [{ x: 300, y: 32 }] : [{ x: 8, y: 32 }]) });
     som.sonar(pl({ i: 0 }));
     som.sonar(pl({ i: 1 }));
-    expect(said[0]).toContain('às 3 horas'); // 300 está à direita de 32 → 3 horas
-    expect(said[1]).toContain('às 9 horas'); // 8 está à esquerda → 9 horas
+    expect(said[0]).toContain('às 3 horas'); // 300 is to the right of 32 → 3 o'clock
+    expect(said[1]).toContain('às 9 horas'); // 8 is to the left → 9 o'clock
   });
 
   it('[Zero] lista de alvos VAZIA é resposta legítima: avisa e não quebra', () => {
@@ -151,15 +149,15 @@ describe('platform/audio-sonar · o alvo vem do CONTRATO, não de um array de mo
   });
 
   it('[Right] o NOME do alvo vem do jogo — a engine não diz mais "moeda" por conta própria', () => {
-    // O caso que mede o campo 3. Antes o anúncio trazia `t('sr.nav.coin')` cravado; num jogo de perguntas
-    // isso faria o sonar de uma criança cega falar de moedas que não existem.
+    // The case that measures field 3. The announcement used to carry a hard-coded `t('sr.nav.coin')`; in a quiz game that
+    // would have a blind child's sonar talk about coins that do not exist.
     const { som, said } = setup({
       alvos: [{ x: 48, y: 32 }],
       nameAt: () => ({ text: 'pergunta', gender: 'f', plural: false }),
     });
     som.sonar(pl());
     expect(said[0]).toContain('pergunta');
-    expect(said[0]).not.toContain('alvo'); // nem o fallback genérico: quem nomeia é o jogo
+    expect(said[0]).not.toContain('alvo'); // not even the generic fallback: the game names it
   });
 
   it('[Error] alvo declarado SEM nome cai numa palavra genérica, e não numa chave crua', () => {
@@ -171,9 +169,9 @@ describe('platform/audio-sonar · o alvo vem do CONTRATO, não de um array de mo
 });
 
 describe('platform/audio-sonar · a MÉTRICA é a declarada (é o que faz o sonar viajar)', () => {
-  // Os três casos abaixo rodam o MESMO código sobre três topologias. É a afirmação central do item 19, e a
-  // única maneira honesta de a fazer: se algum deles precisasse de um ramo próprio no módulo, o sonar não
-  // seria da engine — seria da plataforma com um disfarce.
+  // The three cases below run the SAME code over three topologies. It is item 19's central claim, and the only honest way
+  // to make it: if any of them needed a branch of its own in the module, the sonar would not be the engine's — it would
+  // be the platformer's in disguise.
 
   it('[Right] contínuo: distância em UNIDADES, então 4 e 9 tiles seguem sendo os limiares de antes', () => {
     const perto = setup({ alvos: [{ x: 32 + 3 * 16, y: 32 }] });   // 3 unidades → "muito perto"
@@ -197,18 +195,17 @@ describe('platform/audio-sonar · a MÉTRICA é a declarada (é o que faz o sona
       alvos: [{ x: 3, y: 0 }],
       nameAt: () => ({ text: 'pergunta', gender: 'f', plural: false }),
     });
-    som.sonar(pl({ x: 0, y: 0 })); // 3 de distância → "muito perto"
+    som.sonar(pl({ x: 0, y: 0 })); // 3 away → very close
     expect(said[0]).toContain('pergunta');
     expect(said[0]).toContain('bem perto');
   });
 
   it('[Cross-check] a MESMA separação em unidades dá a MESMA frase em qualquer topologia', () => {
-    // Se este caso cair, alguma topologia ganhou tratamento especial dentro do módulo — que é exatamente o
-    // que o corte existe para impedir.
+    // If this case falls, some topology got special treatment inside the module — exactly what the cut exists to prevent.
     const cont = setup({ alvos: [{ x: 32 + 6 * 16, y: 32 }] }); cont.som.sonar(pl());
     const grade = setup({ topology: GRADE, alvos: [{ x: 6, y: 0 }] }); grade.som.sonar(pl({ x: 0, y: 0 }));
     const lista = setup({ topology: LISTA, alvos: [{ x: 6, y: 0 }] }); lista.som.sonar(pl({ x: 0, y: 0 }));
-    const dist = (t) => t.replace(/^.*?,\s*/, ''); // tira o lado, guarda a distância
+    const dist = (t) => t.replace(/^.*?,\s*/, ''); // drops the side, keeps the distance
     expect(dist(grade.said[0])).toBe(dist(cont.said[0]));
     expect(dist(lista.said[0])).toBe(dist(cont.said[0]));
   });
@@ -216,22 +213,22 @@ describe('platform/audio-sonar · a MÉTRICA é a declarada (é o que faz o sona
 
 describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2)', () => {
   it('⚠️ [Right] O BIPE MORREU: um oscilador SÓ, que começa uma vez e nunca para sozinho', () => {
-    // ESTE É O CASO QUE DEFINE A MUDANÇA. O guia antigo criava um `triangle` de 0,12 s a cada 48 quadros e
-    // deitava-o fora; em 120 quadros havia DOIS osciladores, e cada um deles era um disparo. O veredicto do
-    // Dev sobre isso: «um ping é a pior escolha possível, tenebroso para quem tem TEA». Se alguém voltar a
-    // criar um oscilador por evento, esta contagem passa de 1 e o caso cai.
+    // THIS IS THE CASE THAT DEFINES THE CHANGE. The old guide created a 0.12 s `triangle` every 48 frames and threw it
+    // away; in 120 frames there were TWO oscillators, each a shot. The Dev's verdict on that: «um ping é a pior escolha
+    // possível, tenebroso para quem tem TEA». If someone goes back to creating an oscillator per event, this count
+    // passes 1 and the case falls.
     const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 60, y: 32 }] });
     quadros(g.som, g, 120);
     expect(g.osciladores.length, 'nasceu mais de um oscilador — isto voltou a disparar').toBe(1);
     expect(g.osciladores[0].inicios).toBe(1);
     expect(g.osciladores[0].parouEm, 'o guia parou sozinho: virou um som com fim, que é um bipe').toBe(null);
-    expect(g.som.guideCount).toBe(120); // conta QUADROS que soam, não bipes
+    expect(g.som.guideCount).toBe(120); // counts FRAMES that sound, not beeps
   });
 
   it('⚠️ [Right] o timbre tem HARMÓNICOS e o filtro é passa-baixo — sem isso o eixo do brilho não existe', () => {
-    // Um passa-baixo sobre uma `sine` não corta nada: não há harmónicos acima da fundamental. O guia ficaria
-    // com o eixo principal morto e só o volume a trabalhar, sem que nada falhasse. E a `sawtooth` é também o
-    // que o separa do sonar e da bengala, que são `sine`.
+    // A low-pass over a `sine` cuts nothing: there are no harmonics above the fundamental. The guide would be left with its
+    // main axis dead and only the volume working, with nothing failing. And the `sawtooth` is also what sets it apart
+    // from the sonar and the cane, which are `sine`.
     const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 60, y: 32 }] });
     quadros(g.som, g, FRAMES_BETWEEN_ROUTES);
     expect(g.osciladores[0].type).toBe(GUIDE_WAVE);
@@ -246,7 +243,7 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
     quadros(longe.som, longe, FRAMES_BETWEEN_ROUTES + 2);
     expect(perto.filtros[0].frequency.value).toBeGreaterThan(longe.filtros[0].frequency.value);
     expect(perto.ganhos[0].gain.value).toBeGreaterThan(longe.ganhos[0].gain.value);
-    // ⚠️ E longe NÃO É SILÊNCIO. Se fosse, «longe» ficaria indistinguível de «não há alvo».
+    // ⚠️ AND FAR IS NOT SILENCE. If it were, far would be indistinguishable from no target.
     expect(longe.ganhos[0].gain.value, 'o guia calou ao longe').toBeGreaterThan(0);
     expect(longe.filtros[0].frequency.value).toBeGreaterThanOrEqual(FAR_CUT);
     expect(perto.filtros[0].frequency.value).toBeLessThanOrEqual(NEAR_CUT);
@@ -267,10 +264,10 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
   });
 
   it('⚠️ [Zero] SEM ALVO o guia nem chega a acender — e nasceu vermelho a acender 60× por segundo', () => {
-    // Silêncio é a ÚNICA afirmação que o guia pode fazer, e ela quer dizer «não há alvo» (o `FAR_VOL` do
-    // `guide-intensity` existe para que «longe» nunca a faça). Mas a primeira escrita disto acendia o grafo
-    // e só depois perguntava pelo alvo: sessenta osciladores criados e destruídos por segundo, inaudíveis e
-    // caros. É o custo novo da PERMANÊNCIA — o bipe não podia ter este defeito porque nada nele durava.
+    // Silence is the ONLY statement the guide can make, and it means there is no target (`guide-intensity`'s `FAR_VOL`
+    // exists so that far never makes it). The first writing of this lit the graph and only then asked for the target:
+    // sixty oscillators created and destroyed per second, inaudible and costly. It is the new cost of PERMANENCE — the
+    // beep could not have this defect because nothing of it lasted.
     const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [] });
     quadros(g.som, g, 60);
     expect(g.osciladores.length, 'acendeu um grafo para não ter nada a apontar').toBe(0);
@@ -278,8 +275,8 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
   });
 
   it('⚠️ [Interface] o alvo DESAPARECER a meio apaga o grafo — apanhar a última moeda cala o guia', () => {
-    // O caminho de derrubada que o caso acima não exercita: aqui o guia chega a soar, e é a perda do alvo
-    // (não a categoria, não o modo visual) que o desliga.
+    // The teardown path the case above does not exercise: here the guide does sound, and it is losing the target (not the
+    // category, not the visual mode) that switches it off.
     let alvos = [{ x: 60, y: 32 }];
     const g = setupGuia({ players: [pl({ vePouco: true })], targetsOf: () => alvos });
     quadros(g.som, g, FRAMES_BETWEEN_ROUTES + 2);
@@ -292,8 +289,8 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
   });
 
   it('⚠️ [Interface] desligar a categoria a MEIO apaga o grafo — um som que fica é um som que vaza', () => {
-    // Enquanto o guia era um bipe, «desligar» era não disparar o próximo e o problema não existia. Um
-    // oscilador permanente que ninguém pára continua a tocar com o cursor no zero.
+    // While the guide was a beep, switching off meant not firing the next one and the problem did not exist. A permanent
+    // oscillator nobody stops goes on playing with the slider at zero.
     const cat = { guide: { on: true } };
     const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 60, y: 32 }], audioCat: cat });
     quadros(g.som, g, 30);
@@ -345,33 +342,32 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
   });
 
   it('[Simple] o ganho de base é MAIS BAIXO do que o do bipe que substitui', () => {
-    // Um som que nunca para é percebido como mais alto do que um transiente do mesmo pico. O bipe usava 0,11.
+    // A sound that never stops is perceived as louder than a transient of the same peak. The beep used 0.11.
     expect(GUIDE_VOL).toBeLessThan(0.11);
     expect(GUIDE_VOL, 'o piso de volume não pode ser zero').toBeGreaterThan(0);
   });
 });
 
-// ========================= MUTACOES CONFERIDAS (a fiacao do guia) =========================
-// Aplicadas por script ao ficheiro, com contagem de ocorrencias, uma de cada vez.
-//   · `let g = pl._guia` → `let g = null` (o grafo deixa de sobreviver ao quadro) → reprovam TRES: "O BIPE
-//     MORREU" (60 osciladores em vez de 1) e os dois casos de derrubada, que passam a olhar para o oscilador
-//     errado. E a mutacao produz literalmente o defeito que este item existe para tirar, sessenta vezes pior.
-//   · `GUIDE_WAVE` de `sawtooth` para `sine` → reprova "o timbre tem HARMONICOS". O guia continuaria a soar e
-//     o filtro continuaria a mover-se; o que morreria em silencio e o EIXO PRINCIPAL, porque uma senoide nao
-//     tem harmonicos para um passa-baixo cortar.
-//   · tirando o `desligarGuia(pl)` da guarda de cima → reprova "desligar a categoria a MEIO". O oscilador
-//     fica vivo com o cursor no zero — um som que dura e um som que vaza.
-//   · `if (roleAt)` → `if (roleAt && false)` (tudo cai na reta) → reprova "a distancia e a que a crianca
-//     ANDA". O guia voltaria a dizer «quase la» de um alvo atras de uma parede.
-//   · `GUIDE_VOL * i.volume * vol` → `GUIDE_VOL * i.volume` → reprova "o volume MESTRE multiplica". O guia
-//     ignoraria o cursor de volume do jogo, e so esse.
-//   · tirando o `if (!alvoMaisProximo(pl)) continue` de antes de acender → reprovam DOIS: "SEM ALVO o guia
-//     nem chega a acender" e o caso do alvo que desaparece. E o defeito que esta bateria apanhou por si: a
-//     primeira escrita acendia e apagava um grafo por quadro.
+// ========================= MUTATIONS CHECKED (the guide's wiring) =========================
+// Applied by script to the file, with an occurrence count, one at a time.
+//   · the graph no longer surviving the frame (`pl._guide` not kept) → THREE fail: `O BIPE MORREU` (60 oscillators
+//     instead of 1) and the two teardown cases, which now look at the wrong oscillator. The mutation literally produces
+//     the defect this item exists to remove, sixty times worse.
+//   · `GUIDE_WAVE` from `sawtooth` to `sine` → the harmonics case fails. The guide would still sound and the filter still
+//     move; what would die silently is the MAIN AXIS, because a sine has no harmonics for a low-pass to cut.
+//   · removing `stopGuide(pl)` from the guard above → the switch-the-category-off-midway case fails. The oscillator stays
+//     alive with the slider at zero — a sound that lasts is a sound that leaks.
+//   · `if (roleAt)` → `if (roleAt && false)` (everything falls to the straight line) → the distance-the-child-WALKS case
+//     fails. The guide would again say almost there about a target behind a wall.
+//   · `GUIDE_VOL * i.volume * vol` → `GUIDE_VOL * i.volume` → the MASTER-volume case fails. The guide would ignore the
+//     game's volume slider, and only that one.
+//   · removing the no-target check before lighting (`nearestSpot`) → TWO fail: the no-target-never-lights case and the
+//     vanishing-target one. It is the defect this battery caught by itself: the first writing lit and put out a graph
+//     per frame.
 
 describe('platform/audio-sonar · a rota, quando o jogo a permite (#84 item 2)', () => {
-  // Uma grade 20×20 com uma PAREDE vertical em x = 5, aberta só em y = 19. O alvo fica logo do outro lado:
-  // em reta são 2 casas; a pé são muitas, porque é preciso descer, contornar e voltar.
+  // A 20×20 grid with a vertical WALL at x = 5, open only at y = 19. The target is just on the other side: in a straight
+  // line that is 2 cells; on foot it is many, because one must go down, round and back.
   const PAREDE = (at) => (at.x === 5 && at.y !== 19 ? 'solid' : 'free');
   const GRADE_ORTO = { kind: 'grid', size: [20, 20], move: 'orthogonal', frame: 'compass' };
 
@@ -380,13 +376,13 @@ describe('platform/audio-sonar · a rota, quando o jogo a permite (#84 item 2)',
       topology: GRADE_ORTO, roleAt: PAREDE,
       players: [pl({ x: 4, y: 0, vePouco: true })], alvos: [{ x: 6, y: 0 }],
     });
-    const semRota = setupGuia({ // MESMO cenário, sem o campo 2 injectado
+    const semRota = setupGuia({ // SAME scene, without field 2 injected
       topology: GRADE_ORTO,
       players: [pl({ x: 4, y: 0, vePouco: true })], alvos: [{ x: 6, y: 0 }],
     });
     quadros(comRota.som, comRota, FRAMES_BETWEEN_ROUTES + 2);
     quadros(semRota.som, semRota, FRAMES_BETWEEN_ROUTES + 2);
-    // A reta diz «2 casas» e abre o filtro quase todo; a rota sabe da parede e mantém-no fechado.
+    // The straight line says 2 cells and opens the filter almost fully; the route knows about the wall and keeps it closed.
     expect(
       comRota.filtros[0].frequency.value,
       'a rota não foi usada: o guia diz «quase lá» de um alvo atrás de uma parede',
@@ -394,13 +390,13 @@ describe('platform/audio-sonar · a rota, quando o jogo a permite (#84 item 2)',
   });
 
   it('⚠️ [Interface] as DUAS distâncias já estão na mesma unidade: passos', () => {
-    // É a asserção que impede a conversão a mais. `distance()` divide pela `unit` no ramo contínuo, e
-    // `routeTo().passos` conta passos por definição — dividir outra vez pelo passo do mundo poria o guia no
-    // brilho máximo para sempre num jogo com `unit = 16`. É o defeito que a #121 tirou do `panFor`.
+    // It is the assertion that prevents the extra conversion. `distance()` divides by `unit` in the continuous branch, and
+    // `routeTo().steps` counts steps by definition — dividing again by the world's step would put the guide at full
+    // brightness forever in a game with `unit = 16`. It is the defect #121 took out of `panFor`.
     const semParede = { topology: GRADE_ORTO, roleAt: () => 'free' };
     const rota = routeTo({ ...semParede, topology: GRADE_ORTO }, { x: 0, y: 0 }, [{ x: 7, y: 0 }]);
     expect(rota.steps).toBe(distance(GRADE_ORTO, { x: 0, y: 0 }, { x: 7, y: 0 }));
-    // E com parede a rota é ESTRITAMENTE maior — nunca menor do que a reta, em nenhum caso.
+    // And with a wall the route is STRICTLY longer — never shorter than the straight line, in any case.
     const desvio = routeTo({ topology: GRADE_ORTO, roleAt: PAREDE }, { x: 4, y: 0 }, [{ x: 6, y: 0 }]);
     expect(desvio.steps).toBeGreaterThan(distance(GRADE_ORTO, { x: 4, y: 0 }, { x: 6, y: 0 }));
   });
@@ -408,22 +404,21 @@ describe('platform/audio-sonar · a rota, quando o jogo a permite (#84 item 2)',
 
 // -----------------------------------------------------------------------------------------------------------
 describe('a NARRAÇÃO diz o RUMO, e o rumo vem do referencial que o jogo declarou (ADR-0089)', () => {
-  // O que isto substitui: `alvo.at.x < pl.x - 4 ? 'left' : alvo.at.x > pl.x + 4 ? 'right' : 'ahead'`.
-  // Três palavras onde o contrato tem oito, e misturando referencial de TELA (esquerda, direita) com
-  // referencial de CORPO (à frente) — quem ouve não tem como saber de qual origem cada uma fala.
+  // What this replaces: `alvo.at.x < pl.x - 4 ? 'left' : alvo.at.x > pl.x + 4 ? 'right' : 'ahead'`. Three words where the
+  // contract has eight, mixing a SCREEN frame of reference (left, right) with a BODY one (ahead) — whoever listens has no
+  // way to know which origin each one speaks from.
   const acima = { x: 32, y: 0 }, abaixo = { x: 32, y: 64 };
 
   it('[Right] ⚠️ ACIMA e ABAIXO deixam de virar «à frente» — é o defeito, em uma linha', () => {
-    // Com a zona morta de ±4, TUDO o que estivesse na mesma coluna virava «à frente», estivesse acima ou
-    // abaixo. Era justamente a informação que mais falta a quem não vê a tela, apagada por uma conta sobre
-    // `x` que não olhava para `y` nenhum.
+    // With the ±4 dead zone, EVERYTHING in the same column became ahead, whether above or below. It was exactly the
+    // information most missing for someone who cannot see the screen, erased by arithmetic on `x` that never looked at `y`.
     expect(sonarDe([acima])).toContain('às 12 horas');
     expect(sonarDe([abaixo])).toContain('às 6 horas');
   });
 
   it('[Interface] o MESMO alvo dá palavras diferentes conforme o referencial declarado', () => {
-    // O par que prova que o campo `frame` é lido, e não que dois fixtures por acaso diferem noutra coisa.
-    expect(sonarDe([acima])).toContain('às 12 horas');            // CONTINUO declara `frame: 'clock'`
+    // The pair that proves the `frame` field is read, and not that two fixtures happen to differ in something else.
+    expect(sonarDe([acima])).toContain('às 12 horas');            // CONTINUO declares `frame: 'clock'`
     expect(sonarDe([acima], GRADE)).toContain('ao norte');        // GRADE declara `frame: 'compass'`
   });
 
@@ -439,15 +434,15 @@ describe('a NARRAÇÃO diz o RUMO, e o rumo vem do referencial que o jogo declar
   });
 
   it('[Boundary] ⚠️ a hora 1 tem forma PRÓPRIA — «às 1 horas» não é português', () => {
-    // Uma chave com `{h}` cobre onze das doze horas, e é por isso que a décima segunda passa despercebida:
-    // o caso só existe se alguém escolher um alvo a ~30° do topo. Sem ele, a mutação que apaga o singular
-    // fica verde — e o leitor de tela passa a ler uma frase agramatical a cada sonar da hora 1.
-    const frase = sonarDe([{ x: 37, y: 23 }]); // ~30° no sentido horário a partir do topo
+    // A key with `{h}` covers eleven of the twelve hours, which is why the twelfth goes unnoticed: the case exists only if
+    // someone picks a target ~30° from the top. Without it, the mutation that deletes the singular stays green — and the
+    // screen reader reads an ungrammatical sentence at every sonar on hour 1.
+    const frase = sonarDe([{ x: 37, y: 23 }]); // ~30° clockwise from the top
     expect(frase).toContain('à 1 hora');
     expect(frase).not.toContain('às 1 horas');
   });
 
-  /** Dispara o sonar uma vez e devolve a frase dita. */
+  /** Fires the sonar once and returns the sentence said. */
   function sonarDe(alvos, topology) {
     const { som, said } = setup(topology ? { alvos, topology } : { alvos });
     som.sonar(pl());
@@ -456,20 +451,20 @@ describe('a NARRAÇÃO diz o RUMO, e o rumo vem do referencial que o jogo declar
 });
 
 // ==========================================================================================================
-// ⚠️ A LARGURA DO ESTEREO E MEDIDA NA REGUA DO MUNDO, NAO NA DA TELA (#121)
+// ⚠️ THE STEREO WIDTH IS MEASURED ON THE WORLD'S RULER, NOT THE SCREEN'S (#121)
 //
-// O pan dividia por `LOGICAL_W * 0.55` = 320 x 0,55 = **176 pixels de ECRA**, e o que ele divide (`wx - pl.x`)
-// vem da TOPOLOGIA. As duas reguas so coincidem quando o mundo tambem e medido em pixels.
+// The pan divided by `LOGICAL_W * 0.55` = 320 × 0.55 = **176 SCREEN pixels**, and what it divides (`wx - pl.x`) comes
+// from the TOPOLOGY. The two rulers agree only when the world is also measured in pixels.
 //
-// Medido ao construir o `game-soccer`: num campo de 90 METROS, um colega dez metros a direita da
-// `10 / 176 = 0,057` — mono, na pratica. O sonar ficaria **certo e inaudivel**, a mesma classe de defeito que
-// o quiz registou como «certo e inutil». Para a plataforma era verdade por acaso, e para `grid`/`hotspots`
-// era vacuo — e e por isso que ninguem viu.
+// Measured while building `game-soccer`: on a 90-METRE pitch, a teammate ten metres to the right gave `10 / 176 = 0.057`
+// — mono, in practice. The sonar would be **right and inaudible**, the same class of defect the quiz recorded as right
+// and useless. For the platformer it was true by chance, and for `grid`/`hotspots` it was vacuous — which is why nobody
+// saw it.
 //
-// ⚠️ ONZE NAO E NUMERO NOVO: 176 px / `unit: TILE` = 16 sao exatamente 11 tiles. O primeiro caso abaixo
-// afirma que a crianca da plataforma continua a ouvir EXATAMENTE o que ouvia.
+// ⚠️ ELEVEN IS NOT A NEW NUMBER: 176 px / `unit: TILE` = 16 is exactly 11 tiles. The first case below asserts that the
+// platformer's child still hears EXACTLY what she heard.
 //
-// MUTACOES CONFERIDAS (no fim do bloco).
+// MUTATIONS CHECKED (at the end of the block).
 // ==========================================================================================================
 describe('platform/audio-sonar — o pan na regua declarada (#121)', () => {
   const CAMPO = { kind: 'continuous', size: [90, 60], unit: 1, move: 'free', frame: 'compass' };
@@ -482,7 +477,7 @@ describe('platform/audio-sonar — o pan na regua declarada (#121)', () => {
   });
 
   it('⚠️ [Right] no campo de metros dez metros a direita JA SE OUVEM', () => {
-    // O numero da issue: com o denominador de ecra dava 0,057. Com 11 passos de 1 metro da 0,909.
+    // The issue's number: with the screen denominator it gave 0.057. With 11 paces of 1 metre it gives 0.909.
     const { som } = setup({ topology: CAMPO });
     const pan = som.panFor(10, pl({ x: 0, y: 0 }));
     expect(pan).toBeCloseTo(10 / 11, 6);
@@ -490,7 +485,7 @@ describe('platform/audio-sonar — o pan na regua declarada (#121)', () => {
   });
 
   it('⚠️ [Cross-check] e a formula ANTIGA dava mesmo 0,057 — o defeito, em aritmetica', () => {
-    // Sem isto, o caso de cima podia estar verde por o numero da issue estar errado, e eu nao saberia.
+    // Without this, the case above could be green because the issue's number was wrong, and nobody would know.
     expect(10 / (320 * 0.55)).toBeCloseTo(0.057, 3);
   });
 
@@ -501,8 +496,8 @@ describe('platform/audio-sonar — o pan na regua declarada (#121)', () => {
   });
 
   it('⚠️ [Zero] `hotspots` nao tem lado — o pan e ZERO, e nao um numero calculado sobre indices', () => {
-    // Uma lista e uma ORDEM, nao uma geometria. O `bearing` do contrato ja responde `none` pelo mesmo motivo;
-    // apontar para a direita numa lista de perguntas e apontar para nada.
+    // A list is an ORDER, not a geometry. The contract's `bearing` already answers `none` for the same reason; pointing
+    // right in a list of questions is pointing at nothing.
     const { som } = setup({ topology: LISTA });
     expect(som.panFor(3, pl({ x: 0, y: 0 }))).toBe(0);
     expect(som.panFor(-3, pl({ x: 0, y: 0 }))).toBe(0);
@@ -525,15 +520,15 @@ describe('platform/audio-sonar — o pan na regua declarada (#121)', () => {
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · repondo `(ctx.LOGICAL_W * 0.55)` como denominador → reprovam DOIS: "[Right] no campo de metros" com
-//     **0,0568** — o numero exato que a auditoria mediu — e "[Right] na grade um passo e uma celula". E a
-//     #121 reproduzida, e o `[Cross-check]` ao lado confirma que o numero da issue estava certo.
-//   · trocando `PAN_PACES` de 11 para 12 → reprovam QUATRO, incluindo "[Right] a plataforma ouve EXATAMENTE
-//     o que ouvia". E o que impede o conserto de mexer, de passagem, no que ja funcionava para uma crianca.
-//   · fazendo `worldStep` devolver 1 para `hotspots` → reprovam DOIS: "[Zero] `hotspots` nao tem lado" e o
-//     "[Interface]". Um pan calculado sobre indices de lista aponta para um lado que nao existe.
-//   · tirando o `Math.max(-1, Math.min(1, ...))` → "[Boundary] o pan continua preso" reprova nas tres.
+// ========================= MUTATIONS CHECKED =========================
+//   · putting back `(ctx.LOGICAL_W * 0.55)` as the denominator → TWO fail: the metres-pitch case with **0.0568** — the
+//     exact number the audit measured — and the one-step-is-one-cell grid case. It is #121 reproduced, and the
+//     `[Cross-check]` beside it confirms the issue's number was right.
+//   · changing `PAN_PACES` from 11 to 12 → FOUR fail, including the platformer-hears-EXACTLY-what-it-heard case. It is
+//     what keeps the fix from touching, in passing, what already worked for a child.
+//   · making `worldStep` return 1 for `hotspots` → TWO fail: the `hotspots`-has-no-side case and the [Interface]. A pan
+//     computed over list indices points to a side that does not exist.
+//   · removing the `Math.max(-1, Math.min(1, ...))` → the [Boundary] pan-stays-clamped case fails in all three.
 //
 // PROBED AGAIN (2026-09-23), nineteen decisions of `updateGuide` disabled one at a time — `scratchpad/sonda-guia.py`. Nine were
 // green: the game's sound off, no categories, no `guide` category (the last two THREW on `cat.guide`), a device that refuses the

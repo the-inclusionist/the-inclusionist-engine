@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/caa-sets + a lógica pura de ui/settings-caa (project node, sem document). ADR-0028, issue #57.
+// Tests of ui/caa-sets + the pure logic of ui/settings-caa (node project, no document). ADR-0028, issue #57.
 //
-// O que estes casos protegem NÃO é a lista — é a REGRA que a ordena: a camada de cada conjunto é decidida pela
-// LICENÇA dele e por mais nada. No dia em que um conjunto mudar de camada por ser bonito, popular ou fácil de
-// integrar, o catálogo terá deixado de ser verdadeiro, e é aqui que isso precisa doer.
+// What these cases protect is NOT the list — it is the RULE that orders it: each set's tier is decided by its LICENCE and
+// nothing else. The day a set changes tier for being pretty, popular or easy to integrate, the catalogue will have
+// stopped being true, and this is where that has to hurt.
 import { describe, it, expect } from 'vitest';
 import { CAA_SETS, CAA_BY_KEY, caaAvailable, caaReason, caaLabel } from '../app/js/ui/caa-sets.js';
 import { upperCaseOn, lettersRowSpec, caaRowSpec, caaControlId, CAA_SECTIONS } from '../app/js/ui/settings-caa.js';
 
 describe('CAA_SETS — o catálogo', () => {
   it('[Zero] NENHUM conjunto está disponível hoje, e o menu não finge o contrário', () => {
-    // Os pictogramas são milhares de arquivos que ainda não entraram no repositório. Oferecê-los como
-    // escolhíveis seria um botão que não faz nada — pior que a ausência, porque gasta a confiança.
+    // The pictograms are thousands of files that have not entered the repository yet. Offering them as choosable would be
+    // a button that does nothing — worse than the absence, because it spends trust.
     expect(caaAvailable()).toEqual([]);
   });
 
   it('[Boundary] as LETRAS não estão nesta lista — viraram um interruptor, não um conjunto', () => {
-    // Decisão do Dev: uma pergunta binária apresentada como duas linhas obriga a criança a comparar as duas
-    // para descobrir que são a mesma pergunta. Sobra aqui o que é de verdade uma lista.
+    // The Dev's decision: a binary question presented as two rows forces the child to compare both to discover they are
+    // the same question. What stays here is what really is a list.
     expect(CAA_SETS.some((s) => s.key.startsWith('letras'))).toBe(false);
   });
 
@@ -33,14 +33,14 @@ describe('CAA_SETS — o catálogo', () => {
   });
 
   it('[Boundary] Sclera está com PCS/SymbolStix/Widgit, não com os redistribuíveis', () => {
-    // Sclera é livre e grande, e a tentação de tratá-la como os CC BY-SA é real. Ela precisa de permissão
-    // negociada, e a camada segue a licença — não a vontade.
+    // Sclera is free and big, and the temptation to treat it like the CC BY-SA ones is real. It needs a negotiated
+    // permission, and the tier follows the licence — not the wish.
     expect(CAA_SETS.filter((s) => s.tier === 'negotiating').map((s) => s.key))
       .toEqual(['sclera', 'pcs', 'symbolstix', 'widgit']);
   });
 
   it('[Interface] todo conjunto redistribuível DECLARA a licença; nenhum viaja sem ela', () => {
-    // Embutir sem licença registrada é problema jurídico, não bug: quem redistribui somos nós.
+    // Embedding without a recorded licence is a legal problem, not a bug: whoever redistributes is us.
     for (const s of CAA_SETS) if (s.tier === 'bundled') expect(s.license, s.key).toBeTruthy();
   });
 
@@ -60,8 +60,8 @@ describe('caaMotivo — duas respostas, porque são duas situações', () => {
   });
 
   it('[Right] "aguardando negociação" quando a permissão é de OUTRA pessoa', () => {
-    // A diferença não é de estilo: quem lê a primeira sabe esperar, quem lê a segunda sabe que esperar não
-    // adianta. Um educador decide coisas diferentes com cada uma.
+    // The difference is not style: whoever reads the first knows to wait, whoever reads the second knows waiting is no
+    // use. An educator decides different things with each.
     for (const k of ['sclera', 'pcs', 'symbolstix', 'widgit']) {
       expect(caaReason(CAA_BY_KEY[k])).toBe('caa.aguardandoNegociacao');
     }
@@ -80,14 +80,14 @@ describe('o interruptor das letras', () => {
   });
 
   it('[Interface] a linha explica o DESLIGADO — senão "off" fica sem significado', () => {
-    // O off não é "sem letras": é maiúsculas E minúsculas. Um interruptor cujo desligado não se explica
-    // deixa a criança adivinhando o que ela perde ao desligá-lo.
+    // Off is not no letters: it is upper AND lower case. A switch whose off is not explained leaves the child guessing
+    // what she loses by switching it off.
     expect(lettersRowSpec().hint).toContain('minúsculas');
   });
 
   it('[Interface] o interruptor das letras é o piso: sem motivo, porque não depende de arquivo nenhum', () => {
-    // Todo conjunto de pictograma carrega um motivo de não servir; este não tem nenhum a carregar. Se um dia
-    // tiver, é porque virou dependente de algo — e aí o motivo aparece aqui antes de aparecer na tela.
+    // Every pictogram set carries a reason for not serving; this one has none to carry. If one day it does, it is because
+    // it became dependent on something — and then the reason shows up here before it shows up on screen.
     expect(lettersRowSpec().ariaLabel).toBeUndefined();
   });
 });
@@ -98,14 +98,14 @@ describe('caaRowSpec — o que a linha de um conjunto DIZ, antes de existir nó 
   });
 
   it('[Interface] Tawasol carrega a nota sobre cultura — é o que muda o significado da escolha', () => {
-    // Um pictograma não é neutro: é desenhado por e para uma cultura. Sem a nota, "Tawasol" é só um nome
-    // estranho na lista, e o educador não tem como saber para qual criança ele é a escolha certa.
+    // A pictogram is not neutral: it is drawn by and for a culture. Without the note, Tawasol is just a strange name on
+    // the list, and the educator has no way to know which child it is the right choice for.
     expect(caaRowSpec(CAA_BY_KEY.tawasol).hint).toContain('árabe');
   });
 
   it('[Interface] a licença vai na MESMA dica, não numa segunda linha de prosa', () => {
-    // A regra de menu do CLAUDE.md §4: um único `.opt-hint` por linha. Dois davam duas descrições ao mesmo
-    // controle, e o rodapé mostrava a primeira — a outra ficava na linha, virando o manual que a regra proíbe.
+    // The CLAUDE.md §4 menu rule: a single `.opt-hint` per row. Two gave two descriptions to the same control, and the
+    // footer showed the first — the other stayed in the row, becoming the manual the rule forbids.
     expect(caaRowSpec(CAA_BY_KEY.mulberry).hint).toContain('Licença: ');
   });
 
