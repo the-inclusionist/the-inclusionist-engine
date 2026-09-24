@@ -5,8 +5,9 @@
 // Two properties matter more than the others, and both fail silently if they break:
 //   · the module does NOT read storage on import — or any test importing it inherits the environment's keyboard;
 //   · `resetKB` returns a COPY — or remapping writes into the defaults and the reset stops resetting.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { kb, initKB, setKB, resetKB, saveKB, loadKB, KB_DEFAULTS } from '../app/js/input/keyboard.js';
+import * as store from '../app/js/platform/storage.js';
 
 describe('input/keyboard — o mapa vivo, com dono (#50)', () => {
   it('[Zero] no import ele JÁ é utilizável e NÃO leu disco: nasce dos padrões', () => {
@@ -56,7 +57,49 @@ describe('input/keyboard — loadKB sem armazenamento', () => {
     expect(loadKB()).toEqual(KB_DEFAULTS);
   });
 
-  // The PARTIAL overlay of saved data on the defaults (whoever remapped only the jump keeps the arrows) and the shape
-  // migration of the old `p34` format need real storage and are not measured here. What the child saved winning over
-  // the factory is held in the-game-declares-its-keyboard.node.test.js.
+  // With storage, the next describe measures the overlay itself; what the child saved winning over the GAME's default
+  // is held in the-game-declares-its-keyboard.node.test.js.
+});
+
+describe('input/keyboard — loadKB lays what was saved OVER the defaults', () => {
+  // The SAME key `input/keyboard` uses, written by hand: if it changes there, these cases stop reading the saved data and
+  // go red instead of comparing the defaults with themselves.
+  const CKEY = 'inclusionist.kbcontrols.v3';
+  // ⚠️ A FAKE `localStorage`: the node project has none and `platform/storage` degrades in silence, so without it
+  // `setJSON` would write nothing and every case below would pass by reading the defaults.
+  beforeEach(() => {
+    const data = {};
+    globalThis.localStorage = {
+      getItem: (k) => (k in data ? data[k] : null),
+      setItem: (k, v) => { data[k] = String(v); },
+      removeItem: (k) => { delete data[k]; },
+    };
+  });
+  afterEach(() => { delete globalThis.localStorage; });
+
+  it('[Right] the overlay is PARTIAL: remapping one action keeps every other key of the defaults', () => {
+    store.setJSON(CKEY, { solo: { action1: ['KeyZ'] } });
+    const d = loadKB();
+    expect(d.solo.action1, 'the saved key did not arrive').toEqual(['KeyZ']);
+    expect({ ...d.solo, action1: KB_DEFAULTS.solo.action1 }, 'the overlay replaced the scheme: the arrows went with it')
+      .toEqual(KB_DEFAULTS.solo);
+  });
+
+  it('[Right] the saved scheme of a seat lands on THAT seat, and a null seat keeps its defaults', () => {
+    store.setJSON(CKEY, { p2: [null, { action1: ['KeyK'] }] });
+    const d = loadKB();
+    expect(d.p2[1].action1).toEqual(['KeyK']);
+    expect(d.p2[0], 'a null entry is "nothing saved for this seat", not "empty it"').toEqual(KB_DEFAULTS.p2[0]);
+  });
+
+  it('🔴 [Cross-check] the old `p34` shape migrates into BOTH p3 and p4, seat by seat, and p3 stops at three', () => {
+    const seats = [0, 1, 2, 3].map((i) => ({ action1: [`KeyF${i + 1}`] }));
+    store.setJSON(CKEY, { p34: seats });
+    const d = loadKB();
+    expect(d.p4.map((s) => s.action1), 'p4 did not receive the four seats').toEqual([['KeyF1'], ['KeyF2'], ['KeyF3'], ['KeyF4']]);
+    expect(d.p3.map((s) => s.action1), 'p3 did not receive its three seats').toEqual([['KeyF1'], ['KeyF2'], ['KeyF3']]);
+    // ⚠️ `loadKB`'s `i < 3` guard is EQUIVALENT to its `d.p3[i]` check (p3 has three seats): dropping it changes nothing
+    // this case, or any, can see. The length line holds the outcome both guards protect.
+    expect(d.p3, 'p3 grew a fourth seat from p34').toHaveLength(KB_DEFAULTS.p3.length);
+  });
 });
