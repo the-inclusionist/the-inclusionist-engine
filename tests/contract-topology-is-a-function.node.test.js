@@ -48,6 +48,14 @@ describe('topology é função (ADR-0084)', () => {
     expect(problemas[0]).toMatch(/missing/);
   });
 
+  it('🔴 [Boundary] a topology written as `null` is MISSING too — not «a value that should be a function»', () => {
+    // Found by the probe of 2026-09-24: only `undefined` had a case. A game that writes `topology: null` has written no
+    // space at all, and «must be a FUNCTION» would send its author to fix a shape that is not there.
+    const problemas = conformanceProblems(valida({ topology: null }));
+    expect(problemas).toHaveLength(1);
+    expect(problemas[0]).toMatch(/missing/);
+  });
+
   it('uma função que não devolve nada é reprovada — é o getter partido', () => {
     const problemas = conformanceProblems(valida({ topology: () => undefined }));
     expect(problemas).toHaveLength(1);
