@@ -1,32 +1,34 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
-# Por que ONNX e não NCNN para o TTS neural (estudo)
+Historical study (2026-07-06): kept as a record; the current state lives in `app/js/platform/tts.ts` (Web Speech first per ADR-0200, the Kokoro fallback on onnxruntime-web per ADR-0216).
 
-Justifica a escolha do runtime **ONNX** (via sherpa-onnx-wasm) em vez de **NCNN** (via sherpa-ncnn), decidida em
+# Why ONNX and not NCNN for the neural TTS (study)
+
+It justifies the choice of the **ONNX** runtime (via sherpa-onnx-wasm) instead of **NCNN** (via sherpa-ncnn), decided in
 **[ADR-0022](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml)**.
 
-## O que o estudo confirmou
+## What the study confirmed
 
-A hipótese era: **NCNN é mais focado em STT/ASR e tem menos variedade em alta fidelidade.** O estudo **confirma** isso.
-Um detalhe técnico a registrar (pra não errar em decisões futuras): o **sherpa-ncnn** *tecnicamente* também roda
-vits-piper TTS e WASM ([repo](https://github.com/k2-fsa/sherpa-ncnn)) — ou seja, "faz TTS" —, mas o **foco de projeto**
-do NCNN é inferência enxuta em ARM/embarcado, e o **ecossistema de TTS** ali é muito menor. Portanto a decisão por ONNX
-se apoia em variedade + fidelidade + maturidade WASM (abaixo), exatamente na linha do que você apontou.
+The hypothesis was: **NCNN is more focused on STT/ASR and has less variety in high fidelity.** The study **confirms** it.
+A technical detail worth recording (so as not to get future decisions wrong): **sherpa-ncnn** *technically* also runs
+vits-piper TTS and WASM ([repo](https://github.com/k2-fsa/sherpa-ncnn)) — that is, it does TTS —, but NCNN's **project
+focus** is lean inference on ARM/embedded, and the **TTS ecosystem** there is much smaller. So the decision for ONNX
+rests on variety + fidelity + WASM maturity (below), exactly along the lines of what you pointed out.
 
-## Por que ONNX mesmo assim (os motivos que valem)
+## Why ONNX anyway (the reasons that count)
 
-| Critério | ONNX (sherpa-onnx) | NCNN (sherpa-ncnn) | Vence |
+| Criterion | ONNX (sherpa-onnx) | NCNN (sherpa-ncnn) | Wins |
 |---|---|---|---|
-| **Ecossistema de vozes** | **7 famílias TTS** (VITS/Piper, Matcha, **Kokoro**, Kitten, ZipVoice, PocketTTS, Supertonic), 80+ idiomas; o csukuangfj publica **~50 vozes vits-piper** + Kokoro multi-lang **já em ONNX** | Zoo de TTS **bem menor**; poucas vozes pré-convertidas p/ NCNN — teríamos que **converter e hospedar** cada uma | **ONNX** |
-| **Fidelidade / expressividade** | fp32/fp16, boa fidelidade; sobra compute no navegador | Otimizado p/ **ARM de baixo poder** (Android/iOS/Raspberry Pi), quantização agressiva → foco em tamanho/latência, não em alta fidelidade | **ONNX** |
-| **Maturidade em WASM** | **ONNX Runtime Web** (Microsoft) maduro; sherpa-onnx-wasm TTS documentado, com HF Spaces + já **validado no nosso lab** | WASM existe, mas o caminho TTS-em-WASM é **menos provado/documentado** | **ONNX** |
-| **Alvo de projeto do runtime** | genérico (servidor, desktop, browser) | brilha em **embarcado/mobile nativo** (binário minúsculo, SIMD ARM, sem deps) — vantagem que **não se traduz** no navegador, onde download do modelo + runtime WASM dominam | **ONNX** (p/ browser) |
+| **Voice ecosystem** | **7 TTS families** (VITS/Piper, Matcha, **Kokoro**, Kitten, ZipVoice, PocketTTS, Supertonic), 80+ languages; csukuangfj publishes **~50 vits-piper voices** + multi-language Kokoro **already in ONNX** | A **much smaller** TTS zoo; few voices pre-converted to NCNN — we would have to **convert and host** each one | **ONNX** |
+| **Fidelity / expressiveness** | fp32/fp16, good fidelity; compute to spare in the browser | Optimised for **low-power ARM** (Android/iOS/Raspberry Pi), aggressive quantisation → focus on size/latency, not on high fidelity | **ONNX** |
+| **WASM maturity** | **ONNX Runtime Web** (Microsoft) is mature; sherpa-onnx-wasm TTS is documented, with HF Spaces + already **validated in our lab** | WASM exists, but the TTS-in-WASM path is **less proven/documented** | **ONNX** |
+| **The runtime's design target** | generic (server, desktop, browser) | shines on **native embedded/mobile** (tiny binary, ARM SIMD, no deps) — an advantage that **does not translate** to the browser, where the model download + the WASM runtime dominate | **ONNX** (for the browser) |
 
-## Conclusão
+## Conclusion
 
-Nosso alvo é **navegador do cliente (WASM)**, e a métrica que importa é **variedade + fidelidade das vozes**
-disponíveis **prontas**. As vozes que queremos (todas as vits-piper pt/en/es do Kuang + Kokoro multi-lang) existem **em
-ONNX**; em NCNN seria trabalho de conversão/hospedagem para ganhar, no browser, uma vantagem (binário ARM enxuto) que
-não é o nosso gargalo. A vantagem real do NCNN — rodar em hardware muito fraco (ARM/RPi) — pode ser reavaliada **se e
-quando** o alvo for um app nativo embarcado; para o PWA no navegador, **ONNX vence**.
+Our target is **the client's browser (WASM)**, and the metric that matters is the **variety + fidelity of the voices**
+available **ready-made**. The voices we want (all of Kuang's pt/en/es vits-piper + multi-language Kokoro) exist **in
+ONNX**; in NCNN it would be conversion/hosting work to gain, in the browser, an advantage (a lean ARM binary) that
+is not our bottleneck. NCNN's real advantage — running on very weak hardware (ARM/RPi) — can be reassessed **if and
+when** the target is a native embedded app; for the PWA in the browser, **ONNX wins**.
 
-Fontes: [sherpa-ncnn (repo)](https://github.com/k2-fsa/sherpa-ncnn) · [sherpa-onnx TTS (DeepWiki)](https://deepwiki.com/k2-fsa/sherpa-onnx/3.2-text-to-speech-(tts)) · [catálogo de vozes](https://k2-fsa.github.io/sherpa/onnx/tts/all/).
+Sources: [sherpa-ncnn (repo)](https://github.com/k2-fsa/sherpa-ncnn) · [sherpa-onnx TTS (DeepWiki)](https://deepwiki.com/k2-fsa/sherpa-onnx/3.2-text-to-speech-(tts)) · [voice catalogue](https://k2-fsa.github.io/sherpa/onnx/tts/all/).

@@ -1,4 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+Historical study (2026-07-06): kept as a record; the current state lives in `app/js/platform/tts.ts` (Web Speech first per ADR-0200, the Kokoro fallback loaded by the engine per ADR-0216).
+
 # TTS engine comparison — pt-BR · en · es (research-first table)
 
 **Goal:** pick the neural TTS engine(s) for The Inclusionist's narration, plus the always-available
@@ -26,7 +28,7 @@ companion **[sherpa-lab](./sherpa-lab.html)** (the CDN-only `tts-engine-lab.html
 - **pt-BR is the priority**, and only **Piper** and **Kokoro** ship real neural pt-BR voices.
   **KittenTTS is English-only** — out for pt/es (revisit if a multilingual release lands).
 - **Piper** = smallest per-voice footprint and *already integrated* (`@mintplex-labs/piper-tts-web`,
-  ADR-0021). Downside: one model file *per voice per language* (~20–63 MB each).
+  ADR-0021). [Today: Piper is no longer a dependency in `package.json`; the engine speaks with Web Speech first (ADR-0200) and falls back to Kokoro through onnxruntime-web (ADR-0216), in `app/js/platform/tts.ts`.] Downside: one model file *per voice per language* (~20–63 MB each).
 - **Kokoro** = one ~80 MB model covers **all three languages** — better if we want pt+en+es without
   three separate downloads, at the cost of heavier per-utterance compute (WebGPU recommended).
 - **eSpeak NG + Web Speech** are the fallbacks: eSpeak is tiny + embedded + fully offline (ideal for
@@ -46,7 +48,7 @@ companion **[sherpa-lab](./sherpa-lab.html)** (the CDN-only `tts-engine-lab.html
 
 ## Phoneme input — can each engine speak a *sound* (/k/, /f/, /a/) instead of a letter name?
 
-This is the crux for **alfabetização**: the "phonemes" drill must speak the *sound*, not the letter
+This is the crux for **literacy**: the "phonemes" drill must speak the *sound*, not the letter
 name. From the docs:
 
 | Engine | Phoneme input? | How |

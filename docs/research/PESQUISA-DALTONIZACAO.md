@@ -1,30 +1,30 @@
-# Pesquisa — Daltonização canônica (simulação + correção 🚥)
+# Research — Canonical daltonisation (simulation + correction 🚥)
 
-> Research-first: cravar os valores canônicos dos filtros de daltonismo (simulação `sim-*` e
-> correção `fix-*`), substituindo as matrizes derivadas manualmente que estavam marcadas como
-> "dados ajustáveis".
+> Research-first: pin down the canonical values of the colour-blindness filters (simulation `sim-*` and
+> correction `fix-*`), replacing the manually derived matrices that were marked as
+> adjustable data.
 
-## 1. O algoritmo canônico de correção (daltonização)
+## 1. The canonical correction algorithm (daltonisation)
 
-A daltonização **não é uma matriz única publicada** — é um algoritmo (Fidaner, Lin & Ozguven 2005,
-implementação canônica: daltonize):
+Daltonisation **is not a single published matrix** — it is an algorithm (Fidaner, Lin & Ozguven 2005,
+canonical implementation: daltonize):
 
 ```
-Sim  = S · I                    (1) simula como o dicromata vê
-E    = I − Sim                  (2) erro: a informação que ele perde
-C    = I + M_err · E            (3) redistribui o erro para canais que ele enxerga
+Sim  = S · I                    (1) simulates how the dichromat sees
+E    = I − Sim                  (2) error: the information they lose
+C    = I + M_err · E            (3) redistributes the error to channels they can see
 ```
 
-- **S** (simulação): Machado, Oliveira & Fernandes 2009, *A Physiologically-based Model for
-  Simulation of Color Vision Deficiency* (IEEE TVCG 15(6)) — Tabela 1, severidade 1.0.
-  Valores conferidos na página oficial dos autores (UFRGS).
-- **M_err** (redistribuição, Fidaner et al.): desloca o erro do canal R para G e B —
-  `[[0,0,0],[0.7,1,0],[0.7,0,1]]` (conferido no código canônico `daltonize.py`).
+- **S** (simulation): Machado, Oliveira & Fernandes 2009, *A Physiologically-based Model for
+  Simulation of Color Vision Deficiency* (IEEE TVCG 15(6)) — Table 1, severity 1.0.
+  Values checked on the authors' official page (UFRGS).
+- **M_err** (redistribution, Fidaner et al.): shifts the error from the R channel to G and B —
+  `[[0,0,0],[0.7,1,0],[0.7,0,1]]` (checked in the canonical code `daltonize.py`).
 
-Como os três passos são lineares, compõem numa única matriz por tipo:
-**C = I + M_err·(I − S)** — é o que os filtros `fix-*` aplicam.
+Since the three steps are linear, they compose into a single matrix per type:
+**C = I + M_err·(I − S)** — that is what the `fix-*` filters apply.
 
-## 2. Matrizes de SIMULAÇÃO (Machado 2009, severidade 1.0) — canônicas
+## 2. SIMULATION matrices (Machado 2009, severity 1.0) — canonical
 
 | | R' | G' | B' |
 |---|---|---|---|
@@ -32,47 +32,47 @@ Como os três passos são lineares, compõem numa única matriz por tipo:
 | **Deuteranopia** | 0.367322, 0.860646, −0.227968 | 0.280085, 0.672501, 0.047413 | −0.011820, 0.042940, 0.968881 |
 | **Tritanopia** | 1.255528, −0.076749, −0.178779 | −0.078411, 0.930809, 0.147602 | 0.004733, 0.691367, 0.303900 |
 
-As matrizes `sim-*` anteriores (0.567/0.433… — as "colorjack" que circulam pela web) **não têm
-fonte primária e são consideradas imprecisas** (ver review do DaltonLens). Substituídas pelas
-Machado no mesmo passe.
+The previous `sim-*` matrices (0.567/0.433… — the colorjack ones that circulate on the web) **have no
+primary source and are considered imprecise** (see the DaltonLens review). Replaced by the
+Machado ones in the same pass.
 
-## 3. Matrizes de CORREÇÃO compostas (C = I + M_err·(I − S))
+## 3. Composed CORRECTION matrices (C = I + M_err·(I − S))
 
-Soma de cada linha = 1 → **branco/cinzas preservados** (a correção só mexe onde há croma).
+Each row sums to 1 → **white/greys preserved** (the correction only acts where there is chroma).
 
-| | linha R | linha G | linha B |
+| | R row | G row | B row |
 |---|---|---|---|
 | **fix-protan** | 1, 0, 0 | 0.478897, 0.476911, 0.044192 | 0.597282, −0.688692, 1.091410 |
 | **fix-deutan** | 1, 0, 0 | 0.162790, 0.725047, 0.112165 | 0.454695, −0.645392, 1.190697 |
 | **fix-tritan** | 1, 0, 0 | −0.100459, 1.122915, −0.022457 | −0.183603, −0.637643, 1.821245 |
 
-Leitura: a linha R é identidade (o canal defeituoso não é alterado — não adianta modular o que a
-pessoa não distingue); o erro é reinjetado em G e B, onde a pessoa TEM discriminação. No tritan a
-modulação forte fica no B (1.82) — o erro tritan vive no azul.
+Reading: the R row is the identity (the defective channel is not altered — there is no point modulating what the
+person cannot distinguish); the error is reinjected into G and B, where the person DOES have discrimination. In tritan the
+strong modulation sits in B (1.82) — the tritan error lives in blue.
 
-## 4. Decisões documentadas
+## 4. Documented decisions
 
-1. **Brettel 1997 para tritan**: é o modelo exato, mas é *piecewise* (dois semi-planos escolhidos
-   por pixel) — **não é exprimível numa `feColorMatrix` única** nem no ColorMatrixFilter do PIXI.
-   Usamos a matriz tritan de Machado (a melhor aproximação LINEAR única). Refinamento futuro:
-   shader piecewise Brettel. *Para sobrepor: pedir o shader.*
-2. **Espaço de cor**: Machado define as matrizes em **RGB linear** (o daltonize canônico faz
-   de-gamma antes). Aplicamos em **sRGB nos dois caminhos** (SVG com
-   `color-interpolation-filters="sRGB"` no solo; PIXI ColorMatrixFilter no MP, que só opera em
-   sRGB) → solo ≡ multiplayer visualmente, que é a aproximação padrão das implementações web.
-   Variante linear-exata = refinamento futuro (exigiria gamma no shader do PIXI também).
-3. **M_err de Fidaner é o mesmo para os 3 tipos** no algoritmo canônico (é o que o daltonize
-   faz); alternativas adaptativas por imagem existem na literatura, fora de escopo.
+1. **Brettel 1997 for tritan**: it is the exact model, but it is *piecewise* (two half-planes chosen
+   per pixel) — **it cannot be expressed in a single `feColorMatrix`** nor in PIXI's ColorMatrixFilter.
+   We use Machado's tritan matrix (the best single LINEAR approximation). Future refinement:
+   a piecewise Brettel shader. *To override: ask for the shader.*
+2. **Colour space**: Machado defines the matrices in **linear RGB** (the canonical daltonize does
+   de-gamma first). We apply them in **sRGB on both paths** (SVG with
+   `color-interpolation-filters="sRGB"` in single-player; PIXI ColorMatrixFilter in MP, which only operates in
+   sRGB) → single-player ≡ multiplayer visually, which is the standard approximation of web implementations.
+   A linear-exact variant = future refinement (it would require gamma in the PIXI shader too).
+3. **Fidaner's M_err is the same for the 3 types** in the canonical algorithm (it is what daltonize
+   does); per-image adaptive alternatives exist in the literature, out of scope.
 
-## 5. Verificação (headless, antes de commit)
+## 5. Verification (headless, before commit)
 
-Teste numérico: para um par confundível pelo protanope (vermelho×verde), medir ΔE **sob simulação
-protan** antes e depois da correção — a correção deve AUMENTAR a distância percebida pelo
-protanope. Idem deutan e tritan (azul×amarelo). + screenshot de cada modo.
+Numerical test: for a pair a protanope confuses (red×green), measure ΔE **under protan
+simulation** before and after the correction — the correction must INCREASE the distance perceived by the
+protanope. The same for deutan and tritan (blue×yellow). + a screenshot of each mode.
 
-## 6. Fontes
+## 6. Sources
 
-- [Machado, Oliveira & Fernandes 2009 — página oficial com a Tabela 1 (UFRGS)](https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html) · [IEEE Xplore](https://ieeexplore.ieee.org/document/5290741/)
-- [daltonize.py — implementação canônica (Fidaner et al.; matriz M_err)](https://github.com/joergdietrich/daltonize)
+- [Machado, Oliveira & Fernandes 2009 — official page with Table 1 (UFRGS)](https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html) · [IEEE Xplore](https://ieeexplore.ieee.org/document/5290741/)
+- [daltonize.py — canonical implementation (Fidaner et al.; M_err matrix)](https://github.com/joergdietrich/daltonize)
 - [Daltonize.org — LMS Daltonization Algorithm](http://www.daltonize.org/2010/05/lms-daltonization-algorithm.html)
-- [DaltonLens — Review of Open Source CVD Simulations (imprecisão das matrizes "colorjack")](https://daltonlens.org/opensource-cvd-simulation/)
+- [DaltonLens — Review of Open Source CVD Simulations (imprecision of the colorjack matrices)](https://daltonlens.org/opensource-cvd-simulation/)

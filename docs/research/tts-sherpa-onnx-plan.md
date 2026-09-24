@@ -1,9 +1,11 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+Historical plan (2026-07-06, superseded 2026-09-09): kept as a record; the current state lives in `app/js/platform/tts.ts` (Web Speech first per ADR-0200, the Kokoro fallback loaded by the engine per ADR-0216).
+
 # Neural TTS on sherpa-onnx-wasm — integration plan
 
 > 🛑 **SUPERSEDED ON 2026-09-09 — DO NOT BUILD FROM THIS.** The runtime is **piper**
 > (`@mintplex-labs/piper-tts-web`), owned by the engine — **ADR-0127**, which supersedes ADR-0065 §1 and with
-> it the sherpa adoption this plan was written for.
+> it the sherpa adoption this plan was written for. [Today: piper is no longer a dependency in `package.json`; the engine speaks with Web Speech first (ADR-0200) and falls back to Kokoro on onnxruntime-web (ADR-0216).]
 >
 > 🔴 **AND THE PREMISE BELOW WAS MEASURED FALSE.** This document called the alternative «discontinued», and no
 > version of `@mintplex-labs/piper-tts-web` carries a `deprecated` field — 1.0.5 shipped on 2026-08-11, after

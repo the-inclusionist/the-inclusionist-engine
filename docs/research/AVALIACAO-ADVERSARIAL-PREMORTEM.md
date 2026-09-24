@@ -1,135 +1,137 @@
 ---
-title: Avaliação adversária + premortem — The Inclusionist / EdSP
+title: Adversarial assessment + premortem — The Inclusionist / EdSP
 type: assessment
 status: round-2
 created: 2026-06-01
-method: 3 subagentes independentes (licenças, red-team, premortem)
+method: 3 independent subagents (licences, red-team, premortem)
 ---
 
-# Avaliação adversária + premortem
+Historical assessment (2026-06-01): kept as a record; the current state lives in `docs/ROADMAP.md` and in ADR-0010 (the non-negotiable pillars, in `the-inclusionist-docs`).
 
-Resultado de um **ataque adversário** e um **premortem (dez/2026)** feitos por subagentes
-independentes. Veredito convergente: **a constituição é excelente como norte de 10 anos e
-fatal como lista de requisitos de MVP.** O risco nº 1 não é técnico — é **plataformização
-prematura**: governança de 35 jogos sobre um protótipo de 1 arquivo nunca testado em tablet
-real nem com criança real.
+# Adversarial assessment + premortem
 
-## A reformulação central (concilia tudo)
+Result of an **adversarial attack** and a **premortem (Dec/2026)** carried out by independent
+subagents. Converging verdict: **the constitution is excellent as a 10-year north star and
+fatal as an MVP requirements list.** Risk no. 1 is not technical — it is **premature
+platformisation**: governance of 35 games on top of a one-file prototype never tested on a real
+tablet nor with a real child.
 
-> **Separar NORTE (inegociável, 10 anos) de MVP (mínimo viável, 6 meses).** Os 10 pilares
-> continuam sendo o **destino**. Mas o MVP precisa de **um subconjunto drasticamente menor**,
-> senão nada é entregue. Isso honra os inegociáveis (seguem sendo a meta) e torna o MVP enviável.
+## The central reframing (it reconciles everything)
 
-## Top 10 ameaças (red-team)
+> **Separate the NORTH STAR (non-negotiable, 10 years) from the MVP (minimum viable, 6 months).** The 10 pillars
+> remain the **destination**. But the MVP needs **a drastically smaller subset**,
+> or nothing ships. This honours the non-negotiables (they remain the goal) and makes the MVP shippable.
 
-| # | Ameaça | Sev | Condição de morte |
+## Top 10 threats (red-team)
+
+| # | Threat | Sev | Death condition |
 |---|---|---|---|
-| 1 | **Solo dev × 35 jogos, infra-primeiro** | 🔴 | anos de plataforma, nada enviado, doadores somem |
-| 2 | **PixiJS+WebGL/Tauri Mobile não testados no Positivo/Chromebook real** | 🔴 | o aparelho da missão não roda; descobre tarde |
-| 3 | **Compliance contraditória; China inalcançável** | 🔴 | China real-name **conflita** com minimização COPPA/LGPD; 版号 inviável p/ solo |
-| 4 | **Telemetria de crianças + dados abertos sem parceiro de pesquisa/jurídico** | 🔴 | 1 deanonimização = escândalo que mata a marca |
-| 5 | **Alegar "WCAG 2.2 AAA + GAG complete" (hoje falso e auto-contraditório)** | 🔴 | auditor nórdico refuta em 20 min; credibilidade vai |
-| 6 | **Sem plano de adoção escolar (BNCC/MDM/instalação/PNLD)** | 🟠 | jogo perfeito que ninguém instala = impacto zero |
-| 7 | **Reescrever multiplayer LAN/telas separadas** | 🟠 | netcode pesado p/ cenário que a escola não monta |
-| 8 | **Funding: doações→grants lentos vs. infra multi-ano** | 🟠 | sem dinheiro a curto prazo; grants exigem CNPJ/parceiro/histórico |
-| 9 | **Língua de sinais por locale (6 línguas) + motor zdog do zero** | 🟠 | sinalizar 6 línguas distintas é programa de pesquisa |
-| 10 | **BSL como "open source" + GPL dual-track por módulo + IP de arte IA** | 🟠 | rótulo afasta financiador FOSS; segregar módulos é imposto eterno |
+| 1 | **Solo dev × 35 games, infrastructure-first** | 🔴 | years of platform, nothing shipped, donors vanish |
+| 2 | **PixiJS+WebGL/Tauri Mobile untested on the real Positivo/Chromebook** | 🔴 | the mission's device does not run it; found out late |
+| 3 | **Contradictory compliance; China out of reach** | 🔴 | China real-name **conflicts** with COPPA/LGPD minimisation; 版号 unfeasible for a solo dev |
+| 4 | **Children's telemetry + open data without a research/legal partner** | 🔴 | 1 de-anonymisation = a scandal that kills the brand |
+| 5 | **Claiming "WCAG 2.2 AAA + GAG complete" (false today and self-contradictory)** | 🔴 | a Nordic auditor refutes it in 20 min; credibility goes |
+| 6 | **No school adoption plan (BNCC/MDM/installation/PNLD)** | 🟠 | a perfect game nobody installs = zero impact |
+| 7 | **Rewriting LAN multiplayer/separate screens** | 🟠 | heavy netcode for a scenario schools do not set up |
+| 8 | **Funding: donations→slow grants vs. multi-year infrastructure** | 🟠 | no money in the short term; grants require a CNPJ/partner/track record |
+| 9 | **Sign language per locale (6 languages) + a zdog engine from scratch** | 🟠 | signing 6 distinct languages is a research programme |
+| 10 | **BSL as "open source" + GPL dual-track per module + AI art IP** | 🟠 | the label scares off FOSS funders; segregating modules is an eternal tax |
 
-### Contradições reais entre pilares (não só "tensões")
-- **China real-name/anti-addiction (coleta MAIS PII de menores) × COPPA/LGPD/GDPR-K (coleta MENOS).**
-  "Regra mais rígida vence" é **autocontraditório** aqui → exigiria **builds regionais
-  mutuamente exclusivos**, o que **quebra** o "uma base PWA, nunca duplicar lógica" (P8).
-- **Localização de dados China (PIPL) × dados abertos (P6c).** Anonimizar/agregar é escape do
-  GDPR, **não** isenção automática do regime de exportação chinês.
-- **AAA × 320×180 × paletas vivas** (o próprio CLAUDE.md §2.7 diz "não venda AAA em bloco";
-  o README diz "AAA + GAG complete" → **os dois documentos se contradizem**).
-- **Painel Libras 21:9 (+100px) × telas 16:9 reais:** num tablet/Chromebook 16:9 **não há
-  largura física a "adicionar"** → ou o mundo encolhe (letterbox) ou rola. Repensar como
-  **overlay que reflowa dentro de 16:9** (janela no canto na proporção legal), não +100px físicos.
+### Real contradictions between pillars (not just *tensions*)
+- **China real-name/anti-addiction (collects MORE PII from minors) × COPPA/LGPD/GDPR-K (collect LESS).**
+  *The strictest rule wins* is **self-contradictory** here → it would require **mutually exclusive
+  regional builds**, which **breaks** *one PWA codebase, never duplicate logic* (P8).
+- **China data localisation (PIPL) × open data (P6c).** Anonymising/aggregating is a way out of
+  GDPR, **not** an automatic exemption from the Chinese export regime.
+- **AAA × 320×180 × vivid palettes** (CLAUDE.md §2.7 itself says *do not sell AAA wholesale*;
+  the README says "AAA + GAG complete" → **the two documents contradict each other**).
+- **Libras panel 21:9 (+100px) × real 16:9 screens:** on a 16:9 tablet/Chromebook **there is no
+  physical width to *add*** → either the world shrinks (letterbox) or it scrolls. Rethink it as an
+  **overlay that reflows inside 16:9** (a corner window at the legal proportion), not +100 physical px.
 
-## Premortem — causa de morte mais provável
+## Premortem — most likely cause of death
 
-**Morte por plataformização prematura:** trabalho de documento/governança expulsa progresso
-enviável e validado; as horas finitas do professor-dev acabam antes de qualquer checagem de
-realidade externa. **Já está acontecendo** — em 2026-06-01 produziu-se constituição + plano +
-**reversão dupla** (PNG→dados→dados) enquanto o **jogo segue em v3.1.100** e o **único bug
-crítico (B2)** segue aberto. O gradiente de incentivo aponta para docs (`[CLAUDE]`, infinito,
-nunca bloqueado); a validação que mataria o projeto cedo se ele for morrer (hardware real,
-5 crianças) é toda **`[JOSE]`-gated e toda aberta**.
+**Death by premature platformisation:** document/governance work crowds out shippable,
+validated progress; the teacher-developer's finite hours run out before any external reality
+check. **It is already happening** — on 2026-06-01 a constitution + a plan + a
+**double reversal** (PNG→data→data) were produced while the **game remains at v3.1.100** and the **only
+critical bug (B2)** remains open. The incentive gradient points to docs (`[CLAUDE]`, infinite,
+never blocked); the validation that would kill the project early if it is going to die (real hardware,
+5 children) is all **`[DEV]`-gated and all open**.
 
-### Indicadores de alerta (ranqueados)
-1. **"Build bom atual" envelhece** (>3 semanas sem versão rodável enquanto o esforço vai p/ outro lugar).
-2. **Backlog de validação `[JOSE]` congelado** (2+ meses sem fechar nenhum dos 5 gates do ADR-001).
-3. **Re-litígio de decisões** já "ratificadas" (PNG↔dados já está em 2 reversões).
-4. **Cadência de commits decai** (de ~diária p/ semanal p/ mensal).
-5. **Repo nunca vai a público** (o tarball ainda não tem remote no GitHub).
-6. **Razão doc/código** dispara (palavras de `.md`/semana ≫ linhas de jogo/semana).
-7. **Bugs-bandeira intocados** (toast VLibras, B2) por várias sessões.
-8. **Escopo cresce antes do slice fechar** (zdog Libras, Nórdicos, LAN MP construídos antes do Lúdico passar nos 5 gates).
+### Warning indicators (ranked)
+1. **The *current good build* ages** (>3 weeks without a runnable version while the effort goes elsewhere).
+2. **The `[DEV]` validation backlog freezes** (2+ months without closing any of the 5 gates of ADR-001).
+3. **Re-litigation of decisions** already *ratified* (PNG↔data is already on its 2nd reversal).
+4. **Commit cadence decays** (from ~daily to weekly to monthly).
+5. **The repo never goes public** (the tarball still has no GitHub remote).
+6. **The doc/code ratio** shoots up (`.md` words/week ≫ game lines/week).
+7. **Flagship bugs untouched** (VLibras toast, B2) for several sessions.
+8. **Scope grows before the slice closes** (zdog Libras, Nordics, LAN MP built before Lúdico passes the 5 gates).
 
-### Ações preventivas AGORA (baratas, alto impacto)
-1. **Sprint "validação primeiro" + congelar arquitetura.** Rodar os 5 gates do ADR-001 contra o
-   **v3.1.100 existente** — vários **não** dependem do José: axe-core via Playwright + Lighthouse
-   (4×CPU/3G) **rodam hoje** (`[CLAUDE]`). **Uma tarde com 1 tablet Positivo real** valida ou mata
-   a premissa por ~custo zero.
-2. **Congelar a constituição; regra "sem re-litígio".** Conflitos novos vão a `OPEN-QUESTIONS.md`,
-   revisados **mensalmente**, nunca no meio do build. Mata o churn de "rodada 2/3".
-3. **Adiar a reescrita PixiJS até a performance ser MEDIDA como insuficiente.** Não reescrever um
-   build que funciona e já tem a11y conquistada com base numa hipótese não medida. (⚠️ revê a
-   decisão "Por isso PixiJS" — ver abaixo.)
-4. **Publicar o repo esta semana** (BSL-1.1). Cria superfície p/ Mom Test, contribuidores, legitimidade.
-5. **Fechar B2** (persistência de remap) na próxima sessão (~30 min) — sinal "vivo e enviando".
-6. **Time-box de 1 semana p/ a pesquisa de IP** (default já decidido: arte como dados/código).
-7. **Um compromisso externo** (uma data real com ~5 crianças que o José já ensina, ou 1 deadline de edital).
+### Preventive actions NOW (cheap, high impact)
+1. **A *validation first* sprint + freeze the architecture.** Run the 5 gates of ADR-001 against the
+   **existing v3.1.100** — several do **not** depend on the Dev: axe-core via Playwright + Lighthouse
+   (4×CPU/3G) **run today** (`[CLAUDE]`). **One afternoon with 1 real Positivo tablet** validates or kills
+   the premise at ~zero cost.
+2. **Freeze the constitution; a *no re-litigation* rule.** New conflicts go to `OPEN-QUESTIONS.md`,
+   reviewed **monthly**, never in the middle of the build. It kills the *round 2/3* churn.
+3. **Postpone the PixiJS rewrite until performance is MEASURED as insufficient.** Do not rewrite a
+   build that works and has already won its a11y on the basis of an unmeasured hypothesis. (⚠️ revisits the
+   *That is why PixiJS* decision — see below.)
+4. **Publish the repo this week** (BSL-1.1). It creates surface for the Mom Test, contributors, legitimacy.
+5. **Close B2** (remap persistence) in the next session (~30 min) — an *alive and shipping* signal.
+6. **Time-box the IP research to 1 week** (default already decided: art as data/code).
+7. **One external commitment** (a real date with the ~5 children the Dev already teaches, or 1 call-for-funding deadline).
 
-## Escopo realista de 6 meses (o que deve ser VERDADE em dez/2026)
+## Realistic 6-month scope (what must be TRUE in Dec/2026)
 
-- **The Inclusionist em UM modo (Lúdico)** roda e é **verificado** em ≥1 tablet Positivo e ≥1
-  Chromebook do governo reais.
-- **Os 5 gates do ADR-001 FECHADOS** com números: Lighthouse ≥90 (4×CPU/3G), axe 0, 1 run em
-  hardware real, 1 passada de leitor de tela (NVDA *ou* ChromeVox), **Mom Test com ~5 crianças
-  (1 com NEE)**. *(Isto é o jogo inteiro de um tracer-bullet.)*
-- **Repo público** (BSL-1.1) com README que um estranho roda.
-- **v3.1.100 segue canônico e melhorando** (B2 corrigido; C1 legendas SFX; botões de toque). Sem
-  meia-reescrita abandonada.
-- **Declaração honesta de a11y publicada:** AAA onde alcançado, AA onde não, com evidência de auditoria.
+- **The Inclusionist in ONE mode (Lúdico)** runs and is **verified** on ≥1 real Positivo tablet and ≥1
+  real government Chromebook.
+- **The 5 gates of ADR-001 CLOSED** with numbers: Lighthouse ≥90 (4×CPU/3G), axe 0, 1 run on
+  real hardware, 1 screen-reader pass (NVDA *or* ChromeVox), **Mom Test with ~5 children
+  (1 with SEN)**. *(This is the whole game of a tracer bullet.)*
+- **Public repo** (BSL-1.1) with a README a stranger can run.
+- **v3.1.100 stays canonical and improving** (B2 fixed; C1 SFX captions; touch buttons). No
+  abandoned half-rewrite.
+- **Honest a11y statement published:** AAA where achieved, AA where not, with audit evidence.
 
-### Cortar/adiar do MVP (continuam no NORTE)
-| Item da visão | MVP | Porquê |
+### Cut/postpone from the MVP (they stay in the NORTH STAR)
+| Vision item | MVP | Why |
 |---|---|---|
-| Plataforma 35 jogos / governança EdSP | **adiar** (congelar constituição) | 1 jogo validado primeiro |
-| Reescrita PixiJS (v4.0.0) | **adiar até medir** | não reescrever build a11y-ratificado por hipótese |
-| zdog Libras 21:9 + línguas nórdicas | **cortar do MVP** | 2º motor antes de auditar o 1º; Libras-only depois |
-| i18n nórdico | **adiar** (manter strings externalizadas) | ROI zero antes do lançamento BR |
-| Multiplayer telas separadas + LAN | **cortar do MVP** | reescrita de netcode p/ slice de moedas |
-| Tauri + Tauri Mobile | **adiar** (só PWA) | PWA cobre Chromebook (1ª classe) e Positivo |
-| China (版号/PIPL/anti-addiction) | **cortar do MVP** | precisa de parceiro local que não existe |
-| 1EdTech LTI + Caliper + xAPI | **adiar** (local-first, sem telemetria) | maior superfície de privacidade; nada a medir sem jogadores |
-| Dados abertos (RN-01) | **adiar** | não há dados ainda; é política p/ um futuro |
-| Grants (Rouanet/Ancine/FAPESP/Nórdicos) | **escolher UM, submeter UM** | forcing function, não pesquisar nove |
+| 35-game platform / EdSP governance | **postpone** (freeze the constitution) | 1 validated game first |
+| PixiJS rewrite (v4.0.0) | **postpone until measured** | do not rewrite an a11y-ratified build on a hypothesis |
+| zdog Libras 21:9 + Nordic languages | **cut from the MVP** | a 2nd engine before auditing the 1st; Libras-only later |
+| Nordic i18n | **postpone** (keep strings externalised) | zero ROI before the BR launch |
+| Separate-screen multiplayer + LAN | **cut from the MVP** | a netcode rewrite for a coin slice |
+| Tauri + Tauri Mobile | **postpone** (PWA only) | PWA covers Chromebook (1st class) and Positivo |
+| China (版号/PIPL/anti-addiction) | **cut from the MVP** | needs a local partner that does not exist |
+| 1EdTech LTI + Caliper + xAPI | **postpone** (local-first, no telemetry) | the largest privacy surface; nothing to measure without players |
+| Open data (RN-01) | **postpone** | there is no data yet; it is a policy for a future |
+| Grants (Rouanet/Ancine/FAPESP/Nordics) | **pick ONE, submit ONE** | a forcing function, not researching nine |
 
-## Melhorias sugeridas aos pilares (não silenciosas — você decide)
-- **P2/README:** trocar "AAA + GAG complete" por **"WCAG 2.2 AA conformante; AAA onde viável,
-  documentado por critério; GAG: N/M"**. Corrigir a contradição README × CLAUDE.md.
-- **P4:** rebaixar **China de pilar a "Fase-N, requer parceiro local"**; fazer **LGPD+COPPA a
-  espinha real**. Manter só as partes portáveis (residência plugável, trilha de conteúdo).
-- **P5:** repensar geometria do painel Libras (overlay que reflowa em 16:9); confirmar métrica NBR 15290.
-- **P6:** **sem telemetria pessoal no MVP**; LTI/xAPI/Caliper + dados abertos só com **parceiro
-  universitário** que detenha o IRB/ética + privacidade diferencial.
-- **P7/P9:** rebaixar multiplayer telas-separadas/LAN a **trilha de P&D futura**; manter 2P local atual.
-- **P8:** **PWA-first** confirmado; Tauri/Tauri Mobile adiados.
-- **P10:** considerar **uma licença só** (GPL-3.0 desde já maximiza elegibilidade FOSS e remove o
-  imposto do dual-track); BSL agrega ~zero p/ jogo grátis que ninguém revende.
-- **Arte:** **usar a arte Nanobanana do próprio José** (IP-limpa) como referência → elimina o risco de IP dos geradores.
+## Suggested improvements to the pillars (not silent — you decide)
+- **P2/README:** replace "AAA + GAG complete" with **"WCAG 2.2 AA conformant; AAA where feasible,
+  documented per criterion; GAG: N/M"**. Fix the README × CLAUDE.md contradiction.
+- **P4:** demote **China from a pillar to *Phase N, requires a local partner***; make **LGPD+COPPA the
+  real spine**. Keep only the portable parts (pluggable residency, content trail).
+- **P5:** rethink the geometry of the Libras panel (an overlay that reflows in 16:9); confirm the NBR 15290 metric.
+- **P6:** **no personal telemetry in the MVP**; LTI/xAPI/Caliper + open data only with a **university
+  partner** that holds the IRB/ethics + differential privacy.
+- **P7/P9:** demote separate-screen/LAN multiplayer to a **future R&D track**; keep the current local 2P.
+- **P8:** **PWA-first** confirmed; Tauri/Tauri Mobile postponed.
+- **P10:** consider **a single licence** (GPL-3.0 right now maximises FOSS eligibility and removes the
+  dual-track tax); BSL adds ~zero to a free game nobody resells.
+- **Art:** **use the Dev's own Nanobanana art** (IP-clean) as reference → eliminates the generators' IP risk.
 
-## Respostas do José (rodada 4)
-- **PixiJS:** **NEGADO o adiamento** — nova versão usando PixiJS é o pedido. *Mitigação acordada:*
-  validar a perf **cedo** nos **2 tablets reais** que o José já tem (1 baixo custo + 1 do governo/pandemia).
-- **Licença:** **GPL-3.0 desde já** (sem BSL/dual-track). ✅
-- **Tauri / multiplayer / China / Nórdicos:** **fora do MVP** (seguem no Norte). ✅
-- **Escopo 35 jogos infra-primeiro:** aceito — foco em 1 jogo primeiro. ✅
-- **Hardware:** **2 tablets adquiridos** → o gate "testar no Positivo real" deixa de ser bloqueio. ✅
-- **Compliance:** **prioridade = lei local da região**; resto = meta conforme possível. Identidade do
-  **adulto** via gov (.gov BR; RNV só na China) → **não contradiz LGPD/COPPA** (consentimento do responsável). ✅
-- **Telemetria/dados:** **sem dados abertos**; só **anônimos via parceria de renome**. ✅
-- **a11y:** **remover "complete"** já; recolocar só com o MVP pronto e validado. ✅
+## The Dev's answers (round 4)
+- **PixiJS:** **postponement DENIED** — a new version using PixiJS is the request. *Agreed mitigation:*
+  validate performance **early** on the **2 real tablets** the Dev already has (1 low-cost + 1 from the government/pandemic).
+- **Licence:** **GPL-3.0 right now** (no BSL/dual-track). ✅ [Today: the code licence is AGPL-3.0-or-later (`package.json`), changed on 2026-08-25 per ADR-0010 pillar 10.]
+- **Tauri / multiplayer / China / Nordics:** **out of the MVP** (they stay in the North Star). ✅
+- **35-game infrastructure-first scope:** accepted — focus on 1 game first. ✅
+- **Hardware:** **2 tablets acquired** → the *test on a real Positivo* gate stops being a blocker. ✅
+- **Compliance:** **priority = the local law of the region**; the rest = a goal as far as possible. Identity of the
+  **adult** via gov (.gov BR; RNV only in China) → **does not contradict LGPD/COPPA** (guardian's consent). ✅
+- **Telemetry/data:** **no open data**; only **anonymous data via a reputable partnership**. ✅
+- **a11y:** **remove "complete"** now; put it back only with the MVP ready and validated. ✅

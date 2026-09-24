@@ -1,161 +1,163 @@
-# Estudo de Fontes — The Inclusionist / EdSP
+Historical study (2026-06-02): kept as a record; the current state lives in `docs/game-design/typography.md`, `app/js/ui/fonts.ts` and `app/css/style.css`.
 
-> Objetivo: consolidar ou propor alterações ao conjunto de fontes do projeto. **Onde o estudo converge com a escolha atual, a fonte fica oficial**; onde diverge, segue uma **proposta** para decisão do José. Data: 2026-06-02.
+# Font study — The Inclusionist / EdSP
 
-## 0. ROSTER OFICIAL (decisão do José, 2026-06-02)
+> Goal: consolidate or propose changes to the project's set of fonts. **Where the study converges with the current choice, the font becomes official**; where it diverges, a **proposal** follows for the Dev to decide. Date: 2026-06-02.
 
-> ⭐ **Documento CANÔNICO:** `../game-design/typography.md` (a antiga `referencia-tipografica-projeto-v6` — pesquisa completa do José: ordens de preferência por papel, evidência empírica e referências ABNT/DOI). Este `ESTUDO-FONTES.md` e a `PESQUISA-FONTES-CONDICOES-LETRAMENTO.md` foram **rascunhos que alimentaram a v6** — em caso de conflito, **vale a canônica**.
+## 0. OFFICIAL ROSTER (the Dev's decision, 2026-06-02)
 
-### Núcleo de defaults (o que entra como padrão no jogo)
-- **Padrão geral:** **Atkinson Hyperlegible** (OFL) — legibilidade/baixa visão; "0" com traço próprio, 1/l/I distintos.
-- **Alfabetização:** **Andika** (SIL OFL) — leitores iniciantes; formas alternativas de a/g/t conforme a BNCC.
-- **Opcional (dislexia/discalculia/TDAH):** **Lexend** (OFL) — selecionável a qualquer momento.
-- **Matemática (contas em pé/tabelas):** **Atkinson Hyperlegible Mono** (OFL) — dígitos claros + largura fixa; fórmulas via **STIX Two Math** (MathJax) ou **KaTeX**.
-- **Braille (embarcar):** **Braille CC0** (domínio público) — sem dor de licença.
-- **Demais fontes do estudo** (telas, títulos, pequenos, livros, redação, código, química, ícones, caligráficas, **e OpenDyslexic/Dyslexie**) → **NÃO são canônicas**; usadas **somente quando necessário**, pelas ordens de preferência da v6. (A acessibilidade à dislexia é resolvida por **espaçamento**, não por troca de fonte — ver abaixo.)
+> ⭐ **CANONICAL document:** `../game-design/typography.md` (the former `referencia-tipografica-projeto-v6` — the Dev's complete research: orders of preference per role, empirical evidence and ABNT/DOI references). This `ESTUDO-FONTES.md` and `PESQUISA-FONTES-CONDICOES-LETRAMENTO.md` were **drafts that fed v6** — in case of conflict, **the canonical one prevails**.
 
-### Espaçamento — o que de fato resolve (v6 §1/§7)
-*O ganho real de leitura vem do espaçamento, não da "fonte mágica".* Por isso o **"modo dislexia" do jogo é um TOGGLE DE ESPAÇAMENTO**, não uma troca de fonte.
+### Core of defaults (what goes in as the default in the game)
+- **General default:** **Atkinson Hyperlegible** (OFL) — legibility/low vision; a "0" with its own stroke, distinct 1/l/I.
+- **Literacy:** **Andika** (SIL OFL) — beginning readers; alternative forms of a/g/t as per the BNCC.
+- **Optional (dyslexia/dyscalculia/ADHD):** **Lexend** (OFL) — selectable at any time.
+- **Mathematics (column arithmetic/tables):** **Atkinson Hyperlegible Mono** (OFL) — clear digits + fixed width; formulas via **STIX Two Math** (MathJax) or **KaTeX**.
+- **Braille (to embed):** **Braille CC0** (public domain) — no licensing pain.
+- **Other fonts in the study** (screens, titles, small sizes, books, writing, code, chemistry, icons, calligraphic, **and OpenDyslexic/Dyslexie**) → **are NOT canonical**; used **only when necessary**, following v6's orders of preference. (Accessibility for dyslexia is solved by **spacing**, not by switching fonts — see below.)
 
-**Espaçamento PADRÃO (mínimos WCAG 2.2 §1.4.12):**
-| Medida | Valor |
+### Spacing — what actually solves it (v6 §1/§7)
+*The real reading gain comes from spacing, not from a *magic font*.* That is why the **game's *dyslexia mode* is a SPACING TOGGLE**, not a font switch. [Today: the BDA spacing (0.18em/0.63em) is the default for every non-cursive face since 2026-09-12 (ADR-0149 §2, `app/css/style.css`); it is no longer a dyslexia-mode toggle.]
+
+**DEFAULT spacing (WCAG 2.2 §1.4.12 minimums):**
+| Measure | Value |
 |---|---|
-| Entrelinha (line-height) | **1,5×** (150%) |
-| Entre letras (letter-spacing) | **0,12em** |
-| Entre palavras (word-spacing) | **0,16em** |
-| Entre parágrafos | **2,0×** |
+| Line spacing (line-height) | **1.5×** (150%) |
+| Between letters (letter-spacing) | **0.12em** |
+| Between words (word-spacing) | **0.16em** |
+| Between paragraphs | **2.0×** |
 
-**Toggle DISLEXIA (British Dyslexia Association + estudos de espaçamento):**
-- Regra: **espaço entre palavras ≥ 3,5× o espaço entre letras**; entrelinha 1,5/150% (ideal); entre-letras **≈35% da largura média da letra**, **sem exagerar** (excesso reduz legibilidade).
-- Para as sans do núcleo (Atkinson, Inter, Andika), largura média ≈ **0,5em** → 35% ≈ **0,17–0,18em**.
-- **Valores do toggle:** `letter-spacing: 0.18em` · `word-spacing: 0.63em` (= 3,5×0,18) · `line-height: 1.5`.
+**DYSLEXIA toggle (British Dyslexia Association + spacing studies):**
+- Rule: **space between words ≥ 3.5× the space between letters**; line spacing 1.5/150% (ideal); letter spacing **≈35% of the average letter width**, **without overdoing it** (excess reduces legibility).
+- For the core sans faces (Atkinson, Inter, Andika), average width ≈ **0.5em** → 35% ≈ **0.17–0.18em**.
+- **Toggle values:** `letter-spacing: 0.18em` · `word-spacing: 0.63em` (= 3.5×0.18) · `line-height: 1.5`.
 
-**Cor/contraste:** fundo **creme/pastel** (não branco puro), texto escuro. **Economia de famílias** (poucas famílias, muitos pesos).
+**Colour/contrast:** a **cream/pastel** background (not pure white), dark text. **Economy of families** (few families, many weights).
 
-### Licenças que exigem ação antes de embarcar (v6 §6)
-Clash Display (ITF), APHont/Luciole (restritivas), Bembo/Plantin Infant + Sassoon (Monotype pagas), **Kindergarten Pro** (BR, paga, mira impresso → confirmar uso em app com a Just in Type), Braille Neue (sem licença aberta → usar Braille CC0), iA Writer Quattro/MonoLisa/Victor Mono (conferir termos). Pista livre p/ cursiva BR: **Letra Escolar Brasileira (UFRGS)** — verificar licença (pode poupar a Kindergarten).
+### Licences that require action before embedding (v6 §6)
+Clash Display (ITF), APHont/Luciole (restrictive), Bembo/Plantin Infant + Sassoon (paid, Monotype), **Kindergarten Pro** (BR, paid, aimed at print → confirm app use with Just in Type), Braille Neue (no open licence → use Braille CC0), iA Writer Quattro/MonoLisa/Victor Mono (check the terms). A free lead for BR cursive: **Letra Escolar Brasileira (UFRGS)** — check the licence (it may spare us Kindergarten).
 
-*A §3 abaixo é o estudo comparativo inicial (rascunho); a referência viva é a v6.*
+*§3 below is the initial comparative study (draft); the living reference is v6.*
 
-## 1. Restrições do projeto (pilares que pesam na escolha)
+## 1. Project constraints (pillars that weigh on the choice)
 
-- **A11y primeiro (WCAG 2.2 AAA + GAG).** Critério dominante: legibilidade real e diferenciação de caracteres (I/l/1, O/0, rn/m), não estética.
-- **i18n (portfólio nórdico) + PT-BR.** Toda fonte de texto precisa cobrir diacríticos do português (á â ã à ç é ê í ó ô õ ú) **e** do nórdico (å ä ö ø æ œ ð þ í ý). Fontes decorativas (caligráfica/blackletter) podem ter cobertura parcial → exigem fallback.
-- **Offline (PWA + Electron + Capacitor).** Nada de depender de CDN: **toda fonte é self-hosted** (`@font-face` + `woff2` subsetado no bundle). Isso transforma "usar a fonte" em "**empacotar/embarcar** a fonte" → a licença relevante é **embedding em app/web/eBook**, não só "desktop".
-- **Licença: código GPL-3.0 + _assets_ não-FOSS permitidos.** Fontes entram como **asset** (igual à arte): uma fonte proprietária embarcada **não contamina** o código GPL, desde que distribuída sob a licença de embedding dela. Ainda assim, **preferir libre (OFL)** reduz atrito; pagas só onde há razão pedagógica.
-- **Hardware de escola pública BR (Positivo/Chromebook).** woff2 subsetado por idioma; evitar pesos demais; `font-display: swap`.
+- **A11y first (WCAG 2.2 AAA + GAG).** Dominant criterion: real legibility and character differentiation (I/l/1, O/0, rn/m), not aesthetics.
+- **i18n (Nordic portfolio) + PT-BR.** Every text font must cover the Portuguese diacritics (á â ã à ç é ê í ó ô õ ú) **and** the Nordic ones (å ä ö ø æ œ ð þ í ý). Decorative fonts (calligraphic/blackletter) may have partial coverage → they need a fallback.
+- **Offline (PWA + Electron + Capacitor).** No dependency on a CDN: **every font is self-hosted** (`@font-face` + subset `woff2` in the bundle). This turns *using the font* into ***packaging/embedding** the font* → the relevant licence is **embedding in an app/web/eBook**, not just *desktop*.
+- **Licence: GPL-3.0 code + non-FOSS _assets_ allowed.** Fonts go in as an **asset** (like the art): an embedded proprietary font **does not contaminate** the GPL code, as long as it is distributed under its own embedding licence. Even so, **preferring libre (OFL)** reduces friction; paid ones only where there is a pedagogical reason. [Today: the code licence is AGPL-3.0-or-later (`package.json`), changed on 2026-08-25 per ADR-0010 pillar 10.]
+- **BR public-school hardware (Positivo/Chromebook).** woff2 subset per language; avoid too many weights; `font-display: swap`.
 
-## 2. Critérios de avaliação (cada fonte é pontuada nestes eixos)
+## 2. Evaluation criteria (each font is scored on these axes)
 
-1. **Legibilidade/evidência** (pesquisa, não opinião).
-2. **Diferenciação de caracteres** (crítico p/ baixa visão e dislexia).
-3. **Cobertura de glifos** (PT + nórdico).
-4. **Licença p/ embedding** (web/app/eBook) e **custo**.
-5. **Disponibilidade** (Google Fonts/SIL → self-host trivial vs. foundry comercial).
-6. **Adequação pedagógica** (quando aplicável: manuscrita/alfabetização).
+1. **Legibility/evidence** (research, not opinion).
+2. **Character differentiation** (critical for low vision and dyslexia).
+3. **Glyph coverage** (PT + Nordic).
+4. **Licence for embedding** (web/app/eBook) and **cost**.
+5. **Availability** (Google Fonts/SIL → trivial self-hosting vs. a commercial foundry).
+6. **Pedagogical fit** (when applicable: handwriting/literacy).
 
-## 3. Tabela-resumo (veredito)
+## 3. Summary table (verdict)
 
-| Papel | Atual (José) | Licença | Veredito do estudo |
+| Role | Current (the Dev's) | Licence | The study's verdict |
 |---|---|---|---|
-| **UI padrão** | Atkinson Hyperlegible | OFL (Braille Institute) | ✅ **OFICIAL** — converge |
-| **Alt. acessível** | OpenDyslexic | OFL | ⚠️ **DIVERGE** — manter como _opção_ subjetiva; **adicionar Lexend** (melhor evidência) como alternativa padrão |
-| **Livro/serifada de leitura** | Literata → Garamond (fb) | OFL (Literata) | ✅ **OFICIAL** — converge (Literata é desenhada p/ leitura longa em tela) |
-| **Serifada padrão (tela)** | Merriweather → Times (fb) | OFL (Merriweather) | ✅ **OFICIAL** — converge |
-| **Sans padrão** | Ubuntu → Lato → Arial/Helvetica (fb) | **UFL** (não-OFL) / OFL (Lato) | 🟡 **OFICIAL c/ ressalva** — Ubuntu pode ser embarcada, mas é UFL; ver §6. Alternativa 100%-OFL: **promover Lato a padrão** |
-| **Caligráfica inglesa** | Great Vibes, Pinyon Script | OFL | ✅ **OFICIAL** — converge (uso decorativo; fallback p/ glifos faltantes) |
-| **Blackletter** | UnifrakturCook, UnifrakturMaguntia | OFL | ✅ **OFICIAL** — converge (decorativo) |
-| **Bola/bastão (infantil)** | Comic Neue | OFL | 🟡 **OFICIAL c/ proposta** — Comic Neue serve; **avaliar Andika** (SIL, feita p/ alfabetização/leitores iniciantes, bastão verdadeiro, cobertura completa) |
-| **Pedagógica manuscrita — BR** | **Kindergarten Pro** (paga) | **Comercial** | ✅ **MANTER** (inegociável) — padrão de fato das editoras BR; licenciar embedding (§6) |
-| **Pedagógica manuscrita — EU/CA/US** | **Learning Curve** (suposta paga) | **GRATUITA p/ uso comercial** | ✅ **MANTER** — **correção: NÃO é paga** (Blue Vinyl/Jess Latham); economia de licença (§6) |
+| **Default UI** | Atkinson Hyperlegible | OFL (Braille Institute) | ✅ **OFFICIAL** — converges |
+| **Accessible alt.** | OpenDyslexic | OFL | ⚠️ **DIVERGES** — keep as a subjective _option_; **add Lexend** (better evidence) as the default alternative |
+| **Book/reading serif** | Literata → Garamond (fb) | OFL (Literata) | ✅ **OFFICIAL** — converges (Literata is designed for long on-screen reading) |
+| **Default serif (screen)** | Merriweather → Times (fb) | OFL (Merriweather) | ✅ **OFFICIAL** — converges |
+| **Default sans** | Ubuntu → Lato → Arial/Helvetica (fb) | **UFL** (non-OFL) / OFL (Lato) | 🟡 **OFFICIAL with a caveat** — Ubuntu can be embedded, but it is UFL; see §6. A 100%-OFL alternative: **promote Lato to default** |
+| **English calligraphic** | Great Vibes, Pinyon Script | OFL | ✅ **OFFICIAL** — converges (decorative use; fallback for missing glyphs) |
+| **Blackletter** | UnifrakturCook, UnifrakturMaguntia | OFL | ✅ **OFFICIAL** — converges (decorative) |
+| **Ball-and-stick (children)** | Comic Neue | OFL | 🟡 **OFFICIAL with a proposal** — Comic Neue works; **evaluate Andika** (SIL, made for literacy/beginning readers, true ball-and-stick, full coverage) |
+| **Pedagogical handwriting — BR** | **Kindergarten Pro** (paid) | **Commercial** | ✅ **KEEP** (non-negotiable) — the de facto standard of BR publishers; license embedding (§6) |
+| **Pedagogical handwriting — EU/CA/US** | **Learning Curve** (supposedly paid) | **FREE for commercial use** | ✅ **KEEP** — **correction: it is NOT paid** (Blue Vinyl/Jess Latham); a licence saving (§6) |
 
-## 4. Análise por papel
+## 4. Analysis per role
 
-### 4.1 UI padrão — Atkinson Hyperlegible ✅
-Criada pelo **Braille Institute** para **baixa visão**, com diferenciação **exagerada** de caracteres (cada letra o mais distinta possível: I/l/1, O/0). É o melhor casamento com o pilar a11y para UI/HUD. **Converge → oficial.** (OFL, no Google Fonts → self-host trivial; cobre Latin Extended, ok PT+nórdico.)
+### 4.1 Default UI — Atkinson Hyperlegible ✅
+Created by the **Braille Institute** for **low vision**, with **exaggerated** character differentiation (each letter as distinct as possible: I/l/1, O/0). It is the best match for the a11y pillar for UI/HUD. **Converges → official.** (OFL, on Google Fonts → trivial self-hosting; covers Latin Extended, fine for PT+Nordic.)
 
-### 4.2 Alternativa acessível — OpenDyslexic ⚠️ (diverge)
-A **evidência é fraca/negativa**: estudo revisado (Wery & Diliberto, 2017) não encontrou ganho de velocidade/precisão e os leitores **preferiram Arial/Helvetica/Verdana** a OpenDyslexic. Recomendação de tipógrafos (Pimp my Type, Access-Ability) é a mesma: fontes "para dislexia" não têm suporte robusto; o que ajuda é **boa legibilidade geral + diferenciação**.
-- **Proposta:** manter OpenDyslexic como **opção** (há quem _prefira_ subjetivamente, e isso tem valor de conforto/escolha — alinha com GAG "deixe o usuário escolher"), **sem vendê-la como mais eficaz**. Como **alternativa padrão de fato**, adicionar **Lexend** (OFL; desenhada com base em pesquisa de proficiência de leitura — "reading proficiency"). Assim o seletor de a11y ofereceria: *Atkinson (padrão) · Lexend (alta legibilidade) · OpenDyslexic (preferência pessoal)*.
+### 4.2 Accessible alternative — OpenDyslexic ⚠️ (diverges)
+The **evidence is weak/negative**: a peer-reviewed study (Wery & Diliberto, 2017) found no gain in speed/accuracy and readers **preferred Arial/Helvetica/Verdana** to OpenDyslexic. Typographers' recommendation (Pimp my Type, Access-Ability) is the same: *dyslexia* fonts lack robust support; what helps is **good general legibility + differentiation**.
+- **Proposal:** keep OpenDyslexic as an **option** (some people subjectively _prefer_ it, and that has comfort/choice value — it aligns with GAG's *let the user choose*), **without selling it as more effective**. As the **de facto default alternative**, add **Lexend** (OFL; designed on the basis of reading-proficiency research — "reading proficiency"). The a11y selector would then offer: *Atkinson (default) · Lexend (high legibility) · OpenDyslexic (personal preference)*.
 
-### 4.3 Livro/serifada de leitura — Literata ✅
-**Literata** (Google, OFL) foi desenhada para o **Google Play Books** — leitura longa em tela e-ink/LCD. Perfeita para "simular livros" nas atividades. Fallback Garamond (sistema/EB Garamond OFL). **Converge → oficial.**
+### 4.3 Book/reading serif — Literata ✅
+**Literata** (Google, OFL) was designed for **Google Play Books** — long reading on e-ink/LCD screens. Perfect for *simulating books* in the activities. Garamond fallback (system/EB Garamond OFL). **Converges → official.**
 
-### 4.4 Serifada padrão (tela) — Merriweather ✅
-**Merriweather** (OFL) é serifada de alta legibilidade pensada para telas (altura-x generosa, contraste moderado). Fallback Times (sistema). **Converge → oficial.**
+### 4.4 Default serif (screen) — Merriweather ✅
+**Merriweather** (OFL) is a high-legibility serif designed for screens (generous x-height, moderate contrast). Times fallback (system). **Converges → official.**
 
-### 4.5 Sans padrão — Ubuntu 🟡 (ressalva de licença)
-**Ubuntu** é altamente legível, mas está sob **Ubuntu Font License (UFL)**, **não OFL**. A UFL **permite empacotar/embarcar/redistribuir** a fonte (e documentos feitos com ela não precisam ser UFL), então **dá para usar** no PWA/app. Ressalva: a UFL é "copyleft de fonte" e tem regras próprias (a fonte/derivadas não podem ser relicenciadas) — um atrito de governança que a OFL não tem.
-- **Proposta:** manter Ubuntu como padrão **OU** promover **Lato** (já é o seu 2º) a padrão para ficar **100% OFL** em todo o stack sans. Decisão de governança, não de legibilidade (ambas são ótimas). Fallbacks Lato → Arial/Helvetica (sistema). 
+### 4.5 Default sans — Ubuntu 🟡 (licence caveat)
+**Ubuntu** is highly legible, but it is under the **Ubuntu Font License (UFL)**, **not OFL**. The UFL **allows packaging/embedding/redistributing** the font (and documents made with it need not be UFL), so it **can be used** in the PWA/app. Caveat: the UFL is *font copyleft* and has its own rules (the font/derivatives cannot be relicensed) — a governance friction that OFL does not have.
+- **Proposal:** keep Ubuntu as the default **OR** promote **Lato** (already your 2nd) to default to be **100% OFL** across the whole sans stack. A governance decision, not a legibility one (both are excellent). Fallbacks Lato → Arial/Helvetica (system). 
 
-### 4.6 Caligráfica inglesa — Great Vibes / Pinyon Script ✅
-Ambas OFL (Google Fonts). Uso **decorativo** (títulos, certificados, "letra bonita"). Cobertura de glifos é menor (foco em latim básico + alguns acentos) → **sempre com fallback** (Literata/Atkinson) para textos com nórdico. **Converge → oficial** no papel decorativo.
+### 4.6 English calligraphic — Great Vibes / Pinyon Script ✅
+Both OFL (Google Fonts). **Decorative** use (titles, certificates, *nice handwriting*). Glyph coverage is smaller (focus on basic Latin + some accents) → **always with a fallback** (Literata/Atkinson) for texts with Nordic characters. **Converges → official** in the decorative role.
 
 ### 4.7 Blackletter — UnifrakturCook / UnifrakturMaguntia ✅
-Ambas OFL. UnifrakturMaguntia tem boa cobertura de alemão/latim; uso decorativo (temas medievais/góticos). **Converge → oficial.** (Confirmado: "Maguntia" = **UnifrakturMaguntia**.)
+Both OFL. UnifrakturMaguntia has good German/Latin coverage; decorative use (medieval/gothic themes). **Converges → official.** (Confirmed: "Maguntia" = **UnifrakturMaguntia**.)
 
-### 4.8 Bola/bastão infantil — Comic Neue 🟡 (proposta)
-**Comic Neue** (OFL) é a versão "limpa" da Comic Sans — amigável, informal, boa para crianças. Serve como manuscrita-impressa amigável. **Porém** não é um "bastão" pedagógico verdadeiro (letra de fôrma de cartilha).
-- **Proposta:** para a **letra bastão de alfabetização** (BR começa pela fôrma/bastão antes da cursiva), avaliar **Andika** (SIL, OFL) — desenhada **especificamente para alfabetização e leitores iniciantes**, com formas de letra "ball-and-stick" inequívocas (a de uma perna, g de uma alça), cobertura latina completa. Sugestão: **Andika = bastão/alfabetização**, **Comic Neue = "amigável/informal"** (balões, falas), papéis distintos.
+### 4.8 Children's ball-and-stick — Comic Neue 🟡 (proposal)
+**Comic Neue** (OFL) is the *clean* version of Comic Sans — friendly, informal, good for children. It works as a friendly print-handwriting face. **However** it is not a true pedagogical "ball-and-stick" (the primer's block letter).
+- **Proposal:** for the **literacy ball-and-stick letter** (BR starts with block/ball-and-stick before cursive), evaluate **Andika** (SIL, OFL) — designed **specifically for literacy and beginning readers**, with unambiguous "ball-and-stick" letterforms (single-storey a, single-loop g), full Latin coverage. Suggestion: **Andika = ball-and-stick/literacy**, **Comic Neue = *friendly/informal*** (speech balloons, dialogue), distinct roles.
 
-### 4.9 Pedagógicas manuscritas (pagas) — análise de licenciamento → §6
+### 4.9 Pedagogical handwriting fonts (paid) — licensing analysis → §6
 
-## 5. Convergências × Divergências (resumo executivo)
+## 5. Convergences × Divergences (executive summary)
 
-- **Já oficiais (converge):** Atkinson Hyperlegible (UI), Literata (livro), Merriweather (serifada), Great Vibes/Pinyon (caligráfica), UnifrakturCook/Maguntia (blackletter), Learning Curve (cursiva anglo), Kindergarten Pro (cursiva BR — mantida por decisão).
-- **Diverge / proposta (decisão do José):**
-  1. **OpenDyslexic** → opção subjetiva + **adicionar Lexend** como alternativa de alta legibilidade.
-  2. **Sans**: Ubuntu (UFL) vs **promover Lato (OFL)** a padrão — governança de licença.
-  3. **Bastão**: **Andika** para alfabetização; Comic Neue migra para "amigável/informal".
+- **Already official (converges):** Atkinson Hyperlegible (UI), Literata (book), Merriweather (serif), Great Vibes/Pinyon (calligraphic), UnifrakturCook/Maguntia (blackletter), Learning Curve (Anglo cursive), Kindergarten Pro (BR cursive — kept by decision).
+- **Diverges / proposal (the Dev's decision):**
+  1. **OpenDyslexic** → a subjective option + **add Lexend** as the high-legibility alternative.
+  2. **Sans**: Ubuntu (UFL) vs **promoting Lato (OFL)** to default — licence governance.
+  3. **Ball-and-stick**: **Andika** for literacy; Comic Neue moves to *friendly/informal*.
 
-## 6. Licenciamento das fontes pedagógicas (o ponto sensível)
+## 6. Licensing of the pedagogical fonts (the sensitive point)
 
-> Decisão do José: **usar Kindergarten Pro (BR) e Learning Curve (EU/CA/US) é inegociável.** O estudo analisa o que é possível/necessário — sem propor abandoná-las.
+> The Dev's decision: **using Kindergarten Pro (BR) and Learning Curve (EU/CA/US) is non-negotiable.** The study analyses what is possible/necessary — without proposing to abandon them.
 
-### 6.1 Learning Curve (EU/CA/US) — **descoberta: NÃO é paga**
-A **Learning Curve** (e a **Learning Curve Pro**, com versões *Dashed*/*Dings* para tracejado) de **Jess Latham / Blue Vinyl Fonts** é **gratuita para uso pessoal E comercial** (disponível no Font Squirrel com licença de uso, e no bvfonts.com). 
-- **Implicação:** **sem custo de licença** e **pode ser self-hosted** (`@font-face`/woff2) no app. O autor pede, como apoio, que se considere comprar outras fontes dele — opcional.
-- **Ação:** confirmar a EULA específica do pacote baixado (Font Squirrel mostra a licença) e **arquivar o `.txt` da licença** junto ao asset (`/fonts/learning-curve/LICENSE`). Risco: **baixo**.
+### 6.1 Learning Curve (EU/CA/US) — **finding: it is NOT paid**
+**Learning Curve** (and **Learning Curve Pro**, with *Dashed*/*Dings* versions for tracing) by **Jess Latham / Blue Vinyl Fonts** is **free for personal AND commercial use** (available on Font Squirrel with a usage licence, and on bvfonts.com). 
+- **Implication:** **no licence cost** and it **can be self-hosted** (`@font-face`/woff2) in the app. The author asks, as support, that one consider buying his other fonts — optional.
+- **Action:** confirm the specific EULA of the downloaded package (Font Squirrel shows the licence) and **archive the licence `.txt`** next to the asset (`/fonts/learning-curve/LICENSE`). Risk: **low**.
 
-### 6.2 Kindergarten Pro (BR) — **comercial, requer licença de embedding**
-A família **Kindergarten** é o **padrão de fato das editoras brasileiras** para material de alfabetização (pacote com ~10 fontes: 4 cursivas que simulam a manuscrita escolar + **Kindergarten Dashed** para traçar pontilhado), respeitando a tradição da **cartilha**. A versão **Pro** é **comercial**.
-- **O que é necessário (PWA/Electron/Capacitor = embedding):** uma **licença de _app/web embedding_** (não só desktop). Modelos típicos de foundry: por **app**, por **marca**, ou por **usuários ativos mensais** — custo de dezenas a centenas de USD por faixa de uso; eBook/broadcast somam.
-- **Ações (a fazer antes de embarcar):**
-  1. **Identificar a foundry/distribuidor exato** da "Kindergarten **Pro**" (há variações homônimas; confirmar autoria e EULA — provável origem brasileira ligada a material didático).
-  2. Solicitar **cotação de licença de embedding em aplicativo + web** cobrindo PWA, Electron (desktop) e Capacitor (mobile), e **distribuição gratuita/fomento** (o jogo é gratuito — confirmar se a foundry cobra por downloads/usuários).
-  3. Verificar **direito de subset** (woff2 subsetado) — algumas EULAs proíbem modificar/subsetar; precisamos disso para o tamanho em hardware de escola.
-  4. **Arquivar a licença** e o comprovante; manter a fonte **fora do código GPL** (asset não-FOSS, igual à arte).
-- **Risco/atrito:** **médio-alto** (custo + termos de embedding + subsetting). **Mitigação enquanto a licença não fecha:** usar um **placeholder OFL** de cursiva BR no desenvolvimento (ex.: as cursivas livres de alfabetização do acervo "Be-a-bá"/dafont com licença comercial) e **trocar pela Kindergarten Pro no build de produção**, isolando a dependência paga.
+### 6.2 Kindergarten Pro (BR) — **commercial, requires an embedding licence**
+The **Kindergarten** family is the **de facto standard of Brazilian publishers** for literacy material (a package of ~10 fonts: 4 cursives that simulate school handwriting + **Kindergarten Dashed** for dotted tracing), respecting the tradition of the **cartilha** (primer). The **Pro** version is **commercial**.
+- **What is needed (PWA/Electron/Capacitor = embedding):** an **_app/web embedding_ licence** (not just desktop). Typical foundry models: per **app**, per **brand**, or per **monthly active users** — a cost of tens to hundreds of USD per usage tier; eBook/broadcast add up.
+- **Actions (to do before embedding):**
+  1. **Identify the exact foundry/distributor** of "Kindergarten **Pro**" (there are homonymous variations; confirm authorship and EULA — probably of Brazilian origin tied to textbook material).
+  2. Request a **quote for an embedding licence for app + web** covering PWA, Electron (desktop) and Capacitor (mobile), and **free/funded distribution** (the game is free — confirm whether the foundry charges per downloads/users).
+  3. Check the **right to subset** (subset woff2) — some EULAs forbid modifying/subsetting; we need it for the size on school hardware.
+  4. **Archive the licence** and the receipt; keep the font **outside the GPL code** (a non-FOSS asset, like the art).
+- **Risk/friction:** **medium-high** (cost + embedding terms + subsetting). **Mitigation while the licence is not closed:** use an **OFL placeholder** for BR cursive during development (e.g. the free literacy cursives from the "Be-a-bá"/dafont collection with a commercial licence) and **swap in Kindergarten Pro in the production build**, isolating the paid dependency.
 
-### 6.3 Por que duas fontes pedagógicas distintas (BR × EU/CA/US)?
-Não é capricho: os **modelos de manuscrita diferem por currículo**. O **Brasil** ensina **bastão primeiro e depois cursiva vertical** (substituiu Palmer/roundhand); o material precisa bater com a **cartilha** brasileira → **Kindergarten**. EU/Anglo usam outro traço de cursiva → **Learning Curve**. Usar a fonte "errada" por região **conflita com o material escolar local** — daí a separação ser pedagógica, não estética.
+### 6.3 Why two distinct pedagogical fonts (BR × EU/CA/US)?
+It is not a whim: **handwriting models differ by curriculum**. **Brazil** teaches **ball-and-stick first and then vertical cursive** (it replaced Palmer/roundhand); the material must match the Brazilian **cartilha** → **Kindergarten**. EU/Anglo use another cursive stroke → **Learning Curve**. Using the *wrong* font per region **conflicts with the local school material** — hence the separation is pedagogical, not aesthetic.
 
-## 7. Cobertura de glifos / i18n (verificação obrigatória antes de oficializar)
+## 7. Glyph coverage / i18n (mandatory check before making it official)
 
-- **Cobrem PT + nórdico (Latin Extended):** Atkinson, Literata, Merriweather, Lato, Ubuntu, Lexend, Andika — OK.
-- **Cobertura parcial (decorativas) → exigem fallback:** Great Vibes, Pinyon Script (latim básico+; checar ø/å/æ), UnifrakturCook/Maguntia (alemão ok; checar nórdico). **Regra:** decorativas **nunca** sozinhas em texto corrido multilíngue — sempre `font-family: 'Great Vibes', 'Literata', sans-serif`.
-- **Pedagógicas (Kindergarten/Learning Curve):** confirmar acentos PT (ã, õ, ç) — para EU/US a cobertura nórdica da cursiva precisa ser testada; se faltar, a cursiva é usada só onde o currículo daquela língua pede.
+- **Cover PT + Nordic (Latin Extended):** Atkinson, Literata, Merriweather, Lato, Ubuntu, Lexend, Andika — OK.
+- **Partial coverage (decorative) → need a fallback:** Great Vibes, Pinyon Script (basic Latin+; check ø/å/æ), UnifrakturCook/Maguntia (German ok; check Nordic). **Rule:** decorative faces **never** alone in multilingual running text — always `font-family: 'Great Vibes', 'Literata', sans-serif`.
+- **Pedagogical (Kindergarten/Learning Curve):** confirm the PT accents (ã, õ, ç) — for EU/US the Nordic coverage of the cursive must be tested; if it is missing, the cursive is used only where that language's curriculum asks for it.
 
-## 8. Implementação técnica (quando for wire-ar)
+## 8. Technical implementation (when it gets wired)
 
-- **Self-host** em `/fonts/<familia>/` com **woff2 subsetado por idioma** (`unicode-range`); `font-display: swap`; pré-carregar só a UI padrão (Atkinson) e a fonte da tela atual.
-- **Tokens CSS** por papel: `--font-ui`, `--font-ui-alt`, `--font-book`, `--font-serif`, `--font-sans`, `--font-script`, `--font-fraktur`, `--font-print` (bastão), `--font-cursive` (regional). Trocar a fonte = trocar o token, não o markup.
-- **Seletor de acessibilidade** (Opções): UI = Atkinson / Lexend / OpenDyslexic; + tamanho e espaçamento (line-height ≥1.5, letter-spacing ajustável) — isso costuma ajudar **mais** que a fonte em si.
-- **Pagas isoladas**: a Kindergarten Pro entra só no build de produção, fora do repositório público GPL (como a arte não-FOSS); o repo público referencia um placeholder OFL.
+- **Self-host** in `/fonts/<familia>/` with **woff2 subset per language** (`unicode-range`); `font-display: swap`; preload only the default UI (Atkinson) and the font of the current screen.
+- **CSS tokens** per role: `--font-ui`, `--font-ui-alt`, `--font-book`, `--font-serif`, `--font-sans`, `--font-script`, `--font-fraktur`, `--font-print` (ball-and-stick), `--font-cursive` (regional). Switching the font = switching the token, not the markup.
+- **Accessibility selector** (Options): UI = Atkinson / Lexend / OpenDyslexic; + size and spacing (line-height ≥1.5, adjustable letter-spacing) — this usually helps **more** than the font itself.
+- **Paid ones isolated**: Kindergarten Pro goes only into the production build, outside the public GPL repository (like the non-FOSS art); the public repo references an OFL placeholder.
 
-## 9. Pendências para o José decidir (para fechar a oficialização)
-1. **OpenDyslexic**: aceitar como _opção_ + **adotar Lexend** como alternativa padrão? (recomendado)
-2. **Sans**: manter **Ubuntu (UFL)** ou trocar padrão por **Lato (OFL)**? (recomendo Lato por governança)
-3. **Bastão**: adotar **Andika** para alfabetização e mover Comic Neue para "amigável"? (recomendado)
-4. **Kindergarten Pro**: autorizar contato com a foundry para cotação de **embedding (app+web+mobile) + subset**? (necessário antes de embarcar)
+## 9. Pending items for the Dev to decide (to close the official roster)
+1. **OpenDyslexic**: accept it as an _option_ + **adopt Lexend** as the default alternative? (recommended)
+2. **Sans**: keep **Ubuntu (UFL)** or switch the default to **Lato (OFL)**? (I recommend Lato for governance)
+3. **Ball-and-stick**: adopt **Andika** for literacy and move Comic Neue to *friendly*? (recommended)
+4. **Kindergarten Pro**: authorise contacting the foundry for a quote for **embedding (app+web+mobile) + subset**? (needed before embedding)
 
-## Fontes
-- [Wery & Diliberto — efeito da OpenDyslexic na leitura (PMC)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5629233/)
+## Sources
+- [Wery & Diliberto — effect of OpenDyslexic on reading (PMC)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5629233/)
 - [Pimp my Type — Dyslexia friendly fonts: are they any good?](https://pimpmytype.com/dyslexia-fonts/)
 - [Access-Ability — The Nuance of Dyslexia Friendly Fonts in Games](https://access-ability.uk/2024/06/21/the-nuance-of-dyslexia-friendly-fonts-in-games/)
 - [Max Kohler — The Development of Atkinson Hyperlegible](https://www.maxkohler.com/notes/2021-02-16-atkinson-hyperreadable/)
-- [Learning Curve Pro no Font Squirrel (licença)](https://www.fontsquirrel.com/license/learning-curve-pro) · [Blue Vinyl Fonts (bvfonts.com)](https://www.bvfonts.com/fonts/details.php?id=76)
-- [Primarium — Brazil (modelo de manuscrita escolar)](https://primarium.info/countries/brazil/)
-- [Kindergarten e Be-a-bá — fontes de alfabetização BR](https://fontebeaba.wordpress.com/)
-- [Canonical — Ubuntu Font Licence FAQ](https://canonical.com/legal/font-licence/faq) · [LWN — Ubuntu font e licenciamento libre](https://lwn.net/Articles/409813/)
-- [Monotype — App License (embedding em apps)](https://foundrysupport.monotype.com/hc/en-us/articles/10840068991636-App-License)
+- [Learning Curve Pro on Font Squirrel (licence)](https://www.fontsquirrel.com/license/learning-curve-pro) · [Blue Vinyl Fonts (bvfonts.com)](https://www.bvfonts.com/fonts/details.php?id=76)
+- [Primarium — Brazil (school handwriting model)](https://primarium.info/countries/brazil/)
+- [Kindergarten and Be-a-bá — BR literacy fonts](https://fontebeaba.wordpress.com/)
+- [Canonical — Ubuntu Font Licence FAQ](https://canonical.com/legal/font-licence/faq) · [LWN — Ubuntu font and libre licensing](https://lwn.net/Articles/409813/)
+- [Monotype — App License (embedding in apps)](https://foundrysupport.monotype.com/hc/en-us/articles/10840068991636-App-License)

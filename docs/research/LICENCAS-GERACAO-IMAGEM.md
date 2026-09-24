@@ -1,105 +1,107 @@
 ---
-title: Licenças de geradores de imagem por IA — compatibilidade com nosso caso
+title: Licences of AI image generators — compatibility with our case
 type: research
-status: draft (validar com jurídico)
+status: draft (validate with legal counsel)
 created: 2026-06-01
 ---
 
-# Licenças de geração de imagem por IA × nosso caso
+Historical study (2026-06-01): kept as a record; the current state lives in `docs/LICENSES.md` and `docs/research/compliance-legal.md`.
 
-**Nosso caso:** jogo educativo **gratuito, código aberto sob GPL-3.0 desde já** (sem BSL); **arte
-não-FOSS** (ver seção própria). A arte é **dados/código** (arrays + paleta hex), **não PNG**. Fluxo:
-**IA gera spritesheet de referência → humano escreve algoritmo que reproduz arte similar como
-dados → repo público → terceiros (inclusive empresas China/Nórdicos) podem copiar e implantar.**
+# AI image-generation licences × our case
 
-> ⚠️ **Não é parecer jurídico** — é avaliação de risco de engenharia sobre o texto dos ToS.
-> Itens ⚖️ exigem advogado de PI na(s) jurisdição(ões).
+**Our case:** a **free** educational game, **open source under GPL-3.0 right now** (no BSL); **non-FOSS
+art** (see its own section). [Today: the code licence is AGPL-3.0-or-later (`package.json`), changed on 2026-08-25 per ADR-0010 pillar 10.] The art is **data/code** (arrays + hex palette), **not PNG**. Flow:
+**AI generates a reference spritesheet → a human writes an algorithm that reproduces similar art as
+data → public repo → third parties (including companies in China/the Nordics) can copy and deploy.**
 
-## Dois princípios que decidem tudo
+> ⚠️ **This is not a legal opinion** — it is an engineering risk assessment of the text of the ToS.
+> Items marked ⚖️ require an IP lawyer in the jurisdiction(s).
 
-**1. Ideia × expressão.** Copyright protege **expressão específica**, nunca ideia/estilo/método.
-Um *estilo* de pixel art (ex.: "slime verde 16×16, quica em 4 frames") **não** é protegível; o
-**arranjo específico de pixels** de uma imagem gerada **pode** ser — *se* alguém detém copyright
-nela (ver princípio 2). → **Re-derivar** o look com pixels próprios = copiar **ideia** (baixo
-risco). **Pixel-tracing 1:1** (amostrar os pixels exatos) = copiar **expressão** (risco). ⚖️
-**Regra dura para o time: nunca pixel-tracing 1:1.** Reimplementar o *estilo* como dado original.
+## Two principles that decide everything
 
-**2. "Saída de IA pode não ter copyright" — corta dos dois lados.** O US Copyright Office (2025;
-*Thaler*; *Zarya*) entende que imagem puramente gerada por prompt **não tem autoria humana → sem
-copyright**. A favor: se a referência não tem copyright, não há o que infringir (resta só o
-**contrato**/ToS). Contra: a sua arte-dado derivada de IA também é **fraca em proteção** — um
-terceiro que copie o repo não é facilmente barrável (mas o **código** continua protegido sob
-BSL/GPL). A armadilha: o **contrato (ToS) obriga você mesmo quando o copyright não** (ex.: "você
-é dono da saída" **e** "não pode usar a saída para treinar/competir" coexistem).
+**1. Idea × expression.** Copyright protects **specific expression**, never an idea/style/method.
+A pixel-art *style* (e.g. a green 16×16 slime that bounces in 4 frames) is **not** protectable; the
+**specific arrangement of pixels** of a generated image **may** be — *if* someone holds copyright
+in it (see principle 2). → **Re-deriving** the look with our own pixels = copying the **idea** (low
+risk). **1:1 pixel-tracing** (sampling the exact pixels) = copying the **expression** (risk). ⚖️
+**Hard rule for the team: never 1:1 pixel-tracing.** Reimplement the *style* as original data.
 
-## Veredito por serviço (para o NOSSO fluxo)
+**2. AI output may have no copyright — and that cuts both ways.** The US Copyright Office (2025;
+*Thaler*; *Zarya*) holds that a purely prompt-generated image **has no human authorship → no
+copyright**. In favour: if the reference has no copyright, there is nothing to infringe (only the
+**contract**/ToS remains). Against: your AI-derived art-as-data is also **weak in protection** — a
+third party that copies the repo is not easily barred (but the **code** remains protected under
+BSL/GPL). The trap: the **contract (ToS) binds you even when copyright does not** (e.g. a clause saying you
+own the output **and** one saying you may not use the output to train/compete coexist).
 
-| Serviço | Dono da saída | Redistribuir em repo público | Restrição derivada/competir | Indenização | Veredito |
+## Verdict per service (for OUR flow)
+
+| Service | Owner of the output | Redistribute in a public repo | Derivative/compete restriction | Indemnification | Verdict |
 |---|---|---|---|---|---|
-| **PixelLab.ai** | **Você** | **Sim** ("usar, modificar e distribuir … para qualquer fim") | só não **treinar modelo** com as imagens | nenhuma | 🟢 **SEGURO** (melhor encaixe contratual) |
-| **ComfyUI + SDXL/SD1.5** (Open RAIL-M) | Você | Sim | só uso-proibido (ilegal/nocivo); sem trava de receita | nenhuma | 🟢 **SEGURO** (auto-hospedado) |
-| **ComfyUI + FLUX.1 [schnell]** (Apache 2.0) | Você | Sim | nenhuma | nenhuma | 🟢 **SEGURO** (Apache = compatível GPL) |
-| **Scenario.gg** | **Cedido a você** | Sim | base: sem trava | — | 🟢 **SEGURO** (focado em game asset) |
-| **Adobe Firefly** (pago) | Uso comercial | Sim | padrão | ✅ **SIM (indeniza!)** | 🟢 **SEGURO + único com indenização** |
-| **Magnific/Freepik** (pago) | Você | Sim, mas saída IA **excluída** da proteção legal deles | padrão | parcial | 🟡 **RISCO** — ToS ao vivo bloqueou fetch; **reler** ⚖️ |
-| **Leonardo / Recraft** | pago: você / **free: o serviço (público)** | pago: sim / **free: não** | padrão | — | 🟡 **só no plano pago** (free = AVOID) |
-| **SD 3/3.5** (Stability Community) | Você | Sim | **licença morre acima de US$1M/ano** | — | 🟡 **RISCO p/ 3º deploy** (trava de receita viaja com o modelo) |
-| **Midjourney** | Você (>US$1M exige Pro) | Sim | trava US$1M; **zero indenização** | nenhuma | 🟡 **RISCO** (trava de receita) |
-| **OpenAI gpt-image/DALL·E** | Cedido a você | Sim | políticas de uso | nenhuma | 🟡 **OK só como referência** (cessão pode ser "vazia") |
-| **FLUX.1 [dev]** (BFL NC) | saída usável, **modelo não-comercial**; você indeniza a BFL | modelo não p/ deploy comercial | **não treinar/competir** | você→BFL (unilateral) | 🔴 **EVITAR** (3º não pode rodar o modelo) |
-| **Higgsfield.ai** | licença **perpétua sobre seus inputs E outputs** p/ treinar | sem permissão explícita | ampla | você→empresa (unilateral) | 🔴 **EVITAR** |
+| **PixelLab.ai** | **You** | **Yes** (use, modify and distribute … for any purpose) | only no **training a model** with the images | none | 🟢 **SAFE** (best contractual fit) |
+| **ComfyUI + SDXL/SD1.5** (Open RAIL-M) | You | Yes | only prohibited use (illegal/harmful); no revenue cap | none | 🟢 **SAFE** (self-hosted) |
+| **ComfyUI + FLUX.1 [schnell]** (Apache 2.0) | You | Yes | none | none | 🟢 **SAFE** (Apache = GPL-compatible) |
+| **Scenario.gg** | **Assigned to you** | Yes | base: no cap | — | 🟢 **SAFE** (focused on game assets) |
+| **Adobe Firefly** (paid) | Commercial use | Yes | standard | ✅ **YES (it indemnifies!)** | 🟢 **SAFE + the only one with indemnification** |
+| **Magnific/Freepik** (paid) | You | Yes, but AI output is **excluded** from their legal protection | standard | partial | 🟡 **RISK** — the live ToS blocked the fetch; **re-read** ⚖️ |
+| **Leonardo / Recraft** | paid: you / **free: the service (public)** | paid: yes / **free: no** | standard | — | 🟡 **only on the paid plan** (free = AVOID) |
+| **SD 3/3.5** (Stability Community) | You | Yes | **the licence dies above US$1M/year** | — | 🟡 **RISK for 3rd-party deployment** (the revenue cap travels with the model) |
+| **Midjourney** | You (>US$1M requires Pro) | Yes | US$1M cap; **zero indemnification** | none | 🟡 **RISK** (revenue cap) |
+| **OpenAI gpt-image/DALL·E** | Assigned to you | Yes | usage policies | none | 🟡 **OK only as a reference** (the assignment may be empty) |
+| **FLUX.1 [dev]** (BFL NC) | usable output, **non-commercial model**; you indemnify BFL | model not for commercial deployment | **no training/competing** | you→BFL (one-sided) | 🔴 **AVOID** (a 3rd party cannot run the model) |
+| **Higgsfield.ai** | a **perpetual licence over your inputs AND outputs** for training | no explicit permission | broad | you→company (one-sided) | 🔴 **AVOID** |
 
-## Bottom line para nós
+## Bottom line for us
 
-1. **O passo "referência → algoritmo de dados escrito à mão" é a nossa melhor defesa jurídica** —
-   ele copia a **ideia/estilo** (não protegível), não a **expressão**. *Regra dura: nunca
-   pixel-tracing 1:1; reimplementar o look como dado original; registrar qual ferramenta/plano
-   gerou cada referência.*
-2. **Stack recomendada** (sobrevive ao teste "empresa China/Nórdicos copia e implanta"):
-   **PixelLab.ai**, **SDXL/SD1.5**, **FLUX.1 schnell (Apache)**, **Scenario.gg**. Se houver verba
-   p/ 1 ferramenta indenizada, **Adobe Firefly**.
-3. **Evitar termos com trava de receita** num repo público (SD3/3.5, Midjourney) e **FLUX dev /
+1. **The step from reference to hand-written data algorithm is our best legal defence** —
+   it copies the **idea/style** (not protectable), not the **expression**. *Hard rule: never
+   1:1 pixel-tracing; reimplement the look as original data; record which tool/plan
+   generated each reference.*
+2. **Recommended stack** (survives the test of a company in China/the Nordics copying and deploying it):
+   **PixelLab.ai**, **SDXL/SD1.5**, **FLUX.1 schnell (Apache)**, **Scenario.gg**. If there is budget
+   for 1 indemnified tool, **Adobe Firefly**.
+3. **Avoid terms with a revenue cap** in a public repo (SD3/3.5, Midjourney) and **FLUX dev /
    Higgsfield**.
-4. **🟢 Atalho que já temos:** a arte **Nanobanana do próprio José** já é **IP-limpa e autorizada**
-   (CLAUDE.md §2.11). Usá-la como referência **elimina por completo** a questão de IP dos geradores.
-   *Recomendação do red-team: começar por ela.*
+4. **🟢 A shortcut we already have:** **the Dev's own Nanobanana** art is already **IP-clean and authorised**
+   (CLAUDE.md §2.11). Using it as the reference **entirely eliminates** the generators' IP question.
+   *The red team's recommendation: start with it.*
 
-## Estratégia de licença da NOSSA arte (requisito: arte NÃO-livre)
+## Licence strategy for OUR art (requirement: NON-free art)
 
-O José exige que **nossos personagens NÃO sejam de uso livre** (ex.: não aparecerem em produtos
-adultos). **Conflito fundamental com FOSS:** uma licença **FOSS/GPL não pode restringir campo de
-uso** (liberdade 0; OSI nº 6 "sem discriminação de área de atuação"). Se a arte-dado estiver no
-repo sob GPL, **qualquer um pode usá-la para qualquer fim**. Não dá para ter, ao mesmo tempo,
-arte **(i) FOSS** e **(ii) com uso restrito**.
+The Dev requires that **our characters NOT be free to use** (e.g. not appear in adult
+products). **A fundamental conflict with FOSS:** a **FOSS/GPL licence cannot restrict the field of
+use** (freedom 0; OSI no. 6, "No Discrimination Against Fields of Endeavor"). If the art-as-data is in the
+repo under the GPL, **anyone can use it for any purpose**. One cannot have, at the same time,
+art that is **(i) FOSS** and **(ii) restricted in use**.
 
-**Decisão:** o projeto será **"código FOSS (GPL-3.0) + ARTE não-FOSS"** — **condicionado à
-aceitação das fontes de fomento** (se um financiador exigir arte livre, reavaliar caso a caso) e
-com **marca SELETIVA** (nem todo personagem/jogo será registrado). Mecanismos, do mais robusto ao
-mais fraco:
-1. **Marca registrada (trademark)** dos personagens (nomes + design assinatura). **Esteio da
-   proteção** — barra uso que cause confusão/diluição da marca, **independe de copyright** (logo
-   sobrevive à incopyrightabilidade de saída de IA).
-2. **Licença de arte própria (não-FOSS)** sobre os **dados de arte** (sprite/paleta) e/ou os
-   **algoritmos de composição de personagem**: proíbe uso adulto/depreciativo, exige atribuição,
-   veda sublicenciamento aberto. Mantém o **motor** FOSS e isola a **arte** num recorte restrito.
-3. **Autoria humana** no algoritmo procedural: quanto mais o humano cria/seleciona/modifica (vs.
-   prompt puro), **mais forte o copyright** sobre a arte — tornando a licença (2) executável.
+**Decision:** the project will be **FOSS code (GPL-3.0) + non-FOSS ART** — **conditional on
+acceptance by the funding sources** (if a funder requires free art, reassess case by case) and
+with a **SELECTIVE trademark** (not every character/game will be registered). Mechanisms, from the most robust to
+the weakest:
+1. **Registered trademark** of the characters (names + signature design). **The mainstay of
+   protection** — it bars use that causes confusion/dilution of the mark, **independent of copyright** (so
+   it survives the uncopyrightability of AI output).
+2. **An own (non-FOSS) art licence** over the **art data** (sprite/palette) and/or the
+   **character-composition algorithms**: forbids adult/derogatory use, requires attribution,
+   forbids open sublicensing. It keeps the **engine** FOSS and isolates the **art** in a restricted slice.
+3. **Human authorship** in the procedural algorithm: the more the human creates/selects/modifies (vs.
+   a pure prompt), **the stronger the copyright** over the art — making licence (2) enforceable.
 
-**Ressalva crítica:** arte **derivada de IA pode ser incopyrightável** → a licença (2) pode ser
-**inexequível** sozinha; por isso (1) **marca** é indispensável.
+**Critical caveat:** **AI-derived art may be uncopyrightable** → licence (2) may be
+**unenforceable** on its own; that is why (1) the **trademark** is indispensable.
 
-**Verificar no gerador (PixelLab é o melhor candidato):** a licença nos permite (a) usar em
-**software gratuito** (✔ "qualquer fim"), (b) **redistribuir** a arte derivada (✔), e (c) **impor
-termos próprios downstream** — aqui a incopyrightabilidade limita; a robustez vem da **marca**.
+**Check on the generator (PixelLab is the best candidate):** does the licence allow us to (a) use it in
+**free software** (✔ any purpose), (b) **redistribute** the derived art (✔), and (c) **impose our own
+terms downstream** — here uncopyrightability limits us; the robustness comes from the **trademark**.
 
-**Trade-off explícito:** isto **dente** o ideal "qualquer empresa copia e implanta TUDO" (P10): o
-motor é livre, mas os **personagens não** — um terceiro precisa respeitar a licença de arte / a
-marca, ou trocar a arte. É comum em jogos OSS (código livre + assets restritos) e **aceitável**
-dado o requisito de proteção infantil. Editais FOSS-puristas costumam olhar só o **código** (ok);
-poucos podem exigir assets livres (flag).
+**Explicit trade-off:** this **dents** the ideal that any company copies and deploys EVERYTHING (P10): the
+engine is free, but the **characters are not** — a third party must respect the art licence / the
+trademark, or swap the art. It is common in OSS games (free code + restricted assets) and **acceptable**
+given the child-protection requirement. FOSS-purist calls for funding usually look only at the **code** (ok);
+few may require free assets (flag).
 
-⚖️ **Para advogado:** linha ideia×expressão por sprite; ToS ao vivo do Magnific; se "não treinar
-modelo" alcança extração algorítmica (quase certo que não); enforceabilidade de ToS contra
-terceiros que não aceitaram; combinação BSL 1.1 + arte derivada de IA.
+⚖️ **For a lawyer:** the idea×expression line per sprite; Magnific's live ToS; whether the no-training clause
+reaches algorithmic extraction (almost certainly not); enforceability of ToS against
+third parties that did not accept them; the BSL 1.1 + AI-derived art combination.
 
-*(Fontes primárias com URLs no relatório do subagente; reconfirmar antes de publicar.)*
+*(Primary sources with URLs are in the subagent's report; reconfirm before publishing.)*
