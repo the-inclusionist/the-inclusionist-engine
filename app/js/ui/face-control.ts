@@ -39,9 +39,11 @@ export interface FaceControlDeps {
 
 const REST_MS = 3000;
 
+type Landmarks = ReadonlyArray<{ readonly x: number; readonly y: number }>;
+
 /** The middle's request while the rest is measured, and the face lines, mirrored so they move the way the child moves. */
 function draw(ctx: CanvasRenderingContext2D, w: number, h: number, restLeftMs: number | null, lines: FaceLines | null,
-  landmarks: ReadonlyArray<{ readonly x: number; readonly y: number }> | undefined, say: (k: string) => string): void {
+  landmarks: Landmarks | undefined, say: (k: string) => string): void {
   ctx.clearRect(0, 0, w, h);
   const f = gazeFontPx(w, h);
   if (restLeftMs !== null) {
@@ -84,18 +86,29 @@ export function createFaceControl(d: FaceControlDeps): SwitchableControl {
     const g = canvas.getContext('2d')!;
     if (!cats) { releaseAll(); draw(g, w, h, rest ? null : REST_MS, null, undefined, t); return; }
     const scores = faceScoresFromCategories(cats);
-    let restLeft: number | null = null;
-    if (!rest) {
-      const m = measure(ms, scores, headTurn(landmarks).x);
-      if (m.rest) { rest = m.rest; read = createFaceMapReader({ rest }); d.say(t('sr.face.ready')); }
-      else restLeft = Math.max(0, REST_MS - m.stillMs);
-    }
-    if (read) {
-      const now = new Set(read(ms, scores, landmarks).held);
-      for (const a of held) if (!now.has(a)) { d.controller.release(a, 'rosto'); held.delete(a); }
-      for (const a of now) if (!held.has(a)) { d.controller.press(a, 'rosto'); held.add(a); }
-    }
+    const restLeft = measureRest(ms, scores, landmarks);
+    if (read) holdExactly(new Set(read(ms, scores, landmarks).held)); // nothing commands before the rest: no reader yet
     draw(g, w, h, restLeft, tracker.faceLines, landmarks, t);
+  };
+
+  /**
+   * Until the rest is measured, measure it on this frame — the head counts too — and answer how long the middle is still asked
+   * for. Once it is measured: the reader is made, «ready» is said ONCE, and the answer is `null` from then on.
+   */
+  const measureRest = (ms: number, scores: ReturnType<typeof faceScoresFromCategories>, landmarks: Landmarks | undefined): number | null => {
+    if (rest) return null;
+    const m = measure(ms, scores, headTurn(landmarks).x);
+    if (!m.rest) return Math.max(0, REST_MS - m.stillMs);
+    rest = m.rest;
+    read = createFaceMapReader({ rest });
+    d.say(t('sr.face.ready'));
+    return null;
+  };
+
+  /** Hold exactly what the reading holds now: let go of what left it, press what joined it — once. */
+  const holdExactly = (now: ReadonlySet<Action>): void => {
+    for (const a of held) if (!now.has(a)) { d.controller.release(a, 'rosto'); held.delete(a); }
+    for (const a of now) if (!held.has(a)) { d.controller.press(a, 'rosto'); held.add(a); }
   };
 
   const health = (hh: LoopHealth, fps: number): void => {

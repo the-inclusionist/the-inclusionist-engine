@@ -34,6 +34,18 @@ export interface HandControlDeps {
 
 // 📌 A FORMA É A DA FAMÍLIA (ADR-0221 passo 7f): o HandControl era a mesma linha dos outros três, escrita uma quarta vez.
 
+/** The hand's bones, mirrored so they move the way the child moves; a bone to a landmark the hand does not have is skipped. */
+function drawBones(g: CanvasRenderingContext2D, w: number, h: number, bones: HandTracker['handLines'],
+  hand: ReadonlyArray<{ readonly x: number; readonly y: number }>): void {
+  g.strokeStyle = '#ffffff'; g.lineWidth = Math.max(2, gazeFontPx(w, h) / 6); g.shadowColor = '#000'; g.shadowBlur = 3;
+  for (const { start, end } of bones) {
+    const a = hand[start], b = hand[end];
+    if (!a || !b) continue;
+    g.beginPath(); g.moveTo((1 - a.x) * w, a.y * h); g.lineTo((1 - b.x) * w, b.y * h); g.stroke();
+  }
+  g.shadowBlur = 0;
+}
+
 export function createHandControl(d: HandControlDeps): SwitchableControl {
   const loadTracker = d.loadTracker ?? loadHandTracker;
   const said = new Set<string>();
@@ -53,22 +65,19 @@ export function createHandControl(d: HandControlDeps): SwitchableControl {
     const det = tracker.detect(feed.frame, ms);
     const hand = det?.landmarks?.[0];
     const w = canvas.width = d.region.clientWidth, h = canvas.height = d.region.clientHeight;
-    const g = canvas.getContext('2d')!;
-    g.clearRect(0, 0, w, h);
+    const g = canvas.getContext('2d')!; // setting the width above already cleared the layer
+    // a hand that leaves starts the reading over: one that flickers out for a frame must be held again when it comes back
     if (!hand) { releaseAll(); read = createHandMapReader(); return; }
-    const names = (det?.gestures?.[0] ?? []).slice(0, 1).map((c) => c.categoryName).filter((n) => n !== 'None');
-    const now = new Set(read(ms, gesturesSeen(hand, names)).held);
+    // only the recognizer's TOP answer is a gesture; its «None» is a name the map does not know, and reads nothing
+    const names = (det?.gestures?.[0] ?? []).slice(0, 1).map((c) => c.categoryName);
+    holdExactly(new Set(read(ms, gesturesSeen(hand, names)).held));
+    drawBones(g, w, h, tracker.handLines, hand);
+  };
+
+  /** Hold exactly what the reading holds now: let go of what left it, press what joined it — once. */
+  const holdExactly = (now: ReadonlySet<Action>): void => {
     for (const a of held) if (!now.has(a)) { d.controller.release(a, 'gestos'); held.delete(a); }
     for (const a of now) if (!held.has(a)) { d.controller.press(a, 'gestos'); held.add(a); }
-    {
-      g.strokeStyle = '#ffffff'; g.lineWidth = Math.max(2, gazeFontPx(w, h) / 6); g.shadowColor = '#000'; g.shadowBlur = 3;
-      for (const { start, end } of tracker.handLines) {
-        const a = hand[start], b = hand[end];
-        if (!a || !b) continue;
-        g.beginPath(); g.moveTo((1 - a.x) * w, a.y * h); g.lineTo((1 - b.x) * w, b.y * h); g.stroke();
-      }
-      g.shadowBlur = 0;
-    }
   };
 
   const health = (hh: LoopHealth, fps: number): void => {

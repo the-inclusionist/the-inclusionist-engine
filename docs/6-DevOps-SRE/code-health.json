@@ -1259,12 +1259,12 @@
       "fanIn": 3
     },
     "ui/face-control.ts": {
-      "codeLines": 125,
+      "codeLines": 130,
       "decisionNodes": 25,
       "maxDepth": 3,
       "fanOut": 9,
       "globalReach": 0,
-      "worstFunction": 14,
+      "worstFunction": 8,
       "fanIn": 1
     },
     "ui/focus-trap.ts": {
@@ -1304,12 +1304,12 @@
       "fanIn": 3
     },
     "ui/hand-control.ts": {
-      "codeLines": 104,
+      "codeLines": 107,
       "decisionNodes": 19,
       "maxDepth": 2,
       "fanOut": 9,
       "globalReach": 0,
-      "worstFunction": 14,
+      "worstFunction": 7,
       "fanIn": 1
     },
     "ui/help-panel.ts": {
