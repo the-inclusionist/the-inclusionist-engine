@@ -99,7 +99,7 @@ export function logMel(samples: Float32Array, melFilters: readonly (readonly num
     // band is the clipped value. A child reads for a few seconds into a 30 s window, so most frames are this one. It never
     // raises the loudest point: no computed band is ever below the clip, and an all-silent window floors at −∞.
     let quiet = true;
-    for (let n = 0; n < N_FFT && quiet; n++) if (at(start + n) !== 0) quiet = false;
+    for (let n = 0; n < N_FFT && quiet; n++) quiet = at(start + n) === 0;
     if (quiet) {
       for (let band = 0; band < WHISPER_BANDS; band++) out[band * WHISPER_FRAMES + frame] = CLIPPED;
       continue;
@@ -186,14 +186,15 @@ function piecesOf(tokenizer: TokenizerFile): { readonly text: Map<number, string
   return { text, special };
 }
 
+/** The bytes GPT-2 writes as themselves: its three printable ranges, inclusive (`bytes_to_unicode`, openai/gpt-2 `encoder.py`). */
+const PRINTABLE_RANGES: readonly (readonly [number, number])[] = [[33, 126], [161, 172], [174, 255]];
+
 // GPT-2's byte alphabet: the printable character each byte is written as, so a tokenizer file stays text. Whisper's decoder is
 // this one (`ByteLevel`), and reversing it is the whole of it.
 const byteOfChar = (() => {
   const map = new Map<string, number>();
   const printable: number[] = [];
-  for (let b = 33; b <= 126; b++) printable.push(b);
-  for (let b = 161; b <= 172; b++) printable.push(b);
-  for (let b = 174; b <= 255; b++) printable.push(b);
+  for (const [lo, hi] of PRINTABLE_RANGES) for (let b = lo; b <= hi; b++) printable.push(b);
   for (const b of printable) map.set(String.fromCharCode(b), b);
   let next = 0;
   for (let b = 0; b < 256; b++) {
