@@ -433,19 +433,19 @@ export interface GameDeclaration {
 type FieldCheck = (d: Partial<GameDeclaration>) => string[];
 
 function topologyProblems(d: Partial<GameDeclaration>): string[] {
-  const p: string[] = [];
   // ⚠️ DUAS FALHAS DIFERENTES, E ELAS PRECISAM DE DUAS MENSAGENS. `topology` ausente é um campo que ninguém
   // escreveu; `topology` que não é função é o campo escrito à moda antiga — um VALOR, que passava no
   // TypeScript de quem não recompilou e morreria em produção com "topology is not a function". Dizer só
   // "ausente" mandaria o autor procurar um campo que está lá, à vista.
-  const t = typeof d.topology === 'function' ? d.topology() : undefined;
-  if (d.topology === undefined || d.topology === null) p.push('topology: missing');
-  else if (typeof d.topology !== 'function') p.push('topology: must be a FUNCTION (it was a value until ADR-0084)');
-  else if (!t) p.push('topology: the function returned nothing');
-  else if (t.kind === 'grid' || t.kind === 'continuous') p.push(...sizeProblems(t), ...metricProblems(t), ...frameProblems(t));
-  else if (t.kind === 'hotspots') p.push(...hotspotProblems(t));
-  else p.push('topology: unknown kind');
-  return p;
+  // Each answer excludes the others, so each one returns: the order is the rule, and the space is asked for only once it
+  // is known to be a function.
+  if (d.topology === undefined || d.topology === null) return ['topology: missing'];
+  if (typeof d.topology !== 'function') return ['topology: must be a FUNCTION (it was a value until ADR-0084)'];
+  const t = d.topology();
+  if (!t) return ['topology: the function returned nothing'];
+  if (t.kind === 'grid' || t.kind === 'continuous') return [...sizeProblems(t), ...metricProblems(t), ...frameProblems(t)];
+  if (t.kind === 'hotspots') return hotspotProblems(t);
+  return ['topology: unknown kind'];
 }
 
 /**

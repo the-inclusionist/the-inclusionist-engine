@@ -127,9 +127,9 @@
       "fanIn": 5
     },
     "core/contract.ts": {
-      "codeLines": 213,
-      "decisionNodes": 50,
-      "maxDepth": 5,
+      "codeLines": 211,
+      "decisionNodes": 49,
+      "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 10,
