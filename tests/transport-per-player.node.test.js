@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O TRANSPORTE EM USO, POR JOGADOR — a metade que faltava entre o autómato e a alternância (ADR-0109/0113).
+// THE TRANSPORT IN USE, PER PLAYER — the missing half between the automaton and the latch (ADR-0109/0113).
 //
-// ========================= O QUE ESTA PEÇA É, E ONDE ELA MORA =========================
-// O `input/transport-in-use` é o autómato PURO: recebe um estado e uma aresta, devolve o estado novo, e não
-// guarda nada. O `input/latch-store` sabe ler e gravar a alternância DE UM TRANSPORTE. Faltava quem soubesse
-// QUAL transporte é o de cada jogador — e é isto.
+// ========================= WHAT THIS PIECE IS, AND WHERE IT LIVES =========================
+// `input/transport-in-use` is the PURE automaton: it receives a state and an edge, returns the new state, and keeps
+// nothing. `input/latch-store` knows how to read and write ONE TRANSPORT's latch. What was missing was something that
+// knew WHICH transport is each player's — and this is it.
 //
-// ⚠️ VIVE NO `input/state` E NÃO NO `PlayerBase`, e a escolha foi medida contra o que já existe: este módulo
-// já guarda estado de entrada por jogador exactamente com esta forma (`padCur: Record<number, PadState>`).
-// Pô-lo no `PlayerBase` fá-lo-ia parte do CONTRATO, e trezentos cartuchos passariam a declarar um campo sobre
-// o qual não decidem nada — mais uma quebra num major que já tem vinte e três.
+// ⚠️ IT LIVES IN `input/state` AND NOT IN `PlayerBase`, and the choice was measured against what already exists: that
+// module already keeps per-player input state with exactly this shape (`padCur: Record<number, PadState>`). Putting it in
+// `PlayerBase` would make it part of the CONTRACT, and every cartridge would have to declare a field it decides nothing
+// about — one more break in a major.
 //
-// 📌 O que o jogador CARREGA continua a ser a alternância resolvida (`toggleMove`), que é o que a física lê.
-// Isto é o que está a montante dela.
+// 📌 What the player CARRIES is still the resolved latch (`toggleMove`), which is what the physics reads. This is what is
+// upstream of it.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   inputOf, playerEdge, enableAssistedFor, disableAssistedFor, forgetInputs, releaseAllKeys,
@@ -24,9 +24,9 @@ import { DEFAULT_INPUT_STATE } from '../app/js/input/transport-in-use.js';
 beforeEach(() => { forgetInputs(); });
 
 describe('entrada por jogador · quem nunca tocou em nada tem uma resposta', () => {
-  // ⚠️ `DEFAULT_INPUT_STATE` E NÃO `undefined`, e o contraste com o `sourceOf` do mesmo módulo é deliberado: ali «não sei»
-  // é honesto porque a pergunta é sobre uma TECLA que já existe; aqui a pergunta é sobre um JOGADOR, e um
-  // jogador que ainda não tocou em nada está mesmo no teclado sem assistida.
+  // ⚠️ `DEFAULT_INPUT_STATE` AND NOT `undefined`, and the contrast with the same module's `sourceOf` is deliberate: there
+  // «não sei» is honest because the question is about a KEY that already exists; here the question is about a PLAYER, and
+  // a player who has not touched anything yet really is on the keyboard with no assisted mode.
   it('[Zero] jogador desconhecido responde o PADRÃO, e não `undefined`', () => {
     expect(inputOf(0)).toEqual(DEFAULT_INPUT_STATE);
     expect(inputOf(7)).toEqual(DEFAULT_INPUT_STATE);
@@ -44,8 +44,8 @@ describe('entrada por jogador · a aresta troca o transporte, e só o daquele jo
     expect(inputOf(0).inUse).toBe('toque');
   });
 
-  // 🎯 O CASO QUE DÁ SENTIDO AO `Record` — sem separação por jogador, a criança do segundo assento herdaria o
-  // aparelho da primeira, e com ele a alternância dela.
+  // 🎯 THE CASE THAT GIVES THE `Record` ITS MEANING — without per-player separation, the child in the second seat would
+  // inherit the first one's device, and with it her latch.
   it('🎯 [Right] dois jogadores, dois aparelhos, e nenhum lê o do outro', () => {
     playerEdge(0, 'teclado');
     playerEdge(1, 'gamepad');
@@ -64,8 +64,8 @@ describe('entrada por jogador · a aresta troca o transporte, e só o daquele jo
 });
 
 describe('entrada por jogador · habilitar a assistida é um acto explícito (ADR-0109 regra 4)', () => {
-  // ⚠️ A REGRA INTEIRA NUMA SEQUÊNCIA: uma aresta de um transporte assistido NÃO o habilita. Um falso
-  // positivo da webcam — uma sombra, um segundo rosto a passar — trancaria a alternância de toda a gente.
+  // ⚠️ THE WHOLE RULE IN A SEQUENCE: an edge from an assisted transport does NOT enable it. A webcam false positive — a
+  // shadow, a second face passing by — would lock everyone's latch.
   it('⚠️ [Zero] uma aresta de `olhos` NÃO habilita a assistida', () => {
     playerEdge(0, 'olhos');
     expect(inputOf(0).inUse).toBe('olhos');
@@ -85,9 +85,9 @@ describe('entrada por jogador · habilitar a assistida é um acto explícito (AD
     expect(inputOf(0).assistedOn).toBe(false);
   });
 
-  // ⚠️ ESTE PAR NASCEU DE UMA MUTAÇÃO SOBREVIVENTE, e o buraco era real. O caso era só «habilitar o 0 não
-  // habilita o 1» — e `enableAssistedFor` a escrever SEMPRE no jogador 0 passava, porque o 1 continuava
-  // desligado pela razão errada. Faltava a outra ponta: que habilitar o 1 habilite MESMO o 1.
+  // ⚠️ THIS PAIR WAS BORN FROM A SURVIVING MUTATION, and the hole was real. The case was only «habilitar o 0 não habilita
+  // o 1» — and `enableAssistedFor` ALWAYS writing to player 0 passed, because 1 stayed off for the wrong reason. The other
+  // end was missing: that enabling 1 REALLY enables 1.
   it('[Zero] habilitar um jogador não habilita o outro — nos DOIS sentidos', () => {
     enableAssistedFor(0);
     expect(inputOf(0).assistedOn).toBe(true);
@@ -101,10 +101,9 @@ describe('entrada por jogador · habilitar a assistida é um acto explícito (AD
 });
 
 describe('entrada por jogador · o que o `blur` NÃO faz', () => {
-  // 🔴 O CASO QUE PROTEGE UMA CRIANÇA CONCRETA. O `releaseAllKeys` é o `blur` da janela: as teclas deixaram mesmo
-  // de estar premidas. Mas ninguém trocou de aparelho por mudar de separador — e zerar o transporte em uso ali
-  // devolveria toda a gente ao teclado. Quem joga por olhar perderia a alternância no meio da partida, sem
-  // erro e sem nada na tela a dizê-lo.
+  // 🔴 THE CASE THAT PROTECTS A CONCRETE CHILD. `releaseAllKeys` is the window's `blur`: the keys really stopped being
+  // pressed. But nobody switched device by changing tab — and resetting the transport in use there would send everyone
+  // back to the keyboard. Whoever plays by gaze would lose the latch mid-game, with no error and nothing on screen saying so.
   it('🔴 [Zero] `soltarTodas` solta as teclas e NÃO esquece o aparelho em uso', () => {
     playerEdge(0, 'olhos');
     enableAssistedFor(0);
@@ -113,7 +112,7 @@ describe('entrada por jogador · o que o `blur` NÃO faz', () => {
     expect(inputOf(0).assistedOn, 'o blur desligou a assistida').toBe(true);
   });
 
-  // 📌 O PAR: e existe uma porta que ESQUECE, para o fim de uma partida, onde a pergunta se põe de novo.
+  // 📌 THE PAIR: there is also a door that FORGETS, for the end of a match, where the question is asked again.
   it('📌 [Right] `esquecerEntradas` devolve toda a gente ao padrão', () => {
     playerEdge(0, 'gamepad');
     playerEdge(1, 'toque');
@@ -123,13 +122,13 @@ describe('entrada por jogador · o que o `blur` NÃO faz', () => {
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-08, por script, com contagem de ocorrências) =====
-// 1. `inputOf` a devolver `entradaPorJogador[jogador]` cru      → [Zero] do desconhecido reprova (undefined)
-// 2. `playerEdge` a escrever num sítio só (sem o índice)     → 🎯 o caso dos DOIS JOGADORES reprova
-// 3. `releaseAllKeys` a chamar `forgetInputs`                    → 🔴 o caso do BLUR reprova, que é o defeito
-//    que ele existe para impedir: a criança que joga por olhar volta ao teclado ao mudar de separador
-// 4. `enableAssistedFor` a marcar o jogador 0 sempre           → 🔴 SOBREVIVEU À PRIMEIRA VOLTA, e era
-//    BURACO e não equivalência. O caso afirmava só «habilitar o 0 não habilita o 1», e escrever sempre no 0
-//    passava — porque o 1 continuava desligado pela razão errada. Com a outra ponta acrescentada (habilitar
-//    o 1 chega MESMO ao 1), a mesma mutação reprova. É a mutação a achar o que a leitura não achou.
-// 5. `afterEdge` a habilitar a assistida quando a origem é dela  → ⚠️ o [Zero] da webcam reprova
+// ===== MUTATIONS CHECKED (2026-09-08, by script, with occurrence counts) =====
+// 1. `inputOf` returning the raw `entradaPorJogador[jogador]`   → the unknown-player [Zero] fails (undefined)
+// 2. `playerEdge` writing to one place only (no index)          → 🎯 the TWO PLAYERS case fails
+// 3. `releaseAllKeys` calling `forgetInputs`                     → 🔴 the BLUR case fails, which is the defect it exists to
+//    prevent: the child who plays by gaze goes back to the keyboard when switching tab
+// 4. `enableAssistedFor` always marking player 0                 → 🔴 SURVIVED THE FIRST ROUND, and it was a HOLE and not
+//    an equivalence. The case only asserted «habilitar o 0 não habilita o 1», and always writing to 0 passed — because 1
+//    stayed off for the wrong reason. With the other end added (enabling 1 REALLY reaches 1), the same mutation fails. It
+//    is the mutation finding what the reading did not.
+// 5. `afterEdge` enabling the assisted mode when the source is its own → ⚠️ the webcam [Zero] fails

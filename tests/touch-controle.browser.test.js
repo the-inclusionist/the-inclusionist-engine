@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O CONTROLE VIRTUAL, DESENHADO A PARTIR DO QUE O JOGO DECLARA — o gate do ADR-0143.
+// THE VIRTUAL CONTROLLER, DRAWN FROM WHAT THE GAME DECLARES — the gate of ADR-0143.
 //
-// ========================= POR QUE ESTES CASOS SÃO DE NAVEGADOR =========================
-// A regra herdada do `boot-create-game.browser.test.js`: um caso só entra aqui se o DOM falso não o
-// conseguisse fazer. O que se pergunta é se o nó está mesmo na árvore, se `dataset.btn` sobrevive a ser lido
-// como `'b' + dataset.btn` — que é o que o `touch-bindings` faz —, e se montar duas vezes deixa um pad.
+// ========================= WHY THESE CASES ARE BROWSER ONES =========================
+// The rule inherited from `boot-create-game.browser.test.js`: a case only enters here if the fake DOM could not do it.
+// What is asked is whether the node really is in the tree, whether `dataset.btn` survives being read as
+// `'b' + dataset.btn` — which is what `touch-bindings` does —, and whether mounting twice leaves one pad.
 //
-// 🔴 E UM CASO EXISTE PORQUE O PRÓPRIO REGISTO AVISOU QUE ELE PASSA POR ACIDENTE. O ADR-0143 escreve-o:
-// «hoje o pad já está ausente e já está calado, então um caso que afirme só a ausência continua verde com
-// nada construído». O caso do `preset` vazio exige as DUAS metades — o markup ausente E a linha presente.
+// 🔴 AND ONE CASE EXISTS BECAUSE THE RECORD ITSELF WARNED IT PASSES BY ACCIDENT. ADR-0143 writes it: «hoje o pad já está
+// ausente e já está calado, então um caso que afirme só a ausência continua verde com nada construído». The empty `preset`
+// case requires BOTH halves — the markup absent AND the line present.
 //
-// MUTAÇÕES CONFERIDAS no fim do ficheiro.
+// MUTATIONS CHECKED at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mountTouchControls, touchGaps } from '../app/js/input/touch.js';
 import { TOUCH_DEFAULT } from '../app/js/input/devices.js';
@@ -38,8 +38,8 @@ const montar = (acoes, extra = {}) => {
   return raiz;
 };
 
-// As acções que o jogo de plataforma declara, e as que um quiz declara. São os dois extremos que o registo
-// usa para decidir a forma.
+// The actions the platform game declares, and the ones a quiz declares. They are the two extremes the record uses to
+// decide the shape.
 const OITO_ACOES = ['up', 'down', 'left', 'right', 'action1', 'action2', 'action3', 'action4'];
 const DUAS_ACOES = ['action1', 'action2'];
 
@@ -51,7 +51,7 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
   });
 
   it('🔴 [Right] duas acções e nenhuma direção: DOIS botões e NENHUM braço (ADR-0162)', () => {
-    // O ADR-0157 dava o mínimo a todo jogo (direções e quatro botões); o Dev: «Vale para todos os botões: somente
+    // ADR-0157 gave every game the minimum (directions and four buttons); the Dev: «Vale para todos os botões: somente
     // aparecem se o jogo os nomeia.»
     const raiz = montar(DUAS_ACOES, { dpad: 'cruz' });
     expect(raiz.querySelectorAll('.touch-arm'), 'um braço que o jogo não nomeou').toHaveLength(0);
@@ -93,8 +93,8 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
   });
 
   it('⚠️ [Interface] `data-btn` casa com o `\'b\' + dataset.btn` que o `touch-bindings` recompõe', () => {
-    // Um duplo aceitaria qualquer string aqui. O que se mede é a ida e volta: o que o markup escreve tem de
-    // ser o que o despacho lê, ou o botão dispara `undefined` — sem erro, e sem fazer nada.
+    // A double would accept any string here. What is measured is the round trip: what the markup writes has to be what the
+    // dispatch reads, or the button fires `undefined` — with no error, and doing nothing.
     const raiz = montar(OITO_ACOES);
     for (const b of raiz.querySelectorAll('.touch-btn[data-btn]')) {
       const slot = 'b' + b.dataset.btn;
@@ -103,21 +103,20 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
   });
 
   it('🔴 [Right] o START é INCONDICIONAL — a pausa não é declinável (ADR-0122)', () => {
-    // Os outros oito slots respondem ao que o jogo declara; este responde a uma decisão já tomada. Uma
-    // criança com tablet e sem teclado não tem outra forma de chegar à pausa.
+    // The other eight slots answer to what the game declares; this one answers to a decision already taken. A child with a
+    // tablet and no keyboard has no other way to reach the pause.
     expect(montar([]).querySelector('#touch-start'), 'um jogo sem acções ficou sem pausa alcançável')
       .not.toBeNull();
     expect(montar(DUAS_ACOES).querySelector('#touch-start')).not.toBeNull();
   });
 
   it('⚠️ [Right] nasce ESCONDIDO — a alternância por modalidade é do `touch-bindings`', () => {
-    // «toque/clique MOSTRA; teclado/controle OCULTA». Um pad que nasce à vista cobre o jogo de quem nunca
-    // lhe vai tocar.
+    // «toque/clique MOSTRA; teclado/controle OCULTA». A pad born in sight covers the game of whoever will never touch it.
     expect(montar(OITO_ACOES).hidden).toBe(true);
   });
 
   it('⚠️ [Right] o analógico traz a `.touch-knob`, sem a qual o `touch-bindings` desiste dele', () => {
-    // `if (stick && knob)` — sem a manopla, o analógico inteiro fica sem escuta, em silêncio.
+    // `if (stick && knob)` — without the knob, the whole stick is left with no listener, in silence.
     const raiz = montar(OITO_ACOES, { dpad: 'analogico' });
     const stick = raiz.querySelector('#touch-stick');
     expect(stick, 'o analógico não foi montado').not.toBeNull();
@@ -162,17 +161,17 @@ describe('ADR-0143 §4 · o silêncio acaba', () => {
   });
 
   it('🎯 [Zero] com o preset do platformer, `problems` não inventa lacuna nenhuma', () => {
-    // O par do caso acima. Sem ele, o crivo aprovaria uma engine que acusa sempre — tão inútil quanto uma
-    // que nunca acusa.
+    // The pair of the case above. Without it, the sieve would approve an engine that always accuses — as useless as one
+    // that never does.
     expect(touchGaps({ map: TOUCH_DEFAULT, gameActions: new Set(OITO_ACOES) })).toEqual([]);
   });
 
   it('🔴 [Boundary] uma acção declarada que NENHUM slot dispara também vira linha', () => {
-    // ⚠️ A lacuna PARCIAL, que hoje não aparece em lado nenhum: a acção existe no teclado e não existe no
-    // toque. Quem joga por toque simplesmente não a tem, e ninguém lhe diz.
+    // ⚠️ The PARTIAL gap, which appears nowhere else: the action exists on the keyboard and not on touch. Whoever plays by
+    // touch simply does not have it, and nobody tells them.
     const linhas = touchGaps({
       map: TOUCH_DEFAULT,
-      // ⚠️ `select` e não `leftShoulder`: desde o ADR-0160 os ombros TÊM slot, e o exemplo deixaria de ser exemplo
+      // ⚠️ `select` and not `leftShoulder`: since ADR-0160 the shoulders HAVE a slot, and the example would stop being one
       gameActions: new Set(['action1', 'select']),
     });
     expect(linhas).toHaveLength(1);

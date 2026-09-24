@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de input/touch — render/DOM real (project BROWSER: usa document + querySelector). Injeção por closure
-// (mesmo padrão de ui/settings-motion.browser.test.js): ctx com $/srSay/store/root/isMobile/viewport/
-// frontOverlay/onPadDesignApplied FALSOS (spies), mas `players`/`numPlayers`/`phase` (core/state.js) são os módulos REAIS.
+// Tests of input/touch — real render/DOM (BROWSER project: uses document + querySelector). Injection by closure (the same
+// pattern as ui/settings-motion.browser.test.js): a ctx with FAKE $/srSay/store/root/isMobile/viewport/frontOverlay/
+// onPadDesignApplied (spies); the round and the phase are local to this file.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initTouch } from '../app/js/input/touch.js';
-// A CENA é DO TESTE desde 2026-08-26. `phase` saiu de `core/state` — virou a pilha de `core/scenes`, e os
-// três nomes moram na raiz de composição (ADR-0030 C3). Quem é engine recebe BOOLEANOS. Este `let` faz o
-// papel que o binding vivo fazia, e os casos seguem escritos como estavam.
+// THE SCENE BELONGS TO THE TEST: the phase is not in `core/state` — it is the `core/scenes` stack, and the three names
+// live in the composition root (ADR-0030 C3). What is engine receives BOOLEANS. This `let` plays the root's part, and the
+// cases stay written as they were.
 let faseFalsa = 'playing';
 const setPhaseValue = (p) => { faseFalsa = p; };
 /*
- * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` foi com a pilha de mundo-de-tiles para o
- * `game-platformer`. Este ficheiro nunca testou a rodada — ele PASSA uma ao que está a medir —, e os três
- * membros abaixo são exactamente os que ele lê. Fábrica e não literal: duas rodadas têm de ser dois objectos.
+ * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228): `core/run-state` went with the tile-world stack to `game-platformer`. This
+ * file never tested the round — it HANDS one to what it measures —, and the three members below are exactly the ones it
+ * reads. A factory and not a literal: two rounds have to be two objects.
  */
 const createRunState = () => ({ numPlayers: 1, players: [], setNumPlayers(n) { this.numPlayers = n; } });
-// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
-// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
-// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+// The round is local to this file (ADR-0038, phase B); the aliases below keep the cases' bodies written as they always were.
 const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
@@ -70,8 +68,8 @@ function makeCtx(over = {}) {
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     srSay: (t) => calls.srSay.push(t),
-    // As posicoes que ESTE 'jogo' usa. O menu de cada slot oferecia nove opcoes fixas da engine; agora
-    // oferece as do jogo, e num teste o jogo e o fixture.
+    // The positions THIS 'game' uses. Each slot's menu offers the game's positions, not a fixed engine list; in a test,
+    // the game is the fixture.
     gameActions: () => [
       { action: 'left', label: 'Andar a esquerda' }, { action: 'right', label: 'Andar a direita' },
       { action: 'up', label: 'Subir' }, { action: 'down', label: 'Descer' },
@@ -85,8 +83,8 @@ function makeCtx(over = {}) {
     viewport: () => ({ w: 1280, h: 800 }),
     frontOverlay: (el) => calls.frontOverlay.push(el),
     onPadDesignApplied: () => { calls.onPadDesignApplied++; },
-    // A POLÍTICA do pad entra por ctx (item 19). O padrão é "pode": os casos que testam o CONTRÁRIO passam
-    // `padAllowed: () => false` e dizem, no título, qual condição do jogo estão representando.
+    // The pad's POLICY comes in through the ctx (item 19). The default is "may": the cases testing the OPPOSITE pass
+    // `padAllowed: () => false` and say, in the title, which game condition they represent.
     padAllowed: () => true,
     ...over,
   };
@@ -96,14 +94,14 @@ function makeCtx(over = {}) {
 beforeEach(() => {
   markup();
   players.length = 0;
-  players.push({}); // este módulo não lê mais jogador nenhum (item 19) — o array existe para o resto do estado
+  players.push({}); // this module reads no player (item 19) — the array exists for the rest of the state
   setNumPlayersValue(1);
   setPhaseValue('playing');
 });
 
 describe('initTouch — boot', () => {
   it('[Right] roda applyPadDesign/applyPadPhysical/applyDirStyle sem lançar, mesmo com painel vazio de #pad-diamond', () => {
-    document.body.innerHTML = ''; // sem NENHUM elemento do módulo — todo `if(el)` deve proteger
+    document.body.innerHTML = ''; // with NONE of the module's elements — every `if(el)` must protect
     const { ctx } = makeCtx();
     expect(() => initTouch(ctx)).not.toThrow();
   });
@@ -122,7 +120,7 @@ describe('initTouch — renderTouchMap / config de toque', () => {
     const api = initTouch(ctx);
     api.renderTouchMap();
     const selects = document.querySelectorAll('#touchmap-list select[data-slot]');
-    expect(selects.length).toBe(13); // nove até os quatro ombros do ADR-0160
+    expect(selects.length).toBe(13); // nine up to the four shoulders of ADR-0160
     const b0 = document.querySelector('#tm-b0');
     b0.value = 'action1';
     b0.dispatchEvent(new Event('change'));
@@ -132,16 +130,16 @@ describe('initTouch — renderTouchMap / config de toque', () => {
   });
 
   it('[Right] ⚠️ a PALAVRA DO JOGO entra por texto, nunca por markup (issue #106)', () => {
-    // Terceiro sink da mesma classe — os três consomem o MESMO `acoesDoJogo()`, que devolve as palavras do
-    // preset. Um jogo vive hoje noutro repositório (ADR-0083) e esta árvore não revê o texto dele.
+    // A third sink of the same class — all three consume the SAME `gameActions()`, which returns the preset's words. A
+    // game lives in another repository (ADR-0083) and this tree does not review its text.
     //
-    // ⚠️ E O `value="${acao}"` FICA, o que parece incoerente e não é: `acao` é o nome ABSTRATO, enumerado pela
-    // engine em `core/actions`. É a separação do ADR-0086 — o que é do jogo é a palavra, não a posição — e é
-    // ela que torna um dos dois seguro e o outro não.
-    // ⚠️ O PAYLOAD FECHA A `<option>` E SAI. Ver o caso irmão em `settings-controls.browser`: um `onerror` é
-    // assíncrono e não dispara a tempo, e aferir o DOM final não distingue nada, porque o `textContent`
-    // posterior escreve por cima do que o `innerHTML` já analisou. O que discrimina é o elemento que aterra
-    // FORA do alvo do `textContent` e por isso sobrevive.
+    // ⚠️ AND THE `value="${acao}"` STAYS, which looks inconsistent and is not: `acao` is the ABSTRACT name, enumerated by
+    // the engine in `core/actions`. It is ADR-0086's separation — what belongs to the game is the word, not the position —
+    // and it is what makes one of the two safe and the other not.
+    // ⚠️ THE PAYLOAD CLOSES THE `<option>` AND GETS OUT. See the sibling case in `settings-controls.browser`: an `onerror`
+    // is asynchronous and does not fire in time, and checking the final DOM tells nothing apart, because the later
+    // `textContent` writes over what `innerHTML` has already parsed. What discriminates is the element that lands OUTSIDE
+    // the `textContent` target and therefore survives.
     const { ctx } = makeCtx();
     const FUGA = '</option><option id="fugiu-do-jogo"></option>';
     ctx.gameActions = () => [{ action: 'action1', label: FUGA }];
@@ -154,16 +152,16 @@ describe('initTouch — renderTouchMap / config de toque', () => {
     expect(op.value).toBe('action1'); // o nome abstrato continua no atributo
   });
 
-  // 🔴 O IRMÃO DO `7742ac0`, NO MÓDULO AO LADO. Aquele conserto disse que o leitor de tela nunca pode dizer
-  // `action2` a uma criança, e é a regra mais afiada do ADR-0074 — o quarto gate que o ADR-0111 deve. Aqui o
-  // anúncio do slot recuava para `sel.value`, que É o nome abstrato:
+  // 🔴 THE SIBLING OF `7742ac0`, IN THE MODULE NEXT DOOR. That fix said the screen reader may never say `action2` to a
+  // child, and it is ADR-0074's sharpest rule — the fourth gate ADR-0111 owes. Here the slot's announcement fell back to
+  // `sel.value`, which IS the abstract name:
   //
   //     acao: escolhida ? escolhida.rotulo : sel.value
   //
-  // ⚠️ E O RECUO É ALCANÇÁVEL PELA FORMA QUE ESTE PROJETO PERSEGUE, não por acidente: `acoesDoJogo()` é uma
-  // FUNÇÃO do cartucho, chamada de novo a cada `change`. Num jogo de uma tela só ela devolve sempre o mesmo;
-  // num hub de atividades — que é o desenho da #101 e do menu de atividades — a lista muda quando a criança
-  // troca de atividade, e a `<option>` desenhada antes fica órfã. Aí o `find` falha e a frase sai com o id.
+  // ⚠️ AND THE FALLBACK IS REACHABLE THROUGH THE SHAPE THIS PROJECT PURSUES, not by accident: `gameActions()` is a
+  // cartridge FUNCTION, called again at every `change`. In a single-screen game it always returns the same; in a hub of
+  // activities the list changes when the child switches activity, and the `<option>` drawn before is orphaned. Then the
+  // `find` fails and the sentence comes out with the id.
   it('[Fronteira] com a lista do jogo trocada por baixo, o anúncio NÃO diz o nome abstrato', () => {
     const { ctx, calls } = makeCtx();
     const api = initTouch(ctx);
@@ -172,7 +170,7 @@ describe('initTouch — renderTouchMap / config de toque', () => {
     const b0 = document.querySelector('#tm-b0');
     b0.value = 'action3'; // a posição existia no desenho anterior
 
-    // A criança troca de atividade: o preset novo nomeia outras posições.
+    // The child switches activity: the new preset names other positions.
     ctx.gameActions = () => [{ action: 'action1', label: 'Responder' }];
     b0.dispatchEvent(new Event('change'));
 
@@ -180,8 +178,8 @@ describe('initTouch — renderTouchMap / config de toque', () => {
     for (const abstrato of ['action1', 'action2', 'action3', 'action4', 'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger']) {
       expect(ditos, `o leitor de tela disse o id interno «${abstrato}»`).not.toContain(abstrato);
     }
-    // 📌 O GÉMEO SILENCIOSO tem de ficar fechado: calar o anúncio inteiro passaria no laço acima. A criança
-    // que navega por ouvido precisa de saber que a escolha dela aterrou.
+    // 📌 THE SILENT TWIN has to stay closed: silencing the whole announcement would pass the loop above. The child who
+    // navigates by ear needs to know her choice landed.
     expect(calls.srSay.length, 'o anúncio sumiu em vez de perder o id').toBeGreaterThan(0);
   });
 });
@@ -277,13 +275,8 @@ describe('initTouch — hideTouchControls / showTouchControls', () => {
     expect(document.body.classList.contains('touch-mode')).toBe(false);
   });
   it('[Boundary] o jogo dizendo NÃO cala o pad, e é a ÚNICA coisa que este módulo consulta', () => {
-    // Eram TRÊS casos aqui — mais de um jogador, fora de "playing", e quiz aberto —, e os três mexiam em
-    // `core/state` para exercitar uma linha do módulo. Viraram um: o módulo pergunta `padAllowed()` e nada
-    // mais. As três condições continuam existindo, no `main.js`, onde a política do jogo mora.
-    //
-    // O que se perdeu ao juntar: os três títulos documentavam POR QUE o pad some. Isso não some do projeto —
-    // muda de lugar, para o comentário do ctx no `main.js`. O que se ganhou: este fixture parou de precisar
-    // de um jogador com `quiz` para testar a camada de TOQUE.
+    // The module asks `padAllowed()` and nothing else. The conditions that hide the pad (more than one player, outside
+    // "playing", a quiz open) are the game's policy and live in the root that answers `padAllowed`, not in the touch layer.
     const { ctx } = makeCtx({ padAllowed: () => false });
     const api = initTouch(ctx);
     api.showTouchControls();
@@ -291,8 +284,8 @@ describe('initTouch — hideTouchControls / showTouchControls', () => {
   });
 
   it('[Interface] a resposta é lida A CADA chamada, não guardada no init', () => {
-    // Sem isto, um módulo que lesse `padAllowed()` uma vez no init passaria em tudo acima e ficaria preso à
-    // resposta do primeiro instante — e o pad nunca mais apareceria depois de uma pausa.
+    // Without this, a module reading `padAllowed()` once at init would pass everything above and stay stuck with the first
+    // instant's answer — and the pad would never appear again after a pause.
     let pode = false;
     const { ctx } = makeCtx({ padAllowed: () => pode });
     const api = initTouch(ctx);
@@ -387,7 +380,7 @@ describe('initTouch — applyPadDesign (rótulos físicos dos botões)', () => {
     const btn0 = document.querySelector('.pad-b[data-btn="0"]');
     expect(btn0.textContent).toBe('✕');
     expect(api.getPadDesign()).toBe('sony');
-    expect(calls.onPadDesignApplied).toBeGreaterThan(0); // hook p/ a legenda Sim/Não da pausa (fora deste módulo)
+    expect(calls.onPadDesignApplied).toBeGreaterThan(0); // hook for the pause's Yes/No legend (outside this module)
   });
   it('[Inverse] design desconhecido não muda nada (mantém o atual)', () => {
     const { ctx } = makeCtx();

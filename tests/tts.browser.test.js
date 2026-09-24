@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de platform/tts que só o NAVEGADOR prova: que a narração fala no IDIOMA DO JOGO.
+// Tests of platform/tts that only the BROWSER proves: that narration speaks in the GAME'S LANGUAGE.
 //
-// POR QUE NÃO NO project node. Trocar de idioma passa por `setLocale`, que reaplica o DOM (`applyDom`),
-// escreve em `<html lang>` e dispara um CustomEvent — três coisas que não existem no node. O teste node já
-// afere `spoke[0].lang`, mas contra o literal 'pt-BR': ele passaria idêntico com o valor CRAVADO que existia
-// antes desta correção, porque o idioma padrão é o português. Um caso que não consegue falhar pelo motivo que
-// declara é o que estes arquivos existem para não ter.
+// WHY NOT IN THE node project. Switching language goes through `setLocale`, which reapplies the DOM (`applyDom`), writes
+// `<html lang>` and fires a CustomEvent — three things that do not exist in node. The node test checks `spoke[0].lang`,
+// but against the literal 'pt-BR': it would pass identically with a HARD-CODED value, because the default language is
+// Portuguese. A case that cannot fail for the reason it declares is what these files exist not to have.
 //
-// O DEFEITO QUE ISTO PRENDE. `u.lang` era 'pt-BR' fixo. Com o jogo em inglês, isso pede ao navegador uma voz
-// PORTUGUESA para um texto que não é português — e o resultado não é sotaque, é ininteligível: fonética de
-// uma língua aplicada à ortografia de outra. Para quem depende da narração para jogar, equivale a não ter
-// narração nenhuma.
+// THE DEFECT THIS PINS. A fixed `u.lang = 'pt-BR'` would, with the game in English, ask the browser for a PORTUGUESE voice
+// for a text that is not Portuguese — and the result is not an accent, it is unintelligible: one language's phonetics
+// applied to another's spelling. For whoever depends on narration to play, it is the same as having no narration at all.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
 import { setLocale, getLocale, bcp47 } from '../app/js/core/i18n.js';
@@ -20,8 +18,8 @@ const ORIGINAL = { utter: globalThis.SpeechSynthesisUtterance, synth: window.spe
 
 beforeEach(() => {
   spoke = [];
-  // O SpeechSynthesis real do Chromium não fala em CI e não expõe a utterance; substituímos os dois pelo
-  // mínimo que `speakWebSpeech` toca, para poder LER o que foi pedido ao navegador.
+  // Chromium's real SpeechSynthesis does not speak in CI and does not expose the utterance; both are replaced by the
+  // minimum `speakWebSpeech` touches, so what was asked of the browser can be READ.
   Object.defineProperty(window, 'speechSynthesis', {
     configurable: true,
     // one browser voice per language: a language with no voice at all has narration locked (ADR-0185 §4, ADR-0207)
@@ -35,7 +33,7 @@ beforeEach(() => {
 afterEach(async () => {
   globalThis.SpeechSynthesisUtterance = ORIGINAL.utter;
   Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: ORIGINAL.synth });
-  await setLocale('pt'); // o idioma é estado de MÓDULO: sem isto, o próximo arquivo herda o último locale
+  await setLocale('pt'); // the language is MODULE state: without this, the next file inherits the last locale
 });
 
 function tts() {
@@ -59,8 +57,8 @@ describe('platform/tts — a narração fala o idioma do jogo', () => {
   });
 
   it('[Invariant] a etiqueta pedida ao navegador é SEMPRE a de core/i18n, nunca uma cópia', () => {
-    // O que impede a regressão: se alguém voltar a cravar 'pt-BR', este caso fica vermelho em en e es —
-    // e a asserção não repete a etiqueta, ela a busca na fonte única.
+    // What prevents the regression: if someone hard-codes 'pt-BR' again, this case goes red in en and es — and the
+    // assertion does not repeat the tag, it fetches it from the single source.
     tts().narrate('x');
     expect(spoke[0].lang).toBe(bcp47(getLocale()));
   });

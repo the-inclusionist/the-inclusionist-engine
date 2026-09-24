@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de platform/tts (project NODE: window.speechSynthesis + SpeechSynthesisUtterance stubados). Contratos:
-// narrate é gated por soundOn + audioCat.tts.on + texto não-vazio; o fallback Web Speech fala NO IDIOMA DO JOGO;
-// loadTTS avisa em motor que não fala o idioma. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (#38).
+// Tests of platform/tts (NODE project: window.speechSynthesis + SpeechSynthesisUtterance stubbed). Contracts: narrate is
+// gated by soundOn + audioCat.tts.on + non-empty text; the Web Speech fallback speaks IN THE GAME'S LANGUAGE; loadTTS
+// warns on an engine that does not speak the language. See docs/5-Refactoring/plano-modularizacao-mapa.md (#38).
 //
 // The neural engine is the ENGINE's since ADR-0216: the game only declares `uses: { neuralVoice: true }`, which arrives here as
 // `ctx.neuralVoice`. The loader stays injectable so the whole path runs with a fake — no network, no wasm engine. The fake browser
@@ -43,7 +43,7 @@ function fakeKokoroPort(registro) {
   });
 }
 
-/** Deixa correr as microtasks do `then` encadeado do `loadTTS` sem prender o teste a um número de ticks. */
+/** Lets the microtasks of `loadTTS`'s chained `then` run without tying the test to a number of ticks. */
 async function assentar() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
 
 describe('platform/tts', () => {
@@ -103,9 +103,9 @@ describe('platform/tts', () => {
   });
 
   it('[Interface] loadTTS num motor que não fala o idioma avisa e não carrega', () => {
-    // A frase dizia "ainda não fala PORTUGUÊS", e o teste aferia esse literal. Num jogo em inglês a mensagem
-    // estaria errada — o motor não fala o idioma DO JOGO, seja ele qual for. A asserção passa pelo dicionário
-    // em vez de repetir o texto: continua provando que a pessoa foi avisada, sem congelar a redação.
+    // The engine does not speak the GAME's language, whatever it is — so the assertion goes through the dictionary
+    // instead of repeating a sentence that names one language: it still proves the person was warned, without freezing
+    // the wording.
     const { tts, alerted } = setup();
     tts.setEngineSel('kitten'); // Kokoro speaks since ADR-0198; Kitten has not entered
     tts.loadTTS();
@@ -125,8 +125,8 @@ describe('platform/tts — a declaração da voz neural', () => {
     tts.setEngineSel('kokoro');
     tts.loadTTS();
     expect(alerted).toContain(pt['sr.tts.neuralNotBundled']);
-    // ⚠️ A DISTINÇÃO É O PONTO, e não um detalhe de redação: «não há voz para este idioma» mandaria a criança
-    // trocar de idioma à procura do que não está lá em idioma nenhum.
+    // ⚠️ THE DISTINCTION IS THE POINT, not a wording detail: «não há voz para este idioma» would send the child to switch
+    // language looking for what is not there in any language.
     expect(alerted).not.toContain(pt['sr.tts.noNeuralForLanguage']);
     expect(tts.loading).toBe(false);
     expect(tts.failed).toBe(true);
@@ -142,10 +142,10 @@ describe('platform/tts — a declaração da voz neural', () => {
     expect(spoke[0].lang).toBe('pt-BR');
   });
 
-  // 🎯 O QUE A ADR-0216 §1 TROCOU: o jogo declara, e quem carrega é a engine. Sem carregador injetado o `tts` tem de ir buscar o
-  // dela (`platform/kokoro-runtime`, por `import()`) — aqui, em node, isso rebenta por não haver `document`, e é justamente essa
-  // falha que prova que ele TENTOU: um `tts` que voltasse a exigir a porta do jogo diria «esta montagem não traz motor neural»
-  // sem tentar nada. A distinção entre os dois alertas é a asserção.
+  // 🎯 WHAT ADR-0216 §1 CHANGED: the game declares, and the engine loads. With no injected loader `tts` has to fetch the
+  // engine's own (`platform/kokoro-runtime`, through `import()`) — here, in node, that blows up for lack of `document`, and
+  // that very failure proves it TRIED: a `tts` that went back to requiring the game's port would say «esta montagem não
+  // traz motor neural» without trying anything. The distinction between the two alerts is the assertion.
   it('🔴 [Right] declarada e sem carregador injetado, a engine carrega a voz ELA MESMA — não diz «não vem no pacote»', async () => {
     const { tts, alerted } = setup({ neuralVoice: true });
     expect(tts.neuralAvailable, 'quem responde é a declaração, não um carregador').toBe(true);
@@ -153,8 +153,8 @@ describe('platform/tts — a declaração da voz neural', () => {
     tts.setEngineSel('kokoro');
     tts.loadTTS();
     expect(alerted, 'recusou sem sequer tentar o carregador da engine').not.toContain(pt['sr.tts.neuralNotBundled']);
-    // ⚠️ Não são microtasks: o carregador da engine IMPORTA um módulo, que é trabalho de verdade — esperar por ticks fixos
-    // media o relógio do carregamento e não a decisão. Espera-se pelo desfecho, com teto.
+    // ⚠️ These are not microtasks: the engine's loader IMPORTS a module, which is real work — waiting a fixed number of
+    // ticks would measure the loading's clock and not the decision. The outcome is waited for, with a ceiling.
     for (let i = 0; i < 200 && !tts.failed; i++) await new Promise((r) => setTimeout(r, 5));
     expect(alerted, 'o carregador da engine correu e a falha dele é que foi dita').toContain(pt['sr.tts.loadFailed']);
   });

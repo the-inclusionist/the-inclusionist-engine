@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// AS QUATRO REGRAS DO ADR-0109 §1, testadas como o que são: um AUTÓMATO.
+// THE FOUR RULES OF ADR-0109 §1, tested as what they are: an AUTOMATON.
 //
-// ⚠️ SEQUÊNCIAS E NÃO CHAMADAS SOLTAS. Estas regras são sobre o que acontece DEPOIS de outra coisa ter
-// acontecido — «apertar uma tecla DEVOLVE o teclado» só quer dizer alguma coisa se antes se tinha saído dele.
-// Um caso que chama uma função uma vez mede a função; o que faz a criança tropeçar é a ordem.
+// ⚠️ SEQUENCES AND NOT LOOSE CALLS. These rules are about what happens AFTER something else happened — «apertar uma tecla
+// DEVOLVE o teclado» only means something if you had left it before. A case calling a function once measures the
+// function; what makes the child stumble is the order.
 //
-// ⚠️ E O CASO QUE MAIS IMPORTA É O DA CÂMERA. O §4 diz que ela liga a alternância para todos e que não há
-// como desligar — e a forma como isso falha não é um erro: é uma criança que joga por webcam, toca na tela
-// uma vez, e fica sem a alternância de que depende. Silencioso, e no meio da partida.
+// ⚠️ AND THE CASE THAT MATTERS MOST IS THE CAMERA'S. §4 says it turns the latch on for everyone and there is no way to
+// turn it off — and the way that fails is not an error: it is a child who plays by webcam, touches the screen once, and is
+// left without the latch she depends on. Silent, and mid-game.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_INPUT_STATE, latchNow, afterEdge, enableAssisted, disableAssisted,
   NEED_ENABLING, LATCH_OF_THEIR_OWN,
 } from '../app/js/input/transport-in-use.js';
 
-/** Corre uma sequência de arestas a partir do padrão, e devolve o estado final. */
+/** Runs a sequence of edges from the default, and returns the final state. */
 const correr = (...origens) => origens.reduce(afterEdge, DEFAULT_INPUT_STATE);
 
 describe('ADR-0109 §1 · a alternância segue o aparelho em uso', () => {
@@ -31,29 +31,29 @@ describe('ADR-0109 §1 · a alternância segue o aparelho em uso', () => {
   });
 
   it('⚠️ [Right] REGRA 3 — apertar tecla DEVOLVE o teclado sem alternância; o controle também', () => {
-    // A regra só existe como sequência: sair do teclado, e voltar. Uma chamada solta não a exprime.
+    // The rule only exists as a sequence: leave the keyboard, and come back. A loose call does not express it.
     expect(latchNow(correr('toque', 'teclado'))).toBe(false);
     expect(latchNow(correr('toque', 'gamepad'))).toBe(false);
-    // E a ida e volta várias vezes — é o caps-lock com memória: cada aparelho lembra o seu.
+    // And there and back several times — it is caps-lock with memory: each device remembers its own.
     expect(latchNow(correr('toque', 'teclado', 'toque'))).toBe(true);
     expect(latchNow(correr('toque', 'teclado', 'toque', 'gamepad'))).toBe(false);
   });
 
   it('⚠️ [Zero] REGRA 4 — com a assistida ligada, NENHUM aparelho desliga a alternância', () => {
-    // O caso cuja falha tranca uma criança fora do próprio jogo. Ela joga por webcam, toca na tela uma vez,
-    // e sem esta regra fica sem a alternância de que depende — no meio da partida e sem nada o dizer.
+    // The case whose failure locks a child out of her own game. She plays by webcam, touches the screen once, and without
+    // this rule is left without the latch she depends on — mid-game and with nothing saying so.
     const ligada = enableAssisted(DEFAULT_INPUT_STATE);
     for (const t of ['teclado', 'gamepad', 'toque', 'olhos', 'rosto', 'gestos', 'fala']) {
       expect(latchNow(afterEdge(ligada, t)), `${t} desligou a alternância da assistida`).toBe(true);
     }
-    // E ao longo de uma sequência inteira, não só de uma aresta.
+    // And along a whole sequence, not just one edge.
     const depois = ['teclado', 'toque', 'gamepad', 'teclado'].reduce(afterEdge, ligada);
     expect(latchNow(depois)).toBe(true);
   });
 
   it('⚠️ [Zero] uma ARESTA de transporte assistido NÃO o habilita — habilitar é acto explícito', () => {
-    // Um falso positivo da webcam (uma sombra, um segundo rosto a passar) trancaria a alternância de toda a
-    // gente sem ninguém ter pedido. O §4 diz «precisam ser habilitados», e isto é essa palavra.
+    // A webcam false positive (a shadow, a second face passing by) would lock everyone's latch without anyone asking. §4
+    // says «precisam ser habilitados», and this is that word.
     for (const t of NEED_ENABLING) {
       expect(afterEdge(DEFAULT_INPUT_STATE, t).assistedOn, `${t} habilitou-se sozinho`).toBe(false);
       expect(latchNow(afterEdge(DEFAULT_INPUT_STATE, t)), `${t} ligou a alternância sem habilitação`).toBe(false);
@@ -62,19 +62,19 @@ describe('ADR-0109 §1 · a alternância segue o aparelho em uso', () => {
 
   it('[Right] habilitar é idempotente, e desabilitar existe — mas não é oferecido à criança', () => {
     const ligada = enableAssisted(DEFAULT_INPUT_STATE);
-    expect(enableAssisted(ligada)).toBe(ligada); // MESMO objecto: sem mudança, sem cópia
+    expect(enableAssisted(ligada)).toBe(ligada); // the SAME object: no change, no copy
     expect(latchNow(disableAssisted(ligada))).toBe(false);
     expect(disableAssisted(DEFAULT_INPUT_STATE)).toBe(DEFAULT_INPUT_STATE);
   });
 
   it('[Boundary] uma aresta do transporte que já está em uso não cria estado novo', () => {
     const s = correr('toque');
-    expect(afterEdge(s, 'toque')).toBe(s); // identidade, não igualdade
+    expect(afterEdge(s, 'toque')).toBe(s); // identity, not equality
   });
 
   it('⚠️ [Interface] as duas listas não se sobrepõem — um transporte não pode ter duas regras', () => {
-    // Se `toque` entrasse em `NEED_ENABLING`, ele deixaria de ligar a alternância até ser habilitado, e
-    // a regra 2 morreria em silêncio. As listas dizem coisas diferentes e têm de continuar disjuntas.
+    // If `toque` went into `NEED_ENABLING`, it would stop turning the latch on until enabled, and rule 2 would die in
+    // silence. The lists say different things and have to stay disjoint.
     for (const t of LATCH_OF_THEIR_OWN) {
       expect(NEED_ENABLING.has(t), `${t} está nas duas listas`).toBe(false);
     }
@@ -83,15 +83,15 @@ describe('ADR-0109 §1 · a alternância segue o aparelho em uso', () => {
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · ⚠️ INVERTENDO as duas linhas de `latchNow` (o `emUso` antes da assistida) -> reprova a REGRA 4.
-//     E a mutacao que mais interessa de todo o ficheiro: e o defeito que tranca uma crianca fora do jogo, e
-//     nao da erro nenhum — ela toca na tela, volta ao teclado, e a alternancia de que depende desapareceu.
-//   · `latchNow` a devolver so `LATCH_OF_THEIR_OWN.has(...)` (sem a assistida) -> reprova a
-//     REGRA 4 tambem, pelo outro lado.
-//   · `afterEdge` a habilitar a assistida quando a origem esta em `NEED_ENABLING` -> reprova "uma
-//     ARESTA nao habilita". E a leitura ingenua da regra 4, e a que um falso positivo da webcam explora.
-//   · `afterEdge` a ignorar a origem (devolver sempre o estado) -> reprovam as REGRAS 2 e 3.
-//   · `DEFAULT_INPUT_STATE` com `inUse: 'toque'` -> reprova a REGRA 1: o padrao passaria a ter alternancia, que e
-//     exactamente o contrario do que o ADR diz.
-//   · pondo `'toque'` em `NEED_ENABLING` -> reprovam a REGRA 2 e o caso das listas disjuntas.
+// ========================= MUTATIONS CHECKED =========================
+//   · ⚠️ SWAPPING the two lines of `latchNow` (the `emUso` before the assisted one) -> fails RULE 4. It is the mutation
+//     that matters most in the whole file: it is the defect that locks a child out of the game, and it gives no error —
+//     she touches the screen, goes back to the keyboard, and the latch she depends on is gone.
+//   · `latchNow` returning only `LATCH_OF_THEIR_OWN.has(...)` (without the assisted one) -> fails RULE 4 too, from the
+//     other side.
+//   · `afterEdge` enabling the assisted mode when the source is in `NEED_ENABLING` -> fails "uma ARESTA nao habilita".
+//     It is the naive reading of rule 4, and the one a webcam false positive exploits.
+//   · `afterEdge` ignoring the source (always returning the state) -> RULES 2 and 3 fail.
+//   · `DEFAULT_INPUT_STATE` with `inUse: 'toque'` -> fails RULE 1: the default would have the latch, which is exactly the
+//     opposite of what the ADR says.
+//   · putting `'toque'` in `NEED_ENABLING` -> RULE 2 and the disjoint-lists case fail.

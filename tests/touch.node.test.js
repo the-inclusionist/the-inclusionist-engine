@@ -1,25 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de input/touch — lógica PURA (project node, sem `document`). ZOMBIES + Right-BICEP.
-// Cobre: mm→px (padPxPerMm/computePadPhysicalPx — dpr alto/baixo simulado via tela pequena/grande, extremos),
-// a classificação mão-de-criança/adulto (padHandTag), a detecção de layout por id de controle (padLayoutFromId),
-// e a fusão do mapa de toque persistido (normalizeTouchMap). O render/DOM real (initTouch: querySelector/addEventListener/persistência) fica fora daqui — salvo o
-// caso do fim, que monta o `initTouch` num hospedeiro SEM janela, e é por isso que só aqui ele pode ser medido.
+// Tests of input/touch — PURE logic (node project, no `document`). ZOMBIES + Right-BICEP.
+// Covers: mm→px (padPxPerMm/computePadPhysicalPx — high/low dpr simulated through a small/large screen, extremes), the
+// child/adult hand classification (padHandTag), layout detection by controller id (padLayoutFromId), and the merge of the
+// persisted touch map (normalizeTouchMap). The real render/DOM (initTouch: querySelector/addEventListener/persistence) is
+// outside — except for the last case, which mounts `initTouch` on a host with NO window, which is why only here it can be
+// measured.
 import { describe, it, expect } from 'vitest';
 import {
   padPxPerMm, padHandTag, computePadPhysicalPx, padLayoutFromId, normalizeTouchMap,
   IPHONE16_LONG_MM, IPHONE16_LONG_PX, IPHONE16_PXMM, TOUCH_SLOTS, TOUCH_ACTS,
 } from '../app/js/input/touch.js';
 import { TOUCH_DEFAULT } from '../app/js/input/devices.js';
-import { presetFalso as platformerPreset } from './fixtures/fake-cartridge.js'; // ADR-0096: o preset REAL e' do jogo; aqui prova-se o comportamento DADO um preset de nove
+import { presetFalso as platformerPreset } from './fixtures/fake-cartridge.js'; // ADR-0096: the REAL preset belongs to the game; here the behaviour is proved GIVEN a nine-position preset
 import pt from '../app/js/i18n/pt.js';
 
 describe('padPxPerMm', () => {
   it('[Right] desktop (mobile=false): sempre o ratio fixo do iPhone 16, ignora a janela', () => {
     expect(padPxPerMm(false, 1920, 1080)).toBeCloseTo(IPHONE16_PXMM, 6);
-    expect(padPxPerMm(false, 200, 100)).toBeCloseTo(IPHONE16_PXMM, 6); // janela minúscula não muda nada
+    expect(padPxPerMm(false, 200, 100)).toBeCloseTo(IPHONE16_PXMM, 6); // a tiny window changes nothing
   });
   it('[Right] celular (mobile=true): ancora na aresta LONGA da janela ÷ 141,1mm', () => {
-    expect(padPxPerMm(true, 390, 844)).toBeCloseTo(844 / IPHONE16_LONG_MM, 6); // retrato: 844 é a longa
+    expect(padPxPerMm(true, 390, 844)).toBeCloseTo(844 / IPHONE16_LONG_MM, 6); // portrait: 844 is the long one
     expect(padPxPerMm(true, 844, 390)).toBeCloseTo(844 / IPHONE16_LONG_MM, 6); // paisagem: mesmo valor (max)
   });
   it('📌 [Right] it is an ESTIMATE, not a measurement: a 10-inch tablet window is read as an iPhone 16 display (plan phase 5b)', () => {
@@ -132,7 +133,7 @@ describe('normalizeTouchMap', () => {
   it('[Right] sobrepõe só as chaves presentes no salvo, mantém as demais do padrão', () => {
     const merged = normalizeTouchMap({ b0: 'action1' });
     expect(merged.b0).toBe('action1');
-    expect(merged.up).toBe(TOUCH_DEFAULT.up); // não mexido
+    expect(merged.up).toBe(TOUCH_DEFAULT.up); // untouched
   });
   it('[Inverse] não é a MESMA referência de TOUCH_DEFAULT (não muta o módulo-folha)', () => {
     const merged = normalizeTouchMap({ b0: 'action1' });
@@ -145,36 +146,32 @@ describe('normalizeTouchMap', () => {
     expect(normalizeTouchMap(42)).toEqual(TOUCH_DEFAULT);
   });
   it('[Boundary] array conta como "object" em JS: passa como está (comportamento ORIGINAL preservado, não corrigido)', () => {
-    // Object.assign({}, DEFAULT, []) não muda nada de errado (array sem props enumeráveis próprias) — mas
-    // documenta que o guard `typeof stored === "object"` deixa arrays passarem sem checagem extra.
+    // Object.assign({}, DEFAULT, []) changes nothing wrongly (an array with no own enumerable props) — but it documents that
+    // the `typeof stored === "object"` guard lets arrays through with no extra check.
     expect(normalizeTouchMap([])).toEqual(TOUCH_DEFAULT);
   });
   it('[Bug latente, NÃO corrigido] chaves/valores fora de TOUCH_SLOTS/TOUCH_ACTS passam direto — sem validação', () => {
     const merged = normalizeTouchMap({ b0: 'nao-existe', chaveEstranha: 'x' });
-    expect(merged.b0).toBe('nao-existe'); // não é uma ação válida (fora de TOUCH_ACTS) e mesmo assim entra
-    expect(merged.chaveEstranha).toBe('x'); // slot que nem existe em TOUCH_SLOTS, mesmo assim entra
+    expect(merged.b0).toBe('nao-existe'); // not a valid action (outside TOUCH_ACTS) and it gets in anyway
+    expect(merged.chaveEstranha).toBe('x'); // a slot that does not even exist in TOUCH_SLOTS, it gets in anyway
   });
 });
 
 describe('TOUCH_SLOTS / TOUCH_ACTS (dados de apresentação do painel)', () => {
   it('[Right] 13 posições de toque, cada uma com chave e chave-i18n de rótulo', () => {
-    // nove até 2026-09-12; os quatro ombros do ADR-0160 (L2, L1, R2, R1) fazem treze
+    // the nine slots plus the four shoulders of ADR-0160 (L2, L1, R2, R1) make thirteen
     expect(TOUCH_SLOTS.length).toBe(13);
     for (const s of TOUCH_SLOTS) { expect(typeof s.k).toBe('string'); expect(typeof s.lbl).toBe('string'); }
   });
-  // ESTE TESTE ANTES NÃO PODIA FALHAR: dizia verificar a cobertura "no devices.ts real" e só aferia
-  // `TOUCH_ACTS.length === 9` — passaria com TOUCH_ACT_LABELS vazio. Agora percorre as duas tabelas e o
-  // dicionário: uma ação sem chave, ou uma chave sem entrada em pt, deixa um <option> em branco no painel.
+  // A check of `TOUCH_ACTS.length` alone could not fail on an empty label table. This walks the preset and the slots: an
+  // action with no word leaves a blank <option> in the panel.
   it('⚠️ o PRESET do jogo nomeia tudo o que o transporte de toque consegue carregar', () => {
-    // O teste anterior perguntava a `TOUCH_ACT_LABELS`, uma tabela da ENGINE, se toda ação tinha chave
-    // i18n. A tabela morreu com o corte de 2026-09-06: quem tem as palavras é o jogo.
-    //
-    // O invariante muda de lado e continua a valer para o jogo próprio da engine — se a plataforma
-    // deixasse de nomear uma posição que o toque carrega, o menu daquele slot perderia a opção. Para OUTRO
-    // jogo isso seria decisão legítima; para este é regressão, e é isso que se afirma.
+    // The words belong to the game (there is no engine table of action labels), so the invariant is asked of a preset:
+    // if the preset stopped naming a position touch carries, that slot's menu would lose the option. For another game
+    // that could be a legitimate decision; for this nine-position preset it is a regression, and that is what is asserted.
     const preset = platformerPreset();
-    // ⚠️ Os OMBROS são posições que o toque carrega desde o ADR-0160 e que a plataforma não usa: só aparecem se o jogo os
-    // nomeia (ADR-0162), logo não os nomear é legítimo e não regressão.
+    // ⚠️ The SHOULDERS are positions touch carries since ADR-0160 and the preset does not use: they only appear if the game
+    // names them (ADR-0162), so not naming them is legitimate and not a regression.
     const OMBROS = new Set(['leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger']);
     for (const a of TOUCH_ACTS.filter((x) => !OMBROS.has(x))) {
       expect(preset[a], `a plataforma não nomeia "${a}", que o toque carrega`).toBeTruthy();
