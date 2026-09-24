@@ -8,7 +8,8 @@ truth (Vitest node + browser); this plan is the human checklist around them, plu
 - [ ] Unit/logic covered by Vitest **node** (ZOMBIES + Right-BICEP); each extracted module born with a test.
 - [ ] Render/DOM covered by Vitest **browser** (Playwright) where it touches PIXI/DOM.
 - [ ] Boot verified in the preview: canvas >= 1 and `window.__incl` (real boot, not just a title screenshot).
-- [ ] `tsc --noEmit` and `vitest run` green (Dev runs Node).
+- [ ] `npm run typecheck` (`tsc --noEmit`) and `vitest run` green — run by whoever made the change, before the Dev
+  reviews it.
 - [ ] Acceptance criteria in the issue "Done when" met; for educational activities, the Gherkin `.feature` passes
   (see `bdd/README.md`).
 
@@ -110,56 +111,58 @@ reach screen has to be able to say so **before** the child starts, instead of th
 
 ---
 
-## 🔴 O TRABALHO DE CAMPO MORA AQUI DESDE 2026-09-09 (ADR-0126) — e ele é o trabalho que nunca acontece
+## 🔴 FIELDWORK HAS LIVED HERE SINCE 2026-09-09 (ADR-0126) — and it is the work that never happens
 
-Quatro itens estavam abertos no tracker de issues (#6, #7, #8, #13) e nenhum era um problema resolvível por
-código: **produzem ACHADOS**, e um achado é insumo de trabalho, não o trabalho. Uma issue de campo não tem
-commit que a feche — é por isso que a #7 era a issue aberta há mais tempo do repositório.
+Four items were open in the issue tracker (#6, #7, #8, #13) and none of them was a problem solvable by
+code: **they produce FINDINGS**, and a finding is an input to work, not the work. A fieldwork issue has no
+commit that closes it — which is why #7 was the repository's longest-open issue.
 
-⚠️ **E O RISCO DESTA MUDANÇA ESTÁ ESCRITO NO PRÓPRIO REGISTO QUE A DECIDIU:** *«fieldwork leaving the tracker
-risks it becoming invisible — it is already the work that never happens»*. Um documento é mais fácil de não
-abrir do que um ticket. A contramedida é esta secção existir com **critérios de conclusão marcáveis** e com o
-que cada sessão DEVE produzir — porque o que torna trabalho de campo real não é estar listado, é alguém saber
-o que traz de volta.
+⚠️ **AND THE RISK OF THIS CHANGE IS WRITTEN IN THE VERY RECORD THAT DECIDED IT:** *«fieldwork leaving the tracker
+risks it becoming invisible — it is already the work that never happens»*. A document is easier not to open
+than a ticket. The countermeasure is for this section to exist with **tickable completion criteria** and with
+what each session MUST produce — because what makes fieldwork real is not being listed, it is somebody knowing
+what to bring back.
 
-📌 **Cada achado que precisar de código vira uma issue NESSE momento**, com a evidência anexada. É a quarta
-casa do ADR-0126, e é ela que impede a regra de apagar informação.
+📌 **Every finding that needs code becomes an issue AT THAT MOMENT**, with the evidence attached. It is the fourth
+home of ADR-0126, and it is what keeps the rule from erasing information.
 
-### Auditoria manual com leitor de tela — NVDA/JAWS/VoiceOver (era a #6)
+### Manual screen-reader audit — NVDA/JAWS/VoiceOver (was #6)
 
-Jogar o jogo **só** pelo leitor de tela, sem olhar para o ecrã, em desktop e iOS. Documentar pontos de atrito.
-Cobre o **gate 4 do ADR-001**.
+Play the game **only** through the screen reader, without looking at the screen, on desktop and iOS. Document the
+friction points. Covers **gate 4 of ADR-001**.
 
-- [ ] Uma partida completa sem olhar, em NVDA (Windows).
-- [ ] Uma partida completa sem olhar, em VoiceOver (iOS).
-- [ ] Cada ponto de atrito registado com a TELA, a AÇÃO e o que o leitor disse — as três, senão não se conserta.
-- [ ] Os atritos que precisam de código viram issues, uma por defeito.
+- [ ] One complete game without looking, on NVDA (Windows).
+- [ ] One complete game without looking, on VoiceOver (iOS).
+- [ ] Each friction point recorded with the SCREEN, the ACTION and what the reader said — all three, or it cannot be fixed.
+- [ ] The frictions that need code become issues, one per defect.
 
-### Teste de campo com cinco crianças, uma com NEE (era a #7)
+### Field test with five children, one with SEN (was #7)
 
-Observar **sem dirigir** (Mom Test); anotar quais minijogos prendem mais. Cobre o **gate 5 do ADR-001**, que é
-o último para `fully_ratified`.
+Observe **without directing** (Mom Test); note which minigames hold attention most. Covers **gate 5 of ADR-001**,
+which is the last one for `fully_ratified`.
 
-- [ ] Cinco crianças, pelo menos uma com necessidade educativa especial.
-- [ ] Observação sem instrução: o que ela faz sozinha, não o que faz quando lhe dizem.
-- [ ] A frase da tela de alcance (#112) é LIDA por uma criança sem um adulto a explicá-la.
-- [ ] Anotado o que prendeu e o que ela abandonou — o abandono é o dado mais caro e o mais fácil de não anotar.
+- [ ] Five children, at least one with a special educational need.
+- [ ] Observation without instruction: what the child does alone, not what they do when told.
+- [ ] The sentence of the reach screen (#112) is READ by a child without an adult explaining it.
+- [ ] Noted what held them and what they abandoned — abandonment is the most expensive data point and the easiest not to write down.
 
-### Validação no hardware-alvo — tablet Positivo + Chromebook (era a #8)
+### Validation on the target hardware — Positivo tablet + Chromebook (was #8)
 
-Desempenho, acessibilidade (ChromeVox no Chromebook) e Lighthouse ≥ 90 (mobile / 3G / CPU 4×). Cobre os
-**gates 1 e 2 do ADR-001**. Corre **quando os aparelhos existirem**; ver a bateria de hardware acima, que já
-tem o escopo de quatro jogadores decidido pelo Dev.
+Performance, accessibility (ChromeVox on the Chromebook) and Lighthouse ≥ 90 (mobile / 3G / CPU 4×). Covers
+**gates 1 and 2 of ADR-001**. Runs **when the devices exist**; see the hardware battery above, which already
+has the four-player scope decided by the Dev.
 
-- [ ] Lighthouse ≥ 90 em mobile com estrangulamento de 3G e CPU 4×.
-- [ ] ChromeVox atravessa o jogo inteiro no Chromebook.
-- [ ] O cartão de alcance (#112) é VISTO neste aparelho — é a metade que a #7 não dá.
+- [ ] Lighthouse ≥ 90 on mobile with 3G throttling and 4× CPU.
+- [ ] ChromeVox goes through the whole game on the Chromebook.
+- [ ] The reach card (#112) is SEEN on this device — the half that #7 does not provide.
 
-### Auditoria final WCAG 2.2 + GAG (era a #13)
+### Final WCAG 2.2 + GAG audit (was #13)
 
-Auditoria pós-tudo: axe + Lighthouse + GAG item a item à mão + gates do ADR-001, com relatório **honesto de AA
-contra AAA**. Complementa o gate do axe em CI, que já corre.
+The after-everything audit: axe + Lighthouse + GAG item by item by hand + the gates of ADR-001, with an **honest
+AA-versus-AAA** report. It complements the axe gate in CI, which already runs; the automatable half — which
+criteria have a failing case and which are only cited — is kept in
+[`../compliance/gates-de-acessibilidade.md`](../compliance/gates-de-acessibilidade.md).
 
-- [ ] axe e Lighthouse limpos no build servido, não no dev.
-- [ ] GAG percorrido item a item, à mão.
-- [ ] Relatório que diz onde é AA e não AAA, **por critério** — o pilar 2 proíbe vender «AAA em bloco».
+- [ ] axe and Lighthouse clean on the served build, not on dev.
+- [ ] GAG walked through item by item, by hand.
+- [ ] A report that says where it is AA and not AAA, **per criterion** — pillar 2 forbids selling «AAA em bloco».

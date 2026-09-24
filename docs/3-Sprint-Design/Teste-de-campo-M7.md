@@ -1,20 +1,25 @@
-# Teste de campo — Multilaser M7 3G Plus + uma criança
+# Field test — Multilaser M7 3G Plus + one child
 
-> 📌 **Em pt-BR por excepção declarada** (`CLAUDE.md` §0): é roteiro operacional lido **em campo**, e as frases
-> ditas à criança são conteúdo, não artefacto. O resto da papelada de teste continua em inglês
-> (`Test-Plan.md`).
+> 📌 **Two languages, on purpose.** This is an operational script read **in the field**, in Brazil. The parts used
+> with the child and the carer — consent (PART 0), the session (PART 3) and the notes taken right after it
+> (PART 4) — **stay in pt-BR**: the sentences said to the child are content, not an artifact (`CLAUDE.md`, the pt-BR
+> exception). The engineering parts — the device measurement, putting the game on the tablet and where the notes
+> go — are in English, like the rest of the test paperwork (`Test-Plan.md`). Menu paths on the device are quoted
+> as the pt-BR Android UI shows them.
 
-**Aparelho:** Multilaser M7 3G Plus, comprado pela **Prefeitura de Monte Aprazível em 2019**.
-⚠️ **Isto não é um aparelho parecido com o alvo — é o alvo.** O pilar 1 diz «hardware de escola pública BR», e
-até hoje ele era uma hipótese. Passa a ser um aparelho com número de património.
+**Device:** Multilaser M7 3G Plus, bought by the **Prefeitura de Monte Aprazível in 2019**.
+⚠️ **This is not a device similar to the target — it is the target.** Pillar 1 says «hardware de escola pública BR», and
+until now that was a hypothesis. It becomes a device with an asset number.
 
-**Cobre:** issue #8 (validação em hardware-alvo) e a metade da #7 que precisa de uma criança. ⚠️ **NÃO cobre a
-#112** — a tela que avisa antes de começar **não existe ainda**; o que se colhe aqui é o material para
-escrevê-la.
+**Covers:** issue #8 (validation on target hardware) and the half of #7 that needs a child. And, for **#112**, it
+collects the child's own words: the screen that warns before the game starts **exists now** (`app/js/ui/reach-notice.ts`),
+but its sentences were written without a child reading them; this session checks whether a child understands them.
 
 ---
 
 ## PARTE 0 · Antes de ligar o aparelho (5 min)
+
+*(Kept in pt-BR: said and noted in the field, with the child's carer.)*
 
 - [ ] **Autorização de quem cuida da criança**, dita em voz alta e anotada aqui: quem autorizou, quando.
       ⚠️ **Nada de foto, vídeo ou gravação de voz.** As notas descrevem o que a criança FEZ, e não quem ela é.
@@ -25,67 +30,70 @@ escrevê-la.
 
 ---
 
-## PARTE 1 · O aparelho, sem a criança (15 min)
+## PART 1 · The device, without the child (15 min)
 
-Isto é medição, e é o que torna a sessão com a criança interpretável depois. **Anote os valores, não «ok».**
+This is measurement, and it is what makes the session with the child interpretable afterwards. **Write down the values, not "ok".**
 
-| o que | onde | anotar |
+| what | where | note down |
 |---|---|---|
-| Versão do Android | Config → Sobre o tablet | ______ |
-| Versão do **Chrome** | Chrome → ⋮ → Configurações → Sobre o Chrome | ______ |
-| Resolução da tela | Config → Sobre / ou `chrome://gpu` | ______ |
-| Memória RAM | Sobre o tablet | ______ |
+| Android version | Config → Sobre o tablet | ______ |
+| **Chrome** version | Chrome → ⋮ → Configurações → Sobre o Chrome | ______ |
+| Screen resolution | Config → Sobre / or `chrome://gpu` | ______ |
+| RAM | Sobre o tablet | ______ |
 
-### ⚠️ A medição que decide uma promessa da engine
+### ⚠️ The measurement that decides one of the engine's promises
 
-O **ADR-0065** assume que a voz do sistema pode não existir em português num aparelho de escola. **Este é o
-aparelho para descobrir.** No Chrome do tablet, abra `chrome://version` e depois teste a voz:
+**ADR-0065** assumes the system voice may not exist in Portuguese on a school device. **This is the
+device to find out.** In the tablet's Chrome, open `chrome://version` and then test the voice:
 
-- [ ] Config → Acessibilidade → **existe TalkBack?** ( ) sim ( ) não
-- [ ] Config → Idiomas → **Saída de texto para voz** → há **voz em português**? ( ) sim ( ) não
-      **Qual motor?** ______________ (Google TTS? Multilaser? nenhum?)
-- [ ] Se houver, toque em «Ouvir um exemplo» e anote: **dá para entender?** ( ) sim ( ) mais ou menos ( ) não
+- [ ] Config → Acessibilidade → **is there TalkBack?** ( ) yes ( ) no
+- [ ] Config → Idiomas → **Saída de texto para voz** → is there a **Portuguese voice**? ( ) yes ( ) no
+      **Which engine?** ______________ (Google TTS? Multilaser? none?)
+- [ ] If there is one, tap «Ouvir um exemplo» and note: **is it understandable?** ( ) yes ( ) more or less ( ) no
 
-📌 **Se NÃO houver voz pt-BR neste aparelho, isso sozinho justifica os ~244 MB das quatro vozes neurais** —
-que é a decisão do ADR-0110, hoje sustentada por uma suposição.
+📌 **If there is NO pt-BR voice on this device, that alone justifies the ~244 MB of the four neural voices** —
+which is ADR-0110's decision, today supported by an assumption.
 
 ---
 
-## PARTE 2 · Pôr o jogo no tablet
+## PART 2 · Putting the game on the tablet
 
-⚠️ **Não há deploy ligado** (nenhum projeto do Cloudflare Pages está conectado). O caminho é servir do seu PC
-para a rede local:
+⚠️ **There is no deploy connected** (no Cloudflare Pages project is attached to any repository). The way is to serve
+from your PC to the local network. From the root of the engine repository:
 
 ```bash
-npm --prefix C:\Users\candi\Claude\SP-the-inclusionist-tracer run build
+npm run build
 ```
 
 ```bash
-npm --prefix C:\Users\candi\Claude\SP-the-inclusionist-tracer run preview -- --host
+npm run preview -- --host
 ```
 
-O `--host` faz o servidor aceitar a rede local. Ele imprime um endereço `http://192.168.x.x:PORTA` — **abra
-esse endereço no Chrome do tablet**, com os dois na mesma Wi-Fi.
+`--host` makes the server accept the local network. It prints an address `http://192.168.x.x:PORT` — **open
+that address in the tablet's Chrome**, with both on the same Wi-Fi. ⚠️ The built app has no `index.html` (it left
+with the cartridge, #111): open **`/quiz.html`** at that address.
 
-- [ ] **Abriu?** ( ) sim ( ) não → se não, anote o erro exacto: ______________
-- [ ] **Quanto tempo até aparecer alguma coisa na tela?** ______ segundos (conte em voz baixa, não precisa de
-      cronómetro)
+- [ ] **Did it open?** ( ) yes ( ) no → if not, note the exact error: ______________
+- [ ] **How long until something appears on the screen?** ______ seconds (count under your breath, no
+      stopwatch needed)
 
-### O teste do primeiro dia, se der para fazer
+### The first-day test, if it can be done
 
-📌 O senhor decidiu esta madrugada: **«PWA no primeiro dia ONLINE, depois OFFLINE-FIRST»**. O M7 tem 3G, então
-dá para provar:
+📌 The Dev's decision, now pillar 8: **«PWA no primeiro dia ONLINE, depois OFFLINE-FIRST»**. The M7 has 3G, so
+it can be proved:
 
-- [ ] Com Wi-Fi, abra o jogo e deixe carregar até jogar.
-- [ ] **Desligue a Wi-Fi E os dados.** Feche o Chrome. Abra outra vez no mesmo endereço.
-- [ ] **Funcionou sem rede?** ( ) sim ( ) não ( ) parcialmente: ______________
+- [ ] With Wi-Fi, open the game and let it load until it is playable.
+- [ ] **Turn off Wi-Fi AND mobile data.** Close Chrome. Open the same address again.
+- [ ] **Did it work without a network?** ( ) yes ( ) no ( ) partly: ______________
 
-⚠️ Se não funcionar, **não é falha da criança nem do aparelho** — é o precache, e é exactamente o que os gates
-desta madrugada existem para vigiar. Anote e siga.
+⚠️ If it does not work, **it is not the child's fault nor the device's** — it is the precache, which is exactly
+what the precache gate (`npm run check:precache`) exists to watch. Note it and move on.
 
 ---
 
 ## PARTE 3 · A sessão com a criança (20–30 min)
+
+*(Kept in pt-BR: the sentences in bold quotes are said to the child, and the answers are written in the child's words.)*
 
 ### As três regras, e a terceira é a difícil
 
@@ -117,12 +125,12 @@ Anote **o que aconteceu**, com o minuto aproximado:
 - [ ] Pergunte no fim, apontando para uma palavra: **«O que tá escrito aqui?»** — e anote se ela leu, hesitou
       ou não conseguiu: ______________
 
-📌 Isto mede o `minPx` do #87 item 2 contra uma tela de verdade, e não contra um número numa tabela.
+📌 *(Engineering note.)* This measures the `minPx` of #87 item 2 against a real screen, not against a number in a table.
 
 **3 · O toque responde?**
 - [ ] Algum toque dela **não fez nada**? ( ) sim ( ) não → o quê: ______________
 - [ ] Ela conseguiu usar **dois dedos ao mesmo tempo**? ( ) sim ( ) não ( ) não tentou
-      *(o ADR-0104 §B fixou o piso em DOIS pontos; este aparelho é onde isso se confirma)*
+      *(Engineering note: ADR-0104 §B set the floor at TWO touch points; this device is where that is confirmed.)*
 
 **4 · A voz falou, e ela entendeu?**
 - [ ] Ligue o leitor de tela pelo ícone da barra e observe: ela **parou para ouvir**? ( ) sim ( ) não
@@ -130,18 +138,21 @@ Anote **o que aconteceu**, com o minuto aproximado:
       ______________
       ⚠️ Se ela repetir errado, **a frase é que está errada**, não ela.
 
-**5 · A frase da #112, que ainda não existe**
+**5 · A frase da #112**
 Esta é a colheita, não a verificação. Em algum momento, pergunte:
 
 > **«Se um jogo precisasse de mais botões do que esse tablet tem, como é que ele devia te avisar?»**
 
 Anote a resposta **em português dela, sem corrigir**: ______________
 
-📌 É daqui que sai o texto da tela do #112 — o gate está construído há semanas e a **frase** é o que falta.
+📌 *(Engineering note.)* The #112 screen (`ui/reach-notice`) and its sentences exist, written by adults; the child's
+answer is what they are checked against, and rewritten from if they do not match.
 
 ---
 
 ## PARTE 4 · Depois (5 min, antes de esquecer)
+
+*(Kept in pt-BR: the field operator's own notes, written right after the session.)*
 
 - [ ] **A coisa que mais me surpreendeu:** ______________
 - [ ] **O momento em que ela travou:** ______________
@@ -153,16 +164,16 @@ não repita no mesmo dia.
 
 ---
 
-## O que fazer com estas notas
+## What to do with these notes
 
-Cole a folha preenchida como comentário nas issues, dividida assim:
+Paste the filled-in sheet as comments on the issues, split like this:
 
-| parte | issue |
+| part | issue |
 |---|---|
-| PARTE 1 (aparelho, voz do sistema) | [#8](https://github.com/the-inclusionist/the-inclusionist-engine/issues/8) |
-| PARTE 2 (primeiro dia / offline) | [#8](https://github.com/the-inclusionist/the-inclusionist-engine/issues/8) |
-| PARTE 3 perguntas 1–4 | [#7](https://github.com/the-inclusionist/the-inclusionist-engine/issues/7) |
-| PARTE 3 pergunta 5 (a frase) | [#112](https://github.com/the-inclusionist/the-inclusionist-engine/issues/112) |
+| PART 1 (device, system voice) | [#8](https://github.com/the-inclusionist/the-inclusionist-engine/issues/8) |
+| PART 2 (first day / offline) | [#8](https://github.com/the-inclusionist/the-inclusionist-engine/issues/8) |
+| PARTE 3 questions 1–4 | [#7](https://github.com/the-inclusionist/the-inclusionist-engine/issues/7) |
+| PARTE 3 question 5 (the sentence) | [#112](https://github.com/the-inclusionist/the-inclusionist-engine/issues/112) |
 
-📌 **Não precisa de organizar nem resumir.** Cole cru, com os «não sei» e os campos vazios — um campo vazio
-diz que não deu para medir, e isso é informação. Eu leio e transformo em trabalho.
+📌 **No need to organise or summarise.** Paste it raw, with the "don't know"s and the empty fields — an empty field
+says it could not be measured, and that is information. The AI reads it and turns it into work.

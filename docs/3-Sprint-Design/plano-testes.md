@@ -1,108 +1,110 @@
-# Plano de Testes — The Inclusionist
+> Historical plan (2026-07-04, with a section added 2026-08-26): kept as a record; the current state lives in [`Test-Plan.md`](Test-Plan.md), `vite.config.ts` (the two Vitest projects) and [`../2-Architecture/CI-CD.md`](../2-Architecture/CI-CD.md).
 
-Testes de unidade dos módulos, escritos **conforme cada módulo é extraído** (decisão do José, 2026-07-04; ver
-`../5-Refactoring/plano-modularizacao.md` §8). Padrões adotados: **ZOMBIES** (didático) + **Right-BICEP** (rigor obrigatório).
+# Test Plan — The Inclusionist
 
-## 1. Por que testar por extração (e com redundância)
-O momento da extração é quando o contrato do módulo está mais claro → teste mais barato de escrever, e rede de
-segurança para as extrações grandes/acopladas que vêm depois. A verificação é **redundante de propósito** (decisão
-do José) — dois caminhos independentes pegam mais coisa:
+Unit tests of the modules, written **as each module is extracted** (the Dev's decision, 2026-07-04; see
+`../5-Refactoring/plano-modularizacao.md` §8). Patterns adopted: **ZOMBIES** (didactic) + **Right-BICEP** (mandatory rigour).
 
-| Camada | Quem roda | O quê |
+## 1. Why test at extraction (and with redundancy)
+The moment of extraction is when the module's contract is clearest → the test is cheapest to write, and it is a safety
+net for the large/coupled extractions that come later. Verification is **redundant on purpose** (the Dev's
+decision) — two independent paths catch more:
+
+| Layer | Who runs it | What |
 |---|---|---|
-| **Grafo estático** | IA (script Python) | todo `import {..}` casa com um `export`? Imune a cache. |
-| **Boot real** | IA (preview) | `canvasCount≥1` + `window.__incl` — o jogo inteiro sobe? Ver [[feedback-verify-game-actually-boots]]. |
-| **Vitest** | **José** (`npx vitest`) | unidade real: node (lógica) + Chromium/Playwright (render). CI-ready. |
+| **Static graph** | AI (Python script) | does every `import {..}` match an `export`? Immune to caching. |
+| **Real boot** | AI (preview) | `canvasCount≥1` + `window.__incl` — does the whole game come up? See [[feedback-verify-game-actually-boots]]. |
+| **Vitest** | **the Dev** (`npx vitest`) | real unit tests: node (logic) + Chromium/Playwright (render). CI-ready. |
 
-**Harness de navegador APOSENTADO (2026-07-04, Estágio 0b da migração TS+Vite):** o `app/tests/` foi removido — pós-Vite ficava awkward de servir e a dupla-manutenção não compensava. O **Vitest (José) é o caminho único** de teste; a verificação da IA por extração vira **grafo + boot** (servindo o `dist/` buildado) + pré-validação ad-hoc das expectativas no preview.
+**Browser harness RETIRED (2026-07-04, Stage 0b of the TS+Vite migration):** `app/tests/` was removed — after Vite it was awkward to serve and the double maintenance did not pay off. **Vitest (the Dev) is the single** test path; the AI's per-extraction verification becomes **graph + boot** (serving the built `dist/`) + ad-hoc pre-validation of the expectations in the preview.
 
-## 2. Os dois padrões
+## 2. The two patterns
 
-### ZOMBIES (James Grenning) — heurística de ORDEM e cobertura (didática p/ TDD)
-Ordena o pensamento do teste, do trivial ao complexo — ótimo para um contribuinte iniciante ler a suíte e
-entender *como se pensa* um teste:
-- **Z**ero — o caso vazio/nenhum primeiro (string vazia, lista vazia, nada pressionado).
-- **O**ne — um elemento.
-- **M**any — vários (e a interação entre eles).
-- **B**oundary behaviors — bordas.
-- **I**nterface definition — a forma da API (tipos, contagens, enums).
-- **E**xercise exceptional behavior — forçar o caminho de erro/exceção.
-- **S**imple scenarios, simple solutions — manter simples.
+### ZOMBIES (James Grenning) — a heuristic of ORDER and coverage (didactic, for TDD)
+It orders the thinking behind a test, from trivial to complex — great for a beginner contributor reading the suite and
+understanding *how one thinks* a test:
+- **Z**ero — the empty/none case first (empty string, empty list, nothing pressed).
+- **O**ne — one element.
+- **M**any — several (and the interaction between them).
+- **B**oundary behaviors — edges.
+- **I**nterface definition — the shape of the API (types, counts, enums).
+- **E**xercise exceptional behavior — force the error/exception path.
+- **S**imple scenarios, simple solutions — keep it simple.
 
-### Right-BICEP (Hunt & Thomas, *Pragmatic Unit Testing*) — rigor OBRIGATÓRIO
-Nenhum módulo "fecha" sem cobrir **Right + B + I + C + E** (P quando fizer sentido):
-- **Right** — o resultado está certo no caminho feliz?
-- **B**oundary — condições de borda. Sub-checklist **CORRECT**: **C**onformance (formato), **O**rdering (ordem),
-  **R**ange (faixa), **R**eference (dependências externas/estado), **E**xistence (nulo/vazio/ausente),
-  **C**ardinality (0/1/N — casa com ZOMBIES), **T**ime (ordem/temporização/concorrência).
-- **I**nverse — relação inversa (ex.: `parseLevel` ↔ `gridToGlyphs` = identidade).
-- **C**ross-check — validar por OUTRO caminho (ex.: `tiles.selfTest()` prova a bijeção independentemente).
-- **E**rror conditions — forçar erros (entrada inválida, glifo desconhecido, JSON corrompido).
-- **P**erformance — características de desempenho (raro aqui; usar se um módulo tiver custo relevante).
+### Right-BICEP (Hunt & Thomas, *Pragmatic Unit Testing*) — MANDATORY rigour
+No module "closes" without covering **Right + B + I + C + E** (P when it makes sense):
+- **Right** — is the result right on the happy path?
+- **B**oundary — edge conditions. Sub-checklist **CORRECT**: **C**onformance (format), **O**rdering (order),
+  **R**ange (range), **R**eference (external dependencies/state), **E**xistence (null/empty/absent),
+  **C**ardinality (0/1/N — matches ZOMBIES), **T**ime (ordering/timing/concurrency).
+- **I**nverse — inverse relation (e.g. `parseLevel` ↔ `gridToGlyphs` = identity).
+- **C**ross-check — validate by ANOTHER path (e.g. `tiles.selfTest()` proves the bijection independently).
+- **E**rror conditions — force errors (invalid input, unknown glyph, corrupted JSON).
+- **P**erformance — performance characteristics (rare here; use it if a module has a relevant cost).
 
-**Convenção de escrita:** cada teste leva um rótulo no nome — `[Zero]`, `[One]`, `[Many]`, `[Boundary]`,
-`[Interface]`, `[Inverse]`, `[Cross-check]`, `[Error]`, `[Right]` — para a suíte ser autoexplicativa.
+**Writing convention:** each test carries a label in its name — `[Zero]`, `[One]`, `[Many]`, `[Boundary]`,
+`[Interface]`, `[Inverse]`, `[Cross-check]`, `[Error]`, `[Right]` — so the suite explains itself.
 
-### Gate de DECISÃO não é gate de USO
+### A DECISION gate is not a USE gate
 
-Regra aprendida caro, e duas vezes em poucas fatias (2026-08-26): extrair a decisão para um módulo puro e
-testá-la ali **não prova que ela está ligada**. Os dois casos:
+A rule learned the hard way, and twice within a few slices (2026-08-26): extracting the decision into a pure module and
+testing it there **does not prove it is wired in**. The two cases:
 
-| o que foi gateado | o que passou batido | como apareceu |
+| what was gated | what slipped through | how it showed up |
 |---|---|---|
-| `fracNotsHtml` (o markup inicial das notações de fração) | o *handler* do clique, que continuou escrevendo os atributos antigos | no navegador: clicar não mexia em marca nenhuma |
-| `botaoDeCorrerEngatado` (a decisão da sondagem da bengala) | a chamada em `stepSounds` | só ao tentar a mutação: devolver `held(pl,'run')` deixava tudo verde |
+| `fracNotsHtml` (the initial markup of the fraction notations) | the click *handler*, which kept writing the old attributes | in the browser: clicking moved no mark at all |
+| `botaoDeCorrerEngatado` (the decision of the cane's probing) | the call in `stepSounds` | only when attempting the mutation: returning `held(pl,'run')` left everything green |
 
-Nos dois, o teste da decisão continuava verde com a fiação desfeita — ou seja, ele media a função e não o
-comportamento. Um gate assim dá a sensação de cobertura sem a cobertura, e o custo cai em quem depende do
-comportamento: no primeiro caso, quem não enxerga a cor do realce; no segundo, a criança cega perdendo a
-sondagem da bengala.
+In both, the decision's test stayed green with the wiring undone — that is, it measured the function and not the
+behaviour. A gate like that gives the feeling of coverage without the coverage, and the cost falls on whoever depends on the
+behaviour: in the first case, whoever cannot see the highlight's colour; in the second, the blind child losing the
+cane's probing.
 
-**A prática que fecha isto** é a que a mutação já pedia, aplicada em dois níveis:
+**The practice that closes this** is the one mutation already asked for, applied at two levels:
 
-1. Teste a DECISÃO onde ela é pura (rápido, exaustivo, barato).
-2. Teste o USO onde ele acontece — a função exportada que o produto chama de verdade (`stepSounds`,
-   `screenPauseMarkup`, o *handler* do clique). Basta UM caso, e ele é o que a mutação da fiação derruba.
-3. **Mute a fiação, não só a decisão.** Se trocar a chamada por como era antes deixa a suíte verde, o gate
-   de uso não existe — e é aí que se descobre, não na tela da criança.
+1. Test the DECISION where it is pure (fast, exhaustive, cheap).
+2. Test the USE where it happens — the exported function the product really calls (`stepSounds`,
+   `screenPauseMarkup`, the click *handler*). ONE case is enough, and it is the one the wiring mutation knocks down.
+3. **Mutate the wiring, not only the decision.** If swapping the call back to how it was leaves the suite green, the use
+   gate does not exist — and that is where it is discovered, not on the child's screen.
 
-## 3. Arquitetura — Vitest com dois "projects"
-Regra de design que isso impõe (e que é boa): **maximizar lógica pura** (testável em node, rápida) e **minimizar
-a superfície só-de-navegador** (render). Ao extrair, evitar que módulos de lógica importem PIXI/`document`.
+## 3. Architecture — Vitest with two "projects"
+The design rule this imposes (and it is a good one): **maximise pure logic** (testable in node, fast) and **minimise
+the browser-only surface** (render). When extracting, keep logic modules from importing PIXI/`document`.
 
-- **`node`** — lógica pura, sem `PIXI`/`document`/`localStorage`: `core/constants`, `core/tiles`, `core/world`,
-  `input/state`, e a **física** quando for extraída. Arquivos `tests/*.node.test.js`. Rápido, sem browser.
-- **`browser`** — precisa do ambiente real (Chromium via Playwright): `render/canvas`, `render/props`,
-  `render/sprites`, `render/sprite-fx` (PIXI/canvas/WebGL) e `platform/storage` (localStorage). Arquivos
-  `tests/*.browser.test.js`. `vitest.setup.browser.js` expõe `globalThis.PIXI` (pixi.js **7.4.2**, a MESMA
-  major do `vendor/pixi.min.js`) para os módulos que leem `PIXI` global, igual ao jogo.
+- **`node`** — pure logic, no `PIXI`/`document`/`localStorage`: `core/constants`, `core/tiles`, `core/world`,
+  `input/state`, and **physics** once it is extracted. Files `tests/*.node.test.js`. Fast, no browser.
+- **`browser`** — needs the real environment (Chromium via Playwright): `render/canvas`, `render/props`,
+  `render/sprites`, `render/sprite-fx` (PIXI/canvas/WebGL) and `platform/storage` (localStorage). Files
+  `tests/*.browser.test.js`. `vitest.setup.browser.js` exposes `globalThis.PIXI` (pixi.js **7.4.2**, the SAME
+  major as `vendor/pixi.min.js`) for the modules that read a global `PIXI`, just like the game.
 
-Tudo é **DEV-ONLY**: `package.json`/`node_modules`/`tests/` ficam na RAIZ do repo. O deploy do Cloudflare é a
-pasta `app/`, então **nada disso vai pro jogo** — que continua **sem build/bundler** (pilar da leveza).
+Everything is **DEV-ONLY**: `package.json`/`node_modules`/`tests/` stay at the repo ROOT. The Cloudflare deploy is the
+`app/` folder, so **none of this goes into the game** — which remains **with no build/bundler** (the lightness pillar).
 
-## 4. Como rodar (José)
+## 4. How to run it (the Dev)
 ```bash
-npm install                     # instala vitest + @vitest/browser + playwright + pixi.js (dev)
-npx playwright install chromium # baixa o Chromium do Playwright (1ª vez)
-npx vitest run                  # roda tudo (node + browser), uma vez
-npx vitest                      # modo watch
-npm run test:node               # só a lógica (rápido)
-npm run test:browser            # só o render (Chromium)
+npm install                     # installs vitest + @vitest/browser + playwright + pixi.js (dev)
+npx playwright install chromium # downloads Playwright's Chromium (1st time)
+npx vitest run                  # runs everything (node + browser), once
+npx vitest                      # watch mode
+npm run test:node               # logic only (fast)
+npm run test:browser            # render only (Chromium)
 ```
-> Observação honesta: **eu (IA) não rodo Node neste ambiente** — escrevo os testes e a config, mas quem executa o
-> Vitest é você. A config de *browser mode* pode variar com a versão do Vitest instalada; se algo reclamar,
-> me mande a saída que eu ajusto. Enquanto isso, eu mantenho a verificação por grafo + boot (dist/) a cada rodada.
+> Honest note: **I (the AI) do not run Node in this environment** — I write the tests and the config, but whoever runs
+> Vitest is you. The *browser mode* config may vary with the installed Vitest version; if something complains,
+> send me the output and I adjust it. Meanwhile, I keep the graph + boot (dist/) verification on every round.
 
-## 5. Cobertura e roadmap
-- **Coberto (módulos-folha já extraídos):** constants, tiles, world, input/state (node); canvas, props, sprites,
-  sprite-fx, storage (browser). Ver `tests/logic.node.test.js` e `tests/render.browser.test.js`.
-- **Cada próxima extração** adiciona seus testes no arquivo do project certo, cobrindo Right+B+I+C+E.
-- **Física** (quando extraída de `game.js`): alvo prioritário de testes node (pulo, gravidade, água, trampolim,
-  colisão) — determinística, alto valor. É o maior ganho da suíte.
-- **CI:** ✅ o GitHub Actions (`.github/workflows/ci.yml`) roda a suíte no push da `main` e em pull request — trava regressões.
+## 5. Coverage and roadmap
+- **Covered (leaf modules already extracted):** constants, tiles, world, input/state (node); canvas, props, sprites,
+  sprite-fx, storage (browser). See `tests/logic.node.test.js` and `tests/render.browser.test.js`.
+- **Each next extraction** adds its tests to the right project's file, covering Right+B+I+C+E.
+- **Physics** (when extracted from `game.js`): a priority target for node tests (jump, gravity, water, trampoline,
+  collision) — deterministic, high value. It is the suite's biggest gain.
+- **CI:** ✅ GitHub Actions (`.github/workflows/ci.yml`) runs the suite on pushes to `main` and on pull requests — it blocks regressions.
 
-## 6. (Aposentado) Harness de navegador
-O `app/tests/` (index.html + suite.js) foi REMOVIDO no Estágio 0b da migração TS+Vite (2026-07-04). Motivo: pós-
-Vite ele ficava awkward de servir e a dupla-manutenção com o Vitest não compensava (o Vitest cobre o mesmo). O
-caminho de teste passa a ser SÓ o Vitest; a IA verifica cada extração por grafo (Python) + boot no `dist/`
-buildado + pré-validação das expectativas no preview.
+## 6. (Retired) Browser harness
+`app/tests/` (index.html + suite.js) was REMOVED in Stage 0b of the TS+Vite migration (2026-07-04). Reason: after
+Vite it was awkward to serve and the double maintenance with Vitest did not pay off (Vitest covers the same). The
+test path becomes ONLY Vitest; the AI verifies each extraction by graph (Python) + boot on the built `dist/`
++ pre-validation of the expectations in the preview.
