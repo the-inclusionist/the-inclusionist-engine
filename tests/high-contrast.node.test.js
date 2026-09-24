@@ -68,7 +68,6 @@ describe('render/high-contrast — worldTexFor/spriteTexFor (desvio "normal": n�
       outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => { throw new Error('não deveria construir canvas em modo normal'); },
       getWorldTexNormal: () => worldTexNormal,
-      sprites: () => ({}),
       sprites: () => ({ alvo: { canvas: null, tex: texDeclarada } }), roleOf,
     });
     expect(worldTexFor('normal')).toBe(worldTexNormal);
