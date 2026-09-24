@@ -73,6 +73,7 @@ function boot() {
   const motion = initSettingsMotion({
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $, srSay: noop, store: { setBool: noop }, frontOverlay: panel.frontOverlay, restoreFocus: panel.restoreFocus,
+    matchMedia: () => ({ matches: false }), // mandatory (ADR-0232): the reduced-motion question is injected
     toggleBtn: (el, on) => { el.classList.toggle('is-on', on); el.setAttribute('aria-pressed', String(on)); },
     rm: { parallax: false, decor: false, items: false, particles: false }, saveRM: noop,
     rmKeys: RM_KEYS, rmChar: RM_CHAR,

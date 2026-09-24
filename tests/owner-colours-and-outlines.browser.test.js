@@ -6,6 +6,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SEM_ASSUNTO, comAssunto } from './fixtures/accommodation-answers.js';
+import { DEFAULTS } from '../app/js/core/setting-defaults.js';
 
 let motor, state;
 const CHAVES = ['incl_ownercolors', 'incl_outfg', 'incl_outbg'];
@@ -41,9 +42,9 @@ beforeAll(async () => {
   motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 afterAll(() => {
-  state.setOwnerColorsValue(state.DEFAULTS.ownerColors);
-  state.setOutlineFgValue(state.DEFAULTS.hcOutlineFg);
-  state.setOutlineBgValue(state.DEFAULTS.hcOutlineBg);
+  state.setOwnerColorsValue(DEFAULTS.ownerColors);
+  state.setOutlineFgValue(DEFAULTS.hcOutlineFg);
+  state.setOutlineBgValue(DEFAULTS.hcOutlineBg);
   for (const k of CHAVES) { if (antes[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, antes[k]); }
 });
 

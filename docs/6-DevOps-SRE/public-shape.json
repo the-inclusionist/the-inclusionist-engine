@@ -104,6 +104,9 @@
     "type ActionPreset": "Partial<Readonly<Record<Action, ActionWord>>>",
     "type ActionLabeller": "(a: Action) => string"
   },
+  "core/camera-cycle.ts": {
+    "type CameraControl": "'off' | 'hands' | 'face' | 'eyes'"
+  },
   "core/caption-duration.ts": {
     "type CaptionRate": "(typeof CAPTION_RATES)[number]"
   },
@@ -343,6 +346,9 @@
       "cols"
     ]
   },
+  "core/setting-defaults.ts": {
+    "type MediaQuery": "(query: string) => { readonly matches: boolean }"
+  },
   "core/speech-rate.ts": {
     "type SpeechRate": "(typeof SPEECH_RATES)[number]"
   },
@@ -382,8 +388,7 @@
       "tx"
     ],
     "type LetterCase": "'mixed' | 'upper'",
-    "type OutlineLevel": "0 | 1 | 2",
-    "type CameraControl": "'off' | 'hands' | 'face' | 'eyes'"
+    "type OutlineLevel": "0 | 1 | 2"
   },
   "core/visual-state.ts": {
     "interface VisualState": [
@@ -2303,6 +2308,7 @@
       "getPlayers",
       "holdsKeys",
       "isLibrasOn",
+      "matchMedia",
       "microphone?",
       "noVoice?",
       "onLeaveBar?",
@@ -2535,6 +2541,7 @@
       "getNumPlayers",
       "getPlayers",
       "hasCharacter?",
+      "matchMedia",
       "restoreFocus?",
       "rm?",
       "rmChar?",

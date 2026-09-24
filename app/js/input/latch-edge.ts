@@ -15,7 +15,7 @@
 // of them knowing the toggle exists. A second required field in two contexts would be more public surface, one more
 // thing a cartridge can forget, and the same question asked twice.
 import * as store from '../platform/storage.js';
-import { DEFAULTS } from '../core/state.js';
+import { DEFAULTS } from '../core/setting-defaults.js';
 import { playerEdge, inputOf } from './state.js';
 import { syncLatch, type LatchPlayer } from './latch-sync.js';
 import type { LatchStore } from './latch-store.js';

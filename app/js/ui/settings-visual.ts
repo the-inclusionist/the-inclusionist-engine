@@ -13,7 +13,7 @@ import type { PanelShellCtx } from './panel-shell.js';
 // The DEFAULT colours of the four roles, from render/hc-role-data (a leaf, no dependencies) — the same source
 // render/high-contrast uses to repaint the tiles. Here they only say whether the child changed one.
 import { HC_ROLE_DEF } from '../render/hc-role-data.js';
-import { DEFAULTS } from '../core/state.js';
+import { DEFAULTS } from '../core/setting-defaults.js';
 /*
  * 📌 THE PURE HALF LIVES IN `ui/visual-choices` (ADR-0221), and the SUITE pointed at the seam:
  * `tests/settings-visual.node.test.js` imports exactly those names, and the node project mounts no document — so whoever

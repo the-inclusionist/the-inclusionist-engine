@@ -1080,6 +1080,35 @@ describe('createGame num documento de verdade', () => {
       document.querySelector('#animation-reset').click();
     });
 
+    it('🔴 [Right] the root asks the HOST window whether the system wants less motion (ADR-0232)', () => {
+      // `defaultReducedMotion` reaches no `window` any more: the root passes `win.matchMedia`. A window whose system asks
+      // for reduction must reach the motion panel — a root that passed a constant `false` would switch the scene back on
+      // at the reset for exactly the child who asked for less.
+      const reduce = new Proxy(window, {
+        get: (t, p) => {
+          if (p === 'matchMedia') return (q) => ({ matches: q === '(prefers-reduced-motion: reduce)' });
+          const v = Reflect.get(t, p);
+          // a method runs on the REAL window, or the browser answers «Illegal invocation» (see `platform/listener-scope`)
+          return typeof v === 'function' && !Object.hasOwn(v, 'prototype') ? v.bind(t) : v;
+        },
+      });
+      // The reset STORES what it restores: the keys it writes are put back, so the next cases start where they did.
+      const written = ['inclusionist.reducedmotion.v1', 'incl_rmWalk_p0', 'incl_rmBreath_p0', 'incl_rmFlavor_p0'];
+      const before = written.map((k) => localStorage.getItem(k));
+      try {
+        const motor = abrir({ host: { doc: document, win: reduce } });
+        motor.pause.show(0);
+        document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]').click();
+        document.querySelector('#animation-reset').click();
+        const scene = [...document.querySelectorAll('#motion-list [data-rm]')];
+        expect(scene.length, 'the motion panel has no scene rows').toBeGreaterThan(0);
+        // The switch shows «animated»: after the reset on a reduce machine, every scene row is OFF.
+        for (const b of scene) expect(b.getAttribute('aria-pressed'), `${b.dataset.rm} came back animated`).toBe('false');
+      } finally {
+        written.forEach((k, i) => { if (before[i] === null) localStorage.removeItem(k); else localStorage.setItem(k, before[i]); });
+      }
+    });
+
     it('🎯 [Right] o painel AUDITIVO abre com os seus controles, cada um com a tag certa', () => {
       // The biggest panel: nodes it reached and never created. What is measured here is the whole path — pause item,
       // engine table, `open()`, `renderAudio()` — and that the tag survived it.

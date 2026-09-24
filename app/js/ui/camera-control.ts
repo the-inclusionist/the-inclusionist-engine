@@ -4,7 +4,7 @@
 // One stored position (`core/state.cameraControl`): off · hands · face · eyes. Each control starts only at its own position, so one camera
 // mode at a time holds by construction (ADR-0197). The ones turning off are told first, so a camera is let go before the next mode asks.
 
-import type { CameraControl } from '../core/state.js';
+import type { CameraControl } from '../core/camera-cycle.js';
 /*
  * 🔴 A CONTROL'S SHAPE HAS A NAME OF ITS OWN (ADR-0221 step 7f): the family's four members — eyes, face, hands and voice —
  * share one shape, `SwitchableControl`, and the VOICE declares it too: it answers the 👄 and not the 📷, so the family's

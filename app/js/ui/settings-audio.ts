@@ -12,7 +12,7 @@
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
-import { DEFAULTS } from '../core/state.js';
+import { DEFAULTS } from '../core/setting-defaults.js';
 // The WHOLE module, not loose names: `menuIndexOn` is a live binding and `setMenuIndexOnValue` changes it — reading it
 // through the namespace keeps that visible at each use, instead of looking like an imported constant.
 import * as state from '../core/state.js';

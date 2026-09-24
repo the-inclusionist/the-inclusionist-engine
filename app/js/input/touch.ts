@@ -9,7 +9,7 @@
 import { PAD_DESIGNS, TOUCH_DEFAULT } from './devices.js';
 import { migrateTouchMap } from './vocabulary-migration.js';
 import { t } from '../core/i18n.js';
-import { KEYS } from '../platform/storage.js'; // only the KEYS (constants) — reading and writing go through ctx.store (DI)
+import { KEYS } from '../platform/storage-keys.js'; // the names only — reading and writing go through ctx.store (ADR-0232)
 import type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */

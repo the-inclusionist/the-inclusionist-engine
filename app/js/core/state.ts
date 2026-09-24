@@ -8,6 +8,10 @@
 import { isGameSpeed } from './game-speed.js';
 import { isCaptionRate } from './caption-duration.js';
 import { isSpeechRate } from './speech-rate.js';
+// 📌 THE VOCABULARY IS NOT HERE (ADR-0232, issue #207): the defaults and the camera positions are stateless, and a module that
+// needs only them imports `core/setting-defaults` or `core/camera-cycle`, never this store.
+import { DEFAULTS } from './setting-defaults.js';
+import { toCameraControl, type CameraControl } from './camera-cycle.js';
 
 /** The port the settings are read and written through. `platform/storage` has this shape; a test passes a double. */
 export interface StatePort {
@@ -127,73 +131,6 @@ export function emit<K extends keyof GameEvent>(evt: K, val: GameEvent[K]): void
 export let vizMode = 'normal';
 export function initVizMode(mode: string): void { vizMode = mode; }
 export function setVizModeValue(mode: string): void { const p = portFor('setVizModeValue'); p.set('incl_viz', mode); vizMode = mode; emit('vizMode', mode); }
-
-/**
- * The REDUCED MOTION default is not a constant — it is what the operating system asks for.
- *
- * It lives here, beside `DEFAULTS`, because ADR-0029's rule is ONE source for what a default is, and a computed default
- * is no less a default for not fitting a frozen object. Its readers are the boot and the visual sensitivity panel's
- * "restore defaults".
- *
- * Why the reset must read this and not `false`: on a machine whose owner asked for less motion, `false` would TURN THE
- * ANIMATION BACK ON — the reset would do, by itself, exactly what WCAG 2.3.3 exists to prevent, on the screen of someone
- * who already said they cannot take it.
- *
- * `matchMedia` is guarded: this module runs in the tests' `node` project, where there is no `window`.
- */
-export function defaultReducedMotion(): boolean {
-  return !!(typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-}
-
-/**
- * THE DEFAULTS, named. One value per line, each used in TWO places: the boot's read (when nothing is stored) and the
- * "restore defaults" of the panel that holds it (ADR-0028).
- *
- * The alternative is writing each default twice — once in the stored read, once in the reset — and two copies nobody
- * forces to agree diverge. Here the divergence would be worse than elsewhere: a reset that restores a value DIFFERENT
- * from what the game uses when nothing was set leaves the child in a third state, neither theirs nor the factory's, that
- * they have no name for when asking for help.
- *
- * `as const` + `Object.freeze` on purpose: a default someone can write at run time stops being a default.
- */
-export const DEFAULTS = Object.freeze({
-  // hearing
-  blindMode: false,
-  caneBlockDiv: 1,
-  captionsOn: true,
-  menuIndexOn: true, // the index is born ON: whoever does not know it exists is whoever needs it most
-  // motor
-  wheelchair: false,
-  oneButton: false,
-  inputCooldown: 0,
-  switchScan: false,
-  voiceControl: false,
-  gameSpeed: 1,
-  captionPpm: 125,
-  speechPpm: 254, // the voice's normal speed, the minimum (ADR-0196)
-  noGripStrength: false,
-  cameraControl: 'off' as CameraControl,
-  easy: false,       // per player (Easy mode)
-  toggleMove: false,  // per player (movement by toggling)
-  // The run-button toggle is born off at the FACTORY — and switches itself on with the on-screen pad, which is context,
-  // not choice. The difference matters to ADR-0029's mark, which marks the stored CHOICE and not the state.
-  toggleRun: false,   // per player (run-button toggle)
-  // visual
-  cbSafe: false,
-  ownerColors: true,
-  lq: 0,              // the L→Q contrast boost, off
-  hcOutlineFg: 1,
-  hcOutlineBg: 1,
-  // communication (the letter case today; the AAC panel of ADR-0028 widens this)
-  letterCase: 'upper',
-  // ⚠️ THE LAST TWO are here because they were missing and it had a cost (issue #61): ADR-0029's mark reads `DEFAULTS`
-  // and nothing else, so a value with no named default here is one the mark CANNOT mark.
-  //   · `calmMode` — the autism-support level (0 normal · 1 calm · 2 quiet).
-  //   · `viz` — the vision mode. `'normal'` is the mode that does nothing, now said instead of deduced from an empty
-  //     string that happened to match no mode.
-  calmMode: 0,
-  viz: 'normal',
-} as const);
 
 // --- blindMode: BLIND MODE. Only the audio aids — cane, sonar, edge guard, narration — with no black screen; the
 //     Empathy blindness simulation is another thing and turns this on as well.
@@ -375,17 +312,12 @@ export function setVoiceControlValue(on: boolean): void {
   const p = portFor('setVoiceControlValue'); p.setBool('incl_voice_control', v); voiceControl = v; emit('voiceControl', v);
 }
 
-// --- cameraControl: playing through the webcam, the quick bar's 📷 (ADR-0215): off · hands · face · eyes, in that order. ONE key, so one
-//     camera mode at a time holds by construction (ADR-0197); every playing position draws its lines. Kept on the device; a stored value
-//     that is not a position reads as off, because the camera must never switch itself on. ---
-export type CameraControl = 'off' | 'hands' | 'face' | 'eyes';
-const CAMERA_CONTROLS: readonly CameraControl[] = ['off', 'hands', 'face', 'eyes'];
-const cameraModeOf = (v: string | null): CameraControl => ((CAMERA_CONTROLS as readonly (string | null)[]).includes(v) ? v as CameraControl : 'off');
-/** The next position of the 📷 cycle, wrapping back to off. */
-export const nextCameraControl = (v: CameraControl): CameraControl => CAMERA_CONTROLS[(CAMERA_CONTROLS.indexOf(v) + 1) % CAMERA_CONTROLS.length]!;
-export let cameraControl: CameraControl = cameraModeOf(NULL_PORT.get('incl_camera_control', DEFAULTS.cameraControl));
+// --- cameraControl: playing through the webcam, the quick bar's 📷 (ADR-0215). ONE key, so one camera mode at a time holds by
+//     construction (ADR-0197); every playing position draws its lines. Kept on the device; the positions, their order and the
+//     sanitiser live in `core/camera-cycle`. ---
+export let cameraControl: CameraControl = toCameraControl(NULL_PORT.get('incl_camera_control', DEFAULTS.cameraControl));
 export function setCameraControlValue(v: CameraControl): void {
-  const valid = cameraModeOf(v);
+  const valid = toCameraControl(v);
   if (cameraControl === valid) return;
   const p = portFor('setCameraControlValue'); p.set('incl_camera_control', valid); cameraControl = valid; emit('cameraControl', valid);
 }
@@ -451,7 +383,7 @@ export function loadState(p: StatePort): void {
   inputCooldown = toCooldown(p.getNum('incl_input_cooldown', DEFAULTS.inputCooldown));
   switchScan = p.getBool('incl_switch_scan', DEFAULTS.switchScan);
   voiceControl = p.getBool('incl_voice_control', DEFAULTS.voiceControl);
-  cameraControl = cameraModeOf(p.get('incl_camera_control', DEFAULTS.cameraControl));
+  cameraControl = toCameraControl(p.get('incl_camera_control', DEFAULTS.cameraControl));
   captionPpm = isCaptionRate(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
   speechPpm = isSpeechRate(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
 }

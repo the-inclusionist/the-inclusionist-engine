@@ -25,7 +25,7 @@
 //
 // MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
-import { DEFAULTS } from '../app/js/core/state.js';
+import { DEFAULTS } from '../app/js/core/setting-defaults.js';
 import { sanitiseTeaLevel, CALM_NAMES } from '../app/js/core/calm-mode.js';
 import { KEYS } from '../app/js/platform/storage.js';
 import { VIZ_MODES } from '../app/js/render/viz-modes.js';

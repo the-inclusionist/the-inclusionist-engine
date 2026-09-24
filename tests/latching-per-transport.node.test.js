@@ -38,7 +38,8 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
  * retired it).
  */
 const AINDA_NA_CHAVE_ANTIGA = {
-  'platform/storage.ts':
+  // The key table left `platform/storage` for `platform/storage-keys` (ADR-0232, issue #207): the same entry, moved with it.
+  'platform/storage-keys.ts':
     'declara `toggleMoveP(i)` e `toggleMoveLegacy`. ⚠️ O legado NÃO sai com a migração: o `latch-scope` lê-o ' +
     'de propósito, para que nenhuma criança perca o ajuste que já tem. O que sai é `toggleMoveP`',
   'ui/settings-mobility.ts':

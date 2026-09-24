@@ -89,7 +89,7 @@ describe('a aresta que também resolve a alternância', () => {
   });
 
   it('📌 [Boundary] o padrão de fábrica é o do `DEFAULTS`, não um `false` escrito à mão', async () => {
-    const { DEFAULTS } = await import('../app/js/core/state.js');
+    const { DEFAULTS } = await import('../app/js/core/setting-defaults.js');
     const armazem = armazemFalso();
     const p = { toggleMove: !DEFAULTS.toggleMove, walkDir: 0 };
     createLatchedEdge(() => [p], { store: armazem })(0, 'teclado');

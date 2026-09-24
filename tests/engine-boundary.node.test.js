@@ -208,7 +208,8 @@ const MOEDA_CONHECIDA = new Set([
   // (`left`/`right`/`up`/`down`/`confirm`/`erase`) and a boolean `modalOpen[i]`, not the challenge (ADR-0033); it asks
   // for a BOOLEAN (`ctx.padAllowed()`), not the state.
   /**
-   * `platform/storage.ts` STAYS, and the reason is the opposite of debt — written so nobody "cleans it up".
+   * `platform/storage-keys.ts` STAYS, and the reason is the opposite of debt — written so nobody "cleans it up". (The key
+   * table left `platform/storage` for it, ADR-0232; the entry moved with the table.)
    *
    * The entry is `quizlevel: gameKey('quizlevel')`, and `gameKey()` is exactly the engine's mechanism for GAME-SCOPED
    * keys (ADR-0028, two scopes). The other game-scoped keys live in the same registry for the same reason and nobody
@@ -217,7 +218,7 @@ const MOEDA_CONHECIDA = new Set([
    * That is: this line is the matcher noticing a WORD, not the boundary noticing a leak. Removing it while leaving the
    * others would be fooling the gate, the opposite of what it exists for.
    */
-  'platform/storage.ts',
+  'platform/storage-keys.ts',
   // 📌 A sprite id comes from the game (`ctx.itemTexId`): the texture cache keys by `(id, modo)` and does not know what the
   // id means.
 ]);

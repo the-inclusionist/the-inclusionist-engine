@@ -18,8 +18,11 @@
 // ⚠️ THE VOCABULARY LIVES HERE, not in `settings-motion`: the panel imports the values from here, so the types there
 // would make an import cycle. The vocabulary belongs to whoever owns the VALUES, and the panel consumes it;
 // `settings-motion` keeps the published names by alias, so no consumer's import line changes.
+//
+// 📌 THE SYSTEM DEFAULT ARRIVES AS A PARAMETER (ADR-0232, issue #207): whoever calls asks the operating system through
+// `core/setting-defaults.defaultReducedMotion(matchMedia)` and passes the answer; this module reaches no global and imports
+// no settings store.
 import * as store from '../platform/storage.js';
-import { defaultReducedMotion } from '../core/state.js';
 import type { PlayerView } from '../core/entity.js';
 
 /** The four SCENE animations, as a closed vocabulary. */
@@ -65,24 +68,26 @@ type _MissingChar = Exclude<MotionCharProp, (typeof CHARACTER_ANIMATIONS)[number
 const _COVERS_THE_CHARACTER: [_MissingChar] extends [never] ? true : false = true;
 void _COVERS_THE_CHARACTER;
 
-/** The four switches at the system default — `prefers-reduced-motion`, through `defaultReducedMotion()`. */
-export function sceneDefault(): MotionSceneFlags {
+/**
+ * The four switches at the system default. `reducedByDefault` is what `prefers-reduced-motion` answers — the caller asks
+ * through `defaultReducedMotion(matchMedia)`.
+ */
+export function sceneDefault(reducedByDefault: boolean): MotionSceneFlags {
   const o = {} as MotionSceneFlags;
-  const byDefault = defaultReducedMotion();
-  for (const k of SCENE_KEYS) o[k] = byDefault;
+  for (const k of SCENE_KEYS) o[k] = reducedByDefault;
   return o;
 }
 
 /**
- * The stored state, or the system default when nothing is stored.
+ * The stored state, or the system default (`reducedByDefault`, as in `sceneDefault`) when nothing is stored.
  *
  * ⚠️ EACH KEY IS READ ONE BY ONE, not spread. What is in storage came from a child's browser and may be truncated or
  * from an earlier version: spreading the object would bring extra keys and leave missing ones unfilled, and a missing
  * key reads as `undefined` — which is "not reduced" for whoever asked for reduction. The loop guarantees exactly four.
  */
-export function readStoredScene(): MotionSceneFlags {
+export function readStoredScene(reducedByDefault: boolean): MotionSceneFlags {
   const stored = store.getJSON<Record<string, unknown> | null>(store.KEYS.reducedMotion, null);
-  if (!stored || typeof stored !== 'object') return sceneDefault();
+  if (!stored || typeof stored !== 'object') return sceneDefault(reducedByDefault);
   const o = {} as MotionSceneFlags;
   for (const k of SCENE_KEYS) o[k] = !!stored[k];
   return o;

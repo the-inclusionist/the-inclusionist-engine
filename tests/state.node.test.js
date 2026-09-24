@@ -11,7 +11,7 @@
 // protect.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { blindMode, setBlindModeValue, setCaneBlockDivValue, setLetterCaseValue, setCaptionsOnValue,
-  on, off, defaultReducedMotion } from '../app/js/core/state.js';
+  on, off } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
 // `blindMode` is a LIVE binding: re-importing is not needed, but reading the old value from a local copy would be the
@@ -141,21 +141,7 @@ describe('core/state — blindMode e o espaçamento da bengala', () => {
   });
 });
 
-describe('defaultReducedMotion — o padrão que o sistema decide', () => {
-  // This is the project's only DEFAULT that is not a constant, and the reason matters: returning `false` on a machine
-  // whose owner asked for less motion WOULD TURN ANIMATION BACK ON. The reset would do, by itself, what WCAG 2.3.3 exists
-  // to prevent — on the screen of someone who had already said they cannot bear it.
-  it('[Zero] sem `window` (projeto node) responde false, em vez de explodir', () => {
-    expect(typeof window).toBe('undefined');
-    expect(defaultReducedMotion()).toBe(false);
-  });
-
-  it('[Interface] é uma FUNÇÃO, não um valor congelado no import', () => {
-    // If it became `export const RM_DEFAULT = matchMedia(...)`, the value would be read once at boot and never again. The
-    // system can change the preference with the game open, and a default that does not follow stops being a default.
-    expect(typeof defaultReducedMotion).toBe('function');
-  });
-});
+// `defaultReducedMotion` left this module with the defaults (ADR-0232): its cases are in `tests/setting-defaults.node.test.js`.
 
 // ========================= WHAT IS NOT HERE =========================
 // Round state (`ended`, `selVizPlayer`, `pauseActor`, `players`, `numPlayers`, the phase…) does not live in

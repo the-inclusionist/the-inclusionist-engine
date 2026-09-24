@@ -185,6 +185,8 @@ function domFalso({ comMarcacao = true, ausentes = [], map: mapa = {}, listas = 
   const win = {
     addEventListener: (tipo, fn, captura) => { ouvintes.push({ type: tipo, fn, captura }); },
     getComputedStyle: () => ({ zIndex: '0' }),
+    // The root passes it to whoever asks the reduced-motion default (ADR-0232); this double asks for no reduction.
+    matchMedia: () => ({ matches: false }),
   };
   return { doc, win, ouvintes };
 }

@@ -78,7 +78,8 @@ import { keyName } from '../ui/control-choices.js';
 import { reserveTopBand } from '../ui/top-band.js';
 // The WHOLE module: the event bus's `on`, so the mounted bar keeps telling the truth.
 import * as state from '../core/state.js';
-import type { CameraControl } from '../core/state.js';
+import { DEFAULTS, defaultReducedMotion } from '../core/setting-defaults.js';
+import { CAMERA_CONTROLS, type CameraControl } from '../core/camera-cycle.js';
 import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { createSceneStack, type SceneStack } from '../core/scenes.js';
@@ -1149,7 +1150,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // how a device with a headset and no webcam would have lost the voice for a reason nobody could see in the code.
   const canCaptureMedia = typeof win.navigator?.mediaDevices?.getUserMedia === 'function';
   const pauseIcons = initPauseIcons({
-    doc,
+    doc, matchMedia: win.matchMedia, // the reduced-motion default when nothing is stored (ADR-0232)
     /*
      * THE GAME'S ANSWER, read from the declaration (ADR-0115). Without it the `altmove` icon is not mounted.
      *
@@ -1499,7 +1500,7 @@ export function createGame(o: CreateGameOptions): Engine {
           const slideTimer = {
             requestFrame: (cb: (ms: number) => void) => win.requestAnimationFrame(cb),
             cancelFrame: (id: number) => win.cancelAnimationFrame(id),
-            reduced: state.defaultReducedMotion(),
+            reduced: defaultReducedMotion(win.matchMedia),
           };
           const showSlideAt = (i: number): { index: number; spoken: string } => {
             stopFigure();
@@ -1592,7 +1593,7 @@ export function createGame(o: CreateGameOptions): Engine {
     animPanel.shell.card.insertBefore(animMaster, animPanel.shell.list);
 
     motion = initSettingsMotion({
-      $, srSay, store,
+      $, srSay, store, matchMedia: win.matchMedia,
       getNumPlayers: () => (cartridge.players ?? [null]).length,
       getPlayers: () => cartridge.players ?? [],
       frontOverlay: overlays.frontOverlay,
@@ -1647,7 +1648,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const reflectCaptions = (): void => {
       toggleBtn(captionsButton, state.captionsOn);
       captionsButton.textContent = toggleLabel(state.captionsOn);
-      markChanged(captionsRow, state.captionsOn !== state.DEFAULTS.captionsOn);
+      markChanged(captionsRow, state.captionsOn !== DEFAULTS.captionsOn);
     };
     /* THE CAPTION RATE (ADR-0183 §4; issue #179): 125, 145 or 175 words a minute, by steps, right after the captions switch. */
     const rateSpec = () => ({
@@ -1675,13 +1676,13 @@ export function createGame(o: CreateGameOptions): Engine {
       if (fresh === currentSlide) return;
       state.setCaptionPpmValue(CAPTION_RATES[fresh]!);
       updateSteps(rateSteps, rateSpec());
-      markChanged(speechRateRow, state.captionPpm !== state.DEFAULTS.captionPpm);
+      markChanged(speechRateRow, state.captionPpm !== DEFAULTS.captionPpm);
       srSay(`${t('visual.legenda.ritmo')}: ${t('visual.legenda.ppm', { n: state.captionPpm })}`);
     });
     const reflectCaptionRate = (): void => {
       updateSteps(rateSteps, rateSpec());
       rateHint.textContent = t('visual.legenda.ritmo.dica');
-      markChanged(speechRateRow, state.captionPpm !== state.DEFAULTS.captionPpm);
+      markChanged(speechRateRow, state.captionPpm !== DEFAULTS.captionPpm);
     };
     captionsButton.addEventListener('click', () => {
       state.setCaptionsOnValue(!state.captionsOn);
@@ -1702,7 +1703,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const reflectOwner = (): void => {
       toggleBtn(ownerButton, state.ownerColors);
       ownerButton.textContent = toggleLabel(state.ownerColors);
-      markChanged(ownerRow, state.ownerColors !== state.DEFAULTS.ownerColors);
+      markChanged(ownerRow, state.ownerColors !== DEFAULTS.ownerColors);
     };
     ownerButton.addEventListener('click', () => {
       state.setOwnerColorsValue(!state.ownerColors);
@@ -1823,7 +1824,7 @@ export function createGame(o: CreateGameOptions): Engine {
         toggleBtn(b, on);
         b.textContent = toggleLabel(on);
       }
-      markChanged(noStrengthRow, state.noGripStrength !== state.DEFAULTS.noGripStrength);
+      markChanged(noStrengthRow, state.noGripStrength !== DEFAULTS.noGripStrength);
     };
     const simulate = (i: number, key: string): boolean => {
       const simulation = (key === 'normal' ? null : key) as VisualState['simulacao'];
@@ -1866,7 +1867,7 @@ export function createGame(o: CreateGameOptions): Engine {
       },
       setWheelchair: noEffect,
       getOneButton: () => state.oneButton,
-      getWheelchair: () => state.DEFAULTS.wheelchair,
+      getWheelchair: () => DEFAULTS.wheelchair,
       getPlayers: () => [{ viz: worldState.simulacao ?? 'normal' }],
       setPlayerViz: (i, rowMode) => { simulate(i, rowMode); },
     });
@@ -3287,7 +3288,7 @@ export function createGame(o: CreateGameOptions): Engine {
       const on = state.inputCooldown > 0;
       toggleBtn(cooldownButton, on);
       cooldownButton.textContent = toggleLabel(on);
-      markChanged(cooldownRow, on !== (state.DEFAULTS.inputCooldown > 0));
+      markChanged(cooldownRow, on !== (DEFAULTS.inputCooldown > 0));
       cooldownRow.hidden = !cartridge.declaration.holdsKeys();
     };
     cooldownButton.addEventListener('click', () => {
@@ -3309,14 +3310,13 @@ export function createGame(o: CreateGameOptions): Engine {
      * 📌 AND THE MICROPHONE ROW IS RIGHT BELOW, since 2026-09-21: it used to be missing on purpose, because with no voice-command
      * transport a «microfone» row would switch nothing. The transport landed (issue #184), so the row has a subject.
      */
-    const CAMERA_MODES: readonly CameraControl[] = ['off', 'hands', 'face', 'eyes'];
     const CAMERA_MODE_WORD: { readonly [M in CameraControl]: string } = {
       off: 'state.off', hands: 'camera.hands', face: 'camera.face', eyes: 'camera.eyes',
     };
     const cameraRowSpec = () => ({
       label: t('motora.camera'),
-      values: CAMERA_MODES.map((m) => t(CAMERA_MODE_WORD[m])),
-      current: Math.max(0, CAMERA_MODES.indexOf(state.cameraControl)),
+      values: CAMERA_CONTROLS.map((m) => t(CAMERA_MODE_WORD[m])),
+      current: Math.max(0, CAMERA_CONTROLS.indexOf(state.cameraControl)),
     });
     const cameraRow = doc.createElement('div');
     cameraRow.className = 'ctrl-row ctrl-row--passos';
@@ -3336,9 +3336,9 @@ export function createGame(o: CreateGameOptions): Engine {
     };
     cameraSteps.addEventListener('passo', (ev) => {
       const next = nextStep(
-        Math.max(0, CAMERA_MODES.indexOf(state.cameraControl)), CAMERA_MODES.length, (ev as CustomEvent<number>).detail,
+        Math.max(0, CAMERA_CONTROLS.indexOf(state.cameraControl)), CAMERA_CONTROLS.length, (ev as CustomEvent<number>).detail,
       );
-      const mode = CAMERA_MODES[next]!;
+      const mode = CAMERA_CONTROLS[next]!;
       if (mode === state.cameraControl) return; // at the end of the line nothing moved, and nothing is announced
       state.setCameraControlValue(mode);
       reflectCamera();
@@ -3365,7 +3365,7 @@ export function createGame(o: CreateGameOptions): Engine {
       labelRow(voiceRow, voiceRowSpec());
       toggleBtn(voiceButton, state.voiceControl);
       voiceButton.textContent = toggleLabel(state.voiceControl);
-      markChanged(voiceRow, state.voiceControl !== state.DEFAULTS.voiceControl);
+      markChanged(voiceRow, state.voiceControl !== DEFAULTS.voiceControl);
       voiceRow.hidden = !canCaptureMedia;
     };
     voiceButton.addEventListener('click', () => {

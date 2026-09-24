@@ -55,6 +55,8 @@ function makeCtx(over = {}) {
     $,
     srSay: (t) => calls.srSay.push(t),
     store: { setBool: (k, v) => calls.setBool.push([k, v]) },
+    // The system asks for no reduction unless a case says otherwise (ADR-0232: the question is injected, not reached).
+    matchMedia: () => ({ matches: false }),
     frontOverlay: (el) => calls.frontOverlay.push(el),
     toggleBtn: (el, on) => { calls.toggleBtn.push(on); el.classList.toggle('is-on', on); el.setAttribute('aria-pressed', String(on)); },
     rm, saveRM: () => { calls.saveRM++; },
@@ -329,27 +331,41 @@ describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marc
   });
 
   it('[Right] numa máquina que pede MENOS movimento, o reset CONGELA em vez de religar', () => {
-    // The case this menu exists not to get wrong, and that the other four cases could not catch: with
-    // `defaultReducedMotion()` answering false in the test environment, "reading the default" and "writing false" give
-    // the same result, and a mutation swapping one for the other would pass unnoticed. Here the system says `reduce`,
-    // and then the two stop being the same thing: writing false WOULD TURN ANIMATION BACK ON for whoever already asked
-    // not to have it — the reset doing, by itself, what WCAG 2.3.3 exists to prevent.
-    const real = window.matchMedia;
-    window.matchMedia = (q) => ({ matches: q.includes('prefers-reduced-motion'), media: q,
-      addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+    // The case this menu exists not to get wrong, and that the other four cases could not catch: with the system
+    // answering false, "reading the default" and "writing false" give the same result, and a mutation swapping one for
+    // the other would pass unnoticed. Here the injected question says `reduce`, and then the two stop being the same
+    // thing: writing false WOULD TURN ANIMATION BACK ON for whoever already asked not to have it — the reset doing, by
+    // itself, what WCAG 2.3.3 exists to prevent.
+    const { ctx } = makeCtx({ matchMedia: (q) => ({ matches: q.includes('prefers-reduced-motion') }) });
+    const rm = ctx.rm;
+    initSettingsMotion(ctx).render();
+
+    $('#animation-reset').click();
+
+    expect(rm).toEqual({ parallax: true, decor: true, items: true, particles: true });
+    expect(players[0]).toEqual({ rmWalk: true, rmBreath: true, rmFlavor: true });
+    // And none of this counts as "changed": it is this machine's default, not the child's choice.
+    expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
+  });
+
+  it('[Right] without `rm`, the stored-nothing flags start at what the injected question answers', () => {
+    // The panel's own flags, read when the host shares none (ADR-0106): the default is the system's answer, passed in
+    // (ADR-0232). A panel that ignored the port and started at `false` would switch the scene back on here.
+    const KEY = 'inclusionist.reducedmotion.v1';
+    const before = localStorage.getItem(KEY);
+    localStorage.removeItem(KEY);
     try {
-      const { ctx } = makeCtx();
-      const rm = ctx.rm;
+      const { ctx } = makeCtx({ rm: undefined, saveRM: undefined, matchMedia: (q) => ({ matches: q.includes('prefers-reduced-motion') }) });
       initSettingsMotion(ctx).render();
-
-      $('#animation-reset').click();
-
-      expect(rm).toEqual({ parallax: true, decor: true, items: true, particles: true });
-      expect(players[0]).toEqual({ rmWalk: true, rmBreath: true, rmFlavor: true });
-      // And none of this counts as "changed": it is this machine's default, not the child's choice.
-      expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
+      const scene = [...document.querySelectorAll('#motion-list [data-rm]')];
+      expect(scene).toHaveLength(4);
+      // The switch shows «animated», the opposite of reduced: every scene row OFF, and none marked as a change.
+      for (const b of scene) {
+        expect(b.getAttribute('aria-pressed'), b.dataset.rm).toBe('false');
+        expect(b.closest('.ctrl-row').classList.contains('is-changed'), `${b.dataset.rm} marked as a change`).toBe(false);
+      }
     } finally {
-      window.matchMedia = real;
+      if (before === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, before);
     }
   });
 

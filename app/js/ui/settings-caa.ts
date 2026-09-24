@@ -29,7 +29,7 @@
 // 📌 And mounting happens ONCE, with render REFLECTING: rebuilding the list on every click would force rewiring the
 // listeners on every render and drop the focus. Relabelling instead of rebuilding is what `labelRow` exists for.
 import { t } from '../core/i18n.js';
-import { DEFAULTS } from '../core/state.js';
+import { DEFAULTS } from '../core/setting-defaults.js';
 import type { LetterCase } from '../core/state.js';
 import { CAA_SETS, CAA_BY_KEY, caaReason, type CaaSet } from './caa-sets.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';

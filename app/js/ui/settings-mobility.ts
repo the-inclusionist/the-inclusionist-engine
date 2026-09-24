@@ -12,11 +12,12 @@
 import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
-import { DEFAULTS } from '../core/state.js';
+import { DEFAULTS } from '../core/setting-defaults.js';
 import type { DomQuery } from '../core/dom-query.js';
-// ⚠️ A DIRECT IMPORT, not one more `ctx` piece, for the same reason `ui/pause-icons` imports `platform/storage`: an
-// injected key name is a field a consumer may omit, and omitting it here would make the panel write under a crooked name.
-import { KEYS } from '../platform/storage.js';
+// ⚠️ A DIRECT IMPORT, not one more `ctx` piece: an injected key name is a field a consumer may omit, and omitting it here
+// would make the panel write under a crooked name. The table is stateless (`platform/storage-keys`, ADR-0232), so the
+// import brings names and no storage.
+import { KEYS } from '../platform/storage-keys.js';
 import { writeLatch } from '../input/latch-store.js';
 import {
   applyLatch, BASE_DA_MARCHA, type LatchPlayer as JogadorDaAlternanciaDaAresta,

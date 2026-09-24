@@ -10,7 +10,7 @@
 // in the game. If someone one day "standardises" by prefixing everything, these cases fail.
 import { describe, it, expect } from 'vitest';
 import * as store from '../app/js/platform/storage.js';
-import { KEYS, gameKey } from '../app/js/platform/storage.js';
+import { KEYS, gameKey } from '../app/js/platform/storage-keys.js';
 
 /** The platform game's id. Here it is TEST DATA, not engine truth: the engine does not hold it (ADR-0080), and what
  *  these cases guard is that it still produces exactly the old keys. */

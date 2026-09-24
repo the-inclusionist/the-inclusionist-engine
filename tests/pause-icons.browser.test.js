@@ -72,6 +72,7 @@ function makeCtx(over = {}) {
     isLibrasOn: () => state.libras,
     toggleLibras: () => { state.libras = !state.libras; },
     rm: state.rm, rmKeys: RM_KEYS, rmChar: RM_CHAR, saveRM: () => {},
+    matchMedia: () => ({ matches: false }), // the system asks for no reduction (ADR-0232: injected, not reached)
     setToggleMove: (i, on) => { if (players[i]) players[i].toggleMove = on; },
     setPlayerViz: (i, mode) => { if (players[i]) { players[i].viz = mode; players[i].visual = migrateVisual(mode); } },
     // The PER-AXIS writers (#104): each icon writes to its own, and the other stays where it was.
@@ -903,6 +904,8 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
       setCatGain: () => {},
       reflectTtsPanel: () => {}, reflectTtsPanelEnabled: false,
       isLibrasOn: () => false, toggleLibras: () => {},
+      // Mandatory (ADR-0232): without `rm`, the reduced-motion default is asked through it.
+      matchMedia: () => ({ matches: false }),
       ...over,
     };
   }

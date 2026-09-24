@@ -3086,6 +3086,36 @@ precedent: an optional port would let the water fall silent without a word.
 ctx). Its `roleAt` already answers `'water'` through `tile-roles.ts`, so the sound does not change. Its `declaration` is
 built later in the file than `ambient`, which is why the migration is a closure and not `declaration.roleAt` itself.
 
+## CS · The pure names leave the settings store and the storage, and the reduced-motion default is asked through `matchMedia` (ADR-0232, issue #207)
+
+**Who is affected:** anyone importing the names below from their old module, calling `defaultReducedMotion`,
+`sceneDefault` or `readStoredScene` without an argument, or building a `PauseIconsCtx` or `SettingsMotionCtx` by hand.
+A game that only calls `createGame` changes nothing in its ctx: the root passes `matchMedia` itself.
+
+📌 **Why:** outside the composition root a module imports by value only what holds no state and reaches no global
+(ADR-0232). `DEFAULTS`, the 📷 cycle and the key table are pure, but they lived in `core/state` and `platform/storage`,
+so a panel that only compared against a default imported the page's one settings store to do it. They moved to three
+stateless modules, and `defaultReducedMotion` stopped reaching `window`: whoever calls passes the question.
+
+| old | new | migration |
+|---|---|---|
+| `core/state.js` `DEFAULTS` | `core/setting-defaults.js` `DEFAULTS` | change the import path |
+| `core/state.js` `defaultReducedMotion()` | `core/setting-defaults.js` `defaultReducedMotion(matchMedia)` | pass the browser's question: `defaultReducedMotion((q) => window.matchMedia(q))` — a bare `window.matchMedia` throws «Illegal invocation» |
+| `core/state.js` `nextCameraControl`, type `CameraControl` | `core/camera-cycle.js` | change the import path |
+| `platform/storage.js` `gameKey` | `platform/storage-keys.js` `gameKey` | change the import path |
+| `ui/motion-scene.js` `sceneDefault()`, `readStoredScene()` | `sceneDefault(reducedByDefault)`, `readStoredScene(reducedByDefault)` | pass the system's answer: `readStoredScene(defaultReducedMotion((q) => window.matchMedia(q)))` |
+| `PauseIconsCtx`, `SettingsMotionCtx` | gain a REQUIRED `matchMedia: MediaQuery` | pass `(q) => window.matchMedia(q)`; required, by ADR-0227's precedent — an optional port would let a host forget it and switch the animation back on for a child whose system asked for less |
+
+⚠️ **`platform/storage.js` still publishes `KEYS`**, as an alias of `platform/storage-keys.js`'s table, and that is
+measured and not habit: `game-whackwhack` imports `KEYS` from it by name, `game-platformer` reads `store.KEYS` through the
+namespace, eight engine modules do the same, and the namespace is the port `core/state.loadState` receives. Both paths give
+the same object. The alias ends with D2b, when the root builds the storage.
+
+📏 **Measured in the seven games, as information:** `game-platformer` imports `defaultReducedMotion` from `core/state`
+and calls it twice (`app/js/main.ts`, the scene flags and the per-player character flags); `game-2048` and
+`pixi-15-puzzle` import the scene reader under its older name (`lerCenaGuardada`, note AQ) and will pass the default when
+they migrate to it. No game imports `DEFAULTS`, `nextCameraControl`, `CameraControl` or `gameKey`, or builds either ctx.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |
@@ -3107,6 +3137,7 @@ built later in the file than `ambient`, which is why the migration is a closure 
 | `CreateGameOptions.carregarKokoro` · `TtsCtx.carregarKokoro` · `platform/kokoro` · `Tts.kokoroDispositivo` | new, optional: the Kokoro port (`ModuloKokoro`: phonemize, vocabulary, voice table, session on WebGPU or WASM), filled by the game; its voices listed after Piper's, Heart and Bella marked with a heart; WebGPU kept only when a test synthesis is speech (ADR-0198, issue #181). `Tts.neuralDisponivel` is true with either port |
 | `core/loop.registrarAvisoDeQueda` | new: `createGame` registers its crash notice, and a `startLoop` with no `aoFalhar` announces through it (study item D1); a game's own `aoFalhar` still wins |
 | `Engine.legendarSom` | new: the engine hosts the sound caption in the screen footer (study item D3); pass it as `createAudioEarcons`'s `showCaption` instead of a page `#caption` |
+| `core/camera-cycle` · `core/setting-defaults` · `platform/storage-keys` | new, stateless (note CS): besides the names that moved, `CAMERA_CONTROLS` (the 📷 order, also the motor panel's camera row), `toCameraControl` (a stored value that is not a position reads as off), the `MediaQuery` type, and `KEYS` at its new home |
 | `CreateGameOptions.hud` · `ui/hud-bands` | new, optional: the numbers a game shows, each with its band (`identity`, `mission`, `power`, `learning`); the engine mounts the HUD — points and mission top left, power top right (under the clock, ADR-0175), nothing under the quick bar, one to three learning bars (a `Barra` from `educational/segment-bar`) centred in the footer under the explanation — and `--barra-a11y-h` grows by what it takes (ADR-0168, issue #162). A malformed list is refused. A game that keeps its own HUD passes nothing |
 
 ## F · The commits, and whether they carry the footer

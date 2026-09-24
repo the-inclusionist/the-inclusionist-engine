@@ -74,6 +74,12 @@
     "nextCalmMode",
     "sanitiseTeaLevel"
   ],
+  "core/camera-cycle.ts": [
+    "CAMERA_CONTROLS",
+    "CameraControl",
+    "nextCameraControl",
+    "toCameraControl"
+  ],
   "core/caption-duration.ts": [
     "CAPTION_MIN_MS",
     "CAPTION_RATES",
@@ -201,6 +207,11 @@
     "screenBaseSize",
     "screenGrid"
   ],
+  "core/setting-defaults.ts": [
+    "DEFAULTS",
+    "MediaQuery",
+    "defaultReducedMotion"
+  ],
   "core/speech-rate.ts": [
     "MAX_PLAYBACK_RATE",
     "MIN_PLAYBACK_RATE",
@@ -212,8 +223,6 @@
     "spokenWords"
   ],
   "core/state.ts": [
-    "CameraControl",
-    "DEFAULTS",
     "GameEvent",
     "GateTile",
     "LetterCase",
@@ -225,7 +234,6 @@
     "captionPpm",
     "captionsOn",
     "cbSafe",
-    "defaultReducedMotion",
     "emit",
     "gameSpeed",
     "hcOutlineBg",
@@ -235,7 +243,6 @@
     "letterCase",
     "loadState",
     "menuIndexOn",
-    "nextCameraControl",
     "noGripStrength",
     "off",
     "on",
@@ -905,9 +912,12 @@
   "platform/speech.ts": [
     "gameSay"
   ],
+  "platform/storage-keys.ts": [
+    "KEYS",
+    "gameKey"
+  ],
   "platform/storage.ts": [
     "KEYS",
-    "gameKey",
     "get",
     "getBool",
     "getJSON",

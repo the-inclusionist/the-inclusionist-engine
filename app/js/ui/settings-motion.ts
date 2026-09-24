@@ -2,13 +2,13 @@
 // ui/settings-motion.ts — the Motion panel (#animation overlay): reduced motion (WCAG 2.3.3 + Pause/Stop/Hide 2.2.2) per
 // CHARACTER (walk/breath/flavour) and per SCENE (parallax/decor/items/particles), the stop/resume-all master button, the
 // player selection and the CRT look (scanlines/vignette/corners), which lives on the SAME screen. What a choice IS lives in
-// ./motion-choices.js. INJECTED via initSettingsMotion(ctx): $ (selector), srSay, store (persistence),
-// frontOverlay/toggleBtn (helpers shared with the sibling panels), and optionally rm/saveRM/rmKeys/rmChar (reduced-motion
+// ./motion-choices.js. INJECTED via initSettingsMotion(ctx): $ (selector), srSay, store (persistence), matchMedia (the
+// operating system's reduced-motion answer, ADR-0232), frontOverlay/toggleBtn (helpers shared with the sibling panels), and optionally rm/saveRM/rmKeys/rmChar (reduced-motion
 // state, which a cartridge may share by reference). CRT/applyCrt (render/crt.ts) are imported DIRECTLY.
 import { toggleLabel, toggleAria } from './dom.js';
 
 import { CRT, CRT_DEFAULT, applyCrt } from '../render/crt.js';
-import { defaultReducedMotion } from '../core/state.js';
+import { defaultReducedMotion, type MediaQuery } from '../core/setting-defaults.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { t } from '../core/i18n.js';
 import { mountSteps, updateSteps, nextStep, controlRow, labelRow, sectionHeader } from './panel-widgets.js';
@@ -61,6 +61,12 @@ export interface SettingsMotionCtx {
   srSay: (text: string) => void;
   /** Persistence (platform/storage.ts) — only what is needed here: storing the per-player flags. */
   store: { setBool: (key: string, on: boolean) => void };
+  /**
+   * The browser's media query (`win.matchMedia`), asked for `prefers-reduced-motion` at every mark and every reset — the
+   * default follows the operating system NOW, not at boot. MANDATORY and injected (ADR-0232, ADR-0227): this module
+   * reaches no global, and an optional port would let a host forget it and turn the animation back on at the reset.
+   */
+  matchMedia: MediaQuery;
   /** Stacks the overlay (z-index) + wires the explanation footer — shared by every settings panel. */
   frontOverlay: (el: HTMLElement | null) => void;
   /** Returns focus to whoever opened the dialog (ui/settings-panel `restoreFocus`). Injected, not a fixed `#opt-*`: that
@@ -286,7 +292,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
    * the scene; resolving it on every read would create a new object per call, the switch would stop reaching the
    * drawing, and there would be no error at all — the menu would say reduced and the scene would keep moving.
    */
-  const rm: MotionSceneFlags = ctx.rm ?? readStoredScene();
+  const rm: MotionSceneFlags = ctx.rm ?? readStoredScene(defaultReducedMotion(ctx.matchMedia));
   const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? SCENE_KEYS;
   const allCharAnimations: readonly MotionCharDef[] = ctx.rmChar ?? CHARACTER_ANIMATIONS;
   /** The character targets that HAVE A SUBJECT in this game — read on every use, because the cartridge changes on `mount()`. */
@@ -427,7 +433,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
    * wrong mark is worse than no mark, and here it would err in the costliest direction.
    */
   function refreshMarks(): void {
-    const reducedByDefault = defaultReducedMotion();
+    const reducedByDefault = defaultReducedMotion(ctx.matchMedia);
     const el = ctx.$<HTMLElement>('#motion-list');
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
     const changedFlags: boolean[] = [];
@@ -447,14 +453,14 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   //
   // The only menu whose default is NOT a constant: the animation rows' default is what the operating system asks for
   // (`prefers-reduced-motion`). Returning `false` here would TURN ANIMATION BACK ON for whoever already asked for less
-  // motion — the reset alone would do what WCAG 2.3.3 exists to prevent. That is why it calls `defaultReducedMotion()`
+  // motion — the reset alone would do what WCAG 2.3.3 exists to prevent. That is why it calls `defaultReducedMotion`
   // and does not write the value by hand.
   //
   // The scope is ALL players, as in the mobility menu: the panel edits one at a time, but the reset belongs to the menu,
   // and leaving player 2 frozen because the open tab was player 1's would give two states one name.
   const resetBtn = ctx.$<HTMLButtonElement>('#animation-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
-    const reducedByDefault = defaultReducedMotion();
+    const reducedByDefault = defaultReducedMotion(ctx.matchMedia);
     for (const k of rmKeys) rm[k] = reducedByDefault;
     saveRM();
     (ctx.getPlayers() as readonly MotionPlayer[]).forEach((p, i) => {

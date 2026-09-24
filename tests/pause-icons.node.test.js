@@ -155,6 +155,7 @@ function buildCtx(over = {}) {
     rmKeys: RM_KEYS,
     rmChar: RM_CHAR,
     saveRM: () => { state.saved++; },
+    matchMedia: () => ({ matches: false }), // mandatory (ADR-0232): the reduced-motion question is injected
     setToggleMove: (i, on) => { state.toggleMoveCalls.push([i, on]); const p = players[i]; if (p) p.toggleMove = on; },
     setPlayerViz: (i, mode) => { state.vizCalls.push([i, mode]); const p = players[i]; if (p) { p.viz = mode; p.visual = migrateVisual(mode); } },
     // The PER-AXIS writers (#104): moving one does not erase the other, and that is what the cases assert.

@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { iconsThatAct, computeIconLabel, computeIconVisual } from '../app/js/ui/pause-icons.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import * as state from '../app/js/core/state.js';
+import { nextCameraControl } from '../app/js/core/camera-cycle.js';
 import { DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 
 const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: DEFAULT_VISUAL, privateOutput: true, ...over });
@@ -49,7 +50,7 @@ describe('the 📷 icon', () => {
 describe('the stored position', () => {
   beforeEach(() => { state.loadState(portaFalsa()); });
   it('cycles off → hands → face → eyes → off, in the Dev\'s order', () => {
-    expect(['off', 'hands', 'face', 'eyes'].map(state.nextCameraControl)).toEqual(['hands', 'face', 'eyes', 'off']);
+    expect(['off', 'hands', 'face', 'eyes'].map(nextCameraControl)).toEqual(['hands', 'face', 'eyes', 'off']);
   });
   it('is one key, loaded from the child\'s storage and written back', () => {
     const p = portaFalsa({ incl_camera_control: 'face' });

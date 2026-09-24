@@ -13,7 +13,7 @@ import { toggleLabel } from './dom.js';
 import { VIZ_MODES, simulatesDisability, type VizMode } from '../render/viz-modes.js';
 import { hearingLoss, setHearingLossGraph } from '../platform/audio.js';
 import { t } from '../core/i18n.js';
-import { DEFAULTS } from '../core/state.js';
+import { DEFAULTS } from '../core/setting-defaults.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 
 /**

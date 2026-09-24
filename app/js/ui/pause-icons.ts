@@ -15,6 +15,7 @@
 //                       can be wired after this module.
 //   · the pause screens, asked through a getter: the host rebuilds them when the number of screens changes.
 //   · `rm`/`saveRM`   — the reduced-motion flags, shared with ui/settings-motion (same reference).
+//   · `matchMedia`    — the browser's media query, for the reduced-motion default when nothing is stored (ADR-0232).
 //   · `PM_BTNS` and the other lists of buttons are `ui/pause-buttons`', imported, never copied.
 
 
@@ -58,7 +59,10 @@ import { announceItem } from './item-announcement.js';
 import { accessibleLabel } from '../core/accessible-label.js';
 import { stepInRing } from '../core/ring.js'; // from the LEAF, not from ui/menu-nav: see the note there
 // A LIVE BINDING (ESM): the index can be turned off in the menu, and the value here follows without a subscription.
-import { menuIndexOn, DEFAULTS, setBlindModeValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, voiceControl, setVoiceControlValue, switchScan, setSwitchScanValue, type CameraControl } from '../core/state.js';
+import { menuIndexOn, setBlindModeValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, voiceControl, setVoiceControlValue, switchScan, setSwitchScanValue } from '../core/state.js';
+// The stateless half (ADR-0232): the defaults, the reduced-motion question and the 📷 cycle are vocabulary, not the store.
+import { DEFAULTS, defaultReducedMotion, type MediaQuery } from '../core/setting-defaults.js';
+import { nextCameraControl, type CameraControl } from '../core/camera-cycle.js';
 
 /** The word for each position of the 📷 cycle (ADR-0215). */
 const CAMERA_MODE_NAME: { readonly [M in CameraControl]: string } = { off: 'state.off', hands: 'camera.hands', face: 'camera.face', eyes: 'camera.eyes' };
@@ -615,6 +619,12 @@ export interface PauseIconsCtx {
   rmKeys?: readonly MotionSceneKey[];
   rmChar?: readonly MotionCharDef[];
   saveRM?: () => void;
+  /**
+   * The browser's media query (`win.matchMedia`), asked for `prefers-reduced-motion` when `rm` is absent and nothing is
+   * stored. MANDATORY and injected (ADR-0232, ADR-0227): this module reaches no global, and an optional port would let a
+   * host forget it and switch the animation back on for a child whose system asked for less.
+   */
+  matchMedia: MediaQuery;
 
   // --- mobility + visual (each writes state that the host may also redraw from) ---
   setToggleMove?: (i: number, on: boolean) => void;
@@ -761,7 +771,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * the scene, and resolving it on each use would make a new object per call — the switch would stop reaching the drawing,
    * with no error at all.
    */
-  const rm: MotionSceneFlags = ctx.rm ?? readStoredScene();
+  const rm: MotionSceneFlags = ctx.rm ?? readStoredScene(defaultReducedMotion(ctx.matchMedia));
   const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? SCENE_KEYS;
   const rmChar: readonly MotionCharDef[] = ctx.rmChar ?? CHARACTER_ANIMATIONS;
   const saveRM: () => void = ctx.saveRM ?? (() => storeScene(rm));
