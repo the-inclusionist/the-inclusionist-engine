@@ -1,32 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/viz-axes-labels — O MENU VISUAL COM DOIS CONTROLES (ADR-0076, issue #104), na metade pura.
+// render/viz-axes-labels — THE VISUAL MENU WITH TWO CONTROLS (ADR-0076, issue #104), the pure half.
 //
-// ========================= O COMENTÁRIO QUE AUTORIZA ESTA MUDANÇA =========================
-// O `ui/settings-visual` justifica o controle ÚNICO com estas palavras, e elas continuam lá, verdadeiras
-// sobre o dia em que foram escritas:
+// ========================= WHY TWO CONTROLS AND NOT ONE =========================
+// A SINGLE control was the honest way to state a REAL exclusivity while `p.viz` kept ONE value: two separate controls
+// would overwrite each other silently — the child would pick the correction, then the contrast, and lose the correction
+// with nothing saying so. ⚠️ THAT REASON IS GONE: `p.viz` keeps two axes plus the simulation, and the per-axis writers
+// (`setPlayerTheme`/`setPlayerCorrection`) change one without touching the other. Keeping the single control would state
+// an exclusivity that no longer exists — and keep denying both to whoever needs both.
 //
-//     «Os sete vivem num CONTROLE SÓ, e isso não é economia de espaço: `p.viz` guarda UM valor. Dois
-//      controles separados se sobrescreveriam em silêncio — a criança escolheria a correção, depois o
-//      contraste, e perderia a correção sem nada dizer que perdeu.»
+// ========================= THE DEFAULTS' NAMES ARE A DECISION, NOT ROUTINE =========================
+// ⚠️ «Tema padrão» and «Visão tricromática», and ADR-0076 closes its *definition of done* with the rule that chose them:
+// **no default label diagnoses the reader**. `modo sem deficiência visual` was offered and refused — it tells the child
+// what they are NOT, in the menu they opened to be able to play. A default is named by what it IS.
 //
-// ⚠️ A RAZÃO QUE ELE DÁ DEIXOU DE EXISTIR. `p.viz` já não guarda um valor: guarda dois eixos mais a
-// simulação, e os escritores por eixo (`setTemaDoJogador`/`setCorrecaoDoJogador`) mexem num sem tocar no
-// outro. O controle único era a forma honesta de contar uma exclusividade REAL; mantê-lo agora seria contar
-// uma exclusividade que já não existe — e continuar a negar os dois a quem precisa dos dois.
+// And `Modo padrão` (`viz.normal`) does not serve here: it was the SHARED neutral from when the two axes were one. With
+// two controls, a «padrão» that does not say the default of WHAT is ambiguous in both.
 //
-// ========================= OS NOMES DOS PADRÕES SÃO DECISÃO, NÃO ROTINA =========================
-// ⚠️ «Tema padrão» e «Visão tricromática», e o ADR-0076 fecha a *definition of done* com a regra que os
-// escolheu: **nenhum rótulo de padrão diagnostica quem lê**. `modo sem deficiência visual` foi oferecido e
-// recusado — ele diz à criança o que ela NÃO é, no menu que ela abriu para conseguir jogar. Um padrão
-// chama-se pelo que ele É.
-//
-// E `Modo padrão` (o `viz.normal` de hoje) deixa de servir aqui: era o neutro PARTILHADO, de quando os dois
-// eixos eram um só. Com dois controles, um «padrão» sem dizer padrão de QUÊ é ambíguo em ambos.
-//
-// Módulo puro: devolve HTML e chaves i18n, não toca documento nenhum. Quem monta é o `render/viz-setters`, na mesma camada (issue #167).
+// A pure module: it returns HTML and i18n keys and touches no document. `render/viz-setters`, in the same layer,
+// mounts it (issue #167).
 import { THEMES, CORRECTIONS, type Theme, type Correction, type VisualState } from './viz-axes.js';
 
-/** O rótulo de cada tema. Chave i18n — quem exibe resolve, como todo o resto do menu. */
+/** Each theme's label. An i18n key — whoever shows it resolves it, like the rest of the menu. */
 export const THEME_LABEL: Readonly<Record<Theme, string>> = Object.freeze({
   padrao: 'eixo.tema.padrao',
   hc3: 'viz.hc-direto',
@@ -34,7 +28,7 @@ export const THEME_LABEL: Readonly<Record<Theme, string>> = Object.freeze({
   hc7: 'viz.hc-direto-7',
 });
 
-/** O rótulo de cada correção de cor. */
+/** Each colour correction's label. */
 export const CORRECTION_LABEL: Readonly<Record<Correction, string>> = Object.freeze({
   tricro: 'eixo.correcao.tricro',
   protan: 'viz.fix-protan',
@@ -43,12 +37,11 @@ export const CORRECTION_LABEL: Readonly<Record<Correction, string>> = Object.fre
 });
 
 /**
- * Os rótulos CURTOS, para os ícones da barra rápida — «7:1», «deuteranopia».
+ * The SHORT labels, for the quick bar's icons — «7:1», «deuteranopia».
  *
- * ⚠️ SÃO AS CHAVES QUE JÁ EXISTIAM (`contrast.*`, `cvd.*`), re-chaveadas por eixo. A barra rápida sempre
- * falou curto porque anuncia UM ícone de cada vez, e o painel sempre falou por extenso porque a criança está
- * a ler uma lista — a diferença é de contexto e sobrevive à divisão. Reaproveitar em vez de traduzir de novo
- * é o que mantém a mesma palavra nos dois sítios.
+ * ⚠️ THEY ARE THE KEYS THAT ALREADY EXISTED (`contrast.*`, `cvd.*`), rekeyed per axis. The quick bar speaks short
+ * because it announces ONE icon at a time, and the panel speaks in full because the child is reading a list — the
+ * difference is one of context. Reusing instead of translating again keeps the same word in both places.
  */
 export const SHORT_THEME: Readonly<Record<Theme, string>> = Object.freeze({
   padrao: 'contrast.off', hc3: 'contrast.3', hc45: 'contrast.45', hc7: 'contrast.7',
@@ -57,22 +50,22 @@ export const SHORT_CORRECTION: Readonly<Record<Correction, string>> = Object.fre
   tricro: 'cvd.off', protan: 'cvd.protan', deuter: 'cvd.deuter', tritan: 'cvd.tritan',
 });
 
-/** Os dois eixos, como o painel os identifica no DOM. */
+/** The two axes, as the panel identifies them in the DOM (stored values, and so Portuguese). */
 export type VisualAxis = 'tema' | 'correcao';
 
-/** Um tradutor, igual ao que o resto da interface recebe. */
+/** A translator, the same the rest of the interface gets. */
 export type Translator = (key: string, params?: Record<string, string | number>) => string;
 
 /**
- * As linhas de UM eixo, no formato de rádio que o painel já usa.
+ * ONE axis's rows, in the radio shape the panel already uses.
  *
- * ⚠️ RÁDIO E NÃO SETE BOTÕES, e o motivo sobrevive à divisão: DENTRO de um eixo os valores continuam
- * exclusivos — um tema de cada vez, uma correção de cada vez. O que deixou de ser exclusivo é a relação
- * ENTRE os eixos, e é por isso que eles viram dois rádios em vez de um.
+ * ⚠️ A RADIO AND NOT SEVEN BUTTONS: WITHIN an axis the values stay exclusive — one theme at a time, one correction at a
+ * time. What stopped being exclusive is the relation BETWEEN the axes, which is why they become two radios instead of
+ * one.
  *
- * ⚠️ E MANTÉM-SE A FORMA DE LINHA VISÍVEL, não um `<select>`. O `settings-visual` regista o erro que o Dev
- * apanhou na primeira tentativa: dentro de uma caixa fechada, um controle cuja razão de existir é ser ACHADO
- * por quem enxerga mal fica «quase o mesmo que não ter movido».
+ * ⚠️ AND THE VISIBLE-ROW SHAPE STAYS, not a `<select>`. The visual panel records the mistake the Dev caught on the first
+ * attempt: inside a closed box, a control whose reason to exist is to be FOUND by whoever sees poorly becomes «quase o
+ * mesmo que não ter movido».
  */
 export function axisRows(
   axisName: VisualAxis,
@@ -90,10 +83,10 @@ export function axisRows(
 }
 
 /**
- * Os DOIS eixos, um a seguir ao outro, com um título cada.
+ * The TWO axes, one after the other, with a title each.
  *
- * O título existe porque dois rádios seguidos sem nome são um rádio de oito para quem lê depressa — e essa
- * leitura é exactamente o mal-entendido que a divisão existe para desfazer.
+ * The title exists because two unnamed radios in a row are one radio of eight for whoever reads fast — and that reading
+ * is exactly the misunderstanding the split exists to undo.
  */
 export function axesHtml(v: VisualState, t: Translator): string {
   return `<h3 class="opt-sub">${t('eixo.tema.titulo')}</h3>`
@@ -102,7 +95,7 @@ export function axesHtml(v: VisualState, t: Translator): string {
     + axisRows('correcao', CORRECTIONS, CORRECTION_LABEL, v.correcao, t);
 }
 
-/** O que um clique num botão do painel quer dizer. `null` quando o botão não é de eixo nenhum. */
+/** What a click on a panel button means. `null` when the button belongs to no axis. */
 export interface AxisChoice {
   readonly axis: VisualAxis;
   readonly value: string;

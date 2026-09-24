@@ -1,41 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/cvd-matrices — as SEIS matrizes de daltonismo (3 SIMULAÇÕES Machado 2009 sev. 1.0 + 3 CORREÇÕES
-// C = I + M_err·(I − Sim), M_err de Fidaner et al.), num só lugar. Módulo-folha: ZERO dependências.
+// render/cvd-matrices — the SIX colour-blindness matrices (3 SIMULATIONS, Machado 2009 severity 1.0 + 3 CORRECTIONS
+// C = I + M_err·(I − Sim), M_err from Fidaner et al.), in one place. A leaf module: ZERO dependencies.
 //
-// A DUPLICAÇÃO QUE ESTE MÓDULO CURA (a sétima do refactor). Os mesmos 120 números existiam escritos DUAS
-// vezes, em linguagens diferentes:
-//   · `<feColorMatrix values="…">` em app/index.html — caminho de TELA ÚNICA (`filter: url(#cvd-…)` na
-//     <canvas>); render/viz-modes só guarda o `url(#cvd-deuter)`, nunca os números.
-//   · `PIXI.ColorMatrixFilter` dentro de `pixiFilterFor` no game.js — caminho MULTI-TELA (filtro GPU por
-//     viewport, um modo por jogador).
-// Batiam por sorte: nada ligava as duas cópias. Se divergissem, o sintoma seria SILENCIOSO e de
-// ACESSIBILIDADE — a MESMA pessoa daltônica veria cores diferentes em tela única e em multi-tela, sem erro,
-// sem log, sem teste vermelho. Agora os dois caminhos leem daqui: `render/viewports` monta o
-// ColorMatrixFilter com estes arrays, e `installCvdFilters()` GERA os seis `<filter>` do index.html no boot
-// a partir dos mesmos arrays (o HTML só guarda o `<defs id="cvd-defs">` vazio que os recebe).
+// THE DUPLICATION THIS MODULE CURES. The same 120 numbers were once written TWICE, in different languages: as
+// `<feColorMatrix values="…">` in a page's HTML — the SINGLE-SCREEN path (`filter: url(#cvd-…)` on the <canvas>) — and
+// as a `PIXI.ColorMatrixFilter` — the MULTI-SCREEN path (a GPU filter per viewport, one mode per player). Nothing tied
+// the two copies. Had they drifted, the symptom would be SILENT and about ACCESSIBILITY — the SAME colour-blind person
+// would see different colours on one screen and on several, with no error, no log, no red test. Now both paths read
+// from here: `render/viewports` builds the ColorMatrixFilter from these arrays, and `installCvdFilters()` GENERATES the
+// six `<filter>`s at boot from the same arrays, into the empty host the root is given (`host.cvdHost`).
 //
-// Este é um módulo-folha de propósito (mesmo formato de render/hc-role-data): um arquivo de dados sem
-// dependência nenhuma pode ser lido tanto pelo pipeline de render quanto pelo boot do documento sem arrastar
-// PixiJS para dentro do HTML nem o DOM para dentro do render.
+// A leaf module on purpose (the same shape as render/hc-role-data): a data file with no dependency can be read both by
+// the render pipeline and by the document's boot without dragging PixiJS into the HTML or the DOM into the renderer.
 //
-// LAYOUT: 20 números = 4 linhas de 5 (R, G, B, A), em ordem de linha. É EXATAMENTE o mesmo layout nos dois
-// destinos — `feColorMatrix type="matrix"` e `PIXI.ColorMatrixFilter#matrix` — por isso o array serve aos
-// dois sem conversão. Aplicados em sRGB nos dois caminhos (aproximação padrão da web; ver a decisão 2 da
-// pesquisa). Fonte primária e a conferência valor a valor: docs/research/PESQUISA-DALTONIZACAO.md.
+// LAYOUT: 20 numbers = 4 rows of 5 (R, G, B, A), in row order. It is EXACTLY the same layout at both destinations —
+// `feColorMatrix type="matrix"` and `PIXI.ColorMatrixFilter#matrix` — so the array serves both with no conversion.
+// Applied in sRGB on both paths (the web's standard approximation; see the research's decision 2). Primary source and
+// the value-by-value check: docs/research/PESQUISA-DALTONIZACAO.md.
 
-/** As seis chaves de modo de daltonismo — as MESMAS chaves de `VIZ_MODES` em render/viz-modes. */
+/** The six colour-blindness mode keys — the SAME keys as `VIZ_MODES` in render/viz-modes. */
 export type CvdKey = 'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'fix-protan' | 'fix-deuter' | 'fix-tritan';
 
-/** Ordem canônica: as três simulações (o que a pessoa vê) antes das três correções (o que a ajuda a ver). */
+/** Canonical order: the three simulations (what the person sees) before the three corrections (what helps them see). */
 export const CVD_KEYS: readonly CvdKey[] = ['sim-protan', 'sim-deuter', 'sim-tritan', 'fix-protan', 'fix-deuter', 'fix-tritan'];
 
 /**
- * As matrizes, 4×5 em ordem de linha. Linha A = `0 0 0 1 0` em todas: nenhum dos seis modos mexe em alfa.
+ * The matrices, 4×5 in row order. Row A = `0 0 0 1 0` in all of them: none of the six modes touches alpha.
  *
- * SIMULAÇÃO (Machado, Oliveira & Fernandes 2009, severidade 1.0 — valores conferidos na página dos autores,
- * UFRGS). CORREÇÃO (daltonização canônica): a linha R é identidade — não adianta modular o canal que a pessoa
- * não distingue — e o erro é reinjetado em G e B, onde há discriminação; a soma de cada linha é 1, então
- * branco e cinzas ficam preservados.
+ * SIMULATION (Machado, Oliveira & Fernandes 2009, severity 1.0 — values checked on the authors' page, UFRGS).
+ * CORRECTION (canonical daltonisation): the R row is identity — there is no point modulating the channel the person
+ * cannot tell apart — and the error is reinjected into G and B, where there is discrimination; each row sums to 1, so
+ * white and greys are preserved.
  */
 export const CVD_MATRIX: Record<CvdKey, readonly number[]> = {
   'sim-protan': [0.152286, 1.052583, -0.204868, 0, 0, 0.114503, 0.786281, 0.099216, 0, 0, -0.003882, -0.048116, 1.051998, 0, 0, 0, 0, 0, 1, 0],
@@ -47,16 +42,16 @@ export const CVD_MATRIX: Record<CvdKey, readonly number[]> = {
 };
 
 /**
- * Modo → id do `<filter>` SVG. Os ids são API PÚBLICA deste módulo: `VIZ_FILTER` (render/viz-modes) pede o
- * filtro pelo `url(#…)`, e é este mapa que promete que o filtro com aquele id vai existir no documento.
- * Renomear um id aqui sem renomear lá apaga a canvas (referência de filtro inexistente não renderiza).
+ * Mode → the SVG `<filter>` id. The ids are this module's PUBLIC API: `VIZ_FILTER` (render/viz-modes) asks for the
+ * filter by `url(#…)`, and this map is what promises the filter with that id will exist in the document. Renaming an id
+ * here without renaming it there blanks the canvas (a reference to a missing filter does not render).
  */
 export const CVD_SVG_ID: Record<CvdKey, string> = {
   'sim-protan': 'cvd-protan', 'sim-deuter': 'cvd-deuter', 'sim-tritan': 'cvd-tritan',
   'fix-protan': 'cvd-fix-protan', 'fix-deuter': 'cvd-fix-deuter', 'fix-tritan': 'cvd-fix-tritan',
 };
 
-/** Atributo `values` de um `<feColorMatrix>`: as 4 linhas separadas por espaço duplo (legibilidade). PURA. */
+/** A `<feColorMatrix>`'s `values` attribute: the 4 rows separated by a double space (readability). PURE. */
 export function cvdMatrixValues(k: CvdKey): string {
   const m = CVD_MATRIX[k];
   return [0, 5, 10, 15].map((i) => m.slice(i, i + 5).join(' ')).join('  ');
@@ -65,16 +60,16 @@ export function cvdMatrixValues(k: CvdKey): string {
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 /**
- * Gera os seis `<filter>` DENTRO do `<defs id="cvd-defs">` do index.html, a partir de `CVD_MATRIX`.
+ * Generates the six `<filter>`s INSIDE the given host (an SVG `<defs>`), from `CVD_MATRIX`.
  *
- * Por que no boot e não escrito à mão no HTML: era exatamente a segunda cópia dos números. Construído com
- * `createElementNS` (e não `innerHTML`) porque `<filter>`/`<feColorMatrix>` só funcionam no namespace SVG —
- * com innerHTML o resultado depende do algoritmo de fragmento do navegador.
+ * Why at boot and not written by hand in the HTML: that was exactly the second copy of the numbers. Built with
+ * `createElementNS` (and not `innerHTML`) because `<filter>`/`<feColorMatrix>` only work in the SVG namespace — with
+ * innerHTML the result depends on the browser's fragment algorithm.
  *
- * Idempotente: esvazia o host antes de preencher, então chamar duas vezes não duplica ids (id duplicado faria
- * o navegador escolher o primeiro — falha silenciosa outra vez).
+ * Idempotent: it empties the host before filling it, so calling twice does not duplicate ids (a duplicated id would make
+ * the browser pick the first — a silent failure again).
  *
- * @returns quantos filtros foram instalados (0 = host ausente; o chamador decide se isso é fatal).
+ * @returns how many filters were installed (0 = no host; the caller decides whether that is fatal).
  */
 export function installCvdFilters(host: Element | null | undefined): number {
   if (!host) return 0;
@@ -85,7 +80,7 @@ export function installCvdFilters(host: Element | null | undefined): number {
   for (const k of CVD_KEYS) {
     const f = doc.createElementNS(SVG_NS, 'filter');
     f.setAttribute('id', CVD_SVG_ID[k]);
-    f.setAttribute('color-interpolation-filters', 'sRGB'); // idem PIXI: os dois caminhos operam em sRGB
+    f.setAttribute('color-interpolation-filters', 'sRGB'); // as PIXI does: both paths work in sRGB
     const fe = doc.createElementNS(SVG_NS, 'feColorMatrix');
     fe.setAttribute('type', 'matrix');
     fe.setAttribute('values', cvdMatrixValues(k));

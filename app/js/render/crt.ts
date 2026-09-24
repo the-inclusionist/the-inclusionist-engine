@@ -1,40 +1,38 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/crt.ts — estética CRT (menu Sensibilidade visual): scanlines/vinheta/cantos, só CSS (classes em
-// #game-region). Extraído do game.js (Estágio 4, Tier 1). CRT = config {scan,vig,round} (0=off,1,2; scan/vig são
-// on/off) carregada do localStorage com migração do formato antigo booleano. crtScanVars ancora a scanline em
-// PIXELS REAIS (recomputa da altura real do #game-region + dpr → 1 linha por pixel de arte, espaçamento regular).
-// Auto-contido: depende de core/dom-query ($). A contagem de jogadores entra por `initCrt` (ver abaixo).
+// render/crt.ts — the CRT look (visual sensitivity menu): scanlines/vignette/corners, CSS only (classes on
+// #game-region). CRT = the config {scan,vig,round} (0=off,1,2; scan/vig are on/off) loaded from localStorage, migrating
+// the old boolean format. crtScanVars anchors the scanline to REAL PIXELS (recomputed from #game-region's real height +
+// dpr → 1 line per art pixel, regular spacing).
+// Self-contained: depends on core/dom-query ($). The player count comes in through `initCrt` (see below).
 import { $ } from '../core/dom-query.js';
 
 import { screenGrid } from '../core/screens.js';
 import * as store from '../platform/storage.js';
 
 type CrtCfg = { scan: number; vig: number; round: number };
-// scanline LIGADA por padrão (decisão do José 2026-07-03). Migra incl_crt (booleano) → incl_crt2 (níveis 0..2).
-/** O CRT de fábrica. Ganhou nome porque o "restaurar padrões" do menu (ADR-0028) precisa do MESMO valor que
- *  a carga do boot usa quando nada foi salvo — duas cópias seriam duas chances de o reset devolver um CRT que
- *  o jogo nunca mostrou. Congelado: um padrão que alguém consiga escrever em tempo de execução não é padrão. */
+// scanlines ON by default (the Dev's decision). Migrates incl_crt (boolean) → incl_crt2 (levels 0..2).
+/** The factory CRT. Named because the menu's "restore defaults" (ADR-0028) needs the SAME value the boot load uses when
+ *  nothing was saved — two copies would be two chances for the reset to return a CRT the game never showed. Frozen: a
+ *  default someone can write at runtime is not a default. */
 export const CRT_DEFAULT: Readonly<CrtCfg> = Object.freeze({ scan: 1, vig: 0, round: 1 });
 
-// A CONTAGEM DE JOGADORES entra por injeção desde 2026-08-26. Era `numPlayers`, um `let` de `core/state`
-// importado como binding vivo — e um `let` de módulo é compartilhado por qualquer segundo jogo que a
-// mesma página carregue (D13 do `demos`, ADR-0038). O que entra aqui é o GETTER da rodada que a raiz
-// possui; o `let` que sobra guarda a função, não o número.
+// THE PLAYER COUNT comes in by injection, not as a live binding to a module `let`: a module `let` is shared by any second
+// game the same page loads (ADR-0038). What comes in here is the GETTER of the round the root owns; the `let` left
+// keeps the function, not the number.
 let _playerCount: () => number = () => 1;
 /**
- * ALGUM jogador está num modo de acessibilidade visual? (qualquer coisa que não seja `normal`.)
+ * Is ANY player in a visual accessibility mode? (anything other than `normal`.)
  *
- * O ADR-0020 decide: "modos de a11y SUPRIMEM o CRT/efeitos decorativos — precedência a11y > estética". Isso
- * nunca tinha sido implementado, e a emenda de 2026-08-26 mediu: com a vinheta ligada, `crt-vig-1` sobrevivia
- * em `hc-direto`, `fix-deuter`, `lv-blur` e `blind`. Uma vinheta escurecendo as bordas trabalha contra o modo
- * que existe para AUMENTAR contraste.
+ * ADR-0020 decides that accessibility modes SUPPRESS the CRT and decorative effects — accessibility takes precedence
+ * over aesthetics. Without it, `crt-vig-1` survived in `hc-direto`, `fix-deuter`, `lv-blur` and `blind` with the
+ * vignette on: a vignette darkening the edges works against the mode that exists to RAISE contrast.
  *
- * `ALGUM` e não "o jogador 1": o CRT é decoração GLOBAL, uma só para a tela inteira. Não há como escurecer as
- * bordas de meia tela. Se a decoração e a acessibilidade de qualquer criança se contradizem, quem cede é a
- * decoração — que é literalmente o que "precedência a11y > estética" quer dizer.
+ * `ANY` and not "player 1": the CRT is GLOBAL decoration, one for the whole screen. There is no darkening the edges of
+ * half a screen. If the decoration and any child's accessibility contradict each other, the decoration yields — which
+ * is literally what accessibility-over-aesthetics means.
  */
 let _a11yVisualActive: () => boolean = () => false;
-/** Liga a contagem de jogadores e a pergunta de a11y. Chamado uma vez pela raiz, antes do 1º `applyCrt()`. */
+/** Wires the player count and the accessibility question. Called once by the root, before the 1st `applyCrt()`. */
 export function initCrt(deps: { numPlayers: () => number; a11yVisualOn: () => boolean }): void {
   _playerCount = deps.numPlayers;
   _a11yVisualActive = deps.a11yVisualOn;
@@ -74,31 +72,31 @@ function levelOf(k: keyof CrtCfg, v: unknown): number {
   return Math.max(0, Math.min(2, (v as number) | 0));
 }
 
-// Ancora a scanline em px REAIS: 1 linha por pixel de ARTE (kDev inteiro) → espaçamento SEMPRE regular em qualquer dpr.
+// Anchors the scanline to REAL px: 1 line per ART pixel (an integer kDev) → ALWAYS regular spacing at any dpr.
 export function crtScanVars(): void {
   const g = $<HTMLElement>('#game-region'); if (!g || !CRT.scan) return;
   const { rows } = screenGrid(_playerCount()), dpr = window.devicePixelRatio || 1;
-  const perDev = Math.max(2, Math.round((g.clientHeight || 360) * dpr / (180 * rows))); // kDev = px REAIS por linha de arte (INTEIRO)
-  g.style.setProperty('--scan-per', (perDev / dpr) + 'px'); // período = kDev px reais (1 linha de arte)
-  g.style.setProperty('--scan-line', (Math.max(1, Math.round(dpr)) / dpr) + 'px'); // linha = 1 px REAL
+  const perDev = Math.max(2, Math.round((g.clientHeight || 360) * dpr / (180 * rows))); // kDev = REAL px per art line (INTEGER)
+  g.style.setProperty('--scan-per', (perDev / dpr) + 'px'); // period = kDev real px (1 art line)
+  g.style.setProperty('--scan-line', (Math.max(1, Math.round(dpr)) / dpr) + 'px'); // line = 1 REAL px
 }
 
-// Aplica as classes CSS de CRT ao #game-region e persiste. Chamado no boot e ao mexer no menu.
+// Applies the CRT CSS classes to #game-region and persists. Called at boot and when the menu changes.
 export function applyCrt(): void {
   const g = $<HTMLElement>('#game-region'); if (!g) return;
   ['crt-scan-1', 'crt-vig-1', 'crt-round-0', 'crt-round-2'].forEach((c) => g.classList.remove(c));
-  // OS DOIS EFEITOS CEDEM À ACESSIBILIDADE, SEM EXCEÇÃO (ADR-0020 + ADR-0047).
+  // BOTH EFFECTS YIELD TO ACCESSIBILITY, WITH NO EXCEPTION (ADR-0020 + ADR-0047).
   //
-  // Houve uma versão com uma chave de escape por efeito, a pedido do Dev. Ele a removeu depois de VER o
-  // resultado na tela: "Ceder fez muito bem ao jogo nos modos de acessibilidade". Fica anotado porque a
-  // ausência da chave é decisão, não esquecimento — e porque o pilar 2 volta a não ter exceção nenhuma.
+  // A version with a per-effect escape switch existed, at the Dev's request. They removed it after SEEING the result
+  // on screen: «Ceder fez muito bem ao jogo nos modos de acessibilidade». It is noted because the switch's absence is a
+  // decision, not an oversight — and because pillar 2 is back to having no exception at all.
   //
-  // O valor gravado NÃO é alterado: a preferência continua lá e volta a valer sozinha ao sair do modo de
-  // acessibilidade. Suprimir não é desligar — é a distinção que impede a criança de perder o que escolheu
-  // toda vez que liga o alto contraste.
+  // The stored value is NOT changed: the preference stays and counts again by itself on leaving the accessibility
+  // mode. Suppressing is not turning off — it is the distinction that keeps the child from losing what they chose every
+  // time they turn high contrast on.
   const a11y = _a11yVisualActive();
   if (CRT.scan && !a11y) { g.classList.add('crt-scan-' + CRT.scan); crtScanVars(); }
   if (CRT.vig && !a11y) g.classList.add('crt-vig-' + CRT.vig);
-  if (CRT.round !== 1) g.classList.add('crt-round-' + CRT.round); // 1 = visual padrão (8px), sem classe
+  if (CRT.round !== 1) g.classList.add('crt-round-' + CRT.round); // 1 = the default look (8px), no class
   store.setJSON(store.KEYS.crt, CRT);
 }

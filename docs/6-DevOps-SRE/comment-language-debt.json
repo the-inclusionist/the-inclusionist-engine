@@ -1,16 +1,13 @@
 {
   "about": "Portuguese comment lines per file (scripts/comment-language.mjs). Only shrinks; a new file starts at zero. A heuristic that undercounts — a ratchet, never a verdict.",
-  "total": 15227,
+  "total": 15120,
   "files": {
     "app/js/boot/create-game.ts": 1065,
     "app/js/env.d.ts": 21,
-    "app/js/render/crt.ts": 34,
-    "app/js/render/cvd-matrices.ts": 37,
     "app/js/render/high-contrast.ts": 84,
     "app/js/render/port.ts": 87,
     "app/js/render/screen-pipeline.ts": 112,
     "app/js/render/viewports.ts": 70,
-    "app/js/render/viz-axes-labels.ts": 36,
     "app/js/render/viz-axes.ts": 89,
     "app/js/render/viz-modes.ts": 49,
     "app/js/render/viz-setters.ts": 168,
