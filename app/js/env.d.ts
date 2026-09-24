@@ -16,20 +16,6 @@ declare module 'virtual:sprite-atlas' {
 }
 
 /**
- * espeak-ng 1.0.2 ships no types: its default export is the Emscripten module factory a Kokoro port calls (ADR-0198).
- * ⚠️ The type import below names `consumer-quiz/kokoro-porta`, which this tree no longer has (the engine loads Kokoro
- * itself since ADR-0216); `skipLibCheck` is why `tsc` does not report it.
- */
-declare module 'espeak-ng' {
-  const createEspeak: (options: {
-    arguments: readonly string[];
-    preRun: readonly ((m: { FS: import('./consumer-quiz/kokoro-porta.js').SistemaDeFicheirosDoEspeak }) => void)[];
-    instantiateWasm?: (imports: WebAssembly.Imports, onReady: (i: WebAssembly.Instance, m: WebAssembly.Module) => void) => object;
-  }) => Promise<{ FS: import('./consumer-quiz/kokoro-porta.js').SistemaDeFicheirosDoEspeak }>;
-  export default createEspeak;
-}
-
-/**
  * THE TEST HOOKS HUNG ON `window`, declared because a game's entry point creates and extends them.
  *
  * `__incl` is the object this project's VERIFICATION PROTOCOL uses: checking the boot is checking that
