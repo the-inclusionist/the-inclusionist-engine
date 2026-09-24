@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of platform/audio-ambient (NODE project: a fake Web Audio injected). Contracts: updateAmbient is gated by
-// audioCat.ambient.on, builds the track ONCE (lazily), the rain gain follows _rainLevel and the water gain follows the
-// nearness of water tiles (type 3); thunder respects soundOn/volume. See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// audioCat.ambient.on, builds the track ONCE (lazily), the rain gain follows the rain level and the water gain follows the
+// nearness of the spots the GAME calls 'water' through `roleAt` (never a tile number); thunder respects soundOn/volume.
 import { describe, it, expect } from 'vitest';
 import { createAudioAmbient } from '../app/js/platform/audio-ambient.js';
 
@@ -21,6 +21,10 @@ function fakeAC() {
   return { rec, ac };
 }
 
+const TILE = 16;
+/** The cell a spot falls in, in the metric `roleAt` receives (world units, `TILE` per cell). */
+const cellOf = (at) => ({ tx: Math.floor(at.x / TILE), ty: Math.floor(at.y / TILE) });
+
 function setup(over = {}) {
   const { rec, ac } = fakeAC();
   const ctx = {
@@ -31,47 +35,72 @@ function setup(over = {}) {
     getVolume: () => over.volume === undefined ? 0.6 : over.volume,
     getAudioCat: () => over.audioCat === undefined ? { ambient: { on: true } } : over.audioCat,
     getPlayers: () => over.players || [{ x: 80, y: 80 }],
-    tileAt: over.tileAt || (() => 0),
-    TILE: 16,
+    roleAt: over.roleAt || (() => 'free'),
+    TILE,
     getRainLevel: () => over.rainLevel === undefined ? 0 : over.rainLevel,
+    ...(over.extra || {}),
   };
   return { amb: createAudioAmbient(ctx), rec };
 }
 
+/** The WATER gain is the first target set each frame (then the rain's). */
+const waterGain = (rec) => rec.targets[0];
+
 describe('platform/audio-ambient', () => {
-  it('[Zero] updateAmbient não faz nada com ambient.on=false (não constrói a trilha)', () => {
+  it('[Zero] updateAmbient does nothing with ambient.on=false (does not build the track)', () => {
     const { amb, rec } = setup({ audioCat: { ambient: { on: false } } });
     amb.updateAmbient();
     expect(rec.buffers).toBe(0);
   });
 
-  it('[One] updateAmbient constrói a trilha UMA vez (lazy) em chamadas repetidas', () => {
+  it('[One] updateAmbient builds the track ONCE (lazily) across repeated calls', () => {
     const { amb, rec } = setup();
     amb.updateAmbient(); amb.updateAmbient(); amb.updateAmbient();
     expect(rec.buffers).toBe(1); // buildAmbient ran only on the 1st frame
   });
 
-  it('[Interface] ganho de CHUVA segue _rainLevel (0.09 × nível)', () => {
+  it('[Interface] the RAIN gain follows the rain level (0.09 × level)', () => {
     const { amb, rec } = setup({ rainLevel: 1 });
     amb.updateAmbient();
     expect(rec.targets).toContain(0.09); // 0.09 × 1
   });
 
-  it('[Boundary] ganho de ÁGUA sobe perto de tile de água (tipo 3) e fica 0 longe', () => {
-    const near = setup({ players: [{ x: 80, y: 80 }], tileAt: (x, y) => (x === 5 && y === 5 ? 3 : 0) }); // px=py=5 → water right there
-    near.amb.updateAmbient();
-    expect(near.rec.targets).toContain(0.15); // 0.15 × nearWater(=1 na distância 0)
-    const far = setup({ players: [{ x: 80, y: 80 }], tileAt: () => 0 });
-    far.amb.updateAmbient();
-    expect(far.rec.targets.every((v) => v !== 0.15)).toBe(true); // no water nearby
+  it('[Water · game says] water sounds where the GAME says water, whatever tile number its map uses', () => {
+    // Player at cell (5,5); the game's map calls its water tile 7 — the engine never sees that number, only the role.
+    const tileNumber = (tx, ty) => (tx === 5 && ty === 5 ? 7 : 0);
+    const { amb, rec } = setup({ roleAt: (at) => { const { tx, ty } = cellOf(at); return tileNumber(tx, ty) === 7 ? 'water' : 'free'; } });
+    amb.updateAmbient();
+    expect(waterGain(rec)).toBe(0.15); // 0.15 × nearness 1 (distance 0)
   });
 
-  it('[Zero] thunder com som OFF ou volume 0: nenhum bufferSource', () => {
+  it('[Water · metric] roleAt is asked in the world metric, and the gain falls with the distance in cells', () => {
+    // Water two cells east of the player: nearness = 1 − 2/4.2. A mutation that passed cell indices to `roleAt`
+    // (instead of world units) would find the water at cell (0,0) and never here.
+    const { amb, rec } = setup({ roleAt: (at) => { const { tx, ty } = cellOf(at); return tx === 7 && ty === 5 ? 'water' : 'structure'; } });
+    amb.updateAmbient();
+    expect(waterGain(rec)).toBeCloseTo(0.15 * (1 - 2 / 4.2), 10);
+  });
+
+  it('[Water · game says none] no water sound where the game says there is none', () => {
+    const { amb, rec } = setup({ roleAt: () => 'structure' });
+    amb.updateAmbient();
+    expect(waterGain(rec)).toBe(0);
+  });
+
+  it('[Water · no magic number] a map whose tile 3 is NOT water does not sound like water', () => {
+    // Every cell is tile 3 here, and the game says it is a hazard. A `tileAt` is even offered, to catch a module that
+    // still reads tile numbers: the role is the only thing allowed to decide.
+    const { amb, rec } = setup({ roleAt: () => 'hazard', extra: { tileAt: () => 3 } });
+    amb.updateAmbient();
+    expect(waterGain(rec)).toBe(0);
+  });
+
+  it('[Zero] thunder with sound OFF or volume 0: no bufferSource', () => {
     const off = setup({ soundOn: false }); off.amb.thunder(0.5); expect(off.rec.sources).toBe(0);
     const mute = setup({ volume: 0 }); mute.amb.thunder(0.5); expect(mute.rec.sources).toBe(0);
   });
 
-  it('[One] thunder com som ON: cria 1 bufferSource (rumor em loop)', () => {
+  it('[One] thunder with sound ON: creates 1 bufferSource (a looping rumble)', () => {
     const { amb, rec } = setup();
     amb.thunder(0.7);
     expect(rec.sources).toBe(1);

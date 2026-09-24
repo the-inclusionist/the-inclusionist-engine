@@ -3070,6 +3070,22 @@ it is mapped.
 unreachable *because* the game declines it; that was already not true, so the answer it gives (`() => !paused`) is now
 the one that matters when a child maps a controller mid-pause.
 
+## CR · The ambient water is asked of the game: `AudioAmbientCtx.tileAt` becomes `roleAt` (ADR-0027, ADR-0224)
+
+**Who is affected:** a host that calls `createAudioAmbient` (`platform/audio-ambient`). The ctx loses `tileAt` and gains
+a REQUIRED `roleAt(at: Spot): Role` — the cartridge's own `GameDeclaration.roleAt`. **Migration: replace `tileAt` with
+`roleAt: (at) => declaration.roleAt(at)`; `TILE` stays.**
+
+📌 **Why:** the module decided where the water was with `tileAt(...) === 3`, and tile 3 is water only in the
+platformer's map. A game with another numbering would hear a river in its lava and silence in its lake, with no error.
+The water is now whatever the game's `roleAt` calls `'water'`, asked at each cell's corner in world units (`TILE` per
+cell) — the same answer that paints high contrast and routes the sonar. Required and not optional, by ADR-0224's
+precedent: an optional port would let the water fall silent without a word.
+
+📏 **Measured in the seven games, as information:** one caller — `game-platformer` (`app/js/main.ts`, the `ambient`
+ctx). Its `roleAt` already answers `'water'` through `tile-roles.ts`, so the sound does not change. Its `declaration` is
+built later in the file than `ambient`, which is why the migration is a closure and not `declaration.roleAt` itself.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

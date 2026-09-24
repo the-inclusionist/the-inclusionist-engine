@@ -133,7 +133,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 10,
-      "fanIn": 8
+      "fanIn": 9
     },
     "core/dom-query.ts": {
       "codeLines": 4,
@@ -670,10 +670,10 @@
       "fanIn": 1
     },
     "platform/audio-ambient.ts": {
-      "codeLines": 56,
+      "codeLines": 59,
       "decisionNodes": 13,
       "maxDepth": 3,
-      "fanOut": 0,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 11,
       "fanIn": 0

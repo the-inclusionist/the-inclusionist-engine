@@ -2,14 +2,28 @@
 // platform/audio-ambient — a synthesised AMBIENT track (loops of filtered noise) + thunder. Only the SOUND lives here;
 // the visual weather is the game's. The bridge to it: the rain level (0..1) is computed by the game's weather and READ
 // here through a getter, so the rain's volume "follows the picture". Injection by closure.
-//   updateAmbient() — per frame: builds the track once (lazily) and sets the WATER gain (nearness of water tiles) and the
-//                     RAIN gain (follows the rain level). Gated by audioCat.ambient.on.
+//   updateAmbient() — per frame: builds the track once (lazily) and sets the WATER gain (nearness of what the game
+//                     calls 'water') and the RAIN gain (follows the rain level). Gated by audioCat.ambient.on.
 //   thunder(inten)  — a synthesised low rumble (low-passed noise) of variable intensity; called by the weather.
+
+import type { Role, Spot } from '../core/contract.js';
 
 interface AmbientNodes { hum: GainNode; wind: GainNode; water: GainNode; rain: GainNode; }
 interface Vec2 { x: number; y: number; }
 
 export interface AudioAmbientCtx {
+  /**
+   * WHERE THE WATER IS, ASKED OF THE GAME through the contract's `roleAt` — never read off a tile number. "Water is
+   * tile 3" is true of ONE map (the platformer's), not of the engine: a game with another numbering would hear a river
+   * in its lava and silence in its lake, with no error and no red test (ADR-0027's no. 1 coupling, the one
+   * `render/high-contrast` shed by receiving `roleOf`). `roleAt` and not a bespoke `isWater`, because every cartridge
+   * already answers it (`GameDeclaration.roleAt` is required) and 'water' is already a contract `Role`: a second
+   * question would be a second table to drift from the one that paints high contrast and routes the sonar. Asked in
+   * world units, at the corner of each cell of the neighbourhood (`TILE` per cell).
+   * ⚠️ REQUIRED, by ADR-0224's precedent: an optional port would let a game forget it, and forgetting it would silence
+   * the water without a word.
+   */
+  roleAt: (at: Spot) => Role;
   ensureAC: () => AudioContext | null;
   getAudioCtx: () => AudioContext | null;
   catNode: (cat: string) => AudioNode | null;
@@ -19,8 +33,7 @@ export interface AudioAmbientCtx {
   getVolume: () => number;
   getAudioCat: () => Record<string, { on: boolean }> | null;
   getPlayers: () => Vec2[];
-  tileAt: (x: number, y: number) => number;
-  TILE: number;
+  TILE: number; // the step of the water sampling, in the world units `roleAt` receives (one cell of the game's grid)
   getRainLevel: () => number; // 0..1, computed by the game's weather
 }
 
@@ -51,7 +64,9 @@ export function createAudioAmbient(ctx: AudioAmbientCtx): AudioAmbient {
     if (!_ambient) { _ambient = buildAmbient(ac); if (!_ambient) return; }
     const pl = ctx.getPlayers()[0], px = Math.floor(pl.x / ctx.TILE), py = Math.floor(pl.y / ctx.TILE);
     let nearWater = 0;
-    for (let dx = -3; dx <= 3; dx++) for (let dy = -3; dy <= 3; dy++) { if (ctx.tileAt(px + dx, py + dy) === 3) nearWater = Math.max(nearWater, 1 - Math.hypot(dx, dy) / 4.2); }
+    for (let dx = -3; dx <= 3; dx++) for (let dy = -3; dy <= 3; dy++) {
+      if (ctx.roleAt({ x: (px + dx) * ctx.TILE, y: (py + dy) * ctx.TILE }) === 'water') nearWater = Math.max(nearWater, 1 - Math.hypot(dx, dy) / 4.2);
+    }
     _ambient.water.gain.setTargetAtTime(0.15 * nearWater, ac.currentTime, 0.3);
     _ambient.rain.gain.setTargetAtTime(0.09 * ctx.getRainLevel(), ac.currentTime, 0.5); // the rain follows the rain level; 0 = full silence
   }

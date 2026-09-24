@@ -1067,7 +1067,7 @@
       "getSoundOn",
       "getVolume",
       "noiseBuffer",
-      "tileAt"
+      "roleAt"
     ],
     "interface AudioAmbient": [
       "thunder",
