@@ -153,20 +153,25 @@ export function accommodationLabellerFrom(p: AccommodationPreset): (a: Accommoda
  */
 export function accommodationPresetProblems(p: AccommodationPreset | null | undefined): string[] {
   if (p === null || p === undefined) return [];
-  if (typeof p !== 'object' || Array.isArray(p)) return ['accommodations: must be an object keyed by accommodation'];
-  const problems: string[] = [];
-  for (const key of Object.keys(p)) {
-    if (!isAccommodation(key)) {
-      problems.push(`accommodations: «${key}» is not in the catalogue - a game's own accommodation is an addition (ADR-0145 §2), not a preset entry`);
-    }
-  }
-  for (const a of presetAccommodations(p)) {
-    const w = p[a];
-    if (!w || typeof w.label !== 'string' || !w.label.trim()) {
-      problems.push(`accommodations: ${a} has an empty label - the menu would show a nameless row`);
-    }
-  }
-  return problems;
+  if (!isKeyed(p)) return [NOT_KEYED];
+  const strangers = Object.keys(p).filter((key) => !isAccommodation(key)).map((key) =>
+    `accommodations: «${key}» is not in the catalogue - a game's own accommodation is an addition (ADR-0145 §2), not a preset entry`);
+  const nameless = presetAccommodations(p).filter((a) => !isWord(p[a])).map((a) =>
+    `accommodations: ${a} has an empty label - the menu would show a nameless row`);
+  return [...strangers, ...nameless];
+}
+
+const NOT_KEYED = 'accommodations: must be an object keyed by accommodation';
+
+/** An object keyed by name, and not a list: the one shape a preset and an answer both take. */
+function isKeyed(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null && !Array.isArray(x);
+}
+
+/** A WORD: an object whose label is text and not blank — a row that mounts must have a name to show. */
+function isWord(v: unknown): boolean {
+  return !!v && typeof v === 'object' && typeof (v as { label?: unknown }).label === 'string'
+    && (v as { label: string }).label.trim() !== '';
 }
 
 /* ===================== THE CARTRIDGE'S ANSWER (ADR-0153) ===================== */
@@ -205,28 +210,19 @@ export function accommodationAnswersProblems(a: unknown): string[] {
   if (a === null || a === undefined) {
     return ['accommodations: missing - the cartridge must answer every game-keyed accommodation (ADR-0153): its word, or false'];
   }
-  if (typeof a !== 'object' || Array.isArray(a)) return ['accommodations: must be an object keyed by accommodation'];
-  const answers = a as Record<string, unknown>;
-  const problems: string[] = [];
-  for (const k of GAME_KEYED) {
-    if (!(k in answers)) {
-      problems.push(`accommodations: ${k} is not answered - write its word if it has a subject in this game, or false`);
-      continue;
-    }
-    const v = answers[k];
-    if (v === false) continue;
-    if (!v || typeof v !== 'object' || typeof (v as { label?: unknown }).label !== 'string' || !(v as { label: string }).label.trim()) {
-      problems.push(`accommodations: ${k} must be false or a word with a non-empty label`);
-    }
-  }
-  for (const k of Object.keys(answers)) {
-    if (!isGameKeyed(k)) {
-      problems.push(isAccommodation(k)
-        ? `accommodations: ${k} is not the cartridge's to answer - general ones mount always and contract ones are derived`
-        : `accommodations: «${k}» is not in the catalogue - a game's own accommodation is an addition (ADR-0145 §2)`);
-    }
-  }
-  return problems;
+  if (!isKeyed(a)) return [NOT_KEYED];
+  const unanswered = GAME_KEYED.map((k) => answerProblem(a, k)).filter((p): p is string => p !== null);
+  const strangers = Object.keys(a).filter((k) => !isGameKeyed(k)).map((k) => (isAccommodation(k)
+    ? `accommodations: ${k} is not the cartridge's to answer - general ones mount always and contract ones are derived`
+    : `accommodations: «${k}» is not in the catalogue - a game's own accommodation is an addition (ADR-0145 §2)`));
+  return [...unanswered, ...strangers];
+}
+
+/** What is wrong with the cartridge's answer to ONE accommodation, or `null`: it must be written, and be `false` or a word. */
+function answerProblem(answers: Record<string, unknown>, k: GameKeyedAccommodation): string | null {
+  if (!(k in answers)) return `accommodations: ${k} is not answered - write its word if it has a subject in this game, or false`;
+  const v = answers[k];
+  return v === false || isWord(v) ? null : `accommodations: ${k} must be false or a word with a non-empty label`;
 }
 
 /**

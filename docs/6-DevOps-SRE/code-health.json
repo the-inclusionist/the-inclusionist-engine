@@ -73,12 +73,12 @@
       "fanIn": 1
     },
     "core/accommodations.ts": {
-      "codeLines": 102,
-      "decisionNodes": 17,
-      "maxDepth": 3,
+      "codeLines": 91,
+      "decisionNodes": 9,
+      "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 15,
+      "worstFunction": 4,
       "fanIn": 3
     },
     "core/actions.ts": {

@@ -119,6 +119,8 @@ describe('the cartridge\'s answer — COMPLETE, and mandatory (ADR-0153)', () =>
   it('🔴 [Zero] NO answer is a problem — the difference from the preset, and the Dev\'s decision', () => {
     expect(accommodationAnswersProblems(undefined)[0]).toMatch(/missing .*ADR-0153/);
     expect(accommodationAnswersProblems(null)).toHaveLength(1);
+    // and `null` says the same thing — «missing», not «must be an object»: both are a cartridge that did not answer
+    expect(accommodationAnswersProblems(null)[0]).toMatch(/missing .*ADR-0153/);
   });
 
   it('🔴 [Boundary] ONE missing key is a problem, named — silence is not «no»', () => {
@@ -183,3 +185,11 @@ describe('the cartridge\'s answer — COMPLETE, and mandatory (ADR-0153)', () =>
 // line» and the two «…REPORTED — never thrown» cases. One is EQUIVALENT and declared rather than caught: dropping the check
 // that a word is an OBJECT changes nothing for a string or a number, which have no text `label` and are refused by the next
 // check anyway.
+//
+// RE-PROBED IN THE NEW SHAPE (`isKeyed`, `isWord`, `answerProblem` — `scratchpad/sonda-acc-3.py`): 15 of 19 red, with the
+// «null says missing» line above, which the new shape made necessary — there a `null` answer no longer throws (the keyed
+// check refuses it), so only the MESSAGE told the two guards apart. Declared rather than caught:
+//   · the keyed check refusing `null` itself — both callers return on `null` before asking it;
+//   · a word being an OBJECT (as above);
+//   · the ORDER between the two kinds of problem (unanswered before strangers, strangers before nameless) — kept as it was,
+//     and no reader of `problems` depends on it.
