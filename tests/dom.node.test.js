@@ -1,31 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/dom — as duas metades do botão de alternância (project node: sem DOM, só as funções puras).
+// ui/dom — the two halves of the toggle button (node project: no DOM, only the pure functions).
 //
-// ESTES CASOS VIERAM DE `settings-empathy.node.test.js`, e a mudança de arquivo é o registro: `toggleLabel`
-// estava lá, declarado como "compartilhado", servindo UM chamador — enquanto as mesmas duas palavras apareciam
-// copiadas em treze lugares de nove arquivos. A função foi para junto do `toggleBtn`, que é a outra metade do
-// mesmo gesto, e o teste foi junto (a regra do item 19: o teste viaja com o módulo).
+// `toggleLabel` sits beside `toggleBtn`, the other half of the same gesture, and its test travels with the module.
 //
-// Por que isto é teste de ACESSIBILIDADE e não de formatação: um botão de alternância diz o seu estado DUAS
-// vezes — no texto, para quem vê, e no `aria-pressed`/`aria-label`, para quem ouve. Se as duas metades
-// discordarem, a tela mostra "Ligado" e o leitor anuncia "desligado", e quem depende do leitor não tem como
-// desempatar. É por isso que elas moram no mesmo arquivo, e é isso que estes casos guardam.
+// Why this is an ACCESSIBILITY test and not a formatting one: a toggle states its state TWICE — in the text, for whoever
+// sees, and in `aria-pressed`/`aria-label`, for whoever listens. If the halves disagree, the screen shows "On" and the
+// reader announces "off", and someone who depends on the reader has no way to break the tie. That is why they live in
+// the same file, and what these cases guard.
 import { describe, it, expect } from 'vitest';
 import { toggleBtn, toggleLabel, toggleAria } from '../app/js/ui/dom.js';
 import { t } from '../app/js/core/i18n.js';
 
 describe('toggleLabel — o texto visível', () => {
   it('[Right] ligado e desligado saem do DICIONÁRIO, não do código', () => {
-    // Comparado contra `t()` e não contra a string literal: se um dia o rótulo mudar no dicionário, este caso
-    // continua verdadeiro. Comparar com '❚❚ Ligado' cru voltaria a fixar o texto em português no teste, que é
-    // exatamente o que a mudança tirou do código.
+    // Compared against `t()` and not a literal: if the label ever changes in the dictionary, this case stays true.
+    // Comparing with a raw string would pin Portuguese text in the test, which is exactly what the dictionary took out
+    // of the code.
     expect(toggleLabel(true)).toBe(t('ui.toggle.on'));
     expect(toggleLabel(false)).toBe(t('ui.toggle.off'));
     expect(toggleLabel(true)).not.toBe(toggleLabel(false));
   });
 
   it('[Zero] a chave NUNCA vaza: o que sai é texto, não `ui.toggle.on`', () => {
-    // O modo de falhar da i18n por chave é este, e é silencioso: um `t()` esquecido põe a chave na tela.
+    // This is how key-based i18n fails, and it is silent: a forgotten `t()` puts the key on screen.
     expect(toggleLabel(true)).not.toMatch(/^ui\./);
     expect(toggleLabel(false)).not.toMatch(/^ui\./);
   });
@@ -38,8 +35,8 @@ describe('toggleLabel — o texto visível', () => {
 
 describe('toggleAria — o que o leitor de tela ouve', () => {
   it('[Right] carrega o NOME do alvo junto, que é o que a tela não precisa dizer', () => {
-    // Na tela, o nome do alvo está na linha ao lado do botão e o olho junta os dois. No leitor, o botão é
-    // anunciado sozinho — sem o nome, a pessoa ouve "ligado" e não sabe ligado o quê.
+    // On screen, the target's name is on the row beside the button and the eye joins the two. In the reader the button
+    // is announced alone — without the name, the person hears "on" and does not know what is on.
     expect(toggleAria('Scanlines', true)).toContain('Scanlines');
     expect(toggleAria('Scanlines', false)).toContain('Scanlines');
     expect(toggleAria('Scanlines', true)).not.toBe(toggleAria('Scanlines', false));
@@ -51,7 +48,7 @@ describe('toggleAria — o que o leitor de tela ouve', () => {
 });
 
 describe('as duas metades não se separam', () => {
-  /** Botão de mentira: só o que `toggleBtn` toca. */
+  /** A fake button: only what `toggleBtn` touches. */
   function botao() {
     const attrs = {}, classes = new Set();
     return {
@@ -62,8 +59,8 @@ describe('as duas metades não se separam', () => {
   }
 
   it('[Interface] o estado que o `aria-pressed` declara é o mesmo que o rótulo mostra', () => {
-    // O caso central deste arquivo. As duas funções são independentes — nada no tipo as obriga a concordar —
-    // e é por isso que a concordância precisa ser cobrada em algum lugar.
+    // This file's central case. The two functions are independent — nothing in the types makes them agree — which is
+    // why agreement has to be enforced somewhere.
     for (const on of [true, false]) {
       const b = botao();
       toggleBtn(b, on);

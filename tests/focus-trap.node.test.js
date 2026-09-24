@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A ARMADILHA DE FOCO — o segundo fio da issue #109, e o único dos três que não existia em lado nenhum.
+// THE FOCUS TRAP — the second thread of issue #109.
 //
-// Os outros dois eram construídos e deixados desligados. Este nunca tinha sido escrito, e
-// `ui/settings-panel.ts:17-19` registra a ausência por escrito.
+// ⚠️ Every `.overlay__card` carries `aria-modal="true"`, which tells assistive technology the rest of the page is inert.
+// Tab must agree. A promise the keyboard contradicts is worse than no promise — a screen-reader user leaves the dialog
+// for a game whose state they cannot perceive, with no way back they can perceive.
 //
-// ⚠️ E O DOCUMENTO JÁ PROMETIA O CONTRÁRIO: todo `.overlay__card` do `index.html` tem `aria-modal="true"`, que
-// diz à tecnologia assistiva que o resto da página está inerte. O Tab discordava. Uma promessa que o teclado
-// desmente é pior do que promessa nenhuma — quem usa leitor de tela sai do diálogo para um jogo cujo estado
-// não consegue perceber, e não tem caminho de volta que perceba.
-//
-// A REGRA é pura e mora aqui; o que precisa de navegador é só ler quem está focado e chamar `.focus()`.
+// The RULE is pure and lives here; what needs a browser is only reading who is focused and calling `.focus()`.
 import { describe, it, expect } from 'vitest';
 import { nextInTrap, initFocusTrap, FOCUSABLE_SELECTOR } from '../app/js/ui/focus-trap.js';
 
@@ -22,24 +18,24 @@ describe('proximoNaArmadilha — o ciclo fecha nas BORDAS, e o meio é do navega
   });
 
   it('[Right] ⚠️ o foco que está FORA do diálogo é trazido de volta', () => {
-    // É o caso que os outros não cobrem, e o mais provável na prática: o foco pode já ter escapado antes de
-    // esta armadilha existir, ou por um clique no tabuleiro, ou porque o diálogo abriu sem focar nada. Sem
-    // isto a armadilha só serviria a quem já estava dentro — ou seja, a quem não precisava dela.
+    // The case the others do not cover, and the likeliest in practice: focus may have escaped before the trap was
+    // attached, or through a click on the board, or because the dialog opened without focusing anything. Without this
+    // the trap would serve only whoever was already inside — that is, whoever did not need it.
     expect(nextInTrap(LISTA, 'zzz', false)).toBe('a');
     expect(nextInTrap(LISTA, 'zzz', true)).toBe('c');
     expect(nextInTrap(LISTA, null, false)).toBe('a');
   });
 
   it('[Right] no MEIO devolve null — reimplementar a ordem de tabulação seria errar onde já se acerta', () => {
-    // O navegador já resolve `tabindex` positivo, ordem do DOM e o que fica focável por `contenteditable`.
-    // Uma armadilha que caminha pelo meio tem como errar; uma que só fecha as pontas não toca no meio.
+    // The browser already resolves positive `tabindex`, DOM order and what `contenteditable` makes focusable. A trap
+    // that walks the middle can get it wrong; one that only closes the ends does not touch the middle.
     expect(nextInTrap(LISTA, 'b', false)).toBe(null);
     expect(nextInTrap(LISTA, 'b', true)).toBe(null);
   });
 
   it('[Zero] ⚠️ diálogo SEM nada focável deixa sair, e é deliberado', () => {
-    // Prender o foco num diálogo mudo deixaria a criança sem saída nenhuma. Um diálogo assim é defeito DELE;
-    // a armadilha não conserta isso, e trancar seria trocar um defeito por um pior.
+    // Holding focus in a mute dialog would leave the child no way out at all. Such a dialog is ITS OWN defect; the trap
+    // does not fix that, and locking would trade one defect for a worse one.
     expect(nextInTrap([], 'a', false)).toBe(null);
     expect(nextInTrap([], null, true)).toBe(null);
   });
@@ -51,12 +47,12 @@ describe('proximoNaArmadilha — o ciclo fecha nas BORDAS, e o meio é do navega
 });
 
 describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
-  /** Um evento de teclado de mentira que registra se foi consumido. */
+  /** A fake keyboard event that records whether it was consumed. */
   function tecla(key, shiftKey = false) {
     return { key, shiftKey, impedido: false, preventDefault() { this.impedido = true; } };
   }
 
-  /** Monta a armadilha sobre uma lista de "elementos" que só sabem receber foco. */
+  /** Builds the trap over a list of "elements" that only know how to receive focus. */
   function armar({ dialogo = {}, focaveis = null, foco = null } = {}) {
     const focados = [];
     const el = (n) => ({ n, focus() { focados.push(n); } });
@@ -86,7 +82,7 @@ describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
   });
 
   it('[Zero] ⚠️ SEM diálogo aberto a armadilha não faz nada — o Tab é do jogo', () => {
-    // Uma armadilha sempre ligada prenderia o foco na tela de título, que não é diálogo nenhum.
+    // A trap that is always on would hold focus on the title screen, which is no dialog at all.
     const { api, focados } = armar({ dialogo: null, foco: 'dois' });
     const e = tecla('Tab');
     api.onKeydown(e);
@@ -113,8 +109,8 @@ describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
   });
 
   it('[Interface] instala na fase de CAPTURA — antes de quem está por baixo', () => {
-    // Na fase de bolha o jogo já teria visto o Tab. É a mesma razão do `menu-nav`, e a assimetria entre os
-    // dois seria invisível até alguém reparar que só um dos diálogos prende.
+    // In the bubble phase the game would already have seen the Tab. It is the same reason as `menu-nav`'s, and an
+    // asymmetry between the two would stay invisible until someone noticed only one of the dialogs holds.
     const ouvintes = [];
     initFocusTrap({
       topOverlay: () => null, currentFocus: () => null, focusablesIn: () => [],
@@ -132,9 +128,9 @@ describe('o SELETOR do que é focável', () => {
   });
 
   it('[Zero] ⚠️ `tabindex="-1"` NÃO é focável por Tab, e o seletor tem de o excluir', () => {
-    // É o erro clássico: `[tabindex]` sozinho apanha os `-1`, que existem justamente para receber foco por
-    // programa e NUNCA por tabulação. Um card de diálogo com `tabindex="-1"` entraria no ciclo, e a criança
-    // tabularia para um contêiner que não faz nada.
+    // The classic mistake: `[tabindex]` alone catches the `-1`s, which exist precisely to receive focus by program and
+    // NEVER by tabbing. A dialog card with `tabindex="-1"` would enter the cycle, and the child would tab onto a
+    // container that does nothing.
     expect(FOCUSABLE_SELECTOR).toContain('[tabindex]:not([tabindex="-1"])');
     expect(FOCUSABLE_SELECTOR).not.toMatch(/(^|,)\s*\[tabindex\]\s*(,|$)/);
   });

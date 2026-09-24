@@ -1,42 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O JOGO DE MENTIRA QUE OS GATES DA ENGINE USAM — nascido da separação do cartucho (issue #111).
+// THE FAKE GAME THE ENGINE'S GATES USE — so that no gate imports a game to set itself up (issue #111). With the
+// cartridge out of this repository, a gate that imported it would simply not compile.
 //
-// ========================= O QUE ISTO EXISTE PARA CONSERTAR =========================
-// Nove gates desta engine importavam de `app/js/game/**` para se montarem: `render/draw` pedia o
-// `makePlayer` do jogo, `render/high-contrast` pedia a tabela `roleOf`, `ui/activities-menu` pedia o estado
-// e o id, `input/touch` pedia o preset da plataforma. Enquanto o jogo morava aqui isso parecia natural — e
-// era a fronteira a ser afirmada em prosa e desmentida pelos imports.
+// ========================= THIS FILE'S RULE =========================
+// ⚠️ A FAKE DECLARES THE MINIMUM SLICE, NEVER THE WHOLE GAME. `core/entity.ts` records why the narrow views exist:
+// swapping them for one fat interface would make every fixture invent every field. Copying a real game's player here
+// would be exactly that, made worse by the copy drifting with nobody noticing.
 //
-// ⚠️ E O CUSTO NÃO ERA HIPOTÉTICO: com o cartucho fora, esses gates simplesmente não compilam. Foi a medida
-// que a separação devolveu, e é o que torna esta pasta trabalho e não arrumação.
-//
-// ========================= A REGRA DESTE FICHEIRO =========================
-// ⚠️ UM FALSO DECLARA A FATIA MÍNIMA, NUNCA O JOGO INTEIRO. `core/entity.ts` já regista por escrito por que
-// as vinte e três visões estreitas existem: «trocar 23 visões estreitas por uma interface gorda destruiria
-// isso — todo fixture passaria a ter de inventar 52 campos». Copiar o `makePlayer` de verdade para cá seria
-// exatamente isso, com o agravante de a cópia divergir sem ninguém notar.
-//
-// ⚠️ E O QUE UM FALSO NÃO PODE FAZER É PROVAR UMA RELAÇÃO COM O JOGO REAL. Onde um gate afirmava algo sobre
-// o cartucho — que o preset da plataforma tem nove ações, que o manifesto de sprites tem quatro quadros de
-// `idle` — a asserção NÃO foi falsificada: ela mudou de repositório, para `game-platformer`, onde o jogo
-// existe e a engine chega pelo pacote. Integração pertence a quem integra.
+// ⚠️ AND WHAT A FAKE CANNOT DO IS PROVE A RELATION TO THE REAL GAME. Where a gate asserted something about the
+// cartridge — that the platform preset has nine actions, that the sprite manifest has four `idle` frames — the
+// assertion was NOT faked: it moved to `game-platformer`, where the game exists and the engine arrives as a package.
+// Integration belongs to whoever integrates.
 
 /**
- * A caixa de colisão. É o mesmo `{w:10,h:30}` que `draw.node.test.js` já inventava no seu ctx falso — e o
- * ficheiro avisava, na linha do lado, que os casos da câmera conferem `y - BOX.h/2`, então o número tem de
- * ser coerente entre o ctx e o jogador. Agora há UM número, e ele está aqui.
+ * The collision box, `{w:10,h:30}`: ONE number, kept here so a fake context and a fake player cannot disagree about it
+ * (a camera case checks `y - BOX.h/2`). ⚠️ Nothing imports it today.
  */
 export const BOX_FALSO = Object.freeze({ w: 10, h: 30 });
 
 /**
- * Um jogador com a fatia que os módulos de RENDER da engine leem, e nada mais.
+ * A player with the slice a render module reads, and nothing more; the values are a game's start-up values, so the fake
+ * starts where the game starts.
  *
- * ⚠️ OS CAMPOS NÃO FORAM ESCOLHIDOS A OLHO: são os que `render/player-anim` de facto lê, extraídos por
- * varredura de `pl.<campo>` no módulo — vinte e cinco. O `makePlayer` do jogo devolve mais de quarenta;
- * copiar todos seria trazer o jogo de volta por baixo, e adivinhar menos deixa a máquina de animação a
- * devolver `undefined`, que foi como este ficheiro descobriu que faltavam onze.
- *
- * Os valores são os que o `makePlayer` real usa no arranque, para o falso começar onde o jogo começa.
+ * ⚠️ The fields were the ones the player-animation module read, found by scanning `pl.<field>`. That module left the
+ * engine and nothing imports this function today.
  */
 export function jogadorFalso(i = 0, over = {}) {
   return {
@@ -45,7 +32,7 @@ export function jogadorFalso(i = 0, over = {}) {
     onGround: false, onLadder: false, inWater: false, airTime: 99,
     facing: 1, anim: 0, walkAnim: 0, walkDir: 0,
     hurtTimer: 0, clinging: false, clingN: null, jumpChain: 0, groundIdle: 0,
-    // o bloco que a máquina de animação lê
+    // the block the animation state machine read
     flying: false, idleNow: false, idleTime: 0, flavor: -1, flavorT: 0, climbFrame: 0,
     running: false, walking: false, runCane: false,
     rmWalk: false, rmBreath: false, rmFlavor: false,
@@ -57,22 +44,20 @@ export function jogadorFalso(i = 0, over = {}) {
 }
 
 /**
- * A tabela tile→papel, de mentira. A de verdade é do JOGO e a engine a RECEBE — é o que o comentário de
- * `high-contrast` já dizia enquanto importava a do jogo.
+ * A fake tile→role table. The real one belongs to the GAME and the engine RECEIVES it.
  *
- * ⚠️ Os papéis são os da ENGINE (`render/hc-role-data`), não os tiles do jogo: o que um gate de alto
- * contraste prova é que a cor sai do PAPEL, e para isso qualquer tabela que devolva papéis serve. Uma que
- * copiasse os tiles do platformer voltaria a atar a engine a um jogo, só que por baixo.
+ * ⚠️ The roles are the ENGINE's (`render/hc-role-data`), not the game's tiles: what a high-contrast gate proves is that
+ * the colour comes from the ROLE, and any table that returns roles serves for that. One that copied the platformer's
+ * tiles would tie the engine to a game again, only from below.
  */
 export function roleOfFalso(tipo) {
-  // ⚠️ OS NOMES SÃO OS DE `render/hc-role-data.HC_ROLE_KEYS`, e não inventados: `hazard`, `climb`, `water`.
-  // A primeira versão deste falso devolvia `solid` e `ladder`, que não existem — e dezassete casos do project
-  // browser estouraram com `Cannot read properties of undefined`, porque a tabela de cores é indexada pelo
-  // papel. `gate` fica de fora de propósito: o próprio módulo regista que ele NÃO vem de `roleOf()`.
-  // ⚠️ OS NÚMEROS TAMBÉM NÃO SÃO LIVRES: os gates de alto contraste montam um mundo de teste e escrevem os
-  // tipos na prosa dos casos — «col0=pedra(2, estrutura) · col1=lava(9, hazard) · col2=escada(4, climb)», e
-  // «água(3)». Inverter 2 e 9 fazia a pedra ser repintada e a lava não, e três casos reprovavam a dizer
-  // exatamente isso. O `2` devolve `null` de propósito: estrutura NÃO tem papel, só é dessaturada.
+  // ⚠️ THE NAMES ARE `render/hc-role-data.HC_ROLE_KEYS`'s, not invented: `hazard`, `climb`, `water`. A role that does
+  // not exist makes the browser cases throw `Cannot read properties of undefined`, because the colour table is indexed
+  // by role. `gate` is left out on purpose: the module itself records that it does NOT come from `roleOf()`.
+  // ⚠️ THE NUMBERS ARE NOT FREE EITHER: the high-contrast gates build a test world and write the types into the cases'
+  // prose — «col0=pedra(2, estrutura) · col1=lava(9, hazard) · col2=escada(4, climb)», and «água(3)». Swapping 2 and 9
+  // repaints the stone and not the lava, and three cases fail saying exactly that. `2` returns `null` on purpose:
+  // structure has NO role, it is only desaturated.
   if (tipo === 9) return 'hazard';
   if (tipo === 4) return 'climb';
   if (tipo === 3) return 'water';
@@ -80,15 +65,15 @@ export function roleOfFalso(tipo) {
 }
 
 /**
- * Um preset de NOVE ações — o número que o jogo de plataforma declara hoje.
+ * A preset of NINE actions — the number the platform game declares.
  *
- * ⚠️ E é por isso que ele é falso e não importado: o gate que prova que o preset REAL tem nove ações mudou
- * para `game-platformer`, junto com o preset. O que fica aqui é o comportamento da engine DADO um preset de
- * nove, que é o que `input/touch` e `ui/reach-notice` de facto testam.
+ * ⚠️ That is why it is fake and not imported: the gate proving the REAL preset has nine actions moved to
+ * `game-platformer`, together with the preset. What stays here is the engine's behaviour GIVEN a nine-action preset,
+ * which is what the `input/touch` tests use it for.
  */
 export function presetFalso() {
-  // A FORMA é `{ label, short? }` — a mesma do `ActionPreset` de `core/actions`. O `short` só existe nas
-  // quatro ações, porque é a palavra da LEGENDA e as direções não entram nela.
+  // The SHAPE is `{ label, short? }` — the same as `core/actions`' `ActionPreset`. Only the four actions have `short`,
+  // because it is the CAPTION's word and the directions do not appear in it.
   return {
     up: { label: 'subir' }, down: { label: 'descer' },
     left: { label: 'esquerda' }, right: { label: 'direita' },
@@ -100,5 +85,5 @@ export function presetFalso() {
   };
 }
 
-/** O id de armazenamento, que desde o ADR-0088 é do jogo e não da engine. Neutro de propósito. */
+/** The storage id, which belongs to the game and not the engine (ADR-0088). Neutral on purpose. ⚠️ Nothing imports it today. */
 export const JOGO_FALSO = 'jogo-de-teste';

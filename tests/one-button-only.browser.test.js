@@ -15,8 +15,8 @@ import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import pt from '../app/js/i18n/pt.js';
 import * as estado from '../app/js/core/state.js';
 import { SWITCH_SCAN_DEFAULTS } from '../app/js/input/switch-scan.js';
-// ⚠️ A FOLHA DA ENGINE ENTRA, e sem ela este ficheiro mediria outra coisa: o aviso da varredura é posicionado POR CSS, logo sem
-// a folha ele nasce no topo da região e o caso do espaço reservado não teria o que ver.
+// ⚠️ THE ENGINE'S STYLESHEET IS LOADED, and without it this file would measure something else: the scan notice is positioned BY
+// CSS, so without the sheet it is born at the top of the region and the reserved-room case would have nothing to see.
 import css from '../app/css/style.css?raw';
 
 let motor;
@@ -37,10 +37,10 @@ const PASSO = SWITCH_SCAN_DEFAULTS.stepMs;
 /** The key of a position in the solo scheme, which is what a child's switch sends. */
 const TECLA = { up: 'KeyW', down: 'KeyS', action2: 'KeyJ' };
 /*
- * ⚠️ A TECLA É DESPACHADA NA REGIÃO DO JOGO, e não na janela, e isso é o caso e não um detalhe: um evento despachado NA janela
- * chega aos ouvintes dela «no alvo», onde captura e bolha correm pela mesma ordem de registo — então um ouvinte que saísse da
- * captura passava despercebido. Uma tecla de verdade nasce no elemento com foco e SOBE, e é aí que a captura da janela corre
- * primeiro. Uma mutação sobreviveu exactamente por isto.
+ * ⚠️ THE KEY IS DISPATCHED ON THE GAME REGION, not on the window, and that is the point, not a detail: an event dispatched ON the
+ * window reaches its listeners «no alvo», where capture and bubble run in the same registration order — so a listener moved out
+ * of the capture phase would go unnoticed. A real key is born on the focused element and RISES, and that is where the window's
+ * capture runs first. A mutation survived for exactly this reason.
  */
 const apertar = (code) => {
   const e = new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true });
@@ -140,9 +140,9 @@ describe('with one button only, every press takes what is showing', () => {
   });
 
   /*
-   * 🔴 ACHADO NO NAVEGADOR, NÃO AQUI: no quiz construído o aviso «DIZER A RESPOSTA» caiu EM CIMA do enunciado. Ele é HUD, e HUD
-   * que não reserva o seu espaço é a engine a escrever por cima do jogo — a mesma regra que o ADR-0148 impõe ao contrário, e o
-   * mesmo conserto que a linha do nome do ícone já tinha levado (issue #160): a faixa do topo cresce com o que está lá.
+   * 🔴 FOUND IN THE BROWSER, NOT HERE: in the built quiz the notice «DIZER A RESPOSTA» fell ON TOP of the question. It is HUD, and
+   * HUD that does not reserve its room is the engine writing over the game — the same rule ADR-0148 imposes the other way round,
+   * and the same fix the icon-name line got (issue #160): the top band grows with what is in it.
    */
   it('🔴 [Right] o aviso RESERVA o espaço que ocupa, e devolve-o ao sair', async () => {
     const regiao = document.getElementById('game-region');
@@ -159,21 +159,21 @@ describe('with one button only, every press takes what is showing', () => {
   });
 
   it('🔴 [Many] MEDIR DUAS VEZES não move o aviso — é o laço que o `--scan-top` existe para quebrar', async () => {
-    // 🔴 O COMENTÁRIO DO `style.css` DIZ QUE ISTO FOI «apanhado por um caso», E NÃO ERA VERDADE HOJE: medido por sonda em
-    // 22/09, pôr o aviso pela faixa que ele próprio faz crescer deixava a suíte VERDE. O defeito que o comentário
-    // descreve é um LAÇO — o aviso empurra a faixa, a faixa empurra o aviso, e ele desce a tela a cada medição —, e um
-    // laço não se vê numa medição só. Este caso mede duas vezes e exige o mesmo lugar.
+    // 🔴 THIS is the case the `style.css` comment means by «apanhado por um caso». The defect is a LOOP — the notice pushes
+    // the band, the band pushes the notice, and it walks down the screen at every measurement — and a loop is not seen in
+    // one measurement (a probe on 22/09 found the suite green with the notice placed by the band). This case measures
+    // twice and demands the same place.
     const regiao = document.getElementById('game-region');
     estado.setSwitchScanValue(true);
     await new Promise((r) => requestAnimationFrame(() => r(null)));
     const topo = () => chip().getBoundingClientRect().top - regiao.getBoundingClientRect().top;
     const primeiro = topo();
-    // ⚠️ A SEGUNDA MEDIÇÃO TEM DE SER A DE VERDADE: a varredura remede a faixa a cada troca de palavra, e é isso
-    // que faz o laço andar. Um `resize` sintético não serve — medido, ele não passa por aqui, e com ele o caso
-    // ficava VERDE sobre a mutação que existe para apanhar.
+    // ⚠️ THE SECOND MEASUREMENT MUST BE THE REAL ONE: the scan re-measures the band at every change of word, and that is
+    // what makes the loop move. A synthetic `resize` does not serve — measured, it does not come through here, and with
+    // it the case stayed GREEN over the mutation it exists to catch.
     for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, PASSO + 30));
     expect(topo(), 'o aviso andou entre duas medições: a faixa está a empurrá-lo').toBeCloseTo(primeiro, 0);
-    // e o que o põe ali é o `--scan-top`, que NÃO depende do aviso — só a faixa depende
+    // and what places it there is `--scan-top`, which does NOT depend on the notice — only the band does
     expect(parseFloat(regiao.style.getPropertyValue('--scan-top')), 'o aviso não tem onde se pousar').not.toBeNaN();
     estado.setSwitchScanValue(false);
   });

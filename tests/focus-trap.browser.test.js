@@ -1,19 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A ARMADILHA DE FOCO NO NAVEGADOR — a linha da issue #109 que só um navegador pode responder:
-// *"Tab não pode alcançar o jogo enquanto um overlay está aberto, aferido num teste de navegador."*
+// THE FOCUS TRAP IN THE BROWSER — the line of issue #109 only a browser can answer: Tab cannot reach the game while an
+// overlay is open, measured in a browser test.
 //
-// O project node afere a REGRA (`nextInTrap`) sem DOM nenhum. O que precisa de navegador é o resto, e
-// é onde as armadilhas de foco costumam falhar: quem está focado de verdade, o que conta como visível, e se o
-// `preventDefault` chega a tempo.
+// The node project measures the RULE (`nextInTrap`) with no DOM at all. What needs a browser is the rest, and it is
+// where focus traps usually fail: who is really focused, what counts as visible, and whether `preventDefault` arrives
+// in time.
 //
-// ⚠️ E ESTE FICHEIRO JÁ REPROVOU UMA JUSTIFICATIVA MINHA, o que vale mais registrar do que apagar. Ele dizia
-// aqui que `offsetParent` devolve `null` para «qualquer elemento em `position: fixed`». Não devolve — é `null`
-// para o elemento FIXO em si, e os descendentes dele devolvem o próprio contêiner. Escrevi a asserção, ela
-// ficou vermelha, e a explicação é que estava errada, não o código.
-//
-// O que ficou no lugar é a propriedade que interessa e que não depende de saber onde `offsetParent` tem
-// buracos: um diálogo que não desenha nada não pode oferecer foco a nada. Trocar «o foco escapa» por «o foco
-// desapareceu num botão invisível» seria piorar.
+// ⚠️ `offsetParent` is `null` for the FIXED element itself, not for its descendants, which return that container. So
+// what is asserted is the property that matters and does not depend on where `offsetParent` has holes: a dialog that
+// draws nothing cannot offer focus to anything. Trading «o foco escapa» for «o foco desapareceu num botão invisível»
+// would make things worse.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initFocusTrap, focusablesInDom } from '../app/js/ui/focus-trap.js';
 
@@ -33,14 +29,14 @@ const MARCACAO = `
   </div>`;
 
 let raiz;
-/** ⚠️ As armadilhas instaladas por cada caso, para SAIR no fim dele. Ver o `[Zero]` lá em baixo: sem isto, a
- *  armadilha de um caso continuava a prender o foco no caso seguinte, e o vermelho aparecia no lugar errado. */
+/** ⚠️ The traps each case installs, to DETACH at its end. See the `[Zero]` further down: without this, one case's trap
+ *  kept holding focus in the next case, and the red showed up in the wrong place. */
 let instaladas = [];
 beforeEach(() => {
   raiz = document.createElement('div');
   raiz.innerHTML = MARCACAO;
   document.body.appendChild(raiz);
-  document.querySelector('#dlg').style.cssText = 'position:fixed;inset:0'; // os diálogos reais são posicionados
+  document.querySelector('#dlg').style.cssText = 'position:fixed;inset:0'; // the real dialogs are positioned
   instaladas = [];
 });
 afterEach(() => { instaladas.forEach((a) => a.detach()); raiz.remove(); });
@@ -54,9 +50,9 @@ describe('focaveisNoDom — quem entra no ciclo, num documento de verdade', () =
   });
 
   it('[Zero] ⚠️ o `disabled`, o `hidden` e o `tabindex="-1"` ficam de fora', () => {
-    // Os três por motivos diferentes, e o terceiro é o mais fácil de errar: o card do diálogo tem
-    // `tabindex="-1"` para receber foco POR PROGRAMA. Se entrasse no ciclo, a criança tabularia para um
-    // contêiner que não faz nada e pareceria que o Tab tinha parado de funcionar.
+    // All three for different reasons, and the third is the easiest to get wrong: the dialog card has `tabindex="-1"`
+    // to receive focus BY PROGRAM. If it entered the cycle, the child would tab onto a container that does nothing and
+    // Tab would seem to have stopped working.
     const nomes = focusablesInDom($('#dlg')).map((el) => el.id);
     expect(nomes).not.toContain('d-tres');   // disabled
     expect(nomes).not.toContain('d-quatro'); // hidden
@@ -64,14 +60,13 @@ describe('focaveisNoDom — quem entra no ciclo, num documento de verdade', () =
   });
 
   it('[Boundary] ⚠️ um diálogo ESCONDIDO não oferece foco nenhum — e é assim que o Tab volta a ser do jogo', () => {
-    // A propriedade que a visibilidade tem de ter: um diálogo que existe no DOM e não desenha nada não pode
-    // dar foco a nada. Se desse, a armadilha prenderia o Tab em botões que a criança não vê nem alcança —
-    // trocar «o foco escapa» por «o foco desapareceu» seria piorar.
+    // The property visibility must have: a dialog that exists in the DOM and draws nothing cannot give focus to
+    // anything. If it did, the trap would hold Tab on buttons the child neither sees nor reaches — trading
+    // «o foco escapa» for «o foco desapareceu» would make things worse.
     //
-    // ⚠️ E É AQUI QUE UMA JUSTIFICATIVA MINHA CAIU. Este caso dizia antes que `offsetParent` é `null` para
-    // tudo em `position: fixed`. Não é: é `null` para o elemento FIXO, e os descendentes devolvem o próprio
-    // contêiner. O teste reprovou a afirmação em vez de a acompanhar, que é o serviço que ele presta.
-    expect(getComputedStyle($('#dlg')).position).toBe('fixed'); // o diálogo é posicionado, como os reais
+    // ⚠️ `offsetParent` is `null` for the FIXED element, not for everything under `position: fixed`: its descendants
+    // return that container.
+    expect(getComputedStyle($('#dlg')).position).toBe('fixed'); // the dialog is positioned, like the real ones
     expect(focusablesInDom($('#dlg')).length, 'visível, oferece os três').toBe(3);
 
     $('#dlg').style.display = 'none';
@@ -80,7 +75,7 @@ describe('focaveisNoDom — quem entra no ciclo, num documento de verdade', () =
 });
 
 describe('o Tab NÃO alcança o jogo enquanto o diálogo está aberto', () => {
-  /** Monta a armadilha, INSTALA e regista para o `afterEach` a desinstalar. */
+  /** Builds the trap, ATTACHES it and records it for the `afterEach` to detach. */
   function armar(temDialogo = true) {
     const api = initFocusTrap({
       topOverlay: () => (temDialogo ? $('#dlg') : null),
@@ -93,7 +88,7 @@ describe('o Tab NÃO alcança o jogo enquanto o diálogo está aberto', () => {
     return api;
   }
 
-  /** Um Tab de verdade, na fase de captura, como o navegador o entrega. */
+  /** A real Tab, dispatched on the focused element as the browser delivers it. */
   function tabular({ shift = false } = {}) {
     const e = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: shift, bubbles: true, cancelable: true });
     document.activeElement.dispatchEvent(e);
@@ -116,8 +111,8 @@ describe('o Tab NÃO alcança o jogo enquanto o diálogo está aberto', () => {
   });
 
   it('[Right] ⚠️ o foco que JÁ ESTAVA no tabuleiro é trazido para dentro do diálogo', () => {
-    // O caso realista: o diálogo abriu e o foco ficou onde estava, ou a criança clicou no tabuleiro. Sem
-    // isto, a armadilha só serviria a quem já estava dentro dela.
+    // The realistic case: the dialog opened and focus stayed where it was, or the child clicked the board. Without
+    // this, the trap would serve only whoever was already inside it.
     armar();
     $('#jogo-1').focus();
     expect(document.activeElement.id).toBe('jogo-1');
@@ -130,6 +125,6 @@ describe('o Tab NÃO alcança o jogo enquanto o diálogo está aberto', () => {
     $('#jogo-1').focus();
     const e = tabular();
     expect(e.defaultPrevented, 'a armadilha prendeu o foco sem haver diálogo aberto').toBe(false);
-    expect(document.activeElement.id).toBe('jogo-1'); // ninguém moveu; quem moveria é o navegador
+    expect(document.activeElement.id).toBe('jogo-1'); // nobody moved it; the browser would be the one to
   });
 });

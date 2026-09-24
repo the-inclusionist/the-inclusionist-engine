@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/crt — estética CRT (project BROWSER: usa #game-region, classList, style, localStorage).
-// CRT é config MUTÁVEL (o menu ajusta as props) → fixamos CRT.scan/vig/round no teste e checamos as classes CSS.
-// Ver docs/plano-modularizacao-mapa.md (Estágio 4, Tier 1, render/crt).
+// Tests of render/crt — the CRT look (BROWSER project: uses #game-region, classList, style, localStorage).
+// CRT is MUTABLE config (the menu adjusts its props), so each test pins CRT.scan/vig/round and checks the CSS classes.
+// See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4, Tier 1, render/crt).
 import { describe, it, expect } from 'vitest';
 import { CRT, crtScanVars, applyCrt, initCrt } from '../app/js/render/crt.js';
 
@@ -21,7 +21,7 @@ describe('render/crt — applyCrt (classes CSS no #game-region)', () => {
     applyCrt();
     expect(g.classList.contains('crt-vig-1')).toBe(true);
     expect(g.classList.contains('crt-round-2')).toBe(true);
-    expect(g.classList.contains('crt-scan-1')).toBe(false); // scan=0 → sem scanline
+    expect(g.classList.contains('crt-scan-1')).toBe(false); // scan=0 → no scanline
   });
   it('[Inverse] tudo desligado (scan/vig 0, round 1) → nenhuma classe crt-*', () => {
     const g = region();
@@ -42,19 +42,17 @@ describe('render/crt — crtScanVars (scanline ancorada em px reais)', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------
-// A VINHETA CEDE PARA A ACESSIBILIDADE — ADR-0020: "modos de a11y suprimem o CRT decorativo (precedência
-// a11y > estética)". A regra estava DECIDIDA desde 2026-07-06 e nunca tinha sido implementada; a emenda de
-// 2026-08-26 mediu e confirmou: com a vinheta ligada, `crt-vig-1` sobrevivia em `hc-direto`, `fix-deuter`,
-// `lv-blur` e `blind`.
+// THE VIGNETTE YIELDS TO ACCESSIBILITY — ADR-0020: accessibility modes suppress the decorative CRT (accessibility over
+// looks), in `hc-direto`, `fix-deuter`, `lv-blur` and `blind` alike.
 //
-// Uma vinheta escurece as BORDAS. Em alto contraste — o modo que existe para AUMENTAR contraste — ela
-// trabalha contra o próprio motivo de a criança tê-lo ligado.
+// A vignette darkens the EDGES. In high contrast — the mode that exists to RAISE contrast — it works against the very
+// reason the child turned it on.
 //
-// MUTAÇÕES CONFERIDAS:
-//   · tirando o `&& !_a11yVisualAtiva()` de `render/crt.applyCrt`, o caso [Right] falha em
-//     "expected true to be false" — a vinheta sobrevive ao modo de acessibilidade.
-//   · trocando o `!` por nada (suprimir quando NÃO há a11y), o caso [Inverse] falha — a vinheta some de
-//     quem não pediu acessibilidade nenhuma.
+// MUTATIONS CHECKED:
+//   · removing `&& !_a11yVisualAtiva()` from `render/crt.applyCrt`, the [Right] case fails with
+//     "expected true to be false" — the vignette survives the accessibility mode.
+//   · dropping the `!` (suppressing when there is NO accessibility mode), the [Inverse] case fails — the vignette
+//     vanishes for whoever asked for no accessibility at all.
 describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', () => {
   const comA11y = (ativa) => initCrt({ numPlayers: () => 1, a11yVisualOn: () => ativa });
 
@@ -75,8 +73,8 @@ describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', (
   });
 
   it('[Interface] suprimir NÃO é desligar: a preferência da criança fica gravada e volta sozinha', () => {
-    // A distinção importa para quem administra a máquina da escola: se a supressão apagasse `CRT.vig`, sair
-    // do modo de acessibilidade devolveria a criança a uma estética que ela não escolheu de volta.
+    // The distinction matters to whoever runs the school's machine: if suppression erased `CRT.vig`, leaving the
+    // accessibility mode would not bring back the look the child had chosen.
     const g = region();
     comA11y(true);
     CRT.scan = 0; CRT.vig = 1; CRT.round = 1;
@@ -88,12 +86,8 @@ describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', (
   });
 
   it('[Right] a SCANLINE TAMBÉM cede — a reversão que este caso existia para receber', () => {
-    // ⚠️ ESTE CASO AFIRMAVA O CONTRÁRIO ATÉ 2026-08-27, e a troca é o ponto.
-    //
-    // O ADR-0020 nomeava `CRT_VIGNETTE` e "flashes decorativos"; a scanline não estava na lista, e é a única
-    // das três que vem LIGADA de fábrica. Levei a pergunta ao Dev em vez de deduzir, e a resposta foi
-    // "Scanline não deverá ceder a acessibilidade **por enquanto**". O "por enquanto" ficou escrito aqui de
-    // propósito — este caso era o lugar onde a reversão apareceria. Ela apareceu (ADR-0047).
+    // The scanline yields too (ADR-0047), though ADR-0020's list named only the vignette and decorative flashes, and it
+    // is the only one of the three that comes ON by default.
     const g = region();
     comA11y(true);
     CRT.scan = 1; CRT.vig = 0; CRT.round = 1;
@@ -102,9 +96,9 @@ describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', (
   });
 
   it('[Right] os DOIS cedem juntos, e nenhuma chave os traz de volta', () => {
-    // Houve uma versão com uma chave de escape por efeito, a pedido do Dev. Ele a removeu depois de ver o
-    // resultado na tela ("Ceder fez muito bem ao jogo nos modos de acessibilidade"), e a ausência dela é
-    // decisão: o pilar 2 volta a não ter exceção nenhuma. Este caso é o que impede a chave de voltar sozinha.
+    // There is deliberately no per-effect escape key: the Dev removed it after seeing the result on screen
+    // («Ceder fez muito bem ao jogo nos modos de acessibilidade»), so pillar 2 has no exception. This case keeps the key
+    // from coming back unnoticed.
     const g = region();
     comA11y(true);
     CRT.scan = 1; CRT.vig = 1; CRT.round = 1;

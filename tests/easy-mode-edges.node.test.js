@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O GATE DO MODO FÁCIL NA ENTRADA, e ele é a pré-condição da migração da issue #103.
+// THE EASY-MODE GATE AT INPUT, the precondition of the migration in issue #103.
 //
-// ========================= POR QUE ELE NÃO EXISTIA E PRECISA DE EXISTIR AGORA =========================
-// `tests/alternancia-do-correr.node.test.js` cobre `correndoAgora` — o ESTADO de corrida. Ninguém cobria
-// `edgeAllowed`, que é a guarda na BORDA, e é onde o defeito original morava: o cabeçalho de `input/edges.ts`
-// conta que os três caminhos de entrada tinham cada um a sua cópia da tabela, que a cópia do toque não tinha
-// a guarda do Modo Fácil, e que o resultado foi uma criança em Modo Fácil sem conseguir escalar com teclado
-// nem com controle — e conseguindo com o botão da tela.
+// `edgeAllowed` is the guard at the EDGE, where the original defect lived: as the header of `input/edges.ts` tells,
+// each of the three input paths had its own copy of the table, the touch copy lacked the Easy-mode guard, and a child
+// in Easy mode could not climb with keyboard or pad — and could with the on-screen button.
 //
-// ⚠️ NO TABLET DE ESCOLA PÚBLICA O TOQUE NÃO É O CAMINHO ALTERNATIVO: É O ÚNICO. Uma divergência entre os
-// três não é inconsistência estética; é uma criança com dificuldade motora recebendo um jogo diferente do
-// que a decisão pedagógica desenhou.
+// ⚠️ ON A PUBLIC-SCHOOL TABLET, TOUCH IS NOT THE ALTERNATIVE PATH: IT IS THE ONLY ONE. A divergence among the three is
+// not a cosmetic inconsistency; it is a child with a motor difficulty getting a different game from the one the
+// pedagogical decision designed.
 //
-// A migração vai MOVER esta regra (ela é do jogo, não da engine). Este ficheiro existe para que a mudança
-// seja provada e não confiada.
+// The migration will MOVE this rule (it belongs to the game, not the engine). This file exists so that the change is
+// proven, not trusted.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -30,8 +27,8 @@ describe('a regra: no Modo Fácil o `run` não levanta borda', () => {
   });
 
   it('[Boundary] ⚠️ o Modo Fácil tira SÓ a corrida — as outras cinco continuam a passar', () => {
-    // O conserto óbvio e errado seria bloquear tudo. A decisão pedagógica é sobre correr (que é o
-    // gatilho da escalada de parede), não sobre deixar a criança sem jogo.
+    // The obvious wrong fix would block everything. The pedagogical decision is about running (the trigger of wall
+    // climbing), not about leaving the child without a game.
     for (const [acao] of EDGE_BY_ACTION) {
       if (acao === 'action1') continue;
       expect(edgeAllowed(acao, true), `${acao} não devia ser bloqueada pelo Modo Fácil`).toBe(true);
@@ -44,8 +41,8 @@ describe('a regra: no Modo Fácil o `run` não levanta borda', () => {
 });
 
 describe('⚠️ os TRÊS caminhos passam pela guarda — a asserção estrutural, e é o coração deste ficheiro', () => {
-  // Uma asserção de comportamento não apanha o defeito que aconteceu: `edgeAllowed` estava certa e UM dos
-  // caminhos não a chamava. O que falhou foi a ligação, não a regra — então é a ligação que se afirma.
+  // A behaviour assertion does not catch the defect that happened: `edgeAllowed` was right and ONE of the paths did not
+  // call it. What failed was the wiring, not the rule — so the wiring is what is asserted.
   const CAMINHOS = [
     ['input/gamepad.ts', 'o controle'],
     ['input/keydown.ts', 'o teclado'],
@@ -62,7 +59,7 @@ describe('⚠️ os TRÊS caminhos passam pela guarda — a asserção estrutura
   });
 
   it('e nenhum deles traz a sua PRÓPRIA cópia da regra', () => {
-    // A forma exata do defeito antigo: uma guarda escrita à mão, que diverge da tabela sem ninguém notar.
+    // The exact shape of the old defect: a hand-written guard that drifts from the table with nobody noticing.
     for (const [modulo] of CAMINHOS) {
       const fonte = readFileSync(join(process.cwd(), 'app', 'js', modulo), 'utf8')
         .split(String.fromCharCode(13)).join('')

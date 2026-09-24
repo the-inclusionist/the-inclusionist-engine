@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/layout — escala do #game-region (project BROWSER: usa #stage-wrap/#game-region + devicePixelRatio).
-// Padrões: ZOMBIES + Right-BICEP. VLibras fechado por padrão (librasOpen=false). Ver docs/plano-modularizacao-mapa.md.
+// Tests of ui/layout — the scale of #game-region (BROWSER project: uses #stage-wrap/#game-region + devicePixelRatio).
+// Patterns: ZOMBIES + Right-BICEP. VLibras closed by default (librasOpen=false). See docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import { layout } from '../app/js/ui/layout.js';
 
@@ -34,24 +34,20 @@ describe('ui/layout — escala do #game-region', () => {
 });
 
 // ===================================================================================================
-// O HOST COMO ELE EXISTE DE VERDADE — e não como este ficheiro preferia que fosse
+// THE HOST AS IT REALLY EXISTS — not as this file would prefer it
 // ===================================================================================================
-// ⚠️ O ACHADO QUE ESTE BLOCO EXISTE PARA IMPEDIR, e ele estava vivo enquanto tudo aqui em cima ficava verde:
-// `ui/layout.ts` procura `$('#stage-wrap')` — por ID — e faz early-return silencioso se não achar. O único
-// documento que resta neste repositório, `app/quiz.html:31`, tem `<div class="stage-wrap">` — por CLASSE.
+// ⚠️ `app/quiz.html`, the proof consumer's page, has `<div class="stage-wrap">` — by CLASS — and `ui/layout.ts` returns
+// early, silently, when it finds no shell. Looking up by id only, `layout()` did not run on the engine's host: the
+// canvas did not scale, `--tap`/`--ui-fs`/`--hud-fs` were never written, and the early return is indistinguishable
+// from «não havia o que fazer».
 //
-// Ou seja: `layout()` NÃO CORRIA no único host da engine. O canvas não escalava, `--tap`/`--ui-fs`/`--hud-fs`
-// não eram escritas, e nada reportava erro nenhum — o early-return é indistinguível de «não havia o que
-// fazer». O `quiz.html:33` até diz, num comentário, «mesmo id que ui/layout escala»: quem o escreveu
-// acreditava que corria.
+// ⚠️ AND THE `setup()` ABOVE IS WHY NOBODY SAW IT. It FABRICATES `<div id="stage-wrap">` with a fixed height, injecting
+// exactly the variable it should be measuring. A test that builds the host the way the code wants does not check that
+// the real host is like that — it checks that the function works when it works.
 //
-// ⚠️ E O `setup()` LÁ DE CIMA É O MOTIVO DE NINGUÉM TER VISTO. Ele FABRICA `<div id="stage-wrap">` com altura
-// cravada, ou seja injeta exatamente a variável que devia estar a medir. Um teste que constrói o host do
-// jeito que o código quer não afere que o host real é assim — afere que a função funciona quando funciona.
-//
-// Este bloco monta o host COMO O `quiz.html` O MONTA. Ele nasceu vermelho.
+// This block builds the host AS `quiz.html` BUILDS IT. It was born red.
 describe('ui/layout — o host real do consumidor de prova (achado de 07/09)', () => {
-  /** Exatamente a forma de `app/quiz.html`: a casca por CLASSE, o `#game-region` lá dentro. */
+  /** Exactly the shape of `app/quiz.html`: the shell by CLASS, `#game-region` inside it. */
   const setupComoOQuiz = (w = 1280, h = 720) => {
     document.body.innerHTML =
       `<main><div class="stage-wrap" style="width:${w}px;height:${h}px">`
@@ -68,8 +64,8 @@ describe('ui/layout — o host real do consumidor de prova (achado de 07/09)', (
   });
 
   it('⚠️ [Right] e as vars de UI chegam — sem elas o alvo de toque não tem tamanho', () => {
-    // `--tap` é o que o ADR-0095 usa como chão do alvo. Sem `layout()`, ela nunca é escrita e todo
-    // `min-height: var(--tap)` do `style.css` cai no valor de origem.
+    // `--tap` is what ADR-0095 uses as the target's floor. Without `layout()` it is never written and every
+    // `min-height: var(--tap)` in `style.css` falls back to its default.
     setupComoOQuiz();
     layout();
     const gr = document.querySelector('#game-region');
@@ -79,7 +75,7 @@ describe('ui/layout — o host real do consumidor de prova (achado de 07/09)', (
   });
 
   it('[Interface] as duas formas do host produzem a MESMA escala', () => {
-    // Aceitar a classe não pode ser um caminho de segunda: o mesmo espaço tem de dar o mesmo canvas.
+    // Accepting the class cannot be a second-class path: the same space must give the same canvas.
     setupComoOQuiz(1280, 720);
     layout();
     const porClasse = document.querySelector('#game-region').style.width;
