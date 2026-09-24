@@ -189,6 +189,25 @@ describe('what the child said, from the ids (measured against the tokenizers)', 
     });
   }
 
+  it('🔴 [Boundary] Whisper\'s byte alphabet is GPT-2\'s at its edges — a control byte, a no-break space, a soft hyphen', () => {
+    // Found by the probe of 2026-09-24: the three phrases above only carry common bytes, and every edge of the alphabet was
+    // free to move with them green. The pairs are GPT-2's published `bytes_to_unicode` (openai/gpt-2 `encoder.py`): the
+    // printable ranges stand for themselves, every other byte for U+0100 onwards, in order — space is `Ġ`, DEL is `ġ`,
+    // the no-break space is `ł`, the soft hyphen is `Ń`. A shifted range sends the next one to the wrong byte.
+    const cases = [
+      ['a b', ['a', 'Ġ', 'b']],
+      ['a\u007Fb', ['a', 'ġ', 'b']],
+      ['a b', ['a', 'Â', 'ł', 'b']],
+      ['a­b', ['a', 'Â', 'Ń', 'b']],
+      ['~¬®', ['~', 'Â', '¬', 'Â', '®']],
+    ];
+    for (const [said, pieces] of cases) {
+      const vocab = Object.fromEntries(pieces.map((p, i) => [p, i]));
+      const ids = pieces.map((p) => vocab[p]);
+      expect(readingTextOf({ model: { vocab }, decoder: { type: 'ByteLevel' } }, ids), JSON.stringify(said)).toBe(said);
+    }
+  });
+
   it('🔴 [Zero] a special token never reaches the child', () => {
     const caso = truth.tokenizers.pt;
     const especiais = caso.specials.map((s) => s.id);
