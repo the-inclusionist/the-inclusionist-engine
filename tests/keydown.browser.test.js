@@ -1,26 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de input/keydown — o que SÓ o navegador prova (project BROWSER): a PROPAGAÇÃO de verdade entre os
-// dois ouvintes de teclado do jogo, e a visibilidade de verdade (`.hidden` de um elemento real).
-// A cadeia de decisão está em keydown.node.test.js e NÃO é repetida aqui.
+// Tests of input/keydown — what ONLY the browser proves (BROWSER project): the real PROPAGATION between the game's two
+// keyboard listeners, and real visibility (`.hidden` of a real element).
+// The decision chain is in keydown.node.test.js and is NOT repeated here.
 //
-// ⚠️ O CASO PRINCIPAL DESTE ARQUIVO PINA UM COMPORTAMENTO ATUAL, NÃO UM COMPORTAMENTO DESEJADO.
-// `ui/menu-nav.ts` registra o próprio `keydown` em fase de CAPTURA e dá `stopPropagation()`. Com o jogo
-// PAUSADO, o ouvinte de BOLHA que este módulo instala NÃO É ALCANÇADO por Escape: a cadeia
-// `overlays.escapeTarget()` e o `togglePause()` de Escape são, ali, código morto. Isso está medido no
-// navegador e anotado no game.js e no cabeçalho de ui/menu-nav.ts (DEFEITO 2). Preservado de propósito: o
-// conserto futuro (dar `inEscapeChain` a #help/#touchcfg antes de tirar o `stopPropagation()`) precisa desta
-// rede — sem ela, Escape com a Ajuda aberta passaria a DESPAUSAR o jogo por baixo do diálogo.
-// Se este caso falhar, alguém mexeu na região: confira o conserto inteiro antes de atualizar a expectativa.
+// ⚠️ THIS FILE'S MAIN CASE PINS A CURRENT BEHAVIOUR, NOT A DESIRED ONE.
+// `ui/menu-nav.ts` registers its own `keydown` in the CAPTURE phase and calls `stopPropagation()`. With the game
+// PAUSED, the BUBBLE listener this module installs is NOT REACHED by Escape: the `overlays.escapeTarget()` chain and
+// Escape's `togglePause()` are dead code there. Measured in the browser and noted in the header of ui/menu-nav.ts
+// (DEFECT 2). Kept on purpose: the future fix (giving `inEscapeChain` to #help/#touchcfg before removing the
+// `stopPropagation()`) needs this net — without it, Escape with Help open would UNPAUSE the game under the dialog.
+// If this case fails, someone touched the area: check the whole fix before updating the expectation.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initKeydown } from '../app/js/input/keydown.js';
 import { initMenuNav } from '../app/js/ui/menu-nav.js';
-// O PAR de `input/state` (ADR-0109) — o mesmo que o `keydown.node.test.js` injecta, e pela mesma razão.
+// The `input/state` PAIR (ADR-0109) — the same one `keydown.node.test.js` injects, for the same reason.
 import {
   keys as keysReais, markKey, markKeyWithoutSource, releaseKey, releaseAllKeys,
 } from '../app/js/input/state.js';
-// A CENA é DO TESTE desde 2026-08-26. `phase` saiu de `core/state` — virou a pilha de `core/scenes`, e os
-// três nomes moram na raiz de composição (ADR-0030 C3). Quem é engine recebe BOOLEANOS. Este `let` faz o
-// papel que o binding vivo fazia, e os casos seguem escritos como estavam.
+// The SCENE belongs to the TEST: the phase is the `core/scenes` stack and its three names live in the composition root
+// (ADR-0030 C3); engine code receives BOOLEANS. This `let` plays that role.
 let faseFalsa = 'playing';
 const setPhaseValue = (p) => { faseFalsa = p; };
 
@@ -28,9 +26,9 @@ const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: [
 const CONTROLS = { ...SOLO, gameKeys: Object.values(SOLO).flat() };
 const actionOf = (code) => { for (const a in SOLO) if (SOLO[a].includes(code)) return a; return null; };
 
-// `host` faz o papel da JANELA (ancestral) e `target` o do elemento que recebe a tecla. Precisa ser um
-// ANCESTRAL de verdade: se os dois ouvintes morassem no próprio alvo, o navegador os dispararia na ordem de
-// registro e a fase de captura deixaria de significar coisa alguma — que é justamente o que se testa aqui.
+// `host` plays the WINDOW (ancestor) and `target` the element receiving the key. It must be a real ANCESTOR: if both
+// listeners lived on the target itself, the browser would fire them in registration order and the capture phase would
+// stop meaning anything — which is exactly what is tested here.
 let host, target, log, players;
 
 function wire({ pauseMenu = null } = {}) {
@@ -44,9 +42,9 @@ function wire({ pauseMenu = null } = {}) {
     getPauseMenu: () => pauseMenu,
     setPhase: spy('menuNav:setPhase'),
     setPauseActor: spy('menuNav:setPauseActor'),
-    isNavigable: () => faseFalsa === 'paused', // a plataforma navega menu na pausa; ver o ctx de ui/menu-nav
-    // O modo `accessibility` (ADR-0044, item 7) é perguntado antes do guarda de fase. Aqui ninguém está nele:
-    // o que este arquivo mede é a ORDEM entre a captura do menu-nav e o ouvinte de bolha do keydown.
+    isNavigable: () => faseFalsa === 'paused', // menus are navigable while paused; see ui/menu-nav's ctx
+    // The `accessibility` mode (ADR-0044, item 7) is asked before the phase guard. Nobody is in it here: what this file
+    // measures is the ORDER between menu-nav's capture and keydown's bubble listener.
     srSay: () => {},
     withIndex: () => true,
     onBar: () => false,
@@ -65,12 +63,10 @@ function wire({ pauseMenu = null } = {}) {
     getNumPlayers: () => 1,
     getPlayers: () => players,
     getControls: () => CONTROLS,
-    // 🔴 ESTE DUPLO FICOU PARA TRÁS EM `a78816c` E O CI APANHOU-O, não a suite local. Ao migrar o `keydown`
-    // para o par de `input/state` (ADR-0109) actualizei o irmão NODE deste ficheiro e não este — e o modo de
-    // falhar foi o pior possível: `ctx.markKeyWithoutSource is not a function` sai como UNHANDLED ERROR, não
-    // como asserção reprovada, então os casos continuaram a PASSAR e o contador dizia «3117 verdes».
-    // ⚠️ O par VERDADEIRO e não um duplo dele, pela razão que o ficheiro node já carrega: uma segunda
-    // implementação da regra faria o caso afirmar que a minha cópia concorda com a minha asserção.
+    // 🔴 A stale double here fails the worst way: `ctx.markKeyWithoutSource is not a function` comes out as an UNHANDLED
+    // ERROR, not a failed assertion, so the cases go on PASSING (it happened at `a78816c`; CI caught it, not the local
+    // suite). ⚠️ The REAL pair and not a double of it, for the reason the node file carries: a second implementation of
+    // the rule would make the case assert that a copy agrees with its own assertion.
     heldKeys: keysReais,
     markKey,
     markKeyWithoutSource,
@@ -87,14 +83,14 @@ function wire({ pauseMenu = null } = {}) {
     navTitle: spy('keydown:navTitle'),
     activateScreens: spy('keydown:activateScreens'),
     togglePause: spy('keydown:togglePause'),
-    // UMA entrada onde havia quatro, e uma pergunta em vez do objeto (ADR-0033).
+    // ONE entry, and a question instead of the object (ADR-0033).
     modalInput: spy('keydown:modalInput'),
     hasModal: () => false,
     clearWaitingBadge: spy('keydown:clearWaitingBadge'),
     win: host,
   });
-  menuNav.attach(); // CAPTURA — exatamente como o game.js instala
-  keydown.attach(); // BOLHA — idem
+  menuNav.attach(); // CAPTURE — exactly as the composition root installs it
+  keydown.attach(); // BUBBLE — likewise
   return { menuNav, keydown };
 }
 
@@ -102,9 +98,8 @@ const press = (code) => target.dispatchEvent(new KeyboardEvent('keydown', { code
 
 beforeEach(() => {
   log = [];
-  // ⚠️ O conjunto de teclas é estado de MÓDULO e sobrevive entre casos: sem esta reposição, uma tecla que um
-  // caso deixou premida faz o seguinte medir um mundo que ele não montou. É a mesma linha que o irmão node
-  // ganhou, e pelo mesmo motivo.
+  // ⚠️ The key set is MODULE state and survives between cases: without this reset, a key one case left pressed makes
+  // the next measure a world it did not build. It is the same line the node sibling has, for the same reason.
   releaseAllKeys();
   document.body.innerHTML = '<div id="stage"><button id="target"></button></div>';
   host = document.getElementById('stage');
@@ -115,14 +110,14 @@ afterEach(() => { document.body.innerHTML = ''; setPhaseValue('playing'); });
 
 describe('a captura do menu-nav chega antes (comportamento ATUAL, pinado)', () => {
   it('PAUSADO: Escape morre na captura — o ouvinte de bolha nem é consultado', () => {
-    const pauseMenu = document.createElement('div'); // sem ele o menu-nav consome a tecla e para aí
+    const pauseMenu = document.createElement('div'); // without it menu-nav consumes the key and stops there
     wire({ pauseMenu });
     setPhaseValue('paused');
     press('Escape');
-    // nem `togglePause`, nem sequer a leitura de estado que o snapshot faria:
+    // neither `togglePause` nor even the state read the snapshot would make:
     expect(log.some(([n]) => n === 'keydown:togglePause')).toBe(false);
     expect(log.some(([n]) => n === 'keydown:escapeTarget')).toBe(false);
-    // e quem tratou foi o menu-nav: "não" na raiz do menu de pausa volta ao jogo
+    // and menu-nav handled it: "no" at the pause menu's root goes back to the game
     expect(log).toContainEqual(['menuNav:setPhase', 'playing']);
   });
 
@@ -137,7 +132,7 @@ describe('a captura do menu-nav chega antes (comportamento ATUAL, pinado)', () =
   it('PAUSADO: tecla de JOGO (sem intenção de menu) atravessa a captura e chega ao jogo', () => {
     wire();
     setPhaseValue('paused');
-    press('KeyU'); // `run`: o menu-nav não tem intenção para ela, logo não dá stopPropagation
+    press('KeyU'); // `run`: menu-nav has no intent for it, so it does not stopPropagation
     expect(log).toContainEqual(['keydown:hideTouchControls', 'teclado']);
     expect(players[0].runEdge).toBe(true);
   });
@@ -149,14 +144,14 @@ describe('visibilidade de verdade', () => {
     wire();
     const cfg = document.getElementById('touchcfg');
     press('KeyJ');
-    expect(players[0].jumpEdge).toBe(true); // escondido: não bloqueia nada
+    expect(players[0].jumpEdge).toBe(true); // hidden: blocks nothing
 
     players[0].jumpEdge = false;
     cfg.hidden = false;
     press('KeyJ');
-    expect(players[0].jumpEdge).toBe(false); // visível: a tecla é engolida
+    expect(players[0].jumpEdge).toBe(false); // visible: the key is swallowed
     press('Escape');
-    expect(cfg.hidden).toBe(true);           // e Escape o esconde de verdade
+    expect(cfg.hidden).toBe(true);           // and Escape really hides it
   });
 
   it('o botão "Jogar de novo" é clicado de verdade pela tecla de pulo', () => {

@@ -1,47 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O DICIONÁRIO DO CONSUMIDOR — o achado 2 do quiz, medido de fora do repositório e virado bloqueio.
+// THE CONSUMER'S DICTIONARY — the quiz's finding 2, measured from outside the repository.
 //
-// ========================= O QUE MUDOU DE PESO MORTO PARA IMPOSSIBILIDADE =========================
-// O `consumer-quiz` anotou o achado 2 assim: *"os DICIONÁRIOS são do jogo de plataforma… Um segundo jogo
-// herda 253 chaves das quais usa um punhado. Não é aresta de importação — é peso morto no pacote"*. Estava
-// certo para um consumidor que mora DENTRO deste repositório: as chaves dele caberiam em `app/js/i18n/pt.ts`,
-// e o custo seria só um dicionário gordo.
+// ========================= WHY A GAME NEEDS ITS OWN DOOR =========================
+// Inside this repository a consumer's keys could fit in `app/js/i18n/pt.ts`, at the cost of a fat dictionary. From
+// OUTSIDE that is a wall: the engine's locales are loaded by the engine module itself, and a game installed as
+// `@the-inclusionist/engine` has no way to put a file there, while `DICTS` is private to the module. Without
+// `registerDict` the game would have NO path to its own keys — and pillar 3 says every string is born localisable, with
+// no exception for consumers.
 //
-// De FORA, o mesmo achado deixa de ser peso e vira parede. Os locales entram por
+// The gate was born RED with the mutation confirmed: without `registerDict`, the consumer's key comes back as the key
+// itself. Green that could never have been red proves nothing.
 //
-//     const loaders = import.meta.glob('../i18n/*.ts')
+// ========================= THE RESOLUTION CHAIN THIS TEST PINS =========================
+// The engine alone has `locale → pt → the key itself`. With the consumer there are more steps, and the order is not
+// arbitrary — it mirrors the engine's, with the consumer placed before each step:
 //
-// e esse glob é resolvido NO BUILD DA ENGINE, contra a pasta da engine. Um jogo instalado como
-// `@the-inclusionist/engine` não tem como pôr um arquivo lá dentro, e `DICTS` é privado do módulo. O jogo
-// fica sem NENHUM caminho para as próprias chaves — e o pilar 3 diz que toda string nasce localizável, sem
-// exceção para quem é consumidor.
+//     1. the CONSUMER's dictionary in the current language
+//     2. the ENGINE's dictionary in the current language
+//     3. the CONSUMER's dictionary in pt          (the consumer's "pt" is ITS base)
+//     4. the ENGINE's dictionary in pt            (the engine's base)
+//     5. the key itself
 //
-// ========================= POR QUE ISTO É TESTE E NÃO CONSERTO DIRETO =========================
-// O gate nasce VERMELHO com a mutação confirmada, que aqui é a mais simples que existe: `registerDict` não
-// existe ainda, então a chave do consumidor volta como a própria chave. Verde que nunca pôde ficar vermelho
-// não prova nada, e neste repositório já aconteceu de uma regex morrer em silêncio com a checagem verde.
-//
-// ========================= A CADEIA DE RESOLUÇÃO QUE ESTE TESTE PRENDE =========================
-// A engine já tinha DUAS camadas: `locale → pt → a própria chave`. Com o consumidor viram quatro, e a ordem
-// não é arbitrária — ela espelha a que já existia, com o consumidor colado a cada degrau:
-//
-//     1. o dicionário do CONSUMIDOR no idioma corrente
-//     2. o dicionário da ENGINE no idioma corrente
-//     3. o dicionário do CONSUMIDOR em pt          (o "pt" do consumidor é a base DELE)
-//     4. o dicionário da ENGINE em pt              (a base que já era)
-//     5. a própria chave
-//
-// O degrau 3 é o que faz um jogo que só escreveu pt seguir legível quando a criança troca para inglês: ela lê
-// português, exatamente como já lê hoje quando falta chave na engine. Degradar é melhor que calar.
+// Step 3 is what keeps a game that only wrote pt readable when the child switches to English: they read Portuguese,
+// just as they do when a key is missing in the engine. Degrading beats going silent.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-/** Um DOM de mentira do tamanho exato do que `setLocale` toca: nada além disso vira dependência. */
+/** A fake DOM exactly the size of what `setLocale` touches: nothing beyond it becomes a dependency. */
 function dublarDocumento() {
   vi.stubGlobal('document', { documentElement: { lang: '' }, querySelectorAll: () => [] });
   vi.stubGlobal('window', { dispatchEvent: () => true });
 }
 
-/** Uma instância LIMPA do módulo. `setLocale` guarda estado, e teste que herda estado de outro mente. */
+/** A CLEAN instance of the module. `setLocale` keeps state, and a test that inherits another's state lies. */
 async function carregarI18n() {
   vi.resetModules();
   dublarDocumento();
@@ -81,7 +71,7 @@ describe('core/i18n aceita o dicionário de um CONSUMIDOR (achado 2, de fora do 
   it('[Right] a chave do consumidor VENCE a da engine com o mesmo nome — e isso é deliberado', async () => {
     const i18n = await carregarI18n();
     const daEngine = i18n.t('menu.restoreDefaults');
-    expect(daEngine).not.toBe('menu.restoreDefaults'); // a chave existe na engine, senão o teste não mede nada
+    expect(daEngine).not.toBe('menu.restoreDefaults'); // the key exists in the engine, or the test measures nothing
     i18n.registerDict('pt', { 'menu.restoreDefaults': 'Voltar ao começo' });
     expect(i18n.t('menu.restoreDefaults')).toBe('Voltar ao começo');
   });
@@ -98,7 +88,7 @@ describe('core/i18n aceita o dicionário de um CONSUMIDOR (achado 2, de fora do 
     const i18n = await carregarI18n();
     i18n.registerDict('pt', { 'jogo.2048.soEmPt': 'só em português' });
     await i18n.setLocale('es');
-    // Mesmo comportamento que a engine já tem para as PRÓPRIAS chaves: cai no pt em vez de calar.
+    // The same behaviour the engine has for its OWN keys: falls back to pt instead of going silent.
     expect(i18n.t('jogo.2048.soEmPt')).toBe('só em português');
   });
 
@@ -114,8 +104,8 @@ describe('core/i18n aceita o dicionário de um CONSUMIDOR (achado 2, de fora do 
     const primeiro = await carregarI18n();
     primeiro.registerDict('pt', { 'menu.restoreDefaults': 'Voltar ao começo' });
     expect(primeiro.t('menu.restoreDefaults')).toBe('Voltar ao começo');
-    // O dicionário de pt é um objeto IMPORTADO. Se `registerDict` o mutasse, a sobreposição sobreviveria
-    // a um módulo novo — e um segundo jogo na mesma página herdaria as strings do primeiro.
+    // The pt dictionary is an IMPORTED object. If `registerDict` mutated it, the override would survive a new module
+    // instance — and a second game on the same page would inherit the first one's strings.
     const segundo = await carregarI18n();
     expect(segundo.t('menu.restoreDefaults')).not.toBe('Voltar ao começo');
   });
@@ -123,25 +113,25 @@ describe('core/i18n aceita o dicionário de um CONSUMIDOR (achado 2, de fora do 
   it('[Simple] a chave do consumidor NÃO vaza para um idioma que ele não registrou como se fosse da engine', async () => {
     const i18n = await carregarI18n();
     i18n.registerDict('en', { 'jogo.2048.soEmEn': 'only in English' });
-    // Em pt, sem registro em pt e sem chave na engine, o contrato é o de sempre: a própria chave.
+    // In pt, with no pt registration and no engine key, the contract is the usual one: the key itself.
     expect(i18n.t('jogo.2048.soEmEn')).toBe('jogo.2048.soEmEn');
   });
 });
 
 // -----------------------------------------------------------------------------------------------------------
 describe('A FRONTEIRA DAS STRINGS DE UM JOGO — marcacao nao entra (issue #106)', () => {
-  // ⚠️ POR QUE ESTE GATE EXISTE, e ele fecha um buraco que so apareceu quando a engine virou PACOTE.
+  // ⚠️ WHY THIS GATE EXISTS: it closes a hole that only appeared when the engine became a PACKAGE.
   //
-  // `tests/i18n-without-markup.node.test.js` varre os dicionarios DESTA arvore e prova que nenhuma entrada tem
-  // tag. Ele nao alcanca o `EXTRA` — as strings que um JOGO regista em tempo de execucao, de outro
-  // repositorio (ADR-0083). Um teste desta arvore nao as ve, e nao tem como ver.
+  // `tests/i18n-without-markup.node.test.js` sweeps THIS tree's dictionaries and proves no entry has a tag. It does not
+  // reach `EXTRA` — the strings a GAME registers at run time, from another repository (ADR-0083). A test of this tree
+  // does not see them, and has no way to.
   //
-  // ⚠️ E ELAS GANHAM DO DICIONARIO DA ENGINE: `resolver` consulta o `EXTRA` PRIMEIRO. Um jogo podia sobrepor
-  // QUALQUER chave — inclusive as ~15 que a engine cola em markup —, e «i18n» tinha deixado de significar
-  // «texto que alguem desta arvore reviu» sem que nada registasse a mudanca.
+  // ⚠️ AND THEY WIN OVER THE ENGINE'S DICTIONARY: the resolver looks at `EXTRA` FIRST. A game can override ANY key —
+  // including the ones the engine pastes into markup — so «i18n» would stop meaning «texto que alguem desta arvore
+  // reviu» with nothing recording the change.
   //
-  // A verificacao vai na FRONTEIRA porque a fronteira e UMA. Quinze sinks seriam quinze lugares para
-  // esquecer, e o esquecimento nao deixa rasto.
+  // The check goes at the BOUNDARY because the boundary is ONE. One check per sink would be many places to forget, and
+  // forgetting leaves no trace.
   let erro;
   beforeEach(() => { erro = vi.spyOn(console, 'error').mockImplementation(() => {}); erro.mockClear(); });
 
@@ -149,14 +139,14 @@ describe('A FRONTEIRA DAS STRINGS DE UM JOGO — marcacao nao entra (issue #106)
     const i18n = await carregarI18n();
     const recusadas = i18n.registerDict('pt', { 'menu.alf': '<img src=x onerror=alert(1)>' });
     expect(recusadas).toEqual(['menu.alf']);
-    // A chave da engine sobrevive: o jogo nao a sobrepos, e a interface nao fica com um buraco.
+    // The engine's key survives: the game did not override it, and the interface is left with no hole.
     expect(i18n.t('menu.alf')).not.toContain('<img');
   });
 
   it('[Right] e a recusa e ALTA — descartar em silencio lê-se como defeito da engine', async () => {
-    // ⚠️ ESTE CASO REGISTA A SUA PROPRIA CHAVE. A primeira versao afirmava o espiao logo a seguir ao caso
-    // anterior, e passou a depender da ORDEM: com o `mockClear` do `beforeEach`, ele afirmava sobre um
-    // espiao vazio. Um caso que so passa depois de outro nao afere nada — afere o vizinho.
+    // ⚠️ THIS CASE REGISTERS ITS OWN KEY. Asserting the spy right after the previous case would depend on ORDER: with the
+    // `beforeEach`'s `mockClear`, it would assert on an empty spy. A case that only passes after another measures
+    // nothing — it measures its neighbour.
     const i18n = await carregarI18n();
     i18n.registerDict('pt', { 'jogo.gritou': '<span>tag</span>' });
     expect(erro).toHaveBeenCalled();
@@ -164,7 +154,7 @@ describe('A FRONTEIRA DAS STRINGS DE UM JOGO — marcacao nao entra (issue #106)
   });
 
   it('[Right] as chaves BOAS do mesmo registo entram — a recusa e por entrada, nao por lote', async () => {
-    // Recusar o lote inteiro por causa de uma chave puniria o jogo por um erro de digitacao numa outra.
+    // Refusing the whole batch over one key would punish the game for a typo in another.
     const i18n = await carregarI18n();
     const recusadas = i18n.registerDict('pt', {
       'jogo.ok': 'palavra boa', 'jogo.mau': '<b>tag</b>', 'jogo.ok2': 'outra boa',
@@ -181,8 +171,8 @@ describe('A FRONTEIRA DAS STRINGS DE UM JOGO — marcacao nao entra (issue #106)
   });
 
   it('[Zero] ⚠️ e NAO recusa texto legitimo — um crivo que recusa demais e desligado no primeiro dia', async () => {
-    // `a < b` tem `<` e nao e tag: o que casa e `<` seguido de LETRA ou de barra. Um crivo que reprovasse
-    // matematica basica seria removido por quem escreve o jogo, e ai nao protege nada.
+    // `a < b` has `<` and is not a tag: what matches is `<` followed by a LETTER or a slash. A check that failed basic
+    // maths would be removed by whoever writes the game, and then it protects nothing.
     const i18n = await carregarI18n();
     const bons = { 'jogo.m1': 'a < b', 'jogo.m2': '5<10', 'jogo.m3': 'ganhou 3 de 4', 'jogo.m4': 'R$ 5 & 10' };
     expect(i18n.registerDict('pt', bons)).toEqual([]);

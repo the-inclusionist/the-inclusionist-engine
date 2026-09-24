@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O AVISO DE QUE O LAÇO PAROU — a outra metade do ADR-0054, e o terceiro fio da issue #109.
+// THE NOTICE THAT THE LOOP STOPPED — the other half of ADR-0054, and the third thread of issue #109.
 //
-// `core/loop.startLoop` já parava quando um quadro lançava, e já chamava `aoFalhar`. Ninguém passava um. A
-// `confirmation` do ADR-0054 registra isso por escrito: *"a raiz de composição ainda não liga o `aoFalhar`…
-// enquanto isto não existir este registro é só metade verdadeiro."*
+// `core/loop.startLoop` stops when a frame throws and calls its failure callback (`onFailure`); this module is the notice
+// that callback gives, so stopping is also SAID.
 //
-// ⚠️ E A METADE QUE FALTAVA É A QUE IMPORTA. Tela congelada é sintoma VISUAL. No modo cego, um jogo parado e
-// um jogo pensando produzem a mesma coisa — silêncio —, e a criança fica a esperar por um jogo que já morreu.
-// O único aviso que existia era um erro no console, que ela não lê.
+// ⚠️ AND IT IS THE HALF THAT MATTERS. A frozen screen is a VISUAL symptom. In blind mode, a stopped game and a thinking
+// game produce the same thing — silence — and the child waits for a game that has already died. A console error is
+// not a notice: the child does not read it.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createCrashNotice } from '../app/js/ui/loop-crash.js';
 import { startLoop } from '../app/js/core/loop.js';
@@ -16,12 +15,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Um documento de mentira que DISTINGUE os seletores — um duplo que responde igual a tudo responde errado.
+ * A fake document that TELLS SELECTORS APART — a double that answers the same to everything answers wrong.
  *
- * ⚠️ `#incl-parou` NÃO está entre os presentes de propósito: o aviso procura-o antes de criar, para não
- * empilhar duas caixas quando o laço tenta parar duas vezes. Um duplo que devolvesse um elemento para
- * qualquer seletor faria o módulo achar que a caixa já existe e nunca a acrescentar — e o caso passaria a
- * afirmar o contrário do que promete.
+ * ⚠️ `#incl-parou` is deliberately NOT among those present: the notice looks for it before creating, so as not to stack
+ * two boxes when the loop tries to stop twice. A double returning an element for any selector would make the module
+ * think the box already exists and never add it — and the case would assert the opposite of what it promises.
  */
 function docFalso(presentes = ['#sr-alert', '#game-region']) {
   const novo = () => ({
@@ -35,7 +33,7 @@ function docFalso(presentes = ['#sr-alert', '#game-region']) {
     find: (sel) => mapa.get(sel) ?? null,
     create: () => novo(),
     el: (sel) => mapa.get(sel) ?? null,
-    /** A caixa do aviso, se ela foi acrescentada ao `#game-region`. */
+    /** The notice's box, if it was added to `#game-region`. */
     caixa: () => (mapa.get('#game-region')?.filhos ?? []).find((f) => f.id === 'incl-parou') ?? null,
   };
 }
@@ -43,9 +41,9 @@ function docFalso(presentes = ['#sr-alert', '#game-region']) {
 const FRASE = pt['sr.laco.parou'];
 
 let erroDoConsole;
-// ⚠️ O `mockClear` NÃO É ZELO. `vi.spyOn` sobre o mesmo objeto devolve o espião QUE JÁ EXISTE, e as chamadas
-// acumulam entre casos: sem isto, `calls[0]` é do primeiro teste do ficheiro e não deste. Custou uma asserção
-// que reprovava a comparar um erro com o erro de outro caso — verde ou vermelho pelo motivo errado.
+// ⚠️ THE `mockClear` IS NOT FUSSINESS. `vi.spyOn` on the same object returns the spy THAT ALREADY EXISTS, and calls pile up
+// between cases: without this, `calls[0]` belongs to the file's first test and not this one — an assertion comparing an
+// error with another case's error, green or red for the wrong reason.
 beforeEach(() => {
   erroDoConsole = vi.spyOn(console, 'error').mockImplementation(() => {});
   erroDoConsole.mockClear();
@@ -59,13 +57,12 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
   });
 
   it('[Right] ⚠️ e cria um ELEMENTO com a frase — não um pseudo-elemento', () => {
-    // ERA `::after` com `content: attr(...)`, e o arranque real mostrou que NUNCA apareceria: a scanline do
-    // CRT já ocupa o `::after` de `#game-region`, a vinheta ocupa o `::before`, e um elemento tem UM de cada.
-    // As regras não se empilham — a do CRT vem depois e vence.
+    // Not a `::after` with `content: attr(...)`: it would NEVER show, because the CRT scanline already takes
+    // `#game-region`'s `::after`, the vignette takes `::before`, and an element has ONE of each. The rules do not stack —
+    // the CRT's comes later and wins.
     //
-    // ⚠️ E o pseudo-elemento era errado por uma segunda razão que a primeira escondia: texto de `content` não
-    // entra de forma confiável na árvore de acessibilidade, e este é o aviso que menos pode depender disso.
-    // Daí o `role="alert"`.
+    // ⚠️ And a pseudo-element is wrong for a second reason: `content` text does not reliably enter the accessibility
+    // tree, and this is the notice that can least depend on that. Hence `role="alert"`.
     const d = docFalso();
     createCrashNotice({ find: d.find, create: d.create })(new Error('x'));
     const caixa = d.caixa();
@@ -75,13 +72,13 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
   });
 
   it('[Zero] ⚠️ duas quedas não empilham duas caixas', () => {
-    // O laço para uma vez, mas nada impede um segundo `aoFalhar` (outro laço, um jogo que remonta). Duas
-    // caixas sobrepostas seriam duas frases idênticas na tela e duas no leitor.
+    // The loop stops once, but nothing prevents a second failure call (another loop, a game that remounts). Two
+    // overlapping boxes would be two identical sentences on screen and two in the reader.
     const d = docFalso();
     const avisar = createCrashNotice({ find: d.find, create: d.create });
     avisar(new Error('x'));
     const primeira = d.caixa();
-    // a partir daqui a caixa já existe no documento, e é isso que o módulo procura antes de criar
+    // from here on the box exists in the document, and that is what the module looks for before creating
     d.el('#game-region').filhos.forEach((f) => { if (f.id === 'incl-parou') d.jaExiste = f; });
     expect(primeira).toBeTruthy();
     expect(d.el('#game-region').filhos.filter((f) => f.id === 'incl-parou')).toHaveLength(1);
@@ -97,15 +94,15 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
     const boom = new Error('causa de verdade');
     createCrashNotice({ find: docFalso().find, create: docFalso().create })(boom);
     expect(erroDoConsole).toHaveBeenCalled();
-    // O ERRO EM SI, e não uma string sobre ele: `String(erro)` perde a pilha, que é a única coisa que diz
-    // ONDE o quadro quebrou. Aferido por identidade, no argumento onde ele entra.
+    // THE ERROR ITSELF, not a string about it: `String(erro)` loses the stack, the only thing that says WHERE the frame
+    // broke. Checked by identity, in the argument where it goes.
     expect(erroDoConsole.mock.calls[0][1]).toBe(boom);
   });
 
   it('[Error] ⚠️ uma narração que LANÇA não pode engolir o aviso escrito', () => {
-    // É a mesma regra que o `startLoop` aplica a este próprio callback: um aviso que falha pela metade tem de
-    // entregar a outra metade. Sem esta ordem, uma síntese de voz indisponível apagaria o texto do leitor de
-    // tela — e a criança que mais precisa da frase é justamente quem depende dos dois canais.
+    // It is the same rule `startLoop` applies to this very callback: a notice that half-fails must deliver the other
+    // half. Without this order, an unavailable speech synthesis would erase the screen reader's text — and the child who
+    // most needs the sentence is exactly the one who depends on both channels.
     const d = docFalso();
     const avisar = createCrashNotice({ find: d.find, create: d.create, narrate: () => { throw new Error('sem voz'); } });
     expect(() => avisar(new Error('x'))).not.toThrow();
@@ -114,8 +111,8 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
   });
 
   it('[Zero] documento sem as regiões: não lança, e o console continua a receber', () => {
-    // Um jogo cujo hospedeiro não trouxe a marcação perde o aviso; o que ele NÃO pode é ganhar um segundo
-    // erro por causa do primeiro.
+    // A game whose host did not bring the markup loses the notice; what it must NOT do is gain a second error because of
+    // the first.
     const avisar = createCrashNotice({ find: docFalso([]).find, create: docFalso([]).create });
     expect(() => avisar(new Error('x'))).not.toThrow();
     expect(erroDoConsole).toHaveBeenCalled();
@@ -123,7 +120,7 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
 });
 
 describe('e ligado ao laço de verdade, ponta a ponta', () => {
-  /** Um ticker mínimo com a forma que `startLoop` pede. */
+  /** A minimal ticker with the shape `startLoop` asks for. */
   function ticker() {
     const fns = [];
     return { deltaTime: 1, add: (f) => fns.push(f), remove: (f) => fns.splice(fns.indexOf(f), 1), passo: () => fns.forEach((f) => f()) };
@@ -143,8 +140,8 @@ describe('e ligado ao laço de verdade, ponta a ponta', () => {
   });
 
   it('[Interface] anuncia UMA vez, e não sessenta vezes por segundo', () => {
-    // Repetir o anúncio a cada quadro faria o leitor de tela dizer a mesma frase sem parar — trocar um jogo
-    // parado em silêncio por um jogo parado que grita não é conserto.
+    // Repeating the announcement every frame would make the screen reader say the same sentence nonstop — trading a
+    // game stopped in silence for a stopped game that shouts is no fix.
     const ditas = [];
     const t = ticker();
     startLoop(t, () => { throw new Error('x'); }, 2,
@@ -156,7 +153,5 @@ describe('e ligado ao laço de verdade, ponta a ponta', () => {
 
 // -----------------------------------------------------------------------------------------------------------
 
-// ⚠️ UM DESCRIBE SAIU DAQUI em 2026-09-07 (issue #111): ele afirmava algo sobre o CARTUCHO — a raiz de
-// composicao (`main.ts`) ou o `app/index.html` do jogo — e nenhum dos dois vive mais neste repositorio.
-// As asseercoes nao foram apagadas: mudaram para `game-platformer`, onde os ficheiros estao. O que fica
-// aqui e' o comportamento da ENGINE, que e' o que este ficheiro sempre teve de provar.
+// ⚠️ What this file proves is the ENGINE's behaviour. Assertions about a CARTRIDGE's composition root or page live in
+// `game-platformer`, where those files are (issue #111).

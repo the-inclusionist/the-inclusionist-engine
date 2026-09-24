@@ -1,23 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// NADA NA ENGINE GUARDA O DESEMPENHO DE UMA CRIANÇA — a outra metade da dívida do ADR-0103 §confirmation.
+// NOTHING IN THE ENGINE STORES A CHILD'S PERFORMANCE — the other half of the debt of ADR-0103 §confirmation.
 //
-// ========================= POR QUE ISTO É UM CRIVO E NÃO UMA BUSCA POR PALAVRA =========================
-// A afirmação do ADR-0103 é uma AUSÊNCIA: «nenhum módulo escreve chave de histórico por habilidade». Uma
-// ausência não se prova procurando a palavra «histórico» — quem a fosse escrever não a chamaria assim, e um
-// `grep` verde seria a forma mais barata de o gate mentir.
+// ========================= WHY THIS IS A SIEVE AND NOT A WORD SEARCH =========================
+// ADR-0103's claim is an ABSENCE: «nenhum módulo escreve chave de histórico por habilidade». An absence is not proven by
+// searching for the word "histórico" — whoever wrote one would not call it that, and a green `grep` would be the
+// cheapest way for the gate to lie.
 //
-// O que se pode provar é o INVENTÁRIO. A engine escreve em armazenamento a partir de dezoito ficheiros, e
-// todos eles guardam a MESMA classe de coisa: preferência da criança ou estado desta partida. O crivo
-// congela essa lista. Um ficheiro novo a escrever obriga alguém a acrescentar aqui uma linha que diga O QUE
-// ele guarda — e é nessa linha que «isto é um histórico de desempenho» teria de ser escrito à mão, em vez de
-// entrar sem que ninguém repare.
+// What can be proven is the INVENTORY. Every file of the engine that writes to storage keeps the SAME class of thing:
+// the child's preference or this match's state. The sieve freezes that list. A new writing file forces someone to add
+// a line here saying WHAT it stores — and that line is where «isto é um histórico de desempenho» would have to be
+// written by hand, instead of slipping in unnoticed.
 //
-// ⚠️ E A RAZÃO DA PROIBIÇÃO É PEDAGÓGICA ANTES DE JURÍDICA, o que muda o que ela proíbe: o desenvolvimento
-// oscila, a criança joga uma dada actividade talvez uma vez por semana, e um histórico guardado achata a
-// oscilação numa linha de tendência que lê um recuo normal como regressão. O argumento da LGPD permitiria
-// guardar assim que a controladoria estivesse resolvida; este não permite nunca.
+// ⚠️ AND THE PROHIBITION'S REASON IS PEDAGOGICAL BEFORE LEGAL, which changes what it forbids: development oscillates, a
+// child plays a given activity maybe once a week, and a stored history flattens the oscillation into a trend line that
+// reads a normal dip as regression. The LGPD argument would allow storing once data control was sorted out; this one
+// never does.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -26,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
 /**
- * Toda escrita em armazenamento, em qualquer das formas que este repositório usa.
+ * Every write to storage, in any of the forms this repository uses.
  * ⚠️ Since ADR-0178 `core/state` and `core/i18n` write through the port the root loads (`portFor('setter')` before the write,
  * `porta.set(` in `setLocale`): without those two forms this sieve went blind to them, and their inventory lines read as orphans.
  */
@@ -42,19 +41,19 @@ function ficheirosTs(dir = RAIZ) {
   return saida;
 }
 
-/** Linhas de código (sem comentário de linha) que escrevem em armazenamento. */
+/** Code lines (without line comments) that write to storage. */
 function escritasDe(p) {
   return readFileSync(p, 'utf8').split(/\r?\n/)
     .filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln) && ESCREVE.test(ln)).length;
 }
 
 /**
- * O INVENTÁRIO. Chave = caminho a partir de `app/js/`; valor = o que aquele ficheiro guarda.
+ * THE INVENTORY. Key = path from `app/js/`; value = what that file stores.
  *
- * ⚠️ Cada entrada diz de QUEM é a coisa guardada, porque é essa a pergunta que o ADR-0103 faz. Duas classes
- * existem, e o `platform/storage` explica a fronteira: `incl_*` é da CRIANÇA e segue com ela de jogo em jogo
- * (uma criança cega não pode reconfigurar a bengala em 300 jogos); `incl.<jogo>.*` é DESTA partida. Nenhuma
- * das duas é um histórico de desempenho, e é isso que este ficheiro afirma.
+ * ⚠️ Each entry says WHOSE the stored thing is, because that is the question ADR-0103 asks. Two classes exist, and
+ * `platform/storage` explains the boundary: `incl_*` belongs to the CHILD and follows them from game to game (a blind
+ * child cannot reconfigure the cane in every game); `incl.<jogo>.*` belongs to THIS match. Neither is a performance
+ * history, and that is what this file asserts.
  */
 const INVENTARIO = {
   'core/i18n.ts': 'criança · o idioma da interface',
@@ -71,13 +70,12 @@ const INVENTARIO = {
   'render/lq-filter.ts': 'criança · o nível do filtro de baixa qualidade',
   'render/viz-setters.ts': 'criança · a simulação visual escolhida, por jogador',
   'ui/pause-icons.ts': 'criança · o nível do modo TEA',
-  // ⚠️ Entrou em 2026-09-08 pela etapa 1 do ADR-0106, e a entrada diz de quem é a coisa guardada porque é
-  // essa a pergunta: os quatro interruptores de movimento reduzido de CENA são preferência da CRIANÇA — eram
-  // guardados por cada cartucho na MESMA chave da engine, e cinco jogos não os guardavam de todo.
+  // ⚠️ Step 1 of ADR-0106: the four reduced-motion switches of the SCENE are the CHILD's preference, stored under the
+  // engine's key.
   'ui/motion-scene.ts': 'criança · os quatro interruptores de movimento reduzido de cena (parallax, decor, itens, partículas)',
   'ui/settings-audio.ts': 'criança · a saída de áudio por jogador',
-  // O motor e a voz de TTS foram com a secção da voz (ADR-0221, issue #203). A coisa guardada é a MESMA e mudou de ficheiro:
-  // é escolha da criança sobre como ela quer ouvir, e não desempenho dela (ADR-0103).
+  // The TTS engine and voice live with the voice section (ADR-0221, issue #203): the child's choice of how they want to
+  // hear, not their performance (ADR-0103).
   'ui/voice-settings.ts': 'criança · o motor e a voz de TTS que ela escolheu',
   'ui/settings-motion.ts': 'criança · as reduções de movimento, por jogador',
   'ui/settings-mobility.ts': 'criança · o modo fácil por jogador',
@@ -99,38 +97,38 @@ describe('ADR-0103 · a engine não guarda o desempenho de ninguém', () => {
   });
 
   it('⚠️ [Interface] o inventário não tem ÓRFÃOS — entrada que nomeia quem já não escreve', () => {
-    // Sem este caso, o inventário apodrece: uma entrada podia continuar a descrever um ficheiro que deixou de
-    // persistir, e a lista deixaria de ser uma medida para passar a ser uma lembrança. É o mesmo buraco que o
-    // gate da superfície pública teve, e que custou dezoito casos verdes sobre uma porta que já não existia.
+    // Without this case, the inventory rots: an entry could go on describing a file that stopped persisting, and the list
+    // would stop being a measurement and become a memory. It is the same hole the public-surface gate had, which cost
+    // eighteen green cases over a door that no longer existed.
     const vivos = new Set(escritores.map(([m]) => m));
     const orfaos = Object.keys(INVENTARIO).filter((m) => !vivos.has(m));
     expect(orfaos, 'entrada do inventário a descrever um ficheiro que já não escreve nada').toEqual([]);
   });
 
   it('⚠️ [Right] a camada de CURRÍCULO não escreve nada — é ela que sabe como a criança vai', () => {
-    // O crivo mais estreito e o mais importante: `educational/` é onde vivem o motor adaptativo e a barra, e
-    // é exactamente daí que um histórico por habilidade sairia. Não há entrada de inventário possível aqui.
+    // The narrowest check and the most important: `educational/` is where the adaptive engine and the bar live, and it
+    // is exactly where a per-skill history would come from. No inventory entry is possible here.
     const curriculo = escritores.filter(([m]) => m.startsWith('educational/'));
     expect(curriculo, 'o currículo passou a persistir — é o histórico que o ADR-0103 proíbe').toEqual([]);
   });
 
   it('[Interface] e ele continua a existir: um inventário vazio provaria por vácuo', () => {
-    // Se a varredura deixasse de encontrar seja o que for (uma regex que morre, um caminho que muda), os três
-    // casos acima passariam por não terem nada que examinar.
+    // If the scan stopped finding anything (a regex that dies, a path that changes), the three cases above would pass for
+    // having nothing to examine.
     expect(escritores.length, 'a varredura não achou escritor nenhum — a regex ou o caminho morreram').toBeGreaterThan(10);
     expect(escritores.some(([m]) => m === 'platform/storage.ts')).toBe(true);
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · ⚠️ A AMEACA REAL — pondo `localStorage.setItem('incl_hist_' + barra.skill, …)` dentro do
-//     `educational/segment-bar` → reprovam QUATRO, dois deles aqui: "escritor NOVO" e "o CURRICULO nao
-//     escreve nada". E o gate da propria barra apanha-o tambem, por dois caminhos independentes.
-//   · apagando a linha do `ui/vlibras.ts` do INVENTARIO → reprova "escritor NOVO". E a deriva realista: a
-//     lista deixa de cobrir quem escreve, e o crivo passa a olhar para menos do que existe.
-//   · acrescentando ao INVENTARIO uma entrada para um ficheiro que nao existe → reprova o caso do ORFAO. Sem
-//     ele a lista apodrece: descreveria coisas que ja nao acontecem, e pareceria maior do que e. E o mesmo
-//     buraco que o gate da superficie publica teve, e que custou dezoito casos verdes sobre uma porta morta.
-//   · matando a regex `ESCREVE` → reprovam DOIS, e o que interessa e o segundo: sem o caso do vacuo, os tres
-//     de cima passariam por nao terem nada que examinar. Um crivo que nao acha nada nao prova ausencia
-//     nenhuma — prova que o crivo morreu.
+// ========================= MUTATIONS CHECKED =========================
+//   · ⚠️ THE REAL THREAT — putting `localStorage.setItem('incl_hist_' + barra.skill, …)` inside
+//     `educational/segment-bar` → FOUR fail, two of them here: the NEW writer case and the CURRICULUM-writes-nothing
+//     case. The bar's own gate catches it too, by two independent paths.
+//   · deleting the `ui/vlibras.ts` line from the INVENTORY → the NEW writer case fails. It is the realistic drift: the
+//     list stops covering who writes, and the sieve looks at less than exists.
+//   · adding to the INVENTORY an entry for a file that does not exist → the ORPHAN case fails. Without it the list rots:
+//     it would describe things that no longer happen, and look bigger than it is. It is the same hole the public-surface
+//     gate had, which cost eighteen green cases over a dead door.
+//   · killing the `ESCREVE` regex → TWO fail, and the one that matters is the second: without the vacuum case, the three
+//     above would pass for having nothing to examine. A sieve that finds nothing proves no absence — it proves the
+//     sieve died.

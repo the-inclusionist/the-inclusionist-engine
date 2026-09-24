@@ -1,54 +1,48 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O CONTRASTE DO MENU EM ALTO CONTRASTE — medido, não estimado (issue #83).
+// THE MENU'S CONTRAST IN HIGH CONTRAST — measured, not estimated (issue #83).
 //
-// ========================= O QUE ESTE ARQUIVO IMPEDE =========================
-// Um modo chamado "alto contraste 7:1" que não entrega 7:1 é PIOR que não ter modo nenhum: ele promete um
-// número, a professora confia nele, e a criança lê pior do que leria com a promessa ausente. Este arquivo
-// existe para que a promessa e a tela não possam divergir em silêncio.
+// ========================= WHAT THIS FILE PREVENTS =========================
+// A mode called "high contrast 7:1" that does not deliver 7:1 is WORSE than no mode at all: it promises a number, the
+// teacher trusts it, and the child reads worse than they would with no promise. This file exists so the promise and the
+// screen cannot drift apart silently.
 //
-// As cores são LIDAS DO `style.css`, não copiadas para cá. Duas fontes que se copiam divergem — é o defeito
-// que este repositório já pagou dezesseis vezes com o `DomQuery`. Se alguém mudar um token, a conta muda com
-// ele e o caso reprova sozinho.
+// The colours are READ FROM `style.css`, not copied here. Two sources that copy each other drift apart — the defect
+// this repository has paid for many times with `DomQuery`. If someone changes a token, the arithmetic changes with it
+// and the case fails by itself.
 //
-// ========================= O QUE FOI MEDIDO, E POR QUE MUDOU =========================
-// Antes da issue #83, no nível 7:1:
+// ========================= WHY THE VEIL IS OPAQUE AND THE CURSOR INVERTED =========================
+// A translucent veil (`rgba(4,7,15,.72)`) gives text a ratio that DEPENDS on the game behind — 19.17:1 over a black
+// frame, 8.07:1 over a white one; with `--ink-soft`, `--accent` and `--good` it fell to 5.92 / 5.94 / 5.11:1, AA and not
+// AAA. A `#2a3a5e` selected button gave `--good` 6.70:1.
 //
-//   · o VÉU do painel de pausa era `rgba(4,7,15,.72)`, e a razão do texto sobre ele DEPENDIA do jogo por
-//     trás — 19,17:1 sobre um quadro preto, 8,07:1 sobre um branco. Com `--ink-soft`, `--accent` e `--good`
-//     caía a 5,92 / 5,94 / 5,11:1. AA, não AAA.
-//   · o botão SELECIONADO era `#2a3a5e`, e `--good` sobre ele dava 6,70:1.
+// The fix invents no colour: an OPAQUE veil (no half-tone, no dependency) and an INVERTED cursor (`--accent` background,
+// `--accent-ink` text). Darkening the selected button would bring it closer to the unselected ones and the child would
+// LOSE THE CURSOR — inverting solves contrast and distinction at once. (At 3:1 and 4.5:1 the menu already passed;
+// inventing a per-level difference would be theatre.)
 //
-// Nos níveis 3:1 e 4,5:1 nada falhava — e isso está dito aqui de propósito, porque a tentação seria inventar
-// uma diferença por nível para o modo "fazer alguma coisa" nos três. O menu já passava; inventar seria teatro.
-//
-// O conserto não inventou cor: véu OPACO (sai o meio-tom, sai a dependência) e cursor INVERTIDO (fundo
-// `--accent`, texto `--accent-ink`). Escurecer o selecionado o aproximaria do não-selecionado e a criança
-// PERDERIA O CURSOR — inverter resolve contraste e distinção de uma vez.
-//
-// MUTAÇÕES CONFERIDAS:
-//   · devolvendo `background:rgba(4,7,15,.72)` ao `#dom-layer.hc .screen-pause` → o caso do véu reprova,
-//     porque o valor deixa de ser opaco.
-//   · trocando `--panel-btn` para `#3a4a6a` (a cor da BORDA do botão) → "ink-soft sobre botão: 6.12:1"
-//     reprova. Conferi antes um `#2a3a5e` e ele PASSA (7,77:1) — a mutação óbvia não servia, e registro isso
-//     porque uma mutação anotada que não falha é pior que nenhuma: dá a sensação de rigor sem o rigor.
+// MUTATIONS CHECKED:
+//   · putting `background:rgba(4,7,15,.72)` back on `#dom-layer.hc .screen-pause` → the veil case fails, because the
+//     value is no longer opaque.
+//   · changing `--panel-btn` to `#3a4a6a` (the button's BORDER colour) → "ink-soft sobre botão: 6.12:1" fails. A
+//     `#2a3a5e` was tried first and it PASSES (7.77:1) — the obvious mutation did not serve, and that is recorded because
+//     an annotated mutation that does not fail is worse than none: it gives the feeling of rigour without the rigour.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-// A conta da WCAG SAIU daqui em 2026-09-07 para `fixtures/wcag-contrast.js`, sem mudar de forma: um segundo
-// gate (a marca do ADR-0029, issue #61) passou a precisar dela, e a exportação que já existia aqui não tinha
-// importador possível — importar um ficheiro `.test.js` correria os `describe` dele duas vezes.
+// The WCAG arithmetic lives in `fixtures/wcag-contrast.js`, shared with other gates (the ADR-0029 mark, issue #61):
+// importing a `.test.js` would run its `describe`s twice.
 import { razaoDeContraste, hex, lerToken } from './fixtures/wcag-contrast.js';
 
 const CSS = readFileSync(join(process.cwd(), 'app', 'css', 'style.css'), 'utf8');
 
-/** Lê `--nome:#rrggbb` do `:root`. Falha ALTO se o token sumiu — melhor que medir `undefined`. */
+/** Reads `--name:#rrggbb` from `:root`. Fails LOUDLY if the token is gone — better than measuring `undefined`. */
 function token(nome) {
   return lerToken(CSS, nome);
 }
 
-/* ===================== os pares que a criança de fato lê ===================== */
+/* ===================== the pairs the child actually reads ===================== */
 
-const ALVO_AAA = 7; // o nível mais alto que o modo promete
+const ALVO_AAA = 7; // the highest level the mode promises
 
 describe('alto contraste no DOM · o menu entrega o que o modo promete (issue #83)', () => {
   it('[Zero] o gate está lendo o CSS de verdade', () => {
@@ -57,15 +51,15 @@ describe('alto contraste no DOM · o menu entrega o que o modo promete (issue #8
   });
 
   it('[Right] o véu do painel de pausa é OPACO na BASE — 7:1 desde o início, não só no modo', () => {
-    // Decisão do Dev, 2026-08-26, e o motivo é de uso: é NO MENU que a pessoa com deficiência ajusta os
-    // controles para si. Um contraste que só chega depois de ela achar o ajuste chega tarde. É a mesma razão
-    // por que o modo cego já nasce com TTS, earcons, sonar e guarda de beirada ligados.
+    // The Dev's decision, 2026-08-26, and the reason is use: it is IN THE MENU that a person with a disability adjusts
+    // the controls for themselves. Contrast that arrives only after they find the setting arrives late. It is the same
+    // reason blind mode is born with TTS, earcons, sonar and the ledge guard on.
     //
-    // A causa raiz do pior caso era a TRANSLUCIDEZ: um véu translúcido tem a razão que o quadro atrás lhe
-    // permitir — 19,17:1 sobre um quadro preto, 8,07:1 sobre um branco. Enquanto for translúcido, nenhum
-    // número aqui é garantia; é média de sorte.
+    // The root cause of the worst case was TRANSLUCENCY: a translucent veil has whatever ratio the frame behind allows —
+    // 19.17:1 over a black frame, 8.07:1 over a white one. While it is translucent, no number here is a guarantee; it is
+    // an average of luck.
     //
-    // O CUSTO ESTÁ DECLARADO: não se vê mais o jogo por trás da pausa.
+    // THE COST IS DECLARED: the game behind the pause is no longer visible.
     for (const sel of ['pause-incanvas', 'screen-pause']) {
       const regra = CSS.match(new RegExp('\.' + sel + '\{[^}]*background:([^;}]+)'));
       expect(regra, 'a regra de fundo de .' + sel + ' sumiu').toBeTruthy();
@@ -92,9 +86,9 @@ describe('alto contraste no DOM · o menu entrega o que o modo promete (issue #8
   });
 
   it('[Right] a PALETA BASE também bate 7:1 — o modo não é pré-requisito para enxergar o menu', () => {
-    // O que o Dev corrigiu: o alto contraste é um AJUSTE, não a porta de entrada. Quem precisa dele tem de
-    // conseguir LER o menu para encontrá-lo. Se o menu só ficasse legível depois de ligado, a pessoa teria de
-    // atravessar o que não enxerga para chegar ao que a faria enxergar.
+    // The Dev's correction: high contrast is a SETTING, not the way in. Whoever needs it must be able to READ the menu to
+    // find it. If the menu became legible only after it was on, the person would have to cross what they cannot see to
+    // reach what would let them see.
     const veu = token('bg-solid'), btn = token('panel-btn'), sel = hex('#2a3a5e');
     const ink = token('ink'), inkSoft = token('ink-soft');
     const pares = [
@@ -103,10 +97,9 @@ describe('alto contraste no DOM · o menu entrega o que o modo promete (issue #8
       ['ink sobre botão', ink, btn],
       ['ink-soft sobre botão', inkSoft, btn],
       ['ink sobre selecionado', ink, sel],
-      // A BORDA do selecionado entra aqui junto com o texto, e a razão é do Dev: a WCAG 1.4.11 pede 3:1 para
-      // componente, e 3:1 é PISO, não teto. Tratar um mínimo como permissão para parar é o contrário do que
-      // este projeto faz — e o par mede 7,80:1, então a isenção que eu tinha escrito era desnecessária além
-      // de mal formulada. Se um dia ele cair abaixo de 7:1, quero saber.
+      // The selected button's BORDER is held with the text, and the reason is the Dev's: WCAG 1.4.11 asks 3:1 for a
+      // component, and 3:1 is a FLOOR, not a ceiling. Treating a minimum as permission to stop is the opposite of what
+      // this project does — and the pair measures 7.80:1. If it ever falls below 7:1, the suite says so.
       ['borda accent sobre selecionado', token('accent'), sel],
     ];
     const falham = pares
@@ -117,15 +110,15 @@ describe('alto contraste no DOM · o menu entrega o que o modo promete (issue #8
   });
 
   it('[Interface] o cursor continua DISTINGUÍVEL do não-selecionado — contraste não pode custar a orientação', () => {
-    // O caso que impede o conserto óbvio-e-errado. Escurecer o botão selecionado levanta a razão do texto e
-    // some com o cursor: a criança passa a ler bem sem saber onde está. As duas coisas têm de valer juntas.
+    // The case that prevents the obvious wrong fix. Darkening the selected button raises the text's ratio and loses the
+    // cursor: the child reads well without knowing where they are. Both must hold together.
     const btn = token('panel-btn'), accent = token('accent');
     expect(razaoDeContraste(btn, accent), 'selecionado e não-selecionado ficaram parecidos demais').toBeGreaterThan(3);
   });
 
   it('[Boundary] a conta é a da WCAG — confere contra valores conhecidos', () => {
-    // Sem isto, um erro na fórmula deixaria todos os casos acima verdes medindo a coisa errada. Preto/branco
-    // é 21:1 por definição, e cinza médio contra branco é o par canônico dos exemplos da norma.
+    // Without this, an error in the formula would leave every case above green while measuring the wrong thing.
+    // Black/white is 21:1 by definition, and mid-grey against white is the canonical pair of the standard's examples.
     expect(razaoDeContraste([0, 0, 0], [255, 255, 255])).toBeCloseTo(21, 5);
     expect(razaoDeContraste([255, 255, 255], [255, 255, 255])).toBeCloseTo(1, 5);
     expect(razaoDeContraste([119, 119, 119], [255, 255, 255])).toBeCloseTo(4.48, 1);
