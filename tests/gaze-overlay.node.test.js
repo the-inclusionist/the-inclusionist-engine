@@ -36,6 +36,15 @@ describe('what a region shows', () => {
     }
     expect(SHOULDER).toEqual({ up: 'R1', right: 'R2', down: 'L2', left: 'L1' });
   });
+  it('a preview item from ANOTHER zone\'s group shows nothing — never an arrow that points the wrong way', () => {
+    // Found by the probe of 2026-09-24: this answer had no case. The function is published and pure, so the view a
+    // caller hands it is its whole input; a cycle a frame behind its zone would otherwise draw an arrow for a command
+    // that region does not give.
+    for (const r of ZONES) {
+      const elsewhere = ZONES.find((z) => z !== r);
+      expect(whatRegionShows(r, at(r, GAZE_GROUPS[elsewhere][1])).kind).toBe('nothing');
+    }
+  });
   it('the middle asks to be looked at only while the rest is being measured', () => {
     expect(whatRegionShows('middle', view({ restReady: false }))).toEqual({ kind: 'text', key: 'gaze.lookHere' });
     expect(whatRegionShows('middle', view({ restReady: true })).kind).toBe('nothing');
