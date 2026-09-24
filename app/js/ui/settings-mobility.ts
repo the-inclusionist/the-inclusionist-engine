@@ -1,27 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/settings-mobility — MOTOR / MOVIMENTO POR JOGADOR panel (Estágio 4): extracted from game.js's
-// renderMovPlayers()/reflectFacil()/reflectAltMove()/setEasy() (~line 2136). Pure logic (per-player tab
-// clamp/view-model, the "any player active" predicate, the Modo Fácil announcement text) is separated from the
-// thin DOM-touching render/reflect functions. DI via initSettingsMotor(ctx): `$` (DOM selector), `srSay`,
-// `store` (platform/storage shape), `players`/`getNumPlayers` (core/state.ts's live state) and `rebuildCoins`
-// (coin subsystem, Modo Fácil puts coins on the ground).
+// ui/settings-mobility — the per-player MOBILITY panel: the thin DOM-touching render/reflect functions; what a choice IS
+// lives in ./mobility-choices.js. DI via initSettingsMobility(ctx): `$` (DOM selector), `srSay`, `store`
+// (platform/storage shape), `players`/`getNumPlayers` (the live round) and optionally `rebuildCoins` (the game's reaction
+// to Easy Mode).
 //
-// ⚠️ `setToggleMove` DEIXOU DE ESTAR NESSA LISTA em 2026-09-08 (ADR-0106 §4, etapa 1b), e o que ela dava como
-// razão era o argumento contrário: dizia que ele «fica fora deste módulo porque é PARTILHADO com outra
-// superfície da interface» — o ícone `altmove` da pausa. Ser partilhado por duas superfícies da ENGINE é razão
-// para a engine o possuir. `setMoveLatch` mora aqui; o campo do `ctx` ficou OPCIONAL, então
-// quem injecta continua a mandar e quem não injecta deixa de ficar sem ele.
-// Overlay open/close plumbing (frontOverlay, #movement hidden toggle,
-// Escape handling, renderMapHub) is the SHARED helper used by every settings panel and stays in game.js.
+// ⚠️ The movement latch setter is the ENGINE's (`setMoveLatch`, ADR-0106 §4, step 1b): being shared by two ENGINE
+// surfaces — this panel and the pause bar's `altmove` icon — is a reason for the engine to own it. The ctx field is
+// OPTIONAL, so whoever injects still rules and whoever does not still gets it.
+// Overlay open/close plumbing (frontOverlay, Escape handling) is the SHARED helper every settings panel uses.
 
 import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { DEFAULTS } from '../core/state.js';
 import type { DomQuery } from '../core/dom-query.js';
-// ⚠️ IMPORT DIRETO, e não uma peça a mais no `ctx`, pela mesma razão que o `ui/pause-icons` importa
-// `platform/storage`: um nome de chave injetado é um campo que um consumidor pode omitir, e omiti-lo aqui
-// faria o painel escrever num nome torto — que é o defeito que este import acaba de fechar.
+// ⚠️ A DIRECT IMPORT, not one more `ctx` piece, for the same reason `ui/pause-icons` imports `platform/storage`: an
+// injected key name is a field a consumer may omit, and omitting it here would make the panel write under a crooked name.
 import { KEYS } from '../platform/storage.js';
 import { writeLatch } from '../input/latch-store.js';
 import {
@@ -33,19 +27,19 @@ import type { PanelShellCtx } from './panel-shell.js';
 import { controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
-// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+// `DomQuery` lives in `core/dom-query`: copies of this line in many modules drifted apart. Re-exported for whoever
+// already imported it from here.
 export type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal platform/storage.ts shape this module needs. */
 export interface MobilityStore {
   setBool(key: string, on: boolean): void;
-  /** Lê a chave crua. Só a marca do ADR-0029 usa, e para uma pergunta precisa: a criança ESCOLHEU isto? */
+  /** Reads the raw key. Only ADR-0029's mark uses it, for one precise question: did the child CHOOSE this? */
   get(key: string): string | null;
 }
 
 /** Minimal per-player shape this module reads/writes (core/state.ts's `players` entries carry much more). */
-/** As duas escolhas motoras por jogador: modo Fácil e teclas de alternância. */
+/** The per-player mobility choices: Easy Mode and the latches. */
 export type MobilityPlayer = PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>;
 
 export interface SettingsMobilityCtx {
@@ -59,75 +53,69 @@ export interface SettingsMobilityCtx {
   players: MobilityPlayer[];
   /** Live player count (core/state.ts's `numPlayers`); a getter because the value is reassigned over time. */
   getNumPlayers: () => number;
-  /** SHARED setter (also used by the pause-menu quick icon `altmove`) — stays in game.js, injected. */
+  /** SHARED setter (also used by the pause-menu quick icon `altmove`) — optional: the engine's `setMoveLatch` otherwise. */
   setToggleMove?: (i: number, on: boolean) => void;
   /**
-   * ESTE JOGO SEGURA ALGUMA TECLA? — `GameDeclaration.seguraTeclas` (ADR-0115). Sem ele a linha da
-   * alternância fica AUSENTE deste painel.
+   * DOES THIS GAME HOLD ANY KEY? — `GameDeclaration.holdsKeys` (ADR-0115). Without it the latch row is ABSENT from this
+   * panel.
    *
-   * ⚠️ E A ENGINE NÃO DESENHA ESTA LINHA — o markup do `#opt-altmove` é do CARTUCHO, e a engine só o
-   * encontra pelo `$`. Logo «não oferecer» aqui não é deixar de renderizar: é tornar a linha ausente para
-   * toda a gente, com `hidden`, que a tira da tela E da árvore de acessibilidade. Um `aria-disabled` seria a
-   * resposta errada — essa é a da cláusula 3 do ADR-0113, onde o controle EXISTE e está travado com motivo.
+   * ⚠️ Not offering it means making the row absent for everyone, with `hidden`, which takes it off the screen AND out of
+   * the accessibility tree. An `aria-disabled` would be the wrong answer — that is clause 3 of ADR-0113, where the
+   * control EXISTS and is locked with a reason.
    *
-   * ⚠️ OBRIGATÓRIO, pela mesma razão que no `PauseIconsCtx`: não há padrão seguro. `true` deixa a linha num
-   * jogo onde ela não faz nada; `false` esconde-a de uma criança que depende dela.
+   * ⚠️ REQUIRED, for the same reason as in `PauseIconsCtx`: there is no safe default. `true` leaves the row in a game
+   * where it does nothing; `false` hides it from a child who depends on it.
    */
   holdsKeys: boolean;
   /**
-   * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113) — atravessa daqui para a escrita.
+   * WHICH DEVICE THIS PLAYER IS USING (ADR-0113) — it travels from here to the write.
    *
-   * ⚠️ Opcional pela mesma razão que na `LatchWriteCtx`: sem ele a escrita cai no que já fazia,
-   * e exigi-lo quebraria todo consumidor por causa de uma migração a meio.
+   * ⚠️ Optional for the same reason as in `LatchWriteCtx`: without it the write does what it already did.
    */
   transportInUse?: (player: number) => string;
   /**
-   * A ALTERNÂNCIA DO BOTÃO DE CORRER.
+   * THE RUN BUTTON'S LATCH.
    *
-   * ⚠️ PASSOU A OPCIONAL (ADR-0106 §1), e a ausência é a notícia: a engine passou a saber respondê-la, por
-   * `setRunLatch` — ver o que está escrito lá, e o teste é o mesmo que autorizou a irmã da
-   * marcha: nenhum dos passos é do jogo. Quem injecta continua a mandar.
+   * ⚠️ OPTIONAL (ADR-0106 §1): the engine answers it itself, through `setRunLatch` — none of its steps is the game's.
+   * Whoever injects still rules.
    */
   setToggleRun?: (i: number, on: boolean) => void;
   /**
-   * A REACÇÃO DO MUNDO ao Modo Fácil (moedas no chão) — do jogo, e por isso OPCIONAL em vez de obrigatória.
+   * THE WORLD'S REACTION to Easy Mode (e.g. coins on the ground) — the game's, and therefore OPTIONAL rather than
+   * required.
    *
-   * 📌 O padrão é NÃO FAZER NADA, e é exactamente o que o `ui/pause-icons` já decidiu para o modo cego: «o
-   * padrão é literalmente o que o `core/state` já decidiu que um setter faz — grava, persiste, avisa — e nada
-   * mais. Os efeitos de jogo são REACÇÃO, e quem reage assina.» A escolha da criança fica gravada e vale para
-   * quem a lê; um jogo sem moedas não tem o que refazer, e um que tenha continua a injectar a sua.
+   * 📌 The default is to DO NOTHING, which is what `core/state` decides a setter does — store, persist, notify — and
+   * nothing more: game effects are REACTIONS, subscribed by whoever reacts. The child's choice is stored and holds for
+   * whoever reads it; a game without coins has nothing to rebuild, and one that has them injects its own.
    *
-   * ⚠️ E A LINHA CONTINUA VIVA SEM ELA — não é um botão morto. `setEasy` escreve `p.easy`, persiste e anuncia
-   * antes de chamar isto; o que falta sem a injecção é o remate no mundo, não o efeito.
+   * ⚠️ AND THE ROW STAYS ALIVE WITHOUT IT — not a dead button. `setEasy` writes `p.easy`, persists and announces before
+   * calling this; what is missing without the injection is the finishing touch in the world, not the effect.
    */
   rebuildCoins?: () => void;
   /**
-   * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA render.
+   * Moves the rows' prose to the footer (`ui/settings-panel` → `fillExplain`). Called on EVERY render.
    *
-   * ⚠️ NÃO É OPCIONAL POR ELEGÂNCIA: `fillExplain` roda uma vez quando o overlay é frontalizado e move o
-   * `.opt-hint` de dentro de cada linha para o rodapé. Este painel RECONSTRÓI as linhas, e as linhas novas
-   * voltam com a prosa lá dentro — então a explicação aparece duas vezes, no rodapé e sob o rótulo, a
-   * partir do primeiro clique. O `CLAUDE.md` §4 regista exatamente isto, e a issue #109 já o consertou
-   * uma vez noutros painéis.
+   * ⚠️ Relabelling a row puts its `.opt-hint` back inside it — so without this call the explanation appears twice, in
+   * the footer and under the label, from the first click. `CLAUDE.md` §4 records exactly this (issue #109).
    *
-   * Opcional na assinatura porque um consumidor pode montar o painel sem a casca (um teste, o segundo
-   * consumidor): sem casca não há rodapé para duplicar.
+   * Optional in the signature because a consumer can mount the panel without the shell (a test): without the shell
+   * there is no footer to duplicate.
    */
   fillExplain?: (card: HTMLElement | null) => void;
 }
 
 export interface SettingsMobilityApi {
-  /** Re-renders #movement-players (kept `hidden`, per E3 — see playerTabsHTML) and (re)wires its buttons. */
+  /** Re-renders #movement-players (kept `hidden` — see playerTabsHTML) and (re)wires its buttons. */
   renderMovPlayers: () => void;
-  /** Reflects the selected player's Modo Fácil onto #opt-facil (+ the #opt-movement bar light). */
+  /** Reflects the selected player's Easy Mode onto #opt-facil (+ the #opt-movement bar light). */
   reflectEasy: () => void;
-  /** Reflects the selected player's alternância onto #opt-altmove (+ the #opt-movement bar light). */
+  /** Reflects the selected player's movement latch onto #opt-altmove (+ the #opt-movement bar light). */
   reflectAltMove: () => void;
-  /** Idem para a alternância do botão de CORRER (#opt-togglerun). */
+  /** Likewise for the RUN button's latch (#opt-togglerun). */
   reflectToggleRun: () => void;
-  /** Sets Modo Fácil for player `i`; mirrors the old setEasy(i,on). */
+  /** Sets Easy Mode for player `i`. */
   setEasy: (i: number, on: boolean) => void;
-  /** Selects which player this panel edits (mirrors `selMovPlayer = pauseActor` before opening the panel). */
+  /** Selects which player this panel edits (the pause actor, before opening the panel). */
   setSelPlayer: (i: number) => void;
   /** Currently selected player index. */
   getSelPlayer: () => number;
@@ -139,124 +127,108 @@ export interface SettingsMobilityApi {
 
 /** localStorage key for a player's Modo Fácil flag (== platform/storage.ts's `easy_p{i}` pattern). */
 export function easyKey(i: number): string {
-  // ⚠️ ERA A ÚLTIMA CÓPIA DO LITERAL neste ficheiro, e o irmão logo abaixo (`toggleRunKey`) já regista por
-  // extenso porque isso é defeito: «duas cópias de um nome mudam uma de cada vez». O `platform/storage` diz o
-  // resto — as chaves são funções «para impedir que um deles escreva num nome torto». Passada em 2026-09-08,
-  // ao acrescentar o terceiro irmão; um gate afirma agora que os três concordam com o `KEYS`.
+  // ⚠️ IT DELEGATES, like its siblings: two copies of a name change one at a time, and `platform/storage` makes the keys
+  // functions to stop anyone writing under a crooked name. A gate asserts the three agree with `KEYS`.
   return KEYS.easyP(i);
 }
 
 /**
- * localStorage key da alternância do botão de CORRER, na forma LEGADA (sem transporte).
+ * localStorage key of the RUN button's latch, in the LEGACY form (no transport).
  *
- * ⚠️ ERA UMA CÓPIA DO LITERAL, com um comentário ao lado a dizer «== `toggleRunP` de platform/storage» — o
- * que é a admissão do defeito escrita como se fosse documentação. Duas cópias de um nome mudam uma de cada
- * vez, e o `platform/storage` já tinha escrito a razão de as chaves serem funções: «virar função aqui é o
- * que impede que um deles escreva num nome torto». Agora delega, e há um nome só.
+ * ⚠️ IT DELEGATES to `platform/storage`, so there is one name only.
  *
- * ⚠️ E É A CHAVE LEGADA. O ADR-0104 §C pôs o TRANSPORTE no nome, porque a alternância é do aparelho e não da
- * pessoa; esta continua a ser lida para herdar o que a criança já tinha, e não é escrita. A chave nova é
- * `latchKey`, em `input/latch-scope`.
+ * ⚠️ AND IT IS THE LEGACY KEY. ADR-0104 §C put the TRANSPORT in the name, because the latch belongs to the device and not
+ * the person; this one is still read to inherit what the child already had, and is not written. The new key is
+ * `latchKey`, in `input/latch-scope`.
  */
 export function toggleRunKey(i: number): string {
   return KEYS.toggleRunP(i);
 }
 
-/** localStorage key da alternância de MARCHA, por jogador. Delega, como os dois irmãos acima. */
+/** localStorage key of the MOVEMENT latch, per player. It delegates, like the two siblings above. */
 export function toggleMoveKey(i: number): string {
   return KEYS.toggleMoveP(i);
 }
 
 /**
- * A fatia mínima que a escrita da alternância de marcha toca.
+ * The minimal slice the movement latch's write touches.
  *
- * ⚠️ `walkDir` ENTRA, e não é detalhe: desligar a alternância tem de PARAR quem está a andar por travamento.
- * Sem isso, a criança desliga o modo e a personagem continua a andar sozinha, sem tecla nenhuma premida —
- * e não há erro nenhum a dizê-lo.
+ * ⚠️ `walkDir` IS IN IT, and not as a detail: switching the latch off has to STOP whoever is walking by latch. Without
+ * it, the child switches the mode off and the character keeps walking by itself, with no key pressed — and no error
+ * says so.
  *
- * ⚠️ E É FATIA PRÓPRIA, e não o `MobilityPlayer`, porque os DOIS chamadores têm fatias diferentes: o painel
- * motor traz `easy`/`toggleRun` que isto não lê, e o `PausePlayer` traz o visual e as três do movimento
- * reduzido. Uma fatia mínima é o que deixa os dois passarem sem que nenhum tenha de carregar o do outro.
- * `MobilityPlayer` e `PausePlayer` ganharam `walkDir` — quebra declarada, porque o campo é do `PlayerBase` e
- * todo jogador da engine já o tem.
+ * ⚠️ AND IT IS ITS OWN SLICE, not `MobilityPlayer`, because the TWO callers have different slices: the mobility panel
+ * brings `easy`/`toggleRun`, which this does not read, and `PausePlayer` brings the visual and the three reduced-motion
+ * flags. A minimal slice lets both pass without either carrying the other's.
  *
- * 📌 A DEFINIÇÃO MUDOU DE CASA (issue #127) e o NOME fica publicado aqui. Ela vive em `input/latch-sync`, ao
- * lado da regra que a usa, porque a sincronização da aresta toca exactamente estes dois campos — duas cópias
- * do mesmo tipo divergiriam no dia em que a regra ganhasse um terceiro. ⚠️ **Alias e não `export ... from`**:
- * o retrato de nomes deixa re-exports de fora e leria a mudança de casa como remoção, que é a lição da etapa
- * 1a do ADR-0106.
+ * 📌 THE DEFINITION LIVES IN `input/latch-sync` (issue #127), beside the rule that uses it, and the NAME stays published
+ * here. ⚠️ **An alias and not `export ... from`**: the names snapshot leaves re-exports out and would read the change of
+ * home as a removal (the lesson of ADR-0106 step 1a).
  */
 export type LatchPlayer = JogadorDaAlternanciaDaAresta;
 
-/** O que a escrita precisa de saber. Tudo o que está aqui já vive no `SettingsMobilityCtx` e no `PauseIconsCtx`. */
+/** What the write needs to know. Everything here already lives in `SettingsMobilityCtx` and `PauseIconsCtx`. */
 export interface LatchWriteCtx {
   readonly players: readonly LatchPlayer[];
   readonly store: { setBool(key: string, on: boolean): void };
   readonly srSay: (msg: string) => void;
   readonly getNumPlayers: () => number;
   /**
-   * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113). `input/state.inputOf(i).emUso` é quem responde.
+   * WHICH DEVICE THIS PLAYER IS USING (ADR-0113). `input/state.inputOf(i)` answers it.
    *
-   * ⚠️ OPCIONAL DE PROPÓSITO, e a razão é o que acontece sem ele: a escrita cai exactamente no que já fazia
-   * hoje — só a chave por jogador. Torná-lo obrigatório quebraria todo consumidor que constrói este ctx,
-   * por causa de uma migração que ainda não terminou, e o `holdsAtOnce` já mostrou o que isso custa.
+   * ⚠️ OPTIONAL ON PURPOSE, because of what happens without it: the write falls back to exactly what it did before —
+   * only the per-player key.
    *
-   * 📌 E é INJECTADO em vez de importado: `ui/` a ler estado de módulo de `input/` é uma aresta nova entre
-   * duas camadas, para poupar um argumento. Este ctx já recebe tudo o resto assim.
+   * 📌 And it is INJECTED instead of imported: `ui/` reading `input/` module state would be a new edge between two
+   * layers, to save one argument. This ctx receives everything else that way.
    */
   readonly transportInUse?: (player: number) => string;
 }
 
 /**
- * LIGA OU DESLIGA A ALTERNÂNCIA DE MARCHA DE UM JOGADOR — e agora é a engine que o faz (ADR-0106 §4).
+ * SWITCHES A PLAYER'S MOVEMENT LATCH ON OR OFF — the engine does it (ADR-0106 §4).
  *
- * ⚠️ O COMENTÁRIO QUE JUSTIFICAVA A INJEÇÃO ARGUMENTAVA CONTRA ELA. Ele dizia: «SHARED setter (also used by
- * the pause-menu quick icon `altmove`) — stays in game.js, injected». Ser partilhado por DUAS superfícies da
- * engine é razão para a engine o possuir, não para o cartucho o guardar — e a medição de 2026-09-08 mostra
- * que cada passo já era da engine: `toggleMove` e `walkDir` são campos do `PlayerBase`, a chave é do
- * `platform/storage`, e `sr.motor.toggleMove*` são chaves i18n da engine. Não sobrava efeito de jogo nenhum,
- * o que faz deste o mais limpo dos sete: aqui não há sequer um efeito colateral a injectar.
+ * ⚠️ Being shared by TWO engine surfaces (this panel and the pause bar's `altmove` icon) is a reason for the engine to
+ * own it, not for the cartridge to keep it — and every step is the engine's: `toggleMove` and `walkDir` are
+ * `PlayerBase` fields, the key is `platform/storage`'s, and `sr.motor.toggleMove*` are engine i18n keys. There is no
+ * game effect left to inject.
  */
 export function setMoveLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   const p = ctx.players[i];
   if (!p) return;
-  // 📌 A REGRA DE DESLIGAR MORA NUM SÍTIO SÓ desde a issue #127: `applyLatch` põe o valor E pára quem
-  // anda por travamento. Ela era duas linhas aqui, e passou a ser partilhada com a sincronização da aresta
-  // (`input/latch-sync`) — que resolve a MESMA pergunta ao trocar de aparelho. Duas cópias do «senão a
-  // personagem anda sozinha» divergiriam no dia em que uma delas mudasse.
+  // 📌 THE SWITCH-OFF RULE LIVES IN ONE PLACE (issue #127): `applyLatch` sets the value AND stops whoever walks by latch.
+  // It is shared with the edge sync (`input/latch-sync`), which answers the SAME question when the device changes — two
+  // copies of "otherwise the character walks by itself" would drift the day one of them changed.
   applyLatch(p, on);
-  // ⚠️ AS DUAS CHAVES, E A ANTIGA NÃO SAI AINDA — é a forma do `p.visual` ao lado do `p.viz` (#104 etapa 1a),
-  // e pela mesma razão: quem LÊ ainda é o cartucho, por `KEYS.toggleMoveP(i)` (`main.ts:540`). Parar de a
-  // escrever agora faria a criança perder a escolha no arranque seguinte — o defeito que o ADR-0113 nomeia
-  // como a cláusula que decide se a decisão custa um ajuste real no dia em que sai.
+  // ⚠️ BOTH KEYS, AND THE OLD ONE STAYS FOR NOW — the same shape as `p.visual` beside `p.viz` (#104 step 1a), for the same
+  // reason: a cartridge may still READ it through `KEYS.toggleMoveP(i)`. Stopping writing it now would make the child
+  // lose the choice at the next boot — the cost ADR-0113 names.
   ctx.store.setBool(toggleMoveKey(i), on);
-  // 📌 E a chave NOVA, quando se sabe o aparelho. `writeLatch` recusa-se nos quatro assistidos, onde
-  // não há escolha a guardar (ADR-0113 cláusula 3) — e devolve `false` para quem chama desabilitar o
-  // controle com o motivo dito. Aqui a recusa não muda mais nada: o valor em memória continua a ser o que
-  // a regra resolve, e é ela que responde `true` naqueles quatro.
+  // 📌 And the NEW key, when the device is known. `writeLatch` refuses on the four assisted transports, where there is no
+  // choice to store (ADR-0113 clause 3) — and returns `false` so a caller can disable the control with the reason said.
+  // Here the refusal changes nothing else: the in-memory value is still what the rule resolves, and the rule answers
+  // `true` on those four.
   const transport = ctx.transportInUse ? ctx.transportInUse(i) : null;
   if (transport) writeLatch((key, isOn) => ctx.store.setBool(key, isOn), BASE_DA_MARCHA, i, transport, on);
-  // 📌 O ANÚNCIO É INCONDICIONAL, ao contrário do `applyLatch`, que devolve «mudou». A criança
-  // carregou no ícone: calar-se porque o valor já era esse deixaria o botão sem resposta para quem ouve.
+  // 📌 THE ANNOUNCEMENT IS UNCONDITIONAL, unlike `applyLatch`, which returns "changed". The child pressed the icon:
+  // staying silent because the value already was that would leave the button with no answer for whoever listens.
   ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
 }
 
 /**
- * LIGA OU DESLIGA A ALTERNÂNCIA DO CORRER — a irmã de `setMoveLatch`, e mais limpa do que ela.
+ * SWITCHES THE RUN LATCH ON OR OFF — `setMoveLatch`'s sibling, and simpler.
  *
- * 🎯 A RAZÃO DE EXISTIR É A MESMA, e o teste que a autoriza está escrito no comentário da irmã: «cada passo já
- * era da engine». Aqui é ainda mais verdade — `toggleRun` é campo de `PlayerBase`, a chave é
- * `KEYS.toggleRunP(i)` do `platform/storage`, e `sr.motor.toggleRun*` são chaves i18n da engine. **Não há um
- * único efeito de jogo a injectar**, e por isso `SettingsMobilityCtx.setToggleRun` deixa de ser obrigatório: um
- * jogo que não o forneça deixa de ficar sem a linha do correr, em vez de a ter morta.
+ * 🎯 THE SAME REASON TO EXIST: every step is the engine's — `toggleRun` is a `PlayerBase` field, the key is
+ * `platform/storage`'s `KEYS.toggleRunP(i)`, and `sr.motor.toggleRun*` are engine i18n keys. **There is no game effect
+ * to inject**, which is why `SettingsMobilityCtx.setToggleRun` is optional: a game that does not supply it still gets a
+ * live run row instead of a dead one.
  *
- * ⚠️ E NÃO CHAMA `applyLatch`, ao contrário da irmã. Aquela pára quem anda por travamento ao desligar,
- * porque a alternância de MARCHA deixa a personagem a andar sozinha; a do correr governa uma trava de
- * velocidade, que não tem como deixar ninguém em movimento. Copiar a linha «por simetria» seria mexer em
- * `walkDir` por causa de um botão que não lhe toca.
+ * ⚠️ AND IT DOES NOT CALL `applyLatch`, unlike its sibling. That one stops whoever walks by latch on switch-off, because
+ * the MOVEMENT latch leaves the character walking by itself; the run latch governs a speed lock, which cannot leave anyone
+ * moving. Copying the line "for symmetry" would touch `walkDir` because of a button that does not.
  *
- * 📌 O anúncio é INCONDICIONAL, como o da irmã: a criança carregou no botão, e calar-se porque o valor já era
- * aquele deixa o controle sem resposta para quem ouve em vez de ver.
+ * 📌 The announcement is UNCONDITIONAL, like its sibling's: the child pressed the button, and staying silent because the
+ * value already was that leaves the control with no answer for whoever listens instead of looking.
  */
 export function setRunLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   const p = ctx.players[i] as ({ toggleRun?: boolean } | undefined);
@@ -267,34 +239,32 @@ export function setRunLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
 }
 
 /**
- * MONTA O INTERIOR DESTE PAINEL — as abas por assento e as três linhas que ele alcança mas não criava.
+ * MOUNTS THIS PANEL'S INSIDE — the per-seat tabs and the three rows it reaches.
  *
- * 🔴 O CONTRATO ERA INVISÍVEL, e o cabeçalho do `ui/panel-shell` já nomeou a forma do defeito um nível acima:
- * este módulo procura `#movement-players`, `#opt-facil`, `#opt-altmove` e `#opt-togglerun`, e nada no tipo o
- * dizia. O markup vivia no `app/index.html`, que saiu com o cartucho (#111) — desde então o painel abria com o
- * cartão, o título e o botão de repor, e NENHUMA das três escolhas.
+ * 🔴 THE CONTRACT WOULD OTHERWISE BE INVISIBLE (the shape `ui/panel-shell` names one level up): this module looks for
+ * `#movement-players`, `#opt-facil`, `#opt-altmove` and `#opt-togglerun`, and nothing in the type says so — so it builds
+ * them, instead of a panel that opens with nothing but a card, a title and a reset button.
  *
- * ⚠️ E ISTO MORA AQUI, e não na raiz de composição, pela razão que o `panel-shell` já provou: quem conhece
- * estes quatro ids e a forma de cada controle é este ficheiro, e mais ninguém. Uma raiz que os escrevesse
- * seria uma raiz a adivinhar — e adivinhar um id é como se descobre por tentativa que o painel abre vazio.
+ * ⚠️ AND IT LIVES HERE, not in the composition root: whoever knows these four ids and each control's shape is this file,
+ * and nobody else. A root writing them would be a root guessing.
  *
- * ⚠️ AS TRÊS LINHAS SÃO SEMPRE CRIADAS, incluindo a da alternância. Quem decide se ela se VÊ é o
- * `reflectAltMove`, pelo `seguraTeclas` (ADR-0115) — e a decisão dele é `hidden`, que tira a linha da tela E
- * da árvore de acessibilidade. Criar só quando se aplica poria a mesma regra em dois sítios, e o dia em que
- * elas divergissem é o dia em que a linha aparece num jogo onde não faz nada.
+ * ⚠️ THE THREE ROWS ARE ALWAYS CREATED, the latch row included. Whether it is SEEN is decided at init by `holdsKeys`
+ * (ADR-0115), with `hidden`, which takes the row off the screen AND out of the accessibility tree. Creating it only when
+ * it applies would put the same rule in two places, and the day they diverged the row would appear in a game where it
+ * does nothing.
  *
- * 📌 A ORDEM É A DA DECISÃO, como em todo menu deste projeto (ADR-0044 §2): as abas primeiro, porque elas
- * dizem de QUEM são as escolhas seguintes; depois Modo Fácil, que é a mais procurada; e as duas alternâncias
- * juntas, porque são a mesma ideia aplicada a dois botões.
+ * 📌 THE ORDER IS THE DECISION, as in every menu of this project (ADR-0044 §2): the tabs first, because they say WHOSE
+ * the next choices are; then Easy Mode, the most sought; and the two latches together, the same idea applied to two
+ * buttons.
  *
- * Idempotente: chamar duas vezes reaproveita a lista em vez de a duplicar.
+ * Idempotent: calling it twice reuses the list instead of duplicating it.
  */
 export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
   if (!ctx.find('#movement-players')) {
     const abas = ctx.create('div');
     abas.id = 'movement-players';
-    // Nascem escondidas e vazias: quem as desenha é `renderMovPlayers()`, que sabe quantos assentos há AGORA —
-    // e o número muda durante a partida.
+    // Born hidden and empty: `renderMovPlayers()` draws them, because it knows how many seats there are NOW — and the
+    // number changes during the match.
     abas.hidden = true;
     card.insertBefore(abas, list);
   }
@@ -304,10 +274,9 @@ export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, list:
     { id: 'opt-togglerun', label: t('motor.togglerun'), hint: t('motor.togglerun.dica') },
   ];
   for (const spec of rows) {
-    // ⚠️ REETIQUETA EM VEZ DE SALTAR quando a linha já existe, e é por isso que esta função é chamada
-    // também do `render()` de cada abertura: o texto foi capturado no intervalo de arranque, onde o idioma
-    // ainda é o de recuo. 📏 Medido num navegador com `lang="en"`: o título vinha em inglês e as linhas em
-    // português, na mesma tela. Ver `ui/panel-widgets.labelRow`.
+    // ⚠️ IT RELABELS INSTEAD OF SKIPPING when the row exists, which is why this function is also called from every
+    // open's `render()`: text captured at boot may be in the fallback language, and the title and the rows would end
+    // up in different languages on the same screen. See `ui/panel-widgets.labelRow`.
     const existingRow = ctx.find('#' + spec.id);
     if (existingRow) {
       const rowNode = existingRow.closest<HTMLElement>('.ctrl-row');
@@ -323,50 +292,47 @@ export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, list:
 // ---------------------------------------------------------------------------------------------
 
 export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobilityApi {
-  // ⚠️ RESOLVIDO UMA VEZ: quem injecta manda, quem não injecta passa a ter. A engine sabe fazê-lo sozinha
-  // desde 2026-09-08 — ver definirAlternanciaDeMarcha, e o comentário do campo, que argumentava contra si.
+  // ⚠️ RESOLVED ONCE: whoever injects rules, whoever does not still gets it — the engine does it itself (`setMoveLatch`).
   const setToggleMove = ctx.setToggleMove ?? ((i: number, on: boolean) => setMoveLatch(ctx, i, on));
-  // A irmã, pela mesma regra e pela mesma razão — ver `setRunLatch`.
+  // Its sibling, by the same rule and for the same reason — see `setRunLatch`.
   const setToggleRun = ctx.setToggleRun ?? ((i: number, on: boolean) => setRunLatch(ctx, i, on));
-  // ⚠️ A REACÇÃO DO MUNDO É DO JOGO, e a ausência dela não é um botão morto: `setEasy` já escreveu, persistiu
-  // e anunciou antes de chegar aqui. É o padrão que o `ui/pause-icons` fixou para o modo cego.
+  // ⚠️ THE WORLD'S REACTION IS THE GAME'S, and its absence is not a dead button: `setEasy` has already written,
+  // persisted and announced before getting here.
   const rebuildCoins = ctx.rebuildCoins ?? ((): void => {});
-  let selMovPlayer = 0; // jogador selecionado no painel Acessibilidade motora
+  let selMovPlayer = 0; // the player selected in the mobility panel
 
   const easyModeButton = ctx.$<HTMLElement>('#opt-facil');
   const altMoveBtn = ctx.$<HTMLElement>('#opt-altmove');
   /**
-   * A DICA ORIGINAL DA LINHA, guardada uma vez.
+   * THE ROW'S ORIGINAL HINT, kept once.
    *
-   * ⚠️ AQUI A RECUSA VAI E VEM, e é essa a diferença para o precedente. O `render/viz-setters` ACRESCENTA
-   * o motivo à dica e nunca o retira, o que é correcto lá: aquela lista é reconstruída a cada render. Este
-   * botão é persistente e a criança pode largar a webcam e voltar ao teclado — sem guardar o texto de
-   * origem, o motivo acumular-se-ia na linha a cada troca de aparelho.
+   * ⚠️ HERE THE REFUSAL COMES AND GOES: this button is persistent, and the child may put the webcam down and go back to
+   * the keyboard — without keeping the original text, the reason would pile up on the row with every device change.
    */
   const altMoveRow = altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null;
   const altMoveHint = altMoveRow?.querySelector<HTMLElement>('.opt-hint') ?? null;
   const originalHint = altMoveHint?.textContent ?? '';
 
   /*
-   * ADR-0115 · A LINHA SOME NUM JOGO QUE NÃO SEGURA NADA — e some para TODA A GENTE.
+   * ADR-0115 · THE ROW DISAPPEARS IN A GAME THAT HOLDS NOTHING — and disappears for EVERYONE.
    *
-   * 🔴 `hidden` e não `aria-disabled`: a criança que depende da alternância abre este painel para a ligar, e
-   * num quiz não há nada para ela ligar. Um controle desabilitado com um motivo continua a ser um controle
-   * que não faz nada — e ainda ocupa um lugar na navegação por teclado, entre dois que funcionam.
-   * 📌 A cláusula 3 do ADR-0113 é o caso oposto e continua intacta: lá o aparelho EXIGE a alternância, o
-   * controle existe, e fica `aria-disabled` COM o motivo, alcançável para que ela possa lê-lo.
-   * ⚠️ E a linha é do CARTUCHO: a engine não a criou e por isso não a destrói. `hidden` é reversível e
-   * idempotente; remover markup alheio não é nenhuma das duas coisas.
+   * 🔴 `hidden` and not `aria-disabled`: the child who depends on the latch opens this panel to switch it on, and in a
+   * quiz there is nothing to switch on. A control disabled with a reason is still a control that does nothing — and it
+   * still takes a place in keyboard navigation, between two that work.
+   * 📌 Clause 3 of ADR-0113 is the opposite case and stays intact: there the device REQUIRES the latch, the control
+   * exists, and it is `aria-disabled` WITH the reason, reachable so it can be read.
+   * ⚠️ `hidden` and not removal: the row may be the page's own markup, and `hidden` is reversible and idempotent where
+   * removing someone else's markup is neither.
    */
   if (!ctx.holdsKeys && altMoveRow) altMoveRow.hidden = true;
 
-  /** A recusa DESTE jogador agora, ou `null`. Recalculada a cada reflexo: o aparelho em uso muda. */
+  /** THIS player's refusal now, or `null`. Recomputed on every reflect: the device in use changes. */
   function refusalFor(i: number) {
     return ctx.transportInUse ? latchRefusal(ctx.transportInUse(i)) : null;
   }
   const toggleRunBtn = ctx.$<HTMLElement>('#opt-togglerun');
 
-  // barra acende se QUALQUER jogador usa Fácil/alternância
+  // the bar lights up if ANY player uses Easy Mode or a latch
   function reflectMovementBtn(): void {
     const b = ctx.$<HTMLElement>('#opt-movement');
     if (b) b.classList.toggle('is-on', anyMobilityActive(ctx.players));
@@ -374,24 +340,23 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
   }
 
   /**
-   * A marca de "saiu do padrão" (ADR-0029). Pendurada no reflect que JÁ roda a cada mudança dos dois
-   * controles, porque uma marca que precise de uma chamada própria é uma marca que alguém vai esquecer —
-   * e uma marca errada manda a criança desfazer o que ela nunca mexeu.
+   * The left-the-default mark (ADR-0029). Hung on the reflect that ALREADY runs on every change of the two controls,
+   * because a mark that needs its own call is a mark someone will forget — and a wrong mark sends the child to undo what
+   * they never touched.
    *
-   * O escopo segue o do reset deste menu: as duas PREFERÊNCIAS. Os métodos de entrada (olhos, mapeamento)
-   * ficam de fora aqui também — não porque não possam mudar, mas porque o padrão deles não mora em DEFAULTS,
-   * e marcar sem uma fonte única de "o que é padrão" seria inventar uma segunda opinião sobre isso.
+   * The scope follows this menu's reset: the PREFERENCES. The input methods (eyes, mapping) stay out here too — not
+   * because they cannot change, but because their default does not live in DEFAULTS, and marking without a single source
+   * of "default" would invent a second opinion on it.
    */
   function refreshMarks(): void {
     const easy = ctx.players.some((p) => !!p.easy) !== DEFAULTS.easy;
     const alt = ctx.players.some((p) => !!p.toggleMove) !== DEFAULTS.toggleMove;
-    // A ALTERNÂNCIA DO CORRER PERGUNTA DIFERENTE, e a diferença é o que ela tem de próprio: ela LIGA SOZINHA
-    // no controle de tela. Marcar pelo ESTADO acenderia a marca para 100% de quem joga em tablet, sem ninguém
-    // ter tocado em nada — e uma marca sempre acesa não significa nada. Pior: o comentário do reset deste
-    // menu já diz que "uma marca errada manda a criança desfazer o que ela nunca mexeu".
+    // THE RUN LATCH ASKS DIFFERENTLY, because it SWITCHES ON BY ITSELF on the touch controls. Marking by STATE would
+    // light the mark for everyone playing on a tablet, with nobody touching anything — and a mark always lit means
+    // nothing.
     //
-    // Então o que marca é a ESCOLHA GUARDADA. Valor salvo significa que alguém mexeu naquele controle; o
-    // ligar automático não salva nada, e por isso não marca.
+    // So what marks is the STORED CHOICE. A saved value means someone touched that control; the automatic switch-on
+    // saves nothing, so it does not mark.
     const anyRunToggleChosen = ctx.players.some((p, i) => ctx.store.get(toggleRunKey(i)) != null && !!p.toggleRun !== DEFAULTS.toggleRun);
     markChanged(easyModeButton?.closest<HTMLElement>('.ctrl-row') ?? null, easy);
     markChanged(altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null, alt);
@@ -429,14 +394,14 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
       altMoveBtn.setAttribute('aria-pressed', String(on));
       altMoveBtn.textContent = onOffLabel(on);
       /*
-       * ⚠️ A CLÁUSULA 3 DO ADR-0113 NA TELA: onde a alternância é exigida, o controle NÃO SOME — fica
-       * `aria-disabled` e o motivo entra na dica, que a casca (`ui/settings-panel.fillExplain`) move para o
-       * rodapé. Sumir ensinaria que a coisa não existe; deixá-lo activo faria a criança carregar e não
-       * perceber por que nada mudou.
+       * ⚠️ CLAUSE 3 OF ADR-0113 ON SCREEN: where the latch is required, the control does NOT disappear — it is
+       * `aria-disabled` and the reason goes into the hint, which the shell (`ui/settings-panel.fillExplain`) moves to the
+       * footer. Disappearing would teach that the thing does not exist; leaving it active would make the child press it
+       * and not understand why nothing changed.
        *
-       * 📌 E `aria-disabled` e não `disabled`: um botão desabilitado de verdade SAI da ordem de tabulação, e
-       * quem navega por teclado deixaria de o alcançar — logo deixaria de poder LER o motivo. É a mesma
-       * escolha que a #128 nomeia como defeito quando é feita ao contrário (só classe CSS, sem `aria`).
+       * 📌 And `aria-disabled`, not `disabled`: a really disabled button LEAVES the tab order, and a keyboard user could no
+       * longer reach it — so could no longer READ the reason. The same choice #128 names as a defect when made the other
+       * way (a CSS class only, no `aria`).
        */
       const refusal = refusalFor(selMovPlayer);
       if (refusal) altMoveBtn.setAttribute('aria-disabled', 'true');
@@ -461,7 +426,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     if (!tabs) return;
     const numPlayers = ctx.getNumPlayers();
     selMovPlayer = clampSelPlayer(selMovPlayer, numPlayers);
-    tabs.hidden = true; // E3: sem abas — cada jogador edita só o seu (escopo = pauseActor)
+    tabs.hidden = true; // no tabs — each player edits only their own (scope = the pause actor)
     tabs.innerHTML = playerTabsHTML(numPlayers, selMovPlayer);
     tabs.querySelectorAll<HTMLButtonElement>('button[data-mp]').forEach((b) => {
       b.addEventListener('click', () => {
@@ -471,7 +436,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
         reflectAltMove();
       });
     });
-    // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109).
+    // The prose goes back to the footer after the rows are rebuilt (CLAUDE.md §4, #109).
     ctx.fillExplain?.(ctx.$<HTMLElement>('#movement .overlay__card'));
   }
 
@@ -486,10 +451,9 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     if (altMoveBtn) {
       altMoveBtn.addEventListener('click', () => {
         /*
-         * ⚠️ RECUSAR DIZENDO, E NÃO EM SILÊNCIO. O precedente (`render/viz-setters`) resolve isto não ligando
-         * ouvinte nenhum — pode, porque reconstrói a lista a cada render. Aqui o ouvinte é ligado uma vez, e
-         * um `return` mudo seria «aceitar o clique e ignorá-lo», que é a outra metade do que o ADR-0076
-         * proíbe. Então a recusa FALA: quem carregou fica a saber por quê, mesmo sem ver a dica.
+         * ⚠️ REFUSE BY SAYING, NOT IN SILENCE. The listener is wired once, and a mute `return` would accept the click and
+         * ignore it — the other half of what ADR-0076 forbids. So the refusal SPEAKS: whoever pressed learns why, even
+         * without seeing the hint.
          */
         const refusal = refusalFor(selMovPlayer);
         if (refusal) { ctx.srSay(t(refusal.key)); return; }
@@ -504,21 +468,19 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
       });
     }
 
-    // ---- restaurar os padrões DESTE menu (ADR-0028) ----
+    // ---- reset THIS menu's defaults (ADR-0028) ----
     //
-    // O alcance aqui é MENOR que a tela, e de propósito. A Acessibilidade motora hospeda três coisas: Modo
-    // Fácil, movimento por alternância e o mapeamento de teclas (#map-hub); o controle pelos olhos passou à barra rápida (👀).
-    // O reset devolve as duas PREFERÊNCIAS e não encosta no MÉTODO DE ENTRADA, por uma razão que vale
-    // mais que a simetria:
+    // The reach here is SMALLER than the screen, on purpose. The mobility panel also hosts the input methods (key and
+    // controller mapping); the reset returns the PREFERENCES and does not touch the INPUT METHOD, for a reason worth more
+    // than symmetry:
     //
-    //   UM RESET SÓ PODE DESFAZER O QUE ELE TAMBÉM CONSEGUE REFAZER.
+    //   A RESET MAY ONLY UNDO WHAT IT CAN ALSO REDO.
     //
-    // Quem remapeou as teclas
-    // porque só alcança algumas: devolver o mapa de fábrica é devolver teclas que a mão dela não chega. Esse
-    // mapeamento, aliás, já tem o reset dele (#ctrl-reset), onde a escolha é explícita e não um efeito colateral.
+    // Whoever remapped the keys did it because they reach only some: returning the factory map returns keys their hand
+    // does not reach. That mapping has its own reset (#ctrl-reset), where the choice is explicit and not a side effect.
     //
-    // Por isso o anúncio DIZ o que ficou de fora: um botão que restaura menos do que o nome promete precisa
-    // dizer isso em voz alta, ou a criança conclui que ele não funcionou.
+    // That is why the announcement SAYS what was left out: a button that restores less than its name promises has to say
+    // so aloud, or the child concludes it did not work.
     const resetBtn = ctx.$<HTMLButtonElement>('#movement-reset');
     if (resetBtn) resetBtn.addEventListener('click', () => {
       ctx.players.forEach((p, i) => {
