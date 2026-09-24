@@ -65,6 +65,18 @@ function sinal() {
   return out;
 }
 
+/** The same two tones filling the whole 30 s window: no frame of it is silent. */
+function sinalCheio() {
+  const { tones, amplitudes, rate } = truth.audio;
+  const out = new Float32Array(WHISPER_SAMPLES);
+  for (let n = 0; n < out.length; n++) {
+    let x = 0;
+    for (let t = 0; t < tones.length; t++) x += amplitudes[t] * Math.sin((2 * Math.PI * tones[t] * n) / rate);
+    out[n] = x;
+  }
+  return out;
+}
+
 describe('the reading models, and what the engine asks of each', () => {
   it('🔴 [Right] every file a model needs is in the catalogue, by id', () => {
     const noCatalogo = new Set(HEAVY_FILES.map((p) => p.id));
@@ -107,6 +119,31 @@ describe('what Whisper\'s encoder eats (measured against WhisperFeatureExtractor
     }
   });
 
+  it('🔴 [Right] a reading that fills the window is REFLECTED at its end too, as the original pads it', () => {
+    // ⚠️ The one-second signal above ends in 29 s of zeros, and at a silent end reflecting and repeating the last sample are
+    // the same thing — so the right-hand padding had no case. Here the two tones fill all 30 s, and the last frame reaches 40
+    // samples past the end. 📏 `mel.full` in the fixture is `WhisperFeatureExtractor` on this very signal.
+    const mel = logMel(sinalCheio(), FILTROS);
+    for (const { band, frame, value } of truth.mel.full.probes) {
+      expect(mel[band * WHISPER_FRAMES + frame], `band ${band}, frame ${frame}`).toBeCloseTo(value, 4);
+    }
+  });
+
+  it('🔴 [Boundary] a whisper is clipped where the original clips it: at 1e-10, BEFORE the log', () => {
+    // A tone at 1e-5 is so quiet that far from it the power falls under 1e-10, and the floor eight decades below the loudest
+    // point is lower still — so there the original's clip is the answer, not the floor. 📏 `mel.quiet` is the extractor's
+    // own sums: 239 571 of its 240 000 values sit at −1.5.
+    const { tone, amplitude, seconds } = truth.mel.quiet;
+    const baixo = Float32Array.from({ length: seconds * READING_RATE },
+      (_, n) => amplitude * Math.sin((2 * Math.PI * tone * n) / READING_RATE));
+    const mel = logMel(baixo, FILTROS);
+    truth.mel.quiet.bandSums.forEach((esperada, band) => {
+      let soma = 0;
+      for (let f = 0; f < WHISPER_FRAMES; f++) soma += mel[band * WHISPER_FRAMES + f];
+      expect(soma, `band ${band}`).toBeCloseTo(esperada, 1);
+    });
+  });
+
   it('🔴 [Zero] a window with no sound at all is every value at −1.5, which is what the original answers', () => {
     // 📏 Measured with `WhisperFeatureExtractor` on 16 000 zeros: min −1.5, max −1.5, one value in the whole spectrogram.
     // ⚠️ It is the case that holds the shortcut honest: silence is ANSWERED and not computed, so the constant it is answered
@@ -132,6 +169,15 @@ describe('what Whisper\'s encoder eats (measured against WhisperFeatureExtractor
     logMel(sinal(), FILTROS);
     const ms = performance.now() - começou;
     expect(ms, `a 30 s window took ${ms.toFixed(0)} ms — a child would wait for it`).toBeLessThan(4000);
+    // ⚠️ The ceiling above cannot see the shortcut: 📏 measured 58 ms with it and 818–847 ms without, both far under 4 s on
+    // this machine. A lower ceiling would fail under the suite's load (the instability this plan already records), so the
+    // shortcut is held by a RATIO measured back to back, which load moves on both sides alike: a window that is one second of
+    // sound must cost far less than one that is thirty.
+    const antes = performance.now();
+    logMel(sinalCheio(), FILTROS);
+    const cheio = performance.now() - antes;
+    expect(ms, `one second of sound cost ${ms.toFixed(0)} ms against ${cheio.toFixed(0)} ms for thirty: silence was computed`)
+      .toBeLessThan(cheio / 3);
   });
 });
 
@@ -229,3 +275,14 @@ describe.skipIf(!TEM_ARVORE)('the fixture against the files the catalogue fetche
 //   · special tokens let through                         → «a special token never reaches the child»
 //   · `begin_suppress_tokens` ignored                    → «the first token refuses MORE»
 //   · a model naming a file the catalogue has not        → «every file a model needs is in the catalogue»
+//
+// PROBED AGAIN (2026-09-23), sixteen decisions of `logMel` disabled one at a time — `scratchpad/sonda-mel.py`. Five were green:
+//   · the right-hand reflection replaced by the edge   → «a reading that fills the window is REFLECTED at its end too» (the
+//                                                        one-second signal ends in silence, where the two are the same)
+//   · the clip at 1e-10 before the log dropped          → «a whisper is clipped where the original clips it»
+//   · the silence shortcut dropped                      → the RATIO in «silence is answered and not computed» (58 ms with it,
+//                                                        818–847 ms without — both under the absolute ceiling)
+//   · 📏 EQUIVALENT: the scan for silence not stopping at the first sound — it reads 400 more samples in a frame that already
+//     costs 80 400 multiply-adds, and answers the same.
+//   · 📏 EQUIVALENT, and the line is gone: a silent frame raising the loudest point to `log10(1e-10)`. A computed value is
+//     `log10(max(sum, 1e-10))`, never below it, and an all-silent window floors at −∞, which leaves every value where it is.
