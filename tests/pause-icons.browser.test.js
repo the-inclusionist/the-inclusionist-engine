@@ -26,7 +26,7 @@ const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
 const PM_BTNS = [
   { act: 'resume', lbl: '▶ Continuar' },
-  { act: 'letra', lbl: '🔠 ABC', letra: true },
+  { act: 'letra', lbl: '🔠 ABC', dynamicLabel: true },
   { act: 'quit', lbl: '🚪 Sair do jogo' },
 ];
 const PM_OPTS = [
@@ -65,8 +65,8 @@ function makeCtx(over = {}) {
     // por aqui que `reflectPauseIcons` os encontra. Os testes que exercitam o reflexo alimentam `state.bars`;
     // os que só olham o markup do cartão deixam a lista vazia — e o reflexo então não faz nada, corretamente.
     getA11yBars: () => state.bars || state.screens,
-    getModoCego: () => state.blindMode,
-    setModoCego: (on) => { state.blindMode = on; },
+    getBlindMode: () => state.blindMode,
+    setBlindMode: (on) => { state.blindMode = on; },
     getAudioCat: () => state.audioCat,
     setCatGain: () => {},
     reflectTtsPanel: () => {},
@@ -77,19 +77,19 @@ function makeCtx(over = {}) {
     setToggleMove: (i, on) => { if (players[i]) players[i].toggleMove = on; },
     setPlayerViz: (i, mode) => { if (players[i]) { players[i].viz = mode; players[i].visual = migrateVisual(mode); } },
     // Os escritores POR EIXO (#104): cada icone escreve no seu, e o outro fica onde estava.
-    setTemaDoJogador: (i, tema) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), tema }; },
-    setCorrecaoDoJogador: (i, correcao) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), correcao }; },
+    setPlayerTheme: (i, tema) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), tema }; },
+    setPlayerCorrection: (i, correcao) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), correcao }; },
     // Este duplo é de forma de PLATAFORMA — segura direcção — logo a barra dele tem o `altmove` (ADR-0115).
     // A metade que prova a AUSÊNCIA vive no project node, onde a regra mora.
-    seguraTeclas: () => true,
+    holdsKeys: () => true,
     // 📌 O 11.º ícone (ADR-0149) só é montado por quem sabe andar no ciclo de tipografia — a mesma regra dos
     // dois escritores visuais acima. Este ficheiro mede as INVARIANTES da barra montada e não o filtro, que
     // vive no project node; sem esta linha ele mediria uma barra com um ícone a menos.
-    ciclarTipografia: () => 'Atkinson Hyperlegible',
-    relogio: () => true, // the hourglass (ADR-0180) mounts only where time runs by itself
+    cycleTypography: () => 'Atkinson Hyperlegible',
+    clock: () => true, // the hourglass (ADR-0180) mounts only where time runs by itself
     camera: true, // the 📷 (ADR-0215) mounts only where the root has a camera to ask for
-    microfone: true, // the 👄 (issue #184) mounts only where there is a microphone to ask for
-    abrirMenus: (i) => state.ran.push('menus:' + i), // the ☰ mounts only where there is a card to open
+    microphone: true, // the 👄 (issue #184) mounts only where there is a microphone to ask for
+    openMenus: (i) => state.ran.push('menus:' + i), // the ☰ mounts only where there is a card to open
     ...over,
   };
   return { ctx, state, said, alerted };
@@ -175,7 +175,7 @@ describe('buildScreenPause — a árvore construída', () => {
   });
 
   it('🔴 [Zero] without a card to open there is no ☰ — a button that opens nothing is the dead button of ADR-0106 §5', () => {
-    const { bar } = mount(0, { abrirMenus: undefined });
+    const { bar } = mount(0, { openMenus: undefined });
     expect(bar.querySelector('.pi-btn[data-pi="menu"]')).toBeNull();
   });
 
@@ -247,7 +247,7 @@ describe('buildScreenPause — a árvore construída', () => {
     const { api, sp, state } = mount(0, { pmButtons: [...PM_BTNS, { act: 'acessibilidade', lbl: '♿ Acessibilidade' }] });
     sp.querySelector('.pm-btn[data-act="acessibilidade"]').click();
     expect(state.ran, 'the card stayed open').toContain('resume');
-    expect(api.naBarraDe(0)).toBe(true);
+    expect(api.onBar(0)).toBe(true);
   });
 
   it('⚠️ o menu só OFERECE vivo o que o jogo ACCIONA — `quit` sem tabela fica travado (ADR-0106 §5 → ADR-0161)', () => {
@@ -553,8 +553,8 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     const { api, bar, said, ctx } = mount();
     let retomou = 0;
     ctx.getPauseActs = () => ({ resume: () => { retomou++; } });
-    api.entrarNaBarra(0);
-    expect(api.naBarraDe(0)).toBe(true);
+    api.enterBar(0);
+    expect(api.onBar(0)).toBe(true);
     // 🔴 ATÉ AO ADR-0155 ERA O CONTRÁRIO: entrar despausava, porque o modo era para usar com o jogo a andar.
     // Agora a barra é a metade da PAUSA RÁPIDA, e retomar ao entrar descongelaria o mundo que a criança parou.
     expect(retomou, 'entrar na barra retomou o jogo que a pausa rápida acabou de congelar').toBe(0);
@@ -564,10 +564,10 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
 
   it('[Right] VOLTAR sai do modo, limpa o cursor e anuncia a devolução', () => {
     const { api, bar, said } = mount();
-    api.entrarNaBarra(0);
+    api.enterBar(0);
     said.length = 0;
     api.navBar(0, { no: true });
-    expect(api.naBarraDe(0)).toBe(false);
+    expect(api.onBar(0)).toBe(false);
     expect(bar.querySelectorAll('.pi-sel')).toHaveLength(0);
     expect(bar.querySelector('.pause-icons-cap').textContent).toBe('');
     expect(said.length, 'a devolução do controle também é informação').toBeGreaterThan(0);
@@ -575,9 +575,9 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
 
   it('[Right] START sai também — a segunda porta, e é ela que a pausa ensinou', () => {
     const { api } = mount();
-    api.entrarNaBarra(0);
+    api.enterBar(0);
     api.navBar(0, {}, true);
-    expect(api.naBarraDe(0)).toBe(false);
+    expect(api.onBar(0)).toBe(false);
   });
 
   it('🔴 TODA saída chama `aoSairDaBarra` — e a silenciosa não diz «de volta ao jogo» (ADR-0155)', () => {
@@ -585,15 +585,15 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     // criança de volta ao personagem; e o SELECT sai em silêncio porque vai para o cartão, não para o jogo.
     const { api, said, ctx } = mount();
     const saidas = [];
-    ctx.aoSairDaBarra = (i, silencioso) => saidas.push([i, silencioso]);
-    api.entrarNaBarra(0);
+    ctx.onLeaveBar = (i, silencioso) => saidas.push([i, silencioso]);
+    api.enterBar(0);
     api.navBar(0, { no: true });
-    api.entrarNaBarra(0);
+    api.enterBar(0);
     said.length = 0;
-    api.sairDaBarra(0, true);
+    api.leaveBar(0, true);
     expect(saidas, 'uma das saídas não avisou a raiz').toEqual([[0, false], [0, true]]);
     expect(said, 'a saída silenciosa anunciou a volta ao jogo').toEqual([]);
-    api.sairDaBarra(0);
+    api.leaveBar(0);
     expect(saidas, 'sair de um modo em que não se estava avisou a raiz').toHaveLength(2);
   });
 
@@ -601,7 +601,7 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     // O caso que prova que a saída SAI. Sem ele, `sairDaBarra` poderia limpar o cursor e deixar o modo ligado
     // — e a criança teria "saído" para um jogo em que o personagem continua sem andar.
     const { api, bar } = mount();
-    api.entrarNaBarra(0);
+    api.enterBar(0);
     api.navBar(0, { no: true });
     api.navBar(0, { right: true });
     expect(bar.querySelectorAll('.pi-sel')).toHaveLength(0);
@@ -609,7 +609,7 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
 
   it('[Right] a direção anda na barra, em ANEL', () => {
     const { api, bar } = mount();
-    api.entrarNaBarra(0);
+    api.enterBar(0);
     const icones = [...bar.querySelectorAll('.pi-btn')];
     api.navBar(0, { right: true });
     expect(icones[1].classList.contains('pi-sel')).toBe(true);
@@ -622,7 +622,7 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     // Found by re-probing the cut (2026-09-24): the ring case walks right once and left twice, which a walk from the
     // FIRST icon also passes, and no case pressed down or up — the directions a child on a d-pad reaches first.
     const { api, bar } = mount();
-    api.entrarNaBarra(0);
+    api.enterBar(0);
     const icones = [...bar.querySelectorAll('.pi-btn')];
     api.navBar(0, { down: true });
     api.navBar(0, { down: true });
@@ -636,7 +636,7 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     // go AFTER entering (a remount, a game answering differently). Without the guard a step selects an icon that is not
     // there, and the exception lands in the frame that routes the direction.
     const { api, bar } = mount();
-    api.entrarNaBarra(0);
+    api.enterBar(0);
     bar.querySelectorAll('.pi-btn').forEach((b) => b.remove());
     expect(() => api.navBar(0, { right: true })).not.toThrow();
     expect(() => api.navBar(0, { yes: true })).not.toThrow();
@@ -644,14 +644,14 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
 
   it('🔴 [Boundary] a bar that GOES while the child is on it: a step does nothing and throws nothing', () => {
     const { api, state } = mount();
-    api.entrarNaBarra(0);
+    api.enterBar(0);
     state.bars = [];
     expect(() => api.navBar(0, { right: true })).not.toThrow();
   });
 
   it('[Right] confirmar ATIVA o ícone sob o cursor, e a legenda conta o estado NOVO', () => {
     const { api, bar, state } = mount();
-    api.entrarNaBarra(0);
+    api.enterBar(0);
     // anda até o modo cego para ter um alternador com estado observável
     const icones = [...bar.querySelectorAll('.pi-btn')];
     const alvo = icones.findIndex((b) => b.dataset.pi === 'blind');
@@ -696,7 +696,7 @@ describe('a legenda da barra do HUD · aparece ao apontar e SOME ao sair', () =>
     // A exceção que impede o conserto de cegar o modo `accessibility`: ali a legenda é a ÚNICA coisa que diz
     // onde o cursor está. Apagá-la porque o mouse passou por perto tiraria a orientação de quem não usa mouse.
     const { api, bar } = mount();
-    api.entrarNaBarra(0);
+    api.enterBar(0);
     const cap = bar.querySelector('.pause-icons-cap');
     const antes = cap.textContent;
     expect(antes).not.toBe('');
@@ -733,9 +733,9 @@ describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)',
 
   it('[Right] entrar no modo pela tela 1 NÃO põe cursor na tela 0', () => {
     const { api, bars } = duasTelas();
-    api.entrarNaBarra(1);
-    expect(api.naBarraDe(1)).toBe(true);
-    expect(api.naBarraDe(0), 'o modo de uma tela não pode ligar o da outra').toBe(false);
+    api.enterBar(1);
+    expect(api.onBar(1)).toBe(true);
+    expect(api.onBar(0), 'o modo de uma tela não pode ligar o da outra').toBe(false);
     expect(bars[1].querySelectorAll('.pi-sel')).toHaveLength(1);
     expect(bars[0].querySelectorAll('.pi-sel'), 'a tela 0 ficou com cursor sem ninguém o ter pedido').toHaveLength(0);
   });
@@ -750,8 +750,8 @@ describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)',
     // tela 0 cai na barra certa por acidente. Fica anotado porque uma mutação que não falha é pior que
     // nenhuma — dá a sensação de rigor sem o rigor.
     const { api, bars } = duasTelas();
-    api.entrarNaBarra(0);
-    api.entrarNaBarra(1);
+    api.enterBar(0);
+    api.enterBar(1);
     const inicio = bars.map((b) => b.querySelector('.pi-sel').dataset.pi);
     // O jogador 1 anda DUAS casas; o jogador 0, nenhuma. Se a busca da barra ignorasse o índice, os dois
     // passos cairiam na mesma barra e as duas asserções abaixo trocariam de lado ao mesmo tempo.
@@ -763,7 +763,7 @@ describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)',
 
   it('[Zero] a direção de quem NÃO está no modo não mexe em barra nenhuma', () => {
     const { api, bars } = duasTelas();
-    api.entrarNaBarra(1);
+    api.enterBar(1);
     const antes = bars[1].querySelector('.pi-sel').dataset.pi;
     api.navBar(0, { right: true }); // o jogador 0 não entrou
     expect(bars[1].querySelector('.pi-sel').dataset.pi).toBe(antes);
@@ -772,11 +772,11 @@ describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)',
 
   it('[Right] sair numa tela deixa a outra como estava', () => {
     const { api, bars } = duasTelas();
-    api.entrarNaBarra(0);
-    api.entrarNaBarra(1);
+    api.enterBar(0);
+    api.enterBar(1);
     api.navBar(1, { no: true });
-    expect(api.naBarraDe(1)).toBe(false);
-    expect(api.naBarraDe(0), 'sair de uma tela derrubou o modo da outra').toBe(true);
+    expect(api.onBar(1)).toBe(false);
+    expect(api.onBar(0), 'sair de uma tela derrubou o modo da outra').toBe(true);
     expect(bars[0].querySelectorAll('.pi-sel'), 'a tela que continua no modo perdeu o cursor').toHaveLength(1);
   });
 
@@ -863,7 +863,7 @@ describe('a barra montada obedece ao §5 do ADR-0106 — nenhum botão morto', (
   it('⚠️ [Interface] SEM escritor visual, o contraste e a cor não são MONTADOS', () => {
     // A metade pura (`iconsThatAct`) vive no project node; este caso é a prova de que a regra alcança o
     // DOM de verdade — que é onde uma criança encontra, ou não encontra, o botão.
-    const { bar } = mount(0, { setTemaDoJogador: undefined, setCorrecaoDoJogador: undefined });
+    const { bar } = mount(0, { setPlayerTheme: undefined, setPlayerCorrection: undefined });
     const chaves = [...bar.querySelectorAll('.pi-btn')].map((b) => b.dataset.pi);
     expect(chaves).not.toContain('contrast');
     expect(chaves).not.toContain('cvd');
@@ -916,12 +916,12 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
       getNumPlayers: () => 1,
       srSay: () => {}, srAlert: () => {},
       getA11yBars: () => bars,
-      getModoCego: () => false,
+      getBlindMode: () => false,
       // ⚠️ ESTE CAMPO PERTENCE AO MÍNIMO, e faltava. A engine SABE respondê-lo — lê-o da declaração —, então
       // omiti-lo nunca foi «mínimo», foi esquecimento. E o esquecimento sustentava um caso: com `undefined`,
       // que é falso, o `altmove` sumia e o teste do §5 passava POR ACIDENTE. Agora a resposta é declarada —
       // um jogo mínimo não segura teclas — e o caso passa pelo motivo que diz ter.
-      seguraTeclas: () => false,
+      holdsKeys: () => false,
       getAudioCat: () => ({ tts: { on: false, vol: 1 } }),
       setCatGain: () => {},
       reflectTtsPanel: () => {}, reflectTtsPanelEnabled: false,

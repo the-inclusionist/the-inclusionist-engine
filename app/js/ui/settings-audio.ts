@@ -131,8 +131,8 @@ export interface SettingsAudioCtx {
   tts: TtsPanel;
   /** Core collision state (NOT owned by this panel — core/collision.ts reads it via isModoCego). The toggle's
    *  widget lives inside #audio; the state and its gameplay side effects (setupExtras) stay in game.js. */
-  getModoCego: () => boolean;
-  setModoCego?: (on: boolean) => void;
+  getBlindMode: () => boolean;
+  setBlindMode?: (on: boolean) => void;
   /** Core collision state (cane hit spacing). Same reasoning as modo cego. */
   getCaneBlockDiv: () => number;
   setCaneBlockDiv: (div: number) => void;
@@ -156,7 +156,7 @@ export interface SettingsAudioApi {
    *  cane-div sync) and re-wires whatever it (re)creates. Idempotent; game.js's openAudio() calls it every open. */
   renderAudio: () => void;
   /** Refreshes the #opt-modocego button. Exported because game.js's setModoCego() calls it directly. */
-  reflectModoCego: () => void;
+  reflectBlindMode: () => void;
   /** Refreshes the #opt-tts button + #tts-engine selection. Exported because the pause-menu icon bar's
    *  iconAct('tts', …) toggles audioCat.tts.on itself and then calls this. */
   reflectTts: () => void;
@@ -188,7 +188,7 @@ export interface SettingsAudioApi {
  */
 export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
   // Each entry is either a control row or a CONTAINER the panel fills with rows of its own.
-  const pieces: (ControlRowSpec | { readonly contentor: string; readonly rotulo?: string })[] = [
+  const pieces: (ControlRowSpec | { readonly container: string; readonly label?: string })[] = [
     /*
      * 🔴 A COMPOSIÇÃO DO ADR-0151 E DAS ERRATAS DELE (2026-09-12), na ordem do geral para o particular:
      *   · o MODO CEGO primeiro, porque é o modo em que os outros sons passam a ser a tela — e SEM a dica: «é
@@ -203,16 +203,16 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
      */
     // ⚠️ Their own short keys, not the bar's `icon.blind`/`icon.tts`: those carry «(navegação sonora)» and «(TTS)», and
     // a row keeps no explanation in parentheses (ADR-0158).
-    { id: 'opt-modocego', rotulo: t('audio.modocego') },
-    { id: 'cane-div', rotulo: t('audio.cane'), dica: t('audio.cane.dica'), forma: 'escolha' },
-    { contentor: '@lista' }, // a lista da casca: sonar, guarda e guia
-    { id: 'opt-tts', rotulo: t('audio.narracao'), dica: t('audio.tts.dica') },
-    { id: 'tts-vol', rotulo: t('audio.ttsVol'), forma: 'cursor' },
+    { id: 'opt-modocego', label: t('audio.modocego') },
+    { id: 'cane-div', label: t('audio.cane'), hint: t('audio.cane.dica'), shape: 'escolha' },
+    { container: '@lista' }, // a lista da casca: sonar, guarda e guia
+    { id: 'opt-tts', label: t('audio.narracao'), hint: t('audio.tts.dica') },
+    { id: 'tts-vol', label: t('audio.ttsVol'), shape: 'cursor' },
     // ADR-0183 §1, ADR-0196: the speech rate, 254 to 504 by 50 — six positions, so a list (ADR-0130 erratum)
-    { id: 'tts-ppm', rotulo: t('audio.ttsPpm'), dica: t('audio.ttsPpm.dica'), forma: 'escolha' },
+    { id: 'tts-ppm', label: t('audio.ttsPpm'), hint: t('audio.ttsPpm.dica'), shape: 'escolha' },
     // ADR-0185: the child picks the voice, among the voices that speak the language — a list, since English passes five
-    { id: 'tts-voz', rotulo: t('audio.voz'), forma: 'escolha' },
-    { id: 'opt-menuindex', rotulo: t('audio.menuindex'), dica: t('audio.menuindex.dica') },
+    { id: 'tts-voz', label: t('audio.voz'), shape: 'escolha' },
+    { id: 'opt-menuindex', label: t('audio.menuindex'), hint: t('audio.menuindex.dica') },
     /*
      * 🔴 SAÍRAM QUATRO LINHAS em 2026-09-12 (ADR-0151), pelas palavras do Dev:
      *   · o MOTOR, a VOZ e o TESTAR VOZ — «quem escolhe a voz é o jogo (cartucho), não o jogador. Jogador só
@@ -236,28 +236,28 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
   // ADR-0158: the rows go BEFORE the reset, never after it — the reset is the panel's last item, and «Voltar» its first.
   const actions = card.querySelector<HTMLElement>(':scope > .overlay__actions');
   for (const piece of pieces) {
-    if ('contentor' in piece) {
-      if (piece.contentor === '@lista') { card.insertBefore(lista, actions); continue; }
-      const jaHa = ctx.procurar('#' + piece.contentor);
+    if ('container' in piece) {
+      if (piece.container === '@lista') { card.insertBefore(lista, actions); continue; }
+      const jaHa = ctx.find('#' + piece.container);
       if (jaHa) {
-        if (piece.rotulo) jaHa.setAttribute('aria-label', piece.rotulo);
+        if (piece.label) jaHa.setAttribute('aria-label', piece.label);
         continue;
       }
-      const c = ctx.criar('div');
-      c.id = piece.contentor;
+      const c = ctx.create('div');
+      c.id = piece.container;
       c.className = 'ctrl-list';
       c.setAttribute('role', 'group');
-      if (piece.rotulo) c.setAttribute('aria-label', piece.rotulo);
+      if (piece.label) c.setAttribute('aria-label', piece.label);
       card.insertBefore(c, actions);
       continue;
     }
-    const alreadyThere = ctx.procurar('#' + piece.id);
+    const alreadyThere = ctx.find('#' + piece.id);
     if (alreadyThere) {
       const linha = alreadyThere.closest<HTMLElement>('.ctrl-row');
       if (linha) labelRow(linha, piece);
       continue;
     }
-    card.insertBefore(controlRow(ctx, piece).linha, actions);
+    card.insertBefore(controlRow(ctx, piece).row, actions);
   }
 }
 
@@ -272,17 +272,17 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
 export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
   const actions = card.querySelector<HTMLElement>(':scope > .overlay__actions');
   const rows: ControlRowSpec[] = [
-    { id: 'audio-master', rotulo: t('audio.som'), dica: t('audio.som.dica') },
-    { id: 'audio-master-vol', rotulo: t('audio.volume'), forma: 'cursor' },
+    { id: 'audio-master', label: t('audio.som'), hint: t('audio.som.dica') },
+    { id: 'audio-master-vol', label: t('audio.volume'), shape: 'cursor' },
   ];
   for (const piece of rows) {
-    const alreadyThere = ctx.procurar('#' + piece.id);
+    const alreadyThere = ctx.find('#' + piece.id);
     if (alreadyThere) {
       const linha = alreadyThere.closest<HTMLElement>('.ctrl-row');
       if (linha) labelRow(linha, piece);
       continue;
     }
-    card.insertBefore(controlRow(ctx, piece).linha, lista.parentNode === card ? lista : actions);
+    card.insertBefore(controlRow(ctx, piece).row, lista.parentNode === card ? lista : actions);
   }
   if (lista.parentNode !== card) card.insertBefore(lista, actions);
 }
@@ -295,7 +295,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   // ⚠️ PADRÃO DA ENGINE (ADR-0106 §4): quem injecta manda; quem não injecta deixa de ficar sem modo cego.
   // O `setBlindModeValue` faz as três coisas que o `core/state` diz que um setter faz — grava, persiste, avisa
   // — e nada mais: os efeitos (refazer os extras do nível) são reação, e quem reage assina o evento.
-  const setModoCego = ctx.setModoCego ?? state.setBlindModeValue;
+  const setModoCego = ctx.setBlindMode ?? state.setBlindModeValue;
 
   let audioDevices: MediaDeviceInfo[] = [];
 
@@ -330,8 +330,8 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    * `ui/settings-caa`, and it is what removes this file's reach to `document` without touching `SettingsAudioCtx`.
    */
   const kitCtx = (list: HTMLElement): PanelShellCtx => ({
-    procurar: (sel) => ctx.$<HTMLElement>(sel),
-    criar: (tag) => list.ownerDocument.createElement(tag),
+    find: (sel) => ctx.$<HTMLElement>(sel),
+    create: (tag) => list.ownerDocument.createElement(tag),
   });
 
   /**
@@ -355,14 +355,14 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    * the question «what is a row».
    */
   function buildCatRow(kit: PanelShellCtx, k: string): HTMLElement {
-    const row = kit.criar('div');
+    const row = kit.create('div');
     row.className = 'ctrl-row';
-    const text = kit.criar('span');
-    text.appendChild(kit.criar('strong'));
+    const text = kit.create('span');
+    text.appendChild(kit.create('strong'));
     row.appendChild(text);
-    const box = kit.criar('span');
+    const box = kit.create('span');
     box.style.cssText = 'display:flex;gap:.5rem;align-items:center;flex-shrink:0';
-    const vol = kit.criar('input');
+    const vol = kit.create('input');
     vol.className = 'vol';
     vol.setAttribute('type', 'range');
     vol.setAttribute('min', '0');
@@ -370,7 +370,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     vol.setAttribute('step', '5');
     vol.setAttribute('data-avol', k);
     box.appendChild(vol);
-    const toggle = kit.criar('button');
+    const toggle = kit.create('button');
     toggle.className = 'mode-btn switch';
     toggle.setAttribute('type', 'button');
     toggle.setAttribute('aria-pressed', 'false');
@@ -535,7 +535,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
 
   function reflectModoCego(): void {
     const b = ctx.$<HTMLButtonElement>('#opt-modocego');
-    if (b) { ctx.toggleBtn(b, ctx.getModoCego()); b.textContent = toggleLabel(ctx.getModoCego()); }
+    if (b) { ctx.toggleBtn(b, ctx.getBlindMode()); b.textContent = toggleLabel(ctx.getBlindMode()); }
   }
 
   function renderAudio(): void {
@@ -571,7 +571,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
       didChange.push(changed);
       markChanged(ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
     };
-    mark('#opt-modocego', ctx.getModoCego() !== DEFAULTS.blindMode);
+    mark('#opt-modocego', ctx.getBlindMode() !== DEFAULTS.blindMode);
     mark('#cane-div', ctx.getCaneBlockDiv() !== DEFAULTS.caneBlockDiv);
     // ⚠️ DUAS MARCAS DE MENU, uma por painel: a de «Áudio» acesa por um sonar mudado mandaria a criança
     // procurar no painel errado.
@@ -630,9 +630,9 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   const mcBtn = ctx.$<HTMLButtonElement>('#opt-modocego');
   if (mcBtn) {
     mcBtn.addEventListener('click', () => {
-      setModoCego(!ctx.getModoCego());
+      setModoCego(!ctx.getBlindMode());
       reflectModoCego();
-      ctx.srSay(t(ctx.getModoCego() ? 'sr.blind.on' : 'sr.blind.off'));
+      ctx.srSay(t(ctx.getBlindMode() ? 'sr.blind.on' : 'sr.blind.off'));
     });
   }
 
@@ -704,5 +704,5 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    */
   state.on('blindMode', () => { reflectModoCego(); });
 
-  return { renderAudio, reflectModoCego, reflectTts: voice.reflectTts };
+  return { renderAudio, reflectBlindMode: reflectModoCego, reflectTts: voice.reflectTts };
 }

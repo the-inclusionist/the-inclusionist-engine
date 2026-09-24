@@ -1,17 +1,17 @@
 {
   "measured": "2026-09-24",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 665,
+  "total": 510,
   "totals": {
     "decl": 215,
     "param": 259,
-    "membro": 191
+    "membro": 36
   },
   "files": {
     "app/js/boot/create-game.ts": {
       "decl": 51,
       "param": 56,
-      "membro": 27
+      "membro": 25
     },
     "app/js/core/accommodation-subjects.ts": {
       "decl": 1,
@@ -228,15 +228,10 @@
       "param": 5,
       "membro": 0
     },
-    "app/js/ui/caa-sets.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 4
-    },
     "app/js/ui/debug-panel.ts": {
       "decl": 7,
       "param": 0,
-      "membro": 16
+      "membro": 1
     },
     "app/js/ui/dom.ts": {
       "decl": 0,
@@ -251,22 +246,22 @@
     "app/js/ui/focus-trap.ts": {
       "decl": 2,
       "param": 3,
-      "membro": 4
+      "membro": 0
     },
     "app/js/ui/fonts.ts": {
       "decl": 0,
       "param": 2,
-      "membro": 4
+      "membro": 0
     },
     "app/js/ui/game-options.ts": {
       "decl": 6,
       "param": 5,
-      "membro": 1
+      "membro": 0
     },
     "app/js/ui/help-panel.ts": {
       "decl": 5,
       "param": 0,
-      "membro": 4
+      "membro": 0
     },
     "app/js/ui/hud-bands.ts": {
       "decl": 0,
@@ -276,107 +271,92 @@
     "app/js/ui/item-announcement.ts": {
       "decl": 0,
       "param": 1,
-      "membro": 3
+      "membro": 0
     },
     "app/js/ui/latch-refusal.ts": {
       "decl": 1,
       "param": 1,
-      "membro": 2
+      "membro": 0
     },
     "app/js/ui/layout.ts": {
       "decl": 4,
       "param": 2,
-      "membro": 11
+      "membro": 0
     },
     "app/js/ui/loop-crash.ts": {
       "decl": 2,
       "param": 3,
-      "membro": 3
+      "membro": 0
     },
     "app/js/ui/menu-nav.ts": {
       "decl": 6,
       "param": 5,
-      "membro": 6
+      "membro": 0
     },
     "app/js/ui/mount-panel.ts": {
       "decl": 3,
       "param": 0,
-      "membro": 6
+      "membro": 0
     },
     "app/js/ui/panel-shell.ts": {
       "decl": 4,
       "param": 2,
-      "membro": 13
+      "membro": 0
     },
     "app/js/ui/panel-widgets.ts": {
       "decl": 11,
       "param": 2,
-      "membro": 8
-    },
-    "app/js/ui/pause-buttons.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 2
+      "membro": 0
     },
     "app/js/ui/pause-icons.ts": {
       "decl": 11,
       "param": 5,
-      "membro": 30
-    },
-    "app/js/ui/pause-markup.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 3
+      "membro": 0
     },
     "app/js/ui/reach-notice.ts": {
       "decl": 1,
       "param": 3,
-      "membro": 2
+      "membro": 0
     },
     "app/js/ui/settings-audio.ts": {
       "decl": 4,
       "param": 2,
-      "membro": 5
+      "membro": 0
     },
     "app/js/ui/settings-controls.ts": {
       "decl": 3,
       "param": 0,
-      "membro": 3
+      "membro": 0
     },
     "app/js/ui/settings-empathy.ts": {
       "decl": 1,
       "param": 0,
-      "membro": 1
+      "membro": 0
     },
     "app/js/ui/settings-mobility.ts": {
       "decl": 4,
       "param": 4,
-      "membro": 4
+      "membro": 0
     },
     "app/js/ui/settings-motion.ts": {
       "decl": 1,
       "param": 1,
-      "membro": 5
+      "membro": 0
     },
     "app/js/ui/settings-typo.ts": {
       "decl": 0,
       "param": 4,
-      "membro": 1
+      "membro": 0
     },
     "app/js/ui/settings-visual.ts": {
       "decl": 6,
       "param": 2,
-      "membro": 8
+      "membro": 2
     },
     "app/js/ui/shell.ts": {
       "decl": 3,
       "param": 5,
-      "membro": 5
-    },
-    "app/js/ui/typo-choices.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 2
+      "membro": 0
     }
   }
 }

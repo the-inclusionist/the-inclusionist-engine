@@ -106,12 +106,12 @@ export interface SettingsMotionCtx {
    *
    * ⚠️ OPCIONAL, com o padrão de SEMPRE (`true`): quem monta este painel fora do `createGame` continua igual.
    */
-  comPersonagem?: () => boolean;
+  hasCharacter?: () => boolean;
   /**
    * The GAME's word for its character (ADR-0153: what applies carries the game's word), the section's title. Optional:
    * absent, the section keeps the engine's own title, as for a panel mounted outside `createGame`.
    */
-  rotuloDoPersonagem?: () => string | null;
+  characterLabel?: () => string | null;
   /**
    * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA render.
    *
@@ -183,7 +183,7 @@ export interface MotionInsideSpec {
   readonly allTag: string;
   readonly crtToggles: readonly { readonly key: string; readonly label: string }[];
   /** O nome e as posições dos cantos, para o controle de passos (ADR-0151). */
-  readonly roundSpec: () => { readonly rotulo: string; readonly valores: readonly string[]; readonly atual: number };
+  readonly roundSpec: () => { readonly label: string; readonly values: readonly string[]; readonly current: number };
 }
 
 /**
@@ -209,10 +209,10 @@ function motionParts(ctx: PanelShellCtx, spec: MotionInsideSpec): MotionPart[] {
   const sectionPart = (key: string, title: string, tag: string, rows: number): MotionPart | null =>
     (rows === 0 ? null : {
       key,
-      build: () => sectionHeader(ctx, title, tag, rows) ?? ctx.criar('h3'),
+      build: () => sectionHeader(ctx, title, tag, rows) ?? ctx.create('h3'),
       write: (el) => {
         el.textContent = title + ' ';
-        const mark = ctx.criar('span');
+        const mark = ctx.create('span');
         mark.className = 'panel-sub__tag';
         mark.textContent = tag;
         el.appendChild(mark);
@@ -222,13 +222,13 @@ function motionParts(ctx: PanelShellCtx, spec: MotionInsideSpec): MotionPart[] {
   const switchPart = (key: string, id: string, label: string, mark: readonly [string, string]): MotionPart => ({
     key,
     build: () => {
-      const { linha: newRow, controle } = controlRow(ctx, { id, rotulo: label, rotuloAria: label });
+      const { row: newRow, controle } = controlRow(ctx, { id, label: label, ariaLabel: label });
       controle.setAttribute(mark[0], mark[1]);
       return newRow;
     },
     // ⚠️ SÓ AS PALAVRAS. O estado (classe, `aria-pressed`, o texto do botão) é escrito pelo `reflect` do painel, que é
     // quem sabe o valor — escrevê-lo aqui daria duas respostas à mesma pergunta.
-    write: (el) => labelRow(el, { id, rotulo: label, rotuloAria: label }),
+    write: (el) => labelRow(el, { id, label: label, ariaLabel: label }),
   });
 
   const parts: MotionPart[] = [];
@@ -246,7 +246,7 @@ function motionParts(ctx: PanelShellCtx, spec: MotionInsideSpec): MotionPart[] {
     build: () => {
       // ⚠️ SEM RÓTULO À PARTE (errata do ADR-0130): o controle de passos escreve «◀ Cantos arredondados: pequeno ▶» na
       // linha inteira, e um rótulo ao lado seria o nome dito duas vezes.
-      const row = ctx.criar('div');
+      const row = ctx.create('div');
       row.className = 'ctrl-row ctrl-row--passos';
       const steps = mountSteps(ctx, spec.roundSpec());
       steps.setAttribute('data-crt', 'round');
@@ -320,7 +320,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? SCENE_KEYS;
   const allCharAnimations: readonly MotionCharDef[] = ctx.rmChar ?? CHARACTER_ANIMATIONS;
   /** Os alvos do personagem QUE TÊM ASSUNTO neste jogo — lido a cada uso, porque o cartucho muda no `mount()`. */
-  const rmChar = (): readonly MotionCharDef[] => (ctx.comPersonagem?.() === false ? [] : allCharAnimations);
+  const rmChar = (): readonly MotionCharDef[] => (ctx.hasCharacter?.() === false ? [] : allCharAnimations);
   const saveRM: () => void = ctx.saveRM ?? (() => storeScene(rm));
 
   function reflectMotionBtn(): void {
@@ -339,11 +339,11 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   }
 
   const kitCtx = (list: HTMLElement): PanelShellCtx => ({
-    procurar: (sel) => ctx.$<HTMLElement>(sel),
-    criar: (tag) => list.ownerDocument.createElement(tag),
+    find: (sel) => ctx.$<HTMLElement>(sel),
+    create: (tag) => list.ownerDocument.createElement(tag),
   });
 
-  const roundSpec = () => ({ rotulo: t(CRT_LBL.round), valores: [0, 1, 2].map(crtLevelLabel), atual: CRT.round });
+  const roundSpec = () => ({ label: t(CRT_LBL.round), values: [0, 1, 2].map(crtLevelLabel), current: CRT.round });
 
   /** O ESTADO de cada interruptor — o que o kit não escreve, porque é o painel que sabe o valor. */
   function reflectSwitches(el: HTMLElement): void {
@@ -431,7 +431,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       // ⚠️ O SUFIXO DO ASSENTO é chave desde 2026-09-12, e reusa a `pause.cardSeat` do cartão: é a MESMA frase para a
       // MESMA pessoa, e duas chaves seriam dois sítios para ela divergir entre idiomas.
       charTitle: rmChar().length
-        ? (ctx.rotuloDoPersonagem?.() ?? 'Personagem') + (ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: selectedPlayer + 1 }) : '')
+        ? (ctx.characterLabel?.() ?? 'Personagem') + (ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: selectedPlayer + 1 }) : '')
         : null,
       // 📌 Os três rótulos de secção continuam crus e estão no livro-razão deste módulo — consertá-los de passagem
       // misturava duas decisões num commit.

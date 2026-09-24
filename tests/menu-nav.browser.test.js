@@ -123,8 +123,8 @@ function boot(over = {}) {
     // O MODO `accessibility` (ADR-0044, item 7) é perguntado ANTES do guarda de "navegável", porque ele roda
     // com o jogo andando. Por padrão ninguém está nele; os casos que o exercitam mexem em `naBarra`.
     srSay: (texto) => log.said.push(texto),
-    comIndice: () => true, // o índice do item 3 nasce ligado; ver `comIndice` no ctx de ui/menu-nav
-    naBarraDe: (i) => naBarra.has(i),
+    withIndex: () => true, // o índice do item 3 nasce ligado; ver `withIndex` no ctx de ui/menu-nav
+    onBar: (i) => naBarra.has(i),
     navBar: (i, k) => log.bar.push([i, k]),
     isCapturing: () => false,
     closePadWiz: (save) => log.padWiz.push(save),
@@ -264,8 +264,8 @@ describe('navDialog — andar dentro de um diálogo', () => {
     const { nav, openAudio } = boot();
     openAudio();
     const dlg = $('#audio');
-    const passos = mountSteps({ procurar: (s) => $(s), criar: (t) => document.createElement(t) },
-      { rotulo: 'Cantos', valores: ['off', 'small', 'large'], atual: 1 });
+    const passos = mountSteps({ find: (s) => $(s), create: (t) => document.createElement(t) },
+      { label: 'Cantos', values: ['off', 'small', 'large'], current: 1 });
     $('#a-voz').after(passos);
     const vistos = []; passos.addEventListener('passo', (e) => vistos.push(e.detail));
     passos.focus();
@@ -484,10 +484,10 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
       return row.lastElementChild;
     };
     try {
-      expect(controlParts(linha('<button aria-pressed="true">Ligado</button>'))).toEqual({ rotulo: 'Som, interruptor', estado: 'ligado' });
-      expect(controlParts(linha('<select><option>Baixo</option><option selected>Alto</option></select>'))).toEqual({ rotulo: 'Som, lista', estado: 'Alto' });
-      expect(controlParts(linha('<input type="range" min="0" max="10" value="4" aria-label="Volume">'))).toEqual({ rotulo: 'Volume, controle deslizante', estado: '40%' });
-      expect(controlParts(linha('<div data-passos aria-label="Tamanho" aria-valuetext="adulto"></div>'))).toEqual({ rotulo: 'Tamanho, seletor', estado: 'adulto' });
+      expect(controlParts(linha('<button aria-pressed="true">Ligado</button>'))).toEqual({ label: 'Som, interruptor', state: 'ligado' });
+      expect(controlParts(linha('<select><option>Baixo</option><option selected>Alto</option></select>'))).toEqual({ label: 'Som, lista', state: 'Alto' });
+      expect(controlParts(linha('<input type="range" min="0" max="10" value="4" aria-label="Volume">'))).toEqual({ label: 'Volume, controle deslizante', state: '40%' });
+      expect(controlParts(linha('<div data-passos aria-label="Tamanho" aria-valuetext="adulto"></div>'))).toEqual({ label: 'Tamanho, seletor', state: 'adulto' });
     } finally {
       for (const r of document.querySelectorAll('body > .ctrl-row')) r.remove();
     }
@@ -504,8 +504,8 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     document.body.appendChild(row);
     try {
       const [chosen, other] = row.querySelectorAll('[role="radio"]');
-      expect(controlParts(chosen)).toEqual({ rotulo: 'Andika, opção', estado: 'selecionada' });
-      expect(controlParts(other)).toEqual({ rotulo: 'Andika, opção', estado: '' });
+      expect(controlParts(chosen)).toEqual({ label: 'Andika, opção', state: 'selecionada' });
+      expect(controlParts(other)).toEqual({ label: 'Andika, opção', state: '' });
     } finally {
       row.remove();
     }
@@ -523,7 +523,7 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
       make('<input type="range" min="5" max="5" value="5" aria-label="C">'),
     ];
     try {
-      const [a, b, c] = holders.map((h) => controlParts(h.firstElementChild).estado);
+      const [a, b, c] = holders.map((h) => controlParts(h.firstElementChild).state);
       expect(a, 'a third was said as 33.333…%').toBe('33%');
       expect(b, 'a slider with no max was read against another scale').toBe('40%');
       expect(c, 'a range of zero width divided by zero').toBe('0%');

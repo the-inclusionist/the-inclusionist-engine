@@ -70,34 +70,34 @@ describe('cicloDeTipografia — as cinco posições, ou seis', () => {
   it('🎯 [Right] as quatro primeiras são fixas, e a CAIXA anda com a FACE', () => {
     const c = typographyCycle('pt-BR');
     expect(c.slice(0, 4)).toEqual([
-      { caixa: 'upper', fonte: 'andika', escala: 1 },
-      { caixa: 'mixed', fonte: 'andika', escala: 1 },
-      { caixa: 'mixed', fonte: 'atkinson', escala: 1 },
-      { caixa: 'mixed', fonte: 'lexend', escala: 1 },
+      { letterCase: 'upper', font: 'andika', scale: 1 },
+      { letterCase: 'mixed', font: 'andika', scale: 1 },
+      { letterCase: 'mixed', font: 'atkinson', scale: 1 },
+      { letterCase: 'mixed', font: 'lexend', scale: 1 },
     ]);
   });
 
   it('🔴 [Right] o ciclo COMEÇA na Atkinson, que é a posição (c) e o padrão do projeto', () => {
-    expect(typographyCycle('pt-BR')[CYCLE_START]).toEqual({ caixa: 'mixed', fonte: 'atkinson', escala: 1 });
+    expect(typographyCycle('pt-BR')[CYCLE_START]).toEqual({ letterCase: 'mixed', font: 'atkinson', scale: 1 });
   });
 
   it('🔴 [Boundary] SEIS posições onde o país ensina duas mãos, CINCO onde ensina uma', () => {
     expect(typographyCycle('pt-BR')).toHaveLength(5);
     expect(typographyCycle('en-US')).toHaveLength(6);
-    expect(typographyCycle('en-US')[5]).toEqual({ caixa: 'mixed', fonte: 'pwusmod', escala: HANDWRITING_SCALE });
+    expect(typographyCycle('en-US')[5]).toEqual({ letterCase: 'mixed', font: 'pwusmod', scale: HANDWRITING_SCALE });
   });
 
   it('🔴 [Zero] sem mão nenhuma o ciclo tem QUATRO — e isso é a resposta certa', () => {
     // ⚠️ Melhor uma posição a menos do que uma que mostre a mão de um país que não é o daquela criança.
     const c = typographyCycle('fr-FR');
     expect(c).toHaveLength(4);
-    expect(c.some((p) => p.fonte.startsWith('pw')), 'entrou uma mão de país sem país').toBe(false);
+    expect(c.some((p) => p.font.startsWith('pw')), 'entrou uma mão de país sem país').toBe(false);
   });
 
   it('📌 [Right] a POSIÇÃO (a) é a única em caixa alta — é o par da alfabetização', () => {
     // Sem isto, um ciclo que pusesse tudo em `mixed` passaria os casos de face acima.
     const c = typographyCycle('pt-BR');
-    expect(c.filter((p) => p.caixa === 'upper')).toEqual([{ caixa: 'upper', fonte: 'andika', escala: 1 }]);
+    expect(c.filter((p) => p.letterCase === 'upper')).toEqual([{ letterCase: 'upper', font: 'andika', scale: 1 }]);
   });
 });
 
@@ -109,7 +109,7 @@ describe('o ciclo de COMUNICAÇÃO PULA ARASAAC e PCS (ADR-0155 §3)', () => {
     for (const tag of ['pt-BR', 'en-US', 'es-ES', 'es', 'fr-FR', null]) {
       const ciclo = typographyCycle(tag);
       expect(ciclo.length, `o ciclo de ${tag} veio vazio — o caso mediria nada`).toBeGreaterThanOrEqual(4);
-      const pictos = ciclo.filter((p) => /arasaac|pcs|picto/i.test(p.fonte));
+      const pictos = ciclo.filter((p) => /arasaac|pcs|picto/i.test(p.font));
       expect(pictos, `o ciclo de ${tag} oferece uma posição sem licença`).toEqual([]);
     }
   });
@@ -127,11 +127,11 @@ describe('a ESCALA da mão do país — 25% maior, e o piso não é gosto', () =
      * subir a escala, este caso reprova — que é exactamente o dia em que a criança perderia a legibilidade.
      */
     for (const tag of ['pt-BR', 'en-US', 'es-ES', 'pt-AO']) {
-      for (const passo of typographyCycle(tag).filter((p) => p.escala !== 1)) {
-        const piso = FONT_BY_KEY[passo.fonte]?.minPx;
-        expect(piso, `a mão ${passo.fonte} não declara piso de tamanho`).toBeGreaterThan(0);
-        expect(BASE_EM_PX * passo.escala,
-          `${passo.fonte}: ${BASE_EM_PX}px × ${passo.escala} fica abaixo do piso de ${piso}px`)
+      for (const passo of typographyCycle(tag).filter((p) => p.scale !== 1)) {
+        const piso = FONT_BY_KEY[passo.font]?.minPx;
+        expect(piso, `a mão ${passo.font} não declara piso de tamanho`).toBeGreaterThan(0);
+        expect(BASE_EM_PX * passo.scale,
+          `${passo.font}: ${BASE_EM_PX}px × ${passo.scale} fica abaixo do piso de ${piso}px`)
           .toBeGreaterThanOrEqual(piso);
       }
     }
@@ -141,8 +141,8 @@ describe('a ESCALA da mão do país — 25% maior, e o piso não é gosto', () =
     // O par. Sem ele, uma escala aplicada a tudo passaria o caso de cima e daria a toda a interface um
     // tamanho que só uma das posições justifica.
     const c = typographyCycle('en-US');
-    expect(c.filter((p) => p.escala !== 1).map((p) => p.fonte)).toEqual(['pwustrad', 'pwusmod']);
-    expect(c.slice(0, 4).every((p) => p.escala === 1), 'uma face de leitura foi aumentada').toBe(true);
+    expect(c.filter((p) => p.scale !== 1).map((p) => p.font)).toEqual(['pwustrad', 'pwusmod']);
+    expect(c.slice(0, 4).every((p) => p.scale === 1), 'uma face de leitura foi aumentada').toBe(true);
   });
 });
 

@@ -22,16 +22,16 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { mountShell, shellIds } from '../app/js/ui/panel-shell.js';
 
 const ctx = {
-  procurar: (sel) => document.querySelector(sel),
-  criar: (tag) => document.createElement(tag),
+  find: (sel) => document.querySelector(sel),
+  create: (tag) => document.createElement(tag),
 };
 
 const SPEC = {
   id: 'audio',
-  titulo: 'Acessibilidade auditiva',
-  rotuloDaLista: 'Ajustes de som',
-  rotuloReset: 'Restaurar padrões deste menu',
-  rotuloFechar: 'Fechar',
+  title: 'Acessibilidade auditiva',
+  listLabel: 'Ajustes de som',
+  resetLabel: 'Restaurar padrões deste menu',
+  closeLabel: 'Fechar',
 };
 
 beforeEach(() => { document.body.innerHTML = ''; });
@@ -54,11 +54,11 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
     const casca = mountShell(ctx, SPEC);
     document.body.appendChild(casca.overlay);
     const item = document.createElement('button');
-    casca.lista.appendChild(item);
+    casca.list.appendChild(item);
     const botoes = [...casca.card.querySelectorAll('button')];
-    expect(botoes[0], 'the way out is not item 1').toBe(casca.fechar);
+    expect(botoes[0], 'the way out is not item 1').toBe(casca.close);
     expect(botoes.at(-1), 'something comes after the reset — a close at the bottom again?').toBe(casca.reset);
-    expect(botoes.indexOf(casca.fechar)).toBeLessThan(botoes.indexOf(item));
+    expect(botoes.indexOf(casca.close)).toBeLessThan(botoes.indexOf(item));
   });
 
   it('⚠️ [Right] o cartão é um diálogo NOMEADO pelo próprio título', () => {
@@ -69,20 +69,20 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
     expect(card.getAttribute('role')).toBe('dialog');
     expect(card.getAttribute('aria-modal')).toBe('true');
     const rotulo = card.getAttribute('aria-labelledby');
-    expect(document.getElementById(rotulo)?.textContent).toBe(SPEC.titulo);
+    expect(document.getElementById(rotulo)?.textContent).toBe(SPEC.title);
   });
 
   it('⚠️ [Right] a lista é um GRUPO com nome — e nasce vazia, porque o interior é do painel', () => {
-    const { lista } = mountShell(ctx, SPEC);
+    const { list: lista } = mountShell(ctx, SPEC);
     expect(lista.getAttribute('role')).toBe('group');
-    expect(lista.getAttribute('aria-label')).toBe(SPEC.rotuloDaLista);
+    expect(lista.getAttribute('aria-label')).toBe(SPEC.listLabel);
     expect(lista.children.length, 'a casca desenhou conteúdo que é do settings-*').toBe(0);
   });
 
   it('⚠️ [Boundary] ZERO prosa no topo — a introdução só cabe no `data-explain-idle`', () => {
     // O caso da #62. A casca não tem parâmetro para um parágrafo no topo, então a única forma de a
     // introdução existir é como texto de REPOUSO do rodapé — que é o que o `fillExplain` lê.
-    const { card } = mountShell(ctx, { ...SPEC, introducao: 'Ajuste como o jogo soa.' });
+    const { card } = mountShell(ctx, { ...SPEC, intro: 'Ajuste como o jogo soa.' });
     expect(card.getAttribute('data-explain-idle')).toBe('Ajuste como o jogo soa.');
     expect(card.querySelectorAll('p').length, 'apareceu prosa no topo do cartão').toBe(0);
     // E o primeiro filho é o título: nada se intromete entre o cartão e o `<h2>`.
@@ -98,7 +98,7 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
 
   it('⚠️ [Interface] o rótulo entra por `textContent` — markup de dicionário não vira markup', () => {
     // Um rótulo traduzido é dado de fora, e um dicionário de consumidor pode trazer o que quiser dentro.
-    const { fechar } = mountShell(ctx, { ...SPEC, rotuloFechar: '<img src=x onerror=alert(1)>Fechar' });
+    const { close: fechar } = mountShell(ctx, { ...SPEC, closeLabel: '<img src=x onerror=alert(1)>Fechar' });
     document.body.appendChild(document.createElement('div')).appendChild(fechar);
     expect(fechar.querySelector('img'), 'o rótulo foi ANALISADO como marcação').toBe(null);
     expect(fechar.textContent).toContain('Fechar');
@@ -108,7 +108,7 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
     // A raiz remonta os painéis quando a contagem de jogadores muda. Dois véus com o mesmo id é o defeito
     // que o `.pause-menu[hidden]` já pagou noutra camada: dois nós, um deles invisível ao `querySelector`.
     document.body.appendChild(mountShell(ctx, SPEC).overlay);
-    const segunda = mountShell(ctx, { ...SPEC, titulo: 'Outro título' });
+    const segunda = mountShell(ctx, { ...SPEC, title: 'Outro título' });
     expect(document.querySelectorAll('#audio').length).toBe(1);
     expect(document.querySelectorAll('#audio-title').length).toBe(1);
     expect(document.getElementById('audio-title').textContent).toBe('Outro título');

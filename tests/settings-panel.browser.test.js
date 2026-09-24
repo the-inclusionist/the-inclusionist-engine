@@ -82,7 +82,7 @@ function boot() {
   });
   const empathy = initSettingsEmpathy({
     $, srSay: noop, store: { getBool: () => false },
-    renderVizGroup: noop, reflectMotorEmpathy: noop, reflectVizButtons: noop,
+    renderVizGroup: noop, reflectMobilityEmpathy: noop, reflectVizButtons: noop,
     frontOverlay: panel.frontOverlay, restoreFocus: panel.restoreFocus,
     setHearingLoss: noop, setOneButton: noop, setWheelchair: noop,
     getOneButton: () => false, getWheelchair: () => false,

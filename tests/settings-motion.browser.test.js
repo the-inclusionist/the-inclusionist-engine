@@ -468,7 +468,7 @@ describe('initSettingsMotion — o interior montado em nós', () => {
     // cartucho passa a dizer que não tem personagem, e as três linhas dele têm de desaparecer — enquanto as da
     // cena, que continuam a ter assunto, têm de ser os MESMOS nós.
     let temPersonagem = true;
-    const { ctx } = makeCtx({ comPersonagem: () => temPersonagem });
+    const { ctx } = makeCtx({ hasCharacter: () => temPersonagem });
     const api = initSettingsMotion(ctx);
     api.render();
     expect(lista().querySelectorAll('[data-rmc]')).toHaveLength(3);

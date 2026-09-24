@@ -35,8 +35,8 @@ beforeEach(() => {
 afterEach(() => { raiz.remove(); });
 
 const ctx = () => ({
-  procurar: (sel) => document.querySelector(sel),
-  criar: (tag) => document.createElement(tag),
+  find: (sel) => document.querySelector(sel),
+  create: (tag) => document.createElement(tag),
   t: traduz,
   srAlert: (s) => ditos.push(s),
 });

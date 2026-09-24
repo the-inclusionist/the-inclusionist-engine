@@ -44,7 +44,7 @@ export interface EmpathySettingsCtx {
   /** Renders one viz-mode radio list (+ per-player tabs); shared with settings-visual, so it stays in game.js. */
   renderVizGroup(listSel: string, tabsSel: string, modes: VizMode[]): void;
   /** Reflects #opt-onebtn/#opt-wheelchair; game.js also calls it from its setOneButton/setWheelchair bodies. */
-  reflectMotorEmpathy(): void;
+  reflectMobilityEmpathy(): void;
   /** Reflects the #opt-visual/#opt-empathy summary buttons; shared across every viz-mode change in the game. */
   reflectVizButtons(): void;
   /** Brings an overlay to front + fills its footer explanations; shared by every Sensibilidade panel. */
@@ -101,7 +101,7 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
       h.setAttribute('aria-pressed', String(hearingLoss));
       h.textContent = toggleLabel(hearingLoss);  // ui/dom
     }
-    ctx.reflectMotorEmpathy();
+    ctx.reflectMobilityEmpathy();
     refreshMarks();
     // Depois do `renderVizGroup`, e não antes: é ele quem repõe o `.opt-hint` dentro das linhas.
     ctx.fillExplain?.(ctx.$<HTMLElement>('#empathy .overlay__card'));

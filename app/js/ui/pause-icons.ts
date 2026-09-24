@@ -174,7 +174,7 @@ function iconCaption(barEl: ParentNode, el: HTMLElement): string {
   // e agora vale para o menu inicial e para a lista de pausa também — uma resposta para "como se chama este
   // controle", e não três.
   return announceItem(
-    { rotulo: accessibleLabel(el), posicao: icons.indexOf(el) + 1, total: icons.length },
+    { label: accessibleLabel(el), position: icons.indexOf(el) + 1, total: icons.length },
     menuIndexOn,
   );
 }
@@ -226,15 +226,15 @@ export interface IconStateSnapshot {
    */
   visual: VisualState;
   /** Playing by SPEAKING (ADR-0189): the 👄 of the bar, on or off. */
-  voz?: boolean;
+  voice?: boolean;
   /** Playing with ONE button (ADR-0218): the third position of ☝️, which wins over the latch when it is on. */
   switchScan?: boolean;
   /** The game speed (ADR-0180), a step of `core/game-speed`; absent reads as 100%. */
-  velocidade?: number;
+  speed?: number;
   /** Playing through the webcam (ADR-0215); absent reads as off. */
   camera?: CameraControl;
   /** The current locale (`core/i18n`), for the language button. */
-  idioma?: string;
+  locale?: string;
   /** False disables the blind/TTS icons: those need an audio output nobody else is listening to. */
   privateOutput: boolean;
   /**
@@ -251,9 +251,9 @@ export interface IconStateSnapshot {
    * FORMA (`2f2582f`) foi escrito, e é a primeira vez que ele apanha um campo A ENTRAR e não a sair.
    * Ausente significa «ninguém me disse», que degrada para «não exijo» — o comportamento de hoje.
    */
-  alternanciaExigida?: boolean;
+  latchRequired?: boolean;
   /** No voice speaks the current language (ADR-0185): the narration icon is locked. Absent reads as a voice. */
-  semVoz?: boolean;
+  noVoice?: boolean;
 }
 
 /** A player has private output when nobody else is on the same sink. Single screen ⇒ always private.
@@ -289,10 +289,10 @@ const STATE_OF_ICON: { readonly [k: string]: (s: IconStateSnapshot) => string } 
   contrast: (s) => t(SHORT_THEME[s.visual.tema]),
   cvd: (s) => t(SHORT_CORRECTION[s.visual.correcao]),
   camera: (s) => t(CAMERA_MODE_NAME[s.camera ?? 'off']),
-  voice: (s) => onOff(s.voz),
+  voice: (s) => onOff(s.voice),
   // a language's own name is not translated: «Español» reads the same in every interface
-  idioma: (s) => LANGUAGE_NAME[(s.idioma ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt,
-  velocidade: (s) => t('icon.velocidade.valor', { pct: Math.round((s.velocidade ?? 1) * 100) }),
+  idioma: (s) => LANGUAGE_NAME[(s.locale ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt,
+  velocidade: (s) => t('icon.velocidade.valor', { pct: Math.round((s.speed ?? 1) * 100) }),
 };
 
 /**
@@ -331,7 +331,7 @@ type IconVisualRule = (s: IconStateSnapshot) => Partial<IconVisual>;
 
 const ICON_VISUAL: Readonly<Record<string, IconVisualRule>> = Object.freeze({
   blind: (s) => ({ on: s.blindMode, dis: !s.privateOutput }),
-  tts: (s) => ({ on: s.ttsOn, dis: !s.privateOutput || !!s.semVoz }),
+  tts: (s) => ({ on: s.ttsOn, dis: !s.privateOutput || !!s.noVoice }),
   libras: (s) => ({ on: s.librasOn }),
   tea: (s) => ({ on: s.calmMode === 2, calm: s.calmMode === 1 }),
   // ⚠️ AND IT IS NEVER GREYED OUT ANY MORE. `alternanciaExigida` says the DEVICE in use sends one command at a time and the latch
@@ -339,9 +339,9 @@ const ICON_VISUAL: Readonly<Record<string, IconVisualRule>> = Object.freeze({
   // the icon would have taken the one-button scan away from the child playing with her eyes, who is the likeliest to need it.
   altmove: (s) => ({ on: inputModeOf(s) !== 'standard' }),
   contrast: (s) => ({ on: hasHighContrast(s.visual) }),
-  velocidade: (s) => ({ on: (s.velocidade ?? 1) < 1 }),
+  velocidade: (s) => ({ on: (s.speed ?? 1) < 1 }),
   camera: (s) => ({ on: (s.camera ?? 'off') !== 'off' }),
-  voice: (s) => ({ on: !!s.voz }),
+  voice: (s) => ({ on: !!s.voice }),
   // ⚠️ O FUNDO DE DUAS CORES É O SINAL DE LIGADO deste ícone, e agora ele lê o EIXO da correção — que
   // continua a dizer o mesmo quando o tema também está ligado, coisa que a chave única não conseguia: com
   // `hc-direto-7` no campo, a correção da criança desaparecia do ícone que existe para a mostrar.
@@ -381,9 +381,9 @@ export const ICON_STATE_CLASSES: readonly string[] = ['pi-calm', 'pi-cvd-protan'
  */
 export interface ActionableIcons {
   /** Há quem escreva o TEMA (o alto contraste)? Sem ele, o ícone `contrast` não é montado. */
-  readonly tema: boolean;
+  readonly theme: boolean;
   /** Há quem escreva a CORREÇÃO de cor? Sem ela, o ícone `cvd` não é montado. */
-  readonly correcao: boolean;
+  readonly correction: boolean;
   /**
    * ESTE JOGO SEGURA ALGUMA TECLA? — `GameDeclaration.seguraTeclas`, o campo do ADR-0115.
    *
@@ -402,7 +402,7 @@ export interface ActionableIcons {
    * congelado no arranque. Com um `createGame` a servir vários cartuchos (ADR-0142), o ícone descrevia o
    * jogo que arrancou primeiro. O contrato nunca esteve errado: `GameDeclaration.seguraTeclas` já é função.
    */
-  readonly seguraTeclas: () => boolean;
+  readonly holdsKeys: () => boolean;
   /**
    * HOW MANY POSITIONS THIS GAME DECLARED (`CreateGameOptions.preset`, ADR-0162) — what a scan would have to offer (ADR-0218).
    * A function like its neighbour, so a cartridge mounted later answers for itself (ADR-0142); absent reads as none.
@@ -412,7 +412,7 @@ export interface ActionableIcons {
    * Does this game's time run by itself? (`tick: 'clock'`, ADR-0180.) Without it the hourglass is not mounted. A function,
    * like `seguraTeclas`, so a cartridge mounted later answers for itself (ADR-0142).
    */
-  readonly relogio?: () => boolean;
+  readonly clock?: () => boolean;
   /**
    * Alguém sabe andar no ciclo de tipografia? (ADR-0149 §1.)
    *
@@ -420,11 +420,11 @@ export interface ActionableIcons {
    * obrigatório porque os dois valores dele erram. Aqui não: `false` esconde um ícone que não faria nada,
    * que é exactamente o que o §5 do ADR-0106 quer. A assimetria é a mesma dos dois escritores visuais.
    */
-  readonly tipografia?: boolean;
+  readonly typography?: boolean;
   /** Can this device play through the webcam — is there a camera to ask for? Without it the 📷 is not mounted (ADR-0215). */
   readonly camera?: boolean;
   /** Is there a microphone to ask for? Without one the 👄 is not mounted. */
-  readonly microfone?: boolean;
+  readonly microphone?: boolean;
   /** Is there a card of menus to open? Without it the ☰ is not mounted. */
   readonly menus?: boolean;
 }
@@ -449,25 +449,25 @@ export type VisualWriters = ActionableIcons;
  * uma TABELA, e acrescentar um ícone passa a ser acrescentar uma linha em vez de encaixar mais um nível.
  */
 const ICON_IS_ACTIONABLE: Readonly<Record<string, (w: ActionableIcons) => boolean>> = Object.freeze({
-  contrast: (w) => w.tema,
-  cvd: (w) => w.correcao,
+  contrast: (w) => w.theme,
+  cvd: (w) => w.correction,
   // 📌 «este jogo segura teclas?» é a mesma pergunta que «este ícone tem quem o accione», feita a um campo do contrato
   // em vez de a um escritor injectado — um ramo, e não uma regra nova.
   // 🔴 AND IT GREW A SECOND HALF (ADR-0218): the icon used to exist only where the game HOLDS a key, because the latch
   // was all it held. «One button only» has a subject wherever the game declares a position to scan — which is why the
   // quiz demo, holding no key, had no ☝️ at all. A game that declares nothing still has none: there would be nothing to
   // offer, and a scan of one item is the dead button of ADR-0106 §5 paid for in seconds.
-  altmove: (w) => w.seguraTeclas() || (w.declaredPositions?.() ?? 0) > 0,
+  altmove: (w) => w.holdsKeys() || (w.declaredPositions?.() ?? 0) > 0,
   // 📌 A mesma pergunta feita ao ciclo de tipografia (ADR-0149): o ícone existe quando alguém sabe andar nele. Sem
   // isso seria um botão que anuncia e não muda nada.
   // 📌 `Boolean(...)` e não o campo cru: ele é opcional, e o ternário antigo entregava-o à verdade de um `filter`.
   // A conversão é o que a escada fazia em silêncio — aqui está escrita, e o tipo deixa de aceitar a ambiguidade.
-  tipografia: (w) => Boolean(w.tipografia),
+  tipografia: (w) => Boolean(w.typography),
   // the hourglass exists where time runs by itself (ADR-0180): a turn game has nothing to slow
-  velocidade: (w) => Boolean(w.relogio?.()),
+  velocidade: (w) => Boolean(w.clock?.()),
   camera: (w) => Boolean(w.camera),
   // 👄 exists where there is a MICROPHONE to ask for, the same rule as the camera's (ADR-0106 §5)
-  voice: (w) => Boolean(w.microfone),
+  voice: (w) => Boolean(w.microphone),
   menu: (w) => Boolean(w.menus),
 });
 
@@ -643,15 +643,15 @@ export interface PauseIconsCtx {
    * Chamado depois de TODA saída do modo barra, com a tela e se foi silenciosa. Ausente, não se faz nada.
    * Existe para a raiz descongelar o jogo pela porta que for (ADR-0155) — a barra não sabe de fases.
    */
-  aoSairDaBarra?: (i: number, silent: boolean) => void;
+  onLeaveBar?: (i: number, silent: boolean) => void;
   /**
    * The icon screen `i` is pointing at — by the cursor of the bar, or hover/focus — or `null` when nothing is. The
    * root writes that icon's EXPLANATION in the footer (the Dev: the name below the row, what it does in the footer;
    * `CLAUDE.md` §4, the three zones). Absent, the bar still shows the name.
    */
-  explicarIcone?: (i: number, k: string | null) => void;
+  explainIcon?: (i: number, k: string | null) => void;
   /** A text for the screen footer — the reason of a locked pause item (ADR-0161) — or `null` to clear it. */
-  explicarItem?: (texto: string | null) => void;
+  explainItem?: (texto: string | null) => void;
 
   // --- the per-screen pause menu ---
   /**
@@ -673,7 +673,7 @@ export interface PauseIconsCtx {
   /** PM_OPTIONS_BTNS — o submenu de opções. Mesma dona, mesmo motivo: ninguém tem duas cópias de uma lista. */
   optionsButtons?: readonly PauseMenuButton[];
   /** A lista do JOGO (ADR-0146). Ausente = `PM_GAME_BTNS`, que é só o «voltar» — e a porta cai sozinha. */
-  jogoButtons?: readonly PauseMenuButton[];
+  gameButtons?: readonly PauseMenuButton[];
   /** PM_BTNS — the `.pm-btn` list. Owned by ui/activities-menu; injected, never copied. */
   pmButtons?: readonly PauseMenuButton[];
   /** QL_NAME — literacy-level names, for the (dormant) `nivel` button. Same owner as pmButtons. */
@@ -713,8 +713,8 @@ export interface PauseIconsCtx {
    */
 
   // --- blind mode (game.js owns `blindMode` + persistence + the cane/extras rebuild) ---
-  getModoCego: () => boolean;
-  setModoCego?: (on: boolean) => void;
+  getBlindMode: () => boolean;
+  setBlindMode?: (on: boolean) => void;
 
   // --- TTS (platform/audio mixer; the panel refresh lives in ui/settings-audio) ---
   /**
@@ -760,11 +760,11 @@ export interface PauseIconsCtx {
    * qual o escritor voltou para a engine (ADR-0106 §4). Sem este campo, ele escreveria só a chave antiga
    * enquanto o painel escreve as duas, e as duas superfícies divergiriam em silêncio.
    */
-  transporteEmUso?: (jogador: number) => string;
+  transportInUse?: (jogador: number) => string;
   setPlayerViz?: (i: number, mode: string) => void;
   /** Os escritores POR EIXO (#104): mexer no tema não apaga a correção, e vice-versa. */
-  setTemaDoJogador?: (i: number, tema: Theme) => void;
-  setCorrecaoDoJogador?: (i: number, correcao: Correction) => void;
+  setPlayerTheme?: (i: number, tema: Theme) => void;
+  setPlayerCorrection?: (i: number, correcao: Correction) => void;
   /**
    * ANDA UM PASSO NO CICLO DE TIPOGRAFIA e devolve a face que ficou (ADR-0149 §1).
    *
@@ -775,7 +775,7 @@ export interface PauseIconsCtx {
    * ⚠️ AUSENTE = O ÍCONE NÃO É MONTADO, pela mesma regra dos dois escritores visuais acima: um ícone que não
    * acciona é pior do que um ícone a menos (ADR-0106 §5).
    */
-  ciclarTipografia?: () => string | null;
+  cycleTypography?: () => string | null;
   /**
    * ESTE JOGO SEGURA ALGUMA TECLA? — o valor de `GameDeclaration.seguraTeclas` (ADR-0115). Sem ele o ícone
    * `altmove` não é montado.
@@ -793,19 +793,19 @@ export interface PauseIconsCtx {
    * ⚠️ FUNÇÃO, não valor — ver a nota no campo homónimo de `VisualWriters`. Um cartucho que monte isto
    * por fora passa `() => this.declaration.seguraTeclas()` e não o resultado dela.
    */
-  seguraTeclas: () => boolean;
+  holdsKeys: () => boolean;
   /** How many positions the current game declared — what «one button only» would scan (ADR-0218). Absent reads as none. */
   declaredPositions?: () => number;
   /** Does the current game's time run by itself? (ADR-0180: the hourglass.) Optional; absent, no hourglass. */
-  relogio?: () => boolean;
+  clock?: () => boolean;
   /** Can this device play through the webcam? (ADR-0215: the 📷.) Optional; absent, no 📷. */
   camera?: boolean;
   /** Can this device hear the child — is there a microphone to ask for? (issue #184: the 👄.) Absent, no 👄. */
-  microfone?: boolean;
+  microphone?: boolean;
   /** Opens the menus of seat `i`, as SELECT does (the ☰). Optional; absent, no ☰. */
-  abrirMenus?: (i: number) => void;
+  openMenus?: (i: number) => void;
   /** Does no voice speak the current language? (ADR-0185: the narration icon locks.) Optional; absent, a voice. */
-  semVoz?: () => boolean;
+  noVoice?: () => boolean;
 }
 
 export interface PauseIconsApi {
@@ -821,13 +821,13 @@ export interface PauseIconsApi {
    * jogar), então ela chama `iconsMarkup` directamente — e sem este acessor teria de recalcular quais ícones
    * accionam, que é uma segunda cópia da mesma decisão.
    */
-  iconesMontados: readonly PauseIcon[];
+  mountedIcons: readonly PauseIcon[];
   /** ENTRA no modo `accessibility` da tela `i` — a metade da barra da pausa rápida (ADR-0155). Não mexe na fase. */
-  entrarNaBarra: (i: number) => void;
+  enterBar: (i: number) => void;
   /** SAI do modo e devolve o direcional ao personagem. `silencioso` = sai para outro ecrã, não para o jogo. */
-  sairDaBarra: (i: number, silent?: boolean) => void;
+  leaveBar: (i: number, silent?: boolean) => void;
   /** A tela `i` está com o direcional na BARRA em vez de no personagem? Perguntado a cada quadro. */
-  naBarraDe: (i: number) => boolean;
+  onBar: (i: number) => boolean;
   /** Um passo dentro do modo. `temStart` é a borda do botão de pausa — a segunda saída (ADR-0044, item 7). */
   navBar: (i: number, k: NavKeys, hasStart?: boolean) => void;
   /** Runs the icon `k` for screen `i`. Does NOT reflect — callers reflect after, as game.js always did. */
@@ -884,7 +884,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         players: P(), store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers,
         // ⚠️ ATRAVESSA, e não se resolve aqui: o ícone e o painel têm de escrever a MESMA coisa. Resolver
         // o aparelho num deles e não no outro é como duas superfícies da mesma engine passam a discordar.
-        transporteEmUso: ctx.transporteEmUso,
+        transportInUse: ctx.transportInUse,
       }, i, on));
 
   /*
@@ -893,7 +893,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * quem reage assina `on('blindMode', …)`. O anúncio não se perde para quem não injecta: este ícone já diz
    * `sr.icon.blindOn`/`Off` por si, logo abaixo.
    */
-  const setModoCego = ctx.setModoCego ?? setBlindModeValue;
+  const setModoCego = ctx.setBlindMode ?? setBlindModeValue;
 
   /** O documento onde se constroi. Resolvido a cada uso, e por globalThis — em node o identificador
    *  document nem existe, e um ?? sobre ele lançaria ReferenceError em vez de cair no padrão. */
@@ -912,20 +912,20 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * não muda a meio de uma partida, e recalcular por tela faria as telas discordarem entre si.
    */
   const gameIcons = iconsThatAct({
-    tema: Boolean(ctx.setTemaDoJogador),
-    correcao: Boolean(ctx.setCorrecaoDoJogador),
+    theme: Boolean(ctx.setPlayerTheme),
+    correction: Boolean(ctx.setPlayerCorrection),
     // 📌 Sem `Boolean(...)`: os dois de cima perguntam «existe escritor?» a um campo opcional; este é uma
     // RESPOSTA que o jogo deu, e envolvê-la faria um `undefined` de um ctx mal montado virar `false` —
     // esconder o controle em silêncio, que é metade do defeito que este campo existe para não cometer.
-    seguraTeclas: ctx.seguraTeclas,
+    holdsKeys: ctx.holdsKeys,
     // the same question the scan asks (ADR-0218): how many positions this game would give it to offer
     declaredPositions: ctx.declaredPositions,
-    tipografia: Boolean(ctx.ciclarTipografia),
+    typography: Boolean(ctx.cycleTypography),
     // mounted when the root can answer the clock question; shown or hidden per cartridge in `reflectIconBtn` (ADR-0142)
-    relogio: () => Boolean(ctx.relogio),
+    clock: () => Boolean(ctx.clock),
     camera: Boolean(ctx.camera),
-    microfone: Boolean(ctx.microfone),
-    menus: Boolean(ctx.abrirMenus),
+    microphone: Boolean(ctx.microphone),
+    menus: Boolean(ctx.openMenus),
   });
 
   /*
@@ -958,31 +958,31 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
   /** A recusa da alternância para este jogador agora, ou `null`. Recalculada: o aparelho em uso muda. */
-  function refusalNow(i: number) { return ctx.transporteEmUso ? latchRefusal(ctx.transporteEmUso(i)) : null; }
+  function refusalNow(i: number) { return ctx.transportInUse ? latchRefusal(ctx.transportInUse(i)) : null; }
 
   function iconState(i: number): IconStateSnapshot {
     const p = P()[i] || {};
     const cat = ctx.getAudioCat();
     return {
-      blindMode: ctx.getModoCego(),
+      blindMode: ctx.getBlindMode(),
       ttsOn: !!(cat && cat.tts && cat.tts.on),
       librasOn: ctx.isLibrasOn(),
       calmMode,
       toggleMove: !!p.toggleMove,
       switchScan,
-      voz: voiceControl,
+      voice: voiceControl,
       // ⚠️ `DEFAULTS.viz` E NÃO `''` (issue #61). A cadeia vazia funcionava por ACIDENTE: não casa
       // `hc-direto` nem `fix-*`, então os dois ícones ficavam apagados pelo motivo certo por engano. O padrão
       // passou a ter nome em `core/state`, e `render/viz-modes` já declarava esse modo com `kind:'normal'` —
       // o que não faz nada. Dizer o padrão em vez de o deduzir é o que torna a marca do ADR-0029 possível
       // aqui, porque ela lê `DEFAULTS` e mais nada.
       visual: p.visual ?? PADRAO,
-      velocidade: gameSpeed,
+      speed: gameSpeed,
       camera: cameraControl,
-      idioma: getLocale(),
+      locale: getLocale(),
       privateOutput: hasPrivateOutput(i),
-      alternanciaExigida: refusalNow(i) !== null,
-      semVoz: !!ctx.semVoz?.(),
+      latchRequired: refusalNow(i) !== null,
+      noVoice: !!ctx.noVoice?.(),
     };
   }
 
@@ -1008,10 +1008,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   // --- icon actions (the dispatcher, as a table) ---------------------------------------------
 
   const ICON_ACTS: Record<string, (i: number) => void> = {
-    menu: (i) => { ctx.abrirMenus?.(i); },
+    menu: (i) => { ctx.openMenus?.(i); },
     blind: () => {
-      setModoCego(!ctx.getModoCego());
-      ctx.srSay(t(ctx.getModoCego() ? 'sr.icon.blindOn' : 'sr.icon.blindOff'));
+      setModoCego(!ctx.getBlindMode());
+      ctx.srSay(t(ctx.getBlindMode() ? 'sr.icon.blindOn' : 'sr.icon.blindOff'));
     },
     tts: () => {
       const cat = ctx.getAudioCat();
@@ -1041,7 +1041,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     altmove: (i) => {
       // verbatim: `players[i].toggleMove` with no `||{}` guard (unlike contrast/cvd below).
       const latched = !!P()[i].toggleMove;
-      const next = nextInputMode(inputModeOf({ toggleMove: latched, switchScan }), ctx.seguraTeclas(), refusalNow(i) !== null);
+      const next = nextInputMode(inputModeOf({ toggleMove: latched, switchScan }), ctx.holdsKeys(), refusalNow(i) !== null);
       setSwitchScanValue(next === 'scan');
       // 📌 ENTERING THE SCAN LEAVES THE LATCH WHERE SHE PUT IT — the scan wins in `inputModeOf`, so the position shown is never
       // ambiguous and coming back out returns her to the choice she had made. Leaving it writes the position she walked to.
@@ -1052,7 +1052,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         // device that always latches, so this should be unreachable — and it stays because `iconAct` is exported and the two
         // rules could drift apart, which is the same reason the guards below give for not being belt and braces.
         const refusal = refusalNow(i);
-        if (refusal) { ctx.srAlert(t(refusal.chave)); return; }
+        if (refusal) { ctx.srAlert(t(refusal.key)); return; }
         setToggleMove(i, next === 'sticky');
         return;
       }
@@ -1067,9 +1067,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // qualquer consumidor pode chamá-lo por chave. Sem a guarda, essa chamada rebentaria; com ela, não faz
     // nada e não anuncia — que é o mesmo que dizer a verdade: este jogo não tem por onde.
     contrast: (i) => {
-      if (!ctx.setTemaDoJogador) return;
+      if (!ctx.setPlayerTheme) return;
       const v = nextTheme((P()[i] || {}).visual ?? PADRAO);
-      ctx.setTemaDoJogador(i, v.tema);
+      ctx.setPlayerTheme(i, v.tema);
       ctx.srSay(t('sr.visual.contrast', { v: t(SHORT_THEME[v.tema]) }));
     },
     /*
@@ -1083,8 +1083,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
      * criança reconhece, e é a mesma razão pela qual o ADR-0074 proíbe `action2` chegar a uma pessoa.
      */
     tipografia: () => {
-      if (!ctx.ciclarTipografia) return;
-      const face = ctx.ciclarTipografia();
+      if (!ctx.cycleTypography) return;
+      const face = ctx.cycleTypography();
       if (face) ctx.srSay(t('sr.typo.font', { fam: face }));
     },
     // PLAYING THROUGH THE WEBCAM (ADR-0215): off → hands → face → eyes → off; stored in one key, so one mode at a time.
@@ -1113,16 +1113,16 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       ctx.srSay(t('sr.icon.velocidade', { pct: Math.round(v * 100) }));
     },
     cvd: (i) => {
-      if (!ctx.setCorrecaoDoJogador) return;
+      if (!ctx.setPlayerCorrection) return;
       const v = nextCorrection((P()[i] || {}).visual ?? PADRAO);
-      ctx.setCorrecaoDoJogador(i, v.correcao);
+      ctx.setPlayerCorrection(i, v.correcao);
       ctx.srSay(t('sr.icon.cvd', { v: t(SHORT_CORRECTION[v.correcao]) }));
     },
   };
 
   function iconAct(k: string, i: number): void {
     // locked like the panel's row (ADR-0185): the same reason, said, and nothing turned on
-    if (k === 'tts' && ctx.semVoz?.()) {
+    if (k === 'tts' && ctx.noVoice?.()) {
       ctx.srAlert(t('audio.semVoz'));
       return;
     }
@@ -1146,7 +1146,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   function reflectIconBtn(b: HTMLElement, i: number): void {
     const k = b.dataset.pi || '';
     // the hourglass follows the CURRENT cartridge's clock (ADR-0180): a turn game mounted later hides it, a clock game shows it
-    if (k === 'velocidade') b.hidden = !ctx.relogio?.();
+    if (k === 'velocidade') b.hidden = !ctx.clock?.();
     if (k === 'idioma') { const flag = flagOf(getLocale()); if (b.innerHTML !== flag) b.innerHTML = flag; }
     const st = iconState(i);
     const v = computeIconVisual(k, st);
@@ -1238,7 +1238,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const acts = getPauseActs();
     const rootEl = ctx.pmButtons ?? PM_BTNS;
     const opcoes = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
-    const fromGame = ctx.jogoButtons ?? PM_GAME_BTNS;
+    const fromGame = ctx.gameButtons ?? PM_GAME_BTNS;
     const actingItems = new Set([
       ...rootThatActs(rootEl, opcoes, acts, fromGame).map((b) => b.act),
       ...itemsThatAct(opcoes, acts).map((b) => b.act),
@@ -1287,7 +1287,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (!first) return;
     const itens = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
     ctx.srSay(announceItem(
-      { rotulo: first.textContent || '', posicao: 1, total: itens.length }, menuIndexOn,
+      { label: first.textContent || '', position: 1, total: itens.length }, menuIndexOn,
     ));
   }
 
@@ -1314,7 +1314,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const cap = bar.querySelector('.pause-icons-cap');
     if (cap) cap.textContent = accessibleLabel(el);
     ctx.srSay(iconCaption(bar, el)); // the spoken one carries the place (ADR-0167)
-    ctx.explicarIcone?.(i, el.dataset.pi ?? null);
+    ctx.explainIcon?.(i, el.dataset.pi ?? null);
   }
 
   /**
@@ -1355,9 +1355,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       const cap = bar.querySelector('.pause-icons-cap');
       if (cap) cap.textContent = '';
     }
-    ctx.explicarIcone?.(i, null);
+    ctx.explainIcon?.(i, null);
     if (!silent) ctx.srSay(t('sr.a11y.barExit'));
-    ctx.aoSairDaBarra?.(i, silent);
+    ctx.onLeaveBar?.(i, silent);
   }
 
   /** A tela `i` está com o direcional na barra? É o que o roteamento de entrada pergunta a cada quadro. */
@@ -1406,7 +1406,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       numPlayers: ctx.getNumPlayers(),
       pmButtons: ctx.pmButtons ?? PM_BTNS,
       optionsButtons: ctx.optionsButtons ?? PM_OPTIONS_BTNS,
-      jogoButtons: ctx.jogoButtons ?? PM_GAME_BTNS,
+      gameButtons: ctx.gameButtons ?? PM_GAME_BTNS,
       dynLabel: dynLabel, t,
     });
     cards[i] = sp;
@@ -1425,7 +1425,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (b.getAttribute('aria-disabled') === 'true') {
       const motivo = b.dataset.motivo ?? '';
       ctx.srSay(motivo);
-      ctx.explicarItem?.(motivo);
+      ctx.explainItem?.(motivo);
       return;
     }
     setPauseActor(i);
@@ -1478,13 +1478,13 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     //
     // A EXCEÇÃO É O CURSOR DO MODO `accessibility`: quando ele está pousado num ícone, a legenda é a única
     // coisa que diz onde ele está, e apagá-la ao mexer o mouse cegaria o modo. Daí a pergunta pelo `.pi-sel`.
-    wireBarCaption(bar, (k) => ctx.explicarIcone?.(i, k));
+    wireBarCaption(bar, (k) => ctx.explainIcon?.(i, k));
     return bar;
   }
 
   return {
-    buildScreenPause, buildQuickBar, entrarNaBarra, sairDaBarra, naBarraDe, navBar,
-    iconesMontados: gameIcons,
+    buildScreenPause, buildQuickBar, enterBar: entrarNaBarra, leaveBar: sairDaBarra, onBar: naBarraDe, navBar,
+    mountedIcons: gameIcons,
     iconAct, iconLabel, reflectIconBtn, reflectIconsIn, reflectPauseIcons,
     // ⚠️ O `setCalmMode` PERSISTE TAMBÉM, e sanea. Ele é a outra porta para o mesmo valor — se só o ciclo do
     // ícone gravasse, um nível posto por aqui sobreviveria à sessão e não ao fecho da aba, que é a metade

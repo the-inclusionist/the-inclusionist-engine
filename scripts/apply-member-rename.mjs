@@ -224,6 +224,9 @@ export function leftovers() {
     else if (ts.isBindingElement(n) && n.propertyName && ts.isIdentifier(n.propertyName)) { name = n.propertyName.text; kind = 'destructured'; }
     else if (ts.isBindingElement(n) && !n.propertyName && ts.isIdentifier(n.name) && ts.isObjectBindingPattern(n.parent)) { name = n.name.text; kind = 'destructured'; }
     else if (ts.isLiteralTypeNode(n) && ts.isStringLiteral(n.literal) && namesAMember(n)) { name = n.literal.text; kind = 'string in a type'; }
+    // `'x' in obj` names a member as a STRING. 📏 Measured on the ui layer: `'contentor' in piece` survived the language
+    // service and this gate, and only the type checker noticed — because the narrowing it did stopped working.
+    else if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.InKeyword && ts.isStringLiteral(n.left)) { name = n.left.text; kind = 'string in an `in` check'; }
     const file = relative(ROOT, sf.fileName).split('\\').join('/');
     if (name && watched.has(name) && !map.dataKeys?.[`${file} ${name}`]) {
       const { line } = sf.getLineAndCharacterOfPosition(n.getStart(sf));

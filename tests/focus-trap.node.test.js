@@ -63,9 +63,9 @@ describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
     const lista = (focaveis ?? ['um', 'dois']).map(el);
     let atual = foco === null ? null : lista.find((e) => e.n === foco) ?? { n: foco, focus() {} };
     const api = initFocusTrap({
-      overlayDeCima: () => dialogo,
-      focoAtual: () => atual,
-      focaveisDe: () => lista,
+      topOverlay: () => dialogo,
+      currentFocus: () => atual,
+      focusablesIn: () => lista,
       win: { addEventListener: () => {} },
     });
     return { api, focados, lista, trocar: (n) => { atual = lista.find((e) => e.n === n) ?? null; } };
@@ -74,14 +74,14 @@ describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
   it('[Right] Tab na última opção volta à primeira, e CONSOME a tecla', () => {
     const { api, focados } = armar({ foco: 'dois' });
     const e = tecla('Tab');
-    api.aoTeclar(e);
+    api.onKeydown(e);
     expect(focados).toEqual(['um']);
     expect(e.impedido, 'sem preventDefault o navegador move o foco a seguir e a armadilha não serve').toBe(true);
   });
 
   it('[Right] Shift+Tab na primeira vai à última', () => {
     const { api, focados } = armar({ foco: 'um' });
-    api.aoTeclar(tecla('Tab', true));
+    api.onKeydown(tecla('Tab', true));
     expect(focados).toEqual(['dois']);
   });
 
@@ -89,7 +89,7 @@ describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
     // Uma armadilha sempre ligada prenderia o foco na tela de título, que não é diálogo nenhum.
     const { api, focados } = armar({ dialogo: null, foco: 'dois' });
     const e = tecla('Tab');
-    api.aoTeclar(e);
+    api.onKeydown(e);
     expect(focados).toEqual([]);
     expect(e.impedido).toBe(false);
   });
@@ -98,7 +98,7 @@ describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
     const { api, focados } = armar({ foco: 'dois' });
     for (const k of ['Escape', 'ArrowDown', 'Enter', ' ']) {
       const e = tecla(k);
-      api.aoTeclar(e);
+      api.onKeydown(e);
       expect(e.impedido, k).toBe(false);
     }
     expect(focados).toEqual([]);
@@ -107,7 +107,7 @@ describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
   it('[Interface] no MEIO do diálogo a tecla NÃO é consumida — o navegador caminha', () => {
     const { api, focados } = armar({ focaveis: ['um', 'dois', 'tres'], foco: 'dois' });
     const e = tecla('Tab');
-    api.aoTeclar(e);
+    api.onKeydown(e);
     expect(e.impedido).toBe(false);
     expect(focados).toEqual([]);
   });
@@ -117,7 +117,7 @@ describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
     // dois seria invisível até alguém reparar que só um dos diálogos prende.
     const ouvintes = [];
     initFocusTrap({
-      overlayDeCima: () => null, focoAtual: () => null, focaveisDe: () => [],
+      topOverlay: () => null, currentFocus: () => null, focusablesIn: () => [],
       win: { addEventListener: (tipo, fn, captura) => ouvintes.push({ type: tipo, captura }) },
     }).attach();
     expect(ouvintes).toEqual([{ type: 'keydown', captura: true }]);

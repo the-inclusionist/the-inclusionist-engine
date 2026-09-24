@@ -17,7 +17,7 @@ import { describe, it, expect } from 'vitest';
 import { barIntruders } from '../app/js/ui/layout.js';
 
 const BARRA = { x: 100, y: 10, w: 300, h: 44 };
-const no = (nome, caixa, daBarra = false) => ({ nome, caixa, daBarra });
+const no = (nome, caixa, daBarra = false) => ({ name: nome, box: caixa, isBar: daBarra });
 
 describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
   it('🔴 [Right] o título que cobre a barra é ACUSADO, pelo nome', () => {

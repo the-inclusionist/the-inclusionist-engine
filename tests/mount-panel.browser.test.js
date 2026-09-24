@@ -19,8 +19,8 @@ let host;
 let registados;
 
 const ctx = () => ({
-  procurar: (s) => document.querySelector(s),
-  criar: (t) => document.createElement(t),
+  find: (s) => document.querySelector(s),
+  create: (t) => document.createElement(t),
   host,
   overlays: {
     frontOverlay: (el) => { el.dataset.aFrente = '1'; },
@@ -31,11 +31,11 @@ const ctx = () => ({
 
 const spec = (extra = {}) => ({
   id: 'fixture',
-  rotulos: () => ({
-    titulo: `Fixture ${idioma}`,
-    rotuloDaLista: 'Lista da fixture',
-    rotuloReset: 'Repor',
-    rotuloFechar: 'Fechar',
+  labels: () => ({
+    title: `Fixture ${idioma}`,
+    listLabel: 'Lista da fixture',
+    resetLabel: 'Repor',
+    closeLabel: 'Fechar',
   }),
   render: () => { renderizou += 1; },
   ...extra,
@@ -61,9 +61,9 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
   it('⚠️ [Interface] a casca entra NA ÁRVORE do hospedeiro e nasce escondida', () => {
     // O fixture não consegue responder «está na árvore»: ele regista um `appendChild` e acredita nele.
     const p = mountPanel(ctx(), spec());
-    expect(host.contains(p.casca.overlay), 'o overlay não ficou dentro do hospedeiro').toBe(true);
-    expect(document.getElementById('fixture'), 'o id da casca não chegou ao documento').toBe(p.casca.overlay);
-    expect(p.casca.overlay.hidden, 'um painel que nasce aberto é um painel que ninguém abriu').toBe(true);
+    expect(host.contains(p.shell.overlay), 'o overlay não ficou dentro do hospedeiro').toBe(true);
+    expect(document.getElementById('fixture'), 'o id da casca não chegou ao documento').toBe(p.shell.overlay);
+    expect(p.shell.overlay.hidden, 'um painel que nasce aberto é um painel que ninguém abriu').toBe(true);
   });
 
   it('🎯 [Right] abrir RENDERIZA, revela, traz à frente e põe o foco DENTRO do cartão', () => {
@@ -71,32 +71,32 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     const p = mountPanel(ctx(), spec());
     const botao = document.createElement('button');
     botao.textContent = 'uma opção';
-    p.casca.lista.appendChild(botao);
+    p.shell.list.appendChild(botao);
 
-    p.abrir();
+    p.open();
     expect(renderizou, 'abrir não chamou o render do painel').toBe(1);
-    expect(p.casca.overlay.hidden).toBe(false);
-    expect(p.casca.overlay.dataset.aFrente, 'não foi trazido à frente da pilha').toBe('1');
-    expect(p.casca.card.contains(document.activeElement), 'o foco ficou FORA de um diálogo modal').toBe(true);
+    expect(p.shell.overlay.hidden).toBe(false);
+    expect(p.shell.overlay.dataset.aFrente, 'não foi trazido à frente da pilha').toBe('1');
+    expect(p.shell.card.contains(document.activeElement), 'o foco ficou FORA de um diálogo modal').toBe(true);
     // 🔴 ADR-0158: the cursor lands on «Voltar», item 1 — even with a live control in the list, which is the case
     // that used to take the focus.
-    expect(document.activeElement, 'the panel opened with the cursor away from its way out').toBe(p.casca.fechar);
+    expect(document.activeElement, 'the panel opened with the cursor away from its way out').toBe(p.shell.close);
   });
 
   it('🔴 [Boundary] sem controle na lista, o foco cai no VOLTAR — nunca num `div` que não o aceita', () => {
     // O defeito que eu escrevi e este caso apanhou: `casca.lista` é `div[role=group]` sem `tabindex`, e
     // `.focus()` nele não faz nada E NÃO DIZ NADA. Num DOM falso isto passava.
     const p = mountPanel(ctx(), spec());
-    p.abrir();
-    expect(document.activeElement, 'o foco não pousou em elemento nenhum').toBe(p.casca.fechar);
-    expect(document.activeElement).not.toBe(p.casca.lista);
+    p.open();
+    expect(document.activeElement, 'o foco não pousou em elemento nenhum').toBe(p.shell.close);
+    expect(document.activeElement).not.toBe(p.shell.list);
   });
 
   it('⚠️ [Right] um clique DE VERDADE no fechar esconde e devolve o foco a quem abriu', () => {
     const p = mountPanel(ctx(), spec());
-    p.abrir();
-    p.casca.fechar.click();
-    expect(p.casca.overlay.hidden, 'o clique no fechar não escondeu o painel').toBe(true);
+    p.open();
+    p.shell.close.click();
+    expect(p.shell.overlay.hidden, 'o clique no fechar não escondeu o painel').toBe(true);
     expect(registados.get('fixture:foco-reposto'), 'o foco não voltou a quem abriu (WCAG 2.4.3)').toBe(true);
   });
 
@@ -107,9 +107,9 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     const entrada = registados.get('fixture');
     expect(entrada, 'o painel não se registou na pilha de overlays').toBeTruthy();
     expect(entrada.inEscapeChain, 'registou-se FORA da cadeia do Escape').toBe(true);
-    p.abrir();
+    p.open();
     entrada.close();
-    expect(p.casca.overlay.hidden, 'o fecho da cadeia do Escape não escondeu o painel').toBe(true);
+    expect(p.shell.overlay.hidden, 'o fecho da cadeia do Escape não escondeu o painel').toBe(true);
   });
 
   it('⚠️ [Zero] montar DUAS vezes deixa UM painel — é o terceiro gate do ADR-0139', () => {
@@ -125,10 +125,10 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     // intervalo ficava com o título de recuo — o mesmo defeito que a barra de ícones pagou em 08/09. Aqui a
     // janela é atravessada de propósito: monta em «pt», o idioma chega, e só então a criança abre.
     const p = mountPanel(ctx(), spec());
-    expect(p.casca.titulo.textContent).toBe('Fixture pt');
+    expect(p.shell.title.textContent).toBe('Fixture pt');
     idioma = 'en';
-    p.abrir();
-    expect(p.casca.titulo.textContent, 'o título ficou no idioma de recuo depois de o preferido chegar').toBe('Fixture en');
+    p.open();
+    expect(p.shell.title.textContent, 'o título ficou no idioma de recuo depois de o preferido chegar').toBe('Fixture en');
   });
 
   it('⚠️ [Boundary] retraduzir NÃO remonta a casca: a escuta que o painel ligou no repor sobrevive', () => {
@@ -137,10 +137,10 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     // aparência de vivo, que é precisamente o que o ADR-0106 §5 proíbe.
     const p = mountPanel(ctx(), spec());
     let reposto = 0;
-    p.casca.reset.addEventListener('click', () => { reposto += 1; });
-    const mesmoNo = p.casca.reset;
+    p.shell.reset.addEventListener('click', () => { reposto += 1; });
+    const mesmoNo = p.shell.reset;
     idioma = 'en';
-    p.abrir();
+    p.open();
     // Pelo DOCUMENTO e não pela casca: uma remontagem devolveria um botão novo com o mesmo id, e o antigo
     // — o que tem a escuta — sairia da árvore sem ninguém reparar.
     const noDocumento = document.getElementById('fixture-reset');
@@ -154,15 +154,15 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     // Um dicionário sem a chave é uma introdução ausente. Deixar de escrever não chega: o atributo antigo
     // ficaria, e o rodapé descansaria no idioma que a criança acabou de deixar.
     const p = mountPanel(ctx(), spec({
-      rotulos: () => ({
-        titulo: 'Fixture', rotuloDaLista: 'Lista', rotuloReset: 'Repor', rotuloFechar: 'Fechar',
-        ...(idioma === 'pt' ? { introducao: 'Escolha uma fonte.' } : {}),
+      labels: () => ({
+        title: 'Fixture', listLabel: 'Lista', resetLabel: 'Repor', closeLabel: 'Fechar',
+        ...(idioma === 'pt' ? { intro: 'Escolha uma fonte.' } : {}),
       }),
     }));
-    expect(p.casca.card.getAttribute('data-explain-idle')).toBe('Escolha uma fonte.');
+    expect(p.shell.card.getAttribute('data-explain-idle')).toBe('Escolha uma fonte.');
     idioma = 'en';
-    p.abrir();
-    expect(p.casca.card.hasAttribute('data-explain-idle'), 'a introdução do idioma anterior sobreviveu').toBe(false);
+    p.open();
+    expect(p.shell.card.hasAttribute('data-explain-idle'), 'a introdução do idioma anterior sobreviveu').toBe(false);
   });
 
   it('🎯 [Right] com `fecharProprio`, o botão tem UM dono — e a cadeia do Escape usa o MESMO', () => {
@@ -171,18 +171,18 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     // Escape usaria o desta casca enquanto o botão usava o do painel — uma saída, dois caminhos.
     let fechou = 0;
     const meuFechar = () => { fechou += 1; };
-    const p = mountPanel(ctx(), spec({ fecharProprio: meuFechar }));
-    p.abrir();
-    p.casca.fechar.click();
+    const p = mountPanel(ctx(), spec({ closeOwn: meuFechar }));
+    p.open();
+    p.shell.close.click();
     expect(fechou, 'a casca ligou um ouvinte por cima do que o painel já tinha').toBe(0);
 
     // e a cadeia do Escape fecha pelo caminho DO PAINEL, não por um closer paralelo desta casca
     registados.get('fixture').close();
     expect(fechou, 'o Escape fechou por um caminho que o botão não usa').toBe(1);
-    expect(p.fechar, 'o `fechar` devolvido não é o do painel').toBe(meuFechar);
+    expect(p.close, 'o `fechar` devolvido não é o do painel').toBe(meuFechar);
 
     // ⚠️ E a casca NÃO esconde por conta própria: quem sabe o que fechar significa neste painel é ele.
-    expect(p.casca.overlay.hidden, 'a casca escondeu por trás do closer do painel').toBe(false);
+    expect(p.shell.overlay.hidden, 'a casca escondeu por trás do closer do painel').toBe(false);
   });
 
   it('[Right] o render corre a CADA abertura, não uma vez na montagem', () => {
@@ -190,7 +190,7 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     // barra rápida — e o `fillExplain` tem de correr outra vez ou a prosa volta para dentro das linhas.
     const p = mountPanel(ctx(), spec());
     expect(renderizou, 'montar não devia renderizar').toBe(0);
-    p.abrir(); p.fechar(); p.abrir();
+    p.open(); p.close(); p.open();
     expect(renderizou).toBe(2);
   });
 });

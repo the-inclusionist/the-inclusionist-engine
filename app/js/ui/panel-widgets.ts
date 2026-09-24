@@ -38,16 +38,16 @@ export interface ControlRowSpec {
   /** O id do CONTROLE — `opt-facil`, `cane-div`. É por ele que o `settings-*` o encontra. */
   readonly id: string;
   /** O rótulo CURTO, já traduzido. Vai no `<strong>`, e é a única coisa à vista na linha. */
-  readonly rotulo: string;
+  readonly label: string;
   /**
    * A explicação, já traduzida. Vai num ÚNICO `.opt-hint`, que o `fillExplain` move para o rodapé.
    *
    * 📌 Ausente = esta linha não tem explicação, que é uma resposta legítima. O rodapé então descansa no texto
    * do painel (`data-explain-idle`) enquanto o cursor estiver nela.
    */
-  readonly dica?: string;
+  readonly hint?: string;
   /** A forma do controle. Ausente: `interruptor`, que é o caso de onze dos dezassete medidos. */
-  readonly forma?: ControlShape;
+  readonly shape?: ControlShape;
   /**
    * O nome que um leitor de tela anuncia, quando ele não é o rótulo.
    *
@@ -56,12 +56,12 @@ export interface ControlRowSpec {
    * isso para quem VÊ a linha inteira; para quem navega controlo a controlo, resolve-o este atributo.
    * Ausente, cai no `rotulo` — que é a resposta certa e não um recuo.
    */
-  readonly rotuloAria?: string;
+  readonly ariaLabel?: string;
 }
 
 export interface ControlRow {
   /** A `.ctrl-row` inteira. É nela que o `markChanged` do ADR-0029 põe a marca de «saiu do padrão». */
-  readonly linha: HTMLElement;
+  readonly row: HTMLElement;
   /** O controle em si, com o id pedido. */
   readonly controle: HTMLElement;
 }
@@ -73,30 +73,30 @@ export interface ControlRow {
  * decisão (ADR-0044 §2).
  */
 export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow {
-  const linha = ctx.criar('div');
+  const linha = ctx.create('div');
   linha.className = 'ctrl-row';
 
-  const texto = ctx.criar('span');
-  const forte = ctx.criar('strong');
-  forte.textContent = spec.rotulo;
+  const texto = ctx.create('span');
+  const forte = ctx.create('strong');
+  forte.textContent = spec.label;
   texto.appendChild(forte);
-  if (spec.dica) {
+  if (spec.hint) {
     // ⚠️ UM SÓ, e é o que o `fillExplain` procura. Dois `.opt-hint` na mesma linha davam duas descrições ao
     // mesmo controle, e o rodapé mostraria a primeira — a outra ficaria na linha, que é exactamente o defeito
     // que a regra §4 existe para impedir.
-    const dica = ctx.criar('span');
+    const dica = ctx.create('span');
     dica.className = 'opt-hint';
-    dica.textContent = spec.dica;
+    dica.textContent = spec.hint;
     texto.appendChild(dica);
   }
   linha.appendChild(texto);
 
   const controle = buildControl(ctx, spec);
   controle.id = spec.id;
-  controle.setAttribute('aria-label', spec.rotuloAria ?? spec.rotulo);
+  controle.setAttribute('aria-label', spec.ariaLabel ?? spec.label);
   linha.appendChild(controle);
 
-  return { linha, controle };
+  return { row: linha, controle };
 }
 
 /**
@@ -118,27 +118,27 @@ export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow
  */
 export function labelRow(linha: HTMLElement, spec: ControlRowSpec): void {
   const forte = linha.querySelector<HTMLElement>('strong');
-  if (forte) forte.textContent = spec.rotulo;
+  if (forte) forte.textContent = spec.label;
   const dica = linha.querySelector<HTMLElement>('.opt-hint');
   // ⚠️ A dica que SOME tem de ser apagada, e não só deixar de ser escrita: numa retradução para um dicionário
   // sem a chave, o texto antigo sobreviveria e o rodapé descansaria no idioma anterior.
-  if (dica) dica.textContent = spec.dica ?? '';
+  if (dica) dica.textContent = spec.hint ?? '';
   // The control is found by COMPARING its id, not by building a selector from it: a selector needs the id escaped, escaping
   // needs `CSS.escape`, and `CSS` is a browser global that THROWS where it does not exist — it took down a boot in a case's fake
   // document once (2026-09-21). No selector, nothing to escape, no global (ADR-0221 step 7d).
   const controle = [...linha.querySelectorAll<HTMLElement>('[id]')].find((el) => el.id === spec.id);
-  if (controle) controle.setAttribute('aria-label', spec.rotuloAria ?? spec.rotulo);
+  if (controle) controle.setAttribute('aria-label', spec.ariaLabel ?? spec.label);
 }
 
 function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
-  const forma = spec.forma ?? 'interruptor';
+  const forma = spec.shape ?? 'interruptor';
   if (forma === 'escolha') {
-    const s = ctx.criar('select');
+    const s = ctx.create('select');
     s.className = 'vol';
     return s;
   }
   if (forma === 'cursor') {
-    const i = ctx.criar('input');
+    const i = ctx.create('input');
     i.className = 'vol';
     i.setAttribute('type', 'range');
     // Os limites do cursor de volume, iguais aos que o painel de áudio já lê. Um `range` sem `min`/`max`
@@ -159,7 +159,7 @@ function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
      * anunciado que não existe é pior do que estado nenhum. Quem põe a CARA nele é o painel — no caso do
      * remapeamento, as teclas de agora —, porque só ele sabe o que o botão mostra.
      */
-    const a = ctx.criar('button');
+    const a = ctx.create('button');
     a.className = 'mode-btn';
     a.setAttribute('type', 'button');
     return a;
@@ -176,14 +176,14 @@ function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
      * `ui/settings-typo` é o primeiro; quem agrupar os `role="radio"` num `role="radiogroup"` é o painel, e
      * não o kit, porque é o painel que sabe se a exclusividade é de uma secção ou do menu inteiro.
      */
-    const r = ctx.criar('button');
+    const r = ctx.create('button');
     r.className = 'mode-btn';
     r.setAttribute('type', 'button');
     r.setAttribute('role', 'radio');
     r.setAttribute('aria-checked', 'false');
     return r;
   }
-  const b = ctx.criar('button');
+  const b = ctx.create('button');
   // `switch` é a classe que o CSS deste projeto já dá aos interruptores, e `aria-pressed` é o que diz o estado
   // a quem ouve. Quem reflete o valor é o painel; o que nasce aqui é o estado HONESTO de quem ainda não leu
   // nada: desligado.
@@ -212,10 +212,10 @@ function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
  */
 export function sectionHeader(ctx: PanelShellCtx, title: string, tag: string, rows: number): HTMLElement | null {
   if (rows === 0) return null;
-  const h = ctx.criar('h3');
+  const h = ctx.create('h3');
   h.className = 'panel-sub';
   h.textContent = title + ' ';
-  const mark = ctx.criar('span');
+  const mark = ctx.create('span');
   mark.className = 'panel-sub__tag';
   mark.textContent = tag;
   h.appendChild(mark);
@@ -238,11 +238,11 @@ export function sectionHeader(ctx: PanelShellCtx, title: string, tag: string, ro
  */
 export interface StepsSpec {
   /** O nome falado do controle — vai para o `aria-label`. */
-  readonly rotulo: string;
+  readonly label: string;
   /** As posições, na ordem, já traduzidas. */
-  readonly valores: readonly string[];
+  readonly values: readonly string[];
   /** O índice da posição de agora. */
-  readonly atual: number;
+  readonly current: number;
 }
 
 /**
@@ -268,13 +268,13 @@ export function nextStep(atual: number, total: number, delta: number): number {
  * direita do teclado e do controle emitem-no pelo `ui/menu-nav`. Quem usa ouve um evento só.
  */
 export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
-  const el = ctx.criar('div');
+  const el = ctx.create('div');
   el.className = 'passos';
   el.setAttribute('role', 'spinbutton');
   el.setAttribute('tabindex', '0');
   el.setAttribute('data-passos', '');
   const arrow = (delta: -1 | 1, glyph: string): HTMLElement => {
-    const s = ctx.criar('span');
+    const s = ctx.create('span');
     s.className = 'passo-seta';
     s.setAttribute('data-passo', String(delta));
     s.setAttribute('aria-hidden', 'true');
@@ -282,7 +282,7 @@ export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
     s.addEventListener('click', () => el.dispatchEvent(new CustomEvent('passo', { detail: delta, bubbles: true })));
     return s;
   };
-  const valor = ctx.criar('span');
+  const valor = ctx.create('span');
   valor.className = 'passo-valor';
   el.appendChild(arrow(-1, '◀'));
   el.appendChild(valor);
@@ -293,10 +293,10 @@ export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
 
 /** Reflecte a posição de agora: o valor escrito, o que se ouve, e as pontas que já não andam. */
 export function updateSteps(el: HTMLElement, spec: StepsSpec): void {
-  const lastIndex = Math.max(0, spec.valores.length - 1);
-  const atual = Math.max(0, Math.min(lastIndex, spec.atual));
-  const texto = spec.valores[atual] ?? '';
-  el.setAttribute('aria-label', spec.rotulo);
+  const lastIndex = Math.max(0, spec.values.length - 1);
+  const atual = Math.max(0, Math.min(lastIndex, spec.current));
+  const texto = spec.values[atual] ?? '';
+  el.setAttribute('aria-label', spec.label);
   el.setAttribute('aria-valuemin', '0');
   el.setAttribute('aria-valuemax', String(lastIndex));
   el.setAttribute('aria-valuenow', String(atual));
@@ -304,7 +304,7 @@ export function updateSteps(el: HTMLElement, spec: StepsSpec): void {
   const valor = el.querySelector<HTMLElement>('.passo-valor');
   // O RÓTULO ENTRA NO TEXTO: a linha inteira é o controle, «◀ Cantos arredondados: pequeno ▶». Quem ouve recebe o
   // mesmo em duas partes — o nome no `aria-label` e a posição no `aria-valuetext` —, sem o nome repetido.
-  if (valor) valor.textContent = spec.rotulo ? `${spec.rotulo}: ${texto}` : texto;
+  if (valor) valor.textContent = spec.label ? `${spec.label}: ${texto}` : texto;
   // A ponta que já não anda fica marcada — sem isto a seta de uma parede parece um botão avariado.
   el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', atual === 0);
   el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', atual === lastIndex);

@@ -56,7 +56,7 @@ function panelPlace(panel: HTMLElement, ctx: WhereTheChildIsCtx): Place {
   const items = navigableItems(panel.querySelector<HTMLElement>('.overlay__card') ?? panel);
   const focused = items.indexOf(ctx.focused() as HTMLElement);
   const n = focused >= 0 ? focused : 0;
-  const item = items[n] ? announceItem({ ...controlParts(items[n]!), posicao: n + 1, total: items.length }, ctx.withIndex()) : '';
+  const item = items[n] ? announceItem({ ...controlParts(items[n]!), position: n + 1, total: items.length }, ctx.withIndex()) : '';
   // ⚠️ THE KEY NAMES WHICH PANEL. Two panels reading as the same place is a child moving from the sound panel to the
   // visual one in silence — and going from one panel straight to another is a real path: «map the keyboard» opens the
   // controls panel on top of the motor one.
@@ -74,7 +74,7 @@ function cardPlace(card: HTMLElement, ctx: WhereTheChildIsCtx): Place {
   // 📌 THE MARKED ITEM AND NOT THE FIRST: coming back from a panel, the cursor is on the row that opened it. Naming
   // the first row would send a child who cannot see the mark looking where she is not.
   const marked = card.querySelector<HTMLElement>('.pm-sel') ?? items[0];
-  const item = marked ? announceItem({ rotulo: accessibleLabel(marked), posicao: items.indexOf(marked) + 1, total: items.length }, ctx.withIndex()) : '';
+  const item = marked ? announceItem({ label: accessibleLabel(marked), position: items.indexOf(marked) + 1, total: items.length }, ctx.withIndex()) : '';
   // ⚠️ AND THE KEY CARRIES THE LIST: the root and a submenu are the same card with different rows, so a key that
   // stopped at the card's id would make entering the settings a non-event.
   return { key: `cartao:${card.id}:${sub}`, sentence: say(title, item) };

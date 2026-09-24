@@ -92,22 +92,22 @@ describe('persistFontKey', () => {
 
 describe('fontCssTarget', () => {
   it('[Right] atkinson → data-fonte="padrao", sem --font-custom', () => {
-    expect(fontCssTarget('atkinson', FONT_BY_KEY.atkinson)).toEqual({ fonte: 'padrao', customFamily: null, cursiva: false });
+    expect(fontCssTarget('atkinson', FONT_BY_KEY.atkinson)).toEqual({ font: 'padrao', customFamily: null, cursive: false });
   });
   it('[Right] andika → data-fonte="alfabetizacao"', () => {
-    expect(fontCssTarget('andika', FONT_BY_KEY.andika)).toEqual({ fonte: 'alfabetizacao', customFamily: null, cursiva: false });
+    expect(fontCssTarget('andika', FONT_BY_KEY.andika)).toEqual({ font: 'alfabetizacao', customFamily: null, cursive: false });
   });
   it('[Right] lexend → data-fonte="dislexia" (mantém o espaçamento BDA)', () => {
-    expect(fontCssTarget('lexend', FONT_BY_KEY.lexend)).toEqual({ fonte: 'dislexia', customFamily: null, cursiva: false });
+    expect(fontCssTarget('lexend', FONT_BY_KEY.lexend)).toEqual({ font: 'dislexia', customFamily: null, cursive: false });
   });
   it('[Edge-case] fonte sans genérica → custom sem fallback extra', () => {
-    expect(fontCssTarget('inter', FONT_BY_KEY.inter)).toEqual({ fonte: 'custom', customFamily: "'Inter'", cursiva: false });
+    expect(fontCssTarget('inter', FONT_BY_KEY.inter)).toEqual({ font: 'custom', customFamily: "'Inter'", cursive: false });
   });
   it('[Edge-case] fonte serifada → custom com fallback ,Georgia,serif', () => {
-    expect(fontCssTarget('literata', FONT_BY_KEY.literata)).toEqual({ fonte: 'custom', customFamily: "'Literata',Georgia,serif", cursiva: false });
+    expect(fontCssTarget('literata', FONT_BY_KEY.literata)).toEqual({ font: 'custom', customFamily: "'Literata',Georgia,serif", cursive: false });
   });
   it('[Edge-case] fonte manuscrita → custom com fallback ,cursive', () => {
-    expect(fontCssTarget('pwbr', FONT_BY_KEY.pwbr)).toEqual({ fonte: 'custom', customFamily: "'Playwrite BR',cursive", cursiva: true });
+    expect(fontCssTarget('pwbr', FONT_BY_KEY.pwbr)).toEqual({ font: 'custom', customFamily: "'Playwrite BR',cursive", cursive: true });
   });
 });
 
@@ -235,17 +235,17 @@ describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptore
 
   it('[Interface] a linha é uma ESCOLHA, e diz isso na forma antes de virar nó nenhum', () => {
     const spec = typoRowSpec(fontRow(FONT_BY_KEY.andika, 'atkinson'));
-    expect(spec.forma, 'aria-pressed é vocabulário de interruptor; isto é um rádio').toBe('radio');
+    expect(spec.shape, 'aria-pressed é vocabulário de interruptor; isto é um rádio').toBe('radio');
     expect(spec.id).toBe(typoControlId('andika'));
-    expect(spec.rotulo).toBe('Andika');
+    expect(spec.label).toBe('Andika');
   });
 
   it('[Interface] a nota entra na DICA e também no nome acessível', () => {
     // A dica vai ao rodapé pelo `fillExplain`; o nome acessível fica no botão. Quem não vê a linha ouve para
     // quem aquela face serve sem ir caçar o rodapé — as duas metades dizem a mesma coisa em dois canais.
     const spec = typoRowSpec(fontRow(FONT_BY_KEY.ronde, 'atkinson'));
-    expect(spec.dica, 'a ronde traz a mensagem do que instalar').toBeTruthy();
-    expect(spec.rotuloAria).toContain(spec.dica);
+    expect(spec.hint, 'a ronde traz a mensagem do que instalar').toBeTruthy();
+    expect(spec.ariaLabel).toContain(spec.hint);
   });
 
   it('[Right] o id sai da CHAVE do catálogo, que é única por construção', () => {

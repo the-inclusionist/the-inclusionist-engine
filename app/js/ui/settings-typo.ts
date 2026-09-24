@@ -58,7 +58,7 @@ export interface SettingsTypoCtx {
    * dois lados erravam. Sem detector a linha fica desabilitada COM a mensagem, e a mensagem diz ao adulto as
    * três fontes que resolvem. O estado por omissão é o de hoje, e é accionável.
    */
-  fonteInstalada?: (familia: string) => boolean;
+  fontInstalled?: (familia: string) => boolean;
 }
 
 export interface SettingsTypoApi {
@@ -118,7 +118,7 @@ export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
   fontKey: string, isInstalled?: (familia: string) => boolean): void {
   let radios = list.querySelector<HTMLElement>('[role="radiogroup"]');
   if (!radios) {
-    radios = ctx.criar('div');
+    radios = ctx.create('div');
     radios.setAttribute('role', 'radiogroup');
     list.appendChild(radios);
   }
@@ -133,9 +133,9 @@ export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
     }
     for (const row of group.rows) {
       const spec = typoRowSpec(row);
-      const old = ctx.procurar('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
+      const old = ctx.find('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
       if (old) { labelRow(old, spec); dressRow(old, row); continue; }
-      const { linha, controle } = controlRow(ctx, spec);
+      const { row: linha, controle } = controlRow(ctx, spec);
       controle.dataset.font = row.key;
       dressRow(linha, row);
       radios.appendChild(linha);
@@ -188,19 +188,19 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
    * `SettingsTypoCtx`, que é superfície publicada, não ganha membro obrigatório (ADR-0172).
    */
   const panelCtx = (list: HTMLElement): PanelShellCtx => ({
-    procurar: (sel) => ctx.$<HTMLElement>(sel),
-    criar: (tag) => list.ownerDocument.createElement(tag),
+    find: (sel) => ctx.$<HTMLElement>(sel),
+    create: (tag) => list.ownerDocument.createElement(tag),
   });
 
   function setFont(k: string, announce = false): void {
     const it = FONT_BY_KEY[k];
     // A MESMA função das outras duas leituras: uma face que a lista mostra clicável tem de ser aceite aqui,
     // e uma que ela mostra cinzenta tem de ser recusada. Três respostas à mesma pergunta divergem.
-    if (!it || !faceAvailable(it, ctx.fonteInstalada)) return;
+    if (!it || !faceAvailable(it, ctx.fontInstalled)) return;
     fontKey = k;
     persistFontKey(ctx.store, k);
     const target = fontCssTarget(k, it);
-    ctx.root.dataset.fonte = target.fonte;
+    ctx.root.dataset.fonte = target.font;
     /*
      * 🔴 A MARCA DA FACE LIGADA (ADR-0149 §3), e é ela que tira o espaçamento da BDA. `:root[data-cursiva]`
      * devolve `letter-spacing`/`word-spacing` a `normal`, porque espaçar uma cursiva parte-a nas junções que
@@ -210,7 +210,7 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
      * cursiva e voltasse para a Atkinson ficava com a face de leitura SEM o espaçamento — o defeito na
      * direcção mais cara, porque quem volta para a face de leitura é quem precisa dele.
      */
-    if (target.cursiva) ctx.root.dataset.cursiva = '1';
+    if (target.cursive) ctx.root.dataset.cursiva = '1';
     else delete ctx.root.dataset.cursiva;
     if (target.customFamily) ctx.root.style.setProperty('--font-custom', target.customFamily);
     else ctx.root.style.removeProperty('--font-custom');
@@ -232,8 +232,8 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
   function render(): void {
     const el = ctx.$<HTMLElement>('#typo-list');
     if (!el) return;
-    mountTypoInside(panelCtx(el), el, fontKey, ctx.fonteInstalada);
-    reflectTypo(el, fontKey, ctx.fonteInstalada);
+    mountTypoInside(panelCtx(el), el, fontKey, ctx.fontInstalled);
+    reflectTypo(el, fontKey, ctx.fontInstalled);
     if (!listening) {
       listening = true;
       el.addEventListener('click', (ev) => {

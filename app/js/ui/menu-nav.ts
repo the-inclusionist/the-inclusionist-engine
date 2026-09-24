@@ -203,14 +203,14 @@ export interface MenuNavCtx {
    * declarar "pausado" para navegar os menus dele. `tests/menu-nav.node.test.js` reprova se a aresta voltar,
    * e ela quase voltou por aqui: eu tinha escrito o `import` antes de o gate me lembrar.
    */
-  comIndice: () => boolean;
+  withIndex: () => boolean;
   /** Writes the reason of a locked pause item in the screen footer, or clears it with `null` (ADR-0161). Optional. */
-  explicarItem?: (texto: string | null) => void;
+  explainItem?: (texto: string | null) => void;
   /**
    * A tela `i` está no modo `accessibility` (ADR-0044, item 7)? Perguntado ANTES de `isNavigable`, porque
    * esse modo roda com o jogo ANDANDO — é a única coisa deste módulo que age fora da pausa.
    */
-  naBarraDe: (i: number) => boolean;
+  onBar: (i: number) => boolean;
   /** Um passo dentro da barra rápida da tela `i`. */
   navBar: (i: number, k: NavKeys) => void;
   /** ui/settings-controls.ts: um remap em andamento consome a tecla — o menu não pode roubá-la. */
@@ -256,11 +256,11 @@ export interface MenuNavApi {
  * O rótulo é o `<strong>` da linha quando o controle vive numa (é o que se VÊ, e o texto de um interruptor é o estado,
  * não o nome); fora de linha, ou num cursor com nome próprio («Volume de Música»), é o nome acessível.
  */
-export function controlParts(el: HTMLElement): { rotulo: string; estado: string } {
+export function controlParts(el: HTMLElement): { label: string; state: string } {
   const row = el.closest('.ctrl-row')?.querySelector('strong')?.textContent?.trim() || '';
   const [, role, read] = CONTROL_KINDS.find(([recognises]) => recognises(el))!;
   const { label, value } = read(el, row, accessibleLabel(el));
-  return { rotulo: `${label}, ${t(role)}`, estado: value };
+  return { label: `${label}, ${t(role)}`, state: value };
 }
 
 /** A slider's position as a whole percentage: a missing maximum reads as 100, and a range of zero width as 0. */
@@ -342,8 +342,8 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   function sayItem(items: readonly HTMLElement[], n: number): void {
     const el = items[n];
     if (!el) return;
-    const { rotulo, estado } = controlParts(el);
-    ctx.srSay(announceItem({ rotulo, estado, posicao: n + 1, total: items.length }, ctx.comIndice()));
+    const { label: rotulo, state: estado } = controlParts(el);
+    ctx.srSay(announceItem({ label: rotulo, state: estado, position: n + 1, total: items.length }, ctx.withIndex()));
   }
 
   function focusAndSay(items: readonly HTMLElement[], n: number): void {
@@ -452,9 +452,9 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // outro pelo leitor de tela, e quem ouve os dois não teria como saber qual é a verdadeira.
     // 🔴 UM ITEM TRAVADO DIZ PORQUÊ ao ser alcançado (ADR-0161): dito a seguir ao nome, e escrito no rodapé.
     const motivo = items[n].getAttribute('aria-disabled') === 'true' ? (items[n].dataset.motivo ?? '') : '';
-    const anuncio = announceItem({ rotulo: accessibleLabel(items[n]), posicao: n + 1, total: items.length }, ctx.comIndice());
+    const anuncio = announceItem({ label: accessibleLabel(items[n]), position: n + 1, total: items.length }, ctx.withIndex());
     ctx.srSay(motivo ? `${anuncio}. ${motivo}` : anuncio);
-    ctx.explicarItem?.(motivo || null);
+    ctx.explainItem?.(motivo || null);
   }
 
   /* ===================== teclado ===================== */
@@ -483,7 +483,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // `input/gamepad`; aqui ele não tem par próprio, porque Enter já é "confirmar" e roubá-lo tiraria da
     // criança o único jeito de ATIVAR o ícone sob o cursor.
     const { player, keys } = intentOf(e.code);
-    if (ctx.naBarraDe(player)) {
+    if (ctx.onBar(player)) {
       if (hasIntent(keys)) { consumir(e); ctx.navBar(player, keys); }
       return; // na barra, tecla de menu é da barra — com ou sem intenção, não desce para o personagem
     }
@@ -535,20 +535,20 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   let engolirClique: HTMLElement | null = null;
 
   /** The open menu and the item under `alvo`, when `alvo` is inside one: the top dialog first, else a pause card. */
-  function itemUnder(alvo: EventTarget | null): { menu: HTMLElement; items: HTMLElement[]; n: number; pausa: boolean } | null {
+  function itemUnder(alvo: EventTarget | null): { menu: HTMLElement; items: HTMLElement[]; n: number; inPause: boolean } | null {
     const no = alvo as HTMLElement | null;
     if (!no || typeof no.closest !== 'function') return null;
     const dlg = sharedDialogOpen();
     if (dlg) {
       const items = menuItems(dlg);
       const n = items.findIndex((el) => el.contains(no));
-      return n >= 0 ? { menu: dlg, items, n, pausa: false } : null;
+      return n >= 0 ? { menu: dlg, items, n, inPause: false } : null;
     }
     const menu = no.closest<HTMLElement>('.screen-pause');
     if (!menu || menu.hidden) return null;
     const items = [...menu.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
     const n = items.findIndex((el) => el.contains(no));
-    return n >= 0 ? { menu, items, n, pausa: true } : null;
+    return n >= 0 ? { menu, items, n, inPause: true } : null;
   }
 
   function release(): void {
@@ -567,7 +567,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       timer: setTimeout(() => {
         holding = null;
         engolirClique = under.items[under.n] ?? null;
-        if (under.pausa) selectAndSayInPause(under.menu, under.items, under.n);
+        if (under.inPause) selectAndSayInPause(under.menu, under.items, under.n);
         else focusAndSay(under.items, under.n);
       }, HOLD_MS),
     };

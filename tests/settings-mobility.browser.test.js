@@ -27,7 +27,7 @@ function fullCtx(over = {}) {
   // ⚠️ EXPLÍCITO, e a razão é que a ausência dele MUDA todos os casos deste ficheiro. Desde o ADR-0115 um
   // ctx sem este campo esconde a linha da alternância — e trinta casos passariam na mesma, a exercitar uma
   // linha invisível sem nada o dizer. Este fixture é de um jogo que SEGURA, que é a premissa de todos eles.
-  seguraTeclas: true,
+  holdsKeys: true,
     setToggleRun: (i, on) => { toggleRunCalls.push([i, on]); players[i].toggleRun = on; escolhido.add('incl_togglerun_p' + i); },
     rebuildCoins: () => { rebuildCoinsCalls++; },
     said,
@@ -71,7 +71,7 @@ describe('ui/settings-mobility', () => {
   describe('a linha da alternância num jogo que não segura teclas', () => {
     it('🎯 [Zero] com `seguraTeclas: false`, a linha fica AUSENTE — não desabilitada', () => {
       const ctx = fullCtx();
-      ctx.seguraTeclas = false;
+      ctx.holdsKeys = false;
       initSettingsMobility(ctx);
 
       const linha = document.querySelector('#opt-altmove')?.closest('.ctrl-row');
@@ -94,8 +94,8 @@ describe('ui/settings-mobility', () => {
       // Com o olhar em uso (que EXIGE alternância) mas num jogo que não segura nada, a ausência ganha: não há
       // o que exigir. Uma implementação que lesse só o transporte deixaria a linha desabilitada e visível.
       const ctx = fullCtx();
-      ctx.seguraTeclas = false;
-      ctx.transporteEmUso = () => 'olhos';
+      ctx.holdsKeys = false;
+      ctx.transportInUse = () => 'olhos';
       initSettingsMobility(ctx);
 
       expect(document.querySelector('#opt-altmove').closest('.ctrl-row').hidden).toBe(true);
@@ -108,7 +108,7 @@ describe('ui/settings-mobility', () => {
   describe('a alternância exigida pelo aparelho', () => {
     it('🔴 [Right] com o olhar em uso, o controle fica `aria-disabled` e a dica diz POR QUÊ', () => {
       const ctx = fullCtx();
-      ctx.transporteEmUso = () => 'olhos';
+      ctx.transportInUse = () => 'olhos';
       initSettingsMobility(ctx);
 
       expect($('#opt-altmove').getAttribute('aria-disabled'), 'o controle continua a parecer accionável').toBe('true');
@@ -123,7 +123,7 @@ describe('ui/settings-mobility', () => {
     // uma vez e não pode ser omitido como no `render/viz-setters`, então a recusa FALA.
     it('🔴 [Zero] clicar não liga nada, e a recusa é DITA em vez de silenciosa', () => {
       const ctx = fullCtx();
-      ctx.transporteEmUso = () => 'olhos';
+      ctx.transportInUse = () => 'olhos';
       initSettingsMobility(ctx);
       $('#opt-altmove').click();
 
@@ -139,7 +139,7 @@ describe('ui/settings-mobility', () => {
     it('🎯 [Boundary] ao voltar para o teclado, a recusa sai e a dica volta ao que era', () => {
       const ctx = fullCtx();
       let aparelho = 'olhos';
-      ctx.transporteEmUso = () => aparelho;
+      ctx.transportInUse = () => aparelho;
       const api = initSettingsMobility(ctx);
 
       aparelho = 'teclado';
@@ -284,7 +284,7 @@ describe('ui/settings-mobility', () => {
     });
     const api = initSettingsMobility(ctx);
     api.setSelPlayer(1);
-    api.reflectFacil();
+    api.reflectEasy();
     expect($('#opt-facil').classList.contains('is-on')).toBe(true);
   });
 
@@ -299,7 +299,7 @@ describe('ui/settings-mobility', () => {
     document.body.innerHTML = '';
     const ctx = fullCtx();
     const api = initSettingsMobility(ctx);
-    expect(() => { api.renderMovPlayers(); api.reflectFacil(); api.reflectAltMove(); }).not.toThrow();
+    expect(() => { api.renderMovPlayers(); api.reflectEasy(); api.reflectAltMove(); }).not.toThrow();
   });
 });
 
@@ -405,7 +405,7 @@ describe('o ctx que a ENGINE consegue montar sozinha (ADR-0106 §1)', () => {
       store: { setBool: (k, on) => guardado.set(k, on ? '1' : '0'), get: () => null },
       players,
       getNumPlayers: () => 1,
-      seguraTeclas: true,
+      holdsKeys: true,
     });
 
     $('#opt-facil').click();

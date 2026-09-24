@@ -290,7 +290,7 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
       expect(RONDE.off, 'a ronde ficou selecionável: as três faces não podem ser empacotadas').toBeTruthy();
       // 📌 `geral` e não `caligrafica`, apesar de ela ser caligráfica: o menu filtra as caligráficas, e uma
       // linha filtrada não diz nada a ninguém. O papel «certo» apagaria a única coisa que ela faz.
-      expect(RONDE.papel, 'a ronde foi marcada como caligráfica e desapareceu do menu').toBeUndefined();
+      expect(RONDE.role, 'a ronde foi marcada como caligráfica e desapareceu do menu').toBeUndefined();
     });
 
     it('🎯 [Right] a mensagem nomeia AS TRÊS, nos três idiomas', () => {

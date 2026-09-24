@@ -18,7 +18,7 @@ const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, 
 describe('the language button', () => {
   it('is the last button, and mounts in every game', () => {
     expect(PAUSE_ICONS.at(-1).k).toBe('idioma');
-    expect(iconsThatAct({ tema: false, correcao: false, seguraTeclas: () => false }).map((ic) => ic.k)).toContain('idioma');
+    expect(iconsThatAct({ theme: false, correction: false, holdsKeys: () => false }).map((ic) => ic.k)).toContain('idioma');
   });
   it('cycles Brazil → United States → Mexico → Brazil, and a locale outside the cycle starts it again', () => {
     expect(LOCALE_CYCLE).toEqual(['pt', 'en', 'es']);
@@ -38,8 +38,8 @@ describe('the language button', () => {
     expect(b).not.toContain('🇧🇷');
   });
   it('its name says the language in itself, with its place', () => {
-    expect(computeIconLabel('idioma', snap({ idioma: 'en' }))).toMatch(/English \(United States\)/);
-    expect(computeIconLabel('idioma', snap({ idioma: 'es' }))).toMatch(/Español \(México\)/);
+    expect(computeIconLabel('idioma', snap({ locale: 'en' }))).toMatch(/English \(United States\)/);
+    expect(computeIconLabel('idioma', snap({ locale: 'es' }))).toMatch(/Español \(México\)/);
     expect(LANGUAGE_NAME.pt).toBe('Português (Brasil)');
   });
 });

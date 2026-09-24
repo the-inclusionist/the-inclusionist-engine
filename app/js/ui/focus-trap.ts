@@ -70,17 +70,17 @@ interface KeydownTarget {
 
 export interface FocusTrapCtx {
   /** O diálogo VISÍVEL mais alto da pilha, ou `null`. É o `topVisibleOverlay` de `ui/settings-panel`. */
-  overlayDeCima: () => HTMLElement | null;
+  topOverlay: () => HTMLElement | null;
   /** Quem tem o foco agora — `() => document.activeElement`. Injetado: o project node não tem documento. */
-  focoAtual: () => Element | null;
+  currentFocus: () => Element | null;
   /** Os focáveis DENTRO do diálogo, na ordem do documento e já filtrados por visibilidade. */
-  focaveisDe: (isInside: HTMLElement) => HTMLElement[];
+  focusablesIn: (isInside: HTMLElement) => HTMLElement[];
   win: KeydownTarget;
 }
 
 export interface FocusTrapApi {
   /** O manipulador, exposto para o teste o chamar sem instalar nada. */
-  aoTeclar: (e: KeyboardEvent) => void;
+  onKeydown: (e: KeyboardEvent) => void;
   /** Instala na fase de CAPTURA, pelo mesmo motivo do `menu-nav`: ver a tecla antes de quem está por baixo. */
   attach: () => void;
   /**
@@ -99,10 +99,10 @@ export interface FocusTrapApi {
 export function initFocusTrap(ctx: FocusTrapCtx): FocusTrapApi {
   function aoTeclar(e: KeyboardEvent): void {
     if (e.key !== 'Tab') return;
-    const dialogo = ctx.overlayDeCima();
+    const dialogo = ctx.topOverlay();
     if (!dialogo) return; // sem diálogo aberto o Tab é do jogo, e tem de continuar a ser
 
-    const alvo = nextInTrap(ctx.focaveisDe(dialogo), ctx.focoAtual() as HTMLElement | null, e.shiftKey);
+    const alvo = nextInTrap(ctx.focusablesIn(dialogo), ctx.currentFocus() as HTMLElement | null, e.shiftKey);
     if (!alvo) return;
 
     e.preventDefault();
@@ -110,7 +110,7 @@ export function initFocusTrap(ctx: FocusTrapCtx): FocusTrapApi {
   }
 
   return {
-    aoTeclar,
+    onKeydown: aoTeclar,
     attach: () => ctx.win.addEventListener('keydown', aoTeclar, true),
     detach: () => ctx.win.removeEventListener?.('keydown', aoTeclar, true),
   };

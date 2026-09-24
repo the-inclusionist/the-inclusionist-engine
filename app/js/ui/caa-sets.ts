@@ -25,14 +25,14 @@ export type CaaTier =
 
 export interface CaaSet {
   readonly key: string;
-  readonly nome: string;
+  readonly name: string;
   readonly tier: CaaTier;
   /** Licença como ela foi VERIFICADA, ou null quando ainda não há. Texto curto, para caber na tela. */
-  readonly licenca: string | null;
+  readonly license: string | null;
   /** Funciona NESTA build? Hoje só as letras — os pictogramas são arquivos que ainda não vieram. */
-  readonly disponivel: boolean;
+  readonly available: boolean;
   /** Só para pictogramas: uma linha sobre a origem, quando ela muda o que a escolha significa. */
-  readonly nota?: string;
+  readonly note?: string;
 }
 
 // AS LETRAS NÃO ESTÃO NESTA LISTA, e a ausência é decisão do Dev. Elas eram duas entradas — "maiúsculas e
@@ -43,20 +43,20 @@ export interface CaaSet {
 // Sobra aqui o que é de verdade uma LISTA: os conjuntos de pictogramas, entre os quais se escolhe um.
 export const CAA_SETS: readonly CaaSet[] = [
   // --- PICTOGRAMAS que PODEM viajar com o jogo (CC BY-SA, verificado pelo Dev em 2026-08-24). ---
-  { key: 'mulberry', nome: 'Mulberry Symbols', tier: 'bundled', licenca: 'CC BY-SA', disponivel: false },
-  { key: 'blissymbolics', nome: 'Blissymbolics', tier: 'bundled', licenca: 'CC BY-SA 4.0', disponivel: false,
-    nota: 'Escrita simbólica própria: os símbolos se combinam para formar sentidos novos.' },
-  { key: 'tawasol', nome: 'Tawasol', tier: 'bundled', licenca: 'CC BY-SA 4.0', disponivel: false,
-    nota: 'Desenhado na e para a cultura árabe. Um pictograma não é neutro — a criança reconhece mais depressa os objetos, as roupas e os rostos do próprio mundo.' },
+  { key: 'mulberry', name: 'Mulberry Symbols', tier: 'bundled', license: 'CC BY-SA', available: false },
+  { key: 'blissymbolics', name: 'Blissymbolics', tier: 'bundled', license: 'CC BY-SA 4.0', available: false,
+    note: 'Escrita simbólica própria: os símbolos se combinam para formar sentidos novos.' },
+  { key: 'tawasol', name: 'Tawasol', tier: 'bundled', license: 'CC BY-SA 4.0', available: false,
+    note: 'Desenhado na e para a cultura árabe. Um pictograma não é neutro — a criança reconhece mais depressa os objetos, as roupas e os rostos do próprio mundo.' },
 
   // --- PICTOGRAMA que precisa ser BAIXADO. ---
-  { key: 'arasaac', nome: 'ARASAAC', tier: 'fetched', licenca: 'baixado à parte', disponivel: false },
+  { key: 'arasaac', name: 'ARASAAC', tier: 'fetched', license: 'baixado à parte', available: false },
 
   // --- AGUARDANDO NEGOCIAÇÃO. Ficam visíveis de propósito: ver `caaReason`. ---
-  { key: 'sclera', nome: 'Sclera', tier: 'negotiating', licenca: null, disponivel: false },
-  { key: 'pcs', nome: 'PCS', tier: 'negotiating', licenca: null, disponivel: false },
-  { key: 'symbolstix', nome: 'SymbolStix', tier: 'negotiating', licenca: null, disponivel: false },
-  { key: 'widgit', nome: 'Widgit Symbols', tier: 'negotiating', licenca: null, disponivel: false },
+  { key: 'sclera', name: 'Sclera', tier: 'negotiating', license: null, available: false },
+  { key: 'pcs', name: 'PCS', tier: 'negotiating', license: null, available: false },
+  { key: 'symbolstix', name: 'SymbolStix', tier: 'negotiating', license: null, available: false },
+  { key: 'widgit', name: 'Widgit Symbols', tier: 'negotiating', license: null, available: false },
 ];
 
 export const CAA_BY_KEY: Readonly<Record<string, CaaSet>> = Object.fromEntries(CAA_SETS.map((s) => [s.key, s]));
@@ -64,7 +64,7 @@ export const CAA_BY_KEY: Readonly<Record<string, CaaSet>> = Object.fromEntries(C
 /** Quais CONJUNTOS a criança pode escolher hoje: nenhum. O menu não finge o contrário — os pictogramas são
  *  milhares de arquivos que ainda não entraram no repositório, e quatro deles dependem de negociação. */
 export function caaAvailable(): CaaSet[] {
-  return CAA_SETS.filter((s) => s.disponivel);
+  return CAA_SETS.filter((s) => s.available);
 }
 
 /**
@@ -80,12 +80,12 @@ export function caaAvailable(): CaaSet[] {
  * errada, e responderia errado.
  */
 export function caaReason(s: CaaSet): string | null {
-  if (s.disponivel) return null;
+  if (s.available) return null;
   return s.tier === 'negotiating' ? 'caa.aguardandoNegociacao' : 'caa.emPreparo';
 }
 
 /** Rótulo pronto para a linha do menu: nome + o motivo, quando há um. */
 export function caaLabel(s: CaaSet): string {
   const reason = caaReason(s);
-  return reason ? `${s.nome} — ${t(reason)}` : s.nome;
+  return reason ? `${s.name} — ${t(reason)}` : s.name;
 }

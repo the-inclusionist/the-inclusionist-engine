@@ -267,7 +267,7 @@ describe('ui/settings-typo', () => {
     // ⚠️ A razão não é economia: refazer a linha deixaria um controle no documento e SEM escuta — um botão
     // morto com aparência de vivo (ADR-0106 §5). A escuta deste painel liga-se uma vez, na lista, por
     // delegação; se os nós trocassem, ela sobreviveria, mas o foco cairia a cada clique.
-    const kit = { procurar: (s) => document.querySelector(s), criar: (tag) => document.createElement(tag) };
+    const kit = { find: (s) => document.querySelector(s), create: (tag) => document.createElement(tag) };
     const lista = $('#typo-list');
     mountTypoInside(kit, lista, 'atkinson');
     const antes = lista.querySelectorAll('.ctrl-row').length;

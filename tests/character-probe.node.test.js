@@ -29,35 +29,35 @@ import { summariseProbe } from '../app/js/ui/debug-panel.js';
 
 /** Uma amostra limpa: um recorte que ocupa a base inteira, sem irmãos. */
 const limpa = (tex, pos) => ({
-  texturaId: tex, recorte: '0,0 26x35', base: '26x35', posicao: pos, escala: '1.00,1.00',
-  irmaosDesenhando: 0, posIrmaos: '',
+  textureId: tex, crop: '0,0 26x35', base: '26x35', position: pos, scale: '1.00,1.00',
+  siblingsDrawing: 0, siblingPositions: '',
 });
 
 describe('sonda do personagem · o resumo que separa as causas', () => {
   it('[Zero] sem amostras, diz que não gravou nada — e não inventa diagnóstico', () => {
     const r = summariseProbe([]);
-    expect(r.quadros).toBe(0);
-    expect(r.veredito).toContain('nada');
+    expect(r.frames).toBe(0);
+    expect(r.verdict).toContain('nada');
   });
 
   it('[Right] quadros limpos → nenhum suspeito, e o veredito diz onde procurar em seguida', () => {
     const as = [limpa(0, '10,20'), limpa(1, '10,20'), limpa(2, '11,18'), limpa(3, '11,18')];
     const r = summariseProbe(as);
-    expect(r.quadros).toBe(4);
-    expect(r.texturas).toBe(4);
-    expect(r.maxIrmaos).toBe(0);
+    expect(r.frames).toBe(4);
+    expect(r.textures).toBe(4);
+    expect(r.maxSiblings).toBe(0);
     expect(r.sangramento).toEqual([]);
     // O veredito NÃO pode dizer "está tudo bem": as três perguntas limpas mudam o lugar da busca, não
     // encerram a busca. Dizer "ok" aqui seria transformar ausência de prova em prova de ausência.
-    expect(r.veredito).toMatch(/composi|filtro|câmera/i);
+    expect(r.verdict).toMatch(/composi|filtro|câmera/i);
   });
 
   it('[Right] IRMÃO desenhando o personagem é apontado, com quantos e onde', () => {
-    const as = [limpa(0, '10,20'), { ...limpa(1, '10,20'), irmaosDesenhando: 2, posIrmaos: '40,20 70,20' }];
+    const as = [limpa(0, '10,20'), { ...limpa(1, '10,20'), siblingsDrawing: 2, siblingPositions: '40,20 70,20' }];
     const r = summariseProbe(as);
-    expect(r.maxIrmaos).toBe(2);
-    expect(r.veredito).toMatch(/duas vezes|irmão/i);
-    expect(r.exemploIrmaos).toBe('40,20 70,20');
+    expect(r.maxSiblings).toBe(2);
+    expect(r.verdict).toMatch(/duas vezes|irmão/i);
+    expect(r.siblingExample).toBe('40,20 70,20');
   });
 
   it('[Right] SANGRAMENTO de atlas é apontado por textura, com o recorte e a base', () => {
@@ -65,24 +65,24 @@ describe('sonda do personagem · o resumo que separa as causas', () => {
     // dentro do atlas; o problema é quando o RECORTE é maior que o quadro e engole os vizinhos. Aqui a
     // heurística é a que a sonda consegue ver do lado de fora: recorte maior que a base é impossível, e
     // recorte que cobre a base inteira quando a base é grande demais para um quadro é suspeito.
-    const as = [{ ...limpa(0, '10,20'), recorte: '0,0 256x207', base: '256x207' }];
+    const as = [{ ...limpa(0, '10,20'), crop: '0,0 256x207', base: '256x207' }];
     const r = summariseProbe(as);
     expect(r.sangramento).toHaveLength(1);
     expect(r.sangramento[0]).toContain('256x207');
-    expect(r.veredito).toMatch(/recorte|atlas/i);
+    expect(r.verdict).toMatch(/recorte|atlas/i);
   });
 
   it('[Boundary] escalas distintas são listadas — o squash deforma sem duplicar', () => {
-    const as = [limpa(0, '10,20'), { ...limpa(1, '10,20'), escala: '1.20,0.80' }];
+    const as = [limpa(0, '10,20'), { ...limpa(1, '10,20'), scale: '1.20,0.80' }];
     const r = summariseProbe(as);
-    expect(r.escalas).toEqual(['1.00,1.00', '1.20,0.80']);
+    expect(r.scales).toEqual(['1.00,1.00', '1.20,0.80']);
   });
 
   it('[Interface] IRMÃO vence SANGRAMENTO no veredito — a causa mais grave primeiro', () => {
     // Quando os dois aparecem, o que interessa primeiro é "alguém desenha duas vezes": é a causa que produz
     // cópias INTEIRAS em posições diferentes, que é exatamente o que foi relatado.
-    const as = [{ ...limpa(0, '10,20'), recorte: '0,0 256x207', base: '256x207', irmaosDesenhando: 1, posIrmaos: '40,20' }];
-    expect(summariseProbe(as).veredito).toMatch(/duas vezes|irmão/i);
+    const as = [{ ...limpa(0, '10,20'), crop: '0,0 256x207', base: '256x207', siblingsDrawing: 1, siblingPositions: '40,20' }];
+    expect(summariseProbe(as).verdict).toMatch(/duas vezes|irmão/i);
   });
 });
 

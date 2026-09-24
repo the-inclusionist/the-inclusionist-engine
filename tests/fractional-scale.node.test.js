@@ -15,18 +15,18 @@ describe('the scale on a fractional display scale (ADR-0179)', () => {
       const e = stageScale(640, 360, dpr, 320, 180);
       expect(e.k, `k at ${dpr}`).toBeCloseTo(2, 6);
       expect(8 * e.k, `--ui-fs at ${dpr} is under the 16 px floor`).toBeGreaterThanOrEqual(16 - 1e-9);
-      expect(e.largura, `the region at ${dpr} is not 640 CSS wide`).toBeCloseTo(640, 6);
-      expect(e.altura).toBeCloseTo(360, 6);
+      expect(e.width, `the region at ${dpr} is not 640 CSS wide`).toBeCloseTo(640, 6);
+      expect(e.height).toBeCloseTo(360, 6);
     }
   });
 
   it('🔴 [Boundary] the region never outgrows a window that fits 640×360 — the 2× minimum is counted in CSS pixels', () => {
     const e = stageScale(640, 360, 1.25, 320, 180);
-    expect(e.largura, 'the region is wider than the window').toBeLessThanOrEqual(640 + 1e-9);
+    expect(e.width, 'the region is wider than the window').toBeLessThanOrEqual(640 + 1e-9);
   });
 
   it('📌 [Right] where the whole multiple already reaches 2 CSS px, nothing changes', () => {
-    expect(stageScale(1366, 768, 1, 320, 180)).toMatchObject({ kDev: 4, k: 4, largura: 1280, altura: 720 });
+    expect(stageScale(1366, 768, 1, 320, 180)).toMatchObject({ kDev: 4, k: 4, width: 1280, height: 720 });
     expect(stageScale(1920, 1080, 1, 320, 180)).toMatchObject({ kDev: 6, k: 6 });
     const e = stageScale(1242, 698, 1.1, 320, 180); // 1366×768 at 110%
     expect(e.kDev, 'a large window at 110% lost its whole multiple').toBe(4);

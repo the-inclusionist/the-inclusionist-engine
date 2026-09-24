@@ -16,7 +16,7 @@ let faseFalsa = 'playing';
 const setPhaseValue = (p) => { faseFalsa = p; };
 /** A casca corrente. `setPhase` abaixo faz o papel da RAIZ: troca a cena e manda a casca reprojetar. */
 let shellAtual = null;
-const setPhase = (p) => { faseFalsa = p; if (shellAtual) shellAtual.aplicarCena(); };
+const setPhase = (p) => { faseFalsa = p; if (shellAtual) shellAtual.applyScene(); };
 /*
  * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` foi com a pilha de mundo-de-tiles para o
  * `game-platformer`. Este ficheiro nunca testou a rodada — ele PASSA uma ao que está a medir —, e os três
@@ -81,8 +81,8 @@ function boot(over = {}) {
     // A casca deixou de trocar de cena: ela PROJETA a cena que a raiz já trocou (ADR-0030 C3). O falso faz o
     // papel da raiz — guarda a fase e responde os três fatos. As regras de TRANSIÇÃO (pausar empilha, o
     // título não alterna) mudaram de casa junto, para `game/cenas`, e têm caso próprio lá.
-    fatosDaCena: () => ({ titleScreen: faseFalsa === 'title', worldRunning: faseFalsa === 'playing', pauseMenu: faseFalsa === 'paused' }),
-    retomarJogo: () => { setPhase('playing'); },
+    sceneFacts: () => ({ titleScreen: faseFalsa === 'title', worldRunning: faseFalsa === 'playing', pauseMenu: faseFalsa === 'paused' }),
+    resumeGame: () => { setPhase('playing'); },
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     win: {
@@ -104,7 +104,7 @@ function boot(over = {}) {
     kbFor: () => ({ up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], action2: ['Space'], action3: ['KeyL'], action1: ['ShiftLeft'], action4: ['KeyQ'] }),
     keyName: (c) => 'K:' + c,
     // A palavra CURTA vem do 'jogo' — num teste, o fixture. Uma posicao nao nomeada nao vira ficha.
-    rotuloCurto: (a) => ({ action1: 'correr', action2: 'pular', action3: 'especial', action4: 'trocar' })[a] || null,
+    shortLabel: (a) => ({ action1: 'correr', action2: 'pular', action3: 'especial', action4: 'trocar' })[a] || null,
     openCaa: () => log.acts.push('caa'),
     setQuizLevel: (n, a) => log.acts.push('nivel:' + n + ':' + a),
     getQuizLevel: () => 5,
@@ -117,7 +117,7 @@ function boot(over = {}) {
     fitsN: () => true,
     joinPlayer: () => { players.push({ i: players.length, pad: -1 }); setNumPlayersValue(players.length); return true; },
     showWaitingBadge: (i) => log.acts.push('badge:' + i),
-    setMotorPlayer: (i) => log.acts.push('motor:' + i),
+    setMobilityPlayer: (i) => log.acts.push('motor:' + i),
     setMotionPlayer: (i) => log.acts.push('motionPlayer:' + i),
     openMotion: () => log.acts.push('motion'),
     openEmpathy: () => log.acts.push('empathy'),

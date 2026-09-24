@@ -103,7 +103,7 @@ function positionProblem(v: Row | null, at: string, seen: Set<string>): string |
 
 export interface GameOptionsDrawCtx extends PanelShellCtx {
   /** Where a change is said (the polite live region). */
-  readonly dizer: (texto: string) => void;
+  readonly say: (texto: string) => void;
 }
 
 /**
@@ -115,7 +115,7 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
   for (const o of options) {
     const id = `game-option-${o.id}`;
     if (o.kind === 'switch') {
-      const { linha, controle } = controlRow(ctx, { id, rotulo: o.label, dica: o.hint });
+      const { row: linha, controle } = controlRow(ctx, { id, label: o.label, hint: o.hint });
       const refletir = (): boolean => {
         const on = o.read();
         controle.classList.toggle('is-on', on);
@@ -126,17 +126,17 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
       refletir();
       controle.addEventListener('click', () => {
         o.write(!o.read());
-        ctx.dizer(`${o.label}: ${toggleLabel(refletir())}`);
+        ctx.say(`${o.label}: ${toggleLabel(refletir())}`);
       });
       lista.appendChild(linha);
       continue;
     }
     const labelOf = (valor: string): string => o.values.find((v) => v.value === valor)?.label ?? valor;
     if (o.kind === 'list') {
-      const { linha, controle } = controlRow(ctx, { id, rotulo: o.label, dica: o.hint, forma: 'escolha' });
+      const { row: linha, controle } = controlRow(ctx, { id, label: o.label, hint: o.hint, shape: 'escolha' });
       const sel = controle as HTMLSelectElement;
       for (const v of o.values) {
-        const op = ctx.criar('option') as HTMLOptionElement;
+        const op = ctx.create('option') as HTMLOptionElement;
         op.value = v.value;
         op.textContent = v.label;
         sel.appendChild(op);
@@ -145,19 +145,19 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
       sel.addEventListener('change', () => {
         o.write(sel.value);
         sel.value = o.read();
-        ctx.dizer(`${o.label}: ${labelOf(sel.value)}`);
+        ctx.say(`${o.label}: ${labelOf(sel.value)}`);
       });
       lista.appendChild(linha);
       continue;
     }
     // steps: the row IS the control, «◀ Label: value ▶» (ADR-0130 erratum); the hint rides in the row for the footer
     const indice = (): number => Math.max(0, o.values.findIndex((v) => v.value === o.read()));
-    const spec = () => ({ rotulo: o.label, valores: o.values.map((v) => v.label), atual: indice() });
-    const linha = ctx.criar('div');
+    const spec = () => ({ label: o.label, values: o.values.map((v) => v.label), current: indice() });
+    const linha = ctx.create('div');
     linha.className = 'ctrl-row ctrl-row--passos';
-    const envelope = ctx.criar('span');
+    const envelope = ctx.create('span');
     if (o.hint) {
-      const dica = ctx.criar('span');
+      const dica = ctx.create('span');
       dica.className = 'opt-hint';
       dica.textContent = o.hint;
       envelope.appendChild(dica);
@@ -172,7 +172,7 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
       if (nextIndex === atual) return; // at the wall nothing moved, and nothing is said
       o.write(o.values[nextIndex]!.value);
       updateSteps(passos, spec());
-      ctx.dizer(`${o.label}: ${labelOf(o.read())}`);
+      ctx.say(`${o.label}: ${labelOf(o.read())}`);
     });
     lista.appendChild(linha);
   }

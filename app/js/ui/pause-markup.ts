@@ -27,10 +27,10 @@ export interface PauseMenuButton {
   /** Read ONLY when the button has a dynamic label; see the note on `PauseBtnDef` (ui/pause-buttons). */
   lbl?: string;
   /** Dynamic label (the ABC cycle) — rendered from `lbl`, not from i18n, and NOT given `data-i18n`. */
-  letra?: boolean;
+  dynamicLabel?: boolean;
   /** Dynamic label (the literacy level) — rendered from quizLevel + qlName. Currently dormant: no PM_BTNS
    *  entry sets it, but the branch is live code and is ported verbatim. */
-  nivel?: boolean;
+  level?: boolean;
 }
 
 /** One `.pi-btn`. The label is the RESTING one: reflectIconBtn overwrites it with the stateful label as soon as the bar is
@@ -68,10 +68,10 @@ export function iconsMarkup(icons: readonly PauseIcon[] = PAUSE_ICONS): string {
 export function pmBtnMarkup(
   b: PauseMenuButton, dynLabel: (b: PauseMenuButton) => string | null, tr: (key: string) => string,
 ): string {
-  const dyn = b.letra || b.nivel;
+  const dyn = b.dynamicLabel || b.level;
   const lbl = dynLabel(b) ?? (dyn ? (b.lbl ?? '') : tr('pause.' + b.act));
   const glyph = ITEM_GLYPH[b.act];
-  return '<button class="pm-btn' + (b.letra ? ' pm-letra' : '') + (b.nivel ? ' pm-nivel' : '') +
+  return '<button class="pm-btn' + (b.dynamicLabel ? ' pm-letra' : '') + (b.level ? ' pm-nivel' : '') +
     '" role="menuitem" type="button" data-act="' + b.act + '"' +
     (glyph ? ' data-glifo="' + glyph + '"' : '') +
     (dyn ? '' : (' data-i18n="pause.' + b.act + '"')) + '>' + lbl + '</button>';
@@ -147,7 +147,7 @@ export interface ScreenPauseMarkupOpts {
   /** The settings submenu: the adjustment panels, with «back» in front. */
   optionsButtons: readonly PauseMenuButton[];
   /** The GAME's submenu (ADR-0146). Absent = only «back», which is the case of a game that declares nothing of its own. */
-  jogoButtons?: readonly PauseMenuButton[];
+  gameButtons?: readonly PauseMenuButton[];
   /** The finished label of a DYNAMIC button, or `null` if that button has none. The game is who builds the phrase. */
   dynLabel: (b: PauseMenuButton) => string | null;
   t: (key: string) => string;
@@ -175,6 +175,6 @@ export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
     // reason the other two are built whole and hidden afterwards (see the note on `buildScreenPause`). The game's table
     // arrives LATE, and a list filtered at mount time would erase for ever what only came to exist after boot. What decides
     // what is SEEN is the item refresh.
-    pauseMenuHtml(o.jogoButtons ?? PM_GAME_BTNS, 'jogo', o.dynLabel, o.t) +
+    pauseMenuHtml(o.gameButtons ?? PM_GAME_BTNS, 'jogo', o.dynLabel, o.t) +
     '<p class="pause-legend"></p></div>';
 }

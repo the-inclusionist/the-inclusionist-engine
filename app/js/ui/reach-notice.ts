@@ -58,9 +58,9 @@ export function noticeRows(a: Reach, t: Translator): string[] {
 
 export interface ReachNoticeCtx {
   /** `querySelector` do documento deste jogo. */
-  procurar: (sel: string) => HTMLElement | null;
+  find: (sel: string) => HTMLElement | null;
   /** `document.createElement`. Injetado como tudo o mais que toca o documento. */
-  criar: (tag: string) => HTMLElement;
+  create: (tag: string) => HTMLElement;
   t: Translator;
   /** Anúncio assertivo. Uma criança cega tem de OUVIR isto — ela não vai ver o cartão. */
   srAlert: (texto: string) => void;
@@ -80,21 +80,21 @@ export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
   const rows = noticeRows(a, ctx.t);
   if (rows.length === 0) return false;
 
-  const isInside = ctx.procurar('#game-region');
+  const isInside = ctx.find('#game-region');
   if (!isInside) return false; // sem a marcação do hospedeiro não há onde mostrar; o `problems` já o denuncia
 
-  const overlay = ctx.criar('div');
+  const overlay = ctx.create('div');
   overlay.id = REACH_NOTICE_ID;
   overlay.className = 'overlay';
 
-  const card = ctx.criar('div');
+  const card = ctx.create('div');
   card.className = 'overlay__card';
   card.setAttribute('role', 'dialog');
   card.setAttribute('aria-modal', 'true');
   card.setAttribute('tabindex', '-1');
 
   for (const [i, texto] of rows.entries()) {
-    const p = ctx.criar('p');
+    const p = ctx.create('p');
     p.textContent = texto;
     if (i === 0) p.className = 'reach-notice__titulo';
     card.appendChild(p);
@@ -102,7 +102,7 @@ export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
 
   // ⚠️ O BOTÃO É O QUE FAZ DISTO UM AVISO E NÃO UMA PORTA FECHADA. Ver o cabeçalho: a detecção de teclado
   // erra, e o erro só é aceitável enquanto a criança puder seguir em frente.
-  const continueButton = ctx.criar('button');
+  const continueButton = ctx.create('button');
   continueButton.setAttribute('type', 'button');
   continueButton.className = 'mode-btn';
   continueButton.textContent = ctx.t('reach.continuar');

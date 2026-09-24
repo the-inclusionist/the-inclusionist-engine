@@ -33,8 +33,8 @@ describe('latch-refusal · onde há escolha, não se diz nada', () => {
     for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
       const r = latchRefusal(t);
       expect(r, `${t} deixou de recusar`).not.toBe(null);
-      expect(r.transporte).toBe(t);
-      expect(r.chave).toBe(REFUSAL_KEY[t]);
+      expect(r.transport).toBe(t);
+      expect(r.key).toBe(REFUSAL_KEY[t]);
     }
   });
 });
@@ -59,7 +59,7 @@ describe('latch-refusal · a lista vem da REGRA, e não de uma cópia', () => {
   it('[Vácuo] os sete transportes do catálogo estão cobertos: ou há escolha, ou há motivo', () => {
     for (const t of TRANSPORT_NAMES) {
       const r = latchRefusal(t);
-      expect(r === null || typeof r.chave === 'string', `${t} caiu entre as duas respostas`).toBe(true);
+      expect(r === null || typeof r.key === 'string', `${t} caiu entre as duas respostas`).toBe(true);
     }
   });
 });

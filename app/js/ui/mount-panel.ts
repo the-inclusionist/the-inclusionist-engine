@@ -51,7 +51,7 @@ export interface MountPanelSpec {
   /** The panel's id: `typo`, `audio`, `visual`… Identity, resolved once — unlike the words below. */
   readonly id: string;
   /** The list's id when it is not `${id}-list`. One of the eight needs it — see `PanelShellSpec.idDaLista`. */
-  readonly idDaLista?: string;
+  readonly listId?: string;
   /**
    * The panel's WORDS, already translated — and resolved AT EVERY OPEN rather than once at mount.
    *
@@ -65,7 +65,7 @@ export interface MountPanelSpec {
    * words only have to be right when it opens — no `localeReady()` wiring per panel, and a language changed
    * mid-game is right on the next open too.
    */
-  readonly rotulos: () => PanelLabels;
+  readonly labels: () => PanelLabels;
   /**
    * The panel's own `render()`.
    *
@@ -92,13 +92,13 @@ export interface MountPanelSpec {
    * registered it while the panel's button ran the panel's closer, one control would take two paths to the
    * same job — and the day one of them learns to do something extra, only half the ways out learn it.
    */
-  readonly fecharProprio?: () => void;
+  readonly closeOwn?: () => void;
 }
 
 export interface MountedPanel {
-  readonly casca: PanelShell;
-  readonly abrir: () => void;
-  readonly fechar: () => void;
+  readonly shell: PanelShell;
+  readonly open: () => void;
+  readonly close: () => void;
 }
 
 /**
@@ -108,12 +108,12 @@ export interface MountedPanel {
  * leaves one panel, which is what ADR-0139's third gate asks of two cartridges on one page.
  */
 export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPanel {
-  const casca = mountShell(ctx, { id: spec.id, idDaLista: spec.idDaLista, ...spec.rotulos() });
+  const casca = mountShell(ctx, { id: spec.id, listId: spec.listId, ...spec.labels() });
   // Appending an element that is already a child moves it; it never duplicates. Guarding on `parentNode`
   // would be the same operation written twice.
   ctx.host.appendChild(casca.overlay);
 
-  const fechar = spec.fecharProprio ?? ((): void => {
+  const fechar = spec.closeOwn ?? ((): void => {
     casca.overlay.hidden = true;
     ctx.overlays.restoreFocus?.(spec.id);
   });
@@ -124,11 +124,11 @@ export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPan
   const abrir = (): void => {
     // ⚠️ OS RÓTULOS ANTES DO `render()`, e a ordem tem consequência: `ui/settings-panel.fillExplain` lê o
     // `data-explain-idle` do cartão para montar o rodapé, e quem o chama é o render de cada painel.
-    applyLabels(casca, spec.rotulos());
+    applyLabels(casca, spec.labels());
     spec.render();
     casca.overlay.hidden = false;
     ctx.overlays.frontOverlay(casca.overlay);
-    casca.fechar.focus?.();
+    casca.close.focus?.();
   };
 
   /*
@@ -143,7 +143,7 @@ export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPan
     const doc = casca.card.ownerDocument;
     const focused = doc.activeElement as HTMLElement | null;
     const focusedIndex = focused && casca.card.contains(focused) ? navigableItems(casca.card).indexOf(focused) : -1;
-    applyLabels(casca, spec.rotulos());
+    applyLabels(casca, spec.labels());
     spec.render();
     if (focusedIndex < 0 || !focused) return;
     const destino = focused.isConnected ? focused : navigableItems(casca.card)[focusedIndex];
@@ -157,12 +157,12 @@ export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPan
 
   // Só quando o painel NÃO liga o próprio botão. Ver `fecharProprio`: dois ouvintes no mesmo controle são dois
   // donos da mesma saída, e é assim que elas divergem.
-  if (!spec.fecharProprio) casca.fechar.addEventListener('click', fechar);
+  if (!spec.closeOwn) casca.close.addEventListener('click', fechar);
   // ⚠️ THE ESCAPE CHAIN IS NOT DECORATION. `ui/settings-panel.escapeTarget()` walks the registry, and under
   // `createGame` that registry was EMPTY — nothing had ever registered. A modal dialog no key closes is the
   // trap ADR-0044 §2 names about the pause itself: «a menu you cannot leave is a trap, and the trap costs
   // most to whoever cannot see it».
   ctx.overlays.register(spec.id, { close: fechar, inEscapeChain: true });
 
-  return { casca, abrir, fechar };
+  return { shell: casca, open: abrir, close: fechar };
 }

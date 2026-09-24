@@ -20,7 +20,7 @@ function fakeStore(seed = {}) {
 
 function fullCtx(over = {}) {
   const said = [];
-  const calls = { renderVizGroup: [], reflectMotorEmpathy: 0, reflectVizButtons: 0, frontOverlay: [], setHearingLoss: [], setOneButton: [], setWheelchair: [], setEmpathyOpen: [], setPlayerViz: [] };
+  const calls = { renderVizGroup: [], reflectMobilityEmpathy: 0, reflectVizButtons: 0, frontOverlay: [], setHearingLoss: [], setOneButton: [], setWheelchair: [], setEmpathyOpen: [], setPlayerViz: [] };
   let oneButton = false, wheelchair = false;
   const players = [{ viz: 'normal' }, { viz: 'normal' }];
   return {
@@ -28,7 +28,7 @@ function fullCtx(over = {}) {
     srSay: (msg) => said.push(msg),
     store: fakeStore(),
     renderVizGroup: (listSel, tabsSel, modes) => { calls.renderVizGroup.push([listSel, tabsSel, modes]); },
-    reflectMotorEmpathy: () => { calls.reflectMotorEmpathy++; },
+    reflectMobilityEmpathy: () => { calls.reflectMobilityEmpathy++; },
     reflectVizButtons: () => { calls.reflectVizButtons++; },
     frontOverlay: (el) => { calls.frontOverlay.push(el); },
     setHearingLoss: (on) => { calls.setHearingLoss.push(on); },
@@ -88,7 +88,7 @@ describe('ui/settings-empathy', () => {
     expect(h.classList.contains('is-on')).toBe(false);
     expect(h.getAttribute('aria-pressed')).toBe('false');
     expect(h.textContent).toBe('Desligado');
-    expect(ctx.calls.reflectMotorEmpathy).toBe(1);
+    expect(ctx.calls.reflectMobilityEmpathy).toBe(1);
   });
 
   it('[Right] clicar em #opt-hearing chama setHearingLoss, re-renderiza e chama reflectVizButtons', () => {

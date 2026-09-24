@@ -90,10 +90,10 @@ describe('a barra da primeira tela fala o idioma do arranque', () => {
     expect(botoes.length, 'a barra não montou').toBeGreaterThan(0);
 
     const encalhados = botoes
-      .map((b) => ({ k: b.dataset.pi, rotulo: b.getAttribute('aria-label') || '' }))
-      .filter((x) => /construção|desligado|ligado|Modo cego|Narração/.test(x.rotulo));
+      .map((b) => ({ k: b.dataset.pi, label: b.getAttribute('aria-label') || '' }))
+      .filter((x) => /construção|desligado|ligado|Modo cego|Narração/.test(x.label));
 
-    expect(encalhados, `ícones encalhados no idioma de recuo: ${encalhados.map((x) => `${x.k}=«${x.rotulo}»`).join(' · ')}`)
+    expect(encalhados, `ícones encalhados no idioma de recuo: ${encalhados.map((x) => `${x.k}=«${x.label}»`).join(' · ')}`)
       .toEqual([]);
 
     // 📌 O PAR: exigir «nada em português» passaria se os rótulos ficassem VAZIOS. Toda a barra tem de dizer

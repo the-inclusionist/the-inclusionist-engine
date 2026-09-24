@@ -73,14 +73,14 @@ export interface SettingsMobilityCtx {
    * ⚠️ OBRIGATÓRIO, pela mesma razão que no `PauseIconsCtx`: não há padrão seguro. `true` deixa a linha num
    * jogo onde ela não faz nada; `false` esconde-a de uma criança que depende dela.
    */
-  seguraTeclas: boolean;
+  holdsKeys: boolean;
   /**
    * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113) — atravessa daqui para a escrita.
    *
    * ⚠️ Opcional pela mesma razão que na `LatchWriteCtx`: sem ele a escrita cai no que já fazia,
    * e exigi-lo quebraria todo consumidor por causa de uma migração a meio.
    */
-  transporteEmUso?: (jogador: number) => string;
+  transportInUse?: (jogador: number) => string;
   /**
    * A ALTERNÂNCIA DO BOTÃO DE CORRER.
    *
@@ -120,7 +120,7 @@ export interface SettingsMobilityApi {
   /** Re-renders #movement-players (kept `hidden`, per E3 — see playerTabsHTML) and (re)wires its buttons. */
   renderMovPlayers: () => void;
   /** Reflects the selected player's Modo Fácil onto #opt-facil (+ the #opt-movement bar light). */
-  reflectFacil: () => void;
+  reflectEasy: () => void;
   /** Reflects the selected player's alternância onto #opt-altmove (+ the #opt-movement bar light). */
   reflectAltMove: () => void;
   /** Idem para a alternância do botão de CORRER (#opt-togglerun). */
@@ -204,7 +204,7 @@ export interface LatchWriteCtx {
    * 📌 E é INJECTADO em vez de importado: `ui/` a ler estado de módulo de `input/` é uma aresta nova entre
    * duas camadas, para poupar um argumento. Este ctx já recebe tudo o resto assim.
    */
-  readonly transporteEmUso?: (jogador: number) => string;
+  readonly transportInUse?: (jogador: number) => string;
 }
 
 /**
@@ -234,7 +234,7 @@ export function setMoveLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   // não há escolha a guardar (ADR-0113 cláusula 3) — e devolve `false` para quem chama desabilitar o
   // controle com o motivo dito. Aqui a recusa não muda mais nada: o valor em memória continua a ser o que
   // a regra resolve, e é ela que responde `true` naqueles quatro.
-  const transporte = ctx.transporteEmUso ? ctx.transporteEmUso(i) : null;
+  const transporte = ctx.transportInUse ? ctx.transportInUse(i) : null;
   if (transporte) writeLatch((chave, isOn) => ctx.store.setBool(chave, isOn), BASE_DA_MARCHA, i, transporte, on);
   // 📌 O ANÚNCIO É INCONDICIONAL, ao contrário do `applyLatch`, que devolve «mudou». A criança
   // carregou no ícone: calar-se porque o valor já era esse deixaria o botão sem resposta para quem ouve.
@@ -290,8 +290,8 @@ export function setRunLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
  * Idempotente: chamar duas vezes reaproveita a lista em vez de a duplicar.
  */
 export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
-  if (!ctx.procurar('#movement-players')) {
-    const abas = ctx.criar('div');
+  if (!ctx.find('#movement-players')) {
+    const abas = ctx.create('div');
     abas.id = 'movement-players';
     // Nascem escondidas e vazias: quem as desenha é `renderMovPlayers()`, que sabe quantos assentos há AGORA —
     // e o número muda durante a partida.
@@ -299,22 +299,22 @@ export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, lista
     card.insertBefore(abas, lista);
   }
   const rows: ControlRowSpec[] = [
-    { id: 'opt-facil', rotulo: t('motor.facil'), dica: t('motor.facil.dica') },
-    { id: 'opt-altmove', rotulo: t('motor.altmove'), dica: t('motor.altmove.dica') },
-    { id: 'opt-togglerun', rotulo: t('motor.togglerun'), dica: t('motor.togglerun.dica') },
+    { id: 'opt-facil', label: t('motor.facil'), hint: t('motor.facil.dica') },
+    { id: 'opt-altmove', label: t('motor.altmove'), hint: t('motor.altmove.dica') },
+    { id: 'opt-togglerun', label: t('motor.togglerun'), hint: t('motor.togglerun.dica') },
   ];
   for (const spec of rows) {
     // ⚠️ REETIQUETA EM VEZ DE SALTAR quando a linha já existe, e é por isso que esta função é chamada
     // também do `render()` de cada abertura: o texto foi capturado no intervalo de arranque, onde o idioma
     // ainda é o de recuo. 📏 Medido num navegador com `lang="en"`: o título vinha em inglês e as linhas em
     // português, na mesma tela. Ver `ui/panel-widgets.labelRow`.
-    const existingRow = ctx.procurar('#' + spec.id);
+    const existingRow = ctx.find('#' + spec.id);
     if (existingRow) {
       const linha = existingRow.closest<HTMLElement>('.ctrl-row');
       if (linha) labelRow(linha, spec);
       continue;
     }
-    lista.appendChild(controlRow(ctx, spec).linha);
+    lista.appendChild(controlRow(ctx, spec).row);
   }
 }
 
@@ -358,11 +358,11 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
    * ⚠️ E a linha é do CARTUCHO: a engine não a criou e por isso não a destrói. `hidden` é reversível e
    * idempotente; remover markup alheio não é nenhuma das duas coisas.
    */
-  if (!ctx.seguraTeclas && altMoveRow) altMoveRow.hidden = true;
+  if (!ctx.holdsKeys && altMoveRow) altMoveRow.hidden = true;
 
   /** A recusa DESTE jogador agora, ou `null`. Recalculada a cada reflexo: o aparelho em uso muda. */
   function refusalFor(i: number) {
-    return ctx.transporteEmUso ? latchRefusal(ctx.transporteEmUso(i)) : null;
+    return ctx.transportInUse ? latchRefusal(ctx.transportInUse(i)) : null;
   }
   const toggleRunBtn = ctx.$<HTMLElement>('#opt-togglerun');
 
@@ -441,7 +441,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
       const refusal = refusalFor(selMovPlayer);
       if (refusal) altMoveBtn.setAttribute('aria-disabled', 'true');
       else altMoveBtn.removeAttribute('aria-disabled');
-      if (altMoveHint) altMoveHint.textContent = refusal ? `${dicaOriginal} ${t(refusal.chave)}`.trim() : dicaOriginal;
+      if (altMoveHint) altMoveHint.textContent = refusal ? `${dicaOriginal} ${t(refusal.key)}`.trim() : dicaOriginal;
     }
     reflectMovementBtn();
   }
@@ -492,7 +492,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
          * proíbe. Então a recusa FALA: quem carregou fica a saber por quê, mesmo sem ver a dica.
          */
         const refusal = refusalFor(selMovPlayer);
-        if (refusal) { ctx.srSay(t(refusal.chave)); return; }
+        if (refusal) { ctx.srSay(t(refusal.key)); return; }
         setToggleMove(selMovPlayer, !ctx.players[selMovPlayer].toggleMove);
         reflectAltMove();
       });
@@ -540,7 +540,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
 
   return {
     renderMovPlayers,
-    reflectFacil,
+    reflectEasy: reflectFacil,
     reflectAltMove,
     reflectToggleRun,
     setEasy,

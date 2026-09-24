@@ -24,7 +24,7 @@ describe('CAA_SETS — o catálogo', () => {
   it('[Right] os três CC BY-SA estão na camada que pode viajar dentro do jogo', () => {
     for (const k of ['mulberry', 'blissymbolics', 'tawasol']) {
       expect(CAA_BY_KEY[k].tier).toBe('bundled');
-      expect(CAA_BY_KEY[k].licenca).toContain('CC BY-SA');
+      expect(CAA_BY_KEY[k].license).toContain('CC BY-SA');
     }
   });
 
@@ -41,7 +41,7 @@ describe('CAA_SETS — o catálogo', () => {
 
   it('[Interface] todo conjunto redistribuível DECLARA a licença; nenhum viaja sem ela', () => {
     // Embutir sem licença registrada é problema jurídico, não bug: quem redistribui somos nós.
-    for (const s of CAA_SETS) if (s.tier === 'bundled') expect(s.licenca, s.key).toBeTruthy();
+    for (const s of CAA_SETS) if (s.tier === 'bundled') expect(s.license, s.key).toBeTruthy();
   });
 
   it('[Interface] CAA_BY_KEY cobre o catálogo inteiro, sem chave perdida', () => {
@@ -51,7 +51,7 @@ describe('CAA_SETS — o catálogo', () => {
 
 describe('caaMotivo — duas respostas, porque são duas situações', () => {
   it('[Zero] disponível não tem motivo — não há o que explicar', () => {
-    expect(caaReason({ ...CAA_BY_KEY.mulberry, disponivel: true })).toBeNull();
+    expect(caaReason({ ...CAA_BY_KEY.mulberry, available: true })).toBeNull();
   });
 
   it('[Right] "em preparação" quando a licença está resolvida e o trabalho é NOSSO', () => {
@@ -82,31 +82,31 @@ describe('o interruptor das letras', () => {
   it('[Interface] a linha explica o DESLIGADO — senão "off" fica sem significado', () => {
     // O off não é "sem letras": é maiúsculas E minúsculas. Um interruptor cujo desligado não se explica
     // deixa a criança adivinhando o que ela perde ao desligá-lo.
-    expect(lettersRowSpec().dica).toContain('minúsculas');
+    expect(lettersRowSpec().hint).toContain('minúsculas');
   });
 
   it('[Interface] o interruptor das letras é o piso: sem motivo, porque não depende de arquivo nenhum', () => {
     // Todo conjunto de pictograma carrega um motivo de não servir; este não tem nenhum a carregar. Se um dia
     // tiver, é porque virou dependente de algo — e aí o motivo aparece aqui antes de aparecer na tela.
-    expect(lettersRowSpec().rotuloAria).toBeUndefined();
+    expect(lettersRowSpec().ariaLabel).toBeUndefined();
   });
 });
 
 describe('caaRowSpec — o que a linha de um conjunto DIZ, antes de existir nó nenhum', () => {
   it('[Interface] o motivo entra no NOME ACESSÍVEL — quem não vê a linha ouve por que ela não serve', () => {
-    expect(caaRowSpec(CAA_BY_KEY.sclera).rotuloAria).toMatch(/^Sclera, .*negocia/);
+    expect(caaRowSpec(CAA_BY_KEY.sclera).ariaLabel).toMatch(/^Sclera, .*negocia/);
   });
 
   it('[Interface] Tawasol carrega a nota sobre cultura — é o que muda o significado da escolha', () => {
     // Um pictograma não é neutro: é desenhado por e para uma cultura. Sem a nota, "Tawasol" é só um nome
     // estranho na lista, e o educador não tem como saber para qual criança ele é a escolha certa.
-    expect(caaRowSpec(CAA_BY_KEY.tawasol).dica).toContain('árabe');
+    expect(caaRowSpec(CAA_BY_KEY.tawasol).hint).toContain('árabe');
   });
 
   it('[Interface] a licença vai na MESMA dica, não numa segunda linha de prosa', () => {
     // A regra de menu do CLAUDE.md §4: um único `.opt-hint` por linha. Dois davam duas descrições ao mesmo
     // controle, e o rodapé mostrava a primeira — a outra ficava na linha, virando o manual que a regra proíbe.
-    expect(caaRowSpec(CAA_BY_KEY.mulberry).dica).toContain('Licença: ');
+    expect(caaRowSpec(CAA_BY_KEY.mulberry).hint).toContain('Licença: ');
   });
 
   it('[Right] o id sai do key do catálogo, que é único por construção', () => {

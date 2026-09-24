@@ -100,8 +100,8 @@ function fullCtx(over = {}) {
     getAudioCat: () => audioCat,
     setCatGain: (k) => { catGainCalls.push(k); },
     tts,
-    getModoCego: () => blindMode,
-    setModoCego: (v) => { blindMode = v; },
+    getBlindMode: () => blindMode,
+    setBlindMode: (v) => { blindMode = v; },
     getCaneBlockDiv: () => caneBlockDiv,
     setCaneBlockDiv: (v) => { caneBlockDiv = v; },
     /*
@@ -138,7 +138,7 @@ function fullCtx(over = {}) {
     },
     ...over.ctxOver,
   };
-  return { ctx, said, store, catGainCalls, audioCat, players, tts, getSoundOn: () => soundOn, getVolume: () => volume, getModoCego: () => blindMode, getCaneBlockDiv: () => caneBlockDiv };
+  return { ctx, said, store, catGainCalls, audioCat, players, tts, getSoundOn: () => soundOn, getVolume: () => volume, getBlindMode: () => blindMode, getCaneBlockDiv: () => caneBlockDiv };
 }
 
 const origMediaDevices = navigator.mediaDevices;
@@ -335,7 +335,7 @@ describe('ui/settings-audio — som mestre', () => {
 
 describe('ui/settings-audio — modo cego / bengala', () => {
   it('[Interface] o botão de modo cego delega a ctx.setModoCego e reflete o novo estado', () => {
-    const { ctx, getModoCego } = fullCtx({ blindMode: false });
+    const { ctx, getBlindMode: getModoCego } = fullCtx({ blindMode: false });
     initSettingsAudio(ctx);
     const btn = document.querySelector('#opt-modocego');
     btn.click();
@@ -491,7 +491,7 @@ describe('ui/settings-audio — restaurar padrões DESTE menu (ADR-0028)', () =>
     cat.music.on = false; cat.music.vol = 0.1;   // mexido, mas no OUTRO painel desde o ADR-0151
     cat.sonar.vol = 0.2;                          // mexido, e deste painel
     cat.tts.on = true;                            // o TTS nasce DESLIGADO, então isto é desvio
-    const { ctx, said, getModoCego, getCaneBlockDiv } = fullCtx({ audioCat: cat, blindMode: true, caneBlockDiv: 2 });
+    const { ctx, said, getBlindMode: getModoCego, getCaneBlockDiv } = fullCtx({ audioCat: cat, blindMode: true, caneBlockDiv: 2 });
     initSettingsAudio(ctx);
     document.querySelector('#audio-reset').click();
     expect(getModoCego()).toBe(false);
@@ -573,7 +573,7 @@ describe('ui/settings-audio — o painel ASSINA o modo cego (ADR-0106 §4)', () 
     const estado = await import('../app/js/core/state.js');
     let cego = estado.blindMode;
     const { ctx } = fullCtx({});
-    ctx.getModoCego = () => cego;
+    ctx.getBlindMode = () => cego;
     initSettingsAudio(ctx);
 
     const btn = document.querySelector('#opt-modocego');
@@ -604,8 +604,8 @@ describe('ui/settings-audio — o modo cego ANUNCIA, como os cinco irmãos deste
     // com este botão mudo — a mesma família do `reflectTTS`, que já custou um controlo a mentir o estado.
     let cego = false;
     const { ctx, said } = fullCtx({});
-    ctx.getModoCego = () => cego;
-    ctx.setModoCego = (on) => { cego = on; };
+    ctx.getBlindMode = () => cego;
+    ctx.setBlindMode = (on) => { cego = on; };
     initSettingsAudio(ctx);
 
     document.querySelector('#opt-modocego').click();

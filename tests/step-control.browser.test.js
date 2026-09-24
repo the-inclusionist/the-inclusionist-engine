@@ -9,8 +9,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { mountSteps, updateSteps, nextStep } from '../app/js/ui/panel-widgets.js';
 
-const ctx = { procurar: (s) => document.querySelector(s), criar: (t) => document.createElement(t) };
-const SPEC = { rotulo: 'Rounded corners', valores: ['off', 'small', 'large'], atual: 1 };
+const ctx = { find: (s) => document.querySelector(s), create: (t) => document.createElement(t) };
+const SPEC = { label: 'Rounded corners', values: ['off', 'small', 'large'], current: 1 };
 
 beforeEach(() => { document.body.innerHTML = ''; });
 
@@ -64,11 +64,11 @@ describe('montarPassos — one focusable control, two finger targets', () => {
   });
 
   it('[Boundary] the arrow of a wall is marked, and it moves with the position', () => {
-    const el = mountSteps(ctx, { ...SPEC, atual: 0 });
+    const el = mountSteps(ctx, { ...SPEC, current: 0 });
     document.body.appendChild(el);
     expect(el.querySelector('[data-passo="-1"]').classList.contains('no-limite')).toBe(true);
     expect(el.querySelector('[data-passo="1"]').classList.contains('no-limite')).toBe(false);
-    updateSteps(el, { ...SPEC, atual: 2 });
+    updateSteps(el, { ...SPEC, current: 2 });
     expect(el.querySelector('[data-passo="-1"]').classList.contains('no-limite')).toBe(false);
     expect(el.querySelector('[data-passo="1"]').classList.contains('no-limite')).toBe(true);
     expect(el.getAttribute('aria-valuenow')).toBe('2');

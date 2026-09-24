@@ -52,13 +52,13 @@ export function drawnBelowTheFloor(ctx: DrawingProblemsCtx): string | null {
     const b = el.getBoundingClientRect();
     const hasText = [...el.childNodes].some((c) => c.nodeType === 3 && (c.textContent ?? '').trim() !== '');
     return {
-      nome: nodeName(el),
+      name: nodeName(el),
       daEngine: el.closest(ENGINE_NODES) !== null,
-      fontePx: hasText && b.width > 0 && b.height > 0 ? parseFloat(ctx.computedStyle!(el).fontSize) : null,
-      alvo: el.matches(TOUCH_TARGET) ? { w: b.width, h: b.height } : null,
+      fontPx: hasText && b.width > 0 && b.height > 0 ? parseFloat(ctx.computedStyle!(el).fontSize) : null,
+      target: el.matches(TOUCH_TARGET) ? { w: b.width, h: b.height } : null,
     };
   });
-  const { texto, alvos } = belowFloor(nodes, scale.k);
+  const { text: texto, targets: alvos } = belowFloor(nodes, scale.k);
   if (!texto.length && !alvos.length) return null;
   const k = minimumTarget(scale.k) / 22;
   const parts = [
@@ -94,10 +94,10 @@ export function barIntruderProblems(ctx: DrawingProblemsCtx): string[] {
       || (cs.backgroundImage !== '' && cs.backgroundImage !== 'none');
   };
   const nodes = [...region.querySelectorAll('*')].filter((el) => paints(el)).map((el) => ({
-    nome: nodeName(el),
-    caixa: boxOf(el),
+    name: nodeName(el),
+    box: boxOf(el),
     // the engine's HUD bands are placed by the ENGINE: if one reaches the bar, that is the engine's defect and not the game's
-    daBarra: el === bar || bar.contains(el) || el.closest('.hud-faixa') !== null,
+    isBar: el === bar || bar.contains(el) || el.closest('.hud-faixa') !== null,
   }));
   return barIntruders(boxOf(bar), nodes);
 }

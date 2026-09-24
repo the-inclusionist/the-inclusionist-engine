@@ -11,7 +11,7 @@ import * as state from '../app/js/core/state.js';
 import { PADRAO } from '../app/js/render/viz-axes.js';
 
 const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: PADRAO, privateOutput: true, ...over });
-const todos = { tema: true, correcao: true, seguraTeclas: () => true, tipografia: true, relogio: () => true, menus: true };
+const todos = { theme: true, correction: true, holdsKeys: () => true, typography: true, clock: () => true, menus: true };
 function portaFalsa(guardado = {}) {
   const dados = { ...guardado };
   return {

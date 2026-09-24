@@ -11,8 +11,8 @@ import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { DEFAULTS } from '../app/js/core/state.js';
 import { PADRAO } from '../app/js/render/viz-axes.js';
 
-const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: PADRAO, privateOutput: true, velocidade: DEFAULTS.gameSpeed, ...over });
-const todos = { tema: true, correcao: true, seguraTeclas: () => true, tipografia: true };
+const snap = (over = {}) => ({ blindMode: false, ttsOn: false, librasOn: false, calmMode: 0, toggleMove: false, visual: PADRAO, privateOutput: true, speed: DEFAULTS.gameSpeed, ...over });
+const todos = { theme: true, correction: true, holdsKeys: () => true, typography: true };
 
 describe('the hourglass icon', () => {
   it('📌 [Right] it is its own icon, an hourglass, after the eleven — never the finger icon', () => {
@@ -26,19 +26,19 @@ describe('the hourglass icon', () => {
   });
 
   it('🔴 [Right] it mounts in a game whose time runs by itself, and not in a turn game', () => {
-    expect(iconsThatAct({ ...todos, relogio: () => true }).map((ic) => ic.k)).toContain('velocidade');
-    expect(iconsThatAct({ ...todos, relogio: () => false }).map((ic) => ic.k)).not.toContain('velocidade');
+    expect(iconsThatAct({ ...todos, clock: () => true }).map((ic) => ic.k)).toContain('velocidade');
+    expect(iconsThatAct({ ...todos, clock: () => false }).map((ic) => ic.k)).not.toContain('velocidade');
     expect(iconsThatAct(todos).map((ic) => ic.k), 'no clock answer is no hourglass').not.toContain('velocidade');
   });
 
   it('🔴 [Right] its name says the speed', () => {
-    expect(computeIconLabel('velocidade', snap({ velocidade: 0.8 }))).toMatch(/80\s?%/);
-    expect(computeIconLabel('velocidade', snap({ velocidade: 1 }))).toMatch(/100\s?%/);
+    expect(computeIconLabel('velocidade', snap({ speed: 0.8 }))).toMatch(/80\s?%/);
+    expect(computeIconLabel('velocidade', snap({ speed: 1 }))).toMatch(/100\s?%/);
   });
 
   it('🎯 [Right] it shows as on while the game is slowed, and off at 100%', () => {
-    expect(computeIconVisual('velocidade', snap({ velocidade: 0.6 }))).toMatchObject({ on: true, active: true });
-    expect(computeIconVisual('velocidade', snap({ velocidade: 1 }))).toMatchObject({ on: false, active: false });
+    expect(computeIconVisual('velocidade', snap({ speed: 0.6 }))).toMatchObject({ on: true, active: true });
+    expect(computeIconVisual('velocidade', snap({ speed: 1 }))).toMatchObject({ on: false, active: false });
   });
 });
 

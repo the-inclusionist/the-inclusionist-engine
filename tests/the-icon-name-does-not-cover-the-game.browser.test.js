@@ -28,7 +28,7 @@ async function medir() {
   const nome = barra.querySelector('.pause-icons-cap');
   const caixa = nome.getBoundingClientRect();
   const jogo = [document.querySelector('.quiz-pergunta'), ...document.querySelectorAll('.quiz-alt')].map((el) => el.getBoundingClientRect());
-  return { texto: nome.textContent.trim(), caixa, jogo };
+  return { texto: nome.textContent.trim(), box: caixa, jogo };
 }
 const cruza = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
@@ -46,7 +46,7 @@ beforeAll(async () => {
 
 describe('the icon name under the quick bar', () => {
   it('🔴 [Right] at 640×360, the pointed icon\'s name covers nothing of the game, with a gap before the statement', async () => {
-    const { texto, caixa, jogo } = await medir();
+    const { texto, box: caixa, jogo } = await medir();
     expect(texto, 'no name shown — the case would measure an empty box').not.toBe('');
     jogo.forEach((r, i) => { expect(cruza(caixa, r), `the name covers game node ${i} (0 = statement)`).toBe(false); });
     expect(jogo[0].top - caixa.bottom, 'no gap between the name and the statement').toBeGreaterThanOrEqual(1);
@@ -57,7 +57,7 @@ describe('the icon name under the quick bar', () => {
     palco.style.height = '720px';
     window.dispatchEvent(new Event('resize'));
     await esperar(150);
-    const { caixa, jogo } = await medir();
+    const { box: caixa, jogo } = await medir();
     expect(caixa.height, 'the name did not grow with the scale — the case would measure the old size').toBeGreaterThan(40);
     jogo.forEach((r, i) => { expect(cruza(caixa, r), `at 1280×720 the name covers game node ${i}`).toBe(false); });
     expect(jogo[0].top - caixa.bottom).toBeGreaterThanOrEqual(1);
@@ -71,7 +71,7 @@ describe('the icon name under the quick bar', () => {
       await esperar();
     }
     expect(document.documentElement.style.getPropertyValue('--fonte-escala'), 'the cycle never reached the larger hand').toBe('1.25');
-    const { caixa, jogo } = await medir();
+    const { box: caixa, jogo } = await medir();
     jogo.forEach((r, i) => { expect(cruza(caixa, r), `with the larger text the name covers game node ${i}`).toBe(false); });
     expect(jogo[0].top - caixa.bottom).toBeGreaterThanOrEqual(1);
   });

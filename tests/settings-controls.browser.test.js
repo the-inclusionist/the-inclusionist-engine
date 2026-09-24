@@ -37,11 +37,11 @@ function buildCtx(over = {}) {
     $,
     // As posicoes que ESTE 'jogo' usa. Num teste, o jogo e o fixture — e e por isso que a lista
     // vive aqui e nao numa tabela da engine: era a engine a decidir que todo jogo tem quatro verbos.
-    acoesDoJogo: () => [
-      { acao: 'left', rotulo: 'Esquerda' }, { acao: 'right', rotulo: 'Direita' },
-      { acao: 'up', rotulo: 'Subir' }, { acao: 'down', rotulo: 'Descer' },
-      { acao: 'action1', rotulo: 'Correr' }, { acao: 'action2', rotulo: 'Pular' },
-      { acao: 'action4', rotulo: 'Trocar' }, { acao: 'action3', rotulo: 'Especial' },
+    gameActions: () => [
+      { action: 'left', label: 'Esquerda' }, { action: 'right', label: 'Direita' },
+      { action: 'up', label: 'Subir' }, { action: 'down', label: 'Descer' },
+      { action: 'action1', label: 'Correr' }, { action: 'action2', label: 'Pular' },
+      { action: 'action4', label: 'Trocar' }, { action: 'action3', label: 'Especial' },
     ],
     srSay: (msg) => said.push(msg),
     srAlert: (msg) => alerted.push(msg),
@@ -133,7 +133,7 @@ describe('ui/settings-controls', () => {
     // FORA do `.ctrl-nome`, então nenhum `textContent` posterior o apaga — e ele fica visível ao caso.
     const ctx = buildCtx();
     const FUGA = '</b></span></div><i id="fugiu-do-jogo"></i>';
-    ctx.acoesDoJogo = () => [{ acao: 'action2', rotulo: FUGA }];
+    ctx.gameActions = () => [{ action: 'action2', label: FUGA }];
     initSettingsControls(ctx).render(0);
 
     const lista = $('#ctrl-list');
@@ -214,7 +214,7 @@ describe('ui/settings-controls', () => {
     // é onde a palavra ainda significa alguma coisa: não há tecla para mostrar, há uma para pôr.
     const ctx = buildCtx();
     ctx.kbFor = () => ({ action2: [] });
-    ctx.acoesDoJogo = () => [{ acao: 'action2', rotulo: 'Pular' }];
+    ctx.gameActions = () => [{ action: 'action2', label: 'Pular' }];
     initSettingsControls(ctx).render(0);
     const b = $('#ctrl-list').querySelector('button[data-act="action2"]');
     expect(b.textContent).toBe('Alterar');
@@ -286,9 +286,9 @@ describe('ui/settings-controls', () => {
     // ausência — e este ficheiro tinha decidido outra. Duas respostas à mesma pergunta, e uma contraria um ADR
     // aceite.
     const ctx = buildCtx({
-      acoesDoJogo: () => [
-        { acao: 'up', rotulo: 'Subir' }, { acao: 'down', rotulo: 'Descer' },
-        { acao: 'action1', rotulo: 'Confirmar' },
+      gameActions: () => [
+        { action: 'up', label: 'Subir' }, { action: 'down', label: 'Descer' },
+        { action: 'action1', label: 'Confirmar' },
       ],
     });
     const api = initSettingsControls(ctx);
@@ -503,7 +503,7 @@ describe('ui/settings-controls — uma tecla, uma ação, dentro do mesmo esquem
   it('⚠️ [Interface] o nome vem do JOGO, nao da tabela do jogo de plataforma (#125)', () => {
     // `ACT_LABEL` diz «Subir» porque e a palavra DAQUELE jogo. Um jogo que chame a posicao de outra coisa
     // tem de ouvir a palavra dele — e este caso e o que impede o atalho de voltar.
-    const ctx = soloCtx({ acoesDoJogo: () => [{ acao: 'up', rotulo: 'Cabecear' }, { acao: 'action2', rotulo: 'Chutar' }] });
+    const ctx = soloCtx({ gameActions: () => [{ action: 'up', label: 'Cabecear' }, { action: 'action2', label: 'Chutar' }] });
     const api = initSettingsControls(ctx);
     api.render(0);
     $('#ctrl-list').querySelector('button[data-act="action2"]').click();
@@ -585,7 +585,7 @@ describe('ui/settings-controls — o que o leitor de tela ouve e a palavra DESTE
   });
 
   it('⚠️ [Right] o aria-label de cada botao usa o rotulo do jogo, nao a tabela da engine', () => {
-    const ctx = buildCtx({ acoesDoJogo: () => [{ acao: 'up', rotulo: 'Cabecear' }, { acao: 'action2', rotulo: 'Chutar' }] });
+    const ctx = buildCtx({ gameActions: () => [{ action: 'up', label: 'Cabecear' }, { action: 'action2', label: 'Chutar' }] });
     initSettingsControls(ctx).render(0);
     const rotulos = [...$('#ctrl-list').querySelectorAll('button[data-act]')].map((b) => b.getAttribute('aria-label'));
     expect(rotulos).toHaveLength(2);
@@ -597,7 +597,7 @@ describe('ui/settings-controls — o que o leitor de tela ouve e a palavra DESTE
     // O caso que teria apanhado a #125 no dia. As catorze posicoes, das quais o `ACT_LABEL` so conhecia oito.
     const TODAS = ['left', 'right', 'up', 'down', 'action1', 'action2', 'action3', 'action4',
       'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger', 'start', 'select'];
-    const ctx = buildCtx({ acoesDoJogo: () => TODAS.map((a) => ({ acao: a, rotulo: 'W' + a })) });
+    const ctx = buildCtx({ gameActions: () => TODAS.map((a) => ({ action: a, label: 'W' + a })) });
     initSettingsControls(ctx).render(0);
     const maus = [...$('#ctrl-list').querySelectorAll('button[data-act]')]
       .map((b) => b.getAttribute('aria-label') ?? '')
@@ -609,7 +609,7 @@ describe('ui/settings-controls — o que o leitor de tela ouve e a palavra DESTE
     // O rotulo e texto de FORA. Se fosse para dentro do template do `aria-label`, um preset podia fechar o
     // atributo e abrir outro. O caso passa uma aspa e um `<img>` e exige que nada disso vire marcacao.
     const VENENO = '" onmouseover="alert(1)" x="<img src=x onerror=alert(1)>';
-    const ctx = buildCtx({ acoesDoJogo: () => [{ acao: 'up', rotulo: VENENO }] });
+    const ctx = buildCtx({ gameActions: () => [{ action: 'up', label: VENENO }] });
     initSettingsControls(ctx).render(0);
     const lista = $('#ctrl-list');
     expect(lista.querySelector('img'), 'o rotulo foi ANALISADO como marcacao').toBe(null);
@@ -696,7 +696,7 @@ describe('ui/settings-controls — o que a sonda achou sem caso (23/09)', () => 
     // O outro lado do caso da posicao inventada: aqui a posicao tem PALAVRA, logo o unico guarda no caminho e o
     // `isAction`. Sem ele, a tecla nova seria gravada numa chave que transporte nenhum le.
     const ctx = buildCtx();
-    ctx.acoesDoJogo = () => [{ acao: 'action99', rotulo: 'Voar' }];
+    ctx.gameActions = () => [{ action: 'action99', label: 'Voar' }];
     const api = initSettingsControls(ctx);
     api.render(0);
     $('#ctrl-list').querySelector('button[data-act="action99"]').click();

@@ -77,9 +77,9 @@ const HAND_BY_LANGUAGE: Readonly<Record<string, readonly string[]>> = Object.fre
 /** Uma posição do ciclo de tipografia do 11.º botão: a CAIXA e a FACE, juntas (ADR-0149 §1). */
 export interface TypographyStep {
   /** `upper` = CAIXA ALTA; `mixed` = maiúscula e minúscula. Os valores de `core/state.letterCase`. */
-  readonly caixa: 'upper' | 'mixed';
+  readonly letterCase: 'upper' | 'mixed';
   /** A chave da face no catálogo. */
-  readonly fonte: string;
+  readonly font: string;
   /**
    * O multiplicador de tamanho desta posição — 1 nas faces de leitura, **1,25 na mão do país** (ADR-0149 §1).
    *
@@ -88,7 +88,7 @@ export interface TypographyStep {
    * diferentes: a dificuldade é o exercício, a ilegibilidade é a criança a desistir»). A base do documento é
    * 16 px, e 16 × 1,25 = 20 — o multiplicador É o piso, escrito como razão em vez de como número solto.
    */
-  readonly escala: number;
+  readonly scale: number;
 }
 
 /** O aumento da mão do país. Nomeado para o crivo o poder afirmar contra o `minPx` em vez de o repetir. */
@@ -117,13 +117,13 @@ export const BASE_EM_PX = 16;
 export function typographyCycle(tag: string | null | undefined): readonly TypographyStep[] {
   const hands = handsForTag(tag);
   return Object.freeze([
-    { caixa: 'upper', fonte: 'andika', escala: 1 } as const,   // (a) o par da alfabetização
-    { caixa: 'mixed', fonte: 'andika', escala: 1 } as const,   // (b)
-    { caixa: 'mixed', fonte: 'atkinson', escala: 1 } as const, // (c) o padrão — o ciclo começa aqui
-    { caixa: 'mixed', fonte: 'lexend', escala: 1 } as const,   // (d)
+    { letterCase: 'upper', font: 'andika', scale: 1 } as const,   // (a) o par da alfabetização
+    { letterCase: 'mixed', font: 'andika', scale: 1 } as const,   // (b)
+    { letterCase: 'mixed', font: 'atkinson', scale: 1 } as const, // (c) o padrão — o ciclo começa aqui
+    { letterCase: 'mixed', font: 'lexend', scale: 1 } as const,   // (d)
     // (e), e (f) onde o país ensina duas. ⚠️ 25% MAIOR, e o número não é gosto: a base do documento é 16 px,
     // as Playwrite declaram `minPx: 20`, e 16 × 1,25 é exactamente 20. A escala É o piso.
-    ...hands.map((fonte) => ({ caixa: 'mixed', fonte, escala: HANDWRITING_SCALE } as const)),
+    ...hands.map((fonte) => ({ letterCase: 'mixed', font: fonte, scale: HANDWRITING_SCALE } as const)),
   ]);
 }
 
@@ -144,7 +144,7 @@ export type FontItem = {
   id: string;
   k: string; fam: string; fb: string; d?: string; off?: string;
   /** Ausente = `geral`. Só as caligráficas se declaram, porque são a excepção. */
-  papel?: FontRole;
+  role?: FontRole;
   /**
    * O menor tamanho, em px, em que esta face ainda é legível (item 2 da #87, números do Dev).
    *
@@ -238,11 +238,11 @@ export const FONT_GROUPS: FontGroup[] = [
   //     desabilitadas e nada existia por trás. Uma linha que só serve para dizer «ainda não» é uma linha que
   //     a criança lê e não pode usar.
   {g:'font.group.hand', items:[
-    {k:'pinyon', id:'pinyon_script',     fam:'Pinyon Script',       fb:'cursive', d:'font.desc.pinyon', papel:'caligrafica', minPx:24},
-    {k:'ufmag', id:'unifrakturmaguntia',      fam:'UnifrakturMaguntia',  fb:'cursive', d:'font.desc.ufmag',  papel:'caligrafica', minPx:20},
+    {k:'pinyon', id:'pinyon_script',     fam:'Pinyon Script',       fb:'cursive', d:'font.desc.pinyon', role:'caligrafica', minPx:24},
+    {k:'ufmag', id:'unifrakturmaguntia',      fam:'UnifrakturMaguntia',  fb:'cursive', d:'font.desc.ufmag',  role:'caligrafica', minPx:20},
     // Fondamento entra pela emenda do ADR-0012 (#87 item 3) com o mínimo que o Dev fixou. Caligráfica, logo
     // fora do menu — ela é para os botões DENTRO das atividades escolares, não para a interface.
-    {k:'fondamento', id:'fondamento', fam:'Fondamento',          fb:'cursive', d:'font.desc.fondamento', papel:'caligrafica', minPx:20},
+    {k:'fondamento', id:'fondamento', fam:'Fondamento',          fb:'cursive', d:'font.desc.fondamento', role:'caligrafica', minPx:20},
     /*
      * A RONDE FRANCESA — o item 4 da #87, decidido no ADR-0108 §4. Ela NUNCA é empacotada: as três faces são
      * livres só para uso PESSOAL (ADR-0012), e distribuí-las seria distribuir o que não foi licenciado para
@@ -270,13 +270,13 @@ export const FONT_GROUPS: FontGroup[] = [
      */
     // THE HANDWRITING GROUP'S GENERAL FACE (ADR-0176 §6, the Dev): in the menu, drawn at `minPx` by the face's scale.
     {k:'pwbr', id:'playwrite_br', fam:'Playwrite BR', fb:'cursive', d:'font.desc.pw.br', minPx:20},
-    {k:'pwustrad', id:'playwrite_us_trad', fam:'Playwrite US Trad', fb:'cursive', d:'font.desc.pw.ustrad', papel:'caligrafica', minPx:20},
-    {k:'pwusmod', id:'playwrite_us_modern', fam:'Playwrite US Modern', fb:'cursive', d:'font.desc.pw.usmod', papel:'caligrafica', minPx:20},
-    {k:'pwca', id:'playwrite_ca', fam:'Playwrite CA', fb:'cursive', d:'font.desc.pw.ca', papel:'caligrafica', minPx:20},
-    {k:'pwmx', id:'playwrite_mx', fam:'Playwrite MX', fb:'cursive', d:'font.desc.pw.mx', papel:'caligrafica', minPx:20},
-    {k:'pwar', id:'playwrite_ar', fam:'Playwrite AR', fb:'cursive', d:'font.desc.pw.ar', papel:'caligrafica', minPx:20},
-    {k:'pwcl', id:'playwrite_cl', fam:'Playwrite CL', fb:'cursive', d:'font.desc.pw.cl', papel:'caligrafica', minPx:20},
-    {k:'pwco', id:'playwrite_co', fam:'Playwrite CO', fb:'cursive', d:'font.desc.pw.co', papel:'caligrafica', minPx:20},
+    {k:'pwustrad', id:'playwrite_us_trad', fam:'Playwrite US Trad', fb:'cursive', d:'font.desc.pw.ustrad', role:'caligrafica', minPx:20},
+    {k:'pwusmod', id:'playwrite_us_modern', fam:'Playwrite US Modern', fb:'cursive', d:'font.desc.pw.usmod', role:'caligrafica', minPx:20},
+    {k:'pwca', id:'playwrite_ca', fam:'Playwrite CA', fb:'cursive', d:'font.desc.pw.ca', role:'caligrafica', minPx:20},
+    {k:'pwmx', id:'playwrite_mx', fam:'Playwrite MX', fb:'cursive', d:'font.desc.pw.mx', role:'caligrafica', minPx:20},
+    {k:'pwar', id:'playwrite_ar', fam:'Playwrite AR', fb:'cursive', d:'font.desc.pw.ar', role:'caligrafica', minPx:20},
+    {k:'pwcl', id:'playwrite_cl', fam:'Playwrite CL', fb:'cursive', d:'font.desc.pw.cl', role:'caligrafica', minPx:20},
+    {k:'pwco', id:'playwrite_co', fam:'Playwrite CO', fb:'cursive', d:'font.desc.pw.co', role:'caligrafica', minPx:20},
     /*
      * MAIS SETE, e elas existem por uma REGRA e não por gosto (ADR-0150, decisão do Dev de 2026-09-12).
      *
@@ -294,13 +294,13 @@ export const FONT_GROUPS: FontGroup[] = [
      * conforme necessário»). A decisão nova é dele e é literal: «estas fontes devem ser baixadas no primeiro
      * dia para fazer parte do PWA». Fica escrito porque o registo antigo continua a dizer o contrário.
      */
-    {k:'pwes', id:'playwrite_es', fam:'Playwrite ES', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwesdeco', id:'playwrite_es_deco', fam:'Playwrite ES Deco', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwpt', id:'playwrite_pt', fam:'Playwrite PT', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwgbj', id:'playwrite_gb_j', fam:'Playwrite GB J', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwgbs', id:'playwrite_gb_s', fam:'Playwrite GB S', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwcu', id:'playwrite_cu', fam:'Playwrite CU', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwpe', id:'playwrite_pe', fam:'Playwrite PE', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwes', id:'playwrite_es', fam:'Playwrite ES', fb:'cursive', role:'caligrafica', minPx:20},
+    {k:'pwesdeco', id:'playwrite_es_deco', fam:'Playwrite ES Deco', fb:'cursive', role:'caligrafica', minPx:20},
+    {k:'pwpt', id:'playwrite_pt', fam:'Playwrite PT', fb:'cursive', role:'caligrafica', minPx:20},
+    {k:'pwgbj', id:'playwrite_gb_j', fam:'Playwrite GB J', fb:'cursive', role:'caligrafica', minPx:20},
+    {k:'pwgbs', id:'playwrite_gb_s', fam:'Playwrite GB S', fb:'cursive', role:'caligrafica', minPx:20},
+    {k:'pwcu', id:'playwrite_cu', fam:'Playwrite CU', fb:'cursive', role:'caligrafica', minPx:20},
+    {k:'pwpe', id:'playwrite_pe', fam:'Playwrite PE', fb:'cursive', role:'caligrafica', minPx:20},
     {k:'ronde', id:'ronde_script', fam:'Ronde Script, OPTIFrench-Script, Merveille', fb:'cursive',
       d:'font.desc.ronde', off:'font.off.ronde', minPx:18} ]},
   // ⚠️ A FACE DO JOGO, e ela tem grupo próprio porque não é nem sans, nem serifada, nem manuscrita — é uma
@@ -310,7 +310,7 @@ export const FONT_GROUPS: FontGroup[] = [
   // estava verificado. Ver a nota do `@font-face` em `vendor/fonts.css`: o subconjunto errado desta família
   // carrega, declara-se e reporta-se como certo, e não desenha uma única letra latina.
   {g:'font.group.arcade', items:[
-    {k:'pressstart', id:'press_start_2p', fam:'Press Start 2P', fb:'monospace', d:'font.desc.pressstart', papel:'jogo'} ]},
+    {k:'pressstart', id:'press_start_2p', fam:'Press Start 2P', fb:'monospace', d:'font.desc.pressstart', role:'jogo'} ]},
 ];
 
 /** O papel de uma face; ausente no catálogo quer dizer `geral`. */
@@ -321,7 +321,7 @@ export const FONT_GROUPS: FontGroup[] = [
  */
 export function faceScale(it: FontItem): number { return Math.max(1, (it.minPx ?? BASE_EM_PX) / BASE_EM_PX); }
 
-export function fontRole(it: FontItem): FontRole { return it.papel ?? 'geral'; }
+export function fontRole(it: FontItem): FontRole { return it.role ?? 'geral'; }
 
 /**
  * AS FAMÍLIAS QUE UMA FACE ACEITA, do `fam` que pode ser uma PILHA.

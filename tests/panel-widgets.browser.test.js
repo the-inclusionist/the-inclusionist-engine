@@ -15,8 +15,8 @@ import { mountAudioInside, mountSoundInside } from '../app/js/ui/settings-audio.
 import { mountShell } from '../app/js/ui/panel-shell.js';
 
 const ctx = {
-  procurar: (s) => document.querySelector(s),
-  criar: (t) => document.createElement(t),
+  find: (s) => document.querySelector(s),
+  create: (t) => document.createElement(t),
 };
 
 let hospedeiro;
@@ -30,7 +30,7 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
   it('🎯 [Right] o rótulo curto fica à vista e a prosa vai num `.opt-hint` DENTRO do `<span>`', () => {
     // É onde o `ui/settings-panel.fillExplain` a procura para a mover ao rodapé. Fora do `<span>` ela nunca
     // sai da linha, e o menu volta a ser um manual — o resultado que o Dev já viu e nomeou.
-    const { linha } = controlRow(ctx, { id: 'x', rotulo: 'Modo Fácil', dica: 'Gravidade menor.' });
+    const { row: linha } = controlRow(ctx, { id: 'x', label: 'Modo Fácil', hint: 'Gravidade menor.' });
     hospedeiro.appendChild(linha);
     expect(linha.className).toBe('ctrl-row');
     expect(linha.querySelector('strong').textContent).toBe('Modo Fácil');
@@ -42,21 +42,21 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
   });
 
   it('⚠️ [Zero] UMA dica só — duas descrições do mesmo controle deixam sempre uma para trás', () => {
-    const { linha } = controlRow(ctx, { id: 'x', rotulo: 'Rótulo', dica: 'Uma explicação.' });
+    const { row: linha } = controlRow(ctx, { id: 'x', label: 'Rótulo', hint: 'Uma explicação.' });
     expect(linha.querySelectorAll('.opt-hint')).toHaveLength(1);
   });
 
   it('[Zero] sem dica, não nasce `.opt-hint` vazio — o rodapé descansa no texto do painel', () => {
-    const { linha } = controlRow(ctx, { id: 'x', rotulo: 'Rótulo' });
+    const { row: linha } = controlRow(ctx, { id: 'x', label: 'Rótulo' });
     expect(linha.querySelector('.opt-hint')).toBeNull();
   });
 
   it('🔴 [Interface] a FORMA decide a tag — um `<select>` pedido não pode nascer `<button>`', () => {
     // ⚠️ É O DEFEITO QUE NÃO DÁ ERRO. `settings-audio` faz `ctx.$<HTMLSelectElement>('#cane-div').value = …`;
     // num `<button>` isso escreve uma propriedade que ninguém lê, e a escolha da criança some em silêncio.
-    expect(controlRow(ctx, { id: 'a', rotulo: 'A' }).controle.tagName).toBe('BUTTON');
-    expect(controlRow(ctx, { id: 'b', rotulo: 'B', forma: 'escolha' }).controle.tagName).toBe('SELECT');
-    const cursor = controlRow(ctx, { id: 'c', rotulo: 'C', forma: 'cursor' }).controle;
+    expect(controlRow(ctx, { id: 'a', label: 'A' }).controle.tagName).toBe('BUTTON');
+    expect(controlRow(ctx, { id: 'b', label: 'B', shape: 'escolha' }).controle.tagName).toBe('SELECT');
+    const cursor = controlRow(ctx, { id: 'c', label: 'C', shape: 'cursor' }).controle;
     expect(cursor.tagName).toBe('INPUT');
     expect(cursor.type).toBe('range');
     // ⚠️ E COM LIMITES: um `range` sem `min`/`max` assume 0..100, e o volume deste projeto é 0..1 — sem isto o
@@ -69,7 +69,7 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
     // O `textContent` de um interruptor deste projeto é «▶ Desligado». Sem `aria-label`, quem navega controlo
     // a controlo ouve «Desligado, botão» e não sabe desligado O QUÊ — o `<strong>` ao lado só serve a quem vê
     // a linha inteira.
-    const { controle } = controlRow(ctx, { id: 'x', rotulo: 'Modo Fácil' });
+    const { controle } = controlRow(ctx, { id: 'x', label: 'Modo Fácil' });
     expect(controle.getAttribute('aria-label')).toBe('Modo Fácil');
     expect(controle.getAttribute('aria-pressed'), 'nasce sem estado dito, e um estado por dizer é um estado errado')
       .toBe('false');
@@ -79,9 +79,9 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
     // ⚠️ Uma dica que existe num dicionário e não noutro tem de DESAPARECER na retradução. Deixar de a
     // escrever não chega: o texto antigo sobrevive e o rodapé descansa no idioma que a criança acabou de
     // deixar. É a mesma regra que o `applyLabels` já segue para o `data-explain-idle` da moldura.
-    const { linha, controle } = controlRow(ctx, { id: 'x', rotulo: 'Antes', dica: 'Explicação antiga.' });
+    const { row: linha, controle } = controlRow(ctx, { id: 'x', label: 'Antes', hint: 'Explicação antiga.' });
     hospedeiro.appendChild(linha);
-    labelRow(linha, { id: 'x', rotulo: 'Depois' });
+    labelRow(linha, { id: 'x', label: 'Depois' });
     expect(linha.querySelector('strong').textContent).toBe('Depois');
     expect(linha.querySelector('.opt-hint').textContent, 'a dica do idioma anterior sobreviveu').toBe('');
     expect(controle.getAttribute('aria-label'), 'o nome falado ficou no idioma anterior').toBe('Depois');
@@ -91,18 +91,18 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
     // Found by the probe of 2026-09-24: every kit row has one id, the control's, so «the first element with an id» and «the
     // element with this id» were the same answer. `labelRow` is published and takes any row, and a row built by hand — the
     // four colour swatches of the visual panel — carries several.
-    const { linha, controle } = controlRow(ctx, { id: 'x', rotulo: 'Antes' });
+    const { row: linha, controle } = controlRow(ctx, { id: 'x', label: 'Antes' });
     const outro = document.createElement('span');
     outro.id = 'outro';
     linha.prepend(outro);
     hospedeiro.appendChild(linha);
-    labelRow(linha, { id: 'x', rotulo: 'Depois' });
+    labelRow(linha, { id: 'x', label: 'Depois' });
     expect(controle.getAttribute('aria-label')).toBe('Depois');
     expect(outro.hasAttribute('aria-label'), 'another element of the row got the control\'s name').toBe(false);
   });
 
   it('[Right] `rotuloAria` ganha ao rótulo, para quando o nome falado não é o escrito', () => {
-    const { controle } = controlRow(ctx, { id: 'x', rotulo: '↺', rotuloAria: 'Restaurar cores padrão' });
+    const { controle } = controlRow(ctx, { id: 'x', label: '↺', ariaLabel: 'Restaurar cores padrão' });
     expect(controle.getAttribute('aria-label')).toBe('Restaurar cores padrão');
   });
 });
@@ -110,7 +110,7 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
 describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcança', () => {
   function casca() {
     const c = mountShell(ctx, {
-      id: 'movement', titulo: 'Motora', rotuloDaLista: 'Escolhas', rotuloReset: 'Repor', rotuloFechar: 'Fechar',
+      id: 'movement', title: 'Motora', listLabel: 'Escolhas', resetLabel: 'Repor', closeLabel: 'Fechar',
     });
     hospedeiro.appendChild(c.overlay);
     return c;
@@ -121,7 +121,7 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
     // markup deles vivia no `app/index.html`, que saiu com o cartucho — desde então o painel abria com o
     // cartão, o título e o botão de repor, e NENHUMA das três escolhas.
     const c = casca();
-    mountMobilityInside(ctx, c.card, c.lista);
+    mountMobilityInside(ctx, c.card, c.list);
     for (const id of ['movement-players', 'opt-facil', 'opt-altmove', 'opt-togglerun']) {
       expect(document.getElementById(id), `#${id} não foi criado`).not.toBeNull();
     }
@@ -132,12 +132,12 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
     // de QUEM são as escolhas: pô-las lá dentro faria o grupo anunciar o selector de assento como se fosse
     // mais um ajuste.
     const c = casca();
-    mountMobilityInside(ctx, c.card, c.lista);
+    mountMobilityInside(ctx, c.card, c.list);
     for (const id of ['opt-facil', 'opt-altmove', 'opt-togglerun']) {
-      expect(c.lista.contains(document.getElementById(id)), `#${id} ficou fora da lista`).toBe(true);
+      expect(c.list.contains(document.getElementById(id)), `#${id} ficou fora da lista`).toBe(true);
     }
     const abas = document.getElementById('movement-players');
-    expect(c.lista.contains(abas), 'as abas entraram no grupo das escolhas').toBe(false);
+    expect(c.list.contains(abas), 'as abas entraram no grupo das escolhas').toBe(false);
     expect(c.card.contains(abas), 'as abas ficaram fora do cartão').toBe(true);
     expect(abas.hidden, 'as abas nascem à vista e vazias — um selector que não seleciona nada').toBe(true);
   });
@@ -146,8 +146,8 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
     // A raiz monta mais do que uma vez: a contagem de jogadores muda a grade de telas, e o ADR-0142 põe dois
     // cartuchos na mesma página.
     const c = casca();
-    mountMobilityInside(ctx, c.card, c.lista);
-    mountMobilityInside(ctx, c.card, c.lista);
+    mountMobilityInside(ctx, c.card, c.list);
+    mountMobilityInside(ctx, c.card, c.list);
     for (const id of ['movement-players', 'opt-facil', 'opt-altmove', 'opt-togglerun']) {
       expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
     }
@@ -159,7 +159,7 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
     // poria a mesma regra em dois lugares, e o dia em que divergissem é o dia em que a linha aparece num jogo
     // onde não faz nada.
     const c = casca();
-    mountMobilityInside(ctx, c.card, c.lista);
+    mountMobilityInside(ctx, c.card, c.list);
     const alt = document.getElementById('opt-altmove');
     expect(alt, 'a linha da alternância não foi criada').not.toBeNull();
     expect(alt.closest('.ctrl-row').hidden, 'nasceu escondida: a construção assumiu uma decisão que não é dela')
@@ -168,7 +168,7 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
 
   it('[Right] cada escolha tem a sua explicação, e ela vai para o rodapé pelo caminho da casca', () => {
     const c = casca();
-    mountMobilityInside(ctx, c.card, c.lista);
+    mountMobilityInside(ctx, c.card, c.list);
     for (const id of ['opt-facil', 'opt-altmove', 'opt-togglerun']) {
       const linha = document.getElementById(id).closest('.ctrl-row');
       expect(linha.querySelector('.opt-hint'), `#${id} ficou sem explicação`).not.toBeNull();
@@ -180,7 +180,7 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
 describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () => {
   function casca() {
     const c = mountShell(ctx, {
-      id: 'audio', idDaLista: 'navsound-list', titulo: 'Auditiva', rotuloDaLista: 'Sons de navegação', rotuloReset: 'Repor', rotuloFechar: 'Fechar',
+      id: 'audio', listId: 'navsound-list', title: 'Auditiva', listLabel: 'Sons de navegação', resetLabel: 'Repor', closeLabel: 'Fechar',
     });
     hospedeiro.appendChild(c.overlay);
     return c;
@@ -204,7 +204,7 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     // ⚠️ A TAG É O DEFEITO SILENCIOSO. `renderAudio` faz `ctx.$<HTMLSelectElement>('#cane-div').value = …`;
     // num `<button>` isso cria uma propriedade que ninguém lê, sem erro nenhum, e a escolha some.
     const c = casca();
-    mountAudioInside(ctx, c.card, c.lista);
+    mountAudioInside(ctx, c.card, c.list);
     for (const [id, tag] of Object.entries(CONTROLES)) {
       const el = document.getElementById(id);
       expect(el, `#${id} não foi criado`).not.toBeNull();
@@ -223,16 +223,16 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
 
   it('🎯 [Right] a lista da casca — a da navegação sonora — fica no cartão', () => {
     const c = casca();
-    mountAudioInside(ctx, c.card, c.lista);
-    expect(c.lista.id).toBe('navsound-list');
-    expect(c.card.contains(c.lista), 'a lista da casca saiu do cartão').toBe(true);
+    mountAudioInside(ctx, c.card, c.list);
+    expect(c.list.id).toBe('navsound-list');
+    expect(c.card.contains(c.list), 'a lista da casca saiu do cartão').toBe(true);
   });
 
   it('⚠️ [Right] a ORDEM é a decisão (ADR-0151): modo cego, bengala, navegação, narração, índice falado', () => {
     // O modo cego primeiro, porque é nele que os outros sons passam a ser a tela; o índice logo depois da
     // narração, porque é a narração que ele encurta.
     const c = casca();
-    mountAudioInside(ctx, c.card, c.lista);
+    mountAudioInside(ctx, c.card, c.list);
     const ordem = [...c.card.children];
     const posicao = (sel) => ordem.findIndex((n) => n.matches(sel) || n.querySelector(sel));
     const seq = ['#opt-modocego', '#cane-div', '#navsound-list', '#opt-tts', '#tts-vol', '#opt-menuindex'].map(posicao);
@@ -242,14 +242,14 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
 
   it('🔴 [Zero] o modo cego NÃO tem dica — «quem precisa sabe o que é» (ADR-0151)', () => {
     const c = casca();
-    mountAudioInside(ctx, c.card, c.lista);
+    mountAudioInside(ctx, c.card, c.list);
     expect(document.getElementById('opt-modocego').closest('.ctrl-row').querySelector('.opt-hint')).toBeNull();
   });
 
   it('⚠️ [Zero] montar DUAS vezes deixa UM de cada — a raiz monta mais do que uma vez', () => {
     const c = casca();
-    mountAudioInside(ctx, c.card, c.lista);
-    mountAudioInside(ctx, c.card, c.lista);
+    mountAudioInside(ctx, c.card, c.list);
+    mountAudioInside(ctx, c.card, c.list);
     for (const id of [...Object.keys(CONTROLES), 'navsound-list']) {
       expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
     }
@@ -265,11 +265,11 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     // reetiqueta o que já existe em vez de o refazer: refazer deixaria treze controles sem escuta.
     const { setLocale } = await import('../app/js/core/i18n.js');
     const c = casca();
-    mountAudioInside(ctx, c.card, c.lista);
+    mountAudioInside(ctx, c.card, c.list);
     const antes = document.querySelector('#opt-tts').closest('.ctrl-row').querySelector('strong').textContent;
 
     await setLocale('en');
-    mountAudioInside(ctx, c.card, c.lista);
+    mountAudioInside(ctx, c.card, c.list);
     const linha = document.querySelector('#opt-tts').closest('.ctrl-row');
     expect(linha.querySelector('strong').textContent, 'a linha ficou no idioma de recuo').not.toBe(antes);
     // «(TTS)» left the label on 2026-09-12 (ADR-0158): an explanation in parentheses goes to the footer
@@ -281,7 +281,7 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     // Criá-lo aqui poria DOIS espelhos do mesmo ajuste no documento, e o `reflectMaster` acenderia o de
     // dentro do painel enquanto a barra continuava a dizer o contrário.
     const c = casca();
-    mountAudioInside(ctx, c.card, c.lista);
+    mountAudioInside(ctx, c.card, c.list);
     expect(document.getElementById('opt-sound')).toBeNull();
   });
 });
@@ -289,7 +289,7 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
 describe('montarInteriorDoSom — o painel «Áudio» (ADR-0151 §2 item 4)', () => {
   function casca() {
     const c = mountShell(ctx, {
-      id: 'som', idDaLista: 'audio-list', titulo: 'Áudio', rotuloDaLista: 'Sons do jogo', rotuloReset: 'Repor', rotuloFechar: 'Fechar',
+      id: 'som', listId: 'audio-list', title: 'Áudio', listLabel: 'Sons do jogo', resetLabel: 'Repor', closeLabel: 'Fechar',
     });
     hospedeiro.appendChild(c.overlay);
     return c;
@@ -298,14 +298,14 @@ describe('montarInteriorDoSom — o painel «Áudio» (ADR-0151 §2 item 4)', ()
   it('🎯 [Right] o som geral VOLTOU — interruptor e volume, com as tags que `initSettingsAudio` escreve', () => {
     // O Dev tirou-os e devolveu-os no mesmo dia: «toggle + barra para som geral voltam».
     const c = casca();
-    mountSoundInside(ctx, c.card, c.lista);
+    mountSoundInside(ctx, c.card, c.list);
     expect(document.getElementById('audio-master')?.tagName).toBe('BUTTON');
     expect(document.getElementById('audio-master-vol')?.type, 'o volume geral não é um cursor').toBe('range');
   });
 
   it('⚠️ [Right] o som geral vem ANTES da lista das categorias, e a lista fica no cartão', () => {
     const c = casca();
-    mountSoundInside(ctx, c.card, c.lista);
+    mountSoundInside(ctx, c.card, c.list);
     const ordem = [...c.card.children];
     const posicao = (sel) => ordem.findIndex((n) => n.matches(sel) || n.querySelector(sel));
     expect(posicao('#audio-master')).toBeGreaterThanOrEqual(0);
@@ -315,8 +315,8 @@ describe('montarInteriorDoSom — o painel «Áudio» (ADR-0151 §2 item 4)', ()
 
   it('⚠️ [Zero] montar DUAS vezes deixa UM de cada', () => {
     const c = casca();
-    mountSoundInside(ctx, c.card, c.lista);
-    mountSoundInside(ctx, c.card, c.lista);
+    mountSoundInside(ctx, c.card, c.list);
+    mountSoundInside(ctx, c.card, c.list);
     for (const id of ['audio-master', 'audio-master-vol', 'audio-list']) {
       expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
     }

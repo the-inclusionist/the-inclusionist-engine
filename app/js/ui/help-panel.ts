@@ -84,7 +84,7 @@ export const NO_KEY = 'help.noKey';
 
 /** What building the slide show needs from the document — injected, as the panel shell takes it. */
 export interface SlideCtx {
-  readonly criar: (tag: string) => HTMLElement;
+  readonly create: (tag: string) => HTMLElement;
 }
 
 /** The surface a «how to play» figure draws on, and the time in seconds since the slide showed (still under reduced motion). */
@@ -156,13 +156,13 @@ export function animateFigure(el: HTMLElement, slide: HowToPlaySlide, clock: Fig
 
 /** Builds the slide show's frame: the stop, its two arrows, the slide and the dots. `showSlide` fills it. */
 export function mountSlides(ctx: SlideCtx): HTMLElement {
-  const el = ctx.criar('div');
+  const el = ctx.create('div');
   el.className = 'slides';
   el.setAttribute('role', 'spinbutton');
   el.setAttribute('tabindex', '0');
   el.setAttribute('data-passos', '');
   const arrow = (delta: -1 | 1, glyph: string): HTMLElement => {
-    const s = ctx.criar('span');
+    const s = ctx.create('span');
     s.className = 'passo-seta';
     s.setAttribute('data-passo', String(delta));
     s.setAttribute('aria-hidden', 'true');
@@ -170,19 +170,19 @@ export function mountSlides(ctx: SlideCtx): HTMLElement {
     s.addEventListener('click', () => el.dispatchEvent(new CustomEvent('passo', { detail: delta, bubbles: true })));
     return s;
   };
-  const slide = ctx.criar('div');
+  const slide = ctx.create('div');
   slide.className = 'slide';
   slide.setAttribute('aria-hidden', 'true'); // heard through the stop's value, once
-  const figureFn = ctx.criar('canvas');
+  const figureFn = ctx.create('canvas');
   figureFn.className = 'slide-figura';
   figureFn.hidden = true;
-  const keyGlyphOf = ctx.criar('kbd');
+  const keyGlyphOf = ctx.create('kbd');
   keyGlyphOf.className = 'slide-tecla';
-  const palavra = ctx.criar('p');
+  const palavra = ctx.create('p');
   palavra.className = 'slide-palavra';
-  const texto = ctx.criar('p');
+  const texto = ctx.create('p');
   texto.className = 'slide-texto';
-  const dots = ctx.criar('div');
+  const dots = ctx.create('div');
   dots.className = 'slide-pontos';
   for (const child of [figureFn, keyGlyphOf, palavra, texto, dots]) slide.appendChild(child);
   el.appendChild(arrow(-1, '◀'));
@@ -200,23 +200,23 @@ export function showSlide(
   el: HTMLElement,
   rows: readonly (HelpRow | HowToPlaySlide)[],
   i: number,
-  ctx: SlideCtx & { readonly t: (k: string, p?: Record<string, string>) => string; readonly titulo: string },
-): { readonly indice: number; readonly falado: string } {
+  ctx: SlideCtx & { readonly t: (k: string, p?: Record<string, string>) => string; readonly title: string },
+): { readonly index: number; readonly spoken: string } {
   const last = Math.max(0, rows.length - 1);
   const indice = Math.max(0, Math.min(last, i));
   const r = rows[indice];
   const parts = slidePartsOf(el);
-  if (!r || !parts) return { indice, falado: '' };
+  if (!r || !parts) return { index: indice, spoken: '' };
   drawDots(parts.dots, rows.length, indice, ctx);
   const falado = isFromGame(r) ? showPlaySlide(parts, r) : showButtonSlide(parts, r, ctx.t);
-  el.setAttribute('aria-label', ctx.titulo);
+  el.setAttribute('aria-label', ctx.title);
   el.setAttribute('aria-valuemin', '0');
   el.setAttribute('aria-valuemax', String(last));
   el.setAttribute('aria-valuenow', String(indice));
   el.setAttribute('aria-valuetext', falado);
   el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', indice === 0);
   el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', indice === last);
-  return { indice, falado };
+  return { index: indice, spoken: falado };
 }
 
 /** The parts `mountSlides` builds; `null` when one is missing, and then nothing is drawn. */
@@ -244,7 +244,7 @@ function slidePartsOf(el: HTMLElement): SlideParts | null {
 function drawDots(dots: HTMLElement, count: number, current: number, ctx: SlideCtx): void {
   while (dots.firstChild) dots.removeChild(dots.firstChild);
   Array.from({ length: count }, (_, n) => {
-    const dot = ctx.criar('span');
+    const dot = ctx.create('span');
     dot.className = n === current ? 'slide-ponto is-on' : 'slide-ponto';
     return dots.appendChild(dot);
   });

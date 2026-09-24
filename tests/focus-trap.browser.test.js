@@ -83,9 +83,9 @@ describe('o Tab NÃO alcança o jogo enquanto o diálogo está aberto', () => {
   /** Monta a armadilha, INSTALA e regista para o `afterEach` a desinstalar. */
   function armar(temDialogo = true) {
     const api = initFocusTrap({
-      overlayDeCima: () => (temDialogo ? $('#dlg') : null),
-      focoAtual: () => document.activeElement,
-      focaveisDe: focusablesInDom,
+      topOverlay: () => (temDialogo ? $('#dlg') : null),
+      currentFocus: () => document.activeElement,
+      focusablesIn: focusablesInDom,
       win: window,
     });
     api.attach();

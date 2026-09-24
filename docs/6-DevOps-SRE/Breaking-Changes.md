@@ -2792,6 +2792,184 @@ The table is printed from `scripts/member-rename-map.json` by `node scripts/appl
 | `render/viz-setters.js` | `VizSettersCtx` | `aplicarFiltroCss` | `applyCssFilter` |
 | `render/viz-setters.js` | `VizSettersCtx` | `setModoCego` | `setBlindMode` |
 
+## CM · Published members speak English — the `ui` layer (ADR-0230, issue #206)
+
+**Who is affected:** the largest layer, and the one a cartridge meets most. A game that mounts a panel through the kit
+(`ControlRowSpec { label, hint, shape, ariaLabel }`, `StepsSpec { label, values, current }`, `PanelShellSpec`/`MountPanelSpec`
+with `title`, `listLabel`, `resetLabel`, `closeLabel`, `intro`, `listId`, `labels`, `closeOwn`, and ctx `find`/`create`), fills a
+pause-icons or settings ctx (`getBlindMode`, `setBlindMode`, `setPlayerTheme`, `setPlayerCorrection`, `holdsKeys`,
+`transportInUse`, `openMenus`, `explainItem`, `gameButtons`, …), reads the bar API (`onBar`, `enterBar`, `leaveBar`,
+`mountedIcons`) or the layout measures (`Scale.width`/`height`, `NamedBox { name, box, isBar }`).
+
+⚠️ **The quiet case, once more, and it is at its worst here:** a JavaScript ctx that keeps `setModoCego` or `naBarraDe`
+compiles to nothing and fails on the first call, or — for an optional member — never answers. Search by this table.
+
+📌 **Not moved, each for a reason written in the map:**
+· `HudBar.segmentos`/`.cor` — the learning band takes a bar in the SAME shape as `educational/segment-bar`'s `Bar`
+  (ADR-0168), and `educational` stays in pt-BR (ADR-0032); renaming one side would break the handoff.
+· what reads the STORED `VisualState` (`player.visual.tema`/`.correcao`, ADR-0230 §3).
+· `window.__sonda`, the console handle of the debug panel.
+· DOM dataset keys (`data-fonte`, `data-cursiva`, `data-estado`, `data-acao`) and the ids that are data — the pause
+  action ids (`tipo`, `nivel`, `letra`), the bar's icon ids (`idioma`, `tipografia`, `velocidade`), role and sound names.
+
+The table is printed from `scripts/member-rename-map.json` by `node scripts/apply-member-rename.mjs --table ui`.
+
+| module | type | old member | new member |
+|---|---|---|---|
+| `ui/caa-sets.js` | `CaaSet` | `nome` | `name` |
+| `ui/caa-sets.js` | `CaaSet` | `licenca` | `license` |
+| `ui/caa-sets.js` | `CaaSet` | `disponivel` | `available` |
+| `ui/caa-sets.js` | `CaaSet` | `nota` | `note` |
+| `ui/debug-panel.js` | `CharacterSample` | `texturaId` | `textureId` |
+| `ui/debug-panel.js` | `CharacterSample` | `recorte` | `crop` |
+| `ui/debug-panel.js` | `CharacterSample` | `posicao` | `position` |
+| `ui/debug-panel.js` | `CharacterSample` | `escala` | `scale` |
+| `ui/debug-panel.js` | `CharacterSample` | `irmaosDesenhando` | `siblingsDrawing` |
+| `ui/debug-panel.js` | `CharacterSample` | `posIrmaos` | `siblingPositions` |
+| `ui/debug-panel.js` | `ProbeSummary` | `quadros` | `frames` |
+| `ui/debug-panel.js` | `ProbeSummary` | `texturas` | `textures` |
+| `ui/debug-panel.js` | `ProbeSummary` | `maxIrmaos` | `maxSiblings` |
+| `ui/debug-panel.js` | `ProbeSummary` | `exemploIrmaos` | `siblingExample` |
+| `ui/debug-panel.js` | `ProbeSummary` | `escalas` | `scales` |
+| `ui/debug-panel.js` | `ProbeSummary` | `veredito` | `verdict` |
+| `ui/debug-panel.js` | `DebugPanelCtx` | `amostrarPersonagem` | `sampleCharacter` |
+| `ui/debug-panel.js` | `DebugPanelCtx` | `aoQuadro` | `onFrame` |
+| `ui/debug-panel.js` | `Range` | `cad` | `cadence` |
+| `ui/focus-trap.js` | `FocusTrapCtx` | `overlayDeCima` | `topOverlay` |
+| `ui/focus-trap.js` | `FocusTrapCtx` | `focoAtual` | `currentFocus` |
+| `ui/focus-trap.js` | `FocusTrapCtx` | `focaveisDe` | `focusablesIn` |
+| `ui/focus-trap.js` | `FocusTrapApi` | `aoTeclar` | `onKeydown` |
+| `ui/fonts.js` | `TypographyStep` | `caixa` | `letterCase` |
+| `ui/fonts.js` | `TypographyStep` | `fonte` | `font` |
+| `ui/fonts.js` | `TypographyStep` | `escala` | `scale` |
+| `ui/fonts.js` | `FontItem` | `papel` | `role` |
+| `ui/game-options.js` | `GameOptionsDrawCtx` | `dizer` | `say` |
+| `ui/help-panel.js` | `SlideCtx` | `criar` | `create` |
+| `ui/help-panel.js` | `showSlide` | `titulo` | `title` |
+| `ui/help-panel.js` | `showSlide` | `indice` | `index` |
+| `ui/help-panel.js` | `showSlide` | `falado` | `spoken` |
+| `ui/item-announcement.js` | `ItemDeMenu` | `rotulo` | `label` |
+| `ui/item-announcement.js` | `ItemDeMenu` | `estado` | `state` |
+| `ui/item-announcement.js` | `ItemDeMenu` | `posicao` | `position` |
+| `ui/latch-refusal.js` | `LatchRefusal` | `chave` | `key` |
+| `ui/latch-refusal.js` | `LatchRefusal` | `transporte` | `transport` |
+| `ui/layout.js` | `NodeMeasure` | `nome` | `name` |
+| `ui/layout.js` | `NodeMeasure` | `fontePx` | `fontPx` |
+| `ui/layout.js` | `NodeMeasure` | `alvo` | `target` |
+| `ui/layout.js` | `belowFloor` | `texto` | `text` |
+| `ui/layout.js` | `belowFloor` | `alvos` | `targets` |
+| `ui/layout.js` | `NamedBox` | `nome` | `name` |
+| `ui/layout.js` | `NamedBox` | `caixa` | `box` |
+| `ui/layout.js` | `NamedBox` | `daBarra` | `isBar` |
+| `ui/layout.js` | `initLayout` | `numJogadores` | `numPlayers` |
+| `ui/layout.js` | `Scale` | `largura` | `width` |
+| `ui/layout.js` | `Scale` | `altura` | `height` |
+| `ui/loop-crash.js` | `CrashNoticeCtx` | `procurar` | `find` |
+| `ui/loop-crash.js` | `CrashNoticeCtx` | `criar` | `create` |
+| `ui/loop-crash.js` | `CrashNoticeCtx` | `narrar` | `narrate` |
+| `ui/menu-nav.js` | `MenuNavCtx` | `comIndice` | `withIndex` |
+| `ui/menu-nav.js` | `MenuNavCtx` | `explicarItem` | `explainItem` |
+| `ui/menu-nav.js` | `MenuNavCtx` | `naBarraDe` | `onBar` |
+| `ui/menu-nav.js` | `controlParts` | `rotulo` | `label` |
+| `ui/menu-nav.js` | `controlParts` | `estado` | `state` |
+| `ui/menu-nav.js` | `itemUnder` | `pausa` | `inPause` |
+| `ui/mount-panel.js` | `MountPanelSpec` | `idDaLista` | `listId` |
+| `ui/mount-panel.js` | `MountPanelSpec` | `rotulos` | `labels` |
+| `ui/mount-panel.js` | `MountPanelSpec` | `fecharProprio` | `closeOwn` |
+| `ui/mount-panel.js` | `MountedPanel` | `casca` | `shell` |
+| `ui/mount-panel.js` | `MountedPanel` | `abrir` | `open` |
+| `ui/mount-panel.js` | `MountedPanel` | `fechar` | `close` |
+| `ui/panel-shell.js` | `PanelShellCtx` | `procurar` | `find` |
+| `ui/panel-shell.js` | `PanelShellCtx` | `criar` | `create` |
+| `ui/panel-shell.js` | `PanelShellSpec` | `idDaLista` | `listId` |
+| `ui/panel-shell.js` | `PanelShellSpec` | `titulo` | `title` |
+| `ui/panel-shell.js` | `PanelShellSpec` | `rotuloDaLista` | `listLabel` |
+| `ui/panel-shell.js` | `PanelShellSpec` | `rotuloReset` | `resetLabel` |
+| `ui/panel-shell.js` | `PanelShellSpec` | `rotuloFechar` | `closeLabel` |
+| `ui/panel-shell.js` | `PanelShellSpec` | `introducao` | `intro` |
+| `ui/panel-shell.js` | `PanelShell` | `titulo` | `title` |
+| `ui/panel-shell.js` | `PanelShell` | `lista` | `list` |
+| `ui/panel-shell.js` | `PanelShell` | `fechar` | `close` |
+| `ui/panel-shell.js` | `PanelShell.ids` | `lista` | `list` |
+| `ui/panel-shell.js` | `PanelShell.ids` | `fechar` | `close` |
+| `ui/panel-widgets.js` | `ControlRowSpec` | `rotulo` | `label` |
+| `ui/panel-widgets.js` | `ControlRowSpec` | `dica` | `hint` |
+| `ui/panel-widgets.js` | `ControlRowSpec` | `forma` | `shape` |
+| `ui/panel-widgets.js` | `ControlRowSpec` | `rotuloAria` | `ariaLabel` |
+| `ui/panel-widgets.js` | `ControlRow` | `linha` | `row` |
+| `ui/panel-widgets.js` | `StepsSpec` | `rotulo` | `label` |
+| `ui/panel-widgets.js` | `StepsSpec` | `valores` | `values` |
+| `ui/panel-widgets.js` | `StepsSpec` | `atual` | `current` |
+| `ui/pause-buttons.js` | `PauseBtnDef` | `letra` | `dynamicLabel` |
+| `ui/pause-buttons.js` | `PauseBtnDef` | `nivel` | `level` |
+| `ui/pause-icons.js` | `IconStateSnapshot` | `voz` | `voice` |
+| `ui/pause-icons.js` | `IconStateSnapshot` | `velocidade` | `speed` |
+| `ui/pause-icons.js` | `IconStateSnapshot` | `idioma` | `locale` |
+| `ui/pause-icons.js` | `IconStateSnapshot` | `alternanciaExigida` | `latchRequired` |
+| `ui/pause-icons.js` | `IconStateSnapshot` | `semVoz` | `noVoice` |
+| `ui/pause-icons.js` | `ActionableIcons` | `tema` | `theme` |
+| `ui/pause-icons.js` | `ActionableIcons` | `correcao` | `correction` |
+| `ui/pause-icons.js` | `ActionableIcons` | `seguraTeclas` | `holdsKeys` |
+| `ui/pause-icons.js` | `ActionableIcons` | `relogio` | `clock` |
+| `ui/pause-icons.js` | `ActionableIcons` | `tipografia` | `typography` |
+| `ui/pause-icons.js` | `ActionableIcons` | `microfone` | `microphone` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `aoSairDaBarra` | `onLeaveBar` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `explicarIcone` | `explainIcon` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `explicarItem` | `explainItem` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `jogoButtons` | `gameButtons` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `getModoCego` | `getBlindMode` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `setModoCego` | `setBlindMode` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `transporteEmUso` | `transportInUse` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `setTemaDoJogador` | `setPlayerTheme` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `setCorrecaoDoJogador` | `setPlayerCorrection` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `ciclarTipografia` | `cycleTypography` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `seguraTeclas` | `holdsKeys` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `relogio` | `clock` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `microfone` | `microphone` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `abrirMenus` | `openMenus` |
+| `ui/pause-icons.js` | `PauseIconsCtx` | `semVoz` | `noVoice` |
+| `ui/pause-icons.js` | `PauseIconsApi` | `iconesMontados` | `mountedIcons` |
+| `ui/pause-icons.js` | `PauseIconsApi` | `entrarNaBarra` | `enterBar` |
+| `ui/pause-icons.js` | `PauseIconsApi` | `sairDaBarra` | `leaveBar` |
+| `ui/pause-icons.js` | `PauseIconsApi` | `naBarraDe` | `onBar` |
+| `ui/pause-markup.js` | `PauseMenuButton` | `letra` | `dynamicLabel` |
+| `ui/pause-markup.js` | `PauseMenuButton` | `nivel` | `level` |
+| `ui/pause-markup.js` | `ScreenPauseMarkupOpts` | `jogoButtons` | `gameButtons` |
+| `ui/reach-notice.js` | `ReachNoticeCtx` | `procurar` | `find` |
+| `ui/reach-notice.js` | `ReachNoticeCtx` | `criar` | `create` |
+| `ui/settings-audio.js` | `SettingsAudioCtx` | `getModoCego` | `getBlindMode` |
+| `ui/settings-audio.js` | `SettingsAudioCtx` | `setModoCego` | `setBlindMode` |
+| `ui/settings-audio.js` | `SettingsAudioApi` | `reflectModoCego` | `reflectBlindMode` |
+| `ui/settings-audio.js` | `pieces` | `contentor` | `container` |
+| `ui/settings-audio.js` | `pieces` | `rotulo` | `label` |
+| `ui/settings-controls.js` | `SettingsControlsCtx` | `acoesDoJogo` | `gameActions` |
+| `ui/settings-controls.js` | `SettingsControlsCtx.acoesDoJogo` | `acao` | `action` |
+| `ui/settings-controls.js` | `SettingsControlsCtx.acoesDoJogo` | `rotulo` | `label` |
+| `ui/settings-empathy.js` | `EmpathySettingsCtx` | `reflectMotorEmpathy` | `reflectMobilityEmpathy` |
+| `ui/settings-mobility.js` | `SettingsMobilityCtx` | `seguraTeclas` | `holdsKeys` |
+| `ui/settings-mobility.js` | `SettingsMobilityCtx` | `transporteEmUso` | `transportInUse` |
+| `ui/settings-mobility.js` | `SettingsMobilityApi` | `reflectFacil` | `reflectEasy` |
+| `ui/settings-mobility.js` | `LatchWriteCtx` | `transporteEmUso` | `transportInUse` |
+| `ui/settings-motion.js` | `SettingsMotionCtx` | `comPersonagem` | `hasCharacter` |
+| `ui/settings-motion.js` | `SettingsMotionCtx` | `rotuloDoPersonagem` | `characterLabel` |
+| `ui/settings-motion.js` | `MotionInsideSpec.roundSpec` | `rotulo` | `label` |
+| `ui/settings-motion.js` | `MotionInsideSpec.roundSpec` | `valores` | `values` |
+| `ui/settings-motion.js` | `MotionInsideSpec.roundSpec` | `atual` | `current` |
+| `ui/settings-typo.js` | `SettingsTypoCtx` | `fonteInstalada` | `fontInstalled` |
+| `ui/settings-visual.js` | `SettingsVisualCtx` | `renderEixosVisuais` | `renderVisualAxes` |
+| `ui/settings-visual.js` | `SettingsVisualCtx` | `oferecer` | `offer` |
+| `ui/settings-visual.js` | `playerVisual` | `tema` | `theme` |
+| `ui/settings-visual.js` | `playerVisual` | `correcao` | `correction` |
+| `ui/settings-visual.js` | `VisualRowsOffered` | `dono` | `owner` |
+| `ui/settings-visual.js` | `VisualRowsOffered` | `papeis` | `roles` |
+| `ui/shell.js` | `ShellCtx` | `fatosDaCena` | `sceneFacts` |
+| `ui/shell.js` | `ShellCtx` | `retomarJogo` | `resumeGame` |
+| `ui/shell.js` | `ShellCtx` | `rotuloCurto` | `shortLabel` |
+| `ui/shell.js` | `ShellCtx` | `setMotorPlayer` | `setMobilityPlayer` |
+| `ui/shell.js` | `ShellApi` | `aplicarCena` | `applyScene` |
+| `ui/typo-choices.js` | `FontCssTarget` | `fonte` | `font` |
+| `ui/typo-choices.js` | `FontCssTarget` | `cursiva` | `cursive` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

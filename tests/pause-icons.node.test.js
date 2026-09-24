@@ -110,7 +110,7 @@ const RM_CHAR = [{ k: 'walk', prop: 'rmWalk' }, { k: 'breath', prop: 'rmBreath' 
 
 const PM_BTNS = [
   { act: 'resume', lbl: '▶ Continuar' },
-  { act: 'letra', lbl: '🔠 ABC', letra: true },
+  { act: 'letra', lbl: '🔠 ABC', dynamicLabel: true },
   { act: 'quit', lbl: '🚪 Sair do jogo' },
 ];
 const PM_OPTS = [
@@ -141,15 +141,15 @@ function buildCtx(over = {}) {
     // `altmove` desaparecia em silêncio — «metade do defeito que este campo existe para não cometer», nas
     // palavras do próprio `ui/pause-icons`. Agora é função (ADR-0142) e a omissão passa a LANÇAR, que é o
     // que se quer: um ctx mal montado deixou de poder mentir baixinho.
-    seguraTeclas: () => true,
+    holdsKeys: () => true,
     setPauseActor: (i) => { state.pauseActor = i; },
     getPauseScreens: () => state.screens,
     // As BARRAS RÁPIDAS (ADR-0044, item 7): desde que elas saíram do cartão, é aqui que os ícones vivem, e é
     // por aqui que `reflectPauseIcons` os encontra. Os testes que exercitam o reflexo alimentam `state.bars`;
     // os que só olham o markup do cartão deixam a lista vazia — e o reflexo então não faz nada, corretamente.
     getA11yBars: () => state.bars || state.screens,
-    getModoCego: () => state.blindMode,
-    setModoCego: (on) => { state.blindMode = on; },
+    getBlindMode: () => state.blindMode,
+    setBlindMode: (on) => { state.blindMode = on; },
     getAudioCat: () => state.audioCat,
     setCatGain: (k) => state.catGains.push(k),
     reflectTtsPanel: () => { state.ttsPanelRefreshes++; },
@@ -163,8 +163,8 @@ function buildCtx(over = {}) {
     setToggleMove: (i, on) => { state.toggleMoveCalls.push([i, on]); const p = players[i]; if (p) p.toggleMove = on; },
     setPlayerViz: (i, mode) => { state.vizCalls.push([i, mode]); const p = players[i]; if (p) { p.viz = mode; p.visual = migrateVisual(mode); } },
     // Os escritores POR EIXO (#104): mexer num nao apaga o outro, e e' isso que os casos afirmam.
-    setTemaDoJogador: (i, tema) => { state.vizCalls.push([i, 'tema:' + tema]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? PADRAO), tema }; },
-    setCorrecaoDoJogador: (i, correcao) => { state.vizCalls.push([i, 'correcao:' + correcao]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? PADRAO), correcao }; },
+    setPlayerTheme: (i, tema) => { state.vizCalls.push([i, 'tema:' + tema]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? PADRAO), tema }; },
+    setPlayerCorrection: (i, correcao) => { state.vizCalls.push([i, 'correcao:' + correcao]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? PADRAO), correcao }; },
     ...over,
   };
   return { ctx, state, said, alerted };
@@ -372,12 +372,12 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
    */
   it('🔴 [Zero] um valor AUSENTE diz o que a engine faz sem ele: câmera desligada, português, velocidade a 100%', () => {
     expect(computeIconLabel('camera', snap())).toBe(computeIconLabel('camera', snap({ camera: 'off' })));
-    expect(computeIconLabel('idioma', snap())).toBe(computeIconLabel('idioma', snap({ idioma: 'pt' })));
+    expect(computeIconLabel('idioma', snap())).toBe(computeIconLabel('idioma', snap({ locale: 'pt' })));
     expect(computeIconLabel('velocidade', snap())).toMatch(/: 100%$/);
   });
 
   it('🔴 [Boundary] uma língua fora do ciclo lê-se como português, e não como «undefined»', () => {
-    expect(computeIconLabel('idioma', snap({ idioma: 'fr' }))).toBe(computeIconLabel('idioma', snap({ idioma: 'pt' })));
+    expect(computeIconLabel('idioma', snap({ locale: 'fr' }))).toBe(computeIconLabel('idioma', snap({ locale: 'pt' })));
   });
 
   it('🔴 [Right] e ele só se acende fora do padrão — as outras duas posições são «ligado»', () => {
@@ -386,7 +386,7 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     expect(computeIconVisual('altmove', snap({ switchScan: true })).on).toBe(true);
     // 🔴 E NUNCA APAGADO: apagar o ícone num aparelho que exige a aderência levava «um botão só» junto, e quem joga com os
     // olhos é quem mais precisa dele. A trava vive no ciclo (caso abaixo), não no aspecto.
-    expect(computeIconVisual('altmove', snap({ toggleMove: true, alternanciaExigida: true })).dis).toBe(false);
+    expect(computeIconVisual('altmove', snap({ toggleMove: true, latchRequired: true })).dis).toBe(false);
   });
 
   describe('nextInputMode — o ciclo de ☝️, e as duas coisas que lhe tiram uma posição (ADR-0218)', () => {
@@ -454,13 +454,13 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
    * sobre um ícone que age ensina a criança a não tentar — que é o mesmo defeito, virado do avesso.
    */
   it('🔴 [Zero] nenhum ícone da barra se anuncia EM CONSTRUÇÃO — e o 👄, que era o último, diz o estado', () => {
-    const tudoLigado = snap({ blindMode: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, voz: true });
+    const tudoLigado = snap({ blindMode: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, voice: true });
     for (const ic of PAUSE_ICONS) {
       expect(ic, `${ic.k} trouxe o campo \`soon\` de volta sem mecanismo por trás`).not.toHaveProperty('soon');
       expect(computeIconLabel(ic.k, tudoLigado), ic.k).not.toMatch(/em constru|under construction|en construcci/i);
     }
     expect(computeIconLabel('voice', tudoLigado)).toBe('Comando de voz: ligado');
-    expect(computeIconLabel('voice', snap({ voz: false }))).toBe('Comando de voz: desligado');
+    expect(computeIconLabel('voice', snap({ voice: false }))).toBe('Comando de voz: desligado');
   });
 
   it('EXCEÇÃO: chave desconhecida devolve string vazia (não lança, não inventa rótulo)', () => {
@@ -484,7 +484,7 @@ describe('computeIconVisual — o visual e o aria-pressed andam juntos', () => {
   it('🔴 [Right] o 👄 lê o próprio estado, e nada do resto da barra o liga', () => {
     const tudoMenosAVoz = snap({ blindMode: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, viz: 'fix-protan', privateOutput: false });
     expect(computeIconVisual('voice', tudoMenosAVoz)).toEqual({ on: false, dis: false, calm: false, cvd: '', active: false });
-    expect(computeIconVisual('voice', snap({ voz: true }))).toMatchObject({ on: true, active: true });
+    expect(computeIconVisual('voice', snap({ voice: true }))).toMatchObject({ on: true, active: true });
   });
 
   it('blind/tts ficam DESABILITADOS sem saída de áudio privada — mas o `on` continua verdadeiro', () => {
@@ -494,9 +494,9 @@ describe('computeIconVisual — o visual e o aria-pressed andam juntos', () => {
   });
 
   it('🔴 [Right] tts is LOCKED when no voice speaks the language (ADR-0185), even with a private output', () => {
-    expect(computeIconVisual('tts', snap({ ttsOn: true, semVoz: true }))).toMatchObject({ on: true, dis: true });
-    expect(computeIconVisual('tts', snap({ ttsOn: true, semVoz: false })), 'locked with a voice for the language').toMatchObject({ dis: false });
-    expect(computeIconVisual('blind', snap({ blindMode: true, semVoz: true })), 'blind mode needs no voice').toMatchObject({ dis: false });
+    expect(computeIconVisual('tts', snap({ ttsOn: true, noVoice: true }))).toMatchObject({ on: true, dis: true });
+    expect(computeIconVisual('tts', snap({ ttsOn: true, noVoice: false })), 'locked with a voice for the language').toMatchObject({ dis: false });
+    expect(computeIconVisual('blind', snap({ blindMode: true, noVoice: true })), 'blind mode needs no voice').toMatchObject({ dis: false });
   });
 
   it('BORDA do TEA: nível 1 é `.pi-calm` (não `.pi-on`) e nível 2 é `.pi-on` (não `.pi-calm`)', () => {
@@ -624,7 +624,7 @@ describe('markup dos ícones e do menu', () => {
     const t = (k) => 'T:' + k;
     expect(pmBtnMarkup({ act: 'quit', lbl: 'x' }, SEM_DIN, t))
       .toBe('<button class="pm-btn" role="menuitem" type="button" data-act="quit" data-glifo="🚪" data-i18n="pause.quit">T:pause.quit</button>');
-    const letra = pmBtnMarkup({ act: 'letra', lbl: '🔠 ABC', letra: true }, SEM_DIN, t);
+    const letra = pmBtnMarkup({ act: 'letra', lbl: '🔠 ABC', dynamicLabel: true }, SEM_DIN, t);
     expect(letra).toContain('pm-letra');
     expect(letra).not.toContain('data-i18n');
     expect(letra).toContain('>🔠 ABC<');
@@ -634,7 +634,7 @@ describe('markup dos ícones e do menu', () => {
     // O RÓTULO chega PRONTO (item 19): montá-lo era da engine e passou a ser do jogo, que sabe o que é um
     // nível, como ele se chama e em que idioma dizê-lo. O que este caso ainda mede — e é o que importa — é
     // que o botão dinâmico usa o rótulo entregue e NÃO ganha `data-i18n` (senão o `applyDom` o apagaria).
-    const h = pmBtnMarkup({ act: 'nivel', lbl: 'ignorado', nivel: true }, () => 'RÓTULO DO JOGO', (k) => k);
+    const h = pmBtnMarkup({ act: 'nivel', lbl: 'ignorado', level: true }, () => 'RÓTULO DO JOGO', (k) => k);
     expect(h).toContain('pm-nivel');
     expect(h).toContain('RÓTULO DO JOGO');
     expect(h).not.toContain('ignorado'); // o `lbl` estático é ignorado quando há rótulo dinâmico
@@ -657,7 +657,7 @@ describe('markup dos ícones e do menu', () => {
 describe('initPauseIcons — ações dos ícones', () => {
   it('🔴 [Right] with no voice for the language, the narration icon says why and turns nothing on (ADR-0185)', () => {
     const { ctx, state, alerted } = buildCtx();
-    ctx.semVoz = () => true;
+    ctx.noVoice = () => true;
     const antes = state.audioCat.tts.on;
     initPauseIcons(ctx).iconAct('tts', 0);
     expect(state.audioCat.tts.on, 'the locked icon still toggled narration').toBe(antes);
@@ -688,8 +688,8 @@ describe('initPauseIcons — ações dos ícones', () => {
       const estadoReal = await import('../app/js/core/state.js');
       const antes = estadoReal.blindMode;
       const { ctx, said } = buildCtx();
-      delete ctx.setModoCego;                 // o jogo que não se lembrou
-      ctx.getModoCego = () => estadoReal.blindMode;
+      delete ctx.setBlindMode;                 // o jogo que não se lembrou
+      ctx.getBlindMode = () => estadoReal.blindMode;
 
       initPauseIcons(ctx).iconAct('blind', 0);
 
@@ -724,7 +724,7 @@ describe('initPauseIcons — ações dos ícones', () => {
       setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
       const { ctx } = buildCtx();
       delete ctx.setToggleMove;                  // o jogo que não se lembrou
-      ctx.transporteEmUso = () => 'gamepad';     // e a raiz que sabe o aparelho
+      ctx.transportInUse = () => 'gamepad';     // e a raiz que sabe o aparelho
 
       initPauseIcons(ctx).iconAct('altmove', 0);
 
@@ -768,7 +768,7 @@ describe('initPauseIcons — ações dos ícones', () => {
     setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
     const { ctx, alerted } = buildCtx();
     delete ctx.setToggleMove;
-    ctx.transporteEmUso = () => 'olhos';
+    ctx.transportInUse = () => 'olhos';
 
     initPauseIcons(ctx).iconAct('altmove', 0);
 
@@ -795,8 +795,8 @@ describe('initPauseIcons — ações dos ícones', () => {
   it('🔴 [Right] com o olhar em uso, o ciclo PULA o padrão — e o ícone continua accionável', () => {
     setPlayers([{ viz: 'normal', toggleMove: true, walkDir: 0 }]);
     const { ctx, state } = buildCtx();
-    ctx.transporteEmUso = () => 'olhos';
-    ctx.seguraTeclas = () => true; // senão a aderência não teria o que travar e o ciclo seria outro (o de duas posições)
+    ctx.transportInUse = () => 'olhos';
+    ctx.holdsKeys = () => true; // senão a aderência não teria o que travar e o ciclo seria outro (o de duas posições)
     const api = initPauseIcons(ctx);
     const b = fakeIconBtn('altmove');
     api.reflectIconBtn(b, 0);
@@ -888,7 +888,7 @@ describe('initPauseIcons — ações dos ícones', () => {
   it('🔴 [Right] três toques no ☝️ percorrem as TRÊS posições e voltam ao padrão', () => {
     setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
     const { ctx, state } = buildCtx();
-    ctx.seguraTeclas = () => true;
+    ctx.holdsKeys = () => true;
     const api = initPauseIcons(ctx);
     const posicao = () => api.iconLabel('altmove', 0);
 
@@ -1262,7 +1262,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // 📌 	ipografia: true desde 2026-09-12 (ADR-0149): o 11.o icone tem a mesma regra dos dois visuais, e
     // deixa-lo de fora aqui mediria DUAS ausencias em vez da que o caso nomeia.
     // `relogio: () => true` from ADR-0180 on: the hourglass mounts only in a clock game, and each case here measures its own absence.
-    const chaves = iconsThatAct({ relogio: () => true, tema: false, correcao: false, seguraTeclas: () => true, tipografia: true, camera: true, microfone: true, menus: true }).map((ic) => ic.k);
+    const chaves = iconsThatAct({ clock: () => true, theme: false, correction: false, holdsKeys: () => true, typography: true, camera: true, microphone: true, menus: true }).map((ic) => ic.k);
     expect(chaves).not.toContain('contrast');
     expect(chaves).not.toContain('cvd');
     expect(chaves).toContain('blind');
@@ -1271,7 +1271,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   });
 
   it('[Right] COM escritor visual, a barra é a lista inteira e na mesma ordem', () => {
-    expect(iconsThatAct({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => true, tipografia: true, camera: true, microfone: true, menus: true })).toEqual(PAUSE_ICONS);
+    expect(iconsThatAct({ clock: () => true, theme: true, correction: true, holdsKeys: () => true, typography: true, camera: true, microphone: true, menus: true })).toEqual(PAUSE_ICONS);
   });
 
   it('⚠️ [Boundary] com UM escritor só, aparece UM ícone só — e é o que funciona', () => {
@@ -1280,11 +1280,11 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // `&&` por `||` não reprovava nada — porque todos os casos tiravam os DOIS. E os dois operadores erram,
     // em direcções opostas: o `&&` esconde um ícone que FUNCIONA, o `||` mostra um que NÃO funciona. A
     // pergunta certa é por ÍCONE.
-    const soTema = iconsThatAct({ tema: true, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
+    const soTema = iconsThatAct({ theme: true, correction: false, holdsKeys: () => true, typography: true }).map((ic) => ic.k);
     expect(soTema).toContain('contrast');
     expect(soTema).not.toContain('cvd');
 
-    const soCor = iconsThatAct({ tema: false, correcao: true, seguraTeclas: () => true }).map((ic) => ic.k);
+    const soCor = iconsThatAct({ theme: false, correction: true, holdsKeys: () => true }).map((ic) => ic.k);
     expect(soCor).not.toContain('contrast');
     expect(soCor).toContain('cvd');
   });
@@ -1294,7 +1294,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // contraste está construído. O que falta é este jogo ter por onde o aplicar — e a resposta a isso é a ausência.
     // 📌 O mecanismo saiu inteiro em 2026-09-21 (issue #184); o que este caso guarda é que a ausência NÃO foi
     // substituída por um botão apagado a dizer-se por construir.
-    const ficaram = iconsThatAct({ tema: false, correcao: false, seguraTeclas: () => true });
+    const ficaram = iconsThatAct({ theme: false, correction: false, holdsKeys: () => true });
     for (const ic of ficaram) expect(ic, `${ic.k} voltou a anunciar-se em construção`).not.toHaveProperty('soon');
     expect(ficaram.map((ic) => ic.k), 'o contraste sem escritor ficou na barra').not.toContain('contrast');
   });
@@ -1310,7 +1310,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
    * DESABILITADO com o motivo, porque o aparelho EXIGE a alternância. Aqui não há nada a travar, e explicar
    * por que um controle não faz nada continua a ser entregar um controle que não faz nada. */
   it('🎯 [Zero] um jogo que não segura teclas NEM declara posição não recebe o ícone `altmove`', () => {
-    const chaves = iconsThatAct({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, tipografia: true, camera: true, microfone: true, menus: true }).map((ic) => ic.k);
+    const chaves = iconsThatAct({ clock: () => true, theme: true, correction: true, holdsKeys: () => false, typography: true, camera: true, microphone: true, menus: true }).map((ic) => ic.k);
     expect(chaves, 'o `altmove` foi montado num jogo que não segura nada').not.toContain('altmove');
     expect(chaves).toHaveLength(PAUSE_ICONS.length - 1);
   });
@@ -1322,8 +1322,8 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
    */
   it('🔴 [Right] mas um jogo que DECLARA POSIÇÃO recebe-o, mesmo sem segurar tecla — é o caso do quiz', () => {
     const chaves = iconsThatAct({
-      relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, declaredPositions: () => 5,
-      tipografia: true, camera: true, microfone: true, menus: true,
+      clock: () => true, theme: true, correction: true, holdsKeys: () => false, declaredPositions: () => 5,
+      typography: true, camera: true, microphone: true, menus: true,
     }).map((ic) => ic.k);
     expect(chaves, 'o jogo que declara cinco posições ficou sem «um botão só»').toContain('altmove');
     expect(chaves).toHaveLength(PAUSE_ICONS.length);
@@ -1332,7 +1332,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   it('⚠️ [Right] e o PAR: um jogo que segura recebe-o — senão «ausente» passaria por nunca montar nada', () => {
     // Sem este caso, uma implementação que devolvesse lista vazia satisfaria o de cima. É a mesma razão pela
     // qual o [Zero] dos escritores visuais tem o seu par logo acima.
-    const chaves = iconsThatAct({ tema: true, correcao: true, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
+    const chaves = iconsThatAct({ theme: true, correction: true, holdsKeys: () => true, typography: true }).map((ic) => ic.k);
     expect(chaves).toContain('altmove');
   });
 
@@ -1342,7 +1342,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // o par tema/correcção.
     // ⚠️ 	ipografia FICA DE FORA aqui de propósito, e o número abaixo conta QUATRO ausências: este caso mede
     // que os ramos do filtro sao INDEPENDENTES, e o quarto ramo entrou em 2026-09-12 (ADR-0149).
-    const semNada = iconsThatAct({ relogio: () => true, tema: false, correcao: false, seguraTeclas: () => false }).map((ic) => ic.k);
+    const semNada = iconsThatAct({ clock: () => true, theme: false, correction: false, holdsKeys: () => false }).map((ic) => ic.k);
     expect(semNada).not.toContain('contrast');
     expect(semNada).not.toContain('cvd');
     expect(semNada).not.toContain('altmove');
@@ -1352,13 +1352,13 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     expect(semNada).not.toContain('menu');
     expect(semNada).toHaveLength(PAUSE_ICONS.length - 7);
 
-    const soAlternancia = iconsThatAct({ tema: false, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
+    const soAlternancia = iconsThatAct({ theme: false, correction: false, holdsKeys: () => true, typography: true }).map((ic) => ic.k);
     expect(soAlternancia).toContain('altmove');
     expect(soAlternancia).not.toContain('contrast');
   });
 
   it('📌 [Interface] e o ☝️ que FICA não se anuncia em construção — ele tem as três posições', () => {
-    const alt = iconsThatAct({ tema: true, correcao: true, seguraTeclas: () => true }).find((ic) => ic.k === 'altmove');
+    const alt = iconsThatAct({ theme: true, correction: true, holdsKeys: () => true }).find((ic) => ic.k === 'altmove');
     expect(alt, 'o ☝️ sumiu de um jogo que segura teclas').toBeTruthy();
     expect(alt, 'a alternância passou a anunciar-se como em construção').not.toHaveProperty('soon');
   });
@@ -1370,8 +1370,8 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   it('[Zero] e chamar `iconAct` por chave, sem escritor, não rebenta nem anuncia', () => {
     // `iconAct` é EXPORTADO: a barra já não monta o botão, mas um consumidor pode chamá-lo pela chave.
     const { ctx, said } = buildCtx();
-    delete ctx.setTemaDoJogador;
-    delete ctx.setCorrecaoDoJogador;
+    delete ctx.setPlayerTheme;
+    delete ctx.setPlayerCorrection;
     const api = initPauseIcons(ctx);
     expect(() => { api.iconAct('contrast', 0); api.iconAct('cvd', 0); }).not.toThrow();
     expect(said).toEqual([]);

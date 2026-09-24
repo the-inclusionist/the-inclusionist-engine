@@ -16,8 +16,8 @@ export interface PauseBtnDef {
    * precisa dele; a chave `pause.*` é a fonte, e ela existe nos três idiomas.
    */
   readonly lbl?: string;
-  readonly letra?: boolean;
-  readonly nivel?: boolean;
+  readonly dynamicLabel?: boolean;
+  readonly level?: boolean;
 }
 
 /** The pause menu's items — MENU DATA, so it lives with the other menu tables. The pause slice (ui/pause-icons)

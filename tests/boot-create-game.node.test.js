@@ -496,7 +496,7 @@ describe('createGame em execução', () => {
       // ⚠️ `cartucho` virou `cartridge` na passagem de R2 (2026-09-23): este caso ANCORA num literal do fonte, e um
       // literal que muda de nome tem de mudar aqui no mesmo commit — senão o portão deixa de exigir o que exige,
       // em silêncio, que é a forma de defeito que este plano já regista quatro vezes.
-      .toMatch(/const naBarraDe = cartridge\.naBarraDe \?\? \(\(i: number\) => pauseIcons\.naBarraDe\(i\)\)/);
+      .toMatch(/const naBarraDe = cartridge\.naBarraDe \?\? \(\(i: number\) => pauseIcons\.onBar\(i\)\)/);
     expect(FONTE).toMatch(/const navBar = cartridge\.navBar \?\? \(\(i: number, k: NavKeys, withStart\?: boolean\) => pauseIcons\.navBar\(i, k, withStart\)\)/);
     // ⚠️ E a barra montada tem de continuar a DIZER A VERDADE quando o modo cego muda noutro sítio (o painel
     // de áudio, a simulação de empatia). Sem esta assinatura o ícone ficaria a dizer «desligado» depois de a

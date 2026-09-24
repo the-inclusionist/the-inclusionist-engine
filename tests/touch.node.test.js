@@ -194,7 +194,7 @@ describe('initTouch where there is no window at all', () => {
     const { initTouch } = await import('../app/js/input/touch.js');
     const guardado = new Map();
     const ctx = {
-      $: () => null, srSay: () => {}, acoesDoJogo: () => [], padAllowed: () => true,
+      $: () => null, srSay: () => {}, gameActions: () => [], padAllowed: () => true,
       store: {
         get: (k, fb = null) => (guardado.has(k) ? guardado.get(k) : fb), set: (k, v) => { guardado.set(k, String(v)); return true; },
         getNum: (_k, fb = 0) => fb, getJSON: (_k, fb = null) => fb, setJSON: () => {},

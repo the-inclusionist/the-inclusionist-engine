@@ -131,7 +131,7 @@ describe('ui/settings-caa — restaurar padrões (ADR-0028) e marca (ADR-0029)',
 });
 
 describe('ui/settings-caa — a montagem pelo kit (ADR-0129)', () => {
-  const kit = () => ({ procurar: (sel) => document.querySelector(sel), criar: (tag) => document.createElement(tag) });
+  const kit = () => ({ find: (sel) => document.querySelector(sel), create: (tag) => document.createElement(tag) });
 
   it('[Zero] uma seção sem nenhuma linha NÃO desenha o cabeçalho dela', () => {
     // Um «Aguardando negociação» sobre o vazio conta ao educador que há algo ali e não há: ele procura a linha
@@ -163,7 +163,7 @@ describe('ui/settings-caa — a montagem pelo kit (ADR-0129)', () => {
   it('[Right] o indisponível vem travado, e o disponível não — nunca um botão que não faz nada', () => {
     initSettingsCaa(fullCtx()).render();
     for (const s of CAA_SETS) {
-      expect($(`#caa-list button[data-caa="${s.key}"]`).disabled, s.key).toBe(!s.disponivel);
+      expect($(`#caa-list button[data-caa="${s.key}"]`).disabled, s.key).toBe(!s.available);
     }
     // O interruptor das letras é o piso offline: nunca depende de ficheiro nenhum, logo nunca vem travado.
     expect($('#caa-caixa-alta').disabled).toBe(false);

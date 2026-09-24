@@ -49,9 +49,9 @@
 /** As três coisas do `document` de que a casca precisa. Mesma forma de `ui/loop-crash`. */
 export interface PanelShellCtx {
   /** `document.querySelector`, injetado — a casca nunca alcança o `document` global. */
-  procurar: (sel: string) => HTMLElement | null;
+  find: (sel: string) => HTMLElement | null;
   /** `document.createElement`, injetado. */
-  criar: (tag: string) => HTMLElement;
+  create: (tag: string) => HTMLElement;
 }
 
 export interface PanelShellSpec {
@@ -69,14 +69,14 @@ export interface PanelShellSpec {
    * da casa — e o catálogo vive em repositórios que não são este. Um campo opcional custa uma linha e não
    * quebra ninguém; a renomeação custaria o painel de movimento a quem já tem markup.
    */
-  idDaLista?: string;
+  listId?: string;
   /** O título, JÁ TRADUZIDO. Vai por `textContent`. */
-  titulo: string;
+  title: string;
   /** O `aria-label` da lista, já traduzido — o nome do grupo que a criança ouve ao entrar nele. */
-  rotuloDaLista: string;
+  listLabel: string;
   /** Os rótulos dos dois botões, já traduzidos. `rotuloFechar` é a palavra de VOLTAR (item 1, ADR-0158). */
-  rotuloReset: string;
-  rotuloFechar: string;
+  resetLabel: string;
+  closeLabel: string;
   /**
    * A introdução do painel, já traduzida. Vira o texto de REPOUSO do rodapé, via `data-explain-idle`.
    *
@@ -84,7 +84,7 @@ export interface PanelShellSpec {
    * onde passar um parágrafo de prosa para o topo do cartão. Ausente = o painel não tem introdução, que é
    * uma resposta legítima e não uma omissão.
    */
-  introducao?: string;
+  intro?: string;
 }
 
 /**
@@ -101,12 +101,12 @@ export interface PanelShell {
   overlay: HTMLElement;
   card: HTMLElement;
   /** O `<h2>` do cartão. Exposto porque quem retraduz o painel escreve nele — ver `applyLabels`. */
-  titulo: HTMLElement;
-  lista: HTMLElement;
+  title: HTMLElement;
+  list: HTMLElement;
   reset: HTMLElement;
-  fechar: HTMLElement;
+  close: HTMLElement;
   /** Os cinco selectores que este painel passa a garantir. É o contrato, agora dito em vez de descoberto. */
-  ids: { overlay: string; title: string; lista: string; reset: string; fechar: string };
+  ids: { overlay: string; title: string; list: string; reset: string; close: string };
 }
 
 /** Os ids que um painel de `id` ocupa. Exportado porque um gate e um consumidor precisam de os nomear. */
@@ -114,9 +114,9 @@ export function shellIds(id: string, idDaLista?: string): PanelShell['ids'] {
   return {
     overlay: id,
     title: `${id}-title`,
-    lista: idDaLista ?? `${id}-list`,
+    list: idDaLista ?? `${id}-list`,
     reset: `${id}-reset`,
-    fechar: `${id}-close`,
+    close: `${id}-close`,
   };
 }
 
@@ -128,43 +128,43 @@ export function shellIds(id: string, idDaLista?: string): PanelShell['ids'] {
  * contagem de jogadores muda a grade de telas.
  */
 export function mountShell(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell {
-  const ids = shellIds(spec.id, spec.idDaLista);
-  const overlay = ctx.procurar('#' + ids.overlay) ?? ctx.criar('div');
+  const ids = shellIds(spec.id, spec.listId);
+  const overlay = ctx.find('#' + ids.overlay) ?? ctx.create('div');
   overlay.id = ids.overlay;
   overlay.className = 'overlay';
   overlay.hidden = true;
   while (overlay.firstChild) overlay.removeChild(overlay.firstChild);
 
-  const card = ctx.criar('div');
+  const card = ctx.create('div');
   card.className = 'overlay__card';
   card.setAttribute('role', 'dialog');
   card.setAttribute('aria-modal', 'true');
   card.setAttribute('aria-labelledby', ids.title);
 
-  const h2 = ctx.criar('h2');
+  const h2 = ctx.create('h2');
   h2.id = ids.title;
   card.appendChild(h2);
 
   // ADR-0158: «Voltar» is item 1 and nothing closes the panel after its rows. The way out is where the cursor lands
   // when the panel opens — a close button at the bottom made the child walk every row to leave. The id stays
   // `#X-close`, which is contract; only its place and its word changed.
-  const fechar = botao(ctx, ids.fechar, 'mode-btn overlay__back');
+  const fechar = botao(ctx, ids.close, 'mode-btn overlay__back');
   card.appendChild(fechar);
 
-  const lista = ctx.criar('div');
-  lista.id = ids.lista;
+  const lista = ctx.create('div');
+  lista.id = ids.list;
   lista.className = 'ctrl-list';
   lista.setAttribute('role', 'group');
   card.appendChild(lista);
 
-  const actionsRow = ctx.criar('div');
+  const actionsRow = ctx.create('div');
   actionsRow.className = 'overlay__actions';
   const reset = botao(ctx, ids.reset, 'mode-btn');
   actionsRow.appendChild(reset);
   card.appendChild(actionsRow);
 
   overlay.appendChild(card);
-  const casca: PanelShell = { overlay, card, titulo: h2, lista, reset, fechar, ids };
+  const casca: PanelShell = { overlay, card, title: h2, list: lista, reset, close: fechar, ids };
   applyLabels(casca, spec);
   return casca;
 }
@@ -186,21 +186,21 @@ export function mountShell(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell
  * IDEMPOTENTE: escrever os mesmos rótulos duas vezes é escrever os mesmos rótulos.
  */
 export function applyLabels(casca: PanelShell, r: PanelLabels): void {
-  casca.titulo.textContent = r.titulo;
-  casca.lista.setAttribute('aria-label', r.rotuloDaLista);
-  casca.reset.textContent = r.rotuloReset;
-  casca.fechar.textContent = r.rotuloFechar;
+  casca.title.textContent = r.title;
+  casca.list.setAttribute('aria-label', r.listLabel);
+  casca.reset.textContent = r.resetLabel;
+  casca.close.textContent = r.closeLabel;
   // the arrow is drawn by the stylesheet, out of the name (ADR-0159 rule 12)
-  casca.fechar.setAttribute('data-glifo', '↩');
+  casca.close.setAttribute('data-glifo', '↩');
   // A introdução do painel é o texto de REPOUSO do rodapé (CLAUDE.md §4), nunca um `<p>` no topo.
   // ⚠️ A AUSÊNCIA TEM DE APAGAR, e não só deixar de escrever: numa retradução para um dicionário que não tem
   // a chave, o atributo antigo sobreviveria e o rodapé descansaria no idioma anterior.
-  if (r.introducao) casca.card.setAttribute('data-explain-idle', r.introducao);
+  if (r.intro) casca.card.setAttribute('data-explain-idle', r.intro);
   else casca.card.removeAttribute('data-explain-idle');
 }
 
 function botao(ctx: PanelShellCtx, id: string, cssClass: string): HTMLElement {
-  const b = ctx.criar('button');
+  const b = ctx.create('button');
   b.id = id;
   b.className = cssClass;
   b.setAttribute('type', 'button');

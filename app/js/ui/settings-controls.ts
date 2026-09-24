@@ -61,7 +61,7 @@ export interface SettingsControlsCtx {
   // «`a` é o nome ABSTRATO da ação, que a engine enumera em `core/actions`» (ADR-0086). Enquanto foi
   // `string`, um jogo podia declarar uma posição que não existe e a linha era desenhada com teclas vazias,
   // sem que nada apontasse o erro — a criança via uma ação que nunca responderia.
-  acoesDoJogo: () => readonly { readonly acao: Action; readonly rotulo: string }[];
+  gameActions: () => readonly { readonly action: Action; readonly label: string }[];
   /** Screen-reader "polite" announcement (core/a11y-sr's srSay), injected. */
   srSay: (msg: string) => void;
   /** Screen-reader "assertive" announcement (core/a11y-sr's srAlert) — used for the capture prompt/conflict. */
@@ -238,7 +238,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
    * custou dezasseis vezes; agora são uma.
    */
   function gameWordFor(a: Action): string | null {
-    return ctx.acoesDoJogo().find((x) => x.acao === a)?.rotulo ?? null;
+    return ctx.gameActions().find((x) => x.action === a)?.label ?? null;
   }
 
   /**
@@ -322,14 +322,14 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
      * TEXTO DO JOGO, que esta árvore não revê, e um `aria-label` errado SOBREPÕE-SE ao texto visível — foi o
      * «Alterar tecla de undefined do Jogador 1» medido em seis de doze botões do `game-soccer`.
      */
-    const panelCtx: PanelShellCtx = { procurar: (sel) => ctx.$<HTMLElement>(sel), criar: (tag) => el.ownerDocument.createElement(tag) };
+    const panelCtx: PanelShellCtx = { find: (sel) => ctx.$<HTMLElement>(sel), create: (tag) => el.ownerDocument.createElement(tag) };
     el.textContent = '';
-    for (const { acao: a, rotulo: label } of ctx.acoesDoJogo()) {
-      const { linha: row, controle: control } = controlRow(panelCtx, {
+    for (const { action: a, label: label } of ctx.gameActions()) {
+      const { row: row, controle: control } = controlRow(panelCtx, {
         id: ctrlControlId(a),
-        rotulo: label,
-        forma: 'button',
-        rotuloAria: t('ctrl.changeKeyAria', { acao: label, n: player + 1 }),
+        label: label,
+        shape: 'button',
+        ariaLabel: t('ctrl.changeKeyAria', { acao: label, n: player + 1 }),
       });
       // `data-act` fica, e a diferença com o `rotulo` é a razão: `a` é o nome ABSTRATO da posição, que a
       // engine enumera em `core/actions`, e o `rotulo` é a palavra do JOGO (ADR-0086).

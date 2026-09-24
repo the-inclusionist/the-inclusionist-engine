@@ -15,11 +15,11 @@ import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 describe('ADR-0001 as a pure function', () => {
   it('🔴 [Zero] a space smaller than 640×360 still gets 640×360 — never less', () => {
-    expect(stageScale(569, 395, 1, 320, 180)).toEqual({ kDev: 2, k: 2, largura: 640, altura: 360 });
+    expect(stageScale(569, 395, 1, 320, 180)).toEqual({ kDev: 2, k: 2, width: 640, height: 360 });
   });
 
   it('🎯 [Right] the largest INTEGER multiple that fits', () => {
-    expect(stageScale(1300, 740, 1, 320, 180)).toMatchObject({ kDev: 4, largura: 1280, altura: 720 });
+    expect(stageScale(1300, 740, 1, 320, 180)).toMatchObject({ kDev: 4, width: 1280, height: 720 });
     expect(stageScale(1279, 800, 1, 320, 180).kDev, 'within the tolerance, one more step').toBe(4);
   });
 
@@ -35,17 +35,17 @@ describe('ADR-0001 as a pure function', () => {
     // not scroll and the region is 640×360 — cropped at most by ADR-0001's tolerance of 5 logical px per side.
     for (const [w, h] of [[683, 384], [632, 396]]) {
       const e = stageScale(w, h, 2, 320, 180);
-      expect([e.largura, e.altura], `${w}×${h} at 200%`).toEqual([640, 360]);
-      expect(Math.max(0, e.largura - w), `${w}×${h}: cropped past the tolerance`).toBeLessThanOrEqual(2 * 5 * e.k);
-      expect(Math.max(0, e.altura - h)).toBeLessThanOrEqual(2 * 5 * e.k);
+      expect([e.width, e.height], `${w}×${h} at 200%`).toEqual([640, 360]);
+      expect(Math.max(0, e.width - w), `${w}×${h}: cropped past the tolerance`).toBeLessThanOrEqual(2 * 5 * e.k);
+      expect(Math.max(0, e.height - h)).toBeLessThanOrEqual(2 * 5 * e.k);
     }
   });
 
   it('🎯 [Right] with a fractional device pixel ratio the multiple is in REAL pixels, not CSS ones', () => {
     const e = stageScale(1093, 614, 1.25, 320, 180);
     expect(Number.isInteger(e.kDev)).toBe(true);
-    expect((e.largura * 1.25) % 320, 'the region is not a multiple of 320 in real pixels').toBe(0);
-    expect(e.largura * 1.25, 'under 640 real px').toBeGreaterThanOrEqual(640);
+    expect((e.width * 1.25) % 320, 'the region is not a multiple of 320 in real pixels').toBe(0);
+    expect(e.width * 1.25, 'under 640 real px').toBeGreaterThanOrEqual(640);
   });
 });
 

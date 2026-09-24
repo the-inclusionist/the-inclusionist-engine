@@ -199,7 +199,7 @@ export function questionNarration(p: Question): string {
 
 /** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
 function spokenOption(p: Question, i: number): string {
-  return announceItem({ rotulo: t(p.alternativas[i] ?? ''), posicao: i + 1, total: p.alternativas.length }, menuIndexOn);
+  return announceItem({ label: t(p.alternativas[i] ?? ''), position: i + 1, total: p.alternativas.length }, menuIndexOn);
 }
 
 /**

@@ -28,31 +28,31 @@ type Juice = { dust: boolean; sparkle: boolean; squash: boolean; hitstop: boolea
  */
 export interface CharacterSample {
   /** Identidade da textura DENTRO desta gravação. Não é geometria: os quatro quadros de idle têm a mesma. */
-  texturaId: number;
+  textureId: number;
   /** O recorte, "x,y LxA". */
-  recorte: string;
+  crop: string;
   /** A base da textura, "LxA". */
   base: string;
   /** A posição do sprite, "x,y". */
-  posicao: string;
+  position: string;
   /** A escala, "x,y" — o squash & stretch mexe nela. */
-  escala: string;
+  scale: string;
   /** Quantos IRMÃOS da câmera estavam desenhando alguma textura do personagem neste quadro. */
-  irmaosDesenhando: number;
+  siblingsDrawing: number;
   /** Onde eles estavam, para o caso de haver algum. */
-  posIrmaos: string;
+  siblingPositions: string;
 }
 
 /** O que a sonda responde. Três perguntas, porque são elas que separam as causas que sobraram. */
 export interface ProbeSummary {
-  quadros: number;
-  texturas: number;
-  maxIrmaos: number;
-  exemploIrmaos: string;
+  frames: number;
+  textures: number;
+  maxSiblings: number;
+  siblingExample: string;
   /** As texturas cujo recorte é grande demais para um quadro de personagem — sangramento de atlas. */
   sangramento: string[];
-  escalas: string[];
-  veredito: string;
+  scales: string[];
+  verdict: string;
 }
 
 /** Um recorte maior que isto não é um quadro de personagem: é um pedaço do atlas. O maior real tem 31x35. */
@@ -68,23 +68,23 @@ const MAX_CHARACTER_FRAME_SIDE = 64;
  */
 export function summariseProbe(samples: readonly CharacterSample[]): ProbeSummary {
   if (!samples.length) {
-    return { quadros: 0, texturas: 0, maxIrmaos: 0, exemploIrmaos: '', sangramento: [], escalas: [], veredito: 'não gravou nada — o personagem existia?' };
+    return { frames: 0, textures: 0, maxSiblings: 0, siblingExample: '', sangramento: [], scales: [], verdict: 'não gravou nada — o personagem existia?' };
   }
-  const texturas = new Set(samples.map((a) => a.texturaId)).size;
-  const withSiblings = samples.filter((a) => a.irmaosDesenhando > 0);
-  const maxIrmaos = withSiblings.reduce((m, a) => Math.max(m, a.irmaosDesenhando), 0);
+  const texturas = new Set(samples.map((a) => a.textureId)).size;
+  const withSiblings = samples.filter((a) => a.siblingsDrawing > 0);
+  const maxIrmaos = withSiblings.reduce((m, a) => Math.max(m, a.siblingsDrawing), 0);
   const isAtlasPiece = (r: string): boolean => {
     const m = /(\d+)x(\d+)$/.exec(r);
     return !!m && (+m[1] > MAX_CHARACTER_FRAME_SIDE || +m[2] > MAX_CHARACTER_FRAME_SIDE);
   };
-  const sangramento = [...new Set(samples.filter((a) => isAtlasPiece(a.recorte)).map((a) => a.recorte + ' (base ' + a.base + ')'))];
-  const escalas = [...new Set(samples.map((a) => a.escala))].sort();
+  const sangramento = [...new Set(samples.filter((a) => isAtlasPiece(a.crop)).map((a) => a.crop + ' (base ' + a.base + ')'))];
+  const escalas = [...new Set(samples.map((a) => a.scale))].sort();
   const veredito = maxIrmaos > 0
     ? 'ALGUÉM DESENHA DUAS VEZES: até ' + maxIrmaos + ' irmão(s) da câmera com a textura do personagem'
     : sangramento.length
       ? 'RECORTE GRANDE DEMAIS: o quadro está pegando pedaço do atlas'
       : 'sprite limpo (uma textura por quadro, sem irmão, recorte de quadro) — procure em composição: filtro, pós-efeito ou câmera';
-  return { quadros: samples.length, texturas, maxIrmaos, exemploIrmaos: withSiblings.length ? withSiblings[0].posIrmaos : '', sangramento, escalas, veredito };
+  return { frames: samples.length, textures: texturas, maxSiblings: maxIrmaos, siblingExample: withSiblings.length ? withSiblings[0].siblingPositions : '', sangramento, scales: escalas, verdict: veredito };
 }
 
 export interface DebugPanelCtx {
@@ -98,16 +98,16 @@ export interface DebugPanelCtx {
    * OPCIONAL: um hospedeiro sem personagem (o quiz) não a fornece, e a sonda simplesmente não aparece. O
    * painel continua sem conhecer o PixiJS.
    */
-  amostrarPersonagem?: () => CharacterSample | null;
+  sampleCharacter?: () => CharacterSample | null;
   /** Chama `fn` a cada quadro e devolve como cancelar. É o relógio do render, injetado como verbo. */
-  aoQuadro?: (fn: () => void) => () => void;
+  onFrame?: (fn: () => void) => () => void;
   /** Override for tests; defaults to location.search. */
   search?: string;
 }
 
 type Header = { h: string };
 type Toggle = { label: string; chk: () => boolean; set: (v: boolean) => void };
-type Range = { label: string; get: () => number; set: (v: number) => void; min: number; max: number; step: number; cad?: boolean };
+type Range = { label: string; get: () => number; set: (v: number) => void; min: number; max: number; step: number; cadence?: boolean };
 type Knob = Header | Toggle | Range;
 
 export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
@@ -132,10 +132,10 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
     { label: 'Queda máxima', get: () => TUNE.maxFall, set: (v: number) => (TUNE.maxFall = v), min: 3, max: 14, step: 0.5 },
     { label: 'Queda máxima na água', get: () => TUNE.waterMaxFall, set: (v: number) => (TUNE.waterMaxFall = v), min: 1, max: 8, step: 0.5 },
     { h: 'Animação (cadência: ticks/quadro)' },
-    { label: 'Andar', get: () => ANIM.walkHold, set: (v: number) => (ANIM.walkHold = v), min: 1, max: 20, step: 1, cad: true },
-    { label: 'Correr', get: () => ANIM.runHold, set: (v: number) => (ANIM.runHold = v), min: 1, max: 20, step: 1, cad: true },
-    { label: 'Parado (idle)', get: () => ANIM.idleHold, set: (v: number) => (ANIM.idleHold = v), min: 2, max: 40, step: 1, cad: true },
-    { label: 'Nado', get: () => ANIM.swimHold, set: (v: number) => (ANIM.swimHold = v), min: 2, max: 24, step: 1, cad: true },
+    { label: 'Andar', get: () => ANIM.walkHold, set: (v: number) => (ANIM.walkHold = v), min: 1, max: 20, step: 1, cadence: true },
+    { label: 'Correr', get: () => ANIM.runHold, set: (v: number) => (ANIM.runHold = v), min: 1, max: 20, step: 1, cadence: true },
+    { label: 'Parado (idle)', get: () => ANIM.idleHold, set: (v: number) => (ANIM.idleHold = v), min: 2, max: 40, step: 1, cadence: true },
+    { label: 'Nado', get: () => ANIM.swimHold, set: (v: number) => (ANIM.swimHold = v), min: 2, max: 24, step: 1, cadence: true },
     { h: 'Juice (efeitos de resposta) — toggles independentes' },
     { label: '💨 Poeira (pulo/pouso/corrida)', chk: () => JUICE.dust, set: (v: boolean) => { JUICE.dust = v; saveJuice(); } },
     { label: '✨ Brilho ao coletar', chk: () => JUICE.sparkle, set: (v: boolean) => { JUICE.sparkle = v; saveJuice(); } },
@@ -179,7 +179,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
     lab.style.cssText = 'display:block;font-size:12px;margin-bottom:2px';
     const val = document.createElement('strong');
     val.style.cssText = 'color:#ffd23f;float:right';
-    const upd = () => { val.textContent = k.cad ? `${k.get()} (${Math.round(60 / k.get())}fps)` : String(k.get()); };
+    const upd = () => { val.textContent = k.cadence ? `${k.get()} (${Math.round(60 / k.get())}fps)` : String(k.get()); };
     lab.textContent = k.label;
     lab.appendChild(val);
     const inp = document.createElement('input');
@@ -204,8 +204,8 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
 
      Só aparece se o hospedeiro souber tirar a foto: um jogo sem personagem não ganha um botão que não faz
      nada. */
-  if (ctx.amostrarPersonagem && ctx.aoQuadro) {
-    const sampleCharacter = ctx.amostrarPersonagem, aoQuadro = ctx.aoQuadro;
+  if (ctx.sampleCharacter && ctx.onFrame) {
+    const sampleCharacter = ctx.sampleCharacter, aoQuadro = ctx.onFrame;
     const h = document.createElement('div');
     h.textContent = 'Sonda do personagem';
     h.style.cssText = 'margin:.7rem 0 .1rem;font-weight:700;color:#ffd23f;border-bottom:1px solid rgba(255,210,63,.4)';
@@ -233,12 +233,12 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
         btn.disabled = false;
         const r = summariseProbe(samples);
         saida.textContent = [
-          'quadros: ' + r.quadros + '  texturas: ' + r.texturas,
-          'irmãos desenhando: ' + r.maxIrmaos + (r.exemploIrmaos ? ' em ' + r.exemploIrmaos : ''),
+          'quadros: ' + r.frames + '  texturas: ' + r.textures,
+          'irmãos desenhando: ' + r.maxSiblings + (r.siblingExample ? ' em ' + r.siblingExample : ''),
           'recorte grande: ' + (r.sangramento.length ? r.sangramento.join(' ') : 'nenhum'),
-          'escalas: ' + r.escalas.join(' '),
+          'escalas: ' + r.scales.join(' '),
           '',
-          '→ ' + r.veredito,
+          '→ ' + r.verdict,
         ].join(String.fromCharCode(10));
         // O BRUTO fica alcançável para quem quiser ir além do resumo — sem poluir o painel com 180 linhas.
         (window as unknown as { __sonda?: unknown }).__sonda = samples;

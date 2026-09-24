@@ -1867,11 +1867,11 @@
   },
   "ui/caa-sets.ts": {
     "interface CaaSet": [
-      "disponivel",
+      "available",
       "key",
-      "licenca",
-      "nome",
-      "nota?",
+      "license",
+      "name",
+      "note?",
       "tier"
     ],
     "type CaaTier": "| 'bundled' | 'fetched' | 'negotiating'"
@@ -1879,28 +1879,28 @@
   "ui/debug-panel.ts": {
     "interface CharacterSample": [
       "base",
-      "escala",
-      "irmaosDesenhando",
-      "posIrmaos",
-      "posicao",
-      "recorte",
-      "texturaId"
+      "crop",
+      "position",
+      "scale",
+      "siblingPositions",
+      "siblingsDrawing",
+      "textureId"
     ],
     "interface ProbeSummary": [
-      "escalas",
-      "exemploIrmaos",
-      "maxIrmaos",
-      "quadros",
+      "frames",
+      "maxSiblings",
       "sangramento",
-      "texturas",
-      "veredito"
+      "scales",
+      "siblingExample",
+      "textures",
+      "verdict"
     ],
     "interface DebugPanelCtx": [
       "ANIM",
       "JUICE",
       "TUNE",
-      "amostrarPersonagem?",
-      "aoQuadro?",
+      "onFrame?",
+      "sampleCharacter?",
       "saveJuice",
       "search?"
     ]
@@ -1948,22 +1948,22 @@
   },
   "ui/focus-trap.ts": {
     "interface FocusTrapCtx": [
-      "focaveisDe",
-      "focoAtual",
-      "overlayDeCima",
+      "currentFocus",
+      "focusablesIn",
+      "topOverlay",
       "win"
     ],
     "interface FocusTrapApi": [
-      "aoTeclar",
       "attach",
-      "detach"
+      "detach",
+      "onKeydown"
     ]
   },
   "ui/fonts.ts": {
     "interface TypographyStep": [
-      "caixa",
-      "escala",
-      "fonte"
+      "font",
+      "letterCase",
+      "scale"
     ],
     "interface FontStore": [
       "get"
@@ -1978,7 +1978,7 @@
       "value"
     ],
     "interface GameOptionsDrawCtx": [
-      "dizer"
+      "say"
     ],
     "type GameOption": "| (GameOptionBase & { readonly kind: 'steps' | 'list'"
   },
@@ -2022,7 +2022,7 @@
       "word"
     ],
     "interface SlideCtx": [
-      "criar"
+      "create"
     ],
     "interface HowToPlaySurface": [
       "ctx",
@@ -2089,27 +2089,27 @@
   },
   "ui/item-announcement.ts": {
     "interface ItemDeMenu": [
-      "estado?",
-      "posicao",
-      "rotulo",
+      "label",
+      "position",
+      "state?",
       "total"
     ]
   },
   "ui/latch-refusal.ts": {
     "interface LatchRefusal": [
-      "chave",
-      "transporte"
+      "key",
+      "transport"
     ]
   },
   "ui/layout.ts": {
     "interface NodeMeasure": [
-      "alvo",
       "daEngine",
-      "fontePx",
-      "nome"
+      "fontPx",
+      "name",
+      "target"
     ],
     "interface NamedBox": [
-      "nome"
+      "name"
     ],
     "interface Box": [
       "x"
@@ -2123,9 +2123,9 @@
   },
   "ui/loop-crash.ts": {
     "interface CrashNoticeCtx": [
-      "criar",
-      "narrar?",
-      "procurar"
+      "create",
+      "find",
+      "narrate?"
     ]
   },
   "ui/menu-nav.ts": {
@@ -2139,20 +2139,20 @@
       "actionOf",
       "closeById",
       "closePadWiz",
-      "comIndice",
-      "explicarItem?",
+      "explainItem?",
       "getActiveElement",
       "getPauseMenu",
       "isCapturing",
       "isNavigable",
-      "naBarraDe",
       "navBar",
+      "onBar",
       "setPauseActor",
       "setPhase",
       "srSay",
       "topVisibleOverlay",
       "whichPlayer",
-      "win"
+      "win",
+      "withIndex"
     ],
     "interface MenuNavApi": [
       "attach",
@@ -2187,86 +2187,86 @@
       "overlays"
     ],
     "interface MountPanelSpec": [
-      "fecharProprio?",
+      "closeOwn?",
       "id",
-      "idDaLista?",
-      "render",
-      "rotulos"
+      "labels",
+      "listId?",
+      "render"
     ],
     "interface MountedPanel": [
-      "abrir",
-      "casca",
-      "fechar"
+      "close",
+      "open",
+      "shell"
     ]
   },
   "ui/panel-shell.ts": {
     "interface PanelShellCtx": [
-      "criar",
-      "procurar"
+      "create",
+      "find"
     ],
     "interface PanelShellSpec": [
+      "closeLabel",
       "id",
-      "idDaLista?",
-      "introducao?",
-      "rotuloDaLista",
-      "rotuloFechar",
-      "rotuloReset",
-      "titulo"
+      "intro?",
+      "listId?",
+      "listLabel",
+      "resetLabel",
+      "title"
     ],
     "interface PanelShell": [
       "card",
-      "fechar",
+      "close",
       "ids",
-      "lista",
+      "list",
       "overlay",
       "reset",
-      "titulo"
+      "title"
     ],
     "type PanelLabels": "Omit<PanelShellSpec, 'id'>"
   },
   "ui/panel-widgets.ts": {
     "interface ControlRowSpec": [
-      "dica?",
-      "forma?",
+      "ariaLabel?",
+      "hint?",
       "id",
-      "rotulo",
-      "rotuloAria?"
+      "label",
+      "shape?"
     ],
     "interface ControlRow": [
       "controle",
-      "linha"
+      "row"
     ],
     "interface StepsSpec": [
-      "atual",
-      "rotulo",
-      "valores"
+      "current",
+      "label",
+      "values"
     ],
     "type ControlShape": "'interruptor' | 'escolha' | 'cursor' | 'radio' | 'button'"
   },
   "ui/pause-buttons.ts": {
     "interface PauseBtnDef": [
       "act",
+      "dynamicLabel?",
       "lbl?",
-      "letra?",
-      "nivel?"
+      "level?"
     ]
   },
   "ui/pause-icons.ts": {
     "interface IconStateSnapshot": [
-      "alternanciaExigida?",
       "blindMode",
       "calmMode",
       "camera?",
-      "idioma?",
+      "latchRequired?",
       "librasOn",
+      "locale?",
+      "noVoice?",
       "privateOutput",
-      "semVoz?",
+      "speed?",
       "switchScan?",
       "toggleMove",
       "ttsOn",
-      "velocidade?",
       "visual",
-      "voz?"
+      "voice?"
     ],
     "interface IconVisual": [
       "active",
@@ -2277,73 +2277,73 @@
     ],
     "interface ActionableIcons": [
       "camera?",
-      "correcao",
+      "clock?",
+      "correction",
       "declaredPositions?",
+      "holdsKeys",
       "menus?",
-      "microfone?",
-      "relogio?",
-      "seguraTeclas",
-      "tema",
-      "tipografia?"
+      "microphone?",
+      "theme",
+      "typography?"
     ],
     "interface PauseIconsCtx": [
-      "abrirMenus?",
-      "aoSairDaBarra?",
       "camera?",
-      "ciclarTipografia?",
+      "clock?",
+      "cycleTypography?",
       "declaredPositions?",
       "doc?",
       "dynLabel?",
-      "explicarIcone?",
-      "explicarItem?",
+      "explainIcon?",
+      "explainItem?",
+      "gameButtons?",
       "getA11yBars",
       "getAudioCat",
-      "getModoCego",
+      "getBlindMode",
       "getNumPlayers",
       "getPauseActs?",
       "getPlayers",
+      "holdsKeys",
       "isLibrasOn",
-      "jogoButtons?",
-      "microfone?",
+      "microphone?",
+      "noVoice?",
+      "onLeaveBar?",
+      "openMenus?",
       "optionsButtons?",
       "pmButtons?",
       "reflectTtsPanel",
       "reflectTtsPanelEnabled",
-      "relogio?",
       "rm?",
       "rmChar?",
       "rmKeys?",
       "saveRM?",
-      "seguraTeclas",
-      "semVoz?",
+      "setBlindMode?",
       "setCatGain",
-      "setCorrecaoDoJogador?",
-      "setModoCego?",
       "setPauseActor?",
+      "setPlayerCorrection?",
+      "setPlayerTheme?",
       "setPlayerViz?",
-      "setTemaDoJogador?",
       "setToggleMove?",
       "srAlert",
       "srSay",
       "toggleLibras",
-      "transporteEmUso?"
+      "transportInUse?"
     ],
     "interface PauseIconsApi": [
       "applyCalm",
       "buildQuickBar",
       "buildScreenPause",
-      "entrarNaBarra",
+      "enterBar",
       "getCalmMode",
       "iconAct",
       "iconLabel",
       "iconState",
-      "iconesMontados",
-      "naBarraDe",
+      "leaveBar",
+      "mountedIcons",
       "navBar",
+      "onBar",
       "reflectIconBtn",
       "reflectIconsIn",
       "reflectPauseIcons",
-      "sairDaBarra",
       "setCalmMode"
     ],
     "type InputMode": "'standard' | 'sticky' | 'scan'",
@@ -2354,13 +2354,13 @@
   "ui/pause-markup.ts": {
     "interface PauseMenuButton": [
       "act",
+      "dynamicLabel?",
       "lbl?",
-      "letra?",
-      "nivel?"
+      "level?"
     ],
     "interface ScreenPauseMarkupOpts": [
       "dynLabel",
-      "jogoButtons?",
+      "gameButtons?",
       "numPlayers",
       "optionsButtons",
       "player",
@@ -2371,8 +2371,8 @@
   },
   "ui/reach-notice.ts": {
     "interface ReachNoticeCtx": [
-      "criar",
-      "procurar",
+      "create",
+      "find",
       "srAlert",
       "t"
     ],
@@ -2396,16 +2396,16 @@
       "audioOutputs",
       "fillExplain?",
       "getAudioCat",
+      "getBlindMode",
       "getCaneBlockDiv",
-      "getModoCego",
       "getNumPlayers",
       "getPlayers",
       "getSoundOn",
       "getVolume",
       "newElement",
+      "setBlindMode?",
       "setCaneBlockDiv",
       "setCatGain",
-      "setModoCego?",
       "setSoundOn",
       "setVolume",
       "speech",
@@ -2415,7 +2415,7 @@
       "tts"
     ],
     "interface SettingsAudioApi": [
-      "reflectModoCego",
+      "reflectBlindMode",
       "reflectTts",
       "renderAudio"
     ],
@@ -2444,10 +2444,10 @@
     ],
     "interface SettingsControlsCtx": [
       "$",
-      "acoesDoJogo",
       "applyControls",
       "assignControls",
       "fillExplain?",
+      "gameActions",
       "getNumPlayers",
       "kb",
       "kbFor",
@@ -2473,7 +2473,7 @@
       "getOneButton",
       "getPlayers",
       "getWheelchair",
-      "reflectMotorEmpathy",
+      "reflectMobilityEmpathy",
       "reflectVizButtons",
       "renderVizGroup",
       "restoreFocus?",
@@ -2499,19 +2499,19 @@
       "$",
       "fillExplain?",
       "getNumPlayers",
+      "holdsKeys",
       "players",
       "rebuildCoins?",
-      "seguraTeclas",
       "setToggleMove?",
       "setToggleRun?",
       "srSay",
       "store",
-      "transporteEmUso?"
+      "transportInUse?"
     ],
     "interface SettingsMobilityApi": [
       "getSelPlayer",
       "reflectAltMove",
-      "reflectFacil",
+      "reflectEasy",
       "reflectToggleRun",
       "renderMovPlayers",
       "setEasy",
@@ -2522,7 +2522,7 @@
       "players",
       "srSay",
       "store",
-      "transporteEmUso?"
+      "transportInUse?"
     ],
     "type MobilityPlayer": "PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>",
     "type LatchPlayer": "JogadorDaAlternanciaDaAresta"
@@ -2530,16 +2530,16 @@
   "ui/settings-motion.ts": {
     "interface SettingsMotionCtx": [
       "$",
-      "comPersonagem?",
+      "characterLabel?",
       "fillExplain?",
       "frontOverlay",
       "getNumPlayers",
       "getPlayers",
+      "hasCharacter?",
       "restoreFocus?",
       "rm?",
       "rmChar?",
       "rmKeys?",
-      "rotuloDoPersonagem?",
       "saveRM?",
       "srSay",
       "store",
@@ -2597,7 +2597,7 @@
     "interface SettingsTypoCtx": [
       "$",
       "fillExplain?",
-      "fonteInstalada?",
+      "fontInstalled?",
       "root",
       "srSay",
       "store"
@@ -2624,8 +2624,8 @@
       "getPlayers",
       "getSelectedPlayer",
       "getVisualSettings",
-      "oferecer?",
-      "renderEixosVisuais",
+      "offer?",
+      "renderVisualAxes",
       "resetRoleColors",
       "setCbSafe",
       "setLq",
@@ -2638,7 +2638,7 @@
       "srSay"
     ],
     "interface VisualRowsOffered": [
-      "dono"
+      "owner"
     ],
     "interface SettingsVisual": [
       "render"
@@ -2674,7 +2674,6 @@
     ],
     "interface ShellCtx": [
       "$",
-      "fatosDaCena",
       "fitsN",
       "getGamepads",
       "getNumPlayers",
@@ -2699,20 +2698,21 @@
       "padMapFor",
       "quitGame",
       "reflectPauseIcons",
-      "retomarJogo",
-      "rotuloCurto",
+      "resumeGame",
+      "sceneFacts",
       "setMasterMuted",
+      "setMobilityPlayer",
       "setMotionPlayer",
-      "setMotorPlayer",
       "setQuizLevel",
       "setSelVizPlayer",
+      "shortLabel",
       "showWaitingBadge",
       "srAlert",
       "srSay",
       "win"
     ],
     "interface ShellApi": [
-      "aplicarCena",
+      "applyScene",
       "pauseActs",
       "pauseSelect",
       "printMode",
@@ -2777,9 +2777,9 @@
   },
   "ui/typo-choices.ts": {
     "interface FontCssTarget": [
-      "cursiva",
+      "cursive",
       "customFamily",
-      "fonte"
+      "font"
     ],
     "interface TypoRow": [
       "disabled",

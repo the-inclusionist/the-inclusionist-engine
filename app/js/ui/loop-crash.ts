@@ -30,11 +30,11 @@ const CRASH_NOTICE_ID = 'incl-parou';
 
 export interface CrashNoticeCtx {
   /** `querySelector` do documento deste jogo. Injetado: a engine recebe o dela, `main.ts` passa o `$` global. */
-  procurar: (sel: string) => HTMLElement | null;
+  find: (sel: string) => HTMLElement | null;
   /** `document.createElement` — a caixa do aviso é um elemento de verdade, não um pseudo-elemento. */
-  criar: (tag: string) => HTMLElement;
+  create: (tag: string) => HTMLElement;
   /** A narração falada, quando o jogo tiver uma. Ausente = o aviso escrito basta. */
-  narrar?: (texto: string) => void;
+  narrate?: (texto: string) => void;
 }
 
 /**
@@ -55,10 +55,10 @@ export function createCrashNotice(ctx: CrashNoticeCtx): (erro: unknown) => void 
     const msg = t('sr.laco.parou');
 
     // O leitor de tela: assertivo, porque interromper é justamente o ponto.
-    const alert = ctx.procurar('#sr-alert');
+    const alert = ctx.find('#sr-alert');
     if (alert) alert.textContent = msg;
 
-    try { ctx.narrar?.(msg); } catch { /* noop: a narração falhou; o aviso escrito já saiu */ }
+    try { ctx.narrate?.(msg); } catch { /* noop: a narração falhou; o aviso escrito já saiu */ }
 
     // O VISÍVEL, e é um ELEMENTO DE VERDADE — não um pseudo-elemento.
     //
@@ -73,10 +73,10 @@ export function createCrashNotice(ctx: CrashNoticeCtx): (erro: unknown) => void 
     //
     // O raciocínio que continua de pé é o da TRADUÇÃO: a frase vem de `t()` e entra por `textContent`, então
     // ela chega traduzida e escapada. O que muda é o recipiente.
-    const region = ctx.procurar('#game-region');
+    const region = ctx.find('#game-region');
     if (!region) return;
-    const anterior = ctx.procurar('#' + CRASH_NOTICE_ID);
-    const caixa = anterior ?? ctx.criar('div');
+    const anterior = ctx.find('#' + CRASH_NOTICE_ID);
+    const caixa = anterior ?? ctx.create('div');
     caixa.id = CRASH_NOTICE_ID;
     caixa.setAttribute('role', 'alert');
     caixa.textContent = msg;

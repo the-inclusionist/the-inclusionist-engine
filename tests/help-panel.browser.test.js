@@ -17,9 +17,9 @@ const PRESET = {
 const ESQUEMA = { action2: ['KeyZ'], left: ['ArrowLeft'], start: null };
 const linhas = helpRows(PRESET, (a) => ESQUEMA[a], (c) => `«${c}»`);
 const ctx = {
-  criar: (tag) => document.createElement(tag),
+  create: (tag) => document.createElement(tag),
   t: (k, p) => (k === NO_KEY ? 'sem tecla' : k === 'help.slide.tecla' ? `Tecla ${p.k}` : k),
-  titulo: 'Ajuda',
+  title: 'Ajuda',
 };
 const novo = () => mountSlides(ctx);
 
@@ -66,7 +66,7 @@ describe('the help slide show', () => {
 
   it('🔴 [Right] what is heard: the word, the sentence and the key, and where the show is', () => {
     const el = novo();
-    const { falado } = showSlide(el, linhas, 1, ctx);
+    const { spoken: falado } = showSlide(el, linhas, 1, ctx);
     // the sentence's own full stop is not doubled
     expect(falado).toBe('Pular. Sai do chão e volta. Tecla «KeyZ»');
     expect(el.getAttribute('aria-valuetext')).toBe(falado);
@@ -75,9 +75,9 @@ describe('the help slide show', () => {
 
   it('⚠️ [Boundary] held at the ends: the first and last slides are walls, marked as such', () => {
     const el = novo();
-    expect(showSlide(el, linhas, 9, ctx).indice).toBe(2);
+    expect(showSlide(el, linhas, 9, ctx).index).toBe(2);
     expect(el.querySelector('[data-passo="1"]').classList.contains('no-limite')).toBe(true);
-    expect(showSlide(el, linhas, -3, ctx).indice).toBe(0);
+    expect(showSlide(el, linhas, -3, ctx).index).toBe(0);
     expect(el.querySelector('[data-passo="-1"]').classList.contains('no-limite')).toBe(true);
   });
 
@@ -101,7 +101,7 @@ describe('a cartridge\'s «how to play» slide (ADR-0195)', () => {
 
   it('🔴 [Right] shows the game\'s text, no key cap and no word, and says the text', () => {
     const el = novo();
-    const { falado } = showSlide(el, todos, 1, ctx);
+    const { spoken: falado } = showSlide(el, todos, 1, ctx);
     expect(el.querySelector('.slide').dataset.kind).toBe('play');
     expect(el.querySelector('.slide-texto').textContent).toBe('Escolha a resposta!');
     expect([el.querySelector('.slide-tecla').hidden, el.querySelector('.slide-palavra').hidden]).toEqual([true, true]);

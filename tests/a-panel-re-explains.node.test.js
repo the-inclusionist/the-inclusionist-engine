@@ -84,7 +84,7 @@ const reconstroiPorMarkup = (f) => linhasDeCodigo(fonte(f)).some(([, l]) =>
  */
 const CRIADORES_DO_KIT = ['controlRow', 'sectionHeader', 'mountSteps'];
 const constroiNos = (f) => linhasDeCodigo(fonte(f)).some(([, l]) =>
-  /\bcreateElement\s*\(|\bcriar\s*\(/.test(l) || CRIADORES_DO_KIT.some((n) => new RegExp('\\b' + n + '\\s*\\(').test(l)));
+  /\bcreateElement\s*\(|\bcreate\s*\(/.test(l) || CRIADORES_DO_KIT.some((n) => new RegExp('\\b' + n + '\\s*\\(').test(l)));
 
 const reconstroi = (f) => reconstroiPorMarkup(f) || constroiNos(f);
 
@@ -144,7 +144,7 @@ describe('painel que reconstrói linhas repõe a prosa no rodapé (CLAUDE.md §4
     });
     for (const n of CRIADORES_DO_KIT) {
       expect(corpos.has(n), `${n} deixou de ser uma função do kit; rever CRIADORES_DO_KIT`).toBe(true);
-      expect(corpos.get(n), `${n} deixou de criar nós; rever CRIADORES_DO_KIT`).toMatch(/\bcriar\s*\(/);
+      expect(corpos.get(n), `${n} deixou de criar nós; rever CRIADORES_DO_KIT`).toMatch(/\bcreate\s*\(/);
     }
   });
 

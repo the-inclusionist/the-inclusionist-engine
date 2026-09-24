@@ -70,7 +70,7 @@ export interface SettingsVisualCtx {
    * `VISUAL_MODES` explica-a em prosa logo acima. Ela deixou de existir: o estado tem dois eixos, e os
    * escritores por eixo mexem num sem tocar no outro.
    */
-  renderEixosVisuais: (listSel: string, tabsSel: string) => void;
+  renderVisualAxes: (listSel: string, tabsSel: string) => void;
   setLq: (t: number) => void;
   setOwnerColors: (on: boolean) => void;
   setCbSafe: (on: boolean) => void;
@@ -92,7 +92,7 @@ export interface SettingsVisualCtx {
    */
   fillExplain?: (card: HTMLElement | null) => void;
   /** Which host-specific rows to draw (see `VisualRowsOffered`). Absent = all, as before. */
-  oferecer?: VisualRowsOffered;
+  offer?: VisualRowsOffered;
 }
 
 
@@ -104,11 +104,11 @@ export interface SettingsVisualCtx {
  * ⚠️ Sem jogador ou sem o campo, devolve o PADRÃO — que é a resposta certa para «esta criança mexeu em
  * alguma coisa?»: quem não existe não mexeu. Inventar `hc7` aqui marcaria um menu que ninguém tocou.
  */
-function playerVisual(list: readonly unknown[], i: number): { tema: string; correcao: string } {
+function playerVisual(list: readonly unknown[], i: number): { theme: string; correction: string } {
   const v = (list[i] as { visual?: { tema?: unknown; correcao?: unknown } } | undefined)?.visual;
   return {
-    tema: typeof v?.tema === 'string' ? v.tema : PADRAO_VISUAL.tema,
-    correcao: typeof v?.correcao === 'string' ? v.correcao : PADRAO_VISUAL.correcao,
+    theme: typeof v?.tema === 'string' ? v.tema : PADRAO_VISUAL.tema,
+    correction: typeof v?.correcao === 'string' ? v.correcao : PADRAO_VISUAL.correcao,
   };
 }
 
@@ -126,17 +126,17 @@ function playerViz(list: readonly unknown[], i: number): string {
  * roles; the engine's own panel (`createGame`) has no writer for either and must not describe a game it does not know.
  * The default keeps every existing consumer's panel exactly as it was.
  */
-export interface VisualRowsOffered { readonly dono: boolean; readonly papeis: boolean }
-const EVERY_ROW_OFFERED: VisualRowsOffered = { dono: true, papeis: true };
+export interface VisualRowsOffered { readonly owner: boolean; readonly roles: boolean }
+const EVERY_ROW_OFFERED: VisualRowsOffered = { owner: true, roles: true };
 
 /** A linha dos ITENS NA COR DO DONO, já traduzida. Interruptor, que é a forma de onze dos dezassete controles medidos. */
 function ownerRowSpec(): ControlRowSpec {
-  return { id: 'opt-ownercolors', rotulo: t('visual.dono'), dica: t('visual.dono.dica') };
+  return { id: 'opt-ownercolors', label: t('visual.dono'), hint: t('visual.dono.dica') };
 }
 
 /** A linha da PALETA SEGURA (Okabe-Ito), já traduzida. */
 function cbSafeRowSpec(): ControlRowSpec {
-  return { id: 'opt-cbsafe', rotulo: t('visual.cbsafe'), dica: t('visual.cbsafe.dica') };
+  return { id: 'opt-cbsafe', label: t('visual.cbsafe'), hint: t('visual.cbsafe.dica') };
 }
 
 /**
@@ -160,14 +160,14 @@ function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, oferecer: Visu
    */
   let enhanceRow = list.querySelector<HTMLElement>('.ctrl-row--passos');
   if (!enhanceRow) {
-    enhanceRow = ctx.criar('div');
+    enhanceRow = ctx.create('div');
     enhanceRow.className = 'ctrl-row ctrl-row--passos';
-    const envelope = ctx.criar('span');
-    const newHint = ctx.criar('span');
+    const envelope = ctx.create('span');
+    const newHint = ctx.create('span');
     newHint.className = 'opt-hint';
     envelope.appendChild(newHint);
     enhanceRow.appendChild(envelope);
-    const placeholder = ctx.criar('span');
+    const placeholder = ctx.create('span');
     placeholder.setAttribute('data-passos-lugar', 'lq');
     enhanceRow.appendChild(placeholder);
     list.appendChild(enhanceRow);
@@ -175,13 +175,13 @@ function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, oferecer: Visu
   const enhanceHint = enhanceRow.querySelector<HTMLElement>('.opt-hint');
   if (enhanceHint) enhanceHint.textContent = t('visual.lq.dica');
 
-  for (const spec of [...(oferecer.dono ? [ownerRowSpec()] : []), cbSafeRowSpec()]) {
-    const already = ctx.procurar('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
+  for (const spec of [...(oferecer.owner ? [ownerRowSpec()] : []), cbSafeRowSpec()]) {
+    const already = ctx.find('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
     if (already) labelRow(already, spec);
-    else list.appendChild(controlRow(ctx, spec).linha);
+    else list.appendChild(controlRow(ctx, spec).row);
   }
 
-  if (oferecer.papeis) mountRoleColoursRow(ctx, list);
+  if (oferecer.roles) mountRoleColoursRow(ctx, list);
 }
 
 /**
@@ -197,26 +197,26 @@ function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, oferecer: Visu
  * a inventa — ela atravessa por `{param}`, logo a frase continua verdadeira num cartucho com outros papéis.
  */
 function mountRoleColoursRow(ctx: PanelShellCtx, list: HTMLElement): void {
-  let row = ctx.procurar('#opt-role-reset')?.closest<HTMLElement>('.ctrl-row') ?? null;
+  let row = ctx.find('#opt-role-reset')?.closest<HTMLElement>('.ctrl-row') ?? null;
   if (!row) {
-    row = ctx.criar('div');
+    row = ctx.create('div');
     row.className = 'ctrl-row';
-    const envelope = ctx.criar('span');
-    envelope.appendChild(ctx.criar('strong'));
-    const newHint = ctx.criar('span');
+    const envelope = ctx.create('span');
+    envelope.appendChild(ctx.create('strong'));
+    const newHint = ctx.create('span');
     newHint.className = 'opt-hint';
     envelope.appendChild(newHint);
     row.appendChild(envelope);
-    const swatches = ctx.criar('span');
+    const swatches = ctx.create('span');
     swatches.style.cssText = 'display:flex;gap:.35rem;align-items:center';
     for (const k of ROLE_KEYS) {
-      const swatch = ctx.criar('input');
+      const swatch = ctx.create('input');
       swatch.id = 'opt-role-' + k;
       swatch.setAttribute('type', 'color');
       swatch.style.cssText = 'inline-size:2.2em;block-size:1.8em;padding:0;border:1px solid #666;border-radius:4px;background:none';
       swatches.appendChild(swatch);
     }
-    const resetButton = ctx.criar('button');
+    const resetButton = ctx.create('button');
     resetButton.id = 'opt-role-reset';
     resetButton.className = 'mode-btn';
     resetButton.setAttribute('type', 'button');
@@ -230,9 +230,9 @@ function mountRoleColoursRow(ctx: PanelShellCtx, list: HTMLElement): void {
   const hint = row.querySelector<HTMLElement>('.opt-hint');
   if (hint) hint.textContent = t('visual.papeis.dica');
   for (const k of ROLE_KEYS) {
-    ctx.procurar('#opt-role-' + k)?.setAttribute('aria-label', t('visual.papel.cor', { papel: ROLE_LABELS[k] }));
+    ctx.find('#opt-role-' + k)?.setAttribute('aria-label', t('visual.papel.cor', { papel: ROLE_LABELS[k] }));
   }
-  ctx.procurar('#opt-role-reset')?.setAttribute('aria-label', t('visual.papel.repor'));
+  ctx.find('#opt-role-reset')?.setAttribute('aria-label', t('visual.papel.repor'));
 }
 
 /** Duas cores de papel são a mesma? Comparação por componente — `[0,0,0] === [0,0,0]` é `false` em JS, e
@@ -259,14 +259,14 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
    * superfície publicada, não ganha membro obrigatório (ADR-0172). É o mesmo molde do `ui/settings-caa`.
    */
   const kitCtx = (list: HTMLElement): PanelShellCtx => ({
-    procurar: (sel) => ctx.$<HTMLElement>(sel),
-    criar: (tag) => list.ownerDocument.createElement(tag),
+    find: (sel) => ctx.$<HTMLElement>(sel),
+    create: (tag) => list.ownerDocument.createElement(tag),
   });
 
   /** A posição do realce é LOCAL ao controle: o `setLq` injectado pode não devolver o valor novo em
    *  `getVisualSettings` até ao próximo render, e reler dali voltaria a posição para trás. */
   let enhanceStep = lqPosition(ctx.getVisualSettings().lq);
-  const enhanceSpec = () => ({ rotulo: t('visual.lq'), valores: LQ_STEPS.map((v) => t(lqLabel(v))), atual: enhanceStep });
+  const enhanceSpec = () => ({ label: t('visual.lq'), values: LQ_STEPS.map((v) => t(lqLabel(v))), current: enhanceStep });
 
   /** As escutas ligam-se UMA VEZ. Um segundo `addEventListener` no mesmo botão dá dois cliques por clique. */
   let wired = false;
@@ -345,9 +345,9 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     // e o `renderVizGroup` continua a servir o painel de EMPATIA, cuja lista de simulações é mesmo exclusiva.
     // Trocar o corpo daquela função em vez de acrescentar esta teria posto os dois eixos na lista de
     // simulações — foi o que quase aconteceu, e o que a separação impede.
-    ctx.renderEixosVisuais('#visual-modes', '#visual-players');
+    ctx.renderVisualAxes('#visual-modes', '#visual-players');
     void contrastValue; // lido pelo `refreshMarks`, que compara pelo modelo novo e não por este espelho
-    mountVisualInside(kitCtx(el), el, ctx.oferecer);
+    mountVisualInside(kitCtx(el), el, ctx.offer);
     wireOnce(el);
     reflectControls(settings);
     reflectOutlines();
@@ -383,8 +383,8 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
      * nunca a alcança.
      */
     const visual = playerVisual(ctx.getPlayers(), ctx.getSelectedPlayer());
-    const tema = visual.tema !== PADRAO_VISUAL.tema;
-    const correcao = visual.correcao !== PADRAO_VISUAL.correcao;
+    const tema = visual.theme !== PADRAO_VISUAL.tema;
+    const correcao = visual.correction !== PADRAO_VISUAL.correcao;
     const rowOfCheckedAxis = (eixo: string): HTMLElement | null =>
       ctx.$<HTMLElement>(`#visual-modes button[data-eixo="${eixo}"][aria-checked="true"]`)
         ?.closest<HTMLElement>('.ctrl-row') ?? null;

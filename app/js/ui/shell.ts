@@ -348,10 +348,10 @@ export function pickLegendPad(pads: readonly (PadLike | null)[], p1pad: number):
 export interface ShellCtx {
   /** Os três fatos da cena do TOPO, perguntados a cada uso — a raiz é quem tem a pilha e quem nomeia as
    *  cenas. Getter, e não valor: a casca projeta o estado ATUAL, não o do momento em que foi ligada. */
-  fatosDaCena: () => SceneFacts;
+  sceneFacts: () => SceneFacts;
   /** VOLTAR AO JOGO. É o que o "Continuar" do menu de pausa faz, e o que a entrada de um jogador novo faz.
    *  Era `setPhase('playing')` daqui mesmo — mas empilhar é da raiz, e "retomar" é o que a casca quer dizer. */
-  retomarJogo: () => void;
+  resumeGame: () => void;
   /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
    *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
    *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
@@ -404,7 +404,7 @@ export interface ShellCtx {
    * largura para o «Correr / interagir» que a lista de remapeamento usa. A distinção já estava no dicionário
    * (`legend.*` contra `act.*`) e agora atravessa a fronteira COM as palavras — ver `ActionWord.short`.
    */
-  rotuloCurto: (acao: string) => string | null;
+  shortLabel: (acao: string) => string | null;
 
   /* --- as ações do menu de pausa (cada uma é um callback: TDZ, ver o cabeçalho) --- */
   /** `setQuizLevel(n, announce)` — o ciclo 1..5 do nível de alfabetização. */
@@ -424,7 +424,7 @@ export interface ShellCtx {
   /** ui/hud.ts: crachá "aperte um botão para entrar" na tela do jogador novo. */
   showWaitingBadge: (i: number) => void;
   /** ui/settings-mobility.ts: escopa o painel Movimento no jogador que abriu. */
-  setMotorPlayer: (i: number) => void;
+  setMobilityPlayer: (i: number) => void;
   /** ui/settings-motion.ts `setSelectedPlayer`: idem para o painel Animação. */
   setMotionPlayer: (i: number) => void;
   /** ui/settings-motion.ts `motion.open`. */
@@ -443,7 +443,7 @@ export type PauseActs = Record<string, () => void>;
 export interface ShellApi {
   /** Projeta no documento a cena que está no topo da pilha AGORA. A raiz chama depois de empilhar/desempilhar.
    *  (Era `setPhase(p)`: a casca gravava o valor E projetava. Empilhar é da raiz — ela é quem nomeia as cenas.) */
-  aplicarCena: () => void;
+  applyScene: () => void;
   /** Põe o 1º `.pm-btn` (Continuar) selecionado em CADA tela de pausa. */
   pauseSelect: () => void;
   /** Modo Print: esconde as pausas para ver a tela limpa; qualquer tecla/clique as traz de volta. */
@@ -462,7 +462,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
     const m = ctx.kbFor(0);
     const K = (a: string): string => ctx.keyName((m[a] || [])[0] || '?');
     const l1 = legendRow1(`${K('up')} ${K('left')} ${K('down')} ${K('right')}`, 'Enter');
-    const l2 = legendRow2({ action2: [K('action2'), null], action3: [K('action3'), null], action1: [K('action1'), null], action4: [K('action4'), null] }, ctx.rotuloCurto);
+    const l2 = legendRow2({ action2: [K('action2'), null], action3: [K('action3'), null], action1: [K('action1'), null], action4: [K('action4'), null] }, ctx.shortLabel);
     return [l1, l2];
   }
 
@@ -472,7 +472,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
     let l1: string, l2: string;
     if (ctx.isTouchMode()) {                       // joystick VIRTUAL: 0/1/2/3 + START
       l1 = legendRow1('✜', 'START');
-      l2 = legendRow2(touchActionGlyphs(), ctx.rotuloCurto);
+      l2 = legendRow2(touchActionGlyphs(), ctx.shortLabel);
     } else {
       const p0 = ctx.getPlayers()[0] as { pad?: number } | undefined;
       const p1pad = p0 && typeof p0.pad === 'number' && p0.pad >= 0 ? p0.pad : -1;
@@ -481,7 +481,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
         const layout = gp.mapping === 'standard' ? ctx.padLayoutFromId(gp.id) : 'generic';
         const custom = gp.mapping !== 'standard' ? ctx.padMapFor(gp.id) : null;
         l1 = legendRow1('✜', 'START');
-        l2 = legendRow2(padActionGlyphs(layout, custom), ctx.rotuloCurto);
+        l2 = legendRow2(padActionGlyphs(layout, custom), ctx.shortLabel);
       } else {
         [l1, l2] = keyboardLegend();               // TECLADO: teclas configuradas (remap respeitado)
       }
@@ -507,7 +507,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
       if (e && e.preventDefault) { try { e.preventDefault(); } catch { /* noop */ } }
       ctx.win.removeEventListener('keydown', back, true);
       ctx.win.removeEventListener('pointerdown', back, true);
-      if (ctx.fatosDaCena().pauseMenu) { ctx.getPauseScreens().forEach((sp) => { sp.hidden = false; }); pauseSelect(); }
+      if (ctx.sceneFacts().pauseMenu) { ctx.getPauseScreens().forEach((sp) => { sp.hidden = false; }); pauseSelect(); }
     };
     // 80ms de atraso: o próprio evento que ACIONOU o Print não pode ser o que o desfaz.
     ctx.win.setTimeout(() => {
@@ -559,7 +559,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
    * projeta só precisa dos três fatos.
    */
   function aplicarCena(): void {
-    const f = ctx.fatosDaCena();
+    const f = ctx.sceneFacts();
     const v = phaseView(f);
     // LER ANTES DE ESCONDER. Era aqui o defeito: `hideTouchControls()` roda logo abaixo e já põe `tc.hidden`
     // em true, então o plano — que rodava depois — via o pad como se ele já estivesse desligado, nunca gravava
@@ -590,7 +590,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
   // Ações do menu de pausa (compartilhadas pelos menus por tela). Ao abrir um submenu de a11y, escopa ao
   // jogador que agiu (pauseActor) — o diálogo abre na aba dele.
   const pauseActs: PauseActs = {
-    resume: () => ctx.retomarJogo(),
+    resume: () => ctx.resumeGame(),
     // O botão ABC era um CICLO de duas posições; virou a porta do menu de CAA (ADR-0028), onde a caixa da
     // letra é uma escolha entre outras. Ele não sumiu — quem usava o atalho continua a um clique da escolha,
     // em vez de ter de descobrir onde ela foi parar. A ação `letra` sumiu junto com o ciclo: um nome por coisa.
@@ -606,11 +606,11 @@ export function initShell(ctx: ShellCtx): ShellApi {
       const p = ctx.getPlayers()[ctx.getNumPlayers() - 1] as ShellPlayer;
       p.waiting = true;
       ctx.showWaitingBadge(p.i);
-      ctx.retomarJogo();
+      ctx.resumeGame();
       ctx.srAlert(t('sr.player.pressToJoin', { n: p.i + 1 }));
     },
     audio: () => ctx.openAudio(),
-    motora: () => { ctx.setMotorPlayer(ctx.getPauseActor()); ctx.openMovement(); },
+    motora: () => { ctx.setMobilityPlayer(ctx.getPauseActor()); ctx.openMovement(); },
     anim: () => { ctx.setMotionPlayer(ctx.getPauseActor()); ctx.openMotion(); },
     visual: () => { ctx.setSelVizPlayer(ctx.getPauseActor()); ctx.openVisual(); },
     empatia: () => { ctx.setSelVizPlayer(ctx.getPauseActor()); ctx.openEmpathy(); },
@@ -619,5 +619,5 @@ export function initShell(ctx: ShellCtx): ShellApi {
     ajuda: () => ctx.openHelp(),
   };
 
-  return { aplicarCena, pauseSelect, printMode, updateTitleLegend, pauseActs };
+  return { applyScene: aplicarCena, pauseSelect, printMode, updateTitleLegend, pauseActs };
 }

@@ -47,7 +47,7 @@ function makeCtx(overrides = {}) {
     setPlayerViz: [], setLq: [], setOwnerColors: [], setCbSafe: [],
     setOutlineFg: [], setOutlineBg: [], setRoleColor: [], resetRoleColors: 0, srSay: [], setSelectedPlayer: [],
     renderVizGroup: [],
-    renderEixosVisuais: [],
+    renderVisualAxes: [],
   };
   const ctx = {
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
@@ -61,8 +61,8 @@ function makeCtx(overrides = {}) {
     // EMPATIA, cuja lista de simulações continua a ser mesmo exclusiva — e passou a montar dois rádios, um
     // por eixo. O dublê usa o gerador DE VERDADE (`axesHtml`), e não uma imitação: um dublê que inventa o
     // markup deixa de reprovar quando o markup real muda.
-    renderEixosVisuais: (listSel, tabsSel) => {
-      calls.renderEixosVisuais.push([listSel, tabsSel]);
+    renderVisualAxes: (listSel, tabsSel) => {
+      calls.renderVisualAxes.push([listSel, tabsSel]);
       const el = document.querySelector(listSel);
       if (!el) return;
       el.innerHTML = axesHtml(players[selected]?.visual ?? PADRAO, t);
@@ -192,7 +192,7 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     players.push({ viz: 'normal', visual: PADRAO });
     const { ctx, calls } = makeCtx();
     initSettingsVisual(ctx).render();
-    const [listSel] = calls.renderEixosVisuais.at(-1);
+    const [listSel] = calls.renderVisualAxes.at(-1);
     expect(listSel).toBe('#visual-modes');
     const html = document.querySelector('#visual-modes').innerHTML;
     for (const v of ['padrao', 'hc3', 'hc45', 'hc7']) expect(html, `tema ${v}`).toContain(`data-valor="${v}"`);
@@ -234,7 +234,7 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     players.push({ viz: 'normal', visual: PADRAO });
     const { ctx, calls } = makeCtx();
     initSettingsVisual(ctx).render();
-    expect(calls.renderEixosVisuais.at(-1)).toEqual(['#visual-modes', '#visual-players']);
+    expect(calls.renderVisualAxes.at(-1)).toEqual(['#visual-modes', '#visual-players']);
   });
 
   it('🔴 [Right] o realce de contraste são PASSOS ⯇ ⯈: um passo grava a posição, anuncia, e não há barra (ADR-0151)', () => {

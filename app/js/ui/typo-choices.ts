@@ -33,7 +33,7 @@ export function isSelectableFont(k: string, installed?: (family: string) => bool
 
 export interface FontCssTarget {
   /** Value written to root.dataset.fonte. */
-  fonte: 'padrao' | 'alfabetizacao' | 'dislexia' | 'custom';
+  font: 'padrao' | 'alfabetizacao' | 'dislexia' | 'custom';
   /** Value for the --font-custom CSS property, or null to remove the property. */
   customFamily: string | null;
   /**
@@ -46,7 +46,7 @@ export interface FontCssTarget {
    * 📌 Read off `FontItem.fb` rather than a new field: the catalogue already tells cursive faces apart, and a
    * second source for the same fact is a second place for it to drift.
    */
-  cursiva: boolean;
+  cursive: boolean;
 }
 
 /**
@@ -57,15 +57,15 @@ export interface FontCssTarget {
 export function fontCssTarget(k: string, it: FontItem): FontCssTarget {
   // ⚠️ AS TRÊS CANÓNICAS NÃO SÃO CURSIVAS, e responder `false` por elas é afirmação e não descuido: Atkinson,
   // Andika e Lexend são faces de leitura, e é justamente nelas que o espaçamento da BDA tem de valer.
-  if (k === 'atkinson') return { fonte: 'padrao', customFamily: null, cursiva: false };
-  if (k === 'andika') return { fonte: 'alfabetizacao', customFamily: null, cursiva: false };
-  if (k === 'lexend') return { fonte: 'dislexia', customFamily: null, cursiva: false };
+  if (k === 'atkinson') return { font: 'padrao', customFamily: null, cursive: false };
+  if (k === 'andika') return { font: 'alfabetizacao', customFamily: null, cursive: false };
+  if (k === 'lexend') return { font: 'dislexia', customFamily: null, cursive: false };
   // ⚠️ O CAMPO chama-se `cursiva` e o local não: o campo é superfície publicada e sai na fase 7 do plano do
   // inglês, junto dos outros 310 membros; o que nasce aqui é meu e nasce em inglês. `joined` é a palavra que
   // a própria documentação do campo usa — «is this a JOINED face?» —, e é mais exacta do que «cursiva».
   const joined = it.fb === 'cursive';
   const suffix = it.fb === 'serif' ? ',Georgia,serif' : joined ? ',cursive' : '';
-  return { fonte: 'custom', customFamily: `'${it.fam}'${suffix}`, cursiva: joined };
+  return { font: 'custom', customFamily: `'${it.fam}'${suffix}`, cursive: joined };
 }
 
 export interface TypoRow {
@@ -132,9 +132,9 @@ export const typoControlId = (key: string): string => `typo-font-${key}`;
 export function typoRowSpec(row: TypoRow): ControlRowSpec {
   return {
     id: typoControlId(row.key),
-    rotulo: row.fam,
-    ...(row.note ? { dica: row.note } : {}),
-    forma: 'radio',
-    rotuloAria: row.fam + (row.note ? ' — ' + row.note : ''),
+    label: row.fam,
+    ...(row.note ? { hint: row.note } : {}),
+    shape: 'radio',
+    ariaLabel: row.fam + (row.note ? ' — ' + row.note : ''),
   };
 }

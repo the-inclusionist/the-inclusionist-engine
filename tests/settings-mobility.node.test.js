@@ -139,7 +139,7 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
   // é a forma do `p.visual` ao lado do `p.viz` (#104 etapa 1a), pela mesma razão.
   it('🎯 [Right] com o aparelho conhecido, escreve NAS DUAS chaves — a nova e a legada', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
-    c.ctx.transporteEmUso = () => 'gamepad';
+    c.ctx.transportInUse = () => 'gamepad';
     setMoveLatch(c.ctx, 0, true);
     expect(c.escrito[KEYS.toggleMoveP(0)], 'a chave legada deixou de ser escrita e a criança perde a escolha')
       .toBe(true);
@@ -159,7 +159,7 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
   // criança leva consigo para os aparelhos onde a escolha existe.
   it('⚠️ [Zero] em `olhos` a chave nova não é escrita, e a legada é', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
-    c.ctx.transporteEmUso = () => 'olhos';
+    c.ctx.transportInUse = () => 'olhos';
     setMoveLatch(c.ctx, 0, true);
     expect(Object.keys(c.escrito), 'gravou uma escolha que o jogo vai ignorar').toEqual([KEYS.toggleMoveP(0)]);
   });

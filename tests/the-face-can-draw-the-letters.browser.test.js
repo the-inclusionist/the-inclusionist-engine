@@ -101,7 +101,7 @@ describe('a face de arcade desenha as letras do jogo (issue #87, lição do whac
   it('[Zero] o catálogo declara a face, com papel de JOGO e não de interface', () => {
     const it0 = FONT_BY_KEY.pressstart;
     expect(it0, 'a Press Start 2P saiu do catálogo').toBeTruthy();
-    expect(it0.papel, 'a face de arcade virou fonte de interface').toBe('jogo');
+    expect(it0.role, 'a face de arcade virou fonte de interface').toBe('jogo');
     expect(it0.fam).toBe('Press Start 2P');
   });
 

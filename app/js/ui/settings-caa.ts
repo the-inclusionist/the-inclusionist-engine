@@ -55,7 +55,7 @@ export const caaControlId = (key: string): string => `caa-set-${key}`;
 
 /** O interruptor das letras. Sempre disponível: é o piso offline, e nunca dependeu de arquivo nenhum. */
 export function lettersRowSpec(): ControlRowSpec {
-  return { id: 'caa-caixa-alta', rotulo: t('caa.letras'), dica: t('caa.letras.dica') };
+  return { id: 'caa-caixa-alta', label: t('caa.letras'), hint: t('caa.letras.dica') };
 }
 
 /**
@@ -71,13 +71,13 @@ export function lettersRowSpec(): ControlRowSpec {
  */
 export function caaRowSpec(s: CaaSet): ControlRowSpec {
   const reason = caaReason(s);
-  const explains = [s.nota, s.licenca ? `Licença: ${s.licenca}` : '', reason ? t(reason) : '']
+  const explains = [s.note, s.license ? `Licença: ${s.license}` : '', reason ? t(reason) : '']
     .filter(Boolean).join(' · ');
   return {
     id: caaControlId(s.key),
-    rotulo: s.nome,
-    ...(explains ? { dica: explains } : {}),
-    rotuloAria: `${s.nome}${reason ? ', ' + t(reason) : ''}`,
+    label: s.name,
+    ...(explains ? { hint: explains } : {}),
+    ariaLabel: `${s.name}${reason ? ', ' + t(reason) : ''}`,
   };
 }
 
@@ -118,7 +118,7 @@ export function mountCaaInside(ctx: PanelShellCtx, list: HTMLElement): void {
       list.appendChild(header);
     }
     for (const spec of specs) {
-      const old = ctx.procurar('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
+      const old = ctx.find('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
       if (old) labelRow(old, spec);
       else list.appendChild(newRow(ctx, spec));
     }
@@ -132,11 +132,11 @@ export function mountCaaInside(ctx: PanelShellCtx, list: HTMLElement): void {
  * confiança — então ele vem travado, e o motivo já está no `rotuloAria` para quem navega por teclado.
  */
 function newRow(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
-  const { linha: row, controle: control } = controlRow(ctx, spec);
+  const { row: row, controle: control } = controlRow(ctx, spec);
   if (spec.id === 'caa-caixa-alta') { row.id = 'caa-letras'; return row; }
   const key = spec.id.replace('caa-set-', '');
   control.setAttribute('data-caa', key);
-  if (!CAA_BY_KEY[key]?.disponivel) control.setAttribute('disabled', '');
+  if (!CAA_BY_KEY[key]?.available) control.setAttribute('disabled', '');
   return row;
 }
 
@@ -169,8 +169,8 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
    * é superfície publicada, não ganha membro obrigatório (ADR-0172).
    */
   const panelCtx = (list: HTMLElement): PanelShellCtx => ({
-    procurar: (sel) => ctx.$<HTMLElement>(sel),
-    criar: (tag) => list.ownerDocument.createElement(tag),
+    find: (sel) => ctx.$<HTMLElement>(sel),
+    create: (tag) => list.ownerDocument.createElement(tag),
   });
 
   function reflect(): void {

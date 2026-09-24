@@ -77,10 +77,10 @@ describe('um ajuste não pode ficar mudo ao ganhar padrão da engine', () => {
     // A regra tem saída, e ela foi tomada: `setModoCego` é opcional nos três pontos que o pediam, e o painel
     // de áudio passou a anunciar (caso em `settings-audio.browser.test.js`). Sem este caso, a regra leria-se
     // como «nunca torne nada opcional», que não é o que ela diz.
-    expect(membros('ui/pause-icons.ts', 'interface PauseIconsCtx')).toContain('setModoCego?');
-    expect(membros('ui/settings-audio.ts', 'interface SettingsAudioCtx')).toContain('setModoCego?');
+    expect(membros('ui/pause-icons.ts', 'interface PauseIconsCtx')).toContain('setBlindMode?');
+    expect(membros('ui/settings-audio.ts', 'interface SettingsAudioCtx')).toContain('setBlindMode?');
     // E o campo NÃO está na lista acima — porque o anúncio já não mora no cartucho.
-    expect(ANUNCIO_NO_SETTER_INJETADO.some((a) => a.campo === 'setModoCego')).toBe(false);
+    expect(ANUNCIO_NO_SETTER_INJETADO.some((a) => a.campo === 'setBlindMode')).toBe(false);
   });
 
   it('[Interface] a lista não tem ÓRFÃOS — entrada que nomeia campo inexistente', () => {

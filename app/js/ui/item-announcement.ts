@@ -20,11 +20,11 @@ import { t } from '../core/i18n.js';
 
 export interface ItemDeMenu {
   /** O que o item é. Espaço em branco de markup é normalizado aqui. */
-  rotulo: string;
+  label: string;
   /** O valor ou estado: "ativado", "38%", a palavra de exemplo do minijogo. Opcional. */
-  estado?: string;
+  state?: string;
   /** Posição na lista, contada a partir de 1 — é o número que a criança ouve, não o índice do array. */
-  posicao: number;
+  position: number;
   /** Quantos itens a lista tem. */
   total: number;
 }
@@ -40,11 +40,11 @@ const tidy = (s: string | undefined): string => (s || '').replace(/\s+/g, ' ').t
  * do menu, e a criança confia nela — número errado é pior que número nenhum.
  */
 export function announceItem(item: ItemDeMenu, comIndice: boolean): string {
-  const indexApplies = comIndice && item.total >= 1 && item.posicao >= 1 && item.posicao <= item.total;
+  const indexApplies = comIndice && item.total >= 1 && item.position >= 1 && item.position <= item.total;
   const parts = [
-    tidy(item.rotulo),
-    tidy(item.estado),
-    indexApplies ? t('sr.menu.index', { n: item.posicao, m: item.total }) : '',
+    tidy(item.label),
+    tidy(item.state),
+    indexApplies ? t('sr.menu.index', { n: item.position, m: item.total }) : '',
   ];
   return parts.filter(Boolean).join(', ');
 }

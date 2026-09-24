@@ -21,9 +21,9 @@ import { latchIsOptional, ONE_COMMAND_AT_A_TIME } from '../input/latch-scope.js'
 
 /** Uma linha pronta a traduzir. `null` = há escolha, e não há nada a dizer. */
 export interface LatchRefusal {
-  readonly chave: string;
+  readonly key: string;
   /** O transporte que a exige — fica disponível para quem quiser compor a frase de outro modo. */
-  readonly transporte: string;
+  readonly transport: string;
 }
 
 /**
@@ -52,7 +52,7 @@ export function latchRefusal(transporte: string): LatchRefusal | null {
   // 📌 Um transporte que exija alternância e não tenha frase seria um botão desabilitado SEM motivo — pior do
   // que o defeito que isto conserta, porque a criança deixa de saber sequer que há uma razão. O gate afirma
   // que os dois conjuntos coincidem; aqui a ausência degrada para «não recuso», que mantém o controle vivo.
-  return chave ? { chave, transporte } : null;
+  return chave ? { key: chave, transport: transporte } : null;
 }
 
 /**

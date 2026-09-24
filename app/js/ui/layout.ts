@@ -27,10 +27,10 @@ export function minimumTarget(k: number): number {
 
 /** One node inside the region, as measured by whoever calls: its computed font size if it holds text, its box if it is a target. */
 export interface NodeMeasure {
-  readonly nome: string;
+  readonly name: string;
   readonly daEngine: boolean;
-  readonly fontePx: number | null;
-  readonly alvo: { readonly w: number; readonly h: number } | null;
+  readonly fontPx: number | null;
+  readonly target: { readonly w: number; readonly h: number } | null;
 }
 
 /**
@@ -38,16 +38,16 @@ export interface NodeMeasure {
  * side is under 22·k px (44 at 640×360). The engine's own nodes are not the cartridge's to answer for, and a node with no
  * area is not drawn. Half a pixel of slack absorbs subpixel layout.
  */
-export function belowFloor(nos: readonly NodeMeasure[], k: number): { texto: string[]; alvos: string[] } {
+export function belowFloor(nos: readonly NodeMeasure[], k: number): { text: string[]; targets: string[] } {
   const escala = minimumTarget(k) / 22;
   const texto: string[] = [];
   const alvos: string[] = [];
   for (const n of nos) {
     if (n.daEngine) continue;
-    if (n.fontePx !== null && n.fontePx > 0 && n.fontePx < 8 * escala - 0.5) texto.push(n.nome);
-    if (n.alvo && n.alvo.w > 0 && n.alvo.h > 0 && Math.min(n.alvo.w, n.alvo.h) < minimumTarget(k) - 0.5) alvos.push(n.nome);
+    if (n.fontPx !== null && n.fontPx > 0 && n.fontPx < 8 * escala - 0.5) texto.push(n.name);
+    if (n.target && n.target.w > 0 && n.target.h > 0 && Math.min(n.target.w, n.target.h) < minimumTarget(k) - 0.5) alvos.push(n.name);
   }
-  return { texto, alvos };
+  return { text: texto, targets: alvos };
 }
 
 /**
@@ -66,7 +66,7 @@ export function belowFloor(nos: readonly NodeMeasure[], k: number): { texto: str
  * ⚠️ IGNORA OS DESCENDENTES DA PRÓPRIA BARRA: os botões dela intersectam-na por definição, e contá-los faria
  * o crivo acusar sempre — o defeito que o ADR-0106 §2 chama de afogar o que se pode resolver.
  */
-export interface NamedBox { readonly nome: string; readonly caixa: Box; readonly daBarra: boolean; }
+export interface NamedBox { readonly name: string; readonly box: Box; readonly isBar: boolean; }
 export interface Box { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
 
 export function barIntruders(barBox: Box | null, nos: readonly NamedBox[]): string[] {
@@ -78,10 +78,10 @@ export function barIntruders(barBox: Box | null, nos: readonly NamedBox[]): stri
   // atravessando a barra passa nas quatro comparações. 📌 Contentores de altura ou largura zero são comuns
   // em markup gerado, e acusá-los seria ruído puro — que é como se ensina um consumidor a ignorar a linha.
   return nos
-    .filter((n) => !n.daBarra && n.caixa.w > 0 && n.caixa.h > 0)
-    .filter((n) => n.caixa.x < barBox.x + barBox.w && barBox.x < n.caixa.x + n.caixa.w
-      && n.caixa.y < barBox.y + barBox.h && barBox.y < n.caixa.y + n.caixa.h)
-    .map((n) => n.nome);
+    .filter((n) => !n.isBar && n.box.w > 0 && n.box.h > 0)
+    .filter((n) => n.box.x < barBox.x + barBox.w && barBox.x < n.box.x + n.box.w
+      && n.box.y < barBox.y + barBox.h && barBox.y < n.box.y + n.box.h)
+    .map((n) => n.name);
 }
 
 
@@ -91,7 +91,7 @@ export function barIntruders(barBox: Box | null, nos: readonly NamedBox[]): stri
 // possui; o `let` que sobra guarda a função, não o número.
 let _countPlayers: () => number = () => 1;
 /** Liga a contagem de jogadores. Chamado uma vez pela raiz, antes do primeiro `layout()`. */
-export function initLayout(deps: { numJogadores: () => number }): void { _countPlayers = deps.numJogadores; }
+export function initLayout(deps: { numPlayers: () => number }): void { _countPlayers = deps.numPlayers; }
 
 /**
  * A CASCA QUE DÁ O ESPAÇO DISPONÍVEL — por id OU por classe, e as duas formas valem o mesmo.
@@ -113,7 +113,7 @@ function findStageWrap(): HTMLElement | null {
  * The scale ADR-0001 gives a stage: the factor in REAL pixels (whole, except at the floor — ADR-0179), the CSS factor, and
  * the region's CSS size.
  */
-export interface Scale { readonly kDev: number; readonly k: number; readonly largura: number; readonly altura: number }
+export interface Scale { readonly kDev: number; readonly k: number; readonly width: number; readonly height: number }
 
 /**
  * ADR-0001 AS A PURE FUNCTION — so the engine can apply it to every cartridge (ADR-0163) and a test can pin it.
@@ -128,7 +128,7 @@ export function stageScale(availW: number, availH: number, dpr: number, baseW: n
   const integerK = Math.floor(Math.min(availW * dpr / (baseW - 10), availH * dpr / (baseH - 10)));
   const kDev = integerK / dpr >= MIN_K ? integerK : MIN_K * dpr;
   const k = kDev / dpr;
-  return { kDev, k, largura: baseW * k, altura: baseH * k };
+  return { kDev, k, width: baseW * k, height: baseH * k };
 }
 
 /**
@@ -138,7 +138,7 @@ export function stageScale(availW: number, availH: number, dpr: number, baseW: n
  * are not the global one — the fault the root's finding 15 names about reaching `document` from under the injection.
  */
 export function applyScale(region: HTMLElement, e: Scale): void {
-  region.style.width = e.largura + 'px'; region.style.height = e.altura + 'px';
+  region.style.width = e.width + 'px'; region.style.height = e.height + 'px';
   region.style.setProperty('--hud-fs', Math.max(9, Math.round(180 * e.k * 0.052)) + 'px');
   region.style.setProperty('--ui-fs', (8 * e.k) + 'px');   // base LÓGICA 8px × k (16px em k=2)
   // One ruler (plan phase 5b): `--tap` is the name three sibling games read, `--alvo-min` the engine's (ADR-0163); both come
