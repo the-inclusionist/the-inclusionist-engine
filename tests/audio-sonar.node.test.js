@@ -310,6 +310,40 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
     expect(g.osciladores[0].parouEm, 'baixar o volume matou o grafo em vez de o silenciar').toBe(null);
   });
 
+  it.each([
+    ['the game\'s sound off', { soundOn: false }],
+    ['no categories at all', { audioCat: null }],
+    ['no `guide` category', { audioCat: {} }],
+  ])('🔴 [Zero] %s: no graph is built, and nothing throws', (_titulo, over) => {
+    // Only the category switched OFF had a case; a mixer with the whole sound off, or one that never named the category,
+    // either lit the guide anyway or threw on `cat.guide`.
+    const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 48, y: 32 }], ...over });
+    expect(() => quadros(g.som, g, 30)).not.toThrow();
+    expect(g.osciladores.length).toBe(0);
+    expect(g.som.guideCount).toBe(0);
+  });
+
+  it('⚠️ [Error] a device that refuses to build the graph leaves the guide off, and the frame goes on', () => {
+    const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 48, y: 32 }] });
+    g.ac.createOscillator = () => { throw new Error('no oscillator on this device'); };
+    expect(() => quadros(g.som, g, 30)).not.toThrow();
+    expect(g.som.guideCount).toBe(0);
+  });
+
+  it('🔴 [Right] the route is measured every FRAMES_BETWEEN_ROUTES frames — no sooner, no later — and the pan follows it', () => {
+    // The pan says WHICH SIDE the target is on. It is the route's answer, and the route is asked on a cadence: every frame
+    // would be the BFS sixty times a second, and never would leave the guide pointing where the target used to be.
+    let alvos = [{ x: 32 + 4 * 16, y: 32 }];                              // to the right
+    const g = setupGuia({ players: [pl({ vePouco: true })], targetsOf: () => alvos });
+    quadros(g.som, g, 1);                                                  // the first frame measures
+    expect(g.panners[0].pan.value, 'the pan does not say the target is to the right').toBeGreaterThan(0);
+    alvos = [{ x: 32 - 4 * 16, y: 32 }];                                   // it moves to the left
+    quadros(g.som, g, FRAMES_BETWEEN_ROUTES - 1);
+    expect(g.panners[0].pan.value, 'the route was measured before its cadence').toBeGreaterThan(0);
+    quadros(g.som, g, 1);
+    expect(g.panners[0].pan.value, 'the route was not measured on its cadence').toBeLessThan(0);
+  });
+
   it('[Simple] o ganho de base é MAIS BAIXO do que o do bipe que substitui', () => {
     // Um som que nunca para é percebido como mais alto do que um transiente do mesmo pico. O bipe usava 0,11.
     expect(GUIDE_VOL).toBeLessThan(0.11);
@@ -500,3 +534,11 @@ describe('platform/audio-sonar — o pan na regua declarada (#121)', () => {
 //   · fazendo `worldStep` devolver 1 para `hotspots` → reprovam DOIS: "[Zero] `hotspots` nao tem lado" e o
 //     "[Interface]". Um pan calculado sobre indices de lista aponta para um lado que nao existe.
 //   · tirando o `Math.max(-1, Math.min(1, ...))` → "[Boundary] o pan continua preso" reprova nas tres.
+//
+// PROBED AGAIN (2026-09-23), nineteen decisions of `updateGuide` disabled one at a time — `scratchpad/sonda-guia.py`. Nine were
+// green: the game's sound off, no categories, no `guide` category (the last two THREW on `cat.guide`), a device that refuses the
+// graph (it threw on `++g.desdeARota`), the route's CADENCE both ways, and the pan — following the target and gliding to it.
+// Held now by «%s: no graph is built…», «a device that refuses…» and «the route is measured every FRAMES_BETWEEN_ROUTES…».
+// One is declared rather than caught: without the ENGINE's audio context the guide stays off even for a player with an output
+// device of their own. It is reachable only by that player, and whether they should hear the guide before the engine's audio
+// starts is not a decision anyone has written — pinning today's answer would make it one by accident.
