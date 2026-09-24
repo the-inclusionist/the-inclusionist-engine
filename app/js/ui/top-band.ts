@@ -1,41 +1,40 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/top-band.ts — QUANTO ESPAÇO A ENGINE GUARDA PARA SI NO TOPO DA TELA (ADR-0148 §3, errata de 2026-09-13; issue #160).
+// ui/top-band.ts — HOW MUCH SPACE THE ENGINE KEEPS FOR ITSELF AT THE TOP OF THE SCREEN (ADR-0148 §3; issue #160).
 //
-// A engine desenha coisas por cima do jogo — a barra de acessibilidade, o nome do ícone apontado, as duas colunas do HUD e
-// a ficha da varredura — e o jogo tem de saber quanto do topo não é dele. Este módulo mede o que está lá e escreve duas
-// variáveis na região: `--barra-a11y-h`, que é a faixa inteira, e `--scan-top`, que é onde a ficha se pousa.
+// The engine draws things over the game — the accessibility bar, the name of the pointed icon, the two HUD columns and
+// the scan chip — and the game has to know how much of the top is not its own. This module measures what is there and
+// writes two variables on the region: `--barra-a11y-h`, the whole band, and `--scan-top`, where the chip sits.
 //
-// 📌 SAIU DA RAIZ EM 2026-09-22 (ADR-0221 passo 7c.1). 📏 Era a pior função não-raiz do `boot/create-game`: **26 nós de
-// decisão em 57 linhas**, contra o tecto de 10 por função. E não é fiação — é uma conta, que é justamente o que uma raiz de
-// composição não deve ter (Seemann; Fowler): uma raiz é grande porque liga muita coisa, não porque decide.
+// 📌 It is a calculation, not wiring, which is exactly what a composition root should not hold (Seemann; Fowler): a root
+// is large because it connects many things, not because it decides (ADR-0221).
 //
-// ⚠️ RECEBE OS NÓS E O MEDIDOR, e nunca alcança um global: o alcance global deste módulo é ZERO (passo 7d), e é isso que
-// permite medi-lo num documento que não é o do navegador.
+// ⚠️ IT RECEIVES THE NODES AND THE MEASURER, and never reaches a global: this module's global reach is ZERO, which is
+// what lets it be measured in a document that is not the browser's.
 //
-// 🔴 A ORDEM DAS DUAS ESCRITAS É A DECISÃO, e a primeira versão errou-a: a ficha é posta por `--scan-top`, que NÃO depende
-// dela; só a faixa depende. Pô-la pela faixa que ela própria faz crescer criava um laço — a ficha empurrava a faixa, a
-// faixa empurrava a ficha, e ela descia a tela a cada medição. ⚠️ E o comentário que registava isso dizia que um caso o
-// tinha apanhado: medido em 22/09, nenhum apanhava, porque um laço é invisível a uma medição só. O caso que o prende agora
-// mede a ficha, deixa a varredura andar três passos — que é o que remede a faixa no uso real — e exige o mesmo lugar.
+// 🔴 THE ORDER OF THE TWO WRITES IS THE DECISION: the chip is placed by `--scan-top`, which does NOT depend on it; only the
+// band does. Placing it by the band it makes grow creates a loop — the chip pushes the band, the band pushes the chip,
+// and it walks down the screen on every measurement. A loop is invisible to a single measurement, so the case that
+// holds it measures the chip, lets the scan advance three steps — which is what re-measures the band in real use — and
+// demands the same place.
 
-/** O que este módulo precisa de ver para medir. Tudo injectado: o módulo não alcança `document` nem `window`. */
+/** What this module needs to see in order to measure. All injected: the module reaches neither `document` nor `window`. */
 export interface TopBandCtx {
-  /** A região do jogo, onde as duas variáveis são escritas. Ausente: não há onde escrever, e não se escreve. */
+  /** The game region, where the two variables are written. Absent: there is nowhere to write, and nothing is written. */
   readonly region: HTMLElement | null;
-  /** A barra de acessibilidade. ⚠️ Ausente = faixa ZERO: não há nada para reservar, e reservar mesmo assim tirava ao jogo
-   *  a primeira linha da tela — 12% da altura a 640×360. */
+  /** The accessibility bar. ⚠️ Absent = a ZERO band: there is nothing to reserve, and reserving anyway would take the
+   *  first line of the screen from the game — 12% of the height at 640×360. */
   readonly bar: HTMLElement | null;
-  /** As duas colunas do HUD (ADR-0175), quando montadas. */
+  /** The two HUD columns (ADR-0175), when mounted. */
   readonly hud: { readonly left: HTMLElement; readonly right: HTMLElement } | null;
-  /** `getComputedStyle`, injectado. Ausente num documento que não o tem, e aí a linha do nome não é medida. */
+  /** `getComputedStyle`, injected. Absent in a document that lacks it, and then the name line is not measured. */
   readonly computedStyle?: (el: HTMLElement) => CSSStyleDeclaration;
 }
 
-/** Um quarto da base da escala, resolvido PELA FOLHA através de uma sonda, para a regra ter uma casa só. */
+/** A quarter of the scale's base, resolved BY THE STYLESHEET through a probe, so the rule has one home. */
 function breathingRoom(region: HTMLElement, fallback: number): number {
   const probe = region.ownerDocument.createElement('div');
-  // Um quarto do tamanho base da escala, e não do nome: uma face com piso mais alto faz crescer o TEXTO dela, não este
-  // vão (#172). O `--espaco-fixo` é o que encolhe com o Ctrl −.
+  // A quarter of the scale's base size, not of the name's: a face with a higher floor grows its TEXT, not this gap
+  // (#172). `--espaco-fixo` is what shrinks with Ctrl −.
   probe.style.cssText = 'position:absolute;visibility:hidden;height:calc(var(--ui-fs,16px) / 4 * var(--espaco-fixo,1))';
   region.appendChild(probe);
   const h = probe.getBoundingClientRect().height || fallback;
@@ -44,10 +43,10 @@ function breathingRoom(region: HTMLElement, fallback: number): number {
 }
 
 /**
- * A sala que a barra pede: o fundo dela, ou o fundo da linha do NOME do ícone apontado, mais um respiro.
+ * The room the bar asks for: its bottom, or the bottom of the pointed icon's NAME line, plus breathing room.
  *
- * 📌 A linha do nome conta esteja ou não a mostrar um nome — reservar só enquanto se aponta moveria o jogo debaixo do dedo
- * da criança. 📏 Medido a 640×360: a variável dizia 44 px (só a barra) e o nome, a 57–87 px, cobria o enunciado do quiz.
+ * 📌 The name line counts whether or not it is showing a name — reserving only while pointing would move the game under
+ * the child's finger, and leaving it out lets the name cover the top of the game.
  */
 function barRoom(ctx: TopBandCtx, top: number): { room: number; breath: number } {
   const { region, bar, computedStyle } = ctx;
@@ -66,10 +65,10 @@ function barRoom(ctx: TopBandCtx, top: number): { room: number; breath: number }
 }
 
 /**
- * A sala que o HUD pede, e a largura que cada coluna aceita.
+ * The room the HUD asks for, and the width each column accepts.
  *
- * 📌 Cada coluna é ESTREITADA para nunca alcançar a barra: sem isso um número comprido encosta nos ícones e a criança
- * deixa de conseguir apontar um deles.
+ * 📌 Each column is NARROWED so it never reaches the bar: otherwise a long number touches the icons and the child can no
+ * longer point at one of them.
  */
 function hudRoom(ctx: TopBandCtx, top: number, breath: number, room: number): number {
   const { region, bar, hud } = ctx;
@@ -90,11 +89,11 @@ function hudRoom(ctx: TopBandCtx, top: number, breath: number, room: number): nu
 }
 
 /**
- * Mede o topo e escreve `--scan-top` e `--barra-a11y-h` na região.
+ * Measures the top and writes `--scan-top` and `--barra-a11y-h` on the region.
  *
- * 🔴 A FICHA DA VARREDURA TOMA SALA PELA MESMA RAZÃO QUE A LINHA DO NOME (ADR-0218): ela é HUD, e HUD que não reserva o seu
- * espaço é a engine a escrever por cima do jogo — medido no quiz construído, onde «DIZER A RESPOSTA» caiu em cima do
- * enunciado. Mas ela é POSTA pelo `--scan-top`, escrito ANTES de ela engordar a sala; ver o laço no cabeçalho.
+ * 🔴 THE SCAN CHIP TAKES ROOM FOR THE SAME REASON AS THE NAME LINE (ADR-0218): it is HUD, and HUD that does not reserve its
+ * space is the engine writing over the game. But it is PLACED by `--scan-top`, written BEFORE it widens the room; see
+ * the loop in the header.
  */
 export function reserveTopBand(ctx: TopBandCtx): void {
   const { region } = ctx;

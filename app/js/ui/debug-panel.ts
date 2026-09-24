@@ -1,70 +1,65 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/debug-panel — the ?debug=true live-tuning panel (physics/animation sliders + juice toggles). Leaf UI module.
 // Built via closure DI: receives the LIVE TUNE/ANIM/JUICE objects (mutated in place) + saveJuice from the composition
-// root, so the sliders/checkboxes tune the same state the game reads. Extracted from game.js (modularization Tier 1).
+// root, so the sliders/checkboxes tune the same state the game reads.
 // Returns the panel element (or null when not in ?debug=true) — testable without booting the game.
 
 
 type Tune = Record<string, number>;
 type Anim = Record<string, number>;
-// `Juice` era `Record<string, boolean>` — uma descrição que APENAS se parece com a real. O dono é
-// `render/fx`, que exporta `JuiceFlags` com os campos nomeados. ADR-0039: quem não é dono, ou não
-// declara, ou declara um supertipo VERDADEIRO. Um `Record` genérico não é nem um nem outro — ele
-// aceita qualquer chave e perde exatamente o que o tipo do dono garante.
 /*
- * 🔴 DECLARADO AQUI desde o ADR-0228, e era importado de `render/fx`, que saiu para o cartucho. Os seis campos
- * são os interruptores de «juice» que este painel edita; a alternativa — mantê-los num módulo do jogo e a engine
- * a importá-los — é a inversão que aquele registo veio desfazer. ⚠️ Continua a NÃO ser `Record<string, boolean>`,
- * que é a descrição que apenas se PARECE com a real (ADR-0039).
+ * 🔴 DECLARED HERE (ADR-0228): the six fields are the juice switches this panel edits, and importing them from a game
+ * module would be the inversion that record undid. ⚠️ It is NOT `Record<string, boolean>`, which is a description that
+ * only LOOKS like the real one: it accepts any key and loses exactly what the named fields guarantee (ADR-0039).
  */
 type Juice = { dust: boolean; sparkle: boolean; squash: boolean; hitstop: boolean; shake: boolean; shimmer: boolean };
 
 /**
- * UMA FOTO DO PERSONAGEM num quadro — DADOS, e nenhum objeto do PixiJS.
+ * A SNAPSHOT OF THE CHARACTER in one frame — DATA, and no PixiJS object.
  *
- * A raiz de composição, que é o único lugar onde o PixiJS já é conhecido, tira a foto e entrega strings. É a
- * mesma escolha de `RenderInto` e `CreateSprite` em render/port: pedir o VERBO cabe onde emprestar o objeto
- * não cabe — e aqui ela paga duas vezes, porque mantém `ui/debug-panel` testável no project `node`.
+ * The composition root, the only place where PixiJS is known, takes the snapshot and hands over strings. It is the
+ * same choice as `RenderInto` and `CreateSprite` in render/port: asking for the VERB fits where lending the object does
+ * not — and here it pays twice, because it keeps `ui/debug-panel` testable in the `node` project.
  */
 export interface CharacterSample {
-  /** Identidade da textura DENTRO desta gravação. Não é geometria: os quatro quadros de idle têm a mesma. */
+  /** Identity of the texture WITHIN this recording. Not geometry: the four idle frames share it. */
   textureId: number;
-  /** O recorte, "x,y LxA". */
+  /** The crop, "x,y WxH". */
   crop: string;
-  /** A base da textura, "LxA". */
+  /** The texture base, "WxH". */
   base: string;
-  /** A posição do sprite, "x,y". */
+  /** The sprite position, "x,y". */
   position: string;
-  /** A escala, "x,y" — o squash & stretch mexe nela. */
+  /** The scale, "x,y" — squash & stretch moves it. */
   scale: string;
-  /** Quantos IRMÃOS da câmera estavam desenhando alguma textura do personagem neste quadro. */
+  /** How many camera SIBLINGS were drawing a texture of the character in this frame. */
   siblingsDrawing: number;
-  /** Onde eles estavam, para o caso de haver algum. */
+  /** Where they were, in case there is one. */
   siblingPositions: string;
 }
 
-/** O que a sonda responde. Três perguntas, porque são elas que separam as causas que sobraram. */
+/** What the probe answers. Three questions, because they are what separates the remaining causes. */
 export interface ProbeSummary {
   frames: number;
   textures: number;
   maxSiblings: number;
   siblingExample: string;
-  /** As texturas cujo recorte é grande demais para um quadro de personagem — sangramento de atlas. */
+  /** The textures whose crop is too large for a character frame — atlas bleeding. */
   sangramento: string[];
   scales: string[];
   verdict: string;
 }
 
-/** Um recorte maior que isto não é um quadro de personagem: é um pedaço do atlas. O maior real tem 31x35. */
+/** A crop larger than this is not a character frame: it is a piece of the atlas. The largest real one is 31x35. */
 const MAX_CHARACTER_FRAME_SIDE = 64;
 
 /**
- * Reduz a gravação a três perguntas e um veredito.
+ * Reduces the recording to three questions and a verdict.
  *
- * A ORDEM DO VEREDITO É A DECISÃO: irmão desenhando vence sangramento, porque é ele que produz cópias
- * INTEIRAS em posições diferentes — que é exatamente o que foi relatado. E quando as três perguntas vêm
- * limpas o veredito NÃO diz "está tudo bem": ele diz ONDE procurar em seguida. Ausência de prova nas três
- * não é prova de ausência, e encerrar a busca aqui a encerraria no lugar errado.
+ * THE ORDER OF THE VERDICT IS THE DECISION: a sibling drawing beats bleeding, because it is what produces WHOLE copies
+ * at different positions. And when the three questions come back clean the verdict does NOT say "all is well": it says
+ * WHERE to look next. Absence of evidence in the three is not evidence of absence, and ending the search here would end
+ * it in the wrong place.
  */
 export function summariseProbe(samples: readonly CharacterSample[]): ProbeSummary {
   if (!samples.length) {
@@ -93,13 +88,13 @@ export interface DebugPanelCtx {
   JUICE: Juice;
   saveJuice: () => void;
   /**
-   * Uma foto do personagem AGORA, ou `null` se ainda não há personagem na cena.
+   * A snapshot of the character NOW, or `null` if there is no character in the scene yet.
    *
-   * OPCIONAL: um hospedeiro sem personagem (o quiz) não a fornece, e a sonda simplesmente não aparece. O
-   * painel continua sem conhecer o PixiJS.
+   * OPTIONAL: a host with no character (the quiz) does not provide it, and the probe simply does not appear. The
+   * panel still does not know PixiJS.
    */
   sampleCharacter?: () => CharacterSample | null;
-  /** Chama `fn` a cada quadro e devolve como cancelar. É o relógio do render, injetado como verbo. */
+  /** Calls `fn` every frame and returns how to cancel. It is the render clock, injected as a verb. */
   onFrame?: (fn: () => void) => () => void;
   /** Override for tests; defaults to location.search. */
   search?: string;
@@ -143,11 +138,11 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
     { label: '⏱️ Hit-stop (impacto)', chk: () => JUICE.hitstop, set: (v: boolean) => { JUICE.hitstop = v; saveJuice(); } },
     { label: '📳 Tremor de tela', chk: () => JUICE.shake, set: (v: boolean) => { JUICE.shake = v; saveJuice(); } },
     { label: '🌟 Cintilar dos itens', chk: () => JUICE.shimmer, set: (v: boolean) => { JUICE.shimmer = v; saveJuice(); } },
-  ]; // Estética CRT saiu daqui: mora no menu Sensibilidade visual (pedido do José).
+  ]; // The CRT look is not here: it lives in the visual sensitivity panel (the Dev's request).
 
   const p = document.createElement('div');
   p.id = 'debug-panel';
-  p.hidden = true; // começa oculto; abre pelo botão 🐞 Debug
+  p.hidden = true; // starts hidden; opened by the 🐞 Debug button
   p.setAttribute('role', 'group');
   p.setAttribute('aria-label', 'Painel de depuração');
   p.style.cssText = 'position:fixed;top:8px;right:8px;z-index:200;background:rgba(11,16,32,.97);color:#fff;border:2px solid #ffd23f;border-radius:8px;padding:.6rem .7rem;font:13px/1.4 system-ui,sans-serif;max-width:270px;max-height:86vh;overflow:auto;box-shadow:0 4px 16px rgba(0,0,0,.5)';
@@ -197,13 +192,13 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
     upd();
   }
 
-  /* ===================== A SONDA DO PERSONAGEM =====================
-     Ela mora AQUI, e não num script para colar no console, porque foi o que o Dev pediu — e ele tem razão
-     pelo motivo de sempre: um instrumento que só existe enquanto alguém lembra de colar não é instrumento, é
-     lembrança. Aqui ele fica ao lado dos outros valores ao vivo, atrás do mesmo `?debug=true`.
+  /* ===================== THE CHARACTER PROBE =====================
+     It lives HERE, and not in a script to paste into the console, because that is what the Dev asked for — an
+     instrument that exists only while someone remembers to paste it is not an instrument, it is a memory. Here it
+     sits beside the other live values, behind the same `?debug=true`.
 
-     Só aparece se o hospedeiro souber tirar a foto: um jogo sem personagem não ganha um botão que não faz
-     nada. */
+     It only appears if the host can take the snapshot: a game with no character does not get a button that does
+     nothing. */
   if (ctx.sampleCharacter && ctx.onFrame) {
     const sampleCharacter = ctx.sampleCharacter, everyFrame = ctx.onFrame;
     const h = document.createElement('div');
@@ -240,7 +235,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
           '',
           '→ ' + r.verdict,
         ].join(String.fromCharCode(10));
-        // O BRUTO fica alcançável para quem quiser ir além do resumo — sem poluir o painel com 180 linhas.
+        // The RAW recording stays reachable for whoever wants more than the summary — without filling the panel with 180 lines.
         (window as unknown as { __sonda?: unknown }).__sonda = samples;
       });
     });

@@ -1,31 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/control-choices.ts — O QUE UMA TECLA É E DE QUEM ELA JÁ É, sem documento nenhum.
+// ui/control-choices.ts — WHAT A KEY IS AND WHOSE IT ALREADY IS, with no document anywhere near it.
 //
-// Três perguntas e só três: como se chama um código de tecla, que OUTRO jogador já tem esse código, e que
-// OUTRA posição do mesmo esquema já o tem. Zero DOM, zero ctx, zero estado.
+// Three questions and only three: what a key code is called, which OTHER player already has that code, and which
+// OTHER position of the same scheme already has it. Zero DOM, zero ctx, zero state.
 //
-// 📌 Mesmo corte que o `ui/audio-choices` e o `ui/typo-choices` receberam (notas BD e BJ), e marcado pela mesma
-// coisa: o `tests/settings-controls.node.test.js` já exercia estas funções num projecto SEM documento, e o de
-// navegador conduzia o resto. A costura estava desenhada na pasta de testes antes de existir no código.
-//
-// 🔴 E A RAZÃO IMEDIATA FOI MEDIDA: ao adoptar o kit de painel (nota BK), o `ui/settings-controls` ficou com 195
-// linhas de código contra um tecto de 195 (ADR-0221) — sem uma linha de folga. É a catraca a apontar o corte
-// certo em vez de lhe ser pedida uma excepção, exactamente como aconteceu com a tipografia horas antes.
+// 📌 The same cut `ui/audio-choices` and `ui/typo-choices` received, marked by the same thing:
+// `tests/settings-controls.node.test.js` exercises these functions in a project WITHOUT a document, and the browser
+// test drives the rest. The seam was drawn in the test folder before it existed in the code (ADR-0221).
 import { t } from '../core/i18n.js';
 import { ACTIONS, type Action } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 
 /**
- * AS QUATRO SETAS, uma por direcção.
+ * THE FOUR ARROWS, one per direction.
  *
- * 🔴 ELAS ERAM `↔Up`, `↔Down`, `↔Left` e `↔Right` ATÉ 2026-09-22, e o Dev viu-o numa captura: «Por que está
- * escrevendo "↔Up", "↔Down" etc ao invés de simplesmente "↑", "↓", "←" e "→"? Não escolha poluir a UI.»
- * O defeito vinha da FORMA da função — uma cadeia de substituições sobre o código físico, onde `Arrow` virava
- * uma seta BIDIRECCIONAL e o resto do nome sobrava colado a ela. Uma cadeia de `replace` é uma tabela
- * escondida, e uma tabela escondida escreve o que ninguém escolheu.
+ * 🔴 The Dev asked for exactly these: «Por que está escrevendo "↔Up", "↔Down" etc ao invés de simplesmente "↑",
+ * "↓", "←" e "→"? Não escolha poluir a UI.» A chain of `replace` calls over the physical code is a hidden table, and a
+ * hidden table writes what nobody chose — so the table is written out.
  *
- * 📌 E não há o que traduzir aqui: uma seta é a mesma em pt, en e es, o que é justamente a razão de ser um
- * glifo e não uma palavra. A criança que remapeia vê a tecla que tem na mão.
+ * 📌 And there is nothing to translate here: an arrow is the same in pt, en and es, which is exactly why it is a
+ * glyph and not a word. The child who remaps sees the key they have in hand.
  */
 const GLYPH: Readonly<Record<string, string>> = {
   ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
@@ -37,10 +31,9 @@ const GLYPH: Readonly<Record<string, string>> = {
  * `Space` is the only one with a word to translate; the arrows are glyphs and the rest are the bare letter or
  * digit, identical in every language.
  *
- * ⚠️ UMA TABELA E UMA ESCADA, e não uma cadeia de substituições. A cadeia produzia o nome da MÁQUINA sempre
- * que um prefixo não estava previsto — `Digit1` saía `Digit1` e `Numpad5` saía `Numpad5`, que é a mesma
- * poluição das setas, um teclado mais adiante. O que não é reconhecido continua a passar intacto de
- * propósito: `Comma` é feio e é honesto, e inventar um nome para ele seria adivinhar.
+ * ⚠️ A TABLE AND A LADDER, and not a chain of replacements, which leaks the MACHINE's name whenever a prefix is not
+ * foreseen (`Digit1`, `Numpad5`). What is not recognised still passes through untouched on purpose: `Comma` is ugly
+ * and honest, and inventing a name for it would be guessing.
  */
 export function keyName(code: string): string {
   const c = String(code);
@@ -49,17 +42,16 @@ export function keyName(code: string): string {
   if (c.startsWith('Shift')) return 'Shift';
   if (c.startsWith('Key')) return c.slice(3);
   if (c.startsWith('Digit')) return c.slice(5);
-  // «Num 5», «Num Add»: o teclado numérico é um lugar FÍSICO diferente, e dizer só «5» faria duas teclas
-  // distintas mostrarem o mesmo rótulo na mesma lista.
+  // «Num 5», «Num Add»: the numeric keypad is a different PHYSICAL place, and saying only «5» would make two
+  // distinct keys show the same label in the same list.
   if (c.startsWith('Numpad')) return `Num ${c.slice(6)}`;
   return c;
 }
 
 /**
  * Which OTHER player already owns `code`, among `schemes` (one entry per player, same order as player index) —
- * or -1 if free. `mapRef` (the scheme currently being edited) is excluded BY REFERENCE, mirroring the original
- * `keyUsedByOther(code, mapRef)` closing over `kbFor`/numPlayers in game.js. Built over a Map (code → owner
- * index) so a scheme with many bound keys does not cost a full re-scan per lookup.
+ * or -1 if free. `mapRef` (the scheme currently being edited) is excluded BY REFERENCE. Built over a Map (code →
+ * owner index) so a scheme with many bound keys does not cost a full re-scan per lookup.
  */
 export function keyUsedByOther(code: string, mapRef: KeyScheme, schemes: readonly KeyScheme[]): number {
   const owners = new Map<string, number>();
@@ -71,22 +63,19 @@ export function keyUsedByOther(code: string, mapRef: KeyScheme, schemes: readonl
 }
 
 /**
- * Qual OUTRA acção DO MESMO esquema já tem `code` — ou `null` se nenhuma.
+ * Which OTHER action OF THE SAME scheme already has `code` — or `null` if none.
  *
- * ⚠️ O IRMÃO QUE FALTAVA AO `keyUsedByOther`, E A FALTA ERA INVISÍVEL NUM JOGO DE UM JOGADOR (#126). Aquele
- * exclui o esquema em edição **por referência**; com um jogador só, `schemesFor()` devolve exactamente esse
- * esquema, então a guarda varre uma lista vazia e **nunca pode disparar**. A criança que põe `W` numa acção
- * nova continua com `W` na antiga, e passa o jogo inteiro com as duas a disparar juntas.
+ * ⚠️ THE SIBLING `keyUsedByOther` NEEDS, AND ITS ABSENCE IS INVISIBLE IN A ONE-PLAYER GAME (#126). That function
+ * excludes the scheme being edited **by reference**; with a single player, `schemesFor()` returns exactly that
+ * scheme, so its guard scans an empty list and **can never fire**. A child who puts `W` on a new action would keep
+ * `W` on the old one too, and play the whole game with both firing together.
  *
- * ⚠️ E O DEFEITO É O PIOR FEITIO POSSÍVEL, escrito no cabeçalho do `input/default-bindings` desde sempre:
- * «as duas acções disparam juntas, e a criança vê uma acção dupla intermitente que ninguém consegue reproduzir
- * de propósito». Numa tela que ela abriu **porque** não conseguia usar os controles padrão.
+ * ⚠️ AND THAT IS THE WORST SHAPE A DEFECT CAN TAKE, as the `input/default-bindings` header says: the two actions fire
+ * together, and the child sees an intermittent double action nobody can reproduce on purpose — on a screen they
+ * opened **because** they could not use the default controls.
  *
- * ⚠️ A guarda entre JOGADORES não estava partida — estava inalcançável. Medido na auditoria: com dois
- * assentos ela funciona e recusa certo. O que faltava era a verificação dentro do mesmo esquema.
- *
- * Devolve a ACÇÃO e não um booleano, porque o anúncio tem de dizer qual — «essa tecla já está em uso» manda a
- * criança procurar o que a função já sabe.
+ * Returns the ACTION and not a boolean, because the announcement has to say which one — saying only that the key is
+ * in use sends the child looking for what the function already knows.
  */
 export function actionAlreadyBound(code: string, mapRef: KeyScheme, except: Action): Action | null {
   for (const a of ACTIONS) {

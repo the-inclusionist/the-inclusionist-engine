@@ -14,62 +14,50 @@ import { t } from '../core/i18n.js';
 import type { MotionSceneKey, MotionCharDef, MotionPlayer, MotionSceneFlags } from './motion-scene.js';
 
 /**
- * Alvo → CHAVE i18n do rótulo. CHAVES, e não texto, pelo motivo de sempre: uma tabela de `const` com texto resolve UMA
- * vez, no import, e fica congelada no idioma do boot.
+ * Target → i18n KEY of the label. KEYS, and not text, for the usual reason: a `const` table of text resolves ONCE, on
+ * import, and stays frozen in the boot language.
  *
- * E é UMA tabela onde eram DUAS. A nota anterior dizia que `walk/breath/flavor` ficavam "redundantes com rmChar[].lbl"
- * e que não haviam sido podados "por fidelidade de porte" — havia uma terceira cópia, morta, no main.js. Três tabelas
- * dos mesmos rótulos, sem nada ligando as três: mudar um rótulo pedia três edições e esquecer uma era silencioso.
- * Agora `rmChar[].lbl` guarda a chave DESTA tabela, e a do main.js foi apagada.
+ * And it is ONE table: `rmChar[].lbl` holds a key of THIS table rather than a copy of the label, because copies of the
+ * same labels with nothing linking them make changing one label a multi-file edit where forgetting one is silent.
  */
 export const RM_LABEL: Record<string, string> = {
   parallax: 'rm.parallax', decor: 'rm.decor', items: 'rm.items',
   walk: 'rm.walk', breath: 'rm.breath', flavor: 'rm.flavor', particles: 'rm.particles',
 };
 
-/** CHAVES i18n dos três efeitos CRT (ver `RM_LABEL`). */
+/** i18n KEYS of the three CRT effects (see `RM_LABEL`). */
 export const CRT_LBL: Record<'scan' | 'vig' | 'round', string> = { scan: 'rm.crt.scan', vig: 'rm.crt.vig', round: 'rm.crt.round' };
 
-// ⚠️ CHAVES desde 2026-09-12: eram as três palavras em português cru, e o anúncio saía «Rounded corners: grande» num
-// jogo em inglês. Passaram pelo dicionário quando os cantos viraram passos ⯇ ⯈ (ADR-0151).
+// ⚠️ KEYS, because the levels are words the child hears: a raw word here would announce a level in one language inside a
+// game running in another (ADR-0151 made the corners steps ⯇ ⯈).
 export const CRT_ROUND_LEVELS: readonly string[] = ['crt.round.off', 'crt.round.small', 'crt.round.large'];
 
-/** selAnimPlayer nunca aponta pra fora do nº de telas atual. */
+/** The selected player never points outside the current number of screens. */
 export function clampSelectedPlayer(selected: number, total: number): number {
   return selected >= total ? 0 : selected;
 }
 
-/** true quando TUDO (cena + personagem selecionado) já está com movimento reduzido LIGADO, isto é, congelado — nome
- *  fiel ao `rm[k]`/`player[prop]` que representam "reduzido", não "animado". Controla se o botão-mestre oferece
- *  "Retomar" (true) ou "Parar" (false) — mesma variável `allOn` do game.js original. */
+/** true when EVERYTHING (scene + selected character) already has reduced motion ON, that is, frozen — the name follows
+ *  `rm[k]`/`player[prop]`, which mean "reduced", not "animated". Decides whether the master button offers "Resume"
+ *  (true) or "Stop" (false). */
 export function allMotionFrozen(rmKeys: readonly MotionSceneKey[], rm: MotionSceneFlags, rmChar: readonly MotionCharDef[], player: MotionPlayer | undefined): boolean {
-  // 🔴 SEM PERSONAGEM, A METADE DO PERSONAGEM NÃO PESA — e a versão anterior fazia o contrário, com
-  // `rmChar.every((c) => !!(player && player[c.prop]))`, que é SEMPRE FALSO quando não há jogador.
+  // 🔴 WITH NO CHARACTER, THE CHARACTER HALF DOES NOT COUNT. Requiring `player && player[c.prop]` for every target is
+  // ALWAYS FALSE when there is no player: in a game that declares no `players` — a quiz, a puzzle — `allFrozen` would
+  // stay `false`, the master button would compute `next = true` on EVERY click, and a child who stopped all the
+  // animations would have no way to bring them back. That costs most to whoever froze them because they needed to:
+  // that person does not press the button out of curiosity, they press it feeling sick.
   //
-  // 📏 Medido em 2026-09-11, quando a engine passou a montar este painel para todo jogo: num jogo que não declara
-  // `players` — um quiz, um puzzle — `allFrozen` ficava preso em `false`, logo o botão-mestre calculava
-  // `next = !false = true` a CADA clique. A criança parava todas as animações e **não tinha como as trazer de
-  // volta**: o botão continuava a oferecer «Parar» e a fazer o que já estava feito.
-  //
-  // É a mesma forma do defeito que o `boot/create-game` já regista sobre o modo cego — «ligava uma vez e NÃO HAVIA
-  // COMO DESLIGAR» —, e custa mais a quem ligou o congelamento por precisar dele: essa pessoa não experimenta o botão
-  // por curiosidade, carrega nele com enjoo.
-  //
-  // ⚠️ E O CASO QUE COBRIA ISTO FIXAVA O DEFEITO: ele afirmava «sem player nunca dá true» com a razão escrita em
-  // termos do mecanismo — «RM_CHAR.every falha» —, e não da pessoa. Um caso que descreve a implementação não pode
-  // discordar dela.
-  //
-  // 📌 Com jogador, nada muda: `!player` é falso e a conta é a de sempre, alvo a alvo.
+  // 📌 With a player nothing changes: `!player` is false and the count is target by target.
   return rmKeys.every((k) => rm[k]) && (!player || rmChar.every((c) => !!player[c.prop]));
 }
 
-/** allFrozen=true (tudo já congelado) → oferece "Retomar"; caso contrário → oferece "Parar". */
+/** allFrozen=true (everything already frozen) → offers "Resume"; otherwise → offers "Stop". */
 export function motionMasterLabel(allFrozen: boolean): string {
   return t(allFrozen ? 'a11y.resumeAll' : 'a11y.stopAll'); // no glyph in the name (ADR-0159 rule 12), in the page's language
 }
 
-/** `label` chega JÁ TRADUZIDO; o que era concatenação (' congelado.') virou moldura com `{alvo}` — é o que permite a
- *  uma língua pôr o estado ANTES do alvo, coisa que uma concatenação não deixa. */
+/** `label` arrives ALREADY TRANSLATED, and the state is a frame with `{alvo}` rather than a concatenated suffix — which
+ *  lets a language put the state BEFORE the target, something a concatenation does not allow. */
 export function sceneMotionAnnouncement(label: string, frozen: boolean): string {
   return t(frozen ? 'sr.rm.frozen' : 'sr.rm.animated', { alvo: label });
 }
@@ -87,8 +75,8 @@ export function crtRoundAnnouncement(label: string, level: number): string {
   return t('sr.crt.round', { efeito: label, nivel: crtLevelLabel(level) });
 }
 
-/** `nowFrozen` = o NOVO valor de rm[k]/player[prop] aplicado pelo botão-mestre (true = acabou de congelar tudo;
- *  false = acabou de descongelar/retomar tudo) — mesma variável `v` do game.js original. */
+/** `nowFrozen` = the NEW value of rm[k]/player[prop] applied by the master button (true = everything was just frozen;
+ *  false = everything was just resumed). */
 export function stopResumeAllAnnouncement(nowFrozen: boolean): string {
   return t(nowFrozen ? 'sr.rm.allStopped' : 'sr.rm.allResumed');
 }
