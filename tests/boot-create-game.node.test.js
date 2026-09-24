@@ -971,6 +971,8 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     // and mount() refuses by the same rule: a SECOND cartridge cannot come in without answering
     expect(() => motor.mount(declaracaoValida(), {})).toThrow(/ADR-0153/);
+    // and with NO hooks at all — the type allows it — the refusal is the engine's sentence, not a TypeError on `hooks.preset`
+    expect(() => motor.mount(declaracaoValida())).toThrow(/ADR-0153/);
   });
 
   it('🔴 [Zero] `mount` LANÇA numa declaração malformada — contrato é pré-condição, não diagnóstico', async () => {

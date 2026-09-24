@@ -3465,9 +3465,10 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const rootScenes = createSceneStack();
 
-  // ⚠️ NO `{}` DEFAULT since ADR-0153: the hooks carry the required answer to the accommodations, and an empty default
-  // would be the cartridge that did not answer — the boot would refuse it anyway, with a worse message.
-  function mountAll(declaration: GameDeclaration, hooks: CartridgeHooks): void {
+  // The hooks carry the REQUIRED answer to the accommodations (ADR-0153). The public type lets them be omitted, so an
+  // absent value becomes `{}` — the cartridge that did not answer — and is refused below with ADR-0153's sentence, never
+  // with a TypeError on `hooks.preset`.
+  function mountAll(declaration: GameDeclaration, hooks: CartridgeHooks = {} as CartridgeHooks): void {
     // ⚠️ IT THROWS, IT DOES NOT DIAGNOSE — the boot's rule, and so the boot's sentence. A malformed declaration is a
     // precondition: `problems` is for gaps one can still play with, and this is not one.
     const malformed = conformanceProblems(declaration);
