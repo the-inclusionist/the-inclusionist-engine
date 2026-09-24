@@ -5,7 +5,7 @@
 // project node); DOM wiring + persisted state (touchMap/padDesign/padBtnMm/padGapMm/padStickMm/padTravelMm/
 // padDpadMm/padDir) live behind initTouch(ctx). PAD_DESIGNS/TOUCH_ACT_LABELS/TOUCH_DEFAULT come from
 // ./devices.js (not reimplemented). Reading the real Gamepad API (polling, mapping wizard) is input/gamepad's
-// territory, not this module's — see the header note on padKind() for the one deliberate exception.
+// territory, not this module's.
 import { PAD_DESIGNS, TOUCH_DEFAULT } from './devices.js';
 import { migrateTouchMap } from './vocabulary-migration.js';
 import { t } from '../core/i18n.js';
@@ -184,22 +184,6 @@ export function normalizeTouchMap(stored: unknown): Record<string, string> {
   // não na chave, e por isso precisa de um tradutor próprio. Ver `input/vocabulary-migration.ts`.
   const migrated = migrateTouchMap(stored && typeof stored === 'object' ? (stored as Record<string, string>) : null);
   return Object.assign({}, TOUCH_DEFAULT, migrated || {});
-}
-
-export type PadKind = 'kb' | 'x' | 'd';
-/** UNUSED hoje — grep em game.js (`\bpadKind\b`) só acha a própria definição, nenhum chamador. Extraído porque
- *  a fronteira explicitamente listou; NÃO apagado (relatado, não conserto). Lê navigator.getGamepads() direto,
- *  no mesmo padrão de ui/settings-audio.ts / core/i18n.ts (acesso direto a navigator, sem DI) — mesmo assim,
- *  é semanticamente "ler o controle", território do agente de input/gamepad; ver a nota de fronteira no retorno. */
-export function padKind(): PadKind {
-  let kind: PadKind = 'kb';
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  for (const gp of pads) {
-    if (!gp) continue;
-    kind = gp.mapping === 'standard' ? 'x' : 'd';
-    if (kind === 'x') break;
-  }
-  return kind;
 }
 
 // ===================== IMPURO (DOM + store — via initTouch(ctx)) =====================

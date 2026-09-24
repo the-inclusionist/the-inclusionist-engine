@@ -2,12 +2,11 @@
 // Testes de input/touch — lógica PURA (project node, sem `document`). ZOMBIES + Right-BICEP.
 // Cobre: mm→px (padPxPerMm/computePadPhysicalPx — dpr alto/baixo simulado via tela pequena/grande, extremos),
 // a classificação mão-de-criança/adulto (padHandTag), a detecção de layout por id de controle (padLayoutFromId),
-// a fusão do mapa de toque persistido (normalizeTouchMap) e padKind() (hoje sem chamadores — ver o retorno da
-// extração). O render/DOM real (initTouch: querySelector/addEventListener/persistência) fica fora daqui — salvo o
+// e a fusão do mapa de toque persistido (normalizeTouchMap). O render/DOM real (initTouch: querySelector/addEventListener/persistência) fica fora daqui — salvo o
 // caso do fim, que monta o `initTouch` num hospedeiro SEM janela, e é por isso que só aqui ele pode ser medido.
 import { describe, it, expect } from 'vitest';
 import {
-  padPxPerMm, padHandTag, computePadPhysicalPx, padLayoutFromId, normalizeTouchMap, padKind,
+  padPxPerMm, padHandTag, computePadPhysicalPx, padLayoutFromId, normalizeTouchMap,
   IPHONE16_LONG_MM, IPHONE16_LONG_PX, IPHONE16_PXMM, TOUCH_SLOTS, TOUCH_ACTS,
 } from '../app/js/input/touch.js';
 import { TOUCH_DEFAULT } from '../app/js/input/devices.js';
@@ -184,12 +183,6 @@ describe('TOUCH_SLOTS / TOUCH_ACTS (dados de apresentação do painel)', () => {
   });
   it('[Invariant] toda ação em TOUCH_DEFAULT é uma das TOUCH_ACTS válidas', () => {
     for (const v of Object.values(TOUCH_DEFAULT)) expect(TOUCH_ACTS).toContain(v);
-  });
-});
-
-describe('padKind (sem chamadores em game.js — ver o retorno da extração)', () => {
-  it('[Right] sem gamepads (ou API ausente no ambiente): kb', () => {
-    expect(padKind()).toBe('kb');
   });
 });
 

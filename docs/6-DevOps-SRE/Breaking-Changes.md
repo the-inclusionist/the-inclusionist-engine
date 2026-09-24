@@ -2493,6 +2493,20 @@ wizard's — which positions it asks and in what order — and tells the game wh
 📌 Migrating the platformer is two fields: `wizardStep: demo.step, wizardTick: demo.tick`, with `demo` made once
 from the module above.
 
+## CE · `padKind` leaves `input/touch`: a published name nothing reads (ADR-0221, issue #203)
+
+**Who is affected:** anyone importing `padKind` or `PadKind` from `input/touch.js`. 📏 Measured: nothing in the engine
+calls it (only its own test did), and in the seven games the one mention is a comment in the platformer saying its own
+copy was deleted. Its comment here read «UNUSED hoje … NÃO apagado (relatado, não conserto)» since the extraction.
+
+🎯 **Why now:** it was the one line of `input/touch` that reached a browser global — `navigator.getGamepads()` — in a
+module whose job is the on-screen pad, while reading a gamepad is `input/gamepad`'s. The R3 rule decides a name
+with no reader: it gains one or it goes, and there is no one to read it. `input/touch`: global reach 1 → 0.
+
+| leaving | instead |
+|---|---|
+| `padKind()`, `PadKind` | nothing — which kind of pad is connected is read by `input/gamepad` (`input/pad-reading`) where a pad is read |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

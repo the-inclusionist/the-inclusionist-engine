@@ -45,10 +45,8 @@
 //    parentesco. O precedente da casa já é esse: ui/layout.ts diz, no cabeçalho, "fpsTick/configureRender
 //    seguem no game.js (outro concern)". Não forcei; segue no game.js, e o lar natural dele, quando chegar a
 //    vez, é ui/hud.ts.
-//  · `padKind()` — NÃO extraí porque JÁ ESTÁ EXTRAÍDO: `input/touch.ts` exporta `padKind()` desde a Onda A,
-//    com o corpo idêntico ao do game.js, e o cabeçalho de lá registra que a cópia é órfã. A que sobrou no
-//    game.js é código morto duplicado (nenhum chamador — ver o relatório). O certo é apagá-la, não mudá-la
-//    de lugar mais uma vez.
+//  · `padKind()` — não extraído: não tinha chamador, e a cópia de `input/touch.ts` também foi apagada em
+//    2026-09-24, pela mesma razão (nota CE).
 //  · `updateTitleLegend()` — a fronteira deixava em aberto se ela é de shell ou de menu-nav. É de SHELL, e a
 //    razão é simples: ela não navega nada. Não lê foco, não trata tecla, não anda entre itens; ela pinta o
 //    rodapé de UMA tela específica (o título) com a configuração de entrada vigente, e quem a chama é o

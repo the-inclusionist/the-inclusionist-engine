@@ -984,7 +984,6 @@
     ],
     "type HandTag": "'crianca' | 'adulto' | 'inter'",
     "type PadLayout": "'sony' | 'nintendo' | 'microsoft' | 'generic'",
-    "type PadKind": "'kb' | 'x' | 'd'",
     "type PersonaKey": "'crianca-pequena' | 'crianca-grande' | 'adulto-pequeno' | 'adulto-maos-grandes'"
   },
   "input/transport-in-use.ts": {

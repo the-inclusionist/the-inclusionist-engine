@@ -621,7 +621,6 @@
     "IPHONE16_LONG_PX",
     "IPHONE16_PXMM",
     "PERSONAS_DO_PAD",
-    "PadKind",
     "PadLayout",
     "PadMm",
     "PadMmPatch",
@@ -641,7 +640,6 @@
     "mountTouchControls",
     "normalizeTouchMap",
     "padHandTag",
-    "padKind",
     "padLayoutFromId",
     "padPxPerMm",
     "touchGaps"

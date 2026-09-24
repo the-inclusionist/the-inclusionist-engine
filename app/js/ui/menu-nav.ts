@@ -84,8 +84,8 @@
 //  · `updateTitleLegend` foi para ui/shell.ts, não para cá. Ela não navega nada — não lê foco, não trata tecla,
 //    não anda entre itens; pinta o rodapé de UMA tela (o título) e quem a chama é `setPhase('title')`. Trazê-la
 //    obrigaria a casca a importar o módulo de navegação só para desenhar uma legenda.
-//  · `padKind()` não veio para lugar nenhum: JÁ ESTÁ em `input/touch.ts` (Onda A), com corpo idêntico, e a
-//    cópia do game.js não tem chamador nenhum. É código morto duplicado — apagar, não mover.
+//  · `padKind()` não veio para lugar nenhum: não tinha chamador, e a cópia que `input/touch.ts` guardava foi apagada
+//    em 2026-09-24 pela mesma razão (nota CE).
 //  · `navTitle`/`titleButtons` são de ui/activities-menu.ts (menu inicial), já extraídos.
 //  · A pilha de z-index, o registro de overlays e o fechar por id são de ui/settings-panel.ts. Este módulo
 //    CONSOME (`topVisibleOverlay`, `closeById`) e não reimplementa.
