@@ -493,19 +493,17 @@ export function showPauseOptions(sp: HTMLElement, sub: PauseSub): HTMLElement | 
 
 
 /**
- * O QUE UMA INTENÇÃO SIGNIFICA DENTRO DO MODO `accessibility` (ADR-0044, item 7).
+ * WHAT AN INTENT MEANS INSIDE THE `accessibility` MODE (ADR-0044 item 7).
  *
- * O registro listou este modo entre as consequências NEGATIVAS da decisão, e disse por quê: "um modo em que
- * se entra e não se sabe sair é a própria armadilha de que este registro trata — então a saída dele (START ou
- * VOLTAR) é parte da decisão, e não um detalhe de implementação".
+ * The record lists this mode among the decision's NEGATIVE consequences, and says why: a mode one enters and does not
+ * know how to leave is the very trap the record is about — so its way out (START or BACK) is part of the decision.
  *
- * Daí a forma desta função: SAIR vem primeiro, e vem por DUAS portas. Não é redundância. VOLTAR é a saída de
- * tudo no jogo, e é o que quem já o conhece tenta primeiro; START é o botão que ABRE a pausa, e a pausa é de
- * onde se entrou aqui — quem se perde tenta voltar por onde veio. Ter só uma das duas seria apostar que a
- * criança adivinhe qual delas foi escolhida.
+ * Hence the shape: LEAVING comes first, through TWO doors. BACK is the way out of everything in the game, the one a child
+ * who knows it tries first; START is the button that OPENS the pause, and the pause is where this mode was entered from —
+ * whoever gets lost tries to go back the way they came. One door only would be betting that the child guesses which.
  *
- * E a precedência é decisão também: um controle registra mais de uma borda no mesmo quadro (dedos apertam
- * junto), e nesse quadro `sair` não pode ficar atrás de `ativar`.
+ * The precedence is a decision too: a controller can report more than one edge in the same frame (fingers press
+ * together), and in that frame leaving must not come after activating.
  */
 export type BarAction = 'sair' | 'ativar' | 'andar' | 'nada';
 export function barAction(k: NavKeys, hasStart: boolean): BarAction {
@@ -725,35 +723,28 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       }, i, on));
 
   /*
-   * ⚠️ O MODO CEGO IDEM, e aqui o padrão é literalmente o que o `core/state` já decidiu que um setter faz:
-   * «grava, persiste, avisa» — e nada mais. Os efeitos de jogo (refazer os extras do nível) são REACÇÃO, e
-   * quem reage assina `on('blindMode', …)`. O anúncio não se perde para quem não injecta: este ícone já diz
-   * `sr.icon.blindOn`/`Off` por si, logo abaixo.
+   * BLIND MODE LIKEWISE: the default is exactly what `core/state` decided a setter does — write, persist, notify — and
+   * nothing more. Game effects are REACTIONS, subscribed with `on('blindMode', …)`. The announcement is not lost for a host
+   * that injects nothing: this icon says `sr.icon.blindOn`/`Off` itself, below.
    */
   const writeBlindMode = ctx.setBlindMode ?? setBlindModeValue;
 
-  /** O documento onde se constroi. Resolvido a cada uso, e por globalThis — em node o identificador
-   *  document nem existe, e um ?? sobre ele lançaria ReferenceError em vez de cair no padrão. */
+  /** The document to build in. Resolved on each use, through `globalThis` — in node the `document` identifier does not
+   *  even exist, and a `??` on it would throw a ReferenceError instead of falling back. */
   const mountDoc = (): Document => ctx.doc ?? (globalThis as { document?: Document }).document as Document;
 
   /*
-   * ⚠️ O CONTRASTE E A COR SÓ APARECEM SE HOUVER QUEM OS ESCREVA (ADR-0106 §5).
+   * CONTRAST AND COLOUR ONLY APPEAR IF SOMEONE CAN WRITE THEM (ADR-0106 §5): the theme and the correction are written by
+   * the host (`setPlayerTheme`/`setPlayerCorrection`), and without a writer the engine does not pretend.
    *
-   * 📏 Medido em 2026-09-08, e é o que separa este caso dos outros seis campos «acidentais»: eles eram estado
-   * que um cartucho calhou de guardar, e a engine pôde reclamá-los. Estes precisam de um
-   * `render/viz-setters`, cujo contexto pede **34 campos** do grafo de render de UM jogo — `parallaxLayers`,
-   * `decoSprites`, `getPowerups`, `rebuildCoins`, `worldSprite`. O `createGame` não monta isso, e um quiz não
-   * tem nada disso para montar. A engine não pode dar um padrão aqui; o que ela pode é não FINGIR.
-   *
-   * Decidido uma vez, no arranque, e não a cada montagem de barra: o conjunto de escritores de um consumidor
-   * não muda a meio de uma partida, e recalcular por tela faria as telas discordarem entre si.
+   * Decided once, at start, not per bar: a host's set of writers does not change mid-game, and recomputing per screen
+   * would let the screens disagree.
    */
   const gameIcons = iconsThatAct({
     theme: Boolean(ctx.setPlayerTheme),
     correction: Boolean(ctx.setPlayerCorrection),
-    // 📌 Sem `Boolean(...)`: os dois de cima perguntam «existe escritor?» a um campo opcional; este é uma
-    // RESPOSTA que o jogo deu, e envolvê-la faria um `undefined` de um ctx mal montado virar `false` —
-    // esconder o controle em silêncio, que é metade do defeito que este campo existe para não cometer.
+    // No `Boolean(...)`: the two above ask an optional field «is there a writer?»; this is an ANSWER the game gave, and
+    // wrapping it would turn a badly wired ctx's `undefined` into `false` — hiding the control silently.
     holdsKeys: ctx.holdsKeys,
     // the same question the scan asks (ADR-0218): how many positions this game would give it to offer
     declaredPositions: ctx.declaredPositions,
@@ -766,35 +757,28 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   });
 
   /*
-   * ⚠️ RESOLVIDOS UMA VEZ, no arranque, pela mesma razão do `settings-motion`: o `rm` é mutado in-place e
-   * partilhado por REFERÊNCIA com quem desenha a cena, e resolvê-lo a cada uso criaria um objecto novo por
-   * chamada — o interruptor deixaria de alcançar o desenho, sem erro nenhum.
-   *
-   * 📌 O `getPauseActs` fica FUNÇÃO e não valor, porque a laziness dele é a razão de ele existir assim: no
-   * cartucho a tabela é um `const` declarado ~1200 linhas abaixo, e lê-la aqui cairia na zona morta temporal.
+   * RESOLVED ONCE, at start, as in `settings-motion`: `rm` is mutated in place and shared by REFERENCE with whoever draws
+   * the scene, and resolving it on each use would make a new object per call — the switch would stop reaching the drawing,
+   * with no error at all.
    */
   const rm: MotionSceneFlags = ctx.rm ?? readStoredScene();
   const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? SCENE_KEYS;
   const rmChar: readonly MotionCharDef[] = ctx.rmChar ?? CHARACTER_ANIMATIONS;
   const saveRM: () => void = ctx.saveRM ?? (() => storeScene(rm));
   /*
-   * ⚠️ ESTES TRÊS SÃO LIDOS A CADA CHAMADA, e não resolvidos uma vez como o `rm` acima. A diferença é
-   * deliberada e um teste apanhou-me a errá-la: congelar `ctx.getPauseActs` no arranque partiu um caso que
-   * TROCA a tabela depois do `init` — e trocar depois é legítimo, porque a laziness deste campo existe
-   * precisamente por a tabela chegar tarde. Um padrão não pode custar a ligação tardia que o campo tem.
+   * THESE THREE ARE READ ON EACH CALL, not resolved once like `rm` above: a host may replace the action table after `init`
+   * (it can arrive late), and a default must not cost that late binding. `rm` is the opposite — what matters there is the
+   * object's IDENTITY, shared by reference with whoever draws the scene.
    *
-   * O `rm` é o contrário e por isso fica congelado: ali o que importa é a IDENTIDADE do objecto, partilhada
-   * por referência com quem desenha a cena.
-   *
-   * A anotação de tipo é necessária: sem ela o padrão `() => ({})` infere `{}`, que não aceita indexação por
-   * string, e o compilador passaria a recusar `acts[act]` — o despacho inteiro.
+   * The type annotation is needed: without it the default `() => ({})` infers `{}`, which does not accept string indexing,
+   * and the compiler would refuse `acts[act]` — the whole dispatch.
    */
   const dynLabel = (b: PauseMenuButton): string | null => (ctx.dynLabel ? ctx.dynLabel(b) : null);
   const getPauseActs = (): Record<string, (() => void) | undefined> => (ctx.getPauseActs ? ctx.getPauseActs() : {});
   const setPauseActor = (i: number): void => { if (ctx.setPauseActor) ctx.setPauseActor(i); };
 
   function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
-  /** A recusa da alternância para este jogador agora, ou `null`. Recalculada: o aparelho em uso muda. */
+  /** The latch refusal for this player now, or `null`. Recomputed: the device in use changes. */
   function refusalNow(i: number) { return ctx.transportInUse ? latchRefusal(ctx.transportInUse(i)) : null; }
 
   function iconState(i: number): IconStateSnapshot {
@@ -808,11 +792,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       toggleMove: !!p.toggleMove,
       switchScan,
       voice: voiceControl,
-      // ⚠️ `DEFAULTS.viz` E NÃO `''` (issue #61). A cadeia vazia funcionava por ACIDENTE: não casa
-      // `hc-direto` nem `fix-*`, então os dois ícones ficavam apagados pelo motivo certo por engano. O padrão
-      // passou a ter nome em `core/state`, e `render/viz-modes` já declarava esse modo com `kind:'normal'` —
-      // o que não faz nada. Dizer o padrão em vez de o deduzir é o que torna a marca do ADR-0029 possível
-      // aqui, porque ela lê `DEFAULTS` e mais nada.
+      // The NAMED default, not an empty value that only happened to match nothing: ADR-0029's changed-mark reads the
+      // default and nothing else.
       visual: p.visual ?? DEFAULT_VISUAL,
       speed: gameSpeed,
       camera: cameraControl,
@@ -852,7 +833,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     tts: () => {
       const cat = ctx.getAudioCat();
-      if (!cat || !cat.tts) return; // a guarda que `iconLabel` e `applyCalm` já tinham e esta ação não
+      if (!cat || !cat.tts) return; // the same guard `iconLabel` and `applyCalm` have
       cat.tts.on = !cat.tts.on;
       ctx.setCatGain('tts');
       if (ctx.reflectTtsPanelEnabled) ctx.reflectTtsPanel();
@@ -864,7 +845,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     tea: () => {
       calmMode = nextCalmMode(calmMode);
-      store.set(store.KEYS.tea, calmMode); // ADR-0028: todo menu persiste. Ver a nota no `let` acima.
+      store.set(store.KEYS.tea, calmMode); // ADR-0028: every menu setting persists. See the note at the `let` above.
       applyCalm();
       ctx.srSay(t('sr.icon.tea', { v: t(CALM_NAMES[calmMode]!) }));
     },
@@ -895,14 +876,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       }
       ctx.srSay(t('sr.icon.inputMode', { v: t(INPUT_MODE_NAME[next]) }));
     },
-    // ⚠️ OS DOIS ÍCONES DEIXARAM DE SE APAGAR UM AO OUTRO (#104). Eles SEMPRE ciclaram dentro do seu eixo —
-    // `nextContrast` e `nextCvd` existem separados desde sempre —, mas escreviam os dois no mesmo campo, e
-    // por isso mexer num zerava o outro. O snapshot dizia isso como se fosse desenho: «they overwrite each
-    // other; that is by design». Agora cada um escreve no seu eixo e o outro fica onde estava.
-    // ⚠️ AS DUAS GUARDAS NÃO SÃO CINTO E SUSPENSÓRIOS. Sem escritor, o ícone nem sequer é montado
-    // (`iconesDoJogo`), então este ramo não deveria ser alcançável pela barra — mas `iconAct` é EXPORTADO e
-    // qualquer consumidor pode chamá-lo por chave. Sem a guarda, essa chamada rebentaria; com ela, não faz
-    // nada e não anuncia — que é o mesmo que dizer a verdade: este jogo não tem por onde.
+    // Each of the two icons writes its OWN axis (#104), so changing one leaves the other where it was.
+    // ⚠️ THE TWO GUARDS ARE NOT BELT AND BRACES. Without a writer the icon is not even mounted (`gameIcons`), so the bar
+    // cannot reach this branch — but `iconAct` is EXPORTED and any host can call it by key. Without the guard that call
+    // would throw; with it, nothing happens and nothing is announced — which is the truth: this game has no way to do it.
     contrast: (i) => {
       if (!ctx.setPlayerTheme) return;
       const v = nextTheme((P()[i] || {}).visual ?? DEFAULT_VISUAL);
@@ -910,14 +887,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       ctx.srSay(t('sr.visual.contrast', { v: t(SHORT_THEME[v.tema]) }));
     },
     /*
-     * O CICLO DE TIPOGRAFIA (ADR-0149 §1): uma pressão muda a CAIXA e a FACE de uma vez.
+     * THE TYPOGRAPHY CYCLE (ADR-0149 §1): one press changes the letter CASE and the FACE at once. The guard is the one
+     * written at `contrast` above, for the same reason.
      *
-     * 📌 A guarda é a mesma dos dois abaixo e pela mesma razão escrita ali: sem quem accione, o ícone nem é
-     * montado — mas `iconAct` é EXPORTADO e um consumidor pode chamá-lo por chave. Sem ela, essa chamada
-     * rebentava; com ela, não faz nada e não anuncia, que é dizer a verdade.
-     *
-     * ⚠️ ANUNCIA A FACE E NÃO A POSIÇÃO. «Posição 3 de 5» não diz nada a ninguém; o nome da face é o que a
-     * criança reconhece, e é a mesma razão pela qual o ADR-0074 proíbe `action2` chegar a uma pessoa.
+     * It ANNOUNCES THE FACE, NOT THE POSITION: «position 3 of 5» tells nobody anything; the face's name is what the child
+     * recognises — the same reason ADR-0074 forbids `action2` from reaching a person.
      */
     tipografia: () => {
       if (!ctx.cycleTypography) return;
@@ -967,11 +941,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       ctx.srAlert(t('sr.icon.needsPrivateOutput'));
       return;
     }
-    // 🔴 A RECUSA EM BLOCO DO `altmove` SAIU DAQUI em 2026-09-21 (ADR-0218), e a razão é o que ela passou a custar: ela dizia
-    // «este aparelho exige a alternância» e devolvia sem fazer NADA — o que, com três posições, também trancava «um botão só»
-    // para quem joga com os olhos, que é quem mais precisa dele. Agora a trava vive no CICLO, que não passa pelo «padrão»
-    // nesse aparelho, e a recusa sobrevive dentro do acto, sobre a única coisa que ela sempre foi: a escrita da aderência.
-    // 📌 O motivo continua dito na LINHA DO PAINEL, que é a outra superfície do mesmo ajuste (ADR-0113 cláusula 3).
+    // No blanket refusal for `altmove` here (ADR-0218): refusing the whole icon on a device that always latches would also
+    // lock «one button only» away from the child playing with their eyes. The lock lives in the CYCLE, which skips
+    // `standard` on that device, and the refusal lives inside the action, over the latch write only.
     const act = ICON_ACTS[k];
     if (act) act(i);
   }
@@ -993,13 +965,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     b.classList.toggle('pi-on', v.on);
     b.classList.toggle('pi-dis', v.dis);
     /*
-     * 🔴 A ISSUE #128, E ELA É DE UMA LINHA: `pi-dis` é CLASSE CSS. A criança que enxerga vê o ícone
-     * apagado; a que navega por leitor de tela não recebe nada — o botão anuncia-se accionável e não
-     * responde. `aria-disabled` espelha o mesmo facto para quem ouve.
-     *
-     * ⚠️ E `aria-disabled` e NÃO `disabled`: o segundo tira o botão da ordem de tabulação, e quem navega
-     * por teclado deixaria de o alcançar — logo deixaria de poder ouvir POR QUE ele não responde. É a
-     * mesma escolha que o `#opt-altmove` faz no painel, pela mesma razão.
+     * `pi-dis` is a CSS class (issue #128): a child who sees gets a greyed icon, a child on a screen reader gets nothing — the
+     * button announces itself actionable and does not respond. `aria-disabled` mirrors the same fact for whoever listens.
+     * `aria-disabled` and NOT `disabled`: the latter takes the button out of the tab order, and a keyboard user could no
+     * longer reach it — nor hear WHY it does not respond.
      */
     if (v.dis) b.setAttribute('aria-disabled', 'true');
     else b.removeAttribute('aria-disabled');
@@ -1019,50 +988,27 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   }
 
   /**
-   * Reflete os ícones de TODAS as telas. Varre as BARRAS e não mais os cartões de pausa: desde o item 7 do
-   * ADR-0044 os ícones vivem no HUD, e um cartão de pausa não contém `.pi-btn` nenhum.
-   */
-  /**
-   * OS CARTÕES QUE ESTA INSTÂNCIA CONSTRUIU. Privado, e é a resposta a um problema que eu próprio criei.
-   *
-   * ⚠️ O `PauseIconsCtx` tinha um `getPauseScreens` e eu removi-o hoje, com razão: tinha ZERO leitores. Agora
-   * este módulo precisa de alcançar os cartões — e a saída certa NÃO é repor o campo. Quem os construiu foi
-   * ele; guardar o que construiu não pede nada a consumidor nenhum, e um campo de ctx é mais uma coisa que
-   * cada um dos 300 jogos teria de se lembrar de passar.
+   * THE CARDS THIS INSTANCE BUILT. Private: whoever built them keeps them, which asks nothing of any host — a ctx field
+   * would be one more thing every game had to remember to pass.
    */
   const cards: HTMLElement[] = [];
 
-  /**
-   * ESCONDE OS ITENS QUE ESTE JOGO NÃO CONSEGUE ACCIONAR — recalculado, e não decidido no arranque.
-   *
-   * ⚠️ ESTA FUNÇÃO EXISTE POR UM DEFEITO DE TEMPO. O cartão era FILTRADO no `buildScreenPause`, e o
-   * `getPauseActs` é um getter precisamente porque a tabela CHEGA TARDE — «`pauseActs` is a `const` declared
-   * far below the init site», diz o próprio campo. Um consumidor que siga esse padrão documentado montava um
-   * cartão sem os itens cuja acção só existiu depois do boot, e nunca mais os recuperava.
-   *
-   * 📌 A avaliação passou para o ÚLTIMO instante possível: o `ui/shell` chama `reflectPauseIcons()` quando a
-   * fase vira `pause-menu`, ou seja quando a pausa ABRE. O §5 continua respeitado — a criança nunca vê um
-   * item que não acciona —, e agora também vê os que passaram a accionar.
+  /*
+   * `refreshPauseItems` LOCKS THE ITEMS THIS GAME CANNOT ACTIVATE — recomputed, not decided at start. The action table can
+   * arrive after the card is built (`getPauseActs` is asked when needed), so deciding at build time would lose for good
+   * every item whose action exists only later. The host calls `reflectPauseIcons()` when the pause opens and when a
+   * cartridge is mounted, so the card is right at the moment the child sees it.
    */
   /**
-   * O NOME DO CARTÃO — o que se VÊ e o que se OUVE — repintado no idioma corrente.
+   * THE CARD'S NAME — what is SEEN and what is HEARD — repainted in the current language.
    *
-   * 🔴 MEDIDO em 2026-09-12, no `dist/quiz.html` com `documentElement.lang === 'en'`: o cartão de pausa
-   * mostrava «Paused», «Resume», «Accessibility», «Typography» — tudo em inglês — e anunciava-se a quem usa
-   * leitor de tela como **«Menu de pausa do jogador 1»**. A chave existe nos três dicionários; o que falha é
-   * o TEMPO, o mesmo do ficheiro `barra-no-idioma-do-arranque`: o `initI18n` aplica pt de forma síncrona e
-   * pede en/es de forma assíncrona, a marcação nasce nesse intervalo, e um `aria-label` colado não tem como
-   * ser corrigido depois — `applyDom` só alcança `[data-i18n]` e `[data-i18n-aria]`.
+   * The markup is born before an asynchronously loaded dictionary arrives, and an `aria-label` set once cannot be corrected
+   * later by `applyDom`, which only reaches `[data-i18n]` and `[data-i18n-aria]`. Nor would `data-i18n-aria` do: `applyDom`
+   * calls `t(k)` without parameters, and this key carries the seat number — the child would hear «Player {n} pause menu»,
+   * braces included. So it is repainted on each `reflectPauseIcons()`, i.e. when the pause opens.
    *
-   * ⚠️ E `data-i18n-aria` NÃO SERVIRIA AQUI: `applyDom` chama `t(k)` sem parâmetros, e esta chave leva o
-   * número do assento. Um `data-i18n-aria` deixaria a pessoa a ouvir «Player {n} pause menu», com as chavetas.
-   *
-   * 🎯 Por isso repinta-se aqui: `refrescarItensDaPausa` já corre a cada `reflectPauseIcons()`, ou seja a
-   * cada vez que a pausa ABRE. O idioma vale no instante em que a criança a abre, que é o instante certo.
-   *
-   * ⚠️ QUEM PERDIA ERA SÓ QUEM ESCUTA, e é isso que faz este defeito ser da família que o ADR-0044 item 4
-   * nomeia: para quem vê, o cartão estava inteiro em inglês e nada havia a notar. O canal partido era o
-   * único canal de outra criança.
+   * The one who lost was the one who LISTENS (ADR-0044 item 4): to a sighted child the card was entirely in the right
+   * language, and nothing looked wrong.
    */
   function renameCard(cardEl: HTMLElement, i: number): void {
     const card = cardEl.querySelector<HTMLElement>('.pause-card');
@@ -1081,18 +1027,16 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       ...itemsThatAct(options, acts).map((b) => b.act),
       ...itemsThatAct(fromGame, acts).map((b) => b.act),
     ]);
-    // ⚠️ `filter(Boolean)` VIROU ÍNDICE EXPLÍCITO, e a razão é a linha do nome logo abaixo: os cartões são
-    // indexados por JOGADOR, montar só a tela 2 deixa um buraco no índice 0 — e `filter` fechava o buraco,
-    // o que renumerava os assentos. O guarda de `undefined` que ele dava fica, escrito à mão.
+    // An explicit index, not `filter(Boolean)`: the cards are indexed by PLAYER, building only screen 2 leaves a hole at
+    // index 0, and closing the hole would renumber the seats in the card's name. The `undefined` guard is written by hand.
     for (let i = 0; i < cards.length; i++) {
       const cardEl = cards[i];
       if (!cardEl) continue;
       renameCard(cardEl, i);
       for (const btn of cardEl.querySelectorAll<HTMLElement>('.pm-btn')) {
-        // 🔴 TRAVADO COM O MOTIVO, E NÃO ESCONDIDO (ADR-0161, que supersede aqui o §5 do ADR-0106). O Dev achou três
-        // itens no quiz em vez de seis: o cartão mudava de forma a cada jogo, e a criança não sabia que a opção
-        // existia. O cursor continua a parar no item e o número dele conta; alcançá-lo ou accioná-lo diz o motivo.
-        // ⚠️ E NÃO `remove()`: a tabela pode crescer depois (um jogo que liga «sair» só depois da primeira fase).
+        // LOCKED WITH ITS REASON, NOT HIDDEN (ADR-0161, superseding ADR-0106 §5 here): a card that changed shape from game
+        // to game hid from the child that an option exists. The cursor still stops on the item and it still counts;
+        // reaching or pressing it says why. And not `remove()`: the table can grow later.
         const act = btn.dataset.act ?? '';
         if (actingItems.has(act)) {
           btn.removeAttribute('aria-disabled');
@@ -1113,11 +1057,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   // --- the pause screen ----------------------------------------------------------------------
 
   /**
-   * Troca a lista visível E ANUNCIA o primeiro item da lista que entrou.
-   *
-   * O anúncio não é enfeite: quem não enxerga acabou de mudar de menu e o cursor pulou para outro lugar. Sem
-   * a fala, a única pista de que a tela mudou seria o silêncio. O índice "N de M" vem junto (item 3), e é ele
-   * que diz de quantos itens é a lista nova.
+   * Switches the visible list AND ANNOUNCES the first item of the list that came in. Not decoration: a child who cannot see
+   * has just changed menus and the cursor jumped; without speech the only clue would be silence. The «N de M» index comes
+   * with it (ADR-0044 item 3) and says how many items the new list has.
    */
   function announceList(sp: HTMLElement, sub: PauseSub): void {
     const first = showPauseOptions(sp, sub);
@@ -1128,23 +1070,21 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     ));
   }
 
-  /* ===================== O MODO `accessibility` (ADR-0044, item 7) ===================== */
+  /* ===================== THE `accessibility` MODE (ADR-0044 item 7) ===================== */
 
   /**
-   * Quem está com o direcional dirigindo a BARRA em vez do personagem.
-   *
-   * Vida de RODADA (ADR-0038): mora no closure desta instância, não é persistido, e some com a partida. Um
-   * modo de entrada que sobrevivesse ao reinício seria a armadilha voltando pela porta dos fundos — a criança
-   * abriria o jogo no dia seguinte e o personagem não andaria.
+   * Who has the d-pad steering the BAR instead of the character. ROUND lifetime (ADR-0038): it lives in this instance's
+   * closure, is not persisted, and goes with the round — an input mode that survived a restart would be the trap coming
+   * back: the child would open the game the next day and the character would not move.
    */
   const onBar = new Set<number>();
 
-  /** O cursor da barra da tela `i`, ou o primeiro ícone quando ainda não há cursor. */
+  /** Screen `i`'s bar cursor, or the first icon when there is no cursor yet. */
   function selectedIcon(bar: HTMLElement): HTMLElement | null {
     return bar.querySelector<HTMLElement>('.pi-sel') || bar.querySelector<HTMLElement>('.pi-btn');
   }
 
-  /** Põe o cursor num ícone, escreve a legenda e ANUNCIA — a legenda é o canal de quem não vê o ícone. */
+  /** Puts the cursor on an icon, writes the caption and ANNOUNCES — speech is the channel of whoever cannot see the icon. */
   function selectIcon(i: number, bar: HTMLElement, el: HTMLElement): void {
     bar.querySelectorAll<HTMLElement>('.pi-sel').forEach((x) => x.classList.remove('pi-sel'));
     el.classList.add('pi-sel');
@@ -1155,15 +1095,14 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   }
 
   /**
-   * ENTRA no modo: o direcional passa a dirigir a barra da tela `i`.
+   * ENTERS the mode: the d-pad now steers screen `i`'s bar.
    *
-   * 🔴 E JÁ NÃO RETOMA O JOGO (ADR-0155). Até ali o modo era «para usar DURANTE a partida» e entrar chamava
-   * `acts.resume()`; desde que o START é a PAUSA RÁPIDA, a barra é usada com o jogo CONGELADO, e retomar ao
-   * entrar descongelaria o mundo no instante em que a criança pediu que parasse. Quem entra decide a fase.
+   * It does NOT resume the game (ADR-0155): START is the QUICK PAUSE, the bar is used with the game FROZEN, and resuming on
+   * entry would unfreeze the world the instant the child asked it to stop. Whoever enters decides the phase.
    *
-   * O anúncio diz como SAIR, e diz na hora de entrar. É a linha que desarma a armadilha que o próprio
-   * ADR-0044 anotou como consequência negativa desta decisão: quem não enxerga aperta a direção, o personagem
-   * não anda, e sem esta frase não há nada na tela que explique — porque a tela não é o canal dessa criança.
+   * The announcement says how to LEAVE, at the moment of entering — the line that disarms the trap ADR-0044 recorded as a
+   * negative consequence: a child who cannot see presses a direction, the character does not move, and nothing on screen
+   * explains why, because the screen is not that child's channel.
    */
   function enterBarMode(i: number): void {
     const bar = ctx.getA11yBars()[i];
@@ -1175,14 +1114,13 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   }
 
   /**
-   * SAI do modo e devolve o direcional ao personagem. Anuncia, porque a devolução também é informação.
+   * LEAVES the mode and gives the d-pad back to the character. It announces, because giving it back is information too.
    *
-   * `silencioso` é para quem sai da barra para OUTRO ecrã e não para o jogo — o SELECT, que troca a pausa rápida
-   * pelo cartão (ADR-0155): «de volta ao jogo» dito aí seria mentira, com o cartão a abrir por cima.
+   * `silent` is for leaving the bar for ANOTHER screen, not for the game — SELECT, which swaps the quick pause for the card
+   * (ADR-0155): «back to the game» said there would be a lie, with the card opening on top.
    *
-   * 📌 E `aoSairDaBarra` corre em TODA saída — Voltar, START ou quem chame isto —, porque a raiz tem de
-   * descongelar o jogo por qualquer porta. Uma saída que só um caminho conhecesse deixava o outro com a criança
-   * de volta ao personagem num mundo parado.
+   * `onLeaveBar` runs on EVERY exit — Back, START or whoever calls this — because the root must unfreeze the game by any
+   * door. An exit only one path knew would leave the child on the other back at the character in a stopped world.
    */
   function leaveBarMode(i: number, silent = false): void {
     if (!onBar.delete(i)) return;
@@ -1197,14 +1135,14 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     ctx.onLeaveBar?.(i, silent);
   }
 
-  /** A tela `i` está com o direcional na barra? É o que o roteamento de entrada pergunta a cada quadro. */
+  /** Is screen `i`'s d-pad on the bar? What input routing asks every frame. */
   const isOnBar = (i: number): boolean => onBar.has(i);
 
   /**
-   * UM PASSO dentro do modo. `temStart` é a borda do botão que abre a pausa — a segunda saída.
+   * ONE STEP inside the mode. `hasStart` is the edge of the button that opens the pause — the second way out.
    *
-   * A barra é uma fileira, então as QUATRO direções andam nela: para quem navega sem ver, "cima" numa lista
-   * de uma linha só não pode ser um beco. E anda em ANEL, como todo menu do jogo desde o item 1.
+   * The bar is one row, so all FOUR directions move along it: for someone navigating without sight, «up» in a one-row list
+   * must not be a dead end. And it moves in a RING, like every menu of the game (ADR-0044 item 1).
    */
   function navBar(i: number, k: NavKeys, hasStart = false): void {
     if (!onBar.has(i)) return;
@@ -1227,16 +1165,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     sp.hidden = true;
     sp.dataset.player = String(i);
     /*
-     * ⚠️ MONTA A LISTA INTEIRA E ESCONDE DEPOIS — e a versão anterior desta linha FILTRAVA aqui, o que estava
-     * errado por uma razão de TEMPO. O comentário que estava neste sítio dizia «montar é o primeiro instante
-     * em que a resposta existe»; não é. O `getPauseActs` é um getter precisamente porque a tabela chega
-     * TARDE — «`pauseActs` is a `const` declared far below the init site», diz o próprio campo —, e o
-     * `createGame` monta durante o próprio `createGame(...)`. Filtrar aqui apagava para sempre todo item cuja
-     * acção só passou a existir depois do boot.
-     *
-     * Quem decide o que se VÊ é o `refrescarItensDaPausa`, a cada `reflectPauseIcons()` — que o `ui/shell`
-     * dispara quando a fase vira `pause-menu`, ou seja quando a pausa ABRE. O §5 continua respeitado (a
-     * criança nunca vê um item que não acciona) e agora também vê os que passaram a accionar.
+     * BUILDS THE WHOLE LIST, and `refreshPauseItems` decides which items act — here and on every `reflectPauseIcons()`.
+     * Filtering at build time would lose for good every item whose action exists only after the boot (see above).
      */
     sp.innerHTML = screenPauseMarkup({
       player: i,
@@ -1247,7 +1177,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       dynLabel: dynLabel, t,
     });
     cards[i] = sp;
-    refreshPauseItems(); // o §5 vale já na montagem, e não só na primeira abertura
+    refreshPauseItems(); // the lock holds from the build, not only from the first opening
 
     sp.addEventListener('click', (e) => {
       const b = (e.target as Element | null)?.closest<HTMLElement>('.pm-btn');
@@ -1258,7 +1188,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   /** One item of screen `i`'s pause card pressed — a locked one, a door between its lists, the quick bar, or an action. */
   function pressPauseItem(i: number, sp: HTMLElement, b: HTMLElement): void {
-    // TRAVADO (ADR-0161): accioná-lo DIZ o motivo e não faz nada — nem porta, nem acção.
+    // LOCKED (ADR-0161): pressing it SAYS the reason and does nothing — neither door nor action.
     if (b.getAttribute('aria-disabled') === 'true') {
       const reason = b.dataset.motivo ?? '';
       ctx.srSay(reason);
@@ -1270,30 +1200,28 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // «Opções do jogo» with the cartridge's rows opens the engine's panel (ADR-0182), not the list a host may pass
     const doorWithPanel = act === 'opcoesdojogo' && typeof getPauseActs().opcoesdojogo === 'function';
     if (DOOR_TO_LIST[act] && !doorWithPanel) { announceList(sp, DOOR_TO_LIST[act]!); return; }
-    // `acessibilidade` leva o cursor à BARRA RÁPIDA. ⚠️ O ITEM SAIU DA RAIZ (ADR-0151) e só o alcança uma lista que o
-    // JOGO passe; para ela o comportamento antigo fica aqui, explícito — fechar o cartão e jogar com a barra —, já que
-    // `enterBar` deixou de retomar sozinho (ADR-0155).
+    // `acessibilidade` takes the cursor to the QUICK BAR. The item is not in the engine's root (ADR-0151); only a list a
+    // GAME passes reaches it, and for that list the card closes and the bar is used — explicitly, since `enterBar` does
+    // not resume by itself (ADR-0155).
     if (act === 'acessibilidade') { getPauseActs().resume?.(); enterBarMode(i); return; }
     const fn = getPauseActs()[act];
     if (fn) fn();
   }
 
   /**
-   * A BARRA RÁPIDA de uma tela: os dez alternadores, a legenda, e a fiação dos dois.
+   * One screen's QUICK BAR: the toggles, the caption, and their wiring.
    *
-   * Ela é IRMÃ da `.screen-exp` e não filha, e isso é a decisão do #82 aplicada: a barra é CONTROLE, não
-   * experiência. O modo empatia degrada a experiência de propósito — simulação é criar dificuldade onde a
-   * facilidade não existe —, e degradar o que existe para DAR acesso seria o contrário do que ele serve.
+   * A SIBLING of `.screen-exp`, not a child (#82): the bar is CONTROL, not experience. Empathy mode degrades the experience
+   * on purpose — a simulation creates difficulty — and degrading what exists to GIVE access would be the opposite.
    */
   function buildQuickBar(i: number): HTMLElement {
     const bar = mountDoc().createElement('div');
     bar.className = 'screen-a11y';
     bar.dataset.player = String(i);
     bar.innerHTML = quickBarMarkup(gameIcons);
-    // FORA DA ORDEM DE TABULAÇÃO durante a partida (ADR-0044, item 7). Dez paradas entre a criança e o jogo
-    // seria o preço de deixá-los lá — e o alcance por teclado não se perde: ele passa a ser o modo
-    // `accessibility`, que se abre pela pausa. A barra do TÍTULO não é afetada: lá não se está jogando, e o
-    // `tabindex` é posto AQUI, no elemento, e não no markup que as duas compartilham.
+    // OUT OF THE TAB ORDER during play (ADR-0044 item 7): a stop per icon between the child and the game would be the price
+    // of leaving them in, and keyboard reach is not lost — it becomes the `accessibility` mode, opened from the pause. The
+    // bar the root mounts in `#title-icons` is unaffected: the `tabindex` is set HERE, on the element, not in the shared markup.
     bar.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => { b.tabIndex = -1; });
 
     const cap = bar.querySelector('.pause-icons-cap');
@@ -1306,15 +1234,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       if (cap) cap.textContent = accessibleLabel(ib);
     });
 
-    // Legenda = o `aria-label` do botão, para que passar o mouse ou focar diga a MESMA verdade que um leitor
-    // de tela anunciaria. Uma fonte só para quem vê e para quem escuta.
-    //
-    // E ELA SOME AO SAIR. Antes ficava: a última explicação apontada permanecia por cima do jogo até alguém
-    // apontar outra. Numa barra que agora vive na TELA DE JOGO isso é uma faixa de texto parada em cima da
-    // partida — o Dev viu e disse o que é: explicação só enquanto o mouse estiver no botão.
-    //
-    // A EXCEÇÃO É O CURSOR DO MODO `accessibility`: quando ele está pousado num ícone, a legenda é a única
-    // coisa que diz onde ele está, e apagá-la ao mexer o mouse cegaria o modo. Daí a pergunta pelo `.pi-sel`.
+    // Caption = the button's `aria-label`, so hovering or focusing says the SAME truth a screen reader would announce: one
+    // source for whoever sees and whoever listens. It GOES AWAY on leaving — a bar on the play screen must not leave a strip
+    // of text over the game (the Dev: an explanation only while the pointer is on the button). The exception is the
+    // `accessibility` mode's CURSOR: when it sits on an icon the caption is the only thing saying where it is, hence the
+    // `.pi-sel` check in `wireBarCaption`.
     wireBarCaption(bar, (k) => ctx.explainIcon?.(i, k));
     return bar;
   }
@@ -1323,9 +1247,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     buildScreenPause, buildQuickBar, enterBar: enterBarMode, leaveBar: leaveBarMode, onBar: isOnBar, navBar,
     mountedIcons: gameIcons,
     iconAct, iconLabel, reflectIconBtn, reflectIconsIn, reflectPauseIcons,
-    // ⚠️ O `setCalmMode` PERSISTE TAMBÉM, e sanea. Ele é a outra porta para o mesmo valor — se só o ciclo do
-    // ícone gravasse, um nível posto por aqui sobreviveria à sessão e não ao fecho da aba, que é a metade
-    // pior do defeito: o ajuste parece ter pegado e some depois.
+    // `setCalmMode` PERSISTS TOO, and sanitises: it is the other door to the same value, and a level set here that only
+    // lasted the session would look applied and then vanish.
     applyCalm,
     getCalmMode: () => calmMode,
     setCalmMode: (n) => { calmMode = sanitiseTeaLevel(n, DEFAULTS.calmMode); store.set(store.KEYS.tea, calmMode); },
