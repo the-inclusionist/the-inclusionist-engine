@@ -13,8 +13,10 @@ import {
   ACCOMMODATIONS, GENERAL, CONTRACT_KEYED, GAME_KEYED, isAccommodation, presetAccommodations,
   accommodationLabellerFrom, accommodationPresetProblems, accommodationAnswersProblems, subjectWord, isGameKeyed,
 } from '../app/js/core/accommodations.js';
-import { ACOM, U, DECL } from '../scripts/lib/accommodations.mjs';
+import { ACOM, U, DECL, EIXOS_DA_DECLARACAO } from '../scripts/lib/accommodations.mjs';
 import { MAPA } from '../scripts/lib/taxonomy.mjs';
+import { setGameSpeedValue, setSwitchScanValue, setInputCooldownValue } from '../app/js/core/state.js';
+import { readFileSync } from 'node:fs';
 
 describe('the catalogue and its three families', () => {
   it('🎯 [Right] no id repeats', () => {
@@ -54,13 +56,41 @@ describe('the catalogue and its three families', () => {
   });
 });
 
-describe('the study\'s two tables name the same categories', () => {
+describe('the study catalogue agrees with the code and the tables it reads', () => {
   it('🔴 [Cross-check] the taxonomy (`MAPA`) and the declaration axes (`DECL`) key the same 35 categories', () => {
     // `eixosDe` merges both tables by category name; a name only one of them has leaves the other table's axes undefined,
     // and `medir` then throws on the first key that reads one — the two accommodation scripts died that way after an automated
     // rename turned the key `Desenho / Criativo` into `Drawing / Criativo` in the taxonomy alone.
     expect(Object.keys(MAPA).sort()).toEqual(Object.keys(DECL).sort());
     expect(Object.keys(DECL)).toHaveLength(35);
+  });
+
+  it('🔴 [Cross-check] every `fonte` that names a GameDeclaration member names one the contract declares', () => {
+    // The study prints each axis's source; a renamed contract field left the old name there (`seguraTeclas()` after the
+    // field became `holdsKeys()`), and nothing read it against the contract.
+    const src = readFileSync(new URL('../app/js/core/contract.ts', import.meta.url), 'utf8');
+    const start = src.indexOf('export interface GameDeclaration {');
+    expect(start, 'GameDeclaration not found — this case measures nothing').toBeGreaterThanOrEqual(0);
+    const body = src.slice(start, src.indexOf('\n}', start));
+    const named = Object.values(EIXOS_DA_DECLARACAO).flatMap((e) => [...(e.fonte ?? '').matchAll(/GameDeclaration\.(\w+)/g)].map((m) => m[1]));
+    expect(named.length, 'no fonte names a contract member — this case measures nothing').toBeGreaterThan(0);
+    const missing = named.filter((m) => !new RegExp(`^\\s*(readonly\\s+)?${m}\\??[:(]`, 'm').test(body));
+    expect(missing, 'fonte names a member GameDeclaration does not have').toEqual([]);
+  });
+
+  it('🔴 [Cross-check] an accommodation whose state writer exists says `tem: true`', () => {
+    // `tem: false` changes nothing in the engine, but the study ranks what is MISSING by reach and GAG level; a `false` the
+    // engine already has puts a finished accommodation on the to-do list. Each writer is the one the panel or the quick
+    // bar calls: game speed (ADR-0180), one-button scan (ADR-0218), wait between inputs (ADR-0217).
+    const BUILT = [
+      ['velocidadeDoJogo', setGameSpeedValue],
+      ['umBotaoSo', setSwitchScanValue],
+      ['intervaloEntreEntradas', setInputCooldownValue],
+    ];
+    for (const [k, writer] of BUILT) {
+      expect(typeof writer, `${k}: the engine's writer is gone`).toBe('function');
+      expect(ACOM[k]?.tem, `${k} exists in the engine and the study says it does not`).toBe(true);
+    }
   });
 });
 

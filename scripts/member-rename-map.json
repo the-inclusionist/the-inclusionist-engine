@@ -52,6 +52,7 @@
     "tests/art-licences-accepted.node.test.js fonte": "a column of the art catalogue CSV, which is data",
     "tests/art-licences-accepted.node.test.js licenca": "a column of the art catalogue CSV, which is data",
     "tests/accommodations.node.test.js chave": "a field of the accommodations study JSON, which is data",
+    "tests/accommodations.node.test.js fonte": "a field of the accommodations study (scripts/lib/accommodations.mjs `EIXOS_DA_DECLARACAO`), which is data",
     "tests/game-options.browser.test.js nivel": "the fake cartridge's own state, keyed by its option ids — data of the game, not a type of the engine",
     "tests/audio-synth.node.test.js alvo": "a field the test's own fake AudioParam records — local to the test",
     "tests/audio-sonar.node.test.js alvos": "a field the test's own fake AudioParam records — local to the test",

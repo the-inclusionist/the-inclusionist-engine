@@ -7,11 +7,10 @@ import { MAPA, EIXOS_DA_TAXONOMIA, SECOES } from './taxonomy.mjs';
 
 /* ===================== THE DECLARATION'S AXES =====================
  * `fonte` says where the axis comes from: a contract field that already exists, or none (⚠️ still to be declared).
- * ⚠️ `segura`'s `fonte` still names `seguraTeclas()`; the contract field is `holdsKeys()` now.
  */
 export const EIXOS_DA_DECLARACAO = Object.freeze({
   tick: { fonte: 'GameDeclaration.tick', valores: new Set(['player', 'clock']) },
-  segura: { fonte: 'GameDeclaration.seguraTeclas() + o preset', valores: new Set(['nada', 'direcao', 'botao']) },
+  segura: { fonte: 'GameDeclaration.holdsKeys() + o preset', valores: new Set(['nada', 'direcao', 'botao']) },
   entrada: { fonte: 'GameDeclaration.needsPointer()', valores: new Set(['acoes', 'ponteiro', 'texto']) },
   mundo: { fonte: 'GameDeclaration.world().kind', valores: new Set(['element', 'none']) },
   topologia: { fonte: 'GameDeclaration.topology().kind', valores: new Set(['grid', 'continuous', 'hotspots']) },
@@ -116,11 +115,13 @@ export const ACOM = {
   tamanhoDoAlvo: { tem: false, o: 'alvos maiores para tocar/clicar', chave: U },
 
   // — by what the contract ALREADY declares —
-  velocidadeDoJogo: { tem: false, o: 'abrandar o jogo inteiro (GAG: «adjust the game speed»)', chave: { eixo: 'tick', valores: ['clock'] } },
+  // `core/state` `setGameSpeedValue`, the quick bar's hourglass (ADR-0180).
+  velocidadeDoJogo: { tem: true, o: 'abrandar o jogo inteiro (GAG: «adjust the game speed»)', chave: { eixo: 'tick', valores: ['clock'] } },
   alternanciaDeMarcha: { tem: true, o: 'andar sem segurar a direcção', chave: { eixo: 'segura', valores: ['direcao', 'botao'] } },
   alternanciaDoCorrer: { tem: true, o: 'correr sem segurar o botão', chave: { eixo: 'segura', valores: ['botao'] } },
   controleVirtual: { tem: true, o: 'pad na tela (tamanho, geometria, slots)', chave: { eixo: 'entrada', valores: ['acoes'] } },
-  umBotaoSo: { tem: false, o: 'colapsar as acções numa só', chave: { eixo: 'entrada', valores: ['acoes'] } },
+  // `core/state` `setSwitchScanValue`: the machine offers each position and one press takes it (ADR-0218).
+  umBotaoSo: { tem: true, o: 'colapsar as acções numa só', chave: { eixo: 'entrada', valores: ['acoes'] } },
   // ⚠️ IT WAS «assistenciaDeTraco» (steadying the stroke while drawing). The right key is the continuous POINTER, and with
   // it the same shaky hand that draws also aims and drags — the accommodation is the tremor's, not the drawing's.
   estabilizarPonteiro: { tem: false, o: 'suavizar o tremor do ponteiro (traço, mira, arrasto)', chave: { eixo: 'entrada', valores: ['ponteiro'] } },
@@ -152,10 +153,9 @@ export const ACOM = {
 
   // ============ THE ONES THE GAG BROUGHT (`accommodations-gag.mjs`) — the study did not have them ============
   // 📌 `tem` was checked in the code when written, and each `true` says where; a `false` the engine already had would lie
-  // about the priority. ⚠️ Since then `intervaloEntreEntradas` has landed (ADR-0217) and still says `false` here, like
-  // `velocidadeDoJogo` (ADR-0180) and `umBotaoSo` (ADR-0218) above.
+  // about the priority. `intervaloEntreEntradas` is `core/state` `setInputCooldownValue` (ADR-0217).
   entradaRepetida: { tem: false, o: 'trocar martelar/QTE por segurar ou por um toque', chave: { eixo: 'repeticao', valores: ['sim'] } },
-  intervaloEntreEntradas: { tem: false, o: 'ignorar a segunda entrada dentro de N ms (tremor)', chave: { eixo: 'entrada', valores: ['acoes'] } },
+  intervaloEntreEntradas: { tem: true, o: 'ignorar a segunda entrada dentro de N ms (tremor)', chave: { eixo: 'entrada', valores: ['acoes'] } },
   macros: { tem: false, o: 'uma entrada dispara uma sequência', chave: { eixo: 'entrada', valores: ['acoes'] } },
   sensibilidadeDoControle: { tem: false, o: 'quanto o ponteiro anda por movimento', chave: { eixo: 'entrada', valores: ['ponteiro'] } },
   corDoPonteiro: { tem: false, o: 'cor e forma do cursor / mira', chave: { eixo: 'entrada', valores: ['ponteiro'] } },
