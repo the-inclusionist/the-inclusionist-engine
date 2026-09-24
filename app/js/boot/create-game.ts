@@ -360,7 +360,7 @@ export interface CreateGameOptions {
    * · `neuralVoice: true` — a child who cannot read is read TO by this game, so it wants a voice even where the device has
    *   none of its own. The engine loads Kokoro from the delivery at the first such utterance (ADR-0216 §1); the game names no
    *   phonemizer, runtime or model. Absent, no Kokoro voice is listed, the audio panel does not offer the neural engine, and
-   *   the 372 MB of model, voices and runtime never enter the delivery.
+   *   the 371 MiB of model, voices and runtime never enter the delivery.
    * · `reading: true` — a child reads aloud TO this game and it wants the text; the engine decides who hears her, and a
    *   delivery carries the reading model of her language because of this answer. Absent, `motor.reading.listen()` refuses and
    *   says which line is missing: a game that asks for a microphone it never declared would also be a delivery without the
@@ -370,7 +370,7 @@ export interface CreateGameOptions {
   /**
    * FETCH THE HEAVY FILES ON THE FIRST LOAD? Default **yes** (ADR-0110 (b), ADR-0116, ADR-0119).
    *
-   * The vision runtime and models, and Kokoro's model and voices when the game fills the Kokoro port (327 MB), come down in the
+   * The vision runtime and models, and with `uses.neuralVoice` Kokoro's model, voices and runtime (371 MiB), come down in the
    * BACKGROUND, one at a time, without blocking the game: the child plays while they arrive, and what must not happen is a child
    * back on the second day, offline, finding they were never fetched. Pillar 8 is «first day ONLINE, then offline-first», and
    * ADR-0116 removed the contradiction that blocked this — installing is already a network act.
