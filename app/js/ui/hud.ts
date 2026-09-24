@@ -1,28 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/hud.ts — HUD POR TELA + a infraestrutura de TELAS do jogo (Estágio 4). Duas responsabilidades coladas
-// desde sempre no game.js: (a) a GRADE de `.player-screen` dentro de `#game-hud` — um contêiner por jogador,
-// posicionado em %, que hospeda o HUD, o selo "jogo abandonado", o selo "aperte um botão para entrar"
-// (`.vp-wait`), o menu de pausa daquele jogador e (em MP) o overlay de quiz dele; e (b) o CONTEÚDO do HUD —
-// o OBJETIVO do jogador e o poder ativo — reescrito a cada frame por updateGameHud().
+// ui/hud.ts — PER-SCREEN HUD + the game's SCREEN infrastructure. Two responsibilities: (a) the GRID of
+// `.player-screen` inside `#game-hud` — one container per player, positioned in %, hosting the HUD, the quit badge, the
+// press-a-button-to-join badge (`.vp-wait`), that player's pause menu and (in multiplayer) their quiz overlay; and (b)
+// the HUD's CONTENT — the player's OBJECTIVE and active power — rewritten every frame by updateGameHud().
 //
-// ========================= O CONTADOR DEIXOU DE SER DE MOEDA (item 19) =========================
-// O passo 4 do ADR-0027 matou a DEPENDÊNCIA (`vphudHtml(coinTarget = COIN_TARGET)` virou parâmetro
-// obrigatório); o que sobrou era VOCABULÁRIO — o ícone cravado no markup, a classe `vphud-coins`, o campo
-// `coins` do view-model. Nome não é seguido pelo compilador e não impede um pacote de se separar, e por isso
-// a dívida era menor. Não era nula: ela dizia, em toda tela, que este HUD é de um jogo de plataforma.
+// ========================= THE COUNTER IS NOT A COIN COUNTER =========================
+// The counter receives an `Objective` — field 5 of `core/contract` — and the icon comes in by injection, so the HUD
+// shows what the game declared without knowing whether it is a coin, a word or a sum. And `Objective.name` gives the
+// counter an ACCESSIBLE NAME: without it a blind child would hear "3 / 10", two numbers with no noun — the engine did
+// not know the name of what is collected. Now the game declares it.
 //
-// Agora o contador recebe um `Objective` — campo 5 de `core/contract` — e o ícone entra por injeção. E a
-// mudança compra mais do que um nome: com `Objective.name` o contador GANHOU NOME ACESSÍVEL. Até aqui a
-// criança cega ouvia o contador como "3 / 10", dois números sem substantivo — não havia o que falar porque a
-// engine não sabia o nome do que se junta. Agora sabe, porque o jogo declara.
+// The HUD is OVERLAID DOM (not pixelated: it stays in high definition over the 320×180 canvas) — which is why it lives
+// here and not in render. The pause menu is NOT this module's: `buildScreenPause(i)` comes in by injection, and this
+// module only attaches the result to the right screen and hands the finished panels back through `onScreensBuilt`.
 //
-// O HUD é DOM SOBREPOSTO (não pixela: fica em alta definição sobre o canvas 320×180) — por isso vive aqui e
-// não no render. O menu de pausa NÃO é deste módulo: `buildScreenPause(i)` entra por injeção e este módulo só
-// anexa o retorno na tela certa e devolve os painéis prontos por `onScreensBuilt` (o game.js guarda `vpPause`
-// e o `pauseActor`, que são do slice de pausa/ícones). Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
-//
-// Sem I/O no import: `document` só aparece DENTRO das funções → o módulo é importável no project node, onde os
-// testes exercitam só a metade PURA (screenGrid/screenRect/hudRowView/vphudHtml/waitBadgeHtml).
+// No I/O on import: `document` only appears INSIDE functions → the module is importable in the node project, where the
+// tests exercise only the PURE half (screenGrid/screenRect/hudRowView/vphudHtml/waitBadgeHtml).
 import { screenGrid } from '../core/screens.js';
 import type { PlayerView } from '../core/entity.js';
 import type { Objective } from '../core/contract.js';
@@ -31,33 +24,32 @@ import { t } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
-// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+// `DomQuery` lives in `core/dom-query`: copies of this line in many modules drifted apart. Re-exported for whoever
+// already imported it from here.
 export type { DomQuery } from '../core/dom-query.js';
 
-/** Só os campos do jogador que o HUD lê. Estrutural de propósito: o `players[]` real é `unknown[]` no core/state. */
-/** O que o HUD lê do JOGADOR: o poder ativo e se ele desistiu. O progresso vem do `Objective`, não daqui —
- *  `collected` saiu da fatia, e com ele a última coisa que o HUD sabia sobre juntar objetos. */
+/** Only the player fields the HUD reads. Structural on purpose: the real `players[]` is `unknown[]` in core/state. */
+/** What the HUD reads from the PLAYER: the active power and whether they quit. Progress comes from the `Objective`,
+ *  not from here. */
 export type HudPlayer = PlayerView<'activePower' | 'quit'>;
 
 // ---------------------------------------------------------------------------------------------
-// Lógica PURA (nenhum `document`; testável no project node)
+// PURE logic (no `document`; testable in the node project)
 // ---------------------------------------------------------------------------------------------
 
-/** Grade de telas: 1 → 1×1, 2 → 2×1, 3-4 → 2×2 (a 3ª tela é centralizada na linha de baixo). */
+/** Screen grid: 1 → 1×1, 2 → 2×1, 3-4 → 2×2 (the 3rd screen is centred on the bottom row). */
 
-// A grade agora mora em core/screens (folha, sem dependências), porque o layout e o CRT precisam da MESMA
-// conta e não têm o que fazer importando de um módulo de HUD. Reexportada aqui sob o nome de sempre.
+// The grid lives in core/screens (a leaf, no dependencies), because the layout and the CRT need the SAME arithmetic and
+// have no business importing from a HUD module. Re-exported here under its usual name.
 export { screenGrid } from '../core/screens.js';
 export type { ScreenGrid } from '../core/screens.js';
 
-/** Retângulo da tela `i` em porcentagens de CSS, já prontas para `style.left/top/width/height`. */
+/** Screen `i`'s rectangle in CSS percentages, ready for `style.left/top/width/height`. */
 export interface ScreenRect { L: string; T: string; W: string; H: string; }
 
 /**
- * Posição/tamanho da tela `i` numa grade de `n` jogadores. Verbatim de screenRect(i) — que lia `numPlayers`
- * global; aqui `n` é parâmetro (mesma conta, testável sem estado). Caso especial preservado: com 3 telas, a
- * terceira é centralizada na linha de baixo, para casar com o posicionamento do render (configureRender).
+ * Position/size of screen `i` in a grid of `n` players; `n` is a parameter, so it is testable without state. Special
+ * case: with 3 screens, the third is centred on the bottom row, to match the renderer's positioning.
  */
 export function screenRect(i: number, n: number): ScreenRect {
   const { cols, rows } = screenGrid(n);
@@ -67,23 +59,21 @@ export function screenRect(i: number, n: number): ScreenRect {
   return { L: (colFrac * 100) + '%', T: (row / rows * 100) + '%', W: (100 / cols) + '%', H: (100 / rows) + '%' };
 }
 
-/** Quantas telas o HUD monta: ao menos uma, mesmo antes de `players[]` existir no boot. Verbatim (Math.max(1,…)). */
+/** How many screens the HUD mounts: at least one, even before `players[]` exists at boot. */
 export function screenCount(n: number): number { return Math.max(1, n); }
 
-/** O texto que o leitor de tela ouve no contador. A MOLDURA é a chave; o NOME do objetivo atravessa por
- *  parâmetro — a regra do pilar 3 (ADR-0010), a mesma que o currículo segue. */
+/** The text a screen reader hears on the counter. The FRAME is the key; the objective's NAME passes through as a
+ *  parameter — pillar 3's rule (ADR-0010), the same the curriculum follows. */
 export const counterLabel = (o: Objective): string =>
   t('hud.contador', { have: String(o.have), need: String(o.need), nome: o.name.text });
 
 /**
- * Markup do contador (objetivo na 1ª coluna, poder na 2ª).
+ * The counter's markup (objective in the 1st column, power in the 2nd).
  *
- * O objetivo entra INTEIRO — nome, quanto tem, quanto precisa — em vez de só o alvo numérico, e o ícone entra
- * por injeção. É o que tira o desenho da moeda de dentro da engine: o HUD mostra o que o jogo declarou
- * (campo 5 do contrato), sem saber se é moeda, palavra ou conta.
+ * The objective comes in WHOLE — name, how much you have, how much you need — and the icon by injection: the HUD shows
+ * what the game declared (field 5 of the contract), without knowing whether it is a coin, a word or a sum.
  *
- * O `aria-label` é a parte que não é renomeação: sem o nome do objetivo não havia o que dizer, e o contador
- * era mudo para quem não vê a tela.
+ * The accessible name is set separately (`applyCounterLabel`), because the objective's name is outside data.
  */
 export function vphudHtml(objective: Objective, icon: string): string {
   return '<span class="vphud-obj"><b class="vphud-ico">' + icon
@@ -92,79 +82,75 @@ export function vphudHtml(objective: Objective, icon: string): string {
 }
 
 /**
- * PÕE O NOME DECLARADO PELO JOGO NO RÓTULO DO LEITOR DE TELA — por atributo, nunca por markup (issue #106).
+ * PUTS THE NAME THE GAME DECLARED INTO THE SCREEN READER'S LABEL — by attribute, never by markup (issue #106).
  *
- * ⚠️ ESTE É UM VETOR QUE A AUDITORIA DE 2026-08-26 NÃO TINHA COMO CONHECER, e vale dizer por quê: ela varreu
- * por FONTE DE DADO e concluiu, com razão para a época, que nada de fora chegava a markup. Depois disso o
- * contrato passou a existir (ADR-0030) e os jogos passaram a viver em REPOSITÓRIOS SEPARADOS, consumindo a
- * engine como pacote (ADR-0083). O `name.text` do objetivo é texto de um jogo que esta árvore não revê.
+ * ⚠️ The games live in SEPARATE REPOSITORIES and consume the engine as a package (ADR-0083), so the objective's
+ * `name.text` is text from a game this tree does not review.
  *
- * ⚠️ E ELE ENTRAVA NUM ATRIBUTO, que é o pior contexto dos dois: dentro de um elemento uma aspa é inofensiva,
- * dentro de `aria-label="…"` ela FECHA o atributo e o que vem a seguir vira atributo — um `onmouseover` sem
- * precisar de uma única tag.
+ * ⚠️ AND IT GOES INTO AN ATTRIBUTE, the worse of the two contexts: inside an element a quote is harmless; inside
+ * `aria-label="…"` it CLOSES the attribute and what follows becomes an attribute — an `onmouseover` without a single
+ * tag.
  *
- * `setAttribute` escapa por construção, e é por isso que a resposta é «construir nós» e não «escapar à mão»:
- * um escape esquecido não deixa rasto; um `setAttribute` esquecido tira o rótulo, e há caso a prendê-lo.
+ * `setAttribute` escapes by construction, which is why the answer is building nodes and not escaping by hand: a
+ * forgotten escape leaves no trace; a forgotten `setAttribute` removes the label, and a case holds it.
  */
 export function applyCounterLabel(vphud: Element | null, objective: Objective): void {
   vphud?.querySelector('.vphud-obj')?.setAttribute('aria-label', counterLabel(objective));
 }
 
 /**
- * Um número do jogo, coagido.
+ * A number from the game, coerced.
  *
- * ⚠️ `Objective.have` É `number` NO TIPO E O TIPO NÃO ATRAVESSA A FRONTEIRA DO PACOTE: um jogo em JavaScript
- * puro, ou compilado de outra árvore, devolve o que quiser. Colar isso num template literal é a mesma
- * categoria de defeito que o nome — só que mais fácil de esquecer, porque «é um número» está escrito no tipo.
- * Um não-número vira `0`, que é falso mas inofensivo; deixar passar seria falso E perigoso.
+ * ⚠️ `Objective.have` IS `number` IN THE TYPE AND THE TYPE DOES NOT CROSS THE PACKAGE BOUNDARY: a game in plain
+ * JavaScript, or compiled from another tree, returns whatever it likes. Pasting that into a template literal is the
+ * same category of defect as the name — only easier to forget, because "it is a number" is written in the type. A
+ * non-number becomes `0`, which is false but harmless; letting it through would be false AND dangerous.
  */
 function finiteOrZero(v: number): number {
   return Number.isFinite(v) ? v : 0;
 }
 
 /**
- * Markup do selo "aperte um botão para entrar" (tela criada em jogo, ainda sem dono). `i` é o índice 0-based.
+ * The markup of the press-a-button-to-join badge (a screen created mid-game, still with no owner). `i` is 0-based.
  *
- * 🔴 ERA PORTUGUÊS CRU, e era a última linha deste módulo no livro-razão do `engine-i18n`. Num jogo em inglês
- * a criança que acabou de ganhar uma tela lia, em português, a única frase que lhe diz COMO entrar — e o
- * selo é a tela inteira dela nesse instante, não um detalhe de canto.
+ * 🔴 FROM THE DICTIONARY, never raw text: it is the only sentence that tells the child who just got a screen HOW to join,
+ * and the badge is their whole screen at that instant, not a corner detail.
  *
- * 📌 CHAVE PRÓPRIA e não o `sr.player.pressToJoin` que já existe, apesar de as duas frases se parecerem: a
- * do leitor de tela diz «aperte um botão», esta diz QUAL botão — «do SEU teclado ou de um controle livre» —,
- * porque quem a lê está a olhar para uma tela com outras pessoas à volta e precisa de saber que não é
- * qualquer teclado. Juntá-las apagaria essa metade de uma das duas.
+ * 📌 ITS OWN KEY and not the existing `sr.player.pressToJoin`, although the two look alike: the screen reader's says to
+ * press a button, this one says WHICH — your own keyboard or a free controller —, because whoever reads it is looking
+ * at a screen with other people around and needs to know it is not just any keyboard. Merging them would erase that
+ * half of one of the two.
  */
 export function waitBadgeHtml(i: number): string {
   return '<div class="vphud-quit vp-wait">' + t('hud.waitBadge', { n: i + 1 }) + '</div>';
 }
 
-/** Projeção do HUD de UMA tela: tudo que updateGameHud() escreve no DOM, sem tocar no DOM. */
+/** The HUD projection of ONE screen: everything updateGameHud() writes to the DOM, without touching the DOM. */
 export interface HudRowView {
-  /** Texto do contador: quanto o jogador tem, verbatim (sem formatação nem clamp). */
+  /** The counter's text: how much the player has, as given (no formatting nor clamp). */
   have: string;
-  /** O que o leitor de tela ouve no contador — reescrito junto com o número, senão ele ficaria falando o
-   *  valor do primeiro quadro a partida inteira. É o defeito que um `aria-label` estático teria. */
+  /** What the screen reader hears on the counter — rewritten with the number, otherwise it would keep saying the first
+   *  frame's value the whole match. That is the defect a static `aria-label` would have. */
   label: string;
-  /** Rótulo curto do poder ativo, com o travessão como fallback de poder desconhecido/ausente. */
+  /** Short label of the active power, with the dash as the fallback for an unknown/absent power. */
   power: string;
-  /** `hidden` do selo "Jogo abandonado": escondido enquanto o jogador NÃO desistiu. */
+  /** `hidden` of the quit badge: hidden while the player has NOT quit. */
   quitHidden: boolean;
-  /** `style.visibility` do contador: quem desistiu vê tela preta com o selo, sem números. */
+  /** The counter's `style.visibility`: whoever quit sees a black screen with the badge, no numbers. */
   visibility: 'hidden' | 'visible';
 }
 
 /**
- * Estado do HUD de um jogador. Verbatim do corpo de updateGameHud(), só que como valor.
- * `powerShort` é o POWER_SHORT do game.js (injetado — a mesma FUNÇÃO que game/coin-spawning.ts já recebe).
- * Função e não tabela: o texto depende do idioma ATUAL, e uma tabela lida no boot ficaria congelada nele.
+ * One player's HUD state, as a value. `powerShort` is injected by the host (the same function other game modules
+ * receive). A function and not a table: the text depends on the CURRENT language, and a table read at boot would stay
+ * frozen in it.
  */
 export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string, objective: Objective): HudRowView {
   return {
     have: String(objective.have),
     label: counterLabel(objective),
-    // O `|| '—'` FICA, mesmo com o resolvedor já tratando desconhecido. Não é redundância: é a garantia de
-    // que o campo do poder NUNCA aparece em branco no HUD, e ela não pode depender de todo consumidor futuro
-    // lembrar de tratar o caso. Um teste meu ia perdê-la nesta mudança e reprovou por isso.
+    // The `|| '—'` STAYS, even with the resolver already handling unknowns. It is not redundancy: it guarantees the
+    // power field NEVER appears blank on the HUD, and that cannot depend on every future consumer remembering the case.
     power: powerShort(p.activePower) || '—',
     quitHidden: !p.quit,
     visibility: p.quit ? 'hidden' : 'visible',
@@ -176,60 +162,55 @@ export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string, o
 // ---------------------------------------------------------------------------------------------
 
 export interface HudCtx {
-  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
-   *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
-   *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
+  /** How many players/screens. ROUND state (ADR-0038): it comes from the instance the root owns — a module `let` would
+   *  be shared by any second game the same page loads. */
   getNumPlayers: () => number;
-  /** Os jogadores. Estado de RODADA, pelo mesmo motivo. `readonly unknown[]` porque cada consumidor
-   *  estreita para a SUA fatia — o tipo real é do jogo, não da engine (ADR-0033). */
+  /** The players. ROUND state, for the same reason. `readonly unknown[]` because each consumer narrows to ITS slice —
+   *  the real type is the game's, not the engine's (ADR-0033). */
   getPlayers: () => readonly unknown[];
-  /** Seletor DOM (forma do `$` de ui/dom.ts), injetado — o módulo nunca alcança `document` por global. */
+  /** DOM selector (ui/dom.ts's `$` shape), injected — the module never reaches `document` through a global. */
   $: DomQuery;
   /**
-   * POWER_SHORT: rótulos curtos de poder mostrados no HUD. Fica no game.js porque game/coin-spawning.ts
-   * (showPower) também o recebe — injetar evita a 2ª cópia da tabela.
+   * Short power labels shown on the HUD. Injected so the host keeps one table for every module that shows powers.
    */
   powerShort: (kind: string) => string;
   /**
-   * O OBJETIVO do jogador `i` — campo 5 do contrato (`core/contract.Objective`): o nome do que se junta,
-   * quanto tem e quanto precisa. FUNÇÃO e não valor, porque `have` muda a cada quadro.
-   *
-   * Era `hudTarget: number`, e antes disso `COIN_TARGET` por importação. Cada passo tirou uma coisa que o HUD
-   * sabia sobre o jogo: primeiro a dependência, agora o assunto.
+   * Player `i`'s OBJECTIVE — field 5 of the contract (`core/contract.Objective`): the name of what is collected, how
+   * much they have and how much they need. A FUNCTION and not a value, because `have` changes every frame.
    */
   hudObjective: (playerIndex: number) => Objective;
-  /** O ícone do contador. Era o desenho da moeda cravado no markup da engine; é do jogo, como o nome. */
+  /** The counter's icon. It is the game's, like the name. */
   hudIcon: string;
   /**
-   * Painel de pausa da tela `i`. NÃO é deste módulo (slice de pausa/ícones): entra por injeção e o HUD só
-   * anexa o retorno dentro da `.player-screen` correspondente.
+   * Screen `i`'s pause panel. NOT this module's: it comes in by injection and the HUD only attaches the result inside
+   * the matching `.player-screen`.
    */
   buildScreenPause: (i: number) => HTMLElement;
   /**
-   * A BARRA RÁPIDA de acessibilidade da tela `i` (ui/pause-icons `buildQuickBar`). Anexada como IRMÃ da
-   * `.screen-exp`, e não dentro dela: a barra é CONTROLE, e o modo empatia não a alcança (issue #82).
+   * Screen `i`'s accessibility QUICK BAR (ui/pause-icons `buildQuickBar`). Attached as a SIBLING of `.screen-exp`, not
+   * inside it: the bar is CONTROL, and empathy mode does not reach it (issue #82).
    */
   buildQuickBar: (i: number) => HTMLElement;
   /**
-   * Chamado no FIM de buildGameHud() com os painéis de pausa recém-criados, em ordem de tela. É o gancho onde o
-   * game.js reatribui `vpPause` (binding local dele) e roda o que o original rodava depois do laço
-   * (applyLetra/renderPauseLegend). Opcional: sem ele o HUD monta igual, só não avisa ninguém.
+   * Called at the END of buildGameHud() with the freshly created pause panels, in screen order — the hook where the
+   * host keeps its references and runs what depends on them. Optional: without it the HUD mounts the same, it just
+   * tells nobody.
    */
   onScreensBuilt?: (pausePanels: HTMLElement[]) => void;
-  /** As barras rápidas recém-montadas, na ordem das telas. A raiz guarda para o `getA11yBars`. */
+  /** The freshly mounted quick bars, in screen order. The root keeps them for `getA11yBars`. */
   onBarsBuilt?: (bars: HTMLElement[]) => void;
 }
 
 export interface HudApi {
-  /** (Re)monta `#game-hud`: uma `.player-screen` por jogador, com HUD, selo de abandono e painel de pausa. */
+  /** (Re)mounts `#game-hud`: one `.player-screen` per player, with HUD, quit badge and pause panel. */
   buildGameHud: () => void;
-  /** Reescreve moedas/poder e o selo de abandono de todas as telas montadas. Chamado a cada frame. */
+  /** Rewrites the objective/power and the quit badge on every mounted screen. Called every frame. */
   updateGameHud: () => void;
-  /** Contêiner `.player-screen` da tela `i` (o quiz de MP e outros overlays por jogador penduram aqui). */
+  /** Screen `i`'s `.player-screen` container (the multiplayer quiz and other per-player overlays hang here). */
   getScreen: (i: number) => HTMLElement | null;
-  /** Cria o selo `.vp-wait` na tela `i` (idempotente: não duplica se já existir). */
+  /** Creates the `.vp-wait` badge on screen `i` (idempotent: does not duplicate if it already exists). */
   showWaitingBadge: (i: number) => void;
-  /** Remove o selo `.vp-wait` da tela `i` (o jogador entrou). No-op se a tela ou o selo não existirem. */
+  /** Removes the `.vp-wait` badge from screen `i` (the player joined). No-op if the screen or the badge does not exist. */
   clearWaitingBadge: (i: number) => void;
 }
 
@@ -238,7 +219,7 @@ export function initHud(ctx: HudCtx): HudApi {
   let vpHudDom: HTMLElement[] = [];
   let vpQuitDom: HTMLElement[] = [];
   let vpScreens: HTMLElement[] = [];
-  /** A sub-camada de EXPERIÊNCIA de cada tela — o que a empatia atrapalha. Ver `buildGameHud`. */
+  /** Each screen's EXPERIENCE sub-layer — what empathy gets in the way of. See `buildGameHud`. */
   let vpExpDom: HTMLElement[] = [];
 
   function buildGameHud(): void {
@@ -257,16 +238,16 @@ export function initHud(ctx: HudCtx): HudApi {
       scr.className = 'player-screen'; scr.dataset.player = String(i);
       scr.style.left = r.L; scr.style.top = r.T; scr.style.width = r.W; scr.style.height = r.H;
 
-      // A TELA TEM DUAS SUB-CAMADAS, e a divisão é de PAPEL (issue #82, decisão do Dev):
+      // THE SCREEN HAS TWO SUB-LAYERS, divided by ROLE (issue #82, the Dev's decision):
       //
-      //   · EXPERIÊNCIA (`.screen-exp`) — HUD, selo de abandono e a atividade pedagógica do multi-tela. O
-      //     modo de EMPATIA precisa atrapalhar aqui: é o prejuízo que a pessoa tem de sentir.
-      //   · CONTROLE (o painel de pausa, irmão) — nunca é atingido por empatia. Simulação não é
-      //     acessibilidade: é criar dificuldade onde a facilidade não existe. O que existe para DAR ACESSO
-      //     — pausa, legenda, controle de toque — não pode ser degradado por ela.
+      //   · EXPERIENCE (`.screen-exp`) — HUD, quit badge and the multi-screen learning activity. EMPATHY mode has to get
+      //     in the way here: it is the harm the person has to feel.
+      //   · CONTROL (the pause panel, a sibling) — never touched by empathy. Simulation is not accessibility: it creates
+      //     difficulty where ease does not exist. What exists to GIVE ACCESS — pause, captions, touch controls — cannot
+      //     be degraded by it.
       //
-      // Elas são IRMÃS e não pai/filho porque `filter` de CSS desce para os descendentes e um filho não
-      // consegue cancelá-lo: com a pausa dentro da experiência, não haveria como isentá-la.
+      // They are SIBLINGS and not parent/child because a CSS `filter` descends to descendants and a child cannot cancel
+      // it: with the pause inside the experience, there would be no way to exempt it.
       const exp = doc.createElement('div');
       exp.className = 'screen-exp';
       scr.appendChild(exp); vpExpDom.push(exp);
@@ -274,16 +255,16 @@ export function initHud(ctx: HudCtx): HudApi {
       const d = doc.createElement('div');
       d.className = 'vphud';
       d.innerHTML = vphudHtml(ctx.hudObjective(i), ctx.hudIcon);
-      applyCounterLabel(d, ctx.hudObjective(i)); // #106: o nome vem do JOGO — atributo, nunca markup
+      applyCounterLabel(d, ctx.hudObjective(i)); // #106: the name comes from the GAME — attribute, never markup
       exp.appendChild(d); vpHudDom.push(d);
 
       const q = doc.createElement('div');
       q.className = 'vphud-quit'; q.hidden = true; q.textContent = 'Jogo abandonado';
       exp.appendChild(q); vpQuitDom.push(q);
 
-      // A BARRA RÁPIDA entra entre a experiência e a pausa, e é IRMÃ das duas. Não vai DENTRO da
-      // `.screen-exp` porque `filter` de CSS desce para os descendentes e um filho não consegue cancelá-lo:
-      // ali dentro, o modo empatia degradaria justamente o que existe para dar acesso.
+      // THE QUICK BAR goes between the experience and the pause, as a SIBLING of both. Not INSIDE `.screen-exp`, because
+      // a CSS `filter` descends to descendants and a child cannot cancel it: in there, empathy mode would degrade exactly
+      // what exists to give access.
       const bar = ctx.buildQuickBar(i);
       scr.appendChild(bar); bars.push(bar);
 
@@ -292,9 +273,7 @@ export function initHud(ctx: HudCtx): HudApi {
 
       gameHudEl.appendChild(scr); vpScreens.push(scr);
     }
-    // O original terminava com `vpPause` preenchido e dois efeitos DEFENSIVOS (applyLetra/renderPauseLegend em
-    // try/catch, porque no 1º build do init LETRA/PAD_DESIGNS ainda estão em TDZ). Ambos são de OUTROS slices →
-    // saem por este gancho, com o try/catch preservado no game.js. Ver "chamada defensiva" no relatório.
+    // What depends on the finished panels belongs to other modules, so it leaves through these hooks.
     ctx.onBarsBuilt?.(bars);
     ctx.onScreensBuilt?.(panes);
   }
@@ -306,12 +285,12 @@ export function initHud(ctx: HudCtx): HudApi {
       const d = vpHudDom[i];
       const v = hudRowView(p, ctx.powerShort, ctx.hudObjective(i));
       const n = d.querySelector('.vphud-n'); if (n) n.textContent = v.have;
-      // O rótulo acessível acompanha o número. Escrevê-lo só na montagem deixaria o leitor de tela repetindo
-      // "0 de 10" a partida inteira — pior do que não ter rótulo, porque soa como informação.
+      // The accessible label follows the number. Writing it only at mount would leave the screen reader repeating
+      // "0 of 10" the whole match — worse than no label, because it sounds like information.
       const obj = d.querySelector('.vphud-obj'); if (obj) obj.setAttribute('aria-label', v.label);
       const pw = d.querySelector('.vphud-pw'); if (pw) pw.textContent = v.power;
       if (vpQuitDom[i]) vpQuitDom[i].hidden = v.quitHidden;
-      if (d) d.style.visibility = v.visibility; // jogador que saiu: tela preta "jogo abandonado"
+      if (d) d.style.visibility = v.visibility; // a player who left: black screen with the quit badge
     }
   }
 
