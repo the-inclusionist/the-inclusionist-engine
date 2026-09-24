@@ -2610,7 +2610,7 @@ export function createGame(o: CreateGameOptions): Engine {
     if (clearSoundCaption !== null) clearTimeout(clearSoundCaption);
     clearSoundCaption = setTimeout(() => { captionHome.hidden = true; captionHome.textContent = ''; }, captionDuration(text, state.captionPpm));
   }
-  /** O rodapé diz UMA explicação de cada vez: a do ícone apontado, ou o motivo de um item travado (ADR-0161). */
+  /** The footer says ONE explanation at a time: the pointed icon's, or the reason a locked item is locked (ADR-0161). */
   function writeInFooter(text: string | null): void {
     if (!barExplanation && text) {
       const home = screenFooter($<HTMLElement>('#game-region'));
@@ -2635,9 +2635,9 @@ export function createGame(o: CreateGameOptions): Engine {
     changePhase('paused');
   }
 
-  /** Sai por qualquer porta. `para` diz para onde: o jogo (descongela) ou o cartão (fica parado). */
+  /** Leaves by any door. `to` says where: the game (unfreezes) or the card (stays stopped). */
   function leaveQuickPause(seat: number, to: 'jogo' | 'cartao'): void {
-    if (pauseIcons.onBar(seat)) { pauseIcons.leaveBar(seat, to === 'cartao'); return; } // o gancho termina
+    if (pauseIcons.onBar(seat)) { pauseIcons.leaveBar(seat, to === 'cartao'); return; } // the hook finishes the job
     if (to === 'jogo') srSay(t('sr.a11y.barExit'));
     endQuickPause(seat, to === 'cartao');
   }
@@ -2652,45 +2652,45 @@ export function createGame(o: CreateGameOptions): Engine {
     const seat = seatOfPosition(e.code, 'start');
     if (seat === null) return;
 
-    // GUARDA 1 — HÁ UM PAINEL ABERTO. Medido: com um overlay visível, `menuNavKey` recebe a tecla, não lhe
-    // acha intenção e sai sem consumir. Sem este guarda a pausa rápida entrava POR BAIXO do painel em que a
-    // criança está. Quem fecha um painel é o Escape, não o START.
+    // GUARD 1 — A PANEL IS OPEN. With an overlay visible, `menuNavKey` receives the key, finds no intent in it and leaves
+    // without consuming it. Without this guard the quick pause would open UNDER the panel the child is in. Escape closes
+    // a panel, not START.
     if (overlays.topVisibleOverlay()) return;
 
-    // O START OUTRA VEZ SAI — a segunda saída do modo que o item 7 do ADR-0044 já dava ao START.
+    // START AGAIN LEAVES — the second way out of the mode that ADR-0044 item 7 already gave START.
     if (inQuickPause.has(seat)) { leaveQuickPause(seat, 'jogo'); e.preventDefault(); return; }
 
-    // GUARDA 2 — O CARTÃO ESTÁ ABERTO. Com ele aberto e uma tecla de «start» que não seja `Enter`,
-    // `menuNavKey` não acha intenção e deixa passar. Fechar o cartão é do «Voltar ao jogo» e do Escape.
+    // GUARD 2 — THE CARD IS OPEN. With it open and a «start» key other than `Enter`, `menuNavKey` finds no intent and
+    // lets it through. Closing the card belongs to «Voltar ao jogo» and to Escape.
     const findPauseCard = $<HTMLElement>(`#vp-pause-${seat}`);
     if (findPauseCard && findPauseCard.hidden === false) return;
 
     enterQuickPause(seat);
-    // 📌 E SÓ AQUI, depois de a tecla ter sido NOSSA de facto. `Enter` é «start» por omissão
-    // (`input/default-bindings`), e sem isto o mesmo carregar pausaria E accionaria o que estivesse focado.
+    // 📌 AND ONLY HERE, once the key was in fact OURS. `Enter` is «start» by default (`input/default-bindings`), and
+    // without this the same press would pause AND activate whatever had focus.
     e.preventDefault();
   }
 
   win.addEventListener('keydown', toggleQuickPauseByStart);
 
   /*
-   * ===================== O SELECT ABRE OS MENUS (ADR-0155) =====================
+   * ===================== SELECT OPENS THE MENUS (ADR-0155) =====================
    *
-   * O cartão de seis itens do ADR-0151. 📏 `select` estava mapeado (`KeyF`, `input/default-bindings`) e até ao
-   * ADR-0151 nenhum módulo o lia; o ADR-0086 guardou-o para «o que é da sessão», e os menus da pausa são isso.
+   * The card of ADR-0151. `select` is mapped (`KeyF`, `input/default-bindings`), and ADR-0086 kept it for «what belongs
+   * to the session» — the pause menus are that.
    *
-   * ⚠️ DA PAUSA RÁPIDA PARA O CARTÃO o jogo NÃO descongela: a barra sai em silêncio (dizer «de volta ao jogo»
-   * com o cartão a abrir seria mentira) e a fase já é `paused` — pedi-la outra vez seria um segundo `paused`
-   * num jogo parado.
+   * ⚠️ FROM THE QUICK PAUSE TO THE CARD the game does NOT unfreeze: the bar is left in silence (saying «back to the game»
+   * with the card opening would be a lie) and the phase is already `paused` — asking for it again would be a second
+   * `paused` in a stopped game.
    */
-  /** Abre o cartão do assento, venha a porta de onde vier — a tecla SELECT ou a pílula do toque. Devolve se abriu. */
+  /** Opens the seat's card, whichever door it comes from — the SELECT key, the ☰ or the touch pill. Returns whether it opened. */
   function openSeatMenus(seat: number): boolean {
     if (overlays.topVisibleOverlay()) return false;
     const findPauseCard = $<HTMLElement>(`#vp-pause-${seat}`);
     if (!findPauseCard || findPauseCard.hidden === false) return false;
     const alreadyStopped = inQuickPause.has(seat);
     if (alreadyStopped) leaveQuickPause(seat, 'cartao');
-    // ⚠️ MOSTRAR VEM PRIMEIRO, e a ordem é a defesa: um jogo sem `setPhase` tem de receber o cartão na mesma.
+    // ⚠️ SHOWING COMES FIRST, and the order is the defence: a game without `setPhase` must get the card all the same.
     pauseControls.show(seat);
     if (!alreadyStopped) changePhase('paused');
     return true;
@@ -2703,9 +2703,9 @@ export function createGame(o: CreateGameOptions): Engine {
   win.addEventListener('keydown', openMenusBySelect);
 
   /*
-   * A SEGUNDA PORTA DOS MENUS: o `action4`, só DENTRO da pausa rápida (errata do ADR-0155). Fora dela o `action4` é
-   * do jogo, e a engine não lhe toca — é o par que impede a porta de roubar um verbo a meio da partida.
-   * 📏 `menuNavKey` não tem intenção para `action4` e, na barra, deixa-o subir sem o consumir: chega aqui.
+   * THE MENUS' SECOND DOOR: `action4`, only INSIDE the quick pause (ADR-0155 erratum). Outside it `action4` is the game's,
+   * and the engine does not touch it — that is the pair that keeps the door from stealing a verb mid-match.
+   * 📏 `menuNavKey` has no intent for `action4` and, on the bar, lets it rise without consuming it: it arrives here.
    */
   function openMenusByAction4(e: KeyboardEvent): void {
     const seat = seatOfPosition(e.code, 'action4');
@@ -2718,19 +2718,14 @@ export function createGame(o: CreateGameOptions): Engine {
   win.addEventListener('keydown', openMenusByAction4);
 
   /*
-   * ===================== O CONTROLE VIRTUAL (ADR-0143, fase 4 do plano) =====================
+   * ===================== THE VIRTUAL CONTROLLER (ADR-0143, plan phase 4) =====================
    *
-   * 🔴 MEDIDO em 2026-09-12: `mountTouchControls`, `initTouch` e `initTouchBindings` tinham testes e ZERO
-   * chamadores em produção — `git grep` achava-os só nos próprios módulos. Numa escola onde o aparelho é um
-   * tablet sem teclado, um jogo arrancado por esta raiz não tinha por onde ser jogado, e nada o dizia.
+   * 🔴 `mountTouchControls`, `initTouch` and `initTouchBindings` are wired HERE: in a school where the device is a tablet
+   * with no keyboard, a game booted by this root has to be playable, and nothing else would call them.
    *
-   * ⚠️ E LIGÁ-LOS ACHOU DOIS DEFEITOS NA JUNÇÃO, que nenhum dos testes separados via: a cruz desenhada tinha
-   * braços `.touch-arm` que a folha não estiliza e que o `touch-bindings` não acende (ele procura `.dpad-up`),
-   * e a pílula START tinha nome falado e nenhum texto. Os dois estão consertados em `input/touch`.
-   *
-   * 📌 O PAD MONTA SEMPRE, com ou sem `preset`: sem acções ele fica só com o START, porque a pausa não é
-   * declinável (ADR-0122) e num tablet sem teclado o START é a única porta para ela. O que falta diz-se em
-   * `problems` (`touchGaps`).
+   * 📌 THE PAD IS DRAWN ONLY WHEN THE CARTRIDGE ASKS FOR IT (`onScreenPad`, ADR-0166): a game played by touching its own
+   * elements needs none. What it lacks is said in `problems` (`touchGaps`); with no `preset` it carries only START and
+   * SELECT, the doors to the pause, which is not declinable (ADR-0122).
    */
   const touchHostEl = o.host.touchHost ?? $('#game-region');
   const touchUsable = !!touchHostEl && typeof (touchHostEl as HTMLElement).appendChild === 'function';
@@ -2742,11 +2737,11 @@ export function createGame(o: CreateGameOptions): Engine {
   const menuWithDpad = (): boolean => !!overlays.topVisibleOverlay() || seat0CardOpen() || inQuickPause.has(0);
   /** A position's key handed to the menus, which read keys — stamped with who produced it (ADR-0109). */
   const keyToMenu = (code: string, origin: TransportName | undefined): void => {
-    // 🔴 A TECLA DO TECLADO JÁ ESTÁ NO MUNDO (ADR-0223). Esta função é o tradutor POSIÇÃO → tecla, e existe para os
-    // transportes que não produzem teclas: o dedo, os olhos, o rosto, as mãos, a voz, a varredura. O teclado produz —
-    // o evento que chegou aqui É a tecla —, logo redespachá-la navegaria o menu DUAS vezes.
-    // 📌 É por estar escrito aqui que o condutor do teclado não precisa de perguntar «há um menu aberto?»: essa
-    // pergunta tem UMA resposta, a do controle, e esta linha é o que a torna verdadeira também para ele.
+    // 🔴 THE KEYBOARD'S KEY IS ALREADY IN THE WORLD (ADR-0223). This function translates POSITION → key, and it exists for
+    // the transports that produce no keys: the finger, the eyes, the face, the hands, the voice, the scan. The keyboard
+    // does — the event that got here IS the key — so dispatching it again would move the menu TWICE.
+    // 📌 Because this is written here, the keyboard conductor need not ask whether a menu is open: that question has ONE
+    // answer, the controller's, and this line is what makes it true for the keyboard too.
     if (!origin || origin === 'teclado') return;
     const eventTarget = $<HTMLElement>('#game-region') ?? doc.body;
     eventTarget.dispatchEvent(stampSource(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origin));
@@ -2767,9 +2762,9 @@ export function createGame(o: CreateGameOptions): Engine {
     isMobile: deviceAvailability.touch,
     viewport: () => ({ w: win.innerWidth, h: win.innerHeight }),
     frontOverlay: overlays.frontOverlay,
-    // O toque é sempre do Jogador 1 (`touch-bindings`), e com o cartão ou um painel aberto a criança toca
-    // DIRECTO nos botões do menu (ADR-0166, which undid ADR-0157's «the pad stays over the menus»). The only two callers
-    // that show the pad — the touch listener below and `refletirPadNosMenus` — already ask `menuAberto()` first.
+    // Touch always belongs to Player 1 (`touch-bindings`), and with the card or a panel open the child touches the menu's
+    // buttons DIRECTLY (ADR-0166, which undid ADR-0157's «the pad stays over the menus»). The only two callers that show
+    // the pad — the touch listener below and `reflectPadInMenus` — already ask `isMenuOpen()` first.
     padAllowed: () => players().length <= 1,
   });
 
@@ -2811,7 +2806,7 @@ export function createGame(o: CreateGameOptions): Engine {
         // The FUNCTION of each slot (ADR-0165): the game's SHORT word, said after the button's name in its accessible
         // name; the face shows the name. `start`/`select` are system positions the engine names itself.
         slotLabel: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select')
-            // só se desenha o que o jogo nomeia (ADR-0162), logo a palavra dele existe sempre
+            // only what the game names is drawn (ADR-0162), so its word always exists
             : (short(padMap[slot] as Action) ?? '')),
         dpad: store.get(store.KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
       },
@@ -2825,10 +2820,10 @@ export function createGame(o: CreateGameOptions): Engine {
       + 'Without it, a child on a keyboardless tablet cannot play, nor reach the pause']);
 
   /**
-   * O START da tela: a PAUSA RÁPIDA do assento 0, como a tecla (ADR-0155) — e sai dela ao segundo toque.
+   * The screen's START: seat 0's QUICK PAUSE, like the key (ADR-0155) — and a second touch leaves it.
    *
-   * ⚠️ O PAD FICA À VISTA, ao contrário do cartão, que o escondia: a pílula START É a saída de quem só tem dedo.
-   * Escondê-la deixava a criança num jogo parado sem porta. Com o cartão aberto, o START fecha-o, como fechava.
+   * ⚠️ THE PAD STAYS IN VIEW on the quick pause: the START pill IS the way out for someone who has only a finger, and
+   * hiding it would leave the child in a stopped game with no door. With the card open, START closes it.
    */
   function togglePauseByTouch(): void {
     if (overlays.topVisibleOverlay()) return;
@@ -2843,12 +2838,9 @@ export function createGame(o: CreateGameOptions): Engine {
     getControls: () => keyboard.controlsState().controls,
     getPlayers: () => players(),
     /*
-     * 🔴 O TOQUE APERTA O CONTROLE VIRTUAL (ADR-0223), e por isso já não recebe `markKey`, `releaseKey`, `emMenu` nem
-     * `teclaDeMenu`: os quatro eram esta mesma decisão escrita uma segunda vez dentro do pad. 📏 O preço de a ter
-     * escrita duas vezes estava medido — esta raiz exclui a origem `toque` da escuta de janela, logo um cartucho que
-     * ouve `onCommand` não respondia ao dedo.
-     * 📌 Setas e não referências directas: o `controleVirtual` nasce mais abaixo, e é a mesma zona morta temporal que o
-     * `getPlayers` já ensinou a este ficheiro.
+     * 🔴 TOUCH PRESSES THE VIRTUAL CONTROLLER (ADR-0223), like every other transport: one decision, not a second copy of
+     * it inside the pad — a copy that, when it existed, left a cartridge listening to `onCommand` deaf to the finger.
+     * 📌 Arrows and not direct references: `controleVirtual` is born further below (the temporal dead zone).
      */
     press: (action, source) => controleVirtual.press(action, source),
     release: (action, source) => controleVirtual.release(action, source),
@@ -2860,17 +2852,13 @@ export function createGame(o: CreateGameOptions): Engine {
     hideTips: () => {},
     togglePause: togglePauseByTouch,
     /*
-     * A PÍLULA SELECT (ADR-0155): os menus pelo toque. Sem ela, quem só tem dedo não chegava a «Sair», ao número de
-     * jogadores nem às configurações — o SELECT era tecla. ⚠️ O PAD ESCONDE-SE ao abrir o cartão, como o START
-     * fazia: por cima do cartão ele taparia os botões que agora são a saída dela («Voltar ao jogo»).
+     * THE SELECT PILL (ADR-0155): the menus by touch. Without it, someone with only a finger could not reach «Sair», the
+     * number of players or the settings — SELECT was a key. ⚠️ THE PAD LEAVES when the card opens (ADR-0166,
+     * `reflectPadInMenus`): over the card it would cover the buttons that are now her way out («Voltar ao jogo»).
      */
-    // O pad FICA à vista com o cartão aberto (ADR-0157): é o direccional dele que anda no cartão, e quem o leva lá é
-    // agora o controle virtual — ele já carimba a origem (ADR-0109), que é o que o «teclado esconde o pad» pergunta;
-    // sem o carimbo o pad sumiria a cada seta que ele próprio entregou.
     openMenus: () => { openSeatMenus(0); },
     getTouchMap: () => touchPad.getTouchMap(),
-    // ✅ O DEFEITO QUE O `TouchBindingsCtx` GUARDAVA MORRE AQUI: no cartucho a linha era `touchMap.start` num
-    // escopo onde `touchMap` não existia, e o START da tela estava quebrado. Esta raiz TEM o mapa.
+    // ✅ This root HAS the map, so the screen's START reads the action it carries.
     getStartAction: () => touchPad.getTouchMap().start,
     getStickTravelPx: () => touchPad.getStickTravelPx(),
     getStickDeadPx: () => touchPad.getStickDeadPx(),
@@ -2887,19 +2875,19 @@ export function createGame(o: CreateGameOptions): Engine {
    * `localeReady()` repaints that did it for the boot alone.
    */
   /**
-   * O 👄, quando existe. Declarado AQUI porque a troca de idioma — logo abaixo — tem de o alcançar, e ele nasce lá em baixo:
-   * é a mesma zona morta temporal que o `getPlayers` e o `lacunasDoPad` já ensinaram a este ficheiro.
+   * The 👄, when it exists. Declared HERE because the language change — just below — must reach it, and it is born further
+   * down: the temporal dead zone again.
    */
   let voiceControl: VoiceControl | null = null;
   /*
-   * 🔴 E O CARTUCHO TAMBÉM PRECISA DE SABER, e antes de 23/09 não tinha por onde (ADR-0225). 📏 Medido no `dist`: trocar a
-   * bandeira levava o `<html lang>`, o rodapé, a barra e os painéis para o idioma novo e deixava o ENUNCIADO do quiz em
-   * português — a moldura seguia, a ATIVIDADE não.
+   * 🔴 AND THE CARTRIDGE NEEDS TO KNOW TOO (ADR-0225): changing the flag took `<html lang>`, the footer, the bar and the
+   * panels to the new language and left the ACTIVITY — the quiz's statement — in the old one. The frame followed; the
+   * activity did not.
    *
-   * 📌 A porta é da engine e não do evento, pela regra que o Dev já escreveu para a leitura e a fala (ADR-0216): «o jogo não
-   * deve precisar saber como isso funciona». Um cartucho que tivesse de assinar `i18n:change` na JANELA teria de conhecer o
-   * nome do evento, o objecto onde ele é disparado e a ordem em que a engine o trata — e alcançaria um global para o fazer,
-   * que é o que o passo 7d do ADR-0221 recusa a um módulo novo.
+   * 📌 The door is the engine's and not the event's, by the rule the Dev wrote for reading and speech (ADR-0216): «o jogo
+   * não deve precisar saber como isso funciona». A cartridge that had to subscribe to `i18n:change` on the WINDOW would
+   * have to know the event's name, the object it is dispatched on and the order in which the engine handles it — and
+   * would reach a global to do it, which ADR-0221 step 7d refuses to a new module.
    */
   const localeListeners: (() => void)[] = [];
   if (typeof win.addEventListener === 'function') {
@@ -2910,31 +2898,31 @@ export function createGame(o: CreateGameOptions): Engine {
       drawPad();
       touchBindings.rewire();
       /*
-       * 🔴 E O QUE A ENGINE OUVE TAMBÉM MUDA (ADR-0225). O que ela DESENHA já seguia desde o item C6; o que ela FALA segue
-       * sozinho (o `tts` lê `bcp47()` a cada fala) e o que ela LÊ também (a cada `listen()`). O reconhecimento de comandos era
-       * o único que escolhia a língua UMA vez — e ficar a ouvir na língua velha é pior do que parar, porque a gramática segue o
-       * menu e as palavras novas iam alimentar o modelo antigo.
+       * 🔴 AND WHAT THE ENGINE HEARS CHANGES TOO (ADR-0225). What it DRAWS follows since study item C6; what it SAYS follows
+       * by itself (`tts` reads `bcp47()` at every utterance) and what it READS too (at every `listen()`). Command
+       * recognition chose its language ONCE — and listening in the old language is worse than stopping, because the
+       * grammar follows the menu and the new words would feed the old model.
        */
       void voiceControl?.languageChanged();
-      // ⚠️ O CARTUCHO POR ÚLTIMO, e de propósito: quando ele redesenha, a barra, a legenda e o pad já estão na língua nova,
-      // logo ele nunca mede uma tela meio traduzida. E um cartucho que rebente não leva a moldura da engine com ele.
-      for (const listener of localeListeners) { try { listener(); } catch (e) { /* o cartucho falhou, a engine segue */ } }
+      // ⚠️ THE CARTRIDGE LAST, on purpose: when it redraws, the bar, the caption and the pad are already in the new language,
+      // so it never measures a half-translated screen. And a cartridge that throws does not take the engine's frame with it.
+      for (const listener of localeListeners) { try { listener(); } catch (e) { /* the cartridge failed; the engine goes on */ } }
     });
   }
 
   /*
-   * ===================== ACESSIBILIDADE MOTORA — o painel da engine (ADR-0151 §2 item 5) =====================
+   * ===================== MOTOR ACCESSIBILITY — the engine's panel (ADR-0151 §2 item 5) =====================
    *
-   * 🔴 O PAINEL ANTIGO NÃO SERVE, e não é por gosto: o `ui/settings-mobility` monta Modo Fácil e as duas alternâncias, e o
-   * ADR-0151 tirou os três deste painel («dificuldade é opção do jogo»; as alternâncias ficam no ☝️). Por isso este é
-   * um painel NOVO (`#motora`), e o antigo continua a servir quem o monta com markup próprio.
+   * 🔴 THE OLD PANEL DOES NOT SERVE, and not by taste: `ui/settings-mobility` mounts Easy Mode and the two toggles, and
+   * ADR-0151 took the three out of this panel («dificuldade é opção do jogo»; the toggles live on the ☝️). So this is a
+   * NEW panel (`#motora`), and the old one still serves whoever mounts it with their own markup.
    *
-   * 📌 NASCE COM UMA LINHA, a primeira da lista do Dev: o TAMANHO DO CONTROLE em quatro passos, um por persona. As
-   * outras linhas da lista (mapear toque, controle e teclado; microphone; webcam) são portas para painéis que a engine
-   * ainda não monta, e uma porta para uma sala que não existe é o botão morto do ADR-0106 §5 — entram com as salas.
+   * 📌 ITS ROWS are the Dev's list: the CONTROLLER SIZE in four steps, one per persona; mapping the keyboard (for 1, 2 and
+   * 3–4 players), the gamepad and the touch pad; waiting between presses; the camera; the microphone. Each is offered
+   * only where it has a subject.
    *
-   * ⚠️ SÓ EXISTE ONDE HÁ PAD: sem hospedeiro de toque não há tamanho para escolher, e a porta do submenu cai sozinha
-   * (`acoesDaEngine.motora` não é definida).
+   * ⚠️ IT EXISTS ONLY WHERE THERE IS A TOUCH HOST: without one there is no pad size to choose, and the submenu's door
+   * falls away by itself (`engineActions.motora` is not defined).
    */
   if (pauseMountPoint && pauseUsable && touchUsable) {
     const mobilityCtx = {
@@ -2946,7 +2934,7 @@ export function createGame(o: CreateGameOptions): Engine {
     let padSteps: HTMLElement | null = null;
     let padHint: HTMLElement | null = null;
     let padSizeRow: HTMLElement | null = null;
-    /** Reflecte as linhas do mapeamento de teclado (definido mais abaixo, com o painel `#ctrl`). */
+    /** Reflects the keyboard-mapping rows (defined further below, with the `#ctrl` panel). */
     let reflectKeyboard = (): void => {};
     let currentPersona = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
     const specDoPad = () => ({
@@ -2962,15 +2950,15 @@ export function createGame(o: CreateGameOptions): Engine {
         resetLabel: t('menu.restoreDefaults'),
         closeLabel: t('pause.pmback'),
       }),
-      // Relido a cada abertura: o tamanho pode ter mudado noutro sítio, e os rótulos seguem o idioma de agora.
+      // Read again at every opening: the size may have changed elsewhere, and the labels follow the language of now.
       render: () => {
         currentPersona = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
         // ADR-0166 + ADR-0106 §5: the pad's size is offered only to a cartridge that has a pad — hidden, not locked, because
         // there is nothing to unlock. Read at each opening: `mount()` may have swapped the cartridge.
         if (padSizeRow) padSizeRow.hidden = !cartridge.onScreenPad;
         if (padSteps) updateSteps(padSteps, specDoPad());
-        // ⚠️ A DICA NO IDIOMA DE AGORA, antes de o rodapé a recolher: escrita no arranque, saía no idioma de recuo
-        // (medido no `dist` com a página em inglês — o rodapé em português).
+        // ⚠️ THE HINT IN THE LANGUAGE OF NOW, before the footer collects it: written at boot, it came out in the fallback
+        // language.
         if (padHint) padHint.textContent = t('motora.pad.dica');
         reflectKeyboard();
       },
@@ -2990,7 +2978,7 @@ export function createGame(o: CreateGameOptions): Engine {
     mobilityPanel.shell.list.appendChild(rowNode);
     padSteps.addEventListener('passo', (ev) => {
       const fresh = nextStep(currentPersona, PERSONAS_DO_PAD.length, (ev as CustomEvent<number>).detail);
-      if (fresh === currentPersona) return; // na ponta não se anuncia um passo que não aconteceu
+      if (fresh === currentPersona) return; // at the end, a step that did not happen is not announced
       currentPersona = fresh;
       touchPad.setPadMm(PERSONAS_DO_PAD[fresh]!.mm);
       updateSteps(padSteps!, specDoPad());
@@ -2999,19 +2987,19 @@ export function createGame(o: CreateGameOptions): Engine {
     engineActions.motora = mobilityPanel.open;
 
     /*
-     * ===================== MAPEAR TECLADO — para 1, para 2 e para 3–4 jogadores (ADR-0151 §2 item 5) =====================
+     * ===================== MAP THE KEYBOARD — for 1, for 2 and for 3–4 players (ADR-0151 §2 item 5) =====================
      *
-     * 🎯 TRÊS LINHAS, UM PAINEL: cada linha abre o `#ctrl` no MODO dela, e o `ui/settings-controls` vê só os esquemas
-     * desse modo (`kbFor` e `getNumPlayers` respondem pelo modo, não pela partida). Uma criança sozinha pode assim
-     * preparar o teclado para quando o irmão se sentar ao lado, sem ter de entrar numa partida de dois.
+     * 🎯 THREE ROWS, ONE PANEL: each row opens `#ctrl` in ITS mode, and `ui/settings-controls` sees only that mode's schemes
+     * (`kbFor` and `getNumPlayers` answer for the mode, not for the match). A child alone can thus prepare the keyboard
+     * for when her brother sits beside her, without having to enter a two-player match.
      *
-     * ⚠️ «3–4» É UM TECLADO SÓ, como o Dev o nomeou: edita-se o esquema de quatro, e os três primeiros assentos do
-     * modo de três acompanham (`kb.p3` é guardado à parte desde a migração do `p34`). Sem isto, a criança remapeava
-     * para «3–4» e, numa partida de três, as teclas antigas voltavam.
+     * ⚠️ «3–4» IS ONE KEYBOARD, as the Dev named it: the four-player scheme is edited, and the first three seats of the
+     * three-player mode follow (`kb.p3` is stored apart since the `p34` migration). Without this, the child remapped for
+     * «3–4» and, in a three-player match, the old keys came back.
      *
-     * ⚠️ E A LINHA «3–4» SÓ EXISTE SEM OMBROS NEM GATILHOS no preset: quatro esquemas num teclado já não têm teclas para
-     * as quatro posições laterais (errata do ADR-0151). A razão do Dev: no xadrez, quatro crianças contra quatro
-     * computadores diferentes — «o modo competitivo deve ser desencorajado».
+     * ⚠️ AND THE «3–4» ROW EXISTS ONLY WITHOUT SHOULDERS OR TRIGGERS in the preset: four schemes on one keyboard have no
+     * keys left for the four side positions (ADR-0151 erratum). The Dev's reason: in chess, four children against four
+     * different computers — «o modo competitivo deve ser desencorajado».
      */
     type KeyboardMode = 1 | 2 | 4;
     let keyboardMode: KeyboardMode = 1;
@@ -3052,7 +3040,7 @@ export function createGame(o: CreateGameOptions): Engine {
       },
     });
     {
-      // O ASSENTO, por passos — só nos modos de mais de um: «◀ Teclado de: Jogador 2 ▶».
+      // THE SEAT, by steps — only in the modes of more than one: «◀ Teclado de: Jogador 2 ▶».
       const seatRow = doc.createElement('div');
       seatRow.className = 'ctrl-row ctrl-row--passos';
       seatSteps = mountSteps(mobilityCtx, seatSpec());
@@ -3068,7 +3056,7 @@ export function createGame(o: CreateGameOptions): Engine {
         srSay(`${t('ctrl.assento')}: ${t('ctrl.jogador', { n: nextValue + 1 })}`);
       });
     }
-    /** O modo de quatro arrasta os três primeiros assentos do modo de três — ver o cabeçalho acima. */
+    /** The four-player mode carries the first three seats of the three-player mode — see the header above. */
     const syncThree = (conf: KBDefaults): void => {
       conf.p3.forEach((left, i) => {
         const de = conf.p4[i];
@@ -3080,7 +3068,7 @@ export function createGame(o: CreateGameOptions): Engine {
       gameActions: actionsToMap,
       store: {
         saveKB: (conf) => { if (keyboardMode === 4) syncThree(conf); saveKB(conf); },
-        // ⚠️ «RESTAURAR» DESTE MODO, e não do teclado inteiro: quem repõe o teclado de dois não apaga o de um.
+        // ⚠️ «RESTORE» FOR THIS MODE, not for the whole keyboard: whoever resets the two-player keyboard does not erase the one-player one.
         resetKB: () => {
           const factory = factoryWithGame();
           if (keyboardMode === 1) kb.solo = factory.solo;
@@ -3099,13 +3087,13 @@ export function createGame(o: CreateGameOptions): Engine {
       assignControls: () => { keyboard.assignControls(); },
       fillExplain: overlays.fillExplain,
     });
-    // A CAPTURA RECEBE A TECLA ANTES DE TUDO O RESTO: em captura a navegação de menu já se afasta, e isto impede que a
-    // tecla gravada suba ainda até ao START, ao SELECT ou ao jogo.
+    // THE CAPTURE GETS THE KEY BEFORE EVERYTHING ELSE: while capturing, the menu navigation already steps aside, and this
+    // keeps the recorded key from rising on to START, SELECT or the game.
     win.addEventListener('keydown', (e: KeyboardEvent) => {
       if (keyboardControls?.isCapturing() && keyboardControls.handleCaptureKeydown(e)) e.stopPropagation();
     }, true);
 
-    // AS TRÊS LINHAS no painel motora, cada uma uma PORTA para o `#ctrl` no seu modo.
+    // THE THREE ROWS in the motor panel, each a DOOR to `#ctrl` in its mode.
     const keyboardRows: { mode: KeyboardMode; row: HTMLElement; strong: HTMLElement; button: HTMLElement }[] = [];
     for (const rowMode of [1, 2, 4] as const) {
       const rowT = doc.createElement('div');
@@ -3127,7 +3115,7 @@ export function createGame(o: CreateGameOptions): Engine {
       mobilityPanel.shell.list.appendChild(rowT);
       keyboardRows.push({ mode: rowMode, row: rowT, strong: strongLabel, button: rowButton });
     }
-    /** Rótulos no idioma de agora, e quem aparece: sem posições nomeadas não há o que mapear; «3–4» sem laterais. */
+    /** Labels in the language of now, and who appears: with no named positions there is nothing to map; «3–4» without sides. */
     const reflectKeyboardRows = (): void => {
       const declaredActions = cartridge.preset ? presetActions(cartridge.preset) : [];
       const hasSides = declaredActions.some((a) => (SIDES as readonly string[]).includes(a));
@@ -3165,7 +3153,7 @@ export function createGame(o: CreateGameOptions): Engine {
       closeOwn: () => closeControl(),
     });
     controlPanel.shell.reset.hidden = true;
-    controlPanel.shell.close.addEventListener('click', closeControl); // `fecharProprio` means this panel wires its own button
+    controlPanel.shell.close.addEventListener('click', closeControl); // `closeOwn` means this panel wires its own button
     const controlSentence = doc.createElement('p');
     controlSentence.id = 'padwiz-prompt';
     controlSentence.setAttribute('aria-live', 'assertive');
@@ -3262,13 +3250,13 @@ export function createGame(o: CreateGameOptions): Engine {
     reflectTouchRow();
 
     /*
-     * 🔴 A LINHA «JEITO DE APERTAR» SAIU DESTE PAINEL (the Dev, 2026-09-21: «Tire a linha de acessibilidade motora»), no mesmo dia em
-     * que entrou. Ela nasceu como «Não precisa segurar» a pedido dele — «falta oferecê-la como opção para teclado e toque» — e, quando
-     * o ☝️ ganhou a terceira posição (ADR-0218), passou a ser o MESMO ciclo em duas superfícies. Ele decidiu que o ícone basta.
+     * 🔴 NO STICKY-KEYS ROW IN THIS PANEL (the Dev: «Tire a linha de acessibilidade motora»): the bar's ☝️ is the one
+     * surface for that cycle (ADR-0218), and two surfaces of one setting was what the row had become.
      *
-     * ⚠️ E COM ELA SAIU O ÚNICO SÍTIO QUE DIZIA O MOTIVO da trava num aparelho que manda um comando de cada vez (ADR-0113 cláusula 3).
-     * Fica honesto porque o ciclo deixou de OFERECER o que estava trancado: onde a aderência é obrigatória, «padrão» não aparece, e não
-     * há o que explicar. A linha «Esperar entre toques» (ADR-0217) fica: é outro ajuste, e ninguém a tirou.
+     * ⚠️ The row was also the only place that said WHY the latch is locked on a device that sends one command at a time
+     * (ADR-0113 clause 3). It stays honest because the cycle does not OFFER what is locked: where the latch is required,
+     * «padrão» does not appear, and there is nothing to explain. The «Esperar entre toques» row (ADR-0217) stays: it is
+     * another setting.
      */
     /*
      * «ESPERAR ENTRE TOQUES» (ADR-0217; GAG Advanced/Motor, issue #182). The row beside the sticky keys, and the other half of
@@ -3421,37 +3409,34 @@ export function createGame(o: CreateGameOptions): Engine {
     if (empathyFilter.keyup(e.code) === 'barrar') block(e);
   }, true);
 
-  // Jogar no teclado ESCONDE o pad — a mesma alternância por modalidade do `input/keydown` do cartucho. Só as
-  // teclas de algum jogador: um atalho do navegador não é a criança a trocar de aparelho.
-  // 🔴 EM CAPTURA (`true`): o `ui/menu-nav` consome a tecla de um menu na captura da janela com `stopPropagation()`, e um
-  // ouvinte de bolha nunca a ouvia — num menu, a criança passava ao teclado e o pad ficava por cima do cartão (medido
-  // pelo Dev). `stopPropagation` não cala outro ouvinte do MESMO nó, logo a ordem de registo não importa.
+  // Playing on the keyboard HIDES the pad — the same per-modality switch `input/keydown` makes. Only some player's keys:
+  // a browser shortcut is not the child changing device.
+  // 🔴 IN CAPTURE (`true`): `ui/menu-nav` consumes a menu's key in the window's capture with `stopPropagation()`, and a
+  // bubbling listener never heard it — in a menu, the child moved to the keyboard and the pad stayed over the card (seen
+  // by the Dev). `stopPropagation` does not silence another listener on the SAME node, so registration order does not matter.
   win.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (sourceOfEvent(e) === 'toque') return; // a tecla que o próprio pad entregou a um menu
+    if (sourceOfEvent(e) === 'toque') return; // the key the pad itself handed to a menu
     if (keyboard.whichPlayer(e.code) >= 0) { touchPad.hideTouchControls(); padBeforeMenu = false; } // on the keyboard now
   }, true);
 
   /*
-   * AS COISAS PESADAS COMEÇAM A DESCER AQUI, e a linha é deliberadamente a ÚLTIMA coisa do arranque.
+   * THE HEAVY FILES START COMING DOWN HERE, and the line is deliberately the LAST thing of the boot.
    *
    * ⚠️ NO `await`. The start does not wait for the heavy files — if it did, a 3G school's first screen would stay blank for minutes
    * and the child would conclude the game does not open. The empty `catch` is the same rule written twice: a network failure here
    * cannot bring down a game that may not even use the voice.
    *
-   * 🔴 E O RELATÓRIO NÃO VAI PARA `problems`, embora a primeira versão o fizesse. Duas razões medidas, e a
-   * primeira é a que importa:
+   * 🔴 AND THE REPORT DOES NOT GO TO `problems`, for two reasons, and the first is the one that matters:
    *
-   *  1. **CHEGA DEPOIS DE O LEITOR SE IR EMBORA.** `problems` é devolvido na linha abaixo, sincronamente; a
-   *     descarga é de fundo, logo TODA linha dela entraria num vector que o consumidor já leu. Quem faz
-   *     `if (motor.problems.length) …` não veria nada, e quem o lesse mais tarde veria uma lista que cresceu
-   *     depois do arranque. Um relatório que chega depois do leitor não é um relatório — é a forma exacta do
-   *     `srSay` a escrever onde não havia `#sr-status`.
-   *  2. **AFOGAVA O QUE SE PODE RESOLVER.** Sem rede — uma escola sem rede, que é o alvo e não a excepção —
-   *     são OITO falhas a empurrar para uma lista que o ADR-0106 §2 construiu para dizer o que FALTA NO
-   *     HOSPEDEIRO. A criança perde a barra de acessibilidade e a linha que o diz fica em nono lugar.
+   *  1. **IT ARRIVES AFTER THE READER HAS GONE.** `problems` is returned synchronously; the download runs in the background,
+   *     so EVERY line of it would land in an array the consumer has already read. Whoever does `if (motor.problems.length) …`
+   *     would see nothing, and whoever read it later would see a list that grew after boot.
+   *  2. **IT WOULD DROWN WHAT CAN BE FIXED.** Without a network — a school without one is the target, not the exception —
+   *     every file is a failure pushed into a list ADR-0106 §2 built to say what the HOST LACKS. The child loses the
+   *     accessibility bar and the line that says so sits under all of them.
    *
-   * 📌 O canal certo é o que a própria função já tem: `aoProgredir`, entregue a quem chama. Um consumidor que
-   * queira mostrar «faltam N MB» ou «a voz não desceu» tem por onde; a engine não inventa uma superfície.
+   * 📌 The right channel is the one the function already has: `onHeavyProgress`, handed to whoever calls. A consumer who
+   * wants to show «N MB left» or «the voice did not come down» has a way; the engine invents no surface.
    */
   if (o.downloadHeavy !== false) {
     // ⚠️ THE READING MODEL IS ASKED FOR BY LANGUAGE and not by a yes: the three together are 850 MiB, and the child is reading in
@@ -3463,38 +3448,35 @@ export function createGame(o: CreateGameOptions): Engine {
       only: heavyAtBoot({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47() }),
       onProgress: o.onHeavyProgress,
     })
-      .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });
+      .catch(() => { /* a background download brings down no boot */ });
   }
 
   /*
-   * ⚠️ `declaration` E `declines` SÃO GETTERS; o resto não é, e a assimetria é a decisão.
+   * ⚠️ `declaration`, `declines`, `problems` AND `reach` ARE GETTERS; the rest are not, and the asymmetry is the decision.
    *
-   * Os dois pertencem à metade do JOGO (ADR-0139 §1), logo têm de seguir o cartucho que estiver montado —
-   * um campo fixo aqui devolveria, depois de um `mount()`, a declaração do cartucho que arrancou primeiro.
-   * `pause`, `tts`, `overlays`, `nav`, `keyboard` e o sonar são da PÁGINA e existem uma vez só, que é a
-   * decisão inteira do ADR-0117 §2 — e é por isso que eles ficam como estão.
-   *
-   * 📌 `problems` e `reach` ainda são fixos, e ainda descrevem o arranque. É a dívida que o ADR-0142
-   * nomeia e que o `mount()` fecha.
+   * The first two belong to the GAME's half (ADR-0139 §1), and the last two are derived from it, so all four must follow
+   * the mounted cartridge — a plain field here would return, after a `mount()`, what the cartridge that booted first had.
+   * `pause`, `tts`, `overlays`, `nav`, `keyboard` and the sonar belong to the PAGE and exist once, which is the whole
+   * decision of ADR-0117 §2.
    */
   /*
-   * A PILHA DE CENAS É DA RAIZ, e não do retorno, porque o `desmontar()` tem de a alcançar. Nasce uma vez
-   * (ADR-0117 §2: a página tem uma) e é esvaziada entre cartuchos, nunca substituída.
+   * THE SCENE STACK BELONGS TO THE ROOT, and not to the return value, because `unmount()` must reach it. Born once
+   * (ADR-0117 §2: the page has one) and emptied between cartridges, never replaced.
    */
   const rootScenes = createSceneStack();
 
-  // ⚠️ SEM PADRÃO `{}` desde o ADR-0153: os ganchos carregam a resposta obrigatória às acomodações, e um padrão vazio
-  // seria o cartucho que não respondeu — o arranque recusá-lo-ia de qualquer forma, com uma mensagem pior.
+  // ⚠️ NO `{}` DEFAULT since ADR-0153: the hooks carry the required answer to the accommodations, and an empty default
+  // would be the cartridge that did not answer — the boot would refuse it anyway, with a worse message.
   function mountAll(declaration: GameDeclaration, hooks: CartridgeHooks): void {
-    // ⚠️ LANÇA, NÃO DIAGNOSTICA — a mesma regra do arranque, e por isso a mesma frase. Uma declaração
-    // malformada é pré-condição: `problems` é para lacunas com que se consegue jogar, e isto não é uma.
+    // ⚠️ IT THROWS, IT DOES NOT DIAGNOSE — the boot's rule, and so the boot's sentence. A malformed declaration is a
+    // precondition: `problems` is for gaps one can still play with, and this is not one.
     const malformed = conformanceProblems(declaration);
     if (malformed.length) {
       refuseDeclaration('mount', malformed);
     }
-    // ⚠️ E O `mount()` RECUSA PELA MESMA REGRA, antes de escrever em `cartucho`. `CartridgeHooks` é
-    // `Omit<MetadeDoJogo, 'declaration'>`, logo carrega `preset` — um segundo cartucho podia tomar o «start»
-    // que o primeiro respeitou, e a raiz ficava com a pausa inalcançável a meio da sessão.
+    // ⚠️ AND `mount()` REFUSES BY THE SAME RULES, before writing to `cartridge`. `CartridgeHooks` is
+    // `Omit<GameHalf, 'declaration'>`, so it carries `preset` — a second cartridge could take the «start» the first one
+    // respected, and the root would be left with the pause unreachable mid-session.
     refuseIfItClaimsStart('mount', hooks.preset);
     refuseIfNoAnswer('mount', hooks.accommodations);
     refuseIfGenreRefused('mount', hooks.genre);
@@ -3507,7 +3489,7 @@ export function createGame(o: CreateGameOptions): Engine {
     redrawGameOptions(); // the rows are the new cartridge's, drawn or cleared before its door is weighed
     pauseIcons.reflectPauseIcons(); // the bar follows the new cartridge: the hourglass exists only where time runs by itself
     currentReach = deriveReach();
-    // O pad é da FORMA do preset, logo muda com o cartucho; os ouvintes da janela ficam (`rewire`, e não `attach`).
+    // The pad has the SHAPE of the preset, so it changes with the cartridge; the window listeners stay (`rewire`, not `attach`).
     drawPad();
     touchBindings.rewire();
   }
@@ -3606,9 +3588,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
             readingThread = createReadingInWorker({
               base: doc.baseURI,
               language,
-              // 📌 A FRASE É ESCRITA AQUI e o módulo só entrega o MOTIVO: uma thread que não abre quando ninguém está à
-              // espera da resposta não tinha como ser dita a lado nenhum (ADR-0169), e quem sabe o que a criança perde
-              // é o canal de diagnóstico, não o protocolo de uma thread.
+              // 📌 THE SENTENCE IS WRITTEN HERE and the module hands over only the REASON: a thread that fails to open when
+              // nobody is waiting for the answer had nowhere to be said (ADR-0169), and whoever knows what the child loses
+              // is the diagnostic channel, not a thread's protocol.
               report: (reason) => {
                 const line = `reading: the transcription thread could not open — ${reason}; a child who reads aloud `
                   + 'gets no answer, and nothing else in the page will say so — check that the reading model for this '
@@ -3711,34 +3693,31 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   if (state.switchScan) startScan();
   const controleVirtual = createVirtualController({
     scheme: (i) => keyboard.kbFor(i), menuOpen: menuWithDpad,
-    // ⚠️ `markKeyFrom` E NÃO `markKey` CRU: uma tecla que chega SEM origem — que é todo evento de teclado de verdade —
-    // tem de APAGAR quem a segurou da última vez em vez de a herdar (ADR-0109). A escolha entre as duas portas vive
-    // em `input/state`, onde o `input/keydown` já fazia a mesma.
+    // ⚠️ `markKeyFrom` AND NOT RAW `markKey`: a key that arrives WITHOUT a source — which is every real keyboard event —
+    // must ERASE whoever held it last instead of inheriting them (ADR-0109). The choice between the two doors lives in
+    // `input/state`.
     holdKey: markKeyFrom,
     releaseKey: releaseKey, menuKey: keyToMenu, deliver: deliverCommand,
   });
   /*
-   * 🔴 O CONDUTOR DO TECLADO, E SÓ ISSO (ADR-0223). Esta escuta ERA a segunda porta ao cartucho: resolvia a acção e
-   * entregava o comando ela própria. Agora resolve a acção e APERTA o controle virtual, como os outros cinco
-   * transportes — e depois disto há UM `deliver`, chamado de um sítio.
+   * 🔴 THE KEYBOARD CONDUCTOR, AND ONLY THAT (ADR-0223). It resolves the action and PRESSES the virtual controller, like the
+   * other transports — so there is ONE `deliver`, called from one place.
    *
-   * 📏 O que a mudança conserta, e estava medido antes de ser escrita (ADR-0223, contexto):
-   *   · com um menu aberto esta porta entregava o `keyup` e a outra não entregava nada — agora a soltura só é
-   *     entregue para uma pressão que o jogo OUVIU, que é a memória de `held`;
-   *   · uma pressão engolida por um menu seguida de soltura entregava uma soltura sem pressão — já não;
-   *   · e a lista de exclusão enumerava quatro transportes, o que a deixava a envelhecer com a lista: a voz e a
-   *     varredura entraram depois e nunca lá foram postas. Agora a pergunta é a INVERSA e não envelhece — o que não
-   *     é teclado não é deste condutor.
+   * 📏 What that guarantees:
+   *   · with a menu open, a release is delivered only for a press the game HEARD — the controller's `held` memory;
+   *   · a press swallowed by a menu followed by a release does not deliver a release without a press;
+   *   · the question is asked the INVERSE way and does not age: what is not the keyboard is not this conductor's. A
+   *     list of transports to exclude would age with the list, as it did when voice and scan arrived.
    *
-   * 📌 E ele já não pergunta «há um menu aberto?». Essa pergunta tem UMA resposta, a do controle; o que a torna
-   * verdadeira para o teclado é o `teclaAoMenu` acima, que não redespacha uma tecla que já está no mundo.
+   * 📌 And it does not ask whether a menu is open. That question has ONE answer, the controller's; what makes it true
+   * for the keyboard is `keyToMenu` above, which does not redispatch a key that is already in the world.
    */
   for (const kind of ['keydown', 'keyup'] as const) {
     win.addEventListener(kind, (e: KeyboardEvent) => {
       if (e.repeat || !cartridge.onCommand) return;
       const source = sourceOfEvent(e);
-      // ⚠️ SEM CARIMBO É O TECLADO DE VERDADE: um evento que a criança produziu não traz expando nenhum. O único
-      // carimbo que pertence a este condutor é `teclado`, e ele existe para a soltura que o filtro motor sintetiza.
+      // ⚠️ NO STAMP IS THE REAL KEYBOARD: an event the child produced carries no expando. The only stamp that belongs to
+      // this conductor is `teclado`, and it exists for the release the motor filter synthesises.
       if (source && source !== 'teclado') return;
       const seat = keyboard.whichPlayer(e.code);
       if (seat < 0) return;
@@ -3763,49 +3742,47 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   }));
 
   /*
-   * 🔴 O CONTROLE, MONTADO PELA ENGINE (ADR-0224). Era o único dos seis transportes montado de FORA — quem chamava
-   * `initGamepad` era o cartucho —, e foi isso que quase deixou a porta única (ADR-0223) sem lhe chegar: o controle
-   * virtual é um local desta função. Um comando físico funciona porque a criança ligou um, não porque um jogo se
-   * lembrou de pedir.
+   * 🔴 THE GAMEPAD, MOUNTED BY THE ENGINE (ADR-0224), like every other transport: the virtual controller is a local of
+   * this function, and the one door (ADR-0223) has to reach it. A physical gamepad works because the child plugged one
+   * in, not because a game remembered to ask.
    *
-   * 📏 Das 25 portas do `GamepadCtx`, VINTE E TRÊS são respondidas aqui com o que esta raiz já tem. As que sobram são
-   * o mundo do cartucho e chegam num campo só (`GamepadGameHooks`), com **cada ausência a ter um significado escrito**
-   * — nunca adivinhado. Um cartucho que não declara nada tem um controle a funcionar.
+   * 📌 Almost every port of `GamepadCtx` is answered here with what this root already has. The rest are the cartridge's
+   * world and arrive in one field (`GamepadGameHooks`), with **each absence having a written meaning** — never guessed.
+   * A cartridge that declares nothing has a working gamepad.
    */
-  // 📌 As ausências resolvem-se em `input/gamepad`, numa tabela: o que uma ausência SIGNIFICA é decisão, e uma raiz
-  // de composição carrega fiação (ADR-0221, errata). Só a de `worldRunning` é daqui, porque só quem monta sabe que
-  // menus tem abertos.
+  // 📌 The absences are resolved in `input/gamepad`, in a table: what an absence MEANS is a decision, and a composition
+  // root carries wiring (ADR-0221, erratum). Only `worldRunning`'s is from here, because only whoever mounts knows which
+  // menus it has open.
   const gameHooks = padGameAnswers(cartridge.gamepad, () => !menuWithDpad());
   const gamepad = initGamepad({
     $,
     getGamepads: () => win.navigator?.getGamepads?.() ?? [],
-    // A PALAVRA DO JOGO para uma posição (a fronteira do corte de 2026-09-06): a engine sabe que a posição existe, só
-    // o cartucho sabe como ela se chama — e ele já a declarou no `preset` para existir.
+    // THE GAME'S WORD for a position: the engine knows the position exists, only the cartridge knows what it is called —
+    // and it already declared that in the `preset` to exist.
     actionLabel: (action) => (cartridge.preset ? labellerFrom(cartridge.preset)(action as Action) : null),
     srSay, srAlert,
     frontOverlay: overlays.frontOverlay,
-    // ⚠️ «MENU DE PAUSA» AQUI É TODO MENU COM DIRECIONAL, e não só o cartão: o `steerPause` do transporte já trata o
-    // diálogo partilhado antes do cartão, que é o painel aberto por cima. A mesma pergunta que o controle virtual faz.
+    // ⚠️ «PAUSE MENU» HERE IS EVERY MENU WITH A DIRECTIONAL, not only the card: the transport's `steerPause` already
+    // handles the shared dialog before the card, which is the panel open on top. The same question the controller asks.
     pauseMenu: menuWithDpad,
     worldRunning: gameHooks.worldRunning,
-    // O START do comando é a PAUSA RÁPIDA (ADR-0155), como o da tela; e a saída reusa a decisão já escrita para o dedo,
-    // que sabe distinguir sair da pausa rápida de fechar o cartão.
+    // The gamepad's START is the QUICK PAUSE (ADR-0155), like the screen's; and the way out reuses the decision already
+    // written for the finger, which knows leaving the quick pause from closing the card.
     pause: () => { enterQuickPause(0); },
     resume: togglePauseByTouch,
     isAttractActive: gameHooks.attractActive,
     stopAttract: gameHooks.stopAttract,
-    // Um botão FÍSICO faz sumir o pad da tela — a mesma alternância por modalidade do teclado.
+    // A PHYSICAL button makes the on-screen pad vanish — the same per-modality switch as the keyboard.
     isTouchMode: () => { const p = $<HTMLElement>('#touch-controls'); return !!p && !p.hidden; },
     hideTouchControls: () => { touchPad.hideTouchControls(); padBeforeMenu = false; },
-    // ⚠️ SEMEADO A CADA LEITURA e não uma vez: o cartucho repovoa a lista a cada recomeço, e um assento semeado só no
-    // arranque deixaria os jogadores novos sem `pad` — invisíveis para o transporte, sem erro em lado nenhum.
+    // ⚠️ SEEDED AT EVERY READ and not once: the cartridge repopulates the list at every restart, and a seat seeded only at
+    // boot would leave the new players without a `pad` — invisible to the transport, with no error anywhere.
     getPlayers: () => seatEveryPlayer(players()),
     getNumPlayers: () => players().length,
     navTitle: gameHooks.navTitle,
     onBar: isOnBar,
-    // ✅ E A METADE QUE FICAVA POR LIGAR NA BARRA LIGA-SE AQUI: o `navBar` do `ui/menu-nav` recebe `(i, k)` e nunca o
-    // terceiro argumento, que é a borda do START — a SEGUNDA saída do modo (ADR-0044 item 7). Ela chegava por uma rota
-    // do cartucho que esta raiz não montava; agora a raiz monta o comando, e ela chega por aqui.
+    // ✅ THE BAR'S SECOND WAY OUT: `ui/menu-nav` calls `navBar` with `(i, k)` and never the third argument, the START edge —
+    // the SECOND way out of the mode (ADR-0044 item 7). With the gamepad mounted by the root, it arrives here.
     navBar,
     sharedDialogOpen: nav.sharedDialogOpen,
     navDialog: nav.navDialog,
@@ -3824,21 +3801,21 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     wizardTick: gameHooks.wizardTick,
   });
   /*
-   * E A ENGINE PASSA A SONDAR, porque quem monta sonda. ⚠️ O laço do jogo é do CARTUCHO (`core/loop.startLoop` é
-   * chamado por ele), logo a raiz não tem onde pendurar um quadro — abre o próprio, como já faz para a varredura e
-   * para a câmera. Um comando lido a cada quadro é o preço escrito na consequência negativa do ADR-0224.
+   * AND THE ENGINE POLLS, because whoever mounts polls. ⚠️ The game loop is the CARTRIDGE's (`core/loop.startLoop` is
+   * called by it), so the root has nowhere to hang a frame — it opens its own, as it already does for the scan and the
+   * camera. A gamepad read every frame is the price written in ADR-0224's negative consequence.
    */
   let padFrameHandle = 0;
   const anyPadConnected = (): boolean => (win.navigator?.getGamepads?.() ?? []).some(Boolean);
   const pollPad = (): void => { gamepad.pollPads(); padFrameHandle = win.requestAnimationFrame(pollPad); };
   const stopPollingPad = (): void => { if (padFrameHandle) win.cancelAnimationFrame(padFrameHandle); padFrameHandle = 0; };
   /*
-   * ⚠️ O LAÇO SÓ EXISTE ENQUANTO HÁ UM COMANDO LIGADO, e isto é o pilar 1 a decidir: um `requestAnimationFrame` que
-   * nunca dorme custa bateria no Chromebook de escola, e a esmagadora maioria das máquinas nunca verá um controle.
-   * 📌 `gamepadconnected` é o evento que a própria especificação exige que chegue antes de o pad aparecer na lista, e
-   * a consulta ao arranque cobre a raiz que nasce com um já ligado (um `mount()` de outro cartucho, por exemplo).
-   * 📌 Um hospedeiro SEM quadros — o projecto node é um — é capacidade do ambiente e cala-se (ADR-0169): sem quadros
-   * não há jogo a andar para o comando conduzir.
+   * ⚠️ THE LOOP EXISTS ONLY WHILE A GAMEPAD IS CONNECTED, and that is pillar 1 deciding: a `requestAnimationFrame` that
+   * never sleeps costs battery on a school Chromebook, and the vast majority of machines will never see a gamepad.
+   * 📌 `gamepadconnected` is the event the specification requires to arrive before the pad appears in the list, and the
+   * query at boot covers the root born with one already connected (another cartridge's `mount()`, for example).
+   * 📌 A host WITHOUT frames — the node project is one — is a capability of the environment and stays quiet (ADR-0169):
+   * with no frames there is no game running for the gamepad to drive.
    */
   const startPollingPad = (): void => { if (padFrameHandle || typeof win.requestAnimationFrame !== 'function') return; padFrameHandle = win.requestAnimationFrame(pollPad); };
   win.addEventListener('gamepadconnected', startPollingPad);
@@ -3899,8 +3876,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     void voiceControl.apply(state.voiceControl);
   }
   /*
-   * O AMOSTRADOR DE FLASHES MORA EM `platform/flash-sampler` (ADR-0221, issue #203), e o que fica aqui é o que só a raiz sabe:
-   * qual é o canvas do mundo DESTE cartucho, e para onde vai uma falha. 📏 Eram 53 linhas e 12 ramos nesta função.
+  /*
+   * THE FLASH SAMPLER LIVES IN `platform/flash-sampler` (ADR-0221, issue #203); what stays here is what only the root
+   * knows: which is THIS cartridge's world canvas, and where a failure goes.
    */
   const sampleWorldFlashes = (ms: number): Promise<FlashMeasurement> => sampleFlashes({
     canvas: () => {
@@ -3922,15 +3900,15 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     hudMounted?.remove();
     hudMounted = null;
     reserveBarBand();
-    // ⚠️ `pop()` E NÃO UM `clear()`: cada `exit()` é a limpeza de DOM daquela cena, e saltá-la deixaria na
-    // página o que o cartucho anterior desenhou. O laço tem fim porque `pop()` devolve `null` na pilha vazia.
-    while (rootScenes.pop()) { /* o `exit()` de cada cena É o teardown dela */ }
+    // ⚠️ `pop()` AND NOT A `clear()`: each `exit()` is that scene's DOM cleanup, and skipping it would leave on the page
+    // what the previous cartridge drew. The loop ends because `pop()` returns `null` on an empty stack.
+    while (rootScenes.pop()) { /* each scene's `exit()` IS its teardown */ }
   }
 
   function dispose(): void {
     unmountAll();
-    // 📌 O laço de sondagem do comando é da RAIZ desde o ADR-0224, logo morre com ela: um `requestAnimationFrame` que
-    // sobrevive a `dispose()` lê a Gamepad API para sempre, numa raiz que já não tem jogadores (ADR-0220).
+    // 📌 The gamepad's polling loop belongs to the ROOT since ADR-0224, so it dies with it: a `requestAnimationFrame` that
+    // survives `dispose()` reads the Gamepad API forever, in a root that has no players any more (ADR-0220).
     stopPollingPad();
     listeners.releaseAll();
   }
