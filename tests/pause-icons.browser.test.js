@@ -241,9 +241,12 @@ describe('buildScreenPause — a árvore construída', () => {
     }
   });
 
-  it('🔴 [Right] «Accessibility», where a game lists it, puts the cursor on the quick bar', () => {
-    const { api, sp } = mount(0, { pmButtons: [...PM_BTNS, { act: 'acessibilidade', lbl: '♿ Acessibilidade' }] });
+  it('🔴 [Right] «Accessibility», where a game lists it, closes the card and puts the cursor on the quick bar', () => {
+    // Both halves: entering the bar no longer resumes by itself (ADR-0155), so this item resumes explicitly — without it
+    // the child would be on the bar with the card still open over the game.
+    const { api, sp, state } = mount(0, { pmButtons: [...PM_BTNS, { act: 'acessibilidade', lbl: '♿ Acessibilidade' }] });
     sp.querySelector('.pm-btn[data-act="acessibilidade"]').click();
+    expect(state.ran, 'the card stayed open').toContain('resume');
     expect(api.naBarraDe(0)).toBe(true);
   });
 
@@ -613,6 +616,19 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     api.navBar(0, { left: true });
     api.navBar(0, { left: true });
     expect(icones[icones.length - 1].classList.contains('pi-sel'), 'antes do primeiro está o último').toBe(true);
+  });
+
+  it('🔴 [Right] down and up walk the bar too, and every step starts from where the cursor IS', () => {
+    // Found by re-probing the cut (2026-09-24): the ring case walks right once and left twice, which a walk from the
+    // FIRST icon also passes, and no case pressed down or up — the directions a child on a d-pad reaches first.
+    const { api, bar } = mount();
+    api.entrarNaBarra(0);
+    const icones = [...bar.querySelectorAll('.pi-btn')];
+    api.navBar(0, { down: true });
+    api.navBar(0, { down: true });
+    expect(icones[2].classList.contains('pi-sel'), 'two steps down did not reach the third icon').toBe(true);
+    api.navBar(0, { up: true });
+    expect(icones[1].classList.contains('pi-sel'), 'a step up did not go back one').toBe(true);
   });
 
   it('🔴 [Boundary] a bar that EMPTIES while the child is on it: a step does nothing and throws nothing', () => {
