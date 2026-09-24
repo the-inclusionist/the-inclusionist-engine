@@ -91,9 +91,8 @@ describe('ui/settings-controls', () => {
     //
     // ⚠️ HONESTIDADE SOBRE O QUE ESTE CASO PRENDE, medido por sonda em 22/09: há DOIS guardas neste caminho —
     // o `isAction` e a falta de PALAVRA para uma acção que o jogo não declara — e apagar qualquer um deles
-    // sozinho ainda passa aqui. Ele prende o COMPORTAMENTO, não um guarda específico, e isso é o que se pode
-    // afirmar: a mutação do `isAction` sozinha é EQUIVALENTE hoje. Ela deixa de ser no dia em que uma posição
-    // fora do esquema tiver palavra — e é aí que este caso passa a segurar o primeiro guarda sozinho.
+    // sozinho ainda passa aqui. Ele prende o COMPORTAMENTO, não um guarda específico; cada guarda sozinho tem
+    // o seu caso no bloco da sonda de 23/09, no fim deste ficheiro.
     const ctx = buildCtx();
     const api = initSettingsControls(ctx);
     api.render(0);
@@ -641,8 +640,93 @@ describe('ui/settings-controls — o que o leitor de tela ouve e a palavra DESTE
 //     quem nao tem ouve o id. E o par de casos a funcionar como par — um so nao apanharia a inversao.
 //   · a frase generica a ficar VAZIA → reprova o caso novo pela assercao do `toBeTruthy`. Recusar em silencio
 //     e o defeito GEMEO de dizer `action2`, e sem essa linha o gate premiaria calar o anuncio.
-//   · ⚠️ NAO MUTADA, e declarado em vez de escondido: `if (!palavra) return;` no inicio da captura. Ela e
-//     hoje INALCANCAVEL — o `render` so emite linhas de `acoesDoJogo()`, logo `capture.action` tem sempre
-//     palavra —, entao qualquer mutacao dela e EQUIVALENTE. Fica como guarda para quem mudar a origem das
-//     linhas, e o comentario no codigo diz isso; um caso que a prendesse teria de renderizar uma linha que a
-//     engine nao consegue produzir.
+//   · `if (!palavra) return;` no inicio da captura foi declarada aqui INALCANCAVEL, e nao e: o valor vem de
+//     um ATRIBUTO do DOM, e o caso da posicao inventada ja o edita. Uma posicao VALIDA que o jogo nao nomeia
+//     chega-lhe pelo mesmo caminho — o caso proprio esta no bloco abaixo.
+
+// ============================== o que a sonda de 23/09 achou cego no `render` ==============================
+// `scratchpad/sonda-ctrl.py`: vinte e duas decisoes do `render` e do clique desligadas uma a uma, e ONZE ficaram
+// verdes. Os casos abaixo prendem nove. As outras duas estao declaradas no fim do bloco.
+describe('ui/settings-controls — o que a sonda achou sem caso (23/09)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="ctrl-players"></div><div id="ctrl-list"></div><button id="ctrl-reset"></button>';
+  });
+
+  it('🔴 [Boundary] um jogador que ja nao existe volta ao PRIMEIRO — nunca um controle que ninguem segura', () => {
+    // O painel lembra o ultimo jogador aberto; se o jogo passar de quatro assentos para dois, esse numero fica
+    // fora. Sem o recuo, a lista e o nome acessivel falariam de um Jogador 6 que nao esta a jogar.
+    const ctx = buildCtx();
+    initSettingsControls(ctx).render(5);
+    expect($('#ctrl-list').innerHTML).toContain('<kbd>A</kbd>');
+    const botao = $('#ctrl-list').querySelector('button[data-act]');
+    expect(botao.getAttribute('aria-label')).toContain('Jogador 1');
+  });
+
+  it('🔴 [Right] a linha «editando o seu controle» deixa de estar ESCONDIDA quando a lista se desenha', () => {
+    // O caso irmao acima parte de uma linha ja visivel, e por isso apagar o `hidden = false` passava. Uma
+    // pagina que a traz escondida ate o painel abrir e o caso que o codigo existe para servir.
+    document.body.innerHTML = '<div id="ctrl-players" hidden></div><div id="ctrl-list"></div>';
+    initSettingsControls(buildCtx()).render(0);
+    expect($('#ctrl-players').hidden).toBe(false);
+  });
+
+  it('🔴 [Right] a frase do modo diz-se INTEIRA — antes, o modo e depois — e com um jogador diz «1 jogador»', () => {
+    // A frase e partida no marcador `{modo}` para o modo ir num `<strong>` sem o dicionario carregar markup.
+    // Nenhum caso lia a frase inteira, logo cada pedaco podia sumir; e «1 jogadores» contem «1 jogador».
+    initSettingsControls(buildCtx({ getNumPlayers: () => 1 })).render(0);
+    expect($('#ctrl-players').textContent).toBe('Editando o seu controle — modo 1 jogador.');
+    initSettingsControls(buildCtx()).render(0);
+    expect($('#ctrl-players').textContent).toBe('Editando o seu controle — modo 2 jogadores.');
+  });
+
+  it('🔴 [Boundary] uma posicao que o JOGO declara mas o esquema nao conhece nao inicia captura', () => {
+    // O outro lado do caso da posicao inventada: aqui a posicao tem PALAVRA, logo o unico guarda no caminho e o
+    // `isAction`. Sem ele, a tecla nova seria gravada numa chave que transporte nenhum le.
+    const ctx = buildCtx();
+    ctx.acoesDoJogo = () => [{ acao: 'action99', rotulo: 'Voar' }];
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    $('#ctrl-list').querySelector('button[data-act="action99"]').click();
+    expect(api.isCapturing(), 'a captura comecou sobre uma posicao fora do esquema').toBe(false);
+    expect(ctx.alerted).toHaveLength(0);
+  });
+
+  it('🔴 [Boundary] uma posicao VALIDA que o jogo nao nomeia nao inicia captura — sem palavra, nao se pergunta', () => {
+    // E a regra do `labellerFrom` onde ela e visivel: um pedido sem sujeito seria «Pressione a nova tecla para
+    // undefined». Chega-se aqui pelo mesmo caminho do caso da posicao inventada — um atributo do DOM.
+    const ctx = buildCtx();
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    const botao = $('#ctrl-list').querySelector('button[data-act]');
+    botao.dataset.act = 'leftShoulder';
+    botao.click();
+    expect(api.isCapturing(), 'a captura comecou sobre uma posicao que o jogo nao nomeia').toBe(false);
+    expect(ctx.alerted).toHaveLength(0);
+  });
+
+  it('🔴 [Right] a prosa volta ao rodape do cartao QUE TEM a lista, a cada desenho (CLAUDE.md §4, #109)', () => {
+    document.body.innerHTML = '<div class="overlay__card" id="cartao"><div id="ctrl-players"></div><div id="ctrl-list"></div></div>';
+    const chamados = [];
+    const api = initSettingsControls(buildCtx({ fillExplain: (card) => chamados.push(card) }));
+    api.render(0);
+    api.render(1);
+    expect(chamados).toEqual([$('#cartao'), $('#cartao')]);
+  });
+
+  it('🔴 [Right] cancelar a captura redesenha o jogador que estava ABERTO, e nao o primeiro', () => {
+    // Quem remapeia o Jogador 2 e desiste com Esc tem de continuar a ver as teclas dele.
+    const ctx = buildCtx();
+    const api = initSettingsControls(ctx);
+    api.render(1);
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
+    api.handleCaptureKeydown({ code: 'Escape', preventDefault() {} });
+    expect($('#ctrl-list').innerHTML).toContain('←');
+    expect($('#ctrl-list').querySelector('button[data-act]').getAttribute('aria-label')).toContain('Jogador 2');
+  });
+
+  // DECLARADAS, e nao presas:
+  //   · o `isAction` do laco que marca «saiu do padrao» e EQUIVALENTE: uma posicao fora do esquema nao tem
+  //     tecla nem no esquema de agora nem no de fabrica, logo compara igual e nao se marca de qualquer forma.
+  //   · o campo `player` da captura e INERTE: e escrito e nunca lido (a captura escreve no `mapRef` e o
+  //     redesenho usa o ultimo jogador aberto). Sai no corte.
+});
