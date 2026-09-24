@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A ORIGEM DA TECLA NÃO SE PERDE À PORTA — a metade da ARESTA do ADR-0109, e o crivo que ela deve.
+// THE KEY'S SOURCE IS NOT LOST AT THE DOOR — the EDGE half of ADR-0109, and the sieve it owes.
 //
-// ========================= A ERASÃO QUE ISTO EXISTE PARA ACABAR =========================
-// A issue #114 §C ficou por construir dois meses por uma razão medida: `input/state.keys` é um `Set<string>`
-// de CÓDIGOS, o toque escreve lá dentro e a webcam despacha `KeyboardEvent` sintético — quando o `held()`
-// responde, já não há como saber QUEM carregou. A pergunta que a alternância faz («este toque veio de um
-// aparelho com alternância?») tinha a resposta deitada fora antes de ser feita.
+// ========================= THE ERASURE THIS EXISTS TO END =========================
+// Issue #114 §C stayed unbuilt for two months for a measured reason: `input/state.keys` is a `Set<string>` of CODES,
+// several transports wrote into it, and a synthetic `KeyboardEvent` looked like any other — by the time `held()`
+// answered, there was no way to know WHO pressed. The question the latch asks («did this press come from a device with
+// the latch?») had its answer thrown away before being asked.
 //
-// ⚠️ E O CRIVO É INVENTÁRIO, não busca por palavra: «isto perdeu a origem» não se grepa. O que se congela é
-// a lista de quem escreve no conjunto SEM passar pelo par — e cada entrada diz que transporte aquele módulo
-// vai carimbar quando migrar. É essa frase, escrita à mão, que impede um escritor novo de entrar calado.
+// ⚠️ AND THE SIEVE IS AN INVENTORY, not a word search: «isto perdeu a origem» cannot be grepped. What is frozen is the
+// list of who writes into the set WITHOUT going through the pair — and each entry says why that module does. It is that
+// hand-written sentence that stops a new writer from coming in quietly.
 //
-// 📌 HOJE A LISTA NÃO ESTÁ VAZIA, e isso é o estado real do estrangulamento: o campo novo existe ao lado do
-// velho, sincronizado num ponto só, e os quatro escritores migram um a um — cada commit verde. A lista
-// encolhe; quando chegar a zero, o crivo passa a afirmar a ausência inteira.
+// 📌 THE LIST IS AT ITS FLOOR: only the pair itself is on it, so the sieve asserts the whole absence (see below).
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -27,7 +25,7 @@ import { stampSource, sourceOfEvent, SOURCE_KEY } from '../app/js/input/syntheti
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
-/** Escrita directa no conjunto de teclas, em qualquer dos nomes por que ele viaja. */
+/** A direct write to the key set, under any of the names it travels by. */
 const ESCREVE_CRU = /\b(?:heldKeys|keys)\.(?:add|delete|clear)\s*\(/;
 
 function ficheirosTs(dir = RAIZ) {
@@ -40,31 +38,30 @@ function ficheirosTs(dir = RAIZ) {
   return saida;
 }
 
-/** Linhas de CÓDIGO (comentário não conta) que mexem no conjunto sem passar pelo par. */
+/** CODE lines (a comment does not count) that touch the set without going through the pair. */
 function escritasCruasDe(p) {
   return readFileSync(p, 'utf8').split(/\r?\n/)
     .filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln) && ESCREVE_CRU.test(ln)).length;
 }
 
 /**
- * QUEM AINDA ESCREVE CRU, e que transporte cada um vai carimbar quando migrar.
+ * WHO STILL WRITES RAW, and why.
  *
- * ⚠️ O `input/state.ts` está aqui e FICA: é ele o par. Os outros dois saem à medida que migram.
+ * ⚠️ `input/state.ts` is here and STAYS: it is the pair.
  */
 const POR_MIGRAR = {
   'input/state.ts': 'o PAR — é aqui que `marcarTecla`/`soltarTecla`/`soltarTodas` vivem, e é por isso que ele escreve',
 };
-// ✅ `input/touch-bindings.ts` saiu em 2026-09-08 (carimba `toque`), e `input/keydown.ts` saiu no mesmo dia.
+// ✅ `input/touch-bindings.ts` left on 2026-09-08 (it stamps `toque`), and `input/keydown.ts` left the same day.
 //
-// 🎯 A LISTA CHEGOU AO PISO, e é aqui que este crivo muda de significado: enquanto tinha entradas, ele
-// reportava o estado do estrangulamento; com só o par lá dentro, ele passa a AFIRMAR A AUSÊNCIA INTEIRA —
-// nenhum módulo desta engine escreve no conjunto de teclas sem dizer quem carregou. É o gate que o
-// `confirmation` do ADR-0109 devia, e a razão de ele valer a pena está no que impede: a erasão a voltar por
-// um escritor novo que ninguém reparou que entrou.
+// 🎯 THE LIST IS AT THE FLOOR, and that changes what this sieve means: with only the pair in it, it ASSERTS THE WHOLE
+// ABSENCE — no module of this engine writes into the key set without saying who pressed. It is the gate ADR-0109's
+// `confirmation` owed, and what makes it worth it is what it prevents: the erasure coming back through a new writer
+// nobody noticed coming in.
 //
-// ⚠️ O `keydown` saiu resolvendo o ponto difícil que esta lista carregava escrito na própria entrada dele — a
-// webcam despachava `KeyboardEvent` sintético e seria carimbada `teclado`. A saída foi `input/synthetic-source`:
-// o carimbo viaja NO EVENTO, e `isTrusted` responde por quem não carimbou. Ver os casos lá em baixo.
+// ⚠️ `keydown` left by solving the hard point its own entry carried: a synthetic `KeyboardEvent` would be stamped
+// `teclado`. The way out was `input/synthetic-source`: the stamp travels IN THE EVENT, and `isTrusted` answers for
+// whoever did not stamp. See the cases further down.
 
 describe('ADR-0109 · a origem da tecla viaja com ela', () => {
   beforeEach(() => { releaseAllKeys(); });
@@ -93,16 +90,16 @@ describe('ADR-0109 · a origem da tecla viaja com ela', () => {
   });
 
   it('⚠️ [Zero] uma tecla de origem DESCONHECIDA responde `undefined`, e não um padrão', () => {
-    // ⚠️ ESTE É O CASO QUE IMPEDE A ERASÃO DE VOLTAR POR OUTRA PORTA. Um padrão `teclado` faria uma tecla do
-    // TOQUE — entrada por um escritor ainda não migrado — ser lida como teclado: a alternância desligava-se
-    // sozinha e nada o diria. Não saber é uma resposta; fingir que se sabe não é.
-    keys.add('KeyZ'); // o caminho antigo, que ainda existe enquanto os escritores migram
+    // ⚠️ THIS IS THE CASE THAT STOPS THE ERASURE COMING BACK THROUGH ANOTHER DOOR. A `teclado` default would make a
+    // TOUCH key — entered by an unmigrated writer — be read as keyboard: the latch would turn itself off and nothing
+    // would say so. Not knowing is an answer; pretending to know is not.
+    keys.add('KeyZ'); // the raw path, which is still reachable
     expect(keys.has('KeyZ')).toBe(true);
     expect(sourceOf('KeyZ')).toBeUndefined();
   });
 
   it('[Boundary] marcar duas vezes com origens diferentes fica com a ÚLTIMA', () => {
-    // A tecla é a mesma, o aparelho mudou — e o que interessa é quem a segura AGORA.
+    // The key is the same, the device changed — and what matters is who holds it NOW.
     markKey('KeyA', 'teclado');
     markKey('KeyA', 'toque');
     expect(sourceOf('KeyA')).toBe('toque');
@@ -131,12 +128,11 @@ describe('ADR-0109 · a origem da tecla viaja com ela', () => {
   });
 
   it('⚠️ [Interface] e o crivo continua VIVO: ele acha o PAR, que escreve cru por definição', () => {
-    // Sem isto, uma regex morta deixaria os dois casos acima verdes por não terem nada que examinar.
+    // Without this, a dead regex would leave the two cases above green for having nothing to examine.
     //
-    // ⚠️ ANCORADO NUM NOME E JÁ NÃO NUMA CONTAGEM, e a troca foi obrigada pelo sucesso da migração: enquanto
-    // havia escritores por migrar, «achou mais do que um» provava vida. Com a lista no piso a contagem é 1, e
-    // `>= 1` seria uma afirmação que qualquer ficheiro satisfaria. O `input/state` é o único que escreve cru
-    // por DESENHO — é ele o par —, então é ele a âncora que não pode desaparecer sem alguém reparar.
+    // ⚠️ ANCHORED ON A NAME AND NOT ON A COUNT: with the list at the floor the count is 1, and `>= 1` would be an
+    // assertion any file could satisfy. `input/state` is the only one that writes raw BY DESIGN — it is the pair —, so it
+    // is the anchor that cannot disappear without someone noticing.
     const crus = new Set(ficheirosTs()
       .filter((p) => escritasCruasDe(p) > 0)
       .map((p) => relative(RAIZ, p).split('\\').join('/')));
@@ -144,21 +140,20 @@ describe('ADR-0109 · a origem da tecla viaja com ela', () => {
   });
 
   it('⚠️ [Zero] `marcarTeclaSemOrigem` APAGA a origem anterior, em vez de a deixar herdar', () => {
-    // O defeito que esta linha impede é caro e silencioso: a criança joga por olhar, larga a tecla, e um
-    // despacho sintético de fora repete o mesmo código. Sem o `delete`, a alternância continuaria a responder
-    // «olhos» a uma aresta que já não é dela. Um mapa que guarda a resposta certa de ontem é pior que um vazio.
+    // The defect this line prevents is costly and silent: the child plays by gaze, lets go of the key, and a synthetic
+    // dispatch from outside repeats the same code. Without the `delete`, the latch would keep answering «olhos» about an
+    // edge that is no longer hers. A map that keeps yesterday's right answer is worse than an empty one.
     markKey('KeyA', 'olhos');
     markKeyWithoutSource('KeyA');
-    expect(keys.has('KeyA')).toBe(true);   // a tecla FUNCIONA: não saber quem a produziu não a invalida
+    expect(keys.has('KeyA')).toBe(true);   // the key WORKS: not knowing who produced it does not invalidate it
     expect(sourceOf('KeyA')).toBeUndefined();
   });
 });
 
-// ========================= O CARIMBO NO EVENTO (input/synthetic-source) =========================
-// ⚠️ ISTO É O PONTO DIFÍCIL QUE A LISTA ACIMA CARREGOU DESDE O PRIMEIRO DIA. A webcam despacha `KeyboardEvent`
-// sintético, entra pelo `keydown` e seria carimbada `teclado` — e a regra 3 do ADR-0109 diz que apertar uma
-// tecla devolve o teclado SEM alternância, logo o olhar da criança desligaria sozinho a alternância de que ela
-// depende, no meio da partida e sem nada na tela a dizê-lo.
+// ========================= THE STAMP ON THE EVENT (input/synthetic-source) =========================
+// ⚠️ A synthetic `KeyboardEvent` enters through `keydown` and would be stamped `teclado` — and rule 3 of ADR-0109 says that
+// pressing a key gives the keyboard back WITHOUT the latch, so an assistive input dispatching keys (as the webcam once
+// did) would turn off by itself the latch the child depends on, mid-game and with nothing on screen saying so.
 describe('ADR-0109 · quem despachou este evento', () => {
   const ev = (over = {}) => ({ code: 'KeyA', ...over });
 
@@ -167,37 +162,37 @@ describe('ADR-0109 · quem despachou este evento', () => {
   });
 
   it('[Right] sem carimbo, um evento DE CONFIANÇA é o teclado — a única inferência do módulo', () => {
-    // `isTrusted` é a propriedade que um script não forja: significa que o navegador viu a pessoa carregar.
+    // `isTrusted` is the property a script cannot forge: it means the browser saw the person press.
     expect(sourceOfEvent(ev({ isTrusted: true }))).toBe('teclado');
   });
 
   it('⚠️ [Zero] sem carimbo e SEM confiança responde `undefined`, e não `teclado`', () => {
-    // ⚠️ É AQUI QUE A ERASÃO TENTARIA VOLTAR. Um sintético que ninguém assinou é código de fora que não
-    // declarou; responder `'teclado'` seria pior do que a erasão original, porque teria forma de resposta.
+    // ⚠️ THIS IS WHERE THE ERASURE WOULD TRY TO COME BACK. A synthetic event nobody signed is outside code that did not
+    // declare; answering `'teclado'` would be worse than the original erasure, because it would look like an answer.
     expect(sourceOfEvent(ev({ isTrusted: false }))).toBeUndefined();
-    expect(sourceOfEvent(ev())).toBeUndefined(); // e a AUSÊNCIA de `isTrusted` não é um `true` por omissão
+    expect(sourceOfEvent(ev())).toBeUndefined(); // and the ABSENCE of `isTrusted` is not a `true` by default
   });
 
   it('⚠️ [Boundary] um carimbo INVÁLIDO não vira transporte fantasma', () => {
-    // O valor vem de um expando num objecto que este código não construiu. Sem `isTransportName`, um `'olho'`
-    // mal escrito entrava no `keySource` e a alternância passava a decidir sobre um aparelho que não existe.
+    // The value comes from an expando on an object this code did not build. Without `isTransportName`, a misspelt
+    // `'olho'` would enter `keySource` and the latch would start deciding about a device that does not exist.
     const mau = ev({ isTrusted: true });
     mau[SOURCE_KEY] = 'olho';
-    expect(sourceOfEvent(mau)).toBe('teclado'); // cai na regra seguinte, em vez de aceitar o lixo
+    expect(sourceOfEvent(mau)).toBe('teclado'); // falls to the next rule, instead of accepting the rubbish
     const naoString = ev();
     naoString[SOURCE_KEY] = { inUse: 'olhos' };
     expect(sourceOfEvent(naoString)).toBeUndefined();
   });
 
   it('⚠️ [Boundary] o carimbo GANHA de `isTrusted` — declaração vence inferência', () => {
-    // A ordem das duas linhas é a regra. Um evento REAL que alguém reatribuiu (um pedal, um interruptor de
-    // sopro que emite teclas de verdade) tem de ficar com o que quem carimbou se deu ao trabalho de declarar.
+    // The order of the two lines is the rule. A REAL event someone remapped (a pedal, a sip-and-puff switch emitting real
+    // keys) has to keep what whoever stamped took the trouble to declare.
     expect(sourceOfEvent(stampSource(ev({ isTrusted: true }), 'gestos'))).toBe('gestos');
   });
 
   it('⚠️ [Interface] NADA nesta engine despacha tecla sintética sem carimbar', () => {
-    // O crivo que fecha a porta do lado do ESCRITOR — o de cima fecha-a do lado do leitor, e uma porta só
-    // fechada de um lado não está fechada. Inventário sobre a árvore real, não sobre um fixture.
+    // The sieve that closes the door on the WRITER's side — the one above closes it on the reader's, and a door closed
+    // on one side only is not closed. An inventory over the real tree, not over a fixture.
     const semCarimbo = [];
     for (const p of ficheirosTs()) {
       for (const ln of readFileSync(p, 'utf8').split(/\r?\n/)) {
@@ -215,22 +210,22 @@ describe('ADR-0109 · quem despachou este evento', () => {
   });
 
   it('⚠️ [Interface] e ESTE crivo também está vivo: a raiz ainda despacha a tecla de menu, e carimbada', () => {
-    // Vácuo ao contrário do outro: aqui o perigo é a regex morrer e o caso acima passar por não achar nada. The webcam that used to
+    // The vacuum the other way round: here the danger is the regex dying and the case above passing for finding nothing. The webcam that used to
     // anchor this left with WebGazer (ADR-0214); the one synthetic key left is the menu key the pad and the controller hand to menus.
     const fonte = readFileSync(join(RAIZ, 'boot/create-game.ts'), 'utf8');
     expect(fonte, 'a raiz deixou de despachar a tecla de menu, ou o carimbo saiu').toMatch(/stampSource\([^\n]*KeyboardEvent/);
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · `markKey` a escrever so em `keys` (sem o mapa) -> reprova "marcar escreve NOS DOIS". E a divergencia
-//     silenciosa: o jogo anda na mesma e so a alternancia fica errada.
-//   · `releaseKey` a nao apagar do mapa -> reprova "soltar limpa NOS DOIS". O mapa passaria a descrever
-//     teclas que ja ninguem segura, e a origem lida seria a de um toque que acabou.
-//   · `releaseAllKeys` a nao limpar o mapa -> reprova o caso do `blur`. Meia rede de ciclo de vida nao e rede.
-//   · ⚠️ `sourceOf` a devolver `'teclado'` em vez de `undefined` -> reprova o caso da origem DESCONHECIDA.
-//     E a mutacao mais perigosa das seis: e a leitura "razoavel" que faz a erasao voltar por outra porta.
-//   · matando a regex `ESCREVE_CRU` -> reprovam DOIS, e o que interessa e o do VACUO: sem ele, o inventario
-//     passaria por nao ter nada que examinar.
-//   · tirando `input/keydown.ts` do `POR_MIGRAR` -> reprova "escritor CRU novo". E a deriva realista: a lista
-//     deixa de cobrir quem escreve, e o crivo passa a olhar para menos do que existe.
+// ========================= MUTATIONS CHECKED =========================
+//   · `markKey` writing only to `keys` (without the map) -> fails "marcar escreve NOS DOIS". It is the silent divergence:
+//     the game moves just the same and only the latch goes wrong.
+//   · `releaseKey` not deleting from the map -> fails "soltar limpa NOS DOIS". The map would describe keys nobody holds
+//     any more, and the source read would be that of a press that ended.
+//   · `releaseAllKeys` not clearing the map -> fails the `blur` case. Half a life-cycle net is not a net.
+//   · ⚠️ `sourceOf` returning `'teclado'` instead of `undefined` -> fails the UNKNOWN source case. It is the most dangerous
+//     mutation of the six: it is the "reasonable" reading that brings the erasure back through another door.
+//   · killing the `ESCREVE_CRU` regex -> TWO fail, and the one that matters is the VACUUM one: without it, the inventory
+//     would pass for having nothing to examine.
+//   · removing `input/keydown.ts` from `POR_MIGRAR` -> fails "escritor CRU novo". It is the realistic drift: the list
+//     stops covering who writes, and the sieve starts looking at less than exists.

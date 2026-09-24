@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O MAPA DIZ A VERDADE — os dois crivos do `docs/ARCHITECTURE.md`, e só esses dois.
+// THE MAP TELLS THE TRUTH — the two sieves of `docs/ARCHITECTURE.md`, and only those two.
 //
-// ========================= POR QUE SÃO DOIS, E NÃO UM GERADOR =========================
-// O `CLAUDE.md` manda ler este documento em QUALQUER prompt, e 📏 medido em 2026-09-22 ele nomeava 81 dos 181 módulos, citava
-// um `webcam` apagado seis dias antes e uma pasta `game/` que não existe. A cura óbvia — gerar a tabela da árvore e exigir que
-// ela case — foi pesada e recusada: 📏 205 módulos nasceram ou morreram em 30 dias, em 156 de 1056 commits, logo um em cada
-// sete commits acordaria o crivo para pedir uma regeneração. Pior do que o custo: um crivo que se satisfaz correndo um script
-// ensina a regenerar sem ler, e o que ele garante é EXACTIDÃO, não utilidade.
+// ========================= WHY TWO, AND NOT A GENERATOR =========================
+// `CLAUDE.md` says to read this document in ANY prompt, and 📏 measured on 2026-09-22 it named 81 of the 181 modules, cited
+// a `webcam` deleted six days earlier and a `game/` folder that does not exist. The obvious cure — generate the table
+// from the tree and require it to match — was weighed and refused: 📏 205 modules were born or died in 30 days, in 156 of
+// 1056 commits, so one commit in seven would wake the sieve to ask for a regeneration. Worse than the cost: a sieve
+// satisfied by running a script teaches regenerating without reading, and what it guarantees is EXACTNESS, not usefulness.
 //
-// 🎯 ENTÃO O QUE SE CONFERE SÃO AS AFIRMAÇÕES QUE O MAPA FAZ, e ele deixou de afirmar ser um inventário:
+// 🎯 SO WHAT IS CHECKED ARE THE CLAIMS THE MAP MAKES, and it no longer claims to be an inventory:
 //
-//   1. todo caminho que o documento nomeia EXISTE — apanha exactamente o `webcam`, o `cenario-data` e o `settings-motor` que
-//      lá estavam mortos, e apanha-o no dia em que o ficheiro se move;
-//   2. toda pasta de `app/js` tem linha na tabela de camadas — apanha o `boot/`, o `i18n/` e o `consumer-quiz/`, que não
-//      tinham nenhuma, e a `game/`, que tinha linha e não tinha pasta.
+//   1. every path the document names EXISTS — it catches exactly the `webcam`, the `cenario-data` and the
+//      `settings-motor` that were dead there, and catches it the day the file moves;
+//   2. every folder of `app/js` has a row in the layers table — it catches `boot/`, `i18n/` and `consumer-quiz/`, which
+//      had none, and `game/`, which had a row and no folder.
 //
-// 📏 As duas são ESTÁVEIS: não acordam quando nasce um módulo (que é o custo que se recusou), acordam quando nasce uma CAMADA
-// — três vezes em toda a vida do projeto — ou quando alguém apaga um ficheiro que o mapa cita, que é quando se quer acordar.
+// 📏 Both are STABLE: they do not wake when a module is born (the cost that was refused), they wake when a LAYER is born —
+// three times in the project's whole life — or when someone deletes a file the map cites, which is when waking is wanted.
 //
-// MUTAÇÕES CONFERIDAS no fim do ficheiro.
+// MUTATIONS CHECKED at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -28,18 +28,19 @@ const MAPA = 'docs/ARCHITECTURE.md';
 const texto = readFileSync(join(RAIZ, MAPA), 'utf8');
 
 /*
- * Um caminho que o mapa NOMEIA: dentro de crases, com pasta e extensão. As crases são o critério porque é assim que esta casa
- * escreve um identificador ou um ficheiro num documento — e sem elas o crivo leria prosa («o `game/` que não existe») como
- * promessa. ⚠️ Uma pasta (`core/`) não é caminho: ela é conferida pelo segundo caso, que sabe a diferença.
+ * A path the map NAMES: inside backticks, with a folder and an extension. Backticks are the criterion because that is how
+ * this house writes an identifier or a file in a document — and without them the sieve would read prose («o `game/` que
+ * não existe») as a promise. ⚠️ A folder (`core/`) is not a path: it is checked by the second case, which knows the
+ * difference.
  */
 const CAMINHOS = /`([A-Za-z0-9_@./-]+\/[A-Za-z0-9_.@-]+\.[a-z0-9]{1,5})`/g;
 
 /**
- * Os caminhos que um texto NOMEIA.
+ * The paths a text NAMES.
  *
- * ⚠️ É função e não uma expressão solta dentro do caso, e a razão foi medida: com a regra das crases enterrada no caso, a
- * mutação que a tirava ficava VERDE — o documento de hoje por acaso não tem, na prosa, um caminho inexistente sem crases. Uma
- * regra que nenhum caso consegue avermelhar é uma regra que ninguém defende no dia em que alguém a apaga.
+ * ⚠️ It is a function and not a loose expression inside the case, and the reason was measured: with the backtick rule
+ * buried in the case, the mutation removing it stayed GREEN — today's document happens to have no non-existent path
+ * without backticks in its prose. A rule no case can turn red is a rule nobody defends the day someone deletes it.
  */
 export const caminhosCitados = (t) => [...new Set([...t.matchAll(CAMINHOS)].map((m) => m[1]))];
 
@@ -48,17 +49,18 @@ describe('o mapa não nomeia o que não existe', () => {
     const citados = caminhosCitados(texto);
     expect(citados.length, 'o mapa não cita caminho nenhum — o crivo não está a medir nada').toBeGreaterThan(15);
     /*
-     * ⚠️ O QUE FICA DE FORA, e cada linha tem uma razão que não é conveniência:
-     *   · `node_modules/**` e endereços de pacote (`@the-inclusionist/engine/…`) não são ficheiros desta árvore;
-     *   · um caminho do repositório dos REGISTOS (`docs/2-Architecture/adr/…`) vive do outro lado — o mapa pode nomeá-lo;
-     *   · `app/js/game/**` NÃO está aqui de propósito: essa pasta saiu com o cartucho, e é precisamente o que o crivo apanhou.
+     * ⚠️ WHAT IS LEFT OUT, and each line has a reason that is not convenience:
+     *   · `node_modules/**` and package addresses (`@the-inclusionist/engine/…`) are not files of this tree;
+     *   · a path of the RECORDS repository (`docs/2-Architecture/adr/…`) lives on the other side — the map may name it;
+     *   · `app/js/game/**` is NOT here on purpose: that folder left with the cartridge, and that is precisely what the
+     *     sieve caught.
      */
     const foraDaArvore = (c) => c.startsWith('@') || c.startsWith('node_modules/') || c.includes('://');
     /*
-     * ⚠️ O MAPA ESCREVE UM CAMINHO RELATIVO À SECÇÃO EM QUE ESTÁ, e isso é convenção do documento e não desleixo: a secção do
-     * código diz `ui/pause-icons.ts` e a das docs diz `1-Discovery/NFR.md`, porque repetir `app/js/` e `docs/` em cada célula
-     * de uma tabela custa ao leitor e não lhe dá nada. O crivo aprende a convenção em vez de a proibir — o que ele guarda é
-     * que o ficheiro EXISTA, não onde a frase o ancora.
+     * ⚠️ THE MAP WRITES A PATH RELATIVE TO THE SECTION IT IS IN, and that is the document's convention and not sloppiness:
+     * the code section says `ui/pause-icons.ts` and the docs one says `1-Discovery/NFR.md`, because repeating `app/js/` and
+     * `docs/` in every cell of a table costs the reader and gives them nothing. The sieve learns the convention instead of
+     * forbidding it — what it guards is that the file EXISTS, not where the sentence anchors it.
      */
     const RAIZES = ['', 'app/js/', 'docs/', 'app/'];
     const mortos = citados.filter((c) => !foraDaArvore(c) && !RAIZES.some((r) => existsSync(join(RAIZ, r + c))));
@@ -71,16 +73,16 @@ describe('o mapa não esconde uma camada', () => {
     const pastas = readdirSync(join(RAIZ, 'app/js'), { withFileTypes: true })
       .filter((d) => d.isDirectory()).map((d) => d.name);
     expect(pastas.length, 'não há pastas em app/js — o crivo não está a medir nada').toBeGreaterThan(5);
-    // A linha de uma camada abre com o nome da pasta entre crases, com a barra: `| `core/` | … |`
+    // A layer's row opens with the folder's name in backticks, with the slash: `| `core/` | … |`
     const semLinha = pastas.filter((p) => !texto.includes(`| \`${p}/\` |`));
     expect(semLinha, 'uma camada existe na árvore e não existe no mapa — quem lê o mapa não sabe que ela existe').toEqual([]);
   });
 
   it('🔴 [Zero] e nenhuma linha de camada fala de uma pasta que não existe', () => {
     /*
-     * ⚠️ SÓ A TABELA DAS CAMADAS, e a primeira corrida mostrou porquê: a secção 2 tem uma tabela com a MESMA forma de linha
-     * para as pastas das DOCS (`game-design/`, `research/`), que não são camadas de código e não existem em `app/js`. Um
-     * crivo que lesse o documento inteiro acusaria duas linhas correctas e ensinaria a desligá-lo.
+     * ⚠️ ONLY THE LAYERS TABLE, and the first run showed why: section 2 has a table with the SAME row shape for the DOCS'
+     * folders (`game-design/`, `research/`), which are not code layers and do not exist in `app/js`. A sieve reading the
+     * whole document would accuse two correct rows and teach people to switch it off.
      */
     const seccao = texto.slice(texto.indexOf('### 3.1'), texto.indexOf('### 3.2'));
     expect(seccao.length, 'a secção 3.1 não foi encontrada').toBeGreaterThan(200);
@@ -93,9 +95,10 @@ describe('o mapa não esconde uma camada', () => {
 
 describe('a regra das crases, e o piso, medidos onde o documento de hoje não os exerce', () => {
   /*
-   * 🔴 ESTES DOIS CASOS NASCERAM DE MUTAÇÕES SOBREVIVENTES, e são a diferença entre uma regra escrita e uma regra defendida.
-   * Contra o documento REAL, tirar as crases da expressão e tirar o piso da contagem ficavam os dois VERDES — não porque as
-   * regras sejam inertes, mas porque o texto de hoje não tem o caso que as exerce. Um texto sintético tem.
+   * 🔴 THESE TWO CASES WERE BORN FROM SURVIVING MUTATIONS, and they are the difference between a written rule and a
+   * defended one. Against the REAL document, removing the backticks from the expression and removing the floor from the
+   * count both stayed GREEN — not because the rules are inert, but because today's text does not have the case that
+   * exercises them. A synthetic text does.
    */
   it('🔴 [Zero] um caminho na PROSA, sem crases, não é promessa do mapa', () => {
     const prosa = 'a pasta app/js/game/physics.ts saiu com o cartucho, e o `app/js/core/state.ts` ficou';
@@ -104,29 +107,30 @@ describe('a regra das crases, e o piso, medidos onde o documento de hoje não os
   });
 
   it('⚠️ [Zero] um mapa que não cita nada reprova, em vez de passar por não ter o que medir', () => {
-    // Sem o piso, um documento VAZIO satisfaz «nenhum caminho morto» — o vazio é o falso verde clássico deste repositório.
+    // Without the floor, an EMPTY document satisfies «nenhum caminho morto» — the empty is this repository's classic false green.
     expect(caminhosCitados('um mapa sem um único caminho'), 'texto sem caminhos deu caminhos').toEqual([]);
     expect(caminhosCitados(texto).length, 'o piso é o que impede o vazio de passar').toBeGreaterThan(15);
   });
 });
 
 /*
- * ========================= MUTAÇÕES CONFERIDAS (2026-09-22) =========================
- * 1. pôr `app/js/ui/webcam.ts` numa linha do mapa (o ficheiro que a F10 apagou em 16/09) ......... VERMELHO no 1.º caso
- *    — é o próprio defeito histórico, reproduzido.
- * 2. tirar a linha `| \`boot/\` |` da tabela de camadas .......................................... VERMELHO no 2.º
- * 3. devolver a linha `| \`game/\` |` ao mapa (a pasta saiu com o cartucho) ....................... VERMELHO no 3.º
- * 4. tirar as crases da expressão dos caminhos ................................................... VERMELHO no 4.º
- * 5. tirar o piso da contagem do 1.º caso ........................................................ EQUIVALENTE, e medido
- *    — o piso está afirmado DUAS vezes (no 1.º e no 5.º caso), logo tirá-lo de um sítio não desprotege nada. Fica escrito em
- *      vez de ser «consertado»: a regra está defendida, e é a duplicação da asserção que a torna equivalente.
+ * ========================= MUTATIONS CHECKED (2026-09-22) =========================
+ * 1. putting `app/js/ui/webcam.ts` in a row of the map (the file F10 deleted on 16/09) ......... RED in the 1st case
+ *    — it is the historical defect itself, reproduced.
+ * 2. removing the `| \`boot/\` |` row from the layers table .......................................... RED in the 2nd
+ * 3. putting the `| \`game/\` |` row back in the map (the folder left with the cartridge) ....................... RED in the 3rd
+ * 4. removing the backticks from the paths expression ................................................... RED in the 4th
+ * 5. removing the floor from the 1st case's count ........................................................ EQUIVALENT, and measured
+ *    — the floor is asserted TWICE (in the 1st and the 5th case), so removing it from one place leaves nothing
+ *      unprotected. It stays written instead of being «consertado»: the rule is defended, and it is the duplicated
+ *      assertion that makes it equivalent.
  *
- * 🔴 E DUAS DELAS SÓ FICARAM VERMELHAS DEPOIS DE OS CASOS 4 E 5 EXISTIREM. Contra o documento REAL, a 4 e a 5 passavam — não
- * porque as regras fossem inertes, mas porque o texto de hoje não as exerce: não há, na prosa, um caminho inexistente sem
- * crases, nem um mapa vazio. Uma regra que nenhum caso consegue avermelhar é uma regra que ninguém defende no dia em que
- * alguém a apaga, e foi a mutação sobrevivente que o disse.
+ * 🔴 AND TWO OF THEM ONLY TURNED RED AFTER CASES 4 AND 5 EXISTED. Against the REAL document, 4 and 5 passed — not because
+ * the rules were inert, but because today's text does not exercise them: there is no non-existent path without backticks
+ * in the prose, nor an empty map. A rule no case can turn red is a rule nobody defends the day someone deletes it, and it
+ * was the surviving mutation that said so.
  *
- * ⚠️ E O PRÓPRIO SCRIPT DE MUTAÇÃO APAGOU ESTES DOIS CASOS ao repô-los: ele guarda uma cópia na primeira corrida e restaura-a
- * sempre, logo um caso ESCRITO ENTRE duas corridas é revertido sem aviso. Segunda vez no mesmo dia que uma ferramenta de
- * mutação estraga a árvore que mede.
+ * ⚠️ AND THE MUTATION SCRIPT ITSELF DELETED THESE TWO CASES when restoring: it keeps a copy on the first run and always
+ * restores it, so a case WRITTEN BETWEEN two runs is reverted without warning. The second time in the same day that a
+ * mutation tool damaged the tree it measures.
  */

@@ -1,36 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O JOGO DECLARA O MAPEAMENTO PADRÃO DO TECLADO — e «restaurar padrões» volta AO DELE (ADR-0115, issue #127).
+// THE GAME DECLARES THE KEYBOARD'S DEFAULT MAPPING — and «restaurar padrões» goes back TO ITS (ADR-0115, issue #127).
 //
-// ========================= A ARMADILHA QUE ESTE FICHEIRO GUARDA =========================
-// 🔴 Há DOIS sítios que materializam padrões de teclado, e só um deles é óbvio:
+// ========================= THE TRAP THIS FILE GUARDS =========================
+// 🔴 There are TWO places that materialise keyboard defaults, and only one of them is obvious:
 //
-//   · `loadKB()`  — fábrica + o que a criança guardou. O sítio em que toda a gente pensa.
-//   · `resetKB()` — devolvia uma cópia CRUA do `KB_DEFAULTS`. É o «restaurar padrões» do painel de controles.
+//   · `loadKB()`  — factory + what the child stored. The place everyone thinks of.
+//   · `resetKB()` — the controls panel's «restaurar padrões».
 //
-// Com o padrão do jogo a existir e só o primeiro a conhecê-lo, «restaurar padrões» apagaria o mapeamento que
-// o JOGO escolheu e devolveria o da ENGINE. A criança carrega no botão esperando voltar ao que o jogo lhe
-// deu, e volta para outra coisa — e num jogo cujo autor escolheu o layout por uma razão de acessibilidade,
-// ela perde essa razão sem nada o dizer. A resolução passou a ser uma FUNÇÃO SÓ, usada pelos dois.
+// If only the first knew the game's default, «restaurar padrões» would erase the mapping the GAME chose and give back
+// the ENGINE's. The child presses the button expecting to return to what the game gave her, and returns to something
+// else — and in a game whose author chose the layout for an accessibility reason, she loses that reason with nothing
+// saying so. So the resolution is ONE FUNCTION (`factoryWithGame`), used by both.
 //
-// 📌 A precedência afirmada aqui é a do registo: **fábrica da engine → padrão do JOGO → remapeamento da
-// CRIANÇA**. O que ela guardou vem sempre por último, porque é a única das três que ela escolheu.
+// 📌 The precedence asserted here is the record's: **engine factory → the GAME's default → the CHILD's remap**. What she
+// stored always comes last, because it is the only one of the three she chose.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   factoryWithGame, loadKB, resetKB, registerKeyboardMapping, KB_DEFAULTS,
 } from '../app/js/input/keyboard.js';
 import * as store from '../app/js/platform/storage.js';
 
-// A MESMA chave que o `input/keyboard` usa. Escrita à mão aqui de propósito: se ela mudar lá, este caso
-// deixa de exercitar o dado salvo e o gate diz-o em vez de passar a medir o vazio.
+// The SAME key `input/keyboard` uses. Written by hand here on purpose: if it changes there, this case stops exercising
+// the saved data and the gate says so instead of starting to measure nothing.
 const CKEY = 'inclusionist.kbcontrols.v3';
 
 /**
- * ⚠️ UM `localStorage` DE MENTIRA, e sem ele metade deste ficheiro mediria o nada. O project `node` não tem
- * nenhum e o `platform/storage` degrada em SILÊNCIO (todo acesso é `try/catch`), logo o `setJSON` de um caso
- * não escreve, o `loadKB` não lê, e a asserção «o que ela gravou vence» passaria a comparar a fábrica consigo
- * própria. Apanhado a correr, e não previsto — é a convenção que o `tests/motion-scene` já carrega.
+ * ⚠️ A FAKE `localStorage`, and without it half this file would measure nothing. The `node` project has none and
+ * `platform/storage` degrades in SILENCE (every access is `try/catch`), so a case's `setJSON` would not write, `loadKB`
+ * would not read, and the assertion «o que ela gravou vence» would compare the factory with itself. Caught while
+ * running, not foreseen — it is the convention `tests/motion-scene` already carries.
  */
 function comArmazenamento(inicial = {}) {
   const dados = { ...inicial };
@@ -58,8 +58,8 @@ describe('o padrão do jogo entra entre a fábrica e a criança', () => {
   });
 
   it('🎯 [Boundary] o ASSENTO chega ao jogo — o teclado de dois não é o de um', () => {
-    // ⚠️ O defeito que isto prende: um padrão que não soubesse o assento daria as mesmas teclas a duas
-    // crianças sentadas ao mesmo teclado, e nenhuma das duas jogaria.
+    // ⚠️ The defect this pins: a default that did not know the seat would give the same keys to two children sitting at
+    // the same keyboard, and neither of them could play.
     const vistos = [];
     registerKeyboardMapping((jogadores, assento) => {
       vistos.push([jogadores, assento]);
@@ -133,7 +133,7 @@ describe('o contrato recusa uma declaração que seria ignorada em silêncio', (
   });
 });
 
-/** O mínimo que o contrato aceita — copiado dos outros gates, não inventado. */
+/** The minimum the contract accepts — copied from the other gates, not invented. */
 function declaracaoMinima() {
   return {
     topology: () => ({ kind: 'hotspots', order: ['q1'] }),
@@ -149,12 +149,11 @@ function declaracaoMinima() {
   };
 }
 
-// ================================ MUTAÇÕES CONFERIDAS ================================
-// 1. `resetKB` a voltar a `JSON.parse(JSON.stringify(KB_DEFAULTS))` → 🔴 o caso do «restaurar padrões»
-//    reprova. É a armadilha inteira, e a única mutação desta lista que descreve um defeito que uma criança
-//    encontra com um clique.
-// 2. `factoryWithGame` a chamar o jogo só para o `solo` → o caso do ASSENTO reprova, na lista de perguntas.
-// 3. `Object.assign(alvo, parcial)` → `alvo = parcial` (substituir em vez de fundir) → o caso do parcial
-//    reprova: o resto da fábrica desaparecia e o jogo passava a ter de declarar as catorze posições.
-// 4. o padrão do jogo aplicado DEPOIS do dado salvo, no `loadKB` → o caso da precedência reprova: o
-//    remapeamento da criança seria apagado pelo jogo a cada arranque.
+// ================================ MUTATIONS CHECKED ================================
+// 1. `resetKB` going back to `JSON.parse(JSON.stringify(KB_DEFAULTS))` → 🔴 the «restaurar padrões» case fails. It is the
+//    whole trap, and the only mutation on this list that describes a defect a child meets with one click.
+// 2. `factoryWithGame` calling the game only for `solo` → the SEAT case fails, in the list of questions.
+// 3. `Object.assign(alvo, parcial)` → `alvo = parcial` (replace instead of merge) → the partial case fails: the rest of
+//    the factory would vanish and the game would have to declare all fourteen positions.
+// 4. the game's default applied AFTER the saved data, in `loadKB` → the precedence case fails: the child's remap would
+//    be erased by the game at every boot.

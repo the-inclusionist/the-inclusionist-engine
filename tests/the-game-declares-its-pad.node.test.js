@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O JOGO DECLARA O MAPA DE BOTÕES — e a criança que remapeou continua a ganhar (ADR-0115, issue #127).
+// THE GAME DECLARES THE BUTTON MAP — and the child who remapped still wins (ADR-0115, issue #127).
 //
-// ========================= A METADE QUE FALTAVA, E O QUE A TRAVAVA =========================
-// O campo do TECLADO entrou primeiro (`dbaff04`) e este ficou de fora com uma razão escrita: o
-// `GAMEPAD_STANDARD` é lido num sítio só, mas nesse ponto o ASSENTO ainda não se conhecia — o `owner` só se
-// resolvia mais abaixo, por ramo. A saída foi subir o assento no laço de sondagem, e é por isso que este
-// ficheiro afirma DUAS coisas e não uma: a tabela, e a de que o laço a pede pelo assento certo.
+// ========================= WHY TWO ASSERTIONS =========================
+// `GAMEPAD_STANDARD` is read in one place only, and at that point the SEAT has to be known — so the poll loop resolves
+// the `owner` before reading the table. That is why this file asserts TWO things and not one: the table, and that the
+// loop asks for it by the right seat.
 //
-// ⚠️ A PRECEDÊNCIA TEM UMA DIFERENÇA DE SÍTIO em relação ao teclado, e ela é o caso mais importante daqui: no
-// controle, o mapa que a criança gravou no assistente não é uma camada por cima do padrão do jogo — é um RAMO
-// inteiro do `padActions`. Se ele existe, o padrão do jogo nem é consultado. Nos dois aparelhos ela ganha; só
-// não ganha da mesma maneira, e um dia alguém vai «arrumar» isso.
+// ⚠️ THE PRECEDENCE DIFFERS IN PLACE from the keyboard's, and that is the most important case here: on the controller,
+// the map the child recorded in the wizard is not a layer on top of the game's default — it is a whole BRANCH of
+// `padActions`. If it exists, the game's default is not even consulted. On both devices she wins; just not the same way,
+// and one day someone will «arrumar» that.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { registerPadMapping, padTable } from '../app/js/input/pad-defaults.js';
 import { padActions } from '../app/js/input/pad-reading.js';
 import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
 
-/** Um pad de mentira com os botões pedidos premidos. */
+/** A fake pad with the requested buttons pressed. */
 const pad = (...premidos) => ({
   id: 'std', index: 0, mapping: 'standard',
   buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: premidos.includes(i) })),
@@ -77,8 +76,8 @@ describe('a leitura dos botões, com a tabela do jogo', () => {
   });
 
   it('🔴 o mapa que a CRIANÇA gravou no assistente ignora o padrão do jogo — e é assim que tem de ser', () => {
-    // ⚠️ O ramo do `custom` nem consulta a tabela. Um jogo que declare `action1: 3` não pode reescrever o
-    // botão que ela escolheu no assistente por não conseguir alcançar o outro.
+    // ⚠️ The `custom` branch does not even consult the table. A game declaring `action1: 3` must not rewrite the button
+    // she chose in the wizard because she could not reach the other one.
     const custom = { action1: { b: 9 } };
     const t = { ...GAMEPAD_STANDARD, action1: 3 };
     expect(padActions(pad(9), custom, t).action1, 'a escolha dela deixou de valer').toBe(true);
@@ -86,12 +85,11 @@ describe('a leitura dos botões, com a tabela do jogo', () => {
   });
 });
 
-// ================================ MUTAÇÕES CONFERIDAS ================================
-// 1. `padTable` a ignorar o `assento` (chave só com `jogadores`) → o caso do ASSENTO reprova, e é o que
-//    justifica ter subido o `owner` no laço de sondagem.
-// 2. `registerPadMapping` sem o `memo.clear()` → o caso do registo repetido reprova. Sem ele, o segundo
-//    jogo montado na mesma página lê a tabela do primeiro — e a leitura está certa em toda parte menos no
-//    valor.
-// 3. `padActions` a ler `GAMEPAD_STANDARD` em vez do parâmetro → o primeiro caso da segunda secção reprova.
-// 4. o ramo do `custom` a fundir a tabela do jogo por cima → o caso da criança reprova. Não é hipótese: é
-//    exactamente a «arrumação» que alguém faz ao ver dois caminhos parecidos.
+// ================================ MUTATIONS CHECKED ================================
+// 1. `padTable` ignoring the `assento` (key with `jogadores` only) → the SEAT case fails, and it is what justifies
+//    resolving the `owner` inside the poll loop.
+// 2. `registerPadMapping` without `memo.clear()` → the repeated-registration case fails. Without it, the second game
+//    mounted on the same page reads the first one's table — and the reading is right everywhere except in the value.
+// 3. `padActions` reading `GAMEPAD_STANDARD` instead of the parameter → the first case of the second section fails.
+// 4. the `custom` branch merging the game's table on top → the child's case fails. It is not a hypothesis: it is exactly
+//    the «arrumação» someone does on seeing two similar paths.
