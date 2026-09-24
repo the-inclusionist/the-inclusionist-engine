@@ -1,135 +1,126 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/fonts.ts — catálogo de fontes (dados) + índice por chave + carga/persistência da escolha. Módulo-folha
-// SEM IMPORTS: quem guarda entra por parâmetro (`FontStore`), em `resolveFontKey` e `persistFontKey`.
-//
-// ⚠️ ELE IMPORTAVA O ARMAZENAMENTO ATÉ 23/09, e a razão era só os dois atalhos que saíram daqui — eles fechavam
-// o `store` por dentro para poupar um argumento a um chamador que nunca existiu. Tirados eles, a dependência
-// caiu sozinha: o módulo passou a alcançar zero e a decisão de ONDE se guarda voltou inteira para quem chama.
+// ui/fonts.ts — the font catalogue (data) + index by key + loading/persisting the choice. A leaf module WITH NO IMPORTS:
+// whoever stores comes in as a parameter (`FontStore`), in `resolveFontKey` and `persistFontKey` — so the decision of
+// WHERE it is stored belongs entirely to the caller.
 
 /**
- * Uma fonte do catálogo. `fam` é o NOME DA FONTE — nome próprio, nunca traduzido. `d` guarda CHAVE i18n da
- * descrição, não o texto: mesma decisão de `VIZ_MODES` e `RM_LABEL`, e pelo mesmo motivo — uma tabela de
- * `const` com texto resolve uma vez, no import, e fica congelada no idioma do boot.
- */
-/**
- * O PAPEL de uma face, e é a emenda do ADR-0012 (27/08) posta em dado (issue #87).
+ * A face's ROLE — the ADR-0012 amendment turned into data (issue #87).
  *
- * ⚠️ NÃO É O MESMO QUE O GRUPO. O grupo (`sans`/`serif`/`hand`) é APARÊNCIA e serve para ler a lista; o papel
- * é ONDE A FACE PODE SER USADA, e é regra:
+ * ⚠️ IT IS NOT THE SAME AS THE GROUP. The group (`sans`/`serif`/`hand`) is APPEARANCE and serves to read the list; the
+ * role is WHERE THE FACE MAY BE USED, and it is a rule:
  *
- *   · `geral` — em qualquer lugar. São as únicas que o menu de tipografia oferece.
- *   · `caligrafica` — **só DENTRO das atividades escolares**, nunca no HUD nem nos menus, e por isso **não
- *     aparecem no menu de fonte**. Elas existem para a criança APRENDER a ler letra cursiva, o que é matéria;
- *     usá-las como interface é dar-lhe a matéria como obstáculo em todos os lugares onde ela só quer navegar.
- *   · `jogo` — a face que o JOGO usa no HUD, no título e em rótulos curtos de arcade. Também não aparece no
- *     menu, e pelo mesmo tipo de razão que as caligráficas: uma face de pixel de 8 bits é desenhada para
- *     dizer POUCAS palavras em tamanho grande. Como face de interface ela contradiz o argumento que faz a
- *     Atkinson Hyperlegible ser o padrão — pouca diferenciação entre letras, avanço largo, nenhuma variação
- *     de altura. É certa no HUD de um jogo de pixel-art e errada num menu que a criança precisa de LER.
+ *   · `geral` — anywhere. The only ones the typography menu offers.
+ *   · `caligrafica` — **only INSIDE school activities**, never in the HUD or menus, and so **not in the font menu**. They
+ *     exist for the child to LEARN to read cursive, which is subject matter; using them as interface would hand the
+ *     child the subject as an obstacle everywhere they only want to navigate.
+ *   · `jogo` — the face the GAME uses in the HUD, the title and short arcade labels. Not in the menu either, for the same
+ *     kind of reason: an 8-bit pixel face is drawn to say FEW words at a large size. As an interface face it contradicts
+ *     the argument that makes Atkinson Hyperlegible the default — little differentiation between letters, a wide
+ *     advance, no height variation. Right in a pixel-art game's HUD, wrong in a menu the child has to READ.
  *
- * ⚠️ E O CORTE NÃO É O GRUPO `hand`. A `pwbr` está lá por aparência — é a face GERAL do grupo (ADR-0176) e é
- * frequentemente recomendada para dislexia. Tirá-la do menu removeria uma opção legitimamente acessível. A
- * definição boa é a lista do item 2 da #87, que nomeia as caligráficas dando-lhes tamanho mínimo.
+ * ⚠️ AND THE CUT IS NOT THE `hand` GROUP. `pwbr` is there by appearance — it is the group's GENERAL face (ADR-0176) and
+ * often recommended for dyslexia. Removing it from the menu would remove a legitimately accessible option. The good
+ * definition is the list in #87 item 2, which names the handwriting faces by giving them a minimum size.
  */
 export type FontRole = 'geral' | 'caligrafica' | 'jogo';
 
 /**
- * A MÃO DO PAÍS DESTA CRIANÇA, e o recuo do COLONIZADOR quando o país não tem a sua (ADR-0150 §1).
+ * THIS CHILD'S COUNTRY HAND, and the COLONISER's fallback when the country has none of its own (ADR-0150 §1).
  *
- * 🎯 A regra é do Dev e é mais verdadeira do que a que substituiu: o ADR-0012 diz que a mão que se aprende a
- * escrever é NACIONAL e não linguística, e nunca disse o que fazer com as nações sem face própria. «O que os
- * Estados Unidos ensinam» era um padrão vestido de país; a mão do colonizador é uma afirmação verdadeira
- * sobre como a escola daquela criança a ensinou a escrever.
+ * 🎯 The rule is the Dev's and is truer than the one it replaced: ADR-0012 says the hand one learns to write is NATIONAL,
+ * not linguistic, and never said what to do with nations without a face of their own. Falling back to what the United
+ * States teaches was a default dressed as a country; the coloniser's hand is a true statement about how that child's
+ * school taught them to write.
  *
- * 📌 E TRÊS FACES FECHAM O BURACO INTEIRO, porque o repertório já está limitado a inglês, português e
- * espanhol (ADR-0012). É o que torna a regra mais verdadeira também a mais barata de empacotar.
+ * 📌 AND THREE FACES CLOSE THE WHOLE GAP, because the repertoire is already limited to English, Portuguese and Spanish
+ * (ADR-0012). That is what makes the truer rule also the cheapest to bundle.
  *
- * ⚠️ ONDE O PAÍS ENSINA DUAS MÃOS, DEVOLVE AS DUAS, na ordem do Dev — a tradicional primeiro. É o que faz o
- * ciclo do 11.º botão ter SEIS posições nesses países em vez de cinco.
+ * ⚠️ WHERE THE COUNTRY TEACHES TWO HANDS, IT RETURNS BOTH, in the Dev's order — the traditional first. That gives the
+ * eleventh button's cycle SIX positions in those countries instead of five.
  */
 const HAND_BY_COUNTRY: Readonly<Record<string, readonly string[]>> = Object.freeze({
   BR: ['pwbr'],
-  US: ['pwustrad', 'pwusmod'],   // os EUA ensinam duas, e escolher uma seria escolher pela criança
-  GB: ['pwgbj', 'pwgbs'],        // joined e semi-joined
+  US: ['pwustrad', 'pwusmod'],   // the US teaches two, and choosing one would be choosing for the child
+  GB: ['pwgbj', 'pwgbs'],        // joined and semi-joined
   ES: ['pwes', 'pwesdeco'],
   PT: ['pwpt'],
   CA: ['pwca'], MX: ['pwmx'], AR: ['pwar'], CL: ['pwcl'], CO: ['pwco'], CU: ['pwcu'], PE: ['pwpe'],
 });
 
-/** O recuo por LÍNGUA: a mão do colonizador. Três entradas cobrem todo país que o repertório admite. */
+/** The fallback by LANGUAGE: the coloniser's hand. Three entries cover every country the repertoire admits. */
 const HAND_BY_LANGUAGE: Readonly<Record<string, readonly string[]>> = Object.freeze({
   es: ['pwes', 'pwesdeco'],
   pt: ['pwpt'],
   en: ['pwgbj', 'pwgbs'],
 });
 
-/**
- * As chaves de fonte manuscrita para uma etiqueta BCP-47 — `pt-BR` → `['pwbr']`, `es-MX` → `['pwmx']`.
- *
- * ⚠️ LÊ A REGIÃO E DEPOIS A LÍNGUA, nesta ordem, e o caso que se esquece é a etiqueta SEM região: `en` sozinho
- * não nomeia país nenhum, e cair no recuo é a resposta certa — não é um erro, é uma criança cujo navegador
- * não disse onde ela está.
- *
- * 📌 Devolve LISTA e não uma face: onde o país ensina duas mãos, as duas entram no ciclo.
- * 📌 Devolve VAZIO para uma língua fora do repertório, e o vazio é dizível: quem chama tira a posição do
- * ciclo em vez de mostrar uma mão que não é de ninguém.
- */
-/** Uma posição do ciclo de tipografia do 11.º botão: a CAIXA e a FACE, juntas (ADR-0149 §1). */
+/** One position of the eleventh button's typography cycle: the CASE and the FACE, together (ADR-0149 §1). */
 export interface TypographyStep {
-  /** `upper` = CAIXA ALTA; `mixed` = maiúscula e minúscula. Os valores de `core/state.letterCase`. */
+  /** `upper` = UPPER CASE; `mixed` = upper and lower case. The values of `core/state.letterCase`. */
   readonly letterCase: 'upper' | 'mixed';
-  /** A chave da face no catálogo. */
+  /** The face's key in the catalogue. */
   readonly font: string;
   /**
-   * O multiplicador de tamanho desta posição — 1 nas faces de leitura, **1,25 na mão do país** (ADR-0149 §1).
+   * This position's size multiplier — 1 on the reading faces, **1.25 on the country hand** (ADR-0149 §1).
    *
-   * 🔴 NÃO É PREFERÊNCIA, É O PISO DE LEGIBILIDADE JÁ MEDIDO. As Playwrite declaram `minPx: 20` desde a
-   * emenda do ADR-0012 («abaixo disto a face deixa de ser DIFÍCIL e passa a ser ILEGÍVEL, que são coisas
-   * diferentes: a dificuldade é o exercício, a ilegibilidade é a criança a desistir»). A base do documento é
-   * 16 px, e 16 × 1,25 = 20 — o multiplicador É o piso, escrito como razão em vez de como número solto.
+   * 🔴 NOT A PREFERENCE, IT IS THE LEGIBILITY FLOOR ALREADY MEASURED. The Playwrite faces declare `minPx: 20` (ADR-0012
+   * amendment): below it the face stops being DIFFICULT and becomes ILLEGIBLE — difficulty is the exercise, illegibility
+   * is the child giving up. The document's base is 16 px, and 16 × 1.25 = 20 — the multiplier IS the floor, written as a
+   * ratio instead of a loose number.
    */
   readonly scale: number;
 }
 
-/** O aumento da mão do país. Nomeado para o crivo o poder afirmar contra o `minPx` em vez de o repetir. */
+/** The country hand's increase. Named so the gate can assert it against `minPx` instead of repeating it. */
 export const HANDWRITING_SCALE = 1.25;
-/** A base do documento, em px — o `font-size` de `html,body`. O piso sai de multiplicá-la pela escala. */
+/** The document's base, in px — the `font-size` of `html,body`. The floor comes from multiplying it by the scale. */
 export const BASE_EM_PX = 16;
 
 /**
- * O CICLO DO 11.º BOTÃO — cinco posições, ou seis onde o país ensina duas mãos (ADR-0149 §1, ADR-0150 §2).
+ * THE ELEVENTH BUTTON'S CYCLE — five positions, or six where the country teaches two hands (ADR-0149 §1, ADR-0150 §2).
  *
- * 🎯 CADA PASSO MUDA A CAIXA **E** A FACE, e é essa a decisão inteira. Hoje `letterCase` (`core/state`,
- * ADR-0028) e a face são dois controles em dois sítios; «Andika em caixa alta» é UMA escolha pedagógica de
- * quem alfabetiza, não duas. Uma criança não devia ter de saber o modelo para a fazer.
+ * 🎯 EACH STEP CHANGES THE CASE **AND** THE FACE, and that is the whole decision: `letterCase` (`core/state`, ADR-0028)
+ * and the face are two settings, but Andika in upper case is ONE pedagogical choice of whoever teaches literacy, not
+ * two. A child should not have to know the model to make it.
  *
- * 📌 COMEÇA NA ATKINSON, que é a posição (c) e o padrão do projeto. O ciclo é um anel: a partir dela, uma
- * pressão vai para a Lexend e a última volta ao início.
+ * 📌 IT STARTS AT ATKINSON, which is position (c) and the project's default. The cycle is a ring: from it, one press goes
+ * to Lexend and the last goes back to the start.
  *
- * ⚠️ A MÃO DO PAÍS PODE NÃO EXISTIR — uma etiqueta sem região e numa língua fora do repertório devolve vazio.
- * Nesse caso o ciclo tem QUATRO posições, e isso é a resposta certa: melhor uma posição a menos do que uma
- * que mostre a mão de um país que não é o daquela criança.
+ * ⚠️ THE COUNTRY HAND MAY NOT EXIST — a tag with no region and a language outside the repertoire returns nothing. Then the
+ * cycle has FOUR positions, which is the right answer: one position fewer is better than one showing the hand of a
+ * country that is not that child's.
  *
- * 🔴 ARASAAC E PCS NÃO SÃO POSIÇÕES, e é a decisão e não um esquecimento: o ADR-0151 pô-los no ciclo de comunicação
- * como desabilitados, e o ADR-0155 §3 mudou para «Pular» — enquanto a licença não deixa, o ciclo não pára neles nem os
- * anuncia. Uma posição que existisse só para ser saltada seria dado sem leitor; entram no dia em que funcionarem.
+ * 🔴 ARASAAC AND PCS ARE NOT POSITIONS, a decision and not an oversight: ADR-0155 §3 says to skip them — while the licence
+ * does not allow, the cycle neither stops on them nor announces them. A position existing only to be skipped would be
+ * data with no reader; they enter the day they work.
  */
 export function typographyCycle(tag: string | null | undefined): readonly TypographyStep[] {
   const hands = handsForTag(tag);
   return Object.freeze([
-    { letterCase: 'upper', font: 'andika', scale: 1 } as const,   // (a) o par da alfabetização
+    { letterCase: 'upper', font: 'andika', scale: 1 } as const,   // (a) the literacy pair
     { letterCase: 'mixed', font: 'andika', scale: 1 } as const,   // (b)
-    { letterCase: 'mixed', font: 'atkinson', scale: 1 } as const, // (c) o padrão — o ciclo começa aqui
+    { letterCase: 'mixed', font: 'atkinson', scale: 1 } as const, // (c) the default — the cycle starts here
     { letterCase: 'mixed', font: 'lexend', scale: 1 } as const,   // (d)
-    // (e), e (f) onde o país ensina duas. ⚠️ 25% MAIOR, e o número não é gosto: a base do documento é 16 px,
-    // as Playwrite declaram `minPx: 20`, e 16 × 1,25 é exactamente 20. A escala É o piso.
+    // (e), and (f) where the country teaches two. ⚠️ 25% LARGER, and the number is not taste: the document's base is
+    // 16 px, the Playwrite faces declare `minPx: 20`, and 16 × 1.25 is exactly 20. The scale IS the floor.
     ...hands.map((face) => ({ letterCase: 'mixed', font: face, scale: HANDWRITING_SCALE } as const)),
   ]);
 }
 
-/** O índice de onde o ciclo COMEÇA — a posição (c). Nomeado para o crivo o poder afirmar sem o recontar. */
+/** The index where the cycle STARTS — position (c). Named so the gate can assert it without recounting. */
 export const CYCLE_START = 2;
 
+/**
+ * The handwriting font keys for a BCP-47 tag — `pt-BR` → `['pwbr']`, `es-MX` → `['pwmx']`.
+ *
+ * ⚠️ IT READS THE REGION AND THEN THE LANGUAGE, in that order, and the forgotten case is the tag WITHOUT a region: `en`
+ * alone names no country, and falling back is the right answer — not an error, a child whose browser did not say where
+ * they are.
+ *
+ * 📌 It returns a LIST and not one face: where the country teaches two hands, both enter the cycle.
+ * 📌 It returns NOTHING for a language outside the repertoire, and nothing is sayable: the caller drops the position
+ * from the cycle instead of showing a hand that is nobody's.
+ */
 export function handsForTag(tag: string | null | undefined): readonly string[] {
   if (!tag) return [];
   const parts = String(tag).split('-');
@@ -139,21 +130,26 @@ export function handsForTag(tag: string | null | undefined): readonly string[] {
   return HAND_BY_LANGUAGE[language] ?? [];
 }
 
+/**
+ * A catalogue font. `fam` is the FONT'S NAME — a proper noun, never translated. `d` holds the i18n KEY of the description,
+ * not the text: the same decision as `VIZ_MODES` and `RM_LABEL`, for the same reason — a `const` table of text resolves
+ * once, on import, and stays frozen in the boot language.
+ */
 export type FontItem = {
   /** The face's `id` in `catalogo_tipografico.json` (ADR-0176): the key that holds it to the catalogue's status, layer, floor and coverage. */
   id: string;
   k: string; fam: string; fb: string; d?: string; off?: string;
-  /** Ausente = `geral`. Só as caligráficas se declaram, porque são a excepção. */
+  /** Absent = `geral`. Only the handwriting faces declare it, because they are the exception. */
   role?: FontRole;
   /**
-   * O menor tamanho, em px, em que esta face ainda é legível (item 2 da #87, números do Dev).
+   * The smallest size, in px, at which this face is still legible (#87 item 2, the Dev's numbers).
    *
-   * ⚠️ Abaixo disto a face deixa de ser DIFÍCIL e passa a ser ILEGÍVEL, que são coisas diferentes: a
-   * dificuldade é o exercício, a ilegibilidade é a criança a desistir. Por isso é gate e não recomendação.
+   * ⚠️ Below it the face stops being DIFFICULT and becomes ILLEGIBLE, which are different things: difficulty is the
+   * exercise, illegibility is the child giving up. That is why it is a gate and not a recommendation.
    */
   minPx?: number;
 };
-/** Um grupo do catálogo. `g` também guarda CHAVE ('font.group.sans'), pelo mesmo motivo. */
+/** A catalogue group. `g` holds a KEY too ('font.group.sans'), for the same reason. */
 export type FontGroup = { g: string; items: FontItem[] };
 export const FONT_GROUPS: FontGroup[] = [
   {g:'font.group.sans', items:[
@@ -161,40 +157,37 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'lexend', id:'lexend',     fam:'Lexend',                fb:'sans', d:'font.desc.lexend'},
     {k:'quattro', id:'ia_writer_quattro',    fam:'iA Writer Quattro',     fb:'sans', d:'font.desc.quattro'},
     {k:'andika', id:'andika',     fam:'Andika',                fb:'sans', d:'font.desc.andika'},
-    // ⚠️ A OPENDYSLEXIC ENTRA SEM NENHUMA ALEGAÇÃO DE EFICÁCIA, e a restrição é da issue #87 item 3 e do
-    // `docs/game-design/typography.md`, que diz por extenso: «Ofereça a Dyslexie e a OpenDyslexic apenas como
-    // escolha do usuário. A pesquisa não mostra ganho de leitura com elas.» A descrição dela fala do DESENHO
-    // (hastes pesadas em baixo), nunca do efeito — prometer leitura melhor seria vender a uma criança
-    // disléxica uma coisa que a evidência não sustenta, e ela é quem menos pode pagar por isso.
+    // ⚠️ OPENDYSLEXIC IS OFFERED WITH NO CLAIM OF EFFICACY — issue #87 item 3 and `docs/game-design/typography.md`: offer
+    // Dyslexie and OpenDyslexic only as a user's choice, because research shows no reading gain from them. Its description
+    // speaks of the DESIGN (heavy stems at the bottom), never of the effect — promising better reading would sell a
+    // dyslexic child something the evidence does not support, and they are who can least afford it.
     {k:'opendyslexic', id:'opendyslexic', fam:'OpenDyslexic',       fb:'sans', d:'font.desc.opendyslexic'},
     {k:'sourcesans', id:'source_sans_3', fam:'Source Sans 3',         fb:'sans'},
     {k:'inter', id:'inter',      fam:'Inter',                 fb:'sans'},
     {k:'opensans', id:'open_sans',   fam:'Open Sans',             fb:'sans'},
     {k:'lato', id:'lato',       fam:'Lato',                  fb:'sans'},
-    // ⚠️ AS QUATRO ARREDONDADAS entram a pedido do Dev (2026-09-12) e entram SEM descrição, de propósito: as
-    // quatro linhas acima também não a têm, e um `d` existe quando há algo a dizer que o nome não diz — a
-    // Atkinson tem-no porque o Braille Institute a desenhou para isto, a OpenDyslexic porque a descrição dela
-    // tem de falar do DESENHO e nunca do efeito. «Arredondada» não é uma alegação, é o que se vê.
+    // ⚠️ THE FOUR ROUNDED FACES are here at the Dev's request, WITHOUT a description on purpose: a `d` exists when there
+    // is something to say the name does not — Atkinson has one because the Braille Institute designed it for this,
+    // OpenDyslexic because its description has to speak of the DESIGN and never the effect. Rounded is not a claim, it is
+    // what you see.
     //
-    // 📌 `geral` (papel implícito): são faces de interface, não caligráficas e não de jogo — logo seguem o
-    // espaçamento da BDA que o ADR-0149 §2 generaliza, e aparecem no menu de tipografia como as outras.
+    // 📌 `geral` (implicit role): interface faces, neither handwriting nor game — so they follow the BDA spacing ADR-0149
+    // §2 generalises, and appear in the typography menu like the others.
     //
-    // ⚠️ `Fredoka` E NÃO «Fredoka One»: o pedido usou o nome legado. A Google publica hoje a família variável
-    // como `Fredoka`; a estática antiga era o peso 600 dela. Ver o bloco correspondente em `fonts.css`.
+    // ⚠️ `Fredoka` AND NOT "Fredoka One": that is the legacy name. Google publishes the variable family as `Fredoka`; the
+    // old static one was its 600 weight. See the matching block in `fonts.css`.
     {k:'fredoka', id:'fredoka',    fam:'Fredoka',               fb:'sans'},
     {k:'quicksand', id:'quicksand',  fam:'Quicksand',             fb:'sans'},
     {k:'nunito', id:'nunito',     fam:'Nunito',                fb:'sans'},
     {k:'teachers', id:'teachers',   fam:'Teachers',              fb:'sans'},
     /*
-     * MAIS SETE SEM SERIFA (ADR-0150, pedido do Dev de 2026-09-12). Sete da lista dele já cá estavam —
-     * Source Sans 3, Inter, Open Sans, Lato acima, e as três serifadas abaixo — e não se repetem.
+     * SEVEN MORE SANS FACES (ADR-0150, the Dev's request).
      *
-     * 🔴 A CLASH DISPLAY NÃO ENTRA, e a ausência é medida e não esquecida: ela **não está no Google Fonts**.
-     * É da Fontshare (Indian Type Foundry), e o §3 do `LICENSES.md` exige a licença conferida ANTES de
-     * empacotar — o mesmo teste que as três faces da ronde reprovaram, por serem livres só para uso PESSOAL.
-     * 🔴 LIDA EM 2026-09-12, E REPROVA: é «Closed Source», sob a ITF Free Font License, cujo §02 proíbe distribuir
-     * o ficheiro por repositório, aplicação ou servidor público e servi-lo como fonte selecionável a terceiros.
-     * O que era espera virou recusa com motivo; o crivo está em `tests/fontes-empacotadas.node.test.js`.
+     * 🔴 CLASH DISPLAY IS NOT HERE, and the absence is read, not forgotten: it is **not on Google Fonts** — it comes from
+     * Fontshare (Indian Type Foundry), and `LICENSES.md` §3 requires the licence checked BEFORE bundling. Read, it FAILS:
+     * it is «Closed Source» under the ITF Free Font License, whose §02 forbids distributing the file through a repository,
+     * an application or a public server and serving it as a selectable font to third parties. The gate is in
+     * `tests/fontes-empacotadas.node.test.js`.
      */
     {k:'robotoflex', id:'roboto_flex', fam:'Roboto Flex',           fb:'sans'},
     {k:'ubuntu', id:'ubuntu',     fam:'Ubuntu',                fb:'sans'},
@@ -202,71 +195,65 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'spacegrotesk', id:'space_grotesk', fam:'Space Grotesk',       fb:'sans', minPx:20},
     {k:'sora', id:'sora',       fam:'Sora',                  fb:'sans', minPx:20},
     {k:'jakarta', id:'plus_jakarta_sans',    fam:'Plus Jakarta Sans',     fb:'sans', minPx:20} ]},
-    // ⚠️ A COMFORTAA ENTROU E SAIU NO MESMO DIA, por decisão do Dev: «ruim para dislexia». A razão está na
-    // face — as formas quase geométricas reduzem a diferenciação entre letras, que é o eixo pelo qual a
-    // Atkinson Hyperlegible é a padrão deste projeto. Fica escrito porque uma face que sai sem rasto volta a
-    // ser proposta pelo próximo que olhar para a lista e achar que falta uma arredondada.
+    // ⚠️ NO COMFORTAA, by the Dev's decision: «ruim para dislexia». The reason is in the face — its near-geometric shapes
+    // reduce the differentiation between letters, the very axis that makes Atkinson Hyperlegible this project's default.
+    // Written down because a face that leaves no trace gets proposed again by the next person who thinks a rounded one is
+    // missing.
   {g:'font.group.serif', items:[
     {k:'literata', id:'literata',    fam:'Literata',       fb:'serif'},
     {k:'sourceserif', id:'source_serif_4', fam:'Source Serif 4', fb:'serif'},
     {k:'newsreader', id:'newsreader',  fam:'Newsreader',     fb:'serif'},
-    // Cinco de LEITURA, do mesmo pedido: serifadas de texto corrido, como as três acima.
+    // Five READING faces: serifs for running text, like the three above.
     {k:'merriweather', id:'merriweather', fam:'Merriweather',  fb:'serif'},
     {k:'lora', id:'lora',        fam:'Lora',           fb:'serif'},
     {k:'spectral', id:'spectral',    fam:'Spectral',       fb:'serif'},
     {k:'domine', id:'domine',      fam:'Domine',         fb:'serif'},
     {k:'bitter', id:'bitter',      fam:'Bitter',         fb:'serif'},
     /*
-     * ⚠️ AS QUATRO DE DISPLAY SÃO OUTRA COISA, e entram com o aviso escrito em vez de misturadas com as de
-     * leitura. Playfair Display, DM Serif Display, Fraunces e Bodoni Moda têm CONTRASTE ALTO — hastes grossas
-     * ao lado de hastes finíssimas — e a Bodoni é o extremo do eixo. É exactamente o que a Atkinson
-     * Hyperlegible foi desenhada para NÃO ser, e em corpo pequeno as hastes finas desaparecem primeiro para
-     * quem menos enxerga.
+     * ⚠️ THE FOUR DISPLAY FACES ARE SOMETHING ELSE, and come with the warning written instead of mixed with the reading
+     * ones. Playfair Display, DM Serif Display, Fraunces and Bodoni Moda have HIGH CONTRAST — thick stems beside very thin
+     * ones — and Bodoni is the extreme of the axis. It is exactly what Atkinson Hyperlegible was designed NOT to be, and at
+     * small sizes the thin stems disappear first for whoever sees least.
      *
-     * 📌 Ficam na mesma, porque OFERECER não é aplicar: o padrão continua a ser a Atkinson, e quem escolhe
-     * uma destas está a escolher. O que seria defeito é a engine ADOPTAR uma delas sozinha.
-     * 🔴 E elas não são para corpo de texto de atividade; um jogo que as use num enunciado longo está a usar
-     * uma face de título como face de leitura.
+     * 📌 They stay, because OFFERING is not applying: the default is still Atkinson, and whoever picks one of these is
+     * choosing. The defect would be the engine ADOPTING one by itself.
+     * 🔴 And they are not for activity body text; a game using them for a long prompt is using a title face as a reading
+     * face.
      */
     {k:'playfair', id:'playfair_display',    fam:'Playfair Display', fb:'serif', minPx:20},
     {k:'dmserifdisplay', id:'dm_serif_display', fam:'DM Serif Display', fb:'serif', minPx:20},
     {k:'fraunces', id:'fraunces',    fam:'Fraunces',       fb:'serif', minPx:20},
     {k:'bodonimoda', id:'bodoni_moda',  fam:'Bodoni Moda',    fb:'serif', minPx:20} ]},
-  // ⚠️ QUATRO FACES SAÍRAM DAQUI EM 2026-09-07 (issue #87, item 3, decisão do Dev):
-  //   · `greatvibes` (44 KB) e `ufcook` (20 KB) — peso que o roster não paga;
-  //   · `learningcurve` e `kindergarten` — eram entradas `.off` SEM FICHEIRO, isto é, o menu oferecia-as
-  //     desabilitadas e nada existia por trás. Uma linha que só serve para dizer «ainda não» é uma linha que
-  //     a criança lê e não pode usar.
+  // ⚠️ NO `.off` ENTRY WITHOUT A FILE (issue #87 item 3): a row that only exists to say "not yet" is a row the child
+  // reads and cannot use.
   {g:'font.group.hand', items:[
     {k:'pinyon', id:'pinyon_script',     fam:'Pinyon Script',       fb:'cursive', d:'font.desc.pinyon', role:'caligrafica', minPx:24},
     {k:'ufmag', id:'unifrakturmaguntia',      fam:'UnifrakturMaguntia',  fb:'cursive', d:'font.desc.ufmag',  role:'caligrafica', minPx:20},
-    // Fondamento entra pela emenda do ADR-0012 (#87 item 3) com o mínimo que o Dev fixou. Caligráfica, logo
-    // fora do menu — ela é para os botões DENTRO das atividades escolares, não para a interface.
+    // Fondamento comes through the ADR-0012 amendment (#87 item 3) with the minimum the Dev set. Handwriting, so out of
+    // the menu — it is for the buttons INSIDE school activities, not for the interface.
     {k:'fondamento', id:'fondamento', fam:'Fondamento',          fb:'cursive', d:'font.desc.fondamento', role:'caligrafica', minPx:20},
     /*
-     * A RONDE FRANCESA — o item 4 da #87, decidido no ADR-0108 §4. Ela NUNCA é empacotada: as três faces são
-     * livres só para uso PESSOAL (ADR-0012), e distribuí-las seria distribuir o que não foi licenciado para
-     * distribuição. O que muda é que a opção passa a FALAR.
+     * THE FRENCH RONDE — #87 item 4, decided in ADR-0108 §4. It is NEVER bundled: the three faces are free for PERSONAL
+     * use only (ADR-0012), and distributing them would distribute what was not licensed for distribution. What the entry
+     * does is SPEAK.
      *
-     * ⚠️ E ISTO NÃO É A ENTRADA `.off` QUE ESTE CATÁLOGO JÁ REMOVEU. O cabeçalho acima tirou a `learningcurve`
-     * e a `kindergarten` com a razão certa — «uma linha que só serve para dizer "ainda não" é uma linha que a
-     * criança lê e não pode usar». A diferença é ACCIONABILIDADE, e é a razão que o ADR-0108 dá por extenso:
-     * aquelas diziam «ainda não», que ninguém pode resolver; esta diz QUAIS TRÊS FONTES INSTALAR, que um
-     * adulto resolve numa tarde. 📌 «Instale uma fonte ronde» seria o defeito de volta — um adulto não age
-     * sobre uma categoria —, e é por isso que a mensagem nomeia as três.
+     * ⚠️ AND IT IS NOT A "NOT YET" ROW. The difference is ACTIONABILITY, the reason ADR-0108 gives in full: a "not yet"
+     * nobody can resolve; this names WHICH THREE FONTS TO INSTALL, which an adult resolves in an afternoon. 📌 "Install a
+     * ronde font" would be the defect back — an adult does not act on a category —, which is why the message names all
+     * three.
      *
-     * ⚠️ `role` AUSENTE, logo `geral`, e é deliberado apesar de a ronde ser caligráfica por natureza: as
-     * caligráficas são filtradas do menu (`fontRole === 'geral'`), e uma linha filtrada não pode dizer
-     * nada a ninguém. Marcar o papel «certo» aqui apagaria a única coisa que este item existe para fazer.
+     * ⚠️ `role` ABSENT, so `geral`, deliberately, although the ronde is handwriting by nature: handwriting faces are
+     * filtered out of the menu (`fontRole === 'geral'`), and a filtered row can say nothing to anyone. Marking the
+     * "right" role here would erase the one thing this entry exists to do.
      */
     /*
-     * AS OITO PLAYWRITE — o item 3 da #87, decidido no ADR-0108 §2 e entregue em 2026-09-09.
+     * THE PLAYWRITE FACES — #87 item 3, decided in ADR-0108 §2.
      *
-     * ⚠️ `papel: caligrafica`, logo FORA DO MENU: elas são a mão que se aprende a escrever, para os botões
-     * DENTRO das atividades escolares, e não uma opção de interface. É a divisão do item 1 desta issue.
+     * ⚠️ `role: caligrafica`, so OUT OF THE MENU: they are the hand one learns to write, for the buttons INSIDE school
+     * activities, not an interface option.
      *
-     * 📌 `minPx: 20` é o mesmo piso que as outras três cursivas carregam. A lista de mínimos da #87 não
-     * nomeia a Playwrite — o número é o das irmãs, e não uma medição própria; corrigir-se com uma linha.
+     * 📌 `minPx: 20` is the same floor the other cursive faces carry. #87's list of minimums does not name the
+     * Playwrite — the number is its siblings', not a measurement of its own; correctable in one line.
      */
     // THE HANDWRITING GROUP'S GENERAL FACE (ADR-0176 §6, the Dev): in the menu, drawn at `minPx` by the face's scale.
     {k:'pwbr', id:'playwrite_br', fam:'Playwrite BR', fb:'cursive', d:'font.desc.pw.br', minPx:20},
@@ -278,21 +265,19 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'pwcl', id:'playwrite_cl', fam:'Playwrite CL', fb:'cursive', d:'font.desc.pw.cl', role:'caligrafica', minPx:20},
     {k:'pwco', id:'playwrite_co', fam:'Playwrite CO', fb:'cursive', d:'font.desc.pw.co', role:'caligrafica', minPx:20},
     /*
-     * MAIS SETE, e elas existem por uma REGRA e não por gosto (ADR-0150, decisão do Dev de 2026-09-12).
+     * SEVEN MORE, and they exist by a RULE and not by taste (ADR-0150, the Dev's decision).
      *
-     * 🎯 `pwes`, `pwpt` e `pwgbj` são o RECUO POR LÍNGUA: um país sem Playwrite própria recebe a do
-     * COLONIZADOR — espanhol → Espanha, português → Portugal, inglês → Inglaterra —, e já não a dos Estados
-     * Unidos, que era o recuo da primeira versão do ADR-0149.
-     * 📌 `pwcu` e `pwpe` foram pedidas por nome; `pwesdeco` e `pwgbs` entram pela outra metade da regra, que
-     * é «onde o país tem mais de um TRAÇO, aparecem os dois» — como US Trad e US Modern.
+     * 🎯 `pwes`, `pwpt` and `pwgbj` are the FALLBACK BY LANGUAGE: a country without its own Playwrite gets the
+     * COLONISER's — Spanish → Spain, Portuguese → Portugal, English → England.
+     * 📌 `pwcu` and `pwpe` were asked for by name; `pwesdeco` and `pwgbs` come through the other half of the rule: where
+     * the country has more than one STROKE, both appear — like US Trad and US Modern.
      *
-     * ⚠️ AS «GUIDES» NÃO ENTRAM, por decisão do Dev. 📏 Medido no catálogo da Google: catorze países têm uma
-     * `Playwrite XX Guides`, e ela não é um segundo traço — é o MESMO traço com as pautas de caligrafia por
-     * cima. A engine não as usa; um jogo que precise delas traz a sua própria fonte.
+     * ⚠️ NO "GUIDES" FACES, by the Dev's decision: a `Playwrite XX Guides` is not a second stroke, it is the SAME stroke
+     * with handwriting ruling on top. The engine does not use them; a game that needs them brings its own font.
      *
-     * 🔴 E ELAS SÃO EMPACOTADAS, o que REVOGA o P3 do ADR-0108 («nada de empacotar: estas são baixadas
-     * conforme necessário»). A decisão nova é dele e é literal: «estas fontes devem ser baixadas no primeiro
-     * dia para fazer parte do PWA». Fica escrito porque o registo antigo continua a dizer o contrário.
+     * 🔴 AND THEY ARE BUNDLED, which REVOKES ADR-0108's P3. The newer decision is the Dev's, literally: «estas fontes
+     * devem ser baixadas no primeiro dia para fazer parte do PWA». Written down because the old record still says the
+     * opposite.
      */
     {k:'pwes', id:'playwrite_es', fam:'Playwrite ES', fb:'cursive', role:'caligrafica', minPx:20},
     {k:'pwesdeco', id:'playwrite_es_deco', fam:'Playwrite ES Deco', fb:'cursive', role:'caligrafica', minPx:20},
@@ -303,17 +288,15 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'pwpe', id:'playwrite_pe', fam:'Playwrite PE', fb:'cursive', role:'caligrafica', minPx:20},
     {k:'ronde', id:'ronde_script', fam:'Ronde Script, OPTIFrench-Script, Merveille', fb:'cursive',
       d:'font.desc.ronde', off:'font.off.ronde', minPx:18} ]},
-  // ⚠️ A FACE DO JOGO, e ela tem grupo próprio porque não é nem sans, nem serifada, nem manuscrita — é uma
-  // face de PIXEL, e pô-la em qualquer um dos três diria a coisa errada sobre ela na lista.
+  // ⚠️ THE GAME'S FACE has its own group because it is neither sans, nor serif, nor handwriting — it is a PIXEL face,
+  // and putting it in any of the three would say the wrong thing about it in the list.
   //
-  // Ela NÃO aparece no menu (`papel:'jogo'`), e o ficheiro veio do `SP-the-inclusionist-whackwhack`, onde já
-  // estava verificado. Ver a nota do `@font-face` em `vendor/fonts.css`: o subconjunto errado desta família
-  // carrega, declara-se e reporta-se como certo, e não desenha uma única letra latina.
+  // It does NOT appear in the menu (`role:'jogo'`). See the `@font-face` note in `vendor/fonts.css`: the wrong subset of
+  // this family loads, declares itself and reports as correct, and draws not a single Latin letter.
   {g:'font.group.arcade', items:[
     {k:'pressstart', id:'press_start_2p', fam:'Press Start 2P', fb:'monospace', d:'font.desc.pressstart', role:'jogo'} ]},
 ];
 
-/** O papel de uma face; ausente no catálogo quer dizer `geral`. */
 /**
  * How much larger the text is drawn with this face: enough to reach its `minPx` from the document's base, never smaller.
  * A face whose catalogue floor is above the base (a display sans, the handwriting) is offered at that size, not under it
@@ -321,40 +304,39 @@ export const FONT_GROUPS: FontGroup[] = [
  */
 export function faceScale(it: FontItem): number { return Math.max(1, (it.minPx ?? BASE_EM_PX) / BASE_EM_PX); }
 
+/** A face's role; absent in the catalogue means `geral`. */
 export function fontRole(it: FontItem): FontRole { return it.role ?? 'geral'; }
 
 /**
- * AS FAMÍLIAS QUE UMA FACE ACEITA, do `fam` que pode ser uma PILHA.
+ * THE FAMILIES A FACE ACCEPTS, from a `fam` that may be a STACK.
  *
- * 📌 A Ronde declara três (`'Ronde Script, OPTIFrench-Script, Merveille'`) porque qualquer uma delas serve —
- * são três desenhos da mesma letra de mão, e um adulto instala a que encontrar. As outras faces declaram uma
- * só, e para elas isto devolve uma lista de um.
+ * 📌 The Ronde declares three (`'Ronde Script, OPTIFrench-Script, Merveille'`) because any of them will do — three
+ * drawings of the same hand, and an adult installs whichever they find. The other faces declare one, and for them this
+ * returns a list of one.
  */
 export function faceFamilies(it: FontItem): string[] {
   return it.fam.split(',').map((f) => f.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
 }
 
 /**
- * ESTA FACE PODE SER USADA AGORA? — o `off` deixa de ser uma sentença e passa a ser uma CONDIÇÃO.
+ * CAN THIS FACE BE USED NOW? — `off` stops being a sentence and becomes a CONDITION.
  *
- * O ADR-0012 decidiu que a opção da ronde «fica DESABILITADA enquanto nenhuma fonte estiver presente», e o
- * ADR-0108 §4 acrescentou o que ela diz. A palavra «enquanto» é o que esta função constrói: uma face `off`
- * volta a ficar disponível no instante em que o adulto instala uma das que a mensagem nomeia.
+ * ADR-0012 decided the ronde option stays DISABLED WHILE no font is present, and ADR-0108 §4 added what it says. The word
+ * "while" is what this function builds: an `off` face becomes available again the instant the adult installs one of the
+ * ones the message names.
  *
- * ⚠️ O DETECTOR É INJECTADO, e nunca `document.fonts` lido daqui: este módulo é o catálogo, corre em node nos
- * gates, e ler um global do navegador aqui é o ACHADO 15 outra vez — o `srAlert` que rebentou o boot contra um
- * documento injectado.
- * 📌 E o PADRÃO É «não instalada», que é seguro por uma razão que não vale para todos os padrões deste
- * repositório: sem detector a opção fica desabilitada COM a mensagem, e a mensagem diz ao adulto exactamente
- * o que fazer. O silêncio não decide nada contra a criança — ele mantém o estado que já existia e que é
- * accionável. É o oposto do `seguraTeclas`, onde os dois lados do padrão erravam.
+ * ⚠️ THE DETECTOR IS INJECTED, and `document.fonts` is never read here: this module is the catalogue, it runs in node in
+ * the gates, and reading a browser global here would be a boot waiting to crash against an injected document.
+ * 📌 And the DEFAULT is not installed, which is safe for a reason that does not hold for every default in this repository:
+ * with no detector the option stays disabled WITH the message, and the message tells the adult exactly what to do. The
+ * silence decides nothing against the child — it keeps a state that already existed and is actionable.
  */
 export function faceAvailable(it: FontItem, installed?: (family: string) => boolean): boolean {
   if (!it.off) return true;
   return !!installed && faceFamilies(it).some((f) => installed(f));
 }
 
-/** As faces que o MENU pode oferecer: só as gerais (emenda do ADR-0012). */
+/** The faces the MENU may offer: only the general ones (ADR-0012 amendment). */
 export const OFERECIVEIS: FontItem[] = FONT_GROUPS.flatMap((g) => g.items).filter((it) => fontRole(it) === 'geral');
 export const FONT_BY_KEY: Record<string, FontItem> = {}; FONT_GROUPS.forEach((g) => g.items.forEach((it) => { FONT_BY_KEY[it.k] = it; }));
 
@@ -365,27 +347,24 @@ const FONT_KEY = 'incl_font_k';
 const FONT_KEY_LEGACY = 'incl_fonte'; // pre-Fase-2: 'alfabetizacao' | 'dislexia'
 
 /**
- * A fonte de fábrica, com nome. Atkinson Hyperlegible foi desenhada pelo Braille Institute justamente para
- * quem tem baixa visão — distingue as formas que mais se confundem (I/l/1, O/0). É por isso que ela é o padrão
- * e não uma preferência estética, e é por isso que o "restaurar padrões" da tipografia (ADR-0028) volta para
- * cá: o caminho de volta de um menu de acessibilidade tem que terminar na escolha mais legível, não numa
- * qualquer. Usada em DOIS lugares — o fim da cadeia de boot logo abaixo e o reset do painel —, e uma constante
- * porque duas cópias de um padrão são duas chances de o reset devolver algo que o jogo nunca usou.
+ * The factory font, named. Atkinson Hyperlegible was designed by the Braille Institute precisely for low vision — it
+ * tells apart the shapes most often confused (I/l/1, O/0). That is why it is the default and not an aesthetic preference,
+ * and why typography's reset (ADR-0028) returns here: the way back from an accessibility menu has to end at the most
+ * legible choice, not at any one. Used in TWO places — the end of the boot chain just below and the panel's reset —, and
+ * a constant because two copies of a default are two chances for the reset to return something the game never used.
  */
 export const DEFAULT_FONT_KEY = 'atkinson';
 
 /**
  * Boot choice: validated persisted key (ignores .off fonts) -> legacy-key migration -> DEFAULT_FONT_KEY.
  *
- * ⚠️ E UMA CALIGRÁFICA GUARDADA VOLTA AO PADRÃO (issue #87, 2026-09-07). Antes da emenda do ADR-0012 o menu
- * oferecia as sete caligráficas, então há crianças com `pinyon` ou `ufmag` guardados — e o valor salvo
- * continua a ser escolha delas, que não é nossa para desfazer sem motivo. O motivo existe: a emenda diz que
- * uma caligráfica **não pode ser a face da interface**, e o menu deixou de a oferecer. Deixá-la valer daria
- * uma interface inteira em letra cursiva a quem já não tem como sair dela pelo menu — uma armadilha, e das
- * silenciosas.
+ * ⚠️ AND A STORED HANDWRITING FACE GOES BACK TO THE DEFAULT (issue #87). A child may have one stored from when the menu
+ * offered them, and a stored value is their choice, not ours to undo without a reason. The reason exists: the ADR-0012
+ * amendment says a handwriting face **cannot be the interface face**, and the menu no longer offers it. Letting it stand
+ * would give a whole interface in cursive to someone with no way out of it through the menu — a trap, and a silent one.
  *
- * ⚠️ E UMA CHAVE APAGADA TAMBÉM VOLTA, pelo mesmo caminho: as quatro faces que saíram do roster já não estão
- * no `FONT_BY_KEY`, então quem tinha `greatvibes` guardado cai no padrão em vez de ficar sem face nenhuma.
+ * ⚠️ AND A DELETED KEY GOES BACK TOO, by the same path: a face no longer in `FONT_BY_KEY` falls back to the default
+ * instead of leaving the child with no face at all.
  */
 export function resolveFontKey(s: FontStore): string {
   const k = s.get(FONT_KEY, null);
