@@ -1,33 +1,32 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/canvas.ts — primitivas-folha de desenho: canvas offscreen → textura PixiJS + disco pixel-art nítido.
-// Base de toda a arte procedural do jogo (coin/tree/powerup/world/…). Depende só de document + PIXI (npm),
-// ZERO estado de jogo. NEAREST em tudo (pixel art, sem anti-aliasing). (Fase 2, subsistema render)
-import * as PIXI from 'pixi.js'; // 7.4.2 via npm (Vite empacota; substitui o PIXI global do vendor)
+// render/canvas.ts — leaf drawing primitives: offscreen canvas → PixiJS texture + a crisp pixel-art disc.
+// The base of every procedural art a game draws. Depends only on document + PIXI (npm), ZERO game state. NEAREST
+// everywhere (pixel art, no anti-aliasing).
+import * as PIXI from 'pixi.js'; // 7.4.2 through npm (Vite bundles it)
 
-// Canvas offscreen do tamanho pedido (fonte de textura procedural).
+// An offscreen canvas of the requested size (a procedural texture source).
 export const makeCanvas = (w: number, h: number): HTMLCanvasElement => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
-// Canvas → PIXI.Texture com escala NEAREST (pixel art crisp).
+// Canvas → PIXI.Texture with NEAREST scaling (crisp pixel art).
 export const tex = (cv: HTMLCanvasElement): PIXI.Texture => { const t = PIXI.Texture.from(cv); t.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST; return t; };
-// Disco com pixels INTEIROS (serrilhado nítido, sem anti-aliasing dos arcos vetoriais). edge = cor da borda (opcional).
+// A disc of WHOLE pixels (crisp jagged edge, no anti-aliasing of vector arcs). edge = the border colour (optional).
 export function pixDisc(c: CanvasRenderingContext2D, cx: number, cy: number, r: number, col: string, edge?: string): void { for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) { const d = Math.hypot(x - cx, y - cy); if (d <= r) { c.fillStyle = (edge && d > r - 1.05) ? edge : col; c.fillRect(x, y, 1, 1); } } }
 
-/* ===================== o pintor de retângulos (px) ===================== */
-// POR QUE EXISTE: o par `makeCanvas(w,h)` + `getContext('2d')` seguido de `fillStyle=…; fillRect(…)` aparece em
-// ~24 pontos do projeto, e a arte procedural da Cidade no main.js chegou a definir TRÊS `mk`/`px` locais, com
-// assinaturas incompatíveis entre si (4 args sem cor + cor fixa por fora; 5 args com cor; canvas de tamanho
-// fixo embutido). Aqui a assinatura é UMA só: `px(x, y, w, h, cor)`.
-// POR QUE DEVOLVE O CANVAS (e não a textura): metade dos usos pós-processa o bitmap antes de virar textura
-// (`outlineCanvas`, `_silhouette`, `directSpriteCanvas`). Quem só quer a textura usa `pixelTexture` abaixo —
-// dois nomes em vez de uma flag booleana, porque o tipo de retorno é justamente o que muda.
-/** Pincel de retângulo cheio: pinta `w×h` em `(x,y)` com `col`. É o `px` que todo painter recebe. */
+/* ===================== the rectangle painter (px) ===================== */
+// WHY IT EXISTS: the pair `makeCanvas(w,h)` + `getContext('2d')` followed by `fillStyle=…; fillRect(…)` shows up all
+// over procedural art, and one game once defined THREE local `mk`/`px` helpers with signatures incompatible with each
+// other. Here the signature is ONE: `px(x, y, w, h, colour)`.
+// WHY IT RETURNS THE CANVAS (and not the texture): half the uses post-process the bitmap before it becomes a texture
+// (`outlineCanvas`, `_silhouette`). Whoever only wants the texture uses `pixelTexture` below — two names instead of a
+// boolean flag, because the return type is exactly what changes.
+/** A filled-rectangle brush: paints `w×h` at `(x,y)` with `col`. It is the `px` every painter gets. */
 export type PixelBrush = (x: number, y: number, w: number, h: number, col: string) => void;
-/** Corpo de uma pintura pixel-art: recebe o pincel e desenha. Sem retorno, sem estado próprio. */
+/** The body of a pixel-art painting: it gets the brush and draws. No return, no state of its own. */
 export type PixelPainter = (px: PixelBrush) => void;
-/** Canvas offscreen `w×h` pintado por `paint` — a rotina que os três `mk` locais do main.js duplicavam. */
+/** An offscreen `w×h` canvas painted by `paint` — the routine those local helpers duplicated. */
 export function pixelCanvas(w: number, h: number, paint: PixelPainter): HTMLCanvasElement {
   const cv = makeCanvas(w, h), c = cv.getContext('2d')!;
   paint((x, y, ww, hh, col) => { c.fillStyle = col; c.fillRect(x, y, ww, hh); });
   return cv;
 }
-/** `pixelCanvas` + `tex`: atalho de quem quer a textura NEAREST direto (arte de sprite que não pós-processa). */
+/** `pixelCanvas` + `tex`: a shortcut for whoever wants the NEAREST texture directly (sprite art with no post-processing). */
 export const pixelTexture = (w: number, h: number, paint: PixelPainter): PIXI.Texture => tex(pixelCanvas(w, h, paint));

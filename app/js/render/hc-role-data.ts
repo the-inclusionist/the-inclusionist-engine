@@ -1,32 +1,32 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/hc-role-data — os PAPÉIS SEMÂNTICOS do color-blocking, num só lugar.
+// render/hc-role-data — color-blocking's SEMANTIC ROLES, in one place.
 //
-// Existiam duas listas dos mesmos quatro papéis: `RoleKey`/`ROLE_KEYS` em ui/settings-visual (que desenha um
-// seletor de cor por papel) e `PaintableRole`/`HcRoleKey` em render/high-contrast (que repinta os tiles). Nada
-// ligava as duas, e a falha era silenciosa: um quinto papel adicionado ao render ganharia cor e não ganharia
-// seletor, sem erro de tipo em lugar nenhum — o painel simplesmente não ofereceria como customizar.
+// There were two lists of the same four roles: one in the visual settings panel (which draws a colour picker per role)
+// and one in render/high-contrast (which repaints the tiles). Nothing tied them, and the failure was silent: a fifth
+// role added to the renderer would get a colour and no picker, with no type error anywhere — the panel would simply not
+// offer a way to customise it.
 //
-// Este módulo é FOLHA de propósito: zero dependências. Ele é importado tanto pelo render quanto pela UI, e um
-// arquivo de dados sem dependência nenhuma pode ser importado dos dois lados sem arrastar o pipeline de
-// renderização para dentro de um painel de configuração (nem o contrário).
+// This module is a LEAF on purpose: zero dependencies. Both the renderer and the UI import it, and a data file with no
+// dependency at all can be imported from both sides without dragging the rendering pipeline into a settings panel (nor
+// the reverse).
 //
-// O que NÃO mora aqui: os rótulos em pt-BR dos papéis, que são apresentação e ficam em ui/settings-visual.
-// Eles são digitados por `HcRoleKey`, então continuam obrigados a cobrir exatamente estes quatro papéis.
+// What does NOT live here: the roles' labels, which are presentation and sit in ui/visual-choices (`ROLE_LABELS`). They
+// are typed by `HcRoleKey`, so they stay obliged to cover exactly these four roles.
 
-/** Papéis que `roleOf(tile)` sabe devolver — os que o repinte do alto contraste aplica direto no tile. */
+/** The roles `roleOf(tile)` can return — those the high-contrast repaint applies straight to the tile. */
 export type PaintableRole = 'hazard' | 'climb' | 'water';
 
-/** Todos os papéis customizáveis. `gate` não vem de `roleOf()`: é usado à parte pelo desenho do portão
- *  trancado (game/level-geometry), mas o jogador escolhe a cor dele no mesmo painel. */
+/** All the customisable roles. `gate` does not come from `roleOf()`: a game's locked-gate drawing uses it apart, but
+ *  the player picks its colour in the same panel. */
 export type HcRoleKey = PaintableRole | 'gate';
 
-/** Ordem canônica dos papéis — a ordem em que o painel desenha os seletores de cor. */
+/** The roles' canonical order — the order in which the panel draws the colour pickers. */
 export const HC_ROLE_KEYS: readonly HcRoleKey[] = ['hazard', 'climb', 'water', 'gate'];
 
 /**
- * Cores padrão por papel (RGB 0-255). Color-blocking: perigo = laranja-quente, escalável/interativo
- * (escada/trampolim) = ciano, água = azul, portão = magenta. A estrutura (pedra/parede) fica no cinza-azulado
- * do nível e por isso não é um papel. Customizável e persistido — ver `HC_ROLE` em render/high-contrast.
+ * Default colours per role (RGB 0-255). Color-blocking: hazard = warm orange, climbable/interactive (ladder/trampoline)
+ * = cyan, water = blue, gate = magenta. Structure (stone/wall) stays in the level's blue-grey and so is not a role.
+ * Customisable and persisted — see `HC_ROLE` in render/high-contrast.
  */
 export const HC_ROLE_DEF: Record<HcRoleKey, [number, number, number]> = {
   hazard: [255, 110, 45], climb: [55, 225, 205], water: [70, 140, 255], gate: [194, 58, 212],

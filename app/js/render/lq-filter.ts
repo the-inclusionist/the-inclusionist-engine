@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/lq-filter.ts — Realce de contraste Linear→Quadrático (baixa visão, PESQUISA-ALTO-CONTRASTE §2.3).
-// Curva de tom POR PIXEL na tela inteira, composta via SVG feComponentTransfer (17 amostras, sRGB) no CSS
-// filter do canvas. `lqCurve`/`lqName` são puros (project node); `ensureLqFilter`/`setLq` são a casca fina que
-// cria o nó SVG e escreve no DOM. Recompor o CSS filter final (junto com os modos de cor) fica em game.js via
-// `onChange` injetado — não duplica _lastSharedViz/_rebakeDirect (outros subsistemas). Extraído verbatim.
+// render/lq-filter.ts — the Linear→Quadratic contrast enhancement (low vision, PESQUISA-ALTO-CONTRASTE §2.3).
+// A PER-PIXEL tone curve over the whole screen, composed through an SVG feComponentTransfer (17 samples, sRGB) in the
+// canvas's CSS filter. `lqCurve`/`lqName` are pure (node project); `ensureLqFilter`/`setLq` are the thin shell that
+// creates the SVG node and writes to the DOM. Recomposing the final CSS filter (with the colour modes) belongs to the
+// host, through the injected `onChange` — this module does not duplicate the other subsystems' caches.
 
 import * as store from '../platform/storage.js';
 
@@ -15,7 +15,7 @@ function clamp01(t: number): number {
 
 /**
  * 17-sample `feFuncR/G/B` table for tableValues, blending contrast-stretch (linear, α=1.3, μ=0.5) with an
- * S-curve (quadratic) by `t`. NOT clamped — mirrors game.js's lqCurve verbatim (callers clamp `t` upstream).
+ * S-curve (quadratic) by `t`. NOT clamped — callers clamp `t` upstream.
  */
 export function lqCurve(t: number): string {
   const N = 17, a = 1.3, out: string[] = [];
@@ -29,8 +29,8 @@ export function lqCurve(t: number): string {
 }
 
 /**
- * Continuous `t` -> the i18n KEY of the screen-reader/UI label. NOT clamped — mirrors game.js's lqName verbatim
- * (t<=0 and t>=1-ish inputs fall through to the end labels naturally).
+ * Continuous `t` -> the i18n KEY of the screen-reader/UI label. NOT clamped (t<=0 and t>=1-ish inputs fall through to
+ * the end labels naturally).
  *
  * Returns a key rather than resolved text for two reasons. This module is a render leaf and stays free of the
  * i18n dependency; and its parameter is already called `t`, so importing i18n's `t` here would shadow it — a
@@ -86,24 +86,22 @@ export function getLqT(): number {
 
 export interface LqFilterCtx {
   /**
-   * Recomposes the app's CSS filter after lqT changes. In game.js this is either a full `applyVizGlobal()`
-   * re-apply (single-player: also touches viz-mode texture caches, `_lastSharedViz`) or a direct
-   * `app.view.style.filter = ...` write composed with the active viz-mode filter (multiplayer). That
-   * composition — and the texture-cache invalidation it triggers elsewhere — belongs to other subsystems and
-   * stays in game.js; this module only owns lqT + the SVG filter node.
+   * Recomposes the app's CSS filter after lqT changes — composed with the active colour/simulation filter, and with
+   * whatever texture-cache invalidation that triggers elsewhere. That composition belongs to other subsystems and
+   * stays with the host; this module only owns lqT + the SVG filter node.
    */
   onChange: () => void;
 }
 
 let onChange: () => void = () => {};
 
-/** Wires the injected recompose callback. Call once during game.js boot. */
+/** Wires the injected recompose callback. Call once during the host's boot. */
 export function initLqFilter(ctx: LqFilterCtx): void {
   onChange = ctx.onChange;
 }
 
 /** Sets lqT (clamped to 0..1), persists it, updates the live SVG table (if the filter is already on-screen),
- * then calls the injected `onChange` to let game.js recompose the CSS filter. Mirrors game.js's setLq. */
+ * then calls the injected `onChange` to let the host recompose the CSS filter. */
 export function setLq(t: number): void {
   lqT = clamp01(t);
   store.set(store.KEYS.lq, lqT);
