@@ -40,6 +40,10 @@ export const WHISPER_FRAMES = 3000;
 export const WHISPER_BANDS = 80;
 const N_FFT = 400;
 const HOP = 160;
+const HALF = N_FFT / 2;
+const BINS = HALF + 1;
+/** What a band is when its power is clipped: the original clips at 1e-10 before the log. */
+const CLIPPED = Math.log10(1e-10);
 
 export const READING_MODELS: readonly ReadingModelPlan[] = Object.freeze([
   {
@@ -77,70 +81,88 @@ export function readingModelFor(language: string): ReadingModelPlan | null {
 export function logMel(samples: Float32Array, melFilters: readonly (readonly number[])[]): Float32Array {
   const audio = new Float32Array(WHISPER_SAMPLES);
   audio.set(samples.subarray(0, WHISPER_SAMPLES));
-
-  const window = new Float64Array(N_FFT);
-  for (let i = 0; i < N_FFT; i++) window[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / N_FFT);
-
-  const half = N_FFT / 2;
-  const bins = half + 1;
   // the reflected padding, written once: `at(i)` is the padded signal, so no copy of 480 000 samples is made
   const at = (i: number): number => {
-    const j = i - half;
+    const j = i - HALF;
     if (j < 0) return audio[-j]!;
     if (j >= WHISPER_SAMPLES) return audio[2 * WHISPER_SAMPLES - j - 2]!;
     return audio[j]!;
   };
-
-  // ⚠️ THE TURNS ARE COMPUTED ONCE. A 400-point real DFT for 201 bins is 80 400 sines and cosines per frame, and there are 3000
-  // frames: asking `Math.cos` for them each time is a quarter of a billion calls, which on a school machine is not «slower», it
-  // is a child waiting half a minute to be told what they read.
-  const cosTable = new Float64Array(bins * N_FFT);
-  const sinTable = new Float64Array(bins * N_FFT);
-  for (let k = 0; k < bins; k++) {
-    for (let n = 0; n < N_FFT; n++) {
-      const angle = (-2 * Math.PI * k * n) / N_FFT;
-      cosTable[k * N_FFT + n] = Math.cos(angle);
-      sinTable[k * N_FFT + n] = Math.sin(angle);
-    }
-  }
+  const turns = dftTurns();
 
   const out = new Float32Array(WHISPER_BANDS * WHISPER_FRAMES);
-  const power = new Float64Array(bins);
-  const SILENT = Math.log10(1e-10);
+  const power = new Float64Array(BINS);
   let loudest = -Infinity;
   for (let frame = 0; frame < WHISPER_FRAMES; frame++) {
     const start = frame * HOP;
     // 🎯 A WINDOW OF PURE SILENCE IS ANSWERED, NOT COMPUTED, and it is EXACT: every bin of a window of zeros is zero, so every
-    // band is the same floor. A child reads for a few seconds into a 30 s window, so most frames are this one — measured below.
+    // band is the clipped value. A child reads for a few seconds into a 30 s window, so most frames are this one. It never
+    // raises the loudest point: no computed band is ever below the clip, and an all-silent window floors at −∞.
     let quiet = true;
     for (let n = 0; n < N_FFT && quiet; n++) if (at(start + n) !== 0) quiet = false;
     if (quiet) {
-      for (let band = 0; band < WHISPER_BANDS; band++) out[band * WHISPER_FRAMES + frame] = SILENT;
-      if (SILENT > loudest) loudest = SILENT;
+      for (let band = 0; band < WHISPER_BANDS; band++) out[band * WHISPER_FRAMES + frame] = CLIPPED;
       continue;
     }
-    for (let k = 0; k < bins; k++) {
-      let re = 0, im = 0;
-      const row = k * N_FFT;
-      for (let n = 0; n < N_FFT; n++) {
-        const x = at(start + n) * window[n]!;
-        re += x * cosTable[row + n]!;
-        im += x * sinTable[row + n]!;
-      }
-      power[k] = re * re + im * im;
-    }
-    for (let band = 0; band < WHISPER_BANDS; band++) {
-      const filter = melFilters[band]!;
-      let sum = 0;
-      for (let k = 0; k < bins; k++) sum += power[k]! * filter[k]!;
-      const value = Math.log10(Math.max(sum, 1e-10));
-      out[band * WHISPER_FRAMES + frame] = value;
-      if (value > loudest) loudest = value;
-    }
+    powerOf(at, start, turns, power);
+    loudest = Math.max(loudest, melOf(power, melFilters, out, frame));
   }
+  // the floor is eight decades below the LOUDEST point of this window, not a constant, and the scale ends in (x + 4) / 4
   const floor = loudest - 8;
   for (let i = 0; i < out.length; i++) out[i] = (Math.max(out[i]!, floor) + 4) / 4;
   return out;
+}
+
+/** A PERIODIC Hann window: a symmetric one moves every value. 400 numbers, computed once. */
+const HANN = Float64Array.from({ length: N_FFT }, (_, i) => 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / N_FFT));
+
+/** The cosines and sines of a 400-point real DFT, a row of 400 per bin. */
+interface DftTurns { readonly cos: Float64Array; readonly sin: Float64Array }
+
+/**
+ * ⚠️ THE TURNS ARE COMPUTED ONCE. A 400-point real DFT for 201 bins is 80 400 sines and cosines per frame, and there are 3000
+ * frames: asking `Math.cos` for them each time is a quarter of a billion calls, which on a school machine is not «slower», it is
+ * a child waiting half a minute to be told what they read.
+ */
+function dftTurns(): DftTurns {
+  const cos = new Float64Array(BINS * N_FFT);
+  const sin = new Float64Array(BINS * N_FFT);
+  for (let k = 0; k < BINS; k++) {
+    for (let n = 0; n < N_FFT; n++) {
+      const angle = (-2 * Math.PI * k * n) / N_FFT;
+      cos[k * N_FFT + n] = Math.cos(angle);
+      sin[k * N_FFT + n] = Math.sin(angle);
+    }
+  }
+  return { cos, sin };
+}
+
+/** One frame's power spectrum: the windowed DFT's magnitude SQUARED, one value per bin. */
+function powerOf(at: (i: number) => number, start: number, turns: DftTurns, power: Float64Array): void {
+  for (let k = 0; k < BINS; k++) {
+    let re = 0, im = 0;
+    const row = k * N_FFT;
+    for (let n = 0; n < N_FFT; n++) {
+      const x = at(start + n) * HANN[n]!;
+      re += x * turns.cos[row + n]!;
+      im += x * turns.sin[row + n]!;
+    }
+    power[k] = re * re + im * im;
+  }
+}
+
+/** One frame's 80 bands, each the power through its mel filter, clipped at 1e-10 BEFORE the log. Answers the frame's loudest. */
+function melOf(power: Float64Array, melFilters: readonly (readonly number[])[], out: Float32Array, frame: number): number {
+  let loudest = -Infinity;
+  for (let band = 0; band < WHISPER_BANDS; band++) {
+    const filter = melFilters[band]!;
+    let sum = 0;
+    for (let k = 0; k < BINS; k++) sum += power[k]! * filter[k]!;
+    const value = Math.log10(Math.max(sum, 1e-10));
+    out[band * WHISPER_FRAMES + frame] = value;
+    if (value > loudest) loudest = value;
+  }
+  return loudest;
 }
 
 /** A `tokenizer.json`, in the parts a reading reads: the vocabulary, the added tokens, and which decoder undoes them. */
