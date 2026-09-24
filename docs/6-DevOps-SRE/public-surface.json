@@ -920,22 +920,11 @@
     "gameKey"
   ],
   "platform/storage.ts": [
-    "KEYS",
     "StorageLike",
     "Store",
     "createStorage",
-    "get",
-    "getBool",
-    "getJSON",
-    "getJsonWithLegacy",
-    "getNum",
-    "getWithLegacy",
     "keysOutsideScopes",
-    "memoryBackend",
-    "remove",
-    "set",
-    "setBool",
-    "setJSON"
+    "memoryBackend"
   ],
   "platform/tts.ts": [
     "Tts",

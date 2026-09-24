@@ -3131,6 +3131,8 @@ own the same way: `const store = createStorage(window.localStorage)` — or pass
 
 | old | new | migration |
 |---|---|---|
+| `platform/storage.js` `get`, `set`, `remove`, `getBool`, `setBool`, `getNum`, `getJSON`, `setJSON`, `getWithLegacy`, `getJsonWithLegacy` | the same ten, as members of the `Store` that `createStorage(backend)` returns | `const store = createStorage(window.localStorage)` once at boot, then `store.get(…)` where `get(…)` was |
+| `platform/storage.js` `KEYS` | `platform/storage-keys.js` `KEYS` (note CS) | change the import path |
 | `input/keyboard.js` `loadKB()`, `initKB()`, `resetKB()`, `saveKB(kb)` | `loadKB(store)`, `initKB(store)`, `resetKB(store)`, `saveKB(store, kb)` | pass the store first |
 | `input/latch-edge.js` `LatchedEdgeOptions.store` | REQUIRED (was optional, defaulting to the page's storage) | `createLatchedEdge(() => players, { store })` |
 | `input/pad-wizard.js` `padMap(id)` · `PadWizardCtx` | `padMap(store, id)` · `PadWizardCtx.store` REQUIRED | pass the store |
@@ -3148,7 +3150,31 @@ own the same way: `const store = createStorage(window.localStorage)` — or pass
 | `ui/vlibras.js` `librasOpen` | OFF until the new `initLibras(store)` reads the stored choice (it was read at IMPORT); `toggleLibras` keeps the choice in that store | call `initLibras(store)` at boot — `createGame` does; without it the choice lasts the session only |
 
 Required and not optional, by ADR-0224/0227's precedent: each of these has no safe answer without a store — the child's
-remap, latch or controller map would be read from nowhere and lost in silence.
+remap, latch, controller map, voice, colours or calm level would be read from nowhere and lost in silence. The one
+optional field is `EngineHost.storage` itself, because its absence HAS a safe answer: the host window's `localStorage`,
+which is what «this browser remembers the child's choices» means.
+
+⚠️ **Four values stopped being read at import** — `CRT`, the L→Q amount (`getLqT()`), `HC_ROLE` and `librasOpen`. Each
+holds its factory value until its init reads the store. A game that read one of them right after importing, before the
+init, now sees the factory value; `createGame` inits `CRT`, the L→Q amount and deaf mode before anything reads them.
+
+📏 **Measured in the seven games, read-only, as information** — every one consumes an older published engine, and several
+still import names older than this note (`criarArestaComAlternancia`, `lerCenaGuardada`, `lerVisualGuardado`, `kJogo`), so
+each meets these changes together with the renames already listed:
+
+- **Direct use of `platform/storage`'s page-wide functions:** `game-platformer` (`app/js/main.ts`, `game/state.ts`,
+  `game/attract.ts` — the namespace, with `store.KEYS`), `game-soccer` (`boot/main.ts`; `input/keymap.ts` reads and
+  writes its keymap through a store it declares as a slice), `game-whackwhack` (`boot/standalone.ts` `KEYS`, `set`;
+  `store/high-score.ts` `getNum`, `set`), `game-2048` (`src/standalone.ts`, the namespace), `pixi-15-puzzle`
+  (`cartridge.ts`, `get`/`set`/`getBool`/`setBool`). Each builds its store once with `createStorage(window.localStorage)`
+  — or, better, passes the same backend to `createGame` as `host.storage` so the game and the engine keep the child's
+  data in one place.
+- **Functions and ctx that now take the store:** `game-platformer` calls `initKB`, `initCrt`, `initAudioMixer`,
+  `createTts`, `initLqFilter`, `initHighContrast`, `saveHcRole`, `initPauseIcons`, `initGamepad`, `initVizSetters`,
+  `initSettingsMotion` and the latch factory; `game-soccer` calls `initGamepad`, `initAudioMixer`, the latch factory and
+  `toggleLibras`/`vlibrasOpen` (deaf mode starts off unless `initLibras(store)` runs — its own `createGame` root does
+  it); `game-2048` passes `saveKB`/`resetKB` to the controls panel; `game-whackwhack` and `pixi-15-puzzle` call the visual
+  reader, and `pixi-15-puzzle` and `game-2048` the scene reader. `game-chess` and `game-pinball` use none of these.
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
@@ -3171,6 +3197,7 @@ remap, latch or controller map would be read from nowhere and lost in silence.
 | `CreateGameOptions.carregarKokoro` · `TtsCtx.carregarKokoro` · `platform/kokoro` · `Tts.kokoroDispositivo` | new, optional: the Kokoro port (`ModuloKokoro`: phonemize, vocabulary, voice table, session on WebGPU or WASM), filled by the game; its voices listed after Piper's, Heart and Bella marked with a heart; WebGPU kept only when a test synthesis is speech (ADR-0198, issue #181). `Tts.neuralDisponivel` is true with either port |
 | `core/loop.registrarAvisoDeQueda` | new: `createGame` registers its crash notice, and a `startLoop` with no `aoFalhar` announces through it (study item D1); a game's own `aoFalhar` still wins |
 | `Engine.legendarSom` | new: the engine hosts the sound caption in the screen footer (study item D3); pass it as `createAudioEarcons`'s `showCaption` instead of a page `#caption` |
+| `platform/storage.createStorage`, `memoryBackend`, `StorageLike`, `Store` · `EngineHost.storage` · `ui/vlibras.initLibras` | new (note CT): the store as a factory over the backend it is given, a Map-backed backend for a test or a second root, the host's optional storage the root builds the page's store from (absent: the host window's `localStorage`), and deaf mode's init |
 | `core/camera-cycle` · `core/setting-defaults` · `platform/storage-keys` | new, stateless (note CS): besides the names that moved, `CAMERA_CONTROLS` (the 📷 order, also the motor panel's camera row), `toCameraControl` (a stored value that is not a position reads as off), the `MediaQuery` type, and `KEYS` at its new home |
 | `CreateGameOptions.hud` · `ui/hud-bands` | new, optional: the numbers a game shows, each with its band (`identity`, `mission`, `power`, `learning`); the engine mounts the HUD — points and mission top left, power top right (under the clock, ADR-0175), nothing under the quick bar, one to three learning bars (a `Barra` from `educational/segment-bar`) centred in the footer under the explanation — and `--barra-a11y-h` grows by what it takes (ADR-0168, issue #162). A malformed list is refused. A game that keeps its own HUD passes nothing |
 

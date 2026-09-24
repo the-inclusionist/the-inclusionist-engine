@@ -3595,7 +3595,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     if (!outsideScopes.length) return [];
     return [`the cartridge stored keys outside the engine's scopes (${outsideScopes.slice(0, 5).join(', ')}): a child's settings `
       + 'kept there do not follow them to the next game, and a game\'s own collide with other games\' — what belongs to '
-      + 'the child goes under incl_* through the engine\'s settings, what belongs to the game under incl.<game>.* (storage.gameKey)'];
+      + 'the child goes under incl_* through the engine\'s settings, what belongs to the game under incl.<game>.* (storage-keys.gameKey)'];
   }
 
   const measuredProblems: string[] = [];

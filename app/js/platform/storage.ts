@@ -7,8 +7,6 @@
 // boot down (hence every access is try/catch). Centralised here: one place to change the strategy (namespacing,
 // IndexedDB…) without hunting dozens of call sites.
 
-import { KEYS as KEY_TABLE } from './storage-keys.js';
-
 /**
  * What the store wraps: the three methods of the Web Storage API it calls. A window's `localStorage` has this shape, and so
  * does `memoryBackend()` — which is how a test, or a second root on the same page, gets storage nobody else writes.
@@ -133,33 +131,3 @@ export function memoryBackend(entries: Iterable<readonly [string, string]> = [])
 export function keysOutsideScopes(storedKeys: Iterable<string>): string[] {
   return [...storedKeys].filter((k) => !k.startsWith('incl_') && !k.startsWith('inclusionist.') && !k.startsWith('incl.'));
 }
-
-/* ===================== the page's default store — ENDS WITH D2b ===================== */
-//
-// ⚠️ TRANSITIONAL: the modules below `boot` that still import this module by value read and write through these names,
-// which wrap the page's global `localStorage` exactly as before. Each layer that moves to an injected store stops using
-// them, and they leave with the `KEYS` alias when nothing imports this module by value (ADR-0232 point 5, issue #207).
-const pageStore = createStorage({
-  getItem: (key) => localStorage.getItem(key),
-  setItem: (key, value) => { localStorage.setItem(key, value); },
-  removeItem: (key) => { localStorage.removeItem(key); },
-});
-// One declaration per name, not a destructuring: the public-surface snapshot reads declared names, and a destructured export
-// would read as ten names removed while all ten are still here.
-export const get = pageStore.get;
-export const set = pageStore.set;
-export const remove = pageStore.remove;
-export const getBool = pageStore.getBool;
-export const setBool = pageStore.setBool;
-export const getNum = pageStore.getNum;
-export const getJSON = pageStore.getJSON;
-export const setJSON = pageStore.setJSON;
-export const getWithLegacy = pageStore.getWithLegacy;
-export const getJsonWithLegacy = pageStore.getJsonWithLegacy;
-
-/**
- * The register of known keys and `gameKey` live in `platform/storage-keys`, a stateless module (ADR-0232, issue #207).
- * ⚠️ `KEYS` IS STILL PUBLISHED HERE, as an alias and not a re-export (the surface snapshot does not see re-exports), until
- * nothing imports this module by value.
- */
-export const KEYS = KEY_TABLE;

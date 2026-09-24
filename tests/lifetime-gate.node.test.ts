@@ -15,14 +15,17 @@
 // that no round field persists, left with its subject — see the note at the end.)
 //
 // ========================= WHERE THE FAKE GOES IN =========================
-// BELOW `platform/storage`, at the browser API, not in its place. It is the same choice as `tests/state.node.test.js`,
+// BELOW `platform/storage`, at the backend it wraps, not in its place. It is the same choice as `tests/state.node.test.js`,
 // for the same reason: the real storage is exception-proof (it swallows everything in `file://` and private mode), so
-// replacing it would measure the fake. With a fake `localStorage` underneath, what is measured is that the setter ASKS
-// to persist, with the real persistence module in the path.
+// replacing it would measure the fake. The settings are loaded from a real store over a recording backend (ADR-0178's
+// port, ADR-0232): what is measured is that the setter ASKS to persist, with the real persistence module in the path.
 //
 // As MUTAÇÕES CONFERIDAS estão no fim do arquivo.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as state from '../app/js/core/state.js';
+import { createStorage } from '../app/js/platform/storage.js';
+import { KEYS } from '../app/js/platform/storage-keys.js';
+import { filePort } from './fixtures/file-storage.js';
 
 /**
  * The `core/state` setters that do NOT persist, each with its reason. The list is short on purpose: it is the cut's
@@ -55,22 +58,19 @@ const ARGUMENTOS: Record<string, readonly [unknown, unknown]> = {
   setMenuIndexOnValue: [false, true], setSwitchScanValue: [true, false], setVoiceControlValue: [true, false],
 };
 
-let localAntigo: unknown;
 let escritas: string[] = [];
 
 beforeEach(() => {
-  localAntigo = (globalThis as { localStorage?: unknown }).localStorage;
   const mapa = new Map<string, string>();
   escritas = [];
-  (globalThis as { localStorage?: unknown }).localStorage = {
+  state.loadState({ ...createStorage({
     getItem: (k: string) => (mapa.has(k) ? mapa.get(k)! : null),
     setItem: (k: string, v: string) => { escritas.push(k); mapa.set(k, String(v)); },
     removeItem: (k: string) => { mapa.delete(k); },
-  };
+  }), KEYS });
 });
 afterEach(() => {
-  if (localAntigo === undefined) delete (globalThis as { localStorage?: unknown }).localStorage;
-  else (globalThis as { localStorage?: unknown }).localStorage = localAntigo;
+  state.loadState(filePort); // back to this file's storage, as the setup left it
 });
 
 /** Every setter `core/state` exports, DISCOVERED — not a hand-written list. */

@@ -7,13 +7,12 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
-import * as store from '../app/js/platform/storage.js';
+import { memoryBackend } from '../app/js/platform/storage.js';
+import { filePort } from './fixtures/file-storage.js';
 
 let createGame;
 let state;
 let raiz;
-const CHAVES = ['incl_captions', 'incl_modocego'];
-let guardadas;
 
 const declaracao = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1'] }),
@@ -36,20 +35,17 @@ beforeAll(async () => {
 afterEach(() => {
   raiz?.remove();
   document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove());
-  CHAVES.forEach((k, i) => { if (guardadas[i] === null) localStorage.removeItem(k); else localStorage.setItem(k, guardadas[i]); });
-  state.loadState(store); // back to the page's storage, as the setup left it
+  state.loadState(filePort); // back to this file's storage, as the setup left it
 });
 
 describe('the stored settings reach a game through createGame', () => {
   it('🔴 [Right] a setting stored away from its default is what the game reads after createGame', () => {
-    guardadas = CHAVES.map((k) => localStorage.getItem(k));
-    // stored AFTER the setup loaded the settings: only a load by createGame can bring them in
-    localStorage.setItem('incl_captions', '0');
-    localStorage.setItem('incl_modocego', '1');
+    // stored in the storage the HOST lends (ADR-0232), which the setup never loaded: only a load by createGame brings them in
+    const storage = memoryBackend([['incl_captions', '0'], ['incl_modocego', '1']]);
     raiz = document.createElement('div');
     raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p><section id="game-region"></section><div id="title-icons"></div>';
     document.body.appendChild(raiz);
-    createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
+    createGame({ accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window, storage }, downloadHeavy: false });
     expect(state.captionsOn, 'the child turned captions off and the game reads them on').toBe(false);
     expect(state.blindMode, 'the child turned blind mode on and the game reads it off').toBe(true);
   });
@@ -57,3 +53,4 @@ describe('the stored settings reach a game through createGame', () => {
 
 // ============================== MUTATIONS CHECKED ==============================
 //   R4 createGame without `state.loadState(store)`   🔴 captions off / blind mode on
+//   R5 the root ignoring `host.storage` (`hostStorage` reads the window's)   🔴 the same case: the host's settings never arrive

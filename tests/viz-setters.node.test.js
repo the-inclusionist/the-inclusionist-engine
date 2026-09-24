@@ -8,20 +8,22 @@
 // _rebakeDirect/updateVizIndicator/renderVizGroup.)
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
+import { KEYS } from '../app/js/platform/storage-keys.js';
+import { loadState } from '../app/js/core/state.js';
 import { t } from '../app/js/core/i18n.js';
 import { migrateVisual } from '../app/js/render/viz-axes.js'; // VIZ_MODES holds KEYS (item 14)
 
-// A fake localStorage BEFORE anything of the game touches persistence: platform/storage swallows the exception
-// (try/catch), so without this shim `store.set` becomes a no-op and the persistence test could not fail.
+// ONE backend for this file, over a Map the cases read (ADR-0232): the viz setters write through the store their ctx
+// receives, and `core/state` (the global mode) through the port it is loaded with — both are this Map. Without a backend
+// every write would be refused in silence, and the persistence cases could not fail.
 const mem = new Map();
-globalThis.localStorage = {
+const shared = createStorage({
   getItem: (k) => (mem.has(k) ? mem.get(k) : null),
   setItem: (k, v) => { mem.set(k, String(v)); },
   removeItem: (k) => { mem.delete(k); },
-  clear: () => mem.clear(),
-};
-// ...and the store the module receives is built over that same Map (ADR-0232): the cases read `mem` to see what it wrote.
-const shared = createStorage(globalThis.localStorage);
+});
+const memGet = (k) => (mem.has(k) ? mem.get(k) : null);
+loadState({ ...shared, KEYS });
 
 const { VIZ_MODES, VIZ_BY_KEY } = await import('../app/js/render/viz-modes.js');
 const { initHighContrast } = await import('../app/js/render/high-contrast.js');
@@ -464,7 +466,7 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
     const { env, api } = setup();
     api.applyVizGlobal(migrateVisual('inexistente'));
     expect(env.app.view.style.filter).toBe('');
-    expect(localStorage.getItem('incl_viz')).toBe('normal');
+    expect(memGet('incl_viz')).toBe('normal');
   });
   it('[Right] baixa visão: classe no body + overlay visível com a classe da variante', () => {
     const { env, api } = setup();
@@ -556,16 +558,16 @@ describe('setPlayerViz — solo e multi-tela seguem caminhos DIFERENTES', () => 
     });
     api.setPlayerViz(1, 'blind');
     expect(env.players.map((p) => p.viz)).toEqual(['sim-protan', 'blind', 'lv-blur']);
-    expect(localStorage.getItem('incl_viz_p1')).toBe('blind');
-    expect(localStorage.getItem('incl_viz_p0')).toBeNull();
-    expect(localStorage.getItem('incl_viz_p2')).toBeNull();
+    expect(memGet('incl_viz_p1')).toBe('blind');
+    expect(memGet('incl_viz_p0')).toBeNull();
+    expect(memGet('incl_viz_p2')).toBeNull();
     expect(env.vpSpr.map((s) => s.filters)).toEqual(['FILTER:sim-protan', 'FILTER:blind', 'FILTER:lv-blur']);
   });
   it('[Error] modo desconhecido grava `normal` no jogador e na persistência', () => {
     const { env, api } = setup({ players: [{ viz: 'blind' }], numPlayers: 1 });
     api.setPlayerViz(0, 'chute');
     expect(env.players[0].viz).toBe('normal');
-    expect(localStorage.getItem('incl_viz_p0')).toBe('normal');
+    expect(memGet('incl_viz_p0')).toBe('normal');
   });
   it('[Right] cegueira liga o modo cego (bengala + pistas de áudio) por padrão', () => {
     const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
@@ -591,7 +593,7 @@ describe('reapplyVizAll — reaplicação após mudança estrutural (cenário / 
     api.reapplyVizAll();
     expect(env.bodyClasses.has('lowvision-mode')).toBe(true);
     expect(env.els['#viz-overlay'].className).toBe('lv-tunnel');
-    expect(localStorage.getItem('incl_viz')).toBe('lv-tunnel');
+    expect(memGet('incl_viz')).toBe('lv-tunnel');
   });
   it('[Right] MULTI-TELA: DESLIGA filtro/overlay/bolinha globais e liga os por viewport', () => {
     const { env, api } = setup({ players: [{ viz: 'blind' }, { viz: 'lv-haze' }], numPlayers: 2, vpSpr: [filtered(), filtered()] });
@@ -605,7 +607,7 @@ describe('reapplyVizAll — reaplicação após mudança estrutural (cenário / 
     expect(env.els['#viz-overlay'].hidden).toBe(true);
     expect(env.els['#viz-indicator'].hidden).toBe(true);   // updateVizIndicator('normal')
     expect(env.vpSpr.map((s) => s.filters)).toEqual(['FILTER:blind', 'FILTER:lv-haze']);
-    expect(localStorage.getItem('incl_viz')).toBeNull();   // MP does not write the global mode
+    expect(memGet('incl_viz')).toBeNull();   // MP does not write the global mode
   });
   it('[Right] invalida o registro do render estático nos DOIS caminhos', () => {
     for (const n of [1, 2]) {

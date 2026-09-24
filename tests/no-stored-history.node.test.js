@@ -30,9 +30,10 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
  * `porta.set(` in `setLocale`): without those two forms this sieve went blind to them, and their inventory lines read as orphans.
  * ⚠️ And since ADR-0232 D2b a module keeps the store the root hands it under its own name (`_store?.setJSON(` in `render/crt`,
  * `lqStore?.set(` in `render/lq-filter`, `ctx?.store.setJSON(` in `render/high-contrast`): any `…store`/`…Store` binding, with
- * optional chaining, is a write — the same blindness, one refactor later.
+ * optional chaining, is a write — the same blindness, one refactor later. And `platform/storage` itself writes through the
+ * backend it is GIVEN (`backend.setItem(`), no longer through the global.
  */
-const ESCREVE = /(?:^|[^\w.])(?:ctx\??\.)?\w*[sS]tore\??\.(?:set|setBool|setJSON)\s*\(|portFor\('\w+'\)|port\.set\s*\(|localStorage\.setItem|sessionStorage\.setItem|indexedDB/;
+const ESCREVE = /(?:^|[^\w.])(?:ctx\??\.)?\w*[sS]tore\??\.(?:set|setBool|setJSON)\s*\(|portFor\('\w+'\)|port\.set\s*\(|(?:localStorage|sessionStorage|backend)\??\.setItem|indexedDB/;
 
 function ficheirosTs(dir = RAIZ) {
   const saida = [];
@@ -67,7 +68,7 @@ const INVENTARIO = {
   'platform/audio-mixer.ts': 'criança · liga/desliga e volume de cada categoria do mixer',
   'boot/create-game.ts': 'criança/adulto · a simulação de perda auditiva do modo empatia, ligada ou não',
   'platform/tts.ts': 'criança · a voz escolhida para a narração (ADR-0185)',
-  'platform/storage.ts': 'a própria camada — é aqui que o `localStorage.setItem` vive, e só aqui',
+  'platform/storage.ts': 'the layer itself — the `setItem` of the backend the root lends it lives here, and only here (ADR-0232)',
   'render/crt.ts': 'criança · os parâmetros do filtro CRT',
   'render/high-contrast.ts': 'criança · as cores por papel do alto contraste',
   'render/lq-filter.ts': 'criança · o nível do filtro de baixa qualidade',

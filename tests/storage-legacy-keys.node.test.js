@@ -15,27 +15,17 @@
 // `if (v !== null)` compiles, passes every case with a "normal" value, and silently erases exactly the choices to turn
 // something off. It is the mutation these cases exist to catch.
 //
-// The `localStorage` stub goes BELOW the storage, at the browser API, and not in place of the storage: what is to be
-// checked is the REAL persistence module on the way. (The node project has no `localStorage`, so without the stub every
-// read would return the default — silently and uselessly.)
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { get, set, setJSON, getWithLegacy, getJsonWithLegacy } from '../app/js/platform/storage.js';
+// Each case builds a REAL store over a backend of its own (ADR-0232): what is checked is the persistence module itself,
+// and without a backend every read would return the default — silently and uselessly.
+import { describe, it, expect, beforeEach } from 'vitest';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 const NOVA = 'incl.jogo.nivel';
 const LEGADA = 'incl_nivel';
 
-let localAntigo;
+let get, set, setJSON, remove, getWithLegacy, getJsonWithLegacy;
 beforeEach(() => {
-  localAntigo = globalThis.localStorage;
-  const mapa = new Map();
-  globalThis.localStorage = {
-    getItem: (k) => (mapa.has(k) ? mapa.get(k) : null),
-    setItem: (k, v) => { mapa.set(k, String(v)); },
-    removeItem: (k) => { mapa.delete(k); },
-  };
-});
-afterEach(() => {
-  if (localAntigo === undefined) delete globalThis.localStorage; else globalThis.localStorage = localAntigo;
+  ({ get, set, setJSON, remove, getWithLegacy, getJsonWithLegacy } = createStorage(memoryBackend()));
 });
 
 describe('getWithLegacy — a chave nova ganha, a velha sustenta', () => {
@@ -93,7 +83,7 @@ describe('getJsonWithLegacy — a mesma herança, para o outro formato', () => {
     setJSON(LEGADA, { nivel: 2 });
     expect(getJsonWithLegacy(NOVA, LEGADA)).toEqual({ nivel: 5 });
 
-    globalThis.localStorage.removeItem(NOVA);
+    remove(NOVA);
     expect(getJsonWithLegacy(NOVA, LEGADA)).toEqual({ nivel: 2 });
   });
 

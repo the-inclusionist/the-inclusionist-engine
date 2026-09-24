@@ -10,10 +10,8 @@
 // reaches storage only through the port `core/state.loadState` receives (ADR-0178), which carries the keys it needs; putting
 // the table in `core/` would invite the core to name storage places again, the dependency ADR-0178 took out.
 //
-// ⚠️ `platform/storage` still publishes `KEYS` under its old name, measured and not by habit: two games read
-// `KEYS` from it, eight engine modules read `store.KEYS` through the same namespace they read and write with, and the store
-// object is the port `core/state` receives. That alias ends with D2b, when the storage is built by the root and no module
-// imports it by value (ADR-0232 point 5).
+// 📌 THIS IS THE ONLY HOME OF `KEYS` (ADR-0232 D2b): `platform/storage` is a factory now and publishes no key table. The
+// port `core/state.loadState` receives carries the table beside the store — the root passes `{ ...store, KEYS }`.
 
 /**
  * The full name of a key in the GAME's scope.

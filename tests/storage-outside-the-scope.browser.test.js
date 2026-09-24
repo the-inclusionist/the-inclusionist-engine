@@ -2,7 +2,7 @@
 // A KEY STORED OUTSIDE THE ENGINE'S SCOPES DURING THE PAGE'S LIFE IS SAID IN `problems` (study item E2; ADR-0080, ADR-0027).
 //
 // 📏 Measured on 2026-09-13 across the six sibling games: the platformer, soccer and whack-whack store under the engine's
-// two scopes (`incl_*` for what belongs to the child, `incl.<game>.*` for what belongs to the game — `storage.gameKey`);
+// two scopes (`incl_*` for what belongs to the child, `incl.<game>.*` for what belongs to the game — `storage-keys.gameKey`);
 // 2048 stores nothing; pinball stores `pinball:highscore:*`, `pinball:keymap`, `pinball:palette`, `pinball:vision` — outside
 // both — and chess keeps its game in `incl_chess_*`, the CHILD's shared scope.
 //

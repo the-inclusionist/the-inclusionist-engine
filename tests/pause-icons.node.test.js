@@ -33,6 +33,8 @@ import { CVD_SEQ, CVD_NAMES, nextContrast, nextCvd, CONTRAST_LEVELS } from '../a
 // ☝️ keeps ONE value for the whole engine (ADR-0218), so it is read and reset here as the module state it is.
 import * as estado from '../app/js/core/state.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
+import { KEYS } from '../app/js/platform/storage-keys.js';
+import { filePort } from './fixtures/file-storage.js';
 /*
  * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0038, ADR-0228): the round's state is not in `core/state` and `core/run-state` left
  * the engine. This file never tested the round — it HANDS one to the pause card, and what it measures is the card. The
@@ -672,13 +674,14 @@ describe('initPauseIcons — ações dos ícones', () => {
     // is `core/state`'s `setBlindModeValue`, which does the three things that record says a setter does — write,
     // persist, notify — and NOTHING more: redoing the level's extras is a reaction, and whoever reacts signs for it.
     const guardado = {};
-    globalThis.localStorage = {
+    // `core/state` persists through the port it was loaded with (ADR-0178): a store of this case's own (ADR-0232)
+    const estadoReal = await import('../app/js/core/state.js');
+    estadoReal.loadState({ ...createStorage({
       getItem: (k) => (k in guardado ? guardado[k] : null),
       setItem: (k, v) => { guardado[k] = String(v); },
       removeItem: (k) => { delete guardado[k]; },
-    };
+    }), KEYS });
     try {
-      const estadoReal = await import('../app/js/core/state.js');
       const antes = estadoReal.blindMode;
       const { ctx, said } = buildCtx();
       delete ctx.setBlindMode;                 // the game that forgot
@@ -697,7 +700,7 @@ describe('initPauseIcons — ações dos ícones', () => {
 
       estadoReal.setBlindModeValue(antes);      // hands the module state back to whoever comes next
     } finally {
-      delete globalThis.localStorage;
+      estadoReal.loadState(filePort);          // back to this file's storage, as the setup left it
     }
   });
 

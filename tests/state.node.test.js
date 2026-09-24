@@ -12,32 +12,27 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { blindMode, setBlindModeValue, setCaneBlockDivValue, setLetterCaseValue, setCaptionsOnValue,
   on, off } from '../app/js/core/state.js';
-import * as store from '../app/js/platform/storage.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
+import { KEYS } from '../app/js/platform/storage-keys.js';
+import { filePort } from './fixtures/file-storage.js';
 
 // `blindMode` is a LIVE binding: re-importing is not needed, but reading the old value from a local copy would be the
 // classic mistake — so the cases always read from the module.
 import * as state from '../app/js/core/state.js';
 
-// `platform/storage` is EXCEPTION-PROOF by design: `localStorage` throws on file:// and in some browsers' private mode,
-// and that used to bring the whole boot down, so every access is try/catch. The node project has no `localStorage` at
-// all, so every write falls into the catch and every read returns the default — silently and correctly. That is why the
-// stub goes BELOW the storage, at the browser API, and not in place of the storage: what is to be checked is that the
-// setter ORDERS persistence, with the real persistence module on the way.
+// Each case loads the settings from a store of its own (ADR-0178's port, ADR-0232): what is checked is that the setter
+// ORDERS persistence through the port it was loaded with — the real storage module on the way, over a backend nobody
+// else writes. Without a backend every write would be refused and every read return the default, silently.
 let desinscrever = [];
-let localAntigo;
+let store;
 beforeEach(() => {
-  localAntigo = globalThis.localStorage;
-  const mapa = new Map();
-  globalThis.localStorage = {
-    getItem: (k) => (mapa.has(k) ? mapa.get(k) : null),
-    setItem: (k, v) => { mapa.set(k, String(v)); },
-    removeItem: (k) => { mapa.delete(k); },
-  };
+  store = createStorage(memoryBackend());
+  state.loadState({ ...store, KEYS });
   setBlindModeValue(false); desinscrever = [];
 });
 afterEach(() => {
   desinscrever.forEach((f) => f()); setBlindModeValue(false); setLetterCaseValue('upper'); setCaptionsOnValue(true);
-  if (localAntigo === undefined) delete globalThis.localStorage; else globalThis.localStorage = localAntigo;
+  state.loadState(filePort); // back to this file's storage, as the setup left it
 });
 
 function escuta(evt) {

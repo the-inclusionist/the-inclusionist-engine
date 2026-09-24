@@ -6,7 +6,10 @@
 import { describe, it, expect } from 'vitest';
 import * as CV from '../app/js/render/canvas.js';
 import * as FX from '../app/js/render/sprite-fx.js';
-import * as ST from '../app/js/platform/storage.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
+
+// the storage API over a backend of this file's own (ADR-0232): no key written here reaches another file
+const ST = createStorage(memoryBackend());
 import * as DOM from '../app/js/ui/dom.js';
 
 describe('ui/dom — atalhos de seleção', () => {

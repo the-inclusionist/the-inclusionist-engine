@@ -12,7 +12,7 @@ import { easyKey, toggleRunKey, toggleMoveKey, setMoveLatch, setRunLatch } from 
 import {
   clampSelPlayer, anyMobilityActive, onOffLabel, playerTabsHTML, easyAnnouncement,
 } from '../app/js/ui/mobility-choices.js';
-import { KEYS } from '../app/js/platform/storage.js';
+import { KEYS } from '../app/js/platform/storage-keys.js';
 
 describe('easyKey', () => {
   it('[Right] gera a chave incl_easy_p{i} (== platform/storage.ts KEYS.easy_p)', () => {

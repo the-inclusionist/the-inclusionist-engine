@@ -47,7 +47,6 @@
     "platform/reading-in-worker.ts",
     "platform/reading-runtime.ts",
     "platform/speech.ts",
-    "platform/storage.ts",
     "platform/tts.ts",
     "platform/vision.ts",
     "platform/voice-listener.ts",
@@ -72,7 +71,7 @@
       "fanOut": 85,
       "globalReach": 1,
       "worstFunction": 69,
-      "statefulEdges": 22,
+      "statefulEdges": 21,
       "fanIn": 1,
       "reached": [
         "SpeechSynthesisUtterance"
@@ -90,7 +89,6 @@
         "platform/audio-sonar.ts",
         "platform/audio.ts",
         "platform/heavy.ts",
-        "platform/storage.ts",
         "platform/tts.ts",
         "render/crt.ts",
         "render/lq-filter.ts",
@@ -1262,23 +1260,17 @@
       "globalReach": 0,
       "worstFunction": 1,
       "statefulEdges": 0,
-      "fanIn": 11
+      "fanIn": 10
     },
     "platform/storage.ts": {
-      "codeLines": 86,
+      "codeLines": 69,
       "decisionNodes": 17,
       "maxDepth": 1,
-      "fanOut": 1,
-      "globalReach": 1,
+      "fanOut": 0,
+      "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 1,
-      "reached": [
-        "localStorage"
-      ],
-      "holds": [
-        "singleton pageStore"
-      ]
+      "fanIn": 1
     },
     "platform/tts.ts": {
       "codeLines": 202,
