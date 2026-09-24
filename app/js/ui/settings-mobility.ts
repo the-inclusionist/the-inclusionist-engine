@@ -515,57 +515,64 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     ctx.fillExplain?.(ctx.$<HTMLElement>('#movement .overlay__card'));
   }
 
-  if (easyModeButton) {
-    easyModeButton.addEventListener('click', () => setEasy(selMovPlayer, !ctx.players[selMovPlayer].easy));
-  }
-  if (altMoveBtn) {
-    altMoveBtn.addEventListener('click', () => {
-      /*
-       * ⚠️ RECUSAR DIZENDO, E NÃO EM SILÊNCIO. O precedente (`render/viz-setters`) resolve isto não ligando
-       * ouvinte nenhum — pode, porque reconstrói a lista a cada render. Aqui o ouvinte é ligado uma vez, e
-       * um `return` mudo seria «aceitar o clique e ignorá-lo», que é a outra metade do que o ADR-0076
-       * proíbe. Então a recusa FALA: quem carregou fica a saber por quê, mesmo sem ver a dica.
-       */
-      const refusal = refusalFor(selMovPlayer);
-      if (refusal) { ctx.srSay(t(refusal.chave)); return; }
-      setToggleMove(selMovPlayer, !ctx.players[selMovPlayer].toggleMove);
-      reflectAltMove();
-    });
-  }
-  if (toggleRunBtn) {
-    toggleRunBtn.addEventListener('click', () => {
-      setToggleRun(selMovPlayer, !ctx.players[selMovPlayer].toggleRun);
-      reflectToggleRun();
-    });
-  }
+  /**
+   * The panel's four buttons — easy mode, the move toggle, the run toggle and the reset — wired where the page carries
+   * them. The engine builds none of them here; a page that lacks one simply has that row missing.
+   */
+  function wireButtons(): void {
+    if (easyModeButton) {
+      easyModeButton.addEventListener('click', () => setEasy(selMovPlayer, !ctx.players[selMovPlayer].easy));
+    }
+    if (altMoveBtn) {
+      altMoveBtn.addEventListener('click', () => {
+        /*
+         * ⚠️ RECUSAR DIZENDO, E NÃO EM SILÊNCIO. O precedente (`render/viz-setters`) resolve isto não ligando
+         * ouvinte nenhum — pode, porque reconstrói a lista a cada render. Aqui o ouvinte é ligado uma vez, e
+         * um `return` mudo seria «aceitar o clique e ignorá-lo», que é a outra metade do que o ADR-0076
+         * proíbe. Então a recusa FALA: quem carregou fica a saber por quê, mesmo sem ver a dica.
+         */
+        const refusal = refusalFor(selMovPlayer);
+        if (refusal) { ctx.srSay(t(refusal.chave)); return; }
+        setToggleMove(selMovPlayer, !ctx.players[selMovPlayer].toggleMove);
+        reflectAltMove();
+      });
+    }
+    if (toggleRunBtn) {
+      toggleRunBtn.addEventListener('click', () => {
+        setToggleRun(selMovPlayer, !ctx.players[selMovPlayer].toggleRun);
+        reflectToggleRun();
+      });
+    }
 
-  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
-  //
-  // O alcance aqui é MENOR que a tela, e de propósito. A Acessibilidade motora hospeda três coisas: Modo
-  // Fácil, movimento por alternância e o mapeamento de teclas (#map-hub); o controle pelos olhos passou à barra rápida (👀).
-  // O reset devolve as duas PREFERÊNCIAS e não encosta no MÉTODO DE ENTRADA, por uma razão que vale
-  // mais que a simetria:
-  //
-  //   UM RESET SÓ PODE DESFAZER O QUE ELE TAMBÉM CONSEGUE REFAZER.
-  //
-  // Quem remapeou as teclas
-  // porque só alcança algumas: devolver o mapa de fábrica é devolver teclas que a mão dela não chega. Esse
-  // mapeamento, aliás, já tem o reset dele (#ctrl-reset), onde a escolha é explícita e não um efeito colateral.
-  //
-  // Por isso o anúncio DIZ o que ficou de fora: um botão que restaura menos do que o nome promete precisa
-  // dizer isso em voz alta, ou a criança conclui que ele não funcionou.
-  const resetBtn = ctx.$<HTMLButtonElement>('#movement-reset');
-  if (resetBtn) resetBtn.addEventListener('click', () => {
-    ctx.players.forEach((p, i) => {
-      if (p.easy) setEasy(i, false);
-      if (p.toggleMove) setToggleMove(i, false);
-      if (p.toggleRun) setToggleRun(i, false);
+    // ---- restaurar os padrões DESTE menu (ADR-0028) ----
+    //
+    // O alcance aqui é MENOR que a tela, e de propósito. A Acessibilidade motora hospeda três coisas: Modo
+    // Fácil, movimento por alternância e o mapeamento de teclas (#map-hub); o controle pelos olhos passou à barra rápida (👀).
+    // O reset devolve as duas PREFERÊNCIAS e não encosta no MÉTODO DE ENTRADA, por uma razão que vale
+    // mais que a simetria:
+    //
+    //   UM RESET SÓ PODE DESFAZER O QUE ELE TAMBÉM CONSEGUE REFAZER.
+    //
+    // Quem remapeou as teclas
+    // porque só alcança algumas: devolver o mapa de fábrica é devolver teclas que a mão dela não chega. Esse
+    // mapeamento, aliás, já tem o reset dele (#ctrl-reset), onde a escolha é explícita e não um efeito colateral.
+    //
+    // Por isso o anúncio DIZ o que ficou de fora: um botão que restaura menos do que o nome promete precisa
+    // dizer isso em voz alta, ou a criança conclui que ele não funcionou.
+    const resetBtn = ctx.$<HTMLButtonElement>('#movement-reset');
+    if (resetBtn) resetBtn.addEventListener('click', () => {
+      ctx.players.forEach((p, i) => {
+        if (p.easy) setEasy(i, false);
+        if (p.toggleMove) setToggleMove(i, false);
+        if (p.toggleRun) setToggleRun(i, false);
+      });
+      reflectFacil();
+      reflectAltMove();
+      reflectToggleRun();
+      ctx.srSay(t('sr.motor.reset'));
     });
-    reflectFacil();
-    reflectAltMove();
-    reflectToggleRun();
-    ctx.srSay(t('sr.motor.reset'));
-  });
+  }
+  wireButtons();
 
   reflectFacil();
   reflectAltMove();

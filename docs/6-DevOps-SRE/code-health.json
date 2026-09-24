@@ -1538,12 +1538,12 @@
       "fanIn": 1
     },
     "ui/settings-mobility.ts": {
-      "codeLines": 248,
+      "codeLines": 251,
       "decisionNodes": 34,
       "maxDepth": 3,
       "fanOut": 12,
       "globalReach": 0,
-      "worstFunction": 13,
+      "worstFunction": 9,
       "fanIn": 1
     },
     "ui/settings-motion.ts": {
