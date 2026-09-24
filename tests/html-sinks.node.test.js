@@ -1,32 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O CENSO DOS SINKS DE MARKUP (issue #106) — e o que ele pode e não pode provar.
+// THE CENSUS OF MARKUP SINKS (issue #106) — and what it can and cannot prove.
 //
-// ========================= POR QUE UM TESTE E NÃO UMA REGRA SEMGREP =========================
-// A issue pede *"uma regra que de facto cubra isto, ou o lint equivalente"*. É um teste, por três razões:
+// ========================= WHY A TEST AND NOT A SEMGREP RULE =========================
+// The issue asks for a rule that really covers this, or the equivalent lint. It is a test, for three reasons:
 //
-//   · ⚠️ SEMGREP NÃO SABE DE ONDE VEM O DADO. A pergunta que interessa — «isto interpola texto que uma
-//     pessoa escreveu?» — é de proveniência, e sintaticamente `el.innerHTML = f(x)` é igual quer `f` cole um
-//     literal quer cole o que um professor digitou. Uma regra sintática ou acusa os 37 (e é desligada no
-//     primeiro dia) ou não acusa nenhum.
-//   · O gate que a casa já usa para o mesmo assunto é um teste: `i18n-sem-markup.node.test.js`.
-//   · Uma regra semgrep não pode ser provada VERMELHA daqui — não há semgrep nesta máquina —, e a regra da
-//     casa é que todo gate nasce vermelho com mutação confirmada. Gate que não se pôde ver falhar é hábito.
+//   · ⚠️ SEMGREP DOES NOT KNOW WHERE THE DATA COMES FROM. The question that matters — «isto interpola texto que uma pessoa
+//     escreveu?» — is about provenance, and syntactically `el.innerHTML = f(x)` is the same whether `f` pastes a literal
+//     or what a teacher typed. A syntactic rule either accuses every sink (and is switched off on day one) or none.
+//   · The gate this house already uses for the same subject is a test: `i18n-without-markup.node.test.js`.
+//   · A semgrep rule cannot be proven RED from here — there is no semgrep on this machine — and the house rule is that
+//     every gate is born red with a confirmed mutation. A gate that could not be seen failing is a habit.
 //
-// ========================= O QUE ESTE GATE PROVA, E O QUE NÃO PROVA =========================
-// ⚠️ ELE NÃO PROVA QUE OS 37 SÃO SEGUROS. Prova uma coisa mais modesta e que hoje ninguém prova: que
-// **nenhum sink NOVO apareceu sem alguém olhar para ele**. É exatamente a lacuna que o cabeçalho do
-// `i18n-sem-markup` nomeia desde 2026: *"qualquer `innerHTML` novo que interpole algo que não seja i18n,
-// número ou chave enumerada"*.
+// ========================= WHAT THIS GATE PROVES, AND WHAT IT DOES NOT =========================
+// ⚠️ IT DOES NOT PROVE THE SINKS ARE SAFE. It proves something more modest that nothing else proves: that **no NEW sink
+// appeared without someone looking at it**. It is exactly the gap the `i18n-without-markup` header names: *"any new
+// `innerHTML` that interpolates something other than i18n, a number or an enumerated key"*.
 //
-// O CENSO ANTERIOR CONTINUA VALENDO, e foi feito da forma certa — por FONTE DE DADO, não por ponto (ver o
-// cabeçalho daquele ficheiro): nome de dispositivo de áudio, nome de voz e progresso do assistente vão por
-// `textContent`; id de gamepad é só chave de busca; palavras dos desafios são empacotadas; nenhum valor do
-// armazenamento chega a markup. O i18n era o vetor aberto, e aquele gate fecha-o.
+// THAT FILE'S CENSUS STILL HOLDS, done the right way — by DATA SOURCE, not by call site (see its header): audio device
+// name, voice name and wizard progress go through `textContent`; a gamepad id is only a lookup key; no stored value
+// reaches markup. i18n was the open vector, and that gate closes it.
 //
-// ⚠️ E A ARQUITETURA MOVEU-SE POR BAIXO DAQUELE CENSO. Quando ele correu, o contrato não existia (ADR-0030) e
-// todo jogo vivia nesta árvore. Hoje um jogo vive noutro repositório e consome a engine como pacote
-// (ADR-0083) — então o texto que ELE declara (`Objective.name`, o rótulo de uma ação) é texto que esta árvore
-// não revê. Dois sinks recebem isso, e é a razão de a lista `A_REVER` existir em vez de um verde limpo.
+// ⚠️ AND A GAME LIVES IN ANOTHER REPOSITORY and consumes the engine as a package (ADR-0083) — so the text IT declares
+// (`Objective.name`, an action's label) is text this tree does not review. That is why each sink below carries the
+// reason it is safe from that text.
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -34,7 +30,7 @@ import { join } from 'node:path';
 const RAIZ = join(process.cwd(), 'app', 'js');
 const SINK = /innerHTML\s*=|insertAdjacentHTML/;
 
-/** Todos os `.ts` de `app/js`, recursivo. */
+/** Every `.ts` of `app/js`, recursively. */
 function ficheiros(dir = RAIZ, base = '') {
   const saida = [];
   for (const nome of readdirSync(dir).sort()) {
@@ -45,7 +41,7 @@ function ficheiros(dir = RAIZ, base = '') {
   return saida;
 }
 
-/** Os sinks de hoje: `ficheiro` + o começo da linha de CÓDIGO (comentário não conta). */
+/** Today's sinks: `file` + the start of the CODE line (comments do not count). */
 function sinksDeHoje() {
   const achados = [];
   for (const f of ficheiros()) {
@@ -59,106 +55,89 @@ function sinksDeHoje() {
 }
 
 /**
- * OS SINKS CLASSIFICADOS. A chave é `ficheiro :: começo da linha` — uma linha que se MOVE continua a casar,
- * uma linha que MUDA deixa de casar, e mudar a linha é exatamente quando ela precisa de ser revista de novo.
+ * THE CLASSIFIED SINKS. The key is `file :: start of line` — a line that MOVES still matches, a line that CHANGES stops
+ * matching, and changing the line is exactly when it needs reviewing again.
  *
- * `porque` não é decoração: é a única coisa que distingue este ficheiro de uma lista de supressões.
+ * `porque` is not decoration: it is the only thing that distinguishes this file from a suppression list.
  */
 const SEGUROS = [
-  // ⚠️ CINCO ENTRADAS SAIRAM DAQUI em 2026-09-07 (issue #111): eram sinks de main.ts e de game/**, e os
-  // dois deixaram este repositorio. O censo cobre a ENGINE; os sinks do cartucho sao agora censo do jogo,
-  // em game-platformer. O caso [Zero] deste ficheiro — a lista nao guarda sink que ja nao existe — foi
-  // exatamente quem apontou as cinco, uma a uma, em vez de as deixar a apodrecer numa lista verde.
+  // ⚠️ The census covers the ENGINE; the cartridge's sinks are the game's census, in game-platformer (issue #111). The
+  // [Zero] case — the list keeps no sink that no longer exists — is what points out an entry whose code left.
   // THE HELP SCREEN LEFT THIS LIST (2026-09-13): it is a slide show built with `textContent`, so the game's words reach the
   // document as text and no longer through markup (`ui/help-panel.showSlide`).
   ['consumer-quiz/main-quiz.ts', 'if (!p) { app.innerHTML =', 'dois NÚMEROS interpolados'],
   ['render/viz-setters.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/pause-icons.ts', "if (k === 'idioma') { const flag = flagOf(getLocale", 'the language flag: one of three SVG constants of `ui/locale-flags`, chosen by the locale — nothing typed or fetched enters'],
   ['render/viz-setters.ts', 'el.innerHTML = vizGroupHtml(modes, cur)', 'modos enumerados + i18n'],
-  // ⚠️ OS DOIS EIXOS (#104). Mesma classe do de cima e pelo mesmo motivo: o `axesHtml` interpola só valores
-  // ENUMERADOS (`THEMES`/`CORRECTIONS`, congelados no `viz-axes`) e texto que passou por `t()`. Nada aqui vem
-  // de armazenamento, de URL ou do que uma criança digitou — que é a fronteira que este censo guarda.
+  // ⚠️ THE TWO AXES (#104). Same class as the one above and for the same reason: `axesHtml` interpolates only ENUMERATED
+  // values (`THEMES`/`CORRECTIONS`, frozen in `viz-axes`) and text that went through `t()`. Nothing here comes from
+  // storage, from a URL or from what a child typed — the boundary this census guards.
   ['render/viz-setters.ts', 'el.innerHTML = axesHtml(v, t);', 'eixos enumerados + i18n'],
   ['render/viz-setters.ts', 'const tabs = ctx.$(tabsSel); if (tabs) { tabs.hidden', 'string vazia: limpa o elemento, nada entra'],
   ['ui/debug-panel.ts', "p.innerHTML = '<strong>", 'literal inteiro: o titulo do painel de ?debug'],
   ['ui/hud.ts', "gameHudEl.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/hud.ts', 'd.innerHTML = vphudHtml(', '⚠️ CONSERTADO 2026-09-06: o nome do jogo saiu do markup e vai por `setAttribute`'],
   ['ui/hud.ts', "if (scr && !scr.querySelector('.vp-wait'))", 'só o ÍNDICE da tela, um número'],
-  // ⚠️ ENTROU EM 2026-09-08 com a etapa 2 do ADR-0106: a engine passou a MONTAR a barra de acessibilidade da
-  // primeira tela. Classificado SEGURO pela mesma razão dos dois do `ui/pause-icons` logo abaixo — o que
-  // entra é `iconsMarkup`, markup da própria engine com rótulos resolvidos por `t()`; o único dado variável
-  // é QUAIS ícones, e essa lista é uma sub-lista do `PAUSE_ICONS`, constante de `core/pause-icon-catalogue`
-  // (mudou de casa em 22/09, ADR-0221). Nada de fora do repositório alcança este sink.
-  // 📌 O trecho é CURTO de propósito: a chave é o começo da linha cortado em 52 caracteres (linha 55), e uma
-  // entrada mais LONGA do que esse corte nunca casa — foi o que me aconteceu ao registá-la inteira.
+  // ⚠️ The engine MOUNTS the first screen's accessibility bar (ADR-0106 step 2). SAFE for the same reason as the two of
+  // `ui/pause-icons` just below — what enters is `iconsMarkup`, the engine's own markup with labels resolved by `t()`; the
+  // only variable data is WHICH icons, and that list is a sub-list of `PAUSE_ICONS`, a constant of
+  // `core/pause-icon-catalogue` (ADR-0221). Nothing from outside the repository reaches this sink.
+  // 📌 The excerpt is SHORT on purpose: the key is the start of the line cut at 52 characters (see `sinksDeHoje`), and an
+  // entry LONGER than that cut never matches.
   ['boot/create-game.ts', 'a11yBar.innerHTML = iconsMarkup(', 'markup da engine + i18n'],
   ['ui/pause-icons.ts', 'sp.innerHTML = screenPauseMarkup({', 'markup da engine + i18n'],
-  // ⚠️ O argumento entrou em 2026-09-08 (ADR-0106 §5) e NÃO muda a classificação: `gameIcons` é uma
-  // sub-lista do `PAUSE_ICONS`, constante de `core/pause-icon-catalogue` — nada de fora do repositório alcança este sink.
+  // ⚠️ The argument (ADR-0106 §5) does NOT change the classification: `gameIcons` is a sub-list of `PAUSE_ICONS`, a
+  // constant of `core/pause-icon-catalogue` — nothing from outside the repository reaches this sink.
   ['ui/pause-icons.ts', 'bar.innerHTML = quickBarMarkup(gameIcons);', 'markup da engine + i18n'],
-  // A lista de vozes do sistema mudou de casa com a secção da voz (ADR-0221, issue #203): quem limpa este `<select>` é
-  // agora o `ui/voice-settings`. A classificação não muda com o ficheiro — o que entra continua a ser uma cadeia vazia.
+  // The system voice list lives with the voice section (ADR-0221, issue #203): `ui/voice-settings` clears this `<select>`.
+  // What enters is an empty string.
   ['ui/voice-settings.ts', "sel.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-mobility.ts', 'tabs.innerHTML = playerTabsHTML(', 'números (quantos jogadores, qual selecionado)'],
   ['ui/settings-panel.ts', 'span.innerHTML = strong.outerHTML', 'DOM de volta ao DOM: nenhum texto novo entra'],
-  // 🎯 UM SINK A MENOS, e foi PAGO e não movido: `ui/settings-visual` construía o interior por `innerHTML` e
-  // passou a construí-lo em NÓS com o kit (ADR-0129, 2026-09-23). O que a conversão tira não é só a interpolação
-  // — é a reconstrução: o controle de passos era refeito a cada render e o cursor saía dele.
+  // 🎯 `ui/settings-visual`, `ui/settings-motion` and `ui/settings-audio` build their insides as NODES with the kit
+  // (ADR-0129), not through `innerHTML`. What that removes is not only the interpolation — it is the rebuilding, which
+  // remade the step control on every render and threw the focus of whoever was adjusting it to the `<body>`.
   ['ui/shell.ts', 'el.innerHTML = legendHtml(l1, l2)', 'so i18n, e o dicionario tem gate proprio'],
   ['input/touch.ts', 'el.innerHTML = TOUCH_SLOTS.map((s) =>', '⚠️ CONSERTADO 2026-09-06: idem — o `<option>` nasce vazio e recebe o rótulo por texto'],
   ['consumer-quiz/main-quiz.ts', 'app.innerHTML = questionHtml(p, foco);', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escapeHtml`, com gate hostil em `consumer-quiz`'],
   ['ui/settings-controls.ts', "tabs.innerHTML = '<span class=\"opt-hint\" style=\"widt", '⚠️ CONSERTADO 2026-09-07 (#125): era um literal em português cravado COM o `<strong>` e o plural à mão. Agora o sink é só ESQUELETO — zero dado, zero interpolação — e as três partes do texto entram por `textContent`, com o molde partido no marcador `{modo}` antes da substituição. O dicionário continua sem markup, que é o que o `i18n-sem-markup` exige'],
-  // 🎯 DOIS SINKS A MENOS, e os dois PAGOS: o `ui/settings-motion` montava o interior por `innerHTML` e passou a
-  // montá-lo em NÓS com o kit (ADR-0129, 2026-09-23); a faixa de abas, que era limpa com uma cadeia vazia, passou a
-  // `textContent`. O que a conversão tira não é só a interpolação — é a reconstrução, que destruía o controle de
-  // passos e atirava para o `<body>` o foco de quem estivesse a ajustá-lo.
-  // 🎯 TRÊS SINKS A MENOS, e os três PAGOS: o `ui/settings-audio` foi o ÚLTIMO painel fora do kit (ADR-0129,
-  // 2026-09-23). Saíram a lista de categorias (que era `catsListHTML`, apagada com a conversão), a frase de
-  // «não há saídas» e a cadeia vazia que limpava a secção — as três viraram nós. E com a lista de categorias
-  // saiu a ÚNICA entrada deste livro que carregava uma decisão do Dev em vez de uma classificação: «as
-  // categorias de áudio são DA ENGINE». A decisão continua a valer e continua escrita, no módulo que agora
-  // monta a linha; o que deixou de ser preciso é a excepção.
+  // (The Dev's decision «as categorias de áudio são DA ENGINE» is written in the module that builds that row, not here.)
 ];
 
 /**
- * ⚠️ O TETO. Estes ainda não foram classificados por fonte de dado, e a lista **só encolhe** — um sink que
- * sai daqui vai para `SEGUROS` com a razão escrita, ou é consertado.
- *
- * Os dois primeiros são a razão de este ficheiro existir agora e não depois: recebem texto DECLARADO POR UM
- * JOGO, que vive noutro repositório (ADR-0083). Os dois seguintes são os que a issue #106 nomeia — conteúdo
- * de atividade, hoje catálogo no código e AUTORADO assim que o ADR-0052 chegar.
+ * ⚠️ THE CEILING: sinks not yet classified by data source. The list **only shrinks** — a sink that leaves it goes to
+ * `SEGUROS` with the reason written, or is fixed. It is empty.
  */
 const A_REVER = [
 ];
 
 const chave = (onde, trecho) => `${onde} :: ${trecho}`;
 const CONHECIDOS = new Set([...SEGUROS, ...A_REVER].map(([o, t]) => chave(o, t)));
-/** Um sink de hoje casa um conhecido quando a linha COMEÇA pelo trecho registrado. */
+/** A sink of today matches a known one when the line STARTS with the recorded excerpt. */
 const casa = (s) => [...CONHECIDOS].find((k) => k.startsWith(`${s.onde} :: `) && s.trecho.startsWith(k.split(' :: ')[1]));
 
 describe('censo dos sinks de markup — o gate diz «ninguém acrescentou um sem olhar»', () => {
   it('[Right] ⚠️ nenhum sink NOVO — é a lacuna que o `i18n-sem-markup` nomeia desde 2026', () => {
-    // Um `innerHTML` novo que interpole algo que não seja i18n, número ou chave enumerada é o caminho pelo
-    // qual isto deixa de ser censo e vira incidente. A lista acima é o que alguém já olhou; um sink fora dela
-    // é um que ninguém olhou, e este caso nomeia-o em vez de o deixar passar num verde de 37.
+    // A new `innerHTML` interpolating something other than i18n, a number or an enumerated key is how this stops being a
+    // census and becomes an incident. The list above is what someone has looked at; a sink outside it is one nobody has,
+    // and this case names it instead of letting it pass in a green.
     const novos = sinksDeHoje().filter((s) => !casa(s)).map((s) => chave(s.onde, s.trecho));
     expect(novos, 'sink de markup NOVO — classifique-o em SEGUROS ou em A_REVER antes de seguir').toEqual([]);
   });
 
   it('[Zero] a lista não guarda sink que já não existe', () => {
-    // Entrada morta é pior que entrada nenhuma: dá a impressão de cobertura sobre código que sumiu, e a
-    // próxima pessoa confia nela.
+    // A dead entry is worse than none: it gives the impression of coverage over code that is gone, and the next person
+    // trusts it.
     const hoje = sinksDeHoje();
     const orfas = [...CONHECIDOS].filter((k) => !hoje.some((s) => casa(s) === k));
     expect(orfas, 'entrada da lista que não corresponde a nenhum sink real').toEqual([]);
   });
 
   it('[Boundary] ⚠️ o TETO só encolhe — `A_REVER` não pode crescer', () => {
-    // O mesmo desenho do `engine-boundary`: teto e não igualdade, porque o que importa proibir é o
-    // acoplamento CRESCER. Um sink por rever a mais é dívida nova disfarçada de dívida antiga.
-    // ⚠️ O TETO DESCEU DE 15 → 13 → 12 → 11 → 1 em 2026-09-06, à medida que cada sink deixou de ser dívida e
-    // passou a ser conserto ou classificação. Baixar o número faz parte do trabalho: um teto que fica onde
-    // estava deixa a dívida caber de volta sem ninguém reparar.
+    // The same design as `engine-boundary`: a ceiling, not equality, because what matters to forbid is the coupling
+    // GROWING. One more sink to review is new debt disguised as old debt.
+    // ⚠️ The ceiling is at zero. Lowering the number is part of the work: a ceiling left where it was lets the debt fit
+    // back in without anyone noticing.
     expect(A_REVER.length, 'a dívida de sinks por classificar cresceu').toBeLessThanOrEqual(0);
   });
 
@@ -170,15 +149,10 @@ describe('censo dos sinks de markup — o gate diz «ninguém acrescentou um sem
   });
 
   it('[Interface] ⚠️ e o gate continua honesto sobre o que NÃO prova', () => {
-    // ESTE CASO MUDOU DE CONTEÚDO EM 2026-09-06, quando o teto chegou a zero. Enquanto havia dívida, ele
-    // exigia a lista `A_REVER` NÃO-VAZIA — para o verde não se ler como auditoria. Com tudo classificado essa
-    // exigência deixou de fazer sentido, e apagá-la sem mais teria deixado o ficheiro a parecer uma prova.
-    //
-    // ⚠️ O QUE ELE PROVA: que todo sink que existe está numa das duas listas, com um motivo escrito — ou
-    // seja, que ninguém acrescentou um sem olhar. O que ele NÃO prova: que os 37 são seguros. Classificação
-    // é juízo humano REGISTRADO, não demonstração; sete deles só são seguros porque foram CONSERTADOS, e os
-    // gates desses conseratos vivem noutros ficheiros (`quiz-escape`, `settings-controls.browser`, `touch.browser`,
-    // `i18n-consumer-dict`, `hud`; o do menu de título foi com ele para o platformer).
+    // ⚠️ WHAT IT PROVES: every sink that exists is on one of the two lists, with a written reason — that is, nobody added
+    // one without looking. What it does NOT prove: that the sinks are safe. Classification is RECORDED human judgement,
+    // not demonstration; some are safe only because they were FIXED, and the gates of those fixes live in other files
+    // (`settings-controls.browser`, `touch.browser`, `i18n-consumer-dict`, `hud`).
     expect(SEGUROS.length + A_REVER.length).toBe(sinksDeHoje().length);
     expect(SEGUROS.length, 'sink sem classificação nenhuma').toBeGreaterThan(0);
   });

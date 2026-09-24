@@ -1,26 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A ALTERNÂNCIA MIGRA PARA A CHAVE POR TRANSPORTE — o inventário que o ADR-0113 deve, nos dois sentidos.
+// THE LATCH MIGRATES TO THE PER-TRANSPORT KEY — the inventory ADR-0113 owes, in both directions.
 //
-// ========================= O QUE O REGISTO DECIDIU, E O QUE O CÓDIGO AINDA FAZ =========================
-// O ADR-0113 decidiu que a alternância de marcha é um CAPS-LOCK guardado **com o mapeamento do controle**:
-// o valor pertence ao TRANSPORTE, e trocar de controle troca o valor como troca o mapa de teclas.
+// ========================= WHAT THE RECORD DECIDED =========================
+// ADR-0113 decided the walking latch is a CAPS-LOCK stored **with the controller's mapping**: the value belongs to the
+// TRANSPORT, and switching controllers switches the value as it switches the key map.
 //
-// 📏 MEDIDO EM 2026-09-08, e o estado é «decidido e não entregue», que é o que este ficheiro afirma:
+// The migration is in progress, and this file states where it stands:
 //
-//   · A CHAVE POR JOGADOR — `KEYS.toggleMoveP(i)`, o modelo antigo — tem **exactamente UM escritor** em toda
-//     a engine: `ui/settings-mobility.setToggleMove`. Ela é tocada por DOIS ficheiros ao todo.
-//   · O MODELO NOVO tem **DOIS** participantes: `input/latch-store` (o adaptador) e `ui/settings-mobility` (o
-//     painel, que escreve através dele). Era zero quando este ficheiro nasceu, no mesmo dia.
+//   · THE PER-PLAYER KEY — `KEYS.toggleMoveP(i)`, the old model — has **exactly ONE writer** in the whole engine:
+//     `ui/settings-mobility.setToggleMove`. The inventory below lists who still touches it.
+//   · THE NEW MODEL's participants are counted by the floor further down.
 //
-// ========================= POR QUE DUAS METADES, E NÃO UMA PROIBIÇÃO =========================
-// ⚠️ Uma proibição («ninguém escreve a chave antiga») nasceria VERMELHA e ficaria vermelha até a fiação
-// existir, o que não é gate, é lembrete a travar a suíte. E um inventário sozinho só olha para o passado: ele
-// diria que a dívida não cresceu sem nunca dizer se o trabalho começou.
+// ========================= WHY TWO HALVES, AND NOT A PROHIBITION =========================
+// ⚠️ A prohibition («ninguém escreve a chave antiga») would be born RED and stay red until the wiring existed, which is
+// not a gate but a reminder jamming the suite. And an inventory alone only looks back: it would say the debt did not
+// grow without ever saying whether the work started.
 //
-// Então são duas afirmações opostas e complementares — o TECTO que só desce (quem toca no modelo antigo) e o
-// PISO que só sobe (quantos chamam o novo). É a forma que o `tests/fontes-empacotadas.node.test.js` já usou
-// para as oito Playwrite, e pela mesma razão: dizer a verdade sobre o estado em vez de a esconder atrás de um
-// visto.
+// So there are two opposite, complementary assertions — the CEILING that only goes down (who touches the old model) and
+// the FLOOR that only goes up (how many use the new one). It is the shape `tests/fontes-empacotadas.node.test.js` uses
+// for the Playwrite faces, for the same reason: telling the truth about the state instead of hiding it behind a tick.
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
@@ -33,11 +31,11 @@ import { latchOf } from '../app/js/input/latch-scope.js';
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
 /**
- * OS FICHEIROS DA ENGINE QUE AINDA TOCAM NA CHAVE POR JOGADOR, e por que cada um ainda a toca.
+ * THE ENGINE FILES THAT STILL TOUCH THE PER-PLAYER KEY, and why each one still does.
  *
- * ⚠️ ESTA LISTA SÓ PODE ENCOLHER. Uma entrada nova é o modelo que o ADR-0113 retirou a ganhar um consumidor
- * novo — e a ganhá-lo em silêncio, que é como ele se entrincheirou da primeira vez (ADR-0106 etapa 1b deu-lhe
- * padrão da engine no mesmo dia em que o ADR-0109 o aposentava).
+ * ⚠️ THIS LIST CAN ONLY SHRINK. A new entry is the model ADR-0113 retired gaining a new consumer — and gaining it
+ * silently, which is how it dug in the first time (ADR-0106 step 1b gave it an engine default the same day ADR-0109
+ * retired it).
  */
 const AINDA_NA_CHAVE_ANTIGA = {
   'platform/storage.ts':
@@ -50,23 +48,15 @@ const AINDA_NA_CHAVE_ANTIGA = {
 };
 
 /**
- * ⚠️ O PISO, e ele JÁ SUBIU DUAS VEZES no mesmo dia — 0 → 1 → 2, em 2026-09-08.
+ * ⚠️ THE FLOOR: the files that use the new model.
  *
- * 🎯 O primeiro foi `input/latch-store`, o adaptador entre a regra e o armazenamento, e o modo como ele
- * entrou é o gate a funcionar como desenhado: o caso reprovou, nomeou o ficheiro, e exigiu a revisão.
+ * 🎯 `input/latch-store`, the adapter between the rule and storage; `ui/settings-mobility`, the panel, which writes
+ * through `writeLatch` (the right form — a detector counting only `latchKey(` callers would measure who improvises
+ * instead of who migrated); and `input/latch-sync`, the first READER, which resolves the key for the transport in use
+ * and puts the answer on the player (issue #127). 📌 The floor counts both halves because the key only carries real
+ * behaviour when someone READS it.
  *
- * ⚠️ O SEGUNDO — `ui/settings-mobility`, o painel — quase NÃO foi contado, e a falha era do detector: ele
- * procurava só quem chama `latchKey(`, e o painel escreve através do `writeLatch`, que é
- * a forma certa. Um piso assim mede quem improvisa em vez de quem migra. Alargado, e dito aqui em vez de
- * corrigido em silêncio.
- *
- * Ele NÃO PODE RECUAR: recuar significaria que a fiação foi desfeita sem que o registo mudasse.
- *
- * 🎯 O TERCEIRO SUBIU EM 2026-09-09 e é de outra espécie que os dois primeiros: `input/latch-sync` é o
- * primeiro LEITOR. Os dois anteriores escrevem a chave nova; este resolve-a para o transporte em uso e põe a
- * resposta no jogador — que é a issue #127 a deixar de ser «a regra existe e ninguém a lê». 📌 O piso passou
- * a contar as duas metades porque a chave só carrega comportamento a sério quando alguém a LÊ: enquanto era
- * só escrita, um `2` honesto descrevia uma migração que não tinha chegado a lado nenhum.
+ * It CANNOT GO BACK: going back would mean the wiring was undone without the record changing.
  */
 const CHAMADORES_DA_CHAVE_NOVA_HOJE = 3;
 
@@ -80,27 +70,24 @@ function ficheiros(dir = RAIZ, pref = '') {
   return out;
 }
 
-// ⚠️ `(^|[^:])` no comentário de linha — um `//` precedido de `:` é o esquema de uma URL. O gate irmão
-// (`nada-de-cdn-a-mao`) nasceu de eu ter partido exactamente isto e a varredura ter devolvido zero.
+// ⚠️ `(^|[^:])` in the line comment — a `//` preceded by `:` is a URL's scheme. Getting exactly this wrong made the
+// sibling gate (no-hand-written-cdn) scan return zero.
 const semComentarios = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n\r]*/g, '$1');
 
 const fonte = (f) => semComentarios(readFileSync(join(RAIZ, f), 'utf8'));
 
-/** Ficheiros que nomeiam a chave POR JOGADOR em código. Generoso de propósito: mencionar conta. */
+/** Files that name the PER-PLAYER key in code. Generous on purpose: mentioning counts. */
 function tocamNaChaveAntiga() {
   return ficheiros().filter((f) => /toggleMoveP|toggleMoveKey/.test(fonte(f)));
 }
 
 /**
- * Ficheiros que PARTICIPAM no modelo novo — a definição da regra não conta.
+ * Files that TAKE PART in the new model — the rule's definition does not count.
  *
- * ⚠️ O DETECTOR FOI ALARGADO EM 2026-09-08, E O MOTIVO É UM FALSO NEGATIVO MEU. Ele procurava só
- * `latchKey(`, e quando o `ui/settings-mobility` passou a escrever a chave nova — através do
- * `writeLatch`, que é a forma CERTA — o piso não subiu. Um piso que só conta quem chama o
- * construtor da chave mede a arquitectura errada: mede quem improvisa, e não quem migrou.
- *
- * 📌 Agora conta os três pontos de entrada do modelo novo. Um ficheiro que use qualquer um deles está do
- * lado novo da migração, que é o que o piso diz medir.
+ * ⚠️ It counts the new model's three entry points, not just `latchKey(`: counting only who calls the key's constructor
+ * would miss `ui/settings-mobility`, which writes through `writeLatch` — the RIGHT form — and so measure the wrong
+ * architecture, who improvises instead of who migrated. A file using any of them is on the new side of the migration,
+ * which is what the floor claims to measure.
  */
 function chamamAChaveNova() {
   const entradas = /latchKey\s*\(|writeLatch\s*\(|storedLatch\s*\(/;
@@ -119,13 +106,13 @@ describe('a alternância migra para a chave por transporte · o tecto que só de
     expect(novos, `passou a usar o modelo que o ADR-0113 retirou: ${novos.join(', ')}`).toEqual([]);
   });
 
-  // ⚠️ A SAÍDA. Sem ela o inventário vira monumento: um ficheiro já migrado continuaria listado como dívida.
+  // ⚠️ THE EXIT. Without it the inventory becomes a monument: a file already migrated would stay listed as debt.
   it('[Fronteira] ficheiro da lista que já largou a chave antiga sai daqui', () => {
     const migrados = Object.keys(AINDA_NA_CHAVE_ANTIGA).filter((f) => !tocamNaChaveAntiga().includes(f));
     expect(migrados, `já não toca na chave antiga; apague a entrada: ${migrados.join(', ')}`).toEqual([]);
   });
 
-  // 📌 O PAR que impede o detector de aprovar por cegueira: o escritor que a lista NOMEIA tem de estar mesmo lá.
+  // 📌 THE PAIR that keeps the detector from approving out of blindness: the writer the list NAMES must really be there.
   it('[Fronteira] o único escritor continua a ser o que o inventário nomeia', () => {
     const motor = fonte('ui/settings-mobility.ts');
     expect(motor, 'o escritor da chave por jogador mudou de forma — releia o inventário')
@@ -134,9 +121,9 @@ describe('a alternância migra para a chave por transporte · o tecto que só de
 });
 
 describe('a alternância migra para a chave por transporte · o piso que só sobe', () => {
-  // 🎯 ESTA É A METADE QUE DIZ SE O TRABALHO COMEÇOU. Um inventário sozinho olha só para trás: ele aprovaria
-  // para sempre uma migração que nunca arrancou. Enquanto este número for zero, o registo está decidido e não
-  // entregue — e o ficheiro di-lo em voz alta em vez de deixar o verde sugerir o contrário.
+  // 🎯 THIS IS THE HALF THAT SAYS WHETHER THE WORK STARTED. An inventory alone only looks back: it would forever approve a
+  // migration that never began. Had this number been zero, the record would be decided and not delivered — and the file
+  // would say so aloud instead of letting green suggest otherwise.
   it('🎯 [Zero] o piso dos chamadores da chave nova é EXACTAMENTE o declarado', () => {
     const chamadores = chamamAChaveNova();
     expect(chamadores.length, `o piso subiu para ${chamadores.length} (${chamadores.join(', ')}) — actualize `
@@ -154,21 +141,20 @@ describe('a alternância migra para a chave por transporte · o piso que só sob
 });
 
 describe('a alternância migra para a chave por transporte · o modelo superado não pode ser escolhido por engano', () => {
-  // 🔴 O CÓDIGO TEM DUAS FUNÇÕES QUE RESPONDEM «há alternância?», E UMA DELAS É A QUE O ADR-0113 RETIROU.
-  // `transport-in-use.latchNow` decide SÓ PELO APARELHO (a regra do ADR-0109);
-  // `latch-scope.latchOf` lê o que a criança gravou (a regra do ADR-0113). Nenhuma tem consumidor
-  // hoje, então nada está partido — mas quem for ligar a fiação escolhe uma, e escolher a primeira
-  // implementa o modelo aposentado sem que nada o diga.
+  // 🔴 THE CODE HAS TWO FUNCTIONS THAT ANSWER «há alternância?», AND ONE OF THEM IS THE ONE ADR-0113 RETIRED.
+  // `transport-in-use.latchNow` decides ONLY BY THE DEVICE (ADR-0109's rule); `latch-scope.latchOf` reads what the child
+  // stored (ADR-0113's rule), and `input/latch-store` is its consumer. `latchNow` has no consumer — but whoever wires
+  // more of the chain picks one, and picking the first implements the retired model with nothing saying so.
   //
-  // ⚠️ ESTE BLOCO TORNA A SUPERSESSÃO EXECUTÁVEL. Um `@deprecated` é prosa; prosa não reprova.
+  // ⚠️ THIS BLOCK MAKES THE SUPERSESSION EXECUTABLE. A `@deprecated` is prose; prose does not fail.
 
   it('🔴 [Zero] a criança do TECLADO com alternância gravada: as duas funções DIVERGEM, e o registo diz qual vale', () => {
     const estado = { inUse: 'teclado', assistedOn: false };
     const gravado = { fromTransport: true, fromLegacy: null, byDefault: false };
 
-    // O modelo do ADR-0109: o teclado não tem alternância própria, logo NÃO.
+    // ADR-0109's model: the keyboard has no latch of its own, so NO.
     expect(latchNow(estado), 'o modelo superado deixou de dizer o que dizia').toBe(false);
-    // O modelo do ADR-0113: ela gravou, logo SIM. É o controle que a leitura literal lhe tirava.
+    // ADR-0113's model: she stored it, so YES. It is the control the literal reading took away from her.
     expect(latchOf(estado.inUse, gravado), 'a regra do ADR-0113 deixou de ler o valor gravado').toBe(true);
   });
 
@@ -180,8 +166,8 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
     expect(latchOf(estado.inUse, desligadoPelaCrianca), 'o toque deixou de ser escolha').toBe(false);
   });
 
-  // 📌 E ONDE AS DUAS CONCORDAM, que é o que impede este bloco de parecer uma acusação geral: nos quatro
-  // assistidos a alternância é obrigatória nos DOIS modelos, por razões diferentes e com o mesmo resultado.
+  // 📌 AND WHERE THE TWO AGREE, which keeps this block from reading as a blanket accusation: on the four assisted
+  // transports the latch is mandatory in BOTH models, for different reasons and with the same result.
   it('[Feliz] nos quatro assistidos as duas concordam — obrigatória, e ninguém a desliga', () => {
     for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
       expect(latchOf(t, { fromTransport: false, fromLegacy: false, byDefault: false }), `${t} pôde ser desligado`)
@@ -190,9 +176,8 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
     }
   });
 
-  // ⚠️ A GUARDA QUE MANTÉM ISTO HONESTO: enquanto a função superada não tiver consumidor, a divergência é
-  // documentação. No dia em que ganhar um, é uma DECISÃO — e este caso obriga a que seja tomada em vez de
-  // acontecer.
+  // ⚠️ THE GUARD THAT KEEPS THIS HONEST: while the superseded function has no consumer, the divergence is documentation.
+  // The day it gains one, it is a DECISION — and this case forces it to be taken instead of happening.
   it('🎯 [Zero] a função superada continua SEM CONSUMIDOR na engine', () => {
     const usam = ficheiros()
       .filter((f) => f !== 'input/transport-in-use.ts')
@@ -201,24 +186,23 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-08, por script, com contagem de ocorrências) =====
-// 1. tirar `ui/settings-mobility.ts` do inventário          → reprovam o [Feliz] **e** a saída (a chave renomeada
-//    deixa de aparecer nos achados). Previ só o [Feliz]; fica o medido, como nos gates irmãos
-// 2. acrescentar um ficheiro já migrado ao inventário    → [Fronteira] da saída reprova
-// 3. `tocamNaChaveAntiga` a devolver `[]`                → [Fronteira] da saída reprova; o [Feliz] fica VERDE,
-//    que é a razão de a saída existir — um crivo cego aprova tudo o que a regra sozinha vê
-// 4. `chamamAChaveNova` a devolver um ficheiro           → 🎯 o [Zero] do PISO reprova, e é a mutação que dá
-//    sentido ao ficheiro: no dia em que a fiação chegar, é ESTE caso que obriga a actualizar o inventário em
-//    vez de o deixar a mentir
-// 5. `semComentarios` sem o `(^|[^:])`                   → nenhuma reprova hoje: EQUIVALÊNCIA MEDIDA, porque
-//    nenhum destes ficheiros tem URL numa linha com `toggleMoveP`. Fica registada e não apagada — foi
-//    exactamente este defeito que fez a varredura irmã devolver zero, e ele não morde aqui por sorte
+// ===== MUTATIONS CHECKED (2026-09-08, by script, with occurrence counts) =====
+// 1. removing `ui/settings-mobility.ts` from the inventory → [Feliz] **and** the exit fail (the renamed key stops
+//    appearing in the findings). Only [Feliz] was predicted; what was measured stays, as in the sibling gates
+// 2. adding an already-migrated file to the inventory     → the exit [Fronteira] fails
+// 3. `tocamNaChaveAntiga` returning `[]`                  → the exit [Fronteira] fails; [Feliz] stays GREEN, which is why
+//    the exit exists — a blind sieve approves everything the rule alone sees
+// 4. `chamamAChaveNova` returning one file                → 🎯 the FLOOR's [Zero] fails, the mutation that gives the file
+//    its meaning: the day the wiring arrives, THIS case forces the inventory to be updated instead of left lying
+// 5. `semComentarios` without the `(^|[^:])`              → none fails: MEASURED EQUIVALENCE, because none of these files
+//    has a URL on a line with `toggleMoveP`. Recorded, not deleted — this exact defect made the sibling scan return
+//    zero, and it does not bite here by luck
 //
-// ----- e as do bloco da DIVERGÊNCIA, uma por caso e sem sobreposição nenhuma -----
-// 6. `latchOf` deixa de ler `doTransporte`          → o caso da criança do TECLADO reprova
-// 7. `latchOf` deixa de forçar nos assistidos       → o caso do acordo nos quatro reprova
-// 8. `input/keydown` passa a chamar `latchNow`    → 🎯 o [Zero] do consumidor reprova, que é a guarda
-//    que transforma «documentação da divergência» em «decisão obrigatória» no dia em que alguém a ligar
-// 9. o modelo superado deixa de responder pelo TOQUE      → o caso da divergência no toque reprova
-//    📌 As quatro batem em casos DIFERENTES e nenhuma se sobrepõe — é a medida de que os quatro casos deste
-//    bloco afirmam quatro coisas, e não a mesma escrita quatro vezes.
+// ----- and those of the DIVERGENCE block, one per case with no overlap at all -----
+// 6. `latchOf` no longer reading `doTransporte`   → the KEYBOARD child's case fails
+// 7. `latchOf` no longer forcing the assisted ones → the agreement-on-the-four case fails
+// 8. `input/keydown` calling `latchNow`           → 🎯 the consumer [Zero] fails, the guard that turns «documentação da
+//    divergência» into «decisão obrigatória» the day someone wires it
+// 9. the superseded model no longer answering for TOUCH → the touch-divergence case fails
+//    📌 The four hit DIFFERENT cases and none overlaps — the measure that this block's four cases assert four things,
+//    not the same thing written four times.

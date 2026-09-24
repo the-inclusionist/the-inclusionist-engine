@@ -1,43 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// NENHUMA BUSCA EXTERNA ESCRITA À MÃO — o inventário que estrangula por onde a engine toca na rede.
+// NO HAND-WRITTEN EXTERNAL FETCH — the inventory that throttles where the engine touches the network.
 //
-// ========================= A REGRA, REESCRITA EM 2026-09-09 =========================
-// 🔴 A REGRA QUE ESTAVA AQUI FOI REVOGADA PELO ADR-0116, e deixá-la seria o defeito que este repositório
-// persegue: um gate a argumentar por uma decisão que já não existe. Ela dizia — «um `<script src="https://…">`
-// é uma dependência de rede NO PRIMEIRO USO, e a escola sem rede não recebe nada». O Dev derrubou a premissa:
-// «NÃO FAZ SENTIDO BAIXAR ALGO VIA PWA, E CONSIDERAR QUE SE É PRA USAR VIA PWA OFFLINE NÃO É PRA BAIXAR NADA
-// NO PRIMEIRO USO!» Um PWA chega pela rede; isso É a instalação. O pilar 8 passou a dizer o que mede:
-// **PWA no primeiro dia ONLINE, depois OFFLINE-FIRST.**
+// ========================= THE RULE (ADR-0116) =========================
+// The Dev's premise: «NÃO FAZ SENTIDO BAIXAR ALGO VIA PWA, E CONSIDERAR QUE SE É PRA USAR VIA PWA OFFLINE NÃO É PRA
+// BAIXAR NADA NO PRIMEIRO USO!» A PWA arrives through the network; that IS the installation. Pillar 8 says what it
+// measures: **PWA on the first day ONLINE, then OFFLINE-FIRST.**
 //
-// 📌 A REGRA NOVA É SOBRE TEMPO E NÃO SOBRE ORIGEM: **pré-cacheado na instalação, nunca buscado com preguiça
-// no primeiro uso.** Um runtime de CDN fixada por versão, listado no manifesto de precache, é admissível — foi
-// o que o Dev pediu desde o início («se conseguir usar cdnjs/jsdelivr é ótimo»). O que continua proibido é o
-// endereço que só é buscado quando a criança carrega no botão, porque esse não estava lá no dia da instalação.
+// 📌 THE RULE IS ABOUT TIME, NOT ORIGIN: **precached at installation, never lazily fetched on first use.** A runtime from
+// a version-pinned CDN, listed in the precache manifest, is admissible — as the Dev asked from the start («se conseguir
+// usar cdnjs/jsdelivr é ótimo»). What stays forbidden is the address fetched only when the child presses the button,
+// because it was not there on installation day.
 //
-// ⚠️ E O VEREDICTO SOBRE O `ui/webcam.ts` NÃO MUDOU — mudou a razão. Aquele `<script src>` dispara no primeiro
-// uso do controle por olhar, logo é busca preguiçosa, com CDN ou sem CDN. A regra velha condenava-o pelo host;
-// a nova condena-o pelo MOMENTO, que é o que sempre esteve errado nele.
+// 📌 THIS SIEVE IS THE SOURCE HALF. The other half — «e está mesmo no manifesto?» — can only be measured after a build,
+// and lives in `scripts/check-precache.mjs`, which demands that an external entry be PINNED and have a declared weight.
+// Neither answers alone: here one sees who writes an address, there whether it reached the installation.
 //
-// 📌 ESTE CRIVO É A METADE DA FONTE. A outra metade — «e está mesmo no manifesto?» — só se afere depois de um
-// build, e vive no `scripts/check-precache.mjs`, que desde `af35a7d` exige que uma entrada externa seja
-// FIXADA e tenha peso declarado. Nenhum dos dois responde sozinho: aqui vê-se quem escreve um endereço, lá
-// vê-se se ele chegou à instalação.
+// 📌 The SVG namespace (`http://www.w3.org/2000/svg`), which `createElementNS` requires, **never touches the network**.
+// Excluding it is the difference between a sieve and an alarm someone switches off — and the exclusion is a written
+// RULE, not a silence.
 //
-// 📏 MEDIDO EM 2026-09-08: a engine tem exactamente TRÊS URLs absolutas em código, e só UMA delas é uma busca.
-// As outras duas são o espaço de nomes do SVG (`http://www.w3.org/2000/svg`), que o `createElementNS` exige e
-// que **nunca toca na rede**. Excluí-las é a diferença entre um crivo e um alarme que alguém desliga — e a
-// exclusão é uma REGRA escrita, não um silêncio.
-//
-// ========================= ⚠️ O DETECTOR QUASE MENTIU, E O ERRO ERA MEU =========================
-// 🔴 A primeira varredura devolveu **ZERO** e eu quase reportei «não há CDN escrito à mão». O tira-comentários
-// era `replace(/\/\/[^\n\r]*/g, '')` — e **toda URL tem `//` dentro**. Ele via `https:` e apagava
-// `//webgazer.cs.brown.edu/webgazer.js'; s.async = true;` como se fosse comentário. O crivo comia exactamente
-// aquilo que existe para caçar.
-//
-// 📌 É a segunda vez que um tira-comentários engana este repositório (a primeira deixava passar comentário no
-// fim da linha), e a lição é a mesma dos resultados vazios: **uma varredura que devolve zero prova o detector,
-// não a árvore.** O caso do vácuo aqui embaixo é o que impede a repetição — ele exige que a varredura ache as
-// três, incluindo os dois espaços de nomes que ela depois recusa.
+// ========================= ⚠️ THE DETECTOR CAN LIE =========================
+// 🔴 A comment stripper written as `replace(/\/\/[^\n\r]*/g, '')` erases URLs — **every URL has `//` inside** — so the
+// sieve eats exactly what it exists to hunt, and the scan returns ZERO. **A scan that returns zero proves the detector,
+// not the tree.** The vacuum case below prevents that: it demands the scan find the code URLs, including the two
+// namespaces it then refuses.
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
@@ -48,23 +34,21 @@ import { fileURLToPath } from 'node:url';
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
 /**
- * AS BUSCAS EXTERNAS ESCRITAS À MÃO QUE AINDA EXISTEM, e por que cada uma continua aqui.
+ * THE HAND-WRITTEN EXTERNAL ADDRESSES THAT STILL EXIST, and why each one is still here.
  *
- * ⚠️ A LISTA TEM DE ENCOLHER. Uma entrada nova sem razão escrita à mão é a engine a ganhar uma dependência de
- * rede sem ninguém decidir — que é exactamente como esta chegou.
+ * ⚠️ THE LIST MUST SHRINK. A new entry without a hand-written reason is the engine gaining a network dependency without
+ * anyone deciding.
  */
 /**
- * ⚠️ A DESCULPA CARREGA UMA CONTAGEM, E NÃO SÓ UMA RAZÃO — medido em 2026-09-09, e a razão é um defeito que
- * este ficheiro tinha e que a sua própria entrada descrevia.
+ * ⚠️ THE EXCUSE CARRIES A COUNT, NOT ONLY A REASON (measured 2026-09-09).
  *
- * O ADR-0114 pede que «o host dos modelos seja nomeado NUM SÍTIO SÓ». A lista, indexada por FICHEIRO,
- * afirmava isso à granularidade errada: I planted a second host in the module that named the models' host —
- * an `export const ESPELHO` for a CDN, que é exactamente o
- * movimento de quem constrói o buscador e quer um espelho para a escola — e os CINCO casos ficaram verdes.
- * O ficheiro já estava desculpado, então tudo o que crescesse dentro dele estava desculpado com ele.
+ * ADR-0114 asks that «o host dos modelos seja nomeado NUM SÍTIO SÓ». A list keyed by FILE asserts that at the wrong
+ * granularity: a second host planted in the module that named the models' host — an `export const ESPELHO` for a CDN,
+ * exactly the move of whoever builds the fetcher and wants a mirror for the school — left all FIVE cases green. The
+ * file was already excused, so everything that grew inside it was excused with it.
  *
- * 📌 Com o número, «um sítio só» passa a ser afirmado como UM. Ele é um TECTO QUE SÓ DESCE: subir exige
- * mexer aqui e escrever porquê; descer exige actualizar o número, que é como o inventário encolhe.
+ * 📌 With the number, «um sítio só» is asserted as ONE. It is a CEILING THAT ONLY GOES DOWN: going up requires touching
+ * this and writing why; going down requires updating the number, which is how the inventory shrinks.
  */
 const BUSCAS_A_MAO = {
   'platform/kokoro.ts': {
@@ -110,9 +94,9 @@ const BUSCAS_A_MAO = {
 };
 
 /**
- * ⚠️ ESPAÇOS DE NOMES XML NÃO SÃO BUSCAS, e a exclusão é por PREFIXO e com razão escrita, não caso a caso.
- * `http://www.w3.org/2000/svg` é o argumento obrigatório do `createElementNS`; o navegador nunca o resolve.
- * Acusá-los faria o gate reprovar duas linhas correctas do `render/` e ser desligado antes de apanhar a real.
+ * ⚠️ XML NAMESPACES ARE NOT FETCHES, and the exclusion is by PREFIX with a written reason, not case by case.
+ * `http://www.w3.org/2000/svg` is `createElementNS`'s mandatory argument; the browser never resolves it. Accusing them
+ * would make the gate fail correct lines and get switched off before it catches the real one.
  */
 const NAO_E_BUSCA = 'http://www.w3.org/';
 
@@ -127,8 +111,8 @@ function ficheiros(dir = RAIZ, pref = '') {
 }
 
 /**
- * ⚠️ O `(^|[^:])` É O CONSERTO, e sem ele este ficheiro não mede nada. Um `//` precedido de `:` é o dobro
- * da barra de um esquema (`https://`), nunca o início de um comentário.
+ * ⚠️ THE `(^|[^:])` IS THE FIX, and without it this file measures nothing. A `//` preceded by `:` is a scheme's double
+ * slash (`https://`), never the start of a comment.
  */
 function semComentarios(src) {
   return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n\r]*/g, '$1');
@@ -136,7 +120,7 @@ function semComentarios(src) {
 
 const URL_EM_LITERAL = /['"`](https?:\/\/[^'"`]+)['"`]/g;
 
-/** Toda URL absoluta que aparece num literal de string, em código — inclusive as que não são buscas. */
+/** Every absolute URL that appears in a string literal, in code — including those that are not fetches. */
 function urlsEmCodigo() {
   const achados = [];
   for (const f of ficheiros()) {
@@ -150,8 +134,8 @@ const TODAS = urlsEmCodigo();
 const BUSCAS = TODAS.filter((a) => !a.url.startsWith(NAO_E_BUSCA));
 
 describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
-  // 🎯 O CASO DO VÁCUO, e ele é o primeiro porque é o que apanha o defeito que eu cometi: se o detector
-  // voltar a comer as URLs, TODAS fica vazia e o caso feliz fica verde a olhar para nada.
+  // 🎯 THE VACUUM CASE, first because it catches the stripper defect: if the detector eats the URLs again, TODAS is empty
+  // and the happy case stays green looking at nothing.
   it('🎯 [Vácuo] a varredura acha as três URLs de código, os dois espaços de nomes incluídos', () => {
     expect(TODAS.length, 'o tira-comentários voltou a comer as URLs — ver o cabeçalho').toBeGreaterThanOrEqual(3);
     expect(TODAS.filter((a) => a.url.startsWith(NAO_E_BUSCA)).length, 'os espaços de nomes do SVG sumiram').toBe(2);
@@ -163,13 +147,13 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
     expect(desc, `busca externa que ninguém declarou: ${desc.join(' · ')}`).toEqual([]);
   });
 
-  /* 🎯 O CASO QUE FALTAVA, e o defeito que ele apanha estava DENTRO da desculpa. «Num sítio só» era afirmado
-   * por FICHEIRO: com o ficheiro na lista, uma segunda URL dentro dele passava. Provado plantando um
-   * `ESPELHO` jsDelivr ao lado do `HOST_DOS_MODELOS` — cinco casos verdes, e a cláusula do ADR-0114 morta.
+  /* 🎯 The defect this catches was INSIDE the excuse. «Num sítio só» asserted per FILE lets a second URL in an excused
+   * file pass. Proven by planting a jsDelivr `ESPELHO` beside `HOST_DOS_MODELOS` — five green cases, and ADR-0114's clause
+   * dead.
    *
-   * ⚠️ E o sítio onde ele morde é o único sítio onde isto vai acontecer: quem ligar o buscador da #129 tem
-   * um problema real de escola sem rede e um espelho é a resposta óbvia. O gate não a proíbe — obriga-a a
-   * passar por aqui, com o número e a razão, em vez de aparecer como uma linha a mais num ficheiro puro. */
+   * ⚠️ And where it bites is where this will happen: whoever wires the #129 fetcher has a real problem of a school without
+   * network, and a mirror is the obvious answer. The gate does not forbid it — it makes it come through here, with the
+   * number and the reason, instead of appearing as one more line in a pure file. */
   it('🎯 [Fronteira] um ficheiro desculpado não pode ganhar uma SEGUNDA URL', () => {
     const aMais = [];
     for (const [f, { urls }] of Object.entries(BUSCAS_A_MAO)) {
@@ -179,10 +163,9 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
     expect(aMais, `URL nova isInside de um ficheiro já desculpado: ${aMais.join(' | ')}`).toEqual([]);
   });
 
-  // ⚠️ A SAÍDA, e agora ela tem DUAS metades. Sem elas a lista vira monumento: a entrada do WebGazer
-  // continuaria a dizer que existe uma dependência de rede depois de o ADR-0114 a ter retirado, e a próxima
-  // pessoa leria história como estado. A segunda metade é o número: um tecto que ficou acima do real
-  // desculpa por antecipação a URL que ainda não existe.
+  // ⚠️ THE EXIT, with TWO halves. Without them the list becomes a monument: an entry would go on saying a network
+  // dependency exists after it was removed, and the next person would read history as state. The second half is the
+  // number: a ceiling left above the real count excuses in advance the URL that does not exist yet.
   it('[Fronteira] entrada da lista que já não busca nada sai daqui, e o número acompanha a descida', () => {
     const resolvidas = Object.keys(BUSCAS_A_MAO).filter((f) => !BUSCAS.some((a) => a.f === f));
     expect(resolvidas, `já não faz busca externa; apague a entrada: ${resolvidas.join(', ')}`).toEqual([]);
@@ -193,8 +176,8 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
     expect(inchadas, `o tecto ficou acima do real e desculpa por antecipação: ${inchadas.join(' | ')}`).toEqual([]);
   });
 
-  // 📌 O PAR que prova que a exclusão é uma REGRA e não um buraco: um espaço de nomes é aceite, e uma URL
-  // qualquer no MESMO ficheiro não seria.
+  // 📌 THE PAIR that proves the exclusion is a RULE and not a hole: a namespace is accepted, and any other URL in the SAME
+  // file would not be.
   it('[Fronteira] o espaço de nomes do SVG é aceite; qualquer outra URL do mesmo ficheiro não seria', () => {
     const svg = TODAS.filter((a) => a.url === 'http://www.w3.org/2000/svg');
     expect(svg.length, 'o `createElementNS` deixou de usar o espaço de nomes').toBe(2);
@@ -202,15 +185,15 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
     expect(NAO_E_BUSCA.startsWith('http://www.w3.org/'), 'a exclusão é por prefixo do W3C, não uma lista').toBe(true);
   });
 
-  /* 🎯 A REGRA DO ADR-0116 FEITA ESTRUTURAL: um ENDEREÇO não é uma BUSCA, e é a diferença entre o que se
-   * pré-cacheia e o que se busca com preguiça. `platform/kokoro` NAMES the host and never asks it — a
-   * módulo puro, e é essa pureza que deixa o buscador escolher o momento.
+  /* 🎯 ADR-0116'S RULE MADE STRUCTURAL: an ADDRESS is not a FETCH, and that is the difference between what is precached
+   * and what is lazily fetched. `platform/kokoro` NAMES the host and never asks it — a pure module, and that purity is
+   * what lets the fetcher choose the moment.
    *
-   * ⚠️ If `kokoro` gains a `fetch`, deixa de ser endereço declarado e passa a ser a busca preguiçosa que a desculpa dele diz que não
-   * é. (The case's other side was `ui/webcam`, which left with WebGazer — ADR-0214.)
+   * ⚠️ If `kokoro` gains a `fetch`, it stops being a declared address and becomes the lazy fetch its excuse says it is
+   * not. (The case's other side was `ui/webcam`, which left with WebGazer — ADR-0214.)
    *
-   * 📌 A regex é DUPLICADA do `nada-vem-de-fora` de propósito, pela razão que aquele ficheiro escreve: um
-   * gate tem de poder discordar do outro. */
+   * 📌 The regex is DUPLICATED from nothing-comes-from-outside on purpose, for the reason that file writes: one gate must
+   * be able to disagree with the other. */
   const REDE = /\bfetch\s*\(|\bimport\s*\(|\.src\s*=|XMLHttpRequest|navigator\.sendBeacon|new\s+WebSocket|new\s+EventSource/;
   const pede = (f) => REDE.test(semComentarios(readFileSync(join(RAIZ, f), 'utf8')));
 
@@ -230,16 +213,16 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-08, por script, com contagem de ocorrências) =====
-// 1. tirar `ui/webcam.ts` de `BUSCAS_A_MAO`            → [Feliz] reprova, nomeando a URL do WebGazer
-// 2. acrescentar uma entrada já resolvida à lista      → [Fronteira] da saída reprova
-// 3. `semComentarios` sem o `(^|[^:])` (o meu defeito) → reprovam o [Vácuo], a SAÍDA e o par. 🎯 E o que
-//    interessa é qual NÃO reprova: o **[Feliz] fica verde**, porque uma lista vazia não tem entradas novas —
-//    que é exactamente a forma como eu quase reportei «não há CDN escrito à mão». A regra sozinha não apanha
-//    um crivo cego; quem o apanha é o vácuo. Medido, e diferente do que eu tinha previsto (eu escrevera que
-//    só o vácuo reprovava).
-// 4. `NAO_E_BUSCA` → 'http://www.w3.org/2000/svg' exacto → sobrevive: EQUIVALÊNCIA MEDIDA, porque hoje as duas
-//    ocorrências são exactamente essa. Fica registada em vez de apagada — o prefixo cobre `1999/xlink` e os
-//    outros namespaces do W3C no dia em que um deles aparecer, e apertá-lo agora não reprova nada.
-// 5. `NAO_E_BUSCA` → 'http://'                          → [Fronteira] do par reprova, e devia: excluir todo
-//    `http://` deixaria passar um CDN em texto plano, que é pior do que o que este gate caça.
+// ===== MUTATIONS CHECKED (2026-09-08, by script, with occurrence counts) =====
+// 1. removing `ui/webcam.ts` from `BUSCAS_A_MAO`       → [Feliz] fails, naming the WebGazer URL (a module since removed,
+//    ADR-0214)
+// 2. adding an already-resolved entry to the list       → the exit [Fronteira] fails
+// 3. `semComentarios` without the `(^|[^:])` (the stripper defect) → the [Vácuo], the EXIT and the pair fail. 🎯 And what
+//    matters is which does NOT fail: **[Feliz] stays green**, because an empty list has no new entries — exactly how a
+//    «não há CDN escrito à mão» report nearly went out. The rule alone does not catch a blind sieve; the vacuum does.
+//    Measured, and different from the prediction (which said only the vacuum would fail).
+// 4. `NAO_E_BUSCA` → exactly 'http://www.w3.org/2000/svg' → survives: MEASURED EQUIVALENCE, because both occurrences are
+//    exactly that. Recorded instead of deleted — the prefix covers `1999/xlink` and the other W3C namespaces the day one
+//    appears, and tightening it now fails nothing.
+// 5. `NAO_E_BUSCA` → 'http://'                          → the pair's [Fronteira] fails, as it should: excluding every
+//    `http://` would let a plain-text CDN through, which is worse than what this gate hunts.

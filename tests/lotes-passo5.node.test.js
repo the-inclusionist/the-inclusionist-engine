@@ -1,45 +1,41 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// OS LOTES DO PASSO 5 — "dividir os módulos de fronteira em 4 lotes, FOLHA PRIMEIRO" (project node: só lê o disco).
+// THE BATCHES OF STEP 5 — "split the boundary modules into 4 batches, LEAF FIRST" (node project: only reads the disk).
 //
-// ========================= POR QUE ISTO É TESTE, E NÃO UM DOCUMENTO =========================
-// O item 19 manda dividir folha primeiro. "Folha primeiro" não é uma preferência de organização: é uma
-// ORDENAÇÃO TOPOLÓGICA do grafo de importação, e ela só existe se o grafo for ACÍCLICO. Um único ciclo novo
-// entre dois módulos de engine e o item 19 fica impossível — não mais difícil, impossível — e o modo de
-// descobrir isso seria no meio da mudança, com metade dos módulos já movidos.
+// ========================= WHY THIS IS A TEST, NOT A DOCUMENT =========================
+// Item 19 says to split leaf first. "Leaf first" is not an organisational preference: it is a TOPOLOGICAL ORDERING of
+// the import graph, and it only exists if the graph is ACYCLIC. A single new cycle between two engine modules makes
+// item 19 impossible — not harder, impossible — and the way to find out would be mid-move, with half the modules moved.
 //
-// Um documento com a lista dos lotes envelheceria no primeiro módulo novo e ninguém saberia. Isto aqui
-// RECALCULA a divisão a cada rodada, a partir dos imports de verdade, e reprova se a premissa quebrar.
+// A document listing the batches would age at the first new module and nobody would know. This RECOMPUTES the split on
+// every run, from the real imports, and fails if the premise breaks.
 //
-// ========================= O QUE A MEDIÇÃO ACHOU, E POR QUE ELA IMPORTA =========================
-// O grafo é acíclico e cai em camadas naturais. Os lotes NÃO precisam ser inventados: eles são as camadas. E
-// dentro de uma camada nenhum módulo depende de outro da mesma camada — que é exatamente a propriedade que
-// torna um lote movível DE UMA VEZ, em vez de módulo a módulo.
+// ========================= WHAT THE MEASUREMENT FINDS, AND WHY IT MATTERS =========================
+// The graph is acyclic and falls into natural layers. The batches need not be invented: they are the layers. And within
+// a layer no module depends on another of the same layer — exactly the property that makes a batch movable AT ONCE,
+// instead of module by module.
 //
-// O item 19 estima QUATRO lotes; a medição diz CINCO camadas (30, 24, 21, 13 e uma), e a quinta é um módulo
-// só. Ou seja: quatro lotes de verdade e uma cauda. Está cobrado abaixo em vez de arredondado.
+// Item 19 estimates FOUR batches; the graph gives at least four layers plus a small tail. That is asserted below instead
+// of rounded.
 //
-// O achado que muda a expectativa é o tamanho da dívida: eram QUATRO módulos de engine arrastando `game/`
-// (direta ou transitivamente), hoje são DOIS. Os outros ~87 são limpos. Ou seja, o trabalho do passo 5 não
-// está espalhado pelos lotes — está concentrado, e os lotes existem para mover o resto COM SEGURANÇA, não
-// para consertá-lo.
+// The `game/` checks below guard the boundary: the cartridge left this repository (issue #111), so no engine module may
+// drag a `game/` path, directly or transitively.
 //
-// ========================= O QUE ESTE ARQUIVO NÃO DECIDE =========================
-// Nada sobre o EIXO (por gênero · por subsistema · por contrato declarado). A ordenação folha-primeiro é a
-// mesma nas quatro alternativas, porque é fato do grafo e não da escolha. Quando o eixo for decidido, é este
-// cálculo que diz em que ORDEM mover — e ele já vai estar aqui, verdadeiro.
+// ========================= WHAT THIS FILE DOES NOT DECIDE =========================
+// Nothing about the AXIS (by genre · by subsystem · by declared contract). The leaf-first ordering is the same in all
+// the alternatives, because it is a fact of the graph and not of the choice. When the axis is decided, this computation
+// says in what ORDER to move — and it will already be here, true.
 //
-// ⚠️ Complementa `tests/engine-boundary.node.test.js`, não o repete: lá ficam as ARESTAS conhecidas e o
-// vocabulário; aqui fica a FORMA do grafo (aciclicidade, camadas, concentração).
+// ⚠️ It complements `tests/engine-boundary.node.test.js` rather than repeating it: that one holds the known EDGES and the
+// vocabulary; this one holds the graph's SHAPE (acyclicity, layers, concentration).
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const RAIZ = join(process.cwd(), 'app', 'js');
-// ⚠️ `audio` ESTAVA AQUI E NUNCA EXISTIU (medido em 2026-09-07) — os módulos de áudio vivem em `platform/` —
-// e `boot`, que É publicada, faltava. Terceira cópia à mão da mesma lista na suíte, terceira a ter derivado.
-// Sai agora do `tsconfig.pkg.json`. ⚠️ E aqui o `i18n` FICA: este ficheiro conta lotes de módulos publicados,
-// e os dicionários são módulos publicados como os outros — a exclusão que os outros gates fazem é sobre
-// MEDIR TEXTO neles, que é outra pergunta.
+// ⚠️ The layer list comes from `tsconfig.pkg.json`, not from a hand copy: hand copies of this list in the suite drifted
+// (one named an `audio` layer that never existed and missed `boot`). ⚠️ And `i18n` STAYS here: this file counts batches of
+// published modules, and the dictionaries are published modules like the others — the exclusion other gates make is
+// about MEASURING TEXT in them, which is another question.
 const CAMADAS_ENGINE = (() => {
   const cfg = JSON.parse(readFileSync(join(process.cwd(), 'tsconfig.pkg.json'), 'utf8')
     .split(String.fromCharCode(13)).join(''));
@@ -60,22 +56,22 @@ function modulosDe(camada) {
 const ENGINE = CAMADAS_ENGINE.flatMap(modulosDe);
 const SET = new Set(ENGINE);
 
-/** Fonte SEM comentário. O `split(CR).join('')` não é higiene: com CRLF o `.` da regex não alcança o CR, o
- *  âncora de fim nunca chega e o removedor de comentários FALHA ABERTO — já produziu uma lista de dívida
- *  falsa neste projeto, e uma lista falsa é pior que lista nenhuma (ver o cabeçalho de engine-boundary). */
+/** Source WITHOUT comments. The `split(CR).join('')` is not hygiene: with CRLF the regex's `.` does not reach the CR,
+ *  the end anchor never arrives and the comment stripper FAILS OPEN — it has produced a false debt list in this project,
+ *  and a false list is worse than none (see the engine-boundary header). */
 function semComentarios(caminho) {
   return readFileSync(caminho, 'utf8').split(CR).join('')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .split('\n').map((l) => l.replace(/\/\/.*$/, '')).join('\n');
 }
 
-/** Importações de `m` para outros módulos de app/js, resolvidas para a forma `camada/nome`. */
+/** `m`'s imports of other app/js modules, resolved to the `layer/name` form. */
 function importesDe(m) {
   const src = semComentarios(join(RAIZ, ...m.split('/')) + '.ts');
   const base = m.split('/')[0], alvo = new Set();
   for (const achado of src.matchAll(/from\s+'([^']+\.js)'/g)) {
     const rel = achado[1];
-    if (!rel.startsWith('.')) continue; // pacote npm (pixi.js): não é aresta interna
+    if (!rel.startsWith('.')) continue; // npm package (pixi.js): not an internal edge
     let p = rel.replace(/\.js$/, '');
     if (p.startsWith('./')) p = base + '/' + p.slice(2);
     else if (p.startsWith('../')) p = p.slice(3);
@@ -85,22 +81,22 @@ function importesDe(m) {
 }
 
 const DEPS = new Map(ENGINE.map((m) => [m, importesDe(m)]));
-/** Só as arestas ENTRE módulos de engine — é sobre elas que a ordenação folha-primeiro se faz. */
+/** Only the edges BETWEEN engine modules — the leaf-first ordering is made over them. */
 const DENTRO = new Map(ENGINE.map((m) => [m, DEPS.get(m).filter((d) => SET.has(d) && d !== m)]));
 
-/** Camadas topológicas: nível 0 = folhas; nível n = só depende de níveis < n. */
+/** Topological layers: level 0 = leaves; level n = depends only on levels < n. */
 function niveis() {
   const nivel = new Map();
   let restante = new Set(ENGINE);
   for (let n = 0; n < ENGINE.length && restante.size; n++) {
     const prontos = [...restante].filter((m) => DENTRO.get(m).every((d) => nivel.has(d) && nivel.get(d) < n));
-    if (!prontos.length) break; // ciclo: ninguém mais fica pronto
+    if (!prontos.length) break; // cycle: nobody else becomes ready
     for (const m of prontos) { nivel.set(m, n); restante.delete(m); }
   }
   return { nivel, restante };
 }
 
-/** Fecho transitivo do que `m` arrasta, incluindo o que sai da engine. */
+/** Transitive closure of what `m` drags, including what leaves the engine. */
 function arrasta(m, visto = new Set()) {
   const acc = new Set();
   for (const d of DEPS.get(m) || []) {
@@ -111,7 +107,7 @@ function arrasta(m, visto = new Set()) {
   return acc;
 }
 
-/** Quantos módulos em cada lote. */
+/** How many modules in each batch. */
 function contagem() {
   const { nivel } = niveis(), c = new Map();
   for (const [, n] of nivel) c.set(n, (c.get(n) || 0) + 1);
@@ -120,8 +116,8 @@ function contagem() {
 
 describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => {
   it('[Right] o grafo de engine é ACÍCLICO — sem isso "folha primeiro" não existe', () => {
-    // É o caso central. Um ciclo não torna o passo 5 mais difícil: torna-o impossível de fazer em lotes, e o
-    // lugar onde isso apareceria sem este teste é no meio da mudança, com metade dos módulos já movidos.
+    // The central case. A cycle does not make step 5 harder: it makes it impossible to do in batches, and without this
+    // test it would show up mid-move, with half the modules already moved.
     const { restante } = niveis();
     expect([...restante].sort(), 'módulos em ciclo — desfaça o ciclo antes de dividir').toEqual([]);
   });
@@ -132,8 +128,8 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
   });
 
   it('[Interface] isInside de um lote, nenhum módulo depende de outro do MESMO lote', () => {
-    // É a propriedade que faz um lote ser movível DE UMA VEZ. Sem ela, "lote" seria só um agrupamento de
-    // nome, e a mudança teria de descer a módulo por módulo de qualquer jeito.
+    // The property that makes a batch movable AT ONCE. Without it, a "batch" would be only a grouping by name, and the
+    // move would have to go module by module anyway.
     const { nivel } = niveis();
     const conflitos = [];
     for (const m of ENGINE) {
@@ -149,13 +145,13 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
   });
 
   it('[Interface] o item 19 diz QUATRO lotes; o grafo dá CINCO, e o quinto tem um módulo só', () => {
-    // ESCREVI ESTE CASO PEDINDO QUATRO E ELE REPROVOU, com razão. A pipeline estima quatro; a medição diz
-    // cinco camadas — 30, 24, 21, 13 e UMA (`ui/pause-icons`, que depende do lote 3 e por isso não pode ser
-    // fundido nele sem quebrar a independência dentro do lote, cobrada acima).
+    // Asking for exactly four failed, rightly: the pipeline estimates four; the measurement gives more layers, the last
+    // one a module or so that depends on the layer before and so cannot be merged into it without breaking the
+    // within-batch independence asserted above.
     //
-    // A diferença não é um detalhe de contagem: ela diz que o último "lote" não é um lote, é uma CAUDA. Quem
-    // for executar o passo 5 move quatro lotes de verdade e depois um módulo. Registrado aqui em vez de
-    // arredondado para quatro, porque arredondar teria sido eu ajustando a medida ao plano.
+    // The difference is not a counting detail: the last "batch" is not a batch, it is a TAIL. Whoever runs step 5 moves
+    // the real batches and then the tail. Recorded instead of rounded to four, because rounding would be adjusting the
+    // measurement to the plan.
     const c = contagem(), lotes = [...c.keys()].sort((a, b) => a - b);
     expect(lotes.length).toBeGreaterThanOrEqual(4);
     expect(c.get(lotes[lotes.length - 1]), 'a cauda').toBeLessThan(5);
@@ -163,28 +159,21 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
   });
 
   it('[Interface] o lote 0 são FOLHAS DE VERDADE: não importam nada de app/js', () => {
-    // Folha aqui é mais forte que "nível 0 entre módulos de engine": elas não importam NEM de `game/`. É o
-    // lote que se move sem olhar para mais nada, e é por ele que a divisão começa.
+    // A leaf here is stronger than "level 0 among engine modules": it imports nothing from app/js at all. It is the batch
+    // that moves without looking at anything else, and the split starts with it.
     const { nivel } = niveis();
     const lote0 = ENGINE.filter((m) => nivel.get(m) === 0);
     const comDependencia = lote0.filter((m) => DEPS.get(m).length > 0);
     expect(comDependencia, 'lote 0 deveria ser folha absoluta').toEqual([]);
-    expect(lote0.length).toBeGreaterThan(20); // hoje 30; a ordem de grandeza é o que importa
+    expect(lote0.length).toBeGreaterThan(20); // the order of magnitude is what matters
   });
 });
 
 describe('a dívida do passo 5 é CONCENTRADA, e é isso que torna a divisão barata', () => {
   /**
-   * Dívida CONHECIDA — VAZIA desde 2026-08-25. Só encolhe, e encolheu até o fim.
-   *
-   * O caminho, porque cada saída ensinou uma coisa diferente:
-   *   · `render/textures`    — saiu por INJEÇÃO (os ids das formas), e levou `render/viz-setters` junto, que
-   *                            só arrastava `game/` por transitividade. Uma aresta pequena, dois módulos.
-   *   · `ui/activities-menu` — saiu por MUDANÇA DE ENDEREÇO (ADR-0032): o catálogo era currículo arquivado em
-   *                            `game/`. Não foi conserto, e o `engine-boundary` conta a aresta nova em lista
-   *                            própria justamente para que a mudança de pasta não passe por reparo.
-   *   · `render/draw`        — saiu por CONTRATO: recebe entidades declaradas, que é o que o ADR-0030 manda.
-   *                            As duas importações levavam TRÊS regras do jogo dentro do desenho.
+   * KNOWN debt — EMPTY. It only shrinks, and it shrank to the end: the last engine modules that dragged `game/` stopped
+   * doing so by INJECTION (the shape ids), by a CHANGE OF ADDRESS (the curriculum catalogue, ADR-0032) and by CONTRACT
+   * (drawing receives declared entities, ADR-0030).
    */
   const ARRASTAM_JOGO = [];
 
@@ -194,13 +183,9 @@ describe('a dívida do passo 5 é CONCENTRADA, e é isso que torna a divisão ba
   });
 
   it('[Zero] `render/viz-setters` NÃO arrasta mais nada — a conta transitiva voltou a bater com a direta', () => {
-    // Este caso já disse o CONTRÁRIO, e a inversão é o registro do conserto. Ele existia para mostrar que as
-    // duas medidas divergiam: `viz-setters` não importava de `game/`, importava `render/textures`, que
-    // importava — quatro arrastadores contra três culpados. Tirar `SOMASUB_SHAPES` de dentro do `textures`
-    // resolveu os dois de uma vez, e é a razão de a aresta pequena ter valido a pena.
-    //
-    // O caso FICA (invertido) em vez de ser apagado: enquanto ele existir, ninguém reintroduz a importação em
-    // `render/textures` sem ver aqui que o custo não é uma aresta, são duas.
+    // `viz-setters` once dragged `game/` only transitively, through `render/textures`. ⚠️ `render/textures` no longer
+    // exists in the engine, so the third assertion below (`arrasta('render/textures')`) reads an empty dependency list
+    // and cannot fail; the first two still measure `render/viz-setters`.
     expect(DEPS.get('render/viz-setters').some((d) => d.startsWith('game/'))).toBe(false);
     expect([...arrasta('render/viz-setters')].some((d) => d.startsWith('game/'))).toBe(false);
     expect([...arrasta('render/textures')].some((d) => d.startsWith('game/'))).toBe(false);
