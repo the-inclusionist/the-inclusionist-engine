@@ -20,8 +20,9 @@
  * `"//…"`/`"comment:…"` keys, Python `#` and docstrings, and `#` for YAML, shell, PowerShell, `.gitignore` and `_headers`.
  * Strings and visible text are NOT comments and are not read: a page's words belong in the dictionaries.
  *
- * Exceptions are the identifier gate's (the dictionaries, the pt-BR curriculum, the demo cartridge), the Dev's
- * `research/`, and the validator copied byte for byte from the records' repository — `EXCLUSIONS` says why, one by one.
+ * Exceptions are the identifier gate's (the dictionaries, the pt-BR curriculum, the demo cartridge) and the Dev's
+ * `research/` — `EXCLUSIONS` says why, one by one. The validator copied byte for byte from the records' repository is
+ * measured like any other file: its comments are English at its home, and a Portuguese line copied here fails.
  *
  * Usage:
  *   node scripts/comment-language.mjs              prints the inventory
@@ -247,8 +248,6 @@ export const EXCLUSIONS = [
   ['app/js/educational/**', 'curriculum content is written in pt-BR, not translated: curriculum is rewritten per language (ADR-0032)'],
   ['app/js/consumer-quiz/**', 'the demo cartridge: it is a game, and games are not this package (the identifier gate excludes it too)'],
   ['research/**', 'the Dev\'s own research material, kept in the language it was gathered in (the docs gate excludes it too)'],
-  ['scripts/validate-adr.py', 'a byte-for-byte copy of the records\' validator, whose home is the-inclusionist-docs (ADR-0123); '
-    + '`tests/the-validator-does-not-drift` fails the moment the two differ, so its comments are translated THERE and copied here'],
 ];
 export const isExcluded = (file) => EXCLUSIONS.some(([pattern]) =>
   pattern.endsWith('/**') ? file.startsWith(pattern.slice(0, -2)) : file === pattern);

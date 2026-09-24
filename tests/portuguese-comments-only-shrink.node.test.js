@@ -66,7 +66,9 @@ describe('Portuguese in comments only shrinks', () => {
     const measured = sources();
     // 🎯 One file of every kind, by name: a scope that silently shrinks back to three folders must turn this red.
     for (const f of ['app/css/style.css', 'app/quiz.html', '.github/workflows/ci.yml', 'vite.config.ts', 'tsconfig.json',
-      'package.json', 'tools/build-hc.py', 'tools/png-write.mjs', '.gitignore', 'app/public/_headers', 'app/js/core/i18n.ts']) {
+      'package.json', 'tools/build-hc.py', 'tools/png-write.mjs', '.gitignore', 'app/public/_headers', 'app/js/core/i18n.ts',
+      // the records' validator too: its comments are English at home, so a copy must not bring Portuguese back
+      'scripts/validate-adr.py']) {
       expect(measured, `${f} is no longer measured`).toContain(f);
     }
     expect(measured.filter(isExcluded), 'an excluded file entered the measurement').toEqual([]);
@@ -76,8 +78,8 @@ describe('Portuguese in comments only shrinks', () => {
   it('⚠️ [Zero] the exclusions are exactly the decided ones, each with its reason', () => {
     // 🎯 A literal set, not read back from the script: an exclusion added beside the others must turn this red.
     expect(new Set(EXCLUSIONS.map(([p]) => p))).toEqual(new Set(['app/js/i18n/**', 'app/js/educational/**',
-      'app/js/consumer-quiz/**', 'research/**', 'scripts/validate-adr.py']));
-    expect(EXCLUSIONS.length, 'an exclusion listed twice').toBe(5);
+      'app/js/consumer-quiz/**', 'research/**']));
+    expect(EXCLUSIONS.length, 'an exclusion listed twice').toBe(4);
     for (const [pattern, reason] of EXCLUSIONS) expect(reason.length, `${pattern}: an exclusion without a reason is a hole`).toBeGreaterThan(30);
     expect(isExcluded('docs/research/README.md')).toBe(false); // `docs/research/` is not the Dev's `research/`
   });
