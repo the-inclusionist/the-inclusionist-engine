@@ -1,26 +1,7 @@
 {
   "about": "Portuguese comment lines per file (scripts/comment-language.mjs). Only shrinks; a new file starts at zero. A heuristic that undercounts — a ratchet, never a verdict.",
-  "total": 699,
+  "total": 8,
   "files": {
-    ".github/workflows/ci.yml": 35,
-    ".gitignore": 7,
-    ".release-it.json": 9,
-    "app/css/style.css": 288,
-    "app/public/_headers": 7,
-    "app/public/vendor/fonts.css": 70,
-    "app/quiz.html": 49,
-    "package.json": 6,
-    "scripts/check-extraction.py": 26,
-    "scripts/measure-layers.py": 5,
-    "scripts/measure-menu-shape.py": 8,
-    "tools/audit-history-for-secrets.py": 13,
-    "tools/build-hc.py": 2,
-    "tools/map-editor.html": 4,
-    "tools/migrate-issues-to-github.py": 44,
-    "tools/png-write.mjs": 10,
-    "tsconfig.json": 9,
-    "tsconfig.pkg.json": 27,
-    "vite.config.ts": 71,
-    "vitest.setup.browser.js": 9
+    "app/public/vendor/fonts.css": 8
   }
 }
