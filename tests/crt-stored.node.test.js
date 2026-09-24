@@ -6,11 +6,12 @@
 // mapping of `true`/`false`, the clamp to 0–2, the scanlines and the vignette being on/off only, a partial record keeping the
 // defaults it does not name. The only stored value any case wrote was the factory one, so every answer looked right.
 //
-// The load runs when the module is IMPORTED, so each case hands it a machine — a `localStorage` made of a Map — and imports it
-// again. Node has no storage of its own to leak between cases.
+// The load runs in `initCrt`, from the store it receives (ADR-0232), so each case hands it a machine — a backend made of a
+// Map — through a fresh import: the `CRT` object is module state, and a case must not start from the previous one's.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { createStorage } from '../app/js/platform/storage.js';
 
 /** A machine's storage, holding exactly what a case says it holds. */
 function maquina(guardado) {
@@ -24,9 +25,9 @@ function maquina(guardado) {
 
 /** The CRT the engine starts with on a machine that kept `guardado`. */
 async function arrancarCom(guardado) {
-  vi.stubGlobal('localStorage', maquina(guardado));
   vi.resetModules();
-  const { CRT } = await import('../app/js/render/crt.js');
+  const { CRT, initCrt } = await import('../app/js/render/crt.js');
+  initCrt({ numPlayers: () => 1, a11yVisualOn: () => false, store: createStorage(maquina(guardado)) });
   return { ...CRT };
 }
 
@@ -34,7 +35,6 @@ const ATUAL = 'incl_crt2';
 const ANTIGO = 'incl_crt';
 const json = (o) => JSON.stringify(o);
 
-afterEach(() => { vi.unstubAllGlobals(); });
 
 describe('the stored CRT, read back at boot', () => {
   it('🔴 [Zero] a machine that kept nothing starts with the factory CRT: scanlines on, no vignette, the usual corners', async () => {

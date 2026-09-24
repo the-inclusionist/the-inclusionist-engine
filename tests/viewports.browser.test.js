@@ -11,6 +11,7 @@
 //   · the stamping of the overlay inside the viewport's render-texture.
 // ZOMBIES + Right-BICEP. See ADR-0011-visual-accessibility.yaml and docs/research/RESEARCH-DALTONIZATION.md.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { CVD_KEYS, CVD_MATRIX, CVD_SVG_ID, installCvdFilters } from '../app/js/render/cvd-matrices.js';
 import { initViewports } from '../app/js/render/viewports.js';
 import { initHighContrast } from '../app/js/render/high-contrast.js';
@@ -19,7 +20,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // outlineFg > 0 → directSpriteTexture really outlines (with 0 it returns the source and the player cache test could not
 // fail). The world/coin fields are not exercised here.
-initHighContrast({
+initHighContrast({ store: createStorage(memoryBackend()),
   W: 1, H: 1, outlineFg: () => 1, outlineBg: () => 0,
   getWorldCanvasNormal: () => null, getWorldTexNormal: () => null,
   sprites: () => ({}), roleOf: () => null,

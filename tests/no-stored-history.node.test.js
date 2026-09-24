@@ -28,8 +28,11 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
  * Every write to storage, in any of the forms this repository uses.
  * ⚠️ Since ADR-0178 `core/state` and `core/i18n` write through the port the root loads (`portFor('setter')` before the write,
  * `porta.set(` in `setLocale`): without those two forms this sieve went blind to them, and their inventory lines read as orphans.
+ * ⚠️ And since ADR-0232 D2b a module keeps the store the root hands it under its own name (`_store?.setJSON(` in `render/crt`,
+ * `lqStore?.set(` in `render/lq-filter`, `ctx?.store.setJSON(` in `render/high-contrast`): any `…store`/`…Store` binding, with
+ * optional chaining, is a write — the same blindness, one refactor later.
  */
-const ESCREVE = /(?:^|[^\w.])(?:store|ctx\.store)\.(?:set|setBool|setJSON)\s*\(|portFor\('\w+'\)|port\.set\s*\(|localStorage\.setItem|sessionStorage\.setItem|indexedDB/;
+const ESCREVE = /(?:^|[^\w.])(?:ctx\??\.)?\w*[sS]tore\??\.(?:set|setBool|setJSON)\s*\(|portFor\('\w+'\)|port\.set\s*\(|localStorage\.setItem|sessionStorage\.setItem|indexedDB/;
 
 function ficheirosTs(dir = RAIZ) {
   const saida = [];

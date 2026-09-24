@@ -6,12 +6,13 @@
 //      querySelectorAll, including the tabs' querySelectorAll that finds NOTHING — see the case near the end).
 // ZOMBIES + Right-BICEP. See ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeEach } from 'vitest';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // the tile→role table belongs to the GAME (ADR-0080); the engine RECEIVES it
 
-// lqT is read at the IMPORT of render/lq-filter → clear before the dynamic import, or a leftover 'incl_lq' would enter
-// composing the CSS filter and the exact-string assertions would depend on another test.
-localStorage.clear();
+// lqT is no longer read at the IMPORT of render/lq-filter: it is 0 until `initLqFilter` reads the store it is given
+// (ADR-0232), and this file never calls it — so no leftover 'incl_lq' can enter the exact-string assertions, and nothing
+// here clears the page's storage out from under the files that share the origin.
 
 const { TILE } = await import('../app/js/core/constants.js');
 const { VIZ_BY_KEY } = await import('../app/js/render/viz-modes.js');
@@ -41,7 +42,7 @@ const worldCanvasNormal = flatCanvas(W * TILE, H * TILE, 'rgb(120,120,140)');
 const itemCanvasNormal = flatCanvas(8, 8, 'rgb(240,200,60)');
 const TEX_WORLD_NORMAL = { NORMAL: 'world' };
 const TEX_ITEM_NORMAL = { NORMAL: 'alvo' };
-HC.initHighContrast({ roleOf,
+HC.initHighContrast({ store: createStorage(memoryBackend()), roleOf,
   W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
   getWorldCanvasNormal: () => worldCanvasNormal, getWorldTexNormal: () => TEX_WORLD_NORMAL,
   sprites: () => ({ alvo: { canvas: itemCanvasNormal, tex: TEX_ITEM_NORMAL } }),
@@ -77,6 +78,7 @@ function setup(over = {}) {
     log: { frontDim: [], say: [], hideTouch: [] },
   };
   const ctx = {
+    store: createStorage(memoryBackend()),
     $: (sel) => document.querySelector(sel),
     body: document.body,
     srSay: (s) => env.log.say.push(s),

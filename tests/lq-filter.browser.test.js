@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of render/lq-filter — the DOM shell (BROWSER project): creates/reuses the <filter id="lq-enh"> node, builds the
-// CSS filter string, persists lqT in platform/storage (KEYS.lq = 'incl_lq') and fires the injected `onChange`
+// CSS filter string, persists lqT in the store `initLqFilter` receives (KEYS.lq = 'incl_lq') and fires the injected `onChange`
 // (boot/create-game recomposes the world's CSS filter there — not this module's job).
 // The pure curve/label (lqCurve/lqName) are tested in lq-filter.node.test.js. Module state is a singleton, so each
 // test normalises it with setLq(0) + initLqFilter(noop) in the beforeEach.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ensureLqFilter, lqFilter, setLq, getLqT, initLqFilter, lqCurve } from '../app/js/render/lq-filter.js';
-import * as store from '../app/js/platform/storage.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
+import { KEYS } from '../app/js/platform/storage-keys.js';
 
+let store;
 beforeEach(() => {
   document.body.innerHTML = '';
-  initLqFilter({ onChange: () => {} });
-  setLq(0); // known baseline: off (also clears the previous test's localStorage)
+  store = createStorage(memoryBackend()); // each case its own store (ADR-0232)
+  initLqFilter({ onChange: () => {}, store });
+  setLq(0); // known baseline: off
 });
 
 describe('render/lq-filter — ensureLqFilter', () => {
@@ -51,13 +54,13 @@ describe('render/lq-filter — lqFilter (string de CSS filter)', () => {
 });
 
 describe('render/lq-filter — setLq', () => {
-  it('[Boundary] clampa t em [0,1] e persiste em platform/storage sob KEYS.lq', () => {
+  it('[Boundary] clamps t to [0,1] and persists it in the injected store under KEYS.lq', () => {
     setLq(1.4);
     expect(getLqT()).toBe(1);
-    expect(store.get(store.KEYS.lq)).toBe('1');
+    expect(store.get(KEYS.lq)).toBe('1');
     setLq(-0.4);
     expect(getLqT()).toBe(0);
-    expect(store.get(store.KEYS.lq)).toBe('0');
+    expect(store.get(KEYS.lq)).toBe('0');
   });
 
   it('[Right] com t>0, escreve tableValues=lqCurve(t) nos 3 feFunc* do nó existente', () => {
@@ -79,10 +82,15 @@ describe('render/lq-filter — setLq', () => {
 
   it('[Interface] calls the injected onChange on every change — recomposing the filter is the host\'s (boot/create-game)', () => {
     let calls = 0;
-    initLqFilter({ onChange: () => { calls++; } });
+    initLqFilter({ onChange: () => { calls++; }, store });
     setLq(0.2);
     setLq(0.6);
     expect(calls).toBe(2);
+  });
+
+  it('🔴 [Right] initLqFilter READS the stored amount — at init, not at import (ADR-0232)', () => {
+    initLqFilter({ onChange: () => {}, store: createStorage(memoryBackend([[KEYS.lq, '0.5']])) });
+    expect(getLqT(), 'the enhancement the child chose did not come back').toBe(0.5);
   });
 
   it('[Zero] sem initLqFilter chamado neste teste, onChange default (noop) não lança', () => {

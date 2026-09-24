@@ -3138,6 +3138,10 @@ own the same way: `const store = createStorage(window.localStorage)` — or pass
 | `platform/audio.js` `initAudioMixer()` | `initAudioMixer(store)` | pass the store; `setCatGain` persists through it |
 | `platform/audio-mixer.js` `loadAudioCat()`, `saveAudioCat(k, obj)` | `loadAudioCat(store)`, `saveAudioCat(store, k, obj)` | pass the store first |
 | `platform/tts.js` `TtsCtx` | gains a REQUIRED `store` | pass the store; the chosen engine and voice are read and kept through it |
+| `render/crt.js` `initCrt({ numPlayers, a11yVisualOn })` · `CRT` | `initCrt({ numPlayers, a11yVisualOn, store })`; `CRT` is the factory CRT until `initCrt` reads the stored one into it (it was read at IMPORT) | pass the store; read `CRT` after `initCrt` |
+| `render/lq-filter.js` `LqFilterCtx` · `getLqT()` | gains a REQUIRED `store`; the amount is 0 until `initLqFilter` reads it (it was read at IMPORT) | pass the store to `initLqFilter` |
+| `render/high-contrast.js` `HighContrastCtx` · `HC_ROLE` | gains a REQUIRED `store`; `HC_ROLE` holds the defaults until `initHighContrast` lays the stored colours over them (they were read at IMPORT); `saveHcRole()` keeps them in that store | pass the store to `initHighContrast` |
+| `render/viz-setters.js` `readStoredVisual(i)` · `VizSettersCtx` | `readStoredVisual(store, i)` · `VizSettersCtx.store` REQUIRED | pass the store |
 
 Required and not optional, by ADR-0224/0227's precedent: each of these has no safe answer without a store — the child's
 remap, latch or controller map would be read from nowhere and lost in silence.

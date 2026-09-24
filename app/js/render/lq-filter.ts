@@ -5,7 +5,8 @@
 // creates the SVG node and writes to the DOM. Recomposing the final CSS filter (with the colour modes) belongs to the
 // host, through the injected `onChange` — this module does not duplicate the other subsystems' caches.
 
-import * as store from '../platform/storage.js';
+import type { Store } from '../platform/storage.js';
+import { KEYS } from '../platform/storage-keys.js';
 
 const FILTER_ID = 'lq-enh';
 
@@ -42,8 +43,11 @@ export function lqName(t: number): string {
 
 // ---------- Thin DOM shell ----------
 
-/** Current L→Q amount (0..1), persisted in platform/storage under `KEYS.lq` ('incl_lq'). Module-local state. */
-let lqT: number = clamp01(store.getNum(store.KEYS.lq, 0));
+/** Current L→Q amount (0..1), kept under `KEYS.lq` ('incl_lq') in the injected store; 0 until `initLqFilter` reads it.
+ *  Module-local state. */
+let lqT = 0;
+/** Where lqT is kept: the page's store, handed over by `initLqFilter` (ADR-0232, issue #207). */
+let lqStore: Pick<Store, 'getNum' | 'set'> | null = null;
 
 /** Reads (or lazily creates) the shared `<filter id="lq-enh">` SVG node, appended once to `document.body`. */
 export function ensureLqFilter(): SVGFilterElement {
@@ -91,20 +95,28 @@ export interface LqFilterCtx {
    * stays with the host; this module only owns lqT + the SVG filter node.
    */
   onChange: () => void;
+  /**
+   * Where the amount is kept — the page's store, built by the root (ADR-0232, issue #207). Required: an enhancement read
+   * from nowhere starts OFF at every visit for the child with low vision who turned it on.
+   */
+  store: Pick<Store, 'getNum' | 'set'>;
 }
 
 let onChange: () => void = () => {};
 
-/** Wires the injected recompose callback. Call once during the host's boot. */
+/** Wires the injected recompose callback and READS the stored amount — at init, never at import (ADR-0232). Call once
+ *  during the host's boot. */
 export function initLqFilter(ctx: LqFilterCtx): void {
   onChange = ctx.onChange;
+  lqStore = ctx.store;
+  lqT = clamp01(ctx.store.getNum(KEYS.lq, 0));
 }
 
 /** Sets lqT (clamped to 0..1), persists it, updates the live SVG table (if the filter is already on-screen),
  * then calls the injected `onChange` to let the host recompose the CSS filter. */
 export function setLq(t: number): void {
   lqT = clamp01(t);
-  store.set(store.KEYS.lq, lqT);
+  lqStore?.set(KEYS.lq, lqT);
   if (lqT > 0) {
     const f = ensureLqFilter();
     const tv = lqCurve(lqT);

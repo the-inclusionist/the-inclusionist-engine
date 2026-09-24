@@ -12,7 +12,8 @@ import { makeCanvas, tex } from './canvas.js';
 import { outlineCanvas } from './sprite-fx.js';
 import { TILE } from '../core/constants.js';
 import { HC_ROLE_DEF, type HcRoleKey, type PaintableRole } from './hc-role-data.js';
-import * as store from '../platform/storage.js';
+import type { Store } from '../platform/storage.js';
+import { KEYS } from '../platform/storage-keys.js';
 
 /* ===================== role → colour (color-blocking) ===================== */
 // The roles and their default colours live in render/hc-role-data (a leaf, no dependencies), because the visual
@@ -20,19 +21,20 @@ import * as store from '../platform/storage.js';
 // need not know there was a split.
 export type { PaintableRole, HcRoleKey } from './hc-role-data.js';
 export { HC_ROLE_KEYS, HC_ROLE_DEF } from './hc-role-data.js';
-export const HC_ROLE: Record<HcRoleKey, [number, number, number]> = (() => {
-  const d = JSON.parse(JSON.stringify(HC_ROLE_DEF)) as Record<HcRoleKey, [number, number, number]>;
-  const s = store.getJSON<Partial<Record<HcRoleKey, number[]>>>(store.KEYS.hcrole, null);
-  if (s && typeof s === 'object') {
-    for (const k of Object.keys(d) as HcRoleKey[]) {
-      const v = s[k];
-      if (Array.isArray(v) && v.length === 3) d[k] = v.map((n) => Math.max(0, Math.min(255, n | 0))) as [number, number, number];
-    }
+/** The LIVE role palette: the defaults until `initHighContrast` lays the child's stored colours over them (ADR-0232). */
+export const HC_ROLE: Record<HcRoleKey, [number, number, number]> =
+  JSON.parse(JSON.stringify(HC_ROLE_DEF)) as Record<HcRoleKey, [number, number, number]>;
+/** Lays the stored colours over `HC_ROLE`, each clamped to 0–255; a malformed entry keeps its default. */
+function loadHcRole(store: HighContrastStore): void {
+  const s = store.getJSON<Partial<Record<HcRoleKey, number[]>>>(KEYS.hcrole, null);
+  if (!s || typeof s !== 'object') return;
+  for (const k of Object.keys(HC_ROLE) as HcRoleKey[]) {
+    const v = s[k];
+    if (Array.isArray(v) && v.length === 3) HC_ROLE[k] = v.map((n) => Math.max(0, Math.min(255, n | 0))) as [number, number, number];
   }
-  return d;
-})();
-/** Persists HC_ROLE (called by whoever changes or resets a role colour), through the store. */
-export function saveHcRole(): void { store.setJSON(store.KEYS.hcrole, HC_ROLE); }
+}
+/** Persists HC_ROLE (called by whoever changes or resets a role colour), through the store `initHighContrast` received. */
+export function saveHcRole(): void { ctx?.store.setJSON(KEYS.hcrole, HC_ROLE); }
 
 /* ===================== 3 contrast levels ===================== */
 export interface DirectCfg { off: number; mul: number; bgMul: number }
@@ -94,9 +96,18 @@ export interface HighContrastCtx {
    * Swapping the table is swapping the game, and nothing more.
    */
   roleOf: (t: number) => PaintableRole | null;
+  /**
+   * Where the child's role colours are kept — the page's store, built by the root (ADR-0232, issue #207). Required: colours
+   * read from nowhere come back to the defaults at every visit, and a child who chose them because that is how they see
+   * would lose them in silence.
+   */
+  store: HighContrastStore;
 }
+/** What the role palette is read and written through. */
+export type HighContrastStore = Pick<Store, 'getJSON' | 'setJSON'>;
 let ctx: HighContrastCtx | null = null;
-export function initHighContrast(c: HighContrastCtx): void { ctx = c; }
+/** Wires the host and READS the stored role colours into `HC_ROLE` — at init, never at import (ADR-0232). */
+export function initHighContrast(c: HighContrastCtx): void { ctx = c; loadHcRole(c.store); }
 function requireCtx(): HighContrastCtx {
   if (!ctx) throw new Error('render/high-contrast: initHighContrast(ctx) ainda não foi chamado');
   return ctx;

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // render/crt.ts — the CRT look (visual sensitivity menu): scanlines/vignette/corners, CSS only (classes on
-// #game-region). CRT = the config {scan,vig,round} (0=off,1,2; scan/vig are on/off) loaded from localStorage, migrating
+// #game-region). CRT = the config {scan,vig,round} (0=off,1,2; scan/vig are on/off) read by `initCrt` from the injected store, migrating
 // the old boolean format. crtScanVars anchors the scanline to REAL PIXELS (recomputed from #game-region's real height +
 // dpr → 1 line per art pixel, regular spacing).
 // Self-contained: depends on core/dom-query ($). The player count comes in through `initCrt` (see below).
 import { $ } from '../core/dom-query.js';
 
 import { screenGrid } from '../core/screens.js';
-import * as store from '../platform/storage.js';
+import type { Store } from '../platform/storage.js';
+import { KEYS } from '../platform/storage-keys.js';
 
 type CrtCfg = { scan: number; vig: number; round: number };
 // scanlines ON by default (the Dev's decision). Migrates incl_crt (boolean) → incl_crt2 (levels 0..2).
@@ -32,13 +33,22 @@ let _playerCount: () => number = () => 1;
  * is literally what accessibility-over-aesthetics means.
  */
 let _a11yVisualActive: () => boolean = () => false;
-/** Wires the player count and the accessibility question. Called once by the root, before the 1st `applyCrt()`. */
-export function initCrt(deps: { numPlayers: () => number; a11yVisualOn: () => boolean }): void {
+/** Where the CRT is kept: the page's store, handed over by `initCrt` (ADR-0232, issue #207). */
+type CrtStore = Pick<Store, 'get' | 'setJSON'>;
+let _store: CrtStore | null = null;
+/**
+ * Wires the player count, the accessibility question and the store, and READS the stored CRT into `CRT` — at init, never
+ * at import (ADR-0232). Called once by the root, before the 1st `applyCrt()`.
+ */
+export function initCrt(deps: { numPlayers: () => number; a11yVisualOn: () => boolean; store: CrtStore }): void {
   _playerCount = deps.numPlayers;
   _a11yVisualActive = deps.a11yVisualOn;
+  _store = deps.store;
+  Object.assign(CRT, crtFromStored(deps.store.get(KEYS.crt, null), deps.store.get(KEYS.crtLegacy, null)));
 }
 
-export const CRT: CrtCfg = crtFromStored(store.get(store.KEYS.crt, null), store.get(store.KEYS.crtLegacy, null));
+/** The LIVE config, shared by reference with the motion panel: the factory CRT until `initCrt` reads the stored one. */
+export const CRT: CrtCfg = { ...CRT_DEFAULT };
 
 /**
  * The CRT a machine kept, from the two formats it may hold. The current one wins; the OLD one (all booleans) is migrated:
@@ -98,5 +108,5 @@ export function applyCrt(): void {
   if (CRT.scan && !a11y) { g.classList.add('crt-scan-' + CRT.scan); crtScanVars(); }
   if (CRT.vig && !a11y) g.classList.add('crt-vig-' + CRT.vig);
   if (CRT.round !== 1) g.classList.add('crt-round-' + CRT.round); // 1 = the default look (8px), no class
-  store.setJSON(store.KEYS.crt, CRT);
+  _store?.setJSON(KEYS.crt, CRT);
 }

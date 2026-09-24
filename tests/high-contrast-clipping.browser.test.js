@@ -10,6 +10,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { initHighContrast, directSpriteTexture } from '../app/js/render/high-contrast.js';
 
 /** A "sheet" with 4 frames of 10×10 side by side — the atlas in miniature. */
@@ -32,7 +33,7 @@ function texturaComRecorte(fonte, recorte) {
 
 /** `initHighContrast` asks for a handful of the game's reads; here only the outline matters. */
 function ligarHC(espessura) {
-  initHighContrast({
+  initHighContrast({ store: createStorage(memoryBackend()),
     outlineFg: () => espessura,
     outlineBg: () => 0,
     getWorldCanvasNormal: () => document.createElement('canvas'),

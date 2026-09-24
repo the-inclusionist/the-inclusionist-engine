@@ -7,6 +7,7 @@
 // ZOMBIES + Right-BICEP. (setPlayerViz/applyVizGlobal/reapplyVizAll/applySharedTextures/applyVpFilters/updateVpDots/
 // _rebakeDirect/updateVizIndicator/renderVizGroup.)
 import { describe, it, expect, beforeEach } from 'vitest';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { t } from '../app/js/core/i18n.js';
 import { migrateVisual } from '../app/js/render/viz-axes.js'; // VIZ_MODES holds KEYS (item 14)
 
@@ -19,6 +20,8 @@ globalThis.localStorage = {
   removeItem: (k) => { mem.delete(k); },
   clear: () => mem.clear(),
 };
+// ...and the store the module receives is built over that same Map (ADR-0232): the cases read `mem` to see what it wrote.
+const shared = createStorage(globalThis.localStorage);
 
 const { VIZ_MODES, VIZ_BY_KEY } = await import('../app/js/render/viz-modes.js');
 const { initHighContrast } = await import('../app/js/render/high-contrast.js');
@@ -29,7 +32,7 @@ const {
 
 // worldTexFor/spriteTexFor need the high-contrast ctx. In NON-direct modes they return the normal texture without
 // touching a canvas — which is exactly the detour exercised here.
-initHighContrast({
+initHighContrast({ store: createStorage(memoryBackend()),
   W: 1, H: 1, outlineFg: () => 0, outlineBg: () => 0,
   getWorldCanvasNormal: () => null, getWorldTexNormal: () => 'TEX_WORLD_NORMAL',
   // The high-contrast sprite registry is keyed by ID, and the id here is the same the ctx declares (`itemTexId: 'alvo'`)
@@ -111,6 +114,7 @@ function setup(over = {}) {
     },
   };
   const ctx = {
+    store: shared,
     $: (sel) => env.els[sel] || null,
     body: { classes: new Set(), classList: null },
     srSay: (s) => env.log.say.push(s),
@@ -801,7 +805,7 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
     for (const k of VIZ_CYCLE) {
       mem.clear();
       mem.set('incl_viz_p0', k); // exactly what is in her browser from before the split
-      expect(readStoredVisual(0), `«${k}» perdeu-se na actualização`).toEqual(migrateVisual(k));
+      expect(readStoredVisual(shared, 0), `«${k}» perdeu-se na actualização`).toEqual(migrateVisual(k));
     }
   });
 
@@ -812,7 +816,7 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
     mem.set('incl_viz_p0', 'normal');
     mem.set('incl_visual_p0', JSON.stringify({ tema: 'hc7', correcao: 'deuter', simulacao: null }));
     return import('../app/js/render/viz-setters.js').then(({ readStoredVisual }) => {
-      expect(readStoredVisual(0)).toEqual({ tema: 'hc7', correcao: 'deuter', simulacao: null });
+      expect(readStoredVisual(shared, 0)).toEqual({ tema: 'hc7', correcao: 'deuter', simulacao: null });
     });
   });
 
@@ -820,7 +824,7 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
     const { readStoredVisual } = await import('../app/js/render/viz-setters.js');
     const { DEFAULT_VISUAL } = await import('../app/js/render/viz-axes.js');
     mem.clear();
-    expect(readStoredVisual(0)).toEqual(DEFAULT_VISUAL);
+    expect(readStoredVisual(shared, 0)).toEqual(DEFAULT_VISUAL);
   });
 
   it('⚠️ [Zero] JSON corrompido na chave nova cai na VELHA em vez de no padrão', async () => {
@@ -831,7 +835,7 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
     mem.clear();
     mem.set('incl_viz_p0', 'fix-deuter');
     mem.set('incl_visual_p0', '{"tema":"hc7"');  // truncado
-    expect(readStoredVisual(0)).toEqual(migrateVisual('fix-deuter'));
+    expect(readStoredVisual(shared, 0)).toEqual(migrateVisual('fix-deuter'));
   });
 
   it('⚠️ [Interface] `setPlayerViz` escreve as DUAS chaves, e o que ele escreve volta igual', async () => {
@@ -842,7 +846,7 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
       api.setPlayerViz(0, k);
       expect(mem.get('incl_viz_p0'), `a chave legada de «${k}» não foi escrita`).toBe(k);
       expect(mem.get('incl_visual_p0'), `a chave nova de «${k}» não foi escrita`).toBeTruthy();
-      expect(readStoredVisual(0), `«${k}» não sobreviveu à ida e volta pelo armazenamento`)
+      expect(readStoredVisual(shared, 0), `«${k}» não sobreviveu à ida e volta pelo armazenamento`)
         .toEqual(JSON.parse(mem.get('incl_visual_p0')));
     }
   });

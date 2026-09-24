@@ -938,8 +938,9 @@ export function createGame(o: CreateGameOptions): Engine {
     // `cartucho` and not `players()`: this runs at boot, above the `players` declaration (temporal dead zone)
     numPlayers: () => Math.max(1, (cartridge.players ?? []).length),
     a11yVisualOn: () => filterKey(worldState) !== null || getLqT() > 0,
+    store,
   });
-  initLqFilter({ onChange: recomposeWorldFilter });
+  initLqFilter({ onChange: recomposeWorldFilter, store });
   if (getLqT() > 0) recomposeWorldFilter(); // the stored enhancement holds from boot
   else applyCrt(); // and the stored CRT too (the recompose above applies it when it runs)
 

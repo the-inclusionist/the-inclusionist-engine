@@ -32,7 +32,10 @@ import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteT
 
 import { lqFilter } from './lq-filter.js';
 import { setVizModeValue, setBlindModeValue } from '../core/state.js';
-import * as store from '../platform/storage.js';
+import type { Store } from '../platform/storage.js';
+import { KEYS } from '../platform/storage-keys.js';
+/** What each player's visual state is read and written through. */
+export type VisualStore = Pick<Store, 'get' | 'getJSON' | 'set' | 'setJSON'>;
 import type { DomQuery } from '../core/dom-query.js';
 import type { WithFilter, WithTexture, Visible, DrawingWithCircle, ApplyCssFilter, FilterReach,
   ApplyHighContrastToDom } from './port.js';
@@ -69,11 +72,13 @@ export function resolveViz(key: string | null | undefined): VizMode {
  * between migrating and starting over.
  *
  * `migrateVisual` accepts both shapes and is idempotent, so this can run as many times as needed.
+ *
+ * 📌 THE STORE IS A PARAMETER (ADR-0232, issue #207): the page's store, built by whoever composes the page.
  */
-export function readStoredVisual(i: number): VisualState {
-  const storedVisual = store.getJSON<unknown>(store.KEYS.visualP(i), null);
+export function readStoredVisual(store: VisualStore, i: number): VisualState {
+  const storedVisual = store.getJSON<unknown>(KEYS.visualP(i), null);
   if (storedVisual !== null) return migrateVisual(storedVisual);
-  return migrateVisual(store.get(store.KEYS.vizP(i), null));
+  return migrateVisual(store.get(KEYS.vizP(i), null));
 }
 
 /** Is it one of the three Direct Rendering (high contrast) levels? The test is `!!DIRECT_CFG[mode]`. */
@@ -135,6 +140,11 @@ interface Pl { viz: string; visual?: VisualState; sprite?: Textured | null; _tx?
 interface Pu { kind: string; sprite?: Textured | null }
 
 export interface VizSettersCtx {
+  /**
+   * Where each player's visual state is kept — the page's store, built by the root (ADR-0232, issue #207). Required: a
+   * correction written nowhere is gone at the next visit, for the child who chose it because that is how they see.
+   */
+  store: VisualStore;
   /* --- DOM (ui/dom + a11y) --- */
   /** The game's selector (#viz-overlay, #viz-indicator, the panel's lists). `DomQuery` from `core/dom-query`: a local
    *  NON-GENERIC version would instantiate a generic function by its CONSTRAINT when assigned to it. */
@@ -288,8 +298,8 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     const p = ctx.getPlayers()[i];
     p.visual = v;
     p.viz = legacyKey(v);
-    store.set(store.KEYS.vizP(i), p.viz);        // legacy: an old reader would do `VIZ_BY_KEY[v]` and refuse JSON
-    store.setJSON(store.KEYS.visualP(i), v);     // new: the two axes, which the old key cannot say
+    ctx.store.set(KEYS.vizP(i), p.viz);        // legacy: an old reader would do `VIZ_BY_KEY[v]` and refuse JSON
+    ctx.store.setJSON(KEYS.visualP(i), v);     // new: the two axes, which the old key cannot say
     applyPlayerVisual(i, v);
   }
 

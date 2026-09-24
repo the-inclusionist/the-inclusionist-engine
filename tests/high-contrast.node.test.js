@@ -4,6 +4,7 @@
 // guard of initHighContrast + the "normal" bypass of worldTexFor/spriteTexFor (touches no canvas). ZOMBIES +
 // Right-BICEP. See ADR-0011 (visual accessibility).
 import { describe, it, expect } from 'vitest';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // the tile→role table belongs to the GAME (ADR-0080); the engine RECEIVES it, and the gate proves the colour comes from the ROLE
 import {
   DIRECT_CFG, dcfg, HC_ROLE_DEF, HC_ROLE, saveHcRole,
@@ -58,12 +59,26 @@ describe('render/high-contrast — HC_ROLE / HC_ROLE_DEF (paleta do color-blocki
   it('[Error] saveHcRole() não lança mesmo sem localStorage disponível (store.ts engole a exceção)', () => {
     expect(() => saveHcRole()).not.toThrow();
   });
+  it('🔴 [Right] initHighContrast READS the child\'s colours from the store it receives, and saveHcRole keeps them there (ADR-0232)', () => {
+    const backend = memoryBackend([['incl_hcrole', JSON.stringify({ hazard: [10, 20, 300], water: [1, 2] })]]);
+    try {
+      initHighContrast({ store: createStorage(backend), W: 1, H: 1, outlineFg: () => 0, outlineBg: () => 0,
+        getWorldCanvasNormal: () => null, getWorldTexNormal: () => null, sprites: () => ({}), roleOf });
+      expect(HC_ROLE.hazard, 'the stored colour did not come back, or came back unclamped').toEqual([10, 20, 255]);
+      expect(HC_ROLE.water, 'a malformed entry must keep its default').toEqual(HC_ROLE_DEF.water);
+      HC_ROLE.gate = [7, 7, 7];
+      saveHcRole();
+      expect(JSON.parse(backend.getItem('incl_hcrole')).gate, 'the change was not kept in the injected store').toEqual([7, 7, 7]);
+    } finally {
+      for (const k of Object.keys(HC_ROLE_DEF)) HC_ROLE[k] = HC_ROLE_DEF[k].slice(); // the palette is module state
+    }
+  });
 });
 
 describe('render/high-contrast — worldTexFor/spriteTexFor (desvio "normal": não toca canvas)', () => {
   it('[Right] modo "normal" devolve a textura NORMAL injetada, sem passar por DIRECT_CFG/worldToTextureDirect', () => {
     const worldTexNormal = { tag: 'world-normal' }, texDeclarada = { tag: 'sprite-normal' };
-    initHighContrast({
+    initHighContrast({ store: createStorage(memoryBackend()),
       W: 4, H: 4,
       outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => { throw new Error('não deveria construir canvas em modo normal'); },

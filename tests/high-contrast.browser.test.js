@@ -5,6 +5,7 @@
 // desaturation), directSprite{Canvas,Texture} (foreground outline) and the worldTexFor/spriteTexFor cache.
 // ZOMBIES + Right-BICEP. See ADR-0011 (visual accessibility).
 import { describe, it, expect, beforeAll } from 'vitest';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // the tile→role table belongs to the GAME (ADR-0080); the engine RECEIVES it, and the gate proves the colour comes from the ROLE
 
 import { TILE } from '../app/js/core/constants.js';
@@ -63,7 +64,7 @@ describe('render/high-contrast — dimDesat (dessaturação/escurecimento)', () 
 
 describe('render/high-contrast — worldToTextureDirect (repintura por papel + contorno de 2º plano)', () => {
   beforeAll(() => {
-    initHighContrast({
+    initHighContrast({ store: createStorage(memoryBackend()),
       W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
@@ -130,7 +131,7 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
   });
 
   it('[Zero] outlineBg=0 → sem contorno de 2º plano (a borda fica só com o tom dessaturado/repintado)', () => {
-    initHighContrast({
+    initHighContrast({ store: createStorage(memoryBackend()),
       W, H, tileAt, outlineFg: () => 1, outlineBg: () => 0,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
@@ -145,7 +146,7 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
   });
 
   it('[Right] os 3 níveis de contraste (off crescente) produzem estruturas cada vez mais claras', () => {
-    initHighContrast({
+    initHighContrast({ store: createStorage(memoryBackend()),
       W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
@@ -173,7 +174,7 @@ describe('render/high-contrast — the second-plane outline, on all four sides (
   const outlined = (px) => px[0] > 190;
   let cv;
   beforeAll(() => {
-    initHighContrast({
+    initHighContrast({ store: createStorage(memoryBackend()),
       W: 3, H: 3, tileAt: at, outlineFg: () => 1, outlineBg: () => 2,
       getWorldCanvasNormal: () => flatCanvas(3 * TILE, 3 * TILE, '#888888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX', sprites: () => ({}), roleOf,
@@ -216,7 +217,7 @@ describe('render/high-contrast — directBgTexture (fundo/decoração: só dessa
 
 describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º plano: contorno escuro)', () => {
   it('[Zero] outlineFg=0 → devolve o MESMO canvas (sem contorno, sem cópia)', () => {
-    initHighContrast({
+    initHighContrast({ store: createStorage(memoryBackend()),
       W, H, outlineFg: () => 0, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
       getWorldTexNormal: () => 'N', sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'N' } }), roleOf,
@@ -225,7 +226,7 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
     expect(directSpriteCanvas(src, 'hc-direto')).toBe(src);
   });
   it('[Right] outlineFg>0 → devolve um canvas NOVO (contornado), mesmas dimensões', () => {
-    initHighContrast({
+    initHighContrast({ store: createStorage(memoryBackend()),
       W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
       getWorldTexNormal: () => 'N', sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'N' } }), roleOf,
@@ -236,7 +237,7 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
     expect(out.width).toBe(11); expect(out.height).toBe(11);
   });
   it('[Right] directSpriteTexture com outlineFg=0 devolve a MESMA srcTex (sem construir canvas novo)', () => {
-    initHighContrast({
+    initHighContrast({ store: createStorage(memoryBackend()),
       W, H, outlineFg: () => 0, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
       getWorldTexNormal: () => 'N', sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'N' } }), roleOf,
@@ -245,7 +246,7 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
     expect(directSpriteTexture(srcTex, 'hc-direto')).toBe(srcTex);
   });
   it('[Right] directSpriteTexture com outlineFg>0 desenha o contorno numa textura nova', () => {
-    initHighContrast({
+    initHighContrast({ store: createStorage(memoryBackend()),
       W, H, outlineFg: () => 2, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
       getWorldTexNormal: () => 'N', sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'N' } }), roleOf,
@@ -260,7 +261,7 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
 
 describe('render/high-contrast — worldTexFor/spriteTexFor (cache preguiçoso por modo)', () => {
   beforeAll(() => {
-    initHighContrast({
+    initHighContrast({ store: createStorage(memoryBackend()),
       W, H, tileAt, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',

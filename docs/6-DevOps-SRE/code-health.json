@@ -66,7 +66,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2087,
+      "codeLines": 2088,
       "decisionNodes": 281,
       "maxDepth": 4,
       "fanOut": 85,
@@ -1262,7 +1262,7 @@
       "globalReach": 0,
       "worstFunction": 1,
       "statefulEdges": 0,
-      "fanIn": 5
+      "fanIn": 9
     },
     "platform/storage.ts": {
       "codeLines": 86,
@@ -1272,7 +1272,7 @@
       "globalReach": 1,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 8,
+      "fanIn": 4,
       "reached": [
         "localStorage"
       ],
@@ -1382,24 +1382,25 @@
       ]
     },
     "render/crt.ts": {
-      "codeLines": 49,
+      "codeLines": 54,
       "decisionNodes": 15,
       "maxDepth": 2,
       "fanOut": 3,
       "globalReach": 1,
       "worstFunction": 8,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 3,
       "reached": [
         "window"
       ],
       "holds": [
         "let _a11yVisualActive",
-        "let _playerCount"
+        "let _playerCount",
+        "let _store",
+        "mutated CRT"
       ],
       "statefulImports": [
-        "core/dom-query.ts",
-        "platform/storage.ts"
+        "core/dom-query.ts"
       ]
     },
     "render/cvd-matrices.ts": {
@@ -1423,21 +1424,21 @@
       "fanIn": 4
     },
     "render/high-contrast.ts": {
-      "codeLines": 177,
+      "codeLines": 179,
       "decisionNodes": 37,
       "maxDepth": 3,
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 10,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 2,
       "holds": [
         "let ctx",
+        "mutated HC_ROLE",
         "mutated _spriteTexHC",
         "mutated _worldTexHC"
       ],
       "statefulImports": [
-        "platform/storage.ts",
         "render/canvas.ts"
       ]
     },
@@ -1452,23 +1453,21 @@
       "fanIn": 2
     },
     "render/lq-filter.ts": {
-      "codeLines": 68,
+      "codeLines": 73,
       "decisionNodes": 8,
       "maxDepth": 3,
       "fanOut": 1,
       "globalReach": 1,
       "worstFunction": 4,
-      "statefulEdges": 1,
+      "statefulEdges": 0,
       "fanIn": 3,
       "reached": [
         "document"
       ],
       "holds": [
+        "let lqStore",
         "let lqT",
         "let onChange"
-      ],
-      "statefulImports": [
-        "platform/storage.ts"
       ]
     },
     "render/port.ts": {
@@ -1559,18 +1558,17 @@
       "fanIn": 2
     },
     "render/viz-setters.ts": {
-      "codeLines": 269,
+      "codeLines": 272,
       "decisionNodes": 44,
       "maxDepth": 3,
       "fanOut": 9,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 5,
+      "statefulEdges": 4,
       "fanIn": 0,
       "statefulImports": [
         "core/i18n.ts",
         "core/state.ts",
-        "platform/storage.ts",
         "render/high-contrast.ts",
         "render/lq-filter.ts"
       ]

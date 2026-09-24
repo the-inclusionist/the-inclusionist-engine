@@ -1025,6 +1025,7 @@
     "DirectCfg",
     "HC_ROLE",
     "HighContrastCtx",
+    "HighContrastStore",
     "clearSpriteTexCache",
     "clearWorldTexCache",
     "dcfg",
@@ -1159,6 +1160,7 @@
     "simulationRefusal"
   ],
   "render/viz-setters.ts": [
+    "VisualStore",
     "VizSettersApi",
     "VizSettersCtx",
     "cssFilterFor",

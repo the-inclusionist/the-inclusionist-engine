@@ -4,6 +4,7 @@
 // See docs/5-Refactoring/plan-modularization-map.md (Stage 4, Tier 1, render/crt).
 import { describe, it, expect } from 'vitest';
 import { CRT, crtScanVars, applyCrt, initCrt } from '../app/js/render/crt.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 const region = () => { document.body.innerHTML = '<div id="game-region" style="height:360px"></div>'; return document.querySelector('#game-region'); };
 
@@ -54,7 +55,10 @@ describe('render/crt — crtScanVars (scanline ancorada em px reais)', () => {
 //   · dropping the `!` (suppressing when there is NO accessibility mode), the [Inverse] case fails — the vignette
 //     vanishes for whoever asked for no accessibility at all.
 describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', () => {
-  const comA11y = (ativa) => initCrt({ numPlayers: () => 1, a11yVisualOn: () => ativa });
+  // ONE store for the block, this file's own (ADR-0232): `initCrt` reads it, and `applyCrt` keeps what a case set there — so
+  // re-wiring the accessibility answer mid-case reads back the case's `CRT`, as a page reopened would.
+  const store = createStorage(memoryBackend());
+  const comA11y = (ativa) => initCrt({ numPlayers: () => 1, a11yVisualOn: () => ativa, store });
 
   it('[Right] com modo de a11y ativo, a vinheta NÃO é aplicada', () => {
     const g = region();
