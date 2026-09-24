@@ -1,24 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/pause-icons — a CASCA de DOM (project BROWSER: buildScreenPause usa document.createElement +
-// innerHTML, coisa que o project node não consegue exercitar). A lógica pura (rótulos, ciclos, plano do TEA,
-// markup como string) está em pause-icons.node.test.js e NÃO é repetida aqui — aqui provamos só o que só o
-// navegador prova: a árvore construída, a delegação de clique, e a legenda que segue o foco/mouse.
+// Tests of ui/pause-icons — the DOM SHELL (BROWSER project: buildScreenPause uses document.createElement + innerHTML,
+// which the node project cannot exercise). The pure logic (labels, cycles, the ASD plan, markup as a string) is in
+// pause-icons.node.test.js and is NOT repeated here — here we prove only what only the browser proves: the built tree,
+// click delegation, and the caption that follows focus/mouse.
 //
-// `players`/`numPlayers` são os módulos REAIS (core/state.ts) — os mesmos bindings vivos que o
-// game.js usa; o resto do ctx é falso (spies).
+// `players`/`numPlayers` come from a local round double (below); the rest of the ctx is fake (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initPauseIcons, showPauseOptions } from '../app/js/ui/pause-icons.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 /*
- * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` foi com a pilha de mundo-de-tiles para o
- * `game-platformer`. Este ficheiro nunca testou a rodada — ele PASSA uma ao que está a medir —, e os três
- * membros abaixo são exactamente os que ele lê. Fábrica e não literal: duas rodadas têm de ser dois objectos.
+ * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228: `core/run-state` moved to `game-platformer` with the tile-world stack). This
+ * file never tests the round — it HANDS one to what it measures — and the three members below are exactly the ones it
+ * reads. A factory and not a literal: two rounds must be two objects.
  */
 const createRunState = () => ({ numPlayers: 1, players: [], setNumPlayers(n) { this.numPlayers = n; } });
-// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
-// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
-// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+// `players`/`numPlayers` live in the instance the composition root owns (ADR-0038, Phase B), not in `core/state`. Here
+// the test creates its own, and the aliases below keep the cases' bodies short.
 const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
@@ -47,7 +45,7 @@ function makeCtx(over = {}) {
   const acts = {
     resume: () => state.ran.push('resume'),
     letra: () => state.ran.push('letra'),
-    // 'quit' de propósito AUSENTE: prova que um data-act sem entrada na tabela não quebra o clique.
+    // 'quit' deliberately ABSENT: the menu must not offer it live (see the ADR-0161 case below).
   };
   const ctx = {
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
@@ -55,15 +53,15 @@ function makeCtx(over = {}) {
     srAlert: (m) => alerted.push(m),
     pmButtons: PM_BTNS,
     optionsButtons: PM_OPTS,
-    // O RÓTULO DINÂMICO chega pronto do jogo (item 19). Este fixture não tem botão de nível, então `null` é
-    // a resposta certa — e é a que exercita o caminho estático, que é o que os casos daqui medem.
+    // The DYNAMIC LABEL comes ready from the game (item 19). This fixture has no level button, so `null` is the right
+    // answer — and it exercises the static path, which is what the cases here measure.
     dynLabel: () => null,
     getPauseActs: () => acts,
     setPauseActor: (i) => { state.pauseActor = i; },
     getPauseScreens: () => state.screens,
-    // As BARRAS RÁPIDAS (ADR-0044, item 7): desde que elas saíram do cartão, é aqui que os ícones vivem, e é
-    // por aqui que `reflectPauseIcons` os encontra. Os testes que exercitam o reflexo alimentam `state.bars`;
-    // os que só olham o markup do cartão deixam a lista vazia — e o reflexo então não faz nada, corretamente.
+    // The QUICK BARS (ADR-0044, item 7): the icons live here, not in the card, and this is where `reflectPauseIcons` finds
+    // them. The tests that exercise the reflection feed `state.bars`; those that only look at the card's markup leave the
+    // list empty — and the reflection then does nothing, correctly.
     getA11yBars: () => state.bars || state.screens,
     getBlindMode: () => state.blindMode,
     setBlindMode: (on) => { state.blindMode = on; },
@@ -76,15 +74,15 @@ function makeCtx(over = {}) {
     rm: state.rm, rmKeys: RM_KEYS, rmChar: RM_CHAR, saveRM: () => {},
     setToggleMove: (i, on) => { if (players[i]) players[i].toggleMove = on; },
     setPlayerViz: (i, mode) => { if (players[i]) { players[i].viz = mode; players[i].visual = migrateVisual(mode); } },
-    // Os escritores POR EIXO (#104): cada icone escreve no seu, e o outro fica onde estava.
+    // The PER-AXIS writers (#104): each icon writes to its own, and the other stays where it was.
     setPlayerTheme: (i, tema) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? DEFAULT_VISUAL), tema }; },
     setPlayerCorrection: (i, correcao) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? DEFAULT_VISUAL), correcao }; },
-    // Este duplo é de forma de PLATAFORMA — segura direcção — logo a barra dele tem o `altmove` (ADR-0115).
-    // A metade que prova a AUSÊNCIA vive no project node, onde a regra mora.
+    // This double has a PLATFORMER's shape — it holds direction — so its bar has the `altmove` (ADR-0115). The half that
+    // proves the ABSENCE lives in the node project, where the rule lives.
     holdsKeys: () => true,
-    // 📌 O 11.º ícone (ADR-0149) só é montado por quem sabe andar no ciclo de tipografia — a mesma regra dos
-    // dois escritores visuais acima. Este ficheiro mede as INVARIANTES da barra montada e não o filtro, que
-    // vive no project node; sem esta linha ele mediria uma barra com um ícone a menos.
+    // 📌 The 11th icon (ADR-0149) is only mounted for whoever can walk the typography cycle — the same rule as the two
+    // visual writers above. This file measures the INVARIANTS of the mounted bar and not the filter, which lives in the
+    // node project; without this line it would measure a bar with one icon fewer.
     cycleTypography: () => 'Atkinson Hyperlegible',
     clock: () => true, // the hourglass (ADR-0180) mounts only where time runs by itself
     camera: true, // the 📷 (ADR-0215) mounts only where the root has a camera to ask for
@@ -97,7 +95,7 @@ function makeCtx(over = {}) {
 
 function setPlayers(list) {
   players.length = 0;
-  // DERIVA o estado de dois eixos da chave antiga — mesma regra do espelho que a producao mantem (#104).
+  // DERIVES the two-axis state from the old key — the same rule as the mirror production keeps (#104).
   list.forEach((p) => players.push(
     p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrateVisual(p.viz) } : p,
   ));
@@ -109,24 +107,21 @@ beforeEach(() => {
   setPlayers([{ viz: 'normal', toggleMove: false }]);
 });
 
-// Monta uma tela de pausa e a PLUGA no documento (o clique precisa de árvore de verdade p/ o closest()).
+// Mounts a pause screen and PLUGS it into the document (the click needs a real tree for closest()).
 /**
- * Monta a tela `i` INTEIRA: a barra rápida e o cartão de pausa, irmãos, como o `ui/hud` os pendura.
+ * Mounts screen `i` WHOLE: the quick bar and the pause card, siblings, as `ui/hud` hangs them.
  *
- * Desde o item 7 do ADR-0044 os ícones NÃO moram mais dentro do cartão — montar só a pausa deixaria metade
- * dos casos deste arquivo medindo uma árvore que a produção não tem.
+ * The icons do NOT live inside the card (ADR-0044 item 7) — mounting only the pause would leave half of this file's
+ * cases measuring a tree production does not have.
  */
 /**
- * Os itens VISÍVEIS do cartão — os .pm-btn que não estão hidden.
+ * The card's LIVE items — the .pm-btn that are neither hidden nor locked.
  *
- * ⚠️ VISÍVEIS e não PRESENTES, e a diferença é a correcção de 2026-09-08: o cartão passou a montar a lista
- * inteira e a ESCONDER o que este jogo não acciona, em vez de filtrar no arranque. Filtrar cedo decidia com
- * uma tabela que o próprio campo declara chegar TARDE, e o item cuja acção só existisse depois do boot nunca
- * mais aparecia. Para o §5 o que conta é o que a criança VÊ, e hidden não é focável nem lido.
+ * ⚠️ LIVE and not PRESENT: the card mounts the whole list and decides at each opening, instead of filtering at start-up
+ * with a table the field itself declares arrives LATE (an item whose action existed only after boot would never
+ * appear). Since ADR-0161 no item hides: what the game does not action stays LOCKED (`aria-disabled`) and says why.
+ * §5's question («este item faz alguma coisa?») is the same; «live» means «not hidden AND not locked».
  */
-// 🔴 DESDE O ADR-0161 (2026-09-12) nenhum item se esconde: o que o jogo não acciona fica TRAVADO (`aria-disabled`) e diz o
-// motivo. «Vivo» passa a ser «não escondido E não travado» — a pergunta do §5 («este item faz alguma coisa?») continua
-// a mesma; o que mudou é a resposta visível para o «não».
 const actsVisiveis = (sp) => [...sp.querySelectorAll('.pm-btn')]
   .filter((b) => !b.hidden && b.getAttribute('aria-disabled') !== 'true').map((b) => b.dataset.act);
 
@@ -190,10 +185,9 @@ describe('buildScreenPause — a árvore construída', () => {
     }
   });
 
-  // 🔴 A BARRA MONTADA JÁ NÃO TEM «EM CONSTRUÇÃO» (issue #184): o 👄 era o último ícone a anunciar-se assim, e o mecanismo
-  // inteiro saiu — o campo, a classe `.pi-soon`, o sufixo do rótulo e a regra no `style.css`. O que este caso passa a guardar
-  // é a ausência NA TELA, que é onde ela conta: um botão apagado a 55% com «em construção» no nome, sobre um ícone que age,
-  // ensina a criança a não tentar.
+  // 🔴 THE MOUNTED BAR HAS NO «EM CONSTRUÇÃO» (issue #184): the whole mechanism is gone — the field, the `.pi-soon` class,
+  // the label suffix and the `style.css` rule. This case guards the absence ON SCREEN, where it counts: a button dimmed to
+  // 55% with «em construção» in its name, over an icon that acts, teaches the child not to try.
   it('🔴 [Zero] nenhum ícone da barra montada se declara em construção — nem na classe, nem no rótulo', () => {
     const { sp, bar } = mount();
     for (const ic of PAUSE_ICONS) {
@@ -251,11 +245,9 @@ describe('buildScreenPause — a árvore construída', () => {
   });
 
   it('⚠️ o menu só OFERECE vivo o que o jogo ACCIONA — `quit` sem tabela fica travado (ADR-0106 §5 → ADR-0161)', () => {
-    // ⚠️ ESTE CASO DIZIA O CONTRÁRIO, E O CONTRÁRIO ERA O DEFEITO ESCRITO COMO GARANTIA. Ele esperava
-    // `['resume','letra','quit']`, e o fixture omite `quit` da tabela DE PROPÓSITO — o comentário lá diz que
-    // isso «prova que um data-act sem entrada na tabela não quebra o clique». Não quebrava mesmo: o despacho
-    // faz `if (fn) fn()`. O que ficava institucionalizado é que o menu MOSTRA um botão que não faz nada, e
-    // quem navega por leitor de tela ouve um item que não existe.
+    // ⚠️ The fixture omits `quit` from the table on purpose. The dispatch's `if (fn) fn()` means a click would not break —
+    // but a menu that SHOWS a live button that does nothing makes a screen-reader user hear an item that does not exist.
+    // So `quit` must not be offered live.
     const { sp } = mount();
     const menu = sp.querySelector('.pause-menu');
     expect(menu.getAttribute('role')).toBe('menu');
@@ -269,20 +261,20 @@ describe('buildScreenPause — a árvore construída', () => {
     const letra = sp.querySelector('.pm-btn[data-act="letra"]');
     expect(letra.classList.contains('pm-letra')).toBe(true);
     expect(letra.hasAttribute('data-i18n')).toBe(false);
-    // O contraste continua a ser feito, com um item que o jogo ACCIONA — antes era o `quit`, que já não monta.
+    // The contrast is still made, with an item the game DOES action.
     expect(sp.querySelector('.pm-btn[data-act="resume"]').getAttribute('data-i18n')).toBe('pause.resume');
   });
 
   it('🔴 [Right] o PRIMEIRO item diz a mesma coisa em todo nível — sair daqui é uma palavra só', () => {
-    // 🔴 O Dev, 22/09: «Não seria melhor usar "↩ Voltar" para o primeiro item do menu pausado também, ao invés de
-    // "Voltar ao Jogo"?» O ADR-0158 já fizera de «Voltar» o item 1 de todo painel, e o cartão era a única excepção.
-    // Do ponto de vista da criança é uma palavra só — sair daqui e voltar ao que eu estava a fazer — e o destino é
-    // sempre o nível anterior: do painel, o cartão; do submenu, a raiz; da raiz, o jogo. «Voltar ao jogo» nomeava o
-    // DESTINO em vez da acção.
+    // 🔴 The Dev, 22/09: «Não seria melhor usar "↩ Voltar" para o primeiro item do menu pausado também, ao invés de
+    // "Voltar ao Jogo"?» ADR-0158 made «Voltar» item 1 of every panel, and the card follows. From the child's point of view
+    // it is one word — leave here and go back to what I was doing — and the destination is always the previous level:
+    // from a panel, the card; from the submenu, the root; from the root, the game. «Voltar ao jogo» named the DESTINATION
+    // instead of the action.
     //
-    // ⚠️ O CASO PRENDE A REGRA E NÃO A CADEIA: ele compara as duas saídas uma com a outra, então uma tradução nova
-    // que mude só uma delas reprova. Um caso escrito contra o texto passaria a verde no dia em que alguém mudasse as
-    // duas de forma diferente, que é exactamente o defeito.
+    // ⚠️ THE CASE HOLDS THE RULE, NOT THE STRING: it compares the two exits with each other, so a new translation that
+    // changes only one of them fails. A case written against the text would pass the day someone changed the two
+    // differently, which is exactly the defect.
     const { sp } = mount();
     const saidaDaRaiz = sp.querySelector('.pm-btn[data-act="resume"]');
     const saidaDoSubmenu = sp.querySelector('.pm-btn[data-act="pmback"]');
@@ -290,9 +282,9 @@ describe('buildScreenPause — a árvore construída', () => {
     const palavra = (b) => (b.textContent ?? '').replace(/[^\p{L} ]/gu, '').trim();
     expect(palavra(saidaDaRaiz), 'a saída da raiz deixou de dizer o mesmo que a do submenu')
       .toBe(palavra(saidaDoSubmenu));
-    // 📌 O glifo vive num `data-glifo` e é desenhado pela folha, fora do nome (ADR-0159 regra 12) — logo é ALI que
-    // se mede, e não no texto. ⚠️ A primeira versão deste caso lia o `textContent` e ficava VERDE com o ▶ de volta:
-    // o glifo não está lá, e comparar duas ausências é comparar nada.
+    // 📌 The glyph lives in a `data-glifo` and is drawn by the stylesheet, outside the name (ADR-0159 rule 12) — so THAT is
+    // where it is measured, not in the text. ⚠️ Reading `textContent` stayed GREEN with the ▶ back: the glyph is not
+    // there, and comparing two absences is comparing nothing.
     expect(saidaDaRaiz.dataset.glifo, 'os dois voltares não mostram o mesmo sinal')
       .toBe(saidaDoSubmenu.dataset.glifo);
     expect(saidaDaRaiz.dataset.glifo, 'a saída da raiz ficou sem sinal nenhum').toBeTruthy();
@@ -313,14 +305,13 @@ describe('buildScreenPause — a árvore construída', () => {
   });
 
   it('o rodapé de legenda de sim/não existe e NÃO é mais escondido do leitor (ADR-0044, item 4)', () => {
-    // A versão anterior deste caso afirmava o contrário, e afirmava com um motivo escrito — "é dica visual de
-    // botão físico". O motivo estava errado pela metade: a dica é visual, mas a INFORMAÇÃO ("qual botão
-    // confirma") é de todo mundo, e a XAG 106 manda narrá-la. Quem fica mudo agora são os chips, porque `✕`
-    // lido em voz alta é "sinal de multiplicação"; a frase equivalente em palavras vive num `.sr-only`.
+    // The hint is visual, but the INFORMATION ("which button confirms") is everyone's, and XAG 106 says to narrate it.
+    // What stays mute are the chips, because `✕` read aloud is "multiplication sign"; the equivalent sentence in words lives
+    // in a `.sr-only`.
     const { sp, bar } = mount();
     const lg = sp.querySelector('.pause-legend');
     expect(lg.getAttribute('aria-hidden')).toBe(null);
-    expect(lg.textContent).toBe(''); // nasce vazia: quem a preenche é o `renderPauseLegend` da raiz
+    expect(lg.textContent).toBe(''); // born empty: the root's `renderPauseLegend` fills it
   });
 });
 
@@ -334,9 +325,9 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
   });
 
   it('⚠️ EXCEÇÃO: um `data-act` desconhecido NO DOM registra o ator e não lança', () => {
-    // A robustez continua a valer e é afirmada; o que mudou é o CENÁRIO. O menu já não monta item sem acção
-    // (o caso acima), então um `data-act` órfão só chega aqui vindo de fora — markup de um hospedeiro, uma
-    // extensão, um teste. Nesse caso a pausa não pode cair: regista quem carregou e não faz mais nada.
+    // Robustness still holds and is asserted, in this SCENARIO: the menu offers no live item without an action (the case
+    // above), so an orphan `data-act` only arrives from outside — a host's markup, an extension, a test. Then the pause
+    // must not fall: it records who pressed and does nothing more.
     const { sp, state } = mount(0);
     const menu = sp.querySelector('.pause-menu');
     const intruso = document.createElement('button');
@@ -349,12 +340,12 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
   });
 
   it('⚠️ [Zero] sem tabela de ações NENHUMA, o cartão não oferece porta que não abre', () => {
-    // O caso extremo do §5, e o que ele protege é o `options`: ele é accionado pela ENGINE, então sobrevive a
-    // um filtro item-a-item — e abriria um submenu vazio cuja única saída (`pmback`) desapareceu com ele.
+    // §5's extreme case, and what it protects is `options`: it is actioned by the ENGINE, so it survives an item-by-item
+    // filter — and would open an empty submenu whose only exit (`pmback`) went with it.
     //
-    // ⚠️ E USA A LISTA PADRÃO DA ENGINE de propósito (`pmButtons: undefined`). A primeira versão deste caso
-    // usava a lista do fixture, que não tem `options` nenhum — então ele passava por VÁCUO, e a mutação que
-    // tira a regra da porta SOBREVIVEU. Um caso sobre um item que a lista não contém não afirma nada.
+    // ⚠️ AND IT USES THE ENGINE'S DEFAULT LIST on purpose (`pmButtons: undefined`). The fixture's list has no `options` at
+    // all, so a case on it passed by VACUUM and the mutation removing the door rule SURVIVED. A case about an item the list
+    // does not contain asserts nothing.
     const { sp } = mount(0, { pmButtons: undefined, optionsButtons: undefined, getPauseActs: () => ({}) });
     const actsMontados = actsVisiveis(sp);
     expect(actsMontados, 'a porta para o submenu vazio ficou').not.toContain('options');
@@ -362,27 +353,26 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
   });
 
   it('⚠️ [Right] uma acção que chega DEPOIS do boot faz o item APARECER na abertura seguinte', () => {
-    // ⚠️ ESTE CASO É A CORRECÇÃO DE 2026-09-08, e o defeito que ele prende foi achado a ler e não a testar.
-    // O cartão era FILTRADO no `buildScreenPause`, e o `getPauseActs` é um getter precisamente porque a
-    // tabela chega TARDE — «`pauseActs` is a `const` declared far below the init site», diz o próprio campo.
-    // O `createGame` monta durante o próprio `createGame(...)`, então um consumidor que siga esse padrão
-    // documentado perdia PARA SEMPRE todo item cuja acção só existiu depois do boot.
+    // ⚠️ `getPauseActs` is a getter precisely because the table arrives LATE — «`pauseActs` is a `const` declared far below
+    // the init site», says the field itself. `createGame` mounts during `createGame(...)` itself, so filtering in
+    // `buildScreenPause` would make a consumer following that documented pattern lose FOREVER every item whose action
+    // existed only after boot.
     //
-    // 📌 O `ui/shell` chama `reflectPauseIcons()` quando a fase vira `pause-menu` — quando a pausa ABRE —, e
-    // é aí que a decisão passou a ser tomada: o último instante possível antes de a criança ver o cartão.
-    let acts = {};                       // vazio no arranque, como no cartucho
+    // 📌 `ui/shell` calls `reflectPauseIcons()` when the phase becomes `pause-menu` — when the pause OPENS — and that is
+    // where the decision is made: the last possible instant before the child sees the card.
+    let acts = {};                       // empty at start-up, as in the cartridge
     const { api, sp } = mount(0, { getPauseActs: () => acts });
     expect(actsVisiveis(sp), 'com a tabela vazia, só o que a engine acciona').not.toContain('quit');
 
-    acts = { quit: () => {} };           // a tabela chega DEPOIS — que é o que a laziness existe para permitir
-    api.reflectPauseIcons();             // o que o shell faz quando a pausa abre
+    acts = { quit: () => {} };           // the table arrives LATER — which is what the laziness exists to allow
+    api.reflectPauseIcons();             // what the shell does when the pause opens
 
     expect(actsVisiveis(sp), 'a acção chegou e o item continuou escondido para sempre').toContain('quit');
   });
 
   it('⚠️ [Right] e o inverso também: uma acção que DESAPARECE esconde o item outra vez', () => {
-    // A outra direcção, e ela importa: um jogo pode retirar «sair» durante um tutorial. Se o refresco só
-    // soubesse mostrar, o botão morto voltaria pela porta de trás.
+    // The other direction, and it matters: a game may withdraw «sair» during a tutorial. If the refresh only knew how to
+    // show, the dead button would come back through the back door.
     let acts = { quit: () => {} };
     const { api, sp } = mount(0, { getPauseActs: () => acts });
     expect(actsVisiveis(sp)).toContain('quit');
@@ -392,8 +382,8 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
   });
 
   it('⚠️ [Right] com UM painel accionável, a porta `options` volta — a regra não é «esconder sempre»', () => {
-    // O outro lado, e é o que impede a correcção de custar o submenu a quem o tem: basta um painel vivo para
-    // a porta valer a pena. Sem este caso, filtrar `options` SEMPRE também passaria.
+    // The other side, which keeps the rule from costing the submenu to whoever has one: one live panel is enough for the
+    // door to be worth it. Without this case, filtering `options` ALWAYS would also pass.
     const { sp } = mount(0, {
       pmButtons: undefined, optionsButtons: undefined,
       getPauseActs: () => ({ audio: () => {} }),
@@ -404,9 +394,8 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
   });
 
   it('⚠️ [Right] a LISTA PADRÃO da engine existe — um jogo que não contribui com nada tem menu', () => {
-    // O §4 do ADR-0106 fecha com esta frase: «a engine entrega uma lista padrão, para que um jogo que não
-    // contribui com nada tenha uma». Antes desta mudança, `pmButtons` era OBRIGATÓRIO — um jogo que não a
-    // passasse não compilava, e os cinco jogos sem menu de pausa são o resultado de ninguém a passar.
+    // ADR-0106 §4 closes with this sentence: «a engine entrega uma lista padrão, para que um jogo que não contribui com
+    // nada tenha uma». A mandatory `pmButtons` is how games end up with no pause menu at all: nobody passes it.
     const { sp } = mount(0, {
       pmButtons: undefined, optionsButtons: undefined,
       getPauseActs: () => ({ resume: () => {}, ajuda: () => {} }),
@@ -426,11 +415,11 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
 });
 
 /**
- * O que a legenda de um ícone deve dizer AGORA: o `aria-label` (que já conta o estado) seguido da POSIÇÃO na
- * barra — item 3 do ADR-0044, XAG 106, e o número vai no FIM.
+ * What an icon's caption should say NOW: the `aria-label` (which already tells the state) followed by the POSITION on the
+ * bar — item 3 of ADR-0044, XAG 106, and the number goes at the END.
  *
- * A posição é recontada AQUI, a partir do DOM, e não lida da implementação: se as duas contas divergirem, é
- * porque uma delas está errada, e é justamente isso que o caso existe para descobrir.
+ * The position is recounted HERE, from the DOM, not read from the implementation: if the two counts diverge, one of them
+ * is wrong, and that is exactly what the case exists to find out.
  */
 // ADR-0167: the VISIBLE name is the accessible name alone — «N de M» is spoken, never written under the bar.
 function legendaEsperada(bar, b) {
@@ -461,10 +450,10 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
   });
 
   it('BORDA do TEA: 3 cliques passam por .pi-calm → .pi-on → base, com a legenda certa em cada passo', () => {
-    // ⚠️ O NÍVEL TEA PERSISTE, e o `localStorage` de um navegador é partilhado pelos ficheiros que correm em paralelo:
-    // este caso falhou cinco vezes sob a suíte inteira (o primeiro clique não dava `.pi-calm`) e passava sozinho — o
-    // nível de partida vinha de outro ficheiro. Parte-se do nível 0, escrito antes de montar.
-    try { localStorage.setItem('incl_tea', '0'); } catch { /* sem storage, o padrão já é 0 */ }
+    // ⚠️ THE ASD LEVEL PERSISTS, and a browser's `localStorage` is shared by the files running in parallel: this case
+    // failed under the whole suite (the first click did not give `.pi-calm`) and passed alone — the starting level came
+    // from another file. It starts from level 0, written before mounting.
+    try { localStorage.setItem('incl_tea', '0'); } catch { /* no storage: the default is already 0 */ }
     const { sp, bar } = mount(0);
     const b = bar.querySelector('.pi-btn[data-pi="tea"]');
     b.click();
@@ -481,9 +470,8 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     expect(b.getAttribute('aria-pressed')).toBe('false');
   });
 
-  // 🔴 O 👄 COMANDA (issue #184): este caso exigia que clicar nele ALERTASSE «em construção» e não marcasse nada, porque era o
-  // último ícone por construir. Agora o clique liga o comando de voz, e o botão tem de DIZER que ligou — quem recusa, e por quê,
-  // é o `ui/voice-control`, que o devolve a desligado com o motivo falado.
+  // 🔴 THE 👄 COMMANDS (issue #184): the click turns voice command on, and the button must SAY it turned on — who refuses,
+  // and why, is `ui/voice-control`, which turns it back off with the reason spoken.
   it('🔴 [Right] clicar no 👄 liga o comando de voz, e o botão diz que ligou', () => {
     const { sp, bar, said } = mount(0);
     const b = bar.querySelector('.pi-btn[data-pi="voice"]');
@@ -501,8 +489,8 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     setPlayers([{ viz: 'normal' }, { viz: 'normal' }]);
     const { ctx, state } = makeCtx();
     const api = initPauseIcons(ctx);
-    // Desde o item 7 do ADR-0044 os ícones vivem na BARRA de cada tela, e não no cartão — o que este caso
-    // mede (o daltonismo é por jogador) continua sendo exatamente o mesmo, um nível de árvore ao lado.
+    // The icons live in each screen's BAR, not the card (ADR-0044 item 7) — what this case measures (colour blindness is
+    // per player) is the same, one tree level over.
     const b0 = api.buildQuickBar(0), b1 = api.buildQuickBar(1);
     const s0 = api.buildScreenPause(0), s1 = api.buildScreenPause(1);
     document.body.append(b0, s0, b1, s1);
@@ -544,10 +532,10 @@ describe('buildScreenPause — a legenda segue o foco e o mouse', () => {
 });
 
 describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () => {
-  // O ADR listou este modo entre as consequências NEGATIVAS da própria decisão: "um modo em que se entra e
-  // não se sabe sair é a própria armadilha de que este registro trata". Por isso os casos de SAÍDA são mais
-  // do que os de entrada, e por isso o primeiro deles é o anúncio — a frase que diz como sair, dita na hora
-  // de entrar, é a única coisa que separa o modo da armadilha para quem não vê a tela.
+  // The ADR listed this mode among its own decision's NEGATIVE consequences: «um modo em que se entra e não se sabe sair é
+  // a própria armadilha de que este registro trata». So the EXIT cases outnumber the entry ones, and the first of them is
+  // the announcement — the sentence saying how to leave, said on entering, is the only thing separating the mode from the
+  // trap for whoever cannot see the screen.
 
   it('[Right] entrar ANUNCIA como sair, põe o cursor no 1º ícone — e NÃO retoma o jogo (ADR-0155)', () => {
     const { api, bar, said, ctx } = mount();
@@ -555,8 +543,7 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     ctx.getPauseActs = () => ({ resume: () => { retomou++; } });
     api.enterBar(0);
     expect(api.onBar(0)).toBe(true);
-    // 🔴 ATÉ AO ADR-0155 ERA O CONTRÁRIO: entrar despausava, porque o modo era para usar com o jogo a andar.
-    // Agora a barra é a metade da PAUSA RÁPIDA, e retomar ao entrar descongelaria o mundo que a criança parou.
+    // 🔴 The bar is half of the QUICK PAUSE (ADR-0155), so resuming on entry would unfreeze the world the child stopped.
     expect(retomou, 'entrar na barra retomou o jogo que a pausa rápida acabou de congelar').toBe(0);
     expect(said.some((f) => /volt|back/i.test(f)), 'o anúncio de entrada tem de dizer como sair: ' + said.join(' | ')).toBe(true);
     expect(bar.querySelectorAll('.pi-sel')).toHaveLength(1);
@@ -581,8 +568,8 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
   });
 
   it('🔴 TODA saída chama `aoSairDaBarra` — e a silenciosa não diz «de volta ao jogo» (ADR-0155)', () => {
-    // ⚠️ É o gancho por onde a raiz descongela o jogo. Uma saída que não o chamasse deixava o mundo parado com a
-    // criança de volta ao personagem; e o SELECT sai em silêncio porque vai para o cartão, não para o jogo.
+    // ⚠️ It is the hook through which the root unfreezes the game. An exit that did not call it would leave the world
+    // stopped with the child back on the character; and SELECT leaves silently because it goes to the card, not the game.
     const { api, said, ctx } = mount();
     const saidas = [];
     ctx.onLeaveBar = (i, silencioso) => saidas.push([i, silencioso]);
@@ -598,8 +585,8 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
   });
 
   it('[Boundary] depois de sair, a direção NÃO mexe mais na barra', () => {
-    // O caso que prova que a saída SAI. Sem ele, `sairDaBarra` poderia limpar o cursor e deixar o modo ligado
-    // — e a criança teria "saído" para um jogo em que o personagem continua sem andar.
+    // The case that proves the exit EXITS. Without it, `sairDaBarra` could clear the cursor and leave the mode on — and the
+    // child would have "left" for a game where the character still does not walk.
     const { api, bar } = mount();
     api.enterBar(0);
     api.navBar(0, { no: true });
@@ -652,7 +639,7 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
   it('[Right] confirmar ATIVA o ícone sob o cursor, e a legenda conta o estado NOVO', () => {
     const { api, bar, state } = mount();
     api.enterBar(0);
-    // anda até o modo cego para ter um alternador com estado observável
+    // walk to blind mode to have a toggle with an observable state
     const icones = [...bar.querySelectorAll('.pi-btn')];
     const alvo = icones.findIndex((b) => b.dataset.pi === 'blind');
     for (let i = 0; i < alvo; i++) api.navBar(0, { right: true });
@@ -662,25 +649,24 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
   });
 
   it('[Zero] fora do modo, `navBar` não faz nada — nem cursor, nem clique', () => {
-    // O roteamento pergunta a cada quadro; uma chamada que agisse sem o modo ligado seria o direcional
-    // mexendo na barra durante o jogo normal.
+    // Routing asks every frame; a call acting without the mode on would be the d-pad moving the bar during normal play.
     const { api, bar } = mount();
     api.navBar(0, { right: true });
     expect(bar.querySelectorAll('.pi-sel')).toHaveLength(0);
   });
 
   it('[Interface] os ícones do HUD ficam FORA da ordem de tabulação', () => {
-    // Dez paradas entre a criança e o jogo seria o preço de deixá-los lá. O alcance por teclado não se perde:
-    // ele passa a ser este modo, que se abre pela pausa.
+    // A stop per icon between the child and the game would be the price of leaving them there. Keyboard reach is not lost:
+    // it is this mode, opened from the pause.
     const { bar } = mount();
     for (const b of bar.querySelectorAll('.pi-btn')) expect(b.tabIndex).toBe(-1);
   });
 });
 
 describe('a legenda da barra do HUD · aparece ao apontar e SOME ao sair', () => {
-  // O Dev viu a barra na tela de jogo e disse o que estava errado: "é para aparecer somente os botões, nada
-  // de explicação". A legenda ficava pendurada até alguém apontar outra coisa — uma faixa de texto parada em
-  // cima da partida. Numa barra que vive na TELA DE JOGO isso não é ajuda, é obstrução.
+  // The Dev saw the bar on the game screen and said what was wrong: «é para aparecer somente os botões, nada de
+  // explicação». A caption left hanging until someone pointed at something else is a band of text parked over the match.
+  // On a bar that lives on the GAME SCREEN that is not help, it is obstruction.
 
   it('[Right] apontar mostra, tirar o mouse limpa', () => {
     const { bar } = mount();
@@ -693,8 +679,9 @@ describe('a legenda da barra do HUD · aparece ao apontar e SOME ao sair', () =>
   });
 
   it('[Boundary] com o cursor do modo pousado num ícone, a legenda NÃO some', () => {
-    // A exceção que impede o conserto de cegar o modo `accessibility`: ali a legenda é a ÚNICA coisa que diz
-    // onde o cursor está. Apagá-la porque o mouse passou por perto tiraria a orientação de quem não usa mouse.
+    // The exception that keeps the fix from blinding the `accessibility` mode: there the caption is the ONLY thing saying
+    // where the cursor is. Erasing it because the mouse passed nearby would take orientation from whoever does not use a
+    // mouse.
     const { api, bar } = mount();
     api.enterBar(0);
     const cap = bar.querySelector('.pause-icons-cap');
@@ -706,18 +693,15 @@ describe('a legenda da barra do HUD · aparece ao apontar e SOME ao sair', () =>
 });
 
 describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)', () => {
-  // A regra do Dev, e ela é anterior a este ADR: "Nunca unificar multi tela. Correções / melhorias são por
-  // tela. Modos multi são por tela." O único que força solo é o modo cego, por causa do limite de canais de
-  // áudio — este aqui não é ele.
+  // The Dev's rule, older than this ADR: «Nunca unificar multi tela. Correções / melhorias são por tela. Modos multi são
+  // por tela.» The only one that forces solo is blind mode, because of the audio channel limit — this is not it.
   //
-  // O item 7 mexeu em TUDO o que é por tela ao mesmo tempo: a barra saiu do cartão, virou irmã dele, passou a
-  // ser encontrada por índice (`getA11yBars()[i]`) e ganhou um modo indexado pelo mesmo número. Um erro de
-  // índice em qualquer um desses pontos só apareceria com dois jogadores — e apareceria como "o ajuste da
-  // minha irmã mudou a minha tela", que é a forma mais confusa possível de um defeito de acessibilidade.
+  // The bar is the card's sibling, found by index (`getA11yBars()[i]`), with a mode indexed by the same number. An index
+  // error at any of those points would only show with two players — and would show as "my sister's setting changed my
+  // screen", the most confusing possible form of an accessibility defect.
   //
-  // MEDIDO no jogo construído antes de existir este bloco (1600×900, dois jogadores): ligar a correção de
-  // daltonismo na tela 2 não tocou a tela 1, e entrar no modo pela pausa da tela 2 pôs o cursor só na barra
-  // dela. Estes casos prendem os dois.
+  // MEASURED in the built game (1600×900, two players): turning on the colour-blindness correction on screen 2 did not
+  // touch screen 1, and entering the mode from screen 2's pause put the cursor only on its bar. These cases hold both.
 
   function duasTelas() {
     setPlayers([{ viz: 'normal' }, { viz: 'normal' }]);
@@ -741,20 +725,19 @@ describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)',
   });
 
   it('[Right] com AS DUAS no modo, a direção de cada jogador anda só na barra dele', () => {
-    // O caso que encena o defeito de índice, e ele precisa das DUAS no modo para morder. Com só uma dentro,
-    // a guarda `naBarra.has(i)` já barraria a chamada da outra e o caso passaria sem nunca ter olhado para o
-    // índice da BUSCA da barra — verde pelo motivo errado.
+    // The case that stages the index defect, and it needs BOTH in the mode to bite. With only one inside, the
+    // `naBarra.has(i)` guard would already block the other's call and the case would pass without ever looking at the bar
+    // LOOKUP's index — green for the wrong reason.
     //
-    // E o passo tem de sair da TELA 1, não da 0. A primeira versão deste caso pedia o passo para a tela 0 e
-    // PASSAVA com a mutação aplicada: com `getA11yBars()[0]` fixo no lugar de `[i]`, um passo pedido para a
-    // tela 0 cai na barra certa por acidente. Fica anotado porque uma mutação que não falha é pior que
-    // nenhuma — dá a sensação de rigor sem o rigor.
+    // And the step must come from SCREEN 1, not 0: a step asked for screen 0 PASSED with the mutation applied — with
+    // `getA11yBars()[0]` fixed in place of `[i]`, it lands on the right bar by accident. Recorded because a mutation that
+    // does not fail is worse than none — it gives the feeling of rigour without the rigour.
     const { api, bars } = duasTelas();
     api.enterBar(0);
     api.enterBar(1);
     const inicio = bars.map((b) => b.querySelector('.pi-sel').dataset.pi);
-    // O jogador 1 anda DUAS casas; o jogador 0, nenhuma. Se a busca da barra ignorasse o índice, os dois
-    // passos cairiam na mesma barra e as duas asserções abaixo trocariam de lado ao mesmo tempo.
+    // Player 1 moves TWO places; player 0, none. If the bar lookup ignored the index, both steps would land on the same
+    // bar and the two assertions below would swap sides at once.
     api.navBar(1, { right: true });
     api.navBar(1, { right: true });
     expect(bars[1].querySelector('.pi-sel').dataset.pi, 'a barra de quem andou ficou parada').not.toBe(inicio[1]);
@@ -765,7 +748,7 @@ describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)',
     const { api, bars } = duasTelas();
     api.enterBar(1);
     const antes = bars[1].querySelector('.pi-sel').dataset.pi;
-    api.navBar(0, { right: true }); // o jogador 0 não entrou
+    api.navBar(0, { right: true }); // player 0 did not enter
     expect(bars[1].querySelector('.pi-sel').dataset.pi).toBe(antes);
     expect(bars[0].querySelectorAll('.pi-sel')).toHaveLength(0);
   });
@@ -781,8 +764,8 @@ describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)',
   });
 
   it('[Interface] cada barra se declara da SUA tela, e reflete o estado do SEU jogador', () => {
-    // `data-player` não é enfeite: é por ele que uma auditoria (e um humano lendo o DOM) sabe qual barra é de
-    // quem. E o daltonismo é por jogador — é o ajuste que expõe uma troca de índice na hora.
+    // `data-player` is not decoration: it is how an audit (and a human reading the DOM) knows which bar is whose. And
+    // colour blindness is per player — the setting that exposes an index swap at once.
     const { api, bars } = duasTelas();
     expect(bars.map((b) => b.dataset.player)).toEqual(['0', '1']);
     bars[1].querySelector('.pi-btn[data-pi="cvd"]').click();
@@ -808,15 +791,12 @@ describe('reflectIconsIn — a barra do SPLASH (#title-icons) usa a mesma casca'
 });
 
 // ---------------------------------------------------------------------------------------------
-// ⚠️ O NÍVEL TEA PERSISTE (issue #61) — e é aqui que se prova, porque precisa de `localStorage` real
+// ⚠️ THE ASD LEVEL PERSISTS (issue #61) — and it is proven here, because it needs a real `localStorage`
 // ---------------------------------------------------------------------------------------------
 //
-// Até 2026-09-07 não persistia: era um `let calmMode = 0` com o comentário «deliberately NOT persisted —
-// verbatim: game.js never wrote it to storage». O «verbatim» é o que o desqualificava como decisão — foi
-// preservado na extração do monólito, não escolhido —, e o ADR-0028 diz que todo menu persiste.
-//
-// O custo era da criança que mais precisa dele: quem usa o modo SILENCIOSO voltava a pô-lo a cada sessão, e
-// é para quem o barulho inesperado custa mais. Um ajuste que se esquece não é um ajuste, é uma tarefa diária.
+// ADR-0028 says every menu setting persists. The cost of not persisting falls on the child who needs it most: whoever
+// uses the SILENT mode would set it again every session, and unexpected noise costs them most. A setting that forgets
+// is not a setting, it is a daily chore.
 describe('o nível TEA sobrevive ao fecho da aba (#61, ADR-0028)', () => {
   const CHAVE = 'incl_tea';
 
@@ -824,7 +804,7 @@ describe('o nível TEA sobrevive ao fecho da aba (#61, ADR-0028)', () => {
     localStorage.removeItem(CHAVE);
     setPlayers([{ viz: '', toggleMove: false }]);
 
-    // sessão 1: a criança põe em «calmo» e depois em «silencioso»
+    // session 1: the child sets «calmo» and then «silencioso»
     const primeira = initPauseIcons(makeCtx().ctx);
     expect(primeira.getCalmMode(), 'não começou no padrão').toBe(0);
     primeira.iconAct('tea', 0);
@@ -832,14 +812,14 @@ describe('o nível TEA sobrevive ao fecho da aba (#61, ADR-0028)', () => {
     expect(primeira.getCalmMode()).toBe(2);
     expect(localStorage.getItem(CHAVE), 'o nível não foi gravado').toBe('2');
 
-    // sessão 2: outra instância, como um recarregamento da página
+    // session 2: another instance, like a page reload
     const segunda = initPauseIcons(makeCtx().ctx);
     expect(segunda.getCalmMode(), 'o nível não sobreviveu ao recarregamento').toBe(2);
   });
 
   it('[Interface] o `setCalmMode` também grava — é a outra porta para o mesmo valor', () => {
-    // Se só o ciclo do ícone gravasse, um nível posto por aqui viveria a sessão e morreria no fecho da aba,
-    // que é a metade pior do defeito: o ajuste parece ter pegado e some depois.
+    // If only the icon's cycle stored it, a level set through here would live for the session and die when the tab closed
+    // — the worse half of the defect: the setting seems to have taken and vanishes later.
     localStorage.removeItem(CHAVE);
     setPlayers([{ viz: '', toggleMove: false }]);
     const api = initPauseIcons(makeCtx().ctx);
@@ -849,9 +829,9 @@ describe('o nível TEA sobrevive ao fecho da aba (#61, ADR-0028)', () => {
   });
 
   it('⚠️ [Error] um nível inválido guardado no navegador não chega ao anúncio', () => {
-    // O anúncio ao leitor de tela é `t(CALM_NAMES[calmMode])`. Um `3` guardado — dado corrompido, uma versão
-    // futura, um dedo no devtools — daria `undefined` e a criança cega carregaria no botão e não ouviria
-    // nada. Volta ao padrão, que é audível.
+    // The screen-reader announcement is `t(CALM_NAMES[calmMode])`. A stored `3` — corrupted data, a future version, a
+    // finger in devtools — would give `undefined`, and the blind child would press the button and hear nothing. It falls
+    // back to the default, which is audible.
     localStorage.setItem(CHAVE, '3');
     setPlayers([{ viz: '', toggleMove: false }]);
     expect(initPauseIcons(makeCtx().ctx).getCalmMode()).toBe(0);
@@ -861,13 +841,13 @@ describe('o nível TEA sobrevive ao fecho da aba (#61, ADR-0028)', () => {
 
 describe('a barra montada obedece ao §5 do ADR-0106 — nenhum botão morto', () => {
   it('⚠️ [Interface] SEM escritor visual, o contraste e a cor não são MONTADOS', () => {
-    // A metade pura (`iconsThatAct`) vive no project node; este caso é a prova de que a regra alcança o
-    // DOM de verdade — que é onde uma criança encontra, ou não encontra, o botão.
+    // The pure half (`iconsThatAct`) lives in the node project; this case proves the rule reaches the real DOM — which is
+    // where a child finds, or does not find, the button.
     const { bar } = mount(0, { setPlayerTheme: undefined, setPlayerCorrection: undefined });
     const chaves = [...bar.querySelectorAll('.pi-btn')].map((b) => b.dataset.pi);
     expect(chaves).not.toContain('contrast');
     expect(chaves).not.toContain('cvd');
-    // ⚠️ E o resto da barra fica INTEIRO: perder os oito por causa de dois seria a troca errada.
+    // ⚠️ And the rest of the bar stays WHOLE: losing the others because of two would be the wrong trade.
     expect(chaves).toContain('blind');
     expect(chaves).toContain('tts');
     expect(chaves).toContain('libras');
@@ -881,34 +861,31 @@ describe('a barra montada obedece ao §5 do ADR-0106 — nenhum botão morto', (
   });
 });
 
-// ========================= MUTACOES CONFERIDAS (ADR-0106 §5) =========================
-//   · fazendo `iconsThatAct` devolver sempre `PAUSE_ICONS` -> reprovam os casos SEM escritor, no node e
-//     aqui. E a mutacao que devolve o defeito: a barra volta a oferecer um caminho que nao leva a lado nenhum.
-//   · filtrando os dois SEMPRE (ignorando o booleano) -> reprova "COM escritor visual, os dois estao la", que
-//     e a metade que impede a correccao de custar os icones a quem os tinha.
-// ========================= MUTACOES DA LISTA PADRAO DE `.pm-btn` (ADR-0106 §4/§5) =========================
-//   · tirando o filtro por ACCAO (`itemsThatAct` a devolver tudo) -> reprovam DOIS. E o defeito que estava
-//     institucionalizado: o menu mostrava `quit` sem tabela, e o fixture omitia-o DE PROPOSITO com um
-//     comentario a dizer que isso «prova que um data-act sem entrada nao quebra o clique». Nao quebrava mesmo
-//     — so nao fazia nada, e quem navega por leitor de tela ouvia um item que nao existe.
-//   · ⚠️ tirando a regra da PORTA VAZIA -> SOBREVIVEU na primeira volta, e a sobrevivencia era um caso vazio e
-//     nao um buraco de logica: o `[Zero]` usava a lista do FIXTURE, que nao tem `options` nenhum, entao
-//     afirmava sobre um item que a lista nao continha. Refeito com a lista PADRAO DA ENGINE (que tem
-//     `options`), a mesma mutacao reprova.
-//   · escondendo `options` SEMPRE -> reprova o caso do painel unico. E a metade que impede a correccao de
-//     custar o submenu a quem o tem: basta UM painel vivo para a porta valer a pena.
-//   · trocando a lista padrao por `[]` -> reprovam DOIS. E a prova de que o padrao da engine existe: antes
-//     desta mudanca o `pmButtons` era OBRIGATORIO, e os cinco jogos sem menu de pausa sao o resultado de
-//     ninguem o passar.
+// ========================= MUTATIONS CHECKED (ADR-0106 §5) =========================
+//   · making `iconsThatAct` always return `PAUSE_ICONS` -> the NO-writer cases fail, in node and here. It is the mutation
+//     that brings the defect back: the bar again offers a path that leads nowhere.
+//   · filtering the two ALWAYS (ignoring the boolean) -> the WITH-visual-writer case fails, the half that keeps the fix
+//     from costing the icons to whoever had them.
+// ========================= MUTATIONS OF THE DEFAULT `.pm-btn` LIST (ADR-0106 §4/§5) =========================
+//   · removing the ACTION filter (`itemsThatAct` returning everything) -> TWO fail. It is the defect that was
+//     institutionalised: the menu showed `quit` with no table, and the fixture omitted it ON PURPOSE with a comment saying
+//     that «prova que um data-act sem entrada nao quebra o clique». It did not break — it just did nothing, and a
+//     screen-reader user heard an item that does not exist.
+//   · ⚠️ removing the EMPTY-DOOR rule -> SURVIVED on the first round, and the survival was an empty case, not a logic hole:
+//     the `[Zero]` used the FIXTURE's list, which has no `options`, so it asserted about an item the list did not
+//     contain. Redone with the ENGINE's DEFAULT list (which has `options`), the same mutation fails.
+//   · hiding `options` ALWAYS -> the single-panel case fails. The half that keeps the fix from costing the submenu to
+//     whoever has it: ONE live panel is enough for the door to be worth it.
+//   · replacing the default list with `[]` -> TWO fail. The proof that the engine's default exists: before this change
+//     `pmButtons` was MANDATORY, and games without a pause menu are the result of nobody passing it.
 //
-//   · ⚠️ trocando o `&&` por `||` na deteccao -> SOBREVIVEU, e a sobrevivencia apontou um defeito de DESENHO
-//     em vez de um buraco de cobertura: com UMA bandeira para os dois icones, os dois operadores dao o mesmo
-//     resultado sempre que faltam os dois escritores — e erram em direccoes opostas quando falta so um (o
-//     `&&` esconde um icone que funciona; o `||` mostra um que nao funciona). A pergunta passou a ser por
-//     ICONE (`VisualWriters`), e o caso `[Boundary] com UM escritor so` vive no project node.
+//   · ⚠️ replacing `&&` with `||` in the detection -> SURVIVED, and the survival pointed at a DESIGN defect instead of a
+//     coverage hole: with ONE flag for the two icons, both operators give the same result whenever both writers are
+//     missing — and err in opposite directions when only one is (`&&` hides an icon that works; `||` shows one that does
+//     not). The question became per ICON (`VisualWriters`), and the `[Boundary]` one-writer case lives in the node project.
 
 describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (ADR-0106 etapa 2)', () => {
-  /** Só campos que a ENGINE sabe responder. Nenhum `rm`, `dynLabel`, `getPauseActs` ou `setPauseActor`. */
+  /** Only fields the ENGINE can answer. No `rm`, `dynLabel`, `getPauseActs` or `setPauseActor`. */
   function ctxMinimo(over = {}) {
     const bars = [];
     return {
@@ -917,10 +894,10 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
       srSay: () => {}, srAlert: () => {},
       getA11yBars: () => bars,
       getBlindMode: () => false,
-      // ⚠️ ESTE CAMPO PERTENCE AO MÍNIMO, e faltava. A engine SABE respondê-lo — lê-o da declaração —, então
-      // omiti-lo nunca foi «mínimo», foi esquecimento. E o esquecimento sustentava um caso: com `undefined`,
-      // que é falso, o `altmove` sumia e o teste do §5 passava POR ACIDENTE. Agora a resposta é declarada —
-      // um jogo mínimo não segura teclas — e o caso passa pelo motivo que diz ter.
+      // ⚠️ THIS FIELD BELONGS TO THE MINIMUM. The engine CAN answer it — it reads it from the declaration — so omitting it
+      // would not be «mínimo», it would be forgetting. And forgetting would prop up a case: with `undefined`, which is
+      // falsy, the `altmove` vanishes and the §5 test passes BY ACCIDENT. The answer is declared — a minimal game holds no
+      // keys — and the case passes for the reason it claims.
       holdsKeys: () => false,
       getAudioCat: () => ({ tts: { on: false, vol: 1 } }),
       setCatGain: () => {},
@@ -931,38 +908,37 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
   }
 
   it('⚠️ [Zero] com o ctx MÍNIMO a pausa monta — é a pré-condição da etapa 2', () => {
-    // ⚠️ ESTE CASO É A ETAPA 2 EM FORMA DE AFIRMAÇÃO. Enquanto `rm`, `dynLabel`, `getPauseActs` e
-    // `setPauseActor` fossem OBRIGATÓRIOS, o `createGame` não podia montar a pausa sem inventar respostas por
-    // um jogo que ele não conhece. Agora pode: o que falta é ele MONTAR, não ele PODER.
+    // ⚠️ THIS CASE IS STEP 2 AS AN ASSERTION. With `rm`, `dynLabel`, `getPauseActs` and `setPauseActor` MANDATORY,
+    // `createGame` could not mount the pause without inventing answers for a game it does not know. It can.
     const api = initPauseIcons(ctxMinimo());
     const sp = api.buildScreenPause(0);
     const bar = api.buildQuickBar(0);
     expect(sp.querySelector('.pause-card'), 'o cartão não montou').toBeTruthy();
     expect(bar.querySelectorAll('.pi-btn').length, 'a barra montou vazia').toBeGreaterThan(0);
 
-    // ⚠️ E O MODO TEA TEM DE CORRER, que é onde o `rm` é mesmo lido. Sem esta linha o caso montava a árvore e
-    // nunca tocava nos quatro campos de movimento reduzido — uma mutação que os voltasse a exigir do jogo
-    // sobreviveria a ele. (Foi o que aconteceu na primeira volta.)
+    // ⚠️ AND THE ASD MODE MUST RUN, which is where `rm` is really read. Without this line the case built the tree and never
+    // touched the four reduced-motion fields — a mutation demanding them from the game again would survive it. (That is
+    // what happened on the first round.)
     expect(() => api.applyCalm(), 'o modo TEA rebentou sem `rm` injetado').not.toThrow();
     expect(typeof api.getCalmMode()).toBe('number');
   });
 
   it('⚠️ [Zero] e o cartão mínimo NÃO oferece item que não acciona (§5)', () => {
-    // Sem tabela de acções, sobra o que a engine acciona sozinha — e nada mais. Um cartão com `quit` que não
-    // sai, ou `ajuda` que não abre, seria pior do que um cartão curto.
+    // With no action table, what is left is what the engine actions by itself — and nothing more. A card with a `quit`
+    // that does not quit, or an `ajuda` that does not open, would be worse than a short card.
     const api = initPauseIcons(ctxMinimo());
     const sp = api.buildScreenPause(0);
     const acts = actsVisiveis(sp);
     expect(acts).not.toContain('quit');
-    expect(acts).not.toContain('options'); // a porta cai porque a sala está vazia
+    expect(acts).not.toContain('options'); // the door falls because the room is empty
     expect(acts.every((a) => a === 'acessibilidade' || a === 'pmback'), 'sobrou item sem acção: ' + acts.join(',')).toBe(true);
   });
 
   it('⚠️ [Interface] trocar `getPauseActs` DEPOIS do init continua a valer — a ligação é tardia', () => {
-    // ⚠️ ESTE CASO NASCEU DE UM ERRO MEU QUE UM TESTE APANHOU. Ao dar padrão aos campos, resolvi
-    // `ctx.getPauseActs` UMA vez no arranque — e isso congelou a referência, partindo quem troca a tabela
-    // depois. Trocar depois é legítimo: a laziness deste campo existe porque a tabela chega tarde (no
-    // cartucho é um `const` ~1200 linhas abaixo do `init`). Um padrão não pode custar a ligação tardia.
+    // ⚠️ Resolving `ctx.getPauseActs` ONCE at start-up (while giving the fields defaults) freezes the reference and breaks
+    // whoever swaps the table later — a test caught exactly that. Swapping later is legitimate: this field's laziness
+    // exists because the table arrives late (in a cartridge, a `const` far below the `init`). A default cannot cost the late
+    // binding.
     const ctx = ctxMinimo();
     const api = initPauseIcons(ctx);
     let saiu = 0;

@@ -1,37 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de input/gamepad — lógica PURA de leitura (stdDirs/bindActive/padActions) + a máquina de estados do
-// wizard de mapeamento via initGamepad(ctx) (project node, sem document real: ctx.$ devolve elementos FAKE).
-// Contrato: DI por closure (ctx.getGamepads/$/srSay/srAlert/frontOverlay/phase/attract/touch/players/nav/
-// quiz/join/respawn/spriteBase), nenhum acesso a `document`/`navigator` fora do ctx. ZOMBIES + Right-BICEP.
-// Cobre em especial (pedido da tarefa): botão repetido (release-gate), Escape no meio (_skip sentinel), muitos
-// ticks ociosos sem avançar passo ("timeout" — não existe timeout real no original; isso prova que não há
-// avanço espúrio), e controle desconectado durante o wizard (tick vira no-op sem lançar).
+// Tests of input/gamepad — the PURE reading logic (stdDirs/bindActive/padActions) + the mapping wizard's state machine
+// through initGamepad(ctx) (node project, no real document: ctx.$ returns FAKE elements).
+// Contract: closure DI — everything comes through the ctx, with no access to `document`/`navigator` outside it.
+// ZOMBIES + Right-BICEP. It covers in particular: a repeated button (release gate), Escape midway (the _skip sentinel),
+// many idle ticks without advancing a step (there is no real timeout; this proves there is no spurious advance), and a
+// pad disconnected during the wizard (the tick becomes a no-op without throwing).
 import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PADWIZ_ORDER, initGamepad, padGameAnswers } from '../app/js/input/gamepad.js';
 import { stdDirs, bindActive, padActions, oneButtonAtOnce } from '../app/js/input/pad-reading.js';
 import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
-// `oneButton` e' binding vivo de `core/state` (nao do ctx): estes casos ligam-no e desligam-no de verdade.
+// `oneButton` is a live binding of `core/state` (not of the ctx): these cases really turn it on and off.
 import * as estado from '../app/js/core/state.js';
-// Só o último bloco os usa: ele afere a FONTE do módulo, porque o buraco que ele tapa é de escrita e não
-// de execução — uma frase crua corre sem erro nenhum.
+// Only the last block uses these: it measures the module's SOURCE, because the hole it closes is one of writing and not of
+// execution — a raw sentence runs with no error at all.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-// padCur/padPrevAct/padPrevStart (input/state.ts) são estado GENUINAMENTE compartilhado — não fazem parte do
-// ctx, e persistem entre chamadas de initGamepad() dentro do mesmo processo (é assim que o game.js real os
-// usa: um só, a vida toda). Sem resetar entre testes, uma borda (`edge`) capturada num teste "vaza" pro
-// próximo que reusa o mesmo índice de gamepad. Reset global — nenhum teste depende de estado de outro.
+// padCur/padPrevAct/padPrevStart (input/state.ts) are GENUINELY shared state — not part of the ctx, and they persist
+// between initGamepad() calls in the same process (one set, for the whole lifetime). Without a reset between tests, an
+// `edge` captured in one test "leaks" into the next that reuses the same pad index. A global reset — no test depends on
+// another's state.
 beforeEach(() => {
   for (const k of Object.keys(padCur)) delete padCur[k];
   for (const k of Object.keys(padPrevAct)) delete padPrevAct[k];
   for (const k of Object.keys(padPrevStart)) delete padPrevStart[k];
-  estado.setOneButtonValue(false); // senao um caso da empatia motora vaza para os 50 de cima
+  estado.setOneButtonValue(false); // or a motor-empathy case leaks into the cases above
 });
 
 // ---------------------------------------------------------------------------------------------
-// Fábricas de fixtures (pad falso + ctx falso — nenhuma delas toca document/navigator)
+// Fixture factories (fake pad + fake ctx — neither touches document/navigator)
 // ---------------------------------------------------------------------------------------------
 
 function makePad({ id = 'pad-1', index = 0, mapping = 'standard', pressed = [], axes = [0, 0, 0, 0, 0, 0, 1.3, 1.3] } = {}) {
@@ -39,9 +38,9 @@ function makePad({ id = 'pad-1', index = 0, mapping = 'standard', pressed = [], 
   return { id, index, mapping, buttons, axes: axes.slice() };
 }
 
-// Elemento DOM falso mínimo — só os campos que gamepad.ts efetivamente lê/escreve. `hidden:true` por padrão:
-// overlays (#padwiz, #win-overlay) começam escondidos no HTML real; um fake com hidden:false faria o
-// pollPads achar a tela de vitória sempre aberta e pular toda a lógica de fase.
+// A minimal fake DOM element — only the fields gamepad.ts actually reads/writes. `hidden:true` by default: overlays
+// (#padwiz, #win-overlay) start hidden in real HTML; a fake with hidden:false would make pollPads think the victory
+// screen is always open and skip all the phase logic.
 function fakeEl() {
   return { textContent: '', hidden: true, className: '', style: {}, src: '', clicked: 0, click() { this.clicked++; }, _listeners: {}, addEventListener(ev, fn) { (this._listeners[ev] ??= []).push(fn); } };
 }
@@ -61,9 +60,8 @@ function buildCtx(over = {}) {
   return {
     $: (sel) => dom.get(sel) ?? null,
     getGamepads: () => pads,
-    // ⚠️ O RÓTULO VEM DO 'JOGO', e num teste o jogo é o fixture. Antes o assistente lia as palavras
-    // de uma constante em português dentro de `input/gamepad.ts`; agora pergunta, e este objeto é a
-    // resposta. `leftShoulder` fica de fora de propósito: prova que uma posição não nomeada é SALTADA.
+    // ⚠️ THE LABEL COMES FROM THE 'GAME', and in a test the game is the fixture: the wizard asks, and this object is the
+    // answer. `leftShoulder` is left out on purpose: it proves an unnamed position is SKIPPED.
     actionLabel: (a) => ({
       up: 'CIMA', down: 'BAIXO', left: 'ESQUERDA', right: 'DIREITA',
       action1: 'CORRER', action2: 'PULAR', action3: 'ESPECIAL', action4: 'TROCAR', start: 'START',
@@ -71,8 +69,8 @@ function buildCtx(over = {}) {
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
     frontOverlay: (el) => fronted.push(el),
-    // 2026-08-26: o ctx deixou de pedir a FASE e passou a pedir dois booleanos e dois verbos (ADR-0030 C3).
-    // O falso segue guardando a string por dentro — é como os casos se leem —, e traduz aqui.
+    // The ctx asks for two booleans and two verbs, not the PHASE (ADR-0030 C3). The fake keeps the string inside — it is
+    // how the cases read — and translates here.
     worldRunning: () => phase === 'playing',
     pauseMenu: () => phase === 'paused',
     pause: () => { calls.setPhase.push('paused'); phase = 'paused'; },
@@ -84,8 +82,8 @@ function buildCtx(over = {}) {
     getPlayers: () => players,
     getNumPlayers: () => players.length || 1,
     navTitle: (k) => calls.navTitle.push(k),
-    // O MODO `accessibility` (ADR-0044, item 7): com o jogo andando, o direcional dirige a barra do HUD e não
-    // o personagem. Por padrão ninguém está nele — os casos que o exercitam alimentam `naBarra`.
+    // The `accessibility` MODE (ADR-0044, item 7): with the game moving, the d-pad drives the HUD bar and not the
+    // character. By default nobody is in it — the cases that exercise it feed `naBarra`.
     onBar: (i) => naBarra.has(i),
     navBar: (i, k, temStart) => calls.navBar.push([i, k, temStart]),
     sharedDialogOpen: () => null,
@@ -93,20 +91,20 @@ function buildCtx(over = {}) {
     getPauseMenu: () => null,
     navPause: (menu, pi, k) => calls.navPause.push([menu, pi, k]),
     setPauseActor: (i) => calls.setPauseActor.push(i),
-    // A aresta por jogador (ADR-0113 cláusula 4). Guarda a LISTA e não um contador: a pergunta «que aparelho
-    // produz as arestas» é por assento, e um número não distingue dois controles de dois jogadores.
+    // The per-player edge (ADR-0113 clause 4). It keeps the LIST and not a counter: the question «que aparelho produz as
+    // arestas» is per seat, and a number cannot tell two pads of two players apart.
     playerEdge: (jogador, origem) => calls.arestas.push([jogador, origem]),
     /*
-     * 🔴 O DUBLE DO CONTROLE VIRTUAL, desde 22/09 (ADR-0223). O pad deixou de levantar só arestas: ele APERTA uma
-     * POSIÇÃO no assento dele, e quem decide o que isso significa — ir ao menu, segurar a tecla da criança, entregar o
-     * comando ao cartucho — é o controle, uma vez, para os seis transportes.
-     * 📌 `emMenu` é do duble e não do pad: a resposta de `press` é o que diz se a pressão chegou ao JOGO, e é dela que
-     * depende a aresta. Um duble que respondesse sempre `true` deixaria essa leitura sem nada a segurá-la.
+     * 🔴 THE VIRTUAL CONTROLLER'S DOUBLE (ADR-0223). The pad does not only raise edges: it PRESSES a POSITION on its seat,
+     * and what that means — going to the menu, holding the child's key, handing the command to the cartridge — is decided
+     * by the controller, once, for the six transports.
+     * 📌 `emMenu` belongs to the double and not the pad: `press`'s answer is what says whether the press reached the GAME,
+     * and the edge depends on it. A double always answering `true` would leave that reading with nothing holding it.
      */
     press: (action, source, player) => { calls.pressionadas.push([action, source, player]); return !over.emMenu; },
     release: (action, source, player) => calls.soltas.push([action, source, player]),
-    // UMA entrada onde havia quatro (ADR-0033). O pad e o teclado tinham CÓPIAS da mesma decisão — a grade
-    // de três colunas e o desvio de Braille — e duas cópias de uma regra são duas chances de divergir.
+    // ONE entry (ADR-0033): the pad and the keyboard must not hold COPIES of the same decision — two copies of a rule are
+    // two chances to diverge.
     modalInput: (p, intent) => calls.modalInput.push([p, intent]),
     hasModal: (i) => !!(players[i] && players[i].modalAberto),
     joinPlayer: (gi) => { calls.joinPlayer.push(gi); return true; },
@@ -114,7 +112,7 @@ function buildCtx(over = {}) {
     clearWaitingBadge: (i) => calls.clearWaitingBadge.push(i),
     wizardStep: (position) => calls.wizardSteps.push(position),
     wizardTick: () => { calls.wizardTicks++; },
-    // helpers de teste (não fazem parte do contrato GamepadCtx)
+    // test helpers (not part of the GamepadCtx contract)
     dom, said, alerted, fronted, calls,
     setPads: (p) => { pads = p; },
     setPhaseValue: (p) => { phase = p; },
@@ -127,7 +125,7 @@ function makePlayer(over = {}) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// stdDirs — direções pelas fontes padrão (stick, D-pad, hat)
+// stdDirs — directions from the standard sources (stick, D-pad, hat)
 // ---------------------------------------------------------------------------------------------
 
 describe('stdDirs', () => {
@@ -159,7 +157,7 @@ describe('stdDirs', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// bindActive — um binding do wizard (digital/analógico/hat) contra o frame atual
+// bindActive — a wizard binding (digital/analogue/hat) against the current frame
 // ---------------------------------------------------------------------------------------------
 
 describe('bindActive', () => {
@@ -174,8 +172,8 @@ describe('bindActive', () => {
   });
   it('[Right] binding analógico {ax,s}: limiar por SINAL na metade do curso', () => {
     const gp = makePad({ axes: [0.6, 0, 0, 0, 0, 0, 1.3, 1.3] });
-    expect(bindActive(gp, { ax: 0, s: 1 })).toBe(true); // mesmo sinal, além de 0.5
-    expect(bindActive(gp, { ax: 0, s: -1 })).toBe(false); // sinal oposto
+    expect(bindActive(gp, { ax: 0, s: 1 })).toBe(true); // same sign, beyond 0.5
+    expect(bindActive(gp, { ax: 0, s: -1 })).toBe(false); // opposite sign
   });
   it('[Boundary] binding hat {av,v}: só dentro de ±0.13 do valor exato do passo', () => {
     const gp = makePad({ axes: [0, 0, 0, 0, 0, 0, 0.43, 1.3] });
@@ -189,7 +187,7 @@ describe('bindActive', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// padActions — mapa PADRÃO (Gamepad "standard") vs mapa CUSTOM salvo pelo wizard
+// padActions — the DEFAULT map (Gamepad "standard") vs the CUSTOM map saved by the wizard
 // ---------------------------------------------------------------------------------------------
 
 describe('padActions', () => {
@@ -199,10 +197,8 @@ describe('padActions', () => {
     expect(a.action2).toBe(true); expect(a.action3).toBe(false); expect(a._pause).toBe(true); expect(a._start).toBe(true);
   });
   it('⚠️ R1 e R2 DEIXARAM de correr: agora são os ombros/gatilhos da direita (ADR-0086)', () => {
-    // Isto AFIRMAVA o contrário até 2026-09-06, e a mudança é real e sentida: `action1` era
-    // `b(2) || b(5) || b(7)`, ou seja X, R1 e R2 todos a correr. Com os quatro ombros a existirem como
-    // posições próprias, `run` perde dois dos seus três botões — é o asterisco que o ADR-0086 pôs no
-    // seu próprio «zero movimento»: nenhum VERBO muda de botão, mas este perde alternativas.
+    // With the four shoulders as positions of their own, `run` (`action1`) is X only, not X, R1 and R2 — the asterisk
+    // ADR-0086 put on its own «zero movimento»: no VERB changes button, but this one loses alternatives.
     expect(padActions(makePad({ pressed: [5] }), null).action1).toBe(false);
     expect(padActions(makePad({ pressed: [5] }), null).rightShoulder).toBe(true);
     expect(padActions(makePad({ pressed: [7] }), null).rightTrigger).toBe(true);
@@ -210,13 +206,12 @@ describe('padActions', () => {
   });
 
   it('⚠️ o mapa LIDO é o mapa DECLARADO — a asserção que a divergência exigia', () => {
-    // O defeito que este caso fecha durou vários dias sem ninguém notar: `padActions` trazia os índices
-    // como literais e `input/default-bindings` declarava outros, e nada comparava os dois. É a mesma
-    // forma do defeito que o gate do toque apanhou — duas tabelas que concordam entre si não provam nada
-    // sobre um terceiro que as lê. Aqui não há terceiro: a leitura SAI da tabela.
+    // The defect this case closes: `padActions` with literal indices while `input/default-bindings` declares others, and
+    // nothing comparing the two. The same shape as the defect the touch gate caught — two tables that agree with each
+    // other prove nothing about a third that reads them. Here there is no third: the reading COMES FROM the table.
     for (const [acao, indice] of Object.entries(GAMEPAD_STANDARD)) {
       if (typeof indice !== 'number') continue;
-      if (['up', 'down', 'left', 'right'].includes(acao)) continue; // vêm do stick/D-pad, não de `at()`
+      if (['up', 'down', 'left', 'right'].includes(acao)) continue; // they come from the stick/D-pad, not from `at()`
       const a = padActions(makePad({ pressed: [indice] }), null);
       expect(a[acao], `botão ${indice} devia levantar "${acao}"`).toBe(true);
     }
@@ -225,16 +220,16 @@ describe('padActions', () => {
     const gp = makePad({ pressed: [8] });
     const custom = { action2: { b: 8 } };
     expect(padActions(gp, custom).action2).toBe(true);
-    expect(padActions(gp, null).action2).toBe(false); // botão 8 não é pulo no mapa padrão
+    expect(padActions(gp, null).action2).toBe(false); // button 8 is not jump in the default map
   });
   it('[Interface] custom com _skip:true é tratado como "sem custom" (cai no mapa padrão)', () => {
     const gp = makePad({ pressed: [0] });
-    const custom = { _skip: true, action2: { b: 5 } }; // se fosse respeitado, pulo dependeria do botão 5
-    expect(padActions(gp, custom).action2).toBe(true); // pulo padrão (botão 0), não o custom ignorado
+    const custom = { _skip: true, action2: { b: 5 } }; // if it were honoured, jump would depend on button 5
+    expect(padActions(gp, custom).action2).toBe(true); // default jump (button 0), not the ignored custom one
   });
   it('[Boundary] direções custom caem de volta em stdDirs quando o binding do usuário não está ativo', () => {
-    const gp = makePad({ axes: [-0.9, 0, 0, 0, 0, 0, 1.3, 1.3] }); // stick esquerda (D-pad físico não mapeado no custom)
-    const custom = { action2: { b: 0 } }; // custom não define 'left' -> stdDirs cobre
+    const gp = makePad({ axes: [-0.9, 0, 0, 0, 0, 0, 1.3, 1.3] }); // stick left (physical D-pad not mapped in the custom map)
+    const custom = { action2: { b: 0 } }; // custom does not define 'left' -> stdDirs covers it
     expect(padActions(gp, custom).left).toBe(true);
   });
   it('[Zero] nenhum botão/eixo ativo -> todas as ações false', () => {
@@ -245,35 +240,33 @@ describe('padActions', () => {
 
 describe('PADWIZ_STEPS', () => {
   it('⚠️ o assistente alcança TODAS as quatorze posições — nem uma a menos', () => {
-    // ISTO FALTAVA, e a falta era um buraco de acessibilidade. A lista tinha nove entradas e omitia os
-    // quatro ombros e o `select`; um jogo que declarasse `leftShoulder` não tinha por onde a criança o
-    // mapear. E o assistente existe PARA controles que não são «standard» — genéricos, adaptados, de uma
-    // mão —, ou seja, cinco posições eram inalcançáveis exatamente para quem mais precisa dele.
+    // An accessibility hole otherwise: a game declaring `leftShoulder` would give the child no way to map it. And the
+    // wizard exists FOR pads that are not «standard» — generic, adapted, one-handed — so a missing position is
+    // unreachable exactly for whoever needs it most.
     //
-    // A asserção é de COBERTURA e não de tamanho: comparar com `ACTIONS` faz uma posição nova nascer
-    // coberta ou fazer este caso reprovar, que é a única forma de a lista não voltar a ficar para trás.
+    // The assertion is about COVERAGE, not size: comparing with `ACTIONS` makes a new position be born covered or make
+    // this case fail, the only way the list cannot fall behind again.
     expect([...PADWIZ_ORDER].sort()).toEqual([...ACTIONS].sort());
   });
 
   it('a ordem é de ERGONOMIA: direções, losango, ombros, sistema', () => {
-    // A ordem é o que sobra de decisão da engine aqui — as palavras são do jogo. Direções primeiro porque
-    // a criança as encontra sem pensar; sistema por último porque `start` e `select` costumam ser os
-    // botões mais pequenos e escondidos.
+    // The order is what is left of the engine's decision here — the words are the game's. Directions first because the
+    // child finds them without thinking; system last because `start` and `select` tend to be the smallest, most hidden
+    // buttons.
     expect(PADWIZ_ORDER.slice(0, 4)).toEqual(['up', 'down', 'left', 'right']);
     expect(PADWIZ_ORDER.slice(-2)).toEqual(['start', 'select']);
   });
 
   it('⚠️ nenhum RÓTULO sobrou na tabela — era português cru dentro da engine', () => {
-    // A tabela dizia `['action2', 'PULAR']` e `['action1', 'CORRER / INTERAGIR']`: vocabulário de plataforma
-    // dentro do motor E num idioma só, à frente de uma criança, num ficheiro que o pilar 3 obriga a ser
-    // localizável. Agora cada entrada é uma posição e nada mais.
+    // A label in the table (`['action2', 'PULAR']`) would be platformer vocabulary inside the engine AND in one language,
+    // in front of a child, in a file pillar 3 requires to be localisable. Each entry is a position and nothing more.
     for (const passo of PADWIZ_ORDER) expect(typeof passo).toBe('string');
     expect(PADWIZ_ORDER.some((p) => /[a-z]{2,}\s/.test(p))).toBe(false); // nenhuma frase
   });
 });
 
 // ---------------------------------------------------------------------------------------------
-// initGamepad — o wizard (máquina de estados) via ctx totalmente injetado, sem document/navigator reais
+// initGamepad — the wizard (state machine) through a fully injected ctx, no real document/navigator
 // ---------------------------------------------------------------------------------------------
 
 describe('initGamepad — wizard: fluxo completo', () => {
@@ -283,37 +276,35 @@ describe('initGamepad — wizard: fluxo completo', () => {
   it('[Right] identifica o controle no 1º botão pressionado, espera soltar, e faz os passos NOMEADOS até fechar sozinho', () => {
     api.openPadWiz();
     expect(api.getPadWiz()).not.toBeNull();
-    // ainda sem controle identificado: qualquer pad com botão pressionado é adotado (array indexado por
-    // POSIÇÃO como a Gamepad API real: usa index:0 para casar com a posição 0 do array)
+    // no pad identified yet: any pad with a pressed button is adopted (array indexed by POSITION like the real Gamepad
+    // API: index:0 to match array position 0)
     ctx.setPads([makePad({ id: 'DirectInput X', index: 0, pressed: [0] })]);
     api.padWizTick();
     expect(api.getPadWiz().gi).toBe(0);
     expect(api.getPadWiz().id).toBe('DirectInput X');
-    // ainda segurando o botão 0 -> baseWait continua esperando soltar
+    // still holding button 0 -> baseWait keeps waiting for the release
     api.padWizTick();
     expect(api.getPadWiz().baseWait).toBe(true);
-    // solta tudo -> captura o snapshot de repouso e entra no passo 0 ('up')
+    // release everything -> captures the rest snapshot and enters step 0 ('up')
     ctx.setPads([makePad({ id: 'DirectInput X', index: 0, pressed: [] })]);
     api.padWizTick();
     expect(api.getPadWiz().baseWait).toBe(false);
     expect(api.getPadWiz().step).toBe(0);
 
-    // ⚠️ PERCORRE AS POSIÇÕES QUE O JOGO NOMEIA, e não a lista inteira. O preset falso deste ficheiro
-    // nomeia nove das quatorze, e o assistente SALTA as cinco que este jogo não usa — perguntar por elas
-    // produziria um passo mudo. Até 2026-09-06 a lista tinha exatamente nove entradas e as duas coisas
-    // coincidiam por acidente; agora não coincidem, e é a primeira que importa.
+    // ⚠️ IT WALKS THE POSITIONS THE GAME NAMES, not the whole list. This file's fake preset names nine of the fourteen,
+    // and the wizard SKIPS the five this game does not use — asking for them would produce a mute step.
     const NOMEADAS = PADWIZ_ORDER.filter((a) => ctx.actionLabel(a) !== null);
     expect(NOMEADAS).toHaveLength(9);
     for (let i = 0; i < NOMEADAS.length; i++) {
       ctx.setPads([makePad({ id: 'DirectInput X', index: 0, pressed: [i] })]);
-      api.padWizTick(); // captura o botão i para o passo atual
+      api.padWizTick(); // captures button i for the current step
       if (i < NOMEADAS.length - 1) {
         expect(api.getPadWiz().map[NOMEADAS[i]]).toEqual({ b: i });
         ctx.setPads([makePad({ id: 'DirectInput X', index: 0, pressed: [] })]);
-        api.padWizTick(); // solta -> libera o próximo prompt
+        api.padWizTick(); // release -> frees the next prompt
       }
     }
-    // último passo (start) fecha e SALVA sozinho (closePadWiz(true))
+    // the last step (start) closes and SAVES by itself (closePadWiz(true))
     expect(api.getPadWiz()).toBeNull();
     expect(ctx.alerted.some((m) => m.includes('Mapeamento salvo'))).toBe(true);
     const saved = api.padMapFor('DirectInput X');
@@ -331,19 +322,19 @@ describe('initGamepad — wizard: botão repetido (release-gate)', () => {
     expect(api.getPadWiz().step).toBe(0);
 
     ctx.setPads([makePad({ id: 'pad-rep', index: 0, pressed: [7] })]);
-    api.padWizTick(); // liga o passo 0 ao botão 7
+    api.padWizTick(); // binds step 0 to button 7
     expect(api.getPadWiz().map[PADWIZ_ORDER[0]]).toEqual({ b: 7 });
     expect(api.getPadWiz().step).toBe(1);
     expect(api.getPadWiz().release).toBe(true);
 
-    // continua segurando o MESMO botão 7 por vários ticks: não deve capturar o passo 1 nem avançar
+    // keeps holding the SAME button 7 for several ticks: must not capture step 1 nor advance
     for (let i = 0; i < 10; i++) api.padWizTick();
     expect(api.getPadWiz().step).toBe(1);
     expect(api.getPadWiz().release).toBe(true);
     expect(api.getPadWiz().map[PADWIZ_ORDER[1]]).toBeUndefined();
 
-    // solta -> libera o prompt do passo 1; pressiona o MESMO botão 7 de novo -> É aceito para o novo passo
-    // (o original não deduplica bindings entre ações — documentado, não é bug desta extração)
+    // release -> frees step 1's prompt; press the SAME button 7 again -> it IS accepted for the new step
+    // (the wizard does not deduplicate bindings across actions — documented behaviour)
     ctx.setPads([makePad({ id: 'pad-rep', index: 0, pressed: [] })]);
     api.padWizTick(); // release=false, prompta o passo 1
     expect(api.getPadWiz().release).toBe(false);
@@ -384,7 +375,7 @@ describe('initGamepad — wizard: muitos ticks ociosos não avançam passo ("tim
     api.padWizTick(); // sai do baseWait -> passo 0
     expect(api.getPadWiz().step).toBe(0);
     expect(() => { for (let i = 0; i < 200; i++) api.padWizTick(); }).not.toThrow();
-    expect(api.getPadWiz().step).toBe(0); // nenhum avanço espúrio — o original não tem timeout de fato
+    expect(api.getPadWiz().step).toBe(0); // no spurious advance — there is no real timeout
   });
 });
 
@@ -395,11 +386,11 @@ describe('initGamepad — wizard: controle desconectado durante o mapeamento', (
     ctx.setPads([undefined, makePad({ id: 'pad-dc', index: 1, pressed: [] })]);
     api.padWizTick();
     expect(api.getPadWiz().step).toBe(0);
-    ctx.setPads([]); // desconectou: pads[1] agora é undefined
+    ctx.setPads([]); // disconnected: pads[1] is now undefined
     expect(() => api.padWizTick()).not.toThrow();
     expect(api.getPadWiz()).not.toBeNull();
-    expect(api.getPadWiz().step).toBe(0); // congelado, não perdeu progresso
-    // reconecta -> volta a responder normalmente
+    expect(api.getPadWiz().step).toBe(0); // frozen, no progress lost
+    // reconnect -> responds normally again
     ctx.setPads([undefined, makePad({ id: 'pad-dc', index: 1, pressed: [3] })]);
     api.padWizTick();
     expect(api.getPadWiz().map[PADWIZ_ORDER[0]]).toEqual({ b: 3 });
@@ -417,10 +408,10 @@ describe('initGamepad — wizard: classificação de eixo (analógico vs D-pad/h
     api.openPadWizFor(makePad({ id: 'pad-ax', index: 0, pressed: [], axes: [0, 0, 0, 0, 0, 0, 1.3, 1.3] }));
     ctx.setPads([makePad({ id: 'pad-ax', index: 0, pressed: [], axes: [0, 0, 0, 0, 0, 0, 1.3, 1.3] })]);
     api.padWizTick(); // passo 0
-    // eixo 2 sai do repouso além de 0.45 -> o tick que DETECTA a saída só INICIA o rastreio (não conta);
-    // são precisos 8 ticks de rastreio DEPOIS disso (ticks>=8) para fechar a classificação.
-    ctx.setPads([makePad({ id: 'pad-ax', index: 0, axes: [0, 0, 0.5, 0, 0, 0, 1.3, 1.3] })]); api.padWizTick(); // inicia o rastreio
-    const seq = [0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]; // 8 ticks de PROCESSAMENTO, variando a cada um (>2 mudanças)
+    // axis 2 leaves rest beyond 0.45 -> the tick that DETECTS it only STARTS tracking (does not count); 8 tracking ticks
+    // AFTER that (ticks>=8) are needed to close the classification.
+    ctx.setPads([makePad({ id: 'pad-ax', index: 0, axes: [0, 0, 0.5, 0, 0, 0, 1.3, 1.3] })]); api.padWizTick(); // starts tracking
+    const seq = [0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]; // 8 PROCESSING ticks, changing at each one (>2 changes)
     for (const v of seq) { ctx.setPads([makePad({ id: 'pad-ax', index: 0, axes: [0, 0, v, 0, 0, 0, 1.3, 1.3] })]); api.padWizTick(); }
     expect(api.getPadWiz().map[PADWIZ_ORDER[0]]).toEqual({ ax: 2, s: 1 });
   });
@@ -429,22 +420,22 @@ describe('initGamepad — wizard: classificação de eixo (analógico vs D-pad/h
     api.openPadWizFor(makePad({ id: 'pad-hat', index: 0, pressed: [], axes: [0, 0, 0, 0, 0, 0, 1.3, 1.3] }));
     ctx.setPads([makePad({ id: 'pad-hat', index: 0, pressed: [], axes: [0, 0, 0, 0, 0, 0, 1.3, 1.3] })]);
     api.padWizTick(); // passo 0
-    // mesmo detalhe: 1 tick para DETECTAR (inicia o rastreio) + 8 ticks de processamento (ticks>=8)
+    // same detail: 1 tick to DETECT (starts tracking) + 8 processing ticks (ticks>=8)
     for (let i = 0; i < 9; i++) { ctx.setPads([makePad({ id: 'pad-hat', index: 0, axes: [0, 0, 0.7143, 0, 0, 0, 1.3, 1.3] })]); api.padWizTick(); }
     expect(api.getPadWiz().map[PADWIZ_ORDER[0]]).toEqual({ av: 2, v: 0.7143 });
   });
 });
 
 // ---------------------------------------------------------------------------------------------
-// initGamepad — pollPads: dispatch por fase (title/paused/playing), auto-wizard, e persistência do mapa
+// initGamepad — pollPads: dispatch by phase (title/paused/playing), auto-wizard, and map persistence
 // ---------------------------------------------------------------------------------------------
 
 describe('o assento: quem dirige qual tela (sondado 2026-09-23)', () => {
   /*
-   * 🔴 SEIS DAS SETE DECISÕES DESTE BLOCO ESTAVAM SOLTAS, e é o bloco que decide qual criança dirige qual tela.
-   * Errar aqui não quebra nada visível — o jogo continua a responder — e simplesmente põe o controle de uma
-   * criança a mexer no jogo de outra, que é a mesma forma de defeito que o roteamento por dono do teclado tem
-   * escrita no cabeçalho do ficheiro dele.
+   * 🔴 SIX OF THIS BLOCK'S SEVEN DECISIONS WERE LOOSE (the 2026-09-23 probe), and it is the block that decides which child
+   * drives which screen. Getting it wrong breaks nothing visible — the game keeps responding — it simply puts one
+   * child's pad into another's game, the same shape of defect the keyboard's owner routing has written in its file's
+   * header.
    */
   const jogando = (players, over = {}) => {
     const ctx = buildCtx({ players, ...over });
@@ -498,8 +489,8 @@ describe('o assento: quem dirige qual tela (sondado 2026-09-23)', () => {
     expect(ctx.calls.joinPlayer, 'um controle a mais não pediu para entrar: apertar não fazia nada').toEqual([0]);
   });
 
-  // 🔴 Sondado 2026-09-23 (segunda sonda): tirar o START ou o `action1` da lista que toma assento ficava VERDE — só o
-  // botão 0 e a alavanca tinham caso. Uma criança cujo primeiro gesto é o START ficava sem tela e sem aviso.
+  // 🔴 Probed 2026-09-23 (second probe): removing START or `action1` from the list that takes a seat stayed GREEN — only
+  // button 0 and the stick had a case. A child whose first gesture is START would get no screen and no notice.
   it.each([
     ['action2', 0], ['action3', 1], ['action1', 2], ['action4', 3], ['START', 9],
   ])('⚠️ o botão %s sozinho toma assento', (_nome, botao) => {
@@ -544,15 +535,15 @@ describe('initGamepad — pollPads', () => {
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
     ctx.setPads([
-      makePad({ id: 'DirectInput Z', index: 0, mapping: '', pressed: [0] }), // sem mapa: abre o assistente
+      makePad({ id: 'DirectInput Z', index: 0, mapping: '', pressed: [0] }), // no map: opens the wizard
       makePad({ id: 'std', index: 1, pressed: [0] }),
     ]);
     api.pollPads();
     expect(api.getPadWiz()).not.toBeNull();
     expect(p.jumpEdge, 'o segundo controle jogou para dentro de um quadro em que o assistente acabara de abrir').toBe(false);
-    // 📌 E a asserção que MORDE é esta: o segundo controle não chegou a ser LIDO. Sem ela o caso passava com a
-    // guarda desligada, porque abrir o assistente pausa a fase e o segundo pad caía no ramo da pausa, que não
-    // escreve nada visível — um caso verde sobre um controle que foi lido na mesma.
+    // 📌 And the assertion that BITES is this one: the second pad was never READ. Without it the case passed with the guard
+    // off, because opening the wizard pauses the phase and the second pad fell into the pause branch, which writes nothing
+    // visible — a green case over a pad that was read all the same.
     expect(padCur[1], 'o segundo controle foi lido dentro do quadro do assistente').toBeUndefined();
   });
 
@@ -567,14 +558,14 @@ describe('initGamepad — pollPads', () => {
   });
 
   it('⚠️ dentro do modal a ORDEM decide: com esquerda e confirmar no mesmo quadro, ganha esquerda', () => {
-    // 📌 A ordem é a mesma do `input/keydown`, e lá ela tem caso desde que uma mutação passou. Aqui não tinha:
-    // um controle entrega um RETRATO, sem ordem de chegada, então a única coisa que separa duas posições
-    // premidas no mesmo quadro é esta lista — e trocá-la faz a criança confirmar quando queria andar.
+    // 📌 The order is `input/keydown`'s, which has had a case there since a mutation passed. A pad delivers a SNAPSHOT,
+    // with no order of arrival, so the only thing separating two positions pressed in the same frame is this list — and
+    // swapping it makes the child confirm when they wanted to move.
     const p = makePlayer({ pad: 0, modalAberto: true });
     const ctx = buildCtx({ players: [p] });
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
-    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0, 14] })]); // action2 e o direcional esquerdo
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [0, 14] })]); // action2 and the left d-pad
     api.pollPads();
     expect(ctx.calls.modalInput, 'confirmar passou à frente de andar').toEqual([[0, 'left']]);
   });
@@ -597,8 +588,8 @@ describe('initGamepad — pollPads', () => {
     ctx.setPads([makePad({ id: 'x', index: 0, pressed: [0] })]);
     expect(() => api.pollPads()).not.toThrow();
     expect(ctx.calls.navTitle).toHaveLength(0);
-    // 🔴 Sondado 2026-09-23: a asserção de cima ficava VERDE com a guarda apagada — o quadro seguia para o ramo de
-    // jogo, que não chama `navTitle`. A que morde é esta: o controle nem chegou a ser LIDO.
+    // 🔴 Probed 2026-09-23: the assertion above stayed GREEN with the guard deleted — the frame went on to the game branch,
+    // which does not call `navTitle`. The one that bites is this: the pad was never even READ.
     expect(padCur[0], 'o controle foi lido por baixo do assistente').toBeUndefined();
   });
 
@@ -613,8 +604,8 @@ describe('initGamepad — pollPads', () => {
     expect(padCur[0]).toBeUndefined();
   });
 
-  // 🔴 Sondado 2026-09-23: tirar o START ou o `action4` da lista dos botões físicos ficava VERDE — só o botão 0
-  // tinha caso. Qualquer uma das nove posições que o pad lê é um controle na mão, e o pad virtual tem de sair.
+  // 🔴 Probed 2026-09-23: removing START or `action4` from the list of physical buttons stayed GREEN — only button 0 had a
+  // case. Any of the nine positions the pad reads is a pad in hand, and the on-screen pad must leave.
   it.each([
     ['cima', 12], ['baixo', 13], ['esquerda', 14], ['direita', 15],
     ['action2', 0], ['action3', 1], ['action1', 2], ['action4', 3], ['START', 9],
@@ -642,8 +633,8 @@ describe('initGamepad — pollPads', () => {
     expect(ctx.calls.setPhase, 'o controle jogou por baixo de um cartão de pausa aberto').toEqual(['playing']);
   });
 
-  // 🔴 Sondado 2026-09-23: quatro das seis intenções do modal podiam sumir com a suíte verde — só «esquerda» e
-  // «cima» tinham caso. Cada posição dentro de um modal é uma palavra que a criança monta, e cada uma é uma regra.
+  // 🔴 Probed 2026-09-23: four of the modal's six intents could vanish with the suite green — only «esquerda» and «cima»
+  // had a case. Each position inside a modal is a word the child builds, and each is a rule.
   it.each([
     ['direita', 15, 'right'], ['baixo', 13, 'down'], ['action2', 0, 'confirm'], ['action3', 1, 'erase'],
   ])('⚠️ dentro do modal, %s vira a intenção %s', (_nome, botao, intencao) => {
@@ -658,7 +649,7 @@ describe('initGamepad — pollPads', () => {
     const p = makePlayer({ pad: 0, modalAberto: true });
     const ctx = buildCtx({ players: [p] });
     const api = initGamepad(ctx);
-    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [2] })]); // action1: o modal não o lê
+    ctx.setPads([makePad({ id: 'std', index: 0, pressed: [2] })]); // action1: the modal does not read it
     api.pollPads();
     expect(ctx.calls.modalInput).toEqual([]);
     expect(p.runEdge, 'e o modal continua a comer o botão: nada chega ao jogo por baixo dele').toBe(false);
@@ -671,20 +662,17 @@ describe('initGamepad — pollPads', () => {
     ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]);
     api.pollPads();
     expect(p.jumpEdge).toBe(true);
-    p.jumpEdge = false; // o jogo consome a borda a cada frame
-    api.pollPads(); // botão 0 ainda pressionado -> sem NOVA borda
+    p.jumpEdge = false; // the game consumes the edge every frame
+    api.pollPads(); // button 0 still pressed -> no NEW edge
     expect(p.jumpEdge).toBe(false);
   });
-  // A guarda do Fácil (input/edges.ts) vale nos TRÊS caminhos de entrada. Estes dois casos fecham o triângulo:
-  // keydown e touch-bindings já a testavam, e o controle não — a regra podia ser desligada na folha sem que
-  // nada aqui reagisse.
+  // The Easy guard (input/edges.ts) holds on all THREE input paths. These two cases close the triangle with keydown and
+  // touch-bindings — without them the rule could be switched off in the leaf with nothing here reacting.
   //
-  // 🔴 E DURANTE UM TEMPO ELE MEDIU O VÁCUO, o que só se soube em 2026-09-09 por mutação. O comentário dizia
-  // «`run` no mapa padrão é o botão 5 (ombro direito)» e o caso premia o 5 — mas o **ADR-0086 tirou o `run`
-  // dos ombros**, e o próprio `input/gamepad` regista isso ao lado da tabela: «`action1` perde dois dos seus
-  // três». Com o botão 5, `runEdge` fica falso por não haver borda NENHUMA, e o caso passava sem exercitar a
-  // guarda: apagar `edgeAllowed` do laço do controle deixava-o VERDE.
-  // 📌 O botão certo é o 2, que é o que o caso [Inverse] logo abaixo já prova levantar `runEdge` sem o Fácil.
+  // 🔴 THE BUTTON IS 2, not 5: ADR-0086 took `run` off the shoulders («`action1` perde dois dos seus três», as
+  // `input/gamepad` records beside its table). With button 5, `runEdge` is false because there is NO edge at all, and
+  // the case measured the vacuum — deleting `edgeAllowed` from the pad loop left it GREEN (found by mutation,
+  // 2026-09-09). Button 2 is what the [Inverse] case below proves raises `runEdge` without Easy.
   it('[Right] Fácil: o botão de correr do controle NÃO levanta runEdge (mesma regra do teclado e do toque)', () => {
     const p = makePlayer({ pad: 0, easy: true });
     const ctx = buildCtx({ players: [p] });
@@ -704,10 +692,9 @@ describe('initGamepad — pollPads', () => {
     expect(p.runEdge).toBe(true);
   });
   it('🎯 a aresta do CONTROLE chega ao autómato, por assento (ADR-0113 cláusula 4)', () => {
-    // 🔴 Medido em 2026-09-09: `playerEdge` tinha ZERO chamadores em produção, logo a alternância lida
-    // era a do TECLADO mesmo com o controle na mão. ⚠️ E o gamepad era o único transporte que já sobrevivia
-    // identificável (passa por `padCur`, não pelo conjunto de teclas) — o que tornava esta falta invisível:
-    // o módulo sabe de que controle veio a aresta, e o autómato não sabia.
+    // 🔴 Without `playerEdge` in production, the latch read would be the KEYBOARD's even with the pad in hand (the state
+    // measured on 2026-09-09). ⚠️ And the gamepad stays identifiable (it goes through `padCur`, not the key set), which
+    // makes the gap invisible: the module knows which pad the edge came from, and the automaton would not.
     const p = makePlayer({ pad: 0, easy: false });
     const ctx = buildCtx({ players: [p] });
     const api = initGamepad(ctx);
@@ -716,35 +703,35 @@ describe('initGamepad — pollPads', () => {
     api.pollPads();
     expect(ctx.calls.arestas, 'a aresta do controle não chegou ao autómato').toEqual([[0, 'gamepad']]);
 
-    api.pollPads(); // mesmo botão ainda premido: não há borda nova, e não há aresta nova
+    api.pollPads(); // same button still pressed: no new edge, and no new transport edge
     expect(ctx.calls.arestas.length, 'segurar o botão contou como uma segunda aresta').toBe(1);
   });
 
   it('⚠️ e ela conta MESMO com o Modo Fácil a filtrar a bandeira — a criança carregou no botão', () => {
-    // 📌 A distinção que esta linha compra: ler a mesma condição do `p[flag]` deixaria uma criança em Modo
-    // Fácil com a alternância do TECLADO enquanto joga no controle. O Fácil decide o que o JOGO faz com o
-    // botão; não decide que aparelho está na mão dela.
+    // 📌 The distinction this line buys: reading the same condition as `p[flag]` would leave a child in Easy mode with the
+    // KEYBOARD's latch while playing on the pad. Easy decides what the GAME does with the button; not which device is in
+    // their hand.
     const p = makePlayer({ pad: 0, easy: true });
     const ctx = buildCtx({ players: [p] });
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
-    // 📌 O BOTÃO 2 e não o 5, e a escolha é medida: é o botão que o caso [Inverse] acima prova levantar
-    // `runEdge` sem o Fácil. Com o 5, `runEdge` fica falso por não haver borda NENHUMA, e o caso mediria o
-    // vazio — que é o defeito que ele existe para apanhar noutro sítio.
+    // 📌 BUTTON 2 and not 5, a measured choice: it is the button the [Inverse] case above proves raises `runEdge` without
+    // Easy. With 5, `runEdge` is false because there is NO edge at all, and the case would measure nothing — the defect it
+    // exists to catch elsewhere.
     ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [2] })]);
     api.pollPads();
     expect(p.runEdge, 'o Fácil devia ter filtrado a bandeira').toBe(false);
     expect(ctx.calls.arestas, 'o aparelho em uso passou a depender do Modo Fácil').toEqual([[0, 'gamepad']]);
   });
 
-  /* ===================== A PORTA ÚNICA (ADR-0223) ===================== */
-  // 🔴 O pad era um dos DOIS transportes que não passavam por porta nenhuma: levantava arestas no jogador e mais
-  // nada, logo um cartucho que ouve só `onCommand` — o que a errata do ADR-0111 pediu a todos — não respondia a um
-  // controle na mão da criança. Estes casos prendem as três metades do conserto: a pressão, a resposta e a soltura.
+  /* ===================== THE SINGLE DOOR (ADR-0223) ===================== */
+  // 🔴 The pad goes through the virtual controller: raising edges on the player alone would leave a cartridge that
+  // listens only to `onCommand` — what the ADR-0111 erratum asked of all — deaf to a pad in the child's hand. These cases
+  // hold the three halves: the press, the answer and the release.
 
   it('🔴 [Right] o botão APERTA o controle virtual, com a origem e com o ASSENTO', () => {
-    // 📌 O SEGUNDO ASSENTO, e é ele que separa «diz o assento certo» de «diz sempre 0»: o controle 0 está na mão do
-    // jogador 2, então a posição tem de chegar ao controle virtual com o assento 1.
+    // 📌 THE SECOND SEAT, which separates «diz o assento certo» from «diz sempre 0»: pad 0 is in player 2's hand, so the
+    // position must reach the virtual controller with seat 1.
     const ctx = buildCtx({ players: [makePlayer({ pad: -1 }), makePlayer({ pad: 0, easy: false })] });
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
@@ -755,8 +742,8 @@ describe('initGamepad — pollPads', () => {
   });
 
   it('🔴 [CrossCheck] as OITO posições apertam, e não só as seis que têm aresta', () => {
-    // 📏 `EDGE_BY_ACTION` tem seis; cima e baixo sempre andaram por tecla segurada e nunca levantaram bandeira.
-    // Ao cartucho chegam as oito — a aresta é um subconjunto do que a porta leva, e não o contrário.
+    // 📏 `EDGE_BY_ACTION` has six; up and down move by held key and raise no flag. All eight reach the cartridge — the
+    // edge is a subset of what the door carries, not the other way round.
     const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
@@ -766,9 +753,9 @@ describe('initGamepad — pollPads', () => {
   });
 
   it('🔴 [CrossCheck] com um MENU a levar a pressão, a aresta NÃO sobe — a resposta do controle é lida', () => {
-    // 🎯 É a razão de `press` responder um booleano (ADR-0223): o transporte deixa de adivinhar se a pressão chegou
-    // ao jogo. Sem esta leitura, uma criança a navegar um menu com o controle levantaria a aresta de pulo, que a
-    // física consome no quadro em que o jogo volta.
+    // 🎯 It is why `press` answers a boolean (ADR-0223): the transport does not guess whether the press reached the game.
+    // Without this reading, a child navigating a menu with the pad would raise the jump edge, which the physics consumes
+    // on the frame the game comes back.
     const p = makePlayer({ pad: 0, easy: false });
     const ctx = buildCtx({ players: [p], emMenu: true });
     const api = initGamepad(ctx);
@@ -786,9 +773,9 @@ describe('initGamepad — pollPads', () => {
     ctx.setPhaseValue('playing');
     ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]);
     api.pollPads();
-    // ⚠️ A METADE QUE FALTAVA, e uma mutação mostrou-a: com o botão ainda EM BAIXO não há soltura nenhuma. Sem esta
-    // linha, uma borda calculada ao contrário (`!prev && cur`) soltava a posição no instante em que ela era premida
-    // e o caso ficava verde — as duas leituras acabam com a mesma lista, e o que as separa é QUANDO.
+    // ⚠️ THE HALF A MUTATION SHOWED MISSING: with the button still DOWN there is no release at all. Without this line, an
+    // edge computed backwards (`!prev && cur`) released the position the instant it was pressed and the case stayed green
+    // — both readings end with the same list, and what separates them is WHEN.
     expect(ctx.calls.soltas, 'soltou uma posição que continua premida').toEqual([]);
     ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [] })]);
     api.pollPads();
@@ -797,8 +784,8 @@ describe('initGamepad — pollPads', () => {
   });
 
   it('🔴 [Boundary] e a soltura é INCONDICIONAL: abrir a pausa com o botão premido não deixa a tecla segurada', () => {
-    // ⚠️ A pressão só nasce no ramo de JOGO, mas o dedo sai do botão onde quiser. Se a soltura dependesse do ramo,
-    // uma criança que abre o cartão de pausa com o pulo premido voltaria ao jogo a pular sozinha.
+    // ⚠️ The press is only born in the GAME branch, but the finger leaves the button wherever it likes. If the release
+    // depended on the branch, a child who opens the pause card with jump pressed would return to a game jumping by itself.
     const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
@@ -811,8 +798,8 @@ describe('initGamepad — pollPads', () => {
   });
 
   it('🔴 [Invariant] o Modo Fácil filtra a ARESTA e não a porta: o cartucho ouve o botão na mesma', () => {
-    // 📌 É o que mantém os três transportes a concordar: a entrega ao cartucho nunca passou pelo `edgeAllowed` no
-    // teclado, e não passa aqui. O Fácil decide o que a FÍSICA faz com o botão, não se o jogo soube dele.
+    // 📌 It is what keeps the three transports agreeing: delivery to the cartridge does not go through `edgeAllowed` on
+    // the keyboard, and does not here. Easy decides what the PHYSICS does with the button, not whether the game heard it.
     const p = makePlayer({ pad: 0, easy: true });
     const ctx = buildCtx({ players: [p] });
     const api = initGamepad(ctx);
@@ -834,7 +821,7 @@ describe('initGamepad — pollPads', () => {
     expect(ctx.calls.navTitle[0].yes).toBe(true);
   });
   it('[Boundary] MP, controle de um jogador != J1 na tela de título: não navega, só avisa', () => {
-    const ctx = buildCtx({ players: [makePlayer({ pad: 1 }), makePlayer({ pad: 0 })] }); // owner do pad 0 é o índice 1 (J2)
+    const ctx = buildCtx({ players: [makePlayer({ pad: 1 }), makePlayer({ pad: 0 })] }); // the owner of pad 0 is index 1 (P2)
     const api = initGamepad(ctx);
     ctx.setPhaseValue('title');
     ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]);
@@ -843,16 +830,15 @@ describe('initGamepad — pollPads', () => {
     expect(ctx.said.some((m) => m.includes('Aguarde o Jogador 1'))).toBe(true);
   });
   it('[Right] fase "playing", MODAL aberto: CIMA vira intenção e NÃO mexe jumpEdge', () => {
-    // O caso dizia "quiz braille: CIMA anuncia a célula". Ditar a cela é o que a atividade de alfabetização
-    // faz com `up`; o pad só entrega `up` (ADR-0033). O que continua sendo afirmado — e é o que importa —
-    // é que a tecla vai para o modal em vez de virar borda de jogo.
+    // Dictating a Braille cell is what a literacy activity does with `up`; the pad only delivers `up` (ADR-0033). What is
+    // asserted — and what matters — is that the key goes to the modal instead of becoming a game edge.
     const p = makePlayer({ pad: 0, modalAberto: true });
     const ctx = buildCtx({ players: [p] });
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
     ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [12] })]); // D-pad cima
     api.pollPads();
-    expect(ctx.calls.modalInput).toEqual([[0, 'up']]); // o ÍNDICE do dono, não o objeto (ADR-0033/0039)
+    expect(ctx.calls.modalInput).toEqual([[0, 'up']]); // the owner's INDEX, not the object (ADR-0033/0039)
     expect(p.jumpEdge).toBe(false);
   });
   it('[Right] jogador ausente (owner<0) que aperta algo em "playing" e não há tela esperando: chama joinPlayer', () => {
@@ -865,16 +851,16 @@ describe('initGamepad — pollPads', () => {
   });
 
   /*
-   * ============== OS CINCO RAMOS QUE NINGUÉM VIA (2026-09-22, ADR-0221 passo 7c) ==============
+   * ============== THE FIVE BRANCHES NOBODY SAW (2026-09-22, ADR-0221 step 7c) ==============
    *
-   * 🔴 ESTES CASOS NASCERAM DE UMA MEDIÇÃO E NÃO DE UMA LEITURA. O `pollPads` tem profundidade 11 e ia ser reestruturado; antes
-   * de lhe tocar, cada um dos nove ramos de topo foi DESLIGADO, um de cada vez, para perguntar à suíte se ela reparava.
-   * 📏 Quatro reprovaram (assistente, título, controle sem assento, modal) e **cinco ficaram VERDES**: o modo de demonstração,
-   * o modal de vitória, a navegação do cartão de pausa, a barra rápida e o START que pausa. Cinco ramos que se podiam apagar
-   * inteiros com a suíte verde — e um deles, a barra, é o que impede o botão de virar acção de jogo.
+   * 🔴 THESE CASES CAME FROM A MEASUREMENT, NOT A READING. Before restructuring `pollPads`, each of its nine top-level
+   * branches was SWITCHED OFF, one at a time, to ask the suite whether it noticed.
+   * 📏 Four failed (wizard, title, pad without a seat, modal) and **five stayed GREEN**: the demo mode, the victory modal,
+   * the pause card's navigation, the quick bar and the START that pauses. Five branches that could be deleted whole with
+   * the suite green — and one of them, the bar, is what keeps the button from becoming a game action.
    *
-   * 📌 Reestruturar código que nenhum caso vê não é refactor, é reescrita às cegas. Estes cinco vêm primeiro, e é por isso que
-   * eles afirmam o EFEITO de cada ramo e não a forma dele: a seguir a forma vai mudar.
+   * 📌 Restructuring code no case sees is not a refactor, it is a blind rewrite. That is why these cases assert each
+   * branch's EFFECT and not its shape.
    */
   it('🔴 [Right] na DEMONSTRAÇÃO, um botão de controle encerra a demo e mais nada acontece', () => {
     const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], isAttractActive: () => true });
@@ -921,13 +907,13 @@ describe('initGamepad — pollPads', () => {
   });
 
   it('🔴 [Right] na BARRA RÁPIDA, o botão dirige a barra e NÃO vira acção de jogo (ADR-0044 item 7)', () => {
-    // ⚠️ É a segunda expectativa que carrega o assunto: enquanto o modo está ligado, nada deste controle é de jogo. Sem ela,
-    // uma barra que navegasse e deixasse o personagem saltar ao mesmo tempo passaria.
+    // ⚠️ The second expectation carries the subject: while the mode is on, nothing from this pad is the game's. Without it, a
+    // bar that navigated and let the character jump at the same time would pass.
     const p = makePlayer({ pad: 0 });
     const ctx = buildCtx({ players: [p], naBarra: new Set([0]) });
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
-    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]); // o botão de pular
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [0] })]); // the jump button
     api.pollPads();
     expect(ctx.calls.navBar, 'a barra rápida não recebeu o controle').toHaveLength(1);
     expect(ctx.calls.navBar[0][0]).toBe(0);
@@ -947,10 +933,10 @@ describe('initGamepad — pollPads', () => {
   });
 });
 
-/* ===================== O QUE UMA AUSÊNCIA SIGNIFICA (ADR-0224) ===================== */
-// 🔴 A engine passou a MONTAR este transporte, e o que só o cartucho sabe chega num campo opcional. O valor destes
-// casos não é a tabela — é que cada ausência tem UM significado escrito, em vez de ser adivinhada no sítio onde faz
-// falta. Um cartucho que não declara nada tem um controle a funcionar, e é isso que o primeiro caso afirma.
+/* ===================== WHAT AN ABSENCE MEANS (ADR-0224) ===================== */
+// 🔴 The engine MOUNTS this transport, and what only the cartridge knows arrives in an optional field. The value of these
+// cases is not the table — it is that each absence has ONE written meaning, instead of being guessed where it is missed.
+// A cartridge that declares nothing has a working pad, and that is what the first case asserts.
 describe('padGameAnswers — a ausência é uma resposta, não um esquecimento', () => {
   const SEMPRE_A_ANDAR = () => true;
 
@@ -960,8 +946,8 @@ describe('padGameAnswers — a ausência é uma resposta, não um esquecimento',
     expect(a.attractActive(), 'inventou-se uma demonstração que não existe').toBe(false);
     expect(a.hasModal(0), 'inventou-se um desafio aberto').toBe(false);
     expect(a.joinPlayer(1), 'deixou entrar alguém num jogo que não sabe receber').toBe(false);
-    // 📌 As quatro que não devolvem nada: o que se afirma é que EXISTEM e não estouram — uma porta em falta
-    // rebentaria no meio de um quadro, que é o pior sítio possível para descobrir uma declaração esquecida.
+    // 📌 The ones that return nothing: what is asserted is that they EXIST and do not throw — a missing door would blow up
+    // mid-frame, the worst possible place to discover a forgotten declaration.
     expect(() => { a.navTitle({}); a.stopAttract(); a.modalInput(0, 'confirm'); a.respawnPlayer(0); a.clearWaitingBadge(0); a.wizardStep('up'); a.wizardTick(); })
       .not.toThrow();
   });
@@ -985,9 +971,9 @@ describe('padGameAnswers — a ausência é uma resposta, não um esquecimento',
   });
 
   it('🔴 [Boundary] um campo escrito como `undefined` é uma AUSÊNCIA, e não um buraco', () => {
-    // ⚠️ É o defeito silencioso que a função existe para não ter: espalhar o objecto cru por cima da tabela
-    // sobrescreve a resposta com `undefined`, e o primeiro quadro que a chame estoura. Um cartucho escreve
-    // `{ hasModal: temModal ? f : undefined }` sem pensar duas vezes.
+    // ⚠️ The silent defect the function exists not to have: spreading the raw object over the table overwrites the answer
+    // with `undefined`, and the first frame that calls it throws. A cartridge writes
+    // `{ hasModal: temModal ? f : undefined }` without a second thought.
     const a = padGameAnswers({ hasModal: undefined, wizardStep: undefined }, SEMPRE_A_ANDAR);
     expect(typeof a.hasModal, 'a resposta da tabela foi apagada por um `undefined` declarado').toBe('function');
     expect(a.hasModal(0)).toBe(false);
@@ -995,8 +981,8 @@ describe('padGameAnswers — a ausência é uma resposta, não um esquecimento',
   });
 
   it('🔴 [CrossCheck] `worldRunning` é a única ausência que quem MONTA responde', () => {
-    // 📌 E a razão está escrita: as outras nove têm uma resposta universal, esta depende de saber que menus estão
-    // abertos — coisa que só o hospedeiro sabe. Declarada, ganha ao hospedeiro como qualquer outra.
+    // 📌 And the reason is written: the others have a universal answer, this one depends on knowing which menus are open —
+    // something only the host knows. Declared, it wins over the host like any other.
     expect(padGameAnswers(undefined, () => false).worldRunning()).toBe(false);
     expect(padGameAnswers({ worldRunning: () => true }, () => false).worldRunning()).toBe(true);
   });
@@ -1016,9 +1002,9 @@ describe('initGamepad — padMapFor', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// A demonstração do assistente é DO JOGO (nota CD). A engine faz as perguntas e diz a cada passo QUAL posição
-// está a pedir; o que essa posição parece — o menino do plataformer a subir uma escada — o jogo desenha. Até
-// 23/09 a engine desenhava um jogo aqui (`PADWIZ_ANIM`, `spriteBase`); os casos antigos fixavam o caminho dos PNGs.
+// The wizard's demonstration belongs to the GAME (note CD). The engine asks the questions and says at each step WHICH
+// position it is asking for; what that position looks like — the platformer's boy climbing a ladder — the game draws.
+// The engine draws no game here.
 // ---------------------------------------------------------------------------------------------
 
 describe('initGamepad — a demonstração do assistente é do jogo', () => {
@@ -1037,21 +1023,18 @@ describe('initGamepad — a demonstração do assistente é do jogo', () => {
 });
 
 // ===================================================================================================
-// O MODO DE UM BOTÃO TEM DE VALER NO CONTROLE TAMBÉM (issue #120)
+// THE ONE-BUTTON MODE MUST HOLD ON THE PAD TOO (issue #120)
 // ===================================================================================================
-// ⚠️ O DEFEITO QUE ESTE BLOCO EXISTE PARA FECHAR, medido em 2026-09-07: `grep oneButton` em
-// `input/gamepad.ts` devolvia ZERO. `input/keydown.ts` honra a empatia motora — quando uma tecla de jogo
-// chega e o modo está ligado, TODAS as outras teclas de jogo seguras são soltas (`releaseKeys`, :407) —
-// e o `pollPads` não tinha nada equivalente.
+// ⚠️ `input/keydown.ts` honours the motor empathy — when a game key arrives with the mode on, ALL the other held game
+// keys are released (`releaseKeys`) — and `pollPads` must do the equivalent.
 //
-// ⚠️ E A CRIANÇA NÃO TEM COMO SABER. Ela liga o modo porque precisa dele, e ele funciona — até alguém
-// ligar um controle. Sem erro, sem aviso, sem sintoma: as definições dizem que está ligado e o aparelho
-// comporta-se como se não estivesse. É o pilar 2 do ADR-0010 a falhar em silêncio, e é mais velho que o
-// registro que o encontrou.
+// ⚠️ AND THE CHILD HAS NO WAY TO KNOW. They turn the mode on because they need it, and it works — until someone
+// connects a pad. No error, no notice, no symptom: the settings say it is on and the device behaves as if it were not.
+// It is pillar 2 of ADR-0010 failing silently.
 //
-// ⚠️ AS DIREÇÕES CONTAM, e é isso que torna a regra o que ela é. No teclado, `isGameKeyCode` inclui as
-// teclas de `p.ctrl`, que são as quatro direções — então andar e pular NÃO coexistem com o modo ligado.
-// Um filtro que poupasse as direções seria mais confortável e simularia outra deficiência.
+// ⚠️ THE DIRECTIONS COUNT, and that is what makes the rule what it is. On the keyboard, `isGameKeyCode` includes
+// `p.ctrl`'s keys, which are the four directions — so walking and jumping do NOT coexist with the mode on. A filter that
+// spared the directions would be more comfortable and would simulate a different disability.
 describe('empatia motora no CONTROLE: um botão por vez (issue #120)', () => {
   const nada = {
     left: false, right: false, up: false, down: false,
@@ -1072,9 +1055,9 @@ describe('empatia motora no CONTROLE: um botão por vez (issue #120)', () => {
   });
 
   it('⚠️ [Right] a que já estava em baixo MANTÉM-SE — a nova não a rouba', () => {
-    // No teclado a chegada nova ganha porque HÁ uma chegada. Num controle lido por sondagem não há
-    // "nova": há um retrato. Manter a que já valia é o que faz o botão de correr não ser cortado
-    // porque o polegar encostou noutro — e é a leitura que o ADR-0077 dá ao segurar.
+    // On the keyboard the new arrival wins because there IS an arrival. On a polled pad there is no "new": there is a
+    // snapshot. Keeping the one that already held is what keeps the run button from being cut because the thumb brushed
+    // another — and it is the reading ADR-0077 gives to holding.
     const antes = { ...nada, action2: true };
     const atual = { ...nada, action2: true, right: true };
     expect(ligadas(oneButtonAtOnce(antes, atual, true))).toEqual(['action2']);
@@ -1097,8 +1080,8 @@ describe('empatia motora no CONTROLE: um botão por vez (issue #120)', () => {
   });
 
   it('[Interface] START e SELECT NÃO são cortados — pausar é a saída, não uma jogada', () => {
-    // Cortar o START prenderia a criança dentro da partida: é o mesmo raciocínio do ADR-0044 («a saída
-    // primeiro») e da armadilha de foco do ADR-0090. Uma acomodação que tranca não é acomodação.
+    // Cutting START would trap the child inside the match: the same reasoning as ADR-0044 («a saída primeiro») and
+    // ADR-0090's focus trap. An accommodation that locks in is no accommodation.
     const atual = { ...nada, action2: true, start: true, select: true };
     const saida = oneButtonAtOnce(nada, atual, true);
     expect(saida.start).toBe(true);
@@ -1113,9 +1096,9 @@ describe('empatia motora no CONTROLE: um botão por vez (issue #120)', () => {
   });
 });
 
-// ⚠️ E O FIO TEM DE ESTAR LIGADO, não só existir. O ADR-0090 registra três facilidades que a engine
-// MONTAVA e nunca ligava — «ausência seria visível; o objeto TEM uma `nav`, o laço TEM um campo
-// `aoFalhar`, e os dois parecem prontos». Uma função pura testada e nunca chamada é a quarta.
+// ⚠️ AND THE WIRE MUST BE CONNECTED, not just exist. ADR-0090 records facilities the engine BUILT and never wired —
+// «ausência seria visível; o objeto TEM uma `nav`, o laço TEM um campo `aoFalhar`, e os dois parecem prontos». A pure
+// function, tested and never called, would be one more.
 describe('e o modo de um botão está LIGADO no laço de sondagem (issue #120)', () => {
   const comPad = (pressed) => {
     const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
@@ -1141,31 +1124,31 @@ describe('e o modo de um botão está LIGADO no laço de sondagem (issue #120)',
 });
 
 // ==========================================================================================================
-// ⚠️ O QUE O ASSISTENTE DE MAPEAMENTO FALA PASSA POR `t()` — TODO ELE, E NÃO SÓ O QUE TEM ACENTO (#123)
+// ⚠️ WHAT THE MAPPING WIZARD SAYS GOES THROUGH `t()` — ALL OF IT, NOT ONLY WHAT HAS AN ACCENT (#123)
 //
-// Este é um gate de FONTE dentro de um ficheiro de comportamento, e a razão é medida: o crivo de
-// `tests/engine-i18n.node.test.js` procura prosa por ACENTO ou por palavra funcional de pt-BR, e o próprio
-// cabeçalho dele declara o que isso deixa passar. Neste módulo deixou passar três de cinco —
-// `' — aperte: '`, `'Mapeados: '` e `'. Agora SOLTE tudo.'` não têm acento nem palavra da lista.
+// This is a SOURCE gate inside a behaviour file, for a measured reason: the `tests/engine-i18n.node.test.js` sieve
+// looks for prose by ACCENT or by pt-BR function word, and its own header declares what that lets through. In this
+// module it let through three of five — `' — aperte: '`, `'Mapeados: '` and `'. Agora SOLTE tudo.'` have neither accent
+// nor a listed word.
 //
-// A propriedade aqui não depende de como a frase se escreve: **tudo o que chega ao `wizSay` vem de `t(`**.
-// O `wizSay` é o único caminho pelo qual este assistente fala — ele escreve no `#padwiz-prompt` E anuncia ao
-// leitor de tela —, então prendê-lo prende as duas saídas de uma vez.
+// The property here does not depend on how the sentence is written: **everything that reaches `wizSay` comes from
+// `t(`**. `wizSay` is the only way this wizard speaks — it writes to `#padwiz-prompt` AND announces to the screen reader
+// — so holding it holds both outputs at once.
 //
-// ⚠️ E há uma causa a lembrar: o parâmetro do `wizSay` chamava-se `t` e SOMBREAVA o `t` do `core/i18n` dentro
-// da função inteira. Não é um esquecimento que se evite com atenção; é um nome que fecha a porta sem avisar.
-// O caso `[Interface]` abaixo é o que impede o nome de voltar.
+// ⚠️ And there is a cause to remember: a `wizSay` parameter named `t` SHADOWS `core/i18n`'s `t` throughout the function.
+// It is not an oversight attention avoids; it is a name that closes the door without warning. The `[Interface]` case
+// below keeps the name from coming back.
 //
-// MUTAÇÕES CONFERIDAS:
-//   · devolvendo `wizSay('Aperte QUALQUER botão…')` ao lugar → "[Zero] tudo o que o assistente fala" reprova
-//     nomeando a linha. (E o crivo do `engine-i18n` também reprova nesta, porque ela tem acento.)
-//   · devolvendo `wizSay((padWiz.step + 1) + ' de ' + …)` → "[Zero]" reprova, e o `engine-i18n` TAMBÉM.
-//     ⚠️ Eu tinha previsto que não, e a previsão estava errada: aquela linha contém `' de '`, e `de` é
-//     palavra funcional da lista do crivo. O que passa por ele é o pedaço `' — aperte: '` sozinho.
-//   · devolvendo `'Mapeados: ' + (…)` ao rodapé de progresso → "[Right] e o rodape de progresso" reprova e
-//     o `engine-i18n` fica VERDE. Este é o buraco medido em vez de suposto: sem acento e sem palavra
-//     funcional, uma frase inteira atravessa o crivo de prosa sem tocar em nada.
-//   · renomeando o parâmetro do `wizSay` de volta para `t` → "[Interface] o `wizSay` não sombreia" reprova.
+// MUTATIONS CHECKED:
+//   · putting `wizSay('Aperte QUALQUER botão…')` back → the [Zero] case of everything the wizard says fails, naming the
+//     line. (And the `engine-i18n` sieve also fails on this one, because it has an accent.)
+//   · putting `wizSay((padWiz.step + 1) + ' de ' + …)` back → [Zero] fails, and `engine-i18n` TOO. ⚠️ The prediction was
+//     that it would not, and it was wrong: that line contains `' de '`, and `de` is a function word on the sieve's list.
+//     What gets through it is the `' — aperte: '` piece alone.
+//   · putting `'Mapeados: ' + (…)` back in the progress footer → the [Right] progress-footer case fails and `engine-i18n`
+//     stays GREEN. This is the hole measured instead of supposed: with no accent and no function word, a whole sentence
+//     crosses the prose sieve without touching anything.
+//   · renaming the `wizSay` parameter back to `t` → the [Interface] no-shadowing case fails.
 // ==========================================================================================================
 describe('input/pad-wizard — o assistente de mapeamento fala por t(), sem excepção (#123, pilar 3)', () => {
   // 📌 The wizard moved to `input/pad-wizard` (issue #182): its sentences are said THERE, through `ctx.dizer` and
