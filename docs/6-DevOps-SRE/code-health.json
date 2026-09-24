@@ -607,12 +607,12 @@
       "fanIn": 2
     },
     "input/touch-bindings.ts": {
-      "codeLines": 257,
-      "decisionNodes": 38,
+      "codeLines": 256,
+      "decisionNodes": 37,
       "maxDepth": 3,
       "fanOut": 6,
       "globalReach": 0,
-      "worstFunction": 10,
+      "worstFunction": 9,
       "fanIn": 3
     },
     "input/touch.ts": {

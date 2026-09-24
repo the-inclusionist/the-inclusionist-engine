@@ -458,12 +458,12 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
       const players = ctx.getPlayers();
       for (const { playerIndex, edge } of d.edges) {
         const p = players[playerIndex];
-        if (p) p[edge] = true;
         // 📌 A ARESTA POR JOGADOR, ao lado da borda que ela levanta — e não uma vez por toque: o mesmo código
         // pode pertencer a mais de um assento (`d.edges` é construído com `includes` sobre o esquema de cada
         // um), e o transporte em uso é uma pergunta POR CRIANÇA. Marcar só o jogador 0 daria a alternância do
-        // primeiro assento a quem joga no segundo.
-        if (p) ctx.playerEdge(playerIndex, 'toque');
+        // primeiro assento a quem joga no segundo. (The guard on `p` is defensive: `d.edges` comes from the same
+        // frame's players, so an index without one does not happen today.)
+        if (p) { p[edge] = true; ctx.playerEdge(playerIndex, 'toque'); }
       }
     }
     if (d.hideTips) ctx.hideTips();
