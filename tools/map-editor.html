@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
-<!-- The Inclusionist — editor de mapa (texto-glifo). Ferramenta de DEV (não vai para o deploy).
-     Reusa o legend/parser de app/js/core/tiles.js e as cores de app/js/core/constants.js (uma verdade só).
-     Precisa ser servido por HTTP a partir da RAIZ do repo (ES modules não carregam via file://):
+<!-- The Inclusionist — map editor (text glyphs). A DEV tool (it does not go into the deploy).
+     It reuses the legend/parser of app/js/core/tiles.js and the colours of app/js/core/constants.js (a single truth).
+     ⚠️ IT NO LONGER LOADS IN THIS REPOSITORY: `core/tiles`, `TILE_COLOR` and `app/assets/levels/clarity.map.txt` left
+     with the tile world (ADR-0228), so its imports resolve to nothing. The notes below are how it was served.
+     It has to be served over HTTP from the repo ROOT (ES modules do not load through file://):
        python -m http.server 8191 --directory SP-the-inclusionist-tracer
-     e abrir  http://localhost:8191/tools/map-editor.html -->
+     and open  http://localhost:8191/tools/map-editor.html -->
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -79,16 +81,16 @@ const DEFAULT_URL = '../app/assets/levels/clarity.map.txt';
 const TYPES = Object.keys(TILE_NAME).map(Number);           // 0..14
 const $ = (s) => document.querySelector(s);
 
-let grid = [];            // grid[y][x] = tipo
-let header = [];          // linhas "#!" preservadas
-let active = 2;           // pedra
-let cell = 14;            // px por tile
+let grid = [];            // grid[y][x] = type
+let header = [];          // "#!" lines kept
+let active = 2;           // stone
+let cell = 14;            // px per tile
 let painting = false;
 
-// ---- carregar / normalizar ----
+// ---- load / normalise ----
 function normalize(rows) {
   const W = Math.max(...rows.map(r => r.length));
-  return rows.map(r => { const out = r.slice(); while (out.length < W) out.push(0); return out; }); // pad com 0 (ar escuro)
+  return rows.map(r => { const out = r.slice(); while (out.length < W) out.push(0); return out; }); // pad with 0 (dark air)
 }
 async function loadFromText(text) {
   header = text.split(/\r?\n/).filter(l => l.startsWith('#!'));
@@ -110,7 +112,7 @@ function redraw() {
     const t = grid[y][x];
     ctx.fillStyle = TILE_COLOR[t] || '#000';
     ctx.fillRect(x * cell, y * cell, cell, cell);
-    if (cell >= 10) { // glifo por cima (leve)
+    if (cell >= 10) { // glyph on top (faint)
       ctx.fillStyle = 'rgba(255,255,255,.35)';
       ctx.font = (cell - 3) + 'px ui-monospace,Consolas,monospace';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -136,7 +138,7 @@ cv.addEventListener('mousedown', (e) => { painting = true; paint(e); });
 cv.addEventListener('mousemove', (e) => { if (painting) paint(e); });
 window.addEventListener('mouseup', () => { if (painting) { painting = false; mirror(); validate(); } });
 
-// ---- paleta ----
+// ---- palette ----
 function buildPalette() {
   const pal = $('#pal'); pal.innerHTML = '';
   for (const t of TYPES) {
@@ -151,7 +153,7 @@ function buildPalette() {
   }
 }
 
-// ---- espelho + validação ----
+// ---- mirror + validation ----
 function mirror() { $('#mirror').value = gridToGlyphs(grid); }
 function dims() { $('#dims').textContent = grid.length ? `${grid[0].length}×${grid.length} tiles` : ''; }
 function validate() {
@@ -165,7 +167,7 @@ function validate() {
   $('#report').innerHTML = msgs.join('<br>') + '<hr style="border-color:var(--line);margin:.5rem 0">' + present.join('<br>');
 }
 
-// ---- salvar ----
+// ---- save ----
 function save() {
   const body = gridToGlyphs(grid);
   const txt = (header.length ? header.join('\n') + '\n' : '') + body + '\n';
@@ -174,7 +176,7 @@ function save() {
   a.click(); URL.revokeObjectURL(a.href);
 }
 
-// ---- eventos ----
+// ---- events ----
 $('#btn-load').addEventListener('click', loadDefault);
 $('#btn-save').addEventListener('click', save);
 $('#file').addEventListener('change', async (e) => { const f = e.target.files[0]; if (f) await loadFromText(await f.text()); });
@@ -183,7 +185,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === '-') { cell = Math.max(6, cell - 2); redraw(); }
 });
 
-// expõe para teste no Preview
+// exposed for testing in the Preview
 window.__editor = { get grid(){return grid;}, get header(){return header;}, setActive:(t)=>{active=t;}, paintCell:(x,y,t)=>{grid[y][x]=t;redraw();mirror();validate();}, save };
 
 buildPalette();

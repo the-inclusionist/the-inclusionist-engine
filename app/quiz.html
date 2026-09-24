@@ -5,49 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Segundo consumidor — quiz sem plataforma</title>
 <!--
-  O SEGUNDO CONSUMIDOR (ADR-0027, passo 6, antecipado pelo Dev em 2026-08-25).
+  THE SECOND CONSUMER (ADR-0027, step 6, brought forward by the Dev).
 
-  Isto NÃO é um jogo para crianças ainda: é um INSTRUMENTO DE MEDIDA. Um quiz sem física, sem tiles, sem mundo
-  — e por isso mesmo capaz de responder a pergunta que nenhuma leitura de código responde: o que desta base é
-  ENGINE e o que é O JOGO DE PLATAFORMA que ela hospeda hoje?
+  This is NOT a game for children yet: it is a MEASURING INSTRUMENT. A quiz with no physics, no tiles, no world
+  — and for that very reason able to answer the question no reading of the code answers: what in this base is
+  ENGINE, and what belongs to a game it hosts?
 
-  A regra desta página é uma só, e é ela que produz a medida:
+  The page has one rule, and it is the rule that produces the measure:
 
-      SÓ PODE IMPORTAR DE core/, input/, render/, platform/, ui/ e audio/. NUNCA de game/.
+      IT IMPORTS ONLY THE ENGINE'S LAYERS (core/, input/, render/, platform/, ui/, boot/). NEVER A GAME'S CODE.
 
-  Toda vez que ele precisar de algo que só existe em `game/`, isso é um ACHADO — anotado, não contornado. A
-  lista de achados é o que o passo 5 (a divisão em pacotes) vai consertar. Contornar um achado aqui destruiria
-  o instrumento: ele mede exatamente aquilo que a gente for tentado a esconder.
+  Every time it needs something that exists only in a game, that is a FINDING — written down, not worked around. The
+  list of findings is what the package split fixes. Working around a finding here would destroy the instrument: it
+  measures exactly what we would be tempted to hide.
 -->
 <!--
-  ⚠️ AS FONTES DA ENGINE, e elas ficaram sem ninguém a ligá-las em 07/09. Quem carregava o
-  `vendor/fonts.css` era o `app/index.html` do jogo, que saiu com o cartucho (issue #111) — e o painel de
-  tipografia continuou a oferecer dezassete famílias das quais NENHUMA era carregada. A criança escolhia,
-  o menu marcava a escolha, e o navegador desenhava a fonte do sistema. Sem erro em lado nenhum.
+  ⚠️ THE ENGINE'S FONTS. The page that used to link `vendor/fonts.css` was the game's `app/index.html`, which left with
+  the cartridge (issue #111) — and for a while the typography panel went on offering families of which NONE was
+  loaded. The child chose, the menu marked the choice, and the browser drew the system font. No error anywhere.
 
-  O `preload` é da Atkinson porque ela é o PADRÃO (`DEFAULT_FONT_KEY`): a face que a página desenha antes
-  de qualquer escolha é a que vale a pena não esperar.
+  The `preload` is Atkinson's because it is the DEFAULT (`DEFAULT_FONT_KEY`): the face the page draws before any choice
+  is the one worth not waiting for.
 
-  ⚠️ E UM CONSUMIDOR DO PACOTE TEM DE FAZER O MESMO. O `exports` publica estes ficheiros em `./assets/*` e
-  o `files` leva `app/public/vendor` — mas ligá-los é dele, e isso agora está escrito no `package.json`.
+  ⚠️ AND A CONSUMER OF THE PACKAGE HAS TO DO THE SAME. `exports` publishes these files under `./assets/vendor/*` and
+  `files` ships `app/public/vendor` — but linking them is the consumer's job, and `package.json` says so.
 -->
 <link rel="preload" href="/vendor/fonts/atkinson-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/vendor/fonts.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- ⚠️ A SAÍDA DE EMERGÊNCIA DO TECLADO, e ela é o PRIMEIRO foco da página por definição: um "pular para o
-       conteúdo" que venha depois de outra coisa obriga a atravessar essa coisa, que é o oposto do que ele é.
+  <!-- ⚠️ THE KEYBOARD'S EMERGENCY EXIT, and it is the page's FIRST focus by definition: a "skip to content" that comes
+       after something else forces you to cross that thing, which is the opposite of what it is.
        WCAG 2.4.1 (Bypass Blocks).
 
-       Estava tudo pronto e faltava o elemento: o `.skip-link` tem regra no `style.css` (invisível em
-       `top:-60px`, desce ao foco) e a frase tem chave no dicionário (`skip.toGame`) — e nenhuma página da
-       engine o desenhava. O alvo é o `#game-region`, que já tem `tabindex="-1"` justamente para poder
-       receber foco por programa. -->
+       The `.skip-link` has its rule in `style.css` (invisible at `top:-60px`, it comes down on focus) and the sentence
+       has its key in the dictionary (`skip.toGame`). The target is `#game-region`, which has `tabindex="-1"` precisely
+       so it can receive focus by script. -->
   <a class="skip-link" href="#game-region" data-i18n="skip.toGame">Pular para o jogo</a>
 
-  <!-- Regiões vivas do leitor de tela: o par que core/a11y-sr procura. Se este consumidor precisasse de mais
-       do que isto para anunciar, a camada de a11y não seria reutilizável — seria uma função do jogo. -->
+  <!-- The screen reader's live regions: the pair `core/a11y-sr` looks for. If this consumer needed more than this to
+       announce, the a11y layer would not be reusable — it would be a function of the game. -->
   <p id="sr-status" class="sr-only" role="status" aria-live="polite"></p>
   <p id="sr-alert" class="sr-only" role="alert" aria-live="assertive"></p>
 
@@ -59,34 +57,33 @@
         <section id="game-region" class="game-region" tabindex="-1" aria-label="Quiz">
           <div id="quiz-app" class="quiz-app"></div>
 
-          <!-- 🔴 «TIPOGRAFIA» E «VISÃO» SAÍRAM DAQUI em 2026-09-12, e a ausência é o conserto: estavam na zona do RODAPÉ,
-               que é o lugar da explicação (`CLAUDE.md` §4, as três zonas), e duplicavam o que a barra rápida já dá — o
-               ciclo de comunicação escolhe a letra, e o 🚥 a correcção de cor (ADR-0151). O Dev viu-os num print.
-               O host dos filtros fica: é ele que o `createGame` preenche para o 🚥 funcionar. -->
+          <!-- 🔴 «TIPOGRAFIA» AND «VISÃO» ARE NOT HERE, and the absence is the fix: they sat in the FOOTER zone, which is the
+               place of the explanation (`CLAUDE.md` §4, the three zones), and duplicated what the quick bar already gives
+               — the communication cycle picks the letter, and 🚥 the colour correction (ADR-0151). The Dev saw them on a
+               screenshot. The filters' host stays: `createGame` fills it so 🚥 works. -->
           <svg id="q-cvd" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute"></svg>
-          <!-- A BARRA DE ACESSIBILIDADE DA ENGINE (ADR-0106). VAZIA DE PROPÓSITO: o `createGame` monta-a aqui,
-               como já monta os filtros de daltonismo no `#q-cvd`. Este consumidor não copia markup nenhum.
+          <!-- THE ENGINE'S ACCESSIBILITY BAR (ADR-0106). EMPTY ON PURPOSE: `createGame` mounts it here, as it mounts the
+               colour-vision filters in `#q-cvd`. This consumer copies no markup.
 
-               ⚠️ ANTES HAVIA AQUI UM BOTÃO À MÃO — `#q-libras`, «Modo pessoa surda» —, e tirá-lo é o conserto.
-               Ele demonstrava que o modo funciona SEM o widget do VLibras carregado (o `b0239e9`): o estado é
-               da engine e o intérprete é um tradutor opcional. Essa demonstração não se perde, muda de dono —
-               agora quem a faz é o ícone 🤟 da própria barra, que é o que os 300 jogos vão ter.
+               ⚠️ THERE USED TO BE A HAND-MADE BUTTON HERE — `#q-libras`, «Modo pessoa surda» —, and removing it is the
+               fix. It showed that the mode works WITHOUT the VLibras widget loaded (`b0239e9`): the state is the
+               engine's and the interpreter is an optional translator. That demonstration is not lost, it changes
+               owner — now the bar's own 🤟 icon makes it, which is what every game will have.
 
-               📌 E ele era a ÚNICA duplicação — MEDIDA NO NAVEGADOR e não prevista. Eu tinha escrito «cinco
-               ícones» aqui e a página serviu OITO: os cinco com estado (🦯 cego · 🗨️ TTS · 🤟 Libras ·
-               🧩 TEA · ☝️ alternância) MAIS os três `soon` (🧑 rosto · 👀 olhos · 👄 voz), que se montam
-               rotulados «(em construção)» — soon é «ainda não construímos», e dizê-lo é a decisão.
-               O 🔤 da tipografia não é ícone de barra, e os de contraste e cor NÃO são montados: este jogo
-               não tem escritor visual, e o §5 do ADR-0106 recusa oferecer um botão que não acciona nada.
-               Essa metade da previsão confirmou-se; a outra não, e fica o medido. -->
+               📌 And it was the ONLY duplication — MEASURED IN THE BROWSER, not predicted. «Five icons» had been written
+               here and the page served EIGHT: the five with state (🦯 blind · 🗨️ TTS · 🤟 Libras · 🧩 ASD ·
+               ☝️ switch access) PLUS the three `soon` ones (🧑 face · 👀 eyes · 👄 voice), mounted labelled
+               «(em construção)» — soon means «not built yet», and saying so is the decision.
+               Typography's 🔤 is not a bar icon, and the contrast and colour ones are NOT mounted: this game has no
+               visual writer, and ADR-0106 §5 refuses to offer a button that operates nothing. -->
           <div id="title-icons" class="pause-icons"></div>
-          <!-- ⚠️ O PAINEL DE TIPOGRAFIA SAIU DAQUI EM 07/09, e a ausência é o conserto. Este bloco declarava
-               à mão o véu, o cartão, o título, a lista e os dois botões — cinco ids que o `ui/settings-typo`
-               EXIGIA e que nada no tipo dele dizia. Era o achado 6 da etapa C: «o painel abre vazio, sem
-               erro», e cada consumidor teria de redescobrir a mesma lista por tentativa.
+          <!-- ⚠️ THE TYPOGRAPHY PANEL IS NOT DECLARED HERE, and the absence is the fix. This block used to declare by hand
+               the veil, the card, the title, the list and the two buttons — five ids that `ui/settings-typo`
+               REQUIRED and that nothing in its type said. It was finding 6 of stage C: «o painel abre vazio, sem
+               erro», and every consumer would have had to rediscover the same list by trial.
 
-               Agora quem o monta é a `ui/panel-shell.mountShell`, chamada pelo `main-quiz.ts`: a engine
-               constrói a casca e DEVOLVE os ids. O contrato passou a ler-se no tipo. -->
+               Now `ui/panel-shell.mountShell`, called by `main-quiz.ts`, mounts it: the engine builds the shell and
+               RETURNS the ids. The contract can be read in the type. -->
         </section>
       </div>
     </div>
