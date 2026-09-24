@@ -8,10 +8,10 @@ import { describe, it, expect } from 'vitest';
 import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel é alias dele desde o item 14
 import { t } from '../app/js/core/i18n.js';
 import { latchKey } from '../app/js/input/latch-scope.js'; // os anúncios vêm do dicionário desde o item 14
+import { easyKey, toggleRunKey, toggleMoveKey, setMoveLatch, setRunLatch } from '../app/js/ui/settings-mobility.js';
 import {
-  easyKey, toggleRunKey, toggleMoveKey, setMoveLatch, setRunLatch,
   clampSelPlayer, anyMobilityActive, onOffLabel, playerTabsHTML, easyAnnouncement,
-} from '../app/js/ui/settings-mobility.js';
+} from '../app/js/ui/mobility-choices.js';
 import { KEYS } from '../app/js/platform/storage.js';
 
 describe('easyKey', () => {

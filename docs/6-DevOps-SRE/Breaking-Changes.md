@@ -2507,6 +2507,22 @@ with no reader: it gains one or it goes, and there is no one to read it. `input/
 |---|---|
 | `padKind()`, `PadKind` | nothing — which kind of pad is connected is read by `input/gamepad` (`input/pad-reading`) where a pad is read |
 
+## CF · The mobility panel's pure half moves to `ui/mobility-choices` (ADR-0221, issue #203)
+
+**Who is affected:** anyone importing `clampSelPlayer`, `anyMobilityActive`, `onOffLabel`, `playerTabsHTML` or
+`easyAnnouncement` from `ui/settings-mobility.js`. 📏 Measured: none of the seven games imports any of them; in the
+engine, only the panel itself and its node test did.
+
+🎯 **Why:** the sixth module cut this way, after `audio-`, `typo-`, `control-`, `visual-` and `motion-choices`, and marked
+the same way — the node test drove exactly these names with no document. The three stored KEYS (`easyKey`,
+`toggleRunKey`, `toggleMoveKey`) stay in `ui/settings-mobility`, beside the writers that use them: the ledger of files
+touching the per-player toggle key only shrinks, and moving the definition would have grown it by a change of address.
+
+| leaving `ui/settings-mobility.js` | now in |
+|---|---|
+| `clampSelPlayer`, `anyMobilityActive`, `onOffLabel`, `playerTabsHTML`, `easyAnnouncement` | `ui/mobility-choices.js`, same names, no alias left behind |
+| — | `ui/mobility-choices.js` also publishes `playerPrefix`, which the panel's two toggle writers use |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

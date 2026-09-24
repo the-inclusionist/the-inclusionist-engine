@@ -196,7 +196,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 42
+      "fanIn": 43
     },
     "core/loop.ts": {
       "codeLines": 21,
@@ -1393,6 +1393,15 @@
       "worstFunction": 10,
       "fanIn": 2
     },
+    "ui/mobility-choices.ts": {
+      "codeLines": 22,
+      "decisionNodes": 5,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "globalReach": 0,
+      "worstFunction": 2,
+      "fanIn": 1
+    },
     "ui/motion-choices.ts": {
       "codeLines": 33,
       "decisionNodes": 6,
@@ -1520,8 +1529,8 @@
       "fanIn": 1
     },
     "ui/settings-mobility.ts": {
-      "codeLines": 251,
-      "decisionNodes": 34,
+      "codeLines": 231,
+      "decisionNodes": 29,
       "maxDepth": 3,
       "fanOut": 12,
       "globalReach": 0,

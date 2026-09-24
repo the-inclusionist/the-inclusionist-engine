@@ -1383,6 +1383,14 @@
     "selectWrap",
     "stepInPause"
   ],
+  "ui/mobility-choices.ts": [
+    "anyMobilityActive",
+    "clampSelPlayer",
+    "easyAnnouncement",
+    "onOffLabel",
+    "playerPrefix",
+    "playerTabsHTML"
+  ],
   "ui/motion-choices.ts": [
     "CRT_LBL",
     "CRT_ROUND_LEVELS",
@@ -1534,14 +1542,9 @@
     "MobilityStore",
     "SettingsMobilityApi",
     "SettingsMobilityCtx",
-    "anyMobilityActive",
-    "clampSelPlayer",
-    "easyAnnouncement",
     "easyKey",
     "initSettingsMobility",
     "mountMobilityInside",
-    "onOffLabel",
-    "playerTabsHTML",
     "setMoveLatch",
     "setRunLatch",
     "toggleMoveKey",
