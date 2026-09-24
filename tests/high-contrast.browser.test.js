@@ -205,7 +205,8 @@ describe('render/high-contrast — directBgTexture (fundo/decoração: só dessa
     const cv = canvasOf(dst);
     const [r] = pixelAt(cv, 0, 0);
     // directBgTexture calls dimDesat WITHOUT `off` (only cfg.bgMul=0.30 for hc-direto) — the background does not get the
-    // "off" lightening the world's structure gets; it only darkens/recedes. g = 0 + 200*0.30 = 60.
+    // "off" lightening the world's structure gets; it only darkens/recedes. Its grey is g = 0 + 200*0.30 = 60, and the RED
+    // channel is the one that takes g unscaled (green is g*1.02, blue g*blue), which is why red is the channel read.
     expect(r).toBe(200 * 0.30);
   });
   it('[Interface] não usa outlineFg/outlineBg (funciona mesmo sem initHighContrast novo — não lança)', () => {
