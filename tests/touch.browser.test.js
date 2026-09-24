@@ -208,6 +208,52 @@ describe('initTouch — openTouchCfg / closeTouchCfg', () => {
     $('#opt-touchcfg').click();
     expect($('#touchcfg').hidden).toBe(false);
   });
+  it('🔴 [Right] and the panel\'s own close button is wired too — a panel a child can open and not close is a trap', () => {
+    const { ctx } = makeCtx();
+    initTouch(ctx);
+    $('#opt-touchcfg').click();
+    $('#touchcfg-close').click();
+    expect($('#touchcfg').hidden).toBe(true);
+  });
+});
+
+describe('initTouch — what the machine kept is what the pad starts with', () => {
+  it('🔴 [Right] a stored cross: the selector SHOWS it, and the cross is the one drawn, from the first frame', () => {
+    const { ctx, store } = makeCtx();
+    store.set('incl_paddir', 'cross');
+    initTouch(ctx);
+    expect($('#pad-dir').value, 'the selector shows a direction the child did not choose').toBe('cross');
+    expect($('#touch-stick').hidden, 'the stick is drawn over a stored cross').toBe(true);
+    expect($('#touch-cross').hidden).toBe(false);
+  });
+  it('🔴 [Right] a stored button design is painted at boot, not only after the next choice', () => {
+    const { ctx, store } = makeCtx();
+    store.set('incl_paddesign', 'sony');
+    initTouch(ctx);
+    expect(document.querySelector('.pad-b[data-btn="0"]').textContent).toBe('✕');
+  });
+  it('📌 [Boundary] an EMPTY stored value is the default, never an empty design or direction', () => {
+    const { ctx, store } = makeCtx();
+    store.set('incl_paddesign', '');
+    store.set('incl_paddir', '');
+    const api = initTouch(ctx);
+    expect(api.getPadDesign()).toBe('generic');
+    expect($('#pad-dir').value).toBe('stick');
+  });
+  it('🔴 [Right] choosing a direction KEEPS it for the next session', () => {
+    const { ctx, store } = makeCtx();
+    initTouch(ctx);
+    const sel = $('#pad-dir');
+    sel.value = 'cross';
+    sel.dispatchEvent(new Event('change'));
+    expect(store.get('incl_paddir')).toBe('cross');
+  });
+  it('🔴 [Interface] the window it listens to for a new size is the one the ctx hands it', () => {
+    const ouvidos = [];
+    const { ctx } = makeCtx({ win: { addEventListener: (tipo) => ouvidos.push(tipo) } });
+    initTouch(ctx);
+    expect(ouvidos).toEqual(['resize']);
+  });
 });
 
 describe('initTouch — hideTouchControls / showTouchControls', () => {
@@ -294,6 +340,19 @@ describe('initTouch — setPadMm / presets (mm reais, WCAG 2.5.5)', () => {
     expect(store.get('incl_padbtnmm')).toBe('14');
     expect($('#pad-size-val').textContent).toBe('14,0 mm');
   });
+  it.each([
+    ['#pad-size', 'incl_padbtnmm', '14'], ['#pad-gap', 'incl_padgapmm', '5'], ['#pad-stick', 'incl_padstickmm', '20'],
+    ['#pad-travel', 'incl_padtravelmm', '6'], ['#pad-dpad', 'incl_paddpadmm', '15'],
+  ])('🔴 [Right] every one of the five sliders is wired: %s keeps its own measure (%s)', (id, chave, valor) => {
+    // Only the first slider had a case; the other four could lose their listener with the suite green.
+    const { ctx, store } = makeCtx();
+    initTouch(ctx);
+    const s = $(id);
+    s.value = valor;
+    s.dispatchEvent(new Event('input'));
+    expect(store.get(chave)).toBe(valor);
+    expect($(`${id}-val`).textContent).toBe(`${valor},0 mm`);
+  });
   it('[Right] preset "mão de criança" ajusta os 5 valores de uma vez e persiste todos', () => {
     const { ctx, store, calls } = makeCtx();
     initTouch(ctx);
@@ -303,11 +362,12 @@ describe('initTouch — setPadMm / presets (mm reais, WCAG 2.5.5)', () => {
     expect(calls.srSay.some((s) => s.includes('criança'))).toBe(true);
   });
   it('[Right] preset "mão de adulto" idem, valores maiores', () => {
-    const { ctx, store } = makeCtx();
+    const { ctx, store, calls } = makeCtx();
     initTouch(ctx);
     $('#pad-preset-adult').click();
     expect(store.get('incl_padbtnmm')).toBe('14');
     expect(store.get('incl_paddpadmm')).toBe('14');
+    expect(calls.srSay.some((s) => s.includes('adulto')), 'the adult preset changed five sizes in silence').toBe(true);
   });
   it('[Boundary] tag "mão de criança/adulto/intermediário" reflete a faixa do valor atual', () => {
     const { ctx } = makeCtx();

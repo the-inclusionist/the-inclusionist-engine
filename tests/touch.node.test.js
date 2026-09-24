@@ -3,7 +3,8 @@
 // Cobre: mm→px (padPxPerMm/computePadPhysicalPx — dpr alto/baixo simulado via tela pequena/grande, extremos),
 // a classificação mão-de-criança/adulto (padHandTag), a detecção de layout por id de controle (padLayoutFromId),
 // a fusão do mapa de toque persistido (normalizeTouchMap) e padKind() (hoje sem chamadores — ver o retorno da
-// extração). O render/DOM real (initTouch: querySelector/addEventListener/persistência) fica fora daqui.
+// extração). O render/DOM real (initTouch: querySelector/addEventListener/persistência) fica fora daqui — salvo o
+// caso do fim, que monta o `initTouch` num hospedeiro SEM janela, e é por isso que só aqui ele pode ser medido.
 import { describe, it, expect } from 'vitest';
 import {
   padPxPerMm, padHandTag, computePadPhysicalPx, padLayoutFromId, normalizeTouchMap, padKind,
@@ -189,5 +190,25 @@ describe('TOUCH_SLOTS / TOUCH_ACTS (dados de apresentação do painel)', () => {
 describe('padKind (sem chamadores em game.js — ver o retorno da extração)', () => {
   it('[Right] sem gamepads (ou API ausente no ambiente): kb', () => {
     expect(padKind()).toBe('kb');
+  });
+});
+
+describe('initTouch where there is no window at all', () => {
+  it('⚠️ [Error] a host with no window and no `ctx.win` boots the pad and listens to nothing — it never throws', async () => {
+    // 📏 This is the one place this file mounts `initTouch`, and on purpose: Node has no global `addEventListener`, which is
+    // exactly the host the guard exists for («wired to `createGame`, it brought down every boot in a fake document»). Falling
+    // back to `globalThis` unguarded would call a method that is not there.
+    const { initTouch } = await import('../app/js/input/touch.js');
+    const guardado = new Map();
+    const ctx = {
+      $: () => null, srSay: () => {}, acoesDoJogo: () => [], padAllowed: () => true,
+      store: {
+        get: (k, fb = null) => (guardado.has(k) ? guardado.get(k) : fb), set: (k, v) => { guardado.set(k, String(v)); return true; },
+        getNum: (_k, fb = 0) => fb, getJSON: (_k, fb = null) => fb, setJSON: () => {},
+      },
+      root: { style: { setProperty: () => {} } }, isMobile: () => false, viewport: () => ({ w: 1280, h: 720 }), frontOverlay: () => {},
+    };
+    expect(typeof globalThis.addEventListener, 'this host has a global window after all: the case measures nothing').toBe('undefined');
+    expect(() => initTouch(ctx)).not.toThrow();
   });
 });
