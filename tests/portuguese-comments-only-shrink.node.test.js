@@ -9,7 +9,11 @@
 // ⚠️ The measure is a heuristic that undercounts (see the script's header), so this is a ratchet: it can let a short
 // Portuguese line through; it cannot let the count grow.
 import { describe, it, expect } from 'vitest';
-import { inventory, readBaseline, isPortugueseLine, portugueseCommentLines } from '../scripts/comment-language.mjs';
+import {
+  inventory, readBaseline, isPortugueseLine, portugueseCommentLines, sources, EXCLUSIONS, isExcluded,
+} from '../scripts/comment-language.mjs';
+
+const PT = 'a criança não consegue segurar o botão quando o jogo pausa';
 
 describe('Portuguese in comments only shrinks', () => {
   const now = inventory();
@@ -56,5 +60,66 @@ describe('Portuguese in comments only shrinks', () => {
     expect(portugueseCommentLines('/* The Dev:\n * «a criança não consegue segurar\n * o botão quando o jogo pausa» — so this waits */\nconst a = 1;\n')).toBe(0);
     // a tag has tokens INSIDE the comment, and a `//` after one of them would read as a second comment
     expect(portugueseCommentLines('/** @param a // a criança não consegue segurar o botão quando o jogo pausa */\nexport function f(a) {}\n')).toBe(1);
+  });
+
+  it('🔴 [Right] the WHOLE tree is read, by kind — the files phase 4 never opened are measured now', () => {
+    const measured = sources();
+    // 🎯 One file of every kind, by name: a scope that silently shrinks back to three folders must turn this red.
+    for (const f of ['app/css/style.css', 'app/quiz.html', '.github/workflows/ci.yml', 'vite.config.ts', 'tsconfig.json',
+      'package.json', 'tools/build-hc.py', 'tools/png-write.mjs', '.gitignore', 'app/public/_headers', 'app/js/core/i18n.ts']) {
+      expect(measured, `${f} is no longer measured`).toContain(f);
+    }
+    expect(measured.filter(isExcluded), 'an excluded file entered the measurement').toEqual([]);
+    expect(measured.length, 'nothing was measured — the gate would approve anything').toBeGreaterThan(400);
+  });
+
+  it('⚠️ [Zero] the exclusions are exactly the decided ones, each with its reason', () => {
+    // 🎯 A literal set, not read back from the script: an exclusion added beside the others must turn this red.
+    expect(new Set(EXCLUSIONS.map(([p]) => p))).toEqual(new Set(['app/js/i18n/**', 'app/js/educational/**',
+      'app/js/consumer-quiz/**', 'research/**', 'scripts/validate-adr.py']));
+    expect(EXCLUSIONS.length, 'an exclusion listed twice').toBe(5);
+    for (const [pattern, reason] of EXCLUSIONS) expect(reason.length, `${pattern}: an exclusion without a reason is a hole`).toBeGreaterThan(30);
+    expect(isExcluded('docs/research/README.md')).toBe(false); // `docs/research/` is not the Dev's `research/`
+  });
+
+  it('🔴 [Right] CSS: a `/* */` comment is read; the same words inside a string are not', () => {
+    expect(portugueseCommentLines(`/* ${PT} */\n.a { color: red; }\n`, 'x.css')).toBe(1);
+    expect(portugueseCommentLines(`.a::after { content: "/* ${PT} */"; }\n`, 'x.css')).toBe(0);
+    // and a `//` is not a CSS comment: a url after it is still the rule
+    expect(portugueseCommentLines(`.a { background: url(//x/${PT.replace(/ /g, '-')}.png); }\n`, 'x.css')).toBe(0);
+  });
+
+  it('🔴 [Right] HTML: `<!-- -->`, and the inline script and style, are read; what the page SHOWS is not', () => {
+    expect(portugueseCommentLines(`<!-- ${PT} -->\n<p>ok</p>\n`, 'x.html')).toBe(1);
+    expect(portugueseCommentLines(`<script type="module">\n// ${PT}\nconst a = 1;\n</script>\n`, 'x.html')).toBe(1);
+    expect(portugueseCommentLines(`<style>\n/* ${PT} */\n</style>\n`, 'x.html')).toBe(1);
+    // visible text belongs in the dictionaries, and a JSON island is data
+    expect(portugueseCommentLines(`<p>${PT}</p>\n<script type="application/json">{"a": "// ${PT}"}</script>\n`, 'x.html')).toBe(0);
+  });
+
+  it('🔴 [Right] `#` kinds: YAML, shell and `.gitignore` comments are read; a `#` inside a quote or a word is not', () => {
+    expect(portugueseCommentLines(`jobs:\n  # ${PT}\n  a: 1 # ${PT}\n`, 'x.yml')).toBe(2);
+    expect(portugueseCommentLines(`run: echo "# ${PT}"\nurl: https://x/#${PT.replace(/ /g, '-')}\n`, 'x.yml')).toBe(0);
+    expect(portugueseCommentLines(`# ${PT}\ndist/\n`, '.gitignore')).toBe(1);
+    // an apostrophe inside a word opens no quote, so the comment after it is still read
+    expect(portugueseCommentLines(`name: the child's run # ${PT}\n`, 'x.yml')).toBe(1);
+  });
+
+  it('🔴 [Right] Python: `#` and docstrings are read; a string that is an argument is code', () => {
+    expect(portugueseCommentLines(`def f():\n    """${PT}.\n\n    ${PT}.\n    """\n    return 1  # ${PT}\n`, 'x.py')).toBe(3);
+    expect(portugueseCommentLines(`print('# ${PT}')\nx = """${PT}"""\nf(\n    """${PT}"""\n)\n`, 'x.py')).toBe(0);
+  });
+
+  it('🔴 [Right] JSON: `//` where the parser allows it, and the comment KEYS; any other value is data', () => {
+    expect(portugueseCommentLines(`{\n  // ${PT}\n  "a": 1,\n}\n`, 'tsconfig.json')).toBe(1);
+    expect(portugueseCommentLines(JSON.stringify({ '//': PT, '//2': PT, 'comment:x': [PT, 'in English'], a: 1 }), 'x.json')).toBe(3);
+    expect(portugueseCommentLines(JSON.stringify({ description: PT, url: `https://x/// ${PT}` }), 'x.json')).toBe(0);
+  });
+
+  it('🔴 [Boundary] the Dev\'s words between «» stay Portuguese in every kind — and stay green', () => {
+    expect(portugueseCommentLines(`/* The Dev: «${PT}» */\n`, 'x.css')).toBe(0);
+    expect(portugueseCommentLines(`<!-- The Dev: «${PT}» -->\n`, 'x.html')).toBe(0);
+    expect(portugueseCommentLines(`# The Dev:\n# «${PT}\n# ${PT}»\n`, 'x.yml')).toBe(0);
+    expect(portugueseCommentLines(JSON.stringify({ 'comment:x': ['The Dev:', `«${PT}`, `${PT}» — so this waits`] }), 'x.json')).toBe(0);
   });
 });

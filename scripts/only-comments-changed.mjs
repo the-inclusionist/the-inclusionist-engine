@@ -38,7 +38,8 @@ export function codeTokens(text, fileName = 'x.ts') {
 }
 
 export function codeMoved(base = 'HEAD') {
-  const changed = git('diff', '--name-only', base, '--', 'app/js', 'tests', 'scripts').split(/\r?\n/).filter((f) => /\.(ts|js|mjs)$/.test(f));
+  // the whole tree, as the comment measure reads it: a root config or a `tools/` script is code too
+  const changed = git('-c', 'core.quotepath=off', 'diff', '--name-only', base).split(/\r?\n/).filter((f) => /\.(ts|tsx|js|mjs|cjs)$/.test(f));
   const moved = [];
   for (const f of changed) {
     let before;
