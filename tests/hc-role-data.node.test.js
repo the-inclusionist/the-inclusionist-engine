@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/hc-role-data — a fonte única dos papéis do color-blocking.
+// render/hc-role-data — the single source of the color-blocking roles.
 //
-// O que estes testes existem para pegar: os papéis viviam em DUAS listas independentes (uma no painel visual,
-// outra no repinte de alto contraste) e a divergência era silenciosa — um quinto papel no render ganharia cor
-// e não ganharia seletor, sem erro de tipo. Verificado adicionando um quinto papel de mentira: os casos abaixo
-// ficam vermelhos.
+// What these tests exist to catch: a role list kept apart from the panel's drifts silently — a fifth role in the
+// renderer would get a colour and no picker, with no type error. Checked by adding a fake fifth role: the cases below
+// turn red.
 //
-// NÃO estão aqui, de propósito, dois casos que eu havia escrito e que não podem falhar: `ROLE_KEYS` AGORA É
-// `HC_ROLE_KEYS` (mesma referência) e `HC_ROLE` nasce de uma cópia de `HC_ROLE_DEF`. Compará-los seria afirmar
-// que um objeto é igual a si mesmo — passa sempre, prova nada, e ainda dá a impressão de cobertura.
+// Deliberately NOT here: two cases that cannot fail. `ROLE_KEYS` IS `HC_ROLE_KEYS` (the same reference) and `HC_ROLE`
+// is born as a copy of `HC_ROLE_DEF`. Comparing them would assert that an object equals itself — always passes, proves
+// nothing, and still looks like coverage.
 import { describe, it, expect } from 'vitest';
 import { HC_ROLE_KEYS, HC_ROLE_DEF } from '../app/js/render/hc-role-data.js';
 import { ROLE_LABELS } from '../app/js/ui/visual-choices.js';
@@ -35,9 +34,9 @@ describe('render/hc-role-data — a lista de papéis', () => {
 });
 
 describe('render/hc-role-data — o painel acompanha a lista', () => {
-  // ESTE é o caso que discrimina: ROLE_LABELS é escrito à mão em ui/settings-visual e não deriva da lista.
-  // É por ele que um papel novo no render, sem rótulo no painel, deixa de passar despercebido — o seletor de
-  // cor existiria com legenda vazia, que é pior que não existir para quem usa leitor de tela.
+  // THIS is the case that discriminates: ROLE_LABELS is written by hand in ui/visual-choices and does not derive from
+  // the list. It is what keeps a new role in the renderer, with no label in the panel, from going unnoticed — the colour
+  // picker would exist with an empty caption, which for a screen-reader user is worse than not existing.
   it('[Interface] todo papel tem rótulo legível no painel — sem seletor anônimo', () => {
     for (const k of HC_ROLE_KEYS) {
       expect(typeof ROLE_LABELS[k]).toBe('string');

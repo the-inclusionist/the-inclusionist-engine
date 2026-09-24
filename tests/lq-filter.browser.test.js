@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/lq-filter — casca DOM (project BROWSER): cria/reusa o nó <filter id="lq-enh">, monta a
-// string de CSS filter, persiste lqT em platform/storage (KEYS.lq = 'incl_lq', migrado do localStorage direto)
-// e dispara o `onChange` injetado (game.js recompõe o CSS filter ali — não é responsabilidade deste módulo).
-// A curva/rótulo puros (lqCurve/lqName) são testados em lq-filter.node.test.js. Estado do módulo é singleton →
-// cada teste normaliza com setLq(0) + initLqFilter(noop) no beforeEach, como tests/fx.node.test.js faz p/ fx.
+// Tests of render/lq-filter — the DOM shell (BROWSER project): creates/reuses the <filter id="lq-enh"> node, builds the
+// CSS filter string, persists lqT in platform/storage (KEYS.lq = 'incl_lq') and fires the injected `onChange`
+// (boot/create-game recomposes the world's CSS filter there — not this module's job).
+// The pure curve/label (lqCurve/lqName) are tested in lq-filter.node.test.js. Module state is a singleton, so each
+// test normalises it with setLq(0) + initLqFilter(noop) in the beforeEach.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ensureLqFilter, lqFilter, setLq, getLqT, initLqFilter, lqCurve } from '../app/js/render/lq-filter.js';
 import * as store from '../app/js/platform/storage.js';
@@ -11,7 +11,7 @@ import * as store from '../app/js/platform/storage.js';
 beforeEach(() => {
   document.body.innerHTML = '';
   initLqFilter({ onChange: () => {} });
-  setLq(0); // baseline conhecido: desligado (também limpa o localStorage de teste anterior)
+  setLq(0); // known baseline: off (also clears the previous test's localStorage)
 });
 
 describe('render/lq-filter — ensureLqFilter', () => {
@@ -36,14 +36,14 @@ describe('render/lq-filter — ensureLqFilter', () => {
 describe('render/lq-filter — lqFilter (string de CSS filter)', () => {
   it('[Boundary] lqT=0 → string vazia, sem criar o nó', () => {
     setLq(0);
-    document.body.innerHTML = ''; // prova que lqFilter() não recria o nó quando está OFF
+    document.body.innerHTML = ''; // proves lqFilter() does not recreate the node while OFF
     expect(lqFilter()).toBe('');
     expect(document.getElementById('lq-enh')).toBeNull();
   });
 
   it('[Right] lqT>0 → "url(#lq-enh)" e garante o nó ANTES de devolver a referência (evita url() solto)', () => {
     setLq(0.5);
-    document.body.innerHTML = ''; // apaga o nó criado pelo setLq — lqFilter() deve recriá-lo, não só referenciar
+    document.body.innerHTML = ''; // removes the node setLq created — lqFilter() must recreate it, not merely reference it
     expect(document.getElementById('lq-enh')).toBeNull();
     expect(lqFilter()).toBe('url(#lq-enh)');
     expect(document.getElementById('lq-enh')).not.toBeNull();

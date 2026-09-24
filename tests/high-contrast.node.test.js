@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/high-contrast (project node: sem canvas/DOM — WORLD_TEX/DIRECT/SPRITE que desenham em canvas
-// ficam no .browser.test.js). Aqui: a lógica PURA (mapa tile→papel, os 3 níveis de contraste, a paleta HC_ROLE
-// persistida) + a guarda de DI de initHighContrast + o desvio "normal" de worldTexFor/spriteTexFor (não toca
-// canvas). ZOMBIES + Right-BICEP. Ver docs/2-Architecture/adr/ADR-0011-visual-accessibility.yaml.
+// Tests of render/high-contrast (node project: no canvas/DOM — the WORLD_TEX/DIRECT/SPRITE paths that draw on a canvas
+// live in the .browser.test.js). Here: the PURE logic (the 3 contrast levels, the persisted HC_ROLE palette) + the DI
+// guard of initHighContrast + the "normal" bypass of worldTexFor/spriteTexFor (touches no canvas). ZOMBIES +
+// Right-BICEP. See ADR-0011 (visual accessibility).
 import { describe, it, expect } from 'vitest';
-import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // a tabela tile→papel é do JOGO (ADR-0080); a engine a RECEBE, e o gate prova que a cor sai do PAPEL
+import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // the tile→role table belongs to the GAME (ADR-0080); the engine RECEIVES it, and the gate proves the colour comes from the ROLE
 import {
   DIRECT_CFG, dcfg, HC_ROLE_DEF, HC_ROLE, saveHcRole,
   initHighContrast, worldTexFor, spriteTexFor,
@@ -13,9 +13,9 @@ import {
 describe('render/high-contrast — DI (initHighContrast ainda não chamado)', () => {
   it('[Error] worldTexFor/spriteTexFor lançam antes de initHighContrast', () => {
     expect(() => worldTexFor('normal')).toThrow(/initHighContrast/);
-    // ⚠️ `'sprite-x'` e não `'coin'`: o gate `engine-boundary` reprova vocabulário de JOGO num fixture de
-    // engine, e uma moeda é do platformer. O que este caso prova é que a função estoura ANTES de inicializar,
-    // e para isso o nome do sprite é irrelevante — que é exatamente o argumento de o trocar.
+    // ⚠️ `'sprite-x'` and not `'coin'`: the `engine-boundary` gate fails GAME vocabulary in an engine fixture, and a
+    // coin belongs to the platformer. What this case proves is that the function throws BEFORE initialisation, and for
+    // that the sprite's name is irrelevant — which is exactly the argument for changing it.
     expect(() => spriteTexFor('sprite-x', 'normal')).toThrow(/initHighContrast/);
   });
 });
@@ -52,8 +52,8 @@ describe('render/high-contrast — HC_ROLE / HC_ROLE_DEF (paleta do color-blocki
     expect(HC_ROLE).toEqual(HC_ROLE_DEF);
     expect(HC_ROLE).not.toBe(HC_ROLE_DEF);
     HC_ROLE.hazard = [1, 2, 3];
-    expect(HC_ROLE_DEF.hazard).not.toEqual([1, 2, 3]); // mutar HC_ROLE não vaza pro default
-    HC_ROLE.hazard = HC_ROLE_DEF.hazard.slice(); // devolve o estado do módulo (singleton) limpo p/ os próximos testes
+    expect(HC_ROLE_DEF.hazard).not.toEqual([1, 2, 3]); // mutating HC_ROLE does not leak into the default
+    HC_ROLE.hazard = HC_ROLE_DEF.hazard.slice(); // hands the module's (singleton) state back clean for the next tests
   });
   it('[Error] saveHcRole() não lança mesmo sem localStorage disponível (store.ts engole a exceção)', () => {
     expect(() => saveHcRole()).not.toThrow();
@@ -73,8 +73,8 @@ describe('render/high-contrast — worldTexFor/spriteTexFor (desvio "normal": n�
     });
     expect(worldTexFor('normal')).toBe(worldTexNormal);
     expect(spriteTexFor('alvo', 'normal')).toBe(texDeclarada);
-    // e um id que o jogo NÃO declarou devolve `undefined` em vez de lançar: um sprite ausente vira "sem
-    // textura" no desenho, e derrubar o quadro inteiro por causa de um item seria pior.
+    // and an id the game did NOT declare returns `undefined` instead of throwing: a missing sprite is drawn as "no
+    // texture", and bringing the whole frame down over one item would be worse.
     expect(spriteTexFor('nao-declarado', 'normal')).toBeUndefined();
   });
   it('[Boundary] "normal" nunca está em DIRECT_CFG (senão o desvio acima nem seria exercitado)', () => {

@@ -52,9 +52,9 @@ describe('exports without a consumer (issue #164, ADR-0170 §3)', () => {
   });
 
   it('🔴 [Zero] the ledger has no memory of the games — a repository we cannot see cannot excuse a name', () => {
-    // A correcção do Dev em 22/09, presa e não só escrita: enquanto a chave existir, um nome volta a ser perdoado por
-    // um repositório que esta árvore não controla — e o livro volta a ser irregenerável quando esse repositório ficar
-    // para trás. O crivo afirma a AUSÊNCIA, que é a forma que o plano exige para uma decisão deste tipo.
+    // The Dev's correction of 22/09, held and not just written: while the key exists, a name can again be excused by a
+    // repository this tree does not control — and the ledger again cannot be regenerated when that repository lags.
+    // The check asserts ABSENCE, which is the form the plan requires for a decision of this kind.
     expect(LISTA.cartridgeConsumers, 'a chave `cartridgeConsumers` voltou ao livro').toBeUndefined();
     const fonte = readFileSync(join(RAIZ, 'scripts/exports-without-consumer.mjs'), 'utf8');
     expect(/--catalogue/.test(fonte), 'a bandeira `--catalogue` voltou ao script').toBe(false);

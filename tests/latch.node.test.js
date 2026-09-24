@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de input/latch — SEGURAR VIRA ALTERNAR (project node: puro, sem DOM nem PIXI). ZOMBIES + Right-BICEP.
+// Tests of input/latch — HOLDING BECOMES TOGGLING (node project: pure, no DOM, no PIXI). ZOMBIES + Right-BICEP.
 //
-// POR QUE ESTE ARQUIVO IMPORTA MAIS QUE O TAMANHO DO MÓDULO SUGERE. Estas 15 linhas são a diferença entre
-// jogar e não jogar para quem não consegue MANTER um botão pressionado. A política morava dentro do cálculo
-// de movimento em game/physics.ts, onde nenhum teste a alcançava sem montar um jogador, um mundo e um passo
-// de física inteiro — e por isso a regra do toque nunca teve teste próprio em lugar nenhum.
+// WHY THIS FILE MATTERS MORE THAN THE MODULE'S SIZE SUGGESTS. These few lines are the difference between playing and
+// not playing for whoever cannot KEEP a button pressed. The policy is pure so that a test reaches it without building a
+// player, a world and a whole physics step.
 //
-// O que se fixa aqui, e que antes era um efeito não intencional da ordem de dois `if`: com as duas bordas no
-// MESMO quadro, o resultado é sempre 1, seja qual for o estado anterior.
+// What is pinned here, and falls out of the order of two `if`s: with both edges in the SAME frame, the result is
+// always 1, whatever the previous state.
 import { describe, it, expect } from 'vitest';
 import { nextLatchedDir, latchedDrive, LATCH_HELD, LATCH_IDLE } from '../app/js/input/latch.js';
 
@@ -24,27 +23,25 @@ describe('nextLatchedDir — o toque que trava a direção', () => {
   });
 
   it('[Right] tocar no sentido em que JÁ se anda para — o mesmo botão liga e desliga', () => {
-    // Não existe botão de parar de propósito: quem tem um dedo só pagaria o dobro de alcances por ele.
+    // There is deliberately no stop button: someone with a single finger would pay twice the reaches for it.
     expect(nextLatchedDir(-1, true, false)).toBe(0);
     expect(nextLatchedDir(1, false, true)).toBe(0);
   });
 
   it('[Right] tocar no sentido OPOSTO inverte direto, sem passar pelo zero', () => {
-    // Quem toca "esquerda" andando para a direita quer ir para a esquerda, não quer parar e tocar de novo.
+    // Whoever taps "left" while walking right wants to go left, not to stop and tap again.
     expect(nextLatchedDir(1, true, false)).toBe(-1);
     expect(nextLatchedDir(-1, false, true)).toBe(1);
   });
 
   it('[Boundary] as DUAS bordas no mesmo quadro: o resultado é SEMPRE 1, venha de onde vier', () => {
-    // Acontece de verdade — dois dedos, ou um switch duplo mal calibrado. Como a esquerda é avaliada antes
-    // da direita, a esquerda nunca deixa `dir` valendo 1, e a direita então sempre encontra algo diferente
-    // de 1 e trava em 1. Não é "a direita vence" no sentido frouxo: é que o estado anterior deixa de
-    // importar por completo. Escrevi este caso primeiro esperando `0` para o estado 1 — o comentário que eu
-    // mesmo pusera ao lado já traçava o caminho certo enquanto a asserção dizia outra coisa. O código estava
-    // certo; a expectativa, errada.
-    expect(nextLatchedDir(0, true, true)).toBe(1);   // esq: 0 → -1 · dir: -1 ≠ 1 → 1
-    expect(nextLatchedDir(1, true, true)).toBe(1);   // esq: 1 → -1 · dir: -1 ≠ 1 → 1
-    expect(nextLatchedDir(-1, true, true)).toBe(1);  // esq: -1 → 0 · dir: 0 ≠ 1 → 1
+    // It really happens — two fingers, or a badly calibrated dual switch. Because left is evaluated before right, left
+    // never leaves `dir` at 1, so right always finds something other than 1 and latches at 1. It is not "right wins" in
+    // the loose sense: the previous state stops mattering altogether. (This case was first written expecting `0` from
+    // state 1; the code was right and the expectation wrong.)
+    expect(nextLatchedDir(0, true, true)).toBe(1);   // left: 0 → -1 · right: -1 ≠ 1 → 1
+    expect(nextLatchedDir(1, true, true)).toBe(1);   // left: 1 → -1 · right: -1 ≠ 1 → 1
+    expect(nextLatchedDir(-1, true, true)).toBe(1);  // left: -1 → 0 · right: 0 ≠ 1 → 1
   });
 
   it('[Interface] só devolve -1, 0 ou 1 — nunca um sentido inventado, em nenhuma das 12 combinações', () => {
@@ -80,7 +77,7 @@ describe('latchedDrive — quanto anda, e para que lado', () => {
   });
 
   it('[Boundary] segurar o botão CONTRÁRIO ao sentido travado não acelera nada', () => {
-    // Segurar "direita" enquanto o travamento é para a esquerda não é intenção de acelerar à esquerda.
+    // Holding "right" while latched to the left is not an intention to speed up to the left.
     expect(latchedDrive(-1, false, true)).toBeCloseTo(-LATCH_IDLE, 10);
     expect(latchedDrive(1, true, false)).toBeCloseTo(LATCH_IDLE, 10);
   });

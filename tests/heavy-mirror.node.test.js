@@ -35,23 +35,14 @@ describe('the base of the heavy files', () => {
 
   it('🔴 [Right] NOTHING is left outside the mirror any more — with a base, no school reaches a third party', () => {
     /*
-     * ✅ A DECISÃO MUDOU EM 2026-09-22 («Ok, vamos espelhar»), e este caso mudou com ela. Ele afirmava o contrário: que o
-     * `espeak-ng` continuava a ser buscado no jsDelivr mesmo com base, porque é GPL e espelhá-lo obriga a publicar a FONTE
-     * ao lado (issue #192). A obrigação continua a existir — o que mudou foi a resposta a ela.
+     * 🔴 ONE file stays outside the mirror: `espeak-ng`, fetched from jsDelivr even with a base. It is GPL, and mirroring
+     * is distributing, which obliges publishing the SOURCE beside the binary (issue #192); until then its mirror folder
+     * is «🔴 ON HOLD» and the upload script skips it. 📏 Measured on the bucket: `espeak-ng` answers **404** while the
+     * three `onnxruntime-web` files answer 200 with the catalogue's exact bytes — an empty list would have pointed every
+     * school at a 404.
      *
-     * ⚠️ E O QUE ESTE CASO PRENDE AGORA É A LISTA VAZIA, que sem ele seria cobertura falsa: com `NOT_MIRRORED` vazio, o
-     * laço do caso acima não corre nenhuma vez e deixaria de exigir o que exigia. A afirmação passa a ser a forte: TODO
-     * ficheiro do catálogo tem caminho no espelho, logo com uma base nenhuma escola toca num terceiro.
-     */
-    /*
-     * 🔴 E ESTE CASO MUDOU DUAS VEZES NO MESMO DIA, o que é o próprio assunto dele. Afirmava que o `espeak-ng` ia ao
-     * jsDelivr; passou a afirmar que NADA fica fora do espelho, quando o Dev decidiu espelhar os dois; e voltou, porque
-     * 📏 medir o balde depois do envio mostrou o `espeak-ng` a responder **404** enquanto os três do `onnxruntime-web`
-     * respondem 200 com os bytes exactos do catálogo. A pasta dele está «🔴 ON HOLD» e o script de envio salta-a — a GPL
-     * obriga a publicar a FONTE ao lado do binário, e espelhar é distribuir.
-     *
-     * 🎯 O que o caso prende agora é a REGRA e não o número: quem fica fora do espelho fica com uma RAZÃO escrita, e tudo
-     * o que não está nessa lista tem de ter caminho no espelho. Uma lista vazia teria apontado toda escola para um 404.
+     * 🎯 What the case holds is the RULE, not the number: whatever stays outside the mirror carries a written REASON, and
+     * everything not on that list must have a path in the mirror.
      */
     expect(NOT_MIRRORED.map(([prefixo]) => prefixo), 'a lista de quem fica fora mudou sem a razão mudar com ela')
       .toEqual(['https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2']);

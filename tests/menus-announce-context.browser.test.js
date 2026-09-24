@@ -64,10 +64,11 @@ describe('a change of context says where the child is', () => {
     const cartao = document.querySelector('.screen-pause:not([hidden])');
     const porta = cartao.querySelector('.pm-btn[data-act="som"]');
     /*
-     * 📌 O CURSOR VAI ATÉ À PORTA COM SETAS, e não é cerimónia: abrir o painel com um clique deixa a marca no PRIMEIRO
-     * item, e ao voltar «o item marcado» e «o primeiro» são o mesmo — o caso não conseguiria distingui-los. Uma criança
-     * que navega chega ali com setas, e é essa a situação em que dizer-lhe o primeiro item a manda procurar onde ela
-     * não está. 📏 Medido: sem estas setas a marca voltava em 0 e a asserção de baixo não media nada.
+     * 📌 THE CURSOR WALKS TO THE DOOR WITH ARROWS, and it is not ceremony: opening the panel with a click leaves the mark
+     * on the FIRST item, and on the way back «o item marcado» and «o primeiro» coincide — the case could not tell them
+     * apart. A child who navigates gets there with arrows, and that is when telling them the first item sends them
+     * looking where they are not. 📏 Measured: without these arrows the mark came back at 0 and the assertion below
+     * measured nothing.
      */
     for (let i = 0; i < 12 && cartao.querySelector('.pause-menu:not([hidden]) .pm-sel') !== porta; i++) {
       await depoisDe(() => tecla('ArrowDown'));
@@ -83,9 +84,10 @@ describe('a change of context says where the child is', () => {
     const nomeDoSubmenu = submenu.getAttribute('aria-label') || submenu.textContent.trim();
     expect(fechada.startsWith(`${nomeDoSubmenu}. `), `back from the panel said «${fechada}», not where the child is`).toBe(true);
     /*
-     * 🔴 E DIZ O ITEM ONDE A CRIANÇA ESTÁ, e não o primeiro da lista — a metade que faltava, achada por sonda em
-     * 2026-09-22: trocar «o item marcado» por «o primeiro» deixava a suíte verde. Ao VOLTAR de um painel o cursor está
-     * no item que o abriu, que é quase nunca o primeiro; dizer-lhe o primeiro manda-a procurar onde ela não está.
+     * 🔴 AND IT SAYS THE ITEM WHERE THE CHILD IS, not the first on the list — the missing half, found by a probe on
+     * 2026-09-22: swapping «o item marcado» for «o primeiro» left the suite green. Coming BACK from a panel the cursor is
+     * on the item that opened it, which is almost never the first; saying the first sends the child looking where they
+     * are not.
      */
     const marcado = cartao.querySelector('.pause-menu:not([hidden]) .pm-sel');
     expect(marcado, 'nothing is marked on the card — the case would measure nothing').not.toBeNull();
@@ -124,10 +126,10 @@ describe('a change of context says where the child is', () => {
 
   it('🔴 [CrossCheck] going from ONE panel to ANOTHER is a change of place, and is announced', async () => {
     /*
-     * 🔴 A SONDA ACHOU ISTO CEGO em 2026-09-22: a chave de um painel podia deixar de dizer QUAL painel, e dois painéis
-     * passavam a ler-se como o mesmo sítio — com a suíte verde. Todos os outros casos deste ficheiro atravessam o
-     * cartão entre um painel e outro, e aí a chave muda por causa do cartão; só painel→painel directo os separa.
-     * 📌 E o caminho existe de verdade: a linha «mapear teclado» do painel motora abre o `#ctrl` POR CIMA dele.
+     * 🔴 THE PROBE FOUND THIS BLIND on 2026-09-22: a panel's key could stop saying WHICH panel, and two panels read as the
+     * same place — with the suite green. Every other case in this file crosses the card between one panel and another,
+     * and there the key changes because of the card; only a direct panel→panel step tells them apart.
+     * 📌 And the path really exists: the motor panel's «mapear teclado» row opens `#ctrl` ON TOP of it.
      */
     await depoisDe(() => tecla('KeyF'));
     document.querySelector('.screen-pause:not([hidden]) .pm-btn[data-act="options"]').click();
@@ -149,10 +151,10 @@ describe('a change of context says where the child is', () => {
     expect(segunda.startsWith(`${tituloCtrl}. `),
       `moving from one panel to another said «${segunda}» instead of naming «${tituloCtrl}»`).toBe(true);
     /*
-     * 📏 E ESTA LINHA É O QUE TORNA HONESTA UMA MUTAÇÃO QUE SOBREVIVE, em vez de a deixar sem explicação: ler o item
-     * FOCADO de um painel ou ler sempre o primeiro dá o mesmo resultado, porque no instante em que um painel passa a
-     * ser o sítio da criança o foco está no primeiro item dele. A sonda de 22/09 mediu-o e este caso mede-o de novo —
-     * o dia em que um painel abrir com o foco noutro sítio, esta asserção cai e a mutação deixa de ser equivalente.
+     * 📏 AND THIS LINE IS WHAT MAKES A SURVIVING MUTATION HONEST instead of unexplained: reading a panel's FOCUSED item or
+     * always reading the first gives the same result, because the instant a panel becomes the child's place its focus
+     * is on its first item. The 22/09 probe measured it and this case measures it again — the day a panel opens with
+     * focus elsewhere, this assertion fails and the mutation stops being equivalent.
      */
     const itensDoCtrl = [...painelCtrl.querySelectorAll('.overlay__card button:not([hidden]), .overlay__card [tabindex]:not([hidden])')]
       .filter((el) => el.offsetParent !== null);

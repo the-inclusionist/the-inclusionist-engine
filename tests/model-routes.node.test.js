@@ -5,7 +5,7 @@
 // the bytes the fetcher checked sit unread. So the routes name the fetcher's own cache, read it and never write it, reach no
 // third party, and stay narrow — one package, never a whole domain. Read from the sources, never from a literal repeated here.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -14,32 +14,28 @@ import { CACHE_HEAVY } from '../app/js/platform/heavy.js';
 const CONFIG = readFileSync(fileURLToPath(new URL('../vite.config.ts', import.meta.url)), 'utf8');
 
 /**
- * A configuração sem as LINHAS de comentário — e por LINHA, não por delimitador.
+ * The configuration without its comment LINES — by LINE, not by delimiter.
  *
- * 🔴 A PRIMEIRA VERSÃO USOU UM TIRA-COMENTÁRIOS DE BLOCO E COMEU 7 KB DOS 13 KB DO FICHEIRO, deixando os
- * cinco casos a medir um resto sem `runtimeCaching` nenhum. A causa é uma linha legítima: o `globPatterns`
- * contém um glob com barra seguida de asterisco, que o varredor leu como ABERTURA de bloco e foi fechar
- * muito mais à frente.
- *
- * ⚠️ É A TERCEIRA VEZ QUE UM TIRA-COMENTÁRIOS ENGANA ESTE REPOSITÓRIO — o `nada-de-cdn-a-mao` já tinha
- * apanhado um que apagava a linha do WebGazer porque toda URL tem duas barras dentro.
- * 📌 E a versão seguinte deste comentário ainda partiu o ficheiro: ele CITAVA o padrão, e a citação continha
- * a sequência que fecha um bloco. Um comentário sobre delimitadores não pode conter os delimitadores.
- * 📌 A forma segura é a que o `nada-vem-de-fora` usa: descartar a LINHA que começa por comentário, e mais
- * nada. Não alcança um comentário no fim de uma linha de código — e não precisa, porque o que se procura
- * aqui são chaves de configuração, que vivem no início da linha.
+ * 🔴 A block comment-stripper ate 7 KB of the file's 13 KB and left the cases measuring a remainder with no
+ * `runtimeCaching` at all. The cause is a legitimate line: `globPatterns` holds a glob with a slash followed by an
+ * asterisk, which the scanner read as a block OPENING and closed much further on.
+ * ⚠️ Comment-strippers have fooled this repository before — one erased every URL line, since a URL holds two slashes.
+ * 📌 And a comment about delimiters cannot contain the delimiters: quoting the pattern here once broke this file.
+ * 📌 The safe form is the one nothing-comes-from-outside.node.test.js uses: drop the LINE that starts as a comment, and
+ * nothing else. It does not reach a comment at the end of a code line — and need not, because what is sought here are
+ * configuration keys, which live at the start of the line.
  */
 const CONFIG_LIMPA = CONFIG.split(/\r?\n/).filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
 
 describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
   it('🎯 [Vácuo] existe uma `runtimeCaching` no `vite.config` — sem ela nada do resto quer dizer nada', () => {
-    // Sem este caso, apagar a rota inteira deixaria os outros dois a medir `undefined` contra `undefined`.
+    // Without this case, deleting the whole route would leave the other cases measuring nothing.
     expect(CONFIG_LIMPA, 'a rota de runtime saiu do vite.config: a Cache Storage volta a não ser consultada')
       .toMatch(/runtimeCaching\s*:/);
   });
 
   it('🔴 [Zero] a rota usa a MESMA cache que o buscador escreve', () => {
-    // ⚠️ Um nome diferente é o defeito mais silencioso dos dois: a rota funciona, guarda numa cache própria,
+    // ⚠️ A different name is the quietest defect of all: the route works, keeps to a cache of its own,
     // and what the device already held is downloaded again. Nobody sees an error.
     expect(
       CONFIG_LIMPA,
@@ -68,8 +64,8 @@ describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
   });
 
   it('⚠️ [Right] é `CacheOnly` — nunca a rede do terceiro (ADR-0177), e o pilar 8 continua servido pela cache', () => {
-    // `NetworkFirst` iria à rede primeiro e só recuaria para a cache quando a escola estivesse offline — que
-    // é exactamente o dia em que já é tarde, e é a metade do pilar 8 que o ADR-0116 deixou de pé.
+    // `NetworkFirst` would go to the network first and fall back to the cache only when the school is offline — which is
+    // exactly the day it is too late, and the half of pillar 8 that ADR-0116 left standing.
     // ADR-0177: CacheOnly — the files come from the delivery into the cache; a library request never reaches the upstream host.
     expect(CONFIG_LIMPA, 'a rota pode buscar na rede do terceiro').toMatch(/handler:\s*'CacheOnly'/);
     // Each route on the checked cache, split at its `urlPattern`. A third-party address is `CacheOnly`; only a route that

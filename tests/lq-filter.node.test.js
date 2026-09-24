@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/lq-filter — curva de realce Linear→Quadrático e o rótulo de baixa visão (project node).
-// `lqCurve`/`lqName` são matemática pura e determinística — o melhor alvo de teste do módulo (ZOMBIES +
-// Right-BICEP): bordas 0/1, os três limiares do rótulo, e valores fora de faixa (não clampados, verbatim).
-// A casca DOM (ensureLqFilter/lqFilter/setLq) fica fora daqui — precisa de `document` (project browser).
+// Tests of render/lq-filter — the Linear→Quadratic enhancement curve and the low-vision label (node project).
+// `lqCurve`/`lqName` are pure, deterministic maths — the module's best test target (ZOMBIES + Right-BICEP): the 0/1
+// edges, the label's three thresholds, and out-of-range values (not clamped, verbatim).
+// The DOM shell (ensureLqFilter/lqFilter/setLq) stays out of here — it needs `document` (browser project).
 import { describe, it, expect } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
 import { lqCurve, lqName } from '../app/js/render/lq-filter.js';
 
-// Reimplementação de referência da fórmula (PESQUISA-ALTO-CONTRASTE §2.3) p/ conferir lqCurve ponto a ponto,
-// sem repetir a string mágica do game.js — serve de checagem cruzada independente da implementação.
+// Reference reimplementation of the formula (PESQUISA-ALTO-CONTRASTE §2.3) to check lqCurve point by point without
+// copying the module's expression — an independent cross-check of the implementation.
 function refSample(t, x) {
   const lin = Math.min(1, Math.max(0, 1.3 * (x - 0.5) + 0.5));
   const quad = x < 0.5 ? 2 * x * x : 1 - 2 * (1 - x) * (1 - x);
@@ -28,7 +28,7 @@ describe('lqCurve', () => {
       const x = i / 16;
       expect(parts[i]).toBe(refSample(0, x));
     }
-    // extremos do contrast-stretch saturam em 0 e 1 (clamp interno do lin)
+    // the contrast-stretch ends saturate at 0 and 1 (lin's internal clamp)
     expect(parts[0]).toBe('0.0000');
     expect(parts[16]).toBe('1.0000');
   });
@@ -40,7 +40,7 @@ describe('lqCurve', () => {
       expect(parts[i]).toBe(refSample(1, x));
     }
     expect(parts[0]).toBe('0.0000');
-    expect(parts[8]).toBe('0.5000'); // x=0.5 é o ponto de encontro dos dois ramos da S-curve
+    expect(parts[8]).toBe('0.5000'); // x=0.5 is where the S-curve's two branches meet
     expect(parts[16]).toBe('1.0000');
   });
 
@@ -70,9 +70,9 @@ describe('lqCurve', () => {
   });
 });
 
-// lqName passou a devolver a CHAVE i18n (ver a nota no módulo: o parâmetro já se chama `t`). As asserções
-// atravessam o dicionário pt — assim continuam a afirmar a MESMA coisa que antes ("t=0 é desligado") e ainda
-// pegam uma chave inventada, que sairia `undefined` aqui em vez de aparecer crua na tela.
+// lqName returns the i18n KEY (see the note in the module: the parameter is already called `t`). The assertions go
+// through the pt dictionary — so they state what the label reads ("t=0 is off") and still catch an invented key, which
+// would come out `undefined` here instead of showing raw on screen.
 describe('lqName', () => {
   it('[Boundary] t=0 → desligado', () => {
     expect(pt[lqName(0)]).toBe('desligado');

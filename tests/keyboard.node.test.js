@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de input/keyboard — o MAPA DE TECLAS e seu dono (project node: sem DOM, sem PIXI).
+// Tests of input/keyboard — the KEY MAP and its owner (node project: no DOM, no PIXI). The live map sits beside
+// `loadKB`/`saveKB`/`resetKB`, the functions that manage it (#50).
 //
-// O arquivo não tinha teste: `loadKB`/`saveKB`/`resetKB` moravam aqui desde a Fase 2, mas o VALOR que elas
-// gerenciam era um `let KB` do main.js, com um envoltório `setKB: (k) => { KB = k; }` fabricado à mão. Com o
-// valor vindo para junto das funções (#50), passou a haver o que aferir.
-//
-// Duas propriedades importam mais que as outras, e as duas falham em silêncio se quebrarem:
-//   · o módulo NÃO lê disco no import — senão qualquer teste que o importe herda o teclado do ambiente;
-//   · `resetKB` devolve uma CÓPIA — senão remapear escreve dentro dos defaults e o reset deixa de resetar.
+// Two properties matter more than the others, and both fail silently if they break:
+//   · the module does NOT read storage on import — or any test importing it inherits the environment's keyboard;
+//   · `resetKB` returns a COPY — or remapping writes into the defaults and the reset stops resetting.
 import { describe, it, expect } from 'vitest';
 import { kb, initKB, setKB, resetKB, saveKB, loadKB, KB_DEFAULTS } from '../app/js/input/keyboard.js';
 
@@ -18,8 +15,8 @@ describe('input/keyboard — o mapa vivo, com dono (#50)', () => {
   });
 
   it('[Boundary] e nasce como CÓPIA, não como os próprios defaults', () => {
-    // Se fosse a referência, remapear uma tecla escreveria dentro de KB_DEFAULTS e o "restaurar padrões"
-    // passaria a restaurar o que a criança acabou de mudar — um reset que não reseta, e sem sintoma visível.
+    // Were it the reference, remapping a key would write into KB_DEFAULTS and "restore defaults" would restore what the
+    // child just changed — a reset that does not reset, with no visible symptom.
     expect(kb).not.toBe(KB_DEFAULTS);
   });
 
@@ -43,13 +40,13 @@ describe('input/keyboard — resetKB', () => {
   it('[Right] devolve os padrões, e uma cópia nova a cada chamada', () => {
     const a = resetKB(), b = resetKB();
     expect(a).toEqual(KB_DEFAULTS);
-    expect(a).not.toBe(b); // duas chamadas, dois objetos: um não pode contaminar o outro
+    expect(a).not.toBe(b); // two calls, two objects: one cannot contaminate the other
   });
 });
 
 describe('input/keyboard — loadKB sem armazenamento', () => {
-  // Este projeto de teste é `node`: não há `localStorage`, então `store` é inerte. Isso não é um limite do
-  // teste — é o CENÁRIO REAL de `file://` e do modo privado, onde o jogo também precisa abrir jogável.
+  // This test project is `node`: there is no `localStorage`, so `store` is inert. That is not a limit of the test — it is
+  // the REAL scenario of `file://` and private mode, where the game must still open playable.
   it('[Zero] sem nada salvo (ou sem poder salvar), devolve os padrões íntegros', () => {
     expect(loadKB()).toEqual(KB_DEFAULTS);
   });
@@ -59,6 +56,7 @@ describe('input/keyboard — loadKB sem armazenamento', () => {
     expect(loadKB()).toEqual(KB_DEFAULTS);
   });
 
-  // A sobreposição PARCIAL do dado salvo sobre os defaults (quem remapeou só o pulo não perde as setas) e a
-  // migração do formato antigo `p34` precisam de armazenamento de verdade: ficam no projeto browser.
+  // The PARTIAL overlay of saved data on the defaults (whoever remapped only the jump keeps the arrows) and the shape
+  // migration of the old `p34` format need real storage and are not measured here. What the child saved winning over
+  // the factory is held in the-game-declares-its-keyboard.node.test.js.
 });

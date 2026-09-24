@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/debug-panel (project BROWSER: usa document). Contrato: só monta com ?debug=true; os sliders mutam os
-// objetos TUNE/ANIM VIVOS (mesma referência do jogo); os toggles mutam JUICE + chamam saveJuice. Injeção por closure.
-// Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 1, ui/debug-panel).
+// Tests of ui/debug-panel (BROWSER project: uses document). Contract: mounts only with ?debug=true; the sliders mutate the
+// LIVE TUNE/ANIM objects (the same reference the game holds); the toggles mutate JUICE and call saveJuice. Closure DI.
+// See docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 1, ui/debug-panel).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initDebugPanel } from '../app/js/ui/debug-panel.js';
 
@@ -28,13 +28,13 @@ describe('ui/debug-panel', () => {
     expect(document.querySelector('#debug-panel')).toBe(el);
     expect(el.getAttribute('role')).toBe('group');
     expect(el.getAttribute('aria-label')).toBeTruthy();
-    expect(el.hidden).toBe(true); // abre pelo botão 🐞 Debug
+    expect(el.hidden).toBe(true); // opened by the 🐞 Debug button
   });
 
   it('[Interface] um slider muta o objeto TUNE VIVO (mesma referência injetada)', () => {
     const ctx = fullCtx();
     initDebugPanel(ctx);
-    const range = document.querySelector('#debug-panel input[type=range]'); // 1º = Velocidade de andar (hWalk)
+    const range = document.querySelector('#debug-panel input[type=range]'); // 1st = walking speed (hWalk)
     range.value = '3.5';
     range.dispatchEvent(new Event('input'));
     expect(ctx.TUNE.hWalk).toBe(3.5);
@@ -44,7 +44,7 @@ describe('ui/debug-panel', () => {
     let saved = 0;
     const ctx = fullCtx({ saveJuice: () => { saved++; } });
     initDebugPanel(ctx);
-    const chk = document.querySelector('#debug-panel input[type=checkbox]'); // 1º toggle = Poeira (dust)
+    const chk = document.querySelector('#debug-panel input[type=checkbox]'); // 1st toggle = dust
     chk.checked = false;
     chk.dispatchEvent(new Event('change'));
     expect(ctx.JUICE.dust).toBe(false);
