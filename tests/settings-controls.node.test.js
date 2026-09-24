@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-controls — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
-// Cobre: keyName (código físico -> rótulo legível, com 'Space' passando por t()) e keyUsedByOther (conflito de
-// remapeamento entre jogadores). Sem trocar de idioma nos testes, `t()` devolve o pt-BR do dicionário-base.
-// O render()/handleCaptureKeydown() (tocam DOM) ficam em settings-controls.browser.test.js.
-// Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Tests of ui/settings-controls — PURE logic (node project, no document). ZOMBIES + Right-BICEP.
+// Covers: keyName (physical code -> readable label, with 'Space' going through t()) and keyUsedByOther (a remapping
+// conflict between players). Without switching language in the tests, `t()` returns the base dictionary's pt-BR.
+// render()/handleCaptureKeydown() (they touch the DOM) are in settings-controls.browser.test.js.
+// See docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import { ACT_LABEL } from '../app/js/ui/settings-controls.js';
-// 📌 A metade PURA saiu para `ui/control-choices` em 22/09 (nota BL), e foi este ficheiro que marcou a costura
-// antes de ela existir: os casos que ele já tinha eram todos sobre o que uma TECLA é, nenhum sobre um nó.
+// 📌 The PURE half lives in `ui/control-choices` (note BL); the cases here were all about what a KEY is, none about a node.
 import { keyName, keyUsedByOther } from '../app/js/ui/control-choices.js';
 import pt from '../app/js/i18n/pt.js';
 
@@ -17,24 +16,24 @@ describe('keyName', () => {
     expect(keyName('KeyZ')).toBe('Z');
   });
   it('🔴 [Right] cada seta é A SUA seta, e mais nada', () => {
-    // 🔴 O Dev viu `↔Up` numa captura em 22/09: «Por que está escrevendo "↔Up", "↔Down" etc ao invés de
-    // simplesmente "↑", "↓", "←" e "→"? Não escolha poluir a UI.» O defeito vinha da FORMA: uma cadeia de
-    // substituições em que `Arrow` virava uma seta BIDIRECCIONAL e o resto do nome sobrava colado a ela.
+    // 🔴 The Dev saw `↔Up` in a screenshot on 22/09: «Por que está escrevendo "↔Up", "↔Down" etc ao invés de
+    // simplesmente "↑", "↓", "←" e "→"? Não escolha poluir a UI.» The defect came from the SHAPE: a chain of
+    // substitutions in which `Arrow` became a TWO-WAY arrow and the rest of the name was left stuck to it.
     expect(keyName('ArrowUp')).toBe('↑');
     expect(keyName('ArrowDown')).toBe('↓');
     expect(keyName('ArrowLeft')).toBe('←');
     expect(keyName('ArrowRight')).toBe('→');
-    // ⚠️ E as quatro são DISTINTAS: uma tabela com a mesma seta em duas direcções passaria os casos acima
-    // escritos um a um, e a criança veria duas teclas diferentes com o mesmo rótulo.
+    // ⚠️ And the four are DISTINCT: a table with the same arrow in two directions would pass the cases above written one
+    // by one, and the child would see two different keys with the same label.
     const setas = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].map(keyName);
     expect(new Set(setas).size).toBe(4);
     for (const s of setas) expect(s, 'uma seta é UM glifo, não um nome de código').toHaveLength(1);
   });
 
   it('🔴 [Right] o TECLADO NUMÉRICO e os dígitos também não mostram o nome da máquina', () => {
-    // A mesma poluição, um teclado adiante: `Digit1` e `Numpad5` saíam intactos. 📌 E `Num 5` não é `5`
-    // porque são teclas FÍSICAS diferentes — o esquema de dois jogadores usa as duas, e dois rótulos iguais
-    // na mesma lista mandariam a criança apertar a errada.
+    // The same pollution, one keyboard over: `Digit1` and `Numpad5` came out intact. 📌 And `Num 5` is not `5` because
+    // they are different PHYSICAL keys — the two-player scheme uses both, and two equal labels on the same list would
+    // send the child to press the wrong one.
     expect(keyName('Digit1')).toBe('1');
     expect(keyName('Numpad5')).toBe('Num 5');
     expect(keyName('Numpad5')).not.toBe(keyName('Digit5'));
@@ -48,8 +47,8 @@ describe('keyName', () => {
     expect(keyName('ShiftRight')).toBe('Shift');
   });
   it('[Boundary] código sem nenhum prefixo conhecido passa intacto — e isso é honestidade, não descuido', () => {
-    // `Comma` é feio e é verdadeiro. Inventar um nome para ele seria adivinhar, e uma adivinha na tela de
-    // remapeamento manda a criança apertar a tecla errada.
+    // `Comma` is ugly and it is true. Inventing a name for it would be guessing, and a guess on the remapping screen
+    // sends the child to press the wrong key.
     expect(keyName('Comma')).toBe('Comma');
     expect(keyName('Semicolon')).toBe('Semicolon');
   });
@@ -77,11 +76,11 @@ describe('keyUsedByOther', () => {
     expect(keyUsedByOther('ArrowLeft', p0, [p0, p1, p2])).toBe(1);
   });
   it('[Boundary] o próprio mapa sendo editado é excluído por referência (não conflita consigo mesmo)', () => {
-    expect(keyUsedByOther('KeyA', p0, [p0, p1, p2])).toBe(-1); // KeyA é só do p0, e p0===mapRef é pulado
+    expect(keyUsedByOther('KeyA', p0, [p0, p1, p2])).toBe(-1); // KeyA belongs only to p0, and p0===mapRef is skipped
   });
   it('[Interface] exclusão é por REFERÊNCIA, não por igualdade estrutural — um objeto igual mas distinto ainda conta', () => {
-    const p0clone = { left: ['KeyA'], right: ['KeyD'], action2: ['KeyJ', 'Space'] }; // mesmo conteúdo, outra referência
-    expect(keyUsedByOther('KeyA', p0, [p0clone, p1, p2])).toBe(0); // agora p0clone (índice 0) não é o mapRef
+    const p0clone = { left: ['KeyA'], right: ['KeyD'], action2: ['KeyJ', 'Space'] }; // same content, another reference
+    expect(keyUsedByOther('KeyA', p0, [p0clone, p1, p2])).toBe(0); // now p0clone (index 0) is not the mapRef
   });
   it('[Right] retorna o primeiro dono na ORDEM dos jogadores quando há duplicidade (dado inconsistente)', () => {
     const dupA = { action2: ['KeyQ'] };
@@ -100,22 +99,21 @@ describe('keyUsedByOther', () => {
   });
 
   it('⚠️ [Boundary] uma chave que NÃO é posição não reserva tecla nenhuma', () => {
-    // ⚠️ O fixture deste caso usava `{ extra: [...] }` — uma ação inventada — e esperava que ela disputasse a
-    // tecla. Desde a #118 o esquema é fechado nas quatorze posições, e o crivo percorre `ACTIONS`: uma chave
-    // fora da lista é invisível aqui, e a mudança está CERTA.
+    // ⚠️ The scheme is closed on the fourteen positions (#118), and the sieve walks `ACTIONS`: a key outside the list
+    // (an invented `extra` action) is invisible here, and that is RIGHT.
     //
-    // O motivo é do lado da criança: um conflito só é real contra uma posição que algum transporte leia. Uma
-    // tecla amarrada a `extra` não dispara nada — `actionForCode` também já não a vê —, então acusá-la de
-    // conflito impediria a criança de usar uma tecla que na verdade está livre. Recusar o remapeamento por
-    // causa de dado que não faz nada é o pior dos dois erros possíveis aqui.
+    // The reason is on the child's side: a conflict is only real against a position some transport reads. A key bound to
+    // `extra` fires nothing — `actionForCode` does not see it either —, so accusing it of a conflict would stop the child
+    // using a key that is actually free. Refusing a remap because of data that does nothing is the worse of the two
+    // possible errors here.
     expect(keyUsedByOther('Space', p0, [p1, { extra: ['Space'] }])).toBe(-1);
   });
 });
 
 describe('ACT_LABEL', () => {
   it('[Interface] cobre as 8 ações do jogo, cada uma com uma CHAVE i18n que existe no dicionário', () => {
-    // A tabela guarda chave, não texto (ver a nota no módulo). Aferir só `toBeTruthy()` deixaria passar uma
-    // chave inventada, que renderiza a própria chave na tela — por isso a segunda asserção.
+    // The table holds a key, not text (see the note in the module). Checking only `toBeTruthy()` would let an invented
+    // key pass, which renders the key itself on screen — hence the second assertion.
     const acts = ['left', 'right', 'up', 'down', 'action1', 'action2', 'action4', 'action3'];
     expect(Object.keys(ACT_LABEL)).toEqual(acts);
     for (const a of acts) expect(pt[ACT_LABEL[a]], `chave fora do dicionário: ${ACT_LABEL[a]}`).toBeTypeOf('string');

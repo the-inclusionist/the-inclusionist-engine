@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-empathy — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
-// Cobre: quais modos do catálogo VIZ_MODES contam como simulação de empatia (vs. as correções, que desde a
-// #60 moram no menu visual), o recorte EMPATHY_VIZ_MODES resultante e o mapeamento valor→rótulo dos botões. O render()/open()/
-// close() (tocam DOM) ficam em settings-empathy.browser.test.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Tests of ui/settings-empathy — PURE logic (node project, no document). ZOMBIES + Right-BICEP.
+// Covers: which modes of the VIZ_MODES catalogue count as an empathy simulation (vs. the corrections, which live in
+// the visual menu, #60), the resulting EMPATHY_VIZ_MODES cut, and the value→label mapping of the buttons. render()/open()/
+// close() (they touch the DOM) are in settings-empathy.browser.test.js. See docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
+import { t } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
 import { EMPATHY_VIZ_MODES } from '../app/js/ui/settings-empathy.js';
 import { VIZ_MODES, simulatesDisability } from '../app/js/render/viz-modes.js';
 
 describe('EMPATHY_VIZ_MODES — só o que SIMULA', () => {
-  // Esta lista MUDOU e a mudança é o conserto de um defeito de anos. Ela se recortava por
-  // `isSimKind(m.kind)`, e `kind` não distingue simular de corrigir: as três "Correção de daltonismo"
-  // apareciam num menu chamado "sentir como é ter uma deficiência". A criança daltônica precisava entrar ali
-  // para achar a correção da própria condição, ao lado do botão que simula a condição dela para quem não a
-  // tem. O Dev mandou movê-las para a Acessibilidade visual (#60); a lista agora pergunta pelo campo `sim`.
+  // The list asks the `sim` field. `kind` does not tell simulating from correcting, and the three colour-blindness
+  // corrections belong to visual accessibility (#60): a colour-blind child must not have to look for the correction of
+  // her own condition next to the button that simulates it for whoever does not have it — in a menu about feeling what
+  // having a disability is like.
   it('[Right] são as 9 que simulam: 3 daltonismos, 5 baixas visões e cegueira', () => {
     const keys = EMPATHY_VIZ_MODES.map((m) => m.key);
     expect(keys).toEqual(['sim-deuter', 'sim-protan', 'sim-tritan',
@@ -36,20 +35,19 @@ describe('EMPATHY_VIZ_MODES — só o que SIMULA', () => {
 
   it('[Right] cada entrada preserva nome/desc do catálogo (a lista não reescreve os dados)', () => {
     const blind = EMPATHY_VIZ_MODES.find((m) => m.key === 'blind');
-    // Contra `t()` e não contra o português: fixar a frase aqui devolveria ao teste o texto que o item 14
-    // tirou do catálogo. O caso segue pegando entrada trocada — cada modo tem chave própria.
+    // Against `t()` and not against the Portuguese: pinning the sentence here would bring back into the test the text
+    // item 14 took out of the catalogue. The case still catches a swapped entry — each mode has its own key.
     expect(t(blind.name)).toBe(t('viz.blind'));
     expect(t(blind.desc)).toContain('Tela preta');
   });
 });
 
-// (Os casos de `toggleLabel` mudaram de arquivo: a função foi para `ui/dom`, ao lado do `toggleBtn`, e o
-//  teste viajou com ela — tests/dom.node.test.js. Ver a regra do item 19.)
+// (The `toggleLabel` cases live in tests/dom.node.test.js: the function is in `ui/dom`, beside `toggleBtn`, and the test
+//  travels with it. See the rule of item 19.)
 
-// `simulatesDisability` mora ao lado de `isSimKind` neste arquivo de propósito: as duas parecem responder à
-// mesma pergunta e não respondem, e é justamente aí que um reset erra. `isSimKind` diz o que o PAINEL LISTA;
-// `simulatesDisability` diz o que o RESET PODE DESLIGAR. Enquanto as correções de daltonismo não tiverem outro
-// lugar onde morar, essas duas listas continuam diferentes, e a diferença é a proteção.
+// `simulatesDisability` answers both what the panel LISTS and what the reset MAY TURN OFF, and `kind` cannot answer
+// either: the `fix-*` corrections share `kind:'filter'` with the simulations. That shared `kind` is exactly where a
+// reset goes wrong.
 describe('simulatesDisability', () => {
   it('[Right] verdadeiro para os 9 modos que simulam: 3 daltonismos, 5 baixas visões e cegueira', () => {
     for (const k of ['sim-deuter', 'sim-protan', 'sim-tritan',
@@ -59,8 +57,8 @@ describe('simulatesDisability', () => {
   });
 
   it('[Boundary] falso para os 3 `fix-*` — corrigem daltonismo, e o `kind` deles não denuncia isso', () => {
-    // Os três dividem `kind:'filter'` com `sim-protan/deuter/tritan`, servindo pessoas opostas. Era isso que
-    // os colocava no menu de empatia, e é isso que o campo `sim` passou a separar.
+    // The three share `kind:'filter'` with `sim-protan/deuter/tritan`, serving opposite people. The `sim` field is what
+    // separates them.
     for (const k of ['fix-protan', 'fix-deuter', 'fix-tritan']) {
       expect(simulatesDisability(k)).toBe(false);
       expect(VIZ_MODES.find((m) => m.key === k).kind).toBe('filter');
@@ -79,7 +77,7 @@ describe('simulatesDisability', () => {
   });
 
   it('[Interface] os 16 modos do catálogo se dividem em 9 que simulam e 7 que não', () => {
-    // Prende o total: um modo novo entra no catálogo já tendo que declarar de que lado está.
+    // Pins the total: a new mode enters the catalogue already having to declare which side it is on.
     expect(VIZ_MODES.filter((m) => simulatesDisability(m.key))).toHaveLength(9);
     expect(VIZ_MODES).toHaveLength(16);
   });

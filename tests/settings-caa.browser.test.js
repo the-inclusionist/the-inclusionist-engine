@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-caa — o painel (project BROWSER: usa document). ADR-0028 (7º menu) + ADR-0029 (marca).
-// A lógica pura (catálogo, motivos, montagem) está em caa-sets.node.test.js.
+// Tests of ui/settings-caa — the panel (BROWSER project: uses document). ADR-0028 (7th menu) + ADR-0029 (the mark).
+// The pure logic (catalogue, reasons, assembly) is in caa-sets.node.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initSettingsCaa, mountCaaInside } from '../app/js/ui/settings-caa.js';
 import { sectionHeader } from '../app/js/ui/panel-widgets.js';
@@ -17,8 +17,8 @@ function fullCtx(over = {}) {
     getLetterCase: () => caso,
     setLetterCase: (c) => { caso = c; },
     frontOverlay: () => {},
-    // Dublê do `fillExplain` da casca. Ele existe no ctx porque o painel o chama a CADA render: sem isso a
-    // prosa volta para dentro das linhas ao primeiro clique, e o menu vira manual de novo.
+    // A double of the shell's `fillExplain`. It is in the ctx because the panel calls it on EVERY render: without it the
+    // prose goes back inside the rows at the first click, and the menu becomes a manual again.
     fillExplain: () => {},
     restoreFocus: () => true,
     said,
@@ -52,9 +52,9 @@ describe('ui/settings-caa — escolher', () => {
   });
 
   it('[Right] o interruptor LIGADO parece ligado, e o desligado não', () => {
-    // ADR-0029 e a regra de que estado não se diz só por cor: o `is-on` é a faixa que a criança vê. Sem ele o
-    // botão diz «▶ Ligado» no texto e continua com a aparência de desligado — dois sinais contrários na mesma
-    // linha, e o que ela lê primeiro é a forma. Achado por sonda em 22/09: nada prendia esta classe.
+    // ADR-0029 and the rule that state is not told by colour alone: `is-on` is the band the child sees. Without it the
+    // button says «▶ Ligado» in its text and still looks off — two opposite signals on the same row, and what she reads
+    // first is the shape. Found by a probe on 22/09: nothing pinned this class.
     const ctx = fullCtx();
     initSettingsCaa(ctx).render();
     expect($('#caa-caixa-alta').classList.contains('is-on')).toBe(true);
@@ -63,26 +63,25 @@ describe('ui/settings-caa — escolher', () => {
   });
 
   it('[Right] a explicação vai ao rodapé a CADA render, e não só ao abrir', () => {
-    // 🔴 O COMENTÁRIO DO MÓDULO JÁ CONTAVA ESTE DEFEITO — «sem esta chamada a explicação volta para dentro das
-    // linhas, e foi exatamente o que aconteceu: o menu virou manual de novo ao primeiro clique» — e nenhum
-    // caso o prendia (sonda de 22/09). Uma lição escrita num comentário e não num crivo volta a ser aprendida.
+    // 🔴 THE MODULE'S OWN COMMENT DESCRIBES THIS DEFECT — without this call the explanation goes back inside the rows and
+    // the menu becomes a manual again at the first click — and no case pinned it (probe of 22/09). A lesson written in a
+    // comment and not in a sieve gets learned again.
     let chamadas = 0;
     const ctx = fullCtx({ fillExplain: () => { chamadas += 1; } });
     const api = initSettingsCaa(ctx);
     api.render();
     expect(chamadas).toBe(1);
-    $('#caa-caixa-alta').click(); // o clique RECONSTRÓI as linhas: a prosa volta para dentro delas
+    $('#caa-caixa-alta').click(); // the click REBUILDS the rows: the prose goes back inside them
     expect(chamadas, 'cada reconstrução devolve a prosa às linhas; só o fillExplain a tira de lá').toBe(2);
   });
 
   it('[Interface] clicar num conjunto INDISPONÍVEL não muda nada e não anuncia', () => {
-    // A guarda existe para o dia em que alguém tirar o `disabled` "só para testar": um conjunto que não está
-    // no jogo não pode virar a escolha da criança por acidente, deixando a tela sem nada para desenhar.
+    // The guard exists for the day someone removes the `disabled` "just to test": a set that is not in the game must not
+    // become the child's choice by accident, leaving the screen with nothing to draw.
     //
-    // HONESTIDADE SOBRE O QUE ESTE CASO PRENDE: hoje há DOIS guardas neste caminho — `disponivel` e a falta de
-    // mapeamento para uma caixa de letra —, e apagar qualquer um deles sozinho ainda passa aqui. Ele prende o
-    // COMPORTAMENTO, não um guarda específico. Quando um pictograma virar escolhível, o segundo guarda deixa
-    // de existir (um conjunto disponível terá comportamento) e este caso passa a prender o primeiro sozinho.
+    // HONESTY ABOUT WHAT THIS CASE PINS: there are TWO guards on this path — the button's own `disabled`, and the list's
+    // listener, which only reacts to the letters switch —, and removing either one alone still passes here. It pins the
+    // BEHAVIOUR, not a specific guard.
     const ctx = fullCtx();
     initSettingsCaa(ctx).render();
     const b = $('#caa-list button[data-caa="mulberry"]');
@@ -93,8 +92,8 @@ describe('ui/settings-caa — escolher', () => {
   });
 
   it('[Interface] os sete pictogramas aparecem, e nenhum deles é clicável hoje', () => {
-    // Aparecer é decisão: escondê-los faria o educador concluir que o jogo não faz pictograma nenhum, quando
-    // o obstáculo é licença ou trabalho pendente — e são justamente os que a escola já pode ter.
+    // Appearing is a decision: hiding them would make the educator conclude the game does no pictograms at all, when the
+    // obstacle is a licence or pending work — and they are precisely the ones the school may already have.
     const ctx = fullCtx();
     initSettingsCaa(ctx).render();
     const pict = ['mulberry', 'blissymbolics', 'tawasol', 'arasaac', 'sclera', 'pcs', 'symbolstix', 'widgit'];
@@ -134,10 +133,10 @@ describe('ui/settings-caa — a montagem pelo kit (ADR-0129)', () => {
   const kit = () => ({ find: (sel) => document.querySelector(sel), create: (tag) => document.createElement(tag) });
 
   it('[Zero] uma seção sem nenhuma linha NÃO desenha o cabeçalho dela', () => {
-    // Um «Aguardando negociação» sobre o vazio conta ao educador que há algo ali e não há: ele procura a linha
-    // que o título promete. 📌 Em cadeia este ramo era inalcançável pela API pública — o catálogo é fixo e
-    // nenhuma seção fica vazia hoje —, e era por isso que a sonda de 22/09 o achava e não podia prendê-lo. Com
-    // o número de linhas como ARGUMENTO ele passa a ser exercível, que é o que uma regra precisa para ser uma.
+    // An «Aguardando negociação» over nothing tells the educator there is something there and there is not: they look for
+    // the row the title promises. 📌 With the number of rows as an ARGUMENT this branch can be exercised — the catalogue is
+    // fixed and no section is empty today, so through the public API it would be unreachable — and being exercisable is
+    // what a rule needs to be one.
     expect(sectionHeader(kit(), 'Aguardando negociação', 'a permissão não é nossa', 0)).toBeNull();
     expect(sectionHeader(kit(), 'Aguardando negociação', 'a permissão não é nossa', 1)).not.toBeNull();
   });
@@ -150,8 +149,8 @@ describe('ui/settings-caa — a montagem pelo kit (ADR-0129)', () => {
   });
 
   it('[Right] toda linha nasce com a regra de menu por construção: um `.opt-hint` só, dentro do `<span>`', () => {
-    // É esta a razão de a conversão se pagar. Em cadeia a regra do CLAUDE.md §4 valia por convenção repetida
-    // em quatro ficheiros; agora é o `controlRow` que a escreve, e um quinto painel não pode divergir dela.
+    // This is why the conversion pays for itself: the rule of CLAUDE.md §4 is written by `controlRow`, not repeated by
+    // convention in each panel, so a new panel cannot diverge from it.
     initSettingsCaa(fullCtx()).render();
     for (const linha of document.querySelectorAll('#caa-list .ctrl-row')) {
       expect(linha.querySelectorAll('.opt-hint').length, linha.textContent).toBeLessThanOrEqual(1);
@@ -165,13 +164,13 @@ describe('ui/settings-caa — a montagem pelo kit (ADR-0129)', () => {
     for (const s of CAA_SETS) {
       expect($(`#caa-list button[data-caa="${s.key}"]`).disabled, s.key).toBe(!s.available);
     }
-    // O interruptor das letras é o piso offline: nunca depende de ficheiro nenhum, logo nunca vem travado.
+    // The letters switch is the offline floor: it never depends on any file, so it never comes locked.
     expect($('#caa-caixa-alta').disabled).toBe(false);
   });
 
   it('[Many] montar duas vezes REETIQUETA em vez de duplicar — senão cada render deixaria linhas órfãs', () => {
-    // ⚠️ E reetiquetar não é economia: refazer a linha deixaria um controle no documento e SEM escuta — um
-    // botão morto com aparência de vivo (ADR-0106 §5). É o que o `labelRow` do kit existe para fazer.
+    // ⚠️ And relabelling is not thrift: redoing the row would leave a control in the document WITHOUT a listener — a dead
+    // button that looks alive (ADR-0106 §5). It is what the kit's `labelRow` exists to do.
     const lista = $('#caa-list');
     mountCaaInside(kit(), lista);
     const antes = lista.querySelectorAll('.ctrl-row').length;
@@ -185,9 +184,9 @@ describe('ui/settings-caa — a montagem pelo kit (ADR-0129)', () => {
 
 describe('ui/settings-caa — abrir e fechar', () => {
   it('[Right] open mostra o overlay e foca o primeiro botão; close o esconde e DEVOLVE o foco', () => {
-    // 🔴 O NOME DESTE CASO PROMETIA O FOCO E O CASO NÃO O MEDIA (achado por sonda em 22/09: apagar o
-    // `f.focus()` deixava-o verde). Quem abre um painel pelo teclado e fica com o foco atrás dele não tem como
-    // alcançar o que acabou de abrir — e quem o fecha e não o recebe de volta perde o lugar na lista.
+    // 🔴 This case's name promises the focus, and a probe on 22/09 found it did not measure it (deleting `f.focus()` left
+    // it green). Whoever opens a panel by keyboard and keeps the focus behind it has no way to reach what they just
+    // opened — and whoever closes it and does not get it back loses their place in the list.
     const ctx = fullCtx();
     const devolvido = [];
     const api = initSettingsCaa({ ...ctx, restoreFocus: (id) => { devolvido.push(id); return true; } });
