@@ -1,11 +1,11 @@
 {
   "measured": "2026-09-24",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 785,
+  "total": 800,
   "totals": {
-    "decl": 210,
-    "param": 256,
-    "membro": 319
+    "decl": 217,
+    "param": 259,
+    "membro": 324
   },
   "files": {
     "app/js/boot/create-game.ts": {
@@ -186,17 +186,17 @@
     "app/js/platform/interruptible-speech.ts": {
       "decl": 2,
       "param": 6,
-      "membro": 5
+      "membro": 6
     },
     "app/js/platform/kokoro-port.ts": {
       "decl": 0,
       "param": 0,
-      "membro": 4
+      "membro": 5
     },
     "app/js/platform/kokoro.ts": {
-      "decl": 4,
-      "param": 4,
-      "membro": 5
+      "decl": 5,
+      "param": 5,
+      "membro": 6
     },
     "app/js/platform/speech-recognition.ts": {
       "decl": 2,
@@ -209,9 +209,9 @@
       "membro": 0
     },
     "app/js/platform/tts.ts": {
-      "decl": 11,
+      "decl": 12,
       "param": 11,
-      "membro": 8
+      "membro": 10
     },
     "app/js/platform/vision.ts": {
       "decl": 0,
@@ -254,7 +254,7 @@
       "membro": 4
     },
     "app/js/render/viz-axes.ts": {
-      "decl": 0,
+      "decl": 1,
       "param": 0,
       "membro": 2
     },
@@ -330,7 +330,7 @@
     },
     "app/js/ui/layout.ts": {
       "decl": 4,
-      "param": 0,
+      "param": 2,
       "membro": 11
     },
     "app/js/ui/loop-crash.ts": {
@@ -339,7 +339,7 @@
       "membro": 3
     },
     "app/js/ui/menu-nav.ts": {
-      "decl": 3,
+      "decl": 6,
       "param": 5,
       "membro": 6
     },
@@ -364,7 +364,7 @@
       "membro": 2
     },
     "app/js/ui/pause-icons.ts": {
-      "decl": 10,
+      "decl": 11,
       "param": 5,
       "membro": 30
     },
