@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/state.ts — ESTADO de input em runtime + query genérica, compartilhado pelos handlers (que ficam no
-// game.js e mutam estes objetos IN-PLACE): teclas seguradas (keys), estado de gamepad por controle
-// (padCur/padPrevAct/padPrevStart) e a zona morta do analógico (PAD_DEAD). held(pl,act) = o jogador está
-// segurando a ação, por teclado (pl.ctrl) OU pelo gamepad associado (pl.pad). Módulo-folha, ZERO deps. (Fase 2.22)
+// input/state.ts — runtime input STATE + a generic query, shared by the writers that mutate these objects IN
+// PLACE (the virtual controller through the root, `input/keydown`, `input/gamepad`): held keys (keys), pad state per
+// controller (padCur/padPrevAct/padPrevStart) and the stick's dead zone (PAD_DEAD). held(pl,act) = the player is
+// holding the action, on the keyboard (pl.ctrl) OR on the pad assigned to them (pl.pad).
 
-// Teclas físicas seguradas AGORA (KeyboardEvent.code). Mutada por keydown/keyup no game.js.
+// Physical keys held NOW (KeyboardEvent.code).
 import type { ControlledPlayer } from '../core/entity.js';
 import type { Action } from '../core/actions.js';
-// ⚠️ O cabeçalho deste módulo dizia «ZERO deps», e ele já tinha DUAS de tipo (`ControlledPlayer`, `Action`) —
-// a frase queria dizer «nada em tempo de execução», que continua verdade: os três imports são `type` e
-// desaparecem no build. A terceira entra pela mesma razão que as outras duas: o vocabulário mora com quem
-// tem as REGRAS sobre ele (`input/transport-in-use`), e repeti-lo aqui seria a segunda cópia de uma união.
+// The two above are type-only and vanish in the build. This one is not, and enters for the reason the vocabulary lives
+// where it does: with whoever has the RULES about it (`input/transport-in-use`, a leaf) — repeating it here would be a
+// second copy of a union.
 import {
   DEFAULT_INPUT_STATE, afterEdge, enableAssisted, disableAssisted,
   type TransportName, type InputState,
@@ -19,29 +18,28 @@ import {
 export const keys = new Set<string>();
 
 /**
- * A ORIGEM DE CADA TECLA SEGURADA — código → aparelho que a produziu (ADR-0109).
+ * THE SOURCE OF EACH HELD KEY — code → the device that produced it (ADR-0109).
  *
- * ⚠️ ESTE MAPA EXISTE PORQUE `keys` APAGA A ORIGEM À PORTA, e foi essa erasão que deixou o §C da issue #114
- * por construir durante dois meses: o toque escreve códigos aqui dentro (`press()` faz
- * `heldKeys.add(codeFor(act))`) e a webcam despacha `KeyboardEvent` sintético, então quando o `held()`
- * responde já não há como saber QUEM carregou. O único transporte que sobrevivia identificável era o
- * gamepad, e só porque passa por `padCur` em vez do conjunto.
+ * ⚠️ THIS MAP EXISTS BECAUSE `keys` ERASES THE SOURCE AT THE DOOR (issue #114): it is a set of CODES, and several
+ * transports hold keys in it — the keyboard, and the virtual controller for a position the eyes, the face, the hands
+ * or the voice pressed — so by the time `held()` answers there is no telling WHO pressed. The pad keeps its own
+ * identity only because it goes through `padCur` instead of the set.
  *
- * ⚠️ CAMPO NOVO AO LADO DO VELHO, sincronizado num ponto só (`markKey`/`releaseKey`), com os leitores a
- * migrar um a um — é a forma que este repositório já usou no `p.visual` ao lado do `p.viz` (#104), e a razão
- * é a mesma: uma troca de uma vez não tem estado verde onde parar, e isto é a espinha da entrada.
+ * ⚠️ THE TWO ARE WRITTEN IN ONE PLACE (`markKey`/`releaseKey` and their siblings below), because they are two
+ * structures and may drift apart.
  *
- * 📌 Um código SEM entrada aqui não é um erro de dados — é uma tecla que entrou por um escritor que ainda não
- * migrou. `sourceOf` devolve `undefined` e quem pergunta decide; ver a nota lá.
+ * 📌 A code with NO entry here is not a data error — it is a key nobody signed, and every real key from the keyboard
+ * is one: an event the child produced carries no stamp. `sourceOf` returns `undefined` and whoever asks decides; see
+ * the note there.
  */
 export const keySource = new Map<string, TransportName>();
 
 /**
- * Uma tecla FOI SEGURADA, e sabe-se por quem. É o único sítio que escreve nos dois.
+ * A key WAS PRESSED, and who pressed it is known. The only place that writes both.
  *
- * ⚠️ OS DOIS JUNTOS OU NENHUM: enquanto forem duas estruturas, elas podem divergir, e uma divergência aqui é
- * silenciosa — o jogo continua a andar e só a alternância fica errada. Por isso não há `keys.add` público
- * neste módulo: quem escreve, escreve por aqui.
+ * ⚠️ BOTH TOGETHER OR NEITHER: while they are two structures they can drift apart, and a drift here is silent — the
+ * game keeps moving and only the latch goes wrong. That is why this module has no public `keys.add`: whoever writes,
+ * writes through here.
  */
 export function markKey(code: string, origin: TransportName): void {
   keys.add(code);
@@ -49,21 +47,20 @@ export function markKey(code: string, origin: TransportName): void {
 }
 
 /**
- * A tecla foi segurada e NÃO SE SABE por quem. A porta estreita, e ela é estreita de propósito.
+ * The key was pressed and WHO pressed it is NOT KNOWN. The narrow door, and it is narrow on purpose.
  *
- * ⚠️ POR QUE UMA FUNÇÃO COM OUTRO NOME E NÃO UM SEGUNDO PARÂMETRO OPCIONAL. `markKey(code)` com a origem
- * omitida é o que se escreve quando não se pensou; `markKeyWithoutSource(code)` é o que se escreve quando se
- * pensou e a resposta é «não sei». O tipo não distingue as duas, mas o nome distingue — e é o nome que
- * aparece na revisão. Um parâmetro esquecido não se lê; uma função assim chamada lê-se de longe.
+ * ⚠️ WHY A FUNCTION WITH ANOTHER NAME AND NOT AN OPTIONAL SECOND PARAMETER. `markKey(code)` with the source left out
+ * is what gets written without thinking; `markKeyWithoutSource(code)` is what gets written after thinking, when the
+ * answer is "I don't know". The type does not tell the two apart, but the name does — and the name is what shows in
+ * review. A forgotten parameter cannot be read; a function called this can be read from afar.
  *
- * ⚠️ E O `delete` É A METADE QUE IMPORTA, não o `add`. Sem ele, uma tecla premida de novo por uma fonte
- * desconhecida HERDAVA a origem da vez anterior: a criança joga por olhar, larga a tecla, um script de fora
- * despacha o mesmo código, e a alternância continua a responder «olhos» a uma aresta que já não é dela. Um
- * mapa que guarda a resposta certa de ontem é pior do que um que não guarda nada.
+ * ⚠️ AND THE `delete` IS THE HALF THAT MATTERS, not the `add`. Without it, a key pressed again by an unknown source
+ * INHERITED the source of the time before: the child plays by gaze, lets go of the key, something else dispatches the
+ * same code, and the latch keeps answering "eyes" to an edge that is no longer theirs. A map that keeps yesterday's
+ * right answer is worse than one that keeps nothing.
  *
- * 📌 Hoje há UM chamador — o `input/keydown`, para o evento sintético que ninguém assinou. Depois desta
- * migração nada nesta engine produz um; quem produz é código de consumidor, e é para ele que esta porta fica
- * aberta. Fechá-la faria a tecla dele simplesmente não funcionar, o que é uma quebra pior do que não saber.
+ * 📌 Every real key comes through here, since an event the child produced carries no stamp: `input/keydown` calls it
+ * directly, and the root reaches it through `markKeyFrom` when the virtual controller holds an unsigned key.
  */
 export function markKeyWithoutSource(code: string): void {
   keys.add(code);
@@ -71,30 +68,36 @@ export function markKeyWithoutSource(code: string): void {
 }
 
 /**
- * A tecla foi segurada e o CHAMADOR PODE NÃO SABER por quem — escolhe a porta certa das duas acima.
+ * The key was pressed and the CALLER MAY NOT KNOW by whom — it picks the right one of the two doors above.
  *
- * ⚠️ NÃO É `markKey` COM A ORIGEM OPCIONAL, e a diferença é a que o comentário do `markKeyWithoutSource` defende: um
- * parâmetro esquecido não se lê, e esta assinatura exige a união EXPLÍCITA. Quem sabe quem apertou continua a chamar
- * `markKey`; esta é para quem recebe a resposta de outro e não pode fingir que a tem.
+ * ⚠️ IT IS NOT `markKey` WITH AN OPTIONAL SOURCE, and the difference is the one `markKeyWithoutSource`'s comment
+ * argues: a forgotten parameter cannot be read, and this signature demands the union EXPLICITLY. Whoever knows who
+ * pressed keeps calling `markKey`; this one is for whoever receives the answer from someone else and cannot pretend
+ * to have it.
  *
- * 🔴 Existe porque essa escolha estava escrita DUAS vezes com a mesma frase ao lado — no `input/keydown` (o evento
- * sintético que ninguém assinou) e, desde a porta única do ADR-0223, na raiz, onde o controle virtual segura a tecla
- * de todo transporte. Duas cópias de uma regra são duas hipóteses de divergir, e esta já tem um lado caro: herdar a
- * origem de ontem responde «olhos» a uma aresta que já não é dela.
- * 📌 O `input/keydown` recebe as duas portas pelo ctx dele, logo adopta esta quando esse ctx mudar por outra razão —
- * mudá-lo só por isto seria uma quebra para todo cartucho que monta o teclado.
+ * 🔴 It exists because that choice was written TWICE with the same sentence beside it — in `input/keydown` and, since
+ * ADR-0223's single door, in the root, where the virtual controller holds the key of every transport. Two copies of a
+ * rule are two chances to diverge, and this one has an expensive side: inheriting yesterday's source answers "eyes"
+ * to an edge that is no longer theirs.
+ * 📌 `input/keydown` receives the two doors through its ctx, so it adopts this one when that ctx changes for another
+ * reason — changing it for this alone would break every cartridge that mounts the keyboard.
  */
 export function markKeyFrom(code: string, source: TransportName | undefined): void {
   if (source) markKey(code, source); else markKeyWithoutSource(code);
 }
 
-/** A outra metade. Solta nos dois, pela mesma razão. */
+/** The other half. Lets go in both, for the same reason. */
 export function releaseKey(code: string): void {
   keys.delete(code);
   keySource.delete(code);
 }
 
-/** Solta TUDO — o `blur` da janela. Os dois, ou o mapa fica a descrever teclas que já ninguém segura. */
+/**
+ * Lets go of EVERYTHING — both structures, or the map is left describing keys nobody holds any more.
+ *
+ * ⚠️ The window's `blur` does NOT use this: a blur owes a keyup only to what the keyboard holds, and the keyup has to
+ * be heard by everything that counts presses — see `letGoOfTheKeyboard` below.
+ */
 export function releaseAllKeys(): void {
   keys.clear();
   keySource.clear();
@@ -120,50 +123,50 @@ export function letGoOfTheKeyboard(release: (code: string) => void): void {
 }
 
 /**
- * Quem produziu esta tecla? `undefined` quando não se sabe.
+ * Who produced this key? `undefined` when it is not known.
  *
- * ⚠️ `undefined` E NÃO UM PADRÃO. Um padrão `'teclado'` faria a erasão voltar por outra porta: uma tecla do
- * toque que entrasse por um escritor não migrado seria lida como teclado, a alternância desligava-se, e nada
- * o diria. Não saber é uma resposta; fingir que se sabe não é.
+ * ⚠️ `undefined` AND NOT A DEFAULT. A `'teclado'` default would bring the erasure back through another door: an
+ * unsigned key from a producer this engine does not know would be read as the keyboard, the latch would turn off for
+ * whoever plays by gaze, and nothing would say so. Not knowing is an answer; pretending to know is not.
  */
 export function sourceOf(code: string): TransportName | undefined {
   return keySource.get(code);
 }
 
-// ===================== O TRANSPORTE EM USO, POR JOGADOR (ADR-0109 · ADR-0113) =====================
+// ===================== THE TRANSPORT IN USE, PER PLAYER (ADR-0109 · ADR-0113) =====================
 //
-// ⚠️ AQUI E NÃO NO `PlayerBase`, e a escolha é medida. O autómato responde «que aparelho está a produzir as
-// arestas deste jogador» — isso é estado de ENTRADA, e a entrada já guarda estado por jogador neste módulo
-// exactamente com esta forma: o `padCur` logo abaixo é um `Record<number, …>`. Pô-lo no `PlayerBase` faria
-// dele parte do CONTRATO, e trezentos cartuchos passariam a declarar um campo sobre o qual não decidem nada.
+// ⚠️ HERE AND NOT ON `PlayerBase`, and the choice is measured. The automaton answers "which device is producing this
+// player's edges" — that is INPUT state, and input already keeps per-player state in this module in exactly this
+// shape: `padCur` just below is a `Record<number, …>`. Putting it on `PlayerBase` would make it part of the CONTRACT,
+// and every cartridge would have to declare a field it decides nothing about.
 //
-// 📌 O que o jogador CARREGA é a alternância resolvida (`toggleMove`), que é o que a física lê. Este mapa é
-// o que está a montante dela: com ele e com o `input/latch-store`, a resposta do ADR-0113 fica completa.
+// 📌 What the player CARRIES is the resolved latch (`toggleMove`), which is what the physics reads. This map is what
+// sits upstream of it: with it and `input/latch-store`, ADR-0113's answer is complete.
 const inputByPlayer: Record<number, InputState> = {};
 
 /**
- * O ESTADO DA ENTRADA DESTE JOGADOR. Nunca `undefined`: quem nunca produziu uma aresta está no PADRÃO.
+ * THIS PLAYER'S INPUT STATE. Never `undefined`: whoever never produced an edge is at the DEFAULT.
  *
- * ⚠️ `DEFAULT_INPUT_STATE` E NÃO `undefined`, pela mesma razão que o `sourceOf` faz o contrário: ali «não sei» é uma
- * resposta honesta sobre uma tecla que já existe; aqui a pergunta é sobre um JOGADOR, e um jogador que
- * ainda não tocou em nada está mesmo no teclado sem assistida — que é o que `DEFAULT_INPUT_STATE` diz.
+ * ⚠️ `DEFAULT_INPUT_STATE` AND NOT `undefined`, for the same reason `sourceOf` does the opposite: there, "I don't know"
+ * is an honest answer about a key that exists; here the question is about a PLAYER, and a player who has not touched
+ * anything yet really is on the keyboard with nothing assisted — which is what `DEFAULT_INPUT_STATE` says.
  */
 export function inputOf(player: number): InputState {
   return inputByPlayer[player] ?? DEFAULT_INPUT_STATE;
 }
 
 /**
- * UMA ARESTA DESTE JOGADOR CHEGOU, com a sua origem.
+ * AN EDGE FROM THIS PLAYER ARRIVED, with its source.
  *
- * 📌 O `afterEdge` devolve o MESMO objecto quando nada muda, então guardar de volta não aloca por quadro.
- * ⚠️ E uma aresta de um transporte assistido NÃO o habilita — essa regra vive no `afterEdge` e a razão
- * está lá: um falso positivo da webcam trancaria a alternância de toda a gente sem ninguém ter pedido.
+ * 📌 `afterEdge` returns the SAME object when nothing changes, so storing it back allocates nothing per frame.
+ * ⚠️ And an edge from an assisted transport does NOT enable it — that rule lives in `afterEdge` with its reason: a
+ * webcam false positive would lock latching on for everyone without anyone asking.
  */
 export function playerEdge(player: number, origin: TransportName): void {
   inputByPlayer[player] = afterEdge(inputOf(player), origin);
 }
 
-/** Habilitar a assistida é um ACTO EXPLÍCITO (ADR-0109 regra 4), e por isso tem porta própria. */
+/** Enabling the assisted transports is an EXPLICIT ACT (ADR-0109 rule 4), and so it has its own door. */
 export function enableAssistedFor(player: number): void {
   inputByPlayer[player] = enableAssisted(inputOf(player));
 }
@@ -173,33 +176,33 @@ export function disableAssistedFor(player: number): void {
 }
 
 /**
- * ⚠️ ESQUECER É UMA PORTA SEPARADA, E O `releaseAllKeys` NÃO A CHAMA — de propósito.
+ * ⚠️ FORGETTING IS A SEPARATE DOOR, AND LETTING GO OF KEYS DOES NOT CALL IT — on purpose.
  *
- * O `blur` da janela solta as teclas porque elas deixaram mesmo de estar premidas. Mas a criança não trocou
- * de aparelho por mudar de separador: zerar o transporte em uso ali devolveria toda a gente ao teclado, e
- * quem joga por olhar perderia a alternância no meio da partida sem nada o dizer. Existe para o fim de uma
- * PARTIDA, onde a pergunta se põe de novo.
+ * The window's `blur` lets go of the keyboard's keys because they really stopped being pressed. But the child did not
+ * change devices by changing tabs: resetting the transport in use there would send everyone back to the keyboard, and
+ * whoever plays by gaze would lose latching mid-match with nothing saying so. It exists for the end of a MATCH, where
+ * the question is asked again.
  */
 export function forgetInputs(): void {
   for (const k of Object.keys(inputByPlayer)) delete inputByPlayer[Number(k)];
 }
 
-// Gamepad (B3/L1): padCur[gi] = ações seguradas neste frame; padPrevAct/padPrevStart = borda do frame anterior.
-// Associação pad↔jogador vive em p.pad. Mutados IN-PLACE por pollPads no game.js.
+// Gamepad: padCur[gi] = actions held this frame; padPrevAct/padPrevStart = the previous frame's edge.
+// The pad↔player assignment lives in p.pad. Mutated IN PLACE by `input/gamepad`'s `pollPads`.
 type PadState = Record<string, boolean>;
 export const padCur: Record<number, PadState> = {};
 export const padPrevAct: Record<number, PadState> = {};
 export const padPrevStart: Record<number, boolean> = {};
-export const PAD_DEAD = 0.5; // zona morta = primeira METADE do curso do analógico (ergonomia — José 2026-07-02)
+export const PAD_DEAD = 0.5; // dead zone = the first HALF of the stick's travel (ergonomics — the Dev's decision)
 
-// Contrato mínimo do jogador que o `held` precisa — DERIVADO de core/entity. `ControlledPlayer` porque o
-// `held` só é chamado durante a partida, quando o assignControls já rodou e `ctrl` não é mais `null`.
+// The minimum player contract `held` needs — DERIVED from core/entity. `ControlledPlayer` because `held` is only
+// called during a match, when assignControls has run and `ctrl` is no longer `null`.
 type HeldPlayer = Pick<ControlledPlayer, 'ctrl' | 'pad'>;
 
-// Jogador está segurando a ação? teclado (algum code do esquema pl.ctrl) OU o gamepad associado (pl.pad).
-// ⚠️ `?? []` e não `pl.ctrl[act]` cru: desde a issue #118 uma posição que o teclado NÃO ALCANÇA é um `null`
-// declarado — num teclado partido por quatro não há lugar físico para ombros e gatilhos. Segurar uma ação
-// que o teclado não alcança é `false`, e o gamepad continua a ser perguntado logo a seguir: quem tem pad
-// alcança o que o teclado dele não alcança, que é o ponto de haver dois transportes.
+// Is the player holding the action? keyboard (some code in the pl.ctrl scheme) OR the assigned pad (pl.pad).
+// ⚠️ `?? []` and not a raw `pl.ctrl[act]`: since issue #118 a position the keyboard DOES NOT REACH is a declared
+// `null` — on a keyboard split four ways there is no physical room for shoulders and triggers. Holding an action the
+// keyboard does not reach is `false`, and the pad is asked right after: whoever has a pad reaches what their keyboard
+// does not, which is the point of having two transports.
 export const held = (pl: HeldPlayer, act: Action): boolean =>
   (pl.ctrl[act] ?? []).some((k) => keys.has(k)) || (pl.pad >= 0 && !!padCur[pl.pad]?.[act]);

@@ -1,49 +1,54 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/transport-in-use — A ALTERNÂNCIA SEGUE O APARELHO EM USO (ADR-0109), na metade pura.
+// input/transport-in-use — THE LATCH FOLLOWS THE DEVICE IN USE (ADR-0109), the pure half.
 //
-// ========================= O QUE ESTE MÓDULO É =========================
-// O autómato das quatro regras do ADR-0109 §1, sem DOM, sem armazenamento e sem eventos. Recebe ARESTAS com
-// origem e devolve estado; quem pergunta «há alternância agora?» pergunta ao estado.
+// ========================= WHAT THIS MODULE IS =========================
+// The automaton of ADR-0109 §1's four rules, with no DOM, no storage and no events. It takes EDGES with their
+// origin and returns state; whoever asks "is latching on now?" asks the state.
 //
-//   1. Por padrão, controle e teclado, ambos SEM alternância.
-//   2. Clique de mouse ou toque na tela → controles de tela COM alternância.
-//   3. Apertar tecla devolve o teclado SEM alternância; usar o controle faz o mesmo.
-//   4. Câmera e microfone precisam ser habilitados; habilitados, ligam a alternância em TODOS os outros
-//      controles, SEM possibilidade de desligar. São prioridade.
+//   1. By default, pad and keyboard, both WITHOUT latching.
+//   2. A mouse click or a touch on the screen → on-screen controls WITH latching.
+//   3. Pressing a key returns the keyboard WITHOUT latching; using the pad does the same.
+//   4. Camera and microphone have to be enabled; once enabled, they turn latching on for ALL the other
+//      controls, with NO way to turn it off. They take priority.
 //
-// ⚠️ POR QUE ISTO É UM AUTÓMATO E NÃO UM VALOR GUARDADO — e é o que o ADR-0109 supersede do ADR-0104 §C. A
-// alternância era uma ESCOLHA guardada por transporte, e a issue #114 mediu que a fiação dela não era
-// escrevível: a origem da aresta é apagada à porta (`input/state.keys` é `Set<string>` de CÓDIGOS, e o toque
-// e a webcam escrevem lá dentro). O Dev decidiu o COMPORTAMENTO, e o comportamento escolhe o mecanismo.
+// ⚠️ WHY THIS IS AN AUTOMATON AND NOT A STORED VALUE — and it is what ADR-0109 supersedes of ADR-0104 §C.
+// Latching was a CHOICE stored per transport, and issue #114 measured that its wiring could not be written: the
+// edge's origin is erased at the door (`input/state.keys` is a `Set<string>` of CODES, and touch and the webcam
+// write into it). The Dev decided the BEHAVIOUR, and the behaviour picks the mechanism.
 //
-// ⚠️ E A REGRA 3 É A RAZÃO DE PRECISAR DE DUAS COISAS, não de uma. «Apertar uma tecla devolve o teclado sem
-// alternância» são DOIS factos: um EVENTO cuja origem tem de ser conhecida, e um MODO que persiste até à
-// troca seguinte. Uma aresta não guarda estado; um modo guardado não detecta a própria troca. Nenhuma metade
-// exprime a regra; juntas exprimem. Este ficheiro é a segunda metade — o MODO.
+// ⚠️ AND RULE 3 IS WHY IT TAKES TWO THINGS, not one. "Pressing a key returns the keyboard without latching" is
+// TWO facts: an EVENT whose origin must be known, and a MODE that persists until the next switch. An edge keeps
+// no state; a stored mode does not detect its own switch. Neither half expresses the rule; together they do.
+// This file is the second half — the MODE.
 //
-// 📌 A imagem do Dev, mantida porque diz a coisa: é um CAPS-LOCK NUM TECLADO COM MEMÓRIA. Modo e não estado
-// momentâneo; lembrado por aparelho; trocar de aparelho não apaga o que o outro lembra.
+// 📌 The Dev's image, kept because it says the thing: it is a CAPS LOCK ON A KEYBOARD WITH MEMORY. A mode and
+// not a momentary state; remembered per device; switching devices does not erase what the other remembers.
 
-/** Os aparelhos por onde uma criança joga. Fechado: um transporte novo tem de decidir a sua regra aqui. */
+/**
+ * The devices a child plays through. Closed: a new transport has to decide its rule here.
+ *
+ * The values stay Portuguese because they are stored — `latch-scope.latchKey` puts the transport name in the
+ * key — and renaming a stored value loses what the child saved.
+ */
 export type TransportName = 'teclado' | 'gamepad' | 'toque' | 'olhos' | 'rosto' | 'gestos' | 'fala';
 
 /**
- * A UNIÃO COMO VALOR, porque há um sítio onde ela tem de ser verificada em runtime.
+ * THE UNION AS A VALUE, because there is one place where it has to be checked at runtime.
  *
- * ⚠️ EXISTE POR CAUSA DE UMA FRONTEIRA, e é a única razão que a justifica: o `input/synthetic-source` lê o
- * transporte de um EXPANDO pendurado num `KeyboardEvent` — um objecto que este código não construiu e que
- * qualquer script da página pode construir. Um valor que atravessa essa fronteira não é um `TransportName` por
- * o TypeScript o dizer; é uma `string` até alguém a conferir. Sem lista, `'olho'` entrava no mapa de origens
- * como transporte fantasma, e nada o diria.
+ * ⚠️ IT EXISTS BECAUSE OF A BOUNDARY, and that is the only reason that justifies it: `input/synthetic-source`
+ * reads the transport from an EXPANDO hung on a `KeyboardEvent` — an object this code did not build and that
+ * any script on the page can build. A value crossing that boundary is not a `TransportName` because TypeScript
+ * says so; it is a `string` until someone checks it. Without the list, `'olho'` would enter the origin map as a
+ * phantom transport, and nothing would say so.
  *
- * 📌 Não é o defeito da lista-ao-lado-da-união que este repositório já desfez três vezes (o `RM_KEYS`, os
- * rótulos de movimento reduzido, as chaves de armazenamento), porque a guarda abaixo é do COMPILADOR: as duas
- * não podem divergir. Uma cópia que não pode divergir é uma projecção, não uma segunda fonte.
+ * 📌 This is not the list-beside-the-union defect this repository has already undone three times (`RM_KEYS`,
+ * the reduced-motion labels, the storage keys), because the guard below belongs to the COMPILER: the two cannot
+ * diverge. A copy that cannot diverge is a projection, not a second source.
  */
 export const TRANSPORT_NAMES = ['teclado', 'gamepad', 'toque', 'olhos', 'rosto', 'gestos', 'fala'] as const;
 
-// `[X] extends [never]` e não `X extends never`: o condicional distribui sobre `never` e daria `never` em vez
-// de responder à pergunta. Mesma forma do `_COBRE_A_UNIAO` do `ui/motion-scene`.
+// `[X] extends [never]` and not `X extends never`: the conditional distributes over `never` and would give
+// `never` instead of answering the question. Same shape as `_COVERS_THE_UNION` in `ui/motion-scene`.
 type _MissingTransport = Exclude<TransportName, (typeof TRANSPORT_NAMES)[number]>;
 type _ExtraTransport = Exclude<(typeof TRANSPORT_NAMES)[number], TransportName>;
 const _COVERS_THE_TRANSPORTS: [_MissingTransport] extends [never]
@@ -52,75 +57,76 @@ const _COVERS_THE_TRANSPORTS: [_MissingTransport] extends [never]
 void _COVERS_THE_TRANSPORTS;
 
 /**
- * Isto que veio de fora é mesmo um transporte?
+ * Is this thing that came from outside really a transport?
  *
- * ⚠️ A pergunta não é de segurança — os scripts desta página são todos da casa, e quem quisesse mentir usaria
- * um valor VÁLIDO. É de correcção: impede que um carimbo errado ou ausente vire uma entrada silenciosa no
- * `keySource`, que é a estrutura de que a alternância inteira depende.
+ * ⚠️ The question is not about security — every script on this page is ours, and whoever wanted to lie would
+ * use a VALID value. It is about correctness: it keeps a wrong or missing stamp from becoming a silent entry in
+ * `keySource`, the structure the whole latch depends on.
  */
 export function isTransportName(v: unknown): v is TransportName {
   return typeof v === 'string' && (TRANSPORT_NAMES as readonly string[]).includes(v);
 }
 
 /**
- * OS QUATRO QUE EXIGEM HABILITAÇÃO EXPLÍCITA e, uma vez habilitados, mandam em todos (regra 4).
+ * THE FOUR THAT REQUIRE EXPLICIT ENABLING and, once enabled, rule over all the others (rule 4).
  *
- * ⚠️ É a mesma lista do `ONE_COMMAND_AT_A_TIME` do `input/latch-scope`, e a coincidência não é acaso: são
- * os transportes de quem NÃO CONSEGUE SEGURAR NADA. O que o ADR-0109 acrescenta é que eles não ligam a
- * alternância só para si — ligam-na para o resto, porque quem usa a webcam pode também tocar na tela, e uma
- * alternância que se desliga ao mudar de aparelho é uma armadilha para exactamente essa pessoa.
+ * ⚠️ It is the same list as `ONE_COMMAND_AT_A_TIME` in `input/latch-scope`, and the match is no accident: these
+ * are the transports of whoever CANNOT HOLD ANYTHING. What ADR-0109 adds is that they do not turn latching on
+ * only for themselves — they turn it on for the rest, because whoever uses the webcam may also touch the screen,
+ * and a latch that turns off when the device changes is a trap for exactly that person.
  */
 export const NEED_ENABLING: ReadonlySet<TransportName> = new Set(['olhos', 'rosto', 'gestos', 'fala']);
 
-/** O transporte que liga a alternância por si só, sem prioridade nenhuma envolvida (regra 2). */
+/** The transport that turns latching on by itself, with no priority involved (rule 2). */
 export const LATCH_OF_THEIR_OWN: ReadonlySet<TransportName> = new Set(['toque']);
 
 export interface InputState {
-  /** Qual aparelho está a ser usado AGORA por este jogador. */
+  /** Which device this player is using NOW. */
   readonly inUse: TransportName;
   /**
-   * A câmera/microfone foi habilitada? ⚠️ Uma vez `true`, NUNCA volta a `false` por uma aresta — só uma
-   * decisão explícita a desliga, e o ADR-0109 §4 diz que a criança não tem essa decisão. Ver `desabilitar`.
+   * Was the camera/microphone enabled? ⚠️ Once `true`, it NEVER goes back to `false` through an edge — only an
+   * explicit decision turns it off, and ADR-0109 §4 says the child does not own that decision. See
+   * `disableAssisted`.
    */
   readonly assistedOn: boolean;
 }
 
 /**
- * O ESTADO INICIAL: teclado, sem alternância.
+ * THE INITIAL STATE: keyboard, without latching.
  *
- * ⚠️ A regra 1 diz «controle E teclado, ambos sem alternância», e é por isso que o padrão pode nomear um só
- * sem mentir: entre os dois a resposta à única pergunta que este módulo faz — há alternância? — é a MESMA.
- * O `emUso` só passa a distingui-los quando alguém quiser MOSTRAR o aparelho corrente, que é outra questão
- * e o ADR-0109 deixa-a explicitamente por decidir.
+ * ⚠️ Rule 1 says "pad AND keyboard, both without latching", and that is why the default can name just one
+ * without lying: between the two, the answer to the only question this module asks — is latching on? — is the
+ * SAME. `inUse` only starts telling them apart when someone wants to SHOW the current device, which is another
+ * question, and ADR-0109 explicitly leaves it undecided.
  */
 export const DEFAULT_INPUT_STATE: InputState = Object.freeze({ inUse: 'teclado', assistedOn: false });
 
 /**
- * HÁ ALTERNÂNCIA AGORA? — ⚠️ **NÃO PERGUNTE ISTO A ESTA FUNÇÃO.** Ver o parágrafo abaixo.
+ * IS LATCHING ON NOW? — ⚠️ **DO NOT ASK THIS FUNCTION.** See the paragraph below.
  *
- * ⚠️ A prioridade da assistida vem PRIMEIRO, e a ordem é a regra 4 inteira: enquanto ela estiver ligada,
- * nenhum outro aparelho a desliga — nem o teclado, que noutro caso a desligaria. Inverter estas duas linhas
- * é o defeito que trancaria uma criança fora do próprio jogo, e é silencioso.
+ * ⚠️ The assisted priority comes FIRST, and the order is the whole of rule 4: while it is on, no other device
+ * turns latching off — not even the keyboard, which otherwise would. Swapping these two lines is the defect that
+ * would lock a child out of their own game, and it is silent.
  *
- * @deprecated 🔴 **ESTA FUNÇÃO IMPLEMENTA O MODELO QUE O ADR-0113 SUPERSEDEU**, e fica exportada por ser
- * superfície publicada (`./input/*.js`) e por o registo ter valor histórico — não por ser a resposta.
+ * @deprecated 🔴 **THIS FUNCTION IMPLEMENTS THE MODEL ADR-0113 SUPERSEDED**, and stays exported because it is
+ * published surface (`./input/*.js`) and because the record has historical value — not because it is the answer.
  *
- * O ADR-0109 decidia a alternância **só pelo aparelho**: assistida ligada → sim; toque → sim; todo o resto
- * → não. O ADR-0113 retirou essa cláusula, com a razão do Dev: a alternância é um **caps-lock guardado com
- * o mapeamento do controle**, e o valor que a criança gravou vale.
+ * ADR-0109 decided latching **by device alone**: assisted on → yes; touch → yes; everything else → no. ADR-0113
+ * withdrew that clause, with the Dev's reason: latching is a **caps lock stored with the controller's mapping**,
+ * and the value the child saved counts.
  *
- * 🔴 A DIVERGÊNCIA TEM UMA CRIANÇA CONCRETA, e é a que motivou o registo: quem tem dificuldade motora, joga
- * no TECLADO e gravou a alternância ligada. Esta função devolve `false` para ela — `teclado` não está em
- * `LATCH_OF_THEIR_OWN` — e é exactamente o controle que lhe seria retirado. O `latch-scope.latchOf`
- * devolve `true`, porque lê o que ela gravou.
+ * 🔴 THE DIVERGENCE HAS A CONCRETE CHILD, and it is the one who prompted the record: someone with a motor
+ * difficulty who plays on the KEYBOARD and saved latching on. This function returns `false` for them —
+ * `teclado` is not in `LATCH_OF_THEIR_OWN` — and that is exactly the control they would lose.
+ * `latch-scope.latchOf` returns `true`, because it reads what they saved.
  *
- * ⚠️ E A CLÁUSULA DO TOQUE TAMBÉM CAIU: sob o ADR-0113 o toque é um transporte como os outros — o valor dele
- * é escolha e fica guardado. Só olhos, rosto, gestos e fala podem recusar-se a DESLIGAR, e essa metade vive
- * em `latch-scope.latchAlwaysOn`, com um conjunto diferente deste e a responder a outra pergunta.
+ * ⚠️ AND THE TOUCH CLAUSE FELL TOO: under ADR-0113 touch is a transport like the others — its value is a choice
+ * and is stored. Only eyes, face, gestures and speech may refuse to turn OFF, and that half lives in
+ * `latch-scope.latchAlwaysOn`, with a different set from this one and answering a different question.
  *
- * **A resposta certa é `latch-scope.latchOf(estado.emUso, leitura)`.** O papel que sobra a este
- * módulo é o que o nome dele diz: QUAL transporte está em uso — que é o que alimenta aquele primeiro
- * argumento. `tests/latching-per-transport.node.test.js` afirma que esta função continua sem consumidor.
+ * **The right answer is `latch-scope.latchOf(inputState.inUse, reading)`.** The role left to this module is
+ * what its name says: WHICH transport is in use — which is what feeds that first argument.
+ * `tests/latching-per-transport.node.test.js` asserts this function still has no consumer.
  */
 export function latchNow(inputState: InputState): boolean {
   if (inputState.assistedOn) return true;
@@ -128,29 +134,29 @@ export function latchNow(inputState: InputState): boolean {
 }
 
 /**
- * UMA ARESTA CHEGOU, com a sua origem. Devolve o estado NOVO.
+ * AN EDGE ARRIVED, with its origin. Returns the NEW state.
  *
- * ⚠️ Uma aresta de um transporte assistido NÃO o habilita. Habilitar é um acto explícito (regra 4: «precisam
- * ser habilitados»), e deixar uma aresta fazê-lo significaria que um falso positivo da webcam — uma sombra,
- * um segundo rosto a passar — trancava a alternância de toda a gente sem ninguém ter pedido.
+ * ⚠️ An edge from an assisted transport does NOT enable it. Enabling is an explicit act (rule 4: they "have to
+ * be enabled"), and letting an edge do it would mean a webcam false positive — a shadow, a second face passing
+ * by — locked latching on for everyone without anyone asking.
  */
 export function afterEdge(inputState: InputState, origin: TransportName): InputState {
-  if (inputState.inUse === origin) return inputState; // sem mudança: devolve o MESMO objecto, não uma cópia
+  if (inputState.inUse === origin) return inputState; // no change: returns the SAME object, not a copy
   return { inUse: origin, assistedOn: inputState.assistedOn };
 }
 
-/** A criança (ou quem a acompanha) habilitou câmera/microfone. Daqui em diante a alternância é lei. */
+/** The child (or whoever is with them) enabled the camera/microphone. From here on, latching is law. */
 export function enableAssisted(inputState: InputState): InputState {
   return inputState.assistedOn ? inputState : { inUse: inputState.inUse, assistedOn: true };
 }
 
 /**
- * DESABILITAR a assistida. Existe, e o ADR-0109 diz de quem é: NÃO é da criança durante a partida.
+ * DISABLE the assisted transports. It exists, and ADR-0109 says whose it is: NOT the child's during a match.
  *
- * ⚠️ Fica exportada porque desligar a câmera tem de ser possível em algum lugar — trocar de utilizador,
- * fechar o jogo, um adulto a reconfigurar. O que o §4 proíbe é oferecê-la como um botão ao lado do jogo.
- * Uma função que existe e não é oferecida é diferente de uma função que não existe: a primeira diz onde a
- * decisão mora.
+ * ⚠️ It stays exported because turning the camera off has to be possible somewhere — switching users, closing
+ * the game, an adult reconfiguring. What §4 forbids is offering it as a button beside the game. A function that
+ * exists and is not offered differs from a function that does not exist: the first says where the decision
+ * lives.
  */
 export function disableAssisted(inputState: InputState): InputState {
   return inputState.assistedOn ? { inUse: inputState.inUse, assistedOn: false } : inputState;
