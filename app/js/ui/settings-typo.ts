@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/settings-typo — Typography panel (Estágio 4): extracted from game.js's renderTypo()/setGameFont(). Pure
-// logic (catalog view-model, key→CSS-target mapping, persisted-value validation) is separated from the thin
-// DOM-touching render()/setFont(). DI via initSettingsTypo(ctx): `$` (DOM selector), `srSay`, `store`
-// (platform/storage shape) and `root` (the element the chosen font is applied to — document.documentElement in
-// production). Overlay open/close plumbing (frontOverlay, focus management, the #typo hidden toggle, Escape
-// handling) is the SHARED helper used by every settings panel and stays in game.js. The font catalog itself
-// (FONT_GROUPS/FONT_BY_KEY) stays in ./fonts.js (Phase 2 extraction) — imported here, never duplicated.
+// ui/settings-typo — Typography panel. The thin DOM-touching render()/setFont(); what a choice IS lives in
+// ./typo-choices.js. DI via initSettingsTypo(ctx): `$` (DOM selector), `srSay`, `store` (platform/storage shape) and
+// `root` (the element the chosen font is applied to — document.documentElement in production). Overlay open/close
+// plumbing (frontOverlay, focus management, Escape handling) is the SHARED helper every settings panel uses. The font
+// catalog itself (FONT_GROUPS/FONT_BY_KEY) lives in ./fonts.js — imported here, never duplicated.
 
-// (`toggleLabel` saiu daqui em 2026-09-07: ele devolve «Ligado»/«Desligado», e este menu é uma ESCOLHA.)
+// (No on/off toggle label here: this menu is a CHOICE, not a switch.)
 import { t } from '../core/i18n.js';
 import { FONT_BY_KEY, DEFAULT_FONT_KEY, faceAvailable, faceScale } from './fonts.js';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
-// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+// `DomQuery` lives in `core/dom-query`: copies of this line in many modules drifted apart. Re-exported for whoever
+// already imported it from here.
 export type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal platform/storage.ts shape this module needs (get/set only — no direct localStorage access). */
@@ -33,30 +31,26 @@ export interface SettingsTypoCtx {
   /** Element the chosen font is applied to (dataset.fonte + --font-custom): document.documentElement in prod. */
   root: HTMLElement;
   /**
-   * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA `render()`, e
-   * não só ao abrir — que é o defeito que este parâmetro existe para fechar.
+   * Moves the rows' prose to the footer (`ui/settings-panel` → `fillExplain`). Called on EVERY `render()`, not only on
+   * open.
    *
-   * `fillExplain` roda uma vez quando o overlay é frontalizado e reescreve cada `<span>` para conter só o
-   * rótulo curto. Mas `render()` reconstrói o `#typo-list` inteiro a cada clique numa fonte, e as linhas novas
-   * voltam com o `.opt-hint` dentro. Sem esta chamada a descrição aparece DUAS vezes — no rodapé, vinda da
-   * primeira passada, e sob o nome da fonte, vinda do redesenho. O CLAUDE.md §4 avisa exatamente isso.
+   * Relabelling a row puts its `.opt-hint` back inside it. Without this call the description appears TWICE — in the
+   * footer, from the first pass, and under the font's name, from the redraw. CLAUDE.md §4 warns about exactly that.
    *
-   * OPCIONAL de propósito: um consumidor que monte este painel sem a casca (o segundo consumidor, um teste)
-   * continua desenhando. O que ele não pode é desenhar prosa duplicada, e sem casca não há rodapé para duplicar.
+   * OPTIONAL on purpose: a consumer that mounts this panel without the shell (a test) keeps drawing. What it cannot do
+   * is draw duplicated prose, and without the shell there is no footer to duplicate.
    */
   fillExplain?: (card: HTMLElement | null) => void;
   /**
-   * ESTA FAMÍLIA ESTÁ INSTALADA NO APARELHO? — em produção, `(f) => doc.fonts.check(\`16px "${f}"\`)`.
+   * IS THIS FAMILY INSTALLED ON THE DEVICE? — in production, `(f) => doc.fonts.check(\`16px "${f}"\`)`.
    *
-   * É o que transforma o «enquanto» do ADR-0012 em código: a opção da Ronde fica desabilitada ENQUANTO
-   * nenhuma das três faces estiver presente, e volta a ficar disponível quando o adulto instalar uma.
+   * It turns ADR-0012's «enquanto» into code: the Ronde option stays disabled WHILE none of the three faces is present,
+   * and becomes available again when the adult installs one.
    *
-   * ⚠️ INJECTADO E NUNCA `document.fonts` LIDO AQUI, pela regra que este ficheiro já segue para o `$`: um
-   * global do navegador num módulo que corre em node é o ACHADO 15, e este projecto já pagou por ele com um
-   * boot rebentado.
-   * 📌 OPCIONAL, e aqui o padrão é mesmo seguro — ao contrário do `seguraTeclas` do `PauseIconsCtx`, onde os
-   * dois lados erravam. Sem detector a linha fica desabilitada COM a mensagem, e a mensagem diz ao adulto as
-   * três fontes que resolvem. O estado por omissão é o de hoje, e é accionável.
+   * ⚠️ INJECTED, and `document.fonts` is NEVER read here, by the rule this file already follows for `$`: a browser
+   * global in a module that runs in node is a boot waiting to crash.
+   * 📌 OPTIONAL, and here the default really is safe: with no detector the row stays disabled WITH the message, and the
+   * message tells the adult the three fonts that solve it. The default state is actionable.
    */
   fontInstalled?: (family: string) => boolean;
 }
@@ -75,44 +69,43 @@ export interface SettingsTypoApi {
 // ---------------------------------------------------------------------------------------------
 
 
-// A semantica da chave (validacao + migracao da chave antiga) mora em ui/fonts.ts, que e o dono do
-// catalogo; re-exportada aqui para quem ja consome este modulo. Uma implementacao, nao duas.
+// The key's semantics (validation + migration of the old key) live in ui/fonts.ts, which owns the catalogue;
+// re-exported here for whoever already consumes this module. One implementation, not two.
 export { resolveFontKey, persistFontKey } from './fonts.js';
 import { resolveFontKey, persistFontKey } from './fonts.js';
 import type { DomQuery } from '../core/dom-query.js';
 import { controlRow, labelRow, sectionHeader } from './panel-widgets.js';
 import type { PanelShellCtx } from './panel-shell.js';
 /*
- * 🎯 O QUE UMA ESCOLHA DE TIPOGRAFIA É mora em `./typo-choices.js` desde 2026-09-22 (nota BJ), e este ficheiro
- * ficou com o trabalho que o nome dele sempre descreveu: achar os nós que ele alcança e nunca criou, ligá-los,
- * e reflectir a escolha. Sem apelido deixado para trás — um re-export manteria vivo um caminho que nada aqui
- * usa e faria o retrato da superfície MENTIR, porque ele não vê re-exports (#204).
+ * 🎯 WHAT A TYPOGRAPHY CHOICE IS lives in `./typo-choices.js`, and this file keeps the work its name always described:
+ * finding the nodes it reaches and never created, wiring them, and reflecting the choice. No alias left behind — a
+ * re-export would keep alive a path nothing here uses and make the surface snapshot LIE, because it does not see
+ * re-exports (#204).
  */
 import { typoGroups, typoRowSpec, fontCssTarget, type TypoRow } from './typo-choices.js';
 
 /**
- * ⚠️ A MARCA DE SELEÇÃO, e ela existe porque COR NÃO É ESTADO.
+ * ⚠️ THE SELECTION MARK, and it exists because COLOUR IS NOT STATE.
  *
- * O `.mode-btn.is-on` pinta o botão com `var(--accent)` — o fundo amarelo que a emenda do ADR-0012 pede
- * por extenso. Mas quem não distingue a cor não vê estado nenhum, e é a mesma razão pela qual
- * `ui/activities-menu.ts:656` já emite ☑/☐ ao lado do `aria-checked`: «o estado em DUAS formas, e nenhuma
- * delas é cor».
+ * `.mode-btn.is-on` paints the button with `var(--accent)` — the yellow background the ADR-0012 amendment asks for in
+ * so many words. But whoever does not tell the colour apart sees no state at all: the state has to come in TWO forms,
+ * and neither of them a colour.
  */
 const CHOSEN_MARK = '●';
 const OFFERED_MARK = '○';
 
 /**
- * Monta a lista UMA VEZ, dentro de um grupo de rádio só. Chamada de novo, REETIQUETA em vez de reconstruir.
+ * Mounts the list ONCE, inside a single radio group. Called again, it RELABELS instead of rebuilding.
  *
- * ⚠️ É UM GRUPO DE RÁDIO SÓ, ATRAVESSANDO AS TRÊS SECÇÕES, e isso é a decisão e não um detalhe de marcação: a
- * exclusividade é do MENU inteiro — uma fonte activa no total —, não de cada família. Três grupos diriam a
- * quem escuta que dá para ter uma sans E uma serif ao mesmo tempo. Por isso o `radiogroup` é do PAINEL e não
- * do kit: só o painel sabe onde a exclusividade acaba.
+ * ⚠️ ONE RADIO GROUP ACROSS ALL SECTIONS, and that is the decision and not a markup detail: exclusivity belongs to the
+ * WHOLE menu — one active font in total —, not to each family. Separate groups would tell a listener they can have a
+ * sans AND a serif at once. That is why the `radiogroup` belongs to the PANEL and not the kit: only the panel knows
+ * where exclusivity ends.
  *
- * 🔴 E O RÓTULO DE CADA LINHA É DESENHADO NA PRÓPRIA FACE, que é o comportamento central deste menu: uma lista
- * de dezassete NOMES não deixa ninguém escolher uma tipografia, e quem mais precisa de escolher é quem lê mal
- * a face que está a ver. A nota ao lado fica na face de LEITURA de propósito — ela explica a escolha, não é a
- * escolha. (Quando há `fillExplain`, ela nem chega a ficar na linha: vai para o rodapé.)
+ * 🔴 AND EACH ROW'S LABEL IS DRAWN IN ITS OWN FACE, which is this menu's central behaviour: a list of NAMES lets no one
+ * choose a typeface, and whoever most needs to choose is whoever reads the face they are looking at poorly. The note
+ * beside it stays in the READING face on purpose — it explains the choice, it is not the choice. (With `fillExplain`,
+ * it does not even stay on the row: it goes to the footer.)
  */
 export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
   fontKey: string, isInstalled?: (family: string) => boolean): void {
@@ -143,7 +136,7 @@ export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
   }
 }
 
-/** O que o kit não sabe sobre uma face: a própria face no rótulo, e a nota na face de leitura. */
+/** What the kit does not know about a face: the face itself on the label, and the note in the reading face. */
 function dressRow(where: HTMLElement, row: TypoRow): void {
   const label = where.querySelector<HTMLElement>(':scope > span');
   if (label) label.style.fontFamily = `'${row.fam}'`;
@@ -152,19 +145,16 @@ function dressRow(where: HTMLElement, row: TypoRow): void {
 }
 
 /**
- * Reflecte a escolha sobre as linhas que já existem: a marca, o estado falado e a trava.
+ * Reflects the choice onto the rows that already exist: the mark, the spoken state and the lock.
  *
- * 🔴 A MARCA ● / ○ EXISTE PORQUE COR NÃO É ESTADO. O `.mode-btn.is-on` pinta o botão com `var(--accent)` — o
- * fundo amarelo que a emenda do ADR-0012 pede por extenso —, mas quem não distingue a cor não vê estado
- * nenhum. É a mesma razão pela qual o menu de actividades já emite ☑/☐ ao lado do `aria-checked`: «o estado em
- * DUAS formas, e nenhuma delas é cor».
+ * 🔴 THE ● / ○ MARK EXISTS BECAUSE COLOUR IS NOT STATE (see `CHOSEN_MARK`).
  *
- * 📌 A TRAVA é reflectida e não construída, porque ela pode MUDAR: a `ronde` só fica disponível no instante em
- * que o adulto instala uma das faces que a mensagem nomeia (ADR-0012, a palavra «enquanto»).
+ * 📌 THE LOCK is reflected and not built, because it can CHANGE: `ronde` becomes available the instant the adult
+ * installs one of the faces the message names (ADR-0012, the word «enquanto»).
  */
 function reflectTypo(list: HTMLElement, fontKey: string, isInstalled?: (family: string) => boolean): void {
-  // Percorre o que EXISTE na lista, e não o catálogo: reflectir é sobre os nós que já lá estão, e perguntar
-  // ao catálogo outra vez seria montar a lista uma segunda vez só para a ler.
+  // Walks what EXISTS in the list, not the catalogue: reflecting is about the nodes already there, and asking the
+  // catalogue again would build the list a second time just to read it.
   for (const b of list.querySelectorAll<HTMLButtonElement>('button[data-font]')) {
     const it = FONT_BY_KEY[b.dataset.font ?? ''];
     const isChosen = b.dataset.font === fontKey;
@@ -183,9 +173,9 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
   let fontKey = resolveFontKey(ctx.store);
 
   /*
-   * 📌 O CTX DO KIT SAI DO PRÓPRIO NÓ DA LISTA: `ownerDocument` é o documento onde ela VIVE, que é onde as
-   * linhas têm de nascer. Assim o alcance global deste módulo continua zero (ADR-0221 passo 7d) e
-   * `SettingsTypoCtx`, que é superfície publicada, não ganha membro obrigatório (ADR-0172).
+   * 📌 THE KIT'S CTX COMES FROM THE LIST NODE ITSELF: `ownerDocument` is the document it LIVES in, which is where the
+   * rows must be born. So this module's global reach stays zero (ADR-0221) and `SettingsTypoCtx`, which is published
+   * surface, gains no required member (ADR-0172).
    */
   const panelCtx = (list: HTMLElement): PanelShellCtx => ({
     find: (sel) => ctx.$<HTMLElement>(sel),
@@ -194,21 +184,21 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
 
   function setFont(k: string, announce = false): void {
     const it = FONT_BY_KEY[k];
-    // A MESMA função das outras duas leituras: uma face que a lista mostra clicável tem de ser aceite aqui,
-    // e uma que ela mostra cinzenta tem de ser recusada. Três respostas à mesma pergunta divergem.
+    // The SAME function as the other two readings: a face the list shows clickable has to be accepted here, and one it
+    // shows grey has to be refused. Three answers to the same question drift.
     if (!it || !faceAvailable(it, ctx.fontInstalled)) return;
     fontKey = k;
     persistFontKey(ctx.store, k);
     const target = fontCssTarget(k, it);
     ctx.root.dataset.fonte = target.font;
     /*
-     * 🔴 A MARCA DA FACE LIGADA (ADR-0149 §3), e é ela que tira o espaçamento da BDA. `:root[data-cursiva]`
-     * devolve `letter-spacing`/`word-spacing` a `normal`, porque espaçar uma cursiva parte-a nas junções que
-     * a fazem cursiva — «para manter os conectores».
+     * 🔴 THE JOINED-FACE MARK (ADR-0149 §3), which removes the BDA spacing. `:root[data-cursiva]` returns
+     * `letter-spacing`/`word-spacing` to `normal`, because spacing a cursive face breaks it at the joins that make it
+     * cursive — «para manter os conectores».
      *
-     * ⚠️ APAGA QUANDO NÃO É, e não só escreve quando é: sem o `delete`, uma criança que escolhesse uma
-     * cursiva e voltasse para a Atkinson ficava com a face de leitura SEM o espaçamento — o defeito na
-     * direcção mais cara, porque quem volta para a face de leitura é quem precisa dele.
+     * ⚠️ IT ERASES WHEN IT IS NOT, not only writes when it is: without the `delete`, a child who chose a cursive face
+     * and went back to Atkinson would have the reading face WITHOUT the spacing — the defect in the costliest
+     * direction, because whoever goes back to the reading face is whoever needs it.
      */
     if (target.cursive) ctx.root.dataset.cursiva = '1';
     else delete ctx.root.dataset.cursiva;
@@ -222,10 +212,9 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
   }
 
   /*
-   * As escutas ligam-se UMA VEZ, na lista, por delegação — e é a montagem única que o permite. Antes cada
-   * render refazia os nós, logo cada render religava as dezassete; agora a lista é a mesma e o clique sobe
-   * dela. ⚠️ Um botão `disabled` não emite clique, então a trava continua a ser o que protege a face que o
-   * aparelho não tem — e não um guarda aqui, que seria a segunda resposta à mesma pergunta.
+   * The listeners are wired ONCE, on the list, by delegation — which mounting once allows. ⚠️ A `disabled` button emits
+   * no click, so the lock is still what protects the face the device does not have — not a guard here, which would be
+   * a second answer to the same question.
    */
   let listening = false;
 
@@ -248,18 +237,17 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     const pv = ctx.$<HTMLElement>('#typo-preview');
     if (pv && cur) pv.style.fontFamily = `'${cur.fam}'`;
     refreshMarks();
-    // A ÚLTIMA COISA DO RENDER, e tem de ser: as linhas acabaram de ser recriadas com a prosa dentro delas.
+    // THE LAST THING IN RENDER, and it has to be: the rows were just relabelled with the prose inside them.
     ctx.fillExplain?.(ctx.$<HTMLElement>('#typo .overlay__card'));
   }
 
   /**
-   * A marca de "saiu do padrão" (ADR-0029). Mora DENTRO do render porque é derivada, nunca guardada: ela é
-   * recalculada de valor-atual-contra-padrão a cada desenho, então não tem como envelhecer no armazenamento.
-   * Envelhecer na TELA ela tem — se algum dia alguém mudar a fonte sem redesenhar —, e é por isso que a
-   * atualização anda junto com quem já redesenha, e não numa função própria que se possa esquecer de chamar.
+   * The left-the-default mark (ADR-0029). It lives INSIDE render because it is derived, never stored: it is recomputed
+   * from current-value-against-default on every draw, so it cannot go stale in storage. It could go stale on SCREEN —
+   * if someone changed the font without redrawing —, which is why the update travels with what already redraws.
    *
-   * Aqui a linha marcada é a da fonte ESCOLHIDA, e só quando ela não é a padrão: as outras quinze não saíram
-   * do padrão, foram apenas oferecidas.
+   * Here the marked row is the CHOSEN font's, and only when it is not the default: the others did not leave the default,
+   * they were only offered.
    */
   function refreshMarks(): void {
     const changed = fontKey !== DEFAULT_FONT_KEY;
@@ -270,14 +258,13 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     markMenuChanged(ctx.$<HTMLElement>('[data-act="tipo"]'), [changed]);
   }
 
-  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
+  // ---- reset THIS menu's defaults (ADR-0028) ----
   //
-  // O menu mais simples dos oito: a tipografia guarda uma escolha só, então o reset é uma linha. Ainda assim
-  // vale dizer para onde ele volta — a Atkinson Hyperlegible não é o padrão por ser bonita, é o padrão por ter
-  // sido desenhada para quem tem baixa visão. Uma criança que experimentou seis fontes e não consegue mais ler
-  // a tela precisa de um caminho de volta que termine na MAIS legível, não numa qualquer.
+  // Typography stores a single choice, so the reset is one line. Still, where it returns to is worth saying — Atkinson
+  // Hyperlegible is not the default for being pretty, it is the default for having been designed for low vision. A
+  // child who tried six fonts and can no longer read the screen needs a way back that ends at the MOST legible one.
   //
-  // O anúncio nomeia a fonte porque a mudança é visível para quem enxerga e invisível para quem não enxerga.
+  // The announcement names the font because the change is visible to whoever sees and invisible to whoever does not.
   const resetBtn = ctx.$<HTMLButtonElement>('#typo-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
     setFont(DEFAULT_FONT_KEY, false);
@@ -285,7 +272,7 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     ctx.srSay(t('sr.typo.reset', { fam: FONT_BY_KEY[DEFAULT_FONT_KEY].fam }));
   });
 
-  setFont(fontKey, false); // aplica a fonte persistida ao boot (== antigo `setGameFont(fontKey,false)`)
+  setFont(fontKey, false); // applies the persisted font at boot
 
   return { render, setFont, getFontKey: () => fontKey };
 }
