@@ -1,48 +1,41 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/rng.ts — RNG semeado (LCG determinístico) p/ reprodutibilidade (coin placement / testes estáveis).
-// Módulo-folha PURO, ZERO deps.
+// core/rng.ts — a seeded RNG (deterministic LCG) for reproducibility (placement, stable tests).
+// A PURE leaf module, no dependencies.
 //
-// ⚠️ DUAS COISAS MUDARAM AQUI NA MESMA MIGRAÇÃO, E ISSO É DE PROPÓSITO (issue #107).
+// ⚠️ TWO THINGS ARE HERE ON PURPOSE (issue #107).
 //
-// 1. `createRng(semente)` existe. A regra D13 do ADR-0038 — «um módulo que guarda estado exporta uma
-//    fábrica `createX()`» — nomeava este módulo desde sempre e a conversão nunca aconteceu. O preço foi
-//    medido pelo `game-15puzzle`, o segundo consumidor externo: com uma única corrente compartilhada por
-//    doze módulos (`game/*`, `render/fx`, `render/weather`, `render/draw`), «embaralhamento determinístico
-//    a partir da semente S» só é reproduzível numa página onde mais nada desenha — e a engine existe
-//    justamente para que o jogo NÃO esteja sozinho na página. Cada consumidor faz a sua corrente.
+// 1. `createRng(seed)`. ADR-0038's D13 — "a module that keeps state exports a `createX()` factory" — named this
+//    module. With one stream shared by every consumer, "a deterministic shuffle from seed S" is reproducible only on a
+//    page where nothing else draws — and the engine exists precisely so the game is NOT alone on the page. Each
+//    consumer makes its own stream.
 //
-// 2. A aritmética do LCG estava a perder precisão. `_seed * 1103515245` com `_seed` perto de 2³¹ chega a
-//    ~2,37×10¹⁸, acima de 2⁵³: os bits BAIXOS — exatamente os que o `& 0x7fffffff` guarda — eram
-//    arredondados fora antes de a máscara correr. `Math.imul` faz a multiplicação em 32 bits, que é o que
-//    um LCG de 32 bits sempre quis dizer.
+// 2. `Math.imul`, not `*`. `_seed * 1103515245` with `_seed` near 2³¹ reaches ~2.37×10¹⁸, above 2⁵³: the LOW bits —
+//    exactly the ones `& 0x7fffffff` keeps — were rounded away before the mask ran. `Math.imul` multiplies in 32 bits,
+//    which is what a 32-bit LCG always meant.
 //
-// ⚠️ POR QUE AS DUAS JUNTAS. Cada uma sozinha muda a sequência semeada. Fazer uma hoje e a outra depois
-// mudaria as sequências DUAS vezes, e da segunda vez ninguém se lembraria do porquê — o defeito ficaria a
-// parecer regressão. Uma migração, uma mudança de sequência, uma explicação.
-//
-// ⚠️ O QUE NÃO MUDA: continua determinístico. A aritmética antiga também era reprodutível (ponto flutuante
-// é determinístico), e foi por isso que o defeito nunca apareceu: não era aleatoriedade errada, era um
-// gerador PIOR do que o que foi escrito. Fixtures que dependiam dos valores concretos mudam de valor.
+// ⚠️ Both changed the seeded sequence, so they landed together: one migration, one sequence change, one explanation.
+// The old arithmetic was reproducible too (floating point is deterministic), which is why the defect never showed:
+// not wrong randomness, a WORSE generator than the one written.
 
-/** Uma corrente de números pseudoaleatórios independente de qualquer outra. */
+/** A stream of pseudo-random numbers independent of any other. */
 export interface Rng {
   /** [0, 1). */
   readonly rnd: () => number;
-  /** Inteiro em [lo, hi], ambos inclusive. */
+  /** An integer in [lo, hi], both inclusive. */
   readonly randInt: (lo: number, hi: number) => number;
-  /** Cópia baralhada (Fisher-Yates); não toca no original. */
+  /** A shuffled copy (Fisher-Yates); the original is untouched. */
   readonly shuffle: <T>(arr: readonly T[]) => T[];
-  /** Reposiciona ESTA corrente. Não alcança nenhuma outra. */
+  /** Repositions THIS stream. Reaches no other. */
   readonly reseed: (s: number) => void;
 }
 
-/** A semente do jogo próprio da engine. Um consumidor externo escolhe a sua. */
+/** The seed of the engine's own game. An outside consumer picks its own. */
 export const DEFAULT_SEED = 20260601;
 
 export const createRng = (seed: number = DEFAULT_SEED): Rng => {
   let _seed = seed >>> 0;
-  // `Math.imul` e não `*`: ver o cabeçalho. O `+ 12345` cabe em segurança porque `imul` já devolveu
-  // um inteiro de 32 bits com sinal, e a máscara `& 0x7fffffff` desfaz o sinal.
+  // `Math.imul` and not `*`: see the header. The `+ 12345` fits safely because `imul` already returned a signed 32-bit
+  // integer, and the `& 0x7fffffff` mask undoes the sign.
   const rnd = (): number => (_seed = (Math.imul(_seed, 1103515245) + 12345) & 0x7fffffff) / 0x7fffffff;
   const randInt = (lo: number, hi: number): number => lo + Math.floor(rnd() * (hi - lo + 1));
   const shuffle = <T>(arr: readonly T[]): T[] => {
@@ -57,31 +50,19 @@ export const createRng = (seed: number = DEFAULT_SEED): Rng => {
   return { rnd, randInt, shuffle, reseed };
 };
 
-// ⚠️ ESTE BLOCO TINHA DATA DE MORTE ESCRITA, E ELA NÃO CHEGOU — A PREMISSA É QUE MORREU.
-// Dizia: «Existe porque `game/` ainda vive aqui dentro (issue #111). Quando `game/` sair, isto sai com ele.»
-// O `game/` saiu em 2026-09-07 — e saiu para OUTRO REPOSITÓRIO, onde continua a consumir estes quatro pelo
-// pacote. Medido no dia: `@the-inclusionist/game-platformer` importa `rnd`, `randInt` e `shuffle` em OITO
-// módulos (`quiz`, `physics`, `life`, `traffic`, `fractions`, `coins`, `coin-spawning`,
-// `literacy-distractors`) mais o `main.ts`.
-//
-// Ou seja, o que se previu como «sai junto» virou o oposto: saindo, o cartucho tornou-os SUPERFÍCIE
-// PÚBLICA de um pacote publicado. Removê-los agora é quebra de contrato maior, não limpeza.
-//
-// ⚠️ E A ADVERTÊNCIA CONTINUA VERDADEIRA, o que é o incómodo: são estado partilhado de módulo, que é
-// exatamente o defeito que a fábrica acima conserta. Um segundo jogo na mesma página divide esta corrente
-// com o primeiro. O caminho de saída é o consumidor passar a `createRng(suaSemente)` — e isso é migração
-// dele, com aviso e um major, não uma remoção unilateral daqui.
+// ⚠️ THE SHARED STREAM. It is published surface, so removing it is a breaking change with its own migration, not a
+// cleanup. And the warning still holds, which is the discomfort: it is shared module state, exactly the defect the
+// factory above fixes — a second game on the same page shares this stream with the first. The way out is for a
+// consumer to move to `createRng(itsSeed)`.
 const sharedRng = createRng(DEFAULT_SEED);
 export const reseed = sharedRng.reseed;
 export const rnd = sharedRng.rnd;
 export const randInt = sharedRng.randInt;
 export const shuffle = sharedRng.shuffle;
 
-// ⚠️ A CORRENTE DA DECORAÇÃO, separada da de cima porque a mistura era o defeito CONCRETO.
-// `render/fx` tira um número por partícula, `render/weather` por gota, `render/draw` dois por tremor de
-// câmara — dezenas por quadro. Saindo da mesma corrente das moedas, «semeie com S e o mapa sai igual»
-// passava a depender de quantas partículas a tela desenhou antes, o que ninguém controla nem repara.
-// Enfeite NÃO pode mover o sorteio do jogo. São dois assuntos, e agora são duas correntes.
-// A semente é outra de propósito: se fosse a mesma, as duas correntes andariam em paralelo e o enfeite
-// ficaria correlacionado com o mapa — determinístico, mas visivelmente repetitivo.
+// ⚠️ THE DECORATION STREAM, apart from the one above because mixing them was the CONCRETE defect. Particles, raindrops
+// and camera shake draw dozens of numbers a frame; from the same stream as the game's draws, "seed with S and the map
+// comes out the same" depended on how many particles the screen had drawn before, which nobody controls or notices.
+// Ornament must NOT move the game's draw. Two subjects, two streams. The seed differs on purpose: with the same one the
+// two streams would run in step and the ornament would correlate with the map — deterministic, but visibly repetitive.
 export const decorationRng = createRng(DEFAULT_SEED ^ 0x5eed);

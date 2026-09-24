@@ -1,85 +1,79 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/route — POR ONDE SE VAI ATÉ LÁ, e não só onde é lá (#84, item 1).
+// core/route — WHICH WAY TO GET THERE, not only where there is (#84, item 1).
 //
-// ========================= O DEFEITO QUE ISTO EXISTE PARA CONSERTAR =========================
-// A issue #84 escreve-o em duas linhas, e elas são o módulo inteiro:
+// ========================= THE DEFECT THIS EXISTS TO FIX =========================
+// Without it, every cue points in a STRAIGHT LINE at the target, and a straight line goes through walls: the guide
+// tells the child to walk into a solid block, and they have no way to know why.
 //
-//     «Sem isso, qualquer pista aponta em LINHA RETA para o alvo, e a linha reta atravessa parede: hoje
-//      `alvoMaisProximo()` mede distância pela métrica declarada e `panFor()` só compara `x`, então o guia
-//      manda a criança andar para dentro de um bloco sólido e ela não tem como saber por quê.»
+// ⚠️ AND THEY REALLY HAVE NO WAY TO KNOW. A child who can see ignores an arrow pointing at a wall without noticing they
+// ignored it. A child who depends on the cue does what it says — and then does it again, because the cue keeps saying
+// the same. A wrong cue is worse than none: no cue at least lets them explore.
 //
-// ⚠️ E ELA NÃO TEM MESMO COMO SABER. Uma criança que vê ignora uma seta que aponta para uma parede sem sequer
-// reparar que a ignorou. Quem depende da pista faz o que ela diz — e depois faz outra vez, porque a pista
-// continua a dizer o mesmo. A pista errada é pior do que pista nenhuma: pista nenhuma deixa-a explorar.
+// ========================= WHAT "CROSSABLE" IS, AND WHY IT IS NOT MY INVENTION =========================
+// #84 asks for "the directions where there is AIR OR WATER". Those two words are already in the contract, and each
+// `Role` says of itself whether it can be crossed — the set below is a READING of `core/contract`, not a new decision:
 //
-// ========================= O QUE É «ATRAVESSÁVEL», E POR QUE NÃO É INVENÇÃO MINHA =========================
-// A #84 pede «as direções por onde há AR OU ÁGUA». Essas duas palavras já estão no contrato, e cada `Role`
-// diz de si mesmo se se atravessa — o conjunto abaixo é uma LEITURA do `core/contract`, não uma decisão nova:
+//   free       crossable, with no meaning of its own              → the air
+//   water      crossed by swimming                                → the water
+//   climb      height changes by interacting with it              → the ladder: it is BY it that one climbs
+//   key        satisfies a gate                                   → an object lying there, not a barrier
+//   structure  scenery: floor, wall, what holds things up         → NO
+//   gate       bars until a condition                             → NO: barring is what it does
+//   hazard     hurts on contact                                   → NO, and it is the only one I chose
+//   goal       what the round asks for                            → a case apart, see `targets` below
 //
-//   free       «atravessável e sem significado próprio»          → o ar
-//   water      «atravessa-se nadando»                            → a água
-//   climb      «muda-se de altura interagindo com isto»          → a escada: é POR ELA que se sobe
-//   key        «satisfaz um gate»                                → um objeto pousado, não uma barreira
-//   structure  «cenário: chão, parede, o que sustenta»           → NÃO
-//   gate       «barra até uma condição»                          → NÃO: barrar é o que ele faz
-//   hazard     «machuca ao encostar»                             → NÃO, e é a única onde eu escolhi
-//   goal       «o que a rodada pede»                             → caso à parte, ver `targets` abaixo
+// ⚠️ `hazard` IS THE CHOICE, and I declare it: its metric does not say whether it can be crossed, it says what it
+// costs. A route over a spike is a route that sends the child into damage. A game where the spike is a compulsory
+// passage will have to say so another way; none does today.
 //
-// ⚠️ O `hazard` É A ESCOLHA, e declaro-a: a métrica dele não diz se se atravessa, diz o que custa. Rota que
-// passa por espinho é rota que manda a criança levar dano — e no modo cego e no modo cadeirante o próprio
-// `core/collision.isSolidType` já o trata como sólido, por decisão de acessibilidade. Encaminhar por cima
-// dele contradiria a camada que existe para a proteger. Um jogo em que o espinho seja passagem obrigatória
-// terá de dizê-lo por outro meio; hoje nenhum diz.
+// ========================= THE TARGET IS ALWAYS STEPPABLE, THE PATH IS NOT =========================
+// A `goal` may be declared on a cell that cannot be crossed (a flag inside a gate). Refusing to enter it would make
+// the route never arrive anywhere. The rule is asymmetric on purpose: **the last step is always allowed; the ones in
+// between obey the set.** It is the difference between "entering the gate" and "crossing the gate to go on".
 //
-// ========================= O ALVO É SEMPRE PISÁVEL, E O CAMINHO NÃO =========================
-// Um `goal` pode estar declarado numa célula que não se atravessa (uma bandeira dentro de um portão). Recusar
-// entrar nela faria a rota nunca chegar a lado nenhum. A regra é assimétrica de propósito: **o último passo é
-// sempre permitido; os do meio obedecem ao conjunto.** É a diferença entre «entrar no portão» e «atravessar o
-// portão para continuar do outro lado».
+// ========================= THE BUDGET, WHICH THE CONTRACT ITSELF ASKED FOR =========================
+// ⚠️ `core/contract` warns, in its section 5, that in a CONTINUOUS space the spots cannot be enumerated, and on a large
+// map enumerating would cost a frame. This module cannot ignore that because it is convenient. So it has a CEILING of
+// visited cells and returns `null` when it is hit. `null` means **"I cannot say"**, not "there is no path" — a caller
+// has to treat both alike, which is what an honest cue does: it goes quiet.
 //
-// ========================= O ORÇAMENTO, QUE O PRÓPRIO CONTRATO PEDIU =========================
-// ⚠️ `core/contract` avisa, na sua secção 5: «num espaço CONTÍNUO não há como enumerar os pontos, e num mapa
-// grande enumerar seria caro por quadro». Este módulo não pode ignorar esse aviso só porque é conveniente.
-// Por isso tem TETO de células visitadas e devolve `null` ao estourá-lo. `null` quer dizer **«não sei»**, e
-// não «não há caminho» — quem chamar tem de tratar os dois iguais, que é o que uma pista honesta faz: cala-se.
-//
-// E não importa nada além do contrato: é lógica pura, aferida no project `node`.
+// And it imports nothing but the contract: pure logic, measured in the `node` project.
 
 import type { Role, Spot, Topology } from './contract.js';
 import { distance } from './contract.js';
 
 /**
- * Os papéis que uma rota atravessa. Leitura do `core/contract`, com o `hazard` de fora por decisão declarada
- * no cabeçalho — e `goal` de fora porque ele entra pela regra do último passo, não pela do meio.
+ * The roles a route crosses. A reading of `core/contract`, with `hazard` left out by the decision declared in the
+ * header — and `goal` left out because it comes in by the last-step rule, not the in-between one.
  */
 export const WALKABLE_ROLES: ReadonlySet<Role> = new Set<Role>(['free', 'water', 'climb', 'key']);
 
-/** Este papel deixa passar? */
+/** Does this role let one through? */
 export function isWalkable(role: Role): boolean {
   return WALKABLE_ROLES.has(role);
 }
 
 export interface RouteCtx {
-  /** Campo 1 do contrato. A métrica decide QUANTOS vizinhos um ponto tem. */
+  /** Field 1 of the contract. The metric decides HOW MANY neighbours a spot has. */
   readonly topology: Topology;
-  /** Campo 2 do contrato: o que há neste ponto. Obrigatório na `GameDeclaration`, logo sempre disponível. */
+  /** Field 2 of the contract: what is at this spot. Mandatory in `GameDeclaration`, so always available. */
   readonly roleAt: (at: Spot) => Role;
   /**
-   * Teto de pontos visitados. Estourou → `null`, que é «não sei».
+   * Ceiling of visited spots. Hit → `null`, which is "I cannot say".
    *
-   * 4096 é ~64×64 numa grade e cobre com folga os tabuleiros que existem hoje; num mapa de plataforma grande
-   * ele corta antes de a busca custar um quadro. O número é PARÂMETRO porque o custo aceitável é de quem
-   * chama: uma pista por quadro tolera muito menos do que um cálculo ao carregar a fase.
+   * 4096 is ~64×64 on a grid and covers today's boards with room to spare; on a large platform map it cuts before the
+   * search costs a frame. The number is a PARAMETER because the acceptable cost belongs to the caller: a cue every
+   * frame tolerates far less than a calculation when a level loads.
    */
   readonly budget?: number;
 }
 
 export interface Route {
-  /** O PRÓXIMO ponto a pisar — a um passo de onde se está. É isto que uma pista aponta. */
+  /** The NEXT spot to step on — one step from where one is. This is what a cue points at. */
   readonly next: Spot;
-  /** Qual dos alvos a rota alcançou. Pode não ser o mais próximo em linha reta, e é esse o ponto. */
+  /** Which target the route reached. It may not be the nearest in a straight line, and that is the point. */
   readonly reached: Spot;
-  /** Quantos passos ao longo do caminho. ⚠️ NÃO é `distance()`, que mede a reta que atravessa parede. */
+  /** How many steps along the path. ⚠️ NOT `distance()`, which measures the straight line through walls. */
   readonly steps: number;
 }
 
@@ -90,13 +84,12 @@ const key = (s: Spot, cells: number): string =>
   s.x.toFixed(cells) + '|' + s.y.toFixed(cells) + '|' + (s.z ?? 0).toFixed(cells);
 
 /**
- * Os deslocamentos de UM passo, na métrica declarada.
+ * The offsets of ONE step, in the declared metric.
  *
- * ⚠️ `free` (L², espaço contínuo sem passo discreto) NÃO TEM VIZINHOS — e fingir que tem é a aproximação que
- * este módulo faz e declara: ele anda numa GRELHA de lado `unit`, nas oito direções. A alternativa seria não
- * responder nada num jogo de plataforma, que é justamente o gênero da issue. Quem ler uma rota `free` está a
- * ler uma amostragem, não uma trajetória — e é por isso que `steps` é uma contagem de células e não uma
- * medida física.
+ * ⚠️ `free` (L², continuous space with no discrete step) HAS NO NEIGHBOURS — and pretending it does is the
+ * approximation this module makes and declares: it walks a GRID of side `unit`, in eight directions. The alternative
+ * would be answering nothing in a platform game, which is exactly the issue's genre. Whoever reads a `free` route is
+ * reading a sampling, not a trajectory — which is why `steps` is a count of cells and not a physical measure.
  */
 function neighbours(shape: Topology, stride: number): Spot[] {
   if (shape.kind === 'hotspots') return [];
@@ -108,14 +101,14 @@ function neighbours(shape: Topology, stride: number): Spot[] {
     for (const dz of dims > 2 ? axes : [0]) {
       const n = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
       if (n === 0) continue;
-      if (orthogonal && n > 1) continue; // L¹: a diagonal não existe
+      if (orthogonal && n > 1) continue; // L¹: there is no diagonal
       out.push({ x: dx * stride, y: dy * stride, z: dz * stride });
     }
   }
   return out;
 }
 
-/** O ponto cabe na extensão declarada? Grade conta células 0..n−1; contínuo conta unidades 0..n. */
+/** Does the spot fit the declared extent? A grid counts cells 0..n−1; continuous space counts units 0..n. */
 function isInside(shape: Topology, s: Spot): boolean {
   if (shape.kind === 'hotspots') return false;
   const axis = [s.x, s.y, s.z ?? 0];
@@ -128,14 +121,14 @@ function isInside(shape: Topology, s: Spot): boolean {
 }
 
 /**
- * A rota de `de` até o mais próximo ALCANÇÁVEL dos `targets` — largura primeiro, sobre o que se atravessa.
+ * The route from `de` to the nearest REACHABLE of the `targets` — breadth first, over what can be crossed.
  *
- * `null` quando não há alvo, quando nenhum é alcançável, quando a topologia não tem espaço (`hotspots`), ou
- * quando o orçamento estourou. Os quatro casos são o mesmo para quem chama: **não sei dizer por onde**.
+ * `null` when there is no target, when none is reachable, when the topology has no space (`hotspots`), or when the
+ * budget ran out. The four cases are one for the caller: **I cannot say which way**.
  *
- * ⚠️ «MAIS PRÓXIMO» AQUI É AO LONGO DO CAMINHO, e é a diferença inteira. Um alvo a três células em linha reta
- * do outro lado de uma parede está mais LONGE do que um a oito células por um corredor aberto — e é o segundo
- * que a criança consegue alcançar.
+ * ⚠️ "NEAREST" HERE IS ALONG THE PATH, and that is the whole difference. A target three cells away in a straight line
+ * on the other side of a wall is FARTHER than one eight cells down an open corridor — and it is the second one the
+ * child can reach.
  */
 export function routeTo(ctx: RouteCtx, de: Spot, targets: readonly Spot[]): Route | null {
   const shape = ctx.topology;

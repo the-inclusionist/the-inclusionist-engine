@@ -1,54 +1,42 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/dom-query — O SELETOR DE DOM INJETADO, declarado UMA VEZ.
+// core/dom-query — THE INJECTED DOM SELECTOR, declared ONCE.
 //
-// ========================= POR QUE ESTE ARQUIVO EXISTE =========================
-// A mesma declaração de `DomQuery` — uma seta genérica sobre `Element`, devolvendo `T | null` — estava
-// escrita em DEZESSEIS módulos: `game/coin-spawning`, `game/quiz`, `input/gamepad`, `input/keydown`,
-// `input/touch`, `input/touch-bindings`, `ui/activities-menu`, `ui/hud`, `ui/map-hub`, `ui/menu-nav`,
-// `ui/settings-audio`, `ui/settings-controls`, `ui/settings-mobility`, `ui/settings-typo`, `ui/shell` e
-// `ui/title`.
+// ========================= WHY THIS FILE EXISTS =========================
+// The same `DomQuery` declaration — a generic arrow over `Element`, returning `T | null` — was written in SIXTEEN
+// modules: ADR-0039's defect one step up (there a FIELD described twice, here a TYPE described sixteen times).
 //
-// Dezesseis cópias de uma verdade, que é o defeito do ADR-0039 um degrau acima: lá era um CAMPO descrito
-// duas vezes, aqui é um TIPO descrito dezesseis.
+// And, as copies do, they diverged. One declared it NON-generic. A generic function assigned to a non-generic
+// signature is instantiated at its CONSTRAINT, not its default: the real `$`, `<T extends Element = HTMLElement>`,
+// became `Element` — and `Element` has no `hidden`. Two type errors came from it, and neither mentioned a selector.
 //
-// E, como sempre acontece com cópia, elas divergiram. O `game/session` declarava a sua NÃO-genérica,
-// devolvendo um `SessionEl` estrutural. Uma função genérica atribuída a uma assinatura não-genérica é
-// instanciada pela RESTRIÇÃO e não pelo padrão: o `$` real, que é `<T extends Element = HTMLElement>`,
-// virava `Element` — e `Element` não tem `hidden`. Dois erros de tipo no `main.ts` nasciam daí, e nenhum
-// deles falava de seletor.
-//
-// ========================= POR QUE EM `core/` =========================
-// Porque é a camada que todos podem importar sem inverter nada — `input/`, `render/` e `ui/` (ADR-0173). E não custa
-// dependência nenhuma: `Element` é global de `lib.dom`, e as duas consultas abaixo não tocam no DOM no import, então
-// `core/` continua testável sem navegador.
+// ========================= WHY IN `core/` =========================
+// Because it is the layer everyone may import without inverting anything — `input/`, `render/` and `ui/` (ADR-0173).
+// And it costs no dependency: `Element` is a `lib.dom` global, and the two queries below touch no DOM at import, so
+// `core/` stays testable without a browser.
 // 📌 The two global queries (`$`, `$$`) live here and not in `ui/dom` so that `core/a11y-sr` and `render/crt` can use them
 // without importing upward (issue #167); `ui/dom` still exports them under the same names.
 
 /**
- * `document.querySelector`, na forma em que os módulos o recebem por INJEÇÃO — nunca importando `document`.
+ * `document.querySelector`, in the shape modules receive it by INJECTION — never importing `document`.
  *
- * O padrão é `HTMLElement` e não `Element` porque é o que os chamadores usam: `.hidden`, `.textContent`,
- * `.dataset`, `.focus()`. Quem precisa de outra coisa instancia — há um `$<SVGElement>` na árvore, e é por
- * causa dele que a RESTRIÇÃO continua sendo `Element`.
+ * The default is `HTMLElement` and not `Element` because that is what callers use: `.hidden`, `.textContent`,
+ * `.dataset`, `.focus()`. Whoever needs something else instantiates it — there is a `$<SVGElement>` in the tree, and
+ * it is why the CONSTRAINT stays `Element`.
  */
 export type DomQuery = <T extends Element = HTMLElement>(sel: string) => T | null;
 
 /**
- * ⚠️ RESOLVIDO POR `globalThis` E NÃO PELO GLOBAL CRU, e a diferença é entre devolver `null` e LANÇAR.
+ * ⚠️ RESOLVED THROUGH `globalThis` AND NOT THE BARE GLOBAL, and the difference is between returning `null` and THROWING.
  *
- * `document.querySelector(...)` com `document` inexistente dá `ReferenceError` — não `undefined` —, e a
- * assinatura destas duas funções promete `T | null`. Uma consulta que lança onde promete `null` é um defeito
- * pela própria assinatura, e ele viajava longe: medido em 2026-09-08, o `core/a11y-sr.srAlert` chama o `$`
- * daqui, e o `createGame` chama o `srAlert` ao mostrar o aviso de alcance — logo bootar a engine contra um
- * documento INJECTADO (um iframe, um editor ao lado do jogo, um teste) rebentava o boot inteiro num anúncio.
+ * `document.querySelector(...)` with no `document` is a `ReferenceError` — not `undefined` — and these two functions
+ * promise `T | null`. A query that throws where it promises `null` is a defect by its own signature, and it travelled
+ * far: `core/a11y-sr.srAlert` calls this `$`, and `createGame` calls `srAlert` when it shows the reach warning — so
+ * booting the engine against an INJECTED document (an iframe, an editor beside the game, a test) blew up the whole boot
+ * on an announcement. It survived because while every root was a page in a browser, the global WAS the right document.
  *
- * 📌 É o ACHADO 15 do `boot/create-game` outra vez, e sobreviveu pela mesma razão: enquanto toda raiz era um
- * `main.ts` num navegador, o global ERA o documento certo. `globalThis.document` é a mesma coisa onde ele
- * existe, e é `undefined` — em vez de explosão — onde não existe.
- *
- * ⚠️ E ELAS CONTINUAM A OLHAR PARA O GLOBAL, de propósito: quem precisa de consultar OUTRO documento injecta
- * o seu (`create-game` tem um `$` próprio ligado ao `doc` do hospedeiro, e o `ui/pause-icons` tem o
- * `docDaMontagem`). O que este conserto muda não é ONDE se procura — é o que acontece quando não há onde.
+ * ⚠️ AND THEY STILL LOOK AT THE GLOBAL, on purpose: whoever needs to query ANOTHER document injects their own (the
+ * composition root has a `$` bound to the host's document). What this changes is not WHERE they look — it is what
+ * happens when there is nowhere to look.
  */
 const docGlobal = (): Document | undefined => (globalThis as { document?: Document }).document;
 export const $ = <T extends Element = HTMLElement>(s: string): T | null => docGlobal()?.querySelector<T>(s) ?? null;
