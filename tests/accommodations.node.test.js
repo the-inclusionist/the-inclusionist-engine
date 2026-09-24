@@ -97,6 +97,13 @@ describe('the preset — a game names only what has a subject in it', () => {
     expect(accommodationPresetProblems(['typography'])).toEqual(['accommodations: must be an object keyed by accommodation']);
     expect(accommodationPresetProblems('typography')).toEqual(['accommodations: must be an object keyed by accommodation']);
   });
+
+  it('⚠️ [Error] a null word, or a label that is not text, is REPORTED — the validator never throws at the boot it guards', () => {
+    // Every case above was malformed in VALUE; these are malformed in TYPE, and reading `.label` of null or `.trim()` of a
+    // number would throw from the one function that exists to tell a cartridge what is wrong.
+    expect(accommodationPresetProblems({ easyMode: null })[0]).toMatch(/easyMode has an empty label/);
+    expect(accommodationPresetProblems({ easyMode: { label: 5 } })[0]).toMatch(/easyMode has an empty label/);
+  });
 });
 
 describe('the cartridge\'s answer — COMPLETE, and mandatory (ADR-0153)', () => {
@@ -125,6 +132,19 @@ describe('the cartridge\'s answer — COMPLETE, and mandatory (ADR-0153)', () =>
     expect(accommodationAnswersProblems({ ...NENHUMA, hints: true })[0]).toMatch(/hints must be false or a word/);
     expect(accommodationAnswersProblems({ ...NENHUMA, hints: { label: ' ' } })[0]).toMatch(/hints must be false or a word/);
     expect(accommodationAnswersProblems({ ...NENHUMA, hints: 'Hints' })[0]).toMatch(/hints must be false or a word/);
+  });
+
+  it('🔴 [Error] an answer that is a list or a number is refused in ONE line — never read key by key', () => {
+    // A list read key by key would answer sixteen «not answered» lines for one mistake; a number would throw on `k in 5`.
+    const umaLinha = ['accommodations: must be an object keyed by accommodation'];
+    expect(accommodationAnswersProblems([])).toEqual(umaLinha);
+    expect(accommodationAnswersProblems(5)).toEqual(umaLinha);
+    expect(accommodationAnswersProblems('Hints')).toEqual(umaLinha);
+  });
+
+  it('⚠️ [Error] a null word, or a label that is not text, is REPORTED — never thrown', () => {
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: null })[0]).toMatch(/hints must be false or a word/);
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: { label: 5 } })[0]).toMatch(/hints must be false or a word/);
   });
 
   it('🔴 [Error] answering a general or contract-keyed one is refused, and says why — asking twice lets answers disagree', () => {
@@ -156,3 +176,10 @@ describe('the cartridge\'s answer — COMPLETE, and mandatory (ADR-0153)', () =>
 //   R2 missing keys are not reported                           🔴 silence answers
 //   R3 `true` is accepted as an answer                          🔴 a subject with no word
 //   R4 a non-game-keyed key is not reported                    🔴 two answers for one question
+//
+// PROBED AGAIN (2026-09-23), nineteen decisions of the two validators disabled one at a time — `scratchpad/sonda-acc.py`.
+// Seven were green, and every one was malformed in TYPE where each case above was malformed in VALUE: a list or a number as
+// the answer, a null word, a label that is not text — four of them THREW instead of reporting. Held now by «…refused in ONE
+// line» and the two «…REPORTED — never thrown» cases. One is EQUIVALENT and declared rather than caught: dropping the check
+// that a word is an OBJECT changes nothing for a string or a number, which have no text `label` and are refused by the next
+// check anyway.
