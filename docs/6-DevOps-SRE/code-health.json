@@ -1319,16 +1319,13 @@
       "fanIn": 1
     },
     "ui/hud.ts": {
-      "codeLines": 133,
+      "codeLines": 134,
       "decisionNodes": 15,
       "maxDepth": 2,
       "fanOut": 5,
-      "globalReach": 1,
+      "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 0,
-      "reached": [
-        "document"
-      ]
+      "fanIn": 0
     },
     "ui/item-announcement.ts": {
       "codeLines": 17,

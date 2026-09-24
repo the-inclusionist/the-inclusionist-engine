@@ -249,9 +249,11 @@ export function initHud(ctx: HudCtx): HudApi {
     const panes: HTMLElement[] = [];
     const bars: HTMLElement[] = [];
     const n = ctx.getNumPlayers();
+    // the screens are made by the document the hud is drawn in — the host's own, never the global (ADR-0221 step 7d)
+    const doc = gameHudEl.ownerDocument;
     for (let i = 0; i < screenCount(n); i++) {
       const r = screenRect(i, n);
-      const scr = document.createElement('div');
+      const scr = doc.createElement('div');
       scr.className = 'player-screen'; scr.dataset.player = String(i);
       scr.style.left = r.L; scr.style.top = r.T; scr.style.width = r.W; scr.style.height = r.H;
 
@@ -265,17 +267,17 @@ export function initHud(ctx: HudCtx): HudApi {
       //
       // Elas são IRMÃS e não pai/filho porque `filter` de CSS desce para os descendentes e um filho não
       // consegue cancelá-lo: com a pausa dentro da experiência, não haveria como isentá-la.
-      const exp = document.createElement('div');
+      const exp = doc.createElement('div');
       exp.className = 'screen-exp';
       scr.appendChild(exp); vpExpDom.push(exp);
 
-      const d = document.createElement('div');
+      const d = doc.createElement('div');
       d.className = 'vphud';
       d.innerHTML = vphudHtml(ctx.hudObjective(i), ctx.hudIcon);
       applyCounterLabel(d, ctx.hudObjective(i)); // #106: o nome vem do JOGO — atributo, nunca markup
       exp.appendChild(d); vpHudDom.push(d);
 
-      const q = document.createElement('div');
+      const q = doc.createElement('div');
       q.className = 'vphud-quit'; q.hidden = true; q.textContent = 'Jogo abandonado';
       exp.appendChild(q); vpQuitDom.push(q);
 
