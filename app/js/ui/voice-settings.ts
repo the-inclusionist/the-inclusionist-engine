@@ -207,96 +207,107 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
    * before the row's own listener and stops it; a moved range goes back to the stored volume, a changed list to the voice in
    * use. The footer shows the reason when the row takes focus: the card hears `focusin` after the row's own explanation.
    */
-  for (const id of SPEECH_ROWS) {
-    const el = ctx.$<HTMLElement>(id);
-    if (!el) continue;
-    const refuse = (e: Event): void => {
-      if (el.getAttribute('aria-disabled') !== 'true') return;
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      if (id === '#tts-vol') { const cat = ctx.getAudioCat(); if (cat?.tts) (el as HTMLInputElement).value = String(volPercent(cat.tts.vol)); }
-      if (id === '#tts-voz') renderVoiceList();
-      if (id === '#tts-ppm') renderRate();
-      ctx.srSay(el.dataset.motivo ?? t('audio.semVoz'));
-    };
-    for (const kind of ['click', 'input', 'change']) el.addEventListener(kind, refuse, true);
-    el.closest<HTMLElement>('.overlay__card')?.addEventListener('focusin', (e) => {
-      if (e.target !== el || el.getAttribute('aria-disabled') !== 'true') return;
-      const footer = el.closest<HTMLElement>('.overlay__card')?.querySelector<HTMLElement>('.opt-explain');
-      if (footer) footer.textContent = el.dataset.motivo ?? '';
+  function refuseWhileLocked(): void {
+    for (const id of SPEECH_ROWS) {
+      const el = ctx.$<HTMLElement>(id);
+      if (!el) continue;
+      const refuse = (e: Event): void => {
+        if (el.getAttribute('aria-disabled') !== 'true') return;
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        if (id === '#tts-vol') { const cat = ctx.getAudioCat(); if (cat?.tts) (el as HTMLInputElement).value = String(volPercent(cat.tts.vol)); }
+        if (id === '#tts-voz') renderVoiceList();
+        if (id === '#tts-ppm') renderRate();
+        ctx.srSay(el.dataset.motivo ?? t('audio.semVoz'));
+      };
+      for (const kind of ['click', 'input', 'change']) el.addEventListener(kind, refuse, true);
+      el.closest<HTMLElement>('.overlay__card')?.addEventListener('focusin', (e) => {
+        if (e.target !== el || el.getAttribute('aria-disabled') !== 'true') return;
+        const footer = el.closest<HTMLElement>('.overlay__card')?.querySelector<HTMLElement>('.opt-explain');
+        if (footer) footer.textContent = el.dataset.motivo ?? '';
+      });
+    }
+  }
+  refuseWhileLocked();
+
+  /**
+   * THE SEVEN CONTROLS, wired where the page carries them: the voice list, the rate, the narration switch, the spoken
+   * index, and the three the engine never builds but a page may (the engine selector, the system voice, the sample).
+   * A page that lacks one simply has that row missing.
+   */
+  function wireControls(): void {
+    const voiceSel = ctx.$<HTMLSelectElement>('#tts-voz');
+    if (voiceSel) voiceSel.addEventListener('change', () => {
+      if (!ctx.tts.setVoz?.(voiceSel.value)) { renderVoiceList(); return; }
+      const v = ctx.tts.vozAtual?.();
+      if (v) ctx.srSay(t('sr.audio.voz', { nome: voiceName(v) }));
+    });
+
+    const rateSel = ctx.$<HTMLSelectElement>('#tts-ppm');
+    if (rateSel) rateSel.addEventListener('change', () => {
+      state.setSpeechPpmValue(Number(rateSel.value));
+      renderRate();
+      ctx.srSay(`${t('audio.ttsPpm')}: ${t('visual.legenda.ppm', { n: state.speechPpm })}`);
+    });
+
+    const ttsBtn = ctx.$<HTMLButtonElement>('#opt-tts');
+    if (ttsBtn) ttsBtn.addEventListener('click', () => {
+      const cat = ctx.getAudioCat(); if (!cat) return;
+      cat.tts.on = !cat.tts.on;
+      ctx.setCatGain('tts');
+      reflectTts();
+      ctx.srSay(t(cat.tts.on ? 'sr.audio.ttsOn' : 'sr.audio.ttsOff'));
+      if (cat.tts.on) ctx.tts.narrate(t('sr.audio.ttsOnSpoken'));
+    });
+
+    const idxBtn = ctx.$<HTMLButtonElement>('#opt-menuindex');
+    if (idxBtn) idxBtn.addEventListener('click', () => {
+      state.setMenuIndexOnValue(!state.menuIndexOn);
+      reflectMenuIndex();
+      // The announcement of the change carries NO index: it is not an item of any list, and a «1 of 1» here would be noise at
+      // exactly the moment the child is judging whether the noise bothers her.
+      ctx.srSay(t(state.menuIndexOn ? 'sr.menu.indexOn' : 'sr.menu.indexOff'));
+    });
+
+    const ttsEngSel = ctx.$<HTMLSelectElement>('#tts-engine');
+    if (ttsEngSel) ttsEngSel.addEventListener('change', () => {
+      ctx.tts.setEngineSel(ttsEngSel.value);
+      ctx.store.set('incl_tts_engine', ttsEngSel.value);
+      if (ttsEngSel.value !== 'webspeech') ctx.tts.loadTTS();
+      const opt = ttsEngSel.options[ttsEngSel.selectedIndex];
+      ctx.tts.narrate(t('sr.audio.engineSet', { motor: opt ? opt.text : '' }));
+    });
+
+    const ttsVoiceSel = ctx.$<HTMLSelectElement>('#tts-voice');
+    if (ttsVoiceSel) ttsVoiceSel.addEventListener('change', () => {
+      ctx.tts.setVoiceObj(ports.systemVoices().find((v) => v.name === ttsVoiceSel.value) || null);
+      ctx.store.set('incl_tts_voice', ttsVoiceSel.value);
+      ctx.tts.narrate(t('sr.audio.voicePicked'));
+    });
+
+    const ttsTestBtn = ctx.$<HTMLButtonElement>('#opt-tts-test');
+    if (ttsTestBtn) ttsTestBtn.addEventListener('click', () => {
+      const sample = t('audio.voiceSample');
+      const engine = ctx.tts.getEngine();
+      if (ctx.tts.getEngineSel() !== 'webspeech' && engine && engine.speak) {
+        try { engine.speak(sample); } catch (e) { /* noop */ } // the neural engine is already loaded
+      } else {
+        ports.speakSample(sample, ctx.tts.getVoiceObj()); // audible fallback (volume 1) + starts the neural download
+        if (ctx.tts.getEngineSel() !== 'webspeech') ctx.tts.loadTTS();
+      }
+      ctx.srSay(t('sr.audio.testingVoice'));
+    });
+
+    const ttsVolEl = ctx.$<HTMLInputElement>('#tts-vol');
+    if (ttsVolEl) ttsVolEl.addEventListener('input', () => {
+      const cat = ctx.getAudioCat(); if (!cat) return;
+      cat.tts.vol = (+ttsVolEl.value) / 100;
+      cat.tts.on = true;
+      ctx.setCatGain('tts');
+      reflectTts();
     });
   }
-
-  const voiceSel = ctx.$<HTMLSelectElement>('#tts-voz');
-  if (voiceSel) voiceSel.addEventListener('change', () => {
-    if (!ctx.tts.setVoz?.(voiceSel.value)) { renderVoiceList(); return; }
-    const v = ctx.tts.vozAtual?.();
-    if (v) ctx.srSay(t('sr.audio.voz', { nome: voiceName(v) }));
-  });
-
-  const rateSel = ctx.$<HTMLSelectElement>('#tts-ppm');
-  if (rateSel) rateSel.addEventListener('change', () => {
-    state.setSpeechPpmValue(Number(rateSel.value));
-    renderRate();
-    ctx.srSay(`${t('audio.ttsPpm')}: ${t('visual.legenda.ppm', { n: state.speechPpm })}`);
-  });
-
-  const ttsBtn = ctx.$<HTMLButtonElement>('#opt-tts');
-  if (ttsBtn) ttsBtn.addEventListener('click', () => {
-    const cat = ctx.getAudioCat(); if (!cat) return;
-    cat.tts.on = !cat.tts.on;
-    ctx.setCatGain('tts');
-    reflectTts();
-    ctx.srSay(t(cat.tts.on ? 'sr.audio.ttsOn' : 'sr.audio.ttsOff'));
-    if (cat.tts.on) ctx.tts.narrate(t('sr.audio.ttsOnSpoken'));
-  });
-
-  const idxBtn = ctx.$<HTMLButtonElement>('#opt-menuindex');
-  if (idxBtn) idxBtn.addEventListener('click', () => {
-    state.setMenuIndexOnValue(!state.menuIndexOn);
-    reflectMenuIndex();
-    // The announcement of the change carries NO index: it is not an item of any list, and a «1 of 1» here would be noise at
-    // exactly the moment the child is judging whether the noise bothers her.
-    ctx.srSay(t(state.menuIndexOn ? 'sr.menu.indexOn' : 'sr.menu.indexOff'));
-  });
-
-  const ttsEngSel = ctx.$<HTMLSelectElement>('#tts-engine');
-  if (ttsEngSel) ttsEngSel.addEventListener('change', () => {
-    ctx.tts.setEngineSel(ttsEngSel.value);
-    ctx.store.set('incl_tts_engine', ttsEngSel.value);
-    if (ttsEngSel.value !== 'webspeech') ctx.tts.loadTTS();
-    const opt = ttsEngSel.options[ttsEngSel.selectedIndex];
-    ctx.tts.narrate(t('sr.audio.engineSet', { motor: opt ? opt.text : '' }));
-  });
-
-  const ttsVoiceSel = ctx.$<HTMLSelectElement>('#tts-voice');
-  if (ttsVoiceSel) ttsVoiceSel.addEventListener('change', () => {
-    ctx.tts.setVoiceObj(ports.systemVoices().find((v) => v.name === ttsVoiceSel.value) || null);
-    ctx.store.set('incl_tts_voice', ttsVoiceSel.value);
-    ctx.tts.narrate(t('sr.audio.voicePicked'));
-  });
-
-  const ttsTestBtn = ctx.$<HTMLButtonElement>('#opt-tts-test');
-  if (ttsTestBtn) ttsTestBtn.addEventListener('click', () => {
-    const sample = t('audio.voiceSample');
-    const engine = ctx.tts.getEngine();
-    if (ctx.tts.getEngineSel() !== 'webspeech' && engine && engine.speak) {
-      try { engine.speak(sample); } catch (e) { /* noop */ } // the neural engine is already loaded
-    } else {
-      ports.speakSample(sample, ctx.tts.getVoiceObj()); // audible fallback (volume 1) + starts the neural download
-      if (ctx.tts.getEngineSel() !== 'webspeech') ctx.tts.loadTTS();
-    }
-    ctx.srSay(t('sr.audio.testingVoice'));
-  });
-
-  const ttsVolEl = ctx.$<HTMLInputElement>('#tts-vol');
-  if (ttsVolEl) ttsVolEl.addEventListener('input', () => {
-    const cat = ctx.getAudioCat(); if (!cat) return;
-    cat.tts.vol = (+ttsVolEl.value) / 100;
-    cat.tts.on = true;
-    ctx.setCatGain('tts');
-    reflectTts();
-  });
+  wireControls();
 
   ports.whenVoicesChange(populateTtsVoices);
 

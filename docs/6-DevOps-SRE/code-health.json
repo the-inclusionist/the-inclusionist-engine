@@ -1686,12 +1686,12 @@
       "fanIn": 1
     },
     "ui/voice-settings.ts": {
-      "codeLines": 221,
+      "codeLines": 227,
       "decisionNodes": 47,
       "maxDepth": 3,
       "fanOut": 6,
       "globalReach": 0,
-      "worstFunction": 12,
+      "worstFunction": 9,
       "fanIn": 1
     },
     "ui/where-the-child-is.ts": {
