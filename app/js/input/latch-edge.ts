@@ -32,7 +32,7 @@ export interface LatchedEdgeOptions {
    */
   readonly store?: LatchStore;
   /** O padrão de fábrica. `DEFAULTS.toggleMove`, e não `false` escrito à mão: há UMA fonte (ADR-0029). */
-  readonly padrao?: boolean;
+  readonly byDefault?: boolean;
 }
 
 /**
@@ -51,7 +51,7 @@ export function createLatchedEdge(
   opts: LatchedEdgeOptions = {},
 ): (jogador: number, origin: TransportName) => void {
   const latchStore = opts.store ?? store;
-  const padrao = opts.padrao ?? DEFAULTS.toggleMove;
+  const padrao = opts.byDefault ?? DEFAULTS.toggleMove;
   return (jogador: number, origin: TransportName): void => {
     playerEdge(jogador, origin);
     // 📌 O JOGADOR PODE NÃO EXISTIR — uma tela em espera, um assento que ainda não entrou —, e isso não torna

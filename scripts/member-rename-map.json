@@ -70,7 +70,11 @@
     "tests/pause-icons.browser.test.js letra": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name",
     "tests/shell.browser.test.js nivel": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name",
     "tests/hud.browser.test.js pausa": "a record local to the test (the pieces of a screen it looks up)",
-    "tests/no-text-under-16px.node.test.js linha": "a record local to the test (where in the stylesheet a size was found)"
+    "tests/no-text-under-16px.node.test.js linha": "a record local to the test (where in the stylesheet a size was found)",
+    "app/js/render/viz-axes-labels.ts padrao": "a label table keyed by the THEME VALUE `padrao` (a VisualState value, stored) — data, not a member name",
+    "tests/visual-axes-panel.node.test.js padrao": "a label table keyed by the THEME VALUE `padrao` (a VisualState value, stored) — data, not a member name",
+    "tests/art-licences-accepted.node.test.js padrao": "a record local to the test (a licence pattern and why it is refused)",
+    "scripts/check-precache.mjs padrao": "the script's own record shape (a URL pattern)"
   },
   "layers": {
     "core": {
@@ -211,7 +215,9 @@
       "input/transports.ts Reach.pedidas": "asked",
       "input/transports.ts Reach.seguraPedidas": "holdsAsked",
       "input/transports.ts Reach.serviriamSeLigados": "wouldServeIfOn",
-      "input/transports.ts Transport.aponta": "points"
+      "input/transports.ts Transport.aponta": "points",
+      "input/latch-edge.ts LatchedEdgeOptions.padrao": "byDefault",
+      "input/latch-scope.ts LatchReading.padrao": "byDefault"
     },
     "render": {
       "render/crt.ts initCrt.a11yVisualAtiva": "a11yVisualOn",
@@ -387,7 +393,8 @@
       "ui/shell.ts ShellCtx.setMotorPlayer": "setMobilityPlayer",
       "ui/shell.ts ShellApi.aplicarCena": "applyScene",
       "ui/typo-choices.ts FontCssTarget.fonte": "font",
-      "ui/typo-choices.ts FontCssTarget.cursiva": "cursive"
+      "ui/typo-choices.ts FontCssTarget.cursiva": "cursive",
+      "ui/settings-controls.ts SettingsControlsCtx.kbPadraoFor": "defaultSchemeFor"
     },
     "boot": {
       "boot/create-game.ts Declinios.semAssistenteDePad": "noPadAssistant",

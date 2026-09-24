@@ -102,7 +102,7 @@ export interface LatchReading {
   /** O que está guardado na chave antiga, sem transporte. `null` = nunca foi escrito. */
   readonly fromLegacy: boolean | null;
   /** O padrão de fábrica (`DEFAULTS.toggleMove` / `DEFAULTS.toggleRun`). */
-  readonly padrao: boolean;
+  readonly byDefault: boolean;
 }
 
 /**
@@ -119,5 +119,5 @@ export function latchOf(transporte: string, l: LatchReading): boolean {
   if (latchAlwaysOn(transporte)) return true;
   if (l.fromTransport !== null) return l.fromTransport;
   if (l.fromLegacy !== null) return l.fromLegacy;
-  return l.padrao;
+  return l.byDefault;
 }

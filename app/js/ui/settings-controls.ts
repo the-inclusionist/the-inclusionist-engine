@@ -86,7 +86,7 @@ export interface SettingsControlsCtx {
    * o `input/keyboard.resetKB` faz `store.remove(CKEY)` ANTES de devolver a cópia. Usá-lo como leitor
    * apagaria o remapeamento da criança a cada render, e o estrago só apareceria no arranque seguinte.
    */
-  kbPadraoFor: (playerIndex: number) => KeyScheme;
+  defaultSchemeFor: (playerIndex: number) => KeyScheme;
   /** Shared: current player count (core/state.ts's numPlayers, read live via game.js). */
   getNumPlayers: () => number;
   /** Shared: propagates `kb` -> the live control aliases (game.js's applyControls). Called after remap/reset. */
@@ -280,7 +280,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
    * who tries something and goes back cannot be left with the mark lit for good.
    */
   function markWhatLeftTheDefault(list: HTMLElement, player: number): void {
-    const factory = ctx.kbPadraoFor(player);
+    const factory = ctx.defaultSchemeFor(player);
     const now = ctx.kbFor(player);
     const sameKeys = (a: readonly string[] | null | undefined, b: readonly string[] | null | undefined): boolean =>
       (a ?? []).length === (b ?? []).length && (a ?? []).every((k, i) => k === (b ?? [])[i]);

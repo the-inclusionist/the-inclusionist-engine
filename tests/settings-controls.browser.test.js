@@ -52,7 +52,7 @@ function buildCtx(over = {}) {
     // «quantos jogadores → que balde» (`p2`/`p3`/`p4`) é do consumidor, e duplicá-lo dentro da engine seria a
     // segunda cópia de uma regra. O duplo usa o MESMO `makeKB()` que semeia o `kb`, que é o que faz «igual ao
     // padrão» significar aqui o que significa no jogo.
-    kbPadraoFor: (i) => makeKB().p2[i] ?? makeKB().p2[0],
+    defaultSchemeFor: (i) => makeKB().p2[i] ?? makeKB().p2[0],
     getNumPlayers: () => 2,
     applyControls: () => { applyCalls.applyControls++; },
     assignControls: () => { applyCalls.assignControls++; },
@@ -375,7 +375,7 @@ describe('ui/settings-controls', () => {
     // acende — ela perdeu a tecla alternativa e nada lho diz. O `every` sozinho compara prefixos, não listas.
     const ctx = buildCtx();
     const comDuas = { ...ctx.kbFor(0), action3: ['Semicolon', 'Slash'] };
-    ctx.kbPadraoFor = () => comDuas;
+    ctx.defaultSchemeFor = () => comDuas;
     ctx.kbFor = () => ({ ...comDuas, action3: ['Semicolon'] });
     initSettingsControls(ctx).render(0);
     expect(marcada(linhaDe('action3')), 'perdeu a tecla alternativa e não foi marcado').toBe(true);

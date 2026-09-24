@@ -3256,7 +3256,7 @@ export function createGame(o: CreateGameOptions): Engine {
       kb,
       setKB,
       kbFor: (i) => modeScheme(kb, i),
-      kbPadraoFor: (i) => modeScheme(factoryWithGame(), i),
+      defaultSchemeFor: (i) => modeScheme(factoryWithGame(), i),
       getNumPlayers: () => keyboardMode,
       applyControls: () => { keyboard.refreshControls(); },
       assignControls: () => { keyboard.assignControls(); },

@@ -14,7 +14,7 @@ import {
 } from '../app/js/input/latch-scope.js';
 import { defaultTransports } from '../app/js/input/transports.js';
 
-const nada = { fromTransport: null, fromLegacy: null, padrao: false };
+const nada = { fromTransport: null, fromLegacy: null, byDefault: false };
 
 describe('input/latch-scope · a chave leva o transporte no nome', () => {
   it('[Right] a chave nova separa jogador E transporte; a antiga só separa jogador', () => {
@@ -58,7 +58,7 @@ describe('input/latch-scope · nos transportes de UM COMANDO ela não é prefer�
     // O pior defeito possível, e no controle de quem tem menos alternativas: uma criança que tivesse
     // desligado a alternância no teclado herdaria esse `false` e ficaria com um controle de olhar que não
     // responde. Por isso a pergunta «este transporte é de um comando?» vem ANTES de qualquer leitura.
-    const desligado = { fromTransport: false, fromLegacy: false, padrao: false };
+    const desligado = { fromTransport: false, fromLegacy: false, byDefault: false };
     for (const t of ONE_COMMAND_AT_A_TIME) {
       expect(latchOf(t, desligado), `${t} foi desligado por um valor guardado`).toBe(true);
     }
@@ -73,8 +73,8 @@ describe('input/latch-scope · nos transportes de UM COMANDO ela não é prefer�
 
 describe('input/latch-scope · a resolução, e a herança da chave antiga', () => {
   it('[Right] o valor DESTE transporte vence tudo o resto', () => {
-    expect(latchOf('toque', { fromTransport: true, fromLegacy: false, padrao: false })).toBe(true);
-    expect(latchOf('toque', { fromTransport: false, fromLegacy: true, padrao: true })).toBe(false);
+    expect(latchOf('toque', { fromTransport: true, fromLegacy: false, byDefault: false })).toBe(true);
+    expect(latchOf('toque', { fromTransport: false, fromLegacy: true, byDefault: true })).toBe(false);
   });
 
   it('⚠️ [Boundary] sem valor deste transporte, o LEGADO herda — e herda para todos', () => {
@@ -82,20 +82,20 @@ describe('input/latch-scope · a resolução, e a herança da chave antiga', () 
     // perder o ajuste, adivinhar um transporte, ou herdar para todos. Só a terceira não tira nada a quem
     // depende do ajuste, e o vazamento que ela mantém dura até ela mexer no assunto uma vez em cada aparelho.
     for (const t of ['toque', 'teclado', 'gamepad']) {
-      expect(latchOf(t, { fromTransport: null, fromLegacy: true, padrao: false })).toBe(true);
+      expect(latchOf(t, { fromTransport: null, fromLegacy: true, byDefault: false })).toBe(true);
     }
   });
 
   it('[Zero] sem nada guardado, o padrão de fábrica responde', () => {
     expect(latchOf('teclado', nada)).toBe(false);
-    expect(latchOf('teclado', { ...nada, padrao: true })).toBe(true);
+    expect(latchOf('teclado', { ...nada, byDefault: true })).toBe(true);
   });
 
   it('⚠️ [Boundary] `false` guardado é um VALOR, e não uma ausência', () => {
     // O erro clássico deste desenho é escrever `l.doTransporte || l.doLegado || l.padrao`: um `false`
     // deliberado cairia para o legado e a criança que DESLIGOU a alternância vê-la-ia voltar sozinha.
-    expect(latchOf('teclado', { fromTransport: false, fromLegacy: true, padrao: true })).toBe(false);
-    expect(latchOf('teclado', { fromTransport: null, fromLegacy: false, padrao: true })).toBe(false);
+    expect(latchOf('teclado', { fromTransport: false, fromLegacy: true, byDefault: true })).toBe(false);
+    expect(latchOf('teclado', { fromTransport: null, fromLegacy: false, byDefault: true })).toBe(false);
   });
 });
 

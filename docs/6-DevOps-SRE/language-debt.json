@@ -1,10 +1,10 @@
 {
   "measured": "2026-09-24",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 302,
+  "total": 314,
   "totals": {
-    "decl": 99,
-    "param": 192,
+    "decl": 107,
+    "param": 196,
     "membro": 11
   },
   "files": {
@@ -41,6 +41,11 @@
     "app/js/core/loop.ts": {
       "decl": 0,
       "param": 1,
+      "membro": 0
+    },
+    "app/js/core/rng.ts": {
+      "decl": 1,
+      "param": 0,
       "membro": 0
     },
     "app/js/core/route.ts": {
@@ -84,7 +89,7 @@
       "membro": 0
     },
     "app/js/input/latch-edge.ts": {
-      "decl": 0,
+      "decl": 1,
       "param": 2,
       "membro": 0
     },
@@ -95,12 +100,12 @@
     },
     "app/js/input/latch-store.ts": {
       "decl": 0,
-      "param": 11,
+      "param": 14,
       "membro": 0
     },
     "app/js/input/latch-sync.ts": {
       "decl": 0,
-      "param": 2,
+      "param": 3,
       "membro": 0
     },
     "app/js/input/pad-defaults.ts": {
@@ -114,7 +119,7 @@
       "membro": 0
     },
     "app/js/input/pointer.ts": {
-      "decl": 0,
+      "decl": 1,
       "param": 2,
       "membro": 0
     },
@@ -126,6 +131,11 @@
     "app/js/input/touch.ts": {
       "decl": 4,
       "param": 3,
+      "membro": 0
+    },
+    "app/js/input/transport-in-use.ts": {
+      "decl": 1,
+      "param": 0,
       "membro": 0
     },
     "app/js/input/transports.ts": {
@@ -204,7 +214,7 @@
       "membro": 2
     },
     "app/js/render/viz-axes.ts": {
-      "decl": 1,
+      "decl": 2,
       "param": 0,
       "membro": 0
     },
@@ -273,6 +283,11 @@
       "param": 5,
       "membro": 0
     },
+    "app/js/ui/motion-scene.ts": {
+      "decl": 1,
+      "param": 0,
+      "membro": 0
+    },
     "app/js/ui/panel-shell.ts": {
       "decl": 2,
       "param": 0,
@@ -309,7 +324,7 @@
       "membro": 0
     },
     "app/js/ui/settings-motion.ts": {
-      "decl": 0,
+      "decl": 2,
       "param": 1,
       "membro": 0
     },

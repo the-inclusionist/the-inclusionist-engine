@@ -164,7 +164,7 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
 
   it('🔴 [Zero] a criança do TECLADO com alternância gravada: as duas funções DIVERGEM, e o registo diz qual vale', () => {
     const estado = { inUse: 'teclado', assistedOn: false };
-    const gravado = { fromTransport: true, fromLegacy: null, padrao: false };
+    const gravado = { fromTransport: true, fromLegacy: null, byDefault: false };
 
     // O modelo do ADR-0109: o teclado não tem alternância própria, logo NÃO.
     expect(latchNow(estado), 'o modelo superado deixou de dizer o que dizia').toBe(false);
@@ -174,7 +174,7 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
 
   it('⚠️ [Fronteira] e no TOQUE também divergem — a cláusula do toque caiu com a mesma frase', () => {
     const estado = { inUse: 'toque', assistedOn: false };
-    const desligadoPelaCrianca = { fromTransport: false, fromLegacy: null, padrao: false };
+    const desligadoPelaCrianca = { fromTransport: false, fromLegacy: null, byDefault: false };
 
     expect(latchNow(estado), 'o toque deixou de estar em COM_ALTERNANCIA_PROPRIA').toBe(true);
     expect(latchOf(estado.inUse, desligadoPelaCrianca), 'o toque deixou de ser escolha').toBe(false);
@@ -184,7 +184,7 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
   // assistidos a alternância é obrigatória nos DOIS modelos, por razões diferentes e com o mesmo resultado.
   it('[Feliz] nos quatro assistidos as duas concordam — obrigatória, e ninguém a desliga', () => {
     for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
-      expect(latchOf(t, { fromTransport: false, fromLegacy: false, padrao: false }), `${t} pôde ser desligado`)
+      expect(latchOf(t, { fromTransport: false, fromLegacy: false, byDefault: false }), `${t} pôde ser desligado`)
         .toBe(true);
       expect(latchNow({ inUse: t, assistedOn: true }), `${t} habilitado deixou de forçar`).toBe(true);
     }

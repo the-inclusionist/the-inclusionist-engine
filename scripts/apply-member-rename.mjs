@@ -119,6 +119,21 @@ function declarationAt(sf, pos) {
   return hit;
 }
 
+/**
+ * The key an entry has AFTER the map ran: every segment of its path translated by the map, not only the last one.
+ * 📏 `input/touch.ts TouchCtx.acoesDoJogo.acao` lives at `TouchCtx.gameActions.action` once applied — its parent moved too.
+ */
+function renamedKey(key, to, everyEntry) {
+  const [rel, path] = key.split(' ');
+  const segs = path.split('.');
+  const out = [segs[0]];
+  for (let i = 1; i < segs.length; i++) {
+    const oldPrefix = `${rel} ${segs.slice(0, i + 1).join('.')}`;
+    out.push(i === segs.length - 1 ? to : (everyEntry[oldPrefix] ?? segs[i]));
+  }
+  return `${rel} ${out.join('.')}`;
+}
+
 function apply(layer) {
   const map = readMap();
   const entries = Object.entries(map.layers[layer] ?? {});
@@ -132,7 +147,7 @@ function apply(layer) {
     const decl = findDeclaration(program, key);
     // Already applied: the declaration answers to the NEW name at the same path. A layer can be re-run after an entry is
     // added to it — which is how a mirror found late joins the layer it mirrors.
-    if (!decl && findDeclaration(program, key.replace(/[^.\s]+$/, to))) continue;
+    if (!decl && findDeclaration(program, renamedKey(key, to, everyEntry))) continue;
     if (!decl) { refusals.push(`${key}: no such member declaration`); continue; }
     const file = decl.getSourceFile().fileName;
     const locs = service.findRenameLocations(file, decl.name.getStart(), false, false, { providePrefixAndSuffixTextForRename: true }) ?? [];

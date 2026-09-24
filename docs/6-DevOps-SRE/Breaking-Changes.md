@@ -3021,6 +3021,23 @@ The table is printed from `scripts/member-rename-map.json` by `node scripts/appl
 | `boot/create-game.js` | `keyboardRows` | `forte` | `strong` |
 | `boot/create-game.js` | `keyboardRows` | `botao` | `button` |
 
+## CO · Three members the word list hid: `padrao` was filed as English (ADR-0230, issue #206)
+
+**Who is affected:** a host that builds a latch option or reading (`LatchedEdgeOptions.padrao`, `LatchReading.padrao` →
+`byDefault`: the value to use when nothing is stored) or the controls panel's ctx (`SettingsControlsCtx.kbPadraoFor` →
+`defaultSchemeFor`: a player's factory keyboard scheme).
+
+📌 **Why now, after phase 7 was called done:** the language gate's word list had `padrao` in its ENGLISH list, so these
+three members counted as clean. Moving the word made the phase-7 gate red — which is the gate doing its job: the phase
+was not finished, it was mis-measured. The same `padrao` also marks two published names (`PADRAO`, `nosPadroes`) that
+change in a note of their own.
+
+| module | type | old member | new member |
+|---|---|---|---|
+| `input/latch-edge.js` | `LatchedEdgeOptions` | `padrao` | `byDefault` |
+| `input/latch-scope.js` | `LatchReading` | `padrao` | `byDefault` |
+| `ui/settings-controls.js` | `SettingsControlsCtx` | `kbPadraoFor` | `defaultSchemeFor` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

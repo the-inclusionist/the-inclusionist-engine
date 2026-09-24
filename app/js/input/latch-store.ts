@@ -57,7 +57,7 @@ export function readLatch(
   return {
     fromTransport: readTriState(store, latchKey(base, jogador, transporte)),
     fromLegacy: readTriState(store, legacyLatchKey(base, jogador)),
-    padrao,
+    byDefault: padrao,
   };
 }
 

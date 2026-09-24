@@ -752,15 +752,15 @@
   },
   "input/latch-edge.ts": {
     "interface LatchedEdgeOptions": [
-      "padrao?",
+      "byDefault?",
       "store?"
     ]
   },
   "input/latch-scope.ts": {
     "interface LatchReading": [
+      "byDefault",
       "fromLegacy",
-      "fromTransport",
-      "padrao"
+      "fromTransport"
     ]
   },
   "input/latch-store.ts": {
@@ -2446,12 +2446,12 @@
       "$",
       "applyControls",
       "assignControls",
+      "defaultSchemeFor",
       "fillExplain?",
       "gameActions",
       "getNumPlayers",
       "kb",
       "kbFor",
-      "kbPadraoFor",
       "setKB",
       "srAlert",
       "srSay",

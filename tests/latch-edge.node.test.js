@@ -37,7 +37,7 @@ describe('a aresta que também resolve a alternância', () => {
   it('[Right] a aresta chega ao autómato E o jogador recebe a alternância daquele aparelho', () => {
     const armazem = armazemFalso({ [chave(0, 'gamepad')]: '1' });
     const p = jogador();
-    const aresta = createLatchedEdge(() => [p], { store: armazem, padrao: false });
+    const aresta = createLatchedEdge(() => [p], { store: armazem, byDefault: false });
 
     aresta(0, 'gamepad');
 
@@ -48,7 +48,7 @@ describe('a aresta que também resolve a alternância', () => {
   it('🎯 [Sequência] trocar de aparelho troca a resposta — e o armazenamento não é tocado', () => {
     const armazem = armazemFalso({ [chave(0, 'gamepad')]: '1', [chave(0, 'teclado')]: '0' });
     const p = jogador();
-    const aresta = createLatchedEdge(() => [p], { store: armazem, padrao: false });
+    const aresta = createLatchedEdge(() => [p], { store: armazem, byDefault: false });
 
     aresta(0, 'gamepad');
     expect(p.toggleMove).toBe(true);
@@ -66,14 +66,14 @@ describe('a aresta que também resolve a alternância', () => {
       [chave(0, 'olhos')]: '0', [legacyLatchKey(BASE_DA_MARCHA, 0)]: '0',
     });
     const p = jogador();
-    createLatchedEdge(() => [p], { store: armazem, padrao: false })(0, 'olhos');
+    createLatchedEdge(() => [p], { store: armazem, byDefault: false })(0, 'olhos');
     expect(p.toggleMove, 'quem joga por olhar ficou sem a alternância de que a entrada dela depende').toBe(true);
   });
 
   it('[Muitos] cada assento resolve o seu — a aresta do J2 não mexe no J1', () => {
     const armazem = armazemFalso({ [chave(1, 'toque')]: '1' });
     const p0 = jogador(); const p1 = jogador();
-    const aresta = createLatchedEdge(() => [p0, p1], { store: armazem, padrao: false });
+    const aresta = createLatchedEdge(() => [p0, p1], { store: armazem, byDefault: false });
 
     aresta(1, 'toque');
 
@@ -84,7 +84,7 @@ describe('a aresta que também resolve a alternância', () => {
 
   it('[Zero] assento sem jogador: a aresta fica registada à mesma, e nada rebenta', () => {
     const armazem = armazemFalso();
-    const aresta = createLatchedEdge(() => [], { store: armazem, padrao: false });
+    const aresta = createLatchedEdge(() => [], { store: armazem, byDefault: false });
     expect(() => aresta(3, 'toque')).not.toThrow();
     expect(inputOf(3).inUse, 'o transporte em uso é facto sobre a ENTRADA, não sobre quem já entrou').toBe('toque');
   });
