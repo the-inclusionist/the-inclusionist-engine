@@ -1054,12 +1054,12 @@
       "fanIn": 2
     },
     "render/low-vision-drawing.ts": {
-      "codeLines": 8,
-      "decisionNodes": 5,
-      "maxDepth": 5,
+      "codeLines": 30,
+      "decisionNodes": 3,
+      "maxDepth": 1,
       "fanOut": 0,
       "globalReach": 0,
-      "worstFunction": 6,
+      "worstFunction": 2,
       "fanIn": 2
     },
     "render/lq-filter.ts": {
