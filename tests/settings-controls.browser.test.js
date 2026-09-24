@@ -340,6 +340,19 @@ describe('ui/settings-controls', () => {
     expect(marcada(linhaDe('action1')), 'marcou uma acção que ninguém tocou').toBe(false);
   });
 
+  it('🎯 [Right] a marca é a do jogador ABERTO — o remapeamento do Jogador 2 marca-se no controle dele', () => {
+    // Achado pela re-sonda do corte (23/09): todo caso de marca desenhava o Jogador 1, logo comparar o esquema
+    // de outro assento passava. O Jogador 2 remapeava e a lista dele não dizia onde.
+    const ctx = buildCtx();
+    const api = initSettingsControls(ctx);
+    api.render(1);
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
+    api.handleCaptureKeydown({ code: 'KeyP', preventDefault: () => {} });
+    expect(marcada(linhaDe('action2')), 'o remapeamento do Jogador 2 não foi marcado na lista dele').toBe(true);
+    api.render(0);
+    expect(marcada(linhaDe('action2')), 'a marca do Jogador 2 apareceu no controle do Jogador 1').toBe(false);
+  });
+
   it('⚠️ [Boundary] a MESMA tecla do padrão, reatribuída, NÃO é uma mudança', () => {
     // O caso que separa «mexeu» de «mexeu e voltou». Uma comparação por identidade de objecto, ou um sinal
     // levantado no clique, diria que mudou — e a criança ouviria «alterado» sobre a tecla de fábrica.
