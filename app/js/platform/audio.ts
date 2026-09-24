@@ -47,8 +47,10 @@ export let audioCat: Record<string, CatState> | null = null;
 // Carrega o estado do mixer (defaults do audio-mixer.js + o que estiver salvo). I/O EXPLÍCITO, idempotente.
 export function initAudioMixer(): void { if (!audioCat) audioCat = loadAudioCat(); }
 const _catNodes: Record<string, GainNode> = {};
-export function catNode(cat: string): GainNode | null { const ac = ensureAC(); if (!ac || !audioCat) return null; const out = audioOut(); if (!out) return null; if (!_catNodes[cat]) { const g = ac.createGain(); g.gain.value = audioCat[cat].on ? audioCat[cat].vol : 0; g.connect(out); _catNodes[cat] = g; } return _catNodes[cat]; }
-export function setCatGain(cat: string): void { if (!audioCat) return; const g = _catNodes[cat]; if (g && audioCtx) g.gain.setTargetAtTime(audioCat[cat].on ? audioCat[cat].vol : 0, audioCtx.currentTime, 0.02); saveAudioCat(cat, audioCat[cat]); }
+/** A category's level: silence when it is switched off, its volume when on — asked the same way when its bus is made and when the slider moves. */
+function catLevel(cat: string): number { const c = audioCat![cat]; return c.on ? c.vol : 0; }
+export function catNode(cat: string): GainNode | null { const ac = ensureAC(); if (!ac || !audioCat) return null; const out = audioOut(); if (!out) return null; if (!_catNodes[cat]) { const g = ac.createGain(); g.gain.value = catLevel(cat); g.connect(out); _catNodes[cat] = g; } return _catNodes[cat]; }
+export function setCatGain(cat: string): void { if (!audioCat) return; const g = _catNodes[cat]; if (g && audioCtx) g.gain.setTargetAtTime(catLevel(cat), audioCtx.currentTime, 0.02); saveAudioCat(cat, audioCat[cat]); }
 
 // ===== Sínteses de oscilador (earcons/melodias). Leem soundOn/volume; roteiam pelo mixer→mestre. =====
 // pc = contexto de áudio por-jogador (opcional; o game.js o passa p/ rotear a pista ao dispositivo do jogador).

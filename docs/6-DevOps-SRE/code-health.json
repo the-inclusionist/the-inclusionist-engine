@@ -718,8 +718,8 @@
       ]
     },
     "platform/audio.ts": {
-      "codeLines": 57,
-      "decisionNodes": 38,
+      "codeLines": 58,
+      "decisionNodes": 37,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 1,
