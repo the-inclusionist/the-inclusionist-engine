@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/changed-mark — a marca de "saiu do padrão" (ADR-0029, project BROWSER: usa document).
+// Tests of ui/changed-mark — the changed-from-default mark (ADR-0029, BROWSER project: uses document).
 //
-// O caso que mantém este módulo honesto NÃO é o de marcar: é o de DESMARCAR. Uma marca que só soubesse
-// acrescentar acabaria em todos os controles, e uma marca em tudo não é marca — é ruído com aparência de
-// informação, no menu onde a criança tem menos margem para ser confundida.
+// The case that keeps this module honest is NOT marking: it is UNMARKING. A mark that could only add would end up on
+// every control, and a mark on everything is no mark — it is noise that looks like information, in the menu where the
+// child has least room to be confused.
 //
-// O segundo caso que importa é o do NOME acessível, que tem dois caminhos porque `aria-label` vence o
-// conteúdo do botão. Marcar só um deles deixaria metade dos controles mudos para quem não enxerga, em
-// silêncio — o pior jeito de uma marca de acessibilidade falhar, porque nada na tela denuncia a falta.
+// The second case that matters is the accessible NAME, which has two paths because `aria-label` beats the button's
+// content. Marking only one of them would leave half the controls mute for whoever cannot see, silently — the worst way
+// for an accessibility mark to fail, because nothing on screen gives the gap away.
 //
-// O terceiro é o rótulo VISÍVEL, e ele entrou aqui por um teste alheio ter caído. A primeira versão pendurava
-// um `<span class="sr-only">` dentro do botão, e um caso de settings-mobility que aferia `textContent` acusou:
-// os painéis reescrevem o conteúdo inteiro a cada reflect, então o sufixo dependia da ordem das chamadas para
-// sobreviver. O sufixo agora mora só no `aria-label`, e o texto visível é intocado.
+// The third is the VISIBLE label, and it came in because someone else's test fell. A first version hung a
+// `<span class="sr-only">` inside the button, and a settings-mobility case that checked `textContent` accused it: the
+// panels rewrite the whole content at every reflect, so the suffix depended on the order of the calls to survive. The
+// suffix now lives only in the `aria-label`, and the visible text is untouched.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from '../app/js/ui/changed-mark.js';
 
@@ -38,11 +38,11 @@ describe('ui/changed-mark — a marca visual', () => {
   });
 
   it('[Right] é idempotente — chamar dez vezes com o mesmo valor dá o mesmo resultado', () => {
-    // Os painéis chamam isto de dentro do `reflect*`, que roda a cada mudança de qualquer controle.
+    // The panels call this from inside `reflect*`, which runs at every change of any control.
     const row = $('#row-text');
     for (let i = 0; i < 10; i++) markChanged(row, true);
     expect(row.classList.contains(CHANGED_CLASS)).toBe(true);
-    expect(nome($('#btn-text')).match(/alterado/g)).toHaveLength(1); // UMA vez, não dez
+    expect(nome($('#btn-text')).match(/alterado/g)).toHaveLength(1); // ONCE, not ten times
   });
 
   it('[Interface] NÃO mexe no texto visível — quem reescreve o rótulo a cada reflect são os painéis', () => {
@@ -69,15 +69,15 @@ describe('ui/changed-mark — o nome acessível, pelos dois caminhos', () => {
   });
 
   it('[Right] desmarcar DEVOLVE o nome original, sem sobra dos dois caminhos', () => {
-    // A base fica guardada em dataset justamente para não ter que reconstruí-la removendo texto por regex —
-    // isso quebraria calado no dia em que a tradução do sufixo mudasse.
+    // The base is kept in dataset precisely so it need not be rebuilt by removing text with a regex — that would break
+    // silently the day the suffix's translation changed.
     markChanged($('#row-label'), true);
     markChanged($('#row-label'), false);
     expect($('#btn-label').getAttribute('aria-label')).toBe('Modo Fácil, desligado');
 
     markChanged($('#row-text'), true);
     markChanged($('#row-text'), false);
-    expect($('#btn-text').hasAttribute('aria-label')).toBe(false); // criado por nós → some inteiro
+    expect($('#btn-text').hasAttribute('aria-label')).toBe(false); // created by us → gone entirely
   });
 
   it('[Boundary] alternar marcado→limpo→marcado não acumula sufixo', () => {
@@ -89,12 +89,12 @@ describe('ui/changed-mark — o nome acessível, pelos dois caminhos', () => {
   });
 
   it('[Interface] linha com DOIS controles: o sufixo vai no PRIMEIRO, e só nele', () => {
-    // Uma linha do mixer tem volume + liga/desliga. Quem tabula alcança o volume primeiro, então é ali que
-    // "alterado" precisa sair — antes de a criança decidir se para nesta linha. E só ali: repetir nos dois
-    // faria o leitor dizer a mesma coisa duas vezes ao atravessar uma linha só.
+    // A mixer row has volume + on/off. Whoever tabs reaches the volume first, so that is where changed needs to come out
+    // — before the child decides whether to stop on this row. And only there: repeating it on both would have the reader
+    // say the same thing twice while crossing a single row.
     //
-    // Este caso existe porque a escolha era um ACIDENTE de ordem do DOM até eu conferir no jogo. Agora
-    // reordenar o markup quebra aqui, em vez de mover o sufixo em silêncio.
+    // This case exists because the choice was an ACCIDENT of DOM order until it was checked in the game. Now reordering
+    // the markup breaks here, instead of moving the suffix silently.
     document.body.innerHTML =
       '<div class="ctrl-row" id="mix"><span>Música</span>' +
       '<input type="range" aria-label="Volume de Música">' +
@@ -118,9 +118,9 @@ describe('ui/changed-mark — a marca sobe para o menu', () => {
   });
 
   it('[Boundary] desmarca só quando a ÚLTIMA opção volta ao padrão, não a primeira', () => {
-    // A falha interessante mora aqui: com `every` no lugar de `some`, o menu limparia a marca assim que UMA
-    // opção voltasse ao padrão, e as outras alteradas ficariam escondidas atrás de um menu que diz estar
-    // intocado. A criança procuraria em todo lugar menos onde está.
+    // The interesting failure lives here: with `every` in place of `some`, the menu would clear the mark as soon as ONE
+    // option went back to default, and the other changed ones would be hidden behind a menu that says it is untouched.
+    // The child would look everywhere except where it is.
     const opener = $('#opener');
     markMenuChanged(opener, [true, true]);
     markMenuChanged(opener, [false, true]);

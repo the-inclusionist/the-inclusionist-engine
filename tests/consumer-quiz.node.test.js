@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O SEGUNDO CONSUMIDOR — lógica pura (project node). ADR-0027 passo 6, antecipado pelo Dev em 2026-08-25.
+// THE SECOND CONSUMER — pure logic (node project). ADR-0027 step 6, brought forward by the Dev on 2026-08-25.
 //
-// Este arquivo tem uma função que os outros testes não têm: ele é parte do INSTRUMENTO. O consumidor existe
-// para medir a fronteira engine↔jogo, e um consumidor que não é testado nem construído não mede nada — vira
-// uma pasta com boas intenções, que é exatamente o que o ADR diz que "engine" vira sem ele.
+// This file has a function the other tests do not: it is part of the INSTRUMENT. The consumer exists to measure the
+// engine↔game boundary, and a consumer that is neither tested nor built measures nothing — it becomes a folder of good
+// intentions, which is exactly what the ADR says "engine" becomes without it.
 //
-// O caso mais importante daqui não é sobre quiz nenhum: é o que afere que este módulo NÃO IMPORTA DE `game/`.
-// É a regra inteira do experimento, e sem ela a primeira pressa a desfaz sem que ninguém perceba.
+// The most important case here is not about any quiz: it is the one that checks this module does NOT IMPORT FROM
+// `game/`. It is the experiment's whole rule, and without it the first hurry undoes it without anyone noticing.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,8 +20,8 @@ describe('o consumidor obedece à própria regra', () => {
   });
 
   it('[Interface] e também não importa PIXI: quem não desenha mundo não paga 467 kB por isso', () => {
-    // Não é economia, é a medida. Se o quiz precisasse da PIXI para usar a pilha de acessibilidade, essa
-    // pilha estaria amarrada ao renderizador do jogo de plataforma — e o pilar 2 valeria só dentro do gênero.
+    // It is not economy, it is the measure. If the quiz needed PIXI to use the accessibility stack, that stack would be
+    // tied to the platformer's renderer — and pillar 2 would hold only inside the genre.
     expect(FONTE).not.toMatch(/from 'pixi\.js'|@pixi/);
   });
 
@@ -38,8 +38,8 @@ describe('proximoFoco — a regra que o teclado e o pad compartilham', () => {
   });
 
   it('[Boundary] dá a volta nas duas pontas', () => {
-    // Dar a volta não é conveniência: quem navega só por teclado ou por UM botão não tem como "voltar" de
-    // outro jeito, e uma lista que trava na ponta deixa a última alternativa inalcançável para essa criança.
+    // Wrapping is not a convenience: whoever navigates only by keyboard or by ONE button has no other way to go back, and
+    // a list that stops at the end leaves the last option unreachable for that child.
     expect(nextFocus(3, 1, 4)).toBe(0);
     expect(nextFocus(0, -1, 4)).toBe(3);
   });
@@ -52,8 +52,8 @@ describe('proximoFoco — a regra que o teclado e o pad compartilham', () => {
 
 describe('respostaTexto — o que a criança cega RECEBE', () => {
   it('[Right] o acerto e o erro dizem coisas diferentes, e o erro DIZ A RESPOSTA', () => {
-    // Um "ainda não" sem a resposta certa deixa a criança sem o que aprender com o erro — e quem depende do
-    // leitor de tela não pode simplesmente olhar a tela para descobrir.
+    // A not-yet without the right answer leaves the child nothing to learn from the mistake — and whoever depends on the
+    // screen reader cannot simply look at the screen to find out.
     expect(answerText(true, 'Galinha')).toContain('Certo');
     expect(answerText(false, 'Galinha')).toContain('Galinha');
   });
@@ -107,13 +107,13 @@ describe('perguntaHtml — a marcação', () => {
   });
 
   it('[Right] ⚠️ o CONTEÚDO DA PERGUNTA não vira marcação (issue #106)', () => {
-    // Enunciado e alternativas são conteúdo de atividade — texto, nunca marcação. Hoje vêm de um catálogo em
-    // código; o ADR-0052 torna-os AUTORADOS, e a issue #106 exige que isto esteja consertado ANTES disso:
-    // «assim que um profissional puder digitar numa atividade, deixa de ser censo e vira incidente».
+    // The statement and the options are activity content — text, never markup. Today they come from a catalogue in code;
+    // ADR-0052 makes them AUTHORED, and issue #106 demands this be fixed BEFORE that: «assim que um profissional puder
+    // digitar numa atividade, deixa de ser censo e vira incidente».
     const FUGA = '"><i id="fugiu"></i><b>x';
     const html = questionHtml({ enunciado: FUGA, alternativas: [FUGA], certa: 0 }, 0);
     expect(html, 'o conteúdo fechou um atributo e injetou um elemento').not.toContain('<i id=');
-    expect(html).toContain('&lt;'); // escapado, e não apagado
+    expect(html).toContain('&lt;'); // escaped, not deleted
   });
 
   it('[Zero] e texto normal atravessa INTACTO — um escape que estraga a pergunta não serve a ninguém', () => {

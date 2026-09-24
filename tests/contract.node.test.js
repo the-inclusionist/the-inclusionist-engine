@@ -1,38 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de core/contract — os SETE CAMPOS do ADR-0030 como interface (project node). ZOMBIES + Right-BICEP.
+// Tests of core/contract — ADR-0030's SEVEN FIELDS as an interface (node project). ZOMBIES + Right-BICEP.
 //
-// O RISCO DESTE ARQUIVO, dito de saída: um contrato sem consumidor tenta virar teste tautológico — "a função
-// devolve o que a função devolve". Só três coisas aqui têm como estar erradas de verdade, e são elas que os
-// casos perseguem:
+// THIS FILE'S RISK, said up front: a contract without a consumer tends to become a tautological test — the function
+// returns what the function returns. Only three things here can really be wrong, and they are what the cases chase:
 //
-//   · `conformanceProblems` REPROVAR o que deveria reprovar (e não parar no primeiro problema);
-//   · `distance` ser uma MÉTRICA de verdade em cada topologia — sem simetria e desigualdade triangular não
-//     existe "mais perto", e sem "mais perto" não existe sonar (ADR-0027);
-//   · o mesmo código de acessibilidade rodar sobre DUAS topologias sem saber qual é.
+//   · `conformanceProblems` FAILING what it should fail (and not stopping at the first problem);
+//   · `distance` being a real METRIC in each topology — without symmetry and the triangle inequality there is no nearer,
+//     and without nearer there is no sonar (ADR-0027);
+//   · the same accessibility code running over TWO topologies without knowing which.
 //
-// O terceiro é um ENSAIO, não a prova: o ADR-0030 diz que "o contrato basta" só vira resultado quando dois
-// PRESETS existirem, e duas declarações escritas dentro de um teste não são presets. O que ele mostra é mais
-// modesto e ainda assim é o que se podia mostrar hoje — que a forma da pergunta serve aos dois gêneros.
+// The third is a REHEARSAL, not the proof: ADR-0030 says the contract being enough becomes a result only when two
+// PRESETS exist, and two declarations written inside a test are not presets. What it shows is more modest and still what
+// could be shown — that the shape of the question serves both genres.
 //
-// ========================= POR QUE OS FIXTURES NÃO DIZEM "MOEDA" NEM "QUIZ" =========================
-// A primeira versão deste arquivo dizia. Chamava a coisa a juntar de "moedas" e a segunda declaração de
-// `quiz`, e o gate de fixtures (`engine-boundary`) reprovou na hora — sete linhas. A tentação era listá-las
-// como dívida conhecida, e teria sido errado: nada aqui PRECISA de moeda, eu é que estendi a mão para o
-// vocabulário do jogo por hábito, no arquivo cuja tese inteira é que a engine não sabe o que é uma moeda.
-// Um contrato que se explica com o exemplo do próprio jogo já começou a adivinhá-lo. Os nomes ficaram
-// neutros — 'alvos', 'lista' — e o defeito era meu, não do gate.
+// ========================= WHY THE FIXTURES SAY NEITHER COIN NOR QUIZ =========================
+// A first version did. It called the thing to collect coins and the second declaration `quiz`, and the fixtures gate
+// (`engine-boundary`) failed it at once — seven lines. Listing them as known debt would have been wrong: nothing here
+// NEEDS a coin; reaching for the game's vocabulary was habit, in the file whose whole thesis is that the engine does not
+// know what a coin is. A contract explained with its own game's example has already started guessing it. The names
+// became neutral — 'alvos', 'lista' — and the defect was the file's, not the gate's.
 import { describe, it, expect } from 'vitest';
 import { conformanceProblems, speakableProblems, distance } from '../app/js/core/contract.js';
 
-/** Uma declaração conforme, de plataforma. As funções devolvem constantes: aqui só a FORMA está sob teste. */
+/** A conforming platformer declaration. The functions return constants: only the SHAPE is under test here. */
 const plataforma = () => ({
   topology: () => ({ kind: 'continuous', size: [896, 992], unit: 16, move: 'free', frame: 'clock' }),
   tick: 'clock',
   world: () => ({ kind: 'element', selector: '#game-region' }),
-  // Três: correr, andar e pular ao mesmo tempo. É o número que o ADR-0104 usa como exemplo, e é o que faz
-  // o toque (que segura dois) reprovar — ver o caso do segundo eixo em `transports`.
+  // Three: run, walk and jump at the same time. It is the number ADR-0104 uses as an example, and it is what makes touch
+  // (which holds two) fail — see the second-axis case in `transports`.
   holdsAtOnce: () => 3,
-  // VERDADEIRO: correr é segurar. É o lado do par que OFERECE a alternância (ADR-0115).
+  // TRUE: running is holding. It is the side of the pair that OFFERS the toggle (ADR-0115).
   holdsKeys: () => true,
   roleAt: () => 'structure',
   nameAt: () => ({ text: 'parede', gender: 'f', plural: false }),
@@ -41,17 +39,17 @@ const plataforma = () => ({
   targetsOf: () => [{ x: 100, y: 200 }],
 });
 
-/** A mesma coisa num gênero que não tem espaço nenhum — só ordem. */
+/** The same thing in a genre with no space at all — only order. */
 const lista = () => ({
   ...plataforma(),
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
-  // UM, e a diferença com a plataforma é o ponto do campo: escolher uma alternativa é um comando de cada vez.
+  // ONE, and the difference from the platformer is the field's point: choosing an option is one command at a time.
   holdsAtOnce: () => 1,
-  // 🎯 E FALSO — o par que torna os dois campos visivelmente diferentes. Este jogo declara `1` e não segura
-  // NADA; a plataforma acima declara `3` e segura. Ler o número para saber se algo é segurado dá a resposta
-  // certa aqui por acaso e errada ali, que é o achado do ADR-0115.
+  // 🎯 AND FALSE — the pair that makes the two fields visibly different. This game declares `1` and holds NOTHING; the
+  // platformer above declares `3` and holds. Reading the number to know whether something is held gives the right answer
+  // here by chance and the wrong one there, which is ADR-0115's finding.
   holdsKeys: () => false,
 });
 
@@ -68,8 +66,8 @@ describe('speakableProblems — o nome falável (campo 3)', () => {
   });
 
   it('[Boundary] texto SÓ DE ESPAÇO é vazio — é o defeito que cala o leitor de tela sem falhar em nada', () => {
-    // O caso que mais importa do arquivo inteiro: '' e '   ' produzem o MESMO silêncio, e só o primeiro
-    // pareceria defeito a quem lesse o objeto. `trim()` é o que junta os dois.
+    // The case that matters most in the whole file: '' and '   ' produce the SAME silence, and only the first would look
+    // like a defect to whoever read the object. `trim()` is what joins the two.
     expect(speakableProblems({ text: '   ', gender: 'm', plural: false })[0]).toMatch(/empty/);
     expect(speakableProblems({ text: '', gender: 'm', plural: false })[0]).toMatch(/empty/);
     expect(speakableProblems({ text: '\t\n', gender: 'm', plural: false })[0]).toMatch(/empty/);
@@ -77,7 +75,7 @@ describe('speakableProblems — o nome falável (campo 3)', () => {
 
   it('[Interface] gênero fora de m/f/n é problema — sem ele a moldura em pt-BR concorda errado', () => {
     expect(speakableProblems({ text: 'porta', gender: 'x', plural: false })).toHaveLength(1);
-    expect(speakableProblems({ text: 'porta', gender: 'n', plural: false })).toEqual([]); // 'n' é válido
+    expect(speakableProblems({ text: 'porta', gender: 'n', plural: false })).toEqual([]); // 'n' is valid
   });
 
   it('[Interface] plural precisa ser BOOLEANO — `undefined` não é "falso", é campo esquecido', () => {
@@ -86,8 +84,8 @@ describe('speakableProblems — o nome falável (campo 3)', () => {
   });
 
   it('[Many] dois defeitos produzem DOIS problemas — a lista não para no primeiro', () => {
-    // Parar no primeiro faria a conformidade virar um jogo de esconde-esconde: consertar um defeito revelaria
-    // o próximo, um por vez, e quem escreve o preset descobriria o tamanho do buraco só no fim.
+    // Stopping at the first would turn conformance into hide-and-seek: fixing one defect would reveal the next, one at a
+    // time, and whoever writes the preset would find the size of the hole only at the end.
     expect(speakableProblems({ text: '', gender: 'z', plural: 1 })).toHaveLength(3);
   });
 });
@@ -112,32 +110,32 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
     expect(grade(0, 8)).toHaveLength(1);
     expect(grade(8, 0)).toHaveLength(1);
     expect(grade(-1, 8)).toHaveLength(1);
-    expect(grade(1, 1)).toEqual([]); // uma célula é uma grade legítima
-    expect(grade(8, 8, 4)).toEqual([]); // três dimensões é uma grade legítima também
+    expect(grade(1, 1)).toEqual([]); // one cell is a legitimate grid
+    expect(grade(8, 8, 4)).toEqual([]); // three dimensions is a legitimate grid too
   });
 
   it('[Boundary] ⚠️ a DIMENSÃO é `size.length`, e só 2 ou 3 são representáveis', () => {
-    // Não é medida ruim, é espaço que `Spot` (x, y, z?) não sabe representar — e sem esta recusa o quarto eixo
-    // seria simplesmente IGNORADO por `distance`, que é o defeito que não deixa rasto.
+    // It is not a bad measure, it is a space `Spot` (x, y, z?) cannot represent — and without this refusal the fourth axis
+    // would simply be IGNORED by `distance`, the defect that leaves no trace.
     const dim = (size) => conformanceProblems({
       ...plataforma(), topology: () => ({ kind: 'grid', size, move: 'diagonal', frame: 'compass' }),
     });
-    expect(dim([8])).toHaveLength(1);           // uma dimensão não é um espaço navegável
-    expect(dim([8, 8, 8, 8])).toHaveLength(1);  // quatro é mais do que `Spot` carrega
+    expect(dim([8])).toHaveLength(1);           // one dimension is not a navigable space
+    expect(dim([8, 8, 8, 8])).toHaveLength(1);  // four is more than `Spot` carries
     expect(dim([])).toHaveLength(1);
     expect(dim([8, 8])).toEqual([]);
     expect(dim([8, 8, 8])).toEqual([]);
   });
 
   it('[Boundary] ⚠️ `move` AUSENTE é reprovado — é a métrica, e adivinhá-la sub-relata até 2×', () => {
-    // O achado §3 do ADR-0080: a grade contava sempre em passos de rei, e num quebra-cabeça deslizante nada
-    // anda na diagonal. Deixar o campo opcional com padrão faria ESQUECER passar por ESCOLHER, e o preço do
-    // esquecimento é o sonar mandar uma criança cega para o lado errado com confiança.
+    // ADR-0080's §3 finding: the grid always counted in king's steps, and in a sliding puzzle nothing moves diagonally.
+    // Leaving the field optional with a default would let FORGETTING pass as CHOOSING, and the price of forgetting is the
+    // sonar sending a blind child the wrong way with confidence.
     const mv = (move) => conformanceProblems({
       ...plataforma(), topology: () => ({ kind: 'grid', size: [8, 8], move, frame: 'compass' }),
     });
     expect(mv(undefined)).toHaveLength(1);
-    expect(mv('chebyshev')).toHaveLength(1); // o nome da métrica não é o nome da regra
+    expect(mv('chebyshev')).toHaveLength(1); // the metric's name is not the rule's name
     for (const bom of ['orthogonal', 'diagonal', 'free']) expect(mv(bom), bom).toEqual([]);
   });
 
@@ -152,7 +150,7 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
   });
 
   it('[Boundary] contínuo SEM `unit` é reprovado — unit é a métrica da narração, não decoração', () => {
-    // Sem `unit`, "a dois passos" não tem como ser dito: sobra pixel, que não é unidade de ninguém que joga.
+    // Without `unit`, two steps away cannot be said: pixels remain, and pixels are nobody's unit who plays.
     const semUnit = { kind: 'continuous', size: [100, 100], move: 'free', frame: 'clock' };
     expect(conformanceProblems({ ...plataforma(), topology: () => semUnit })).toHaveLength(1);
     expect(conformanceProblems({ ...plataforma(), topology: () => ({ ...semUnit, unit: 0 }) })).toHaveLength(1);
@@ -162,7 +160,7 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
   it('[Boundary] lista de hotspots vazia é reprovada — não há para onde navegar', () => {
     const hot = (order) => conformanceProblems({ ...plataforma(), topology: () => ({ kind: 'hotspots', order }) });
     expect(hot([])).toHaveLength(1);
-    expect(hot(['q1'])).toEqual([]); // um único item é uma lista legítima
+    expect(hot(['q1'])).toEqual([]); // a single item is a legitimate list
   });
 
   it('[Interface] hotspot repetido é reprovado — a distância é diferença de ÍNDICE, e id repetido a quebra', () => {
@@ -198,34 +196,32 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
   });
 
   it('[Many] uma declaração vazia acusa os DEZ campos de uma vez', () => {
-    // topology + world + holdsAtOnce + holdsKeys + tick + as CINCO funções. É o número que diz a quem
-    // escreve um preset quanto falta, de uma vez só — e é a diferença entre "faltam dez coisas" e dez rodadas
-    // de conserto às cegas. Era SEIS até `targetsOf` completar o campo 5 (a metade "alvo", que o sonar
-    // cobrou), SETE até `world` (o ADR-0087) parar de deixar a engine adivinhar que o mundo é a canvas, OITO
-    // até o `holdsAtOnce` (o ADR-0104) parar de deixar a acessibilidade motora ser decidida por omissão, e
-    // NOVE até o `holdsKeys` (o ADR-0115) parar de deixar a ALTERNÂNCIA ser oferecida onde não faz nada.
+    // topology + world + holdsAtOnce + holdsKeys + tick + the FIVE functions. It is the number that tells whoever writes
+    // a preset how much is missing, all at once — the difference between ten things missing and ten rounds of fixing
+    // blind. Each field added to the contract (`targetsOf`, `world` in ADR-0087, `holdsAtOnce` in ADR-0104, `holdsKeys` in
+    // ADR-0115) raised it by one.
     expect(conformanceProblems({})).toHaveLength(10);
   });
 
   it('⚠️ [Boundary] `holdsAtOnce` AUSENTE é reprovado — omitir é decidir pela criança, em silêncio', () => {
-    // Na frase do Dev: «os 300 jogos precisam declarar sim! Não declarar é ter a acessibilidade programada
-    // no controle pro sorte». Um campo opcional é respondido por silêncio, e o silêncio decide.
+    // In the Dev's words: «os 300 jogos precisam declarar sim! Não declarar é ter a acessibilidade programada
+    // no controle pro sorte». An optional field is answered by silence, and silence decides.
     const semCampo = { ...plataforma() };
     delete semCampo.holdsAtOnce;
     const p = conformanceProblems(semCampo);
     expect(p).toHaveLength(1);
     expect(p[0], 'a mensagem não diz o que perguntar a si próprio').toMatch(/holdsAtOnce/);
     expect(p[0], 'a mensagem não dá o exemplo que torna a pergunta respondível').toMatch(/three fingers/i);
-    // ⚠️ E ela não nomeia GÊNERO nenhum — mas quem o afirma é o `engine-boundary`, e não este caso. A
-    // primeira escrita da mensagem dizia «a quiz is 1» e aquele gate reprovou-a, com razão. Escrevi aqui uma
-    // segunda asserção sobre a mesma regra, e ela reprovou também — porque para nomear os gêneros proibidos
-    // eu tinha de os escrever. As duas recusas eram a mesma, e a lição é a do `segment-bar`: uma regra tem
-    // UM dono, e o dono desta é o crivo de fronteira, que a aplica a TODOS os módulos em vez de a um.
+    // ⚠️ And it names NO genre — but the one that asserts that is `engine-boundary`, not this case. A first writing of the
+    // message named a genre and that gate failed it, rightly. A second assertion here about the same rule failed too —
+    // because naming the forbidden genres meant writing them. The two refusals were one, and the lesson is
+    // `segment-bar`'s: a rule has ONE owner, and this one's is the boundary check, which applies it to ALL modules
+    // instead of to one.
   });
 
   it('⚠️ [Zero] ZERO é reprovado, e não lido como «não usa controle»', () => {
-    // Um jogo que não segura posição nenhuma não é jogável. Aceitar zero faria a aritmética do alcance passar
-    // por vacuidade — exactamente o que o `reachable` recusa fazer com um conjunto de ações vazio.
+    // A game that holds no position is not playable. Accepting zero would make the reach arithmetic pass by vacuity —
+    // exactly what `reachable` refuses to do with an empty set of actions.
     for (const mau of [0, -1, 1.5, NaN, '3']) {
       expect(conformanceProblems({ ...plataforma(), holdsAtOnce: () => mau }), `aceitou ${mau}`).toHaveLength(1);
     }
@@ -233,18 +229,17 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
   });
 
   it('[Cross-check] conformidade é FORMA, não verdade — um `roleAt` que mente passa, e tem de passar', () => {
-    // A fronteira do que este módulo pode saber. Um `roleAt` que devolve 'free' para a lava é conforme aqui e
-    // errado no jogo; quem pega isso é o teste do PRESET. Deixar este caso escrito evita que alguém "reforce"
-    // a conformidade até ela tentar adivinhar o jogo — que é exatamente o defeito que o ADR-0030 cortou.
+    // The boundary of what this module can know. A `roleAt` that returns 'free' for lava conforms here and is wrong in the
+    // game; what catches that is the PRESET's test. Keeping this case written stops someone from strengthening
+    // conformance until it tries to guess the game — exactly the defect ADR-0030 cut.
     expect(conformanceProblems({ ...plataforma(), roleAt: () => 'free' })).toEqual([]);
   });
 
   it('⚠️ [Interface] `holdsKeys` tem de devolver um BOOLEANO — truthy oferece a alternância a toda a gente', () => {
     /*
-     * 🔴 SEM CASO ATÉ 2026-09-23, e o argumento estava escrito ao lado do código o tempo todo: um valor que não
-     * é booleano é truthy, logo um jogo que não segura nada passaria a OFERECER a alternância — um controle de
-     * acessibilidade que não faz nada, que é o §5 do ADR-0106 em pessoa. A sonda dos 29 comportamentos deste
-     * módulo achou três cegos, e este é o primeiro.
+     * 🔴 A value that is not a boolean is truthy, so a game that holds nothing would OFFER the toggle — an accessibility
+     * control that does nothing, ADR-0106 §5 in person. The argument was written beside the code; a probe of this module's
+     * behaviours found three blind ones, and this is the first.
      */
     for (const mau of ['sim', 1, 0, null, {}]) {
       expect(conformanceProblems({ ...plataforma(), holdsKeys: () => mau }), `aceitou ${String(mau)}`).toHaveLength(1);
@@ -255,14 +250,13 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
 
 // -----------------------------------------------------------------------------------------------------------
 /*
- * 🔴 O GÉMEO DO TECLADO, E ELE NÃO TINHA CASO NENHUM. 📏 Medido em 2026-09-23 pela sonda: das 29 decisões do
- * `conformanceProblems`, as DUAS do `keyboardMapping` estavam presas e as DUAS do `padMapping` eram
- * cegas — a mesma verificação escrita duas vezes, uma guardada e a outra não. É o que a pergunta do Dev («há duas
- * funções para resolver o mesmo problema?») existe para achar, e a assimetria da cobertura é como ela se nota.
+ * 🔴 THE KEYBOARD'S TWIN, AND IT HAD NO CASE. 📏 A probe of `conformanceProblems`' decisions found the TWO for
+ * `keyboardMapping` held and the TWO for `padMapping` blind — the same check written twice, one guarded and the other not.
+ * It is what the Dev's question («há duas funções para resolver o mesmo problema?») exists to find, and the coverage's
+ * asymmetry is how it shows.
  *
- * 📌 Os casos ficam por SUJEITO e não pela função partilhada: quando as duas verificações passarem a ser uma só,
- * uma mutação nela ficaria vermelha pelo caso do TECLADO e o pad estaria coberto por acidente. Um portão coberto
- * por dourado não é portão.
+ * 📌 The cases go by SUBJECT and not by the shared function: when the two checks become one, a mutation in it would go
+ * red by the KEYBOARD case and the pad would be covered by accident. A gate covered only by gold is no gate.
  */
 describe('padMapping — o mapeamento que seria ignorado em silêncio', () => {
   it('⚠️ um VALOR em vez de função é acusado — senão a fábrica fica e o autor julga tê-la mudado', () => {
@@ -284,10 +278,10 @@ describe('padMapping — o mapeamento que seria ignorado em silêncio', () => {
 // -----------------------------------------------------------------------------------------------------------
 describe('needsPointer — o campo OPCIONAL que não é impune (ADR-0112)', () => {
   it('[Zero] ausente não é problema — a ausência É a resposta `false`', () => {
-    // ⚠️ E A OPCIONALIDADE É DECISÃO, não descuido. O `holdsAtOnce` é obrigatório porque não tem padrão seguro
-    // e falha INVISIVELMENTE a quem escreve o jogo — ele tem teclado completo, o jogo corre, e quem paga é a
-    // criança no telemóvel de dois dedos. Este tem padrão seguro e falha VISIVELMENTE: um jogo de desenho que
-    // se esqueça de o declarar é inoperável no próprio aparelho de quem o escreve.
+    // ⚠️ AND BEING OPTIONAL IS A DECISION, not carelessness. `holdsAtOnce` is required because it has no safe default and
+    // fails INVISIBLY to whoever writes the game — they have a full keyboard, the game runs, and whoever pays is the child
+    // on a two-finger phone. This one has a safe default and fails VISIBLY: a drawing game that forgets to declare it is
+    // unusable on its own author's device.
     expect(conformanceProblems(plataforma()).filter((x) => /needsPointer/.test(x))).toEqual([]);
   });
 
@@ -297,16 +291,16 @@ describe('needsPointer — o campo OPCIONAL que não é impune (ADR-0112)', () =
   });
 
   it('⚠️ [Boundary] declarado como VALOR e não função é recusado', () => {
-    // `needsPointer: true` parece declarar «sim» e não declara nada: o alcance chamaria uma coisa que não é
-    // função. O jogo julgaria ter respondido, e ninguém saberia — o defeito silencioso que esta função existe
-    // para não deixar acontecer.
+    // `needsPointer: true` looks like declaring yes and declares nothing: the reach would call something that is not a
+    // function. The game would believe it had answered, and nobody would know — the silent defect this function exists
+    // not to let happen.
     const p = conformanceProblems({ ...plataforma(), needsPointer: true });
     expect(p.some((x) => /needsPointer: must be a function/.test(x))).toBe(true);
   });
 
   it('⚠️ [Boundary] devolver algo que não é booleano é recusado', () => {
-    // `() => 'sim'` é verdadeiro por ser uma string não vazia, então o jogo passaria a recusar aparelhos que
-    // ele consegue usar — e a recusa é a coisa mais cara que este campo pode fazer errado.
+    // `() => 'sim'` is true for being a non-empty string, so the game would refuse devices it can use — and refusing is the
+    // most expensive thing this field can get wrong.
     const p = conformanceProblems({ ...plataforma(), needsPointer: () => 'sim' });
     expect(p.some((x) => /needsPointer: must return a boolean/.test(x))).toBe(true);
   });
@@ -320,23 +314,23 @@ describe('distance — a métrica, que é o que faz "mais perto" existir', () =>
   const P = (x, y = 0, z) => (z === undefined ? { x, y } : { x, y, z });
 
   it('[Right] grade de DIAGONAL conta passos de rei: a diagonal custa 1, não 2 e não √2', () => {
-    // Continua a ser verdade — onde a diagonal é legal. O que mudou é que deixou de ser a única verdade.
+    // Still true — where the diagonal is legal. What changed is that it stopped being the only truth.
     expect(distance(GRADE, P(0, 0), P(1, 1))).toBe(1);
     expect(distance(GRADE, P(0, 0), P(3, 1))).toBe(3);
     expect(distance(GRADE, P(2, 5), P(2, 5))).toBe(0);
   });
 
   it('[Right] ⚠️ grade ORTOGONAL conta MOVIMENTOS: duas à direita e duas abaixo são QUATRO, não 2', () => {
-    // É o achado §3 do ADR-0080, medido no `game-15puzzle`: nada anda na diagonal num quebra-cabeça
-    // deslizante, e Chebyshev sub-relatava a distância até 2×. Sub-relatar distância a quem não vê a tela não
-    // é imprecisão — é dizer "está perto" de uma coisa que está longe, e a criança confia.
+    // It is ADR-0080's §3 finding, measured in `game-15puzzle`: nothing moves diagonally in a sliding puzzle, and Chebyshev
+    // under-reported the distance up to 2×. Under-reporting distance to someone who cannot see the screen is not
+    // imprecision — it is saying something far is close, and the child trusts it.
     expect(distance(DESLIZANTE, P(0, 0), P(2, 2))).toBe(4);
     expect(distance(DESLIZANTE, P(0, 0), P(1, 1))).toBe(2);
     expect(distance(DESLIZANTE, P(0, 0), P(3, 0))).toBe(3); // no eixo, as duas regras concordam
   });
 
   it('[Right] a MESMA grade com regras diferentes dá respostas diferentes — é o campo que decide', () => {
-    // O par que prova que a regra é lida, e não que os dois fixtures por acaso diferem noutra coisa.
+    // The pair that proves the rule is read, and not that the two fixtures happen to differ in something else.
     const size = [8, 8], frame = 'compass';
     const a = P(0, 0), b = P(3, 3);
     expect(distance({ kind: 'grid', size, frame, move: 'diagonal' }, a, b)).toBe(3);
@@ -347,8 +341,8 @@ describe('distance — a métrica, que é o que faz "mais perto" existir', () =>
   it('[Boundary] três dimensões: o terceiro eixo entra na conta, e só quando declarado', () => {
     const cubo = { kind: 'grid', size: [4, 4, 4], move: 'orthogonal', frame: 'compass' };
     expect(distance(cubo, P(0, 0, 0), P(1, 1, 1))).toBe(3);
-    // ⚠️ O MESMO PONTO numa topologia de DUAS dimensões: o `z` é ignorado, porque a dimensão é `size.length`
-    // e não o que o ponto por acaso carrega. Sem isto, um `z` esquecido num fixture mudaria distâncias 2D.
+    // ⚠️ THE SAME POINT in a TWO-dimensional topology: the `z` is ignored, because the dimension is `size.length` and not
+    // what the point happens to carry. Without this, a `z` forgotten in a fixture would change 2D distances.
     expect(distance(DESLIZANTE, P(0, 0, 0), P(1, 1, 99))).toBe(2);
   });
 
@@ -369,7 +363,7 @@ describe('distance — a métrica, que é o que faz "mais perto" existir', () =>
   });
 
   it.each(TOPOLOGIAS)('[Interface] em %s: é SIMÉTRICA — "a está perto de b" é "b está perto de a"', (_nome, t) => {
-    // Sem simetria o sonar diria uma coisa ao aproximar e outra ao afastar, com os mesmos dois pontos.
+    // Without symmetry the sonar would say one thing when approaching and another when moving away, with the same two points.
     expect(distance(t, P(1, 2), P(6, 5))).toBe(distance(t, P(6, 5), P(1, 2)));
     expect(distance(t, P(0, 0), P(7, 0))).toBe(distance(t, P(7, 0), P(0, 0)));
   });
@@ -390,23 +384,23 @@ describe('distance — a métrica, que é o que faz "mais perto" existir', () =>
 
 // -----------------------------------------------------------------------------------------------------------
 describe('ENSAIO: o mesmo código de acessibilidade sobre duas topologias (ADR-0030)', () => {
-  // Um "sonar" mínimo, escrito CONTRA O CONTRATO e contra nada mais. Se este código precisasse saber o gênero,
-  // o contrato estaria errado — é essa a única coisa que o ensaio tem como mostrar.
+  // A minimal sonar, written AGAINST THE CONTRACT and against nothing else. If this code needed to know the genre, the
+  // contract would be wrong — that is the only thing the rehearsal can show.
   //
-  // O que ele NÃO é: prova. O ADR-0030 pede dois PRESETS, e duas declarações num arquivo de teste não são
-  // presets — não desenham, não recebem entrada, não vivem fora deste `describe`. A diferença fica escrita
-  // aqui para ninguém confundir um ensaio verde com o passo 6 do ADR-0027.
+  // What it is NOT: proof. ADR-0030 asks for two PRESETS, and two declarations in a test file are not presets — they do
+  // not draw, take no input, do not live outside this `describe`. The difference is written here so nobody confuses a
+  // green rehearsal with ADR-0027's step 6.
   const alvoMaisProximo = (decl, de, candidatos) =>
     candidatos
       .filter((c) => decl.roleAt(c) === 'goal')
-      // ⚠️ `decl.topology()` COM OS PARÊNTESES, e eles faltavam. Passar a função onde vai a topologia dava
-      // `t.kind === undefined` e o `distance` antigo caía no ramo contínuo, dividindo por `t.unit` ausente:
-      // NaN em toda distância, e um `sort` por NaN que devolvia o primeiro item — o teste passava por acaso.
-      // A forma nova estoura em vez de mentir, que é a única razão de isto ter aparecido.
+      // ⚠️ `decl.topology()` WITH THE PARENTHESES, and they were missing. Passing the function where the topology goes
+      // gave `t.kind === undefined` and the old `distance` fell into the continuous branch, dividing by a missing `t.unit`:
+      // NaN in every distance, and a `sort` by NaN that returned the first item — the test passed by chance. The new shape
+      // throws instead of lying, which is the only reason this showed up.
       .map((c) => ({ at: c, d: distance(decl.topology(), de, c), nome: decl.nameAt(c) }))
       .sort((x, y) => x.d - y.d)[0] ?? null;
 
-  /** Um mapa de grade de mentira: só a coluna 5 é objetivo. */
+  /** A make-believe grid map: only column 5 is a goal. */
   const gradeDecl = {
     ...plataforma(),
     topology: () => ({ kind: 'grid', size: [8, 8], move: 'diagonal', frame: 'compass' }),
@@ -414,7 +408,7 @@ describe('ENSAIO: o mesmo código de acessibilidade sobre duas topologias (ADR-0
     nameAt: (at) => ({ text: `alvo ${at.x},${at.y}`, gender: 'm', plural: false }),
   };
 
-  /** Uma lista de mentira: só o item de índice 3 está em aberto. */
+  /** A make-believe list: only the item at index 3 is open. */
   const listaDecl = {
     ...lista(),
     roleAt: (at) => (at.x === 3 ? 'goal' : 'free'),
@@ -425,7 +419,7 @@ describe('ENSAIO: o mesmo código de acessibilidade sobre duas topologias (ADR-0
 
   it('[Right] na grade, acha o objetivo mais perto pela métrica de grade', () => {
     const r = alvoMaisProximo(gradeDecl, { x: 5, y: 0 }, CANDIDATOS);
-    expect(r.at).toEqual({ x: 5, y: 2 }); // 2 passos, contra 6 do outro
+    expect(r.at).toEqual({ x: 5, y: 2 }); // 2 steps, against 6 for the other
     expect(r.nome.text).toBe('alvo 5,2');
   });
 

@@ -1,44 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O QUE `core/constants.ts` EXPORTA E A ENGINE NÃO USA (issue #63, etapa B).
+// WHAT `core/constants.ts` EXPORTS AND THE ENGINE DOES NOT USE (issue #63, step B).
 //
-// ========================= O QUE ESTE FICHEIRO MEDE, E POR QUE MEDIR E NÃO CORTAR =========================
-// A etapa B da #63 é «cortar `core/constants.ts` em engine (resolução, grade) e jogo (`TUNE`, `EASY`, `ANIM`,
-// `TILE_TYPES`, `COIN_TARGET`)». A própria issue põe uma condição antes: *«a lista de achados da etapa C é o
-// que dirá se este corte é o certo»* — e a lista de C tem sete itens, nenhum feito.
+// ========================= WHAT THIS FILE MEASURES, AND WHY MEASURE AND NOT CUT =========================
+// Step B of #63 is «cortar `core/constants.ts` em engine (resolução, grade) e jogo (`TUNE`, `EASY`, `ANIM`,
+// `TILE_TYPES`, `COIN_TARGET`)».
 //
-// ⚠️ E A MEDIÇÃO DE 07/09 ACHOU O MOTIVO DE A PRESSA SER CARA. Oito exports não têm UM ÚNICO importador
-// dentro da engine, e é tentador ler isso como «código morto, apagar é de graça». Não é:
+// ⚠️ AN EXPORT WITH NO IMPORTER INSIDE THE ENGINE IS NOT FREE TO DELETE: a game imports it from the published package
+// (`@the-inclusionist/engine/core/constants.js`), and deleting it breaks that consumer and is a semver break of a
+// published package — a major, and an edit in two trees in the same step. So each symbol left by MOVING HOUSE into the
+// game first, and only then out of the engine.
 //
-//     `game-platformer` importa SEIS DOS OITO, do pacote publicado, por
-//     `@the-inclusionist/engine/core/constants.js` — em `game/physics.ts`, `game/player.ts`,
-//     `game/session.ts`, `game/tile-roles.ts`, `game/level-geometry.ts`, `game/elevators.ts`,
-//     `main.ts` e mais dois módulos do jogo.
+// ⚠️ This file cannot name the game's modules: `engine-boundary` forbids an engine test from saying the game's words.
+// Whoever wants the list greps `core/constants.js` in `game-platformer`; what matters here is the REPOSITORY that
+// consumes.
 //
-// ⚠️ «MAIS DOIS MÓDULOS» PORQUE ESTE FICHEIRO NÃO OS PODE NOMEAR, e a limitação é um gate a funcionar, não
-// um esquecimento: `engine-boundary` proíbe um teste de engine de dizer as palavras do jogo, e os nomes
-// desses dois são palavras do jogo. Ele acusou-me ao escrever isto — corretamente. Quem quiser a lista
-// inteira faz um `grep` por `core/constants.js` no `game-platformer`; o que importa aqui é o REPOSITÓRIO
-// que consome, e esse está dito.
+// So what this file does is what can be done without deciding anything: **keep the number visible and shrinking**. It
+// is ADR-0043's pattern — known debt with a ceiling that only goes down —, and the LEDGER below is at the same time the
+// gate and the worksheet of step B's cut.
 //
-// Não são órfãos. São a SUPERFÍCIE PÚBLICA que o cartucho consome, e ficaram sem importador cá dentro
-// exactamente porque o cartucho saiu (#111). Apagá-los parte o segundo consumidor real e é uma quebra
-// semver de um pacote publicado — quer dizer, uma major e uma edição em duas árvores no mesmo passo.
-//
-// Então o que este ficheiro faz é o que se pode fazer sem decidir nada: **manter o número visível e a
-// encolher**. É o padrão do ADR-0043 — dívida conhecida com tecto que só desce —, e o LIVRO abaixo é, ao
-// mesmo tempo, o gate e a folha de trabalho do corte da etapa B.
-//
-// ========================= AS DUAS QUE SÃO MESMO MORTAS =========================
-// `JUMP_BASE` e `ehChave` não são usadas por ninguém: nem pela engine, nem pelos testes dela (fora um), nem
-// pelo `game-platformer`. A #63 já nomeia a primeira no seu «achado solto»: o único uso é um teste que
-// verifica que `JUMP_BASE === jumpVel * sqrt(8/5)`, ou seja, reafirma a própria definição.
-//
-// ⚠️ ELAS FICAM, E A RAZÃO É DE PREÇO, NÃO DE ZELO: tirar um export de um pacote publicado é uma major, e
-// gastar uma major em dois símbolos mortos, dias depois da 7.0.0/7.0.1, é pagar caro por arrumação. Saem no
-// mesmo corte que as outras seis, que é quando a major se paga. Está escrito aqui para que a próxima pessoa
-// não repita a medição para chegar à mesma conclusão.
-//
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -47,7 +27,7 @@ import * as CONSTANTES from '../app/js/core/constants.js';
 const RAIZ = process.cwd();
 const CONST_REL = 'app/js/core/constants.ts';
 
-/** Todos os ficheiros `.ts` da engine, com barra normal — o glob do Windows não perdoa a invertida. */
+/** All the engine's `.ts` files, with forward slashes — the Windows glob does not forgive the backslash. */
 function ficheirosTs(dir, out = []) {
   for (const nome of readdirSync(dir)) {
     const p = join(dir, nome);
@@ -62,12 +42,11 @@ const MODULOS = ficheirosTs(join(RAIZ, 'app', 'js'))
   .filter((f) => f !== CONST_REL);
 
 /**
- * Quantos módulos da engine importam cada nome.
+ * How many engine modules import each name.
  *
- * ⚠️ O PADRÃO ACEITA `./constants.js` E `../core/constants.js`, e a diferença já custou uma medição errada:
- * a primeira versão exigia `core/constants.js` e por isso não via o `core/collision.ts`, que é vizinho e
- * importa por `./constants.js`. O resultado foi `TILE_TYPES` e `isHazard` a aparecerem como sem dono — quer
- * dizer, um crivo estreito a INVENTAR dívida. O caso `[Zero]` abaixo existe por causa disto.
+ * ⚠️ THE PATTERN ACCEPTS `./constants.js` AND `../core/constants.js`: a first version demanded `core/constants.js` and so
+ * did not see a `core/` neighbour importing through `./constants.js`, which made names look ownerless — a narrow check
+ * INVENTING debt. The `[Zero]` case below exists because of this.
  */
 function importadoresPorNome() {
   const conta = new Map(Object.keys(CONSTANTES).map((n) => [n, 0]));
@@ -84,42 +63,37 @@ function importadoresPorNome() {
 }
 
 /**
- * O LIVRO: o que a engine exporta e não usa, e quem o consome do outro lado da fronteira.
+ * THE LEDGER: what the engine exports and does not use, and who consumes it on the other side of the boundary.
  *
- * Cada linha é uma linha da etapa B da #63. Uma entrada sai daqui quando o símbolo MUDA DE CASA (vai para o
- * cartucho) ou quando um módulo de engine passa a precisar dele — nunca por se levantar o tecto.
+ * Each line is a line of #63's step B. An entry leaves when the symbol MOVES HOUSE (to the cartridge) or when an engine
+ * module starts needing it — never by raising the ceiling.
  */
 const SO_DO_CARTUCHO = {
-  // ⚠️ `COIN_TARGET` e `TUNE` SAÍRAM em 2026-09-07 — mudaram de casa para o `game/tuning.ts` do
-  // `game-platformer`, com o jogo editado PRIMEIRO para que nada quebrasse no intervalo. O livro encolheu de
-  // seis para quatro, e o tecto com ele.
-  // ⚠️ ZERADO EM 2026-09-07 (issue #63, etapa B). Os oito saíram em três passagens, e o livro fica — VAZIO —
-  // pela mesma razão que a `STATUS_DEBT` do `validate-adr.py` ficou: **um orçamento que chega a zero e some
-  // deixa de provar que chegou**, e a próxima entrada tem de ser uma decisão e não um esquecimento.
+  // ⚠️ EMPTY since issue #63's step B. The ledger stays — EMPTY — for the same reason `validate-adr.py`'s `STATUS_DEBT`
+  // stayed: **a budget that reaches zero and disappears stops proving it got there**, and the next entry has to be a
+  // decision and not an oversight.
   //
-  // Quem saiu, e para onde:
-  //   · `JUMP_BASE`, `ehChave`                        → apagados; zero consumidores em lado nenhum
-  //   · `TUNE`, `COIN_TARGET`                         → `game/tuning.ts` do `game-platformer`
-  //   · `ehAgua`, `ehEscada`, `ehPortao`, `ehSecreto` → `game/tile-flags.ts` do mesmo
+  // Who left, and where to:
+  //   · `JUMP_BASE`, `ehChave`                        → deleted; zero consumers anywhere
+  //   · `TUNE`, `COIN_TARGET`                         → `game-platformer`'s `game/tuning.ts`
+  //   · `ehAgua`, `ehEscada`, `ehPortao`, `ehSecreto` → the same game's `game/tile-flags.ts`
   //
-  // Em todas as passagens o JOGO foi editado PRIMEIRO: ele consome o pacote publicado, então deixar de
-  // depender dos exports enquanto a 7.0.1 ainda os tem é o que faz nada quebrar no intervalo.
+  // Every time the GAME was edited FIRST: it consumes the published package, so stopping depending on the exports while
+  // the published version still has them is what makes nothing break in the interval.
 };
 
 /**
- * ⚠️ O QUE O ZERO NÃO SIGNIFICA, e vale dizer para ninguém ler este ficheiro como uma vitória maior do que
- * ela é: **a fronteira não está resolvida**. A `TILE_TYPES` continua na engine a carregar as bandeiras
- * `water`, `ladder`, `gate`, `key` e `secreto`, que nenhum módulo de engine lê — o que este crivo mede são
- * EXPORTS SEM IMPORTADOR, e a tabela tem um (`core/collision`). O fim honesto é a tabela mudar de casa e o
- * jogo declarar os papéis pelo `core/contract` (`roleOf`), que é o mecanismo que já existe. Está na #63.
+ * 📌 WHAT core/constants PUBLISHES TODAY: the logical resolution and the grid (`LOGICAL_W`, `LOGICAL_H`, `TILE`) — what
+ * any 2D pixel game shares. `TILE_TYPES` and the geometry that consulted it went to `game-platformer` (ADR-0228); a game
+ * declares its roles through `core/contract` (`roleAt`).
  */
 
 /**
- * Tecto que só desce (ADR-0043). Eram OITO; são seis desde que as duas mortas saíram na etapa B.
+ * A ceiling that only goes down (ADR-0043). It is zero: the ledger is empty.
  *
- * ⚠️ Este número não é um alvo nem uma tolerância: é o máximo que a superfície só-do-cartucho pode voltar a
- * ser. Ele desce quando um símbolo muda de casa, e a asserção de igualdade lá em baixo é o que impede que
- * fique acima do medido — folga por cima é onde a próxima dívida cabe sem que nada reprove.
+ * ⚠️ This number is neither a target nor a tolerance: it is the most the cartridge-only surface may become again. It goes
+ * down when a symbol moves house, and the equality assertion below keeps it from sitting above what is measured — slack
+ * above is where the next debt fits without anything failing.
  */
 const TETO = 0;
 
@@ -128,42 +102,31 @@ describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa
   const semDono = [...conta.entries()].filter(([, n]) => n === 0).map(([nome]) => nome).sort();
 
   it('[Zero] o crivo de imports está mesmo a ver imports — senão TUDO pareceria sem dono', () => {
-    // ⚠️ O modo de falhar deste ficheiro é o crivo casar zero e o livro parecer completo. Estes três pares
-    // são conhecidos e de FORMAS DIFERENTES de import: `../core/constants.js` (render) e `./constants.js`
-    // (o vizinho `core/collision.ts`), que foi exactamente o que a primeira versão do padrão não via.
-    // 📌 5 → 4 em 23/09, pela terceira vez e pela mesma razão que o próprio ficheiro escreve abaixo: a F12
-    // (ADR-0228) levou módulos que importavam `LOGICAL_W`, e o que este número afere é que o `import` RESOLVE,
-    // não quantos existem. Descer com o corte é o comportamento correcto dele.
-    // 🔴 E o par de VIZINHO saiu em 23/09: o `TILE_TYPES` era importado por `./constants.js` a partir do
-    // `core/collision`, e os dois mudaram de repositório no mesmo passo (ADR-0228). O que fica a aferir a forma
-    // curta é o `TILE`, que o `render/high-contrast` importa como `'../core/constants.js'` — a mesma forma longa
-    // que o `LOGICAL_W` já cobria. ⚠️ Fica NOMEADO que a forma `./constants.js` deixou de ter par nesta árvore:
-    // se um módulo de `core/` voltar a importar o vizinho, esta linha volta a valer.
+    // ⚠️ This file fails by the check matching zero and the ledger looking complete. These pairs are known imports:
+    // `LOGICAL_W` through `../core/constants.js`, and `TILE`, which `render/high-contrast` imports the same long way.
+    // 📌 The `./constants.js` short form has no pair in this tree today — no `core/` module imports its neighbour. If one
+    // does again, the pattern already accepts it.
     expect(conta.get('LOGICAL_W'), 'ninguém importa LOGICAL_W? o crivo partiu-se').toBeGreaterThanOrEqual(4);
     expect(conta.get('TILE'), 'ninguém importa TILE? o crivo partiu-se').toBeGreaterThanOrEqual(1);
-    // ⚠️ ESTE PISO NÃO MEDE DÍVIDA — mede que o `import` resolveu, e por isso é o único número deste ficheiro
-    // que pode DESCER com o corte. Já desceu duas vezes numa tarde (15 → 10 → 5) enquanto a etapa B levava
-    // oito exports, e um número que se ajusta a cada passagem não guarda nada: por isso ficou LARGO. Um
-    // import partido devolve ZERO, e é isso que ele apanha.
+    // ⚠️ THESE FLOORS DO NOT MEASURE DEBT — they measure that the `import` resolved, which is why they are the only numbers
+    // of this file that may GO DOWN with the cut (they did, as modules moved out). A broken import returns ZERO, and that
+    // is what they catch. What really guards are the assertions that pin CONCRETE names — an empty module or a narrow
+    // check fails on them first.
     //
-    // Quem guarda de verdade são as três asserções acima, que pinam nomes CONCRETOS — um módulo vazio ou um
-    // crivo estreito reprova por elas primeiro, e o número sozinho nunca é o que prova nada.
-    // 📏 5 → 3 em 23/09: a `TILE_TYPES`, o `isHazard` e o `isTrampoline` foram para o `game-platformer` com a
-    // geometria que os consultava (ADR-0228). O que fica é `LOGICAL_W`, `LOGICAL_H` e `TILE` — a resolução
-    // lógica e a grade, que é o que qualquer jogo 2D em pixel partilha.
+    // 📏 The module exports three values: `LOGICAL_W`, `LOGICAL_H` and `TILE`.
     expect(Object.keys(CONSTANTES).length, 'o módulo deixou de exportar valores').toBeGreaterThanOrEqual(3);
   });
 
   it('⚠️ [Right] o livro está completo — nenhum export NOVO fica sem dono em silêncio', () => {
-    // Um export novo que a engine não use é uma peça de cartucho a nascer dentro da engine. Ele tem de ser
-    // escrito no livro, com o nome de quem o consome, e não simplesmente aparecer.
+    // A new export the engine does not use is a cartridge piece being born inside the engine. It must be written in the
+    // ledger, with the name of whoever consumes it, and not simply appear.
     const naoListados = semDono.filter((n) => !(n in SO_DO_CARTUCHO));
     expect(naoListados, 'export sem importador na engine e fora do livro: ' + naoListados.join(', ')).toEqual([]);
   });
 
   it('[Interface] e o livro não tem entradas mortas — quem ganhou dono na engine sai dele', () => {
-    // A outra metade, e sem ela o livro engordaria para sempre: uma linha que já não descreve a árvore é uma
-    // dívida fantasma, e uma dívida fantasma faz o tecto parecer apertado quando não está.
+    // The other half, and without it the ledger would grow forever: a line that no longer describes the tree is ghost
+    // debt, and ghost debt makes the ceiling look tight when it is not.
     const fantasmas = Object.keys(SO_DO_CARTUCHO).filter((n) => !semDono.includes(n));
     expect(fantasmas, 'no livro mas já com dono na engine (ou já apagado): ' + fantasmas.join(', ')).toEqual([]);
   });
@@ -171,21 +134,21 @@ describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa
   it('⚠️ [Boundary] o tecto SÓ DESCE — oito é o máximo, nunca o alvo', () => {
     expect(semDono.length, `a superfície só-do-cartucho cresceu para ${semDono.length}: ` + semDono.join(', '))
       .toBeLessThanOrEqual(TETO);
-    // E o tecto acompanha a realidade: deixá-lo acima do medido esconderia uma folga onde cabe uma dívida
-    // nova sem que nada reprove. Se estas oito saírem, esta linha é a que obriga a baixar o número.
+    // And the ceiling follows reality: leaving it above what is measured would hide slack where new debt fits without
+    // anything failing. When the ledger shrinks, this line is the one that forces the number down.
     expect(TETO, 'o tecto ficou acima do medido — há folga escondida').toBe(semDono.length);
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · pondo `export const NOVA_COISA = 1;` em `core/constants.ts` (sem importador) → "[Right] o livro está
-//     completo" reprova nomeando `NOVA_COISA`, e "[Boundary] o tecto" reprova nas duas asserções (9 > 8).
-//   · tirando `ehChave` do livro `SO_DO_CARTUCHO` → "[Right]" reprova. É o caso que impede alguém de
-//     esvaziar o livro em vez de esvaziar a dívida.
-//   · pondo `LOGICAL_W` no livro (uma entrada fantasma, que tem dono) → "[Interface]" reprova nomeando-o.
-//   · estreitando o padrão do crivo para `core\/constants\.js` — a primeira versão, e o defeito real que eu
-//     cometi ao medir → reprovam TRÊS casos: "[Zero]" no `TILE_TYPES`, "[Right]" a acusar `TILE_TYPES`,
-//     `isHazard` e `isTrampoline` de estarem fora do livro, e "[Boundary]" com 11 > 8.
-//     ⚠️ Sem o `[Zero]`, esta mutação teria INVENTADO três dívidas e o livro teria crescido para as
-//     acomodar — um gate a fabricar o problema que existe para medir. Os três nomes são os do
-//     `core/collision.ts`, que importa por `./constants.js` por ser vizinho.
+// ========================= MUTATIONS CHECKED =========================
+// Checked while the ledger still had entries:
+//   · putting `export const NOVA_COISA = 1;` in `core/constants.ts` (no importer) → the [Right] ledger-is-complete case
+//     fails naming `NOVA_COISA`, and the [Boundary] ceiling case fails on both assertions.
+//   · removing an entry from the `SO_DO_CARTUCHO` ledger → [Right] fails. It is the case that keeps someone from emptying
+//     the ledger instead of emptying the debt.
+//   · putting `LOGICAL_W` in the ledger (a ghost entry, which has an owner) → [Interface] fails naming it.
+//   · narrowing the check's pattern to `core\/constants\.js` — the first version, and the real defect made while
+//     measuring → THREE cases fail: [Zero], [Right] accusing the neighbour-imported names of being outside the ledger,
+//     and [Boundary].
+//     ⚠️ Without the `[Zero]`, this mutation would have INVENTED debts and the ledger would have grown to hold them — a
+//     gate manufacturing the problem it exists to measure.

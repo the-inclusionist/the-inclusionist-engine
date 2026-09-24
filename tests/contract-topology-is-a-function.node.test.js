@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O gate do ADR-0084. `topology` é FUNÇÃO, e a diferença entre função e valor tem de ser VISÍVEL —
-// não uma coincidência que o TypeScript aceita e a produção descobre.
+// The ADR-0084 gate. `topology` is a FUNCTION, and the difference between function and value must be VISIBLE — not a
+// coincidence TypeScript accepts and production discovers.
 //
-// ⚠️ O QUE ESTE FICHEIRO EXISTE PARA IMPEDIR, e é uma coisa concreta: um jogo escrito antes desta
-// mudança, ou copiado de um exemplo velho, entrega `topology: { kind: 'grid', ... }`. Isso passa por
-// `conformanceProblems` se ele só perguntar "existe?", e morre no primeiro quadro com
-// «o.declaration.topology is not a function» — uma tela congelada, que para quem não enxerga é
-// indistinguível de um jogo que simplesmente não começou.
+// ⚠️ WHAT THIS FILE EXISTS TO PREVENT, and it is concrete: a game written before this change, or copied from an old
+// example, hands in `topology: { kind: 'grid', ... }`. That passes `conformanceProblems` if it only asks whether the field
+// exists, and dies on the first frame with `o.declaration.topology is not a function` — a frozen screen, which for
+// someone who cannot see is indistinguishable from a game that simply did not start.
 import { describe, it, expect } from 'vitest';
 import { conformanceProblems, distance } from '../app/js/core/contract.js';
 
 const GRADE = { kind: 'grid', size: [8, 8], move: 'diagonal', frame: 'compass' };
 
-/** Uma declaração conforme, mínima. */
+/** A conforming, minimal declaration. */
 const valida = (over = {}) => ({
   topology: () => GRADE,
   holdsAtOnce: () => 1,
-  // Um fixture de hotspots não segura nada — o par do ADR-0115, ao lado do número que não o diz.
+  // A hotspots fixture holds nothing — ADR-0115's pair, beside the number that does not say so.
   holdsKeys: () => false,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
@@ -36,8 +35,8 @@ describe('topology é função (ADR-0084)', () => {
   it('⚠️ topology COMO VALOR é reprovada, e a mensagem diz o que fazer', () => {
     const problemas = conformanceProblems(valida({ topology: GRADE }));
     expect(problemas).toHaveLength(1);
-    // A mensagem não pode dizer só "ausente": o campo está lá, à vista, e mandaria o autor procurar
-    // uma coisa que ele já escreveu.
+    // The message cannot say only missing: the field is there, in plain view, and it would send the author looking for
+    // something they already wrote.
     expect(problemas[0]).toMatch(/FUNCTION/);
     expect(problemas[0]).not.toMatch(/missing/);
   });
@@ -65,7 +64,7 @@ describe('topology é função (ADR-0084)', () => {
 
 describe('a topologia é REAVALIADA, que é a razão inteira da mudança', () => {
   it('um tabuleiro que muda de tamanho é lido pelo tamanho de agora', () => {
-    // O caso medido: o game-15puzzle é 3×3, 4×4 ou 5×5, escolhido em tempo de jogo.
+    // The measured case: game-15puzzle is 3×3, 4×4 or 5×5, chosen at play time.
     let lado = 3;
     const d = valida({ topology: () => ({ kind: 'grid', size: [lado, lado], move: 'diagonal', frame: 'compass' }) });
 
@@ -73,8 +72,8 @@ describe('a topologia é REAVALIADA, que é a razão inteira da mudança', () =>
     expect(conformanceProblems(d)).toEqual([]);
 
     lado = 5;
-    // ⚠️ A IGUALDADE ABAIXO É A DECISÃO. Com `topology` como valor, este 5 seria um 3 — o objeto foi
-    // lido uma vez, na construção, e nada tornava a perguntar.
+    // ⚠️ THE EQUALITY BELOW IS THE DECISION. With `topology` as a value, this 5 would be a 3 — the object was read once, at
+    // construction, and nothing asked again.
     expect(d.topology().size[0]).toBe(5);
     expect(conformanceProblems(d)).toEqual([]);
   });
@@ -93,7 +92,7 @@ describe('a topologia é REAVALIADA, que é a razão inteira da mudança', () =>
     let cols = 4;
     const d = valida({ topology: () => ({ kind: 'grid', size: [cols, 4], move: 'diagonal', frame: 'compass' }) });
     expect(conformanceProblems(d)).toEqual([]);
-    cols = 0; // um bug do jogo: o tabuleiro colapsou
+    cols = 0; // a game bug: the board collapsed
     expect(conformanceProblems(d)).toHaveLength(1);
   });
 });
@@ -102,7 +101,7 @@ describe('o MUNDO declarado (ADR-0087)', () => {
   const valida = (over = {}) => ({
     topology: () => ({ kind: 'grid', size: [4, 4], move: 'diagonal', frame: 'compass' }),
     holdsAtOnce: () => 1,
-    // Um fixture de hotspots não segura nada — o par do ADR-0115, ao lado do número que não o diz.
+    // A hotspots fixture holds nothing — ADR-0115's pair, beside the number that does not say so.
     holdsKeys: () => false,
     world: () => ({ kind: 'element', selector: '#game-region' }),
     tick: 'player',
@@ -119,9 +118,9 @@ describe('o MUNDO declarado (ADR-0087)', () => {
   });
 
   it('⚠️ AUSENTE é REPROVADO — e a mensagem ensina as duas saídas', () => {
-    // A proposta original era campo opcional com padrão. O Dev recusou, e a razão e o blindfold chess:
-    // xadrez as cegas existe, logo um jogo de DOM puro nao e um jogo onde empatia nao faz sentido. Um
-    // padrao deixaria o ESQUECIMENTO passar como se fosse escolha.
+    // The original proposal was an optional field with a default. The Dev refused, and the reason is blindfold chess:
+    // chess played blind exists, so a pure-DOM game is not a game where empathy makes no sense. A default would let
+    // FORGETTING pass as if it were a choice.
     const p = conformanceProblems(valida({ world: undefined }));
     expect(p).toHaveLength(1);
     expect(p[0]).toMatch(/world: missing/);
@@ -129,8 +128,8 @@ describe('o MUNDO declarado (ADR-0087)', () => {
   });
 
   it('⚠️ `none` PASSA, e e a escolha escrita — atividade sem espaco', () => {
-    // O caso que o Dev nomeou: "atividades como paint nao sao exatamente jogos, mas podem ser feitas
-    // com a engine e sonar nao vai funcionar muito bem".
+    // The case the Dev named: «atividades como paint nao sao exatamente jogos, mas podem ser feitas com a engine e sonar
+    // nao vai funcionar muito bem».
     expect(conformanceProblems(valida({ world: () => ({ kind: 'none' }) }))).toEqual([]);
   });
 
@@ -155,8 +154,8 @@ describe('o MUNDO declarado (ADR-0087)', () => {
   });
 
   it('⚠️ o mundo e REAVALIADO, como a topologia', () => {
-    // Uma atividade pode trocar de superficie em tempo de execucao — um editor que abre uma tela de
-    // pintura por cima do tabuleiro. Ler uma vez congelaria o alcance da simulacao no que era antes.
+    // An activity can swap surfaces at run time — an editor that opens a painting canvas over the board. Reading once
+    // would freeze the simulation's reach on what it was before.
     let alvo = '#game-region';
     const d = valida({ world: () => ({ kind: 'element', selector: alvo }) });
     expect(d.world().selector).toBe('#game-region');

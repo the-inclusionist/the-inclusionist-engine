@@ -1,33 +1,32 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A SONDA DO PERSONAGEM — o instrumento que o "kage bunshin" pediu, e por que ele mora no painel de debug.
+// THE CHARACTER PROBE — the instrument the "kage bunshin" report asked for, and why it lives in the debug panel.
 //
-// ========================= O PROBLEMA QUE ELA RESOLVE =========================
-// O Dev relatou várias cópias do personagem em posições diferentes durante o pulo e o idle. Eu descartei, por
-// medição, quatro causas — sprite órfão na cena, recorte errado no atlas (39 quadros conferidos contra a
-// origem, zero divergência), acúmulo de textura de render (só existe com 2+ jogadores) e a barra de
-// acessibilidade. O que sobrou mora nos quadros em movimento, e é ali que eu não chego: o meu ambiente não
-// desenha a tela, e a tela é dele.
+// ========================= THE PROBLEM IT SOLVES =========================
+// The Dev reported several copies of the character at different positions during the jump and idle. Four causes were
+// ruled out by measurement — an orphan sprite in the scene, a wrong crop in the atlas (39 frames checked against the
+// source, zero divergence), render-texture build-up (it exists only with 2+ players) and the accessibility bar. What is
+// left lives in the moving frames, and those can only be seen on the Dev's screen.
 //
-// A sonda existe para que a MEDIÇÃO ande até onde eu não ando. Ela grava alguns segundos de quadros e reduz
-// tudo a três perguntas que separam as causas restantes:
+// The probe exists so the MEASUREMENT can go where the screen is. It records a few seconds of frames and reduces
+// everything to three questions that separate the remaining causes:
 //
-//   · quantas TEXTURAS distintas apareceram, e qual o recorte de cada uma — uma base maior que o recorte é
-//     sangramento de atlas (o personagem aparece com os vizinhos dentro do próprio quadro);
-//   · algum IRMÃO da câmera desenhou o personagem junto — é o caso de alguém desenhando duas vezes;
-//   · quais ESCALAS apareceram — o squash & stretch mexe nelas, e uma escala doida deforma sem duplicar.
+//   · how many distinct TEXTURES appeared, and each one's crop — a base larger than the crop is atlas bleeding (the
+//     character appears with its neighbours inside its own frame);
+//   · whether some SIBLING of the camera drew the character too — the case of someone drawing twice;
+//   · which SCALES appeared — squash & stretch moves them, and a wild scale deforms without duplicating.
 //
-// Se as três vierem limpas, a causa é de composição (pós-efeito, filtro, câmera) e não do sprite — e isso
-// também é resposta.
+// If all three come back clean, the cause is in composition (post-effect, filter, camera) and not in the sprite — and
+// that is an answer too.
 //
-// ========================= POR QUE UM RESUMO, E NÃO O BRUTO =========================
-// 180 quadros de dados brutos num painel é um muro de números que ninguém lê, e no console é pior: o Dev
-// pediu explicitamente que a sonda fosse PARA DENTRO do painel. O que ele precisa ler são três linhas.
+// ========================= WHY A SUMMARY, AND NOT THE RAW DATA =========================
+// 180 frames of raw data in a panel is a wall of numbers nobody reads, and in the console it is worse: the Dev asked
+// explicitly for the probe to go INTO the panel. What they need to read is three lines.
 //
-// MUTAÇÕES CONFERIDAS (no fim do arquivo).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { summariseProbe } from '../app/js/ui/debug-panel.js';
 
-/** Uma amostra limpa: um recorte que ocupa a base inteira, sem irmãos. */
+/** A clean sample: a crop that fills the whole base, with no siblings. */
 const limpa = (tex, pos) => ({
   textureId: tex, crop: '0,0 26x35', base: '26x35', position: pos, scale: '1.00,1.00',
   siblingsDrawing: 0, siblingPositions: '',
@@ -47,8 +46,8 @@ describe('sonda do personagem · o resumo que separa as causas', () => {
     expect(r.textures).toBe(4);
     expect(r.maxSiblings).toBe(0);
     expect(r.sangramento).toEqual([]);
-    // O veredito NÃO pode dizer "está tudo bem": as três perguntas limpas mudam o lugar da busca, não
-    // encerram a busca. Dizer "ok" aqui seria transformar ausência de prova em prova de ausência.
+    // The verdict must NOT say all is well: three clean questions move the search, they do not end it. Saying ok here
+    // would turn absence of proof into proof of absence.
     expect(r.verdict).toMatch(/composi|filtro|câmera/i);
   });
 
@@ -61,10 +60,10 @@ describe('sonda do personagem · o resumo que separa as causas', () => {
   });
 
   it('[Right] SANGRAMENTO de atlas é apontado por textura, com o recorte e a base', () => {
-    // O caso que descreve o defeito procurado: um recorte de 26×35 numa base de 256×207 é o quadro certo
-    // dentro do atlas; o problema é quando o RECORTE é maior que o quadro e engole os vizinhos. Aqui a
-    // heurística é a que a sonda consegue ver do lado de fora: recorte maior que a base é impossível, e
-    // recorte que cobre a base inteira quando a base é grande demais para um quadro é suspeito.
+    // The case that describes the defect sought: a 26×35 crop on a 256×207 base is the right frame inside the atlas; the
+    // problem is when the CROP is larger than the frame and swallows the neighbours. The heuristic here is what the probe
+    // can see from outside: a crop larger than the base is impossible, and a crop covering the whole base when the base is
+    // too big for one frame is suspect.
     const as = [{ ...limpa(0, '10,20'), crop: '0,0 256x207', base: '256x207' }];
     const r = summariseProbe(as);
     expect(r.sangramento).toHaveLength(1);
@@ -79,16 +78,16 @@ describe('sonda do personagem · o resumo que separa as causas', () => {
   });
 
   it('[Interface] IRMÃO vence SANGRAMENTO no veredito — a causa mais grave primeiro', () => {
-    // Quando os dois aparecem, o que interessa primeiro é "alguém desenha duas vezes": é a causa que produz
-    // cópias INTEIRAS em posições diferentes, que é exatamente o que foi relatado.
+    // When both appear, what matters first is someone drawing twice: it is the cause that produces WHOLE copies at
+    // different positions, which is exactly what was reported.
     const as = [{ ...limpa(0, '10,20'), crop: '0,0 256x207', base: '256x207', siblingsDrawing: 1, siblingPositions: '40,20' }];
     expect(summariseProbe(as).verdict).toMatch(/duas vezes|irmão/i);
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · trocando a ordem do veredito (sangramento antes de irmão) → "[Interface] IRMÃO vence" reprova.
-//   · devolvendo "tudo ok" quando as três perguntas vêm limpas → "[Right] quadros limpos" reprova, e o efeito
-//     real seria pior que o teste: encerraria a busca no lugar errado.
-//   · contando `texturas` por igualdade de recorte em vez de por id → "[Right] quadros limpos" reprova com 1,
-//     que é exatamente o erro que EU cometi ao medir à mão: os quatro quadros de idle têm a mesma geometria.
+// ========================= MUTATIONS CHECKED =========================
+//   · swapping the verdict's order (bleeding before sibling) → the [Interface] sibling-wins case fails.
+//   · returning all ok when the three questions come back clean → the [Right] clean-frames case fails, and the real effect
+//     would be worse than the test: it would end the search in the wrong place.
+//   · counting `texturas` by equal crop instead of by id → the [Right] clean-frames case fails with 1, exactly the error
+//     made when measuring by hand: the four idle frames have the same geometry.

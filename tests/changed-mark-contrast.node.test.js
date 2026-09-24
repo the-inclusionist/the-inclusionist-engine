@@ -1,45 +1,45 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A MARCA DE "SAIU DO PADRÃO" TEM DE SER VISTA — medida, não estimada (ADR-0029, issue #61).
+// THE CHANGED-FROM-DEFAULT MARK MUST BE SEEN — measured, not estimated (ADR-0029, issue #61).
 //
-// ========================= POR QUE ESTE FICHEIRO EXISTE =========================
-// A issue #61 fecha com um aviso escrito pelo Dev e nunca cumprido: «⚠️ Não verificado: contraste da marca.
-// WCAG 1.4.11 pede 3:1 para indicador não-textual, e NINGUÉM MEDIU.» Sete painéis passaram a marcar, o
-// ADR-0029 descreveu três canais, e o único número que sustentava tudo isso era nenhum.
+// ========================= WHY THIS FILE EXISTS =========================
+// Issue #61 closes with a warning written by the Dev and never kept: «⚠️ Não verificado: contraste da marca. WCAG
+// 1.4.11 pede 3:1 para indicador não-textual, e NINGUÉM MEDIU.» The panels mark, ADR-0029 described three channels, and
+// the one number behind all of it was none.
 //
-// É o mesmo defeito que o `contraste-menu` já corrigiu para o texto: um recurso de acessibilidade que promete
-// e não mede é pior que a ausência dele, porque a professora confia no que está escrito.
+// It is the same defect the `contraste-menu` check already fixed for text: an accessibility feature that promises and
+// does not measure is worse than its absence, because the teacher trusts what is written.
 //
-// ========================= O QUE FOI MEDIDO (2026-09-07) =========================
-// Alvo: 7:1, e a escolha é a mesma que o `contraste-menu` já fez para a borda do cursor — a WCAG 1.4.11 pede
-// 3:1 para componente, e 3:1 é PISO, não teto. Tratar um mínimo como permissão para parar é o contrário do
-// que este projeto faz. Nenhum par chegou perto de precisar da folga:
+// ========================= WHAT WAS MEASURED =========================
+// Target: 7:1, the same choice `contraste-menu` made for the cursor's border — WCAG 1.4.11 asks 3:1 for a component, and
+// 3:1 is a FLOOR, not a ceiling. Treating a minimum as permission to stop is the opposite of what this project does. No
+// pair came close to needing the slack:
 //
-//   tema base          moldura sobre a linha (.ctrl-row)   18,42:1
-//                      moldura sobre o botão (--panel)     15,30:1
-//                      moldura sobre o .pm-btn             14,91:1
-//   alto contraste     moldura sobre a linha               14,54:1
-//                      moldura sobre o botão (--panel)     16,57:1
-//                      moldura sobre o .pm-btn             11,77:1
+//   base theme         frame over the row (.ctrl-row)       18.42:1
+//                      frame over the button (--panel)      15.30:1
+//                      frame over the .pm-btn               14.91:1
+//   high contrast      frame over the row                   14.54:1
+//                      frame over the button (--panel)      16.57:1
+//                      frame over the .pm-btn               11.77:1
 //
-// ⚠️ E A MEDIÇÃO ACHOU O QUE O AVISO NÃO PREVIA, que é o achado deste ficheiro:
+// ⚠️ AND THE MEASUREMENT FOUND WHAT THE WARNING DID NOT FORESEE, which is this file's finding:
 //
-//   MARCADO contra NÃO-MARCADO mede 1,45:1 no tema base e 1,27:1 no alto contraste.
+//   MARKED against UNMARKED measures 1.45:1 in the base theme and 1.27:1 in high contrast.
 //
-// Quer dizer: por LUMINÂNCIA, as duas molduras são a mesma. Branco (#fff) contra `--ink-soft` (#cdd6f2), e
-// amarelo (#ffe600) contra branco, são diferenças de MATIZ. Para quem vê em escala de cinza — acromatopsia,
-// tela monocromática, impressão — o canal de COR da marca não entrega nada, nos dois temas.
+// That is: by LUMINANCE, the two frames are the same. White (#fff) against `--ink-soft` (#cdd6f2), and yellow (#ffe600)
+// against white, are differences of HUE. For whoever sees in greyscale — achromatopsia, a monochrome screen, print — the
+// mark's COLOUR channel delivers nothing, in both themes.
 //
-// Isto NÃO é um defeito, e a distinção importa: é exactamente a razão de o ADR-0029 ter três canais e não
-// um, e de o canal 2 ser uma CONTAGEM DE ANÉIS. O que muda é o estatuto do anel — ele deixa de ser reforço e
-// passa a ser o que carrega a informação para uma parte do público. Por isso o caso `[Interface]` abaixo
-// prende o anel: quem um dia o apagar «porque a cor já diz» estará a apagar a única coisa que diz.
+// This is NOT a defect, and the distinction matters: it is exactly why ADR-0029 has three channels and not one, and why
+// channel 2 is a COUNT OF RINGS. What changes is the ring's status — it stops being reinforcement and becomes what
+// carries the information for part of the audience. That is why the `[Interface]` case below holds the ring: whoever
+// deletes it one day because the colour already says it will be deleting the only thing that says it.
 //
-// ⚠️ O comentário do `@media (prefers-contrast: more)` no `style.css` diz que sem a troca «marcado e
-// não-marcado viram a mesma moldura». Isso continua verdade ao pé da letra — lá `--ink-soft` JÁ é branco, e
-// sem a troca as duas seriam o MESMO valor, não apenas parecidas. A troca compra distinção de matiz; não
-// compra contraste. As duas frases convivem, e ambas ficam presas por caso.
+// ⚠️ The comment of `@media (prefers-contrast: more)` in `style.css` says that without the swap marked and unmarked become
+// the same frame. That stays literally true — there `--ink-soft` IS already white, and without the swap both would be
+// the SAME value, not just similar. The swap buys hue distinction; it does not buy contrast. Both sentences live
+// together, and both are held by a case.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -47,44 +47,44 @@ import { razaoDeContraste, hex, lerToken } from './fixtures/wcag-contrast.js';
 
 const CSS = readFileSync(join(process.cwd(), 'app', 'css', 'style.css'), 'utf8');
 
-/** Onde começa a redeclaração de tokens do alto contraste. Tudo antes é tema base. */
+/** Where the high-contrast token redeclaration starts. Everything before is the base theme. */
 const HC = CSS.indexOf('@media (prefers-contrast: more)');
 
 const base = (nome) => lerToken(CSS, nome);
 const alto = (nome) => lerToken(CSS, nome, HC);
 
-/** O `background:#rrggbb` LITERAL de uma regra, lido da folha em vez de copiado para cá. */
+/** A rule's LITERAL `background:#rrggbb`, read from the stylesheet instead of copied here. */
 function fundoDaRegra(seletor) {
   const m = CSS.match(new RegExp(seletor.replace('.', '\\.') + '\\{[^}]*background:\\s*(#[0-9a-fA-F]{3,8})'));
   if (!m) throw new Error(`o fundo literal de ${seletor} sumiu do style.css — o par deixou de existir`);
   return hex(m[1]);
 }
 
-/** 3:1 é o que a norma pede; 7:1 é o que este projecto paga. Ver o cabeçalho. */
+/** 3:1 is what the standard asks; 7:1 is what this project pays. See the header. */
 const ALVO = 7;
 const PISO_DA_NORMA = 3;
 
 describe('a marca de "saiu do padrão" é VISÍVEL nos dois temas (ADR-0029, issue #61)', () => {
   it('[Zero] o gate está a ler o CSS de verdade, e achou os DOIS temas', () => {
-    // Sem isto, um `indexOf` que devolvesse -1 faria `lerToken(css, nome, -1)` medir o último caractere e
-    // rebentar — ou pior, faria a leitura do alto contraste devolver o valor do tema base em silêncio, e
-    // todos os casos abaixo ficariam verdes a medir o mesmo tema duas vezes.
+    // Without this, an `indexOf` returning -1 would make `lerToken(css, nome, -1)` measure the last character and throw —
+    // or worse, make the high-contrast reading return the base theme's value silently, and every case below would stay
+    // green measuring the same theme twice.
     expect(CSS.length).toBeGreaterThan(5000);
     expect(HC, 'o @media do alto contraste sumiu do style.css').toBeGreaterThan(0);
     expect(CSS.slice(0, HC), 'a marca deixou de ter token no tema base').toContain('--changed:');
   });
 
   it('[Right] a moldura da marca bate 7:1 contra TODA superfície onde é desenhada, nos dois temas', () => {
-    const linha = fundoDaRegra('.ctrl-row');   // as linhas de opção dos painéis
+    const linha = fundoDaRegra('.ctrl-row');   // the panels' option rows
     const pares = [
       ['base · moldura sobre a linha', base('changed'), linha],
       ['base · moldura sobre o botão', base('changed'), base('panel')],
       ['base · moldura sobre o .pm-btn', base('changed'), base('panel-btn')],
       ['alto · moldura sobre a linha', alto('changed'), linha],
       ['alto · moldura sobre o botão', alto('changed'), alto('panel')],
-      // `--panel-btn` NÃO é redeclarado no alto contraste — o `.pm-btn` continua com o fundo do tema base,
-      // e é contra ele que a moldura amarela se desenha. Ler `alto('panel-btn')` rebentaria, e rebentar aqui
-      // seria certo: significaria que a folha mudou e este par deixou de ser o par real.
+      // `--panel-btn` is NOT redeclared in high contrast — the `.pm-btn` keeps the base theme's background, and the yellow
+      // frame is drawn against it. Reading `alto('panel-btn')` would throw, and throwing here would be right: it would
+      // mean the stylesheet changed and this pair stopped being the real pair.
       ['alto · moldura sobre o .pm-btn', alto('changed'), base('panel-btn')],
     ];
     const falham = pares
@@ -95,18 +95,18 @@ describe('a marca de "saiu do padrão" é VISÍVEL nos dois temas (ADR-0029, iss
   });
 
   it('⚠️ [Interface] o ANEL é o que distingue marcado de não-marcado — a cor não distingue, e está medido', () => {
-    // O achado do cabeçalho, preso por número dos dois lados.
+    // The header's finding, held by a number on both sides.
     //
-    // Primeiro a constatação: as duas molduras são indistinguíveis por luminância. Isto está afirmado como
-    // asserção, e não como comentário, de propósito — se um dia alguém escolher cores que TAMBÉM contrastem
-    // entre si, este caso reprova e obriga a reler o parágrafo em vez de o deixar mentir em silêncio.
+    // First the observation: the two frames are indistinguishable by luminance. It is stated as an assertion, not as a
+    // comment, on purpose — if one day someone picks colours that ALSO contrast with each other, this case fails and
+    // forces the paragraph to be reread instead of letting it lie silently.
     const rBase = razaoDeContraste(base('changed'), base('ink-soft'));
     const rAlto = razaoDeContraste(alto('changed'), alto('ink-soft'));
     expect(rBase, `marcado x não-marcado no tema base: ${rBase.toFixed(2)}:1`).toBeLessThan(PISO_DA_NORMA);
     expect(rAlto, `marcado x não-marcado no alto contraste: ${rAlto.toFixed(2)}:1`).toBeLessThan(PISO_DA_NORMA);
 
-    // E por isso o canal de FORMA tem de existir: é ele que sobra em escala de cinza. A regra desenha um anel
-    // INTERNO com `box-shadow`, de que o não-marcado não tem nenhum — é a contagem de anéis do ADR-0029.
+    // And that is why the SHAPE channel must exist: it is what remains in greyscale. The rule draws an INNER ring with
+    // `box-shadow`, of which the unmarked has none — ADR-0029's count of rings.
     const regra = CSS.match(/\.is-changed\{([^}]*)\}/);
     expect(regra, 'a regra .is-changed sumiu do style.css').toBeTruthy();
     expect(regra[1], 'o ANEL do canal de FORMA saiu, e a cor sozinha não distingue nada em escala de cinza')
@@ -114,26 +114,25 @@ describe('a marca de "saiu do padrão" é VISÍVEL nos dois temas (ADR-0029, iss
   });
 
   it('[Boundary] o alto contraste REDECLARA a marca — sem isso ela seria o mesmo valor do não-marcado', () => {
-    // A promessa literal do comentário do `@media` no style.css. Lá `--ink-soft` é `#fff`; se `--changed`
-    // não fosse trocado, marcado e não-marcado seriam o MESMO `#fff` — não parecidos, iguais.
+    // The literal promise of the `@media` comment in style.css. There `--ink-soft` is `#fff`; if `--changed` were not
+    // swapped, marked and unmarked would be the SAME `#fff` — not similar, equal.
     expect(alto('ink-soft'), 'a premissa mudou: --ink-soft já não é branco no alto contraste').toEqual([255, 255, 255]);
     expect(alto('changed'), 'a marca voltou a ser a cor do não-marcado no alto contraste').not.toEqual(alto('ink-soft'));
     expect(base('changed'), 'a marca ficou igual ao não-marcado no tema base').not.toEqual(base('ink-soft'));
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · trocando `--changed:#fff` por `--changed:#1c2542` (quase o fundo do botão) no `:root` → reprovam DOIS
-//     casos, e o segundo é a prova de que o parágrafo do cabeçalho está preso e não apenas escrito:
-//       "[Right] 7:1" cai nos três pares do tema base, com 1,22 / 1,01 / 1,01:1;
-//       "[Interface]" cai porque uma moldura ESCURA passa a contrastar 10,41:1 com `--ink-soft` — quer
-//       dizer, a afirmação "a cor não distingue" deixaria de ser verdade e o caso obriga a reescrevê-la.
-//   · apagando o `box-shadow` de `.is-changed` → "[Interface] o ANEL" reprova: sobra a cor, que já está
-//     medida como incapaz de distinguir.
-//   · tirando `--changed:#ffe600` do `@media (prefers-contrast: more)` → reprovam três casos por exceção do
-//     `lerToken` ("token --changed não existe a partir do índice 14591"), que é a falha certa: sem o token
-//     não há o que medir, e devolver `undefined` daria NaN verde.
-//   · ⚠️ trocando `--changed` no alto contraste para `#fff` (a cor do não-marcado) → "[Boundary]" reprova na
-//     asserção do `.not.toEqual`, E "[Right]" continua VERDE (branco sobre preto mede 21:1). Registado
-//     porque mostra o que cada caso guarda: o primeiro guarda a DISTINÇÃO, o segundo a VISIBILIDADE, e
-//     nenhum dos dois substitui o outro.
+// ========================= MUTATIONS CHECKED =========================
+//   · replacing `--changed:#fff` with `--changed:#1c2542` (almost the button's background) in `:root` → TWO cases fail,
+//     and the second is the proof that the header's paragraph is held and not only written:
+//       the [Right] 7:1 case falls on the three base-theme pairs, with 1.22 / 1.01 / 1.01:1;
+//       [Interface] falls because a DARK frame contrasts 10.41:1 with `--ink-soft` — that is, the claim that colour does
+//       not distinguish would stop being true, and the case forces it to be rewritten.
+//   · deleting `.is-changed`'s `box-shadow` → the [Interface] ring case fails: the colour remains, already measured as
+//     unable to distinguish.
+//   · removing `--changed:#ffe600` from `@media (prefers-contrast: more)` → three cases fail by `lerToken`'s exception
+//     (`token --changed não existe a partir do índice 14591`), the right failure: without the token there is nothing to
+//     measure, and returning `undefined` would give a green NaN.
+//   · ⚠️ switching `--changed` in high contrast to `#fff` (the unmarked colour) → [Boundary] fails on the `.not.toEqual`
+//     assertion, AND [Right] stays GREEN (white on black measures 21:1). Recorded because it shows what each case
+//     guards: the first guards DISTINCTION, the second VISIBILITY, and neither replaces the other.
