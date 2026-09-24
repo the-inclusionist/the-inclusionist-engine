@@ -1,67 +1,69 @@
-# Plano de Acessibilidade — The Inclusionist (v4)
+> Historical plan (2026-06-30): kept as a record; the current state lives in ADR-0011 (visual) and ADR-0013 (motor) in `the-inclusionist-docs`, and in the panels `app/js/ui/settings-visual.ts`, `settings-motion.ts` and `settings-mobility.ts`.
 
-Decisões fechadas com o José. Implementação em fases (A→B→C→E→F).
+# Accessibility Plan — The Inclusionist (v4)
 
-## Estratégia de cor (revisada com o José)
-**Grupos por importância** (não por luminância): **G1** personagem/HUD/itens/NPC especial · **G2** plataforma/chão onde piso/escada/porta/secundário · **G3** fundo.
-**Conformidade WCAG 2.2 AA via CONTORNO** (preserva a arte, não repinta): contorno **G1↔fundo 7:1**, **G2↔fundo 4.5:1**, condução de caminho **3:1**, **texto↔fundo 7:1** (HUD no DOM). Contorno **bicolor** (claro+escuro) → visível sobre qualquer fundo. As 4 variações de repintura dark foram **removidas** (repintar não é exigência WCAG); as 13 paletas + motor de matiz ficam para os modos de cor abaixo.
+Decisions closed with the Dev. Implementation in phases (A→B→C→E→F).
 
-## Modos de cor — menu "Acessibilidade visual" (radio, efeito imediato, 11 opções)
-1. **Cores normais** — arte crua.
-2. **Contorno (Normal AA)** — ✅ contorno escuro em player/itens/power-ups/porta e bordas de plataforma (preserva a arte).
-3. **Alto contraste ×4** (claro/médio/escuro/noturno) — ✅ recolor por **paleta de grupo** (fundo escuro colorido P10–P13; player P(n−9), itens P(n−7)). **Provisório** — alguns níveis de baixa visão se beneficiam; José fará melhor no Aseprite.
-4. **Simular daltonismo ×3** (Protanopia/Deuteranopia/Tritanopia) — ✅ filtros **`feColorMatrix`** na `<canvas>` (auditoria + demo). É **simulação**, não correção (daltonização fica para depois, se desejado).
-5. **Simular baixa visão** — ✅ desfoque (filter) + névoa + manchas/scotomas (overlay). **Bolinha verde** no canto; toque/clique **2×** volta ao normal.
-6. **Simular cegueira total (amaurose)** — ✅ tela preta (`brightness(0)`), HUD e controles escondidos (só resposta tátil/sonora — Fase F). **Bolinha branca** no canto; **2×** volta ao normal.
-- (a fazer) **Normal AA · Cores** (deslocamento leve) e **daltonização** (correção real).
-- (Descartado: recolor "CB-safe" a 20 cores Okabe–Ito — posterizava a arte.)
+## Colour strategy (revised with the Dev)
+**Groups by importance** (not by luminance): **G1** character/HUD/items/special NPC · **G2** platform/ground I stand on/ladder/door/secondary · **G3** background.
+**WCAG 2.2 AA conformance through OUTLINE** (preserves the art, does not repaint): outline **G1↔background 7:1**, **G2↔background 4.5:1**, path guidance **3:1**, **text↔background 7:1** (HUD in the DOM). **Two-colour** outline (light+dark) → visible over any background. The 4 dark repaint variations were **removed** (repainting is not a WCAG requirement); the 13 palettes + the hue engine stay for the colour modes below.
 
-**Papéis das paletas (José):** P1 luz direta · P2 muito claras · P3 claras · P4–P5 lavadas · P6 vivas/saturadas · P7 quentes vivas + apagadas · P8 azul/rosa/vermelho vivos + resto apagado · P9–P10 escuras · P11–P13 bem escuras. Uso: contorno claro de P1/P2 (sobre fundo escuro) ou escuro de P12/P13 (sobre claro); interiores vivos de P6; fundo lavado de P4/P5. Grupos-base para o modo Cores: **P1×P6×P11**, **P2×P7×P12**, **P3×P8×P13** (adjacentes ~3:1).
+## Colour modes — "Visual accessibility" menu (radio, immediate effect, 11 options)
+1. **Normal colours** — raw art.
+2. **Outline (Normal AA)** — ✅ dark outline on player/items/power-ups/door and platform edges (preserves the art).
+3. **High contrast ×4** (light/medium/dark/night) — ✅ recolour by **group palette** (dark coloured background P10–P13; player P(n−9), items P(n−7)). **Provisional** — some low-vision levels benefit from it; the Dev will do better in Aseprite.
+4. **Simulate colour blindness ×3** (Protanopia/Deuteranopia/Tritanopia) — ✅ **`feColorMatrix`** filters on the `<canvas>` (audit + demo). It is **simulation**, not correction (daltonization is left for later, if wanted).
+5. **Simulate low vision** — ✅ blur (filter) + haze + spots/scotomas (overlay). **Green dot** in the corner; tap/click **2×** returns to normal.
+6. **Simulate total blindness (amaurosis)** — ✅ black screen (`brightness(0)`), HUD and controls hidden (touch/sound feedback only — Phase F). **White dot** in the corner; **2×** returns to normal.
+- (to do) **Normal AA · Colours** (slight shift) and **daltonization** (real correction).
+- (Discarded: "CB-safe" recolour to 20 Okabe–Ito colours — it posterized the art.)
 
-## Por jogador (multiplayer) — ✅ feito
-Cada jogador tem suas configs (abas P1–P4 nos painéis, como os controles):
-- **A12e visual (cor):** totalmente por tela — no MP cada viewport renderiza no modo do seu jogador (troca de texturas compartilhadas antes de cada render + filtro PIXI por viewport; bolinha por cima, fora do filtro).
-- **A12e motora:** Fácil (física/hitbox/borda/imunidade-a-perigo/controles) e alternância por jogador. Único efeito de **mundo** que fica global: **moedas no chão** (liga se QUALQUER jogador usa Fácil — há um mundo só).
-- **S11e (animação):** **personagem** (andar/respiração/gracinhas) por jogador; **cena** (parallax/decoração/itens/partículas) global (fundo compartilhado).
-- Persistido por jogador (`incl_*_pN`). ⚠️ FPS no MP cai com filtros por viewport — otimizar depois.
+**Palette roles (the Dev's):** P1 direct light · P2 very light · P3 light · P4–P5 washed · P6 vivid/saturated · P7 warm vivid + muted · P8 vivid blue/pink/red + the rest muted · P9–P10 dark · P11–P13 very dark. Use: light outline from P1/P2 (over a dark background) or dark from P12/P13 (over a light one); vivid interiors from P6; washed background from P4/P5. Base groups for the Colours mode: **P1×P6×P11**, **P2×P7×P12**, **P3×P8×P13** (adjacent ~3:1).
 
-## Modo Fácil (deficiência motora)
-- Gravidade **×2/3**; pulo **×8/7**; andar/escada/nado **×0.7** (ajuste fino depois).
-- Hitbox de coleta **+4px** por lado, desenhada como **retângulo translúcido**.
-- **Moedas rebaixadas ao chão** (só no Fácil; revertem ao desligar).
-- **Sem perigos** (herda do antigo "Assistência", que vira "Fácil").
-- **Pula-pula = quique fixo suave** (sem cadeia de carga); segurar = descer flutuando devagar.
-- **Proteção de borda:** andar não derruba em fosso; só cai apertando **baixo**.
-- **Controles enxutos:** **interagir = qualquer botão de pulo** (não só Espaço); Ctrl=especial; Shift=trocar poder; sem correr.
+## Per player (multiplayer) — ✅ done
+Each player has their own settings (tabs P1–P4 in the panels, like the controls):
+- **Visual a11y (colour):** fully per screen — in MP each viewport renders in its player's mode (swap of shared textures before each render + PIXI filter per viewport; dot on top, outside the filter).
+- **Motor a11y:** Easy (physics/hitbox/edge/hazard immunity/controls) and toggle movement per player. The only **world** effect that stays global: **coins on the ground** (on if ANY player uses Easy — there is only one world).
+- **Animation:** **character** (walking/breathing/idle antics) per player; **scene** (parallax/decoration/items/particles) global (shared background).
+- Persisted per player (`incl_*_pN`). ⚠️ FPS in MP drops with per-viewport filters — optimize later.
 
-## Movimento por alternância (1 dedo / acesso sequencial) — ✅ FEITO (toggle no painel Movimento)
-- Tocar direção → anda **contínuo** naquele sentido (~1/3 da velocidade); segurar → ~2/3.
-- **Pulo é momentâneo e NÃO interrompe a caminhada** (aperta pular perto do obstáculo, pula pra frente e segue andando).
-- Acoplado ao **Fácil** (herda proteção de borda + gravidade menor + coyote-time → pulo de fosso tolerante). GAG-OK (sem exigir segurar+mover simultâneos). Sequencial multi-botão basta (não precisa varredura/scanning).
+## Easy Mode (motor disability)
+- Gravity **×2/3**; jump **×8/7**; walk/ladder/swim **×0.7** (fine tuning later).
+- Pickup hitbox **+4px** per side, drawn as a **translucent rectangle**.
+- **Coins lowered to the ground** (only in Easy; they revert when it is switched off).
+- **No hazards** (inherited from the old "Assistance", which becomes "Easy").
+- **Trampoline = fixed soft bounce** (no charge chain); holding = float down slowly.
+- **Edge protection:** walking does not drop you into a pit; you only fall by pressing **down**.
+- **Lean controls:** **interact = any jump button** (not only Space); Ctrl=special; Shift=swap power; no running.
 
-## Animação reduzida (WCAG 2.3.3) + Pause/Stop/Hide (2.2.2)
-> Terminologia: **Movimento** = como o jogador anda (GAG, alternância). **Animação** = movimento na tela (WCAG, redução). Painel "Mov./Anim." separa as duas seções.
-- Reduced-motion **ligado por padrão** (respeita `prefers-reduced-motion`).
-- 7 toggles: **parallax · fundo decorativo (nuvens/grama) · itens (moedas) · personagem em movimento · respiração · gracinhas · partículas/cintilação**.
-  - **Personagem em movimento** congela TODA a locomoção num quadro único: andar/correr, escalar parede (ventosa), subir escada, nadar e pular.
-  - **Respiração** e **gracinhas** são toggles separados (há quem se incomode com as gracinhas e queira mantê-las desligadas sem congelar a respiração).
-- **1 botão mestre** (Pause/Stop/Hide) congela todos.
-- Hoje agem: parallax, personagem em movimento, respiração/gracinhas. Decoração/itens/partículas ficam prontos e ligam quando a Cidade animar.
+## Toggle movement (1 finger / sequential access) — ✅ DONE (toggle in the Movement panel)
+- Tap a direction → walks **continuously** that way (~1/3 of the speed); hold → ~2/3.
+- **The jump is momentary and does NOT interrupt the walk** (press jump near the obstacle, jump forward and keep walking).
+- Coupled to **Easy** (inherits edge protection + lower gravity + coyote time → forgiving pit jump). GAG-OK (does not require hold+move at the same time). Sequential multi-button is enough (no scanning needed).
 
-## Modo Áudio (Fase F) — spec detalhado
-Botão de áudio **abre um menu** com **toggle + barra de volume** para cada grupo:
-- **Música**
-- **Sons ambiente:** água, conversas de rua, trânsito, folhas ao vento, chuva
-- **Efeitos de interação com o ambiente:** passos por superfície (grama/piso/pedra/areia), portas (madeira/ferro), escada (madeira)/escalada em parede
-- **Earcons** (sons simbólicos das ações: pulo, coleta de moeda, dano, etc.)
-- **Outros efeitos sonoros**
-- **TTS** (narração)
-- **Sonar** (botão de interação + no menu) — varredura que anuncia a moeda/alvo mais próximo (direção + distância)
-- **Guarda de beirada sonoro** (aviso ao chegar em fosso/borda)
-- **Pista em laço / trilha de navegação / guia auditivo** (loop que orienta o caminho)
-- Pistas espaciais: panorâmica L/R pela direção; tom/altura pela distância.
-- **Som de perigo** (queda de fosso, lava) e **som de barreira/parede**.
-- ⚠️ Validar com a **comunidade cega** (AudioGames.net, associações) antes de cravar detalhes.
+## Reduced animation (WCAG 2.3.3) + Pause/Stop/Hide (2.2.2)
+> Terminology: **Movement** = how the player moves (GAG, toggle). **Animation** = motion on screen (WCAG, reduction). The "Mov./Anim." panel separates the two sections.
+- Reduced motion **on by default** (respects `prefers-reduced-motion`).
+- 7 toggles: **parallax · decorative background (clouds/grass) · items (coins) · character in motion · breathing · idle antics · particles/twinkling**.
+  - **Character in motion** freezes ALL locomotion on a single frame: walking/running, wall climbing (suction), ladder climbing, swimming and jumping.
+  - **Breathing** and **idle antics** are separate toggles (some people are bothered by the antics and want them off without freezing the breathing).
+- **1 master button** (Pause/Stop/Hide) freezes them all.
+- Acting today: parallax, character in motion, breathing/antics. Decoration/items/particles are ready and switch on when the City animates.
 
-## Já feito
-- Som de **vitória 8-bit** (jingle + 4 fogos de artifício).
+## Audio Mode (Phase F) — detailed spec
+The audio button **opens a menu** with a **toggle + volume bar** for each group:
+- **Music**
+- **Ambient sounds:** water, street conversations, traffic, leaves in the wind, rain
+- **Effects of interaction with the environment:** footsteps per surface (grass/floor/stone/sand), doors (wood/iron), ladder (wood)/wall climbing
+- **Earcons** (symbolic sounds of the actions: jump, coin pickup, damage, etc.)
+- **Other sound effects**
+- **TTS** (narration)
+- **Sonar** (interaction button + in the menu) — a sweep that announces the nearest coin/target (direction + distance)
+- **Audible edge guard** (warning on reaching a pit/edge)
+- **Looping cue / navigation trail / audio guide** (a loop that points the way)
+- Spatial cues: L/R panning by direction; tone/pitch by distance.
+- **Danger sound** (pit fall, lava) and **barrier/wall sound**.
+- ⚠️ Validate with the **blind community** (AudioGames.net, associations) before settling details.
+
+## Already done
+- **8-bit victory** sound (jingle + 4 fireworks).

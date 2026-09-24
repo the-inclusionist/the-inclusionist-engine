@@ -1,91 +1,93 @@
-# Plano — Internacionalização (i18n) e localização (l10n)
+> Historical plan (2026-07-03): kept as a record; the current state lives in `app/js/core/i18n.ts` and the three dictionaries under `app/js/i18n/`, and the rule in pillar 3 of ADR-0010 (`the-inclusionist-docs`).
 
-Pedido do José em 2026-07-03: o jogo precisa suportar vários idiomas. Começar por **pt-BR**, adicionar já
-**inglês** e **espanhol** (as duas línguas da BNCC), e no futuro a lista comercial (mandarim, hindi, indonésio,
-japonês, coreano, francês, alemão, finlandês). Integrado à modularização (`../5-Refactoring/plano-modularizacao.md`) — o i18n
-vira um dos primeiros módulos, porque toca em tudo.
+# Plan — Internationalization (i18n) and localization (l10n)
+
+The Dev's request on 2026-07-03: the game needs to support several languages. Start with **pt-BR**, add
+**English** and **Spanish** right away (the two languages of the BNCC), and in the future the commercial list
+(Mandarin, Hindi, Indonesian, Japanese, Korean, French, German, Finnish). Integrated with the modularization
+(`../5-Refactoring/plano-modularizacao.md`) — i18n becomes one of the first modules, because it touches everything.
 
 ---
 
-## 1. A distinção que muda o escopo: UI × currículo
+## 1. The distinction that changes the scope: UI × curriculum
 
-Traduzir **não é** localizar o conteúdo pedagógico. Há duas camadas bem diferentes:
+Translating **is not** localizing the pedagogical content. There are two very different layers:
 
-- **Chrome / UI** (menus, botões, rótulos ARIA, rodapés, HUD, mensagens): tradução direta. Barato por idioma.
-- **Conteúdo universal** (Matemática, Lúdico): quase universal — só traduzir números/palavras e rótulos.
-- **Conteúdo de currículo (Alfabetização):** é **currículo específico da língua**, não tradução. As sílabas
-  do português (`ga`/`to`), a psicogênese de Ferreiro aplicada a palavras PT, a relação grafema↔fonema PT, o
-  "escrever GATO" — **nada disso mapeia** para inglês (que é fônico, não silábico) ou espanhol (silabação
-  própria). Localizar a alfabetização = **autorar novo currículo por língua**, com cuidado pedagógico.
+- **Chrome / UI** (menus, buttons, ARIA labels, footers, HUD, messages): direct translation. Cheap per language.
+- **Universal content** (Mathematics, Play): almost universal — only numbers/words and labels to translate.
+- **Curriculum content (Literacy):** it is **language-specific curriculum**, not translation. The syllables
+  of Portuguese (`ga`/`to`), Ferreiro's psychogenesis applied to PT words, the PT grapheme↔phoneme relation, the
+  "write GATO" — **none of it maps** to English (which is phonic, not syllabic) or Spanish (its own
+  syllabification). Localizing literacy = **authoring a new curriculum per language**, with pedagogical care.
 
-**Recomendação:** localizar **agora** a UI + Matemática + Lúdico para pt/en/es; manter a **Alfabetização só em
-pt**, com o framework já pronto para receber "pacotes de currículo" por língua, autorados depois (en com
-*phonics*, es com *silabeo*). Assim entregamos en/es de verdade sem inventar pedagogia errada às pressas.
+**Recommendation:** localize **now** the UI + Mathematics + Play for pt/en/es; keep **Literacy in pt
+only**, with the framework ready to receive per-language "curriculum packs", authored later (en with
+*phonics*, es with *silabeo*). That way we deliver en/es for real without rushing wrong pedagogy.
 
-## 2. Idiomas — recomendação (você disse "aceito sugestões")
+## 2. Languages — recommendation (you said "I accept suggestions")
 
-Todos os idiomas da sua lista são **LTR** (nada de RTL/bidi) — ótimo, simplifica. O custo tem dois eixos:
-**script/fonte** e **profundidade de conteúdo**. Agrupando por esforço:
+All the languages on your list are **LTR** (no RTL/bidi) — great, it simplifies. The cost has two axes:
+**script/font** and **depth of content**. Grouped by effort:
 
-| Onda | Idiomas | Custo | Observações |
+| Wave | Languages | Cost | Notes |
 |---|---|---|---|
-| **0 (agora)** | pt · en · es | baixo | BNCC + alcance gigante. Reusam a stack de fontes acessíveis atual (Atkinson/Andika/Lexend). |
-| **1 (barato, Latim)** | fr · de · id · fi | baixo | Indonésio é Latim; finlandês é a "cortesia" *Work on Finland*. Só JSON de UI + voz TTS. |
-| **2 (novo script/fonte)** | ja · ko · zh-Hans · hi | **alto** | Precisam de webfonts dedicadas (Noto Sans JP/KR/SC/Devanagari, **multi-MB**), quebra de linha por script e variantes acessíveis. Conflita com o pilar "enxuto/offline" → **carregar a fonte só quando o idioma é escolhido**. Fazer quando houver demanda/financiamento. |
+| **0 (now)** | pt · en · es | low | BNCC + huge reach. Reuse the current accessible font stack (Atkinson/Andika/Lexend). |
+| **1 (cheap, Latin)** | fr · de · id · fi | low | Indonesian is Latin script; Finnish is the *Work on Finland* "courtesy". Only UI JSON + TTS voice. |
+| **2 (new script/font)** | ja · ko · zh-Hans · hi | **high** | They need dedicated webfonts (Noto Sans JP/KR/SC/Devanagari, **multi-MB**), per-script line breaking and accessible variants. Conflicts with the "lean/offline" pillar → **load the font only when the language is chosen**. Do it when there is demand/funding. |
 
-Ordem sugerida difere da comercial de propósito: a Onda 1 são vitórias baratas de UI; a Onda 2 é um projeto
-de infra de fontes por si só. A prioridade comercial (ARPU Japão/Coreia etc.) entra assim que a infra de
-script CJK existir.
+The suggested order differs from the commercial one on purpose: Wave 1 is cheap UI wins; Wave 2 is a font
+infrastructure project in itself. The commercial priority (Japan/Korea ARPU etc.) comes in as soon as the CJK
+script infrastructure exists.
 
-## 3. Arquitetura (sem build, offline/PWA, ES Modules)
+## 3. Architecture (no build, offline/PWA, ES Modules)
 
-- **Módulo `app/js/core/i18n.js`** — API: `t(key, params?)`, `getLocale()`, `setLocale(code)`, `applyDom(root)`.
-  Fallback em cadeia: `locale → pt → a própria key`. Interpolação `{nome}`.
-- **Arquivos de idioma como ES Modules** (não .json): `app/js/i18n/pt.js` → `export default { … }`.
-  - O idioma **padrão é `import` estático** (resolvido antes do game.js rodar) → **boot síncrono, sem async**
-    (o jogo monta menus na carga; evita refatorar para init assíncrono).
-  - Os demais entram por **`import()` dinâmico** ao trocar de idioma; ficam em cache pelo SW.
-  - Racional: no-build + offline + zero fetch no boot. Tradutor edita um objeto JS (trivial).
-- **Namespaces de chave:** `menu.*`, `title.*`, `pause.*`, `a11y.*` (diálogos), `hud.*`, `power.*`,
-  `activity.<id>.{name,sub,footer}`, `content.*` (currículo, por locale).
-- **HTML estático** (`index.html`, ~100 strings): atributos declarativos
-  `data-i18n="menu.play"` (textContent) e `data-i18n-aria="a11y.gameRegion"` (aria-label). O i18n percorre
-  `[data-i18n]`/`[data-i18n-aria]` na carga e a cada troca de idioma.
-- **Strings dinâmicas** (game.js): trocar literais por `t('...')`; menus construídos por JS re-renderizam no
-  evento de troca.
-- **Voz/TTS:** `localeVoice()` substitui `ptbrVoice()` — escolhe a voz pela locale ativa (pt-BR, en-US/GB,
-  es-ES/MX). Liga o i18n ao adapter de fala.
-- **Persistência + default:** `incl_lang` no localStorage; default por `navigator.language` limitado aos
-  idiomas disponíveis (fallback pt).
-- **Seletor de idioma:** ícone 🌐 nos atalhos do título + no menu de pausa; troca aplica sem recarregar.
-- **Acessibilidade:** setar `document.documentElement.lang` por locale (leitores de tela); fontes acessíveis
-  por script na Onda 2; `lang` correto também melhora hifenização/pronúncia.
-- **SW/offline:** pré-cachear pt (estático) + en + es no `SHELL`; Ondas seguintes cacheiam sob demanda.
+- **Module `app/js/core/i18n.js`** — API: `t(key, params?)`, `getLocale()`, `setLocale(code)`, `applyDom(root)`.
+  Chained fallback: `locale → pt → the key itself`. Interpolation `{nome}`.
+- **Language files as ES Modules** (not .json): `app/js/i18n/pt.js` → `export default { … }`.
+  - The **default** language is a **static `import`** (resolved before game.js runs) → **synchronous boot, no async**
+    (the game builds menus on load; avoids refactoring to an asynchronous init).
+  - The others come in through **dynamic `import()`** when the language changes; they are cached by the SW.
+  - Rationale: no-build + offline + zero fetch at boot. A translator edits a JS object (trivial).
+- **Key namespaces:** `menu.*`, `title.*`, `pause.*`, `a11y.*` (dialogs), `hud.*`, `power.*`,
+  `activity.<id>.{name,sub,footer}`, `content.*` (curriculum, per locale).
+- **Static HTML** (`index.html`, ~100 strings): declarative attributes
+  `data-i18n="menu.play"` (textContent) and `data-i18n-aria="a11y.gameRegion"` (aria-label). The i18n walks
+  `[data-i18n]`/`[data-i18n-aria]` on load and on every language change.
+- **Dynamic strings** (game.js): replace literals with `t('...')`; menus built by JS re-render on the
+  change event.
+- **Voice/TTS:** `localeVoice()` replaces `ptbrVoice()` — it picks the voice by the active locale (pt-BR, en-US/GB,
+  es-ES/MX). It connects i18n to the speech adapter.
+- **Persistence + default:** `incl_lang` in localStorage; default from `navigator.language`, limited to the
+  available languages (fallback pt).
+- **Language selector:** 🌐 icon in the title shortcuts + in the pause menu; the change applies without reloading.
+- **Accessibility:** set `document.documentElement.lang` per locale (screen readers); accessible fonts
+  per script in Wave 2; a correct `lang` also improves hyphenation/pronunciation.
+- **SW/offline:** precache pt (static) + en + es in the `SHELL`; later Waves cache on demand.
 
-## 4. Execução em etapas (cada uma = 1 commit verificado, sem mudar comportamento em pt)
-1. **Fundação:** `core/i18n.js` + `i18n/pt.js` (seed) + `applyDom`; converter **um** subconjunto (menu do
-   título) para `data-i18n`; game.js faz o 1º `import`. Verificar: título idêntico, vindo do dicionário.
-2. **Localização POR MÓDULO (durante a Fase B da modularização) — NÃO varrer o monólito.** Correção de rumo
-   (2026-07-03): extrair strings do `game.js` de 3800 linhas antes de modularizar era garimpar + tocar o mesmo
-   código duas vezes. Em vez disso, **cada módulo com UI extraído na Fase B** (`ui/menus`, `ui/pause`,
-   diálogos…) já sai com seus literais trocados por `t()`/`data-i18n` e as chaves no `pt.js` — **uma tocada só
-   por trecho de código**. Os lotes já feitos (título, pausa) são a largada dos futuros `ui/*` (chaves prontas,
-   não retrabalho). As strings estáticas do `index.html` (diálogos) casam com a extração do módulo que as
-   controla. Ver `../5-Refactoring/plano-modularizacao.md`.
-3. **Voz por locale:** `localeVoice()`; seletor 🌐; persistência + default por navegador.
-4. **en + es (UI + Matemática + Lúdico):** `i18n/en.js`, `i18n/es.js`; TTS en/es; Alfabetização fica pt
-   (rótulo "disponível em português") até os pacotes de currículo.
-5. **Onda 1 (fr/de/id/fi):** só arquivos de idioma + vozes.
-6. **Onda 2 (ja/ko/zh/hi):** infra de fontes por script (lazy-load), quebra de linha, revisão de layout.
-7. **Pacotes de currículo de alfabetização** por língua (en phonics, es silabeo…), quando houver autoria.
+## 4. Execution in steps (each = 1 verified commit, with no behaviour change in pt)
+1. **Foundation:** `core/i18n.js` + `i18n/pt.js` (seed) + `applyDom`; convert **one** subset (the title
+   menu) to `data-i18n`; game.js does the 1st `import`. Check: identical title, coming from the dictionary.
+2. **Localization PER MODULE (during Phase B of the modularization) — do NOT sweep the monolith.** Course
+   correction (2026-07-03): extracting strings from the 3800-line `game.js` before modularizing meant digging + touching the same
+   code twice. Instead, **each module with UI extracted in Phase B** (`ui/menus`, `ui/pause`,
+   dialogs…) already comes out with its literals replaced by `t()`/`data-i18n` and the keys in `pt.js` — **one touch
+   per piece of code**. The batches already done (title, pause) are the starting point of the future `ui/*` (keys ready,
+   not rework). The static strings of `index.html` (dialogs) go with the extraction of the module that
+   controls them. See `../5-Refactoring/plano-modularizacao.md`.
+3. **Voice per locale:** `localeVoice()`; 🌐 selector; persistence + browser default.
+4. **en + es (UI + Mathematics + Play):** `i18n/en.js`, `i18n/es.js`; TTS en/es; Literacy stays pt
+   (label "available in Portuguese") until the curriculum packs.
+5. **Wave 1 (fr/de/id/fi):** only language files + voices.
+6. **Wave 2 (ja/ko/zh/hi):** per-script font infrastructure (lazy-load), line breaking, layout review.
+7. **Literacy curriculum packs** per language (en phonics, es silabeo…), when there is authoring.
 
-## 5. Riscos
-- **Boot assíncrono** — evitado pelo import estático da locale padrão.
-- **Explosão de fontes (Onda 2)** vs. pilar enxuto — lazy-load por script; nunca embutir CJK no shell.
-- **Currículo mal-localizado** — mitigado pela separação UI×currículo (§1): não fingir alfabetização en/es.
-- **Chaves órfãs / faltando** — fallback para pt e um script de auditoria de chaves (tools/) na Onda 1.
+## 5. Risks
+- **Asynchronous boot** — avoided by the static import of the default locale.
+- **Font explosion (Wave 2)** vs. the lean pillar — lazy-load per script; never embed CJK in the shell.
+- **Mis-localized curriculum** — mitigated by the UI×curriculum separation (§1): do not fake en/es literacy.
+- **Orphan / missing keys** — fallback to pt and a key-audit script (tools/) in Wave 1.
 
-## 6. Decisão pendente (José)
-Confirmar o §1: **UI + Matemática + Lúdico** localizados para en/es agora, **Alfabetização só em pt** por ora
-(framework pronto p/ pacotes de currículo depois). Se quiser tentar alfabetização en/es já, o esforço é de
-**autoria pedagógica**, não de tradução — planejo à parte.
+## 6. Pending decision (the Dev)
+Confirm §1: **UI + Mathematics + Play** localized for en/es now, **Literacy in pt only** for the time being
+(framework ready for curriculum packs later). If you want to try en/es literacy now, the effort is
+**pedagogical authoring**, not translation — I plan it separately.
