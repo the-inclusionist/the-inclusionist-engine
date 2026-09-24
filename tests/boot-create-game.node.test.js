@@ -500,7 +500,7 @@ describe('createGame em execução', () => {
     // ask for, and in a test boot it is never ON at the instant of the change (the model is not in the delivery, so it
     // fails to start and switches off). What this holds is the WIRING; the behaviour is held in `voice-control`.
     expect(FONTE, 'a troca de idioma deixou de alcançar o reconhecimento de fala: a criança passa a ser ouvida na língua velha')
-      .toMatch(/win\.addEventListener\('i18n:change'[\s\S]{0,2000}?voiceControl\?\.languageChanged\(\)/);
+      .toMatch(/localeOn\(\(\) => \{[\s\S]{0,2000}?voiceControl\?\.languageChanged\(\)/);
   });
 
   it('⚠️ [Right] a engine monta o CARTÃO DE PAUSA — e com o id que ela própria procura', async () => {

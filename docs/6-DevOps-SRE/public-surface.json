@@ -155,8 +155,10 @@
   ],
   "core/i18n.ts": [
     "LocalePort",
-    "applyDom",
+    "Translate",
+    "Translator",
     "bcp47",
+    "createTranslator",
     "dictionaryGaps",
     "getLocale",
     "initI18n",

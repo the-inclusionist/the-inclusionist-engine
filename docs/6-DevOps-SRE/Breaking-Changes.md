@@ -3212,6 +3212,27 @@ to answer from. `initVizSetters` is called by `game-platformer` alone (`app/js/m
 blind writer, under its older name `setModoCego`). `initPauseIcons` and `initSettingsAudio` are called by `game-platformer`
 alone (`app/js/main.ts`); no game calls `createVoiceSettings`.
 
+## CV · The translator is built by the root and passed in: no module reads `core/i18n` by import (ADR-0232 D3, issue #207)
+
+**Who is affected:** anyone calling the functions below outside `createGame`, building one of the ctx listed by hand, or
+importing `core/i18n`'s page-wide functions. A game that only calls `createGame` changes nothing in its ctx: the root
+builds the translator and hands `t` down itself.
+
+📌 **Why:** outside the composition root a module imports by value only what holds no state and reaches no global
+(ADR-0232). `core/i18n` holds the page's language and, until this note, one game dictionary for the whole page — so a
+dictionary one root registered resolved in another. The decisions, recorded as an ADR-0232 erratum before the code (docs
+`dac7a6d`): the LANGUAGE is the page's (`<html lang>` is one attribute, so two roots in two languages would tell a screen
+reader one of them wrongly), a game's DICTIONARY is the root's; a module that only translates receives a bare `t`, one
+that reads or sets the language receives the `Translator`; a helper function gains a `t` parameter and stays a function
+(no new factories); a module that must hear a language change subscribes through `translator.onChange`, which the root
+passes through its disposing door. The window's `i18n:change` event stays, as the page's signal to its host.
+
+| old | new | migration |
+|---|---|---|
+| `core/i18n.js` `applyDom(root)` | the root's `translator.applyDom(root)` — no longer published by the module | a game's markup is translated by its root; `createTranslator().applyDom` where a page translates its own |
+
+📏 **Measured in the seven games, read-only, as information:** no game calls `applyDom` (two mention it in comments).
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

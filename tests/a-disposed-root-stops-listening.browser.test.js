@@ -318,7 +318,8 @@ describe('a disposed root stops hearing the state bus — and an unmounted one d
  *     and the cross-check
  * 10. `whenDisposed(stopScan)` goes ........................................................... 1 RED, the running scan's case
  * 11. the releases run in `unmountAll` instead of `dispose` ................................... 1 RED, the `unmount()` case
- * 12. `i18n:change` hung on `o.host.win` instead of the scoped window ........................... 1 RED, the locale case
+ * 12. the root's language listener subscribed with `translator.onChange` bare, not through `localeOn` (ADR-0232 D3) — once
+ *     `i18n:change` hung on `o.host.win` instead of the scoped window ................................ 1 RED, the locale case
  *     — the locale case was green before this fix: that listener already went through the scope. The mutation is what shows
  *       the case can see it leak.
  */

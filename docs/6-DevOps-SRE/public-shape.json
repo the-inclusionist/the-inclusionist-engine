@@ -284,7 +284,19 @@
       "get",
       "preferred?",
       "set"
-    ]
+    ],
+    "interface Translator": [
+      "applyDom",
+      "bcp47",
+      "dictionaryGaps",
+      "locale",
+      "onChange",
+      "ready",
+      "registerDict",
+      "setLocale",
+      "t"
+    ],
+    "type Translate": "(key: string, params?: Record<string, string | number>) => string"
   },
   "core/loop.ts": {
     "interface LoopOptions": [

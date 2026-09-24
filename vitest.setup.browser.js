@@ -21,11 +21,11 @@ Object.defineProperty(window, 'localStorage', { value: fileBackend, configurable
 // The stored settings are loaded as a composition root loads them (ADR-0178), from that same storage; `createGame` loads them
 // again from the storage its host lends, and `estado-carregado-pela-raiz` checks the order without this setup.
 import { loadState } from './app/js/core/state.js';
-import { loadLocale, applyDom } from './app/js/core/i18n.js';
+import { loadLocale, createTranslator } from './app/js/core/i18n.js';
 import { localeHostHooks } from './app/js/platform/locale-host.js';
 loadState(filePort);
 // 🔴 AND THE HOST TOO (ADR-0221 step 7g): since `core/i18n` stopped reaching `document`/`window`, the three things a PAGE
 // does when the language changes — `<html lang>`, re-translating the markup and telling the window — come in through
 // the port. This setup plays the composition root, and without this line a case that checks `<html lang>` measures a
 // page nobody told. That is exactly what happened: `tts.browser` went red at the moment of the cut, and it was right.
-loadLocale({ ...filePort, ...localeHostHooks(document, window, applyDom) });
+loadLocale({ ...filePort, ...localeHostHooks(document, window, createTranslator().applyDom) });

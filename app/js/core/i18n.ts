@@ -130,11 +130,11 @@ function hasMarkup(value: string | undefined): boolean {
  * Step 2 coming BEFORE step 3 is the only defensible order: the engine's right language is worth more than the
  * consumer's wrong one. Inverting it would show Portuguese in a Spanish interface that had the translation to hand.
  */
-function resolveKey(key: string): string {
-  const fromGame = EXTRA[locale];
+function resolveKey(key: string, extra: Record<string, LocaleDict> = EXTRA): string {
+  const fromGame = extra[locale];
   if (fromGame && key in fromGame) return fromGame[key];
   if (key in dict) return dict[key];
-  const fromGameInPt = EXTRA.pt;
+  const fromGameInPt = extra.pt;
   if (fromGameInPt && key in fromGameInPt) return fromGameInPt[key];
   return key in base ? base[key] : key;
 }
@@ -161,11 +161,18 @@ const loaders: Record<string, () => Promise<{ default: LocaleDict }>> = {
 let locale = 'pt';
 let dict: LocaleDict = base;
 
-// Translates a key; the fallback chain is in `resolveKey()` above. Interpolates {param}.
-export function t(key: string, params?: Record<string, string | number>): string {
-  let s = resolveKey(key);
+/** What a module that only TRANSLATES receives (ADR-0232 D3): a key and its `{param}`s in, the text of the page's language out. */
+export type Translate = (key: string, params?: Record<string, string | number>) => string;
+
+/** Interpolates `{param}` into a resolved string. */
+function interpolate(s: string, params?: Record<string, string | number>): string {
   if (params) for (const k in params) s = s.replaceAll('{' + k + '}', String(params[k]));
   return s;
+}
+
+// Translates a key; the fallback chain is in `resolveKey()` above. Interpolates {param}.
+export function t(key: string, params?: Record<string, string | number>): string {
+  return interpolate(resolveKey(key), params);
 }
 
 export function getLocale(): string { return locale; }
@@ -183,7 +190,7 @@ export function bcp47(code: string = locale): string { return REGION_OF[code] ??
 function availableLocales(): string[] { return AVAILABLE.slice(); }
 
 // Applies the declarative translations of the markup: [data-i18n] → textContent; [data-i18n-aria] → aria-label.
-export function applyDom(root: ParentNode): void {
+function applyDom(root: ParentNode): void {
   root.querySelectorAll('[data-i18n]').forEach((el) => { const k = el.getAttribute('data-i18n'); if (k) el.textContent = t(k); });
   root.querySelectorAll('[data-i18n-aria]').forEach((el) => { const k = el.getAttribute('data-i18n-aria'); if (k) el.setAttribute('aria-label', t(k)); });
 }
@@ -209,7 +216,12 @@ export async function setLocale(code: string): Promise<void> {
   // 📌 The three page effects — `<html lang>`, re-translating the markup, telling the page — in ONE call to the host, which
   // is what keeps this module free of `document` and `window` (ADR-0173, ADR-0221 step 7g).
   port.applied?.(locale, bcp47(code));
+  // and then every translator's listeners, each root's through its own disposing door (ADR-0232 D3, ADR-0220)
+  for (const listener of [...changeListeners]) { try { listener(locale); } catch { /* a listener failed; the language changed */ } }
 }
+
+/** Who hears a language change — the PAGE's, as the language is (ADR-0232 D3 erratum): each translator subscribes here. */
+const changeListeners = new Set<(locale: string) => void>();
 
 function pickDefault(): string {
   const saved = localePort ? localePort.get(localePort.KEYS.lang, null) : null;
@@ -252,6 +264,58 @@ export function initI18n(root: ParentNode): string {
  * Switching language AT RUN TIME is a different question, answered by the redraw on `i18n:change` (ADR-0225).
  */
 export function localeReady(): Promise<void> { return pending; }
+
+/**
+ * THE TRANSLATOR A ROOT BUILDS AND HANDS DOWN (ADR-0232 D3, and its erratum of docs dac7a6d).
+ *
+ * The LANGUAGE is the page's — `<html lang>` is one attribute, so two roots in two languages would tell a screen reader one
+ * of them wrongly — and it stays in this module. What a translator adds is the root's side: its `t`, its markup pass, and
+ * the subscription to a change that its root can release. A module that only translates receives the bare `t`; one that
+ * reads or sets the language receives this object.
+ */
+export interface Translator {
+  readonly t: Translate;
+  /** The page's language code (`pt`, `en`, `es`). */
+  readonly locale: () => string;
+  /** The BCP-47 tag of a language, the page's by default — what speech and recognition are given. */
+  readonly bcp47: (code?: string) => string;
+  /** Switches the PAGE's language; every root on the page follows. */
+  readonly setLocale: (code: string) => Promise<void>;
+  /** Hears a language change; returns the release (the root passes this through its disposing door, ADR-0220). */
+  readonly onChange: (react: (locale: string) => void) => () => void;
+  /** Translates the declarative markup (`data-i18n`, `data-i18n-aria`) under `root`. */
+  readonly applyDom: (root: ParentNode) => void;
+  /** Resolves when the language chosen at boot has loaded. */
+  readonly ready: () => Promise<void>;
+  /** Registers a game's keys for a language; returns the refused ones (markup). */
+  readonly registerDict: (code: string, entries: LocaleDict) => string[];
+  /** The keys registered in one language and not another, for `problems` (study item E4). */
+  readonly dictionaryGaps: () => string[];
+}
+
+/**
+ * Builds a translator. ⚠️ TRANSITIONAL: it resolves against the page-wide game dictionary (`EXTRA`) that the module-level
+ * `t` and `registerDict` still use, until every module receives its `t` from the root and each root keeps its own
+ * dictionary (ADR-0232 D3, issue #207).
+ */
+export function createTranslator(): Translator {
+  const tr: Translate = (key, params) => interpolate(resolveKey(key, EXTRA), params);
+  const applyTo = (root: ParentNode): void => {
+    root.querySelectorAll('[data-i18n]').forEach((el) => { const k = el.getAttribute('data-i18n'); if (k) el.textContent = tr(k); });
+    root.querySelectorAll('[data-i18n-aria]').forEach((el) => { const k = el.getAttribute('data-i18n-aria'); if (k) el.setAttribute('aria-label', tr(k)); });
+  };
+  return {
+    t: tr,
+    locale: () => locale,
+    bcp47,
+    setLocale,
+    onChange: (react) => { changeListeners.add(react); return () => { changeListeners.delete(react); }; },
+    applyDom: applyTo,
+    ready: () => pending,
+    registerDict,
+    dictionaryGaps,
+  };
+}
 
 const i18n = { t, getLocale, availableLocales, applyDom, setLocale, initI18n, localeReady, registerDict };
 export default i18n;

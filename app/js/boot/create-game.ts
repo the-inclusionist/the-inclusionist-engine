@@ -44,7 +44,7 @@
 // game with a title screen. What it covers is what is the SAME in every game: language, screen reader, mixer, voice,
 // the dialog stack, the colour filters, the remappable keyboard, menu navigation, the pause card and the accessibility
 // bar, the settings panels, the navigation sonar, and every input transport.
-import i18nObject, { initI18n, dictionaryGaps, loadLocale, applyDom } from '../core/i18n.js';
+import i18nObject, { initI18n, dictionaryGaps, loadLocale, createTranslator } from '../core/i18n.js';
 import { localeHostHooks, exposeI18n } from '../platform/locale-host.js';
 import { inputOf, keys, markKeyFrom, releaseKey, playerEdge, letGoOfTheKeyboard } from '../input/state.js';
 import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
@@ -771,6 +771,12 @@ export function createGame(o: CreateGameOptions): Engine {
   const whenDisposed = (release: () => void): void => { endOfLife.push(release); };
   const stateOn: typeof state.on = (evt, fn) => { const off = state.on(evt, fn); whenDisposed(off); return off; };
   /*
+   * THE ROOT'S TRANSLATOR (ADR-0232 D3): the page's language, and this root's `t`, markup pass and door to a language change.
+   * `localeOn` is that door — like `stateOn`, whatever subscribes through it is released by `dispose()` (ADR-0220).
+   */
+  const translator = createTranslator();
+  const localeOn = (react: (locale: string) => void): (() => void) => { const off = translator.onChange(react); whenDisposed(off); return off; };
+  /*
    * 🔴 THE PAGE'S ONE STORE IS BUILT HERE, from what the HOST lends (ADR-0232 point 2, issue #207): the backend the host
    * passed, or its window's `localStorage`. Every module below that persists receives THIS store; none reaches the global.
    * Reading `win.localStorage` can itself THROW (file://, some private modes), which is a host with no storage: `null`.
@@ -785,7 +791,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * which are THIS root's host speaking: the document and window it received, never the globals. `core` is what the
    * engine IS without a browser.
    */
-  loadLocale({ ...store, KEYS, ...localeHostHooks(doc as Document, win, applyDom) });
+  loadLocale({ ...store, KEYS, ...localeHostHooks(doc as Document, win, translator.applyDom) });
   // 📌 And the debugging exposure: whoever HAS a window is this root.
   exposeI18n(win, i18nObject);
   /*
@@ -2955,8 +2961,9 @@ export function createGame(o: CreateGameOptions): Engine {
    * would reach a global to do it, which ADR-0221 step 7d refuses to a new module.
    */
   const localeListeners: (() => void)[] = [];
-  if (typeof win.addEventListener === 'function') {
-    win.addEventListener('i18n:change', () => {
+  {
+    // through the root's door, released by `dispose()`; the window's `i18n:change` stays the host's page-level signal
+    localeOn(() => {
       pauseIcons.reflectPauseIcons();
       updateCaption();
       if (pausedWord && !pausedWord.hidden) pausedWord.textContent = t('pause.quick');
