@@ -91,22 +91,19 @@ describe('touchControlsPlan — o único pedaço da troca de fase com memória',
     expect(touchControlsPlan(fase('title'), st(false, true), 1)).toEqual({ hidden: true, wasOn: false });
   });
 
-  // 📌 THE PLAN MUST RECEIVE THE STATE READ BEFORE `hideTouchControls()` — `ui/shell` reads first and hides after
-  // (`readTouchControls`/`applyTouchControls`). This case shows why, by building the OTHER order by hand: fed the
-  // already-hidden state, the plan cannot store the `wasOn` mark, and resuming does not bring the d-pad back. It measures
-  // the pure plan, not production's call order; that order is measured in shell.browser ("pausar com o direcional
-  // visível guarda a marca").
-  it('DEFEITO (pinado): com hideTouchControls rodando antes, a marca NUNCA é gravada ao pausar', () => {
-    // 1) jogando, controle virtual visível
-    let s = st(false, false);
-    // 2) setPhase('paused') → hideTouchControls() hides BEFORE the plan
-    s = { ...s, hidden: true };
-    // 3) only then the plan runs
-    s = touchControlsPlan(fase('paused'), s, 1);
-    expect(s).toEqual({ hidden: true, wasOn: false }); // the mark was lost here
-    // 4) setPhase('playing') → with no mark, there is nothing to restore
-    s = touchControlsPlan(fase('playing'), s, 1);
-    expect(s.hidden).toBe(true); // the d-pad does NOT come back by itself — that is the defect of the wrong order
+  // 📌 THE PLAN READS THE MARK FROM THE STATE IT IS GIVEN, so `ui/shell` reads before it hides (`readTouchControls`, then
+  // `applyTouchControls`): given a pad that is already hidden, pausing has nothing to remember. That caller order is
+  // measured in shell.browser, by the case that pauses with the d-pad visible and resumes; this case holds the plan's half
+  // of the rule, the one branch the cases above do not reach.
+  it('pausing with the pad ALREADY hidden changes nothing: no mark is invented, and a stored mark survives', () => {
+    // hidden before the pause (by the player, or by a caller that hid first): no mark, so resuming leaves it hidden
+    const paused = touchControlsPlan(fase('paused'), st(true, false), 1);
+    expect(paused).toEqual({ hidden: true, wasOn: false });
+    expect(touchControlsPlan(fase('playing'), paused, 1).hidden).toBe(true);
+    // the scene projected again while paused: the mark the first pause stored is kept, so resuming still brings it back
+    const again = touchControlsPlan(fase('paused'), st(true, true), 1);
+    expect(again).toEqual({ hidden: true, wasOn: true });
+    expect(touchControlsPlan(fase('playing'), again, 1).hidden).toBe(false);
   });
 });
 
