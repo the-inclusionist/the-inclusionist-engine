@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// THE FOUR MEASURES OF CODE HEALTH, AND THE BASELINE THEY RATCHET AGAINST (ADR-0221, issue #203).
+// THE SEVEN MEASURES OF CODE HEALTH, AND THE BASELINE THEY RATCHET AGAINST (ADR-0221, ADR-0232, issues #203 and #207).
 //
 // 🔴 WHY THIS EXISTS. The engine gates the language, the DIRECTION of its dependencies (ADR-0173), its public surface, its
 // exports without a consumer and the pointers its records make — and gates NOTHING about size, complexity or coupling. The
@@ -38,13 +38,15 @@ const posix = (p) => p.split('\\').join('/');
 export const EXEMPT = {
   // The composition root wires everything, which is its job (ADR-0173) — so fan-out is not its debt. Its LINES, BRANCHES and
   // DEPTH are, and it is not exempt on those: 2185 lines and 330 decision nodes are logic, not wiring.
-  'boot/create-game.ts': ['fanOut'],
+  // 📌 And it is exempt from `statefulEdges` for the same reason (ADR-0232 point 4): constructing the state everything else
+  // receives is what a composition root is for.
+  'boot/create-game.ts': ['fanOut', 'statefulEdges'],
   // The three dictionaries are DATA. 621 lines of sentences a child reads is not complexity, and splitting them would only
   // make a translator open three files instead of one.
   'i18n/pt.ts': ['*'], 'i18n/en.ts': ['*'], 'i18n/es.ts': ['*'],
 };
 
-export const MEASURES = ['codeLines', 'decisionNodes', 'maxDepth', 'fanOut', 'globalReach', 'worstFunction'];
+export const MEASURES = ['codeLines', 'decisionNodes', 'maxDepth', 'fanOut', 'globalReach', 'worstFunction', 'statefulEdges'];
 
 /*
  * 🔴 THE FIFTH MEASURE IS WHAT A MODULE REACHES, and it is here because the other four did not see it (ADR-0221, step 7d,
@@ -56,7 +58,116 @@ export const MEASURES = ['codeLines', 'decisionNodes', 'maxDepth', 'fanOut', 'gl
  * and a module that imports nothing and touches `document` passes green — even in `core/`, the layer ADR-0173 describes
  * as what the engine IS, without a browser.
  */
-const BROWSER_GLOBALS = ['document', 'window', 'localStorage', 'sessionStorage', 'navigator', 'performance', 'fetch', 'CSS'];
+const BROWSER_GLOBALS = [
+  'document', 'window', 'localStorage', 'sessionStorage', 'navigator', 'performance', 'fetch', 'CSS',
+  /*
+   * 📌 ADR-0232 point 2 names the root as the only module that touches the browser, so the list has to see every door to
+   * it the tree actually uses: `globalThis` (a `(globalThis as …).document` reaches the document as surely as the bare
+   * name), the frame clock, the cache and worker APIs, WebAssembly, audio and speech synthesis, the page's address and
+   * `crypto`. A name missing here is a reach the ratchet cannot see.
+   */
+  'globalThis', 'requestAnimationFrame', 'cancelAnimationFrame', 'caches', 'Worker', 'WebAssembly',
+  'AudioContext', 'webkitAudioContext', 'location', 'SpeechSynthesisUtterance', 'speechSynthesis', 'crypto',
+];
+
+/*
+ * ⚠️ A NAME IS THE GLOBAL ONLY WHEN NO ENCLOSING SCOPE DECLARES IT. A parameter called `document`, or a local `const window`
+ * built from what was injected, is the OPPOSITE of the defect — it is the injection ADR-0232 asks for — and counting it
+ * would punish exactly the shape the measure exists to cause. The same resolution tells a module-level binding from a
+ * local that shadows it, which is what the stateful test below needs.
+ */
+const FUNCTION_LIKE = (n) => ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isArrowFunction(n)
+  || ts.isMethodDeclaration(n) || ts.isConstructorDeclaration(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n);
+
+/** Every identifier a binding name declares — `a`, `{ a, b: [c] }`, `[d, ...e]`. */
+const bindingNames = (name, out = []) => {
+  if (ts.isIdentifier(name)) out.push(name.text);
+  else for (const el of name.elements) if (!ts.isOmittedExpression(el)) bindingNames(el.name, out);
+  return out;
+};
+
+/** The names a statement list declares at its own level (let/const/var, functions, classes, enums, imports). */
+const namesOfStatements = (statements) => {
+  const out = [];
+  for (const st of statements) {
+    if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) bindingNames(d.name, out);
+    else if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st) || ts.isEnumDeclaration(st)) && st.name) out.push(st.name.text);
+    else if (ts.isImportDeclaration(st) && st.importClause) {
+      const c = st.importClause;
+      if (c.name) out.push(c.name.text);
+      if (c.namedBindings && ts.isNamespaceImport(c.namedBindings)) out.push(c.namedBindings.name.text);
+      else if (c.namedBindings) for (const e of c.namedBindings.elements) out.push(e.name.text);
+    }
+  }
+  return out;
+};
+
+/** The names a scope-making node declares, or null when the node makes no scope. */
+const scopeNames = (n) => {
+  if (ts.isSourceFile(n) || ts.isBlock(n) || ts.isModuleBlock(n)) return namesOfStatements(n.statements);
+  if (ts.isCaseBlock(n)) return n.clauses.flatMap((c) => namesOfStatements(c.statements));
+  if (FUNCTION_LIKE(n)) {
+    const out = n.parameters.flatMap((p) => bindingNames(p.name));
+    if (ts.isFunctionExpression(n) && n.name) out.push(n.name.text);
+    return out;
+  }
+  if ((ts.isForStatement(n) || ts.isForOfStatement(n) || ts.isForInStatement(n)) && n.initializer
+    && ts.isVariableDeclarationList(n.initializer)) return n.initializer.declarations.flatMap((d) => bindingNames(d.name));
+  if (ts.isCatchClause(n) && n.variableDeclaration) return bindingNames(n.variableDeclaration.name);
+  if (ts.isClassExpression(n) && n.name) return [n.name.text];
+  return null;
+};
+
+/** The node whose scope declares this identifier's name, or undefined when it resolves to a global. */
+const declaringScope = (id) => {
+  for (let n = id.parent; n; n = n.parent) {
+    const names = scopeNames(n);
+    if (names && names.includes(id.text)) return n;
+  }
+  return undefined;
+};
+
+/** Is this identifier written where a TYPE is, or where a NAME is declared or read as a member? Neither reaches anything. */
+const isTypeOrNamePosition = (id) => {
+  const p = id.parent;
+  if (p && 'name' in p && p.name === id && !ts.isShorthandPropertyAssignment(p)) return true; // `o.document`, `{ window: … }`, `const x`
+  if (p && ts.isBindingElement(p) && p.propertyName === id) return true; // `const { document: d } = …`
+  if (p && ts.isQualifiedName(p) && p.right === id) return true;
+  for (let n = p; n && !ts.isStatement(n) && !ts.isSourceFile(n); n = n.parent) if (ts.isTypeNode(n)) return true;
+  return false;
+};
+
+/*
+ * 🔴 WHAT MAKES A MODULE STATEFUL (ADR-0232 point 4), read by the parser so a reviewer can argue with each line of it. A
+ * module holds state when, at MODULE level, it has:
+ *   · a `let` or `var` — a binding that changes after import;
+ *   · a `const` that the module's own code MUTATES — `.set/.add/.delete/.clear/.push/…`, an assignment or `++` through
+ *     it (`x.k = …`, `x[k] = …`), `delete x.k`, or `Object.assign(x, …)`. A frozen table that nobody writes is not state;
+ *   · a `const` built by a `createX(…)` call at import — ADR-0038's D13 names `createX()` as the shape of a module that
+ *     keeps state, so calling one at module level is a SINGLETON (`core/rng`'s `sharedRng`);
+ *   · or a browser global reached (`globalReach > 0`), because the browser is the state it reads.
+ * ⚠️ What the parser cannot see: a const exported and mutated by ANOTHER module, or aliased before it is mutated. That is
+ * why the set is written into the baseline BY NAME — a misclassification is a line in a diff, reviewed, never trusted.
+ */
+const MUTATORS = new Set(['set', 'add', 'delete', 'clear', 'push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin']);
+const isAssignmentOperator = (k) => k >= ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment;
+
+/** Is this reference the root of a write — `x.k = …`, `x[k]++`, `delete x.k`, `x.push(…)`, `Object.assign(x, …)`? */
+const isMutatedThrough = (id) => {
+  let top = id;
+  while (top.parent && (ts.isPropertyAccessExpression(top.parent) || ts.isElementAccessExpression(top.parent))
+    && top.parent.expression === top) top = top.parent;
+  const p = top.parent;
+  if (!p) return false;
+  if (top !== id && ts.isBinaryExpression(p) && p.left === top && isAssignmentOperator(p.operatorToken.kind)) return true;
+  if (top !== id && (ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p))
+    && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(p.operator)) return true;
+  if (top !== id && ts.isDeleteExpression(p)) return true;
+  if (ts.isCallExpression(p) && p.expression === top && ts.isPropertyAccessExpression(top) && top !== id
+    && MUTATORS.has(top.name.text)) return true;
+  if (ts.isCallExpression(p) && p.arguments[0] === top && p.expression.getText() === 'Object.assign') return true;
+  return false;
+};
 
 /** Is this module exempt from this measure? */
 export const isExempt = (mod, measure) => {
@@ -70,8 +181,30 @@ export const isExempt = (mod, measure) => {
  *   · codeLines     — lines that are neither blank nor a comment. Comments are 55% of some files here and are not complexity.
  *   · decisionNodes — `if`, the four loops, `switch`, `catch` and the ternary: every place a reader has to hold a branch.
  *   · maxDepth      — the deepest nesting of those. 📏 Depth 11 exists in this tree, in `input/gamepad.ts`.
- *   · fanOut        — DISTINCT relative imports. A package import is not coupling inside this tree.
+ *   · fanOut        — DISTINCT relative imports BY VALUE (ADR-0232 point 3). A package import is not coupling inside this
+ *                     tree, and a type-only import is not coupling either: it is a dependence on a contract, erased at
+ *                     build, and it is what injection asks a module to depend on.
+ *   · statefulEdges — DISTINCT value imports of a module that holds state (ADR-0232 point 4). Computed over the tree in
+ *                     `measureTree`, because it needs to know which modules are stateful.
  */
+
+/**
+ * Is this import or re-export TYPE-ONLY? `import type …`, `export type … from`, or named bindings that are ALL marked
+ * `type`. A bare `import './x'` and a default or namespace import load the module, so they are value imports.
+ */
+export const isTypeOnlyImport = (node) => {
+  if (ts.isExportDeclaration(node)) {
+    if (node.isTypeOnly) return true;
+    const c = node.exportClause;
+    return !!c && ts.isNamedExports(c) && c.elements.length > 0 && c.elements.every((e) => e.isTypeOnly);
+  }
+  const c = node.importClause;
+  if (!c) return false;
+  if (c.isTypeOnly) return true;
+  return !c.name && !!c.namedBindings && ts.isNamedImports(c.namedBindings)
+    && c.namedBindings.elements.length > 0 && c.namedBindings.elements.every((e) => e.isTypeOnly);
+};
+
 export function measureModule(text) {
   const sf = ts.createSourceFile('m.ts', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   let decisionNodes = 0, maxDepth = 0;
@@ -86,7 +219,7 @@ export function measureModule(text) {
     }
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
       && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)
-      && node.moduleSpecifier.text.startsWith('.')) imports.add(node.moduleSpecifier.text);
+      && node.moduleSpecifier.text.startsWith('.') && !isTypeOnlyImport(node)) imports.add(node.moduleSpecifier.text);
     node.forEachChild((k) => walk(k, d));
   };
   sf.forEachChild((n) => walk(n, 0));
@@ -95,18 +228,53 @@ export function measureModule(text) {
    * ⚠️ READ BY THE PARSER AND NOT BY GREP, and the difference is what makes the measure usable: `document` appears in
    * comments, in property names (`o.document`), in parameters (`doc = document`) and in strings. What counts is a BARE
    * IDENTIFIER that resolves to the global — the rest is prose or injection, which is precisely the opposite of the defect.
+   * 📌 The bare global handed over AS A VALUE — a parameter default (`doc = document`) or a port field
+   * (`{ storage: localStorage }`) — is read as injection and does not count; `document.body` in the same place does.
    */
   const reached = new Set();
   const look = (node) => {
     if (ts.isIdentifier(node) && BROWSER_GLOBALS.includes(node.text)) {
       const p = node.parent;
-      const isPropertyName = p && ts.isPropertyAccessExpression(p) && p.name === node;
-      const isDeclared = p && (ts.isParameter(p) || ts.isPropertySignature(p) || ts.isPropertyAssignment(p) || ts.isBindingElement(p));
-      if (!isPropertyName && !isDeclared) reached.add(node.text);
+      const handedOver = p && (ts.isParameter(p) || ts.isPropertyAssignment(p) || ts.isBindingElement(p)) && p.initializer === node;
+      if (!isTypeOrNamePosition(node) && !handedOver && !declaringScope(node)) reached.add(node.text);
     }
     node.forEachChild(look);
   };
   sf.forEachChild(look);
+
+  /*
+   * The state this module holds, as `kind name` lines (see "WHAT MAKES A MODULE STATEFUL" above). Only MODULE-level
+   * bindings: state inside a factory is per instance, which is the shape ADR-0232 asks for.
+   */
+  const holds = [];
+  const moduleConsts = new Map();
+  for (const st of sf.statements) {
+    if (!ts.isVariableStatement(st)) continue;
+    if (st.modifiers?.some((m) => m.kind === ts.SyntaxKind.DeclareKeyword)) continue; // an ambient declaration holds nothing
+    const isConst = !!(st.declarationList.flags & ts.NodeFlags.Const);
+    for (const d of st.declarationList.declarations) {
+      if (!isConst) {
+        const kind = st.declarationList.flags & ts.NodeFlags.Let ? 'let' : 'var';
+        for (const n of bindingNames(d.name)) holds.push(`${kind} ${n}`);
+        continue;
+      }
+      let init = d.initializer;
+      while (init && (ts.isAsExpression(init) || ts.isSatisfiesExpression(init) || ts.isParenthesizedExpression(init)
+        || ts.isNonNullExpression(init))) init = init.expression;
+      if (ts.isIdentifier(d.name) && init && ts.isCallExpression(init)) {
+        const callee = ts.isPropertyAccessExpression(init.expression) ? init.expression.name : init.expression;
+        if (ts.isIdentifier(callee) && /^create[A-Z]/.test(callee.text)) { holds.push(`singleton ${d.name.text}`); continue; }
+      }
+      for (const n of bindingNames(d.name)) moduleConsts.set(n, false);
+    }
+  }
+  const findWrites = (node) => {
+    if (ts.isIdentifier(node) && moduleConsts.get(node.text) === false && !isTypeOrNamePosition(node)
+      && ts.isSourceFile(declaringScope(node) ?? node) && isMutatedThrough(node)) moduleConsts.set(node.text, true);
+    node.forEachChild(findWrites);
+  };
+  sf.forEachChild(findWrites);
+  for (const [n, written] of moduleConsts) if (written) holds.push(`mutated ${n}`);
 
   /*
    * 🔴 THE CYCLOMATIC COMPLEXITY OF THE WORST FUNCTION, the only measure in this file with a BORROWED threshold instead of
@@ -143,9 +311,12 @@ export function measureModule(text) {
   const codeLines = text.split('\n').filter((l) => l.trim() && !/^\s*(\/\/|\*|\/\*)/.test(l)).length;
   return {
     codeLines, decisionNodes, maxDepth, fanOut: imports.size, globalReach: reached.size, worstFunction,
-    imports: [...imports], reached: [...reached].sort(),
+    imports: [...imports], reached: [...reached].sort(), holds: holds.sort(),
   };
 }
+
+/** A module is STATEFUL when it holds state or reaches a browser global (ADR-0232 point 4). */
+export const isStateful = (m) => m.holds.length > 0 || m.reached.length > 0;
 
 /** The whole tree: `{ 'core/ring.ts': {codeLines, decisionNodes, maxDepth, fanOut, fanIn} }`, keyed as the portrait keys. */
 export function measureTree() {
@@ -162,26 +333,37 @@ export function measureTree() {
   for (const f of files) raw.set(f, measureModule(readFileSync(join(ROOT, f), 'utf8')));
 
   // fan-in is counted here and NEVER limited: `core/dom-query.ts` is 4 lines with fan-in 17, which is the shape to copy.
+  // Like fan-out it counts VALUE imports (ADR-0232 point 3): a module read only for its types is not loaded by anyone.
+  const key = (f) => f.replace('app/js/', '');
+  const targetsOf = (f, m) => [...new Set(m.imports.map((spec) =>
+    posix(relative(ROOT, resolve(join(ROOT, dirname(f)), spec))).replace(/\.js$/, '.ts')))];
   const fanIn = new Map();
-  for (const [f, m] of raw) {
-    for (const spec of m.imports) {
-      const target = posix(relative(ROOT, resolve(join(ROOT, dirname(f)), spec))).replace(/\.js$/, '.ts');
-      fanIn.set(target, (fanIn.get(target) ?? 0) + 1);
-    }
-  }
+  for (const [f, m] of raw) for (const target of targetsOf(f, m)) fanIn.set(target, (fanIn.get(target) ?? 0) + 1);
+  const stateful = new Set([...raw].filter(([, m]) => isStateful(m)).map(([f]) => f));
   const out = {};
   for (const [f, m] of [...raw].sort(([a], [b]) => a.localeCompare(b))) {
-    const key = f.replace('app/js/', '');
-    out[key] = {
+    const intoState = targetsOf(f, m).filter((t) => stateful.has(t)).map(key).sort();
+    out[key(f)] = {
       codeLines: m.codeLines, decisionNodes: m.decisionNodes, maxDepth: m.maxDepth, fanOut: m.fanOut,
-      globalReach: m.globalReach, worstFunction: m.worstFunction, fanIn: fanIn.get(f) ?? 0,
+      globalReach: m.globalReach, worstFunction: m.worstFunction, statefulEdges: intoState.length, fanIn: fanIn.get(f) ?? 0,
       // 📌 WHICH globals, not only how many: a ratchet on a number says it got worse, and this line says what to change to
       // pay it back. It appears only where there is one, so the baseline does not grow with empty lists.
       ...(m.reached.length ? { reached: m.reached } : {}),
+      // 📌 And the same for state (ADR-0232 point 5, «the edges listed»): what this module holds, and which stateful
+      // modules it imports by value — the list each later phase of issue #207 pays down to zero.
+      ...(m.holds.length ? { holds: m.holds } : {}),
+      ...(intoState.length ? { statefulImports: intoState } : {}),
     };
   }
   return out;
 }
+
+/**
+ * The stateful set BY NAME, as the baseline writes it (ADR-0232 point 4): a module holding state or reaching a global.
+ * Derived from what `measureTree` records, so the set and the edges can never be computed by two different rules.
+ */
+export const statefulSet = (modules) => Object.entries(modules)
+  .filter(([, m]) => (m.holds?.length ?? 0) > 0 || (m.reached?.length ?? 0) > 0).map(([k]) => k).sort();
 
 /** The p90 of a measure over the modules that are NOT exempt from it — the ceiling a new module is born under. */
 export function ceilingFrom(modules) {
@@ -201,6 +383,11 @@ export function ceilingFrom(modules) {
      * from the defect itself.
      */
     if (measure === 'worstFunction') { teto[measure] = 10; continue; }
+    /*
+     * ⚠️ AND A VALUE IMPORT OF STATE HAS NO p90 EITHER: ADR-0232 decided that state arrives by injection, so a new module
+     * that imports a stateful one by value is undoing that decision — the ceiling is ZERO, like reach to globals.
+     */
+    if (measure === 'statefulEdges') { teto[measure] = 0; continue; }
     const vals = Object.entries(modules).filter(([m]) => !isExempt(m, measure)).map(([, v]) => v[measure]).sort((a, b) => a - b);
     teto[measure] = vals[Math.min(vals.length - 1, Math.floor(vals.length * 0.9))];
   }
@@ -218,7 +405,13 @@ export const readBaseline = () => JSON.parse(readFileSync(join(ROOT, BASELINE), 
  */
 export function ceilingToRecord(modules, previous, remeasure) {
   if (remeasure || !previous?.ceiling) return { ceiling: ceilingFrom(modules), takenOn: new Date().toISOString().slice(0, 10) };
-  return { ceiling: previous.ceiling, takenOn: previous.takenOn };
+  /*
+   * 📌 A measure NEW to the file (ADR-0232's `statefulEdges`) has no recorded ceiling yet, so it takes its rule's; every
+   * measure already recorded keeps what was recorded. The literal in `tests/code-health.node.test.js` is what says so.
+   */
+  const rule = ceilingFrom(modules);
+  const ceiling = Object.fromEntries(MEASURES.map((m) => [m, m in previous.ceiling ? previous.ceiling[m] : rule[m]]));
+  return { ceiling, takenOn: previous.takenOn };
 }
 
 if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'code-health.mjs') {
@@ -230,16 +423,21 @@ if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'code-health.mjs') {
 
   if (process.argv.includes('--write') || remeasure) {
     writeFileSync(join(ROOT, BASELINE), `${JSON.stringify({
-      about: 'ADR-0221 — the six measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a '
-        + 'module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID, a module is '
-        + 'legitimately split, or the growth BUYS something no measure here can see — and in that third case the commit has to '
-        + 'name the purchase and the falsifiable criterion that will show it landed (ADR-0221 point 6: the criterion is the '
-        + 'co-change falling, not the number). Rewriting it to green a red build is the ratchet being unscrewed.',
-      takenOn, ceiling, exempt: EXEMPT, modules,
+      about: 'ADR-0221 and ADR-0232 — the seven measures of code health. A RATCHET, never a score: '
+        + '`tests/code-health.node.test.js` refuses a module that got worse and a new module above the ceiling. Rewrite this '
+        + 'file only when a debt is PAID, a module is legitimately split, or the growth BUYS something no measure here can '
+        + 'see — and in that third case the commit has to name the purchase and the falsifiable criterion that will show it '
+        + 'landed (ADR-0221 point 6: the criterion is the co-change falling, not the number). Rewriting it to green a red '
+        + 'build is the ratchet being unscrewed. `stateful` is the set of modules that hold state or reach a browser global '
+        + '(ADR-0232 point 4), written BY NAME so that a module entering or leaving it is a line a reviewer reads.',
+      takenOn, ceiling, exempt: EXEMPT, stateful: statefulSet(modules), modules,
     }, null, 2)}\n`);
     console.log(`baseline escrita: ${nomes.length} módulos`);
   }
   console.log(`📏 ${nomes.length} módulos · ${soma('codeLines')} linhas de código · ${soma('decisionNodes')} nós de decisão`);
+  const outsideRoot = nomes.filter((n) => !isExempt(n, 'statefulEdges'));
+  console.log(`   stateful ${statefulSet(modules).length}: ${statefulSet(modules).join(', ')}`);
+  console.log(`   value edges into stateful modules outside the root: ${outsideRoot.reduce((a, n) => a + modules[n].statefulEdges, 0)}`);
   console.log(`   tecto (gravado em ${takenOn}): ${MEASURES.map((m) => `${m} ${ceiling[m]}`).join(' · ')}`);
   const today = ceilingFrom(modules);
   const drift = MEASURES.filter((m) => today[m] !== ceiling[m]).map((m) => `${m} ${ceiling[m]} → ${today[m]}`);

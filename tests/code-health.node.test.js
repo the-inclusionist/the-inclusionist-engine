@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// CODE HEALTH ONLY IMPROVES — the ratchet of the SIX measures (ADR-0221, issue #203).
+// CODE HEALTH ONLY IMPROVES — the ratchet of the SEVEN measures (ADR-0221 and ADR-0232, issues #203 and #207).
 //
 // ========================= WHY THIS EXISTS, AND IT ANSWERS A QUESTION OF THE DEV'S =========================
 // The Dev reread the article that guided this engine's modularisation (arXiv:2409.15152) and said the problems it had
@@ -21,7 +21,9 @@
 //
 // MUTATIONS CHECKED at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { measureTree, readBaseline, isExempt, ceilingFrom, ceilingToRecord, MEASURES, BASELINE } from '../scripts/code-health.mjs';
+import {
+  measureTree, measureModule, readBaseline, isExempt, ceilingFrom, ceilingToRecord, statefulSet, MEASURES, BASELINE,
+} from '../scripts/code-health.mjs';
 
 const arvore = measureTree();
 const base = readBaseline();
@@ -94,6 +96,10 @@ describe('a saúde do código só melhora', () => {
      * exactly where its debt is.
      */
     expect(isExempt('boot/create-game.ts', 'fanOut'), 'a raiz perdeu a isenção do fan-out, que é o trabalho dela').toBe(true);
+    // ADR-0232 point 4: constructing the state everything else receives is the root's job, so it is exempt from
+    // `statefulEdges` too — and it is still MEASURED, so the wiring it does is visible.
+    expect(isExempt('boot/create-game.ts', 'statefulEdges'), 'the root lost its statefulEdges exemption').toBe(true);
+    expect(arvore['boot/create-game.ts'].statefulEdges, 'the root stopped being measured on stateful edges').toBeGreaterThan(0);
     for (const m of ['codeLines', 'decisionNodes', 'maxDepth']) {
       expect(isExempt('boot/create-game.ts', m), `a raiz ficou isenta de ${m}, que é a dívida dela e não o trabalho`).toBe(false);
     }
@@ -138,11 +144,109 @@ describe('a saúde do código só melhora', () => {
   it('🔴 [Right] o tecto gravado é o que alguém DISSE, e só `--remeasure-ceiling` o muda', () => {
     expect({ takenOn: base.takenOn, ...base.ceiling }, 'the recorded ceiling changed without this line changing').toEqual({
       takenOn: '2026-09-22', codeLines: 187, decisionNodes: 37, maxDepth: 4, fanOut: 6, globalReach: 0, worstFunction: 10,
+      statefulEdges: 0,
     });
+    // A plain `--write` keeps every recorded ceiling; only a measure the file has never recorded takes its rule's.
     const previous = { takenOn: '2026-01-01', ceiling: { codeLines: 1 } };
     expect(ceilingToRecord(arvore, previous, false), 'a plain `--write` re-derived the ceiling').toEqual(
-      { ceiling: previous.ceiling, takenOn: previous.takenOn });
+      { ceiling: { ...ceilingFrom(arvore), codeLines: 1 }, takenOn: previous.takenOn });
     expect(ceilingToRecord(arvore, previous, true).ceiling, 'the explicit re-measure did not re-measure').toEqual(ceilingFrom(arvore));
+  });
+
+  /*
+   * 🔴 THE SEVENTH MEASURE HAS A CEILING OF ZERO BY DECISION (ADR-0232 point 4): state arrives by injection, so a new
+   * module that imports a stateful one by value is undoing that decision, not sitting above an average. The RULE is
+   * checked and not only the recorded number — a case that reads the file does not see the script change (mutation 13).
+   */
+  it('🔴 [Right] a new module imports no stateful module by value: the ceiling is 0 by decision', () => {
+    expect(ceilingFrom(arvore).statefulEdges, 'the RULE of the statefulEdges ceiling stopped being zero').toBe(0);
+    expect(base.ceiling.statefulEdges, 'the RECORDED statefulEdges ceiling stopped being zero').toBe(0);
+  });
+
+  /*
+   * 🔴 THE STATEFUL SET IS WRITTEN BY NAME, AND THE TREE MUST MATCH IT BOTH WAYS (ADR-0232 point 4). A module that starts
+   * holding state reddens here until someone writes it into the set and says why; a module that stopped holding state
+   * reddens until the payment is written down. Either way the classification is a line a reviewer reads in a diff —
+   * never a number derived in silence.
+   */
+  it('🔴 [Right] the stateful set written in the baseline is the set measured today, both ways', () => {
+    const measured = statefulSet(arvore);
+    const written = base.stateful ?? [];
+    expect(measured.filter((m) => !written.includes(m)), `modules that hold state or reach a global and are not written in `
+      + `${BASELINE} \`stateful\` — state arrives by injection (ADR-0232); if it must stay, run \`--write\` and say why`).toEqual([]);
+    expect(written.filter((m) => !measured.includes(m)), `modules written as stateful in ${BASELINE} that no longer are — `
+      + 'a debt was paid: run `--write` and say so').toEqual([]);
+    // And every edge the measure counts points into that written set.
+    for (const [mod, m] of Object.entries(arvore)) {
+      expect(m.statefulImports ?? [], `${mod}: statefulEdges and the listed imports disagree`).toHaveLength(m.statefulEdges);
+      for (const t of m.statefulImports ?? []) expect(written, `${mod} imports ${t}, which is not written as stateful`).toContain(t);
+    }
+  });
+
+  /*
+   * 🔴 FAN-OUT COUNTS VALUE IMPORTS ONLY (ADR-0232 point 3): a type import is a dependence on a contract, erased at build,
+   * and it is what injection asks a module to depend on. Every form is here, because the defect this prevents is the
+   * rule quietly counting one of them again.
+   */
+  it('🔴 [Right] fan-out counts value imports only: every type-only form is left out', () => {
+    const m = measureModule([
+      "import type { A } from './a.js';",
+      "import { type B, type C } from './b.js';",
+      "export type { D } from './d.js';",
+      "export { type E } from './e.js';",
+      "import { f, type G } from './f.js';", // one value binding makes it a value import
+      "import './side-effect.js';", // a side effect loads the module
+      "import H from './h.js';",
+      "export { i } from './i.js';",
+      "import ts from 'typescript';", // a package is not coupling inside this tree
+    ].join('\n'));
+    expect(m.imports.sort(), 'the value imports').toEqual(['./f.js', './h.js', './i.js', './side-effect.js']);
+    expect(m.fanOut, 'fan-out counted a type-only import').toBe(4);
+  });
+
+  /*
+   * 🔴 REACH SEES EVERY DOOR TO THE BROWSER THE TREE USES, AND ONLY THE GLOBAL ONE (ADR-0232 point 2). A local that
+   * shadows a global name is injection, not reach; a name in a type or as a member is not a reach either.
+   */
+  it('🔴 [Right] reach sees globalThis, the frame clock, caches, workers, audio and speech — and not a shadowing local', () => {
+    const reached = (src) => measureModule(src).reached;
+    expect(reached('const d = (globalThis as { document?: Document }).document;')).toEqual(['globalThis']);
+    expect(reached('requestAnimationFrame(() => 0);')).toEqual(['requestAnimationFrame']);
+    expect(reached("const c = await caches.open('x'); new Worker('w.js'); WebAssembly.instantiate(b);"))
+      .toEqual(['WebAssembly', 'Worker', 'caches']);
+    expect(reached('new (window.AudioContext ?? webkitAudioContext)(); new AudioContext();'))
+      .toEqual(['AudioContext', 'webkitAudioContext', 'window']);
+    expect(reached("location.search; speechSynthesis.speak(new SpeechSynthesisUtterance('a')); crypto.subtle;"))
+      .toEqual(['SpeechSynthesisUtterance', 'crypto', 'location', 'speechSynthesis']);
+    // Shadowing: a parameter, a local const, a destructured name, a catch binding, a module-level import.
+    expect(reached('function f(document: Document) { return document.body; }')).toEqual([]);
+    expect(reached('const g = (w: Window) => { const window = w; return window.innerWidth; };')).toEqual([]);
+    expect(reached('export function h(p: { location: Location }) { const { location } = p; return location.href; }')).toEqual([]);
+    expect(reached("import { fetch } from './port.js'; fetch('x');")).toEqual([]);
+    // ⚠️ And shadowing is SCOPED: the global read outside the function that shadows it still counts.
+    expect(reached('function f(document: Document) { return document; }\nconst b = document.body;')).toEqual(['document']);
+    // Types and member names reach nothing.
+    expect(reached('let r: ReturnType<typeof requestAnimationFrame>; const o = { location: 1 }; o.location; interface I { crypto: 1 }'))
+      .toEqual([]);
+  });
+
+  /*
+   * 🔴 WHAT MAKES A MODULE STATEFUL (ADR-0232 point 4), one line per rule and one per thing that must NOT count, so the
+   * written set cannot drift by the rule changing under it.
+   */
+  it('🔴 [Right] a module holds state by a module-level let, a mutated const, or a createX() singleton — and nothing else', () => {
+    const holds = (src) => measureModule(src).holds;
+    expect(holds('let current = 0; export var legacy = 1;')).toEqual(['let current', 'var legacy']);
+    expect(holds('const cache = new Map(); export const put = (k, v) => { cache.set(k, v); };')).toEqual(['mutated cache']);
+    expect(holds('const list = []; export const add = (x) => list.push(x);')).toEqual(['mutated list']);
+    expect(holds('const conf = { a: 1 }; export const set = (v) => { conf.a = v; };')).toEqual(['mutated conf']);
+    expect(holds('const byKey = {}; export const put = (k, v) => { byKey[k] = v; };')).toEqual(['mutated byKey']);
+    expect(holds('const shared = createRng(1); export const rnd = shared.rnd;')).toEqual(['singleton shared']);
+    // Not state: a table nobody writes, a Set only read, state inside a factory, and a local that shadows the const.
+    expect(holds('export const TABLE = Object.freeze({ a: 1 }); export const KEYS = new Set(["a"]); KEYS.has("a");')).toEqual([]);
+    expect(holds('export const createX = () => { let n = 0; const m = new Map(); return () => { n++; m.set(n, n); }; };')).toEqual([]);
+    expect(holds('const cache = new Map(); export const f = () => { const cache = new Map(); cache.set(1, 1); };')).toEqual([]);
+    expect(holds('declare const __BUILD__: string;')).toEqual([]);
   });
 
   it('📌 [Interface] toda isenção nomeia um módulo que existe, e o tecto cobre as quatro medidas', () => {
@@ -190,4 +294,26 @@ describe('a saúde do código só melhora', () => {
  * 14. `--write` derives the ceiling from today's tree again ....................................... RED on the ceiling case
  * 15. the JSON gains a new ceiling without the literal line changing .............................. RED on the ceiling case
  * 16. `--remeasure-ceiling` keeps the old one ..................................................... RED on the ceiling case
+ *
+ * ========================= and those of ADR-0232 (value-only fan-out, wider reach, `statefulEdges`) =========================
+ * 17. a stateless baseline module (`core/ring`) gains a value import of `core/i18n` ................ RED on the 1st
+ * 18. the same while GIVING a line and a branch, so the fan-out +1 clause forgives the import ...... RED on the 1st
+ *     — and the only line is `core/ring.ts statefulEdges: 0 → 1`: the clause forgives fan-out, never state.
+ * 19. fan-out counts a type-only import again ..................................................... RED on the 1st and the fan-out case
+ * 20. a module removed from the written `stateful` set ............................................ RED on the stateful-set case
+ * 21. a stateless module added to the written `stateful` set ...................................... RED on the stateful-set case
+ * 22. a NEW module imports `core/i18n` by value .................................................... RED on the 2nd
+ *     📌 CONTROL: the same new module importing `core/i18n` by TYPE only ran GREEN.
+ * 23. `core/actions`, imported by eight modules, gains a module-level `let` ........................ RED on the 1st and the stateful-set case
+ * 24. the root loses its `statefulEdges` exemption ................................................. RED on the exemption case
+ *     — with the tree standing still the root's 22 edges do not grow, so only the exemption case can see this.
+ * 25. the `statefulEdges` ceiling becomes the tree's p90 ........................................... RED on the zero-ceiling case
+ * 26. the `createX()` singleton rule is removed .................................................... RED on the stateful-set and the holds case
+ * 27. reach ignores shadowing ...................................................................... RED on the reach case
+ * 28. a mutated module-level const is never seen ................................................... RED on the stateful-set and the holds case
+ * 29. `globalThis` leaves the list of globals ...................................................... RED on the stateful-set and the reach case
+ * 30. `statefulEdges` counts type-only imports too ................................................. RED on the 1st
+ * 31. names in type positions count as reach ....................................................... RED on the 1st, the stateful-set and the reach case
+ * 32. a plain `--write` stops filling a measure the file never recorded ............................ RED on the ceiling case
+ * 33. a module-level `var` is not state ............................................................ RED on the holds case
  */

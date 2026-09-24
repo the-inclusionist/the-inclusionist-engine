@@ -1,5 +1,5 @@
 {
-  "about": "ADR-0221 — the six measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID, a module is legitimately split, or the growth BUYS something no measure here can see — and in that third case the commit has to name the purchase and the falsifiable criterion that will show it landed (ADR-0221 point 6: the criterion is the co-change falling, not the number). Rewriting it to green a red build is the ratchet being unscrewed.",
+  "about": "ADR-0221 and ADR-0232 — the seven measures of code health. A RATCHET, never a score: `tests/code-health.node.test.js` refuses a module that got worse and a new module above the ceiling. Rewrite this file only when a debt is PAID, a module is legitimately split, or the growth BUYS something no measure here can see — and in that third case the commit has to name the purchase and the falsifiable criterion that will show it landed (ADR-0221 point 6: the criterion is the co-change falling, not the number). Rewriting it to green a red build is the ratchet being unscrewed. `stateful` is the set of modules that hold state or reach a browser global (ADR-0232 point 4), written BY NAME so that a module entering or leaving it is a line a reviewer reads.",
   "takenOn": "2026-09-22",
   "ceiling": {
     "codeLines": 187,
@@ -7,11 +7,13 @@
     "maxDepth": 4,
     "fanOut": 6,
     "globalReach": 0,
-    "worstFunction": 10
+    "worstFunction": 10,
+    "statefulEdges": 0
   },
   "exempt": {
     "boot/create-game.ts": [
-      "fanOut"
+      "fanOut",
+      "statefulEdges"
     ],
     "i18n/pt.ts": [
       "*"
@@ -23,26 +25,108 @@
       "*"
     ]
   },
+  "stateful": [
+    "boot/create-game.ts",
+    "consumer-quiz/main-quiz.ts",
+    "core/a11y-sr.ts",
+    "core/dom-query.ts",
+    "core/i18n.ts",
+    "core/loop.ts",
+    "core/rng.ts",
+    "core/state.ts",
+    "input/keyboard.ts",
+    "input/pad-defaults.ts",
+    "input/pad-wizard.ts",
+    "input/state.ts",
+    "input/touch.ts",
+    "platform/audio-sonar.ts",
+    "platform/audio.ts",
+    "platform/heavy.ts",
+    "platform/kokoro-runtime.ts",
+    "platform/microphone.ts",
+    "platform/reading-in-worker.ts",
+    "platform/reading-runtime.ts",
+    "platform/speech.ts",
+    "platform/storage.ts",
+    "platform/tts.ts",
+    "platform/vision.ts",
+    "platform/voice-listener.ts",
+    "platform/vosk-runtime.ts",
+    "render/canvas.ts",
+    "render/crt.ts",
+    "render/high-contrast.ts",
+    "render/lq-filter.ts",
+    "ui/debug-panel.ts",
+    "ui/fonts.ts",
+    "ui/layout.ts",
+    "ui/mount-panel.ts",
+    "ui/pause-icons.ts",
+    "ui/settings-motion.ts",
+    "ui/vlibras.ts"
+  ],
   "modules": {
     "boot/create-game.ts": {
       "codeLines": 2064,
       "decisionNodes": 276,
       "maxDepth": 4,
-      "fanOut": 85,
-      "globalReach": 0,
+      "fanOut": 81,
+      "globalReach": 1,
       "worstFunction": 69,
-      "fanIn": 1
+      "statefulEdges": 22,
+      "fanIn": 1,
+      "reached": [
+        "SpeechSynthesisUtterance"
+      ],
+      "statefulImports": [
+        "core/a11y-sr.ts",
+        "core/i18n.ts",
+        "core/loop.ts",
+        "core/state.ts",
+        "input/keyboard.ts",
+        "input/pad-defaults.ts",
+        "input/pad-wizard.ts",
+        "input/state.ts",
+        "input/touch.ts",
+        "platform/audio-sonar.ts",
+        "platform/audio.ts",
+        "platform/heavy.ts",
+        "platform/storage.ts",
+        "platform/tts.ts",
+        "render/crt.ts",
+        "render/lq-filter.ts",
+        "ui/fonts.ts",
+        "ui/layout.ts",
+        "ui/mount-panel.ts",
+        "ui/pause-icons.ts",
+        "ui/settings-motion.ts",
+        "ui/vlibras.ts"
+      ]
     },
     "consumer-quiz/main-quiz.ts": {
       "codeLines": 233,
       "decisionNodes": 34,
       "maxDepth": 2,
-      "fanOut": 8,
+      "fanOut": 7,
       "globalReach": 1,
       "worstFunction": 8,
+      "statefulEdges": 4,
       "fanIn": 0,
       "reached": [
         "document"
+      ],
+      "holds": [
+        "let atual",
+        "let correctCount",
+        "let foco",
+        "let listening",
+        "let motor",
+        "let narratedQuestion"
+      ],
+      "statefulImports": [
+        "boot/create-game.ts",
+        "core/a11y-sr.ts",
+        "core/i18n.ts",
+        "core/state.ts"
       ]
     },
     "core/a11y-sr.ts": {
@@ -50,9 +134,19 @@
       "decisionNodes": 2,
       "maxDepth": 1,
       "fanOut": 1,
-      "globalReach": 0,
+      "globalReach": 1,
       "worstFunction": 2,
-      "fanIn": 2
+      "statefulEdges": 1,
+      "fanIn": 2,
+      "reached": [
+        "requestAnimationFrame"
+      ],
+      "holds": [
+        "let _vlibrasSay"
+      ],
+      "statefulImports": [
+        "core/dom-query.ts"
+      ]
     },
     "core/accessible-label.ts": {
       "codeLines": 9,
@@ -61,15 +155,17 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 3,
+      "statefulEdges": 0,
       "fanIn": 4
     },
     "core/accommodation-subjects.ts": {
       "codeLines": 27,
       "decisionNodes": 0,
       "maxDepth": 0,
-      "fanOut": 3,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 2,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "core/accommodations.ts": {
@@ -79,7 +175,8 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 4,
-      "fanIn": 3
+      "statefulEdges": 0,
+      "fanIn": 2
     },
     "core/actions.ts": {
       "codeLines": 75,
@@ -88,7 +185,8 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 25
+      "statefulEdges": 0,
+      "fanIn": 8
     },
     "core/calm-mode.ts": {
       "codeLines": 14,
@@ -97,6 +195,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 4,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "core/caption-duration.ts": {
@@ -106,6 +205,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
+      "statefulEdges": 0,
       "fanIn": 3
     },
     "core/cartridge-problems.ts": {
@@ -115,6 +215,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 8,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "core/constants.ts": {
@@ -124,34 +225,41 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
+      "statefulEdges": 0,
       "fanIn": 5
     },
     "core/contract.ts": {
       "codeLines": 211,
       "decisionNodes": 49,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 10,
-      "fanIn": 9
+      "statefulEdges": 0,
+      "fanIn": 3
     },
     "core/dom-query.ts": {
       "codeLines": 4,
       "decisionNodes": 0,
       "maxDepth": 0,
       "fanOut": 0,
-      "globalReach": 0,
+      "globalReach": 1,
       "worstFunction": 2,
-      "fanIn": 17
+      "statefulEdges": 0,
+      "fanIn": 3,
+      "reached": [
+        "globalThis"
+      ]
     },
     "core/entity.ts": {
       "codeLines": 83,
       "decisionNodes": 0,
       "maxDepth": 0,
-      "fanOut": 2,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
-      "fanIn": 17
+      "statefulEdges": 0,
+      "fanIn": 0
     },
     "core/escape-html.ts": {
       "codeLines": 5,
@@ -160,6 +268,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 1,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "core/flash-threshold.ts": {
@@ -169,6 +278,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 7,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "core/game-speed.ts": {
@@ -178,6 +288,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "core/genres.ts": {
@@ -187,6 +298,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "core/i18n.ts": {
@@ -196,7 +308,16 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 43
+      "statefulEdges": 0,
+      "fanIn": 43,
+      "holds": [
+        "let dict",
+        "let locale",
+        "let localePort",
+        "let pending",
+        "mutated DICTS",
+        "mutated EXTRA"
+      ]
     },
     "core/loop.ts": {
       "codeLines": 21,
@@ -205,7 +326,14 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 5,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "holds": [
+        "let registeredNotice"
+      ],
+      "statefulImports": [
+        "core/state.ts"
+      ]
     },
     "core/pause-icon-catalogue.ts": {
       "codeLines": 22,
@@ -214,6 +342,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 1,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "core/ring.ts": {
@@ -223,6 +352,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
+      "statefulEdges": 0,
       "fanIn": 3
     },
     "core/rng.ts": {
@@ -232,7 +362,12 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 0
+      "statefulEdges": 0,
+      "fanIn": 0,
+      "holds": [
+        "singleton decorationRng",
+        "singleton sharedRng"
+      ]
     },
     "core/route.ts": {
       "codeLines": 97,
@@ -241,6 +376,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 9,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "core/scenes.ts": {
@@ -250,7 +386,8 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 2
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "core/screens.ts": {
       "codeLines": 8,
@@ -259,6 +396,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 4,
+      "statefulEdges": 0,
       "fanIn": 5
     },
     "core/speech-rate.ts": {
@@ -268,6 +406,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 6,
+      "statefulEdges": 0,
       "fanIn": 3
     },
     "core/state.ts": {
@@ -277,9 +416,34 @@
       "fanOut": 3,
       "globalReach": 1,
       "worstFunction": 4,
-      "fanIn": 16,
+      "statefulEdges": 0,
+      "fanIn": 15,
       "reached": [
         "window"
+      ],
+      "holds": [
+        "let blindMode",
+        "let cameraControl",
+        "let caneBlockDiv",
+        "let captionPpm",
+        "let captionsOn",
+        "let cbSafe",
+        "let gameSpeed",
+        "let hcOutlineBg",
+        "let hcOutlineFg",
+        "let inputCooldown",
+        "let letterCase",
+        "let menuIndexOn",
+        "let noGripStrength",
+        "let oneButton",
+        "let ownerColors",
+        "let port",
+        "let speechPpm",
+        "let switchScan",
+        "let vizMode",
+        "let voiceControl",
+        "let wheelchair",
+        "mutated _subs"
       ]
     },
     "core/visual-cycles.ts": {
@@ -289,6 +453,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "core/visual-state.ts": {
@@ -298,7 +463,8 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
-      "fanIn": 2
+      "statefulEdges": 0,
+      "fanIn": 0
     },
     "educational/activities-registry.ts": {
       "codeLines": 58,
@@ -307,6 +473,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 4,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "educational/adaptive-engine.ts": {
@@ -316,6 +483,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "educational/segment-bar.ts": {
@@ -325,6 +493,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 4,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "env.d.ts": {
@@ -334,6 +503,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "i18n/en.ts": {
@@ -343,6 +513,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "i18n/es.ts": {
@@ -352,6 +523,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "i18n/pt.ts": {
@@ -361,6 +533,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "input/default-bindings.ts": {
@@ -370,6 +543,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
+      "statefulEdges": 0,
       "fanIn": 3
     },
     "input/devices.ts": {
@@ -379,6 +553,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "input/edges.ts": {
@@ -388,7 +563,8 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 6,
-      "fanIn": 7
+      "statefulEdges": 0,
+      "fanIn": 4
     },
     "input/empathy-filter.ts": {
       "codeLines": 32,
@@ -397,15 +573,17 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 8,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "input/face-map.ts": {
       "codeLines": 174,
       "decisionNodes": 35,
       "maxDepth": 3,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 8,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "input/face-signals.ts": {
@@ -415,42 +593,54 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 2
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "input/gamepad.ts": {
       "codeLines": 300,
       "decisionNodes": 58,
       "maxDepth": 2,
-      "fanOut": 10,
+      "fanOut": 7,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 1
+      "statefulEdges": 5,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "core/state.ts",
+        "input/pad-defaults.ts",
+        "input/pad-wizard.ts",
+        "input/state.ts"
+      ]
     },
     "input/gaze-cycle.ts": {
       "codeLines": 109,
       "decisionNodes": 19,
       "maxDepth": 2,
-      "fanOut": 2,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 6,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "input/gaze-relative.ts": {
       "codeLines": 124,
       "decisionNodes": 24,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 3
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "input/hand-map.ts": {
       "codeLines": 95,
       "decisionNodes": 15,
       "maxDepth": 3,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 6,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "input/input-cooldown.ts": {
@@ -460,43 +650,63 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 4,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "input/keyboard-runtime.ts": {
       "codeLines": 91,
       "decisionNodes": 11,
       "maxDepth": 3,
-      "fanOut": 3,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 7,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "input/keyboard.ts": {
       "codeLines": 54,
       "decisionNodes": 10,
       "maxDepth": 4,
-      "fanOut": 4,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 5,
-      "fanIn": 3
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "holds": [
+        "let gameMapping",
+        "let kb"
+      ],
+      "statefulImports": [
+        "platform/storage.ts"
+      ]
     },
     "input/keydown.ts": {
       "codeLines": 280,
       "decisionNodes": 50,
       "maxDepth": 2,
-      "fanOut": 7,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 7,
-      "fanIn": 2
+      "statefulEdges": 1,
+      "fanIn": 0,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "input/latch-edge.ts": {
       "codeLines": 22,
       "decisionNodes": 1,
       "maxDepth": 1,
-      "fanOut": 6,
+      "fanOut": 4,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 0
+      "statefulEdges": 3,
+      "fanIn": 0,
+      "statefulImports": [
+        "core/state.ts",
+        "input/state.ts",
+        "platform/storage.ts"
+      ]
     },
     "input/latch-scope.ts": {
       "codeLines": 24,
@@ -505,6 +715,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 4,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "input/latch-store.ts": {
@@ -514,15 +725,17 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 3
+      "statefulEdges": 0,
+      "fanIn": 2
     },
     "input/latch-sync.ts": {
       "codeLines": 19,
       "decisionNodes": 2,
       "maxDepth": 1,
-      "fanOut": 2,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "input/latch.ts": {
@@ -532,25 +745,35 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "input/pad-defaults.ts": {
       "codeLines": 20,
       "decisionNodes": 3,
       "maxDepth": 1,
-      "fanOut": 2,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 4,
-      "fanIn": 3
+      "statefulEdges": 0,
+      "fanIn": 2,
+      "holds": [
+        "let gameMapping",
+        "mutated memo"
+      ]
     },
     "input/pad-reading.ts": {
       "codeLines": 98,
       "decisionNodes": 18,
       "maxDepth": 2,
-      "fanOut": 4,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 10,
-      "fanIn": 2
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "input/state.ts"
+      ]
     },
     "input/pad-wizard.ts": {
       "codeLines": 159,
@@ -559,7 +782,15 @@
       "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 2
+      "statefulEdges": 2,
+      "fanIn": 2,
+      "holds": [
+        "mutated maps"
+      ],
+      "statefulImports": [
+        "core/i18n.ts",
+        "platform/storage.ts"
+      ]
     },
     "input/pointer-space.ts": {
       "codeLines": 12,
@@ -568,33 +799,42 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 2
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "input/pointer.ts": {
       "codeLines": 24,
       "decisionNodes": 3,
       "maxDepth": 1,
-      "fanOut": 2,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 4,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "input/state.ts": {
       "codeLines": 60,
       "decisionNodes": 4,
       "maxDepth": 2,
-      "fanOut": 3,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 4,
-      "fanIn": 4
+      "statefulEdges": 0,
+      "fanIn": 4,
+      "holds": [
+        "mutated inputByPlayer",
+        "mutated keySource",
+        "mutated keys"
+      ]
     },
     "input/switch-scan.ts": {
       "codeLines": 38,
       "decisionNodes": 4,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 6,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "input/synthetic-source.ts": {
@@ -604,25 +844,35 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "input/touch-bindings.ts": {
       "codeLines": 256,
       "decisionNodes": 37,
       "maxDepth": 3,
-      "fanOut": 6,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 3
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "input/touch.ts": {
       "codeLines": 414,
       "decisionNodes": 57,
       "maxDepth": 2,
-      "fanOut": 5,
-      "globalReach": 0,
+      "fanOut": 4,
+      "globalReach": 1,
       "worstFunction": 6,
-      "fanIn": 1
+      "statefulEdges": 2,
+      "fanIn": 1,
+      "reached": [
+        "globalThis"
+      ],
+      "statefulImports": [
+        "core/i18n.ts",
+        "platform/storage.ts"
+      ]
     },
     "input/transport-in-use.ts": {
       "codeLines": 32,
@@ -631,7 +881,8 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 8
+      "statefulEdges": 0,
+      "fanIn": 2
     },
     "input/transports.ts": {
       "codeLines": 69,
@@ -640,16 +891,18 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 2
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "input/virtual-controller.ts": {
       "codeLines": 42,
       "decisionNodes": 5,
       "maxDepth": 2,
-      "fanOut": 3,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
-      "fanIn": 5
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "input/vocabulary-migration.ts": {
       "codeLines": 54,
@@ -658,24 +911,27 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 6,
+      "statefulEdges": 0,
       "fanIn": 3
     },
     "input/voice-map.ts": {
       "codeLines": 70,
       "decisionNodes": 10,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "platform/audio-ambient.ts": {
       "codeLines": 59,
       "decisionNodes": 13,
       "maxDepth": 3,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 11,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "platform/audio-earcons.ts": {
@@ -685,7 +941,11 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 0
+      "statefulEdges": 1,
+      "fanIn": 0,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "platform/audio-jingles.ts": {
       "codeLines": 45,
@@ -694,6 +954,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 8,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "platform/audio-mixer.ts": {
@@ -703,7 +964,11 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 3
+      "statefulEdges": 1,
+      "fanIn": 3,
+      "statefulImports": [
+        "platform/storage.ts"
+      ]
     },
     "platform/audio-sonar.ts": {
       "codeLines": 207,
@@ -712,9 +977,13 @@
       "fanOut": 4,
       "globalReach": 1,
       "worstFunction": 9,
-      "fanIn": 2,
+      "statefulEdges": 1,
+      "fanIn": 1,
       "reached": [
         "window"
+      ],
+      "statefulImports": [
+        "core/i18n.ts"
       ]
     },
     "platform/audio.ts": {
@@ -724,9 +993,21 @@
       "fanOut": 1,
       "globalReach": 1,
       "worstFunction": 7,
+      "statefulEdges": 0,
       "fanIn": 3,
       "reached": [
         "window"
+      ],
+      "holds": [
+        "let _footCount",
+        "let _hlChain",
+        "let _masterGain",
+        "let audioCat",
+        "let audioCtx",
+        "let hearingLoss",
+        "let soundOn",
+        "let volume",
+        "mutated _catNodes"
       ]
     },
     "platform/flash-sampler.ts": {
@@ -736,6 +1017,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 9,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "platform/guide-intensity.ts": {
@@ -745,6 +1027,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 3,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "platform/heavy-catalogue.ts": {
@@ -754,6 +1037,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 4,
+      "statefulEdges": 0,
       "fanIn": 3
     },
     "platform/heavy-mirror.ts": {
@@ -763,6 +1047,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 4,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "platform/heavy.ts": {
@@ -770,11 +1055,14 @@
       "decisionNodes": 25,
       "maxDepth": 2,
       "fanOut": 1,
-      "globalReach": 1,
+      "globalReach": 3,
       "worstFunction": 8,
+      "statefulEdges": 0,
       "fanIn": 5,
       "reached": [
-        "fetch"
+        "caches",
+        "fetch",
+        "globalThis"
       ]
     },
     "platform/interruptible-speech.ts": {
@@ -784,26 +1072,33 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 7,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "platform/kokoro-port.ts": {
       "codeLines": 62,
       "decisionNodes": 1,
       "maxDepth": 1,
-      "fanOut": 3,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "platform/heavy.ts"
+      ]
     },
     "platform/kokoro-runtime.ts": {
       "codeLines": 39,
       "decisionNodes": 3,
       "maxDepth": 1,
-      "fanOut": 3,
-      "globalReach": 1,
+      "fanOut": 2,
+      "globalReach": 2,
       "worstFunction": 7,
+      "statefulEdges": 0,
       "fanIn": 0,
       "reached": [
+        "WebAssembly",
         "fetch"
       ]
     },
@@ -811,10 +1106,11 @@
       "codeLines": 110,
       "decisionNodes": 9,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 6,
-      "fanIn": 4
+      "statefulEdges": 0,
+      "fanIn": 3
     },
     "platform/listener-scope.ts": {
       "codeLines": 45,
@@ -823,6 +1119,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "platform/locale-host.ts": {
@@ -832,6 +1129,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "platform/microphone.ts": {
@@ -839,10 +1137,12 @@
       "decisionNodes": 13,
       "maxDepth": 2,
       "fanOut": 0,
-      "globalReach": 2,
+      "globalReach": 3,
       "worstFunction": 7,
-      "fanIn": 1,
+      "statefulEdges": 0,
+      "fanIn": 0,
       "reached": [
+        "AudioContext",
         "navigator",
         "performance"
       ]
@@ -854,16 +1154,24 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 5,
-      "fanIn": 3
+      "statefulEdges": 1,
+      "fanIn": 2,
+      "statefulImports": [
+        "platform/heavy.ts"
+      ]
     },
     "platform/reading-in-worker.ts": {
       "codeLines": 62,
       "decisionNodes": 8,
       "maxDepth": 1,
-      "fanOut": 1,
-      "globalReach": 0,
+      "fanOut": 0,
+      "globalReach": 1,
       "worstFunction": 4,
-      "fanIn": 0
+      "statefulEdges": 0,
+      "fanIn": 0,
+      "reached": [
+        "Worker"
+      ]
     },
     "platform/reading-model.ts": {
       "codeLines": 182,
@@ -872,6 +1180,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 10,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "platform/reading-runtime.ts": {
@@ -881,6 +1190,7 @@
       "fanOut": 2,
       "globalReach": 1,
       "worstFunction": 9,
+      "statefulEdges": 0,
       "fanIn": 1,
       "reached": [
         "fetch"
@@ -893,7 +1203,11 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 0,
+      "statefulImports": [
+        "platform/reading-runtime.ts"
+      ]
     },
     "platform/reading.ts": {
       "codeLines": 115,
@@ -902,6 +1216,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 5,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "platform/speech-recognition.ts": {
@@ -911,6 +1226,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 8,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "platform/speech.ts": {
@@ -918,11 +1234,16 @@
       "decisionNodes": 6,
       "maxDepth": 1,
       "fanOut": 1,
-      "globalReach": 1,
+      "globalReach": 2,
       "worstFunction": 8,
+      "statefulEdges": 1,
       "fanIn": 0,
       "reached": [
+        "SpeechSynthesisUtterance",
         "window"
+      ],
+      "statefulImports": [
+        "platform/audio.ts"
       ]
     },
     "platform/storage.ts": {
@@ -932,6 +1253,7 @@
       "fanOut": 0,
       "globalReach": 1,
       "worstFunction": 3,
+      "statefulEdges": 0,
       "fanIn": 15,
       "reached": [
         "localStorage"
@@ -942,13 +1264,19 @@
       "decisionNodes": 38,
       "maxDepth": 3,
       "fanOut": 6,
-      "globalReach": 3,
+      "globalReach": 4,
       "worstFunction": 10,
+      "statefulEdges": 2,
       "fanIn": 1,
       "reached": [
+        "SpeechSynthesisUtterance",
         "document",
         "performance",
         "window"
+      ],
+      "statefulImports": [
+        "core/i18n.ts",
+        "platform/storage.ts"
       ]
     },
     "platform/vision-loop.ts": {
@@ -958,6 +1286,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 10,
+      "statefulEdges": 0,
       "fanIn": 3
     },
     "platform/vision.ts": {
@@ -965,19 +1294,28 @@
       "decisionNodes": 12,
       "maxDepth": 2,
       "fanOut": 1,
-      "globalReach": 0,
+      "globalReach": 1,
       "worstFunction": 6,
-      "fanIn": 4
+      "statefulEdges": 1,
+      "fanIn": 3,
+      "reached": [
+        "caches"
+      ],
+      "statefulImports": [
+        "platform/heavy.ts"
+      ]
     },
     "platform/voice-listener.ts": {
       "codeLines": 56,
       "decisionNodes": 12,
       "maxDepth": 1,
-      "fanOut": 2,
-      "globalReach": 1,
+      "fanOut": 0,
+      "globalReach": 2,
       "worstFunction": 6,
+      "statefulEdges": 0,
       "fanIn": 1,
       "reached": [
+        "AudioContext",
         "navigator"
       ]
     },
@@ -988,16 +1326,27 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 2
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "platform/vosk-runtime.ts": {
       "codeLines": 69,
       "decisionNodes": 9,
       "maxDepth": 2,
       "fanOut": 2,
-      "globalReach": 0,
+      "globalReach": 1,
       "worstFunction": 8,
-      "fanIn": 2
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "reached": [
+        "caches"
+      ],
+      "holds": [
+        "mutated loadedBundles"
+      ],
+      "statefulImports": [
+        "platform/heavy.ts"
+      ]
     },
     "render/canvas.ts": {
       "codeLines": 12,
@@ -1006,6 +1355,7 @@
       "fanOut": 0,
       "globalReach": 1,
       "worstFunction": 6,
+      "statefulEdges": 0,
       "fanIn": 3,
       "reached": [
         "document"
@@ -1018,9 +1368,18 @@
       "fanOut": 3,
       "globalReach": 1,
       "worstFunction": 8,
+      "statefulEdges": 2,
       "fanIn": 3,
       "reached": [
         "window"
+      ],
+      "holds": [
+        "let _a11yVisualActive",
+        "let _playerCount"
+      ],
+      "statefulImports": [
+        "core/dom-query.ts",
+        "platform/storage.ts"
       ]
     },
     "render/cvd-matrices.ts": {
@@ -1030,6 +1389,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "render/hc-role-data.ts": {
@@ -1039,6 +1399,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
+      "statefulEdges": 0,
       "fanIn": 4
     },
     "render/high-contrast.ts": {
@@ -1048,7 +1409,17 @@
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 10,
-      "fanIn": 2
+      "statefulEdges": 2,
+      "fanIn": 2,
+      "holds": [
+        "let ctx",
+        "mutated _spriteTexHC",
+        "mutated _worldTexHC"
+      ],
+      "statefulImports": [
+        "platform/storage.ts",
+        "render/canvas.ts"
+      ]
     },
     "render/low-vision-drawing.ts": {
       "codeLines": 30,
@@ -1057,6 +1428,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "render/lq-filter.ts": {
@@ -1066,9 +1438,17 @@
       "fanOut": 1,
       "globalReach": 1,
       "worstFunction": 4,
+      "statefulEdges": 1,
       "fanIn": 3,
       "reached": [
         "document"
+      ],
+      "holds": [
+        "let lqT",
+        "let onChange"
+      ],
+      "statefulImports": [
+        "platform/storage.ts"
       ]
     },
     "render/port.ts": {
@@ -1078,15 +1458,17 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
-      "fanIn": 4
+      "statefulEdges": 0,
+      "fanIn": 0
     },
     "render/screen-pipeline.ts": {
       "codeLines": 114,
       "decisionNodes": 9,
       "maxDepth": 2,
-      "fanOut": 3,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 7,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "render/sprite-fx.ts": {
@@ -1096,16 +1478,25 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 7,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "render/canvas.ts"
+      ]
     },
     "render/viewports.ts": {
       "codeLines": 112,
       "decisionNodes": 17,
       "maxDepth": 2,
-      "fanOut": 7,
+      "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 6,
-      "fanIn": 0
+      "statefulEdges": 2,
+      "fanIn": 0,
+      "statefulImports": [
+        "render/canvas.ts",
+        "render/high-contrast.ts"
+      ]
     },
     "render/viz-axes-labels.ts": {
       "codeLines": 52,
@@ -1114,15 +1505,17 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 6,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "render/viz-axes.ts": {
       "codeLines": 100,
       "decisionNodes": 16,
       "maxDepth": 3,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 8,
+      "statefulEdges": 0,
       "fanIn": 6
     },
     "render/viz-modes.ts": {
@@ -1132,6 +1525,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
+      "statefulEdges": 0,
       "fanIn": 7
     },
     "render/viz-refusal.ts": {
@@ -1141,16 +1535,25 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 2,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "render/viz-setters.ts": {
       "codeLines": 269,
       "decisionNodes": 44,
       "maxDepth": 3,
-      "fanOut": 11,
+      "fanOut": 9,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 0
+      "statefulEdges": 5,
+      "fanIn": 0,
+      "statefulImports": [
+        "core/i18n.ts",
+        "core/state.ts",
+        "platform/storage.ts",
+        "render/high-contrast.ts",
+        "render/lq-filter.ts"
+      ]
     },
     "ui/audio-choices.ts": {
       "codeLines": 45,
@@ -1159,15 +1562,20 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 3
+      "statefulEdges": 1,
+      "fanIn": 2,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/audio-rows-that-apply.ts": {
       "codeLines": 19,
       "decisionNodes": 4,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 7,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/caa-sets.ts": {
@@ -1177,15 +1585,20 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/camera-control.ts": {
       "codeLines": 7,
       "decisionNodes": 4,
       "maxDepth": 2,
-      "fanOut": 2,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/changed-mark.ts": {
@@ -1195,27 +1608,37 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 5,
-      "fanIn": 9
+      "statefulEdges": 1,
+      "fanIn": 9,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/control-choices.ts": {
       "codeLines": 31,
       "decisionNodes": 13,
       "maxDepth": 3,
-      "fanOut": 3,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 7,
-      "fanIn": 2
+      "statefulEdges": 1,
+      "fanIn": 2,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/debug-panel.ts": {
       "codeLines": 186,
       "decisionNodes": 15,
       "maxDepth": 2,
       "fanOut": 0,
-      "globalReach": 2,
+      "globalReach": 3,
       "worstFunction": 8,
+      "statefulEdges": 0,
       "fanIn": 0,
       "reached": [
         "document",
+        "location",
         "window"
       ]
     },
@@ -1226,7 +1649,12 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 10
+      "statefulEdges": 2,
+      "fanIn": 10,
+      "statefulImports": [
+        "core/dom-query.ts",
+        "core/i18n.ts"
+      ]
     },
     "ui/drawing-problems.ts": {
       "codeLines": 61,
@@ -1235,25 +1663,39 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "ui/layout.ts"
+      ]
     },
     "ui/eye-control.ts": {
       "codeLines": 146,
       "decisionNodes": 21,
       "maxDepth": 2,
-      "fanOut": 10,
+      "fanOut": 7,
       "globalReach": 0,
       "worstFunction": 7,
-      "fanIn": 3
+      "statefulEdges": 2,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "platform/vision.ts"
+      ]
     },
     "ui/face-control.ts": {
       "codeLines": 130,
       "decisionNodes": 25,
       "maxDepth": 3,
-      "fanOut": 9,
+      "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 1
+      "statefulEdges": 2,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "platform/vision.ts"
+      ]
     },
     "ui/focus-trap.ts": {
       "codeLines": 57,
@@ -1262,6 +1704,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 9,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/fonts.ts": {
@@ -1271,34 +1714,48 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 7,
-      "fanIn": 3
+      "statefulEdges": 0,
+      "fanIn": 3,
+      "holds": [
+        "mutated FONT_BY_KEY"
+      ]
     },
     "ui/game-options.ts": {
       "codeLines": 139,
       "decisionNodes": 18,
       "maxDepth": 3,
-      "fanOut": 3,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 7,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/gaze-overlay.ts": {
       "codeLines": 116,
       "decisionNodes": 19,
       "maxDepth": 3,
-      "fanOut": 4,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 3
+      "statefulEdges": 1,
+      "fanIn": 3,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/hand-control.ts": {
       "codeLines": 107,
       "decisionNodes": 19,
       "maxDepth": 2,
-      "fanOut": 9,
+      "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 7,
-      "fanIn": 1
+      "statefulEdges": 2,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "platform/vision.ts"
+      ]
     },
     "ui/help-panel.ts": {
       "codeLines": 184,
@@ -1307,25 +1764,34 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/hud-bands.ts": {
       "codeLines": 112,
       "decisionNodes": 15,
       "maxDepth": 2,
-      "fanOut": 2,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/hud.ts": {
       "codeLines": 134,
       "decisionNodes": 15,
       "maxDepth": 2,
-      "fanOut": 5,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 0
+      "statefulEdges": 1,
+      "fanIn": 0,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/item-announcement.ts": {
       "codeLines": 17,
@@ -1334,7 +1800,11 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 5,
-      "fanIn": 4
+      "statefulEdges": 1,
+      "fanIn": 4,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/latch-refusal.ts": {
       "codeLines": 20,
@@ -1343,6 +1813,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "ui/layout.ts": {
@@ -1350,11 +1821,19 @@
       "decisionNodes": 10,
       "maxDepth": 2,
       "fanOut": 3,
-      "globalReach": 1,
+      "globalReach": 2,
       "worstFunction": 10,
+      "statefulEdges": 1,
       "fanIn": 2,
       "reached": [
+        "location",
         "window"
+      ],
+      "holds": [
+        "let _countPlayers"
+      ],
+      "statefulImports": [
+        "render/crt.ts"
       ]
     },
     "ui/locale-flags.ts": {
@@ -1364,6 +1843,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "ui/loop-crash.ts": {
@@ -1373,15 +1853,20 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 7,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/menu-intent.ts": {
       "codeLines": 34,
       "decisionNodes": 2,
       "maxDepth": 1,
-      "fanOut": 2,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 7,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/menu-items.ts": {
@@ -1391,16 +1876,22 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 1,
+      "statefulEdges": 0,
       "fanIn": 3
     },
     "ui/menu-nav.ts": {
       "codeLines": 254,
       "decisionNodes": 52,
       "maxDepth": 2,
-      "fanOut": 10,
+      "fanOut": 8,
       "globalReach": 0,
       "worstFunction": 10,
-      "fanIn": 2
+      "statefulEdges": 2,
+      "fanIn": 2,
+      "statefulImports": [
+        "core/i18n.ts",
+        "ui/pause-icons.ts"
+      ]
     },
     "ui/mobility-choices.ts": {
       "codeLines": 22,
@@ -1409,25 +1900,38 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/motion-choices.ts": {
       "codeLines": 33,
       "decisionNodes": 6,
       "maxDepth": 1,
-      "fanOut": 2,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/motion-scene.ts": {
       "codeLines": 39,
       "decisionNodes": 3,
       "maxDepth": 1,
-      "fanOut": 3,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 4,
-      "fanIn": 3
+      "statefulEdges": 2,
+      "fanIn": 2,
+      "statefulImports": [
+        "core/state.ts",
+        "platform/storage.ts"
+      ]
     },
     "ui/mount-panel.ts": {
       "codeLines": 60,
@@ -1436,7 +1940,12 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 1
+      "statefulEdges": 0,
+      "fanIn": 1,
+      "holds": [
+        "mutated alreadyListening",
+        "mutated redrawOf"
+      ]
     },
     "ui/panel-shell.ts": {
       "codeLines": 80,
@@ -1445,16 +1954,18 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 3,
-      "fanIn": 10
+      "statefulEdges": 0,
+      "fanIn": 1
     },
     "ui/panel-widgets.ts": {
       "codeLines": 134,
       "decisionNodes": 12,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 6,
-      "fanIn": 10
+      "statefulEdges": 0,
+      "fanIn": 9
     },
     "ui/pause-buttons.ts": {
       "codeLines": 26,
@@ -1463,16 +1974,26 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
+      "statefulEdges": 0,
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
       "codeLines": 592,
       "decisionNodes": 81,
       "maxDepth": 3,
-      "fanOut": 21,
-      "globalReach": 0,
+      "fanOut": 17,
+      "globalReach": 1,
       "worstFunction": 9,
-      "fanIn": 4
+      "statefulEdges": 3,
+      "fanIn": 4,
+      "reached": [
+        "globalThis"
+      ],
+      "statefulImports": [
+        "core/i18n.ts",
+        "core/state.ts",
+        "platform/storage.ts"
+      ]
     },
     "ui/pause-markup.ts": {
       "codeLines": 63,
@@ -1481,52 +2002,72 @@
       "fanOut": 4,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 2
+      "statefulEdges": 1,
+      "fanIn": 2,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/reach-notice.ts": {
       "codeLines": 55,
       "decisionNodes": 8,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/scan-overlay.ts": {
       "codeLines": 30,
       "decisionNodes": 2,
       "maxDepth": 1,
-      "fanOut": 2,
+      "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 3,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/settings-audio.ts": {
       "codeLines": 395,
       "decisionNodes": 66,
       "maxDepth": 4,
-      "fanOut": 12,
+      "fanOut": 8,
       "globalReach": 0,
       "worstFunction": 10,
-      "fanIn": 1
+      "statefulEdges": 2,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "core/state.ts"
+      ]
     },
     "ui/settings-caa.ts": {
       "codeLines": 136,
       "decisionNodes": 21,
       "maxDepth": 3,
-      "fanOut": 7,
+      "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 6,
-      "fanIn": 0
+      "statefulEdges": 2,
+      "fanIn": 0,
+      "statefulImports": [
+        "core/i18n.ts",
+        "core/state.ts"
+      ]
     },
     "ui/settings-controls.ts": {
       "codeLines": 176,
       "decisionNodes": 18,
       "maxDepth": 2,
-      "fanOut": 10,
+      "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 6,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/settings-empathy.ts": {
       "codeLines": 95,
@@ -1535,25 +2076,46 @@
       "fanOut": 6,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 1
+      "statefulEdges": 3,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "core/state.ts",
+        "platform/audio.ts"
+      ]
     },
     "ui/settings-mobility.ts": {
       "codeLines": 231,
       "decisionNodes": 29,
       "maxDepth": 3,
-      "fanOut": 12,
+      "fanOut": 9,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 1
+      "statefulEdges": 3,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "core/state.ts",
+        "platform/storage.ts"
+      ]
     },
     "ui/settings-motion.ts": {
       "codeLines": 313,
       "decisionNodes": 46,
       "maxDepth": 3,
-      "fanOut": 9,
+      "fanOut": 8,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 2
+      "statefulEdges": 3,
+      "fanIn": 1,
+      "holds": [
+        "let selectedPlayer"
+      ],
+      "statefulImports": [
+        "core/i18n.ts",
+        "core/state.ts",
+        "render/crt.ts"
+      ]
     },
     "ui/settings-panel.ts": {
       "codeLines": 141,
@@ -1562,34 +2124,53 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 10,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/settings-typo.ts": {
       "codeLines": 134,
       "decisionNodes": 20,
       "maxDepth": 3,
-      "fanOut": 7,
+      "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 7,
-      "fanIn": 1
+      "statefulEdges": 2,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "ui/fonts.ts"
+      ]
     },
     "ui/settings-visual.ts": {
       "codeLines": 251,
       "decisionNodes": 42,
       "maxDepth": 2,
-      "fanOut": 8,
+      "fanOut": 7,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 1
+      "statefulEdges": 2,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "core/state.ts"
+      ]
     },
     "ui/shell.ts": {
       "codeLines": 270,
       "decisionNodes": 43,
       "maxDepth": 3,
-      "fanOut": 7,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 10,
-      "fanIn": 0
+      "statefulEdges": 2,
+      "fanIn": 0,
+      "statefulImports": [
+        "core/i18n.ts",
+        "ui/pause-icons.ts"
+      ]
     },
     "ui/simulation-list.ts": {
       "codeLines": 56,
@@ -1598,15 +2179,20 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 8,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts"
+      ]
     },
     "ui/simulation-over-the-world.ts": {
       "codeLines": 74,
       "decisionNodes": 16,
       "maxDepth": 2,
-      "fanOut": 4,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 10,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/simulation-refusal.ts": {
@@ -1616,6 +2202,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 0,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "ui/switchable-control.ts": {
@@ -1625,15 +2212,17 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 0,
-      "fanIn": 5
+      "statefulEdges": 0,
+      "fanIn": 0
     },
     "ui/title.ts": {
       "codeLines": 49,
       "decisionNodes": 7,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 7,
+      "statefulEdges": 0,
       "fanIn": 0
     },
     "ui/top-band.ts": {
@@ -1643,16 +2232,22 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 10,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/typo-choices.ts": {
       "codeLines": 53,
       "decisionNodes": 12,
       "maxDepth": 2,
-      "fanOut": 3,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 6,
-      "fanIn": 1
+      "statefulEdges": 2,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "ui/fonts.ts"
+      ]
     },
     "ui/visual-axes-panel.ts": {
       "codeLines": 17,
@@ -1661,6 +2256,7 @@
       "fanOut": 1,
       "globalReach": 0,
       "worstFunction": 0,
+      "statefulEdges": 0,
       "fanIn": 1
     },
     "ui/visual-choices.ts": {
@@ -1670,7 +2266,11 @@
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "render/lq-filter.ts"
+      ]
     },
     "ui/vlibras.ts": {
       "codeLines": 31,
@@ -1679,29 +2279,53 @@
       "fanOut": 2,
       "globalReach": 2,
       "worstFunction": 7,
+      "statefulEdges": 2,
       "fanIn": 1,
       "reached": [
         "document",
         "window"
+      ],
+      "holds": [
+        "let _onLibrasChange",
+        "let _vlBusyUntil",
+        "let _vlNext",
+        "let _vlNode",
+        "let _vlOpen",
+        "let librasOpen"
+      ],
+      "statefulImports": [
+        "core/i18n.ts",
+        "platform/storage.ts"
       ]
     },
     "ui/voice-control.ts": {
       "codeLines": 101,
       "decisionNodes": 10,
       "maxDepth": 2,
-      "fanOut": 7,
+      "fanOut": 4,
       "globalReach": 0,
       "worstFunction": 6,
-      "fanIn": 1
+      "statefulEdges": 3,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "platform/voice-listener.ts",
+        "platform/vosk-runtime.ts"
+      ]
     },
     "ui/voice-settings.ts": {
       "codeLines": 230,
       "decisionNodes": 44,
       "maxDepth": 3,
-      "fanOut": 6,
+      "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 1
+      "statefulEdges": 2,
+      "fanIn": 1,
+      "statefulImports": [
+        "core/i18n.ts",
+        "core/state.ts"
+      ]
     },
     "ui/where-the-child-is.ts": {
       "codeLines": 41,
@@ -1710,7 +2334,11 @@
       "fanOut": 5,
       "globalReach": 0,
       "worstFunction": 9,
-      "fanIn": 1
+      "statefulEdges": 1,
+      "fanIn": 1,
+      "statefulImports": [
+        "ui/pause-icons.ts"
+      ]
     }
   }
 }
