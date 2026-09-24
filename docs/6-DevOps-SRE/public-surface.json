@@ -563,6 +563,7 @@
     "inputOf",
     "keySource",
     "keys",
+    "letGoOfTheKeyboard",
     "markKey",
     "markKeyFrom",
     "markKeyWithoutSource",
