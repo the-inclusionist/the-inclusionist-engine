@@ -46,16 +46,16 @@ describe('ADR-0112 · as operações do ponteiro são cegas à origem', () => {
     expect(FONTE_PONTEIRO).toContain('export function clampInside');
   });
 
-  it('[Feliz] `dentro` e `prender` dão o MESMO para os sete transportes', () => {
+  it('[Happy] `isInside` and `clampInside` answer the SAME for all seven transports', () => {
     for (const [fx, fy] of PONTOS) {
       const refDentro = isInside(amostra(fx, fy, false, 'rato-inexistente'));
       const refPreso = clampInside({ fx, fy });
       for (const origem of TRANSPORT_NAMES) {
         const a = amostra(fx, fy, false, origem);
-        expect(isInside(a), `«dentro» mudou por ser ${origem}`).toBe(refDentro);
+        expect(isInside(a), `isInside answered differently because the source was ${origem}`).toBe(refDentro);
         const preso = clampInside(a);
-        expect(preso.fx, `«clampInside» mudou por ser ${origem}`).toBe(refPreso.fx);
-        expect(preso.fy, `«clampInside» mudou por ser ${origem}`).toBe(refPreso.fy);
+        expect(preso.fx, `clampInside moved x differently because the source was ${origem}`).toBe(refPreso.fx);
+        expect(preso.fy, `clampInside moved y differently because the source was ${origem}`).toBe(refPreso.fy);
       }
     }
   });

@@ -253,7 +253,7 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     }
   });
 
-  it('🔴 [Right] o IDIOMA QUE CHEGA DEPOIS DO ARRANQUE alcança as ROWS, e não só a moldura', async () => {
+  it('🔴 [Right] a LANGUAGE THAT ARRIVES AFTER BOOT reaches the ROWS, not only the frame', async () => {
     // 🔴 THIS CASE CAME FROM A DEFECT MEASURED IN A BROWSER, which no unit test caught: they all run in one language.
     // 📏 In `quiz.html` with `lang="en"`, on 2026-09-12: the title said «Hearing accessibility» and the first row said
     // «Som», on the same screen — the frame was retranslated at each opening and the INSIDE was left behind.

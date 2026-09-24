@@ -216,21 +216,21 @@ const tabela = linhas.map((l) => {
 }).sort((a, b) => a.nivel - b.nivel || b.nJogos - a.nJogos);
 const pct = (n) => `${Math.round((n / TOTAL) * 100)}%`;
 
-console.log(`GAG: ${slugs.size} directrizes (${lidas.length} entradas por eixo) · impressão ${impressao.slice(0, 12)} · lida ${copia ? 'de cópia' : 'ao vivo'}`);
+console.log(`GAG: ${slugs.size} guidelines (${lidas.length} entries by axis) · fingerprint ${impressao.slice(0, 12)} · read ${copia ? 'from a copy' : 'live'}`);
 const porRazao = {};
 for (const v of Object.values(D)) { const r = Array.isArray(v) ? 'acomodação' : v.razao; porRazao[r] = (porRazao[r] ?? 0) + 1; }
-console.log('classificação: ' + Object.entries(porRazao).map(([r, n]) => `${r} ${n}`).join(' · ') + '\n');
-console.log('nível  acomodação               tem?  reach  directrizes  eixos GAG (M/C/V/H/S/G × B/I/A)');
+console.log('classification: ' + Object.entries(porRazao).map(([r, n]) => `${r} ${n}`).join(' · ') + '\n');
+console.log('level  accommodation            has?  reach  guidelines   GAG axes (M/C/V/H/S/G × B/I/A)');
 console.log('─'.repeat(100));
 for (const t of tabela) {
   const n = t.nivel === 9 ? '  —  ' : NIVEIS[t.nivel].slice(0, 5).padEnd(5);
-  console.log(`${n}  ${t.k.padEnd(24)} ${t.tem ? ' sim' : ' NÃO'}  ${pct(t.nJogos).padStart(6)}  ${String(t.nDir || '').padStart(6)}       ${t.eixosGag.join(' ')}`);
+  console.log(`${n}  ${t.k.padEnd(24)} ${t.tem ? ' yes' : '  NO'}  ${pct(t.nJogos).padStart(6)}  ${String(t.nDir || '').padStart(6)}       ${t.eixosGag.join(' ')}`);
 }
-console.log('\n=== 🎯 A INTERSECÇÃO: Basic × a engine NÃO tem, por reach ===');
+console.log('\n=== 🎯 THE INTERSECTION: Basic × the engine does NOT have it, by reach ===');
 for (const t of tabela.filter((x) => x.nivel === 0 && !x.tem)) console.log(`  ${t.k.padEnd(24)} ${pct(t.nJogos).padStart(5)}  — ${t.o}`);
-console.log('\n=== fora da GAG (nenhuma directriz as pede) ===');
+console.log('\n=== outside the GAG (no guideline asks for them) ===');
 console.log('  ' + tabela.filter((x) => x.nivel === 9).map((x) => x.k).join(', '));
-console.log('\n=== as que NÃO viram acomodação ===');
+console.log('\n=== the guidelines that do NOT become an accommodation ===');
 for (const [r, desc] of Object.entries(RAZOES)) {
   const ss = Object.entries(D).filter(([, v]) => !Array.isArray(v) && v.razao === r);
   if (!ss.length) continue;

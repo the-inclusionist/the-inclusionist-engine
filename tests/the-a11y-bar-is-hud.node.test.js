@@ -47,13 +47,13 @@ describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
     //
     // ⚠️ BOTH AXES: a mutation loosening only the X comparison stayed GREEN while the case only touched in Y. A sieve
     // that pins one border and not the other authorises half the defect.
-    expect(barIntruders(BARRA, [no('div#.abaixo', { x: 100, y: 54, w: 300, h: 20 })])).toEqual([]);
-    expect(barIntruders(BARRA, [no('div#.um-px-isInside', { x: 100, y: 53, w: 300, h: 20 })]))
-      .toEqual(['div#.um-px-isInside']);
-    expect(barIntruders(BARRA, [no('div#.a-direita', { x: 400, y: 10, w: 50, h: 44 })])).toEqual([]);
-    expect(barIntruders(BARRA, [no('div#.a-esquerda', { x: 50, y: 10, w: 50, h: 44 })])).toEqual([]);
-    expect(barIntruders(BARRA, [no('div#.um-px-a-direita', { x: 399, y: 10, w: 50, h: 44 })]))
-      .toEqual(['div#.um-px-a-direita']);
+    expect(barIntruders(BARRA, [no('div#.below', { x: 100, y: 54, w: 300, h: 20 })])).toEqual([]);
+    expect(barIntruders(BARRA, [no('div#.one-px-inside', { x: 100, y: 53, w: 300, h: 20 })]))
+      .toEqual(['div#.one-px-inside']);
+    expect(barIntruders(BARRA, [no('div#.to-the-right', { x: 400, y: 10, w: 50, h: 44 })])).toEqual([]);
+    expect(barIntruders(BARRA, [no('div#.to-the-left', { x: 50, y: 10, w: 50, h: 44 })])).toEqual([]);
+    expect(barIntruders(BARRA, [no('div#.one-px-into-the-right', { x: 399, y: 10, w: 50, h: 44 })]))
+      .toEqual(['div#.one-px-into-the-right']);
   });
 
   it('[Zero] um nó SEM ÁREA não invade nada', () => {
