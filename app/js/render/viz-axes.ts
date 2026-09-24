@@ -1,57 +1,58 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/viz-axes — OS DOIS EIXOS, e a simulação que NÃO é um deles (ADR-0076). Only dependency: the shapes, from `core/visual-state`.
+// render/viz-axes — THE TWO AXES, and the simulation that is NOT one of them (ADR-0076). Only dependency: the shapes,
+// from `core/visual-state`.
 //
-// ========================= O DEFEITO QUE ISTO CONSERTA =========================
-// Hoje o menu visual é UM rádio e `p.viz` guarda UMA string. Escolher `fix-deuter` desliga o contraste 7:1;
-// escolher um nível de contraste desliga a correção. ⚠️ UMA CRIANÇA COM DALTONISMO QUE TAMBÉM PRECISE DE
-// ALTO CONTRASTE NÃO PODE TER OS DOIS — e as duas necessidades coexistem numa mesma pessoa com frequência.
+// ========================= THE DEFECT THIS FIXES =========================
+// With ONE radio and `p.viz` keeping ONE string, choosing `fix-deuter` turned 7:1 contrast off, and choosing a contrast
+// level turned the correction off. ⚠️ A COLOUR-BLIND CHILD WHO ALSO NEEDS HIGH CONTRAST COULD NOT HAVE BOTH — and the
+// two needs often coexist in one person. Two axes let them.
 //
-// ========================= POR QUE A SIMULAÇÃO NÃO É UM EIXO =========================
-// Correção e simulação são ambas implementadas como filtro e servem a PROPÓSITOS OPOSTOS: uma deixa uma
-// criança JOGAR, a outra deixa alguém SENTIR como é não conseguir. Agrupá-las pelo mecanismo já as fundiu
-// duas vezes — no ADR-0011 (as correções listadas no painel de Empatia, de modo que *«a criança que
-// PRECISAVA da correção tinha de a procurar no menu sobre fingir»*) e no ADR-0075.
+// ========================= WHY THE SIMULATION IS NOT AN AXIS =========================
+// Correction and simulation are both implemented as a filter and serve OPPOSITE PURPOSES: one lets a child PLAY, the
+// other lets someone FEEL what not being able to is like. Grouping them by mechanism merged them twice — in ADR-0011
+// (the corrections listed in the Empathy panel, so that *«a criança que PRECISAVA da correção tinha de a procurar no
+// menu sobre fingir»*) and in ADR-0075.
 //
-// ⚠️ UM GRUPO DE AJUSTES CHAMA-SE PELO QUE ELE SERVE, NUNCA PELO COMO É IMPLEMENTADO.
+// ⚠️ A GROUP OF SETTINGS IS NAMED FOR WHAT IT SERVES, NEVER FOR HOW IT IS IMPLEMENTED.
 //
-// ========================= E POR QUE A SIMULAÇÃO É TRAVADA NOS DOIS PADRÕES =========================
-// De uma tela já corrigida, uma simulação não mostra nem a deficiência nem a correção; por cima de um tema
-// de alto contraste, mostra o que o tema faz e não o que a deuteranopia faz. Uma demonstração a correr em
-// cima de uma adaptação não é uma demonstração mais fraca — **ela ensina uma coisa falsa**.
+// ========================= AND WHY THE SIMULATION IS LOCKED TO BOTH DEFAULTS =========================
+// Over an already corrected screen, a simulation shows neither the disability nor the correction; over a high-contrast
+// theme, it shows what the theme does and not what deuteranopia does. A demonstration running over an adaptation is not
+// a weaker demonstration — **it teaches something false**.
 
 // The shapes live in `core/visual-state` (issue #167: `core/entity` holds them and may not import upward); the names
 // stay exported here, where cartridges import them.
 import type {
   Theme as TemaDoCore, Correction as CorrecaoDoCore, Simulation as SimulacaoDoCore, VisualState as VisualStateDoCore,
 } from '../core/visual-state.js';
-/** O eixo do CONTRASTE (`core/visual-state`). */
+/** The CONTRAST axis (`core/visual-state`). */
 export type Theme = TemaDoCore;
-/** O eixo da CORREÇÃO DE COR (`core/visual-state`). */
+/** The COLOUR CORRECTION axis (`core/visual-state`). */
 export type Correction = CorrecaoDoCore;
-/** A simulação, que NÃO é eixo (`core/visual-state`). */
+/** The simulation, which is NOT an axis (`core/visual-state`). */
 export type Simulation = SimulacaoDoCore;
-/** O estado visual de UM jogador (`core/visual-state`). */
+/** ONE player's visual state (`core/visual-state`). The field names and values stay Portuguese: they are stored. */
 export type VisualState = VisualStateDoCore;
 
 export const DEFAULT_VISUAL: VisualState = Object.freeze({ tema: 'padrao', correcao: 'tricro', simulacao: null });
 
 /**
- * Os dois eixos estão no padrão?
+ * Are both axes at their default?
  *
- * ⚠️ É A PERGUNTA QUE LIBERA A SIMULAÇÃO, e é por isso que ela é uma função e não um booleano guardado:
- * guardar o resultado deixaria as duas coisas divergirem, e a divergência aqui significa uma demonstração a
- * correr por cima de uma adaptação — que ensina uma coisa falsa.
+ * ⚠️ IT IS THE QUESTION THAT RELEASES THE SIMULATION, which is why it is a function and not a stored boolean: storing the
+ * result would let the two drift apart, and here a drift means a demonstration running over an adaptation — which
+ * teaches something false.
  */
 export function bothAxesAtDefault(v: VisualState): boolean {
   return v.tema === 'padrao' && v.correcao === 'tricro';
 }
 
 /**
- * Esta simulação pode correr AGORA? E se não, por quê?
+ * Can this simulation run NOW? And if not, why?
  *
- * ⚠️ DEVOLVE O MOTIVO E NÃO SÓ `false`. O ADR-0076 exige que a recusa seja VISÍVEL e explicada — nunca
- * silenciosamente removida, nunca aceita e depois ignorada. E o motivo é um FACTO SOBRE A DEMONSTRAÇÃO, não
- * uma repreensão a quem escolheu: quem ligou o alto contraste ligou-o porque precisa.
+ * ⚠️ IT RETURNS THE REASON AND NOT JUST `false`. ADR-0076 requires the refusal to be VISIBLE and explained — never
+ * silently removed, never accepted then ignored. And the reason is a FACT ABOUT THE DEMONSTRATION, not a reproach to
+ * whoever chose: whoever turned high contrast on did so because they need it.
  */
 export type UnavailableReason = 'tema' | 'correcao' | 'ambos';
 export function simulationUnavailable(v: VisualState): UnavailableReason | null {
@@ -63,14 +64,14 @@ export function simulationUnavailable(v: VisualState): UnavailableReason | null 
   return null;
 }
 
-/* ===================== A COMPOSIÇÃO ===================== */
+/* ===================== THE COMPOSITION ===================== */
 //
-// ⚠️ ELA JÁ ERA MECANICAMENTE POSSÍVEL, e é isso que torna o defeito mais caro do que parecia: o TEMA de
-// alto contraste vai pela RENDERIZAÇÃO DIRETA (`DIRECT_CFG`/PIXI) e a CORREÇÃO vai por FILTRO CSS
-// (`url(#cvd-fix-*)`). São dois mecanismos que não colidem. O que impedia os dois de coexistir não era a
-// máquina — era o campo único que só cabia um valor.
+// ⚠️ IT WAS ALWAYS MECHANICALLY POSSIBLE, which is what made the defect costlier than it looked: the high-contrast THEME
+// goes through DIRECT RENDERING (`DIRECT_CFG`/PIXI) and the CORRECTION through a CSS FILTER (`url(#cvd-fix-*)`). Two
+// mechanisms that do not collide. What kept them from coexisting was not the machine — it was the single field that
+// held one value.
 
-/** A chave de modo DIRETO que este tema usa, ou `null` para o tema padrão. */
+/** The DIRECT mode key this theme uses, or `null` for the default theme. */
 function directTheme(v: VisualState): string | null {
   return v.tema === 'hc3' ? 'hc-direto'
     : v.tema === 'hc45' ? 'hc-direto-45'
@@ -79,12 +80,12 @@ function directTheme(v: VisualState): string | null {
 }
 
 /**
- * A chave de FILTRO CSS que este estado usa, ou `null`.
+ * The CSS FILTER key this state uses, or `null`.
  *
- * ⚠️ SIMULAÇÃO VENCE CORREÇÃO AQUI, e não é uma regra de precedência escondida: as duas não podem coexistir
- * porque `simulationUnavailable` já as separa — uma simulação só corre com a correção no padrão. Este `??`
- * é o que acontece quando alguém constrói um estado à mão que a interface não deixaria montar, e escolher a
- * simulação é o menos errado dos dois: ela é a intenção mais recente e mais visível.
+ * ⚠️ SIMULATION BEATS CORRECTION HERE, and it is not a hidden precedence rule: the two cannot coexist because
+ * `simulationUnavailable` already keeps them apart — a simulation only runs with the correction at its default. This
+ * branch is what happens when someone builds by hand a state the interface would not let them build, and picking the
+ * simulation is the less wrong of the two: it is the most recent and most visible intent.
  */
 export function filterKey(v: VisualState): string | null {
   if (v.simulacao) return v.simulacao;
@@ -92,66 +93,63 @@ export function filterKey(v: VisualState): string | null {
 }
 
 /**
- * As DUAS coisas que a raiz precisa aplicar, num objeto só.
+ * The TWO things the root needs to apply, in one object.
  *
- * ⚠️ Devolver os dois JUNTOS é o ponto da issue #104: enquanto eram um campo, aplicar um apagava o outro.
- * Aqui um estado com tema `hc7` e correção `deuter` devolve os dois preenchidos, e é o que o gate afirma.
+ * ⚠️ Returning both TOGETHER is the point of issue #104: while they were one field, applying one erased the other. Here
+ * a state with theme `hc7` and correction `deuter` returns both filled in, and that is what the gate asserts.
  */
 export interface HowItApplies {
-  /** A chave do modo direto (alto contraste), ou `null`. */
+  /** The direct mode key (high contrast), or `null`. */
   readonly direct: string | null;
-  /** A chave do filtro CSS (correção ou simulação), ou `null`. */
+  /** The CSS filter key (correction or simulation), or `null`. */
   readonly filter: string | null;
 }
 export function howItApplies(v: VisualState): HowItApplies {
   return { direct: directTheme(v), filter: filterKey(v) };
 }
 
-/* ===================== O QUE OS LEITORES DE FACTO PERGUNTAM ===================== */
+/* ===================== WHAT THE READERS ACTUALLY ASK ===================== */
 //
-// ⚠️ ESTAS FUNÇÕES SAÍRAM DE UMA MEDIDA, e não de um desenho a priori. Os 31 leitores de `p.viz` foram
-// classificados pelo que PERGUNTAM, e a lista curta abaixo é o resultado — quatro perguntam o «kind», duas
-// se é simulação, uma a textura, e o resto é escrita. Um leitor que precise de algo fora daqui é sinal de
-// que a pergunta dele merecia um nome.
+// ⚠️ THESE FUNCTIONS CAME FROM A MEASUREMENT, not from an a-priori design: the readers of `p.viz` were sorted by what they
+// ASK, and the short list below is the result — whether it is a simulation, blindness, low vision, high contrast, which
+// texture. A reader that needs something outside this list is a sign its question deserves a name.
 //
-// ⚠️ E A MEDIDA TROUXE UM ACHADO: `ui/pause-icons` já tem `nextContrast` e `nextCvd`, cada uma a ciclar
-// DENTRO do seu eixo. A interface já pensava em dois eixos há muito tempo; era o ARMAZENAMENTO que os
-// colapsava num campo. As funções de ciclo abaixo são as mesmas duas, agora com onde guardar o resultado.
+// ⚠️ And the interface already thought in two axes: the quick bar's two icons always cycled WITHIN their own axis; it
+// was the STORAGE that collapsed them into one field. The cycle functions below are those two, now with a place to keep
+// the result.
 
-/** Há uma simulação a correr? É a pergunta que `simulatesDisability` fazia à string. */
+/** Is a simulation running? The question `simulatesDisability` asked of the string. */
 export function isSimulation(v: VisualState): boolean {
   return v.simulacao !== null;
 }
 
-/** É a simulação de CEGUEIRA? O quiz e o sonar perguntam isto para se comportarem sem tela. */
+/** Is it the BLINDNESS simulation? The quiz and the sonar ask this to behave without a screen. */
 export function isBlind(v: VisualState): boolean {
   return v.simulacao === 'blind';
 }
 
-/** É uma das cinco simulações de BAIXA VISÃO? Elas pedem o overlay como textura, e não só um filtro. */
+/** Is it one of the five LOW-VISION simulations? They need the overlay as a texture, not only a filter. */
 export function isLowVision(v: VisualState): boolean {
   return v.simulacao !== null && v.simulacao.startsWith('lv-');
 }
 
-/** O tema está fora do padrão? Era o `/^hc-direto/.test(s.viz)` espalhado pela interface. */
+/** Is the theme off its default? It replaces a `/^hc-direto/` test on the old string. */
 export function hasHighContrast(v: VisualState): boolean {
   return v.tema !== 'padrao';
 }
 
-/** Próximo TEMA no ciclo do ícone da barra rápida. Anda só no seu eixo, e não toca na correção. */
+/** The next THEME in the quick bar icon's cycle. It moves only on its own axis and does not touch the correction. */
 export function nextTheme(v: VisualState): VisualState {
   const i = THEMES.indexOf(v.tema);
   return { ...v, tema: THEMES[(i < 0 ? 0 : i + 1) % THEMES.length]! };
 }
 
 /**
- * Próxima CORREÇÃO no ciclo do ícone. Anda só no seu eixo, e não toca no tema.
+ * The next CORRECTION in the icon's cycle. It moves only on its own axis and does not touch the theme.
  *
- * ⚠️ A ASSIMETRIA DO ORIGINAL FICA REGISTRADA E NÃO É COPIADA: `nextCvd` mapeava um valor desconhecido para
- * o ÍNDICE 1 (`fix-protan`) enquanto `nextContrast` mapeava para 0. Era um comentário no ficheiro a explicar
- * uma diferença que ninguém tinha decidido. Aqui as duas começam no padrão, porque um valor desconhecido é
- * exatamente o caso em que não se sabe o que a criança queria — e o padrão é a única resposta que não
- * escolhe por ela.
+ * ⚠️ AN UNKNOWN VALUE STARTS AT THE DEFAULT, on both axes. (One old cycle mapped it to index 1 and the other to 0 — a
+ * difference nobody had decided.) An unknown value is exactly the case where nobody knows what the child wanted — and
+ * the default is the only answer that does not choose for them.
  */
 export function nextCorrection(v: VisualState): VisualState {
   const i = CORRECTIONS.indexOf(v.correcao);
@@ -159,58 +157,58 @@ export function nextCorrection(v: VisualState): VisualState {
 }
 
 /**
- * A chave que o sprite do jogador usa para escolher textura.
+ * The key the player's sprite uses to pick a texture.
  *
- * ⚠️ É a SIMULAÇÃO quando há uma, e o TEMA quando não há — nesta ordem porque é a ordem do que a criança vê:
- * uma cegueira simulada apaga a tela inteira, e nesse instante o tema não muda nada do que ela percebe.
+ * ⚠️ It is the SIMULATION when there is one, and the THEME when there is not — in this order because it is the order of
+ * what the child sees: a simulated blindness blanks the whole screen, and at that moment the theme changes nothing they
+ * perceive.
  */
 export function textureKey(v: VisualState): string {
   return v.simulacao ?? directTheme(v) ?? 'normal';
 }
 
 /**
- * A CHAVE ÚNICA que melhor descreve este estado no vocabulário ANTIGO — para quem só sabe ler uma.
+ * The ONE key that best describes this state in the OLD vocabulary — for whoever can only read one.
  *
- * ⚠️ NÃO É A `textureKey`, e a diferença custou um gate vermelho para aparecer. A de textura devolve
- * `normal` para uma correção de cor, porque correção não muda textura nenhuma — e usá-la como espelho faria
- * uma criança em `fix-deuter` passar a gravar `'normal'` na chave legada. **Um leitor antigo perderia a
- * correção dela**, que é exactamente o estrago que a migração inteira existe para não cometer.
+ * ⚠️ IT IS NOT `textureKey`, and the difference took a red gate to show. The texture one returns `normal` for a colour
+ * correction, because a correction changes no texture — and using it as the mirror would make a child in `fix-deuter`
+ * start writing `'normal'` into the legacy key. **An old reader would lose their correction**, which is exactly the
+ * damage the whole migration exists not to do.
  *
- * A ordem é simulação → tema → correção → padrão, e ela preserva TODO ajuste que já existia: nenhum estado
- * antigo tinha dois eixos, então nenhum deles perde nada aqui.
+ * The order is simulation → theme → correction → default, and it keeps EVERY setting that already existed: no old state
+ * had two axes, so none of them loses anything here.
  *
- * ⚠️ O ÚNICO CASO COM PERDA É O NOVO — `hc7 + fix-deuter` só cabe como uma das duas metades, e a escolhida é
- * o tema. Não há regressão possível nisso: esse estado NÃO EXISTIA antes, e um leitor que só entende uma
- * chave nunca soube exprimi-lo. Quem quiser as duas metades lê a chave nova, que existe precisamente para
- * isso.
+ * ⚠️ THE ONLY LOSSY CASE IS THE NEW ONE — `hc7 + fix-deuter` fits only as one of its two halves, and the chosen one is
+ * the theme. There is no possible regression in that: this state DID NOT EXIST before, and a reader that understands one
+ * key never could express it. Whoever wants both halves reads the new key, which exists precisely for that.
  */
 export function legacyKey(v: VisualState): string {
   return v.simulacao ?? directTheme(v) ?? filterKey(v) ?? 'normal';
 }
 
-/* ===================== A MIGRAÇÃO ===================== */
+/* ===================== THE MIGRATION ===================== */
 //
-// ⚠️ ELA NÃO É OPCIONAL E VEM ANTES DA PRIMEIRA LEITURA DA FORMA NOVA. O ajuste salvo guarda o valor único
-// antigo; sem a tradução, o modo visual que cada criança já escolheu é DESCARTADO — e quem escolheu um
-// desses valores escolheu-o porque enxerga assim.
+// ⚠️ IT IS NOT OPTIONAL AND IT COMES BEFORE THE FIRST READ OF THE NEW SHAPE. The saved setting keeps the old single value;
+// without the translation, the visual mode each child already chose is DISCARDED — and whoever chose one of those values
+// chose it because that is how they see.
 
-/** O valor único antigo → o estado de dois eixos. Chave desconhecida cai no padrão, e nunca estoura. */
+/** The old single value → the two-axis state. An unknown key falls to the default and never throws. */
 const FROM_SINGLE_KEY: Readonly<Record<string, VisualState>> = Object.freeze({
   normal: DEFAULT_VISUAL,
 
-  // Os três níveis de contraste viram TEMA, e a correção fica no padrão.
+  // The three contrast levels become a THEME, and the correction stays at its default.
   'hc-direto': { tema: 'hc3', correcao: 'tricro', simulacao: null },
   'hc-direto-45': { tema: 'hc45', correcao: 'tricro', simulacao: null },
   'hc-direto-7': { tema: 'hc7', correcao: 'tricro', simulacao: null },
 
-  // As três correções viram CORREÇÃO, e o tema fica no padrão.
+  // The three corrections become a CORRECTION, and the theme stays at its default.
   'fix-protan': { tema: 'padrao', correcao: 'protan', simulacao: null },
   'fix-deuter': { tema: 'padrao', correcao: 'deuter', simulacao: null },
   'fix-tritan': { tema: 'padrao', correcao: 'tritan', simulacao: null },
 
-  // ⚠️ AS NOVE SIMULAÇÕES VOLTAM COM OS DOIS EIXOS NO PADRÃO, e não é perda de informação: uma simulação
-  // só era possível a partir do padrão de qualquer maneira, porque ela SUBSTITUÍA tudo o resto. O que a
-  // forma nova acrescenta é dizer isso em vez de o deixar implícito.
+  // ⚠️ THE NINE SIMULATIONS COME BACK WITH BOTH AXES AT THEIR DEFAULT, and no information is lost: a simulation was only
+  // possible from the default anyway, because it REPLACED everything else. The new shape says so instead of leaving it
+  // implicit.
   'sim-protan': { tema: 'padrao', correcao: 'tricro', simulacao: 'sim-protan' },
   'sim-deuter': { tema: 'padrao', correcao: 'tricro', simulacao: 'sim-deuter' },
   'sim-tritan': { tema: 'padrao', correcao: 'tricro', simulacao: 'sim-tritan' },
@@ -223,14 +221,15 @@ const FROM_SINGLE_KEY: Readonly<Record<string, VisualState>> = Object.freeze({
 });
 
 /**
- * Traduz o valor salvo. Aceita o antigo (string) e o novo (objeto), e devolve sempre um estado válido.
+ * Translates the saved value. It accepts the old one (a string) and the new one (an object), and always returns a
+ * valid state.
  *
- * ⚠️ IDEMPOTENTE POR CONSTRUÇÃO: um objeto já migrado atravessa com os campos conferidos. Importa porque a
- * leitura acontece por jogador e mais de uma vez por sessão.
+ * ⚠️ IDEMPOTENT BY CONSTRUCTION: an already migrated object passes through with its fields checked. It matters because
+ * the read happens per player and more than once a session.
  *
- * ⚠️ E DESCONHECIDO CAI NO PADRÃO EM VEZ DE ESTOURAR. O dado vem do navegador de uma criança e pode ser de
- * uma versão futura, de outra máquina, ou lixo. Um `throw` aqui tiraria o jogo do ar por causa de uma
- * preferência; o padrão apenas devolve o jogo como ele nasce.
+ * ⚠️ AND THE UNKNOWN FALLS TO THE DEFAULT INSTEAD OF THROWING. The data comes from a child's browser and may be from a
+ * future version, another machine, or garbage. A `throw` here would take the game down over a preference; the default
+ * just gives the game back as it is born.
  */
 export function migrateVisual(saved: unknown): VisualState {
   if (typeof saved === 'string') return FROM_SINGLE_KEY[saved] ?? DEFAULT_VISUAL;
@@ -252,5 +251,5 @@ export const SIMULATIONS: readonly Simulation[] = [
   'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind',
 ];
 
-/** As chaves antigas que a migração conhece — exportada para o gate poder exigir que TODAS estejam cobertas. */
+/** The old keys the migration knows — exported so the gate can demand that ALL of them are covered. */
 export const LEGACY_KEYS: readonly string[] = Object.keys(FROM_SINGLE_KEY);

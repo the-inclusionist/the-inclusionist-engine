@@ -1,33 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/port — A PORTA DO RENDERIZADOR (Fase D do plano, ADR-0035).
+// render/port — THE RENDERER'S PORT (ADR-0035).
 //
-// ========================= O QUE ESTE ARQUIVO RESOLVE =========================
-// O ADR-0035 apostou a reversibilidade da escolha do renderizador num adaptador: os módulos não importam
-// PixiJS, recebem por injeção o que vão desenhar. A aposta foi cumprida pela metade — os módulos de fato não
-// importam PixiJS, mas cada um descreveu a forma do que recebe POR CONTA PRÓPRIA, e as descrições
-// divergiram.
+// ========================= WHAT THIS FILE SOLVES =========================
+// ADR-0035 bet the reversibility of the renderer choice on an adapter: modules do not import PixiJS, they get what they
+// will draw by injection. Without one declaration, each module described the shape of what it gets ON ITS OWN, and the
+// descriptions drift — a graphics type was once written FIVE times with four different definitions (some with
+// `clear(): void`, others with `clear(): Gfx`; one with `visible`, another with `lineStyle`/`moveTo`/`lineTo`).
 //
-// `Gfx` estava escrito CINCO vezes, em `render/scene-city`, `render/scene-sky`, `render/title-scene`,
-// `render/weather` e `game/traffic`, com quatro definições diferentes: umas com `clear(): void`, outras com
-// `clear(): Gfx`; uma com `visible`, outra com `lineStyle`/`moveTo`/`lineTo`. `Layer` e `SpriteCtor`, duas
-// vezes cada. `RendererLike`, `ContainerLike` e `GraphicsLike`, duas cada.
+// It is the same defect as `DomQuery` (sixteen copies) and `KeyScheme` (six), in the renderer: a truth written in many
+// places drifts, and the drift shows at the composition root — the one point where the real PixiJS meets all of them at
+// once.
 //
-// É o mesmo defeito do `DomQuery` (dezesseis cópias) e do `KeyScheme` (seis), agora no renderizador: uma
-// verdade escrita em muitos lugares diverge, e a divergência aparece na raiz de composição — que é o único
-// ponto onde o PixiJS de verdade encontra todas elas ao mesmo tempo.
+// ========================= WHAT THE PORT IS NOT =========================
+// It is NOT the `Scene`/`Handle` implementation the `demos` plan's D14 specifies — only the port, and only where the
+// modules already are. This describes what the CURRENT renderer offers, in one declaration, in a way PixiJS satisfies
+// with no adapter. The `Scene` comes later, and can reuse these names.
 //
-// ========================= O QUE A PORTA NÃO É =========================
-// NÃO é a implementação de `Scene`/`Handle` que a D14 do `demos` especifica. O plano é explícito: "não fazer
-// agora a implementação completa de `Scene`; só a porta, e só onde os módulos já estão". Isto aqui descreve
-// o que o renderizador ATUAL oferece, numa declaração só, de um jeito que o PixiJS satisfaz sem adaptador.
-// A `Scene` nasce depois, e nasce podendo reusar estes nomes.
-//
-// ========================= POR QUE OS RETORNOS ENCADEIAM =========================
-// `beginFill(…): this` e não `: void`. O PixiJS encadeia (`g.beginFill(c).drawRect(…).endFill()`), e três
-// dos cinco módulos já dependiam disso. `this` em vez do nome do tipo é o que permite uma interface derivada
-// continuar encadeando sem redeclarar cada método — foi o que fez as cinco cópias divergirem.
+// ========================= WHY THE RETURNS CHAIN =========================
+// `beginFill(…): this` and not `: void`. PixiJS chains (`g.beginFill(c).drawRect(…).endFill()`), and consumers depend on
+// it. `this` instead of the type's name is what lets a derived interface keep chaining without redeclaring each method
+// — the lack of it is what made the copies drift.
 
-/** O MÍNIMO de uma camada de desenho vetorial: limpar, preencher, retangular. */
+/** The MINIMUM of a vector drawing layer: clear, fill, rectangle. */
 export interface Drawing {
   clear(): this;
   beginFill(color: number, alpha?: number): this;
@@ -35,153 +29,151 @@ export interface Drawing {
   endFill(): this;
 }
 
-/** Desenho que também traça linha — chuva, cabos, tracinhos de lava. */
+/** A drawing that also strokes lines — rain, cables, lava dashes. */
 export interface DrawingWithLine extends Drawing {
   lineStyle(width: number, color?: number, alpha?: number): this;
   moveTo(x: number, y: number): this;
   lineTo(x: number, y: number): this;
 }
 
-/** O que se pode esconder. Separado de `Drawing` porque nem toda camada é escondida por quem a desenha. */
+/** What can be hidden. Separate from `Drawing` because not every layer is hidden by whoever draws it. */
 export interface Visible {
   visible: boolean;
 }
 
-/** Um contêiner do grafo de cena, do ponto de vista de quem só adiciona e remove filhos. */
+/** A scene-graph container, from the point of view of whoever only adds and removes children. */
 export interface Layer {
   addChild(c: unknown): unknown;
   removeChild(c: unknown): unknown;
 }
 
-/** O que tem textura trocável — o recolor do alto contraste escreve aqui. */
+/** What has a swappable texture — the high-contrast recolour writes here. */
 export interface WithTexture {
   texture: unknown;
 }
 
 /**
- * DESENHAR UM OBJETO DENTRO DE UMA TEXTURA — a captura de tela de cada jogador no multi-tela.
+ * DRAW AN OBJECT INTO A TEXTURE — each player's screen capture in multi-screen.
  *
- * É uma FUNÇÃO e não um objeto `{ render(...) }`, e a diferença é o que faz a porta funcionar. Dois módulos
- * declaravam `interface RendererLike { render(displayObject: unknown, options: { renderTexture: unknown }) }`
- * — idênticos, e ambos recusados pelo PixiJS real: o `render` dele pede `IRenderableObject`, e `unknown` não
- * é atribuível a isso. Por contravariância, quem DECLARA o parâmetro mais largo é quem não cabe.
+ * A FUNCTION and not a `{ render(...) }` object, and the difference is what makes the port work. An
+ * `interface RendererLike { render(displayObject: unknown, options: { renderTexture: unknown }) }` is refused by the real
+ * PixiJS: its `render` asks for an `IRenderableObject`, and `unknown` is not assignable to that. By contravariance,
+ * whoever DECLARES the wider parameter is who does not fit.
  *
- * Pedir a CAPACIDADE resolve: o módulo diz o que quer que aconteça, e a raiz de composição — que é o único
- * lugar onde o PixiJS já é conhecido — entrega a função. É o adaptador que o ADR-0035 prometeu, e a promessa
- * só vira fato quando o pedido tem a forma de um verbo, não a de um objeto emprestado.
+ * Asking for the CAPABILITY solves it: the module says what it wants to happen, and the composition root — the one place
+ * where PixiJS is already known — hands in the function. It is the adapter ADR-0035 promised, and the promise only
+ * becomes fact when the request has the shape of a verb, not of a borrowed object.
  *
- * ⚠️ `clearFirst` É OBRIGATÓRIO, e era opcional. Desenhar numa textura de render sem dizer se ela deve ser limpa
- * antes é a diferença entre um quadro e um BORRÃO: sem limpar, cada quadro se acumula sobre o anterior e o
- * personagem aparece várias vezes, em várias posições. Havia dois chamadores — um passava `false` de
- * propósito (a passada extra de baixa visão, que compõe POR CIMA) e o outro não passava nada, deixando a
- * decisão para um padrão que ninguém escreveu.
+ * ⚠️ `clearFirst` IS REQUIRED. Drawing into a render texture without saying whether it should be cleared first is the
+ * difference between a frame and a SMEAR: without clearing, each frame piles on the previous one and the character shows
+ * several times, in several places. One caller passes `false` on purpose (the extra low-vision pass, which composes ON
+ * TOP); an optional parameter would let another leave the decision to a default nobody wrote.
  *
- * Um padrão implícito aqui é caro de duas formas: ele muda com a versão do renderizador, e o sintoma dele é
- * visual — nenhum teste de lógica o vê. Tornar o parâmetro obrigatório faz o compilador cobrar a intenção de
- * cada chamador, uma vez, e para sempre.
+ * An implicit default here is expensive twice over: it changes with the renderer's version, and its symptom is visual —
+ * no logic test sees it. A required parameter makes the compiler demand each caller's intent, once, and forever.
  */
 export type RenderInto = (displayObject: unknown, target: unknown, clearFirst: boolean) => void;
 
 /**
- * CRIAR UM SPRITE a partir de uma textura, e um AZULEJO a partir dela.
+ * CREATE A SPRITE from a texture, and a TILE from one.
  *
- * Fábricas, não construtores — e pelo mesmo motivo do `RenderInto` acima. Três módulos pediam
- * `interface SpriteCtor { new (tex: unknown): Sprite }`, e o `PIXI.Sprite` real não cabe: o construtor dele
- * aceita `Texture | undefined`, e um parâmetro declarado `unknown` é MAIS LARGO — por contravariância, quem
- * promete aceitar qualquer coisa é quem não pode receber um construtor que só aceita textura.
+ * Factories, not constructors — for the same reason as `RenderInto` above. An `interface SpriteCtor { new (tex:
+ * unknown): Sprite }` does not fit the real `PIXI.Sprite`: its constructor accepts `Texture | undefined`, and a
+ * parameter declared `unknown` is WIDER — by contravariance, whoever promises to accept anything cannot receive a
+ * constructor that only accepts a texture.
  *
- * Uma função apaga o problema: quem chama passa a textura que já tem, e quem compõe fecha a diferença uma
- * vez. `T` é o que o módulo espera de volta — cada um sabe qual fatia do sprite ele vai tocar.
+ * A function erases the problem: the caller passes the texture it already has, and the composer closes the difference
+ * once. `T` is what the module expects back — each knows which slice of the sprite it will touch.
  */
 export type CreateSprite<T> = (sourceTexture: unknown) => T;
 
-/** Idem para o azulejo do parallax, que também recebe largura e altura. */
+/** Likewise for the parallax tile, which also gets a width and a height. */
 export type CreateTile<T> = (sourceTexture: unknown, tileWidth: number, tileHeight: number) => T;
 
-/** E o desenho vetorial vazio (`new PIXI.Graphics()`), pela mesma razão. */
+/** And the empty vector drawing (`new PIXI.Graphics()`), for the same reason. */
 export type CreateDrawing<T> = () => T;
 
 /**
- * O QUE SE TINGE — um sprite do ponto de vista de quem só ESCREVE a cor nele.
+ * WHAT GETS TINTED — a sprite from the point of view of whoever only WRITES its colour.
  *
- * `tint: unknown`, e o `unknown` aqui é a coisa certa, não preguiça. Dois módulos declaravam
- * `tint: number` — e o `PIXI.Sprite` real NÃO CABE nisso: o `tint` dele é `ColorSource`, que aceita
- * número, texto (`'red'`), array e mais. `number` é um SUBTIPO estrito disso, e um módulo que não é
- * dono do campo declarando algo MAIS ESTREITO que a verdade é exatamente o que o ADR-0039 proíbe:
- * estreitar é o que quebra a atribuição.
+ * `tint: unknown`, and `unknown` here is right, not lazy. `tint: number` does NOT fit the real `PIXI.Sprite`: its
+ * `tint` is a `ColorSource`, which accepts a number, text (`'red'`), an array and more. `number` is a strict SUBTYPE of
+ * that, and a module that does not own the field declaring something NARROWER than the truth is exactly what ADR-0039
+ * forbids: narrowing is what breaks the assignment.
  *
- * O supertipo verdadeiro que dá para provar sem importar PixiJS é `unknown`. O preço é conhecido e
- * pequeno: quem escreve aqui não é mais conferido pelo compilador — mas as duas únicas escritas da
- * árvore são constantes hexadecimais literais, e o `ColorSource` aceitaria todas elas de qualquer jeito.
+ * The true supertype provable without importing PixiJS is `unknown`. The price is known and small: whoever writes here
+ * is no longer checked by the compiler — nothing in the engine writes a tint today, and the hex constants a game writes
+ * are all `ColorSource`s anyway.
  */
 export interface Tintable {
   tint: unknown;
 }
 
-/** O que se descarta. `DisplayObject.destroy(options?)` do PixiJS satisfaz — o opcional não atrapalha. */
+/** What gets disposed. PixiJS's `DisplayObject.destroy(options?)` satisfies it — the optional does not get in the way. */
 export interface Disposable {
   destroy(): void;
 }
 
 /**
- * Camada que também ESVAZIA, devolvendo o que saiu para quem precisa destruir os filhos removidos.
+ * A layer that also EMPTIES, returning what came out to whoever needs to destroy the removed children.
  *
- * Separada de `Layer` porque só um consumidor esvazia, e porque o retorno é a parte delicada: quem
- * declarava `removeChildren(): CoinSprite[]` pedia de volta algo mais ESPECÍFICO do que o PixiJS
- * entrega (`DisplayObject[]`) — e retorno é covariante, então o pedido específico é o que não cabe.
- * `Disposable` é o que o chamador de fato usa.
+ * Separate from `Layer` because only one consumer empties, and because the return is the delicate part: asking for
+ * `removeChildren(): CoinSprite[]` asks back for something more SPECIFIC than PixiJS delivers (`DisplayObject[]`) — and
+ * a return is covariant, so the specific request is what does not fit. `Disposable` is what the caller actually uses.
  */
 export interface ClearableLayer extends Layer {
   removeChildren(): Disposable[];
 }
 
-/** O que tem filtro de GPU — a câmera e cada sprite de saída do multi-tela. */
+/** What has a GPU filter — the camera and each multi-screen output sprite. */
 export interface WithFilter {
   filters: unknown;
 }
 
-/** Desenho que também traça CÍRCULO — a bolinha indicadora de cada viewport. */
+/** A drawing that also draws a CIRCLE — each viewport's indicator dot. */
 export interface DrawingWithCircle extends DrawingWithLine {
   drawCircle(x: number, y: number, r: number): this;
 }
 
 /**
- * APLICAR UM FILTRO CSS NO SOLO — o filtro global da tela, que compõe daltonismo, baixa visão,
- * cegueira e o realce de luminância/quantização.
+ * APPLY A CSS FILTER TO THE GROUND — the screen's global filter, composing colour blindness, low vision, blindness and
+ * the luminance/quantisation enhancement.
  *
- * Era `app: AppLike | null` com `AppLike { view?: { style: { filter: string } } }` — o módulo alcançava
- * TRÊS níveis para dentro de um objeto que não é dele, e o `PIXI.Application` real não cabia: o `style`
- * do `ICanvas` do PixiJS é `ICanvasStyle`, que sequer TEM `filter` (ele existe para a `OffscreenCanvas`,
- * onde não há CSS). Em produção o `view` é um `HTMLCanvasElement` de verdade e o campo existe — mas isso
- * é uma coisa que só a raiz de composição sabe, e é lá que a conversão pertence.
+ * Not `app: AppLike | null` with `AppLike { view?: { style: { filter: string } } }`: that reached THREE levels into an
+ * object that is not the module's, and the real `PIXI.Application` did not fit — PixiJS's `ICanvas` `style` is an
+ * `ICanvasStyle`, which does not even HAVE `filter` (it exists for `OffscreenCanvas`, where there is no CSS). In
+ * production the `view` is a real `HTMLCanvasElement` and the field exists — but only the composition root knows that,
+ * and that is where the conversion belongs.
  *
- * Mesma lição do `RenderInto` e do `CreateSprite`: pedir o VERBO cabe onde emprestar o objeto não cabe.
+ * The same lesson as `RenderInto` and `CreateSprite`: asking for the VERB fits where borrowing the object does not.
  */
 export type ApplyCssFilter = (css: string, reach: FilterReach) => void;
 
 /**
- * ONDE o filtro de acessibilidade cai — e a distinção é de PRODUTO, decidida pelo Dev em 2026-08-26.
+ * WHERE the accessibility filter lands — and the distinction is one of PRODUCT, decided by the Dev.
  *
- * O quadro é metade canvas e metade DOM, e filtro de PIXI não alcança DOM. Até aqui o filtro caía SÓ na
- * canvas, e os menus ficavam crus: a criança daltônica recebia o jogo corrigido e as palavras não (issue
- * #82). Mas a correção não é o único modo, e nem todos devem alcançar o menu:
+ * The frame is half canvas and half DOM, and a PIXI filter does not reach the DOM. With the filter landing ONLY on the
+ * canvas, the menus stayed raw: the colour-blind child got the game corrected and the words not (issue #82). But the
+ * correction is not the only mode, and not all of them should reach the menu:
  *
- *   · MELHORIA (`normal`, `hc-direto*`, `fix-*`) — existe para a criança ENXERGAR MELHOR. Tem de alcançar
- *     tudo que ela lê, menus inclusive. É o caso que estava quebrado.
- *   · EMPATIA (`sim-*`, `lv-*`, `blind`) — existe para um adulto SENTIR como é. Fica no mundo. O menu é o
- *     instrumento de SAIR da simulação, e uma cegueira que apagasse o menu de pausa trancaria a criança
- *     dentro dela.
+ *   · ENHANCEMENT (`normal`, `hc-direto*`, `fix-*`) — exists so the child SEES BETTER. It has to reach everything they
+ *     read, menus included.
+ *   · EMPATHY (`sim-*`, `lv-*`, `blind`) — exists so an adult FEELS what it is like. It stays in the world. The menu is
+ *     the instrument for LEAVING the simulation, and a blindness that blanked the pause menu would lock the child
+ *     inside it.
  *
- * O catálogo já sabia disto antes de a regra ser escrita: `VIZ_MODES` traz `sim: true` exatamente nos nove
- * modos de empatia, e `simulatesDisability(chave)` é a pergunta pronta. Nada de taxonomia nova.
+ * The catalogue already knew this before the rule was written: `VIZ_MODES` carries `sim: true` exactly on the nine
+ * empathy modes, and `simulatesDisability(key)` is the ready-made question. No new taxonomy. (The values stay
+ * Portuguese: `mundo` is "world", `mundo-e-menus` "world and menus".)
  */
 export type FilterReach = 'mundo' | 'mundo-e-menus';
 
 /**
- * LIGAR/DESLIGAR O ALTO CONTRASTE NO DOM — a metade que o filtro não alcança.
+ * TURN HIGH CONTRAST ON/OFF IN THE DOM — the half the filter does not reach.
  *
- * O alto contraste não é filtro de CSS: é Renderização Direta, e repinta as TEXTURAS da canvas. O DOM não
- * tem textura, então não há o que propagar — há que escrever o equivalente, e ele mora no `style.css` sob
- * `#dom-layer.hc`. Aqui só se diz SE está ligado; o desenho é do CSS, com as razões medidas (issue #83).
+ * High contrast is not a CSS filter: it is Direct Rendering, and it repaints the canvas's TEXTURES. The DOM has no
+ * texture, so there is nothing to propagate — the equivalent has to be written, and it lives in `style.css` under
+ * `#dom-layer.hc`. Here only WHETHER it is on is said; the drawing belongs to the CSS, with the measured reasons (issue
+ * #83).
  */
 export type ApplyHighContrastToDom = (isOn: boolean) => void;
