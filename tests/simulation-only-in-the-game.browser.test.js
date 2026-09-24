@@ -39,10 +39,10 @@ async function voltarAoJogo() {
 
 beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
-    // 📌 `#caixa-com-porta` É UM FILHO QUE CONTÉM UM MENU, e existe para a RECURSÃO ter assunto: sem ele o mundo deste
-    // teste só tinha filhos que ou eram menus ou não continham nenhum, e o ramo que desce mais um nível nunca corria.
-    // 📏 Medido por sonda em 2026-09-22: filtrar um filho que contém um menu em vez de o percorrer passava com a suíte
-    // verde — e é literalmente o defeito do ADR-0187, a simulação a apagar a porta onde ela se desliga.
+    // 📌 `#caixa-com-porta` IS A CHILD THAT CONTAINS A MENU, and it exists so the RECURSION has a subject: without it this
+    // test's world only had children that either were menus or contained none, and the branch that goes one level down
+    // never ran. 📏 Measured by a probe on 2026-09-22: filtering a child that contains a menu instead of walking it passed
+    // with the suite green — and it is literally ADR-0187's defect, the simulation erasing the door where it is turned off.
     + '<div id="game-region" tabindex="-1"><div id="conteudo-do-jogo">a pergunta</div>'
     + '<div id="caixa-com-porta"><span id="texto-ao-lado-da-porta">ao lado</span><button id="porta-aninhada" data-incl-menu>Ajustes</button></div>'
     + '<button id="porta-do-cartucho" data-incl-menu>Menu</button><div id="title-icons"></div></div>';

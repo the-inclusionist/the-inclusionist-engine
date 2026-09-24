@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/shell — a DECISÃO de fase, sem DOM (project node). É aqui que se prova a razão de a extração
-// ter separado projeção de efeito: `phaseView` e `touchControlsPlan` respondem "o que esta fase manda fazer"
-// sem overlay, sem áudio e sem PIXI, e um `!==` trocado vira asserção em vez de sintoma silencioso.
+// Tests of ui/shell — the phase DECISION, with no DOM (node project). This is where the reason the extraction separated
+// projection from effect is proved: `phaseView` and `touchControlsPlan` answer "what this phase says to do" with no
+// overlay, no audio and no PIXI, and a swapped `!==` becomes an assertion instead of a silent symptom.
 //
-// A casca (foco de verdade, innerHTML da legenda, os ouvintes do modo Print) está em shell.browser.test.js.
+// The shell (real focus, the legend's innerHTML, Print mode's listeners) is in shell.browser.test.js.
 import { describe, it, expect } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // a legenda vem do dicionário desde o item 14
+import { t } from '../app/js/core/i18n.js'; // the legend comes from the dictionary (item 14)
 import {
   phaseView, touchControlsPlan, chip, legendRow1, legendRow2, legendHtml,
   padActionGlyphs, touchActionGlyphs, pickLegendPad,
 } from '../app/js/ui/shell.js';
 
-// A CASCA DEIXOU DE CONHECER AS FASES em 2026-08-26 (ADR-0030 C3). `phaseView`/`touchControlsPlan` recebem
-// três BOOLEANOS — `SceneFacts` —, e os três nomes moram na raiz de composição, que é este jogo. Este
-// arquivo continua escrito em `'title'`/`'playing'`/`'paused'` porque é como os casos se leem melhor; a
-// tradução acontece aqui, num lugar só, e é justamente o que a raiz faz de verdade.
+// THE SHELL DOES NOT KNOW THE PHASES (ADR-0030 C3). `phaseView`/`touchControlsPlan` receive three BOOLEANS —
+// `SceneFacts` —, and the three names live in the composition root. This file stays written in
+// `'title'`/`'playing'`/`'paused'` because that is how the cases read best; the translation happens here, in one place,
+// which is exactly what the root really does.
 const fase = (p) => ({ titleScreen: p === 'title', worldRunning: p === 'playing', pauseMenu: p === 'paused' });
-/** As três cenas que ESTE jogo vive. Era `PHASES`, exportado pela casca; a casca não sabe mais quantas são. */
+/** The three scenes THIS game lives. The shell no longer knows how many there are. */
 const PHASES = ['title', 'playing', 'paused'];
 
 describe('phaseView — a fase projetada em ordens para o documento', () => {
@@ -36,7 +36,7 @@ describe('phaseView — a fase projetada em ordens para o documento', () => {
     expect(phaseView(fase('playing')).screenPauseHidden).toBe(true);
   });
 
-  // GAG (pilar de a11y): som de jogo com o jogo parado é ruído para quem depende do áudio para se orientar.
+  // GAG (a11y pillar): game sound with the game stopped is noise to whoever depends on audio to find their way.
   it('fora de "playing" TODO o som cala, e o controle virtual some', () => {
     for (const p of PHASES) {
       expect(phaseView(fase(p)).masterMuted, p).toBe(p !== 'playing');
@@ -45,15 +45,10 @@ describe('phaseView — a fase projetada em ordens para o documento', () => {
   });
 
   it('⚠️ a pausa GLOBAL não existe: a casca não PROCURA `#pause-overlay` em lado nenhum', async () => {
-    // ⚠️ A AFIRMAÇÃO MUDOU, E A NOVA É MAIS FORTE. Antes dizia «fica escondido em toda fase», e para o dizer
-    // a casca tinha de o procurar e escondê-lo a cada troca de fase — código a segurar um elemento que a
-    // Etapa 2 aposentou. Enquanto isso durou, aquelas quarenta linhas de markup no `index.html` do cartucho
-    // eram o menu de pausa com aspecto mais oficial do repositório, e é o que o próximo autor de cartucho
-    // copia junto com o ficheiro. Já tinham derivado: dois itens «Comunicação», e um `#opt-letra` que a
-    // engine hoje gera dinamicamente.
-    //
-    // Um caso que afirma «está escondido» aceita que ele exista. Este afirma que a casca não o conhece, e é
-    // por isso que ele não pode voltar por distração.
+    // ⚠️ A case asserting «fica escondido» accepts that the element exists. This one asserts that the shell does not
+    // know it, which is why it cannot come back by distraction. (Pause markup copied into a cartridge's page had already
+    // drifted — two «Comunicação» items, and an `#opt-letra` the engine now generates — and looked like the most official
+    // pause menu in the repository.)
     const { readFileSync } = await import('node:fs');
     const src = readFileSync(new URL('../app/js/ui/shell.ts', import.meta.url), 'utf8');
     const linhas = src.split(/\r?\n/)
@@ -68,7 +63,7 @@ describe('phaseView — a fase projetada em ordens para o documento', () => {
     expect(phaseView(fase('title')).pausePressed).toBe(false);
   });
 
-  // Requisito de a11y: entrar numa tela sem levar o foco junto deixa quem usa teclado/leitor sem âncora.
+  // An a11y requirement: entering a screen without taking the focus along leaves keyboard/screen-reader users with no anchor.
   it('cada fase leva o foco para um lugar, e nunca deixa ninguém sem destino', () => {
     expect(phaseView(fase('playing')).focus).toBe('game-region');
     expect(phaseView(fase('paused')).focus).toBe('pause-menu');
@@ -96,36 +91,36 @@ describe('touchControlsPlan — o único pedaço da troca de fase com memória',
     expect(touchControlsPlan(fase('title'), st(false, true), 1)).toEqual({ hidden: true, wasOn: false });
   });
 
-  // ⚠️ DEFEITO CONHECIDO, PINADO — não conserte. No setPhase real, `hideTouchControls()` roda ANTES deste
-  // plano sempre que a fase não é 'playing', e já deixa `hidden: true`. Portanto a entrada REAL do ramo
-  // 'paused' é sempre `hidden: true`, e a marca `wasOn` nunca chega a ser gravada: o ramo de restauração é
-  // inalcançável por esse caminho. Sintoma no celular: pausar esconde o direcional e retomar não o traz de
-  // volta. Este caso pina a SEQUÊNCIA como ela é hoje; quando o conserto vier, ele falha — é a rede.
+  // 📌 THE PLAN MUST RECEIVE THE STATE READ BEFORE `hideTouchControls()` — `ui/shell` reads first and hides after
+  // (`readTouchControls`/`applyTouchControls`). This case shows why, by building the OTHER order by hand: fed the
+  // already-hidden state, the plan cannot store the `wasOn` mark, and resuming does not bring the d-pad back. It measures
+  // the pure plan, not production's call order; that order is measured in shell.browser ("pausar com o direcional
+  // visível guarda a marca").
   it('DEFEITO (pinado): com hideTouchControls rodando antes, a marca NUNCA é gravada ao pausar', () => {
     // 1) jogando, controle virtual visível
     let s = st(false, false);
-    // 2) setPhase('paused') → hideTouchControls() esconde ANTES do plano
+    // 2) setPhase('paused') → hideTouchControls() hides BEFORE the plan
     s = { ...s, hidden: true };
-    // 3) só então o plano roda
+    // 3) only then the plan runs
     s = touchControlsPlan(fase('paused'), s, 1);
-    expect(s).toEqual({ hidden: true, wasOn: false }); // a marca se perdeu aqui
-    // 4) setPhase('playing') → sem marca, não há o que restaurar
+    expect(s).toEqual({ hidden: true, wasOn: false }); // the mark was lost here
+    // 4) setPhase('playing') → with no mark, there is nothing to restore
     s = touchControlsPlan(fase('playing'), s, 1);
-    expect(s.hidden).toBe(true); // o direcional NÃO volta sozinho — é o defeito
+    expect(s.hidden).toBe(true); // the d-pad does NOT come back by itself — that is the defect of the wrong order
   });
 });
 
 describe('legenda do título — os chips de dispositivo', () => {
   it('chip sem cor não emite style; com cor, emite', () => {
-    expect(chip('A', null, 'pular')).toBe('<span class="lg"><span class="lg-ico">A</span> pular</span>'); // `chip` recebe a palavra PRONTA: quem traduz é quem chama
+    expect(chip('A', null, 'pular')).toBe('<span class="lg"><span class="lg-ico">A</span> pular</span>'); // `chip` receives the word READY: whoever calls it translates
     expect(chip('A', '#2fae4e')).toBe('<span class="lg"><span class="lg-ico" style="background:#2fae4e">A</span></span>');
   });
 
   it('as duas linhas saem na ordem fixa: direcional+pausa, depois pular/especial/correr/trocar', () => {
     const l1 = legendRow1('✜', 'START');
     const l2 = legendRow2({ action2: ['A', null], action3: ['B', null], action1: ['C', null], action4: ['D', null] }, (a) => ({ action1: 'correr', action2: 'pular', action3: 'especial', action4: 'trocar' })[a] || null);
-    // Contra `t()` e não contra o português: fixar as palavras aqui devolveria ao teste o texto que saiu do
-    // código. A ORDEM é o que este caso guarda, e ela não depende de idioma nenhum.
+    // Against `t()` and not against the Portuguese: pinning the words here would bring back into the test the text that
+    // left the code. The ORDER is what this case guards, and it depends on no language at all.
     expect(l1.indexOf(t('legend.move'))).toBeLessThan(l1.indexOf(t('legend.pause')));
     const pos = ['legend.jump', 'legend.especial', 'legend.run', 'legend.swap'].map((k) => l2.indexOf(t(k)));
     expect(pos.every((n) => n >= 0)).toBe(true);
@@ -144,9 +139,9 @@ describe('legenda do título — os chips de dispositivo', () => {
 
   it('gamepad FORA do padrão: o mapa do assistente redireciona cada ação para o botão que a pessoa apertou', () => {
     const g = padActionGlyphs('generic', { action2: { b: 2 }, action3: { b: 3 } });
-    expect(g.action2[0]).toBe('2');     // "pular" agora mostra o botão 2
+    expect(g.action2[0]).toBe('2');     // "pular" now shows button 2
     expect(g.action3[0]).toBe('3');
-    expect(g.action1[0]).toBe('2');      // sem entrada custom: cai no índice default
+    expect(g.action1[0]).toBe('2');      // no custom entry: falls back to the default index
     expect(g.action4[0]).toBe('3');
   });
 
@@ -162,8 +157,8 @@ describe('legenda do título — os chips de dispositivo', () => {
 
   it('a legenda descreve o pad do JOGADOR 1 quando ele tem um; senão, o primeiro conectado', () => {
     const pads = [null, { index: 1, id: 'x', mapping: 'standard' }, { index: 2, id: 'y', mapping: '' }];
-    expect(pickLegendPad(pads, 2).index).toBe(2);   // P1 associado ao pad 2 → é esse
-    expect(pickLegendPad(pads, -1).index).toBe(1);  // sem associação → o primeiro conectado
+    expect(pickLegendPad(pads, 2).index).toBe(2);   // P1 bound to pad 2 → it is that one
+    expect(pickLegendPad(pads, -1).index).toBe(1);  // no binding → the first connected
     expect(pickLegendPad([null, null], -1)).toBe(null);
   });
 

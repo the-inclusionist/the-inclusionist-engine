@@ -1,26 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de platform/speech — a voz do LETRAMENTO (`gameSay`).
+// Tests of platform/speech — the LITERACY voice (`gameSay`).
 //
-// 📏 POR QUE ESTE FICHEIRO EXISTE, e a medição que o pediu: `platform/speech` é um dos DOIS módulos da engine
-// que não têm importador interno NENHUM **e** não são importados por teste nenhum daqui. Ele não é morto — o
-// `game-platformer` consome `gameSay` (`main.ts:135`) pela superfície publicada `./platform/*.js` —, é
-// **publicado sem gate**. O outro é `render/recycling-tex`, e esse tem o seu único teste no repositório do
-// CARTUCHO, que a CI da engine nunca corre: é o padrão do canário outra vez, num terceiro sítio.
+// 📏 WHY THIS FILE EXISTS: `platform/speech` has NO internal importer in the engine. It is not dead — `game-platformer`
+// consumes `gameSay` through the published surface `./platform/*.js` —, so without a test here it would be **published
+// without a gate** (see `tests/published-without-a-gate.node.test.js`).
 //
-// ⚠️ ESTE MÓDULO NÃO RECEBE `soundOn`/`volume` POR INJEÇÃO — lê os bindings vivos de `platform/audio`, ao
-// contrário do `platform/tts`, que os recebe no ctx. Não é defeito a consertar aqui: é a razão de o teste
-// conduzir o módulo pelos setters (`setSoundOn`/`setVolume`) em vez de por um duplo.
+// ⚠️ THIS MODULE DOES NOT RECEIVE `soundOn`/`volume` BY INJECTION — it reads the live bindings of `platform/audio`, unlike
+// `platform/tts`, which receives them in its ctx. That is not a defect to fix here: it is why the test drives the module
+// through the setters (`setSoundOn`/`setVolume`) instead of through a double.
 //
-// ⚠️ E O QUE ESTE FICHEIRO **NÃO** AFIRMA, para não parecer decidido: o módulo força `pt-BR` em toda parte,
-// enquanto o ADR-0065 dá TRÊS idiomas à engine. Isso é do desenho de origem (é a voz de um jogo de letramento
-// brasileiro) e mudá-lo é comportamento, não cobertura. Fica medido e nomeado, não corrigido de passagem.
+// ⚠️ AND WHAT THIS FILE DOES **NOT** ASSERT, so it does not look decided: the module forces `pt-BR` everywhere, while
+// ADR-0065 gives the engine THREE languages. That comes from its original design (it is the voice of a Brazilian
+// literacy game) and changing it is behaviour, not coverage. It stays measured and named, not fixed in passing.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { gameSay } from '../app/js/platform/speech.js';
 import { setSoundOn, setVolume } from '../app/js/platform/audio.js';
 
 let spoke, cancels, vozes, getVoicesLanca;
 
-/** As vozes que um navegador de escola pode oferecer, com pt-PT no meio de propósito. */
+/** The voices a school browser may offer, with pt-PT in the middle on purpose. */
 const PT_BR = { lang: 'pt-BR', name: 'Microsoft Daniel' };
 const PT_PT = { lang: 'pt-PT', name: 'Microsoft Helia' };
 const PT_SEM_REGIAO_BR = { lang: 'pt', name: 'Google português do Brasil' };
@@ -59,10 +57,9 @@ describe('platform/speech · gameSay só fala quando há o que dizer e o som est
     expect(spoke).toHaveLength(0);
   });
 
-  // ⚠️ O CONTRATO DE DUAS METADES, e é a razão de o módulo existir separado do `platform/tts`: a voz do
-  // letramento IGNORA o toggle «Narração (TTS)» do mixer — uma criança que está a aprender a ler ouve as
-  // palavras mesmo com a narração de menu desligada — mas OBEDECE ao mudo mestre. Sem a segunda metade, um
-  // jogo silenciado numa sala de aula continua a falar por cima da professora.
+  // ⚠️ THE TWO-HALF CONTRACT, and it is why the module exists apart from `platform/tts`: the literacy voice IGNORES the
+  // mixer's «Narração (TTS)» toggle — a child learning to read hears the words even with menu narration off — but OBEYS
+  // the master mute. Without the second half, a game muted in a classroom keeps talking over the teacher.
   it('[Fronteira] com o som mestre desligado, cala-se', () => {
     setSoundOn(false);
     gameSay('lata é metal');
@@ -75,8 +72,8 @@ describe('platform/speech · gameSay só fala quando há o que dizer e o som est
     expect(spoke).toHaveLength(1);
   });
 
-  // ⚠️ Sem o `cancel`, cada palavra nova entra na FILA em vez de substituir a anterior: a criança carrega em
-  // quatro peças depressa e ouve as quatro a destempo, muito depois de já ter jogado.
+  // ⚠️ Without the `cancel`, each new word enters the QUEUE instead of replacing the previous one: the child presses four
+  // pieces quickly and hears all four out of step, long after she has already played.
   it('[Fronteira] cancela a fala anterior antes de falar', () => {
     gameSay('um'); gameSay('dois');
     expect(cancels).toBe(2);
@@ -97,7 +94,7 @@ describe('platform/speech · a escolha da voz evita pt-PT, e a ORDEM é a regra'
     expect(spoke[0].voice).toBe(PT_BR);
   });
 
-  // 📌 O segundo degrau existe porque há navegadores que reportam `lang: 'pt'` e escondem a região no NOME.
+  // 📌 The second step exists because some browsers report `lang: 'pt'` and hide the region in the NAME.
   it('[Fronteira] sem pt-BR, aceita pt cujo NOME diz Brasil', () => {
     vozes = [EN, PT_PT, PT_SEM_REGIAO_BR, PT_SEM_REGIAO];
     gameSay('lata');
@@ -110,9 +107,9 @@ describe('platform/speech · a escolha da voz evita pt-PT, e a ORDEM é a regra'
     expect(spoke[0].voice).toBe(PT_SEM_REGIAO);
   });
 
-  // 🎯 O CASO QUE DÁ NOME AO MÓDULO: com pt-PT como a única voz portuguesa instalada, a escolha é NENHUMA.
-  // Falar em português europeu a uma criança brasileira em fase de alfabetização ensina a grafia errada — é
-  // preferível a voz padrão do sistema, que o `lang: 'pt-BR'` ainda orienta.
+  // 🎯 THE CASE THAT GIVES THE MODULE ITS NAME: with pt-PT as the only Portuguese voice installed, the choice is NONE.
+  // Speaking European Portuguese to a Brazilian child learning to read teaches the wrong spelling — the system's default
+  // voice, which `lang: 'pt-BR'` still steers, is preferable.
   it('[Fronteira] com só pt-PT instalada, não escolhe voz nenhuma — mas fala', () => {
     vozes = [EN, PT_PT];
     gameSay('lata');
@@ -143,9 +140,9 @@ describe('platform/speech · o volume sobe acima dos efeitos, mas com tecto', ()
     expect(spoke[0].volume).toBeCloseTo(0.7, 5);
   });
 
-  // ⚠️ Sem o `Math.min`, o volume mestre no máximo dá 1,4 — e `SpeechSynthesisUtterance.volume` fora de [0,1]
-  // é erro no navegador: a fala do letramento morre exactamente para quem pôs o som no máximo, que é quem
-  // menos ouve.
+  // ⚠️ Without the `Math.min`, the master volume at maximum gives 1.4 — and `SpeechSynthesisUtterance.volume` outside
+  // [0,1] is an error in the browser: the literacy voice dies exactly for whoever turned the sound all the way up, who is
+  // whoever hears least.
   it('[Fronteira] no volume máximo, o valor fica preso em 1', () => {
     setVolume(1);
     gameSay('lata');

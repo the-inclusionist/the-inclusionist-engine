@@ -1,25 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-visual (project BROWSER: usa document). Contrato: initSettingsVisual(ctx) NUNCA importa
-// game.js nem toca localStorage direto — todo estado que não é dele (lq/ownerColors/cbSafe/outlines/role colors/
-// selVizPlayer/setPlayerViz) chega por injeção; só numPlayers/players vêm de core/state.js (binding vivo, como o
-// próprio game.js usa). DI por closure — modelo: tests/debug-panel.browser.test.js.
-// Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, ui/settings-visual).
+// Tests of ui/settings-visual (BROWSER project: uses document). Contract: initSettingsVisual(ctx) never touches
+// localStorage directly — every piece of state that is not its own (lq/ownerColors/cbSafe/outlines/role colors/
+// selVizPlayer/setPlayerViz) arrives by injection, and the players come from the file's local round double. DI by
+// closure — model: tests/debug-panel.browser.test.js.
+// See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4, ui/settings-visual).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { axesHtml } from '../app/js/ui/visual-axes-panel.js';
 import { DEFAULT_VISUAL, migrateVisual } from '../app/js/render/viz-axes.js';
-import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
+import { t } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
 import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
 import { ROLE_KEYS, ROLE_LABELS } from '../app/js/ui/visual-choices.js';
 import pt from '../app/js/i18n/pt.js';
 /*
- * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` foi com a pilha de mundo-de-tiles para o
- * `game-platformer`. Este ficheiro nunca testou a rodada — ele PASSA uma ao que está a medir —, e os três
- * membros abaixo são exactamente os que ele lê. Fábrica e não literal: duas rodadas têm de ser dois objectos.
+ * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228): `core/run-state` went with the tile-world stack to `game-platformer`. This
+ * file never tested the round — it HANDS one to what it measures —, and the three members below are exactly the ones it
+ * reads. A factory and not a literal: two rounds have to be two objects.
  */
 const createRunState = () => ({ numPlayers: 1, players: [], setNumPlayers(n) { this.numPlayers = n; } });
-// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
-// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
-// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+// The round is local to this file (ADR-0038, phase B); the aliases below keep the cases' bodies written as they always were.
 const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
@@ -27,9 +25,8 @@ const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
 const PANEL_HTML =
   '<div id="visual"><div id="visual-modes"></div><div id="visual-list"></div>' +
-  // Os dois selects de contorno vivem dentro de `.ctrl-row` no documento real. O fixture os tinha soltos, e
-  // isso bastava enquanto ninguém procurava a linha deles — a marca do ADR-0029 procura, e um fixture menos
-  // fiel que o documento não testaria justamente o que passou a existir.
+  // The two outline selects live inside a `.ctrl-row` in the real document. ADR-0029's mark looks for their row, and
+  // a fixture less faithful than the document would not test exactly what the mark needs.
   '<div class="ctrl-row"><span>Contorno de 1º plano</span>' +
   '<select id="opt-outline-fg"><option value="0">Nenhum</option><option value="1">Fino</option><option value="2">Grosso</option></select></div>' +
   '<div class="ctrl-row"><span>Contorno de 2º plano</span>' +
@@ -57,19 +54,17 @@ function makeCtx(overrides = {}) {
     getSelectedPlayer: () => selected,
     setSelectedPlayer: (i) => { selected = i; calls.setSelectedPlayer.push(i); },
     setPlayerViz: (i, mode) => calls.setPlayerViz.push([i, mode]),
-    // ⚠️ DUBLÊ DOS DOIS EIXOS (#104). Este painel deixou de usar o `renderVizGroup` — que fica com o menu de
-    // EMPATIA, cuja lista de simulações continua a ser mesmo exclusiva — e passou a montar dois rádios, um
-    // por eixo. O dublê usa o gerador DE VERDADE (`axesHtml`), e não uma imitação: um dublê que inventa o
-    // markup deixa de reprovar quando o markup real muda.
+    // ⚠️ A DOUBLE OF THE TWO AXES (#104). This panel does not use `renderVizGroup` — which stays with the EMPATHY menu,
+    // whose list of simulations really is exclusive — and mounts two radio groups, one per axis. The double uses the REAL
+    // generator (`axesHtml`), not an imitation: a double that invents the markup stops failing when the real markup changes.
     renderVisualAxes: (listSel, tabsSel) => {
       calls.renderVisualAxes.push([listSel, tabsSel]);
       const el = document.querySelector(listSel);
       if (!el) return;
       el.innerHTML = axesHtml(players[selected]?.visual ?? DEFAULT_VISUAL, t);
     },
-    // Dublê do renderizador de linhas compartilhado com o painel de empatia (render/viz-setters). Ele desenha
-    // as MESMAS linhas de rádio nos dois menus — é por isso que as correções de daltonismo mantêm a aparência
-    // que a criança já conhecia ao mudar de casa (#60).
+    // A double of the row renderer the empathy panel uses (`renderVizGroup`, render/viz-setters). This panel draws
+    // through `renderVisualAxes` instead, so this double is not called by it.
     renderVizGroup: (listSel, tabsSel, modes) => {
       calls.renderVizGroup.push([listSel, tabsSel, modes]);
       const el = document.querySelector(listSel);
@@ -128,16 +123,13 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     expect(list.querySelector('#opt-role-reset')).toBeTruthy();
   });
 
-  // ===================== A MARCA DE «SAIU DO PADRÃO», POR EIXO (ADR-0029 · #61) =====================
-  // 🔴 REGRESSÃO INTRODUZIDA PELA #104 ETAPA 4D, e é minha. Antes dela o `#visual-modes` era UM rádio de sete
-  // opções, então marcar o contentor era marcar a escolha. Com dois eixos lá dentro, UMA marca no contentor
-  // não diz QUAL saiu do padrão — e é exactamente o terceiro canal do ADR-0029 a perder informação: «a criança
-  // cega percorre o menu e OUVE, em ordem, o que saiu do padrão». Ouvir «mudado» sem saber de quê manda-a
-  // procurar em oito linhas.
+  // ===================== THE «SAIU DO PADRÃO» MARK, PER AXIS (ADR-0029 · #61) =====================
+  // 🔴 With two axes inside `#visual-modes` (#104 step 4d), ONE mark on the container would not say WHICH one left the
+  // default — exactly ADR-0029's third channel losing information: «a criança cega percorre o menu e OUVE, em ordem, o
+  // que saiu do padrão». Hearing «mudado» without knowing about what sends her searching through eight rows.
   //
-  // ⚠️ E A MARCA ERA CALCULADA DO ESPELHO OBSOLETO (`resolveVisualMode(playerViz(...))` → `p.viz`), o campo que
-  // a #104 etapa 1a marcou `@deprecated`. O predicado que responde a esta pergunta exacta já existe no modelo
-  // novo, e é o `DEFAULT_VISUAL` do `render/viz-axes`.
+  // ⚠️ AND THE MARK IS NOT COMPUTED FROM THE OBSOLETE MIRROR (`p.viz`, which #104 step 1a marked `@deprecated`). The
+  // predicate that answers this exact question lives in the new model: `DEFAULT_VISUAL` of `render/viz-axes`.
   const linhaDoEixo = (eixo) => document.querySelector(`#visual-modes button[data-eixo="${eixo}"][aria-checked="true"]`)
     ?.closest('.ctrl-row') ?? null;
   const marcada = (el) => !!el && el.classList.contains('is-changed');
@@ -157,8 +149,8 @@ describe('ui/settings-visual — initSettingsVisual', () => {
   });
 
   it('⚠️ [Boundary] os DOIS ao mesmo tempo — o caso que o campo único não exprimia', () => {
-    // `hc7 + deuter` é o par que a #104 inteira existiu para tornar possível. Se a marca continuasse a vir do
-    // espelho, ela teria de escolher um dos dois para reportar.
+    // `hc7 + deuter` is the pair the whole of #104 existed to make possible. If the mark still came from the mirror, it
+    // would have to pick one of the two to report.
     players.push({ viz: 'hc7', visual: { tema: 'hc7', correcao: 'deuter', simulacao: null } });
     initSettingsVisual(makeCtx().ctx).render();
     expect(marcada(linhaDoEixo('tema'))).toBe(true);
@@ -166,9 +158,8 @@ describe('ui/settings-visual — initSettingsVisual', () => {
   });
 
   it('⚠️ [Zero] uma SIMULAÇÃO não marca este menu — a marca é do menu de empatia', () => {
-    // A regra estava escrita no comentário do `refreshMarks` e vinha do `resolveVisualMode`. Com os dois
-    // eixos ela deixa de ser derivada e passa a ser ESTRUTURAL: a simulação vive noutro campo do
-    // `VisualState`, então perguntar pelo tema e pela correcção nunca a alcança.
+    // With two axes this rule is STRUCTURAL rather than derived: the simulation lives in another field of `VisualState`,
+    // so asking about the theme and the correction never reaches it.
     players.push({ viz: 'sim-deuter', visual: migrateVisual('sim-deuter') });
     initSettingsVisual(makeCtx().ctx).render();
     expect(marcada(linhaDoEixo('tema')), 'a simulação marcou o menu errado').toBe(false);
@@ -176,19 +167,18 @@ describe('ui/settings-visual — initSettingsVisual', () => {
   });
 
   it('⚠️ [Right] o botão que ABRE o menu fica marcado quando qualquer um dos eixos saiu', () => {
-    // O canal que leva a criança até aqui: sem ele, ela teria de abrir cada menu para descobrir onde mexeu.
+    // The channel that brings the child here: without it, she would have to open every menu to find where she changed things.
     players.push({ viz: 'normal', visual: { ...DEFAULT_VISUAL, correcao: 'protan' } });
     initSettingsVisual(makeCtx().ctx).render();
     expect(document.querySelector('[data-act="visual"]').classList.contains('is-changed')).toBe(true);
   });
 
   it('⚠️ [Right] o modo visual é desenhado em DOIS rádios — um por eixo (#104)', () => {
-    // O que este caso protege continua a ser a ACHABILIDADE: as correções de daltonismo estavam no menu de
-    // empatia como linhas visíveis, e a primeira tentativa de as trazer para cá pô-las num `<select>`, onde
-    // sumiram. Para um controle feito para ser achado por quem enxerga mal, isso é quase não ter movido.
+    // What this case protects is FINDABILITY: the colour-blindness corrections were visible rows in the empathy menu, and
+    // a `<select>` would hide them. For a control made to be found by whoever sees poorly, that is almost not having moved.
     //
-    // ⚠️ E O QUE MUDOU: os sete numa lista só contavam uma exclusividade que DEIXOU DE EXISTIR. Agora são
-    // dois eixos, e cada um pode estar fora do padrão ao mesmo tempo que o outro.
+    // ⚠️ And seven options in a single list would tell an exclusivity that DOES NOT EXIST: there are two axes, and each
+    // can be off the default at the same time as the other.
     players.push({ viz: 'normal', visual: DEFAULT_VISUAL });
     const { ctx, calls } = makeCtx();
     initSettingsVisual(ctx).render();
@@ -204,11 +194,9 @@ describe('ui/settings-visual — initSettingsVisual', () => {
   });
 
   it('⚠️ [Boundary] com uma SIMULAÇÃO ligada, os dois eixos aparecem no PADRÃO (#104)', () => {
-    // ⚠️ MUDOU DE FORMA COM A DIVISÃO, e a nova é mais verdadeira. Antes, uma simulação ocupava o campo único
-    // e NENHUMA linha deste menu ficava marcada — o menu ficava mudo sobre o estado dos ajustes, quando a
-    // criança podia estar a olhar para ele justamente para saber onde estava. Agora a simulação é coisa à
-    // parte, e os dois eixos dizem o que dizem: estão no padrão — que é exactamente a condição que o
-    // ADR-0076 exige para uma simulação poder correr.
+    // ⚠️ With the split, a simulation is a thing apart, and the two axes say what they say: they are at the default —
+    // which is exactly the condition ADR-0076 requires for a simulation to run. (With a single field, a simulation left
+    // this menu mute about its settings, when the child might be looking at it precisely to know where she was.)
     players.push({ viz: 'sim-deuter', visual: migrateVisual('sim-deuter') });
     const { ctx } = makeCtx();
     initSettingsVisual(ctx).render();
@@ -220,17 +208,17 @@ describe('ui/settings-visual — initSettingsVisual', () => {
   it('[Boundary] jogador selecionado além da contagem atual é reclampado para 0 (jogador saiu)', () => {
     players.push({ viz: 'normal' });
     const { ctx, calls, getSelected } = makeCtx();
-    ctx.getSelectedPlayer = () => 3; // sobrou de quando havia mais jogadores
+    ctx.getSelectedPlayer = () => 3; // left over from when there were more players
     const panel = initSettingsVisual(ctx);
     panel.render();
     expect(calls.setSelectedPlayer).toContain(0);
   });
 
   it('⚠️ [Interface] o painel DELEGA o desenho e a escrita ao renderizador dos eixos (#104)', () => {
-    // O clique deixou de ser deste painel: quem liga o botão ao escritor POR EIXO é o `renderEixosVisuais`,
-    // em `render/viz-setters`, e é lá que ele tem caso próprio. O que ESTE painel ainda promete é chamá-lo
-    // com o seletor certo — e é isso que se afirma aqui, em vez de reimplementar a fiação dentro do dublê e
-    // acabar a medir o dublê.
+    // The click is not this panel's: what wires the button to the PER-AXIS writer is `renderVisualAxes`, in
+    // `render/viz-setters`, and it has its own case there. What THIS panel still promises is calling it with the right
+    // selector — and that is what is asserted here, instead of reimplementing the wiring inside the double and ending up
+    // measuring the double.
     players.push({ viz: 'normal', visual: DEFAULT_VISUAL });
     const { ctx, calls } = makeCtx();
     initSettingsVisual(ctx).render();
@@ -252,13 +240,13 @@ describe('ui/settings-visual — initSettingsVisual', () => {
   });
 
   it('🔴 [Right] a EXPLICAÇÃO nasce num .opt-hint e não colada ao rótulo — o defeito que o Dev viu', () => {
-    // «A EXPLICAÇÃO ESTÁ NA OPÇÃO AO INVÉS DE IR PARA O RODAPÉ, CORRIJA». Com um .opt-hint o `fillExplain` a leva
-    // ao rodapé; e o <strong> guarda só o rótulo curto, sem o «(Linear → Quadrático)» que o alongava.
+    // «A EXPLICAÇÃO ESTÁ NA OPÇÃO AO INVÉS DE IR PARA O RODAPÉ, CORRIJA». With an .opt-hint `fillExplain` takes it to the
+    // footer; and the <strong> keeps only the short label, without the «(Linear → Quadrático)» that made it long.
     players.push({ viz: 'normal' });
     const { ctx } = makeCtx();
     initSettingsVisual(ctx).render();
     const linha = document.querySelector('#opt-lq').closest('.ctrl-row');
-    // 📌 E o rótulo mora DENTRO dos passos, «◀ Realce de contraste: … ▶» (errata do ADR-0130) — nada à parte.
+    // 📌 And the label lives INSIDE the steps, «◀ Realce de contraste: … ▶» (ADR-0130 erratum) — nothing apart.
     expect(linha.querySelector('strong'), 'sobrou um rótulo à esquerda dos passos').toBeNull();
     expect(linha.querySelector('.passo-valor').textContent).toMatch(/^Realce de contraste: /);
     expect(linha.querySelector('.opt-hint')?.textContent, 'a prosa não está no .opt-hint').toMatch(/linear/);
@@ -313,7 +301,7 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     const { ctx, calls } = makeCtx();
     const panel = initSettingsVisual(ctx);
     panel.render();
-    panel.render(); // um 2º render NÃO deve duplicar o listener dos selects estáticos
+    panel.render(); // a 2nd render must NOT duplicate the static selects' listener
     const fg = document.querySelector('#opt-outline-fg');
     fg.value = '2';
     fg.dispatchEvent(new Event('change'));
@@ -332,13 +320,12 @@ describe('ui/settings-visual — initSettingsVisual', () => {
 });
 
 describe('ui/settings-visual — restaurar padrões DESTE menu (ADR-0028) + marca (ADR-0029)', () => {
-  // O beforeEach zera `players` — ele é o array VIVO de core/state, compartilhado com o resto da suíte —,
-  // então cada caso planta o jogador de que precisa em vez de assumir que existe um.
-  // ⚠️ ESCREVE OS DOIS CAMPOS, como o `setPlayerViz` de produção faz — e derivando o novo pelo MESMO
-// `migrateVisual`, que é o que impede a tradução de existir em duas versões. O fixture criava um jogador só com
-// o `viz` obsoleto, e a #104 etapa 1a tornou o `visual` OBRIGATÓRIO: era um jogador que o programa não
-// consegue produzir, e um teste que contorna a API mede um estado que o jogo nunca alcança. Mesmo defeito que
-// a etapa 2b já tinha apanhado em três fixtures.
+  // The beforeEach empties `players` — the round double's array, shared by the cases of this file —, so each case plants
+  // the player it needs instead of assuming one exists.
+  // ⚠️ WRITES BOTH FIELDS, as production's `setPlayerViz` does — deriving the new one through the SAME `migrateVisual`,
+// which is what stops the translation from existing in two versions. #104 step 1a made `visual` REQUIRED: a player with
+// only the obsolete `viz` is a player the program cannot produce, and a test that goes around the API measures a state
+// the game never reaches.
 const comViz = (viz) => { players.length = 0; players.push({ viz, visual: migrateVisual(viz) }); };
 
   it('[Right] devolve realce, cores de dono, paleta segura, contornos e cores de papel', () => {
@@ -367,8 +354,8 @@ const comViz = (viz) => { players.length = 0; players.push({ viz, visual: migrat
   });
 
   it('[Right] a correção de daltonismo AGORA é zerada — ela mudou para este menu (#60)', () => {
-    // Desfazê-la é legítimo aqui, e só aqui: a criança a reencontra no MESMO seletor que acabou de usar.
-    // A regra continua sendo "um reset só pode desfazer o que ele também consegue refazer".
+    // Undoing it is legitimate here, and only here: the child finds it again in the SAME selector she just used.
+    // The rule is still "a reset may only undo what it can also redo".
     const { ctx, calls } = makeCtx();
     comViz('fix-deuter');
     initSettingsVisual(ctx).render();
@@ -387,30 +374,25 @@ const comViz = (viz) => { players.length = 0; players.push({ viz, visual: migrat
   });
 
   it('[Interface] a correção é ESCOLHÍVEL daqui, numa linha visível — a prova de que ela mudou de casa', () => {
-    // Antes da #60 uma criança daltônica não achava a correção dela sem abrir o menu de empatia. Depois da
-    // primeira tentativa, achava-a só abrindo um `<select>`. Este caso exige a linha.
+    // The correction must be findable here without opening the empathy menu or a `<select>`. This case requires the row.
     const { ctx, calls } = makeCtx();
     comViz('normal');
     initSettingsVisual(ctx).render();
-    // ⚠️ A LINHA CONTINUA A EXISTIR, e é isso que o caso protege — o que mudou é que ela vive agora no EIXO
-    // da correção, ao lado das outras três, em vez de misturada com os níveis de contraste numa lista onde
-    // escolher uma apagava o outro.
+    // ⚠️ THE ROW STILL EXISTS, and that is what the case protects — it lives in the correction AXIS, beside the other
+    // three, instead of mixed with the contrast levels in a list where choosing one erased the other.
     const linha = document.querySelector('#visual-modes button[data-valor="deuter"]').closest('.ctrl-row');
     expect(linha.textContent).toContain('Correção deuteranopia');
-    // ⚠️ O CLIQUE não é afirmado aqui: quem o liga ao escritor por eixo é o `renderEixosVisuais`, e ele tem
-    // caso próprio em `viz-setters`. Afirmá-lo pelo dublê mediria o dublê.
+    // ⚠️ THE CLICK is not asserted here: what wires it to the per-axis writer is `renderVisualAxes`, and it has its own
+    // case in `viz-setters`. Asserting it through the double would measure the double.
     expect(linha.querySelector('button').dataset.eixo).toBe('correcao');
   });
 
   it('⚠️ [Interface] com a correção ligada, a LINHA DELA fica marcada — e já não a lista inteira', () => {
-    // ⚠️ ESTE CASO FOI VIRADO, e o que ele afirmava era o defeito escrito como garantia. Marcar
-    // `#visual-modes` estava certo enquanto aquele contentor tinha UM rádio de sete opções: marcar o
-    // contentor era marcar a escolha. A #104 etapa 4d pôs DOIS eixos lá dentro e a mesma asserção passou a
-    // certificar uma marca que já não diz QUAL deles saiu do padrão.
+    // ⚠️ With TWO axes inside `#visual-modes` (#104 step 4d), marking the container would certify a mark that does not
+    // say WHICH of them left the default.
     //
-    // 📌 E a marca desceu para o sítio que tem NOME: o contentor não tem nome acessível, a linha tem. É o
-    // terceiro canal do ADR-0029 — «a criança cega percorre o menu e ouve, em ordem, o que saiu do padrão» —
-    // a voltar a funcionar.
+    // 📌 So the mark sits where there is a NAME: the container has no accessible name, the row does. It is ADR-0029's
+    // third channel — «a criança cega percorre o menu e ouve, em ordem, o que saiu do padrão» — working.
     const { ctx, state } = makeCtx();
     state.outlineFg = 1;
     comViz('fix-tritan');
@@ -424,7 +406,7 @@ const comViz = (viz) => { players.length = 0; players.push({ viz, visual: migrat
 
   it('[Zero] com tudo no padrão, nenhum setter é chamado', () => {
     const { ctx, calls, state } = makeCtx();
-    state.outlineFg = 1; // o fixture nasce fora do padrão neste campo
+    state.outlineFg = 1; // the fixture is born off the default in this field
     comViz('normal');
     initSettingsVisual(ctx).render();
     document.querySelector('#visual-reset').click();
@@ -447,7 +429,7 @@ const comViz = (viz) => { players.length = 0; players.push({ viz, visual: migrat
   });
 
   it('[Boundary] cor de papel IGUAL ao padrão não marca — comparar arrays por identidade diria "alterado"', () => {
-    // `[255,110,45] === [255,110,45]` é false em JS. Esse false mandaria a criança desfazer o que não fez.
+    // `[255,110,45] === [255,110,45]` is false in JS. That false would send the child to undo what she did not do.
     const { ctx, state } = makeCtx();
     state.outlineFg = 1;
     comViz('normal');
@@ -460,16 +442,15 @@ const comViz = (viz) => { players.length = 0; players.push({ viz, visual: migrat
 
 
 // ==========================================================================================================
-// AS LINHAS DESTE PAINEL, AGORA EM NÓS (ADR-0129; ADR-0221 passo 7c)
+// THIS PANEL'S ROWS, AS NODES (ADR-0129; ADR-0221 step 7c)
 //
-// 📌 ESTES CASOS MUDARAM DE PROJECTO, e não de exigência. Eles viviam em `settings-visual.node` e mediam a
-// CADEIA que o `renderVisualPanelHtml` devolvia; o painel passou a construir NÓS com o kit, logo a cadeia
-// deixou de existir e o que eles afirmam passou a ser observável só num documento. Cada afirmação está aqui
-// inteira — o rótulo, a dica no `.opt-hint`, o estado nos dois canais, uma amostra por papel com a cor e o
-// nome de cada uma, e o ↺.
+// 📌 THESE CASES CHANGED PROJECT, not requirement. They measured the STRING `renderVisualPanelHtml` returned; the panel
+// builds NODES with the kit, so the string no longer exists and what they assert is observable only in a document.
+// Every assertion is here whole — the label, the hint in `.opt-hint`, the state on both channels, one swatch per role
+// with the colour and the name of each, and the ↺.
 //
-// 🎯 E DUAS DELAS AFIRMAM MAIS DO QUE ANTES, porque em nós há o que a cadeia não tinha: a linha dos passos
-// SOBREVIVE a um render (era refeita a cada um, e o cursor saía dela), e as escutas ligam-se uma vez só.
+// 🎯 AND TWO OF THEM ASSERT MORE THAN BEFORE, because nodes have what the string did not: the steps row SURVIVES a
+// render (it used to be rebuilt each time, and the cursor fell out of it), and the listeners are wired only once.
 // ==========================================================================================================
 describe('ui/settings-visual — o interior montado em nós', () => {
   const montar = (patch = {}) => {
@@ -485,9 +466,8 @@ describe('ui/settings-visual — o interior montado em nós', () => {
 
   it('[Interface] NÃO monta o modo visual — ele saiu daqui para uma lista de rádio própria', () => {
     montar();
-    // O modo visual era um `<select>` dentro deste interior. Virou `#visual-modes`, desenhado pelo mesmo
-    // renderizador de linhas que o painel de empatia usa, porque as correções de daltonismo precisavam
-    // continuar VISÍVEIS ao mudar de menu — dentro da caixa fechada elas sumiam.
+    // The visual mode is not a `<select>` inside this interior: it is `#visual-modes`, drawn as visible rows, because the
+    // colour-blindness corrections had to stay VISIBLE when they changed menu — inside a closed box they vanished.
     const lista = document.querySelector('#visual-list');
     expect(lista.querySelector('#opt-contrast')).toBeNull();
     expect(lista.querySelector('select')).toBeNull();
@@ -503,20 +483,20 @@ describe('ui/settings-visual — o interior montado em nós', () => {
       expect(rotuloDe(sel), `${sel}: o rótulo não é o do dicionário`).toBe(pt[rotulo]);
       expect(dicaDe(sel), `${sel}: a explicação não está no .opt-hint que o rodapé recolhe (CLAUDE.md §4)`).toBe(pt[dica]);
     }
-    // 📌 E a lista dos quatro papéis não voltou para a frase: «perigo, escalável, água e portão» são as palavras
-    // de um jogo, e a engine não descreve um jogo. Quem os nomeia é o nome acessível de cada cor, por `{param}`.
+    // 📌 And the list of the four roles did not come back into the sentence: «perigo, escalável, água e portão» are a
+    // game's words, and the engine does not describe a game. What names them is each colour's accessible name, by `{param}`.
     expect(pt['visual.papeis.dica']).not.toMatch(/lava|escada|trampolim/);
   });
 
   it('🎯 [Cross-check] NENHUMA linha fica com o rótulo ou a explicação vazios — a regra, e não uma linha de cada vez', () => {
-    // As afirmações acima NOMEIAM três linhas, e foi assim que a paleta segura ficou um dia sem caso nenhum.
-    // Esta mede a regra do `CLAUDE.md` §4 sobre tudo o que o painel montar, e a próxima linha herda-a.
+    // The assertions above NAME three rows, and that is how the safe palette once went without any case. This one
+    // measures the rule of `CLAUDE.md` §4 over everything the panel mounts, and the next row inherits it.
     montar();
     const linhas = [...document.querySelectorAll('#visual-list .ctrl-row')];
     expect(linhas.length, 'o painel montou um interior vazio — o caso não mediria nada').toBeGreaterThanOrEqual(4);
     for (const linha of linhas) {
       const forte = linha.querySelector('strong');
-      // a linha de PASSOS não tem rótulo curto de propósito: ele mora dentro do controle (errata do ADR-0130)
+      // the STEPS row has no short label on purpose: it lives inside the control (ADR-0130 erratum)
       if (forte) expect(forte.textContent, 'uma linha ficou com o rótulo curto vazio').toBeTruthy();
       const dica = linha.querySelector('.opt-hint');
       expect(dica, 'uma linha ficou sem `.opt-hint` nenhum').not.toBeNull();
@@ -561,8 +541,8 @@ describe('ui/settings-visual — o interior montado em nós', () => {
   });
 
   it('🔴 [Right] a linha dos PASSOS sobrevive a um render — o cursor não sai dela quando a criança mexe noutra', () => {
-    // 📏 Medido em 2026-09-23, antes da conversão: o `render()` refazia o interior por `innerHTML`, logo o controle
-    // de passos era CONSTRUÍDO DE NOVO a cada render — um clique em qualquer outra linha tirava o foco de cima dele.
+    // 📏 Measured on 2026-09-23, before the conversion: `render()` rebuilt the interior through `innerHTML`, so the steps
+    // control was BUILT AGAIN on every render — a click on any other row took the focus away from it.
     const { api } = montar();
     const antes = document.querySelector('#opt-lq');
     expect(antes, 'o controle de passos não foi montado').not.toBeNull();
@@ -573,7 +553,7 @@ describe('ui/settings-visual — o interior montado em nós', () => {
   });
 
   it('🔴 [Boundary] um clique escreve UMA vez — as escutas não se acumulam a cada render', () => {
-    // O par do caso acima: montar uma vez e reetiquetar depois só é seguro se ligar também acontecer uma vez.
+    // The pair of the case above: mounting once and relabelling afterwards is only safe if wiring also happens once.
     const { ctx, calls, api } = montar({ cbSafe: false });
     api.render();
     api.render();

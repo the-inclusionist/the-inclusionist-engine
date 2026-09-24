@@ -1,31 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/shell — a CASCA de DOM (project BROWSER): foco de verdade (document.activeElement), o
-// `dataset` do `#touch-controls`, o innerHTML da legenda do título e os dois ouvintes em CAPTURA do modo
-// Print. A projeção pura (`phaseView`, `touchControlsPlan`, os chips) está em shell.node.test.js e NÃO é
-// repetida aqui.
+// Tests of ui/shell — the DOM SHELL (BROWSER project): real focus (document.activeElement), the `dataset` of
+// `#touch-controls`, the innerHTML of the title legend and the two CAPTURE listeners of Print mode. The pure projection
+// (`phaseView`, `touchControlsPlan`, the chips) is in shell.node.test.js and is NOT repeated here.
 //
-// `numPlayers`/`players` vinham de core/state.ts — os mesmos bindings vivos que o
-// game.js usa; o resto do ctx é falso (spies).
+// `numPlayers`/`players` come from the file's local round double; the rest of the ctx is fake (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // a legenda vem do dicionário desde o item 14
+import { t } from '../app/js/core/i18n.js'; // the legend comes from the dictionary (item 14)
 import { initShell } from '../app/js/ui/shell.js';
-// A CENA é DO TESTE desde 2026-08-26. `phase` saiu de `core/state` — virou a pilha de `core/scenes`, e os
-// três nomes moram na raiz de composição (ADR-0030 C3). Quem é engine recebe BOOLEANOS. Este `let` faz o
-// papel que o binding vivo fazia, e os casos seguem escritos como estavam.
+// THE SCENE BELONGS TO THE TEST: the phase is not in `core/state` — it is the `core/scenes` stack, and the three names
+// live in the composition root (ADR-0030 C3). What is engine receives BOOLEANS. This `let` plays the root's part, and
+// the cases stay written as they were.
 let faseFalsa = 'playing';
 const setPhaseValue = (p) => { faseFalsa = p; };
-/** A casca corrente. `setPhase` abaixo faz o papel da RAIZ: troca a cena e manda a casca reprojetar. */
+/** The current shell. `setPhase` below plays the ROOT's part: it swaps the scene and tells the shell to re-project. */
 let shellAtual = null;
 const setPhase = (p) => { faseFalsa = p; if (shellAtual) shellAtual.applyScene(); };
 /*
- * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` foi com a pilha de mundo-de-tiles para o
- * `game-platformer`. Este ficheiro nunca testou a rodada — ele PASSA uma ao que está a medir —, e os três
- * membros abaixo são exactamente os que ele lê. Fábrica e não literal: duas rodadas têm de ser dois objectos.
+ * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228): `core/run-state` went with the tile-world stack to `game-platformer`. This
+ * file never tested the round — it HANDS one to what it measures —, and the three members below are exactly the ones it
+ * reads. A factory and not a literal: two rounds have to be two objects.
  */
 const createRunState = () => ({ numPlayers: 1, players: [], setNumPlayers(n) { this.numPlayers = n; } });
-// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
-// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
-// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+// The round is local to this file (ADR-0038, phase B); the aliases below keep the cases' bodies written as they always were.
 const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
@@ -34,8 +30,8 @@ const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 
-// Fiel ao index.html no que a casca toca: o splash, a pausa global aposentada, o botão de pausa, os controles
-// de toque, a região do canvas e os menus de pausa por tela (que a casca esconde/mostra, mas NÃO constrói).
+// Faithful to the page where the shell touches it: the splash, the retired global pause, the pause button, the touch
+// controls, the canvas region and the per-screen pause menus (which the shell hides/shows, but does NOT build).
 const MARKUP = `
   <div id="game-region" tabindex="-1">
     <div id="title-overlay" class="overlay">
@@ -75,12 +71,12 @@ function boot(over = {}) {
 
   const log = { muted: [], hidTouch: 0, reflect: 0, said: [], alerted: [], acts: [] };
   const listeners = { keydown: [], pointerdown: [] };
-  let pending = null; // o setTimeout de 80ms do modo Print, disparado à mão pelo teste
+  let pending = null; // Print mode's 80ms setTimeout, fired by hand by the test
 
   const ctx = {
-    // A casca deixou de trocar de cena: ela PROJETA a cena que a raiz já trocou (ADR-0030 C3). O falso faz o
-    // papel da raiz — guarda a fase e responde os três fatos. As regras de TRANSIÇÃO (pausar empilha, o
-    // título não alterna) mudaram de casa junto, para `game/cenas`, e têm caso próprio lá.
+    // The shell does not switch scenes: it PROJECTS the scene the root has already switched (ADR-0030 C3). The fake
+    // plays the root — it keeps the phase and answers the three facts. The TRANSITION rules (pausing pushes, the title
+    // does not toggle) belong to the root's scene stack, not to the shell.
     sceneFacts: () => ({ titleScreen: faseFalsa === 'title', worldRunning: faseFalsa === 'playing', pauseMenu: faseFalsa === 'paused' }),
     resumeGame: () => { setPhase('playing'); },
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
@@ -103,7 +99,7 @@ function boot(over = {}) {
     padMapFor: () => null,
     kbFor: () => ({ up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], action2: ['Space'], action3: ['KeyL'], action1: ['ShiftLeft'], action4: ['KeyQ'] }),
     keyName: (c) => 'K:' + c,
-    // A palavra CURTA vem do 'jogo' — num teste, o fixture. Uma posicao nao nomeada nao vira ficha.
+    // The SHORT word comes from the 'game' — in a test, the fixture. A position with no name does not become a chip.
     shortLabel: (a) => ({ action1: 'correr', action2: 'pular', action3: 'especial', action4: 'trocar' })[a] || null,
     openCaa: () => log.acts.push('caa'),
     setQuizLevel: (n, a) => log.acts.push('nivel:' + n + ':' + a),
@@ -155,15 +151,15 @@ describe('setPhase — a casca inteira, no documento', () => {
     expect($('#touch-start').getAttribute('aria-pressed')).toBe('true');
   });
 
-  // O caso que a linha morta escondia. O reflexo caía em `#btn-pause`, id que a produção nunca teve, e o
-  // fixture antigo inventava o elemento — então o teste provava que o código escreve num botão que só ele
-  // tem. Agora cai no botão de verdade, que num tablet é o ÚNICO caminho de pausa (não há teclado).
+  // The case a dead line used to hide: the reflect aimed at `#btn-pause`, an id production never had, and a fixture
+  // that invented the element made the test prove the code writes to a button only the test has. It aims at the real
+  // button, which on a tablet is the ONLY way to pause (there is no keyboard).
   //
-  // E no TÍTULO o atributo SAI, em vez de virar `false`: ali o botão significa "iniciar", e `aria-pressed`
-  // num botão que não alterna nada faz o leitor de tela anunciar um estado que não existe.
+  // And on the TITLE the attribute is REMOVED instead of becoming `false`: there the button means "start", and
+  // `aria-pressed` on a button that toggles nothing makes the screen reader announce a state that does not exist.
   //
-  // MUTAÇÃO CONFERIDA: trocando o `removeAttribute` por `setAttribute(..., 'false')` em `ui/shell`, este caso
-  // falha em "expected 'false' to be null".
+  // MUTATION CHECKED: replacing `removeAttribute` with `setAttribute(..., 'false')` in `ui/shell`, this case fails with
+  // "expected 'false' to be null".
   it('no TÍTULO o botão não tem aria-pressed — lá ele é "iniciar", não alterna nada', () => {
     boot();
     setPhase('playing');
@@ -192,10 +188,9 @@ describe('setPhase — a casca inteira, no documento', () => {
   });
 
   it('⚠️ um `#pause-overlay` no documento é IGNORADO — a casca não o toca (2026-09-08)', () => {
-    // A afirmação virou-se do avesso, e é a nova que interessa. Ela dizia «fica escondido em toda fase», e
-    // para o afirmar a casca tinha de o procurar e escondê-lo — código a segurar um elemento que a Etapa 2
-    // aposentou. Agora o documento pode ter um `#pause-overlay` VISÍVEL de propósito, e a casca passa por
-    // ele sem lhe tocar: é a prova de que a pausa global saiu da engine, e não de que ela a esconde bem.
+    // What matters is that the shell does not know the element: a document may hold a VISIBLE `#pause-overlay` on
+    // purpose, and the shell passes by it without touching it. It is the proof that the global pause left the engine
+    // (retired in Step 2), and not that the shell hides it well.
     const { shell } = boot();
     const pa = $('#pause-overlay');
     pa.hidden = false;
@@ -205,27 +200,26 @@ describe('setPhase — a casca inteira, no documento', () => {
     }
   });
 
-  // (`togglePause` SAIU daqui em 2026-08-26. Alternar não é projetar: é uma decisão sobre a PILHA, e a pilha
-  //  é do jogo. A regra — e o "não faz nada no título" — mora agora em `game/cenas`, com caso próprio em
-  //  `tests/cenas.node.test.js`, onde ela é conferível sem documento nenhum.)
+  // (`togglePause` is not the shell's. Toggling is not projecting: it is a decision about the STACK, and the stack
+  //  belongs to the game — including the rule that it does nothing on the title.)
 });
 
 describe('setPhase e os controles de toque', () => {
-  // O ciclo inteiro, que é o que a pessoa faz no celular: jogando com o direcional na tela, pausa, retoma.
-  // Isto já esteve quebrado, e de um jeito que só aparecia no aparelho: `hideTouchControls()` rodava ANTES da
-  // leitura, então a marca `wasOn` nunca era gravada e o direcional não voltava. O `boot()` deste arquivo tem
-  // uma tela só, que é a condição em que o virtual existe.
+  // The whole cycle, which is what the person does on a phone: playing with the on-screen d-pad, pause, resume. It
+  // matters that the shell reads the state BEFORE `hideTouchControls()`: read after, the `wasOn` mark was never stored
+  // and the d-pad did not come back — a defect that only showed on the device. This file's `boot()` has one screen,
+  // which is the condition in which the virtual pad exists.
   it('[Right] pausar com o direcional visível guarda a marca, e retomar o devolve', () => {
     const { shell } = boot();
     setPhase('playing');
     const tc = $('#touch-controls');
-    tc.hidden = false; // como se a pessoa estivesse jogando no toque
+    tc.hidden = false; // as if the person were playing on touch
     setPhase('paused');
-    expect(tc.hidden).toBe(true);              // na pausa ele sai da frente
-    expect(tc.dataset.wasOn).toBe('1');        // mas fica anotado que estava ligado
+    expect(tc.hidden).toBe(true);              // in the pause it gets out of the way
+    expect(tc.dataset.wasOn).toBe('1');        // but it is noted that it was on
     setPhase('playing');
-    expect(tc.hidden).toBe(false);             // e volta ao retomar
-    expect(tc.dataset.wasOn).toBe(undefined);  // a marca é consumida
+    expect(tc.hidden).toBe(false);             // and it comes back on resume
+    expect(tc.dataset.wasOn).toBe(undefined);  // the mark is consumed
   });
 
   it('[Inverse] quem NÃO estava com o direcional na tela não o ganha ao retomar', () => {
@@ -236,7 +230,7 @@ describe('setPhase e os controles de toque', () => {
     setPhase('paused');
     expect(tc.dataset.wasOn).toBe(undefined);
     setPhase('playing');
-    expect(tc.hidden).toBe(true);              // continua escondido: pausar não liga o toque de ninguém
+    expect(tc.hidden).toBe(true);              // stays hidden: pausing turns nobody's touch on
   });
 
   it('com a marca presente na mão, retomar em tela única devolve o direcional (o ramo existe)', () => {
@@ -245,7 +239,7 @@ describe('setPhase e os controles de toque', () => {
     tc.dataset.wasOn = '1';
     setPhase('playing');
     expect(tc.hidden).toBe(false);
-    expect(tc.dataset.wasOn).toBe(undefined); // a marca é consumida
+    expect(tc.dataset.wasOn).toBe(undefined); // the mark is consumed
   });
 
   it('em multitela a marca é descartada sem devolver o direcional (o virtual é só de tela única)', () => {
@@ -264,10 +258,10 @@ describe('updateTitleLegend — a legenda por dispositivo', () => {
     const { shell } = boot();
     shell.updateTitleLegend();
     const html = $('#title-legend').innerHTML;
-    expect(html).toContain('K:KeyW');   // veio do kbFor, não de um literal
+    expect(html).toContain('K:KeyW');   // it came from kbFor, not from a literal
     expect(html).toContain('K:Space');
-    expect(html).toContain(t('legend.move')); // do dicionário, não do código
-    expect(html).not.toMatch(/legend\./);      // e a chave nunca vaza para a tela
+    expect(html).toContain(t('legend.move')); // from the dictionary, not from the code
+    expect(html).not.toMatch(/legend\./);      // and the key never leaks onto the screen
     expect($('#title-legend').querySelectorAll('.lg-row').length).toBe(2);
   });
 
@@ -308,7 +302,7 @@ describe('printMode — ver a tela sem menus', () => {
     shell.printMode();
     expect($$('.screen-pause').every((sp) => sp.hidden)).toBe(true);
     expect(log.said.at(-1)).toContain('Modo Print');
-    // ANTES do adiamento não há ouvinte: é o que impede o próprio evento que abriu o Print de fechá-lo.
+    // BEFORE the delay there is no listener: that is what stops the very event that opened Print from closing it.
     expect(listeners.keydown.length + listeners.pointerdown.length).toBe(0);
     flush();
     expect(listeners.keydown.length).toBe(1);
@@ -372,8 +366,7 @@ describe('pauseActs — a tabela do menu de pausa', () => {
     const { shell, log } = boot();
     setNumPlayersValue(4);
     shell.pauseActs.addplayer();
-    // A frase mudou ao ser unificada com a de game/session: os dois anunciavam o MESMO evento com palavras
-    // diferentes ('Máximo de 4 jogadores.' aqui, 'Já são 4 jogadores.' lá). Uma frase por evento.
+    // One sentence per event: adding a player when there are already four is announced the same way wherever it happens.
     expect(log.alerted.at(-1)).toBe('Já são 4 jogadores.');
     expect(log.acts).toEqual([]);
   });
@@ -381,8 +374,8 @@ describe('pauseActs — a tabela do menu de pausa', () => {
   it('se a tela nova não couber na janela, avisa e NÃO cria — o jogo não fica ilegível', () => {
     const { shell, log } = boot({ fitsN: () => false });
     shell.pauseActs.addplayer();
-    // Unificada com a de game/session, que informava o mínimo de 640×360 que esta omitia; a metade acionável
-    // ('aumente a janela') veio desta. A frase única diz as duas coisas.
+    // One sentence says both things: the 640×360 minimum each screen needs, and the actionable half (make the window
+    // bigger or use full screen).
     expect(log.alerted.at(-1)).toContain('cada tela precisa de ao menos 640×360');
     expect(log.alerted.at(-1)).toContain('Aumente a janela ou use tela cheia');
     expect(log.acts).toEqual([]);
@@ -400,7 +393,7 @@ describe('pauseActs — a tabela do menu de pausa', () => {
     setPhase('paused');
     const usados = new Set($$('.screen-pause .pm-btn').map((b) => b.dataset.act));
     for (const a of usados) expect(typeof shell.pauseActs[a], a).toBe('function');
-    // e a tabela cobre exatamente os atos que o game.js declara (a lista viva, para o dia em que divergir)
+    // and the table covers exactly the acts a root declares (the live list, for the day they diverge)
     expect(Object.keys(shell.pauseActs).sort()).toEqual(
       ['addplayer', 'ajuda', 'anim', 'audio', 'caa', 'empatia', 'motora', 'nivel', 'print', 'quit', 'resume', 'tipo', 'visual'],
     );

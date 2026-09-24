@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-typo — render()/setFont() (project BROWSER: usa document). Contrato: DI por closure
-// (ctx.$/srSay/store/root), nenhum acesso a globais fora do ctx. A lógica pura (mapeamento/validação/view-model)
-// está coberta em settings-typo.node.test.js. Modelo: tests/a11y-sr.browser.test.js, tests/debug-panel.browser.test.js.
+// Tests of ui/settings-typo — render()/setFont() (BROWSER project: uses document). Contract: DI by closure
+// (ctx.$/srSay/store/root), no access to globals outside the ctx. The pure logic (mapping/validation/view-model) is
+// covered in settings-typo.node.test.js. Model: tests/a11y-sr.browser.test.js, tests/debug-panel.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
-import cssDoJogo from '../app/css/style.css?raw'; // a folha do jogo, para o caso do espaçamento medir o computado
+import cssDoJogo from '../app/css/style.css?raw'; // the game's stylesheet, so the spacing case measures the computed value
 import { initSettingsTypo, mountTypoInside } from '../app/js/ui/settings-typo.js';
 
-// Fake de platform/storage.ts (mesma forma get/set), em memória.
+// A fake of platform/storage.ts (the same get/set shape), in memory.
 function fakeStore(seed = {}) {
   const m = new Map(Object.entries(seed));
   return { map: m, get: (k, fallback = null) => (m.has(k) ? m.get(k) : fallback), set: (k, v) => { m.set(k, String(v)); return true; } };
@@ -39,7 +39,7 @@ describe('ui/settings-typo', () => {
     const api = initSettingsTypo(ctx);
     expect(api.getFontKey()).toBe('atkinson');
     expect(document.documentElement.dataset.fonte).toBe('padrao');
-    expect(ctx.said).toHaveLength(0); // boot não fala (announce=false)
+    expect(ctx.said).toHaveLength(0); // boot does not speak (announce=false)
   });
 
   it('[Interface] respeita a fonte persistida no store injetado ao montar', () => {
@@ -85,20 +85,18 @@ describe('ui/settings-typo', () => {
     const ctx = fullCtx();
     const api = initSettingsTypo(ctx);
     api.setFont('kindergarten', true);
-    expect(api.getFontKey()).toBe('atkinson'); // não mudou
-    expect(ctx.said).toHaveLength(0); // não anunciou
+    expect(api.getFontKey()).toBe('atkinson'); // unchanged
+    expect(ctx.said).toHaveLength(0); // did not announce
   });
 
   it('[Boundary] botão de fonte .off nasce disabled (não clicável)', () => {
     const ctx = fullCtx();
     initSettingsTypo(ctx).render();
-    // ⚠️ ESTE CASO PERDEU O SUJEITO em 2026-09-07: apontava para a `kindergarten`, uma entrada `.off` sem
-    // ficheiro que saiu do roster (issue #87, item 3). O que ele mede agora é a outra metade da mesma regra,
-    // que passou a existir: nenhuma CALIGRÁFICA é desenhada no menu — não desabilitada, AUSENTE.
+    // ⚠️ `kindergarten`, the `.off` entry with no file this case pointed at, left the roster (issue #87, item 3). What it
+    // measures is the other half of the same rule: no CALLIGRAPHIC face is drawn in the menu — not disabled, ABSENT.
     //
-    // A diferença importa para quem navega por leitor de tela: um botão desabilitado ainda é anunciado e
-    // ainda ocupa uma parada na travessia. Uma face que a criança não pode usar como interface não deve
-    // custar-lhe uma parada.
+    // The difference matters to whoever navigates by screen reader: a disabled button is still announced and still takes
+    // a stop in the traversal. A face the child cannot use as the interface must not cost her a stop.
     for (const k of ['pinyon', 'ufmag']) {
       expect($('#typo-list').querySelector(`button[data-font="${k}"]`), `${k} apareceu no menu`).toBe(null);
     }
@@ -122,20 +120,19 @@ describe('ui/settings-typo', () => {
 
   it('🔴 [Right] o espaçamento PADRÃO do documento é o da BDA — e a cursiva devolve-o a `normal`', () => {
     /*
-     * 🔴 ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE, e é a mais importante desta mudança: repor o `--ls`
-     * em 0.12em — o piso da WCAG §1.4.12, que era o valor de antes — não reprovava NADA. O número que a
-     * decisão inteira do Dev move não estava preso em lado nenhum.
+     * 🔴 THIS CASE WAS BORN FROM A SURVIVING MUTATION, and it is the most important of this change: putting `--ls` back at
+     * 0.12em — WCAG §1.4.12's floor, the previous value — failed NOTHING. The number the Dev's whole decision moves was
+     * pinned nowhere.
      *
-     * 📏 A regra: 0.18em de letra e 0.63em de palavra, que é a recomendação da British Dyslexia Association
-     * (palavra ≥ 3,5× letra). Antes eles viviam só em `[data-fonte="dislexia"]`, e a face PADRÃO — a que
-     * todos os jogos desenham — ficava no piso mais baixo dos dois.
+     * 📏 The rule: 0.18em of letter and 0.63em of word spacing, the British Dyslexia Association's recommendation (word
+     * ≥ 3.5× letter), on the DEFAULT face — the one every game draws —, not only under `[data-fonte="dislexia"]`.
      *
-     * ⚠️ MEDIDO PELO COMPUTADO e não pelo texto do ficheiro: o que importa é o que o navegador resolve na
-     * raiz, que é onde a cascata acaba. Ler o CSS como string mediria o que eu escrevi, não o que se aplica.
+     * ⚠️ MEASURED ON THE COMPUTED VALUE and not on the file's text: what matters is what the browser resolves at the root,
+     * which is where the cascade ends. Reading the CSS as a string would measure what I wrote, not what applies.
      */
-    // 📌 A FOLHA ENTRA À MÃO, pelo precedente de `palco-tem-prioridade.browser.test.js`: o ambiente do vitest
-    // não carrega o `style.css` do jogo, e sem ela tudo responde `normal` — o caso do vácuo abaixo apanhou
-    // exactamente isso na primeira volta.
+    // 📌 THE SHEET GOES IN BY HAND, following the precedent of `the-stage-has-priority.browser.test.js`: the vitest
+    // environment does not load the game's `style.css`, and without it everything answers `normal` — the vacuum case
+    // below caught exactly that on the first round.
     const folha = document.createElement('style');
     folha.textContent = cssDoJogo;
     document.head.appendChild(folha);
@@ -149,33 +146,29 @@ describe('ui/settings-typo', () => {
 
     api.setFont('atkinson', false);
     const padrao = espaco();
-    // O caso do vácuo: sem a folha carregada, tudo seria `normal` e as duas metades passariam de graça.
+    // The vacuum case: without the sheet loaded, everything would be `normal` and both halves would pass for free.
     expect(padrao.ls, 'a folha de estilo não foi aplicada; o caso mediria o nada').not.toBe('normal');
-    // 16px de base × 0.18em = 2.88px; × 0.63em = 10.08px. Comparado em px porque é o que o computado devolve.
+    // 16px base × 0.18em = 2.88px; × 0.63em = 10.08px. Compared in px because that is what the computed value returns.
     expect(parseFloat(padrao.ls) / 16, 'o espaçamento de LETRA não é o da BDA').toBeCloseTo(0.18, 2);
     expect(parseFloat(padrao.ws) / 16, 'o espaçamento de PALAVRA não é o da BDA').toBeCloseTo(0.63, 2);
 
-    // 🔴 E a cursiva devolve os dois a `normal` — espaçar uma face ligada parte-a nas junções.
+    // 🔴 And the cursive gives both back to `normal` — spacing a joined face breaks it at the joins.
     api.setFont('pwbr', false);
-    // ⚠️ O COMPUTADO É ASSIMÉTRICO, e é do navegador e não da regra: para `normal`, o Chromium devolve
-    // `'normal'` em `letterSpacing` e `'0px'` em `wordSpacing`. Escrito à espera de `'normal'` nos dois, o
-    // caso reprovava com o CSS certo. O que se afirma é «não há espaçamento extra», e é isso que se mede.
+    // ⚠️ THE COMPUTED VALUE IS ASYMMETRIC, and that is the browser's, not the rule's: for `normal`, Chromium returns
+    // `'normal'` in `letterSpacing` and `'0px'` in `wordSpacing`. Written expecting `'normal'` on both, the case failed
+    // with the right CSS. What is asserted is «não há espaçamento extra», and that is what is measured.
     const cursiva = espaco();
     expect(cursiva.ls, 'a face ligada ficou com espaçamento de letra a partir-lhe os conectores').toBe('normal');
     expect(parseFloat(cursiva.ws) || 0, 'a face ligada ficou com espaçamento de palavra').toBe(0);
 
     /*
-     * 🔴 E A ESCALA DA MÃO DO PAÍS, no mesmo sítio e pelo mesmo motivo: uma mutação que tirava o `calc()` do
-     * `font-size` de `html,body` não reprovava NADA — a regra que faz a posição (e) ser 25% maior estava
-     * escrita e não estava presa.
+     * 🔴 AND THE SCALE OF THE COUNTRY'S HAND, in the same place and for the same reason: a mutation removing the `calc()`
+     * from the `font-size` failed NOTHING — the rule that makes position (e) 25% larger was written and not pinned.
      *
-     * 📏 16 px × 1,25 = 20 px, que é exactamente o `minPx` das Playwrite. O número não é gosto: abaixo do
-     * piso a face deixa de ser DIFÍCIL e passa a ser ILEGÍVEL, e a dificuldade é o exercício enquanto a
-     * ilegibilidade é a criança a desistir (emenda do ADR-0012).
+     * 📏 16 px × 1.25 = 20 px, which is exactly the Playwrite faces' `minPx`. The number is not taste: below the floor the
+     * face stops being DIFFICULT and becomes ILLEGIBLE, and the difficulty is the exercise while the illegibility is the
+     * child giving up (ADR-0012 amendment).
      */
-    // 📌 Since ADR-0176 the menu itself draws a face at its floor: choosing Playwrite BR (20 px) makes the game's TEXT 25%
-    // larger, and going back to a reading face gives the base back. Since issue #172 the scale is the region's, never the
-    // document's: the root stays 16 px, so `rem` spacing does not grow with the hand (interface log 2026-09-13).
     const regiao = document.createElement('div');
     regiao.id = 'game-region';
     document.body.appendChild(regiao);
@@ -198,13 +191,13 @@ describe('ui/settings-typo', () => {
 
   it('🔴 [Right] uma face LIGADA marca `data-cursiva`, e voltar a uma de leitura APAGA a marca', () => {
     /*
-     * 🔴 É a excepção do ADR-0149 §3, e a marca é o que tira o espaçamento da BDA: espaçar uma cursiva
-     * parte-a nas junções que a fazem cursiva — «para manter os conectores», palavras do Dev.
+     * 🔴 It is the exception of ADR-0149 §3, and the mark is what removes the BDA spacing: spacing a cursive face breaks
+     * it at the joins that make it cursive — «para manter os conectores», the Dev's words.
      *
-     * ⚠️ E O SEGUNDO METADE DO CASO É QUE IMPORTA. Escrever a marca sem a APAGAR deixaria uma criança que
-     * experimentou uma cursiva e voltou para a Atkinson com a face de LEITURA sem espaçamento nenhum — o
-     * defeito na direcção mais cara, porque quem volta para a face de leitura é exactamente quem precisa
-     * dele. Um caso que só medisse a ida ficaria verde com essa metade partida.
+     * ⚠️ AND THE SECOND HALF OF THE CASE IS WHAT MATTERS. Writing the mark without ERASING it would leave a child who
+     * tried a cursive and went back to Atkinson with the READING face and no spacing at all — the defect in the costliest
+     * direction, because whoever goes back to the reading face is exactly who needs it. A case measuring only the way
+     * there would stay green with that half broken.
      */
     const ctx = fullCtx();
     const api = initSettingsTypo(ctx);
@@ -218,9 +211,9 @@ describe('ui/settings-typo', () => {
   });
 
   it('🔴 [Right] cada linha é desenhada NA PRÓPRIA face — é assim que se escolhe uma tipografia', () => {
-    // Achado por sonda em 22/09: apagar o `font-family` do rótulo deixava a suíte inteira verde. É o
-    // comportamento central deste menu — uma lista de dezassete NOMES não deixa ninguém escolher uma face, e
-    // quem mais precisa de escolher é quem não lê bem a que está a ver.
+    // Found by a probe on 22/09: deleting the label's `font-family` left the whole suite green. It is this menu's central
+    // behaviour — a list of NAMES lets nobody choose a face, and whoever most needs to choose is whoever does not read
+    // the current one well.
     const api = initSettingsTypo(fullCtx());
     api.render();
     for (const linha of $('#typo-list').querySelectorAll('.ctrl-row')) {
@@ -231,9 +224,9 @@ describe('ui/settings-typo', () => {
   });
 
   it('🔴 [Right] a escolhida traz ● e as outras ○ — porque COR não é estado', () => {
-    // O comentário do módulo argumenta isto por extenso (emenda do ADR-0012: «the state in TWO forms, and
-    // neither of them is colour»), e nada o prendia: pôr a mesma marca nas dezassete passava verde. Quem não
-    // distingue o amarelo do `is-on` fica sem saber qual fonte está activa.
+    // The module argues this in full (ADR-0012 amendment: the state in TWO forms, neither of them a colour), and nothing
+    // pinned it: putting the same mark on every row passed green. Whoever cannot tell `is-on`'s yellow apart is left not
+    // knowing which font is active.
     const api = initSettingsTypo(fullCtx());
     api.render();
     const botoes = [...$('#typo-list').querySelectorAll('button[data-font]')];
@@ -246,11 +239,11 @@ describe('ui/settings-typo', () => {
   });
 
   it('🔴 [Right] uma face que a lista mostra cinzenta vem TRAVADA, e a nota vai no nome acessível', () => {
-    // Duas coisas que a sonda achou verdes na mesma linha. Um botão travado que não vem `disabled` é um botão
-    // que não faz nada com aparência de vivo (ADR-0106 §5); e a nota é o que diz ao educador PARA QUEM aquela
-    // face serve — sem ela no `aria-label`, quem não vê a linha ouve só um nome estranho.
-    // A `ronde` é a única face OFERECIDA que depende de instalação (ADR-0012 §«enquanto»): sem detector, ou
-    // com um que diga que não, ela aparece na lista e não responde.
+    // Two things the probe found green on the same row. A locked button that does not come `disabled` is a button that
+    // does nothing while looking alive (ADR-0106 §5); and the note is what tells the educator WHOM that face serves —
+    // without it in the `aria-label`, whoever cannot see the row hears only a strange name.
+    // `ronde` is the only OFFERED face that depends on installation (ADR-0012 §«enquanto»): with no detector, or one
+    // that says no, it appears on the list and does not respond.
     const api = initSettingsTypo(fullCtx());
     api.render();
     const cinzenta = $('#typo-list').querySelector('button[data-font="ronde"]');
@@ -264,9 +257,9 @@ describe('ui/settings-typo', () => {
   });
 
   it('[Many] montar duas vezes REETIQUETA em vez de duplicar — e os nós ficam os MESMOS', () => {
-    // ⚠️ A razão não é economia: refazer a linha deixaria um controle no documento e SEM escuta — um botão
-    // morto com aparência de vivo (ADR-0106 §5). A escuta deste painel liga-se uma vez, na lista, por
-    // delegação; se os nós trocassem, ela sobreviveria, mas o foco cairia a cada clique.
+    // ⚠️ The reason is not thrift: redoing the row would leave a control in the document WITHOUT a listener — a dead
+    // button that looks alive (ADR-0106 §5). This panel's listener is wired once, on the list, by delegation; if the nodes
+    // were swapped it would survive, but the focus would drop at every click.
     const kit = { find: (s) => document.querySelector(s), create: (tag) => document.createElement(tag) };
     const lista = $('#typo-list');
     mountTypoInside(kit, lista, 'atkinson');
@@ -279,10 +272,9 @@ describe('ui/settings-typo', () => {
   });
 
   it('⚠️ [Right] nenhum botão da lista é um INTERRUPTOR — o vocabulário todo é de escolha', () => {
-    // 📌 Desceu do `settings-typo.node.test.js` em 22/09, quando a lista deixou de ser cadeia e passou a ser
-    // nós: a pergunta é a mesma, o sítio onde ela se responde é que mudou. `aria-pressed` é vocabulário de
-    // interruptor, e a classe `switch` desenha uma chave de 52×28 px com bolinha — o desenho de um estado
-    // que não existe aqui (emenda do ADR-0012).
+    // 📌 The question moved here from `settings-typo.node.test.js` when the list became nodes: it is the same question,
+    // answered where there is a document. `aria-pressed` is switch vocabulary, and the `switch` class draws a 52×28 px
+    // toggle with a knob — the drawing of a state that does not exist here (ADR-0012 amendment).
     const api = initSettingsTypo(fullCtx());
     api.render();
     const lista = $('#typo-list');
@@ -297,17 +289,17 @@ describe('ui/settings-typo', () => {
   });
 
   it('🔴 [Right] as três famílias anunciam-se, e o grupo de rádio é UM só através delas', () => {
-    // O cabeçalho some sem ninguém reparar (sonda de 22/09), e com ele some a informação de que a lista tem
-    // famílias. ⚠️ E o radiogroup é um SÓ de propósito: a exclusividade é do menu inteiro — uma fonte activa —,
-    // e três grupos diriam a quem escuta que dá para ter uma sans E uma serif ao mesmo tempo.
+    // The heading vanishes without anyone noticing (probe of 22/09), and with it the information that the list has
+    // families. ⚠️ And the radiogroup is ONE on purpose: the exclusivity belongs to the whole menu — one active font —,
+    // and three groups would tell whoever listens that a sans AND a serif can be on at the same time.
     initSettingsTypo(fullCtx()).render();
     expect($('#typo-list').querySelectorAll('.panel-sub').length).toBeGreaterThanOrEqual(3);
     expect($('#typo-list').querySelectorAll('[role="radiogroup"]')).toHaveLength(1);
   });
 
   it('🔴 [Boundary] uma face que a lista recusa também é recusada por setFont — uma resposta, não três', () => {
-    // O comentário do módulo diz-o: «três respostas à mesma pergunta divergem». Apagar o `faceAvailable` do
-    // `setFont` passava verde, e a criança acabaria com uma face escolhida que o aparelho não tem.
+    // The module says so: three answers to the same question drift. Deleting the `faceAvailable` from `setFont` passed
+    // green, and the child would end up with a chosen face the device does not have.
     const ctx = fullCtx();
     const api = initSettingsTypo(ctx);
     const antes = api.getFontKey();
@@ -321,23 +313,23 @@ describe('ui/settings-typo', () => {
     const api = initSettingsTypo(ctx);
     api.setFont('lexend', false);
     api.render();
-    expect($('#typo-preview').style.fontFamily).toBe('Lexend'); // o browser normaliza e tira as aspas do valor computado
+    expect($('#typo-preview').style.fontFamily).toBe('Lexend'); // the browser normalises and strips the quotes from the computed value
   });
 
   it('[Boundary] `setFont` SOZINHO já move a pré-visualização — quem cicla pela barra não chama render', () => {
-    // 📏 As duas escritas da pré-visualização (no `setFont` e no `render`) cobriam-se uma à outra na suíte, e
-    // cada uma parecia a inerte quando a outra corria. Nenhuma é: o ciclo do 11.º botão da barra chama
-    // `setFont` sem redesenhar o painel, e é esta linha que faz a amostra seguir a escolha.
+    // 📏 The preview's two writes (in `setFont` and in `render`) covered each other in the suite, and each looked like
+    // the inert one while the other ran. Neither is: the bar's typography button cycles through `setFont` without
+    // redrawing the panel, and this line is what makes the sample follow the choice.
     const api = initSettingsTypo(fullCtx());
     api.setFont('lexend', false);
     expect($('#typo-preview').style.fontFamily.replace(/["']/g, '')).toBe('Lexend');
   });
 
   it('[Boundary] a pré-visualização que NASCE depois do arranque também é alcançada pelo render', () => {
-    // 📌 A sonda de 22/09 deixou esta linha verde e eu ia apagá-la como inerte — o `setFont` já escreve a
-    // pré-visualização, e o caso acima chama `setFont` antes do `render`. Medido: ela NÃO é inerte. Quando o
-    // nó nasce depois do arranque — que é como um painel montado em duas etapas se comporta — o `setFont` já
-    // correu contra um documento onde ele não existia, e o `render` é o único que ainda o alcança.
+    // 📌 A probe of 22/09 left this line green, which made it look inert — `setFont` already writes the preview, and the
+    // case above calls `setFont` before `render`. Measured: it is NOT inert. When the node is born after boot — which is
+    // how a panel mounted in two steps behaves — `setFont` has already run against a document where it did not exist,
+    // and `render` is the only one that still reaches it.
     document.body.innerHTML = '<div id="typo"><div id="typo-list"></div></div>';
     const api = initSettingsTypo(fullCtx());
     api.setFont('lexend', false);
@@ -379,11 +371,11 @@ describe('ui/settings-typo — restaurar padrões DESTE menu (ADR-0028)', () => 
   });
 
   it('[Interface] limpa o --font-custom que uma fonte de catálogo tinha deixado no root', () => {
-    // A volta tem que apagar o rastro da ida. Uma fonte "custom" escreve a propriedade; se o reset trocasse só
-    // o data-fonte, a criança ficaria com o padrão declarado e a fonte anterior ainda desenhada na tela.
+    // The way back has to erase the trace of the way there. A "custom" font writes the property; if the reset swapped only
+    // the data-fonte, the child would have the default declared and the previous font still drawn on screen.
     const ctx = fullCtx();
     const api = initSettingsTypo(ctx);
-    api.setFont('pwbr', true); // fonte de catálogo → passa pelo --font-custom, não por um data-fonte próprio
+    api.setFont('pwbr', true); // a catalogue font → goes through --font-custom, not through a data-fonte of its own
     api.render();
     const antes = document.documentElement.style.getPropertyValue('--font-custom');
 
@@ -434,7 +426,7 @@ describe('ui/settings-typo — marca o que saiu do padrão (ADR-0029)', () => {
   });
 
   it('[Right] voltar ao padrão APAGA a marca, na linha e no botão do menu', () => {
-    // O caso que mantém a marca honesta: uma marca que só soubesse aparecer acabaria em tudo.
+    // The case that keeps the mark honest: a mark that only knew how to appear would end up on everything.
     const ctx = fullCtx({ store: fakeStore({ incl_font_k: 'lexend' }) });
     const api = initSettingsTypo(ctx);
     api.render();
@@ -452,31 +444,30 @@ describe('ui/settings-typo — marca o que saiu do padrão (ADR-0029)', () => {
 });
 
 // ============================================================================================
-// A EXPLICAÇÃO APARECIA DUAS VEZES — achado do Dev, 2026-08-27.
+// THE EXPLANATION APPEARED TWICE — found by the Dev, 2026-08-27.
 //
-// "a explicação está duplicada no menu fonte, aparece no rodapé, o que é certo, mas também está aparecendo
-//  embaixo do nome da fonte."
+// «a explicação está duplicada no menu fonte, aparece no rodapé, o que é certo, mas também está aparecendo
+//  embaixo do nome da fonte.»
 //
-// O MECANISMO, e ele está escrito no CLAUDE.md como AVISO desde 2026-08-25: `fillExplain` tira o `.opt-hint`
-// de dentro da linha e o move para o rodapé, reescrevendo o `<span>` para conter só o rótulo curto. Ele roda
-// uma vez, quando o overlay é frontalizado.
+// THE MECHANISM, and CLAUDE.md warns about it (§4): `fillExplain` takes the `.opt-hint` out of the row and moves it to
+// the footer, rewriting the `<span>` to hold only the short label. It runs once, when the overlay is brought to the
+// front.
 //
-// `render()` reconstrói o `#typo-list` inteiro — e é chamado DE NOVO a cada clique numa fonte. As linhas novas
-// voltam com o `.opt-hint` dentro, e ninguém o move outra vez. Rodapé com a descrição (da primeira passada) E
-// descrição sob o nome da fonte (do redesenho). Exatamente o que ele viu.
+// `render()` rebuilds the whole `#typo-list` — and is called AGAIN on every click on a font. The new rows come back with
+// the `.opt-hint` inside, and nobody moves it again. Footer with the description (from the first pass) AND description
+// under the font's name (from the redraw). Exactly what the Dev saw.
 //
-// "Painel que re-renderiza precisa chamar `fillExplain` a cada render, senão a prosa volta para dentro das
-//  linhas no primeiro clique." — CLAUDE.md §4, escrito ANTES deste defeito existir. O aviso estava certo e o
-// painel de tipografia era o que faltava obedecê-lo.
+// CLAUDE.md §4 says it: a panel that re-renders has to call `fillExplain` on every render, or the prose goes back
+// inside the rows at the first click. The warning was right and the typography panel was the one not obeying it.
 //
-// MUTAÇÃO CONFERIDA: tirar a chamada do fim do `render()` faz este caso reprovar.
+// MUTATION CHECKED: removing the call at the end of `render()` makes this case fail.
 describe('ui/settings-typo · a explicação FICA no rodapé, inclusive depois de escolher uma fonte', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="typo"><div class="overlay__card"><div id="typo-list"></div>' +
       '<span id="typo-preview"></span><button id="typo-reset" type="button">Restaurar</button></div></div>';
   });
 
-  /** Um `fillExplain` mínimo com o comportamento que importa: tira o `.opt-hint` de dentro da linha. */
+  /** A minimal `fillExplain` with the behaviour that matters: it takes the `.opt-hint` out of the row. */
   const moverParaORodape = (card) => {
     card?.querySelectorAll('.ctrl-row').forEach((row) => {
       const span = row.querySelector(':scope > span');
