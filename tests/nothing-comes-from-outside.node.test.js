@@ -1,26 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// NADA CHEGA DE FORA EM TEMPO DE EXECUÇÃO — o pilar 8 (offline/PWA), como inventário.
+// NOTHING ARRIVES FROM OUTSIDE AT RUN TIME — pillar 8 (offline/PWA), as an inventory.
 //
-// ========================= POR QUE ISTO IMPORTA NUMA ESCOLA =========================
-// O pilar 8 do ADR-0010 diz que este jogo funciona OFFLINE. Numa escola pública sem rede — que é o alvo, não a
-// excepção — um módulo que busque código a um servidor de terceiros não degrada: ele simplesmente não faz
-// nada. A criança liga o botão e não acontece coisa nenhuma, sem erro e sem explicação.
+// ========================= WHY THIS MATTERS IN A SCHOOL =========================
+// Pillar 8 of ADR-0010 says this game works OFFLINE. In a public school with no network — the target, not the
+// exception — a module that fetches code from a third-party server does not degrade: it simply does nothing. The child
+// turns the button on and nothing happens, with no error and no explanation.
 //
-// 📏 MEDIDO EM 2026-09-08: a engine inteira tinha UMA busca de runtime externo, e ela era justamente no
-// transporte assistido — o `ui/webcam` carrega o WebGazer de `webgazer.cs.brown.edu`. Ou seja: o único
-// subsistema que exigia internet era o que serve a criança que menos pode ir buscar outra coisa.
+// ⚠️ The distinction this file makes is WHEN: a fetch at INSTALLATION honours pillar 8 («primeiro dia online, depois
+// offline-first», the erratum the Dev dictated) — the heavy files come down with the delivery (ADR-0110 (b), ADR-0177);
+// a LAZY fetch on first use violates it, because a machine that never turned that control on never made it.
 //
-// ⚠️ E EM 2026-09-09 PASSARAM A SER DUAS, POR DECISÃO E NÃO POR DERIVA. O `platform/heavy` desce as quatro
-// vozes neurais no primeiro carregamento (ADR-0110 (b), pedido do Dev). A distinção que este ficheiro tem de
-// fazer deixou de ser «há busca ou não há» e passou a ser QUANDO: uma busca na INSTALAÇÃO cumpre o pilar 8
-// («primeiro dia online, depois offline-first», errata ditada pelo Dev); uma busca PREGUIÇOSA no primeiro uso
-// viola-o, porque a máquina que nunca ligou aquele controle nunca a fez. O WebGazer é a segunda; é por isso
-// que ele continua a ser um defeito e o buscador não.
-//
-// ⚠️ E A DISTINÇÃO QUE ESTE CRIVO TEM DE FAZER É A RAZÃO DE ELE SER INVENTÁRIO E NÃO PROIBIÇÃO: nem toda URL
-// em código é uma busca. `http://www.w3.org/2000/svg` é um NAMESPACE XML — um identificador que o
-// `createElementNS` exige, e que nunca sai da máquina. Um gate que as tratasse igual acusaria dois falsos, e
-// um gate que acusa falsos é desligado antes de apanhar o verdadeiro.
+// ⚠️ AND THE DISTINCTION THIS SIEVE MUST MAKE IS WHY IT IS AN INVENTORY AND NOT A PROHIBITION: not every URL in code is a
+// fetch. `http://www.w3.org/2000/svg` is an XML NAMESPACE — an identifier `createElementNS` requires, which never leaves
+// the machine. A gate that treated them alike would accuse false ones, and a gate that accuses false ones is switched
+// off before it catches the true one.
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
@@ -42,11 +35,10 @@ function ficheirosTs(dir = RAIZ) {
 }
 
 /**
- * As URLs que vivem em CÓDIGO, por ficheiro.
+ * The URLs that live in CODE, per file.
  *
- * ⚠️ Comentários fora: esta engine explica-se muito, e metade das URLs que ela escreve estão em prosa a citar
- * uma fonte. Contá-las criaria o incentivo de APAGAR A EXPLICAÇÃO para baixar o número — que é a lição que o
- * `action-vocabulary-boundary` já deixou escrita.
+ * ⚠️ Comments are out: this engine explains itself a lot, and URLs in prose cite a source. Counting them would create
+ * the incentive to DELETE THE EXPLANATION to lower the number — the lesson `action-vocabulary-boundary` already wrote.
  */
 function urlsEmCodigo() {
   const fora = [];
@@ -61,8 +53,8 @@ function urlsEmCodigo() {
 }
 
 /**
- * O QUE PODE APARECER, e o que cada coisa é. ⚠️ As razões não são do mesmo TIPO, e é isso que a lista serve
- * para dizer: duas são identificadores que não viajam, e uma é uma busca a sério.
+ * WHAT MAY APPEAR, and what each thing is. ⚠️ The reasons are not of the same KIND, and that is what the list is for:
+ * some are identifiers that do not travel, some are addresses the build fetches into the delivery.
  */
 const DECLARADAS = {
   'https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main': 'KOKORO (ADR-0186, ADR-0198): the fp32 model, its tokenizer '
@@ -102,32 +94,30 @@ const DECLARADAS = {
 };
 
 /**
- * ESTE MÓDULO TOCA NA REDE? — a pergunta que separa um ENDEREÇO de uma BUSCA.
+ * DOES THIS MODULE TOUCH THE NETWORK? — the question that separates an ADDRESS from a FETCH.
  *
- * ⚠️ Estrutural e não por nome: procura a PRIMITIVA que sai da máquina. Um módulo pode nomear um endereço
- * (o ADR-0114 exige que um deles o faça) sem nunca o pedir, e tratá-los igual acusaria um falso — que é
- * como um gate é desligado antes de apanhar o verdadeiro.
+ * ⚠️ Structural and not by name: it looks for the PRIMITIVE that leaves the machine. A module can name an address
+ * (ADR-0114 requires one to) without ever asking for it, and treating them alike would accuse a false one — which is how
+ * a gate gets switched off before it catches the true one.
  */
-// 🔴 ERA `\bfetch\s*\(` ATÉ 2026-09-09, E O BUSCADOR DAS COISAS PESADAS PASSOU-LHE AO LADO. O
-// `platform/heavy.ts` RECEBE o `fetch` (`readonly buscar?: typeof fetch`, com
-// `opcoes.buscar ?? fetch`) e chama-o por outro nome — `buscar(p.url)`. A primitiva está lá, o nome
-// dela desapareceu do sítio onde ela é usada.
-// ⚠️ E ISSO NÃO FOI EVASÃO, FOI BOM DESENHO: injectar a primitiva é o que torna o buscador testável sem
-// rede, e é o mesmo movimento que o `input/touch` já recomenda («injectar o BOOLEANO, não o estado»). Um
-// discriminador derrotado por DESENHO CERTO é pior do que um derrotado por descuido: ninguém fez nada de
-// errado, e por isso ninguém vai à procura.
-// 📌 `\bfetch\b` apanha o nome em posição de VALOR (`typeof fetch`, `?? fetch`) e não só de chamada. Medido
-// em 2026-09-09 na árvore inteira: passa de três módulos para QUATRO, e o quarto é o buscador — zero falsos.
+// 🔴 `\bfetch\b`, not `\bfetch\s*\(`: `platform/heavy.ts` RECEIVES `fetch` (`readonly buscar?: typeof fetch`, with
+// `opcoes.buscar ?? fetch`) and calls it by another name — `buscar(p.url)`. The primitive is there; its name is gone
+// from where it is used.
+// ⚠️ AND THAT IS NOT EVASION, IT IS GOOD DESIGN: injecting the primitive is what makes the fetcher testable without a
+// network. A discriminator defeated by RIGHT DESIGN is worse than one defeated by carelessness: nobody did anything
+// wrong, so nobody goes looking.
+// 📌 `\bfetch\b` catches the name in VALUE position (`typeof fetch`, `?? fetch`), not only as a call — with no false
+// positives in the tree when it was measured (2026-09-09).
 const REDE = /\bfetch\b|\bimport\s*\(|\.src\s*=|XMLHttpRequest|navigator\.sendBeacon|new\s+WebSocket|new\s+EventSource/;
 /**
- * OS MÓDULOS QUE TOCAM NUMA PRIMITIVA DE REDE, e o que cada um faz com ela.
+ * THE MODULES THAT TOUCH A NETWORK PRIMITIVE, and what each one does with it.
  *
- * ⚠️ TOCAR NA PRIMITIVA NÃO É SAIR DA MÁQUINA, e é essa a distinção que a lista existe para escrever. Dois
- * destes carregam recurso LOCAL — um chunk do próprio pacote, um sprite do próprio cartucho — e contá-los
- * como dependência de rede seria o mesmo erro que contar o namespace do W3C como busca.
+ * ⚠️ TOUCHING THE PRIMITIVE IS NOT LEAVING THE MACHINE, and that is the distinction the list exists to write. Most of
+ * these load a LOCAL resource — a chunk of this same package, a file at `heavy/` on the page's own origin — and counting
+ * them as network dependencies would be the same mistake as counting the W3C namespace as a fetch.
  *
- * 📌 A lista é afirmada por IGUALDADE e não por inclusão: um módulo novo com `fetch` reprova, e um módulo
- * que deixe de tocar na rede também — que é como o inventário ENCOLHE quando a #129 for resolvida.
+ * 📌 The list is asserted by EQUALITY, not inclusion: a new module with `fetch` fails, and so does a module that stops
+ * touching the network — which is how the inventory SHRINKS.
  */
 const TOCAM_NA_REDE = {
   'boot/create-game.ts': 'LOCAL. `import(\'../platform/reading-runtime.js\')` — a chunk of this same package, cut by Vite and '
@@ -192,8 +182,8 @@ describe('pilar 8 · nada chega de fora sem estar declarado', () => {
   });
 
   it('[Interface] a lista não tem órfãos — uma URL que saiu do código sai dela', () => {
-    // É por aqui que esta lista ENCOLHE: quando uma busca sai do código, a entrada dela sai também, senão o inventário reportaria
-    // uma dívida já paga — foi o que aconteceu ao WebGazer em 2026-09-16 (ADR-0214).
+    // This is how the list SHRINKS: when a fetch leaves the code, its entry leaves too, or the inventory would report a debt
+    // already paid — as with WebGazer (ADR-0214).
     const presentes = new Set(urlsEmCodigo().map((u) => u.url));
     expect(Object.keys(DECLARADAS).filter((u) => !presentes.has(u)), 'entrada de uma URL que já não existe').toEqual([]);
   });
@@ -205,22 +195,17 @@ describe('pilar 8 · nada chega de fora sem estar declarado', () => {
   });
 
   it('📌 [Right] TODO módulo que toca numa primitiva de rede está declarado — o inventário é o assunto', () => {
-    // ⚠️ A afirmação forte deste ficheiro não é «há uma lista»: é que se sabe, uma a uma, quais são as
-    // dependências de rede desta engine e o que cada uma faz. Uma a mais tem de custar uma linha escrita.
+    // ⚠️ This file's strong claim is not «há uma lista»: it is that the network dependencies of this engine are known, one
+    // by one, with what each does. One more must cost a written line.
     //
-    // 🎯 O DISCRIMINADOR PASSOU A SER ESTRUTURAL EM 2026-09-08, e a mudança é um aperto e não um alívio.
-    //    Era «não é o namespace do W3C, logo é uma busca» — que assume que só há duas categorias. O ADR-0114
-    //    criou a terceira: um ENDEREÇO declarado num módulo puro, para um buscador que ainda não existe.
-    //    Agora conta-se quem toca mesmo na REDE: um módulo é uma busca quando contém uma primitiva de rede.
-    //    ⚠️ Uma lista de nomes teria deixado passar o buscador no dia em que ele nascesse NAQUELE ficheiro;
-    //    esta forma apanha-o, porque é a primitiva que o denuncia e não o endereço.
-    // 🔴 E EM 2026-09-09 O CASO MUDOU DE FORMA OUTRA VEZ, porque a forma anterior tinha um BURACO que este
-    //    ficheiro não podia ver: ela contava módulos que tocam na rede **de entre os que têm uma URL em
-    //    código**. O buscador das coisas pesadas não tem nenhuma — as quatro moram no `platform/voice-plan`,
-    //    de onde chegam por import. Ele fetcha, e era invisível ao caso que existe para contar quem fetcha.
-    //    ⚠️ Separar CATÁLOGO de BUSCADOR é bom desenho (a lista é dado, o buscador é regra), e é exactamente
-    //    o que abria a porta: o literal fica de um lado, a primitiva do outro, e um crivo que exija os dois
-    //    no mesmo ficheiro não vê nenhum dos dois. Agora conta-se a PRIMITIVA onde quer que ela esteja.
+    // 🎯 THE DISCRIMINATOR IS STRUCTURAL: a module is a fetch when it contains a network primitive. "Not the W3C namespace,
+    //    so a fetch" assumes only two categories; ADR-0114 created a third — an ADDRESS declared in a pure module. A list
+    //    of names would miss a fetcher born IN THAT file; this form catches it, because the primitive gives it away, not
+    //    the address.
+    // 🔴 AND THE PRIMITIVE IS COUNTED WHEREVER IT IS, not only among modules with a URL in code: the heavy-files fetcher
+    //    has none — its addresses arrive by import from the catalogue. Separating CATALOGUE from FETCHER is good design
+    //    (the list is data, the fetcher is rule), and it is exactly what opens the door: the literal on one side, the
+    //    primitive on the other, and a sieve demanding both in one file sees neither.
     const naRede = ficheirosTs()
       .map((p) => relative(RAIZ, p).split('\\').join('/'))
       .filter((m) => tocaNaRede(m));
@@ -228,39 +213,34 @@ describe('pilar 8 · nada chega de fora sem estar declarado', () => {
       .toEqual(Object.keys(TOCAM_NA_REDE).sort());
   });
 
-  // 📌 O PAR QUE IMPEDE A CATEGORIA NOVA DE VIRAR PORTA DOS FUNDOS: o módulo que NOMEIA o host tem de
-  // continuar sem tocar na rede. No dia em que ele ganhar um `fetch`, o caso acima acusa-o — e este diz
-  // porquê, antes de alguém ter de o descobrir.
+  // 📌 THE PAIR THAT KEEPS THE NEW CATEGORY FROM BECOMING A BACK DOOR: the module that NAMES the host must stay off the
+  // network. The day it gains a `fetch`, the case above accuses it — and this one says why, before anyone has to find
+  // out.
   it('📌 [Zero] o módulo que NOMEIA o host dos modelos não toca na rede', () => {
     expect(tocaNaRede('platform/voice-plan.ts'), 'o catálogo passou a buscar — deixou de ser um endereço').toBe(false);
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-// Quatro, tres mortas e uma EQUIVALENTE hoje — e o «hoje» esta medido, nao suposto.
+// ========================= MUTATIONS CHECKED =========================
+// (Recorded while WebGazer was still in the engine; it left with ADR-0214.)
 //
-//   1. uma SEGUNDA busca externa a aparecer num modulo real (`platform/tts`) -> reprovam DOIS: o dos
-//      declarados e o que afirma que a busca externa continua a ser UMA. E o defeito mais provavel deste
-//      ficheiro: nao alguem apagar o crivo, alguem acrescentar um CDN a resolver um problema.
-//   2. o detector de URLs morto -> reprovam TRES. Um crivo de ausencia que nao acha nada esta verde pela pior
-//      razao possivel.
-//   4. o WebGazer a passar a ser local (`/vendor/webgazer.js`) -> reprovam DOIS, e ⚠️ ESTA REPROVA POR BOA
-//      NOTICIA: e a #129 resolvida. Quando acontecer, a entrada do WebGazer sai desta lista e o caso do
-//      «continua a ser UMA» passa a exigir uma lista VAZIA. Fica escrito para ninguem ler o vermelho como
-//      regressao.
+//   1. a SECOND external fetch appearing in a real module (`platform/tts`) -> TWO fail: the declared-URLs case and the one
+//      asserting the external fetch is still ONE. It is this file's likeliest defect: not someone deleting the sieve,
+//      someone adding a CDN to solve a problem.
+//   2. the URL detector killed -> THREE fail. An absence sieve that finds nothing is green for the worst possible reason.
+//   4. WebGazer becoming local (`/vendor/webgazer.js`) -> TWO fail, and ⚠️ THIS FAILS ON GOOD NEWS: it is #129 resolved.
+//      When it happens, the WebGazer entry leaves this list. Written so nobody reads the red as a regression.
 //
-//   5. 🎯 O DISCRIMINADOR DE VOLTA A `\bfetch\s*\(` (2026-09-09) -> reprova o inventario, e e a mutacao que
-//      prova o conserto do dia: com ela, o `platform/heavy` — que RECEBE o `fetch` e o chama por outro
-//      nome — desaparece do conjunto medido e a engine volta a parecer ter tres modulos de rede em vez de
-//      quatro. ⚠️ Ela nao apanha um descuido: apanha BOM DESENHO a cegar um crivo, que e o buraco mais caro
-//      porque ninguem fez nada de errado.
-//   6. um modulo novo a ganhar `fetch(` sem entrada em `TOCAM_NA_REDE` -> reprova pela mesma assercao, que e
-//      a metade para que a lista existe. ⚠️ E a IGUALDADE (e nao a inclusao) e o que faz a lista ENCOLHER:
-//      no dia em que o WebGazer entrar no precache, a entrada dele tem de SAIR, senao o inventario reporta
-//      uma divida ja paga.
+//   5. 🎯 THE DISCRIMINATOR BACK TO `\bfetch\s*\(` (2026-09-09) -> the inventory fails, the mutation that proves that
+//      day's fix: with it, `platform/heavy` — which RECEIVES `fetch` and calls it by another name — vanishes from the
+//      measured set. ⚠️ It does not catch carelessness: it catches GOOD DESIGN blinding a sieve, the most expensive hole
+//      because nobody did anything wrong.
+//   6. a new module gaining `fetch(` with no `TOCAM_NA_REDE` entry -> fails on the same assertion, the half the list
+//      exists for. ⚠️ And EQUALITY (not inclusion) is what makes the list SHRINK: when a fetch goes, its entry must LEAVE,
+//      or the inventory reports a debt already paid.
 //
-//   3. ⚠️ os comentarios a voltarem a contar -> SOBREVIVE, e e equivalencia por VACUIDADE: medido, ha ZERO
-//      URLs em comentario em `app/js` inteiro, entao o filtro nao remove nada hoje. Ele FICA na mesma, e
-//      deixa de ser equivalente no primeiro comentario que cite uma fonte — «ver https://…» seria acusado
-//      como busca nova. A licao e a mesma que o `action-vocabulary-boundary` ja escreveu: contar a prosa cria
-//      o incentivo de APAGAR A EXPLICACAO para baixar o numero.
+//   3. ⚠️ comments counting again -> SURVIVES, an equivalence by VACUITY: measured, there were ZERO URLs in comments in
+//      all of `app/js`, so the filter removed nothing. It STAYS all the same, and stops being equivalent at the first
+//      comment that cites a source — «ver https://…» would be accused as a new fetch. The lesson
+//      `action-vocabulary-boundary` already wrote: counting prose creates the incentive to DELETE THE EXPLANATION to lower
+//      the number.

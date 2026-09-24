@@ -1,33 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/menu-nav — o que SÓ o navegador prova (project BROWSER): foco de verdade
-// (document.activeElement), visibilidade de verdade (`offsetParent`), a pilha de z-index EFETIVA
-// (getComputedStyle) e o que cada tecla faz de ponta a ponta. A decisão pura está em menu-nav.node.test.js e
-// NÃO é repetida aqui.
+// Tests of ui/menu-nav — what ONLY the browser proves (BROWSER project): real focus (document.activeElement), real
+// visibility (`offsetParent`), the EFFECTIVE z-index stack (getComputedStyle) and what each key does end to end. The
+// pure decision is in menu-nav.node.test.js and is NOT repeated here.
 //
-// A casca é exercitada COMPOSTA com o ui/settings-panel REAL, porque é assim que o game.js a usa: é ele que
-// mantém a pilha de overlays e o registro de fechamento, e `sharedDialogOpen` é hoje um ALIAS do
-// `topVisibleOverlay` dele. Testar as duas juntas é o que prova que a unificação não mudou nada.
+// The shell is exercised COMPOSED with the REAL ui/settings-panel, because that is how the composition root uses it: the
+// panel keeps the overlay stack and the close registry, and `sharedDialogOpen` is an ALIAS of its `topVisibleOverlay`.
+// Testing the two together is what proves the unification changed nothing.
 //
-// DOIS DEFEITOS CONHECIDOS SÃO PINADOS AQUI, DE PROPÓSITO, COMO ESTÃO HOJE — não como deveriam ser:
-//   · o escopo `#game-region .overlay` NÃO alcança `.screen-pause`, então fechar #typo/#help larga o foco;
-//   · Escape é "voltar", resolvido pelo TOPO DA PILHA (z-index) e não pela cadeia de registro.
-// Os dois têm conserto pendente. Estes casos existem para que o conserto tenha rede: quando alguém arrumar,
-// eles falham, e a falha É o aviso de que o comportamento mudou onde tinha de mudar.
+// TWO KNOWN DEFECTS ARE PINNED HERE, ON PURPOSE, AS THEY ARE — not as they should be:
+//   · the `#game-region .overlay` scope does NOT reach `.screen-pause`, so closing #typo/#help drops the focus;
+//   · Escape is "back", resolved by the TOP OF THE STACK (z-index) and not by the registry chain.
+// Both have a pending fix. These cases exist so the fix has a net: when someone fixes it, they fail, and the failure IS
+// the warning that the behaviour changed where it had to.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initMenuNav } from '../app/js/ui/menu-nav.js';
 import { initSettingsPanel } from '../app/js/ui/settings-panel.js';
-// A CENA é DO TESTE desde 2026-08-26. `phase` saiu de `core/state` — virou a pilha de `core/scenes`, e os
-// três nomes moram na raiz de composição (ADR-0030 C3). Quem é engine recebe BOOLEANOS. Este `let` faz o
-// papel que o binding vivo fazia, e os casos seguem escritos como estavam.
+// The SCENE belongs to the TEST: the phase is the `core/scenes` stack and its three names live in the composition root
+// (ADR-0030 C3); engine code receives BOOLEANS. This `let` plays that role.
 let faseFalsa = 'playing';
 const setPhaseValue = (p) => { faseFalsa = p; };
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 
-// Marcação enxuta mas FIEL ao index.html no que importa: os diálogos vivem dentro do #game-region (o
-// inCanvasMenus() os reparenta pra lá) e são `.overlay` com `.overlay__card`; os menus de pausa vivem no MESMO
-// #game-region mas são `.screen-pause`/`.pause-card` — classe diferente. É essa diferença que produz o defeito 1.
+// Lean markup, FAITHFUL to a real host in what matters: the dialogs live inside #game-region and are `.overlay` with
+// `.overlay__card`; the pause menus live in the SAME #game-region but are `.screen-pause`/`.pause-card` — a different
+// class. That difference is what produces defect 1.
 const MARKUP = `
   <div id="game-region" tabindex="-1">
     <div id="padwiz" class="overlay" hidden><div class="overlay__card"><button id="padwiz-cancel">Cancelar</button></div></div>
@@ -86,7 +84,7 @@ const MARKUP = `
   <button id="opt-touchcfg" type="button">fora do #game-region (o botão que abriria um painel)</button>
 `;
 
-/** Monta a casca de overlays + o menu-nav, ligados como no game.js. */
+/** Builds the overlay shell + menu-nav, wired as the composition root wires them. */
 function boot(over = {}) {
   document.body.innerHTML = MARKUP;
   setPhaseValue('paused');
@@ -94,11 +92,11 @@ function boot(over = {}) {
   const naBarra = over.naBarra || new Set();
   const panel = initSettingsPanel({ $, $$, doc: document, computedZ: (el) => Number(getComputedStyle(el).zIndex) || 0 });
 
-  // MESMA ordem de registro do game.js para os diálogos que importam aqui. #typo entra na cadeia de Escape;
-  // #help NAO entra — verbatim, e é justamente o que o defeito 2 (b) explora.
+  // The dialogs that matter here, registered in the Escape chain in this order — #help included, as the last case of
+  // this file asserts.
   panel.register('audio', { close: () => closeAudio(), inEscapeChain: true });
   panel.register('typo', { close: () => closeTypo(), inEscapeChain: true });
-  panel.register('help', { close: () => closeHelp(), inEscapeChain: true }); // como o main.js registra
+  panel.register('help', { close: () => closeHelp(), inEscapeChain: true }); // in the chain
 
   function openOv(id) { const ov = $('#' + id); ov.hidden = false; panel.frontOverlay(ov); }
   function openTypo() { openOv('typo'); $('#font-a').focus(); }
@@ -116,19 +114,18 @@ function boot(over = {}) {
     getPauseMenu: (i) => $('#sp' + i),
     setPhase: (p) => { log.phase.push(p); setPhaseValue(p); },
     setPauseActor: (i) => log.actor.push(i),
-    // A PLATAFORMA responde na língua dela: menu é coisa de pausa. Era `if (phase !== 'paused')` DENTRO do
-    // módulo; virou pergunta injetada, e por isso os casos abaixo — que já mexiam na fase —
-    // continuam medindo exatamente o mesmo comportamento. Um quiz responderia `true` e não mentiria (achado 10).
+    // THE PLATFORMER answers in its own language: a menu is a pause thing. It is an injected question, not a phase
+    // check inside the module, so a quiz can answer `true` without lying (finding 10).
     isNavigable: () => faseFalsa === 'paused',
-    // O MODO `accessibility` (ADR-0044, item 7) é perguntado ANTES do guarda de "navegável", porque ele roda
-    // com o jogo andando. Por padrão ninguém está nele; os casos que o exercitam mexem em `naBarra`.
+    // The `accessibility` MODE (ADR-0044, item 7) is asked BEFORE the "navigable" guard, because it runs with the game
+    // moving. By default nobody is in it; the cases that exercise it change `naBarra`.
     srSay: (texto) => log.said.push(texto),
-    withIndex: () => true, // o índice do item 3 nasce ligado; ver `withIndex` no ctx de ui/menu-nav
+    withIndex: () => true, // item 3's index is on by default; see `withIndex` in ui/menu-nav's ctx
     onBar: (i) => naBarra.has(i),
     navBar: (i, k) => log.bar.push([i, k]),
     isCapturing: () => false,
     closePadWiz: (save) => log.padWiz.push(save),
-    whichPlayer: () => -1,        // só teclas genéricas nestes casos (o roteamento por jogador é de outro módulo)
+    whichPlayer: () => -1,        // only generic keys in these cases (routing by player belongs to another module)
     actionOf: () => null,
     win: { addEventListener: () => {} },
     ...over,
@@ -137,13 +134,13 @@ function boot(over = {}) {
   return { nav, panel, log, naBarra, open, openTypo, openAudio, openHelp };
 }
 
-/** Um KeyboardEvent falso — `menuNavKey` é exportado à parte justamente para poder ser chamado direto. */
+/** A fake KeyboardEvent — `menuNavKey` is exported separately precisely so it can be called directly. */
 function key(code) {
   const e = { code, defaults: 0, stops: 0, preventDefault() { this.defaults++; }, stopPropagation() { this.stops++; } };
   return e;
 }
 
-/** Mostra as pausas (o setPhase de ui/shell faria isso; aqui interessa só a navegação). */
+/** Shows the pauses (ui/shell's setPhase would; here only navigation matters). */
 function showPauses() { $$('.screen-pause').forEach((sp) => { sp.hidden = false; }); }
 
 beforeEach(() => { document.body.innerHTML = ''; setPhaseValue('title'); });
@@ -158,40 +155,40 @@ describe('sharedDialogOpen — quem está por cima', () => {
     const { nav, openTypo, openAudio } = boot();
     openTypo(); openAudio();
     expect(nav.sharedDialogOpen().id).toBe('audio');
-    $('#audio').hidden = true;                 // fecha o de cima: sobra o de baixo
+    $('#audio').hidden = true;                 // close the top one: the one below remains
     expect(nav.sharedDialogOpen().id).toBe('typo');
   });
 
-  // ⚠️ DEFEITO 1, PINADO. Não conserte: o escopo é `#game-region .overlay` e os menus de pausa são
-  // `.screen-pause`. O dia em que o escopo for corrigido, este caso falha — e é isso que ele existe para dizer.
+  // ⚠️ DEFECT 1, PINNED. Do not fix here: the scope is `#game-region .overlay` and the pause menus are `.screen-pause`. The
+  // day the scope is fixed, this case fails — which is what it exists to say.
   it('DEFEITO 1 (pinado): o escopo NÃO enxerga os menus de pausa (.screen-pause não é .overlay)', () => {
     const { nav } = boot();
     showPauses();
     expect($$('.screen-pause').length).toBe(2);
-    expect($$('#game-region .overlay').length).toBe(4); // padwiz, typo, help, audio — e NENHUMA pausa
-    expect(nav.sharedDialogOpen()).toBe(null);          // com dois menus de pausa VISÍVEIS na tela
+    expect($$('#game-region .overlay').length).toBe(4); // padwiz, typo, help, audio — and NO pause
+    expect(nav.sharedDialogOpen()).toBe(null);          // with two pause menus VISIBLE on screen
   });
 
-  // ⚠️ DEFEITO 1, PINADO — a consequência de acessibilidade (WCAG 2.4.3: o foco se perde ao fechar).
+  // ⚠️ DEFECT 1, PINNED — the accessibility consequence (WCAG 2.4.3: focus is lost on closing).
   it('DEFEITO 1 (pinado): fechar #typo com a pausa aberta larga o foco no <body>', () => {
     const { nav, openTypo } = boot();
     showPauses();
     openTypo();
     expect(document.activeElement.id).toBe('font-a');
-    nav.dialogBack($('#typo'));                          // = o que Escape faz
+    nav.dialogBack($('#typo'));                          // = what Escape does
     expect($('#typo').hidden).toBe(true);
-    // menuFocus(sharedDialogOpen()) recebeu null → saiu pelo guarda → ninguém devolveu o foco.
-    // O requisito de a11y é "o foco volta para quem abriu": aqui ele NÃO volta para o menu de pausa.
+    // menuFocus(sharedDialogOpen()) received null → left by the guard → nobody gave the focus back.
+    // The a11y requirement is "focus returns to whoever opened": here it does NOT return to the pause menu.
     const ae = document.activeElement;
     expect(ae && ae.closest ? ae.closest('.screen-pause') : null).toBe(null);
-    expect($$('.pm-sel, .pi-sel').length).toBe(0); // nem por foco, nem pela seleção própria do menu de pausa
+    expect($$('.pm-sel, .pi-sel').length).toBe(0); // neither by focus nor by the pause menu's own selection
   });
 
   it('fechar o de cima com OUTRO diálogo aberto devolve o foco — o caminho que funciona hoje', () => {
     const { nav, openTypo, openAudio } = boot();
     openTypo(); openAudio();
     nav.dialogBack($('#audio'));
-    expect(document.activeElement.id).toBe('font-a'); // voltou para o #typo, que ficou por baixo
+    expect(document.activeElement.id).toBe('font-a'); // back on #typo, which stayed underneath
   });
 });
 
@@ -207,19 +204,18 @@ describe('menuItems — quem conta como item navegável', () => {
 
   it('diálogo inteiro escondido: nenhum item é navegável (offsetParent nulo em cascata)', () => {
     const { nav } = boot();
-    expect(nav.menuItems($('#audio'))).toEqual([]); // #audio ainda hidden
+    expect(nav.menuItems($('#audio'))).toEqual([]); // #audio still hidden
   });
 });
 
 describe('navDialog — andar dentro de um diálogo', () => {
   const K = (o) => ({ yes: false, no: false, up: false, down: false, left: false, right: false, ...o });
 
-  // O ANEL, e este caso mudou de assunto com o ADR-0044. Ele afirmava "prendem nas pontas"; a regra virou a
-  // oposta, e o motivo é de uso: quem não enxerga não varre a lista à procura do fim — ela pergunta "e antes
-  // do primeiro?" e tem de receber uma resposta. É o que põe o item mais indesejado a UMA tecla do mais
-  // urgente sem os dois estarem perto um do outro.
+  // THE RING (ADR-0044), and the reason is use: whoever cannot see does not scan the list looking for its end — they ask
+  // "and before the first?" and must get an answer. It is what puts the least wanted item ONE key from the most urgent
+  // without the two being near each other.
   //
-  // MUTAÇÃO CONFERIDA: com `stepInRing` de volta ao limite antigo, a última asserção falha em
+  // MUTATION CHECKED: with `stepInRing` back to the old clamp, the last assertion fails with
   // "expected 'a-first' to be 'a-close'".
   it('baixo/cima andam entre os itens, e as pontas DÃO A VOLTA', () => {
     const { nav, openAudio } = boot();
@@ -230,11 +226,11 @@ describe('navDialog — andar dentro de um diálogo', () => {
     expect(document.activeElement.id).toBe('a-voz');
     nav.navDialog(dlg, K({ up: true }));
     expect(document.activeElement.id).toBe('a-first');
-    // A ponta de cima: antes do primeiro está o ÚLTIMO item navegável. O `a-off` (desabilitado) e o
-    // `a-invis` (escondido) não contam — `menuItems` já os filtra, e o anel anda sobre o que sobrou.
+    // The top end: before the first is the LAST navigable item. `a-off` (disabled) and `a-invis` (hidden) do not count —
+    // `menuItems` already filters them, and the ring walks over what is left.
     nav.navDialog(dlg, K({ up: true }));
     expect(document.activeElement.id, 'antes do primeiro vem o último').toBe('a-close');
-    // E a ponta de baixo fecha o anel de volta ao começo.
+    // And the bottom end closes the ring back to the start.
     nav.navDialog(dlg, K({ down: true }));
     expect(document.activeElement.id, 'depois do último vem o primeiro').toBe('a-first');
   });
@@ -247,7 +243,7 @@ describe('navDialog — andar dentro de um diálogo', () => {
     sel.focus();
     nav.navDialog(dlg, K({ right: true }));
     expect(sel.selectedIndex).toBe(1);
-    expect(document.activeElement.id).toBe('a-voz'); // continua no mesmo controle
+    expect(document.activeElement.id).toBe('a-voz'); // stays on the same control
     expect(changes).toBe(1);
   });
 
@@ -273,7 +269,7 @@ describe('navDialog — andar dentro de um diálogo', () => {
     nav.navDialog(dlg, K({ left: true }));
     expect(vistos).toEqual([1, -1]);
     expect(document.activeElement, 'esquerda/direita tiraram o foco do controle').toBe(passos);
-    // e as setas lá dentro não são paragens do cursor: descer a partir do controle sai dele de uma vez
+    // and the arrows inside it are not cursor stops: going down from the control leaves it at once
     nav.navDialog(dlg, K({ down: true }));
     expect(passos.contains(document.activeElement), 'o cursor parou numa seta').toBe(false);
   });
@@ -305,12 +301,12 @@ describe('navDialog — andar dentro de um diálogo', () => {
   it('com o foco FORA do diálogo, o primeiro item recebe o foco antes de qualquer coisa', () => {
     const { nav, openAudio } = boot();
     openAudio();
-    // 🔴 era `document.body.focus()`, que não move nada (o <body> não é focável): o caso nunca pôs o foco FORA, e passava
-    // com o foco já no primeiro item. Medido em 2026-09-23, ao escrever o caso de baixo.
+    // 🔴 not `document.body.focus()`, which moves nothing (the <body> is not focusable): with it the case never put the
+    // focus OUTSIDE, and passed with the focus already on the first item (measured 2026-09-23).
     document.activeElement.blur();
     expect(document.activeElement).toBe(document.body);
     nav.navDialog($('#audio'), K({ down: true }));
-    expect(document.activeElement.id).toBe('a-voz'); // entrou no primeiro e desceu um
+    expect(document.activeElement.id).toBe('a-voz'); // entered at the first and went down one
   });
 
   /*
@@ -367,10 +363,8 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
   const K = (o) => ({ yes: false, no: false, up: false, down: false, left: false, right: false, ...o });
 
   it('a seleção é EXCLUSIVA — e o cursor da pausa não alcança mais os ícones', () => {
-    // ESTE CASO MUDOU DE FORMA no item 7 do ADR-0044. Ele afirmava que o cursor atravessava a fronteira entre
-    // a barra de ícones e a lista, e que a legenda narrava o ícone sob ele. A fronteira não existe mais: a
-    // barra vive no HUD, com o cursor DELA. O que sobra aqui é a metade que continua sendo verdade e continua
-    // importando — nunca há dois itens selecionados ao mesmo tempo.
+    // The icon bar lives in the HUD, with ITS OWN cursor (ADR-0044 item 7), so the pause cursor never crosses into it.
+    // What this case holds: there are never two items selected at the same time.
     const { nav } = boot();
     showPauses();
     const menu = $('#sp0');
@@ -380,24 +374,24 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     nav.pauseSetSel(menu, itens[2]);
     expect(menu.querySelectorAll('.pm-sel').length).toBe(1);
     expect(itens[2].classList.contains('pm-sel')).toBe(true);
-    // E o cursor da pausa não escreve mais na legenda dos ícones: seria um módulo mexendo na tela de outro.
+    // And the pause cursor does not write to the icons' caption: that would be one module touching another's screen.
     expect(document.querySelector('.pause-icons-cap').textContent).toBe('');
   });
 
   it('[Right] a navegação NÃO enxerga a lista escondida (ADR-0044, item 5)', () => {
-    // O cartão passou a ter DUAS listas no markup, e só uma visível. Se a navegação varresse `.pm-btn` cru,
-    // o cursor entraria nos itens do submenu de opções — e a criança ouviria itens de um menu que não está na
-    // tela. É por isso que `PM_VISIBLE_ITEMS` existe como constante e não como seletor solto.
+    // The card has TWO lists in the markup, and only one visible. If navigation scanned raw `.pm-btn`, the cursor would
+    // enter the options submenu's items — and the child would hear items of a menu that is not on screen. That is why
+    // `PM_VISIBLE_ITEMS` is a constant and not a loose selector.
     //
-    // E AGORA O ANEL DÁ A VOLTA — item 7: com a barra no HUD a pausa virou lista, e a XAG 106 passa a
-    // RECOMENDAR o laço em vez de proibi-lo. A volta tem de cair no primeiro da lista VISÍVEL, nunca no
-    // primeiro do markup, que é um item do submenu escondido.
+    // AND THE RING WRAPS — item 7: with the bar in the HUD the pause is a list, and XAG 106 RECOMMENDS wrapping instead of
+    // forbidding it. The wrap must land on the first of the VISIBLE list, never on the first in the markup, which is an
+    // item of the hidden submenu.
     const { nav } = boot();
     showPauses();
     const menu = $('#sp0');
     const visiveis = [...menu.querySelectorAll('.pause-menu:not([hidden]) .pm-btn')];
     const escondidos = [...menu.querySelectorAll('.pause-menu[hidden] .pm-btn')];
-    expect(escondidos.length).toBeGreaterThan(0); // há mesmo lista escondida para atravessar
+    expect(escondidos.length).toBeGreaterThan(0); // there really is a hidden list to cross
     nav.pauseSetSel(menu, visiveis[visiveis.length - 1]);
     nav.navPause(menu, 0, K({ down: true }));
     expect(escondidos.some((b) => b.classList.contains('pm-sel')), 'o cursor entrou na lista escondida').toBe(false);
@@ -405,8 +399,8 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
   });
 
   it('[Right] "não" dentro do submenu de opções volta à RAIZ, e não ao jogo', () => {
-    // A armadilha que o ADR-0044 desfaz, um nível abaixo: quem entra em Opções sem enxergar só sairia
-    // despausando — perderia a pausa inteira para desfazer um passo.
+    // The trap ADR-0044 undoes, one level down: whoever enters Options without seeing could only leave by unpausing —
+    // losing the whole pause to undo one step.
     const { nav, log } = boot();
     showPauses();
     const menu = $('#sp0');
@@ -426,31 +420,16 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
   });
 
   it('🔴 [Right] moving inside a settings PANEL speaks the item reached — label, type, «N de M» (ADR-0159 rule 1)', () => {
-    // A FRONTEIRA do item 3 do ADR-0044, e ela é decisão e não esquecimento.
+    // ADR-0159 rule 1, the Dev's: «On focus, an item is spoken as label, control type, value or state, "N de M"» — in
+    // panels too. Without it, inside a panel the cursor moved and `#sr-status` said nothing, so a child playing by ear
+    // heard no item. The cost is written down rather than hidden: with an external screen reader the label is heard from
+    // the focus AND from the live region.
     //
-    // O item diz que todo item navegável anuncia posição e total "em todo lugar — pausa, título, opções,
-    // atividades". A lista de PAUSA precisou de `srSay` porque ela seleciona por CLASSE: nada dispara anúncio
-    // sozinho. Os diálogos de ajuste são o contrário — `navDialog` move o FOCO do navegador, e o leitor de
-    // tela já anuncia o controle focado.
-    //
-    // Acrescentar `srSay` aqui criaria exatamente a divergência que o commit anterior consertou: o leitor
-    // dizendo o controle e o jogo dizendo outra versão dele, por cima.
-    //
-    // E O ÍNDICE NÃO CABE POR ARIA: `aria-posinset`/`aria-setsize` só valem em papéis como `listitem`,
-    // `menuitem`, `option`, `radio`, `row`, `tab`. MEDIDO no jogo: os 13 controles do painel de áudio são
-    // `button`/`select`/`input` dentro de `role="group"` — pôr os atributos ali seria ARIA inválida. Este
-    // projeto já recusou essa troca no menu do título, com o motivo escrito: "role='menu' exigiria filhos
-    // 'menuitem' + padrão de setas ARIA que não implementamos → violaria WCAG 1.3.1".
-    //
-    // Indexar os diálogos exige mudar os papéis e implementar o padrão ARIA inteiro. É trabalho de verdade e
-    // não cabe aqui; o que cabe é que ninguém o faça pela metade sem perceber.
-    //
-    // ⚠️ SUPERSEDED on 2026-09-12 by ADR-0159 rule 1, the Dev's: «On focus, an item is spoken as label, control type,
-    // value or state, "N de M"» — in panels too. Measured in the dist: inside a panel the cursor moved and `#sr-status`
-    // said nothing, so a child playing by ear heard no item. The cost is written down rather than hidden: with an
-    // external screen reader the label is heard from the focus AND from the live region. The ARIA reason above still
-    // holds — the index is spoken, not put in `aria-posinset`.
-    const { nav, log, openTypo } = boot(); // `openTypo` vem do boot, não do escopo do arquivo
+    // ⚠️ THE INDEX IS SPOKEN, NOT PUT IN `aria-posinset`: `aria-posinset`/`aria-setsize` only hold for roles such as
+    // `listitem`, `menuitem`, `option`, `radio`, `row`, `tab`, and a panel's controls are `button`/`select`/`input` inside
+    // `role="group"` — putting the attributes there would be invalid ARIA (the same reason `role='menu'` was refused: it
+    // would demand `menuitem` children and an ARIA arrow pattern not implemented, violating WCAG 1.3.1).
+    const { nav, log, openTypo } = boot(); // `openTypo` comes from boot, not from the file's scope
     openTypo();
     log.said.length = 0;
     nav.navDialog($('#typo'), K({ down: true }));
@@ -533,15 +512,12 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
   });
 
   it('[Right] andar na lista de pausa FALA o item — senão o menu é mudo para quem o navega por escuta', () => {
-    // MEDIDO no jogo construído antes de este caso existir (`?x=84`): a seta movia o cursor de `resume` para
-    // `acessibilidade` e o `#sr-status` continuava VAZIO. Não havia foco (a pausa seleciona por CLASSE, não
-    // por foco do navegador), não havia `aria-activedescendant` e não havia região viva dentro do cartão —
-    // ou seja, nada em lugar nenhum contava para a criança que o cursor tinha andado.
+    // The pause selects by CLASS, not by browser focus, and has no `aria-activedescendant` and no live region inside the
+    // card — so without `srSay` nothing anywhere tells the child the cursor moved (measured in the built game before this
+    // case existed: the arrow moved from `resume` to `acessibilidade` and `#sr-status` stayed EMPTY).
     //
-    // O item 3 do ADR-0044 diz "todo item navegável anuncia posição e total... em todo lugar — pausa, título,
-    // opções, atividades". Ele tinha chegado ao título e à barra de ícones e NÃO à lista de pausa, que é
-    // justamente o menu que o item 5 reconstruiu. A promessa mais visível do registro estava muda no lugar
-    // mais importante dele.
+    // Item 3 of ADR-0044: every navigable item announces position and total everywhere — pause, title, options,
+    // activities. The pause list is the menu item 5 rebuilt, the most important place for that promise.
     const { nav, log } = boot();
     showPauses();
     const menu = $('#sp0');
@@ -555,8 +531,8 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
   });
 
   it('[Zero] confirmar e voltar NÃO falam item nenhum', () => {
-    // Só o ANDAR anuncia. Confirmar já tem a consequência dele (o painel que abre, o jogo que volta), e
-    // voltar já tem a dele; repetir o rótulo nesses dois seria falar por cima do que interessa.
+    // Only MOVING announces. Confirming has its own consequence (the panel that opens, the game that resumes), and going
+    // back has its own; repeating the label on those two would talk over what matters.
     const { nav, log } = boot();
     showPauses();
     const menu = $('#sp0');
@@ -568,9 +544,8 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
   });
 
   it('[Right] a PROMESSA do ADR-0044, no DOM: `quit` a uma tecla de `resume`', () => {
-    // ESTE CASO SUBSTITUI o da FRONTEIRA ícones↔itens, que não existe mais. E a substituição é o desfecho:
-    // enquanto havia fronteira, "para cima" no primeiro item subia para a barra de ícones. Agora sobe para o
-    // ÚLTIMO item da lista — que é `quit` na produção. Longe na leitura, vizinho no dedo.
+    // "Up" on the first item goes to the LAST item of the list — `quit` in production. Far in reading, neighbours under the
+    // finger.
     const { nav } = boot();
     showPauses();
     const menu = $('#sp0');
@@ -620,9 +595,8 @@ describe('menuNavKey — o tradutor de teclado', () => {
   });
 
   it('QUEM DECIDE É `isNavigable`, e não a fase — um jogo sem pausa navega os menus dele', () => {
-    // É o achado 10 do segundo consumidor virando teste. O quiz precisava se declarar "pausado" para poder
-    // navegar os próprios menus, porque `menu-nav` lia `phase` por IMPORTAÇÃO. Aqui a fase é 'title' — nada
-    // de pausa em lugar nenhum — e a navegação funciona, porque quem responde é o consumidor.
+    // The second consumer's finding 10 as a test: a quiz must not have to declare itself "paused" to navigate its own
+    // menus. Here the phase is 'title' — no pause anywhere — and navigation works, because the consumer answers.
     setPhaseValue('title');
     const { nav } = boot({ isNavigable: () => true });
     showPauses();
@@ -632,8 +606,8 @@ describe('menuNavKey — o tradutor de teclado', () => {
   });
 
   it('e o contrário também: em plena pausa, `isNavigable` falso cala tudo', () => {
-    // O par do caso acima. Sem ele, `isNavigable` poderia estar sendo IGNORADO e o de cima passaria assim
-    // mesmo — bastaria o módulo ter voltado a olhar a fase e a fase ser 'paused' aqui.
+    // The pair of the case above. Without it, `isNavigable` could be IGNORED and the one above would pass anyway — it
+    // would be enough for the module to look at the phase again and the phase to be 'paused' here.
     const { nav } = boot({ isNavigable: () => false });
     setPhaseValue('paused');
     showPauses();
@@ -643,11 +617,10 @@ describe('menuNavKey — o tradutor de teclado', () => {
   });
 
   it('[Right] navegável, mas SEM diálogo e SEM menu aberto: a tecla NÃO é consumida', () => {
-    // A issue #72, virada teste. `menuNavKey` matava o evento (preventDefault + stopPropagation, em CAPTURA)
-    // ANTES de descobrir se havia o que navegar — e depois saía sem fazer nada. Na plataforma era invisível,
-    // porque pausar ABRE o menu; no segundo consumidor era total: um quiz cujos ajustes estão sempre
-    // disponíveis responde `isNavigable(): true`, e com isso perdia as setas de escolher alternativa e a
-    // tecla do sonar. Duas funcionalidades que existiam e não chegavam à criança.
+    // Issue #72 as a test: `menuNavKey` must not kill the event (preventDefault + stopPropagation, in CAPTURE) BEFORE
+    // finding out whether there is anything to navigate. In a platformer that would be invisible, because pausing OPENS
+    // the menu; in a quiz whose settings are always available (`isNavigable(): true`) it would take away the arrows that
+    // choose an answer and the sonar key.
     setPhaseValue('title');
     const { nav } = boot({ isNavigable: () => true, getPauseMenu: () => null });
     const e = key('ArrowDown');
@@ -657,7 +630,7 @@ describe('menuNavKey — o tradutor de teclado', () => {
   });
 
   it('[Right] com MENU DE PAUSA aberto, a tecla continua sendo consumida', () => {
-    // O par do caso acima, e o que impede o conserto de virar "o menu-nav parou de funcionar".
+    // The pair of the case above, which keeps the fix from becoming "menu-nav stopped working".
     setPhaseValue('paused');
     const { nav } = boot({ isNavigable: () => true });
     showPauses();
@@ -668,10 +641,9 @@ describe('menuNavKey — o tradutor de teclado', () => {
   });
 
   it('[Right] com DIÁLOGO aberto, a tecla continua sendo consumida — a rede do Escape fica de pé', () => {
-    // Este é o caso que o conserto NÃO podia quebrar. O bloco (b) do cabeçalho do módulo registra que `#help`
-    // e `#touchcfg` dependem do `stopPropagation()` para a tecla não cair no ouvinte de bolha, que
-    // despausaria o jogo com o diálogo aberto. Eles entram por `sharedDialogOpen()` — há diálogo, logo a
-    // tecla é consumida, exatamente como antes.
+    // The case the #72 fix must NOT break. The module header's block (b) records that `#help` and `#touchcfg` depend on the
+    // `stopPropagation()` to keep the key from reaching the bubble listener, which would unpause the game with the dialog
+    // open. They come in through `sharedDialogOpen()` — there is a dialog, so the key is consumed.
     const { nav, openHelp } = boot({ isNavigable: () => true });
     openHelp();
     const e = key('Escape');
@@ -700,7 +672,7 @@ describe('menuNavKey — o tradutor de teclado', () => {
     showPauses();
     $('#padwiz').hidden = false;
     const down = key('ArrowDown'); nav.menuNavKey(down);
-    expect([down.defaults, log.padWiz]).toEqual([0, []]); // consumido pelo wizard, sem efeito
+    expect([down.defaults, log.padWiz]).toEqual([0, []]); // consumed by the wizard, with no effect
     const esc = key('Escape'); nav.menuNavKey(esc);
     expect(log.padWiz).toEqual([false]);
     expect(esc.stops).toBe(1);
@@ -732,37 +704,35 @@ describe('menuNavKey — o tradutor de teclado', () => {
     const e = key('ArrowRight');
     nav.menuNavKey(e);
     expect($('#sp1').querySelectorAll('.pm-btn')[1].classList.contains('pm-sel')).toBe(true);
-    expect($('#sp0').querySelector('.pm-sel')).toBe(null); // a tela do outro jogador não se mexeu
+    expect($('#sp0').querySelector('.pm-sel')).toBe(null); // the other player's screen did not move
   });
 
-  // ⚠️ DEFEITO 2, PINADO. Hoje quem decide é o TOPO DA PILHA (z-index), e não a cadeia de registro do
-  // ui/settings-panel (ordem: audio → typo → help, neste teste). Com #typo por cima, é #typo que fecha —
-  // mesmo com #audio antes dele na cadeia. Se alguém trocar a resolução para a cadeia registrada, este
-  // caso falha, e é esse o aviso.
+  // ⚠️ DEFECT 2, PINNED. What decides is the TOP OF THE STACK (z-index), not ui/settings-panel's registry chain (order:
+  // audio → typo → help, in this test). With #typo on top, #typo closes — even with #audio before it in the chain. If
+  // someone switches the resolution to the registered chain, this case fails, and that is the warning.
   it('DEFEITO 2 (pinado): Escape fecha o de cima por z-index, NÃO o primeiro da cadeia registrada', () => {
     const { nav, panel, openTypo, openAudio } = boot();
     showPauses();
-    openAudio(); openTypo();                    // #typo por cima; na CADEIA, #audio vem antes
-    expect(panel.escapeTarget()).toBe('audio'); // é isto que o ouvinte de BOLHA do game.js faria…
+    openAudio(); openTypo();                    // #typo on top; in the CHAIN, #audio comes first
+    expect(panel.escapeTarget()).toBe('audio'); // this is what the composition root's BUBBLE listener would do…
     nav.menuNavKey(key('Escape'));
-    expect($('#typo').hidden).toBe(true);       // …e é isto que de fato acontece: fecha o de cima
+    expect($('#typo').hidden).toBe(true);       // …and this is what actually happens: the top one closes
     expect($('#audio').hidden).toBe(false);
   });
 
-  // A #help já esteve FORA da cadeia de Escape, e o jogo só não despausava com ela aberta porque o menuNavKey
-  // a cobre por z-index e dá stopPropagation — uma rede acidental. Quem mexesse na captura sem antes pôr a
-  // #help na cadeia criaria o bug. Agora as duas metades existem, e este caso cobre as duas: a cadeia SABE da
-  // #help, e a captura continua fazendo o seu trabalho.
+  // Both halves hold: the chain KNOWS about #help, and the capture keeps doing its job (menuNavKey covers it by z-index and
+  // calls stopPropagation). With #help outside the chain, the capture would be an accidental net, and whoever touched it
+  // would create the bug of Escape unpausing the game under the dialog.
   it('[Right] #help está na cadeia de Escape E a captura impede a tecla de despausar o jogo', () => {
     const { nav, panel, log, openHelp } = boot();
     showPauses();
     openHelp();
-    expect(panel.escapeTarget()).toBe('help');  // na cadeia: o recuo também fecharia a Ajuda
+    expect(panel.escapeTarget()).toBe('help');  // in the chain: the fallback would also close Help
     const e = key('Escape');
     nav.menuNavKey(e);
-    expect($('#help').hidden).toBe(true);       // a captura fechou o diálogo…
-    expect(e.stops).toBe(1);                    // …e impediu a tecla de chegar ao ouvinte de bolha
-    expect(log.phase).toEqual([]);              // por isso o jogo NÃO despausou
+    expect($('#help').hidden).toBe(true);       // the capture closed the dialog…
+    expect(e.stops).toBe(1);                    // …and kept the key from reaching the bubble listener
+    expect(log.phase).toEqual([]);              // so the game did NOT unpause
   });
 
   it('Escape com o menu de pausa na raiz (nenhum diálogo) volta ao jogo', () => {

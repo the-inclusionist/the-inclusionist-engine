@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes dos DICIONÁRIOS de locale (project node — nenhum toca `document`).
+// Tests of the locale DICTIONARIES (node project — none touches `document`).
 //
-// POR QUE ESTE ARQUIVO EXISTE
-// A camada de acessibilidade é o produto deste projeto, e até agora ela não passava por `t()`: todo anúncio de
-// leitor de tela era pt-BR escrito no código. Quer dizer que ela quebrava no segundo IDIOMA antes de quebrar no
-// segundo JOGO. A conversão para `t()` cria três dicionários que precisam concordar — e este repositório já sabe o
-// que acontece com cópias que ninguém obriga a concordar: três cópias da tabela ação→borda divergiram e quebraram a
-// escalada no modo Fácil, e a documentação afirma sprite 16×32 enquanto a arte tem seis tamanhos.
+// WHY THIS FILE EXISTS
+// The accessibility layer is this project's product, and every screen-reader announcement goes through `t()` — or it
+// would break on the second LANGUAGE before breaking on the second GAME. Three dictionaries that must agree are three
+// copies, and this repository knows what happens to copies nobody forces to agree: three copies of the action→edge table
+// drifted apart and broke climbing in Easy mode.
 //
-// Então o que se testa aqui NÃO é tradução (isso é julgamento humano), é ESTRUTURA: as mesmas chaves, os mesmos
-// parâmetros, e a fronteira currículo × moldura.
+// So what is tested here is NOT translation (that is human judgement), it is STRUCTURE: the same keys, the same
+// parameters, and the curriculum × frame boundary.
 import { describe, it, expect } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';
 
 const DICTS = { pt, en, es };
-const TRADUZIDOS = { en, es }; // pt é o dicionário-base; os outros dois caem nele por fallback
+const TRADUZIDOS = { en, es }; // pt is the base dictionary; the other two fall back to it
 
-/** Os `{param}` que uma frase declara, em ordem irrelevante. */
+/** The `{param}`s a sentence declares, in any order. */
 const paramsDe = (frase) => new Set([...String(frase).matchAll(/\{(\w+)\}/g)].map((m) => m[1]));
 
 const chavesSr = Object.keys(pt).filter((k) => k.startsWith('sr.'));
@@ -32,14 +31,10 @@ describe('dicionários de locale — estrutura', () => {
   });
 
   it('[Right] os TRÊS dicionários têm as MESMAS chaves — o fallback deixou de ser rotina', () => {
-    // Este caso não existia, e não podia: en/es andaram meses incompletos de propósito, com o cabeçalho de
-    // pt.ts dizendo que cairiam no fallback "até serem completados (Etapa 4)". Faltavam 18 chaves em cada, e
-    // não eram quaisquer 18: eram o MENU DE PAUSA inteiro, o título e a tela de vitória — as telas mais vistas
-    // do jogo. Quem escolhesse inglês apertava Enter e via "Pausado".
-    //
-    // O fallback continua existindo, e é bom que exista: uma chave nova sem tradução mostra português em vez
-    // de mostrar a chave crua. O que ele não pode voltar a ser é o CAMINHO NORMAL, porque nesse regime
-    // ninguém percebe que uma tela inteira ficou para trás — foi assim que o menu de pausa passou despercebido.
+    // The fallback exists, and it is good that it does: a new key without a translation shows Portuguese instead of the
+    // raw key. What it must not become is the NORMAL PATH, because then nobody notices a whole screen was left behind —
+    // that is how an untranslated pause menu once went unnoticed (someone who chose English pressed Enter and saw
+    // "Pausado").
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const faltando = Object.keys(pt).filter((k) => !(k in d));
       expect(faltando, `${nome} não traduziu estas chaves — traduza, ou explique aqui por que não`).toEqual([]);
@@ -47,9 +42,9 @@ describe('dicionários de locale — estrutura', () => {
   });
 
   it('[Right] toda chave `sr.*` existe nos três idiomas', () => {
-    // A regra é mais dura para `sr.*` que para o resto: uma chave de UI ausente cai no fallback pt e a pessoa vê
-    // português no meio do inglês, o que é feio. Um ANÚNCIO ausente cai em português no ouvido de quem depende do
-    // leitor de tela para jogar — e essa pessoa não tem a tela para desempatar.
+    // The rule is harder for `sr.*` than for the rest: a missing UI key falls back to pt and the person sees Portuguese in
+    // the middle of English, which is ugly. A missing ANNOUNCEMENT falls into Portuguese in the ear of whoever depends on
+    // the screen reader to play — and that person has no screen to break the tie.
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const faltando = chavesSr.filter((k) => !(k in d));
       expect(faltando, `${nome} não traduziu estes anúncios`).toEqual([]);
@@ -57,7 +52,7 @@ describe('dicionários de locale — estrutura', () => {
   });
 
   it('[Right] os `{param}` de cada chave são os MESMOS nos três idiomas', () => {
-    // Um `{n}` esquecido na tradução não quebra nada: some silenciosamente e a frase sai sem o número.
+    // A `{n}` forgotten in a translation breaks nothing: it vanishes silently and the sentence comes out without the number.
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       for (const k of Object.keys(pt)) {
         if (!(k in d)) continue;
@@ -84,54 +79,52 @@ describe('dicionários de locale — estrutura', () => {
   });
 
   it('[Right] traduzir de verdade: nenhum anúncio en/es é idêntico ao pt', () => {
-    // Salvo os que legitimamente coincidem — número puro, sigla, nome próprio. Se um dia coincidirem de fato,
-    // acrescente a chave à lista COM o motivo, em vez de afrouxar a asserção.
-    // pt e es coincidem PALAVRA POR PALAVRA nestas duas — não é tradução esquecida, é a mesma frase nas duas
-    // línguas. Cada entrada precisa do motivo escrito; lista sem motivo é afrouxamento disfarçado.
+    // Except those that legitimately coincide — a bare number, an acronym, a proper noun. If one ever truly coincides, add
+    // the key to the list WITH the reason, instead of loosening the assertion.
+    // pt and es coincide WORD FOR WORD in the first two — not a forgotten translation, the same sentence in both languages.
+    // Each entry needs its reason written; a list without reasons is loosening in disguise.
     const COINCIDEM_DE_PROPOSITO = new Set([
-      'sr.visual.contrast', // 'Alto contraste: {v}.' é idêntico em pt-BR e es
-      'sr.visual.lq',       // 'Realce de contraste: {v}.' idem
-      // '{slot}: {acao}.' — a moldura aqui é só pontuação: os dois lados são parâmetros e já chegam
-      // traduzidos. Existe como chave, e não como concatenação no código, porque uma língua que inverta a
-      // ordem (ação antes da posição) precisa poder inverter — e só consegue se a ordem morar no dicionário.
+      'sr.visual.contrast', // identical in pt-BR and es
+      'sr.visual.lq',       // likewise
+      // '{slot}: {acao}.' — the frame here is only punctuation: both sides are parameters and arrive translated. It is a
+      // key, and not a concatenation in code, because a language that reverses the order (action before position) must be
+      // able to reverse it — and can only if the order lives in the dictionary.
       'sr.touch.slotSet',
-      // 'Motor de voz: {motor}.' — "motor de voz" é a mesma expressão em pt-BR e es, palavra por palavra;
+      // the voice-engine announcement: the phrase is the same in pt-BR and es, word for word;
       // and the engine's name (Kokoro) is a proper noun that arrives through the parameter, untranslated.
       'sr.audio.engineSet',
-      // 'Modo TEA: {v}.' — "TEA" (Transtorno do Espectro Autista / Trastorno del Espectro Autista) é a mesma
-      // sigla nas duas línguas, e o nível chega pelo parâmetro, esse sim traduzido (calmo/calmado).
+      // the ASD-mode announcement — "TEA" (Transtorno do Espectro Autista / Trastorno del Espectro Autista) is the same
+      // acronym in both languages, and the level arrives through the parameter, which is translated (calmo/calmado).
       'sr.icon.tea',
       // The control types spoken after a panel item's label (ADR-0159 rule 1): «interruptor» and «lista» are the same
       // word in pt-BR and es (RAE: interruptor, lista), not a copy left untranslated.
       'sr.papel.interruptor',
       'sr.papel.lista',
-      // 'ok' — empréstimo do inglês que entrou nas três línguas com a mesma grafia e o mesmo som. Traduzir
-      // por "de acordo"/"aceptar" seria trocar a palavra que a criança já reconhece no botão por uma mais
-      // longa e menos familiar, justamente no cursor de confirmar.
+      // 'ok' — a loan from English that entered all three languages with the same spelling and sound. Translating it as
+      // "de acordo"/"aceptar" would swap the word the child already recognises on the button for a longer, less familiar
+      // one, right on the confirm cursor.
       'sr.quiz.ok',
-      // '{efeito}: {nivel}.' — a moldura é DOIS parâmetros, dois-pontos e um ponto final. O efeito do CRT e o
-      // nível chegam já traduzidos; não sobra palavra nenhuma para traduzir. Existe como chave, e não como
-      // concatenação no código, pelo mesmo motivo do slotSet: uma língua que precise inverter a ordem só
-      // consegue se a ordem morar no dicionário.
+      // '{efeito}: {nivel}.' — the frame is TWO parameters, a colon and a full stop. The CRT effect and the level arrive
+      // translated; no word is left to translate. It is a key, not a concatenation, for the same reason as slotSet: a
+      // language that must reverse the order can only do so if the order lives in the dictionary.
       'sr.crt.round',
-      // '{alvo} congelado.' e '{alvo} animado.' — "congelado" e "animado" são a MESMA palavra em pt-BR e es,
-      // com a mesma grafia e o mesmo sentido, e o alvo chega pelo parâmetro já traduzido. Mesmo caso do
-      // `sr.visual.contrast` acima: coincidência de verdade entre as duas línguas, não tradução esquecida.
+      // "congelado" and "animado" are the SAME word in pt-BR and es, with the same spelling and meaning, and the target
+      // arrives translated through the parameter. Same case as `sr.visual.contrast` above: a true coincidence between the
+      // two languages, not a forgotten translation.
       'sr.rm.frozen', 'sr.rm.animated',
-      // 'Sonar: {alvo} {lado}, {dist}.' — a moldura é TRÊS parâmetros e pontuação. "Sonar" é empréstimo do
-      // inglês com a mesma grafia nas três línguas, e tudo que carrega sentido (o alvo, o lado, a distância)
-      // chega já traduzido. Existe como chave, e não como concatenação, pelo mesmo motivo do slotSet: uma
-      // língua que anuncie a distância antes do lado precisa poder inverter, e só consegue se a ordem morar
-      // no dicionário.
+      // 'Sonar: {alvo} {lado}, {dist}.' — the frame is THREE parameters and punctuation. "Sonar" is a loan from English
+      // with the same spelling in all three languages, and everything that carries meaning (target, side, distance)
+      // arrives translated. It is a key, not a concatenation, for the same reason as slotSet: a language that announces
+      // the distance before the side must be able to reverse it, and can only if the order lives in the dictionary.
       'sr.nav.sonarFound',
-      // '{n} de {m}' — o índice de posição do ADR-0044. pt-BR e es escrevem "6 de 10" com as MESMAS três
-      // partes: número, a preposição `de`, número. Não sobra palavra para traduzir. O inglês DIFERE ('{n} of
-      // {m}') e é justamente por isso que a moldura mora no dicionário em vez de ser concatenada no código.
+      // '{n} de {m}' — ADR-0044's position index. pt-BR and es write "6 de 10" with the SAME three parts: number, the
+      // preposition `de`, number. No word is left to translate. English DIFFERS ('{n} of {m}'), which is exactly why the
+      // frame lives in the dictionary instead of being concatenated in code.
       'sr.menu.index',
-      // 'Comando de voz: {v}.' — «comando» e «voz» escrevem-se e dizem-se igual em pt-BR e es, e o estado chega pelo
-      // parâmetro já traduzido («ligado» × «activado»). Mesmo caso do `sr.visual.contrast`: coincidência de verdade entre
-      // as duas línguas. 📌 E o anúncio repete o NOME do ícone de propósito (issue #184): a criança ouve a palavra que lê
-      // no botão — foi por não repetir que ele começou a dizer «Jogar falando» sobre um botão chamado «Comando de voz».
+      // the voice-command announcement — «comando» and «voz» are written and said the same in pt-BR and es, and the state
+      // arrives translated through the parameter («ligado» × «activado»). Same case as `sr.visual.contrast`: a true
+      // coincidence. 📌 And the announcement repeats the icon's NAME on purpose (issue #184): the child hears the word they
+      // read on the button — not «Jogar falando» about a button called «Comando de voz».
       'sr.icon.voice',
     ]);
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
@@ -142,28 +135,21 @@ describe('dicionários de locale — estrutura', () => {
 });
 
 describe('a fronteira currículo × moldura', () => {
-  // A REGRA (Dev, 2026-08-24 — ver o CLAUDE.md): o idioma do programa é o idioma da INTERFACE, e é ele que
-  // define a língua de origem das atividades. O ENUNCIADO SEMPRE TRADUZ — numa atividade de ciências como numa
-  // de idioma. A única exceção é o CONTEÚDO linguístico: a palavra, a letra, a sílaba, a soletração e a cela
-  // Braille seguem em pt-BR, porque são a matéria. Matemática NÃO é disciplina de idioma: `2 + 3` independe de
-  // língua, então "Quanto é 2 mais 3?" traduz inteiro, operadores por extenso inclusive.
+  // THE RULE (the Dev, 2026-08-24 — see CLAUDE.md): the program's language is the INTERFACE's language, and it sets the
+  // source language of the activities. THE PROMPT ALWAYS TRANSLATES — in a science activity as in a language one. The
+  // only exception is LINGUISTIC CONTENT: the word, the letter, the syllable, the spelling and the Braille cell stay in
+  // pt-BR, because they are the subject matter. Maths is NOT a language subject: `2 + 3` does not depend on language, so
+  // the question "how much is 2 plus 3?" translates entirely, spelled-out operators included.
   //
-  // Mecanicamente: a moldura mora na chave, o conteúdo atravessa por `{param}`.
+  // Mechanically: the frame lives in the key, the content crosses through `{param}`.
 
-  // ESTE CASO FOI REESCRITO, e o motivo importa mais que o código.
+  // Not a VOCABULARY sniff (`sílaba|soletr|grafema|fonema|braille`): under the Dev's narrower rule, a prompt saying the
+  // game spells each option is legitimate, and sniffing the word would accuse the innocent. (A `\b` after the stem
+  // `soletr` never even matched "soletra" or "soletração" — a stem that made the case unable to fail.)
   //
-  // A versão anterior farejava VOCABULÁRIO — /\b(sílaba|soletr|grafema|fonema|braille)\b/ — partindo da minha
-  // leitura de que a atividade de alfabetização INTEIRA ficaria em pt-BR. A régua do Dev é mais estreita, e
-  // com ela "O jogo soletra cada opção" virou enunciado legítimo: farejar a palavra "soletra" passou a acusar
-  // o inocente.
-  //
-  // E a versão anterior nem funcionava. O `\b` depois do radical `soletr` exige fronteira de palavra ali
-  // mesmo, então ele nunca casou com "soletra" nem com "soletração" — as duas formas que de fato existem. O
-  // radical era decorativo e o caso passava por não conseguir falhar, não por estar tudo em ordem.
-  //
-  // O que entra no lugar é a forma MECÂNICA da regra, que é verificável: quem anuncia conteúdo de currículo
-  // tem de recebê-lo por `{param}`. Uma chave que fala de palavra sem ter `{palavra}` embutiu o conteúdo — e
-  // então a tradução precisaria reproduzir a palavra, que é precisamente o que a regra proíbe.
+  // What stands is the MECHANICAL form of the rule, which is checkable: whoever announces curriculum content must
+  // receive it through `{param}`. A key that talks about a word without having `{palavra}` embedded the content — and then
+  // the translation would have to reproduce the word, precisely what the rule forbids.
   it('[Right] toda chave que anuncia conteúdo de alfabetização o recebe por PARÂMETRO', () => {
     const DE_CONTEUDO = ['sr.quiz.buildWord', 'sr.quiz.whichSpelling', 'sr.quiz.writeWord',
       'sr.quiz.brailleDictation', 'sr.quiz.wellDone'];
@@ -176,26 +162,24 @@ describe('a fronteira currículo × moldura', () => {
     }
   });
 
-  // NÃO HÁ SEGUNDO CASO AQUI, e a ausência é o resultado de duas tentativas, não de esquecimento.
+  // THERE IS NO SECOND CASE HERE, and the absence is the result of two attempts, not forgetting.
   //
-  // Tentei aferir que nenhuma chave EMBUTE uma palavra do currículo. Primeiro com uma lista escrita à mão
-  // (BABA, BOLA, CASA…), depois pensando em derivá-la de `SILABAS_WORDS`, que é a fonte de verdade. As duas
-  // falham pela mesma razão de fundo: as palavras do currículo de alfabetização são palavras COMUNÍSSIMAS do
-  // português — gato, bola, casa, lua, uva, dado, fogo. A primeira tentativa já acusou `fnot.desc.dec`, que
-  // diz "uma casa decimal" e não tem nada a ver com currículo.
+  // Asserting that no key EMBEDS a curriculum word was tried with a hand-written list (BABA, BOLA, CASA…) and by deriving
+  // it from the curriculum's word list. Both fail for the same underlying reason: literacy curriculum words are VERY
+  // COMMON Portuguese words — gato, bola, casa, lua, uva, dado, fogo. The first attempt already accused `fnot.desc.dec`,
+  // which says "uma casa decimal" and has nothing to do with the curriculum.
   //
-  // Não dá para distinguir "a palavra CASA como matéria" de "casa" usada em prosa olhando só o dicionário.
-  // Restringir a caixa alta cobriria menos ainda: o conteúdo chega minúsculo de `SILABAS_WORDS`.
+  // "The word CASA as subject matter" cannot be told from "casa" used in prose by looking at the dictionary alone.
+  // Restricting to capitals would cover even less: the content arrives in lower case.
   //
-  // Então a verificação mecânica da regra é só a de cima — o conteúdo entra por `{param}`. Um teste que não
-  // pode ficar correto não vale a pena guardar numa forma enfraquecida, que daria a impressão de cobrir o que
-  // não cobre. Fica escrito aqui o que sobrou por fazer, para ninguém tentar uma terceira vez sem saber das
-  // duas primeiras.
+  // So the rule's mechanical check is only the one above — content enters through `{param}`. A test that cannot be made
+  // correct is not worth keeping in a weakened form that would look as if it covered what it does not. What was left
+  // undone is written here, so nobody tries a third time without knowing about the first two.
 
 
   it('[Interface] chave que fala de jogador ou de tela carrega o número por parâmetro', () => {
-    // O que prova que a moldura foi separada do conteúdo: se o número estivesse na frase, haveria uma chave por
-    // número, e a tradução teria de reproduzir a aritmética.
+    // What proves the frame was separated from the content: if the number were in the sentence, there would be one key
+    // per number, and the translation would have to reproduce the arithmetic.
     const comNumero = chavesSr.filter((k) => /player\.|screens\.(alreadyN|activeN|newRoundN|wontFitN)|round\.multi/.test(k));
     // three left since the platformer's screen and round sentences moved to it (ADR-0174); it holds the same rule on them
     expect(comNumero.length).toBeGreaterThanOrEqual(3);

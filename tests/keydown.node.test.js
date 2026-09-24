@@ -1,30 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de input/keydown — a CADEIA DE DECISÃO do teclado, sem DOM (project node). ZOMBIES + Right-BICEP.
+// Tests of input/keydown — the keyboard's DECISION CHAIN, without a DOM (node project). ZOMBIES + Right-BICEP.
 //
-// O que este arquivo protege não é aritmética: é a ORDEM DE PRECEDÊNCIA de nove guardas. A pergunta que cada
-// caso responde é sempre a mesma — "com este mundo e esta tecla, qual ramo VENCE?" — e é justamente essa
-// resposta que o monólito não conseguia afirmar, porque decisão e efeito estavam trançados no mesmo `if`.
-// Por isso os casos mais valiosos daqui são os de CONFLITO (quiz aberto E diálogo visível; quiz aberto E
-// Alt+3; quiz aberto E Enter), e não os de ramo isolado: um ramo isolado continua passando mesmo depois de
-// alguém trocar duas guardas de lugar.
+// What this file protects is not arithmetic: it is the PRECEDENCE ORDER of the guards. Every case answers the same
+// question — "with this world and this key, which branch WINS?" — an answer that cannot be asserted while decision and
+// effect are woven into the same `if`. So the most valuable cases here are the CONFLICTS (quiz open AND dialog visible;
+// quiz open AND Alt+3; quiz open AND Enter), not the isolated branches: an isolated branch keeps passing even after
+// someone swaps two guards.
 //
-// O ROTEAMENTO POR DONO é o outro tema: em multi-tela, a tecla age no quiz do jogador DONO dela, e a tecla
-// genérica cai no Jogador 1. Errar isso não quebra nada visível — o jogo continua respondendo — e simplesmente
-// faz a criança da tela 2 comandar o desafio da tela 1.
+// ROUTING BY OWNER is the other theme: with several screens, a key acts on the quiz of the player who OWNS it, and a
+// generic key falls to Player 1. Getting it wrong breaks nothing visible — the game keeps responding — it simply makes
+// the child of screen 2 drive screen 1's challenge.
 //
-// A casca (DOM, foco, propagação real, a captura do menu-nav) está em keydown.browser.test.js e NÃO é
-// repetida aqui.
+// The shell (DOM, focus, real propagation, menu-nav's capture) is in keydown.browser.test.js and is NOT repeated here.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { actionForCode } from '../app/js/input/keyboard-runtime.js';
-// ⚠️ O PAR VERDADEIRO, E NÃO UM DUPLO DELE (ADR-0109). Escrever um `markKey` de mentira aqui seria uma
-// SEGUNDA implementação da regra, e então o caso afirmaria que a minha cópia concorda com a minha asserção —
-// as duas mexem-se juntas e nenhuma falha. Com o par a sério, o `heldKeys` que o caso lê é o conjunto que o
-// jogo lê, e o mapa de origens ao lado dele é o que a alternância vai perguntar.
+// ⚠️ THE REAL PAIR, NOT A DOUBLE OF IT (ADR-0109). A fake `markKey` here would be a SECOND implementation of the rule,
+// and the case would assert that a copy agrees with its own assertion — both move together and neither fails. With the
+// real pair, the `heldKeys` the case reads is the set the game reads, and the origin map beside it is what the latch
+// will ask.
 import {
   keys as keysReais, keySource, markKey, markKeyWithoutSource, releaseKey, releaseAllKeys,
-  // 📌 O AUTÓMATO TAMBÉM ENTRA A SÉRIO, e pela mesma razão do parágrafo acima: um `playerEdge` de mentira
-  // aqui afirmaria que a minha cópia concorda com a minha asserção. Com o par verdadeiro, o `inputOf` que o
-  // caso lê é o mesmo que a alternância vai perguntar.
+  // 📌 THE AUTOMATON IS REAL TOO, for the same reason: a fake `playerEdge` here would assert that a copy agrees with its
+  // own assertion. With the real one, the `inputOf` the case reads is the one the latch will ask.
   playerEdge, inputOf, forgetInputs,
 } from '../app/js/input/state.js';
 import { stampSource } from '../app/js/input/synthetic-source.js';
@@ -33,26 +30,24 @@ import {
   titleNavOf, hasTitleIntent, modalOwnerIndex, modalIntentOf, edgesFor,
   EASY_SHORTCUTS, PAUSE_KEYS, SCREEN_DIGITS, EDGE_BY_ACTION,
 } from '../app/js/input/keydown.js';
-// A CENA é do falso desde 2026-08-26. `phase` saiu de `core/state` (virou a pilha de `core/scenes`, ADR-0030
-// C3) e chega ao teclado como dois BOOLEANOS no ctx. Este `let` é o que aqueles dois booleanos leem, e
-// `setPhaseValue` continua existindo com o mesmo nome para os casos não mudarem de leitura.
+// The SCENE belongs to the fake: the phase is the `core/scenes` stack (ADR-0030 C3) and reaches the keyboard as two
+// BOOLEANS in the ctx. This `let` is what those two booleans read, and `setPhaseValue` keeps the cases readable.
 let faseFalsa = 'playing';
 const setPhaseValue = (p) => { faseFalsa = p; };
 
-/* ===================== fixtures (esquemas de fábrica de input/keyboard.ts) ===================== */
+/* ===================== fixtures (input/keyboard.ts factory schemes) ===================== */
 
 const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], action1: ['KeyU'], action2: ['KeyJ', 'Space'], action4: ['KeyI'], action3: ['KeyK'] };
 const P2A = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action4: ['KeyI'], action3: ['KeyK'] };
 const P2B = { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], action1: ['Numpad8'], action2: ['Numpad5'], action4: ['Numpad9'], action3: ['Numpad6'] };
 
-// O JOGADOR NÃO CARREGA MAIS O DESAFIO (ADR-0033): `quiz` saiu de `core/entity`, e com ele saiu daqui. Quem
-// diz se há modal aberto é o SNAPSHOT, por posição — `modal: [true, false]` nos casos abaixo. É a mudança que
-// este arquivo inteiro mede, e ela encolheu o fixture: um objeto de desafio de mentira virou um booleano.
+// THE PLAYER DOES NOT CARRY THE CHALLENGE (ADR-0033): what says whether a modal is open is the SNAPSHOT, by position —
+// `modal: [true, false]` in the cases below. A fake challenge object is a boolean.
 const mkPlayer = (i, ctrl, extra = {}) => ({ i, ctrl, waiting: false, easy: false, ...extra });
 
-/** Reconstrói o `ControlsState` como input/keyboard-runtime.ts o computa: aliases SEMPRE do esquema solo,
- *  `gameKeys` = união de TODOS os esquemas ativos. (Repetir a conta aqui seria trapaça; a forma é copiada,
- *  mas os dados vêm dos esquemas de fábrica, iguais aos do jogo.) */
+/** Rebuilds the `ControlsState` as input/keyboard-runtime.ts computes it: aliases ALWAYS from the solo scheme,
+ *  `gameKeys` = union of ALL active schemes. (Repeating the arithmetic here would be cheating; the shape is copied, but
+ *  the data comes from the factory schemes, the same as the game's.) */
 function controlsFrom(schemes) {
   const { action2, left, right, up, down, action1 } = SOLO;
   const set = new Set();
@@ -60,15 +55,14 @@ function controlsFrom(schemes) {
   return { action2, left, right, up, down, action1, gameKeys: [...set] };
 }
 
-/** Um mundo. Tudo tem padrão de "jogando, solo, nada aberto"; cada caso muda só o que interessa. */
+/** A world. Everything defaults to "playing, solo, nothing open"; each case changes only what matters to it. */
 function snap(over = {}) {
   const players = over.players || [mkPlayer(0, SOLO)];
   const schemes = over.schemes || players.map((p) => p.ctrl || {});
   const numPlayers = over.numPlayers ?? players.length;
   const active = schemes.slice(0, numPlayers);
-  // 2026-08-26: o snapshot deixou de carregar `phase: string` e passou a carregar dois BOOLEANOS — a engine
-  // não conhece mais o vocabulário de cenas deste jogo (ADR-0030 C3). Os casos seguem escrevendo
-  // `{ phase: 'title' }`, que é como se lê melhor; a tradução é feita aqui, em UM lugar.
+  // The snapshot carries two BOOLEANS, not a `phase: string` — the engine does not know this game's scene vocabulary
+  // (ADR-0030 C3). The cases write `{ phase: 'title' }`, which reads best; the translation happens here, in ONE place.
   const fase = over.phase || 'playing';
   const base = {
     titleScreen: fase === 'title',
@@ -76,9 +70,8 @@ function snap(over = {}) {
     numPlayers,
     players,
     controls: over.controls || controlsFrom(active),
-    // `modal` no `over` é atalho de escrita: os casos dizem `{ modal: [true] }` e o snapshot recebe
-    // `modalOpen`. Sem ele, cada caso teria de montar um array do tamanho de `players`, e o ruído esconderia
-    // o que o caso mede.
+    // `modal` in `over` is a writing shortcut: the cases say `{ modal: [true] }` and the snapshot receives `modalOpen`.
+    // Without it, each case would build an array the size of `players`, and the noise would hide what the case measures.
     modalOpen: over.modal || players.map(() => false),
     heldKeys: over.heldKeys || new Set(),
     oneButton: false,
@@ -96,7 +89,7 @@ function snap(over = {}) {
 const ev = (code, mods = {}) => ({ code, altKey: false, ctrlKey: false, ...mods });
 const decide = (code, over = {}, mods = {}) => decideKeydown(ev(code, mods), snap(over));
 
-/* ===================== 1. PRECEDÊNCIA — os casos que valem por dez ===================== */
+/* ===================== 1. PRECEDENCE — the cases worth ten ===================== */
 
 describe('a ORDEM das guardas É a especificação', () => {
   const withQuiz = { players: [mkPlayer(0, SOLO)], modal: [true] };
@@ -110,8 +103,8 @@ describe('a ORDEM das guardas É a especificação', () => {
   it('[precedência] com diálogo aberto, tecla de JOGO não chega ao jogo (é engolida, sem preventDefault)', () => {
     const d = decide('KeyJ', { ...withQuiz, escapeTargetId: 'audio' });
     expect(d.kind).toBe('overlay');
-    expect(d.closeId).toBeNull();          // não é Escape: não fecha nada
-    expect(d.preventDefault).toBe(false);  // o diálogo é DOM e quer o comportamento nativo por baixo
+    expect(d.closeId).toBeNull();          // not Escape: closes nothing
+    expect(d.preventDefault).toBe(false);  // the dialog is DOM and wants the native behaviour underneath
   });
 
   it('[precedência] #touchcfg vence #padwiz (ordem de registro do monólito, verbatim)', () => {
@@ -136,11 +129,11 @@ describe('a ORDEM das guardas É a especificação', () => {
   });
 
   it('[precedência] com MODAL aberto, Enter CONFIRMA o desafio em vez de pausar', () => {
-    // Enter não é tecla de nenhum esquema → genérica → cai no quiz do P1, onde não é nada
+    // Enter is in no scheme → generic → falls to P1's quiz, where it is nothing
     const d = decide('Enter', withQuiz);
     expect(d.kind).toBe('modal');
     expect(d.kind === 'modal' && d.intent).toBeNull();
-    // e a tecla de PULO do P1 (que é `jump` no esquema) confirma de verdade
+    // and P1's JUMP key (`jump` in the scheme) really confirms
     const j = decide('KeyJ', withQuiz);
     expect(j.kind).toBe('modal');
     expect(j.intent).toBe('confirm');
@@ -175,7 +168,7 @@ describe('diálogos abertos bloqueiam o jogo', () => {
   });
 });
 
-/* ===================== 3. tela de vitória ===================== */
+/* ===================== 3. victory screen ===================== */
 
 describe('tela de vitória', () => {
   const win = { winVisible: true };
@@ -197,7 +190,7 @@ describe('tela de vitória', () => {
   });
 });
 
-/* ===================== 4. tela de título ===================== */
+/* ===================== 4. title screen ===================== */
 
 describe('tela de título', () => {
   const dois = { phase: 'title', players: [mkPlayer(0, P2A), mkPlayer(1, P2B)], schemes: [P2A, P2B], numPlayers: 2 };
@@ -209,7 +202,7 @@ describe('tela de título', () => {
   });
 
   it('[Right] multi-tela: SÓ o Jogador 1 comanda — a tecla do J2 vira aviso, não navegação', () => {
-    const d = decide('ArrowUp', dois); // ArrowUp é `up` do J2
+    const d = decide('ArrowUp', dois); // ArrowUp is P2's `up`
     expect(d).toEqual({ kind: 'title', wait: true, nav: null, preventDefault: true });
   });
 
@@ -230,16 +223,16 @@ describe('tela de título', () => {
     expect(d).toEqual({ kind: 'title', wait: false, nav: null, preventDefault: false });
   });
 
-  // ASSIMETRIA REAL, preservada verbatim do monólito — pinada como está HOJE, não como deveria ser.
+  // A REAL ASYMMETRY, preserved verbatim — pinned as it IS, not as it should be.
   it('[Boundary] cima/baixo aceitam as setas ALÉM do remap; esquerda/direita NÃO (assimetria preservada)', () => {
     const remap = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action4: ['KeyI'], action3: ['KeyK'] };
     const s = snap({ phase: 'title', players: [mkPlayer(0, remap)], controls: { ...controlsFrom([remap]), up: remap.up, down: remap.down, left: remap.left, right: remap.right, action2: remap.action2, action1: remap.action1 } });
-    expect(decideKeydown(ev('ArrowUp'), s).nav.up).toBe(true);      // seta ainda sobe
-    expect(decideKeydown(ev('ArrowLeft'), s).nav).toBeNull();       // seta NÃO anda para o lado
+    expect(decideKeydown(ev('ArrowUp'), s).nav.up).toBe(true);      // the arrow still goes up
+    expect(decideKeydown(ev('ArrowLeft'), s).nav).toBeNull();       // the arrow does NOT move sideways
   });
 });
 
-/* ===================== 5. Alt+1..4 (número de telas) ===================== */
+/* ===================== 5. Alt+1..4 (number of screens) ===================== */
 
 describe('Alt+1..4 = número de telas', () => {
   it('[Right] Alt+1..4 ativa 1..4 telas, jogando ou pausado', () => {
@@ -309,10 +302,8 @@ describe('modal: a tecla age no modal do DONO dela', () => {
   });
 
   it('[Right] as seis intenções saem do esquema de teclas — e SÓ isso sai daqui', () => {
-    // Este caso mudou de assunto no ADR-0033, e a mudança É o item: ele afirmava a GRADE
-    // (`{type:'move', delta:-3}` para cima, `-1` para a esquerda) e o desvio de Braille. Isso é layout do
-    // desafio DESTE jogo, e saiu para `game/quiz`. O que a engine entrega é a direção; o que ela significa
-    // não é mais pergunta que este arquivo possa responder.
+    // The engine delivers the direction (ADR-0033); a grid's deltas and a Braille detour are the layout of one game's
+    // challenge, which belongs to the game. What a direction means is not a question this file can answer.
     const solo1 = { players: [mkPlayer(0, SOLO)], modal: [true] };
     expect(decide('KeyA', solo1).intent).toBe('left');
     expect(decide('KeyD', solo1).intent).toBe('right');
@@ -323,25 +314,23 @@ describe('modal: a tecla age no modal do DONO dela', () => {
   });
 
   it('[Right] a ORDEM das seis é a especificação: uma tecla que é `left` E `jump` vale `left`', () => {
-    // Este caso NASCEU de uma mutação que passou. Inverti a ordem no módulo — `confirm` antes de `left` — e
-    // os 74 casos continuaram verdes, o que significa que a ordem estava escrita só num comentário. Uma
-    // afirmação sem teste é uma afirmação que a próxima refatoração apaga sem avisar.
+    // This case CAME from a mutation that passed: swapping the order in the module — `confirm` before `left` — left every
+    // other case green, so the order was written only in a comment. A claim without a test is one the next refactor
+    // erases without warning.
     //
-    // O caminho GENÉRICO é onde a ordem pode ser exercida: sem dono, as seis leituras saem das listas de
-    // `controls`, e um mesmo código pode estar em duas delas. Com dono, `actionOf` devolve UMA ação e o
-    // conflito não existe.
+    // The GENERIC path is where the order can be exercised: with no owner, the six readings come from `controls`' lists,
+    // and one code can be in two of them. With an owner, `actionOf` returns ONE action and there is no conflict.
     const s2 = snap({
       players: [mkPlayer(0, SOLO)], modal: [true],
       controls: { ...controlsFrom([SOLO]), left: ['Numpad0'], action2: ['Numpad0'], right: [], up: [], down: [], action1: [], gameKeys: ['Numpad0'] },
     });
-    // `Numpad0` não pertence a esquema nenhum → genérica → as seis leituras vêm de `controls`
+    // `Numpad0` belongs to no scheme → generic → the six readings come from `controls`
     expect(modalIntentOf('Numpad0', s2, 0, true)).toBe('left');
   });
 
   it('[Zero] tecla sem significado no esquema vira intenção NULA — e ainda assim é do modal', () => {
-    // A distinção que o `preventDefault` depende: a tecla É do modal (o desafio a engole), mesmo quando não
-    // exprime intenção nenhuma. Se este caso caísse para `play`, a tecla vazaria para o jogo por baixo do
-    // desafio aberto.
+    // The distinction `preventDefault` depends on: the key IS the modal's (the challenge swallows it), even when it
+    // expresses no intent. If this case fell to `play`, the key would leak into the game under the open challenge.
     const solo1 = { players: [mkPlayer(0, SOLO)], modal: [true] };
     const d = decide('KeyZ', solo1);
     expect(d.kind).toBe('modal');
@@ -350,7 +339,7 @@ describe('modal: a tecla age no modal do DONO dela', () => {
 
   it('[Right] tecla de jogo sem significado no modal mesmo assim PREVINE o padrão (senão `run` rolaria a página)', () => {
     const solo1 = { players: [mkPlayer(0, SOLO)], modal: [true] };
-    const d = decide('KeyU', solo1); // `run`: não é nenhuma das seis
+    const d = decide('KeyU', solo1); // `run`: none of the six
     expect(d.intent).toBeNull();
     expect(d.preventDefault).toBe(true);
   });
@@ -394,14 +383,14 @@ describe('jogo normal: bordas, espera e empatia motora', () => {
   it('[Right] Fácil não corre: a borda de corrida não sobe para quem está no modo Fácil', () => {
     const facil = { players: [mkPlayer(0, SOLO, { easy: true })] };
     expect(decide('KeyU', facil).edges).toEqual([]);
-    expect(decide('KeyU').edges).toEqual([{ playerIndex: 0, edge: 'runEdge' }]); // e sobe para quem não está
+    expect(decide('KeyU').edges).toEqual([{ playerIndex: 0, edge: 'runEdge' }]); // and it rises for whoever is not
   });
 
   it('[Right] Fácil SOLO ganha os atalhos: Ctrl = Especial, Shift = Trocar poder', () => {
     const facil = { players: [mkPlayer(0, SOLO, { easy: true })] };
     expect(decide('ControlLeft', facil).edges).toEqual([{ playerIndex: 0, edge: 'specialEdge' }]);
     expect(decide('ShiftRight', facil).edges).toEqual([{ playerIndex: 0, edge: 'swapEdge' }]);
-    expect(decide('ControlLeft', facil).gameKey).toBe(true); // e contam como tecla de jogo
+    expect(decide('ControlLeft', facil).gameKey).toBe(true); // and they count as game keys
   });
 
   it('[Boundary] os atalhos do Fácil NÃO valem em multi-tela (Ctrl/Shift voltam a ser teclas de sistema)', () => {
@@ -415,12 +404,12 @@ describe('jogo normal: bordas, espera e empatia motora', () => {
       players: [mkPlayer(0, P2A), mkPlayer(1, P2B, { waiting: true })],
       schemes: [P2A, P2B], numPlayers: 2,
     };
-    expect(decide('Numpad5', dois).wake).toEqual([1]); // tecla do J2 acorda o J2
-    expect(decide('KeyJ', dois).wake).toEqual([]);     // tecla do J1 não acorda ninguém
+    expect(decide('Numpad5', dois).wake).toEqual([1]); // P2's key wakes P2
+    expect(decide('KeyJ', dois).wake).toEqual([]);     // P1's key wakes nobody
   });
 
   it('[Right] empatia "um botão por vez": a tecla nova solta as OUTRAS teclas de jogo', () => {
-    const held = new Set(['KeyA', 'KeyQ']); // KeyA é de jogo, KeyQ não
+    const held = new Set(['KeyA', 'KeyQ']); // KeyA is a game key, KeyQ is not
     const d = decide('KeyD', { heldKeys: held, oneButton: true });
     expect(d.releaseKeys).toEqual(['KeyA']);
   });
@@ -520,16 +509,16 @@ describe('the guards nothing was holding', () => {
   });
 });
 
-/* ===================== 10. o wrapper: as sondas, a ordem e o efeito ===================== */
+/* ===================== 10. the wrapper: the probes, the order and the effect ===================== */
 
-/** ctx de mentira: nada de DOM real (o `$` devolve objetos simples), tudo espionado. */
+/** A fake ctx: no real DOM (`$` returns plain objects), everything spied. */
 function mkCtx(over = {}) {
   const els = over.els || {};
   const players = over.players || [mkPlayer(0, SOLO)];
   const schemes = players.map((p) => p.ctrl || {});
-  // O conjunto é o do módulo — `releaseAllKeys()` no `beforeEach` é o que o mantém limpo entre casos. As teclas
-  // semeadas entram pelo par, com origem `'teclado'`: um caso que semeia está a dizer «isto já estava
-  // segurado», e no mundo real algo o segurou.
+  // The set is the module's — `releaseAllKeys()` in the `beforeEach` keeps it clean between cases. Seeded keys enter
+  // through the pair, with origin `'teclado'`: a case that seeds is saying «isto já estava segurado», and in the real
+  // world something held it.
   releaseAllKeys();
   for (const k of (over.heldKeys || [])) markKey(k, 'teclado');
   const heldKeys = keysReais;
@@ -538,7 +527,7 @@ function mkCtx(over = {}) {
   const ctx = {
     attractOnInput: over.attractOnInput || (() => false),
     handleCaptureKeydown: over.handleCaptureKeydown || (() => false),
-    // Os dois fatos da cena (ADR-0030 C3). O falso guarda a string, como os casos se leem.
+    // The scene's two facts (ADR-0030 C3). The fake keeps the string, as the cases read.
     isTitleScreen: () => (over.phase || faseFalsa) === 'title',
     isInGame: () => { const f = over.phase || faseFalsa; return f === 'playing' || f === 'paused'; },
     getNumPlayers: () => players.length,
@@ -561,9 +550,8 @@ function mkCtx(over = {}) {
     navTitle: spy('navTitle'),
     activateScreens: spy('activateScreens'),
     togglePause: spy('togglePause'),
-    // UMA entrada onde havia quatro (ADR-0033): `quizMove`/`quizConfirm`/`quizErase`/`announceBraille` só
-    // existiam porque a decisão de qual chamar morava no módulo. O espião registra a INTENÇÃO, que é o que
-    // a engine passou a entregar.
+    // ONE entry (ADR-0033): the spy records the INTENT, which is what the engine delivers — not one callback per action,
+    // which would put the decision of which to call inside the module.
     modalInput: spy('modalInput'),
     hasModal: (i) => !!(players[i] && players[i].modalAberto),
     clearWaitingBadge: spy('clearWaitingBadge'),
@@ -574,9 +562,9 @@ function mkCtx(over = {}) {
 
 const fire = (api, code, mods = {}) => {
   const prevented = [];
-  // ⚠️ `isTrusted: true` POR PADRÃO, e antes do `...mods` para um caso o poder contrariar: `fire` neste
-  // ficheiro significa «uma criança carregou numa tecla», e é isso que `isTrusted` quer dizer. Deixá-lo de
-  // fora faria todos estes casos exercitarem, sem o dizerem, o caminho do evento sintético não assinado.
+  // ⚠️ `isTrusted: true` BY DEFAULT, and before `...mods` so a case can override it: `fire` in this file means «uma
+  // criança carregou numa tecla», which is what `isTrusted` means. Leaving it out would make all these cases exercise,
+  // without saying so, the path of an unsigned synthetic event.
   api.onKeydown({ code, altKey: false, ctrlKey: false, isTrusted: true, preventDefault: () => prevented.push(code), ...mods });
   return prevented.length > 0;
 };
@@ -588,7 +576,7 @@ describe('initKeydown — as sondas vêm ANTES de tudo', () => {
     const { ctx, names } = mkCtx({ attractOnInput: () => true, escapeTargetId: 'audio' });
     const api = initKeydown(ctx);
     expect(fire(api, 'Escape')).toBe(true);     // preventDefault
-    expect(names()).toEqual([]);                // e NENHUM efeito da cadeia
+    expect(names()).toEqual([]);                // and NO effect of the chain
   });
 
   it('[Right] a demo vem ANTES da captura: com as duas ativas, a captura nem é consultada', () => {
@@ -606,7 +594,7 @@ describe('initKeydown — as sondas vêm ANTES de tudo', () => {
       escapeTargetId: 'options',
     });
     const api = initKeydown(ctx);
-    expect(fire(api, 'KeyZ')).toBe(false);      // a captura NÃO passa por preventDefault daqui
+    expect(fire(api, 'KeyZ')).toBe(false);      // the capture does NOT go through preventDefault here
     expect(seen).toEqual(['KeyZ']);
     expect(names()).toEqual([]);
   });
@@ -672,13 +660,10 @@ describe('initKeydown — o efeito de cada ramo', () => {
   });
 
   it('modal: a INTENÇÃO chega com o ÍNDICE do jogador dono', () => {
-    // Eram QUATRO funções no ctx (`quizMove`/`quizConfirm`/`quizErase`/`announceBraille`) e este caso as
-    // afirmava uma a uma, com os deltas da grade. Virou uma, e o que resta a afirmar é o que a engine de
-    // fato decide: QUEM é o dono e QUAL direção foi pedida (ADR-0033).
+    // What is asserted is what the engine actually decides: WHO the owner is and WHICH direction was asked (ADR-0033).
     //
-    // E passou a ser o ÍNDICE e não o objeto: este módulo buscava o jogador só para repassá-lo, e o jogador
-    // que ele sabe descrever não tem `quiz` — que é justamente o que o outro lado lê. Passar o índice tira
-    // da engine a necessidade de saber o que é um jogador com desafio aberto.
+    // And it is the INDEX, not the object: the player this module can describe has no `quiz` — which is exactly what the
+    // other side reads. Passing the index spares the engine from knowing what a player with an open challenge is.
     const players = [mkPlayer(0, P2A), mkPlayer(1, P2B, { modalAberto: true })];
     const { ctx, calls } = mkCtx({ players });
     const api = initKeydown(ctx);
@@ -691,8 +676,8 @@ describe('initKeydown — o efeito de cada ramo', () => {
   });
 
   it('modal: CIMA é uma intenção como as outras — o Braille deixou de ser caso especial AQUI', () => {
-    // O caso dizia "quiz braille: cima dita a cela", e a frase é verdadeira sobre o JOGO, não sobre a engine.
-    // Ditar a cela é o que a atividade de alfabetização faz com `up`; o despacho de teclado só entrega `up`.
+    // "Up dictates the Braille cell" is true about a GAME, not the engine. Dictating the cell is what a literacy activity
+    // does with `up`; the keyboard dispatch only delivers `up`.
     const players = [mkPlayer(0, SOLO, { modalAberto: true })];
     const { ctx, calls } = mkCtx({ players });
     fire(initKeydown(ctx), 'KeyW');
@@ -709,15 +694,15 @@ describe('initKeydown — o efeito de cada ramo', () => {
 
   it('⚠️ a tecla premida chega ao mapa carimbada `teclado` (ADR-0109)', () => {
     const { ctx, origens } = mkCtx();
-    fire(initKeydown(ctx), 'KeyJ'); // `fire` é uma criança a carregar: `isTrusted: true`
+    fire(initKeydown(ctx), 'KeyJ'); // `fire` is a child pressing: `isTrusted: true`
     expect(origens.get('KeyJ')).toBe('teclado');
   });
 
   it('⚠️ A TECLA DA WEBCAM NÃO É LIDA COMO TECLADO — o §C da #114, de ponta a ponta', () => {
-    // ⚠️ ESTE É O CASO QUE A ISSUE ESPEROU DOIS MESES, e o defeito que ele prende não tem sintoma: a criança
-    // que joga por olhar dependia da alternância, e um evento sintético carimbado `teclado` accionaria a regra
-    // 3 do ADR-0109 («apertar uma tecla devolve o teclado SEM alternância») — desligando-a no meio da partida,
-    // sem erro e sem nada na tela. O `ui/webcam` carimba, e é o carimbo que atravessa até aqui.
+    // ⚠️ The defect this holds has no symptom: the child who plays by gaze depends on the latch, and a synthetic event
+    // stamped `teclado` would trigger rule 3 of ADR-0109 («apertar uma tecla devolve o teclado SEM alternância») —
+    // turning it off mid-game, with no error and nothing on screen. The assisted transport stamps its keys, and the stamp
+    // is what crosses to here.
     const { ctx, heldKeys, origens } = mkCtx();
     const api = initKeydown(ctx);
     api.onKeydown(stampSource(
@@ -729,13 +714,13 @@ describe('initKeydown — o efeito de cada ramo', () => {
   });
 
   it('🎯 [Sequência] o carimbo ALIMENTA o autómato: olhar vira o transporte em uso, e uma tecla premida devolve o teclado', () => {
-    // 🔴 O CASO QUE FALTAVA À FIAÇÃO INTEIRA, e a medição que o pediu é dura: até 2026-09-09 o
-    // `playerEdge` tinha ZERO chamadores em produção, logo `inputOf(i).emUso` respondia `teclado` a
-    // toda a gente, para sempre. Com isso a recusa da cláusula 3 do ADR-0113 NUNCA dispara — a criança que
-    // joga por webcam consegue desligar a alternância de que a entrada dela depende, e nada o diz.
+    // 🔴 THE CASE THE WHOLE WIRING NEEDS: with no `playerEdge` caller in production, `inputOf(i).inUse` would answer
+    // `teclado` to everyone, forever, and the refusal of ADR-0113 clause 3 would NEVER fire — the child who plays by
+    // camera could turn off the latch their input depends on, and nothing would say so (the state measured before
+    // 2026-09-09).
     //
-    // ⚠️ É SEQUÊNCIA E NÃO UMA CHAMADA: «apertar uma tecla devolve o teclado» (regra 3 do ADR-0109) não quer
-    // dizer nada sem se ter saído dele.
+    // ⚠️ IT IS A SEQUENCE AND NOT A CALL: «apertar uma tecla devolve o teclado» (rule 3 of ADR-0109) means nothing without
+    // having left it.
     forgetInputs();
     const { ctx } = mkCtx();
     const api = initKeydown(ctx);
@@ -780,7 +765,7 @@ describe('initKeydown — o efeito de cada ramo', () => {
   });
 
   it('⚠️ um sintético que NINGUÉM assinou funciona, mas não finge saber de onde veio', () => {
-    // Código de consumidor que despacha teclas continua a jogar; o que ele não faz é herdar uma origem alheia.
+    // Consumer code that dispatches keys still plays; what it does not do is inherit someone else's origin.
     const { ctx, heldKeys, origens } = mkCtx();
     fire(initKeydown(ctx), 'KeyJ', { isTrusted: false });
     expect(heldKeys.has('KeyJ')).toBe(true);
@@ -798,7 +783,7 @@ describe('initKeydown — o efeito de cada ramo', () => {
 
   it('empatia "um botão por vez": solta as outras E MANTÉM a recém-chegada', () => {
     const { ctx, heldKeys } = mkCtx({ oneButton: true, heldKeys: new Set(['KeyA', 'KeyD']) });
-    fire(initKeydown(ctx), 'KeyD'); // a própria tecla estava na lista: sai na limpeza e volta no fim
+    fire(initKeydown(ctx), 'KeyD'); // the key itself was on the list: it leaves in the clean-up and comes back at the end
     expect([...heldKeys]).toEqual(['KeyD']);
   });
 
@@ -809,14 +794,12 @@ describe('initKeydown — o efeito de cada ramo', () => {
     expect(heldKeys.has('KeyJ')).toBe(false);
     api.attach();
     expect(calls.map((c) => c[1])).toEqual(['keydown', 'keyup']);
-    expect(calls[0].length).toBe(3); // (tipo, fn) — sem o terceiro argumento de CAPTURA
+    expect(calls[0].length).toBe(3); // (type, fn) — without the third CAPTURE argument
   });
 
-  // Este caso mudou de FONTE em 2026-08-26 e não de garantia. A fase saiu de `core/state` (virou a pilha de
-  // `core/scenes`) e chega por dois booleanos no ctx — mas a coisa que ele guarda é a mesma e continua sendo
-  // a que importa: o snapshot PERGUNTA a cada tecla, em vez de copiar a cena no init. Um `const emJogo =
-  // ctx.isEmJogo()` guardado no init faria este caso falhar, e o teclado do jogo pararia de responder à
-  // pausa sem que nada ficasse vermelho.
+  // The phase arrives by two booleans in the ctx (the `core/scenes` stack), and what this case guards is that the
+  // snapshot ASKS on every key instead of copying the scene at init. A `const emJogo = ctx.isEmJogo()` stored at init
+  // would make this case fail, and the game's keyboard would stop responding to the pause with nothing turning red.
   it('snapshot() PERGUNTA a cena a cada tecla, não a copia no init', () => {
     const { ctx } = mkCtx();
     const api = initKeydown(ctx);

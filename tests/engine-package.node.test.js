@@ -1,26 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O QUE SOBREVIVE AO `tsc` E MENTE DO OUTRO LADO — o gate do ADR-0072 §4.
+// WHAT SURVIVES `tsc` AND LIES ON THE OTHER SIDE — the gate of ADR-0072 §4.
 //
-// ========================= O ACHADO QUE ESTE ARQUIVO EXISTE PARA IMPEDIR =========================
-// O primeiro build de pacote de verdade (2026-09-05, `tsc -p tsconfig.pkg.json`) devolveu exit 0 e 103
-// arquivos. Parecia pronto. Duas linhas do emitido diziam o contrário:
+// ========================= WHAT THIS FILE EXISTS TO PREVENT =========================
+// A package build (`tsc -p tsconfig.pkg.json`) can exit 0 and still emit code no consumer can run. Two Vite-only
+// constructs did exactly that:
 //
-//   · `dist-pkg/core/i18n.js:67` — `import.meta.glob('../i18n/*.ts')`, COPIADA INTACTA. O `tsc` não é o Vite:
-//     ele não conhece a construção e a trata como chamada comum. Num consumidor que não a transforme,
-//     `import.meta.glob` é `undefined` e estoura no carregamento; num que a transforme, o padrão `*.ts` casa
-//     ZERO arquivos ao lado de um emitido que só tem `.js`, e todo idioma que não fosse pt viraria português
-//     sem erro nenhum.
-//   · `dist-pkg/render/sprites.js:13` — `import { ATLAS_URL, FRAMES } from 'virtual:sprite-atlas'`, um módulo
-//     que só existe dentro do plugin de build DESTE repositório.
+//   · `import.meta.glob('../i18n/*.ts')`, COPIED INTACT. `tsc` is not Vite: it does not know the construct and treats it
+//     as an ordinary call. In a consumer that does not transform it, `import.meta.glob` is `undefined` and blows up on
+//     load; in one that does, the `*.ts` pattern matches ZERO files beside an output that only has `.js`, and every
+//     language other than pt would turn into Portuguese with no error at all.
+//   · `import { ATLAS_URL, FRAMES } from 'virtual:sprite-atlas'`, a module that exists only inside one repository's
+//     build plugin.
 //
-// ========================= POR QUE O CRIVO É NA FONTE E NÃO NO EMITIDO =========================
-// Testar `dist-pkg/` exigiria que o build tivesse rodado, e um gate que só funciona depois de um passo que
-// alguém pode esquecer é um gate que falha ABERTO — o pior tipo, porque parece verde. A propriedade que
-// importa é da FONTE: um módulo que só compila sob o Vite não pode ser publicado, e isso se lê sem compilar.
+// ========================= WHY THE SIEVE IS ON THE SOURCE AND NOT THE OUTPUT =========================
+// Testing `dist-pkg/` would require the build to have run, and a gate that only works after a step someone can forget
+// is a gate that fails OPEN — the worst kind, because it looks green. The property that matters belongs to the SOURCE:
+// a module that only compiles under Vite cannot be published, and that is read without compiling.
 //
-// ========================= E A LISTA DE CAMADAS VEM DO PRÓPRIO CONFIG =========================
-// `tsconfig.pkg.json` é lido aqui em vez de a lista ser copiada. Copiar seria a divergência clássica: alguém
-// acrescenta uma camada ao pacote, o gate segue vigiando as antigas, e o módulo novo viaja sem ninguém olhar.
+// ========================= AND THE LAYER LIST COMES FROM THE CONFIG ITSELF =========================
+// `tsconfig.pkg.json` is read here instead of the list being copied. Copying would be the classic drift: someone adds a
+// layer to the package, the gate keeps watching the old ones, and the new module travels with nobody looking.
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -28,7 +27,7 @@ import { join, relative } from 'node:path';
 const RAIZ_REPO = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const CR = String.fromCharCode(13);
 
-/** O `tsconfig.pkg.json`, sem os comentários `//N` que o TypeScript tolera e o `JSON.parse` não. */
+/** `tsconfig.pkg.json`, without the `//N` comments TypeScript tolerates and `JSON.parse` does not. */
 function lerConfigDoPacote() {
   const bruto = readFileSync(join(RAIZ_REPO, 'tsconfig.pkg.json'), 'utf8').split(CR).join('');
   return JSON.parse(bruto);
@@ -37,7 +36,7 @@ function lerConfigDoPacote() {
 const CFG = lerConfigDoPacote();
 const EXCLUIDOS = new Set((CFG.exclude ?? []).map((p) => p.split('\\').join('/')));
 
-/** Os `.ts` que o pacote de fato EMBARCA: o que o `include` alcança, menos o que o `exclude` tira. */
+/** The `.ts` files the package actually SHIPS: what `include` reaches, minus what `exclude` removes. */
 function modulosDoPacote() {
   const out = [];
   for (const entrada of CFG.include ?? []) {
@@ -59,8 +58,8 @@ function modulosDoPacote() {
 const MODULOS = modulosDoPacote();
 const fonte = (rel) => readFileSync(join(RAIZ_REPO, rel), 'utf8').split(CR).join('');
 
-/** Linhas de CÓDIGO. Prosa que MENCIONA `import.meta.glob` não é `import.meta.glob` — e este arquivo e o
- *  `core/i18n` estão cheios de prosa que a menciona, exatamente para explicar por que ela saiu. */
+/** CODE lines. Prose that MENTIONS `import.meta.glob` is not `import.meta.glob` — and this file and `core/i18n` are full of
+ *  prose mentioning it, precisely to explain why it left. */
 function linhasDeCodigo(texto) {
   const out = [];
   let bloco = false;
@@ -74,7 +73,7 @@ function linhasDeCodigo(texto) {
   return out;
 }
 
-/** Construções que SÓ o Vite entende. Cada uma sobrevive ao `tsc` sem aviso, e é isso que as torna perigosas. */
+/** Constructs ONLY Vite understands. Each survives `tsc` with no warning, which is what makes them dangerous. */
 const SO_NO_VITE = [
   { nome: 'import.meta.glob', re: /import\s*\.\s*meta\s*\.\s*glob\s*[<(]/ },
   { nome: "import de 'virtual:'", re: /from\s*['"]virtual:/ },
@@ -82,7 +81,7 @@ const SO_NO_VITE = [
   { nome: 'import com sufixo ?raw/?url/?worker', re: /from\s*['"][^'"]+\?(raw|url|worker|inline)['"]/ },
 ];
 
-/** [módulo, linha, construção] para tudo que o crivo pega. */
+/** [module, line, construct] for everything the sieve catches. */
 function ocorrencias(modulos = MODULOS) {
   const achados = [];
   for (const m of modulos) {
@@ -107,11 +106,8 @@ describe('o pacote publicável não carrega construção que só o Vite entende 
     expect(legivel, 'sobrevive ao tsc e quebra (ou mente) do outro lado').toEqual([]);
   });
 
-  // ⚠️ OS DOIS CASOS SOBRE `render/sprites` SAIRAM DAQUI em 2026-09-07 (issue #111), e nao por terem
-  // deixado de importar: o MODULO mudou de repositorio. Eles afirmavam que ele estava no `exclude` do
-  // `tsconfig.pkg.json` e que nenhum modulo embarcado o importava — as duas coisas continuam verdadeiras
-  // e nenhuma e mais aferivel aqui, porque nao ha ficheiro que ler. A propriedade que elas protegiam
-  // passou a ser garantida por CONSTRUCAO: o que nao esta na arvore nao entra no pacote.
+  // ⚠️ `render/sprites` (the `virtual:sprite-atlas` importer) is not in this repository (issue #111): what is not in the
+  // tree cannot enter the package, so the property is guaranteed by CONSTRUCTION.
 
   it('[Cross-check] o crivo ainda pega o que os DOIS achados de 05/09 eram', () => {
     const amostras = [
@@ -131,26 +127,24 @@ describe('o pacote publicável não carrega construção que só o Vite entende 
 });
 
 // ===================================================================================================
-// O SEGUNDO CRIVO: O QUE O PACOTE NOMEIA TEM DE SER O QUE ELE DECLARA
+// THE SECOND SIEVE: WHAT THE PACKAGE NAMES MUST BE WHAT IT DECLARES
 // ===================================================================================================
-// ⚠️ O ACHADO QUE ESTE BLOCO EXISTE PARA IMPEDIR, e ele chegou de FORA: um consumidor real instalou
-// `@the-inclusionist/engine@6.36.1` do registro e o build dele parou em
+// ⚠️ WHAT THIS BLOCK EXISTS TO PREVENT came from OUTSIDE: a real consumer installed
+// `@the-inclusionist/engine@6.36.1` from the registry and its build stopped at
 //
 //     Rolldown failed to resolve import "@example/neural-voice"
 //     from ".../@the-inclusionist/engine/dist-pkg/platform/tts.js"
 //
-// `platform/tts` é código EMBARCADO e nomeia esse pacote; o `package.json` o declarava em
-// `devDependencies`, que o npm NÃO instala para quem consome. Ou seja: a versão publicada não podia
-// ser compilada por ninguém — e nada aqui dentro tinha como saber, porque neste repositório o pacote
-// está presente (é devDependency da própria árvore) e tudo resolve.
+// `platform/tts` was SHIPPED code naming that package, and `package.json` declared it in `devDependencies`, which npm
+// does NOT install for a consumer. So the published version could not be built by anyone — and nothing in here could
+// know, because in this repository the package is present (a devDependency of this very tree) and everything resolves.
 //
-// ⚠️ E O DEFEITO ESCONDEU-SE NA FORMA DINÂMICA. A linha é `import('@example/neural-voice')`
-// dentro de uma função, não um `from` no topo. Um crivo escrito só para `from '...'` ficaria verde por
-// cima dela para sempre. Por isso o `[Right]` abaixo prende as DUAS formas pelo nome.
+// ⚠️ AND THE DEFECT HID IN THE DYNAMIC FORM: `import('@example/neural-voice')` inside a function, not a top-level `from`.
+// A sieve written only for `from '...'` would stay green over it forever. That is why the `[Right]` below holds BOTH
+// forms by name.
 //
-// POR QUE ISTO É UM `[Zero]` E NÃO UM TETO QUE ENCOLHE: medido em 06/09, os 112 módulos embarcados
-// nomeiam TRÊS especificadores de terceiros ao todo. O resíduo honesto é vazio, então qualquer entrada
-// é defeito — não há dívida legítima a tolerar.
+// WHY THIS IS A `[Zero]` AND NOT A SHRINKING CEILING: the honest residue is empty, so any entry is a defect — there is no
+// legitimate debt to tolerate.
 describe('todo pacote que o código embarcado NOMEIA é declarado como dependência de execução', () => {
   const PKG = JSON.parse(readFileSync(join(RAIZ_REPO, 'package.json'), 'utf8'));
   const DECLARADOS = new Set([
@@ -158,17 +152,17 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
     ...Object.keys(PKG.peerDependencies ?? {}),
   ]);
 
-  /** `from 'x'`, `import 'x'` e `import('x')` — as três formas com que um módulo nomeia outro. */
+  /** `from 'x'`, `import 'x'` and `import('x')` — the three forms in which a module names another. */
   const ESPECIFICADOR = /(?:\bfrom|\bimport)\s*\(?\s*['"]([^'"]+)['"]/g;
 
-  /** O NOME DO PACOTE, não o caminho: `@scope/nome/sub.js` → `@scope/nome`; `foo/bar` → `foo`. */
+  /** The PACKAGE NAME, not the path: `@scope/nome/sub.js` → `@scope/nome`; `foo/bar` → `foo`. */
   function nomeDoPacote(spec) {
     const p = spec.split('/');
     return spec.startsWith('@') ? p.slice(0, 2).join('/') : p[0];
   }
 
-  /** Nomes de terceiros. Relativo, absoluto, `node:` e `virtual:` não são pacotes do npm — e o
-   *  `virtual:` já é reprovado pelo crivo de cima, então reprová-lo aqui de novo só duplicaria o erro. */
+  /** Third-party names. Relative, absolute, `node:` and `virtual:` are not npm packages — and `virtual:` is already failed
+   *  by the sieve above, so failing it here again would only duplicate the error. */
   function especificadoresNus(linha) {
     const out = [];
     for (const m of linha.matchAll(ESPECIFICADOR)) {
@@ -179,7 +173,7 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
     return out;
   }
 
-  /** [módulo, linha, pacote] para tudo que os módulos embarcados nomeiam. */
+  /** [module, line, package] for everything the shipped modules name. */
   function nomeados(modulos = MODULOS) {
     const achados = [];
     for (const m of modulos) {
@@ -231,31 +225,29 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
 });
 
 /* ===================================================================================================
- * O QUARTO CRIVO: A ENGINE NÃO GANHA DEPENDÊNCIA DE EXECUÇÃO — a POLÍTICA, que os três de cima não vêem
+ * THE FOURTH SIEVE: THE ENGINE GAINS NO RUN-TIME DEPENDENCY — the POLICY, which the three above do not see
  * ===================================================================================================
  *
- * 🎯 O BURACO FOI MEDIDO EM 2026-09-09 E É DE CONSTRUÇÃO, não de cobertura. Os crivos acima aferem
- * COERÊNCIA — que o que o código nomeia está declarado, e que o que está declarado alguém nomeia. Ambos
- * ficam VERDES se alguém acrescentar `onnxruntime-web` a `dependencies` **e** o importar: as duas metades
- * concordam, e 135 MB entram em cada `npm ci` de trezentos repositórios.
+ * 🎯 THE HOLE IS ONE OF CONSTRUCTION, not coverage. The sieves above measure COHERENCE — that what the code names is
+ * declared, and that what is declared someone names. Both stay GREEN if someone adds `onnxruntime-web` to
+ * `dependencies` **and** imports it: the two halves agree, and 135 MB enter every consumer's `npm ci`.
  *
- * ⚠️ E o ADR-0093 empurra para o mesmo sítio sem querer: «o que o código embarcado NOMEIA, o pacote tem de
- * declarar». Lido sozinho, ele diz que a saída para um import novo é acrescentar a dependência. As duas
- * regras juntas dizem outra coisa, e é ela que fica escrita aqui: **a engine não importa nada pesado**.
+ * ⚠️ And ADR-0093 unintentionally pushes the same way: «o que o código embarcado NOMEIA, o pacote tem de declarar». Read
+ * alone, it says the way out for a new import is adding the dependency. The two rules together say something else, and
+ * that is what is written here: **the engine imports nothing heavy**.
  *
- * 📏 A POLÍTICA VEM DE QUATRO REGISTOS QUE DIZEM O MESMO POR CAMINHOS DIFERENTES: o ADR-0094 mediu os 135 MB
- * e recusou-os ao cartucho; o ADR-0114 tirou runtime e modelos do pacote; o ADR-0117 pôs a entrega na
- * PLATAFORMA porque a Cache Storage é por origem; e o ADR-0119 estendeu a lista à arte. Nenhum deles tinha
- * gate sobre a porta do `dependencies`, que é por onde a decisão seria revertida sem ninguém a tomar. */
+ * 📏 THE POLICY COMES FROM FOUR RECORDS SAYING THE SAME BY DIFFERENT ROUTES: ADR-0094 measured the 135 MB and refused them
+ * to the cartridge; ADR-0114 took runtime and models out of the package; ADR-0117 put delivery on the PLATFORM because
+ * Cache Storage is per origin; and ADR-0119 extended the list to art. The `dependencies` door is where the decision
+ * would be reversed without anyone taking it, and this is its gate. */
 describe('ADR-0119 · a engine não ganha dependência de execução, e cada `peer` diz porquê', () => {
   const PKG = JSON.parse(readFileSync(join(RAIZ_REPO, 'package.json'), 'utf8'));
 
   /**
-   * As dependências de quem CONSOME, com a razão de cada uma escrita à mão.
+   * The dependencies of whoever CONSUMES, each with a hand-written reason.
    *
-   * ⚠️ A LISTA TEM DE ENCOLHER e não pode crescer em silêncio: uma entrada nova sem razão reprova, e uma
-   * razão cuja dependência já não existe também — senão ela fica a desculpar por antecipação o que vier
-   * ocupar o mesmo nome.
+   * ⚠️ THE LIST MUST SHRINK and cannot grow silently: a new entry without a reason fails, and so does a reason whose
+   * dependency no longer exists — or it would excuse in advance whatever came to occupy the same name.
    */
   const PEERS_COM_RAZAO = {
     'pixi.js':
@@ -281,47 +273,47 @@ describe('ADR-0119 · a engine não ganha dependência de execução, e cada `pe
   });
 
   it('[Fronteira] razão cuja dependência já não existe SAI daqui', () => {
-    // A metade da saída. Sem ela a lista vira monumento — a entrada do PIXI continuaria a explicar um
-    // `peer` que já não há, e a próxima pessoa leria história como estado.
+    // The exit half. Without it the list becomes a monument — the PIXI entry would go on explaining a `peer` that no
+    // longer exists, and the next person would read history as state.
     const peers = new Set(Object.keys(PKG.peerDependencies ?? {}));
     const orfas = Object.keys(PEERS_COM_RAZAO).filter((p) => !peers.has(p));
     expect(orfas, `razão sem \`peer\` correspondente; apague a entrada: ${orfas.join(', ')}`).toEqual([]);
   });
 
-  /* 🎯 E O CÍRCULO FECHA-SE COM O CRIVO DE CIMA, sem o repetir. Ele já afirma que «nenhum módulo embarcado
-   * nomeia pacote fora de `dependencies`/`peerDependencies`»; com o `dependencies` provado VAZIO aqui, o
-   * conjunto declarável passa a ser só os `peers` — e importar coisa pesada deixa de ter saída legal, que é
-   * exactamente o que os quatro registos querem. 📌 Uma terceira cópia do `nomeados()` seria a duplicação que
-   * este ficheiro já recusou duas vezes; o par vive na leitura dos dois crivos juntos, e fica escrito aqui. */
+  /* 🎯 AND THE CIRCLE CLOSES WITH THE SIEVE ABOVE, without repeating it. It asserts «nenhum módulo embarcado nomeia
+   * pacote fora de `dependencies`/`peerDependencies`»; with `dependencies` proven EMPTY here, the declarable set is only
+   * the `peers` — and importing something heavy has no legal way out, exactly what the four records want. 📌 A third
+   * copy of `nomeados()` would be the duplication this file refuses; the pair lives in reading the two sieves together,
+   * and is written here. */
 });
 
 // ===================================================================================================
-// O TERCEIRO CRIVO: O QUE O PACOTE EMITE, ELE TEM DE DEIXAR ALCANÇAR
+// THE THIRD SIEVE: WHAT THE PACKAGE EMITS, IT MUST LET CONSUMERS REACH
 // ===================================================================================================
-// ⚠️ O ACHADO, e ele chegou pela SEPARAÇÃO DO CARTUCHO (issue #111), não por leitura: um teste do jogo, no
-// repositório novo, fez `import pt from '@the-inclusionist/engine/i18n/pt.js'` e recebeu
+// ⚠️ The finding came from the CARTRIDGE SEPARATION (issue #111), not from reading: a game test, in the new repository,
+// did `import pt from '@the-inclusionist/engine/i18n/pt.js'` and got
 //
 //     "./i18n/pt.js" is not exported under the conditions ["node","development","import"]
 //
-// O `tsconfig.pkg.json` INCLUI `app/js/i18n` — os três dicionários são emitidos e viajam no tarball — e o
-// `exports` não tinha entrada para eles. Emitido e inalcançável: peso no pacote que ninguém pode usar, e uma
-// porta fechada para o consumidor que quer conferir uma frase contra o dicionário em vez de contra uma cópia.
+// `tsconfig.pkg.json` INCLUDES `app/js/i18n` — the dictionaries are emitted and travel in the tarball — and `exports` had
+// no entry for them. Emitted and unreachable: weight in the package nobody can use, and a closed door for the consumer
+// who wants to check a sentence against the dictionary instead of a copy.
 //
-// ⚠️ E OS DOIS CRIVOS DE CIMA NÃO O VEEM, por construção: aquele olha o que o código NOMEIA, este olha o que
-// o pacote OFERECE. São perguntas diferentes sobre o mesmo `package.json`, e a primeira estava verde.
+// ⚠️ AND THE SIEVES ABOVE DO NOT SEE IT, by construction: that one looks at what the code NAMES, this one at what the
+// package OFFERS. Different questions about the same `package.json`, and the first was green.
 //
-// A EXCEÇÃO É `boot`, e é declarada: o único módulo dele é `create-game`, que é a entrada `.` do pacote.
-// Uma camada de entrada não precisa de subcaminho — precisa de estar alcançável, e está.
+// THE EXCEPTION IS `boot`, and it is declared: its entry module is `create-game`, the package's `.` entry. An entry layer
+// does not need a subpath — it needs to be reachable, and it is.
 describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #111)', () => {
   const PKG = JSON.parse(readFileSync(join(RAIZ_REPO, 'package.json'), 'utf8'));
   const SUBCAMINHOS = Object.keys(PKG.exports ?? {});
 
-  /** As camadas que o `tsconfig.pkg.json` manda emitir: `app/js/<camada>` → `<camada>`. */
+  /** The layers `tsconfig.pkg.json` says to emit: `app/js/<layer>` → `<layer>`. */
   const CAMADAS_EMITIDAS = (CFG.include ?? [])
     .filter((e) => e.startsWith('app/js/'))
     .map((e) => e.slice('app/js/'.length));
 
-  /** `boot` entra pela raiz `.` (create-game), e é a ÚNICA camada que pode não ter subcaminho próprio. */
+  /** `boot` enters through the `.` root (create-game), and is the ONLY layer that may have no subpath of its own. */
   const PELA_RAIZ = new Set(['boot']);
 
   it('[Interface] o `exports` tem uma raiz `.`, e ela aponta para dentro de `boot`', () => {
@@ -339,8 +331,8 @@ describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #1
   });
 
   it('[Right] e o crivo PEGA a lacuna real que a separação encontrou', () => {
-    // `i18n` era exatamente este caso em 06/09: incluída no build, ausente do `exports`. Sem esta prova, o
-    // `[Zero]` acima poderia estar verde por não olhar nada.
+    // `i18n` was exactly this case: included in the build, absent from `exports`. Without this proof, the `[Zero]` above
+    // could be green for looking at nothing.
     const semI18n = SUBCAMINHOS.filter((s) => !s.startsWith('./i18n/'));
     const faltando = CAMADAS_EMITIDAS
       .filter((c) => !PELA_RAIZ.has(c))
@@ -349,54 +341,30 @@ describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #1
   });
 
   /**
-   * ⚠️ A PORTA QUE PROMETE MAIS DO QUE ENTREGA, e ela é CONHECIDA e DELIBERADA — metade dela.
+   * ⚠️ PORTS THAT PROMISE MORE THAN THEY DELIVER, exempted by name with a reason. The list is EMPTY: the wide
+   * `"./assets/*": "./app/public/*"` port — which matched the whole folder while `files` ships only `app/public/vendor` —
+   * was removed (#119, recorded in `docs/6-DevOps-SRE/Breaking-Changes.md`). The narrow `./assets/vendor/*` promises
+   * exactly what travels, and `engine/assets/vendor/fonts.css` matches it.
    *
-   * `"./assets/*": "./app/public/*"` casa a pasta inteira, e o `files` embarca só `app/public/vendor`.
-   * Medido no tarball 7.0.1: `assets/vendor/fonts.css` resolve; `assets/assets/sprites/…` dá 404.
+   * What is right is the ABSENCE: art is NOT FOSS (pillar 10 of ADR-0010) and cannot travel in an AGPL package.
    *
-   * O QUE ESTÁ CERTO É A AUSÊNCIA: a arte NÃO é FOSS (pilar 10 do ADR-0010) e não pode viajar num pacote
-   * AGPL. O que está errado é o PADRÃO, que promete a pasta toda.
-   *
-   * ⚠️ ATUALIZADO EM 2026-09-07 (#119). A porta ESTREITA `./assets/vendor/*` passou a existir ao lado da
-   * larga — aditiva, portanto sem quebrar nada. As duas resolvem `assets/vendor/fonts.css` para o mesmo
-   * ficheiro hoje; a estreita é a que diz a verdade.
-   *
-   * ⚠️ E A MEDIÇÃO MUDOU A PREMISSA DA PRÓPRIA ISSUE, que dizia que remover a larga «é quebra de contrato —
-   * major». Medido: `app/public/` tem TRÊS entradas (`vendor/`, `_headers`, `icon.svg`) e o `files` embarca
-   * só `vendor`. Ou seja, tudo o que a porta larga consegue resolver num tarball publicado já é coberto pela
-   * estreita; o resto já dá 404 hoje. Removê-la não quebra consumidor de npm nenhum.
-   *
-   * A remoção continua a ser do Dev — a medida vale para quem instala do registo, e um consumidor por
-   * `file:` alcança a árvore inteira. Fica registada em `docs/6-DevOps-SRE/Breaking-Changes.md`.
+   * ⚠️ An exemption must also point at a port that still EXISTS: an orphan exemption makes the list lie about the size of
+   * the exception, the rule every other ledger in this tree follows.
    */
-  //
-  // ⚠️ E A LISTA ESTÁ VAZIA DESDE 2026-09-07: a porta larga SAIU (#119). O Dev decidiu removê-la depois de a
-  // medição mostrar que ela não quebra consumidor nenhum — `engine/assets/vendor/fonts.css` continua a casar
-  // na porta estreita, e tudo o mais que ela alcançava já dava 404.
-  //
-  // ⚠️ E ESTE FICHEIRO QUASE DEIXOU A ENTRADA ÓRFÃ FICAR. Quando a porta saiu do `package.json`, os dezoito
-  // casos passaram na mesma: o `[Interface]` abaixo só contava o TAMANHO da lista e media o comprimento do
-  // motivo — nunca perguntava se a porta que ela isenta ainda existe. Uma isenção órfã faz a lista mentir
-  // sobre o tamanho da excepção, que é a regra que todos os outros livros-razão desta árvore já seguem, e
-  // que este não seguia por eu não a ter escrito aqui.
   const PORTA_LARGA_DE_PROPOSITO = new Map([]);
 
   it('[Boundary] toda porta do `exports` aponta para algo que o pacote realmente EMBARCA', () => {
-    // A recíproca: uma porta para uma pasta que o `files` não leva é um 404 prometido ao consumidor.
+    // The converse: a port to a folder `files` does not carry is a 404 promised to the consumer.
     const FILES = new Set(PKG.files ?? []);
     const problemas = [];
     for (const [sub, alvo] of Object.entries(PKG.exports ?? {})) {
       if (PORTA_LARGA_DE_PROPOSITO.has(sub)) continue;
       const destino = typeof alvo === 'string' ? alvo : alvo?.default;
       if (!destino) { problemas.push(`${sub}: sem destino`); continue; }
-      // ⚠️ O CRIVO LIA SÓ O PRIMEIRO SEGMENTO, e por isso não sabia distinguir uma porta HONESTA de uma
-      // larga. `./app/public/vendor/*` tem raiz `app`, que não está no `files` — mas `app/public/vendor`
-      // está, e é exatamente a pasta que a porta promete. Em 2026-09-07 a #119 acrescentou essa porta
-      // estreita e o gate reprovou-a, sendo ela o conserto.
-      //
-      // Agora ele lê o PREFIXO LITERAL (o que vem antes do `*`) e pergunta se o `files` embarca esse
-      // prefixo, ou um antecessor dele. Com isso a porta estreita PASSA por ser verdadeira, e a larga
-      // continua a reprovar por não o ser — que é a diferença que a issue existe para nomear.
+      // ⚠️ The sieve reads the LITERAL PREFIX (what comes before the `*`) and asks whether `files` ships that prefix, or an
+      // ancestor of it — not just the first segment, which cannot tell an HONEST port from a wide one:
+      // `./app/public/vendor/*` has root `app`, which is not in `files`, but `app/public/vendor` is. So the narrow port
+      // PASSES for being true, and a wide one fails for not being — the difference the issue exists to name.
       const limpo = destino.replace(/^\.\//, '');
       const prefixo = limpo.includes('*') ? limpo.slice(0, limpo.indexOf('*')).replace(/\/$/, '') : limpo;
       const embarcado = prefixo === 'package.json'
@@ -408,22 +376,21 @@ describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #1
   });
 
   it('[Interface] a lista de portas largas NÃO cresce, e cada uma carrega o motivo', () => {
-    // É a última saída deste crivo. Uma exceção sem motivo é afrouxamento disfarçado, e uma lista que cresce
-    // é o crivo a ser desligado devagar. ZERO hoje: a porta larga saiu com a #119.
+    // It is this sieve's last way out. An exception without a reason is loosening in disguise, and a list that grows is the
+    // sieve being switched off slowly. ZERO: the wide port left with #119.
     expect(PORTA_LARGA_DE_PROPOSITO.size).toBeLessThanOrEqual(1);
     for (const [, motivo] of PORTA_LARGA_DE_PROPOSITO) expect(motivo.length).toBeGreaterThan(20);
 
-    // ⚠️ E NENHUMA ISENÇÃO É ÓRFÃ, que era o buraco desta lista. Quando a porta saiu do `package.json` os
-    // dezoito casos passaram na mesma, porque ninguém perguntava se o que a lista isenta ainda existe.
+    // ⚠️ AND NO EXEMPTION IS AN ORPHAN: without this, removing a port from `package.json` would leave every case passing,
+    // because nothing asked whether what the list exempts still exists.
     for (const sub of PORTA_LARGA_DE_PROPOSITO.keys()) {
       expect(Object.keys(PKG.exports ?? {}), `isenta \`${sub}\`, que já não é porta nenhuma`).toContain(sub);
     }
   });
 
   it('⚠️ [Right] a porta ESTREITA existe, e e a que diz a verdade (#119)', () => {
-    // O conserto aditivo: `./assets/vendor/*` promete exatamente o que o `files` embarca. Ela nao substitui
-    // a larga hoje — convive com ela —, e e por isso que remover a larga um dia nao quebra quem escrever
-    // `engine/assets/vendor/...`: continua a casar aqui.
+    // `./assets/vendor/*` promises exactly what `files` ships, and whoever writes `engine/assets/vendor/...` matches it —
+    // which is why removing the wide port broke nobody.
     const exp = PKG.exports ?? {};
     expect(exp['./assets/vendor/*'], 'a porta estreita sumiu; a promessa volta a ser so a larga')
       .toBe('./app/public/vendor/*');
@@ -431,8 +398,8 @@ describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #1
   });
 
   it('⚠️ [Cross-check] e a porta LARGA continua a reprovar sem a isencao — senao a excecao nao mede nada', () => {
-    // Sem isto, alguem podia alargar o crivo ate a larga passar sozinha, e a excecao nomeada viraria
-    // decoracao. Aqui o crivo corre COM a larga e SEM a lista de isentos.
+    // Without this, someone could widen the sieve until a wide port passed by itself, and a named exemption would become
+    // decoration. Here the sieve runs WITH a wide port and WITHOUT the exemption list.
     const FILES = new Set(PKG.files ?? []);
     const cabe = (destino) => {
       const limpo = destino.replace(/^\.\//, '');
@@ -444,8 +411,8 @@ describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #1
   });
 
   it('⚠️ [Interface] `app/public` so tem uma pasta que viaja — e o que torna a remocao segura', () => {
-    // A medicao que mudou a premissa da #119. Se aparecer coisa nova em `app/public` que o `files` embarque,
-    // a conclusao «remover a larga nao quebra ninguem» deixa de valer, e este caso avisa.
+    // The measurement behind #119. If something new appears in `app/public` that `files` ships, the conclusion «remover a
+    // larga nao quebra ninguem» stops holding, and this case warns.
     const publico = readdirSync(join(RAIZ_REPO, 'app', 'public'));
     const embarcados = publico.filter((n) => (PKG.files ?? []).includes('app/public/' + n));
     expect(embarcados, 'algo novo em app/public viaja no pacote; reler a #119').toEqual(['vendor']);
