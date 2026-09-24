@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de input/touch-bindings — a TRADUÇÃO gesto→tecla e a GEOMETRIA do direcional, sem DOM (project node).
+// Tests of input/touch-bindings — the gesture→key TRANSLATION and the d-pad's GEOMETRY, with no DOM (node project).
 // ZOMBIES + Right-BICEP.
 //
-// O que este arquivo protege é uma mentira útil: o botão da tela finge ser o teclado. `doTouch('jump',true)`
-// não empurra o personagem — ele injeta o código físico mapeado para "pular" no MESMO `keys` que o keydown
-// alimenta e levanta as bordas nos jogadores que tenham aquele código. Enquanto isso morava num IIFE do
-// main.js, a única forma de conferir era num tablet.
+// What this file protects is a useful lie: the on-screen button pretends to be the keyboard. `doTouch('jump',true)` does
+// not push the character — it presses the virtual controller, which holds the physical code mapped to "jump" in the SAME
+// `keys` keydown feeds and raises the edges on the players who have that code. Without these cases, the only way to
+// check it would be on a tablet.
 //
-// ⚠️ O CASO MAIS IMPORTANTE DAQUI PINA UM DEFEITO, NÃO UM ACERTO — ver o bloco "as três cópias da tabela".
-// Se ele ficar vermelho, ninguém "quebrou o teste": alguém unificou (ou tentou unificar) as três tabelas
-// ação→borda do projeto. Leia o cabeçalho de app/js/input/touch-bindings.ts inteiro antes de mexer na
-// expectativa, e confira as três de uma vez.
+// ⚠️ THE MOST IMPORTANT BLOCK HERE is "the three copies of the table": the action→edge rule has to give the same answer
+// on the three input paths (keyboard, gamepad, touch). If it goes red, one path has drifted from `input/edges`.
 //
-// O amarrado de ouvintes (captura de ponteiro, preventDefault, classes das setas) está em
-// touch-bindings.browser.test.js e NÃO é repetido aqui.
+// The listener wiring (pointer capture, preventDefault, the arrows' classes) is in touch-bindings.browser.test.js and is
+// NOT repeated here.
 import { describe, it, expect } from 'vitest';
 import { TOUCH_ACTS } from '../app/js/input/touch.js';
 import {
@@ -23,21 +21,21 @@ import {
 } from '../app/js/input/touch-bindings.js';
 import { edgesFor } from '../app/js/input/keydown.js';
 
-/* ===================== fixtures (esquemas de fábrica de input/keyboard.ts) ===================== */
+/* ===================== fixtures (factory schemes of input/keyboard.ts) ===================== */
 
 const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], action1: ['KeyU'], action2: ['KeyJ', 'Space'], action4: ['KeyI'], action3: ['KeyK'] };
 const P2B = { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], action1: ['Numpad8'], action2: ['Numpad5'], action4: ['Numpad9'], action3: ['Numpad6'] };
 
 const mkPlayer = (ctrl, extra = {}) => ({ ctrl, easy: false, jumpEdge: false, runEdge: false, leftEdge: false, rightEdge: false, swapEdge: false, specialEdge: false, ...extra });
 
-/** Um mundo. Padrão: solo, esquema de fábrica, nada segurado. */
+/** A world. Default: solo, factory scheme, nothing held. */
 const snap = (over = {}) => ({ controls: SOLO, players: [mkPlayer(SOLO)], heldKeys: new Set(), ...over });
 
-/* ===================== 1. codeForAction — QUE tecla o botão finge apertar ===================== */
+/* ===================== 1. codeForAction — WHICH key the button pretends to press ===================== */
 
 describe('codeForAction — a ação vira a 1ª tecla do Jogador 1', () => {
   it('[Right] cada ação devolve o PRIMEIRO código do esquema, não a lista', () => {
-    expect(codeForAction('action2', SOLO)).toBe('KeyJ');   // e não 'Space', que é o 2º alias
+    expect(codeForAction('action2', SOLO)).toBe('KeyJ');   // and not 'Space', which is the 2nd alias
     expect(codeForAction('left', SOLO)).toBe('KeyA');
     expect(codeForAction('action1', SOLO)).toBe('KeyU');
   });
@@ -48,11 +46,11 @@ describe('codeForAction — a ação vira a 1ª tecla do Jogador 1', () => {
     expect(codeForAction('voar', SOLO)).toBeNull();
     expect(codeForAction('action2', { ...SOLO, action2: [] })).toBeNull();
     expect(codeForAction('', SOLO)).toBeNull();
-    expect(codeForAction(undefined, SOLO)).toBeNull(); // slot do touchMap vazio chega assim
+    expect(codeForAction(undefined, SOLO)).toBeNull(); // an empty touchMap slot arrives like this
   });
 });
 
-/* ===================== 2. touchEdgesFor — EM QUEM a borda sobe ===================== */
+/* ===================== 2. touchEdgesFor — ON WHOM the edge rises ===================== */
 
 describe('touchEdgesFor — a borda sobe em quem tem AQUELE código no PRÓPRIO esquema', () => {
   it('[Right] solo: a ação levanta exatamente uma borda, no jogador 0', () => {
@@ -62,7 +60,7 @@ describe('touchEdgesFor — a borda sobe em quem tem AQUELE código no PRÓPRIO 
   });
 
   it('[CrossCheck] jogador cujo esquema NÃO contém o código não recebe borda nenhuma', () => {
-    // multi-tela: o toque é sempre do J1, e o J2 tem outro esquema. 'KeyJ' não é dele.
+    // multi-screen: touch is always P1's, and P2 has another scheme. 'KeyJ' is not theirs.
     const out = touchEdgesFor('action2', 'KeyJ', [mkPlayer(SOLO), mkPlayer(P2B)]);
     expect(out).toEqual([{ playerIndex: 0, edge: 'jumpEdge' }]);
   });
@@ -78,7 +76,7 @@ describe('touchEdgesFor — a borda sobe em quem tem AQUELE código no PRÓPRIO 
   });
 
   it('[CrossCheck] a AÇÃO manda, não o código: `run` com o código do pulo não levanta jumpEdge', () => {
-    // o par (ação, código) chega sempre coerente do codeForAction; se alguém os desemparelhar, nada sobe.
+    // the (action, code) pair always arrives consistent from codeForAction; if someone unpairs them, nothing rises.
     expect(touchEdgesFor('action1', 'KeyJ', [mkPlayer(SOLO)])).toEqual([]);
   });
 
@@ -94,20 +92,17 @@ describe('touchEdgesFor — a borda sobe em quem tem AQUELE código no PRÓPRIO 
   });
 });
 
-/* ===================== 3. ⚠️ AS TRÊS CÓPIAS DA TABELA — a divergência do modo Fácil ===================== */
+/* ===================== 3. ⚠️ THE THREE COPIES OF THE TABLE — the Easy-mode divergence ===================== */
 
 describe('modo Fácil e `run`: os três caminhos de entrada têm de CONCORDAR', () => {
-  // Contexto (medido, não suposto): `runEdge` NÃO é a velocidade de corrida — a velocidade sai de
-  // `held(pl,'run')` em game/physics.ts:169-170. `runEdge` é o gatilho de GRUDAR e SOLTAR da parede
-  // (updateCling, game/physics.ts:177 e :179). A tabela ação→borda existe três vezes no projeto:
-  //   · input/keydown.ts (EDGE_BY_ACTION + a guarda `if (act === 'run' && p.easy) continue;`)
-  //   · input/gamepad.ts:478 (`if (edge('run') && !p.easy) p.runEdge = true;`)
-  //   · input/touch-bindings.ts (AQUI)
-  // Durante um tempo só o toque não tinha a guarda: no modo Fácil a escalada não existia no teclado nem no
-  // controle, e existia no botão da tela — quer dizer, a criança com dificuldade motora, no tablet, jogava um
-  // jogo diferente do da mesma criança no teclado. Corrigido; estes casos existem para que não volte.
-  // O `edgesFor` abaixo é o REAL, importado de keydown.js — comparar com uma reimplementação aqui não provaria
-  // nada, porque as duas cópias poderiam derivar juntas.
+  // Context (measured, not assumed): `runEdge` is NOT the running speed — in the platform game it is the wall CLING and
+  // RELEASE trigger. The action→edge rule and the Easy guard live in `input/edges.ts` (`EDGE_BY_ACTION`, `edgeAllowed`),
+  // and the three input paths apply it: `input/keydown.ts`, `input/gamepad.ts` and `input/touch-bindings.ts` (HERE).
+  // For a while only touch lacked the guard: in Easy mode climbing did not exist on the keyboard or the gamepad, and
+  // existed on the on-screen button — that is, the child with a motor difficulty, on the tablet, played a different game
+  // from the same child on the keyboard. These cases exist so it does not come back.
+  // The `edgesFor` below is the REAL one, imported from keydown.js — comparing with a reimplementation here would prove
+  // nothing, because the two copies could drift together.
   const easy = [mkPlayer(SOLO, { easy: true })];
 
   it('[toque] com `easy`, o botão da tela NÃO levanta runEdge', () => {
@@ -142,8 +137,8 @@ describe('modo Fácil e `run`: os três caminhos de entrada têm de CONCORDAR', 
 
 describe('decideTouch — apertar, soltar e o caso especial `pause`', () => {
   it('[Right] apertar uma ação mapeada: devolve a POSIÇÃO e traz as bordas', () => {
-    // 🔴 A MOEDA DESTA DECISÃO É A POSIÇÃO E NÃO A TECLA desde 22/09 (ADR-0223): o toque aperta o controle virtual,
-    // que é a porta única, e a tecla volta a ser um EFEITO da pressão, escrito num sítio só.
+    // 🔴 THE CURRENCY OF THIS DECISION IS THE POSITION AND NOT THE KEY (ADR-0223): touch presses the virtual controller,
+    // which is the single door, and the key is an EFFECT of the press, written in one place only.
     const d = decideTouch('action2', true, snap());
     expect(d).toEqual({ kind: 'press', action: 'action2', addKey: true, edges: [{ playerIndex: 0, edge: 'jumpEdge' }], hideTips: true });
   });
@@ -154,7 +149,7 @@ describe('decideTouch — apertar, soltar e o caso especial `pause`', () => {
 
   it('[Right] `pause` é o único que não vira tecla: apertar pausa, SOLTAR não faz nada', () => {
     expect(decideTouch('start', true, snap())).toEqual({ kind: 'pause' });
-    expect(decideTouch('start', false, snap())).toEqual({ kind: 'noop' }); // soltar o START não despausa
+    expect(decideTouch('start', false, snap())).toEqual({ kind: 'noop' }); // releasing START does not unpause
   });
 
   it('[Boundary] tecla JÁ segurada: sem re-injeção e sem borda — é BORDA, não estado', () => {
@@ -181,9 +176,9 @@ describe('decideTouch — apertar, soltar e o caso especial `pause`', () => {
   });
 
   it('🔴 [Boundary] uma posição SEM TECLA mapeada chega na mesma ao cartucho', () => {
-    // 🔴 ERA `noop` ATÉ 22/09, e o silêncio era do lado errado da fronteira: o mapa é do JOGO e não do teclado
-    // (ADR-0111), então uma posição que o cartucho declarou tem de lhe chegar mesmo que a criança não tenha tecla
-    // para ela. ⚠️ Sem tecla não há borda a levantar — `addKey` é falso —, mas a POSIÇÃO viaja.
+    // 🔴 A position the cartridge declared has to reach it even if the child has no key for it: the map belongs to the
+    // GAME and not to the keyboard (ADR-0111), and answering `noop` would put the silence on the wrong side of the
+    // boundary. ⚠️ With no key there is no edge to raise — `addKey` is false —, but the POSITION travels.
     const semTecla = snap({ controls: { ...SOLO, action2: [] } });
     expect(decideTouch('action2', true, semTecla))
       .toEqual({ kind: 'press', action: 'action2', addKey: false, edges: [], hideTips: true });
@@ -198,7 +193,7 @@ describe('decideTouch — apertar, soltar e o caso especial `pause`', () => {
 /* ===================== 5. geometria da CRUZ (pura) ===================== */
 
 describe('crossDirsAt — posição do dedo → direções, com miolo neutro', () => {
-  // 200×200 na origem: centro em (100,100), zona morta = 200 × 0,18 = 36 px em cada eixo.
+  // 200×200 at the origin: centre at (100,100), dead zone = 200 × 0.18 = 36 px on each axis.
   const R = { left: 0, top: 0, width: 200, height: 200 };
   const DEAD = 200 * CROSS_DEAD_FRACTION; // 36
 
@@ -221,7 +216,7 @@ describe('crossDirsAt — posição do dedo → direções, com miolo neutro', (
   });
 
   it('[Boundary] a borda da zona morta é EXCLUSIVA: exatamente ±36 ainda é miolo; 1 px além liga', () => {
-    expect(crossDirsAt(100 - DEAD, 100, R).left).toBe(false);     // = -36 → estritamente maior que -36? não
+    expect(crossDirsAt(100 - DEAD, 100, R).left).toBe(false);     // = -36 → strictly greater than -36? no
     expect(crossDirsAt(100 - DEAD - 1, 100, R).left).toBe(true);
     expect(crossDirsAt(100 + DEAD, 100, R).right).toBe(false);
     expect(crossDirsAt(100 + DEAD + 1, 100, R).right).toBe(true);
@@ -239,8 +234,8 @@ describe('crossDirsAt — posição do dedo → direções, com miolo neutro', (
   });
 
   it('[⚠️ verbatim] a zona morta VERTICAL também sai da LARGURA — a altura nunca entra na conta', () => {
-    // Cruz achatada (400 de largura, 100 de altura): miolo vertical = 72 px, ou seja MAIOR que a metade da
-    // altura → nenhum ponto dentro do elemento liga `up`/`down`. Comportamento atual; ver o cabeçalho.
+    // A flattened cross (400 wide, 100 high): vertical dead centre = 72 px, that is, MORE than half the height → no point
+    // inside the element turns `up`/`down` on. Current behaviour; see the header.
     const flat = { left: 0, top: 0, width: 400, height: 100 }; // centro (200,50); dead = 72
     expect(crossDirsAt(200, 0, flat).up).toBe(false);
     expect(crossDirsAt(200, 100, flat).down).toBe(false);
@@ -283,9 +278,9 @@ describe('stickDirsAt / stickKnobOffset — a zona morta vem em px de input/touc
 
   it('[Boundary/Invariant] passando do curso, ela PARA no raio e mantém o ÂNGULO (recorte radial)', () => {
     const o = stickKnobOffset(60 + 300, 60 + 300, R, 42); // diagonal bem além do curso
-    expect(Math.hypot(o.x, o.y)).toBeCloseTo(42, 6);      // no raio, não em 42×42 (que seria recorte por eixo)
-    expect(o.x).toBeCloseTo(o.y, 6);                      // ângulo de 45° preservado
-    expect(o.x).toBeLessThan(42);                         // e por isso NENHUM eixo chega a 42 sozinho
+    expect(Math.hypot(o.x, o.y)).toBeCloseTo(42, 6);      // on the radius, not at 42×42 (which would be per-axis clipping)
+    expect(o.x).toBeCloseTo(o.y, 6);                      // 45° angle preserved
+    expect(o.x).toBeLessThan(42);                         // and so NO axis reaches 42 on its own
   });
 
   it('[Boundary] exatamente no raio não recorta (o recorte é `>`, não `>=`)', () => {
@@ -304,13 +299,13 @@ describe('wantsForcedTouch', () => {
   it('[Zero/CrossCheck] vazio, outro valor, ou nome que só CONTÉM "touch" não contam', () => {
     expect(wantsForcedTouch('')).toBe(false);
     expect(wantsForcedTouch('?touch=0')).toBe(false);
-    expect(wantsForcedTouch('?notouch=1')).toBe(false); // sem o `?`/`&` na frente, não casa
+    expect(wantsForcedTouch('?notouch=1')).toBe(false); // without the `?`/`&` in front, it does not match
   });
 });
 
-/* ===================== 8. o despacho ligado ao mundo (sem DOM: só o ctx) ===================== */
+/* ===================== 8. the dispatch wired to the world (no DOM: only the ctx) ===================== */
 
-/** ctx mínimo: `initTouchBindings` não toca em DOM nenhum enquanto `attach()` não for chamado. */
+/** A minimal ctx: `initTouchBindings` touches no DOM while `attach()` is not called. */
 function makeCtx(over = {}) {
   const calls = {
     pause: 0, hideTips: 0, show: 0, defer: [], origens: new Map(), arestas: [],
@@ -326,12 +321,12 @@ function makeCtx(over = {}) {
     getPlayers: () => players,
     heldKeys,
     /*
-     * 🔴 O DUBLE DO CONTROLE VIRTUAL, desde 22/09 (ADR-0223). O pad já não escreve teclas: ele APERTA uma posição, e
-     * quem decide o que isso significa — ir ao menu, segurar a tecla da criança, entregar o comando — é o controle.
-     * O duble faz o mínimo que o controle real faz para estes casos poderem continuar a afirmar o que afirmavam:
-     * resolve a posição no esquema, segura a tecla com o carimbo, e devolve se a pressão chegou ao JOGO.
+     * 🔴 THE VIRTUAL CONTROLLER'S DOUBLE (ADR-0223). The pad no longer writes keys: it PRESSES a position, and what decides
+     * what that means — going to the menu, holding the child's key, delivering the command — is the controller. The double
+     * does the minimum the real controller does so these cases can keep asserting what they asserted: it resolves the
+     * position in the scheme, holds the key with the stamp, and returns whether the press reached the GAME.
      *
-     * 📌 `emMenu` é do duble e não do pad: a pergunta «há um menu aberto?» passou a ter UMA resposta, a do controle.
+     * 📌 `emMenu` belongs to the double and not to the pad: the question «há um menu aberto?» has ONE answer, the controller's.
      */
     press: (action, source) => {
       if (over.emMenu) { calls.aoMenu.push([action, source]); return false; }
@@ -344,8 +339,8 @@ function makeCtx(over = {}) {
       const code = (over.controls || SOLO)[action]?.[0];
       if (code) { heldKeys.delete(code); calls.origens.delete(code); }
     },
-    // 📌 O duplo GUARDA A LISTA em vez de contar: a pergunta «que aparelho está a produzir as arestas» é POR
-    // JOGADOR, e um contador não distinguiria dois toques do jogador 1 de um toque de cada assento.
+    // 📌 The double KEEPS THE LIST instead of counting: the question «que aparelho está a produzir as arestas» is PER
+    // PLAYER, and a counter would not tell two presses by player 1 from one press on each seat.
     playerEdge: (jogador, origem) => { calls.arestas.push([jogador, origem]); },
     attractOnInput: () => false,
     showTouchControls: () => { calls.show++; },
@@ -387,31 +382,30 @@ describe('doTouch — a decisão carimbada no mundo', () => {
     const { api, players } = makeCtx({ players: [mkPlayer(SOLO), mkPlayer(P2B)] });
     api.doTouch('action2', true);
     expect(players[0].jumpEdge).toBe(true);
-    expect(players[1].jumpEdge).toBe(false); // 'KeyJ' não está no esquema dele
+    expect(players[1].jumpEdge).toBe(false); // 'KeyJ' is not in their scheme
   });
 
   it('🎯 a aresta do TOQUE é por JOGADOR, e só chega a quem tem o código (ADR-0113 cláusula 4)', () => {
-    // 🔴 O defeito que isto prende: marcar sempre o jogador 0 daria ao segundo assento a alternância do
-    // primeiro — e a alternância é o ajuste de quem não consegue manter uma tecla premida, logo o erro cai
-    // exactamente sobre quem depende dela. Medido em 2026-09-09: até esta linha, `playerEdge` tinha ZERO
-    // chamadores em produção e o autómato respondia `teclado` a toda a gente.
+    // 🔴 The defect this pins: always marking player 0 would give the second seat the first one's latch — and the latch is
+    // the setting of whoever cannot hold a key down, so the error falls exactly on whoever depends on it. Measured on
+    // 2026-09-09: until this line, `playerEdge` had ZERO callers in production and the automaton answered `teclado` to
+    // everyone.
     const { api, calls } = makeCtx({ players: [mkPlayer(SOLO), mkPlayer(P2B)] });
     api.doTouch('action2', true);
     expect(calls.arestas, 'a aresta do toque não chegou ao autómato, ou chegou ao assento errado').toEqual([[0, 'toque']]);
 
-    // 🎯 E O SEGUNDO ASSENTO, que é o que separa «marca o jogador certo» de «marca sempre o 0»: com o controle
-    // do J2 a produzir o código, a aresta é DELE. Sem esta metade, fixar `0` na fiação passaria despercebido.
+    // 🎯 AND THE SECOND SEAT, which is what separates «marca o jogador certo» from «marca sempre o 0»: with P2's controller
+    // producing the code, the edge is THEIRS. Without this half, hard-coding `0` in the wiring would go unnoticed.
     const dois = makeCtx({ controls: P2B, players: [mkPlayer(SOLO), mkPlayer(P2B)] });
     dois.api.doTouch('action2', true);
     expect(dois.calls.arestas, 'o toque do segundo assento foi contado no primeiro').toEqual([[1, 'toque']]);
   });
 
-  // 🔴 A RESPOSTA DO CONTROLE É LIDA, E ESTE É O CASO QUE A SEGURA (ADR-0223). O pad tinha a própria pergunta
-  // `emMenu()`, e o que ele fazia com a resposta estava escrito aqui uma segunda vez. Agora quem responde é o
-  // controle, e o pad PARA: com um menu aberto a posição move o menu e mais nada acontece deste lado — nenhuma
-  // aresta a dizer que o jogador apertou, nenhuma dica a desaparecer, nenhuma tecla segurada.
-  // 📏 Medido por mutação: sem a leitura da resposta (ou com a resposta a mentir), um dedo no pad enquanto o
-  // cartão de pausa está aberto levanta a aresta de pulo — e a física consome-a no quadro em que o jogo volta.
+  // 🔴 THE CONTROLLER'S ANSWER IS READ, AND THIS IS THE CASE THAT HOLDS IT (ADR-0223). The controller answers whether a
+  // menu is open, and the pad STOPS: with a menu open the position moves the menu and nothing else happens on this side —
+  // no edge saying the player pressed, no hint disappearing, no key held.
+  // 📏 Measured by mutation: without reading the answer (or with the answer lying), a finger on the pad while the pause
+  // card is open raises the jump edge — and the physics consumes it on the frame the game comes back.
   it('🔴 [CrossCheck] com um MENU aberto o toque para: sem aresta, sem dica, sem tecla — só o menu anda', () => {
     const { api, calls, players, heldKeys } = makeCtx({ emMenu: true });
     api.doTouch('action2', true);
@@ -425,8 +419,8 @@ describe('doTouch — a decisão carimbada no mundo', () => {
   it('[Boundary] apertar com a tecla já segurada não re-levanta a borda', () => {
     const { api, players, heldKeys } = makeCtx({ heldKeys: new Set(['KeyJ']) });
     api.doTouch('action2', true);
-    players[0].jumpEdge = false;      // finge que a física consumiu a borda
-    api.doTouch('action2', true);        // o mesmo botão de novo, sem soltar
+    players[0].jumpEdge = false;      // pretends the physics consumed the edge
+    api.doTouch('action2', true);        // the same button again, without releasing
     expect(players[0].jumpEdge).toBe(false);
     expect(heldKeys.has('KeyJ')).toBe(true);
   });
@@ -471,12 +465,12 @@ describe('pressStart — o botão START', () => {
     expect(calls.defer).toHaveLength(1);
     expect(calls.defer[0][1]).toBe(START_TAP_MS);
     calls.defer[0][0]();                       // roda o timer
-    expect(heldKeys.has('KeyJ')).toBe(false);  // e aí sim solta
+    expect(heldKeys.has('KeyJ')).toBe(false);  // and only then it releases
   });
 
   it('[Zero] ação indefinida (é o estado de HOJE no main.js — ver o relato): não pausa, não injeta tecla', () => {
-    // `touchMap.start` no main.js lê um binding que não existe naquele escopo. Este caso documenta o que
-    // acontece quando a ação chega vazia; o defeito em si é do call-site, e está no relatório.
+    // Documents what happens when the start action arrives empty: nothing pauses and no key is injected. (The defect that
+    // produced it was the call site's, not this module's.)
     const { api, calls, heldKeys } = makeCtx({ startAction: undefined });
     api.pressStart();
     expect(calls.pause).toBe(0);
@@ -485,17 +479,16 @@ describe('pressStart — o botão START', () => {
 });
 
 describe('⚠️ TODA ação que o toque oferece é reconhecida pelo DESPACHO', () => {
-  // ESTE GATE NASCEU DE UM BURACO REAL, e do meu primeiro conserto errado dele. Durante a unificação
-  // `pause` -> `start`, `TOUCH_DEFAULT` e `TOUCH_ACTS` mudaram juntos e `decideTouch` ficou a procurar
-  // `'pause'`. A suíte inteira passou verde, e passou porque o `[Invariant]` que já existia compara as
-  // DUAS TABELAS uma com a outra — elas concordavam. Quem discordava era o terceiro lado.
+  // THIS GATE WAS BORN FROM A REAL HOLE. During the `pause` -> `start` unification, `TOUCH_DEFAULT` and `TOUCH_ACTS` changed
+  // together and `decideTouch` kept looking for `'pause'`. The whole suite passed green, because the `[Invariant]` that
+  // already existed compares the TWO TABLES with each other — they agreed. What disagreed was the third side.
   //
-  // A primeira versão deste gate que escrevi repetia esse invariante e teria passado igual. O que ele
-  // pergunta agora é ao lado que estava errado: o despacho reconhece o que o menu oferece?
+  // So what it asks is the side that was wrong: does the dispatch recognise what the menu offers? (A first version that
+  // repeated the invariant would have passed the same.)
   //
-  // No mundo, o defeito era o botão START do controle de tela deixar de pausar — sem erro, sem aviso, e
-  // num tablet de escola pública esse é o único botão de pausa que existe.
-  // com os ombros do esquema solo real (`input/default-bindings`): o toque passou a carregá-los (ADR-0160)
+  // In the world, the defect was the on-screen control's START button no longer pausing — no error, no warning, and on a
+  // public-school tablet that is the only pause button there is.
+  // with the real solo scheme's shoulders (`input/default-bindings`): touch carries them (ADR-0160)
   const SOLO = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action3: ['KeyK'], action4: ['KeyI'],
     leftShoulder: ['Digit7'], leftTrigger: ['KeyY'], rightShoulder: ['Digit8'], rightTrigger: ['KeyO'] };
   const mundo = () => ({ controls: SOLO, heldKeys: new Set(), players: [{ ctrl: SOLO, easy: false }] });

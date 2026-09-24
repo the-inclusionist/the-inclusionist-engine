@@ -1,25 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// AS DUAS CÓPIAS DO VALIDADOR NÃO DIVERGEM — a contramedida da deriva que o ADR-0123 comprou.
+// THE TWO COPIES OF THE VALIDATOR DO NOT DRIFT — the countermeasure for the drift ADR-0123 bought.
 //
-// ========================= POR QUE ISTO EXISTE, E O QUE ELE CUSTA SE NÃO EXISTIR =========================
-// 🔴 A regra do Dev é «cada repositório precisa ter seus validadores e gates para ADRs», e ela ganha de uma
-// objecção minha por uma razão que ficou escrita no ADR-0123 §4: um gate que mora noutro sítio é um gate que
-// não corre aqui. O preço é o que o ADR-0068 §4 recusou para o `game-ci.yml` — DUAS cópias de uma ferramenta,
-// e duas cópias divergem.
+// ========================= WHY THIS EXISTS, AND WHAT IT COSTS IF IT DOES NOT =========================
+// 🔴 The Dev's rule is «cada repositório precisa ter seus validadores e gates para ADRs», and it wins over my objection
+// for a reason written in ADR-0123 §4: a gate that lives somewhere else is a gate that does not run here. The price is
+// what ADR-0068 §4 refused for `game-ci.yml` — TWO copies of a tool, and two copies drift.
 //
-// 📏 E NÃO É HIPÓTESE: divergiu no dia um. O `--repo` nasceu do lado dos registos, a cópia deste repositório
-// ainda só tinha `--root`, e a primeira corrida cruzada devolveu NOVE reprovações falsas. Quem as viu fui eu,
-// a olhar para a saída; a próxima vez pode não ter ninguém a olhar.
+// 📏 AND IT IS NOT A HYPOTHESIS: it drifted on day one. `--repo` was born on the records' side, this repository's copy
+// still only had `--root`, and the first cross run returned NINE false failures. I saw them because I was looking at
+// the output; next time nobody may be looking.
 //
-// ⚠️ E O DEFEITO NÃO É A CÓPIA DESACTUALIZADA — é o VEREDICTO. Com duas versões, a mesma árvore fica verde
-// num repositório e vermelha noutro, e nada diz qual dos dois está certo. Um gate que discorda de si próprio
-// é pior do que um gate a menos: ele produz confiança onde não há.
+// ⚠️ AND THE DEFECT IS NOT THE OUT-OF-DATE COPY — it is the VERDICT. With two versions, the same tree is green in one
+// repository and red in the other, and nothing says which of the two is right. A gate that disagrees with itself is
+// worse than one gate fewer: it produces confidence where there is none.
 //
-// 📌 A árvore chega como no `ponteiros-de-registo`: por `ADR_TREE` (o que a CI passa) ou por clone irmão. Sem
-// nenhuma delas, os casos SALTAM — e o caso do `ADR_TREE_REQUIRED`, naquele ficheiro, é o que recusa o salto
-// no trabalho que se declara responsável pela árvore.
+// 📌 The tree arrives as in `ponteiros-de-registo`: through `ADR_TREE` (what CI passes) or through the sibling clone.
+// With neither, the cases SKIP — and the `ADR_TREE_REQUIRED` case, in that file, is what refuses the skip in the job
+// that declares itself responsible for the tree.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -37,29 +36,29 @@ const AQUI = fileURLToPath(new URL('../scripts/validate-adr.py', import.meta.url
 const LA = TEM_ARVORE ? join(RAIZ_DOS_REGISTOS, 'scripts', 'validate-adr.py') : '';
 
 /**
- * ⚠️ FINAIS DE LINHA NORMALIZADOS, e não é indulgência: os dois repositórios são clonados em máquinas com
- * configurações de `core.autocrlf` diferentes, e um `\r` a mais não é deriva de comportamento. O que este
- * ficheiro guarda é o CÓDIGO que decide o veredicto.
+ * ⚠️ LINE ENDINGS NORMALISED, and it is not leniency: the two repositories are cloned on machines with different
+ * `core.autocrlf` settings, and an extra `\r` is not a behaviour drift. What this file guards is the CODE that decides
+ * the verdict.
  */
 const corpo = (caminho) => readFileSync(caminho, 'utf8').replace(/\r\n/g, '\n');
 
 describe.skipIf(!TEM_ARVORE)('o validador deste repositório e o dos registos', () => {
   it('📌 [Vácuo] os dois ficheiros existem e têm código — senão isto compara dois vazios', () => {
-    // Sem este caso, apagar um dos dois deixaria o [Interface] a comparar `''` com `''` e a passar. É a
-    // metade da SAÍDA: um crivo que não lê nada está verde pela pior razão.
+    // Without this case, deleting one of the two would leave [Interface] comparing `''` with `''` and passing. It is the
+    // WAY-OUT half: a sieve that reads nothing is green for the worst reason.
     expect(existsSync(AQUI), `o validador deste repositório sumiu (${AQUI})`).toBe(true);
     expect(existsSync(LA), `o validador dos registos não está em ${LA}`).toBe(true);
     expect(corpo(AQUI).length, 'o validador daqui está vazio').toBeGreaterThan(2000);
     expect(corpo(LA).length, 'o validador dos registos está vazio').toBeGreaterThan(2000);
-    // 🔴 E OS DOIS CAMINHOS TÊM DE SER FICHEIROS DIFERENTES — a asserção que faltava, e a CI provou-o.
+    // 🔴 AND THE TWO PATHS HAVE TO BE DIFFERENT FILES — CI proved this assertion was missing.
     //
-    // A raiz dos registos era calculada com `new URL('../../../', …)`, que depende da BARRA FINAL: o clone
-    // irmão trazia-a, o `ADR_TREE` da CI não. Lá, a raiz resolvia um nível acima e o `LA` apontava para o
-    // validador DESTE repositório — o caso comparava o ficheiro consigo próprio e passava. Um gate cego, e
-    // cego exactamente onde só a CI o exercita.
+    // The records' root was computed with `new URL('../../../', …)`, which depends on the TRAILING SLASH: the sibling
+    // clone had it, CI's `ADR_TREE` did not. There, the root resolved one level up and `LA` pointed at THIS repository's
+    // validator — the case compared the file with itself and passed. A blind gate, and blind exactly where only CI
+    // exercises it.
     //
-    // ⚠️ O vácuo antigo não o apanhava porque os dois ficheiros EXISTIAM: era o mesmo, duas vezes. «Existe»
-    // não é a pergunta toda quando dois caminhos podem colapsar num só.
+    // ⚠️ The vacuum check did not catch it because both files EXISTED: it was the same one, twice. «Existe» is not the
+    // whole question when two paths can collapse into one.
     expect(resolve(AQUI), `os dois caminhos resolvem para o MESMO ficheiro (${AQUI}) — a comparação seria consigo própria`)
       .not.toBe(resolve(LA));
   });
@@ -75,10 +74,10 @@ describe.skipIf(!TEM_ARVORE)('o validador deste repositório e o dos registos', 
   });
 });
 
-// ================================ MUTAÇÕES CONFERIDAS ================================
-// 1. acrescentar uma linha a `scripts/validate-adr.py` (a deriva de verdade) → o [Interface] reprova, com a
-//    frase que diz o que fazer. É a mutação que descreve o defeito que já aconteceu uma vez.
-// 2. comparar por TAMANHO em vez de por conteúdo → duas versões do mesmo tamanho passariam; a mutação
-//    sobrevive ao caso feliz e é apanhada pela 1, que muda o tamanho — por isso a comparação é do corpo.
-// 3. tirar o `[Vácuo]` e apagar uma das cópias → o [Interface] passaria a comparar dois vazios e ficaria
-//    VERDE. É a razão de o vácuo vir primeiro e não ser decoração.
+// ================================ MUTATIONS CHECKED ================================
+// 1. adding a line to `scripts/validate-adr.py` (the real drift) → [Interface] fails, with the sentence that says what
+//    to do. It is the mutation that describes the defect that already happened once.
+// 2. comparing by SIZE instead of by content → two versions of the same size would pass; the mutation survives the happy
+//    case and is caught by 1, which changes the size — that is why the comparison is on the body.
+// 3. removing the `[Vácuo]` and deleting one of the copies → [Interface] would compare two empties and stay GREEN. That is
+//    why the vacuum comes first and is not decoration.

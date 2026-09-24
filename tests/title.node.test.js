@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { TITLE_MENU_IDS, isTitleMenuId, computeTitleMenuView } from '../app/js/ui/title.js';
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/title (navegação pura entre submenus) e render/title-scene (geometria da cena PIXI do título) —
-// project NODE: sem document/PIXI reais, só a lógica + camadas falsas injetadas (padrão de scene-sky-decor).
-// Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4).
+// Tests of ui/title (pure navigation between submenus) — NODE project: no real document, only the logic.
+// See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4).
 
-// ===================== ui/title — máquina de estados (navegação) =====================
+// ===================== ui/title — state machine (navigation) =====================
 
 describe('ui/title · TITLE_MENU_IDS / isTitleMenuId', () => {
   it('[Interface] os 6 submenus do título, na ordem histórica do game.js', () => {
@@ -56,5 +55,4 @@ describe('ui/title · computeTitleMenuView', () => {
   });
 });
 
-// ===================== render/title-scene — geometria pura =====================
 

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de input/touch-bindings — o que SÓ o navegador prova (project BROWSER): o AMARRADO de ouvintes de
-// ponteiro. Retângulo de verdade (`getBoundingClientRect` de um elemento com tamanho real), captura de
-// ponteiro de verdade, `preventDefault` de verdade, `classList` de verdade.
+// Tests of input/touch-bindings — what ONLY the browser proves (BROWSER project): the WIRING of pointer listeners. A real
+// rectangle (`getBoundingClientRect` of an element with a real size), real pointer capture, real `preventDefault`, real
+// `classList`.
 //
-// A tradução gesto→tecla e a geometria pura estão em touch-bindings.node.test.js e NÃO são repetidas aqui —
-// o que se afirma neste arquivo é sempre "o EVENTO chegou ao lugar certo", nunca "a conta está certa".
+// The gesture→key translation and the pure geometry are in touch-bindings.node.test.js and are NOT repeated here — what
+// this file asserts is always "the EVENT reached the right place", never "the sum is right".
 //
-// Injeção por closure (mesmo padrão de tests/touch.browser.test.js): o ctx é todo de sondas falsas, e o
-// `win` é um <div> ancestral de verdade (e não `window`), para os ouvintes não vazarem de um caso para o
-// outro — mas ancestral mesmo, senão a fase de CAPTURA deixaria de significar coisa alguma.
+// Injection by closure (the same pattern as tests/touch.browser.test.js): the ctx is all fake probes, and the `win` is a
+// real ancestor <div> (not `window`), so the listeners do not leak from one case to the next — but really an ancestor,
+// or the CAPTURE phase would stop meaning anything.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initTouchBindings, START_TAP_MS } from '../app/js/input/touch-bindings.js';
 
@@ -17,9 +17,9 @@ const TOUCH_MAP = { up: 'up', down: 'down', left: 'left', right: 'right', start:
 
 const $ = (sel) => document.querySelector(sel);
 
-/** A cruz e o analógico ficam com tamanho REAL e posição fixa: a conta de direção depende do retângulo.
- *  #touch-controls fica VISÍVEL de propósito — com o atributo `hidden` (display:none pela folha do agente)
- *  todo `getBoundingClientRect()` de dentro dele volta zerado e a geometria não teria o que medir. */
+/** The cross and the stick get a REAL size and a fixed position: the direction sum depends on the rectangle.
+ *  #touch-controls stays VISIBLE on purpose — with the `hidden` attribute (display:none from the user-agent sheet) every
+ *  `getBoundingClientRect()` inside it comes back zeroed and the geometry would have nothing to measure. */
 function markup() {
   document.body.innerHTML = `
     <div id="host">
@@ -50,14 +50,14 @@ function wire(over = {}) {
     getSearch: () => '',
     getControls: () => SOLO,
     getPlayers: () => players,
-    // ⚠️ O PAR de `input/state` (ADR-0109): o conjunto continua para LER, e as duas escritas são por onde a
-    // origem passa a viajar. O duplo carimba num `Map` para que um caso possa afirmar o APARELHO, e não só a
-    // tecla — que é a coisa que a erasão do §C tornava impossível.
+    // ⚠️ The PAIR of `input/state` (ADR-0109): the set is still there to READ, and the two writes are where the source
+    // travels. The double stamps into a `Map` so a case can assert the DEVICE, and not only the key — which is what the
+    // erasure of §C made impossible.
     heldKeys,
     /*
-     * 🔴 O DUBLE DO CONTROLE VIRTUAL desde 22/09 (ADR-0223): o pad aperta uma POSIÇÃO e quem a leva à tecla, ao menu
-     * ou ao cartucho é o controle. O duble resolve a posição no esquema e segura a tecla com o carimbo, que é o que
-     * estes casos afirmam — e devolve `true`, porque aqui não há menu aberto.
+     * 🔴 THE VIRTUAL CONTROLLER'S DOUBLE (ADR-0223): the pad presses a POSITION, and what takes it to the key, the menu or
+     * the cartridge is the controller. The double resolves the position in the scheme and holds the key with the stamp,
+     * which is what these cases assert — and returns `true`, because there is no open menu here.
      */
     press: (action, source) => {
       const code = SOLO[action]?.[0];
@@ -69,8 +69,8 @@ function wire(over = {}) {
       if (code) { heldKeys.delete(code); calls.origens.delete(code); }
       void source;
     },
-    // A aresta por jogador (ADR-0113 cláusula 4). Aqui basta existir: quem afirma o assento é o caso do
-    // project node, onde os dois esquemas cabem sem um ecrã.
+    // The per-player edge (ADR-0113 clause 4). Here it only has to exist: the seat is asserted by the node-project case,
+    // where the two schemes fit without a screen.
     playerEdge: () => {},
     attractOnInput: () => false,
     showTouchControls: () => { calls.show++; },
@@ -88,14 +88,14 @@ function wire(over = {}) {
   return api;
 }
 
-/** Um evento de ponteiro de verdade (não um objeto literal): é o `preventDefault` real que interessa. */
+/** A real pointer event (not an object literal): the real `preventDefault` is what matters. */
 function ptr(type, { id = 1, x = 0, y = 0 } = {}) {
   return new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, cancelable: true });
 }
 function fire(el, type, opts) { const e = ptr(type, opts); el.dispatchEvent(e); return e; }
 
-/** Deslocamento da manopla, em números — o CSSOM reserializa `translate(0,0)` como `translate(0px, 0px)`,
- *  então comparar a string crua testaria a serialização do navegador, não o código. */
+/** The knob's offset, as numbers — the CSSOM re-serialises `translate(0,0)` as `translate(0px, 0px)`, so comparing the
+ *  raw string would test the browser's serialisation, not the code. */
 function knobXY() {
   const m = /translate\(\s*(-?[\d.]+)(?:px)?\s*,\s*(-?[\d.]+)(?:px)?\s*\)/.exec($('.touch-knob').style.transform);
   return m ? [parseFloat(m[1]), parseFloat(m[2])] : null;
@@ -110,7 +110,7 @@ describe('attach — a guarda do IIFE original', () => {
     document.body.innerHTML = '<div id="host"></div>';
     wire();
     expect(() => fire($('#host'), 'pointerdown')).not.toThrow();
-    expect(calls.show).toBe(0); // nem o ouvinte global foi registrado
+    expect(calls.show).toBe(0); // not even the global listener was registered
   });
 
   it('[Right] com ?touch=1, os controles são revelados já na amarração', () => {
@@ -146,7 +146,7 @@ describe('o primeiro toque revela os botões — e encerra a demo', () => {
   });
 });
 
-/* ===================== 3. os botões do losango ===================== */
+/* ===================== 3. the diamond's buttons ===================== */
 
 describe('.touch-btn — a função vem do touchMap, não do data-act', () => {
   const b0 = () => $('.touch-btn[data-btn="0"]');
@@ -161,10 +161,9 @@ describe('.touch-btn — a função vem do touchMap, não do data-act', () => {
   });
 
   it('⚠️ [Right] a tecla entra CARIMBADA como `toque` — é a regra 2 do ADR-0109 a tornar-se executável', () => {
-    // 📏 O que isto conserta, medido na issue #114 §C: o toque escrevia o código CRU no conjunto, e a partir
-    // daí ele era indistinguível de uma tecla do teclado. A alternância é uma propriedade do APARELHO, e a
-    // pergunta que ela faz — «este toque veio de um aparelho com alternância?» — tinha a resposta deitada
-    // fora antes de ser feita. Agora viaja com a tecla.
+    // 📏 What this fixes, measured in issue #114 §C: touch wrote the RAW code into the set, and from then on it was
+    // indistinguishable from a keyboard key. The latch is a property of the DEVICE, and the question it asks — «este toque
+    // veio de um aparelho com alternância?» — had its answer thrown away before being asked. Now it travels with the key.
     wire();
     fire(b0(), 'pointerdown');
     expect(calls.origens.get('KeyJ'), 'a tecla entrou sem origem').toBe('toque');
@@ -175,7 +174,7 @@ describe('.touch-btn — a função vem do touchMap, não do data-act', () => {
   it('[Right] o slot é lido do touchMap A CADA evento: remapear vale no toque seguinte', () => {
     const map = { ...TOUCH_MAP };
     wire({ getTouchMap: () => map });
-    map.b0 = 'action1';                       // o painel remapeou o botão 0 para "correr"
+    map.b0 = 'action1';                       // the panel remapped button 0 to "run"
     fire(b0(), 'pointerdown');
     expect(heldKeys.has('KeyU')).toBe(true);
     expect(heldKeys.has('KeyJ')).toBe(false);
@@ -216,7 +215,7 @@ describe('.touch-btn — a função vem do touchMap, não do data-act', () => {
   });
 });
 
-/* ===================== 4. o botão START ===================== */
+/* ===================== 4. the START button ===================== */
 
 describe('#touch-start', () => {
   it('[Right] com a ação padrão (pause), o clique pausa', () => {
@@ -281,10 +280,10 @@ describe('#touch-cross — hit-test com retângulo real e captura de ponteiro', 
   });
 
   it('[Right] arrastar DENTRO do mesmo braço não RE-DESPACHA a ação (só a MUDANÇA despacha)', () => {
-    // Sonda contável de propósito: `keys`/bordas NÃO servem aqui — um segundo despacho de "esquerda ligada"
-    // seria absorvido pela guarda de tecla-já-segurada e o teste passaria com a trava do gate removida
-    // (medido: a versão anterior deste caso sobrevivia à mutação). Com a esquerda remapeada para `pause`,
-    // cada despacho vira um togglePause visível, e a contagem denuncia o re-disparo.
+    // A countable probe on purpose: `keys`/edges will NOT do here — a second dispatch of "left on" would be absorbed by
+    // the key-already-held guard and the test would pass with the gate's lock removed (measured: the previous version of
+    // this case survived the mutation). With left remapped to `pause`, each dispatch becomes a visible togglePause, and the
+    // count exposes the re-firing.
     wire({ getTouchMap: () => ({ ...TOUCH_MAP, left: 'start' }) });
     fire(cross(), 'pointerdown', { x: 10, y: 100 });
     expect(calls.pause).toBe(1);
@@ -322,7 +321,7 @@ describe('#touch-cross — hit-test com retângulo real e captura de ponteiro', 
     fire(cross(), 'pointermove', { id: 2, x: 190, y: 100 }); // outro dedo, ignorado
     expect(heldKeys.has('KeyA')).toBe(true);
     expect(heldKeys.has('KeyD')).toBe(false);
-    fire(cross(), 'pointerup', { id: 2, x: 190, y: 100 });   // e não pode soltar o gesto alheio
+    fire(cross(), 'pointerup', { id: 2, x: 190, y: 100 });   // and it must not release someone else's gesture
     expect(heldKeys.has('KeyA')).toBe(true);
   });
 
@@ -341,7 +340,7 @@ describe('#touch-cross — hit-test com retângulo real e captura de ponteiro', 
   });
 });
 
-/* ===================== 6. o ANALÓGICO ===================== */
+/* ===================== 6. the STICK ===================== */
 
 describe('#touch-stick — manopla e direções', () => {
   const stick = () => $('#touch-stick');
@@ -380,8 +379,8 @@ describe('#touch-stick — manopla e direções', () => {
     wire({ getStickDeadPx: () => dead, getStickTravelPx: () => travel });
     fire(stick(), 'pointerdown', { x: 80, y: 360 }); // 20 px > 12 → liga
     expect(heldKeys.has('KeyD')).toBe(true);
-    dead = 30;                                       // o painel de tamanho mexeu nos mm
-    fire(stick(), 'pointermove', { x: 80, y: 360 }); // os mesmos 20 px agora são miolo
+    dead = 30;                                       // the size panel changed the mm
+    fire(stick(), 'pointermove', { x: 80, y: 360 }); // the same 20 px are now the dead centre
     expect(heldKeys.has('KeyD')).toBe(false);
   });
 });
