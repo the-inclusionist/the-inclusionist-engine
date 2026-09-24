@@ -21,7 +21,7 @@ const camada = () => document.getElementById('viz-overlay');
 
 const declaracao = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => false, tick: 'player',
-  // ⚠️ O MUNDO É O CANVAS, e é a outra forma que o contrato permite — a que nenhum caso conduzia.
+  // ⚠️ THE WORLD IS THE CANVAS, the other shape the contract allows — the one no case drove.
   world: () => ({ kind: 'element', selector: '#mundo-canvas' }), roleAt: () => 'goal',
   nameAt: () => ({ text: 'a', gender: 'f', plural: false }), focusOf: () => null,
   objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],
@@ -42,15 +42,15 @@ async function simular(chave) {
 
 beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
-    // 📌 O canvas tem um PAI que não é a região: é ele que tem de hospedar a camada, porque um canvas não tem filhos.
+    // 📌 The canvas has a PARENT that is not the region: that parent must host the layer, because a canvas has no children.
     + '<div id="game-region" tabindex="-1"><div id="palco"><canvas id="mundo-canvas" width="320" height="180"'
     + ' style="position:absolute;left:12px;top:7px;width:640px;height:360px"></canvas></div><div id="title-icons"></div></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
     accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
     downloadHeavy: false, players: [{ ctrl: 0 }],
-    // 📌 O cartucho DECLARA um escritor de correcção, e é o que faz o 🚥 existir na barra (ADR-0106 §5: um ícone só é
-    // montado onde há quem o accione). É por ele que o caso da melhoria liga uma correcção como a criança a liga.
+    // 📌 The cartridge DECLARES a correction writer, which is what makes the 🚥 exist on the bar (ADR-0106 §5: an icon is
+    // mounted only where something acts on it). Through it the enhancement case turns a correction on as the child does.
     setPlayerCorrection: () => {},
   });
   await esperar();
@@ -61,7 +61,7 @@ describe('a world that is a canvas', () => {
   it('🔴 [Right] is simulated AS A WHOLE — it holds no menu, so there is nothing inside it to spare', async () => {
     await simular('blind');
     expect(mundo().style.filter, 'the canvas world was not simulated at all').not.toBe('');
-    // 📌 E os menus ficam de fora porque estão FORA dele, que é o que torna este mundo diferente do outro caso.
+    // 📌 And the menus stay out because they are OUTSIDE it, which is what makes this world different from the other case.
     expect(document.getElementById('title-icons').style.filter, 'the quick bar was darkened with the world').toBe('');
   });
 
@@ -71,16 +71,13 @@ describe('a world that is a canvas', () => {
      * child turned on to SEE stays, and the simulation is laid over it. Dropping the improvement here takes her colour
      * correction away for as long as an adult is looking through her eyes.
      */
-    // 📌 A correcção é LIGADA COMO A CRIANÇA A LIGA — o 🚥 da barra —, e não injectada: o filtro do mundo é recomposto
-    // do ESTADO a cada mudança, logo um valor posto à mão seria apagado no passo seguinte e o caso mediria o vazio.
-    // 📏 Foi o que aconteceu na primeira tentativa: «brightness(0)» → «brightness(0)», sem sinal de melhoria nenhuma.
-    // ⚠️ O caso anterior deixa a simulação LIGADA, e sem esta linha o «antes» que se mede é o filtro dela — foi o que
-    // aconteceu: 13 caracteres antes e 13 depois, os dois `brightness(0)`, e a asserção comparava a simulação consigo.
-    // ⚠️ O caso anterior deixa a simulação LIGADA, e sem esta linha o «antes» que se mede é o filtro dela — foi o que
-    // aconteceu: 13 caracteres antes e 13 depois, os dois `brightness(0)`, e a asserção comparava a simulação consigo.
+    // 📌 The enhancement is TURNED ON AS THE CHILD DOES IT, not injected: the world's filter is recomposed from the STATE at
+    // every change, so a value set by hand would be erased at the next step and the case would measure nothing.
+    // ⚠️ The previous case leaves the simulation ON, and without this line the before-value measured is the simulation's
+    // filter — both `brightness(0)`, and the assertion compared the simulation with itself.
     await simular('normal');
-    // 📌 A melhoria usada é o REALCE DE CONTRASTE, que é estado da própria engine: a correcção de cor depende de o
-    // cartucho trazer um escritor, e um duplo vazio escreveria em lado nenhum — o caso mediria o vazio outra vez.
+    // 📌 The enhancement used is the CONTRAST ENHANCEMENT, the engine's own state: the colour correction depends on the
+    // cartridge bringing a writer, and an empty double would write nowhere — the case would measure nothing again.
     motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]').click();
@@ -101,10 +98,10 @@ describe('a world that is a canvas', () => {
       .toBeGreaterThan(melhoria.trim().length);
     await simular('normal');
     /*
-     * ⚠️ E O REALCE VOLTA PARA ONDE ESTAVA, porque ele é PERSISTIDO: `incl_*` vive no armazenamento da origem, e a
-     * origem é a mesma para todos os ficheiros de navegador desta suíte. 📏 Medido: deixá-lo ligado fez cair dois casos
-     * do `boot-create-game.browser`, que leem o filtro do mundo esperando encontrá-lo limpo. Um teste que muda um ajuste
-     * guardado e não o devolve é um teste que escreve nos outros.
+     * ⚠️ AND THE ENHANCEMENT GOES BACK TO WHERE IT WAS, because it is PERSISTED: `incl_*` lives in the origin's storage, and
+     * the origin is the same for every browser file of this suite. Left on, it failed two cases of
+     * `boot-create-game.browser`, which read the world's filter expecting it clean. A test that changes a stored setting
+     * and does not give it back is a test that writes into the others.
      */
     motor.pause.show(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();

@@ -1,48 +1,48 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// UMA RESPOSTA SÓ PARA "COMO SE CHAMA ESTE CONTROLE" — o resto do item 3 do ADR-0044.
+// ONE ANSWER TO WHAT THIS CONTROL IS CALLED — the rest of item 3 of ADR-0044.
 //
-// ========================= O DEFEITO, MEDIDO =========================
-// No jogo construído, pousando o cursor no botão de número de jogadores do menu inicial:
+// ========================= THE DEFECT, MEASURED =========================
+// In the built game, landing the cursor on the number-of-players button of the start menu:
 //
-//     o jogo narrou:         "◀ Number of players: 1 ▶, 1 of 4"
-//     o leitor de tela diz:  "Number of players: 1. Click on the left for fewer, on the right for more."
+//     the game narrated:        "◀ Number of players: 1 ▶, 1 of 4"
+//     the screen reader said:   "Number of players: 1. Click on the left for fewer, on the right for more."
 //
-// Duas frases para o MESMO item, no mesmo instante. Quem usa leitor de tela E a narração do jogo ouve o item
-// duas vezes, de dois jeitos — e a versão do jogo lê os glifos `◀` e `▶`, o mesmo ruído que o item 4 tirou da
-// legenda da pausa. O índice "1 of 4" é do item 3 e está certo; o rótulo é que vinha da fonte errada.
+// Two sentences for the SAME item, at the same instant. Whoever uses a screen reader AND the game's narration hears the
+// item twice, two ways — and the game's version reads the glyphs `◀` and `▶`, the same noise item 4 took out of the pause
+// legend. The index "1 of 4" is item 3's and is right; the label came from the wrong source.
 //
-// A regra já existia escrita UMA vez, em `iconCaption`: ler o `aria-label` para que "passar o mouse ou
-// focar diga a MESMA verdade que um leitor de tela anunciaria". Valia para os dez ícones e não para o resto.
+// The rule was already written ONCE, in `iconCaption`: read the `aria-label` so that hovering or focusing says the SAME
+// truth a screen reader would announce. It held for the bar's icons and not for the rest.
 //
-// MUTAÇÕES CONFERIDAS (no fim do arquivo).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { accessibleLabel } from '../app/js/core/accessible-label.js';
 
-/** Um elemento falso com a fatia que o módulo lê — sem DOM, para rodar no project `node`. */
+/** A fake element with the slice the module reads — no DOM, to run in the `node` project. */
 const el = (aria, texto) => ({ getAttribute: (n) => (n === 'aria-label' ? aria : null), textContent: texto });
 
 describe('rótulo acessível · o que o jogo narra é o que o leitor de tela diz', () => {
   it('[Right] `aria-label` VENCE o texto visível', () => {
-    // A ordem é a decisão: `aria-label` é o que a plataforma de acessibilidade JÁ vai anunciar. Narrar outra
-    // coisa não acrescenta informação — cria uma segunda versão do mesmo item.
+    // The order is the decision: `aria-label` is what the accessibility platform WILL announce. Narrating something else
+    // adds no information — it creates a second version of the same item.
     expect(accessibleLabel(el('Number of players: 1', '◀ Number of players: 1 ▶'))).toBe('Number of players: 1');
   });
 
   it('[Right] sem `aria-label`, o texto visível é a resposta', () => {
-    // O caso da maioria dos botões: as duas fontes já coincidem por construção, e forçar um rótulo declarado
-    // em todos eles seria trabalho sem ganho.
+    // Most buttons' case: the two sources already agree by construction, and forcing a declared label on all of them
+    // would be work with no gain.
     expect(accessibleLabel(el(null, 'Continuar'))).toBe('Continuar');
   });
 
   it('[Zero] `aria-label` VAZIO não engole o texto visível', () => {
-    // Um `aria-label=""` num markup gerado é acidente, não decisão. Se ele vencesse, o item ficaria SEM nome
-    // — e um item sem nome é pior que um item com dois nomes.
+    // An `aria-label=""` in generated markup is an accident, not a decision. If it won, the item would have NO name — and
+    // an item with no name is worse than an item with two.
     expect(accessibleLabel(el('', 'Continuar'))).toBe('Continuar');
     expect(accessibleLabel(el('   ', 'Continuar'))).toBe('Continuar');
   });
 
   it('[Interface] espaço em branco de markup não vaza', () => {
-    // `textContent` traz quebra de linha e indentação do HTML. Sem isto o TTS lê pausas onde não há nada.
+    // `textContent` brings the HTML's line breaks and indentation. Without this the TTS reads pauses where there is nothing.
     expect(accessibleLabel(el(null, '\n   Sair do jogo  \n'))).toBe('Sair do jogo');
   });
 
@@ -53,8 +53,8 @@ describe('rótulo acessível · o que o jogo narra é o que o leitor de tela diz
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · invertendo a ordem (texto visível antes do `aria-label`) → "[Right] `aria-label` VENCE" reprova, e o
-//     efeito real é o defeito medido voltando: o jogo lendo "◀ … ▶" por cima do leitor de tela.
-//   · trocando `enxuto(aria) || enxuto(texto)` por `aria ?? texto` → "[Zero] `aria-label` VAZIO" reprova com
-//     string vazia, que é o item ficando sem nome nenhum.
+// ========================= MUTATIONS CHECKED =========================
+//   · reversing the order (visible text before `aria-label`) → the [Right] case where `aria-label` wins fails, and the real effect is
+//     the measured defect coming back: the game reading "◀ … ▶" over the screen reader.
+//   · replacing `enxuto(aria) || enxuto(texto)` with `aria ?? texto` → the [Zero] empty-`aria-label` case fails with an empty
+//     string, which is the item left with no name at all.

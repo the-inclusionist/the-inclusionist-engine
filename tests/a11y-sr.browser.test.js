@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de core/a11y-sr — anúncios p/ leitor de tela (project BROWSER: usa document + requestAnimationFrame).
-// Contrato: limpa a região → escreve no próximo frame (força reanúncio) e espelha no VLibras INJETADO.
-// Ver docs/plano-modularizacao-mapa.md (Estágio 4, Tier 1, core/a11y-sr).
+// Tests of core/a11y-sr — screen-reader announcements (BROWSER project: uses document + requestAnimationFrame).
+// Contract: clears the region → writes on the next frame (forces a re-announcement) and mirrors to the INJECTED VLibras.
+// See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4, Tier 1, core/a11y-sr).
 import { describe, it, expect } from 'vitest';
 import * as A from '../app/js/core/a11y-sr.js';
 
@@ -13,8 +13,8 @@ describe('core/a11y-sr — srSay (status "polite")', () => {
     let spoken = null;
     A.setVlibrasSay((t) => { spoken = t; });
     A.srSay('olá mundo');
-    expect(spoken).toBe('olá mundo');                                  // Libras: chamado já (síncrono)
-    expect(document.querySelector('#sr-status').textContent).toBe(''); // limpa primeiro (reanúncio de texto repetido)
+    expect(spoken).toBe('olá mundo');                                  // Libras: called at once (synchronous)
+    expect(document.querySelector('#sr-status').textContent).toBe(''); // cleared first (re-announcing repeated text)
     await nextFrame();
     expect(document.querySelector('#sr-status').textContent).toBe('olá mundo');
   });

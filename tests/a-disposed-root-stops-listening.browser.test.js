@@ -60,13 +60,13 @@ describe('o tempo de vida de uma raiz', () => {
     return motor;
   };
 
-  /** Uma seta para baixo, pelo caminho por onde a criança a manda: a região do jogo, em bolha até à janela. */
+  /** One arrow down, along the path the child sends it: the game region, bubbling up to the window. */
   const seta = () => {
     const regiao = document.getElementById('game-region') ?? document.body;
     regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', bubbles: true, cancelable: true }));
   };
 
-  /** Quantos itens o cursor andou com UMA seta, no cartão de pausa aberto. */
+  /** How many items the cursor moved with ONE arrow, on the open pause card. */
   const passosDeUmaSeta = (motor) => {
     motor.pause.show(0);
     const cartao = document.querySelector('#vp-pause-0');
@@ -90,7 +90,7 @@ describe('o tempo de vida de uma raiz', () => {
   });
 
   it('🔴 [Right] uma raiz encerrada não mexe mais no cursor da raiz seguinte', () => {
-    // A raiz que acabou: o `dispose()` é o fim dela, e o documento dela sai como sairia numa página a sério.
+    // The root that ended: `dispose()` is its end, and its document leaves as it would on a real page.
     const velha = abrir();
     velha.dispose();
 
@@ -98,8 +98,8 @@ describe('o tempo de vida de uma raiz', () => {
   });
 
   it('🔴 [Right] e com DUAS raízes encerradas continua a andar um item só', () => {
-    // Duas, porque uma só não distingue «encerrei a raiz certa» de «encerrei uma raiz qualquer»: com o defeito, o número de
-    // passos É a contagem das raízes vivas, e a terceira medição é a que o mostra a crescer.
+    // Two, because one does not tell ending the right root from ending any root: with the defect, the number of steps
+    // IS the count of live roots, and the third measurement is what shows it growing.
     abrir().dispose();
     abrir().dispose();
 
@@ -107,12 +107,13 @@ describe('o tempo de vida de uma raiz', () => {
   });
 
   it('🔴 [Right] mas `unmount()` NÃO cala a raiz — ela volta do `mount()` com teclado', () => {
-    // ⚠️ ESTE É O CASO QUE IMPEDE O CONSERTO ERRADO. `unmount()` solta o CARTUCHO (ADR-0142), não a raiz: uma engine que
-    // largasse as escutas aqui deixaria a criança que troca de cartucho sem teclado nenhum, e nada no resto da árvore o veria.
+    // ⚠️ THIS IS THE CASE THAT PREVENTS THE WRONG FIX. `unmount()` releases the CARTRIDGE (ADR-0142), not the root: an engine
+    // that dropped the listeners here would leave a child who changes cartridge with no keyboard at all, and nothing else in
+    // the tree would see it.
     const motor = abrir();
     motor.unmount();
-    // ⚠️ Os ganchos vão aqui, e não são opcionais como a interface diz: `mount` lê `ganchos.preset` sem guarda, logo
-    // `mount(declaration)` estoura com um `TypeError` em vez da frase da própria engine. Está dito ao Dev; não é deste conserto.
+    // ⚠️ The hooks go here, and they are not optional as the interface says: `mount` reads `hooks.preset` with no guard, so
+    // `mount(declaration)` throws a `TypeError` instead of the engine's own sentence. Reported to the Dev; not this fix's.
     motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
 
     expect(passosDeUmaSeta(motor), 'depois de `unmount()` + `mount()` a raiz deixou de ouvir a seta').toBe(1);
@@ -128,28 +129,29 @@ describe('o tempo de vida de uma raiz', () => {
 });
 
 /*
- * ========================= MUTAÇÕES CONFERIDAS (2026-09-22) =========================
- * Corridas sobre ESTE ficheiro e sobre `reading-no-createGame.browser.test.js`, que é quem mede a metade do Proxy que não é a
- * das escutas. Os quatro casos deste ficheiro chamam-se aqui 1, 2, 3 (o do `unmount`) e 4 (o [Boundary]).
+ * ========================= MUTATIONS CHECKED =========================
+ * Run over THIS file and over `reading-no-createGame.browser.test.js`, which measures the half of the Proxy that is not
+ * about listeners. This file's four cases are called 1, 2, 3 (the `unmount` one) and 4 (the [Boundary]) here.
  *
- * 1. `platform/listener-scope`: `releaseAll` não remove nada (só esvazia a lista) ............. os 4 VERMELHOS
- *    — é o próprio defeito: a raiz encerrada continua a navegar o cartão da viva.
- * 2. `platform/listener-scope`: `listen` não guarda a escuta (o `push` sai) ................... os 4 VERMELHOS
- *    — lista vazia, nada para soltar; a mesma falha por outro caminho.
- * 3. `boot/create-game`: `dispose` só chama `desmontar()` (o `releaseAll` sai) ................ os 4 VERMELHOS
- *    — prova que quem cala a raiz é o escopo de escutas, e não o teardown do cartucho.
- * 4. `boot/create-game`: `desmontar` passa a chamar `listeners.releaseAll()` .................. 1 VERMELHO, o caso 3
- *    — O CONSERTO NO SÍTIO ERRADO, e é a mutação que mais importa: é a única que só o caso do `unmount()` apanha. Sem ele,
- *      calar a raiz no teardown do cartucho ficaria verde na árvore inteira e a criança que troca de cartucho perdia o teclado.
- * 5. `platform/listener-scope`: o Proxy manda o PROXY por receiver ao `Reflect.get` ........... os 7 VERMELHOS
- *    — «Illegal invocation»: um getter da janela (`innerWidth`) não corre com o proxy por `this`.
- * 6. `platform/listener-scope`: o Proxy devolve a função crua, sem `bind` nem excepção ........ 6 VERMELHOS
- *    — «Illegal invocation» de novo, agora no primeiro `getComputedStyle`.
- * 7. `platform/listener-scope`: o Proxy liga TODA função, inclusive as construtoras ........... 2 VERMELHOS, os da leitura
- *    — `bind` apaga o `prototype`, e o `platform/speech-recognition` pergunta `'processLocally' in api.prototype` antes de
- *      abrir o microfone. Foi a suíte que achou isto, não eu: a criança que lê em voz alta ficava sem microfone nenhum.
+ * 1. `platform/listener-scope`: `releaseAll` removes nothing (it only empties the list) ........ all 4 RED
+ *    — it is the defect itself: the ended root goes on navigating the live one's card.
+ * 2. `platform/listener-scope`: `listen` does not keep the listener (the `push` goes) ........... all 4 RED
+ *    — empty list, nothing to release; the same failure by another path.
+ * 3. `boot/create-game`: `dispose` only calls `unmountAll()` (the `releaseAll` goes) ............ all 4 RED
+ *    — proves that what silences the root is the listener scope, not the cartridge's teardown.
+ * 4. `boot/create-game`: `unmountAll` also calls `listeners.releaseAll()` ....................... 1 RED, case 3
+ *    — THE FIX IN THE WRONG PLACE, and the mutation that matters most: only the `unmount()` case catches it. Without it,
+ *      silencing the root in the cartridge's teardown would be green across the tree and a child who changes cartridge
+ *      would lose the keyboard.
+ * 5. `platform/listener-scope`: the Proxy passes the PROXY as receiver to `Reflect.get` .......... all 7 RED
+ *    — «Illegal invocation»: a window getter (`innerWidth`) does not run with the proxy as `this`.
+ * 6. `platform/listener-scope`: the Proxy returns the raw function, with no `bind` or exception .. 6 RED
+ *    — «Illegal invocation» again, now at the first `getComputedStyle`.
+ * 7. `platform/listener-scope`: the Proxy binds EVERY function, constructors included ............ 2 RED, the reading ones
+ *    — `bind` erases `prototype`, and `platform/speech-recognition` asks `'processLocally' in api.prototype` before opening
+ *      the microphone. The suite found this: the child who reads aloud was left with no microphone at all.
  *
- * ⚠️ E UMA SOBREVIVEU PRIMEIRO, e era código inerte meu: o `Reflect.get(real, prop, real)` da primeira escrita passava o
- * receiver que a linguagem já usa por omissão dentro de um trap. O comentário ao lado afirmava que aquela linha decidia tudo,
- * e não decidia nada. O argumento saiu e a mutação passou a ser a de verdade — mandar o PROXY —, que é a 5 acima.
+ * ⚠️ AND ONE SURVIVED FIRST, and it was inert code: `Reflect.get(real, prop, real)` passed the receiver the language
+ * already uses by default inside a trap. The comment beside it claimed that line decided everything, and it decided
+ * nothing. The argument went, and the mutation became the real one — passing the PROXY —, which is 5 above.
  */

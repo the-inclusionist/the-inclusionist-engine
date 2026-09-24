@@ -1,32 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// UM AJUSTE QUE MUDA SEM O DIZER É INVISÍVEL PARA QUEM USA LEITOR DE TELA.
+// A SETTING THAT CHANGES WITHOUT SAYING SO IS INVISIBLE TO WHOEVER USES A SCREEN READER.
 //
-// ========================= O DEFEITO QUE ISTO EXISTE PARA NÃO SE REPETIR =========================
-// Em 2026-09-08 o `#opt-modocego` do painel de áudio estava MUDO. Os cinco irmãos dele anunciavam (som, TTS,
-// divisor da bengala, índice de menu, saída de áudio) e ele não — ele só PARECIA anunciar porque um cartucho
-// o fazia a partir do próprio `setModoCego`, e o painel herdava o efeito de graça.
+// ========================= THE DEFECT THIS EXISTS TO NOT REPEAT =========================
+// The audio panel's `#opt-modocego` was once MUTE. Its five siblings announced (sound, narration, the cane divider, the
+// menu index, the audio output) and it did not — it only SEEMED to, because a cartridge announced from its own blind-mode
+// setter, and the panel inherited the effect for free.
 //
-// ⚠️ E O SILÊNCIO SÓ FICOU ALCANÇÁVEL QUANDO O CAMPO GANHOU PADRÃO DA ENGINE. Enquanto `setModoCego` era
-// OBRIGATÓRIO, todo consumidor tinha de fornecer um setter, e o do jogo de plataforma falava. No instante em
-// que o campo passou a opcional — com um padrão que grava, persiste e emite, mas NÃO fala —, um jogo que não
-// o injecta ficou com um alternador que muda o estado e não o diz.
+// ⚠️ AND THE SILENCE BECAME REACHABLE ONLY WHEN THE FIELD GOT AN ENGINE DEFAULT. While `setBlindMode` was REQUIRED,
+// every consumer had to supply a setter, and the platformer's spoke. The moment the field became optional — with a
+// default that stores, persists and emits, but does NOT speak —, a game that does not inject it had a toggle that
+// changes the state and does not say so.
 //
-// ========================= A REGRA, E POR QUE ELA É GATEÁVEL =========================
-// Foram vistos os vizinhos do módulo consertado («uma causa achada não é a causa toda») e há mais TRÊS
-// ajustes na mesma forma: perda auditiva, um-botão e cadeira de rodas. O anúncio dos três mora no setter
-// INJETADO — o `ui/settings-empathy` escreve a dependência sem a notar, no comentário do botão de repor:
+// ========================= THE RULE, AND WHY IT CAN BE GATED =========================
+// The neighbours of the fixed module were looked at («uma causa achada não é a causa toda») and there are THREE more
+// settings of the same shape: hearing loss, one-button and wheelchair. The announcement of all three lives in the
+// INJECTED setter — `ui/settings-empathy` records the dependency without noticing, in the reset button's comment:
 // «Cada setter já é idempotente e ANUNCIA SOZINHO ao mudar».
 //
-// 📌 HOJE NÃO HÁ SILÊNCIO NENHUM: os três continuam OBRIGATÓRIOS, logo todo consumidor fornece um setter.
-// O que este ficheiro afirma é a única metade que uma máquina consegue ver: **enquanto o anúncio morar no
-// setter injetado, o campo não pode virar opcional**. Tornar um deles opcional exige, NO MESMO COMMIT, mover
-// o anúncio para o painel — e é isso que a mensagem de reprovação diz a quem lá chegar.
+// 📌 TODAY THERE IS NO SILENCE: the three are still REQUIRED, so every consumer supplies a setter. What this file asserts
+// is the only half a machine can see: **while the announcement lives in the injected setter, the field cannot become
+// optional**. Making one of them optional demands, IN THE SAME COMMIT, moving the announcement into the panel — and that
+// is what the failure message tells whoever gets there.
 //
-// ⚠️ O QUE ISTO NÃO PROVA, dito à frente: que os painéis anunciam. Isso são casos de comportamento, e vivem
-// nos ficheiros dos painéis (o do modo cego está em `settings-audio.browser`). Aqui só se guarda a PORTA por
-// onde o defeito de hoje entrou.
+// ⚠️ WHAT THIS DOES NOT PROVE, said up front: that the panels announce. Those are behaviour cases, and they live in the
+// panels' files (blind mode's is in `settings-audio.browser`). Here only the DOOR the defect came in by is guarded.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,7 +34,7 @@ import { formaDe } from '../scripts/shape-surface.mjs';
 const RAIZ = fileURLToPath(new URL('../', import.meta.url));
 const forma = formaDe(join(RAIZ, 'app', 'js'));
 
-/** Onde o anúncio de cada ajuste mora HOJE, medido nos dois lados em 2026-09-08. */
+/** Where each setting's announcement lives TODAY, measured on both sides. */
 const ANUNCIO_NO_SETTER_INJETADO = [
   {
     modulo: 'ui/settings-empathy.ts', type: 'interface EmpathySettingsCtx', campo: 'setHearingLoss',
@@ -55,7 +54,7 @@ const membros = (modulo, tipo) => forma[modulo]?.[tipo] ?? [];
 
 describe('um ajuste não pode ficar mudo ao ganhar padrão da engine', () => {
   it('⚠️ [Interface] o crivo está VIVO — lê os tipos de verdade', () => {
-    // Sem isto, uma lista vazia faria os casos abaixo passarem por não terem nada que examinar.
+    // Without this, an empty list would make the cases below pass for having nothing to examine.
     expect(membros('ui/settings-empathy.ts', 'interface EmpathySettingsCtx').length).toBeGreaterThan(10);
     expect(membros('ui/pause-icons.ts', 'interface PauseIconsCtx').length).toBeGreaterThan(10);
   });
@@ -74,12 +73,12 @@ describe('um ajuste não pode ficar mudo ao ganhar padrão da engine', () => {
   });
 
   it('📌 [Right] e o modo cego é o exemplo RESOLVIDO — opcional porque o anúncio mudou de casa', () => {
-    // A regra tem saída, e ela foi tomada: `setModoCego` é opcional nos três pontos que o pediam, e o painel
-    // de áudio passou a anunciar (caso em `settings-audio.browser.test.js`). Sem este caso, a regra leria-se
-    // como «nunca torne nada opcional», que não é o que ela diz.
+    // The rule has a way out, and it was taken: `setBlindMode` is optional in the three places that asked for it, and the
+    // audio panel now announces (case in `settings-audio.browser.test.js`). Without this case, the rule would read as
+    // never making anything optional, which is not what it says.
     expect(membros('ui/pause-icons.ts', 'interface PauseIconsCtx')).toContain('setBlindMode?');
     expect(membros('ui/settings-audio.ts', 'interface SettingsAudioCtx')).toContain('setBlindMode?');
-    // E o campo NÃO está na lista acima — porque o anúncio já não mora no cartucho.
+    // And the field is NOT on the list above — because the announcement no longer lives in the cartridge.
     expect(ANUNCIO_NO_SETTER_INJETADO.some((a) => a.campo === 'setBlindMode')).toBe(false);
   });
 
@@ -92,13 +91,13 @@ describe('um ajuste não pode ficar mudo ao ganhar padrão da engine', () => {
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · tornando `setHearingLoss` opcional no `EmpathySettingsCtx` (arvore REAL) -> reprova "os TRES continuam
-//     OBRIGATORIOS", nomeando o campo e onde o anuncio mora. E o defeito de hoje a tentar repetir-se.
-//   · tirando `setModoCego?` do `PauseIconsCtx` (voltando a obrigatorio) -> reprova o caso do exemplo
-//     RESOLVIDO. Sem ele a regra leria-se como «nunca torne nada opcional», que nao e o que ela diz — e uma
-//     regra sem saida e uma regra que alguem desliga.
-//   · pondo na lista um campo que nao existe -> reprova o ORFAO. Sem ele a lista apodrece e passa a descrever
-//     um repositorio que ja nao ha.
-//   · fazendo `formaDe` devolver `{}` -> reprova o caso do VACUO, e so ele: os outros tres passariam por nao
-//     terem nada que examinar.
+// ========================= MUTATIONS CHECKED =========================
+//   · making `setHearingLoss` optional in `EmpathySettingsCtx` (the REAL tree) -> fails the three-are-still-required
+//     case, naming the field and where the announcement lives. It is today's defect trying to repeat itself.
+//   · taking `setBlindMode?` out of `PauseIconsCtx` (back to required) -> fails the SOLVED-example case. Without it the
+//     rule would read as never making anything optional, which is not what it says — and a rule with no way out is a
+//     rule someone switches off.
+//   · putting on the list a field that does not exist -> fails the ORPHAN case. Without it the list rots and starts
+//     describing a repository that no longer exists.
+//   · making `formaDe` return `{}` -> fails the VACUUM case, and only it: the other three would pass for having nothing
+//     to examine.

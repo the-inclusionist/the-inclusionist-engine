@@ -1,36 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A FRONTEIRA DO VOCABULÁRIO DE ENTRADA, como teste. Project node: só lê ficheiros.
+// THE BOUNDARY OF THE INPUT VOCABULARY, as a test. Node project: it only reads files.
 //
-// ========================= O QUE ELE SEPARA =========================
-// O Dev disse o corte em 2026-09-06: *"deveríamos separar o que é do jogo, as ações com nome, do que é da
-// engine, o nome abstrato e como é implementado nos diversos controles que programarmos."*
+// ========================= WHAT IT SEPARATES =========================
+// The Dev drew the cut on 2026-09-06: *«deveríamos separar o que é do jogo, as ações com nome, do que é da
+// engine, o nome abstrato e como é implementado nos diversos controles que programarmos.»*
 //
-//   ENGINE  →  as quatorze POSIÇÕES (`core/actions.ts`) e como cada transporte as alcança.
-//   JOGO    →  as PALAVRAS: pular, correr, trocar, especial — num `ActionPreset`.
+//   ENGINE  →  the fourteen POSITIONS (`core/actions.ts`) and how each transport reaches them.
+//   GAME    →  the WORDS: jump, run, swap, special — in an `ActionPreset`.
 //
-// ========================= POR QUE ISTO É UM TETO E NÃO UMA PROIBIÇÃO =========================
-// Medido hoje: a camada de engine diz as quatro palavras do jogo em 132 pontos, 13 ficheiros. Um teste que
-// simplesmente reprovasse seria apagado ou afrouxado na primeira pressa — é a lição que o
-// `engine-boundary.node.test.js` já escreveu e este ficheiro copia de propósito. Uma lista que só encolhe faz
-// três coisas: deixa a suíte verde hoje, torna a dívida CONTÁVEL, e faz qualquer acoplamento NOVO falhar no
-// mesmo minuto.
+// ========================= WHY THIS IS A CEILING AND NOT A BAN =========================
+// A test that simply failed would be deleted or loosened in the first hurry — the lesson
+// `engine-boundary.node.test.js` already wrote and this file copies on purpose. A list that only shrinks does three
+// things: it keeps the suite green today, it makes the debt COUNTABLE, and it makes any NEW coupling fail the same
+// minute.
 //
-// ⚠️ E O DETECTOR TEM DE SER PRECISO OU A LISTA NASCE MENTINDO. `run` aparece em `toggleRun`, `runState`,
-// `running` e `runEdge`, e NENHUMA delas é o nome de uma ação. Procura-se a palavra como IDENTIFICADOR, que
-// neste código tem duas formas: literal entre aspas (`A('jump')`) e chave de objeto (`jump: b(0)`).
+// ⚠️ AND THE DETECTOR MUST BE PRECISE OR THE LIST IS BORN LYING. `run` appears in `toggleRun`, `runState`, `running` and
+// `runEdge`, and NONE of them is an action's name. The word is looked for as an IDENTIFIER, which in this code has two
+// forms: a quoted literal (`A('jump')`) and an object key (`jump: b(0)`).
 //
-// ⚠️ COMENTÁRIOS FICAM DE FORA DA CONTAGEM, e isso é decisão: uma explicação que cita `jump` não acopla nada,
-// e contá-la criaria o incentivo de APAGAR A EXPLICAÇÃO para baixar o número.
+// ⚠️ COMMENTS ARE LEFT OUT OF THE COUNT, and that is a decision: an explanation that cites `jump` couples nothing, and
+// counting it would create the incentive to DELETE THE EXPLANATION to lower the number.
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const RAIZ = join(process.cwd(), 'app', 'js');
-// ⚠️ `audio` ESTAVA AQUI E NUNCA EXISTIU (medido em 2026-09-07): os módulos de áudio vivem em `platform/`, e
-// o `existsSync` de baixo devolvia lista vazia sem uma palavra. Era a terceira cópia da mesma lista à mão na
-// suíte, e as três tinham derivado — a lista sai do `tsconfig.pkg.json`, que é quem decide o que é publicado.
-// `educational` e `i18n` ficam de fora porque são DADO: uma não importa nada (gate próprio no
-// `engine-boundary`) e a outra são os dicionários.
+// ⚠️ The list comes from `tsconfig.pkg.json`, which decides what is published — not a hand-written list: a hand copy
+// named an `audio` layer that never existed (the audio modules live in `platform/`), and `existsSync` below returned an
+// empty list without a word. `educational` and `i18n` stay out because they are DATA: one imports nothing (its own gate
+// in `engine-boundary`) and the other is the dictionaries.
 const CAMADAS_ENGINE = (() => {
   const cfg = JSON.parse(readFileSync(join(process.cwd(), 'tsconfig.pkg.json'), 'utf8')
     .split(String.fromCharCode(13)).join(''));
@@ -64,61 +62,48 @@ function ocorrencias(modulo) {
 }
 
 /**
- * ⚠️ OS NÚMEROS SAEM DESTE FICHEIRO, e não de uma varredura de fora. É a mesma lição que o gate de i18n
- * aprendeu à força: a primeira tabela dele foi preenchida por um script à parte e contou MENOS em sete
- * módulos. Quem for baixar um número, baixe-o pelo que ESTE teste reporta.
- *
- * Medido em 2026-09-06, antes de a migração da issue #103 começar.
+ * ⚠️ THE NUMBERS COME FROM THIS FILE, not from an outside scan. It is the lesson the i18n gate learned the hard way: its
+ * first table was filled by a separate script and counted FEWER in several modules. Whoever lowers a number lowers it by
+ * what THIS test reports.
  */
 const DIVIDA = {
-  /* --- ⚠️ OS TRANSPORTES SAÍRAM DAQUI EM 2026-09-06, e a lista de onde saíram fica escrita porque o número
-   *     É o resultado: `input/gamepad` 41 · `input/keyboard` 28 · `ui/shell` 20 · `input/edges` 9 ·
-   *     `input/devices` 8 · `input/keydown` 7 · `input/touch` 4 · `ui/settings-controls` 4 ·
-   *     `input/keyboard-runtime` 2 · `ui/menu-nav` 2 · `input/touch-bindings` 1 = CENTO E VINTE E SEIS
-   *     pontos, todos migrados para `action1`..`action4`.
-   *
-   *     Nenhuma linha morta fica: o teste [Zero] abaixo reprova quem tiver teto e dívida zero, e foi ele
-   *     que exigiu esta limpeza no mesmo minuto em que a migração acabou. --- */
+  /* --- ⚠️ THE TRANSPORTS ARE NOT HERE: every point where they said a game's word was migrated to `action1`..`action4`
+   *     (issue #103). No dead line stays: the [Zero] case below fails whoever has a ceiling and zero debt. --- */
 
-  /* --- ⚠️ A QUARENTENA, de natureza diferente de tudo o mais nesta tabela. --- */
+  /* --- ⚠️ THE QUARANTINE, of a different nature from everything else in this table. --- */
   'input/voice-map.ts': 4,
-  // 🔴 ESTAS QUATRO NÃO SÃO POSIÇÕES — são PALAVRAS QUE UMA CRIANÇA DIZ. «jump», «swap», «drop» e «special» são o que o Dev
-  // escolheu em inglês para os botões 2, 4 e 3 (errata do ADR-0204), e calham de ser as mesmas cadeias dos nomes ANTIGOS das
-  // posições, que é tudo o que este crivo consegue ver. A fronteira que ele guarda fica inteira: o módulo MAPEIA palavra →
-  // `Action` do `core/actions`, e nenhuma destas cadeias atravessa para um cartucho nem para uma frase que alguém leia.
-  // ⚠️ Tirá-las do vocabulário para agradar ao crivo seria decidir, por conta do teste, que uma criança inglesa não pode
-  // dizer «jump» — que é exactamente a inversão que este ficheiro existe para impedir.
+  // 🔴 THESE FOUR ARE NOT POSITIONS — they are WORDS A CHILD SAYS. «jump», «swap», «drop» and «special» are what the Dev
+  // chose in English for buttons 2, 4 and 3 (ADR-0204 erratum), and they happen to be the same strings as the positions'
+  // OLD names, which is all this check can see. The boundary it guards stays whole: the module MAPS word → `Action` of
+  // `core/actions`, and none of these strings crosses into a cartridge or into a sentence anyone reads.
+  // ⚠️ Taking them out of the vocabulary to please the check would decide, on the test's behalf, that an English child
+  // cannot say «jump» — exactly the inversion this file exists to prevent.
   'input/vocabulary-migration.ts': 4,
-  // Este módulo TEM de dizer `jump`: traduzir o nome antigo é a função dele. Quando a tabela nasceu dentro
-  // de `input/keyboard.ts`, este gate reprovou — e estava certo. A saída NÃO foi levantar o teto do
-  // keyboard, que é o afrouxamento que este ficheiro existe para impedir; foi quarentenar o acoplamento
-  // inteiro num módulo cujo nome diz que ele é histórico, com teto próprio e data de morte.
-  // ⚠️ ELE SE APAGA quando não restar dado salvo no formato antigo — o que não se sabe do lado do código,
-  // porque o dado está no navegador de cada criança. Enquanto houver, apagá-lo apaga o remapeamento de
-  // quem o fez.
+  // This module MUST say `jump`: translating the old name is its job. When the table was born inside
+  // `input/keyboard.ts`, this gate failed — and it was right. The way out was NOT raising the keyboard's ceiling, the
+  // loosening this file exists to prevent; it was quarantining the whole coupling in a module whose name says it is
+  // historical, with its own ceiling and a death date.
+  // ⚠️ IT DELETES ITSELF when no saved data in the old format remains — which cannot be known from the code side, because
+  // the data is in each child's browser. While there is some, deleting it deletes the remapping of whoever made it.
 
-  /* --- O QUE SOBRA. 🔴 E o `core/constants` SAIU desta lista em 2026-09-23: as duas ocorrências que ele tinha
-     eram bandeiras da `TILE_TYPES` (`jump`, `ladder`), e a tabela mudou de casa para o `game-platformer` junto
-     com a geometria que a consultava. O ficheiro publica hoje três constantes: a resolução lógica e a grade. --- */
-  /* 📌 E a lição daquela linha fica escrita, porque ela não saiu com o ficheiro: um crivo por FORMA não
-     distingue os dois sentidos que a mesma palavra tem neste repositório — `jump` como bandeira de um tile e
-     `jump` como nome de uma ação. O renomeador da migração trocou um pelo outro e o teste rebentou com
-     `Cannot read properties of undefined`. */
+  /* --- WHAT REMAINS. 📌 A check by FORM does not tell the two senses the same word has in this repository apart —
+     `jump` as a tile's flag and `jump` as an action's name: the migration's renamer once swapped one for the other and
+     the test broke with `Cannot read properties of undefined`. --- */
 };
 
-// ========================= O ESPELHO DESTA FRONTEIRA =========================
-// O bloco acima conta a engine a dizer as palavras do JOGO. Este conta o contrário: o nome ABSTRATO da engine
-// a chegar a uma PESSOA, que o ADR-0074 chama de defeito em tantas palavras — «o nome que a criança lê e ouve
-// é sempre a palavra do jogo, nunca `action1`».
+// ========================= THE MIRROR OF THIS BOUNDARY =========================
+// The block above counts the engine saying the GAME's words. This one counts the opposite: the engine's ABSTRACT name
+// reaching a PERSON, which ADR-0074 calls a defect in so many words — «o nome que a criança lê e ouve é sempre a palavra
+// do jogo, nunca `action1`».
 //
-// ⚠️ E ELE NÃO É HIPOTÉTICO: em 2026-09-08 o `ui/settings-controls` recuava para o id abstrato e o leitor de
-// tela dizia «Essa tecla já é de action2» — a um toque de distância, com o esquema PADRÃO da engine, e dito
-// precisamente à criança que navega de ouvido. Consertado em `7742ac0`; este caso guarda o OUTRO caminho.
+// ⚠️ AND IT IS NOT HYPOTHETICAL: `ui/settings-controls` once fell back to the abstract id and the screen reader said
+// `Essa tecla já é de action2` — one press away, with the engine's DEFAULT scheme, and said precisely to the child who
+// navigates by ear. Fixed in `7742ac0`; this case guards the OTHER path.
 //
-// 📌 POR QUE OS DICIONÁRIOS E NÃO O CÓDIGO. As quatro conversões `Action → palavra` foram medidas e devolvem
-// todas `null` (`labellerFrom`, `shortLabellerFrom`, `palavraDaAcao`, e o `acoesDoJogo` que vem do jogo), e
-// cada uma tem caso próprio. O que o tipo NÃO alcança é alguém escrever `action1` dentro de uma frase à mão —
-// e o dicionário é o único sítio deste repositório onde texto para pessoas é escrito assim.
+// 📌 WHY THE DICTIONARIES AND NOT THE CODE. The `Action → word` conversions (`labellerFrom`, `shortLabellerFrom`,
+// `gameWordFor`, and the game's `gameActions`) all return `null` for a position with no word, and each has its own case.
+// What the type does NOT reach is someone writing `action1` inside a sentence by hand — and the dictionary is the only
+// place in this repository where text for people is written that way.
 const POSICOES_ABSTRATAS = /\b(action[1-8]|leftShoulder|rightShoulder|leftTrigger|rightTrigger)\b/;
 
 describe('ADR-0074 · nenhum nome abstrato de posição chega a uma pessoa', () => {
@@ -126,7 +111,7 @@ describe('ADR-0074 · nenhum nome abstrato de posição chega a uma pessoa', () 
     .map((l) => join(RAIZ, 'i18n', `${l}.ts`))
     .filter((p) => existsSync(p));
 
-  /** As frases: valor de cada chave, sem os comentários que citam nomes para explicar. */
+  /** The sentences: each key's value, without the comments that cite names to explain. */
   const frasesDe = (p) => readFileSync(p, 'utf8')
     .replace(COMENTARIO_BLOCO, '')
     .replace(COMENTARIO_LINHA, '')
@@ -151,25 +136,25 @@ describe('ADR-0074 · nenhum nome abstrato de posição chega a uma pessoa', () 
   });
 
   it('⚠️ [Interface] e a varredura está VIVA: ela lê frases a sério nos três idiomas', () => {
-    // Sem isto o caso acima passaria por não ter nada que examinar — e um regex morto num crivo de ausência é
-    // a forma de verde falso que este repositório já apanhou mais de uma vez.
+    // Without this the case above would pass for having nothing to examine — and a dead regex in an absence check is the
+    // kind of false green this repository has caught more than once.
     expect(DICIONARIOS.length, 'os três dicionários têm de existir').toBe(3);
     for (const p of DICIONARIOS) {
       expect(frasesDe(p).length, `${p} não devolveu frase nenhuma`).toBeGreaterThan(100);
     }
-    // e o detector reconhece o defeito quando ele existe, em vez de nunca casar com nada
+    // and the detector recognises the defect when it exists, instead of never matching anything
     expect(POSICOES_ABSTRATAS.test('Essa tecla já é de action2. Escolha outra.')).toBe(true);
     expect(POSICOES_ABSTRATAS.test('Essa tecla já está em uso neste controle.')).toBe(false);
   });
 
-  // ===================== MUTACOES CONFERIDAS (deste bloco) =====================
-  //   · acrescentando ao dicionario pt uma frase com `action2` -> reprova o [Zero]. E o defeito consertado em
-  //     `7742ac0` a voltar pela outra porta: nao por um recuo de codigo, mas por alguem a escrever o id
-  //     dentro de uma frase a mao — que e o unico caminho que o TIPO nao alcanca.
-  //   · trocando `action[1-8]` por `zzzz[1-8]` (detector morto) -> reprova o [Interface], e SO ele. E a
-  //     medida de que o caso de vivacidade se paga: sem ele, um crivo cego passaria por nao achar nada.
-  //   · `frasesDe` a devolver zero -> reprova o [Interface] pelo piso de 100 frases. Um crivo de AUSENCIA que
-  //     nao le nada e verde falso, e este ficheiro ja carrega essa licao no cabecalho.
+  // ===================== MUTATIONS CHECKED (this block) =====================
+  //   · adding to the pt dictionary a sentence with `action2` -> fails the [Zero]. It is the defect fixed in `7742ac0`
+  //     coming back through the other door: not a code fallback, but someone writing the id inside a sentence by hand —
+  //     the only path the TYPE does not reach.
+  //   · replacing `action[1-8]` with `zzzz[1-8]` (dead detector) -> fails the [Interface], and ONLY it. It is the measure
+  //     that the liveness case pays for itself: without it, a blind check would pass for finding nothing.
+  //   · `frasesDe` returning zero -> fails the [Interface] by the floor of 100 sentences. An ABSENCE check that reads
+  //     nothing is a false green, and this file already carries that lesson in its header.
 });
 
 describe('a engine não fala as palavras do jogo (o corte do Dev, 2026-09-06)', () => {
@@ -189,20 +174,20 @@ describe('a engine não fala as palavras do jogo (o corte do Dev, 2026-09-06)', 
   });
 
   it('[Zero] a lista não guarda módulo que já se limpou', () => {
-    // Sem esta, uma entrada morta ficaria a dizer que há dívida onde não há, e a próxima pessoa
-    // procuraria o que consertar sem achar.
+    // Without this, a dead entry would say there is debt where there is none, and the next person would look for
+    // something to fix without finding it.
     const limpos = Object.keys(DIVIDA).filter((m) => ocorrencias(m) === 0);
     expect(limpos, 'módulo com teto e sem dívida — apague a linha').toEqual([]);
   });
 
   it('⚠️ o total A PAGAR desce, e a quarentena não conta nele', () => {
-    // ⚠️ ESTA ASSERÇÃO JÁ ESTEVE ERRADA, e o erro vale mais escrito do que corrigido em silêncio: ela somava
-    // `input/vocabulary-migration.ts` ao total, então criar o módulo de migração fez o número SUBIR de 132
-    // para 136 e o gate reprovou uma mudança que estava certa.
+    // ⚠️ THIS ASSERTION WAS ONCE WRONG, and the error is worth more written than silently fixed: it added
+    // `input/vocabulary-migration.ts` to the total, so creating the migration module made the number RISE and the gate
+    // failed a change that was right.
     //
-    // A quarentena não é dívida que a migração paga — ela É a migração. Dívida é o que os transportes têm de
-    // deixar de dizer; o tradutor tem de dizer, e desaparece por outro caminho (quando não houver mais dado
-    // antigo), não por alguém o consertar.
+    // The quarantine is not debt the migration pays — it IS the migration. Debt is what the transports must stop saying;
+    // the translator must say it, and disappears by another path (when there is no old data left), not by someone
+    // fixing it.
     const APAGA_SE_SOZINHO = ['input/vocabulary-migration.ts'];
     const aPagar = Object.keys(DIVIDA)
       .filter((m) => !APAGA_SE_SOZINHO.includes(m))

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O gate do ADR-0085: as quatorze ações, e as duas coisas que a lista NÃO pode virar.
+// The ADR-0085 gate: the fourteen actions, and the two things the list must NOT become.
 import { describe, it, expect } from 'vitest';
 import {
   ACTIONS, DIRECTIONS, VERBS, SYSTEM, isAction, actionSetProblems,
@@ -13,9 +13,9 @@ describe('as quatorze posições (ADR-0085, que supersede o ADR-0074 §1)', () =
   });
 
   it('as três famílias cobrem a lista inteira e não se sobrepõem', () => {
-    // ⚠️ ESTA É A ASSERÇÃO QUE IMPEDE UMA AÇÃO ÓRFÃ. Acrescentar uma posição e esquecer de a pôr numa
-    // família produziria uma ação que existe, passa em `isAction`, e não aparece em nenhuma tela de
-    // remapeamento — presente para o código e invisível para a criança.
+    // ⚠️ THIS IS THE ASSERTION THAT PREVENTS AN ORPHAN ACTION. Adding a position and forgetting to put it in a family
+    // would produce an action that exists, passes `isAction`, and appears on no remapping screen — present to the code and
+    // invisible to the child.
     const familias = [...DIRECTIONS, ...VERBS, ...SYSTEM];
     expect(familias).toHaveLength(ACTIONS.length);
     expect([...familias].sort()).toEqual([...ACTIONS].sort());
@@ -35,13 +35,13 @@ describe('as quatorze posições (ADR-0085, que supersede o ADR-0074 §1)', () =
 
 describe('os nomes são anatômicos, não de marca (ADR-0086)', () => {
   it('⚠️ `L1`, `R2` e `SELECT` continuam FORA — a fronteira mudou de sítio, não desapareceu', () => {
-    // O ADR-0086 aceitou nomear os quatro por ombro e gatilho, e recusou nomeá-los pelas etiquetas de UM
-    // fabricante. `L1` é Sony e Xbox; a Nintendo escreve `L`/`ZL`, e um controle genérico escreve o que
-    // quiser. Ombro e gatilho descrevem a MÃO, que é a mesma em todos.
+    // ADR-0086 accepted naming the four by shoulder and trigger, and refused naming them by ONE manufacturer's labels.
+    // `L1` is Sony's and Xbox's; Nintendo writes `L`/`ZL`, and a generic controller writes whatever it likes. Shoulder and
+    // trigger describe the HAND, which is the same on all of them.
     for (const marca of ['L1', 'L2', 'R1', 'R2', 'SELECT', 'l1', 'r2', 'ZL', 'LB', 'RT']) {
       expect(isAction(marca)).toBe(false);
     }
-    // `select` minúsculo É ação: é função de sistema, como `start`.
+    // Lower-case `select` IS an action: a system function, like `start`.
     expect(isAction('select')).toBe(true);
   });
 
@@ -60,9 +60,9 @@ describe('os nomes são anatômicos, não de marca (ADR-0086)', () => {
 
 describe('o conjunto de ações de um jogo', () => {
   it('um jogo escolhe o seu conjunto, e NÃO precisa das quatro direções', () => {
-    // Um quiz navega em cima/baixo e confirma. Exigir left/right inventaria uma tecla que não faz nada.
+    // A quiz moves up/down and confirms. Demanding left/right would invent a key that does nothing.
     expect(actionSetProblems(['up', 'down', 'action1'])).toEqual([]);
-    // Um jogo de um botão.
+    // A one-button game.
     expect(actionSetProblems(['action1'])).toEqual([]);
   });
 
@@ -89,7 +89,7 @@ describe('o conjunto de ações de um jogo', () => {
 });
 
 describe('o preset: onde as PALAVRAS do jogo moram (o corte do Dev, 2026-09-06)', () => {
-  // O preset da plataforma, tal como o ADR-0086 o corrigiu.
+  // The platformer's preset, as ADR-0086 corrected it.
   const PLATAFORMA = {
     up: { label: 'Cima' }, down: { label: 'Baixo' },
     left: { label: 'Esquerda' }, right: { label: 'Direita' },
@@ -102,14 +102,14 @@ describe('o preset: onde as PALAVRAS do jogo moram (o corte do Dev, 2026-09-06)'
 
   it('um jogo nomeia SÓ as posições que usa', () => {
     expect(presetProblems(PLATAFORMA)).toEqual([]);
-    // A plataforma não usa ombros nem gatilhos, e não precisa de inventar nome para eles.
+    // The platformer uses no shoulders or triggers, and need not invent names for them.
     expect(presetActions(PLATAFORMA)).not.toContain('leftShoulder');
     expect(presetActions(PLATAFORMA)).not.toContain('select');
   });
 
   it('as posições saem na ordem canônica, não na ordem em que foram escritas', () => {
-    // A tela de remapeamento lê esta ordem; se ela seguisse a ordem do objeto, dois jogos com as mesmas
-    // ações mostrariam listas diferentes e a criança perderia a referência ao trocar de jogo.
+    // The remapping screen reads this order; if it followed the object's order, two games with the same actions would show
+    // different lists and the child would lose her bearings when changing game.
     const foraDeOrdem = { action3: { label: 'C' }, up: { label: 'A' }, action1: { label: 'B' } };
     expect(presetActions(foraDeOrdem)).toEqual(['up', 'action1', 'action3']);
   });
@@ -149,15 +149,15 @@ describe('labellerFrom: a pergunta que a engine faz ao jogo', () => {
   });
 
   it('⚠️ devolve `null` para uma posição que o jogo NÃO nomeia — nunca `action7`', () => {
-    // Devolver o nome abstrato poria `action5` à frente de uma criança, que o ADR-0074 chama de defeito
-    // em tantas palavras. Quem chama decide o que fazer com a ausência; o assistente de controle SALTA.
+    // Returning the abstract name would put `action5` in front of a child, which ADR-0074 calls a defect in so many words.
+    // The caller decides what to do with the absence; the controller wizard SKIPS it.
     expect(labellerFrom(PRESET)('leftShoulder')).toBeNull();
     expect(labellerFrom(PRESET)('select')).toBeNull();
   });
 
   it('⚠️ rótulo só de espaço conta como AUSENTE, não como nome', () => {
-    // Devolvê-lo calaria o leitor de tela — o defeito silencioso que `speakableProblems` persegue no
-    // contrato, aqui outra vez.
+    // Returning it would silence the screen reader — the silent defect `speakableProblems` chases in the contract, here
+    // again.
     expect(labellerFrom(PRESET)('action7')).toBeNull();
   });
 
@@ -172,7 +172,7 @@ describe('shortLabellerFrom: a palavra CURTA da legenda', () => {
   });
 
   it('⚠️ RECUA para `label` quando `short` falta — apertada é melhor que vazia', () => {
-    // Vazia sumiria também para quem usa leitor de tela; apertada só fica feia. É a razão do recuo.
+    // Empty would vanish for screen-reader users too; tight is only ugly. That is the reason for the fallback.
     expect(shortLabellerFrom({ action1: { label: 'Correr / interagir' } })('action1')).toBe('Correr / interagir');
   });
 

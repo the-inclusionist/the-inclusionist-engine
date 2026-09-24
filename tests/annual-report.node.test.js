@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O GATE DA ÚNICA OBRIGAÇÃO QUE SE DESFAZ SOZINHA (ADR-0053, issue #95).
+// THE GATE OF THE ONLY OBLIGATION THAT UNDOES ITSELF (ADR-0053, issue #95).
 //
-// ========================= O QUE ESTE FICHEIRO IMPEDE =========================
-// Das vinte e duas divergências achadas entre o documento entregue e os ADRs, o relatório anual era a única
-// que RECORRE. Todas as outras fazem-se uma vez e ficam feitas; esta desfaz-se com o tempo, sem decisão de
-// ninguém — e o §51.j diz o motivo melhor do que eu diria: *«compromisso sem prestação de contas periódica
-// degrada silenciosamente»*.
+// ========================= WHAT THIS FILE PREVENTS =========================
+// Of the twenty-two divergences found between the filed document and the ADRs, the annual report was the only one that
+// RECURS. All the others are done once and stay done; this one is undone by time, by nobody's decision — and §51.j gives
+// the reason best: *«compromisso sem prestação de contas periódica degrada silenciosamente»*.
 //
-// O gate vive em `scripts/check-annual-report.mjs` e corre no CI. Este ficheiro prende a ARITMÉTICA dele,
-// que é onde um erro passaria despercebido: um gate que olhasse só para o ano corrente ficaria verde em 2028
-// por causa do relatório de 2028, com 2027 nunca escrito — e estaria a afirmar que o compromisso foi
-// cumprido no ano em que não foi.
+// The gate lives in `scripts/check-annual-report.mjs` and runs in CI. This file holds its ARITHMETIC, which is where an
+// error would go unnoticed: a gate that looked only at the current year would be green in 2028 because of the 2028
+// report, with 2027 never written — and it would be claiming the commitment was kept in the year it was not.
 //
-// ⚠️ O QUE ELE NÃO PRENDE, e o script diz isto em voz alta na própria mensagem de sucesso: a QUALIDADE do
-// relatório. Um ficheiro vazio satisfaz o gate. O ADR-0053 escreve-o como consequência aceite — «the gate
-// buys the ritual, not the quality» — e o caso `[Interface]` abaixo existe para que essa ressalva não possa
-// ser apagada em silêncio, porque apagá-la transformaria um verde de existência num verde de conformidade.
+// ⚠️ WHAT IT DOES NOT HOLD, and the script says so out loud in its own success message: the report's QUALITY. An empty
+// file satisfies the gate. ADR-0053 writes it as an accepted consequence — «the gate buys the ritual, not the quality»
+// — and the `[Interface]` case below exists so that this caveat cannot be deleted silently, because deleting it would
+// turn a green of existence into a green of compliance.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -28,9 +26,9 @@ const FONTE = readFileSync(join(process.cwd(), 'scripts', 'check-annual-report.m
 
 describe('scripts/check-annual-report · o relatório anual do §51.j (ADR-0053)', () => {
   it('[Zero] sem declaração e sem relatório o gate está DORMENTE — e dormente não é reprovado', () => {
-    // O ADR-0053 deixa o início em aberto de propósito: «the first report is due for the first calendar year
-    // in which the systems are in use, not now». Nenhum ficheiro deste repositório sabe essa data, e
-    // inventá-la seria uma segunda opinião sobre um facto que só o Dev tem.
+    // ADR-0053 leaves the start open on purpose: «the first report is due for the first calendar year in which the
+    // systems are in use, not now». No file of this repository knows that date, and inventing it would be a second
+    // opinion on a fact only the Dev has.
     expect(primeiroAnoDevido(null, [])).toBe(null);
     expect(anosEmFalta(null, 2026, [])).toEqual([]);
   });
@@ -40,9 +38,8 @@ describe('scripts/check-annual-report · o relatório anual do §51.j (ADR-0053)
   });
 
   it('⚠️ [Boundary] um buraco NO MEIO é cobrado — o gate olha para trás, não só para o ano corrente', () => {
-    // O defeito que este caso impede tem uma forma específica e cara: alguém escreve o relatório de 2026,
-    // o pipeline fica verde, e 2025 fica por escrever para sempre. A obrigação é anual; a verificação
-    // também tem de ser.
+    // The defect this case prevents has a specific and expensive shape: someone writes the 2026 report, the pipeline goes
+    // green, and 2025 stays unwritten forever. The obligation is annual; the check has to be too.
     expect(anosEmFalta(2024, 2026, [2024, 2026])).toEqual([2025]);
     expect(anosEmFalta(2024, 2028, [2028])).toEqual([2024, 2025, 2026, 2027]);
   });
@@ -57,18 +54,18 @@ describe('scripts/check-annual-report · o relatório anual do §51.j (ADR-0053)
   });
 
   it('[Interface] o PRIMEIRO RELATÓRIO arma o gate sozinho, e a declaração vence-o', () => {
-    // Dois caminhos, e cada um serve um momento. A declaração arma ANTES do primeiro relatório vencer, que
-    // é o caso que o ADR-0053 pede pelo nome. O relatório mais antigo arma DEPOIS, e existe para que a
-    // obrigação não possa ser começada e largada: escrever o primeiro é o que torna o segundo obrigatório.
+    // Two paths, each serving a moment. The declaration arms BEFORE the first report is due, which is the case ADR-0053
+    // asks for by name. The oldest report arms AFTER, and exists so the obligation cannot be started and dropped: writing
+    // the first is what makes the second mandatory.
     expect(primeiroAnoDevido(null, [2027, 2029])).toBe(2027);
-    // ⚠️ A declaração vence um relatório mais antigo: se alguém preencher um ano anterior ao início — um
-    // voluntário, um exemplo —, quem decide continua a ser o ficheiro, e os relatórios são prova.
+    // ⚠️ The declaration beats an older report: if someone fills in a year before the start — a volunteer, an example —,
+    // the file still decides, and the reports are evidence.
     expect(primeiroAnoDevido(2028, [2027, 2029])).toBe(2028);
   });
 
   it('[Error] a declaração só aceita quatro dígitos, e rebenta em vez de adivinhar', () => {
-    // Uma declaração ilegível NÃO pode cair no ramo dormente: seria a forma mais fácil de desarmar o gate
-    // sem apagar nada — escrever «em breve» no ficheiro e ficar verde para sempre.
+    // An unreadable declaration must NOT fall into the dormant branch: it would be the easiest way to disarm the gate
+    // without deleting anything — writing `em breve` in the file and staying green forever.
     expect(lerDeclaracao('2027')).toBe(2027);
     expect(lerDeclaracao(' 2027\n')).toBe(2027);
     for (const lixo of ['', 'em breve', '27', '20270', '2027-01', 'MMXXVII']) {
@@ -84,12 +81,12 @@ describe('scripts/check-annual-report · o relatório anual do §51.j (ADR-0053)
   });
 
   it('⚠️ [Interface] a mensagem de sucesso DIZ que só afere existência — a ressalva é parte do gate', () => {
-    // A issue #95 pede isto por escrito: *«o alcance, dito no próprio gate — ele garante que o exercício não
+    // Issue #95 asks for this in writing: *«o alcance, dito no próprio gate — ele garante que o exercício não
     // se encerra sem alguém escrever; não garante que o texto preste. Escrever isso no cabeçalho do script
     // evita que o verde seja lido como conformidade.»*
     //
-    // Sem este caso, apagar a ressalva seria uma alteração invisível que muda o SIGNIFICADO de todos os
-    // verdes futuros, num ficheiro que uma auditoria vai ler.
+    // Without this case, deleting the caveat would be an invisible change that alters the MEANING of every future green,
+    // in a file an audit will read.
     expect(FONTE, 'a ressalva saiu da mensagem de sucesso: um verde de existência passaria por conformidade')
       .toContain('Existence only — nobody checked the text.');
     expect(FONTE, 'a ressalva saiu do cabeçalho do script')
@@ -97,23 +94,22 @@ describe('scripts/check-annual-report · o relatório anual do §51.j (ADR-0053)
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-// A aritmética, por mutação no `scripts/check-annual-report.mjs`:
-//   · fazendo o laço de `anosEmFalta` começar em `anoAtual` em vez de `primeiroAno` — quer dizer, o gate a
-//     olhar só para o ano corrente → reprovam "[Boundary] um buraco NO MEIO" (nas duas asserções) e
-//     "[Right] armado em 2024". Os restantes sete casos continuam verdes, que é o que mostra o tamanho do
-//     buraco: um gate assim passaria por correcto em qualquer ano em que alguém tivesse escrito ALGO.
-//   · trocando `if (!m) throw` por `if (!m) return null` em `lerDeclaracao` → "[Error] quatro dígitos"
-//     reprova. É a mutação que importa mais: com ela, escrever «em breve» no `PRIMEIRO-ANO` desarmaria o
-//     gate em silêncio e para sempre.
-//   · apagando o sufixo «(Existence only …)» da mensagem de sucesso → "[Interface] a mensagem de sucesso
-//     DIZ" reprova.
-//   · trocando `\d{4}` por `\d+` em `NOME_DO_RELATORIO` → "[Error] relatorio-27.md" reprova.
+// ========================= MUTATIONS CHECKED =========================
+// The arithmetic, by mutation in `scripts/check-annual-report.mjs`:
+//   · making `anosEmFalta`'s loop start at `anoAtual` instead of `primeiroAno` — that is, the gate looking only at the
+//     current year → `[Boundary] um buraco NO MEIO` (in both assertions) and `[Right] armado em 2024` fail. The other
+//     seven cases stay green, which shows the size of the hole: such a gate would pass as correct in any year someone had
+//     written SOMETHING.
+//   · replacing `if (!m) throw` with `if (!m) return null` in `lerDeclaracao` → `[Error] quatro dígitos` fails. It is
+//     the mutation that matters most: with it, writing `em breve` in `PRIMEIRO-ANO` would disarm the gate silently and
+//     forever.
+//   · deleting the «(Existence only …)» suffix from the success message → `[Interface] a mensagem de sucesso DIZ` fails.
+//   · replacing `\d{4}` with `\d+` in `NOME_DO_RELATORIO` → `[Error] relatorio-27.md` fails.
 //
-// E o SCRIPT INTEIRO, corrido contra pastas de ensaio com `COMPLIANCE_DIR`/`ANO_ATUAL` (07/09):
-//   A) declarado 2024, zero relatórios, ano 2026 → exit 1, cobra 2024, 2025 e 2026.
-//   B) 2024 e 2026 presentes, 2025 em falta      → exit 1, cobra SÓ 2025.
-//   C) os três presentes                         → exit 0.
-//   D) sem declaração, só `relatorio-2026.md`    → exit 0 (auto-armou em 2026).
-//   E) sem declaração, só `relatorio-2024.md`    → exit 1, cobra 2025 e 2026.
-//   F) `PRIMEIRO-ANO` com «em breve»             → exit 1, e a mensagem nomeia o conteúdo inválido.
+// And the WHOLE SCRIPT, run against trial folders with `COMPLIANCE_DIR`/`ANO_ATUAL`:
+//   A) declared 2024, zero reports, year 2026 → exit 1, demands 2024, 2025 and 2026.
+//   B) 2024 and 2026 present, 2025 missing    → exit 1, demands ONLY 2025.
+//   C) all three present                      → exit 0.
+//   D) no declaration, only `relatorio-2026.md` → exit 0 (armed itself in 2026).
+//   E) no declaration, only `relatorio-2024.md` → exit 1, demands 2025 and 2026.
+//   F) `PRIMEIRO-ANO` with `em breve`         → exit 1, and the message names the invalid content.

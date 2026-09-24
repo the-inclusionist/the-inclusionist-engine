@@ -1,39 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O COMENTÁRIO NÃO PODE COMER CÓDIGO — o gate que faltava, escrito depois de um defeito real.
+// A COMMENT MUST NOT EAT CODE — the gate that was missing, written after a real defect.
 //
-// ========================= O QUE ACONTECEU =========================
-// Em 2026-08-25 (commit `d889254`), um comentário explicativo foi inserido NO MEIO de uma linha:
+// ========================= WHAT HAPPENED =========================
+// An explanatory comment was inserted IN THE MIDDLE of a line (commit `d889254`):
 //
-//   ti.addEventListener('click',(e)=>{ … if(!ib)return; // genérico: é o `dataset` … setPauseActorValue(0); pauseIcons.iconAct(ib.dataset.pi,0);
+//   ti.addEventListener('click',(e)=>{ … if(!ib)return; // (an explanation) … setPauseActorValue(0); pauseIcons.iconAct(ib.dataset.pi,0);
 //
-// Um `//` vai até o fim da linha. As duas chamadas depois dele — que eram A AÇÃO do clique — ficaram
-// comentadas. Os dez ícones de acessibilidade da tela de título passaram a NÃO FAZER NADA: cegueira,
-// narração por voz, Libras, modo TEA, teclas alternadas, alto contraste e mais quatro.
+// A `//` runs to the end of the line. The two calls after it — which were THE ACTION of the click — became comments,
+// and the ten accessibility icons of the title screen stopped DOING ANYTHING: blindness, voice narration, Libras, ASD
+// mode, toggle keys, high contrast and four more.
 //
-// E o pior detalhe é o que sobrou VIVO na linha seguinte: `srSay(ib.getAttribute('aria-label'))`. A criança
-// que usa leitor de tela clicava em "Alto contraste" e OUVIA "High contrast: off" — resposta imediata,
-// nenhuma ação. Um botão morto que fala é pior que um botão morto calado: ele confirma o que não fez.
+// And the worst detail is what stayed ALIVE on the next line: `srSay(ib.getAttribute('aria-label'))`. The child using a
+// screen reader pressed high contrast and HEARD `High contrast: off` — an immediate answer, no action. A dead button that
+// speaks is worse than a silent dead one: it confirms what it did not do.
 //
-// Ficou assim por 36 commits. Nada acusou, e nada podia:
-//   · o `tsc` não lê comentário — nem com `strict`, nem com `noUnusedLocals`;
-//   · o gate de tipos com orçamento não vê o que não é erro de tipo;
-//   · nenhum teste cobria o despachante do splash (ele vive na raiz de composição, que não é importável);
-//   · `setPauseActorValue`, a função chamada ali, DEIXOU DE EXISTIR num refactor posterior — e nem isso
-//     apareceu, porque uma chamada dentro de comentário não é uma chamada.
+// It stayed that way for dozens of commits. Nothing accused it, and nothing could:
+//   · `tsc` does not read comments — not with `strict`, not with `noUnusedLocals`;
+//   · no test covered the splash dispatcher (it lived in the composition root, which was not importable);
+//   · `setPauseActorValue`, the function called there, STOPPED EXISTING in a later refactor — and not even that showed,
+//     because a call inside a comment is not a call.
 //
-// O sintoma que se via era outro e parecia inofensivo: o bundle encolheu 33 bytes numa mudança "só de tipo"
-// (issue #80). Os 33 bytes eram as duas chamadas sumindo do código emitido.
+// The visible symptom was another and looked harmless: the bundle shrank 33 bytes in a "type-only" change (issue #80).
+// The 33 bytes were the two calls vanishing from the emitted code.
 //
-// ========================= COMO ESTE GATE DISTINGUE PROSA DE CÓDIGO =========================
-// A regra tem de deixar passar comentário legítimo com parênteses e ponto-e-vírgula — a árvore tem quinze
-// deles, do tipo "trampolim = CHÃO sólido (para EM CIMA); escada = desce ao chão de baixo".
+// ========================= HOW THIS GATE TELLS PROSE FROM CODE =========================
+// The rule must let a legitimate comment with parentheses and semicolons through — the tree has comments like
+// `trampolim = CHÃO sólido (para EM CIMA); escada = desce ao chão de baixo`.
 //
-// O que separa os dois é o ESPAÇO: prosa escreve `mixer (dados);`, chamada escreve `iconAct(0);`. Exigir o
-// identificador COLADO no parêntese derruba os quinze falsos positivos e mantém o defeito. Medido: 0
-// suspeitos na árvore inteira hoje, 1 quando o defeito é reintroduzido.
+// What separates the two is the SPACE: prose writes `mixer (dados);`, a call writes `iconAct(0);`. Requiring the
+// identifier GLUED to the parenthesis drops the false positives and keeps the defect.
 //
-// MUTAÇÃO CONFERIDA: reinserindo o comentário no meio daquela linha do `main.ts`, este caso falha com
-// "comentário engoliu chamada — app\\js\\main.ts:1734".
+// MUTATION CHECKED: reinserting such a comment in the middle of a line of code makes this case fail, naming the file
+// and line (`comentário engoliu chamada — <file>:<line>`).
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -49,19 +47,19 @@ function fontes(dir, out = []) {
   return out;
 }
 
-/** Uma CHAMADA terminada: identificador colado no `(`, e `;` depois do `)`. */
+/** A terminated CALL: an identifier glued to the `(`, and `;` after the `)`. */
 const CHAMADA = /[A-Za-z_$][\w$]*\([^()]*\)\s*;/;
 
-/** Linhas com CÓDIGO antes do `//` cujo comentário contém uma chamada terminada. */
+/** Lines with CODE before the `//` whose comment holds a terminated call. */
 function engolidas(arquivo) {
   const achados = [];
   readFileSync(arquivo, 'utf8').split('\n').forEach((ln, i) => {
     const k = ln.indexOf('//');
-    if (k <= 0) return;                        // sem `//`, ou o `//` abre a linha (comentário inteiro)
+    if (k <= 0) return;                        // no `//`, or the `//` opens the line (a whole-line comment)
     const antes = ln.slice(0, k).trim();
-    if (!antes) return;                        // só espaço antes: comentário indentado, legítimo
-    if (/[,*]$/.test(antes)) return;           // continuação de lista ou bloco `/** … */`
-    if (/https?:$/.test(antes)) return;        // uma URL não é um comentário
+    if (!antes) return;                        // only space before: an indented comment, legitimate
+    if (/[,*]$/.test(antes)) return;           // continuation of a list or a `/** … */` block
+    if (/https?:$/.test(antes)) return;        // a URL is not a comment
     if (CHAMADA.test(ln.slice(k + 2))) achados.push(`${arquivo}:${i + 1}`);
   });
   return achados;
@@ -69,7 +67,7 @@ function engolidas(arquivo) {
 
 describe('comentário de fim de linha não engole código', () => {
   it('[Zero] o gate está olhando arquivos de verdade', () => {
-    // Sem isto, mudar a pasta de lugar deixaria o caso abaixo verde por não medir nada.
+    // Without this, moving the folder would leave the case below green for measuring nothing.
     expect(fontes(RAIZ).length).toBeGreaterThan(60);
   });
 
@@ -79,8 +77,8 @@ describe('comentário de fim de linha não engole código', () => {
   });
 
   it('[Interface] a regra deixa PASSAR prosa com parêntese e ponto-e-vírgula', () => {
-    // O caso que impede o gate de virar ruído. São quinze linhas assim na árvore, e um gate que reprovasse
-    // nelas seria desligado na primeira pressa — e aí não estaria lá no dia em que importa.
+    // The case that keeps the gate from becoming noise. There are lines like this in the tree, and a gate that failed on
+    // them would be switched off in the first hurry — and would not be there on the day it matters.
     expect(CHAMADA.test('trampolim = CHÃO sólido (para EM CIMA); escada desce')).toBe(false);
     expect(CHAMADA.test('Fase 2: categorias do mixer (dados); audioCat vem de audio.js')).toBe(false);
     expect(CHAMADA.test('TEX_IDLE — respiração (4 quadros); [0] é a pose neutra')).toBe(false);

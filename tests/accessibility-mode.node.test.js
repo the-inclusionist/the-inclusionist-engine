@@ -1,40 +1,38 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O MODO `accessibility` — item 7 do ADR-0044, e a ARMADILHA que o próprio registro anotou.
+// The `accessibility` MODE — item 7 of ADR-0044, and the TRAP the record itself noted.
 //
-// ========================= POR QUE ESTE ARQUIVO COMEÇA PELA SAÍDA =========================
-// O ADR-0044 listou este item entre as CONSEQUÊNCIAS NEGATIVAS da decisão, com estas palavras:
+// ========================= WHY THIS FILE STARTS WITH THE WAY OUT =========================
+// ADR-0044 listed this item among the NEGATIVE CONSEQUENCES of the decision: the `accessibility` item brings in a second
+// INPUT MODE (the directional drives the HUD bar, not the player); a mode one enters and cannot leave is the very trap
+// that record is about, so its way out (START or BACK) is part of the decision, not an implementation detail.
 //
-//   "O item `accessibility` introduz um segundo MODO DE ENTRADA (o direcional dirige a barra do HUD, e não o
-//    jogador). Um modo em que se entra e não se sabe sair é a própria armadilha de que este registro trata —
-//    então a saída dele (START ou VOLTAR) é parte da decisão, e não um detalhe de implementação."
+// A child who cannot see enters the mode, presses a direction, and the character does not move. If she does not know
+// how to leave, the game is over for her — and nothing on the screen will say what happened, because the screen is not
+// her channel. That is why the WAY-OUT cases come first here, and why there are more of them than entry cases.
 //
-// Uma criança que não enxerga entra no modo, aperta a direção, e o personagem não anda. Se ela não souber
-// sair, o jogo acabou para ela — e nada na tela vai dizer o que aconteceu, porque a tela não é o canal dela.
-// Por isso os casos de SAÍDA vêm primeiro aqui, e por isso são mais do que os de entrada.
+// ========================= WHAT IS PURE, AND WHAT IS NOT =========================
+// The part testable without a screen is the one that decides WHAT AN INTENT MEANS inside the mode. It is little, and it
+// is exactly where the trap lives: `sair` has only to stop matching one of the two inputs for the way out to vanish with
+// nothing else breaking. The routing (who calls this, and when) belongs to the browser test.
 //
-// ========================= O QUE É PURO, E O QUE NÃO É =========================
-// A parte testável sem tela é a que decide O QUE UMA INTENÇÃO SIGNIFICA dentro do modo. É pouca coisa, e é
-// exatamente onde a armadilha mora: basta `sair` deixar de casar com uma das duas entradas para a saída
-// desaparecer sem que nada mais quebre. O roteamento (quem chama isto, e quando) é do teste de navegador.
-//
-// MUTAÇÕES CONFERIDAS (no fim do arquivo).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { barAction } from '../app/js/ui/pause-icons.js';
 
-/** Uma intenção isolada, como os tradutores de teclado e de controle a montam. */
+/** A single intent, as the keyboard and gamepad translators build it. */
 const so = (...ks) => Object.fromEntries(ks.map((k) => [k, true]));
 
 describe('modo acessibilidade · o que cada intenção significa dentro da barra', () => {
   it('[Right] VOLTAR sai do modo', () => {
-    // O `no` do projeto: Escape no teclado, e o botão de voltar no controle (X no PlayStation, B no Xbox,
-    // A no Nintendo). É a saída que quem já conhece o jogo vai tentar primeiro, porque é a saída de tudo.
+    // The project's `no`: Escape on the keyboard, and the back button on the gamepad (X on PlayStation, B on Xbox, A on
+    // Nintendo). It is the way out someone who knows the game tries first, because it is the way out of everything.
     expect(barAction(so('no'), false)).toBe('sair');
   });
 
   it('[Right] START também sai — DUAS saídas, e é de propósito', () => {
-    // A segunda saída não é redundância: START é o botão que ABRE a pausa, e a pausa é de onde se entrou no
-    // modo. Quem se perde tenta voltar por onde veio. Ter só uma das duas seria confiar que a criança
-    // adivinhe QUAL das duas o jogo escolheu.
+    // The second way out is not redundancy: START is the button that OPENS the pause, and the pause is where the mode was
+    // entered from. Whoever is lost tries to go back the way they came. Having only one of the two would trust the child to
+    // guess WHICH of the two the game chose.
     expect(barAction({}, true)).toBe('sair');
     expect(barAction(so('up'), true), 'START vence a direção — sair nunca fica atrás de andar').toBe('sair');
   });
@@ -48,22 +46,22 @@ describe('modo acessibilidade · o que cada intenção significa dentro da barra
   });
 
   it('[Boundary] SAIR vence tudo, inclusive confirmar', () => {
-    // A ordem de precedência é a decisão. Se `yes` viesse antes, um controle que registrasse os dois no mesmo
-    // quadro (acontece: dedos apertam junto) alternaria um ajuste em vez de devolver o jogo.
+    // The order of precedence is the decision. If `yes` came first, a gamepad that registered both in the same frame (it
+    // happens: fingers press together) would toggle a setting instead of giving the game back.
     expect(barAction(so('no', 'yes'), false)).toBe('sair');
     expect(barAction(so('yes'), true)).toBe('sair');
   });
 
   it('[Zero] quadro sem intenção nenhuma não faz nada', () => {
-    // O controle é lido A CADA QUADRO. Sem isto, um modo que "faz alguma coisa" por quadro parado viraria
-    // sessenta ações por segundo.
+    // The gamepad is read EVERY FRAME. Without this, a mode that does something on an idle frame would become sixty
+    // actions a second.
     expect(barAction({}, false)).toBe('nada');
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · tirando o ramo do START (`temStart`) → "[Right] START também sai" reprova, e o efeito real seria a
-//     criança apertando o botão que a trouxe até ali e nada acontecendo.
-//   · pondo `yes` antes de `no` na ordem → "[Boundary] SAIR vence tudo" reprova.
-//   · fazendo a direção devolver 'andar' antes de checar START → "[Right] START também sai" reprova na
-//     segunda asserção, que é a que encena o dedo apertando os dois juntos.
+// ========================= MUTATIONS CHECKED =========================
+//   · removing the START branch (`hasStart`) → the [Right] START-also-leaves case fails, and the real effect would be the child
+//     pressing the button that brought her there and nothing happening.
+//   · putting `yes` before `no` in the order → the [Boundary] leaving-beats-everything case fails.
+//   · making a direction return 'andar' before checking START → the START-also-leaves case fails on its second
+//     assertion, the one that stages a finger pressing both together.

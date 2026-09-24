@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de educational/activities-registry — catálogo de atividades + validação de id (project node). ZOMBIES + Right-BICEP.
-// Puro (sem DOM/PIXI). Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, ACTIVITIES).
+// Tests of educational/activities-registry — the activities catalogue + id validation (node project). ZOMBIES + Right-BICEP.
+// Pure (no DOM/PIXI). See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4, ACTIVITIES).
 import { describe, it, expect } from 'vitest';
 import {
   getActivity, hasActivity, isValidActivityId, listActivities, listActivityIds, DEFAULT_ACTIVITY_ID,
@@ -24,7 +24,7 @@ describe('isValidActivityId / hasActivity', () => {
   it('false para id desconhecido, string vazia e id de outra atividade parecido', () => {
     expect(isValidActivityId('nao-existe')).toBe(false);
     expect(isValidActivityId('')).toBe(false);
-    expect(isValidActivityId('alf6')).toBe(false); // só existem alf1..alf5
+    expect(isValidActivityId('alf6')).toBe(false); // only alf1..alf5 exist
   });
   it('hasActivity é sinônimo de isValidActivityId (mesma resposta)', () => {
     expect(hasActivity('mat6')).toBe(isValidActivityId('mat6'));
@@ -88,16 +88,15 @@ describe('listActivityIds / listActivities', () => {
     expect(fromGet).toBe(fromList);
   });
 });
+/* ---------- the MODE derivation (ADR-0040) ----------
 
-/* ---------- a derivação do MODE (ADR-0040) ----------
+   These cases are the CONFIRMATION ADR-0040 demands, and their target is not the translation's arithmetic — it is its
+   HOLE. `modeForCategory` decides by two tests and an `else`, and the `else` falls into 'ludico'. A new category in the
+   catalogue (say 'ciencias') breaks nothing: it becomes 'ludico' silently, the coins are born with no shape or letter,
+   and nobody finds out until a child opens the activity.
 
-   Estes casos são a CONFIRMAÇÃO que o ADR-0040 exige, e o alvo deles não é a aritmética da tradução — é o
-   BURACO dela. `modeForCategory` decide por dois testes e um `else`, e o `else` cai em 'ludico'. Uma
-   categoria nova no catálogo (digamos 'ciencias') não quebra nada: vira 'ludico' em silêncio, as moedas
-   nascem sem forma nem letra, e ninguém descobre até uma criança abrir a atividade.
-
-   Por isso o primeiro caso enumera as categorias REALMENTE PRESENTES no catálogo e cobra mapeamento
-   EXPLÍCITO de cada uma. O fall-through não conta como resposta. */
+   So the first case enumerates the categories REALLY PRESENT in the catalogue and demands an EXPLICIT mapping for each.
+   The fall-through does not count as an answer. */
 
 const MAPA_EXPLICITO = { ludico: 'ludico', alf: 'silabas', mat: 'somasub' };
 
