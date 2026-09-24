@@ -75,7 +75,7 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
       .toBe('false');
   });
 
-  it('🔴 [Boundary] `rotularLinha` APAGA a dica que some — não a deixa no idioma anterior', () => {
+  it('🔴 [Boundary] `labelRow` ERASES a hint that is gone — it does not leave it in the previous language', () => {
     // ⚠️ A hint that exists in one dictionary and not another must DISAPPEAR on retranslation. Not writing it is not
     // enough: the old text survives and the footer rests in the language the child just left. It is the same rule
     // `applyLabels` follows for the frame's `data-explain-idle`.

@@ -59,7 +59,7 @@ describe('lqCurve', () => {
     }
   });
 
-  it('[Range] valores fora de [0,1] não são clampados — mirrors game.js (quem clampa é setLq, não lqCurve)', () => {
+  it('[Range] lqCurve does not clamp values outside [0,1] — setLq clamps, not lqCurve', () => {
     const under = lqCurve(-0.5).split(' ');
     const over = lqCurve(1.5).split(' ');
     for (let i = 0; i < 17; i++) {

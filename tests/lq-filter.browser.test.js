@@ -77,7 +77,7 @@ describe('render/lq-filter — setLq', () => {
     f.querySelectorAll('feFuncR,feFuncG,feFuncB').forEach((fn) => expect(fn.getAttribute('tableValues')).toBe(tv));
   });
 
-  it('[Interface] chama o onChange injetado a cada troca — a recomposição do filtro fica em game.js', () => {
+  it('[Interface] calls the injected onChange on every change — recomposing the filter is the host\'s (boot/create-game)', () => {
     let calls = 0;
     initLqFilter({ onChange: () => { calls++; } });
     setLq(0.2);

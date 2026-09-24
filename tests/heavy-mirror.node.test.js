@@ -33,7 +33,7 @@ describe('the base of the heavy files', () => {
     }
   });
 
-  it('🔴 [Right] NOTHING is left outside the mirror any more — with a base, no school reaches a third party', () => {
+  it('🔴 [Right] only espeak-ng stays outside the mirror, with its reason — with a base, every other file comes from it', () => {
     /*
      * 🔴 ONE file stays outside the mirror: `espeak-ng`, fetched from jsDelivr even with a base. It is GPL, and mirroring
      * is distributing, which obliges publishing the SOURCE beside the binary (issue #192); until then its mirror folder
