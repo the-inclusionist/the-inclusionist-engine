@@ -13,7 +13,8 @@ import {
   ACCOMMODATIONS, GENERAL, CONTRACT_KEYED, GAME_KEYED, isAccommodation, presetAccommodations,
   accommodationLabellerFrom, accommodationPresetProblems, accommodationAnswersProblems, subjectWord, isGameKeyed,
 } from '../app/js/core/accommodations.js';
-import { ACOM, U } from '../scripts/lib/accommodations.mjs';
+import { ACOM, U, DECL } from '../scripts/lib/accommodations.mjs';
+import { MAPA } from '../scripts/lib/taxonomy.mjs';
 
 describe('the catalogue and its three families', () => {
   it('🎯 [Right] no id repeats', () => {
@@ -50,6 +51,16 @@ describe('the catalogue and its three families', () => {
   it('[Boundary] isAccommodation rejects what is not an id of the catalogue', () => {
     expect(isAccommodation('gameSpeed')).toBe(true);
     for (const x of ['GameSpeed', 'velocidadeDoJogo', '', null, undefined, 3, {}]) expect(isAccommodation(x)).toBe(false);
+  });
+});
+
+describe('the study\'s two tables name the same categories', () => {
+  it('🔴 [Cross-check] the taxonomy (`MAPA`) and the declaration axes (`DECL`) key the same 35 categories', () => {
+    // `eixosDe` merges both tables by category name; a name only one of them has leaves the other table's axes undefined,
+    // and `medir` then throws on the first key that reads one — the two accommodation scripts died that way after an automated
+    // rename turned the key `Desenho / Criativo` into `Drawing / Criativo` in the taxonomy alone.
+    expect(Object.keys(MAPA).sort()).toEqual(Object.keys(DECL).sort());
+    expect(Object.keys(DECL)).toHaveLength(35);
   });
 });
 
