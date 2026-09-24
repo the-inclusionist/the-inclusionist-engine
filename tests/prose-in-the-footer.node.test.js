@@ -1,26 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// UM PAINEL QUE RE-RENDERIZA TEM DE MOVER A PROSA OUTRA VEZ — a regra do `CLAUDE.md` §4, que já falhou.
+// A PANEL THAT RE-RENDERS HAS TO MOVE THE PROSE AGAIN — the rule of `CLAUDE.md` §4, which has already failed once.
 //
-// ========================= A REGRA, E POR QUE ELA PRECISA DE GATE =========================
-// A decisão do Dev de 2026-08-25 põe a explicação no RODAPÉ e não dentro das linhas: «Em vez de colocar no
-// rodapé como dica, está explicando item a item dentro do menu e transformando-os em manuais!». O mecanismo é
-// o `fillExplain` do `ui/settings-panel`, que MOVE o `.opt-hint` de dentro de cada linha para o rodapé.
+// ========================= THE RULE, AND WHY IT NEEDS A GATE =========================
+// The Dev's decision of 2026-08-25 puts the explanation in the FOOTER and not inside the rows: «Em vez de colocar no
+// rodapé como dica, está explicando item a item dentro do menu e transformando-os em manuais!». The mechanism is
+// `fillExplain` in `ui/settings-panel`, which MOVES the `.opt-hint` from inside each row to the footer.
 //
-// ⚠️ E ELE CORRE UMA VEZ, quando o overlay é frontalizado. Um painel que RECONSTRÓI as suas linhas devolve-as
-// com a prosa lá dentro — então a explicação passa a aparecer DUAS VEZES, no rodapé e sob o rótulo, a partir
-// do primeiro clique. É o defeito que a issue #109 já consertou no `settings-visual` e no `settings-empathy`.
+// ⚠️ AND IT RUNS ONCE, when the overlay is brought to the front. A panel that REBUILDS its rows gives them back with the
+// prose inside — so the explanation shows up TWICE, in the footer and under the label, from the first click on. It is
+// the defect issue #109 fixed in `settings-visual` and `settings-empathy`.
 //
-// 📌 HOJE A REGRA ESTÁ HONRADA nos oito painéis, e é por isso que este ficheiro é um crivo e não um conserto:
-// o que ele impede é o NONO. A regra vive num comentário de cada ctx e no `CLAUDE.md`; enquanto for lembrada à
-// mão, ela falha exactamente como falhou — e o modo de falhar é silencioso, porque nada quebra: a criança só
-// lê a mesma frase duas vezes, numa tela que ela abriu para perceber uma coisa.
+// 📌 THE RULE IS HONOURED IN EVERY PANEL TODAY, and that is why this file is a sieve and not a fix: what it prevents is
+// the NEXT panel. The rule lives in a comment of each ctx and in `CLAUDE.md`; while it is remembered by hand, it fails
+// exactly as it failed — and it fails silently, because nothing breaks: the child just reads the same sentence twice,
+// on a screen she opened to understand something.
 //
-// ⚠️ E O QUE ELE NÃO APANHA, dito para ninguém confiar demais: ele prova que a CHAMADA existe, não que ela
-// está em todos os caminhos de render de um painel com vários. Um painel com dois `render` e a chamada só num
-// deles passa. O que apanharia isso é um caso de comportamento por painel — e esses vivem nos ficheiros de
-// cada um, onde o #109 os deixou.
+// ⚠️ AND WHAT IT DOES NOT CATCH, said so nobody trusts it too much: it proves the CALL exists, not that it is on every
+// render path of a panel with several. A panel with two `render`s and the call in only one of them passes. What would
+// catch that is a behaviour case per panel — and those live in each panel's own file, where #109 left them.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -29,8 +28,8 @@ import { fileURLToPath } from 'node:url';
 const UI = fileURLToPath(new URL('../app/js/ui/', import.meta.url));
 
 /**
- * ⚠️ O `settings-panel` É A CASCA e fica de fora: é ELE quem oferece o `fillExplain`. Exigir que o provedor
- * chame o que ele próprio provê seria o gate a não perceber de que lado da fronteira está.
+ * ⚠️ `settings-panel` IS THE SHELL and stays out: it is the one that OFFERS `fillExplain`. Requiring the provider to
+ * call what it provides would be the gate not knowing which side of the boundary it is on.
  */
 const A_CASCA = 'settings-panel.ts';
 
@@ -39,15 +38,14 @@ const paineis = () => readdirSync(UI)
 
 const fonte = (n) => readFileSync(join(UI, n), 'utf8');
 /**
- * Linhas de CÓDIGO: um comentário que explica a regra não é a chamada que a cumpre.
+ * CODE lines: a comment explaining the rule is not the call that fulfils it.
  *
- * ⚠️ E O COMENTÁRIO DE FIM DE LINHA TAMBÉM SAI, o que a primeira versão não fazia. Ela só descartava linhas
- * COMEÇADAS por `//`, e cada ctx desta engine explica a regra do `fillExplain` em prosa — um `const x = 1; //
- * ver fillExplain(card)` faria um painel passar por cumprir uma coisa que ele só menciona. Foi o caso de
- * vivacidade deste ficheiro que o apanhou, e essa é a razão de ele existir.
+ * ⚠️ AND THE END-OF-LINE COMMENT GOES TOO. Every ctx in this engine explains the `fillExplain` rule in prose — a
+ * `const x = 1; // ver fillExplain(card)` would make a panel pass for fulfilling something it only mentions. This file's
+ * liveness case is what caught it, and that is why it exists.
  *
- * 📌 O `[^:]` antes das duas barras poupa `https://…`: um endereço dentro de uma string não é um comentário, e
- * cortá-lo ali partiria a linha ao meio sem que nada dissesse porquê.
+ * 📌 The `[^:]` before the two slashes spares `https://…`: an address inside a string is not a comment, and cutting it
+ * there would break the line in half with nothing saying why.
  */
 const codigo = (n) => fonte(n).split(/\r?\n/)
   .filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln))
@@ -72,22 +70,22 @@ describe('CLAUDE.md §4 · a prosa fica no rodapé, também depois de re-renderi
   });
 
   it('⚠️ [Interface] e a varredura está VIVA: acha os painéis e vê a casca do lado certo', () => {
-    // Um crivo que lesse a pasta errada, ou cuja regex morresse, ficaria verde por não ter nada que examinar.
+    // A sieve reading the wrong folder, or whose regex died, would stay green for having nothing to examine.
     const lista = paineis();
     expect(lista.length, 'a varredura não achou painel nenhum').toBeGreaterThan(5);
     expect(lista, 'a casca entrou na lista — ela PROVÊ o `fillExplain`, não o consome').not.toContain(A_CASCA);
-    // o detector reconhece as duas metades quando elas existem
+    // the detector recognises both halves when they exist
     expect(RECONSTROI.test('el.innerHTML = html;')).toBe(true);
     expect(CHAMA.test('ctx.fillExplain?.(card);')).toBe(true);
-    // ⚠️ E É POR ISTO QUE OS COMENTÁRIOS SAEM ANTES: um que CITE a chamada — e cada ctx desta engine cita —
-    // casaria com o detector, e um painel que só explicasse a regra sem a cumprir passaria por a cumprir.
+    // ⚠️ AND THIS IS WHY COMMENTS ARE REMOVED FIRST: one that CITES the call — and every ctx in this engine cites it —
+    // would match the detector, and a panel that only explained the rule without fulfilling it would pass for fulfilling it.
     expect(CHAMA.test('// lembre-se de chamar `fillExplain(card)` a cada render')).toBe(true);
     expect(codigo(A_CASCA).includes('//'), 'a limpeza de comentários deixou passar uma linha de comentário').toBe(false);
   });
 
   it('📌 [Right] a casca continua a OFERECER o mecanismo — sem ela a regra não tem como ser cumprida', () => {
-    // Se o `fillExplain` sair do `settings-panel`, os oito painéis passam a chamar uma coisa que não existe e
-    // este crivo continuaria verde. É o caso que prende o outro lado da fronteira.
+    // If `fillExplain` leaves `settings-panel`, the panels end up calling something that does not exist and this
+    // sieve would stay green. It is the case that pins the other side of the boundary.
     expect(fonte(A_CASCA), 'a casca deixou de oferecer o `fillExplain`').toMatch(/fillExplain/);
   });
 });

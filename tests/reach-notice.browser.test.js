@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A TELA DO ALCANCE NUM NAVEGADOR (issue #112). O project node afere as FRASES; aqui é o cartão: que ele
-// aparece, que uma criança cega o OUVE, que ele é operável por teclado, e — sobretudo — que ele não tranca.
+// THE REACH SCREEN IN A BROWSER (issue #112). The node project checks the SENTENCES; here it is the card: that it
+// appears, that a blind child HEARS it, that it is keyboard-operable, and — above all — that it does not lock.
 //
-// ⚠️ ELE INFORMA E NÃO RECUSA, e isso é a decisão que o resto depende. A detecção de teclado é imprecisa por
-// natureza: não há API que diga «há um teclado físico ligado», e um tablet COM teclado responde «toque» ao
-// `pointer:coarse && hover:none`. Se este cartão barrasse, esse tablet levaria uma RECUSA FALSA num jogo que
-// ele joga. Informando, o erro custa uma frase a mais e nunca uma porta fechada — e é por isso que o caso do
-// botão «jogar assim mesmo» é o mais importante deste ficheiro.
+// ⚠️ IT INFORMS AND DOES NOT REFUSE, and that is the decision the rest depends on. Keyboard detection is imprecise by
+// nature: no API says «há um teclado físico ligado», and a tablet WITH a keyboard answers «toque» to
+// `pointer:coarse && hover:none`. If this card blocked, that tablet would get a FALSE REFUSAL in a game it plays.
+// Informing, the error costs one sentence more and never a closed door — and that is why the case of the
+// «jogar assim mesmo» button is the most important one in this file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { showReachNotice, REACH_NOTICE_ID } from '../app/js/ui/reach-notice.js';
 import { reach, defaultTransports } from '../app/js/input/transports.js';
@@ -15,7 +15,7 @@ import { ACTIONS } from '../app/js/core/actions.js';
 import pt from '../app/js/i18n/pt.js';
 
 const sempre = () => true, nunca = () => false;
-/** O caso da issue: só o toque, e ele é curto para as catorze. */
+/** The issue's case: touch only, and it is short for the fourteen. */
 const TABLET = () => reach(defaultTransports({ gamepad: nunca, keyboard: nunca, touch: sempre, mouse: nunca }), ACTIONS);
 const DESKTOP = () => reach(defaultTransports({ gamepad: nunca, keyboard: sempre, touch: nunca, mouse: sempre }), ACTIONS);
 
@@ -48,7 +48,7 @@ describe('o cartão aparece — e só quando há o que dizer', () => {
     const ps = [...cartao().querySelectorAll('p')].map((p) => p.textContent);
     expect(ps).toHaveLength(3);
     expect(ps[0]).toBe('Este jogo usa 14 ações.');
-    expect(ps[1]).toContain('13 lugares'); // nove até os ombros do ADR-0160
+    expect(ps[1]).toContain('13 lugares'); // nine up to ADR-0160's shoulders
   });
 
   it('[Zero] com alcance ok, nada é criado — o caso comum tem de continuar silencioso', () => {
@@ -72,8 +72,8 @@ describe('quem não vê a tela também recebe o aviso', () => {
   });
 
   it('[Right] o foco vai para o CARTÃO, e não para o botão de sair', () => {
-    // Se fosse para o botão, o leitor de tela leria «Jogar assim mesmo» primeiro e o MOTIVO ficaria para quem
-    // fosse procurar. A criança tem de ouvir por que o aviso existe antes de encontrar a saída dele.
+    // If it went to the button, the screen reader would read «Jogar assim mesmo» first and the REASON would be left for
+    // whoever went looking. The child has to hear why the notice exists before finding its way out.
     showReachNotice(ctx(), TABLET());
     expect(document.activeElement.matches('.overlay__card')).toBe(true);
   });
@@ -96,9 +96,9 @@ describe('⚠️ e ele NÃO TRANCA — é aviso, não porta fechada', () => {
   });
 
   it('[Interface] o botão é alcançável por TECLADO — é o pilar 2, e um aviso sem saída é pior que nenhum', () => {
-    // A armadilha de foco (#109) prende o Tab dentro deste cartão enquanto ele está aberto. Se o único
-    // controle dele não fosse focável, ela prenderia a criança num diálogo sem saída — trocar «descobre no
-    // meio que não alcança» por «não consegue sair do aviso» seria piorar.
+    // The focus trap (#109) keeps Tab inside this card while it is open. If its only control were not focusable, the
+    // trap would lock the child in a dialog with no exit — trading «descobre no meio que não alcança» for «não consegue
+    // sair do aviso» would be making it worse.
     showReachNotice(ctx(), TABLET());
     const focaveis = focusablesInDom(cartao());
     expect(focaveis).toHaveLength(1);

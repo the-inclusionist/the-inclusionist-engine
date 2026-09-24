@@ -1,27 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A BARRA RÁPIDA SAI DO CARTÃO DE PAUSA — item 7 do ADR-0044, e o que ele destrava.
+// THE QUICK BAR LEAVES THE PAUSE CARD — item 7 of ADR-0044, and what it unlocks.
 //
-// ========================= O QUE ESTAVA MEDIDO =========================
-// O cartão tinha 22 paradas: DEZ alternadores de acessibilidade (`role="group"`) e DOZE itens de palavra
-// (`role="menu"`), com um `<h2>` no meio. Dois modelos de interação numa tela só, e o leitor de tela
-// apresenta tudo em sequência estrita — o que quem vê lê como "uma barra e uma lista" vira, para quem
-// escuta, vinte e duas coisas em fila.
+// ========================= WHAT WAS MEASURED =========================
+// The card had 22 stops: TEN accessibility toggles (`role="group"`) and TWELVE word items (`role="menu"`), with an
+// `<h2>` in between. Two interaction models on one screen, and the screen reader presents everything in strict
+// sequence — what a sighted reader sees as "a bar and a list" becomes, for whoever listens, twenty-two things in a row.
 //
-// O item 5 tirou cinco itens da lista. Este tira os DEZ ícones do cartão inteiro: eles passam a viver no
-// HUD, disponíveis DURANTE a partida — que é quando uma criança precisa mudar um ajuste que está a
-// atrapalhando agora, e não depois de pausar.
+// Item 5 took five items out of the list. This one takes the icons out of the card entirely: they live in the HUD,
+// available DURING the game — which is when a child needs to change a setting that is getting in her way now, not
+// after pausing.
 //
-// ========================= O QUE ISSO DESTRAVA, E É O MAIOR GANHO =========================
-// Sem a barra, a pausa deixa de ser uma GRADE de duas zonas e vira uma LISTA LINEAR. A XAG 106 permite laço
-// (`wrap`) para menu linear e o PROÍBE para grade de duas dimensões — era por isso que o anel do item 1
-// ainda não fechava aqui. Agora fecha, e com ele a promessa que abriu o ADR-0044:
+// ========================= WHAT THAT UNLOCKS, AND IT IS THE BIGGEST GAIN =========================
+// Without the bar, the pause is no longer a two-zone GRID and becomes a LINEAR LIST. XAG 106 allows wrapping (`wrap`)
+// for a linear menu and FORBIDS it for a two-dimensional grid — that is why item 1's ring could not close here. Now it
+// closes, and with it the promise that opened ADR-0044:
 //
-//   `quit` está a UMA tecla para CIMA de `resume`.
+//   `quit` is ONE key UP from `resume`.
 //
-// Longe na leitura (é o sétimo), perto no dedo (é o vizinho de cima do primeiro). As duas coisas ao mesmo
-// tempo, que é o que só um anel consegue.
+// Far in reading order (it is the seventh), near to the finger (it is the neighbour above the first). Both at the same
+// time, which only a ring can do.
 //
-// MUTAÇÕES CONFERIDAS (no fim do arquivo).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { screenPauseMarkup, quickBarMarkup } from '../app/js/ui/pause-markup.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from '../app/js/ui/pause-buttons.js';
@@ -41,27 +40,27 @@ describe('barra rápida · sai do cartão de pausa e vira HUD', () => {
   it('[Right] a barra existe por si, com os treze ícones e a sua legenda (o ☰ primeiro; um 📷 só, ADR-0215; o idioma por último)', () => {
     const b = quickBarMarkup();
     expect(b).toContain('class="pause-icons"');
-    // ⚠️ ONZE desde 2026-09-12: entrou o ciclo de tipografia (ADR-0149). O número é escrito por extenso de
-    // propósito — um ícone que entre ou saia da barra sem alguém reparar é decisão de produto, não etiqueta.
+    // ⚠️ The number is written literally on purpose — an icon entering or leaving the bar without anyone noticing is a
+    // product decision, not a label.
     expect((b.match(/class="pi-btn/g) || []).length).toBe(13);
-    // A legenda viaja COM a barra: ela é a dica que substitui, para quem não vê, o `title` que só o mouse
-    // revela. Deixá-la para trás no cartão tornaria a barra do HUD muda.
+    // The legend travels WITH the bar: it is the hint that replaces, for whoever cannot see, the `title` only the mouse
+    // reveals. Leaving it behind in the card would make the HUD bar mute.
     expect(b).toContain('class="pause-icons-cap"');
     expect(b).toContain('aria-live="polite"');
   });
 
   it('[Right] a pausa continua com a lista inteira — só os ícones saíram', () => {
     const h = markup();
-    // A terceira lista (ADR-0146) entra no markup sempre, escondida: é só o «voltar» enquanto o jogo não declara nada.
+    // The third list (ADR-0146) is always in the markup, hidden: it is only «voltar» while the game declares nothing.
     expect((h.match(/class="pm-btn/g) || []).length).toBe(PM_BTNS.length + PM_OPTIONS_BTNS.length + PM_GAME_BTNS.length);
     expect(h).toContain('data-act="resume"');
     expect(h).toContain('data-act="quit"');
   });
 
   it('[Right] AGORA a pausa é linear, e `quit` fica a UMA tecla de `resume`', () => {
-    // A promessa que abriu o ADR-0044, e ela só pôde ser cumprida depois de a barra sair: a XAG 106 permite
-    // laço para menu LINEAR e o proíbe para grade de duas dimensões. Enquanto o cartão tivesse duas zonas,
-    // dar a volta seria contra a norma; com uma lista só, é o que a norma recomenda.
+    // The promise that opened ADR-0044, and it could only be kept once the bar left: XAG 106 allows wrapping for a
+    // LINEAR menu and forbids it for a two-dimensional grid. While the card had two zones, going round would be against
+    // the guideline; with a single list, it is what the guideline recommends.
     const n = PM_BTNS.length;
     expect(PM_BTNS[0].act).toBe('resume');
     expect(PM_BTNS[n - 1].act).toBe('quit');
@@ -70,15 +69,15 @@ describe('barra rápida · sai do cartão de pausa e vira HUD', () => {
   });
 
   it('[Zero] a barra é montada UMA vez por chamada e não carrega estado', () => {
-    // `quickBarMarkup` é string pura: duas telas de jogador recebem a MESMA marcação e cada uma reflete o
-    // estado do SEU jogador depois (o daltonismo é por jogador). Se a função guardasse estado, a segunda
-    // tela nasceria com o rótulo da primeira.
+    // `quickBarMarkup` is a pure string: two player screens receive the SAME markup and each reflects ITS player's state
+    // afterwards (colour blindness is per player). If the function kept state, the second screen would be born with
+    // the first one's label.
     expect(quickBarMarkup()).toBe(quickBarMarkup());
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · devolvendo `iconsMarkup()` ao `screenPauseMarkup` → "[Right] o cartão NÃO tem mais ícone nenhum" reprova.
-//   · deixando a `.pause-icons-cap` no cartão em vez de na barra → "[Right] a barra existe por si" reprova,
-//     e o efeito real seria uma barra de HUD que não diz o que cada ícone faz.
-//   · pondo `quit` antes de `print` em PM_BTNS → "[Right] AGORA a pausa é linear" reprova na última asserção.
+// ========================= MUTATIONS CHECKED =========================
+//   · giving `iconsMarkup()` back to `screenPauseMarkup` → `[Right] o cartão NÃO tem mais ícone nenhum` fails.
+//   · leaving `.pause-icons-cap` in the card instead of in the bar → `[Right] a barra existe por si` fails,
+//     and the real effect would be a HUD bar that does not say what each icon does.
+//   · putting `quit` before `print` in PM_BTNS → `[Right] AGORA a pausa é linear` fails on the last assertion.

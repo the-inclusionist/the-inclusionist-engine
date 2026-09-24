@@ -22,13 +22,13 @@ import {
 import { HEAVY_FILES } from '../app/js/platform/heavy-catalogue.js';
 
 /*
- * ⚠️ O TECTO DE TEMPO DESTE FICHEIRO É ESCOLHIDO, e a distinção importa porque levantar um tecto costuma ser o conserto
- * que adia o erro. 📏 Medido em 2026-09-23: este ficheiro leva 3,73 s de teste numa máquina OCIOSA — o log-mel de 30 s de
- * áudio conferido ponto a ponto contra o `WhisperFeatureExtractor` é o trabalho, não desperdício —, contra o padrão de
- * 5 s do Vitest, que ninguém escolheu para ele. Sob a carga da suíte inteira a CPU é partilhada e ele cruzava esse
- * padrão em cerca de uma corrida em cinco, reprovando por motivo nenhum e levando junto qualquer medição ao lado.
- * 📌 A janela de silêncio já é RESPONDIDA em vez de calculada (sem isso seriam 250 mil milhões de multiplicações); o que
- * resta é o custo real da medida.
+ * ⚠️ THIS FILE'S TIME CEILING IS CHOSEN, and the distinction matters because raising a ceiling is usually the fix that
+ * postpones the error. 📏 Measured on 2026-09-23: this file takes 3.73 s of test on an IDLE machine — the log-mel of 30 s of
+ * audio checked point by point against `WhisperFeatureExtractor` is the work, not waste —, against Vitest's default of
+ * 5 s, which nobody chose for it. Under the load of the whole suite the CPU is shared and it crossed that default in about
+ * one run in five, failing for no reason and taking any measurement beside it down too.
+ * 📌 The silence window is already ANSWERED instead of computed (otherwise it would be 250 billion multiplications); what
+ * is left is the real cost of the measurement.
  */
 vi.setConfig({ testTimeout: 20_000 });
 

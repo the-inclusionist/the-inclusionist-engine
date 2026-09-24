@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// PUBLICADO SEM GATE — o inventário dos módulos que a engine entrega e que nada aqui exercita.
+// PUBLISHED WITHOUT A GATE — the inventory of the modules the engine ships and that nothing here exercises.
 //
-// ========================= A MEDIÇÃO QUE PEDIU ESTE FICHEIRO, E A QUE A DESFEZ =========================
-// A primeira varredura comparou o TEXTO dos testes com os nomes dos módulos e acusou cinco. Era falsa: `anel`
-// casa dentro de `painel`, `speech` dentro de `interruptible-speech`. Refeita pelo GRAFO DE IMPORTAÇÃO — por
-// especificador, um a um —, a lista mudou de forma inteira. Fica escrito porque é a diferença entre um crivo
-// e um alarme que alguém desliga.
+// ========================= THE MEASUREMENT THAT ASKED FOR THIS FILE, AND THE ONE THAT UNDID IT =========================
+// The first sweep compared the TEXT of the tests with the module names and accused five. It was false: `anel` matches
+// inside `painel`, `speech` inside `interruptible-speech`. Redone through the IMPORT GRAPH — by specifier, one by one —,
+// the list changed shape entirely. It stays written because it is the difference between a sieve and an alarm someone
+// switches off.
 //
-// 📏 MEDIDO EM 2026-09-08: 127 módulos. QUARENTA não têm importador interno nenhum, e isso **não é defeito** —
-// é a arquitectura: a raiz de composição é o cartucho, então uma folha que o jogo fia por sua conta não tem
-// chamador aqui dentro. Trinta e sete dos quarenta têm teste. É a INTERSECÇÃO que interessa.
+// 📏 MEASURED ON 2026-09-08: 127 modules. FORTY had no internal importer at all, and that is **not a defect** — it is
+// the architecture: the composition root is the cartridge, so a leaf the game wires on its own has no caller in here.
+// Thirty-seven of the forty had a test. It is the INTERSECTION that matters.
 //
-// ⚠️ E A INTERSECÇÃO NÃO PODE PRODUZIR ACUSAÇÃO FALSA, o que é a razão de o crivo ser esta e não «módulo sem
-// teste». Um módulo sem importador interno é inalcançável por caminho transitivo: se nada em `app/js` o
-// importa, nenhum teste chega a ele senão importando-o directamente. Logo «sem importador **e** sem teste»
-// é literalmente «ninguém aqui o exercita», e não «o meu detector não viu».
+// ⚠️ AND THE INTERSECTION CANNOT PRODUCE A FALSE ACCUSATION, which is why the sieve is this and not «módulo sem
+// teste». A module with no internal importer is unreachable by a transitive path: if nothing in `app/js` imports it,
+// no test reaches it except by importing it directly. So «no importer **and** no test» literally means «nobody here
+// exercises it», and not «my detector did not see».
 //
-// 📌 O `package.json` exporta `./core/*.js`, `./input/*.js`, `./render/*.js`, `./platform/*.js`, `./ui/*.js`,
-// `./educational/*.js` e `./i18n/*.js` — CURINGAS. Um módulo destes está publicado no instante em que existe.
-// Estar nesta lista é, então, «a engine entrega isto a 300 jogos e não tem como saber se partiu».
+// 📌 `package.json` exports `./core/*.js`, `./input/*.js`, `./render/*.js`, `./platform/*.js`, `./ui/*.js`,
+// `./educational/*.js` and `./i18n/*.js` — WILDCARDS. One of these modules is published the instant it exists. Being
+// on this list means «the engine hands this to every game and has no way of knowing whether it broke».
 //
-// ⚠️ A LISTA TEM DE ENCOLHER, e já encolheu uma vez: `platform/speech` saiu daqui em `873618b`, com catorze
-// casos e sete mutações. Uma lista que só cresce é um monumento.
+// ⚠️ THE LIST HAS TO SHRINK: an entry leaves when its module gains a gate (as `platform/speech` did, `873618b`). A list
+// that only grows is a monument.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, posix } from 'node:path';
@@ -33,24 +33,22 @@ const RAIZ_JS = fileURLToPath(new URL('../app/js/', import.meta.url));
 const RAIZ_TESTES = fileURLToPath(new URL('./', import.meta.url));
 
 /**
- * OS MÓDULOS PUBLICADOS QUE NADA AQUI EXERCITA, e por que cada um ainda está assim.
+ * THE PUBLISHED MODULES THAT NOTHING HERE EXERCISES, and why each one is still so.
  *
- * ⚠️ Uma entrada NOVA sem razão escrita à mão é a engine a publicar superfície sem alarme, sem ninguém
- * decidir — que foi exactamente como estes chegaram.
+ * ⚠️ A NEW entry without a hand-written reason is the engine publishing surface with no alarm, with nobody
+ * deciding — which is exactly how these arrived.
  */
 /*
- * 🔴 A LISTA ESTÁ VAZIA, E ISSO É UM PAGAMENTO E NÃO UM AFROUXAMENTO. A única entrada era o
- * `render/recycling-tex`, dispensado porque o único teste dele vivia no repositório do CARTUCHO — o padrão do
- * canário, com a nota de que mover o teste era decisão do cartucho e não daqui.
- *
- * 🎯 O ADR-0228 respondeu essa decisão por inteiro: o módulo É do cartucho, e foi para lá com o teste. A dispensa
- * desapareceu porque o sujeito dela desapareceu, que é a única forma honesta de uma excepção sair de uma lista.
+ * 🔴 THE LIST IS EMPTY, AND THAT IS A PAYMENT, NOT A LOOSENING. Its last entry was `render/recycling-tex`, excused because
+ * its only test lived in the CARTRIDGE's repository. ADR-0228 settled it: the module IS the cartridge's, and went there
+ * with its test. The exemption disappeared because its subject disappeared, which is the only honest way for an
+ * exception to leave a list.
  */
 const SEM_GATE = {};
 
 // ===== A varredura =====
 
-/** Todo `.ts` sob `app/js`, menos as declarações ambiente (`*.d.ts`), que não são módulos. */
+/** Every `.ts` under `app/js`, except the ambient declarations (`*.d.ts`), which are not modules. */
 function modulos(dir = RAIZ_JS, prefixo = '') {
   const saida = [];
   for (const nome of readdirSync(dir)) {
@@ -62,7 +60,7 @@ function modulos(dir = RAIZ_JS, prefixo = '') {
   return saida;
 }
 
-/** Todo ficheiro de teste, incluindo auxiliares que não terminam em `.test.js`. */
+/** Every test file, including helpers that do not end in `.test.js`. */
 function ficheirosDeTeste(dir = RAIZ_TESTES) {
   const saida = [];
   for (const nome of readdirSync(dir)) {
@@ -78,7 +76,7 @@ const especificadores = (src) => [...src.matchAll(ESPECIFICADOR)].map((m) => m[1
 
 const TODOS = modulos();
 
-/** Chave de módulo (`ui/shell`) a partir de um especificador relativo visto dentro de `app/js/<de>`. */
+/** Module key (`ui/shell`) from a relative specifier seen inside `app/js/<from>`. */
 function resolveInterno(de, spec) {
   if (!spec.startsWith('.')) return null;
   const base = posix.dirname(de);
@@ -109,10 +107,9 @@ function medir() {
 describe('publicado sem gate · o inventário encolhe, e uma entrada nova tem de ser declarada', () => {
   const achados = medir();
 
-  // ⚠️ ESTE CASO APANHOU-ME A TRAZER UM FACTO DE OUTRO REPOSITÓRIO: escrevi `expect(TODOS).toContain('main')`
-  // porque num CARTUCHO a raiz é `app/js/main.ts` e um glob `**` já a escondeu. Aqui a raiz de `app/js` tem
-  // **só** o `env.d.ts` — a engine não tem módulo de raiz nenhum. O caso passou a afirmar o que é verdade
-  // desta árvore, incluindo a exclusão das declarações ambiente, que é regra e não sorte.
+  // ⚠️ THE ENGINE HAS NO ROOT MODULE: in a CARTRIDGE the root is `app/js/main.ts` (and a `**` glob has hidden it before),
+  // but the root of this `app/js` holds **only** `env.d.ts`. The case asserts what is true of this tree, including the
+  // exclusion of the ambient declarations, which is a rule and not luck.
   it('[Vácuo] a varredura desce a árvore, e a declaração ambiente fica de fora', () => {
     expect(TODOS.length).toBeGreaterThan(100);
     expect(TODOS).toContain('boot/create-game');
@@ -125,17 +122,17 @@ describe('publicado sem gate · o inventário encolhe, e uma entrada nova tem de
     expect(novos, `módulo publicado que ninguém aqui exercita e ninguém declarou: ${novos.join(', ')}`).toEqual([]);
   });
 
-  // ⚠️ A SAÍDA. Sem esta metade a lista vira monumento: uma entrada consertada continuaria a dizer que existe
-  // um buraco, e a próxima pessoa leria a lista inteira como história em vez de estado.
+  // ⚠️ THE WAY OUT. Without this half the list becomes a monument: a fixed entry would keep saying there is a hole,
+  // and the next person would read the whole list as history instead of state.
   it('[Fronteira] nenhuma entrada da lista já foi resolvida — se foi, sai daqui', () => {
     const resolvidas = Object.keys(SEM_GATE).filter((m) => !achados.includes(m));
     expect(resolvidas, `já tem gate (ou deixou de existir); apague a entrada: ${resolvidas.join(', ')}`).toEqual([]);
   });
 
-  // 🎯 O caso que prova que o crivo mede o que diz medir, e não «módulo cujo nome não aparece num teste».
+  // 🎯 The case that proves the sieve measures what it says it measures, and not «módulo cujo nome não aparece num teste».
   it('[Fronteira] um módulo muito importado e nunca nomeado num teste NÃO é acusado', () => {
-    // `core/entity` tem 19 importadores internos e nenhum teste o importa directamente: é exercitado por
-    // caminho transitivo, e acusá-lo seria a falsa acusação que desliga um gate.
+    // `core/entity` has many internal importers and no test imports it directly: it is exercised by a transitive
+    // path, and accusing it would be the false accusation that gets a gate switched off.
     expect(achados).not.toContain('core/entity');
     expect(achados).not.toContain('core/dom-query');
   });
@@ -146,20 +143,20 @@ describe('publicado sem gate · o inventário encolhe, e uma entrada nova tem de
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-08) =====
-// Cada uma aplicada POR SCRIPT ao ficheiro, com a contagem de ocorrências afirmada em exactamente 1 — um
-// `replace` com `\n` casa zero em CRLF e a mutação «sobrevive» sem ter sido aplicada. E o que está aqui é o
-// que foi MEDIDO, não o que eu previa: quatro das seis reprovaram casos diferentes dos que eu tinha escrito.
+// ===== MUTATIONS CHECKED (2026-09-08) =====
+// Each applied BY SCRIPT to the file, with the occurrence count asserted at exactly 1 — a `replace` with `\n` matches
+// zero in CRLF and the mutation «sobrevive» without having been applied. And what is here is what was MEASURED, not what
+// I predicted: four of the six failed different cases from the ones I had written.
 //
-// 1. renomear a chave `render/recycling-tex` em `SEM_GATE`  → reprova [Feliz] **e** [Fronteira] da saída. A
-//    segunda porque a chave renomeada deixa de aparecer nos achados — as duas metades a funcionar juntas.
-// 2. acrescentar `platform/speech` a `SEM_GATE`             → reprova [Fronteira] da saída e o caso do speech
-// 3. tirar a cláusula «sem importador interno»              → reprova [Feliz] e o caso da FALSA ACUSAÇÃO, que
-//    é a prova de que a intersecção é o crivo e não uma conveniência
-// 4. tirar a cláusula «sem teste»                           → reprova [Feliz] e o caso do speech
-// 5. `medir()` a devolver `[]`                              → reprova **só** [Fronteira] da saída
-//    🎯 É A MUTAÇÃO QUE MAIS IMPORTA: com o crivo cego, o [Feliz] fica verde para sempre — um crivo cego
-//    aprova tudo. Quem o apanha é a metade da SAÍDA, e é por isso que ela não é arrumação.
-// 6. contar só `*.test.js` como teste                       → SOBREVIVE. Equivalência MEDIDA: hoje não há
-//    auxiliar em `tests/` que importe `app/js`. Fica registada em vez de apagada — a generosidade do detector
-//    é o que impede a acusação falsa no dia em que um auxiliar aparecer.
+// 1. renaming the key `render/recycling-tex` in `SEM_GATE`  → fails [Feliz] **and** the way-out [Fronteira]. The
+//    second because the renamed key stops appearing in the findings — both halves working together.
+// 2. adding `platform/speech` to `SEM_GATE`               → fails the way-out [Fronteira] and the speech case
+// 3. removing the «sem importador interno» clause         → fails [Feliz] and the FALSE ACCUSATION case, which is
+//    the proof that the intersection is the sieve and not a convenience
+// 4. removing the «sem teste» clause                      → fails [Feliz] and the speech case
+// 5. `medir()` returning `[]`                              → fails **only** the way-out [Fronteira]
+//    🎯 IT IS THE MUTATION THAT MATTERS MOST: with the sieve blind, [Feliz] stays green forever — a blind sieve
+//    approves everything. What catches it is the WAY-OUT half, and that is why it is not tidying.
+// 6. counting only `*.test.js` as a test                  → SURVIVES. A MEASURED equivalence: today no helper in
+//    `tests/` imports `app/js`. It stays recorded instead of erased — the detector's generosity is what prevents the
+//    false accusation the day a helper appears.

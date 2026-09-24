@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de RENDER/DOM (project browser — Chromium/Playwright; PIXI global via vitest.setup.browser.js).
-// Padrões: ZOMBIES + Right-BICEP (rótulos no nome). Ver docs/plano-testes.md. Módulos: canvas, props,
-// sprites, sprite-fx, storage. Testes ESTRUTURAIS (dimensões/tipos) — não dependem dos PNGs de asset.
-//
-// O bloco de `props` SAIU no item 19, junto com o módulo: a arte da moeda, da árvore e dos poderes é do JOGO
-// e foi para `game/props` — logo o teste dela foi para `tests/props.browser.test.js`. Não é organização: se
-// ele tivesse ficado, este arquivo passaria a importar de `game/` e os OUTROS quatro módulos que ele cobre
-// (canvas, sprite-fx, storage, dom) sumiriam da varredura de fixtures, que pula testes de jogo por desenho.
+// RENDER/DOM tests (browser project — Chromium/Playwright; PIXI global via vitest.setup.browser.js).
+// Patterns: ZOMBIES + Right-BICEP (labels in the name). See docs/plano-testes.md. Modules: render/canvas,
+// render/sprite-fx, platform/storage, ui/dom. STRUCTURAL tests (dimensions/types) — they do not depend on asset PNGs.
+// The art of a game (coins, trees, power-ups) belongs to the game and is tested in its own repository.
 import { describe, it, expect } from 'vitest';
 import * as CV from '../app/js/render/canvas.js';
 import * as FX from '../app/js/render/sprite-fx.js';

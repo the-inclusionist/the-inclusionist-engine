@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// O MAPA DA RENOMEAÇÃO, E A REGRA QUE IMPEDE ELE DE ESTRAGAR PROSA (ADR-0219; issue #202).
+// THE RENAME MAP, AND THE RULE THAT STOPS IT FROM SPOILING PROSE (ADR-0219; issue #202).
 //
-// A superfície pública passa a falar inglês numa release quebrante só, e o que renomeia é um FICHEIRO — o mapa —, porque a
-// tabela de migração é impressa dele: um nome não pode ser renomeado sem ficar escrito. O que este crivo mede é o que uma
-// suíte grande não veria num commit de 93 ficheiros.
+// The public surface moves to English in a single breaking release, and what renames is a FILE — the map —, because the
+// migration table is printed from it: a name cannot be renamed without being written down. What this sieve measures is
+// what a big suite would not see in a 93-file commit.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
@@ -17,9 +17,9 @@ const RAIZ = process.cwd().endsWith('app') ? join(process.cwd(), '..') : process
 
 describe('o mapa é declaração, não adivinhação', () => {
   /*
-   * ⚠️ SÓ AS CAMADAS POR APLICAR, e a razão é mecânica: depois de uma camada correr, o nome NOVO existe na árvore de
-   * propósito, e uma verificação de colisão que não soubesse disso acusaria o próprio trabalho de ontem. O campo `done` de
-   * cada camada é o que separa «ainda vai renomear» de «já renomeou» — e é por isso que ele é dado do mapa e não memória.
+   * ⚠️ ONLY THE LAYERS NOT YET APPLIED, and the reason is mechanical: after a layer runs, the NEW name exists in the tree on
+   * purpose, and a collision check that did not know it would accuse yesterday's own work. Each layer's `done` field is
+   * what separates «ainda vai renomear» from «já renomeou» — and that is why it is data in the map and not memory.
    */
   it('🔴 [Right] todo nome novo é inglês, e nenhum choca com um nome que já existe', () => {
     const mapa = readMap();
@@ -38,8 +38,8 @@ describe('o mapa é declaração, não adivinhação', () => {
 
     const aindaPortugues = pares.filter(([, novo]) => palavras(novo).some((w) => pt.has(w)));
     expect(aindaPortugues, 'um nome «novo» que continua português renomeia para o mesmo problema').toEqual([]);
-    // 🔴 Uma COLISÃO é a forma silenciosa de estragar isto: dois módulos a publicar o mesmo nome, e o `tsc` só reclama onde os
-    // dois se encontram — que pode ser em nenhum ficheiro.
+    // 🔴 A COLLISION is the silent way to spoil this: two modules publishing the same name, and `tsc` only complains where
+    // the two meet — which may be in no file at all.
     const colisoes = pares.filter(([velho, novo]) => existentes.has(novo) && novo !== velho);
     expect(colisoes, 'o nome novo já é de outra coisa').toEqual([]);
     const destinos = pares.map(([, novo]) => novo);
@@ -48,22 +48,22 @@ describe('o mapa é declaração, não adivinhação', () => {
 });
 
 /*
- * ========================= FASE 3: O NOME DO FICHEIRO TAMBÉM É SUPERFÍCIE =========================
- * Um jogo escreve `from '@the-inclusionist/engine/core/anel.js'`, logo um CAMINHO é contrato tanto quanto um nome. O que muda
- * face à fase 2 é o que se pode medir: um nome vive no retrato da superfície, mas um ficheiro vive no DISCO — e por isso estes
- * casos perguntam ao sistema de ficheiros, que é a única testemunha que não repete o que o mapa diz.
+ * ========================= PHASE 3: THE FILE NAME IS SURFACE TOO =========================
+ * A game writes `from '@the-inclusionist/engine/core/anel.js'`, so a PATH is as much a contract as a name. What changes
+ * from phase 2 is what can be measured: a name lives in the surface snapshot, but a file lives on DISK — so these cases
+ * ask the file system, which is the only witness that does not repeat what the map says.
  */
 /*
- * 🔴 O QUE MUDOU DE NOME E DEPOIS MUDOU DE REPOSITÓRIO. O mapa da fase 3 regista «X passou a Y», e para sete
- * ficheiros o Y deixou de existir aqui — não porque o rename falhou, mas porque o ADR-0228 tirou da engine os
- * módulos que descrevem um jogo, e estes foram com eles para o `game-platformer`.
+ * 🔴 WHAT WAS RENAMED AND THEN CHANGED REPOSITORY. The phase-3 map records «X passou a Y», and for seven files the Y no
+ * longer exists here — not because the rename failed, but because ADR-0228 took out of the engine the modules that
+ * describe one game, and these went with them to `game-platformer`.
  *
- * 📌 DECLARADOS COM O MOTIVO, e não apagados do mapa: o mapa é o registo de uma migração que aconteceu, e
- * reescrevê-lo faria a fase 3 parecer menor do que foi. É a mesma escolha que o livro dos ponteiros mortos faz,
- * pela mesma razão — «X virou Y» é dado SOBRE caminhos, e um livro que se deixa reescrever deixa de ser livro.
+ * 📌 DECLARED WITH THE REASON, not deleted from the map: the map is the record of a migration that happened, and
+ * rewriting it would make phase 3 look smaller than it was. It is the same choice the book of dead pointers makes, for
+ * the same reason — «X virou Y» is data ABOUT paths, and a book that lets itself be rewritten stops being a book.
  *
- * ⚠️ E a metade VELHA do par continua a ser exigida: o ficheiro com o nome antigo não pode estar de volta aqui.
- * Só a existência do NOVO é dispensada, e só para estes sete.
+ * ⚠️ And the OLD half of the pair is still required: the file with the old name cannot be back here. Only the NEW one's
+ * existence is excused, and only for these seven.
  */
 const SAIRAM = {
   'app/js/render/scenery-data.ts': 'ADR-0228: os cenários são de um jogo',
@@ -93,9 +93,9 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
 
   it('⚠️ [Zero] uma entrada de `SAIRAM` que VOLTOU reprova — senão a lista de excepções vira coringa', () => {
     /*
-     * 🔴 Uma lista de excepções que sobrevive ao facto que a justificava é pior do que não a ter: ela autoriza
-     * de graça. Este caso é o par do de cima, e é o que mantém a dispensa amarrada à realidade — se um destes
-     * sete voltar à árvore, a linha que o dispensa tem de sair com ele.
+     * 🔴 A list of exceptions that outlives the fact that justified it is worse than having none: it authorises for
+     * free. This case is the pair of the one above, and it keeps the exemption tied to reality — if one of these seven
+     * comes back to the tree, the line excusing it has to leave with it.
      */
     const voltaram = Object.keys(SAIRAM).filter((p) => existsSync(join(RAIZ, p)));
     expect(voltaram, 'está de volta na árvore e continua declarado como tendo saído').toEqual([]);
@@ -104,7 +104,7 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
   it('🔴 [Right] o caminho novo é inglês, e nenhum ficheiro velho aponta para dois sítios', () => {
     const todas = fileLayers().flatMap(([, l]) => Object.entries(l.files));
     const pt = new Set(JSON.parse(readFileSync(join(RAIZ, 'scripts/word-lists.json'), 'utf8')).portuguese);
-    // O nome do ficheiro parte-se como um identificador se parte: por `-`, `.` e `_`, e o que sobra é palavra.
+    // A file name splits the way an identifier does: by `-`, `.` and `_`, and what is left is words.
     const palavras = (p) => p.split('/').pop().replace(/\.[a-z.]+$/i, '').split(/[-._]/).map((w) => w.toLowerCase());
     const aindaPortugues = todas.filter(([, novo]) => palavras(novo).some((w) => pt.has(w)));
     expect(aindaPortugues, 'um caminho «novo» que continua português move para o mesmo problema').toEqual([]);
@@ -114,37 +114,29 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
 
   it('🎯 [Zero] e NINGUÉM na árvore ainda importa um caminho que já não existe', () => {
     /*
-     * ⚠️ ESTE É O CASO QUE O `tsc` NÃO FAZ, e é por isso que ele está aqui: um `import` de um ficheiro que sumiu é erro de
-     * tipos, sim — mas um caminho escrito numa CADEIA (um crivo que nomeia o módulo que guarda, um livro-razão chaveado por
-     * caminho, um `.md`) não é lido por compilador nenhum. Foi assim que o inventário da dívida ficou a falar de
-     * `core/anel.ts` depois de `core/anel.ts` já não existir.
+     * ⚠️ THIS IS THE CASE `tsc` DOES NOT DO, and that is why it is here: an `import` of a file that vanished is a type error,
+     * yes — but a path written in a STRING (a sieve naming the module it guards, a ledger keyed by path, a `.md`) is read
+     * by no compiler. That is how the debt inventory kept talking about `core/anel.ts` after `core/anel.ts` no longer existed.
      */
     const movidos = fileLayers().filter(([, l]) => l.done).flatMap(([, l]) => Object.keys(l.files));
     expect(movidos.length, 'nada movido — este caso não mede nada').toBeGreaterThan(0);
-    // As duas formas de cada caminho movido (`.ts` no disco, `.js` num import), numa alternação só. O `Set` guarda a
-    // contagem igual à da versão anterior: uma entrada por FORMA distinta encontrada no ficheiro, não por ocorrência.
+    // The two forms of each moved path (`.ts` on disk, `.js` in an import), in one alternation. The `Set` keeps one entry
+    // per distinct FORM found in the file, not per occurrence.
     const escapar = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const FORMAS_MOVIDAS = new RegExp(
       [...new Set(movidos.flatMap((v) => [v, v.replace(/\.ts$/, '.js')]))].map(escapar).join('|'), 'g');
     const rastreados = execFileSync('git', ['ls-files'], { cwd: RAIZ, encoding: 'utf8' }).trim().split(/\r?\n/);
     const sobras = [];
     for (const f of rastreados) {
-      if (f === 'scripts/rename-map.json' || f === 'scripts/apply-file-rename.mjs') continue; // CITAM os velhos de propósito
-      if (f === 'docs/6-DevOps-SRE/Breaking-Changes.md' || f === 'CHANGELOG.md') continue;    // a tabela de migração vive deles
-      if (f === 'tests/rename-map.node.test.js') continue;                                     // e este ficheiro também os cita
-      /*
-       * ⚠️ E O LIVRO DOS PONTEIROS MORTOS, que é o caso mais interessante desta lista porque nasceu de DOIS PORTÕES EM
-       * CONFLITO. O `ponteiros-de-registo` exige que um caminho citado por um registo e já inexistente seja DECLARADO pelo
-       * nome, com o motivo; este caso proíbe escrever um caminho movido. Os dois têm razão, e quem cede é este: um livro que
-       * regista o que morreu tem de poder nomear o que morreu. A prosa de um registo é história e não se reescreve (ADR-0057),
-       * logo alguém tem de dizer, em algum sítio, para onde o ficheiro foi — e esse sítio é aquele livro.
-       */
+      if (f === 'scripts/rename-map.json' || f === 'scripts/apply-file-rename.mjs') continue; // they CITE the old ones on purpose
+      if (f === 'docs/6-DevOps-SRE/Breaking-Changes.md' || f === 'CHANGELOG.md') continue;    // the migration table lives in them
+      if (f === 'tests/rename-map.node.test.js') continue;                                     // and this file cites them too
       if (f === 'tests/ponteiros-de-registo.node.test.js') continue;
       const texto = readFileSync(join(RAIZ, f), 'utf8');
-      // ⚠️ UMA PASSAGEM POR FICHEIRO, e não uma por caminho movido. A primeira versão fazia `includes` para cada uma das
-      // ~320 formas dentro do laço dos ~1050 ficheiros rastreados — ~335 mil varreduras do texto inteiro —, e sob a carga
-      // da suíte o caso estourava o tecto de 5 s em cerca de uma corrida em cinco. Um vermelho que vem da máquina e não
-      // do código invalida o que estiver a ser medido ao lado dele; o conserto é o trabalho encolher, nunca o relógio crescer.
+      // ⚠️ ONE PASS PER FILE, not one per moved path: an `includes` for each of the ~320 forms inside the loop over the
+      // ~1050 tracked files — ~335 thousand scans of the whole text — blew the 5 s ceiling in about one run in five under
+      // the suite's load. A red that comes from the machine and not from the code invalidates whatever is being measured
+      // beside it; the fix is the work shrinking, never the clock growing.
       for (const forma of new Set([...texto.matchAll(FORMAS_MOVIDAS)].map((m) => m[0]))) sobras.push(`${f} → ${forma}`);
     }
     expect(sobras, 'alguém ainda escreve um caminho que foi movido').toEqual([]);
@@ -161,9 +153,9 @@ describe('a renomeação não estraga prosa', () => {
   });
 
   /*
-   * 🔴 ESTE É O CASO QUE FEZ A REGRA EXISTIR. 📏 Medido antes de renomear uma linha: `LINHAS` é o número de linhas da grelha de
-   * flashes E é a palavra portuguesa em dezassete comentários de prosa deste repositório. Uma substituição por palavra inteira
-   * deixaria «🎯 TRÊS ROWS, UM PAINEL» — prosa estragada dentro de um commit grande demais para alguém a ver.
+   * 🔴 THIS IS THE CASE THAT MADE THE RULE EXIST. 📏 Measured before renaming a single line: `LINHAS` is the number of rows
+   * of the flash grid AND the Portuguese word in seventeen prose comments of this repository. A whole-word substitution
+   * would leave «🎯 TRÊS ROWS, UM PAINEL» — prose spoiled inside a commit too big for anyone to see it.
    */
   it('🔴 [Zero] num comentário, a PALAVRA fica e o identificador entre crases muda', () => {
     const antes = '// 🎯 TRÊS LINHAS, UM PAINEL: o `LINHAS` da grelha é outra coisa\nconst n = LINHAS;\n';
@@ -186,11 +178,11 @@ describe('a renomeação não estraga prosa', () => {
   });
 
   /*
-   * 🔴 O CASO QUE FALTAVA, e ele custou um valor de DADOS já commitado: `'dentro-da-zona'` — o motivo que o motor adaptativo
-   * dá para manter o nível — saiu como `'isInside-da-zona'`, metade em inglês, numa cadeia que nenhuma tabela de migração
-   * menciona e que um jogo pode ter guardado. A regra de então dizia «cadeia sem espaços é um nome»; a regra certa é mais
-   * estreita: renomeia-se uma cadeia quando ela É o nome, inteira. É o que distingue o nome de um evento («modoCego», que a
-   * superfície publica) de um pedaço de um valor composto.
+   * 🔴 THE CASE THAT WAS MISSING, and it cost a DATA value already committed: `'dentro-da-zona'` — the reason the adaptive
+   * engine gives for keeping the level — came out as `'isInside-da-zona'`, half in English, in a string no migration table
+   * mentions and that a game may have stored. The rule then said «cadeia sem espaços é um nome»; the right rule is
+   * narrower: a string is renamed when it IS the name, whole. That is what tells an event's name («modoCego», which the
+   * surface publishes) from a piece of a compound value.
    */
   it('🔴 [Zero] numa cadeia só se renomeia o nome INTEIRO — um valor composto é dado, não nome', () => {
     const nomes = { dentro: 'isInside', modoCego: 'blindMode' };
@@ -208,19 +200,20 @@ describe('a renomeação não estraga prosa', () => {
 });
 
 /*
- * ========================= MUTAÇÕES CONFERIDAS =========================
- * ⚠️ O cabeçalho deste ficheiro prometia esta secção desde que ele nasceu e ela não existia. As da FASE 2 estão escritas nas
- * mensagens dos oito commits das camadas, que é onde nasceram; as da FASE 3 ficam aqui, onde foram prometidas (2026-09-22).
+ * ========================= MUTATIONS CHECKED =========================
+ * The PHASE 2 ones are written in the messages of the eight layer commits, where they were born; the PHASE 3 ones are
+ * here (2026-09-22).
  *
- * FASE 3 — os três casos dos nomes de FICHEIRO:
- *   1. o mapa diz que moveu e o disco discorda (`ring.ts` devolvido a `anel.ts`) ......... 2 VERMELHOS (o do disco e o das sobras)
- *   2. um caminho «novo» que continua português (`anel-novo.ts`) ........................ 3 VERMELHOS
- *   3. uma referência obsoleta deixada escrita num ficheiro rastreado ................... 1 VERMELHO, e é SÓ o caso das sobras
- *      — é a mutação que mais importa, porque é a única que o `tsc` nunca veria: um caminho dentro de uma CADEIA (um crivo que
- *        nomeia o módulo que guarda, um livro-razão chaveado por caminho, um `.md`) não é lido por compilador nenhum.
- *   4. dois ficheiros velhos a apontar para o mesmo ficheiro novo ...................... 3 VERMELHOS
+ * PHASE 3 — the three cases of FILE names:
+ *   1. the map says it moved and the disk disagrees (`ring.ts` given back to `anel.ts`) ......... 2 REDS (the disk one and the leftovers one)
+ *   2. a «new» path that is still Portuguese (`anel-novo.ts`) ........................ 3 REDS
+ *   3. an obsolete reference left written in a tracked file ................... 1 RED, and it is ONLY the leftovers case
+ *      — it is the mutation that matters most, because it is the only one `tsc` would never see: a path inside a STRING (a
+ *        sieve naming the module it guards, a ledger keyed by path, a `.md`) is read by no compiler.
+ *   4. two old files pointing at the same new file ...................... 3 REDS
  *
- * 🔴 E O PRÓPRIO SCRIPT DE MUTAÇÃO ESTRAGOU A ÁRVORE à primeira volta: o «desfazer» apagava o ficheiro reposto sem perguntar se
- * ele existia, e com a mutação 1 aplicada (o novo já não existe) apagou-o de vez. Reposto à mão, e o guarda entrou no script.
- * Uma ferramenta de mutação sem rede é pior do que mutação nenhuma — ela mede e destrói na mesma passagem.
+ * 🔴 AND THE MUTATION SCRIPT ITSELF DAMAGED THE TREE on the first round: the «undo» deleted the restored file without asking
+ * whether it existed, and with mutation 1 applied (the new one no longer exists) it deleted it for good. Restored by hand,
+ * and the guard went into the script. A mutation tool with no net is worse than no mutation at all — it measures and
+ * destroys in the same pass.
  */

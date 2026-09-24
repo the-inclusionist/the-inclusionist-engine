@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// A LEITURA CORRE NOUTRA THREAD (ADR-0216 §2; issue #185) — e o que se mede aqui é o PROTOCOLO, dos dois lados.
+// READING RUNS ON ANOTHER THREAD (ADR-0216 §2; issue #185) — and what is measured here is the PROTOCOL, on both sides.
 //
-// 📏 A razão de o worker existir está medida no laboratório e não é higiene: o Whisper a transcrever na linha principal cortava
-// a gravação em lacunas de 4 s — a criança continua a ler e as palavras que ela diz enquanto a página está ocupada não estão no
-// som —, contra 264 ms num worker. A caixa «Whisper runs in a worker» da #185 nunca foi marcada.
+// 📏 The reason the worker exists is measured in the lab and is not hygiene: Whisper transcribing on the main thread cut
+// the recording into 4 s gaps — the child keeps reading, and the words she says while the page is busy are not in the
+// sound —, against 264 ms in a worker. The «Whisper runs in a worker» box of #185 was never ticked.
 //
-// ⚠️ OS DOIS LADOS CORREM A SÉRIO, e nenhum é reescrito aqui: o cliente é o `createReadingInWorker` e o servidor é o
-// `serveReading` do próprio worker. O que o duble substitui é a THREAD — um objecto que leva as mensagens de um ao outro —,
-// porque uma thread de verdade traria 378 MiB de modelo para dentro de um caso.
+// ⚠️ BOTH SIDES RUN FOR REAL, and neither is rewritten here: the client is `createReadingInWorker` and the server is the
+// worker's own `serveReading`. What the double replaces is the THREAD — an object carrying messages from one to the other —,
+// because a real thread would bring 378 MiB of model into a case.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { createReadingInWorker } from '../app/js/platform/reading-in-worker.js';
 import { serveReading } from '../app/js/platform/reading-worker.js';
 
-/** A thread de mentira: entrega as mensagens nos dois sentidos, e regista o que passou por ela. */
+/** The fake thread: delivers messages both ways, and records what went through it. */
 function fio({ load, adiar = false } = {}) {
   const log = { pedidos: [], transferidos: [], terminado: 0 };
   const scope = { onmessage: null, postMessage: (answer) => { cliente.onmessage?.({ data: answer }); } };
@@ -58,9 +58,9 @@ describe('o cliente e o worker falam a mesma língua', () => {
   });
 
   /*
-   * 🔴 DUAS LEITURAS AO MESMO TEMPO, e é por isto que cada resposta carrega o id da pergunta: uma criança que pede para ler
-   * outra vez antes de a primeira responder receberia a resposta da outra — e num jogo de leitura isso é a palavra errada
-   * corrigida contra o texto errado.
+   * 🔴 TWO READINGS AT THE SAME TIME, and this is why every answer carries the id of its question: a child asking to read
+   * again before the first answers would get the other's answer — and in a reading game that is the wrong word corrected
+   * against the wrong text.
    */
   it('🔴 [Right] cada resposta volta a QUEM a pediu, mesmo fora de ordem', async () => {
     const respostas = ['primeira', 'segunda'];
@@ -78,27 +78,28 @@ describe('o cliente e o worker falam a mesma língua', () => {
     await expect(leitura.transcribe(amostras())).rejects.toThrow(/does not carry/);
   });
 
-  /* ===================== A ABERTURA TEM DONO DESDE QUE NASCE ===================== */
-  // 🔴 O caso acima mede a thread que não abre com ALGUÉM à espera. Este mede o contrário, e é onde estava o defeito:
-  // ninguém espera pela abertura até à primeira `transcribe()`, logo um modelo que não carrega rejeitava PARA NADA.
-  // 📏 Medido em 22/09: o projecto de navegador acabava com os 1140 casos verdes e o código de saída a dizer FALHA,
-  // por causa desta rejeição sozinha. Uma suíte que reprova enquanto passa ensina toda a gente a parar de ler o
-  // código de saída, e esta casa já pagou por isso — o CI do ramo publicado esteve vermelho oito dias.
+  /* ===================== THE OPENING HAS AN OWNER FROM BIRTH ===================== */
+  // 🔴 The case above measures the thread that does not open with SOMEONE waiting. This one measures the opposite, which
+  // is where the defect was: nobody waits for the opening until the first `transcribe()`, so a model that fails to load
+  // rejected FOR NOBODY.
+  // 📏 Measured on 22/09: the browser project ended with its 1140 cases green and the exit code saying FAILURE, because
+  // of this rejection alone. A suite that fails while passing teaches everyone to stop reading the exit code, and this
+  // house has already paid for that — the published branch's CI was red for eight days.
 
   it('🔴 [Zero] uma thread que não abre SEM NINGUÉM À ESPERA não vira rejeição órfã — e é dita em `problems`', async () => {
     const ditas = [];
     const t = fio({ load: async () => { throw new Error('the delivery does not carry this language\'s model'); } });
     createReadingInWorker({ base: 'b/', language: 'fr', spawn: t.spawn, report: (l) => ditas.push(l) });
-    await new Promise((r) => setTimeout(r, 0)); // a falha chega no microtask seguinte, como na página
+    await new Promise((r) => setTimeout(r, 0)); // the failure arrives on the next microtask, as in the page
     expect(ditas, 'a thread não abriu e nada em lado nenhum o disse').toHaveLength(1);
-    // 📌 O MOTIVO e não a frase: quem escreve o que a criança perde e o que se conserta é o canal de diagnóstico
-    // (a raiz), porque um módulo que é o protocolo de uma thread não tem nada que carregar prosa de interface.
+    // 📌 The REASON and not the sentence: what the child loses and what fixes it is written by the diagnostic channel
+    // (the root), because a module that is a thread's protocol has no business carrying interface prose.
     expect(ditas[0], 'o motivo da falha não atravessou').toBe('the delivery does not carry this language\'s model');
   });
 
   it('🔴 [Zero] e SEM porta de relato a falha continua a ter dono — o silêncio é escolha, a rejeição órfã não', async () => {
-    // ⚠️ O caso é o próprio corredor: se a abertura não tiver dono, o Vitest reprova a RODADA por rejeição não
-    // apanhada, com este caso verde. É a mesma forma do defeito que ele existe para prender.
+    // ⚠️ The case is the runner itself: if the opening has no owner, Vitest fails the RUN for an unhandled rejection,
+    // with this case green. It is the same shape as the defect it exists to pin.
     const t = fio({ load: async () => { throw new Error('nada disto existe'); } });
     createReadingInWorker({ base: 'b/', language: 'fr', spawn: t.spawn });
     await new Promise((r) => setTimeout(r, 0));
@@ -115,8 +116,8 @@ describe('o cliente e o worker falam a mesma língua', () => {
   });
 
   it('🎯 [Boundary] LARGAR a thread antes de ela abrir não é falha — e não vira linha nenhuma', async () => {
-    // 📌 Uma criança que troca de jogo antes de o modelo abrir não é um defeito a relatar. O `close()` rejeita a
-    // abertura para libertar quem esperava, e é exactamente essa rejeição que não pode passar por diagnóstico.
+    // 📌 A child who switches game before the model opens is not a defect to report. `close()` rejects the opening to
+    // release whoever was waiting, and that rejection is exactly what must not pass for a diagnostic.
     const t = fio({ load: () => new Promise(() => {}), adiar: true }); // nunca responde
     const ditas = [];
     const leitura = createReadingInWorker({ base: 'b/', language: 'pt', spawn: t.spawn, report: (l) => ditas.push(l) });
@@ -152,14 +153,15 @@ describe('o cliente e o worker falam a mesma língua', () => {
   });
 
   /*
-   * 🔴 E A RAIZ TEM DE PASSAR POR AQUI, senão tudo o que está acima mede um módulo que ninguém usa. O caminho de verdade só
-   * corre num `listen()` com microfone, que um caso não tem — então o que se afirma é a FONTE: o `createGame` alcança a
-   * transcrição pelo worker, e o carregador directo só existe no ramo do navegador sem `Worker`, com a linha de `problems`
-   * que diz à escola o que ela perde. É a mesma forma de crivo que impede alguém de importar o `kokoro-runtime` estaticamente.
+   * 🔴 AND THE ROOT HAS TO GO THROUGH HERE, or everything above measures a module nobody uses. The real path only runs in a
+   * `listen()` with a microphone, which a case does not have — so what is asserted is the SOURCE: `createGame` reaches
+   * transcription through the worker, and the direct loader only exists in the branch of a browser with no `Worker`, with
+   * the `problems` line that tells the school what it loses. The same kind of sieve that stops anyone importing
+   * `kokoro-runtime` statically.
    */
   it('🔴 [Right] o `createGame` alcança a transcrição pelo WORKER, e o caminho directo só existe onde não há thread', () => {
     const raiz = readFileSync(join(process.cwd(), 'app', 'js', 'boot', 'create-game.ts'), 'utf8')
-      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, ''); // comentários citam os dois nomes de propósito
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, ''); // comments name both on purpose
     expect(raiz, 'a raiz deixou de abrir a leitura numa thread').toContain('reading-in-worker.js');
     const directo = raiz.indexOf('reading-runtime.js');
     expect(directo, 'o carregador directo sumiu — o ramo sem `Worker` ficou sem leitura nenhuma').toBeGreaterThan(-1);
@@ -170,8 +172,8 @@ describe('o cliente e o worker falam a mesma língua', () => {
   });
 
   it('🎯 [Zero] pedir ao worker antes de o modelo abrir é RESPONDIDO, não ignorado', async () => {
-    // Uma mensagem deixada cair deixa a promessa do outro lado pendente para sempre, e a criança à espera de palavras que
-    // não vêm não tem como saber que devia tentar outra vez.
+    // A dropped message leaves the promise on the other side pending forever, and the child waiting for words that do not
+    // come has no way of knowing she should try again.
     const respostas = [];
     const scope = { onmessage: null, postMessage: (a) => respostas.push(a) };
     serveReading(scope, async () => ({ transcribe: async () => 'x' }));

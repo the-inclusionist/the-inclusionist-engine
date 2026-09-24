@@ -1,25 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// AS FRASES DO AVISO DE ALCANCE (issue #112). A tela é aferida no project browser; aqui é o TEXTO, que é a
-// parte que precisa de ser lida com cuidado e traduzida para três idiomas.
+// THE SENTENCES OF THE REACH NOTICE (issue #112). The screen is checked in the browser project; here it is the TEXT,
+// which is the part that needs careful reading and translating into three languages.
 //
-// ⚠️ O QUE ESTE AVISO EXISTE PARA IMPEDIR: o controle de tela tem NOVE lugares e o vocabulário passou a
-// CATORZE. Num tablet de escola pública o toque não é o caminho alternativo — é o único. Sem a frase, a
-// criança descobre no meio da partida que não alcança uma ação e conclui que o jogo está partido, sem ter
-// como saber que não está.
+// ⚠️ WHAT THIS NOTICE EXISTS TO PREVENT: the on-screen control has fewer slots (13) than the vocabulary has actions
+// (14). On a public-school tablet touch is not the alternative path — it is the only one. Without the sentence, the
+// child finds out mid-game that she cannot reach an action and concludes the game is broken, with no way of knowing
+// it is not.
 import { describe, it, expect } from 'vitest';
 import { noticeRows } from '../app/js/ui/reach-notice.js';
-// ⚠️ `presetActions` e o preset do jogo SAÍRAM destes imports em 2026-09-07 (issue #111): as duas asserções
-// que os usavam eram sobre o JOGO — liam o fonte de `main.ts` e afirmavam que o preset da plataforma tem
-// nove ações — e mudaram para `game-platformer`. `reach`/`defaultTransports` FICAM: são da engine, e é
-// com elas que se monta o alcance de que este ficheiro fala.
+// `reach`/`defaultTransports` belong to the engine, and they are what builds the reach this file talks about. The
+// game's preset is not imported: assertions about the platform game's preset live in `game-platformer` (issue #111).
 import { reach, defaultTransports } from '../app/js/input/transports.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import pt from '../app/js/i18n/pt.js';
 
-/** Um tradutor de teste que devolve a CHAVE e os parâmetros — assim os casos falam de estrutura, não de prosa. */
+/** A test translator that returns the KEY and the parameters — so the cases talk about structure, not prose. */
 const cru = (k, p) => (p ? `${k}(${Object.entries(p).map(([a, b]) => `${a}=${b}`).join(',')})` : k);
 
-/** E um que usa o dicionário de verdade, para os casos que precisam de afirmar a frase. */
+/** And one that uses the real dictionary, for the cases that need to assert the sentence. */
 const real = (k, p) => {
   let s = pt[k];
   if (s === undefined) throw new Error(`chave i18n ausente: ${k}`);
@@ -43,11 +41,11 @@ describe('quando NÃO há o que dizer, não se diz nada', () => {
 });
 
 describe('⚠️ O PONTO CEGO DO ADR-0104: cabe nas ações e ainda assim não dá para jogar', () => {
-  // Este bloco é a razão de existir do segundo eixo, e o caso acima é o que ele corrige. Enquanto o
-  // `reach` só media «chega às ações», a plataforma passava: nove ações, nove lugares no controle de tela,
-  // `ok` verdadeiro, cartão nunca mostrado. Mas correr, andar e pular ao mesmo tempo são TRÊS DEDOS, e o
-  // aparelho barato reconhece dois — a criança tentava, não acontecia nada, e não havia nada em lado nenhum
-  // a dizer porquê. O `ok` estava a afirmar «dá para jogar» sobre um jogo que não dava.
+  // This block is the reason the second axis exists, and the case above is what it corrects. While `reach` only
+  // measured «chega às ações», a game of nine actions passed on a control with at least nine slots: `ok` true, card
+  // never shown. But running, walking and jumping at once are THREE FINGERS, and the cheap device recognises two — the
+  // child tried, nothing happened, and nothing anywhere said why. `ok` was asserting «dá para jogar» about a game that
+  // could not be played.
   const nove = ACTIONS.slice(0, 9);
 
   it('⚠️ [Right] nove ações cabem nos nove lugares do toque, e SEGURAR três reprova na mesma', () => {
@@ -68,16 +66,16 @@ describe('⚠️ O PONTO CEGO DO ADR-0104: cabe nas ações e ainda assim não d
   });
 
   it('⚠️ [Interface] um transporte SEM tecto declarado não reprova por falta de medida', () => {
-    // O teclado e o controle não declaram `holds`. Ausente quer dizer «não medimos isto», e recusar por falta
-    // de medida transformaria uma ignorância numa acusação: eles reprovariam TODOS os jogos.
+    // The keyboard and the gamepad declare no `holds`. Absent means «não medimos isto», and refusing for lack of a
+    // measure would turn ignorance into an accusation: they would fail EVERY game.
     expect(reach(DESKTOP, nove, 9).ok, 'o teclado reprovou por não ter número').toBe(true);
     expect(reach(DESKTOP, nove, 9).cannotHold).toEqual([]);
   });
 
   it('⚠️ [Interface] o transporte que já está CURTO de lugares não aparece duas vezes', () => {
-    // Um transporte nas duas listas faria o cartão dizer dois problemas onde há um, e a criança leria uma
-    // parede em vez de uma diferença.
-    const a = reach(TABLET, ACTIONS, 3); // 14 ações num transporte de 13 lugares (nove até os ombros do ADR-0160), e ainda pede 3 dedos
+    // A transport on both lists would make the card state two problems where there is one, and the child would read a
+    // wall instead of a difference.
+    const a = reach(TABLET, ACTIONS, 3); // 14 actions on a 13-slot transport (nine up to ADR-0160's shoulders), and it still asks for 3 fingers
     expect(a.short.map((c) => c.id)).toEqual(['toque']);
     expect(a.cannotHold, 'o toque foi acusado duas vezes pelo mesmo aparelho').toEqual([]);
   });
@@ -101,17 +99,17 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
   });
 
   it('[Zero] ⚠️ quando NADA resolveria, a frase é OUTRA — mandar ligar um controle seria mentir', () => {
-    // O jogo pede mais posições do que qualquer transporte deste aparelho oferece. Aqui o problema é do JOGO,
-    // e dizer «ligue um controle» mandaria a criança procurar uma coisa que não conserta nada.
-    const demais = [...ACTIONS, ...ACTIONS, ...ACTIONS]; // 42 posições: acima até do gamepad
+    // The game asks for more positions than any transport of this device offers. Here the problem is the GAME's, and
+    // saying «ligue um controle» would send the child looking for something that fixes nothing.
+    const demais = [...ACTIONS, ...ACTIONS, ...ACTIONS]; // 42 positions: above even the gamepad
     const linhas = noticeRows(reach(defaultTransports({ gamepad: sempre, keyboard: sempre, touch: sempre, mouse: sempre }), demais), cru);
     expect(linhas).toContain('reach.semSaida');
     expect(linhas.some((l) => l.startsWith('reach.ligue'))).toBe(false);
   });
 
   it('[Interface] todas as chaves usadas EXISTEM no dicionário base', () => {
-    // O tradutor `real` lança em chave ausente, então isto é a asserção. Uma chave que falta não dá erro no
-    // navegador — dá a chave crua na tela, ou uma frase vazia num leitor de tela, que é pior.
+    // The `real` translator throws on a missing key, so this is the assertion. A missing key gives no error in the
+    // browser — it gives the raw key on screen, or an empty sentence in a screen reader, which is worse.
     expect(() => noticeRows(reach(TABLET, ACTIONS, 1), real)).not.toThrow();
     expect(() => noticeRows(reach(defaultTransports({ gamepad: sempre, keyboard: sempre, touch: sempre, mouse: sempre }),
       [...ACTIONS, ...ACTIONS, ...ACTIONS]), real)).not.toThrow();
@@ -119,30 +117,28 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
 });
 
 // -----------------------------------------------------------------------------------------------------------
-// ⚠️ O DESCRIBE `as DUAS raizes mostram o aviso` SAIU DAQUI na separacao do cartucho (issue #111), e nao
-// foi apagado: ele mudou para `game-platformer/tests/reach-notice-plataforma.node.test.js`. As duas
-// asseercoes dele nao eram sobre a engine — liam o fonte de `main.ts` e afirmavam que o preset REAL do
-// jogo de plataforma tem NOVE acoes. Com o cartucho fora, nenhuma das duas e' aferivel aqui, e falsificar
-// o preset apagaria justamente o que elas provam. O que fica neste ficheiro e' o TEXTO do aviso, que e'
-// comportamento da engine e nao depende de jogo nenhum.
+// ⚠️ The describe `as DUAS raizes mostram o aviso` lives in `game-platformer/tests/reach-notice-plataforma.node.test.js`
+// (issue #111). Its two assertions were not about the engine — they read `main.ts`'s source and asserted that the
+// platform game's REAL preset has NINE actions. With the cartridge out, neither can be checked here, and faking the
+// preset would erase exactly what they prove. What stays in this file is the TEXT of the notice, which is engine
+// behaviour and depends on no game.
 
-// ========================= MUTACOES CONFERIDAS (o segundo eixo, ADR-0104) =========================
-//   · `holds()` a devolver sempre `true` (o tecto deixa de valer, e volta o modelo em que «chega» era a
-//     unica pergunta) -> reprovam DOIS, os dois do ponto cego. E o estado do repositorio ate hoje.
-//   · `holds()` a ler a ausencia como ZERO -> reprovam QUATRO, e tres deles sao casos ANTIGOS: o teclado e o
-//     controle, que nao declaram tecto, passariam a reprovar TODOS os jogos. Ausencia de medida nao pode
-//     virar acusacao, e o estrago de a ler assim e' muito maior do que o caso novo que a nomeia.
-//   · `HOLDS_TOUCH` de 2 para 5 — que e' exactamente o que o `maxTouchPoints` costuma anunciar -> reprovam
-//     DOIS. E a mutacao que representa a decisao inteira do ADR-0104 §B: cinco e' o numero que o aparelho
-//     DIZ, dois e' o que ele FAZ.
-//   · `ok` de volta a `reachable(lista, acoes)` -> reprovam DOIS. Ele voltaria a dizer «da para jogar» sobre
-//     um jogo que nao da.
-//   · `naoSeguram` sem o filtro `carries` -> reprova o caso da acusacao dupla: o mesmo aparelho apareceria
-//     nas duas listas e a crianca leria dois problemas onde ha um.
-//   · tirando o laco da terceira frase do `ui/reach-notice` -> reprova a frase em portugues. O `ok`
-//     reprovaria e ninguem diria porque, que e' a versao pior do defeito original.
+// ========================= MUTATIONS CHECKED (the second axis, ADR-0104) =========================
+//   · `holds()` always returning `true` (the ceiling stops counting, and back comes the model where «chega» was the
+//     only question) -> TWO fail, the two of the blind spot. It is the state of the repository until today.
+//   · `holds()` reading absence as ZERO -> FOUR fail, and three of them are OLD cases: the keyboard and the gamepad,
+//     which declare no ceiling, would fail EVERY game. Absence of a measure cannot become an accusation, and the
+//     damage of reading it that way is much bigger than the new case that names it.
+//   · `HOLDS_TOUCH` from 2 to 5 — which is exactly what `maxTouchPoints` tends to announce -> TWO fail. It is the
+//     mutation that represents the whole decision of ADR-0104 §B: five is the number the device SAYS, two is what it DOES.
+//   · `ok` back to `reachable(lista, acoes)` -> TWO fail. It would go back to saying «da para jogar» about a game that
+//     cannot be played.
+//   · `naoSeguram` without the `carries` filter -> the double-accusation case fails: the same device would appear on
+//     both lists and the child would read two problems where there is one.
+//   · removing the loop of the third sentence from `ui/reach-notice` -> the Portuguese sentence fails. `ok` would fail
+//     and nobody would say why, which is the worse version of the original defect.
 //
-// E no `tests/contract.node.test.js`, sobre o campo obrigatorio:
-//   · aceitar `holdsAtOnce` ausente -> reprovam TRES, incluindo a contagem dos nove campos.
-//   · aceitar zero -> reprova o caso do zero. Um jogo que nao segura nada nao e' jogavel, e aceita-lo faria
-//     a aritmetica do alcance passar por vacuidade.
+// And in `tests/contract.node.test.js`, about the required field:
+//   · accepting an absent `holdsAtOnce` -> THREE fail, including the count of the nine fields.
+//   · accepting zero -> the zero case fails. A game that holds nothing is not playable, and accepting it would make the
+//     reach arithmetic pass by vacuity.

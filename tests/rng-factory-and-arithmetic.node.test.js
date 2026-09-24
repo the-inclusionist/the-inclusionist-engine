@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O gate da issue #107. Duas propriedades, porque foram dois defeitos numa migração só.
+// The gate of issue #107. Two properties, because there were two defects in a single migration.
 //
-// ⚠️ ESTE FICHEIRO NÃO FIXA VALORES. Fixar a saída do LCG faria um teste que passa a ser a razão de a
-// aritmética não poder ser corrigida — foi exatamente o que quase impediu esta correção. O que ele fixa
-// são as duas propriedades que os consumidores precisam: correntes INDEPENDENTES, e multiplicação que
-// não perde bits.
+// ⚠️ THIS FILE DOES NOT PIN VALUES. Pinning the LCG's output would make a test that becomes the reason the arithmetic
+// cannot be corrected — which is exactly what nearly blocked this correction. What it pins are the two properties the
+// consumers need: INDEPENDENT streams, and multiplication that does not lose bits.
 import { describe, it, expect } from 'vitest';
 import { createRng, DEFAULT_SEED, rnd as rndPartilhado, reseed as reseedPartilhado } from '../app/js/core/rng.js';
 
@@ -21,14 +20,14 @@ describe('createRng: cada consumidor tem a sua corrente (ADR-0038 D13, issue #10
     const jogo = createRng(777);
     const particulas = createRng(777);
 
-    // O jogo tira três números. Entre o primeiro e o segundo, o motor de partículas desenha 500 vezes,
-    // que é o que `render/fx.ts` faz — uma partícula por chamada, num quadro qualquer.
+    // The game draws three numbers. Between the first and the second, a particle effect draws 500 times — one particle
+    // per call, on any frame.
     const primeiro = jogo.rnd();
     for (let i = 0; i < 500; i++) particulas.rnd();
     const segundo = jogo.rnd();
     const terceiro = jogo.rnd();
 
-    // A mesma semente, sem ninguém a desenhar no meio, tem de dar os mesmos três.
+    // The same seed, with nobody drawing in between, has to give the same three.
     const sozinho = createRng(777);
     expect([primeiro, segundo, terceiro]).toEqual([sozinho.rnd(), sozinho.rnd(), sozinho.rnd()]);
   });
@@ -37,7 +36,7 @@ describe('createRng: cada consumidor tem a sua corrente (ADR-0038 D13, issue #10
     const a = createRng(5);
     const b = createRng(5);
     a.reseed(99);
-    // `b` continua onde estava: a sua próxima saída é a primeira de uma corrente semeada com 5.
+    // `b` stays where it was: its next output is the first of a stream seeded with 5.
     expect(b.rnd()).toBe(createRng(5).rnd());
   });
 
@@ -52,12 +51,12 @@ describe('createRng: cada consumidor tem a sua corrente (ADR-0038 D13, issue #10
 
 describe('a aritmética do LCG não perde bits (issue #107, defeito 2)', () => {
   it('a corrente bate com o LCG verdadeiro, calculado em BigInt — passo a passo', () => {
-    // ⚠️ ESTE É O GATE, e a primeira versão dele não era. Ela comparava `Math.imul` com `Math.imul` e
-    // passava mesmo com a mutação aplicada: afirmava uma propriedade da linguagem, não do módulo.
+    // ⚠️ THIS IS THE GATE: comparing `Math.imul` with `Math.imul` would pass even with the mutation applied — it would
+    // assert a property of the language, not of the module.
     //
-    // Agora a referência é calculada por OUTRO caminho — BigInt, que não tem 2^53 nenhum — e a asserção
-    // é sobre o que o módulo devolve. É a vantagem estrutural que um verificador precisa ter sobre o
-    // que verifica: o BigInt não pode errar do mesmo jeito que o ponto flutuante erra.
+    // The reference is computed by ANOTHER path — BigInt, which has no 2^53 at all — and the assertion is about what the
+    // module returns. It is the structural advantage a checker needs over what it checks: BigInt cannot be wrong the
+    // same way floating point is.
     const r = createRng(DEFAULT_SEED);
     let s = BigInt(DEFAULT_SEED >>> 0);
     const A = 1103515245n, C = 12345n, MASCARA = 0x7fffffffn;
@@ -68,8 +67,8 @@ describe('a aritmética do LCG não perde bits (issue #107, defeito 2)', () => {
   });
 
   it('a aritmética ANTIGA era de facto insegura — o defeito não era teórico', () => {
-    // Sem esta medida, o teste acima poderia estar a defender contra nada. Ela diz que na esmagadora
-    // maioria dos passos o produto de 64 bits saía da faixa exata de inteiros do JavaScript.
+    // Without this measurement, the test above could be defending against nothing. It says that in the overwhelming
+    // majority of steps the 64-bit product left JavaScript's exact integer range.
     let s = DEFAULT_SEED >>> 0;
     let inseguros = 0;
     for (let i = 0; i < 5000; i++) {
@@ -80,8 +79,8 @@ describe('a aritmética do LCG não perde bits (issue #107, defeito 2)', () => {
   });
 
   it('o período passa de 12 mil e o gerador cobre a faixa', () => {
-    // Com a aritmética antiga a corrente reentrava em 12.354 passos, num gerador cujo período nominal é
-    // 2^31. Não medimos 2^31 aqui (levaria minutos); medimos que passou MUITO do que era.
+    // With the old arithmetic the stream re-entered in 12,354 steps, in a generator whose nominal period is 2^31. We do
+    // not measure 2^31 here (it would take minutes); we measure that it went WELL past what it was.
     const r = createRng(DEFAULT_SEED);
     const vistos = new Set();
     for (let i = 0; i < 60000; i++) vistos.add(r.rnd());
@@ -111,14 +110,14 @@ describe('enfeite não move o sorteio do jogo (issue #107, a consequência concr
     reseedPartilhado(4242);
     const comEnfeite = [];
     for (let i = 0; i < 4; i++) {
-      // Um quadro qualquer: dezenas de partículas entre dois sorteios do jogo.
+      // Any frame: dozens of particles between two of the game's draws.
       for (let p = 0; p < 60; p++) decorationRng.rnd();
       comEnfeite.push(rndPartilhado());
     }
 
-    // ⚠️ A igualdade É a decisão. Antes desta mudança as duas listas divergiam, e divergiam de um jeito
-    // que dependia de quantas partículas a tela tinha desenhado — quer dizer, de coisa nenhuma que
-    // alguém controle. Repor uma corrente só faz isto ficar vermelho.
+    // ⚠️ The equality IS the decision. With one shared stream the two lists diverge, and they diverge in a way that
+    // depends on how many particles the screen drew — that is, on nothing anyone controls. Going back to one stream
+    // is all it takes to turn this red.
     expect(comEnfeite).toEqual(semEnfeite);
   });
 
@@ -128,8 +127,8 @@ describe('enfeite não move o sorteio do jogo (issue #107, a consequência concr
     const enfeite = Array.from({ length: 5 }, () => decorationRng.rnd());
     const jogo = createRng(S);
     const doJogo = Array.from({ length: 200 }, () => jogo.rnd());
-    // Nenhum dos cinco primeiros do enfeite aparece nos duzentos primeiros do jogo: as correntes não
-    // estão só desfasadas, estão separadas.
+    // None of the decoration's first five appears in the game's first two hundred: the streams are not just out of
+    // phase, they are separate.
     for (const v of enfeite) expect(doJogo).not.toContain(v);
   });
 });
