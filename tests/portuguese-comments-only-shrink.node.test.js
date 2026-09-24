@@ -30,6 +30,8 @@ describe('Portuguese in comments only shrinks', () => {
     // quotations stay in the language they were said in, and code in backticks is not prose
     expect(isPortugueseLine('// The Dev: «não é na rodada de agora» — so this waits')).toBe(false);
     expect(isPortugueseLine('// `nao` and `que` are identifiers here, and the line is English')).toBe(false);
+    // a word joined by an apostrophe is neither: split, `o'clock` would hand Portuguese its article twice
+    expect(isPortugueseLine('//   `clock`    "at 2 o\'clock", "at 10 o\'clock" — a side view')).toBe(false);
   });
 
   it('🔴 [Boundary] a comment AFTER a template with an interpolation is read — a raw scanner loses its place there', () => {

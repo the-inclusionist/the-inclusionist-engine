@@ -38,9 +38,13 @@ const EN = new Set(('the of and to is it that this for with not are be was were 
   'how who why here after before never always nothing').split(/\s+/));
 const ACCENT = /[ãõçáéíóúâêôà]/i;
 
-/** Is this comment line Portuguese? Quotations («…») and code (`…`) are not read. */
+/**
+ * Is this comment line Portuguese? Quotations («…») and code (`…`) are not read, and neither are words joined by an
+ * apostrophe: `o'clock` split at it gives `o`, a Portuguese article (measured: the one line left in `core/contract` was
+ * "at 2 o'clock"), while Portuguese itself almost never writes one.
+ */
 export function isPortugueseLine(line) {
-  const text = line.replace(/«[^»]*»?/g, ' ').replace(/`[^`]*`/g, ' ').toLowerCase();
+  const text = line.replace(/«[^»]*»?/g, ' ').replace(/`[^`]*`/g, ' ').replace(/[a-zà-ÿ]+['’][a-zà-ÿ]+/gi, ' ').toLowerCase();
   const words = text.split(/[^a-zà-ÿ]+/).filter(Boolean);
   const pt = words.filter((w) => PT.has(w)).length;
   const en = words.filter((w) => EN.has(w)).length;
