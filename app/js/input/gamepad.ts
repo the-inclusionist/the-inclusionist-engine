@@ -13,15 +13,10 @@ import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import { createPadWizard, padMap, PADWIZ_ORDER as ORDEM_DO_ASSISTENTE, type PadMapStore } from './pad-wizard.js';
 import { padTable, type PadTable } from './pad-defaults.js';
 import { padCur, padPrevAct, padPrevStart } from './state.js';
-// ⚠️ `oneButton` COMES IN BY IMPORT, not through the `ctx` — unlike `input/keydown`, which gets it through a getter.
-// The difference is not taste: `keydown` was extracted when `oneButton` belonged to the game, and the house rule says
-// what the GAME reassigns comes in through a getter. Today it is `core/state`, the ENGINE's — and a getter would make
-// every consumer remember to pass it.
-//
-// ⚠️ AND FORGETTING IS EXACTLY THE DEFECT THIS FIXES (issue #120). An optional ctx field would make the accommodation
-// exist only in the games where someone remembered it, which is ADR-0077's M3 argument with another noun. A live
-// binding to `core/state`: there is nothing to forget.
-import * as estadoDoJogo from '../core/state.js';
+// 📌 `oneButton` (the motor empathy's one-button mode, issue #120) arrives through the ctx, as `input/keydown`'s does:
+// the settings store is built by the root and passed in (ADR-0232, issue #207). The field is REQUIRED, which is what the
+// old live import defended — an optional field would make the accommodation exist only where someone remembered it
+// (ADR-0077's M3 argument); a required one does not compile without it.
 
 // ---------------------------------------------------------------------------------------------
 // Gamepad API surface (minimal, adapter-friendly — mirrors the real Gamepad/GamepadButton shape)
@@ -194,6 +189,11 @@ export interface GamepadCtx {
    * a pad whose map is read from nowhere answers with the standard layout, and a custom pad goes dead with no word said.
    */
   store: PadMapStore;
+  /**
+   * Is the ONE-BUTTON mode on (the motor empathy, issue #120)? Read each frame — the child turns it on mid-game. The
+   * root answers from the settings store it built (ADR-0232); required, see the note at the imports.
+   */
+  oneButton: () => boolean;
   /** The Gamepad API adapter (replaces `navigator.getGamepads()`) — the DI point for testing with no browser. */
   getGamepads: GetGamepads;
   /** DOM selector (querySelector), injected — never reaches the global `document`. */
@@ -417,7 +417,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     const cur = oneButtonAtOnce(
       prev,
       actionsFor(gp, padTable(ctx.getNumPlayers(), owner < 0 ? 0 : owner)),
-      estadoDoJogo.oneButton,
+      ctx.oneButton(),
     );
     const startEdge = cur._start && !padPrevStart[gi]; padPrevStart[gi] = cur._start;
     const pauseEdge = cur._pause && !prev._pause;

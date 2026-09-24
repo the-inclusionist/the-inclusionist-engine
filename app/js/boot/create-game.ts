@@ -3814,6 +3814,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   const gameHooks = padGameAnswers(cartridge.gamepad, () => !menuWithDpad());
   const gamepad = initGamepad({
     $, store,
+    oneButton: () => state.oneButton, // the motor empathy, read each frame from the settings store (ADR-0232)
     getGamepads: () => win.navigator?.getGamepads?.() ?? [],
     // THE GAME'S WORD for a position: the engine knows the position exists, only the cartridge knows what it is called —
     // and it already declared that in the `preset` to exist.

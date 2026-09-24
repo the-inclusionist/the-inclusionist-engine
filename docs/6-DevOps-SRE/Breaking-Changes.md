@@ -3176,6 +3176,26 @@ each meets these changes together with the renames already listed:
   it); `game-2048` passes `saveKB`/`resetKB` to the controls panel; `game-whackwhack` and `pixi-15-puzzle` call the visual
   reader, and `pixi-15-puzzle` and `game-2048` the scene reader. `game-chess` and `game-pinball` use none of these.
 
+## CU · The settings store arrives by injection: no module reads `core/state` by import (ADR-0232, issue #207)
+
+**Who is affected:** anyone calling the functions below outside `createGame`, or building one of the ctx listed by hand.
+A game that only calls `createGame` changes nothing in its ctx: the root answers every question from the settings
+store it loaded. What a game calls itself — `startLoop` above all — changes.
+
+📌 **Why:** outside the composition root a module imports by value only what holds no state and reaches no global
+(ADR-0232). `core/state` is the page's settings store; seven modules read or wrote it by import, so a panel, the
+gamepad and the loop each depended on WHICH store existed, and a test could not hand them its own. Each now receives
+the reads and writes it needs as REQUIRED ports (ADR-0224/0227's precedent: an absent port would ignore a child's
+setting in silence). A game that is its own root answers them from `core/state` — `() => state.oneButton` — or, beside
+`createGame`, from the engine handle (`engine.gameSpeed`).
+
+| old | new | migration |
+|---|---|---|
+| `input/gamepad.js` `GamepadCtx` | gains a REQUIRED `oneButton: () => boolean` | pass `() => state.oneButton` (`core/state`), read each frame |
+
+📏 **Measured in the seven games, read-only, as information:** `initGamepad` is called by `game-platformer`
+(`app/js/main.ts`) and `game-soccer` (`app/js/boot/main.ts`).
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

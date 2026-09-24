@@ -11,7 +11,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { PADWIZ_ORDER, initGamepad, padGameAnswers } from '../app/js/input/gamepad.js';
 import { stdDirs, bindActive, padActions, oneButtonAtOnce } from '../app/js/input/pad-reading.js';
 import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
-// `oneButton` is a live binding of `core/state` (not of the ctx): these cases really turn it on and off.
+// `oneButton` reaches the module through the ctx, which answers from `core/state`: these cases really turn it on and off.
 import * as estado from '../app/js/core/state.js';
 // Only the last block uses these: it measures the module's SOURCE, because the hole it closes is one of writing and not of
 // execution — a raw sentence runs with no error at all.
@@ -61,6 +61,8 @@ function buildCtx(over = {}) {
   return {
     // each ctx its own store (ADR-0232): a map one case saves cannot be the one another case reads
     store: createStorage(memoryBackend()),
+    // the test plays the root: it answers from the real settings store, which the one-button cases turn on and off
+    oneButton: () => estado.oneButton,
     $: (sel) => dom.get(sel) ?? null,
     getGamepads: () => pads,
     // ⚠️ THE LABEL COMES FROM THE 'GAME', and in a test the game is the fixture: the wizard asks, and this object is the

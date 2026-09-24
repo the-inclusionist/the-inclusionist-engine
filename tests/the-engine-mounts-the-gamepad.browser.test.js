@@ -113,6 +113,22 @@ describe('a cartridge that declares nothing still has a controller', () => {
     expect(jogadores[0].quit).toBe(false);
   });
 
+  it('🔴 [Right] the root answers the ONE-BUTTON question from the settings store (ADR-0232; issue #120)', async () => {
+    // The gamepad receives `oneButton` through its ctx now; the root reads the store it built. With the mode on, two
+    // positions pressed in the same frame reach the game as ONE — a root that answered a constant `false` delivers both.
+    const state = await import('../app/js/core/state.js');
+    botoes = []; await quadro();
+    recebidos.length = 0;
+    state.setOneButtonValue(true);
+    try {
+      botoes = [0, 15]; await quadro(); // action2 and right, together
+      expect(recebidos.filter((c) => c.pressed).length, 'one-button mode on, and two positions reached the game').toBe(1);
+    } finally {
+      state.setOneButtonValue(false);
+      botoes = []; await quadro();
+    }
+  });
+
   it('🔴 [Zero] with NO controller connected the engine does not poll — a loop that never sleeps costs battery', async () => {
     // ⚠️ Pilar 1: a máquina de escola. 📏 The frame loop only exists while a pad is connected; `gamepaddisconnected`
     // with nothing left stops it, and a press after that reaches nobody.
