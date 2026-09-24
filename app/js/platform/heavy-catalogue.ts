@@ -71,10 +71,6 @@ const MEDIAPIPE: readonly HeavyFile[] = Object.freeze([
 ]);
 
 /**
- * KOKORO (ADR-0186, ADR-0198; the Dev: «Faça»): the fp32 model, its tokenizer vocabulary and a style table per voice of the engine's
- * languages. The phonemizer and the runtime are the game's (ADR-0198 §5), bundled by it. Read by the port the quiz demo fills.
- */
-/**
  * THE VOICE RUNTIME (ADR-0216 and its erratum; issue #200): what SPEAKS a neural voice, fetched like the vision runtime and for the
  * same reason — the engine imports nothing from npm at run time, so a game that never asks for this voice carries none of it, and
  * the published package stays free of a bundler-only import.
@@ -214,6 +210,11 @@ export function commandsLanguageOf(id: string): string | null {
   return parts[0] === 'commands' && parts[1] === 'model' && parts[2] ? parts[2] : null;
 }
 
+/**
+ * KOKORO (ADR-0186, ADR-0198; the Dev: «Faça»): the fp32 model, its tokenizer vocabulary and a style table per voice of the engine's
+ * languages. The engine loads them itself when a game declares `uses.neuralVoice` (ADR-0216); the phonemizer and the runtime that
+ * speak them are `VOICE_RUNTIME`, above.
+ */
 const KOKORO: readonly HeavyFile[] = Object.freeze([
   { id: 'voz:kokoro:modelo', url: KOKORO_MODEL_URL, bytes: KOKORO_MODEL_BYTES, sha256: KOKORO_MODEL_SHA256 },
   { id: 'voz:kokoro:tokenizador', url: URL_DO_TOKENIZADOR_KOKORO, bytes: BYTES_DO_TOKENIZADOR_KOKORO, sha256: SHA256_DO_TOKENIZADOR_KOKORO },
