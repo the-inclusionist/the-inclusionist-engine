@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// UMA LINHA DE MENU, E O INTERIOR DO PAINEL MOTORA — o contrato invisível um nível abaixo do `panel-shell`.
+// A MENU ROW, AND THE MOTOR PANEL'S INSIDE — the invisible contract one level below `panel-shell`.
 //
-// ========================= POR QUE ESTES CASOS SÃO DE NAVEGADOR =========================
-// A regra herdada do `boot-create-game.browser.test.js`: **um caso só entra aqui se o DOM falso não o
-// conseguisse fazer.** O que se pergunta é se o controle criado é mesmo um `<select>` e não um `<button>`, se
-// o `.opt-hint` está DENTRO do `<span>` onde o `fillExplain` o vai procurar, e se montar duas vezes deixa uma
-// linha. Um duplo responde «sim» às três sem que nenhuma seja verdade.
+// ========================= WHY THESE CASES ARE BROWSER ONES =========================
+// The rule inherited from `boot-create-game.browser.test.js`: **a case only enters here if the fake DOM could not do
+// it.** What is asked is whether the created control really is a `<select>` and not a `<button>`, whether the
+// `.opt-hint` is INSIDE the `<span>` where `fillExplain` will look for it, and whether mounting twice leaves one row. A
+// double answers «sim» to all three without any being true.
 //
 // MUTAÇÕES CONFERIDAS no fim do ficheiro.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -28,8 +28,8 @@ afterEach(() => { hospedeiro.remove(); });
 
 describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção', () => {
   it('🎯 [Right] o rótulo curto fica à vista e a prosa vai num `.opt-hint` DENTRO do `<span>`', () => {
-    // É onde o `ui/settings-panel.fillExplain` a procura para a mover ao rodapé. Fora do `<span>` ela nunca
-    // sai da linha, e o menu volta a ser um manual — o resultado que o Dev já viu e nomeou.
+    // It is where `ui/settings-panel.fillExplain` looks for it to move it to the footer. Outside the `<span>` it never
+    // leaves the row, and the menu becomes a manual again — the result the Dev has already seen and named.
     const { row: linha } = controlRow(ctx, { id: 'x', label: 'Modo Fácil', hint: 'Gravidade menor.' });
     hospedeiro.appendChild(linha);
     expect(linha.className).toBe('ctrl-row');
@@ -52,23 +52,23 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
   });
 
   it('🔴 [Interface] a FORMA decide a tag — um `<select>` pedido não pode nascer `<button>`', () => {
-    // ⚠️ É O DEFEITO QUE NÃO DÁ ERRO. `settings-audio` faz `ctx.$<HTMLSelectElement>('#cane-div').value = …`;
-    // num `<button>` isso escreve uma propriedade que ninguém lê, e a escolha da criança some em silêncio.
+    // ⚠️ IT IS THE DEFECT THAT RAISES NO ERROR. `settings-audio` does `ctx.$<HTMLSelectElement>('#cane-div').value = …`;
+    // on a `<button>` that writes a property nobody reads, and the child's choice vanishes silently.
     expect(controlRow(ctx, { id: 'a', label: 'A' }).controle.tagName).toBe('BUTTON');
     expect(controlRow(ctx, { id: 'b', label: 'B', shape: 'escolha' }).controle.tagName).toBe('SELECT');
     const cursor = controlRow(ctx, { id: 'c', label: 'C', shape: 'cursor' }).controle;
     expect(cursor.tagName).toBe('INPUT');
     expect(cursor.type).toBe('range');
-    // ⚠️ E COM LIMITES: um `range` sem `min`/`max` assume 0..100, e o volume deste projeto é 0..1 — sem isto o
-    // primeiro passo do cursor salta o intervalo inteiro.
+    // ⚠️ AND WITH BOUNDS: a `range` without `min`/`max` assumes 0..100, and this project's volume is 0..1 — without this
+    // the slider's first step jumps the whole interval.
     expect(cursor.min).toBe('0');
     expect(cursor.max).toBe('100');
   });
 
   it('🔴 [Right] o interruptor anuncia o NOME, não só o estado', () => {
-    // O `textContent` de um interruptor deste projeto é «▶ Desligado». Sem `aria-label`, quem navega controlo
-    // a controlo ouve «Desligado, botão» e não sabe desligado O QUÊ — o `<strong>` ao lado só serve a quem vê
-    // a linha inteira.
+    // A switch's `textContent` in this project is «▶ Desligado». Without `aria-label`, whoever navigates control by
+    // control hears «Desligado, botão» and does not know WHAT is off — the `<strong>` beside it only serves whoever sees
+    // the whole row.
     const { controle } = controlRow(ctx, { id: 'x', label: 'Modo Fácil' });
     expect(controle.getAttribute('aria-label')).toBe('Modo Fácil');
     expect(controle.getAttribute('aria-pressed'), 'nasce sem estado dito, e um estado por dizer é um estado errado')
@@ -76,9 +76,9 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
   });
 
   it('🔴 [Boundary] `rotularLinha` APAGA a dica que some — não a deixa no idioma anterior', () => {
-    // ⚠️ Uma dica que existe num dicionário e não noutro tem de DESAPARECER na retradução. Deixar de a
-    // escrever não chega: o texto antigo sobrevive e o rodapé descansa no idioma que a criança acabou de
-    // deixar. É a mesma regra que o `applyLabels` já segue para o `data-explain-idle` da moldura.
+    // ⚠️ A hint that exists in one dictionary and not another must DISAPPEAR on retranslation. Not writing it is not
+    // enough: the old text survives and the footer rests in the language the child just left. It is the same rule
+    // `applyLabels` follows for the frame's `data-explain-idle`.
     const { row: linha, controle } = controlRow(ctx, { id: 'x', label: 'Antes', hint: 'Explicação antiga.' });
     hospedeiro.appendChild(linha);
     labelRow(linha, { id: 'x', label: 'Depois' });
@@ -117,9 +117,8 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
   }
 
   it('🎯 [Right] cria os QUATRO ids que o painel alcança e nunca criava', () => {
-    // 📏 `settings-mobility` procura `#movement-players`, `#opt-facil`, `#opt-altmove` e `#opt-togglerun`. O
-    // markup deles vivia no `app/index.html`, que saiu com o cartucho — desde então o painel abria com o
-    // cartão, o título e o botão de repor, e NENHUMA das três escolhas.
+    // 📏 `settings-mobility` looks for `#movement-players`, `#opt-facil`, `#opt-altmove` and `#opt-togglerun`. Without
+    // this inside, the panel would open with the card, the title and the reset button, and NONE of the three choices.
     const c = casca();
     mountMobilityInside(ctx, c.card, c.list);
     for (const id of ['movement-players', 'opt-facil', 'opt-altmove', 'opt-togglerun']) {
@@ -128,9 +127,8 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
   });
 
   it('⚠️ [Right] as três escolhas ficam DENTRO da lista, e as abas FORA dela', () => {
-    // A lista é o `div[role=group]` que o leitor de tela anuncia como o conjunto das escolhas. As abas dizem
-    // de QUEM são as escolhas: pô-las lá dentro faria o grupo anunciar o selector de assento como se fosse
-    // mais um ajuste.
+    // The list is the `div[role=group]` the screen reader announces as the set of choices. The tabs say WHOSE the choices
+    // are: putting them inside would make the group announce the seat selector as one more setting.
     const c = casca();
     mountMobilityInside(ctx, c.card, c.list);
     for (const id of ['opt-facil', 'opt-altmove', 'opt-togglerun']) {
@@ -143,8 +141,8 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
   });
 
   it('⚠️ [Zero] montar DUAS vezes deixa UMA linha de cada', () => {
-    // A raiz monta mais do que uma vez: a contagem de jogadores muda a grade de telas, e o ADR-0142 põe dois
-    // cartuchos na mesma página.
+    // The root mounts more than once: the player count changes the screen grid, and ADR-0142 puts two cartridges on the
+    // same page.
     const c = casca();
     mountMobilityInside(ctx, c.card, c.list);
     mountMobilityInside(ctx, c.card, c.list);
@@ -154,10 +152,10 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
   });
 
   it('🔴 [Right] a linha da ALTERNÂNCIA é sempre criada — quem a esconde é o painel, por `seguraTeclas`', () => {
-    // ⚠️ A REGRA MORA NUM SÍTIO SÓ. `reflectAltMove` decide se ela se vê, pelo `seguraTeclas` do ADR-0115, e
-    // a decisão dele é `hidden` — que a tira da tela E da árvore de acessibilidade. Criar só quando se aplica
-    // poria a mesma regra em dois lugares, e o dia em que divergissem é o dia em que a linha aparece num jogo
-    // onde não faz nada.
+    // ⚠️ THE RULE LIVES IN ONE PLACE. `reflectAltMove` decides whether it shows, by the declaration's `holdsKeys`
+    // (ADR-0115), and its decision is `hidden` — which takes it off the screen AND out of the accessibility tree.
+    // Creating it only when it applies would put the same rule in two places, and the day they diverged is the day the
+    // row appears in a game where it does nothing.
     const c = casca();
     mountMobilityInside(ctx, c.card, c.list);
     const alt = document.getElementById('opt-altmove');
@@ -186,8 +184,8 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     return c;
   }
 
-  // 📏 Os quinze que `ui/settings-audio` alcança e nunca criou, medidos do próprio ficheiro. `#opt-sound` NÃO
-  // entra: ele é o espelho deste ajuste na barra rápida, fora do painel, e é alcançado com guarda.
+  // 📏 The controls `ui/settings-audio` reaches, measured from the file itself. `#opt-sound` is NOT among them: it is this
+  // setting's mirror on the quick bar, outside the panel, and is reached with a guard.
   const CONTROLES = {
     'opt-modocego': 'BUTTON',
     'cane-div': 'SELECT',
@@ -196,13 +194,13 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     'tts-vol': 'INPUT',
   };
 
-  /** O que o ADR-0151 tirou do painel — afirmado AUSENTE, e não só deixado de fora da lista acima. */
-  // E o som e o volume GERAIS mudaram-se para o painel «Áudio»; o volume da navegação saiu (um lugar por escolha).
+  /** What ADR-0151 took out of the panel — asserted ABSENT, not just left off the list above. */
+  // The GENERAL sound and volume live in the «Áudio» panel; the navigation volume left (one place per choice).
   const SAIRAM = ['tts-engine', 'tts-voice', 'opt-tts-test', 'audio-sinks', 'audio-detect', 'audio-master', 'audio-master-vol', 'navsound-master'];
 
   it('🎯 [Right] cria os controles, cada um com a TAG que o painel escreve', () => {
-    // ⚠️ A TAG É O DEFEITO SILENCIOSO. `renderAudio` faz `ctx.$<HTMLSelectElement>('#cane-div').value = …`;
-    // num `<button>` isso cria uma propriedade que ninguém lê, sem erro nenhum, e a escolha some.
+    // ⚠️ THE TAG IS THE SILENT DEFECT. `renderAudio` does `ctx.$<HTMLSelectElement>('#cane-div').value = …`; on a
+    // `<button>` that creates a property nobody reads, with no error at all, and the choice vanishes.
     const c = casca();
     mountAudioInside(ctx, c.card, c.list);
     for (const [id, tag] of Object.entries(CONTROLES)) {
@@ -210,12 +208,12 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
       expect(el, `#${id} não foi criado`).not.toBeNull();
       expect(el.tagName, `#${id} nasceu com a tag errada`).toBe(tag);
     }
-    // 🔴 O PAR (ADR-0151): motor, voz, testar voz e as saídas por jogador NÃO estão no painel. Sem isto, uma lista
-    // de controles que voltasse a crescer passaria no caso de cima — ele só confere os que DEVEM existir.
+    // 🔴 THE PAIR (ADR-0151): engine, voice, voice test and the per-player outputs are NOT in the panel. Without this, a
+    // control list that grew again would pass the case above — it only checks those that MUST exist.
     for (const id of SAIRAM) {
       expect(document.getElementById(id), `#${id} continua no painel — o Dev tirou-o`).toBeNull();
     }
-    // e os três volumes são cursores de verdade, não caixas de texto
+    // and the volume is a real slider, not a text box
     for (const id of ['tts-vol']) {
       expect(document.getElementById(id).type, `#${id} não é um cursor`).toBe('range');
     }
@@ -229,8 +227,8 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
   });
 
   it('⚠️ [Right] a ORDEM é a decisão (ADR-0151): modo cego, bengala, navegação, narração, índice falado', () => {
-    // O modo cego primeiro, porque é nele que os outros sons passam a ser a tela; o índice logo depois da
-    // narração, porque é a narração que ele encurta.
+    // Blind mode first, because in it the other sounds become the screen; the index right after the narration, because
+    // it is the narration it shortens.
     const c = casca();
     mountAudioInside(ctx, c.card, c.list);
     const ordem = [...c.card.children];
@@ -256,13 +254,12 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
   });
 
   it('🔴 [Right] o IDIOMA QUE CHEGA DEPOIS DO ARRANQUE alcança as ROWS, e não só a moldura', async () => {
-    // 🔴 ESTE CASO NASCEU DE UM DEFEITO MEDIDO NUM NAVEGADOR, e nenhum teste unitário o apanhava: eles correm
-    // todos num idioma só. 📏 No `quiz.html` com `lang="en"`, em 2026-09-12: o título dizia «Hearing
-    // accessibility» e a primeira linha dizia «Som», na mesma tela. A moldura já se retraduzia desde que
-    // `MountPanelSpec.rotulos` passou a resolver-se a cada abertura; o INTERIOR ficou para trás.
+    // 🔴 THIS CASE CAME FROM A DEFECT MEASURED IN A BROWSER, which no unit test caught: they all run in one language.
+    // 📏 In `quiz.html` with `lang="en"`, on 2026-09-12: the title said «Hearing accessibility» and the first row said
+    // «Som», on the same screen — the frame was retranslated at each opening and the INSIDE was left behind.
     //
-    // 📌 O que o conserta é montar o interior outra vez a cada abertura — e por isso `mountAudioInside`
-    // reetiqueta o que já existe em vez de o refazer: refazer deixaria treze controles sem escuta.
+    // 📌 What fixes it is mounting the inside again at each opening — which is why `mountAudioInside` relabels what exists
+    // instead of rebuilding it: rebuilding would leave the controls with no listeners.
     const { setLocale } = await import('../app/js/core/i18n.js');
     const c = casca();
     mountAudioInside(ctx, c.card, c.list);
@@ -278,8 +275,8 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
   });
 
   it('🔴 [Zero] `#opt-sound` NÃO é criado — ele mora na barra rápida, fora do painel', () => {
-    // Criá-lo aqui poria DOIS espelhos do mesmo ajuste no documento, e o `reflectMaster` acenderia o de
-    // dentro do painel enquanto a barra continuava a dizer o contrário.
+    // Creating it here would put TWO mirrors of the same setting in the document, and `reflectMaster` would light the one
+    // inside the panel while the bar went on saying the opposite.
     const c = casca();
     mountAudioInside(ctx, c.card, c.list);
     expect(document.getElementById('opt-sound')).toBeNull();
@@ -296,7 +293,7 @@ describe('montarInteriorDoSom — o painel «Áudio» (ADR-0151 §2 item 4)', ()
   }
 
   it('🎯 [Right] o som geral VOLTOU — interruptor e volume, com as tags que `initSettingsAudio` escreve', () => {
-    // O Dev tirou-os e devolveu-os no mesmo dia: «toggle + barra para som geral voltam».
+    // The Dev's decision: «toggle + barra para som geral voltam».
     const c = casca();
     mountSoundInside(ctx, c.card, c.list);
     expect(document.getElementById('audio-master')?.tagName).toBe('BUTTON');
@@ -324,19 +321,20 @@ describe('montarInteriorDoSom — o painel «Áudio» (ADR-0151 §2 item 4)', ()
 
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-// Dez, cada uma aplicada por script a ficheiro e com contagem de ocorrencias antes de aplicar.
+// ========================= MUTATIONS CHECKED =========================
+// Ten, each applied by script to the file with occurrence counts before applying. (`rotuloAria` and `seguraTeclas` are
+// today's `ariaLabel` and `holdsKeys`.)
 //
-//   1. a dica a sair do `<span>` -> o `fillExplain` nunca a acha, e o menu volta a ser um manual.
-//   2. a FORMA ignorada (tudo botao) -> um `<select>` pedido nasce `<button>`; escrever `.value` nele nao da
-//      erro nenhum, e a escolha da crianca some em silencio.
-//   3. o cursor sem `min`/`max` -> assume 0..100 onde o volume e 0..1, e o primeiro passo salta o intervalo.
-//   4. o controle sem `aria-label` -> reprovam DOIS: quem navega controlo a controlo ouve so «Desligado».
-//   5. `rotuloAria` a deixar de ganhar -> um botao cujo rotulo e um glifo passa a anunciar o glifo.
-//   6. o interruptor sem `aria-pressed` -> nasce com o estado por dizer, que e um estado errado.
-//   7. o interior do motor sem guarda -> montar duas vezes deixa duas linhas de cada, e a raiz monta mais do
-//      que uma vez (a contagem de jogadores muda a grade; o ADR-0142 poe dois cartuchos na mesma pagina).
-//   8. as abas DENTRO da lista -> o grupo anuncia o selector de assento como se fosse mais um ajuste.
-//   9. a linha da alternancia criada so quando se aplica -> reprovam CINCO. A regra do `seguraTeclas` mora no
-//      `reflectAltMove`; em dois sitios, elas divergem, e a linha aparece num jogo onde nao faz nada.
-//  10. as escolhas no cartao em vez da lista -> saem do `div[role=group]` que o leitor de tela anuncia.
+//   1. the hint leaving the `<span>` -> `fillExplain` never finds it, and the menu becomes a manual again.
+//   2. the SHAPE ignored (everything a button) -> a requested `<select>` is born a `<button>`; writing `.value` on it
+//      raises no error at all, and the child's choice vanishes silently.
+//   3. the slider without `min`/`max` -> assumes 0..100 where the volume is 0..1, and the first step jumps the interval.
+//   4. the control without `aria-label` -> TWO fail: whoever navigates control by control hears only «Desligado».
+//   5. `rotuloAria` no longer winning -> a button whose label is a glyph announces the glyph.
+//   6. the switch without `aria-pressed` -> born with its state unsaid, which is a wrong state.
+//   7. the motor inside without a guard -> mounting twice leaves two rows of each, and the root mounts more than once
+//      (the player count changes the grid; ADR-0142 puts two cartridges on the same page).
+//   8. the tabs INSIDE the list -> the group announces the seat selector as one more setting.
+//   9. the latch row created only when it applies -> FIVE fail. The `seguraTeclas` rule lives in `reflectAltMove`; in
+//      two places they drift, and the row appears in a game where it does nothing.
+//  10. the choices on the card instead of the list -> they leave the `div[role=group]` the screen reader announces.

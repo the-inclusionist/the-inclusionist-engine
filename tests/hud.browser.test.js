@@ -1,34 +1,32 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/hud.initHud (project BROWSER: precisa de `document` real — createElement/hidden/style/remove).
-// Contrato da casca: buildGameHud() esvazia #game-hud e monta UMA .player-screen por jogador (HUD + selo de
-// abandono + painel de pausa INJETADO), avisa por onScreensBuilt; updateGameHud() reescreve moedas/poder e
-// esconde o contador de quem desistiu; getScreen/showWaitingBadge/clearWaitingBadge operam sobre as telas
-// montadas. `numPlayers`/`players` vêm de core/state.js (bindings vivos, como no game.js real).
-// ZOMBIES + Right-BICEP. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Tests of ui/hud.initHud (BROWSER project: needs a real `document` — createElement/hidden/style/remove).
+// The shell's contract: buildGameHud() empties #game-hud and mounts ONE .player-screen per player (HUD + quit badge +
+// INJECTED pause panel) and reports through onScreensBuilt; updateGameHud() rewrites the objective/power and hides the
+// counter of whoever quit; getScreen/showWaitingBadge/clearWaitingBadge operate on the mounted screens.
+// `numPlayers`/`players` come from a local round double (below).
+// ZOMBIES + Right-BICEP. See docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initHud } from '../app/js/ui/hud.js';
 /*
- * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` foi com a pilha de mundo-de-tiles para o
- * `game-platformer`. Este ficheiro nunca testou a rodada — ele PASSA uma ao que está a medir —, e os três
- * membros abaixo são exactamente os que ele lê. Fábrica e não literal: duas rodadas têm de ser dois objectos.
+ * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228: `core/run-state` moved to `game-platformer` with the tile-world stack). This
+ * file never tests the round — it HANDS one to what it measures — and the three members below are exactly the ones it
+ * reads. A factory and not a literal: two rounds must be two objects.
  */
 const createRunState = () => ({ numPlayers: 1, players: [], setNumPlayers(n) { this.numPlayers = n; } });
-// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
-// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
-// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+// `players`/`numPlayers` live in the instance the composition root owns (ADR-0038, Phase B), not in `core/state`. Here
+// the test creates its own, and the aliases below keep the cases' bodies short.
 const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
 
 const $ = (sel) => document.querySelector(sel);
-// `powerShort`/`POWER_MSG` são FUNÇÕES desde o item 14: eram tabelas de texto em português, congeladas no
-// idioma do boot. O fixture continua sendo uma tabela — é o que se lê melhor num teste — e vira função na
-// injeção, o que também prova que o módulo não indexa nada: ele PERGUNTA.
+// `powerShort`/`POWER_MSG` are FUNCTIONS (item 14), so they follow the current language. The fixture is still a table —
+// it reads best in a test — and becomes a function at injection, which also proves the module indexes nothing: it ASKS.
 const POWERS_TAB = { off: '—', fly: '🎈 Voo', superjump: '🐇 Super-pulo' };
 const POWERS = (k) => POWERS_TAB[k] || '—';
 
-/** Painel de pausa FALSO: o real vem do slice de pausa/ícones e nunca é construído aqui. */
+/** A FAKE pause panel: the real one comes from the pause/icons slice and is never built here. */
 function fakePause(i) {
   const sp = document.createElement('div');
   sp.className = 'screen-pause'; sp.hidden = true; sp.dataset.player = String(i);
@@ -43,9 +41,9 @@ function makeCtx(over = {}) {
     $,
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     powerShort: POWERS,
-    // O OBJETIVO entra pelo ctx, como no `main.js`: o HUD não lê mais `collected` do jogador (item 19). O
-    // fixture continua declarando jogadores com `collected` porque é o jogo QUE OS TEM — a diferença é que
-    // agora quem traduz isso para "quanto de quanto" é a raiz de composição, e não o módulo de engine.
+    // The OBJECTIVE comes in through the ctx: the HUD does not read the player's `collected` (item 19). The fixture still
+    // declares players with `collected` because it is the GAME that has them — what turns that into "how much of how
+    // much" is the composition root, not the engine module.
     hudObjective: (i) => ({
       name: { text: 'itens', gender: 'm', plural: true },
       have: (players[i] && players[i].collected) || 0,
@@ -53,11 +51,11 @@ function makeCtx(over = {}) {
     }),
     hudIcon: '🎯',
     buildScreenPause: (i) => { built.push(i); return fakePause(i); },
-    // A BARRA RÁPIDA passou a ser montada aqui também (ADR-0044, item 7). Falsa como a pausa: o que este
-    // arquivo mede é a GRADE de telas, não o conteúdo do que se pendura nela.
+    // The QUICK BAR is mounted here too (ADR-0044, item 7). Fake like the pause: what this file measures is the screen
+    // GRID, not the content of what hangs on it.
     buildQuickBar: (i) => { const b = document.createElement('div'); b.className = 'screen-a11y'; b.dataset.player = String(i); return b; },
     onScreensBuilt: (panes) => announced.push(panes),
-    built, announced, // helpers de teste (não fazem parte de HudCtx)
+    built, announced, // test helpers (not part of HudCtx)
     ...over,
   };
 }
@@ -165,7 +163,7 @@ describe('ui/hud · initHud(ctx).buildGameHud', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// updateGameHud — o conteúdo do HUD a cada frame
+// updateGameHud — the HUD's content every frame
 // ---------------------------------------------------------------------------------------------
 
 describe('ui/hud · initHud(ctx).updateGameHud', () => {
@@ -210,10 +208,10 @@ describe('ui/hud · initHud(ctx).updateGameHud', () => {
     const api = initHud(makeCtx());
     api.buildGameHud();
     api.updateGameHud();
-    players.length = 1; // o array encolheu; a grade de telas ainda é de 2
+    players.length = 1; // the array shrank; the screen grid is still for 2
     expect(() => api.updateGameHud()).not.toThrow();
     const huds = [...document.querySelectorAll('#game-hud .vphud')];
-    expect(huds[1].querySelector('.vphud-n').textContent).toBe('9'); // último valor escrito, sem lixo
+    expect(huds[1].querySelector('.vphud-n').textContent).toBe('9'); // last value written, no garbage
   });
 
   it('[Zero] chamar updateGameHud ANTES de buildGameHud é no-op silencioso (sem tela montada)', () => {
@@ -301,44 +299,36 @@ describe('ui/hud · showWaitingBadge / clearWaitingBadge', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// A SEPARAÇÃO ESTRUTURAL ENTRE EXPERIÊNCIA E CONTROLE (ADR-0046, issue #85)
+// THE STRUCTURAL SEPARATION BETWEEN EXPERIENCE AND CONTROL (ADR-0046, issue #85)
 // ---------------------------------------------------------------------------------------------
 //
-// ⚠️ O QUE ESTA SECÇÃO IMPEDE, e o efeito de errar não é cosmético: no modo cego a simulação aplica
-// `brightness(0)` à `.screen-exp`, e `filter` de CSS DESCE para os descendentes sem que um filho consiga
-// cancelá-lo. Um controlo que caia lá dentro é pintado de preto — e a pessoa fica TRANCADA na simulação,
-// sem o botão que a desligaria.
+// ⚠️ WHAT THIS SECTION PREVENTS, and getting it wrong is not cosmetic: in blind mode the simulation applies
+// `brightness(0)` to `.screen-exp`, and a CSS `filter` GOES DOWN to the descendants with no way for a child to cancel
+// it. A control that falls inside is painted black — and the person is LOCKED in the simulation, without the button
+// that would turn it off. ADR-0046 records that the gate was owed («the gate is owed»); issue #85 is that debt.
 //
-// Até 2026-09-07 isto era garantido por dois comentários de código e um registo. O próprio ADR-0046 anota a
-// dívida em vez de a esconder («the gate is owed»), e a issue #85 é essa dívida.
+// Of the issue's four clauses, this section pays ONE (clause 1, the structural one, which no other file measures):
 //
-// ⚠️ MEDIÇÃO DE 07/09: das quatro cláusulas da issue, esta secção paga UMA — e as outras três não
-// desapareceram por acaso:
-//
-//   · a cláusula 4 (`reachOfMode`: simulação → 'mundo', correção → 'mundo-e-menus') JÁ TEM gate, em
-//     `viz-setters.node.test.js:687-711`, com mutação conferida. Escrevê-la aqui seria uma segunda opinião
-//     sobre a mesma coisa, e duas fontes que se copiam divergem.
-//   · as cláusulas 2 e 3 (`#touch-start`, `#caption`, `#touch-controls`) nomeiam marcação que vivia no
-//     `app/index.html` e saiu com o cartucho (issue #111). A engine PROCURA esses elementos; não os cria.
-//     Enquanto o dono deles for o consumidor, o gate deles é do consumidor — aqui não haveria o que montar.
-//     (A bolinha do `vizDotFor` nunca foi DOM: é um `Graphics` do PixiJS, e o filtro que a alcança é o do
-//     mundo, não o da `.screen-exp`.)
-//
-// O que sobra é a cláusula 1, que é a estrutural — e é a que nenhum outro ficheiro afere.
+//   · clause 4 (`reachOfMode`: simulation → 'mundo', correction → 'mundo-e-menus') has its gate in
+//     `viz-setters.node.test.js`, with a checked mutation. Writing it here would be a second opinion on the same thing,
+//     and two sources that copy each other drift apart.
+//   · clauses 2 and 3 (`#touch-start`, `#caption`, `#touch-controls`) name markup the CONSUMER owns: the engine LOOKS
+//     FOR those elements and does not create them, so their gate belongs to the consumer. (The `vizDotFor` dot was
+//     never DOM: it is a PixiJS `Graphics`, and the filter that reaches it is the world's, not `.screen-exp`'s.)
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 
 describe('ui/hud · o que dá ACESSO fica fora da subárvore que a empatia degrada (ADR-0046, #85)', () => {
-  /** As três peças de uma tela, pelo papel que o ADR-0046 lhes dá. */
+  /** A screen's three pieces, by the role ADR-0046 gives them. */
   function pecasDaTela(i) {
     const scr = document.querySelectorAll('#game-hud .player-screen')[i];
     return {
       scr,
       exp: scr.querySelector('.screen-exp'),
-      barra: scr.querySelector('.screen-a11y'),   // CONTROLE: a barra rápida de acessibilidade
-      pausa: scr.querySelector('.screen-pause'),  // CONTROLE: o painel de pausa
-      hud: scr.querySelector('.vphud'),           // EXPERIÊNCIA
-      abandono: scr.querySelector('.vphud-quit'), // EXPERIÊNCIA
+      barra: scr.querySelector('.screen-a11y'),   // CONTROL: the accessibility quick bar
+      pausa: scr.querySelector('.screen-pause'),  // CONTROL: the pause panel
+      hud: scr.querySelector('.vphud'),           // EXPERIENCE
+      abandono: scr.querySelector('.vphud-quit'), // EXPERIENCE
     };
   }
 
@@ -350,18 +340,18 @@ describe('ui/hud · o que dá ACESSO fica fora da subárvore que a empatia degra
     expect(barra, 'a barra rápida não foi montada').not.toBe(null);
     expect(pausa, 'o painel de pausa não foi montado').not.toBe(null);
 
-    // ⚠️ `contains` e não `parentElement`, de propósito: o que desce é o `filter`, e ele desce a QUALQUER
-    // profundidade. Aferir só o pai deixaria passar a barra pendurada dois níveis abaixo da `.screen-exp`,
-    // que sofreria o filtro exactamente igual.
+    // ⚠️ `contains` and not `parentElement`, on purpose: what goes down is the `filter`, and it goes down to ANY depth.
+    // Checking only the parent would let through the bar hanging two levels below `.screen-exp`, which would suffer the
+    // filter just the same.
     expect(exp.contains(barra), 'a barra rápida caiu DENTRO da .screen-exp: no modo cego ela fica preta').toBe(false);
     expect(exp.contains(pausa), 'o painel de pausa caiu DENTRO da .screen-exp: a pessoa fica trancada').toBe(false);
     expect(scr.contains(barra) && scr.contains(pausa), 'os controlos saíram da própria tela').toBe(true);
   });
 
   it('[Interface] e o que é EXPERIÊNCIA continua DENTRO — senão a simulação deixaria de simular', () => {
-    // O contrapeso do caso acima, e ele é necessário: mover TUDO para fora da `.screen-exp` faria o
-    // primeiro caso passar e esvaziaria o modo empatia, que existe para que a pessoa SINTA o prejuízo.
-    // Um gate só do lado do controlo aprovaria a supressão do outro lado.
+    // The counterweight of the case above, and it is needed: moving EVERYTHING out of `.screen-exp` would make the first
+    // case pass and empty the empathy mode, which exists so the person FEELS the impairment. A gate only on the control
+    // side would approve deleting the other side.
     mount();
     initHud(makeCtx()).buildGameHud();
     const { exp, hud, abandono } = pecasDaTela(0);
@@ -370,9 +360,9 @@ describe('ui/hud · o que dá ACESSO fica fora da subárvore que a empatia degra
   });
 
   it('[Boundary] a .player-screen NÃO é ela própria a .screen-exp — senão não haveria fora nenhum', () => {
-    // O buraco que o `contains` sozinho não fecha. Se a tela inteira ganhasse a classe filtrada, a barra e a
-    // pausa continuariam a NÃO ser descendentes do `<div>` interno — e seriam filtradas na mesma, porque o
-    // filtro passaria a estar acima delas. A separação depende de a subárvore ser PRÓPRIA.
+    // The hole `contains` alone does not close. If the whole screen got the filtered class, the bar and the pause would
+    // still NOT be descendants of the inner `<div>` — and would be filtered all the same, because the filter would sit
+    // above them. The separation depends on the subtree being ITS OWN.
     mount();
     initHud(makeCtx()).buildGameHud();
     const { scr, exp } = pecasDaTela(0);
@@ -382,8 +372,8 @@ describe('ui/hud · o que dá ACESSO fica fora da subárvore que a empatia degra
   });
 
   it('[Many] vale em TODAS as telas do multi-tela, e não só na primeira', () => {
-    // O laço do `buildGameHud` monta uma tela por jogador com o mesmo código, mas um gate que medisse só a
-    // tela 0 não distinguiria "está certo" de "está certo uma vez". Quatro jogadores = quatro telas.
+    // `buildGameHud`'s loop mounts one screen per player with the same code, but a gate measuring only screen 0 would
+    // not tell "it is right" from "it is right once". Four players = four screens.
     mount();
     setPlayers([mk(), mk(), mk(), mk()]);
     initHud(makeCtx()).buildGameHud();
@@ -397,15 +387,15 @@ describe('ui/hud · o que dá ACESSO fica fora da subárvore que a empatia degra
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS (secção do ADR-0046) =========================
-//   · em `ui/hud.ts`, trocando `scr.appendChild(bar)` por `exp.appendChild(bar)` → "[Right]" e "[Many]"
-//     reprovam, e é exactamente o defeito da issue #85.
-//   · trocando `scr.appendChild(sp)` por `exp.appendChild(sp)` (o painel de pausa) → "[Right]" e "[Many]"
-//     reprovam na segunda asserção — e com elas cai também o "[Interface] onScreensBuilt recebe os painéis
-//     em ordem e JÁ ancorados na tela certa", que já existia. Registado porque diz uma coisa útil: a pausa
-//     tinha meia guarda desde sempre (alguém verificava a ÂNCORA), e a barra rápida não tinha nenhuma.
-//   · trocando `exp.appendChild(d)` por `scr.appendChild(d)` (o HUD) → "[Interface]" reprova. É a mutação
-//     que prova que o gate não aprova esvaziar a experiência para satisfazer o primeiro caso.
-//   · pondo `scr.className = 'player-screen screen-exp'` → "[Boundary]" reprova. ⚠️ E "[Right]" continua
-//     VERDE, porque a barra deixa de ser descendente do `<div>` interno enquanto passa a estar sob o filtro:
-//     é o caso que mostra por que a descendência sozinha não basta.
+// ========================= MUTATIONS CHECKED (the ADR-0046 section) =========================
+//   · in `ui/hud.ts`, replacing `scr.appendChild(bar)` with `exp.appendChild(bar)` → [Right] and [Many] fail, and it is
+//     exactly issue #85's defect.
+//   · replacing `scr.appendChild(sp)` with `exp.appendChild(sp)` (the pause panel) → [Right] and [Many] fail on the second
+//     assertion — and with them the older [Interface] case of onScreensBuilt receiving the panels in order and ALREADY
+//     anchored on the right screen. Recorded because it says something useful: the pause had half a guard all along
+//     (someone checked the ANCHOR), and the quick bar had none.
+//   · replacing `exp.appendChild(d)` with `scr.appendChild(d)` (the HUD) → [Interface] fails. It is the mutation that
+//     proves the gate does not approve emptying the experience to satisfy the first case.
+//   · setting `scr.className = 'player-screen screen-exp'` → [Boundary] fails. ⚠️ And [Right] stays GREEN, because the
+//     bar stops being a descendant of the inner `<div>` while falling under the filter: the case that shows why
+//     descent alone is not enough.

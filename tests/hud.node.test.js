@@ -1,36 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/hud (project NODE: só a metade PURA, sem `document`). Contrato: a GRADE de telas
-// (screenGrid/screenRect/screenCount), o MARKUP estático (vphudHtml/waitBadgeHtml) e a PROJEÇÃO do HUD de um
-// jogador (hudRowView) são funções de valor — não dependem de DOM nem de estado global. A casca
-// (initHud/buildGameHud/updateGameHud/…) está em tests/hud.browser.test.js.
-// ZOMBIES + Right-BICEP. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Tests of ui/hud (NODE project: only the PURE half, no `document`). Contract: the screen GRID
+// (screenGrid/screenRect/screenCount), the static MARKUP (vphudHtml/waitBadgeHtml) and the PROJECTION of one player's HUD
+// (hudRowView) are value functions — they depend on no DOM and no global state. The shell
+// (initHud/buildGameHud/updateGameHud/…) is in tests/hud.browser.test.js.
+// ZOMBIES + Right-BICEP. See docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import {
   screenGrid, screenRect, screenCount, vphudHtml, waitBadgeHtml, hudRowView, counterLabel, applyCounterLabel,
 } from '../app/js/ui/hud.js';
 
-// O `COIN_TARGET` SAIU DAQUI, e a ausência é o assunto do item 19. O fixture não conhece mais a constante do
-// jogo de plataforma — ele DECLARA um objetivo, que é o campo 5 do contrato. Um teste que ainda precisasse
-// importar a constante estaria dizendo que o módulo também precisa.
-// O nome PADRÃO é 'itens', e não o do jogo de plataforma. Um teste de HUD que dissesse "moedas" a cada
-// linha estaria afirmando, por hábito, o que este item acabou de tirar do módulo — e o gate de fixtures
-// (engine-boundary) reprova exatamente isso. Os exemplos abaixo variam o nome de propósito.
+// No game constant here (item 19): the fixture DECLARES an objective, field 5 of the contract. A test that needed a
+// game's constant would be saying the module needs it too.
+// The DEFAULT name is 'itens', not the platformer's. A HUD test that said "moedas" on every line would assert, out of
+// habit, what item 19 took out of the module — and the fixtures gate (engine-boundary) fails exactly that. The examples
+// below vary the name on purpose.
 const OBJ = (have, need, nome = 'itens', gender = 'm') =>
   ({ name: { text: nome, gender, plural: have !== 1 }, have, need });
 const ICONE = '🪙';
 
-const pct = (s) => Number.parseFloat(s); // '50%' -> 50 (as funções devolvem string de CSS)
+const pct = (s) => Number.parseFloat(s); // '50%' -> 50 (the functions return CSS strings)
 
-// Tabela de poderes FALSA — de propósito diferente do POWER_SHORT real: hudRowView tem que ler a tabela
-// INJETADA, não uma cópia interna.
-// `powerShort`/`POWER_MSG` são FUNÇÕES desde o item 14: eram tabelas de texto em português, congeladas no
-// idioma do boot. O fixture continua sendo uma tabela — é o que se lê melhor num teste — e vira função na
-// injeção, o que também prova que o módulo não indexa nada: ele PERGUNTA.
+// A FAKE power table — deliberately different from any real one: hudRowView must read the INJECTED resolver, not an
+// internal copy.
+// `powerShort`/`POWER_MSG` are FUNCTIONS (item 14), so they follow the current language. The fixture is still a table —
+// it reads best in a test — and becomes a function at injection, which also proves the module indexes nothing: it ASKS.
 const POWERS_TAB = { off: '—', superjump: '🐇 Super-pulo', fly: '🎈 Voo' };
 const POWERS = (k) => POWERS_TAB[k] || '—';
 
 // ---------------------------------------------------------------------------------------------
-// screenGrid — colunas/linhas da grade de telas
+// screenGrid — columns/rows of the screen grid
 // ---------------------------------------------------------------------------------------------
 
 describe('ui/hud · screenGrid', () => {
@@ -63,7 +61,7 @@ describe('ui/hud · screenGrid', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// screenRect — retângulo (em %) de cada tela
+// screenRect — each screen's rectangle (in %)
 // ---------------------------------------------------------------------------------------------
 
 describe('ui/hud · screenRect', () => {
@@ -144,28 +142,27 @@ describe('ui/hud · screenCount', () => {
 
 describe('ui/hud · vphudHtml', () => {
   it('[Interface] o objetivo INTEIRO entra: numerador e denominador saem dele, não de constante nenhuma', () => {
-    // Era `vphudHtml(coinTarget = COIN_TARGET)` — um padrão posto no lugar de uma fronteira, e o nome que o
-    // ADR-0027 usa como veredito do passo 4. Depois virou `vphudHtml(alvo)`, que matou a DEPENDÊNCIA e
-    // deixou o assunto. Agora entra um `Objective`, e o HUD não sabe mais o QUE se junta.
+    // An `Objective` comes in, and the HUD does not know WHAT is being gathered — not a default constant put where a
+    // boundary belongs (ADR-0027, step 4).
     expect(vphudHtml(OBJ(0, 10), ICONE)).toContain('/ 10');
     expect(vphudHtml(OBJ(4, 10), ICONE)).toContain('>4</b>');
     expect(vphudHtml(OBJ(0, 3), ICONE)).toContain('/ 3');
   });
 
   it('[Interface] o ÍCONE é injetado — a engine não desenha mais a moeda no markup', () => {
-    // O caso que prende a metade que era só vocabulário. Um ícone cravado passaria em tudo acima.
+    // The case that holds the half that was only vocabulary. A hard-coded icon would pass everything above.
     expect(vphudHtml(OBJ(0, 10), '🧩')).toContain('>🧩<');
     expect(vphudHtml(OBJ(0, 10), '🧩')).not.toContain(ICONE);
   });
 
   it('[Right] o contador tem NOME ACESSÍVEL — e ele deixou de vir por MARKUP (issue #106)', () => {
-    // A exigência não mudou: antes o contador era "3 / 10" e mais nada, e quem não vê a tela não tinha o que
-    // ouvir. O que mudou é a PORTA. O nome vem de `Objective.name`, que é declarado pelo JOGO — e um jogo vive
-    // hoje noutro repositório (ADR-0083), então o seu texto não é revisto por esta árvore.
+    // A counter of just "3 / 10" gives someone who cannot see the screen nothing to hear. The name comes from
+    // `Objective.name`, declared by the GAME — and a game lives in another repository (ADR-0083), so its text is not
+    // reviewed by this tree.
     //
-    // ⚠️ E ELE ENTRAVA NUM ATRIBUTO, que é o pior contexto: dentro de um elemento uma aspa é inofensiva;
-    // dentro de `aria-label="…"` ela FECHA o atributo e o resto vira atributo — um `onmouseover` sem precisar
-    // de uma única tag. `setAttribute` escapa por construção.
+    // ⚠️ AND IN MARKUP IT WOULD GO INTO AN ATTRIBUTE, the worst context: inside an element a quote is harmless; inside
+    // `aria-label="…"` it CLOSES the attribute and the rest becomes attributes — an `onmouseover` without a single tag.
+    // `setAttribute` escapes by construction.
     const posto = [];
     const alvo = { setAttribute: (k, v) => posto.push([k, v]) };
     const raiz = { querySelector: (sel) => (sel === '.vphud-obj' ? alvo : null) };
@@ -177,16 +174,16 @@ describe('ui/hud · vphudHtml', () => {
   });
 
   it('[Zero] ⚠️ e o markup NÃO carrega mais o nome do jogo — nem escapado', () => {
-    // A metade negativa, e é ela que impede a volta: enquanto o nome estiver fora da string, não há escape
-    // para esquecer. Um caso que só afirmasse `setAttribute` deixaria passar uma versão que fizesse as duas.
+    // The negative half, the one that prevents the return: while the name stays out of the string, there is no escape to
+    // forget. A case asserting only `setAttribute` would let through a version doing both.
     const html = vphudHtml(OBJ(3, 10, 'palavras'), ICONE);
     expect(html).not.toContain('palavras');
     expect(html).not.toContain('aria-label');
   });
 
   it('[Error] ⚠️ um jogo que devolve um NÃO-NÚMERO em `have` não escreve markup', () => {
-    // `Objective.have` é `number` no tipo, e o tipo não atravessa a fronteira do pacote: um jogo em JavaScript
-    // puro devolve o que quiser. «É um número» estar escrito no tipo é justamente o que faz esquecer.
+    // `Objective.have` is `number` in the type, and the type does not cross the package boundary: a game in plain
+    // JavaScript returns whatever it likes. «É um número» being written in the type is exactly what makes one forget.
     const html = vphudHtml({ ...OBJ(0, 10), have: '<img src=x onerror=alert(1)>' }, ICONE);
     expect(html).not.toContain('<img');
     expect(html).toContain('<b class="vphud-n">0</b>'); // falso, mas inofensivo
@@ -198,10 +195,10 @@ describe('ui/hud · vphudHtml', () => {
   });
 
   it('[Interface] a classe do contador é a do OBJETIVO, não a do que este jogo junta', () => {
-    // A asserção NEGATIVA que estava aqui ("não contém a classe antiga") tinha de escrever a palavra que o
-    // módulo acabou de largar — e o gate de fixtures a acusou, com razão. A proteção contra a volta do nome
-    // antigo mora onde tem de morar: em `engine-boundary`, que reprova QUALQUER linha de código de `ui/hud`
-    // que fale de moeda. Aqui basta a afirmação positiva.
+    // A NEGATIVE assertion ("does not contain the old class") would have to write the word the module dropped — and the
+    // fixtures gate rightly flags it. The protection against the old name coming back lives where it must: in
+    // `engine-boundary`, which fails ANY code line of `ui/hud` that talks about coins. Here the positive assertion is
+    // enough.
     expect(vphudHtml(OBJ(0, 10), ICONE)).toContain('class="vphud-obj"');
   });
 
@@ -238,7 +235,7 @@ describe('ui/hud · contadorLabel', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// waitBadgeHtml — selo "aperte um botão para entrar"
+// waitBadgeHtml — the "press a button to join" badge
 // ---------------------------------------------------------------------------------------------
 
 describe('ui/hud · waitBadgeHtml', () => {
@@ -259,18 +256,17 @@ describe('ui/hud · waitBadgeHtml', () => {
 
   it('🔴 o selo sai do DICIONÁRIO e não de um literal — e os três casos acima não distinguem os dois', async () => {
     /*
-     * 🔴 ESTE CASO EXISTE PORQUE OS TRÊS DE CIMA FICAM VERDES COM O DEFEITO DE VOLTA. O dicionário activo
-     * aqui é o pt, e a frase da chave é a MESMA que estava colada no módulo — logo «contém Jogador 1» não
-     * separa «lê o dicionário» de «tem um literal em português». É a armadilha do gate coberto só por
-     * dourado, e ela custou-me uma suposição errada neste mesmo item.
+     * 🔴 THIS CASE EXISTS BECAUSE THE THREE ABOVE STAY GREEN WITH THE DEFECT BACK. The active dictionary here is pt,
+     * and the key's sentence is the SAME a literal in the module would carry — so «contém Jogador 1» does not separate
+     * «lê o dicionário» from «tem um literal em português». It is the trap of a gate covered only by golden values.
      *
-     * 🎯 O que separa os dois é SUBSTITUIR a entrada: um literal não muda, uma chave muda. `registerDict`
-     * escreve em `EXTRA`, que o `resolver` consulta ANTES do dicionário da engine (é assim que um jogo
-     * sobrepõe qualquer chave, ADR-0083).
+     * 🎯 What separates the two is REPLACING the entry: a literal does not change, a key does. `registerDict` writes to
+     * `EXTRA`, which the resolver consults BEFORE the engine's dictionary (that is how a game overrides any key,
+     * ADR-0083).
      *
-     * ⚠️ E REPÕE NO FIM, porque `EXTRA` é estado de módulo e não há como desregistar: sem a reposição, a
-     * sobreposição vazava para todo caso deste ficheiro que corresse depois — que é a mesma classe de
-     * contaminação por ordem que já apanhei no crivo do idioma do cartão de pausa.
+     * ⚠️ AND IT RESTORES AT THE END, because `EXTRA` is module state and there is no unregistering: without the restore,
+     * the override would leak into every case of this file that ran after — the same class of order contamination
+     * already caught in the pause card's language check.
      */
     const { registerDict } = await import('../app/js/core/i18n.js');
     const pt = (await import('../app/js/i18n/pt.js')).default;
@@ -290,7 +286,7 @@ describe('ui/hud · waitBadgeHtml', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// hudRowView — projeção do HUD de UM jogador
+// hudRowView — the projection of ONE player's HUD
 // ---------------------------------------------------------------------------------------------
 
 describe('ui/hud · hudRowView', () => {
@@ -304,8 +300,8 @@ describe('ui/hud · hudRowView', () => {
   });
 
   it('[Interface] o PROGRESSO vem do objetivo, e não mais do jogador', () => {
-    // O caso que mede a mudança de fronteira: o mesmo jogador, dois objetivos, dois contadores. Enquanto o
-    // número saía de `p.collected`, o HUD sabia que jogadores JUNTAM coisas — e um jogo de perguntas não.
+    // The case that measures the boundary: the same player, two objectives, two counters. If the number came from
+    // `p.collected`, the HUD would know players GATHER things — and a quiz game does not.
     const pl = { activePower: 'off', quit: false };
     expect(hudRowView(pl, POWERS, OBJ(2, 10)).have).toBe('2');
     expect(hudRowView(pl, POWERS, OBJ(9, 10)).have).toBe('9');
@@ -326,10 +322,8 @@ describe('ui/hud · hudRowView', () => {
   });
 
   it('[Boundary] resolvedor que devolve VAZIO ainda vira travessão (o HUD nunca fica em branco)', () => {
-    // Este caso dizia "tabela vazia" e reprovou quando a tabela virou função — e ao reprovar mostrou que a
-    // mudança ia CUSTAR uma garantia: com o `|| '—'` movido para o injetor, um resolvedor que devolvesse ''
-    // deixaria o campo do poder em branco na tela. A guarda voltou para o `hudRowView`, onde ela não depende
-    // de todo consumidor futuro se lembrar dela.
+    // With the `|| '—'` in the injector, a resolver returning '' would leave the power field blank on screen. The guard
+    // lives in `hudRowView`, where it does not depend on every future consumer remembering it.
     expect(hudRowView({ activePower: 'fly', quit: false }, () => '', OBJ(1, 10)).power).toBe('—');
   });
 
@@ -357,6 +351,6 @@ describe('ui/hud · hudRowView', () => {
     const obj = OBJ(4, 10);
     hudRowView(pl, POWERS, obj);
     expect(pl).toEqual({ activePower: 'superjump', quit: false });
-    expect(obj).toEqual(OBJ(4, 10)); // nem no objetivo: projetar é LER
+    expect(obj).toEqual(OBJ(4, 10)); // nor the objective: projecting is READING
   });
 });

@@ -1,29 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O MENU DE ABERTURA — largura que não quebra linha, e submenus que são LISTAS, não grades (ADR-0044).
+// THE OPENING MENU — a width that does not wrap lines, and submenus that are LISTS, not grids (ADR-0044).
 //
-// ========================= O QUE O DEV VIU, E POR QUE É A11Y E NÃO ESTÉTICA =========================
-// Duas observações dele, no mesmo pedido:
+// ========================= WHY IT IS ACCESSIBILITY, NOT LOOKS =========================
+// Two observations of the Dev's, in the same request:
 //
-//   · o `#tm-main` tinha 13em e os rótulos passavam a ocupar DUAS linhas. Um botão de duas linhas muda de
-//     altura conforme o texto, e o texto muda com o idioma — a mesma tela tem uma geometria em pt-BR e outra
-//     em espanhol. Quem navega por escuta não percebe; quem navega por resto de visão perde o alinhamento que
-//     usava para se orientar.
+//   · a narrow `#tm-main` (13em) makes labels take TWO lines. A two-line button changes height with its text, and the
+//     text changes with the language — the same screen has one geometry in pt-BR and another in Spanish. Someone
+//     navigating by ear does not notice; someone navigating by residual vision loses the alignment they used to
+//     orient themselves.
 //
-//   · os outros submenus da abertura eram GRADES de duas colunas, e a navegação por seta anda em ordem de DOM.
-//     Numa grade de duas colunas isso significa que "para baixo" pula para a coluna da direita. O anel do
-//     ADR-0044 (item 1) já estava certo no código — `nextTitleIndex` dá a volta —, e era o LAYOUT que mentia
-//     sobre ele: a criança apertava para baixo e o foco atravessava a tela. Virar lista vertical não muda a
-//     lógica; faz o que se vê coincidir com o que já acontecia.
+//   · arrow navigation walks in DOM order, so in a two-column GRID "down" jumps to the right-hand column. The ADR-0044
+//     ring (item 1) is right in code — `nextTitleIndex` wraps — and a grid LAYOUT would lie about it: the child
+//     presses down and the focus crosses the screen. A vertical list makes what is seen match what happens.
 //
-// Uma lista vertical de onze frações não cabe no quadro, e por isso ela ROLA — foi o que o Dev pediu com
-// todas as letras. Rolagem aqui é o preço de a ordem visual ser a ordem de navegação, e é o preço certo:
-// `focus()` leva o item para dentro da janela sozinho, então quem anda por teclado ou controle nunca perde
-// o foco fora da vista.
+// A vertical list of eleven fractions does not fit the frame, so it SCROLLS — as the Dev asked, in so many words.
+// Scrolling is the price of the visual order being the navigation order, and it is the right price: `focus()` brings
+// the item into view by itself, so keyboard or pad users never lose the focus out of sight.
 //
-// ========================= POR QUE UM GATE DE CSS, E NÃO "ficou bom na tela" =========================
-// Porque a regressão aqui é silenciosa. Alguém devolve `grid-template-columns:1fr 1fr` para caber mais coisa,
-// a tela fica mais bonita, e a navegação por seta volta a pular de coluna sem que nada reprove. É a mesma
-// razão do gate de contraste: a promessa e a tela não podem divergir em silêncio.
+// ========================= WHY A CSS GATE, AND NOT "it looked fine on screen" =========================
+// Because the regression is silent. Someone puts back `grid-template-columns:1fr 1fr` to fit more, the screen looks
+// nicer, and arrow navigation jumps columns again with nothing failing. The same reason as the contrast gate: the
+// promise and the screen cannot drift apart silently.
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
@@ -31,20 +28,20 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const CSS = readFileSync(join(process.cwd(), 'app', 'css', 'style.css'), 'utf8');
-/** Sem comentários: `/* … *\/` entre duas regras vira parte do seletor da seguinte e nada casa. Aprendido
- *  ao escrever este arquivo — o `[Zero]` reprovou primeiro, e reprovou pelo motivo certo. */
+/** Without comments: a `/* … *\/` between two rules becomes part of the next rule's selector and nothing matches. (The
+ *  `[Zero]` failed first when this file was written, and for the right reason.) */
 const LIMPO = CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');
 
-/** Os cinco submenus da abertura. O `#tm-main` fica DE FORA de propósito: ele é a lista curta, sem rolagem. */
+/** The opening menu's five submenus. `#tm-main` is left OUT on purpose: it is the short list, with no scrolling. */
 const SUBMENUS = ['#tm-alf', '#tm-mat', '#tm-tab', '#tm-fr', '#tm-cen'];
 
 const BLOCO = /([^{}]+)\{([^}]*)\}/g;
 
 /**
- * Declarações que alcançam `sel`, na ordem do arquivo — a última é a que vale.
+ * Declarations that reach `sel`, in file order — the last one wins.
  *
- * Casa por TOKEN de seletor, e não por `includes`: `#tm-fr` não pode casar `#tm-frac`, e `#tm-fr .title-btn`
- * é uma regra sobre os BOTÕES, não sobre a lista. Só entram regras em que o seletor termina no token.
+ * Matches by selector TOKEN, not by `includes`: `#tm-fr` must not match `#tm-frac`, and `#tm-fr .title-btn` is a rule
+ * about the BUTTONS, not the list. Only rules whose selector ends at the token count.
  */
 function declaracoes(sel) {
   const out = [];
@@ -58,7 +55,7 @@ function declaracoes(sel) {
   }
   return out;
 }
-/** Valor EFETIVO de uma propriedade: a última declaração que a define. */
+/** A property's EFFECTIVE value: the last declaration that sets it. */
 function prop(sel, nome) {
   const hits = declaracoes(sel).filter(([k]) => k === nome);
   return hits.length ? hits[hits.length - 1][1] : null;
@@ -67,7 +64,7 @@ const em = (v) => (v && /^([\d.]+)em$/.test(v) ? parseFloat(v) : NaN);
 
 describe('menu de abertura · largura de uma linha e submenus em lista vertical', () => {
   it('[Zero] o gate está lendo o style.css de verdade', () => {
-    // Sem isto, renomear o arquivo deixaria os casos abaixo verdes por não medirem nada.
+    // Without this, renaming the file would leave the cases below green for measuring nothing.
     expect(CSS.length).toBeGreaterThan(5000);
     expect(declaracoes('.title-menu').length).toBeGreaterThan(0);
   });
@@ -81,7 +78,7 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
   });
 
   it('[Right] nenhum submenu da abertura é grade de duas colunas', () => {
-    // A grade é o que fazia "para baixo" pular para a coluna da direita. Se voltar, esta é a linha que reprova.
+    // The grid is what makes "down" jump to the right-hand column. If it comes back, this is the line that fails.
     const grades = SUBMENUS
       .map((s) => [s, prop(s, 'grid-template-columns')])
       .filter(([, v]) => v && v.trim().split(/\s+/).length > 1)
@@ -90,8 +87,8 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
   });
 
   it('[Right] cada submenu da abertura ROLA em vez de transbordar', () => {
-    // Uma lista vertical de onze itens não cabe no quadro. Sem rolagem ela sai por baixo do canvas e os itens
-    // do fim ficam inalcançáveis — o `quit` do menu inicial é o "Voltar", e ele é o ÚLTIMO.
+    // A vertical list of eleven items does not fit the frame. Without scrolling it runs off the bottom of the canvas and
+    // the last items become unreachable — the opening menu's `quit` is "Voltar", and it is the LAST.
     const faltam = SUBMENUS
       .filter((s) => !/auto|scroll/.test(prop(s, 'overflow-y') || '') || !prop(s, 'max-height'))
       .map((s) => `${s}: overflow-y=${prop(s, 'overflow-y')} max-height=${prop(s, 'max-height')}`);
@@ -99,10 +96,10 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
   });
 
   it('[Boundary] o item que ganha o foco não fica embaixo do cabeçalho grudado', () => {
-    // MEDIDO no navegador, e é a razão de a linha existir: dando a volta do último para o primeiro, o navegador
-    // considerava o primeiro botão "já visível" e não rolava — mas o cabeçalho `sticky` cobria 12px dele. Foco
-    // encoberto é foco perdido para quem lê por resto de visão, e nenhum teste de layout em node veria isso.
-    // `scroll-margin-top` é o que diz ao navegador onde o quadro ÚTIL começa.
+    // MEASURED in the browser, and the reason the line exists: wrapping from the last to the first, the browser
+    // considered the first button "already visible" and did not scroll — but the `sticky` header covered 12px of it.
+    // Covered focus is lost focus for someone reading by residual vision, and no node layout test would see it.
+    // `scroll-margin-top` is what tells the browser where the USEFUL frame begins.
     const falta = SUBMENUS
       .map((s) => [s, em(prop(`${s} .title-btn`, 'scroll-margin-top'))])
       .filter(([, v]) => !(v >= 2))
@@ -111,20 +108,16 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
   });
 
   it('[Right] NADA dentro de um submenu da abertura se deita na horizontal', () => {
-    // O Dev viu o resultado da primeira volta e cobrou de novo: "menus que não estão na vertical, mas sim
-    // MISTOS". Eu tinha aberto duas exceções por conta própria — as cinco notações de fração e as duas
-    // fileiras de números da tabuada —, argumentando que são "grupos" e não itens de lista. A régua dele não
-    // tem essa distinção, e ela é a régua certa: para quem anda de seta, um grupo deitado é uma parte da
-    // lista onde "para baixo" anda para o LADO. A ordem que se vê tem de ser a ordem em que se anda, sem
-    // exceção — se houvesse uma, ela apareceria justamente no meio da lista, sem aviso.
-    // ⚠️ UM BOTÃO NÃO É UM CONTAINER DE ITENS. A regra deste caso é sobre containers que deitam vários itens
-    // NAVEGÁVEIS lado a lado — é isso que faz "para baixo" andar para o lado. O arranjo INTERNO de um botão
-    // (a marca ☑ ao lado do símbolo, dentro da mesma caixa clicável) é uma coisa só para quem navega, e
-    // deitá-lo não move cursor nenhum.
+    // No exception for "groups" (the fraction notations, the times-table number rows): the Dev rejected them —
+    // «menus que não estão na vertical, mas sim MISTOS». For someone walking with arrows, a horizontal group is a part of
+    // the list where "down" walks SIDEWAYS. The order seen must be the order walked, without exception — an exception
+    // would appear right in the middle of the list, with no warning.
+    // ⚠️ A BUTTON IS NOT A CONTAINER OF ITEMS. This case's rule is about containers laying several NAVIGABLE items side
+    // by side — that is what makes "down" walk sideways. A button's INTERNAL arrangement (the ☑ mark beside the symbol,
+    // inside the same clickable box) is one thing for whoever navigates, and laying it flat moves no cursor.
     //
-    // A distinção entrou depois de o gate acusar `#tm-fr .fnot-opt` — o botão de notação, cuja marca e
-    // símbolo ficam lado a lado. Não é afrouxamento: é o caso dizendo o que ele sempre quis dizer. Se um dia
-    // um destes nomes deixar de ser um botão, ele volta a ser vigiado.
+    // (It is why `#tm-fr .fnot-opt`, the notation button whose mark and symbol sit side by side, is exempt. If one of
+    // these names stops being a button, it is watched again.)
     const BOTOES = ['.title-btn', '.fnot-opt', '.pi-btn', '.pm-btn'];
     const ehBotao = (sel) => BOTOES.some((b) => sel.endsWith(b));
     const deitados = [];
@@ -144,10 +137,9 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
   });
 
   it('[Right] a barra do HUD tem altura declarada e o HUD desce pelo MESMO token', () => {
-    // O defeito que isto impede foi visto na tela: a barra e o HUD ficavam os DOIS ancorados no topo, e o HUD
-    // era desenhado por cima dos ícones. Duas medidas que precisam concordar, escritas em dois lugares, são a
-    // divergência que este repositório já pagou dezesseis vezes com o `DomQuery` — aqui a concordância é
-    // estrutural: as duas leem o mesmo token, então não há como uma andar sem a outra.
+    // The defect this prevents was seen on screen: the bar and the HUD BOTH anchored at the top, and the HUD drawn over
+    // the icons. Two measures that must agree, written in two places, are the drift this repository has paid for many
+    // times with `DomQuery` — here agreement is structural: both read the same token, so one cannot move without the other.
     const alturaBarra = prop('.screen-a11y', 'height');
     const topoDoHud = prop('.screen-exp .vphud', 'top');
     expect(alturaBarra, '.screen-a11y sem altura declarada — o HUD não tem por onde descer').toBeTruthy();
@@ -157,24 +149,23 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
   });
 
   it('[Right] a explicação da barra fica FORA do fluxo — só os botões ocupam espaço', () => {
-    // "É para aparecer somente os botões, nada de explicação" (Dev). Uma legenda no fluxo reserva altura na
-    // tela de jogo mesmo vazia, e a barra deixa de ser atalho para virar faixa.
+    // «É para aparecer somente os botões, nada de explicação» (the Dev). A caption in the flow reserves height on the
+    // game screen even when empty, and the bar stops being a shortcut and becomes a band.
     expect(prop('.screen-a11y .pause-icons-cap', 'position')).toBe('absolute');
   });
 
   it('[Interface] o casador de seletor distingue a LISTA dos seus botões', () => {
-    // O caso que impede o gate de se enganar sozinho. `#tm-fr .frac-nots{justify-content:center}` não pode ser
-    // lido como declaração sobre `#tm-fr`, senão propriedade de filho passaria a valer como propriedade da lista.
+    // The case that keeps the gate from fooling itself. `#tm-fr .frac-nots{justify-content:center}` must not be read as a
+    // declaration about `#tm-fr`, or a child's property would count as the list's.
     expect(declaracoes('#tm-fr .frac-nots').length).toBeGreaterThan(0);
     expect(declaracoes('#tm-fr').some(([k]) => k === 'justify-content')).toBe(false);
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · devolvendo `#tm-alf{grid-template-columns:1fr 1fr}` → "[Right] nenhum submenu é grade" reprova nomeando
-//     `#tm-alf: 1fr 1fr`.
-//   · tirando `overflow-y:auto` da regra dos cinco → "[Right] cada submenu ROLA" reprova com os cinco nomes.
-//   · devolvendo `#tm-main{width:13em}` → "[Right] o dobro da largura base" reprova em "13 >= 26".
-//   · tirando `scroll-margin-top` dos botões → "[Boundary] o item que ganha o foco" reprova com os cinco.
-//   · devolvendo `display:flex` (sem `flex-direction:column`) a `#tm-fr .frac-nots` → "[Right] NADA se deita
-//     na horizontal" reprova nomeando o seletor.
+// ========================= MUTATIONS CHECKED =========================
+//   · putting back `#tm-alf{grid-template-columns:1fr 1fr}` → the [Right] no-grid case fails naming `#tm-alf: 1fr 1fr`.
+//   · removing `overflow-y:auto` from the five's rule → the [Right] scrolling case fails with the five names.
+//   · putting back `#tm-main{width:13em}` → the [Right] double-base-width case fails at "13 >= 26".
+//   · removing `scroll-margin-top` from the buttons → the [Boundary] focused-item case fails with the five.
+//   · putting back `display:flex` (without `flex-direction:column`) on `#tm-fr .frac-nots` → the [Right] nothing-lies-
+//     horizontal case fails naming the selector.

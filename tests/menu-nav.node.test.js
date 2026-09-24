@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/menu-nav — a DECISÃO de navegação, sem DOM (project node): traduzir tecla em intenção, andar
-// numa lista, ajustar select/slider e atravessar a fronteira entre a barra de ícones e a grade de itens.
+// Tests of ui/menu-nav — the navigation DECISION, without a DOM (node project): turning a key into an intent, walking
+// a list, adjusting a select/slider, and stepping through the pause list.
 //
-// Por que isto é teste de ACESSIBILIDADE e não de aritmética: cada função aqui é um gesto que alguém faz sem
-// ver a tela. Um sinal trocado em `pauseGridMove` não quebra nada visível — o menu continua desenhado, os
-// botões continuam clicáveis com o mouse — e simplesmente torna um item inalcançável para quem só tem teclado.
-// É o tipo de regressão que passa por build, por olho e por screenshot.
+// Why this is an ACCESSIBILITY test and not arithmetic: each function here is a gesture someone makes without seeing
+// the screen. A flipped sign in a step function breaks nothing visible — the menu is still drawn, the buttons still
+// clickable with the mouse — and simply makes an item unreachable for someone with only a keyboard. It is the kind of
+// regression that passes build, eye and screenshot.
 //
-// A casca de DOM (foco de verdade, `offsetParent`, z-index, Escape) está em menu-nav.browser.test.js e NÃO é
-// repetida aqui.
+// The DOM shell (real focus, `offsetParent`, z-index, Escape) is in menu-nav.browser.test.js and is NOT repeated here.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -27,12 +26,12 @@ describe('menuKeyIntent — tecla física → intenção', () => {
     }
   });
 
-  // Este caso PINA o DEFEITO 2 (conhecido, não consertado): Escape é a intenção "voltar", a MESMA que a ação
-  // "especial" do gamepad. Não existe, hoje, uma intenção "fechar diálogo" separada de "voltar ao jogo".
+  // This case PINS DEFECT 2 (known, not fixed): Escape is the "back" intent, the SAME as the pad's "special" action.
+  // There is no "close dialog" intent separate from "back to the game".
   it('Escape é "não" — e é a MESMA intenção que a ação "action3" (defeito 2, pinado)', () => {
     expect(menuKeyIntent('Escape', null).no).toBe(true);
     expect(menuKeyIntent('KeyL', 'action3').no).toBe(true);
-    // e Escape NÃO é nenhuma outra intenção — se virasse, o menu andaria ao tentar voltar
+    // and Escape is NO other intent — if it were, the menu would move when trying to go back
     const k = menuKeyIntent('Escape', null);
     expect([k.yes, k.up, k.down, k.left, k.right]).toEqual([false, false, false, false, false]);
   });
@@ -42,7 +41,7 @@ describe('menuKeyIntent — tecla física → intenção', () => {
     expect(menuKeyIntent('ArrowDown', null).down).toBe(true);
     expect(menuKeyIntent('KeyA', null).left).toBe(true);
     expect(menuKeyIntent('ArrowRight', null).right).toBe(true);
-    // tecla exótica, mas remapeada para "up" pelo jogador: navega igual (é o pilar — o remap vale nos menus)
+    // an exotic key, but remapped to "up" by the player: it navigates the same (the pillar — remapping holds in menus)
     expect(menuKeyIntent('Numpad8', 'up').up).toBe(true);
   });
 
@@ -59,32 +58,31 @@ describe('menuKeyIntent — tecla física → intenção', () => {
 });
 
 describe('passos de lista e de controle', () => {
-  // ANEL, e não mais limite (ADR-0044). O caso antigo afirmava "não dá a volta em nenhuma das pontas", e o
-  // ADR derrubou a regra: com um menu por tela, toda lista é anel, e é isso que põe `quit` a UMA tecla de
-  // `resume` sem os dois estarem perto um do outro.
+  // A RING, not a clamp (ADR-0044): with one menu per screen every list is a ring, and that is what puts `quit` ONE key
+  // away from `resume` without the two being near each other.
   //
-  // MUTAÇÃO CONFERIDA: voltando `stepInRing` ao antigo `Math.max(0, Math.min(len-1, idx+delta))`, o caso
-  // falha em "expected 0 to be 4" — antes do primeiro deixa de haver último.
+  // MUTATION CHECKED: putting `stepInRing` back to the old `Math.max(0, Math.min(len-1, idx+delta))`, the case fails
+  // with "expected 0 to be 4" — before the first there is no longer a last.
   it('stepInRing dá a volta nas DUAS pontas — e o `%` de negativo não escapa', () => {
     expect(stepInRing(5, 4, +1), 'depois do último vem o primeiro').toBe(0);
     expect(stepInRing(5, 0, -1), 'antes do primeiro vem o último').toBe(4);
     expect(stepInRing(5, 2, +1)).toBe(3);
     expect(stepInRing(5, 2, -1)).toBe(1);
-    // O `%` de JavaScript devolve NEGATIVO para operando negativo (`-1 % 5 === -1`), e um índice negativo
-    // num array devolve `undefined` — que aqui viraria `undefined.focus()`. O `+ len` extra existe por isso.
+    // JavaScript's `%` returns a NEGATIVE for a negative operand (`-1 % 5 === -1`), and a negative array index returns
+    // `undefined` — which here would become `undefined.focus()`. The extra `+ len` exists for that.
     expect(stepInRing(5, 0, -3), 'salto negativo maior que um passo').toBe(2);
   });
 
   it('[Zero] lista vazia não estoura — anel de tamanho zero devolve 0, não NaN', () => {
-    // `% 0` é NaN, e `items[NaN]` é `undefined`. Um menu sem itens acontece de verdade: um painel que
-    // renderiza antes de o conteúdo chegar.
+    // `% 0` is NaN, and `items[NaN]` is `undefined`. A menu with no items really happens: a panel that renders before
+    // its content arrives.
     expect(stepInRing(0, 0, +1)).toBe(0);
     expect(stepInRing(0, 3, -1)).toBe(0);
   });
 
   it('AJUSTAR VALOR continua preso nas pontas — a diferença é deliberada', () => {
-    // Passar do volume máximo para o mínimo com uma tecla é um susto, não uma conveniência. Num jogo com
-    // pistas de áudio para cegueira, um susto de volume é dano.
+    // Going from maximum to minimum volume with one key is a fright, not a convenience. In a game with audio cues for
+    // blindness, a volume fright is harm.
     expect(selectStep(0, 5, -1)).toBe(0);
     expect(selectStep(4, 5, +1)).toBe(4);
   });
@@ -106,18 +104,12 @@ describe('passos de lista e de controle', () => {
 });
 
 describe('passoNaPausa — a pausa virou LISTA, e a lista virou anel', () => {
-  // ESTE BLOCO SUBSTITUI o de `pauseGridMove`, e a substituição é o desfecho do ADR-0044.
-  //
-  // O que havia era uma GRADE de duas zonas — dez ícones de a11y em cima, oito itens em duas colunas embaixo —
-  // com quatro regras de fronteira próprias: "de cima, 'baixo' cai sempre no primeiro item"; "da primeira
-  // linha, 'cima' sobe para o ícone de MESMO índice"; "preso ao último ícone se a barra for mais curta"; "sem
-  // ícone nenhum, 'cima' vira passo de linha". Onze casos existiam para pinar isso, e cada regra era uma coisa
-  // a mais para a criança descobrir sem ver — e nenhuma delas era descobrível: só se aprendia esbarrando.
-  //
-  // A barra saiu para o HUD (item 7) e o cartão virou uma lista. A XAG 106 permite laço para menu LINEAR e o
-  // proíbe para grade 2-D; com uma lista só, o que era proibido virou o recomendado. As quatro regras somem e
-  // sobra UMA, que se enuncia numa frase: depois do último vem o primeiro, e antes do primeiro vem o último.
-  const N = 7; // os sete itens da pausa (ADR-0044 §2)
+  // The pause card is a LIST, not a two-zone grid (ADR-0044): the icon bar lives in the HUD (item 7). A grid needs
+  // border rules the child has to discover without seeing — none of them discoverable, only learnt by bumping into
+  // them. XAG 106 allows wrapping for a LINEAR menu and forbids it for a 2-D grid; with one list, what was forbidden
+  // becomes the recommendation. ONE rule is left, stated in a sentence: after the last comes the first, and before the
+  // first comes the last.
+  const N = 7; // a seven-item pause list, as in ADR-0044 §2
 
   it('[Right] baixo e direita andam para a frente; cima e esquerda, para trás', () => {
     expect(stepInPause(N, 0, only('down'))).toBe(1);
@@ -127,15 +119,15 @@ describe('passoNaPausa — a pausa virou LISTA, e a lista virou anel', () => {
   });
 
   it('[Right] a PROMESSA do ADR-0044: `quit` a uma tecla de `resume`', () => {
-    // `resume` é o item 0 e `quit` é o 6. Uma tecla para CIMA no primeiro chega no último — longe na leitura,
-    // vizinho no dedo. É a frase que abriu o registro, e é este caso que a torna verdadeira ou falsa.
+    // `resume` is item 0 and `quit` is 6. One UP key on the first reaches the last — far in reading, neighbours under the
+    // finger. It is the sentence that opened the record, and this case makes it true or false.
     expect(stepInPause(N, 0, only('up')), 'para cima em `resume` tem de cair em `quit`').toBe(N - 1);
     expect(stepInPause(N, N - 1, only('down')), 'para baixo em `quit` tem de voltar a `resume`').toBe(0);
   });
 
   it('[Boundary] cursor perdido (índice negativo) entra como 0 — verbatim do `if(idx<0)idx=0`', () => {
-    // Preservado do comportamento antigo: um menu que acabou de abrir sem seleção não pode fazer o cursor
-    // aparecer no meio da lista. Ele entra pelo começo, ande-se para onde se andar.
+    // A menu that just opened with no selection must not make the cursor appear in the middle of the list. It enters
+    // from the start, whichever way one walks.
     expect(stepInPause(N, -1, only('down'))).toBe(1);
     expect(stepInPause(N, -1, only('up'))).toBe(N - 1);
   });
@@ -145,9 +137,8 @@ describe('passoNaPausa — a pausa virou LISTA, e a lista virou anel', () => {
   });
 
   it('[Many] TODO item é alcançável a partir de `resume` só com baixo — e a volta fecha', () => {
-    // O caso que o bloco antigo tinha em forma de busca em largura sobre uma grade. Numa lista ele cabe numa
-    // linha, e é essa a economia: a estrutura que precisa de busca em largura para se provar navegável é a
-    // estrutura que a criança precisa explorar às cegas para aprender.
+    // On a grid this needed a breadth-first search; on a list it fits in one line, and that is the saving: a structure
+    // that needs a breadth-first search to prove it navigable is a structure the child must explore blind to learn.
     const vistos = new Set();
     let i = 0;
     for (let passo = 0; passo < N; passo++) { vistos.add(i); i = stepInPause(N, i, only('down')); }
@@ -160,20 +151,20 @@ describe('a independência do módulo — o que ele NÃO conhece', () => {
   const fonte = readFileSync(join(process.cwd(), 'app', 'js', 'ui', 'menu-nav.ts'), 'utf8');
 
   it('[Right] NÃO importa `core/state` — o modelo de fases é de quem consome, não deste módulo', () => {
-    // Enquanto ele importava `phase`, um segundo jogo não tinha como trazer o próprio modelo de fases: o quiz
-    // do `consumer-quiz` teve de se declarar "pausado" para navegar os próprios menus (achado 10). A aresta
-    // morreu quando a pergunta virou `isNavigable()` no ctx. Se voltar, este caso reprova — e o custo de ela
-    // voltar é invisível de dentro da plataforma, onde menu SEMPRE é coisa de pausa.
+    // Importing `phase` would leave a second game no way to bring its own phase model: the `consumer-quiz` had to declare
+    // itself "paused" to navigate its own menus (finding 10). The question is `isNavigable()` in the ctx. If the import
+    // comes back, this case fails — and the cost of it coming back is invisible from inside a platformer, where a menu
+    // is ALWAYS a pause thing.
     expect(fonte).not.toMatch(/from '\.\.\/core\/state\.js'/);
   });
 
   it('[Interface] o ctx pergunta um BOOLEANO, e não a fase — é o que evita a mentira', () => {
-    // Injetar `getPhase()` teria matado a importação e mantido o problema: o consumidor continuaria obrigado
-    // a devolver a string `'paused'`, que é vocabulário do jogo de plataforma. Perguntar "dá para navegar
-    // agora?" deixa cada jogo responder na própria língua. A diferença é pequena no diff e é o ponto inteiro.
-    // A 2a asserção era `not.toMatch(/getPhase/)` e reprovou na MINHA PRÓPRIA PROSA: o módulo explica, em
-    // comentário, por que `getPhase` foi recusado. Proibir a palavra proibia a explicação junto. O que importa
-    // é que não exista o CAMPO — daí o dois-pontos, que a prosa (`getPhase()`, com parênteses) não tem.
+    // Injecting `getPhase()` would have killed the import and kept the problem: the consumer would still have to return
+    // the string `'paused'`, the platformer's vocabulary. Asking "can one navigate now?" lets each game answer in its own
+    // language. The difference is small in the diff and it is the whole point.
+    // The 2nd assertion checks the FIELD (`getPhase:`), not the word: the module explains in a comment why `getPhase` was
+    // refused, and forbidding the word would forbid the explanation too — hence the colon, which the prose
+    // (`getPhase()`, with parentheses) does not have.
     expect(fonte).toMatch(/isNavigable: \(\) => boolean/);
     expect(fonte).not.toMatch(/getPhase\s*:/);
   });
