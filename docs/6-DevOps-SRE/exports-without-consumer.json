@@ -21,9 +21,7 @@
       "holds"
     ],
     "platform/audio.ts": [
-      "_footCount",
       "noiseBuffer",
-      "noiseHit",
       "setMasterMuted",
       "tone"
     ],
