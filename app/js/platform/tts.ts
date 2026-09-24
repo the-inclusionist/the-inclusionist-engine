@@ -4,7 +4,8 @@
 // is the entry point, gated by the mixer's narration toggle (audioCat.tts.on) — independent of captions. The PANEL's side (the
 // engine and voice lists) lives in `ui/voice-settings` and reads and writes the choice through this module. Injection by closure.
 
-import * as store from './storage.js';
+import type { Store } from './storage.js';
+import { KEYS } from './storage-keys.js';
 import { t, bcp47 } from '../core/i18n.js';
 import { createInterruptibleSpeech } from './interruptible-speech.js';
 import { voicesForLocale, type NeuralVoice } from './voice-plan.js';
@@ -31,6 +32,12 @@ const fromDelivery: LoadKokoro = async () => {
 };
 
 export interface TtsCtx {
+  /**
+   * Where the chosen engine and voice are kept: the page's store, built by the root (ADR-0232, issue #207). Required — a
+   * voice choice read from nowhere would speak with the first voice of the list at every visit, and the child who picked
+   * one would lose it in silence.
+   */
+  store: Pick<Store, 'get' | 'set'>;
   srSay: (t: string) => void;
   srAlert: (t: string) => void;
   ensureAC: () => AudioContext | null;
@@ -97,7 +104,7 @@ export function createTts(ctx: TtsCtx): Tts {
   let _ttsVoiceObj: SpeechSynthesisVoice | null = null; // the selected Web Speech voice
   // An engine set explicitly (stored, or by the panel) wins; otherwise the engine of the voice in use, which is the browser's when it
   // offers one for the language (ADR-0200) — measured on the device at every call, since the browser lists its voices late.
-  const stored: string | null = store.get(store.KEYS.ttsEngine, null) || null; // webspeech | kokoro | kitten | espeak
+  const stored: string | null = ctx.store.get(KEYS.ttsEngine, null) || null; // webspeech | kokoro | kitten | espeak
   let ttsEngineSelExplicito: string | null = stored && !ENGINES_THAT_LEFT.includes(stored) ? stored : null;
   const engineSel = (): string => {
     if (ttsEngineSelExplicito) return ttsEngineSelExplicito;
@@ -133,12 +140,12 @@ export function createTts(ctx: TtsCtx): Tts {
   };
   function voiceInUse(): NeuralVoice | null {
     const list = availableVoices();
-    const storedVoiceId = store.get(store.KEYS.ttsVoz, null);
+    const storedVoiceId = ctx.store.get(KEYS.ttsVoz, null);
     return list.find((v) => v.voice === storedVoiceId) ?? list[0] ?? null;
   }
   function chooseVoice(id: string): boolean {
     if (!availableVoices().some((v) => v.voice === id)) return false;
-    store.set(store.KEYS.ttsVoz, id);
+    ctx.store.set(KEYS.ttsVoz, id);
     ttsEngineSelExplicito = availableVoices().find((v) => v.voice === id)!.engine;
     _ttsVoiceObj = browserVoice(id);
     return true;

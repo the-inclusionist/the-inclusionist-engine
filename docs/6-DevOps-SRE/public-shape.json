@@ -1123,6 +1123,9 @@
       "playVictory"
     ]
   },
+  "platform/audio-mixer.ts": {
+    "type AudioCatStore": "Pick<Store, 'getJSON' | 'setJSON'>"
+  },
   "platform/audio-sonar.ts": {
     "interface SonarPlayer": [
       "audioSink?",
@@ -1492,7 +1495,8 @@
       "loadKokoro?",
       "neuralVoice?",
       "srAlert",
-      "srSay"
+      "srSay",
+      "store"
     ],
     "interface Tts": [
       "currentVoice",

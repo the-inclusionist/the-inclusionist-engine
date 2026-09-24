@@ -9,6 +9,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
 import { createTts } from '../app/js/platform/tts.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 let spoke, cancels;
 beforeEach(() => {
@@ -21,6 +22,7 @@ afterEach(() => { delete globalThis.window; delete globalThis.SpeechSynthesisUtt
 function setup(over = {}) {
   const said = [], alerted = [];
   const ctx = {
+    store: createStorage(memoryBackend()),
     srSay: (t) => said.push(t), srAlert: (t) => alerted.push(t),
     ensureAC: () => null, catNode: () => null, audioOut: () => null,
     getSoundOn: () => over.soundOn === undefined ? true : over.soundOn,

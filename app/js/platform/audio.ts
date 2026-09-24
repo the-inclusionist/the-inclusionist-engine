@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/audio.ts — the audio base: the AudioContext's lifecycle (ensureAC), the master and mixer graph, and the
 // oscillator and noise syntheses every game's cues are made of. `audioCtx` is a live binding; only ensureAC (re)creates it.
-import { loadAudioCat, saveAudioCat } from './audio-mixer.js'; // per-category mixer (data + persistence)
+import { loadAudioCat, saveAudioCat, type AudioCatStore } from './audio-mixer.js'; // per-category mixer (data + persistence)
 
 type CatState = { on: boolean; vol: number };
 type PlayerCtx = { ac: AudioContext; out: AudioNode }; // a per-player audio context (routes to that player's device)
@@ -41,15 +41,18 @@ export function setMasterMuted(muted: boolean): void { if (!_masterGain || !audi
 
 // ===== The per-category mixer: each category has its gain (on/off + volume), hanging off the master node. =====
 // `audioCat` is the mixer state's live source (mutated by the panels — an object, never reassigned AFTER init). NULL until
-// initAudioMixer(): importing stays PURE (no storage read). The root calls initAudioMixer at boot, before any reader.
+// initAudioMixer(store): importing stays PURE (no storage read). The root calls it at boot, before any reader, with the page's
+// store (ADR-0232, issue #207) — the one `setCatGain` persists through.
 export let audioCat: Record<string, CatState> | null = null;
-// Loads the mixer state (audio-mixer's defaults + whatever is stored). EXPLICIT I/O, idempotent.
-export function initAudioMixer(): void { if (!audioCat) audioCat = loadAudioCat(); }
+let mixerStore: AudioCatStore | null = null;
+// Loads the mixer state (audio-mixer's defaults + whatever is stored). EXPLICIT I/O; the state loads once per page, and the
+// latest root's store is the one written to (a second root on the page shares this module state until ADR-0232 D4).
+export function initAudioMixer(store: AudioCatStore): void { mixerStore = store; if (!audioCat) audioCat = loadAudioCat(store); }
 const _catNodes: Record<string, GainNode> = {};
 /** A category's level: silence when it is switched off, its volume when on — asked the same way when its bus is made and when the slider moves. */
 function catLevel(cat: string): number { const c = audioCat![cat]; return c.on ? c.vol : 0; }
 export function catNode(cat: string): GainNode | null { const ac = ensureAC(); if (!ac || !audioCat) return null; const out = audioOut(); if (!out) return null; if (!_catNodes[cat]) { const g = ac.createGain(); g.gain.value = catLevel(cat); g.connect(out); _catNodes[cat] = g; } return _catNodes[cat]; }
-export function setCatGain(cat: string): void { if (!audioCat) return; const g = _catNodes[cat]; if (g && audioCtx) g.gain.setTargetAtTime(catLevel(cat), audioCtx.currentTime, 0.02); saveAudioCat(cat, audioCat[cat]); }
+export function setCatGain(cat: string): void { if (!audioCat) return; const g = _catNodes[cat]; if (g && audioCtx) g.gain.setTargetAtTime(catLevel(cat), audioCtx.currentTime, 0.02); if (mixerStore) saveAudioCat(mixerStore, cat, audioCat[cat]); }
 
 // ===== Oscillator syntheses (earcons/melodies). They read soundOn/volume and route through mixer → master. =====
 // pc = a per-player audio context (optional; passed to route the cue to that player's device).

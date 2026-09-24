@@ -9,18 +9,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 const lingua = vi.hoisted(() => ({ tag: 'fr-FR' }));
 vi.mock(import('../app/js/core/i18n.js'), async (original) => ({ ...(await original()), bcp47: () => lingua.tag }));
 const { createTts } = await import('../app/js/platform/tts.js');
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
-let spoke, guardado;
+let spoke, store;
 beforeEach(() => {
-  spoke = []; guardado = {}; lingua.tag = 'fr-FR';
-  globalThis.localStorage = { getItem: (k) => (k in guardado ? guardado[k] : null), setItem: (k, v) => { guardado[k] = String(v); }, removeItem: (k) => { delete guardado[k]; } };
+  spoke = []; lingua.tag = 'fr-FR';
+  store = createStorage(memoryBackend()); // each case its own store (ADR-0232): a voice picked in one is not read in the next
   globalThis.window = { speechSynthesis: { cancel: () => {}, speak: (u) => spoke.push(u), getVoices: () => [] } };
   globalThis.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
 });
-afterEach(() => { delete globalThis.localStorage; delete globalThis.window; delete globalThis.SpeechSynthesisUtterance; });
+afterEach(() => { delete globalThis.window; delete globalThis.SpeechSynthesisUtterance; });
 
 const montar = (over = {}) => createTts({
-  srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
+  store, srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
   getSoundOn: () => true, getVolume: () => 0.6, getAudioCat: () => ({ tts: { on: true } }), ...over,
 });
 

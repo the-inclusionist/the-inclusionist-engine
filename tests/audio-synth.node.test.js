@@ -13,6 +13,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as audio from '../app/js/platform/audio.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 function contextoDoJogador() {
   const rec = { osc: [], picos: [], panners: [], destinos: [], paradas: [], filtros: [], fontes: 0 };
@@ -124,7 +125,7 @@ describe('noiseHit — a material, heard', () => {
     vi.stubGlobal('window', { AudioContext: function AudioContextFalso() { return pc.ac; } });
     vi.resetModules();
     const novo = await import('../app/js/platform/audio.js');
-    novo.initAudioMixer();
+    novo.initAudioMixer(createStorage(memoryBackend()));
     novo.audioCat.interact.on = false;
     novo.audioCat.earcons.on = true;
     novo.noiseHit('piso', null);
@@ -189,7 +190,7 @@ describe('tone — the engine\'s own earcon synth', () => {
 
   it('🔴 [Right] it goes out through the `earcons` category — the slider that says so silences it', async () => {
     const { ganhos, fresh, done } = await engineWith((m) => {
-      m.initAudioMixer();
+      m.initAudioMixer(createStorage(memoryBackend()));
       m.audioCat.earcons.on = false;
       m.audioCat.interact.on = true;
     });
@@ -218,8 +219,9 @@ describe('the mixer — each category\'s level, when its bus is made and when th
     vi.resetModules();
     const fresh = await import('../app/js/platform/audio.js');
     fresh.setSoundOn(true); fresh.setVolume(0.6);
-    fresh.initAudioMixer();
-    return { fresh, ganhos, done: () => vi.unstubAllGlobals() };
+    const store = createStorage(memoryBackend());
+    fresh.initAudioMixer(store);
+    return { fresh, ganhos, store, done: () => vi.unstubAllGlobals() };
   }
 
   it('🔴 [Right] a category that is ON is born at ITS volume, not at full', async () => {
@@ -232,7 +234,7 @@ describe('the mixer — each category\'s level, when its bus is made and when th
   });
 
   it('🔴 [Right] moving the slider or the switch reaches the bus: off is silence, on is the new volume', async () => {
-    const { fresh, ganhos, done } = await mixer();
+    const { fresh, ganhos, store, done } = await mixer();
     fresh.tone(440, 0.1); // makes the `earcons` bus
     const bus = ganhos.at(-1);
     fresh.audioCat.earcons.on = false;
@@ -243,6 +245,8 @@ describe('the mixer — each category\'s level, when its bus is made and when th
     fresh.setCatGain('earcons');
     done();
     expect(bus.gain.alvo, 'the slider moved and the bus did not follow').toBeCloseTo(0.5, 6);
+    // and it is kept in the store the root handed to `initAudioMixer` (ADR-0232), not in a storage of its own
+    expect(store.getJSON('incl_audiocat_earcons'), 'the change was not kept in the injected store').toEqual({ on: true, vol: 0.5 });
   });
 });
 

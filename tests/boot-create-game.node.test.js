@@ -57,9 +57,9 @@ describe('o veredito: a fronteira passa ou não passa', () => {
   it('[Interface] o mixer é ligado ANTES da voz — a ordem do achado 3, na ordem do arquivo', () => {
     // Finding 3 of the second consumer: without `initAudioMixer()` first, `audioCat` is null and `narrate` goes quiet with
     // no error. Here the order is the file's, and this case is what prevents a careless reordering.
-    const mixer = CODIGO.indexOf('initAudioMixer()');
+    const mixer = CODIGO.indexOf('initAudioMixer(');
     const voz = CODIGO.indexOf('createTts(');
-    expect(mixer, 'initAudioMixer() precisa ser chamado').toBeGreaterThan(-1);
+    expect(mixer, 'initAudioMixer(store) precisa ser chamado').toBeGreaterThan(-1);
     expect(voz, 'createTts() precisa ser chamado').toBeGreaterThan(-1);
     expect(mixer, 'mixer depois da voz = narração muda, sem erro nenhum').toBeLessThan(voz);
   });

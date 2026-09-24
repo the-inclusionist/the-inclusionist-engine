@@ -5,6 +5,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { setLocale } from '../app/js/core/i18n.ts';
 
 const ss = window.speechSynthesis;
@@ -18,6 +19,7 @@ const vozFalsa = (name, lang) => ({ name, lang, localService: true, default: fal
 function montar({ vozesDoNavegador, comPorta = true }) {
   ss.getVoices = () => vozesDoNavegador;
   return createTts({
+    store: createStorage(memoryBackend()), // each boot its own store (ADR-0232): no stored voice is inherited
     srSay: () => {}, srAlert: () => {}, ensureAC: () => new AudioContext(), catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => ({ tts: { on: true } }),
     // `comPorta` is now the GAME'S ANSWER (ADR-0216 §3): declared, the neural voice is listed and loadable — and the loader is
@@ -28,13 +30,12 @@ function montar({ vozesDoNavegador, comPorta = true }) {
 
 beforeEach(async () => {
   await setLocale('pt');
-  localStorage.removeItem('incl_tts_voz'); localStorage.removeItem('incl_tts_engine');
   faladas = []; portaChamada = 0;
   ss.speak = (u) => { faladas.push(u); };
   ss.cancel = () => {};
   window.SpeechSynthesisUtterance = UtteranceFalsa;
 });
-afterEach(() => { Object.assign(ss, originais); window.SpeechSynthesisUtterance = UtteranceOriginal; localStorage.removeItem('incl_tts_voz'); });
+afterEach(() => { Object.assign(ss, originais); window.SpeechSynthesisUtterance = UtteranceOriginal; });
 
 describe('the browser speaks first where it offers a voice for the language', () => {
   it('🔴 [Right] the browser\'s Portuguese voice leads the list, then Kokoro\'s; the English one is not listed', () => {

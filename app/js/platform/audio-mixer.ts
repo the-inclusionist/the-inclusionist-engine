@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/audio-mixer.ts — the audio mixer's categories (data) + load/persist. A leaf module (storage).
+// platform/audio-mixer.ts — the audio mixer's categories (data) + load/persist, through the store the caller passes (ADR-0232).
 // Only the list of categories, the initial state (narration born off) and the per-category save live here; the audio
 // graph and the LIVE mixer state are `platform/audio`'s.
-import * as store from './storage.js';
+import type { Store } from './storage.js';
 
 type AudioCat = { k: string; lbl: string };
 type AudioCatState = { on: boolean; vol: number };
+/** What the mixer is read and written through: the page's store, built by the root (ADR-0232, issue #207). */
+export type AudioCatStore = Pick<Store, 'getJSON' | 'setJSON'>;
 
 // 🔴 There is no `other` category (ADR-0151, erratum): «O que esta categoria controla? Nada. Então pra que?» (the Dev).
 // 📏 Measured: no sound was routed through it — a volume with nothing underneath, the dead button of ADR-0106 §5.
@@ -54,7 +56,7 @@ export function defaultAudioCat(k: string): AudioCatState {
   return { on: !BORN_OFF.has(k), vol: 0.8 };
 }
 
-export function loadAudioCat(): Record<string, AudioCatState> {
+export function loadAudioCat(store: AudioCatStore): Record<string, AudioCatState> {
   const cat: Record<string, AudioCatState> = {};
   AUDIO_CATS.forEach((c) => {
     const d = defaultAudioCat(c.k);
@@ -65,4 +67,4 @@ export function loadAudioCat(): Record<string, AudioCatState> {
   });
   return cat;
 }
-export function saveAudioCat(k: string, obj: AudioCatState): void { store.setJSON('incl_audiocat_' + k, obj); }
+export function saveAudioCat(store: AudioCatStore, k: string, obj: AudioCatState): void { store.setJSON('incl_audiocat_' + k, obj); }

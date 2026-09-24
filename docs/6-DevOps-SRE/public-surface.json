@@ -716,6 +716,7 @@
   ],
   "platform/audio-mixer.ts": [
     "AUDIO_CATS",
+    "AudioCatStore",
     "defaultAudioCat",
     "loadAudioCat",
     "saveAudioCat"

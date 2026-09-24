@@ -771,7 +771,7 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const store = createStorage(hostStorage(o.host));
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
-  // ⚠️ The port of ADR-0178 carries the key names beside the store, so core names no storage place itself.
+  // ⚠️ The port of ADR-0178 carries the key names beside the store, so `core` names no storage place itself.
   state.loadState({ ...store, KEYS });
   /*
    * 🔴 THE STORED LANGUAGE **AND** THE BROWSER'S (ADR-0221 step 7g). `core/i18n` keeps the decisions; the page effects —
@@ -854,9 +854,9 @@ export function createGame(o: CreateGameOptions): Engine {
   initI18n(doc);
 
   // 2. MIXER BEFORE VOICE. Finding 3 turned into sequence: the caller cannot swap these two lines.
-  initAudioMixer();
+  initAudioMixer(store);
   const tts = createTts({
-    srSay, srAlert, ensureAC, catNode, audioOut,
+    store, srSay, srAlert, ensureAC, catNode, audioOut,
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
     neuralVoice: !!o.uses?.neuralVoice, // ADR-0216 §3: the game says it wants one; the engine loads it
     getSpeechPpm: () => state.speechPpm, // ADR-0183 §1: the child's speech rate

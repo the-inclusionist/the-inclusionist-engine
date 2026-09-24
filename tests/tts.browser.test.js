@@ -11,6 +11,7 @@
 // applied to another's spelling. For whoever depends on narration to play, it is the same as having no narration at all.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { setLocale, getLocale, bcp47 } from '../app/js/core/i18n.js';
 
 let spoke;
@@ -38,6 +39,7 @@ afterEach(async () => {
 
 function tts() {
   return createTts({
+    store: createStorage(memoryBackend()),
     srSay: () => {}, srAlert: () => {},
     ensureAC: () => null, catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 0.6,

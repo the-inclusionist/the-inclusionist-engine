@@ -24,7 +24,7 @@ export interface LatchedEdgeOptions {
   /**
    * The page's store, built by the root (ADR-0232, issue #207). REQUIRED, and the reason is the one that once gave it a
    * default: omitting it would make the child lose their stored choice — in silence, and only in that game. The compiler
-   * now refuses the omission instead of a default reaching the page's one localStorage underneath the host.
+   * now refuses the omission instead of a default reaching the page's one `localStorage` underneath the host.
    */
   readonly store: LatchStore;
   /** The factory default. `DEFAULTS.toggleMove`, not a hand-written `false`: there is ONE source (ADR-0029). */

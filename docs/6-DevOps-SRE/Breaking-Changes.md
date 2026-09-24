@@ -3135,6 +3135,9 @@ own the same way: `const store = createStorage(window.localStorage)` — or pass
 | `input/latch-edge.js` `LatchedEdgeOptions.store` | REQUIRED (was optional, defaulting to the page's storage) | `createLatchedEdge(() => players, { store })` |
 | `input/pad-wizard.js` `padMap(id)` · `PadWizardCtx` | `padMap(store, id)` · `PadWizardCtx.store` REQUIRED | pass the store |
 | `input/gamepad.js` `GamepadCtx` | gains a REQUIRED `store` | pass the store; the controller maps are read and saved through it |
+| `platform/audio.js` `initAudioMixer()` | `initAudioMixer(store)` | pass the store; `setCatGain` persists through it |
+| `platform/audio-mixer.js` `loadAudioCat()`, `saveAudioCat(k, obj)` | `loadAudioCat(store)`, `saveAudioCat(store, k, obj)` | pass the store first |
+| `platform/tts.js` `TtsCtx` | gains a REQUIRED `store` | pass the store; the chosen engine and voice are read and kept through it |
 
 Required and not optional, by ADR-0224/0227's precedent: each of these has no safe answer without a store — the child's
 remap, latch or controller map would be read from nowhere and lost in silence.

@@ -7,7 +7,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { voicesForLocale } from '../app/js/platform/voice-plan.js';
 import { KOKORO_VOICES } from '../app/js/platform/kokoro.js';
 import { createTts } from '../app/js/platform/tts.js';
-import * as store from '../app/js/platform/storage.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
+import { KEYS } from '../app/js/platform/storage-keys.js';
 
 describe('the voices of a language', () => {
   it('🔴 [Right] Portuguese lists its Kokoro voices and no English one', () => {
@@ -24,18 +25,19 @@ describe('the voices of a language', () => {
   });
 });
 
+// each case its own backend (ADR-0232): the store `platform/tts` receives is built over it, and a case reads it directly
 let guardado;
 beforeEach(() => {
-  guardado = {};
-  globalThis.localStorage = { getItem: (k) => (k in guardado ? guardado[k] : null), setItem: (k, v) => { guardado[k] = String(v); }, removeItem: (k) => { delete guardado[k]; } };
+  guardado = memoryBackend();
   globalThis.window = { speechSynthesis: { cancel: () => {}, speak: () => {}, getVoices: () => [] } };
   globalThis.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
 });
-afterEach(() => { delete globalThis.localStorage; delete globalThis.window; delete globalThis.SpeechSynthesisUtterance; });
+afterEach(() => { delete globalThis.window; delete globalThis.SpeechSynthesisUtterance; });
 
 function montar(comPorta) {
   const registro = {};
   const ctx = {
+    store: createStorage(guardado),
     srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 0.6, getAudioCat: () => ({ tts: { on: true } }),
   };
@@ -64,9 +66,9 @@ describe('platform/tts — the voice choice', () => {
   it('🔴 [Right] a choice is stored, and a voice of another language is refused', () => {
     const { tts } = montar(true);
     expect(tts.setVoice('af_heart'), 'an English voice was accepted for Portuguese').toBe(false);
-    expect(localStorage.getItem(store.KEYS.ttsVoz)).toBeNull();
+    expect(guardado.getItem(KEYS.ttsVoz)).toBeNull();
     expect(tts.setVoice('pm_alex')).toBe(true);
-    expect(localStorage.getItem(store.KEYS.ttsVoz)).toBe('pm_alex');
+    expect(guardado.getItem(KEYS.ttsVoz)).toBe('pm_alex');
   });
 
   it('🔴 [Right] with the port, the voice in use is the one that loads — without an engine choice first', async () => {
@@ -81,7 +83,7 @@ describe('platform/tts — the voice choice', () => {
   });
 
   it('🔴 [Zero] an engine stored before it left the engine (ADR-0207) is no choice: the voice in use speaks, no alert', () => {
-    guardado[store.KEYS.ttsEngine] = 'piper';
+    guardado.setItem(KEYS.ttsEngine, 'piper');
     expect(montar(true).tts.getEngineSel()).toBe('kokoro');
     expect(montar(false).tts.getEngineSel()).toBe('webspeech');
   });

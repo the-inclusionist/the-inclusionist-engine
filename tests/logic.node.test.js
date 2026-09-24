@@ -7,6 +7,7 @@ import * as C from '../app/js/core/constants.js';
 import * as S from '../app/js/input/state.js';
 import * as AUDIO from '../app/js/platform/audio.js';
 import { AUDIO_CATS } from '../app/js/platform/audio-mixer.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import * as RNG from '../app/js/core/rng.js';
 
 describe('core/constants', () => {
@@ -53,11 +54,11 @@ describe('platform/audio — mixer (import PURO, init explícito; dívida paga F
     expect(typeof AUDIO.initAudioMixer).toBe('function');
   });
   it('[Interface] após init, audioCat tem exatamente as 9 categorias do AUDIO_CATS', () => {
-    AUDIO.initAudioMixer();
+    AUDIO.initAudioMixer(createStorage(memoryBackend()));
     expect(Object.keys(AUDIO.audioCat).sort()).toEqual(AUDIO_CATS.map((c) => c.k).sort());
   });
   it('[Right/a11y] TTS geral nasce DESLIGADO (TEA-safe) e as demais LIGADAS', () => {
-    AUDIO.initAudioMixer(); // idempotente
+    AUDIO.initAudioMixer(createStorage(memoryBackend())); // idempotente
     expect(AUDIO.audioCat.tts.on).toBe(false);
     expect(AUDIO.audioCat.music.on).toBe(true);
     expect(AUDIO.audioCat.ambient.on).toBe(true);
