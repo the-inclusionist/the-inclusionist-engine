@@ -9,12 +9,12 @@
 import { PAD_DESIGNS, TOUCH_DEFAULT } from './devices.js';
 import { migrateTouchMap } from './vocabulary-migration.js';
 import { t } from '../core/i18n.js';
-import { KEYS } from '../platform/storage.js'; // só as CHAVES (constantes) — leitura/escrita passam por ctx.store (DI)
+import { KEYS } from '../platform/storage.js'; // only the KEYS (constants) — reading and writing go through ctx.store (DI)
 import type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
-// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+// `DomQuery` lives in `core/dom-query`: this line was copied into SIXTEEN modules, and the copies drifted.
+// Re-exported for whoever already imported it from here.
 export type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal platform/storage.ts shape this module needs. */
@@ -26,9 +26,8 @@ export interface TouchStore {
   setJSON(key: string, obj: unknown): void;
 }
 
-/* O `TouchPlayer` SAIU no item 19. Era `PlayerView<'quiz'>` — a camada de TOQUE declarando que sabe existir
- * atividade de alfabetização — e servia a UMA linha, que virou `ctx.padAllowed()`. Um tipo que sobrevive ao
- * único uso vira documentação de um acoplamento que já não existe. Ver `padAllowed` no ctx. */
+/* There is no `TouchPlayer`: the touch layer does not know what a player carries — whether the pad may show is one
+ * boolean the game answers (`padAllowed` on the ctx). */
 
 export interface TouchCtx {
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
@@ -36,14 +35,14 @@ export interface TouchCtx {
   /** Screen-reader "polite" announcement (core/a11y-sr's srSay), injected. */
   srSay: (msg: string) => void;
   /**
-   * AS POSIÇÕES QUE ESTE JOGO USA, cada uma com a palavra dele, no idioma vigente.
+   * THE POSITIONS THIS GAME USES, each with its own word, in the current language.
    *
-   * ⚠️ Substitui `TOUCH_ACTS` + `TOUCH_ACT_LABELS`. O menu de cada slot oferecia NOVE opções fixas — quer
-   * dizer, a engine decidia que todo jogo tem pular, correr, trocar e especial, e uma criança num quiz
-   * poderia atribuir «Trocar poder» a um botão da tela, que depois não faria nada.
+   * ⚠️ The slot menu offers these and not a fixed list: with a fixed list the engine would be deciding that every
+   * game has jump, run, swap and special, and a child in a quiz could assign a button a power swap that then does
+   * nothing.
    *
-   * A ordem também vem daqui: é a ordem canônica de `core/actions`, a mesma que a tela de remapeamento usa,
-   * para a criança não ter de reaprender a lista ao trocar de painel.
+   * The order comes from here too: it is `core/actions`' canonical order, the same the remapping screen uses, so the
+   * child does not have to relearn the list when switching panels.
    */
   gameActions: () => readonly { readonly action: string; readonly label: string }[];
   /** Persistence (platform/storage.ts), injected. */
@@ -51,22 +50,22 @@ export interface TouchCtx {
   /** Element the --pad-* CSS custom properties are written to: document.documentElement in production
    *  (mirrors ui/settings-typo.ts's `root` injection for the same reason — no direct `document` access). */
   root: HTMLElement;
-  /** Shared device-class check (game.js's isMobile(), used by several subsystems) — injected, not duplicated. */
+  /** Shared device-class check (the host's, used by several subsystems) — injected, not duplicated. */
   isMobile: () => boolean;
   /** Screen dimensions, injected (never reads `window.innerWidth/innerHeight` directly). */
   viewport: () => { w: number; h: number };
-  /** Shared overlay z-index/focus helper (game.js's frontOverlay), used by every panel — injected. */
+  /** Shared overlay z-index/focus helper, used by every panel — injected. */
   frontOverlay: (el: HTMLElement | null) => void;
-  /** Optional hook fired after applyPadDesign() changes padDesign — game.js's renderPauseLegend() (Sim/Não
-   *  glyphs in the pause menu) is NOT part of this module's boundary but must still refresh; see report. */
+  /** Optional hook fired after applyPadDesign() changes padDesign — whatever draws the button glyphs elsewhere (a
+   *  pause legend, say) is NOT part of this module's boundary but must still refresh. */
   onPadDesignApplied?: () => void;
   /**
-   * O controle de tela ENTROU em cena. Existe para que a raiz possa ligar sozinha o que só faz sentido no
-   * toque — hoje, a alternância do botão de correr: num botão virtual ninguém "segura" com conforto, porque
-   * o dedo que segura é o mesmo que precisa alcançar os outros.
+   * The on-screen control CAME ON. It exists so the root can turn on by itself what only makes sense on touch — the
+   * run button's latch, say: on a virtual button nobody "holds" comfortably, because the finger that holds is the
+   * same one that has to reach the others.
    *
-   * Gancho e não regra aqui dentro: este módulo desenha controles e não conhece ajuste de acessibilidade
-   * nenhum. Quem sabe o que ligar é quem possui os jogadores.
+   * A hook and not a rule in here: this module draws controls and knows no accessibility setting at all. Whoever owns
+   * the players knows what to turn on.
    */
   onTouchControlsShown?: () => void;
   /**
@@ -75,33 +74,28 @@ export interface TouchCtx {
    */
   onTouchControlsHidden?: () => void;
   /**
-   * PODE mostrar o pad virtual AGORA? Injetado, e é o corte do item 19 neste módulo.
+   * MAY the virtual pad show NOW? Injected, and it is the GAME's policy, not the engine's.
    *
-   * Era uma linha que lia TRÊS coisas por importação de `core/state`:
-   *     `if (numPlayers > 1 || phase !== 'playing' || players.some((p) => p.quiz)) return;`
-   * — o número de jogadores, a fase, e se algum jogador tem um QUIZ aberto. A última é a que denunciava: a
-   * camada de TOQUE sabia que existe atividade de alfabetização. E as três juntas eram uma POLÍTICA do jogo
-   * escrita dentro da engine.
-   *
-   * É o mesmo movimento do achado 10 (`isNavigable`): injetar o BOOLEANO, não o estado. A plataforma responde
-   * "um jogador, jogando, sem desafio aberto"; um jogo de outro gênero responde o que for verdade nele. E o
-   * módulo deixou de importar `core/state` — não sobrou leitura de estado compartilhado nenhuma.
+   * Reading the player count, the phase and whether a player has a quiz open here would write one game's policy
+   * into the engine — and make the touch layer know that a literacy activity exists. So it is the same move as
+   * `isNavigable`: inject the BOOLEAN, not the state. The platformer answers "one player, playing, no challenge
+   * open"; a game of another genre answers whatever is true in it.
    */
   padAllowed: () => boolean;
   /**
-   * A janela, só para ouvir `resize`. Opcional: sem ela o módulo recua para o global quando existe, e num
-   * ambiente sem janela nenhuma simplesmente não ouve — a geometria fica a do arranque.
+   * The window, only to listen for `resize`. Optional: without it the module falls back to the global when there is
+   * one, and in an environment with no window at all it simply does not listen — the geometry stays as at boot.
    */
   win?: Pick<Window, 'addEventListener'> | null;
 }
 
-// ===================== PURO (sem DOM/store — project node) =====================
+// ===================== PURE (no DOM/store — node project) =====================
 
-// Alvo físico ancorado no iPhone 16 a tela cheia (aresta longa 141,1mm do display 1179×2556 @460ppi →
-// ~6,04 px CSS/mm). Ver o comentário original em game.js para a justificativa completa (WCAG 2.5.5 / GAG).
+// Physical target anchored on a full-screen iPhone 16 (the long edge of the 1179×2556 @460ppi display is 141.1 mm →
+// ~6.04 CSS px/mm) — see `padPxPerMm` for what this estimate is and is not (WCAG 2.5.5 / GAG).
 export const IPHONE16_LONG_MM = 141.1;
 export const IPHONE16_LONG_PX = 852;
-export const IPHONE16_PXMM = IPHONE16_LONG_PX / IPHONE16_LONG_MM; // ~6,04 px CSS/mm
+export const IPHONE16_PXMM = IPHONE16_LONG_PX / IPHONE16_LONG_MM; // ~6.04 CSS px/mm
 
 /**
  * CSS px per ASSUMED millimetre — an estimate anchored on one phone, NOT a measurement of the device (plan phase 5b).
@@ -116,8 +110,8 @@ export function padPxPerMm(mobile: boolean, viewW: number, viewH: number): numbe
 }
 
 export type HandTag = 'crianca' | 'adulto' | 'inter';
-/** Classifica um valor em mm na faixa mão-de-criança / intermediário / mão-de-adulto (usado nas etiquetas
- *  do painel de configuração de toque). */
+/** Sorts a value in mm into the child's-hand / in-between / adult's-hand band (used by the touch settings panel's
+ *  tags). */
 export function padHandTag(v: number, lo: number, hi: number): HandTag {
   return v <= lo ? 'crianca' : v >= hi ? 'adulto' : 'inter';
 }
@@ -127,21 +121,21 @@ export interface PadPhysicalPx {
   btnPx: number; diamPx: number; knobPx: number; basePx: number;
   armPx: number; armWPx: number; spanPx: number; stickTravelPx: number; stickDeadPx: number;
 }
-/** Toda a geometria em px a partir dos mm configurados + do fator px/mm — extraída de applyPadPhysical() para
- *  ficar pura/testável (dpr alto/baixo, tela pequena, valores extremos). applyPadPhysical() só chama isto e
- *  escreve o resultado em custom properties CSS + nos rótulos do painel. */
+/** All the geometry in px from the configured mm + the px/mm factor — kept pure so it is testable (high/low dpr, small
+ *  screen, extreme values). applyPadPhysical() only calls this and writes the result into CSS custom properties + the
+ *  panel's labels. */
 export function computePadPhysicalPx(mm: PadMm, pxPerMm: number): PadPhysicalPx {
   const btnPx = mm.btn * pxPerMm, gapPx = mm.gap * pxPerMm;
-  const diamPx = btnPx + Math.SQRT2 * (btnPx + gapPx); // losango: folga de aresta = gap
+  const diamPx = btnPx + Math.SQRT2 * (btnPx + gapPx); // diamond: edge clearance = gap
   const knobPx = mm.stick * pxPerMm, travelPx = mm.travel * pxPerMm;
-  const basePx = knobPx + 2 * travelPx + 16; // base do analógico = contato + curso
-  const armPx = mm.dpad * pxPerMm, armWPx = armPx * 0.8, spanPx = 2 * armPx + armWPx; // cruz: braço + largura(0,8×)
-  const stickTravelPx = travelPx, stickDeadPx = Math.max(6, travelPx * 0.4); // zona-morta ~40% do curso
+  const basePx = knobPx + 2 * travelPx + 16; // stick base = contact + travel
+  const armPx = mm.dpad * pxPerMm, armWPx = armPx * 0.8, spanPx = 2 * armPx + armWPx; // cross: arm + width (0.8×)
+  const stickTravelPx = travelPx, stickDeadPx = Math.max(6, travelPx * 0.4); // dead zone ~40% of the travel
   return { btnPx, diamPx, knobPx, basePx, armPx, armWPx, spanPx, stickTravelPx, stickDeadPx };
 }
 
 export type PadLayout = 'sony' | 'nintendo' | 'microsoft' | 'generic';
-/** Layout de rotulagem dos botões pelo id reportado do controle (heurística por substring/VID). */
+/** The button-labelling layout from the controller's reported id (a substring/VID heuristic). */
 export function padLayoutFromId(id: string | null | undefined): PadLayout {
   const s = (id || '').toLowerCase();
   if (/dualshock|dualsense|playstation|054c/.test(s)) return 'sony';
@@ -150,10 +144,10 @@ export function padLayoutFromId(id: string | null | undefined): PadLayout {
   return 'generic';
 }
 
-/** As 9 posições de toque remapeáveis (direcional×4, START, botões 0–3) — `lbl` é a chave i18n do rótulo. */
-// `lbl` guarda a CHAVE i18n, não o texto: tabela de módulo resolvida no import congelaria o idioma no boot
-// (ver a nota em input/devices). A seta e o nome do botão viajam DENTRO da tradução, porque em inglês o
-// "(cima)" vira "(up)" e a seta fica onde está — é moldura inteira, não conteúdo interpolado.
+/** The 13 remappable touch slots (d-pad×4, START, buttons 0–3, the four shoulders) — `lbl` is the label's i18n key. */
+// `lbl` keeps the i18n KEY, not the text: a module table resolved on import would freeze the language at boot (see the
+// note in input/devices). The arrow and the button's name travel INSIDE the translation, because in English the
+// direction word changes and the arrow stays where it is — it is the whole frame, not interpolated content.
 export const TOUCH_SLOTS: ReadonlyArray<{ k: string; lbl: string }> = [
   { k: 'up', lbl: 'touch.slot.up' }, { k: 'down', lbl: 'touch.slot.down' },
   { k: 'left', lbl: 'touch.slot.left' }, { k: 'right', lbl: 'touch.slot.right' },
@@ -164,29 +158,28 @@ export const TOUCH_SLOTS: ReadonlyArray<{ k: string; lbl: string }> = [
   { k: 'br2', lbl: 'touch.slot.br2' }, { k: 'br1', lbl: 'touch.slot.br1' },
 ];
 /**
- * As ações que o TRANSPORTE de toque consegue carregar.
+ * The actions the touch TRANSPORT can carry.
  *
- * ⚠️ DEIXOU DE SER A LISTA DO `<select>`: as opções vêm agora de `ctx.acoesDoJogo()`, porque quem decide
- * quais ações existem é o jogo. Esta lista continua a valer como o que ESTE transporte alcança — e é contra
- * ela que o gate de `input/touch-bindings` confere se o despacho reconhece tudo o que se pode oferecer.
- * As duas coisas eram a mesma por acidente enquanto só havia um jogo.
+ * ⚠️ IT IS NOT THE `<select>`'S LIST: the options come from `ctx.gameActions()`, because the game decides which actions
+ * exist. This list is what THIS transport reaches — and it is against it that `input/touch-bindings`' gate checks the
+ * dispatch recognises everything that can be offered. The two were the same by accident while there was one game.
  */
 export const TOUCH_ACTS: readonly string[] = ['left', 'right', 'up', 'down', 'action2', 'action1', 'action3', 'action4', 'start',
   'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger'];
 
-/** Funde o mapa persistido (JSON solto do localStorage) sobre TOUCH_DEFAULT. Mantido IDÊNTICO ao original:
- *  NÃO valida chaves/valores contra TOUCH_SLOTS/TOUCH_ACTS — um JSON malformado com chaves/valores estranhos
- *  passa como está (só falha se não for um objeto). Ver a nota "bug surfaced" no retorno da extração. */
+/** Merges the persisted map (loose JSON from localStorage) over TOUCH_DEFAULT. It does NOT validate keys/values
+ *  against TOUCH_SLOTS/TOUCH_ACTS — malformed JSON with strange keys/values passes as it is (it only fails if it is not
+ *  an object). */
 export function normalizeTouchMap(stored: unknown): Record<string, string> {
-  // ⚠️ O GUARDADO PASSA PELO TRADUTOR ANTES DA FUSÃO, e a ordem é o que importa: `Object.assign` deixa o
-  // guardado VENCER o padrão, então um `b0: 'jump'` de antes do ADR-0086 sobrescreveria o `b0: 'action2'`
-  // correto e o botão da tela deixaria de fazer nada — sem erro nenhum. Aqui o nome da ação está no VALOR,
-  // não na chave, e por isso precisa de um tradutor próprio. Ver `input/vocabulary-migration.ts`.
+  // ⚠️ WHAT IS STORED GOES THROUGH THE TRANSLATOR BEFORE THE MERGE, and the order is what matters: `Object.assign`
+  // lets the stored map WIN over the default, so a `b0: 'jump'` from before ADR-0086 would overwrite the correct
+  // `b0: 'action2'` and the on-screen button would stop doing anything — with no error at all. Here the action name
+  // is in the VALUE, not the key, which is why it needs its own translator. See `input/vocabulary-migration.ts`.
   const migrated = migrateTouchMap(stored && typeof stored === 'object' ? (stored as Record<string, string>) : null);
   return Object.assign({}, TOUCH_DEFAULT, migrated || {});
 }
 
-// ===================== IMPURO (DOM + store — via initTouch(ctx)) =====================
+// ===================== IMPURE (DOM + store — through initTouch(ctx)) =====================
 
 export interface PadMmPatch { btn?: number; gap?: number; stick?: number; travel?: number; dpad?: number; }
 
@@ -202,36 +195,35 @@ const PAD_PRESETS: readonly (readonly [string, Required<PadMmPatch>, string])[] 
 ];
 
 export interface TouchApi {
-  /** (Re)desenha #touchmap-list a partir do touchMap atual e prende os <select> de cada slot. */
+  /** (Re)draws #touchmap-list from the current touchMap and wires each slot's <select>. */
   renderTouchMap(): void;
-  /** Abre o diálogo "Botões de tela touch" (#touchcfg). */
+  /** Opens the on-screen buttons dialog (#touchcfg). */
   openTouchCfg(): void;
-  /** Fecha o diálogo #touchcfg e devolve o foco ao botão que o abriu. */
+  /** Closes the #touchcfg dialog and gives focus back to the button that opened it. */
   closeTouchCfg(): void;
-  /** Esconde os controles de toque (teclado/controle físico assumiu, ou um menu abriu por cima). O parâmetro
-   *  `reason` é só um rótulo de depuração nos call-sites originais — o game.js já o descartava (função de
-   *  zero parâmetros); mantido aqui só de fachada para não quebrar chamadas existentes. */
+  /** Hides the touch controls (the keyboard or a physical pad took over, or a menu opened on top). The `reason`
+   *  parameter is only a debugging label at call sites; the function ignores it and keeps it so existing calls do not
+   *  break. */
   hideTouchControls(reason?: string): void;
-  /** Mostra os controles de toque (toque/clique detectado). No-op em multi-tela, fora de 'playing', ou com
-   *  quiz aberto — dá pra tocar direto nos botões da tela nesses casos. */
+  /** Shows the touch controls (a touch/click was detected). A no-op whenever the game's `padAllowed()` says no — on
+   *  those screens the child touches the on-screen buttons directly. */
   showTouchControls(): void;
-  /** Alterna a visibilidade do analógico virtual vs. da cruz (D-pad), conforme `padDir`. */
+  /** Switches between the virtual stick and the cross (D-pad), following `padDir`. */
   applyDirStyle(): void;
-  /** Recalcula toda a geometria (mm→px) e escreve as custom properties + os rótulos do painel. */
+  /** Recomputes all the geometry (mm→px) and writes the custom properties + the panel's labels. */
   applyPadPhysical(): void;
-  /** Atualiza um ou mais tamanhos (mm), persiste e reaplica a geometria. */
+  /** Updates one or more sizes (mm), persists them and reapplies the geometry. */
   setPadMm(patch: PadMmPatch): void;
-  /** Aplica (e opcionalmente troca) o desenho dos botões; persiste; repinta os botões físicos do losango de
-   *  toque (#pad-diamond); dispara ctx.onPadDesignApplied() (legenda Sim/Não da pausa, fora daqui). Retorna o
-   *  design resultante. */
+  /** Applies (and optionally switches) the button design; persists it; repaints the touch diamond's buttons
+   *  (#pad-diamond); fires ctx.onPadDesignApplied(). Returns the resulting design. */
   applyPadDesign(d?: string): string;
-  /** Design de botão atualmente ativo ('generic'|'microsoft'|'sony'|'nintendo'). */
+  /** The button design currently active ('generic'|'microsoft'|'sony'|'nintendo'). */
   getPadDesign(): string;
-  /** Referência viva do mapa de toque atual (slot → ação) — mutada por renderTouchMap(); NÃO é uma cópia. */
+  /** A live reference to the current touch map (slot → action) — mutated by renderTouchMap(); NOT a copy. */
   getTouchMap(): Record<string, string>;
-  /** Deslocamento útil do analógico virtual em px, recalculado a cada applyPadPhysical(). */
+  /** The virtual stick's useful travel in px, recomputed on every applyPadPhysical(). */
   getStickTravelPx(): number;
-  /** Zona-morta do analógico virtual em px, recalculada a cada applyPadPhysical(). */
+  /** The virtual stick's dead zone in px, recomputed on every applyPadPhysical(). */
   getStickDeadPx(): number;
 }
 
@@ -243,7 +235,7 @@ export function initTouch(ctx: TouchCtx): TouchApi {
   let padTravelMm = ctx.store.getNum(KEYS.padTravelMm, 4.5);
   let padDpadMm = ctx.store.getNum(KEYS.padDpadMm, 12);
   let padDir = ctx.store.get(KEYS.padDir, 'stick') || 'stick';
-  let _stickTravelPx = 42, _stickDeadPx = 12; // valores de arranque; applyPadPhysical() atualiza de verdade
+  let _stickTravelPx = 42, _stickDeadPx = 12; // boot values; applyPadPhysical() sets the real ones
   const touchMap: Record<string, string> = normalizeTouchMap(ctx.store.getJSON(KEYS.touchmap, null));
 
   function renderTouchMap(): void {
@@ -251,14 +243,14 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     if (!el) return;
     el.innerHTML = TOUCH_SLOTS.map((s) =>
       `<div class="ctrl-row"><label for="tm-${s.k}">${t(s.lbl)}</label><select id="tm-${s.k}" class="vol" data-slot="${s.k}">` +
-      // ⚠️ A OPÇÃO NASCE VAZIA e o `label` entra logo abaixo por `textContent` (issue #106). Ele é a PALAVRA
-      // do jogo — `gameActions()` sai do preset —, e um jogo vive noutro repositório (ADR-0083), então este
-      // texto não é revisto por esta árvore. `value="${slotAction}"` fica: `slotAction` é o nome ABSTRATO, e a engine
-      // enumera-o em `core/actions`; é dela e não do jogo.
+      // ⚠️ THE OPTION IS BORN EMPTY and the `label` goes in just below through `textContent` (issue #106). It is the
+      // game's WORD — `gameActions()` comes from the preset —, and a game lives in another repository (ADR-0083), so
+      // this text is not reviewed by this tree. `value="${slotAction}"` stays: `slotAction` is the ABSTRACT name, and
+      // the engine enumerates it in `core/actions`; it is the engine's and not the game's.
       ctx.gameActions().map(({ action: slotAction }) => `<option value="${slotAction}"${touchMap[s.k] === slotAction ? ' selected' : ''}></option>`).join('') +
       `</select></div>`
     ).join('');
-    // As palavras do jogo, por `textContent` — que escapa por construção. A ordem casa porque é a mesma lista.
+    // The game's words, through `textContent` — which escapes by construction. The order matches because it is the same list.
     for (const sel of el.querySelectorAll<HTMLSelectElement>('select[data-slot]')) {
       const words = ctx.gameActions();
       for (let i = 0; i < sel.options.length && i < words.length; i++) {
@@ -271,15 +263,15 @@ export function initTouch(ctx: TouchCtx): TouchApi {
         touchMap[slot] = sel.value;
         ctx.store.setJSON(KEYS.touchmap, touchMap);
         const label = sel.previousElementSibling ? sel.previousElementSibling.textContent : null;
-        // ⚠️ A palavra falada é a MESMA que a lida: sai da mesma lista que acabou de montar o `<option>`.
-        // Antes vinham de tabelas diferentes e nada obrigava as duas a concordar.
+        // ⚠️ The spoken word is the SAME as the one read: it comes from the list that just built the `<option>`, so
+        // nothing has to make two tables agree.
         const chosen = ctx.gameActions().find((x) => x.action === sel.value);
         const slotName = label || t('touch.slot.fallback');
-        // ⚠️ SEM PALAVRA DO JOGO, O ANÚNCIO PERDE A POSIÇÃO — NÃO RECUA PARA O ID. `sel.value` é o nome
-        // ABSTRATO (`action3`), e o ADR-0074 diz que ele nunca chega a uma pessoa; o `7742ac0` já pagou este
-        // defeito no ecrã de remapeamento e a saída é a mesma: uma chave própria que diz o que importa.
-        // 📌 O recuo é alcançável porque `acoesDoJogo()` é FUNÇÃO do cartucho, relida a cada `change`: num hub
-        // de atividades a lista muda por baixo e a `<option>` desenhada antes fica órfã.
+        // ⚠️ WITHOUT THE GAME'S WORD, THE ANNOUNCEMENT DROPS THE POSITION — IT DOES NOT FALL BACK TO THE ID. `sel.value`
+        // is the ABSTRACT name (`action3`), and ADR-0074 says it never reaches a person; `7742ac0` already paid for
+        // this defect on the remapping screen and the way out is the same: a key of its own that says what matters.
+        // 📌 The fallback is reachable because `gameActions()` is a FUNCTION of the cartridge, reread on every
+        // `change`: in an activity hub the list changes underneath and the `<option>` drawn before is orphaned.
         ctx.srSay(chosen
           ? t('sr.touch.slotSet', { slot: slotName, acao: chosen.label })
           : t('sr.touch.slotSetUnnamed', { slot: slotName }));
@@ -311,7 +303,7 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     ctx.onTouchControlsHidden?.();
   }
   function showTouchControls(): void {
-    // MENU ativo = sem controle virtual: dá pra tocar direto nos botões da tela. QUEM decide é o jogo.
+    // A MENU up = no virtual pad: the child touches the on-screen buttons directly. The GAME decides.
     if (!ctx.padAllowed()) return;
     const tc = ctx.$<HTMLElement>('#touch-controls');
     if (tc) tc.hidden = false;
@@ -410,13 +402,12 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     }
   }
   wirePanel();
-  // Recalcula os px ao girar/redimensionar; os mm são fixos.
-  // ⚠️ ERA `addEventListener('resize', …)` NU — o global —, num módulo cujo cabeçalho diz que nunca alcança a
-  // janela. Ninguém o via porque ninguém montava isto fora de um navegador; ligado ao `createGame`, derrubou
-  // todo arranque num documento falso. A janela entra pelo `ctx`, e sem ela não há o que ouvir.
+  // Recomputes the px on rotate/resize; the mm are fixed.
+  // ⚠️ THE WINDOW COMES THROUGH THE `ctx`: a bare global `addEventListener('resize', …)` took down every boot in a fake
+  // document once this was wired to `createGame`. Without a window there is nothing to listen to.
   (ctx.win ?? (typeof addEventListener === 'function' ? globalThis : null))?.addEventListener('resize', applyPadPhysical);
 
-  // estado inicial (equivalente aos `applyPadDesign(padDesign); applyPadPhysical(); applyDirStyle();` de boot no game.js)
+  // initial state: the stored design, geometry and direction applied once at boot
   applyPadDesign();
   applyPadPhysical();
   applyDirStyle();
@@ -432,44 +423,43 @@ export function initTouch(ctx: TouchCtx): TouchApi {
 }
 
 // =============================================================================================
-// O CONTROLE VIRTUAL, DESENHADO A PARTIR DO QUE O JOGO DECLARA (ADR-0143)
+// THE VIRTUAL PAD, DRAWN FROM WHAT THE GAME DECLARES (ADR-0143)
 // =============================================================================================
 //
-// 🔴 O QUE ISTO CONSERTA. 📏 Medido em 2026-09-12: este ficheiro alcança **26 ids** e cria **ZERO**, e
-// `input/touch-bindings.ts:506` é `const tc = ctx.$('#touch-controls'); if (!tc) return;` — **sem uma linha
-// em `problems`**. Um jogo sem essa marcação não tem pad, não tem erro e não tem como saber porquê. Numa
-// escola onde o aparelho é um tablet sem teclado, isso não é uma comodidade em falta: é a única entrada.
+// 🔴 WHAT THIS FIXES. The rest of this file reaches the pad's ids and creates none, and `input/touch-bindings` gives up
+// on a missing `#touch-controls` without a line in `problems`. A game without that markup had no pad, no error and no
+// way of knowing why. In a school where the device is a tablet with no keyboard, that is not a missing comfort: it is
+// the only input.
 //
-// ⚠️ E MORA AQUI, E NÃO NUM MÓDULO AO LADO, porque um gate desta casa recusou a alternativa em tantas
-// palavras: «o `exports` do pacote é um CURINGA (`./input/*.js`) — logo ele já está alcançável por trezentos
-// cartuchos. Declare-o, ou construa-o ATRÁS do controle virtual em vez de ao lado dele». Um ficheiro novo em
-// `input/` nasce API pública por acidente; uma função neste, não.
+// ⚠️ AND IT LIVES HERE, NOT IN A MODULE BESIDE IT, because a gate of this house refused the alternative: the package's
+// `exports` is a WILDCARD (`./input/*.js`), so a new file in `input/` is born public API by accident — a function in
+// this one is not.
 //
-// ========================= POR QUE NÃO É UM MOLDE FIXO =========================
-// A leitura óbvia do pedido do Dev já tinha sido recusada, por escrito, pelo segundo consumidor da própria
-// engine (`consumer-quiz/main-quiz.ts` item 14): «reproduzir doze ids para um conjunto de controles que o
-// quiz não quer seria o mesmo tipo de mentira do sonar». Montar o pad do platformer em todo jogo entregaria
-// NOVE BOTÕES MORTOS a quem declara duas acções — o ADR-0106 §5 quebrado pelo trabalho que o cita.
+// ========================= WHY IT IS NOT A FIXED MOULD =========================
+// The obvious reading of the Dev's request had already been refused, in writing, by the engine's own second consumer
+// (`consumer-quiz/main-quiz.ts`): reproducing a dozen ids for a set of controls the quiz does not want would be the same
+// kind of lie as the sonar. Mounting the platformer's pad in every game would hand NINE DEAD BUTTONS to whoever
+// declares two actions — ADR-0106 §5 broken by the very work that cites it.
 //
-// 🎯 Então a forma vem do `preset`: um slot é desenhado quando a acção que ele dispara é uma que ESTE jogo
-// declara. 📌 E dispara pelo MAPA, não pelo nome do slot — `touch-bindings.ts:451` faz
-// `doTouch(ctx.getTouchMap()['b' + b.dataset.btn])`, «a função vem do touchMap (remapeável), não do
-// data-act». Ler o nome desenharia o pad de fábrica a quem o remapeou.
+// 🎯 So the shape comes from the `preset`: a slot is drawn when the action it fires is one THIS game declares. 📌 And
+// it fires through the MAP, not the slot's name — `touch-bindings` recomposes the slot as `'b' + dataset.btn` and reads
+// `ctx.getTouchMap()[slot]`: the function comes from the (remappable) touchMap, not from a data attribute. Reading the name would draw the factory pad
+// for whoever remapped it.
 
-/** As três coisas do `document` de que a marcação do pad precisa. Mesma forma do `ui/panel-shell`. */
+/** The three `document` things the pad's markup needs. Same shape as `ui/panel-shell`. */
 export interface TouchMarkupCtx {
   find: (sel: string) => HTMLElement | null;
   create: (tag: string) => HTMLElement;
 }
 
 export interface TouchMarkupSpec {
-  /** O MAPA VIVO de slot→acção (`TOUCH_DEFAULT` fundido com o que a criança remapeou). */
+  /** The LIVE slot→action map (`TOUCH_DEFAULT` merged with what the child remapped). */
   readonly map: Readonly<Record<string, string>>;
-  /** As acções que ESTE jogo declara (`presetActions(preset)`). Vazio = não há o que desenhar. */
+  /** The actions THIS game declares (`presetActions(preset)`). Empty = nothing to draw. */
   readonly gameActions: ReadonlySet<string>;
-  /** O rótulo de cada slot, já traduzido — a palavra do JOGO para a acção que ele dispara. */
+  /** Each slot's label, already translated — the GAME's word for the action it fires. */
   readonly slotLabel: (slot: string) => string;
-  /** O desenho do direcional: `cruz` ou `analogico`. Vem do ajuste persistido do pad (`padDir`). */
+  /** The d-pad's drawing: `cruz` (cross) or `analogico` (stick). It comes from the pad's persisted setting (`padDir`). */
   readonly dpad?: 'cruz' | 'analogico';
 }
 
@@ -487,26 +477,26 @@ function buttonName(slotAction: string): string | null {
   return slotAction === 'up' || slotAction === 'down' || slotAction === 'left' || slotAction === 'right' ? t(`touch.nome.${slotAction}`) : null;
 }
 
-/** Os quatro slots direcionais, na ordem em que a cruz os desenha. */
+/** The four direction slots, in the order the cross draws them. */
 const DIRECTIONS = ['up', 'left', 'right', 'down'] as const;
-/** Os quatro slots de botão de acção, na ordem do losango. */
+/** The four action-button slots, in the diamond's order. */
 const BUTTONS = ['b0', 'b1', 'b2', 'b3'] as const;
-/** Os OMBROS por canto, de cima para baixo (ADR-0160): o gatilho (2) sobre o ombro (1). */
+/** The SHOULDERS per corner, top to bottom (ADR-0160): the trigger (2) over the shoulder (1). */
 const SHOULDERS = [['esq', ['bl2', 'bl1']], ['dir', ['br2', 'br1']]] as const;
 
 /**
- * Constrói (ou reaproveita) `#touch-controls` e devolve-o.
+ * Builds (or reuses) `#touch-controls` and returns it.
  *
- * ⚠️ NASCE ESCONDIDO, e não é detalhe: a alternância por modalidade é do `touch-bindings` — «toque/clique
- * MOSTRA; teclado/controle OCULTA». Um pad que nasce à vista cobre o jogo de quem nunca lhe vai tocar.
+ * ⚠️ IT IS BORN HIDDEN, and that is not a detail: switching by modality belongs to `touch-bindings` — a touch or click
+ * SHOWS it, the keyboard or a pad HIDES it. A pad born on screen covers the game of whoever will never touch it.
  *
- * 🔴 SÓ O QUE O JOGO NOMEIA, desde o ADR-0162 — que desfez o mínimo do ADR-0157 (direções e quatro botões em todo
- * jogo, com a legenda física nos sem nome): «Vale para todos os botões: somente aparecem se o jogo os nomeia.» SELECT
- * e START ficam sempre, porque são as portas da pausa. ⚠️ Um jogo que não nomeia direção não anda nos menus por toque;
- * por isso o `consumer-quiz` declara as posições que usa. Os quatro botões ficam em bloco 2×2 pelo NÚMERO da acção
- * (ADR-0160): 1 e 4 em cima, 2 e 3 embaixo.
+ * 🔴 ONLY WHAT THE GAME NAMES, since ADR-0162 — which undid ADR-0157's minimum (directions and four buttons in every
+ * game, with the physical legend on the unnamed ones): «Vale para todos os botões: somente aparecem se o jogo os
+ * nomeia.» SELECT and START always stay, because they are the pause's doors. ⚠️ A game that names no direction does not
+ * move through menus by touch; that is why `consumer-quiz` declares the positions it uses. The four buttons sit in a 2×2
+ * block by the action's NUMBER (ADR-0160): 1 and 4 on top, 2 and 3 below.
  *
- * Idempotente: montar duas vezes devolve o mesmo nó, com o conteúdo refeito para o mapa de agora.
+ * Idempotent: mounting twice returns the same node, its content rebuilt for the map of now.
  */
 export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): HTMLElement {
   const touchControls = ctx.find('#touch-controls') ?? ctx.create('div');
@@ -530,8 +520,8 @@ interface PadFaces {
 }
 
 function padFacesOf(spec: TouchMarkupSpec): PadFaces {
-  // 🔴 SÓ O QUE O JOGO NOMEIA (ADR-0162, supersede o mínimo do ADR-0157): «Vale para todos os botões: somente aparecem
-  // se o jogo os nomeia.» Um botão na tela é uma promessa de que ele faz alguma coisa, e quem sabe isso é o jogo.
+  // 🔴 ONLY WHAT THE GAME NAMES (ADR-0162, superseding ADR-0157's minimum): «Vale para todos os botões: somente
+  // aparecem se o jogo os nomeia.» A button on screen is a promise that it does something, and the game is who knows.
   const named = (slot: string): boolean => spec.gameActions.has(spec.map[slot] ?? '');
   // ADR-0165: the face is the NAME of the position the slot fires; the accessible name is «name, function».
   const nameOf = (slot: string): string => buttonName(spec.map[slot] ?? slot) ?? spec.slotLabel(slot);
@@ -552,8 +542,8 @@ function directionPad(ctx: TouchMarkupCtx, spec: TouchMarkupSpec, f: PadFaces): 
   dir.id = kind;
   dir.className = kind; // the id is what `touch-bindings` finds; the class is what the stylesheet DRAWS
   if (kind === 'touch-stick') {
-    // `touch-bindings` exige a `.touch-knob` dentro da base (`if (stick && knob)`), e sem ela desiste do
-    // analógico inteiro — em silêncio.
+    // `touch-bindings` requires the `.touch-knob` inside the base (`if (stick && knob)`), and without it gives up on the
+    // whole stick — silently.
     const knob = ctx.create('div');
     knob.className = 'touch-knob';
     dir.appendChild(knob);
@@ -561,10 +551,9 @@ function directionPad(ctx: TouchMarkupCtx, spec: TouchMarkupSpec, f: PadFaces): 
   }
   for (const d of live) {
     const arm = ctx.create('button');
-    // ⚠️ AS TRÊS CLASSES, e cada uma tem um leitor. `touch-arm` é a deste módulo; `dpad-arm` é a que a folha
-    // de estilo DESENHA; `dpad-<dir>` é a que o `touch-bindings` ACENDE ao toque (`.dpad-up` & co.). Com só
-    // a primeira — que era o que isto escrevia até ser ligado ao `createGame` —, o braço era um botão sem
-    // estilo que nunca acendia, e nenhum caso o via, porque nada tinha ainda montado os dois juntos.
+    // ⚠️ THE THREE CLASSES, and each has a reader. `touch-arm` is this module's; `dpad-arm` is the one the stylesheet
+    // DRAWS; `dpad-<dir>` is the one `touch-bindings` LIGHTS on touch (`.dpad-up` & co.). With only the first, the arm
+    // is an unstyled button that never lights, and no case sees it unless both are mounted together.
     arm.className = `touch-arm dpad-arm dpad-${d}`;
     arm.setAttribute('type', 'button');
     arm.setAttribute('aria-label', f.accessible(d));
@@ -596,15 +585,15 @@ function actionButtons(ctx: TouchMarkupCtx, spec: TouchMarkupSpec, f: PadFaces):
   rhombus.className = 'touch-pad';
   for (const b of live) {
     const button = padButton(ctx, f, b, 'touch-btn');
-    // O LUGAR SEGUE A ACÇÃO, não o slot (ADR-0160: 1 4 em cima, 2 3 embaixo): a folha de estilo põe cada botão na
-    // célula do seu número, e um slot remapeado leva o botão para o lugar da acção que passou a disparar.
+    // THE PLACE FOLLOWS THE ACTION, not the slot (ADR-0160: 1 4 on top, 2 3 below): the stylesheet puts each button in
+    // its number's cell, and a remapped slot takes the button to the place of the action it now fires.
     button.dataset.acao = spec.map[b] ?? '';
     rhombus.appendChild(button);
   }
   return [rhombus];
 }
 
-/** OS OMBROS, cada par no seu canto superior (ADR-0160), e só os que o jogo nomeia (ADR-0162) — nenhum canto vazio. */
+/** THE SHOULDERS, each pair in its top corner (ADR-0160), and only those the game names (ADR-0162) — no empty corner. */
 function shoulderCorners(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement[] {
   return SHOULDERS.flatMap(([side, slots]) => {
     const named = slots.filter(f.named);
@@ -617,9 +606,9 @@ function shoulderCorners(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement[] {
 }
 
 /*
- * AS DUAS PÍLULAS DE SISTEMA, lado a lado e ao centro: SELECT (os menus) e START (a pausa rápida), na ordem de
- * um comando de consola. ⚠️ AMBAS INCONDICIONAIS, pela mesma razão: desde o ADR-0155 são as duas portas da pausa,
- * e a pausa não é declinável (ADR-0122) — um tablet sem teclado não tem outra forma de chegar a «Sair».
+ * THE TWO SYSTEM PILLS, side by side in the centre: SELECT (the menus) and START (the quick pause), in a console pad's
+ * order. ⚠️ BOTH UNCONDITIONAL, for the same reason: since ADR-0155 they are the pause's two doors, and the pause cannot
+ * be declined (ADR-0122) — a tablet without a keyboard has no other way to reach "Quit".
  */
 function systemPills(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement {
   const system = ctx.create('div');
@@ -630,7 +619,7 @@ function systemPills(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement {
     b.className = `touch-btn touch-${slot}`;
     b.setAttribute('type', 'button');
     b.setAttribute('aria-label', f.accessible(slot));
-    // ⚠️ E ESCRITO, não só dito: uma pílula sem texto é um botão que quem vê não sabe ler.
+    // ⚠️ AND WRITTEN, not only spoken: a pill with no text is a button a sighted child cannot read.
     b.textContent = f.nameOf(slot);
     system.appendChild(b);
   }
@@ -638,20 +627,20 @@ function systemPills(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement {
 }
 
 /**
- * O que este jogo NÃO alcança pelo toque, dito em vez de calado — a metade do ADR-0143 §4 que não é markup.
+ * What this game does NOT reach by touch, said instead of kept quiet — the half of ADR-0143 §4 that is not markup.
  *
- * 📌 Devolve LINHAS e não lança: uma lacuna do hospedeiro nunca derruba o boot, pela mesma regra que o resto
- * de `problems` já segue. As frases vão para o consumidor que INTEGRA a engine, e não para uma criança.
+ * 📌 It returns LINES and does not throw: a host gap never takes the boot down, by the same rule the rest of
+ * `problems` follows. The sentences go to the consumer that INTEGRATES the engine, not to a child.
  */
 export function touchGaps(spec: Pick<TouchMarkupSpec, 'map' | 'gameActions'>): string[] {
-  // ⚠️ SEM `preset` O PAD SÓ TEM SELECT E START (ADR-0162): nenhuma direção, nenhum botão — nem para andar nos menus.
-  // É lacuna de quem integra, e diz-se.
+  // ⚠️ WITHOUT `preset` THE PAD HAS ONLY SELECT AND START (ADR-0162): no direction, no button — not even to move
+  // through menus. It is the integrator's gap, and it is said.
   if (!spec.gameActions.size) {
     return ['the virtual pad shows only SELECT and START — no direction and no button: a child on a tablet without a '
       + 'keyboard cannot play — declare `preset` with the positions this game uses and a word for each'];
   }
-  // ⚠️ E A LACUNA PARCIAL TAMBÉM SE DIZ. Um jogo pode declarar uma acção que nenhum slot dispara: ela existe
-  // no teclado e não existe no toque, e hoje isso não aparece em lado nenhum.
+  // ⚠️ AND THE PARTIAL GAP IS SAID TOO. A game may declare an action no slot fires: it exists on the keyboard and not on
+  // touch, and without this line that would show up nowhere.
   const reached = new Set(TOUCH_SLOTS.map((s) => spec.map[s.k]).filter(Boolean));
   const outsideTouch = [...spec.gameActions].filter((a) => !reached.has(a));
   if (!outsideTouch.length) return [];
@@ -680,7 +669,7 @@ export function touchGaps(spec: Pick<TouchMarkupSpec, 'map' | 'gameActions'>): s
 //
 // 📌 AND SO THE SMALL CHILD GETS THE LARGEST BUTTONS, which reads backwards and is not: the small hand is not the
 // constraint, the imprecision is. A 3-year-old lands up to twice as far from the centre as an adult (Vatavu), so
-// her target has to absorb that spread. The large-handed adult is second largest for the other reason — the
+// their target has to absorb that spread. The large-handed adult is second largest for the other reason — the
 // finger itself is 16–20 mm and covers a smaller button entirely.
 //
 // ⚠️ `gap`, `stick`, `travel` and `dpad` follow the button in proportion to the engine's factory pad (button
