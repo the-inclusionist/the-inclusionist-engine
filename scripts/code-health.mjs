@@ -26,8 +26,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname, relative, resolve } from 'node:path';
 import ts from 'typescript';
-// The one definition of «type-only», shared with the import gates that read the same declarations.
-import { isTypeOnlyImport } from './lib/module-specifiers.mjs';
+// The one reader of module specifiers, shared with the import gates: every form that loads code, and one «type-only».
+import { runtimeSpecifiersOf } from './lib/module-specifiers.mjs';
 
 const ROOT = process.cwd().endsWith('app') ? join(process.cwd(), '..') : process.cwd();
 export const BASELINE = 'docs/6-DevOps-SRE/code-health.json';
@@ -186,14 +186,20 @@ export const isExempt = (mod, measure) => {
  *   · fanOut        — DISTINCT relative imports BY VALUE (ADR-0232 point 3). A package import is not coupling inside this
  *                     tree, and a type-only import is not coupling either: it is a dependence on a contract, erased at
  *                     build, and it is what injection asks a module to depend on.
- *   · statefulEdges — DISTINCT value imports of a module that holds state (ADR-0232 point 4). Computed over the tree in
- *                     `measureTree`, because it needs to know which modules are stateful.
+ *                     ⚠️ EVERY FORM THAT LOADS CODE is an edge — `import … from`, `import '…'`, `export … from`, a lazy
+ *                     `import('…')`, `require('…')` and a worker's `new URL('…', import.meta.url)` — read by the same parser
+ *                     the import gates use (`scripts/lib/module-specifiers.mjs`). A lazy import defers WHEN the module
+ *                     loads, not WHETHER this one depends on it; the reachability count of ADR-0228 followed them on
+ *                     purpose. A non-literal `import(url)` names no module of this tree and is not counted.
+ *   · statefulEdges — DISTINCT value imports of a module that holds state (ADR-0232 point 4), in every form fan-out reads:
+ *                     the two are one edge set. Computed over the tree in `measureTree`, because it needs to know which
+ *                     modules are stateful.
  */
 
 export function measureModule(text) {
   const sf = ts.createSourceFile('m.ts', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   let decisionNodes = 0, maxDepth = 0;
-  const imports = new Set();
+  const imports = new Set(runtimeSpecifiersOf(text, 'm.ts').filter((s) => s.spec?.startsWith('.')).map((s) => s.spec));
 
   const walk = (node, depth) => {
     let d = depth;
@@ -202,9 +208,6 @@ export function measureModule(text) {
       || ts.isConditionalExpression(node)) {
       d += 1; decisionNodes += 1; maxDepth = Math.max(maxDepth, d);
     }
-    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
-      && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)
-      && node.moduleSpecifier.text.startsWith('.') && !isTypeOnlyImport(node)) imports.add(node.moduleSpecifier.text);
     node.forEachChild((k) => walk(k, d));
   };
   sf.forEachChild((n) => walk(n, 0));

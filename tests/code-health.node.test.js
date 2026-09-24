@@ -21,6 +21,9 @@
 //
 // MUTATIONS CHECKED at the end of the file.
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { posix } from 'node:path';
+import { runtimeSpecifiersOf } from '../scripts/lib/module-specifiers.mjs';
 import {
   measureTree, measureModule, readBaseline, isExempt, ceilingFrom, ceilingToRecord, statefulSet, MEASURES, BASELINE,
 } from '../scripts/code-health.mjs';
@@ -205,6 +208,50 @@ describe('a saúde do código só melhora', () => {
   });
 
   /*
+   * 🔴 AND IT COUNTS EVERY FORM THAT LOADS CODE, not only the ones with `from`. The measure read `import`/`export`
+   * declarations alone, and so missed the lazy `import()` edges of `core/i18n` (the two dictionaries), `platform/tts` (the
+   * Kokoro runtime) and the root (reading, microphone) — the same blind spot the import gates had before they moved to
+   * the shared parser. A lazy import defers WHEN a module loads, not WHETHER this one depends on it (ADR-0228's count
+   * followed them on purpose).
+   */
+  it('🔴 [Right] fan-out counts a lazy import(), require() and a worker URL; a non-literal import() and a type query are not edges', () => {
+    const m = measureModule([
+      "export const load = () => import('./lazy.js');",
+      'export const again = () => import("./lazy.js");', // double quotes, same module: counted once
+      "const fs = require('./req.js');",
+      "import legacy = require('./legacy.js');",
+      "new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });",
+      'export const byUrl = (u: string) => import(u);', // names no module of this tree
+      "let t: typeof import('./only-type.js');", // erased, like `import type`
+      "export * from './star.js';",
+    ].join('\n'));
+    expect(m.imports.sort(), 'the edges').toEqual(['./lazy.js', './legacy.js', './req.js', './star.js', './worker.js']);
+    expect(m.fanOut, 'fan-out missed a form that loads code, or counted one that does not').toBe(5);
+  });
+
+  /*
+   * 🔴 ONE READER, CHECKED ON THE REAL TREE: fan-out and `statefulEdges` agree, module by module, with what the import gates'
+   * reader says the module loads. Two readers for the same question is how the gates went blind before; this case is what
+   * reddens if the measure grows a private one again.
+   */
+  it('🔴 [Right] fan-out and statefulEdges read the same edges the import gates read, in every module', () => {
+    const stateful = new Set(statefulSet(arvore));
+    const disagree = [];
+    for (const [mod, m] of Object.entries(arvore)) {
+      const text = readFileSync(new URL(`../app/js/${mod}`, import.meta.url), 'utf8');
+      const specs = [...new Set(runtimeSpecifiersOf(text, mod)
+        .filter((s) => s.spec?.startsWith('.')).map((s) => s.spec))];
+      const targets = [...new Set(specs.map((s) => posix.join(posix.dirname(mod), s).replace(/\.js$/, '.ts')))];
+      const intoState = targets.filter((t) => stateful.has(t)).sort();
+      if (m.fanOut !== specs.length) disagree.push(`${mod} fanOut ${m.fanOut}, the reader ${specs.length}`);
+      if (JSON.stringify(m.statefulImports ?? []) !== JSON.stringify(intoState)) {
+        disagree.push(`${mod} statefulImports ${JSON.stringify(m.statefulImports ?? [])}, the reader ${JSON.stringify(intoState)}`);
+      }
+    }
+    expect(disagree, 'the measure and scripts/lib/module-specifiers.mjs disagree on what a module loads').toEqual([]);
+  });
+
+  /*
    * 🔴 REACH SEES EVERY DOOR TO THE BROWSER THE TREE USES, AND ONLY THE GLOBAL ONE (ADR-0232 point 2). A local that
    * shadows a global name is injection, not reach; a name in a type or as a member is not a reach either.
    */
@@ -316,4 +363,15 @@ describe('a saúde do código só melhora', () => {
  * 31. names in type positions count as reach ....................................................... RED on the 1st, the stateful-set and the reach case
  * 32. a plain `--write` stops filling a measure the file never recorded ............................ RED on the ceiling case
  * 33. a module-level `var` is not state ............................................................ RED on the holds case
+ *
+ * ========================= and those of the ONE READER (every form that loads code is an edge) =========================
+ * 34. the measure reads `import`/`export` declarations only again ................................. RED on the forms and the one-reader case
+ * 35. a lazy `import()` is dropped ................................................................ RED on the forms and the one-reader case
+ * 36. `require()` is dropped ....................................................................... RED on the forms case
+ *     — only there: `app/js` has no `require` today, so the tree cannot see it and the fixture must.
+ * 37. a worker's `new URL(…, import.meta.url)` is dropped ......................................... RED on the forms and the one-reader case
+ * 38. `statefulEdges` gets a second, static-only reader of its own ................................ RED on the one-reader case
+ *     — only there: the ratchet reads it as an improvement, which is exactly how a blind reader passes.
+ * 39. a non-literal `import(url)` is counted as an edge ........................................... RED on the 1st, the forms and the one-reader case
+ * 40. type-only forms are counted (`specifiersOf` instead of `runtimeSpecifiersOf`) ............... RED on the 1st, the type-only, the forms and the one-reader case
  */

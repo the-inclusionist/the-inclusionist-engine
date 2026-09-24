@@ -68,10 +68,10 @@
       "codeLines": 2095,
       "decisionNodes": 281,
       "maxDepth": 4,
-      "fanOut": 85,
+      "fanOut": 88,
       "globalReach": 1,
       "worstFunction": 69,
-      "statefulEdges": 21,
+      "statefulEdges": 24,
       "fanIn": 1,
       "reached": [
         "SpeechSynthesisUtterance"
@@ -89,6 +89,9 @@
         "platform/audio-sonar.ts",
         "platform/audio.ts",
         "platform/heavy.ts",
+        "platform/microphone.ts",
+        "platform/reading-in-worker.ts",
+        "platform/reading-runtime.ts",
         "platform/tts.ts",
         "render/crt.ts",
         "render/lq-filter.ts",
@@ -312,7 +315,7 @@
       "codeLines": 108,
       "decisionNodes": 26,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 3,
       "globalReach": 0,
       "worstFunction": 8,
       "statefulEdges": 0,
@@ -525,7 +528,7 @@
       "globalReach": 0,
       "worstFunction": 0,
       "statefulEdges": 0,
-      "fanIn": 0
+      "fanIn": 1
     },
     "i18n/es.ts": {
       "codeLines": 647,
@@ -535,7 +538,7 @@
       "globalReach": 0,
       "worstFunction": 0,
       "statefulEdges": 0,
-      "fanIn": 0
+      "fanIn": 1
     },
     "i18n/pt.ts": {
       "codeLines": 647,
@@ -1097,7 +1100,7 @@
       "globalReach": 2,
       "worstFunction": 7,
       "statefulEdges": 0,
-      "fanIn": 0,
+      "fanIn": 1,
       "reached": [
         "WebAssembly",
         "fetch"
@@ -1141,7 +1144,7 @@
       "globalReach": 3,
       "worstFunction": 7,
       "statefulEdges": 0,
-      "fanIn": 0,
+      "fanIn": 1,
       "reached": [
         "AudioContext",
         "navigator",
@@ -1165,11 +1168,11 @@
       "codeLines": 62,
       "decisionNodes": 8,
       "maxDepth": 1,
-      "fanOut": 0,
+      "fanOut": 1,
       "globalReach": 1,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 0,
+      "fanIn": 1,
       "reached": [
         "Worker"
       ]
@@ -1192,7 +1195,7 @@
       "globalReach": 1,
       "worstFunction": 9,
       "statefulEdges": 0,
-      "fanIn": 1,
+      "fanIn": 2,
       "reached": [
         "fetch"
       ]
@@ -1205,7 +1208,7 @@
       "globalReach": 0,
       "worstFunction": 3,
       "statefulEdges": 1,
-      "fanIn": 0,
+      "fanIn": 1,
       "statefulImports": [
         "platform/reading-runtime.ts"
       ]
@@ -1271,10 +1274,10 @@
       "codeLines": 202,
       "decisionNodes": 38,
       "maxDepth": 3,
-      "fanOut": 6,
+      "fanOut": 7,
       "globalReach": 4,
       "worstFunction": 10,
-      "statefulEdges": 1,
+      "statefulEdges": 2,
       "fanIn": 1,
       "reached": [
         "SpeechSynthesisUtterance",
@@ -1283,7 +1286,8 @@
         "window"
       ],
       "statefulImports": [
-        "core/i18n.ts"
+        "core/i18n.ts",
+        "platform/kokoro-runtime.ts"
       ]
     },
     "platform/vision-loop.ts": {
