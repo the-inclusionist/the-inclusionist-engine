@@ -55,11 +55,23 @@ export function setCatGain(cat: string): void { if (!audioCat) return; const g =
 export function tone(freq: number, dur: number, type?: OscillatorType, when?: number, vol?: number): void { if (!soundOn || volume <= 0) return; try { const ac = ensureAC(); if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + (when || 0);
   o.type = type || 'square'; o.frequency.setValueAtTime(freq, t); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.02, (vol || 0.22) * volume), t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g).connect(catNode('earcons') || audioOut() || ac.destination); o.start(t); o.stop(t + dur + 0.02); } catch (e) { /* noop */ } }
-export function tonePan(freq: number, dur: number, cat: string, pan?: number | null, vol?: number, type?: OscillatorType, pc?: PlayerCtx | null): void { if (!soundOn || volume <= 0) return; const ac = pc ? pc.ac : ensureAC(); if (!ac) return; try {
+export function tonePan(freq: number, dur: number, cat: string, pan?: number | null, vol?: number, type?: OscillatorType, pc?: PlayerCtx | null): void { if (!audible()) return; const ac = contextFor(pc); if (!ac) return; try {
   const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime; o.type = type || 'sine'; o.frequency.value = freq;
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.02, (vol || 0.2) * volume), t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  let node: AudioNode = g; if (pan != null && ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan)); g.connect(p); node = p; }
-  o.connect(g); node.connect(pc ? pc.out : (catNode(cat) || audioOut() || ac.destination)); o.start(t); o.stop(t + dur + 0.02); } catch (e) { /* noop */ } }
+  o.connect(g); panned(ac, g, pan).connect(outFor(ac, cat, pc)); o.start(t); o.stop(t + dur + 0.02); } catch (e) { /* noop */ } }
+
+// ===== The questions a cue asks before it sounds, the same for the tone and the noise. =====
+/** Whether a sound may play at all: the game's sound on, and the master above zero. */
+function audible(): boolean { return soundOn && volume > 0; }
+/** The context a cue plays in: the player's own device when one is given, the engine's otherwise. */
+function contextFor(pc?: PlayerCtx | null): AudioContext | null { return pc ? pc.ac : ensureAC(); }
+/** The last node before the output: a panner clamped to the two ears when a pan is asked, the gain itself when not. */
+function panned(ac: AudioContext, g: GainNode, pan?: number | null): AudioNode {
+  if (pan == null || !ac.createStereoPanner) return g;
+  const p = ac.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan)); g.connect(p); return p;
+}
+/** Where a cue goes out: the player's own device; otherwise its category's bus, the master, or the device itself. */
+function outFor(ac: AudioContext, cat: string, pc?: PlayerCtx | null): AudioNode { return pc ? pc.out : (catNode(cat) || audioOut() || ac.destination); }
 
 // ===== Synth de RUÍDO (passos por material, bengala). noiseBuffer cacheia por-contexto (suporta AC por jogador). =====
 export let _footCount = 0; // contador de passos/pancadas (estatística de a11y; o __incl do game.js lê via getter)
@@ -69,11 +81,10 @@ type FootTimbre = { f: BiquadFilterType; hz: number; d: number; v: number };
 const FOOT: Record<string, FootTimbre> = { grama:{f:'highpass',hz:2000,d:0.09,v:0.10}, piso:{f:'bandpass',hz:1200,d:0.06,v:0.15}, pedra:{f:'highpass',hz:1600,d:0.05,v:0.19},
   areia:{f:'lowpass',hz:650,d:0.13,v:0.10}, madeira:{f:'bandpass',hz:480,d:0.08,v:0.15}, ferro:{f:'bandpass',hz:2600,d:0.12,v:0.16}, parede:{f:'highpass',hz:3200,d:0.10,v:0.08},
   terra:{f:'lowpass',hz:520,d:0.11,v:0.12}, agua:{f:'lowpass',hz:330,d:0.15,v:0.13} };
-export function noiseHit(mat: string, pan?: number | null, pc?: PlayerCtx | null): void { if (!soundOn || volume <= 0) return; const ac = pc ? pc.ac : ensureAC(); if (!ac) return; const f = FOOT[mat] || FOOT.piso; try {
+export function noiseHit(mat: string, pan?: number | null, pc?: PlayerCtx | null): void { if (!audible()) return; const ac = contextFor(pc); if (!ac) return; const f = FOOT[mat] || FOOT.piso; try {
   const src = ac.createBufferSource(); src.buffer = noiseBuffer(ac); const bq = ac.createBiquadFilter(); bq.type = f.f; bq.frequency.value = f.hz; bq.Q.value = 1.2;
   const g = ac.createGain(), t = ac.currentTime; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.02, f.v * volume), t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + f.d);
-  let node: AudioNode = g; if (pan != null && ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan)); g.connect(p); node = p; }
-  src.connect(bq).connect(g); node.connect(pc ? pc.out : (catNode('interact') || audioOut() || ac.destination)); src.start(t); src.stop(t + f.d + 0.03); _footCount++;
+  src.connect(bq).connect(g); panned(ac, g, pan).connect(outFor(ac, 'interact', pc)); src.start(t); src.stop(t + f.d + 0.03); _footCount++;
 } catch (e) { /* noop */ } }
 
 /* A TABELA DE EARCONS SAIU daqui em 2026-08-25 (item 19) — está em `game/earcons`.

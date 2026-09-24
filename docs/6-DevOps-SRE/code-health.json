@@ -730,12 +730,12 @@
       ]
     },
     "platform/audio.ts": {
-      "codeLines": 52,
-      "decisionNodes": 41,
+      "codeLines": 57,
+      "decisionNodes": 38,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 1,
-      "worstFunction": 13,
+      "worstFunction": 10,
       "fanIn": 3,
       "reached": [
         "window"

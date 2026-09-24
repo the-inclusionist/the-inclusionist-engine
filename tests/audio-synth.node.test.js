@@ -11,7 +11,7 @@
 // and which needs no browser window. The context writes down what is built and where it is connected.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as audio from '../app/js/platform/audio.js';
 
 function contextoDoJogador() {
@@ -112,6 +112,27 @@ describe('noiseHit — a material, heard', () => {
     expect(rec.destinos.at(-1)).toEqual(['panner', 'saida-do-jogador']);
   });
 
+  it('🔴 [Right] with no player\'s device, a hit goes out through the `interact` category — the slider that says so moves it', async () => {
+    // The only path that runs the engine's OWN context, so it needs a window: one is lent, with the same recording context, and
+    // the module is imported afresh so its context is this one. `interact` is switched off and `earcons` on: a hit on the right
+    // bus lands on a silent category gain, on the wrong one it is heard.
+    const { rec, pc } = contextoDoJogador();
+    const ganhos = [];
+    const criarGanho = pc.ac.createGain;
+    pc.ac.createGain = () => { const g = criarGanho(); ganhos.push(g); return g; };
+    pc.ac.state = 'running';
+    vi.stubGlobal('window', { AudioContext: function AudioContextFalso() { return pc.ac; } });
+    vi.resetModules();
+    const novo = await import('../app/js/platform/audio.js');
+    novo.initAudioMixer();
+    novo.audioCat.interact.on = false;
+    novo.audioCat.earcons.on = true;
+    novo.noiseHit('piso', null);
+    vi.unstubAllGlobals();
+    expect(rec.fontes).toBe(1);
+    expect(ganhos.at(-1).gain.value, 'the hit went to a category that is on — not `interact`').toBe(0);
+  });
+
   it('🔴 [Zero] the game\'s sound off: no noise is made', () => {
     const { rec, pc } = contextoDoJogador();
     audio.setSoundOn(false);
@@ -121,4 +142,7 @@ describe('noiseHit — a material, heard', () => {
 });
 
 // ============================== MUTATIONS CHECKED ==============================
-// `scratchpad/sonda-audio.py --novos`: the eighteen decisions of the two synths, all green before this file.
+// `scratchpad/sonda-audio.py --novos`: the eighteen decisions of the two synths, all green before this file, all red with it.
+// Re-probed after the cut into shared questions (`audible`, `contextFor`, `panned`, `outFor` — `sonda-audio-3.py`): 19 of 19,
+// with «a hit goes out through the `interact` category», added with the cut — every other case hands a player's device, so the
+// CATEGORY a hit is routed to (the mixer slider that moves the cane) was never run; green on the old shape too.
