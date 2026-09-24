@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O CARTÃO DE PAUSA MONTADO NÃO COME AS TECLAS DO JOGO — só o cartão ABERTO é dono do teclado.
+// THE MOUNTED PAUSE CARD DOES NOT EAT THE GAME'S KEYS — only the OPEN card owns the keyboard.
 //
-// ========================= POR QUE ESTE FICHEIRO EXISTE, E É UMA HISTÓRIA DE MÉTODO =========================
-// 🔴 Uma frase escrita no código de um consumidor tornou-se premissa de um registo aceite, sem nunca ter sido
-// medida. O `pixi-15-puzzle` escreveu ao lado da própria declaração: «if `semMenuDePausa` were omitted, every
-// arrow, Enter and Space would start being eaten the moment anything created an element with a pause id». Eu
-// citei-a no ADR-0121 e revertí a aposentadoria do campo por causa dela.
+// ========================= WHY THIS FILE EXISTS, AND IT IS A STORY OF METHOD =========================
+// 🔴 A sentence written in a consumer's code became the premise of an accepted record without ever being measured.
+// `pixi-15-puzzle` wrote beside its own declaration: «if `semMenuDePausa` were omitted, every arrow, Enter and Space would
+// start being eaten the moment anything created an element with a pause id». It was cited in ADR-0121, which reverted
+// retiring the field because of it.
 //
-// 📏 MEDIDA DEPOIS, ela é verdadeira do cartão ABERTO e falsa do cartão MONTADO:
+// 📏 MEASURED AFTERWARDS, it is true of the OPEN card and false of the MOUNTED card:
 //
-//   · `ui/menu-nav.ts:485`   — `if (menu && !menu.hidden) { consumir(e); navPause(menu, pi, k); }`
-//   · `input/gamepad.ts:619` — a mesma guarda, no outro transporte
-//   · `ui/pause-icons.ts:1180` — `sp.hidden = true`, três linhas dentro do `buildScreenPause`
+//   · `ui/menu-nav`, the keydown handler — `if (menu && !menu.hidden) { consume(e); navPause(menu, pi, k); }`
+//   · `input/gamepad` — the same guard, on the other transport
+//   · `ui/pause-icons`, `buildScreenPause` — `sp.hidden = true`: the card is born hidden
 //
-// ⚠️ E É ESSA A DIFERENÇA QUE DECIDIU O ADR-0122: com ela, adoptar a pausa da engine não tira as setas a um
-// jogo que se joga com setas, e o menu de pausa passa a ser da engine em todo jogo — que é a regra do Dev.
+// ⚠️ AND THAT DIFFERENCE IS WHAT DECIDED ADR-0122: with it, adopting the engine's pause does not take the arrows from a
+// game played with arrows, and the pause menu belongs to the engine in every game — which is the Dev's rule.
 //
-// 📌 ISTO TEM DE SER UM CASO DE BROWSER e não de node, e a razão é o próprio defeito: o que se afirma é a
-// PROPAGAÇÃO de um evento por um documento real — captura na `window`, `preventDefault`, e um ouvinte do jogo
-// mais abaixo na árvore. Um DOM falso responde o que o duplo mandar responder, e este ficheiro nasceu de uma
-// afirmação que ninguém tinha exercitado.
+// 📌 THIS HAS TO BE A BROWSER CASE and not a node one, and the reason is the defect itself: what is asserted is the
+// PROPAGATION of an event through a real document — capture on `window`, `preventDefault`, and a game listener further
+// down the tree. A fake DOM answers whatever the double tells it to, and this file was born from a claim nobody had
+// exercised.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
@@ -44,7 +44,7 @@ const declaracaoValida = () => ({
   targetsOf: () => [{ x: 0, y: 0 }],
 });
 
-/** A tecla como o jogo a vê: despachada na região do jogo, a subir até quem quer que a escute. */
+/** The key as the game sees it: dispatched on the game region, bubbling up to whoever listens. */
 function apertar(code) {
   const alvo = raiz.querySelector('#game-region');
   const ev = new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true });
@@ -59,12 +59,12 @@ beforeEach(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
 
-  // 📌 E A RAIZ LIGA A NAVEGAÇÃO SOZINHA — `create-game.ts:729`, desde `dfaec02` e contido no `v7.0.1`. Este
-  // ficheiro tinha um `motor.nav.attach()` aqui, e a mutação 3 mostrou que ele não fazia nada: `attach` passa
-  // sempre a MESMA função com a mesma bandeira de captura, e o DOM não regista o mesmo ouvinte duas vezes.
+  // 📌 AND THE ROOT TURNS NAVIGATION ON BY ITSELF — `nav.attach()` in `boot/create-game`. Calling `motor.nav.attach()` here
+  // again would do nothing: `attach` always passes the SAME function with the same capture flag, and the DOM does not
+  // register the same listener twice (mutation 3).
   motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc: document, win: window }, downloadHeavy: false });
 
-  // O ouvinte DO JOGO: uma seta é comando de jogo, e é ele que a perde quando alguém a consome antes.
+  // The GAME's listener: an arrow is a game command, and it is the game that loses it when someone consumes it first.
   vistas = [];
   ouvinteDoJogo = (e) => vistas.push(e.code);
   raiz.querySelector('#game-region').addEventListener('keydown', ouvinteDoJogo);
@@ -79,8 +79,8 @@ describe('o cartão de pausa que a engine monta', () => {
   it('🔴 [Zero] MONTADO e escondido: a seta chega ao jogo e ninguém a cancela', () => {
     const cartao = document.getElementById('vp-pause-0');
     expect(cartao, 'o cartão não montou; o caso mediria a ausência dele e não a guarda').not.toBeNull();
-    // 📌 E ele montou SEM declínio nenhum — o `semMenuDePausa` saiu do contrato (ADR-0122), e com um
-    // `#game-region` presente a raiz não tem do que se queixar.
+    // 📌 And it mounted WITH NO decline at all — `semMenuDePausa` left the contract (ADR-0122), and with a `#game-region`
+    // present the root has nothing to complain about.
     expect(motor.problems.filter((p) => p.includes('pausa')), 'a pausa acusou com hospedeiro válido').toEqual([]);
     expect(cartao.hidden, 'o cartão tem de NASCER escondido — é essa a metade que a citação ignorava').toBe(true);
 
@@ -110,19 +110,20 @@ describe('o cartão de pausa que a engine monta', () => {
 
   it('⚠️ `Enter` SAIU dessa lista por DECISÃO e não por regressão — ele é `start` (ADR-0144, ADR-0155)', () => {
     /*
-     * 🔴 ESTE CASO ERA A QUARTA TECLA DO CASO ACIMA, e vale a pena dizer porque saiu, em vez de o número
-     * mudar em silêncio. A citação que fundou este ficheiro nomeava «every arrow, Enter and Space», e o que
-     * ela acusava era o cartão MONTADO a comer teclas pela navegação de menu. Isso continua verdade e
-     * continua medido — a seta e o `Space` acima.
+     * 🔴 THIS CASE WAS THE FOURTH KEY OF THE CASE ABOVE, and it is worth saying why it left, instead of the number
+     * changing in silence. The quote that founded this file named «every arrow, Enter and Space», and what it accused was
+     * the MOUNTED card eating keys through menu navigation. That is still true and still measured — the arrow and `Space`
+     * above.
      *
-     * 🎯 O QUE MUDOU É OUTRA COISA, E É UMA DECISÃO: desde o ADR-0144 a engine ouve a ACÇÃO `start` e pausa com
-     * ela — desde o ADR-0155, a PAUSA RÁPIDA (PAUSADO e a barra), e já não o cartão. O esquema solo põe `start` em `KeyH` E `Enter` (`input/default-bindings:89`), e a nota
-     * de lá explica que `Enter` foi escolhido porque JÁ pausava no monólito (`PAUSE_KEYS = {Escape, Enter}`)
-     * — declará-lo descrevia o que a tecla fazia há anos, não lhe dava trabalho novo.
+     * 🎯 WHAT CHANGED IS SOMETHING ELSE, AND IT IS A DECISION: since ADR-0144 the engine listens to the `start` ACTION and
+     * pauses with it — since ADR-0155, the QUICK PAUSE (PAUSED and the bar), no longer the card. The solo scheme puts
+     * `start` on `KeyH` AND `Enter` (`input/default-bindings`), and the note there explains that `Enter` was chosen
+     * because it ALREADY paused (`PAUSE_KEYS = {Escape, Enter}`) — declaring it described what the key had done for
+     * years, it did not give it new work.
      *
-     * ⚠️ E A CAUSA NÃO É O DEFEITO QUE ESTE FICHEIRO GUARDA, que é o ponto de o caso viver aqui: o cartão
-     * estava ESCONDIDO quando a tecla chegou. Quem a consumiu foi o gancho da pausa, de propósito, e não a
-     * navegação de menu a correr sobre um cartão que ninguém abriu.
+     * ⚠️ AND THE CAUSE IS NOT THE DEFECT THIS FILE GUARDS, which is why the case lives here: the card was HIDDEN when the
+     * key arrived. What consumed it was the pause hook, on purpose, and not menu navigation running over a card nobody
+     * opened.
      */
     const cartao = document.getElementById('vp-pause-0');
     expect(cartao.hidden, 'o cartão já estava aberto: o caso mediria a navegação e não o gancho').toBe(true);
@@ -136,17 +137,17 @@ describe('o cartão de pausa que a engine monta', () => {
   });
 });
 
-// ================================ MUTAÇÕES CONFERIDAS ================================
-// 1. tirar `&& !menu.hidden` do `ui/menu-nav.ts:485`  → [Zero] e [Boundary] reprovam (2 de 3): o cartão
-//    montado passa a comer as quatro teclas, que é EXACTAMENTE a frase do 15-puzzle a tornar-se verdadeira.
-//    É a mutação que prova que este ficheiro mede a guarda, e não o acaso.
-// 2. `sp.hidden = true` → `false` no `buildScreenPause`  → [Zero] e [Boundary] reprovam: nascer escondido é a
-//    outra metade da mesma promessa, e sem ela a guarda da mutação 1 nunca chega a proteger nada.
-// 3. 🔴 SOBREVIVEU, E ACHOU UM FACTO EM VEZ DE UM BURACO. A primeira versão deste ficheiro chamava
-//    `motor.nav.attach()` no `beforeEach`, com um comentário a dizer que a raiz não liga a navegação sozinha
-//    — copiado do `pixi-15-puzzle`, que escreve `engine.nav.attach(); // createGame does not`. Tirá-lo
-//    deixava os três casos VERDES. Medido: a raiz LIGA (`create-game.ts:729`, `dfaec02`, contido no
-//    `v7.0.1`), e uma segunda chamada não regista ouvinte nenhum — mesma função, mesma bandeira de captura.
-//    A linha saiu, e a linha equivalente no 15-puzzle é ruído que a migração para o 8.0.0 pode limpar.
-//    ⚠️ Uma mutação que não pode reprovar não é prova de cobertura; fica registada por ter medido outra
-//    coisa, que é o que a mutação 1 do `viz-setters` já ensinou neste repositório.
+// ================================ MUTATIONS CHECKED ================================
+// 1. removing `&& !menu.hidden` from `ui/menu-nav.ts:485`  → [Zero] and [Boundary] fail (2 of 3): the mounted card starts
+//    eating the four keys, which is EXACTLY the 15-puzzle's sentence coming true. It is the mutation that proves this file
+//    measures the guard, and not chance.
+// 2. `sp.hidden = true` → `false` in `buildScreenPause`  → [Zero] and [Boundary] fail: being born hidden is the other half
+//    of the same promise, and without it the guard of mutation 1 never gets to protect anything.
+// 3. 🔴 SURVIVED, AND FOUND A FACT INSTEAD OF A HOLE. The first version of this file called `motor.nav.attach()` in the
+//    `beforeEach`, with a comment saying the root does not turn navigation on by itself — copied from `pixi-15-puzzle`,
+//    which writes `engine.nav.attach(); // createGame does not`. Removing it left the three cases GREEN. Measured: the
+//    root DOES turn it on (`create-game.ts:729`, `dfaec02`, contained in `v7.0.1`), and a second call registers no
+//    listener at all — same function, same capture flag. The line left, and the equivalent line in the 15-puzzle is
+//    noise the migration to 8.0.0 can clean.
+//    ⚠️ A mutation that cannot fail is not proof of coverage; it stays recorded for having measured something else, which
+//    is what mutation 1 of `viz-setters` already taught in this repository.

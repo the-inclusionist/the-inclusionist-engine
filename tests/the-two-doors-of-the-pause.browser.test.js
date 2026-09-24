@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// AS DUAS PORTAS DA PAUSA: o START é a PAUSA RÁPIDA e o SELECT abre os MENUS (ADR-0155, que supersede em parte
-// o ADR-0144 — e a errata dele, a do cartão com saída, continua medida aqui).
+// THE TWO DOORS OF THE PAUSE: START is the QUICK PAUSE and SELECT opens the MENUS (ADR-0155, which partly supersedes
+// ADR-0144 — and its erratum, the card with a way out, is still measured here).
 //
-// ========================= POR QUE ESTE FICHEIRO EXISTE =========================
-// 🔴 MEDIDO em 2026-09-12: `createGame` montava o cartão de pausa, a barra de acessibilidade e quatro painéis
-// de ajustes, e NADA revelava o cartão. O ADR-0144 fez do `start` a porta. No mesmo dia o Dev trocou as portas:
-// «A barra sobre o jogo mais a palavra PAUSED no centro da tela. No entanto, esta deve passar a ser a opção do
-// botão START, e o botão SELECT deve trazer à tona os diversos menus.» O nome do ficheiro fica, porque o
-// `confirmed-by` do ADR-0144 aponta para ele; o que ele mede é o que o ADR-0155 decidiu.
+// ========================= WHY THIS FILE EXISTS =========================
+// 🔴 MEASURED on 2026-09-12: `createGame` mounted the pause card, the accessibility bar and four settings panels, and
+// NOTHING revealed the card. ADR-0144 made `start` the door. The same day the Dev swapped the doors: «A barra sobre o
+// jogo mais a palavra PAUSED no centro da tela. No entanto, esta deve passar a ser a opção do botão START, e o botão
+// SELECT deve trazer à tona os diversos menus.» The file's name stays, because ADR-0144's `confirmed-by` points at it;
+// what it measures is what ADR-0155 decided.
 //
-// 📌 TEM DE SER UM FICHEIRO DE NAVEGADOR: o que se afirma é a PROPAGAÇÃO de um evento de teclado por um documento
-// a sério, com `ui/menu-nav` a ouvir em CAPTURA na mesma janela e estes ouvintes em BOLHA por baixo dele.
+// 📌 IT HAS TO BE A BROWSER FILE: what is asserted is the PROPAGATION of a keyboard event through a real document, with
+// `ui/menu-nav` listening in CAPTURE on the same window and these listeners in BUBBLE below it.
 //
-// ⚠️ E TEM DE SER UM FICHEIRO SEU, com UMA raiz só. Cada `createGame` pendura ouvintes na `window` e nada os
-// tira; por isso a raiz nasce uma vez no `beforeAll` e o cartucho troca-se por `mount()` (ADR-0142).
+// ⚠️ AND IT HAS TO BE A FILE OF ITS OWN, with ONE root only. Each `createGame` hangs listeners on the `window` and nothing
+// removes them; so the root is born once in `beforeAll` and the cartridge is swapped through `mount()` (ADR-0142).
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 let motor;
 let raiz;
-/** As fases que o JOGO recebeu — é o `setPhase` do cartucho, não o da engine. */
+/** The phases the GAME received — it is the cartridge's `setPhase`, not the engine's. */
 let fases;
 
 const declaracaoValida = () => ({
@@ -38,7 +38,7 @@ const declaracaoValida = () => ({
 });
 const comGancho = () => ({ accommodations: SEM_ASSUNTO, setPhase: (p) => fases.push(p) });
 
-/** A tecla como a criança a dá: despachada na região do jogo, a subir até quem a quiser. */
+/** The key as the child gives it: dispatched on the game region, bubbling up to whoever wants it. */
 function apertar(code) {
   const alvo = raiz.querySelector('#game-region');
   const ev = new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true });
@@ -49,7 +49,7 @@ function apertar(code) {
 const cartao = () => document.getElementById('vp-pause-0');
 const item = (act) => document.querySelector(`#vp-pause-0 .pm-btn[data-act="${act}"]`);
 const pausado = () => document.querySelector('#game-region .pausa-rapida');
-/** PAUSADO à vista — pelo layout, não só pelo atributo: é ao layout que a criança pergunta. */
+/** PAUSED in sight — by the layout, not only by the attribute: the layout is what the child asks. */
 const pausadoAVista = () => !!pausado() && pausado().hidden === false && pausado().offsetParent !== null;
 const cursorNaBarra = () => document.querySelectorAll('.pi-sel').length;
 
@@ -64,12 +64,11 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  // Um painel que um caso anterior tenha aberto não pode decidir o seguinte: o primeiro guarda dos ouvintes é
-  // exactamente «há um painel aberto?».
+  // A panel a previous case opened must not decide the next: the listeners' first guard is exactly «há um painel aberto?».
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
   motor.pause.hide(0);
-  // ⚠️ E UMA PAUSA RÁPIDA que um caso deixou ligada tem de sair pela PORTA — não há API pública que a desligue,
-  // e é de propósito: a criança também só a tem pelo START.
+  // ⚠️ AND A QUICK PAUSE a case left on has to leave through the DOOR — there is no public API that turns it off, on
+  // purpose: the child also only has it through START.
   if (pausadoAVista()) apertar('KeyH');
   fases.length = 0;
 });
@@ -84,8 +83,8 @@ describe('o START é a PAUSA RÁPIDA', () => {
     expect(pausadoAVista(), 'o START não mostrou PAUSADO').toBe(true);
     expect(cursorNaBarra(), 'o direccional não foi para a barra').toBe(1);
     expect(cartao().hidden, 'o START abriu o cartão de menus — isso é do SELECT agora').toBe(true);
-    // ⚠️ E A TECLA É CONSUMIDA: `Enter` é `start` por omissão, e sem isto o mesmo carregar pausava E accionava o
-    // que estivesse focado por trás. O par é o caso do `KeyD`.
+    // ⚠️ AND THE KEY IS CONSUMED: `Enter` is `start` by default, and without this the same press would pause AND activate
+    // whatever was focused behind. The pair is the `KeyD` case.
     expect(ev.defaultPrevented, 'a engine pausou e deixou a tecla seguir para o que estava focado').toBe(true);
   });
 
@@ -102,7 +101,7 @@ describe('o START é a PAUSA RÁPIDA', () => {
   });
 
   it('⚠️ uma tecla que NÃO é `start` não pausa nada — o guarda é a acção, não «uma tecla qualquer»', () => {
-    const ev = apertar('KeyD'); // `right` no esquema solo: comando de jogo, não de sistema
+    const ev = apertar('KeyD'); // `right` in the solo scheme: a game command, not a system one
     expect(pausadoAVista(), 'uma tecla de movimento pausou').toBe(false);
     expect(ev.defaultPrevented, 'a engine cancelou uma tecla que não é dela').toBe(false);
   });
@@ -121,8 +120,8 @@ describe('o START é a PAUSA RÁPIDA', () => {
   });
 
   it('🔴 o VOLTAR dentro da barra também sai — e também DESCONGELA (a saída é uma só, por qualquer porta)', () => {
-    // ⚠️ É O CASO DO GANCHO. O Escape é tratado pela BARRA (`navBar` → `sairDaBarra`), não pelo ouvinte do START;
-    // sem `aoSairDaBarra` a criança voltava ao personagem com o mundo parado e PAUSADO escrito por cima.
+    // ⚠️ IT IS THE HOOK'S CASE. Escape is handled by the BAR (`navBar` → `leaveBar`), not by the START listener; without
+    // `onLeaveBar` the child would go back to her character with the world stopped and PAUSED written on top.
     apertar('KeyH');
     apertar('Escape');
     expect(cursorNaBarra(), 'o Escape não saiu da barra').toBe(0);
@@ -156,8 +155,9 @@ describe('o SELECT abre os MENUS', () => {
   });
 
   it('🔴 DA PAUSA RÁPIDA para o cartão, o jogo NÃO descongela pelo caminho', () => {
-    // ⚠️ O par que apanha o SELECT escrito como «sair da pausa rápida e depois abrir»: sair pela porta normal
-    // pede `playing`, e o mundo andaria o instante entre as duas — com a criança a pedir menus, não o jogo.
+    // ⚠️ The pair that catches SELECT written as «sair da pausa rápida e depois abrir»: leaving through the normal door
+    // asks for `playing`, and the world would move for the instant between the two — with the child asking for menus, not
+    // the game.
     apertar('KeyH');
     apertar('KeyF');
     expect(cartao().hidden, 'o SELECT na pausa rápida não abriu o cartão').toBe(false);
@@ -175,7 +175,7 @@ describe('o SELECT abre os MENUS', () => {
   });
 
   it('🔴 o item «Voltar ao jogo» está VIVO e FECHA o cartão, pedindo a retoma', () => {
-    // 🔴 ANTES DA ERRATA DO ADR-0144 ELE NÃO ESTAVA: `acoesDaEngine` não definia `resume`.
+    // 🔴 The engine's own acts define `resume` (ADR-0144 erratum): the card always has a way out.
     apertar('KeyF');
     expect(item('resume')?.hidden, 'o «Voltar ao jogo» falta ou está escondido').toBe(false);
     fases.length = 0;
@@ -241,7 +241,7 @@ describe('a SEGUNDA porta dos menus: a legenda no rodapé e o `action4` (ADR-015
   });
 
   it('🔴 [Zero] FORA da pausa rápida o `action4` é do JOGO — não abre nada e não é consumido', () => {
-    // O par que impede a porta de roubar um verbo a meio da partida.
+    // The pair that stops the door from stealing a verb mid-game.
     const ev = apertar('KeyI');
     expect(cartao().hidden, 'o `action4` abriu os menus com o jogo a correr').toBe(true);
     expect(fases).toEqual([]);
@@ -251,8 +251,8 @@ describe('a SEGUNDA porta dos menus: a legenda no rodapé e o `action4` (ADR-015
 
 describe('o guarda comum: com um PAINEL aberto, nenhuma das portas é nossa', () => {
   it('⚠️ nem o START nem o SELECT abrem nada por baixo de um painel', () => {
-    // 📌 ESTE ESTADO É O DO QUIZ: um jogo cujos ajustes estão sempre disponíveis tem painéis abertos com o cartão
-    // fechado. Sem o guarda, a pausa abria POR BAIXO do painel em que a criança está.
+    // 📌 THIS STATE IS THE QUIZ'S: a game whose settings are always available has panels open with the card closed.
+    // Without the guard, the pause would open UNDER the panel the child is in.
     apertar('KeyF');
     item('options').click();
     item('audio').click();
@@ -271,26 +271,26 @@ describe('o guarda comum: com um PAINEL aberto, nenhuma das portas é nossa', ()
   });
 });
 
-// ============================== MUTAÇÕES CONFERIDAS ==============================
-// Aplicadas por script ao ficheiro, com a contagem de ocorrências conferida ANTES de cada uma.
-// As do ADR-0155 (este ficheiro):
-//   S1  o ouvinte do START não é registado                                   🔴 nada pausa
-//   S2  `assentoDaPosicao` ignora a acção                                    🔴 `KeyD` pausa
-//   S3  o guarda do painel aberto sai (START)                                🔴 pausa por baixo do painel
-//   S4  o START outra vez não sai                                            🔴 preso na pausa rápida
-//   S5  `aoSairDaBarra` não é passado                                        🔴 Escape deixa o mundo parado
-//   S6  o SELECT da pausa rápida sai pela porta normal (`'jogo'`)            🔴 retoma a caminho dos menus
-//   S7  o guarda do cartão aberto sai (START)                                🔴 pausa rápida por baixo do cartão
-//   S8  `e.preventDefault()` sai do START                                    🔴 a tecla segue para trás
-//   S9  o SELECT abre com `mudarDeFase` antes de `pausa.mostrar` só com gancho 🔴 cartucho sem `setPhase`
-//   L1  a legenda não é criada                                             🔴 a tela não diz como chegar aos menus
-//   L2  a legenda não se esconde ao sair                                   🔴 legenda por cima do jogo
-//   L3  o `action4` abre também fora da pausa rápida                       🔴 rouba um verbo ao jogo
-//   L4  o ouvinte do `action4` não é registado                             🔴 a segunda porta não abre
-// E as da errata do ADR-0144, que continuam a valer para o cartão:
-//   M8  `acoesDaEngine.resume` sai                                           🔴 cartão sem «Voltar ao jogo»
-//   M9  `setPhase: mudarDeFase` → `cartucho.setPhase ?? (() => {})`          🔴 Escape não fecha
-//   M10 `if (p !== 'paused') pausa.esconder(0)` nunca corre                  🔴 «Voltar» não fecha
+// ============================== MUTATIONS CHECKED ==============================
+// Applied by script to the file, with the occurrence count checked BEFORE each one.
+// Those of ADR-0155 (this file):
+//   S1  the START listener is not registered                                 🔴 nothing pauses
+//   S2  `assentoDaPosicao` ignores the action                                🔴 `KeyD` pauses
+//   S3  the open-panel guard leaves (START)                                  🔴 pauses under the panel
+//   S4  START again does not leave                                           🔴 stuck in the quick pause
+//   S5  `aoSairDaBarra` is not passed                                        🔴 Escape leaves the world stopped
+//   S6  the quick pause's SELECT leaves through the normal door (`'jogo'`)   🔴 resumes on the way to the menus
+//   S7  the open-card guard leaves (START)                                   🔴 quick pause under the card
+//   S8  `e.preventDefault()` leaves START                                    🔴 the key goes on behind
+//   S9  SELECT opens with `mudarDeFase` before `pausa.mostrar` only with a hook 🔴 cartridge with no `setPhase`
+//   L1  the legend is not created                                            🔴 the screen does not say how to reach the menus
+//   L2  the legend does not hide on leaving                                  🔴 legend on top of the game
+//   L3  `action4` also opens outside the quick pause                         🔴 steals a verb from the game
+//   L4  the `action4` listener is not registered                             🔴 the second door does not open
+// And those of ADR-0144's erratum, which still hold for the card:
+//   M8  `acoesDaEngine.resume` leaves                                         🔴 card with no «Voltar ao jogo»
+//   M9  `setPhase: mudarDeFase` → `cartucho.setPhase ?? (() => {})`          🔴 Escape does not close
+//   M10 `if (p !== 'paused') pausa.esconder(0)` never runs                   🔴 «Voltar» does not close
 
 // ---- the button legend on the pause card (ADR-0164 rule 3, 2026-09-12) ----
 //   L1 opening the card does not refresh the legend      🔴 action4 case and the card-legend case
