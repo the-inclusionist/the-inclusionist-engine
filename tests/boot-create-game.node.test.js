@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O VEREDITO DO ADR-0027 (passo 4), como teste — item 13 da pipeline.
+// ADR-0027'S VERDICT (step 4), as a test — item 13 of the pipeline.
 //
-// O registro não deixou a pergunta vaga, e não deixou a consequência vaga tampouco:
+// The record did not leave the question vague, nor the consequence: if `createGame()` could not be written without a
+// parameter called `coinTarget`, the boundary it proposed was wrong and its steps 5 to 7 could not begin.
 //
-//     "se `createGame()` não puder ser escrito sem um parâmetro chamado `coinTarget`, a fronteira que este
-//      registro propõe está errada e os passos 5 a 7 NÃO PODEM COMEÇAR."
+// This file has TWO halves, and they measure different things.
 //
-// Este arquivo tem DUAS metades, e elas medem coisas diferentes.
+// The first reads the SOURCE. It exists because the verdict is about what the signature DEMANDS, and a signature is read
+// — not run. A test that only called `createGame()` with a valid argument would never notice an optional `coinTarget`
+// sleeping in the type.
 //
-// A primeira lê a FONTE. Ela existe porque o veredito é sobre o que a assinatura EXIGE, e uma assinatura se
-// lê — não se executa. Um teste que só chamasse `createGame()` com um argumento válido nunca perceberia um
-// `coinTarget` opcional dormindo no tipo.
-//
-// A segunda EXECUTA, num DOM de mentira. Ela existe porque a primeira metade é cega para o que importa
-// depois: se a ordem obrigatória é mesmo obrigatória, se declarar mal explode, se faltar marcação não explode.
+// The second RUNS, in a make-believe DOM. It exists because the first half is blind to what matters next: whether the
+// mandatory order really is mandatory, whether declaring badly throws, whether missing markup does not.
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import { readFileSync } from 'node:fs';
@@ -21,24 +19,24 @@ import { join } from 'node:path';
 
 const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'boot', 'create-game.ts'), 'utf8');
 
-/** Linhas de CÓDIGO da fonte: sem comentário. A prosa deste módulo CITA `coinTarget` para explicar o
- *  veredito, e um filtro que confundisse a citação com a exigência reprovaria o próprio registro. */
+/** The source's CODE lines: no comments. This module's prose QUOTES `coinTarget` to explain the verdict, and a filter
+ *  that confused the quotation with the demand would fail the record itself. */
 const CODIGO = FONTE.split('\n')
   .filter((ln) => { const t = ln.trim(); return t && !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*'); })
   .join('\n');
 
 describe('o veredito: a fronteira passa ou não passa', () => {
   it('[Right] `createGame()` NÃO pede coinTarget — nem alvo de moeda com outro nome', () => {
-    // É a frase do ADR virada gate. Se um dia alguém precisar do número de moedas aqui, o caso reprova e a
-    // conversa volta a ser sobre a FRONTEIRA, não sobre um parâmetro a mais.
+    // It is the ADR's sentence turned gate. If one day someone needs the coin count here, the case fails and the
+    // conversation goes back to being about the BOUNDARY, not about one more parameter.
     expect(CODIGO).not.toMatch(/coinTarget/);
     expect(CODIGO).not.toMatch(/\bcoins?\b/i);
     expect(CODIGO).not.toMatch(/\bmoedas?\b/i);
   });
 
   it('[Right] o alvo vem do CONTRATO, e é assim que `coinTarget` deixou de ser preciso', () => {
-    // Não basta a ausência: uma engine que simplesmente não soubesse do objetivo também passaria no caso
-    // acima, e teria perdido a funcionalidade em vez de tê-la generalizado. `objectiveOf` é o campo 5.
+    // Absence is not enough: an engine that simply did not know about the objective would also pass the case above, and
+    // it would have lost the feature instead of generalising it. `objectiveOf` is field 5.
     expect(CODIGO).toMatch(/GameDeclaration/);
     expect(CODIGO).toMatch(/conformanceProblems/);
   });
@@ -52,8 +50,8 @@ describe('o veredito: a fronteira passa ou não passa', () => {
   });
 
   it('[Interface] o mixer é ligado ANTES da voz — a ordem do achado 3, na ordem do arquivo', () => {
-    // O achado 3 do segundo consumidor: sem `initAudioMixer()` antes, `audioCat` é null e o `narrate` cala
-    // sem erro. Aqui a ordem é do arquivo, e este caso é o que impede uma reordenação distraída.
+    // Finding 3 of the second consumer: without `initAudioMixer()` first, `audioCat` is null and `narrate` goes quiet with
+    // no error. Here the order is the file's, and this case is what prevents a careless reordering.
     const mixer = CODIGO.indexOf('initAudioMixer()');
     const voz = CODIGO.indexOf('createTts(');
     expect(mixer, 'initAudioMixer() precisa ser chamado').toBeGreaterThan(-1);
@@ -62,44 +60,41 @@ describe('o veredito: a fronteira passa ou não passa', () => {
   });
 
   it('[Interface] o idioma é ligado com o documento do HOSPEDEIRO, não com o global', () => {
-    // Achado 15, e o motivo de ele ser um caso e não uma nota: `initI18n()` alcançava o `document` global por
-    // baixo de quem a chamasse. Num navegador dá no mesmo, e é por isso que sobreviveu tanto tempo.
+    // Finding 15, and why it is a case and not a note: `initI18n()` reached the global `document` underneath whoever
+    // called it. In a browser it makes no difference, which is why it survived so long.
     expect(CODIGO).toMatch(/initI18n\(doc\)/);
-    // 🔴 ESTE CASO ESTEVE MORTO E NINGUÉM SABIA. A regex tinha um caractere de CONTROLO invisível no meio —
-    // `/docu<VT>ment/` — injectado por uma edição via PowerShell, onde a crase é escape e `` `v `` é
-    // tabulação vertical. Ela nunca podia casar com `document`, logo o caso passava sempre, e passava pela
-    // pior razão possível: parecia guardar a fronteira e não guardava nada.
-    // ⚠️ E RESSUSCITADO ELE ACUSOU UM FALSO POSITIVO, que é a segunda metade da lição: a palavra PORTUGUESA
-    // «documento», dentro de uma linha de `problems` que fala a quem integra a engine, contém `document`. A
-    // fronteira de palavra separa as duas — «documento» tem um `o` a seguir, logo `\b` falha ali.
+    // 🔴 THIS CASE WAS ONCE DEAD AND NOBODY KNEW. The regex had an invisible CONTROL character in the middle —
+    // `/docu<VT>ment/` — injected by an edit through PowerShell, where the backtick is an escape and `` `v `` is a vertical
+    // tab. It could never match `document`, so the case always passed, for the worst reason possible: it looked like it
+    // guarded the boundary and guarded nothing.
+    // ⚠️ AND REVIVED IT ACCUSED A FALSE POSITIVE, the second half of the lesson: the PORTUGUESE word `documento`, inside a
+    // `problems` line addressed to whoever integrates the engine, contains `document`. The word boundary separates the two
+    // — `documento` has an `o` after it, so `\b` fails there.
     expect(CODIGO, 'nenhuma linha de código deste boot pode alcançar o document global').not.toMatch(/\bdocument\b/);
   });
 });
 
 /* ===================== a metade que EXECUTA ===================== */
 
-/** Um documento de mentira: só o suficiente para `createGame` fazer o que faz sem navegador. */
+/** A make-believe document: just enough for `createGame` to do what it does without a browser. */
 function domFalso({ comMarcacao = true, ausentes = [], map: mapa = {}, listas = {} } = {}) {
   const feito = [];
   const el = (id) => ({
     id,
     hidden: true,
     /*
-     * ⚠️ `style` COM OS DOIS MÉTODOS — a QUINTA vez que este duplo fica mais pobre que a coisa real, e a
-     * primeira em que não é um método solto: `{}` parece um `style` e não é. Desde que a engine monta o painel
-     * de tipografia (ADR-0106 §1), o `initSettingsTypo` aplica a fonte persistida no arranque e escreve
-     * `--font-custom` na raiz do documento — com `{}` isso é um `TypeError` no meio do boot.
+     * ⚠️ `style` WITH BOTH METHODS: `{}` looks like a `style` and is not. The engine applies the stored font at boot and
+     * writes `--font-custom` on the document root (`initSettingsTypo`) — with `{}` that is a `TypeError` in the middle of
+     * the boot. Every time this double is poorer than the real thing, the engine looks wrong for the double's sake.
      */
     style: { setProperty() {}, removeProperty() {} },
     dataset: {},
     /*
-     * ⚠️ `classList` QUE FUNCIONA, e não um que engole — a SEXTA vez que este duplo fica mais pobre que a
-     * coisa real. Entrou com o painel de sensibilidade visual: `reflectMotionBtn` faz
-     * `b.classList.toggle('is-on', …)` e o `ui/dom.toggleBtn` faz o mesmo em qualquer botão-mestre.
+     * ⚠️ A `classList` THAT WORKS, not one that swallows: `reflectMotionBtn` does `b.classList.toggle('is-on', …)` and
+     * `ui/dom.toggleBtn` does the same on any master button.
      *
-     * 📌 Sobre um `Set` e não com métodos vazios, pela lição que este ficheiro já aprendeu cinco vezes: um
-     * duplo que aceita a chamada e não guarda nada responde «sim» a qualquer pergunta sobre classe, e um
-     * teste que pergunte «ficou ligado?» passa sem que nada tenha ficado.
+     * 📌 Over a `Set` and not with empty methods: a double that accepts the call and keeps nothing answers yes to any
+     * question about a class, and a test that asks whether it stayed on passes without anything having stayed.
      */
     classList: (() => {
       const s = new Set();
@@ -114,20 +109,17 @@ function domFalso({ comMarcacao = true, ausentes = [], map: mapa = {}, listas = 
         },
       };
     })(),
-    // ⚠️ `innerHTML` ENTROU EM 2026-09-08, e é a mesma lição que o `ausentes` e o `mapa` já ensinaram neste
-    // ficheiro: um duplo mais pobre do que a coisa real não testa a pergunta. Todo `Element` de verdade tem
-    // `innerHTML`; sem ele aqui, a montagem da barra (etapa 2 do ADR-0106) recusava-se a correr e o duplo
-    // fazia a engine parecer errada. O caso que isto destrava é o da barra montada, logo abaixo.
+    // ⚠️ `innerHTML`, for the same lesson `ausentes` and `mapa` teach in this file: a double poorer than the real thing
+    // does not test the question. Every real `Element` has `innerHTML`; without it here, mounting the bar (ADR-0106 step
+    // 2) refused to run and the double made the engine look wrong.
     innerHTML: '',
-    // ⚠️ `appendChild` entrou na mesma volta e pela mesma razão: desde a etapa 2 o `createGame` PENDURA o
-    // cartão de pausa no hospedeiro, e um duplo que não aceita filhos fazia a engine acusar uma lacuna que
-    // só existia no duplo. Terceira vez que este ficheiro aprende a lição — ver `ausentes` e `mapa`.
+    // ⚠️ `appendChild` for the same reason: `createGame` HANGS the pause card on the host, and a double that takes no
+    // children made the engine accuse a gap that existed only in the double.
     filhos: [],
     appendChild(n) { this.filhos.push(n); return n; },
-    // ⚠️ `insertBefore` e `contains` entraram em 2026-09-11, com os painéis de ajustes. O `contains` é o que
-    // responde à pergunta que a engine passou a fazer — «este hospedeiro está dentro de `#game-region`?» —, e
-    // um duplo que respondesse sempre `false` faria a engine acusar uma lacuna que só existe no duplo, que é a
-    // armadilha que este ficheiro já documentou quatro vezes. Recursivo porque a pergunta real também é.
+    // ⚠️ `insertBefore` and `contains` came with the settings panels. `contains` answers the question the engine asks —
+    // is this host inside `#game-region`? —, and a double that always answered `false` would make the engine accuse a gap
+    // that exists only in the double. Recursive because the real question is too.
     insertBefore(novo, ref) {
       const i = this.filhos.indexOf(ref);
       if (i < 0) this.filhos.push(novo); else this.filhos.splice(i, 0, novo);
@@ -135,63 +127,60 @@ function domFalso({ comMarcacao = true, ausentes = [], map: mapa = {}, listas = 
     },
     contains(n) { return n === this || this.filhos.some((f) => f === n || (f.contains && f.contains(n))); },
     /*
-     * ⚠️ `closest` — a SÉTIMA vez que este duplo fica mais pobre que a coisa real, e entrou com a retradução
-     * do interior dos painéis: `mountAudioInside` sobe de um controle para a `.ctrl-row` dele para lhe
-     * reescrever as palavras. 📌 Devolve `null` e não `this`: aqui os nós não têm pai, logo a resposta honesta
-     * a «qual é o ancestral que casa» é «nenhum» — e quem chama já a trata (`if (linha)`).
+     * ⚠️ `closest`, for the retranslation of the panels' insides: `mountAudioInside` climbs from a control to its
+     * `.ctrl-row` to rewrite its words. 📌 It returns `null` and not `this`: here the nodes have no parent, so the honest
+     * answer to which ancestor matches is none — and the caller already handles it (`if (linha)`).
      */
     closest() { return null; },
     querySelector: () => null, querySelectorAll: () => [],
     addEventListener: () => {}, setAttribute: () => {}, removeAttribute: () => {}, removeChild: () => {},
-    // ⚠️ `focus` ENTROU EM 2026-09-08 — a QUARTA vez que este duplo fica mais pobre que a coisa real, e vale
-    // contar porquê: o cartão de alcance (`ui/reach-notice`) leva o foco ao próprio cartão e não ao botão,
-    // «porque a criança tem de OUVIR o motivo antes de decidir». Ele só é montado quando o alcance REPROVA, e
-    // até haver um jogo a declarar ponteiro nenhum caso deste ficheiro o fazia reprovar. A falha foi boa
-    // notícia: só um aviso que dispara de verdade chega ao `focus()`.
-    // 📌 As quatro juntas são a razão de existir o `boot-create-game.browser.test.js` — um duplo só sabe o que
-    // quem o escreveu sabia, e a montagem mora onde o DOM decide.
+    // ⚠️ `focus`: the reach card (`ui/reach-notice`) moves focus to the card itself and not to the button, «porque a
+    // criança tem de OUVIR o motivo antes de decidir». It is mounted only when the reach FAILS, which is why no case of
+    // this file needed it until a game declared a pointer.
+    // 📌 These gaps together are why `boot-create-game.browser.test.js` exists — a double knows only what whoever wrote
+    // it knew, and the mounting lives where the DOM decides.
     focus: () => {},
     get firstChild() { return null; },
     ownerDocument: null,
   });
   /*
-   * 🔴 O MESMO SELETOR DEVOLVE O MESMO NÓ — e esta era a mentira mais cara do duplo.
+   * 🔴 THE SAME SELECTOR RETURNS THE SAME NODE — and this was the double's most expensive lie.
    *
-   * Num documento a sério, `$('#game-region')` chamado duas vezes devolve o MESMO elemento; aqui devolvia dois
-   * objetos diferentes, e nenhum teste conseguia observar o que tinha sido escrito num deles. O `mapa` existe
-   * precisamente por causa disso — é o remendo por caso de uma mentira que se conserta de uma vez.
+   * In a real document, `$('#game-region')` called twice returns the SAME element; here it returned two different
+   * objects, and no test could observe what had been written into one of them. `mapa` exists precisely because of that
+   * — the per-case patch of a lie that is fixed once.
    *
-   * ⚠️ E DEIXOU DE SER FOLCLORE EM 2026-09-11: a engine pergunta se o hospedeiro da pausa está DENTRO de
-   * `#game-region`, porque `ui/settings-panel.topVisibleOverlay` varre `'#game-region .overlay'` e é por ele
-   * que as setas acham o painel aberto. Com dois objetos a responder ao mesmo id, a resposta é «não» sempre —
-   * e a engine acusaria uma lacuna que só existe aqui.
+   * ⚠️ AND IT MATTERS: the engine asks whether the pause host is INSIDE `#game-region`, because
+   * `ui/settings-panel.topVisibleOverlay` scans `'#game-region .overlay'` and that is how the arrows find the open panel.
+   * With two objects answering the same id, the answer is always no — and the engine would accuse a gap that exists only
+   * here.
    */
   const memo = new Map();
   const doc = {
-    // A raiz onde a fonte escolhida é aplicada (`dataset.fonte` + `--font-custom`). UM objeto e não um getter
-    // que fabrica: é a mesma razão do memo acima — quem escreve e quem lê têm de encontrar o mesmo nó.
+    // The root where the chosen font is applied (`dataset.fonte` + `--font-custom`). ONE object and not a getter that
+    // manufactures: the same reason as the memo above — whoever writes and whoever reads must find the same node.
     documentElement: el('html'),
     activeElement: null,
     createElement: (tag) => { feito.push(tag); return el(tag); },
     contains: () => false,
-    // ⚠️ `ausentes` existe porque um duplo que responde SIM a qualquer seletor não testa a pergunta —
-    // testa apenas que ela foi feita. Foi o que deixou o caso do mundo inexistente passar verde.
-    // ⚠️ `mapa` deixa um caso NOMEAR o elemento que um seletor devolve. Sem ele o duplo respondia
-    // sempre um objeto novo, e nenhum teste conseguia observar o que foi escrito NAQUELE elemento.
+    // ⚠️ `ausentes` exists because a double that answers YES to any selector does not test the question — it only tests
+    // that it was asked. That is what let the non-existent world case pass green.
+    // ⚠️ `mapa` lets a case NAME the element a selector returns. Without it the double always answered a new object, and
+    // no test could observe what was written into THAT element.
     querySelector: (sel) => {
       if (mapa[sel] !== undefined) return mapa[sel];
       if (ausentes.includes(sel) || !comMarcacao) return null;
       if (!memo.has(sel)) memo.set(sel, el(sel));
       return memo.get(sel);
     },
-    // ⚠️ POR SELETOR, e nao uma lista so: devolver a mesma coisa a todo seletor fazia os overlays de
-    // mentira chegarem tambem a `[data-i18n]`, e o `applyDom` chamava `getAttribute` num objeto que
-    // nao o tem. Um duplo que nao distingue a pergunta acaba a responder a errada.
+    // ⚠️ BY SELECTOR, not one list: returning the same thing to every selector made the fake overlays reach `[data-i18n]`
+    // too, and `applyDom` called `getAttribute` on an object that does not have it. A double that does not tell the
+    // questions apart ends up answering the wrong one.
     querySelectorAll: (sel) => (listas[sel] ?? []),
   };
-  // ⚠️ O `win` REGISTRA agora, e nao e zelo: um duplo que engole `addEventListener` nao consegue responder
-  // "isto ficou LIGADO?", que e exatamente a pergunta da issue #109. Enquanto ele era um no-op, `createGame`
-  // podia montar a navegacao de menu e nao a ligar sem que nada ficasse vermelho — e foi o que aconteceu.
+  // ⚠️ THE `win` RECORDS, and it is not fussiness: a double that swallows `addEventListener` cannot answer whether
+  // something was SWITCHED ON, which is exactly issue #109's question. While it was a no-op, `createGame` could mount
+  // the menu navigation and not switch it on without anything going red — and that is what happened.
   const ouvintes = [];
   const win = {
     addEventListener: (tipo, fn, captura) => { ouvintes.push({ type: tipo, fn, captura }); },
@@ -201,29 +190,28 @@ function domFalso({ comMarcacao = true, ausentes = [], map: mapa = {}, listas = 
 }
 
 /**
- * O `#game-region` que um caso NOMEIA, para poder ver o que a engine pendurou nele.
+ * The `#game-region` a case NAMES, so it can see what the engine hung on it.
  *
- * ⚠️ ERA QUATRO CÓPIAS DO MESMO LITERAL, e a duplicação cobrou em 2026-09-11: a engine passou a perguntar se o
- * hospedeiro da pausa está DENTRO de `#game-region` (é por `'#game-region .overlay'` que as setas acham o
- * painel aberto), e as quatro cópias precisavam da mesma resposta nova ao mesmo tempo. Uma função é o sítio
- * onde uma resposta dessas se escreve uma vez.
+ * ⚠️ ONE FUNCTION AND NOT COPIES OF THE SAME LITERAL: the engine asks whether the pause host is INSIDE `#game-region`
+ * (the arrows find the open panel through `'#game-region .overlay'`), and every copy needed the same new answer at the
+ * same time. A function is the place where such an answer is written once.
  */
 function regiaoFalsa() {
   return {
     id: 'game-region', innerHTML: '', filhos: [],
     appendChild(n) { this.filhos.push(n); return n; },
-    // `contains` diz a verdade sobre si mesmo e sobre os filhos — é a pergunta que a engine faz.
+    // `contains` tells the truth about itself and about its children — the question the engine asks.
     contains(n) { return n === this || this.filhos.includes(n); },
     addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
   };
 }
 
-/** Uma declaração de quiz conforme — sem espaço, só ordem. É o gênero que não pode fingir ser plataforma. */
+/** A conforming quiz declaration — no space, only order. It is the genre that cannot pretend to be a platformer. */
 const declaracaoValida = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   holdsAtOnce: () => 1,
-  // Um jogo de hotspots não segura nada — e declarar `1` acima e `false` aqui é a distinção do ADR-0115
-  // escrita num fixture: os dois campos respondem a perguntas diferentes.
+  // A hotspots game holds nothing — and declaring `1` above and `false` here is ADR-0115's distinction written in a
+  // fixture: the two fields answer different questions.
   holdsKeys: () => false,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
@@ -235,17 +223,16 @@ const declaracaoValida = () => ({
 });
 
 describe('createGame em execução', () => {
-  // AQUECE O MÓDULO UMA VEZ, FORA DA JANELA DE 5s DE CADA CASO.
+  // WARMS THE MODULE ONCE, OUTSIDE EACH CASE'S 5 s WINDOW.
   //
-  // Os seis `await import()` deste bloco são de propósito: a primeira metade do arquivo lê a FONTE, e um
-  // import estático faria um `create-game` quebrado derrubar também os casos que só leem texto — que é
-  // exatamente o que se quer medindo separado.
+  // This block's `await import()` calls are on purpose: the first half of the file reads the SOURCE, and a static import
+  // would make a broken `create-game` bring down the cases that only read text too — exactly what is wanted measured
+  // apart.
   //
-  // O preço disso era um teste INTERMITENTE: o primeiro `import` paga a transformação a frio do grafo de boot
-  // inteiro (engine + i18n + áudio + overlays), e isso passa dos 5s padrão do vitest quando a máquina está
-  // carregada ou quando uma edição invalidou o cache de transformação — foi o que aconteceu ao mudar o padrão
-  // de `ui/dom`. Falhava com "Test timed out in 5000ms", que lê como teste lento e é, na verdade, um teste
-  // medindo a compilação. Aquecendo aqui, os seis imports seguintes saem do cache e medem só o que deviam.
+  // The price was an INTERMITTENT test: the first `import` pays the cold transformation of the whole boot graph (engine +
+  // i18n + audio + overlays), and that goes past vitest's default 5 s when the machine is loaded or an edit invalidated
+  // the transform cache. It failed with "Test timed out in 5000ms", which reads as a slow test and is really a test
+  // measuring compilation. Warming here, the following imports come from the cache and measure only what they should.
   beforeAll(async () => { await import('../app/js/boot/create-game.js'); }, 30000);
 
   it('[Zero] declaração MALFORMADA explode — um jogo meio declarado é pior que um que não abre', async () => {
@@ -256,13 +243,13 @@ describe('createGame em execução', () => {
   });
 
   it('🔴 [Zero] um cartucho que declara «start» no preset é RECUSADO, com o motivo dito (ADR-0144 §4)', async () => {
-    // 🔴 ESTE É O GATE QUE UMA IMPLEMENTAÇÃO DESCUIDADA PASSA POR ACIDENTE, e o próprio registo avisa disso:
-    // HOJE nenhum cartucho declara «start», então afirmar só «nada partiu» ficaria verde com nada a valer.
-    // Por isso o caso CONSTRÓI o cartucho proibido em vez de esperar por um.
+    // 🔴 THIS IS THE GATE A CARELESS IMPLEMENTATION PASSES BY ACCIDENT, and the record itself warns of it: no cartridge
+    // declares «start» TODAY, so asserting only that nothing broke would stay green with nothing in force. That is why the
+    // case BUILDS the forbidden cartridge instead of waiting for one.
     //
-    // ⚠️ E A REGRA NÃO É ARRUMAÇÃO: desde o ADR-0122 a pausa não é declinável, e «start» é a única posição
-    // por onde se lá chega. Um jogo que a tomasse para outra coisa declinava a pausa pela porta dos fundos —
-    // com os quatro painéis montados, no documento, e inalcançáveis, sem uma linha vermelha em lado nenhum.
+    // ⚠️ AND THE RULE IS NOT TIDINESS: since ADR-0122 the pause is not declinable, and «start» is the only position that
+    // reaches it. A game that took it for something else would decline the pause by the back door — with the panels
+    // mounted, in the document, and unreachable, with no red line anywhere.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const base = () => ({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
@@ -270,12 +257,12 @@ describe('createGame em execução', () => {
     expect(() => createGame({ accommodations: SEM_ASSUNTO, ...base(), preset: { start: { label: 'Turbo' } } }))
       .toThrow(/«start» is the position that opens the pause/);
 
-    // O PAR QUE IMPEDE UM CRIVO QUE ACUSA SEMPRE: o mesmo preset sem «start» passa. Sem ele, uma recusa
-    // escrita `if (preset) throw` ficaria verde acima e tiraria o vocabulário a todo o catálogo.
+    // THE PAIR THAT PREVENTS A CHECK THAT ALWAYS ACCUSES: the same preset without «start» passes. Without it, a refusal
+    // written `if (preset) throw` would stay green above and take the vocabulary away from the whole catalogue.
     expect(() => createGame({ accommodations: SEM_ASSUNTO, ...base(), preset: { action2: { label: 'Confirmar' } } })).not.toThrow();
 
-    // E O `mount()` RECUSA PELA MESMA REGRA. `CartridgeHooks` carrega `preset`, logo um SEGUNDO cartucho
-    // podia tomar o «start» que o primeiro respeitou — e a pausa ficava inalcançável a meio da sessão.
+    // AND `mount()` REFUSES BY THE SAME RULE. `CartridgeHooks` carries `preset`, so a SECOND cartridge could take the
+    // «start» the first respected — and the pause would become unreachable mid-session.
     const motor = createGame(base());
     expect(() => motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO, preset: { start: { label: 'Turbo' } } }))
       .toThrow(/«start» is the position that opens the pause/);
@@ -296,14 +283,14 @@ describe('createGame em execução', () => {
   });
 
   it('🔴 [Zero] e um cartucho que declara «select» também é RECUSADO — é a porta dos menus (ADR-0155 §4)', async () => {
-    // Mesma construção do caso acima, e pela mesma razão: nenhum jogo declara «select» hoje (medido nos
-    // repositórios dos jogos), então só um cartucho CONSTRUÍDO pode pôr este crivo vermelho.
+    // Same construction as the case above, and for the same reason: no game declares «select» today (measured in the
+    // games' repositories), so only a BUILT cartridge can turn this check red.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const base = () => ({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     expect(() => createGame({ ...base(), preset: { select: { label: 'Mapa' } } }))
       .toThrow(/«select» is the position that opens the pause menus/);
-    // o par: um preset sem posição de sistema passa
+    // the pair: a preset with no system position passes
     expect(() => createGame({ ...base(), preset: { action1: { label: 'Mapa' } } })).not.toThrow();
     const motor = createGame(base());
     expect(() => motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO, preset: { select: { label: 'Mapa' } } }))
@@ -311,7 +298,7 @@ describe('createGame em execução', () => {
   });
 
   it('[Right] a exceção DIZ o que falta, em vez de "erro ao iniciar"', () => {
-    // Quem escreve um preset lê esta mensagem no primeiro `npm run dev`; ela é o manual naquele momento.
+    // Whoever writes a preset reads this message at the first `npm run dev`; it is the manual at that moment.
     return import('../app/js/boot/create-game.js').then(({ createGame }) => {
       const { doc, win } = domFalso();
       const ruim = { ...declaracaoValida(), tick: 'turno', roleAt: undefined };
@@ -323,9 +310,9 @@ describe('createGame em execução', () => {
   });
 
   it('[Boundary] marcação AUSENTE não explode: vira `problems`, e o resto da engine liga', async () => {
-    // A assimetria é a decisão do módulo, e este par de casos é o que a prende. Declaração errada é defeito
-    // de PROGRAMA; id faltando é lacuna do HOSPEDEIRO, e o segundo consumidor provou que ligar só a parte
-    // que serve é legítimo — foi assim que ele recusou o pad e o sonar sem mentir.
+    // The asymmetry is the module's decision, and this pair of cases is what holds it. A wrong declaration is a PROGRAM
+    // defect; a missing id is a gap of the HOST, and the second consumer proved that switching on only the part that
+    // serves is legitimate — that is how it declined the pad and the sonar without lying.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso({ comMarcacao: false });
     const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
@@ -338,28 +325,27 @@ describe('createGame em execução', () => {
   it('[Right] com o documento completo, `problems` só acusa o que de fato falta', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    // ⚠️ A declaração da voz neural entra aqui em 2026-09-08 porque um jogo REAL a abre (ADR-0094, uma linha). Sem
-    // ela, o `problems` acusaria — correctamente — e este caso deixaria de medir o que diz medir.
+    // ⚠️ The neural-voice declaration is here because a REAL game opens it (ADR-0094, one line). Without it, `problems`
+    // would accuse — correctly — and this case would stop measuring what it says it measures.
     const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
       uses: { neuralVoice: true },
-      // ⚠️ O `preset` ENTRA AQUI em 2026-09-12 pela mesma razão que a declaração da voz neural entrou em 08/09: a
-      // ajuda passou a ser montada pela engine (ADR-0147 §4) e, sem as palavras do jogo, ela acusa — com
-      // razão. Sem esta linha o caso deixaria de medir o que diz medir.
+      // ⚠️ The `preset` is here for the same reason: the help is mounted by the engine (ADR-0147 §4) and, without the
+      // game's words, it accuses — rightly. Without this line the case would stop measuring what it says it measures.
       preset: { action2: { label: 'Confirmar' } },
     });
-    // O host de filtros não foi fornecido neste caso, e é a ÚNICA lacuna que deve sobrar.
+    // The filter host was not supplied in this case, and it is the ONLY gap that must remain.
     expect(motor.problems).toHaveLength(1);
     expect(motor.problems[0]).toMatch(/filter host/);
   });
 
   it('🔴 [Zero] SEM `preset` a AJUDA não é montada, e a engine DIZ porquê', async () => {
-    // 🔴 A tela de ajuda lista POSIÇÃO ↔ tecla ↔ a palavra do jogo. Sem as palavras só restaria mostrar
-    // `action2` a uma criança que abriu a ajuda precisamente por não saber o que o botão faz — o defeito que
-    // o ADR-0074 proíbe. Então não se monta; e o §5 do ADR-0106 prefere a ausência ao botão morto.
+    // 🔴 The help screen lists POSITION ↔ key ↔ the game's word. Without the words it could only show `action2` to a
+    // child who opened the help precisely for not knowing what the button does — the defect ADR-0074 forbids. So it is
+    // not mounted; and ADR-0106 §5 prefers absence to a dead button.
     //
-    // ⚠️ MAS A AUSÊNCIA TEM DE SER DITA, pelo precedente que o caso da voz neural fixou logo abaixo: uma
-    // funcionalidade da engine que some por falta de UMA declaração, em silêncio, é a mesma classe de defeito.
+    // ⚠️ BUT THE ABSENCE MUST BE SAID, by the precedent the neural-voice case set: an engine feature that vanishes for lack
+    // of ONE declaration, silently, is the same class of defect.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const motor = createGame({ accommodations: SEM_ASSUNTO,
@@ -368,8 +354,8 @@ describe('createGame em execução', () => {
     });
     const daAjuda = motor.problems.filter((p) => /help screen/.test(p));
     expect(daAjuda, 'sem `preset` a ajuda sumiu e nada o disse').toHaveLength(1);
-    // 📌 E a linha tem de ser ACCIONÁVEL: diz o campo que falta e o registo que o define. Uma linha que só
-    // dissesse «falta algo» seria a «lacuna que o consumidor lê como escolha» do ADR-0106 §2.
+    // 📌 And the line must be ACTIONABLE: it says the missing field and the record that defines it. A line that only said
+    // something is missing would be ADR-0106 §2's gap the consumer reads as a choice.
     expect(daAjuda[0]).toMatch(/preset/);
   });
 
@@ -394,18 +380,18 @@ describe('createGame em execução', () => {
     expect(motor.problems.filter((p) => /neural voice/.test(p))).toEqual([]);
   });
 
-  // ===================== O PONTEIRO DECLARADO (ADR-0112) =====================
-  // ⚠️ SEM ESTA FIAÇÃO, A DECISÃO É UM PARÂMETRO QUE NINGUÉM CONSEGUE PÔR. O `reach()` aceita a pergunta
-  // desde `7ddb857` e tem gate próprio, mas o quarto argumento chegava sempre `false` porque a
-  // `GameDeclaration` não tinha por onde dizê-lo — um jogo de desenho não conseguia declarar que desenha.
+  // ===================== THE DECLARED POINTER (ADR-0112) =====================
+  // ⚠️ WITHOUT THIS WIRING, THE DECISION IS A PARAMETER NOBODY CAN SET. `reach()` accepts the question and has its own
+  // gate, but the fourth argument always arrived `false` because `GameDeclaration` had no way to say it — a drawing game
+  // could not declare that it draws.
   const TRES_PALAVRAS = { up: { label: 'Subir' }, down: { label: 'Descer' }, action1: { label: 'Confirmar' } };
   const soTeclado = (rato) => ({
     gamepad: () => false, touch: () => false, keyboard: () => true, mouse: () => rato,
   });
 
   it('⚠️ [Zero] um jogo que DECLARA ponteiro é recusado por um aparelho que não aponta', async () => {
-    // O cenário do ADR-0112: «Desenho livre» num aparelho sem rato nem toque. A recusa tem de acontecer AQUI,
-    // antes de a criança começar, e não a meio do primeiro traço.
+    // ADR-0112's scenario: free drawing on a device with neither mouse nor touch. The refusal must happen HERE, before
+    // the child starts, and not in the middle of the first stroke.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const motor = createGame({ accommodations: SEM_ASSUNTO,
@@ -429,11 +415,11 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ [Zero] quem NÃO declara nada não pede ponteiro — o campo é opcional de propósito', async () => {
-    // ⚠️ E A OPCIONALIDADE É DECISÃO, não descuido. O `holdsAtOnce` é obrigatório porque não tem padrão seguro
-    // e falha INVISIVELMENTE a quem escreve o jogo — ele tem teclado completo; quem descobre é a criança no
-    // telemóvel de dois dedos. Este tem padrão seguro (`false`) e falha VISIVELMENTE: um jogo de desenho que
-    // se esqueça de declarar é inoperável no próprio aparelho de quem o escreve. Obrigar trezentos jogos a
-    // escrever `needsPointer: () => false` cobraria o preço do `holdsAtOnce` sem o motivo dele.
+    // ⚠️ AND BEING OPTIONAL IS A DECISION, not carelessness. `holdsAtOnce` is required because it has no safe default and
+    // fails INVISIBLY to whoever writes the game — they have a full keyboard; whoever finds out is the child on a
+    // two-finger phone. This one has a safe default (`false`) and fails VISIBLY: a drawing game that forgets to declare is
+    // unusable on its own author's device. Forcing every game to write `needsPointer: () => false` would charge
+    // `holdsAtOnce`'s price without its reason.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const motor = createGame({ accommodations: SEM_ASSUNTO,
@@ -444,9 +430,8 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ [Right] a engine MONTA a barra de acessibilidade da primeira tela (ADR-0106 etapa 2)', async () => {
-    // ⚠️ ESTE É O PEDIDO DO DEV EM FORMA DE AFIRMAÇÃO: «todo jogo da engine inclusionist deve ter os mesmos
-    // ícones de acessibilidade desde a primeira tela». Até hoje o `createGame` só REPORTAVA a ausência — e o
-    // próprio ADR dizia que reportar não é oferecer.
+    // ⚠️ THIS IS THE DEV'S REQUEST AS AN ASSERTION: «todo jogo da engine inclusionist deve ter os mesmos ícones de
+    // acessibilidade desde a primeira tela». Reporting the absence is not offering the bar; the engine mounts it.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const barra = {
       id: 'title-icons', innerHTML: '', addEventListener: () => {},
@@ -458,92 +443,85 @@ describe('createGame em execução', () => {
     expect(barra.innerHTML, 'a engine não escreveu ícone nenhum na barra').toContain('pi-btn');
     expect(barra.innerHTML, 'o modo cego não está na primeira tela').toContain('data-pi="blind"');
     expect(barra.innerHTML, 'o TTS não está na primeira tela').toContain('data-pi="tts"');
-    // ⚠️ E o §5 alcança a barra montada por AQUI também: sem escritor visual injectado, os dois ícones que
-    // precisam dele não entram — em vez de entrarem e recusarem a criança que carregar neles.
+    // ⚠️ And §5 reaches the mounted bar through HERE too: with no visual writer injected, the icon that needs one does not
+    // come in — instead of coming in and refusing the child who presses it.
     expect(barra.innerHTML, 'contraste montado sem quem o escreva').not.toContain('data-pi="contrast"');
     expect(barra.innerHTML, 'correção de cor montada sem quem a escreva').not.toContain('data-pi="cvd"');
     expect(motor.problems.filter((p) => /accessibility bar/.test(p)), 'acusou uma barra que montou').toEqual([]);
   });
 
   it('⚠️ [Zero] a barra que a engine monta é NAVEGÁVEL sem o jogo dar nada (ADR-0106 §5)', async () => {
-    // ⚠️ ESTE CASO GUARDA UM BURACO QUE A ETAPA 2 ABRIU. Antes dela, `naBarraDe`/`navBar` caírem em no-op era
-    // inofensivo: sem barra montada, ninguém os chamava — e o comentário no `create-game` dizia exactamente
-    // isso. Com a barra montada e os dois em no-op, ela existiria e só se alcançaria por PONTEIRO.
+    // ⚠️ THIS CASE GUARDS A HOLE THAT STEP 2 OPENED. Before it, `onBar`/`navBar` falling to a no-op was harmless: with no
+    // bar mounted, nobody called them. With the bar mounted and both as no-ops, it would exist and be reachable only by
+    // POINTER.
     //
-    // Para uma criança cega, que navega por teclado, uma barra que ela não alcança é o mesmo que barra
-    // nenhuma — é o «oferece o caminho e depois recusa-o» que o §5 proíbe, com a barra no papel de porta.
+    // For a blind child, who navigates by keyboard, a bar she cannot reach is the same as no bar — the offering of a path
+    // and then refusing it that §5 forbids, with the bar in the role of the door.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
       uses: { neuralVoice: true },
     });
-    // O `nav` é montado com as respostas da PRÓPRIA engine — não com no-ops. `menuNavKey` é o tradutor de
-    // teclado, e é por ele que o direcional chega à barra.
+    // The `nav` is mounted with the engine's OWN answers — not no-ops. `menuNavKey` is the keyboard translator, and it is
+    // how the directional reaches the bar.
     expect(motor.nav, 'a navegação de menu não foi montada').toBeTruthy();
     expect(typeof motor.nav.menuNavKey, 'o tradutor de teclado não existe').toBe('function');
     expect(typeof motor.nav.navPause, 'a navegação da pausa não existe').toBe('function');
-    // ⚠️ E a prova de que os dois padrões deixaram de ser no-op: o código-fonte desta raiz responde com a
-    // própria instância. Lido do ficheiro porque o `ctx` do `initMenuNav` não é observável de fora — e uma
-    // afirmação que não se consegue fazer é melhor dita assim do que fingida com um duplo que aceita tudo.
-    // ⚠️ ESTES DOIS CRIVOS LEEM O TEXTO DA FONTE, logo estão presos ao NOME de quem guarda a metade do jogo.
-    // Era `o.` até 2026-09-11 e passou a `cartucho.` quando essa metade ganhou um detentor próprio (ADR-0142).
-    // Um rename futuro reprova aqui com a mensagem certa — o que se quer — mas a causa é o nome, não a regra.
-    // 📌 A resposta mudou de FORMA em 22/09 e não de conteúdo: o `??` deixou de estar escrito dentro do `ctx` e passou
-    // a um `const` só, porque desde o ADR-0224 a raiz monta também o comando e as duas ligações liam a mesma decisão —
-    // escrevê-la duas vezes é a forma de defeito que este ficheiro já pagou noutras três.
+    // ⚠️ And the proof that the two defaults are no longer no-ops: this root's source answers with its own instance. Read
+    // from the file because `initMenuNav`'s `ctx` is not observable from outside — and a claim that cannot be made is
+    // better said this way than faked with a double that accepts everything.
+    // ⚠️ THESE TWO CHECKS READ THE SOURCE TEXT, so they are tied to the NAME of whoever holds the game's half
+    // (`cartridge`, ADR-0142), and to the answer being one `const` shared by the menu navigation and the gamepad (ADR-0224).
+    // A rename fails here with the right message — which is wanted — but the cause is the name, not the rule.
     expect(FONTE, 'a barra montada voltou a ser inalcançável por teclado')
-      // ⚠️ `cartucho` virou `cartridge` na passagem de R2 (2026-09-23): este caso ANCORA num literal do fonte, e um
-      // literal que muda de nome tem de mudar aqui no mesmo commit — senão o portão deixa de exigir o que exige,
-      // em silêncio, que é a forma de defeito que este plano já regista quatro vezes.
+      // ⚠️ This case ANCHORS on a literal of the source, and a literal that changes name must change here in the same
+      // commit — or the gate stops demanding what it demands, silently.
       .toMatch(/const isOnBar = cartridge\.onBar \?\? \(\(i: number\) => pauseIcons\.onBar\(i\)\)/);
     expect(FONTE).toMatch(/const navBar = cartridge\.navBar \?\? \(\(i: number, k: NavKeys, withStart\?: boolean\) => pauseIcons\.navBar\(i, k, withStart\)\)/);
-    // ⚠️ E a barra montada tem de continuar a DIZER A VERDADE quando o modo cego muda noutro sítio (o painel
-    // de áudio, a simulação de empatia). Sem esta assinatura o ícone ficaria a dizer «desligado» depois de a
-    // criança o ligar — a família do `reflectTTS`, que este projeto já pagou duas vezes.
+    // ⚠️ And the mounted bar must go on TELLING THE TRUTH when blind mode changes elsewhere (the audio panel, the empathy
+    // simulation). Without this subscription the icon would go on saying off after the child turned it on — the family of
+    // a control lying about its state.
     expect(FONTE, 'a barra montada não se refaz quando o modo cego muda fora dela')
       .toMatch(/state\.on\('blindMode',\s*\(\)\s*=>\s*\{\s*pauseIcons\.reflectIconsIn\(a11yBar,\s*0\);\s*\}\)/);
   });
 
   it('🔴 [Right] trocar de idioma avisa o RECONHECIMENTO DE FALA, e não só o que se desenha (ADR-0225)', () => {
-    // 🔴 O `ui/voice-control` tem os casos do que ele FAZ quando lhe dizem que a língua mudou; o que não tinha nada a
-    // segurá-lo era a raiz DIZER-LHO — uma mutação que apagava esta linha passava com a suíte inteira verde.
-    // ⚠️ LIDO DA FONTE, e é a mesma razão dos dois crivos acima: o 👄 só nasce onde há microfone por onde pedir, e num
-    // arranque de teste ele nunca chega a estar LIGADO no instante da troca (o modelo não está na entrega, então ele
-    // falha a começar e apaga-se). Uma afirmação que não se consegue fazer de fora é melhor dita assim do que fingida
-    // com um duplo que aceita tudo. O que ela prende é a LIGAÇÃO; o comportamento está preso em `voice-control`.
+    // 🔴 `ui/voice-control` has the cases of what it DOES when told the language changed; what nothing held was the root
+    // TELLING it — a mutation that deleted this line passed with the whole suite green.
+    // ⚠️ READ FROM THE SOURCE, for the reason of the two checks above: the 👄 is born only where there is a microphone to
+    // ask for, and in a test boot it is never ON at the instant of the change (the model is not in the delivery, so it
+    // fails to start and switches off). What this holds is the WIRING; the behaviour is held in `voice-control`.
     expect(FONTE, 'a troca de idioma deixou de alcançar o reconhecimento de fala: a criança passa a ser ouvida na língua velha')
       .toMatch(/win\.addEventListener\('i18n:change'[\s\S]{0,2000}?voiceControl\?\.languageChanged\(\)/);
   });
 
   it('⚠️ [Right] a engine monta o CARTÃO DE PAUSA — e com o id que ela própria procura', async () => {
-    // 📏 O LAÇO QUE ISTO FECHA, medido nos seis jogos: `#vp-pause-0` é procurado pelo `getPauseMenu` desta
-    // raiz e NENHUM jogo o cria (`git grep vp-pause` devolve zero nos seis). A engine inventou uma convenção,
-    // procurou-a, não a achou, e concluiu em silêncio que nenhum jogo tem menu de pausa.
+    // 📏 THE LOOP THIS CLOSES: `#vp-pause-0` is looked for by this root's `getPauseMenu` and games did not create it. The
+    // engine had invented a convention, looked for it, not found it, and concluded in silence that no game had a pause
+    // menu.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ map: { '#game-region': regiao } });
     createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
 
-    // ⚠️ PELO ID E NÃO PELA CONTAGEM. Isto dizia `filhos.length === 1`, e a contagem nunca foi a exigência —
-    // era um proxy, verdadeiro enquanto o cartão era a única coisa que a engine pendurava ali. Desde
-    // 2026-09-11 ela pendura também os painéis de ajustes, e o proxy passou a medir «quantas coisas a engine
-    // monta» em vez de «o cartão está lá»: um número que muda a cada etapa do ADR-0106 e reprova sem nada ter
-    // partido. O que o caso afirma é o que ele sempre quis afirmar.
+    // ⚠️ BY THE ID AND NOT BY THE COUNT. The count was never the demand — it was a proxy, true while the card was the only
+    // thing the engine hung there. The engine hangs the settings panels there too, and a count would measure how many
+    // things the engine mounts instead of whether the card is there.
     const cartao = regiao.filhos.find((f) => f.id === 'vp-pause-0');
     expect(cartao, 'a engine não pendurou o cartão com o id que ela própria procura').toBeTruthy();
     expect(cartao.className).toBe('screen-pause');
   });
 
   it('🔴 [Inverse] NENHUMA declinação tira o cartão — nem a que existia e foi aposentada (ADR-0122)', async () => {
-    // 🎯 O GATE QUE O ADR-0122 DEVIA, e ele afirma a decisão do Dev inteira: «o menu de pausa da engine e os
-    // botões no hud para acessibilidade rápida deveriam estar em todos os jogos, por isso seriam
-    // responsabilidade da engine». Não é oferecido; é da engine.
+    // 🎯 THE GATE ADR-0122 OWED, and it asserts the Dev's whole decision: «o menu de pausa da engine e os botões no hud
+    // para acessibilidade rápida deveriam estar em todos os jogos, por isso seriam responsabilidade da engine». It is not
+    // offered; it is the engine's.
     //
-    // ⚠️ O FIXTURE PASSA `semMenuDePausa: true` DE PROPÓSITO, e é isso que o torna um gate em vez de uma
-    // repetição do caso acima. O campo saiu do contrato, logo em TypeScript isto nem compila — mas um objecto
-    // vindo de um cartucho no `7.0.1` traz a chave à mesma, e o que se afirma é que ela deixou de ter efeito.
-    // Repor a consulta (`declines.semMenuDePausa ? null : …`) faz este caso reprovar e o de cima passar.
+    // ⚠️ THE FIXTURE PASSES THE RETIRED PAUSE-MENU DECLINE ON PURPOSE, and that is what makes it a gate instead of a
+    // repetition of the case above. The field left the contract, so in TypeScript this does not even compile — but an
+    // object from a cartridge on `7.0.1` carries the key all the same, and what is asserted is that it has no effect.
+    // Putting the query back makes this case fail and the one above pass.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ map: { '#game-region': regiao } });
@@ -552,19 +530,18 @@ describe('createGame em execução', () => {
       declines: { semMenuDePausa: true, noPauseActor: true, noNeuralVoice: true },
     });
 
-    // Pelo id e não pela contagem, pela razão escrita no caso acima.
+    // By the id and not the count, for the reason written in the case above.
     expect(regiao.filhos.some((f) => f.id === 'vp-pause-0'),
       'uma declinação aposentada voltou a tirar o cartão da criança').toBe(true);
-    // 📌 E o silêncio não volta pela outra porta: com hospedeiro válido não há nada a acusar.
+    // 📌 And silence does not come back by the other door: with a valid host there is nothing to accuse.
     expect(motor.problems.filter((p) => p.includes('pausa')), 'acusou pausa com hospedeiro válido').toEqual([]);
   });
 
   it('⚠️ [Right] MONTAR não é MOSTRAR — e a engine dá as duas, sem o jogo caçar id nenhum', async () => {
-    // ⚠️ ESTA LACUNA ESTAVA SILENCIOSA NA MINHA PRÓPRIA ETAPA 2. O cartão nasce `hidden` — tem de nascer, uma
-    // pausa abre-se — e quem o revela é o `ui/shell`, POR FASE, que esta raiz não monta de propósito. Sem
-    // estas duas, um jogo montado por `createGame` ficava com um cartão que NADA mostrava, e a única saída
-    // era procurar `#vp-pause-0` no documento: exactamente o conhecimento que este ficheiro existe para não
-    // exigir.
+    // ⚠️ MOUNTING IS NOT SHOWING. The card is born `hidden` — it must, a pause is opened — and the engine reveals it on
+    // SELECT, the ☰ and the quick pause's `action4`. These two let a game do it too; without them a game mounted by
+    // `createGame` would have to look for `#vp-pause-0` in the document — exactly the knowledge this file exists not to
+    // demand.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const cartaoMapeado = {
       id: '', hidden: true, className: '', dataset: {}, innerHTML: '',
@@ -587,25 +564,23 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ [Right] quem DECLINA o menu de pausa não recebe cartão nem acusação', async () => {
-    // Declinar é escolha registada; não ter é omissão. O ADR-0106 §2 é inteiro sobre a diferença, e um gate
-    // que as tratasse igual apagaria a razão de os declínios existirem.
+    // Declining is a recorded choice; not having is an omission. ADR-0106 §2 is entirely about the difference, and a gate
+    // that treated them alike would erase the reason declines exist.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ map: { '#game-region': regiao } });
     const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
-    // 🔴 VIRADO EM 2026-09-09 (ADR-0120), e o caso mudou de lado inteiro. Ele afirmava «montou pausa a quem a
-    // declinou → 0 filhos», e essa era a verdade enquanto a pausa fosse declinável. O Dev aposentou o
-    // declínio — «Aposentar.» — porque a razão dele foi construída fora pelo próprio ADR-0106: lista padrão
-    // de botões (`001b185`) e montagem do cartão (`092a670`).
-    // 📌 Agora a afirmação é a OPOSTA e mais forte: TODO jogo recebe o cartão, sem nada a declarar. Um jogo
-    // que antes se calava passa a ter onde a criança alcança os ajustes durante a partida.
+    // 🔴 THE CASE'S TITLE PREDATES ADR-0120, and the assertion is its opposite. The pause-menu decline was retired — the
+    // Dev: «Aposentar.» — because ADR-0106 built what it stood for: a default list of buttons and the mounting of the card.
+    // 📌 So the assertion is the OPPOSITE and stronger: EVERY game gets the card, with nothing to declare. A game that
+    // used to stay quiet now has a place where the child reaches the settings during the match.
     expect(regiao.filhos.length, 'a engine deixou de montar a pausa que agora é de todos').toBeGreaterThan(0);
     expect(motor.problems.filter((p) => /menu de pausa/.test(p)), 'acusou um jogo com hospedeiro válido').toEqual([]);
   });
 
   it('⚠️ [Boundary] um hospedeiro que não aceita conteúdo nem clique NÃO derruba o boot', async () => {
-    // Derrubar o jogo inteiro por causa da barra seria tirá-lo de toda a gente para não o dar a ninguém. A
-    // lacuna vira `problems`, como as outras do hospedeiro.
+    // Bringing the whole game down because of the bar would take it from everyone so as to give it to no one. The gap
+    // becomes `problems`, like the host's others.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const inutil = { id: 'title-icons', querySelector: () => null, querySelectorAll: () => [] };
     const { doc, win } = domFalso({ map: { '#title-icons': inutil } });
@@ -615,10 +590,10 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ [Zero] com DOIS assentos e sem ator de pausa, a engine DIZ — o segundo não consegue remapear', async () => {
-    // O achado 3 da auditoria do `game-soccer`. O painel de controle é parametrizado pelo ASSENTO
-    // (`render(selPlayer)` desenha as posições daquele esquema) e não tem selector — quem escolhe é o
-    // consumidor, passando o ator da pausa. ⚠️ E o `setPauseActor` desta raiz é `() => {}`, literal: um jogo
-    // de dois assentos montado por `createGame` deixa a criança do SEGUNDO sem como remapear, em silêncio.
+    // Finding 3 of the `game-soccer` audit. The keyboard panel is parameterised by the SEAT (`render(selPlayer)` draws
+    // that scheme's positions) and has no selector — the consumer chooses, by passing the pause actor. ⚠️ Without
+    // `setPauseActor` this root's default is `() => {}`: a two-seat game mounted by `createGame` leaves the child in the
+    // SECOND seat unable to remap, silently.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const motor = createGame({ accommodations: SEM_ASSUNTO,
@@ -628,8 +603,8 @@ describe('createGame em execução', () => {
     });
     const linha = motor.problems.find((p) => /pause actor/.test(p));
     expect(linha, 'dois assentos sem ator de pausa e a engine não disse nada').toBeTruthy();
-    // ⚠️ A frase nomeia a SAÍDA e o que se perde, como as outras deste bloco fazem — uma linha que só diz
-    // «faltou algo» manda procurar, e quem procura é quem já não sabia.
+    // ⚠️ The sentence names the WAY OUT and what is lost, as the others of this block do — a line that only says something
+    // is missing sends someone searching, and whoever searches is whoever did not already know.
     expect(linha).toMatch(/remap/);
     expect(linha).toMatch(/noPauseActor/);
   });
@@ -644,9 +619,9 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ [Right] DECLARAR `noPauseActor` cala a linha — ausência declarada é escolha', async () => {
-    // A distinção que este caso guarda: declinar é uma escolha registada; não declinar é uma omissão. O
-    // ADR-0106 §2 é inteiro sobre a diferença entre as duas, e um gate que as tratasse igual apagaria a
-    // razão de os declínios existirem.
+    // The distinction this case guards: declining is a recorded choice; not declining is an omission. ADR-0106 §2 is
+    // entirely about the difference between the two, and a gate that treated them alike would erase the reason declines
+    // exist.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const motor = createGame({ accommodations: SEM_ASSUNTO,
@@ -659,52 +634,50 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ [Zero] SEM barra de acessibilidade na primeira tela, a engine DIZ — e cinco jogos não a têm', () => {
-    // ⚠️ `ausentes` e não `comMarcacao: false`, e a razão está escrita no próprio `domFalso`: «um duplo que
-    // responde SIM a qualquer seletor não testa a pergunta — testa apenas que ela foi feita». Sem isto o caso
-    // ficaria verde sem nunca ter exercitado a ausência, que é como o caso do mundo inexistente passou verde
-    // uma vez.
+    // ⚠️ `ausentes` and not `comMarcacao: false`, and the reason is written in `domFalso` itself: a double that answers
+    // YES to any selector does not test the question — it only tests that it was asked. Without this the case would stay
+    // green without ever exercising the absence, which is how the non-existent world case once passed green.
     //
-    // O PEDIDO DO DEV (2026-09-07): «os ícones de acessibilidade que aparecem no jogo desde a primeira tela
+    // THE DEV'S REQUEST (2026-09-07): «os ícones de acessibilidade que aparecem no jogo desde a primeira tela
     // devem ser oferecidos pela ENGINE e não pela programação do jogo. Todo jogo da engine inclusionist deve
     // ter o mesmo menu de pausa e ícones de acessibilidade desde a primeira.»
     //
-    // ⚠️ E A MEDIÇÃO DE 2026-09-08 fez disto um ACHADO: dos seis jogos do catálogo local, CINCO não têm barra
-    // nenhuma — `pixi-15-puzzle`, `game-chess`, `game-soccer`, `2048` e `whackwhack` não chamam
-    // `initPauseIcons` nem montam HUD. Uma criança que depende do modo cego, do TTS ou do alto contraste abre
-    // esses cinco e não tem por onde. Este caso não monta a barra; fecha o SILÊNCIO, que era a parte que
-    // fazia cinco jogos parecerem completos.
+    // ⚠️ Most of the catalogue's games had no bar at all — they did not call `initPauseIcons` nor mount a HUD. A child
+    // who depends on blind mode, narration or high contrast opened them and had no way in. This case does not mount the
+    // bar; it closes the SILENCE, the part that made those games look complete.
     return import('../app/js/boot/create-game.js').then(({ createGame }) => {
       const { doc, win } = domFalso({ ausentes: ['#title-icons'] });
       const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
       const linha = motor.problems.find((p) => /accessibility bar/.test(p));
       expect(linha, 'a engine calou-se sobre a barra que falta').toBeTruthy();
-      // A frase nomeia a SAÍDA e o que se PERDE — «falta uma coisa» manda procurar sem dizer o quê.
+      // The sentence names the WAY OUT and what is LOST — saying something is missing sends someone searching without
+      // saying for what.
       expect(linha).toMatch(/a11yBarHost/);
       expect(linha).toMatch(/#title-icons/);
       expect(linha, 'não diz o que a criança perde').toMatch(/blind mode|narration|Libras/);
     });
   });
 
-  // ========================= MUTACOES CONFERIDAS (a barra de a11y da primeira tela) =========================
-  //   · `if (!a11yBar)` -> `if (false)` (a engine volta a calar-se) -> reprova o caso do Zero. E o estado do
-  //     repositorio ate hoje, e e' o que faz cinco jogos parecerem completos.
-  //   · tirando o `o.host.a11yBarHost ??` -> reprova o caso do jogo que declara o seu elemento. O gate
-  //     passaria a exigir um ID em vez de uma barra, e um cartucho com outra marcacao ficaria acusado sem ter
-  //     defeito nenhum.
-  //   · encurtando a frase para «sem barra de acessibilidade na primeira tela» -> reprova, porque ela deixa
-  //     de nomear a SAIDA (`a11yBarHost` / `#title-icons`). «Falta uma coisa» manda procurar sem dizer o que.
-  //   · tirando a segunda metade da frase -> reprova: ela deixa de dizer o que a CRIANCA perde, que e' a
-  //     parte que faz alguem consertar em vez de arquivar.
+  // ========================= MUTATIONS CHECKED (the first screen's a11y bar) =========================
+  //   · `if (!a11yBar)` -> `if (false)` (the engine goes quiet again) -> fails the Zero case. It is what makes games
+  //     without a bar look complete.
+  //   · removing `o.host.a11yBarHost ??` -> fails the case of the game that declares its element. The gate would demand
+  //     an ID instead of a bar, and a cartridge with other markup would be accused with no defect at all.
+  //   · shortening the sentence to say only that there is no bar on the first screen -> fails, because it stops naming
+  //     the WAY OUT (`a11yBarHost` / `#title-icons`). Saying something is missing sends someone searching without saying
+  //     for what.
+  //   · removing the second half of the sentence -> fails: it stops saying what the CHILD loses, the part that makes
+  //     someone fix instead of file.
 
   it('[Right] e um jogo que DECLARA o seu elemento não é acusado — a barra não tem de se chamar assim', () => {
-    // O id `#title-icons` é o que o jogo de plataforma usa desde sempre, e não é um requisito de nome: um
-    // cartucho com outra marcação declara o elemento e fica servido. Sem este caso, o de cima estaria a
-    // exigir um id em vez de uma barra.
+    // The `#title-icons` id is the one the platformer has always used, and it is not a naming requirement: a cartridge
+    // with other markup declares the element and is served. Without this case, the one above would be demanding an id
+    // instead of a bar.
     return import('../app/js/boot/create-game.js').then(({ createGame }) => {
       const { doc, win } = domFalso({ ausentes: ['#title-icons'] });
-      // ⚠️ O duplo ganhou `innerHTML` e `addEventListener` em 2026-09-08: desde a etapa 2 do ADR-0106 a
-      // engine MONTA a barra aqui dentro, e um elemento que não aceita conteúdo nem clique é acusado por uma
-      // linha própria de `problems` — correctamente, mas não é o que este caso mede.
+      // ⚠️ The double has `innerHTML` and `addEventListener`: the engine MOUNTS the bar in here (ADR-0106 step 2), and an
+      // element that takes neither content nor clicks is accused by a `problems` line of its own — correctly, but that is
+      // not what this case measures.
       const meuSitio = {
         id: 'outro-lugar', innerHTML: '', addEventListener: () => {},
         querySelector: () => null, querySelectorAll: () => [],
@@ -720,13 +693,12 @@ describe('createGame em execução', () => {
 
 
   it('⚠️ o MUNDO declarado que NAO existe no documento vira `problems` (ADR-0087)', async () => {
-    // A falha que a conformidade nao alcanca: `conformanceProblems` confere a FORMA — que ha um seletor e
-    // que ele nao esta vazio — e nao tem como conferir se ele CASA alguma coisa, porque `core/contract` e
-    // puro e nao ve DOM.
+    // The failure conformance does not reach: `conformanceProblems` checks the SHAPE — that there is a selector and it is
+    // not empty — and cannot check whether it MATCHES anything, because `core/contract` is pure and sees no DOM.
     //
-    // Um erro de digitacao passa na conformidade e produz exatamente o defeito que o ADR-0087 existe para
-    // eliminar: a simulacao de empatia aplicada a NADA, e um adulto informado de que sentiu algo que nao
-    // sentiu. E lacuna do HOSPEDEIRO, entao entra em `problems` — o jogo abre e quem o integrou le.
+    // A typo passes conformance and produces exactly the defect ADR-0087 exists to remove: the empathy simulation applied
+    // to NOTHING, and an adult told they felt something they did not. It is a HOST gap, so it goes into `problems` — the
+    // game opens and whoever integrated it reads.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso({ ausentes: ['#gaem-region'] });
     const torto = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#gaem-region' }) };
@@ -744,12 +716,12 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ a navegacao de menu fica LIGADA, e nao so montada (issue #109)', async () => {
-    // `MenuNavApi.attach()` existia e `createGame` nunca a chamava. Num jogo que arranque pela engine, os
-    // dialogos de acessibilidade e o menu de pausa respondiam so ao RATO — o pilar 2 a falhar por inteiro.
-    // O `consumer-quiz` tinha de a chamar a mao logo depois do `createGame`, o que e o sintoma.
+    // `MenuNavApi.attach()` existed and `createGame` never called it. In a game booted by the engine, the accessibility
+    // dialogs and the pause menu answered only to the MOUSE — pillar 2 failing whole. The `consumer-quiz` had to call it
+    // by hand right after `createGame`, which was the symptom.
     //
-    // A FASE DE CAPTURA faz parte da assercao: o menu tem de ver a tecla ANTES de quem quer que esteja
-    // por baixo, senao o jogo consome a seta e o dialogo aberto nao navega.
+    // THE CAPTURE PHASE is part of the assertion: the menu must see the key BEFORE whoever is underneath, or the game
+    // consumes the arrow and the open dialog does not navigate.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win, ouvintes } = domFalso();
     createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
@@ -758,10 +730,10 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ a ARMADILHA DE FOCO fica instalada, e prende de verdade (issue #109)', async () => {
-    // ⚠️ ESTE CASO NASCEU DE UMA MUTACAO QUE SOBREVIVEU. A primeira versao aferia "ha ouvinte de keydown em
-    // captura", e a navegacao de menu ja instalava um — tirar a armadilha inteira do `createGame` deixava a
-    // contagem intacta e o teste verde. Contar ouvintes responde "alguem se registou", nao "a armadilha
-    // existe". Entao este caso DISPARA um Tab pelos ouvintes instalados e afere o que aconteceu ao foco.
+    // ⚠️ THIS CASE WAS BORN OF A MUTATION THAT SURVIVED. Checking that there is a capturing keydown listener was not
+    // enough: the menu navigation already installed one, so removing the whole trap from `createGame` left the count
+    // intact and the test green. Counting listeners answers that someone registered, not that the trap exists. So this
+    // case FIRES a Tab through the installed listeners and checks what happened to the focus.
     const { createGame } = await import('../app/js/boot/create-game.js');
 
     const focados = [];
@@ -772,7 +744,7 @@ describe('createGame em execução', () => {
       querySelectorAll: () => isInside,
     };
     const { doc, win, ouvintes } = domFalso({ listas: { '#game-region .overlay': [overlay] } });
-    doc.activeElement = { n: 'o tabuleiro por baixo' }; // o foco esta FORA do dialogo: o caso realista
+    doc.activeElement = { n: 'o tabuleiro por baixo' }; // focus is OUTSIDE the dialog: the realistic case
 
     createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
 
@@ -785,17 +757,15 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ a engine ENTREGA o aviso de que o laco parou (ADR-0054, issue #109)', async () => {
-    // O `createGame` montava tres fios e nao ligava nenhum, e este era o pior: `core/loop` ja parava quando um
-    // quadro lancava, e parava EM SILENCIO. Tela congelada e sintoma VISUAL — no modo cego, um jogo parado e
-    // um jogo pensando produzem a mesma coisa.
+    // `core/loop` already stopped when a frame threw, and stopped IN SILENCE. A frozen screen is a VISUAL symptom — in
+    // blind mode, a stopped game and a thinking game produce the same thing.
     //
-    // ⚠️ ENTREGUE E NAO INSTALADO, e o caso afere essa forma de proposito: quem chama `startLoop` e o JOGO,
-    // dono do ticker. A engine nao pode instalar o que nao possui — o que ela pode e nao obrigar cada jogo a
-    // escrever a propria mensagem, que divergiria em silencio entre jogos.
-    // ⚠️ `#incl-parou` entra em `ausentes`: o aviso procura a caixa ANTES de criar, para nao empilhar duas.
-    // Um duplo que devolvesse elemento para qualquer seletor faria o modulo achar que ela ja existe e nunca a
-    // acrescentar — e este caso passaria a afirmar o contrario do que promete. E a quarta vez que o duplo
-    // deste ficheiro tem de aprender a DISTINGUIR a pergunta.
+    // ⚠️ HANDED OVER, and the case checks that form on purpose: whoever calls `startLoop` is the GAME, owner of the ticker.
+    // The engine hands the notice over (`onFailure`) and also registers it with `core/loop` as the default (study item
+    // D1), so no game has to write its own message, which would diverge silently between games.
+    // ⚠️ `#incl-parou` goes into `ausentes`: the notice looks for the box BEFORE creating it, so as not to stack two. A
+    // double that returned an element for any selector would make the module think it already exists and never add it —
+    // and this case would assert the opposite of what it promises.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const alerta = { textContent: '' };
     const regiao = { filhos: [], appendChild(f) { this.filhos.push(f); }, style: {}, contains: () => false };
@@ -824,9 +794,9 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ um overlay DENTRO do mundo perde o filtro — e um de fora nao e tocado', async () => {
-    // A generalizacao que substitui a regra escrita a mao do `main.ts`: ele limpava `#dom-layer` porque ele
-    // esta DENTRO de `#game-region` e o filtro CSS herda. Aqui o codigo PERGUNTA ao DOM em vez de assumir a
-    // forma, e por isso serve tanto a marcacao da engine quanto a de um jogo que nao aninha nada.
+    // The generalisation that replaces the platformer's hand-written rule: it cleared `#dom-layer` because that sits INSIDE
+    // `#game-region` and a CSS filter is inherited. Here the code ASKS the DOM instead of assuming the shape, which is why
+    // it serves both the engine's markup and a game's that nests nothing.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const isInside = { style: { filter: 'brightness(0)' } };
     const fora = { style: { filter: 'brightness(0)' } };
@@ -875,18 +845,19 @@ describe('createGame em execução', () => {
     const d = declaracaoValida();
     const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: d, host: { doc, win } });
     expect(motor.declaration).toBe(d);
-    // E o objetivo é legível SEM a engine saber o que é uma moeda: é o campo 5 respondendo.
+    // And the objective is readable WITHOUT the engine knowing what a coin is: it is field 5 answering.
     expect(motor.declaration.objectiveOf(0)).toEqual({
       name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 3,
     });
   });
 
   /**
-   * 🎯 O QUE A DECLARAÇÃO CAUSA, e não só o que ela diz (ADR-0216 §3): a lista que o arranque baixa sai da resposta do jogo. Um
-   * jogo que não pede voz neural não pode pagar 372 MB de modelo, vozes e runtime no link de uma escola — e o contrário é pior
-   * de ver, porque ninguém repara num download que acontece.
+   * 🎯 WHAT THE DECLARATION CAUSES, not only what it says (ADR-0216 §3): the list the boot downloads comes from the game's
+   * answer. A game that does not ask for a neural voice cannot pay 372 MB of model, voices and runtime on a school's link
+   * — and the opposite is worse to see, because nobody notices a download that happens.
    *
-   * ⚠️ O `downloadHeavy` é substituído aqui porque a lista só existe na CHAMADA: o que se mede é o argumento, que é a decisão.
+   * ⚠️ `downloadHeavy` is replaced here because the list exists only in the CALL: what is measured is the argument, which
+   * is the decision.
    */
   it('🔴 [Right] o arranque só baixa a voz neural do jogo que a pediu', async () => {
     const pedidos = [];
@@ -913,9 +884,9 @@ describe('createGame em execução', () => {
   });
 
   /**
-   * 🔴 E A LEITURA DESCE NA LÍNGUA DA CRIANÇA (ADR-0216 §3; ADR-0201 erratum). 📏 Os três modelos somam 850 MiB — pt 378, en 162,
-   * es 310 —, então «este jogo escuta» não pode querer dizer «baixe os três». A língua não é uma pergunta nova: é a que a
-   * interface arrancou (ADR-0031).
+   * 🔴 AND READING COMES DOWN IN THE CHILD'S LANGUAGE (ADR-0216 §3; ADR-0201 erratum). 📏 The three models add up to 850
+   * MiB — pt 378, en 162, es 310 —, so this game listens cannot mean download all three. The language is not a new
+   * question: it is the one the interface booted in (ADR-0031).
    */
   it('🔴 [Right] o jogo que ESCUTA baixa o modelo de uma língua só, e é a da interface', async () => {
     const pedidos = [];
@@ -939,8 +910,8 @@ describe('createGame em execução', () => {
   });
 
   it('[Right] um jogo SEM FASES não precisa inventar uma — `isNavigable` ausente vale `true`', async () => {
-    // O achado 10 do segundo consumidor, virado padrão: o quiz precisava se declarar "pausado" para navegar
-    // os próprios menus. O caso mais simples passou a ser o que não obriga a mentir.
+    // Finding 10 of the second consumer, turned default: the quiz had to declare itself paused to navigate its own menus.
+    // The simplest case became the one that does not force a lie.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     expect(() => createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } })).not.toThrow();
@@ -948,16 +919,16 @@ describe('createGame em execução', () => {
 });
 
 /*
- * MONTAR E DESMONTAR — uma raiz de composição, vários cartuchos (ADR-0142).
+ * MOUNT AND UNMOUNT — one composition root, several cartridges (ADR-0142).
  *
- * ⚠️ O caso que decide é o PRIMEIRO: sem ele, `mount()` seria uma função que troca um campo e o diagnóstico
- * continuaria a falar do jogo que arrancou — que é exactamente a dívida que o ADR-0139 §5 registou e que
- * este registo veio pagar. Um teste que só verificasse que `mount` não lança não provaria nada disso.
+ * ⚠️ The deciding case is the FIRST: without it, `mount()` would be a function that swaps a field while the diagnosis
+ * went on talking about the game that booted — exactly the debt ADR-0139 §5 recorded and this record came to pay. A test
+ * that only checked that `mount` does not throw would prove none of that.
  */
 describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
-  // ⚠️ O DUPLO DEVOLVE ELEMENTO PARA QUALQUER SELETOR, então «um mundo que não existe» só existe se o
-  // dissermos ao duplo — é para isso que `ausentes` está lá. Sem ele estes casos passavam a verde sem nunca
-  // terem exercitado a linha que dizem exercitar, que é a forma mais cara de um teste mentir.
+  // ⚠️ THE DOUBLE RETURNS AN ELEMENT FOR ANY SELECTOR, so a world that does not exist exists only if we tell the double —
+  // that is what `ausentes` is for. Without it these cases would go green without ever exercising the line they claim
+  // to, the most expensive way for a test to lie.
   const SELETOR_AUSENTE = '#mundo-que-nao-existe';
   const semDom = () => domFalso({ ausentes: [SELETOR_AUSENTE] });
   const semMundo = () => ({
@@ -986,18 +957,19 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
   });
 
   it('🔴 [Zero] um cartucho que NÃO RESPONDE às suas acomodações é RECUSADO no arranque e no mount (ADR-0153)', async () => {
-    // «Gênero não precisa responder todas as acomodações, mas sim o cartucho, obrigatoriamente.» Recusa, e não
-    // `problems`: sem a resposta a engine não sabe que linhas montar, e montar todas é a cadeira de rodas no xadrez.
+    // «Gênero não precisa responder todas as acomodações, mas sim o cartucho, obrigatoriamente.» A refusal, not
+    // `problems`: without the answer the engine does not know which rows to mount, and mounting all is the wheelchair in
+    // chess.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     expect(() => createGame({ declaration: declaracaoValida(), host: { doc, win } })).toThrow(/ADR-0153/);
-    // UMA chave em falta também — o silêncio de uma só é o mesmo defeito
+    // ONE missing key too — the silence of a single one is the same defect
     const { caneSpacing: _fora, ...incompleta } = SEM_ASSUNTO;
     expect(() => createGame({ accommodations: incompleta, declaration: declaracaoValida(), host: { doc, win } }))
       .toThrow(/caneSpacing is not answered/);
-    // 📌 O PAR: a resposta completa passa — senão um crivo que recusasse sempre ficaria verde acima
+    // 📌 THE PAIR: the complete answer passes — otherwise a check that always refused would stay green above
     const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
-    // e o mount() recusa pela mesma regra: um SEGUNDO cartucho não pode entrar sem responder
+    // and mount() refuses by the same rule: a SECOND cartridge cannot come in without answering
     expect(() => motor.mount(declaracaoValida(), {})).toThrow(/ADR-0153/);
   });
 
@@ -1006,7 +978,7 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     const { doc, win } = domFalso();
     const motor = createGame({ accommodations: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     expect(() => motor.mount({ ...declaracaoValida(), topology: undefined }, { accommodations: SEM_ASSUNTO })).toThrow(/malformada/);
-    // ⚠️ E O CARTUCHO BOM CONTINUA MONTADO: uma recusa não pode deixar a raiz a meio caminho.
+    // ⚠️ AND THE GOOD CARTRIDGE STAYS MOUNTED: a refusal cannot leave the root halfway.
     expect(motor.problems.join(' ')).not.toMatch(/declared world/);
   });
 
@@ -1030,28 +1002,27 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     motor.scenes.push({ name: 'b', exit: () => saiu.push('b') });
     expect(motor.scenes.names()).toEqual(['a', 'b']);
 
-    // ⚠️ `push` JÁ CORRE O `exit()` DA CENA DE BAIXO — medido aqui, e não suposto: empilhar `b` sobre `a`
-    // produz um `'a'` antes de o `unmount` existir. Medir só a CAUDA é o que separa o que este caso afirma
-    // do que a pilha já fazia sozinha.
+    // ⚠️ `push` ALREADY RUNS THE LOWER SCENE'S `exit()` — measured here, not assumed: pushing `b` over `a` produces an
+    // `'a'` before `unmount` exists. Measuring only the TAIL is what separates what this case asserts from what the stack
+    // already did by itself.
     const antes = saiu.length;
     motor.unmount();
     expect(motor.scenes.names(), 'a pilha guardou cenas do cartucho anterior').toEqual([]);
-    // A ORDEM É DE CIMA PARA BAIXO: `pop()` desfaz o que foi empilhado por último, que é a única ordem em
-    // que uma cena pode contar com o que empilhou por baixo dela ainda estar lá.
+    // THE ORDER IS TOP TO BOTTOM: `pop()` undoes what was pushed last, the only order in which a scene can count on what
+    // it pushed beneath it still being there.
     expect(saiu.slice(antes), 'uma cena saiu sem correr o seu `exit()`').toEqual(['b', 'a']);
   });
 
   /*
-   * OS DOIS MAPEAMENTOS DEPOIS DO `unmount()`.
+   * THE TWO MAPPINGS AFTER `unmount()`.
    *
-   * ⚠️ ESTE PAR QUASE NÃO FOI ESCRITO, e vale contar porquê: a confirmação do ADR-0142 afirmava que ele era
-   * impossível sem alargar a superfície pública, porque `registerKeyboardMapping` e
-   * `registerPadMapping` são só de escrita e não há leitor do campo. A primeira metade é verdade e a
-   * conclusão não era: não há leitor do CAMPO, mas há duas funções exportadas cujo RESULTADO muda conforme
-   * ele esteja registado — `factoryWithGame()` e `padTable()`.
+   * ⚠️ THIS PAIR ALMOST WAS NOT WRITTEN, and it is worth saying why: ADR-0142's confirmation claimed it was impossible
+   * without widening the public surface, because `registerKeyboardMapping` and `registerPadMapping` are write-only and
+   * the field has no reader. The first half is true and the conclusion was not: the FIELD has no reader, but two exported
+   * functions have a RESULT that changes depending on whether it is registered — `factoryWithGame()` and `padTable()`.
    *
-   * 🎯 E o crivo por comportamento é o melhor dos dois: «o campo interno está nulo» mede a implementação;
-   * «depois de soltar o cartucho, as teclas voltam a ser as da engine» mede o que a criança encontra.
+   * 🎯 And the behaviour check is the better of the two: the internal field being null measures the implementation; the
+   * keys going back to the engine's after the cartridge is released measures what the child finds.
    */
   const comTeclas = () => ({
     ...declaracaoValida(),
@@ -1075,7 +1046,7 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
   it('🎯 [Right] e o PAD volta à tabela padrão — inclusive a memória que o registo limpa', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { padTable } = await import('../app/js/input/pad-defaults.js');
-    // 📌 A constante mora em `default-bindings`, e o `pad-defaults` importa-a — não a reexporta.
+    // 📌 The constant lives in `default-bindings`, and `pad-defaults` imports it — it does not re-export it.
     const { GAMEPAD_STANDARD } = await import('../app/js/input/default-bindings.js');
     const { doc, win } = domFalso();
 
@@ -1083,9 +1054,9 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     expect(padTable(1, 0).up, 'o mapa de pad do jogo nem chegou a valer').not.toEqual(GAMEPAD_STANDARD.up);
 
     motor.unmount();
-    // ⚠️ IDENTIDADE E NÃO IGUALDADE: sem mapeamento registado a função devolve a PRÓPRIA constante, e é isso
-    // que prova também que a memória por `jogadores:assento` foi limpa — uma tabela fundida em cache seria
-    // igual em valor a nada e diferente em identidade da constante.
+    // ⚠️ IDENTITY AND NOT EQUALITY: with no mapping registered the function returns the constant ITSELF, which also proves
+    // that the per-`players:seat` memory was cleared — a merged table in cache would be equal in value to nothing and
+    // different in identity from the constant.
     expect(padTable(1, 0), 'o pad ficou com a tabela do cartucho anterior em cache').toBe(GAMEPAD_STANDARD);
   });
 });

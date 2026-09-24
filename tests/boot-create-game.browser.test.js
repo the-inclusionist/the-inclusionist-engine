@@ -1,39 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A RAIZ DE COMPOSIÇÃO CONTRA UM DOCUMENTO DE VERDADE (ADR-0106 etapa 2).
+// THE COMPOSITION ROOT AGAINST A REAL DOCUMENT (ADR-0106 step 2).
 //
-// ========================= POR QUE ESTE FICHEIRO EXISTE =========================
-// Em 2026-09-08 uma varredura achou SEIS defeitos na montagem da barra e do cartão de pausa, e CINCO deles
-// eram meus, introduzidos no próprio dia em que fiz a engine montá-los. Os cinco passaram pelo mesmo sítio: o
-// `domFalso` do `boot-create-game.node.test.js`, que precisou de ser remendado TRÊS VEZES SEPARADAS por ser
-// mais pobre do que a coisa real — primeiro sem `innerHTML`, depois sem `appendChild`, e por fim com
-// `HTMLElement` a ser um global de navegador que, lido onde não existe, LANÇA em vez de devolver `false`.
+// ========================= WHY THIS FILE EXISTS =========================
+// A sweep once found SIX defects in the mounting of the bar and the pause card, five of them introduced the same day the
+// engine started mounting them. All five went through the same place: the `domFalso` of `boot-create-game.node.test.js`,
+// which had to be patched THREE SEPARATE TIMES for being poorer than the real thing — first with no `innerHTML`, then
+// with no `appendChild`, and finally with `HTMLElement` being a browser global that, read where it does not exist,
+// THROWS instead of returning `false`.
 //
-// ⚠️ ISSO NÃO É UMA CRÍTICA AO DUPLO: é a definição dele. Um duplo só sabe o que quem o escreveu sabia, e por
-// isso ele é forte exactamente onde a lógica decide e cego exactamente onde o DOM decide. O padrão não se
-// conserta remendando o duplo pela quarta vez — conserta-se tendo um documento a sério onde a montagem mora.
+// ⚠️ THAT IS NOT A CRITICISM OF THE DOUBLE: it is its definition. A double knows only what whoever wrote it knew, so it is
+// strong exactly where logic decides and blind exactly where the DOM decides. The pattern is not fixed by patching the
+// double a fourth time — it is fixed by having a real document where the mounting lives.
 //
-// 🎯 A REGRA DE CADA CASO AQUI, e ela é o que impede este ficheiro de ser uma duplicata cara: **um caso só
-// entra se o `domFalso` NÃO CONSEGUISSE fazê-lo.** Onde o duplo já responde — a ordem do mixer, o que entra em
-// `problems`, declarar mal explodir —, o node continua a ser o sítio certo: corre em milissegundos e não
-// precisa de navegador. O que fica para aqui é o que só um documento sabe: se a marcação PARSEIA, se o
-// elemento está mesmo NA ÁRVORE, se dá para lá chegar com o teclado, e se um clique de verdade percorre o
-// caminho todo.
+// 🎯 EACH CASE'S RULE HERE, and it is what keeps this file from being an expensive duplicate: **a case comes in only if
+// `domFalso` COULD NOT do it.** Where the double already answers — the mixer's order, what goes into `problems`, declaring
+// badly throwing —, node stays the right place: it runs in milliseconds and needs no browser. What stays here is what only
+// a document knows: whether the markup PARSES, whether the element is really IN THE TREE, whether the keyboard can reach
+// it, and whether a real click walks the whole path.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 let createGame;
 let repor;
 
-/** O documento mínimo que um jogo oferece: a região do mundo e o hospedeiro da barra da primeira tela. */
+/** The minimal document a game offers: the world's region and the host of the first screen's bar. */
 function montarHospedeiro() {
   const raiz = document.createElement('div');
   raiz.id = 'raiz-de-teste';
-  // ⚠️ AS DUAS REGIÕES DE LEITOR DE TELA ENTRARAM EM 2026-09-08, e a ausência delas era o motivo de o
-  // ANÚNCIO nunca ter sido exercitado aqui: sem `#sr-status` no documento, o `srSay` não acha onde escrever
-  // e falha em silêncio — que é precisamente a forma de defeito que ele existe para evitar. Um hospedeiro
-  // sem elas também não é realista: a `MARCACAO_EXIGIDA` da raiz pede as duas.
+  // ⚠️ THE TWO SCREEN-READER REGIONS: without `#sr-status` in the document, `srSay` finds nowhere to write and fails
+  // silently — precisely the kind of defect it exists to avoid —, and the ANNOUNCEMENT would never be exercised here. A
+  // host without them is not realistic either: the root's `REQUIRED_MARKUP` asks for both.
   raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
@@ -43,7 +41,7 @@ function montarHospedeiro() {
 const declaracaoValida = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   holdsAtOnce: () => 1,
-  // Um fixture de hotspots não segura nada — o par do ADR-0115, ao lado do número que não o diz.
+  // A hotspots fixture holds nothing — ADR-0115's pair, beside the number that does not say so.
   holdsKeys: () => false,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
@@ -55,13 +53,12 @@ const declaracaoValida = () => ({
 });
 
 /*
- * 🔴 AS RAÍZES ABERTAS POR UM CASO SÃO ENCERRADAS NO FIM DELE, e isto não é arrumação — é o conserto de um defeito que fazia
- * casos deste ficheiro mudarem de resultado conforme os vizinhos. Uma raiz instala ~30 escutas na JANELA e, até existir o
- * `dispose()`, nada as tirava: tirar o hospedeiro do documento não cala ninguém, e como toda a busca de uma raiz é no documento
- * inteiro (`getPauseMenu` é `doc.querySelector('#vp-pause-0')`), a raiz morta passava a navegar o cartão da raiz VIVA.
- * 📏 Medido neste navegador: uma seta para baixo andava um item com uma raiz, DOIS com duas, TRÊS com três — e por isso o caso
- * «a locked item SAYS WHY», que conta setas, parava noutro item assim que um vizinho abrisse mais uma raiz.
- * O portão do mecanismo é `tests/a-disposed-root-stops-listening.browser.test.js`; aqui fica só a consequência.
+ * 🔴 THE ROOTS A CASE OPENS ARE ENDED AT ITS END, and that is not tidiness — it fixes a defect that made this file's cases
+ * change result depending on their neighbours. A root installs ~30 listeners on the WINDOW and, until `dispose()` existed,
+ * nothing took them off: removing the host from the document silences nobody, and since every search a root makes is
+ * document-wide (`getPauseMenu` is `doc.querySelector('#vp-pause-0')`), the dead root went on navigating the LIVE root's
+ * card. 📏 Measured in this browser: one arrow down moved one item with one root, TWO with two, THREE with three.
+ * The mechanism's gate is `tests/a-disposed-root-stops-listening.browser.test.js`; only the consequence stays here.
  */
 const raizesAbertas = [];
 const abrir = (extra = {}) => {
@@ -78,62 +75,61 @@ describe('createGame num documento de verdade', () => {
   let raiz;
 
   beforeEach(async () => {
-    // `await import` e não estático, pela mesma razão do ficheiro node: o grafo de boot é grande e um módulo
-    // partido não deve derrubar a colecção inteira antes de o primeiro caso correr.
+    // `await import` and not static, for the same reason as the node file: the boot graph is big, and a broken module
+    // must not bring down the whole collection before the first case runs.
     if (!createGame) ({ createGame } = await import('../app/js/boot/create-game.js'));
-    // ⚠️ O MODO CEGO É ESTADO DE MÓDULO E PERSISTE — em `core/state` e no armazenamento. Sem esta reposição,
-    // um caso que o liga deixa o seguinte a começar ligado, e o seguinte mede o contrário do que diz. Foi o
-    // que aconteceu na primeira volta, e apanhá-lo aqui é mais barato do que voltar a caçá-lo.
+    // ⚠️ BLIND MODE IS MODULE STATE AND PERSISTS — in `core/state` and in storage. Without this reset, a case that turns it
+    // on leaves the next one starting on, and the next one measures the opposite of what it says.
     if (!repor) ({ setBlindModeValue: repor } = await import('../app/js/core/state.js'));
     repor(false);
     raiz = montarHospedeiro();
   });
 
   afterEach(() => {
-    // ⚠️ `dispose()` e não `unmount()`: o segundo solta o CARTUCHO e deixa a raiz a ouvir (ADR-0142), que é exactamente o que
-    // acumulava. Ver a nota do `abrir`.
+    // ⚠️ `dispose()` and not `unmount()`: the second releases the CARTRIDGE and leaves the root listening (ADR-0142), which
+    // is exactly what piled up. See the note on `abrir`.
     for (const motor of raizesAbertas.splice(0)) motor.dispose();
     raiz.remove(); document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove());
   });
 
   it('⚠️ [Right] a marcação da barra PARSEIA — o duplo só sabia que uma string foi atribuída', () => {
-    // ⚠️ O `domFalso` guarda `innerHTML` como texto. Num documento a sério, atribuir `innerHTML` ANALISA a
-    // marcação, e uma que não fecha uma tag produz ZERO elementos — sem erro, sem aviso, e com o duplo verde.
-    // A criança que depende do modo cego abre o jogo e a barra simplesmente não está lá.
+    // ⚠️ `domFalso` keeps `innerHTML` as text. In a real document, assigning `innerHTML` PARSES the markup, and one that does
+    // not close a tag produces ZERO elements — no error, no warning, and the double green. The child who depends on blind
+    // mode opens the game and the bar is simply not there.
     abrir();
     const barra = document.querySelector('#title-icons');
     const botoes = barra.querySelectorAll('[data-pi]');
     expect(botoes.length, 'a barra montou marcação que o navegador não conseguiu ler').toBeGreaterThan(0);
-    // e são ELEMENTOS na árvore, não texto: cada um responde ao documento que o contém
+    // and they are ELEMENTS in the tree, not text: each answers to the document that holds it
     expect(botoes[0].isConnected).toBe(true);
   });
 
   it('⚠️ [Right] os ícones da primeira tela são ALCANÇÁVEIS PELO TECLADO', () => {
-    // ⚠️ É O ARGUMENTO DA ETAPA 2 VIRADO AFIRMAÇÃO, e nenhum duplo o alcança. A montagem deliberadamente NÃO
-    // usa `buildQuickBar`, que põe `tabIndex = -1` porque durante a partida dez paradas separam a criança do
-    // jogo. Na PRIMEIRA tela ninguém está a jogar, e tirar os ícones da ordem de tabulação ali seria
-    // escondê-los de quem navega por teclado — exactamente a pessoa para quem eles existem.
+    // ⚠️ IT IS STEP 2'S ARGUMENT TURNED ASSERTION, and no double reaches it. The mounting deliberately does NOT use
+    // `buildQuickBar`, which sets `tabIndex = -1` because during play ten stops separate the child from the game. On the
+    // FIRST screen nobody is playing, and taking the icons out of the tab order there would hide them from whoever
+    // navigates by keyboard — exactly the person they exist for.
     abrir();
     const alvo = document.querySelector('#title-icons [data-pi]');
     expect(alvo.tabIndex, 'ícone fora da ordem de tabulação na tela onde ninguém está a jogar').toBeGreaterThanOrEqual(0);
-    // e focar de verdade: `tabIndex` é uma promessa, `activeElement` é o cumprimento dela
+    // and truly focus: `tabIndex` is a promise, `activeElement` is keeping it
     alvo.focus();
     expect(document.activeElement).toBe(alvo);
   });
 
   it('⚠️ [Right] o cartão de pausa é ENCONTRÁVEL pelo id que a própria engine procura', () => {
-    // ⚠️ ESTE É O CASO MAIS FORTE DO FICHEIRO, e é o único que fecha o laço de verdade. O `getPauseMenu` da
-    // engine procura `#vp-pause-0` no DOCUMENTO. Pôr `cartao.id = 'vp-pause-0'` satisfaz qualquer duplo — mas
-    // um cartão com id certo pendurado num hospedeiro DESLIGADO da árvore é invisível a `querySelector`, e a
-    // engine voltaria a concluir, em silêncio, que este jogo não tem menu de pausa. Só um documento sabe a
-    // diferença entre «tem o id» e «está lá».
+    // ⚠️ THIS IS THE FILE'S STRONGEST CASE, and the only one that truly closes the loop. The engine's `getPauseMenu` looks
+    // for `#vp-pause-0` in the DOCUMENT. Setting `cartao.id = 'vp-pause-0'` satisfies any double — but a card with the
+    // right id hung on a host DISCONNECTED from the tree is invisible to `querySelector`, and the engine would again
+    // conclude, silently, that this game has no pause menu. Only a document knows the difference between having the id and
+    // being there.
     abrir();
     expect(document.querySelector('#vp-pause-0'), 'a engine monta o cartão e depois não o encontra').not.toBeNull();
   });
 
   it('⚠️ [Right] MONTAR não é MOSTRAR, e `pausa.mostrar` mostra DE FACTO', () => {
-    // O cartão nasce escondido — uma pausa ABRE. O duplo só consegue ver a propriedade `hidden` mudar; aqui
-    // pergunta-se ao layout, que é quem a criança consulta.
+    // The card is born hidden — a pause OPENS. The double can only see the `hidden` property change; here the layout is
+    // asked, which is what the child consults.
     const motor = abrir();
     const cartao = document.querySelector('#vp-pause-0');
     expect(cartao.offsetParent, 'o cartão nasceu visível — uma pausa ABRE, não está sempre aberta').toBeNull();
@@ -145,98 +141,85 @@ describe('createGame num documento de verdade', () => {
   });
 
   it('⚠️ [Right] um clique DE VERDADE num ícone percorre o caminho todo', () => {
-    // ⚠️ O duplo regista que `addEventListener` foi chamado; ele não pode disparar o ouvinte com um evento que
-    // BORBULHA a partir de um filho, que é como um clique real chega. O `iconAct` lê `e.target.closest(...)`,
-    // e um alvo que não é elemento — ou um ouvinte pendurado no sítio errado — só falha aqui.
-    // 📌 O ÍCONE ESCOLHIDO É O MODO CEGO de propósito: é o que a etapa 1b deu à engine por padrão
-    // (`setBlindModeValue`), logo um jogo que não injecta nada tem de o ver funcionar — e foi exactamente ali
-    // que o botão ficou mudo em 2026-09-08. O caminho medido é o inteiro: clique real → `iconAct` →
-    // `setModoCego` → evento de estado → `reflectIconsIn` → o DOM diz o estado novo.
+    // ⚠️ The double records that `addEventListener` was called; it cannot fire the listener with an event that BUBBLES up
+    // from a child, which is how a real click arrives. `iconAct` reads `e.target.closest(...)`, and a target that is not an
+    // element — or a listener hung in the wrong place — fails only here.
+    // 📌 THE ICON CHOSEN IS BLIND MODE on purpose: step 1b gave it to the engine by default (`setBlindModeValue`), so a
+    // game that injects nothing must see it work — and that is exactly where the button once went mute. The path measured
+    // is the whole one: real click → `iconAct` → the blind-mode writer → state event → `reflectIconsIn` → the DOM says the
+    // new state.
     abrir();
     const barra = document.querySelector('#title-icons');
     const alvo = barra.querySelector('[data-pi="blind"]');
     expect(alvo, 'o modo cego não está na primeira tela').not.toBeNull();
     alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    // ⚠️ Relê do DOCUMENTO e não da referência: reflectir pode ter REESCRITO a barra, e um nó guardado antes
-    // do clique seria um órfão a dizer o estado velho — a forma de defeito do `reflectTTS`.
+    // ⚠️ Re-read from the DOCUMENT and not the reference: reflecting may have REWRITTEN the bar, and a node kept from before
+    // the click would be an orphan saying the old state.
     const depois = document.querySelector('#title-icons [data-pi="blind"]');
     expect(depois.getAttribute('aria-pressed'), 'o clique chegou mas o ícone não diz o estado novo').toBe('true');
   });
 
-  // 🔴 O ANÚNCIO, e ele nunca tinha sido exercitado — foi o que a verificação no navegador de 2026-09-08 não
-  // conseguiu medir: o painel estava OCULTO, o `requestAnimationFrame` congelado (medido: zero quadros em
-  // 600 ms) e o `srSay` escreve dentro de um. «O `#sr-status` não mudou» não era prova de silêncio, e eu
-  // declarei-o por verificar em vez de o reportar como regressão. Aqui a página renderiza, e dá para medir.
+  // 🔴 THE ANNOUNCEMENT, which a check in a browser with a HIDDEN panel could not measure: `requestAnimationFrame` was frozen
+  // (zero frames in 600 ms) and `srSay` writes inside one. An unchanged `#sr-status` was no proof of silence. Here the page
+  // renders, and it can be measured.
   //
-  // ⚠️ E O QUE ESTE CASO PRENDE É A ORDEM, que é onde mora o defeito interessante: o anúncio lê o
-  // `aria-label` DEPOIS do reflexo, porque é ele que carrega o estado NOVO. Anunciar antes diria à criança o
-  // estado que ela acabou de DEIXAR — e o botão ficaria a mentir para quem só o ouve, que é a família do
-  // `reflectTTS`: uma saída cujo único destino é o leitor de tela não tem quem note quando ela mente.
+  // ⚠️ AND WHAT THIS CASE HOLDS IS THE ORDER, where the interesting defect lives: the announcement reads the `aria-label`
+  // AFTER the reflection, because that carries the NEW state. Announcing before would tell the child the state she just
+  // LEFT — and the button would lie to whoever only hears it: an output whose only destination is the screen reader has
+  // nobody to notice when it lies.
   //
-  // 📏 O ÍCONE É O `tea` E NÃO O MODO CEGO, e a escolha foi MEDIDA por uma mutação que sobreviveu. Com o
-  // modo cego, inverter a ordem não muda nada: `create-game` subscreve `state.on('blindMode')` e o reflexo
-  // já aconteceu DENTRO do `iconAct`, então o rótulo lido já é o novo de qualquer maneira. Era equivalência
-  // e não cobertura — e um caso que só passa por causa de uma subscrição não mede a linha que diz medir.
-  // Medido: essa é a ÚNICA subscrição de estado desta raiz, logo o `tea` percorre o caminho de todos os
-  // outros sete ícones.
+  // 📏 THE ICON IS `tea` AND NOT BLIND MODE, and the choice was MEASURED by a mutation that survived. With blind mode,
+  // swapping the order changes nothing: `create-game` subscribes to `state.on('blindMode')` and the reflection has already
+  // happened INSIDE `iconAct`, so the label read is the new one either way. That was equivalence, not coverage. `tea` has
+  // no state subscription in the root, so it walks the path the icons without one take.
   it('🔴 [Zero] o clique ANUNCIA, e anuncia o estado NOVO — não o que a criança deixou', async () => {
     abrir();
-    // 🔴 ESPERAR O IDIOMA É O QUE FALTAVA, e foi a CI que o mostrou — verde aqui, vermelho lá:
-    // «expected 'Modo TEA: calmo' to be 'Autism mode: calm'». Este caso compara DUAS leituras feitas em
-    // instantes diferentes — o anúncio, composto no clique, e o rótulo, lido depois. O `initI18n` aplica pt
-    // de forma síncrona e pede en/es em chunks ASSÍNCRONOS; num runner mais lento o chunk aterra ENTRE as
-    // duas, e a comparação passa a medir o relógio da máquina em vez do comportamento.
+    // 🔴 WAITING FOR THE LANGUAGE IS WHAT WAS MISSING, and CI showed it — green here, red there: `expected 'Modo TEA: calmo'
+    // to be 'Autism mode: calm'`. This case compares TWO readings made at different instants — the announcement, composed
+    // on the click, and the label, read after. `initI18n` applies pt synchronously and asks for en/es in ASYNCHRONOUS
+    // chunks; on a slower runner the chunk lands BETWEEN the two, and the comparison measures the machine's clock instead
+    // of the behaviour.
     //
-    // ⚠️ E É A CLASSE DE DEFEITO QUE ESTE REPOSITÓRIO CATALOGOU ESTA SEMANA — «um teste que mede a MÁQUINA».
-    // Não reproduz localmente nem isolado nem emparelhado; só num runner com outro tempo.
+    // ⚠️ IT IS A TEST THAT MEASURES THE MACHINE: it reproduces neither locally, alone nor paired; only on a runner with
+    // another timing.
     //
-    // 📌 O QUE ELE DESTAPA NO PRODUTO, e fica dito em vez de consertado às cegas: uma criança que carregue no
-    // ícone ANTES de o dicionário aterrar ouve o idioma de recuo enquanto o rótulo já mudou. É a mesma
-    // fronteira do `424ee36` (a barra bilingue), do lado do ANÚNCIO em vez do rótulo — e ali a resposta foi
-    // reflectir depois do `localeReady()`. Aqui o anúncio é composto uma vez e não se reflecte.
+    // 📌 WHAT IT UNCOVERS IN THE PRODUCT, said instead of fixed blindly: a child who presses the icon BEFORE the dictionary
+    // lands hears the fallback language while the label has already changed. It is the same boundary as the bilingual bar
+    // (`424ee36`), on the ANNOUNCEMENT's side instead of the label's — and there the answer was to repaint when the
+    // language arrives (today the `i18n:change` listener). Here the announcement is composed once and not repainted.
     const { localeReady } = await import('../app/js/core/i18n.js');
     await localeReady();
     const alvo = document.querySelector('#title-icons [data-pi="tea"]');
     const rotuloAntes = alvo.getAttribute('aria-label');
     alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    // O `srSay` limpa e escreve no quadro seguinte (é assim que força o leitor a reanunciar texto repetido).
+    // `srSay` clears and writes on the next frame (that is how it forces the reader to re-announce repeated text).
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     const dito = document.querySelector('#sr-status').textContent;
     expect(dito.trim().length, 'o clique não anunciou nada a quem navega por ouvido').toBeGreaterThan(0);
 
-    // ⚠️ A AFIRMAÇÃO É IGUALDADE COM O RÓTULO, e a primeira versão deste caso usava
-    // `toContain('ligado')` — que é EXACTAMENTE o mesmo defeito que este caso existe para apanhar, cometido
-    // dentro dele: «desligado» CONTÉM «ligado». A mutação que inverte a ordem sobreviveu por isso e só por
-    // isso. Igualdade com o rótulo pós-clique apanha as três: sem anúncio, anúncio antes do reflexo, e
-    // anúncio do id interno.
+    // ⚠️ THE ASSERTION IS EQUALITY WITH THE LABEL: `toContain('ligado')` would be EXACTLY the defect this case exists to
+    // catch, committed inside it — `desligado` CONTAINS `ligado`. The mutation that swaps the order survived because of
+    // that and only that. Equality with the post-click label catches all three: no announcement, announcement before the
+    // reflection, and an announcement of the internal id.
     const rotulo = document.querySelector('#title-icons [data-pi="tea"]').getAttribute('aria-label');
     expect(dito, 'o que se ouve não é o que o ícone diz').toBe(rotulo);
     expect(dito, 'anunciou o estado que a criança acabou de deixar').not.toBe(rotuloAntes);
   });
 
-  /*
-   * 🔴 ESTE CASO NASCEU NO NAVEGADOR, em 2026-09-21, e o defeito estava servido numa página: com o microfone recusado, o
-   * `ui/voice-control` disse à criança «ele não abriu» e devolveu a chave guardada a desligado — e o botão continuou a dizer
-   * «Comando de voz: ligado». Um controle que mente o estado é pior do que um ícone a menos (ADR-0106 §5).
-   *
-   * ⚠️ E O CAMINHO DO CLIQUE NÃO COBRE ISTO: o `iconAct` reflecte a seguir a si próprio. O que faltava era a subscrição, que é
-   * por onde chega uma mudança vinda de FORA da barra — a mesma linha que o 📷 já tinha desde o ADR-0215.
-   */
-  // 🎯 A RAIZ RESPONDE PELO APARELHO EM USO (ADR-0113), e este é o único caso que o mede de ponta a ponta.
-  // Os casos do `ui/pause-icons` injectam o `transporteEmUso` deles, então a LINHA DA RAIZ — a que lê o
-  // `input/state.inputOf(i)` — ficava sem ninguém a afirmar. Duas mutações sobreviveram por isso, e é este
-  // caso que as mata: sem ele, a raiz podia responder «teclado» a toda a gente e nada reprovava.
+  // 🎯 THE ROOT ANSWERS FOR THE DEVICE IN USE (ADR-0113), and this is the only case that measures it end to end. The
+  // `ui/pause-icons` cases inject their own `transportInUse`, so the ROOT's line — the one that reads
+  // `input/state.inputOf(i)` — had nobody asserting it. Two mutations survived because of that, and this case kills them:
+  // without it, the root could answer keyboard for everyone and nothing would fail.
   it('🎯 [Right] a raiz lê o aparelho do jogador, e o ícone escreve na chave DELE', async () => {
     const { playerEdge, forgetInputs } = await import('../app/js/input/state.js');
     forgetInputs();
     try {
-      playerEdge(0, 'gamepad');           // a criança pegou no controle
-      // ⚠️ `seguraTeclas: true` E A RAZÃO É O PONTO DO CASO: desde o ADR-0115 a raiz só monta o `altmove`
-      // num jogo que segura alguma tecla, e o fixture padrão daqui é de hotspots (declara `false`). Sem esta
-      // linha o caso passaria a medir a ausência do ícone em vez da fiação do aparelho — verde pela razão
-      // errada, que é o defeito que este ficheiro inteiro existe para não cometer.
+      playerEdge(0, 'gamepad');           // the child picked up the gamepad
+      // ⚠️ `holdsKeys: true`, AND THE REASON IS THE CASE'S POINT: since ADR-0115 the root mounts `altmove` only in a game
+      // that holds some key, and this file's default fixture is a hotspots one (it declares `false`). Without this line
+      // the case would measure the icon's absence instead of the device wiring — green for the wrong reason.
       abrir({
         declaration: { ...declaracaoValida(), holdsKeys: () => true },
         players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }],
@@ -246,7 +229,7 @@ describe('createGame num documento de verdade', () => {
       expect(alvo, 'o ícone da alternância não está na barra').not.toBeNull();
       alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-      // ⚠️ Literal, e não a função que escreve a chave: afirmar pela mesma tabela mediria a ida e a volta.
+      // ⚠️ A literal, not the function that writes the key: asserting through the same table would measure the round trip.
       expect(localStorage.getItem('incl_togglemove_p0_gamepad'),
         'a raiz não levou o aparelho em uso até à escrita').toBe('1');
     } finally {
@@ -256,14 +239,14 @@ describe('createGame num documento de verdade', () => {
     }
   });
 
-  // 📌 O PAR: com OUTRO aparelho, a chave é outra. Sem ele, «escrever sempre no gamepad» passaria no caso
-  // acima — que é exactamente a forma da mutação que sobreviveu antes de este bloco existir.
+  // 📌 THE PAIR: with ANOTHER device, the key is another. Without it, always writing to the gamepad would pass the case
+  // above — exactly the shape of the mutation that survived before this block existed.
   it('📌 [Right] com outro aparelho, a chave é a desse aparelho', async () => {
     const { playerEdge, forgetInputs } = await import('../app/js/input/state.js');
     forgetInputs();
     try {
       playerEdge(0, 'toque');
-      // `seguraTeclas: true` pela mesma razão do caso acima — sem o ícone não há clique para medir.
+      // `holdsKeys: true` for the same reason as the case above — without the icon there is no click to measure.
       abrir({
         declaration: { ...declaracaoValida(), holdsKeys: () => true },
         players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }],
@@ -281,22 +264,22 @@ describe('createGame num documento de verdade', () => {
   });
 
   it('🔴 [Zero] o modo cego DESLIGA — sem isto ele liga uma vez e a criança fica lá dentro', () => {
-    // 🔴 ESTE CASO EXISTE POR CAUSA DE UM DEFEITO REAL QUE SÓ UM DOM REAL PODIA MOSTRAR, e ele era meu.
+    // 🔴 THIS CASE EXISTS BECAUSE OF A REAL DEFECT ONLY A REAL DOM COULD SHOW.
     //
-    // O par do modo cego ganhou os dois padrões em dias diferentes e eles não se falavam: o ESCRITOR ficou
-    // com `setBlindModeValue` (etapa 1b do ADR-0106), que escreve no `core/state`; o LEITOR ficou com
-    // `() => false`, uma CONSTANTE que já lá estava. Com um jogo que não injecta `isBlindMode`:
+    // The blind-mode pair got its two defaults on different days and they did not talk: the WRITER got
+    // `setBlindModeValue` (ADR-0106 step 1b), which writes to `core/state`; the READER kept `() => false`, a CONSTANT
+    // already there. With a game that does not inject `isBlindMode`:
     //
-    //   1. a criança carrega → `setModoCego(!false)` → o modo LIGA de verdade;
-    //   2. o reflexo lê `false` → o ícone continua a dizer «desligado» e o anúncio também;
-    //   3. ela carrega outra vez → `setBlindModeValue(!false)` = `true` OUTRA VEZ → a guarda de igualdade
-    //      devolve cedo → nada acontece.
+    //   1. the child presses → the writer stores `!false` → the mode really turns ON;
+    //   2. the reflection reads `false` → the icon still says off, and so does the announcement;
+    //   3. she presses again → `setBlindModeValue(!false)` = `true` AGAIN → the equality guard returns early → nothing
+    //      happens.
     //
-    // ⚠️ Ou seja: o modo cego ligava uma vez e NÃO HAVIA COMO DESLIGAR. Para quem não depende dele, é um jogo
-    // que de repente descreve tudo em voz alta e não se cala. Não há erro em lado nenhum.
+    // ⚠️ That is: blind mode turned on once and THERE WAS NO WAY TO TURN IT OFF. For someone who does not depend on it, it
+    // is a game that suddenly describes everything aloud and does not stop. No error anywhere.
     //
-    // 📌 E o `domFalso` não podia apanhá-lo NUNCA: o `addEventListener` dele é um stub, então o corpo do
-    // ouvinte — onde o par é exercitado — jamais correu em teste algum.
+    // 📌 And `domFalso` could NEVER catch it: its `addEventListener` is a stub, so the listener's body — where the pair is
+    // exercised — never ran in any test.
     abrir();
     const q = () => document.querySelector('#title-icons [data-pi="blind"]');
     q().dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -306,26 +289,25 @@ describe('createGame num documento de verdade', () => {
   });
 
   /*
-   * ⚠️ O QUE UM CONSUMIDOR NÃO TINHA COMO ENTREGAR, E QUE POR ISSO NENHUM JOGO TINHA.
+   * ⚠️ WHAT A CONSUMER COULD NOT HAND OVER, AND SO NO GAME HAD.
    *
-   * O `initPauseIcons` aceita `getPauseActs`, `setPauseActor`, `setTemaDoJogador` e `setCorrecaoDoJogador`
-   * desde que existem — todos opcionais, todos documentados. O `createGame` simplesmente não os passava e o
-   * `CreateGameOptions` não tinha campo para eles, então **nenhum jogo montado por esta raiz** conseguia
-   * ligar um item do cartão de pausa nem fazer aparecer os ícones de alto contraste e correcção de cor.
+   * `initPauseIcons` has always accepted `getPauseActs`, `setPauseActor`, `setPlayerTheme` and `setPlayerCorrection` —
+   * all optional, all documented. `CreateGameOptions` now carries them; before, a game mounted by this root could wire no
+   * item of the pause card nor bring up the high-contrast and colour-correction icons.
    *
-   * Medido de fora, pelo `game-pinball`, que é o consumidor externo: ele lia a ausência dos dois ícones como
-   * «este jogo tem os seus próprios», o que é verdade sobre o resultado e falso sobre a causa — ele não
-   * PODIA entregar um escritor. Uma lacuna que o consumidor lê como escolha é a pior forma de lacuna.
+   * Measured from outside, by `game-pinball`, the external consumer: it read the absence of the two icons as this game
+   * having its own, which is true about the result and false about the cause — it COULD NOT hand over a writer. A gap
+   * the consumer reads as a choice is the worst kind of gap.
    */
   describe('o que o jogo pode entregar ao cartão e à barra', () => {
     it('⚠️ [Zero] sem `getPauseActs`, o item que SÓ o jogo acciona nasce TRAVADO (ADR-0161)', () => {
-      // O `refrescarItensDaPausa` escondia o que não tem acção (§5 do ADR-0106); desde o ADR-0161 trava-o com o motivo.
+      // `refreshPauseItems` hid what has no action (ADR-0106 §5); since ADR-0161 it locks it with the reason.
       //
-      // ⚠️ O EXEMPLO MUDOU DE `quit` PARA `addplayer` em 2026-09-12, e a troca é a notícia: a engine passou a
-      // accionar `resume`, `ajuda`, `print` e `quit` sozinha (ADR-0144 errata, ADR-0147 §4 e §5), logo `quit`
-      // deixou de servir como exemplo de «item que só o jogo acciona» — ele aparece agora sem o jogo dizer
-      // nada. `addplayer` continua a ser do jogo: entrar um segundo jogador é uma decisão que só ele sabe
-      // tomar. 📌 Um caso cujo exemplo deixa de ser exemplo mede o oposto do que diz.
+      // ⚠️ THE EXAMPLE IS `addplayer`, NOT `quit`: the engine acts on `resume`, `ajuda`, `print` and `quit` itself (ADR-0144
+      // erratum, ADR-0147 §4 and §5), so `quit` no longer serves as an example of an item only the game acts on — it
+      // appears without the game saying anything. `addplayer` is still the game's: letting a second player in is a
+      // decision only the game can make. 📌 A case whose example stops being an example measures the opposite of what it
+      // says.
       const motor = abrir();
       motor.pause.show(0);
 
@@ -421,10 +403,10 @@ describe('createGame num documento de verdade', () => {
 
     it('🔴 [Right] o `quit` do JOGO ganha ao da engine — o padrão não é uma tomada', () => {
       /*
-       * 🎯 A engine passou a oferecer um `quit` («voltar à tela de press start», decisão do Dev), e este caso
-       * é o que impede isso de virar confisco: `getPauseActs` espalha a tabela do JOGO POR CIMA da da engine,
-       * então um jogo que precise de guardar alguma coisa, confirmar, ou desligar uma ligação antes de sair
-       * continua a mandar. 📌 É a mesma forma do `resume` na errata do ADR-0144.
+       * 🎯 The engine offers a `quit` («voltar à tela de press start», the Dev's decision), and this case keeps that from
+       * becoming a seizure: `getPauseActs` spreads the GAME's table OVER the engine's, so a game that needs to save
+       * something, confirm, or close a connection before leaving is still in charge. 📌 It is the same shape as `resume`
+       * in the ADR-0144 erratum.
        */
       let saiuPeloJogo = 0;
       let fase = null;
@@ -441,9 +423,9 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🎯 [Right] sem `quit` do jogo, a engine leva à TELA DE PRESS START', () => {
-      // A outra metade: o jogo que não declara nada recebe uma saída na mesma (errata do ADR-0144 §5).
-      // ⚠️ O crivo afirma a CHAMADA e não os pixels, porque quem desenha essa tela é o `ui/shell`, que esta
-      // raiz recusa montar de propósito — a engine esconde o cartão dela e PEDE a fase.
+      // The other half: the game that declares nothing still gets a way out (ADR-0144 §5 erratum).
+      // ⚠️ The check asserts the CALL and not the pixels, because whoever draws that screen is `ui/shell`, which this root
+      // does not mount on purpose — the engine hides its card and ASKS for the phase.
       const fases = [];
       const motor = abrir({ setPhase: (p) => fases.push(p) });
       motor.pause.show(0);
@@ -458,11 +440,11 @@ describe('createGame num documento de verdade', () => {
 
     it('🔴 [Zero] o PRINT SAIU da raiz (ADR-0151) — o item não está no cartão, nem escondido', () => {
       /*
-       * ⚠️ ESTE CASO MEDIA O COMPORTAMENTO do print (esconder o cartão; qualquer tecla, depois de 80 ms, o traz
-       * de volta), e a porta dele era o item da raiz. O Dev tirou-o de lá: «basta apertar SELECT que se tem a
-       * visão apropriada pra print». O que o SELECT mostra para o print é pergunta em aberto no ADR-0151, e a
-       * acção print da engine FICA no código à espera dessa resposta — sem porta, e por isso sem caso que a
-       * exercite. Dito aqui para ninguém ler a ausência como cobertura.
+       * ⚠️ THIS CASE MEASURED print's BEHAVIOUR (hide the card; any key, after 80 ms, brings it back), and its door was the
+       * root's item. The Dev took it out of there: «basta apertar SELECT que se tem a visão apropriada pra print». What
+       * SELECT shows for print is an open question in ADR-0151, and the engine's print action STAYS in the code waiting
+       * for that answer — with no door, and so with no case to exercise it. Said here so nobody reads the absence as
+       * coverage.
        */
       const motor = abrir();
       motor.pause.show(0);
@@ -471,24 +453,23 @@ describe('createGame num documento de verdade', () => {
     });
     it('🔴 [Right] o jogo que escreve POR CIMA da barra é acusado, com o nó pelo nome', () => {
       /*
-       * 🔴 O caso do Dev, no documento a sério. Medido no `dist/quiz.html`: `#title-icons` é absoluto DENTRO
-       * do `#game-region` e o `H2.quiz-pergunta` ocupa os mesmos pixels. ⚠️ Nada falhava — sem erro, sem
-       * tipo, sem consola —, e quem mais depende daqueles botões é quem não vê que eles estão tapados.
+       * 🔴 The Dev's case, in a real document: `#title-icons` is absolute INSIDE `#game-region`, and in the quiz the
+       * question's `H2` took the same pixels. ⚠️ Nothing failed — no error, no type, no console —, and whoever depends on
+       * those buttons most is whoever cannot see they are covered.
        *
-       * 📌 TEM DE SER NO NAVEGADOR: o que se afirma é uma INTERSECÇÃO de rectângulos reais. Um duplo
-       * devolveria o que o duplo quisesse, e a metade pura já está presa em `barra-a11y-e-hud.node`.
+       * 📌 IT MUST BE IN THE BROWSER: what is asserted is an INTERSECTION of real rectangles. A double would return whatever
+       * the double wanted, and the pure half is already held in `the-a11y-bar-is-hud.node`.
        */
       const regiao = raiz.querySelector('#game-region');
       regiao.style.position = 'relative';
       const titulo = document.createElement('h2');
-      // ⚠️ Nome NEUTRO: o crivo `engine-boundary` reprova um fixture de engine que precise do vocabulário de
-      // um género. O defeito foi medido num quiz, mas o que se afirma — um título por cima da barra — é de
-      // qualquer jogo que desenhe um cabeçalho.
+      // ⚠️ A NEUTRAL name: the `engine-boundary` check fails an engine fixture that needs a genre's vocabulary. The defect
+      // was measured in a quiz, but what is asserted — a heading over the bar — is any game's that draws a heading.
       titulo.className = 'titulo-da-atividade';
       titulo.textContent = 'Um título qualquer';
       titulo.style.cssText = 'position:absolute;left:0;top:0;width:400px;height:120px';
       regiao.appendChild(titulo);
-      // A barra tem de estar DENTRO da região e a ocupar espaço, senão o caso mede a ausência dela.
+      // The bar must be INSIDE the region and taking room, or the case measures its absence.
       const barra = raiz.querySelector('#title-icons');
       regiao.appendChild(barra);
       barra.style.cssText = 'position:absolute;left:10px;top:10px;width:300px;height:44px';
@@ -541,25 +522,25 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🎯 [Zero] sem nada por cima, a engine NÃO acusa — e declara a faixa reservada', () => {
-      // O par. Sem ele, um crivo que acusasse sempre passaria o caso acima sem provar nada.
+      // The pair. Without it, a check that always accused would pass the case above without proving anything.
       const motor = abrir();
       expect(motor.problems.filter((p) => /draws over the accessibility bar/.test(p)),
         'acusou sobreposição num jogo que não desenhou nada').toEqual([]);
-      // 📌 E a faixa é DECLARADA onde o jogo a lê, ao lado do `--tap` e do `--alvo-min`.
+      // 📌 And the band is DECLARED where the game reads it, beside `--tap` and `--alvo-min`.
       const regiao = document.querySelector('#game-region');
       expect(regiao.style.getPropertyValue('--barra-a11y-h'), 'a engine não disse que faixa reserva').toMatch(/^\d+px$/);
     });
 
     it('🔴 [Right] COM host de filtros, a engine acciona 🚥 sozinha — e 🌗 continua a ser do jogo', () => {
       /*
-       * 📏 MEDIDO no `dist/quiz.html`: a barra servia sete ícones, três deles a dizer «em construção», e o 🚥
-       * ficava de fora — com a engine a ter tudo à mão. `installCvdFilters` monta os seis `<filter>` e
-       * `aplicarFiltroDeVisao` sabe pô-los no mundo; faltava ligá-los ao ícone.
+       * 📏 Without a default, the bar left the 🚥 out while the engine had everything at hand: `installCvdFilters` mounts
+       * the six `<filter>` and `applyVisionFilter` knows how to put them on the world; what was missing was wiring them to
+       * the icon.
        *
-       * 🔴 E O PAR É O QUE IMPEDE ISTO DE SE TORNAR UMA PROMESSA A MAIS: o 🌗 NÃO aparece, porque
-       * `setTemaDoJogador` não é um filtro — é um REPINTE de texturas (`render/textures`), e os níveis
-       * `hc-direto-45`/`hc-direto-7` são os rácios 4,5:1 e 7:1 da WCAG. A engine não tem texturas, e
-       * aproximá-lo com `filter: contrast()` seria anunciar um rácio que nada garante.
+       * 🔴 AND THE PAIR IS WHAT KEEPS THIS FROM BECOMING ONE MORE PROMISE: the 🌗 does NOT appear, because `setPlayerTheme`
+       * is not a filter — it is a REPAINT of textures in the game's render, and the levels `hc-direto-45`/`hc-direto-7` are
+       * WCAG's 4.5:1 and 7:1 ratios. The engine has no textures, and approximating it with `filter: contrast()` would be
+       * announcing a ratio nothing guarantees.
        */
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       raiz.appendChild(svg);
@@ -572,7 +553,7 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🎯 [Right] carregar no 🚥 põe MESMO o filtro no mundo — não só anuncia', () => {
-      // ⚠️ Sem isto o caso acima ficaria verde com um ícone inerte, que é o botão morto do §5 com outra roupa.
+      // ⚠️ Without this the case above would stay green with an inert icon, §5's dead button in other clothes.
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       raiz.appendChild(svg);
       abrir({ host: { doc: document, win: window, cvdHost: svg } });
@@ -581,9 +562,9 @@ describe('createGame num documento de verdade', () => {
 
       document.querySelector('#title-icons [data-pi="cvd"]').click();
 
-      // ⚠️ A asserção aceita aspas: o navegador normaliza `url(#x)` para `url("#x")` ao devolver o estilo, e a
-      // primeira versão deste caso reprovou por causa disso — com o filtro JÁ aplicado. Medir o que o
-      // navegador devolve, e não o que se escreveu.
+      // ⚠️ The assertion accepts quotes: the browser normalises `url(#x)` to `url("#x")` when returning the style, and the
+      // first version of this case failed because of that — with the filter ALREADY applied. Measure what the browser
+      // returns, not what was written.
       expect(mundo.style.filter, 'o ícone anunciou uma correcção que não aconteceu').toMatch(/url\(["']?#cvd-fix-/);
     });
 
@@ -741,18 +722,17 @@ describe('createGame num documento de verdade', () => {
 
     it('🔴 [Boundary] o ciclo ANDA e LIMPA quando o jogo declara jogadores', () => {
       /*
-       * 🔴 ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE: «aplica sempre um filtro, nunca limpa» ficava verde,
-       * porque o caso de cima carrega UMA vez. O ciclo tem quatro posições — tricromata, protan, deuter,
-       * tritan — e a quarta volta ao início.
+       * 🔴 THIS CASE WAS BORN OF A SURVIVING MUTATION: always applying a filter and never clearing stayed green, because
+       * the case above presses ONCE. The cycle has four positions — trichromat, protan, deuter, tritan — and the fourth
+       * goes back to the start.
        *
-       * ⚠️ E VOLTAR AO INÍCIO TEM DE LIMPAR DE FACTO. A criança que experimenta as três e decide que nenhuma
-       * serve ficaria, sem isso, com a última por cima do jogo para sempre — e o ícone a anunciar «visão
-       * tricromata». É o controle a mentir o estado na direcção mais cruel: ela mexeu para desfazer.
+       * ⚠️ AND GOING BACK TO THE START MUST TRULY CLEAR. The child who tries all three and decides none serves would, without
+       * it, keep the last one over the game forever — with the icon announcing trichromatic vision. It is the control lying
+       * about its state in the cruellest direction: she moved it to undo.
        *
-       * 🔴 E O `players` AQUI É O CASO, não cenário. Sem ele o ciclo fica PRESO na primeira posição, porque
-       * `initPauseIcons` recebe uma lista VAZIA (`create-game.ts`, nota do `getPlayers`) e o passo seguinte é
-       * calculado a partir do estado do jogador. O defeito é dessa linha e não deste eixo; está nomeado lá,
-       * medido, e o conserto é refactor de ordem de arranque.
+       * 📌 The `players` here once decided the case: with an empty list the cycle stuck on the first position (issue #147).
+       * Since that fix the root answers one seat for a game that declares none; the case keeps the players a game with
+       * seats has.
        */
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       raiz.appendChild(svg);
@@ -770,8 +750,8 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🔴 [Right] o `setPlayerCorrection` do JOGO ganha ao padrão da engine', () => {
-      // O padrão é piso, não tomada: um jogo que corrija a cor no seu próprio render — o `game-pinball`
-      // fá-lo num framebuffer há semanas — entrega o seu e a engine sai da frente.
+      // The default is a floor, not a seizure: a game that corrects colour in its own render — `game-pinball` does it in a
+      // framebuffer — hands in its own and the engine steps aside.
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       raiz.appendChild(svg);
       const vistas = [];
@@ -788,8 +768,8 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('⚠️ [Zero] sem escritores visuais, os ícones de contraste e cor NÃO são montados', () => {
-      // `iconsThatAct` monta `contrast` e `cvd` só para quem entrega quem os escreve. É a regra certa:
-      // um ícone que não acciona é pior que um ícone a menos. O que faltava era a PORTA.
+      // `iconsThatAct` mounts `contrast` only for whoever hands in its writer. It is the right rule: an icon that does not
+      // act is worse than one icon fewer. What was missing was the DOOR.
       abrir();
 
       expect(document.querySelector('#title-icons [data-pi="contrast"]')).toBeNull();
@@ -804,9 +784,9 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('⚠️ [Right] e UM escritor só monta UM ícone, porque são duas perguntas diferentes', () => {
-      // O par não é um botão de dois estados: um jogo pode saber repintar para alto contraste e não ter
-      // como corrigir daltonismo, ou o contrário — que é exactamente o caso do `game-pinball`, cuja imagem
-      // é um framebuffer de 320x180 sem textura para repintar, mas que aplica um filtro de cor há semanas.
+      // The pair is not a two-state button: a game may know how to repaint for high contrast and have no way to correct
+      // colour, or the other way round — exactly `game-pinball`'s case, whose image is a 320x180 framebuffer with no
+      // texture to repaint, but which applies a colour filter.
       abrir({ setPlayerCorrection: () => {} });
 
       expect(document.querySelector('#title-icons [data-pi="cvd"]'), 'o que ele sabe fazer').not.toBeNull();
@@ -815,8 +795,8 @@ describe('createGame num documento de verdade', () => {
   });
 
   it('⚠️ [Boundary] a barra monta no hospedeiro DECLARADO, e não caça um id fixo', () => {
-    // O jogo diz onde ela cabe no desenho dele; a engine não adivinha. Num documento a sério isto prova-se
-    // pelo sítio onde os nós ficaram, que é a única coisa que um duplo com um mapa de ids não distingue.
+    // The game says where it fits in its layout; the engine does not guess. In a real document this is proved by where
+    // the nodes ended up, the one thing a double with a map of ids cannot tell apart.
     const meu = document.createElement('nav');
     meu.id = 'a-minha-barra';
     raiz.appendChild(meu);
@@ -826,22 +806,22 @@ describe('createGame num documento de verdade', () => {
   });
 
   /*
-   * O AVISO DE ALCANCE ENTRE CARTUCHOS (ADR-0142).
+   * THE REACH NOTICE BETWEEN CARTRIDGES (ADR-0142).
    *
-   * ⚠️ ESTE CASO SÓ PODE VIVER AQUI, e a regra do cabeçalho deste ficheiro é que o diz: o `domFalso` do
-   * projeto node devolve um elemento para QUALQUER seletor que não esteja em `ausentes`, logo
-   * `#reach-notice` responde «existe» quer tenha sido criado quer não; e o `removeChild` dele é uma função
-   * vazia. As duas metades da pergunta — apareceu? saiu? — são invisíveis ao duplo. Aqui há árvore a sério.
+   * ⚠️ THIS CASE CAN ONLY LIVE HERE, and this file's header rule says why: the node project's `domFalso` returns an element
+   * for ANY selector not in `ausentes`, so `#reach-notice` answers that it exists whether it was created or not; and its
+   * `removeChild` is an empty function. Both halves of the question — did it appear? did it leave? — are invisible to the
+   * double. Here there is a real tree.
    *
-   * 🎯 E o que se mede não é o aviso APARECER: é ele SAIR quando o cartucho seguinte não tem o que avisar.
-   * `retirarAvisoDeAlcance()` corre sempre, e não só quando há o que mostrar, exactamente por isto — um
-   * cartucho calado tem de apagar o barulho do anterior, e é esse o caso que se esquece.
+   * 🎯 And what is measured is not the notice APPEARING: it is it LEAVING when the next cartridge has nothing to warn
+   * about. `removeReachNotice()` always runs, and not only when there is something to show, exactly for this — a quiet
+   * cartridge must erase the previous one's noise, and that is the case that gets forgotten.
    */
   it('🎯 [Zero] um cartucho sem nada a avisar APAGA o aviso de alcance do anterior', () => {
-    // ⚠️ UM APARELHO SEM NADA, e não «só com toque», que foi a primeira tentativa e passou: o `ok` do
-    // alcance é `acoes.length > 0 && disponiveis.some(serve)`, e o toque APONTA — logo servia ao jogo que
-    // pede ponteiro, e o aviso não chegava a existir. Sem transporte nenhum disponível, `some` é falso e a
-    // engine tem o que dizer, que é a pré-condição deste caso.
+    // ⚠️ A DEVICE WITH NOTHING, and not touch only, which was the first attempt and passed: the reach's `ok` is
+    // `actions.length > 0 && availableNow.some(serve)`, and touch POINTS — so it served the game that asks for a pointer,
+    // and the notice never existed. With no transport available, `some` is false and the engine has something to say,
+    // which is this case's precondition.
     const semNada = {
       gamepad: () => false, touch: () => false, keyboard: () => false, mouse: () => false,
     };
@@ -853,38 +833,37 @@ describe('createGame num documento de verdade', () => {
     expect(document.querySelector('#reach-notice'), 'o aviso nem chegou a aparecer — o caso não mede nada')
       .not.toBeNull();
 
-    // Sem ganchos: o cartucho novo não declara `preset`, logo não tem ações a avisar.
+    // No hooks: the new cartridge declares no `preset`, so it has no actions to warn about.
     motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
     expect(document.querySelector('#reach-notice'), 'o aviso do cartucho anterior ficou na página')
       .toBeNull();
   });
 
   /*
-   * ===================== OS PAINÉIS DE AJUSTES (ADR-0106 §1) =====================
+   * ===================== THE SETTINGS PANELS (ADR-0106 §1) =====================
    *
-   * 🔴 O QUE ESTES CASOS MEDEM JÁ FOI MEDIDO A VALER, e o número é o argumento: um jogo que chama só
-   * `createGame` recebia ZERO painéis. `ui/panel-shell.mountShell` existe desde 07/09 e nenhum módulo da
-   * engine a chamava — o único chamador da árvore era o quiz. Cada `ui/settings-*` preenchia o interior de ids
-   * que ninguém criava, e o quiz registou o sintoma como achado 6: «o painel abre VAZIO, sem erro».
+   * 🔴 WHAT THESE CASES MEASURE: a game that called only `createGame` got ZERO panels. `ui/panel-shell.mountShell` existed
+   * and no engine module called it; each `ui/settings-*` filled the inside of ids nobody created, and the quiz recorded the
+   * symptom as finding 6: the panel opens EMPTY, with no error.
    *
-   * 🎯 E TÊM DE VIVER AQUI, pela regra do cabeçalho: a pergunta é se o painel está NA ÁRVORE, se um clique de
-   * verdade o abre, se as opções de fonte PARSEIAM e se o foco pousa dentro do cartão. Um duplo responde «sim»
-   * às quatro sem que nenhuma seja verdade.
+   * 🎯 AND THEY MUST LIVE HERE, by the header's rule: the question is whether the panel is IN THE TREE, whether a real
+   * click opens it, whether its markup PARSES and whether focus lands inside the card. A double answers yes to all four
+   * without any being true.
    */
   describe('os painéis de ajustes, que a engine passou a montar', () => {
-    // ⚠️ ERA O ITEM `tipo`. Desde o ADR-0151 a tipografia não tem painel nem porta, e os casos que mediam a
-    // MAQUINARIA dos painéis (o filtro do §5, o clique até ao foco, a cadeia do Escape, o cartucho que sobrepõe)
-    // passaram a medi-la no painel de sensibilidade visual, que é da engine e continua na lista.
+    // ⚠️ IT WAS THE `tipo` ITEM. Since ADR-0151 typography has neither panel nor door, and the cases that measured the
+    // panels' MACHINERY (the §5 filter, the click to focus, the Escape chain, the overriding cartridge) measure it on the
+    // visual-sensitivity panel, which is the engine's and is still on the list.
     const itemAnim = () => document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]');
 
     it('🎯 [Right] com ZERO campos opcionais, o painel de SENSIBILIDADE VISUAL está no documento e nasce escondido', () => {
-      // O caso que carrega a etapa: nada de `getPauseActs`, nada de escritores. O jogo só chamou `createGame`.
+      // The case that carries the step: no `getPauseActs`, no writers. The game only called `createGame`.
       abrir();
       const painel = document.querySelector('#animation');
       expect(painel, 'a engine não montou painel nenhum — é o estado de antes').not.toBeNull();
       expect(painel.isConnected).toBe(true);
       expect(painel.hidden, 'um painel que nasce aberto é um painel que ninguém abriu').toBe(true);
-      // Os ids que o `ui/settings-motion` exige e que ninguém declarava. O contrato agora é construído.
+      // The ids `ui/settings-motion` demands and nobody declared. The contract is built now.
       for (const id of ['motion-list', 'animation-reset', 'animation-close']) {
         expect(document.getElementById(id), `a casca não criou #${id}`).not.toBeNull();
       }
@@ -892,13 +871,13 @@ describe('createGame num documento de verdade', () => {
 
     it('🔴 [Right] a AJUDA abre por um clique e diz POSIÇÃO ↔ tecla ↔ a palavra do jogo', () => {
       /*
-       * 🔴 O item `ajuda` está na lista desde o ADR-0044 e a engine nunca o soube accionar — a tela que o
-       * preenchia saiu com o cartucho (#111). Este caso é o percurso inteiro da criança: item da pausa →
-       * despacho → tabela da engine → `abrir()` → `render()` → as linhas no documento.
+       * 🔴 The `ajuda` item has been on the list since ADR-0044 and the engine could not act on it — the screen that filled
+       * it left with the cartridge (#111). This case is the child's whole path: pause item → dispatch → engine table →
+       * `open()` → `render()` → the rows in the document.
        *
-       * 📌 E TEM DE VIVER AQUI e não no ficheiro `node`: lá a metade pura já está presa (`helpRows`), mas
-       * «o painel está NA ÁRVORE», «um clique de verdade o abre» e «a lista foi preenchida» são as três
-       * coisas que só um documento sabe — é a regra do cabeçalho deste ficheiro.
+       * 📌 AND IT MUST LIVE HERE and not in the `node` file: there the pure half is already held (`helpRows`), but the panel
+       * being IN THE TREE, a real click opening it and the list being filled are the three things only a document knows
+       * — this file's header rule.
        */
       const motor = abrir({
         preset: {
@@ -923,16 +902,16 @@ describe('createGame num documento de verdade', () => {
       expect(repor === null || repor.offsetParent === null, 'the help offers «restore defaults»').toBe(true);      const slides = document.querySelector('#help .slides');
       expect(slides, 'no slide show in the help').not.toBeNull();
       const slide = () => slides.querySelector('.slide');
-      // A ordem é a canónica de `ACTIONS`: `left` antes de `action2`, e não a ordem do objeto do jogo.
+      // The order is `ACTIONS`' canonical one: `left` before `action2`, not the game object's order.
       expect(slide().dataset.act, 'the show does not open on the first position').toBe('left');
       expect(slide().querySelectorAll('.slide-ponto').length, 'one dot per slide').toBe(2);
       slides.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
       expect(slide().dataset.act, 'right did not turn the page').toBe('action2');
-      // 🔴 A PALAVRA É A DO JOGO, e o slide não mostra um identificador.
+      // 🔴 THE WORD IS THE GAME'S, and the slide shows no identifier.
       expect(slide().querySelector('.slide-palavra').textContent).toBe('Confirmar');
       expect(slide().querySelector('.slide-texto').textContent).toBe('Escolhe a alternativa em que está o cursor.');
       expect(painel.textContent, 'a ajuda mostrou um identificador a uma criança').not.toContain('action2');
-      // A tecla é a do esquema desta criança, resolvida pelo runtime de teclado e não inventada aqui.
+      // The key is this child's scheme's, resolved by the keyboard runtime and not invented here.
       expect(slide().querySelector('.slide-tecla').hasAttribute('data-sem-tecla'), 'the child\'s key is not drawn').toBe(false);
       expect(slide().querySelector('.slide-tecla').textContent.trim().length).toBeGreaterThan(0);
       // The last slide is a wall, as every steps control's end is.
@@ -977,8 +956,8 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🔴 [Zero] SEM `preset` o item de ajuda fica TRAVADO — presente, e sem painel por trás (ADR-0161)', () => {
-      // O par do caso acima. Sem as palavras do jogo a ajuda não se monta (ADR-0074); desde o ADR-0161 o item fica à
-      // vista e travado com o motivo, em vez de sumir. Medir só a presença deixaria passar uma ajuda vazia.
+      // The pair of the case above. Without the game's words the help is not mounted (ADR-0074); since ADR-0161 the item
+      // stays in view and locked with the reason, instead of vanishing. Measuring only presence would let an empty help by.
       const motor = abrir();
       motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]');
@@ -988,9 +967,9 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🎯 [Right] o item `anim` SOBREVIVE ao filtro do §5 — a tabela da engine deixou de ser vazia', () => {
-      // 📏 A cascata que produzia um cartão de um botão: sem `getPauseActs` a tabela é `{}`, `itemsThatAct`
-      // guarda só os três de `ENGINE_ITEMS`, e `rootThatActs` tira também o `options` porque seria «uma
-      // porta para uma sala vazia». Com uma acção de verdade, a porta e a sala existem.
+      // 📏 The cascade that produced a one-button card: without `getPauseActs` the table is `{}`, `itemsThatAct` keeps only
+      // `ENGINE_ITEMS`, and `rootThatActs` also drops `options` because it would be «uma porta para uma sala vazia». With
+      // a real action, the door and the room exist.
       const motor = abrir();
       motor.pause.show(0);
       expect(itemAnim(), 'o item de sensibilidade visual nem foi montado').not.toBeNull();
@@ -1000,8 +979,8 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🎯 [Right] UM CLIQUE DE VERDADE no item abre o painel, com as fontes desenhadas e o foco dentro', () => {
-      // O caminho inteiro: botão da pausa -> despacho de `ui/pause-icons` -> tabela da engine -> `abrir()` ->
-      // `render()` do painel. Nenhum duplo percorre isto; e é o percurso que a criança faz.
+      // The whole path: pause button -> `ui/pause-icons` dispatch -> engine table -> `open()` -> the panel's `render()`.
+      // No double walks this; and it is the path the child takes.
       const motor = abrir();
       motor.pause.show(0);
       itemAnim().click();
@@ -1024,8 +1003,8 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('⚠️ [Right] o CARTUCHO sobrepõe a acção da engine — não-declinável é a pausa, não cada item dela', () => {
-      // ADR-0122 torna não-declinável a pausa EXISTIR; não faz da engine dona de cada item dentro dela. Um
-      // jogo que já tenha o seu painel de sensibilidade visual continua a ser quem responde pelo item.
+      // ADR-0122 makes the pause EXISTING non-declinable; it does not make the engine the owner of every item in it. A game
+      // that already has its own visual-sensitivity panel is still the one that answers for the item.
       let meu = 0;
       const motor = abrir({ getPauseActs: () => ({ anim: () => { meu += 1; } }) });
       motor.pause.show(0);
@@ -1036,24 +1015,23 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🔴 [Zero] os painéis de COMUNICAÇÃO e de TIPOGRAFIA não são montados, nem têm porta (ADR-0151)', () => {
-      // ⚠️ ESTES CASOS MEDIAM O PAINEL DE CAA (a caixa da letra, o dono do fechar, a cadeia do Escape) pela porta
-      // «Comunicação». O Dev tirou-a das configurações de inclusão: a caixa da letra anda no ciclo do 11.º botão.
-      // Um painel sem porta seria um diálogo no documento que ninguém alcança, e por isso a engine deixou de o
-      // montar — os casos do comportamento dele saíram com a montagem, e o módulo tem os seus em
-      // `settings-caa.browser.test.js`.
+      // ⚠️ THESE CASES MEASURED THE AAC PANEL (the letter case, the close owner, the Escape chain) through the
+      // «Comunicação» door. The Dev took it out of the inclusion settings: the letter case moves with the 11th button's
+      // cycle. A panel with no door would be a dialog in the document nobody reaches, so the engine no longer mounts it —
+      // the cases of its behaviour left with the mounting, and the module has its own in `settings-caa.browser.test.js`.
       const motor = abrir();
       motor.pause.show(0);
       expect(document.querySelector('#caa'), 'o painel de CAA continua montado sem porta').toBeNull();
       expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="caa"]'), 'a porta «Comunicação» continua').toBeNull();
       expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="tipo"]'), 'a porta «Tipografia» continua').toBeNull();
-      // ⚠️ E OS DOIS CASOS QUE SÓ A TIPOGRAFIA TINHA — a amostra e o repor — saíram com a casca dela; o módulo
-      // `ui/settings-typo` guarda os seus em `settings-typo.browser.test.js`.
+      // ⚠️ AND THE TWO CASES ONLY TYPOGRAPHY HAD — the sample and the reset — left with its shell; the `ui/settings-typo`
+      // module keeps its own in `settings-typo.browser.test.js`.
       expect(document.querySelector('#typo'), 'o painel de tipografia continua no documento sem porta').toBeNull();
     });
 
     it('🔴 [Right] sem o painel, o ESCRITOR da tipografia continua vivo — o 11.º botão ainda troca a face', () => {
-      // 📌 O par do caso de cima, e a razão de o `initSettingsTypo` continuar a correr: tirar a casca não pode
-      // levar a escrita. Sem este caso, um `createGame` que deixasse de iniciar o módulo passaria em tudo.
+      // 📌 The pair of the case above, and the reason `initSettingsTypo` still runs: removing the shell must not take the
+      // writing with it. Without this case, a `createGame` that stopped starting the module would pass everything.
       abrir();
       const botao = document.querySelector('#title-icons [data-pi="tipografia"]');
       expect(botao, 'o 11.º botão não montou — o caso mediria nada').not.toBeNull();
@@ -1063,9 +1041,9 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🎯 [Right] o painel de SENSIBILIDADE VISUAL abre, e a lista dele é `#motion-list`', () => {
-      // ⚠️ A ÚNICA DIVERGÊNCIA DE ID DOS OITO, e ela é silenciosa: `settings-motion` vive em `#animation` — com
-      // `#animation-reset` e `#animation-close`, que casam — e lê a lista em `#motion-list`. A casca que
-      // criasse `#animation-list` devolveria um painel que abre VAZIO, sem erro, que é o achado 6 outra vez.
+      // ⚠️ A SILENT ID DIVERGENCE: `settings-motion` lives in `#animation` — with `#animation-reset` and `#animation-close`,
+      // which match — and reads its list in `#motion-list`. A shell that created `#animation-list` would give a panel that
+      // opens EMPTY, with no error, which is finding 6 again.
       const motor = abrir();
       motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]');
@@ -1077,14 +1055,14 @@ describe('createGame num documento de verdade', () => {
       const lista = document.querySelector('#motion-list');
       expect(lista, 'a casca criou a lista com o id errado — o painel abre vazio e ninguém sabe').not.toBeNull();
       expect(lista.querySelectorAll('button').length, 'a lista existe e está vazia').toBeGreaterThan(0);
-      // e não sobrou uma lista órfã com o id que a convenção daria
+      // and no orphan list was left with the id the convention would give
       expect(document.querySelector('#animation-list'), 'ficaram DUAS listas no cartão').toBeNull();
     });
 
     it('🔴 [Right] o BOTÃO-MESTRE congela tudo de um gesto — e existe antes do `init`, ou é morto', () => {
-      // ⚠️ Mesma regra de ordem do `#typo-reset`: `initSettingsMotion` liga o clique dele UMA VEZ, no arranque.
-      // E ele não é conveniência — é a saída de quem sentiu enjoo com a tela a mexer e precisa de parar TUDO
-      // num gesto, em vez de percorrer sete linhas uma a uma.
+      // ⚠️ The panels' order rule: `initSettingsMotion` wires its click ONCE, at boot. And it is not a convenience — it is
+      // the way out for someone who felt sick with the screen moving and needs to stop EVERYTHING in one gesture, instead
+      // of going through seven rows one by one.
       const motor = abrir();
       motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]').click();
@@ -1098,13 +1076,13 @@ describe('createGame num documento de verdade', () => {
       expect(document.querySelector('#motion-master').getAttribute('aria-pressed'),
         'o clique não fez nada — a casca montou DEPOIS do `init` e o botão ficou sem escuta').not.toBe(antes);
 
-      // devolve ao padrão para não deixar tudo congelado aos casos seguintes
+      // back to the default so as not to leave everything frozen for the next cases
       document.querySelector('#animation-reset').click();
     });
 
     it('🎯 [Right] o painel AUDITIVO abre com os seus controles, cada um com a tag certa', () => {
-      // O maior dos oito: quinze nós que o painel alcançava e nunca criava. Aqui o que se mede é o percurso
-      // inteiro — item da pausa, tabela da engine, `abrir()`, `renderAudio()` — e que a tag sobreviveu a ele.
+      // The biggest panel: nodes it reached and never created. What is measured here is the whole path — pause item,
+      // engine table, `open()`, `renderAudio()` — and that the tag survived it.
       const motor = abrir();
       motor.pause.show(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]');
@@ -1115,24 +1093,24 @@ describe('createGame num documento de verdade', () => {
       expect(document.querySelector('#audio').hidden, 'o clique não revelou o painel').toBe(false);
       expect(document.querySelector('#cane-div').tagName, 'a bengala não é uma escolha').toBe('SELECT');
       expect(document.querySelector('#tts-vol').type, 'o volume da narração não é um cursor').toBe('range');
-      // e a lista da navegação sonora foi PREENCHIDA pelo painel: um grupo vazio é o achado 6 outra vez
+      // and the navigation-sound list was FILLED by the panel: an empty group is finding 6 again
       expect([...document.querySelectorAll('#navsound-list [data-acat]')].map((b) => b.dataset.acat),
         'o painel abriu sem sonar, guarda e guia').toEqual(['sonar', 'guard', 'guide']);
-      // 🔴 O QUE O ADR-0151 TIROU DESTE PAINEL, afirmado AUSENTE dentro dele
+      // 🔴 WHAT ADR-0151 TOOK OUT OF THIS PANEL, asserted ABSENT inside it
       const painel = document.querySelector('#audio');
       for (const sel of ['#audio-master', '#audio-master-vol', '#navsound-master', '[data-acat="music"]']) {
         expect(painel.querySelector(sel), `${sel} continua na acessibilidade auditiva`).toBeNull();
       }
 
-      // ⚠️ E OS CONTROLES ESTÁTICOS ESTÃO LIGADOS — a regra de ordem, medida no que ela produz.
-      // `initSettingsAudio` liga-os UMA VEZ, no arranque; com o interior montado DEPOIS, ficariam botões no
-      // documento e sem escuta nenhuma. Sem este pedaço a mutação da ordem sobrevivia.
+      // ⚠️ AND THE STATIC CONTROLS ARE WIRED — the order rule, measured in what it produces. `initSettingsAudio` wires them
+      // ONCE, at boot; with the inside mounted AFTER, there would be buttons in the document with no listener at all.
+      // Without this piece the order mutation survived.
       const indice = document.querySelector('#opt-menuindex');
       const antes = indice.getAttribute('aria-pressed');
       indice.click();
       expect(document.querySelector('#opt-menuindex').getAttribute('aria-pressed'),
         'o clique no índice falado não fez nada — o interior montou DEPOIS do `init`').not.toBe(antes);
-      indice.click(); // devolve: o índice é estado de módulo
+      indice.click(); // gives it back: the index is module state
     });
 
     it('🎯 [Right] o painel ÁUDIO abre pelo submenu, com o SOM GERAL e as quatro categorias de gosto (ADR-0151)', () => {
@@ -1145,7 +1123,7 @@ describe('createGame num documento de verdade', () => {
       expect(document.querySelector('#som').hidden, 'o clique não revelou o painel Áudio').toBe(false);
       expect([...document.querySelectorAll('#som #audio-list [data-acat]')].map((b) => b.dataset.acat),
         'as categorias de gosto não são as quatro — ou `other` voltou').toEqual(['music', 'ambient', 'interact', 'earcons']);
-      // «toggle + barra para som geral voltam» — e LIGADOS antes do `init`, pela mesma regra de ordem
+      // «toggle + barra para som geral voltam» — and WIRED before the `init`, by the same order rule
       expect(document.querySelector('#som #audio-master-vol')?.type, 'o volume geral não voltou').toBe('range');
       const mestre = document.querySelector('#som #audio-master');
       const antesDoSom = mestre.getAttribute('aria-pressed');
@@ -1196,19 +1174,19 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🔴 [Right] ligar o TTS pelo ÍCONE refresca o painel — o guarda morto do monólito voltou a valer', () => {
-      // ⚠️ `ui/pause-icons` documenta o defeito e preservou-o verbatim: no monólito esta chamada estava atrás
-      // de `typeof reflectTTS === 'function'`, um símbolo que já não existia, «so it never fires». O campo
-      // `reflectTtsPanelEnabled` existe para o ligar de volta, e só agora há um painel para refrescar.
+      // ⚠️ `ui/pause-icons` documents the defect and kept it verbatim: in the monolith this call sat behind
+      // `typeof reflectTTS === 'function'`, a symbol that no longer existed, «so it never fires». The
+      // `reflectTtsPanelEnabled` field exists to switch it back on, and now there is a panel to refresh.
       //
-      // 📌 Sem isto, a criança liga a narração pelo ícone 🗣 e o painel continua a dizer que está desligada —
-      // a família do controlo a mentir o estado, que este repositório já pagou com o `#opt-modocego`.
+      // 📌 Without it, the child turns narration on with the 🗣 icon and the panel goes on saying it is off — the family of
+      // a control lying about its state.
       const motor = abrir();
       motor.pause.show(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
       const botao = document.querySelector('#opt-tts');
       const antes = botao.getAttribute('aria-pressed');
 
-      // o ícone da barra da primeira tela, que é outra superfície da MESMA engine
+      // the first screen bar's icon, which is another surface of the SAME engine
       const icone = document.querySelector('#title-icons [data-pi="tts"]');
       expect(icone, 'o ícone de narração não está na barra: o caso não mede nada').not.toBeNull();
       icone.click();
@@ -1218,27 +1196,26 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🔴 [Boundary] hospedeiro FORA de `#game-region` vira linha em `problems`, e não silêncio', () => {
-      // ⚠️ ESTE É O CASO DO SILÊNCIO. `ui/settings-panel.topVisibleOverlay` varre `'#game-region .overlay'`, e é
-      // por ele que o `ui/menu-nav` acha o diálogo de cima para andar com as setas. Um painel pendurado fora
-      // desse escopo ABRE e fecha com Escape — e as setas não andam dentro dele, sem erro em lado nenhum.
+      // ⚠️ THIS IS THE CASE OF SILENCE. `ui/settings-panel.topVisibleOverlay` scans `'#game-region .overlay'`, and that is
+      // how `ui/menu-nav` finds the top dialog to move with the arrows. A panel hung outside that scope OPENS and closes
+      // with Escape — and the arrows do not move inside it, with no error anywhere.
       const fora = document.createElement('div');
       fora.id = 'fora-da-regiao';
-      raiz.appendChild(fora); // irmão do #game-region, não filho
+      raiz.appendChild(fora); // a sibling of #game-region, not a child
       const motor = abrir({ host: { doc: document, win: window, pauseHost: fora } });
 
       const linha = motor.problems.find((p) => p.includes('#game-region'));
       expect(linha, 'a engine montou fora do escopo dos overlays e calou-se').toBeTruthy();
       expect(linha, 'a linha tem de nomear a saída, ou é queixa em vez de conserto').toMatch(/pauseHost/);
-      // E a lacuna é DITA, não fingida: o painel foi mesmo montado onde o jogo mandou.
-      // (Era `#typo`; a tipografia deixou de ter painel no ADR-0151 — o de sensibilidade visual mede o mesmo.)
+      // And the gap is SAID, not faked: the panel really was mounted where the game said.
+      // (The typography panel is gone since ADR-0151; the visual-sensitivity one measures the same.)
       expect(fora.querySelector('#animation'), 'acusou e não montou — pior do que montar e calar').not.toBeNull();
     });
 
     it('🎯 [Zero] DOIS cartuchos em sequência deixam UM de cada — o terceiro gate do ADR-0139', () => {
-      // ⚠️ O gate existia como frase e não como contagem, e até hoje ele não tinha o que contar: a engine
-      // montava a barra e o cartão, e mais nada. Com quatro painéis montados, «uma barra» passou a ser
-      // «uma barra, um cartão e quatro painéis» — e um `mount()` que um dia passasse a remontá-los deixaria
-      // dois de cada, com o segundo a roubar os ids do primeiro.
+      // ⚠️ The gate existed as a sentence and not as a count. With the panels mounted, one bar became one bar, one card and
+      // the panels — and a `mount()` that one day started remounting them would leave two of each, the second stealing
+      // the first's ids.
       const motor = abrir();
       motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
       motor.mount(declaracaoValida(), { accommodations: SEM_ASSUNTO });
@@ -1248,18 +1225,18 @@ describe('createGame num documento de verdade', () => {
       for (const id of ['animation', 'audio']) {
         expect(document.querySelectorAll('#' + id).length, `#${id} ficou duplicado`).toBe(1);
       }
-      // e a barra não ganhou uma segunda fiada de ícones dentro de si
+      // and the bar did not grow a second row of icons inside itself
       const porIcone = [...document.querySelectorAll('#title-icons [data-pi]')].map((b) => b.dataset.pi);
       expect(new Set(porIcone).size, 'a barra remontou por cima de si mesma').toBe(porIcone.length);
     });
 
     it('🔴 [Inverse] `unmount` NÃO leva a acessibilidade — ela é da PÁGINA, não do cartucho (ADR-0038)', () => {
-      // ⚠️ ESTE CASO AFIRMA UMA AUSÊNCIA DE EFEITO, e é a metade que um teardown esquece. O ADR-0038 corta o
-      // estado em PÁGINA / RODADA / JOGO, e a barra, o cartão e os painéis são da PÁGINA: uma criança que
-      // trocou de jogo não pode perder o modo cego, a tipografia e a pausa no caminho.
+      // ⚠️ THIS CASE ASSERTS AN ABSENCE OF EFFECT, the half a teardown forgets. ADR-0038 cuts state into PAGE / ROUND /
+      // GAME, and the bar, the card and the panels are the PAGE's: a child who changed game cannot lose blind mode, the
+      // typography and the pause on the way.
       //
-      // 📌 O que `unmount` solta é o que é do cartucho — mapeamentos, aviso de alcance, pilha de cenas —, e
-      // isso já tem casos no ficheiro node. O que se guarda aqui é o que ele NÃO pode tocar.
+      // 📌 What `unmount` releases is what is the cartridge's — mappings, reach notice, scene stack —, and that already
+      // has cases in the node file. What is guarded here is what it may NOT touch.
       const motor = abrir();
       motor.unmount();
 
@@ -1269,16 +1246,16 @@ describe('createGame num documento de verdade', () => {
       for (const id of ['animation', 'audio']) {
         expect(document.getElementById(id), `#${id} saiu com o cartucho`).not.toBeNull();
       }
-      // e o que sobra ainda ABRE: um painel que fica no documento e deixa de responder é pior do que um que sai
+      // and what remains still OPENS: a panel that stays in the document and stops answering is worse than one that leaves
       motor.pause.show(0);
-      // Desde o ADR-0151 a tipografia não tem porta: o painel que ABRE a medir é o de acessibilidade auditiva.
+      // Since ADR-0151 typography has no door: the panel that OPENS for the measurement is the hearing one.
       document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
       expect(document.querySelector('#audio').hidden, 'o painel sobreviveu ao `unmount` e deixou de abrir')
         .toBe(false);
     });
 
     it('🎯 [Zero] com hospedeiro DENTRO da região, `problems` não inventa a lacuna', () => {
-      // O par do caso acima, e sem ele o crivo aprovaria uma engine que acusa sempre.
+      // The pair of the case above, and without it the check would approve an engine that always accuses.
       const motor = abrir();
       expect(motor.problems.filter((p) => p.includes('#game-region') && p.includes('setas')),
         'acusou o escopo dos overlays com o hospedeiro no sítio certo').toEqual([]);
@@ -1286,17 +1263,15 @@ describe('createGame num documento de verdade', () => {
   });
 
   /*
-   * 🔴 ESTE CASO NASCEU NO NAVEGADOR, em 2026-09-21, e o defeito estava servido numa página: com o microfone recusado, o
-   * `ui/voice-control` disse à criança «ele não abriu» e devolveu a chave guardada a desligado — e o botão continuou a dizer
-   * «Comando de voz: ligado». Um controle que mente o estado é pior do que um ícone a menos (ADR-0106 §5).
+   * 🔴 THIS CASE WAS BORN IN THE BROWSER, and the defect was served on a page: with the microphone refused,
+   * `ui/voice-control` told the child that it did not open and put the stored key back to off — and the button went on
+   * saying `Comando de voz: ligado`. A control that lies about its state is worse than one icon fewer (ADR-0106 §5).
    *
-   * ⚠️ E O CAMINHO DO CLIQUE NÃO COBRE ISTO: o `iconAct` reflecte logo a seguir a si próprio. O que faltava era a subscrição,
-   * que é por onde chega uma mudança vinda de FORA da barra — a mesma linha que o 📷 tem desde o ADR-0215.
+   * ⚠️ AND THE CLICK PATH DOES NOT COVER THIS: `iconAct` reflects right after itself. What was missing was the subscription,
+   * which is how a change from OUTSIDE the bar arrives — the same line the 📷 has had since ADR-0215.
    *
-   * 📌 NASCEU NO FIM DO FICHEIRO POR UM DEFEITO DA SUÍTE QUE JÁ NÃO EXISTE, e fica escrito porque a causa vale mais do que a
-   * posição: 📏 em 2026-09-21 acrescentar QUALQUER caso que abrisse mais uma raiz antes do «a locked item SAYS WHY» fazia o
-   * cursor dele parar noutro item — as raízes acumulavam-se e cada uma somava um passo à seta. A causa era a raiz não ter fim
-   * (`dispose()`, 22/09); o `afterEach` fecha-as agora, e a posição deste caso deixou de importar.
+   * 📌 Its position in the file no longer matters: the roots a case opens are disposed of in `afterEach`, so a case that
+   * opens one more root no longer shifts another case's cursor.
    */
   it('🔴 [Zero] ligado o 👄 onde nada consegue começar, o botão VOLTA a dizer desligado', async () => {
     const estado = await import('../app/js/core/state.js');
@@ -1305,7 +1280,7 @@ describe('createGame num documento de verdade', () => {
     estado.setVoiceControlValue(true);
     expect(document.querySelector('#title-icons [data-pi="voice"]').getAttribute('aria-pressed'),
       'a barra não seguiu a escolha da criança').toBe('true');
-    // aqui não há entrega nem microfone: o `ui/voice-control` falha, diz porquê e devolve a chave a desligado
+    // there is no delivery nor microphone here: `ui/voice-control` fails, says why and puts the key back to off
     for (let i = 0; i < 120 && estado.voiceControl; i++) await new Promise((r) => { setTimeout(r, 10); });
     expect(estado.voiceControl, 'o comando de voz ficou ligado sobre um reconhecedor que nunca abriu').toBe(false);
     const depois = document.querySelector('#title-icons [data-pi="voice"]');
@@ -1314,42 +1289,44 @@ describe('createGame num documento de verdade', () => {
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-// Seis, aplicadas por script ao ficheiro e sempre com contagem de ocorrencias.
+// ========================= MUTATIONS CHECKED =========================
+// Six, applied by script to the file and always with an occurrence count.
 //
-//   1. ⚠️ `getModoCego` a voltar a ser `() => false` -> reprovam DOIS. E ela nao e uma mutacao inventada: e o
-//      ESTADO EM QUE O CODIGO ESTAVA quando este ficheiro nasceu. Todo o resto da suite continua verde com
-//      ela aplicada, que e a medida exacta de quanto o duplo nao alcancava.
-//   2. a barra a montar marcacao VAZIA -> reprovam CINCO. E o caso do vacuo deste ficheiro: sem barra, quase
-//      tudo o que ele afirma deixa de ter sujeito, e um crivo que nao acha nada nao prova ausencia nenhuma.
-//   3. o cartao com outro id -> reprovam DOIS. A engine procura `#vp-pause-0`; montar com outro nome reabre
-//      o laco que a etapa 2 fechou, e em silencio.
-//   4. `mostrar` a nao revelar -> reprova UM. Montar nao e mostrar, e a distincao tem de custar alguma coisa.
-//   5. o hospedeiro DECLARADO ignorado -> reprova UM. A engine nao adivinha onde a barra cabe num jogo alheio.
-//   6. `tabindex="-1"` nos icones -> reprova UM. E o argumento da etapa 2 a pagar-se: na primeira tela ninguem
-//      esta a jogar, e tirar os icones da tabulacao esconde-os de quem navega por teclado.
+//   1. ⚠️ `getBlindMode` going back to `() => false` -> TWO fail. It is not an invented mutation: it is the STATE THE CODE
+//      WAS IN when this file was born. The rest of the suite stays green with it applied, the exact measure of how much
+//      the double did not reach.
+//   2. the bar mounting EMPTY markup -> FIVE fail. It is this file's vacuum case: without a bar, almost everything it
+//      asserts loses its subject, and a check that finds nothing proves no absence.
+//   3. the card with another id -> TWO fail. The engine looks for `#vp-pause-0`; mounting under another name reopens the
+//      loop step 2 closed, silently.
+//   4. `show` not revealing -> ONE fails. Mounting is not showing, and the distinction must cost something.
+//   5. the DECLARED host ignored -> ONE fails. The engine does not guess where the bar fits in someone else's game.
+//   6. `tabindex="-1"` on the icons -> ONE fails. It is step 2's argument paying off: on the first screen nobody is
+//      playing, and taking the icons out of the tab order hides them from whoever navigates by keyboard.
 //
-// ========================= E MAIS SETE, PELOS PAINEIS (2026-09-11) =========================
-//   7. a accao do painel nunca entrar na tabela da engine (`acoesDaEngine.tipo` apagado) -> reprovam QUATRO.
-//      E o ESTADO EM QUE O CODIGO ESTAVA: sem accao, a cascata do §5 esconde o item, a porta `options` fecha
-//      sobre uma sala vazia, e a crianca chega a pausa e encontra um botao.
-//   8. a tabela da engine nao se juntar a do cartucho (`...acoesDaEngine` fora do merge) -> os mesmos quatro.
-//      Duas maneiras de a mesma ligacao morrer, e as duas tinham de custar.
-//   9. o CARTUCHO deixar de sobrepor a engine (ordem do merge trocada) -> reprova UM, e so um. O ADR-0122
-//      torna nao-declinavel a pausa EXISTIR; nao faz da engine dona de cada item dentro dela.
-//  10. o `init` do painel correr ANTES de a casca entrar no documento -> reprova UM: o repor. `initSettingsTypo`
-//      liga o `#typo-reset` uma vez, no arranque, e a ordem invertida deixa um botao no documento sem escuta
-//      nenhuma — morto com aparencia de vivo (ADR-0106 §5). A ORDEM das duas chamadas e a decisao.
-//  11. a amostra nao entrar no cartao -> reprovam DOIS. Um menu de fontes sem amostra nao responde a unica
-//      pergunta que ele existe para responder, e ela nao se responde por nome de fonte.
-//  12. `dentroDoEscopo` sempre VERDADEIRO -> reprova o caso do hospedeiro fora da regiao: a engine volta a
-//      calar-se sobre um painel onde as setas nao andam.
-//  13. `dentroDoEscopo` sempre FALSO -> reprova o par dele. Sem este, o crivo aprovaria uma engine que acusa
-//      sempre, que e tao inutil quanto uma que nunca acusa.
-//  14. (2026-09-12, ADR-0158) the hearing panel's rows appended AFTER the actions again -> the «Voltar first» case
-//      is red: the reset sits between «Voltar» and the first row again, as measured in dist.
-//      ⚠️ The twin in the «Áudio» interior (its list appended after the actions) SURVIVES: under the shell the list
-//      is already a child of the card, so that line only runs for a card without the shell.
+// ========================= AND SEVEN MORE, BY THE PANELS =========================
+// ⚠️ 7, 8, 10 and 11 were checked against the typography panel, which is no longer mounted (ADR-0151); the cases they
+// failed now measure the visual-sensitivity panel.
+//   7. the panel's action never entering the engine's table (`engineActions.tipo` deleted) -> FOUR fail. Without an
+//      action, the §5 cascade hides the item, the `options` door closes over an empty room, and the child reaches the
+//      pause and finds one button.
+//   8. the engine's table not joining the cartridge's (`...engineActions` out of the merge) -> the same four. Two ways
+//      for the same wiring to die, and both had to cost.
+//   9. the CARTRIDGE no longer overriding the engine (merge order swapped) -> ONE fails, and only one. ADR-0122 makes the
+//      pause EXISTING non-declinable; it does not make the engine the owner of every item in it.
+//  10. the panel's `init` running BEFORE the shell enters the document -> ONE fails: the reset. `initSettingsTypo` wires
+//      `#typo-reset` once, at boot, and the inverted order leaves a button in the document with no listener at all —
+//      dead looking alive (ADR-0106 §5). The ORDER of the two calls is the decision.
+//  11. the sample not entering the card -> TWO fail. A font menu with no sample does not answer the only question it
+//      exists to answer, and that is not answered by a font's name.
+//  12. `insideScope` always TRUE -> fails the host-outside-the-region case: the engine goes quiet again about a panel where
+//      the arrows do not move.
+//  13. `insideScope` always FALSE -> fails its pair. Without this one, the check would approve an engine that always
+//      accuses, as useless as one that never does.
+//  14. (ADR-0158) the hearing panel's rows appended AFTER the actions again -> the «Voltar first» case is red: the reset
+//      sits between «Voltar» and the first row again, as measured in dist.
+//      ⚠️ The twin in the «Áudio» interior (its list appended after the actions) SURVIVES: under the shell the list is
+//      already a child of the card, so that line only runs for a card without the shell.
 
 // ---- ADR-0159 rule 7 in the empathy panel (2026-09-12) ----
 //   S1 an explicit put-back of a refused choice    ✅ SURVIVED: the render writes the list from the world — removed
