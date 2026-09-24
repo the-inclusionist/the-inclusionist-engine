@@ -1,32 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/heavy.ts — AS COISAS PESADAS, BAIXADAS NO PRIMEIRO CARREGAMENTO (ADR-0110, ADR-0116, ADR-0119).
+// platform/heavy.ts — THE HEAVY THINGS, DOWNLOADED ON FIRST LOAD (ADR-0110, ADR-0116, ADR-0119).
 //
-// ========================= O QUE ISTO É =========================
-// O pilar 8 diz «PWA no primeiro dia ONLINE, depois OFFLINE-FIRST», e o ADR-0116 tirou a contradição que
-// travava isto: instalar já é um acto de rede, logo buscar na instalação não viola nada. O que faltava era
-// alguém a buscar.
+// ========================= WHAT THIS IS =========================
+// Pillar 8 says "PWA ONLINE on the first day, then OFFLINE-FIRST", and ADR-0116 removed the contradiction that blocked
+// this: installing is already a network act, so fetching at install violates nothing. What was missing was someone
+// fetching.
 //
-// 📏 MEDIDO EM 2026-09-09, e é o estado que este ficheiro existe para mudar: das quatro coisas pesadas que a
-// engine promete (fontes · voz neural · runtime de visão · arte do LCP), só as FONTES viajavam de verdade.
-// As vozes eram porta do cartucho, o runtime de visão era um `<script src>` de CDN buscado com preguiça no
-// PRIMEIRO USO, e a arte do LCP não existe.
+// ⚠️ AND IT DOES NOT BLOCK THE GAME. The child plays while the heavy files come down; what must not happen is them
+// reaching the second day, offline, and finding the voice was never fetched.
 //
-// ⚠️ E ISTO NÃO BLOQUEIA O JOGO. A criança joga enquanto os 241 MB descem; o que não pode acontecer é ela
-// chegar ao segundo dia, sem rede, e descobrir que a voz nunca foi buscada.
-//
-// ========================= AS TRÊS REGRAS QUE A FORMA IMPÕE =========================
-//  1. **UM DE CADA VEZ.** Quatro descargas de 60 MB em paralelo num link de escola disputam a mesma banda e
-//     nenhuma acaba primeiro — e o jogo, que precisa da rede para as próprias imagens, fica atrás delas.
-//  2. **NUNCA LANÇA.** Uma falha de rede é REPORTADA e a lista continua. Um `throw` aqui derrubaria o
-//     arranque de um jogo por causa de um recurso que ele nem usa hoje.
-//  3. **IDEMPOTENTE.** O que já está na Cache Storage não é buscado outra vez — é o que torna isto seguro de
-//     chamar em todo arranque em vez de só «no primeiro», que ninguém sabe detectar com honestidade.
+// ========================= THE THREE RULES THE SHAPE IMPOSES =========================
+//  1. **ONE AT A TIME.** Four 60 MB downloads in parallel on a school link fight for the same bandwidth and none
+//     finishes first — and the game, which needs the network for its own images, waits behind them.
+//  2. **NEVER THROWS.** A network failure is REPORTED and the list goes on. A `throw` here would bring down a game's
+//     start over a resource it may not even use today.
+//  3. **IDEMPOTENT.** What is already in Cache Storage is not fetched again — which is what makes this safe to call on
+//     every start instead of only "on the first", which nobody can detect honestly.
 import { CACHE_HEAVY, HEAVY_FILES, readingLanguageOf, commandsLanguageOf, type HeavyFile } from './heavy-catalogue.js';
 
 export { CACHE_HEAVY, HEAVY_FILES };
 export type { HeavyFile };
 
-/** O que aconteceu com cada entrada, para quem chama poder dizê-lo a uma pessoa. */
+/** What happened to each entry, so the caller can tell a person. */
 export interface HeavyReport {
   readonly id: string;
   readonly outcome: 'ja-tinha' | 'baixado' | 'falhou' | 'sem-fonte';
@@ -35,18 +30,18 @@ export interface HeavyReport {
 }
 
 export interface HeavyOptions {
-  /** `caches` do navegador. Injectado para o gate não precisar de um. */
+  /** The browser's `caches`. Injected so the gate does not need one. */
   readonly cacheStorage?: CacheStorage;
-  /** `fetch`. Injectado pela mesma razão. */
+  /** `fetch`. Injected for the same reason. */
   readonly fetch?: typeof fetch;
-  /** Chamado a cada entrada resolvida — é o que deixa a interface dizer o que está a acontecer. */
+  /** Called on each resolved entry — what lets the interface say what is happening. */
   readonly onProgress?: (r: HeavyReport) => void;
   /**
    * The SHA-256 of a body, as lowercase hex (issue #168). Injected for the gate; by default `crypto.subtle`. `null`, or a
    * host without `crypto.subtle` (an insecure context), keeps NOTHING: unverifiable is not verified.
    */
   readonly digest?: ((payload: ArrayBuffer) => Promise<string>) | null;
-  /** Só estas ids, se dado. Serve ao consumidor que quer as vozes e não o resto. */
+  /** Only these ids, when given. For a consumer that wants the voices and not the rest. */
   readonly only?: readonly string[];
   /** The page's address the delivery's `heavy/` folder is resolved against. By default the page's own (`location.href`). */
   readonly base?: string;
@@ -121,11 +116,11 @@ export function deliveryCacheKey(urlOrRequest: string | { readonly request: { re
 }
 
 /**
- * BAIXA O QUE FALTA, UM DE CADA VEZ, E DEVOLVE O QUE ACONTECEU COM CADA UM.
+ * DOWNLOADS WHAT IS MISSING, ONE AT A TIME, AND RETURNS WHAT HAPPENED TO EACH.
  *
- * ⚠️ AS ENTRADAS SEM `url` NÃO SÃO SALTADAS EM SILÊNCIO — devolvem `sem-fonte`. É a diferença entre «este
- * subsistema ainda não tem de onde vir» e «este subsistema está tratado», e é exactamente a distinção que o
- * ADR-0119 mediu em falta: a engine PROMETIA quatro coisas e entregava uma, sem nada a dizê-lo.
+ * ⚠️ ENTRIES WITHOUT A `url` ARE NOT SKIPPED IN SILENCE — they return `sem-fonte`. It is the difference between "this
+ * subsystem has nowhere to come from yet" and "this subsystem is handled", exactly the distinction ADR-0119 measured as
+ * missing: the engine PROMISED four things and delivered one, with nothing saying so.
  */
 export async function downloadHeavy(options: HeavyOptions = {}): Promise<HeavyReport[]> {
   const targets = options.only ? HEAVY_FILES.filter((p) => options.only!.includes(p.id)) : HEAVY_FILES;
@@ -205,7 +200,7 @@ export async function sha256Hex(payload: ArrayBuffer): Promise<string> {
   return [...bytes].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
 
-/** O peso do que ainda falta, em bytes — para um aviso poder dizer «faltam 241 MB» antes de começar. */
+/** The size of what is still missing, in bytes — so a notice can say how much is left before it starts. */
 export function bytesLeftToDownload(soFar: readonly HeavyReport[]): number {
   const feitos = new Set(soFar.filter((r) => r.outcome === 'ja-tinha' || r.outcome === 'baixado').map((r) => r.id));
   return HEAVY_FILES.filter((p) => p.url && !feitos.has(p.id)).reduce((s, p) => s + (p.bytes ?? 0), 0);

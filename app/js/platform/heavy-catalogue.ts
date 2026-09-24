@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/heavy-catalogue.ts — O QUE É PESADO, DE ONDE VEM, E QUANTO PESA.
+// platform/heavy-catalogue.ts — WHAT IS HEAVY, WHERE IT COMES FROM, AND HOW MUCH IT WEIGHS.
 //
-// 📌 SEPARADO DO BUSCADOR de propósito: a lista é DADO e muda por decisão registada; o buscador é regra e
-// muda por defeito encontrado. Juntos, cada correcção de uma URL mexeria no ficheiro que decide a ordem das
-// descargas, e cada correcção da ordem mexeria na lista que um registo governa.
+// 📌 APART FROM THE FETCHER on purpose: the list is DATA and changes by recorded decision; the fetcher is a rule and
+// changes by defect found. Together, every URL fix would touch the file that decides the download order, and every
+// order fix would touch the list a record governs.
 //
 // 📌 Every address is written ONCE, where its module owns it: Kokoro's in `platform/kokoro`, the vision runtime's here.
 import {
@@ -11,57 +11,49 @@ import {
   KOKORO_MODEL_SHA256, KOKORO_MODEL_BYTES, SHA256_DO_TOKENIZADOR_KOKORO, BYTES_DO_TOKENIZADOR_KOKORO,
 } from './kokoro.js';
 
-/** Uma coisa pesada que a engine promete e que não cabe no pacote. */
+/** A heavy thing the engine promises that does not fit in the package. */
 export interface HeavyFile {
   readonly id: string;
-  /** `null` = decidido que existe, mas ainda não há de onde vir. Ver `porQueNaoTemFonte`. */
+  /** `null` = decided that it exists, but there is nowhere to fetch it from yet. See `whyNoSource`. */
   readonly url: string | null;
-  /** Medido, não estimado — é o número que uma frase honesta usa antes de começar a descarga. */
+  /** Measured, not estimated — the number an honest sentence uses before the download starts. */
   readonly bytes?: number;
   /**
    * The SHA-256 of the bytes, MEASURED (issue #168): what the fetcher compares before keeping anything. A pinned URL is
    * not pinned content — a CDN or a mirror can serve other bytes at the same address, and these run in the child's page.
    */
   readonly sha256?: string;
-  /** Obrigatório quando `url` é `null`: uma ausência sem razão escrita vira uma ausência esquecida. */
+  /** Required when `url` is `null`: an absence without a written reason becomes a forgotten absence. */
   readonly whyNoSource?: string;
 }
 
-/** O nome da Cache Storage. Versionado: mudar o conteúdo do catálogo não deve servir bytes velhos. */
+/** The Cache Storage name. Versioned: changing the catalogue's content must not serve old bytes. */
 // v2 since issue #168: what v1 kept was never checked against a hash, so it is not trusted — it is fetched again, checked.
 export const CACHE_HEAVY = 'incl-pesados-v2';
 
 /**
- * O RUNTIME DE VISÃO — **MediaPipe**, decidido pelo Dev em 2026-09-09 (ADR-0124): «… mediapipe
- * (webgazer não), e LPCP: devem acompanhar a engine». WebGazer, trazido de volta pelo ADR-0132, saiu de novo (ADR-0214).
+ * THE VISION RUNTIME — **MediaPipe**, decided by the Dev (ADR-0124): «… mediapipe (webgazer não), e LPCP: devem
+ * acompanhar a engine». WebGazer, brought back by ADR-0132, left again (ADR-0214).
  *
- * 🔴 ESTA ENTRADA DIZIA «a #129 ainda não escolheu o fornecedor» DEPOIS DE ELE TER ESCOLHIDO, e a linha
- * sobreviveu ao registo que a contradizia. Não era só trabalho em falta: era uma afirmação FALSA a dirigir
- * quem a lesse para uma issue já fechada. O Dev teve de perguntar três vezes.
+ * 📏 MEASURED 2026-09-09: the three files answer 200 on jsDelivr with `Access-Control-Allow-Origin: *`, at the PINNED
+ * version — 155 439 + 323 377 + 11 756 954 bytes.
  *
- * 📏 MEASURED 2026-09-09: the three files answer 200 on jsDelivr with
- * `Access-Control-Allow-Origin: *`, na versão FIXADA — 155 439 + 323 377 + 11 756 954 bytes.
+ * ⚠️ A PINNED CDN IS ALLOWED AND ADR-0116 SAYS WHY: what pillar 8 forbids is depending on the network AFTER the first day.
+ * This comes down at INSTALL, with the rest. 📌 The version goes in the URL, which is what `check:precache` requires of
+ * any external entry: different bytes arrive by a different address, and a pinned entry never freezes.
  *
- * ⚠️ CDN FIXADA É PERMITIDA E O ADR-0116 DIZ PORQUÊ: o que o pilar 8 proíbe é depender da rede DEPOIS do
- * primeiro dia. Isto desce na INSTALAÇÃO, com o resto — e é a diferença inteira para o WebGazer de antes, que buscava
- * quando a criança liga o controle por olhar, logo a máquina que nunca o ligou fica sem ele para sempre.
- * 📌 A versão vai na URL, que é o que o `check:precache` exige de qualquer entrada externa: bytes diferentes
- * chegam por endereço diferente, e uma entrada fixada nunca congela.
- *
- * 🎯 SÃO OS TRÊS FICHEIROS E NÃO SÓ O `.wasm`: o `vision_bundle.mjs` é quem o carrega e o
- * `vision_wasm_internal.js` é a cola do Emscripten. The wasm alone is a «downloaded» thing that does not run.
- *
- * ⬜ Still to do is the WIRING (issues #11, #189): these bytes come down and the camera reader does not read them yet.
+ * 🎯 IT IS THE THREE FILES AND NOT ONLY THE `.wasm`: `vision_bundle.mjs` is what loads it and `vision_wasm_internal.js` is
+ * the Emscripten glue. The wasm alone is a «downloaded» thing that does not run.
  */
 const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1';
 const MP_MODELS = 'https://storage.googleapis.com/mediapipe-models';
 
 /**
- * 🔴 A PRIMEIRA VERSÃO DESTA LISTA TRAZIA O RUNTIME E NENHUM MODELO, e o Dev apanhou-o ao perguntar o que
- * tinha ficado de fora. 11.7 MB of WebAssembly without a `.task` recognise nothing.
+ * 🔴 THE MODELS, without which the runtime recognises nothing: 11.7 MB of WebAssembly without a `.task` is a download
+ * that does no work. The Dev caught the first version of this list, which carried the runtime and no model.
  *
- * 📏 MEDIDOS EM 2026-09-09, todos 200 com CORS aberto. `float16` e não `float32`: metade do peso, e a precisão
- * que se perde é irrelevante para dizer onde está um íris num ecrã de 320×180.
+ * 📏 MEASURED, all 200 with open CORS. `float16` and not `float32`: half the weight, and the precision lost is irrelevant
+ * to saying where an iris is on a 320×180 screen.
  */
 const MEDIAPIPE: readonly HeavyFile[] = Object.freeze([
   { id: 'visao:runtime', url: `${MP}/vision_bundle.mjs`, bytes: 155_439,
@@ -242,16 +234,13 @@ export const HEAVY_FILES: readonly HeavyFile[] = Object.freeze([
   ...MEDIAPIPE,
 
   /*
-   * 🔴 O ACERVO DE ARTE — a quarta coisa pesada do ADR-0119, e a única SEM FONTE. Medido: `art/` tem DOIS
-   * ficheiros — um README e um `ATTRIBUTION.csv` de 40 bytes, só o cabeçalho. Zero arte.
+   * 🔴 THE ART COLLECTION — the fourth heavy thing of ADR-0119, and the only one WITHOUT A SOURCE. Measured: `art/` has
+   * TWO files — a README and a 40-byte `ATTRIBUTION.csv`, the header only. No art.
    *
-   * ⚠️ ATÉ 2026-09-09 ESTA LINHA CULPAVA A COISA ERRADA. Dizia que a quarentena estava vazia e que a arte
-   * era CC BY-SA 3.0 com autoria por recurso — descrevendo o Liberated Pixel Cup, que o ADR-0133 recusou:
-   * os dois braços dele são share-alike ou GPL, e nenhum está na lista fechada de quatro licenças.
-   *
-   * 📌 A razão de continuar sem fonte MUDOU e é mais simples: não há acervo escolhido. A arte entra sob
-   * CC0, CC BY 3.0, CC BY 4.0 ou OGA-BY, com uma linha de livro por recurso e a URL da origem — e nada
-   * disso é uma URL única que um buscador possa pedir. A fonte desta linha é o dia em que houver acervo.
+   * 📌 The reason is simple: no collection has been chosen. Art enters under CC0, CC BY 3.0, CC BY 4.0 or OGA-BY, with a
+   * ledger line per asset and its source URL — and none of that is one URL a fetcher can ask for. (The Liberated Pixel
+   * Cup was refused by ADR-0133: both its arms are share-alike or GPL, outside the closed list of four licences.) This
+   * line's source is the day there is a collection.
    */
   {
     id: 'arte:acervo',
