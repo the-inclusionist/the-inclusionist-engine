@@ -1,188 +1,111 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/shell.ts — A CASCA: em que TELA o jogo está, e o que a tela liga e desliga ao trocar.
+// ui/shell.ts — THE SHELL: which SCREEN the game is on (title, playing, paused), and what the screen turns on and off
+// when it changes.
 //
-// Este módulo responde a UMA pergunta: "estamos no título, jogando ou pausados — e o que isso significa para o
-// documento?". Ele é o irmão de cima de tudo o que já saiu: game/session.ts decide o que é uma RODADA,
-// render/draw.ts decide o que é um QUADRO, e aqui se decide o que é uma TELA. Nada aqui sabe de física, de
-// moeda ou de pixel; tudo aqui sabe de `hidden`, de foco, de mudo e do menu de pausa.
+// It knows nothing of physics or pixels; it knows `hidden`, focus, mute and the pause cards. `createGame` does NOT mount
+// it — nothing in `app/js` calls `initShell`. It is a published kit for a game that has a title screen and wants the
+// engine's projection of scenes onto the document; several of its ctx fields (`setQuizLevel`, `openTypo`, the pause
+// actions) are one game's vocabulary.
 //
-// O QUE VEIO, E DE ONDE (bloco "E14: shell — título/splash + pausa" do game.js)
-//  · `setPhase(p)`        — a reação de UI à troca de fase. O VALOR continua em core/state.ts (setPhaseValue);
-//                           o que mora aqui é só a consequência visível.
-//  · `pauseActs`          — a tabela de ações dos `.pm-btn` do menu de pausa (por tela).
-//  · `pauseSelect()`      — põe o 1º item (Continuar) selecionado em cada tela de pausa.
-//  · `printMode()`        — esconde as pausas para ver a tela limpa; qualquer botão volta.
-//  · `togglePause()`      — jogando ⇄ pausado.
-//  · `updateTitleLegend()`— a legenda de dispositivo do splash (2 linhas de "chips": movimento/pausa e os 4
-//                           botões de ação, com o que está CONFIGURADO para o Jogador 1).
+// WHY `projectScene` IS NOT A STATE MACHINE WITH A TRANSITION TABLE. There are three scenes and every transition between
+// them is legal — no guard, no named event, no entry/exit hook beyond the body below. A `Map<[from, to], handler>` would
+// forbid no illegal state (there is none) and turn a block read top to bottom into a jump. What IS worth it is separating
+// the DECISION from the EFFECT: `phaseView(facts)` returns everything a scene asks of the document, and `applyPhaseView`
+// is the only part that touches it. The decision is then testable in the `node` project, and a sign error (the title
+// overlay visible during play, sound not muted on pause — accessibility broken silently) becomes an assertion instead of a
+// symptom found by playing. `ui/title.ts` made the same move with `computeTitleMenuView`.
+// The only part with MEMORY — giving the touch controls back on resume, from the `dataset.wasOn` written on pause — is
+// `touchControlsPlan`, a pure function of (scene facts, previous state, number of screens).
 //
-// POR QUE `setPhase` NÃO VIROU UMA MÁQUINA DE ESTADOS COM TABELA DE TRANSIÇÃO — E O QUE VIROU NO LUGAR
-// O pedido do projeto era transformar a sequência de `if`s numa máquina de estados de verdade. Olhei e a
-// resposta honesta é: metade sim, metade não, e a metade que vale não é a que o nome sugere.
-//   · NÃO vale a tabela de transição. São TRÊS estados e as nove transições são todas legais — de qualquer
-//     fase para qualquer fase, sem guarda, sem evento nomeado, sem hook de entrada/saída além do corpo que já
-//     está aqui. Uma `Map<[from,to], handler>` sobre isso não impede nenhum estado ilegal (não existe nenhum),
-//     não descreve nada que o código já não diga, e troca um bloco linear que se lê de cima a baixo por uma
-//     indireção que obriga a saltar. Seria cerimônia sobre três estados. Não fiz.
-//   · VALE, e muito, separar a DECISÃO do EFEITO. Os `if`s do original não são transições: são nove perguntas
-//     diferentes feitas à MESMA fase (`p!=='playing'`, `p!=='title'`, `p!=='paused'`, `p==='paused'`…),
-//     espalhadas no meio de nove escritas no DOM. Isso é uma PROJEÇÃO pura da fase disfarçada de sequência
-//     imperativa. Extraí a projeção — `phaseView(p)` devolve o registro completo do que a fase manda fazer, e
-//     `applyPhaseView` é a única parte que toca o documento. O ganho é concreto e não é estético: a decisão
-//     passa a ser testável no project `node`, sem DOM, sem PIXI e sem áudio, e um erro de sinal num `!==`
-//     (o tipo de erro que aqui deixa a11y quebrada em silêncio: overlay do título visível durante o jogo,
-//     áudio não silenciado na pausa) vira uma asserção em vez de um sintoma que só aparece jogando.
-//     É o mesmo movimento que ui/title.ts já fez com `computeTitleMenuView`, e por isso é o precedente da casa.
-//   · O único pedaço com MEMÓRIA (e portanto o único candidato legítimo a "estado") é a restauração dos
-//     controles de toque, que depende do `dataset.wasOn` gravado na pausa anterior. Esse virou
-//     `touchControlsPlan(...)`, uma função pura de (fase, wasOn, escondido, nº de telas) → (escondido', wasOn').
-//     Ver, logo abaixo, o defeito que essa separação tornou visível.
+// WHAT IS NOT HERE: the `.pm-btn`/`.pi-btn` markup and click delegation belong to `ui/pause-icons`, which reads this
+// module's action table through `getPauseActs()`. Opening and closing the settings panels belongs to
+// `ui/settings-panel` and the `ui/settings-*` panels; `pauseActs` only CALLS them, by injection.
 //
-// O QUE FICOU DE FORA, E POR QUÊ
-//  · `fpsTick` — a fronteira listava, mas ele não é casca: é instrumentação de HUD (escreve `#hud-fps` e
-//    `#hud-fpsmin`), tem três contadores próprios de módulo e é chamado do laço a cada quadro, não na troca de
-//    tela. Trazê-lo para cá acoplaria o "em que tela estamos" ao "quantos quadros por segundo" sem nenhum
-//    parentesco. O precedente da casa já é esse: ui/layout.ts diz, no cabeçalho, "fpsTick/configureRender
-//    seguem no game.js (outro concern)". Não forcei; segue no game.js, e o lar natural dele, quando chegar a
-//    vez, é ui/hud.ts.
-//  · `padKind()` — não extraído: não tinha chamador, e a cópia de `input/touch.ts` também foi apagada em
-//    2026-09-24, pela mesma razão (nota CE).
-//  · `updateTitleLegend()` — a fronteira deixava em aberto se ela é de shell ou de menu-nav. É de SHELL, e a
-//    razão é simples: ela não navega nada. Não lê foco, não trata tecla, não anda entre itens; ela pinta o
-//    rodapé de UMA tela específica (o título) com a configuração de entrada vigente, e quem a chama é o
-//    próprio `setPhase('title')`. Se morasse em ui/menu-nav, a casca precisaria importar o módulo de
-//    navegação só para desenhar uma legenda, e a dependência apontaria para o lado errado (a casca chamando o
-//    teclado). Ficando aqui, ui/menu-nav não precisa saber que existe uma tela de título.
-//  · O `.pm-btn`/`.pi-btn` (markup e delegação de clique) é de ui/pause-icons.ts, que já os constrói e já
-//    consome esta tabela por `getPauseActs()`. Aqui está só a TABELA, não o botão.
-//  · Abrir/fechar os nove diálogos de configuração é de ui/settings-panel.ts + ui/settings-*.ts. `pauseActs`
-//    apenas os CHAMA, por injeção.
+// INJECTION: every entry of `pauseActs` is a callback resolved when it is CALLED, so the host can wire the shell before
+// the panels it opens exist. The number of players and the players are asked through getters: they are round state,
+// owned by the host, and a module-level binding would be shared by a second game on the same page.
 //
-// INJEÇÃO E ORDEM DE BOOT (a armadilha desta etapa)
-//   · `phase` e `numPlayers` NÃO entram por getter, e isso é de propósito: eles deixaram de ser `let` do
-//     game.js na Fase 2 e hoje são bindings vivos de core/state.ts. Importá-los direto é exatamente o que
-//     game/session.ts e input/touch.ts já fazem — um getter aqui seria uma indireção sobre uma indireção.
-//     Quem AINDA é `let` do game.js entra por getter: `vpPause` (reatribuído por `buildGameHud`) e
-//     `pauseActor` (reatribuído por seis lugares, incluindo o ctx do gamepad).
-//   · TODA entrada de `pauseActs` é um callback, e não um valor, porque `initShell` precisa poder ser chamado
-//     no lugar do bloco E14 (linha ~1373 do game.js) enquanto quase tudo o que a tabela chama — `openTypo`,
-//     `openAudio`, `openMovement`, `openVisual`, `openHelp`, `quitGame`, `fitsN`, `joinPlayer` — são
-//     `function` içadas OU `const` declarados depois (`motor`, `motion`, `empathy`, `hud`, `selVizPlayer`).
-//     Com callbacks, a resolução acontece na CHAMADA (sempre pós-boot) e não na montagem do ctx.
-//   · `setPhase` é chamado de fora por game/session.ts, input/gamepad.ts, game/attract.ts e
-//     ui/activities-menu.ts, todos com o ctx montado ANTES do ponto de extração. Por isso o game.js deve
-//     manter um envelope `function setPhase(p){ shell.setPhase(p); }` — declaração de função, içada — em vez
-//     de trocar as quatro fiações. É o mesmo padrão já usado lá para `hideTouchControls`, `showTouchControls`,
-//     `restartGame`, `fitsN`, `joinPlayer` e `quitGame`.
-//   · O original protegia duas chamadas com `typeof pauseSelect==='function'` / `typeof reflectPauseIcons===
-//     'function'`. Eram guardas de TDZ do tempo do monólito; aqui `pauseSelect` é função local (sempre
-//     definida) e `reflectPauseIcons` é injetada (sempre função). Verifiquei que `reflectPauseIcons` é `const`
-//     declarado no game.js MUITO antes de a primeira pausa acontecer, então as guardas nunca foram falsas em
-//     execução real — removê-las não muda comportamento, só tira ruído. Registrado aqui porque é a única
-//     linha que não é cópia literal.
-//
-// SEM I/O NO IMPORT: o corpo do módulo só declara dados e funções puras. Todo efeito passa por `initShell`.
-// GUARDAS: cada consulta ao DOM passa por guarda de nulo, como manda a casa — é o que permite rodar no project
-// `node` com um `$` falso que devolve `null`.
-//
-// Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C3).
+// NO I/O ON IMPORT: the module body only declares data and pure functions. Every effect goes through `initShell`.
+// GUARDS: every DOM lookup is null-guarded, which is what lets the `node` project run it with a fake `$` returning `null`.
 
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 
-import { PAD_DESIGNS, PAD_GLYPH_SPOKEN } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
+import { PAD_DESIGNS, PAD_GLYPH_SPOKEN } from '../input/devices.js'; // a DATA leaf module (zero deps) — imported, not injected
 import type { DomQuery } from '../core/dom-query.js';
 import type { PadMap } from '../input/pad-reading.js';
 import type { SceneFacts } from '../core/scenes.js';
-// UMA constante, e não um seletor repetido: com o submenu de opções (ADR-0044, item 5) o cartão de pausa passou
-// a ter DUAS listas, e quem varrer `.pm-btn` cru enxerga também a que está escondida.
+// ONE constant, not a repeated selector: the pause card has more than one list (ADR-0044 item 5), and whoever scans raw
+// `.pm-btn` also sees the hidden ones.
 import { PM_VISIBLE_ITEMS } from './pause-icons.js';
 
-/* ===================== interfaces mínimas ===================== */
+/* ===================== minimal interfaces ===================== */
 
-/** ui/dom.ts `$` — injetado para o teste node poder passar um DOM falso. */
-// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
-// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+/** ui/dom.ts `$` — injected so a node test can pass a fake DOM. */
+// `DomQuery` is defined once, in `core/dom-query` (copies of it had diverged). Re-exported for whoever imported it from here.
 export type { DomQuery } from '../core/dom-query.js';
 
-/** O que `pauseActs.addplayer` lê de um jogador. `players` é `unknown[]` em core/state.ts. */
-/** A casca só precisa saber QUEM é o jogador e se ele está esperando a próxima rodada. */
+/** What `pauseActs.addplayer` reads of a player. `players` is `unknown[]` to the shell. */
+/** The shell only needs to know WHO the player is and whether they are waiting for the next round. */
 type ShellPlayer = PlayerView<'i' | 'waiting'>;
 
-/** O subconjunto de `Window` que `printMode` usa (add/remove de ouvinte em CAPTURA + o adiamento de 80ms). */
+/** The part of `Window` that `printMode` uses (adding and removing a listener in CAPTURE, and the 80 ms delay). */
 export interface ShellWindow {
   addEventListener(type: string, fn: (e: Event) => void, capture: boolean): void;
   removeEventListener(type: string, fn: (e: Event) => void, capture: boolean): void;
   setTimeout(fn: () => void, ms: number): unknown;
 }
 
-/** Uma tela de pausa (`.screen-pause`) — só o que a casca toca. */
+/** A pause screen (`.screen-pause`) — only what the shell touches. */
 export interface PauseScreen {
   hidden: boolean;
   querySelectorAll<T extends Element = Element>(sel: string): ArrayLike<T> & Iterable<T>;
 }
 
-/** Um gamepad, do jeito mínimo que a legenda do título lê. */
+/** A gamepad, as little of it as the title legend reads. */
 interface PadLike { index: number; id: string; mapping: string }
 
 // ---------------------------------------------------------------------------------------------------------
-// PROJEÇÃO PURA — a decisão de fase, sem DOM. Testável no project `node`.
+// PURE PROJECTION — the scene decision, without a DOM. Testable in the `node` project.
 // ---------------------------------------------------------------------------------------------------------
 
-// (`PHASES` SAIU em 2026-08-26. A casca não sabe mais QUANTAS cenas existem nem como se chamam — ver
-//  `SceneFacts`, logo abaixo. Quem enumera as cenas deste jogo é a raiz de composição.)
+// The shell does not know HOW MANY scenes there are nor what they are called — see `SceneFacts`: the composition root
+// names the scenes of its game.
 
-/** Para onde o foco vai ao ENTRAR na fase. `null` = ninguém foca nada (não existe hoje; é o default seguro). */
+/** Where the focus goes on ENTERING a scene. */
 export type PhaseFocus = 'game-region' | 'pause-menu' | 'title-button';
 
 /**
- * O que a fase `p` manda o documento fazer. É a sequência de `if`s do `setPhase` original lida como o que ela
- * sempre foi: uma projeção da fase. Nenhum campo depende de histórico — o único que dependeria
- * (`#touch-controls`) mora em `touchControlsPlan`, separado de propósito.
+ * What the scene on top asks of the document — a projection of the scene facts, with no field depending on history (the
+ * one that would, `#touch-controls`, lives in `touchControlsPlan`, apart on purpose).
  */
-export type { SceneFacts } from '../core/scenes.js'; // reexportado: os consumidores da casca já o pediam daqui
+export type { SceneFacts } from '../core/scenes.js'; // re-exported: the shell's consumers already asked for it here
 
 export interface PhaseView {
-  /** `#title-overlay`.hidden — o splash só aparece no título. */
+  /** `#title-overlay`.hidden — the splash only shows on the title. */
   titleOverlayHidden: boolean;
   /**
-   * ⚠️ `pauseOverlayHidden` SAIU EM 2026-09-08, e a ausência é a notícia.
-   *
-   * Ele era `true` em toda fase, e existia porque a Etapa 2 aposentou a pausa GLOBAL sem apagar o elemento: a
-   * casca continuava a procurá-lo e a escondê-lo a cada troca de fase, com dois gates a afirmar que ele ficava
-   * escondido. Código a segurar um cadáver.
-   *
-   * E o cadáver custava mais do que as linhas: aquelas quarenta linhas de `#pause-overlay` no `index.html` do
-   * cartucho eram o menu de pausa com aspecto mais OFICIAL do repositório — o que o próximo autor de cartucho
-   * copia junto com o ficheiro —, e já tinham derivado do que a engine gera (dois itens «Comunicação», e um
-   * `#opt-letra` que hoje sai do `dynLabel`). Um campo que diz «está escondido» aceita que ele exista; não o
-   * ter diz que ele não existe.
+   * There is no global pause overlay to hide: each screen has its own pause card (below). A field saying «it is hidden»
+   * would accept that one exists — and a leftover global menu in a page is the one the next game author would copy.
    */
-  /** `.screen-pause`.hidden de CADA tela — os menus por tela só aparecem na pausa. */
+  /** `.screen-pause`.hidden of EACH screen — the per-screen cards only show while paused. */
   screenPauseHidden: boolean;
-  /** `setMasterMuted(...)` — GAG: fora de 'playing' TODO o som cala (loops de ambiente/chuva inclusive). */
+  /** `setMasterMuted(...)` — GAG: outside play ALL sound goes quiet (ambient and rain loops included). */
   masterMuted: boolean;
-  /** `hideTouchControls()` — menu ativo (título/pausa) = sem controle virtual. */
+  /** `hideTouchControls()` — an active menu (title or pause) = no virtual controller. */
   hideTouchControls: boolean;
   /**
-   * `aria-pressed` do botão de pausa — ele diz ao leitor de tela SE está pausado.
-   *
-   * O alvo era `#btn-pause`, e esse id NUNCA existiu no documento: o botão saiu da barra e a fiação ficou
-   * "guardada p/ compat". A linha que escrevia o atributo era morta, e o teste do navegador não pegava porque
-   * o FIXTURE inventava o elemento — um caso que provava que o código escreve num botão que só o teste tem.
-   *
-   * O alvo agora é `#touch-start`, que é o botão que existe, o que o Dev clica e o ÚNICO caminho de pausa num
-   * tablet (não há teclado no Positivo da issue #8).
+   * The pause button's `aria-pressed` — it tells a screen reader WHETHER the game is paused. The target is
+   * `#touch-start`, the pad's START: the button that exists, and the only way to pause on a tablet without a keyboard.
    */
   pausePressed: boolean;
-  /** Quem recebe o foco ao entrar nesta fase. */
+  /** Who receives the focus on entering this scene. */
   focus: PhaseFocus;
 }
 
-// `SceneFacts` mora em `core/scenes`, ao lado da pilha que os produz — é tipo de ENGINE, e precisa ser
-// alcançável também por `game/`, que não pode importar de `ui/`. Ver o cabeçalho de lá.
+// `SceneFacts` lives in `core/scenes`, beside the stack that produces them — it is an ENGINE type.
 
-/** Verbatim das nove perguntas que o `setPhase` do game.js fazia à fase, agora feitas de uma vez só. */
+/** Every question the scene change asks of the scene, asked at once. */
 export function phaseView(f: SceneFacts): PhaseView {
   return {
     titleOverlayHidden: !f.titleScreen,
@@ -194,48 +117,47 @@ export function phaseView(f: SceneFacts): PhaseView {
   };
 }
 
-/** O estado de `#touch-controls` que interessa: escondido? e havia controle ligado antes da pausa? */
+/** The part of `#touch-controls` that matters: hidden? and was the pad on before the pause? */
 export interface TouchControlsState {
   /** `tc.hidden`. */
   hidden: boolean;
-  /** `tc.dataset.wasOn === '1'`. Ausente/qualquer outro valor = false, como no original. */
+  /** `tc.dataset.wasOn === '1'`. Absent or any other value = false. */
   wasOn: boolean;
 }
 
 /**
- * O ÚNICO pedaço de `setPhase` com memória: esconder os controles de toque ao pausar (guardando que estavam
- * ligados) e devolvê-los ao retomar. Pura, e por isso pinável sem navegador.
+ * The ONE part of a scene change with memory: hide the touch controls on pause (recording that they were on) and give them
+ * back on resume. Pure, so it can be pinned without a browser.
  *
- * O estado que chega aqui é o de ANTES de `hideTouchControls()` — quem chama lê primeiro e esconde depois.
- * Já foi o contrário, e o efeito era que `wasOn` nunca era gravado (o plano via o pad como se já estivesse
- * desligado): pausar no celular sumia com o direcional virtual e retomar não o devolvia.
+ * The state that arrives here is the one from BEFORE `hideTouchControls()` — the caller reads first and hides after.
+ * The other order never records `wasOn` (the plan sees the pad already off), and resuming on a phone would not give the
+ * virtual d-pad back.
  */
 export function touchControlsPlan(f: SceneFacts, st: TouchControlsState, screens: number): TouchControlsState {
   if (f.pauseMenu) {
-    if (!st.hidden) return { hidden: true, wasOn: true }; // guarda que estava ligado e esconde
-    return st;                                            // já escondido: nada muda (nem `wasOn`)
+    if (!st.hidden) return { hidden: true, wasOn: true }; // record that it was on, and hide
+    return st;                                            // already hidden: nothing changes (not even `wasOn`)
   }
   if (f.worldRunning) {
     return { hidden: st.wasOn && screens <= 1 ? false : st.hidden, wasOn: false };
   }
-  return { hidden: true, wasOn: false }; // título (ou qualquer cena que não seja jogo nem pausa): some e esquece
+  return { hidden: true, wasOn: false }; // the title (or any scene that is neither play nor pause): hide and forget
 }
 
 // ---------------------------------------------------------------------------------------------------------
-// LEGENDA DO TÍTULO — a parte pura (montar as duas linhas de chips a partir dos glifos escolhidos)
+// THE TITLE LEGEND — the pure part (building the two rows of chips from the chosen glyphs)
 // ---------------------------------------------------------------------------------------------------------
 
-/** Um "chip" da legenda: o glifo (com cor de fundo opcional) seguido da palavra que ele significa. */
+/** One legend «chip»: the glyph (with an optional background colour) followed by the word it stands for. */
 export function chip(txt: string, col: string | null, word?: string): string {
   return `<span class="lg"><span class="lg-ico"${col ? ` style="background:${col}"` : ''}>${txt}</span>${word ? ' ' + word : ''}</span>`;
 }
 
 /**
- * O nome FALADO de um glifo de controle. Glifo que já se lê passa intocado.
+ * The SPOKEN name of a controller glyph. A glyph that already reads as a word passes untouched.
  *
- * Ver `PAD_GLYPH_SPOKEN` em `input/devices`: a tabela guarda CHAVES e não texto, porque ela é uma `const` de
- * módulo avaliada uma vez no import — texto já resolvido congelaria o idioma no boot. Quem resolve é aqui, a
- * cada chamada, com o idioma vigente naquele instante.
+ * `PAD_GLYPH_SPOKEN` in `input/devices` holds KEYS, not text, because it is a module `const` evaluated once on import —
+ * resolved text would freeze the language at boot. It is resolved here, on each call, in the language of that moment.
  */
 export function spokenGlyph(g: string): string {
   const k = PAD_GLYPH_SPOKEN[g];
@@ -243,15 +165,12 @@ export function spokenGlyph(g: string): string {
 }
 
 /**
- * A LEGENDA DA PAUSA — duas camadas no mesmo lugar (ADR-0044, item 4).
+ * THE PAUSE LEGEND — two layers in the same place (ADR-0044 item 4).
  *
- * Ela dizia qual botão confirma e qual volta, e carregava `aria-hidden="true"` — ou seja, era invisível
- * justamente para quem não pode ver o glifo. A XAG 106 manda narrar exatamente isto ("A to Select").
- *
- * Mas só tirar o atributo devolveria o ruído que provavelmente o motivou: um leitor de tela lê `✕` como
- * "sinal de multiplicação". Então os CHIPS ficam visíveis e mudos, e ao lado nasce UMA frase só para leitor
- * de tela, com os glifos já traduzidos em palavra. Duas leituras da mesma informação, cada uma no sentido
- * que a alcança.
+ * It says which button confirms and which goes back, and XAG 106 asks for exactly this to be narrated ("A to Select").
+ * The CHIPS stay visible and silent — a screen reader would read `✕` as a multiplication sign — and beside them a single
+ * sentence exists for screen readers only, with the glyphs already turned into words. Two readings of the same
+ * information, each in the sense that reaches it.
  *
  * Takes the `[glyph, colour]` pairs of the pad's design by position: yes is the south button (A · ✕ · B) and no the east one
  * (B · ◯ · A) on every design — no design swaps them (the Dev's association, ADR-0013 erratum).
@@ -263,7 +182,7 @@ export function pauseLegendHtml(sim: readonly [string, string], no: readonly [st
   return silentLegend(sim, t('menu.yes')) + silentLegend(no, t('menu.no')) + `<span class="sr-only">${spoken}</span>`;
 }
 
-/** Os quatro botões de ação, na ordem fixa da legenda: pular · especial · correr · trocar. */
+/** The four action buttons, in the legend's fixed glyph order: action2 · action3 · action1 · action4. */
 export interface ActionGlyphs {
   action2: readonly [string, string | null];
   action3: readonly [string, string | null];
@@ -272,23 +191,21 @@ export interface ActionGlyphs {
 }
 
 /**
- * Linha 1 da legenda: direcional + START/Enter. Igual para toque e gamepad; o teclado sobrescreve os rótulos.
+ * Legend row 1: the d-pad and START/Enter. The same for touch and gamepad; the keyboard overrides the labels.
  *
- * As palavras vêm de `legend.*` e são resolvidas AQUI, a cada chamada — não numa tabela de módulo, que
- * congelaria o idioma no boot. Registro CURTO de propósito: esta fileira fica embaixo de um glifo e não tem
- * largura para o "Correr / interagir" que a lista de mapeamento usa (ver a nota em pt.ts).
+ * The words come from `legend.*` and are resolved HERE, on each call — not in a module table, which would freeze the
+ * language at boot. The SHORT register on purpose: this row sits under a glyph and has no room for the longer wording the
+ * remapping list uses.
  */
 export function legendRow1(dirTxt: string, pauseTxt: string): string {
   return chip(dirTxt, null, t('legend.move')) + chip(pauseTxt, null, t('legend.pause'));
 }
 
 /**
- * Linha 2 da legenda: os botões de ação, na ordem dos glifos.
+ * Legend row 2: the action buttons, in glyph order.
  *
- * ⚠️ AS PALAVRAS DEIXARAM DE ESTAR AQUI. Esta função dizia `t('legend.jump')`, `t('legend.run')` — o
- * vocabulário da plataforma dentro de um módulo de engine, e a engine a afirmar que todo jogo tem pular,
- * especial, correr e trocar, nessa ordem. Agora `wordFor` é perguntado ao jogo (a versão CURTA, ver
- * `ActionWord.short`), e uma posição que o jogo não nomeia não vira ficha nenhuma.
+ * The words are asked of the GAME (`wordFor`, the SHORT version — see `ActionWord.short`): the engine does not assume
+ * every game has jump, special, run and swap. A position the game does not name becomes no chip at all.
  */
 export function legendRow2(g: ActionGlyphs, wordFor: (action: string) => string | null): string {
   const GLYPH_ORDER: readonly (keyof ActionGlyphs)[] = ['action2', 'action3', 'action1', 'action4'];
@@ -298,22 +215,22 @@ export function legendRow2(g: ActionGlyphs, wordFor: (action: string) => string 
   }).join('');
 }
 
-/** O innerHTML final de `#title-legend`: duas `.lg-row`. */
+/** The final innerHTML of `#title-legend`: two `.lg-row`. */
 export function legendHtml(l1: string, l2: string): string {
   return `<span class="lg-row">${l1}</span><span class="lg-row">${l2}</span>`;
 }
 
 /**
- * Glifos de um pad FÍSICO. `layout` sai de `padLayoutFromId` (só quando `mapping === 'standard'`; fora do
- * padrão é sempre 'generic'), e `custom` é o mapa do assistente (só consultado FORA do padrão). Verbatim:
- * um botão sem entrada no mapa custom cai no índice default ('0'..'3'), e um índice que o design não conhece
- * vira o par `[índice, '#3a4a6a']` — o cinza de fallback.
+ * The glyphs of a PHYSICAL pad. `layout` comes from `padLayoutFromId` (only when `mapping === 'standard'`; off-standard it
+ * is always 'generic'), and `custom` is the wizard's map (only consulted OFF the standard). A button with no entry in the
+ * custom map falls back to its default index ('0'..'3'), and an index the design does not know becomes the pair
+ * `[index, '#3a4a6a']` — the fallback grey.
  */
 export function padActionGlyphs(layout: string, custom: PadMap | null): ActionGlyphs {
   const set = PAD_DESIGNS[layout] || PAD_DESIGNS.generic;
-  // O `typeof b === 'object'` não é cerimônia: o `PadMap` admite `boolean` além de `PadBinding` — é o
-  // sentinela `_skip: true` do assistente de mapeamento. As quatro chaves lidas aqui nunca são ele, então
-  // em execução nada muda; o que muda é que a leitura passa a PERGUNTAR em vez de supor.
+  // The `typeof b === 'object'` is not ceremony: a `PadMap` admits a `boolean` besides a `PadBinding` — the mapping
+  // wizard's `_skip: true` sentinel. The four keys read here are never it, so nothing changes at run time; what changes is
+  // that the read ASKS instead of assuming.
   const bOf = (k: string, def: string): string => {
     const b = custom && custom[k];
     return b && typeof b === 'object' && typeof b.b === 'number' ? String(b.b) : def;
@@ -322,15 +239,15 @@ export function padActionGlyphs(layout: string, custom: PadMap | null): ActionGl
   return { action2: gy(bOf('action2', '0')), action3: gy(bOf('action3', '1')), action1: gy(bOf('action1', '2')), action4: gy(bOf('action4', '3')) };
 }
 
-/** Glifos do joystick VIRTUAL (toque): sempre o design 'generic' (0/1/2/3), sem mapa custom. */
+/** The glyphs of the VIRTUAL (touch) pad: always the 'generic' design (0/1/2/3), no custom map. */
 export function touchActionGlyphs(): ActionGlyphs {
   return padActionGlyphs('generic', null);
 }
 
 /**
- * Escolhe QUAL gamepad a legenda descreve: o do Jogador 1, se ele tiver um associado (`players[0].pad`);
- * senão o primeiro conectado. Verbatim do laço do game.js — inclusive o detalhe de que, com `p1pad >= 0` e
- * nenhum pad daquele índice presente, o resultado é `null` (a legenda cai no teclado) em vez de pegar outro.
+ * Chooses WHICH gamepad the legend describes: Player 1's, if they have one (`players[0].pad`); otherwise the first one
+ * connected. With `p1pad >= 0` and no pad of that index present, the result is `null` (the legend falls back to the
+ * keyboard) rather than picking another.
  */
 export function pickLegendPad(pads: readonly (PadLike | null)[], p1pad: number): PadLike | null {
   let gp: PadLike | null = null;
@@ -346,70 +263,68 @@ export function pickLegendPad(pads: readonly (PadLike | null)[], p1pad: number):
 // ---------------------------------------------------------------------------------------------------------
 
 export interface ShellCtx {
-  /** Os três fatos da cena do TOPO, perguntados a cada uso — a raiz é quem tem a pilha e quem nomeia as
-   *  cenas. Getter, e não valor: a casca projeta o estado ATUAL, não o do momento em que foi ligada. */
+  /** The three facts of the scene on TOP, asked on each use — the root holds the stack and names the scenes. A getter,
+   *  not a value: the shell projects the CURRENT state, not the one of the moment it was wired. */
   sceneFacts: () => SceneFacts;
-  /** VOLTAR AO JOGO. É o que o "Continuar" do menu de pausa faz, e o que a entrada de um jogador novo faz.
-   *  Era `setPhase('playing')` daqui mesmo — mas empilhar é da raiz, e "retomar" é o que a casca quer dizer. */
+  /** BACK TO THE GAME. What the pause card's «Continue» does, and what a new player joining does. Resuming is what the
+   *  shell means; pushing and popping scenes is the root's. */
   resumeGame: () => void;
-  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
-   *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
-   *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
+  /** How many players/screens. ROUND state (ADR-0038): it comes from the instance the host owns — a module-level
+   *  binding would be shared by a second game on the same page. */
   getNumPlayers: () => number;
-  /** Os jogadores. Estado de RODADA, pelo mesmo motivo. `readonly unknown[]` porque cada consumidor
-   *  estreita para a SUA fatia — o tipo real é do jogo, não da engine (ADR-0033). */
+  /** The players. ROUND state, for the same reason. `readonly unknown[]` because each consumer narrows to ITS slice —
+   *  the real type is the game's, not the engine's (ADR-0033). */
   getPlayers: () => readonly unknown[];
-  /* --- DOM e plataforma --- */
-  /** ui/dom.ts `$`. Injetado: o módulo nunca alcança `document`. */
+  /* --- DOM and platform --- */
+  /** ui/dom.ts `$`. Injected: the module never reaches `document`. */
   $: DomQuery;
-  /** `window` — só para os dois ouvintes em CAPTURA do modo Print e o adiamento de 80ms. */
+  /** `window` — only for Print mode's two CAPTURE listeners and the 80 ms delay. */
   win: ShellWindow;
-  /** platform/audio.ts `setMasterMuted` — o nó mestre que cala TUDO na pausa/título (GAG). */
+  /** platform/audio.ts `setMasterMuted` — the master node that silences EVERYTHING on pause and title (GAG). */
   setMasterMuted: (muted: boolean) => void;
-  /** core/a11y-sr `srSay` (educado) e `srAlert` (assertivo). */
+  /** core/a11y-sr `srSay` (polite) and `srAlert` (assertive). */
   srSay: (msg: string) => void;
   srAlert: (msg: string) => void;
 
-  /* --- o que o game.js AINDA reatribui: getters --- */
-  /** `let vpPause` — `buildGameHud` REATRIBUI a array a cada troca de nº de telas. */
+  /* --- asked on each use --- */
+  /** The pause cards, one per screen; the host rebuilds them when the number of screens changes. */
   getPauseScreens: () => PauseScreen[];
-  /** `let pauseActor` — quem abriu o menu; os submenus de a11y escopam no jogador dele. */
+  /** Who opened the pause card; the accessibility panels open scoped to that player. */
   getPauseActor: () => number;
 
-  /* --- efeitos vizinhos (todos `const`/`function` do game.js; entram como callback) --- */
-  /** input/touch.ts via o envelope içado do game.js: some com o direcional virtual. */
+  /* --- neighbouring effects, as callbacks --- */
+  /** input/touch.ts: hides the virtual d-pad. */
   hideTouchControls: () => void;
-  /** ui/pause-icons.ts: reflete os `.pi-btn` de todas as telas (estado de a11y). */
+  /** ui/pause-icons.ts: reflects the `.pi-btn` of every screen (accessibility state). */
   reflectPauseIcons: () => void;
 
-  /* --- legenda do título --- */
-  /** Adaptador da Gamepad API — mesmo padrão de input/gamepad.ts (é o que a torna testável sem navegador). */
+  /* --- the title legend --- */
+  /** Gamepad API adapter — the same pattern as input/gamepad.ts (it is what makes it testable without a browser). */
   getGamepads: () => readonly (PadLike | null)[];
-  /** `document.body.classList.contains('touch-mode')` — injetado para não alcançar `document`. */
+  /** `document.body.classList.contains('touch-mode')` — injected so as not to reach `document`. */
   isTouchMode: () => boolean;
-  /** input/touch.ts `padLayoutFromId` — id do controle → design de botões. */
+  /** input/touch.ts `padLayoutFromId` — controller id → button design. */
   padLayoutFromId: (id: string) => string;
-  /** input/gamepad.ts `padMapFor` — mapa do assistente para aquele modelo (só usado FORA do padrão). */
-  /** O mapa do controle. `PadMap` vem de `input/gamepad`, que é dono dele — a versão escrita aqui,
-   *  `Record<string, { b?: number }>`, era uma aproximação: perdia o `boolean` que o mapa admite. */
+  /** The wizard's map for that controller model (only used OFF the standard). `PadMap` comes from `input/pad-reading`,
+   *  which owns it, including the `boolean` the map admits. */
   padMapFor: (id: string) => PadMap | null;
-  /** input/keyboard-runtime.ts `kbFor(i)` — as teclas CONFIGURADAS do jogador `i` (remap respeitado). */
+  /** input/keyboard-runtime.ts `kbFor(i)` — player `i`'s CONFIGURED keys (the remap honoured). */
   kbFor: (i: number) => Record<string, string[]>;
-  /** ui/settings-controls.ts `keyName` — `KeyboardEvent.code` → rótulo humano. */
+  /** ui/control-choices `keyName` — `KeyboardEvent.code` → a human label. */
   keyName: (code: string) => string;
   /**
-   * A palavra CURTA desta posição, na língua do jogo. `null` = o jogo não a usa.
+   * The SHORT word for this position, in the game's language. `null` = the game does not use it.
    *
-   * ⚠️ Curta e não a longa: a legenda põe a palavra debaixo de um glifo, numa fileira de quatro, e não tem
-   * largura para o «Correr / interagir» que a lista de remapeamento usa. A distinção já estava no dicionário
-   * (`legend.*` contra `act.*`) e agora atravessa a fronteira COM as palavras — ver `ActionWord.short`.
+   * ⚠️ Short and not the long one: the legend puts the word under a glyph, in a row of four, and has no room for the
+   * «Correr / interagir» the remapping list uses. The distinction was already in the dictionary (`legend.*` against
+   * `act.*`) and now crosses the boundary WITH the words — see `ActionWord.short`.
    */
   shortLabel: (action: string) => string | null;
 
-  /* --- as ações do menu de pausa (cada uma é um callback: TDZ, ver o cabeçalho) --- */
-  /** `setQuizLevel(n, announce)` — o ciclo 1..5 do nível de alfabetização. */
+  /* --- the pause card's actions (each a callback, resolved when called — see the header) --- */
+  /** `setQuizLevel(n, announce)` — the 1..5 cycle of the literacy level. */
   setQuizLevel: (n: number, announce: boolean) => void;
-  /** `quizLevel` de core/state.ts — lido para calcular o próximo do ciclo. */
+  /** The current literacy level — read to compute the next in the cycle. */
   getQuizLevel: () => number;
   openTypo: () => void;
   openAudio: () => void;
@@ -417,47 +332,47 @@ export interface ShellCtx {
   openVisual: () => void;
   openHelp: () => void;
   quitGame: () => void;
-  /** game/session.ts: cabe mais uma tela nesta janela? */
+  /** Does one more screen fit in this window? */
   fitsN: (n: number) => boolean;
-  /** game/session.ts: cria/ativa o jogador seguinte; `null` = sem pad associado ainda. */
+  /** Creates/activates the next player; `null` = no pad associated yet. */
   joinPlayer: (padIdx: number | null) => boolean;
-  /** ui/hud.ts: crachá "aperte um botão para entrar" na tela do jogador novo. */
+  /** ui/hud.ts: the «press a button to join» badge on the new player's screen. */
   showWaitingBadge: (i: number) => void;
-  /** ui/settings-mobility.ts: escopa o painel Movimento no jogador que abriu. */
+  /** ui/settings-mobility.ts: scopes the Mobility panel to the player who opened it. */
   setMobilityPlayer: (i: number) => void;
-  /** ui/settings-motion.ts `setSelectedPlayer`: idem para o painel Animação. */
+  /** ui/settings-motion.ts `setSelectedPlayer`: the same for the Motion panel. */
   setMotionPlayer: (i: number) => void;
   /** ui/settings-motion.ts `motion.open`. */
   openMotion: () => void;
-  /** Abre o menu de Comunicação Aumentada e Alternativa (ui/settings-caa). */
+  /** Opens the Augmentative and Alternative Communication menu (ui/settings-caa). */
   openCaa: () => void;
   /** ui/settings-empathy.ts `empathy.open`. */
   openEmpathy: () => void;
-  /** `let selVizPlayer` do game.js — escopa Visual e Empatia no jogador que abriu. */
+  /** Scopes Visual and Empathy to the player who opened them. */
   setSelVizPlayer: (i: number) => void;
 }
 
-/** A tabela de ações dos `.pm-btn`. Chave = `data-act` do botão (PM_BTNS, de ui/activities-menu.ts). */
+/** The table of the `.pm-btn` actions. Key = the button's `data-act`. */
 export type PauseActs = Record<string, () => void>;
 
 export interface ShellApi {
-  /** Projeta no documento a cena que está no topo da pilha AGORA. A raiz chama depois de empilhar/desempilhar.
-   *  (Era `setPhase(p)`: a casca gravava o valor E projetava. Empilhar é da raiz — ela é quem nomeia as cenas.) */
+  /** Projects onto the document the scene on top of the stack NOW. The root calls it after pushing or popping: pushing
+   *  is the root's, since the root names the scenes. */
   applyScene: () => void;
-  /** Põe o 1º `.pm-btn` (Continuar) selecionado em CADA tela de pausa. */
+  /** Selects the 1st `.pm-btn` (Continue) on EACH pause screen. */
   pauseSelect: () => void;
-  /** Modo Print: esconde as pausas para ver a tela limpa; qualquer tecla/clique as traz de volta. */
+  /** Print mode: hides the pause cards to see the screen clean; any key or click brings them back. */
   printMode: () => void;
-  /** Repinta `#title-legend` com o dispositivo e o mapeamento vigentes do Jogador 1. */
+  /** Repaints `#title-legend` with Player 1's current device and mapping. */
   updateTitleLegend: () => void;
-  /** A tabela de ações do menu de pausa — consumida por ui/pause-icons.ts (`getPauseActs`). */
+  /** The pause card's action table — read by ui/pause-icons.ts (`getPauseActs`). */
   pauseActs: PauseActs;
 }
 
 export function initShell(ctx: ShellCtx): ShellApi {
-  /* ===================== a legenda do título ===================== */
+  /* ===================== the title legend ===================== */
 
-  /** Linha 1+2 quando não há toque nem gamepad: as teclas REALMENTE configuradas do Jogador 1. */
+  /** Rows 1 and 2 when there is neither touch nor a gamepad: Player 1's ACTUALLY configured keys. */
   function keyboardLegend(): [string, string] {
     const m = ctx.kbFor(0);
     const K = (a: string): string => ctx.keyName((m[a] || [])[0] || '?');
@@ -468,48 +383,48 @@ export function initShell(ctx: ShellCtx): ShellApi {
 
   function updateTitleLegend(): void {
     const el = ctx.$<HTMLElement>('#title-legend');
-    if (!el) return; // 2 ROWS, com o que está CONFIGURADO p/ o jogador da tela
+    if (!el) return; // 2 ROWS, with what is CONFIGURED for the screen's player
     let l1: string, l2: string;
-    if (ctx.isTouchMode()) {                       // joystick VIRTUAL: 0/1/2/3 + START
+    if (ctx.isTouchMode()) {                       // VIRTUAL pad: 0/1/2/3 + START
       l1 = legendRow1('✜', 'START');
       l2 = legendRow2(touchActionGlyphs(), ctx.shortLabel);
     } else {
       const p0 = ctx.getPlayers()[0] as { pad?: number } | undefined;
       const p1pad = p0 && typeof p0.pad === 'number' && p0.pad >= 0 ? p0.pad : -1;
       const gp = pickLegendPad(ctx.getGamepads(), p1pad);
-      if (gp) {                                    // joystick FÍSICO: design do modelo + mapa custom do wizard
+      if (gp) {                                    // PHYSICAL pad: the model's design + the wizard's custom map
         const layout = gp.mapping === 'standard' ? ctx.padLayoutFromId(gp.id) : 'generic';
         const custom = gp.mapping !== 'standard' ? ctx.padMapFor(gp.id) : null;
         l1 = legendRow1('✜', 'START');
         l2 = legendRow2(padActionGlyphs(layout, custom), ctx.shortLabel);
       } else {
-        [l1, l2] = keyboardLegend();               // TECLADO: teclas configuradas (remap respeitado)
+        [l1, l2] = keyboardLegend();               // KEYBOARD: the configured keys (remap honoured)
       }
     }
     el.innerHTML = legendHtml(l1, l2);
     const w = ctx.$<HTMLElement>('#title-wait');
-    if (w) w.hidden = ctx.getNumPlayers() <= 1;             // MP: aviso "Aguarde o Jogador 1"
+    if (w) w.hidden = ctx.getNumPlayers() <= 1;             // multiplayer: the «wait for Player 1» notice
   }
 
-  /* ===================== seleção e Print ===================== */
+  /* ===================== selection and Print ===================== */
 
   function pauseSelect(): void {
     ctx.getPauseScreens().forEach((sp) => {
       const items = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
       items.forEach((b) => b.classList.remove('pm-sel'));
-      if (items[0]) items[0].classList.add('pm-sel'); // 1º item (Continuar) selecionado em cada tela
+      if (items[0]) items[0].classList.add('pm-sel'); // the 1st item (Continue) selected on each screen
     });
   }
 
   function printMode(): void {
-    ctx.getPauseScreens().forEach((sp) => { sp.hidden = true; }); // vê a tela limpa; qualquer botão volta
+    ctx.getPauseScreens().forEach((sp) => { sp.hidden = true; }); // see the screen clean; any button brings them back
     const back = (e?: Event): void => {
       if (e && e.preventDefault) { try { e.preventDefault(); } catch { /* noop */ } }
       ctx.win.removeEventListener('keydown', back, true);
       ctx.win.removeEventListener('pointerdown', back, true);
       if (ctx.sceneFacts().pauseMenu) { ctx.getPauseScreens().forEach((sp) => { sp.hidden = false; }); pauseSelect(); }
     };
-    // 80ms de atraso: o próprio evento que ACIONOU o Print não pode ser o que o desfaz.
+    // An 80 ms delay: the very event that TRIGGERED Print must not be the one that undoes it.
     ctx.win.setTimeout(() => {
       ctx.win.addEventListener('keydown', back, true);
       ctx.win.addEventListener('pointerdown', back, true);
@@ -517,30 +432,29 @@ export function initShell(ctx: ShellCtx): ShellApi {
     ctx.srSay(t('sr.print.on'));
   }
 
-  /* ===================== a troca de fase ===================== */
+  /* ===================== the scene change ===================== */
 
-  /** A metade IMPURA: pega a projeção pronta e a carimba no documento. */
+  /** The IMPURE half: takes the ready projection and stamps it on the document. */
   function applyPhaseView(v: PhaseView): void {
-    // A pausa GLOBAL não é procurada: ela foi aposentada na Etapa 2, e a casca deixou de a segurar em
-    // 2026-09-08. Ver a nota no `PhaseView`, onde o campo estava.
+    // There is no global pause overlay to look for — see the note in `PhaseView`.
     const t = ctx.$<HTMLElement>('#title-overlay');
     if (t) t.hidden = v.titleOverlayHidden;
     ctx.getPauseScreens().forEach((sp) => { sp.hidden = v.screenPauseHidden; });
   }
 
-  /** O estado do `#touch-controls` ANTES de qualquer coisa desta troca de fase mexer nele. */
+  /** The state of `#touch-controls` BEFORE anything in this scene change touches it. */
   function readTouchControls(): TouchControlsState | null {
     const tc = ctx.$<HTMLElement>('#touch-controls');
     return tc ? { hidden: tc.hidden, wasOn: tc.dataset.wasOn === '1' } : null;
   }
 
-  /** A metade IMPURA do plano de toque: recebe o estado lido ANTES do hide e grava o plano de volta. */
+  /** The IMPURE half of the touch plan: receives the state read BEFORE the hide and writes the plan back. */
   function applyTouchControls(f: SceneFacts, before: TouchControlsState | null): void {
     const tc = ctx.$<HTMLElement>('#touch-controls');
     if (!tc || !before) return;
     const after = touchControlsPlan(f, before, ctx.getNumPlayers());
-    // Só escreve o que MUDOU — é o que torna o applier equivalente linha a linha ao original (que, no ramo
-    // 'paused' já-escondido, não toca em nada; e cujos `delete` nos outros ramos são no-op quando não havia flag).
+    // Writes only what CHANGED: on pause with the pad already hidden nothing is touched, and removing a flag that was
+    // never set is not attempted.
     if (after.hidden !== before.hidden) tc.hidden = after.hidden;
     if (after.wasOn !== before.wasOn) { if (after.wasOn) tc.dataset.wasOn = '1'; else delete tc.dataset.wasOn; }
   }
@@ -554,28 +468,25 @@ export function initShell(ctx: ShellCtx): ShellApi {
   }
 
   /**
-   * Projeta a cena do topo no documento. Chamada pela raiz DEPOIS de ela mexer na pilha — a casca não empilha
-   * nem desempilha, e é essa separação que faz o `Phase` sumir daqui: quem troca de cena sabe os nomes, quem
-   * projeta só precisa dos três fatos.
+   * Projects the scene on top onto the document. Called by the root AFTER it changes the stack — the shell neither pushes
+   * nor pops: whoever changes scenes knows their names, whoever projects only needs the three facts.
    */
   function projectScene(): void {
     const f = ctx.sceneFacts();
     const v = phaseView(f);
-    // LER ANTES DE ESCONDER. Era aqui o defeito: `hideTouchControls()` roda logo abaixo e já põe `tc.hidden`
-    // em true, então o plano — que rodava depois — via o pad como se ele já estivesse desligado, nunca gravava
-    // o `wasOn`, e o ramo que o traz de volta ao retomar era inalcançável. No celular: pausar sumia com o
-    // direcional e retomar não o devolvia.
+    // READ BEFORE HIDING: `hideTouchControls()` below already sets `tc.hidden`, and a plan that read after it would see the
+    // pad as already off, never record `wasOn`, and never give the d-pad back on resume.
     const touchStateBeforeHiding = readTouchControls();
-    if (v.hideTouchControls) ctx.hideTouchControls(); // menu ativo (título/pausa) = sem controle virtual
-    // GAG: na pausa, silencia TODO o som do jogo (loops de ambiente/chuva inclusive) — volta ao retomar.
+    if (v.hideTouchControls) ctx.hideTouchControls(); // an active menu (title or pause) = no virtual controller
+    // GAG: on pause, ALL the game's sound goes quiet (ambient and rain loops included) — it comes back on resume.
     ctx.setMasterMuted(v.masterMuted);
     applyPhaseView(v);
-    applyTouchControls(f, touchStateBeforeHiding); // o estado é o de ANTES do hide — ver o comentário acima
-    // ORDEM verbatim: o aria-pressed vem DEPOIS do bloco de toque.
+    applyTouchControls(f, touchStateBeforeHiding); // the state from BEFORE the hide — see above
+    // `aria-pressed` comes AFTER the touch block.
     //
-    // No TÍTULO o atributo SAI, em vez de virar `false`. Ali o botão significa "iniciar", e `aria-pressed`
-    // num botão que não alterna nada faz o leitor de tela anunciar um estado que não existe — pior que não
-    // anunciar nada. `titleOverlayHidden` é verdadeiro fora do título.
+    // On the TITLE the attribute is REMOVED rather than set to `false`. There the button means «start», and
+    // `aria-pressed` on a button that toggles nothing makes a screen reader announce a state that does not exist — worse
+    // than announcing nothing. `titleOverlayHidden` is true outside the title.
     const pb = ctx.$<HTMLElement>('#touch-start');
     if (pb) {
       if (v.titleOverlayHidden) pb.setAttribute('aria-pressed', String(v.pausePressed));
@@ -585,19 +496,18 @@ export function initShell(ctx: ShellCtx): ShellApi {
   }
 
 
-  /* ===================== a tabela do menu de pausa ===================== */
+  /* ===================== the pause card's table ===================== */
 
-  // Ações do menu de pausa (compartilhadas pelos menus por tela). Ao abrir um submenu de a11y, escopa ao
-  // jogador que agiu (pauseActor) — o diálogo abre na aba dele.
+  // The pause card's actions (shared by the per-screen cards). Opening an accessibility panel scopes it to the player who
+  // acted (pauseActor) — the panel opens on their tab.
   const pauseActs: PauseActs = {
     resume: () => ctx.resumeGame(),
-    // O botão ABC era um CICLO de duas posições; virou a porta do menu de CAA (ADR-0028), onde a caixa da
-    // letra é uma escolha entre outras. Ele não sumiu — quem usava o atalho continua a um clique da escolha,
-    // em vez de ter de descobrir onde ela foi parar. A ação `letra` sumiu junto com o ciclo: um nome por coisa.
+    // The door to the Augmentative and Alternative Communication menu (ADR-0028), where the letter case is one choice
+    // among others.
     caa: () => ctx.openCaa(),
-    nivel: () => ctx.setQuizLevel(ctx.getQuizLevel() % 5 + 1, true), // L3: cicla 1..5
+    nivel: () => ctx.setQuizLevel(ctx.getQuizLevel() % 5 + 1, true), // cycles 1..5
     tipo: () => ctx.openTypo(),
-    // R-splash 2: só AUMENTA (nunca diminui); a tela nova ESPERA um botão do jogador entrar
+    // Only ever ADDS a player (never removes); the new screen WAITS for its player to press a button
     addplayer: () => {
       const n = ctx.getNumPlayers();
       if (n >= 4) { ctx.srAlert(t('sr.screens.maxPlayers')); return; }
