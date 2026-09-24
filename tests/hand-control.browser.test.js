@@ -51,6 +51,46 @@ describe('the hand control', () => {
     expect(alpha(0.75), 'mirrored: x 0.3–0.2 is drawn at 0.7–0.8').toBeGreaterThan(0);
     expect(alpha(0.25), 'not unmirrored').toBe(0);
   });
+  it('🔴 [Right] changing gesture lets go of the old one and presses the new one ONCE', async () => {
+    // Only a LOST hand had a case; a hand that goes from one gesture to another could keep both held, or press again every frame.
+    await make().apply(true);
+    hold('Thumb_Up', 700);
+    hold('Thumb_Down', 700);
+    expect(presses.filter(([o, a]) => o === 'press' && a === 'leftShoulder'), 'a held gesture pressed again').toHaveLength(1);
+    expect(presses).toContainEqual(['release', 'leftShoulder', 'gestos']);
+    expect(presses).toContainEqual(['press', 'leftTrigger', 'gestos']);
+  });
+  it('🔴 [Right] a hand that comes back must be held again — the gap is not bridged', async () => {
+    // Losing the hand starts the reading over; otherwise a hand that flickers out for a frame comes back pressing at once.
+    await make().apply(true);
+    hold('Thumb_Up', 700);
+    hold(null, 33);
+    presses.length = 0;
+    hold('Thumb_Up', 100);
+    expect(presses, 'a returning hand pressed before it was held').toEqual([]);
+  });
+  it('🔴 [Right] only the recognizer\'s TOP answer counts — a runner-up is not a gesture', async () => {
+    await make().apply(true);
+    hand = { landmarks: [PONTOS], gestures: [[{ categoryName: 'None', score: 0.6 }, { categoryName: 'Thumb_Up', score: 0.3 }]] };
+    for (const end = now + 700; now < end;) { now += 33; frameCb?.(now); }
+    expect(presses).toEqual([]);
+  });
+  it('[Zero] «None» held presses nothing', async () => {
+    await make().apply(true);
+    hold('None', 700);
+    expect(presses).toEqual([]);
+  });
+  it('🔴 [Zero] a camera with no frame yet reads nothing', async () => {
+    await make({ openFeed: async () => ({ frame: {}, ready: () => false, close: () => {} }) }).apply(true);
+    hold('Thumb_Up', 700);
+    expect(presses).toEqual([]);
+  });
+  it('⚠️ [Error] a bone to a landmark the hand does not have is skipped — the frame does not fail', async () => {
+    await make({ loadTracker: async () => ({ ok: true, tracker: { detect: () => hand, delegate: () => 'GPU', handLines: [{ start: 0, end: 99 }, { start: 0, end: 1 }], close: () => {} } }) }).apply(true);
+    hold('Thumb_Up', 700);
+    expect(reports.filter((r) => /a frame failed/.test(r))).toEqual([]);
+    expect(presses).toContainEqual(['press', 'leftShoulder', 'gestos']);
+  });
   it('files not on the device: reported and the 📷 back to off; turning it off removes the drawing', async () => {
     await make({ loadTracker: async () => ({ ok: false, missing: ['visao:modelo:gestos'] }) }).apply(true);
     expect(reports[0]).toMatch(/gesture control: visao:modelo:gestos/); expect(offs).toBe(1);
@@ -67,3 +107,9 @@ describe('the hand control', () => {
 //   · no release when the hand is lost               → «lets go of what it held»
 //   · the bones not mirrored                         → «mirrored»
 //   · no turnOff on missing files                    → «back to off»
+//
+// PROBED AGAIN (2026-09-23), eleven decisions of the `frame` disabled one at a time — `scratchpad/sonda-rosto-maos.py`. Nine
+// were green, and the press/release diff itself was among them: only a LOST hand had a case, so a hand going from one gesture
+// to another could keep both held or press every frame. Held now by the six cases before «files not on the device». Two are
+// inert and leave in the cut rather than being pinned: dropping `None` before the map (the map already ignores a name it does
+// not know), and clearing the layer (setting the canvas width a line above already clears it).
