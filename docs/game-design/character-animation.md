@@ -1,56 +1,61 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
-# E15 — Personagem em camadas + animações (spec)
+# E15 — Layered character + animations (spec)
 
-**Decisões do José (2026-06-01):**
-- **Resolução mantida** (320×180, tiles 16px) — 48×48 cancelado (estudo TDAH pendente). **SEM TAMANHO FIXO de
-  sprite** (emendado e REMEDIDO em 2026-08-25): este documento dizia 16×32 e nenhum dos 80 PNG entregues tem esse
-  tamanho. Os 39 quadros de sprite cobrem **13 animações** em **15 tamanhos distintos**, larguras 24–34 e alturas
-  29–36, mais um 64×64 esquecido. E o tamanho **varia dentro da mesma animação** (`nadar` 34×29 e 34×32; `pulo`
-  26×32 e 28×30) — não há nem tamanho por animação em que se apoiar. Ver a seção "Sprite size" do
-  [`Art-Bible.md`](Art-Bible.md) para a medição e as consequências (o atlas não pode supor grade uniforme, nem
-  por folha nem por animação; cada sprite carrega o próprio pivô, porque o `render/draw` ancora o squash &
-  stretch NOS PÉS).
-- **Orientação:** personagem em **perfil**, virado para a **última direção** (E/W). **Sempre respira/anima** (idle nunca estático).
-- **Camadas procedurais:** corpo + cabelo + roupa como camadas (palette-swap por chave + overlays) → diversidade
-  (5 tons Fitzpatrick, vários cabelos/roupas), jogadores distintos no multiplayer. **Sem PNG embutido** (GPL-clean);
-  PixelLab gera só **referência de design**, convertida à mão para sprite procedural.
+> 📌 **Where this lives now:** the character, its sprite frames and the code that draws them left this repository with
+> the cartridge on 2026-09-07 (#111), and the frame-drawing module left in the F12 move (ADR-0228); they are the
+> platformer's, in `game-platformer`. This spec stays here as the design record. `render/draw`, named below, is no
+> longer in this tree.
 
-## Pipeline (validado na prova)
-PixelLab (referência) → extrair paleta/pose → **sprite procedural** (pixel-data + paleta hex) → sistema de camadas.
-Prova feita: `Pip` lateral → paleta extraída → render procedural fiel (ver `assets-ref/`, não versionado). A
-prova original foi num quadro 16×32; o tamanho era do EXPERIMENTO, não uma spec — a arte entregue depois não o
-seguiu, e a decisão do Dev é que não há tamanho fixo.
+**The Dev's decisions (2026-06-01):**
+- **Resolution kept** (320×180, 16px tiles) — 48×48 cancelled (ADHD study pending). **NO FIXED sprite
+  SIZE** (amended and RE-MEASURED on 2026-08-25): this document said 16×32 and none of the 80 PNGs delivered has that
+  size. The 39 sprite frames cover **13 animations** in **15 distinct sizes**, widths 24–34 and heights
+  29–36, plus a forgotten 64×64. And the size **varies within the same animation** (`nadar` 34×29 and 34×32; `pulo`
+  26×32 and 28×30) — there is not even a per-animation size to lean on. See the "Sprite size" section of
+  [`Art-Bible.md`](Art-Bible.md) for the measurement and the consequences (the atlas cannot assume a uniform grid, neither
+  per sheet nor per animation; each sprite carries its own pivot, because `render/draw` anchors the squash &
+  stretch AT THE FEET).
+- **Orientation:** character in **profile**, facing the **last direction** (E/W). **Always breathing/animating** (idle never static).
+- **Procedural layers:** body + hair + clothes as layers (palette-swap by key + overlays) → diversity
+  (5 Fitzpatrick tones, various hair/clothes), distinct players in multiplayer. **No embedded PNG** (GPL-clean);
+  PixelLab generates only a **design reference**, converted by hand into a procedural sprite.
 
-## Animações pedidas → fonte PixelLab
+## Pipeline (validated in the proof)
+PixelLab (reference) → extract palette/pose → **procedural sprite** (pixel-data + hex palette) → layer system.
+Proof done: side-view `Pip` → palette extracted → faithful procedural render (see `assets-ref/`, not versioned). The
+original proof was on a 16×32 frame; the size belonged to the EXPERIMENT, it was not a spec — the art delivered later did not
+follow it, and the Dev's decision is that there is no fixed size.
 
-| # | Animação (José) | Fonte PixelLab | Tipo |
+## Animations requested → PixelLab source
+
+| # | Animation (the Dev) | PixelLab source | Type |
 |---|---|---|---|
-| 1 | **Respirar sempre** (idle vivo) | `breathing-idle` | template |
-| 2 | Andar | `walking` | template |
-| 3 | Correr | `running-8-frames` | template |
-| 4 | Pular do chão | `jumping-1` / `two-footed-jump` | template |
-| 5 | Pular da parede (wall-jump) | "pushing off a wall to jump" | v3 custom |
-| 6 | Mudar de orientação (virar) | "turning around" | v3 custom |
-| 7 | Agachar | `crouching` | template |
-| 8 | Rastejar | "crawling on belly" | v3 custom |
-| 9 | Escalar parede | "climbing a wall" | v3 custom |
-| 10 | Andar pendurado no teto | "moving hand over hand on ceiling" | v3 custom |
-| 11 | Subir/descer escada | "climbing a ladder" | v3 custom |
-| 12 | Subir/descer cipó/corda | "climbing a rope" | v3 custom |
-| 13 | Nadar frente/trás | "swimming horizontally" | v3 custom |
-| 14 | Nadar p/ baixo / mergulhar | "diving downward swimming" | v3 custom |
-| 15 | Nadar p/ cima | "swimming upward" | v3 custom |
-| 16 | Sair da água | "climbing out of water" | v3 custom |
-| 17 | Voar | "flying with arms out" | v3 custom |
-| 18 | Pulo "bumbum em chamas" (lava/fogo) | "jumping in panic, bottom on fire" | v3 custom |
-| 19 | Pulo "bumbum dolorido" (espinhos) | "jumping in pain holding bottom" | v3 custom |
+| 1 | **Always breathing** (living idle) | `breathing-idle` | template |
+| 2 | Walk | `walking` | template |
+| 3 | Run | `running-8-frames` | template |
+| 4 | Jump from the ground | `jumping-1` / `two-footed-jump` | template |
+| 5 | Jump off the wall (wall-jump) | "pushing off a wall to jump" | v3 custom |
+| 6 | Change orientation (turn) | "turning around" | v3 custom |
+| 7 | Crouch | `crouching` | template |
+| 8 | Crawl | "crawling on belly" | v3 custom |
+| 9 | Climb a wall | "climbing a wall" | v3 custom |
+| 10 | Move hanging from the ceiling | "moving hand over hand on ceiling" | v3 custom |
+| 11 | Climb up/down a ladder | "climbing a ladder" | v3 custom |
+| 12 | Climb up/down a vine/rope | "climbing a rope" | v3 custom |
+| 13 | Swim forwards/backwards | "swimming horizontally" | v3 custom |
+| 14 | Swim down / dive | "diving downward swimming" | v3 custom |
+| 15 | Swim up | "swimming upward" | v3 custom |
+| 16 | Get out of the water | "climbing out of water" | v3 custom |
+| 17 | Fly | "flying with arms out" | v3 custom |
+| 18 | "Bottom on fire" jump (lava/fire) | "jumping in panic, bottom on fire" | v3 custom |
+| 19 | "Sore bottom" jump (spikes) | "jumping in pain holding bottom" | v3 custom |
 
-**Economia (Tier 1, 2000 ger.):** gerar só a direção **east** (espelhar W no motor) → 1 geração por animação.
-Lote 1 (prova de animação): #1 breathing-idle + #2 walking. Validar conversão → escalar para o resto.
+**Economy (Tier 1, 2000 generations):** generate only the **east** direction (mirror W in the engine) → 1 generation per animation.
+Batch 1 (animation proof): #1 breathing-idle + #2 walking. Validate the conversion → scale to the rest.
 
 ## Status
-- [x] Base `Pip` (referência lateral) + prova de conversão procedural.
-- [ ] Lote 1: breathing-idle + walking (em geração).
-- [ ] Conversão das animações para frames procedurais.
-- [ ] Sistema de camadas (pele Fitzpatrick + cabelos + roupas) + distinção por jogador.
-- [ ] Lotes 2+: demais animações (#3–#19).
+- [x] `Pip` base (side reference) + proof of procedural conversion.
+- [ ] Batch 1: breathing-idle + walking (being generated).
+- [ ] Conversion of the animations into procedural frames.
+- [ ] Layer system (Fitzpatrick skin + hair + clothes) + per-player distinction.
+- [ ] Batches 2+: the remaining animations (#3–#19).

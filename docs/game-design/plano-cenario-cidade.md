@@ -1,110 +1,112 @@
-# Plano de cenário — CIDADE (tilemap 16×16 + vida ambiente)
+> Historical plan (2026-06-30): kept as a record; the current state lives in the `game-platformer` repository, which owns the city scenery since the scenery left the engine (ADR-0228).
 
-> Objetivo: substituir os "blocos horríveis" por uma cidade vertical coerente.
-> Regra de custo: **tudo 1-direção (sidescroller)**, nunca 8 direções. Orçamento estimado ~46 gerações para a cidade inteira.
+# Scenery plan — CITY (16×16 tilemap + ambient life)
 
-## 1. Conceito: cidade VERTICAL
-O mapa (56×62 tiles) é lido por faixas de altura:
+> Goal: replace the "horrible blocks" with a coherent vertical city.
+> Cost rule: **everything 1-direction (sidescroller)**, never 8 directions. Estimated budget ~46 generations for the whole city.
 
-| Zona | Faixa (Y, a calibrar) | Piso/estrutura | Vida | Decoração |
+## 1. Concept: a VERTICAL city
+The map (56×62 tiles) is read in height bands:
+
+| Zone | Band (Y, to calibrate) | Floor/structure | Life | Decoration |
 |---|---|---|---|---|
-| **Telhado** (alto) | topo | laje + platibanda | só **gatos + pombos** | caixas d'água, letreiros/outdoors, antenas, **lâmpadas pendentes**, ar-cond. — **sem árvores** |
-| **Prédio** (meio) | meio | fachada/parede | quase nenhuma | janelas, canos, escada de incêndio |
-| **Rua** (baixo) | base | **calçada + meio-fio** | adultos, cães, gatos, **pombos** | árvores urbanas, postes, **placas de trânsito**, toldos/bancas de loja, hidrante, lixeira, banco |
-| **Secreta** (`darkRegions`) | bolsões escuros | **interior de construção abandonada** | nenhuma | entulho, viga exposta, cano quebrado, lâmpada quebrada, pichação |
+| **Rooftop** (high) | top | slab + parapet | only **cats + pigeons** | water tanks, signs/billboards, antennas, **hanging lamps**, air conditioners — **no trees** |
+| **Building** (middle) | middle | façade/wall | almost none | windows, pipes, fire escape |
+| **Street** (low) | base | **pavement + kerb** | adults, dogs, cats, **pigeons** | street trees, lamp posts, **traffic signs**, shop awnings/stalls, hydrant, bin, bench |
+| **Secret** (`darkRegions`) | dark pockets | **interior of an abandoned building** | none | rubble, exposed beam, broken pipe, broken lamp, graffiti |
 
-- **Água = interior de caixa d'água**: paredes de tanque (metal/concreto) + linha d'água. Coerência: as caixas d'água ficam **nos telhados** — você nada dentro delas.
-- **Letreiros e lâmpadas = decoração** com brilho suave.
+- **Water = the inside of a water tank**: tank walls (metal/concrete) + waterline. Coherence: the water tanks sit **on the rooftops** — you swim inside them.
+- **Signs and lamps = decoration** with a soft glow.
 
-## 2. Mapeamento às camadas (já existentes + 1 nova)
-1. **C1 gameplay** (`worldToTexture`): tiles por zona (calçada/parede/laje/tanque/abandonado).
-2. **decoLayer** (atrás do player, sem colisão): props por zona.
-3. **NOVA camada "vida"** (entre deco e player, sem colisão): criaturas animadas.
-4. **C2/C3/C4 parallax**: lojas+letreiros / prédios médios / skyline.
-5. **darkLayer** (escuridão das secretas) — já existe.
+## 2. Mapping to the layers (already existing + 1 new)
+1. **C1 gameplay** (`worldToTexture`): tiles by zone (pavement/wall/slab/tank/abandoned).
+2. **decoLayer** (behind the player, no collision): props by zone.
+3. **NEW "life" layer** (between deco and player, no collision): animated creatures.
+4. **C2/C3/C4 parallax**: shops+signs / mid-rise buildings / skyline.
+5. **darkLayer** (the darkness of the secret areas) — already exists.
 
-## 3. Tilesets 16×16 a gerar (`create_sidescroller_tileset`, base encadeada p/ consistência)
-1. **Calçada** — concreto claro + meio-fio (topo = borda de calçada).
-2. **Fachada de prédio** — parede estrutural (meio).
-3. **Laje/telhado** — superfície + platibanda na borda.
-4. **Caixa d'água** — parede interna do tanque + linha d'água (reskin do tile água, tipo 3).
-5. **Interior abandonado** — concreto rachado/tijolo exposto/entulho (zonas secretas).
-- **Reskins de gameplay** mantêm forma/contraste reconhecíveis (legibilidade AAA): escada→escada de incêndio metálica; moeda, perigo, trampolim, portão, chave **inalterados em leitura**.
+## 3. 16×16 tilesets to generate (`create_sidescroller_tileset`, chained base for consistency)
+1. **Pavement** — light concrete + kerb (top = pavement edge).
+2. **Building façade** — structural wall (middle).
+3. **Slab/rooftop** — surface + parapet at the edge.
+4. **Water tank** — the tank's inner wall + waterline (reskin of the water tile, type 3).
+5. **Abandoned interior** — cracked concrete/exposed brick/rubble (secret zones).
+- **Gameplay reskins** keep a recognisable shape/contrast (AAA legibility): ladder→metal fire escape; coin, hazard, trampoline, gate, key **unchanged in how they read**.
 
-## 4. Props (`create_1_direction_object`, view sidescroller, 1 dir, espelhável)
-- **Rua**: árvore urbana, poste de luz, placa de trânsito (faixa/pare/semáforo), toldo/banca de loja, hidrante, lixeira, banco.
-- **Telhado**: caixa d'água (prop grande), letreiro/outdoor, antena, lâmpada pendente, ar-condicionado.
-- **Abandonado**: entulho, viga, cano quebrado, lâmpada quebrada.
-- Lâmpadas/letreiros: **brilho estável** (sem piscar — WCAG 2.3.1, < 3 Hz).
+## 4. Props (`create_1_direction_object`, sidescroller view, 1 dir, mirrorable)
+- **Street**: street tree, lamp post, traffic sign (crossing/stop/traffic light), shop awning/stall, hydrant, bin, bench.
+- **Rooftop**: water tank (large prop), sign/billboard, antenna, hanging lamp, air conditioner.
+- **Abandoned**: rubble, beam, broken pipe, broken lamp.
+- Lamps/signs: **steady glow** (no blinking — WCAG 2.3.1, < 3 Hz).
 
-## 5. Vida ambiente (criaturas) — comportamentos
-- **Rua**: pombos (andam/bicam; **voam ao se aproximar** e pousam adiante), gatos (andam), cães (andam), adultos (andam ao fundo, recuados/dessaturados).
-- **Telhado**: **só gatos + pombos**.
-- **Pombo (juice)**: raio de aproximação do player → debanda pra cima e repousa. **Puramente cosmético**: sem colisão, sem dano, **distinto do "susto" de perigo (E3)**.
-- Sprites 1-direção, 2 quadros, espelhados por sentido.
+## 5. Ambient life (creatures) — behaviours
+- **Street**: pigeons (walk/peck; **fly off when approached** and land further on), cats (walk), dogs (walk), adults (walk in the background, set back/desaturated).
+- **Rooftop**: **only cats + pigeons**.
+- **Pigeon (juice)**: a proximity radius around the player → they scatter upwards and settle again. **Purely cosmetic**: no collision, no damage, **distinct from the hazard "scare" (E3)**.
+- 1-direction sprites, 2 frames, mirrored by heading.
 
-## 6. Acessibilidade & desempenho (melhorias minhas)
-- **Toggle "Vida & animação de fundo"** + respeito a `prefers-reduced-motion`: desliga voo de pombos e reduz animações ambientes (autismo/TDAH/vestibular). Liga por padrão só se não houver reduce-motion.
-- **Sem flashes**: letreiros/lâmpadas com brilho constante.
-- **Contraste/leitura**: criaturas e decoração **recuadas e atrás do player**, paleta separada de moeda (amarelo)/perigo (vermelho)/player; nunca confundíveis com plataforma.
-- **Desempenho** (hardware escolar): pool de criaturas, **spawn só perto da câmera**, limite por tela, 2 quadros; tudo cosmético → cortável sem afetar o jogo (graceful degradation por FPS).
-- **Não colidível**: nada de prop/criatura vira "chão" ou "inimigo" acidental.
+## 6. Accessibility & performance (my improvements)
+- **Toggle "Background life & animation"** + respect for `prefers-reduced-motion`: turns off the pigeons' flight and reduces ambient animations (autism/ADHD/vestibular). On by default only if there is no reduce-motion.
+- **No flashes**: signs/lamps with constant brightness.
+- **Contrast/reading**: creatures and decoration **set back and behind the player**, a palette separate from coin (yellow)/hazard (red)/player; never mistakable for a platform.
+- **Performance** (school hardware): a creature pool, **spawn only near the camera**, a per-screen limit, 2 frames; all cosmetic → can be cut without affecting the game (graceful degradation by FPS).
+- **Not collidable**: no prop/creature accidentally becomes "floor" or "enemy".
 
-## 7. Correções às ideias originais
-- **Placa de trânsito no telhado não faz sentido** → no alto uso **letreiros/outdoors/antenas** (sinalização de prédio); placas de trânsito ficam **na rua**. (Você já separou rua=trânsito / alto=sinalização; aqui fica definido.)
-- **Pombo voando = cosmético**, nunca o susto de perigo (sem dano/respawn).
-- **Caixa d'água nos telhados** amarra "água = interior de caixa d'água" à verticalidade.
+## 7. Corrections to the original ideas
+- **A traffic sign on the rooftop makes no sense** → up high I use **signs/billboards/antennas** (building signage); traffic signs stay **on the street**. (You had already separated street=traffic / high=signage; here it is settled.)
+- **A flying pigeon = cosmetic**, never the hazard scare (no damage/respawn).
+- **Water tanks on the rooftops** ties "water = the inside of a water tank" to the verticality.
 
-## 8. Orçamento de geração (1-direção)
-| Item | Qtd | ~Gerações |
+## 8. Generation budget (1-direction)
+| Item | Qty | ~Generations |
 |---|---|---|
 | Tilesets | 5 | ~15 |
 | Props | ~16 | ~16 |
-| Criaturas | ~6 (×~2 quadros) | ~12 |
-| Parallax (refino lojas/letreiros) | 3 | ~3 |
+| Creatures | ~6 (×~2 frames) | ~12 |
+| Parallax (refining shops/signs) | 3 | ~3 |
 | **Total** | | **~46** |
 
-Comparação: o personagem 8-direcional desperdiçou ~540. Aqui, **a cidade rica inteira ≈ 46**.
+Comparison: the 8-directional character wasted ~540. Here, **the whole rich city ≈ 46**.
 
-## 9. Ordem de execução (rodadas, com aval visual entre cada)
-- **A** — Tilesets (calçada/fachada/laje/tanque/abandonado) + wire por zona.
-- **B** — Props por zona (decoLayer).
-- **C** — Criaturas + sistema de vida ambiente + toggle de acessibilidade.
-- **D** — Refino do parallax (lojas com letreiros na camada próxima).
+## 9. Order of execution (rounds, with visual sign-off between each)
+- **A** — Tilesets (pavement/façade/slab/tank/abandoned) + wiring by zone.
+- **B** — Props by zone (decoLayer).
+- **C** — Creatures + the ambient-life system + the accessibility toggle.
+- **D** — Parallax refinement (shops with signs on the near layer).
 
 ---
 
-# REVISÃO FINAL (alinhado) — substitui pontos acima onde divergir
+# FINAL REVISION (agreed) — replaces the points above where they diverge
 
-## Filosofia: procedural-first como redução de carga cognitiva
-Sprite PixelLab = **andaime** para criar. José corrige/adequa cada imagem e a abstração é
-**transformada em geração procedural** em seguida. Gerar imagem só quando procedural não resolve.
+## Philosophy: procedural-first as a reduction of cognitive load
+A PixelLab sprite = **scaffolding** to create with. The Dev corrects/adapts each image and the abstraction is
+**turned into procedural generation** afterwards. Generate an image only when procedural does not solve it.
 
-## Vertical REAL do mapa (corrigido — NÃO há telhado)
-- **Base = rua** (calçada, lojas/letreiros no parallax, vida de rua).
-- **Caixa d'água**: o corpo d'água fica na **base**, mas a **entrada é no alto** (parede alta após o trampolim). Tiles de água = interior de tanque.
-- **Acima da altura da entrada da caixa d'água = interior de prédio.**
-- **Secretas (`darkRegions`) = interior de construção abandonada.**
-- **Lava**: não combina; deixada intacta por ora (José resolve depois).
+## The map's REAL vertical (corrected — there is NO rooftop)
+- **Base = street** (pavement, shops/signs in the parallax, street life).
+- **Water tank**: the body of water is at the **base**, but the **entrance is up high** (a tall wall after the trampoline). Water tiles = the inside of a tank.
+- **Above the height of the water tank's entrance = the inside of a building.**
+- **Secret areas (`darkRegions`) = the inside of an abandoned building.**
+- **Lava**: does not fit; left untouched for now (the Dev will solve it later).
 
-## Tilesets (4, Rodada A — gerados): calçada · interior de prédio · caixa d'água · interior abandonado
-(O genérico "concreto" anterior é aposentado.)
+## Tilesets (4, Round A — generated): pavement · building interior · water tank · abandoned interior
+(The earlier generic "concrete" is retired.)
 
-## Camadas (atualizado) — agora com FRENTE
-1. Parallax fundo: C4 céu · C3 prédios médios · C2 lojas+letreiros **+ adultos em silhueta**.
-2. C1 gameplay: tileset por zona + itens + player + **vida no plano (adultos/cães/gatos/pombos) atrás do player**.
-3. **NOVA camada FRENTE (à frente do player): CARROS** passando de vez em quando.
-4. **Clima** (chuva) overlay, abaixo do HUD.
+## Layers (updated) — now with a FRONT
+1. Background parallax: C4 sky · C3 mid-rise buildings · C2 shops+signs **+ adults in silhouette**.
+2. C1 gameplay: tileset by zone + items + player + **life on the plane (adults/dogs/cats/pigeons) behind the player**.
+3. **NEW FRONT layer (in front of the player): CARS** passing every now and then.
+4. **Weather** (rain) overlay, below the HUD.
 
-## Mecânicas novas (todas procedurais, 0 crédito)
-- **Carros**: surgem esporádicos, cruzam a rua na camada da frente; **param no vermelho do semáforo**, seguem no verde.
-- **Semáforo funcional**: ciclo verde→amarelo→vermelho; governa os carros.
-- **Adultos**: silhuetas no parallax **e** pedestres andando no plano (atrás do player).
-- **Pombos**: andam/bicam; **revoam ao se aproximar** (cosmético, sem dano).
-- **Chuva (rotina)**: inicia aos **30s**; ciclo `garoa 5s → chuva 5s → garoa 5s → bom 45s` (60s) em loop. Respeita `prefers-reduced-motion`/toggle.
+## New mechanics (all procedural, 0 credits)
+- **Cars**: appear sporadically, cross the street on the front layer; **stop at the red traffic light**, go on green.
+- **Working traffic light**: green→amber→red cycle; it governs the cars.
+- **Adults**: silhouettes in the parallax **and** pedestrians walking on the plane (behind the player).
+- **Pigeons**: walk/peck; **fly off when approached** (cosmetic, no damage).
+- **Rain (routine)**: starts at **30s**; cycle `drizzle 5s → rain 5s → drizzle 5s → fair 45s` (60s) in a loop. Respects `prefers-reduced-motion`/the toggle.
 
-## Orçamento revisado
-- **Rodada A: 4 tilesets ≈ 12 gerações** (única geração desta etapa).
-- Props/criaturas-herói (caixa d'água, gato, cão, adulto, placa, carro): poucas, 1-direção.
-- Ambiente (pombos, névoa, nuvens, chuva, semáforo, carros) = **procedural, 0 crédito**.
-- Total cidade ≈ **20–25 gerações**.
+## Revised budget
+- **Round A: 4 tilesets ≈ 12 generations** (the only generation in this stage).
+- Hero props/creatures (water tank, cat, dog, adult, sign, car): few, 1-direction.
+- Ambience (pigeons, mist, clouds, rain, traffic light, cars) = **procedural, 0 credits**.
+- City total ≈ **20–25 generations**.

@@ -1,98 +1,100 @@
-# Estudo — Compatibilidade com Tiled (mapas) e Aseprite (sprites)
+> Historical plan (2026-07-03): kept as a record; the current state lives in [`Art-Bible.md`](Art-Bible.md) and [`plano-arte-procedural.md`](plano-arte-procedural.md), and the level format belongs to `game-platformer` since ADR-0228.
 
-Pedido do José em 2026-07-03: estudar deixar o jogo compatível com arquivos de **Tiled** e **Aseprite** antes
-de prosseguir com o tilemap/engine. Pesquisa research-first (fontes ao fim de cada seção). **Nenhum código
-alterado** — é estudo para decisão.
+# Study — Compatibility with Tiled (maps) and Aseprite (sprites)
 
----
-
-## A. Tiled (editor de mapas) — VEREDITO: não adotar como formato; manter texto-glifo
-
-Adotar o Tiled como formato **reverteria** a decisão travada hoje (mapa como *ascii art* legível/diffável) e
-**fere pilares** (no-build/enxuto/procedural). Detalhes:
-
-- **Formatos:** JSON (`.tmj`) é o único fácil de ler sem build (`JSON.parse` nativo); TMX=XML, CSV perde
-  tilesets/objetos, Lua inútil. Mas todos guardam `"data":[2,2,1,10,…]` (ou XML) → **ilegível como arte e com
-  diff ruim** (inserir uma coluna desloca todos os índices). É o oposto do seu objetivo.
-- **Libs Pixi↔Tiled** (`@pixi/tilemap`, `pixi-tiledmap`): assumem **bundler + spritesheet + Pixi v8** → ferem
-  no-build/enxuto/nossa v7. Se um dia ler `.tmj`, o parser é **de mão** (JSON, `encoding:"csv"`, sem compressão
-  — ~20 linhas, mascarando as flip-flags `& ~0xE0000000`).
-- **Modelo procedural:** o Tiled é orientado a *imagem de tileset*; nosso jogo é *cor por tipo* (`TILE_COLOR`).
-  Usá-lo exigiria criar PNGs de tileset (nem que placeholders) + `firstgid`→nosso tipo via "Collection of
-  Images" com `inclType` por tile. Duplica o modelo. Chave/portão/itens caberiam bem em **object layers**.
-- **Editor custom NÃO fica obsoleto** (para este jogo): o custom reusa o mesmo `parseLevel`/legend (uma verdade
-  só), valida regras do **jogo** (spawn, portão-sem-chave, regiões inalcançáveis) que o Tiled não sabe, e prova
-  as fronteiras da engine. Reavaliar Tiled só como **editor compartilhado dos 35+ jogos**, no futuro.
-- **Licença:** app Tiled é GPLv2+, mas **arquivos exportados não herdam** (output ≠ derivado; spec TMX é
-  CC BY-SA). Sem conflito com nosso GPL-3.0.
-- **Ponte opcional (se quiser a edição visual do Tiled um dia):** conversores `texto→.tmj` (abre no Tiled) e
-  `.tmj→texto` (regrava o canônico). O jogo **nunca** lê `.tmj`; o `.txt` segue sendo a fonte no git. É variante
-  disciplinada da "Opção A", não adoção do Tiled como formato.
-
-**Recomendação A:** manter o **texto-glifo canônico** (`plano-editor-mapa.md`) e o **editor custom**. Tiled só
-como conversor opcional de autoria, se e quando desejado.
-
-*Fontes:* doc.mapeditor.org (JSON Map Format, Global Tile IDs, TMX, Editing Tilesets) · npm @pixi/tilemap ·
-github riebel/pixi-tiledmap · gnu.org GPL-FAQ (output≠derivado).
+The Dev's request on 2026-07-03: study making the game compatible with **Tiled** and **Aseprite** files before
+moving on with the tilemap/engine. Research-first (sources at the end of each section). **No code
+changed** — it is a study for a decision.
 
 ---
 
-## B. Aseprite (sprites/animação) — VEREDITO: pipeline tecnicamente ótimo, MAS há uma decisão de pilar
+## A. Tiled (map editor) — VERDICT: do not adopt it as the format; keep the glyph text
 
-O caminho **atlas PNG + JSON** é limpo e vantajoso, e o repo **já usa PNGs** (`game.js`: `SPR=`, `pngTex`,
-`A('andar',8)` → ~40+ PNGs individuais por personagem). Tecnicamente resolvido:
+Adopting Tiled as the format **would reverse** the decision locked today (the map as readable/diffable *ASCII art*) and
+**breaks pillars** (no-build/lean/procedural). Details:
+
+- **Formats:** JSON (`.tmj`) is the only one easy to read with no build (native `JSON.parse`); TMX=XML, CSV loses
+  tilesets/objects, Lua useless. But all of them store `"data":[2,2,1,10,…]` (or XML) → **unreadable as art and with
+  bad diffs** (inserting a column shifts every index). It is the opposite of your goal.
+- **Pixi↔Tiled libs** (`@pixi/tilemap`, `pixi-tiledmap`): assume a **bundler + spritesheet + Pixi v8** → they break
+  no-build/lean/our v7. If `.tmj` is ever read, the parser is **hand-written** (JSON, `encoding:"csv"`, no compression
+  — ~20 lines, masking the flip flags `& ~0xE0000000`).
+- **Procedural model:** Tiled is oriented to a *tileset image*; our game is *colour by type* (`TILE_COLOR`).
+  Using it would require creating tileset PNGs (even placeholders) + `firstgid`→our type via a "Collection of
+  Images" with `inclType` per tile. It duplicates the model. Key/gate/items would fit well in **object layers**.
+- **The custom editor does NOT become obsolete** (for this game): the custom one reuses the same `parseLevel`/legend (a single
+  truth), validates the **game's** rules (spawn, gate-without-key, unreachable regions) that Tiled does not know, and proves
+  the engine's boundaries. Reconsider Tiled only as a **shared editor for the 35+ games**, in the future.
+- **Licence:** the Tiled app is GPLv2+, but **exported files do not inherit it** (output ≠ derivative; the TMX spec is
+  CC BY-SA). No conflict with our GPL-3.0.
+- **Optional bridge (if you want Tiled's visual editing one day):** converters `text→.tmj` (opens in Tiled) and
+  `.tmj→text` (rewrites the canonical one). The game **never** reads `.tmj`; the `.txt` stays the source in git. It is a
+  disciplined variant of "Option A", not adoption of Tiled as the format.
+
+**Recommendation A:** keep the **canonical glyph text** (`plano-editor-mapa.md`) and the **custom editor**. Tiled only
+as an optional authoring converter, if and when wanted.
+
+*Sources:* doc.mapeditor.org (JSON Map Format, Global Tile IDs, TMX, Editing Tilesets) · npm @pixi/tilemap ·
+github riebel/pixi-tiledmap · gnu.org GPL-FAQ (output≠derivative).
+
+---
+
+## B. Aseprite (sprites/animation) — VERDICT: technically a great pipeline, BUT there is a pillar decision
+
+The **PNG atlas + JSON** path is clean and advantageous, and the repo **already uses PNGs** (`game.js`: `SPR=`, `pngTex`,
+`A('andar',8)` → ~40+ individual PNGs per character). Technically solved:
 
 - **Export:** `aseprite -b menino.aseprite --sheet menino.png --data menino.json --format json-array
-  --list-tags --filename-format '{tag}-{tagframe}'` (sem `--trim` no v1 = preserva "pés na linha").
-- **JSON:** `frames[]` (`frame{x,y,w,h}`, `duration` em **ms**, `spriteSourceSize`, `sourceSize`) +
-  `meta.frameTags` (`name`,`from`,`to`,`direction`) = as animações + `meta.slices` (pivot/hitbox) +
+  --list-tags --filename-format '{tag}-{tagframe}'` (no `--trim` in v1 = keeps "feet on the line").
+- **JSON:** `frames[]` (`frame{x,y,w,h}`, `duration` in **ms**, `spriteSourceSize`, `sourceSize`) +
+  `meta.frameTags` (`name`,`from`,`to`,`direction`) = the animations + `meta.slices` (pivot/hitbox) +
   `meta.layers`.
-- **Loader PixiJS v7 (offline, sem build):** o único passo não-nativo é converter **`frameTags`→`animations`**
-  (dict `nome→[chaves]`, ~15 linhas); o resto do JSON o `PIXI.Spritesheet` já entende. `BaseTexture` com
-  `SCALE_MODES.NEAREST` **antes** do `parse()` (mantém pixel-art). São **2 arquivos** (png+json) por personagem,
-  cacheados no SW.
-- **Ganhos (importam no hardware-alvo fraco = inclusão):** ~40 requests → **2**; N base-textures → **1** →
-  **batching WebGL** (menos texture-swaps); cache PWA mais simples.
-- **Cadência:** manter o `ANIM.*Hold` atual (holds em ticks) e só trocar a **fonte** das texturas — **zero
-  regressão** de timing, painel `?debug` intacto. Migrar para durações-por-frame (ms do Aseprite) fica para
-  depois, dentro do subsistema de animação da engine.
-- **Slices** → **pivot dos pés** (elimina alinhamento manual); **layers** → variações de **forma** (ex.:
-  **cadeira de rodas** como layer por cima, sincronizada por tag) — casa com "forma=camada, cor=palette-swap".
-- **Licença:** Aseprite é pago (EULA: só não redistribuir o *app*), mas **os assets exportados são seus** e o
-  **formato é aberto** → **nenhuma** implicação para o GPL-3.0 (só lemos PNG+JSON nossos; não parsear `.aseprite`
-  nativo em runtime).
-- **Encaixe na engine:** loader em `render/aseprite-loader.js`, chamado no **boot async** já previsto; a
-  **entidade** recebe `{animations, anchor}` já parseado — não sabe que veio do Aseprite (troca de fonte no
-  futuro não a afeta).
+- **PixiJS v7 loader (offline, no build):** the only non-native step is converting **`frameTags`→`animations`**
+  (a `name→[keys]` dict, ~15 lines); `PIXI.Spritesheet` already understands the rest of the JSON. `BaseTexture` with
+  `SCALE_MODES.NEAREST` **before** `parse()` (keeps pixel art). That is **2 files** (png+json) per character,
+  cached in the SW.
+- **Gains (they matter on weak target hardware = inclusion):** ~40 requests → **2**; N base textures → **1** →
+  **WebGL batching** (fewer texture swaps); a simpler PWA cache.
+- **Cadence:** keep the current `ANIM.*Hold` (holds in ticks) and only swap the textures' **source** — **zero
+  regression** in timing, the `?debug` panel intact. Moving to per-frame durations (Aseprite's ms) is for
+  later, inside the engine's animation subsystem.
+- **Slices** → **feet pivot** (removes manual alignment); **layers** → **shape** variations (e.g. a
+  **wheelchair** as a layer on top, synchronised by tag) — matches "shape=layer, colour=palette-swap".
+- **Licence:** Aseprite is paid (EULA: just do not redistribute the *app*), but **the exported assets are yours** and the
+  **format is open** → **no** implication for GPL-3.0 (we only read our own PNG+JSON; do not parse native `.aseprite`
+  at runtime).
+- **Fit into the engine:** a loader in `render/aseprite-loader.js`, called at the **async boot** already planned; the
+  **entity** receives `{animations, anchor}` already parsed — it does not know it came from Aseprite (a change of source in
+  the future does not affect it).
 
-### ⚠️ A DECISÃO que isto força (pilar do CLAUDE.md)
-O `CLAUDE.md` crava **"arte = dados/algoritmo; nenhum PNG embutido (GPL-clean)"** e **ASCII paramétrico** como
-rumo oficial da arte. Mas o jogo **já carrega PNGs** (PixelLab, "fase atual"), e o atlas Aseprite **consolida o
-caminho PNG** — contradizendo o pilar. **Não dá para 'adotar Aseprite' sem o José decidir conscientemente:**
-o atlas PNG vira a **fonte oficial** (revisando o pilar), ou o Aseprite é só **ferramenta de autoria** enquanto
-o jogo caminha para arte-como-dados?
+### ⚠️ The DECISION this forces (a CLAUDE.md pillar)
+`CLAUDE.md` states **"art = data/algorithm; no embedded PNG (GPL-clean)"** and **parametric ASCII** as
+the official direction of the art. But the game **already loads PNGs** (PixelLab, "current phase"), and the Aseprite atlas **consolidates the
+PNG path** — contradicting the pillar. **"Adopting Aseprite" cannot happen without the Dev deciding consciously:**
+does the PNG atlas become the **official source** (revising the pillar), or is Aseprite only an **authoring tool** while
+the game moves towards art-as-data?
 
-### Restrição a11y (independe da decisão)
-O **alto-contraste** hoje gera silhueta do caminho **ASCII/indexado** (`silhouetteCanvasIdx`). O atlas de cor
-**não** produz silhueta sozinho. Então, adotando ou não o Aseprite, é preciso **preservar o caminho
-ASCII/indexado** como (a) fonte do alto-contraste e (b) fallback — ou gerar a silhueta do alpha do atlas na
-carga. (Pilar a11y AAA — não pode regredir.)
+### a11y constraint (independent of the decision)
+**High contrast** today generates a silhouette from the **ASCII/indexed** path (`silhouetteCanvasIdx`). The colour atlas
+does **not** produce a silhouette on its own. So, whether or not Aseprite is adopted, the **ASCII/indexed path must be
+preserved** as (a) the source of high contrast and (b) a fallback — or the silhouette is generated from the atlas's alpha at
+load time. (a11y pillar, AAA — it must not regress.)
 
-*Fontes:* aseprite.org/docs/cli · gists dacap (json-hash/array) · pixijs.com guides Spritesheets v7 ·
-community.aseprite.org (frameTags→animations middleware; slices/pivot) · aseprite.org/faq + EULA (uso de assets).
+*Sources:* aseprite.org/docs/cli · dacap's gists (json-hash/array) · pixijs.com guides Spritesheets v7 ·
+community.aseprite.org (frameTags→animations middleware; slices/pivot) · aseprite.org/faq + EULA (use of assets).
 
 ---
 
-## C. Impacto nas decisões anteriores
-- **`plano-editor-mapa.md`:** confirmado — texto-glifo + editor custom seguem. Tiled não muda nada (no máximo um
-  conversor opcional futuro).
-- **`../2-Architecture/plano-engine.md`:** o subsistema **Render** ganha um `aseprite-loader.js` (se a decisão B for "adotar");
-  o subsistema **Entidades** consome `animations`. O **alto-contraste** amarra o caminho ASCII/indexado — a
-  engine deve mantê-lo como subsistema vivo, não descartável.
-- **Repo público (GPL):** aviso lateral — a **procedência/licença dos PNGs atuais** (PixelLab) precisa ser
-  confirmada limpa para o repositório público, independentemente do Aseprite. (Verificar antes do 1º push.)
+## C. Impact on earlier decisions
+- **`plano-editor-mapa.md`:** confirmed — glyph text + custom editor stay. Tiled changes nothing (at most an
+  optional future converter).
+- **`../2-Architecture/plano-engine.md`:** the **Render** subsystem gains an `aseprite-loader.js` (if decision B is "adopt");
+  the **Entities** subsystem consumes `animations`. **High contrast** ties down the ASCII/indexed path — the
+  engine must keep it as a living subsystem, not a disposable one.
+- **Public repo (GPL):** a side warning — the **provenance/licence of the current PNGs** (PixelLab) must be
+  confirmed clean for the public repository, regardless of Aseprite. (Check before the 1st push.)
 
-## D. Decisões pendentes (José)
-1. **Tiled:** confirmar a Recomendação A (texto-glifo canônico; Tiled só como conversor opcional).
-2. **Aseprite / rumo da arte:** atlas PNG como fonte oficial (revisando o pilar) × só autoria (rumo procedural)
-   × adiar. (Independe: preservar o caminho ASCII/indexado do alto-contraste.)
+## D. Pending decisions (the Dev)
+1. **Tiled:** confirm Recommendation A (canonical glyph text; Tiled only as an optional converter).
+2. **Aseprite / direction of the art:** PNG atlas as the official source (revising the pillar) × authoring only (procedural direction)
+   × postpone. (Independently: preserve the ASCII/indexed path of high contrast.)

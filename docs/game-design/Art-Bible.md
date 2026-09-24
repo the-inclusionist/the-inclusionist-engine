@@ -12,6 +12,11 @@ dictionary → recolor by colour-key + layers). PixelLab/Aseprite/Tiled are **de
 to procedural. Active pipeline plans: [`plano-arte-procedural.md`](plano-arte-procedural.md),
 [`plano-tiled-aseprite.md`](plano-tiled-aseprite.md).
 
+> ⚠️ **Checked on 2026-09-24: the art this bible measures is no longer in this repository.** The sprite PNGs left with
+> the cartridge on 2026-09-07 (#111) — `app/` holds none today — and the modules that drew a game's world
+> (`render/draw`, `render/city-tex`, the weather) left in the F12 move (ADR-0228). They are the platformer's, in
+> `game-platformer`. The rules below still describe that art; the counts and paths are as they were measured here.
+
 ## Character & animation
 
 320×180 canvas, 16px tiles, **no fixed sprite size** (48×48 cancelled — TDAH concern; see below). In **profile**, facing the last
@@ -86,7 +91,7 @@ The canonical font system (roster by role, evidence-based, licences) →
 
 Juice (dust, collect-glow, squash&stretch, hit-stop, screenshake, tile shimmer, camera easing) — **each an independent
 debug toggle**, plus a "low-performance" profile that turns all off. CRT scanlines + vignette as toggleable CSS
-overlays. Dedicated doc: **`Game-Feel.md`** *(to create — absorbs ADR-0018 + `../1-Discovery/plano-audio-fase-f.md`)*.
+overlays. Dedicated doc: **[`Game-Feel.md`](Game-Feel.md)**.
 
 ## Colour & accessibility
 

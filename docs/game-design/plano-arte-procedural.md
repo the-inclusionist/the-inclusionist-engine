@@ -1,163 +1,165 @@
-# Plano — Arte procedural semântica (imagem semântica + dicionário de paletas)
+> Historical plan (2026-07-03, amended 2026-09-09): kept as a record; the current state lives in [`Art-Bible.md`](Art-Bible.md).
 
-Pedido do José em 2026-07-03. Substitui o dilema "PNG × procedural": a arte vira **dado semântico** e as cores
-vivem num **dicionário de paletas separado**. Escopo travado: **unificado** — personagens **e** tiles/mundo.
-Realiza o pilar "arte = dados / GPL-clean". Research-first (fontes ao fim). Estudo para decisão; nada de código.
+# Plan — Semantic procedural art (semantic image + palette dictionary)
 
-## 1. Modelo (confirmado com o José)
-- **Imagem semântica** (o asset): por pixel, **(região, luminosidade)** — nunca uma cor. `região` = o que é
-  (pele, cabelo, camisa, calça, metal, pedra, água, contorno…); `luminosidade` = degrau ordenado sombra→luz
-  (+ papel `contorno`). Nada é chapado: a luminosidade preserva volume/sombreamento.
-- **Dicionário de paletas** (separado, do jogo): por região, um conjunto de **rampas** escolhíveis (ex.: pele
-  clara/média/escura; N cores de camisa; materiais de tile). Uma rampa = cor por nível de luminosidade.
-- **Render**: `cor(pixel) = paleta[ variante_escolhida_da_região ][ luminosidade ]`. Mesma imagem semântica +
-  paletas diferentes → recolor infinito, com sombreamento correto. Compatibilidade = só rampas da mesma região.
+The Dev's request on 2026-07-03. It replaces the "PNG × procedural" dilemma: art becomes **semantic data** and the colours
+live in a **separate palette dictionary**. Locked scope: **unified** — characters **and** tiles/world.
+It fulfils the pillar "art = data / GPL-clean". Research-first (sources at the end). A study for a decision; no code.
 
-## 2. Referências estudadas
-- **Palette swap / color ramps indexados** (NES/SNES; tutoriais Slynyrd; modo indexado do Aseprite): recolorir
-  trocando a paleta mantendo os índices — a base clássica disto.
-- **Recolor por LUT/rampa em jogos modernos** (ex.: *Dead Cells* — swap de cor por rampas HSV; *Rain World* —
-  cor procedural): separar **forma/sombreamento** de **cor** é técnica consagrada.
-- **Semente no próprio repo:** `game.js` já tem caminho indexado — `PIP_PAL` (paleta de 10 cores),
-  `indexedToCanvas()` (índice→canvas) e `silhouetteCanvasIdx()` (silhueta chapada p/ alto-contraste). **Este
-  plano generaliza esse código** de "paleta fixa" para "semântica (região+luminosidade) + dicionário de
-  paletas". Não é do zero.
+## 1. Model (confirmed with the Dev)
+- **Semantic image** (the asset): per pixel, **(region, luminosity)** — never a colour. `region` = what it is
+  (skin, hair, shirt, trousers, metal, stone, water, outline…); `luminosity` = an ordered step shadow→light
+  (+ the `outline` role). Nothing is flat: luminosity preserves volume/shading.
+- **Palette dictionary** (separate, the game's): per region, a set of selectable **ramps** (e.g. light/medium/dark
+  skin; N shirt colours; tile materials). A ramp = a colour per luminosity level.
+- **Render**: `colour(pixel) = palette[ region's_chosen_variant ][ luminosity ]`. Same semantic image +
+  different palettes → infinite recolour, with correct shading. Compatibility = only ramps of the same region.
 
-## 3. Formato do dado semântico (a "imagem semântica")
-Por asset, dois canais por pixel: **regionId** (qual região) + **lumLevel** (nível na rampa; um valor especial
-= `contorno`). Proposta:
-- ~~**Armazenamento legível/diffável**: um grid de texto onde cada célula é `região×luminosidade`~~ —
-  **a proposta de 03/07 caiu em 09/09, e caiu por medição.** Ela justificava-se a si própria com a condição
-  *«preferir texto/JSON indexado **enquanto os sprites são pequenos (24×32)**»*, e essa condição morreu no dia
-  em que o LPC entrou pela ponte do ADR-0133.
-- **Animações**: várias imagens semânticas (frames) + tags (reusa `frameTags` do Aseprite na importação).
-- **Metadados**: tamanho, âncora/pés (slice), lista de regiões usadas.
+## 2. References studied
+- **Palette swap / indexed colour ramps** (NES/SNES; Slynyrd tutorials; Aseprite's indexed mode): recolouring
+  by swapping the palette while keeping the indices — the classic basis of this.
+- **Recolour by LUT/ramp in modern games** (e.g. *Dead Cells* — colour swap by HSV ramps; *Rain World* —
+  procedural colour): separating **shape/shading** from **colour** is an established technique.
+- **The seed in the repo itself:** `game.js` already has an indexed path — `PIP_PAL` (a 10-colour palette),
+  `indexedToCanvas()` (index→canvas) and `silhouetteCanvasIdx()` (flat silhouette for high contrast). **This
+  plan generalises that code** from "fixed palette" to "semantic (region+luminosity) + palette
+  dictionary". It is not from scratch.
 
-### 📏 A MEDIÇÃO DE 2026-09-09, e ela decidiu três coisas de uma vez
+## 3. Format of the semantic data (the "semantic image")
+Per asset, two channels per pixel: **regionId** (which region) + **lumLevel** (level on the ramp; a special value
+= `outline`). Proposal:
+- ~~**Readable/diffable storage**: a text grid where each cell is `region×luminosity`~~ —
+  **the proposal of 03/07 fell on 09/09, and it fell by measurement.** It justified itself with the condition
+  *«preferir texto/JSON indexado **enquanto os sprites são pequenos (24×32)**»* (prefer indexed text/JSON while the
+  sprites are small), and that condition died on the day LPC came in through ADR-0133's bridge.
+- **Animations**: several semantic images (frames) + tags (reuses Aseprite's `frameTags` on import).
+- **Metadata**: size, anchor/feet (slice), list of regions used.
 
-Descodificadas as folhas reais do LPC (`sprite/character/Body/Base/Human_androgynous/Coffee/`), com um leitor
-PNG sem dependências:
+### 📏 THE MEASUREMENT OF 2026-09-09, and it decided three things at once
 
-| folha | dimensões | bytes | píxeis opacos | **cores únicas** |
+The real LPC sheets decoded (`sprite/character/Body/Base/Human_androgynous/Coffee/`), with a
+dependency-free PNG reader:
+
+| sheet | dimensions | bytes | opaque pixels | **unique colours** |
 |---|---|---|---|---|
 | `walk.png` | 576×256 | 30 724 | 41 923 | **11** |
 | `thrust.png` | 576×256 | 28 785 | 41 700 | **14** |
 | `hurt.png` | 448×64 | 21 528 | 8 621 | **10** |
-| **as três juntas** | — | 81 037 | 92 244 | **15** |
+| **the three together** | — | 81 037 | 92 244 | **15** |
 
-**① A grelha de texto é inviável e o número é grande.** 576×256 = 147 456 píxeis; a dois caracteres por
-píxel, uma folha vira **~295 KB de texto** — quase dez vezes o PNG RGBA de 30 KB que ela descreve. E é uma
-folha de um corpo, antes de cabelo, roupa e das outras animações. 📌 O que a grelha protegia era
-**legibilidade**, e ninguém lê 147 mil células: a legibilidade passa a ser dada pelo editor, que desenha, e
-por uma **exportação de texto para depuração** de recursos pequenos.
+**① The text grid is unworkable and the number is large.** 576×256 = 147 456 pixels; at two characters per
+pixel, one sheet becomes **~295 KB of text** — almost ten times the 30 KB RGBA PNG it describes. And it is one
+body's sheet, before hair, clothes and the other animations. 📌 What the grid protected was
+**readability**, and nobody reads 147 thousand cells: readability is now provided by the editor, which draws, and
+by a **text export for debugging** small assets.
 
-**② 🎯 A ANOTAÇÃO É UMA TABELA DE QUINZE LINHAS.** Três folhas inteiras têm quinze cores únicas somadas — a
-pessoa não pinta píxeis, decide quinze vezes. É isto que torna o anotador viável, e é o número que faltava
-para saber se ele valia a pena.
+**② 🎯 THE ANNOTATION IS A FIFTEEN-ROW TABLE.** Three whole sheets have fifteen unique colours between them — the
+person does not paint pixels, they decide fifteen times. That is what makes the annotator viable, and it is the number that was
+missing to know whether it was worth it.
 
-**③ Zero alfa parcial: todos os 92 244 píxeis opacos têm alfa exactamente 255.** A máscara dura do formato
-deixa de ser uma restrição que impomos e passa a ser o que a fonte já é. ⚠️ E é ela que impede a
-**pré-multiplicação** do browser de corromper os canais R e G, que é a forma de corrupção que falha em silêncio.
+**③ Zero partial alpha: all 92 244 opaque pixels have alpha of exactly 255.** The format's hard mask
+stops being a restriction we impose and becomes what the source already is. ⚠️ And it is what keeps the browser's
+**premultiplication** from corrupting the R and G channels, which is the form of corruption that fails silently.
 
-📌 **E a ordenação por luminância funciona nesta arte**: as seis cores mais frequentes descem 80 → 64 → 47 →
-35 → 21 → 6, que é uma rampa de corpo limpa. A sugestão automática do §7 não é uma esperança.
+📌 **And sorting by luminance works on this art**: the six most frequent colours go down 80 → 64 → 47 →
+35 → 21 → 6, which is a clean body ramp. The automatic suggestion of §7 is not a hope.
 
-### O formato decidido em 2026-09-09
+### The format decided on 2026-09-09
 
-**Dois ficheiros por recurso, um partilhado por jogo.**
+**Two files per asset, one shared per game.**
 
-- **`<nome>.semantic.png`** — `R` = `regionId` (0 = nada), `G` = `lumLevel` (um valor reservado = `contorno`),
-  `B` = 0 reservado, `A` = **0 ou 255 e mais nada**.
-  ⚠️ **Sem gestão de cor** (um `iCCP`/`gAMA` faz o browser transformar os valores e os índices deixam de ser
-  índices), **sem alfa parcial**, e **nunca redimensionado nem recomprimido**. 📌 `tools/png-write.mjs` já
-  escreve exactamente isto — codificador RGBA sem dependências, filtro 0, sem chunks de cor. Reusar.
-- **`<nome>.semantic.json`** — `regioes`, `niveis`, `quadros` (`{nome,x,y,w,h,pivo,duracaoMs}`), `animacoes`,
-  `mapaDeCores` (a tabela de quinze linhas que a pessoa decidiu) e `origem` — 🎯 esta com **os mesmos campos
-  da linha do `art/ATTRIBUTION.csv`**, para o livro-razão ser GERADO em vez de escrito à mão.
-- **`paletas.json`** — o §4 abaixo, inalterado: do jogo e não do recurso.
+- **`<name>.semantic.png`** — `R` = `regionId` (0 = nothing), `G` = `lumLevel` (one reserved value = `outline`),
+  `B` = 0 reserved, `A` = **0 or 255 and nothing else**.
+  ⚠️ **No colour management** (an `iCCP`/`gAMA` makes the browser transform the values and the indices stop being
+  indices), **no partial alpha**, and **never resized or recompressed**. 📌 `tools/png-write.mjs` already
+  writes exactly this — a dependency-free RGBA encoder, filter 0, no colour chunks. Reuse it.
+- **`<name>.semantic.json`** — `regioes`, `niveis`, `quadros` (`{nome,x,y,w,h,pivo,duracaoMs}`), `animacoes`,
+  `mapaDeCores` (the fifteen-row table the person decided) and `origem` — 🎯 the last with **the same fields
+  as the `art/ATTRIBUTION.csv` row**, so that the ledger is GENERATED instead of written by hand.
+- **`paletas.json`** — §4 below, unchanged: the game's and not the asset's.
 
-⚠️ **O pivô mora no JSON e não numa convenção de nomes**, porque o ADR-0027 mediu **quinze tamanhos distintos**
-de sprite e concluiu que o atlas não pode assumir grelha uniforme. A medição acima confirma-o do lado do LPC:
-`walk` é 576×256 e `hurt` é 448×64 — **a grelha muda entre folhas da mesma personagem.**
+⚠️ **The pivot lives in the JSON and not in a naming convention**, because ADR-0027 measured **fifteen distinct sizes**
+of sprite and concluded that the atlas cannot assume a uniform grid. The measurement above confirms it on LPC's side:
+`walk` is 576×256 and `hurt` is 448×64 — **the grid changes between sheets of the same character.**
 
-## 4. Dicionário de paletas (separado)
-- Estrutura: `região → { variantes: { nome: rampa[] } }`, onde `rampa[lumLevel] = cor`. Ex.:
-  `pele → { clara:[…], media:[…], escura:[…] }`, `camisa → { vermelha:[…], azul:[…] }`,
-  `pedra → { cinza:[…], musgo:[…] }`.
-- **Regras de compatibilidade** embutidas na estrutura (só se troca variante DENTRO da região; níveis fixos).
-- **Contorno** pode ser global (uma cor) ou por região (contorno de pele ≠ de metal) — decidir.
-- Vive como **dado do jogo** (não no asset): `app/js/art/palettes.js` (ou `.json`), pré-cacheado.
+## 4. Palette dictionary (separate)
+- Structure: `region → { variants: { name: ramp[] } }`, where `ramp[lumLevel] = colour`. E.g.:
+  `skin → { light:[…], medium:[…], dark:[…] }`, `shirt → { red:[…], blue:[…] }`,
+  `stone → { grey:[…], moss:[…] }`.
+- **Compatibility rules** built into the structure (a variant is only swapped WITHIN its region; fixed levels).
+- **Outline** can be global (one colour) or per region (skin outline ≠ metal outline) — to decide.
+- Lives as **game data** (not in the asset): `app/js/art/palettes.js` (or `.json`), precached.
 
-## 5. Motor de render (combinar semântica + paleta)
-- **Compor um canvas** por (asset, combinação-de-paletas) uma vez e cachear a `PIXI.Texture` (NEAREST) — como
-  o `indexedToCanvas` atual já faz, só que a fonte é a imagem semântica + as variantes escolhidas. Recolor =
-  recompor o canvas (barato p/ sprites pequenos) ou, no futuro, um **shader/LUT** (mapear (região,lum)→cor na
-  GPU) se precisar de troca em tempo real de muitos.
-- **Sombreamento correto** vem de graça: o `lumLevel` indexa o degrau da rampa.
-- **Perf (hardware fraco = pilar):** cache por combinação; recompor só quando a escolha muda.
+## 5. Render engine (combining semantics + palette)
+- **Compose a canvas** per (asset, palette combination) once and cache the `PIXI.Texture` (NEAREST) — as
+  the current `indexedToCanvas` already does, except the source is the semantic image + the chosen variants. Recolour =
+  recompose the canvas (cheap for small sprites) or, in the future, a **shader/LUT** (map (region,lum)→colour on the
+  GPU) if many need to be swapped in real time.
+- **Correct shading** comes for free: `lumLevel` indexes the ramp's step.
+- **Perf (weak hardware = a pillar):** cache per combination; recompose only when the choice changes.
 
-## 6. Importação (o editor lê; o jogo não)
-Reusa as pesquisas de `plano-tiled-aseprite.md` — agora como **parsers de import**, não runtime:
-- **png/jpg**: extrai as cores únicas → lista para o humano anotar (cor→(região,luminosidade)).
-- **Aseprite / Libresprite** (Libresprite = fork GPL, ótimo p/ o pilar): lê PNG+JSON → frames + `frameTags`
-  (animações) + a **paleta indexada** (no modo indexado, já vem a ordem de cores — acelera a anotação).
-- **Tiled / LDtk** (ambos JSON): importa o **tileset** (imagem) + a grade, para anotar tiles por material.
-- O import produz a **imagem semântica** + sugestões (agrupar por luminosidade via ordenação HSV das cores).
+## 6. Import (the editor reads; the game does not)
+Reuses the research of `plano-tiled-aseprite.md` — now as **import parsers**, not runtime:
+- **png/jpg**: extracts the unique colours → a list for the human to annotate (colour→(region,luminosity)).
+- **Aseprite / Libresprite** (Libresprite = a GPL fork, great for the pillar): reads PNG+JSON → frames + `frameTags`
+  (animations) + the **indexed palette** (in indexed mode, the colour order already comes along — speeds up annotation).
+- **Tiled / LDtk** (both JSON): imports the **tileset** (image) + the grid, to annotate tiles by material.
+- The import produces the **semantic image** + suggestions (group by luminosity via HSV sorting of the colours).
 
 ## 7. Editor (`tools/`, standalone, no-build)
-- Abrir bitmap/animação (formatos acima) → **paleta detectada**.
-- Para cada cor: escolher **região** (dropdown de materiais) + **luminosidade** (degrau, ou "contorno").
-  Auto-sugestão: ordenar por luminância e propor níveis; agrupar cores parecidas.
-- **Preview ao vivo**: aplicar variantes do dicionário (trocar pele/roupa/material) e ver o sombreamento.
-- **Salvar**: imagem semântica (+ frames/tags) no formato do §3. Validar: toda cor anotada, níveis coerentes,
-  contorno presente.
-- Reusa `art/palettes.js` e o motor de render do jogo (uma verdade só; valida as fronteiras da engine).
+- Open a bitmap/animation (formats above) → **detected palette**.
+- For each colour: choose the **region** (a dropdown of materials) + **luminosity** (a step, or "outline").
+  Auto-suggestion: sort by luminance and propose levels; group similar colours.
+- **Live preview**: apply dictionary variants (swap skin/clothes/material) and see the shading.
+- **Save**: semantic image (+ frames/tags) in the §3 format. Validate: every colour annotated, coherent levels,
+  outline present.
+- Reuses `art/palettes.js` and the game's render engine (a single truth; it validates the engine's boundaries).
 
-## 8. Encaixe na engine (`../2-Architecture/plano-engine.md`)
-- Novo subsistema **Arte/Material** (`art/`): `semantic.js` (formato+parse), `palettes.js` (dicionário),
-  `recolor.js` (motor de composição). O subsistema **Render** consome texturas já compostas; as **Entidades**
-  pedem "personagem com pele=X, camisa=Y". **Tiles** idem (material por tipo).
-- **Alto-contraste** = uma paleta especial (chapado + contorno) aplicada pelo mesmo `recolor` → some a
-  duplicação de caminho que a pesquisa do Aseprite apontou.
-- Encaixa no **boot async** (carrega dicionário + imagens semânticas).
+## 8. Fit into the engine (`../2-Architecture/plano-engine.md`)
+- A new **Art/Material** subsystem (`art/`): `semantic.js` (format+parse), `palettes.js` (dictionary),
+  `recolor.js` (composition engine). The **Render** subsystem consumes already-composed textures; the **Entities**
+  ask for "character with skin=X, shirt=Y". **Tiles** likewise (material per type).
+- **High contrast** = a special palette (flat + outline) applied by the same `recolor` → the
+  duplicated path the Aseprite research pointed out disappears.
+- Fits into the **async boot** (loads the dictionary + semantic images).
 
-## 9. Entrega em etapas (cada uma verificável)
-1. **Formato + motor de recolor** (`art/semantic.js` + `art/palettes.js` + `art/recolor.js`), provado num
-   asset pequeno (ex.: o menino), gerando a textura recolorida — sem editor ainda. Generaliza `PIP_/indexedToCanvas`.
-2. **Alto-contraste via paleta** (migra `silhouetteCanvasIdx` para o novo motor).
-3. **Editor** `tools/`: importar png/jpg + anotar + preview + salvar.
-4. **Import Aseprite/Libresprite** (frames+tags+paleta indexada).
-5. **Import Tiled/LDtk** (tileset → materiais de tile) — une com o tilemap-glifo.
-6. **Migrar personagens e tiles** do jogo para o sistema semântico; PNGs viram só fonte de autoria.
+## 9. Delivery in steps (each one verifiable)
+1. **Format + recolour engine** (`art/semantic.js` + `art/palettes.js` + `art/recolor.js`), proved on a
+   small asset (e.g. the boy), producing the recoloured texture — no editor yet. Generalises `PIP_/indexedToCanvas`.
+2. **High contrast via palette** (migrates `silhouetteCanvasIdx` to the new engine).
+3. **Editor** `tools/`: import png/jpg + annotate + preview + save.
+4. **Aseprite/Libresprite import** (frames+tags+indexed palette).
+5. **Tiled/LDtk import** (tileset → tile materials) — joins with the glyph tilemap.
+6. **Migrate the game's characters and tiles** to the semantic system; PNGs become authoring sources only.
 
-## 10. Riscos
-- **Escopo grande (unificado)** → entregar em etapas §9; começar por 1 personagem antes de generalizar p/ tiles.
-- **Anotação trabalhosa** → auto-sugestão por luminância + import da paleta indexada do Aseprite reduzem o esforço.
-- **Perf de recolor** → cache por combinação; shader/LUT só se necessário.
-- **Legibilidade do formato** vs compactação → decidir texto/JSON vs PNG-de-dados no detalhamento (preferir
-  legível enquanto sprites são pequenos).
-- **a11y não pode regredir** → o alto-contraste passa a ser paleta; testar cedo (etapa 2).
+## 10. Risks
+- **Large scope (unified)** → deliver in the §9 steps; start with 1 character before generalising to tiles.
+- **Laborious annotation** → auto-suggestion by luminance + importing Aseprite's indexed palette reduce the effort.
+- **Recolour perf** → cache per combination; shader/LUT only if necessary.
+- **Readability of the format** vs compactness → decide text/JSON vs data-PNG in the detailing (prefer
+  readable while the sprites are small).
+- **a11y must not regress** → high contrast becomes a palette; test early (step 2).
 
-*Fontes:* Aseprite (modo indexado / color ramps; docs CLI, gists dacap) · técnicas de palette-swap/LUT em
-pixel-art (Slynyrd ramps; palette-swap gamedev) · Libresprite (fork GPL do Aseprite) · LDtk/Tiled (JSON) ·
-`plano-tiled-aseprite.md` (parsers de import) · semente no repo (`PIP_PAL`/`indexedToCanvas`/`silhouetteCanvasIdx`).
+*Sources:* Aseprite (indexed mode / colour ramps; CLI docs, dacap's gists) · palette-swap/LUT techniques in
+pixel art (Slynyrd ramps; palette-swap gamedev) · Libresprite (GPL fork of Aseprite) · LDtk/Tiled (JSON) ·
+`plano-tiled-aseprite.md` (import parsers) · the seed in the repo (`PIP_PAL`/`indexedToCanvas`/`silhouetteCanvasIdx`).
 
 ---
 
-## 11. Backlog de temas de cenário — PAUSADO até a etapa 3 (era a issue #14)
+## 11. Backlog of scenery themes — PAUSED until step 3 (was issue #14)
 
-~20 temas de cenário precisam de arte (Cave, Desert, Factory, Castle, …). 🛑 **Não começar tema novo** enquanto
-o pipeline procedural deste plano não estiver pronto: cada tema desenhado à mão antes disso é arte que a etapa
-6 («migrar personagens e tiles para o sistema semântico») vai ter de refazer.
+~20 scenery themes need art (Cave, Desert, Factory, Castle, …). 🛑 **Do not start a new theme** while
+this plan's procedural pipeline is not ready: every theme drawn by hand before then is art that step
+6 («migrar personagens e tiles para o sistema semântico») will have to redo.
 
-⚠️ **Isto veio do tracker de issues em 2026-09-09 (ADR-0126), e o corpo da issue dizia porquê sem o notar:**
-*«Tracked so it isn't lost»* — uma coisa rastreada para não se perder é uma NOTA, não um problema. Não havia
-conserto à espera; havia uma espera. Uma issue sem fix não tem commit que a feche, e uma que ninguém pode
-fechar ensina a ignorar o quadro inteiro.
+⚠️ **This came from the issue tracker on 2026-09-09 (ADR-0126), and the issue's body said why without noticing:**
+*«Tracked so it isn't lost»* — a thing tracked so it is not lost is a NOTE, not a problem. There was no
+fix waiting; there was a wait. An issue with no fix has no commit to close it, and one nobody can
+close teaches people to ignore the whole board.
 
-📌 **O que a destranca é a etapa 1 deste plano** (o motor de recolorização), e é por isso que ela mora aqui e
-não no roadmap: quem abrir este ficheiro para construir o pipeline é exactamente quem precisa de saber que há
-vinte temas à espera dele. **Cada tema vira uma issue quando for construível**, uma por tema, com a paleta e a
-imagem semântica já decididas.
-⚠️ **Corrigido em 2026-09-09:** esta linha dizia «etapa 3» e chamava-lhe «o motor de recolorização». Pelo §9 o
-motor é a **etapa 1**; a etapa 3 é o editor. Um número errado aqui adiava vinte temas por duas etapas inteiras.
+📌 **What unlocks it is step 1 of this plan** (the recolour engine), and that is why it lives here and
+not in the roadmap: whoever opens this file to build the pipeline is exactly who needs to know that there are
+twenty themes waiting for them. **Each theme becomes an issue when it is buildable**, one per theme, with the palette and the
+semantic image already decided.
+⚠️ **Corrected on 2026-09-09:** this line said «etapa 3» (step 3) and called it «o motor de recolorização» (the recolour
+engine). Per §9 the engine is **step 1**; step 3 is the editor. A wrong number here postponed twenty themes by two whole steps.

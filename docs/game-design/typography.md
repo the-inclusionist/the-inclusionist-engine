@@ -1,287 +1,305 @@
-# Referência Tipográfica do Projeto — v6
+# The Project's Typographic Reference — v6
 
-**Projeto:** ensino básico em jogos, da educação infantil ao médio, com foco em inclusão.
-**Propósito deste documento:** reunir todas as fontes num só lugar, com a ordem de preferência de cada grupo, a razão de cada escolha e as pendências de licença.
-**Data:** 2 de junho de 2026 · **Versão:** v6 (acrescenta a seção 8, Referências, em ABNT com DOI).
+**Project:** basic education in games, from early childhood to secondary school, with a focus on inclusion.
+**Purpose of this document:** gather every typeface in one place, with each group's order of preference, the reason for each choice and the licence items still pending.
+**Date:** 2 June 2026 · **Version:** v6 (adds section 8, References, in ABNT with DOI).
 
-> **Legenda dos sinais de preferência** (usados nos rankings ao longo do texto)
-> `>` melhor que · `≥` um pouco melhor que · `=` igual para o uso · `>>` muito melhor que
+> **Key to the preference signs** (used in the rankings throughout the text)
+> `>` better than · `≥` a little better than · `=` equal for the purpose · `>>` much better than
 >
-> Os sinais medem **adequação ao uso**, não desempenho de leitura. Eles pesam desenho, qualidade em tela, robustez da família e licença. Veja a base de evidência na seção 7 e as fontes na seção 8.
+> The signs measure **fitness for the purpose**, not reading performance. They weigh design, on-screen quality, the family's robustness and the licence. See the evidence base in section 7 and the sources in section 8.
+
+> 📌 **This is the reference; what the engine SHIPS is in the code** — `app/public/vendor/fonts.css` (the bundled
+> faces) and `app/js/ui/fonts.ts` (the catalogue, each face's role and minimum size, and the typography cycle).
+> Checked on 2026-09-24, the shipped choices differ from this reference in four places, all decided after v6:
+>
+> - **The default face is Atkinson Hyperlegible**, for everyone. Andika is not the default of the literacy stage
+>   (§3.1): it is the literacy PAIR at the start of the typography cycle — Andika in UPPER CASE, then Andika in mixed
+>   case — followed by Atkinson (where the cycle starts), Lexend and the country's handwriting face (ADR-0149 §1).
+> - **The default spacing is the British Dyslexia Association's, not the WCAG floor** of §1.2: 0.18em between
+>   letters and 0.63em between words (word ≥ 3.5× letter), on the default face and not only on a dyslexia setting
+>   (ADR-0149 §2; `--ls`/`--ws` in `app/css/style.css`, pinned by `tests/settings-typo.browser.test.js`).
+> - **Handwriting is Playwrite, by country** (ADR-0150): the Brazilian, US, Canadian, Mexican, Argentinian,
+>   Spanish, Portuguese, British and other Playwrite faces, with the coloniser's hand as the fallback for a country
+>   with none of its own. It is shown 25% larger (the faces' 20 px floor over a 16 px base), and the calligraphic
+>   faces are used only inside school activities, never in the HUD or menus. The paid cursives of §5.3 are not shipped.
+> - **OpenDyslexic is shipped as a user's choice with no claim of efficacy** (issue #87 item 3), as §3.3 asks;
+>   Dyslexie is not shipped. Clash Display is not shipped (§2.2, §6), and a test holds that absence
+>   (`tests/fontes-empacotadas.node.test.js`).
 
 ---
 
-## Sumário
+## Contents
 
-- [1. Princípios que valem mais que a fonte](#1-princípios-que-valem-mais-que-a-fonte)
-- [2. Núcleo de leitura](#2-núcleo-de-leitura)
-  - [2.1 Sans serif para texto longo](#21-sans-serif-para-texto-longo)
-  - [2.2 Sans serif para display (placas e avisos)](#22-sans-serif-para-display-placas-e-avisos)
-  - [2.3 Sans serif para texto pequeno](#23-sans-serif-para-texto-pequeno)
-  - [2.4 Serifadas para texto longo](#24-serifadas-para-texto-longo)
-  - [2.5 Serifadas para display](#25-serifadas-para-display)
-  - [2.6 Redação](#26-redação)
-- [3. Públicos e etapas de alfabetização](#3-públicos-e-etapas-de-alfabetização)
-  - [3.1 Alfabetização infantil](#31-alfabetização-infantil)
-  - [3.2 EJA](#32-eja)
-  - [3.3 Dislexia, discalculia e TDAH](#33-dislexia-discalculia-e-tdah)
-  - [3.4 Baixa visão e vista cansada](#34-baixa-visão-e-vista-cansada)
-  - [3.5 Libras e surdez](#35-libras-e-surdez)
+- [1. Principles that matter more than the typeface](#1-principles-that-matter-more-than-the-typeface)
+- [2. Reading core](#2-reading-core)
+  - [2.1 Sans serif for long text](#21-sans-serif-for-long-text)
+  - [2.2 Sans serif for display (signs and notices)](#22-sans-serif-for-display-signs-and-notices)
+  - [2.3 Sans serif for small text](#23-sans-serif-for-small-text)
+  - [2.4 Serif for long text](#24-serif-for-long-text)
+  - [2.5 Serif for display](#25-serif-for-display)
+  - [2.6 Writing](#26-writing)
+- [3. Audiences and literacy stages](#3-audiences-and-literacy-stages)
+  - [3.1 Early-childhood literacy](#31-early-childhood-literacy)
+  - [3.2 EJA (youth and adult education)](#32-eja-youth-and-adult-education)
+  - [3.3 Dyslexia, dyscalculia and ADHD](#33-dyslexia-dyscalculia-and-adhd)
+  - [3.4 Low vision and tired eyes](#34-low-vision-and-tired-eyes)
+  - [3.5 Libras and deafness](#35-libras-and-deafness)
   - [3.6 Braille](#36-braille)
-- [4. Domínios específicos](#4-domínios-específicos)
-  - [4.1 Matemática](#41-matemática)
-  - [4.2 Código](#42-código)
-  - [4.3 Química, grego e nomes estrangeiros](#43-química-grego-e-nomes-estrangeiros)
-  - [4.4 Símbolos e ícones](#44-símbolos-e-ícones)
-- [5. Caligráficas e decorativas](#5-caligráficas-e-decorativas)
-- [6. Pendências de licença](#6-pendências-de-licença)
-- [7. Apêndice: por que o espaçamento vence a fonte](#7-apêndice-por-que-o-espaçamento-vence-a-fonte)
-- [8. Referências](#8-referências)
+- [4. Specific domains](#4-specific-domains)
+  - [4.1 Mathematics](#41-mathematics)
+  - [4.2 Code](#42-code)
+  - [4.3 Chemistry, Greek and foreign names](#43-chemistry-greek-and-foreign-names)
+  - [4.4 Symbols and icons](#44-symbols-and-icons)
+- [5. Calligraphic and decorative](#5-calligraphic-and-decorative)
+- [6. Licence items pending](#6-licence-items-pending)
+- [7. Appendix: why spacing beats the typeface](#7-appendix-why-spacing-beats-the-typeface)
+- [8. References](#8-references)
 
 ---
 
-## 1. Princípios que valem mais que a fonte
+## 1. Principles that matter more than the typeface
 
-A escolha da fonte importa menos do que parece. Três regras pesam mais.
+The choice of typeface matters less than it seems. Three rules weigh more.
 
-**1.1 Cor e contraste.** Use fundo creme ou pastel, com texto escuro. Evite branco puro.
+**1.1 Colour and contrast.** Use a cream or pastel background, with dark text. Avoid pure white.
 
-**1.2 Espaçamento ajustável.** Deixe o usuário ajustar o espaço do texto. Comece pelos mínimos da WCAG 2.2, critério 1.4.12:
+**1.2 Adjustable spacing.** Let the user adjust the text's spacing. Start from the WCAG 2.2 minimums, criterion 1.4.12:
 
-| Medida | Mínimo (× tamanho da fonte) |
+| Measure | Minimum (× font size) |
 |---|---|
-| Entrelinha | 1,5 |
-| Entre letras | 0,12 |
-| Entre palavras | 0,16 |
-| Entre parágrafos | 2,0 |
+| Line height | 1.5 |
+| Between letters | 0.12 |
+| Between words | 0.16 |
+| Between paragraphs | 2.0 |
 
-**1.3 Economia de famílias.** Use poucas famílias e muitos pesos de cada uma. O núcleo de leitura já está completo. Não acrescente mais fontes de texto, display ou serifadas.
+**1.3 Economy of families.** Use few families and many weights of each. The reading core is already complete. Do not add more text, display or serif faces.
 
 ---
 
-## 2. Núcleo de leitura
+## 2. Reading core
 
-### 2.1 Sans serif para texto longo
+### 2.1 Sans serif for long text
 
 `Source Sans 3 ≥ Inter ≥ Open Sans = Lato > Roboto Flex > Ubuntu > Noto Sans >> IBM Plex Sans > Arial = Helvetica > Verdana`
 
-A Noto Sans entra quando o critério é cobrir muitos idiomas. As três últimas servem de reserva, quando já existem no aparelho. A Verdana tem bom espaço entre letras, mas o desenho é antigo.
+Noto Sans comes in when the criterion is covering many languages. The last three serve as a fallback, when they already exist on the device. Verdana has good letter spacing, but its design is old.
 
-### 2.2 Sans serif para display (placas e avisos)
+### 2.2 Sans serif for display (signs and notices)
 
 `Clash Display ≥ Space Grotesk > Sora ≥ Plus Jakarta Sans >> Montserrat = Poppins`
 
-**Para números, a ordem muda:** `Sora ≥ Plus Jakarta >> Montserrat = Poppins`.
+**For numbers, the order changes:** `Sora ≥ Plus Jakarta >> Montserrat = Poppins`.
 
-A Montserrat e a Poppins têm "1" sem serifa e "0" muito redondo. Por isso não as use em placa com número, como preço ou código. Quando precisar de número em display, prefira **Lexend** ou **Outfit**; as duas são livres e têm dígitos claros.
+Montserrat and Poppins have a "1" with no serif and a very round "0". So do not use them on a sign with a number, such as a price or a code. When you need numbers in display, prefer **Lexend** or **Outfit**; both are free and have clear digits.
 
-> 🔴 A **Clash Display** não pode ser adotada pela engine. A licença foi lida em 2026-09-12: é «Closed Source», sob a
-> ITF Free Font License, cujo §02 proíbe distribuir o ficheiro por repositório, aplicação ou servidor público e
-> servi-lo como fonte selecionável a terceiros (ADR-0150, errata). Na ordem acima, quem a substitui é a Space Grotesk.
+> 🔴 **Clash Display** cannot be adopted by the engine. The licence was read on 2026-09-12: it is «Closed Source», under the
+> ITF Free Font License, whose §02 forbids distributing the file through a repository, application or public server and
+> serving it as a selectable font to third parties (ADR-0150, erratum). In the order above, Space Grotesk replaces it.
 
-### 2.3 Sans serif para texto pequeno
+### 2.3 Sans serif for small text
 
 `Inter ≥ IBM Plex Sans > Geist`
 
-A Source Sans 3 faz a ponte com o texto longo. A **Inter** resolve os dois casos ao mesmo tempo e tem números de largura fixa confiáveis. Por isso ela serve também de fonte de números e enxuga o conjunto.
+Source Sans 3 bridges to long text. **Inter** solves both cases at once and has reliable fixed-width numbers. So it also serves as the numbers face and slims down the set.
 
-### 2.4 Serifadas para texto longo
+### 2.4 Serif for long text
 
 `Literata ≥ Source Serif 4 ≥ Newsreader > Merriweather = Lora > Spectral > Domine > Bitter >> Georgia > Garamond > Times`
 
-A Georgia se sai melhor que a Times na tela, pois foi feita para isso. A Garamond é fina demais para tela pequena.
+Georgia does better than Times on screen, because it was made for it. Garamond is too thin for a small screen.
 
-### 2.5 Serifadas para display
+### 2.5 Serif for display
 
 `Playfair Display > DM Serif Display ≥ Fraunces > Bodoni Moda`
 
-> ⚠️ **Cuidado de acessibilidade:** a Playfair e a Bodoni têm traços muito finos, que somem para quem tem baixa visão. Em aviso que todos precisam ler, prefira a DM Serif ou volte para uma sans display.
+> ⚠️ **Accessibility caution:** Playfair and Bodoni have very thin strokes, which vanish for people with low vision. On a notice everyone needs to read, prefer DM Serif or go back to a display sans.
 
-### 2.6 Redação
+### 2.6 Writing
 
-Para escrita longa e calma, use a **iA Writer Quattro**. Ela é quase monoespaçada e ajuda na concentração.
+For long, calm writing, use **iA Writer Quattro**. It is almost monospaced and helps concentration.
 
 ---
 
-## 3. Públicos e etapas de alfabetização
+## 3. Audiences and literacy stages
 
-### 3.1 Alfabetização infantil
+### 3.1 Early-childhood literacy
 
-A fonte padrão é a **Andika**. Ela é da SIL, é livre e foi feita para quem aprende a ler. Traz formas alternativas de "a", "g" e "t".
+The default face is **Andika**. It is from SIL, it is free and it was made for people learning to read. It carries alternative forms of "a", "g" and "t".
 
-Para a versão serifada, há a **Bembo Infant** e a **Plantin Infant**. As duas são da Monotype e são pagas. Trate-as como opção premium. A **Sassoon Primary** também é premium e paga.
+For the serif version, there are **Bembo Infant** and **Plantin Infant**. Both are from Monotype and are paid. Treat them as a premium option. **Sassoon Primary** is also premium and paid.
 
-> 📌 **Regra pedagógica que pesa mais que o gosto:** escolha entre "a" e "g" de uma perna ou de duas conforme a letra que a escola ensina a escrever. Siga a BNCC, não a estética. Para os menores, priorize o tamanho e a altura das letras.
+> 📌 **A pedagogical rule that weighs more than taste:** choose between the single-storey and double-storey "a" and "g" according to the letter the school teaches children to write. Follow the BNCC, not aesthetics. For the youngest, prioritise size and letter height.
 
-### 3.2 EJA
+### 3.2 EJA (youth and adult education)
 
-Para o jovem e o adulto, use a **Lexia Readable**. Ela segue a lógica da alfabetização, mas sem ar infantil.
+For young people and adults, use **Lexia Readable**. It follows the logic of literacy, but without a childish air.
 
-### 3.3 Dislexia, discalculia e TDAH
+### 3.3 Dyslexia, dyscalculia and ADHD
 
-`Atkinson Hyperlegible ≥ Lexend > Andika > Open Sans/Verdana = Comic Neue >> Dyslexie e OpenDyslexic`
+`Atkinson Hyperlegible ≥ Lexend > Andika > Open Sans/Verdana = Comic Neue >> Dyslexie and OpenDyslexic`
 
-Ofereça a Dyslexie e a OpenDyslexic apenas como escolha do usuário. A pesquisa não mostra ganho de leitura com elas.
+Offer Dyslexie and OpenDyslexic only as the user's choice. Research shows no reading gain from them.
 
-> 📌 **O que de fato importa é o espaçamento.** Exponha os controles de espaço entre letras, palavras, linhas e parágrafos, a partir dos mínimos da WCAG (seção 1.2). Garanta que o espaço entre palavras seja maior que o espaço entre letras; sem isso, as palavras se fundem. Reduza a poluição visual e evite fontes difíceis de propósito.
+> 📌 **What really matters is spacing.** Expose controls for the space between letters, words, lines and paragraphs, starting from the WCAG minimums (section 1.2). Make sure the space between words is larger than the space between letters; without that, words merge. Reduce visual clutter and avoid deliberately difficult typefaces.
 
-### 3.4 Baixa visão e vista cansada
+### 3.4 Low vision and tired eyes
 
 `Atkinson Hyperlegible = Atkinson Hyperlegible Next > APHont ≥ Luciole > Lexend = Verdana > Andika`
 
-> ⚠️ A **APHont** e a **Luciole** têm licenças mais restritas que a OFL. Confirme o uso comercial antes de adotá-las.
+> ⚠️ **APHont** and **Luciole** have licences more restrictive than the OFL. Confirm commercial use before adopting them.
 
-### 3.5 Libras e surdez
+### 3.5 Libras and deafness
 
-Use o script **SuttonSignWriting** para escrever sinais. Ele é livre.
+Use the **SuttonSignWriting** script to write signs. It is free.
 
-> 📌 **Aviso de escopo:** a Libras não é apenas mais uma fonte; é um sistema próprio. A forma principal de incluir deve ser o vídeo do intérprete, somado à escrita de sinais. Trate a Libras numa trilha à parte, não como tipografia.
+> 📌 **Scope notice:** Libras is not just one more typeface; it is a system of its own. The main form of inclusion should be the interpreter's video, plus sign writing. Treat Libras in a separate track, not as typography.
 
 ### 3.6 Braille
 
-A fonte padrão para embarcar é a **Braille CC0**. Ela está em domínio público. Você pode usá-la em qualquer projeto, pago ou não, impresso ou digital. É a opção sem dor de cabeça de licença.
+The default face to bundle is **Braille CC0**. It is in the public domain. You can use it in any project, paid or not, printed or digital. It is the option with no licensing headache.
 
-Existe também a **Braille Neue**. Ela junta braille e letra latina no mesmo glifo, para o vidente e o cego lerem juntos. Porém não tem licença aberta: o site oficial só indica contato com o autor. Use-a apenas com licença; senão, faça o braille como camada de SVG.
+There is also **Braille Neue**. It combines braille and the Latin letter in the same glyph, so that sighted and blind people can read together. But it has no open licence: the official site only points to contacting the author. Use it only under a licence; otherwise, render the braille as an SVG layer.
 
-> ⚠️ **Correção importante:** a Iosevka Charon, a Cascadia Code e a Noto Sans **não são fontes braille**. São fontes comuns. Elas só mostram os pontos do braille quando têm a cobertura Unicode certa, e isso não as torna fontes de ensino. Para o braille Unicode puro, a **DejaVu Sans** cobre o bloco e é livre. Aquelas três servem para código e ASCII art.
+> ⚠️ **Important correction:** Iosevka Charon, Cascadia Code and Noto Sans **are not braille fonts**. They are ordinary fonts. They only show braille dots when they have the right Unicode coverage, and that does not make them teaching fonts. For pure Unicode braille, **DejaVu Sans** covers the block and is free. Those three serve for code and ASCII art.
 
 ---
 
-## 4. Domínios específicos
+## 4. Specific domains
 
-Esta seção cobre o fundamental II e o médio, quando o conteúdo fica mais técnico.
+This section covers lower secondary (fundamental II) and upper secondary (médio), when the content becomes more technical.
 
-### 4.1 Matemática
+### 4.1 Mathematics
 
-**Contas em pé e tabelas:** use a **Atkinson Hyperlegible Mono**. Ela tem largura fixa e números claros, e vence a JetBrains Mono nesse papel por causa dos dígitos.
+**Column arithmetic and tables:** use **Atkinson Hyperlegible Mono**. It has fixed width and clear numbers, and it beats JetBrains Mono in this role because of its digits.
 
-**Fórmulas no MathJax:** use a **STIX Two Math**. A Latin Modern Math é a alternativa, com o ar do LaTeX. Se você usar o **KaTeX**, o problema some: ele já traz as próprias fontes.
+**Formulas in MathJax:** use **STIX Two Math**. Latin Modern Math is the alternative, with a LaTeX air. If you use **KaTeX**, the problem goes away: it ships its own fonts.
 
-**Números no corpo do texto:** a Atkinson resolve pelo desenho. O "0" tem traço próprio e o "1" não se confunde com "l" nem "I". Ative os números de largura fixa nas telas de conta.
+**Numbers in body text:** Atkinson solves it through its design. The "0" has its own stroke and the "1" is not confused with "l" or "I". Turn on fixed-width numbers on arithmetic screens.
 
-### 4.2 Código
+### 4.2 Code
 
-| Fonte | Largura |
+| Typeface | Width |
 |---|---|
-| Victor Mono | estreita |
-| JetBrains Mono | equilibrada (base da iA Writer Quattro) |
-| MonoLisa | mais larga |
+| Victor Mono | narrow |
+| JetBrains Mono | balanced (the basis of iA Writer Quattro) |
+| MonoLisa | wider |
 
-### 4.3 Química, grego e nomes estrangeiros
+### 4.3 Chemistry, Greek and foreign names
 
-Aqui o que importa é a cobertura de caracteres. A **Noto Sans**, a **Noto Serif** e a família **IBM Plex** resolvem. Elas trazem subscrito e sobrescrito de verdade, como em H₂O e CO₂, e o alfabeto grego, como π, Δ e λ.
+Here what matters is character coverage. **Noto Sans**, **Noto Serif** and the **IBM Plex** family solve it. They carry real subscript and superscript, as in H₂O and CO₂, and the Greek alphabet, such as π, Δ and λ.
 
-> 📌 Antes de confiar, teste H₂O, π e ½ na sua fonte de corpo.
+> 📌 Before trusting it, test H₂O, π and ½ in your body face.
 
-### 4.4 Símbolos e ícones
+### 4.4 Symbols and icons
 
-**Ícones de interface:** use a **Material Symbols** (mais completa) ou a **Lucide** (mais leve e bonita).
+**Interface icons:** use **Material Symbols** (more complete) or **Lucide** (lighter and prettier).
 
-**Emoji igual em todo aparelho:** use a **Noto Emoji** (de linha) ou a **Noto Color Emoji** (colorida). O emoji ajuda a comunicar com quem lê pouco.
+**The same emoji on every device:** use **Noto Emoji** (outline) or **Noto Color Emoji** (colour). Emoji helps communicate with people who read little.
 
 ---
 
-## 5. Caligráficas e decorativas
+## 5. Calligraphic and decorative
 
-> ⚠️ **Uso restrito.** Use estas fontes só em título, selo, enfeite ou no ensino do próprio traçado. Nunca as use em texto que a criança precise ler para jogar. A BDA e a WCAG as desaconselham na leitura, pois cansam e confundem.
+> ⚠️ **Restricted use.** Use these faces only in a title, a badge, an ornament or when teaching the stroke itself. Never use them in text the child needs to read to play. The BDA and the WCAG advise against them for reading, because they tire and confuse.
 
-**5.1 Caligráfica inglesa:** Great Vibes · Pinyon Script.
+**5.1 English calligraphic:** Great Vibes · Pinyon Script.
 
-**5.2 Blackletter alemã:** UnifrakturCook (mais legível) · UnifrakturMaguntia (mais autêntica).
+**5.2 German blackletter:** UnifrakturCook (more legible) · UnifrakturMaguntia (more authentic).
 
-**5.3 Cursiva infantil:**
+**5.3 Children's cursive:**
 
-| Estilo | Fonte | Situação |
+| Style | Typeface | Status |
 |---|---|---|
-| Bola-bastão | Comic Neue | livre |
-| Cursiva inglesa | Learning Curve | livre |
-| Cursiva brasileira | Kindergarten Pro | paga (FTD, Ática, Moderna, Saraiva) |
+| Ball-and-stick | Comic Neue | free |
+| English cursive | Learning Curve | free |
+| Brazilian cursive | Kindergarten Pro | paid (FTD, Ática, Moderna, Saraiva) |
 
-> ⚠️ A **Kindergarten Pro** é paga e exige cuidado: a licença mira o material impresso. Confirme com a Just in Type se ela cobre o uso em aplicativo antes de comprar.
+> ⚠️ **Kindergarten Pro** is paid and needs care: the licence targets printed material. Confirm with Just in Type whether it covers use in an app before buying.
 >
-> 🔎 **Alternativa livre a investigar:** a "Letra Escolar Brasileira", família da tese da UFRGS, feita para o ensino da escrita à mão na escola brasileira. Verifique a licença, pois ela pode poupar o custo da Kindergarten sem perder o traçado certo. A família Beaba gratuita não serve (é só uso pessoal); a versão comercial dela também é paga.
+> 🔎 **A free alternative to investigate:** the "Letra Escolar Brasileira", the family from the UFRGS thesis, made for teaching handwriting in Brazilian schools. Check the licence, because it may save the cost of Kindergarten without losing the right stroke. The free Beaba family does not qualify (personal use only); its commercial version is also paid.
 
 ---
 
-## 6. Pendências de licença
+## 6. Licence items pending
 
-A maioria das fontes é livre (OFL, Apache, CC0 ou ISC). Guarde uma cópia de cada licença no repositório. As fontes abaixo exigem ação antes de embarcar.
+Most of the faces are free (OFL, Apache, CC0 or ISC). Keep a copy of each licence in the repository. The faces below require action before bundling.
 
-| Fonte | Situação | O que fazer |
+| Typeface | Status | What to do |
 |---|---|---|
-| Clash Display | ITF Free Font License (Closed Source) | 🔴 **Não empacotável** — §02 proíbe distribuição e uso como fonte selecionável por terceiros |
-| APHont | Restritiva | Confirmar uso comercial |
-| Luciole | Restritiva | Confirmar uso embarcado |
-| Bembo Infant e Plantin Infant | Monotype, pagas | Orçar licença de aplicativo |
-| Sassoon Primary | Paga | Orçar se for usar |
-| Kindergarten Pro | Paga, voltada ao impresso | Confirmar uso em aplicativo antes de comprar |
-| Braille Neue | Sem licença aberta | Licenciar com o autor ou usar a Braille CC0 |
-| MonoLisa, iA Writer Quattro, Victor Mono | Mistas | Conferir os termos de cada uma |
+| Clash Display | ITF Free Font License (Closed Source) | 🔴 **Not bundleable** — §02 forbids distribution and use as a selectable font by third parties |
+| APHont | Restrictive | Confirm commercial use |
+| Luciole | Restrictive | Confirm embedded use |
+| Bembo Infant and Plantin Infant | Monotype, paid | Get a quote for an app licence |
+| Sassoon Primary | Paid | Get a quote if it is to be used |
+| Kindergarten Pro | Paid, aimed at print | Confirm use in an app before buying |
+| Braille Neue | No open licence | License it from the author or use Braille CC0 |
+| MonoLisa, iA Writer Quattro, Victor Mono | Mixed | Check each one's terms |
 
 ---
 
-## 7. Apêndice: por que o espaçamento vence a fonte
+## 7. Appendix: why spacing beats the typeface
 
-Esta seção resume a revisão de evidências e explica as escolhas acima.
+This section summarises the evidence review and explains the choices above.
 
-**7.1 Fontes "para dislexia" não mostram ganho.** A OpenDyslexic e a Dyslexie falharam em estudos controlados. Wery e Diliberto não acharam melhora em 2017 (ref. 1); Kuster e colegas também não, em 2018 (ref. 2). Muitos leitores até preferem a Arial.
+**7.1 "Dyslexia fonts" show no gain.** OpenDyslexic and Dyslexie failed in controlled studies. Wery and Diliberto found no improvement in 2017 (ref. 1); nor did Kuster and colleagues, in 2018 (ref. 2). Many readers even prefer Arial.
 
-**7.2 O ganho real vem do espaçamento.** Zorzi e colegas mostraram isso em 2012, na PNAS (ref. 3). O benefício atribuído às fontes de dislexia é, na verdade, o espaçamento delas. Marinus e colegas confirmaram em 2016 (ref. 4).
+**7.2 The real gain comes from spacing.** Zorzi and colleagues showed this in 2012, in PNAS (ref. 3). The benefit attributed to dyslexia fonts is, in fact, their spacing. Marinus and colleagues confirmed it in 2016 (ref. 4).
 
-**7.3 A briga entre serifa e sans é falsa.** O que pesa é o contraste do traço. Minakata e Beier mostraram isso em 2022 (ref. 5).
+**7.3 The serif-versus-sans fight is a false one.** What weighs is stroke contrast. Minakata and Beier showed this in 2022 (ref. 5).
 
-**7.4 Números e discalculia são uma lacuna.** Quase não existe estudo. A evidência mais próxima testou fontes difíceis em contas e deu nada (Meyer e colegas, 2015 — ref. 6). Sobre legibilidade de numerais, o trabalho de desenho de Beier e colegas (2018) é a melhor referência (ref. 7).
+**7.4 Numbers and dyscalculia are a gap.** There is almost no study. The closest evidence tested difficult fonts on arithmetic and found nothing (Meyer and colleagues, 2015 — ref. 6). On the legibility of numerals, the design work of Beier and colleagues (2018) is the best reference (ref. 7).
 
-**7.5 A Lexend tem base fraca.** O estudo dela teve só vinte alunos e não passou por revisão (ref. 8). Mantenha-a como opção, não como padrão fixo.
+**7.5 Lexend has a weak basis.** Its study had only twenty students and was not peer-reviewed (ref. 8). Keep it as an option, not as a fixed default.
 
-**7.6 A Atkinson Hyperlegible é plausível, não comprovada.** Tem bom desenho, mas não tem prova independente revisada (ref. 9).
+**7.6 Atkinson Hyperlegible is plausible, not proven.** It has a good design, but no independent peer-reviewed proof (ref. 9).
 
-**7.7 Dois guias sustentam o espaçamento ajustável.** São a WCAG 2.2, critério 1.4.12 (ref. 10), e o guia de estilo da British Dyslexia Association, de 2023 (ref. 11).
+**7.7 Two guides support adjustable spacing.** They are WCAG 2.2, criterion 1.4.12 (ref. 10), and the British Dyslexia Association's style guide, from 2023 (ref. 11).
 
 ---
 
-## 8. Referências
+## 8. References
 
-Referências em ABNT (NBR 6023), com DOI ou link primário. Onde a fonte é paga ou de acesso fechado, isso está sinalizado. Os documentos de criadores de fontes (refs. 12–17) sustentam as decisões de desenho e licença.
+References in ABNT (NBR 6023), with DOI or a primary link. Where the source is paid or closed-access, that is flagged. The type designers' documents (refs. 12–17) support the design and licence decisions.
 
-**Evidência empírica (estudos revisados por pares)**
+**Empirical evidence (peer-reviewed studies)**
 
-1. WERY, J. J.; DILIBERTO, J. A. The effect of a specialized dyslexia font, OpenDyslexic, on reading rate and accuracy. **Annals of Dyslexia**, v. 67, n. 2, p. 114-127, 2017. DOI: 10.1007/s11881-016-0127-1. Disponível em: https://doi.org/10.1007/s11881-016-0127-1. Acesso em: 2 jun. 2026.
+1. WERY, J. J.; DILIBERTO, J. A. The effect of a specialized dyslexia font, OpenDyslexic, on reading rate and accuracy. **Annals of Dyslexia**, v. 67, n. 2, p. 114-127, 2017. DOI: 10.1007/s11881-016-0127-1. Available at: https://doi.org/10.1007/s11881-016-0127-1. Accessed: 2 Jun. 2026.
 
-2. KUSTER, S. M. *et al.* Dyslexie font does not benefit reading in children with or without dyslexia. **Annals of Dyslexia**, v. 68, n. 1, p. 25-42, 2018. DOI: 10.1007/s11881-017-0154-6. Disponível em: https://doi.org/10.1007/s11881-017-0154-6. Acesso em: 2 jun. 2026.
+2. KUSTER, S. M. *et al.* Dyslexie font does not benefit reading in children with or without dyslexia. **Annals of Dyslexia**, v. 68, n. 1, p. 25-42, 2018. DOI: 10.1007/s11881-017-0154-6. Available at: https://doi.org/10.1007/s11881-017-0154-6. Accessed: 2 Jun. 2026.
 
-3. ZORZI, M. *et al.* Extra-large letter spacing improves reading in dyslexia. **Proceedings of the National Academy of Sciences (PNAS)**, v. 109, n. 28, p. 11455-11459, 2012. DOI: 10.1073/pnas.1205566109. Disponível em: https://doi.org/10.1073/pnas.1205566109. Acesso em: 2 jun. 2026.
+3. ZORZI, M. *et al.* Extra-large letter spacing improves reading in dyslexia. **Proceedings of the National Academy of Sciences (PNAS)**, v. 109, n. 28, p. 11455-11459, 2012. DOI: 10.1073/pnas.1205566109. Available at: https://doi.org/10.1073/pnas.1205566109. Accessed: 2 Jun. 2026.
 
-4. MARINUS, E. *et al.* A special font for people with dyslexia: does it work and, if so, why? **Dyslexia**, v. 22, n. 3, p. 233-244, 2016. DOI: 10.1002/dys.1527. Disponível em: https://doi.org/10.1002/dys.1527. Acesso em: 2 jun. 2026. (Acesso fechado; PDF de autor disponível.)
+4. MARINUS, E. *et al.* A special font for people with dyslexia: does it work and, if so, why? **Dyslexia**, v. 22, n. 3, p. 233-244, 2016. DOI: 10.1002/dys.1527. Available at: https://doi.org/10.1002/dys.1527. Accessed: 2 Jun. 2026. (Closed access; author's PDF available.)
 
-5. MINAKATA, K.; BEIER, S. The dispute about sans serif versus serif fonts: an interaction between serif and stroke contrast. **Acta Psychologica**, v. 228, 103623, 2022. DOI: 10.1016/j.actpsy.2022.103623. Disponível em: https://doi.org/10.1016/j.actpsy.2022.103623. Acesso em: 2 jun. 2026.
+5. MINAKATA, K.; BEIER, S. The dispute about sans serif versus serif fonts: an interaction between serif and stroke contrast. **Acta Psychologica**, v. 228, 103623, 2022. DOI: 10.1016/j.actpsy.2022.103623. Available at: https://doi.org/10.1016/j.actpsy.2022.103623. Accessed: 2 Jun. 2026.
 
-6. MEYER, A. *et al.* Disfluent fonts don't help people solve math problems. **Journal of Experimental Psychology: General**, v. 144, n. 2, p. e16-e30, 2015. DOI: 10.1037/xge0000049. Disponível em: https://doi.org/10.1037/xge0000049. Acesso em: 2 jun. 2026.
+6. MEYER, A. *et al.* Disfluent fonts don't help people solve math problems. **Journal of Experimental Psychology: General**, v. 144, n. 2, p. e16-e30, 2015. DOI: 10.1037/xge0000049. Available at: https://doi.org/10.1037/xge0000049. Accessed: 2 Jun. 2026.
 
-7. BEIER, S.; BERNARD, J.-B.; CASTET, E. Numeral legibility and visual complexity. *In*: **DRS2018**: Design Research Society Conference, Limerick, 2018. DOI: 10.21606/drs.2018.246. Disponível em: https://doi.org/10.21606/drs.2018.246. Acesso em: 2 jun. 2026.
+7. BEIER, S.; BERNARD, J.-B.; CASTET, E. Numeral legibility and visual complexity. *In*: **DRS2018**: Design Research Society Conference, Limerick, 2018. DOI: 10.21606/drs.2018.246. Available at: https://doi.org/10.21606/drs.2018.246. Accessed: 2 Jun. 2026.
 
-**Fontes de evidência fraca ou guias (citadas com ressalva)**
+**Sources of weak evidence, or guides (cited with a caveat)**
 
-8. SHAVER-TROUP, B.; JOCKIN, T. **Lexend**: change the way the world reads. Estudo de fluência com 20 participantes, não revisado por pares. Disponível em: https://www.lexend.com/. Acesso em: 2 jun. 2026.
+8. SHAVER-TROUP, B.; JOCKIN, T. **Lexend**: change the way the world reads. Fluency study with 20 participants, not peer-reviewed. Available at: https://www.lexend.com/. Accessed: 2 Jun. 2026.
 
-9. BRAILLE INSTITUTE OF AMERICA. **Atkinson Hyperlegible Font**. Documentação de desenho; sem validação independente revisada por pares. Disponível em: https://www.brailleinstitute.org/freefont/. Acesso em: 2 jun. 2026.
+9. BRAILLE INSTITUTE OF AMERICA. **Atkinson Hyperlegible Font**. Design documentation; no independent peer-reviewed validation. Available at: https://www.brailleinstitute.org/freefont/. Accessed: 2 Jun. 2026.
 
-10. WORLD WIDE WEB CONSORTIUM (W3C). **Understanding Success Criterion 1.4.12: Text Spacing (WCAG 2.2)**. Disponível em: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html. Acesso em: 2 jun. 2026.
+10. WORLD WIDE WEB CONSORTIUM (W3C). **Understanding Success Criterion 1.4.12: Text Spacing (WCAG 2.2)**. Available at: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html. Accessed: 2 Jun. 2026.
 
-11. BRITISH DYSLEXIA ASSOCIATION. **Dyslexia Style Guide 2023**: creating dyslexia friendly content. Disponível em: https://www.bdadyslexia.org.uk/advice/employers/creating-a-dyslexia-friendly-workplace/dyslexia-friendly-style-guide. Acesso em: 2 jun. 2026.
+11. BRITISH DYSLEXIA ASSOCIATION. **Dyslexia Style Guide 2023**: creating dyslexia friendly content. Available at: https://www.bdadyslexia.org.uk/advice/employers/creating-a-dyslexia-friendly-workplace/dyslexia-friendly-style-guide. Accessed: 2 Jun. 2026.
 
-**Criadores de fontes e licenças**
+**Type designers and licences**
 
-12. SIL INTERNATIONAL. **Andika**: a literacy font (SIL Open Font License). Disponível em: https://software.sil.org/andika/. Acesso em: 2 jun. 2026.
+12. SIL INTERNATIONAL. **Andika**: a literacy font (SIL Open Font License). Available at: https://software.sil.org/andika/. Accessed: 2 Jun. 2026.
 
-13. TAKAHASHI, K. **Braille Neue**: a universal typeface. Licença não aberta; contato com o autor. Disponível em: http://brailleneue.com/. Acesso em: 2 jun. 2026.
+13. TAKAHASHI, K. **Braille Neue**: a universal typeface. Licence not open; contact the author. Available at: http://brailleneue.com/. Accessed: 2 Jun. 2026.
 
-14. **Braille CC0** (Creative Commons Zero v1.0 Universal — domínio público). Disponível em: https://www.ggbot.net/fonts. Acesso em: 2 jun. 2026.
+14. **Braille CC0** (Creative Commons Zero v1.0 Universal — public domain). Available at: https://www.ggbot.net/fonts. Accessed: 2 Jun. 2026.
 
-15. JUST IN TYPE. **Kindergarten Pro / Fonte Beaba**: fontes para alfabetização (licença comercial, voltada a impresso). Disponível em: https://www.fontebeaba.com/fonte-kindergarten-pro. Acesso em: 2 jun. 2026.
+15. JUST IN TYPE. **Kindergarten Pro / Fonte Beaba**: fontes para alfabetização (commercial licence, aimed at print). Available at: https://www.fontebeaba.com/fonte-kindergarten-pro. Accessed: 2 Jun. 2026.
 
-16. UNIVERSIDADE FEDERAL DO RIO GRANDE DO SUL (UFRGS). **Letra Escolar Brasileira**: design de uma família tipográfica para o ensino da escrita manual. Repositório Lume/UFRGS. Disponível em: https://lume.ufrgs.br/handle/10183/199539. Acesso em: 2 jun. 2026.
+16. UNIVERSIDADE FEDERAL DO RIO GRANDE DO SUL (UFRGS). **Letra Escolar Brasileira**: design de uma família tipográfica para o ensino da escrita manual. Lume/UFRGS repository. Available at: https://lume.ufrgs.br/handle/10183/199539. Accessed: 2 Jun. 2026.
 
-17. SUTTON, V. **SignWriting (SuttonSignWriting)**: sistema de escrita de sinais. Disponível em: https://www.signwriting.org/. Acesso em: 2 jun. 2026.
+17. SUTTON, V. **SignWriting (SuttonSignWriting)**: a writing system for signs. Available at: https://www.signwriting.org/. Accessed: 2 Jun. 2026.
 
-> **Observação.** Esta lista cobre o que sustenta as decisões deste documento. A revisão de escopo completa, com as demais fontes (Rello & Baeza-Yates, Galliussi, Walker & Reynolds, entre outras) e suas notas de força de evidência, está no documento "Fonts & Typography in Education and Inclusion: A Scoping Review".
+> **Note.** This list covers what supports the decisions in this document. The complete scoping review, with the other sources (Rello & Baeza-Yates, Galliussi, Walker & Reynolds, among others) and their notes on strength of evidence, is in the document "Fonts & Typography in Education and Inclusion: A Scoping Review".
