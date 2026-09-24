@@ -1,122 +1,63 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/menu-nav.ts — NAVEGAÇÃO UNIVERSAL de menus e diálogos: andar, escolher e voltar sem mouse.
+// ui/menu-nav.ts — UNIVERSAL menu and dialog navigation: move, choose and go back without a mouse.
 //
-// Este módulo é acessibilidade pura, e é o coração do pilar de a11y no que diz respeito a operação por
-// teclado (WCAG 2.1.1) e a ordem de foco (2.4.3). A regra que ele encarna é a do projeto, escrita no game.js
-// antes de qualquer código: QUALQUER menu aberto — o de pausa OU um submenu de configuração — é navegável
-// pelos MESMOS seis gestos, e esses seis gestos valem igualmente para teclado, controle, olhos e fala:
-//   · cima/baixo/esquerda/direita — andam entre itens; nos `select`/`slider`, esquerda/direita AJUSTAM o valor
-//   · sim   — confirma, alterna, entra
-//   · não   — volta ao menu anterior; na raiz, volta ao jogo (= Continuar)
-// Por isso o módulo não fala em "tecla": ele fala em INTENÇÃO (`NavKeys`). O teclado é só um dos tradutores —
-// input/gamepad.ts monta exatamente o mesmo `{yes,no,up,down,left,right}` e chama `navDialog`/`navPause` daqui.
-// É essa forma comum que faz "o jogo inteiro é operável de seis maneiras" ser verdade por construção e não por
-// disciplina.
+// Operation by keyboard (WCAG 2.1.1) and focus order (2.4.3). Any open menu — the pause card or a settings panel —
+// answers the SAME six intents, whether they come from the keyboard, a controller, the eyes or speech:
+//   · up/down/left/right — move between items; on a list, a slider or a steps control, left/right ADJUST the value
+//   · yes — confirm, toggle, enter
+//   · no  — back one level; at the pause card's root, back to the game
+// So the module speaks of INTENT (`NavKeys`), never of keys. The keyboard is one translator (`menuNavKey`, below);
+// `input/gamepad` builds the same `NavKeys` and calls `navDialog`/`navPause` from here. That shared shape is what makes
+// «every menu works six ways» true by construction rather than by discipline.
 //
-// O QUE VEIO, E DE ONDE (bloco "NAVEGAÇÃO UNIVERSAL de menus" do game.js)
-//  · `sharedDialogOpen` · `menuItems` · `menuFocus` · `dialogBack` — a leitura do "onde estou" e o voltar.
-//  · `navDialog` — andar dentro de um diálogo de configuração (o único lugar que ajusta select/slider).
-//  · `pauseSetSel` · `navPause` — andar dentro de um menu de pausa, que NÃO usa foco do navegador e sim uma
-//    classe de seleção própria (`.pm-sel`/`.pi-sel`), porque ele é desenhado dentro da tela do jogador.
-//  · `menuNavKey` — o tradutor de teclado, em fase de CAPTURA.
+// TWO KINDS OF MENU. A settings panel selects by browser FOCUS (`navDialog`). The pause card is drawn inside the player's
+// screen and selects by a CLASS (`.pm-sel`, `navPause`) — and a class fires no announcement, which is why the pause card
+// speaks its items through `srSay` and a panel does not need to for its focus.
 //
-// A DUPLICAÇÃO QUE ESTA EXTRAÇÃO CUROU
-// `sharedDialogOpen` do game.js e `topVisibleOverlay` de ui/settings-panel.ts eram A MESMA FUNÇÃO escrita
-// duas vezes: mesmo seletor de escopo (`#game-region .overlay`), mesmo filtro (`!hidden`), mesma ordenação
-// estável por z-index efetivo, mesmo "vence o último". Conferi as duas linha a linha antes de unificar. Aqui
-// `sharedDialogOpen` é um ALIAS de `ctx.topVisibleOverlay` — o nome antigo sobrevive porque input/gamepad.ts o
-// consome por esse nome, mas o CÓDIGO agora existe uma vez só, em ui/settings-panel.ts. O ganho não é linha de
-// menos: enquanto eram duas, uma correção de escopo (é justamente o que o defeito 1 abaixo pede) podia ser
-// aplicada num lado e não no outro, e o sintoma seria "às vezes o foco volta".
+// `sharedDialogOpen` is an ALIAS of `ui/settings-panel.topVisibleOverlay`, not a copy: the two were once the same function
+// written twice, and a scope fix applied to one would not have reached the other.
 //
-// ======================= DOIS DEFEITOS CONHECIDOS — PRESERVADOS VERBATIM, NÃO CONSERTE =======================
+// ======================= TWO KNOWN DEFECTS, PINNED BY TESTS — DO NOT FIX ONE WITHOUT THE OTHER =======================
 //
-// DEFEITO 1 — o escopo de `sharedDialogOpen` não alcança os menus de pausa (WCAG 2.4.3 · foco perdido).
-// O escopo é `#game-region .overlay`. Os nove diálogos de configuração estão lá (o `inCanvasMenus()` do game.js
-// reparenta os onze elementos para dentro do `#game-region`), MAS os menus de pausa por tela são
-// `.screen-pause` — classe diferente, construída por ui/pause-icons.ts, e nunca `.overlay`. Consequência:
-// `menuFocus(sharedDialogOpen())` devolve `null` quando o último diálogo se fecha, `menuFocus` sai pelo guarda
-// de nulo, e o foco fica no botão que acabou de ficar `hidden` — o navegador o joga no `<body>`. Quem sofre são
-// `#typo` (closeTypo) e `#help` (closeHelp), os dois únicos que devolvem o foco por esse caminho.
+// DEFECT 1 — `sharedDialogOpen`'s scope does not see the pause card (WCAG 2.4.3, focus lost). The scope is
+// `#game-region .overlay`; the pause card is `.screen-pause`, never `.overlay`. When the last dialog closes over an open
+// pause card, `menuFocus(sharedDialogOpen())` receives `null`, leaves at its guard, and the focus stays on a button that
+// has just become hidden — the browser drops it on `<body>`.
 //
-// O QUE EU VERIFIQUEI ANTES DE ESCREVER ISTO (a nota do coordenador estava certa, e a conclusão dela também):
-// li os NOVE `close*` e o `app/index.html` inteiro, um por um. De todos os nove, só UM devolve o foco de fato:
-//   · touchcfg  → `#opt-touchcfg`  — EXISTE (index.html, dentro do painel #movement). Funciona.
-//   · options   → `#opt-controls`  — NÃO existe no index.html. No-op silencioso.
-//   · movement  → `#opt-movement`  — NÃO existe. No-op.
-//   · visual    → `#opt-visual`    — NÃO existe. No-op.
-//   · audio     → `#opt-sound`     — NÃO existe. No-op.
-//   · animation → `#opt-animation` — NÃO existe (o próprio game.js já anota isso na linha do `#animation-close`).
-//   · empathy   → `#opt-empathy`   — NÃO existe. No-op.
-//   · typo/help → `menuFocus(sharedDialogOpen())` — o caminho quebrado descrito acima.
-// Os ids que EXISTEM no index.html com prefixo `opt-` são: opt-title, opt-telas, opt-letra, opt-facil,
-// opt-altmove, opt-touchcfg, opt-modocego, opt-tts, opt-onebtn, opt-wheelchair, opt-hearing,
-// opt-captions. Nenhum `#opt-visual`/`#opt-sound`/`#opt-movement`/`#opt-controls`/`#opt-empathy`/`#opt-animation`
-// — são ganchos para uma barra de botões que ainda não existe. Ou seja: NÃO é "sete certos e dois errados". É
-// "um certo e oito quebrados, por duas causas diferentes" — e a causa dos oito (botão inexistente) não é a
-// mesma dos dois (escopo do seletor). Quem consertar precisa saber disso, porque arrumar só o escopo deixa oito
-// painéis ainda largando o foco.
+// DEFECT 2 — Escape is resolved in CAPTURE, by z-index, and consumed with `stopPropagation()`. `menuNavKey` runs before
+// any bubble listener on the window, so the topmost visible dialog is the one that closes, and the registration-order
+// chain (`overlays.escapeTarget()`, read by `input/keydown`) never decides while a dialog is open. Escape is also the same
+// intent as action3 (`no`): at the pause card's root it means «back to the game», and nothing tells «close a dialog» from
+// «leave the pause» apart. The capture and the `stopPropagation()` are also what keep a later window listener — a game's
+// own keydown — from acting on the same Escape: removing them without a replacement lets one key do two things.
 //
-// DEFEITO 2 — `menuNavKey` trata Escape como "voltar", em CAPTURA, com `stopPropagation()`, e resolve por
-// z-index em vez de pela cadeia registrada. `addEventListener('keydown', menuNavKey, true)` roda ANTES do
-// ouvinte principal do game.js (que é de BOLHA, na mesma janela); o `stopPropagation()` na fase de captura
-// impede o evento de descer e, portanto, de voltar — o ouvinte de bolha nunca vê a tecla. Efeitos verificados
-// lendo os dois ouvintes lado a lado:
-//   (a) a cadeia `overlays.escapeTarget()` (ORDEM DE REGISTRO: options→movement→animation→visual→empathy→
-//       audio→typo→touchcfg→help) é código morto com o jogo pausado. Quem decide é o topo da pilha de z-index.
-//       O próprio game.js já anota isso ("MEDIDO no navegador") no ouvinte de bolha.
-//   (b) `#help` e `#touchcfg` estão registrados com `inEscapeChain:false` e por isso ficam fora da cadeia de Escape.
-//       Enquanto a captura os cobrir por z-index, Escape os fecha; se alguém tirar o `stopPropagation()` ou a
-//       fase de captura sem antes dar flag aos dois, a tecla cai no ouvinte de bolha e o
-//       `if(Escape||Enter) togglePause()` de lá DESPAUSA O JOGO com o diálogo de Ajuda ainda aberto.
-//       Ou seja: o comportamento correto de hoje depende de um `stopPropagation()`, não da cadeia — é uma rede
-//       de segurança acidental, e é exatamente o que o conserto vai mexer.
-//   (c) Escape é a MESMA intenção que "especial" do gamepad (`no`). Não há como distinguir "fechar diálogo" de
-//       "voltar ao jogo" — na raiz do menu de pausa, `no` faz `setPhase('playing')`.
-// `menuNavKey` é exportado por si só (e não só instalado) justamente para o teste poder dispará-lo sem depender
-// de fase de propagação, e `attach()` existe para o game.js instalar exatamente como antes.
+// `tests/menu-nav.browser.test.js` and `tests/menu-nav.node.test.js` pin both as they are today, and fail on purpose if
+// the region is «improved» without the whole fix. `menuNavKey` is exported on its own so a test can fire it without
+// depending on the propagation phase; `attach()` installs it.
+// ======================================================================================================================
 //
-// Os testes de `menu-nav` PINAM os dois comportamentos ACIMA como estão hoje. Eles falham de propósito se
-// alguém "melhorar" a região sem tratar o conserto inteiro — que é o ponto: o conserto futuro precisa da rede.
-// ============================================================================================================
+// WHAT IS NOT HERE: the overlay stack, the registry and closing by id belong to `ui/settings-panel` — this module
+// consumes `topVisibleOverlay` and `closeById` and reimplements nothing. The quick bar belongs to `ui/pause-icons`; this
+// module only asks whether a screen is on it (`onBar`) and hands it a step (`navBar`).
 //
-// O QUE FICOU DE FORA, E POR QUÊ
-//  · `updateTitleLegend` foi para ui/shell.ts, não para cá. Ela não navega nada — não lê foco, não trata tecla,
-//    não anda entre itens; pinta o rodapé de UMA tela (o título) e quem a chama é `setPhase('title')`. Trazê-la
-//    obrigaria a casca a importar o módulo de navegação só para desenhar uma legenda.
-//  · `padKind()` não veio para lugar nenhum: não tinha chamador, e a cópia que `input/touch.ts` guardava foi apagada
-//    em 2026-09-24 pela mesma razão (nota CE).
-//  · `navTitle`/`titleButtons` são de ui/activities-menu.ts (menu inicial), já extraídos.
-//  · A pilha de z-index, o registro de overlays e o fechar por id são de ui/settings-panel.ts. Este módulo
-//    CONSOME (`topVisibleOverlay`, `closeById`) e não reimplementa.
+// INJECTION: nothing is reached. `isNavigable`, `withIndex` and `onBar` are QUESTIONS asked of the ctx rather than state
+// read from `core/state`, so a game answers in its own model — a quiz whose settings are always open answers
+// `isNavigable(): true` without pretending to be paused. `getPauseMenu`, `closePadWiz`, `isCapturing` and `setPhase` are
+// resolved at call time, because what they reach is built in the root after this module.
 //
-// INJEÇÃO E ORDEM DE BOOT
-//  · `phase` entra como binding vivo de core/state.ts (deixou de ser `let` do game.js na Fase 2) — mesmo
-//    precedente de game/session.ts e input/touch.ts. O que AINDA é `let` do game.js entra por getter:
-//    `vpPause` (`getPauseMenu(i)`), reatribuído por `buildGameHud`.
-//  · `closePadWiz` é LAZY (`(save) => gamepadApi.closePadWiz(save)`): input/gamepad.ts é `const` do game.js e o
-//    ctx DELE consome `sharedDialogOpen`/`navDialog`/`navPause` daqui. A dependência é mútua, e a única forma
-//    de quebrar o ciclo sem reordenar o boot é ela ser resolvida na CHAMADA. Mesmo motivo para `isCapturing`
-//    (ui/settings-controls.ts) e para `setPhase` (o envelope içado do game.js sobre ui/shell.ts).
-//  · `actionOf`/`whichPlayer` entram já ligados a input/keyboard-runtime.ts, que é `const` declarado bem no
-//    alto do game.js — mas entram como callback mesmo assim, porque o roteamento por jogador é dele e não daqui.
-//
-// SEM I/O NO IMPORT: o corpo do módulo só declara dados e funções puras. Todo efeito passa por `initMenuNav`.
-//
-// Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C3).
+// NO I/O ON IMPORT: the module body only declares data and pure functions. Every effect goes through `initMenuNav`.
 
-/* ===================== interfaces mínimas ===================== */
+/* ===================== minimal interfaces ===================== */
 
-/** ui/dom.ts `$` — injetado; o módulo nunca alcança `document`. */
-// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
-// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+/** ui/dom.ts `$` — injected; the module never reaches `document`. */
+// `DomQuery` is defined once, in `core/dom-query` (copies of it had diverged). Re-exported for whoever imported it from here.
 export type { DomQuery } from '../core/dom-query.js';
 
-/** A intenção, não a tecla. Definição única em input/edges; aqui só reexportada. */
+/** The intent, not the key. Defined once in input/edges; only re-exported here. */
 import type { NavKeys } from '../input/edges.js';
 export type { NavKeys } from '../input/edges.js';
 
-/** O que este módulo lê de um `KeyboardEvent`. */
+/** What this module reads from a `KeyboardEvent`. */
 export interface NavKeyEvent {
   code: string;
   preventDefault(): void;
@@ -124,12 +65,12 @@ export interface NavKeyEvent {
 }
 
 // ---------------------------------------------------------------------------------------------------------
-// PURO — a decisão de navegação, sem DOM. Testável no project `node`.
+// PURE — the navigation decision, without a DOM. Testable in the `node` project.
 // ---------------------------------------------------------------------------------------------------------
 
-/** Alguma intenção foi expressa? Definição única em input/edges; aqui só o nome que este módulo sempre teve. */
+/** Was any intent expressed? Defined once in input/edges; here under the name this module has always used. */
 import { hasNavIntent as hasIntent } from '../input/edges.js';
-import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
+import type { EventTargetLike } from '../input/touch-bindings.js'; // the listening port, generic over WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
 import { showPauseOptions, PM_VISIBLE_ITEMS } from './pause-icons.js';
 import { announceItem } from './item-announcement.js';
@@ -140,10 +81,9 @@ import { t } from '../core/i18n.js';
 import { menuKeyIntent, selectStep, selectWrap, rangeStep, stepInPause } from './menu-intent.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
-// A CONTA DO ANEL mudou de casa para `core/ring` no item 7 do ADR-0044: `ui/pause-icons` passou a precisar
-// dela, e como ESTE módulo já importa aquele, a volta fecharia um ciclo de importação — que em ESM não
-// estoura na hora, estoura no boot em TDZ. O nome público fica: é daqui que os menus e os testes já a
-// importavam, e mudar isso seria pedir uma edição em cada um deles para não ganhar nada.
+// The ring's arithmetic lives in `core/ring`: `ui/pause-icons` needs it too, and this module imports that one, so keeping
+// it here would close an import cycle — which in ESM does not fail on the spot, it fails at boot in the TDZ. The public
+// name stays here because the menus and the tests import it from here.
 export { stepInRing } from '../core/ring.js';
 
 // ---------------------------------------------------------------------------------------------------------
@@ -151,110 +91,100 @@ export { stepInRing } from '../core/ring.js';
 // ---------------------------------------------------------------------------------------------------------
 
 export interface MenuNavCtx {
-  /** ui/dom.ts `$` — só para achar `#padwiz`. */
+  /** ui/dom.ts `$` — only to find `#padwiz`. */
   $: DomQuery;
-  /** `document.activeElement` — injetado para o teste node poder simular foco sem DOM. */
+  /** `document.activeElement` — injected so a node test can simulate focus without a DOM. */
   getActiveElement: () => Element | null;
 
-  /* --- ui/settings-panel.ts: a pilha de overlays. NÃO reimplementar nada disto aqui. --- */
-  /** O overlay VISÍVEL de z-index mais alto dentro de `#game-region`. É o `sharedDialogOpen` original. */
+  /* --- ui/settings-panel.ts: the overlay stack. Reimplement none of it here. --- */
+  /** The VISIBLE overlay with the highest z-index inside `#game-region`. */
   topVisibleOverlay: () => HTMLElement | null;
-  /** `overlays.closeById(id)` — true se havia entrada registrada para aquele diálogo. */
+  /** `overlays.closeById(id)` — true if that dialog had a registered entry. */
   closeById: (id: string) => boolean;
 
-  /* --- o que o game.js AINDA reatribui: getter --- */
-  /** `vpPause[i]` — o menu de pausa da tela do jogador `i`. `buildGameHud` REATRIBUI a array. */
+  /** The pause card of player `i`'s screen, looked up when asked. */
   getPauseMenu: (playerIndex: number) => HTMLElement | null | undefined;
 
-  /* --- vizinhos, todos LAZY (ver o cabeçalho: o ciclo com input/gamepad.ts) --- */
-  /** ui/shell.ts via o envelope içado do game.js. `no` na raiz do menu de pausa volta ao jogo. */
+  /* --- neighbours, all resolved at call time (see the header) --- */
+  /** Changes the game phase. `no` at the pause card's root goes back to the game. */
   setPhase: (p: 'title' | 'playing' | 'paused') => void;
-  /** `let pauseActor` do game.js: "sim" no menu de pausa marca QUEM agiu (o submenu abre na aba dele).
-   *  ui/pause-icons.ts já recebe o mesmo setter — o `let` continua sendo do game.js, com seis leitores. */
+  /** «Yes» on the pause card marks WHO acted (the options open on that player's tab). `ui/pause-icons` receives the
+   *  same setter. */
   setPauseActor: (playerIndex: number) => void;
   /**
-   * ESTE É O MOMENTO DE NAVEGAR MENU? Se `false`, toda tecla passa direto.
+   * IS THIS A MOMENT TO NAVIGATE A MENU? If `false`, every key passes through.
    *
-   * Era `if (phase !== 'paused') return`, com `phase` vindo por IMPORTAÇÃO de `core/state` — e o segundo
-   * consumidor mostrou o preço (achado 10 de `consumer-quiz`): um quiz cujos ajustes estão SEMPRE disponíveis
-   * precisava se declarar "pausado" para poder navegar os próprios menus. Não havia como trazer o próprio
-   * modelo de fases, porque não havia por onde.
-   *
-   * A pergunta injetada é PROPOSITALMENTE um booleano, e não a fase. Injetar `getPhase()` teria consertado a
-   * importação e mantido a mentira: o consumidor continuaria obrigado a devolver a string `'paused'`, que é
-   * um conceito do jogo de plataforma. Perguntando "dá para navegar agora?", o jogo de plataforma responde
-   * `phase === 'paused'` e um quiz responde `true` — cada um na sua língua, e nenhum dos dois mentindo.
+   * A boolean on purpose, not the phase: asking for the phase would oblige every game to answer with the string
+   * `'paused'`, a platformer's concept. Asked «can a menu be navigated now?», a platformer answers `phase === 'paused'`
+   * and a quiz whose settings are always open answers `true` — each in its own terms, neither pretending.
    */
   isNavigable: () => boolean;
   /**
-   * `core/a11y-sr.srSay` — a região `aria-live` "polite". INJETADO porque ela alcança o `document` na hora da
-   * chamada, e este módulo não pode alcançar documento nenhum por conta própria.
+   * `core/a11y-sr.srSay` — the «polite» `aria-live` region. INJECTED because it reaches the `document` when called, and
+   * this module reaches no document on its own.
    *
-   * O menu de PAUSA precisa dela e os diálogos não: eles selecionam por FOCO, e o leitor de tela anuncia o
-   * foco sozinho. A pausa seleciona por CLASSE (`.pm-sel`), porque é desenhada dentro da tela do jogador —
-   * e classe nenhuma dispara anúncio. Sem esta injeção o menu é mudo para quem o navega por escuta.
+   * The PAUSE card needs it and the dialogs do not: dialogs select by FOCUS, which a screen reader announces by itself.
+   * The pause card selects by CLASS (`.pm-sel`), because it is drawn inside the player's screen — and no class fires an
+   * announcement. Without this the card is silent to whoever navigates it by ear.
    */
   srSay: (text: string) => void;
   /**
-   * O índice "N de M" está ligado? (ADR-0044, item 3, e a XAG 106 exige que ele possa ser desligado.)
+   * Is the «N of M» index on? (ADR-0044 item 3; XAG 106 requires that it can be turned off.)
    *
-   * PERGUNTADO ao ctx e não lido de `core/state`, e o motivo é o mesmo do `isNavigable`: enquanto este módulo
-   * importava `core/state`, um segundo jogo não tinha como trazer o próprio modelo — o quiz teve de se
-   * declarar "pausado" para navegar os menus dele. `tests/menu-nav.node.test.js` reprova se a aresta voltar,
-   * e ela quase voltou por aqui: eu tinha escrito o `import` antes de o gate me lembrar.
+   * ASKED of the ctx rather than read from `core/state`, for the same reason as `isNavigable`: a game answers in its own
+   * model. `tests/menu-nav.node.test.js` fails if the import of `core/state` comes back.
    */
   withIndex: () => boolean;
   /** Writes the reason of a locked pause item in the screen footer, or clears it with `null` (ADR-0161). Optional. */
   explainItem?: (text: string | null) => void;
   /**
-   * A tela `i` está no modo `accessibility` (ADR-0044, item 7)? Perguntado ANTES de `isNavigable`, porque
-   * esse modo roda com o jogo ANDANDO — é a única coisa deste módulo que age fora da pausa.
+   * Is screen `i` on the quick bar (ADR-0044 item 7)? Asked BEFORE `isNavigable`, because the bar works with the game
+   * RUNNING — the only thing in this module that acts outside the pause.
    */
   onBar: (i: number) => boolean;
-  /** Um passo dentro da barra rápida da tela `i`. */
+  /** One step inside screen `i`'s quick bar. */
   navBar: (i: number, k: NavKeys) => void;
-  /** ui/settings-controls.ts: um remap em andamento consome a tecla — o menu não pode roubá-la. */
+  /** ui/settings-controls.ts: a remap in progress consumes the key — the menu must not steal it. */
   isCapturing: () => boolean;
-  /** input/gamepad.ts: o assistente de mapeamento fica POR CIMA de tudo; só Escape (cancela) o alcança. */
+  /** Closes the controller-mapping panel (`#padwiz`), which sits ON TOP of everything; only Escape (cancel) reaches it. */
   closePadWiz: (save: boolean) => void;
-  /** input/keyboard-runtime.ts: de quem é esta tecla? (-1 = genérica). */
+  /** input/keyboard-runtime.ts: whose key is this? (-1 = generic). */
   whichPlayer: (code: string) => number;
-  /** input/keyboard-runtime.ts: que ação esta tecla é PARA aquele jogador (respeitando o remap)? */
+  /** input/keyboard-runtime.ts: which action is this key FOR that player (honouring the remap)? */
   actionOf: (code: string, playerIndex: number) => string | null;
-  /** `window` — só para `attach()` instalar o ouvinte em CAPTURA, exatamente como o game.js fazia. */
-  /** A escuta de teclado dos menus. Ver `EventTargetLike` em input/touch-bindings. */
+  /** Where `attach()` installs the menus' listeners, in CAPTURE. See `EventTargetLike` in input/touch-bindings. */
   win: EventTargetLike;
 }
 
 export interface MenuNavApi {
-  /** O overlay visível mais alto (alias de `topVisibleOverlay` — ver "a duplicação que esta extração curou"). */
+  /** The highest visible overlay (an alias of `topVisibleOverlay` — see the header). */
   sharedDialogOpen: () => HTMLElement | null;
-  /** Os controles NAVEGÁVEIS de um menu: habilitados E visíveis (`offsetParent !== null`). */
+  /** A menu's NAVIGABLE controls: enabled AND visible (`offsetParent !== null`). */
   menuItems: (menu: HTMLElement) => HTMLElement[];
-  /** Foca o item atual (se já for um deles) ou o primeiro. Sai calado com `menu` nulo — ver o DEFEITO 1. */
+  /** Focuses the current item (if the focus is already on one) or the first. Leaves quietly with a null `menu` — see DEFECT 1. */
   menuFocus: (menu: HTMLElement | null) => void;
-  /** Fecha o diálogo e tenta devolver o foco ao que ficou por baixo. */
+  /** Closes the dialog and tries to give the focus back to what is left underneath. */
   dialogBack: (menu: HTMLElement) => void;
-  /** Um passo de navegação DENTRO de um diálogo de configuração. */
+  /** One navigation step INSIDE a settings dialog. */
   navDialog: (menu: HTMLElement, k: NavKeys) => void;
-  /** Marca `el` como o item selecionado de `menu` e atualiza a legenda dos ícones. */
+  /** Marks `el` as `menu`'s selected item. */
   pauseSetSel: (menu: HTMLElement, el: HTMLElement | null | undefined) => void;
-  /** Um passo de navegação DENTRO de um menu de pausa (barra de ícones + grade de itens). */
+  /** One navigation step INSIDE a pause card (its items; the quick bar is not in the card). */
   navPause: (menu: HTMLElement, playerIndex: number, k: NavKeys) => void;
-  /** O tradutor de teclado. Exportado à parte para o teste disparar sem depender da fase de propagação. */
+  /** The keyboard translator. Exported on its own so a test can fire it without depending on the propagation phase. */
   menuNavKey: (e: NavKeyEvent) => void;
-  /** Instala `menuNavKey` em CAPTURA na janela — verbatim do game.js. */
+  /** Installs `menuNavKey` on the window, in CAPTURE. */
   attach: () => void;
 }
 
-// O SELECTOR DOS ITENS mudou-se para `ui/menu-items` (ADR-0158): a numeração visível lê a MESMA lista, porque o número
-// escrito tem de ser o do índice falado — duas cópias do selector eram como «2 de 7» e um «3» escrito divergiriam.
+// The items' selector lives in `ui/menu-items` (ADR-0158): what counts as an item is defined once, and the spoken
+// «N of M» and the panel shell read the same list.
 /**
- * As partes que um controle de painel DIZ (ADR-0159 regra 1, XAG 106: «Gamma, slider, 38%, 6 of 9»): o rótulo com o
- * PAPEL, e o VALOR. O índice junta-se no `announceItem`.
+ * The parts a panel control SAYS (ADR-0159 rule 1, XAG 106: «Gamma, slider, 38%, 6 of 9»): the label with the ROLE, and
+ * the VALUE. The index is added by `announceItem`.
  *
- * O rótulo é o `<strong>` da linha quando o controle vive numa (é o que se VÊ, e o texto de um interruptor é o estado,
- * não o nome); fora de linha, ou num cursor com nome próprio («Volume de Música»), é o nome acessível.
+ * The label is the row's `<strong>` when the control lives in one (it is what is SEEN, and a switch's text is its state,
+ * not its name); outside a row, or on a slider with a name of its own («Volume de Música»), it is the accessible name.
  */
 export function controlParts(el: HTMLElement): { label: string; state: string } {
   const row = el.closest('.ctrl-row')?.querySelector('strong')?.textContent?.trim() || '';
@@ -292,23 +222,23 @@ const CONTROL_KINDS: readonly (readonly [(el: HTMLElement) => boolean, string, C
   [() => true, 'sr.papel.botao', (_el, _row, name) => ({ label: name, value: '' })],
 ];
 
-/** Onde os itens moram: o card do diálogo (`.overlay__card`) ou o card da pausa (`.pause-card`). */
+/** Where the items live: the dialog's card (`.overlay__card`) or the pause card (`.pause-card`). */
 const CARD_SELECTOR = '.overlay__card, .pause-card';
 
 export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
-  /* ===================== diálogos de configuração ===================== */
+  /* ===================== settings dialogs ===================== */
 
-  // ALIAS, não cópia: o corpo mora em ui/settings-panel.ts. Ver "a duplicação que esta extração curou".
+  // An ALIAS, not a copy: the body lives in ui/settings-panel.ts (see the header).
   const sharedDialogOpen = (): HTMLElement | null => ctx.topVisibleOverlay();
 
   function menuItems(menu: HTMLElement): HTMLElement[] {
     const card = menu.querySelector<HTMLElement>(CARD_SELECTOR) || menu;
-    // O filtro de VISIBILIDADE (`offsetParent`) mora com o selector em `ui/menu-items` — verbatim do que estava aqui.
+    // The VISIBILITY filter (`offsetParent`) lives with the selector in `ui/menu-items`.
     return navigableItems(card);
   }
 
   function menuFocus(menu: HTMLElement | null): void {
-    if (!menu) return; // ⚠️ DEFEITO 1: com os menus de pausa fora do escopo, este guarda é o fim da linha
+    if (!menu) return; // ⚠️ DEFECT 1: with the pause card outside the scope, this guard is the end of the line
     const it = menuItems(menu);
     if (!it.length) return;
     const cur = it.indexOf(ctx.getActiveElement() as HTMLElement);
@@ -316,28 +246,27 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   }
 
   function dialogBack(menu: HTMLElement): void {
-    if (!ctx.closeById(menu.id)) menu.hidden = true; // sem entrada no registro: some na marra
+    if (!ctx.closeById(menu.id)) menu.hidden = true; // no registered entry: hide it outright
     menuFocus(sharedDialogOpen());
   }
 
-  /** Ajusta um `select` (esquerda/direita = passo preso; sim = passo com volta) e dispara `change`. */
+  /** Adjusts a `select` (left/right = a step that stops at the ends; yes = a step that wraps) and fires `change`. */
   function tweakSelect(el: HTMLSelectElement, delta: number | 'wrap'): void {
     el.selectedIndex = delta === 'wrap' ? selectWrap(el.selectedIndex, el.options.length) : selectStep(el.selectedIndex, el.options.length, delta);
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  /** Ajusta um `input[type=range]` em um `step` e dispara `input` (é o evento que os painéis escutam). */
+  /** Moves an `input[type=range]` by one `step` and fires `input` (the event the panels listen to). */
   function tweakRange(el: HTMLInputElement, delta: number): void {
     el.value = String(rangeStep(+el.value, +el.min, +el.max, +el.step, delta));
     el.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   /**
-   * O ITEM ALCANÇADO SE DIZ (ADR-0159 regra 1): rótulo, papel, valor e «N de M», nessa ordem.
+   * THE ITEM REACHED SAYS ITSELF (ADR-0159 rule 1): label, role, value and «N de M», in that order.
    *
-   * 🔴 Medido no `dist` em 2026-09-12: dentro de um painel o cursor andava e o `#sr-status` ficava calado — o índice
-   * falado só existia no cartão de pausa. O foco do navegador move-se, mas a narração da engine (a de quem joga no
-   * modo cego) não ouve foco; ouve isto.
+   * The browser's focus moves by itself, but the engine's narration (the one a child playing in blind mode hears) does
+   * not listen to focus; it listens to this.
    */
   function sayItem(items: readonly HTMLElement[], n: number): void {
     const el = items[n];
@@ -373,7 +302,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       return;
     }
     if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); sayItem(items, idx); return; }
-    // Os PASSOS ⯇ ⯈ (ADR-0151): esquerda e direita são o próprio ajuste, e quem o aplica ouve o `passo` (e anuncia).
+    // A steps control ⯇ ⯈ (ADR-0151): left and right are the adjustment itself; its owner listens to `passo` (and announces).
     if (cur.hasAttribute('data-passos')) { cur.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true })); return; }
     focusAndSay(items, stepInRing(items.length, idx, d));
   }
@@ -396,96 +325,85 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     if (k.yes) confirm(items, idx);
   }
 
-  /* ===================== menu de pausa (seleção por classe, não por foco) ===================== */
+  /* ===================== pause card (selected by class, not by focus) ===================== */
 
   /**
-   * Move o cursor do menu de pausa. Só ITENS: desde o item 7 do ADR-0044 a barra de ícones vive no HUD, e o
-   * cursor dela é dela.
-   *
-   * O QUE SAIU DAQUI, e vale registrar: esta função também escrevia a legenda dos ícones, porque o cursor
-   * atravessava a fronteira entre as duas zonas. Sem a fronteira, escrever legenda de ícone a partir do menu
-   * de pausa seria um módulo mexendo na tela de outro.
+   * Moves the pause card's cursor. Items only: since ADR-0044 item 7 the quick bar lives in the HUD and keeps its own
+   * cursor — writing the bar's caption from here would be one module drawing on another's screen.
    */
   function pauseSetSel(menu: HTMLElement, el: HTMLElement | null | undefined): void {
-    if (!el) return; // índice fora da lista (menu vazio): não mexe em nada — verbatim
+    if (!el) return; // an index outside the list (an empty card): touch nothing
     menu.querySelectorAll<HTMLElement>('.pm-sel').forEach((b) => b.classList.remove('pm-sel'));
     el.classList.add('pm-sel');
   }
 
   function navPause(menu: HTMLElement, playerIndex: number, k: NavKeys): void {
     if (k.no) {
-      // "não" DENTRO do submenu de opções volta à raiz, e não ao jogo (ADR-0044, item 5). A regra "voltar sai
-      // um nível" já valia para os diálogos de configuração (`dialogBack`); o que mudou é que o menu de pausa
-      // passou a TER um nível a mais. Sem esta linha, quem entra em Opções sem enxergar só sairia despausando.
-      // ⚠️ ERA `=== 'opcoes'`, E COM TRÊS LISTAS ISSO PASSOU A SER O RAMO ERRADO. A pergunta certa nunca foi
-      // «é a lista de opções?» — é «NÃO é a raiz?»: de qualquer submenu, «não» sobe UM nível (ADR-0044 item
-      // 5). Escrita como estava, a lista nova do ADR-0146 caía no ramo de baixo e o «não» DESPAUSAVA o jogo a
-      // partir dela, que é sair do jogo quando a criança pediu para voltar.
+      // «No» inside any sub-list goes up ONE level, to the root, and not back to the game (ADR-0044 item 5) — the same
+      // «back leaves one level» the settings dialogs have (`dialogBack`). The question is «is this NOT the root?», not
+      // «is this the options list?»: with three lists (ADR-0146), asking the second would make «no» from the game's own
+      // options resume the game when the child asked to go back.
       const open = menu.querySelector<HTMLElement>('.pause-menu:not([hidden])');
       if (open && open.dataset.sub && open.dataset.sub !== 'raiz') { showPauseOptions(menu, 'raiz'); return; }
-      ctx.setPhase('playing'); return; // "não" na raiz → volta ao jogo (retoma todos)
+      ctx.setPhase('playing'); return; // «no» at the root → back to the game (resumes everyone)
     }
 
     const items = [...menu.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
     const cur = menu.querySelector<HTMLElement>('.pm-sel') || items[0];
 
-    // "sim": o jogador que agiu vira o `pauseActor` (o submenu de a11y abre na aba dele) e o item é clicado.
+    // «Yes»: the player who acted becomes the `pauseActor` (the accessibility options open on their tab) and the item is clicked.
     if (k.yes) { ctx.setPauseActor(playerIndex); if (cur) cur.click(); return; }
-    // Guarda NOVA (o original estouraria em `cur.classList` aqui): menu sem `.pm-btn` nenhum. Não é o defeito
-    // preservado — é um TypeError, e trocar um crash por um no-op não tira rede de conserto nenhum.
+    // A card with no item at all: nothing to move (without this guard the next line throws on `cur`).
     if (!cur) return;
 
-    // UMA LISTA, um anel. A barra de ícones saiu do cartão no item 7 do ADR-0044, e com ela saíram as quatro
-    // regras de fronteira que ninguém conseguia descobrir sem esbarrar.
+    // ONE list, one ring: the quick bar is not in the card (ADR-0044 item 7), so there are no borders between zones to cross.
     const n = stepInPause(items.length, items.indexOf(cur), k);
     selectAndSayInPause(menu, items, n);
   }
 
   function selectAndSayInPause(menu: HTMLElement, items: readonly HTMLElement[], n: number): void {
     pauseSetSel(menu, items[n]);
-    // E O ITEM NOVO É FALADO. Este menu não usa foco do navegador — seleciona por classe, porque é desenhado
-    // dentro da tela do jogador —, então nada dispara anúncio sozinho: nem foco, nem `aria-activedescendant`,
-    // nem região viva. MEDIDO no jogo construído: a seta andava e o `#sr-status` ficava vazio. O item 3 do
-    // ADR-0044 pede posição e total "em todo lugar", e este era o lugar onde ele não tinha chegado — o menu
-    // que o item 5 reconstruiu.
-    // `accessibleLabel` e não `textContent`: um item com `aria-label` seria narrado de um jeito pelo jogo e de
-    // outro pelo leitor de tela, e quem ouve os dois não teria como saber qual é a verdadeira.
-    // 🔴 UM ITEM TRAVADO DIZ PORQUÊ ao ser alcançado (ADR-0161): dito a seguir ao nome, e escrito no rodapé.
+    // AND THE NEW ITEM IS SPOKEN. This card selects by class, not by browser focus — it is drawn inside the player's
+    // screen — so nothing announces it by itself: no focus, no `aria-activedescendant`, no live region. ADR-0044 item 3
+    // asks for position and total everywhere.
+    // `accessibleLabel` and not `textContent`: an item with an `aria-label` would otherwise be narrated one way by the
+    // game and another by the screen reader, and whoever hears both could not tell which is true.
+    // 🔴 A LOCKED ITEM SAYS WHY when it is reached (ADR-0161): right after its name, and written in the footer.
     const reason = items[n].getAttribute('aria-disabled') === 'true' ? (items[n].dataset.motivo ?? '') : '';
     const announcement = announceItem({ label: accessibleLabel(items[n]), position: n + 1, total: items.length }, ctx.withIndex());
     ctx.srSay(reason ? `${announcement}. ${reason}` : announcement);
     ctx.explainItem?.(reason || null);
   }
 
-  /* ===================== teclado ===================== */
+  /* ===================== keyboard ===================== */
 
-  /** O assistente de gamepad fica POR CIMA de tudo: com ele aberto, só Escape passa (e cancela). */
+  /** The controller-mapping panel sits ON TOP of everything: while it is open, only Escape gets through (and cancels). */
   function padWizKey(e: NavKeyEvent): boolean {
     const pw = ctx.$<HTMLElement>('#padwiz');
     if (!pw || pw.hidden) return false;
     if (e.code === 'Escape') { ctx.closePadWiz(false); e.preventDefault(); e.stopPropagation(); }
-    return true; // aberto = consome (mesmo sem ser Escape: o resto do menu não navega por baixo dele)
+    return true; // open = consumed (even when it is not Escape: no menu underneath navigates while it is open)
   }
 
-  /** Consome a tecla: ela era nossa, e ninguém mais deve vê-la. Uma função só para o par nunca se separar. */
+  /** Consumes the key: it was ours, and nobody else should see it. One function, so the pair never comes apart. */
   const consume = (e: NavKeyEvent): void => { e.preventDefault(); e.stopPropagation(); };
 
   function menuNavKey(e: NavKeyEvent): void {
-    if (ctx.isCapturing()) return;   // remap em andamento: a tecla é dele
+    if (ctx.isCapturing()) return;   // a remap in progress: the key is its
     if (padWizKey(e)) return;
 
-    // ===================== O MODO `accessibility` VEM ANTES DO GUARDA DE "NAVEGÁVEL" =====================
-    // `isNavigable()` é `phase === 'paused'`, e este modo roda com o jogo ANDANDO — é para isso que ele
-    // existe: ajustar a acessibilidade DURANTE a partida, sem parar. Se ele ficasse depois do guarda, a
-    // direção cairia no personagem e o modo não faria nada, que é a versão silenciosa da armadilha.
+    // ===================== THE QUICK BAR COMES BEFORE THE «NAVIGABLE» GUARD =====================
+    // `isNavigable()` can be false while the game runs (a platformer answers `phase === 'paused'`), and the bar works
+    // with the game RUNNING — that is what it is for: adjusting accessibility DURING play. After the guard, the
+    // direction would fall to the character and the bar would do nothing, silently.
     //
-    // No TECLADO a saída é Escape (o `no` do projeto). O START do controle é a segunda saída e entra por
-    // `input/gamepad`; aqui ele não tem par próprio, porque Enter já é "confirmar" e roubá-lo tiraria da
-    // criança o único jeito de ATIVAR o ícone sob o cursor.
+    // On the KEYBOARD the way out is Escape (the project's `no`). A controller's START is the second way out and comes
+    // through `input/gamepad`; the keyboard has no pair of its own for it, because Enter is already «confirm» and taking
+    // it would leave the child no way to ACTIVATE the icon under the cursor.
     const { player, keys } = intentOf(e.code);
     if (ctx.onBar(player)) {
       if (hasIntent(keys)) { consume(e); ctx.navBar(player, keys); }
-      return; // na barra, tecla de menu é da barra — com ou sem intenção, não desce para o personagem
+      return; // on the bar, a menu key belongs to the bar — with or without an intent, it does not reach the character
     }
 
     if (!ctx.isNavigable() || !hasIntent(keys)) return;
@@ -501,27 +419,20 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
 
   /** The key moves the dialog on top if there is one, else the player's own pause card if it is open, else nothing. */
   function navOpenMenu(e: NavKeyEvent, pi: number, k: NavKeys): void {
-    // A TECLA SÓ É CONSUMIDA SE HOUVER O QUE NAVEGAR. Antes, `preventDefault()` + `stopPropagation()` vinham
-    // AQUI, antes de se saber se havia diálogo ou menu aberto — e o `menuNavKey` matava o evento para depois
-    // descobrir que não tinha nada a fazer com ele. Na plataforma isso era invisível: `isNavigable()` é
-    // `phase === 'paused'`, e pausar ABRE o menu, então quase nunca havia um caso "navegável e nada aberto".
+    // THE KEY IS CONSUMED ONLY IF THERE IS SOMETHING TO NAVIGATE. A game whose settings are always open answers
+    // `isNavigable(): true`, and consuming before knowing would swallow every key with a menu intent — the arrows that
+    // choose an answer in the quiz, for one.
     //
-    // No segundo consumidor não era invisível — era total. Um quiz cujos ajustes estão SEMPRE disponíveis
-    // responde `isNavigable(): true`, e com isso TODA tecla com intenção de menu morria aqui: as setas de
-    // escolher alternativa, e o `S` do sonar. Duas funcionalidades que existiam e não chegavam à criança.
-    //
-    // A REDE DE SEGURANÇA DO ESCAPE FICA INTACTA, e era o risco real desta mudança. O bloco (b) acima explica
-    // que `#help` e `#touchcfg` dependem do `stopPropagation()` para não deixarem a tecla cair no ouvinte de
-    // bolha, que despausaria o jogo com o diálogo aberto. Esses dois casos entram por `sharedDialogOpen()`
-    // — há diálogo, logo a tecla É consumida, exatamente como antes.
+    // DEFECT 2's safety net stays: with a dialog open the key IS consumed, so one Escape closes the dialog and no later
+    // listener sees it.
     const dlg = sharedDialogOpen();
-    if (dlg) { consume(e); navDialog(dlg, k); return; }    // diálogo de a11y aberto: navega ele (compartilhado)
-    const menu = ctx.getPauseMenu(pi);                      // senão: menu de pausa do PRÓPRIO jogador
+    if (dlg) { consume(e); navDialog(dlg, k); return; }    // an accessibility dialog is open: it is the one navigated
+    const menu = ctx.getPauseMenu(pi);                      // otherwise: the player's OWN pause card
     if (menu && !menu.hidden) { consume(e); navPause(menu, pi, k); }
-    // Sem diálogo e sem menu: a tecla NÃO é nossa. Segue o caminho dela até quem for o dono.
+    // No dialog and no card: the key is NOT ours. It goes on to whoever owns it.
   }
 
-  /* ===================== segurar sobre um item ===================== */
+  /* ===================== holding on an item ===================== */
 
   /*
    * A PRESS HELD ON AN ITEM PLACES THE CURSOR THERE AND SAYS IT, WITHOUT ACTIVATING IT (ADR-0159 rule 2, erratum of
