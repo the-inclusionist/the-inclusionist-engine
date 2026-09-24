@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Gera as silhuetas de ALTO CONTRASTE (_hc.png) a partir dos frames de cor.
-# Fonte da verdade = assets/sprites/menino/<animacao>/<i>.png  (editados no Aseprite)
-# Saida            = assets/sprites/menino/<animacao>/<i>_hc.png (silhueta amarela #ffe600)
-# Uso: python tools/build-hc.py   (rode apos editar/exportar os frames de cor)
+# Generates the HIGH-CONTRAST silhouettes (_hc.png) from the colour frames.
+# Source of truth = assets/sprites/menino/<animation>/<i>.png  (edited in Aseprite)
+# Output          = assets/sprites/menino/<animation>/<i>_hc.png (a yellow #ffe600 silhouette)
+# Usage: python tools/build-hc.py   (run after editing/exporting the colour frames)
+# ⚠️ `assets/sprites/menino` is not in this repository any more: the character's art left with the cartridge
+# (issue #111), so here the script finds no frame and generates nothing.
 import glob, os, re
 from PIL import Image
 
@@ -12,7 +14,7 @@ HC = (255, 230, 0, 255)
 n = 0
 for p in glob.glob(os.path.join(ROOT, '**', '*.png'), recursive=True):
     stem = os.path.splitext(os.path.basename(p))[0]
-    if not re.fullmatch(r'\d+', stem):   # so frames numerados (0.png, 1.png...); ignora _hc e candidatos
+    if not re.fullmatch(r'\d+', stem):   # numbered frames only (0.png, 1.png...); skips _hc and candidates
         continue
     im = Image.open(p).convert('RGBA')
     px = im.load()

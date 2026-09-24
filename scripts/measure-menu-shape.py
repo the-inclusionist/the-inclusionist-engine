@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""SEGUNDO LEVANTAMENTO (ADR-0092): o que os sinks da camada de MENUS tem em comum.
+"""SECOND SURVEY (ADR-0092): what the sinks of the MENUS layer have in common.
 
-O registro fixou QUANTAS camadas e QUAIS. A FORMA do padrao de nos tem de sair de
-uma medida, e nao de um desenho — o mesmo metodo que corrigiu o numero de camadas
-de quatro para seis.
+The record fixed HOW MANY layers and WHICH. The SHAPE of the node pattern has to come out of
+a measure, not out of a design — the same method that corrected the number of layers from
+four to six.
 
-O que se conta: as CLASSES de CSS e os ATRIBUTOS que os construtores de markup da
-camada de menus emitem. O que se repete em muitos modulos e a forma; o que aparece
-num so e daquele painel.
+What is counted: the CSS CLASSES and the ATTRIBUTES that the menu layer's markup builders
+emit. What repeats across many modules is the shape; what appears in only one belongs to
+that panel. A module in the list that no longer exists is printed as absent and skipped.
 """
 import io, os, re, sys
 from collections import Counter, defaultdict
@@ -16,7 +16,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 RAIZ = "app/js"
 
-# A camada de MENUS E DIALOGOS, pela medida do ADR-0092.
+# The MENUS AND DIALOGS layer, by ADR-0092's measure.
 MENUS = [
     "ui/activities-menu.ts", "ui/pause-icons.ts", "ui/map-hub.ts", "ui/menu-nav.ts",
     "ui/settings-panel.ts", "ui/settings-audio.ts", "ui/settings-caa.ts", "ui/settings-controls.ts",

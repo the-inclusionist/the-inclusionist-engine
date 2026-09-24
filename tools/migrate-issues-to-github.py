@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Migra as issues do GitLab para o GitHub PRESERVANDO OS NÚMEROS.
+"""Migrates the GitLab issues to GitHub KEEPING THE NUMBERS.
 
-    python tools/migrate-issues-to-github.py            # ensaio: não escreve nada
-    python tools/migrate-issues-to-github.py --go       # cria de verdade
+    python tools/migrate-issues-to-github.py            # dry run: writes nothing
+    python tools/migrate-issues-to-github.py --go       # creates for real
 
-POR QUE OS NÚMEROS SOBREVIVEM, e por que isso é frágil
-------------------------------------------------------
-No GitHub, issues e pull requests dividem UM contador, que começa em 1 num repositório
-novo. As issues do GitLab aqui são `iid` 1..N sem buracos. Logo, criadas em ordem
-crescente num repositório sem nenhuma issue e sem nenhuma PR, recebem exatamente os
-mesmos números — e todo `#N` escrito em ADR, em mensagem de commit e no corpo de outra
-issue continua apontando para a coisa certa.
+The migration has run (the 101 GitLab issues are #1..#101 on GitHub); the script stays as its record.
 
-⚠️ A FRAGILIDADE, e é a razão do gate de integridade abaixo: qualquer PR aberta antes do
-fim consome um número e desloca tudo dali para a frente, sem aviso e sem volta. Por isso
-este script CONFERE, antes de cada criação, que o próximo número do GitHub é exatamente o
-`iid` que ele vai criar. Na primeira divergência ele PARA — melhor parar no meio do que
-terminar com uma numeração que mente.
+WHY THE NUMBERS SURVIVE, and why that is fragile
+------------------------------------------------
+On GitHub, issues and pull requests share ONE counter, which starts at 1 in a new repository.
+The GitLab issues here are `iid` 1..N with no gaps. So, created in ascending order in a
+repository with no issue and no PR, they get exactly the same numbers — and every `#N`
+written in an ADR, in a commit message and in another issue's body keeps pointing at the
+right thing.
 
-O QUE NÃO ATRAVESSA, dito antes para não ser descoberto depois
---------------------------------------------------------------
-  · o AUTOR original (tudo passa a ser quem roda o script) — vai escrito no rodapé;
-  · a DATA de criação (vira a data da migração) — vai escrita no rodapé;
-  · o estado fechado é reaplicado no fim, não na criação;
-  · milestones e o quadro não vêm;
-  · as labels são recriadas por nome, sem cor nem descrição do original.
+⚠️ THE FRAGILITY, and it is the reason for the integrity gate below: any PR opened before the
+end consumes a number and shifts everything after it, with no warning and no way back. So
+this script CHECKS, before each creation, that GitHub's next number is exactly the `iid` it
+is about to create. At the first divergence it STOPS — better to stop halfway than to finish
+with a numbering that lies.
+
+WHAT DOES NOT CROSS OVER, said up front so it is not discovered later
+--------------------------------------------------------------------
+  · the original AUTHOR (everything becomes whoever runs the script) — written in the footer;
+  · the creation DATE (it becomes the migration's date) — written in the footer;
+  · the closed state is reapplied at the end, not at creation;
+  · milestones and the board do not come;
+  · labels are recreated by name, without the original's colour or description.
 """
 from __future__ import annotations
 
@@ -35,8 +37,8 @@ import subprocess
 import sys
 import time
 
-# O console do Windows abre em cp1252, e um titulo com "↔" derruba o print no meio da
-# migracao — no pior momento possivel. Forca UTF-8 na saida antes de qualquer print.
+# The Windows console opens in cp1252, and a title with "↔" brings the print down in the middle of the
+# migration — at the worst possible moment. Force UTF-8 on the output before any print.
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -45,12 +47,12 @@ except Exception:
 
 GITLAB = "jrocha-dev/inclusionist-engine"
 GITHUB = "the-inclusionist/the-inclusionist-engine"
-PAUSA = 1.5          # segundos entre escritas: o GitHub tem limite secundário para criação de conteúdo
+PAUSA = 1.5          # seconds between writes: GitHub has a secondary limit on content creation
 PAGINA = 100
 
 
 def roda(cmd: list[str]) -> str:
-    """Executa e devolve stdout como texto UTF-8. Erro do processo aborta o script."""
+    """Runs and returns stdout as UTF-8 text. A process error aborts the script."""
     r = subprocess.run(cmd, capture_output=True)
     saida = r.stdout.decode("utf-8", errors="replace")
     if r.returncode != 0:
@@ -79,21 +81,21 @@ def issues_do_gitlab() -> list[dict]:
 
 
 def comentarios(iid: int) -> list[dict]:
-    """Só os humanos: `system: true` são as notas automáticas do GitLab e não valem a viagem."""
+    """Humans only: `system: true` are GitLab's automatic notes and are not worth the trip."""
     notas = glab_json("projects/%s/issues/%d/notes?per_page=%d&sort=asc"
                       % (GITLAB.replace("/", "%2F"), iid, PAGINA))
     return [n for n in notas if not n.get("system")]
 
 
 def numeros_no_github() -> list[int]:
-    """TODOS os números já usados no repositório — issue e PR dividem o contador.
+    """EVERY number already used in the repository — issue and PR share the counter.
 
-    ⚠️ NÃO se pergunta `per_page=1&sort=created&direction=desc` a cada criação, e a razão é
-    medida: em 2026-09-05 a migração parou no iid 3 dizendo que o próximo número seria #2,
-    com #1 e #2 já criadas. A lista do GitHub é EVENTUALMENTE CONSISTENTE — 1,5 s depois da
-    escrita ela ainda devolvia #1 como a mais recente. Quem sabe o número na hora é a
-    resposta do POST, e é ela que o laço passa a usar. Esta varredura roda UMA vez, na
-    partida, para saber de onde retomar.
+    ⚠️ `per_page=1&sort=created&direction=desc` is NOT asked on every creation, and the reason is
+    measured: on 2026-09-05 the migration stopped at iid 3 saying the next number would be #2,
+    with #1 and #2 already created. GitHub's list is EVENTUALLY CONSISTENT — 1.5 s after the
+    write it still returned #1 as the most recent. What knows the number at that moment is the
+    POST's response, and that is what the loop uses. This sweep runs ONCE, at the start, to
+    know where to resume from.
     """
     numeros: list[int] = []
     for pagina in range(1, 30):
@@ -118,7 +120,7 @@ def rodape(issue: dict) -> str:
 
 
 def preflight(issues: list[dict], ensaio: bool) -> int:
-    """Confere o que dá para conferir e devolve o último número já criado (0 se nenhum)."""
+    """Checks what can be checked and returns the last number already created (0 if none)."""
     iids = [i["iid"] for i in issues]
     faltando = [n for n in range(1, max(iids) + 1) if n not in set(iids)]
     print("GitLab: %d issues, iid %d..%d, buracos: %s"
@@ -136,9 +138,9 @@ def preflight(issues: list[dict], ensaio: bool) -> int:
               % (GITHUB, min(iids), max(iids)))
         feito = 0
     else:
-        # Retomada só é segura se o que existe for exatamente o PREFIXO 1..k. Qualquer buraco
-        # ou qualquer número acima do fim da migração significa que o contador já andou por
-        # outro motivo, e aí a numeração não fecha mais — melhor parar do que "consertar".
+        # Resuming is only safe if what exists is exactly the PREFIX 1..k. Any gap or any number
+# above the migration's end means the counter already moved for another reason, and then
+# the numbering no longer closes — better to stop than to "fix" it.
         feito = max(ja)
         if ja != list(range(1, feito + 1)):
             sys.exit("ABORTADO: os números existentes em %s não são o prefixo 1..%d (são %s). "
@@ -184,15 +186,15 @@ def main() -> int:
     fechar: list[int] = []
     for issue in issues:
         iid = issue["iid"]
-        if iid <= feito:                      # já migrada numa execução anterior
+        if iid <= feito:                      # already migrated in an earlier run
             if issue.get("state") == "closed":
                 fechar.append(iid)
             continue
 
-        # ---- gate de integridade, em duas metades ----
-        # ANTES: o contador local tem de estar exatamente no iid. Ele começa na varredura da
-        # partida e depois avança pelo número que o POST devolveu — que é o único dado que não
-        # sofre atraso de replicação.
+        # ---- the integrity gate, in two halves ----
+# BEFORE: the local counter has to be exactly at the iid. It starts at the sweep made at
+# the start and then advances by the number the POST returned — which is the only datum
+# that suffers no replication lag.
         if esperado != iid:
             sys.exit("PARADO em iid %d: o próximo número seria #%d. A numeração divergiu — "
                      "alguém abriu uma PR ou uma issue. Nada mais será criado." % (iid, esperado))
@@ -201,7 +203,7 @@ def main() -> int:
         corpo = (issue.get("description") or "") + rodape(issue)
         print("#%-4d %-9s %s" % (iid, issue.get("state"), titulo[:70]))
         if ensaio:
-            esperado = iid + 1          # no ensaio ninguem cria, entao o contador anda aqui
+            esperado = iid + 1          # in a dry run nobody creates, so the counter moves here
             if issue.get("state") == "closed":
                 fechar.append(iid)
             continue
@@ -211,8 +213,8 @@ def main() -> int:
         for l in issue.get("labels") or []:
             cmd += ["-f", "labels[]=%s" % l]
         criada = json.loads(roda(cmd))
-        # DEPOIS: a outra metade do gate, e a que de facto manda — a resposta do POST diz o
-        # número real. Se ele não for o iid, para aqui, antes de a issue seguinte herdar o erro.
+        # AFTER: the other half of the gate, and the one that really rules — the POST's response gives the
+# real number. If it is not the iid, stop here, before the next issue inherits the error.
         if criada["number"] != iid:
             sys.exit("PARADO: o GitHub criou #%d para o iid %d. Nada mais será criado."
                      % (criada["number"], iid))
@@ -231,7 +233,7 @@ def main() -> int:
         if issue.get("state") == "closed":
             fechar.append(iid)
 
-    # ---- fechar só no FIM: fechar durante a criação não muda o contador, mas deixa o log ilegível
+    # ---- close only at the END: closing during creation does not change the counter, but makes the log unreadable
     print("\na fechar: %d" % len(fechar))
     if not ensaio:
         for numero in fechar:

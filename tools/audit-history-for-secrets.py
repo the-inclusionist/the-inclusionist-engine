@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Varre TODO o histórico atrás de segredo e dado pessoal, antes de o repositório ficar público.
+"""Sweeps the WHOLE history for secrets and personal data, before the repository goes public.
 
-    python tools/audit-history-for-secrets.py            # todos os refs locais
-    python tools/audit-history-for-secrets.py --ref main # só um ref
+    python tools/audit-history-for-secrets.py            # every local ref
+    python tools/audit-history-for-secrets.py --ref main # one ref only
 
-O ADR-0066 §3 lista isto como condição para qualquer repositório virar público, e diz por que:
-em 2026-09-04 conferiram-se NOMES DE ARQUIVO e caminhos absolutos, e o CONTEÚDO não.
+ADR-0066 §3 lists this as a condition for any repository going public, and says why: on
+2026-09-04 FILE NAMES and absolute paths were checked, and the CONTENT was not.
 
-⚠️ O QUE ESTA VARREDURA É E O QUE ELA NÃO É. Ela lê o PATCH de cada commit — o que entrou e o
-que saiu — e casa expressões conhecidas. Isso pega o que tem forma reconhecível: chave de API,
-chave privada, CPF, CNPJ, telefone, caminho absoluto. **Não pega segredo sem forma** (uma senha
-que pareça uma palavra qualquer), nem dado pessoal em prosa ("o aluno João, da 3ª série"). Um
-resultado limpo aqui NÃO é prova de que não há nada; é prova de que não há nada COM ESTAS FORMAS.
-Dizer isso faz parte do resultado.
+⚠️ WHAT THIS SWEEP IS AND WHAT IT IS NOT. It reads the PATCH of every commit — what went in and
+what came out — and matches known expressions. That catches whatever has a recognisable shape:
+an API key, a private key, a CPF, a CNPJ, a phone number, an absolute path. **It does not catch a
+shapeless secret** (a password that looks like any word), nor personal data in prose ("the pupil
+João, 3rd grade"). A clean result here is NOT proof that there is nothing; it is proof that there
+is nothing WITH THESE SHAPES. Saying so is part of the result.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-# Cada regra: (nome, regex, gravidade). ALTA = trata-se como vazamento até prova em contrário.
+# Each rule: (name, regex, severity). ALTA (high) = treated as a leak until proven otherwise.
 REGRAS: list[tuple[str, re.Pattern[str], str]] = [
     ("chave privada",        re.compile(r"BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY"), "ALTA"),
     ("token GitHub",         re.compile(r"\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b"), "ALTA"),
@@ -48,12 +48,12 @@ REGRAS: list[tuple[str, re.Pattern[str], str]] = [
     ("e-mail",               re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"), "BAIXA"),
 ]
 
-# E-mails que são do próprio projeto e não são achado. Tudo o mais é reportado.
+# E-mails that are the project's own and are not a finding. Everything else is reported.
 EMAILS_CONHECIDOS = re.compile(
     r"(?:noreply@anthropic\.com|jrocha\.developer@gmail\.com|@users\.noreply\.(?:github|gitlab)\.com"
     r"|jrocha-dev|example\.com|localhost)")
 
-# Linhas que quase sempre são ruído em lockfile e dicionário de fonemas.
+# Lines that are almost always noise in a lockfile and a phoneme dictionary.
 RUIDO = re.compile(r"^[-+]\s*(?:\"integrity\"|\"resolved\"|sha512-|sha1-)")
 
 

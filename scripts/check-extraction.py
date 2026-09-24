@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
-"""Confere o que um corte de extração levou junto.
+"""Checks what an extraction cut took along with it.
 
-    python scripts/check-extraction.py [ref]        # ref padrão: HEAD
+    python scripts/check-extraction.py [ref]        # default ref: HEAD
 
-Compara as declarações de topo de `app/js/main.js` entre `ref` e a cópia de
-trabalho, e acusa toda declaração que SUMIU mas continua sendo referenciada —
-que é a forma como uma remoção acidental passa por build e testes.
+Compares the top-level declarations of `app/js/main.js` between `ref` and the
+working copy, and flags every declaration that DISAPPEARED but is still
+referenced — which is how an accidental removal gets through build and tests.
 
-Por que existe: removendo um bloco por marcadores de início e fim, é fácil o
-intervalo abarcar vizinhos que não eram do módulo. Aconteceu três vezes nesta
-migração: a chave de fechamento de `stepTileFx`, o par
-`simNaoGlyphs`/`renderPauseLegend`, e `padKind`/`updateTitleLegend` com os dois
-ouvintes de gamepad. Nas três, `npm run build` ou o navegador acusaram — mas só
-depois, e uma delas chegou a ser publicada. Uma lista de nomes escrita à mão não
-serve: ela só encontra o que já se suspeita ter perdido.
+⚠️ Its target no longer exists: `main.js` became `main.ts` and then left with the
+cartridge (issue #111), so as written the script only reports that it cannot
+read it. It stays as the method, for the next file carved up by extraction.
 
-Não substitui build/testes/navegador; responde a uma pergunta que nenhum deles
-faz. Um nome que sumiu E não é mais referenciado é resultado legítimo de
-extração — por isso só o par (sumiu, ainda usado) vira erro.
+Why it exists: removing a block by start and end markers, it is easy for the
+range to take in neighbours that were not the module's. It happened three times
+in that migration: the closing brace of `stepTileFx`, the pair
+`simNaoGlyphs`/`renderPauseLegend`, and `padKind`/`updateTitleLegend` with the two
+gamepad listeners. All three times `npm run build` or the browser caught it — but
+only later, and one of them got as far as being published. A hand-written list of
+names does not do: it only finds what is already suspected lost.
+
+It does not replace build/tests/browser; it answers a question none of them asks.
+A name that disappeared AND is no longer referenced is a legitimate result of an
+extraction — which is why only the pair (disappeared, still used) is an error.
 """
 from __future__ import annotations
 
@@ -27,26 +31,26 @@ import sys
 
 ALVO = "app/js/main.js"
 
-# Declarações de TOPO (coluna 0). Aninhadas não interessam: extração move blocos inteiros.
+# TOP-LEVEL declarations (column 0). Nested ones do not matter: an extraction moves whole blocks.
 FUNC = re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)", re.M)
 VAR = re.compile(r"^(?:export\s+)?(?:const|let|var)\s+(.*)$", re.M)
-# `let a=1, b=[], c=null;` declara TRÊS nomes. Pegar só o primeiro é um ponto cego caro: foi assim que
-# vpHudDom/vpQuitDom/vpScreens ficaram fora do radar na extração do HUD. Varre os declaradores do
-# statement, parando no `=` de cada um e ignorando o que estiver dentro de parênteses/colchetes.
+# `let a=1, b=[], c=null;` declares THREE names. Taking only the first is an expensive blind spot: that is how
+# vpHudDom/vpQuitDom/vpScreens stayed off the radar in the HUD extraction. It sweeps the statement's declarators,
+# stopping at each one's `=` and ignoring whatever is inside parentheses/brackets.
 NOME = re.compile(r"[A-Za-z_$][\w$]*")
 
 
 def _padrao(resto: str) -> list[str]:
-    """Nomes de um padrão de desestruturação: `{a, b: c, ...d}` / `[a, , b]`.
-    Sem isto, `const { frontOverlay } = overlays;` some do radar e o nome parece removido —
-    o que fez o conferidor gritar em falso a cada onda desta migração."""
+    """Names of a destructuring pattern: `{a, b: c, ...d}` / `[a, , b]`.
+    Without this, `const { frontOverlay } = overlays;` drops off the radar and the name looks removed —
+    which made the checker cry wolf on every wave of that migration."""
     nomes, i, n = [], 0, len(resto)
     while i < n:
         ch = resto[i]
-        if ch in ":":            # `{ a: b }` — quem é declarado é `b`, então descarta o que veio antes
+        if ch in ":":            # `{ a: b }` — what is declared is `b`, so drop what came before
             nomes.pop() if nomes else None
             i += 1; continue
-        if ch in "=":            # valor padrão: pula até a próxima vírgula do mesmo nível
+        if ch in "=":            # a default value: skip to the next comma at the same level
             prof = 0
             while i < n and not (resto[i] == "," and prof == 0):
                 if resto[i] in "([{": prof += 1
@@ -62,7 +66,7 @@ def _padrao(resto: str) -> list[str]:
 
 def _declaradores(resto: str) -> list[str]:
     corte = resto.lstrip()
-    if corte[:1] in ("{", "["):   # declaração por desestruturação
+    if corte[:1] in ("{", "["):   # a destructuring declaration
         fim, prof = 0, 0
         for j, ch in enumerate(corte):
             if ch in "([{": prof += 1
@@ -108,8 +112,8 @@ def declaracoes(fonte: str) -> set[str]:
 
 
 def referencias(fonte: str) -> set[str]:
-    """Identificadores citados fora de comentário de linha. Grosseiro de propósito:
-    falso positivo aqui custa uma conferida; falso negativo custa um bug publicado."""
+    """Identifiers cited outside a line comment. Coarse on purpose:
+    a false positive here costs one check; a false negative costs a published bug."""
     limpo = "\n".join(l.split("//")[0] for l in fonte.splitlines())
     limpo = re.sub(r"/\*.*?\*/", " ", limpo, flags=re.S)
     return set(re.findall(r"[A-Za-z_$][\w$]*", limpo))

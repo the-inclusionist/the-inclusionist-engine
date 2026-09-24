@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Mede as QUATRO camadas legiveis propostas contra o conteudo legivel que existe.
+"""Measures the FOUR proposed readable layers against the readable content that exists.
 
-O metodo e o do CONTROLE_ENGINE: nao desenhar o numero, MEDIR se ele fecha. Se
-sobrar conteudo legivel fora das quatro, ou sao mais camadas, ou o que sobra nao
-e legivel — e as duas conclusoes so aparecem contando.
+The method is CONTROLE_ENGINE's: do not design the number, MEASURE whether it closes. If
+readable content is left outside the four, either there are more layers or what is left
+is not readable — and both conclusions only show up by counting.
+
+⚠️ The `game/` modules listed below left with the cartridge (issue #111); run today, the
+layers that name them count nothing. The script is the record of how the layers were measured.
 """
 import io, os, re, sys
 
@@ -13,7 +16,7 @@ RAIZ = "app/js"
 SINK = re.compile(r"innerHTML\s*=|insertAdjacentHTML")
 FALA = re.compile(r"\bsrSay\(|\bsrAlert\(|\.narrate\(|\banunciar\w*\(")
 
-# As quatro camadas propostas pelo Dev, mapeadas a modulos.
+# The four layers the Dev proposed, mapped to modules.
 CAMADAS = {
     "1 · ACAO (o mundo onde as coisas acontecem)": [
         "game/physics.ts", "game/session.ts", "game/recycling-scene.ts", "game/recycling.ts",
@@ -26,7 +29,7 @@ CAMADAS = {
         "game/literacy-distractors.ts", "game/activity-content.ts",
     ],
     "3 · HUD DO JOGO": ["ui/hud.ts"],
-    "4 · HUD DO MINIGAME": [],  # hoje vive dentro de game/quiz.ts (winsDots)
+    "4 · HUD DO MINIGAME": [],  # it lived inside game/quiz.ts (winsDots) when this was measured
 }
 
 PERTENCE = {}
