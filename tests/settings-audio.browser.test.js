@@ -10,6 +10,7 @@ import { initSettingsAudio } from '../app/js/ui/settings-audio.js';
 import { NAV_CATS, GEN_CATS } from '../app/js/ui/audio-choices.js';
 import { defaultAudioCat } from '../app/js/platform/audio-mixer.js';
 import { menuIndexOn, setMenuIndexOnValue, speechPpm, setSpeechPpmValue } from '../app/js/core/state.js';
+import * as settingsStore from '../app/js/core/state.js';
 import { SPEECH_RATES } from '../app/js/core/speech-rate.js';
 // The sentence is asked of the dictionary and not copied: a copy here would end up measuring itself.
 import { t as tr } from '../app/js/core/i18n.js';
@@ -84,6 +85,8 @@ function fullCtx(over = {}) {
     narrate: (t) => { tts.narrated = tts.narrated || []; tts.narrated.push(t); },
   };
   const ctx = {
+    // the test plays the root: the page's settings store and its bus (ADR-0232)
+    settings: settingsStore, on: settingsStore.on,
     $: (sel) => document.querySelector(sel),
     srSay: (t) => said.push(t),
     store: { get: (k, fb = null) => (store.has(k) ? store.get(k) : fb), set: (k, v) => { store.set(k, String(v)); return true; } },
@@ -560,6 +563,21 @@ describe('ui/settings-audio — marca o que saiu do padrão (ADR-0029)', () => {
   });
 });
 
+describe('ui/settings-audio — the default blind-mode writer is the settings store it is handed (ADR-0232 D2c)', () => {
+  it('🔴 [Right] with no `setBlindMode` injected, the row writes blind mode through `ctx.settings`', () => {
+    // A host that injects no writer still gets a row that works — through the store its ctx hands in, not one reached by
+    // import. A recording store stands where `core/state` stands in a game.
+    const writes = [];
+    const { ctx } = fullCtx({});
+    delete ctx.setBlindMode;
+    ctx.settings = { ...settingsStore, setBlindModeValue: (on) => { writes.push(on); } };
+    ctx.getBlindMode = () => false;
+    initSettingsAudio(ctx);
+    document.querySelector('#opt-modocego').click();
+    expect(writes, 'the row did not write blind mode into the store it was handed').toEqual([true]);
+  });
+});
+
 describe('ui/settings-audio — o painel ASSINA o modo cego (ADR-0106 §4)', () => {
   it('⚠️ [Interface] o botão #opt-modocego acompanha uma mudança feita FORA do painel', async () => {
     // The defect this case prevents is the control LYING about the state to the screen reader: the child turns blind
@@ -585,9 +603,9 @@ describe('ui/settings-audio — o painel ASSINA o modo cego (ADR-0106 §4)', () 
 });
 
 // ========================= MUTATIONS CHECKED (ADR-0106 §4, step 1b) =========================
-//   · removing the `state.on('blindMode', …)` at the end of `initSettingsAudio` -> fails the case above. Without it, a
+//   · removing the `ctx.on('blindMode', …)` at the end of `initSettingsAudio` -> fails the case above. Without it, a
 //     game that does not inject its own `setModoCego` leaves this button lying about the state.
-//   · replacing the subscription with `state.on('blindMode', () => {})` (subscribes and does not react) -> fails too,
+//   · replacing the subscription with `ctx.on('blindMode', () => {})` (subscribes and does not react) -> fails too,
 //     which is the measure that the case asserts the EFFECT and not the subscription.
 
 describe('ui/settings-audio — o modo cego ANUNCIA, como os cinco irmãos deste painel', () => {

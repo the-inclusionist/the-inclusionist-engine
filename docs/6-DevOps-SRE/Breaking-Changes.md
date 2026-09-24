@@ -3193,6 +3193,9 @@ setting in silence). A game that is its own root answers them from `core/state` 
 |---|---|---|
 | `input/gamepad.js` `GamepadCtx` | gains a REQUIRED `oneButton: () => boolean` | pass `() => state.oneButton` (`core/state`), read each frame |
 | `core/loop.js` `startLoop(ticker, frame, maxDt?, options?)` | `startLoop(ticker, frame, maxDt, options)` with a REQUIRED `options.speed: () => number` — the loop no longer reads the game speed from the settings store | pass `{ speed: engine.gameSpeed }` beside `createGame` (or `() => state.gameSpeed` in a game that is its own root); `maxDt` may be `undefined` for the default 2 |
+| `ui/pause-icons.js` `PauseIconsCtx` | gains a REQUIRED `settings: PauseIconsSettings` — the live reads and writers of the menu index, game speed, camera and voice controls, switch scanning, and the default blind-mode writer | pass `core/state` itself (`settings: state`): the names are its own, and its live bindings are the reads |
+| `ui/settings-audio.js` `SettingsAudioCtx` | gains a REQUIRED `settings: SettingsAudioSettings` (the voice section's reads and writers, the default blind-mode writer) and a REQUIRED `on(setting, react)` that returns the release | pass `settings: state` and, as `on`, the root's own disposable door to the bus — `createGame` passes its `stateOn`, released by `dispose()` (ADR-0220); a game that is its own root passes `state.on` |
+| `ui/voice-settings.js` `VoiceSettingsCtx` | gains a REQUIRED `settings: VoiceSettingsStore` (menu index, speech rate) | pass `core/state` |
 | `render/viz-setters.js` `VizSettersCtx` | `setBlindMode` becomes REQUIRED (its default was `core/state`'s writer), and it gains a REQUIRED `setVizMode: (mode: string) => void` — the legacy mirror `incl_viz` | pass `setBlindModeValue` and `setVizModeValue` from `core/state` |
 
 📌 **`startLoop`'s port was a decision, recorded before the code** (ADR-0232 erratum, docs `ced165e`): a REQUIRED port,
@@ -3206,7 +3209,8 @@ rule out because a game that forgot it would ignore the child's speed in silence
 (`src/standalone.ts`), `game-soccer` (`app/js/boot/main.ts`, with no options at all), `game-whackwhack`
 (`app/js/boot/standalone.ts`) and `pixi-15-puzzle` (`app/js/boot/standalone.ts`). Each of them has a `createGame` handle
 to answer from. `initVizSetters` is called by `game-platformer` alone (`app/js/main.ts`, which already passes the
-blind writer, under its older name `setModoCego`).
+blind writer, under its older name `setModoCego`). `initPauseIcons` and `initSettingsAudio` are called by `game-platformer`
+alone (`app/js/main.ts`); no game calls `createVoiceSettings`.
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 

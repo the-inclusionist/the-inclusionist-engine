@@ -31,6 +31,7 @@ function mount({ voices = [{ voice: 'pf_dora' }, { voice: 'pm_alex' }], setVozOk
   let current = voices[0] ?? null;
   const system = [{ name: 'Maria', lang: 'pt-BR' }, { name: 'Luciana', lang: 'pt-BR' }];
   const ctx = {
+    settings: state, // the test plays the root: the page's settings store (ADR-0232)
     $, srSay: (m) => said.push(m),
     toggleBtn: (b, on) => b.classList.toggle('is-on', on),
     store: { get: (k, f = null) => (stored.has(k) ? stored.get(k) : f), set: (k, v) => { stored.set(k, v); return true; } },

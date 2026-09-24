@@ -130,6 +130,7 @@ function buildCtx(over = {}) {
   };
   const ctx = {
     store: createStorage(memoryBackend()), // each ctx its own store (ADR-0232)
+    settings: estado, // the test plays the root: the page's settings store
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
@@ -651,6 +652,17 @@ describe('markup dos ícones e do menu', () => {
 // CASCA — initPauseIcons com DOM falso
 // =============================================================================================
 describe('initPauseIcons — ações dos ícones', () => {
+  it('🔴 [Right] the 📷 cycles the camera control IN THE SETTINGS STORE it is handed (ADR-0215; ADR-0232)', () => {
+    // The store is a port now: a store of this case's own, recording, stands where `core/state` stands in a game.
+    const { ctx, said } = buildCtx();
+    const writes = [];
+    ctx.camera = true;
+    ctx.settings = { ...estado, cameraControl: 'off', setCameraControlValue: (m) => { writes.push(m); } };
+    initPauseIcons(ctx).iconAct('camera', 0);
+    expect(writes, 'the icon did not write the next camera mode into the store it was handed').toEqual(['hands']);
+    expect(said.at(-1), 'the announcement did not name the mode written').toMatch(/mãos/i);
+  });
+
   it('🔴 [Right] with no voice for the language, the narration icon says why and turns nothing on (ADR-0185)', () => {
     const { ctx, state, alerted } = buildCtx();
     ctx.noVoice = () => true;

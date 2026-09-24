@@ -214,6 +214,23 @@ describe('a disposed root stops hearing the state bus — and an unmounted one d
     }
   });
 
+  it('🔴 [Right] nor does the hearing panel: its blind-mode row stays as the ended root left it (ADR-0220; ADR-0232 D2c)', () => {
+    // `ui/settings-audio` subscribed to `blindMode` on the page's bus by import, underneath the root's door: the panel of an
+    // ended root went on redrawing its row. It now subscribes through the door its ctx hands it — the root's `stateOn`.
+    const ended = open();
+    const row = host.ownerDocument.querySelector('#opt-modocego');
+    expect(row, 'the root mounts no hearing panel — this case would measure nothing').not.toBeNull();
+    ended.dispose();
+    const before = row.getAttribute('aria-pressed');
+    const blind = state.blindMode;
+    try {
+      state.setBlindModeValue(!blind);
+      expect(row.getAttribute('aria-pressed'), 'the ended root\'s hearing panel redrew its blind-mode row').toBe(before);
+    } finally {
+      state.setBlindModeValue(blind);
+    }
+  });
+
   it('🔴 [Right] and what a subscription had STARTED ends too: a scan running at `dispose()` stops and takes its chip away', async () => {
     state.setSwitchScanValue(true);
     const root = open();

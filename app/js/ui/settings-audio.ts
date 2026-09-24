@@ -13,9 +13,6 @@
 import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
-// The WHOLE module, not loose names: `menuIndexOn` is a live binding and `setMenuIndexOnValue` changes it — reading it
-// through the namespace keeps that visible at each use, instead of looking like an imported constant.
-import * as state from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
@@ -28,7 +25,7 @@ import { controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
  * voice, the rate, the spoken index and the test button — and the sound categories, cane, blind mode and outputs never
  * needed each other.
  */
-import { createVoiceSettings, type TtsPanel } from './voice-settings.js';
+import { createVoiceSettings, type TtsPanel, type VoiceSettingsStore } from './voice-settings.js';
 
 // `DomQuery` lives in `core/dom-query`: copies of this line in many modules drifted apart. Re-exported for whoever
 // already imported it from here.
@@ -60,7 +57,24 @@ import {
  */
 export type SinkPlayer = PlayerView<'audioSink'> & PlayerAudioOut;
 
+/**
+ * THE SETTINGS THIS PANEL READS AND WRITES — the page's settings store, built by the root (ADR-0232 D2c, issue #207): the
+ * voice section's (the spoken index and the speech rate) and the default blind-mode writer. A root passes `core/state`.
+ */
+export interface SettingsAudioSettings extends VoiceSettingsStore {
+  /** Write, persist, notify — used when the host injects no `setBlindMode`. */
+  setBlindModeValue(on: boolean): void;
+}
+
 export interface SettingsAudioCtx {
+  /** The page's settings store (see `SettingsAudioSettings`). REQUIRED (ADR-0232): no module reads it by import. */
+  settings: SettingsAudioSettings;
+  /**
+   * Subscribes to a setting's change and returns the release. REQUIRED, and it is the ROOT'S door (`stateOn` in
+   * `createGame`): a subscription made through it ends with the root's `dispose()` (ADR-0220), where one made on the
+   * page's bus by import went on redrawing the panel of an ended root.
+   */
+  on: (setting: 'blindMode', react: (on: boolean) => void) => () => void;
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
   $: DomQuery;
   /** Screen-reader "polite" announcement (core/a11y-sr's srSay), injected. */
@@ -271,7 +285,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   // ⚠️ THE ENGINE'S DEFAULT (ADR-0106 §4): whoever injects rules; whoever does not still gets blind mode.
   // `setBlindModeValue` does the three things `core/state` says a setter does — store, persist, notify — and nothing
   // more: the effects are reactions, and whoever reacts subscribes to the event.
-  const writeBlindMode = ctx.setBlindMode ?? state.setBlindModeValue;
+  const writeBlindMode = ctx.setBlindMode ?? ((on: boolean): void => { ctx.settings.setBlindModeValue(on); });
 
   let audioDevices: MediaDeviceInfo[] = [];
 
@@ -669,7 +683,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    * rewrites the button. A duplicated announcement would be another matter, which is why the subscription does NOT
    * announce: the bar's icon already speaks for itself.
    */
-  state.on('blindMode', () => { drawBlindMode(); });
+  ctx.on('blindMode', () => { drawBlindMode(); }); // through the root's door: released by its `dispose()`
 
   return { renderAudio, reflectBlindMode: drawBlindMode, reflectTts: voice.reflectTts };
 }

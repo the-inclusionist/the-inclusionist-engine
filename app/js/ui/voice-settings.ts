@@ -18,7 +18,6 @@
 
 import { toggleLabel } from './dom.js';
 import { t, bcp47 } from '../core/i18n.js';
-import * as state from '../core/state.js';
 import { SPEECH_RATES } from '../core/speech-rate.js';
 import type { DomQuery } from '../core/dom-query.js';
 import {
@@ -76,7 +75,21 @@ export interface VoicePorts {
  * ⚠️ The store shape is written here and NOT imported from `ui/settings-audio`, which declares the same two methods: that
  * module imports this one, and importing it back would be the cycle ADR-0173 forbids — for a type as much as for a value.
  */
+/**
+ * THE SETTINGS THIS SECTION READS AND WRITES — the page's settings store, built by the root (ADR-0232 D2c, issue #207): the
+ * spoken index (ADR-0044 item 3) and the speech rate (ADR-0183). The names are `core/state`'s, so a root passes the store
+ * itself; the reads are LIVE, because the quick bar and a second screen change them too.
+ */
+export interface VoiceSettingsStore {
+  readonly menuIndexOn: boolean;
+  setMenuIndexOnValue(on: boolean): void;
+  readonly speechPpm: number;
+  setSpeechPpmValue(ppm: number): void;
+}
+
 export interface VoiceSettingsCtx {
+  /** The page's settings store (see `VoiceSettingsStore`). REQUIRED: a section reading from nowhere would show the defaults. */
+  settings: VoiceSettingsStore;
   $: DomQuery;
   srSay: (msg: string) => void;
   toggleBtn: (btn: HTMLElement, on: boolean) => void;
@@ -128,7 +141,7 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
 
   function reflectMenuIndex(): void {
     const b = ctx.$<HTMLButtonElement>('#opt-menuindex');
-    if (b) { ctx.toggleBtn(b, state.menuIndexOn); b.textContent = toggleLabel(state.menuIndexOn); }
+    if (b) { ctx.toggleBtn(b, ctx.settings.menuIndexOn); b.textContent = toggleLabel(ctx.settings.menuIndexOn); }
   }
 
   function populateTtsEngines(): void {
@@ -170,7 +183,7 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
     for (const ppm of SPEECH_RATES) {
       const o = ports.newOption(); o.value = String(ppm); o.textContent = t('visual.legenda.ppm', { n: ppm }); sel.appendChild(o);
     }
-    sel.value = String(state.speechPpm);
+    sel.value = String(ctx.settings.speechPpm);
   }
 
   function renderVoiceList(): void {
@@ -253,9 +266,9 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
 
     const rateSel = ctx.$<HTMLSelectElement>('#tts-ppm');
     if (rateSel) rateSel.addEventListener('change', () => {
-      state.setSpeechPpmValue(Number(rateSel.value));
+      ctx.settings.setSpeechPpmValue(Number(rateSel.value));
       renderRate();
-      ctx.srSay(`${t('audio.ttsPpm')}: ${t('visual.legenda.ppm', { n: state.speechPpm })}`);
+      ctx.srSay(`${t('audio.ttsPpm')}: ${t('visual.legenda.ppm', { n: ctx.settings.speechPpm })}`);
     });
 
     const ttsBtn = ctx.$<HTMLButtonElement>('#opt-tts');
@@ -270,11 +283,11 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
 
     const idxBtn = ctx.$<HTMLButtonElement>('#opt-menuindex');
     if (idxBtn) idxBtn.addEventListener('click', () => {
-      state.setMenuIndexOnValue(!state.menuIndexOn);
+      ctx.settings.setMenuIndexOnValue(!ctx.settings.menuIndexOn);
       reflectMenuIndex();
       // The announcement of the change carries NO index: it is not an item of any list, and a «1 of 1» here would be noise at
       // exactly the moment the child is judging whether the noise bothers her.
-      ctx.srSay(t(state.menuIndexOn ? 'sr.menu.indexOn' : 'sr.menu.indexOff'));
+      ctx.srSay(t(ctx.settings.menuIndexOn ? 'sr.menu.indexOn' : 'sr.menu.indexOff'));
     });
 
     const ttsEngSel = ctx.$<HTMLSelectElement>('#tts-engine');

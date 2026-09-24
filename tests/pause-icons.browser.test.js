@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initPauseIcons, showPauseOptions } from '../app/js/ui/pause-icons.js';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
+import * as settingsStore from '../app/js/core/state.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
 /*
@@ -76,6 +77,8 @@ function makeCtx(over = {}) {
     matchMedia: () => ({ matches: false }), // the system asks for no reduction (ADR-0232: injected, not reached)
     // each ctx its own store (ADR-0232): no level, latch or flag is inherited from another case or another file
     store: createStorage(memoryBackend()),
+    // the test plays the root: the page's settings store, whose live bindings the icons read and cycle
+    settings: settingsStore,
     setToggleMove: (i, on) => { if (players[i]) players[i].toggleMove = on; },
     setPlayerViz: (i, mode) => { if (players[i]) { players[i].viz = mode; players[i].visual = migrateVisual(mode); } },
     // The PER-AXIS writers (#104): each icon writes to its own, and the other stays where it was.
@@ -551,6 +554,30 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     expect(bar.querySelectorAll('.pi-sel')).toHaveLength(1);
   });
 
+  it('🔴 [Right] the «N de M» the bar speaks follows the settings store it is handed — on and off (ADR-0044 item 3; ADR-0232)', () => {
+    // The index is a child's setting in the page's settings store; the bar reads it through its ctx now. Both answers are
+    // asserted, so a bar that ignored the port in either direction fails.
+    for (const [menuIndexOn, comIndice] of [[true, true], [false, false]]) {
+      document.body.innerHTML = '';
+      const { api, said } = mount(0, { settings: { ...settingsStore, menuIndexOn } });
+      api.enterBar(0);
+      const falaDoIcone = said.find((f) => /\d de \d/.test(f));
+      expect(Boolean(falaDoIcone), `menuIndexOn ${menuIndexOn}: ${said.join(' | ')}`).toBe(comIndice);
+    }
+  });
+
+  it('🔴 [Right] and the list a door opens is announced with the index only when the store says so', () => {
+    for (const [menuIndexOn, comIndice] of [[true, true], [false, false]]) {
+      document.body.innerHTML = '';
+      const { sp, said } = mount(0, { settings: { ...settingsStore, menuIndexOn } });
+      showPauseOptions(sp, 'opcoes');
+      said.length = 0;
+      sp.querySelector('.pause-menu[data-sub="opcoes"] .pm-btn[data-act="pmback"]').click(); // the door back to the root list
+      expect(said.length, 'the door opened a list and said nothing').toBeGreaterThan(0);
+      expect(/\d de \d/.test(said.at(-1)), `menuIndexOn ${menuIndexOn}: ${said.at(-1)}`).toBe(comIndice);
+    }
+  });
+
   it('[Right] VOLTAR sai do modo, limpa o cursor e anuncia a devolução', () => {
     const { api, bar, said } = mount();
     api.enterBar(0);
@@ -908,8 +935,9 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
       isLibrasOn: () => false, toggleLibras: () => {},
       // Mandatory (ADR-0232): without `rm`, the reduced-motion default is asked through it.
       matchMedia: () => ({ matches: false }),
-      // Mandatory too (ADR-0232): the calm level and the latch are kept in the page's store.
+      // Mandatory too (ADR-0232): the calm level and the latch are kept in the page's store, and the settings read there.
       store: createStorage(memoryBackend()),
+      settings: settingsStore,
       ...over,
     };
   }

@@ -65,7 +65,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2091,
+      "codeLines": 2093,
       "decisionNodes": 281,
       "maxDepth": 4,
       "fanOut": 85,
@@ -432,7 +432,7 @@
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 5,
+      "fanIn": 2,
       "holds": [
         "let blindMode",
         "let cameraControl",
@@ -1979,20 +1979,19 @@
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 598,
+      "codeLines": 610,
       "decisionNodes": 81,
       "maxDepth": 3,
-      "fanOut": 19,
+      "fanOut": 18,
       "globalReach": 1,
       "worstFunction": 9,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 4,
       "reached": [
         "globalThis"
       ],
       "statefulImports": [
-        "core/i18n.ts",
-        "core/state.ts"
+        "core/i18n.ts"
       ]
     },
     "ui/pause-markup.ts": {
@@ -2029,17 +2028,16 @@
       "fanIn": 1
     },
     "ui/settings-audio.ts": {
-      "codeLines": 395,
+      "codeLines": 399,
       "decisionNodes": 66,
       "maxDepth": 4,
-      "fanOut": 9,
+      "fanOut": 8,
       "globalReach": 0,
       "worstFunction": 10,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 1,
       "statefulImports": [
-        "core/i18n.ts",
-        "core/state.ts"
+        "core/i18n.ts"
       ]
     },
     "ui/settings-caa.ts": {
@@ -2308,17 +2306,16 @@
       ]
     },
     "ui/voice-settings.ts": {
-      "codeLines": 230,
+      "codeLines": 236,
       "decisionNodes": 44,
       "maxDepth": 3,
-      "fanOut": 5,
+      "fanOut": 4,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 1,
       "statefulImports": [
-        "core/i18n.ts",
-        "core/state.ts"
+        "core/i18n.ts"
       ]
     },
     "ui/where-the-child-is.ts": {

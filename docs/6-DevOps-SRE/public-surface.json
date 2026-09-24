@@ -1467,6 +1467,7 @@
     "PM_VISIBLE_ITEMS",
     "PauseIconsApi",
     "PauseIconsCtx",
+    "PauseIconsSettings",
     "PauseIconsStore",
     "PausePlayer",
     "VisualWriters",
@@ -1508,6 +1509,7 @@
     "AudioStore",
     "SettingsAudioApi",
     "SettingsAudioCtx",
+    "SettingsAudioSettings",
     "SinkPlayer",
     "initSettingsAudio",
     "mountAudioInside",
@@ -1714,6 +1716,7 @@
     "VoicePorts",
     "VoiceSettings",
     "VoiceSettingsCtx",
+    "VoiceSettingsStore",
     "createVoiceSettings"
   ],
   "ui/where-the-child-is.ts": [

@@ -1189,6 +1189,7 @@ export function createGame(o: CreateGameOptions): Engine {
   initLibras(store); // deaf mode's stored choice, read before the bar asks `isLibrasOn` (ADR-0232)
   const pauseIcons = initPauseIcons({
     store,
+    settings: state, // the page's settings store itself: its live bindings are the reads the bar asks for (ADR-0232)
     doc, matchMedia: win.matchMedia, // the reduced-motion default when nothing is stored (ADR-0232)
     rm: sceneMotion, saveRM: saveSceneMotion,
     /*
@@ -1997,6 +1998,8 @@ export function createGame(o: CreateGameOptions): Engine {
     hideRowsWithoutSubject();
     audio = initSettingsAudio({
       $, srSay, store,
+      // the page's settings store, and the ROOT'S door to its bus: the panel's subscription ends with `dispose()` (ADR-0220)
+      settings: state, on: stateOn,
       /*
        * 🔴 THE AUDIO PANEL'S BROWSER COMES FROM HERE (ADR-0227). What ADR-0221 step 7d asks is not that nobody touches the
        * browser — it is that whoever touches it is whoever RECEIVED it. This root receives `doc` and `win` from the host

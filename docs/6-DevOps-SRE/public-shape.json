@@ -2293,6 +2293,18 @@
     ]
   },
   "ui/pause-icons.ts": {
+    "interface PauseIconsSettings": [
+      "cameraControl",
+      "gameSpeed",
+      "menuIndexOn",
+      "setBlindModeValue",
+      "setCameraControlValue",
+      "setGameSpeedValue",
+      "setSwitchScanValue",
+      "setVoiceControlValue",
+      "switchScan",
+      "voiceControl"
+    ],
     "interface IconStateSnapshot": [
       "blindMode",
       "calmMode",
@@ -2365,6 +2377,7 @@
       "setPlayerTheme?",
       "setPlayerViz?",
       "setToggleMove?",
+      "settings",
       "srAlert",
       "srSay",
       "store",
@@ -2434,6 +2447,9 @@
       "get",
       "set"
     ],
+    "interface SettingsAudioSettings": [
+      "setBlindModeValue"
+    ],
     "interface SettingsAudioCtx": [
       "$",
       "audioCats",
@@ -2447,11 +2463,13 @@
       "getSoundOn",
       "getVolume",
       "newElement",
+      "on",
       "setBlindMode?",
       "setCaneBlockDiv",
       "setCatGain",
       "setSoundOn",
       "setVolume",
+      "settings",
       "speech",
       "srSay",
       "store",
@@ -2894,10 +2912,17 @@
       "systemVoices",
       "whenVoicesChange"
     ],
+    "interface VoiceSettingsStore": [
+      "menuIndexOn",
+      "setMenuIndexOnValue",
+      "setSpeechPpmValue",
+      "speechPpm"
+    ],
     "interface VoiceSettingsCtx": [
       "$",
       "getAudioCat",
       "setCatGain",
+      "settings",
       "srSay",
       "store",
       "toggleBtn",

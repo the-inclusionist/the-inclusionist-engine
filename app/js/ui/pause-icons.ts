@@ -59,7 +59,6 @@ import { announceItem } from './item-announcement.js';
 import { accessibleLabel } from '../core/accessible-label.js';
 import { stepInRing } from '../core/ring.js'; // from the LEAF, not from ui/menu-nav: see the note there
 // A LIVE BINDING (ESM): the index can be turned off in the menu, and the value here follows without a subscription.
-import { menuIndexOn, setBlindModeValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, voiceControl, setVoiceControlValue, switchScan, setSwitchScanValue } from '../core/state.js';
 // The stateless half (ADR-0232): the defaults, the reduced-motion question and the 📷 cycle are vocabulary, not the store.
 import { DEFAULTS, defaultReducedMotion, type MediaQuery } from '../core/setting-defaults.js';
 import { nextCameraControl, type CameraControl } from '../core/camera-cycle.js';
@@ -155,7 +154,7 @@ export function wireBarCaption(bar: HTMLElement, explain: (k: string | null) => 
  * reads already carries the STATE («Alto contraste, ativado»): `reflectIconBtn` rewrites it on every change, which is why
  * this reads it back instead of rebuilding the text.
  */
-function iconCaption(barEl: ParentNode, el: HTMLElement): string {
+function iconCaption(barEl: ParentNode, el: HTMLElement, menuIndexOn: boolean): string {
   const icons = [...barEl.querySelectorAll<HTMLElement>('.pi-btn')];
   // «A declared label wins» is `core/accessible-label`'s rule, shared with the pause list and every menu: one answer to
   // «what is this control called».
@@ -168,6 +167,26 @@ function iconCaption(barEl: ParentNode, el: HTMLElement): string {
 /** Reads the calm level from storage, sanitised. Called in `init`, never on import. */
 function readTeaLevel(store: PauseIconsStore): number {
   return sanitiseTeaLevel(store.getNum(KEYS.tea, DEFAULTS.calmMode), DEFAULTS.calmMode);
+}
+
+/**
+ * THE SETTINGS THE BAR READS AND WRITES — the page's settings store, built by the root (ADR-0232 D2c, issue #207). The
+ * names are `core/state`'s own, so the root passes the store itself; the reads are LIVE (a getter or a live binding),
+ * because another surface — the motion panel, a gamepad, a second screen — changes them between two presses.
+ */
+export interface PauseIconsSettings {
+  /** The «N de M» at the end of an announcement (ADR-0044 item 3). */
+  readonly menuIndexOn: boolean;
+  readonly gameSpeed: number;
+  setGameSpeedValue(speed: number): void;
+  readonly cameraControl: CameraControl;
+  setCameraControlValue(mode: CameraControl): void;
+  readonly voiceControl: boolean;
+  setVoiceControlValue(on: boolean): void;
+  readonly switchScan: boolean;
+  setSwitchScanValue(on: boolean): void;
+  /** The blind-mode writer used when the host injects no `setBlindMode`: write, persist, notify. */
+  setBlindModeValue(on: boolean): void;
 }
 
 /** What the bar reads and writes through: the calm level, the movement latch and the scene flags' default. */
@@ -618,6 +637,12 @@ export interface PauseIconsCtx {
    * visit — for the child whom unexpected noise costs most — with no error at all.
    */
   store: PauseIconsStore;
+  /**
+   * THE PAGE'S SETTINGS STORE (ADR-0232 D2c): what the icons read and cycle — game speed, the camera and voice controls,
+   * switch scanning, the menu index — and the default blind-mode writer. REQUIRED: a bar reading settings from nowhere
+   * would show every icon at its default and write the child's choice where no game reads it.
+   */
+  settings: PauseIconsSettings;
 
   // --- TEA / reduced motion (the `rm` object is co-owned with ui/settings-motion — same reference) ---
   /*
@@ -746,7 +771,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * nothing more. Game effects are REACTIONS, subscribed with `on('blindMode', …)`. The announcement is not lost for a host
    * that injects nothing: this icon says `sr.icon.blindOn`/`Off` itself, below.
    */
-  const writeBlindMode = ctx.setBlindMode ?? setBlindModeValue;
+  const writeBlindMode = ctx.setBlindMode ?? ((on: boolean): void => { ctx.settings.setBlindModeValue(on); });
 
   /** The document to build in. Resolved on each use, through `globalThis` — in node the `document` identifier does not
    *  even exist, and a `??` on it would throw a ReferenceError instead of falling back. */
@@ -809,13 +834,13 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       librasOn: ctx.isLibrasOn(),
       calmMode,
       toggleMove: !!p.toggleMove,
-      switchScan,
-      voice: voiceControl,
+      switchScan: ctx.settings.switchScan,
+      voice: ctx.settings.voiceControl,
       // The NAMED default, not an empty value that only happened to match nothing: ADR-0029's changed-mark reads the
       // default and nothing else.
       visual: p.visual ?? DEFAULT_VISUAL,
-      speed: gameSpeed,
-      camera: cameraControl,
+      speed: ctx.settings.gameSpeed,
+      camera: ctx.settings.cameraControl,
       locale: getLocale(),
       privateOutput: hasPrivateOutput(i),
       latchRequired: refusalNow(i) !== null,
@@ -878,8 +903,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     altmove: (i) => {
       // verbatim: `players[i].toggleMove` with no `||{}` guard (unlike contrast/cvd below).
       const latched = !!P()[i].toggleMove;
-      const next = nextInputMode(inputModeOf({ toggleMove: latched, switchScan }), ctx.holdsKeys(), refusalNow(i) !== null);
-      setSwitchScanValue(next === 'scan');
+      const next = nextInputMode(inputModeOf({ toggleMove: latched, switchScan: ctx.settings.switchScan }), ctx.holdsKeys(), refusalNow(i) !== null);
+      ctx.settings.setSwitchScanValue(next === 'scan');
       // 📌 ENTERING THE SCAN LEAVES THE LATCH WHERE SHE PUT IT — the scan wins in `inputModeOf`, so the position shown is never
       // ambiguous and coming back out returns her to the choice she had made. Leaving it writes the position she walked to.
       // ⚠️ And the latch writer ANNOUNCES BY ITSELF, so it is called only where it changes something: otherwise the child would
@@ -919,15 +944,15 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     // PLAYING THROUGH THE WEBCAM (ADR-0215): off → hands → face → eyes → off; stored in one key, so one mode at a time.
     camera: () => {
-      const v = nextCameraControl(cameraControl);
-      setCameraControlValue(v);
+      const v = nextCameraControl(ctx.settings.cameraControl);
+      ctx.settings.setCameraControlValue(v);
       ctx.srSay(t('sr.icon.camera', { v: t(CAMERA_MODE_NAME[v]) }));
     },
     // PLAYING BY SPEAKING (ADR-0189, issue #184): on or off, one stored key. What cannot start puts it back to off and says why,
     // which is the control's own job (`ui/voice-control`) — this only writes the child's answer.
     voice: () => {
-      const v = !voiceControl;
-      setVoiceControlValue(v);
+      const v = !ctx.settings.voiceControl;
+      ctx.settings.setVoiceControlValue(v);
       ctx.srSay(t('sr.icon.voice', { v: t(v ? 'state.on' : 'state.off') }));
     },
     // THE LANGUAGE (the Dev, 2026-09-16): the next flag; `setLocale` stores it and every surface redraws on `i18n:change`. Said in the NEW
@@ -938,8 +963,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     // THE GAME SPEED (ADR-0180): one step down, wrapping at 50%; stored, and felt on the next frame of `startLoop`.
     velocidade: () => {
-      const v = nextGameSpeed(gameSpeed);
-      setGameSpeedValue(v);
+      const v = nextGameSpeed(ctx.settings.gameSpeed);
+      ctx.settings.setGameSpeedValue(v);
       ctx.srSay(t('sr.icon.velocidade', { pct: Math.round(v * 100) }));
     },
     cvd: (i) => {
@@ -1085,7 +1110,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (!first) return;
     const items = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
     ctx.srSay(announceItem(
-      { label: first.textContent || '', position: 1, total: items.length }, menuIndexOn,
+      { label: first.textContent || '', position: 1, total: items.length }, ctx.settings.menuIndexOn,
     ));
   }
 
@@ -1109,7 +1134,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     el.classList.add('pi-sel');
     const cap = bar.querySelector('.pause-icons-cap');
     if (cap) cap.textContent = accessibleLabel(el);
-    ctx.srSay(iconCaption(bar, el)); // the spoken one carries the place (ADR-0167)
+    ctx.srSay(iconCaption(bar, el, ctx.settings.menuIndexOn)); // the spoken one carries the place (ADR-0167)
     ctx.explainIcon?.(i, el.dataset.pi ?? null);
   }
 
