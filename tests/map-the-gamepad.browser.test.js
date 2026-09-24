@@ -92,6 +92,24 @@ describe('«Mapear controle»', () => {
     expect(localStorage.getItem('incl_padmap_' + pad.id), 'a cancelled wizard stored a map').toBeNull();
   });
 
+  // Every panel closes on Escape. This one did not: the menu navigation consumes every key while `#padwiz` is open and hands
+  // Escape to the root's `closePadWiz`, which was an empty function — the key was swallowed and the panel stayed (measured
+  // 2026-09-24 while translating `ui/menu-nav`).
+  it('🔴 [Right] Escape cancels, like «Voltar»: the panel closes and nothing is stored', async () => {
+    localStorage.removeItem('incl_padmap_' + pad.id);
+    abrirMotora();
+    document.querySelector('#motora #opt-controle').click();
+    pad.buttons[2].pressed = true;
+    await esperar();
+    soltarTudo();
+    await esperar();
+    expect(document.querySelector('#padwiz').hidden, 'the wizard did not open').toBe(false);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape', bubbles: true }));
+    await esperar();
+    expect(document.querySelector('#padwiz').hidden, 'Escape left the mapping panel open').toBe(true);
+    expect(localStorage.getItem('incl_padmap_' + pad.id), 'an Escaped wizard stored a map').toBeNull();
+  });
+
   it('🎯 [Zero] a game that names no position has nothing to map: the row is not offered', () => {
     motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, players: [{ ctrl: 0 }] });
     abrirMotora();

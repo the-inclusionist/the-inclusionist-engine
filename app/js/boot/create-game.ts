@@ -2259,7 +2259,9 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ ERA `() => false`: sem painel de remapeamento não havia captura. Agora há (ADR-0151), e com isto a falso a
     // seta que a criança quer gravar navegava o menu em vez de ficar na tecla.
     isCapturing: () => keyboardControls?.isCapturing() ?? false,
-    closePadWiz: () => {},
+    // Escape on the controller-mapping panel (`#padwiz`) closes it the way «Voltar» does: through the panel's own closer,
+    // registered with the overlays, which cancels a running wizard without storing its map.
+    closePadWiz: () => { overlays.closeById('padwiz'); },
     whichPlayer: (code) => keyboard.whichPlayer(code),
     actionOf: (code, i) => keyboard.actionOf(code, i),
     // Achado 12, RESOLVIDO NA ENGINE: o ctx tipava `win` com `fn: (e: never) => void`, o `window` real não
