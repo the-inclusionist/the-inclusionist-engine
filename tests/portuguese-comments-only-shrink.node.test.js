@@ -9,7 +9,7 @@
 // ⚠️ The measure is a heuristic that undercounts (see the script's header), so this is a ratchet: it can let a short
 // Portuguese line through; it cannot let the count grow.
 import { describe, it, expect } from 'vitest';
-import { inventory, readBaseline, isPortugueseLine } from '../scripts/comment-language.mjs';
+import { inventory, readBaseline, isPortugueseLine, portugueseCommentLines } from '../scripts/comment-language.mjs';
 
 describe('Portuguese in comments only shrinks', () => {
   const now = inventory();
@@ -30,5 +30,20 @@ describe('Portuguese in comments only shrinks', () => {
     // quotations stay in the language they were said in, and code in backticks is not prose
     expect(isPortugueseLine('// The Dev: «não é na rodada de agora» — so this waits')).toBe(false);
     expect(isPortugueseLine('// `nao` and `que` are identifiers here, and the line is English')).toBe(false);
+  });
+
+  it('🔴 [Boundary] a comment AFTER a template with an interpolation is read — a raw scanner loses its place there', () => {
+    const pt = '// a criança não consegue segurar o botão quando o jogo pausa\n';
+    expect(portugueseCommentLines('const s = `a${x}b`;\n' + pt)).toBe(1);
+    // a comment closing a line of code belongs to the token before it, not to the one after
+    expect(portugueseCommentLines('const a = 1; ' + pt + 'const b = 2;\n')).toBe(1);
+    // and text inside a template is not a comment, however much it looks like one
+    expect(portugueseCommentLines('const s = `${x} // a criança não consegue segurar o botão quando o jogo pausa`;\n')).toBe(0);
+  });
+
+  it('📌 [Boundary] a quotation spanning lines is the Dev\'s words on every line; a JSDoc is one comment, read once', () => {
+    expect(portugueseCommentLines('/* The Dev:\n * «a criança não consegue segurar\n * o botão quando o jogo pausa» — so this waits */\nconst a = 1;\n')).toBe(0);
+    // a tag has tokens INSIDE the comment, and a `//` after one of them would read as a second comment
+    expect(portugueseCommentLines('/** @param a // a criança não consegue segurar o botão quando o jogo pausa */\nexport function f(a) {}\n')).toBe(1);
   });
 });

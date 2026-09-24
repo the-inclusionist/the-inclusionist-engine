@@ -4,7 +4,7 @@
  *
  * `scripts/language-inventory.mjs` measures NAMES; its debt reached eleven, all decided exclusions (ADR-0230). Comments
  * were in the plan's phase 0 from the start («mede o português por ficheiro — nome, identificadores, comentários e
- * docs») and nothing measured them: 📏 on 2026-09-24, 13 523 of 25 109 comment lines, in 355 of 536 files.
+ * docs») and nothing measured them: 📏 on 2026-09-24, 18 937 of 34 205 comment lines, in 362 of 540 files.
  *
  * ⚠️ THIS IS A HEURISTIC, AND IT SAYS SO. A line is Portuguese when it carries at least two common Portuguese words and
  * more of them than common English ones — or one, an accent, and no English word at all. Words shared by both languages
@@ -47,13 +47,33 @@ export function isPortugueseLine(line) {
   return (pt >= 2 && pt > en) || (pt >= 1 && en === 0 && ACCENT.test(text));
 }
 
-/** The Portuguese comment lines of one source text, read with TypeScript's scanner (a comment is lexing, not a regex). */
-export function portugueseCommentLines(text) {
-  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, text);
-  let n = 0, kind;
-  while ((kind = scanner.scan()) !== ts.SyntaxKind.EndOfFileToken) {
-    if (kind !== ts.SyntaxKind.SingleLineCommentTrivia && kind !== ts.SyntaxKind.MultiLineCommentTrivia) continue;
-    for (const l of scanner.getTokenText().split(/\r?\n/)) if (l.trim() && isPortugueseLine(l)) n++;
+/**
+ * The comments of one source text, found by the PARSER: the trivia around each token of the tree.
+ *
+ * 🔴 Not the raw scanner, and that was measured: a raw scan cannot resume a template after `${…}`, falls out of phase and
+ * reads the rest of the file wrong — it saw 13 523 Portuguese comment lines where there are 18 937, and a Portuguese
+ * comment written in the region it lost passed the gate green. JSDoc nodes are not walked into: a position inside a
+ * comment would be read as the start of more comments.
+ */
+export function commentsOf(text, fileName = 'x.ts') {
+  const sf = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true);
+  const found = new Map();
+  const take = (ranges) => { for (const r of ranges ?? []) found.set(r.pos, text.slice(r.pos, r.end)); };
+  (function walk(n) {
+    const kids = n.getChildren(sf).filter((c) => !ts.isJSDoc(c));
+    if (kids.length) { kids.forEach(walk); return; }
+    take(ts.getLeadingCommentRanges(text, n.pos));
+    take(ts.getTrailingCommentRanges(text, n.end));
+  })(sf);
+  return [...found.values()];
+}
+
+/** The Portuguese comment lines of one source text. A quotation that spans lines is the Dev's words on every line of it. */
+export function portugueseCommentLines(text, fileName = 'x.ts') {
+  let n = 0;
+  for (const comment of commentsOf(text, fileName)) {
+    const unquoted = comment.replace(/«[^»]*»?/g, (q) => q.replace(/[^\n]/g, ' '));
+    for (const l of unquoted.split(/\r?\n/)) if (l.trim() && isPortugueseLine(l)) n++;
   }
   return n;
 }
@@ -69,7 +89,7 @@ export const sources = () => [...new Set([
 export function inventory() {
   const debt = {};
   for (const f of sources()) {
-    const n = portugueseCommentLines(readFileSync(join(ROOT, f), 'utf8'));
+    const n = portugueseCommentLines(readFileSync(join(ROOT, f), 'utf8'), f);
     if (n) debt[f] = n;
   }
   return debt;
