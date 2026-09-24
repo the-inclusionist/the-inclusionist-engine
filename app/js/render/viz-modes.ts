@@ -1,31 +1,30 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/viz-modes.ts — os 16 modos visuais de acessibilidade (dados) + índices derivados. Módulo-folha, ZERO
-// deps. Alto contraste (renderização direta 3 níveis), simulação/correção de daltonismo, baixa visão, cegueira.
-// A aplicação dos modos (setPlayerViz/applyVpFilters/overlays) fica no game.js. Ver docs/PESQUISA-ALTO-CONTRASTE.md.
-// SEM campo `filter` aqui, de proposito: quem diz "modo -> filtro CSS" e VIZ_FILTER, logo abaixo. Os seis
-// modos de daltonismo traziam o `url(#cvd-*)` repetido dentro do proprio registro, mas ninguem lia `m.filter`
-// — todo consumo passa por VIZ_FILTER, que alem dos seis cobre baixa visao e cegueira. Duas copias, uma so
-// lida: se divergissem, a errada seria a silenciosa. E como o campo era opcional, o tipo tambem calaria.
+// render/viz-modes.ts — the 16 visual accessibility modes (data) + derived indexes. A leaf module, ZERO deps. High
+// contrast (direct rendering, 3 levels), colour-blindness simulation/correction, low vision, blindness. Applying the
+// modes belongs to `render/viz-setters` and the root. See docs/PESQUISA-ALTO-CONTRASTE.md.
+// NO `filter` field here, on purpose: VIZ_FILTER, just below, is what says "mode -> CSS filter". A per-record copy of
+// `url(#cvd-*)` nobody read would be two copies with one read: if they diverged, the wrong one would be the silent one,
+// and an optional field would keep the type silent too.
 /**
- * `sim` — este modo SIMULA uma deficiência em quem não a tem, em vez de CORRIGIR a tela para quem a tem.
+ * `sim` — this mode SIMULATES a disability in someone who does not have it, instead of CORRECTING the screen for someone
+ * who does.
  *
- * O `kind` não responde a isso e nunca respondeu: `sim-deuter` (simular daltonismo) e `fix-deuter` (corrigir
- * daltonismo) compartilham `kind:'filter'`, ainda que sirvam a duas pessoas opostas. Enquanto ninguém
- * precisava distinguir, a lacuna era inofensiva. Passou a não ser quando o menu de empatia ganhou um
- * "restaurar padrões" (ADR-0028): desligar as simulações é o objetivo do botão, e desligar as correções junto
- * seria tirar de uma criança daltônica a única correção que ela tem — a partir do menu que existe para quem
- * NÃO tem a deficiência. Um reset que faz isso é pior que a armadilha que ele deveria desfazer.
+ * `kind` does not answer that: `sim-deuter` (simulating colour blindness) and `fix-deuter` (correcting it) share
+ * `kind:'filter'`, though they serve two opposite people. It matters because the empathy menu's "restore defaults"
+ * (ADR-0028) turns the simulations off, and turning the corrections off with them would take from a colour-blind child
+ * the only correction they have — from the menu that exists for whoever does NOT have the disability. A reset that does
+ * that is worse than the trap it should undo.
  *
- * Só os 9 modos marcados simulam. Os 3 `fix-*` corrigem, os 3 `hc-direto*` corrigem, e `normal` não faz nada.
+ * Only the 9 marked modes simulate. The 3 `fix-*` correct, the 3 `hc-direto*` correct, and `normal` does nothing.
  */
 /**
- * Um modo de visão. `nome` e `desc` guardam CHAVE i18n, não texto — mesma decisão de `SceneryTheme.nome` e
- * `RM_LABEL`, e pelo mesmo motivo: uma tabela de `const` com texto resolve UMA vez, no import, e fica
- * congelada no idioma do boot. Este menu é o que uma criança de baixa visão ou daltônica lê para configurar o
- * PRÓPRIO jogo; deixá-lo em português numa build em inglês tira dela a única página que ela precisava ler.
+ * A vision mode. `name` and `desc` keep an i18n KEY, not text — the same decision as `SceneryTheme.name` and
+ * `RM_LABEL`, for the same reason: a `const` table with text resolves ONCE, on import, and stays frozen in the boot's
+ * language. This menu is what a low-vision or colour-blind child reads to configure their OWN game; leaving it in
+ * Portuguese in an English build takes from them the one page they needed to read.
  *
- * Quem EXIBE resolve (`render/viz-setters`, `consumer-quiz`), e por isso este módulo continua FOLHA: dado
- * puro, sem dependência nenhuma, importável dos dois lados da fronteira.
+ * Whoever SHOWS it resolves it (`render/viz-setters`, `consumer-quiz`), and that is why this module stays a LEAF: pure
+ * data, no dependency, importable from both sides of the boundary.
  */
 export type VizMode = { key: string; kind: string; name: string; desc: string; lv?: string; sim?: true };
 export const VIZ_MODES: VizMode[] = [
@@ -53,57 +52,52 @@ export const VIZ_FILTER: Record<string, string> = {'sim-deuter':'url(#cvd-deuter
 export const VIZ_CYCLE: string[] = VIZ_MODES.map((m) => m.key);
 
 /**
- * Este modo simula uma deficiência? Chave desconhecida (ou vazia) → false, porque a pergunta que o chamador
- * está fazendo é "posso desligar isto sem tirar nada de ninguém?", e a resposta honesta diante do
- * desconhecido é não.
+ * Does this mode simulate a disability? An unknown (or empty) key → false, because the question the caller is asking is
+ * "can I turn this off without taking anything from anyone?", and the honest answer in front of the unknown is no.
  */
 export function simulatesDisability(key: string): boolean {
   return VIZ_BY_KEY[key]?.sim === true;
 }
 
 /**
- * As CORREÇÕES de daltonismo: daltonizam a tela para quem TEM a condição. Derivadas do catálogo, nunca
- * listadas à mão — são exatamente os filtros que não simulam.
+ * The colour-blindness CORRECTIONS: they daltonise the screen for whoever HAS the condition. Derived from the catalogue,
+ * never listed by hand — they are exactly the filters that do not simulate.
  *
- * Existem como lista própria porque moram no menu de ACESSIBILIDADE VISUAL, e não no de empatia (decisão do
- * Dev, issue #60). Ficaram anos no menu errado por um motivo que este arquivo agora conserta: `kind` não
- * distinguia simular de corrigir, então o painel de empatia, que se recorta por `kind:'filter'`, arrastava as
- * três junto. Dois públicos opostos na mesma lista — quem quer sentir como é ser daltônico e quem é.
+ * They exist as a list of their own because they live in the VISUAL ACCESSIBILITY menu, and not in the empathy one (the
+ * Dev's decision, issue #60). With `kind` not telling simulating from correcting, the empathy panel, which cuts itself
+ * by `kind:'filter'`, dragged the three along: two opposite audiences in one list — whoever wants to feel what being
+ * colour-blind is like, and whoever is.
  */
 export const VIZ_CORRECTIONS: readonly VizMode[] = VIZ_MODES.filter((m) => m.kind === 'filter' && !m.sim);
 
-/* ===================== AS DUAS PILHAS COM UM NOME SÓ (achado 8, item 19) ===================== */
+/* ===================== TWO STACKS UNDER ONE NAME ===================== */
 //
-// O segundo consumidor mediu, e a medição é o motivo desta seção existir:
+// What the menu calls "visual accessibility" is TWO stacks under one name — the engine's second consumer measured it:
+// the `hcnew` modes REPAINT tile TEXTURES in PIXI, and a quiz has no tiles to repaint. One stack is DOM/CSS
+// (colour-blindness filters, typography, letter case) and serves any game; the other is CANVAS (direct rendering,
+// outlines, role colours) and only exists where there is a world.
 //
-//     "O ALTO CONTRASTE NÃO VIAJA, e a razão é estrutural, não um defeito. Os modos `hcnew` REPINTAM
-//      TEXTURAS de tile na PIXI; um quiz não tem tiles, e não há o que repintar. Ou seja: o que o menu chama
-//      de 'acessibilidade visual' são DUAS pilhas com um nome só — uma de DOM/CSS (filtros de daltonismo,
-//      tipografia, caixa alta) que serve a qualquer jogo; uma de CANVAS (renderização direta, contornos,
-//      cores de papel) que só existe onde há mundo. O painel as apresenta numa lista única de 7 modos… A
-//      divisão do passo 5 precisa cortar AQUI."
+// This is the cut, and it is one of DATA, not of files — the files were already apart (`render/cvd-matrices` is pure
+// DOM; `render/high-contrast` repaints a world whose tiles it is handed). What was missing was the table SAYING which
+// stack each mode belongs to, so nobody rebuilds the answer in their head.
 //
-// Este é o corte, e ele é de DADO e não de arquivo — os arquivos já estavam separados (`render/cvd-matrices`
-// é DOM puro; `render/high-contrast` importa `core/collision.tileAt`). O que faltava era a tabela DIZER a
-// qual pilha cada modo pertence, para que ninguém mais reconstruísse a resposta de cabeça.
-//
-// E era reconstruída: o segundo consumidor escrevia
+// And it was being rebuilt: the second consumer wrote
 //     `VIZ_MODES.filter((m) => m.kind === 'normal' || (m.kind === 'filter' && !simulatesDisability(m.key)))`
-// — uma expressão que mistura DUAS perguntas diferentes ("precisa de canvas?" e "isto simula deficiência?")
-// e que todo consumidor futuro teria de reinventar, com a chance de acertar uma e errar a outra.
+// — an expression mixing TWO different questions ("does it need a canvas?" and "does it simulate a disability?") that
+// every future consumer would have to reinvent, with the chance of getting one right and the other wrong.
 
-/** Este modo precisa de um CANVAS de mundo para existir? Só os `hcnew` precisam: eles repintam texturas. */
+/** Does this mode need a world CANVAS to exist? Only the `hcnew` ones do: they repaint textures. */
 export function needsCanvas(key: string): boolean {
   return VIZ_BY_KEY[key]?.kind === 'hcnew';
 }
 
 /**
- * Os modos que funcionam em QUALQUER jogo — os que se aplicam como filtro de CSS sobre um elemento.
+ * The modes that work in ANY game — the ones applied as a CSS filter over an element.
  *
- * Derivada, nunca listada à mão: um modo novo entra na pilha certa por causa do `kind` que ele declara, e não
- * porque alguém lembrou de acrescentá-lo aqui. É a mesma regra de `VIZ_CORRECTIONS`.
+ * Derived, never listed by hand: a new mode enters the right stack because of the `kind` it declares, not because
+ * someone remembered to add it here. The same rule as `VIZ_CORRECTIONS`.
  */
 export const VIZ_DOM_ONLY: readonly VizMode[] = VIZ_MODES.filter((m) => !needsCanvas(m.key));
 
-/** Os modos que EXIGEM mundo. Complemento exato de `VIZ_DOM_ONLY` — juntos, os 16, sem sobra nem repetição. */
+/** The modes that REQUIRE a world. The exact complement of `VIZ_DOM_ONLY` — together, the 16, no leftover and no repeat. */
 export const VIZ_CANVAS_ONLY: readonly VizMode[] = VIZ_MODES.filter((m) => needsCanvas(m.key));

@@ -1,42 +1,35 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/viewports — a FÁBRICA de imagem dos modos de visão acessível: como um MODO vira PIXEL.
+// render/viewports — the IMAGE FACTORY of the accessible vision modes: how a MODE becomes a PIXEL.
 //
-// Par de render/viz-setters, que levou a POLÍTICA ("qual modo vale onde": por jogador, global, overlays, painéis).
-// Aqui mora a outra metade — a produção do pixel em si, que a política consome:
-//   · `pixiFilterFor`  — modo → filtro GPU do viewport (daltonismo, cegueira, baixa visão)
-//   · `parallaxTexFor` — camada de fundo i, recolorida (ou não) para o modo
-//   · `treeTexFor`     — decoração de fundo, idem
-//   · `playerVizTex`   — quadro do jogador com contorno escuro no alto contraste
-//   · `lvOverlay*` / `renderVpOverlay` — a névoa/túnel/mancha de baixa visão DENTRO da render-texture do viewport
-// Os quatro primeiros entravam em viz-setters por injeção (`parallaxTexFor`/`treeTexFor`/`playerVizTex`/
-// `pixiFilterFor` no `VizSettersCtx`) enquanto ainda moravam no game.js; a partir daqui quem os fornece é este
-// módulo. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (B2).
+// The pair of render/viz-setters, which holds the POLICY ("which mode counts where": per player, global, overlays,
+// panels). Here lives the other half — producing the pixel itself, which the policy consumes:
+//   · `pixiFilterFor`  — mode → the viewport's GPU filter (colour blindness, blindness, low vision)
+//   · `parallaxTexFor` — background layer i, recoloured (or not) for the mode
+//   · `treeTexFor`     — background decoration, likewise
+//   · `playerVizTex`   — the player's frame with a dark outline in high contrast
+//   · `lvOverlay*` / `renderVpOverlay` — low vision's haze/tunnel/spot INSIDE the viewport's render texture
 //
-// A DUPLICAÇÃO QUE ESTA EXTRAÇÃO CUROU: as seis matrizes de daltonismo estavam escritas duas vezes — como
-// `<feColorMatrix>` no app/index.html (caminho de tela única) e como `PIXI.ColorMatrixFilter` dentro de
-// `pixiFilterFor` (caminho multi-tela). Saíram para render/cvd-matrices (folha, zero deps); `pixiFilterFor` lê
-// de lá e `initViewports` GERA os `<filter>` do documento de lá também. O sintoma da divergência era silencioso
-// e de acessibilidade: a mesma pessoa daltônica veria cores diferentes em tela única e em multi-tela.
+// THE DUPLICATION THIS CURES: the six colour-blindness matrices were once written twice — as `<feColorMatrix>` in a
+// page's HTML (the single-screen path) and as a `PIXI.ColorMatrixFilter` (the multi-screen path). They live in
+// render/cvd-matrices (a leaf, zero deps); `pixiFilterFor` reads from there and `initViewports` GENERATES the document's
+// `<filter>`s from there too. A divergence would be silent and about accessibility: the same colour-blind person would
+// see different colours on one screen and on several.
 //
-// Fronteiras que este módulo NÃO reabre:
-//  · `parallaxTexNormal` e `treeTexNormal` (as texturas CRUAS, fonte do recolor) continuam nascendo no game.js
-//    — a primeira é preenchida por `setCenario` (carrega PNG por tema), a segunda pelo desenho procedural da
-//    árvore. Entram injetadas. `parallaxTexNormal` é `const` cujos ELEMENTOS `setCenario` troca in place → entra
-//    por VALOR (o array é o mesmo objeto); `vpTex` é `let` que `configureRender` REATRIBUI a cada troca de nº de
-//    telas → entra por GETTER.
-//  · `lvOverlaySpr` e o renderer são objetos PIXI criados no game.js e entram por interface ESTRUTURAL, para o
-//    módulo rodar no project `node` sem importar PIXI. Mesmo precedente de render/scene-sky e game/traffic.
-//  · `_lastSharedViz` NÃO é daqui (é o registro do render estático, fica no game.js) — ver o topo de viz-setters.
+// Boundaries this module does NOT reopen:
+//  · `parallaxTexNormal` and the tree texture (the RAW textures, the recolour's source) are born in the host — the
+//    first filled by the host's scenery loader (a PNG per theme), the second by its procedural drawing. They come in
+//    injected. `parallaxTexNormal` is an array whose ELEMENTS the host swaps in place → it comes in by VALUE (the array
+//    is the same object); the viewport textures are REASSIGNED whenever the number of screens changes → by GETTER.
+//  · The overlay sprite and the renderer are PIXI objects the host creates and come in through a STRUCTURAL
+//    interface, so the module runs in the `node` project without importing PIXI.
 //
-// POR QUE `getTreeTexNormal`/`getLvOverlaySpr` são GETTERS e não valores, sendo os dois `const` no game.js:
-// não é reatribuição, é ORDEM DE BOOT. `clearParallaxTexCache` precisa existir dentro de `setCenario`, que o
-// game.js chama no topo do módulo (na restauração do cenário salvo) — bem ANTES de `treeTexNormal` e
-// `lvOverlaySpr` serem declarados. Com getters, `initViewports` pode ser chamado cedo o bastante para aquela
-// chamada não cair em TDZ; com valores, o `const` ainda não inicializado derrubaria a restauração do tema
-// dentro de um `try/catch` que apenas cai para 'cidade' — o jogador perderia o cenário escolhido em silêncio.
+// WHY `getTreeTexNormal`/`getLvOverlaySpr` are GETTERS and not values: BOOT ORDER, not reassignment. A host may call
+// `clearParallaxTexCache` while restoring a saved scenery before those objects exist; with getters, `initViewports`
+// can be called early enough for that call to work, where a value would be read before it exists — and a scenery
+// restore inside a `try/catch` that falls back to a default would lose the chosen scenery silently.
 //
-// SEM I/O no import: nada de makeCanvas/tex no corpo do módulo (precedente de render/textures). O único efeito
-// de `initViewports` é gerar os `<filter>` SVG, que é justamente o ponto da cura da duplicação.
+// NO I/O on import: no makeCanvas/tex in the module body. `initViewports`'s one effect is generating the SVG `<filter>`s,
+// which is precisely the point of curing the duplication.
 
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { makeCanvas, tex } from './canvas.js';
@@ -46,16 +39,16 @@ import { drawLowVision } from './low-vision-drawing.js';
 import { CVD_MATRIX, installCvdFilters, type CvdKey } from './cvd-matrices.js';
 import type { RenderInto } from './port.js';
 
-/* ===================== interfaces estruturais (PIXI sem importar PIXI) ===================== */
+/* ===================== structural interfaces (PIXI without importing PIXI) ===================== */
 
-/** O que `pixiFilterFor` toca de um `PIXI.ColorMatrixFilter` — e só isso. */
+/** What `pixiFilterFor` touches of a `PIXI.ColorMatrixFilter` — and only that. */
 interface ColorMatrixLike {
   matrix: number[];
   brightness(b: number, multiply: boolean): void;
   contrast(amount: number, multiply: boolean): void;
 }
 interface ColorMatrixCtor { new (): ColorMatrixLike }
-/** `PIXI.BlurFilter` é opaco aqui: só se constrói com a força e se entrega para o `filters` do sprite. */
+/** `PIXI.BlurFilter` is opaque here: it is only built with a strength and handed to the sprite's `filters`. */
 interface BlurCtor { new (strength: number): unknown }
 
 /**
@@ -89,65 +82,64 @@ function matrixWith(CM: ColorMatrixCtor, paint: (c: ColorMatrixLike) => void): C
   paint(c);
   return c;
 }
-/** O sprite reaproveitado para carimbar o overlay de baixa visão — só a textura é trocada. */
+/** The sprite reused to stamp the low-vision overlay — only its texture is swapped. */
 interface TexturedSprite { texture: unknown }
-/** `app.renderer` — só a passada extra em render-texture (`clear:false` = por cima da cena já desenhada). */
-// `RendererLike` SAIU (Fase D). A porta pede a CAPACIDADE `RenderInto`, não o objeto renderizador:
-// o `render` do PixiJS pede `IRenderableObject`, e um parâmetro declarado `unknown` não cabe ali por
-// contravariância. Ver o cabeçalho de `render/port`.
+// The renderer comes in as the CAPABILITY `RenderInto`, not the renderer object: PixiJS's `render` asks for an
+// `IRenderableObject`, and a parameter declared `unknown` does not fit there by contravariance. See `render/port`'s
+// header.
 
 export interface ViewportsCtx {
-  /* --- construtores de filtro do PIXI (podem faltar: o original testa `&&CM` / `&&BL` antes de usar) --- */
-  ColorMatrixFilter: ColorMatrixCtor | null | undefined; // PIXI.ColorMatrixFilter — daltonismo, cegueira, névoa
-  BlurFilter: BlurCtor | null | undefined;               // PIXI.BlurFilter — desfoque, túnel, mancha, manchas
+  /* --- PIXI's filter constructors (they may be missing: then the mode gets no filter instead of throwing) --- */
+  ColorMatrixFilter: ColorMatrixCtor | null | undefined; // PIXI.ColorMatrixFilter — colour blindness, blindness, haze
+  BlurFilter: BlurCtor | null | undefined;               // PIXI.BlurFilter — blur, tunnel, spot, spots
 
-  /* --- texturas NORMAIS: a fonte crua de todo recolor de alto contraste --- */
-  parallaxTexNormal: unknown[];          // `const` do game.js; setCenario troca os ELEMENTOS in place → valor
-  getTreeTexNormal: () => unknown;       // GETTER por ordem de boot (ver o cabeçalho): declarada DEPOIS desta init
+  /* --- NORMAL textures: the raw source of every high-contrast recolour --- */
+  parallaxTexNormal: unknown[];          // the host swaps its ELEMENTS in place → by value
+  getTreeTexNormal: () => unknown;       // a GETTER for boot order (see the header)
 
-  /* --- objetos PIXI criados no game.js (z-order e ciclo de vida soldados lá) --- */
-  getLvOverlaySpr: () => TexturedSprite; // GETTER idem; sprite de carimbo, nunca entra em container
-  renderInto: RenderInto;                // `app.renderer` (app é `const`, criado no início do boot)
-  getVpTex: () => unknown[];             // GETTER: `let vpTex` é REATRIBUÍDO por configureRender a cada troca de nº de telas
+  /* --- PIXI objects the host creates (z-order and lifecycle welded there) --- */
+  getLvOverlaySpr: () => TexturedSprite; // a GETTER likewise; the stamping sprite, never in a container
+  renderInto: RenderInto;                // the host's renderer
+  getVpTex: () => unknown[];             // a GETTER: the viewport textures are REASSIGNED when the number of screens changes
 
-  /* --- DOM: o host dos <filter> gerados (cura da duplicação das matrizes) --- */
-  cvdDefsHost: Element | null;  // `<defs id="cvd-defs">` do index.html; ausente = os seis filtros não são gerados
+  /* --- DOM: the host of the generated <filter>s (the cure for the duplicated matrices) --- */
+  cvdDefsHost: Element | null;  // an SVG `<defs>`; absent = the six filters are not generated
 }
 
 export interface ViewportsApi {
-  /** Camada de parallax `i` no `mode`: alto contraste recua o fundo (dessatura/escurece); resto = textura crua. */
+  /** Parallax layer `i` in `mode`: high contrast pushes the background back (desaturates/darkens); else the raw texture. */
   parallaxTexFor(i: number, mode: string): unknown;
-  /** Decoração de fundo (árvore) no `mode`: mesma regra do parallax, cache próprio. */
+  /** Background decoration (tree) in `mode`: the parallax's rule, its own cache. */
   treeTexFor(mode: string): unknown;
-  /** Quadro do jogador no `mode`: alto contraste ganha contorno escuro (salta do fundo recuado). */
+  /** The player's frame in `mode`: high contrast gets a dark outline (it jumps off the pushed-back background). */
   playerVizTex(base: unknown, mode: string): unknown;
-  /** Filtro GPU do viewport para o `mode` (array de filtros, ou `null` quando o modo não usa filtro). */
+  /** The viewport's GPU filter for `mode` (an array of filters, or `null` when the mode uses none). */
   pixiFilterFor(mode: string): unknown;
-  /** Canvas 320×180 do overlay de baixa visão (`haze`/`tunnel`/`macular`/`diabetic`). */
+  /** The 320×180 canvas of the low-vision overlay (`haze`/`tunnel`/`macular`/`diabetic`). */
   lvOverlayCanvas(lv: string): HTMLCanvasElement;
-  /** Textura do overlay de baixa visão (memoizada). `blur` não tem overlay — é filtro puro → `null`. */
+  /** The low-vision overlay texture (memoised). `blur` has no overlay — it is a pure filter → `null`. */
   lvOverlayTex(lv: string): unknown;
-  /** Carimba o overlay de baixa visão do jogador `i` DENTRO da render-texture do viewport, por cima da cena. */
+  /** Stamps player `i`'s low-vision overlay INSIDE the viewport's render texture, over the scene. */
   renderVpOverlay(i: number, mode: string): void;
-  /** Invalida o cache de parallax recolorido — o cenário mudou, as texturas cruas são outras. */
+  /** Invalidates the recoloured parallax cache — the scenery changed, the raw textures are different. */
   clearParallaxTexCache(): void;
-  /** Invalida o cache de quadros do jogador com contorno (chamado por `rebakeDirect` em viz-setters). */
+  /** Invalidates the cache of outlined player frames (called by `rebakeDirect` in viz-setters). */
   clearPlayerDirectCache(): void;
 }
 
 export function initViewports(ctx: ViewportsCtx): ViewportsApi {
-  // Gera os seis <filter> de daltonismo do documento a partir de render/cvd-matrices — a MESMA fonte que
-  // pixiFilterFor lê logo abaixo. É por isso que tela única e multi-tela não podem mais divergir.
+  // Generates the document's six colour-blindness <filter>s from render/cvd-matrices — the SAME source pixiFilterFor
+  // reads just below. That is why one screen and several can no longer diverge.
   installCvdFilters(ctx.cvdDefsHost);
 
-  /* ===================== fundo: parallax e decoração ===================== */
+  /* ===================== background: parallax and decoration ===================== */
 
   const _parallaxTexHC: Record<string, unknown[]> = {}; // {mode: [tex,tex,tex]}
   function parallaxTexFor(i: number, mode: string): unknown {
     if (DIRECT_CFG[mode]) {
       (_parallaxTexHC[mode] = _parallaxTexHC[mode] || []);
       if (!_parallaxTexHC[mode][i]) _parallaxTexHC[mode][i] = directBgTexture(ctx.parallaxTexNormal[i] as never, mode);
-      return _parallaxTexHC[mode][i]; // direto: fundo recua
+      return _parallaxTexHC[mode][i]; // direct: the background steps back
     }
     return ctx.parallaxTexNormal[i];
   }
@@ -157,42 +149,42 @@ export function initViewports(ctx: ViewportsCtx): ViewportsApi {
   function treeTexFor(mode: string): unknown {
     if (DIRECT_CFG[mode]) {
       if (!_treeTexHC[mode]) _treeTexHC[mode] = directBgTexture(ctx.getTreeTexNormal() as never, mode);
-      return _treeTexHC[mode]; // direto: decoração recua
+      return _treeTexHC[mode]; // direct: the decoration steps back
     }
     return ctx.getTreeTexNormal();
   }
 
-  /* ===================== frente: o jogador ===================== */
+  /* ===================== foreground: the player ===================== */
 
-  // {mode: Map<texturaBase, texturaComContorno>} — chaveado pela textura de ORIGEM porque o jogador troca de
-  // quadro toda frame; um Map por modo evita recontornar o mesmo quadro a cada volta da animação.
+  // {mode: Map<baseTexture, outlinedTexture>} — keyed by the SOURCE texture because the player changes frame every tick;
+  // a Map per mode avoids outlining the same frame again on every loop of the animation.
   let _playerDirect: Record<string, Map<unknown, unknown>> = {};
   function playerVizTex(base: unknown, mode: string): unknown {
     if (!base) return base;
     if (DIRECT_CFG[mode]) {
       const mm = (_playerDirect[mode] = _playerDirect[mode] || new Map());
       if (!mm.has(base)) mm.set(base, directSpriteTexture(base as never, mode));
-      return mm.get(base); // direto: player com contorno escuro → salta
+      return mm.get(base); // direct: the player with a dark outline → it jumps out
     }
     return base;
   }
   function clearPlayerDirectCache(): void { _playerDirect = {}; }
 
-  /* ===================== o filtro do viewport ===================== */
+  /* ===================== the viewport's filter ===================== */
 
-  // Cacheado por MODO e por identidade: o mesmo array de filtros volta sempre, então trocar de viewport não
-  // reconstrói o filtro (nem invalida o shader do PIXI). Guarda `null` também — `mode in cache` e não
-  // `cache[mode]` — para que modo sem filtro (normal, hc-*) não seja reprocessado a cada frame.
+  // Cached per MODE and by identity: the same filter array always comes back, so switching viewport does not rebuild the
+  // filter (nor invalidate PIXI's shader). It keeps `null` too — `mode in cache` and not `cache[mode]` — so a mode with
+  // no filter (normal, hc-*) is not reprocessed every frame.
   const _vpFilterCache: Record<string, unknown> = {};
   function pixiFilterFor(mode: string): unknown {
     if (mode in _vpFilterCache) return _vpFilterCache[mode];
     return _vpFilterCache[mode] = filterFor(mode, ctx.ColorMatrixFilter, ctx.BlurFilter);
   }
 
-  /* ===================== baixa visão: o overlay como textura ===================== */
+  /* ===================== low vision: the overlay as a texture ===================== */
 
-  // O que o filtro GPU não sabe fazer: névoa de catarata, o túnel do glaucoma, a mancha central da degeneração
-  // macular e as manchas espalhadas da retinopatia. São desenho, não transformação de cor — vêm como textura.
+  // What the GPU filter cannot do: a cataract's haze, glaucoma's tunnel, macular degeneration's central spot and
+  // retinopathy's scattered spots. They are drawing, not a colour transform — they come as a texture.
   function lvOverlayCanvas(lv: string): HTMLCanvasElement {
     const W = LOGICAL_W, H = LOGICAL_H, cv = makeCanvas(W, H), c = cv.getContext('2d')!;
     drawLowVision(c, lv, W, H); // one drawing for the viewports and for the world `createGame` declares (issue #182)
@@ -201,13 +193,13 @@ export function initViewports(ctx: ViewportsCtx): ViewportsApi {
 
   const _lvOverlayTex: Record<string, unknown> = {};
   function lvOverlayTex(lv: string): unknown {
-    if (lv === 'blur') return null; // desfoque é filtro puro, não tem o que carimbar
+    if (lv === 'blur') return null; // blur is a pure filter, there is nothing to stamp
     if (!_lvOverlayTex[lv]) _lvOverlayTex[lv] = tex(lvOverlayCanvas(lv));
     return _lvOverlayTex[lv];
   }
 
-  // Overlay DENTRO da render-texture (a bolinha indicadora do viewport fica por cima, FORA do filtro — é por
-  // isso que ela continua visível no modo cegueira; ver updateVpDots em render/viz-setters).
+  // The overlay INSIDE the render texture (the viewport's indicator dot sits on top, OUTSIDE the filter — which is why
+  // it stays visible in blindness mode; see updateVpDots in render/viz-setters).
   function renderVpOverlay(i: number, mode: string): void {
     const m = VIZ_BY_KEY[mode];
     if (!m || m.kind !== 'lowvision') return;
