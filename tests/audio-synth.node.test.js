@@ -199,6 +199,53 @@ describe('tone — the engine\'s own earcon synth', () => {
   });
 });
 
+describe('the mixer — each category\'s level, when its bus is made and when the slider moves', () => {
+  // Found by the probe of 2026-09-24: only a category SWITCHED OFF had a case (born silent). A category on was never checked to be
+  // born at its volume, and `setCatGain` — what the mixer's slider and switch call on every change — had no case at all.
+  async function mixer() {
+    const { pc } = contextoDoJogador();
+    const ganhos = [];
+    const criarGanho = pc.ac.createGain;
+    pc.ac.createGain = () => {
+      const g = criarGanho();
+      g.gain.value = 1;
+      g.gain.setTargetAtTime = (v) => { g.gain.alvo = v; };
+      ganhos.push(g);
+      return g;
+    };
+    pc.ac.state = 'running';
+    vi.stubGlobal('window', { AudioContext: function AudioContextFalso() { return pc.ac; } });
+    vi.resetModules();
+    const fresh = await import('../app/js/platform/audio.js');
+    fresh.setSoundOn(true); fresh.setVolume(0.6);
+    fresh.initAudioMixer();
+    return { fresh, ganhos, done: () => vi.unstubAllGlobals() };
+  }
+
+  it('🔴 [Right] a category that is ON is born at ITS volume, not at full', async () => {
+    const { fresh, ganhos, done } = await mixer();
+    fresh.audioCat.earcons.on = true;
+    fresh.audioCat.earcons.vol = 0.3;
+    fresh.tone(440, 0.1);
+    done();
+    expect(ganhos.at(-1).gain.value).toBeCloseTo(0.3, 6);
+  });
+
+  it('🔴 [Right] moving the slider or the switch reaches the bus: off is silence, on is the new volume', async () => {
+    const { fresh, ganhos, done } = await mixer();
+    fresh.tone(440, 0.1); // makes the `earcons` bus
+    const bus = ganhos.at(-1);
+    fresh.audioCat.earcons.on = false;
+    fresh.setCatGain('earcons');
+    expect(bus.gain.alvo, 'switching the category off did not silence it').toBe(0);
+    fresh.audioCat.earcons.on = true;
+    fresh.audioCat.earcons.vol = 0.5;
+    fresh.setCatGain('earcons');
+    done();
+    expect(bus.gain.alvo, 'the slider moved and the bus did not follow').toBeCloseTo(0.5, 6);
+  });
+});
+
 // ============================== MUTATIONS CHECKED ==============================
 // `scratchpad/sonda-audio.py --novos`: the eighteen decisions of the two synths, all green before this file, all red with it.
 // Re-probed after the cut into shared questions (`audible`, `contextFor`, `panned`, `outFor` — `sonda-audio-3.py`): 19 of 19,
