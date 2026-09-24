@@ -723,7 +723,7 @@
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 1,
-      "worstFunction": 10,
+      "worstFunction": 7,
       "fanIn": 3,
       "reached": [
         "window"

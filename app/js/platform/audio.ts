@@ -52,9 +52,9 @@ export function setCatGain(cat: string): void { if (!audioCat) return; const g =
 
 // ===== Sínteses de oscilador (earcons/melodias). Leem soundOn/volume; roteiam pelo mixer→mestre. =====
 // pc = contexto de áudio por-jogador (opcional; o game.js o passa p/ rotear a pista ao dispositivo do jogador).
-export function tone(freq: number, dur: number, type?: OscillatorType, when?: number, vol?: number): void { if (!soundOn || volume <= 0) return; try { const ac = ensureAC(); if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + (when || 0);
+export function tone(freq: number, dur: number, type?: OscillatorType, when?: number, vol?: number): void { if (!audible()) return; try { const ac = contextFor(); if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + (when || 0);
   o.type = type || 'square'; o.frequency.setValueAtTime(freq, t); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.02, (vol || 0.22) * volume), t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g).connect(catNode('earcons') || audioOut() || ac.destination); o.start(t); o.stop(t + dur + 0.02); } catch (e) { /* noop */ } }
+  o.connect(g).connect(outFor(ac, 'earcons')); o.start(t); o.stop(t + dur + 0.02); } catch (e) { /* noop */ } }
 export function tonePan(freq: number, dur: number, cat: string, pan?: number | null, vol?: number, type?: OscillatorType, pc?: PlayerCtx | null): void { if (!audible()) return; const ac = contextFor(pc); if (!ac) return; try {
   const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime; o.type = type || 'sine'; o.frequency.value = freq;
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.02, (vol || 0.2) * volume), t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
