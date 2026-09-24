@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/speech.ts — voz do LETRAMENTO (gameSay): fala pt-BR SEMPRE-ativa (independe do toggle 'Narração
-// (TTS)' do mixer), pela voz nativa do navegador. Escolhe uma voz pt-BR e evita pt-PT. Módulo-folha (só áudio).
+// platform/speech.ts — the LITERACY voice (gameSay): pt-BR speech that is ALWAYS on (independent of the mixer's
+// narration toggle), through the browser's native voice. It picks a pt-BR voice and avoids pt-PT. A leaf module (audio only).
 // The MENU's TTS (narrate/ttsSpeak and the Kokoro neural engine) is another path, gated by the mixer — `platform/tts`.
 import { soundOn, volume } from './audio.js';
 
@@ -11,7 +11,7 @@ function ptbrVoice(): SpeechSynthesisVoice | null {
   } catch (e) { return null; }
 }
 
-// FORÇA pt-BR (não usa a voz do mixer, que pode ser pt-PT). Volume ×1.4 para a fala soar acima dos efeitos.
+// FORCES pt-BR (not the mixer's voice, which may be pt-PT). Volume ×1.4 so the speech sits above the effects.
 export function gameSay(text: string): void {
   if (!text || !soundOn) return;
   try {

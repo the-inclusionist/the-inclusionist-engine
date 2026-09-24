@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/tts — spoken narration. The browser's voice speaks first (Web Speech, ADR-0200); the neural fallback is Kokoro, which
-// THE ENGINE ITSELF loads from the delivery (ADR-0216 §1) the first time a child picks it — the game only says it wants one. narrate() é o
-// ponto de entrada, gated pelo toggle 'Narração (TTS)' do mixer (audioCat.tts.on) — independe das legendas. As funções de
-// PAINEL (populateTTSEngines/Voices/reflectTTS) ficam no game.js (→ ui/settings-audio, #38→#54) e usam get/setEngineSel +
-// get/setVoiceObj daqui. Injeção por closure. Ver docs/plano-tts-fase-f5.md + docs/5-Refactoring/plano-modularizacao-mapa.md.
+// THE ENGINE ITSELF loads from the delivery (ADR-0216 §1) the first time a child picks it — the game only says it wants one. narrate()
+// is the entry point, gated by the mixer's narration toggle (audioCat.tts.on) — independent of captions. The PANEL's side (the
+// engine and voice lists) lives in `ui/voice-settings` and reads and writes the choice through this module. Injection by closure.
 
 import * as store from './storage.js';
 import { t, bcp47 } from '../core/i18n.js';
@@ -60,7 +59,7 @@ export interface TtsCtx {
 }
 
 export interface Tts {
-  narrate: (text: string) => void;         // ponto de entrada (gated); usado em todo o game.js + injetado no audio-nav
+  narrate: (text: string) => void;         // the entry point (gated by the mixer)
   ttsSpeak: (text: string) => boolean;
   loadTTS: () => void;
   speakWebSpeech: (text: string) => boolean;
@@ -73,9 +72,9 @@ export interface Tts {
   readonly failed: boolean;
   readonly narrateCount: number;
   /**
-   * DOES THIS GAME ASK FOR A NEURAL ENGINE? (ADR-0216 §3) O painel de áudio pergunta antes de o oferecer: uma opção
-   * que não pode funcionar é pior que uma opção a menos — quem a escolhe fica à espera de um download que
-   * nunca começa, e quem navega por escuta não tem como ver que não começou.
+   * DOES THIS GAME ASK FOR A NEURAL ENGINE? (ADR-0216 §3) The audio panel asks before offering it: an option that cannot
+   * work is worse than one option fewer — whoever picks it waits for a download that never starts, and whoever navigates
+   * by ear has no way to see that it did not start.
    */
   readonly neuralAvailable: boolean;
   /** The voices of the current language the child may pick (ADR-0185); empty locks the speech rows and the bar's button. */
@@ -95,7 +94,7 @@ export interface Tts {
 const ENGINES_THAT_LEFT: readonly string[] = ['piper'];
 export function createTts(ctx: TtsCtx): Tts {
   let ttsEngine: TtsEngine | null = null, ttsLoading = false, ttsFailed = false, _narrateCount = 0;
-  let _ttsVoiceObj: SpeechSynthesisVoice | null = null; // voz do Web Speech selecionada
+  let _ttsVoiceObj: SpeechSynthesisVoice | null = null; // the selected Web Speech voice
   // An engine set explicitly (stored, or by the panel) wins; otherwise the engine of the voice in use, which is the browser's when it
   // offers one for the language (ADR-0200) — measured on the device at every call, since the browser lists its voices late.
   const stored: string | null = store.get(store.KEYS.ttsEngine, null) || null; // webspeech | kokoro | kitten | espeak
@@ -148,9 +147,9 @@ export function createTts(ctx: TtsCtx): Tts {
   function speakWebSpeech(text: string): boolean {
     try {
       const ss = window.speechSynthesis; if (!ss) return false; ss.cancel();
-      // `u.lang` era 'pt-BR' fixo. Com o jogo em inglês ou espanhol isso pedia ao navegador uma voz
-      // PORTUGUESA para um texto que não é português — e o resultado não é sotaque, é ininteligível: a
-      // fonética errada aplicada às letras erradas. Segue o idioma do jogo.
+      // `u.lang` follows the game's language. Fixed at pt-BR, a game in English or Spanish would ask the browser for a
+      // PORTUGUESE voice for a text that is not Portuguese — and the result is not an accent, it is unintelligible: the
+      // wrong phonetics applied to the wrong letters.
       const voiceName = _ttsVoiceObj ?? browserVoice(voiceInUse()?.voice);
       const u = new SpeechSynthesisUtterance(text); u.lang = bcp47(); if (voiceName) u.voice = voiceName; u.volume = Math.min(1, ctx.getVolume() * 1.4);
       // ADR-0183 §1: the browser's `rate` is a multiplier. The voice's words a minute at rate 1 is measured on its own utterances
@@ -179,7 +178,7 @@ export function createTts(ctx: TtsCtx): Tts {
       synthesize: async (text) => {
         const bytes = await produce(text);
         const ac = ctx.ensureAC();
-        if (!ac) throw new Error('AudioContext unavailable'); // o `catch` de lá trata: silêncio deste item, motor vivo
+        if (!ac) throw new Error('AudioContext unavailable'); // the `catch` there handles it: this item is silent, the engine lives
         let speedRatio = 1;
         if (ctx.getSpeechPpm) {
           const buf = await ac.decodeAudioData(bytes.slice(0));
@@ -243,9 +242,10 @@ export function createTts(ctx: TtsCtx): Tts {
       if (sel !== 'webspeech') ctx.srAlert(t('sr.tts.engineNoLanguage'));
       return;
     }
-    // ESTE JOGO NÃO PEDIU VOZ NEURAL (ADR-0216 §3). Vem ANTES da pergunta do idioma de propósito: sem a
-    // declaração, não há voz neural em idioma nenhum — a entrega não traz o modelo —, e dizer «não há voz para
-    // o teu idioma» faria a criança pensar que trocar de idioma resolveria. `ttsFailed` para não repetir a cada fala.
+    // THIS GAME DID NOT ASK FOR A NEURAL VOICE (ADR-0216 §3). It comes BEFORE the language question on purpose: without
+    // the declaration there is no neural voice in any language — the delivery does not carry the model — and saying "there
+    // is no voice for your language" would make the child think switching language would fix it. `ttsFailed` so it is not
+    // repeated on every utterance.
     if (!ctx.neuralVoice) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
     // The voice in use for the current language (ADR-0185); a browser voice in use with Kokoro set explicitly gives way to the
     // language's first Kokoro voice. None: another language's voice is NOT fetched — it would read this text with the wrong phonetics.
@@ -261,12 +261,12 @@ export function createTts(ctx: TtsCtx): Tts {
       const inUse = voiceInUse();
       if (ttsEngine && inUse?.engine !== 'webspeech' && loadedVoice !== inUse?.voice) { ttsEngine = null; ttsFailed = false; }
       if (ttsEngine && ttsEngine.speak) { try { ttsEngine.speak(text); } catch (e) { /* noop */ } return true; }
-      loadTTS(); // motor neural (baixando/indisponível) → cai no fallback
+      loadTTS(); // the neural engine is downloading or unavailable → falls back
     }
-    return speakWebSpeech(text); // fallback imediato: Web Speech, no idioma do jogo
+    return speakWebSpeech(text); // immediate fallback: Web Speech, in the game's language
   }
 
-  function narrate(text: string): void { // gated pelo toggle 'Narração (TTS)' do mixer, independente das legendas
+  function narrate(text: string): void { // gated by the mixer's narration toggle, independent of captions
     const cat = ctx.getAudioCat(); if (!ctx.getSoundOn() || !cat || !cat.tts || !cat.tts.on || !text) return;
     if (availableVoices().length === 0) return; // no voice speaks this language: narration is locked (ADR-0185 §4)
     _narrateCount++; ttsSpeak(text);
