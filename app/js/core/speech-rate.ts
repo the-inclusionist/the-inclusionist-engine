@@ -30,11 +30,11 @@ export function spokenWords(texto: string): number {
 }
 
 /** Seconds from the first to the last sample above the silence threshold — the pauses inside stay, the silent ends go. */
-export function speechSeconds(samples: ArrayLike<number>, taxa: number, silenceThreshold = 0.01): number {
+export function speechSeconds(samples: ArrayLike<number>, sampleRate: number, silenceThreshold = 0.01): number {
   let a = 0, b = samples.length - 1;
   while (a <= b && Math.abs(samples[a]!) < silenceThreshold) a++;
   while (b >= a && Math.abs(samples[b]!) < silenceThreshold) b--;
-  return b >= a ? (b - a + 1) / taxa : 0;
+  return b >= a ? (b - a + 1) / sampleRate : 0;
 }
 
 /**
@@ -50,8 +50,8 @@ export function speechPlaybackRate(
   const alvo = isSpeechRate(ppm);
   const clampInside = (x: number): number => Math.min(MAX_PLAYBACK_RATE, Math.max(MIN_PLAYBACK_RATE, +x.toFixed(6)));
   if (words >= WORDS_TO_MEASURE && seconds >= SECONDS_TO_MEASURE) {
-    const ppmDaVoz = (words / seconds) * 60;
-    return { rate: clampInside(alvo / ppmDaVoz), voiceWpm: ppmDaVoz };
+    const measuredWpm = (words / seconds) * 60;
+    return { rate: clampInside(alvo / measuredWpm), voiceWpm: measuredWpm };
   }
   return { rate: voiceAverage ? clampInside(alvo / voiceAverage) : 1, voiceWpm: null };
 }

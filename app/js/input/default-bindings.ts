@@ -211,19 +211,19 @@ export const GAMEPAD_STANDARD: Readonly<Record<Action, Binding<number>>> = {
  */
 export function bindingProblems<T>(table: Readonly<Record<Action, Binding<T | readonly T[]>>>): string[] {
   const p: string[] = [];
-  const dono = new Map<string, Action>();
+  const actionOfKey = new Map<string, Action>();
 
   for (const acao of ACTIONS) {
     if (!(acao in table)) { p.push(`binding: ${acao} is not declared - write null if the transport cannot reach it`); continue; }
     const v = table[acao];
     if (v === null) continue;
-    const itens = Array.isArray(v) ? v : [v];
-    if (itens.length === 0) { p.push(`binding: ${acao} has an empty list - write null instead`); continue; }
-    for (const item of itens) {
+    const keyList = Array.isArray(v) ? v : [v];
+    if (keyList.length === 0) { p.push(`binding: ${acao} has an empty list - write null instead`); continue; }
+    for (const item of keyList) {
       const chave = String(item);
-      const anterior = dono.get(chave);
+      const anterior = actionOfKey.get(chave);
       if (anterior) p.push(`binding: ${chave} is bound to both ${anterior} and ${acao}`);
-      else dono.set(chave, acao);
+      else actionOfKey.set(chave, acao);
     }
   }
   return p;
@@ -243,7 +243,7 @@ export function conflictsBetweenTables<T>(
   tables: readonly Readonly<Record<Action, Binding<T | readonly T[]>>>[],
 ): string[] {
   const p: string[] = [];
-  const dono = new Map<string, string>();
+  const actionOfKey = new Map<string, string>();
   tables.forEach((table, i) => {
     for (const acao of ACTIONS) {
       const v = table[acao];
@@ -251,9 +251,9 @@ export function conflictsBetweenTables<T>(
       for (const item of (Array.isArray(v) ? v : [v]) as readonly T[]) {
         const chave = String(item);
         const aqui = `p${i + 1}.${acao}`;
-        const anterior = dono.get(chave);
+        const anterior = actionOfKey.get(chave);
         if (anterior) p.push(`cross: ${chave} is claimed by both ${anterior} and ${aqui}`);
-        else dono.set(chave, aqui);
+        else actionOfKey.set(chave, aqui);
       }
     }
   });

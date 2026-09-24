@@ -1,16 +1,16 @@
 {
   "measured": "2026-09-24",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 485,
+  "total": 302,
   "totals": {
-    "decl": 215,
-    "param": 259,
+    "decl": 99,
+    "param": 192,
     "membro": 11
   },
   "files": {
     "app/js/boot/create-game.ts": {
-      "decl": 51,
-      "param": 56,
+      "decl": 27,
+      "param": 49,
       "membro": 0
     },
     "app/js/core/accommodation-subjects.ts": {
@@ -39,23 +39,18 @@
       "membro": 0
     },
     "app/js/core/loop.ts": {
-      "decl": 1,
-      "param": 4,
+      "decl": 0,
+      "param": 1,
       "membro": 0
     },
     "app/js/core/route.ts": {
       "decl": 2,
-      "param": 2,
+      "param": 1,
       "membro": 0
     },
     "app/js/core/speech-rate.ts": {
-      "decl": 2,
-      "param": 2,
-      "membro": 0
-    },
-    "app/js/core/state.ts": {
       "decl": 1,
-      "param": 0,
+      "param": 1,
       "membro": 0
     },
     "app/js/core/visual-state.ts": {
@@ -69,13 +64,13 @@
       "membro": 0
     },
     "app/js/input/default-bindings.ts": {
-      "decl": 10,
+      "decl": 7,
       "param": 0,
       "membro": 0
     },
     "app/js/input/gamepad.ts": {
       "decl": 0,
-      "param": 5,
+      "param": 4,
       "membro": 0
     },
     "app/js/input/keyboard.ts": {
@@ -84,13 +79,13 @@
       "membro": 0
     },
     "app/js/input/keydown.ts": {
-      "decl": 1,
-      "param": 3,
+      "decl": 0,
+      "param": 1,
       "membro": 0
     },
     "app/js/input/latch-edge.ts": {
-      "decl": 1,
-      "param": 4,
+      "decl": 0,
+      "param": 2,
       "membro": 0
     },
     "app/js/input/latch-scope.ts": {
@@ -100,12 +95,12 @@
     },
     "app/js/input/latch-store.ts": {
       "decl": 0,
-      "param": 14,
+      "param": 11,
       "membro": 0
     },
     "app/js/input/latch-sync.ts": {
       "decl": 0,
-      "param": 3,
+      "param": 2,
       "membro": 0
     },
     "app/js/input/pad-defaults.ts": {
@@ -114,18 +109,18 @@
       "membro": 0
     },
     "app/js/input/pad-wizard.ts": {
-      "decl": 5,
+      "decl": 1,
       "param": 3,
       "membro": 0
     },
     "app/js/input/pointer.ts": {
       "decl": 0,
-      "param": 4,
+      "param": 2,
       "membro": 0
     },
     "app/js/input/state.ts": {
       "decl": 0,
-      "param": 6,
+      "param": 4,
       "membro": 0
     },
     "app/js/input/touch.ts": {
@@ -133,23 +128,18 @@
       "param": 3,
       "membro": 0
     },
-    "app/js/input/transport-in-use.ts": {
-      "decl": 0,
-      "param": 5,
-      "membro": 0
-    },
     "app/js/input/transports.ts": {
       "decl": 0,
-      "param": 6,
+      "param": 4,
       "membro": 0
     },
     "app/js/input/vocabulary-migration.ts": {
       "decl": 4,
-      "param": 7,
+      "param": 5,
       "membro": 0
     },
     "app/js/platform/audio-sonar.ts": {
-      "decl": 9,
+      "decl": 6,
       "param": 1,
       "membro": 0
     },
@@ -158,29 +148,24 @@
       "param": 2,
       "membro": 0
     },
-    "app/js/platform/guide-intensity.ts": {
-      "decl": 0,
-      "param": 1,
-      "membro": 0
-    },
     "app/js/platform/heavy.ts": {
       "decl": 0,
       "param": 1,
       "membro": 0
     },
     "app/js/platform/interruptible-speech.ts": {
-      "decl": 2,
-      "param": 6,
-      "membro": 0
-    },
-    "app/js/platform/kokoro.ts": {
-      "decl": 5,
+      "decl": 0,
       "param": 5,
       "membro": 0
     },
+    "app/js/platform/kokoro.ts": {
+      "decl": 3,
+      "param": 1,
+      "membro": 0
+    },
     "app/js/platform/speech-recognition.ts": {
-      "decl": 2,
-      "param": 8,
+      "decl": 0,
+      "param": 4,
       "membro": 0
     },
     "app/js/platform/storage.ts": {
@@ -189,8 +174,8 @@
       "membro": 0
     },
     "app/js/platform/tts.ts": {
-      "decl": 12,
-      "param": 11,
+      "decl": 2,
+      "param": 8,
       "membro": 0
     },
     "app/js/platform/vision.ts": {
@@ -204,18 +189,18 @@
       "membro": 0
     },
     "app/js/render/high-contrast.ts": {
-      "decl": 2,
+      "decl": 1,
       "param": 0,
       "membro": 0
     },
     "app/js/render/port.ts": {
       "decl": 0,
-      "param": 3,
+      "param": 1,
       "membro": 0
     },
     "app/js/render/viz-axes-labels.ts": {
       "decl": 0,
-      "param": 8,
+      "param": 5,
       "membro": 2
     },
     "app/js/render/viz-axes.ts": {
@@ -224,12 +209,12 @@
       "membro": 0
     },
     "app/js/render/viz-setters.ts": {
-      "decl": 6,
+      "decl": 0,
       "param": 5,
       "membro": 0
     },
     "app/js/ui/debug-panel.ts": {
-      "decl": 7,
+      "decl": 1,
       "param": 0,
       "membro": 1
     },
@@ -244,22 +229,22 @@
       "membro": 0
     },
     "app/js/ui/focus-trap.ts": {
-      "decl": 2,
-      "param": 3,
+      "decl": 1,
+      "param": 2,
       "membro": 0
     },
     "app/js/ui/fonts.ts": {
       "decl": 0,
-      "param": 2,
+      "param": 1,
       "membro": 0
     },
     "app/js/ui/game-options.ts": {
-      "decl": 6,
-      "param": 5,
+      "decl": 1,
+      "param": 3,
       "membro": 0
     },
     "app/js/ui/help-panel.ts": {
-      "decl": 5,
+      "decl": 2,
       "param": 0,
       "membro": 0
     },
@@ -268,48 +253,38 @@
       "param": 0,
       "membro": 2
     },
-    "app/js/ui/item-announcement.ts": {
-      "decl": 0,
-      "param": 1,
-      "membro": 0
-    },
     "app/js/ui/latch-refusal.ts": {
       "decl": 1,
       "param": 1,
       "membro": 0
     },
     "app/js/ui/layout.ts": {
-      "decl": 4,
-      "param": 2,
-      "membro": 0
-    },
-    "app/js/ui/loop-crash.ts": {
-      "decl": 2,
-      "param": 3,
-      "membro": 0
-    },
-    "app/js/ui/menu-nav.ts": {
-      "decl": 6,
-      "param": 5,
-      "membro": 0
-    },
-    "app/js/ui/mount-panel.ts": {
-      "decl": 3,
+      "decl": 1,
       "param": 0,
       "membro": 0
     },
+    "app/js/ui/loop-crash.ts": {
+      "decl": 1,
+      "param": 1,
+      "membro": 0
+    },
+    "app/js/ui/menu-nav.ts": {
+      "decl": 3,
+      "param": 5,
+      "membro": 0
+    },
     "app/js/ui/panel-shell.ts": {
-      "decl": 4,
-      "param": 2,
+      "decl": 2,
+      "param": 0,
       "membro": 0
     },
     "app/js/ui/panel-widgets.ts": {
-      "decl": 11,
-      "param": 2,
+      "decl": 4,
+      "param": 0,
       "membro": 0
     },
     "app/js/ui/pause-icons.ts": {
-      "decl": 11,
+      "decl": 4,
       "param": 5,
       "membro": 0
     },
@@ -319,7 +294,7 @@
       "membro": 0
     },
     "app/js/ui/settings-audio.ts": {
-      "decl": 4,
+      "decl": 0,
       "param": 2,
       "membro": 0
     },
@@ -328,18 +303,13 @@
       "param": 0,
       "membro": 0
     },
-    "app/js/ui/settings-empathy.ts": {
-      "decl": 1,
-      "param": 0,
-      "membro": 0
-    },
     "app/js/ui/settings-mobility.ts": {
-      "decl": 4,
+      "decl": 2,
       "param": 4,
       "membro": 0
     },
     "app/js/ui/settings-motion.ts": {
-      "decl": 1,
+      "decl": 0,
       "param": 1,
       "membro": 0
     },
@@ -349,13 +319,13 @@
       "membro": 0
     },
     "app/js/ui/settings-visual.ts": {
-      "decl": 6,
-      "param": 2,
+      "decl": 2,
+      "param": 1,
       "membro": 2
     },
     "app/js/ui/shell.ts": {
-      "decl": 3,
-      "param": 5,
+      "decl": 2,
+      "param": 4,
       "membro": 0
     }
   }

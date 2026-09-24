@@ -39,25 +39,25 @@ export interface LatchedEdgeOptions {
  * DEVOLVE O `playerEdge` QUE TAMBÉM RESOLVE A ALTERNÂNCIA — para passar a `initKeydown` e a
  * `initTouchBindings` no lugar do cru.
  *
- * ⚠️ RESOLVE CONTRA `inputOf(jogador).emUso` E NÃO CONTRA `origem`, e a distinção é de desenho e não de
+ * ⚠️ RESOLVE CONTRA `inputOf(jogador).inUse` E NÃO CONTRA `origin`, e a distinção é de desenho e não de
  * comportamento: hoje o `afterEdge` põe sempre `emUso = origem`, logo trocar uma pela outra é uma mutação
  * EQUIVALENTE — está registada como tal no gate, em vez de fingir cobertura. O que a escolha compra é o
  * futuro: quem decide que aparelho está em uso é o autómato, e o dia em que ele ganhar uma regra que RECUSE
  * uma aresta (um falso positivo da webcam a ser filtrado, por exemplo) esta linha segue-o sem ser editada.
- * Ler `origem` seria uma segunda resposta à pergunta que o `input/transport-in-use` existe para responder.
+ * Ler `origin` seria uma segunda resposta à pergunta que o `input/transport-in-use` existe para responder.
  */
 export function createLatchedEdge(
   getPlayers: () => readonly (LatchPlayer | null | undefined)[],
   opts: LatchedEdgeOptions = {},
-): (jogador: number, origem: TransportName) => void {
-  const armazem = opts.store ?? store;
+): (jogador: number, origin: TransportName) => void {
+  const latchStore = opts.store ?? store;
   const padrao = opts.padrao ?? DEFAULTS.toggleMove;
-  return (jogador: number, origem: TransportName): void => {
-    playerEdge(jogador, origem);
+  return (jogador: number, origin: TransportName): void => {
+    playerEdge(jogador, origin);
     // 📌 O JOGADOR PODE NÃO EXISTIR — uma tela em espera, um assento que ainda não entrou —, e isso não torna
     // a aresta inválida: o transporte em uso é facto sobre a ENTRADA e fica registado à mesma. O que não
     // acontece é a segunda metade, porque não há onde a escrever.
     const p = getPlayers()[jogador];
-    if (p) syncLatch(p, armazem, jogador, inputOf(jogador).inUse, padrao);
+    if (p) syncLatch(p, latchStore, jogador, inputOf(jogador).inUse, padrao);
   };
 }

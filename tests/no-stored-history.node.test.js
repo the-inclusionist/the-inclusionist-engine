@@ -27,10 +27,10 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
 /**
  * Toda escrita em armazenamento, em qualquer das formas que este repositório usa.
- * ⚠️ Since ADR-0178 `core/state` and `core/i18n` write through the port the root loads (`armazem('setter')` before the write,
+ * ⚠️ Since ADR-0178 `core/state` and `core/i18n` write through the port the root loads (`portFor('setter')` before the write,
  * `porta.set(` in `setLocale`): without those two forms this sieve went blind to them, and their inventory lines read as orphans.
  */
-const ESCREVE = /(?:^|[^\w.])(?:store|ctx\.store)\.(?:set|setBool|setJSON)\s*\(|armazem\('\w+'\)|port\.set\s*\(|localStorage\.setItem|sessionStorage\.setItem|indexedDB/;
+const ESCREVE = /(?:^|[^\w.])(?:store|ctx\.store)\.(?:set|setBool|setJSON)\s*\(|portFor\('\w+'\)|port\.set\s*\(|localStorage\.setItem|sessionStorage\.setItem|indexedDB/;
 
 function ficheirosTs(dir = RAIZ) {
   const saida = [];

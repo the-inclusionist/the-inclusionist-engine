@@ -179,7 +179,7 @@ export function emit<K extends keyof GameEvent>(evt: K, val: GameEvent[K]): void
 //     boot; persistir travaria o rastreio de prefers-contrast). Mudanças do usuário usam setVizModeValue. ---
 export let vizMode = 'normal';
 export function initVizMode(mode: string): void { vizMode = mode; }
-export function setVizModeValue(mode: string): void { const p = armazem('setVizModeValue'); p.set('incl_viz', mode); vizMode = mode; emit('vizMode', mode); }
+export function setVizModeValue(mode: string): void { const p = portFor('setVizModeValue'); p.set('incl_viz', mode); vizMode = mode; emit('vizMode', mode); }
 
 /* (`coins` SAIU daqui em 2026-08-25, item 19 — está em `game/state`. Ele era `unknown[]` porque `core/` não
  *  podia conhecer o tipo, e esse `unknown` era o SINTOMA: um estado que não consegue declarar o próprio tipo
@@ -293,7 +293,7 @@ export const DEFAULTS = Object.freeze({
 export let blindMode: boolean = NULL_PORT.getBool('incl_modocego', DEFAULTS.blindMode);
 export function setBlindModeValue(on: boolean): void {
   if (blindMode === on) return; // a guarda VEM DO ORIGINAL: sem ela o anúncio repetiria a cada clique redundante
-  const p = armazem('setBlindModeValue'); p.setBool('incl_modocego', on); blindMode = on; emit('blindMode', on);
+  const p = portFor('setBlindModeValue'); p.setBool('incl_modocego', on); blindMode = on; emit('blindMode', on);
 }
 
 
@@ -370,14 +370,14 @@ export type LetterCase = 'mixed' | 'upper';
 export let letterCase: LetterCase = NULL_PORT.get(NULL_PORT.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
 export function setLetterCaseValue(c: LetterCase): void {
   if (letterCase === c) return;
-  const p = armazem('setLetterCaseValue'); p.set(p.KEYS.letterCase, c); letterCase = c; emit('letterCase', c);
+  const p = portFor('setLetterCaseValue'); p.set(p.KEYS.letterCase, c); letterCase = c; emit('letterCase', c);
 }
 
 export let captionsOn = NULL_PORT.getBool(NULL_PORT.KEYS.captions, DEFAULTS.captionsOn);
 export function setCaptionsOnValue(on: boolean): void {
   const v = !!on;
   if (captionsOn === v) return;
-  const p = armazem('setCaptionsOnValue'); p.setBool(p.KEYS.captions, v); captionsOn = v; emit('captionsOn', v);
+  const p = portFor('setCaptionsOnValue'); p.setBool(p.KEYS.captions, v); captionsOn = v; emit('captionsOn', v);
 }
 
 // --- menuIndexOn: o "6 de 10" no fim do anuncio de cada item de menu (ADR-0044, item 3).
@@ -391,7 +391,7 @@ export let menuIndexOn = NULL_PORT.getBool(NULL_PORT.KEYS.menuIndex, DEFAULTS.me
 export function setMenuIndexOnValue(on: boolean): void {
   const v = !!on;
   if (menuIndexOn === v) return;
-  const p = armazem('setMenuIndexOnValue'); p.setBool(p.KEYS.menuIndex, v); menuIndexOn = v; emit('menuIndexOn', v);
+  const p = portFor('setMenuIndexOnValue'); p.setBool(p.KEYS.menuIndex, v); menuIndexOn = v; emit('menuIndexOn', v);
 }
 
 // --- cbSafe: PALETA SEGURA PARA DALTONISMO (Okabe-Ito). Não é um filtro sobre a imagem — é a escolha das
@@ -400,7 +400,7 @@ export let cbSafe: boolean = NULL_PORT.getBool(NULL_PORT.KEYS.cbsafe, DEFAULTS.c
 export function setCbSafeValue(on: boolean): void {
   const v = !!on;
   if (cbSafe === v) return;
-  const p = armazem('setCbSafeValue'); p.setBool(p.KEYS.cbsafe, v); cbSafe = v; emit('cbSafe', v);
+  const p = portFor('setCbSafeValue'); p.setBool(p.KEYS.cbsafe, v); cbSafe = v; emit('cbSafe', v);
 }
 
 // --- ownerColors: no multijogador, cada item aparece na cor de QUEM pode pegá-lo. Desligado, todos veem a cor
@@ -409,7 +409,7 @@ export let ownerColors: boolean = NULL_PORT.getBool(NULL_PORT.KEYS.ownercolors, 
 export function setOwnerColorsValue(on: boolean): void {
   const v = !!on;
   if (ownerColors === v) return;
-  const p = armazem('setOwnerColorsValue'); p.setBool(p.KEYS.ownercolors, v); ownerColors = v; emit('ownerColors', v);
+  const p = portFor('setOwnerColorsValue'); p.setBool(p.KEYS.ownercolors, v); ownerColors = v; emit('ownerColors', v);
 }
 
 /** Espessura de contorno: 0 nenhum · 1 fino · 2 grosso. Fora da faixa satura, não rejeita. */
@@ -428,13 +428,13 @@ export let hcOutlineFg: OutlineLevel = toOutlineLevel(NULL_PORT.getNum(NULL_PORT
 export function setOutlineFgValue(v: number): void {
   const n = toOutlineLevel(v);
   if (hcOutlineFg === n) return;
-  const p = armazem('setOutlineFgValue'); p.set(p.KEYS.outfg, n); hcOutlineFg = n; emit('hcOutlineFg', n);
+  const p = portFor('setOutlineFgValue'); p.set(p.KEYS.outfg, n); hcOutlineFg = n; emit('hcOutlineFg', n);
 }
 export let hcOutlineBg: OutlineLevel = toOutlineLevel(NULL_PORT.getNum(NULL_PORT.KEYS.outbg, DEFAULTS.hcOutlineBg));
 export function setOutlineBgValue(v: number): void {
   const n = toOutlineLevel(v);
   if (hcOutlineBg === n) return;
-  const p = armazem('setOutlineBgValue'); p.set(p.KEYS.outbg, n); hcOutlineBg = n; emit('hcOutlineBg', n);
+  const p = portFor('setOutlineBgValue'); p.set(p.KEYS.outbg, n); hcOutlineBg = n; emit('hcOutlineBg', n);
 }
 
 // --- caneBlockDiv: espaçamento da batida da BENGALA, em blocos pisados. 1 = uma batida por bloco;
@@ -444,7 +444,7 @@ export let caneBlockDiv: number = NULL_PORT.getNum('incl_cane_div', DEFAULTS.can
 export function setCaneBlockDivValue(div: number): void {
   const d = (+div) || 1; // o `|| 1` vem do original: um valor corrompido no localStorage viraria NaN e a
   if (caneBlockDiv === d) return; //  bengala pararia de bater, que é o modo de falha mais silencioso possível
-  const p = armazem('setCaneBlockDivValue'); p.set('incl_cane_div', d); caneBlockDiv = d; emit('caneBlockDiv', d);
+  const p = portFor('setCaneBlockDivValue'); p.set('incl_cane_div', d); caneBlockDiv = d; emit('caneBlockDiv', d);
 }
 
 // --- wheelchair: MODO CADEIRANTE. Muda a geometria do nível inteiro — degraus e escada viram rampas e
@@ -453,7 +453,7 @@ export function setCaneBlockDivValue(div: number): void {
 export let wheelchair: boolean = NULL_PORT.getBool('incl_wheelchair', DEFAULTS.wheelchair);
 export function setWheelchairValue(on: boolean): void {
   if (wheelchair === on) return;
-  const p = armazem('setWheelchairValue'); p.setBool('incl_wheelchair', on); wheelchair = on; emit('wheelchair', on);
+  const p = portFor('setWheelchairValue'); p.setBool('incl_wheelchair', on); wheelchair = on; emit('wheelchair', on);
 }
 
 // --- oneButton: «um botão por vez», an EMPATHY SIMULATION (ADR-0181): while one game key is held, a second is never
@@ -461,7 +461,7 @@ export function setWheelchairValue(on: boolean): void {
 export let oneButton: boolean = NULL_PORT.getBool('incl_onebtn', DEFAULTS.oneButton);
 export function setOneButtonValue(on: boolean): void {
   if (oneButton === on) return;
-  const p = armazem('setOneButtonValue'); p.setBool('incl_onebtn', on); oneButton = on; emit('oneButton', on);
+  const p = portFor('setOneButtonValue'); p.setBool('incl_onebtn', on); oneButton = on; emit('oneButton', on);
 }
 
 // --- semForca: «sem força para segurar botão», the second motor empathy simulation (ADR-0181): any sustained contact of a
@@ -470,7 +470,7 @@ export let noGripStrength: boolean = NULL_PORT.getBool('incl_sem_forca', DEFAULT
 export function setNoGripStrengthValue(on: boolean): void {
   const v = !!on;
   if (noGripStrength === v) return;
-  const p = armazem('setNoGripStrengthValue'); p.setBool('incl_sem_forca', v); noGripStrength = v; emit('noGripStrength', v);
+  const p = portFor('setNoGripStrengthValue'); p.setBool('incl_sem_forca', v); noGripStrength = v; emit('noGripStrength', v);
 }
 
 // --- inputCooldown: a tremor is not a second press (ADR-0217, GAG Advanced/Motor). MILLISECONDS, and 0 is off — the rule reads
@@ -480,7 +480,7 @@ export let inputCooldown: number = NULL_PORT.getNum('incl_input_cooldown', DEFAU
 export function setInputCooldownValue(ms: number): void {
   const v = Number.isFinite(ms) && ms > 0 ? Math.round(ms) : 0;
   if (inputCooldown === v) return;
-  const p = armazem('setInputCooldownValue'); p.set('incl_input_cooldown', v); inputCooldown = v; emit('inputCooldown', v);
+  const p = portFor('setInputCooldownValue'); p.set('incl_input_cooldown', v); inputCooldown = v; emit('inputCooldown', v);
 }
 
 // --- switchScan: PLAYING WITH ONE BUTTON, the third position of the quick bar's ☝️ (ADR-0218, issue #201). The scan offers the
@@ -496,7 +496,7 @@ export let switchScan: boolean = NULL_PORT.getBool('incl_switch_scan', DEFAULTS.
 export function setSwitchScanValue(on: boolean): void {
   const v = !!on;
   if (switchScan === v) return;
-  const p = armazem('setSwitchScanValue'); p.setBool('incl_switch_scan', v); switchScan = v; emit('switchScan', v);
+  const p = portFor('setSwitchScanValue'); p.setBool('incl_switch_scan', v); switchScan = v; emit('switchScan', v);
 }
 
 // --- voiceControl: PLAYING BY SPEAKING, the quick bar's 👄 (ADR-0189, ADR-0193; issue #184). The child says a word of the
@@ -507,7 +507,7 @@ export let voiceControl: boolean = NULL_PORT.getBool('incl_voice_control', DEFAU
 export function setVoiceControlValue(on: boolean): void {
   const v = !!on;
   if (voiceControl === v) return;
-  const p = armazem('setVoiceControlValue'); p.setBool('incl_voice_control', v); voiceControl = v; emit('voiceControl', v);
+  const p = portFor('setVoiceControlValue'); p.setBool('incl_voice_control', v); voiceControl = v; emit('voiceControl', v);
 }
 
 // --- cameraControl: playing through the webcam, the quick bar's 📷 (ADR-0215): off · hands · face · eyes, in that order. ONE key, so one
@@ -522,7 +522,7 @@ export let cameraControl: CameraControl = cameraModeOf(NULL_PORT.get('incl_camer
 export function setCameraControlValue(v: CameraControl): void {
   const valid = cameraModeOf(v);
   if (cameraControl === valid) return;
-  const p = armazem('setCameraControlValue'); p.set('incl_camera_control', valid); cameraControl = valid; emit('cameraControl', valid);
+  const p = portFor('setCameraControlValue'); p.set('incl_camera_control', valid); cameraControl = valid; emit('cameraControl', valid);
 }
 
 // --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
@@ -531,7 +531,7 @@ export let gameSpeed: number = isGameSpeed(NULL_PORT.getNum('incl_game_speed', D
 export function setGameSpeedValue(v: number): void {
   const isValidSpeed = isGameSpeed(v);
   if (gameSpeed === isValidSpeed) return;
-  const p = armazem('setGameSpeedValue'); p.set('incl_game_speed', isValidSpeed); gameSpeed = isValidSpeed; emit('gameSpeed', isValidSpeed);
+  const p = portFor('setGameSpeedValue'); p.set('incl_game_speed', isValidSpeed); gameSpeed = isValidSpeed; emit('gameSpeed', isValidSpeed);
 }
 
 // --- captionPpm: the child's caption reading rate, words a minute (ADR-0183 §4): how long a sound caption stays. One of
@@ -540,7 +540,7 @@ export let captionPpm: number = isCaptionRate(NULL_PORT.getNum('incl_caption_ppm
 export function setCaptionPpmValue(ppm: number): void {
   const isValidRate = isCaptionRate(ppm);
   if (captionPpm === isValidRate) return;
-  const p = armazem('setCaptionPpmValue'); p.set('incl_caption_ppm', isValidRate); captionPpm = isValidRate; emit('captionPpm', isValidRate);
+  const p = portFor('setCaptionPpmValue'); p.set('incl_caption_ppm', isValidRate); captionPpm = isValidRate; emit('captionPpm', isValidRate);
 }
 
 // --- speechPpm: the child's speech rate, words a minute (ADR-0183 §1; issue #179): each engine measures its voice and plays at
@@ -549,7 +549,7 @@ export let speechPpm: number = isSpeechRate(NULL_PORT.getNum('incl_speech_ppm', 
 export function setSpeechPpmValue(ppm: number): void {
   const isValidRate = isSpeechRate(ppm);
   if (speechPpm === isValidRate) return;
-  const p = armazem('setSpeechPpmValue'); p.set('incl_speech_ppm', isValidRate); speechPpm = isValidRate; emit('speechPpm', isValidRate);
+  const p = portFor('setSpeechPpmValue'); p.set('incl_speech_ppm', isValidRate); speechPpm = isValidRate; emit('speechPpm', isValidRate);
 }
 
 /* ===================== THE STORED SETTINGS, LOADED BY THE ROOT (ADR-0178, issue #174) ===================== */
@@ -559,7 +559,7 @@ export function setSpeechPpmValue(ppm: number): void {
  * The port for a write — or an error. ⚠️ A write before the load would put a default over what the child saved, and nobody
  * would see it; the error names the setter, so the root that calls it too early is found the first time it runs.
  */
-function armazem(setter: string): StatePort {
+function portFor(setter: string): StatePort {
   if (!port) throw new Error(`core/state: ${setter} wrote a setting before loadState — it would overwrite the child's stored choice; the composition root loads the settings first (ADR-0178)`);
   return port;
 }

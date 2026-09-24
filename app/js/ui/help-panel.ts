@@ -139,8 +139,8 @@ export function animateFigure(el: HTMLElement, slide: HowToPlaySlide, clock: Fig
   if (!screen || !ctx || !slide.figure) return () => {};
   const figureFn = slide.figure;
   // the drawing surface is the size it is shown at, in CSS pixels, so a figure's coordinates are the ones the child sees
-  const caixa = screen.getBoundingClientRect();
-  if (caixa.width > 0 && caixa.height > 0) { screen.width = Math.round(caixa.width); screen.height = Math.round(caixa.height); }
+  const screenBox = screen.getBoundingClientRect();
+  if (screenBox.width > 0 && screenBox.height > 0) { screen.width = Math.round(screenBox.width); screen.height = Math.round(screenBox.height); }
   let id = 0, still = false, start = -1;
   const draw = (ms: number): void => {
     if (still || !el.isConnected) return;
@@ -203,20 +203,20 @@ export function showSlide(
   ctx: SlideCtx & { readonly t: (k: string, p?: Record<string, string>) => string; readonly title: string },
 ): { readonly index: number; readonly spoken: string } {
   const last = Math.max(0, rows.length - 1);
-  const indice = Math.max(0, Math.min(last, i));
-  const r = rows[indice];
+  const shown = Math.max(0, Math.min(last, i));
+  const r = rows[shown];
   const parts = slidePartsOf(el);
-  if (!r || !parts) return { index: indice, spoken: '' };
-  drawDots(parts.dots, rows.length, indice, ctx);
-  const falado = isFromGame(r) ? showPlaySlide(parts, r) : showButtonSlide(parts, r, ctx.t);
+  if (!r || !parts) return { index: shown, spoken: '' };
+  drawDots(parts.dots, rows.length, shown, ctx);
+  const spokenText = isFromGame(r) ? showPlaySlide(parts, r) : showButtonSlide(parts, r, ctx.t);
   el.setAttribute('aria-label', ctx.title);
   el.setAttribute('aria-valuemin', '0');
   el.setAttribute('aria-valuemax', String(last));
-  el.setAttribute('aria-valuenow', String(indice));
-  el.setAttribute('aria-valuetext', falado);
-  el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', indice === 0);
-  el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', indice === last);
-  return { index: indice, spoken: falado };
+  el.setAttribute('aria-valuenow', String(shown));
+  el.setAttribute('aria-valuetext', spokenText);
+  el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', shown === 0);
+  el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', shown === last);
+  return { index: shown, spoken: spokenText };
 }
 
 /** The parts `mountSlides` builds; `null` when one is missing, and then nothing is drawn. */

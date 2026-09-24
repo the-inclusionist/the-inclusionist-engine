@@ -96,7 +96,7 @@ export type RenderInto = (displayObject: unknown, alvo: unknown, clearFirst: boo
 export type CreateSprite<T> = (sourceTexture: unknown) => T;
 
 /** Idem para o azulejo do parallax, que também recebe largura e altura. */
-export type CreateTile<T> = (sourceTexture: unknown, largura: number, altura: number) => T;
+export type CreateTile<T> = (sourceTexture: unknown, tileWidth: number, tileHeight: number) => T;
 
 /** E o desenho vetorial vazio (`new PIXI.Graphics()`), pela mesma razão. */
 export type CreateDrawing<T> = () => T;

@@ -121,11 +121,11 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     const deafness = hearingLoss;
     const um = ctx.getOneButton() !== DEFAULTS.oneButton;
     const wheelchair = ctx.getWheelchair() !== DEFAULTS.wheelchair;
-    const linha = (sel: string): HTMLElement | null =>
+    const rowOf = (sel: string): HTMLElement | null =>
       ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null;
-    markChanged(linha('#opt-hearing'), deafness);
-    markChanged(linha('#opt-onebtn'), um);
-    markChanged(linha('#opt-wheelchair'), wheelchair);
+    markChanged(rowOf('#opt-hearing'), deafness);
+    markChanged(rowOf('#opt-onebtn'), um);
+    markChanged(rowOf('#opt-wheelchair'), wheelchair);
     markChanged(ctx.$<HTMLElement>('#empathy-list'), simulating);
     markMenuChanged(ctx.$<HTMLElement>('[data-act="empatia"]'), [simulating, deafness, um, wheelchair]);
   }

@@ -294,7 +294,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    * gate passou a afirmá-la nesses termos. Um leitor antigo continua a ver algo verdadeiro sobre a tela; o
    * que ele deixa de ver é a metade que a forma antiga nunca soube dizer.
    */
-  function setVisualDoJogador(i: number, v: VisualState): void {
+  function writePlayerVisual(i: number, v: VisualState): void {
     const p = ctx.getPlayers()[i];
     p.visual = v;
     p.viz = legacyKey(v);
@@ -304,20 +304,20 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   }
 
   /** Muda SÓ o tema deste jogador. A correção e a simulação ficam onde estavam — é o ponto da #104. */
-  function setTemaDoJogador(i: number, tema: Theme): void {
+  function writePlayerTheme(i: number, tema: Theme): void {
     const p = ctx.getPlayers()[i];
-    setVisualDoJogador(i, { ...(p.visual ?? PADRAO), tema });
+    writePlayerVisual(i, { ...(p.visual ?? PADRAO), tema });
   }
 
   /** Muda SÓ a correção de cor deste jogador. O tema e a simulação ficam onde estavam. */
-  function setCorrecaoDoJogador(i: number, correcao: Correction): void {
+  function writePlayerCorrection(i: number, correcao: Correction): void {
     const p = ctx.getPlayers()[i];
-    setVisualDoJogador(i, { ...(p.visual ?? PADRAO), correcao });
+    writePlayerVisual(i, { ...(p.visual ?? PADRAO), correcao });
   }
 
   /** A API antiga, por chave única. Continua a valer: um jogo que escolhe um modo inteiro passa por aqui. */
   function setPlayerViz(i: number, mode: string): void {
-    setVisualDoJogador(i, migrateVisual(resolveViz(mode).key));
+    writePlayerVisual(i, migrateVisual(resolveViz(mode).key));
   }
 
   /** Os efeitos colaterais de ter mudado o visual de um jogador. Separados do ESCREVER de propósito: os dois
@@ -349,7 +349,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    * sério são os dois eixos, e esta linha sai quando o último leitor da chave velha sair.
    */
   function applyVizGlobal(v: VisualState): void {
-    const filtro = filterKey(v);
+    const filterName = filterKey(v);
     const textureForMode = textureKey(v);
     // ⚠️ `legacyKey` E NÃO `textura`: a de textura devolve `normal` para uma correção de cor, e escrevê-la
     // aqui faria um leitor antigo da chave global perder a correção da criança. Ver a nota em `legacyKey`.
@@ -360,7 +360,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     // `vizMode!=='normal'`, e discordava do setter — sem efeito, porque applyVizGlobal roda no boot antes de
     // o gancho existir, mas é o sintoma clássico de cópia de estado.)
     // --- eixo CORREÇÃO/SIMULAÇÃO: o filtro CSS ---
-    ctx.applyCssFilter(cssFilterFor(filtro ?? '', lqFilter()), isSimulation(v) ? 'mundo' : 'mundo-e-menus');
+    ctx.applyCssFilter(cssFilterFor(filterName ?? '', lqFilter()), isSimulation(v) ? 'mundo' : 'mundo-e-menus');
     // --- eixo TEMA: DOM e textura. Não é filtro (ver `ApplyHighContrastToDom`), e é por isso que compõe.
     ctx.applyHighContrastToDom(hasHighContrast(v));
     ctx.camera.filters = hasHighContrast(v) ? ctx.pixiFilterFor(textureForMode) : null; // solo: alto contraste na câmera
@@ -435,15 +435,15 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     // — a regra das três zonas do CLAUDE.md: a explicação mora no rodapé, nunca na linha.
     //
     // ⚠️ SÓ AS LINHAS QUE SIMULAM. Esta função desenha hoje a lista de simulações (o painel visual passou a
-    // usar o `renderEixosVisuais`), mas ela continua a receber os modos por parâmetro — e uma correção de
+    // usar o `drawVisualAxes`), mas ela continua a receber os modos por parâmetro — e uma correção de
     // cor nesta lista não deve ser recusada por causa do eixo dela própria.
     const refusal = simulationRefusal(v);
     el.querySelectorAll<HTMLElement>('button[data-viz]').forEach((btn) => {
       const key = btn.dataset.viz as string;
       if (refusal && simulatesDisability(key)) {
         btn.setAttribute('aria-disabled', 'true');
-        const dica = btn.closest('.ctrl-row')?.querySelector<HTMLElement>('.opt-hint');
-        if (dica) dica.textContent = `${dica.textContent} ${t(refusal.key)}`.trim();
+        const explanation = btn.closest('.ctrl-row')?.querySelector<HTMLElement>('.opt-hint');
+        if (explanation) explanation.textContent = `${explanation.textContent} ${t(refusal.key)}`.trim();
         return; // sem ouvinte: aceitar o clique e ignorá-lo é a outra metade do que o ADR proíbe
       }
       btn.addEventListener('click', () => {
@@ -465,7 +465,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    * a mais faria cada um dos 300 jogos ter de se lembrar dele — a forma de defeito que o ADR-0106 acabou de
    * medir em cinco jogos sem barra de acessibilidade nenhuma.
    */
-  function renderEixosVisuais(listSel: string, tabsSel: string): void {
+  function drawVisualAxes(listSel: string, tabsSel: string): void {
     const el = ctx.$(listSel); if (!el) return;
     if (ctx.getSelVizPlayer() >= ctx.getNumPlayers()) ctx.setSelVizPlayer(0);
     const tabs = ctx.$(tabsSel); if (tabs) { tabs.hidden = true; tabs.innerHTML = ''; }
@@ -477,10 +477,10 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       if (!choice) return; // botão de outro assunto, ou um `data-` editado à mão: não se adivinha
       const i = ctx.getSelVizPlayer();
       if (choice.axis === 'tema') {
-        setTemaDoJogador(i, choice.value as Theme);
+        writePlayerTheme(i, choice.value as Theme);
         ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(THEME_LABEL[choice.value as Theme])));
       } else {
-        setCorrecaoDoJogador(i, choice.value as Correction);
+        writePlayerCorrection(i, choice.value as Correction);
         ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(CORRECTION_LABEL[choice.value as Correction])));
       }
     }));
@@ -488,8 +488,8 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   return {
     applySharedTextures, updateVpDots, applyVpFilters, setPlayerViz, applyVizGlobal, reapplyVizAll,
-    updateVizIndicator, rebakeDirect, renderVizGroup, renderVisualAxes: renderEixosVisuais,
+    updateVizIndicator, rebakeDirect, renderVizGroup, renderVisualAxes: drawVisualAxes,
     // Os DOIS escritores por eixo (#104): é o que um painel de dois controles chama.
-    setPlayerVisual: setVisualDoJogador, setPlayerTheme: setTemaDoJogador, setPlayerCorrection: setCorrecaoDoJogador,
+    setPlayerVisual: writePlayerVisual, setPlayerTheme: writePlayerTheme, setPlayerCorrection: writePlayerCorrection,
   };
 }

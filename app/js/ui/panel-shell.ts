@@ -110,11 +110,11 @@ export interface PanelShell {
 }
 
 /** Os ids que um painel de `id` ocupa. Exportado porque um gate e um consumidor precisam de os nomear. */
-export function shellIds(id: string, idDaLista?: string): PanelShell['ids'] {
+export function shellIds(id: string, customListId?: string): PanelShell['ids'] {
   return {
     overlay: id,
     title: `${id}-title`,
-    list: idDaLista ?? `${id}-list`,
+    list: customListId ?? `${id}-list`,
     reset: `${id}-reset`,
     close: `${id}-close`,
   };
@@ -148,8 +148,8 @@ export function mountShell(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell
   // ADR-0158: «Voltar» is item 1 and nothing closes the panel after its rows. The way out is where the cursor lands
   // when the panel opens — a close button at the bottom made the child walk every row to leave. The id stays
   // `#X-close`, which is contract; only its place and its word changed.
-  const fechar = botao(ctx, ids.close, 'mode-btn overlay__back');
-  card.appendChild(fechar);
+  const backButton = botao(ctx, ids.close, 'mode-btn overlay__back');
+  card.appendChild(backButton);
 
   const lista = ctx.create('div');
   lista.id = ids.list;
@@ -164,9 +164,9 @@ export function mountShell(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell
   card.appendChild(actionsRow);
 
   overlay.appendChild(card);
-  const casca: PanelShell = { overlay, card, title: h2, list: lista, reset, close: fechar, ids };
-  applyLabels(casca, spec);
-  return casca;
+  const shell: PanelShell = { overlay, card, title: h2, list: lista, reset, close: backButton, ids };
+  applyLabels(shell, spec);
+  return shell;
 }
 
 /**
@@ -185,18 +185,18 @@ export function mountShell(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell
  *
  * IDEMPOTENTE: escrever os mesmos rótulos duas vezes é escrever os mesmos rótulos.
  */
-export function applyLabels(casca: PanelShell, r: PanelLabels): void {
-  casca.title.textContent = r.title;
-  casca.list.setAttribute('aria-label', r.listLabel);
-  casca.reset.textContent = r.resetLabel;
-  casca.close.textContent = r.closeLabel;
+export function applyLabels(shell: PanelShell, r: PanelLabels): void {
+  shell.title.textContent = r.title;
+  shell.list.setAttribute('aria-label', r.listLabel);
+  shell.reset.textContent = r.resetLabel;
+  shell.close.textContent = r.closeLabel;
   // the arrow is drawn by the stylesheet, out of the name (ADR-0159 rule 12)
-  casca.close.setAttribute('data-glifo', '↩');
+  shell.close.setAttribute('data-glifo', '↩');
   // A introdução do painel é o texto de REPOUSO do rodapé (CLAUDE.md §4), nunca um `<p>` no topo.
   // ⚠️ A AUSÊNCIA TEM DE APAGAR, e não só deixar de escrever: numa retradução para um dicionário que não tem
   // a chave, o atributo antigo sobreviveria e o rodapé descansaria no idioma anterior.
-  if (r.intro) casca.card.setAttribute('data-explain-idle', r.intro);
-  else casca.card.removeAttribute('data-explain-idle');
+  if (r.intro) shell.card.setAttribute('data-explain-idle', r.intro);
+  else shell.card.removeAttribute('data-explain-idle');
 }
 
 function botao(ctx: PanelShellCtx, id: string, cssClass: string): HTMLElement {

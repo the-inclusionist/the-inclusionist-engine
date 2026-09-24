@@ -38,7 +38,7 @@ export interface SpeechEngine<Audio, Fonte> {
   /** Começa a tocar e devolve a fonte, para que ela possa ser parada. `null` = não deu para tocar agora. */
   play(audio: Audio, onEnded: () => void): Fonte | null;
   /** Cala a fonte. Chamado com o que `tocar` devolveu, e nunca com `null`. */
-  stop(fonte: Fonte): void;
+  stop(playing: Fonte): void;
 }
 
 export interface InterruptibleSpeech {
@@ -62,7 +62,7 @@ export function createInterruptibleSpeech<Audio, Fonte>(motor: SpeechEngine<Audi
     }
   }
 
-  async function falar(texto: string): Promise<void> {
+  async function speakNow(texto: string): Promise<void> {
     const myTurn = ++currentTurn; // reivindica a vez ANTES de qualquer espera
     stopPlayback();             // garantia 1: silêncio imediato, não ao fim da síntese
     if (!texto) return;
@@ -70,9 +70,9 @@ export function createInterruptibleSpeech<Audio, Fonte>(motor: SpeechEngine<Audi
       const audio = await motor.synthesize(texto);
       if (myTurn !== currentTurn) return; // garantia 2: chegou tarde — outro pedido já assumiu
       stopPlayback();                   // de novo: alguém pode ter começado a tocar durante a espera
-      const fonte = motor.play(audio, () => { if (nowPlaying === fonte) nowPlaying = null; });
-      if (myTurn !== currentTurn) { if (fonte !== null) { try { motor.stop(fonte); } catch (e) { /* noop */ } } return; }
-      nowPlaying = fonte;
+      const playing = motor.play(audio, () => { if (nowPlaying === playing) nowPlaying = null; });
+      if (myTurn !== currentTurn) { if (playing !== null) { try { motor.stop(playing); } catch (e) { /* noop */ } } return; }
+      nowPlaying = playing;
     } catch (e) {
       // Síntese falhou para ESTE texto. Não é motivo para derrubar a narração inteira: o próximo pedido
       // tenta de novo, e o silêncio de um item é melhor que um motor morto.
@@ -80,7 +80,7 @@ export function createInterruptibleSpeech<Audio, Fonte>(motor: SpeechEngine<Audi
   }
 
   return {
-    speak: (texto) => { void falar(texto); },
+    speak: (texto) => { void speakNow(texto); },
     silence: () => { currentTurn++; stopPlayback(); }, // o `++` invalida o que estiver sintetizando agora
     speaking: () => nowPlaying !== null,
   };

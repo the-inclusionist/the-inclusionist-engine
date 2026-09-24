@@ -151,7 +151,7 @@ function cbSafeRowSpec(): ControlRowSpec {
  * ⚠️ Reetiquetar e não reconstruir, pela razão que o `labelRow` já escreve: as escutas ligam-se no arranque, e refazer
  * a linha deixaria um controle no documento e sem escuta — um botão morto com aparência de vivo (ADR-0106 §5).
  */
-function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, oferecer: VisualRowsOffered = EVERY_ROW_OFFERED): void {
+function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, offered: VisualRowsOffered = EVERY_ROW_OFFERED): void {
   /*
    * 🔴 O REALCE DE CONTRASTE, EM PASSOS E COM A PROSA NO SÍTIO CERTO (ADR-0151). O Dev viu a explicação DENTRO da
    * linha: ela vinha colada ao rótulo e dependia de o hospedeiro passar o `fillExplain` para descer ao rodapé. Mora
@@ -175,13 +175,13 @@ function mountVisualInside(ctx: PanelShellCtx, list: HTMLElement, oferecer: Visu
   const enhanceHint = enhanceRow.querySelector<HTMLElement>('.opt-hint');
   if (enhanceHint) enhanceHint.textContent = t('visual.lq.dica');
 
-  for (const spec of [...(oferecer.owner ? [ownerRowSpec()] : []), cbSafeRowSpec()]) {
+  for (const spec of [...(offered.owner ? [ownerRowSpec()] : []), cbSafeRowSpec()]) {
     const already = ctx.find('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
     if (already) labelRow(already, spec);
     else list.appendChild(controlRow(ctx, spec).row);
   }
 
-  if (oferecer.roles) mountRoleColoursRow(ctx, list);
+  if (offered.roles) mountRoleColoursRow(ctx, list);
 }
 
 /**
@@ -275,15 +275,15 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     wired = true;
     const placeholder = ctx.$<HTMLElement>('[data-passos-lugar="lq"]');
     if (placeholder) {
-      const passos = mountSteps(kitCtx(list), enhanceSpec());
-      passos.id = 'opt-lq';
-      placeholder.replaceWith(passos);
-      passos.addEventListener('passo', (ev) => {
+      const stepper = mountSteps(kitCtx(list), enhanceSpec());
+      stepper.id = 'opt-lq';
+      placeholder.replaceWith(stepper);
+      stepper.addEventListener('passo', (ev) => {
         const nextIndex = nextStep(enhanceStep, LQ_STEPS.length, (ev as CustomEvent<number>).detail);
         if (nextIndex === enhanceStep) return; // na ponta não se anuncia um passo que não aconteceu
         enhanceStep = nextIndex;
         ctx.setLq(LQ_STEPS[enhanceStep] as number);
-        updateSteps(passos, enhanceSpec());
+        updateSteps(stepper, enhanceSpec());
         ctx.srSay(t('sr.visual.lq', { v: t(lqLabel(LQ_STEPS[enhanceStep] as number)) }));
       });
     }
@@ -312,8 +312,8 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
       const inp = ctx.$<HTMLInputElement>('#opt-role-' + k);
       if (inp) inp.value = rgbToHex(s.roleColors[k]);
     }
-    const passos = ctx.$<HTMLElement>('#opt-lq');
-    if (passos) updateSteps(passos, enhanceSpec());
+    const stepper = ctx.$<HTMLElement>('#opt-lq');
+    if (stepper) updateSteps(stepper, enhanceSpec());
   }
 
   function reflectOutlines(): void {
@@ -393,18 +393,18 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     const cb = s.cbSafe !== DEFAULTS.cbSafe;
     const fg = s.outlineFg !== DEFAULTS.hcOutlineFg;
     const bg = s.outlineBg !== DEFAULTS.hcOutlineBg;
-    const papeis = ROLE_KEYS.some((k) => !sameRgb(s.roleColors[k], HC_ROLE_DEF[k]));
-    const linha = (sel: string): HTMLElement | null =>
+    const rolesChanged = ROLE_KEYS.some((k) => !sameRgb(s.roleColors[k], HC_ROLE_DEF[k]));
+    const rowOf = (sel: string): HTMLElement | null =>
       ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null;
     markChanged(rowOfCheckedAxis('tema'), tema);
     markChanged(rowOfCheckedAxis('correcao'), correcao);
-    markChanged(linha('#opt-lq'), lqOff);
-    markChanged(linha('#opt-ownercolors'), owner);
-    markChanged(linha('#opt-cbsafe'), cb);
-    markChanged(linha('#opt-outline-fg'), fg);
-    markChanged(linha('#opt-outline-bg'), bg);
-    markChanged(linha('#opt-role-reset'), papeis);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="visual"]'), [tema, correcao, lqOff, owner, cb, fg, bg, papeis]);
+    markChanged(rowOf('#opt-lq'), lqOff);
+    markChanged(rowOf('#opt-ownercolors'), owner);
+    markChanged(rowOf('#opt-cbsafe'), cb);
+    markChanged(rowOf('#opt-outline-fg'), fg);
+    markChanged(rowOf('#opt-outline-bg'), bg);
+    markChanged(rowOf('#opt-role-reset'), rolesChanged);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="visual"]'), [tema, correcao, lqOff, owner, cb, fg, bg, rolesChanged]);
   }
 
   // ---- restaurar os padrões DESTE menu (ADR-0028) ----

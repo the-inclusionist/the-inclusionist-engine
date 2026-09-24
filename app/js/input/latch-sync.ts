@@ -82,10 +82,10 @@ export function applyLatch(p: LatchPlayer, on: boolean): boolean {
  */
 export function syncLatch(
   p: LatchPlayer,
-  armazem: LatchStore,
+  store: LatchStore,
   jogador: number,
   transporte: string,
   padrao: boolean,
 ): boolean {
-  return applyLatch(p, storedLatch(armazem, BASE_DA_MARCHA, jogador, transporte, padrao));
+  return applyLatch(p, storedLatch(store, BASE_DA_MARCHA, jogador, transporte, padrao));
 }

@@ -468,7 +468,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   }
 
   /** Consome a tecla: ela era nossa, e ninguém mais deve vê-la. Uma função só para o par nunca se separar. */
-  const consumir = (e: NavKeyEvent): void => { e.preventDefault(); e.stopPropagation(); };
+  const consume = (e: NavKeyEvent): void => { e.preventDefault(); e.stopPropagation(); };
 
   function menuNavKey(e: NavKeyEvent): void {
     if (ctx.isCapturing()) return;   // remap em andamento: a tecla é dele
@@ -484,7 +484,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // criança o único jeito de ATIVAR o ícone sob o cursor.
     const { player, keys } = intentOf(e.code);
     if (ctx.onBar(player)) {
-      if (hasIntent(keys)) { consumir(e); ctx.navBar(player, keys); }
+      if (hasIntent(keys)) { consume(e); ctx.navBar(player, keys); }
       return; // na barra, tecla de menu é da barra — com ou sem intenção, não desce para o personagem
     }
 
@@ -515,9 +515,9 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // bolha, que despausaria o jogo com o diálogo aberto. Esses dois casos entram por `sharedDialogOpen()`
     // — há diálogo, logo a tecla É consumida, exatamente como antes.
     const dlg = sharedDialogOpen();
-    if (dlg) { consumir(e); navDialog(dlg, k); return; }    // diálogo de a11y aberto: navega ele (compartilhado)
+    if (dlg) { consume(e); navDialog(dlg, k); return; }    // diálogo de a11y aberto: navega ele (compartilhado)
     const menu = ctx.getPauseMenu(pi);                      // senão: menu de pausa do PRÓPRIO jogador
-    if (menu && !menu.hidden) { consumir(e); navPause(menu, pi, k); }
+    if (menu && !menu.hidden) { consume(e); navPause(menu, pi, k); }
     // Sem diálogo e sem menu: a tecla NÃO é nossa. Segue o caminho dela até quem for o dono.
   }
 
@@ -532,7 +532,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
    */
   const HOLD_MS = 500;
   let holding: { id: number; timer: ReturnType<typeof setTimeout> } | null = null;
-  let engolirClique: HTMLElement | null = null;
+  let clickToSwallow: HTMLElement | null = null;
 
   /** The open menu and the item under `alvo`, when `alvo` is inside one: the top dialog first, else a pause card. */
   function itemUnder(alvo: EventTarget | null): { menu: HTMLElement; items: HTMLElement[]; n: number; inPause: boolean } | null {
@@ -558,7 +558,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
 
   function onPress(e: PointerEvent): void {
     release();
-    engolirClique = null;
+    clickToSwallow = null;
     const under = itemUnder(e.target);
     if (!under) return;
     const id = e.pointerId;
@@ -566,7 +566,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       id,
       timer: setTimeout(() => {
         holding = null;
-        engolirClique = under.items[under.n] ?? null;
+        clickToSwallow = under.items[under.n] ?? null;
         if (under.inPause) selectAndSayInPause(under.menu, under.items, under.n);
         else focusAndSay(under.items, under.n);
       }, HOLD_MS),
@@ -577,9 +577,9 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     if (holding && holding.id === e.pointerId) release();
   }
 
-  function aoClicar(e: MouseEvent): void {
-    const alvo = engolirClique;
-    engolirClique = null;
+  function onClick(e: MouseEvent): void {
+    const alvo = clickToSwallow;
+    clickToSwallow = null;
     if (alvo && e.target instanceof Node && alvo.contains(e.target)) { e.preventDefault(); e.stopPropagation(); }
   }
 
@@ -588,7 +588,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     ctx.win.addEventListener('pointerdown', onPress, true);
     ctx.win.addEventListener('pointerup', onRelease, true);
     ctx.win.addEventListener('pointercancel', onRelease, true);
-    ctx.win.addEventListener('click', aoClicar, true);
+    ctx.win.addEventListener('click', onClick, true);
   }
 
   return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, attach };

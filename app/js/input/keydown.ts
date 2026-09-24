@@ -516,7 +516,7 @@ export interface KeydownCtx {
    */
   readonly heldKeys: ReadonlySet<string>;
   /** Uma tecla foi segurada, e sabe-se por quem. */
-  markKey: (code: string, origem: TransportName) => void;
+  markKey: (code: string, origin: TransportName) => void;
   /**
    * Uma tecla foi segurada e NÃO se sabe por quem — o evento sintético que ninguém assinou.
    *
@@ -536,7 +536,7 @@ export interface KeydownCtx {
    * chega carimbado (`input/synthetic-source`), então é por esta linha que `olhos`/`rosto`/`gestos`/`fala`
    * passam a ser o transporte em uso. Uma tecla premida a sério devolve o teclado, que é a regra 3 do ADR-0109.
    */
-  playerEdge: (jogador: number, origem: TransportName) => void;
+  playerEdge: (jogador: number, origin: TransportName) => void;
   releaseKey: (code: string) => void;
   /** `let oneButton` do game.js (empatia motora) → getter. */
   isOneButton: () => boolean;
@@ -609,7 +609,7 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
   }
 
   /**
-   * ⚠️ A ORIGEM CHEGA DO EVENTO E NÃO É INVENTADA AQUI (ADR-0109). `origem` é `undefined` só para o evento
+   * ⚠️ A ORIGEM CHEGA DO EVENTO E NÃO É INVENTADA AQUI (ADR-0109). `origin` é `undefined` só para o evento
    * sintético que ninguém assinou — e nesse caso a porta estreita APAGA a entrada anterior, em vez de deixar a
    * tecla herdar de quem a segurou da última vez. Ver `markKeyWithoutSource`.
    *
@@ -623,8 +623,8 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
     // one question: a key with no source says so and stops; a key with one marks it and the seat's transport
     if (!transport) { ctx.markKeyWithoutSource(code); return; }
     ctx.markKey(code, transport);
-    const dono = ctx.whichPlayer(code);
-    ctx.playerEdge(dono < 0 ? 0 : dono, transport);
+    const keyOwner = ctx.whichPlayer(code);
+    ctx.playerEdge(keyOwner < 0 ? 0 : keyOwner, transport);
   }
 
   /*

@@ -123,7 +123,7 @@ export function typographyCycle(tag: string | null | undefined): readonly Typogr
     { letterCase: 'mixed', font: 'lexend', scale: 1 } as const,   // (d)
     // (e), e (f) onde o país ensina duas. ⚠️ 25% MAIOR, e o número não é gosto: a base do documento é 16 px,
     // as Playwrite declaram `minPx: 20`, e 16 × 1,25 é exactamente 20. A escala É o piso.
-    ...hands.map((fonte) => ({ letterCase: 'mixed', font: fonte, scale: HANDWRITING_SCALE } as const)),
+    ...hands.map((face) => ({ letterCase: 'mixed', font: face, scale: HANDWRITING_SCALE } as const)),
   ]);
 }
 

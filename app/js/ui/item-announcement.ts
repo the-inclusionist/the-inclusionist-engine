@@ -39,8 +39,8 @@ const tidy = (s: string | undefined): string => (s || '').replace(/\s+/g, ' ').t
  * visibilidade sai da lista e deixa o índice de quem sobrou fora dela. "0 de 7" ensina uma geografia falsa
  * do menu, e a criança confia nela — número errado é pior que número nenhum.
  */
-export function announceItem(item: ItemDeMenu, comIndice: boolean): string {
-  const indexApplies = comIndice && item.total >= 1 && item.position >= 1 && item.position <= item.total;
+export function announceItem(item: ItemDeMenu, withIndex: boolean): string {
+  const indexApplies = withIndex && item.total >= 1 && item.position >= 1 && item.position <= item.total;
   const parts = [
     tidy(item.label),
     tidy(item.state),

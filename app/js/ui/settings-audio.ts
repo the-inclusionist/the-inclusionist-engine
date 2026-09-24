@@ -7,10 +7,10 @@
 // `store` (narrow get/set), the live sound/mixer primitives from platform/audio.ts (getSoundOn/setSoundOn/
 // getVolume/setVolume/getAudioCat/setCatGain), the injected `tts` panel API (platform/tts.ts), and the SHARED
 // game.js helpers other panels also use (`toggleBtn`, `getNumPlayers`/`getPlayers`) or that live outside audio
-// entirely (`getModoCego`/`setModoCego`, `getCaneBlockDiv`/`setCaneBlockDiv` — core collision state; the widgets
+// entirely (`getBlindMode`/`setBlindMode`, `getCaneBlockDiv`/`setCaneBlockDiv` — core collision state; the widgets
 // live in this overlay, the state does not). Overlay open/close plumbing (#audio hidden toggle, frontOverlay,
 // focus management, Escape, `ensureAC()`) is the shared infra every settings panel uses and stays in game.js,
-// which calls `renderAudio()` from its `openAudio()`. `reflectModoCego`/`reflectTts` are also exported because
+// which calls `renderAudio()` from its `openAudio()`. `reflectBlindMode`/`reflectTts` are also exported because
 // game.js's own `setModoCego()` and the pause-menu icon bar (`iconAct('tts'|'blind', …)`) call them directly.
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
@@ -253,8 +253,8 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
     }
     const alreadyThere = ctx.find('#' + piece.id);
     if (alreadyThere) {
-      const linha = alreadyThere.closest<HTMLElement>('.ctrl-row');
-      if (linha) labelRow(linha, piece);
+      const rowNode = alreadyThere.closest<HTMLElement>('.ctrl-row');
+      if (rowNode) labelRow(rowNode, piece);
       continue;
     }
     card.insertBefore(controlRow(ctx, piece).row, actions);
@@ -278,8 +278,8 @@ export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
   for (const piece of rows) {
     const alreadyThere = ctx.find('#' + piece.id);
     if (alreadyThere) {
-      const linha = alreadyThere.closest<HTMLElement>('.ctrl-row');
-      if (linha) labelRow(linha, piece);
+      const rowNode = alreadyThere.closest<HTMLElement>('.ctrl-row');
+      if (rowNode) labelRow(rowNode, piece);
       continue;
     }
     card.insertBefore(controlRow(ctx, piece).row, lista.parentNode === card ? lista : actions);
@@ -295,7 +295,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   // ⚠️ PADRÃO DA ENGINE (ADR-0106 §4): quem injecta manda; quem não injecta deixa de ficar sem modo cego.
   // O `setBlindModeValue` faz as três coisas que o `core/state` diz que um setter faz — grava, persiste, avisa
   // — e nada mais: os efeitos (refazer os extras do nível) são reação, e quem reage assina o evento.
-  const setModoCego = ctx.setBlindMode ?? state.setBlindModeValue;
+  const writeBlindMode = ctx.setBlindMode ?? state.setBlindModeValue;
 
   let audioDevices: MediaDeviceInfo[] = [];
 
@@ -533,7 +533,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     renderSinks(audioDevices);
   }
 
-  function reflectModoCego(): void {
+  function drawBlindMode(): void {
     const b = ctx.$<HTMLButtonElement>('#opt-modocego');
     if (b) { ctx.toggleBtn(b, ctx.getBlindMode()); b.textContent = toggleLabel(ctx.getBlindMode()); }
   }
@@ -542,7 +542,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     reflectMaster();
     renderCategoryList('#audio-list', GEN_CATS);
     renderNavSound();
-    reflectModoCego();
+    drawBlindMode();
     voice.render();
     const cd = ctx.$<HTMLSelectElement>('#cane-div');
     if (cd) cd.value = String(ctx.getCaneBlockDiv());
@@ -616,22 +616,22 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   /*
    * ⚠️ ESTE BOTÃO ERA O ÚNICO DESTE PAINEL QUE NÃO ANUNCIAVA. Medido em 2026-09-08: os cinco irmãos daqui
    * anunciam (som, TTS, divisor da bengala, índice de menu, saída de áudio) e o modo cego não — ele parecia
-   * anunciar porque UM cartucho o fazia a partir do próprio `setModoCego`, e o painel herdava o efeito.
+   * anunciar porque UM cartucho o fazia a partir do próprio `setBlindMode`, e o painel herdava o efeito.
    *
    * ⚠️ E ISSO PASSOU A EXPOR SILÊNCIO no mesmo dia: desde que o campo ganhou padrão da engine
    * (`setBlindModeValue`, que grava/persiste/avisa e NÃO fala), um jogo que não injecta o seu próprio setter
    * ficava com este botão mudo. Um alternador que muda estado sem o dizer é invisível para quem usa leitor de
-   * tela — a mesma família de defeito que o `reflectTTS` e o `reflectModoCego` já custaram aqui.
+   * tela — a mesma família de defeito que o `reflectTTS` e o `reflectBlindMode` já custaram aqui.
    *
    * O anúncio pertence a QUEM É ACCIONADO, não ao setter: `core/state` diz que o setter faz três coisas e só
    * três. ⚠️ Consequência de lockstep, escrita para não se descobrir depois: quando o `game-platformer` subir
-   * de versão, tem de TIRAR o `srSay` do `setModoCego` dele, senão a criança ouve o estado duas vezes.
+   * de versão, tem de TIRAR o `srSay` do `setBlindMode` dele, senão a criança ouve o estado duas vezes.
    */
   const mcBtn = ctx.$<HTMLButtonElement>('#opt-modocego');
   if (mcBtn) {
     mcBtn.addEventListener('click', () => {
-      setModoCego(!ctx.getBlindMode());
-      reflectModoCego();
+      writeBlindMode(!ctx.getBlindMode());
+      drawBlindMode();
       ctx.srSay(t(ctx.getBlindMode() ? 'sr.blind.on' : 'sr.blind.off'));
     });
   }
@@ -667,12 +667,12 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   }
   const resetBtn = ctx.$<HTMLButtonElement>('#audio-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
-    setModoCego(DEFAULTS.blindMode);
+    writeBlindMode(DEFAULTS.blindMode);
     ctx.setCaneBlockDiv(DEFAULTS.caneBlockDiv);
     // 🔴 DESDE O ADR-0151 ESTE MENU NÃO TEM A MÚSICA: repor aqui a música seria alcançar fora de si — a regra do
     // escopo, acima. Tudo o que não é das categorias de gosto é deste painel.
     resetCategories(ctx.audioCats.map((c) => c.k).filter((k) => !(GEN_CATS as readonly string[]).includes(k)));
-    renderAudio(); reflectModoCego();
+    renderAudio(); drawBlindMode();
     ctx.srSay(t('sr.audio.reset'));
   });
   // O «repor» do painel ÁUDIO: as categorias de gosto e nada mais.
@@ -693,7 +693,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    * escrito ao lado do `setBlindModeValue` — «o setter faz três coisas e só três: grava, persiste, avisa. Os
    * efeitos … são reação, e quem reage assina o evento».
    *
-   * Sem esta assinatura, um jogo que NÃO injecta o seu próprio `setModoCego` liga o modo cego pelo ícone da
+   * Sem esta assinatura, um jogo que NÃO injecta o seu próprio `setBlindMode` liga o modo cego pelo ícone da
    * barra e o botão `#opt-modocego` deste painel continua a dizer «Desligado», com `aria-pressed=false` — o
    * controlo a mentir o estado para o leitor de tela. É o gémeo exacto do defeito do `reflectTTS` que já está
    * registado no `ui/pause-icons`, e não vale a pena descobri-lo uma terceira vez.
@@ -702,7 +702,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
    * e reescreve o botão. Um anúncio duplicado seria outra história, e por isso a assinatura NÃO anuncia: o
    * ícone da barra já diz `sr.icon.blindOn`/`Off` por si.
    */
-  state.on('blindMode', () => { reflectModoCego(); });
+  state.on('blindMode', () => { drawBlindMode(); });
 
-  return { renderAudio, reflectBlindMode: reflectModoCego, reflectTts: voice.reflectTts };
+  return { renderAudio, reflectBlindMode: drawBlindMode, reflectTts: voice.reflectTts };
 }

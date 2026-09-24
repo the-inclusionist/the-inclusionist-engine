@@ -1671,7 +1671,7 @@
     ],
     "type RenderInto": "(displayObject: unknown, alvo: unknown, clearFirst: boolean) => void",
     "type CreateSprite": "(sourceTexture: unknown) => T",
-    "type CreateTile": "(sourceTexture: unknown, largura: number, altura: number) => T",
+    "type CreateTile": "(sourceTexture: unknown, tileWidth: number, tileHeight: number) => T",
     "type CreateDrawing": "() => T",
     "type ApplyCssFilter": "(css: string, reach: FilterReach) => void",
     "type FilterReach": "'mundo' | 'mundo-e-menus'",

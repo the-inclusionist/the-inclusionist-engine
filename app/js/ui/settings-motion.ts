@@ -398,14 +398,14 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       ctx.srSay(sceneMotionAnnouncement(t(RM_LABEL[k]), rm[k]));
     });
     el.addEventListener('passo', (ev) => {
-      const passos = (ev.target as HTMLElement | null)?.closest<HTMLElement>('[data-crt="round"]');
-      if (!passos) return;
+      const stepper = (ev.target as HTMLElement | null)?.closest<HTMLElement>('[data-crt="round"]');
+      if (!stepper) return;
       const next = nextStep(CRT.round, CRT_ROUND_LEVELS.length, (ev as CustomEvent<number>).detail);
       // ⚠️ NA PONTA NÃO SE ANUNCIA NADA: repetir «grande» a quem já está no máximo soaria a um passo dado.
       if (next === CRT.round) return;
       CRT.round = next;
       applyCrt();
-      updateSteps(passos, roundSpec());
+      updateSteps(stepper, roundSpec());
       refreshMarks();
       ctx.srSay(crtRoundAnnouncement(t(CRT_LBL.round), CRT.round));
     });

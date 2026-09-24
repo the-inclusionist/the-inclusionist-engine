@@ -102,19 +102,19 @@ export function createTts(ctx: TtsCtx): Tts {
   let ttsEngineSelExplicito: string | null = stored && !ENGINES_THAT_LEFT.includes(stored) ? stored : null;
   const engineSel = (): string => {
     if (ttsEngineSelExplicito) return ttsEngineSelExplicito;
-    const e = vozAtual()?.engine;
+    const e = voiceInUse()?.engine;
     // a fallback this game did not ask for is not the default: undeclared, the browser's voice (no «not bundled» alert)
     return e === 'kokoro' && ctx.neuralVoice ? e : 'webspeech';
   };
-  let kokoroDispositivo: 'webgpu' | 'wasm' | null = null;
+  let kokoroBackend: 'webgpu' | 'wasm' | null = null;
   let loadedVoice: string | null = null; // the voice the loaded engine speaks; another choice reloads it
   // Each voice's words per minute, averaged over the utterances long enough to measure (`core/speech-rate`): what a short
   // utterance («Voltar») is played against. Neural voices by id; browser voices by name.
   const voiceAverage = new Map<string, number>();
-  const media = (voz: string, ppm: number | null): void => {
+  const media = (voiceName: string, ppm: number | null): void => {
     if (!ppm) return;
-    const before = voiceAverage.get(voz);
-    voiceAverage.set(voz, before ? before * 0.7 + ppm * 0.3 : ppm);
+    const before = voiceAverage.get(voiceName);
+    voiceAverage.set(voiceName, before ? before * 0.7 + ppm * 0.3 : ppm);
   };
 
   /**
@@ -126,21 +126,21 @@ export function createTts(ctx: TtsCtx): Tts {
     try { lista = window.speechSynthesis?.getVoices() ?? []; } catch { /* no speech synthesis here */ }
     return voicesForLocale(bcp47(), lista.map((v) => ({ locale: v.lang.replace('_', '-'), engine: 'webspeech', voice: 'webspeech:' + v.name })));
   };
-  const vozes = (): readonly NeuralVoice[] => [...browserVoices(), ...(ctx.neuralVoice ? voicesForLocale(bcp47(), KOKORO_VOICES) : [])];
+  const availableVoices = (): readonly NeuralVoice[] => [...browserVoices(), ...(ctx.neuralVoice ? voicesForLocale(bcp47(), KOKORO_VOICES) : [])];
   /** The browser voice an entry names, or null. */
   const browserVoice = (id: string | undefined): SpeechSynthesisVoice | null => {
     if (!id?.startsWith('webspeech:')) return null;
     try { return window.speechSynthesis?.getVoices().find((v) => 'webspeech:' + v.name === id) ?? null; } catch { return null; }
   };
-  function vozAtual(): NeuralVoice | null {
-    const lista = vozes();
+  function voiceInUse(): NeuralVoice | null {
+    const lista = availableVoices();
     const storedVoiceId = store.get(store.KEYS.ttsVoz, null);
     return lista.find((v) => v.voice === storedVoiceId) ?? lista[0] ?? null;
   }
-  function setVoz(id: string): boolean {
-    if (!vozes().some((v) => v.voice === id)) return false;
+  function chooseVoice(id: string): boolean {
+    if (!availableVoices().some((v) => v.voice === id)) return false;
     store.set(store.KEYS.ttsVoz, id);
-    ttsEngineSelExplicito = vozes().find((v) => v.voice === id)!.engine;
+    ttsEngineSelExplicito = availableVoices().find((v) => v.voice === id)!.engine;
     _ttsVoiceObj = browserVoice(id);
     return true;
   }
@@ -151,11 +151,11 @@ export function createTts(ctx: TtsCtx): Tts {
       // `u.lang` era 'pt-BR' fixo. Com o jogo em inglês ou espanhol isso pedia ao navegador uma voz
       // PORTUGUESA para um texto que não é português — e o resultado não é sotaque, é ininteligível: a
       // fonética errada aplicada às letras erradas. Segue o idioma do jogo.
-      const voz = _ttsVoiceObj ?? browserVoice(vozAtual()?.voice);
-      const u = new SpeechSynthesisUtterance(text); u.lang = bcp47(); if (voz) u.voice = voz; u.volume = Math.min(1, ctx.getVolume() * 1.4);
+      const voiceName = _ttsVoiceObj ?? browserVoice(voiceInUse()?.voice);
+      const u = new SpeechSynthesisUtterance(text); u.lang = bcp47(); if (voiceName) u.voice = voiceName; u.volume = Math.min(1, ctx.getVolume() * 1.4);
       // ADR-0183 §1: the browser's `rate` is a multiplier. The voice's words a minute at rate 1 is measured on its own utterances
       // (start to end, so the silent ends count — an approximation the neural path does not need); until one is measured, 1.
-      const voiceIdOf = 'webspeech:' + (voz?.name ?? bcp47());
+      const voiceIdOf = 'webspeech:' + (voiceName?.name ?? bcp47());
       const words = spokenWords(text);
       const voiceBase = voiceAverage.get(voiceIdOf) ?? null;
       u.rate = ctx.getSpeechPpm && voiceBase ? speechPlaybackRate(0, 0, ctx.getSpeechPpm(), voiceBase).rate : 1;
@@ -180,14 +180,14 @@ export function createTts(ctx: TtsCtx): Tts {
         const bytes = await produce(texto);
         const ac = ctx.ensureAC();
         if (!ac) throw new Error('AudioContext unavailable'); // o `catch` de lá trata: silêncio deste item, motor vivo
-        let taxa = 1;
+        let speedRatio = 1;
         if (ctx.getSpeechPpm) {
           const buf = await ac.decodeAudioData(bytes.slice(0));
           const measure = speechPlaybackRate(spokenWords(texto), speechSeconds(buf.getChannelData(0), buf.sampleRate), ctx.getSpeechPpm(), voiceAverage.get(voiceId) ?? null);
           media(voiceId, measure.voiceWpm);
-          taxa = measure.rate;
+          speedRatio = measure.rate;
         }
-        return { url: URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' })), rate: taxa };
+        return { url: URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' })), rate: speedRatio };
       },
       play: (som, onFinish) => {
         const ac = ctx.ensureAC();
@@ -210,24 +210,24 @@ export function createTts(ctx: TtsCtx): Tts {
    * ids and a waveform. WebGPU only where a short test synthesis is speech — measured, WebGPU can run and return noise — and WASM
    * with threads otherwise (ADR-0192).
    */
-  function loadKokoroEngine(fonte: NeuralVoice): void {
+  function loadKokoroEngine(forVoice: NeuralVoice): void {
     const load = ctx.loadKokoro ?? fromDelivery;
-    const kv = KOKORO_VOICES.find((v) => v.voice === fonte.voice);
+    const kv = KOKORO_VOICES.find((v) => v.voice === forVoice.voice);
     if (!kv) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
-    ttsLoading = true; loadedVoice = fonte.voice; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
+    ttsLoading = true; loadedVoice = forVoice.voice; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
     load().then(async (mod) => {
       const [vocabulario, tabela] = await Promise.all([mod.vocabulary(), mod.voice(kv.voice)]);
-      const synthesiseWith = async (sessao: KokoroSession, texto: string): Promise<Float32Array> => {
+      const synthesiseWith = async (kokoroSession: KokoroSession, texto: string): Promise<Float32Array> => {
         const ids = tokenizar(await mod.phonemize(texto, kv.espeak), vocabulario);
-        return sessao.synthesize(ids, sentenceStyle(tabela, ids.length - 2));
+        return kokoroSession.synthesize(ids, sentenceStyle(tabela, ids.length - 2));
       };
-      let sessao: KokoroSession | null = null;
+      let kokoroSession: KokoroSession | null = null;
       try {
         const gpu = await mod.session('webgpu');
-        if (eFala(await synthesiseWith(gpu, t('tts.kokoro.teste')))) { sessao = gpu; kokoroDispositivo = 'webgpu'; }
+        if (eFala(await synthesiseWith(gpu, t('tts.kokoro.teste')))) { kokoroSession = gpu; kokoroBackend = 'webgpu'; }
       } catch { /* no WebGPU here: WASM below */ }
-      if (!sessao) { sessao = await mod.session('wasm'); kokoroDispositivo = 'wasm'; }
-      const used = sessao;
+      if (!kokoroSession) { kokoroSession = await mod.session('wasm'); kokoroBackend = 'wasm'; }
+      const used = kokoroSession;
       const fala = speakByWav(kv.voice, async (texto) => wavDe(await synthesiseWith(used, texto)));
       ttsEngine = { id: 'kokoro', speak: (text: string) => { fala.speak(text); } };
       ttsLoading = false;
@@ -249,17 +249,17 @@ export function createTts(ctx: TtsCtx): Tts {
     if (!ctx.neuralVoice) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
     // The voice in use for the current language (ADR-0185); a browser voice in use with Kokoro set explicitly gives way to the
     // language's first Kokoro voice. None: another language's voice is NOT fetched — it would read this text with the wrong phonetics.
-    const atual = vozAtual();
-    const fonte = atual?.engine === 'kokoro' ? atual : voicesForLocale(bcp47(), KOKORO_VOICES)[0] ?? null;
-    if (!fonte) { ctx.srAlert(t('sr.tts.noNeuralForLanguage')); return; }
-    loadKokoroEngine(fonte);
+    const current = voiceInUse();
+    const forVoice = current?.engine === 'kokoro' ? current : voicesForLocale(bcp47(), KOKORO_VOICES)[0] ?? null;
+    if (!forVoice) { ctx.srAlert(t('sr.tts.noNeuralForLanguage')); return; }
+    loadKokoroEngine(forVoice);
   }
 
   function ttsSpeak(text: string): boolean {
     if (engineSel() !== 'webspeech') {
       // another voice picked, or the language changed, since the engine loaded: load the voice in use
-      const emUso = vozAtual();
-      if (ttsEngine && emUso?.engine !== 'webspeech' && loadedVoice !== emUso?.voice) { ttsEngine = null; ttsFailed = false; }
+      const inUse = voiceInUse();
+      if (ttsEngine && inUse?.engine !== 'webspeech' && loadedVoice !== inUse?.voice) { ttsEngine = null; ttsFailed = false; }
       if (ttsEngine && ttsEngine.speak) { try { ttsEngine.speak(text); } catch (e) { /* noop */ } return true; }
       loadTTS(); // motor neural (baixando/indisponível) → cai no fallback
     }
@@ -268,7 +268,7 @@ export function createTts(ctx: TtsCtx): Tts {
 
   function narrate(text: string): void { // gated pelo toggle 'Narração (TTS)' do mixer, independente das legendas
     const cat = ctx.getAudioCat(); if (!ctx.getSoundOn() || !cat || !cat.tts || !cat.tts.on || !text) return;
-    if (vozes().length === 0) return; // no voice speaks this language: narration is locked (ADR-0185 §4)
+    if (availableVoices().length === 0) return; // no voice speaks this language: narration is locked (ADR-0185 §4)
     _narrateCount++; ttsSpeak(text);
   }
 
@@ -278,7 +278,7 @@ export function createTts(ctx: TtsCtx): Tts {
     getEngine: () => ttsEngine, getVoiceObj: () => _ttsVoiceObj, setVoiceObj: (v) => { _ttsVoiceObj = v; },
     get loading() { return ttsLoading; }, get failed() { return ttsFailed; }, get narrateCount() { return _narrateCount; },
     get neuralAvailable() { return !!ctx.neuralVoice; },
-    get kokoroDevice() { return kokoroDispositivo; },
-    voices: vozes, currentVoice: vozAtual, setVoice: setVoz,
+    get kokoroDevice() { return kokoroBackend; },
+    voices: availableVoices, currentVoice: voiceInUse, setVoice: chooseVoice,
   };
 }

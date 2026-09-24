@@ -73,30 +73,30 @@ export interface ControlRow {
  * decisão (ADR-0044 §2).
  */
 export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow {
-  const linha = ctx.create('div');
-  linha.className = 'ctrl-row';
+  const rowNode = ctx.create('div');
+  rowNode.className = 'ctrl-row';
 
   const texto = ctx.create('span');
-  const forte = ctx.create('strong');
-  forte.textContent = spec.label;
-  texto.appendChild(forte);
+  const shortLabel = ctx.create('strong');
+  shortLabel.textContent = spec.label;
+  texto.appendChild(shortLabel);
   if (spec.hint) {
     // ⚠️ UM SÓ, e é o que o `fillExplain` procura. Dois `.opt-hint` na mesma linha davam duas descrições ao
     // mesmo controle, e o rodapé mostraria a primeira — a outra ficaria na linha, que é exactamente o defeito
     // que a regra §4 existe para impedir.
-    const dica = ctx.create('span');
-    dica.className = 'opt-hint';
-    dica.textContent = spec.hint;
-    texto.appendChild(dica);
+    const explanation = ctx.create('span');
+    explanation.className = 'opt-hint';
+    explanation.textContent = spec.hint;
+    texto.appendChild(explanation);
   }
-  linha.appendChild(texto);
+  rowNode.appendChild(texto);
 
   const controle = buildControl(ctx, spec);
   controle.id = spec.id;
   controle.setAttribute('aria-label', spec.ariaLabel ?? spec.label);
-  linha.appendChild(controle);
+  rowNode.appendChild(controle);
 
-  return { row: linha, controle };
+  return { row: rowNode, controle };
 }
 
 /**
@@ -116,28 +116,28 @@ export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow
  * os cliques dos seus controles UMA VEZ, no arranque. Refazer a linha deixaria um controle no documento e sem
  * escuta — um botão morto com aparência de vivo (ADR-0106 §5).
  */
-export function labelRow(linha: HTMLElement, spec: ControlRowSpec): void {
-  const forte = linha.querySelector<HTMLElement>('strong');
-  if (forte) forte.textContent = spec.label;
-  const dica = linha.querySelector<HTMLElement>('.opt-hint');
+export function labelRow(rowNode: HTMLElement, spec: ControlRowSpec): void {
+  const shortLabel = rowNode.querySelector<HTMLElement>('strong');
+  if (shortLabel) shortLabel.textContent = spec.label;
+  const explanation = rowNode.querySelector<HTMLElement>('.opt-hint');
   // ⚠️ A dica que SOME tem de ser apagada, e não só deixar de ser escrita: numa retradução para um dicionário
   // sem a chave, o texto antigo sobreviveria e o rodapé descansaria no idioma anterior.
-  if (dica) dica.textContent = spec.hint ?? '';
+  if (explanation) explanation.textContent = spec.hint ?? '';
   // The control is found by COMPARING its id, not by building a selector from it: a selector needs the id escaped, escaping
   // needs `CSS.escape`, and `CSS` is a browser global that THROWS where it does not exist — it took down a boot in a case's fake
   // document once (2026-09-21). No selector, nothing to escape, no global (ADR-0221 step 7d).
-  const controle = [...linha.querySelectorAll<HTMLElement>('[id]')].find((el) => el.id === spec.id);
+  const controle = [...rowNode.querySelectorAll<HTMLElement>('[id]')].find((el) => el.id === spec.id);
   if (controle) controle.setAttribute('aria-label', spec.ariaLabel ?? spec.label);
 }
 
 function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
-  const forma = spec.shape ?? 'interruptor';
-  if (forma === 'escolha') {
+  const controlShape = spec.shape ?? 'interruptor';
+  if (controlShape === 'escolha') {
     const s = ctx.create('select');
     s.className = 'vol';
     return s;
   }
-  if (forma === 'cursor') {
+  if (controlShape === 'cursor') {
     const i = ctx.create('input');
     i.className = 'vol';
     i.setAttribute('type', 'range');
@@ -148,7 +148,7 @@ function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
     i.setAttribute('step', '1');
     return i;
   }
-  if (forma === 'button') {
+  if (controlShape === 'button') {
     /*
      * 🎯 A QUINTA FORMA, e é a única que NÃO GUARDA um valor: as outras quatro respondem «em que posição
      * estou», esta FAZ uma coisa. O `ui/settings-controls` é o primeiro a exigi-la — o botão dele abre a
@@ -164,7 +164,7 @@ function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
     a.setAttribute('type', 'button');
     return a;
   }
-  if (forma === 'radio') {
+  if (controlShape === 'radio') {
     /*
      * 🔴 UMA ESCOLHA NÃO É UM INTERRUPTOR, e a diferença é o que a emenda do ADR-0012 diz em tantas palavras:
      * «THE MENU IS A CHOICE, NOT A TOGGLE […] One font is active; the others are alternatives, not switches.»
@@ -252,9 +252,9 @@ export interface StepsSpec {
  * ele sem aviso e desligaria o que queria aumentar. Preso, a ponta é uma parede que se sente — o número de
  * jogadores, que é o modelo que o Dev deu, também não dá a volta.
  */
-export function nextStep(atual: number, total: number, delta: number): number {
+export function nextStep(from: number, total: number, delta: number): number {
   if (total <= 0) return 0;
-  return Math.max(0, Math.min(total - 1, atual + Math.sign(delta)));
+  return Math.max(0, Math.min(total - 1, from + Math.sign(delta)));
 }
 
 /**
@@ -294,18 +294,18 @@ export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
 /** Reflecte a posição de agora: o valor escrito, o que se ouve, e as pontas que já não andam. */
 export function updateSteps(el: HTMLElement, spec: StepsSpec): void {
   const lastIndex = Math.max(0, spec.values.length - 1);
-  const atual = Math.max(0, Math.min(lastIndex, spec.current));
-  const texto = spec.values[atual] ?? '';
+  const from = Math.max(0, Math.min(lastIndex, spec.current));
+  const texto = spec.values[from] ?? '';
   el.setAttribute('aria-label', spec.label);
   el.setAttribute('aria-valuemin', '0');
   el.setAttribute('aria-valuemax', String(lastIndex));
-  el.setAttribute('aria-valuenow', String(atual));
+  el.setAttribute('aria-valuenow', String(from));
   el.setAttribute('aria-valuetext', texto);
   const valor = el.querySelector<HTMLElement>('.passo-valor');
   // O RÓTULO ENTRA NO TEXTO: a linha inteira é o controle, «◀ Cantos arredondados: pequeno ▶». Quem ouve recebe o
   // mesmo em duas partes — o nome no `aria-label` e a posição no `aria-valuetext` —, sem o nome repetido.
   if (valor) valor.textContent = spec.label ? `${spec.label}: ${texto}` : texto;
   // A ponta que já não anda fica marcada — sem isto a seta de uma parede parece um botão avariado.
-  el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', atual === 0);
-  el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', atual === lastIndex);
+  el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', from === 0);
+  el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', from === lastIndex);
 }

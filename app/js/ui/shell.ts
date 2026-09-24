@@ -287,13 +287,13 @@ export function legendRow1(dirTxt: string, pauseTxt: string): string {
  *
  * ⚠️ AS PALAVRAS DEIXARAM DE ESTAR AQUI. Esta função dizia `t('legend.jump')`, `t('legend.run')` — o
  * vocabulário da plataforma dentro de um módulo de engine, e a engine a afirmar que todo jogo tem pular,
- * especial, correr e trocar, nessa ordem. Agora `rotulo` é perguntado ao jogo (a versão CURTA, ver
+ * especial, correr e trocar, nessa ordem. Agora `wordFor` é perguntado ao jogo (a versão CURTA, ver
  * `ActionWord.short`), e uma posição que o jogo não nomeia não vira ficha nenhuma.
  */
-export function legendRow2(g: ActionGlyphs, rotulo: (acao: string) => string | null): string {
+export function legendRow2(g: ActionGlyphs, wordFor: (acao: string) => string | null): string {
   const GLYPH_ORDER: readonly (keyof ActionGlyphs)[] = ['action2', 'action3', 'action1', 'action4'];
   return GLYPH_ORDER.map((a) => {
-    const palavra = rotulo(a);
+    const palavra = wordFor(a);
     return palavra ? chip(g[a][0], g[a][1], palavra) : '';
   }).join('');
 }
@@ -558,7 +558,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
    * nem desempilha, e é essa separação que faz o `Phase` sumir daqui: quem troca de cena sabe os nomes, quem
    * projeta só precisa dos três fatos.
    */
-  function aplicarCena(): void {
+  function projectScene(): void {
     const f = ctx.sceneFacts();
     const v = phaseView(f);
     // LER ANTES DE ESCONDER. Era aqui o defeito: `hideTouchControls()` roda logo abaixo e já põe `tc.hidden`
@@ -619,5 +619,5 @@ export function initShell(ctx: ShellCtx): ShellApi {
     ajuda: () => ctx.openHelp(),
   };
 
-  return { applyScene: aplicarCena, pauseSelect, printMode, updateTitleLegend, pauseActs };
+  return { applyScene: projectScene, pauseSelect, printMode, updateTitleLegend, pauseActs };
 }

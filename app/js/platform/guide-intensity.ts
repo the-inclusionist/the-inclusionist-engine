@@ -62,7 +62,7 @@ export const NEAR_CUT = 3200;
 export const FAR_VOL = 0.55;
 
 /**
- * A intensidade para `passos` de distância ao longo da rota.
+ * A intensidade para `stepsAway` de distância ao longo da rota.
  *
  * ⚠️ A INTERPOLAÇÃO DO CORTE É EXPONENCIAL, e não linear, pelo mesmo motivo do earcon da #124: o ouvido
  * percebe altura e brilho em RAZÃO, não em diferença. Uma rampa linear de 320 a 3200 abriria quase tudo no
@@ -72,10 +72,10 @@ export const FAR_VOL = 0.55;
  * O volume interpola LINEARMENTE, e a assimetria é deliberada: ele é o eixo secundário, e uma curva também
  * exponencial ali faria os dois acelerarem no mesmo ponto, que é o oposto de ter dois eixos.
  */
-export function guideIntensity(passos: number): Intensity {
-  if (!Number.isFinite(passos) || passos < 0) return { cutoff: FAR_CUT, volume: FAR_VOL };
+export function guideIntensity(stepsAway: number): Intensity {
+  if (!Number.isFinite(stepsAway) || stepsAway < 0) return { cutoff: FAR_CUT, volume: FAR_VOL };
   // 0 = em cima do alvo; 1 = no fundo da escala ou além.
-  const far = Math.min(1, passos / STEPS_TO_FLOOR);
+  const far = Math.min(1, stepsAway / STEPS_TO_FLOOR);
   const near = 1 - far;
   return {
     cutoff: FAR_CUT * Math.pow(NEAR_CUT / FAR_CUT, near),

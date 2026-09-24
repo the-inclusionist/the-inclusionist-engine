@@ -43,9 +43,9 @@ export const keySource = new Map<string, TransportName>();
  * silenciosa — o jogo continua a andar e só a alternância fica errada. Por isso não há `keys.add` público
  * neste módulo: quem escreve, escreve por aqui.
  */
-export function markKey(code: string, origem: TransportName): void {
+export function markKey(code: string, origin: TransportName): void {
   keys.add(code);
-  keySource.set(code, origem);
+  keySource.set(code, origin);
 }
 
 /**
@@ -140,8 +140,8 @@ export function inputOf(jogador: number): InputState {
  * ⚠️ E uma aresta de um transporte assistido NÃO o habilita — essa regra vive no `afterEdge` e a razão
  * está lá: um falso positivo da webcam trancaria a alternância de toda a gente sem ninguém ter pedido.
  */
-export function playerEdge(jogador: number, origem: TransportName): void {
-  inputByPlayer[jogador] = afterEdge(inputOf(jogador), origem);
+export function playerEdge(jogador: number, origin: TransportName): void {
+  inputByPlayer[jogador] = afterEdge(inputOf(jogador), origin);
 }
 
 /** Habilitar a assistida é um ACTO EXPLÍCITO (ADR-0109 regra 4), e por isso tem porta própria. */

@@ -40,9 +40,9 @@ export interface RecognitionRoute {
 export async function recognitionRoute(language: string, api: RecognitionApi | null | undefined): Promise<RecognitionRoute> {
   if (!api) return { route: 'recuo', status: 'sem-api' };
   if (!('processLocally' in api.prototype) || typeof api.available !== 'function') return { route: 'recuo', status: 'sem-processamento-local' };
-  let estado: OnDeviceAvailability;
-  try { estado = await api.available({ langs: [language], processLocally: true }); } catch { return { route: 'recuo', status: 'unavailable' }; }
-  return { route: estado === 'available' ? 'webspeech-local' : 'recuo', status: estado };
+  let availability: OnDeviceAvailability;
+  try { availability = await api.available({ langs: [language], processLocally: true }); } catch { return { route: 'recuo', status: 'unavailable' }; }
+  return { route: availability === 'available' ? 'webspeech-local' : 'recuo', status: availability };
 }
 
 /** A recognition object set to recognise on the device, continuously, with partial hypotheses. Refuses a browser that cannot. */
@@ -64,17 +64,17 @@ export const spokenText = (t: string): string => t.toLowerCase().normalize('NFC'
 
 export interface CommandReader {
   /** The menu's item names now on screen (already as spoken). */
-  items(nomes: readonly string[]): void;
+  items(names: readonly string[]): void;
   /**
-   * One hypothesis of utterance `indice`: returns the commands it completes that were not returned before for that utterance. A
+   * One hypothesis of utterance `index`: returns the commands it completes that were not returned before for that utterance. A
    * partial one holds back its last name while another item's name continues it («voltar» may become «voltar ao jogo»).
    */
-  read(indice: number, texto: string, final: boolean): readonly HeardCommand[];
+  read(index: number, texto: string, final: boolean): readonly HeardCommand[];
 }
 
 export function createCommandReader(vocabulary: readonly string[]): CommandReader {
   const spokenForms = vocabulary.map(spokenText);
-  let itens: readonly string[] = [];
+  let spokenItems: readonly string[] = [];
   const firedCount = new Map<number, number>();
   const phrasesIn = (texto: string): string[] => {
     const p = spokenText(texto).split(' ').filter(Boolean);
@@ -83,25 +83,25 @@ export function createCommandReader(vocabulary: readonly string[]): CommandReade
       let matched: string | null = null;
       for (let n = p.length - i; n >= 1; n--) {
         const f = p.slice(i, i + n).join(' ');
-        if (itens.includes(f) || spokenForms.includes(f)) { matched = f; i += n; break; }
+        if (spokenItems.includes(f) || spokenForms.includes(f)) { matched = f; i += n; break; }
       }
       if (matched) found.push(matched); else i++;
     }
     return found;
   };
   return {
-    items(nomes) { itens = nomes.map(spokenText); },
-    read(indice, texto, final) {
+    items(names) { spokenItems = names.map(spokenText); },
+    read(index, texto, final) {
       const found = phrasesIn(texto);
-      const alreadyFired = firedCount.get(indice) ?? 0;
+      const alreadyFired = firedCount.get(index) ?? 0;
       const newCommands: HeardCommand[] = [];
       for (let i = alreadyFired; i < found.length; i++) {
         const f = found[i]!;
-        if (!final && i === found.length - 1 && itens.some((o) => o !== f && o.startsWith(f + ' '))) break;
-        newCommands.push(itens.includes(f) ? { kind: 'item', name: f } : { kind: 'palavra', word: f });
-        firedCount.set(indice, i + 1);
+        if (!final && i === found.length - 1 && spokenItems.some((o) => o !== f && o.startsWith(f + ' '))) break;
+        newCommands.push(spokenItems.includes(f) ? { kind: 'item', name: f } : { kind: 'palavra', word: f });
+        firedCount.set(index, i + 1);
       }
-      if (final) firedCount.delete(indice);
+      if (final) firedCount.delete(index);
       return newCommands;
     },
   };

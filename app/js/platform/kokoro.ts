@@ -16,8 +16,8 @@ export interface KokoroSession {
 }
 /**
  * WHAT SPEAKING NEEDS OF KOKORO — `platform/kokoro-runtime` fills it from the delivery (ADR-0216 §1).
- * `fonemizar` is espeak-ng in the voice's language (`pt-br`, `es-419`, `en-us`, `en-gb`); `vocabulario` the model tokenizer's symbols;
- * `voz` a voice's style table; `sessao` a session on WebGPU or WASM.
+ * `phonemize` is espeak-ng in the voice's language (`pt-br`, `es-419`, `en-us`, `en-gb`); `vocabulary` the model tokenizer's symbols;
+ * `voice` a voice's style table; `session` a session on WebGPU or WASM.
  *
  * 📌 IT LIVES IN THIS LEAF and not beside the speaking, so that the runtime that builds one can be reached from `platform/tts` by
  * `import()` without the two naming each other — a cycle the direction gate (ADR-0173) refuses, and rightly: the loader must not
@@ -27,12 +27,12 @@ export interface KokoroModule {
   readonly phonemize: (texto: string, espeak: string) => Promise<string>;
   readonly vocabulary: () => Promise<Readonly<{ [symbol: string]: number }>>;
   readonly voice: (id: string) => Promise<Float32Array>;
-  readonly session: (dispositivo: 'webgpu' | 'wasm') => Promise<KokoroSession>;
+  readonly session: (device: 'webgpu' | 'wasm') => Promise<KokoroSession>;
 }
 /** How the neural voice arrives. Until ADR-0216 every game wrote one of these; now the engine has its own. */
 export type LoadKokoro = () => Promise<KokoroModule>;
 
-/** A Kokoro voice of the engine's three languages. `boa` marks the two the Dev rated good (ADR-0198 §3). */
+/** A Kokoro voice of the engine's three languages. `recommended` marks the two the Dev rated good (ADR-0198 §3). */
 export interface KokoroVoice extends NeuralVoice {
   readonly engine: 'kokoro';
   /** The espeak-ng voice that phonemizes this voice's text. */
@@ -40,8 +40,8 @@ export interface KokoroVoice extends NeuralVoice {
   readonly recommended: boolean;
 }
 
-const voz = (id: string, locale: string, espeak: string, boa = false): KokoroVoice =>
-  Object.freeze({ locale, engine: 'kokoro', voice: id, espeak, recommended: boa });
+const voiceEntry = (id: string, locale: string, espeak: string, isRecommended = false): KokoroVoice =>
+  Object.freeze({ locale, engine: 'kokoro', voice: id, espeak, recommended: isRecommended });
 
 /**
  * Kokoro-82M v1.0's voices for Portuguese, Spanish and English, as the model repository lists them (read 2026-09-14). The model's
@@ -49,12 +49,12 @@ const voz = (id: string, locale: string, espeak: string, boa = false): KokoroVoi
  * voice's gender. The others (French, Hindi, Italian, Japanese, Chinese) are not the engine's languages.
  */
 export const KOKORO_VOICES: readonly KokoroVoice[] = Object.freeze([
-  voz('pf_dora', 'pt-BR', 'pt-br'), voz('pm_alex', 'pt-BR', 'pt-br'), voz('pm_santa', 'pt-BR', 'pt-br'),
-  voz('ef_dora', 'es', 'es-419'), voz('em_alex', 'es', 'es-419'), voz('em_santa', 'es', 'es-419'),
-  voz('af_heart', 'en-US', 'en-us', true), voz('af_bella', 'en-US', 'en-us', true),
+  voiceEntry('pf_dora', 'pt-BR', 'pt-br'), voiceEntry('pm_alex', 'pt-BR', 'pt-br'), voiceEntry('pm_santa', 'pt-BR', 'pt-br'),
+  voiceEntry('ef_dora', 'es', 'es-419'), voiceEntry('em_alex', 'es', 'es-419'), voiceEntry('em_santa', 'es', 'es-419'),
+  voiceEntry('af_heart', 'en-US', 'en-us', true), voiceEntry('af_bella', 'en-US', 'en-us', true),
   ...['af_alloy', 'af_aoede', 'af_jessica', 'af_kore', 'af_nicole', 'af_nova', 'af_river', 'af_sarah', 'af_sky',
-    'am_adam', 'am_echo', 'am_eric', 'am_fenrir', 'am_liam', 'am_michael', 'am_onyx', 'am_puck', 'am_santa'].map((id) => voz(id, 'en-US', 'en-us')),
-  ...['bf_alice', 'bf_emma', 'bf_isabella', 'bf_lily', 'bm_daniel', 'bm_fable', 'bm_george', 'bm_lewis'].map((id) => voz(id, 'en-GB', 'en-gb')),
+    'am_adam', 'am_echo', 'am_eric', 'am_fenrir', 'am_liam', 'am_michael', 'am_onyx', 'am_puck', 'am_santa'].map((id) => voiceEntry(id, 'en-US', 'en-us')),
+  ...['bf_alice', 'bf_emma', 'bf_isabella', 'bf_lily', 'bm_daniel', 'bm_fable', 'bm_george', 'bm_lewis'].map((id) => voiceEntry(id, 'en-GB', 'en-gb')),
 ]);
 
 /**
@@ -119,10 +119,10 @@ export const STYLE_DIMENSION = 256;
 const KOKORO_SAMPLE_RATE = 24_000;
 
 /** The token ids of a phoneme string: each symbol the vocabulary knows, in order, between two pad tokens (id 0). */
-export function tokenizar(phonemes: string, vocabulario: Readonly<{ [symbol: string]: number }>): number[] {
+export function tokenizar(phonemes: string, symbolIds: Readonly<{ [symbol: string]: number }>): number[] {
   const ids: number[] = [];
   for (const symbol of phonemes) {
-    const id = vocabulario[symbol];
+    const id = symbolIds[symbol];
     if (id !== undefined) ids.push(id);
     if (ids.length === MAX_KOKORO_TOKENS) break;
   }
@@ -132,8 +132,8 @@ export function tokenizar(phonemes: string, vocabulario: Readonly<{ [symbol: str
 /** The style row a sentence of `tokens` ids (pads excluded) takes from a voice table. */
 export function sentenceStyle(styleTable: Float32Array, tokens: number): Float32Array {
   const rowCount = Math.floor(styleTable.length / STYLE_DIMENSION);
-  const linha = Math.max(0, Math.min(rowCount - 1, tokens));
-  return styleTable.slice(linha * STYLE_DIMENSION, (linha + 1) * STYLE_DIMENSION);
+  const row = Math.max(0, Math.min(rowCount - 1, tokens));
+  return styleTable.slice(row * STYLE_DIMENSION, (row + 1) * STYLE_DIMENSION);
 }
 
 /**
@@ -153,14 +153,14 @@ export function eFala(waveform: ArrayLike<number>): boolean {
 }
 
 /** A 16-bit mono PCM WAV of a waveform, clipped to ±1 — what the narration's media element plays. */
-export function wavDe(waveform: ArrayLike<number>, taxa = KOKORO_SAMPLE_RATE): ArrayBuffer {
+export function wavDe(waveform: ArrayLike<number>, sampleRate = KOKORO_SAMPLE_RATE): ArrayBuffer {
   const n = waveform.length;
   const buf = new ArrayBuffer(44 + n * 2);
   const v = new DataView(buf);
   const texto = (o: number, s: string): void => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
   texto(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); texto(8, 'WAVE'); texto(12, 'fmt ');
-  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, taxa, true);
-  v.setUint32(28, taxa * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); texto(36, 'data'); v.setUint32(40, n * 2, true);
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); texto(36, 'data'); v.setUint32(40, n * 2, true);
   for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.round(Math.max(-1, Math.min(1, waveform[i]!)) * 32767), true);
   return buf;
 }

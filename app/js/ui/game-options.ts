@@ -115,7 +115,7 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
   for (const o of options) {
     const id = `game-option-${o.id}`;
     if (o.kind === 'switch') {
-      const { row: linha, controle } = controlRow(ctx, { id, label: o.label, hint: o.hint });
+      const { row: rowNode, controle } = controlRow(ctx, { id, label: o.label, hint: o.hint });
       const refletir = (): boolean => {
         const on = o.read();
         controle.classList.toggle('is-on', on);
@@ -128,12 +128,12 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
         o.write(!o.read());
         ctx.say(`${o.label}: ${toggleLabel(refletir())}`);
       });
-      lista.appendChild(linha);
+      lista.appendChild(rowNode);
       continue;
     }
     const labelOf = (valor: string): string => o.values.find((v) => v.value === valor)?.label ?? valor;
     if (o.kind === 'list') {
-      const { row: linha, controle } = controlRow(ctx, { id, label: o.label, hint: o.hint, shape: 'escolha' });
+      const { row: rowNode, controle } = controlRow(ctx, { id, label: o.label, hint: o.hint, shape: 'escolha' });
       const sel = controle as HTMLSelectElement;
       for (const v of o.values) {
         const op = ctx.create('option') as HTMLOptionElement;
@@ -147,33 +147,33 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
         sel.value = o.read();
         ctx.say(`${o.label}: ${labelOf(sel.value)}`);
       });
-      lista.appendChild(linha);
+      lista.appendChild(rowNode);
       continue;
     }
     // steps: the row IS the control, «◀ Label: value ▶» (ADR-0130 erratum); the hint rides in the row for the footer
-    const indice = (): number => Math.max(0, o.values.findIndex((v) => v.value === o.read()));
-    const spec = () => ({ label: o.label, values: o.values.map((v) => v.label), current: indice() });
-    const linha = ctx.create('div');
-    linha.className = 'ctrl-row ctrl-row--passos';
+    const selectedIndex = (): number => Math.max(0, o.values.findIndex((v) => v.value === o.read()));
+    const spec = () => ({ label: o.label, values: o.values.map((v) => v.label), current: selectedIndex() });
+    const rowNode = ctx.create('div');
+    rowNode.className = 'ctrl-row ctrl-row--passos';
     const envelope = ctx.create('span');
     if (o.hint) {
-      const dica = ctx.create('span');
-      dica.className = 'opt-hint';
-      dica.textContent = o.hint;
-      envelope.appendChild(dica);
+      const explanation = ctx.create('span');
+      explanation.className = 'opt-hint';
+      explanation.textContent = o.hint;
+      envelope.appendChild(explanation);
     }
-    linha.appendChild(envelope);
-    const passos = mountSteps(ctx, spec());
-    passos.id = id;
-    linha.appendChild(passos);
-    passos.addEventListener('passo', (ev) => {
-      const atual = indice();
-      const nextIndex = nextStep(atual, o.values.length, (ev as CustomEvent<number>).detail);
-      if (nextIndex === atual) return; // at the wall nothing moved, and nothing is said
+    rowNode.appendChild(envelope);
+    const stepper = mountSteps(ctx, spec());
+    stepper.id = id;
+    rowNode.appendChild(stepper);
+    stepper.addEventListener('passo', (ev) => {
+      const currentIndex = selectedIndex();
+      const nextIndex = nextStep(currentIndex, o.values.length, (ev as CustomEvent<number>).detail);
+      if (nextIndex === currentIndex) return; // at the wall nothing moved, and nothing is said
       o.write(o.values[nextIndex]!.value);
-      updateSteps(passos, spec());
+      updateSteps(stepper, spec());
       ctx.say(`${o.label}: ${labelOf(o.read())}`);
     });
-    lista.appendChild(linha);
+    lista.appendChild(rowNode);
   }
 }

@@ -25,7 +25,7 @@ export interface LoopOptions {
    * A raiz de composição liga isto ao `srAlert` e a uma mensagem visível. Opcional de propósito: um consumidor
    * que monte o laço sem casca (um teste, o quiz) continua parando — o anúncio é opcional, **parar não é**.
    */
-  onFailure?: (erro: unknown) => void;
+  onFailure?: (failure: unknown) => void;
 }
 
 /**
@@ -34,8 +34,8 @@ export interface LoopOptions {
  * announcement depended on each game remembering it. `createGame` registers its own notice here and withdraws it on
  * `unmount`; a caller's own `aoFalhar` still wins. The same shape as `registerKeyboardMapping`.
  */
-let registeredNotice: ((erro: unknown) => void) | null = null;
-export function registerCrashNotice(notice: ((erro: unknown) => void) | null): void { registeredNotice = notice; }
+let registeredNotice: ((failure: unknown) => void) | null = null;
+export function registerCrashNotice(notice: ((failure: unknown) => void) | null): void { registeredNotice = notice; }
 
 export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, opcoes: LoopOptions = {}): void {
   let stopped = false;
@@ -44,13 +44,13 @@ export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2
     try {
       // the game speed (ADR-0180) applies to the clamped time, read each frame: a change is felt on the next one
       frame(Math.min(ticker.deltaTime, maxDt) * gameSpeed);
-    } catch (erro) {
+    } catch (failure) {
       stopped = true;
       ticker.remove?.(step); // some do ticker quando dá: callback que roda 60×/s para nada custa em hardware fraco
       // O anúncio não pode ressuscitar o problema. Se o próprio aviso quebrar — sem leitor de tela, sem DOM —,
       // uma exceção aqui voltaria a ser invisível dentro do ticker, que é exatamente o defeito que isto fecha.
       // read at the throw, not at the start: a root mounted after the loop began still announces it
-      try { (opcoes.onFailure ?? registeredNotice)?.(erro); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
+      try { (opcoes.onFailure ?? registeredNotice)?.(failure); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
     }
   };
   ticker.add(step);

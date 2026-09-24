@@ -416,11 +416,11 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   function stepsToTarget(pl: SonarPlayer, alvo: { at: Spot; d: number }): number {
     const roleAt = ctx.roleAt;
     if (roleAt) {
-      const rota = routeTo(
+      const path = routeTo(
         { topology: ctx.topology(), roleAt, budget: ROUTE_BUDGET },
         { x: pl.x, y: pl.y }, [alvo.at],
       );
-      if (rota) return rota.steps;
+      if (path) return path.steps;
     }
     return alvo.d;
   }
@@ -431,21 +431,21 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     const ac = pc ? pc.ac : ctx.getAudioCtx();
     if (!ac) return null;
     try {
-      const osc = ac.createOscillator(), filtro = ac.createBiquadFilter(), ganho = ac.createGain();
+      const osc = ac.createOscillator(), lowpass = ac.createBiquadFilter(), level = ac.createGain();
       osc.type = GUIDE_WAVE;
       osc.frequency.value = GUIDE_HZ;
-      filtro.type = 'lowpass';
-      filtro.frequency.value = FAR_CUT; // nasce no fundo da escala e sobe; nascer aberto seria um susto
-      ganho.gain.value = 0;                 // e nasce calado, para não estalar ao ligar
-      let saida: AudioNode = ganho;
+      lowpass.type = 'lowpass';
+      lowpass.frequency.value = FAR_CUT; // nasce no fundo da escala e sobe; nascer aberto seria um susto
+      level.gain.value = 0;                 // e nasce calado, para não estalar ao ligar
+      let saida: AudioNode = level;
       let panner: StereoPannerNode | null = null;
-      if (ac.createStereoPanner) { panner = ac.createStereoPanner(); ganho.connect(panner); saida = panner; }
-      osc.connect(filtro).connect(ganho);
+      if (ac.createStereoPanner) { panner = ac.createStereoPanner(); level.connect(panner); saida = panner; }
+      osc.connect(lowpass).connect(level);
       saida.connect(pc ? pc.out : (ctx.catNode?.('guide') || ctx.audioOut?.() || ac.destination));
       osc.start();
       // `desdeARota` nasce no tecto para que a PRIMEIRA volta já meça a rota, em vez de soar doze quadros
       // com um `passos` inventado.
-      return { ac, osc, filter: filtro, gain: ganho, panner, framesSinceRoute: FRAMES_BETWEEN_ROUTES, steps: STEPS_TO_FLOOR, pan: 0 };
+      return { ac, osc, filter: lowpass, gain: level, panner, framesSinceRoute: FRAMES_BETWEEN_ROUTES, steps: STEPS_TO_FLOOR, pan: 0 };
     } catch (e) { return null; }
   }
 

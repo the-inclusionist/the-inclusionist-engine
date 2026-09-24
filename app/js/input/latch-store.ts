@@ -37,8 +37,8 @@ export interface LatchStore {
  * ⚠️ É por isso que o `latch-scope` tipa os dois campos como `boolean | null` e tem um caso próprio a dizer
  * que «`false` guardado é um VALOR, e não uma ausência». Este é o lado do armazenamento da mesma frase.
  */
-export function readTriState(armazem: LatchStore, chave: string): boolean | null {
-  const v = armazem.get(chave, null);
+export function readTriState(store: LatchStore, chave: string): boolean | null {
+  const v = store.get(chave, null);
   return v == null ? null : v === '1';
 }
 
@@ -48,15 +48,15 @@ export function readTriState(armazem: LatchStore, chave: string): boolean | null
  * `base` é `togglemove` ou `togglerun` — os dois nomes que já existem no armazenamento da criança.
  */
 export function readLatch(
-  armazem: LatchStore,
+  store: LatchStore,
   base: string,
   jogador: number,
   transporte: string,
   padrao: boolean,
 ): LatchReading {
   return {
-    fromTransport: readTriState(armazem, latchKey(base, jogador, transporte)),
-    fromLegacy: readTriState(armazem, legacyLatchKey(base, jogador)),
+    fromTransport: readTriState(store, latchKey(base, jogador, transporte)),
+    fromLegacy: readTriState(store, legacyLatchKey(base, jogador)),
     padrao,
   };
 }
@@ -68,13 +68,13 @@ export function readLatch(
  * valor pertence ao mapeamento do controle, como um caps-lock, e mudar de controle é mudar de mapeamento.
  */
 export function storedLatch(
-  armazem: LatchStore,
+  store: LatchStore,
   base: string,
   jogador: number,
   transporte: string,
   padrao: boolean,
 ): boolean {
-  return latchOf(transporte, readLatch(armazem, base, jogador, transporte, padrao));
+  return latchOf(transporte, readLatch(store, base, jogador, transporte, padrao));
 }
 
 /**

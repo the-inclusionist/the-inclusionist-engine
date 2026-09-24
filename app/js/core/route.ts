@@ -128,7 +128,7 @@ function isInside(shape: Topology, s: Spot): boolean {
 }
 
 /**
- * A rota de `de` até o mais próximo ALCANÇÁVEL dos `alvos` — largura primeiro, sobre o que se atravessa.
+ * A rota de `de` até o mais próximo ALCANÇÁVEL dos `targets` — largura primeiro, sobre o que se atravessa.
  *
  * `null` quando não há alvo, quando nenhum é alcançável, quando a topologia não tem espaço (`hotspots`), ou
  * quando o orçamento estourou. Os quatro casos são o mesmo para quem chama: **não sei dizer por onde**.
@@ -137,13 +137,13 @@ function isInside(shape: Topology, s: Spot): boolean {
  * do outro lado de uma parede está mais LONGE do que um a oito células por um corredor aberto — e é o segundo
  * que a criança consegue alcançar.
  */
-export function routeTo(ctx: RouteCtx, de: Spot, alvos: readonly Spot[]): Route | null {
+export function routeTo(ctx: RouteCtx, de: Spot, targets: readonly Spot[]): Route | null {
   const shape = ctx.topology;
-  if (shape.kind === 'hotspots' || alvos.length === 0) return null;
+  if (shape.kind === 'hotspots' || targets.length === 0) return null;
   const walk = walkOf(shape);
   // a unit of zero would make the queue go nowhere, and a negative one would walk exactly like a positive one
   if (!(walk.step > 0)) return null;
-  const arrived = (s: Spot): Spot | null => alvos.find((a) => distance(shape, s, a) <= walk.tolerance) ?? null;
+  const arrived = (s: Spot): Spot | null => targets.find((a) => distance(shape, s, a) <= walk.tolerance) ?? null;
 
   const targetHere = arrived(de);
   if (targetHere) return { next: de, reached: targetHere, steps: 0 };

@@ -220,8 +220,8 @@ export interface Reach {
 export function reach(
   lista: readonly Transport[],
   actions: readonly Action[],
-  seguraPedidas: number,
-  pedePonteiro = false,
+  askedHolds: number,
+  wantsPointer = false,
 ): Reach {
   const availableNow = lista.filter((t) => t.available());
   /**
@@ -229,25 +229,25 @@ export function reach(
    * mudança, e um quarto argumento exigido faria cada chamador existente decidir hoje uma coisa que não lhe
    * diz respeito.
    */
-  const pointsIfNeeded = (t: Transport) => !pedePonteiro || (!!t.points && t.points());
+  const pointsIfNeeded = (t: Transport) => !wantsPointer || (!!t.points && t.points());
   // ⚠️ «Serve» passou a ser TRÊS coisas. Foi DUAS na #114 (o `ok` dizia sim a quem não segurava três dedos), e
   // é três desde o ADR-0112 — pela mesma razão das duas vezes: um `ok` verdadeiro sobre um jogo que a criança
   // não consegue jogar é a pior coisa que este campo pode fazer.
-  const serve = (t: Transport) => carries(t, actions) && holds(t, seguraPedidas) && pointsIfNeeded(t);
+  const serve = (t: Transport) => carries(t, actions) && holds(t, askedHolds) && pointsIfNeeded(t);
   return {
     ok: actions.length > 0 && availableNow.some(serve),
     asked: actions.length,
-    holdsAsked: seguraPedidas,
-    needsPointer: pedePonteiro,
+    holdsAsked: askedHolds,
+    needsPointer: wantsPointer,
     wouldServeIfOn: lista.filter((t) => !t.available() && serve(t)).map((t) => t.id),
     short: availableNow.filter((t) => !carries(t, actions)).map((t) => ({ id: t.id, slots: t.slots })),
     cannotPoint: availableNow
-      .filter((t) => carries(t, actions) && holds(t, seguraPedidas) && !pointsIfNeeded(t))
+      .filter((t) => carries(t, actions) && holds(t, askedHolds) && !pointsIfNeeded(t))
       .map((t) => t.id),
     // ⚠️ SÓ QUEM CHEGA, e não quem já reprovou por lugares. Um transporte que aparecesse nas duas listas
     // faria o cartão dizer duas coisas sobre o mesmo defeito, e a criança leria dois problemas onde há um.
     cannotHold: availableNow
-      .filter((t) => carries(t, actions) && !holds(t, seguraPedidas))
+      .filter((t) => carries(t, actions) && !holds(t, askedHolds))
       .map((t) => ({ id: t.id, holds: t.holds as number })),
   };
 }

@@ -122,9 +122,9 @@ export const PADRAO: InputState = Object.freeze({ inUse: 'teclado', assistedOn: 
  * módulo é o que o nome dele diz: QUAL transporte está em uso — que é o que alimenta aquele primeiro
  * argumento. `tests/latching-per-transport.node.test.js` afirma que esta função continua sem consumidor.
  */
-export function latchNow(estado: InputState): boolean {
-  if (estado.assistedOn) return true;
-  return LATCH_OF_THEIR_OWN.has(estado.inUse);
+export function latchNow(inputState: InputState): boolean {
+  if (inputState.assistedOn) return true;
+  return LATCH_OF_THEIR_OWN.has(inputState.inUse);
 }
 
 /**
@@ -134,14 +134,14 @@ export function latchNow(estado: InputState): boolean {
  * ser habilitados»), e deixar uma aresta fazê-lo significaria que um falso positivo da webcam — uma sombra,
  * um segundo rosto a passar — trancava a alternância de toda a gente sem ninguém ter pedido.
  */
-export function afterEdge(estado: InputState, origem: TransportName): InputState {
-  if (estado.inUse === origem) return estado; // sem mudança: devolve o MESMO objecto, não uma cópia
-  return { inUse: origem, assistedOn: estado.assistedOn };
+export function afterEdge(inputState: InputState, origin: TransportName): InputState {
+  if (inputState.inUse === origin) return inputState; // sem mudança: devolve o MESMO objecto, não uma cópia
+  return { inUse: origin, assistedOn: inputState.assistedOn };
 }
 
 /** A criança (ou quem a acompanha) habilitou câmera/microfone. Daqui em diante a alternância é lei. */
-export function enableAssisted(estado: InputState): InputState {
-  return estado.assistedOn ? estado : { inUse: estado.inUse, assistedOn: true };
+export function enableAssisted(inputState: InputState): InputState {
+  return inputState.assistedOn ? inputState : { inUse: inputState.inUse, assistedOn: true };
 }
 
 /**
@@ -152,6 +152,6 @@ export function enableAssisted(estado: InputState): InputState {
  * Uma função que existe e não é oferecida é diferente de uma função que não existe: a primeira diz onde a
  * decisão mora.
  */
-export function disableAssisted(estado: InputState): InputState {
-  return estado.assistedOn ? { inUse: estado.inUse, assistedOn: false } : estado;
+export function disableAssisted(inputState: InputState): InputState {
+  return inputState.assistedOn ? { inUse: inputState.inUse, assistedOn: false } : inputState;
 }

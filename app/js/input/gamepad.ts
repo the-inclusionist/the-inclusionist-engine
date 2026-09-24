@@ -258,7 +258,7 @@ export interface GamepadCtx {
    * conjunto de teclas, passa por `padCur` —, e é exactamente por isso que a falta aqui era invisível: o
    * módulo sabe de que controle veio a aresta, e o autómato não.
    */
-  playerEdge: (jogador: number, origem: 'gamepad') => void;
+  playerEdge: (jogador: number, origin: 'gamepad') => void;
   /**
    * A PORTA ÚNICA PARA O CARTUCHO (ADR-0223): apertar uma POSIÇÃO no assento deste controle. Responde se a
    * pressão chegou ao JOGO — `false` quer dizer que um menu a levou.

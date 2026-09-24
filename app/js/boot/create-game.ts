@@ -598,7 +598,7 @@ export interface Engine {
    * então isto é entregue e não instalado: um jogo que monte o laço sem passar isto continua a PARAR, porque
    * parar não é opcional; o que ele perde é dizer que parou.
    */
-  readonly onFailure: (erro: unknown) => void;
+  readonly onFailure: (failure: unknown) => void;
   /**
    * O ALCANCE MEDIDO NO ARRANQUE — a garantia do ADR-0079 §3 como dado, para quem quiser lê-la.
    *
@@ -678,8 +678,8 @@ function refuseIfItClaimsStart(quem: string, preset: ActionPreset | undefined): 
  * O cartucho RESPONDEU às suas acomodações? (ADR-0153.) Mesma rubrica do contrato: resposta ausente ou incompleta é
  * pré-condição, não lacuna — `problems` é para o que deixa jogar, e aqui a engine não saberia que linhas montar.
  */
-function refuseIfNoAnswer(quem: string, acomodacoes: unknown): void {
-  const problemas = accommodationAnswersProblems(acomodacoes);
+function refuseIfNoAnswer(quem: string, answers: unknown): void {
+  const problemas = accommodationAnswersProblems(answers);
   if (problemas.length) refuseDeclaration(quem, problemas);
 }
 
@@ -888,7 +888,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ `{kind:'none'}` NÃO APLICA NADA. Uma atividade sem espaço não tem mundo para simular, e pintar um
    * filtro sobre ela seria a mentira que o ADR-0087 existe para impedir, só que ao contrário.
    */
-  function aplicarFiltroDeVisao(css: string, reach: FilterReach): void {
+  function setVisionFilter(css: string, reach: FilterReach): void {
     const declaredWorld = cartridge.declaration.world();
     if (declaredWorld.kind !== 'element') return;
     const el = $<HTMLElement>(declaredWorld.selector);
@@ -938,7 +938,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // what HELPS (the colour correction, the contrast enhancement) stays on the world as before; the SIMULATION is laid apart
     const enhancementKey = filterKey({ ...worldState, simulacao: null });
     const enhancement = [enhancementKey ? (VIZ_FILTER[enhancementKey] ?? '') : '', lqFilter()].filter(Boolean).join(' ');
-    aplicarFiltroDeVisao(enhancement, 'mundo');
+    setVisionFilter(enhancement, 'mundo');
     const simulacao = simulationSuspended() ? null : worldState.simulacao;
     simulationOverWorld.onlyInPlay(simulacao ? (VIZ_FILTER[simulacao] ?? '') : '', enhancement);
     simulationOverWorld.drawLayer(simulacao);
@@ -1066,7 +1066,7 @@ export function createGame(o: CreateGameOptions): Engine {
   function changePhase(p: 'title' | 'playing' | 'paused'): void {
     // ⚠️ A ENGINE FECHA O SEU CARTÃO; O JOGO CONTINUA A DECIDIR O MUNDO. É a simetria exacta do ADR-0144 §2
     // do outro lado: lá a engine revela e PEDE a pausa, aqui esconde e PEDE a retoma.
-    if (p !== 'paused') { pausa.hide(0); writeInFooter(null); } // o motivo de um item não fica sobre o jogo
+    if (p !== 'paused') { pauseControls.hide(0); writeInFooter(null); } // o motivo de um item não fica sobre o jogo
     cartridge.setPhase?.(p);
   }
   engineActions.resume = () => changePhase('playing');
@@ -1340,7 +1340,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * 📏 MEDIDO no `dist/quiz.html`: a barra servia sete ícones — três deles a dizer «em construção» — e o
      * 🚥 ficava de fora, porque `iconsThatAct` pergunta «este ícone tem quem o accione» e esta raiz não
      * passava escritor nenhum. E não passava tendo tudo à mão: `installCvdFilters` já montou os seis
-     * `<filter>` e `aplicarFiltroDeVisao` já sabe pô-los no elemento do mundo.
+     * `<filter>` e `setVisionFilter` já sabe pô-los no elemento do mundo.
      *
      * 🎯 UM FILTRO NÃO PRECISA DE CONHECER O JOGO — é o argumento que torna isto legítimo. Ele passa por cima
      * do que quer que o jogo tenha desenhado, que é o mesmo caminho que o `consumer-quiz` já usa à mão
@@ -1382,9 +1382,9 @@ export function createGame(o: CreateGameOptions): Engine {
           const jogador = players()[i] as { visual?: VisualState } | undefined;
           // Uma correcção LIGADA pára a demonstração (ADR-0076): a simulação por cima de uma adaptação ensina uma coisa falsa.
           const before = jogador?.visual ?? worldState;
-          const estado: VisualState = { ...before, correcao, simulacao: correcao === 'tricro' ? before.simulacao : null };
-          if (jogador) jogador.visual = estado;
-          worldState = estado;
+          const nextVisual: VisualState = { ...before, correcao, simulacao: correcao === 'tricro' ? before.simulacao : null };
+          if (jogador) jogador.visual = nextVisual;
+          worldState = nextVisual;
           recomposeWorldFilter();
         }) }
         : {}),
@@ -1609,24 +1609,24 @@ export function createGame(o: CreateGameOptions): Engine {
           const ctxDoSlide = { create: (tag: string) => doc.createElement(tag), t, title: t('menu.help') };
           const slides = mountSlides(ctxDoSlide);
           lista.appendChild(slides);
-          const relogio = {
+          const slideTimer = {
             requestFrame: (cb: (ms: number) => void) => win.requestAnimationFrame(cb),
             cancelFrame: (id: number) => win.cancelAnimationFrame(id),
             reduced: state.defaultReducedMotion(),
           };
-          const mostrar = (i: number): { index: number; spoken: string } => {
+          const showSlideAt = (i: number): { index: number; spoken: string } => {
             stopFigure();
             const shown = showSlide(slides, slideContents, i, ctxDoSlide);
             const slide = slideContents[shown.index];
-            if (slide && 'text' in slide) stopFigure = animateFigure(slides, slide, relogio);
+            if (slide && 'text' in slide) stopFigure = animateFigure(slides, slide, slideTimer);
             return shown;
           };
-          let atual = mostrar(0).index;
+          let currentSlide = showSlideAt(0).index;
           slides.addEventListener('passo', (ev) => {
-            const fresh = nextStep(atual, slideContents.length, (ev as CustomEvent<number>).detail);
-            if (fresh === atual) return;
-            const shown = mostrar(fresh);
-            atual = shown.index;
+            const fresh = nextStep(currentSlide, slideContents.length, (ev as CustomEvent<number>).detail);
+            if (fresh === currentSlide) return;
+            const shown = showSlideAt(fresh);
+            currentSlide = shown.index;
             srSay(shown.spoken);
           });
         },
@@ -1751,7 +1751,7 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     /*
      * CAPTIONS (ADR-0151 §2; issue #182): the Dev listed them in the visual panel. `state.captionsOn` was stored and read by
-     * the sound captions (`legendarSom`) with no row to change it. Placed after the panel's list, which `visual.render()`
+     * the sound captions (`captionSound`) with no row to change it. Placed after the panel's list, which `visual.render()`
      * rewrites by markup; built once, so its listener is not lost.
      */
     const captionsSpec = () => ({ id: 'opt-captions', label: t('visual.captions'), hint: t('visual.captions.dica') });
@@ -1783,9 +1783,9 @@ export function createGame(o: CreateGameOptions): Engine {
     speechRateRow.appendChild(rateSteps);
     visualPanel.shell.card.insertBefore(speechRateRow, linhaDasLegendas.nextSibling);
     rateSteps.addEventListener('passo', (ev) => {
-      const atual = rateSpec().current;
-      const fresh = nextStep(atual, CAPTION_RATES.length, (ev as CustomEvent<number>).detail);
-      if (fresh === atual) return;
+      const currentSlide = rateSpec().current;
+      const fresh = nextStep(currentSlide, CAPTION_RATES.length, (ev as CustomEvent<number>).detail);
+      if (fresh === currentSlide) return;
       state.setCaptionPpmValue(CAPTION_RATES[fresh]!);
       updateSteps(rateSteps, rateSpec());
       markChanged(speechRateRow, state.captionPpm !== state.DEFAULTS.captionPpm);
@@ -1824,32 +1824,32 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     const OUTLINE_LEVELS = ['visual.contorno.0', 'visual.contorno.1', 'visual.contorno.2'] as const;
     const outline = (plano: 'fg' | 'bg') => {
-      const ler = (): number => (plano === 'fg' ? state.hcOutlineFg : state.hcOutlineBg);
+      const readOutline = (): number => (plano === 'fg' ? state.hcOutlineFg : state.hcOutlineBg);
       const write = plano === 'fg' ? state.setOutlineFgValue : state.setOutlineBgValue;
-      const spec = () => ({ label: t(`visual.contorno.${plano}`), values: OUTLINE_LEVELS.map((k) => t(k)), current: ler() });
+      const spec = () => ({ label: t(`visual.contorno.${plano}`), values: OUTLINE_LEVELS.map((k) => t(k)), current: readOutline() });
       const rowC = doc.createElement('div');
       rowC.className = 'ctrl-row ctrl-row--passos';
       const envelope = doc.createElement('span');
-      const dica = doc.createElement('span');
-      dica.className = 'opt-hint';
-      envelope.appendChild(dica);
+      const explanation = doc.createElement('span');
+      explanation.className = 'opt-hint';
+      envelope.appendChild(explanation);
       rowC.appendChild(envelope);
-      const passos = mountSteps(panelCtx, spec());
-      passos.id = `opt-contorno-${plano}`;
-      rowC.appendChild(passos);
-      passos.addEventListener('passo', (ev) => {
-        const fresh = nextStep(ler(), OUTLINE_LEVELS.length, (ev as CustomEvent<number>).detail);
-        if (fresh === ler()) return;
+      const stepper = mountSteps(panelCtx, spec());
+      stepper.id = `opt-contorno-${plano}`;
+      rowC.appendChild(stepper);
+      stepper.addEventListener('passo', (ev) => {
+        const fresh = nextStep(readOutline(), OUTLINE_LEVELS.length, (ev as CustomEvent<number>).detail);
+        if (fresh === readOutline()) return;
         write(fresh);
-        updateSteps(passos, spec());
+        updateSteps(stepper, spec());
         srSay(`${t(`visual.contorno.${plano}`)}: ${t(OUTLINE_LEVELS[fresh]!)}`);
       });
       // the hint is written BEFORE the panel's render, which runs `fillExplain`: written after, it stays inside the row
       const escreverDica = (): void => {
-        dica.textContent = subjectWord(cartridge.accommodations, 'contrastOutlines')?.hint ?? t(`visual.contorno.${plano}.dica`);
+        explanation.textContent = subjectWord(cartridge.accommodations, 'contrastOutlines')?.hint ?? t(`visual.contorno.${plano}.dica`);
       };
       escreverDica();
-      const refletir = (): void => { updateSteps(passos, spec()); };
+      const refletir = (): void => { updateSteps(stepper, spec()); };
       return { row: rowC, refletir, escreverDica };
     };
     const fgOutline = outline('fg');
@@ -1943,9 +1943,9 @@ export function createGame(o: CreateGameOptions): Engine {
       const base = jogador?.visual ?? worldState;
       const motivo = simulacao ? simulationUnavailable(base) : null;
       if (motivo) { srSay(t(`sim.indisponivel.${motivo}`)); return false; } // refusal VISÍVEL e explicada (ADR-0076)
-      const estado: VisualState = { ...base, simulacao };
-      if (jogador) { jogador.visual = estado; jogador.viz = chave; }
-      worldState = estado;
+      const nextVisual: VisualState = { ...base, simulacao };
+      if (jogador) { jogador.visual = nextVisual; jogador.viz = chave; }
+      worldState = nextVisual;
       recomposeWorldFilter();
       return true;
     };
@@ -2214,7 +2214,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * o ADR-0224, também o comando — e escrever o mesmo `??` em dois sítios é escrever a mesma decisão duas vezes, que é
    * a forma de defeito que este ficheiro já pagou noutras três.
    */
-  const naBarraDe = cartridge.onBar ?? ((i: number) => pauseIcons.onBar(i));
+  const isOnBar = cartridge.onBar ?? ((i: number) => pauseIcons.onBar(i));
   const navBar = cartridge.navBar ?? ((i: number, k: NavKeys, withStart?: boolean) => pauseIcons.navBar(i, k, withStart));
   const setPauseActor = cartridge.setPauseActor ?? ((): void => {});
 
@@ -2252,7 +2252,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * modo (ADR-0044 item 7). No cartucho ela chega por outra rota (o encaminhador do gamepad, `main.ts:1470`)
      * que esta raiz ainda não monta. Logo: o direcional navega a barra; sair por START, por enquanto, não.
      */
-    onBar: naBarraDe,
+    onBar: isOnBar,
     navBar,
     // ⚠️ ERA `() => false`: sem painel de remapeamento não havia captura. Agora há (ADR-0151), e com isto a falso a
     // seta que a criança quer gravar navegava o menu em vez de ficar na tecla.
@@ -2327,7 +2327,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * `pointer:coarse && hover:none` é toque, e o contrário é teclado. Ela erra num tablet COM teclado — e o
    * erro só é tolerável porque a tela INFORMA em vez de recusar. Ver o cabeçalho de `ui/reach-notice`.
    */
-  const disponibilidade: Availability = o.availability ?? {
+  const deviceAvailability: Availability = o.availability ?? {
     gamepad: () => { try { return [...(win.navigator?.getGamepads?.() ?? [])].some(Boolean); } catch { return false; } },
     touch: () => { try { return win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches; } catch { return false; } },
     keyboard: () => { try { return !(win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches); } catch { return true; } },
@@ -2371,7 +2371,7 @@ export function createGame(o: CreateGameOptions): Engine {
   function deriveReach(): Reach {
     const declaredActions = cartridge.preset ? presetActions(cartridge.preset) : [];
     const a = reach(
-      defaultTransports(disponibilidade),
+      defaultTransports(deviceAvailability),
       declaredActions,
       cartridge.declaration.holdsAtOnce(),
       cartridge.declaration.needsPointer?.() ?? false,
@@ -2546,20 +2546,20 @@ export function createGame(o: CreateGameOptions): Engine {
     }
   }
 
-  const aoFalhar = createCrashNotice({
+  const announceFailure = createCrashNotice({
     find: (sel) => $<HTMLElement>(sel),
     create: (tag) => doc.createElement(tag),
     narrate: (texto) => tts.narrate(texto),
   });
-  // study item D1: every `startLoop` that passes no `aoFalhar` announces through this one (measured: game-soccer passes none)
-  registerCrashNotice(aoFalhar);
+  // study item D1: every `startLoop` that passes no `onFailure` announces through this one (measured: game-soccer passes none)
+  registerCrashNotice(announceFailure);
 
   /*
    * ⚠️ MOSTRAR REFAZ OS ITENS ANTES DE REVELAR, e a ordem é a regra: o §5 do ADR-0106 diz que a criança nunca
    * vê um item que não acciona, e a tabela de acções deste jogo pode ter mudado desde a montagem. Revelar
    * primeiro e refazer depois deixaria um piscar em que ela vê o que não pode usar.
    */
-  const pausa = {
+  const pauseControls = {
     show: (i: number) => {
       pauseIcons.reflectPauseIcons();
       const findPauseCard = $<HTMLElement>(`#vp-pause-${i}`);
@@ -2581,7 +2581,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * ===================== E AGORA ALGUMA COISA ABRE A PAUSA (ADR-0144) =====================
    *
    * 🔴 MEDIDO em 2026-09-12, e é o buraco por baixo de tudo o que esta semana construiu: `git grep` por
-   * `vp-pause-` devolvia a montagem, o `getPauseMenu` da navegação e o par `mostrar`/`esconder` daqui —
+   * `vp-pause-` devolvia a montagem, o `getPauseMenu` da navegação e o par `show`/`hide` daqui —
    * NADA revelava o cartão sem o jogo pedir. Os quatro painéis estavam no documento e inalcançáveis, que é
    * o mesmo que não existirem e custou mais a construir.
    *
@@ -2606,9 +2606,9 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ O DONO DA TECLA DECIDE O ASSENTO, como em `menuNavKey`: quem carregou é quem abre a SUA pausa. Uma
     // tecla que não é de ninguém (`-1`) não pode ser «start» de assento nenhum — perguntar por ela ao
     // assento 0 devolveria a pausa do Jogador 1 a quem carregou numa tecla solta.
-    const dono = keyboard.whichPlayer(code);
-    if (dono < 0) return null;
-    return keyboard.actionOf(code, dono) === acao ? dono : null;
+    const keyOwner = keyboard.whichPlayer(code);
+    if (keyOwner < 0) return null;
+    return keyboard.actionOf(code, keyOwner) === acao ? keyOwner : null;
   }
 
   /*
@@ -2757,7 +2757,7 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   let soundCaption: HTMLElement | null = null;
   let clearSoundCaption: ReturnType<typeof setTimeout> | null = null;
-  function legendarSom(texto: string): void {
+  function writeSoundCaption(texto: string): void {
     if (!state.captionsOn || !texto) return;
     if (!soundCaption) {
       const home = screenFooter($<HTMLElement>('#game-region'));
@@ -2854,7 +2854,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const alreadyStopped = inQuickPause.has(assento);
     if (alreadyStopped) leaveQuickPause(assento, 'cartao');
     // ⚠️ MOSTRAR VEM PRIMEIRO, e a ordem é a defesa: um jogo sem `setPhase` tem de receber o cartão na mesma.
-    pausa.show(assento);
+    pauseControls.show(assento);
     if (!alreadyStopped) changePhase('paused');
     return true;
   }
@@ -2875,7 +2875,7 @@ export function createGame(o: CreateGameOptions): Engine {
     if (assento === null || !inQuickPause.has(assento)) return;
     if (overlays.topVisibleOverlay()) return;
     leaveQuickPause(assento, 'cartao');
-    pausa.show(assento);
+    pauseControls.show(assento);
     e.preventDefault();
   }
   win.addEventListener('keydown', openMenusByAction4);
@@ -2904,15 +2904,15 @@ export function createGame(o: CreateGameOptions): Engine {
   /** A menu the directional moves is open: an overlay, the seat-0 card, or the quick pause (ADR-0157). */
   const menuWithDpad = (): boolean => !!overlays.topVisibleOverlay() || seat0CardOpen() || inQuickPause.has(0);
   /** A position's key handed to the menus, which read keys — stamped with who produced it (ADR-0109). */
-  const keyToMenu = (code: string, origem: TransportName | undefined): void => {
+  const keyToMenu = (code: string, origin: TransportName | undefined): void => {
     // 🔴 A TECLA DO TECLADO JÁ ESTÁ NO MUNDO (ADR-0223). Esta função é o tradutor POSIÇÃO → tecla, e existe para os
     // transportes que não produzem teclas: o dedo, os olhos, o rosto, as mãos, a voz, a varredura. O teclado produz —
     // o evento que chegou aqui É a tecla —, logo redespachá-la navegaria o menu DUAS vezes.
     // 📌 É por estar escrito aqui que o condutor do teclado não precisa de perguntar «há um menu aberto?»: essa
     // pergunta tem UMA resposta, a do controle, e esta linha é o que a torna verdadeira também para ele.
-    if (!origem || origem === 'teclado') return;
+    if (!origin || origin === 'teclado') return;
     const alvo = $<HTMLElement>('#game-region') ?? doc.body;
-    alvo.dispatchEvent(stampSource(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origem));
+    alvo.dispatchEvent(stampSource(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origin));
   };
   const labelledActions = (): readonly { action: string; label: string }[] => {
     const preset = cartridge.preset;
@@ -2927,7 +2927,7 @@ export function createGame(o: CreateGameOptions): Engine {
     $, srSay, store, win,
     gameActions: labelledActions,
     root: doc.documentElement,
-    isMobile: disponibilidade.touch,
+    isMobile: deviceAvailability.touch,
     viewport: () => ({ w: win.innerWidth, h: win.innerHeight }),
     frontOverlay: overlays.frontOverlay,
     // O toque é sempre do Jogador 1 (`touch-bindings`), e com o cartão ou um painel aberto a criança toca
@@ -2964,18 +2964,18 @@ export function createGame(o: CreateGameOptions): Engine {
       old?.parentNode?.removeChild(old);
       return;
     }
-    const mapa = toque.getTouchMap();
+    const padMap = toque.getTouchMap();
     const short = cartridge.preset ? shortLabellerFrom(cartridge.preset) : (): null => null;
     const pad = mountTouchControls(
       { find: (sel) => $<HTMLElement>(sel), create: (tag) => doc.createElement(tag) },
       {
-        map: mapa,
+        map: padMap,
         gameActions: cartridgeActions(),
         // The FUNCTION of each slot (ADR-0165): the game's SHORT word, said after the button's name in its accessible
         // name; the face shows the name. `start`/`select` are system positions the engine names itself.
         slotLabel: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select')
             // só se desenha o que o jogo nomeia (ADR-0162), logo a palavra dele existe sempre
-            : (short(mapa[slot] as Action) ?? '')),
+            : (short(padMap[slot] as Action) ?? '')),
         dpad: store.get(store.KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
       },
     );
@@ -3138,19 +3138,19 @@ export function createGame(o: CreateGameOptions): Engine {
         reflectKeyboard();
       },
     });
-    const linha = doc.createElement('div');
-    linha.className = 'ctrl-row ctrl-row--passos';
-    padSizeRow = linha; // offered or not is decided at each opening (`render` above)
-    const dica = doc.createElement('span');
-    dica.className = 'opt-hint';
-    padHint = dica;
+    const rowNode = doc.createElement('div');
+    rowNode.className = 'ctrl-row ctrl-row--passos';
+    padSizeRow = rowNode; // offered or not is decided at each opening (`render` above)
+    const explanation = doc.createElement('span');
+    explanation.className = 'opt-hint';
+    padHint = explanation;
     const envelope = doc.createElement('span');
-    envelope.appendChild(dica);
-    linha.appendChild(envelope);
+    envelope.appendChild(explanation);
+    rowNode.appendChild(envelope);
     padSteps = mountSteps(mobilityCtx, specDoPad());
     padSteps.id = 'opt-pad-persona';
-    linha.appendChild(padSteps);
-    mobilityPanel.shell.list.appendChild(linha);
+    rowNode.appendChild(padSteps);
+    mobilityPanel.shell.list.appendChild(rowNode);
     padSteps.addEventListener('passo', (ev) => {
       const fresh = nextStep(currentPersona, PERSONAS_DO_PAD.length, (ev as CustomEvent<number>).detail);
       if (fresh === currentPersona) return; // na ponta não se anuncia um passo que não aconteceu
@@ -3187,8 +3187,8 @@ export function createGame(o: CreateGameOptions): Engine {
       if (!cartridge.preset) return [];
       const palavra = labellerFrom(cartridge.preset);
       return presetActions(cartridge.preset).flatMap((acao) => {
-        const rotulo = palavra(acao);
-        return rotulo ? [{ action: acao, label: rotulo }] : [];
+        const actionWord = palavra(acao);
+        return actionWord ? [{ action: acao, label: actionWord }] : [];
       });
     };
     let seatSteps: HTMLElement | null = null;
@@ -3274,8 +3274,8 @@ export function createGame(o: CreateGameOptions): Engine {
       const rowT = doc.createElement('div');
       rowT.className = 'ctrl-row';
       const envelope = doc.createElement('span');
-      const forte = doc.createElement('strong');
-      envelope.appendChild(forte);
+      const strongLabel = doc.createElement('strong');
+      envelope.appendChild(strongLabel);
       rowT.appendChild(envelope);
       const botao = doc.createElement('button');
       botao.className = 'mode-btn';
@@ -3288,14 +3288,14 @@ export function createGame(o: CreateGameOptions): Engine {
       });
       rowT.appendChild(botao);
       mobilityPanel.shell.list.appendChild(rowT);
-      keyboardRows.push({ mode: modo, row: rowT, strong: forte, button: botao });
+      keyboardRows.push({ mode: modo, row: rowT, strong: strongLabel, button: botao });
     }
     /** Rótulos no idioma de agora, e quem aparece: sem posições nomeadas não há o que mapear; «3–4» sem laterais. */
     const reflectKeyboardRows = (): void => {
       const declaredActions = cartridge.preset ? presetActions(cartridge.preset) : [];
       const hasSides = declaredActions.some((a) => (SIDES as readonly string[]).includes(a));
-      for (const { mode: modo, row: l, strong: forte, button: botao } of keyboardRows) {
-        forte.textContent = modeLabel(modo);
+      for (const { mode: modo, row: l, strong: strongLabel, button: botao } of keyboardRows) {
+        strongLabel.textContent = modeLabel(modo);
         botao.textContent = t('motora.abrir');
         botao.setAttribute('aria-label', modeLabel(modo));
         l.hidden = actionsToMap().length === 0 || (modo === 4 && hasSides);
@@ -3395,10 +3395,10 @@ export function createGame(o: CreateGameOptions): Engine {
     touchPanel.shell.reset.hidden = true;
     const hideSlotsWithoutAction = (): void => {
       const named = cartridgeActions();
-      const mapa = toque.getTouchMap();
+      const padMap = toque.getTouchMap();
       for (const sel of Array.from(touchPanel.shell.list.querySelectorAll<HTMLSelectElement>('select[data-slot]'))) {
-        const linha = sel.closest<HTMLElement>('.ctrl-row');
-        if (linha) linha.hidden = !named.has(mapa[sel.dataset.slot ?? ''] ?? '');
+        const rowNode = sel.closest<HTMLElement>('.ctrl-row');
+        if (rowNode) rowNode.hidden = !named.has(padMap[sel.dataset.slot ?? ''] ?? '');
       }
     };
     // after the select's own listener (it writes the map), the pad is drawn again with the new function
@@ -3634,7 +3634,7 @@ export function createGame(o: CreateGameOptions): Engine {
    *
    * Os dois pertencem à metade do JOGO (ADR-0139 §1), logo têm de seguir o cartucho que estiver montado —
    * um campo fixo aqui devolveria, depois de um `mount()`, a declaração do cartucho que arrancou primeiro.
-   * `pausa`, `tts`, `overlays`, `nav`, `keyboard` e o sonar são da PÁGINA e existem uma vez só, que é a
+   * `pause`, `tts`, `overlays`, `nav`, `keyboard` e o sonar são da PÁGINA e existem uma vez só, que é a
    * decisão inteira do ADR-0117 §2 — e é por isso que eles ficam como estão.
    *
    * 📌 `problems` e `reach` ainda são fixos, e ainda descrevem o arranque. É a dívida que o ADR-0142
@@ -3748,7 +3748,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       now: () => win.performance.now(),
       every: (fn, ms) => win.setInterval(fn, ms),
       stopEvery: (h) => win.clearInterval(h as number),
-      report: (linha) => { if (!measuredProblems.includes(linha)) measuredProblems.push(linha); },
+      report: (rowNode) => { if (!measuredProblems.includes(rowNode)) measuredProblems.push(rowNode); },
       /**
        * THE ENGINE'S OWN RECOGNISER, and it arrives late on purpose (ADR-0216 §5): `platform/reading-runtime` is what names the
        * model files, so a game that never listens — and a child of a game that does, until the first `listen()` — loads none of
@@ -3952,7 +3952,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     getPlayers: () => seatEveryPlayer(players()),
     getNumPlayers: () => players().length,
     navTitle: gameHooks.navTitle,
-    onBar: naBarraDe,
+    onBar: isOnBar,
     // ✅ E A METADE QUE FICAVA POR LIGAR NA BARRA LIGA-SE AQUI: o `navBar` do `ui/menu-nav` recebe `(i, k)` e nunca o
     // terceiro argumento, que é a borda do START — a SEGUNDA saída do modo (ADR-0044 item 7). Ela chegava por uma rota
     // do cartucho que esta raiz não montava; agora a raiz monta o comando, e ela chega por aqui.
@@ -4005,7 +4005,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     };
     const cameraDeps = {
       doc, region: gazeRegion, base: doc.baseURI, loop: visionLoop, controller: controleVirtual, say: srSay, alert: srAlert,
-      report: (linha: string) => { if (!measuredProblems.includes(linha)) measuredProblems.push(linha); },
+      report: (rowNode: string) => { if (!measuredProblems.includes(rowNode)) measuredProblems.push(rowNode); },
       turnOff: () => state.setCameraControlValue('off'),
     };
     // the eyes: the relative reading and the four-zone cycle (ADR-0213), presses from `olhos`, the eye lines and the regions' outlines
@@ -4052,7 +4052,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * O AMOSTRADOR DE FLASHES MORA EM `platform/flash-sampler` (ADR-0221, issue #203), e o que fica aqui é o que só a raiz sabe:
    * qual é o canvas do mundo DESTE cartucho, e para onde vai uma falha. 📏 Eram 53 linhas e 12 ramos nesta função.
    */
-  const medirFlashes = (ms: number): Promise<FlashMeasurement> => sampleFlashes({
+  const sampleWorldFlashes = (ms: number): Promise<FlashMeasurement> => sampleFlashes({
     canvas: () => {
       const declaredWorld = cartridge.declaration.world();
       const alvo = declaredWorld.kind === 'element' ? $<HTMLElement>(declaredWorld.selector) : null;
@@ -4060,7 +4060,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     },
     scratch: () => doc.createElement('canvas'),
     frame: typeof win.requestAnimationFrame === 'function' ? (cb) => { win.requestAnimationFrame(cb); } : undefined,
-    report: (linha) => { measuredProblems.push(linha); },
+    report: (rowNode) => { measuredProblems.push(rowNode); },
   }, ms);
 
   function unmountAll(): void {
@@ -4091,23 +4091,23 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     mount: mountAll,
     unmount: unmountAll,
     dispose,
-    pause: pausa,
+    pause: pauseControls,
     tts,
     reading,
-    captionSound: legendarSom,
+    captionSound: writeSoundCaption,
     gameSpeed: () => state.gameSpeed,
-    measureFlashes: medirFlashes,
+    measureFlashes: sampleWorldFlashes,
     overlays,
     nav,
     keyboard,
     controller: controleVirtual,
     sonar,
-    applyVisionFilter: aplicarFiltroDeVisao,
+    applyVisionFilter: setVisionFilter,
     scenes: rootScenes,
     onLocaleChange: (fn) => { localeListeners.push(fn); },
     cvdFilters,
     get problems() { return [...hostProblems, ...stylesheetMissing(), ...measureCartridgeProblems(), ...dictionaryGaps(), ...measuredProblems, ...storageOutsideScope()]; },
-    onFailure: aoFalhar,
+    onFailure: announceFailure,
     get reach() { return currentReach; },
   };
 }

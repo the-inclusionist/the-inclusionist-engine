@@ -235,17 +235,17 @@ export function directSpriteTexture(srcTex: DirectTexSource, mode: string): unkn
     // cache `_playerDirect` memoriza a versão baseada no atlas e a guarda para sempre.
     const f = srcTex.frame;
     const needsClipping = !!f && (f.x !== 0 || f.y !== 0 || f.width !== s.width || f.height !== s.height);
-    let fonte: HTMLCanvasElement | HTMLImageElement = s;
+    let drawSource: HTMLCanvasElement | HTMLImageElement = s;
     if (needsClipping && f) {
       const rec = makeCanvas(Math.max(1, f.width), Math.max(1, f.height));
       const rc = rec.getContext('2d')!;
       rc.imageSmoothingEnabled = false; // pixel art: reamostrar aqui borraria o contorno que o modo promete
       rc.drawImage(s, f.x, f.y, f.width, f.height, 0, 0, f.width, f.height);
-      fonte = rec;
+      drawSource = rec;
     }
     // outlineCanvas só declara HTMLCanvasElement; o recorte já devolve canvas, e a base sem recorte é
     // canvas-sourced pelos caminhos que restam. O cast preserva o runtime idêntico ao original.
-    const o = outlineCanvas(fonte as HTMLCanvasElement, th);
+    const o = outlineCanvas(drawSource as HTMLCanvasElement, th);
     cv.width = o.width; cv.height = o.height;
     const c = cv.getContext('2d')!;
     c.clearRect(0, 0, cv.width, cv.height); c.drawImage(o, 0, 0);

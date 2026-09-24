@@ -310,8 +310,8 @@ export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, lista
     // português, na mesma tela. Ver `ui/panel-widgets.labelRow`.
     const existingRow = ctx.find('#' + spec.id);
     if (existingRow) {
-      const linha = existingRow.closest<HTMLElement>('.ctrl-row');
-      if (linha) labelRow(linha, spec);
+      const rowNode = existingRow.closest<HTMLElement>('.ctrl-row');
+      if (rowNode) labelRow(rowNode, spec);
       continue;
     }
     lista.appendChild(controlRow(ctx, spec).row);
@@ -399,7 +399,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     markMenuChanged(ctx.$<HTMLElement>('[data-act="motora"]'), [easy, alt, anyRunToggleChosen]);
   }
 
-  function reflectFacil(): void {
+  function drawEasy(): void {
     const p = ctx.players[selMovPlayer];
     const on = !!(p && p.easy);
     if (easyModeButton) {
@@ -451,7 +451,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
     if (!p) return;
     p.easy = on;
     ctx.store.setBool(easyKey(i), on);
-    reflectFacil();
+    drawEasy();
     rebuildCoins();
     ctx.srSay(easyAnnouncement(i, ctx.getNumPlayers(), on));
   }
@@ -467,7 +467,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
       b.addEventListener('click', () => {
         selMovPlayer = Number(b.dataset.mp);
         renderMovPlayers();
-        reflectFacil();
+        drawEasy();
         reflectAltMove();
       });
     });
@@ -526,7 +526,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
         if (p.toggleMove) setToggleMove(i, false);
         if (p.toggleRun) setToggleRun(i, false);
       });
-      reflectFacil();
+      drawEasy();
       reflectAltMove();
       reflectToggleRun();
       ctx.srSay(t('sr.motor.reset'));
@@ -534,13 +534,13 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
   }
   wireButtons();
 
-  reflectFacil();
+  drawEasy();
   reflectAltMove();
   reflectToggleRun();
 
   return {
     renderMovPlayers,
-    reflectEasy: reflectFacil,
+    reflectEasy: drawEasy,
     reflectAltMove,
     reflectToggleRun,
     setEasy,

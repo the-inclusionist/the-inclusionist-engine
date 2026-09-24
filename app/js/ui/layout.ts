@@ -38,16 +38,16 @@ export interface NodeMeasure {
  * side is under 22·k px (44 at 640×360). The engine's own nodes are not the cartridge's to answer for, and a node with no
  * area is not drawn. Half a pixel of slack absorbs subpixel layout.
  */
-export function belowFloor(nos: readonly NodeMeasure[], k: number): { text: string[]; targets: string[] } {
-  const escala = minimumTarget(k) / 22;
+export function belowFloor(nodes: readonly NodeMeasure[], k: number): { text: string[]; targets: string[] } {
+  const ratio = minimumTarget(k) / 22;
   const texto: string[] = [];
-  const alvos: string[] = [];
-  for (const n of nos) {
+  const smallTargets: string[] = [];
+  for (const n of nodes) {
     if (n.daEngine) continue;
-    if (n.fontPx !== null && n.fontPx > 0 && n.fontPx < 8 * escala - 0.5) texto.push(n.name);
-    if (n.target && n.target.w > 0 && n.target.h > 0 && Math.min(n.target.w, n.target.h) < minimumTarget(k) - 0.5) alvos.push(n.name);
+    if (n.fontPx !== null && n.fontPx > 0 && n.fontPx < 8 * ratio - 0.5) texto.push(n.name);
+    if (n.target && n.target.w > 0 && n.target.h > 0 && Math.min(n.target.w, n.target.h) < minimumTarget(k) - 0.5) smallTargets.push(n.name);
   }
-  return { text: texto, targets: alvos };
+  return { text: texto, targets: smallTargets };
 }
 
 /**
@@ -69,7 +69,7 @@ export function belowFloor(nos: readonly NodeMeasure[], k: number): { text: stri
 export interface NamedBox { readonly name: string; readonly box: Box; readonly isBar: boolean; }
 export interface Box { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
 
-export function barIntruders(barBox: Box | null, nos: readonly NamedBox[]): string[] {
+export function barIntruders(barBox: Box | null, nodes: readonly NamedBox[]): string[] {
   // Uma barra sem área não reserva nada — e acusar contra um rectângulo de zero seria acusar toda a gente.
   if (!barBox || barBox.w <= 0 || barBox.h <= 0) return [];
   // ⚠️ O GUARDA DE ÁREA ZERO FAZ TRABALHO, e eu quase o tirei por uma leitura errada. Uma mutação que o
@@ -77,7 +77,7 @@ export function barIntruders(barBox: Box | null, nos: readonly NamedBox[]): stri
   // era falsa: elas excluem um nó DEGENERADO NA FRONTEIRA, não um em geral. Uma risca de largura zero
   // atravessando a barra passa nas quatro comparações. 📌 Contentores de altura ou largura zero são comuns
   // em markup gerado, e acusá-los seria ruído puro — que é como se ensina um consumidor a ignorar a linha.
-  return nos
+  return nodes
     .filter((n) => !n.isBar && n.box.w > 0 && n.box.h > 0)
     .filter((n) => n.box.x < barBox.x + barBox.w && barBox.x < n.box.x + n.box.w
       && n.box.y < barBox.y + barBox.h && barBox.y < n.box.y + n.box.h)
@@ -163,13 +163,13 @@ export function layout(): void {
   // por lado (o −10): base·kDev − avail·dpr ≤ 10·kDev ⇒ kDev ≤ avail·dpr/(base−10). (José escolheu inteiro-REAL.)
   // A conta mora em `stageScale` desde o ADR-0163, para a engine a aplicar a todo cartucho.
   const dpr = window.devicePixelRatio || 1;
-  const escala = stageScale(availW, availH, dpr, baseW, baseH);
-  const { kDev, k } = escala;
+  const ratio = stageScale(availW, availH, dpr, baseW, baseH);
+  const { kDev, k } = ratio;
   // ESCALA das vars de UI é ESCOPADA ao #game-region: só a UI DENTRO do canvas (menus/HUD/pausa/quiz) escala com o
   // k. Fora do canvas (barra de topo, painel de debug) herda o :root → texto SEMPRE 16px, toque 44px (José).
   const gr = $<HTMLElement>('#game-region'); if (gr) {
     // `--tap` é o tamanho PREFERIDO (22·k) e `--alvo-min` o CHÃO (22·k, 44 px a 640×360 — ADR-0163), escritos em `applyScale`.
-    applyScale(gr, escala);
+    applyScale(gr, ratio);
   }
   crtScanVars(); // scanlines re-alinham quando a escala k muda
   if (/[?&]debug=true/.test(location.search)) console.info(`[escala] kDev=${kDev}× px REAIS (canvas físico ${baseW * kDev}×${baseH * kDev} = múltiplo INTEIRO de ${baseW}×${baseH}); CSS ${Math.round(baseW * k)}×${Math.round(baseH * k)} (k=${k.toFixed(3)}, dpr=${dpr})`);

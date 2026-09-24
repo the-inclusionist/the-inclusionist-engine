@@ -49,14 +49,14 @@ export const FOCUSABLE_SELECTOR = [
  */
 export function nextInTrap<T>(
   focusables: readonly T[],
-  atual: T | null,
+  current: T | null,
   backwards: boolean,
 ): T | null {
   if (focusables.length === 0) return null;
   const first = focusables[0]!;
   const last = focusables[focusables.length - 1]!;
 
-  const i = atual === null ? -1 : focusables.indexOf(atual);
+  const i = current === null ? -1 : focusables.indexOf(current);
   if (i < 0) return backwards ? last : first; // caso 3: o foco estava fora
   if (!backwards && i === focusables.length - 1) return first;
   if (backwards && i === 0) return last;
@@ -97,7 +97,7 @@ export interface FocusTrapApi {
 }
 
 export function initFocusTrap(ctx: FocusTrapCtx): FocusTrapApi {
-  function aoTeclar(e: KeyboardEvent): void {
+  function trapKey(e: KeyboardEvent): void {
     if (e.key !== 'Tab') return;
     const dialogo = ctx.topOverlay();
     if (!dialogo) return; // sem diálogo aberto o Tab é do jogo, e tem de continuar a ser
@@ -110,9 +110,9 @@ export function initFocusTrap(ctx: FocusTrapCtx): FocusTrapApi {
   }
 
   return {
-    onKeydown: aoTeclar,
-    attach: () => ctx.win.addEventListener('keydown', aoTeclar, true),
-    detach: () => ctx.win.removeEventListener?.('keydown', aoTeclar, true),
+    onKeydown: trapKey,
+    attach: () => ctx.win.addEventListener('keydown', trapKey, true),
+    detach: () => ctx.win.removeEventListener?.('keydown', trapKey, true),
   };
 }
 

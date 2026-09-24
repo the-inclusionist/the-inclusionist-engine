@@ -70,21 +70,21 @@ export function summariseProbe(samples: readonly CharacterSample[]): ProbeSummar
   if (!samples.length) {
     return { frames: 0, textures: 0, maxSiblings: 0, siblingExample: '', sangramento: [], scales: [], verdict: 'não gravou nada — o personagem existia?' };
   }
-  const texturas = new Set(samples.map((a) => a.textureId)).size;
+  const textureCount = new Set(samples.map((a) => a.textureId)).size;
   const withSiblings = samples.filter((a) => a.siblingsDrawing > 0);
-  const maxIrmaos = withSiblings.reduce((m, a) => Math.max(m, a.siblingsDrawing), 0);
+  const mostSiblings = withSiblings.reduce((m, a) => Math.max(m, a.siblingsDrawing), 0);
   const isAtlasPiece = (r: string): boolean => {
     const m = /(\d+)x(\d+)$/.exec(r);
     return !!m && (+m[1] > MAX_CHARACTER_FRAME_SIDE || +m[2] > MAX_CHARACTER_FRAME_SIDE);
   };
   const sangramento = [...new Set(samples.filter((a) => isAtlasPiece(a.crop)).map((a) => a.crop + ' (base ' + a.base + ')'))];
-  const escalas = [...new Set(samples.map((a) => a.scale))].sort();
-  const veredito = maxIrmaos > 0
-    ? 'ALGUÉM DESENHA DUAS VEZES: até ' + maxIrmaos + ' irmão(s) da câmera com a textura do personagem'
+  const distinctScales = [...new Set(samples.map((a) => a.scale))].sort();
+  const finding = mostSiblings > 0
+    ? 'ALGUÉM DESENHA DUAS VEZES: até ' + mostSiblings + ' irmão(s) da câmera com a textura do personagem'
     : sangramento.length
       ? 'RECORTE GRANDE DEMAIS: o quadro está pegando pedaço do atlas'
       : 'sprite limpo (uma textura por quadro, sem irmão, recorte de quadro) — procure em composição: filtro, pós-efeito ou câmera';
-  return { frames: samples.length, textures: texturas, maxSiblings: maxIrmaos, siblingExample: withSiblings.length ? withSiblings[0].siblingPositions : '', sangramento, scales: escalas, verdict: veredito };
+  return { frames: samples.length, textures: textureCount, maxSiblings: mostSiblings, siblingExample: withSiblings.length ? withSiblings[0].siblingPositions : '', sangramento, scales: distinctScales, verdict: finding };
 }
 
 export interface DebugPanelCtx {
@@ -205,7 +205,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
      Só aparece se o hospedeiro souber tirar a foto: um jogo sem personagem não ganha um botão que não faz
      nada. */
   if (ctx.sampleCharacter && ctx.onFrame) {
-    const sampleCharacter = ctx.sampleCharacter, aoQuadro = ctx.onFrame;
+    const sampleCharacter = ctx.sampleCharacter, everyFrame = ctx.onFrame;
     const h = document.createElement('div');
     h.textContent = 'Sonda do personagem';
     h.style.cssText = 'margin:.7rem 0 .1rem;font-weight:700;color:#ffd23f;border-bottom:1px solid rgba(255,210,63,.4)';
@@ -225,11 +225,11 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
       const samples: CharacterSample[] = [];
       let n = 0;
       saida.textContent = 'gravando… PULE agora';
-      const parar = aoQuadro(() => {
+      const stopSampling = everyFrame(() => {
         const a = sampleCharacter();
         if (a) samples.push(a);
         if (++n < 180) return;
-        parar();
+        stopSampling();
         btn.disabled = false;
         const r = summariseProbe(samples);
         saida.textContent = [

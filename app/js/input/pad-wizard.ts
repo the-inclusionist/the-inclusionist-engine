@@ -110,7 +110,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
   function advance(): void {
     if (!padWiz) return;
     while (padWiz.step < PADWIZ_ORDER.length && !ctx.actionLabel(PADWIZ_ORDER[padWiz.step]!)) padWiz.step++;
-    if (padWiz.step >= PADWIZ_ORDER.length) fechar(true);
+    if (padWiz.step >= PADWIZ_ORDER.length) closeWizard(true);
   }
   function ask(): void {
     if (!padWiz) return;
@@ -135,12 +135,12 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     ctx.say(phrase);
     ctx.onStep?.(null);
     ctx.progress('');
-    padWiz.timer = setInterval(tique, 30);
+    padWiz.timer = setInterval(tickWizard, 30);
   }
-  function abrir(): void { begin(-1, '', t('pad.wiz.pressAny')); }
-  function abrirPara(gp: PadLike): void { begin(gp.index, gp.id, t('pad.wiz.detected', { id: gp.id })); }
+  function openAny(): void { begin(-1, '', t('pad.wiz.pressAny')); }
+  function openForPad(gp: PadLike): void { begin(gp.index, gp.id, t('pad.wiz.detected', { id: gp.id })); }
 
-  function fechar(save: boolean): void {
+  function closeWizard(save: boolean): void {
     if (!padWiz) return;
     if (padWiz.timer != null) clearInterval(padWiz.timer);
     if (save && padWiz.id) {
@@ -159,7 +159,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
    *
    * 🔴 Este é um AUTÓMATO, e a ordem abaixo é o que ele é: sem controle adoptado · à espera da pose de repouso · à
    * espera de a mão largar · com um eixo em observação · a ler o que mexeu. Cada momento é uma função com o nome do
-   * que ele espera, e o `tique` é a lista deles.
+   * que ele espera, e o `tickWizard` é a lista deles.
    *
    * ⚠️ E NÃO É UMA TABELA, ao contrário da cadeia do `input/keydown`, porque os momentos não são simétricos: o
    * primeiro corre SEM um controle na mão (é ele que o escolhe) e os outros quatro precisam de um. Uma lista de
@@ -220,7 +220,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     }
   }
 
-  function tique(): void {
+  function tickWizard(): void {
     if (!padWiz) return;
     ctx.onTick?.();
     const pads = ctx.getGamepads() ?? [];
@@ -234,5 +234,5 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     readWhatMoved(padWiz, gp, base);
   }
 
-  return { open: abrir, openFor: abrirPara, close: fechar, tick: tique, state: () => padWiz };
+  return { open: openAny, openFor: openForPad, close: closeWizard, tick: tickWizard, state: () => padWiz };
 }

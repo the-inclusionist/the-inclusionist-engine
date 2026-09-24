@@ -76,14 +76,14 @@ export type Translator = (chave: string, params?: Record<string, string | number
  */
 export function axisRows(
   eixo: VisualAxis,
-  valores: readonly string[],
-  rotulos: Readonly<Record<string, string>>,
-  atual: string,
+  options: readonly string[],
+  optionLabels: Readonly<Record<string, string>>,
+  selected: string,
   t: Translator,
 ): string {
-  return valores.map((valor) => {
-    const sel = valor === atual;
-    return `<div class="ctrl-row"><span><strong>${t(rotulos[valor]!)}</strong></span>`
+  return options.map((valor) => {
+    const sel = valor === selected;
+    return `<div class="ctrl-row"><span><strong>${t(optionLabels[valor]!)}</strong></span>`
       + `<button class="mode-btn${sel ? ' is-on' : ''}" role="radio" aria-checked="${sel}"`
       + ` data-eixo="${eixo}" data-valor="${valor}" type="button">${sel ? t('viz.escolhido') : t('viz.escolher')}</button></div>`;
   }).join('');

@@ -108,27 +108,27 @@ export interface MountedPanel {
  * leaves one panel, which is what ADR-0139's third gate asks of two cartridges on one page.
  */
 export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPanel {
-  const casca = mountShell(ctx, { id: spec.id, listId: spec.listId, ...spec.labels() });
+  const panelShell = mountShell(ctx, { id: spec.id, listId: spec.listId, ...spec.labels() });
   // Appending an element that is already a child moves it; it never duplicates. Guarding on `parentNode`
   // would be the same operation written twice.
-  ctx.host.appendChild(casca.overlay);
+  ctx.host.appendChild(panelShell.overlay);
 
-  const fechar = spec.closeOwn ?? ((): void => {
-    casca.overlay.hidden = true;
+  const closePanel = spec.closeOwn ?? ((): void => {
+    panelShell.overlay.hidden = true;
     ctx.overlays.restoreFocus?.(spec.id);
   });
 
   // 🔴 NO NUMBERING (ADR-0167): the stops drew their index here, renumbered by an observer on every render; the place is
   // now only spoken, after the name, by the navigation.
 
-  const abrir = (): void => {
+  const openPanel = (): void => {
     // ⚠️ OS RÓTULOS ANTES DO `render()`, e a ordem tem consequência: `ui/settings-panel.fillExplain` lê o
     // `data-explain-idle` do cartão para montar o rodapé, e quem o chama é o render de cada painel.
-    applyLabels(casca, spec.labels());
+    applyLabels(panelShell, spec.labels());
     spec.render();
-    casca.overlay.hidden = false;
-    ctx.overlays.frontOverlay(casca.overlay);
-    casca.close.focus?.();
+    panelShell.overlay.hidden = false;
+    ctx.overlays.frontOverlay(panelShell.overlay);
+    panelShell.close.focus?.();
   };
 
   /*
@@ -138,31 +138,31 @@ export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPan
    * position — `render()` rebuilds rows by `innerHTML`, and a redraw that drops focus on «Voltar» loses the child's place.
    * A hidden panel does nothing: its words are resolved when it opens.
    */
-  redrawOf.set(casca.overlay, () => {
-    if (casca.overlay.hidden) return;
-    const doc = casca.card.ownerDocument;
+  redrawOf.set(panelShell.overlay, () => {
+    if (panelShell.overlay.hidden) return;
+    const doc = panelShell.card.ownerDocument;
     const focused = doc.activeElement as HTMLElement | null;
-    const focusedIndex = focused && casca.card.contains(focused) ? navigableItems(casca.card).indexOf(focused) : -1;
-    applyLabels(casca, spec.labels());
+    const focusedIndex = focused && panelShell.card.contains(focused) ? navigableItems(panelShell.card).indexOf(focused) : -1;
+    applyLabels(panelShell, spec.labels());
     spec.render();
     if (focusedIndex < 0 || !focused) return;
-    const destino = focused.isConnected ? focused : navigableItems(casca.card)[focusedIndex];
+    const destino = focused.isConnected ? focused : navigableItems(panelShell.card)[focusedIndex];
     if (destino && destino !== doc.activeElement) destino.focus();
   });
-  const win = casca.overlay.ownerDocument?.defaultView;
-  if (win && typeof win.addEventListener === 'function' && !alreadyListening.has(casca.overlay)) {
-    alreadyListening.add(casca.overlay);
-    win.addEventListener('i18n:change', () => { redrawOf.get(casca.overlay)?.(); });
+  const win = panelShell.overlay.ownerDocument?.defaultView;
+  if (win && typeof win.addEventListener === 'function' && !alreadyListening.has(panelShell.overlay)) {
+    alreadyListening.add(panelShell.overlay);
+    win.addEventListener('i18n:change', () => { redrawOf.get(panelShell.overlay)?.(); });
   }
 
   // Só quando o painel NÃO liga o próprio botão. Ver `fecharProprio`: dois ouvintes no mesmo controle são dois
   // donos da mesma saída, e é assim que elas divergem.
-  if (!spec.closeOwn) casca.close.addEventListener('click', fechar);
+  if (!spec.closeOwn) panelShell.close.addEventListener('click', closePanel);
   // ⚠️ THE ESCAPE CHAIN IS NOT DECORATION. `ui/settings-panel.escapeTarget()` walks the registry, and under
   // `createGame` that registry was EMPTY — nothing had ever registered. A modal dialog no key closes is the
   // trap ADR-0044 §2 names about the pause itself: «a menu you cannot leave is a trap, and the trap costs
   // most to whoever cannot see it».
-  ctx.overlays.register(spec.id, { close: fechar, inEscapeChain: true });
+  ctx.overlays.register(spec.id, { close: closePanel, inEscapeChain: true });
 
-  return { shell: casca, open: abrir, close: fechar };
+  return { shell: panelShell, open: openPanel, close: closePanel };
 }

@@ -66,10 +66,10 @@ export const OLD_VOCABULARY: Readonly<Record<string, string>> = Object.freeze({
  * Foi um teste de NAVEGADOR que o encontrou (`tests/touch.browser.test.js`), depois de a suíte `node` já
  * estar verde — o que é o argumento para os dois projetos existirem.
  */
-export function migrateTouchMap(mapa: Record<string, string> | null | undefined): Record<string, string> | null {
-  if (!mapa) return null;
+export function migrateTouchMap(touchMap: Record<string, string> | null | undefined): Record<string, string> | null {
+  if (!touchMap) return null;
   const saida: Record<string, string> = {};
-  for (const [slot, acao] of Object.entries(mapa)) {
+  for (const [slot, acao] of Object.entries(touchMap)) {
     saida[slot] = OLD_VOCABULARY[acao] ?? acao;
   }
   return saida;
@@ -88,10 +88,10 @@ export function migrateTouchMap(mapa: Record<string, string> | null | undefined)
  *
  * `_skip` e qualquer chave desconhecida atravessam, pela mesma razão das outras duas migrações.
  */
-export function migrateControlMap<T>(mapa: Record<string, T> | null | undefined): Record<string, T> | null {
-  if (!mapa) return null;
+export function migrateControlMap<T>(touchMap: Record<string, T> | null | undefined): Record<string, T> | null {
+  if (!touchMap) return null;
   const saida: Record<string, T> = {};
-  for (const [chave, valor] of Object.entries(mapa)) {
+  for (const [chave, valor] of Object.entries(touchMap)) {
     saida[OLD_VOCABULARY[chave] ?? chave] = valor;
   }
   return saida;

@@ -150,21 +150,21 @@ import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from '.
  */
 export function wireBarCaption(bar: HTMLElement, explain: (k: string | null) => void): void {
   const cap = bar.querySelector('.pause-icons-cap');
-  const mostrar = (b: HTMLElement): void => {
+  const captionFor = (b: HTMLElement): void => {
     if (cap) cap.textContent = accessibleLabel(b); // name and state only: «N de M» is spoken, never written (ADR-0167)
     explain(b.dataset.pi ?? null);
   };
-  const largar = (): void => {
+  const restoreCaption = (): void => {
     const cursor = bar.querySelector<HTMLElement>('.pi-sel');
-    if (cursor) { mostrar(cursor); return; }
+    if (cursor) { captionFor(cursor); return; }
     if (cap) cap.textContent = '';
     explain(null);
   };
   bar.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => {
-    b.addEventListener('mouseenter', () => mostrar(b));
-    b.addEventListener('focus', () => mostrar(b));
-    b.addEventListener('mouseleave', largar);
-    b.addEventListener('blur', largar);
+    b.addEventListener('mouseenter', () => captionFor(b));
+    b.addEventListener('focus', () => captionFor(b));
+    b.addEventListener('mouseleave', restoreCaption);
+    b.addEventListener('blur', restoreCaption);
   });
 }
 
@@ -893,7 +893,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * quem reage assina `on('blindMode', …)`. O anúncio não se perde para quem não injecta: este ícone já diz
    * `sr.icon.blindOn`/`Off` por si, logo abaixo.
    */
-  const setModoCego = ctx.setBlindMode ?? setBlindModeValue;
+  const writeBlindMode = ctx.setBlindMode ?? setBlindModeValue;
 
   /** O documento onde se constroi. Resolvido a cada uso, e por globalThis — em node o identificador
    *  document nem existe, e um ?? sobre ele lançaria ReferenceError em vez de cair no padrão. */
@@ -1010,7 +1010,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   const ICON_ACTS: Record<string, (i: number) => void> = {
     menu: (i) => { ctx.openMenus?.(i); },
     blind: () => {
-      setModoCego(!ctx.getBlindMode());
+      writeBlindMode(!ctx.getBlindMode());
       ctx.srSay(t(ctx.getBlindMode() ? 'sr.icon.blindOn' : 'sr.icon.blindOff'));
     },
     tts: () => {
@@ -1285,9 +1285,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   function announceList(sp: HTMLElement, sub: PauseSub): void {
     const first = showPauseOptions(sp, sub);
     if (!first) return;
-    const itens = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
+    const items = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
     ctx.srSay(announceItem(
-      { label: first.textContent || '', position: 1, total: itens.length }, menuIndexOn,
+      { label: first.textContent || '', position: 1, total: items.length }, menuIndexOn,
     ));
   }
 
@@ -1328,7 +1328,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * ADR-0044 anotou como consequência negativa desta decisão: quem não enxerga aperta a direção, o personagem
    * não anda, e sem esta frase não há nada na tela que explique — porque a tela não é o canal dessa criança.
    */
-  function entrarNaBarra(i: number): void {
+  function enterBarMode(i: number): void {
     const bar = ctx.getA11yBars()[i];
     const first = bar && selectedIcon(bar);
     if (!bar || !first) return;
@@ -1347,7 +1347,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * descongelar o jogo por qualquer porta. Uma saída que só um caminho conhecesse deixava o outro com a criança
    * de volta ao personagem num mundo parado.
    */
-  function sairDaBarra(i: number, silent = false): void {
+  function leaveBarMode(i: number, silent = false): void {
     if (!onBar.delete(i)) return;
     const bar = ctx.getA11yBars()[i];
     if (bar) {
@@ -1361,7 +1361,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   }
 
   /** A tela `i` está com o direcional na barra? É o que o roteamento de entrada pergunta a cada quadro. */
-  const naBarraDe = (i: number): boolean => onBar.has(i);
+  const isOnBar = (i: number): boolean => onBar.has(i);
 
   /**
    * UM PASSO dentro do modo. `temStart` é a borda do botão que abre a pausa — a segunda saída.
@@ -1374,7 +1374,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const bar = ctx.getA11yBars()[i];
     if (!bar) return;
     const acao = barAction(k, hasStart);
-    if (acao === 'sair') { sairDaBarra(i); return; }
+    if (acao === 'sair') { leaveBarMode(i); return; }
     const icons = [...bar.querySelectorAll<HTMLElement>('.pi-btn')];
     if (!icons.length) return;
     // never null here: the bar has an icon, and `selectedIcon` falls back to the first one
@@ -1435,8 +1435,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (DOOR_TO_LIST[act] && !doorWithPanel) { announceList(sp, DOOR_TO_LIST[act]!); return; }
     // `acessibilidade` leva o cursor à BARRA RÁPIDA. ⚠️ O ITEM SAIU DA RAIZ (ADR-0151) e só o alcança uma lista que o
     // JOGO passe; para ela o comportamento antigo fica aqui, explícito — fechar o cartão e jogar com a barra —, já que
-    // `entrarNaBarra` deixou de retomar sozinho (ADR-0155).
-    if (act === 'acessibilidade') { getPauseActs().resume?.(); entrarNaBarra(i); return; }
+    // `enterBar` deixou de retomar sozinho (ADR-0155).
+    if (act === 'acessibilidade') { getPauseActs().resume?.(); enterBarMode(i); return; }
     const fn = getPauseActs()[act];
     if (fn) fn();
   }
@@ -1483,7 +1483,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   }
 
   return {
-    buildScreenPause, buildQuickBar, enterBar: entrarNaBarra, leaveBar: sairDaBarra, onBar: naBarraDe, navBar,
+    buildScreenPause, buildQuickBar, enterBar: enterBarMode, leaveBar: leaveBarMode, onBar: isOnBar, navBar,
     mountedIcons: gameIcons,
     iconAct, iconLabel, reflectIconBtn, reflectIconsIn, reflectPauseIcons,
     // ⚠️ O `setCalmMode` PERSISTE TAMBÉM, e sanea. Ele é a outra porta para o mesmo valor — se só o ciclo do

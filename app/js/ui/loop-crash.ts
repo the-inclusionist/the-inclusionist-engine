@@ -48,9 +48,9 @@ export interface CrashNoticeCtx {
  * Cada canal é isolado do seguinte: se a narração lançar, o aviso escrito já saiu. Um aviso que falha pela
  * metade tem de entregar a outra metade — é a mesma regra que o `startLoop` aplica a este próprio callback.
  */
-export function createCrashNotice(ctx: CrashNoticeCtx): (erro: unknown) => void {
-  return (erro: unknown): void => {
-    try { console.error('[inclusionist] the frame threw; the loop stopped.', erro); } catch { /* noop */ }
+export function createCrashNotice(ctx: CrashNoticeCtx): (failure: unknown) => void {
+  return (failure: unknown): void => {
+    try { console.error('[inclusionist] the frame threw; the loop stopped.', failure); } catch { /* noop */ }
 
     const msg = t('sr.laco.parou');
 
@@ -76,10 +76,10 @@ export function createCrashNotice(ctx: CrashNoticeCtx): (erro: unknown) => void 
     const region = ctx.find('#game-region');
     if (!region) return;
     const anterior = ctx.find('#' + CRASH_NOTICE_ID);
-    const caixa = anterior ?? ctx.create('div');
-    caixa.id = CRASH_NOTICE_ID;
-    caixa.setAttribute('role', 'alert');
-    caixa.textContent = msg;
-    if (!anterior) region.appendChild(caixa);
+    const notice = anterior ?? ctx.create('div');
+    notice.id = CRASH_NOTICE_ID;
+    notice.setAttribute('role', 'alert');
+    notice.textContent = msg;
+    if (!anterior) region.appendChild(notice);
   };
 }
