@@ -123,21 +123,21 @@ def main() -> int:
     ref = sys.argv[1] if len(sys.argv) > 1 else "HEAD"
     antes = subprocess.run(["git", "show", f"{ref}:{ALVO}"], capture_output=True, text=True, encoding="utf-8")
     if antes.returncode:
-        sys.exit(f"não consegui ler {ref}:{ALVO} — {antes.stderr.strip()}")
+        sys.exit(f"could not read {ref}:{ALVO} — {antes.stderr.strip()}")
     try:
         depois = open(ALVO, encoding="utf-8").read()
     except OSError as e:
-        sys.exit(f"não consegui ler {ALVO} — {e}")
+        sys.exit(f"could not read {ALVO} — {e}")
 
     sumiram = declaracoes(antes.stdout) - declaracoes(depois)
     ainda_usados = sorted(n for n in sumiram if n in referencias(depois))
 
-    print(f"{len(sumiram)} declaracoes sairam de {ALVO} desde {ref}")
+    print(f"{len(sumiram)} declarations left {ALVO} since {ref}")
     if not ainda_usados:
-        print("nenhuma delas continua referenciada — o corte foi limpo")
+        print("none of them is still referenced — the cut was clean")
         return 0
 
-    print(f"\n{len(ainda_usados)} SUMIRAM MAS AINDA SAO USADAS:")
+    print(f"\n{len(ainda_usados)} DISAPPEARED BUT ARE STILL USED:")
     linhas = depois.splitlines()
     for nome in ainda_usados:
         print(f"  {nome}")
@@ -145,8 +145,8 @@ def main() -> int:
             if re.search(r"\b" + re.escape(nome) + r"\b", l.split("//")[0]):
                 print(f"      L{i}: {l.strip()[:96]}")
                 break
-    print("\nSe o nome virou import, tudo bem — confira o bloco de imports.")
-    print("Se nao virou, o corte levou junto o que nao era dele.")
+    print("\nIf the name became an import, fine — check the imports block.")
+    print("If it did not, the cut took along what was not its own.")
     return 1
 
 

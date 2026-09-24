@@ -57,7 +57,7 @@ def roda(cmd: list[str]) -> str:
     saida = r.stdout.decode("utf-8", errors="replace")
     if r.returncode != 0:
         erro = r.stderr.decode("utf-8", errors="replace")
-        sys.exit("FALHOU: %s\n%s\n%s" % (" ".join(cmd), saida[:800], erro[:800]))
+        sys.exit("FAILED: %s\n%s\n%s" % (" ".join(cmd), saida[:800], erro[:800]))
     return saida
 
 
@@ -123,18 +123,18 @@ def preflight(issues: list[dict], ensaio: bool) -> int:
     """Checks what can be checked and returns the last number already created (0 if none)."""
     iids = [i["iid"] for i in issues]
     faltando = [n for n in range(1, max(iids) + 1) if n not in set(iids)]
-    print("GitLab: %d issues, iid %d..%d, buracos: %s"
-          % (len(issues), min(iids), max(iids), faltando or "nenhum"))
+    print("GitLab: %d issues, iid %d..%d, gaps: %s"
+          % (len(issues), min(iids), max(iids), faltando or "none"))
     if faltando:
-        sys.exit("ABORTADO: há buracos na numeração do GitLab; os números NÃO vão bater. "
-                 "Decida antes se cria issues-tampão para os buracos.")
+        sys.exit("ABORTED: there are gaps in the GitLab numbering; the numbers will NOT match. "
+                 "Decide first whether to create filler issues for the gaps.")
 
     repo = gh_json("repos/%s" % GITHUB)
     if not repo.get("has_issues"):
-        sys.exit("ABORTADO: as issues estão desativadas em %s." % GITHUB)
+        sys.exit("ABORTED: issues are disabled in %s." % GITHUB)
     ja = numeros_no_github()
     if not ja:
-        print("GitHub: %s está com o contador zerado. Vai criar #%d..#%d."
+        print("GitHub: %s has its counter at zero. Will create #%d..#%d."
               % (GITHUB, min(iids), max(iids)))
         feito = 0
     else:
@@ -143,16 +143,16 @@ def preflight(issues: list[dict], ensaio: bool) -> int:
 # the numbering no longer closes — better to stop than to "fix" it.
         feito = max(ja)
         if ja != list(range(1, feito + 1)):
-            sys.exit("ABORTADO: os números existentes em %s não são o prefixo 1..%d (são %s). "
-                     "O contador já andou por outro caminho e a numeração não vai fechar."
+            sys.exit("ABORTED: the numbers in %s are not the prefix 1..%d (they are %s). "
+                     "The counter already moved another way and the numbering will not close."
                      % (GITHUB, feito, ja[:12]))
         if feito >= max(iids):
-            print("Nada a fazer: #1..#%d já existem." % feito)
+            print("Nothing to do: #1..#%d already exist." % feito)
             return feito
-        print("RETOMANDO: #1..#%d já existem em %s. Vai criar #%d..#%d."
+        print("RESUMING: #1..#%d already exist in %s. Will create #%d..#%d."
               % (feito, GITHUB, feito + 1, max(iids)))
     if ensaio:
-        print("\n*** ENSAIO — nada será escrito. Rode com --go para valer. ***")
+        print("\n*** DRY RUN — nothing will be written. Run with --go for real. ***")
     return feito
 
 
@@ -162,7 +162,7 @@ def garante_labels(issues: list[dict], ensaio: bool) -> None:
         return
     existentes = {l["name"] for l in gh_json("repos/%s/labels?per_page=100" % GITHUB)}
     faltam = [n for n in nomes if n not in existentes]
-    print("labels: %d no GitLab, %d a criar" % (len(nomes), len(faltam)))
+    print("labels: %d on GitLab, %d to create" % (len(nomes), len(faltam)))
     if ensaio:
         return
     for nome in faltam:
@@ -173,8 +173,8 @@ def garante_labels(issues: list[dict], ensaio: bool) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--go", action="store_true", help="escreve de verdade (o padrão é ensaio)")
-    ap.add_argument("--sem-comentarios", action="store_true", help="não traz os comentários")
+    ap.add_argument("--go", action="store_true", help="writes for real (the default is a dry run)")
+    ap.add_argument("--sem-comentarios", action="store_true", help="does not bring the comments")
     args = ap.parse_args()
     ensaio = not args.go
 
@@ -196,8 +196,8 @@ def main() -> int:
 # the start and then advances by the number the POST returned — which is the only datum
 # that suffers no replication lag.
         if esperado != iid:
-            sys.exit("PARADO em iid %d: o próximo número seria #%d. A numeração divergiu — "
-                     "alguém abriu uma PR ou uma issue. Nada mais será criado." % (iid, esperado))
+            sys.exit("STOPPED at iid %d: the next number would be #%d. The numbering diverged — "
+                     "someone opened a PR or an issue. Nothing more will be created." % (iid, esperado))
 
         titulo = issue.get("title") or "(sem título)"
         corpo = (issue.get("description") or "") + rodape(issue)
@@ -216,7 +216,7 @@ def main() -> int:
         # AFTER: the other half of the gate, and the one that really rules — the POST's response gives the
 # real number. If it is not the iid, stop here, before the next issue inherits the error.
         if criada["number"] != iid:
-            sys.exit("PARADO: o GitHub criou #%d para o iid %d. Nada mais será criado."
+            sys.exit("STOPPED: GitHub created #%d for iid %d. Nothing more will be created."
                      % (criada["number"], iid))
         esperado = criada["number"] + 1
         time.sleep(PAUSA)
@@ -234,15 +234,15 @@ def main() -> int:
             fechar.append(iid)
 
     # ---- close only at the END: closing during creation does not change the counter, but makes the log unreadable
-    print("\na fechar: %d" % len(fechar))
+    print("\nto close: %d" % len(fechar))
     if not ensaio:
         for numero in fechar:
             roda(["gh", "api", "--method", "PATCH", "repos/%s/issues/%d" % (GITHUB, numero),
                   "-f", "state=closed"])
             time.sleep(PAUSA)
 
-    print("\nfim. %d issues, %d fechadas." % (len(issues), len(fechar)))
-    print("Confira: gh issue list -R %s --state all --limit 5" % GITHUB)
+    print("\ndone. %d issues, %d closed." % (len(issues), len(fechar)))
+    print("Check: gh issue list -R %s --state all --limit 5" % GITHUB)
     return 0
 
 

@@ -18,18 +18,18 @@ FALA = re.compile(r"\bsrSay\(|\bsrAlert\(|\.narrate\(|\banunciar\w*\(")
 
 # The four layers the Dev proposed, mapped to modules.
 CAMADAS = {
-    "1 · ACAO (o mundo onde as coisas acontecem)": [
+    "1 · ACTION (the world where things happen)": [
         "game/physics.ts", "game/session.ts", "game/recycling-scene.ts", "game/recycling.ts",
         "game/coins.ts", "game/powerups.ts", "game/carry.ts", "game/life.ts", "game/secret-areas.ts",
         "game/elevators.ts", "game/traffic.ts", "render/draw.ts", "platform/audio-sonar.ts",
         "platform/audio-nav.ts",
     ],
-    "2 · ATIVIDADE ESCOLAR (o minigame por cima do jogo)": [
+    "2 · SCHOOL ACTIVITY (the minigame on top of the game)": [
         "game/quiz.ts", "consumer-quiz/main-quiz.ts", "game/braille.ts", "game/fractions.ts",
         "game/literacy-distractors.ts", "game/activity-content.ts",
     ],
-    "3 · HUD DO JOGO": ["ui/hud.ts"],
-    "4 · HUD DO MINIGAME": [],  # it lived inside game/quiz.ts (winsDots) when this was measured
+    "3 · THE GAME'S HUD": ["ui/hud.ts"],
+    "4 · THE MINIGAME'S HUD": [],  # it lived inside game/quiz.ts (winsDots) when this was measured
 }
 
 PERTENCE = {}
@@ -65,28 +65,28 @@ if __name__ == "__main__":
     todos = sorted(set(sinks) | set(falas))
 
     print("=" * 78)
-    print("O QUE CAI NAS QUATRO CAMADAS")
+    print("WHAT FALLS INTO THE FOUR LAYERS")
     print("=" * 78)
     for camada in CAMADAS:
         ms = [m for m in todos if PERTENCE.get(m) == camada]
         s = sum(sinks.get(m, 0) for m in ms)
         f = sum(falas.get(m, 0) for m in ms)
-        print("\n%s\n   %d sinks de markup · %d anuncios" % (camada, s, f))
+        print("\n%s\n   %d markup sinks · %d announcements" % (camada, s, f))
         for m in ms:
-            print("     %-34s markup:%-3d fala:%d" % (m, sinks.get(m, 0), falas.get(m, 0)))
+            print("     %-34s markup:%-3d speech:%d" % (m, sinks.get(m, 0), falas.get(m, 0)))
 
     print("\n" + "=" * 78)
-    print("⚠️  O QUE SOBRA — conteudo legivel FORA das quatro")
+    print("⚠️  WHAT IS LEFT — readable content OUTSIDE the four")
     print("=" * 78)
     fora = [m for m in todos if m not in PERTENCE]
     ts = sum(sinks.get(m, 0) for m in fora)
     tf = sum(falas.get(m, 0) for m in fora)
-    print("   %d sinks de markup · %d anuncios, em %d modulos\n" % (ts, tf, len(fora)))
+    print("   %d markup sinks · %d announcements, in %d modules\n" % (ts, tf, len(fora)))
     for m in sorted(fora, key=lambda x: -(sinks.get(x, 0) * 10 + falas.get(x, 0))):
-        print("     %-34s markup:%-3d fala:%d" % (m, sinks.get(m, 0), falas.get(m, 0)))
+        print("     %-34s markup:%-3d speech:%d" % (m, sinks.get(m, 0), falas.get(m, 0)))
 
     print("\n" + "=" * 78)
     dentroS = sum(sinks.get(m, 0) for m in todos if m in PERTENCE)
     dentroF = sum(falas.get(m, 0) for m in todos if m in PERTENCE)
-    print("TOTAIS   dentro das quatro: %d markup / %d fala" % (dentroS, dentroF))
-    print("         FORA das quatro:   %d markup / %d fala" % (ts, tf))
+    print("TOTALS   inside the four:  %d markup / %d speech" % (dentroS, dentroF))
+    print("         OUTSIDE the four: %d markup / %d speech" % (ts, tf))

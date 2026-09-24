@@ -55,7 +55,7 @@ if __name__ == "__main__":
     for mod in MENUS:
         caminho = os.path.join(RAIZ, *mod.split("/"))
         if not os.path.exists(caminho):
-            print("  (ausente) " + mod)
+            print("  (absent) " + mod)
             continue
         for ln in linhas_de_codigo(io.open(caminho, encoding="utf-8").read()):
             for m in CLASSE.finditer(ln):
@@ -69,23 +69,23 @@ if __name__ == "__main__":
                 onde_atrib[m.group(1)].add(mod)
 
     print("=" * 78)
-    print("CLASSES que aparecem em VARIOS modulos de menu — a FORMA")
+    print("CLASSES that appear in SEVERAL menu modules — the SHAPE")
     print("=" * 78)
     for c, n in classes.most_common():
         mods = onde_classe[c]
         if len(mods) >= 3:
-            print("  %-22s %3d usos em %2d modulos" % (c, n, len(mods)))
+            print("  %-22s %3d uses in %2d modules" % (c, n, len(mods)))
 
     print("\n" + "=" * 78)
-    print("CLASSES de UM modulo so — sao daquele painel, nao da forma")
+    print("CLASSES of ONE module only — they belong to that panel, not to the shape")
     print("=" * 78)
     so_um = [(c, n) for c, n in classes.most_common() if len(onde_classe[c]) == 1]
-    print("  %d classes, %d usos" % (len(so_um), sum(n for _, n in so_um)))
+    print("  %d classes, %d uses" % (len(so_um), sum(n for _, n in so_um)))
     for c, n in so_um[:10]:
         print("     %-22s %3d  (%s)" % (c, n, list(onde_classe[c])[0]))
 
     print("\n" + "=" * 78)
-    print("ATRIBUTOS de semantica — o que a forma tem de saber emitir")
+    print("SEMANTIC ATTRIBUTES — what the shape has to know how to emit")
     print("=" * 78)
     for a, n in atribs.most_common():
-        print("  %-16s %3d usos em %2d modulos" % (a, n, len(onde_atrib[a])))
+        print("  %-16s %3d uses in %2d modules" % (a, n, len(onde_atrib[a])))

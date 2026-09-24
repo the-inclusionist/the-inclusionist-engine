@@ -26,4 +26,4 @@ for p in glob.glob(os.path.join(ROOT, '**', '*.png'), recursive=True):
                 op[x, y] = HC
     out.save(os.path.join(os.path.dirname(p), stem + '_hc.png'))
     n += 1
-print(f'{n} silhuetas _hc geradas em {os.path.relpath(ROOT)}')
+print(f'{n} _hc silhouettes generated in {os.path.relpath(ROOT)}')

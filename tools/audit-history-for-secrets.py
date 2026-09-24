@@ -28,24 +28,24 @@ try:
 except Exception:
     pass
 
-# Each rule: (name, regex, severity). ALTA (high) = treated as a leak until proven otherwise.
+# Each rule: (name, regex, severity). HIGH = treated as a leak until proven otherwise.
 REGRAS: list[tuple[str, re.Pattern[str], str]] = [
-    ("chave privada",        re.compile(r"BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY"), "ALTA"),
-    ("token GitHub",         re.compile(r"\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b"), "ALTA"),
-    ("token GitHub (novo)",  re.compile(r"\bgithub_pat_[A-Za-z0-9_]{22,}\b"), "ALTA"),
-    ("token GitLab",         re.compile(r"\bglpat-[A-Za-z0-9_-]{20,}\b"), "ALTA"),
-    ("chave AWS",            re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "ALTA"),
-    ("chave Google",         re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"), "ALTA"),
-    ("chave OpenAI/afins",   re.compile(r"\bsk-[A-Za-z0-9]{32,}\b"), "ALTA"),
-    ("token Slack",          re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b"), "ALTA"),
-    ("token Cloudflare",     re.compile(r"CLOUDFLARE_API_TOKEN\s*[:=]\s*[\"']?[A-Za-z0-9_-]{20,}"), "ALTA"),
-    ("segredo atribuído",    re.compile(r"(?i)\b(?:password|senha|secret|api[_-]?key|access[_-]?token)"
-                                        r"\s*[:=]\s*[\"'][^\"'\s]{8,}[\"']"), "ALTA"),
-    ("CPF",                  re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b"), "ALTA"),
-    ("CNPJ",                 re.compile(r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"), "MEDIA"),
-    ("telefone BR",          re.compile(r"\(\d{2}\)\s?9?\d{4}[- ]?\d{4}\b"), "MEDIA"),
-    ("caminho absoluto",     re.compile(r"[A-Za-z]:\\\\?(?:Users|Dropbox|Documents)\\\\?"), "BAIXA"),
-    ("e-mail",               re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"), "BAIXA"),
+    ("private key",          re.compile(r"BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY"), "HIGH"),
+    ("GitHub token",         re.compile(r"\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b"), "HIGH"),
+    ("GitHub token (new)",   re.compile(r"\bgithub_pat_[A-Za-z0-9_]{22,}\b"), "HIGH"),
+    ("GitLab token",         re.compile(r"\bglpat-[A-Za-z0-9_-]{20,}\b"), "HIGH"),
+    ("AWS key",              re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "HIGH"),
+    ("Google key",           re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"), "HIGH"),
+    ("OpenAI-style key",     re.compile(r"\bsk-[A-Za-z0-9]{32,}\b"), "HIGH"),
+    ("Slack token",          re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b"), "HIGH"),
+    ("Cloudflare token",     re.compile(r"CLOUDFLARE_API_TOKEN\s*[:=]\s*[\"']?[A-Za-z0-9_-]{20,}"), "HIGH"),
+    ("assigned secret",      re.compile(r"(?i)\b(?:password|senha|secret|api[_-]?key|access[_-]?token)"
+                                        r"\s*[:=]\s*[\"'][^\"'\s]{8,}[\"']"), "HIGH"),
+    ("CPF",                  re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b"), "HIGH"),
+    ("CNPJ",                 re.compile(r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"), "MEDIUM"),
+    ("BR phone number",      re.compile(r"\(\d{2}\)\s?9?\d{4}[- ]?\d{4}\b"), "MEDIUM"),
+    ("absolute path",        re.compile(r"[A-Za-z]:\\\\?(?:Users|Dropbox|Documents)\\\\?"), "LOW"),
+    ("e-mail",               re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"), "LOW"),
 ]
 
 # E-mails that are the project's own and are not a finding. Everything else is reported.
@@ -89,29 +89,29 @@ def varrer(ref: str | None) -> dict[str, list[tuple[str, str, str]]]:
                 continue
             achados[nome].append((sha, arquivo, trecho[:80]))
     proc.wait()
-    print("linhas de patch lidas: %d" % total_linhas, file=sys.stderr)
+    print("patch lines read: %d" % total_linhas, file=sys.stderr)
     return achados
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ref", default=None, help="um ref só (padrão: --all)")
-    ap.add_argument("--por-regra", type=int, default=8, help="quantos exemplos mostrar por regra")
+    ap.add_argument("--ref", default=None, help="one ref only (default: --all)")
+    ap.add_argument("--por-regra", type=int, default=8, help="how many examples to show per rule")
     args = ap.parse_args()
 
     achados = varrer(args.ref)
-    ordem = {"ALTA": 0, "MEDIA": 1, "BAIXA": 2}
+    ordem = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
     gravidade_de = {nome: g for nome, _, g in REGRAS}
 
     print("\n" + "=" * 78)
-    print("AUDITORIA DE HISTÓRICO —", args.ref or "todos os refs locais")
+    print("HISTORY AUDIT —", args.ref or "every local ref")
     print("=" * 78)
     if not achados:
-        print("\nNenhuma ocorrência das formas procuradas.")
+        print("\nNo occurrence of the shapes searched for.")
     for nome in sorted(achados, key=lambda n: (ordem[gravidade_de[n]], -len(achados[n]))):
         ocorrencias = achados[nome]
         commits = {c for c, _, _ in ocorrencias}
-        print("\n[%s] %s — %d ocorrências em %d commits"
+        print("\n[%s] %s — %d occurrences in %d commits"
               % (gravidade_de[nome], nome, len(ocorrencias), len(commits)))
         vistos: set[str] = set()
         mostrados = 0
@@ -125,13 +125,13 @@ def main() -> int:
             if mostrados >= args.por_regra:
                 restante = len(vistos) - mostrados
                 if restante > 0:
-                    print("    … e mais %d distintas" % restante)
+                    print("    … and %d more distinct" % restante)
                 break
 
     print("\n" + "-" * 78)
-    print("⚠️  LIMITE DESTA VARREDURA: ela casa FORMAS conhecidas. Não pega segredo sem forma")
-    print("    (uma senha que pareça palavra comum) nem dado pessoal em prosa. Limpo aqui")
-    print("    significa `nada com estas formas`, e não `nada`.")
+    print("⚠️  THE LIMIT OF THIS SWEEP: it matches known SHAPES. It does not catch a shapeless secret")
+    print("    (a password that looks like a common word) nor personal data in prose. Clean here")
+    print("    means `nothing with these shapes`, not `nothing`.")
     return 0
 
 
