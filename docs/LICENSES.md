@@ -1,174 +1,178 @@
-# O que governa o quê
+# What governs what
 
-Este projeto tem **duas licenças e um terceiro regime**, e confundi-los seria afirmar direito que não se
-tem. Este ficheiro diz apenas **qual regra alcança qual coisa**. As atribuições estão em
-[`CREDITS.md`](CREDITS.md); as razões, nos registros citados em cada linha.
+This project has **two licences and a third regime**, and confusing them would be claiming a right one does not
+have. This file says only **which rule reaches which thing**. The attributions are in
+[`CREDITS.md`](CREDITS.md); the reasons, in the records cited on each line.
 
-| o quê | regime | onde se decide |
+| what | regime | where it is decided |
 |---|---|---|
-| **Código** | **AGPL-3.0-or-later** | ADR-0064 · texto integral em [`../LICENSE`](../LICENSE) |
-| **Arte própria** | **NÃO é FOSS** — direito autoral do autor, uso restrito | ADR-0010 pilar 10 · `research/LICENCAS-GERACAO-IMAGEM.md` |
-| **Conteúdo de terceiros** | a licença que o autor escolheu, preservada | requerimento, pedido `g` |
+| **Code** | **AGPL-3.0-or-later** | ADR-0064 · full text in [`../LICENSE`](../LICENSE) |
+| **Own art** | **NOT FOSS** — the author's copyright, restricted use | ADR-0010 pillar 10 · `research/LICENCAS-GERACAO-IMAGEM.md` |
+| **Third-party content** | the licence its author chose, preserved | the filing, request `g` |
 
 ---
 
-## 1 · O código é AGPL-3.0-or-later
+## 1 · The code is AGPL-3.0-or-later
 
-Todo programa deste repositório. O `-or-later` é deliberado.
+Every program in this repository. The `-or-later` is deliberate.
 
-**Por que AGPL e não GPL:** a GPL obriga quem **conveia**, e rodar serviço não é conveiar — a seção 0 da
-própria GPL separa `propagate` de `convey`. Um fornecedor que pegasse este código, melhorasse e hospedasse
-a sala de aula como serviço **não deveria a fonte a ninguém**. A seção 13 da AGPL fecha exatamente isso, e é
-o argumento que o requerimento faz ao Município na alínea `e`. Ver **ADR-0064**.
+**Why AGPL and not GPL:** the GPL binds whoever **conveys**, and running a service is not conveying — section 0 of
+the GPL itself separates `propagate` from `convey`. A supplier who took this code, improved it and hosted
+the classroom as a service **would owe the source to nobody**. Section 13 of the AGPL closes exactly that, and it is
+the argument the filing makes to the Município in item `e`. See **ADR-0064**.
 
-⚠️ **Titularidade patrimonial: o MUNICÍPIO, não o desenvolvedor.** Software produzido no exercício das
-funções pertence ao empregador (Lei nº 9.609/1998, art. 4º), e é por isso que a publicação sob AGPL é
-objeto de **pedido** no requerimento — ato do Poder Executivo — e não decisão de quem escreveu o código.
+⚠️ **Patrimonial ownership: the MUNICÍPIO, not the developer.** Software produced in the exercise of one's
+duties belongs to the employer (Lei nº 9.609/1998, art. 4º), and that is why publication under the AGPL is
+the object of a **request** in the filing — an act of the Executive Branch — and not a decision of whoever wrote the code.
 
-⚠️ **E é AQUI que essa titularidade fica dita, não no nome do pacote.** O escopo era `@pm-monte` para
-carregar esse fato (ADR-0036); passou a ser **`@the-inclusionist`** (**ADR-0071**), porque nome é lido por
-quem não vai abrir o repositório, e um escopo com o nome da Prefeitura publicado por servidor **antes do
-ato** é reivindicação pública de nome alheio. A regra é a mesma do **ADR-0066 §2**: a posse se declara
-DENTRO — neste ficheiro, na `LICENSE` e nos registros —, onde lê quem pretende usar.
+⚠️ **And it is HERE that this ownership is stated, not in the package name.** The scope was `@pm-monte` to
+carry that fact (ADR-0036); it became **`@the-inclusionist`** (**ADR-0071**), because a name is read by
+people who will not open the repository, and a scope bearing the City Hall's name published by a civil servant **before the
+act** is a public claim to someone else's name. The rule is the same as **ADR-0066 §2**: ownership is declared
+INSIDE — in this file, in the `LICENSE` and in the records —, where whoever intends to use it reads.
 
-## 2 · A arte NÃO é AGPL, e isso é decisão, não omissão
+## 2 · The art is NOT AGPL, and that is a decision, not an omission
 
-Programa é o que a **Lei nº 9.609/1998** define. **Arte segue a Lei nº 9.610/1998** e pertence a quem a fez.
-Estender a AGPL à arte daria mais do que a lei pede **e** disporia de direito alheio.
+A program is what **Lei nº 9.609/1998** defines. **Art follows Lei nº 9.610/1998** and belongs to whoever made it.
+Extending the AGPL to the art would give more than the law asks **and** would dispose of someone else's right.
 
-⚠️ **E há uma razão de produto, não só jurídica:** o requisito é que os personagens **não** sejam de uso
-livre — não aparecerem em produto adulto, por exemplo. Isso é **incompatível com FOSS por construção**:
-licença livre não pode restringir campo de uso (liberdade 0; critério 6 da OSI, "sem discriminação de área
-de atuação"). Não existe arte simultaneamente livre e de uso restrito. A escolha foi feita com o
-trade-off escrito: **código FOSS + arte não-FOSS**.
+⚠️ **And there is a product reason, not only a legal one:** the requirement is that the characters **not** be free to
+use — not appear in an adult product, for example. That is **incompatible with FOSS by construction**:
+a free licence cannot restrict the field of use (freedom 0; criterion 6 of the OSI, "no discrimination against fields
+of endeavor"). There is no art that is at the same time free and of restricted use. The choice was made with the
+trade-off written down: **FOSS code + non-FOSS art**.
 
-**A proteção é uma pilha de três, do mais forte ao mais fraco** (`research/LICENCAS-GERACAO-IMAGEM.md`):
+**The protection is a stack of three, from strongest to weakest** (`research/LICENCAS-GERACAO-IMAGEM.md`):
 
-1. **Marca registrada** dos personagens — nome e design-assinatura. É o esteio, porque barra uso que cause
-   confusão ou diluição **independentemente de copyright**. Seletiva: nem todo personagem é registrado.
-2. **Licença de arte própria**, não-FOSS, sobre os dados de arte e os algoritmos de composição.
-3. **Autoria humana no algoritmo procedural** — quanto mais o humano cria, seleciona e modifica (em vez de
-   apenas pedir a um gerador), mais forte o copyright, e mais exequível a licença (2).
+1. **Registered trademark** of the characters — name and signature design. It is the mainstay, because it bars use that causes
+   confusion or dilution **regardless of copyright**. Selective: not every character is registered.
+2. **Own art licence**, non-FOSS, over the art data and the composition algorithms.
+3. **Human authorship in the procedural algorithm** — the more the human creates, selects and modifies (instead of
+   just asking a generator), the stronger the copyright, and the more enforceable the licence (2).
 
-⚠️ **E a ressalva que ordena a pilha:** arte derivada de IA **pode ser incopyrightável** — o US Copyright
-Office já o disse —, o que pode tornar a licença (2) **inexequível sozinha**. Por isso a marca é
-indispensável, e não um reforço opcional. Escrito aqui porque é o ponto em que a proteção falha em
-silêncio se ninguém souber.
+⚠️ **And the caveat that orders the stack:** AI-derived art **may be uncopyrightable** — the US Copyright
+Office has said so —, which can make licence (2) **unenforceable on its own**. That is why the trademark is
+indispensable, and not an optional reinforcement. Written here because it is the point where the protection fails in
+silence if nobody knows.
 
-## 3 · Conteúdo de terceiros mantém a licença de quem o fez
+## 3 · Third-party content keeps the licence of whoever made it
 
-Nem tudo aqui é nosso, e o que não é **não muda de licença por estar neste repositório**. É o que o pedido
-`g` do requerimento pede que conste dos autos: a relação nominal desses elementos e de suas licenças.
+Not everything here is ours, and what is not **does not change licence by being in this repository**. That is what
+request `g` of the filing asks to be put on record: the itemized list of those elements and their licences.
 
-- **Código de terceiros** — Clarity (MIT), eSpeak NG (GPL-3.0). Piper and sherpa-onnx left (ADR-0207).
-  Detalhe e atribuição em [`CREDITS.md`](CREDITS.md).
-  O quiz demo empacota, só no pedaço carregado quando a criança escolhe uma voz Kokoro (ADR-0198, issue #181), o
-  `espeak-ng` 1.0.2 do npm (eSpeak NG em WebAssembly, **GPL-3.0-or-later**, compatível com a AGPL-3.0-or-later) e o
-  `onnxruntime-web` 1.27.0 (**MIT**). A engine publicada não traz nenhum dos dois: quem os empacota é o jogo.
+- **Third-party code** — eSpeak NG (GPL-3.0). Clarity (MIT) left this repository with the platformer, and its
+  credit travels with `game-platformer`; Piper and sherpa-onnx left (ADR-0207). Detail and attribution in
+  [`CREDITS.md`](CREDITS.md).
+  The engine itself loads the neural voice's runtime (ADR-0216): `espeak-ng` 1.0.2 (eSpeak NG in WebAssembly,
+  **GPL-3.0-or-later**, compatible with the AGPL-3.0-or-later) and `onnxruntime-web` 1.27.0 (**MIT**) are catalogued
+  heavy files (`app/js/platform/heavy-catalogue.ts`), fetched by the build into the delivery's `heavy/` folder and read
+  from the page's own origin — only for a game that declares `uses: { neuralVoice: true }`. The published npm package
+  carries neither. The other runtimes and models the engine downloads (the vision runtime, the reading and command
+  models) are listed in the same catalogue, each with its source; their attribution is not yet in `CREDITS.md`.
 - **Voices** — only **Kokoro-82M** (Apache-2.0 weights trained on permissive audio; `CREDITS.md`). A voice enters when its licence
   AND its starting point's (the model it was fine-tuned from, and that model's data) have been read — that chain took the Piper
   voices out (ADR-0207, [`notices/2026-09-14-piper-voices-withdrawn.md`](notices/2026-09-14-piper-voices-withdrawn.md)).
-- **Pictogramas** — a camada é decidida pela **LICENÇA e por mais nada** (**ADR-0028**): Mulberry,
-  Blissymbolics e Tawasol sob CC BY-SA são embutíveis; ARASAAC é **baixado, nunca redistribuído**; Sclera,
-  PCS, SymbolStix e Widgit aparecem no menu como **indisponíveis, aguardando negociação**.
-  ⚠️ E o **SA** alcança o que nós alterarmos: um pictograma reajustado à paleta de alto contraste
-  (ADR-0011) ou à grade de pixels continua CC BY-SA.
-- **Tipografias** — roster e restrições no **ADR-0012**. ⚠️ Ronde e as alternativas OPTIFrench-Script e
-  Merveille são **gratuitas só para uso pessoal e NÃO podem ser empacotadas**: oferece-se download, e a
-  opção fica desabilitada quando nenhuma está presente.
-- **Arte de terceiros — TRÊS PORTAS, e o que decide é compatibilidade com o projeto** (**ADR-0133**), não a
-  família a que um nome pertence. Quatro perguntas: podemos **derivar**? pode ser usada **comercialmente**?
-  podemos **conveiar** o ficheiro no que publicamos? alguma coisa **viaja** da fonte para a nossa saída?
-  - **Porta `licenca`** — uma licença pública já medida: **CC0 1.0**, **CC BY 3.0/4.0**, **OGA-BY 3.0/4.0**,
-    e as permissivas de software (**MIT**, **Apache-2.0**) quando a arte carrega uma. ⚠️ A OGA-BY **não é
-    Creative Commons** — a própria CC declara que não a endossa — e é a CC BY *menos* a restrição sobre
-    medidas técnicas, logo estritamente mais permissiva. 📌 Um nome novo não é recusado: é **referido**, e
-    entra assim que um registo responder as quatro perguntas para ele.
-  - **Porta `concessao`** — o autor escreveu a permissão, sem nome de licença conhecido. A linha do livro
-    guarda a **URL onde a concessão está escrita**, porque uma permissão que ninguém consegue abrir é
-    memória e não permissão.
-  - **Porta `ponte`** — copyleft **CC BY-SA** entra convertido em **`GPL-3.0-only`** na nossa saída. O
-    mecanismo é público e tem três degraus: a CC BY-SA 3.0 §4(b)(ii) deixa uma **adaptação** sair como 4.0;
-    a Creative Commons declarou a GPLv3 compatível num sentido só em 08/10/2015; e o **§13 da GPLv3** permite
-    combinar obra GPLv3 com obra AGPLv3 num único trabalho. ⚠️ Exige **fonte modificável** — a imagem
-    semântica mais o dicionário de paletas —, é de **sentido único e permanente**, e só abre para
-    **adaptação**: nenhum ficheiro CC BY-SA entra tal e qual.
-    🔴 **E essa fonte modificável AINDA NÃO EXISTE.** A versão anterior desta linha dizia «o que este projeto
-    já mantém», e era falsa: não há `app/js/art/`, não há formato semântico e não há editor. **Enquanto não
-    houver, esta porta está descrita e não está aberta** — o LPC não entra. Ver `game-design/plano-arte-procedural.md`.
-  🔴 **E o que não tem porta nenhuma: ND** (proíbe derivar, e recolorir já é derivar) e **NC** (deixaria a
-  arte mais estreita que o CÓDIGO — a AGPL permite uso comercial, e quem ela convida seria travado por um
-  sprite; e a fronteira do NC é indefinida, com uma implantação municipal em cima dela).
-  📌 **Não há quarentena, e já houve.** O ADR-0107 punha o Liberated Pixel Cup atrás de uma parede; a ponte
-  substitui-a, porque a arte que a atravessa **deixa de ser share-alike do nosso lado** em vez de ficar
-  murada do resto.
-- **Arte de terceiros — as fontes admitidas** (decisão do Dev, 2026-09-09; detalhe em
-  [`../art/README.md`](../art/README.md)). Entram **antes de qualquer arte do próprio projeto**:
-  **Kenney** (`kenney.nl/assets`, CC0 1.0, confirmado em três lugares) · **ansimuz** (`ansimuz.itch.io`,
-  CC0 1.0 **por pacote** — o perfil não concede nada) · **Tiny Swords** (`pixelfrog-assets.itch.io`), que
-  entra **pelas duas portas**: o ficheiro `TS_old version_CC0 Licensed` é CC0, e o **pacote atual** entra
-  pela **concessão** do autor, cujos termos permitem uso pessoal e comercial e modificação à vontade sem
-  exigir crédito · e o **Liberated Pixel Cup** (`OpenGameArt/LiberatedPixelCup`), pela **ponte**, como
-  adaptação sob `GPL-3.0-only`.
-  **Quais recursos entram, e para que jogos, é direção de arte** e não se decide aqui.
-  ⚠️ **Atribuição é condição de uso, por recurso**, e a **fonte guarda-se como URL**: uma licença declarada
-  por quem nos entrega o ficheiro é indício, não autoridade, e sem a origem registada não há contra o que a
-  conferir. Recurso sem autor conhecido **não entra** — «não consegui descobrir» não é licença.
+- **Pictograms** — the layer is decided by the **LICENCE and nothing else** (**ADR-0028**): Mulberry,
+  Blissymbolics and Tawasol under CC BY-SA are embeddable; ARASAAC is **downloaded, never redistributed**; Sclera,
+  PCS, SymbolStix and Widgit appear in the menu as **unavailable, awaiting negotiation**.
+  ⚠️ And the **SA** reaches what we alter: a pictogram readjusted to the high-contrast palette
+  (ADR-0011) or to the pixel grid stays CC BY-SA.
+- **Typefaces** — roster and restrictions in **ADR-0012**. ⚠️ Ronde and the alternatives OPTIFrench-Script and
+  Merveille are **free for personal use only and CANNOT be packaged**: a download is offered, and the
+  option stays disabled when none of them is present.
+- **Third-party art — THREE DOORS, and what decides is compatibility with the project** (**ADR-0133**), not the
+  family a name belongs to. Four questions: may we **derive**? may it be used **commercially**?
+  may we **convey** the file in what we publish? does anything **travel** from the source to our output?
+  - **Door `licenca`** — a public licence already measured: **CC0 1.0**, **CC BY 3.0/4.0**, **OGA-BY 3.0/4.0**,
+    and the permissive software licences (**MIT**, **Apache-2.0**) when the art carries one. ⚠️ OGA-BY **is not
+    Creative Commons** — CC itself declares that it does not endorse it — and it is CC BY *minus* the restriction on
+    technical measures, so strictly more permissive. 📌 A new name is not refused: it is **referred**, and
+    comes in as soon as a record answers the four questions for it.
+  - **Door `concessao`** — the author wrote the permission, with no known licence name. The ledger row
+    keeps the **URL where the grant is written**, because a permission nobody can open is
+    memory and not permission.
+  - **Door `ponte`** — copyleft **CC BY-SA** comes in converted into **`GPL-3.0-only`** in our output. The
+    mechanism is public and has three steps: CC BY-SA 3.0 §4(b)(ii) lets an **adaptation** go out as 4.0;
+    Creative Commons declared GPLv3 one-way compatible on 2015-10-08; and **§13 of the GPLv3** allows
+    combining a GPLv3 work with an AGPLv3 work into a single work. ⚠️ It requires a **modifiable source** — the semantic
+    image plus the palette dictionary —, it is **one-way and permanent**, and it only opens for
+    **adaptation**: no CC BY-SA file comes in as it is.
+    🔴 **And that modifiable source DOES NOT EXIST YET.** The previous version of this line said it was something
+    this project already maintains, and it was false: there is no `app/js/art/`, there is no semantic format and there is no editor. **As long as
+    there is not, this door is described and not open** — the LPC does not come in. See `game-design/plano-arte-procedural.md`.
+  🔴 **And what has no door at all: ND** (forbids deriving, and recolouring is already deriving) and **NC** (it would make the
+  art narrower than the CODE — the AGPL allows commercial use, and whoever it invites would be blocked by a
+  sprite; and the NC boundary is undefined, with a municipal deployment sitting on it).
+  📌 **There is no quarantine, and there was one.** ADR-0107 put the Liberated Pixel Cup behind a wall; the bridge
+  replaces it, because the art that crosses it **stops being share-alike on our side** instead of staying
+  walled off from the rest.
+- **Third-party art — the admitted sources** (the Dev's decision, 2026-09-09; detail in
+  [`../art/README.md`](../art/README.md)). They come in **before any of the project's own art**:
+  **Kenney** (`kenney.nl/assets`, CC0 1.0, confirmed in three places) · **ansimuz** (`ansimuz.itch.io`,
+  CC0 1.0 **per pack** — the profile grants nothing) · **Tiny Swords** (`pixelfrog-assets.itch.io`), which
+  comes in **through both doors**: the file `TS_old version_CC0 Licensed` is CC0, and the **current pack** comes in
+  through the author's **grant**, whose terms allow personal and commercial use and modification at will without
+  requiring credit · and the **Liberated Pixel Cup** (`OpenGameArt/LiberatedPixelCup`), through the **bridge**, as an
+  adaptation under `GPL-3.0-only`.
+  **Which resources come in, and for which games, is art direction** and is not decided here.
+  ⚠️ **Attribution is a condition of use, per resource**, and the **source is kept as a URL**: a licence declared
+  by whoever hands us the file is a clue, not an authority, and without the recorded origin there is nothing to
+  check it against. A resource with no known author **does not come in** — *I could not find out* is not a licence.
 
 ---
 
-## 4 · Inventário da arte — por enquanto, só a do PixelLab
+## 4 · Art inventory — for now, only the PixelLab art
 
-O ADR-0066 §3 põe este inventário entre as condições para qualquer repositório virar público, e o §2 desta
-página dizia que ele ainda não existia. Existe agora, **com o alcance que o Dev deu: apenas a arte gerada
-no PixelLab.**
+ADR-0066 §3 puts this inventory among the conditions for any repository to become public, and §2 of this
+page said it did not exist yet. It exists now, **with the scope the Dev gave it: only the art generated
+in PixelLab.**
 
-### O que foi gerado, e onde está registrado
+### What was generated, and where it is recorded
 
-**100 gerações**, de 2026-06-01 em diante, com data, ferramenta, custo estimado e **o prompt de cada uma**:
-[`research/auditoria-creditos-pixellab.csv`](research/auditoria-creditos-pixellab.csv). O prompt está lá de
-propósito — é o que permite a alguém de fora refazer a pergunta *"de onde veio esta imagem?"* sem depender da
-memória de ninguém.
+**100 generations**, from 2026-06-01 onwards, with date, tool, estimated cost and **the prompt of each one**:
+[`research/auditoria-creditos-pixellab.csv`](research/auditoria-creditos-pixellab.csv). The prompt is there on
+purpose — it is what lets someone from outside ask again *"where did this image come from?"* without depending on
+anyone's memory.
 
-### O regime, e a restrição que viaja junto
+### The regime, and the restriction that travels with it
 
-Conforme a pesquisa de licenças (`research/LICENCAS-GERACAO-IMAGEM.md`), o PixelLab.ai é o gerador com os
-termos mais limpos do levantamento: **a titularidade da imagem é de quem gerou**, o uso comercial é
-permitido — *"usar, modificar e distribuir … para qualquer fim"* —, e **não há exigência de atribuição**.
+According to the licence research (`research/LICENCAS-GERACAO-IMAGEM.md`), PixelLab.ai is the generator with the
+cleanest terms of the survey: **the image belongs to whoever generated it**, commercial use is
+allowed — to use, modify and distribute … for any purpose —, and **there is no attribution requirement**.
 
-⚠️ **E há UMA restrição, que não é nossa e por isso não podemos dispensá-la: as imagens não podem ser usadas
-para TREINAR MODELO.** Isso importa aqui por dois motivos concretos:
+⚠️ **And there is ONE restriction, which is not ours and so we cannot waive it: the images may not be used
+to TRAIN A MODEL.** That matters here for two concrete reasons:
 
-1. A arte deste projeto **não é FOSS** (§2), então a licença de arte própria é nossa para escrever — e ela
-   tem de **carregar esta restrição adiante**, ou concederíamos a terceiros mais do que recebemos.
-2. O alvo declarado é **arte procedural semântica** (`plano-arte-procedural.md`): imagem semântica + paletas.
-   Se algum dia essa geração passar por um modelo treinado nos próprios assets, esta linha é a que diz que
-   não pode.
+1. This project's art **is not FOSS** (§2), so the own art licence is ours to write — and it
+   has to **carry this restriction forward**, or we would grant third parties more than we received.
+2. The declared target is **semantic procedural art** (`plano-arte-procedural.md`): semantic image + palettes.
+   If one day that generation goes through a model trained on the assets themselves, this line is the one that says it
+   may not.
 
-### O que este inventário NÃO cobre, e por quê
+### What this inventory does NOT cover, and why
 
-**ARTE PRÓPRIA NÃO EXISTE.** Não é que esteja fora do inventário — não há nenhuma para inventariar, e é por
-isso que esta seção cobre só o PixelLab.
+**OWN ART DOES NOT EXIST.** It is not that it is outside the inventory — there is none to inventory, and that is
+why this section covers only PixelLab.
 
-O Dev passa a produzi-la **depois de o Município aceitar o arranjo inteiro**: o código sob **AGPL-3.0** e a
-arte sob **licença CC adequada**. Enquanto essa aceitação não estiver documentada, não há arte própria e
-não há o que licenciar.
+The Dev starts producing it **after the Município accepts the whole arrangement**: the code under **AGPL-3.0** and the
+art under **a suitable CC licence**. As long as that acceptance is not documented, there is no own art and
+nothing to license.
 
-⚠️ **E arte não vai para AGPL — vai para CC.** A AGPL é licença de PROGRAMA (Lei 9.609); arte é obra da Lei
-9.610 e o instrumento usual dela é o Creative Commons. Está escrito aqui porque a versão anterior deste
-parágrafo levantava, como se fosse dúvida em aberto, a hipótese de a arte própria virar AGPL. Não era
-dúvida: era erro, sobre uma coisa que ainda não existe.
+⚠️ **And art does not go to the AGPL — it goes to CC.** The AGPL is a licence for a PROGRAM (Lei 9.609); art is a work under Lei
+9.610 and its usual instrument is Creative Commons. It is written here because the previous version of this
+paragraph raised, as if it were an open question, the hypothesis of own art becoming AGPL. It was not a
+question: it was an error, about something that does not exist yet.
 
-**Qual CC** é escolha para quando houver arte a licenciar, e não antes. O §2 desta página fica de pé como
-está: ele descreve o regime da arte que EXISTE hoje.
+**Which CC** is a choice for when there is art to license, and not before. §2 of this page stands as
+it is: it describes the regime of the art that EXISTS today.
 
 ---
 
-## O que este ficheiro NÃO faz
+## What this file does NOT do
 
-- **Não é parecer jurídico.** É a declaração de escopo que um leitor precisa para não assumir que a AGPL da
-  raiz alcança tudo. Onde há dúvida de propriedade intelectual, a fonte é a Procuradoria — que o requerimento
-  aciona no pedido `c`.
-- **Não substitui o `CREDITS.md`**, que é onde mora a atribuição. Fato duplicado apodrece.
-- **Não lista a arte própria peça a peça** — e agora isso é ALCANCE e não omissão: o §4 inventaria a
-  arte do PixelLab e diz, na mesma seção, por que a arte própria ainda não entrou.
+- **It is not a legal opinion.** It is the scope statement a reader needs so as not to assume that the root AGPL
+  reaches everything. Where there is an intellectual-property doubt, the source is the Procuradoria (the municipal attorney's office) — which the filing
+  calls on in request `c`.
+- **It does not replace `CREDITS.md`**, which is where attribution lives. A duplicated fact rots.
+- **It does not list the own art piece by piece** — and now that is SCOPE and not omission: §4 inventories the
+  PixelLab art and says, in the same section, why the own art has not come in yet.

@@ -1,18 +1,23 @@
-# Créditos e atribuições de terceiros
+# Credits and third-party attributions
 
-O código de **The Inclusionist** é AGPL-3.0-or-later. Partes de terceiros abaixo mantêm suas próprias licenças.
+The code of **The Inclusionist** is AGPL-3.0-or-later. The third-party parts below keep their own licences.
 
 ## Clarity — Adam Brooks (dissimulate) — MIT
 
-As **mecânicas de plataforma** partiram do projeto **Clarity**, de Adam Brooks (dissimulate), sob licença
-**MIT**. O **mapa** (`app/assets/levels/clarity.map.txt`, batizado em homenagem) foi **fortemente adaptado** do
-nível do Clarity — com modificações cirúrgicas de layout e mudança de significado de vários tiles — não é uma
-cópia, mas uma obra derivada. A atribuição abaixo cobre a porção de origem.
+The **platform mechanics** started from the **Clarity** project, by Adam Brooks (dissimulate), under the
+**MIT** licence. The **map** (`clarity.map.txt`, named in its honour) was **heavily adapted** from
+Clarity's level — with surgical layout changes and a change of meaning of several tiles — it is not a
+copy, but a derived work. The attribution below covers the original portion.
 
-- Código: https://github.com/dissimulate/Clarity
-- Jogável: https://codepen.io/dissimulate/pen/AGYEby
+⚠️ **Neither the mechanics nor the map are in this repository any more.** They left with the platformer
+(the cartridge's departure, issue #111) and live in `game-platformer`, whose credits carry this attribution;
+the engine published from here contains no code derived from Clarity. The credit stays here as the record of
+where the project's platform code came from.
 
-Texto da licença MIT (aplicável às porções derivadas do Clarity):
+- Code: https://github.com/dissimulate/Clarity
+- Playable: https://codepen.io/dissimulate/pen/AGYEby
+
+Text of the MIT licence (applicable to the portions derived from Clarity):
 
 ```
 MIT License
@@ -38,8 +43,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-> Nota: confirmar o ano/linha exata de copyright no `LICENSE` do repositório do Clarity e alinhar aqui antes de
-> qualquer distribuição formal. MIT é compatível com AGPL-3.0 (as porções MIT mantêm seu aviso; o todo é AGPL-3.0).
+> Note: confirm the exact copyright year/line in the `LICENSE` of the Clarity repository and align it here before
+> any formal distribution. MIT is compatible with AGPL-3.0 (the MIT portions keep their notice; the whole is AGPL-3.0).
 
 ## Neural voice (TTS) — until 2026-09-14: Piper and sherpa-onnx (WITHDRAWN)
 
@@ -67,11 +72,16 @@ Credit follows what was used. Until that date neural narration relied on:
 
 ## Kokoro-82M — hexgrad — Apache-2.0
 
-Os pesos são **Apache-2.0** (`huggingface.co/hexgrad/Kokoro-82M`), treinados só com áudio permissivo — entre ele, áudio **CC BY**:
-**Koniwa** (CC BY 3.0) e **SIWIS** (CC BY 4.0), creditados aqui. A exportação ONNX usada é a `onnx-community/Kokoro-82M-v1.0-ONNX`.
+The weights are **Apache-2.0** (`huggingface.co/hexgrad/Kokoro-82M`), trained only on permissive audio — among it, **CC BY**
+audio: **Koniwa** (CC BY 3.0) and **SIWIS** (CC BY 4.0), credited here. The ONNX export used is `onnx-community/Kokoro-82M-v1.0-ONNX`.
 
-> Os pesos das vozes são **baixados uma vez** (de um host público) e rodam **100% localmente** depois — nenhum áudio de
-> criança sai do dispositivo. Ver `the-inclusionist-docs · docs/2-Architecture/adr/ADR-0065-three-neural-voices-owned-by-the-engine-and-cached-on-first-use.yaml`.
+What speaks it, fetched by the engine beside the model: **[eSpeak NG](https://github.com/espeak-ng/espeak-ng)**
+(`espeak-ng` 1.0.2, **GPL-3.0-or-later**) turns the sentence into phonemes, and
+**[ONNX Runtime Web](https://github.com/microsoft/onnxruntime)** (`onnxruntime-web` 1.27.0, **MIT**, Microsoft) runs the graph.
+
+> The voice's files are **downloaded once** — by the build into the delivery's `heavy/` folder, and from there into the
+> device's cache — and run **100% locally** afterwards: no child's audio leaves the device. See ADR-0216 (the engine loads
+> the voice), ADR-0198 and ADR-0207 in `the-inclusionist-docs · docs/2-Architecture/adr/`.
 
 ## Arrow icons — Lucide, derived from Feather (Cole Bemis) — MIT
 
@@ -95,23 +105,25 @@ Feather's MIT notice:
 > ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
 > THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## Arte importada — CC0, CC BY 3.0, CC BY 4.0 ou OGA-BY
+## Imported art — through the three doors of ADR-0133
 
-A atribuição da arte que vem de fora é **por recurso**, e por isso não cabe nesta página em prosa: a autoria de um
-acervo lê-se recurso a recurso, e a cadeia de derivações com ela.
+The attribution of art that comes from outside is **per resource**, and so it does not fit on this page as prose: the
+authorship of a collection is read resource by resource, and the chain of derivations with it.
 
-**Ela mora em [`../art/ATTRIBUTION.csv`](../art/ATTRIBUTION.csv)** — caminho, autor, **URL da fonte**, licença e de
-que recursos cada um derivou. É a mesma forma que o `LICENSES.md` §4 já usa para as 100 gerações do PixelLab: um
-ficheiro tabular ao lado do apontador em prosa, porque um livro-razão que cresce com o catálogo não se mantém à mão.
+**It lives in [`../art/ATTRIBUTION.csv`](../art/ATTRIBUTION.csv)** — path, author, **source URL**, door, licence,
+delivery and which resources each one derived from. It is the same shape `LICENSES.md` §4 already uses for the 100
+PixelLab generations: a tabular file beside the prose pointer, because a ledger that grows with the catalogue cannot be
+kept by hand.
 
-⚠️ **Atribuição aqui é condição de uso, não linha de crédito.** Três das quatro licenças exigem-na, e um recurso
-sem autor conhecido **não entra** — «não consegui descobrir» não é licença. O gate
-`tests/art-licences-accepted.node.test.js` reprova a entrada vazia, a entrada órfã, o recurso sem entrada, a fonte
-sem URL e **qualquer licença fora das quatro** — com ND, NC e share-alike recusados por nome e com o motivo de
-cada um, que o [`LICENSES.md`](LICENSES.md) §3 e o **ADR-0133** explicam.
+⚠️ **Attribution here is a condition of use, not a credit line.** Most of the admitted licences require it, and a
+resource with no known author **does not come in** — *I could not find out* is not a licence. The gate
+`tests/art-licences-accepted.node.test.js` fails the empty entry, the orphan entry, the resource with no entry, the source
+with no URL, a row with no valid door, and ND and NC, refused by name with the reason for each, which
+[`LICENSES.md`](LICENSES.md) §3 and **ADR-0133** explain. A licence name not yet measured is referred, not refused, and
+share-alike comes in only through the bridge, converted to `GPL-3.0-only`.
 
-📌 **Não há quarentena, e já houve.** Até 2026-09-09 o Liberated Pixel Cup ia entrar sob CC BY-SA 3.0 atrás de uma
-parede (ADR-0107). O Dev recusou o share-alike e a parede saiu com ele: sem arte cujo copyleft viaje, não há o que
-segregar.
+📌 **There is no quarantine, and there was one.** Until 2026-09-09 the Liberated Pixel Cup was to come in under CC BY-SA 3.0
+behind a wall (ADR-0107). ADR-0133 replaced the wall with the bridge: art whose copyleft would travel comes in only as an
+adaptation under `GPL-3.0-only`, and the bridge stays closed while the modifiable source it requires does not exist.
 
-**Hoje o livro está vazio** — nenhum recurso entrou nunca.
+**Today the ledger is empty** — no resource has ever come in.

@@ -2,111 +2,119 @@
 
 [![ci](https://github.com/the-inclusionist/the-inclusionist-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/the-inclusionist/the-inclusionist-engine/actions/workflows/ci.yml)
 
-Jogo educativo de plataforma **acessível-primeiro**, em PixiJS, feito para escolas públicas
-brasileiras. Alfabetização (base psicogenética de Ferreiro & Teberosky) e matemática dentro de
-um platformer que mira **WCAG 2.2 (AAA aspiracional) + Game Accessibility Guidelines (GAG)**:
-alto contraste, simulação/correção de daltonismo, baixa visão, modo cego (navegação sonora),
-narração TTS, modo cadeirante, um-botão, controles remapeáveis (teclado/gamepad/toque em mm reais),
-Libras (VLibras) e tipografia para dislexia. Roda 100% offline como PWA.
+An **accessibility-first** engine for educational 2D pixel-art games, in PixiJS, made for Brazilian public
+schools and published as the npm package **`@the-inclusionist/engine`**. It is the part every game inherits,
+aiming at **WCAG 2.2 (AAA aspirational) + Game Accessibility Guidelines (GAG)**: high contrast,
+colour-blindness simulation/correction, low vision, blind mode (audio navigation), TTS narration, wheelchair
+mode, one-button play, remappable controls (keyboard/gamepad/touch in real millimetres), Libras (VLibras) and
+typography for dyslexia. Games built on it are PWAs that work offline after the first load.
 
-**Licenças — e são duas, não uma.** O **código** é **AGPL-3.0-or-later** (ADR-0064: sob GPL, um servidor
-de sala hospedado não deveria a fonte a ninguém; a seção 13 da AGPL fecha isso). A **ARTE NÃO é AGPL** —
-programa é o que a Lei 9.609 define, arte segue a Lei 9.610 e pertence a quem a fez. O que governa o quê
-está em [`docs/LICENSES.md`](docs/LICENSES.md); as atribuições, em [`docs/CREDITS.md`](docs/CREDITS.md).
+The games themselves are not here: **each game is its own repository** (ADR-0068) — the platformer, with the
+literacy and mathematics activities, is `game-platformer`. What stays here is the engine and one demo
+cartridge, `app/js/consumer-quiz/`, which exercises the contract from outside (`app/quiz.html`).
+
+**Licences — and there are two, not one.** The **code** is **AGPL-3.0-or-later** (ADR-0064: under the GPL, a
+hosted classroom server would owe the source to nobody; section 13 of the AGPL closes that). The **ART IS NOT
+AGPL** — a program is what Lei 9.609 defines, art follows Lei 9.610 and belongs to whoever made it. What governs
+what is in [`docs/LICENSES.md`](docs/LICENSES.md); the attributions, in [`docs/CREDITS.md`](docs/CREDITS.md).
 
 ⚠️ **Notice (2026-09-14): the Piper voices were withdrawn from the engine** over a licence chain we could not show —
 see [`docs/notices/2026-09-14-piper-voices-withdrawn.md`](docs/notices/2026-09-14-piper-voices-withdrawn.md).
 
-Mecânicas de plataforma portadas do
-[Clarity, de Adam Brooks (dissimulate)](https://github.com/dissimulate/Clarity) (MIT).
+The platform mechanics were ported from
+[Clarity, by Adam Brooks (dissimulate)](https://github.com/dissimulate/Clarity) (MIT); they left this repository with
+the platformer and live in `game-platformer` now.
 
-## Estrutura do repositório
+## Repository layout
 
 ```
-app/            # fonte do jogo (Vite root)
-├─ index.html   #   entrada (Vite)
-├─ js/          #   código — ES Modules, em modularização + migração p/ TypeScript
-├─ css/         #   estilos
-└─ public/      #   estáticos servidos como estão → copiados p/ dist/ no build
-   ├─ assets/   #     sprites e cenários (arte GPL-clean)
-   ├─ vendor/   #     PixiJS (MIT) e fontes (SIL OFL)
-   └─ manifest.webmanifest · icon.svg · _headers
-dist/           # saída do build (git-ignored) — é o que o Cloudflare Pages publica
-tests/          # testes Vitest (node + browser) — não publicado
-vite.config.ts · tsconfig.json · package.json    # toolchain (Vite + TypeScript + Vitest)
-docs/ · tools/ · legacy/    # planos/ADRs · scripts de dev · protótipo histórico (não publicados)
+app/            # engine source + the demo page (Vite root)
+├─ quiz.html    #   the demo cartridge's page (the only page the build emits)
+├─ js/          #   code — ES Modules in TypeScript, in layers (docs/ARCHITECTURE.md §3)
+├─ css/         #   the engine stylesheet (shipped in the package)
+└─ public/      #   static files served as they are → copied to dist/ at build
+   ├─ vendor/   #     fonts (SIL OFL) and fonts.css
+   └─ icon.svg · _headers
+art/            # imported art and its attribution ledger (empty today)
+dist/           # app build output (git-ignored) — no deploy is connected to it (see CD below)
+dist-pkg/       # package build output (git-ignored) — what the npm package exports
+tests/          # Vitest tests (node + browser) — not published
+scripts/ · tools/                    # build, delivery and measurement scripts · dev tools
+vite.config.ts · tsconfig.json · tsconfig.pkg.json · package.json    # toolchain (Vite + TypeScript + Vitest)
+docs/ · research/                    # documentation (start at docs/ARCHITECTURE.md) · the typography catalogue
 ```
 
-## Rodar localmente
+## Running locally
 
-Toolchain **Vite + TypeScript** (migração incremental — `docs/plano-typescript-vite.md`):
+**Vite + TypeScript** toolchain (`docs/2-Architecture/plano-typescript-vite.md`):
 
 ```powershell
-npm install
-npm run dev        # servidor de dev com HMR (Vite) → http://localhost:5173
-npm run build      # build de produção → dist/
-npm run preview    # serve o dist/ buildado
-npm test           # testes Vitest (node + browser via Playwright); npm run test:node = só a lógica
+npm install        # also builds dist-pkg/ (the `prepare` script)
+npm run dev        # dev server with HMR (Vite) → http://localhost:5173/quiz.html
+npm run build      # production build → dist/
+npm run preview    # serves the built dist/
+npm test           # Vitest tests (node + browser via Playwright); npm run test:node = the logic only
 ```
 
 ## CI/CD
 
-- **CI** — **GitHub Actions** (`.github/workflows/ci.yml`), a cada push na `main` e a cada pull request.
-  Seis serviços, nenhum decorativo:
+- **CI** — **GitHub Actions** (`.github/workflows/ci.yml`), on every push to `main` and on every pull request.
+  Six jobs, none decorative:
 
-  | job | o que barra |
+  | job | what it blocks |
   |---|---|
-  | `gate` | `npm audit --omit=dev`, typecheck, Vitest (node + browser), build, orçamento de precache |
-  | `adr` | o validador dos registros — oito checagens, entre elas o ponteiro bidirecional de supersessão |
-  | `a11y` | axe contra o app **servido**, não contra a fonte |
-  | `dco` | `Signed-off-by` em toda PR (ADR-0078); pushes do mantenedor ficam de fora |
-  | `secrets` | **gitleaks** sobre o histórico INTEIRO (`fetch-depth: 0`), com `--redact` |
-  | `sast` | **semgrep**, versão fixada |
+  | `gate` | `npm audit --omit=dev`, typecheck, Vitest (node + browser), build, precache budget |
+  | `adr` | the records' validator — eight checks, among them the bidirectional supersession pointer. The records live in `the-inclusionist-docs`, so the job is dormant (a warning, not a pass) until the `DOCS_READ_TOKEN` secret exists |
+  | `a11y` | axe against the **served** app, not against the source |
+  | `dco` | `Signed-off-by` on every PR (ADR-0078); the maintainer's pushes are left out |
+  | `secrets` | **gitleaks** over the WHOLE history (`fetch-depth: 0`), with `--redact` |
+  | `sast` | **semgrep**, pinned version |
 
-  ⚠️ **Os dois scanners são de código aberto e não os nativos do GitHub, e a razão é preço:** *code
-  scanning* (CodeQL) e *secret scanning* são gratuitos **só em repositório público**; em privado exigem
-  GitHub Advanced Security, que é pago — e o ADR-0066 §3 mantém tudo privado até o ato. Ficam fixados por
-  versão exata, porque scanner que muda de regra sozinho é portão cujo veredito ninguém reproduz.
+  ⚠️ **The two scanners are open-source ones and not GitHub's native ones, and the reason is price:** *code
+  scanning* (CodeQL) and *secret scanning* are free **only on a public repository**; on a private one they require
+  GitHub Advanced Security, which is paid — and ADR-0066 §3 keeps everything private until the act. They are pinned
+  to an exact version, because a scanner that changes its rules by itself is a gate whose verdict nobody reproduces.
 
-  ⚠️ **O `.gitlab-ci.yml` foi REMOVIDO, não desativado.** O projeto no GitLab está arquivado (ADR-0066 §5),
-  então aquele ficheiro não podia mais rodar — e descrevia como vigentes dois scanners que carregavam
-  `allow_failure: true` e estavam vermelhos havia semanas. O histórico o guarda; o cabeçalho do `ci.yml`
-  documenta o porte linha a linha.
+  ⚠️ **The `.gitlab-ci.yml` was REMOVED, not disabled.** The GitLab project is archived (ADR-0066 §5),
+  so that file could no longer run — and it described as current two scanners that carried
+  `allow_failure: true` and had been red for weeks. The history keeps it; the header of `ci.yml`
+  documents the port line by line.
 
-- **CD** — ⚠️ **NÃO HÁ NENHUM**, hoje. Informado pelo Dev em 2026-09-07: **nenhum projeto do Cloudflare Pages
-  está conectado a repositório nenhum**. A ressalva anterior — «a conexão apontava para o GitLab, que agora
-  está arquivado» — descrevia um deploy desapontado; o estado atual é mais simples e mais grave de confundir:
-  **push não é publicação**, e `dist/` só chega a alguém por um passo manual.
-  A tabela abaixo fica como a RECEITA de quando houver conexão, e não como descrição do que existe:
+- **CD** — ⚠️ **THERE IS NONE**, today. Reported by the Dev on 2026-09-07: **no Cloudflare Pages project
+  is connected to any repository**. The previous caveat — that the connection pointed to GitLab, which is now
+  archived — described a disconnected deploy; the current state is simpler and more serious to confuse:
+  **a push is not a publication**, and `dist/` only reaches anyone through a manual step.
+  The table below stays as the RECIPE for when there is a connection, and not as a description of what exists:
 
-  | Configuração | Valor |
+  | Setting | Value |
   |---|---|
   | Framework preset | **None** |
-  | Build command | **`npm run test:node && npm run build`** — testes de lógica barram publicação quebrada |
+  | Build command | **`npm run test:node && npm run build`** — logic tests block a broken publication |
   | Build output directory | **`dist`** |
-  | Root directory | *(raiz do repo)* |
+  | Root directory | *(repo root)* |
 
-  Publica em `*.pages.dev` (HTTPS grátis); branches/PRs geram *preview deployments*. O cache imutável
-  dos assets hasheados do Vite + o `dist/_headers` cuidam da borda.
+  It publishes on `*.pages.dev` (free HTTPS); branches/PRs generate *preview deployments*. The immutable cache
+  of Vite's hashed assets + `dist/_headers` take care of the edge.
 
-## Acessibilidade — o que o jogo demonstra
+## Accessibility — what the engine demonstrates
 
-- **WCAG 2.2 (POUR)** e **GAG** como pilares inegociáveis (ver `docs/PILARES-INEGOCIAVEIS.md`).
-- Operação 100% por teclado via `e.code` (ABNT/QWERTY/alternativos), gamepad e toque; remapeável.
-- Visão: alto contraste, daltonismo (simulação Machado 2009 + correção), baixa visão, modo cego.
-- Áudio como reforço, nunca requisito; narração TTS neural offline; legendas.
-- Motora: cadeirante, um-botão, modo fácil, botões de toque dimensionados em milímetros reais.
-- Surdez: Libras via VLibras (interino/online; motor próprio planejado).
+- **WCAG 2.2 (POUR)** and **GAG** as non-negotiable pillars (see ADR-0010 in `the-inclusionist-docs`, and
+  `docs/1-Discovery/NFR.md` for the testable thresholds).
+- 100% keyboard operation via `e.code` (ABNT/QWERTY/alternatives), gamepad and touch; remappable.
+- Vision: high contrast, colour blindness (Machado 2009 simulation + correction), low vision, blind mode.
+- Audio as reinforcement, never a requirement; neural TTS narration that runs offline once downloaded; captions.
+- Motor: wheelchair, one-button, easy mode, touch buttons sized in real millimetres.
+- Deafness: Libras via VLibras (interim/online; our own engine planned).
 
 ## Status
 
-Protótipo (MVP em construção). Ratificações pendentes: Lighthouse mobile, hardware-alvo real
-(tablet/Chromebook de escola), auditoria automatizada (axe-core/Lighthouse/WAVE) e manual
-(NVDA/JAWS/VoiceOver), e teste com crianças (incluindo NEE). **Não se alega conformidade
-"completa" até o MVP validado.**
+Published as `@the-inclusionist/engine`; what the MVP is has not been decided (ADR-0152). Pending ratifications:
+Lighthouse mobile, real target hardware (school tablet/Chromebook), automated audit (axe-core/Lighthouse/WAVE) and
+manual audit (NVDA/JAWS/VoiceOver), and testing with children (including children with special educational needs).
+**No "complete" conformance is claimed until the MVP is validated.**
 
-## Origem
+## Origin
 
-Antecedido por um *tracer bullet* de 102 versões (v1.0.0 → v3.1.100) que ratificou empiricamente a
-arquitetura acessível; o monólito final (`v3.1.100.html`, ~3454 linhas) está preservado no **histórico
-git** (recuperável por `git log --all --oneline -- legacy/v3.1.100.html`). A v4 é a reescrita sobre PixiJS.
+Preceded by a *tracer bullet* of 102 versions (v1.0.0 → v3.1.100) that ratified the accessible
+architecture empirically; the final monolith (`v3.1.100.html`, ~3454 lines) is preserved in the **git
+history** (recoverable with `git log --all --oneline -- legacy/v3.1.100.html`). v4 is the rewrite on PixiJS.

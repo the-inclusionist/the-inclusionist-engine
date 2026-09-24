@@ -1,88 +1,88 @@
-# `art/` — a arte importada, e o livro-razão que diz de onde veio
+# `art/` — the imported art, and the ledger that says where it came from
 
-Esta pasta guarda arte de fora. Não é uma quarentena, e já foi: até 2026-09-09 chamava-se `art/lcp/` e
-existia para segurar uma parede à volta de material CC BY-SA. A parede saiu quando o **ADR-0133** trocou a
-pergunta — deixou de ser *«a que família a licença pertence»* e passou a ser **«o projeto pode usar isto»**.
+This folder holds art from outside. It is not a quarantine, and it used to be: until 2026-09-09 it was called `art/lcp/` and
+existed to hold a wall around CC BY-SA material. The wall came down when **ADR-0133** changed the
+question — it stopped being *which family does the licence belong to* and became **may the project use this**.
 
-## As quatro perguntas
+## The four questions
 
-1. **Podemos DERIVAR?** O pipeline é uma máquina de obra derivada, e recolorir já é derivar.
-2. **Pode ser usada COMERCIALMENTE?** Não porque o projeto venda: porque a arte **nunca pode ser mais
-   estreita que o código**. A AGPL convida uso comercial, e um sprite não pode travar quem ela convida.
-3. **Podemos CONVEIAR o ficheiro no que publicamos?** 🎯 Esta não aprova nem recusa — **ROTEIA**. Quem pode
-   ser conveiado viaja connosco; quem não pode é obtido por quem instala, da origem. Ver «A entrega», abaixo.
-4. **Alguma coisa VIAJA da fonte para a nossa saída?** Se não viaja, custa uma linha no livro. Se viaja
-   copyleft, é a terceira porta.
+1. **May we DERIVE?** The pipeline is a derived-work machine, and recolouring is already deriving.
+2. **May it be used COMMERCIALLY?** Not because the project sells: because the art **can never be narrower
+   than the code**. The AGPL invites commercial use, and a sprite cannot block whoever it invites.
+3. **May we CONVEY the file in what we publish?** 🎯 This one neither approves nor refuses — **it ROUTES**. What can
+   be conveyed travels with us; what cannot is fetched from the source by whoever installs. See "The delivery", below.
+4. **Does anything TRAVEL from the source to our output?** If nothing travels, it costs a line in the ledger. If
+   copyleft travels, it is the third door.
 
-## As três portas
+## The three doors
 
-| porta | o que é | o que a linha do livro carrega |
+| door | what it is | what the ledger row carries |
 |---|---|---|
-| `licenca` | uma licença pública que já foi medida e passou | o identificador (`CC0-1.0`, `CC-BY-4.0`, `OGA-BY-3.0`, `MIT`…) |
-| `concessao` | o autor escreveu a permissão, sem nome de licença conhecido | a **URL** onde a concessão está escrita |
-| `ponte` | copyleft CC BY-SA, convertido em `GPL-3.0-only` na nossa saída | licença de origem, `licenca-de-saida` e de que derivou |
+| `licenca` | a public licence that has already been measured and passed | the identifier (`CC0-1.0`, `CC-BY-4.0`, `OGA-BY-3.0`, `MIT`…) |
+| `concessao` | the author wrote the permission, with no known licence name | the **URL** where the grant is written |
+| `ponte` | copyleft CC BY-SA, converted into `GPL-3.0-only` in our output | source licence, `licenca-de-saida` and what it derived from |
 
-📌 **Um nome novo não é recusado, é REFERIDO.** Se a licença ainda não foi medida, a linha reprova com a
-mensagem a dizer o que fazer: responder as quatro perguntas num registo e acrescentar o nome. É a diferença
-entre uma lista e um estrangulamento.
+📌 **A new name is not refused, it is REFERRED.** If the licence has not been measured yet, the row fails with the
+message saying what to do: answer the four questions in a record and add the name. That is the difference
+between a list and a stranglehold.
 
-🔴 **E o que não tem porta nenhuma: ND e NC.** O ND proíbe derivar, e o pipeline não conseguiria nem trocar
-a paleta. O NC deixaria a arte mais estreita que o código, e a fronteira dele é genuinamente indefinida —
-uma implantação municipal fica em cima dela.
+🔴 **And what has no door at all: ND and NC.** ND forbids deriving, and the pipeline could not even swap
+the palette. NC would make the art narrower than the code, and its boundary is genuinely undefined —
+a municipal deployment sits right on it.
 
-## As fontes admitidas (decisão do Dev, 2026-09-09)
+## The admitted sources (the Dev's decision, 2026-09-09)
 
-Estas quatro entram **antes de qualquer arte do próprio projeto**:
+These come in **before any of the project's own art**:
 
-| fonte | porta | o que a licença exige de nós |
+| source | door | what the licence requires of us |
 |---|---|---|
-| **Kenney** · `kenney.nl/assets` | `licenca` · CC0-1.0 | nada. A linha do livro é por proveniência |
-| **ansimuz** · `ansimuz.itch.io` | `licenca` · CC0-1.0 | nada — mas **por pacote**: o perfil não concede |
-| **Tiny Swords** · `TS_old version_CC0 Licensed` | `licenca` · CC0-1.0 | nada; a linha cita o `LICENSE` de dentro do zip |
-| **Tiny Swords** · Free Pack atual | `concessao` · entrega `pessoa` | os termos do autor, a URL na linha, e o ficheiro **não entra** |
-| **Liberated Pixel Cup** | `ponte` · CC-BY-SA-3.0 → `GPL-3.0-only` | atribuição, aviso GPL, **fonte modificável**, e só adaptação |
+| **Kenney** · `kenney.nl/assets` | `licenca` · CC0-1.0 | nothing. The ledger row is for provenance |
+| **ansimuz** · `ansimuz.itch.io` | `licenca` · CC0-1.0 | nothing — but **per pack**: the profile grants nothing |
+| **Tiny Swords** · `TS_old version_CC0 Licensed` | `licenca` · CC0-1.0 | nothing; the row cites the `LICENSE` inside the zip |
+| **Tiny Swords** · current Free Pack | `concessao` · delivery `pessoa` | the author's terms, the URL in the row, and the file **does not come in** |
+| **Liberated Pixel Cup** | `ponte` · CC-BY-SA-3.0 → `GPL-3.0-only` | attribution, GPL notice, **modifiable source**, and adaptation only — ⚠️ the modifiable source does not exist yet, so this door is described and not open ([`../docs/LICENSES.md`](../docs/LICENSES.md) §3) |
 
-## O livro-razão
+## The ledger
 
-`ATTRIBUTION.csv` — uma linha por recurso, e o gate `tests/art-licences-accepted.node.test.js` reprova um
-ficheiro sem linha e uma linha sem ficheiro.
+`ATTRIBUTION.csv` — one row per resource, and the gate `tests/art-licences-accepted.node.test.js` fails a
+file with no row and a row with no file.
 
-| coluna | o que carrega |
+| column | what it carries |
 |---|---|
-| `caminho` | a partir da raiz do repositório; tem de começar por `art/` |
-| `autor` | quem fez. Vazio **reprova** — «não consegui descobrir» não é licença |
-| `fonte` | a **URL** da página de origem. Vazia ou sem URL **reprova** |
+| `caminho` | from the repository root; it has to start with `art/` |
+| `autor` | who made it. Empty **fails** — *I could not find out* is not a licence |
+| `fonte` | the **URL** of the source page. Empty or with no URL **fails** |
 | `porta` | `licenca` · `concessao` · `ponte` |
-| `licenca` | o identificador, ou a URL da concessão, ou a licença de origem da ponte |
-| `licenca-de-saida` | só na ponte, e tem de ser exactamente `GPL-3.0-only` |
-| `entrega` | `repositorio` (viaja connosco) ou `pessoa` (quem instala obtém, da origem) |
-| `derivado-de` | de que recursos este derivou, separados por `;`. Obrigatório na ponte |
+| `licenca` | the identifier, or the grant's URL, or the bridge's source licence |
+| `licenca-de-saida` | only on the bridge, and it has to be exactly `GPL-3.0-only` |
+| `entrega` | `repositorio` (travels with us) or `pessoa` (whoever installs fetches it, from the source) |
+| `derivado-de` | which resources this one derived from, separated by `;`. Mandatory on the bridge |
 
-## 🎯 A entrega — a pergunta 3 não aprova, ROTEIA
+## 🎯 The delivery — question 3 does not approve, it ROUTES
 
-«Podemos conveiar isto?» não é critério de admissão: decide **por onde o ficheiro chega**.
+May we convey this? is not an admission criterion: it decides **which way the file arrives**.
 
-- **`repositorio`** — podemos redistribuir, então a arte viaja connosco e o gate exige que o ficheiro exista.
-- **`pessoa`** — não podemos redistribuir. A linha existe no livro, mas o **ficheiro NÃO entra nesta árvore
-  nem no pacote**; quem instala obtém-no da origem. O gate afirma a **ausência**: se o ficheiro aparecer cá,
-  reprova.
+- **`repositorio`** — we may redistribute, so the art travels with us and the gate requires the file to exist.
+- **`pessoa`** — we may not redistribute. The row exists in the ledger, but the **file does NOT come into this tree
+  nor into the package**; whoever installs fetches it from the source. The gate asserts the **absence**: if the file shows up here,
+  it fails.
 
-⚠️ **E a distinção não é subtil num pacote de assets.** Uma concessão que permite usar a arte **num jogo**
-não permite **equipar uma engine com o pacote inteiro** e entregá-lo a trezentos jogos — isso é reempacotar,
-que é o que a frase do autor recusa. Pedir-lhe autorização seria pedir licença exactamente para aquilo.
+⚠️ **And the distinction is not subtle for an asset pack.** A grant that allows using the art **in a game**
+does not allow **equipping an engine with the whole pack** and handing it to every game built on it — that is repackaging,
+which is what the author's sentence refuses. Asking them for authorization would be asking permission for exactly that.
 
-📌 **O precedente é o ADR-0108**, e é idêntico: a fonte Ronde não pode ser empacotada, então oferece-se o
-download e a opção fica desabilitada enquanto o ficheiro não estiver presente.
+📌 **The precedent is ADR-0108**, and it is identical: the Ronde font cannot be packaged, so the
+download is offered and the option stays disabled while the file is not present.
 
-🔴 **E a versão automática disto não existe, medido em 2026-09-09:** nem `itch.io` nem `kenney.nl` mandam
-cabeçalho CORS, e o itch não tem link directo estável (`/download` responde 404 sem sessão). O buscador de
-pesados funciona com o Hugging Face e o jsDelivr porque **eles** mandam o cabeçalho. A engine não consegue
-buscar de lá — só uma pessoa consegue. ⚠️ Isso não afecta o Kenney, que é CC0: como podemos redistribuir,
-servimo-lo nós, e o CORS deixa de importar. **O obstáculo só morde onde a licença já nos proibia de servir.**
+🔴 **And the automatic version of this does not exist, measured on 2026-09-09:** neither `itch.io` nor `kenney.nl` sends
+a CORS header, and itch has no stable direct link (`/download` answers 404 without a session). The heavy-file
+fetcher works with Hugging Face and jsDelivr because **they** send the header. The engine cannot
+fetch from there — only a person can. ⚠️ That does not affect Kenney, which is CC0: since we may redistribute,
+we serve it ourselves, and CORS stops mattering. **The obstacle only bites where the licence already forbade us to serve.**
 
-⚠️ **A coluna `fonte` é uma URL por uma razão que foi medida.** Uma declaração a jusante é indício e não
-autoridade: o `ElizaWy/LPC` declara tudo CC BY 3.0 ou OGA-BY 3.0, e uma das páginas que os créditos dele
-citam concede só CC-BY-SA 3.0 e GPL 3.0. A conferência contra a origem precisa de rede e está na
+⚠️ **The `fonte` column is a URL for a reason that was measured.** A downstream declaration is a clue and not an
+authority: `ElizaWy/LPC` declares everything CC BY 3.0 or OGA-BY 3.0, and one of the pages its credits
+cite grants only CC-BY-SA 3.0 and GPL 3.0. The check against the source needs a network and is in
 [#140](https://github.com/the-inclusionist/the-inclusionist-engine/issues/140).
 
-**Hoje o livro está vazio.** Nenhum recurso entrou ainda.
+**Today the ledger is empty.** No resource has come in yet.
