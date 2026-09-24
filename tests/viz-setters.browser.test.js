@@ -101,7 +101,7 @@ function setup(over = {}) {
     clearPlayerDirectCache: () => {},
     setFrontDim: (on) => env.log.frontDim.push(on),
     rebuildExtras: () => {}, rebuildCoins: () => {},
-    setBlindMode: () => {}, hideTouchControls: (r) => env.log.hideTouch.push(r),
+    setBlindMode: () => {}, setVizMode: () => {}, hideTouchControls: (r) => env.log.hideTouch.push(r),
     reflectVizButtons: () => {}, renderVisualPanel: () => {}, renderEmpathyPanel: () => {},
   };
   return { env, api: initVizSetters(ctx) };

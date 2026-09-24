@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { KEYS } from '../app/js/platform/storage-keys.js';
-import { loadState } from '../app/js/core/state.js';
+import { loadState, setVizModeValue } from '../app/js/core/state.js';
 import { t } from '../app/js/core/i18n.js';
 import { migrateVisual } from '../app/js/render/viz-axes.js'; // VIZ_MODES holds KEYS (item 14)
 
@@ -159,6 +159,8 @@ function setup(over = {}) {
     rebuildExtras: () => { env.log.rebuildExtras++; },
     rebuildCoins: () => { env.log.rebuildCoins++; },
     setBlindMode: (on) => env.log.blindMode.push(on),
+    // the test plays the root: the legacy mirror goes to the real settings store, loaded over this file's Map
+    setVizMode: setVizModeValue,
     hideTouchControls: (r) => env.log.hideTouch.push(r),
     reflectVizButtons: () => { env.log.reflect++; },
     renderVisualPanel: () => { env.log.visual++; },

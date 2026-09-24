@@ -31,7 +31,6 @@ import { simulationRefusal } from './viz-refusal.js';
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 
 import { lqFilter } from './lq-filter.js';
-import { setVizModeValue, setBlindModeValue } from '../core/state.js';
 import type { Store } from '../platform/storage.js';
 import { KEYS } from '../platform/storage-keys.js';
 /** What each player's visual state is read and written through. */
@@ -206,7 +205,17 @@ export interface VizSettersCtx {
   setFrontDim: (on: boolean) => void;               // foreground props (cars/signs/lights) darken like the background
   rebuildExtras: () => void;                        // the level's extra geometry
   rebuildCoins: () => void;                         // the level's collectables
-  setBlindMode?: (on: boolean) => void;               // the blindness empathy mode turns on the cane + audio cues
+  /**
+   * The blindness empathy mode turns on the cane + audio cues: the settings store's blind-mode writer (write, persist,
+   * notify). REQUIRED (ADR-0232 D2c): the store is built by the root and passed in; a game that is its own root passes
+   * `setBlindModeValue` from `core/state`.
+   */
+  setBlindMode: (on: boolean) => void;
+  /**
+   * Writes the single LEGACY visual-mode mirror (`incl_viz`) — the settings store's `setVizModeValue`. REQUIRED for the
+   * same reason: the old readers of the global key would lose the child's mode without it.
+   */
+  setVizMode: (mode: string) => void;
   hideTouchControls: (reason?: string) => void;     // input/touch
   reflectVizButtons: () => void;                    // lights #opt-visual/#opt-empathy
   renderVisualPanel: () => void;                    // the visual panel's render()
@@ -324,7 +333,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    *  and the old per-key one share them, and one more copy would be one more copy to drift. */
   function applyPlayerVisual(i: number, v: VisualState): void {
     ctx.invalidateSharedViz();
-    if (isBlind(v)) (ctx.setBlindMode ?? setBlindModeValue)(true); // total-blindness empathy turns blind mode (audio) on by default
+    if (isBlind(v)) ctx.setBlindMode(true); // total-blindness empathy turns blind mode (audio) on by default
     if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(v); } else { applyVpFilters(); updateVpDots(); }
     ctx.reflectVizButtons(); ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }
@@ -344,7 +353,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    * menus, because the child needs it to READ the menu; a SIMULATION stays in the world, because whoever simulates has to
    * be able to leave.
    *
-   * `setVizModeValue` keeps writing the single legacy key. It is a mirror, not a source: the real state is the two axes,
+   * `ctx.setVizMode` keeps writing the single legacy key. It is a mirror, not a source: the real state is the two axes,
    * and this line goes when the last reader of the old key goes.
    */
   function applyVizGlobal(v: VisualState): void {
@@ -352,7 +361,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     const textureForMode = textureKey(v);
     // ⚠️ `legacyKey` AND NOT the texture key: that one returns `normal` for a colour correction, and writing it here
     // would make an old reader of the global key lose the child's correction. See the note on `legacyKey`.
-    setVizModeValue(legacyKey(v)); // core/state: value + persistence (incl_viz) + event — the legacy mirror
+    ctx.setVizMode(legacyKey(v)); // the settings store: value + persistence (incl_viz) + event — the legacy mirror
     // There is no separate "high contrast is on" flag: deriving it from VIZ_BY_KEY costs a comparison and cannot drift,
     // where a copied flag once disagreed with its own setter.
     // --- the CORRECTION/SIMULATION axis: the CSS filter ---

@@ -432,7 +432,7 @@
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 6,
+      "fanIn": 5,
       "holds": [
         "let blindMode",
         "let cameraControl",
@@ -1549,14 +1549,13 @@
       "codeLines": 272,
       "decisionNodes": 44,
       "maxDepth": 3,
-      "fanOut": 9,
+      "fanOut": 8,
       "globalReach": 0,
       "worstFunction": 9,
-      "statefulEdges": 4,
+      "statefulEdges": 3,
       "fanIn": 0,
       "statefulImports": [
         "core/i18n.ts",
-        "core/state.ts",
         "render/high-contrast.ts",
         "render/lq-filter.ts"
       ]

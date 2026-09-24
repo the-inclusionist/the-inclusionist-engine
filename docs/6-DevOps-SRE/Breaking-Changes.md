@@ -3193,6 +3193,7 @@ setting in silence). A game that is its own root answers them from `core/state` 
 |---|---|---|
 | `input/gamepad.js` `GamepadCtx` | gains a REQUIRED `oneButton: () => boolean` | pass `() => state.oneButton` (`core/state`), read each frame |
 | `core/loop.js` `startLoop(ticker, frame, maxDt?, options?)` | `startLoop(ticker, frame, maxDt, options)` with a REQUIRED `options.speed: () => number` — the loop no longer reads the game speed from the settings store | pass `{ speed: engine.gameSpeed }` beside `createGame` (or `() => state.gameSpeed` in a game that is its own root); `maxDt` may be `undefined` for the default 2 |
+| `render/viz-setters.js` `VizSettersCtx` | `setBlindMode` becomes REQUIRED (its default was `core/state`'s writer), and it gains a REQUIRED `setVizMode: (mode: string) => void` — the legacy mirror `incl_viz` | pass `setBlindModeValue` and `setVizModeValue` from `core/state` |
 
 📌 **`startLoop`'s port was a decision, recorded before the code** (ADR-0232 erratum, docs `ced165e`): a REQUIRED port,
 and not a speed reader the root registers beside `registerCrashNotice` — that would be the module state D4 removes, and a
@@ -3204,7 +3205,8 @@ rule out because a game that forgot it would ignore the child's speed in silence
 (`app/js/boot/standalone.ts`, with `{ aoFalhar }` — the older name of `onFailure`), `game-platformer`
 (`src/standalone.ts`), `game-soccer` (`app/js/boot/main.ts`, with no options at all), `game-whackwhack`
 (`app/js/boot/standalone.ts`) and `pixi-15-puzzle` (`app/js/boot/standalone.ts`). Each of them has a `createGame` handle
-to answer from.
+to answer from. `initVizSetters` is called by `game-platformer` alone (`app/js/main.ts`, which already passes the
+blind writer, under its older name `setModoCego`).
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
