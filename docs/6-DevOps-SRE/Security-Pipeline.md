@@ -12,7 +12,9 @@ chain** is real (we pull npm deps). So adopt the light, high-value pieces now:
   GitLab's Semgrep-based template, which had itself replaced **CodeQL** when the project left GitHub in
   August. ⚠️ **And GitHub's CodeQL did NOT come back with the move, for a price rather than a preference:**
   code scanning is free only on **public** repositories, and on a private one it needs GitHub Advanced
-  Security, which is paid — while ADR-0066 §3 keeps every repository private until the ato. So the honest
+  Security, which is paid — and this repository is still private (checked 2026-09-24): ADR-0125 decided on
+  2026-09-09 that the organisation goes public, superseding ADR-0066 §3's visibility clause, but that has not
+  happened yet. So the honest
   statement is the same as before, with a different owner: semgrep's JS/TS analysis is shallower than
   CodeQL's, and for a client-only app the delta is small but real.
 - **Secret detection** — **gitleaks**, pinned, as a step ✅, and it scans the **whole history**

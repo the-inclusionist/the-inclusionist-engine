@@ -64,8 +64,10 @@ And outside `gate`:
    attributed by git.
 10. ⚠️ **SAST + secret detection — THEY CHANGED TOOLS, and for a price.** They were the GitLab templates.
     GitHub's native equivalents — *code scanning* (CodeQL) and *secret scanning* — are free **only on
-    public repositories**; on a private one they require GitHub Advanced Security, which is paid, and
-    ADR-0066 §3 keeps everything private until the ato. So they are **gitleaks** (8.30.1) and **semgrep**
+    public repositories**; on a private one they require GitHub Advanced Security, which is paid, and this
+    repository is **still private** (checked 2026-09-24). ADR-0125 (2026-09-09) decided that the organisation
+    goes public, superseding the visibility clause of ADR-0066 §3, but that has not happened yet, and the
+    scanners must not wait for it. So they are **gitleaks** (8.30.1) and **semgrep**
     (image 1.176.0), open source, **pinned to an exact version** — a scanner that changes its rules on its own
     is a gate whose verdict nobody can reproduce. gitleaks scans the **whole history** (`fetch-depth: 0`),
     because a secret committed and then deleted is still in the history, and it is the history that becomes
@@ -103,10 +105,10 @@ Not part of CI. Cutting a version is a **local, human** step: `release-it` (Conv
 tag; `git.push` is `false`, so it does not push). The build stamps `__BUILD__`: the version from `package.json`,
 and `git describe` decides whether it is clean or carries `+sha`/`-dirty`. See `plano-versionamento.md`.
 
-⚠️ **And `.release-it.json` has had `npm.publish` set to `true` since 2026-09-05**, which makes `npm run release`
-publish the package **publicly** on npmjs. Publication of the code is the subject of **request `e`** of the
-requerimento — an act of the Executive — and ADR-0066 §3 lists that act among the conditions. Written here because
-it is the difference between cutting a version and publishing the work.
+⚠️ **And `.release-it.json` has had `npm.publish` set to `true` since 2026-09-05 (ADR-0072)**, which makes
+`npm run release` publish the package **publicly** on npmjs — `@the-inclusionist/engine` is there, at `9.0.0` when
+this was checked (2026-09-24). A release is therefore a publication, not only a version cut, and the `npm publish`
+step spends something that cannot be taken back: the Dev runs it.
 
 ## Notes / TODO
 

@@ -24,7 +24,7 @@ render/physics/input/art)` → `3 (art: depends on the engine's render/state)` �
 subsystems — they validate the boundaries)` → `5 (i18n finalizes what was localized per module)` → `6 (features on a
 clean base)`.
 
-### Fase 0 — Publish (deploy)
+### Phase 0 — Publish (deploy)
 
 Push public GitHub + connect Cloudflare Pages (output `app/`).
 **Done when:** `*.pages.dev` is live and every push auto-deploys.
@@ -32,10 +32,10 @@ Push public GitHub + connect Cloudflare Pages (output `app/`).
 ⚠️ **NOT done, and the issue said it was.** It read «done (repo public + CF Pages connected)», true when written
 on 2026-07-05. Measured since: the Dev stated on 2026-09-07 that **no Cloudflare Pages project is connected to
 any repository**, and the organisation is private (ADR-0066 — now superseded by **ADR-0125**, which decides it
-goes public). What Fase 0 did deliver, and still delivers, is the **published package** on npmjs
+goes public). What Phase 0 did deliver, and still delivers, is the **published package** on npmjs
 (`@the-inclusionist/engine`, ADR-0072); the page deploy did not happen.
 
-### Fase 1 — Level subsystem: glyph map format + editor
+### Phase 1 — Level subsystem: glyph map format + editor
 
 `core/tiles` (glyph legend) + `parseLevel` + bit-exact round-trip test vs `CLARITY_MAP`; explicit async boot;
 migrate `CLARITY_MAP` → `assets/levels/ludico.map.txt`; `tools/map-editor.html`.
@@ -45,7 +45,7 @@ Detail: `plano-editor-mapa`, `plano-engine`.
 📌 The `CLARITY_MAP` migration is now the **cartridge's**, not the engine's — the whole game left for
 `game-platformer` in `b55b88e` (issue #111).
 
-### Fase 2 — Engine spine (modularization) — **DONE (2026-09-07)**
+### Phase 2 — Engine spine (modularization) — **DONE (2026-09-07)**
 
 Its own criterion was «`game.js` dissolved into clean-boundary subsystems, game identical, `__incl` preserved,
 all green». Measured: `game.js`, `main.js` and `main.ts` no longer exist in `app/`; the composition root is
@@ -54,30 +54,30 @@ ADR-0038); node and browser suites and `tsc` are green.
 
 ⚠️ **And the boundary ended up being BETWEEN REPOSITORIES**, which is not what the phase asked for: the whole
 cartridge left for `game-platformer` (`b55b88e`, −15 943 lines, issue #111). That is stronger than
-«clean-boundary subsystems», and it is why Fases 3–6 are no longer gated by this one.
+«clean-boundary subsystems», and it is why Phases 3–6 are no longer gated by this one.
 
-### Fase 3 — Art subsystem (semantic procedural)
+### Phase 3 — Art subsystem (semantic procedural)
 
 `art/semantic` + palettes + recolor; high-contrast becomes a palette; migrate characters and tiles to the
 semantic system (PNG = authoring only).
 **Done when:** a recolorable character (skin/clothes/hair) and high-contrast through the new engine, with no
 visual regression. Detail: `plano-arte-procedural`.
 
-### Fase 4 — Art editor + importers
+### Phase 4 — Art editor + importers
 
 `tools/art-editor.html` (png → annotate colour → `(region, luminosity)` → preview → save semantic image);
 Aseprite/Libresprite import; Tiled/LDtk import.
 **Done when:** external art can be imported, annotated and used in-game.
 Detail: `plano-arte-procedural`, `plano-tiled-aseprite`.
 
-### Fase 5 — i18n: complete en/es
+### Phase 5 — i18n: complete en/es
 
 Per-locale voice, 🌐 selector, browser default + persistence; en and es complete (UI + Math + Lúdico); literacy
 stays pt-BR, because curriculum is per-language and is REWRITTEN rather than translated (pillar 3).
 **Done when:** switching language changes all UI + Math/Lúdico + voice, offline, with no reload.
 Detail: `plano-i18n`.
 
-### Fase 6 — Pedagogical features + audit
+### Phase 6 — Pedagogical features + audit
 
 Literacy games (grapheme-phoneme, Braille grid, writing, VLibras deaf mode); webcam (MediaPipe) + voice;
 refinements; final WCAG 2.2 / GAG audit.
@@ -90,9 +90,9 @@ this project's to build.
 
 ## Flexibility point (Dev's call)
 
-The **Fase 6** features could be pulled forward or interleaved for visible value before the whole structure is
-done — the cost is touching code that will still be modularized. Recommended: structure-first (Fases 1–4), then
-Fase 6, as decided; but items can be pulled into gaps if preferred.
+The **Phase 6** features could be pulled forward or interleaved for visible value before the whole structure is
+done — the cost is touching code that will still be modularized. Recommended: structure-first (Phases 1–4), then
+Phase 6, as decided; but items can be pulled into gaps if preferred.
 
 ## Other standing facts
 

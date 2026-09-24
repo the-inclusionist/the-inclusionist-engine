@@ -29,8 +29,10 @@ Reports about **exposure of children's data** are welcome even if you are unsure
 
 ## Supported versions
 
-This is a pre-1.0 project under active development; only the **latest `main`** (and the current Cloudflare
-Pages deploy built from it) is supported. There are no back-ported security fixes for older tags.
+The project is under active development. Supported: the **latest `main`** and the **latest release** of the
+package published on npmjs (`@the-inclusionist/engine`, `9.0.0` when this was checked on 2026-09-24). There is
+no web deploy connected today, so there is no hosted build to support. There are no back-ported security fixes
+for older tags.
 
 ## Scope notes
 

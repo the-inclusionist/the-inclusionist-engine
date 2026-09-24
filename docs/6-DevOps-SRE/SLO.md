@@ -1,7 +1,8 @@
 # SLI / SLO / Error Budget → SLA (SDD phase f)  ⏸ defer to backend
 
 **Deferred.** SRE reliability targets measure a **service we operate**. Today there is no such service — the PWA is
-static on Cloudflare Pages (CF owns its own uptime), and there is no SLA to any customer. Nothing to instrument yet.
+static, and today it is not deployed anywhere (no Cloudflare Pages project is connected; when one is, CF owns its own
+uptime), and there is no SLA to any customer. Nothing to instrument yet.
 
 ## When
 

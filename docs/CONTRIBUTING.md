@@ -12,8 +12,9 @@
   `browser`/Playwright (render/DOM). Patterns: **ZOMBIES** (didactic) + **Right-BICEP** (rigor).
 - **Validation before "done":** `npm run build` + `npx vitest run` + `npx tsc --noEmit` green.
 - **Backlog & issues:** the executable backlog lives in **GitHub Issues**
-  (`the-inclusionist/the-inclusionist-engine`), **not** in a Markdown file. ⚠️ **Migrado em 2026-09-06 e os NÚMEROS sobreviveram**: as 101 issues foram recriadas em ordem crescente num repositório de contador zerado, então `#1`–`#101` apontam para as mesmas coisas. Todo `#N` escrito antes dessa data continua válido. The roadmap is the board's **Fase 0–6** issues;
-  `docs/ROADMAP.md` holds only the strategy / why-this-order.
+  (`the-inclusionist/the-inclusionist-engine`), **not** in a Markdown file. ⚠️ **Migrated on 2026-09-06, and the NUMBERS survived**: the 101 issues were recreated in ascending order in a repository with a zeroed counter, so `#1`–`#101` point at the same things. Every `#N` written before that date remains valid.
+  An issue is a **problem solvable by code** (ADR-0126): a phase lives in [`ROADMAP.md`](ROADMAP.md), which **is**
+  the roadmap, and fieldwork lives in [`3-Sprint-Design/Test-Plan.md`](3-Sprint-Design/Test-Plan.md).
   Priority is carried by labels **`P0`/`P1`/`P2`** (until a Project single-select field is set up); area/type labels
   (`a11y`, `curriculum`, `engine`, `docs`, `infra`, `bug`, `feature`, `research`, `pillar`, …) classify them. Commits
   close issues with **`Closes #N`** — the light commit↔requirement trace (the heavy FEAT-### traceability is deferred).
@@ -23,10 +24,10 @@
   🔴 **AND AN ADR IS NOT WRITTEN IN THIS REPOSITORY ANY MORE** (2026-09-09, ADR-0123): the records live in
   [`the-inclusionist-docs`](https://github.com/the-inclusionist/the-inclusionist-docs), one tree for the whole
   project, with the validator beside them. What stays here is the GATE that opens the confirmations naming
-  this repository — see [`docs/2-Architecture/ADR.md`](docs/2-Architecture/ADR.md).
-- The **map of where everything lives** is [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — **the first doc to open**
+  this repository — see [`docs/2-Architecture/ADR.md`](2-Architecture/ADR.md).
+- The **map of where everything lives** is [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — **the first doc to open**
   for any task, to find what to read/change. Any structure/name/convention change is reflected there the same commit.
-  The AI agent's operating rules are in [`CLAUDE.md`](CLAUDE.md).
+  The AI agent's operating rules are in [`CLAUDE.md`](../CLAUDE.md).
 
 ## Contribution terms — read this before your first patch
 
@@ -46,7 +47,7 @@ patch, or that you have the right to submit it under this project's licence. **C
 whose commits lack it.**
 
 ⚠️ **It transfers nothing, and that is deliberate.** The patrimonial owner of this software is the
-Município (Lei nº 9.609/1998, art. 4º), and publication is still a *pedido* in an administrative process —
+Município (Lei nº 9.609/1998, art. 4º), and publication is still a *pedido* (a formal request) in an administrative process —
 so there is no party a contributor agreement could assign rights to. A CLA assigning to the developer would
 have a public servant receive rights over their employer's work. See **ADR-0078**.
 
@@ -103,7 +104,7 @@ So we **split by layer**:
 | Layer | Form | Where |
 |---|---|---|
 | **Curriculum** (large, fixed, BNCC-bound) | **Curriculum Map (Scope & Sequence)** + **Learning Objectives** — each objective = a BNCC skill code + a *measurable* criterion (e.g. "given a phoneme, selects the correct grapheme in ≥80% of attempts") | `docs/educational/` (pt-BR) |
-| **Engine / game** (small, negotiable software features) | light **User Stories** | `docs/1-Discovery/User-Stories.md` + the GitLab backlog |
+| **Engine / game** (small, negotiable software features) | light **User Stories** | `docs/1-Discovery/User-Stories.md` + the GitHub issues |
 
 > **Layer boundary (Dev's rule):** `1-Discovery/` is **software/engine only**; all pedagogical content — activities,
 > learning objectives, curriculum, pedagogical fundamentals — lives in `docs/educational/`. Which educational

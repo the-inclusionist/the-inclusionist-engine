@@ -23,7 +23,7 @@ nothing enforces it.
 
 **k6** (Grafana; preferred over Gatling for a JS/TS team — scripts in JS). **Purpose: verify the targets defined by the
 SLIs/SLOs** in [`SLO.md`](SLO.md) (e.g. p99 < 200 ms under load). Deferred because there is no server to load today
-(static PWA on Cloudflare). Owner when active: the perf gate fails if a run misses an SLO target.
+(a static PWA, with no web deploy connected today). Owner when active: the perf gate fails if a run misses an SLO target.
 
 > Client-side performance targets (boot time, FPS on target hardware, offline) are **not** load tests — they live as
 > NFR thresholds and hardware batteries (`../3-Sprint-Design/Test-Plan.md`).
