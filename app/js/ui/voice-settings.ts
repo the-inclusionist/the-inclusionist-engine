@@ -40,15 +40,15 @@ export interface TtsPanel {
    * Does this assembly have a neural engine (the game's Kokoro port, ADR-0198)? Optional, absent reads `true`: a panel test
    * fake written before this field has no opinion on neural engines.
    */
-  neuralDisponivel?: boolean;
+  neuralAvailable?: boolean;
   /** The voices of the language (ADR-0185). Optional: a panel driven without them offers no «Voz» list and locks nothing. */
-  vozes?: () => readonly PanelVoice[];
-  vozAtual?: () => PanelVoice | null;
-  setVoz?: (id: string) => boolean;
+  voices?: () => readonly PanelVoice[];
+  currentVoice?: () => PanelVoice | null;
+  setVoice?: (id: string) => boolean;
 }
 
 /** A voice as this panel lists it: `webspeech:<name>` for the browser's, `xx_name` for Kokoro's. */
-export interface PanelVoice { readonly voice: string; readonly engine?: string; readonly boa?: boolean }
+export interface PanelVoice { readonly voice: string; readonly engine?: string; readonly recommended?: boolean }
 
 /**
  * The browser, as four functions.
@@ -110,7 +110,7 @@ function voiceName(v: PanelVoice): string {
  * the name alone (ADR-0159 rule 12, no glyph inside a spoken name).
  */
 function panelVoiceLabel(v: PanelVoice): string {
-  return (v.boa ? '❤️ ' : '') + voiceName(v);
+  return (v.recommended ? '❤️ ' : '') + voiceName(v);
 }
 
 /** The rows a missing voice locks (ADR-0185 §4): narration, its volume and rate, the spoken index, and the voice. */
@@ -135,7 +135,7 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
     const sel = ctx.$<HTMLSelectElement>('#tts-engine');
     if (!sel || sel.dataset.filled) return;
     sel.dataset.filled = '1';
-    voiceEngineOptions(ctx.tts.neuralDisponivel !== false).forEach(([v, l]) => {
+    voiceEngineOptions(ctx.tts.neuralAvailable !== false).forEach(([v, l]) => {
       const o = ports.newOption(); o.value = v; o.textContent = t(l); sel.appendChild(o);
     });
     sel.value = ctx.tts.getEngineSel();
@@ -160,7 +160,7 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
     ctx.tts.setVoiceObj(pick);
   }
 
-  const noVoice = (): boolean => !!ctx.tts.vozes && ctx.tts.vozes().length === 0;
+  const noVoice = (): boolean => !!ctx.tts.voices && ctx.tts.voices().length === 0;
 
   /** The speech rate list: each step «N PPM», the stored one selected (ADR-0183 §1, ADR-0196). */
   function renderRate(): void {
@@ -175,8 +175,8 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
 
   function renderVoiceList(): void {
     const sel = ctx.$<HTMLSelectElement>('#tts-voz');
-    if (!sel || !ctx.tts.vozes) return;
-    const list = ctx.tts.vozes();
+    if (!sel || !ctx.tts.voices) return;
+    const list = ctx.tts.voices();
     sel.replaceChildren(); // options built node by node: no markup sink
     if (!list.length) {
       const o = ports.newOption(); o.textContent = t('audio.voz.nenhuma'); sel.appendChild(o);
@@ -185,7 +185,7 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
     for (const v of list) {
       const o = ports.newOption(); o.value = v.voice; o.textContent = panelVoiceLabel(v); sel.appendChild(o);
     }
-    sel.value = ctx.tts.vozAtual?.()?.voice ?? list[0]!.voice;
+    sel.value = ctx.tts.currentVoice?.()?.voice ?? list[0]!.voice;
   }
 
   /**
@@ -246,8 +246,8 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
   function wireControls(): void {
     const voiceSel = ctx.$<HTMLSelectElement>('#tts-voz');
     if (voiceSel) voiceSel.addEventListener('change', () => {
-      if (!ctx.tts.setVoz?.(voiceSel.value)) { renderVoiceList(); return; }
-      const v = ctx.tts.vozAtual?.();
+      if (!ctx.tts.setVoice?.(voiceSel.value)) { renderVoiceList(); return; }
+      const v = ctx.tts.currentVoice?.();
       if (v) ctx.srSay(t('sr.audio.voz', { nome: voiceName(v) }));
     });
 

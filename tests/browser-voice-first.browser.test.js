@@ -39,8 +39,8 @@ afterEach(() => { Object.assign(ss, originais); window.SpeechSynthesisUtterance 
 describe('the browser speaks first where it offers a voice for the language', () => {
   it('🔴 [Right] the browser\'s Portuguese voice leads the list, then Kokoro\'s; the English one is not listed', () => {
     const tts = montar({ vozesDoNavegador: [vozFalsa('Samantha', 'en-US'), vozFalsa('Luciana', 'pt-BR')] });
-    expect(tts.vozes().map((v) => v.voice)).toEqual(['webspeech:Luciana', 'pf_dora', 'pm_alex', 'pm_santa']);
-    expect([tts.vozAtual()?.voice, tts.getEngineSel()]).toEqual(['webspeech:Luciana', 'webspeech']);
+    expect(tts.voices().map((v) => v.voice)).toEqual(['webspeech:Luciana', 'pf_dora', 'pm_alex', 'pm_santa']);
+    expect([tts.currentVoice()?.voice, tts.getEngineSel()]).toEqual(['webspeech:Luciana', 'webspeech']);
   });
 
   it('🎯 [Zero] it speaks with that voice, and no neural voice is loaded', () => {
@@ -52,17 +52,17 @@ describe('the browser speaks first where it offers a voice for the language', ()
 
   it('⚠️ [Boundary] a browser with no voice for the language falls back to the neural voice', () => {
     const tts = montar({ vozesDoNavegador: [vozFalsa('Samantha', 'en-US')] });
-    expect([tts.vozAtual()?.voice, tts.getEngineSel()]).toEqual(['pf_dora', 'kokoro']);
+    expect([tts.currentVoice()?.voice, tts.getEngineSel()]).toEqual(['pf_dora', 'kokoro']);
     tts.ttsSpeak('Pule a pedra.');
     expect(portaChamada).toBe(1);
   });
 
   it('🔴 [Right] the fallback stays pickable: choosing Dora loads it, choosing the browser voice again speaks through it', () => {
     const tts = montar({ vozesDoNavegador: [vozFalsa('Luciana', 'pt-BR')] });
-    expect(tts.setVoz('pf_dora')).toBe(true);
+    expect(tts.setVoice('pf_dora')).toBe(true);
     tts.ttsSpeak('Olá.');
     expect([tts.getEngineSel(), portaChamada]).toEqual(['kokoro', 1]);
-    expect(tts.setVoz('webspeech:Luciana')).toBe(true);
+    expect(tts.setVoice('webspeech:Luciana')).toBe(true);
     tts.ttsSpeak('Olá.');
     expect([tts.getEngineSel(), faladas.at(-1)?.voice?.name]).toEqual(['webspeech', 'Luciana']);
   });

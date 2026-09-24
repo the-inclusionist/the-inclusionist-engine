@@ -17,9 +17,9 @@ import {
 
 describe('platform/guide-intensity — a distancia vira brilho', () => {
   it('[Right] em cima do alvo abre no maximo, no fundo da escala fecha no minimo', () => {
-    expect(guideIntensity(0).corte).toBeCloseTo(NEAR_CUT, 6);
+    expect(guideIntensity(0).cutoff).toBeCloseTo(NEAR_CUT, 6);
     expect(guideIntensity(0).volume).toBeCloseTo(1, 6);
-    expect(guideIntensity(STEPS_TO_FLOOR).corte).toBeCloseTo(FAR_CUT, 6);
+    expect(guideIntensity(STEPS_TO_FLOOR).cutoff).toBeCloseTo(FAR_CUT, 6);
     expect(guideIntensity(STEPS_TO_FLOOR).volume).toBeCloseTo(FAR_VOL, 6);
   });
 
@@ -28,14 +28,14 @@ describe('platform/guide-intensity — a distancia vira brilho', () => {
     // dele concluiria que nao ha nada para achar exatamente quando ha e esta distante.
     for (const passos of [12, 20, 100, 5000]) {
       expect(guideIntensity(passos).volume, `${passos} passos calou o guia`).toBeGreaterThanOrEqual(FAR_VOL);
-      expect(guideIntensity(passos).corte, `${passos} passos fechou o filtro`).toBeGreaterThanOrEqual(FAR_CUT);
+      expect(guideIntensity(passos).cutoff, `${passos} passos fechou o filtro`).toBeGreaterThanOrEqual(FAR_CUT);
     }
     expect(FAR_VOL, 'o piso de volume virou zero').toBeGreaterThan(0);
   });
 
   it('⚠️ [Right] os DOIS eixos crescem juntos ao aproximar — nenhum decide sozinho', () => {
     const passos = [12, 9, 6, 3, 0];
-    const cortes = passos.map((p) => guideIntensity(p).corte);
+    const cortes = passos.map((p) => guideIntensity(p).cutoff);
     const vols = passos.map((p) => guideIntensity(p).volume);
     for (let i = 1; i < passos.length; i++) {
       expect(cortes[i], `o brilho nao subiu de ${passos[i - 1]} para ${passos[i]}`).toBeGreaterThan(cortes[i - 1]);
@@ -47,7 +47,7 @@ describe('platform/guide-intensity — a distancia vira brilho', () => {
     // Uma rampa linear abriria quase tudo no primeiro terco do caminho e depois pareceria parada — a crianca
     // sentiria que chegou quando ainda faltava metade. Com razao constante, meio caminho da a MEDIA
     // GEOMETRICA dos extremos, que e sensivelmente menor do que a aritmetica.
-    const meio = guideIntensity(STEPS_TO_FLOOR / 2).corte;
+    const meio = guideIntensity(STEPS_TO_FLOOR / 2).cutoff;
     expect(meio).toBeCloseTo(Math.sqrt(FAR_CUT * NEAR_CUT), 4);
     expect(meio, 'o corte virou linear').toBeLessThan((FAR_CUT + NEAR_CUT) / 2);
   });
@@ -60,7 +60,7 @@ describe('platform/guide-intensity — a distancia vira brilho', () => {
   it('[Zero] entrada absurda cai no fundo da escala em vez de produzir NaN', () => {
     for (const mau of [NaN, Infinity, -1, -0.0001]) {
       const i = guideIntensity(mau);
-      expect(Number.isFinite(i.corte), `${mau} produziu corte nao-finito`).toBe(true);
+      expect(Number.isFinite(i.cutoff), `${mau} produziu corte nao-finito`).toBe(true);
       expect(i.volume).toBeCloseTo(FAR_VOL, 6);
     }
   });

@@ -23,16 +23,16 @@ function motorFalso() {
   const demora = {};
   let n = 0;
   const motor = {
-    sintetizar: (texto) => {
+    synthesize: (texto) => {
       log.push('sintetizar:' + texto);
       const ms = demora[texto] || 0;
       return new Promise((r) => setTimeout(() => r({ texto, id: ++n }), ms));
     },
-    tocar: (audio, aoTerminar) => {
+    play: (audio, aoTerminar) => {
       log.push('tocar:' + audio.texto);
       return { texto: audio.texto, aoTerminar };
     },
-    parar: (fonte) => { log.push('parar:' + fonte.texto); },
+    stop: (fonte) => { log.push('parar:' + fonte.texto); },
   };
   return { motor, log, demora };
 }
@@ -43,10 +43,10 @@ describe('fala interrompível — o último pedido é o que vale', () => {
   it('[Right] fala o texto pedido', async () => {
     const { motor, log } = motorFalso();
     const fala = createInterruptibleSpeech(motor);
-    fala.falar('Continuar');
+    fala.speak('Continuar');
     await esperar(10);
     expect(log).toEqual(['sintetizar:Continuar', 'tocar:Continuar']);
-    expect(fala.falando()).toBe(true);
+    expect(fala.speaking()).toBe(true);
   });
 
   it('[Right] pedido novo CALA o anterior antes mesmo de sintetizar', async () => {
@@ -54,10 +54,10 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     // voz velha falando durante a síntese — o item errado, com convicção.
     const { motor, log } = motorFalso();
     const fala = createInterruptibleSpeech(motor);
-    fala.falar('Continuar');
+    fala.speak('Continuar');
     await esperar(10);
     log.length = 0;
-    fala.falar('Sair');
+    fala.speak('Sair');
     // ANTES de qualquer espera, o `parar` já tem de ter acontecido.
     expect(log[0], 'o anterior precisa calar na hora, não ao fim da síntese').toBe('parar:Continuar');
     await esperar(10);
@@ -70,7 +70,7 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     const { motor, log, demora } = motorFalso();
     for (const t of ['um', 'dois', 'três', 'quatro', 'cinco']) demora[t] = 20;
     const fala = createInterruptibleSpeech(motor);
-    for (const t of ['um', 'dois', 'três', 'quatro', 'cinco']) fala.falar(t);
+    for (const t of ['um', 'dois', 'três', 'quatro', 'cinco']) fala.speak(t);
     await esperar(80);
     expect(log.filter((l) => l.startsWith('tocar:')), 'só o último deve tocar').toEqual(['tocar:cinco']);
   });
@@ -82,9 +82,9 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     const { motor, log, demora } = motorFalso();
     demora['lento'] = 50; demora['rápido'] = 5;
     const fala = createInterruptibleSpeech(motor);
-    fala.falar('lento');
+    fala.speak('lento');
     await esperar(1);
-    fala.falar('rápido');   // pedido depois, mas termina antes
+    fala.speak('rápido');   // pedido depois, mas termina antes
     await esperar(100);     // tempo de sobra para o 'lento' voltar da síntese
     expect(log.filter((l) => l.startsWith('tocar:')), 'o lento não pode tocar depois').toEqual(['tocar:rápido']);
   });
@@ -93,12 +93,12 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     const { motor, log, demora } = motorFalso();
     demora['longo'] = 30;
     const fala = createInterruptibleSpeech(motor);
-    fala.falar('longo');
+    fala.speak('longo');
     await esperar(1);
-    fala.calar();
+    fala.silence();
     await esperar(60);
     expect(log.filter((l) => l.startsWith('tocar:')), 'nada deve tocar depois de calar').toEqual([]);
-    expect(fala.falando()).toBe(false);
+    expect(fala.speaking()).toBe(false);
   });
 
   it('[Zero] texto vazio não sintetiza — mas ainda CALA o anterior', async () => {
@@ -106,10 +106,10 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     // sintetizar silêncio, mas vale calar: o foco mudou.
     const { motor, log } = motorFalso();
     const fala = createInterruptibleSpeech(motor);
-    fala.falar('Continuar');
+    fala.speak('Continuar');
     await esperar(10);
     log.length = 0;
-    fala.falar('');
+    fala.speak('');
     await esperar(10);
     expect(log).toEqual(['parar:Continuar']);
   });
@@ -120,15 +120,15 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     const log = [];
     let falhar = true;
     const motor = {
-      sintetizar: (texto) => { log.push('sintetizar:' + texto); return falhar ? Promise.reject(new Error('sem voz')) : Promise.resolve({ texto }); },
-      tocar: (audio) => { log.push('tocar:' + audio.texto); return { texto: audio.texto }; },
-      parar: (f) => { log.push('parar:' + f.texto); },
+      synthesize: (texto) => { log.push('sintetizar:' + texto); return falhar ? Promise.reject(new Error('sem voz')) : Promise.resolve({ texto }); },
+      play: (audio) => { log.push('tocar:' + audio.texto); return { texto: audio.texto }; },
+      stop: (f) => { log.push('parar:' + f.texto); },
     };
     const fala = createInterruptibleSpeech(motor);
-    fala.falar('quebra');
+    fala.speak('quebra');
     await esperar(10);
     falhar = false;
-    fala.falar('funciona');
+    fala.speak('funciona');
     await esperar(10);
     expect(log).toContain('tocar:funciona');
   });

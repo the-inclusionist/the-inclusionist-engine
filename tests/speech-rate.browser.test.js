@@ -10,8 +10,8 @@ import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 // loader and not a port. ten words in 2 s of speech between 0.5 s silent ends: the voice says 300 words a minute.
 vi.mock('../app/js/platform/kokoro-runtime.js', () => ({
   loadKokoroRuntime: async () => ({
-    fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }), voz: async () => new Float32Array(256),
-    sessao: async () => ({ sintetizar: async () => waveform(0.5, 2, 0.5) }),
+    phonemize: async () => 'a', vocabulary: async () => ({ a: 1 }), voice: async () => new Float32Array(256),
+    session: async () => ({ synthesize: async () => waveform(0.5, 2, 0.5) }),
   }),
 }));
 

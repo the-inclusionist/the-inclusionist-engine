@@ -24,7 +24,7 @@ export interface HeavyFile {
    */
   readonly sha256?: string;
   /** Obrigatório quando `url` é `null`: uma ausência sem razão escrita vira uma ausência esquecida. */
-  readonly porQueNaoTemFonte?: string;
+  readonly whyNoSource?: string;
 }
 
 /** O nome da Cache Storage. Versionado: mudar o conteúdo do catálogo não deve servir bytes velhos. */
@@ -256,7 +256,7 @@ export const HEAVY_FILES: readonly HeavyFile[] = Object.freeze([
   {
     id: 'arte:acervo',
     url: null,
-    porQueNaoTemFonte: 'não há acervo escolhido: `art/` tem só README e cabeçalho do CSV. O ADR-0133 fechou '
+    whyNoSource: 'não há acervo escolhido: `art/` tem só README e cabeçalho do CSV. O ADR-0133 fechou '
       + 'a lista em CC0, CC BY 3.0/4.0 e OGA-BY, e a arte entra recurso a recurso com autoria e URL de '
       + 'origem — não por uma URL solta que este buscador possa pedir.',
   },

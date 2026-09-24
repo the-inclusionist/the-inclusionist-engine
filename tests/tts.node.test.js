@@ -37,9 +37,9 @@ function setup(over = {}) {
 function fakeKokoroPort(registro) {
   const tom = Float32Array.from({ length: 2400 }, (_, i) => Math.sin(i / 8) * 0.4);
   return () => Promise.resolve({
-    fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }),
-    voz: async (id) => { registro.voz = id; return new Float32Array(256); },
-    sessao: async (dispositivo) => { registro.dispositivo = dispositivo; return { sintetizar: async () => tom }; },
+    phonemize: async () => 'a', vocabulary: async () => ({ a: 1 }),
+    voice: async (id) => { registro.voice = id; return new Float32Array(256); },
+    session: async (dispositivo) => { registro.dispositivo = dispositivo; return { synthesize: async () => tom }; },
   });
 }
 
@@ -130,7 +130,7 @@ describe('platform/tts — a declaração da voz neural', () => {
     expect(alerted).not.toContain(pt['sr.tts.noNeuralForLanguage']);
     expect(tts.loading).toBe(false);
     expect(tts.failed).toBe(true);
-    expect(tts.neuralDisponivel).toBe(false);
+    expect(tts.neuralAvailable).toBe(false);
   });
 
   it('[Right] sem a declaração a narração NÃO emudece — cai na voz do navegador', () => {
@@ -148,8 +148,8 @@ describe('platform/tts — a declaração da voz neural', () => {
   // sem tentar nada. A distinção entre os dois alertas é a asserção.
   it('🔴 [Right] declarada e sem carregador injetado, a engine carrega a voz ELA MESMA — não diz «não vem no pacote»', async () => {
     const { tts, alerted } = setup({ neuralVoice: true });
-    expect(tts.neuralDisponivel, 'quem responde é a declaração, não um carregador').toBe(true);
-    expect(tts.vozes().some((v) => v.engine === 'kokoro'), 'as vozes do idioma entram na lista').toBe(true);
+    expect(tts.neuralAvailable, 'quem responde é a declaração, não um carregador').toBe(true);
+    expect(tts.voices().some((v) => v.engine === 'kokoro'), 'as vozes do idioma entram na lista').toBe(true);
     tts.setEngineSel('kokoro');
     tts.loadTTS();
     expect(alerted, 'recusou sem sequer tentar o carregador da engine').not.toContain(pt['sr.tts.neuralNotBundled']);
@@ -162,12 +162,12 @@ describe('platform/tts — a declaração da voz neural', () => {
   it('[Happy] com carregador o caminho neural corre inteiro e o motor fica de pé', async () => {
     const registro = {};
     const { tts } = setup({ loadKokoro: fakeKokoroPort(registro) });
-    expect(tts.neuralDisponivel).toBe(true);
+    expect(tts.neuralAvailable).toBe(true);
     tts.setEngineSel('kokoro');
     tts.loadTTS();
     expect(tts.loading, 'o carregamento começa de imediato').toBe(true);
     await assentar();
-    expect(registro.voz, 'the first Kokoro voice of the language loads').toBe('pf_dora');
+    expect(registro.voice, 'the first Kokoro voice of the language loads').toBe('pf_dora');
     expect(tts.getEngine()?.id).toBe('kokoro');
     expect(tts.loading).toBe(false);
     expect(tts.failed).toBe(false);

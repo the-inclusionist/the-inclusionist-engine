@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { recognitionRoute, createOnDeviceRecognition, createCommandReader, spokenText } from '../app/js/platform/speech-recognition.js';
 
 /** A fake `SpeechRecognition`: `local` says whether its objects know `processLocally`; `estado` what `available` answers. */
-function apiFalsa({ local = true, estado = 'available', semAvailable = false } = {}) {
+function apiFalsa({ local = true, status: estado = 'available', semAvailable = false } = {}) {
   const pedidos = [];
   class SR { constructor() { this.lang = ''; this.continuous = false; this.interimResults = false; } }
   if (local) SR.prototype.processLocally = false;
@@ -18,20 +18,20 @@ function apiFalsa({ local = true, estado = 'available', semAvailable = false } =
 describe('the route: the browser only on the device (ADR-0200 erratum)', () => {
   it('🔴 [Right] recognition installed on the device → the browser, asked with processLocally', async () => {
     const { SR, pedidos } = apiFalsa();
-    expect(await recognitionRoute('pt-BR', SR)).toEqual({ rota: 'webspeech-local', estado: 'available' });
+    expect(await recognitionRoute('pt-BR', SR)).toEqual({ route: 'webspeech-local', status: 'available' });
     expect(pedidos).toEqual([{ langs: ['pt-BR'], processLocally: true }]);
   });
 
   it('🎯 [Zero] a browser that cannot recognise on the device is never the route, even if it says «available»', async () => {
     const { SR } = apiFalsa({ local: false });
-    expect(await recognitionRoute('pt-BR', SR)).toEqual({ rota: 'recuo', estado: 'sem-processamento-local' });
+    expect(await recognitionRoute('pt-BR', SR)).toEqual({ route: 'recuo', status: 'sem-processamento-local' });
     expect(() => createOnDeviceRecognition(SR, 'pt-BR'), 'a server recogniser was created').toThrow(/leave the device/);
   });
 
   it('⚠️ [Boundary] a language still to download, no API, or no `available` → the engine\'s recogniser', async () => {
-    expect(await recognitionRoute('es', apiFalsa({ estado: 'downloadable' }).SR)).toEqual({ rota: 'recuo', estado: 'downloadable' });
-    expect(await recognitionRoute('es', null)).toEqual({ rota: 'recuo', estado: 'sem-api' });
-    expect((await recognitionRoute('es', apiFalsa({ semAvailable: true }).SR)).rota).toBe('recuo');
+    expect(await recognitionRoute('es', apiFalsa({ status: 'downloadable' }).SR)).toEqual({ route: 'recuo', status: 'downloadable' });
+    expect(await recognitionRoute('es', null)).toEqual({ route: 'recuo', status: 'sem-api' });
+    expect((await recognitionRoute('es', apiFalsa({ semAvailable: true }).SR)).route).toBe('recuo');
   });
 
   it('🔴 [Right] the recognition object is set to the device, continuous, with partial hypotheses', () => {
@@ -41,32 +41,32 @@ describe('the route: the browser only on the device (ADR-0200 erratum)', () => {
 });
 
 describe('what a command is in what was heard (ADR-0194)', () => {
-  const leitor = () => { const l = createCommandReader(['acima', 'abaixo', 'confirmar', 'voltar', 'menu']); l.itens(['Voltar ao jogo', 'Configurações de inclusão', 'Voltar']); return l; };
+  const leitor = () => { const l = createCommandReader(['acima', 'abaixo', 'confirmar', 'voltar', 'menu']); l.items(['Voltar ao jogo', 'Configurações de inclusão', 'Voltar']); return l; };
 
   it('🔴 [Right] direction words and whole item names, the longest name first', () => {
-    expect(leitor().ler(0, 'Acima, configurações de inclusão e abaixo', true)).toEqual([
-      { tipo: 'palavra', palavra: 'acima' }, { tipo: 'item', nome: 'configurações de inclusão' }, { tipo: 'palavra', palavra: 'abaixo' },
+    expect(leitor().read(0, 'Acima, configurações de inclusão e abaixo', true)).toEqual([
+      { kind: 'palavra', word: 'acima' }, { kind: 'item', name: 'configurações de inclusão' }, { kind: 'palavra', word: 'abaixo' },
     ]);
   });
 
   it('🔴 [Right] a growing partial hypothesis fires each command once, and the final one adds nothing new', () => {
     const l = leitor();
-    expect(l.ler(3, 'acima', false)).toEqual([{ tipo: 'palavra', palavra: 'acima' }]);
-    expect(l.ler(3, 'acima abaixo', false)).toEqual([{ tipo: 'palavra', palavra: 'abaixo' }]);
-    expect(l.ler(3, 'acima abaixo', true)).toEqual([]);
-    expect(l.ler(4, 'acima', true), 'the next utterance starts afresh').toEqual([{ tipo: 'palavra', palavra: 'acima' }]);
+    expect(l.read(3, 'acima', false)).toEqual([{ kind: 'palavra', word: 'acima' }]);
+    expect(l.read(3, 'acima abaixo', false)).toEqual([{ kind: 'palavra', word: 'abaixo' }]);
+    expect(l.read(3, 'acima abaixo', true)).toEqual([]);
+    expect(l.read(4, 'acima', true), 'the next utterance starts afresh').toEqual([{ kind: 'palavra', word: 'acima' }]);
   });
 
   it('⚠️ [Boundary] a partial «voltar» waits while «voltar ao jogo» may follow; the final one decides', () => {
     const l = leitor();
-    expect(l.ler(0, 'voltar', false)).toEqual([]);
-    expect(l.ler(0, 'voltar ao jogo', false)).toEqual([{ tipo: 'item', nome: 'voltar ao jogo' }]);
+    expect(l.read(0, 'voltar', false)).toEqual([]);
+    expect(l.read(0, 'voltar ao jogo', false)).toEqual([{ kind: 'item', name: 'voltar ao jogo' }]);
     const m = leitor();
-    expect(m.ler(1, 'voltar', true)).toEqual([{ tipo: 'item', nome: 'voltar' }]);
+    expect(m.read(1, 'voltar', true)).toEqual([{ kind: 'item', name: 'voltar' }]);
   });
 
   it('[Zero] other words command nothing; punctuation and case do not matter', () => {
-    expect(leitor().ler(0, 'o gato subiu no telhado', true)).toEqual([]);
+    expect(leitor().read(0, 'o gato subiu no telhado', true)).toEqual([]);
     expect(spokenText('Ajuda — Como jogar!')).toBe('ajuda como jogar');
   });
 });

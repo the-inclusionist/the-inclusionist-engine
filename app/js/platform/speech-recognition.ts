@@ -28,9 +28,9 @@ export interface RecognitionInstance {
 
 export interface RecognitionRoute {
   /** `webspeech-local`: the browser recognises on the device. `recuo`: the engine's own recogniser. */
-  readonly rota: 'webspeech-local' | 'recuo';
+  readonly route: 'webspeech-local' | 'recuo';
   /** Why: the browser's answer, or what is missing. */
-  readonly estado: OnDeviceAvailability | 'sem-api' | 'sem-processamento-local';
+  readonly status: OnDeviceAvailability | 'sem-api' | 'sem-processamento-local';
 }
 
 /**
@@ -38,11 +38,11 @@ export interface RecognitionRoute {
  * flag as an unknown property and recognise on its servers — it is never the route, whatever it says about availability.
  */
 export async function recognitionRoute(language: string, api: RecognitionApi | null | undefined): Promise<RecognitionRoute> {
-  if (!api) return { rota: 'recuo', estado: 'sem-api' };
-  if (!('processLocally' in api.prototype) || typeof api.available !== 'function') return { rota: 'recuo', estado: 'sem-processamento-local' };
+  if (!api) return { route: 'recuo', status: 'sem-api' };
+  if (!('processLocally' in api.prototype) || typeof api.available !== 'function') return { route: 'recuo', status: 'sem-processamento-local' };
   let estado: OnDeviceAvailability;
-  try { estado = await api.available({ langs: [language], processLocally: true }); } catch { return { rota: 'recuo', estado: 'unavailable' }; }
-  return { rota: estado === 'available' ? 'webspeech-local' : 'recuo', estado };
+  try { estado = await api.available({ langs: [language], processLocally: true }); } catch { return { route: 'recuo', status: 'unavailable' }; }
+  return { route: estado === 'available' ? 'webspeech-local' : 'recuo', status: estado };
 }
 
 /** A recognition object set to recognise on the device, continuously, with partial hypotheses. Refuses a browser that cannot. */
@@ -57,19 +57,19 @@ export function createOnDeviceRecognition(api: RecognitionApi, language: string)
 }
 
 /** A command heard: a direction word, or the name of an item of the open menu. */
-export type HeardCommand = { readonly tipo: 'palavra'; readonly palavra: string } | { readonly tipo: 'item'; readonly nome: string };
+export type HeardCommand = { readonly kind: 'palavra'; readonly word: string } | { readonly kind: 'item'; readonly name: string };
 
 /** How a heard text is compared: lower case, letters and spaces only. */
 export const spokenText = (t: string): string => t.toLowerCase().normalize('NFC').replace(/[^\p{L}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
 
 export interface CommandReader {
   /** The menu's item names now on screen (already as spoken). */
-  itens(nomes: readonly string[]): void;
+  items(nomes: readonly string[]): void;
   /**
    * One hypothesis of utterance `indice`: returns the commands it completes that were not returned before for that utterance. A
    * partial one holds back its last name while another item's name continues it («voltar» may become «voltar ao jogo»).
    */
-  ler(indice: number, texto: string, final: boolean): readonly HeardCommand[];
+  read(indice: number, texto: string, final: boolean): readonly HeardCommand[];
 }
 
 export function createCommandReader(vocabulary: readonly string[]): CommandReader {
@@ -90,15 +90,15 @@ export function createCommandReader(vocabulary: readonly string[]): CommandReade
     return found;
   };
   return {
-    itens(nomes) { itens = nomes.map(spokenText); },
-    ler(indice, texto, final) {
+    items(nomes) { itens = nomes.map(spokenText); },
+    read(indice, texto, final) {
       const found = phrasesIn(texto);
       const alreadyFired = firedCount.get(indice) ?? 0;
       const newCommands: HeardCommand[] = [];
       for (let i = alreadyFired; i < found.length; i++) {
         const f = found[i]!;
         if (!final && i === found.length - 1 && itens.some((o) => o !== f && o.startsWith(f + ' '))) break;
-        newCommands.push(itens.includes(f) ? { tipo: 'item', nome: f } : { tipo: 'palavra', palavra: f });
+        newCommands.push(itens.includes(f) ? { kind: 'item', name: f } : { kind: 'palavra', word: f });
         firedCount.set(indice, i + 1);
       }
       if (final) firedCount.delete(indice);

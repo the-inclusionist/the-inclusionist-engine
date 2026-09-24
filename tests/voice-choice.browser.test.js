@@ -10,8 +10,8 @@ import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 vi.mock('../app/js/platform/kokoro-runtime.js', () => ({
   loadKokoroRuntime: async () => ({
-    fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }), voz: async () => new Float32Array(256),
-    sessao: async () => { throw new Error('no session in this case'); },
+    phonemize: async () => 'a', vocabulary: async () => ({ a: 1 }), voice: async () => new Float32Array(256),
+    session: async () => { throw new Error('no session in this case'); },
   }),
 }));
 
@@ -64,7 +64,7 @@ describe('the voice choice in the hearing panel', () => {
     const sel = document.querySelector('#audio #tts-voz');
     sel.value = 'pm_alex'; // the second: a <select> opens on its first option by itself (mutation P7)
     sel.dispatchEvent(new Event('change', { bubbles: true }));
-    expect(motor.tts.vozAtual()?.voice).toBe('pm_alex');
+    expect(motor.tts.currentVoice()?.voice).toBe('pm_alex');
     expect(localStorage.getItem('incl_tts_voz')).toBe('pm_alex');
     // the live region is written after a beat (a repeated phrase must be re-announced), so wait for it rather than a tick count
     const dito = () => document.getElementById('sr-status').textContent;

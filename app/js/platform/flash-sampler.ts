@@ -19,10 +19,10 @@ import { analyseFlashes, COLUMNS, ROWS, type LuminanceFrame } from '../core/flas
 
 /** What a measurement found. `passa` and `piorSegundo` exist only when the canvas was actually read. */
 export interface FlashMeasurement {
-  readonly lido: boolean;
-  readonly motivo?: string;
-  readonly passa?: boolean;
-  readonly piorSegundo?: number;
+  readonly measured: boolean;
+  readonly reason?: string;
+  readonly passes?: boolean;
+  readonly worstSecond?: number;
 }
 
 /** Ten samples per cell of the pure half's grid — enough for an average, small enough to read every frame. */
@@ -45,13 +45,13 @@ export interface FlashSamplerCtx {
 
 export function sampleFlashes(ctx: FlashSamplerCtx, ms: number): Promise<FlashMeasurement> {
   const canvas = ctx.canvas();
-  if (!canvas) return Promise.resolve({ lido: false, motivo: 'the world is not a canvas and contains none to read' });
+  if (!canvas) return Promise.resolve({ measured: false, reason: 'the world is not a canvas and contains none to read' });
   const copy = ctx.scratch();
   copy.width = SAMPLE_COLS;
   copy.height = SAMPLE_ROWS;
   const c2d = copy.getContext('2d', { willReadFrequently: true });
   const frame = ctx.frame;
-  if (!c2d || typeof frame !== 'function') return Promise.resolve({ lido: false, motivo: 'this host cannot sample canvases' });
+  if (!c2d || typeof frame !== 'function') return Promise.resolve({ measured: false, reason: 'this host cannot sample canvases' });
 
   return new Promise((resolve) => {
     const frames: LuminanceFrame[] = [];
@@ -65,7 +65,7 @@ export function sampleFlashes(ctx: FlashSamplerCtx, ms: number): Promise<FlashMe
         c2d.drawImage(canvas, 0, 0, SAMPLE_COLS, SAMPLE_ROWS);
         px = c2d.getImageData(0, 0, SAMPLE_COLS, SAMPLE_ROWS).data;
       } catch {
-        resolve({ lido: false, motivo: 'the page may not read the world\'s canvas (an image from another origin drew on it)' });
+        resolve({ measured: false, reason: 'the page may not read the world\'s canvas (an image from another origin drew on it)' });
         return;
       }
       const grid = new Float32Array(COLUMNS * ROWS);
@@ -80,7 +80,7 @@ export function sampleFlashes(ctx: FlashSamplerCtx, ms: number): Promise<FlashMe
       frames.push({ t: now - start, luminances: grid });
       if (now - start < ms) { frame(step); return; }
       if (!anyPixel) {
-        resolve({ lido: false, motivo: 'the world\'s canvas read transparent in every frame (WebGL canvases need preserveDrawingBuffer)' });
+        resolve({ measured: false, reason: 'the world\'s canvas read transparent in every frame (WebGL canvases need preserveDrawingBuffer)' });
         return;
       }
       const { passes: passa, worstSecond: piorSegundo } = analyseFlashes(frames);
@@ -88,7 +88,7 @@ export function sampleFlashes(ctx: FlashSamplerCtx, ms: number): Promise<FlashMe
         ctx.report(`the world's canvas flashed ${piorSegundo} times in one second within a 10-degree field `
           + '(WCAG 2.3.1 allows 3): it can trigger a seizure in a child with photosensitive epilepsy — slow or dim it');
       }
-      resolve({ lido: true, passa, piorSegundo });
+      resolve({ measured: true, passes: passa, worstSecond: piorSegundo });
     };
     frame(step);
   });

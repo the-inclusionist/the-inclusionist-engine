@@ -42,9 +42,9 @@ function montar(comPorta) {
   if (comPorta) { // the game declared `uses: { neuralVoice: true }` (ADR-0216 §3); the loader is only this case's stand-in
     ctx.neuralVoice = true;
     ctx.loadKokoro = () => Promise.resolve({
-      fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }),
-      voz: async (id) => { registro.voz = id; return new Float32Array(256); },
-      sessao: async () => { throw new Error('no session here'); },
+      phonemize: async () => 'a', vocabulary: async () => ({ a: 1 }),
+      voice: async (id) => { registro.voice = id; return new Float32Array(256); },
+      session: async () => { throw new Error('no session here'); },
     });
   }
   return { tts: createTts(ctx), registro };
@@ -53,19 +53,19 @@ const assentar = async () => { for (let i = 0; i < 12; i++) await Promise.resolv
 
 describe('platform/tts — the voice choice', () => {
   it('🔴 [Right] the panel lists the Kokoro voices of the current language with the port, and none without it', () => {
-    expect(montar(true).tts.vozes().map((v) => v.voice)).toEqual(['pf_dora', 'pm_alex', 'pm_santa']);
-    expect(montar(false).tts.vozes(), 'a voice listed without the port could never load').toEqual([]);
+    expect(montar(true).tts.voices().map((v) => v.voice)).toEqual(['pf_dora', 'pm_alex', 'pm_santa']);
+    expect(montar(false).tts.voices(), 'a voice listed without the port could never load').toEqual([]);
   });
 
   it('🔴 [Right] without a choice, the first voice of the language is the one in use', () => {
-    expect(montar(true).tts.vozAtual()?.voice).toBe('pf_dora');
+    expect(montar(true).tts.currentVoice()?.voice).toBe('pf_dora');
   });
 
   it('🔴 [Right] a choice is stored, and a voice of another language is refused', () => {
     const { tts } = montar(true);
-    expect(tts.setVoz('af_heart'), 'an English voice was accepted for Portuguese').toBe(false);
+    expect(tts.setVoice('af_heart'), 'an English voice was accepted for Portuguese').toBe(false);
     expect(localStorage.getItem(store.KEYS.ttsVoz)).toBeNull();
-    expect(tts.setVoz('pm_alex')).toBe(true);
+    expect(tts.setVoice('pm_alex')).toBe(true);
     expect(localStorage.getItem(store.KEYS.ttsVoz)).toBe('pm_alex');
   });
 
@@ -73,7 +73,7 @@ describe('platform/tts — the voice choice', () => {
     const { tts, registro } = montar(true);
     tts.narrate('bom dia');
     await assentar();
-    expect(registro.voz, 'the neural voice never loaded: the browser voice was still the default').toBe('pf_dora');
+    expect(registro.voice, 'the neural voice never loaded: the browser voice was still the default').toBe('pf_dora');
   });
 
   it('📌 [Boundary] without the port the default stays the browser voice, so no «not bundled» alert on the first word', () => {

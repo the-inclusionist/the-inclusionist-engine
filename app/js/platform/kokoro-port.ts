@@ -47,7 +47,7 @@ export function createKokoroPort(d: KokoroPortDeps): KokoroModule {
   let model: Promise<Uint8Array> | null = null;
 
   return {
-    async fonemizar(text, espeak) {
+    async phonemize(text, espeak) {
       // the sentence goes in as a FILE and never as an argument: a line starting with «-» would be read as an option
       const e = await d.espeak({
         arguments: ['-q', '--ipa', '--phonout', OUTPUT, '-v', espeak, '-f', INPUT],
@@ -55,19 +55,19 @@ export function createKokoroPort(d: KokoroPortDeps): KokoroModule {
       });
       return e.FS.readFile(OUTPUT, { encoding: 'utf8' }).trim().replace(/\s*\n\s*/g, ' ');
     },
-    vocabulario() {
+    vocabulary() {
       vocabulary ??= fromDelivery(URL_DO_TOKENIZADOR_KOKORO)
         .then(async (r) => (await r.json() as { model: { vocab: { [s: string]: number } } }).model.vocab);
       return vocabulary;
     },
-    async voz(id) {
+    async voice(id) {
       return new Float32Array(await (await fromDelivery(kokoroVoiceUrl(id))).arrayBuffer());
     },
-    async sessao(device) {
+    async session(device) {
       model ??= fromDelivery(KOKORO_MODEL_URL).then(async (r) => new Uint8Array(await r.arrayBuffer()));
       const s = await d.ort.InferenceSession.create(await model, { executionProviders: [device] });
       const session: KokoroSession = {
-        async sintetizar(ids, style) {
+        async synthesize(ids, style) {
           const out = await s.run({
             input_ids: new d.ort.Tensor('int64', BigInt64Array.from(ids, (id) => BigInt(id)), [1, ids.length]),
             style: new d.ort.Tensor('float32', style, [1, style.length]),

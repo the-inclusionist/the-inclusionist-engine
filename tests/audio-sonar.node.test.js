@@ -75,8 +75,8 @@ function setup(over = {}) {
     // `lv-*`) — e o módulo atravessava-a com `pl.viz`. Ou seja: o teste inventava um vocabulário para o
     // módulo consultar, e passava por isso. Agora o ctx responde a PERGUNTA, e o fixture diz em português
     // quais jogadores têm a visão comprometida, que é o que os casos sempre quiseram dizer.
-    visaoComprometida: (pl) => (over.visaoComprometida ? over.visaoComprometida(pl) : !!pl.vePouco),
-    getModoCego: () => over.blindMode || false,
+    visionImpaired: (pl) => (over.visionImpaired ? over.visionImpaired(pl) : !!pl.vePouco),
+    getBlindMode: () => over.blindMode || false,
     LOGICAL_W: 320,
     getPlayers: () => over.players || [],
     getNumPlayers: () => over.numPlayers || 1,
@@ -112,7 +112,7 @@ describe('platform/audio-sonar · o que não depende de gênero', () => {
     expect(setup().som.needsAudioCues(pl({ vePouco: true }))).toBe(true);
     expect(setup().som.needsAudioCues(pl({ vePouco: false }))).toBe(false);
     // E a metade visual é INJECTADA: o módulo não a calcula, e um ctx que responda outra coisa manda.
-    expect(setup({ visaoComprometida: () => true }).som.needsAudioCues(pl({ vePouco: false }))).toBe(true);
+    expect(setup({ visionImpaired: () => true }).som.needsAudioCues(pl({ vePouco: false }))).toBe(true);
   });
 
   it('[Simple] panFor: à direita > 0, à esquerda < 0, centrado ~0', () => {

@@ -34,20 +34,20 @@
 /** What the caller provides. Nothing here knows the neural engine, Web Audio or the browser. */
 export interface SpeechEngine<Audio, Fonte> {
   /** Texto → áudio. ASSÍNCRONO de propósito: é onde a síntese neural gasta o tempo dela. */
-  sintetizar(texto: string): Promise<Audio>;
+  synthesize(texto: string): Promise<Audio>;
   /** Começa a tocar e devolve a fonte, para que ela possa ser parada. `null` = não deu para tocar agora. */
-  tocar(audio: Audio, onEnded: () => void): Fonte | null;
+  play(audio: Audio, onEnded: () => void): Fonte | null;
   /** Cala a fonte. Chamado com o que `tocar` devolveu, e nunca com `null`. */
-  parar(fonte: Fonte): void;
+  stop(fonte: Fonte): void;
 }
 
 export interface InterruptibleSpeech {
   /** Fala `texto`, CALANDO na hora o que estiver falando. Não enfileira: o último pedido é o que vale. */
-  falar(texto: string): void;
+  speak(texto: string): void;
   /** Cala e esquece. Usado ao fechar um menu ou ao desligar a narração. */
-  calar(): void;
+  silence(): void;
   /** Está tocando alguma coisa? Só para teste e depuração — a política não depende disto. */
-  falando(): boolean;
+  speaking(): boolean;
 }
 
 export function createInterruptibleSpeech<Audio, Fonte>(motor: SpeechEngine<Audio, Fonte>): InterruptibleSpeech {
@@ -57,7 +57,7 @@ export function createInterruptibleSpeech<Audio, Fonte>(motor: SpeechEngine<Audi
   /** Cala o que estiver tocando. O `try` existe porque parar uma fonte já terminada lança em alguns motores. */
   function stopPlayback(): void {
     if (nowPlaying !== null) {
-      try { motor.parar(nowPlaying); } catch (e) { /* fonte já encerrada — parar de novo não é erro */ }
+      try { motor.stop(nowPlaying); } catch (e) { /* fonte já encerrada — parar de novo não é erro */ }
       nowPlaying = null;
     }
   }
@@ -67,11 +67,11 @@ export function createInterruptibleSpeech<Audio, Fonte>(motor: SpeechEngine<Audi
     stopPlayback();             // garantia 1: silêncio imediato, não ao fim da síntese
     if (!texto) return;
     try {
-      const audio = await motor.sintetizar(texto);
+      const audio = await motor.synthesize(texto);
       if (myTurn !== currentTurn) return; // garantia 2: chegou tarde — outro pedido já assumiu
       stopPlayback();                   // de novo: alguém pode ter começado a tocar durante a espera
-      const fonte = motor.tocar(audio, () => { if (nowPlaying === fonte) nowPlaying = null; });
-      if (myTurn !== currentTurn) { if (fonte !== null) { try { motor.parar(fonte); } catch (e) { /* noop */ } } return; }
+      const fonte = motor.play(audio, () => { if (nowPlaying === fonte) nowPlaying = null; });
+      if (myTurn !== currentTurn) { if (fonte !== null) { try { motor.stop(fonte); } catch (e) { /* noop */ } } return; }
       nowPlaying = fonte;
     } catch (e) {
       // Síntese falhou para ESTE texto. Não é motivo para derrubar a narração inteira: o próximo pedido
@@ -80,8 +80,8 @@ export function createInterruptibleSpeech<Audio, Fonte>(motor: SpeechEngine<Audi
   }
 
   return {
-    falar: (texto) => { void falar(texto); },
-    calar: () => { currentTurn++; stopPlayback(); }, // o `++` invalida o que estiver sintetizando agora
-    falando: () => nowPlaying !== null,
+    speak: (texto) => { void falar(texto); },
+    silence: () => { currentTurn++; stopPlayback(); }, // o `++` invalida o que estiver sintetizando agora
+    speaking: () => nowPlaying !== null,
   };
 }

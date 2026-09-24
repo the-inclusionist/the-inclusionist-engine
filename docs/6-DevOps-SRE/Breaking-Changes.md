@@ -2599,6 +2599,89 @@ The table is printed from `scripts/member-rename-map.json` by `node scripts/appl
 | `core/speech-rate.js` | `speechPlaybackRate` | `ppmDaVoz` | `voiceWpm` |
 | `core/speech-rate.js` | `speechPlaybackRate` | `taxa` | `rate` |
 
+## CJ · Published members speak English — the `platform` layer (ADR-0230, issue #206)
+
+**Who is affected:** a host or cartridge that builds or reads the voice engine (`Tts.voices`, `currentVoice`, `setVoice`,
+`neuralAvailable`, `kokoroDevice`), a Kokoro port (`phonemize`, `vocabulary`, `voice`, `session`, `synthesize`), the
+heavy-file download (`HeavyOptions.fetch`/`only`/`onProgress`, `HeavyReport.outcome`/`error`), the flash measurement
+(`measured`, `reason`, `passes`, `worstSecond`), the command reader and the sonar's ctx (`getBlindMode`,
+`visionImpaired`).
+
+⚠️ **A typed consumer is NOT safe by construction here, and this layer measured why.** `ui/voice-settings` held its own
+view of the voice engine with every member OPTIONAL (`vozes?`, `vozAtual?`, …). The real engine, renamed, stayed
+assignable to that view — an optional member that is absent is not an error — and the panel saw no voices at all, with
+`tsc` clean. Only a browser test caught it. A consumer that declares its own optional mirror of these types must rename
+it by this table; the compiler will not ask.
+
+📌 **The delivery `bin` speaks the same shape:** its report rows are `{ id, outcome, error }` and its option is `fetch`.
+The values it prints (`ja-tinha`, `falhou`, `sem-fonte`, `escrito`) did not change.
+
+📌 **Not moved:** `TasksVision.FilesetResolver` is the name MediaPipe exports; the engine only mirrors it.
+
+The table is printed from `scripts/member-rename-map.json` by `node scripts/apply-member-rename.mjs --table platform`.
+
+| module | type | old member | new member |
+|---|---|---|---|
+| `platform/audio-sonar.js` | `LiveGuide` | `desdeARota` | `framesSinceRoute` |
+| `platform/audio-sonar.js` | `LiveGuide` | `filtro` | `filter` |
+| `platform/audio-sonar.js` | `LiveGuide` | `ganho` | `gain` |
+| `platform/audio-sonar.js` | `LiveGuide` | `passos` | `steps` |
+| `platform/audio-sonar.js` | `PlayerAudioOut` | `_guia` | `_guide` |
+| `platform/audio-sonar.js` | `SonarCtx` | `getModoCego` | `getBlindMode` |
+| `platform/audio-sonar.js` | `SonarCtx` | `visaoComprometida` | `visionImpaired` |
+| `platform/flash-sampler.js` | `FlashMeasurement` | `lido` | `measured` |
+| `platform/flash-sampler.js` | `FlashMeasurement` | `motivo` | `reason` |
+| `platform/flash-sampler.js` | `FlashMeasurement` | `passa` | `passes` |
+| `platform/flash-sampler.js` | `FlashMeasurement` | `piorSegundo` | `worstSecond` |
+| `platform/guide-intensity.js` | `Intensity` | `corte` | `cutoff` |
+| `platform/heavy-catalogue.js` | `HeavyFile` | `porQueNaoTemFonte` | `whyNoSource` |
+| `platform/heavy.js` | `HeavyOptions` | `aoProgredir` | `onProgress` |
+| `platform/heavy.js` | `HeavyOptions` | `apenas` | `only` |
+| `platform/heavy.js` | `HeavyOptions` | `buscar` | `fetch` |
+| `platform/heavy.js` | `HeavyReport` | `erro` | `error` |
+| `platform/heavy.js` | `HeavyReport` | `estado` | `outcome` |
+| `platform/interruptible-speech.js` | `InterruptibleSpeech` | `calar` | `silence` |
+| `platform/interruptible-speech.js` | `InterruptibleSpeech` | `falando` | `speaking` |
+| `platform/interruptible-speech.js` | `InterruptibleSpeech` | `falar` | `speak` |
+| `platform/interruptible-speech.js` | `SpeechEngine` | `parar` | `stop` |
+| `platform/interruptible-speech.js` | `SpeechEngine` | `sintetizar` | `synthesize` |
+| `platform/interruptible-speech.js` | `SpeechEngine` | `tocar` | `play` |
+| `platform/kokoro-port.js` | `createKokoroPort` | `fonemizar` | `phonemize` |
+| `platform/kokoro-port.js` | `createKokoroPort` | `sessao` | `session` |
+| `platform/kokoro-port.js` | `createKokoroPort` | `vocabulario` | `vocabulary` |
+| `platform/kokoro-port.js` | `createKokoroPort` | `voz` | `voice` |
+| `platform/kokoro-port.js` | `session` | `sintetizar` | `synthesize` |
+| `platform/kokoro.js` | `KokoroModule` | `fonemizar` | `phonemize` |
+| `platform/kokoro.js` | `KokoroModule` | `sessao` | `session` |
+| `platform/kokoro.js` | `KokoroModule` | `vocabulario` | `vocabulary` |
+| `platform/kokoro.js` | `KokoroModule` | `voz` | `voice` |
+| `platform/kokoro.js` | `KokoroSession` | `sintetizar` | `synthesize` |
+| `platform/kokoro.js` | `KokoroVoice` | `boa` | `recommended` |
+| `platform/speech-recognition.js` | `CommandReader` | `itens` | `items` |
+| `platform/speech-recognition.js` | `CommandReader` | `ler` | `read` |
+| `platform/speech-recognition.js` | `createCommandReader` | `itens` | `items` |
+| `platform/speech-recognition.js` | `createCommandReader` | `ler` | `read` |
+| `platform/speech-recognition.js` | `HeardCommand` | `nome` | `name` |
+| `platform/speech-recognition.js` | `HeardCommand` | `palavra` | `word` |
+| `platform/speech-recognition.js` | `HeardCommand` | `tipo` | `kind` |
+| `platform/speech-recognition.js` | `RecognitionRoute` | `estado` | `status` |
+| `platform/speech-recognition.js` | `RecognitionRoute` | `rota` | `route` |
+| `platform/tts.js` | `Tts` | `kokoroDispositivo` | `kokoroDevice` |
+| `platform/tts.js` | `createTts` | `kokoroDispositivo` | `kokoroDevice` |
+| `platform/tts.js` | `Tts` | `neuralDisponivel` | `neuralAvailable` |
+| `platform/tts.js` | `createTts` | `neuralDisponivel` | `neuralAvailable` |
+| `platform/tts.js` | `Tts` | `setVoz` | `setVoice` |
+| `platform/tts.js` | `Tts` | `vozAtual` | `currentVoice` |
+| `platform/tts.js` | `Tts` | `vozes` | `voices` |
+| `platform/tts.js` | `TtsCtx` | `criarAudio` | `createAudio` |
+| `platform/tts.js` | `speakByWav` | `falar` | `speak` |
+| `platform/tts.js` | `speakByWav` | `taxa` | `rate` |
+| `ui/voice-settings.js` | `PanelVoice` | `boa` | `recommended` |
+| `ui/voice-settings.js` | `TtsPanel` | `neuralDisponivel` | `neuralAvailable` |
+| `ui/voice-settings.js` | `TtsPanel` | `setVoz` | `setVoice` |
+| `ui/voice-settings.js` | `TtsPanel` | `vozAtual` | `currentVoice` |
+| `ui/voice-settings.js` | `TtsPanel` | `vozes` | `voices` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

@@ -1242,7 +1242,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // the ☰, the bar's first icon (interface log 2026-09-16): the SELECT door, where there is a card to open. Hoisted, read at the press.
     ...(pauseUsable ? { abrirMenus: (i: number) => { openSeatMenus(i); } } : {}),
     // no voice speaks the current language: the narration icon locks like the panel's rows (ADR-0185)
-    semVoz: () => tts.vozes().length === 0,
+    semVoz: () => tts.voices().length === 0,
     /*
      * ✅ A MESMA LISTA DO TECLADO (issue #147, consertada em 2026-09-12).
      *
@@ -2151,11 +2151,11 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ A RESPOSTA, E NÃO A TABELA (#104). O `platform/audio-sonar` recebia o `VIZ_BY_KEY` e atravessava-o
     // com `pl.viz`; ele deixou de saber o que é um modo visual, e quem responde é aqui — a raiz é a única
     // camada que conhece os dois eixos E pode importar de `render/`.
-    visaoComprometida: (pl) => {
+    visionImpaired: (pl) => {
       const v = (pl as { visual?: VisualState }).visual;
       return !!v && (isBlind(v) || isLowVision(v));
     },
-    getModoCego: readBlindMode, LOGICAL_W,
+    getBlindMode: readBlindMode, LOGICAL_W,
     // O jogador DERIVADO do foco: campo 4 respondendo "onde a criança está". Um jogo que não fornece lista
     // ainda tem sonar, e é isso que faz a pilha de acessibilidade não ser acessório.
     getPlayers: cartridge.sonarPlayers ?? (() => {
@@ -3623,8 +3623,8 @@ export function createGame(o: CreateGameOptions): Engine {
       // 📌 AND THE COMMAND MODEL IS ASKED FOR WITHOUT ASKING THE GAME (issue #184): a child who says «menu» instead of pressing
       // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). A delivery built without
       // `--commands` simply has none, this background fetch fails quietly, and the transport says so when she turns it on.
-      apenas: heavyAtBoot({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47() }),
-      aoProgredir: o.aoProgredirPesados,
+      only: heavyAtBoot({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47() }),
+      onProgress: o.aoProgredirPesados,
     })
       .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });
   }

@@ -68,7 +68,7 @@ function issuesAbertas() {
     ], { encoding: 'utf8', maxBuffer: 1 << 28 });
     return JSON.parse(out);
   } catch (e) {
-    return { erro: e instanceof Error ? e.message : String(e) };
+    return { error: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -81,9 +81,9 @@ function main() {
   // 🛑 DORMENTE E EM VOZ ALTA: sem `gh`, sem rede ou sem acesso, o censo não mediu NADA — e dizer «0 problemas»
   // aqui seria exactamente a mentira que o ficheiro existe para não contar. ⚠️ E um 404 sem autenticação não é
   // ausência: é falta de acesso, que já custou a este projecto um plano refeito em cima de um vazio.
-  if (dados.erro) {
+  if (dados.error) {
     console.log('censo de issues: DORMENTE — não consegui ler o tracker.');
-    console.log(`  motivo: ${dados.erro.split('\n')[0]}`);
+    console.log(`  motivo: ${dados.error.split('\n')[0]}`);
     console.log('  ⚠️ isto NÃO é «zero problemas»: é zero medições. Corra com `gh auth status` a passar.');
     process.exit(0);
   }

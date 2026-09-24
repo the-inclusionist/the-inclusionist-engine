@@ -47,17 +47,17 @@ describe('measuring what the world flashes', () => {
   it('🔴 [Right] a canvas flashing 6 times a second fails, and `problems` says so', async () => {
     piscando = 6;
     const r = await motor.medirFlashes(1600);
-    expect(r.lido, r.motivo).toBe(true);
-    expect(r.passa, `worst second ${r.piorSegundo}`).toBe(false);
-    expect(r.piorSegundo).toBeGreaterThanOrEqual(5);
+    expect(r.measured, r.reason).toBe(true);
+    expect(r.passes, `worst second ${r.worstSecond}`).toBe(false);
+    expect(r.worstSecond).toBeGreaterThanOrEqual(5);
     expect(motor.problems.some((p) => /2\.3\.1/.test(p)), 'the failure is not in problems').toBe(true);
   });
 
   it('🎯 [Boundary] a canvas flashing twice a second passes', async () => {
     piscando = 2;
     const r = await motor.medirFlashes(1600);
-    expect(r.lido, r.motivo).toBe(true);
-    expect(r.passa, `worst second ${r.piorSegundo}`).toBe(true);
+    expect(r.measured, r.reason).toBe(true);
+    expect(r.passes, `worst second ${r.worstSecond}`).toBe(true);
   });
 
   it('🎯 [Boundary] luminance is RELATIVE luminance: grey 128↔100 at 6/s is a change of 0.089, no flash', async () => {
@@ -66,8 +66,8 @@ describe('measuring what the world flashes', () => {
     piscando = 6;
     const r = await motor.medirFlashes(1600);
     cores = ['#fff', '#000'];
-    expect(r.lido, r.motivo).toBe(true);
-    expect(r.passa, `worst second ${r.piorSegundo}: the colours were read as raw sRGB`).toBe(true);
+    expect(r.measured, r.reason).toBe(true);
+    expect(r.passes, `worst second ${r.worstSecond}: the colours were read as raw sRGB`).toBe(true);
   });
 
   it('🎯 [Boundary] a dim flicker #000↔#141414 at 6/s is a change of 0.007 — the cell is an AVERAGE of its pixels', async () => {
@@ -75,17 +75,17 @@ describe('measuring what the world flashes', () => {
     piscando = 6;
     const r = await motor.medirFlashes(1600);
     cores = ['#fff', '#000'];
-    expect(r.lido, r.motivo).toBe(true);
-    expect(r.passa, `worst second ${r.piorSegundo}: a cell summed its pixels instead of averaging them`).toBe(true);
+    expect(r.measured, r.reason).toBe(true);
+    expect(r.passes, `worst second ${r.worstSecond}: a cell summed its pixels instead of averaging them`).toBe(true);
   });
 
   it('🎯 [Zero] a canvas that reads transparent is NOT READ — never a pass by silence', async () => {
     piscando = 0;
     await new Promise((res) => setTimeout(res, 50));
     const r = await motor.medirFlashes(400);
-    expect(r.lido, 'an unreadable canvas was reported as read').toBe(false);
-    expect(r.passa, 'an unreadable canvas passed').toBeUndefined();
-    expect(r.motivo).toMatch(/transparent|preserveDrawingBuffer/);
+    expect(r.measured, 'an unreadable canvas was reported as read').toBe(false);
+    expect(r.passes, 'an unreadable canvas passed').toBeUndefined();
+    expect(r.reason).toMatch(/transparent|preserveDrawingBuffer/);
   });
 
   it('🎯 [Zero] a world that is not a canvas and holds none is not read, and says why', async () => {
@@ -95,8 +95,8 @@ describe('measuring what the world flashes', () => {
       host: { doc: document, win: window }, downloadHeavy: false,
     });
     const r = await sem.medirFlashes(100);
-    expect(r.lido).toBe(false);
-    expect(r.motivo).toMatch(/not a canvas/);
+    expect(r.measured).toBe(false);
+    expect(r.reason).toMatch(/not a canvas/);
   });
 });
 

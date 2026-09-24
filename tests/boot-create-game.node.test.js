@@ -194,7 +194,7 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
   // podia montar a navegacao de menu e nao a ligar sem que nada ficasse vermelho — e foi o que aconteceu.
   const ouvintes = [];
   const win = {
-    addEventListener: (tipo, fn, captura) => { ouvintes.push({ tipo, fn, captura }); },
+    addEventListener: (tipo, fn, captura) => { ouvintes.push({ type: tipo, fn, captura }); },
     getComputedStyle: () => ({ zIndex: '0' }),
   };
   return { doc, win, ouvintes };
@@ -753,7 +753,7 @@ describe('createGame em execução', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win, ouvintes } = domFalso();
     createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
-    const nav = ouvintes.filter((o) => o.tipo === 'keydown' && o.captura === true);
+    const nav = ouvintes.filter((o) => o.type === 'keydown' && o.captura === true);
     expect(nav.length, 'a navegacao de menu voltou a ficar desligada').toBeGreaterThan(0);
   });
 
@@ -778,7 +778,7 @@ describe('createGame em execução', () => {
 
     let impedido = false;
     const tab = { key: 'Tab', shiftKey: false, preventDefault: () => { impedido = true; } };
-    for (const o of ouvintes) if (o.tipo === 'keydown' && o.captura === true) o.fn(tab);
+    for (const o of ouvintes) if (o.type === 'keydown' && o.captura === true) o.fn(tab);
 
     expect(focados, 'o Tab saiu do dialogo para o jogo por baixo').toEqual(['primeiro']);
     expect(impedido, 'sem preventDefault o navegador move o foco logo a seguir').toBe(true);
@@ -894,7 +894,7 @@ describe('createGame em execução', () => {
     const pedidos = [];
     vi.doMock('../app/js/platform/heavy.js', async (original) => ({
       ...(await original()),
-      downloadHeavy: async ({ apenas }) => { pedidos.push(apenas); },
+      downloadHeavy: async ({ only: apenas }) => { pedidos.push(apenas); },
     }));
     vi.resetModules();
     try {
@@ -923,7 +923,7 @@ describe('createGame em execução', () => {
     const pedidos = [];
     vi.doMock('../app/js/platform/heavy.js', async (original) => ({
       ...(await original()),
-      downloadHeavy: async ({ apenas }) => { pedidos.push(apenas); },
+      downloadHeavy: async ({ only: apenas }) => { pedidos.push(apenas); },
     }));
     vi.resetModules();
     try {

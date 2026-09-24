@@ -29,25 +29,25 @@ export type { HeavyFile };
 /** O que aconteceu com cada entrada, para quem chama poder dizê-lo a uma pessoa. */
 export interface HeavyReport {
   readonly id: string;
-  readonly estado: 'ja-tinha' | 'baixado' | 'falhou' | 'sem-fonte';
+  readonly outcome: 'ja-tinha' | 'baixado' | 'falhou' | 'sem-fonte';
   readonly bytes?: number;
-  readonly erro?: string;
+  readonly error?: string;
 }
 
 export interface HeavyOptions {
   /** `caches` do navegador. Injectado para o gate não precisar de um. */
   readonly cacheStorage?: CacheStorage;
   /** `fetch`. Injectado pela mesma razão. */
-  readonly buscar?: typeof fetch;
+  readonly fetch?: typeof fetch;
   /** Chamado a cada entrada resolvida — é o que deixa a interface dizer o que está a acontecer. */
-  readonly aoProgredir?: (r: HeavyReport) => void;
+  readonly onProgress?: (r: HeavyReport) => void;
   /**
    * The SHA-256 of a body, as lowercase hex (issue #168). Injected for the gate; by default `crypto.subtle`. `null`, or a
    * host without `crypto.subtle` (an insecure context), keeps NOTHING: unverifiable is not verified.
    */
   readonly digest?: ((payload: ArrayBuffer) => Promise<string>) | null;
   /** Só estas ids, se dado. Serve ao consumidor que quer as vozes e não o resto. */
-  readonly apenas?: readonly string[];
+  readonly only?: readonly string[];
   /** The page's address the delivery's `heavy/` folder is resolved against. By default the page's own (`location.href`). */
   readonly base?: string;
 }
@@ -128,13 +128,13 @@ export function deliveryCacheKey(urlOrRequest: string | { readonly request: { re
  * ADR-0119 mediu em falta: a engine PROMETIA quatro coisas e entregava uma, sem nada a dizê-lo.
  */
 export async function downloadHeavy(opcoes: HeavyOptions = {}): Promise<HeavyReport[]> {
-  const targets = opcoes.apenas ? HEAVY_FILES.filter((p) => opcoes.apenas!.includes(p.id)) : HEAVY_FILES;
+  const targets = opcoes.only ? HEAVY_FILES.filter((p) => opcoes.only!.includes(p.id)) : HEAVY_FILES;
   const out: HeavyReport[] = [];
-  const record = (r: HeavyReport): void => { out.push(r); opcoes.aoProgredir?.(r); };
+  const record = (r: HeavyReport): void => { out.push(r); opcoes.onProgress?.(r); };
 
   const { cacheStorage, fetchFile } = hostOf(opcoes);
   if (!cacheStorage || !fetchFile) {
-    for (const p of targets) record({ id: p.id, estado: 'falhou', erro: 'sem Cache Storage ou sem fetch' });
+    for (const p of targets) record({ id: p.id, outcome: 'falhou', error: 'sem Cache Storage ou sem fetch' });
     return out;
   }
   const tools: DownloadTools = { cache: await cacheStorage.open(CACHE_HEAVY), fetchFile, ...checkAndBaseOf(opcoes) };
@@ -154,7 +154,7 @@ interface DownloadTools {
 function hostOf(o: HeavyOptions): { cacheStorage: CacheStorage | undefined; fetchFile: typeof fetch | undefined } {
   return {
     cacheStorage: o.cacheStorage ?? (typeof caches !== 'undefined' ? caches : undefined),
-    fetchFile: o.buscar ?? (typeof fetch !== 'undefined' ? fetch : undefined),
+    fetchFile: o.fetch ?? (typeof fetch !== 'undefined' ? fetch : undefined),
   };
 }
 
@@ -168,16 +168,16 @@ function checkAndBaseOf(o: HeavyOptions): Pick<DownloadTools, 'digest' | 'base'>
 
 /** One file's fate: already kept, fetched from the delivery and checked, or refused — always with the reason. */
 async function fetchOne(p: HeavyFile, t: DownloadTools): Promise<HeavyReport> {
-  if (!p.url) return { id: p.id, estado: 'sem-fonte', erro: p.porQueNaoTemFonte };
+  if (!p.url) return { id: p.id, outcome: 'sem-fonte', error: p.whyNoSource };
   try {
-    if (await t.cache.match(p.url)) return { id: p.id, estado: 'ja-tinha' };
+    if (await t.cache.match(p.url)) return { id: p.id, outcome: 'ja-tinha' };
     // from the delivery's own origin, never from the upstream host (ADR-0177)
     const pathInDelivery = deliveryPath(p.url);
     const resp = await t.fetchFile(t.base ? new URL(pathInDelivery, t.base).href : pathInDelivery);
-    if (!resp.ok) return { id: p.id, estado: 'falhou', erro: `HTTP ${resp.status}` };
+    if (!resp.ok) return { id: p.id, outcome: 'falhou', error: `HTTP ${resp.status}` };
     return await keepIfChecked(p, p.url, resp, t);
   } catch (e) {
-    return { id: p.id, estado: 'falhou', erro: e instanceof Error ? e.message : String(e) };
+    return { id: p.id, outcome: 'falhou', error: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -187,14 +187,14 @@ async function fetchOne(p: HeavyFile, t: DownloadTools): Promise<HeavyReport> {
  * what the voice and vision libraries ask for.
  */
 async function keepIfChecked(p: HeavyFile, url: string, resp: Response, t: DownloadTools): Promise<HeavyReport> {
-  const refused = (reason: string): HeavyReport => ({ id: p.id, estado: 'falhou', erro: reason });
+  const refused = (reason: string): HeavyReport => ({ id: p.id, outcome: 'falhou', error: reason });
   if (!p.sha256) return refused('this entry pins its sha256 nowhere: there is nothing to check it against');
   if (!t.digest) return refused('this host cannot compute a sha256 (crypto.subtle needs a secure context)');
   const body = await resp.arrayBuffer();
   const got = await t.digest(body);
   if (got !== p.sha256) return refused(`sha256 mismatch: expected ${p.sha256}, got ${got} — not kept`);
   await t.cache.put(url, new Response(body, { status: resp.status, statusText: resp.statusText, headers: resp.headers }));
-  return { id: p.id, estado: 'baixado', bytes: p.bytes };
+  return { id: p.id, outcome: 'baixado', bytes: p.bytes };
 }
 
 const canComputeSha256 = (): boolean => !!(globalThis as { crypto?: Crypto }).crypto?.subtle;
@@ -207,6 +207,6 @@ export async function sha256Hex(payload: ArrayBuffer): Promise<string> {
 
 /** O peso do que ainda falta, em bytes — para um aviso poder dizer «faltam 241 MB» antes de começar. */
 export function bytesLeftToDownload(soFar: readonly HeavyReport[]): number {
-  const feitos = new Set(soFar.filter((r) => r.estado === 'ja-tinha' || r.estado === 'baixado').map((r) => r.id));
+  const feitos = new Set(soFar.filter((r) => r.outcome === 'ja-tinha' || r.outcome === 'baixado').map((r) => r.id));
   return HEAVY_FILES.filter((p) => p.url && !feitos.has(p.id)).reduce((s, p) => s + (p.bytes ?? 0), 0);
 }

@@ -130,6 +130,9 @@ function apply(layer) {
   const everyEntry = Object.assign({}, ...Object.values(map.layers));
   for (const [key, to] of entries) {
     const decl = findDeclaration(program, key);
+    // Already applied: the declaration answers to the NEW name at the same path. A layer can be re-run after an entry is
+    // added to it — which is how a mirror found late joins the layer it mirrors.
+    if (!decl && findDeclaration(program, key.replace(/[^.\s]+$/, to))) continue;
     if (!decl) { refusals.push(`${key}: no such member declaration`); continue; }
     const file = decl.getSourceFile().fileName;
     const locs = service.findRenameLocations(file, decl.name.getStart(), false, false, { providePrefixAndSuffixTextForRename: true }) ?? [];
@@ -171,20 +174,38 @@ function apply(layer) {
  * `tests/`. The language service follows a member through its TYPE; an object nothing types (a JS helper in a test that
  * builds `{ t, luminancias }`) is invisible to it, and the module then reads `undefined` without failing anything.
  *
- * Two things are not leftovers, each for a stated reason:
+ * Three things are not leftovers, each for a stated reason:
  *   · an old spelling that is STILL DECLARED as a member somewhere (a layer not yet applied, or an excluded stored shape):
  *     its accesses may be the other type's. The check tightens by itself as the layers land.
  *   · the object passed as the params of a `t(…)` call: its keys are interpolation keys, written in three dictionaries.
- *   · a (file, name) the map lists under `dataReads`: a field of DATA this tree reads but does not own — the Dev's
- *     typographic catalogue calls a family `familia`, and that JSON is not to be edited. Listed one file at a time, with
- *     the reason, so an exemption can never cover a module that did not ask for it.
+ *   · a (file, name) the map lists under `dataKeys`: a key of DATA, not a member name — the Dev's
+ *     typographic catalogue calls a family `familia` (a JSON not to be edited), and the pause's action ids (`tipo`) are the
+ *     `data-act` values games read. Listed one file at a time, with the reason, so an exemption can never cover a module
+ *     that did not ask for it.
  */
+/**
+ * Is this string literal type a MEMBER NAME, and not a value? `Pick<T, 'x'>`, `Omit<T, 'x'>` and `T['x']` name a member;
+ * `kind: 'palavra' | 'item'` is a union of VALUES, which phase 7 does not rename. 📏 Measured on the platform layer: without
+ * this, the gate called the value `'palavra'` of `HeardCommand.kind` a leftover of the member `palavra`.
+ */
+function namesAMember(lit) {
+  let n = lit.parent;
+  while (n && ts.isUnionTypeNode(n)) n = n.parent; // Pick<T, 'a' | 'b'>
+  if (n && ts.isIndexedAccessTypeNode(n)) return true;
+  return !!n && ts.isTypeReferenceNode(n) && /^(Pick|Omit)$/.test(n.typeName.getText()) && n.typeArguments?.[0] !== lit;
+}
+
 export function leftovers() {
   const map = readMap();
   const applied = Object.assign({}, ...map.layersApplied.map((l) => map.layers[l] ?? {}));
   const oldNames = new Set(Object.keys(applied).map((k) => k.split('.').at(-1)));
   const cfg = ts.getParsedCommandLineOfConfigFile(join(ROOT, 'tsconfig.json'), {}, { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} });
-  const sources = cfg.fileNames.filter((f) => !f.includes('/app/js/i18n/'))
+  // `scripts/` is outside the tsconfig, so outside the language service — and the delivery `bin` lives there. 📏 Measured on
+  // the platform layer: its report rows and its `fetch` option were invisible to both the rename and this gate. The tool
+  // and the map themselves are left out: they carry the old names as DATA, by design.
+  const scripts = ts.sys.readDirectory(join(ROOT, 'scripts'), ['.mjs', '.js'], undefined, undefined, 1)
+    .filter((f) => !/apply-member-rename|\.tmp\./.test(f));
+  const sources = [...cfg.fileNames, ...scripts].filter((f) => !f.includes('/app/js/i18n/'))
     .map((f) => ts.createSourceFile(f, readFileSync(f, 'utf8'), ts.ScriptTarget.Latest, true, f.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.JS));
   const stillDeclared = new Set();
   for (const sf of sources) (function walk(n) {
@@ -202,9 +223,9 @@ export function leftovers() {
     else if (ts.isPropertyAccessExpression(n)) { name = n.name.text; kind = 'access'; }
     else if (ts.isBindingElement(n) && n.propertyName && ts.isIdentifier(n.propertyName)) { name = n.propertyName.text; kind = 'destructured'; }
     else if (ts.isBindingElement(n) && !n.propertyName && ts.isIdentifier(n.name) && ts.isObjectBindingPattern(n.parent)) { name = n.name.text; kind = 'destructured'; }
-    else if (ts.isLiteralTypeNode(n) && ts.isStringLiteral(n.literal)) { name = n.literal.text; kind = 'string in a type'; }
+    else if (ts.isLiteralTypeNode(n) && ts.isStringLiteral(n.literal) && namesAMember(n)) { name = n.literal.text; kind = 'string in a type'; }
     const file = relative(ROOT, sf.fileName).split('\\').join('/');
-    if (name && watched.has(name) && !map.dataReads?.[`${file} ${name}`]) {
+    if (name && watched.has(name) && !map.dataKeys?.[`${file} ${name}`]) {
       const { line } = sf.getLineAndCharacterOfPosition(n.getStart(sf));
       out.push({ file, line: line + 1, name, kind });
     }

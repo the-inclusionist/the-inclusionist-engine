@@ -49,8 +49,8 @@ describe('the neural voice, loaded by the engine', () => {
   it('🔴 [Right] every piece is loaded from the delivery on the page\'s own origin — never from a CDN', async () => {
     const { deps, imported, fetched } = build();
     const kokoro = await loadKokoroRuntime(deps);
-    await kokoro.fonemizar('as mãos dadas', 'pt-br');
-    await kokoro.vocabulario();
+    await kokoro.phonemize('as mãos dadas', 'pt-br');
+    await kokoro.vocabulary();
     for (const url of [...imported, ...fetched]) {
       expect(url.startsWith(BASE), `${url} was not asked of the page's own origin`).toBe(true);
       expect(url).toContain('/heavy/');
@@ -70,9 +70,9 @@ describe('the neural voice, loaded by the engine', () => {
   it('📌 [Boundary] the phonemizer\'s wasm is compiled ONCE, however many sentences are spoken', async () => {
     const { deps, fetched } = build();
     const kokoro = await loadKokoroRuntime(deps);
-    await kokoro.fonemizar('uma', 'pt-br');
-    await kokoro.fonemizar('duas', 'pt-br');
-    await kokoro.fonemizar('três', 'pt-br');
+    await kokoro.phonemize('uma', 'pt-br');
+    await kokoro.phonemize('duas', 'pt-br');
+    await kokoro.phonemize('três', 'pt-br');
     expect(fetched.filter((u) => u.endsWith('espeak-ng.wasm')), 'the 18 MiB wasm was fetched again for each sentence').toHaveLength(1);
   });
 
@@ -88,7 +88,7 @@ describe('the neural voice, loaded by the engine', () => {
   it('📌 [Right] espeak-ng loads whether it default-exports its factory or is the factory', async () => {
     for (const espeakExport of ['default', 'bare']) {
       const { deps } = build({ espeakExport });
-      expect(await (await loadKokoroRuntime(deps)).fonemizar('oi', 'pt-br')).toBe('fonemas');
+      expect(await (await loadKokoroRuntime(deps)).phonemize('oi', 'pt-br')).toBe('fonemas');
     }
   });
 

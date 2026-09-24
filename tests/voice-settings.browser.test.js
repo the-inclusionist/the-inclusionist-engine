@@ -41,8 +41,8 @@ function mount({ voices = [{ voice: 'pf_dora' }, { voice: 'pm_alex' }], setVozOk
       getEngine: () => (engine ? { id: 'kokoro', speak: (x) => spoken.push(x) } : null),
       getVoiceObj: () => rec.voiceObj ?? null, setVoiceObj: (v) => { rec.voiceObj = v; },
       loadTTS: () => { rec.loadTTS++; }, narrate: (m) => narrated.push(m),
-      vozes: () => voices, vozAtual: () => current,
-      setVoz: (id) => { if (!setVozOk) return false; current = voices.find((v) => v.voice === id) ?? current; return true; },
+      voices: () => voices, currentVoice: () => current,
+      setVoice: (id) => { if (!setVozOk) return false; current = voices.find((v) => v.voice === id) ?? current; return true; },
     },
   };
   const ports = {

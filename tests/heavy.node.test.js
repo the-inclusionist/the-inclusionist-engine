@@ -41,12 +41,12 @@ const digestPelaUrl = async (buf) => {
 describe('o buscador das coisas pesadas', () => {
   it('🎯 [Zero] o que NÃO tem fonte devolve `sem-fonte` COM a razão — nunca é saltado em silêncio', async () => {
     const f = cacheFalsa();
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
-    const sem = r.filter((x) => x.estado === 'sem-fonte');
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: digestPelaUrl });
+    const sem = r.filter((x) => x.outcome === 'sem-fonte');
     expect(sem.map((x) => x.id).sort(), 'só a arte continua sem acervo — a visão ganhou fonte no ADR-0124/0132, e o ADR-0133 fechou a lista de licenças sem escolher de onde a arte vem').toEqual(['arte:acervo']);
     for (const s of sem) {
-      expect(s.erro, `${s.id} não diz PORQUE não tem fonte`).toBeTruthy();
-      expect(s.erro.length, `${s.id} tem uma razão curta demais para servir a alguém`).toBeGreaterThan(40);
+      expect(s.error, `${s.id} não diz PORQUE não tem fonte`).toBeTruthy();
+      expect(s.error.length, `${s.id} tem uma razão curta demais para servir a alguém`).toBeGreaterThan(40);
     }
   });
 
@@ -61,8 +61,8 @@ describe('o buscador das coisas pesadas', () => {
   it('📌 [Boundary] o que já está na cache não é buscado outra vez — isto corre em TODO arranque', async () => {
     const primeiro = HEAVY_FILES.find((p) => p.url).url;
     const f = cacheFalsa([primeiro]);
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
-    expect(r.find((x) => x.estado === 'ja-tinha'), 'não reconheceu o que já tinha').toBeTruthy();
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: digestPelaUrl });
+    expect(r.find((x) => x.outcome === 'ja-tinha'), 'não reconheceu o que já tinha').toBeTruthy();
     expect(f.postos.includes(primeiro), 'voltou a gravar o que já estava lá').toBe(false);
   });
 
@@ -70,15 +70,15 @@ describe('o buscador das coisas pesadas', () => {
     const f = cacheFalsa();
     let n = 0;
     const buscar = async (u) => { n += 1; if (n === 1) throw new Error('rede caiu'); return resposta(urlDe(u)); };
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl });
-    expect(r.filter((x) => x.estado === 'falhou').length, 'a falha não foi reportada').toBe(1);
-    expect(r.filter((x) => x.estado === 'baixado').length, 'a lista parou na primeira falha').toBe(HEAVY_FILES.filter((p) => p.url).length - 1);
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscar, digest: digestPelaUrl });
+    expect(r.filter((x) => x.outcome === 'falhou').length, 'a falha não foi reportada').toBe(1);
+    expect(r.filter((x) => x.outcome === 'baixado').length, 'a lista parou na primeira falha').toBe(HEAVY_FILES.filter((p) => p.url).length - 1);
   });
 
   it('[Interface] `apenas` limita a lista — um consumidor pode querer só as vozes', async () => {
     const f = cacheFalsa();
     const id = HEAVY_FILES.find((p) => p.url).id;
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl, apenas: [id] });
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: digestPelaUrl, only: [id] });
     expect(r.map((x) => x.id)).toEqual([id]);
   });
 
@@ -93,13 +93,13 @@ describe('o buscador das coisas pesadas', () => {
     // a device actually fetches is `heavyAtBoot`, which asks for one language and for what the game declared.
     expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1363);
     const f = cacheFalsa();
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: digestPelaUrl });
     expect(bytesLeftToDownload(r), 'depois de tudo descer não falta nada').toBe(0);
   });
 
   it('⚠️ [Zero] sem Cache Storage nada rebenta — reporta e devolve', async () => {
-    const r = await downloadHeavy({ cacheStorage: undefined, buscar: buscarOk() });
-    expect(r.every((x) => x.estado === 'falhou' || x.estado === 'sem-fonte')).toBe(true);
+    const r = await downloadHeavy({ cacheStorage: undefined, fetch: buscarOk() });
+    expect(r.every((x) => x.outcome === 'falhou' || x.outcome === 'sem-fonte')).toBe(true);
   });
 
   it('📌 o nome da cache é versionado', () => {
@@ -117,17 +117,17 @@ describe('what the report SAYS when a file does not arrive (probed 2026-09-23)',
   const alvo = HEAVY_FILES.find((p) => p.url);
 
   it('🔴 [Zero] without Cache Storage EVERY file is reported, with the reason — the case above passed on an empty list', async () => {
-    const r = await downloadHeavy({ cacheStorage: undefined, buscar: buscarOk() });
+    const r = await downloadHeavy({ cacheStorage: undefined, fetch: buscarOk() });
     expect(r.length, '`every` on an empty list is true: nothing was reported').toBe(HEAVY_FILES.length);
-    expect(r.every((x) => x.estado === 'falhou' && /Cache Storage/.test(x.erro))).toBe(true);
+    expect(r.every((x) => x.outcome === 'falhou' && /Cache Storage/.test(x.error))).toBe(true);
   });
 
   it('🔴 [Zero] without fetch the same — and the cache is never opened', async () => {
     vi.stubGlobal('fetch', undefined);
     try {
       const f = cacheFalsa();
-      const r = await downloadHeavy({ cacheStorage: f.cacheStorage, apenas: [alvo.id] });
-      expect(r).toEqual([{ id: alvo.id, estado: 'falhou', erro: 'sem Cache Storage ou sem fetch' }]);
+      const r = await downloadHeavy({ cacheStorage: f.cacheStorage, only: [alvo.id] });
+      expect(r).toEqual([{ id: alvo.id, outcome: 'falhou', error: 'sem Cache Storage ou sem fetch' }]);
       expect(f.cache._nome, 'a cache was opened on a host that cannot fetch into it').toBeUndefined();
     } finally {
       vi.unstubAllGlobals();
@@ -139,8 +139,8 @@ describe('what the report SAYS when a file does not arrive (probed 2026-09-23)',
     let lido = false;
     const buscar = async () => ({ ok: false, status: 404, statusText: 'Not Found', headers: new Headers(),
       arrayBuffer: async () => { lido = true; return new ArrayBuffer(0); } });
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id] });
-    expect(r[0]).toEqual({ id: alvo.id, estado: 'falhou', erro: 'HTTP 404' });
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscar, digest: digestPelaUrl, only: [alvo.id] });
+    expect(r[0]).toEqual({ id: alvo.id, outcome: 'falhou', error: 'HTTP 404' });
     expect(lido, 'the body of an error page was read and hashed').toBe(false);
     expect(f.postos).toEqual([]);
   });
@@ -148,17 +148,17 @@ describe('what the report SAYS when a file does not arrive (probed 2026-09-23)',
   it('📌 [Right] a thrown error is reported by its MESSAGE, not by its class name', async () => {
     const f = cacheFalsa();
     const buscar = async () => { throw new Error('rede caiu'); };
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id] });
-    expect(r[0].erro).toBe('rede caiu');
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscar, digest: digestPelaUrl, only: [alvo.id] });
+    expect(r[0].error).toBe('rede caiu');
   });
 
   it('📌 [Right] a downloaded file reports its measured size, and progress hears every report as it happens', async () => {
     const f = cacheFalsa();
     const ouvidos = [];
     const [a, b] = HEAVY_FILES.filter((p) => p.url);
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl,
-      apenas: [a.id, b.id], aoProgredir: (x) => ouvidos.push(x) });
-    expect(r[0]).toEqual({ id: a.id, estado: 'baixado', bytes: a.bytes });
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: digestPelaUrl,
+      only: [a.id, b.id], onProgress: (x) => ouvidos.push(x) });
+    expect(r[0]).toEqual({ id: a.id, outcome: 'baixado', bytes: a.bytes });
     expect(ouvidos, 'the progress callback did not hear every report, in order').toEqual(r);
   });
 
@@ -166,7 +166,7 @@ describe('what the report SAYS when a file does not arrive (probed 2026-09-23)',
     const guardados = new Map();
     const cacheStorage = { open: async () => ({ match: async () => undefined, put: async (u, resp) => { guardados.set(u, resp); } }) };
     const buscar = async (u) => ({ ...resposta(urlDe(u)), headers: new Headers({ 'content-type': 'application/wasm' }) });
-    await downloadHeavy({ cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id] });
+    await downloadHeavy({ cacheStorage, fetch: buscar, digest: digestPelaUrl, only: [alvo.id] });
     expect(guardados.get(alvo.url)?.headers.get('content-type')).toBe('application/wasm');
   });
 });
@@ -195,31 +195,31 @@ describe('what comes from outside is checked before it is kept (issue #168; STRI
     const f = cacheFalsa();
     const [alvo, outro] = HEAVY_FILES.filter((p) => p.url);
     const buscar = async (u) => (urlDe(u) === alvo.url ? resposta(u, new TextEncoder().encode('altered').buffer) : resposta(urlDe(u)));
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id, outro.id] });
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscar, digest: digestPelaUrl, only: [alvo.id, outro.id] });
     expect(f.postos.includes(alvo.url), 'the altered body entered the cache').toBe(false);
     const dele = r.find((x) => x.id === alvo.id);
-    expect(dele.estado).toBe('falhou');
-    expect(dele.erro, 'the report does not say it was the integrity check').toMatch(/sha256/);
-    expect(r.find((x) => x.id === outro.id).estado, 'one refusal stopped the list').toBe('baixado');
+    expect(dele.outcome).toBe('falhou');
+    expect(dele.error, 'the report does not say it was the integrity check').toMatch(/sha256/);
+    expect(r.find((x) => x.id === outro.id).outcome, 'one refusal stopped the list').toBe('baixado');
   });
 
   it('🔴 [Right] with no injected digest, the REAL one runs — a body that is not the file is refused', async () => {
     const f = cacheFalsa();
     const alvo = HEAVY_FILES.find((p) => p.url);
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar: buscarOk(), apenas: [alvo.id] });
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), only: [alvo.id] });
     expect(f.postos, 'the default path kept a body without hashing it').toEqual([]);
     // the hash it reports is the body's real SHA-256 — a broken default that hashed to anything would still refuse
     const real = createHash('sha256').update(alvo.url).digest('hex');
-    expect(r[0].erro, 'the reported hash is not the body\'s real SHA-256').toContain(`got ${real}`);
+    expect(r[0].error, 'the reported hash is not the body\'s real SHA-256').toContain(`got ${real}`);
   });
 
   it('🎯 [Zero] a host that cannot hash keeps NOTHING — unverifiable is not verified', async () => {
     const f = cacheFalsa();
     const alvo = HEAVY_FILES.find((p) => p.url);
-    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: null, apenas: [alvo.id] });
+    const r = await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscarOk(), digest: null, only: [alvo.id] });
     expect(f.postos).toEqual([]);
-    expect(r[0].estado).toBe('falhou');
-    expect(r[0].erro, 'the report does not say the host cannot hash').toMatch(/cannot compute a sha256/);
+    expect(r[0].outcome).toBe('falhou');
+    expect(r[0].error, 'the report does not say the host cannot hash').toMatch(/cannot compute a sha256/);
   });
 
   it('🔴 [Right] the default digest IS SHA-256 — the FIPS 180-2 vector for «abc»', async () => {
@@ -245,7 +245,7 @@ describe('the heavy files come from the delivery\'s own origin (ADR-0177, issue 
     const pedidos = [];
     const buscar = async (u) => { pedidos.push(u); return resposta(urlDe(u.slice('https://escola.example/jogo/'.length))); };
     const alvo = HEAVY_FILES.find((p) => p.url);
-    await downloadHeavy({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id], base: 'https://escola.example/jogo/' });
+    await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscar, digest: digestPelaUrl, only: [alvo.id], base: 'https://escola.example/jogo/' });
     expect(pedidos, 'the download asked a third party').toEqual([`https://escola.example/jogo/${deliveryPath(alvo.url)}`]);
     expect(f.postos, 'the file is not kept under the address the libraries ask for').toEqual([alvo.url]);
   });
@@ -254,7 +254,7 @@ describe('the heavy files come from the delivery\'s own origin (ADR-0177, issue 
     const f = cacheFalsa();
     const hosts = new Set();
     const buscar = async (u) => { hosts.add(new URL(u).host); return resposta(urlDe(new URL(u).pathname.slice(1))); };
-    await downloadHeavy({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, base: 'https://escola.example/' });
+    await downloadHeavy({ cacheStorage: f.cacheStorage, fetch: buscar, digest: digestPelaUrl, base: 'https://escola.example/' });
     expect([...hosts]).toEqual(['escola.example']);
   });
 

@@ -32,37 +32,37 @@ const sha256DoNode = (buf) => createHash('sha256').update(Buffer.from(buf)).dige
  * Fetches, checks and writes every entry with an address. Returns one line per entry; `ok` is false when any file failed.
  * Everything is injected so a gate can run it without the network.
  */
-export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, buscar = fetch, sha256 = sha256DoNode,
+export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, fetch: buscar = fetch, sha256 = sha256DoNode,
   base = '', fonteDe = (url) => url, lerLocal = (caminho) => readFileSync(caminho) }) {
   const linhas = [];
   for (const p of pesados) {
-    if (!p.url) { linhas.push({ id: p.id, estado: 'sem-fonte' }); continue; }
+    if (!p.url) { linhas.push({ id: p.id, outcome: 'sem-fonte' }); continue; }
     const alvo = join(destino, deliveryPath(p.url));
-    if (existsSync(alvo) && sha256(readFileSync(alvo)) === p.sha256) { linhas.push({ id: p.id, estado: 'ja-tinha' }); continue; }
+    if (existsSync(alvo) && sha256(readFileSync(alvo)) === p.sha256) { linhas.push({ id: p.id, outcome: 'ja-tinha' }); continue; }
     const fonte = fonteDe(p.url, base);
     const daRede = /^https?:\/\//i.test(fonte);
     try {
       let corpo;
       if (daRede) {
         const resp = await buscar(fonte);
-        if (!resp.ok) { linhas.push({ id: p.id, estado: 'falhou', erro: `HTTP ${resp.status} — ${fonte}` }); continue; }
+        if (!resp.ok) { linhas.push({ id: p.id, outcome: 'falhou', error: `HTTP ${resp.status} — ${fonte}` }); continue; }
         corpo = await resp.arrayBuffer();
       } else {
         corpo = lerLocal(fonte);
       }
       const obtido = sha256(corpo);
       if (!p.sha256 || obtido !== p.sha256) {
-        linhas.push({ id: p.id, estado: 'falhou', erro: `sha256 mismatch at ${fonte}: expected ${p.sha256}, got ${obtido} — not written` });
+        linhas.push({ id: p.id, outcome: 'falhou', error: `sha256 mismatch at ${fonte}: expected ${p.sha256}, got ${obtido} — not written` });
         continue;
       }
       mkdirSync(dirname(alvo), { recursive: true });
       writeFileSync(alvo, Buffer.from(corpo));
-      linhas.push({ id: p.id, estado: 'escrito', bytes: corpo.byteLength });
+      linhas.push({ id: p.id, outcome: 'escrito', bytes: corpo.byteLength });
     } catch (e) {
-      linhas.push({ id: p.id, estado: 'falhou', erro: e instanceof Error ? e.message : String(e) });
+      linhas.push({ id: p.id, outcome: 'falhou', error: e instanceof Error ? e.message : String(e) });
     }
   }
-  return { ok: linhas.every((l) => l.estado !== 'falhou'), linhas };
+  return { ok: linhas.every((l) => l.outcome !== 'falhou'), linhas };
 }
 
 /**
@@ -115,6 +115,6 @@ if (executado) {
   const { ok, linhas } = await levarPesadosParaEntrega({
     destino, pesados: HEAVY_FILES.filter((p) => ids.includes(p.id)), deliveryPath, base, fonteDe: heavySourceOf,
   });
-  for (const l of linhas) console.log(`${l.estado.padEnd(9)} ${l.id}${l.erro ? ` — ${l.erro}` : ''}`);
+  for (const l of linhas) console.log(`${l.outcome.padEnd(9)} ${l.id}${l.error ? ` — ${l.error}` : ''}`);
   if (!ok) { console.error('a heavy file failed: the delivery is incomplete, and nothing unchecked was written'); process.exit(1); }
 }

@@ -1123,18 +1123,18 @@
     ],
     "interface LiveGuide": [
       "ac",
-      "desdeARota",
-      "filtro",
-      "ganho",
+      "filter",
+      "framesSinceRoute",
+      "gain",
       "osc",
       "pan",
       "panner",
-      "passos"
+      "steps"
     ],
     "interface PlayerAudioOut": [
       "_ac?",
       "_acOut?",
-      "_guia?"
+      "_guide?"
     ],
     "interface PlayerCtxOut": [
       "ac"
@@ -1145,7 +1145,7 @@
       "catNode?",
       "getAudioCat",
       "getAudioCtx",
-      "getModoCego",
+      "getBlindMode",
       "getNumPlayers",
       "getPlayers",
       "getSoundOn",
@@ -1157,7 +1157,7 @@
       "targetsOf",
       "tonePan",
       "topology",
-      "visaoComprometida"
+      "visionImpaired"
     ],
     "interface AudioSonar": [
       "guideCount",
@@ -1172,10 +1172,10 @@
   },
   "platform/flash-sampler.ts": {
     "interface FlashMeasurement": [
-      "lido",
-      "motivo?",
-      "passa?",
-      "piorSegundo?"
+      "measured",
+      "passes?",
+      "reason?",
+      "worstSecond?"
     ],
     "interface FlashSamplerCtx": [
       "canvas",
@@ -1186,7 +1186,7 @@
   },
   "platform/guide-intensity.ts": {
     "interface Intensity": [
-      "corte",
+      "cutoff",
       "volume"
     ]
   },
@@ -1194,37 +1194,37 @@
     "interface HeavyFile": [
       "bytes?",
       "id",
-      "porQueNaoTemFonte?",
       "sha256?",
-      "url"
+      "url",
+      "whyNoSource?"
     ]
   },
   "platform/heavy.ts": {
     "interface HeavyReport": [
       "bytes?",
-      "erro?",
-      "estado",
-      "id"
+      "error?",
+      "id",
+      "outcome"
     ],
     "interface HeavyOptions": [
-      "aoProgredir?",
-      "apenas?",
       "base?",
-      "buscar?",
       "cacheStorage?",
-      "digest?"
+      "digest?",
+      "fetch?",
+      "onProgress?",
+      "only?"
     ]
   },
   "platform/interruptible-speech.ts": {
     "interface SpeechEngine": [
-      "parar",
-      "sintetizar",
-      "tocar"
+      "play",
+      "stop",
+      "synthesize"
     ],
     "interface InterruptibleSpeech": [
-      "calar",
-      "falando",
-      "falar"
+      "silence",
+      "speak",
+      "speaking"
     ]
   },
   "platform/kokoro-port.ts": {
@@ -1251,18 +1251,18 @@
   },
   "platform/kokoro.ts": {
     "interface KokoroSession": [
-      "sintetizar"
+      "synthesize"
     ],
     "interface KokoroModule": [
-      "fonemizar",
-      "sessao",
-      "vocabulario",
-      "voz"
+      "phonemize",
+      "session",
+      "vocabulary",
+      "voice"
     ],
     "interface KokoroVoice": [
-      "boa",
       "engine",
-      "espeak"
+      "espeak",
+      "recommended"
     ],
     "type LoadKokoro": "() => Promise<KokoroModule>"
   },
@@ -1441,21 +1441,21 @@
       "processLocally?"
     ],
     "interface RecognitionRoute": [
-      "estado",
-      "rota"
+      "route",
+      "status"
     ],
     "interface CommandReader": [
-      "itens",
-      "ler"
+      "items",
+      "read"
     ],
     "type OnDeviceAvailability": "'available' | 'downloadable' | 'downloading' | 'unavailable'",
-    "type HeardCommand": "{ readonly tipo: 'palavra'"
+    "type HeardCommand": "{ readonly kind: 'palavra'"
   },
   "platform/tts.ts": {
     "interface TtsCtx": [
       "audioOut",
       "catNode",
-      "criarAudio?",
+      "createAudio?",
       "ensureAC",
       "getAudioCat",
       "getSoundOn",
@@ -1467,23 +1467,23 @@
       "srSay"
     ],
     "interface Tts": [
+      "currentVoice",
       "failed",
       "getEngine",
       "getEngineSel",
       "getVoiceObj",
-      "kokoroDispositivo",
+      "kokoroDevice",
       "loadTTS",
       "loading",
       "narrate",
       "narrateCount",
-      "neuralDisponivel",
+      "neuralAvailable",
       "setEngineSel",
+      "setVoice",
       "setVoiceObj",
-      "setVoz",
       "speakWebSpeech",
       "ttsSpeak",
-      "vozAtual",
-      "vozes"
+      "voices"
     ]
   },
   "platform/vision-loop.ts": {
@@ -2825,17 +2825,17 @@
       "id"
     ],
     "interface TtsPanel": [
+      "currentVoice?",
       "getEngine",
       "getEngineSel",
       "getVoiceObj",
       "loadTTS",
       "narrate",
-      "neuralDisponivel?",
+      "neuralAvailable?",
       "setEngineSel",
+      "setVoice?",
       "setVoiceObj",
-      "setVoz?",
-      "vozAtual?",
-      "vozes?"
+      "voices?"
     ],
     "interface PanelVoice": [
       "voice"

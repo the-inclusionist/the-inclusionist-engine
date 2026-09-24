@@ -12,7 +12,7 @@ import type { NeuralVoice } from './voice-plan.js';
 
 /** A Kokoro inference session on one device: token ids and a style row in, a 24 kHz waveform out. */
 export interface KokoroSession {
-  readonly sintetizar: (ids: readonly number[], styleVector: Float32Array) => Promise<Float32Array>;
+  readonly synthesize: (ids: readonly number[], styleVector: Float32Array) => Promise<Float32Array>;
 }
 /**
  * WHAT SPEAKING NEEDS OF KOKORO — `platform/kokoro-runtime` fills it from the delivery (ADR-0216 §1).
@@ -24,10 +24,10 @@ export interface KokoroSession {
  * have to load the speaker to be loaded by it.
  */
 export interface KokoroModule {
-  readonly fonemizar: (texto: string, espeak: string) => Promise<string>;
-  readonly vocabulario: () => Promise<Readonly<{ [symbol: string]: number }>>;
-  readonly voz: (id: string) => Promise<Float32Array>;
-  readonly sessao: (dispositivo: 'webgpu' | 'wasm') => Promise<KokoroSession>;
+  readonly phonemize: (texto: string, espeak: string) => Promise<string>;
+  readonly vocabulary: () => Promise<Readonly<{ [symbol: string]: number }>>;
+  readonly voice: (id: string) => Promise<Float32Array>;
+  readonly session: (dispositivo: 'webgpu' | 'wasm') => Promise<KokoroSession>;
 }
 /** How the neural voice arrives. Until ADR-0216 every game wrote one of these; now the engine has its own. */
 export type LoadKokoro = () => Promise<KokoroModule>;
@@ -37,11 +37,11 @@ export interface KokoroVoice extends NeuralVoice {
   readonly engine: 'kokoro';
   /** The espeak-ng voice that phonemizes this voice's text. */
   readonly espeak: string;
-  readonly boa: boolean;
+  readonly recommended: boolean;
 }
 
 const voz = (id: string, locale: string, espeak: string, boa = false): KokoroVoice =>
-  Object.freeze({ locale, engine: 'kokoro', voice: id, espeak, boa });
+  Object.freeze({ locale, engine: 'kokoro', voice: id, espeak, recommended: boa });
 
 /**
  * Kokoro-82M v1.0's voices for Portuguese, Spanish and English, as the model repository lists them (read 2026-09-14). The model's

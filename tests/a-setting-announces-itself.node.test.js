@@ -38,15 +38,15 @@ const forma = formaDe(join(RAIZ, 'app', 'js'));
 /** Onde o anúncio de cada ajuste mora HOJE, medido nos dois lados em 2026-09-08. */
 const ANUNCIO_NO_SETTER_INJETADO = [
   {
-    modulo: 'ui/settings-empathy.ts', tipo: 'interface EmpathySettingsCtx', campo: 'setHearingLoss',
+    modulo: 'ui/settings-empathy.ts', type: 'interface EmpathySettingsCtx', campo: 'setHearingLoss',
     onde: 'game-platformer/main.ts:568 — `sr.empathy.hearingOn/Off`',
   },
   {
-    modulo: 'ui/settings-empathy.ts', tipo: 'interface EmpathySettingsCtx', campo: 'setOneButton',
+    modulo: 'ui/settings-empathy.ts', type: 'interface EmpathySettingsCtx', campo: 'setOneButton',
     onde: 'game-platformer/main.ts:1664 — `sr.motor.oneButtonOn/Off`',
   },
   {
-    modulo: 'ui/settings-empathy.ts', tipo: 'interface EmpathySettingsCtx', campo: 'setWheelchair',
+    modulo: 'ui/settings-empathy.ts', type: 'interface EmpathySettingsCtx', campo: 'setWheelchair',
     onde: 'game-platformer/main.ts:1667+ — depois dos efeitos',
   },
 ];
@@ -62,7 +62,7 @@ describe('um ajuste não pode ficar mudo ao ganhar padrão da engine', () => {
 
   it('⚠️ [Zero] os TRÊS cujo anúncio mora no cartucho continuam OBRIGATÓRIOS', () => {
     const opcionais = ANUNCIO_NO_SETTER_INJETADO.filter(
-      (a) => membros(a.modulo, a.tipo).includes(`${a.campo}?`),
+      (a) => membros(a.modulo, a.type).includes(`${a.campo}?`),
     );
     expect(
       opcionais.map((a) => `${a.campo} (anúncio em ${a.onde})`),
@@ -85,7 +85,7 @@ describe('um ajuste não pode ficar mudo ao ganhar padrão da engine', () => {
 
   it('[Interface] a lista não tem ÓRFÃOS — entrada que nomeia campo inexistente', () => {
     const orfaos = ANUNCIO_NO_SETTER_INJETADO.filter((a) => {
-      const m = membros(a.modulo, a.tipo);
+      const m = membros(a.modulo, a.type);
       return !m.includes(a.campo) && !m.includes(`${a.campo}?`);
     });
     expect(orfaos.map((a) => a.campo), 'entrada a descrever um campo que já não existe').toEqual([]);

@@ -21,14 +21,14 @@ vi.mock('../app/js/platform/kokoro-runtime.js', () => ({ loadKokoroRuntime: asyn
 
 /** A fake Kokoro runtime: `gpuFala` says whether WebGPU returns speech; every session and phonemization is recorded. */
 function portaFalsa({ gpuFala }) {
-  const registo = { sessoes: [], fonemizados: [], vozes: [] };
+  const registo = { sessoes: [], fonemizados: [], voices: [] };
   const modulo = {
-    fonemizar: async (texto, espeak) => { registo.fonemizados.push([texto, espeak]); return 'abc'; },
-    vocabulario: async () => ({ a: 1, b: 2, c: 3 }),
-    voz: async (id) => { registo.vozes.push(id); return new Float32Array(510 * 256); },
-    sessao: async (dispositivo) => {
+    phonemize: async (texto, espeak) => { registo.fonemizados.push([texto, espeak]); return 'abc'; },
+    vocabulary: async () => ({ a: 1, b: 2, c: 3 }),
+    voice: async (id) => { registo.voices.push(id); return new Float32Array(510 * 256); },
+    session: async (dispositivo) => {
       registo.sessoes.push(dispositivo);
-      return { sintetizar: async () => (dispositivo === 'webgpu' && !gpuFala ? ruido() : tom()) };
+      return { synthesize: async () => (dispositivo === 'webgpu' && !gpuFala ? ruido() : tom()) };
     },
   };
   return { registo, carregar: async () => modulo };
@@ -72,13 +72,13 @@ afterAll(async () => {
 describe('the voice list with the Kokoro port', () => {
   it('🔴 [Right] in Portuguese the three Kokoro voices, in the catalogue\'s order', () => {
     const tts = ttsCom(portaFalsa({ gpuFala: true }));
-    expect(tts.vozes().map((v) => v.voice)).toEqual(['pf_dora', 'pm_alex', 'pm_santa']);
+    expect(tts.voices().map((v) => v.voice)).toEqual(['pf_dora', 'pm_alex', 'pm_santa']);
   });
 
   it('🔴 [Zero] without the port no Kokoro voice is listed', () => {
     const tts = createTts({ srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
       getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => null });
-    expect(tts.vozes(), 'a browser offering no voice and no port: nothing to list').toEqual([]);
+    expect(tts.voices(), 'a browser offering no voice and no port: nothing to list').toEqual([]);
   });
 });
 
@@ -86,26 +86,26 @@ describe('a Kokoro voice speaks', () => {
   it('🔴 [Right] WebGPU returning noise falls back to WASM, and the utterance plays', async () => {
     const porta = portaFalsa({ gpuFala: false });
     const tts = ttsCom(porta);
-    expect(tts.setVoz('pf_dora')).toBe(true);
+    expect(tts.setVoice('pf_dora')).toBe(true);
     const antes = tocados.length;
     tts.ttsSpeak('Pule a pedra e pegue a estrela agora mesmo.');
     await esperar(() => tts.getEngine());
-    expect(tts.kokoroDispositivo, 'the noise was taken for speech').toBe('wasm');
+    expect(tts.kokoroDevice, 'the noise was taken for speech').toBe('wasm');
     expect(porta.registo.sessoes).toEqual(['webgpu', 'wasm']);
     tts.ttsSpeak('Pule a pedra e pegue a estrela agora mesmo.');
     await esperar(() => tocados.length > antes);
     expect(tocados.length, 'nothing played').toBeGreaterThan(antes);
     expect(porta.registo.fonemizados.at(-1), 'the Portuguese voice was phonemized in another language').toEqual(['Pule a pedra e pegue a estrela agora mesmo.', 'pt-br']);
-    expect(porta.registo.vozes).toEqual(['pf_dora']);
+    expect(porta.registo.voices).toEqual(['pf_dora']);
   });
 
   it('⚠️ [Boundary] WebGPU returning speech is kept, and WASM is never asked for', async () => {
     const porta = portaFalsa({ gpuFala: true });
     const tts = ttsCom(porta);
-    tts.setVoz('pm_alex');
+    tts.setVoice('pm_alex');
     tts.ttsSpeak('Olá');
     await esperar(() => tts.getEngine());
-    expect([tts.kokoroDispositivo, porta.registo.sessoes]).toEqual(['webgpu', ['webgpu']]);
+    expect([tts.kokoroDevice, porta.registo.sessoes]).toEqual(['webgpu', ['webgpu']]);
   });
 });
 

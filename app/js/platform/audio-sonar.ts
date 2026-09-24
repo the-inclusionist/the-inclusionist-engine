@@ -93,14 +93,14 @@ export interface LiveGuide {
   /** O contexto que o construiu — é dele que sai o `currentTime` de cada `setTargetAtTime`. */
   readonly ac: AudioContext;
   readonly osc: OscillatorNode;
-  readonly filtro: BiquadFilterNode;
-  readonly ganho: GainNode;
+  readonly filter: BiquadFilterNode;
+  readonly gain: GainNode;
   /** `null` em motor sem `createStereoPanner` — o guia fica mono em vez de não existir. */
   readonly panner: StereoPannerNode | null;
   /** Quadros desde a última vez que a ROTA foi recalculada. A rota é cara; o som não pode esperar por ela. */
-  desdeARota: number;
+  framesSinceRoute: number;
   /** O último `passos` medido. É daqui que a intensidade sai a cada quadro. */
-  passos: number;
+  steps: number;
   /** A última panorâmica medida, pelo mesmo motivo: ela vem do alvo, que só se procura com a rota. */
   pan: number;
 }
@@ -183,7 +183,7 @@ export interface PlayerAudioOut {
    * ⚠️ E É POR ISSO QUE `desligarGuia` EXISTE. Um campo que dura é um campo que vaza: sem alguém a pará-lo,
    * desligar a categoria `guide` no mixer deixaria o som a tocar.
    */
-  _guia?: LiveGuide | null;
+  _guide?: LiveGuide | null;
 }
 
 export interface PlayerCtxOut { ac: AudioContext; out: GainNode; }
@@ -241,8 +241,8 @@ export interface SonarCtx {
    * O `pl` inteiro e não o índice: quem responde já tem o jogador em mão, e passar o índice obrigaria a raiz
    * a procurá-lo outra vez numa lista que ela acabou de percorrer.
    */
-  visaoComprometida: (pl: SonarPlayer) => boolean;
-  getModoCego: () => boolean;
+  visionImpaired: (pl: SonarPlayer) => boolean;
+  getBlindMode: () => boolean;
   /** Largura LÓGICA da tela. É do console, não do gênero — por isso ctx, e não campo de contrato. */
   /**
    * @deprecated ⚠️ SEM LEITOR DESDE 2026-09-07 (#121). Era o denominador do pan, e era o defeito: media a
@@ -320,7 +320,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * independentemente do que a visão diga.
    */
   function needsAudioCues(pl: SonarPlayer): boolean {
-    return ctx.getModoCego() || ctx.visaoComprometida(pl);
+    return ctx.getBlindMode() || ctx.visionImpaired(pl);
   }
 
   /**
@@ -445,7 +445,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
       osc.start();
       // `desdeARota` nasce no tecto para que a PRIMEIRA volta já meça a rota, em vez de soar doze quadros
       // com um `passos` inventado.
-      return { ac, osc, filtro, ganho, panner, desdeARota: FRAMES_BETWEEN_ROUTES, passos: STEPS_TO_FLOOR, pan: 0 };
+      return { ac, osc, filter: filtro, gain: ganho, panner, framesSinceRoute: FRAMES_BETWEEN_ROUTES, steps: STEPS_TO_FLOOR, pan: 0 };
     } catch (e) { return null; }
   }
 
@@ -459,12 +459,12 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * precisamente o que este item existe para tirar do ouvido da criança.
    */
   function stopGuide(pl: SonarPlayer): void {
-    const g = pl._guia;
+    const g = pl._guide;
     if (!g) return;
-    pl._guia = null;
+    pl._guide = null;
     try {
       const audioNow = g.ac.currentTime;
-      g.ganho.gain.setTargetAtTime(0, audioNow, 0.05);
+      g.gain.gain.setTargetAtTime(0, audioNow, 0.05);
       g.osc.stop(audioNow + 0.3);
     } catch (e) { /* noop */ }
   }
@@ -501,14 +501,14 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
 
   /** This player's live guide — lit here only if there is a target to point to, and `null` where it cannot be lit. */
   function liveGuide(pl: SonarPlayer): LiveGuide | null {
-    if (pl._guia) return pl._guia;
+    if (pl._guide) return pl._guide;
     // ⚠️ A PERGUNTA «HÁ ALVO?» VEM ANTES DE ACENDER, e o gate cobrou-a: com o grafo a nascer primeiro, um
     // jogador sem alvo criava um oscilador, media a rota, não achava nada e apagava-o — SESSENTA VEZES
     // POR SEGUNDO. O bipe não tinha este problema porque não tinha nada que durasse; foi a permanência
     // que o trouxe. `alvoMaisProximo` é um laço sobre `targetsOf`, não a BFS: perguntar por quadro custa
     // zero quando a lista está vazia, que é exactamente o caso em questão.
     if (!nearestSpot(pl)) return null;
-    return (pl._guia = startGuide(pl));
+    return (pl._guide = startGuide(pl));
   }
 
   /**
@@ -516,22 +516,22 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * second. Answers `false` when the target is gone.
    */
   function remeasure(pl: SonarPlayer, g: LiveGuide): boolean {
-    if (++g.desdeARota < FRAMES_BETWEEN_ROUTES) return true;
-    g.desdeARota = 0;
+    if (++g.framesSinceRoute < FRAMES_BETWEEN_ROUTES) return true;
+    g.framesSinceRoute = 0;
     const alvo = nearestSpot(pl);
     if (!alvo) return false;
-    g.passos = stepsToTarget(pl, alvo);
+    g.steps = stepsToTarget(pl, alvo);
     g.pan = panFor(alvo.at.x, pl);
     return true;
   }
 
   /** TODO quadro, e não só quando a rota é nova: é isto que faz a mudança ser um deslize. */
   function glide(g: LiveGuide, vol: number): void {
-    const i = guideIntensity(g.passos);
+    const i = guideIntensity(g.steps);
     try {
       const audioNow = g.ac.currentTime;
-      g.filtro.frequency.setTargetAtTime(i.corte, audioNow, GUIDE_TAU);
-      g.ganho.gain.setTargetAtTime(GUIDE_VOL * i.volume * vol, audioNow, GUIDE_TAU);
+      g.filter.frequency.setTargetAtTime(i.cutoff, audioNow, GUIDE_TAU);
+      g.gain.gain.setTargetAtTime(GUIDE_VOL * i.volume * vol, audioNow, GUIDE_TAU);
       g.panner?.pan.setTargetAtTime(g.pan, audioNow, GUIDE_TAU);
     } catch (e) { /* noop */ }
   }

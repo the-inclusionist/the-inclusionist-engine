@@ -86,7 +86,7 @@ export function createReading(d: ReadingDeps): Reading {
   let askToStop: ((why: 'asked') => void) | null = null;
 
   async function ready(): Promise<{ can: boolean; why: OnDeviceAvailability | 'sem-api' | 'sem-processamento-local' | 'no-model' }> {
-    const { rota: route, estado: state } = await routeOf(d.language(), d.api);
+    const { route: route, status: state } = await routeOf(d.language(), d.api);
     if (route === 'webspeech-local') return { can: true, why: state };
     return { can: !!d.model, why: d.model ? state : 'no-model' };
   }
@@ -136,7 +136,7 @@ export function createReading(d: ReadingDeps): Reading {
     stop() { askToStop?.('asked'); },
     async listen(options = {}) {
       if (inFlight) return inFlight;                       // one microphone, one reading: the second caller waits on the first
-      const { rota: route, estado: state } = await routeOf(d.language(), d.api);
+      const { route: route, status: state } = await routeOf(d.language(), d.api);
       if (route !== 'webspeech-local') {
         if (!d.model) {
           once('sem-route', `reading: nothing on this device can hear ${d.language()} (${state}) — the child's reading is not assessed; `

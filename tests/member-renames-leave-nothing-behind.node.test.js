@@ -22,10 +22,10 @@ describe('a renamed member leaves nothing behind', () => {
     expect(left, 'rename these by the table in scripts/member-rename-map.json — the engine reads the NEW name').toEqual([]);
   }, 60_000);
 
-  it('⚠️ [Interface] every data-read exemption names a file that exists and still reads that name — an exemption cannot outlive its reason', () => {
-    const stale = Object.keys(map.dataReads ?? {}).filter((k) => {
+  it('⚠️ [Interface] every data-key exemption names a file that exists and still uses that name — an exemption cannot outlive its reason', () => {
+    const stale = Object.keys(map.dataKeys ?? {}).filter((k) => {
       const [file, name] = k.split(' ');
-      return !existsSync(join(ROOT, file)) || !new RegExp(`\\.${name}\\b`).test(readFileSync(join(ROOT, file), 'utf8'));
+      return !existsSync(join(ROOT, file)) || !new RegExp(`\\b${name}\\b`).test(readFileSync(join(ROOT, file), 'utf8'));
     });
     expect(stale).toEqual([]);
   });

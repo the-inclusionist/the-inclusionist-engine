@@ -118,9 +118,9 @@ describe('initFocusTrap — quando a tecla é nossa, e quando não é', () => {
     const ouvintes = [];
     initFocusTrap({
       overlayDeCima: () => null, focoAtual: () => null, focaveisDe: () => [],
-      win: { addEventListener: (tipo, fn, captura) => ouvintes.push({ tipo, captura }) },
+      win: { addEventListener: (tipo, fn, captura) => ouvintes.push({ type: tipo, captura }) },
     }).attach();
-    expect(ouvintes).toEqual([{ tipo: 'keydown', captura: true }]);
+    expect(ouvintes).toEqual([{ type: 'keydown', captura: true }]);
   });
 });
 

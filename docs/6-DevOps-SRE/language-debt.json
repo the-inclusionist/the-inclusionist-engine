@@ -1,11 +1,11 @@
 {
   "measured": "2026-09-24",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 800,
+  "total": 740,
   "totals": {
     "decl": 217,
     "param": 259,
-    "membro": 324
+    "membro": 264
   },
   "files": {
     "app/js/boot/create-game.ts": {
@@ -161,47 +161,37 @@
     "app/js/platform/audio-sonar.ts": {
       "decl": 9,
       "param": 1,
-      "membro": 7
+      "membro": 0
     },
     "app/js/platform/flash-sampler.ts": {
       "decl": 0,
       "param": 2,
-      "membro": 4
+      "membro": 0
     },
     "app/js/platform/guide-intensity.ts": {
       "decl": 0,
       "param": 1,
-      "membro": 1
-    },
-    "app/js/platform/heavy-catalogue.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 1
+      "membro": 0
     },
     "app/js/platform/heavy.ts": {
       "decl": 0,
       "param": 1,
-      "membro": 5
+      "membro": 0
     },
     "app/js/platform/interruptible-speech.ts": {
       "decl": 2,
       "param": 6,
-      "membro": 6
-    },
-    "app/js/platform/kokoro-port.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 5
+      "membro": 0
     },
     "app/js/platform/kokoro.ts": {
       "decl": 5,
       "param": 5,
-      "membro": 6
+      "membro": 0
     },
     "app/js/platform/speech-recognition.ts": {
       "decl": 2,
       "param": 8,
-      "membro": 10
+      "membro": 0
     },
     "app/js/platform/storage.ts": {
       "decl": 0,
@@ -211,7 +201,7 @@
     "app/js/platform/tts.ts": {
       "decl": 12,
       "param": 11,
-      "membro": 10
+      "membro": 0
     },
     "app/js/platform/vision.ts": {
       "decl": 0,
@@ -422,11 +412,6 @@
       "decl": 0,
       "param": 0,
       "membro": 2
-    },
-    "app/js/ui/voice-settings.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 5
     }
   }
 }

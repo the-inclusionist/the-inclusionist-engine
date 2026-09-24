@@ -27,8 +27,8 @@ const montar = (over = {}) => createTts({
 describe('a language no voice speaks', () => {
   it('🔴 [Right] lists no voice, and has none in use', () => {
     const tts = montar();
-    expect(tts.vozes()).toEqual([]);
-    expect(tts.vozAtual()).toBeNull();
+    expect(tts.voices()).toEqual([]);
+    expect(tts.currentVoice()).toBeNull();
   });
 
   it('🔴 [Right] narration is locked: nothing is spoken, not even by the browser voice', () => {
@@ -45,15 +45,15 @@ describe('a language no voice speaks', () => {
     tts.loadTTS();
     await assentar();
     expect(pedidas, 'a Portuguese voice was fetched to read French').toEqual([]);
-    expect(tts.setVoz('pf_dora'), 'a Portuguese voice was accepted for French').toBe(false);
+    expect(tts.setVoice('pf_dora'), 'a Portuguese voice was accepted for French').toBe(false);
   });
 });
 
 /** A Kokoro port whose voices are recorded as the engine asks for them; WebGPU returns speech. */
 const porta = (pedidas) => () => Promise.resolve({
-  fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }),
-  voz: async (id) => { pedidas.push(id); return new Float32Array(256); },
-  sessao: async () => ({ sintetizar: async () => Float32Array.from({ length: 2400 }, (_, i) => Math.sin(i / 8) * 0.4) }),
+  phonemize: async () => 'a', vocabulary: async () => ({ a: 1 }),
+  voice: async (id) => { pedidas.push(id); return new Float32Array(256); },
+  session: async () => ({ synthesize: async () => Float32Array.from({ length: 2400 }, (_, i) => Math.sin(i / 8) * 0.4) }),
 });
 const assentar = async () => { for (let i = 0; i < 60; i++) await Promise.resolve(); };
 
@@ -62,9 +62,9 @@ describe('English, where many voices speak', () => {
     lingua.tag = 'en';
     const pedidas = [];
     const tts = montar({ neuralVoice: true, loadKokoro: porta(pedidas) });
-    expect(tts.vozes()[0]?.voice, 'Heart first (ADR-0198 §3)').toBe('af_heart');
-    expect(tts.setVoz('af_bella')).toBe(true);
-    expect(tts.vozAtual()?.voice).toBe('af_bella');
+    expect(tts.voices()[0]?.voice, 'Heart first (ADR-0198 §3)').toBe('af_heart');
+    expect(tts.setVoice('af_bella')).toBe(true);
+    expect(tts.currentVoice()?.voice).toBe('af_bella');
     tts.narrate('hello');
     await assentar();
     expect(pedidas, 'the first voice loaded instead of the pick').toEqual(['af_bella']);
@@ -77,7 +77,7 @@ describe('English, where many voices speak', () => {
     tts.narrate('hello');
     await assentar();
     expect(pedidas).toEqual(['af_heart']);
-    tts.setVoz('af_bella');
+    tts.setVoice('af_bella');
     tts.narrate('hello again');
     await assentar();
     expect(pedidas, 'the engine kept speaking the old voice').toEqual(['af_heart', 'af_bella']);

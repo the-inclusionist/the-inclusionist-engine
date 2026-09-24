@@ -33,7 +33,7 @@
 /** O que o guia soa, para uma dada distância. */
 export interface Intensity {
   /** Corte do passa-baixo, em hertz. Grave e abafado longe; aberto e brilhante perto. */
-  readonly corte: number;
+  readonly cutoff: number;
   /** Fator sobre o volume da categoria `guide`, entre `FAR_VOL` e 1. NUNCA zero. */
   readonly volume: number;
 }
@@ -73,12 +73,12 @@ export const FAR_VOL = 0.55;
  * exponencial ali faria os dois acelerarem no mesmo ponto, que é o oposto de ter dois eixos.
  */
 export function guideIntensity(passos: number): Intensity {
-  if (!Number.isFinite(passos) || passos < 0) return { corte: FAR_CUT, volume: FAR_VOL };
+  if (!Number.isFinite(passos) || passos < 0) return { cutoff: FAR_CUT, volume: FAR_VOL };
   // 0 = em cima do alvo; 1 = no fundo da escala ou além.
   const far = Math.min(1, passos / STEPS_TO_FLOOR);
   const near = 1 - far;
   return {
-    corte: FAR_CUT * Math.pow(NEAR_CUT / FAR_CUT, near),
+    cutoff: FAR_CUT * Math.pow(NEAR_CUT / FAR_CUT, near),
     volume: FAR_VOL + (1 - FAR_VOL) * near,
   };
 }

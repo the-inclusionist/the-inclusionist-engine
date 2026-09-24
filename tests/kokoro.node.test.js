@@ -19,7 +19,7 @@ describe('the Kokoro catalogue', () => {
   });
 
   it('🔴 [Right] exactly two voices are good: Heart and Bella (ADR-0198 §3)', () => {
-    expect(KOKORO_VOICES.filter((v) => v.boa).map((v) => v.voice)).toEqual(['af_heart', 'af_bella']);
+    expect(KOKORO_VOICES.filter((v) => v.recommended).map((v) => v.voice)).toEqual(['af_heart', 'af_bella']);
   });
 
   it('⚠️ [Boundary] each voice is phonemized in its own language — British English is not American', () => {

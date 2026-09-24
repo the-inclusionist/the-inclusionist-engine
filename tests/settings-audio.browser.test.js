@@ -636,9 +636,9 @@ function comVozes(vozes) {
   const r = fullCtx({});
   let escolhida = null;
   Object.assign(r.tts, {
-    vozes: () => vozes,
-    vozAtual: () => vozes.find((v) => v.voice === escolhida) ?? vozes[0] ?? null,
-    setVoz: (id) => { if (!vozes.some((v) => v.voice === id)) return false; escolhida = id; return true; },
+    voices: () => vozes,
+    currentVoice: () => vozes.find((v) => v.voice === escolhida) ?? vozes[0] ?? null,
+    setVoice: (id) => { if (!vozes.some((v) => v.voice === id)) return false; escolhida = id; return true; },
   });
   return r;
 }
@@ -656,21 +656,21 @@ describe('ui/settings-audio — the voice choice (ADR-0185)', () => {
 
   it('🔴 [Right] a good Kokoro voice carries a heart only where it is SEEN — the choice is said by the name alone', () => {
     // ADR-0198 §3: Heart and Bella are marked; ADR-0159 rule 12: no glyph in a spoken name.
-    const HEART = { locale: 'en-US', engine: 'kokoro', voice: 'af_heart', boa: true };
+    const HEART = { locale: 'en-US', engine: 'kokoro', voice: 'af_heart', recommended: true };
     const { ctx, said, tts } = comVozes([HEART, { locale: 'en-US', engine: 'kokoro', voice: 'am_adam' }]);
     initSettingsAudio(ctx).renderAudio();
     const sel = document.querySelector('#tts-voz');
     expect([...sel.options].map((o) => o.textContent)).toEqual(['❤️ Heart', 'Adam']);
     sel.value = 'af_heart';
     sel.dispatchEvent(new Event('change', { bubbles: true }));
-    expect(tts.vozAtual().voice).toBe('af_heart');
+    expect(tts.currentVoice().voice).toBe('af_heart');
     expect(said.at(-1) ?? '', 'the heart is spoken').not.toMatch(/❤️/);
   });
 
   it('🔴 [Right] the list opens on the voice in use, even when it is not the first', () => {
     // a <select> opens on its first option by itself, so only a pick further down shows the list was set
     const { ctx, tts } = comVozes([DORA, OUTRA]);
-    tts.setVoz('pm_alex');
+    tts.setVoice('pm_alex');
     initSettingsAudio(ctx).renderAudio();
     expect(document.querySelector('#tts-voz').value).toBe('pm_alex');
   });
@@ -681,7 +681,7 @@ describe('ui/settings-audio — the voice choice (ADR-0185)', () => {
     const sel = document.querySelector('#tts-voz');
     sel.value = 'pm_alex';
     sel.dispatchEvent(new Event('change', { bubbles: true }));
-    expect(tts.vozAtual().voice).toBe('pm_alex');
+    expect(tts.currentVoice().voice).toBe('pm_alex');
     expect(said.at(-1) ?? '', 'the choice was silent').toMatch(/Alex/);
   });
 

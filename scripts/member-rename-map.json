@@ -1,17 +1,21 @@
 {
   "about": "Phase 7 of the English plan (ADR-0230, issue #206): published MEMBERS renamed by (type, member). Keys are '<module under app/js> <Type>.<member>'; the table in Breaking-Changes is printed from this file by `node scripts/apply-member-rename.mjs --table`.",
   "layersApplied": [
-    "core"
+    "core",
+    "platform"
   ],
   "excluded": {
     "core/visual-state.ts VisualState.tema": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6",
     "core/visual-state.ts VisualState.correcao": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6",
-    "core/visual-state.ts VisualState.simulacao": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6"
+    "core/visual-state.ts VisualState.simulacao": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6",
+    "platform/vision.ts TasksVision.FilesetResolver": "a foreign API: the name MediaPipe tasks-vision exports, mirrored so the checker sees it. «resolver» is a word of both languages, and the name is not this tree's to choose"
   },
-  "dataReads": {
+  "dataKeys": {
     "tests/catalogo-tipografico.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
     "tests/fontes-carregam.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
-    "tests/fontes-empacotadas.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit"
+    "tests/fontes-empacotadas.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
+    "app/js/ui/pause-markup.ts tipo": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name",
+    "app/js/ui/shell.ts tipo": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name"
   },
   "layers": {
     "core": {
@@ -38,6 +42,67 @@
       "core/scenes.ts createSceneStack.nomes": "names",
       "core/speech-rate.ts speechPlaybackRate.ppmDaVoz": "voiceWpm",
       "core/speech-rate.ts speechPlaybackRate.taxa": "rate"
+    },
+    "platform": {
+      "platform/audio-sonar.ts LiveGuide.desdeARota": "framesSinceRoute",
+      "platform/audio-sonar.ts LiveGuide.filtro": "filter",
+      "platform/audio-sonar.ts LiveGuide.ganho": "gain",
+      "platform/audio-sonar.ts LiveGuide.passos": "steps",
+      "platform/audio-sonar.ts PlayerAudioOut._guia": "_guide",
+      "platform/audio-sonar.ts SonarCtx.getModoCego": "getBlindMode",
+      "platform/audio-sonar.ts SonarCtx.visaoComprometida": "visionImpaired",
+      "platform/flash-sampler.ts FlashMeasurement.lido": "measured",
+      "platform/flash-sampler.ts FlashMeasurement.motivo": "reason",
+      "platform/flash-sampler.ts FlashMeasurement.passa": "passes",
+      "platform/flash-sampler.ts FlashMeasurement.piorSegundo": "worstSecond",
+      "platform/guide-intensity.ts Intensity.corte": "cutoff",
+      "platform/heavy-catalogue.ts HeavyFile.porQueNaoTemFonte": "whyNoSource",
+      "platform/heavy.ts HeavyOptions.aoProgredir": "onProgress",
+      "platform/heavy.ts HeavyOptions.apenas": "only",
+      "platform/heavy.ts HeavyOptions.buscar": "fetch",
+      "platform/heavy.ts HeavyReport.erro": "error",
+      "platform/heavy.ts HeavyReport.estado": "outcome",
+      "platform/interruptible-speech.ts InterruptibleSpeech.calar": "silence",
+      "platform/interruptible-speech.ts InterruptibleSpeech.falando": "speaking",
+      "platform/interruptible-speech.ts InterruptibleSpeech.falar": "speak",
+      "platform/interruptible-speech.ts SpeechEngine.parar": "stop",
+      "platform/interruptible-speech.ts SpeechEngine.sintetizar": "synthesize",
+      "platform/interruptible-speech.ts SpeechEngine.tocar": "play",
+      "platform/kokoro-port.ts createKokoroPort.fonemizar": "phonemize",
+      "platform/kokoro-port.ts createKokoroPort.sessao": "session",
+      "platform/kokoro-port.ts createKokoroPort.vocabulario": "vocabulary",
+      "platform/kokoro-port.ts createKokoroPort.voz": "voice",
+      "platform/kokoro-port.ts session.sintetizar": "synthesize",
+      "platform/kokoro.ts KokoroModule.fonemizar": "phonemize",
+      "platform/kokoro.ts KokoroModule.sessao": "session",
+      "platform/kokoro.ts KokoroModule.vocabulario": "vocabulary",
+      "platform/kokoro.ts KokoroModule.voz": "voice",
+      "platform/kokoro.ts KokoroSession.sintetizar": "synthesize",
+      "platform/kokoro.ts KokoroVoice.boa": "recommended",
+      "platform/speech-recognition.ts CommandReader.itens": "items",
+      "platform/speech-recognition.ts CommandReader.ler": "read",
+      "platform/speech-recognition.ts createCommandReader.itens": "items",
+      "platform/speech-recognition.ts createCommandReader.ler": "read",
+      "platform/speech-recognition.ts HeardCommand.nome": "name",
+      "platform/speech-recognition.ts HeardCommand.palavra": "word",
+      "platform/speech-recognition.ts HeardCommand.tipo": "kind",
+      "platform/speech-recognition.ts RecognitionRoute.estado": "status",
+      "platform/speech-recognition.ts RecognitionRoute.rota": "route",
+      "platform/tts.ts Tts.kokoroDispositivo": "kokoroDevice",
+      "platform/tts.ts createTts.kokoroDispositivo": "kokoroDevice",
+      "platform/tts.ts Tts.neuralDisponivel": "neuralAvailable",
+      "platform/tts.ts createTts.neuralDisponivel": "neuralAvailable",
+      "platform/tts.ts Tts.setVoz": "setVoice",
+      "platform/tts.ts Tts.vozAtual": "currentVoice",
+      "platform/tts.ts Tts.vozes": "voices",
+      "platform/tts.ts TtsCtx.criarAudio": "createAudio",
+      "platform/tts.ts speakByWav.falar": "speak",
+      "platform/tts.ts speakByWav.taxa": "rate",
+      "ui/voice-settings.ts PanelVoice.boa": "recommended",
+      "ui/voice-settings.ts TtsPanel.neuralDisponivel": "neuralAvailable",
+      "ui/voice-settings.ts TtsPanel.setVoz": "setVoice",
+      "ui/voice-settings.ts TtsPanel.vozAtual": "currentVoice",
+      "ui/voice-settings.ts TtsPanel.vozes": "voices"
     }
   }
 }

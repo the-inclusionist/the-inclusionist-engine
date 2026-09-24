@@ -21,8 +21,8 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
-  motor.tts.vozes = () => [];
-  motor.tts.vozAtual = () => null;
+  motor.tts.voices = () => [];
+  motor.tts.currentVoice = () => null;
 });
 
 describe('a language no voice speaks', () => {
