@@ -737,6 +737,31 @@
       "files": {
         "tests/gates-de-acessibilidade.node.test.js": "tests/the-wcag-index-points-at-gates-that-exist.node.test.js"
       }
+    },
+    "non-markdown": {
+      "done": "2026-09-24",
+      "files": {
+        "tests/actions-catorze.node.test.js": "tests/the-fourteen-actions.node.test.js",
+        "tests/catalogo-tipografico.node.test.js": "tests/faces-answer-to-the-type-catalogue.node.test.js",
+        "tests/catorze-discretas.node.test.js": "tests/the-fourteen-stay-discrete.node.test.js",
+        "tests/censo-de-issues.node.test.js": "tests/the-issue-census-is-alive.node.test.js",
+        "tests/contract-rumo.node.test.js": "tests/contract-bearing.node.test.js",
+        "tests/declinio-morto.node.test.js": "tests/no-decline-is-dead.node.test.js",
+        "tests/fontes-carregam.node.test.js": "tests/an-offered-font-loads.node.test.js",
+        "tests/fontes-empacotadas.node.test.js": "tests/what-fonts-the-package-carries.node.test.js",
+        "tests/holds-at-once-continua-contagem.node.test.js": "tests/holds-at-once-stays-a-count.node.test.js",
+        "tests/limiar-de-flashes.node.test.js": "tests/general-flash-threshold.node.test.js",
+        "tests/lotes-passo5.node.test.js": "tests/step-5-batches-leaf-first.node.test.js",
+        "tests/menu-abertura-layout.node.test.js": "tests/opening-menu-layout.node.test.js",
+        "tests/politica-de-seguranca-do-conteudo.node.test.js": "tests/content-security-policy.node.test.js",
+        "tests/ponteiros-de-registo.node.test.js": "tests/records-pointing-at-dead-gates.node.test.js",
+        "tests/superficie-da-pagina.node.test.js": "tests/public-page-surface.node.test.js",
+        "tests/superficie-publica.node.test.js": "tests/public-surface-shrinks-by-declaration.node.test.js",
+        "tests/touch-controle.browser.test.js": "tests/the-touch-pad-follows-the-declaration.browser.test.js",
+        "tests/viz-migracao.node.test.js": "tests/viz-migration-keeps-each-mode.node.test.js",
+        "tests/webgazer-saiu.node.test.js": "tests/webgazer-left-the-engine.node.test.js",
+        "docs/research/auditoria-creditos-pixellab.csv": "docs/research/pixellab-credits-audit.csv"
+      }
     }
   }
 }

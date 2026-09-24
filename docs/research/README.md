@@ -21,7 +21,7 @@ Migration round 2 (2026-07-05) — studies relocated intact (their findings feed
 | `RESEARCH-FONTS-CONDITIONS-LITERACY.md` · `STUDY-FONTS.md` | typography/legibility choices → Design (issue #2) |
 | `LICENSES-IMAGE-GENERATION.md` | AI-image-gen licensing vs GPL (draft, validate w/ legal) → art pipeline |
 | `ADVERSARIAL-ASSESSMENT-PREMORTEM.md` | risk/red-team assessment → NFR + roadmap |
-| `audit-v3-environment-richness.md` · `auditoria-creditos-pixellab.csv` | evidence for the procedural-art pillar |
+| `audit-v3-environment-richness.md` · `pixellab-credits-audit.csv` | evidence for the procedural-art pillar |
 
 - **`compliance-legal.md`** — legal/compliance analysis extracted from PILARES (P4/P5/P6/P10): region regimes
   (LGPD/COPPA/PIPL/GDPR), the local-law-wins model, RN-01..04, ABNT NBR 15290 (Libras), funding × licensing. Feeds

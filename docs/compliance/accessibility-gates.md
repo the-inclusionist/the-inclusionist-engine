@@ -27,7 +27,7 @@ This document is also raw material for the **annual report** (ADR-0053), which t
 | **2.5.5** Target Size (Enhanced, AAA) | 44 px where the screen allows | `tests/pause-target-44px.browser.test.js`, `tests/touch.browser.test.js` |
 | **2.5.8** Target Size (Minimum, AA) | a 24 px floor, and the spacing that stands in for it | `tests/pause-target-44px.browser.test.js` |
 | **1.4.6** Contrast (Enhanced, AAA) | menus at 7:1, not only 4.5:1 | `tests/menu-contrast-measured.node.test.js` |
-| **2.3.1** Three Flashes (measurement only) | `measureFlashes(ms)` reads the world's canvas on request and reports a general-flash failure in `problems` — it limits nothing (see below) | `tests/limiar-de-flashes.node.test.js`, `tests/measure-flashes.browser.test.js` |
+| **2.3.1** Three Flashes (measurement only) | `measureFlashes(ms)` reads the world's canvas on request and reports a general-flash failure in `problems` — it limits nothing (see below) | `tests/general-flash-threshold.node.test.js`, `tests/measure-flashes.browser.test.js` |
 
 And the gate that runs against the BUILT application, covering A/AA as a block: `scripts/axe-check.mjs`, in the
 `a11y` job of `.github/workflows/ci.yml`.

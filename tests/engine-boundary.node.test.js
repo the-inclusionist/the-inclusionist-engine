@@ -186,7 +186,7 @@ describe('fronteira engine↔currículo — a aresta que a mudança de endereço
 // ⚠️ `quiz.html` AND `consumer-quiz` DO NOT COUNT, and the distinction is of OWNER, not of word. They name the SECOND
 // CONSUMER — the measuring instrument this very gate exists to serve, which lives in this repository (`app/quiz.html`,
 // `app/js/consumer-quiz/`). An engine test naming them points at the ruler, not at a dependency on a game (e.g.
-// `fontes-carregam.node.test.js` reads the engine's host to prove it loads the font sheet).
+// `an-offered-font-loads.node.test.js` reads the engine's host to prove it loads the font sheet).
 //
 // The exception is NARROW on purpose: it erases only those names before matching, so `quiz` alone, `quizLevel` and
 // `quizlevel` are still accused — and a case at the end of this file proves it. The THREE names the second consumer has

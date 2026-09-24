@@ -755,7 +755,7 @@ describe('alto contraste alcança o DOM por CLASSE, não por filtro (issue #83)'
 // writing through `setPlayerViz` leaves the two fields saying the same thing.
 //
 // ⚠️ AND THE MIRROR HAS A KNOWN LIMIT: `viz` keeps ONE value, so no key describes «hc7 + fix-deuter»; for that state
-// `legacyKey` keeps the theme (see `viz-migracao.node.test.js`). Readers that need both axes read `visual`.
+// `legacyKey` keeps the theme (see `viz-migration-keeps-each-mode.node.test.js`). Readers that need both axes read `visual`.
 describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existirem', () => {
   it('⚠️ [Right] toda escrita por `setPlayerViz` deixa os dois campos a dizer a MESMA coisa', async () => {
     const { migrateVisual, howItApplies } = await import('../app/js/render/viz-axes.js');

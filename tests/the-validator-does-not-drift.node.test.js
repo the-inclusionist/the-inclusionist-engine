@@ -14,7 +14,7 @@
 // repository and red in the other, and nothing says which of the two is right. A gate that disagrees with itself is
 // worse than one gate fewer: it produces confidence where there is none.
 //
-// 📌 The tree arrives as in `ponteiros-de-registo`: through `ADR_TREE` (what CI passes) or through the sibling clone.
+// 📌 The tree arrives as in `records-pointing-at-dead-gates`: through `ADR_TREE` (what CI passes) or through the sibling clone.
 // With neither, the cases SKIP — and the `ADR_TREE_REQUIRED` case, in that file, is what refuses the skip in the job
 // that declares itself responsible for the tree.
 //

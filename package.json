@@ -34,7 +34,7 @@
     "that used to link it left with the cartridge (issue #111), and the typography panel went on offering",
     "seventeen families of which none loaded — the child picks one, the menu marks it active, and the browser",
     "draws the system font. No error anywhere. `app/quiz.html` links it now, and",
-    "`tests/fontes-carregam.node.test.js` holds both halves: no offerable font without a `@font-face`, and",
+    "`tests/an-offered-font-loads.node.test.js` holds both halves: no offerable font without a `@font-face`, and",
     "the host actually loading the sheet."
   ],
   "exports": {

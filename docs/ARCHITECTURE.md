@@ -107,7 +107,7 @@ docs/
 │   │                          #   `node scripts/snapshot-public-surface.mjs` rewrites it, and running it
 │   │                          #   IS the declaration that a removal was deliberate
 │   ├── public-page-surface.json #  the CSS variables, classes, ids, data-* and keys cartridges read, each with its
-│   │                          #   reader (ADR-0170); hand-kept, held by `superficie-da-pagina`
+│   │                          #   reader (ADR-0170); hand-kept, held by `public-page-surface`
 │   ├── exports-without-consumer.json # published values nothing IN THIS REPOSITORY imports — all of it debt,
 │   │                          #   and it only shrinks. `node scripts/exports-without-consumer.mjs`
 │   ├── public-shape.json · code-health.json · language-debt.json · comment-language-debt.json   # other committed
@@ -235,7 +235,7 @@ dictionaries and the root».
 drawing a tile world is a game's work, and it is the platformer's now. The co-change reading survives the departure — a module
 nothing changes with is a module nobody else's work touches — but the EXAMPLE does not. 📌 Its path is deliberately not written
 here: this file is a MAP, and a map that names something this tree no longer has sends its reader looking for nothing. Where a
-departed pointer IS named on purpose is the dead-pointer book in `tests/ponteiros-de-registo.node.test.js`.
+departed pointer IS named on purpose is the dead-pointer book in `tests/records-pointing-at-dead-gates.node.test.js`.
 
 ### 3.4 Two lines that are long because something is missing
 

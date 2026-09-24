@@ -56,7 +56,7 @@ said so. A document that describes the code has to be able to notice when it sto
 - ✅ As a **player on a small screen**, I want touch targets **big enough to hit and far enough apart**, without
   the list scrolling out of reach. `app/js/ui/layout.ts` · `tests/pause-target-44px.browser.test.js`
 - ✅ As a **player**, I want to **choose the typeface**, and have the choice actually change what I see.
-  `app/js/ui/fonts.ts` · `tests/fontes-carregam.node.test.js`
+  `app/js/ui/fonts.ts` · `tests/an-offered-font-loads.node.test.js`
 - ✅ As a **player with low vision**, I want **high contrast** that keeps the cursor findable, so that reading
   better does not cost me my place. `app/js/render/high-contrast.ts` · `tests/high-contrast.browser.test.js`,
   `tests/menu-contrast-measured.node.test.js`
@@ -133,7 +133,7 @@ said so. A document that describes the code has to be able to notice when it sto
   `tests/transports.node.test.js`, `tests/default-bindings.node.test.js`
 - ✅ As a **game developer**, I want the engine to **name the actions and let me say what they mean**, so that
   a platformer and a board game can use the same input layer. `app/js/core/actions.ts` ·
-  `tests/actions-catorze.node.test.js`
+  `tests/the-fourteen-actions.node.test.js`
 - 🟡 As a **game developer**, I want the engine's **assets to arrive with the package**, so that a menu that
   offers seventeen typefaces can load them. `package.json` — the door promises more than it delivers today:
   **#119**

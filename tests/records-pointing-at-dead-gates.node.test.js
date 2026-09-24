@@ -14,7 +14,7 @@
 // test that later left was not wrong — it aged. The defect is not the old sentence; it is the lack, beside it, of a
 // line saying what confirms the record NOW.
 //
-// 📌 THAT IS WHY THIS IS AN INVENTORY AND NOT A BAN, in the shape of `POR_MIGRAR` and `fontes-empacotadas`: a ban
+// 📌 THAT IS WHY THIS IS AN INVENTORY AND NOT A BAN, in the shape of `POR_MIGRAR` and `what-fonts-the-package-carries`: a ban
 // would be born red with seven entries and be switched off at the first rush. The list freezes what already happened,
 // demands a hand-written reason per entry, and SHRINKS as the records gain `confirmed-by`. A list that shrinks reports
 // the real state; a tick reports the intention of whoever put it there.
@@ -94,7 +94,14 @@ const MORTOS = {
   'tests/nada-vem-de-fora.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/nothing-comes-from-outside.node.test.js`',
   'tests/pausa-44px.browser.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/pause-target-44px.browser.test.js`',
   'tests/pausa-sete-itens.node.test.js': 'MUDOU DE NOME NA FASE 3 (2026-09-22, ADR-0219): é hoje `tests/the-pause-items-and-their-order.node.test.js`',
-  'tests/z-order-css.node.test.js': 'MUDOU DE REPOSITÓRIO (2026-09-23, ADR-0228): a ordem das camadas é `core/layers`, que descreve as camadas de UM jogo — foi com a pilha de mundo-de-tiles para o `game-platformer`, e o gate foi com ela',
+  'tests/actions-catorze.node.test.js': 'RENAMED IN PHASE 3 (2026-09-24, ADR-0219): today it is `tests/the-fourteen-actions.node.test.js`',
+  'tests/catalogo-tipografico.node.test.js': 'RENAMED IN PHASE 3 (2026-09-24, ADR-0219): today it is `tests/faces-answer-to-the-type-catalogue.node.test.js`',
+  'tests/contract-rumo.node.test.js': 'RENAMED IN PHASE 3 (2026-09-24, ADR-0219): today it is `tests/contract-bearing.node.test.js`',
+  'tests/declinio-morto.node.test.js': 'RENAMED IN PHASE 3 (2026-09-24, ADR-0219): today it is `tests/no-decline-is-dead.node.test.js`',
+  'tests/fontes-carregam.node.test.js': 'RENAMED IN PHASE 3 (2026-09-24, ADR-0219): today it is `tests/an-offered-font-loads.node.test.js`',
+  'tests/fontes-empacotadas.node.test.js': 'RENAMED IN PHASE 3 (2026-09-24, ADR-0219): today it is `tests/what-fonts-the-package-carries.node.test.js`',
+  'tests/lotes-passo5.node.test.js': 'RENAMED IN PHASE 3 (2026-09-24, ADR-0219): today it is `tests/step-5-batches-leaf-first.node.test.js`',
+  'tests/z-order-css.node.test.js':'MUDOU DE REPOSITÓRIO (2026-09-23, ADR-0228): a ordem das camadas é `core/layers`, que descreve as camadas de UM jogo — foi com a pilha de mundo-de-tiles para o `game-platformer`, e o gate foi com ela',
 };
 /*
  * 🔴 THE `z-order-css` ENTRY HAS A CAUSE OF ITS OWN: the file did not die and was not renamed — it changed REPOSITORY.

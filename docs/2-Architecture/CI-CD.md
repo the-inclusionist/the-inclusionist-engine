@@ -52,7 +52,7 @@ And outside `gate`:
    `the-inclusionist-docs` and runs **that repository's** `scripts/validate-adr.py` with `--repo engine=.`, which
    is the part that **only this side can do** — open the `confirmed-by` paths marked `engine:`. In the records'
    repository they are only counted, and the validator says how many on every run. A second step runs
-   `tests/ponteiros-de-registo.node.test.js` and `tests/the-validator-does-not-drift.node.test.js` with
+   `tests/records-pointing-at-dead-gates.node.test.js` and `tests/the-validator-does-not-drift.node.test.js` with
    `ADR_TREE_REQUIRED=1`: no record may point at a gate that does not exist, and this repository's own copy of
    `scripts/validate-adr.py` must not drift from the records' copy.
    ⚠️ **Without the `DOCS_READ_TOKEN` secret the job is DORMANT**: it announces that it fetched nothing and

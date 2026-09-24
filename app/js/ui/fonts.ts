@@ -187,7 +187,7 @@ export const FONT_GROUPS: FontGroup[] = [
      * Fontshare (Indian Type Foundry), and `LICENSES.md` §3 requires the licence checked BEFORE bundling. Read, it FAILS:
      * it is «Closed Source» under the ITF Free Font License, whose §02 forbids distributing the file through a repository,
      * an application or a public server and serving it as a selectable font to third parties. The gate is in
-     * `tests/fontes-empacotadas.node.test.js`.
+     * `tests/what-fonts-the-package-carries.node.test.js`.
      */
     {k:'robotoflex', id:'roboto_flex', fam:'Roboto Flex',           fb:'sans'},
     {k:'ubuntu', id:'ubuntu',     fam:'Ubuntu',                fb:'sans'},

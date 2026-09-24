@@ -25,7 +25,7 @@
 >   faces are used only inside school activities, never in the HUD or menus. The paid cursives of §5.3 are not shipped.
 > - **OpenDyslexic is shipped as a user's choice with no claim of efficacy** (issue #87 item 3), as §3.3 asks;
 >   Dyslexie is not shipped. Clash Display is not shipped (§2.2, §6), and a test holds that absence
->   (`tests/fontes-empacotadas.node.test.js`).
+>   (`tests/what-fonts-the-package-carries.node.test.js`).
 
 ---
 

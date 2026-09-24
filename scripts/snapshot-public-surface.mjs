@@ -3,7 +3,7 @@
 //
 // Writes the PORTRAIT of the package's public surface: each module of `app/js/**` and the names it exports.
 //
-// ⚠️ THIS IS NOT AN INDEX, IT IS A COMMITMENT. `tests/superficie-publica.node.test.js` compares the tree with the portrait
+// ⚠️ THIS IS NOT AN INDEX, IT IS A COMMITMENT. `tests/public-surface-shrinks-by-declaration.node.test.js` compares the tree with the portrait
 // and fails when a name DISAPPEARS. Running this script is therefore the way to say that a removal is deliberate — and
 // the test's failure message asks for the `BREAKING CHANGE:` footer in the commit, the information a release's breaking
 // changes need.

@@ -33,7 +33,7 @@
 // separates a finding from a false green. Here it becomes a TYPE: a game without a piece says so in a field instead
 // of returning `null` from a getter and hoping. What is declined is kept in the returned object, so a consumer can be
 // audited by what it refused.
-// ⚠️ THIS PARAGRAPH NAMES NONE OF THE FIELDS, which looks odd and is deliberate: `tests/declinio-morto` counts
+// ⚠️ THIS PARAGRAPH NAMES NONE OF THE FIELDS, which looks odd and is deliberate: `tests/no-decline-is-dead` counts
 // MENTIONS, comments included, on purpose — erring towards «alive» is the right direction for that error, because a
 // false accusation switches a gate off. So using a decline as an EXAMPLE in prose makes it look read, and a field
 // that is genuinely dead stops being accused.

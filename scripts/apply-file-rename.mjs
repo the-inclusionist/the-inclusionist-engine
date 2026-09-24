@@ -34,13 +34,13 @@ const posix = (p) => p.split('\\').join('/');
 /** Every tracked text file a path may be written in. The map and this tool are left out: they QUOTE the old paths on purpose. */
 /*
  * ⚠️ AND THE LEDGER OF DEAD POINTERS IS LEFT OUT, learned by damaging it twice in one afternoon.
- * `tests/ponteiros-de-registo.node.test.js` exists to say «this path no longer exists, and here is where it went»: rewriting
+ * `tests/records-pointing-at-dead-gates.node.test.js` exists to say «this path no longer exists, and here is where it went»: rewriting
  * the old half of that sentence turns «X became Y» into «Y became Y», and rewriting the KEY declares a dead pointer for a file
  * that is alive. Its entries are data ABOUT paths, exactly as `word-lists.json` is data about words — the same mistake phase 2
  * made when it rewrote the gate's own dictionary into English.
  */
 const LEFT_OUT = [MAP, 'scripts/apply-file-rename.mjs', 'docs/6-DevOps-SRE/Breaking-Changes.md', 'CHANGELOG.md',
-  'tests/ponteiros-de-registo.node.test.js'];
+  'tests/records-pointing-at-dead-gates.node.test.js'];
 const filesToTouch = () => execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
   .trim().split(/\r?\n/)
   // 📌 `.css` IS IN THE LIST BECAUSE A STYLESHEET NAMES ITS GATE. Measured on the first tests batch: `app/css/style.css`

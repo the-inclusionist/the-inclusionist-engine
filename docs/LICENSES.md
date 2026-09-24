@@ -137,7 +137,7 @@ in PixelLab.**
 ### What was generated, and where it is recorded
 
 **100 generations**, from 2026-06-01 onwards, with date, tool, estimated cost and **the prompt of each one**:
-[`research/auditoria-creditos-pixellab.csv`](research/auditoria-creditos-pixellab.csv). The prompt is there on
+[`research/pixellab-credits-audit.csv`](research/pixellab-credits-audit.csv). The prompt is there on
 purpose — it is what lets someone from outside ask again *"where did this image come from?"* without depending on
 anyone's memory.
 

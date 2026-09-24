@@ -131,7 +131,7 @@ describe('o mapa dos FICHEIROS diz a verdade sobre o disco', () => {
       if (f === 'scripts/rename-map.json' || f === 'scripts/apply-file-rename.mjs') continue; // they CITE the old ones on purpose
       if (f === 'docs/6-DevOps-SRE/Breaking-Changes.md' || f === 'CHANGELOG.md') continue;    // the migration table lives in them
       if (f === 'tests/rename-map.node.test.js') continue;                                     // and this file cites them too
-      if (f === 'tests/ponteiros-de-registo.node.test.js') continue;
+      if (f === 'tests/records-pointing-at-dead-gates.node.test.js') continue;
       const texto = readFileSync(join(RAIZ, f), 'utf8');
       // ⚠️ ONE PASS PER FILE, not one per moved path: an `includes` for each of the ~320 forms inside the loop over the
       // ~1050 tracked files — ~335 thousand scans of the whole text — blew the 5 s ceiling in about one run in five under

@@ -14,7 +14,7 @@ import { migrateControlMap } from './vocabulary-migration.js';
 import * as store from '../platform/storage.js';
 
 // ⚠️ THE SHAPES ARE WRITTEN HERE, not imported from `input/gamepad`: gamepad imports this module, and a type import back would
-// close a cycle in the module graph (`lotes-passo5`). They are the same shapes, structurally — `initGamepad` passes its
+// close a cycle in the module graph (`step-5-batches-leaf-first`). They are the same shapes, structurally — `initGamepad` passes its
 // own values straight in and returns this wizard's state as its `WizState`.
 interface PadLike {
   readonly id: string;

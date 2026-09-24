@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // `motor.medirFlashes(ms)` READS WHAT THE GAME DRAWS AND SAYS WHETHER IT PASSES WCAG 2.3.1 (study item B2, cut 2).
 //
-// The rule is gated in `limiar-de-flashes.node`; this file gates the SAMPLER on a real canvas: a world that flashes too
+// The rule is gated in `general-flash-threshold.node`; this file gates the SAMPLER on a real canvas: a world that flashes too
 // fast is reported (and lands in `problems`), a slow one passes, and a world the engine cannot read says so instead of
 // passing by silence — a canvas never drawn reads transparent, which is what a WebGL canvas without a preserved buffer
 // also returns.

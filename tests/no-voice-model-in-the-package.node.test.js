@@ -15,7 +15,7 @@
 // the Playwrite faces are bundled, and the ceiling would fail their delivery. The right metric here is the file's
 // NATURE, not its weight.
 //
-// 📌 And the sieve is by INVENTORY, not by word search, in the shape of `fontes-empacotadas`: «isto foi empacotado» is
+// 📌 And the sieve is by INVENTORY, not by word search, in the shape of `what-fonts-the-package-carries`: «isto foi empacotado» is
 // not grepped in the code — it is seen in the tree the package carries.
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).

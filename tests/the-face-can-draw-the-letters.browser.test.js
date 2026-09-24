@@ -18,7 +18,7 @@
 // that loads but has no glyph for `U+0057` is ignored for that character in silence — no console error, no failed
 // request, no state in `document.fonts` that can be read.
 //
-// ⚠️ AND THE GATE THIS TREE ALREADY HAD HAS THE SAME BLIND SPOT: `fontes-carregam.node.test.js` compares the catalogue's
+// ⚠️ AND THE GATE THIS TREE ALREADY HAD HAS THE SAME BLIND SPOT: `an-offered-font-loads.node.test.js` compares the catalogue's
 // family name with the `@font-face`'s. It is exactly the comparison that was proved worthless there. This file does not
 // replace it — it covers what it cannot reach.
 //

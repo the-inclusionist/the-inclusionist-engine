@@ -17,7 +17,7 @@
 // grow without ever saying whether the work started.
 //
 // So there are two opposite, complementary assertions — the CEILING that only goes down (who touches the old model) and
-// the FLOOR that only goes up (how many use the new one). It is the shape `tests/fontes-empacotadas.node.test.js` uses
+// the FLOOR that only goes up (how many use the new one). It is the shape `tests/what-fonts-the-package-carries.node.test.js` uses
 // for the Playwrite faces, for the same reason: telling the truth about the state instead of hiding it behind a tick.
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).

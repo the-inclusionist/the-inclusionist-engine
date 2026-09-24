@@ -214,7 +214,7 @@ export interface IconStateSnapshot {
    * `inputModeOrder`).
    *
    * OPTIONAL because adding a required member to a published snapshot is a breaking change (the shape gate,
-   * `tests/superficie-publica`, fails on it). Absent means «nobody told me», which degrades to «not required».
+   * `tests/public-surface-shrinks-by-declaration`, fails on it). Absent means «nobody told me», which degrades to «not required».
    */
   latchRequired?: boolean;
   /** No voice speaks the current language (ADR-0185): the narration icon is locked. Absent reads as a voice. */

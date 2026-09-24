@@ -1,5 +1,5 @@
 {
-  "about": "What a cartridge reads from the engine's page that TypeScript does not see (ADR-0170, issue #164). Every name says who reads it: a sibling repository (measured with git grep on 2026-09-13, first place shown) or the record that tells games to read it. Changing a name, or what it MEANS, writes a note in Breaking-Changes.md, as an export does. Held by tests/superficie-da-pagina.node.test.js.",
+  "about": "What a cartridge reads from the engine's page that TypeScript does not see (ADR-0170, issue #164). Every name says who reads it: a sibling repository (measured with git grep on 2026-09-13, first place shown) or the record that tells games to read it. Changing a name, or what it MEANS, writes a note in Breaking-Changes.md, as an export does. Held by tests/public-page-surface.node.test.js.",
   "cssVariables": {
     "--tap": ["game-chess app/css/board.css:359", "game-whackwhack app/css/style.css:9", "pixi-15-puzzle app/css/style.css:18"],
     "--ui-fs": ["game-2048 app/css/game.css:26", "game-chess app/css/board.css:159", "game-whackwhack app/css/style.css:143", "pixi-15-puzzle app/css/style.css:130"],

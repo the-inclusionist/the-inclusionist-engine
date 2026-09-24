@@ -13,7 +13,7 @@ the one that can do what the records' own repository cannot:
 
 - it checks out the tree and runs the validator with **`--repo engine=.`**, which OPENS the `confirmed-by`
   paths marked `engine:` — 24 of them, across 9 records. Without a root they can only be counted;
-- it runs `tests/ponteiros-de-registo.node.test.js`, the sieve over prose citations, because a record naming
+- it runs `tests/records-pointing-at-dead-gates.node.test.js`, the sieve over prose citations, because a record naming
   a file of THIS tree that no longer exists is a breakage of THIS tree, and it has to go red where somebody
   can fix it.
 
@@ -28,7 +28,7 @@ git clone https://github.com/the-inclusionist/the-inclusionist-docs.git ../the-i
 Or point at any checkout explicitly:
 
 ```bash
-ADR_TREE=/path/to/the-inclusionist-docs/docs/2-Architecture/adr npx vitest run --project node tests/ponteiros-de-registo.node.test.js
+ADR_TREE=/path/to/the-inclusionist-docs/docs/2-Architecture/adr npx vitest run --project node tests/records-pointing-at-dead-gates.node.test.js
 python scripts/validate-adr.py /path/to/.../adr --repo engine=.
 ```
 
