@@ -33,7 +33,7 @@ const plataforma = () => ({
   // o toque (que segura dois) reprovar — ver o caso do segundo eixo em `transports`.
   holdsAtOnce: () => 3,
   // VERDADEIRO: correr é segurar. É o lado do par que OFERECE a alternância (ADR-0115).
-  seguraTeclas: () => true,
+  holdsKeys: () => true,
   roleAt: () => 'structure',
   nameAt: () => ({ text: 'parede', gender: 'f', plural: false }),
   focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'e' }),
@@ -52,7 +52,7 @@ const lista = () => ({
   // 🎯 E FALSO — o par que torna os dois campos visivelmente diferentes. Este jogo declara `1` e não segura
   // NADA; a plataforma acima declara `3` e segura. Ler o número para saber se algo é segurado dá a resposta
   // certa aqui por acaso e errada ali, que é o achado do ADR-0115.
-  seguraTeclas: () => false,
+  holdsKeys: () => false,
 });
 
 // -----------------------------------------------------------------------------------------------------------
@@ -198,12 +198,12 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
   });
 
   it('[Many] uma declaração vazia acusa os DEZ campos de uma vez', () => {
-    // topology + world + holdsAtOnce + seguraTeclas + tick + as CINCO funções. É o número que diz a quem
+    // topology + world + holdsAtOnce + holdsKeys + tick + as CINCO funções. É o número que diz a quem
     // escreve um preset quanto falta, de uma vez só — e é a diferença entre "faltam dez coisas" e dez rodadas
     // de conserto às cegas. Era SEIS até `targetsOf` completar o campo 5 (a metade "alvo", que o sonar
     // cobrou), SETE até `world` (o ADR-0087) parar de deixar a engine adivinhar que o mundo é a canvas, OITO
     // até o `holdsAtOnce` (o ADR-0104) parar de deixar a acessibilidade motora ser decidida por omissão, e
-    // NOVE até o `seguraTeclas` (o ADR-0115) parar de deixar a ALTERNÂNCIA ser oferecida onde não faz nada.
+    // NOVE até o `holdsKeys` (o ADR-0115) parar de deixar a ALTERNÂNCIA ser oferecida onde não faz nada.
     expect(conformanceProblems({})).toHaveLength(10);
   });
 
@@ -239,7 +239,7 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
     expect(conformanceProblems({ ...plataforma(), roleAt: () => 'free' })).toEqual([]);
   });
 
-  it('⚠️ [Interface] `seguraTeclas` tem de devolver um BOOLEANO — truthy oferece a alternância a toda a gente', () => {
+  it('⚠️ [Interface] `holdsKeys` tem de devolver um BOOLEANO — truthy oferece a alternância a toda a gente', () => {
     /*
      * 🔴 SEM CASO ATÉ 2026-09-23, e o argumento estava escrito ao lado do código o tempo todo: um valor que não
      * é booleano é truthy, logo um jogo que não segura nada passaria a OFERECER a alternância — um controle de
@@ -247,16 +247,16 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
      * módulo achou três cegos, e este é o primeiro.
      */
     for (const mau of ['sim', 1, 0, null, {}]) {
-      expect(conformanceProblems({ ...plataforma(), seguraTeclas: () => mau }), `aceitou ${String(mau)}`).toHaveLength(1);
+      expect(conformanceProblems({ ...plataforma(), holdsKeys: () => mau }), `aceitou ${String(mau)}`).toHaveLength(1);
     }
-    expect(conformanceProblems({ ...plataforma(), seguraTeclas: () => false }), 'recusou um booleano legítimo').toEqual([]);
+    expect(conformanceProblems({ ...plataforma(), holdsKeys: () => false }), 'recusou um booleano legítimo').toEqual([]);
   });
 });
 
 // -----------------------------------------------------------------------------------------------------------
 /*
  * 🔴 O GÉMEO DO TECLADO, E ELE NÃO TINHA CASO NENHUM. 📏 Medido em 2026-09-23 pela sonda: das 29 decisões do
- * `conformanceProblems`, as DUAS do `mapeamentoDoTeclado` estavam presas e as DUAS do `mapeamentoDoPad` eram
+ * `conformanceProblems`, as DUAS do `keyboardMapping` estavam presas e as DUAS do `padMapping` eram
  * cegas — a mesma verificação escrita duas vezes, uma guardada e a outra não. É o que a pergunta do Dev («há duas
  * funções para resolver o mesmo problema?») existe para achar, e a assimetria da cobertura é como ela se nota.
  *
@@ -264,19 +264,19 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
  * uma mutação nela ficaria vermelha pelo caso do TECLADO e o pad estaria coberto por acidente. Um portão coberto
  * por dourado não é portão.
  */
-describe('mapeamentoDoPad — o mapeamento que seria ignorado em silêncio', () => {
+describe('padMapping — o mapeamento que seria ignorado em silêncio', () => {
   it('⚠️ um VALOR em vez de função é acusado — senão a fábrica fica e o autor julga tê-la mudado', () => {
-    expect(conformanceProblems({ ...plataforma(), mapeamentoDoPad: { action1: 3 } }).join(' | ')).toContain('mapeamentoDoPad');
+    expect(conformanceProblems({ ...plataforma(), padMapping: { action1: 3 } }).join(' | ')).toContain('padMapping');
   });
 
   it('⚠️ e um retorno que não é objecto nem `null` também — a fusão engoli-lo-ia sem escrever nada', () => {
-    expect(conformanceProblems({ ...plataforma(), mapeamentoDoPad: () => 3 }).join(' | ')).toContain('mapeamentoDoPad');
-    expect(conformanceProblems({ ...plataforma(), mapeamentoDoPad: () => [3] }).join(' | ')).toContain('mapeamentoDoPad');
+    expect(conformanceProblems({ ...plataforma(), padMapping: () => 3 }).join(' | ')).toContain('padMapping');
+    expect(conformanceProblems({ ...plataforma(), padMapping: () => [3] }).join(' | ')).toContain('padMapping');
   });
 
   it('[Zero] uma declaração correcta — e uma ausente — não acusam nada', () => {
-    expect(conformanceProblems({ ...plataforma(), mapeamentoDoPad: () => ({ action1: 3 }) })).toEqual([]);
-    expect(conformanceProblems({ ...plataforma(), mapeamentoDoPad: () => null })).toEqual([]);
+    expect(conformanceProblems({ ...plataforma(), padMapping: () => ({ action1: 3 }) })).toEqual([]);
+    expect(conformanceProblems({ ...plataforma(), padMapping: () => null })).toEqual([]);
     expect(conformanceProblems(plataforma())).toEqual([]);
   });
 });

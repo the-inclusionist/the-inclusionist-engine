@@ -158,12 +158,12 @@ export function createTts(ctx: TtsCtx): Tts {
       const voiceIdOf = 'webspeech:' + (voz?.name ?? bcp47());
       const words = spokenWords(text);
       const voiceBase = voiceAverage.get(voiceIdOf) ?? null;
-      u.rate = ctx.getSpeechPpm && voiceBase ? speechPlaybackRate(0, 0, ctx.getSpeechPpm(), voiceBase).taxa : 1;
+      u.rate = ctx.getSpeechPpm && voiceBase ? speechPlaybackRate(0, 0, ctx.getSpeechPpm(), voiceBase).rate : 1;
       let startAt = 0;
       u.onstart = () => { startAt = performance.now(); };
       u.onend = () => {
         const seconds = startAt ? (performance.now() - startAt) / 1000 : 0;
-        const measured = speechPlaybackRate(words, seconds, 150, null).ppmDaVoz;
+        const measured = speechPlaybackRate(words, seconds, 150, null).voiceWpm;
         if (measured) media(voiceIdOf, measured / u.rate);
       };
       ss.speak(u); return true;
@@ -184,8 +184,8 @@ export function createTts(ctx: TtsCtx): Tts {
         if (ctx.getSpeechPpm) {
           const buf = await ac.decodeAudioData(bytes.slice(0));
           const measure = speechPlaybackRate(spokenWords(texto), speechSeconds(buf.getChannelData(0), buf.sampleRate), ctx.getSpeechPpm(), voiceAverage.get(voiceId) ?? null);
-          media(voiceId, measure.ppmDaVoz);
-          taxa = measure.taxa;
+          media(voiceId, measure.voiceWpm);
+          taxa = measure.rate;
         }
         return { url: URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' })), taxa };
       },

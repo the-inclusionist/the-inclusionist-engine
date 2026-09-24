@@ -113,23 +113,23 @@ describe('a precedência, e o botão que a punha em causa', () => {
 describe('o contrato recusa uma declaração que seria ignorada em silêncio', () => {
   it('⚠️ um VALOR em vez de função é acusado — senão o mapeamento é descartado e ninguém sabe', async () => {
     const { conformanceProblems } = await import('../app/js/core/contract.js');
-    const d = { ...declaracaoMinima(), mapeamentoDoTeclado: { action1: ['KeyQ'] } };
-    expect(conformanceProblems(d).join(' | ')).toContain('mapeamentoDoTeclado');
+    const d = { ...declaracaoMinima(), keyboardMapping: { action1: ['KeyQ'] } };
+    expect(conformanceProblems(d).join(' | ')).toContain('keyboardMapping');
   });
 
   it('⚠️ e um retorno que não é objecto nem `null` também — a fusão engoli-lo-ia sem escrever nada', async () => {
     const { conformanceProblems } = await import('../app/js/core/contract.js');
-    const d = { ...declaracaoMinima(), mapeamentoDoTeclado: () => 'KeyQ' };
-    expect(conformanceProblems(d).join(' | ')).toContain('mapeamentoDoTeclado');
+    const d = { ...declaracaoMinima(), keyboardMapping: () => 'KeyQ' };
+    expect(conformanceProblems(d).join(' | ')).toContain('keyboardMapping');
   });
 
   it('[Zero] uma declaração correcta — e uma ausente — não acusam nada', async () => {
     const { conformanceProblems } = await import('../app/js/core/contract.js');
-    const bom = { ...declaracaoMinima(), mapeamentoDoTeclado: () => ({ action1: ['KeyQ'] }) };
-    const nulo = { ...declaracaoMinima(), mapeamentoDoTeclado: () => null };
-    expect(conformanceProblems(bom).filter((x) => x.includes('mapeamentoDoTeclado'))).toEqual([]);
-    expect(conformanceProblems(nulo).filter((x) => x.includes('mapeamentoDoTeclado'))).toEqual([]);
-    expect(conformanceProblems(declaracaoMinima()).filter((x) => x.includes('mapeamentoDoTeclado'))).toEqual([]);
+    const bom = { ...declaracaoMinima(), keyboardMapping: () => ({ action1: ['KeyQ'] }) };
+    const nulo = { ...declaracaoMinima(), keyboardMapping: () => null };
+    expect(conformanceProblems(bom).filter((x) => x.includes('keyboardMapping'))).toEqual([]);
+    expect(conformanceProblems(nulo).filter((x) => x.includes('keyboardMapping'))).toEqual([]);
+    expect(conformanceProblems(declaracaoMinima()).filter((x) => x.includes('keyboardMapping'))).toEqual([]);
   });
 });
 
@@ -138,7 +138,7 @@ function declaracaoMinima() {
   return {
     topology: () => ({ kind: 'hotspots', order: ['q1'] }),
     holdsAtOnce: () => 1,
-    seguraTeclas: () => false,
+    holdsKeys: () => false,
     tick: 'player',
     world: () => ({ kind: 'none' }),
     roleAt: () => 'goal',

@@ -417,10 +417,10 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     const roleAt = ctx.roleAt;
     if (roleAt) {
       const rota = routeTo(
-        { topology: ctx.topology(), roleAt, orcamento: ROUTE_BUDGET },
+        { topology: ctx.topology(), roleAt, budget: ROUTE_BUDGET },
         { x: pl.x, y: pl.y }, [alvo.at],
       );
-      if (rota) return rota.passos;
+      if (rota) return rota.steps;
     }
     return alvo.d;
   }

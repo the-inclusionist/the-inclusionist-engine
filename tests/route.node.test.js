@@ -68,19 +68,19 @@ describe('core/route — a rota contorna, a linha reta atravessa', () => {
   it('⚠️ [Right] a rota escolhe o alcançável, e não o mais perto', () => {
     const r = routeTo(ctx, DE, [PERTO, LONGE]);
     expect(r, 'não achou rota nenhuma').not.toBe(null);
-    expect(r.ate).toEqual(LONGE);
+    expect(r.reached).toEqual(LONGE);
   });
 
   it('[Right] `passos` conta o caminho andado, não a reta', () => {
     const r = routeTo(ctx, DE, [LONGE]);
     // Contornar pela esquerda ou pela direita dá o mesmo: 6 de descida + 2 de desvio, ida e volta.
-    expect(r.passos).toBeGreaterThan(distance(topo, DE, LONGE));
+    expect(r.steps).toBeGreaterThan(distance(topo, DE, LONGE));
   });
 
   it('⚠️ [Right] `proximo` é UM passo — é isso que a pista aponta', () => {
     const r = routeTo(ctx, DE, [LONGE]);
-    expect(distance(topo, DE, r.proximo)).toBe(1);
-    expect(ctx.roleAt(r.proximo), 'o primeiro passo caiu numa parede').not.toBe('structure');
+    expect(distance(topo, DE, r.next)).toBe(1);
+    expect(ctx.roleAt(r.next), 'o primeiro passo caiu numa parede').not.toBe('structure');
   });
 
   it('[Zero] alvo TOTALMENTE emparedado devolve null — «não sei», e a pista cala-se', () => {
@@ -93,7 +93,7 @@ describe('core/route — a rota contorna, a linha reta atravessa', () => {
 
   it('[Boundary] estar EM CIMA do alvo é zero passos, e o próximo é o próprio sítio', () => {
     const r = routeTo(ctx, LONGE, [LONGE]);
-    expect(r).toEqual({ proximo: LONGE, ate: LONGE, passos: 0 });
+    expect(r).toEqual({ next: LONGE, reached: LONGE, steps: 0 });
   });
 });
 
@@ -121,7 +121,7 @@ describe('core/route — os casos que o contrato manda tratar', () => {
     const ctx = { topology: GRADE(4, 1), roleAt: mapa(DESENHO) };
     const r = routeTo(ctx, { x: 0, y: 0 }, [{ x: 3, y: 0 }]);
     expect(r, 'o alvo dentro do portão ficou inalcançável').not.toBe(null);
-    expect(r.passos).toBe(3);
+    expect(r.steps).toBe(3);
   });
 
   it('⚠️ [Boundary] mas NÃO se atravessa o portão para continuar do outro lado', () => {
@@ -139,7 +139,7 @@ describe('core/route — os casos que o contrato manda tratar', () => {
 
   it('[Right] água e escada deixam passar', () => {
     const ctx = { topology: GRADE(5, 1), roleAt: mapa(['.~L..']) };
-    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 4, y: 0 }])?.passos).toBe(4);
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 4, y: 0 }])?.steps).toBe(4);
   });
 
   it('⚠️ [Zero] `hotspots` não tem espaço, logo não tem rota', () => {
@@ -155,16 +155,16 @@ describe('core/route — os casos que o contrato manda tratar', () => {
     // varrer inteiro, e que com orçamento à altura ela acha.
     const aberto = { topology: GRADE(60, 60), roleAt: () => 'free' };
     const de = { x: 0, y: 0 }, ate = { x: 59, y: 59 };
-    expect(routeTo({ ...aberto, orcamento: 50 }, de, [ate]), 'varreu o mapa apesar do teto').toBe(null);
-    expect(routeTo({ ...aberto, orcamento: 20000 }, de, [ate]), 'com folga tinha de achar').not.toBe(null);
+    expect(routeTo({ ...aberto, budget: 50 }, de, [ate]), 'varreu o mapa apesar do teto').toBe(null);
+    expect(routeTo({ ...aberto, budget: 20000 }, de, [ate]), 'com folga tinha de achar').not.toBe(null);
   });
 
   it('[Boundary] fora da extensão declarada não é caminho', () => {
     // `size` é 3×1: `y = 1` não existe, e um vizinho para lá não pode ser considerado.
     const ctx = { topology: GRADE(3, 1), roleAt: () => 'free' };
     const r = routeTo(ctx, { x: 0, y: 0 }, [{ x: 2, y: 0 }]);
-    expect(r.passos).toBe(2);
-    expect(r.proximo).toEqual({ x: 1, y: 0, z: 0 });
+    expect(r.steps).toBe(2);
+    expect(r.next).toEqual({ x: 1, y: 0, z: 0 });
   });
 });
 
@@ -175,8 +175,8 @@ describe('core/route — contínuo: a grelha é uma AMOSTRAGEM, e está declarad
     const ctx = { topology: CONT, roleAt: () => 'free' };
     const r = routeTo(ctx, { x: 0, y: 0 }, [{ x: 24, y: 0 }]);
     expect(r).not.toBe(null);
-    expect(r.proximo.x, 'o primeiro passo não tem o tamanho da unidade').toBe(8);
-    expect(r.passos).toBe(3);
+    expect(r.next.x, 'o primeiro passo não tem o tamanho da unidade').toBe(8);
+    expect(r.steps).toBe(3);
   });
 
   it('⚠️ [Boundary] um alvo ENTRE pontos da grelha continua alcançável', () => {
@@ -214,21 +214,21 @@ describe('core/route — what the probe of 2026-09-23 found unheld', () => {
   it('⚠️ [Boundary] in a continuous space two points half a unit apart are two points, not one', () => {
     // with keys rounded to whole numbers, 0.5 and 1 would share a key («1») and the corridor would close
     const ctx = { topology: { kind: 'continuous', size: [2, 0], unit: 0.5, move: 'free', frame: 'clock' }, roleAt: () => 'free' };
-    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 2, y: 0 }])?.passos).toBe(4);
+    expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 2, y: 0 }])?.steps).toBe(4);
   });
 
   it('[Boundary] the budget counts the cell the child stands on, and is spent only when EXCEEDED', () => {
     const ctx = { topology: GRADE(3, 1), roleAt: () => 'free' };
     // from the middle, the left cell is looked at first and the target second: three cells in all
-    expect(routeTo({ ...ctx, orcamento: 2 }, { x: 1, y: 0 }, [{ x: 2, y: 0 }])).toBe(null);
-    expect(routeTo({ ...ctx, orcamento: 3 }, { x: 1, y: 0 }, [{ x: 2, y: 0 }])?.passos).toBe(1);
+    expect(routeTo({ ...ctx, budget: 2 }, { x: 1, y: 0 }, [{ x: 2, y: 0 }])).toBe(null);
+    expect(routeTo({ ...ctx, budget: 3 }, { x: 1, y: 0 }, [{ x: 2, y: 0 }])?.steps).toBe(1);
   });
 
   it('[Right] a three-dimensional grid walks along z too', () => {
     const ctx = { topology: { kind: 'grid', size: [1, 1, 3], move: 'orthogonal', frame: 'compass' }, roleAt: () => 'free' };
     const r = routeTo(ctx, { x: 0, y: 0, z: 0 }, [{ x: 0, y: 0, z: 2 }]);
-    expect(r?.passos).toBe(2);
-    expect(r?.proximo).toEqual({ x: 0, y: 0, z: 1 });
+    expect(r?.steps).toBe(2);
+    expect(r?.next).toEqual({ x: 0, y: 0, z: 1 });
   });
 });
 

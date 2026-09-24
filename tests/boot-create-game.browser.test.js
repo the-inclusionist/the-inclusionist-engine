@@ -44,7 +44,7 @@ const declaracaoValida = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   holdsAtOnce: () => 1,
   // Um fixture de hotspots não segura nada — o par do ADR-0115, ao lado do número que não o diz.
-  seguraTeclas: () => false,
+  holdsKeys: () => false,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'goal',
@@ -238,7 +238,7 @@ describe('createGame num documento de verdade', () => {
       // linha o caso passaria a medir a ausência do ícone em vez da fiação do aparelho — verde pela razão
       // errada, que é o defeito que este ficheiro inteiro existe para não cometer.
       abrir({
-        declaration: { ...declaracaoValida(), seguraTeclas: () => true },
+        declaration: { ...declaracaoValida(), holdsKeys: () => true },
         players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }],
       });
 
@@ -265,7 +265,7 @@ describe('createGame num documento de verdade', () => {
       playerEdge(0, 'toque');
       // `seguraTeclas: true` pela mesma razão do caso acima — sem o ícone não há clique para medir.
       abrir({
-        declaration: { ...declaracaoValida(), seguraTeclas: () => true },
+        declaration: { ...declaracaoValida(), holdsKeys: () => true },
         players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }],
       });
       document.querySelector('#title-icons [data-pi="altmove"]')

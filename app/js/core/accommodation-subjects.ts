@@ -4,7 +4,7 @@
 //
 // ========================= WHY THIS IS DERIVED AND NOT ASKED =========================
 // Fifteen accommodations have a subject that the contract ALREADY answers: whether time runs on its own (`tick`),
-// whether the game holds keys (`seguraTeclas`), whether it needs a continuous pointer (`needsPointer`), whether it has a
+// whether the game holds keys (`holdsKeys`), whether it needs a continuous pointer (`needsPointer`), whether it has a
 // world and a direction (`world` × `topology`), how many players there are. Asking the cartridge again would let the two
 // answers disagree — so the engine derives them, which is the `sonarPlayers` precedent: absent ⇒ derive from the contract.
 //
@@ -20,7 +20,7 @@ export type ContractKeyedAccommodation = (typeof CONTRACT_KEYED)[number];
 
 /** What the derivation reads — and only that. */
 export interface SubjectInputs {
-  readonly declaration: Pick<GameDeclaration, 'tick' | 'seguraTeclas' | 'needsPointer' | 'world' | 'topology'>;
+  readonly declaration: Pick<GameDeclaration, 'tick' | 'holdsKeys' | 'needsPointer' | 'world' | 'topology'>;
   /** The positions this game's preset names (`presetActions`). Empty = the game is not played by actions. */
   readonly actions: readonly Action[];
   /** How many seats (`players().length` — a game that declares none has one child playing). */
@@ -45,7 +45,7 @@ export function contractSubjects(i: SubjectInputs): ReadonlySet<ContractKeyedAcc
   const hasDirection = hasWorld && d.topology().kind !== 'hotspots';
   const byActions = i.actions.length > 0;
   const pointer = d.needsPointer?.() === true;
-  const segura = d.seguraTeclas();
+  const segura = d.holdsKeys();
   const rule: Readonly<Record<ContractKeyedAccommodation, boolean>> = {
     gameSpeed: d.tick === 'clock',
     moveLatch: segura, holdLatch: segura,

@@ -340,7 +340,7 @@ export interface GameDeclaration {
    * 📌 FUNÇÃO e não valor, pelo ADR-0084: um jogo muda de exigência entre fases. A pé segura-se uma direcção;
    * o mesmo jogo dentro de um veículo pode não segurar nada.
    */
-  seguraTeclas(): boolean;
+  holdsKeys(): boolean;
   /**
    * ESTE JOGO PRECISA DE UM PONTEIRO — posição contínua? (ADR-0112.)
    *
@@ -381,7 +381,7 @@ export interface GameDeclaration {
    * 📌 O irmão do CONTROLE é o campo logo abaixo, e chegou um commit depois: o obstáculo era que o assento
    * ainda não se conhecia no ponto em que a tabela de botões é lida, e a saída foi subi-lo no laço.
    */
-  mapeamentoDoTeclado?(jogadores: number, assento: number): Partial<Record<Action, readonly string[] | null>> | null;
+  keyboardMapping?(jogadores: number, assento: number): Partial<Record<Action, readonly string[] | null>> | null;
   /**
    * O MAPEAMENTO DE BOTÕES QUE ESTE JOGO QUER NO CONTROLE — mesma pergunta, outro aparelho (ADR-0115).
    *
@@ -396,7 +396,7 @@ export interface GameDeclaration {
    * dois aparelhos, mas o JOGO pode querer arranjos distintos por assento (o guarda-redes e o atacante não
    * fazem o mesmo).
    */
-  mapeamentoDoPad?(jogadores: number, assento: number): Partial<Record<Action, number | null>> | null;
+  padMapping?(jogadores: number, assento: number): Partial<Record<Action, number | null>> | null;
   readonly tick: TickOwner;
   /** O papel do que está em `at`. É o campo 2, e é o que substitui `roleOf`. */
   roleAt(at: Spot): Role;
@@ -532,13 +532,13 @@ function latchingProblems(d: Partial<GameDeclaration>): string[] {
   // ⚠️ E ESTA É A OUTRA PERGUNTA, que o número acima parecia responder e não responde (ADR-0115). A mensagem
   // diz o que a ausência CUSTA, e não só o que falta: sem ela, um jogo que nada segura oferece um controle de
   // acessibilidade que não faz nada, e um que segura tudo pode não o oferecer a quem depende dele.
-  if (typeof d.seguraTeclas !== 'function') {
-    return ['seguraTeclas: missing - declare whether any key is HELD in this game (latching is offered only where something can be held, and a game that holds nothing must not show a control that does nothing)'];
+  if (typeof d.holdsKeys !== 'function') {
+    return ['holdsKeys: missing - declare whether any key is HELD in this game (latching is offered only where something can be held, and a game that holds nothing must not show a control that does nothing)'];
   }
   // Um valor não-booleano seria truthy e ofereceria a alternância a toda a gente — o mesmo defeito
   // silencioso que o `needsPointer` recusa logo abaixo, e pela mesma razão.
-  return typeof d.seguraTeclas() !== 'boolean'
-    ? ['seguraTeclas: must return a boolean - a non-boolean is truthy and would offer latching in a game where nothing is held']
+  return typeof d.holdsKeys() !== 'boolean'
+    ? ['holdsKeys: must return a boolean - a non-boolean is truthy and would offer latching in a game where nothing is held']
     : [];
 }
 
@@ -588,13 +588,13 @@ function mappingProblems(field: string, declared: unknown, example: string, beca
 }
 
 const keyboardMappingProblems: FieldCheck = (d) => mappingProblems(
-  'mapeamentoDoTeclado', d.mapeamentoDoTeclado,
+  'keyboardMapping', d.keyboardMapping,
   '(jogadores, assento) => ({ action1: ["KeyQ"] })',
   'the keyboard of two players is not the keyboard of one',
 );
 
 const padMappingProblems: FieldCheck = (d) => mappingProblems(
-  'mapeamentoDoPad', d.mapeamentoDoPad,
+  'padMapping', d.padMapping,
   '(jogadores, assento) => ({ action1: 3 })',
   'two seats may want different arrangements',
 );

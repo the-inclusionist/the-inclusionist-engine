@@ -2557,6 +2557,48 @@ uses it as its live sample of a comma inside a string (`'button:not([disabled]),
 | `directTheme` | `render/viz-axes.js` |
 | `ENGINE_ITEMS`, `iconCaption`, `itemsThatAct` | `ui/pause-icons.js` |
 
+## CI · Published members speak English — the `core` layer (ADR-0230, issue #206)
+
+**Who is affected:** a cartridge or host that WRITES or READS one of the members below — above all a game's declaration
+(`holdsKeys` for `seguraTeclas`, `keyboardMapping`/`padMapping` for the two mappings) and a loop started with
+`onFailure` for `aoFalhar`. The problem lines of the contract name the new fields.
+
+⚠️ **The quiet case, and the one line to act on:** a TypeScript consumer that writes the declaration as a fresh object
+literal gets a compile error on the old key. One that builds it in plain JavaScript, or through `any`, gets NOTHING: the
+engine reads the new key, finds `undefined`, and the contract refuses the declaration at boot (`holdsKeys: missing`) —
+or, for an optional member, silently uses its default. Search the game for the old names in this table.
+
+📌 **What did NOT move, by decision:** `VisualState.tema`, `.correcao` and `.simulacao` are the shape of a value stored per
+player; renaming them would erase the child's visual setting (ADR-0230 §3, the rule of ADR-0219 §6).
+
+The table is printed from `scripts/member-rename-map.json` by `node scripts/apply-member-rename.mjs --table core`.
+
+| module | type | old member | new member |
+|---|---|---|---|
+| `core/contract.js` | `GameDeclaration` | `mapeamentoDoPad` | `padMapping` |
+| `core/contract.js` | `GameDeclaration` | `mapeamentoDoTeclado` | `keyboardMapping` |
+| `core/contract.js` | `GameDeclaration` | `seguraTeclas` | `holdsKeys` |
+| `core/entity.js` | `Player` | `alfWins` | `literacyWins` |
+| `core/flash-threshold.js` | `FlashVerdict` | `passa` | `passes` |
+| `core/flash-threshold.js` | `FlashVerdict` | `piorSegundo` | `worstSecond` |
+| `core/flash-threshold.js` | `LuminanceFrame` | `luminancias` | `luminances` |
+| `core/genres.js` | `Genre` | `familia` | `family` |
+| `core/genres.js` | `Genre` | `marca` | `mark` |
+| `core/genres.js` | `Genre` | `nome` | `name` |
+| `core/loop.js` | `LoopOptions` | `aoFalhar` | `onFailure` |
+| `core/route.js` | `Route` | `ate` | `reached` |
+| `core/route.js` | `Route` | `passos` | `steps` |
+| `core/route.js` | `Route` | `proximo` | `next` |
+| `core/route.js` | `RouteCtx` | `orcamento` | `budget` |
+| `core/scenes.js` | `Scene` | `nome` | `name` |
+| `core/scenes.js` | `SceneFacts` | `menuDePausa` | `pauseMenu` |
+| `core/scenes.js` | `SceneFacts` | `mundoRodando` | `worldRunning` |
+| `core/scenes.js` | `SceneFacts` | `telaDeTitulo` | `titleScreen` |
+| `core/scenes.js` | `SceneStack` | `nomes` | `names` |
+| `core/scenes.js` | `createSceneStack` | `nomes` | `names` |
+| `core/speech-rate.js` | `speechPlaybackRate` | `ppmDaVoz` | `voiceWpm` |
+| `core/speech-rate.js` | `speechPlaybackRate` | `taxa` | `rate` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

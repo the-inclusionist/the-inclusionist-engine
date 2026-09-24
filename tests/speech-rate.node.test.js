@@ -41,23 +41,23 @@ describe('measuring an utterance', () => {
 describe('the playback rate of an utterance', () => {
   it('🔴 [Right] is the chosen rate over the voice\'s own, measured on this utterance', () => {
     // 10 words in 3 s of speech = 200 words a minute; the child chose 404 → play at 2.02×
-    expect(speechPlaybackRate(10, 3, 404, null)).toEqual({ taxa: 2.02, ppmDaVoz: 200 });
-    expect(speechPlaybackRate(10, 2, 504, null).taxa).toBeCloseTo(504 / 300, 5);
+    expect(speechPlaybackRate(10, 3, 404, null)).toEqual({ rate: 2.02, voiceWpm: 200 });
+    expect(speechPlaybackRate(10, 2, 504, null).rate).toBeCloseTo(504 / 300, 5);
   });
 
   it('⚠️ [Boundary] an utterance too short to measure takes the voice\'s average, or plays as is when there is none yet', () => {
-    expect(speechPlaybackRate(1, 0.4, 404, 202)).toEqual({ taxa: 2, ppmDaVoz: null });
-    expect(speechPlaybackRate(2, 0.5, 404, null)).toEqual({ taxa: 1, ppmDaVoz: null });
+    expect(speechPlaybackRate(1, 0.4, 404, 202)).toEqual({ rate: 2, voiceWpm: null });
+    expect(speechPlaybackRate(2, 0.5, 404, null)).toEqual({ rate: 1, voiceWpm: null });
   });
 
   it('🔴 [Right] never under 1: a voice faster than the chosen step plays at its own speed (ADR-0196)', () => {
     // 10 words in 2 s = 300 words a minute; 254 chosen would be 0.85× — the voice is not slowed
     expect(MIN_PLAYBACK_RATE).toBe(1);
-    expect(speechPlaybackRate(10, 2, 254, null).taxa).toBe(1);
+    expect(speechPlaybackRate(10, 2, 254, null).rate).toBe(1);
   });
 
   it('⚠️ [Boundary] held under the maximum, so a wrong measure never garbles the voice', () => {
-    expect(speechPlaybackRate(10, 20, 504, null).taxa).toBe(MAX_PLAYBACK_RATE);
+    expect(speechPlaybackRate(10, 20, 504, null).rate).toBe(MAX_PLAYBACK_RATE);
   });
 });
 

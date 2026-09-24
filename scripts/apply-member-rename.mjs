@@ -1,0 +1,239 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+/**
+ * PHASE 7 OF THE ENGLISH PLAN — published MEMBERS, renamed by TYPE and not by name (ADR-0230, issue #206).
+ *
+ * Phase 2 renamed NAMES from a map (`apply-rename.mjs`): a public name is one binding in one module, so its spelling is
+ * enough to find it. A member is not: 📏 `nome` is a member of six unrelated types, `rotulo` of eight. Renaming by spelling
+ * renames all of them, including one that mirrors a foreign API or is the shape of something stored on a child's machine.
+ * So an entry here is `"<file> <Type>.<member>"` and the rename is asked of TypeScript's language service, which follows
+ * the member through the TYPE — into object literals, shorthand properties, destructuring and accesses — in `app/js` AND
+ * `tests/` (the tsconfig includes both, with `allowJs`).
+ *
+ * 🔴 IT REFUSES, BEFORE WRITING, A RENAME THAT DRAGS A DECLARATION THE MAP DID NOT NAME. The language service renames
+ * related symbols together: a member of a union, of a type that is spread into another, of an interface a class
+ * implements. Each of those is a DECLARATION it touches; every one must be an entry of the map with the same new name,
+ * or the run stops and names it. A rename that quietly reaches an excluded type (ADR-0230 §3) is the failure this guards.
+ *
+ * ⚠️ What the language service cannot follow is an object it cannot type — plain JS built as `any`, a key computed at
+ * runtime. That is the silent case of ADR-0230, and the gate that makes it loud lives in the tests, not here.
+ *
+ * Usage:
+ *   node scripts/apply-member-rename.mjs --list <layer>    the Portuguese members of a layer, as map keys
+ *   node scripts/apply-member-rename.mjs --apply <layer>   renames that layer's entries and records it as applied
+ *   node scripts/apply-member-rename.mjs --table [layer]   the old→new table, printed from the map (never typed twice)
+ */
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join, relative, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
+import { words, readLists, EXCEPTIONS } from './language-inventory.mjs';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const MAP = join(ROOT, 'scripts/member-rename-map.json');
+const APP = join(ROOT, 'app/js');
+const readMap = () => JSON.parse(readFileSync(MAP, 'utf8'));
+
+/** The layer a module belongs to is its first folder under `app/js`. */
+const layerOf = (rel) => rel.split('/')[0];
+const relOf = (abs) => relative(APP, abs).split('\\').join('/');
+
+export const isMember = (n) => ts.isPropertySignature(n) || ts.isPropertyDeclaration(n) || ts.isMethodSignature(n)
+  || ts.isMethodDeclaration(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n) || ts.isEnumMember(n);
+
+/**
+ * The name a member is filed under: the nearest named type-like declaration around it — interface, type alias, class,
+ * enum, or the variable whose annotation holds an anonymous object type. A member nested in an anonymous type inside a
+ * member is filed under the outer member's path (`Outer.inner.member`), so two identical spellings never share a key.
+ */
+export function keyOf(node, rel) {
+  const path = [];
+  for (let n = node; n; n = n.parent) {
+    if (isMember(n) && n.name && ts.isIdentifier(n.name)) path.unshift(n.name.text);
+    else if ((ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n) || ts.isClassDeclaration(n)
+      || ts.isEnumDeclaration(n) || ts.isVariableDeclaration(n) || ts.isFunctionDeclaration(n)) && n.name && ts.isIdentifier(n.name)) {
+      path.unshift(n.name.text);
+      break;
+    }
+  }
+  return `${rel} ${path.join('.')}`;
+}
+
+function languageService() {
+  const cfg = ts.getParsedCommandLineOfConfigFile(join(ROOT, 'tsconfig.json'), {}, { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} });
+  const files = new Map(cfg.fileNames.map((f) => [f.split('\\').join('/'), 0]));
+  const host = {
+    getScriptFileNames: () => [...files.keys()],
+    getScriptVersion: (f) => String(files.get(f) ?? 0),
+    getScriptSnapshot: (f) => (ts.sys.fileExists(f) ? ts.ScriptSnapshot.fromString(ts.sys.readFile(f)) : undefined),
+    getCurrentDirectory: () => ROOT,
+    getCompilationSettings: () => cfg.options,
+    getDefaultLibFileName: ts.getDefaultLibFilePath,
+    fileExists: ts.sys.fileExists, readFile: ts.sys.readFile, readDirectory: ts.sys.readDirectory,
+    directoryExists: ts.sys.directoryExists, getDirectories: ts.sys.getDirectories,
+  };
+  return ts.createLanguageService(host, ts.createDocumentRegistry());
+}
+
+/** Every Portuguese member DECLARED in the modules of one layer, as the key the map files it under. */
+function portugueseMembersOf(layer, service) {
+  const lists = readLists();
+  const out = [];
+  for (const sf of service.getProgram().getSourceFiles()) {
+    const abs = sf.fileName;
+    if (!abs.startsWith(APP.split('\\').join('/'))) continue;
+    const rel = relOf(abs);
+    if (layerOf(rel) !== layer || EXCEPTIONS.some(([p]) => `app/js/${rel}`.startsWith(p))) continue;
+    const walk = (n) => {
+      if (isMember(n) && n.name && ts.isIdentifier(n.name) && words(n.name.text).some((w) => lists.pt.has(w))) out.push(keyOf(n, rel));
+      n.forEachChild(walk);
+    };
+    walk(sf);
+  }
+  return [...new Set(out)].sort();
+}
+
+/** The declaration node a map key names, or null. */
+function findDeclaration(program, key) {
+  const [rel] = key.split(' ');
+  const sf = program.getSourceFile(join(APP, rel).split('\\').join('/'));
+  if (!sf) return null;
+  let found = null;
+  const walk = (n) => {
+    if (!found && isMember(n) && n.name && keyOf(n, rel) === key) found = n;
+    n.forEachChild(walk);
+  };
+  walk(sf);
+  return found;
+}
+
+/** The member declaration a rename location sits on, if it is one. */
+function declarationAt(sf, pos) {
+  let hit = null;
+  const walk = (n) => {
+    if (pos >= n.getStart(sf) && pos < n.getEnd()) {
+      if (isMember(n) && n.name && n.name.getStart(sf) === pos) hit = n;
+      n.forEachChild(walk);
+    }
+  };
+  walk(sf);
+  return hit;
+}
+
+function apply(layer) {
+  const map = readMap();
+  const entries = Object.entries(map.layers[layer] ?? {});
+  if (!entries.length) throw new Error(`no entries for layer ${layer}`);
+  const service = languageService();
+  const program = service.getProgram();
+  const edits = new Map(); // file -> Map(start -> {end, text})
+  const refusals = [];
+  const everyEntry = Object.assign({}, ...Object.values(map.layers));
+  for (const [key, to] of entries) {
+    const decl = findDeclaration(program, key);
+    if (!decl) { refusals.push(`${key}: no such member declaration`); continue; }
+    const file = decl.getSourceFile().fileName;
+    const locs = service.findRenameLocations(file, decl.name.getStart(), false, false, { providePrefixAndSuffixTextForRename: true }) ?? [];
+    if (!locs.length) { refusals.push(`${key}: the language service found nothing to rename`); continue; }
+    for (const l of locs) {
+      const sf = program.getSourceFile(l.fileName);
+      const other = sf && declarationAt(sf, l.textSpan.start);
+      if (other && sf.fileName.startsWith(APP.split('\\').join('/'))) {
+        const otherKey = keyOf(other, relOf(sf.fileName));
+        if (otherKey !== key && everyEntry[otherKey] !== to) {
+          refusals.push(`${key} -> ${to} also renames ${otherKey}, which the map ${everyEntry[otherKey] ? `sends to ${everyEntry[otherKey]}` : 'does not name'}`);
+        }
+      }
+      const perFile = edits.get(l.fileName) ?? edits.set(l.fileName, new Map()).get(l.fileName);
+      perFile.set(l.textSpan.start, { end: l.textSpan.start + l.textSpan.length, text: `${l.prefixText ?? ''}${to}${l.suffixText ?? ''}` });
+    }
+  }
+  if (refusals.length) {
+    console.error('REFUSED (nothing was written):');
+    for (const r of [...new Set(refusals)]) console.error('  ' + r);
+    process.exit(3);
+  }
+  let total = 0;
+  for (const [file, perFile] of edits) {
+    let text = readFileSync(file, 'utf8');
+    for (const [start, { end, text: to }] of [...perFile].sort((a, b) => b[0] - a[0])) text = text.slice(0, start) + to + text.slice(end);
+    writeFileSync(file, text, 'utf8');
+    total += perFile.size;
+    console.log(`${relative(ROOT, file).split('\\').join('/')}: ${perFile.size}`);
+  }
+  if (!map.layersApplied.includes(layer)) map.layersApplied.push(layer);
+  writeFileSync(MAP, JSON.stringify(map, null, 2) + '\n', 'utf8');
+  console.log(`occurrences renamed: ${total}`);
+}
+
+/**
+ * THE SILENT CASE, MADE LOUD (ADR-0230 §4): every place an applied OLD member name still sits in a member position — an
+ * object key, a shorthand, a `.x` access, a destructured property, a string literal used as a type — in `app/js` or
+ * `tests/`. The language service follows a member through its TYPE; an object nothing types (a JS helper in a test that
+ * builds `{ t, luminancias }`) is invisible to it, and the module then reads `undefined` without failing anything.
+ *
+ * Two things are not leftovers, each for a stated reason:
+ *   · an old spelling that is STILL DECLARED as a member somewhere (a layer not yet applied, or an excluded stored shape):
+ *     its accesses may be the other type's. The check tightens by itself as the layers land.
+ *   · the object passed as the params of a `t(…)` call: its keys are interpolation keys, written in three dictionaries.
+ *   · a (file, name) the map lists under `dataReads`: a field of DATA this tree reads but does not own — the Dev's
+ *     typographic catalogue calls a family `familia`, and that JSON is not to be edited. Listed one file at a time, with
+ *     the reason, so an exemption can never cover a module that did not ask for it.
+ */
+export function leftovers() {
+  const map = readMap();
+  const applied = Object.assign({}, ...map.layersApplied.map((l) => map.layers[l] ?? {}));
+  const oldNames = new Set(Object.keys(applied).map((k) => k.split('.').at(-1)));
+  const cfg = ts.getParsedCommandLineOfConfigFile(join(ROOT, 'tsconfig.json'), {}, { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} });
+  const sources = cfg.fileNames.filter((f) => !f.includes('/app/js/i18n/'))
+    .map((f) => ts.createSourceFile(f, readFileSync(f, 'utf8'), ts.ScriptTarget.Latest, true, f.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.JS));
+  const stillDeclared = new Set();
+  for (const sf of sources) (function walk(n) {
+    if (isMember(n) && n.name && ts.isIdentifier(n.name) && oldNames.has(n.name.text)) stillDeclared.add(n.name.text);
+    n.forEachChild(walk);
+  })(sf);
+  const watched = new Set([...oldNames].filter((n) => !stillDeclared.has(n)));
+  const isTParams = (lit) => ts.isCallExpression(lit.parent) && lit.parent.arguments[1] === lit
+    && /(^|\.)t$/.test(lit.parent.expression.getText());
+  const out = [];
+  for (const sf of sources) (function walk(n) {
+    let name = null, kind = '';
+    if ((ts.isPropertyAssignment(n) || ts.isShorthandPropertyAssignment(n) || ts.isMethodDeclaration(n)) && n.name && ts.isIdentifier(n.name)
+      && !(ts.isObjectLiteralExpression(n.parent) && isTParams(n.parent))) { name = n.name.text; kind = 'object key'; }
+    else if (ts.isPropertyAccessExpression(n)) { name = n.name.text; kind = 'access'; }
+    else if (ts.isBindingElement(n) && n.propertyName && ts.isIdentifier(n.propertyName)) { name = n.propertyName.text; kind = 'destructured'; }
+    else if (ts.isBindingElement(n) && !n.propertyName && ts.isIdentifier(n.name) && ts.isObjectBindingPattern(n.parent)) { name = n.name.text; kind = 'destructured'; }
+    else if (ts.isLiteralTypeNode(n) && ts.isStringLiteral(n.literal)) { name = n.literal.text; kind = 'string in a type'; }
+    const file = relative(ROOT, sf.fileName).split('\\').join('/');
+    if (name && watched.has(name) && !map.dataReads?.[`${file} ${name}`]) {
+      const { line } = sf.getLineAndCharacterOfPosition(n.getStart(sf));
+      out.push({ file, line: line + 1, name, kind });
+    }
+    n.forEachChild(walk);
+  })(sf);
+  return out;
+}
+
+function table(layer) {
+  const map = readMap();
+  const layers = layer ? [layer] : Object.keys(map.layers);
+  console.log('| module | type | old member | new member |\n|---|---|---|---|');
+  for (const l of layers) for (const [key, to] of Object.entries(map.layers[l] ?? {})) {
+    const [rel, path] = key.split(' ');
+    const parts = path.split('.');
+    console.log(`| \`${rel.replace(/\.ts$/, '.js')}\` | \`${parts.slice(0, -1).join('.')}\` | \`${parts.at(-1)}\` | \`${to}\` |`);
+  }
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const [mode, arg] = process.argv.slice(2);
+  if (mode === '--list') {
+    const map = readMap();
+    for (const k of portugueseMembersOf(arg, languageService())) {
+      const note = map.excluded?.[k] ? `   (excluded: ${map.excluded[k]})` : map.layers[arg]?.[k] ? `   -> ${map.layers[arg][k]}` : '';
+      console.log(k + note);
+    }
+  } else if (mode === '--apply') apply(arg);
+  else if (mode === '--table') table(arg);
+  else if (mode === '--leftovers') for (const l of leftovers()) console.log(`${l.file}:${l.line}  ${l.name}  (${l.kind})`);
+  else { console.error('usage: --list <layer> | --apply <layer> | --table [layer]'); process.exit(2); }
+}

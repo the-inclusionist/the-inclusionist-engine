@@ -36,7 +36,7 @@ const QPS = 120;
 function quadros(segundos, valor) {
   const out = [];
   for (let f = 0; f < segundos * QPS; f++) {
-    out.push({ t: (f * 1000) / QPS, luminancias: Float32Array.from({ length: COLUMNS * ROWS }, (_, c) => valor(f, c)) });
+    out.push({ t: (f * 1000) / QPS, luminances: Float32Array.from({ length: COLUMNS * ROWS }, (_, c) => valor(f, c)) });
   }
   return out;
 }
@@ -48,31 +48,31 @@ const primeirasDaJanela = (n) => new Set(Array.from({ length: 20 }, (_, k) => (k
 describe('WCAG 2.3.1 general flash threshold', () => {
   it('🔴 [Right] the whole screen at 4 flashes/s fails, with 4 in the worst second', () => {
     const r = analyseFlashes(quadros(2, onda(4, 1, 0)));
-    expect(r.passa).toBe(false);
-    expect(r.piorSegundo).toBe(4);
+    expect(r.passes).toBe(false);
+    expect(r.worstSecond).toBe(4);
   });
 
   it('🎯 [Boundary] at 3 flashes/s it passes — «no more than three»', () => {
     const r = analyseFlashes(quadros(2, onda(3, 1, 0)));
-    expect(r.piorSegundo).toBe(3);
-    expect(r.passa).toBe(true);
+    expect(r.worstSecond).toBe(3);
+    expect(r.passes).toBe(true);
   });
 
   it('🎯 [Boundary] 10 flashes/s on 4 cells of a field pass — under 25% of it; on 6 cells they fail', () => {
     const quatro = primeirasDaJanela(4);
-    expect(analyseFlashes(quadros(2, (q, c) => (quatro.has(c) ? onda(10, 1, 0)(q) : 0))).passa, 'area under 25% was counted').toBe(true);
+    expect(analyseFlashes(quadros(2, (q, c) => (quatro.has(c) ? onda(10, 1, 0)(q) : 0))).passes, 'area under 25% was counted').toBe(true);
     const seis = primeirasDaJanela(6);
     const r = analyseFlashes(quadros(2, (q, c) => (seis.has(c) ? onda(10, 1, 0)(q) : 0)));
-    expect(r.passa, 'area over 25% was not counted').toBe(false);
-    expect(r.piorSegundo).toBe(10);
+    expect(r.passes, 'area over 25% was not counted').toBe(false);
+    expect(r.worstSecond).toBe(10);
   });
 
   it('🎯 [Boundary] a darker image not below 0.80 is no flash', () => {
-    expect(analyseFlashes(quadros(2, onda(10, 1, 0.85))).piorSegundo).toBe(0);
+    expect(analyseFlashes(quadros(2, onda(10, 1, 0.85))).worstSecond).toBe(0);
   });
 
   it('🎯 [Boundary] a change under 10% of the maximum is no flash', () => {
-    expect(analyseFlashes(quadros(2, onda(10, 0.35, 0.3))).piorSegundo).toBe(0);
+    expect(analyseFlashes(quadros(2, onda(10, 0.35, 0.3))).worstSecond).toBe(0);
   });
 
   it('🔴 [Right] a change is measured from the PEAK — a fade by small steps that swings 0.12 is a flash', () => {
@@ -82,12 +82,12 @@ describe('WCAG 2.3.1 general flash threshold', () => {
     const ciclo = [0.26, 0.22, 0.18, 0.22, 0.26, 0.3];
     const valor = (q) => (q < subida.length ? subida[q] : ciclo[(q - subida.length) % ciclo.length]);
     const r = analyseFlashes(quadros(2, valor));
-    expect(r.passa, 'a swing of 0.12 reached by small steps was not counted').toBe(false);
+    expect(r.passes, 'a swing of 0.12 reached by small steps was not counted').toBe(false);
   });
 
   it('🎯 [Zero] one change and no return is no flash — a flash is a PAIR of opposing changes', () => {
-    expect(analyseFlashes(quadros(2, (q) => (q < 60 ? 0 : 1))).piorSegundo).toBe(0);
-    expect(analyseFlashes([]).passa).toBe(true);
+    expect(analyseFlashes(quadros(2, (q) => (q < 60 ? 0 : 1))).worstSecond).toBe(0);
+    expect(analyseFlashes([]).passes).toBe(true);
   });
 });
 
@@ -97,33 +97,33 @@ describe('the boundaries the probe of 2026-09-23 found unheld', () => {
   const exact = (segundos, valor) =>
     Array.from({ length: segundos * QPS }, (_, f) => ({
       t: (f * 1000) / QPS,
-      luminancias: Array.from({ length: COLUMNS * ROWS }, (_, c) => valor(f, c)),
+      luminances: Array.from({ length: COLUMNS * ROWS }, (_, c) => valor(f, c)),
     }));
   const within = (cells, v) => (f, c) => (cells.has(c) ? v(f) : 0);
 
   it('🎯 [Boundary] a change of EXACTLY 10% counts — «10% or more»', () => {
-    expect(analyseFlashes(exact(2, onda(10, 0.1, 0))).passa, 'a swing of exactly 0.10 was not counted').toBe(false);
+    expect(analyseFlashes(exact(2, onda(10, 0.1, 0))).passes, 'a swing of exactly 0.10 was not counted').toBe(false);
   });
 
   it('🎯 [Boundary] a darker image of EXACTLY 0.80 is no flash — «below 0.80»', () => {
-    expect(analyseFlashes(exact(2, onda(10, 0.95, 0.8))).piorSegundo).toBe(0);
+    expect(analyseFlashes(exact(2, onda(10, 0.95, 0.8))).worstSecond).toBe(0);
   });
 
   it('🎯 [Boundary] 5 cells of a field pass — the area is SIX, not five', () => {
-    expect(analyseFlashes(exact(2, within(primeirasDaJanela(5), onda(10, 1, 0)))).passa).toBe(true);
+    expect(analyseFlashes(exact(2, within(primeirasDaJanela(5), onda(10, 1, 0)))).passes).toBe(true);
   });
 
   it('🎯 [Boundary] the field is FOUR rows tall — six cells that need all four still count', () => {
     // Column 0 rows 0–3, and column 1 rows 0 and 3: no three-row window holds more than five of them.
     const seis = new Set([0, COLUMNS, 2 * COLUMNS, 3 * COLUMNS, 1, 3 * COLUMNS + 1]);
-    expect(analyseFlashes(exact(2, within(seis, onda(10, 1, 0)))).passa, 'a field three rows tall missed this').toBe(false);
+    expect(analyseFlashes(exact(2, within(seis, onda(10, 1, 0)))).passes, 'a field three rows tall missed this').toBe(false);
   });
 
   it('🎯 [Zero] three groups brightening in turn are no flash — a flash is a pair of OPPOSING transitions', () => {
     // Different cells each time, all rising: a wipe or a fade-in, never a return.
     const grupo = (k) => Math.floor([...primeirasDaJanela(18)].indexOf(k) / 6);
     const valor = (f, c) => (primeirasDaJanela(18).has(c) && f >= 10 * (grupo(c) + 1) ? 0.5 : 0);
-    expect(analyseFlashes(exact(1, valor)).piorSegundo, 'two rises in a row were read as a flash').toBe(0);
+    expect(analyseFlashes(exact(1, valor)).worstSecond, 'two rises in a row were read as a flash').toBe(0);
   });
 
   it('🎯 [Right] a completed pair starts afresh — the transition after it opens a new pair and closes nothing', () => {
@@ -131,16 +131,16 @@ describe('the boundaries the probe of 2026-09-23 found unheld', () => {
     const a = new Set([...primeirasDaJanela(6)]);
     const b = new Set([...primeirasDaJanela(12)].filter((c) => !a.has(c)));
     const valor = (f, c) => (a.has(c) ? (f >= 10 && f < 20 ? 0.5 : 0) : b.has(c) ? (f < 30 ? 0.5 : 0) : 0);
-    expect(analyseFlashes(exact(1, valor)).piorSegundo, 'the old pair closed a second time').toBe(1);
+    expect(analyseFlashes(exact(1, valor)).worstSecond, 'the old pair closed a second time').toBe(1);
   });
 
   it('🎯 [Boundary] four flashes 999.9999 ms apart are not «within one second» — frame arithmetic drifts', () => {
-    const at = (t, l) => ({ t, luminancias: Array(COLUMNS * ROWS).fill(l) });
+    const at = (t, l) => ({ t, luminances: Array(COLUMNS * ROWS).fill(l) });
     const frames = [at(0, 0), at(1, 1), at(10, 0), at(300, 1), at(343.33, 0), at(600, 1), at(676.66, 0), at(900, 1),
       at(10 + 999.9999, 0)];
     const r = analyseFlashes(frames);
-    expect(r.piorSegundo, 'a drift of a ten-thousandth of a millisecond made a fourth flash').toBe(3);
-    expect(r.passa).toBe(true);
+    expect(r.worstSecond, 'a drift of a ten-thousandth of a millisecond made a fourth flash').toBe(3);
+    expect(r.passes).toBe(true);
   });
 });
 

@@ -399,10 +399,10 @@ describe('platform/audio-sonar · a rota, quando o jogo a permite (#84 item 2)',
     // brilho máximo para sempre num jogo com `unit = 16`. É o defeito que a #121 tirou do `panFor`.
     const semParede = { topology: GRADE_ORTO, roleAt: () => 'free' };
     const rota = routeTo({ ...semParede, topology: GRADE_ORTO }, { x: 0, y: 0 }, [{ x: 7, y: 0 }]);
-    expect(rota.passos).toBe(distance(GRADE_ORTO, { x: 0, y: 0 }, { x: 7, y: 0 }));
+    expect(rota.steps).toBe(distance(GRADE_ORTO, { x: 0, y: 0 }, { x: 7, y: 0 }));
     // E com parede a rota é ESTRITAMENTE maior — nunca menor do que a reta, em nenhum caso.
     const desvio = routeTo({ topology: GRADE_ORTO, roleAt: PAREDE }, { x: 4, y: 0 }, [{ x: 6, y: 0 }]);
-    expect(desvio.passos).toBeGreaterThan(distance(GRADE_ORTO, { x: 4, y: 0 }, { x: 6, y: 0 }));
+    expect(desvio.steps).toBeGreaterThan(distance(GRADE_ORTO, { x: 4, y: 0 }, { x: 6, y: 0 }));
   });
 });
 

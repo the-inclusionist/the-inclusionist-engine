@@ -12,7 +12,7 @@ let motor, state;
 const antes = {};
 const CHAVES = ['incl_onebtn', 'incl_sem_forca'];
 const declaracao = () => ({
-  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 2, seguraTeclas: () => true, tick: 'clock',
+  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 2, holdsKeys: () => true, tick: 'clock',
   world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
   nameAt: () => ({ text: 'a', gender: 'f', plural: false }), focusOf: () => null,
   objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],

@@ -185,12 +185,12 @@ export interface PhaseView {
 /** Verbatim das nove perguntas que o `setPhase` do game.js fazia à fase, agora feitas de uma vez só. */
 export function phaseView(f: SceneFacts): PhaseView {
   return {
-    titleOverlayHidden: !f.telaDeTitulo,
-    screenPauseHidden: !f.menuDePausa,
-    masterMuted: !f.mundoRodando,
-    hideTouchControls: !f.mundoRodando,
-    pausePressed: f.menuDePausa,
-    focus: f.mundoRodando ? 'game-region' : f.menuDePausa ? 'pause-menu' : 'title-button',
+    titleOverlayHidden: !f.titleScreen,
+    screenPauseHidden: !f.pauseMenu,
+    masterMuted: !f.worldRunning,
+    hideTouchControls: !f.worldRunning,
+    pausePressed: f.pauseMenu,
+    focus: f.worldRunning ? 'game-region' : f.pauseMenu ? 'pause-menu' : 'title-button',
   };
 }
 
@@ -211,11 +211,11 @@ export interface TouchControlsState {
  * desligado): pausar no celular sumia com o direcional virtual e retomar não o devolvia.
  */
 export function touchControlsPlan(f: SceneFacts, st: TouchControlsState, screens: number): TouchControlsState {
-  if (f.menuDePausa) {
+  if (f.pauseMenu) {
     if (!st.hidden) return { hidden: true, wasOn: true }; // guarda que estava ligado e esconde
     return st;                                            // já escondido: nada muda (nem `wasOn`)
   }
-  if (f.mundoRodando) {
+  if (f.worldRunning) {
     return { hidden: st.wasOn && screens <= 1 ? false : st.hidden, wasOn: false };
   }
   return { hidden: true, wasOn: false }; // título (ou qualquer cena que não seja jogo nem pausa): some e esquece
@@ -507,7 +507,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
       if (e && e.preventDefault) { try { e.preventDefault(); } catch { /* noop */ } }
       ctx.win.removeEventListener('keydown', back, true);
       ctx.win.removeEventListener('pointerdown', back, true);
-      if (ctx.fatosDaCena().menuDePausa) { ctx.getPauseScreens().forEach((sp) => { sp.hidden = false; }); pauseSelect(); }
+      if (ctx.fatosDaCena().pauseMenu) { ctx.getPauseScreens().forEach((sp) => { sp.hidden = false; }); pauseSelect(); }
     };
     // 80ms de atraso: o próprio evento que ACIONOU o Print não pode ser o que o desfaz.
     ctx.win.setTimeout(() => {

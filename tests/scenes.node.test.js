@@ -14,7 +14,7 @@ import { createSceneStack } from '../app/js/core/scenes.js';
 /** Uma cena que ANOTA tudo o que recebe — é assim que se afirma "quem foi chamado, e em que ordem". */
 function cena(nome, log, over = {}) {
   return {
-    nome,
+    name: nome,
     enter: () => log.push(`${nome}:enter`),
     exit: () => log.push(`${nome}:exit`),
     update: (dt) => log.push(`${nome}:update:${dt}`),
@@ -28,7 +28,7 @@ describe('empilhar e desempilhar', () => {
   it('[Zero] pilha vazia não quebra em nada', () => {
     const p = createSceneStack();
     expect(p.top()).toBeNull();
-    expect(p.nomes()).toEqual([]);
+    expect(p.names()).toEqual([]);
     expect(p.pop()).toBeNull();
     expect(() => { p.update(1); p.draw(); }).not.toThrow();
     expect(p.input('confirm')).toBe(false);
@@ -40,7 +40,7 @@ describe('empilhar e desempilhar', () => {
     p.push(cena('jogo', log));
     p.push(cena('pausa', log));
     expect(log).toEqual(['jogo:enter', 'jogo:exit', 'pausa:enter']);
-    expect(p.nomes()).toEqual(['jogo', 'pausa']);
+    expect(p.names()).toEqual(['jogo', 'pausa']);
   });
 
   it('[Inverse] pop devolve o topo e RESSUSCITA quem estava embaixo', () => {
@@ -52,9 +52,9 @@ describe('empilhar e desempilhar', () => {
     p.push(cena('pausa', log));
     log.length = 0;
     const fora = p.pop();
-    expect(fora.nome).toBe('pausa');
+    expect(fora.name).toBe('pausa');
     expect(log).toEqual(['pausa:exit', 'jogo:enter']);
-    expect(p.nomes()).toEqual(['jogo']);
+    expect(p.names()).toEqual(['jogo']);
   });
 
   it('[Right] replace é UMA transição, e não um pop seguido de push', () => {
@@ -68,14 +68,14 @@ describe('empilhar e desempilhar', () => {
     p.replace(cena('nivel', log));
     expect(log).toEqual(['mapa:exit', 'nivel:enter']);
     expect(log).not.toContain('menu:enter'); // a de baixo NÃO reapareceu no meio do caminho
-    expect(p.nomes()).toEqual(['menu', 'nivel']);
+    expect(p.names()).toEqual(['menu', 'nivel']);
   });
 
-  it('[Interface] `nomes()` é CÓPIA — quem lê não muta a pilha por acidente', () => {
+  it('[Interface] `names()` é CÓPIA — quem lê não muta a pilha por acidente', () => {
     const p = createSceneStack();
     p.push(cena('a', []));
-    p.nomes().push('intruso');
-    expect(p.nomes()).toEqual(['a']);
+    p.names().push('intruso');
+    expect(p.names()).toEqual(['a']);
   });
 });
 
@@ -114,13 +114,13 @@ describe('as três regras', () => {
     // A distinção que o ADR-0033 deu à entrada modal: "é do modal" e "significa algo no modal" são perguntas
     // diferentes. Sem o retorno, a pilha teria de adivinhar, e adivinhar aqui é engolir tecla em silêncio.
     const p = createSceneStack();
-    p.push({ nome: 'x', input: () => false });
+    p.push({ name: 'x', input: () => false });
     expect(p.input('qualquer')).toBe(false);
   });
 
   it('[Zero] cena SEM ganchos é legítima — nada de `update` vazio por obrigação', () => {
     const p = createSceneStack();
-    p.push({ nome: 'so-nome' });
+    p.push({ name: 'so-nome' });
     expect(() => { p.update(1); p.draw(); }).not.toThrow();
     expect(p.input('a')).toBe(false);
   });
@@ -132,37 +132,37 @@ describe('as fases de HOJE, ditas como pilha', () => {
   // conheça nenhum dos três nomes.
   const montar = (fases) => {
     const p = createSceneStack();
-    for (const f of fases) p.push({ nome: f });
+    for (const f of fases) p.push({ name: f });
     return p;
   };
   /** As três perguntas de que as sete respostas de `phaseView` derivam — feitas à PILHA, não ao enum. */
   const fatos = (p) => ({
-    telaDeTitulo: p.top()?.nome === 'titulo',
-    mundoRodando: p.top()?.nome === 'jogo',
-    menuDePausa: p.top()?.nome === 'pausa',
+    titleScreen: p.top()?.name === 'titulo',
+    worldRunning: p.top()?.name === 'jogo',
+    pauseMenu: p.top()?.name === 'pausa',
   });
 
   it('[Right] title → [titulo]', () => {
-    expect(fatos(montar(['titulo']))).toEqual({ telaDeTitulo: true, mundoRodando: false, menuDePausa: false });
+    expect(fatos(montar(['titulo']))).toEqual({ titleScreen: true, worldRunning: false, pauseMenu: false });
   });
 
   it('[Right] playing → [jogo]', () => {
-    expect(fatos(montar(['jogo']))).toEqual({ telaDeTitulo: false, mundoRodando: true, menuDePausa: false });
+    expect(fatos(montar(['jogo']))).toEqual({ titleScreen: false, worldRunning: true, pauseMenu: false });
   });
 
   it('[Right] paused → [jogo, pausa] — e o JOGO continua na pilha, que é o que o enum não dizia', () => {
     // É a diferença que motiva a troca. `phase === 'paused'` apaga a informação de que há um jogo por baixo;
     // a pilha a mantém, e é dela que sai "o mundo continua desenhado, mas não recebe tempo".
     const p = montar(['jogo', 'pausa']);
-    expect(fatos(p)).toEqual({ telaDeTitulo: false, mundoRodando: false, menuDePausa: true });
-    expect(p.nomes()).toEqual(['jogo', 'pausa']);
+    expect(fatos(p)).toEqual({ titleScreen: false, worldRunning: false, pauseMenu: true });
+    expect(p.names()).toEqual(['jogo', 'pausa']);
   });
 
   it('[Interface] um gênero que o enum NÃO comporta cabe sem mudar esta pilha', () => {
     // O motivo de C1 (alargar a união) ser não-opção no ADR-0030: um jogo com mapa de fases e tela de
     // resultados precisaria de duas constantes novas NA ENGINE. Aqui ele só empilha.
     const p = montar(['titulo', 'mapa', 'nivel', 'resultado']);
-    expect(p.nomes()).toEqual(['titulo', 'mapa', 'nivel', 'resultado']);
-    expect(p.top().nome).toBe('resultado');
+    expect(p.names()).toEqual(['titulo', 'mapa', 'nivel', 'resultado']);
+    expect(p.top().name).toBe('resultado');
   });
 });

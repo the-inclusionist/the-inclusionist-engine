@@ -23,7 +23,7 @@ let motor;
 let raiz;
 const assentos = [{ ctrl: 0 }];
 const declaracao = () => ({
-  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => true, tick: 'player',
+  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => true, tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
   nameAt: () => ({ text: 'a', gender: 'f', plural: false }), focusOf: () => null,
   objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],

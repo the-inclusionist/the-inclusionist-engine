@@ -40,7 +40,7 @@ afterAll(() => {
 const declaracaoValida = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2'] }),
   holdsAtOnce: () => 1,
-  seguraTeclas: () => false,
+  holdsKeys: () => false,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'goal',

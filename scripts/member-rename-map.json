@@ -1,0 +1,43 @@
+{
+  "about": "Phase 7 of the English plan (ADR-0230, issue #206): published MEMBERS renamed by (type, member). Keys are '<module under app/js> <Type>.<member>'; the table in Breaking-Changes is printed from this file by `node scripts/apply-member-rename.mjs --table`.",
+  "layersApplied": [
+    "core"
+  ],
+  "excluded": {
+    "core/visual-state.ts VisualState.tema": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6",
+    "core/visual-state.ts VisualState.correcao": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6",
+    "core/visual-state.ts VisualState.simulacao": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6"
+  },
+  "dataReads": {
+    "tests/catalogo-tipografico.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
+    "tests/fontes-carregam.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
+    "tests/fontes-empacotadas.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit"
+  },
+  "layers": {
+    "core": {
+      "core/contract.ts GameDeclaration.mapeamentoDoPad": "padMapping",
+      "core/contract.ts GameDeclaration.mapeamentoDoTeclado": "keyboardMapping",
+      "core/contract.ts GameDeclaration.seguraTeclas": "holdsKeys",
+      "core/entity.ts Player.alfWins": "literacyWins",
+      "core/flash-threshold.ts FlashVerdict.passa": "passes",
+      "core/flash-threshold.ts FlashVerdict.piorSegundo": "worstSecond",
+      "core/flash-threshold.ts LuminanceFrame.luminancias": "luminances",
+      "core/genres.ts Genre.familia": "family",
+      "core/genres.ts Genre.marca": "mark",
+      "core/genres.ts Genre.nome": "name",
+      "core/loop.ts LoopOptions.aoFalhar": "onFailure",
+      "core/route.ts Route.ate": "reached",
+      "core/route.ts Route.passos": "steps",
+      "core/route.ts Route.proximo": "next",
+      "core/route.ts RouteCtx.orcamento": "budget",
+      "core/scenes.ts Scene.nome": "name",
+      "core/scenes.ts SceneFacts.menuDePausa": "pauseMenu",
+      "core/scenes.ts SceneFacts.mundoRodando": "worldRunning",
+      "core/scenes.ts SceneFacts.telaDeTitulo": "titleScreen",
+      "core/scenes.ts SceneStack.nomes": "names",
+      "core/scenes.ts createSceneStack.nomes": "names",
+      "core/speech-rate.ts speechPlaybackRate.ppmDaVoz": "voiceWpm",
+      "core/speech-rate.ts speechPlaybackRate.taxa": "rate"
+    }
+  }
+}

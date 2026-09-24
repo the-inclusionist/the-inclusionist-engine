@@ -15,7 +15,7 @@ import {
 // três BOOLEANOS — `SceneFacts` —, e os três nomes moram na raiz de composição, que é este jogo. Este
 // arquivo continua escrito em `'title'`/`'playing'`/`'paused'` porque é como os casos se leem melhor; a
 // tradução acontece aqui, num lugar só, e é justamente o que a raiz faz de verdade.
-const fase = (p) => ({ telaDeTitulo: p === 'title', mundoRodando: p === 'playing', menuDePausa: p === 'paused' });
+const fase = (p) => ({ titleScreen: p === 'title', worldRunning: p === 'playing', pauseMenu: p === 'paused' });
 /** As três cenas que ESTE jogo vive. Era `PHASES`, exportado pela casca; a casca não sabe mais quantas são. */
 const PHASES = ['title', 'playing', 'paused'];
 

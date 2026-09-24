@@ -28,13 +28,13 @@ export interface LuminanceFrame {
   /** Milliseconds. */
   readonly t: number;
   /** Relative luminance 0..1 per cell, row by row, `COLUMNS * ROWS` long. */
-  readonly luminancias: ArrayLike<number>;
+  readonly luminances: ArrayLike<number>;
 }
 
 export interface FlashVerdict {
-  readonly passa: boolean;
+  readonly passes: boolean;
   /** The most general flashes any 10° field showed within one second. */
-  readonly piorSegundo: number;
+  readonly worstSecond: number;
 }
 
 const CELLS = COLUMNS * ROWS;
@@ -61,7 +61,7 @@ interface Tracking {
 function markCellTransitions(frame: LuminanceFrame, s: Tracking): void {
   for (let c = 0; c < CELLS; c++) {
     s.transition[c] = 0;
-    const l = Number(frame.luminancias[c] ?? 0);
+    const l = Number(frame.luminances[c] ?? 0);
     const ref = s.reference[c]!;
     if (Number.isNaN(ref)) { s.reference[c] = l; continue; }
     const way = Math.sign(l - ref);
@@ -131,5 +131,5 @@ export function analyseFlashes(frames: readonly LuminanceFrame[]): FlashVerdict 
     pairFieldTransitions(frame.t, s);
   }
   const worst = worstSecond(s.flashTimes);
-  return { passa: worst <= MAX_PER_SECOND, piorSegundo: worst };
+  return { passes: worst <= MAX_PER_SECOND, worstSecond: worst };
 }

@@ -409,7 +409,7 @@ function declareQuiz(questions: readonly Question[]): GameDeclaration {
     // precisa de alternância, somente os que precisam de tecla segurando» (ADR-0115).
     // 📌 A consequência aqui é visível: a criança que abre a acessibilidade deste quiz **não vê** o controle
     // de alternância. Não desabilitado com um motivo — AUSENTE, porque não há nada que ele pudesse fazer.
-    seguraTeclas: () => false,
+    holdsKeys: () => false,
     tick: 'player',
     // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
     roleAt: (at) => (at.x === atual ? 'goal' : 'free'),
@@ -526,7 +526,7 @@ function bootQuiz(): void {
   // `title`, sem `paused`, sem nada do enum da plataforma. Um segundo consumidor que precisasse inventar uma
   // fase para usar a pilha seria o achado 10 outra vez.
   motor.cenas.push({
-    nome: 'perguntas',
+    name: 'perguntas',
     draw: () => render(),
     input: (intent) => {
       if (intent !== 'confirm') return false;

@@ -147,13 +147,13 @@
     "interface GameDeclaration": [
       "focusOf",
       "holdsAtOnce",
-      "mapeamentoDoPad?",
-      "mapeamentoDoTeclado?",
+      "holdsKeys",
+      "keyboardMapping?",
       "nameAt",
       "needsPointer?",
       "objectiveOf",
+      "padMapping?",
       "roleAt",
-      "seguraTeclas",
       "targetsOf",
       "tick",
       "topology",
@@ -190,7 +190,6 @@
       "_tx",
       "activePower",
       "airTime",
-      "alfWins?",
       "anim",
       "audioSink?",
       "caneDist?",
@@ -217,6 +216,7 @@
       "jumpChain",
       "jumpEdge",
       "leftEdge",
+      "literacyWins?",
       "onGround",
       "onLadder",
       "owned",
@@ -258,19 +258,19 @@
   },
   "core/flash-threshold.ts": {
     "interface LuminanceFrame": [
-      "luminancias",
+      "luminances",
       "t"
     ],
     "interface FlashVerdict": [
-      "passa",
-      "piorSegundo"
+      "passes",
+      "worstSecond"
     ]
   },
   "core/genres.ts": {
     "interface Genre": [
-      "familia",
-      "marca?",
-      "nome"
+      "family",
+      "mark?",
+      "name"
     ]
   },
   "core/i18n.ts": {
@@ -284,7 +284,7 @@
   },
   "core/loop.ts": {
     "interface LoopOptions": [
-      "aoFalhar?"
+      "onFailure?"
     ]
   },
   "core/pause-icon-catalogue.ts": {
@@ -304,14 +304,14 @@
   },
   "core/route.ts": {
     "interface RouteCtx": [
-      "orcamento?",
+      "budget?",
       "roleAt",
       "topology"
     ],
     "interface Route": [
-      "ate",
-      "passos",
-      "proximo"
+      "next",
+      "reached",
+      "steps"
     ]
   },
   "core/scenes.ts": {
@@ -320,13 +320,13 @@
       "enter?",
       "exit?",
       "input?",
-      "nome",
+      "name",
       "update?"
     ],
     "interface SceneStack": [
       "draw",
       "input",
-      "nomes",
+      "names",
       "pop",
       "push",
       "replace",
@@ -334,9 +334,9 @@
       "update"
     ],
     "interface SceneFacts": [
-      "menuDePausa",
-      "mundoRodando",
-      "telaDeTitulo"
+      "pauseMenu",
+      "titleScreen",
+      "worldRunning"
     ]
   },
   "core/screens.ts": {

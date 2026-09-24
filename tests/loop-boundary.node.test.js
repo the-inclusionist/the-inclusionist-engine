@@ -45,7 +45,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
   it('[Right] quando o quadro lança, o laço PARA de chamá-lo', () => {
     const t = fakeTicker();
     let chamadas = 0;
-    startLoop(t, () => { chamadas++; throw new Error('jogo quebrou'); }, 2, { aoFalhar: () => {} });
+    startLoop(t, () => { chamadas++; throw new Error('jogo quebrou'); }, 2, { onFailure: () => {} });
     t.tick();
     t.tick();
     t.tick();
@@ -57,7 +57,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     const t = fakeTicker();
     const falhas = [];
     const boom = new Error('jogo quebrou');
-    startLoop(t, () => { throw boom; }, 2, { aoFalhar: (e) => falhas.push(e) });
+    startLoop(t, () => { throw boom; }, 2, { onFailure: (e) => falhas.push(e) });
     t.tick(); t.tick();
     expect(falhas).toEqual([boom]);
   });
@@ -66,7 +66,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     // Diferença que importa em hardware fraco: um callback que roda 60 vezes por segundo para não fazer nada
     // ainda custa. E deixa o ticker mentindo sobre quantas coisas o jogo tem.
     const t = fakeTicker();
-    startLoop(t, () => { throw new Error('x'); }, 2, { aoFalhar: () => {} });
+    startLoop(t, () => { throw new Error('x'); }, 2, { onFailure: () => {} });
     expect(t.inscritas).toBe(1);
     t.tick();
     expect(t.inscritas, 'saiu do ticker').toBe(0);
@@ -78,12 +78,12 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     const fns = [];
     const t = { deltaTime: 1, add: (fn) => fns.push(fn) };
     let chamadas = 0;
-    startLoop(t, () => { chamadas++; throw new Error('x'); }, 2, { aoFalhar: () => {} });
+    startLoop(t, () => { chamadas++; throw new Error('x'); }, 2, { onFailure: () => {} });
     fns[0](); fns[0](); fns[0]();
     expect(chamadas).toBe(1);
   });
 
-  it('[Zero] sem `aoFalhar`, o laço ainda para — o anúncio é opcional, parar não é', () => {
+  it('[Zero] sem `onFailure`, o laço ainda para — o anúncio é opcional, parar não é', () => {
     const t = fakeTicker();
     let chamadas = 0;
     expect(() => {
@@ -93,9 +93,9 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     expect(chamadas).toBe(1);
   });
 
-  // STUDY ITEM D1 (ADR-0054). 📏 Measured on 2026-09-13: `game-soccer` calls `startLoop` WITHOUT `aoFalhar`, so a frame
+  // STUDY ITEM D1 (ADR-0054). 📏 Measured on 2026-09-13: `game-soccer` calls `startLoop` WITHOUT `onFailure`, so a frame
   // that throws there stops in silence — the announcement depended on each game remembering. The root registers its own.
-  it('🔴 [Right] a loop started without `aoFalhar` announces through the one the root REGISTERED', () => {
+  it('🔴 [Right] a loop started without `onFailure` announces through the one the root REGISTERED', () => {
     const t = fakeTicker();
     const erros = [];
     registerCrashNotice((e) => erros.push(e));
@@ -106,13 +106,13 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     expect(erros.map((e) => e.message), 'the registered notice was not called exactly once').toEqual(['quadro']);
   });
 
-  it('🎯 [Right] a game\'s own `aoFalhar` wins over the registered one — the engine\'s is a default', () => {
+  it('🎯 [Right] a game\'s own `onFailure` wins over the registered one — the engine\'s is a default', () => {
     const t = fakeTicker();
     const doRegisto = [];
     const doJogo = [];
     registerCrashNotice((e) => doRegisto.push(e));
     try {
-      startLoop(t, () => { throw new Error('x'); }, 2, { aoFalhar: (e) => doJogo.push(e) });
+      startLoop(t, () => { throw new Error('x'); }, 2, { onFailure: (e) => doJogo.push(e) });
       t.tick();
     } finally { registerCrashNotice(null); }
     expect([doJogo.length, doRegisto.length]).toEqual([1, 0]);
@@ -129,12 +129,12 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     expect(t.inscritas).toBe(0);
   });
 
-  it('[Interface] o que `aoFalhar` lançar não pode ressuscitar o problema', () => {
+  it('[Interface] o que `onFailure` lançar não pode ressuscitar o problema', () => {
     // Se o próprio anúncio quebrar (o leitor de tela não existe, o DOM sumiu), isso não pode virar exceção
     // dentro do ticker — que é onde ela seria invisível outra vez.
     const t = fakeTicker();
     expect(() => {
-      startLoop(t, () => { throw new Error('x'); }, 2, { aoFalhar: () => { throw new Error('o anúncio também'); } });
+      startLoop(t, () => { throw new Error('x'); }, 2, { onFailure: () => { throw new Error('o anúncio também'); } });
       t.tick();
     }).not.toThrow();
   });
@@ -145,5 +145,5 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
 //     real é o laço continuar chamando o quadro quebrado em qualquer ticker que não saiba remover.
 //   · trocando o `catch` por `catch { /* segue */ }` sem parar → "[Right] o laço PARA" reprova, e o efeito real
 //     é o pior dos dois mundos: jogo rodando para sempre computando lixo, sem ninguém saber.
-//   · chamando `aoFalhar` a cada quadro em vez de uma vez → "[Right] e ANUNCIA... uma vez só" reprova, e o
+//   · chamando `onFailure` a cada quadro em vez de uma vez → "[Right] e ANUNCIA... uma vez só" reprova, e o
 //     efeito real é o leitor de tela repetindo a mesma frase 60 vezes por segundo.

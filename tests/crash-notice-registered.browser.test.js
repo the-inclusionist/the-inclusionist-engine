@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A GAME'S LOOP THAT THROWS IS ANNOUNCED EVEN WHEN THE GAME PASSED NO `aoFalhar` (study item D1; ADR-0054).
+// A GAME'S LOOP THAT THROWS IS ANNOUNCED EVEN WHEN THE GAME PASSED NO `onFailure` (study item D1; ADR-0054).
 //
 // 📏 Measured on 2026-09-13: `game-soccer` calls `startLoop(ticker, frame)` with no options. Its frame stopping would have
 // frozen the screen in silence — the notice existed (`Engine.aoFalhar`) and depended on the game wiring it. `createGame`
@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
 const declaracao = () => ({
-  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => false, tick: 'player',
+  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => false, tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
   nameAt: () => ({ text: 'pergunta', gender: 'f', plural: false }), focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'none' }),
   objectiveOf: () => ({ name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [{ x: 0, y: 0 }],
@@ -21,7 +21,7 @@ function ticker() {
 }
 
 describe('the loop notice under createGame', () => {
-  it('🔴 [Right] a loop started with no `aoFalhar` says it stopped — aloud and on screen', async () => {
+  it('🔴 [Right] a loop started with no `onFailure` says it stopped — aloud and on screen', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { startLoop } = await import('../app/js/core/loop.js');
     const { t } = await import('../app/js/core/i18n.js');

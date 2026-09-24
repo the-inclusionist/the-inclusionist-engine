@@ -71,16 +71,16 @@ export interface RouteCtx {
    * ele corta antes de a busca custar um quadro. O número é PARÂMETRO porque o custo aceitável é de quem
    * chama: uma pista por quadro tolera muito menos do que um cálculo ao carregar a fase.
    */
-  readonly orcamento?: number;
+  readonly budget?: number;
 }
 
 export interface Route {
   /** O PRÓXIMO ponto a pisar — a um passo de onde se está. É isto que uma pista aponta. */
-  readonly proximo: Spot;
+  readonly next: Spot;
   /** Qual dos alvos a rota alcançou. Pode não ser o mais próximo em linha reta, e é esse o ponto. */
-  readonly ate: Spot;
+  readonly reached: Spot;
   /** Quantos passos ao longo do caminho. ⚠️ NÃO é `distance()`, que mede a reta que atravessa parede. */
-  readonly passos: number;
+  readonly steps: number;
 }
 
 const DEFAULT_BUDGET = 4096;
@@ -95,7 +95,7 @@ const chave = (s: Spot, cells: number): string =>
  * ⚠️ `free` (L², espaço contínuo sem passo discreto) NÃO TEM VIZINHOS — e fingir que tem é a aproximação que
  * este módulo faz e declara: ele anda numa GRELHA de lado `unit`, nas oito direções. A alternativa seria não
  * responder nada num jogo de plataforma, que é justamente o gênero da issue. Quem ler uma rota `free` está a
- * ler uma amostragem, não uma trajetória — e é por isso que `passos` é uma contagem de células e não uma
+ * ler uma amostragem, não uma trajetória — e é por isso que `steps` é uma contagem de células e não uma
  * medida física.
  */
 function neighbours(shape: Topology, stride: number): Spot[] {
@@ -146,11 +146,11 @@ export function routeTo(ctx: RouteCtx, de: Spot, alvos: readonly Spot[]): Route 
   const arrived = (s: Spot): Spot | null => alvos.find((a) => distance(shape, s, a) <= walk.tolerance) ?? null;
 
   const targetHere = arrived(de);
-  if (targetHere) return { proximo: de, ate: targetHere, passos: 0 };
+  if (targetHere) return { next: de, reached: targetHere, steps: 0 };
 
   const search: Search = {
     ctx, space: shape, arrived, keyDecimals: walk.keyDecimals, jumps: neighbours(shape, walk.step),
-    budget: ctx.orcamento ?? DEFAULT_BUDGET, seen: new Set<string>([chave(de, walk.keyDecimals)]),
+    budget: ctx.budget ?? DEFAULT_BUDGET, seen: new Set<string>([chave(de, walk.keyDecimals)]),
   };
   let level: Step[] = [{ at: de, first: de, steps: 0 }];
   while (level.length) {
@@ -199,7 +199,7 @@ function nextLevel(s: Search, level: readonly Step[]): Route | null | Step[] {
       const first = item.steps === 0 ? neighbour : item.first;
       // THE LAST STEP IS ALWAYS ALLOWED: a target may be declared on a cell that cannot be crossed.
       const target = s.arrived(neighbour);
-      if (target) return { proximo: first, ate: target, passos: item.steps + 1 };
+      if (target) return { next: first, reached: target, steps: item.steps + 1 };
       if (isWalkable(s.ctx.roleAt(neighbour))) next.push({ at: neighbour, first, steps: item.steps + 1 });
     }
   }

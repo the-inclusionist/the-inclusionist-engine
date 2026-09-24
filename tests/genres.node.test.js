@@ -9,11 +9,11 @@
 import { describe, it, expect } from 'vitest';
 import { GENRES, genreProblems, genreWarning } from '../app/js/core/genres.js';
 
-const nomes = GENRES.map((g) => g.nome);
+const nomes = GENRES.map((g) => g.name);
 
 describe('the genre list (ADR-0156)', () => {
   it('🔴 [Right] it is exactly §1: the ten families and their genres, in the Dev\'s order', () => {
-    const familias = [...new Set(GENRES.map((g) => g.familia))];
+    const familias = [...new Set(GENRES.map((g) => g.family))];
     expect(familias).toEqual(['Action', 'Action-adventure', 'Adventure', 'Puzzle', 'Role-playing', 'Simulation', 'Strategy', 'Sports', 'MMO', 'Other notable genres']);
     for (const n of ['Platform games', 'Hero shooters', 'Metroidvania', 'Visual novels', 'Puzzle-platform game', 'Monster-taming',
       'Vehicle simulation', 'Auto chess', 'Grand strategy wargame', 'Racing', 'MMO', 'Typing game', 'Trivia game', 'Casino game', 'Horror game']) {
@@ -40,7 +40,7 @@ describe('the genre list (ADR-0156)', () => {
 
   it('🔴 [Right] Horror game is accepted and carries its «avoid» mark', () => {
     expect(genreProblems('Horror game')).toEqual([]);
-    expect(GENRES.find((g) => g.nome === 'Horror game').marca).toBe('avoid');
+    expect(GENRES.find((g) => g.name === 'Horror game').mark).toBe('avoid');
     expect(genreWarning('Horror game')).toMatch(/Horror game.*avoid.*children.*ADR-0156/);
     expect(genreWarning('Platform games'), 'a genre without a mark reports nothing').toBeNull();
   });

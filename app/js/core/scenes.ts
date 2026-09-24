@@ -31,7 +31,7 @@
  */
 export interface Scene {
   /** Nome legível — para depuração e para os testes afirmarem a pilha por nome, não por identidade. */
-  readonly nome: string;
+  readonly name: string;
   /** Chamado ao ENTRAR (push, ou ao reaparecer no topo por um pop). */
   enter?(): void;
   /** Chamado ao SAIR (pop, ou ao ser coberto por um push). */
@@ -54,7 +54,7 @@ export interface SceneStack {
   /** A cena do topo, ou `null`. */
   top(): Scene | null;
   /** Os nomes, da base para o topo. Cópia: quem lê não muta a pilha por acidente. */
-  nomes(): string[];
+  names(): string[];
   update(dt: number): void;
   draw(): void;
   /** Devolve `true` se a cena do topo consumiu a intenção. */
@@ -96,7 +96,7 @@ export function createSceneStack(): SceneStack {
     },
 
     top() { return stack[stack.length - 1] ?? null; },
-    nomes() { return stack.map((s) => s.nome); },
+    names() { return stack.map((s) => s.name); },
 
     update(dt) { stack[stack.length - 1]?.update?.(dt); },
 
@@ -124,9 +124,9 @@ export function createSceneStack(): SceneStack {
  */
 export interface SceneFacts {
   /** O topo é a tela de título (o splash cobre o mundo). */
-  telaDeTitulo: boolean;
+  titleScreen: boolean;
   /** O topo é o JOGO — o mundo recebe tempo, o som toca, o controle de toque pode aparecer. */
-  mundoRodando: boolean;
+  worldRunning: boolean;
   /** O topo é o menu de pausa. O jogo continua na pilha por baixo, e continua desenhado. */
-  menuDePausa: boolean;
+  pauseMenu: boolean;
 }

@@ -64,7 +64,7 @@ describe('createGame applies it — the cartridge has no other', () => {
     regiao = palco.querySelector('#game-region');
     motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: {
-        topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => false, tick: 'player',
+        topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => false, tick: 'player',
         world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
         nameAt: () => ({ text: 'pergunta', gender: 'f', plural: false }), focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'none' }),
         objectiveOf: () => ({ name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [{ x: 0, y: 0 }],

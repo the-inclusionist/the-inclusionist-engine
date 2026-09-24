@@ -77,13 +77,13 @@ export function sampleFlashes(ctx: FlashSamplerCtx, ms: number): Promise<FlashMe
           grid[Math.floor(y / 10) * COLUMNS + Math.floor(x / 10)] += l / 100;
         }
       }
-      frames.push({ t: now - start, luminancias: grid });
+      frames.push({ t: now - start, luminances: grid });
       if (now - start < ms) { frame(step); return; }
       if (!anyPixel) {
         resolve({ lido: false, motivo: 'the world\'s canvas read transparent in every frame (WebGL canvases need preserveDrawingBuffer)' });
         return;
       }
-      const { passa, piorSegundo } = analyseFlashes(frames);
+      const { passes: passa, worstSecond: piorSegundo } = analyseFlashes(frames);
       if (!passa) {
         ctx.report(`the world's canvas flashed ${piorSegundo} times in one second within a 10-degree field `
           + '(WCAG 2.3.1 allows 3): it can trigger a seizure in a child with photosensitive epilepsy — slow or dim it');

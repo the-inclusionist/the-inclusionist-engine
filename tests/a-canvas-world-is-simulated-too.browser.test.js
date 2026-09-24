@@ -20,7 +20,7 @@ const mundo = () => document.getElementById('mundo-canvas');
 const camada = () => document.getElementById('viz-overlay');
 
 const declaracao = () => ({
-  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => false, tick: 'player',
+  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => false, tick: 'player',
   // ⚠️ O MUNDO É O CANVAS, e é a outra forma que o contrato permite — a que nenhum caso conduzia.
   world: () => ({ kind: 'element', selector: '#mundo-canvas' }), roleAt: () => 'goal',
   nameAt: () => ({ text: 'a', gender: 'f', plural: false }), focusOf: () => null,

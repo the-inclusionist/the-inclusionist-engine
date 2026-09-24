@@ -25,7 +25,7 @@ export interface LoopOptions {
    * A raiz de composição liga isto ao `srAlert` e a uma mensagem visível. Opcional de propósito: um consumidor
    * que monte o laço sem casca (um teste, o quiz) continua parando — o anúncio é opcional, **parar não é**.
    */
-  aoFalhar?: (erro: unknown) => void;
+  onFailure?: (erro: unknown) => void;
 }
 
 /**
@@ -50,7 +50,7 @@ export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2
       // O anúncio não pode ressuscitar o problema. Se o próprio aviso quebrar — sem leitor de tela, sem DOM —,
       // uma exceção aqui voltaria a ser invisível dentro do ticker, que é exatamente o defeito que isto fecha.
       // read at the throw, not at the start: a root mounted after the loop began still announces it
-      try { (opcoes.aoFalhar ?? registeredNotice)?.(erro); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
+      try { (opcoes.onFailure ?? registeredNotice)?.(erro); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
     }
   };
   ticker.add(step);

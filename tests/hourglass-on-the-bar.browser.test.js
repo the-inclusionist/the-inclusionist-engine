@@ -12,7 +12,7 @@ import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 let motor;
 let guardadoAntes;
 const declaracao = (tick) => ({
-  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => false, tick,
+  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, holdsKeys: () => false, tick,
   world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
   nameAt: () => ({ text: 'a', gender: 'f', plural: false }), focusOf: () => null,
   objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],

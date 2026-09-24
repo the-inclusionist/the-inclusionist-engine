@@ -46,12 +46,12 @@ export function speechPlaybackRate(
   seconds: number,
   ppm: number,
   voiceAverage: number | null,
-): { readonly taxa: number; readonly ppmDaVoz: number | null } {
+): { readonly rate: number; readonly voiceWpm: number | null } {
   const alvo = isSpeechRate(ppm);
   const clampInside = (x: number): number => Math.min(MAX_PLAYBACK_RATE, Math.max(MIN_PLAYBACK_RATE, +x.toFixed(6)));
   if (words >= WORDS_TO_MEASURE && seconds >= SECONDS_TO_MEASURE) {
     const ppmDaVoz = (words / seconds) * 60;
-    return { taxa: clampInside(alvo / ppmDaVoz), ppmDaVoz };
+    return { rate: clampInside(alvo / ppmDaVoz), voiceWpm: ppmDaVoz };
   }
-  return { taxa: voiceAverage ? clampInside(alvo / voiceAverage) : 1, ppmDaVoz: null };
+  return { rate: voiceAverage ? clampInside(alvo / voiceAverage) : 1, voiceWpm: null };
 }

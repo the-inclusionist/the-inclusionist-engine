@@ -224,7 +224,7 @@ const declaracaoValida = () => ({
   holdsAtOnce: () => 1,
   // Um jogo de hotspots não segura nada — e declarar `1` acima e `false` aqui é a distinção do ADR-0115
   // escrita num fixture: os dois campos respondem a perguntas diferentes.
-  seguraTeclas: () => false,
+  holdsKeys: () => false,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'goal',
@@ -1028,16 +1028,16 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     const { doc, win } = domFalso();
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     const saiu = [];
-    motor.cenas.push({ nome: 'a', exit: () => saiu.push('a') });
-    motor.cenas.push({ nome: 'b', exit: () => saiu.push('b') });
-    expect(motor.cenas.nomes()).toEqual(['a', 'b']);
+    motor.cenas.push({ name: 'a', exit: () => saiu.push('a') });
+    motor.cenas.push({ name: 'b', exit: () => saiu.push('b') });
+    expect(motor.cenas.names()).toEqual(['a', 'b']);
 
     // ⚠️ `push` JÁ CORRE O `exit()` DA CENA DE BAIXO — medido aqui, e não suposto: empilhar `b` sobre `a`
     // produz um `'a'` antes de o `unmount` existir. Medir só a CAUDA é o que separa o que este caso afirma
     // do que a pilha já fazia sozinha.
     const antes = saiu.length;
     motor.unmount();
-    expect(motor.cenas.nomes(), 'a pilha guardou cenas do cartucho anterior').toEqual([]);
+    expect(motor.cenas.names(), 'a pilha guardou cenas do cartucho anterior').toEqual([]);
     // A ORDEM É DE CIMA PARA BAIXO: `pop()` desfaz o que foi empilhado por último, que é a única ordem em
     // que uma cena pode contar com o que empilhou por baixo dela ainda estar lá.
     expect(saiu.slice(antes), 'uma cena saiu sem correr o seu `exit()`').toEqual(['b', 'a']);
@@ -1057,8 +1057,8 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
    */
   const comTeclas = () => ({
     ...declaracaoValida(),
-    mapeamentoDoTeclado: () => ({ up: ['KeyZ'] }),
-    mapeamentoDoPad: () => ({ up: 99 }),
+    keyboardMapping: () => ({ up: ['KeyZ'] }),
+    padMapping: () => ({ up: 99 }),
   });
 
   it('🎯 [Right] `unmount` devolve o TECLADO à fábrica da engine — o mapa do cartucho sai com ele', async () => {

@@ -29,7 +29,7 @@ beforeAll(async () => {
   document.body.appendChild(raiz);
   createGame({ acomodacoes: SEM_ASSUNTO,
     declaration: {
-      topology: () => ({ kind: 'hotspots', order: ['a'] }), holdsAtOnce: () => 1, seguraTeclas: () => false,
+      topology: () => ({ kind: 'hotspots', order: ['a'] }), holdsAtOnce: () => 1, holdsKeys: () => false,
       tick: 'player', world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
       nameAt: () => ({ text: 'a', gender: 'f', plural: false }), focusOf: () => null,
       objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],

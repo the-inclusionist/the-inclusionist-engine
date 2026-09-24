@@ -225,7 +225,7 @@ export interface Player {
   walking?: boolean;
   running?: boolean;
   /** game/quiz: vitórias na atividade de alfabetização, zeradas a cada nova partida. */
-  alfWins?: number;
+  literacyWins?: number;
   /** ui/settings-audio, ui/pause-icons: saída de áudio própria; `null`/ausente = compartilhada. */
   audioSink?: string | null;
   // `_ac` e `_acOut` NÃO ficam aqui (ADR-0039, opção A1). São o AudioContext e o nó de ganho da saída

@@ -81,7 +81,7 @@ function boot(over = {}) {
     // A casca deixou de trocar de cena: ela PROJETA a cena que a raiz já trocou (ADR-0030 C3). O falso faz o
     // papel da raiz — guarda a fase e responde os três fatos. As regras de TRANSIÇÃO (pausar empilha, o
     // título não alterna) mudaram de casa junto, para `game/cenas`, e têm caso próprio lá.
-    fatosDaCena: () => ({ telaDeTitulo: faseFalsa === 'title', mundoRodando: faseFalsa === 'playing', menuDePausa: faseFalsa === 'paused' }),
+    fatosDaCena: () => ({ titleScreen: faseFalsa === 'title', worldRunning: faseFalsa === 'playing', pauseMenu: faseFalsa === 'paused' }),
     retomarJogo: () => { setPhase('playing'); },
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,

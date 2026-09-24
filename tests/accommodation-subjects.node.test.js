@@ -13,7 +13,7 @@ import { CONTRACT_KEYED } from '../app/js/core/accommodations.js';
 const base = () => ({
   declaration: {
     tick: 'player',
-    seguraTeclas: () => false,
+    holdsKeys: () => false,
     needsPointer: () => false,
     world: () => ({ kind: 'element', selector: '#game-region' }),
     topology: () => ({ kind: 'grid', size: [3, 3], move: 'orthogonal', frame: 'compass' }),
@@ -33,7 +33,7 @@ describe('contractSubjects — every rule, both sides', () => {
   it('🔴 the two latches follow held keys', () => {
     for (const k of ['moveLatch', 'holdLatch']) {
       expect(tem(base(), k)).toBe(false);
-      expect(tem(com({ declaration: { seguraTeclas: () => true } }), k)).toBe(true);
+      expect(tem(com({ declaration: { holdsKeys: () => true } }), k)).toBe(true);
     }
   });
 
@@ -75,7 +75,7 @@ describe('contractSubjects — every rule, both sides', () => {
   });
 
   it('[Interface] the answer only ever holds contract-keyed ids', () => {
-    const tudoLigado = com({ declaration: { tick: 'clock', seguraTeclas: () => true, needsPointer: () => true }, players: 2 });
+    const tudoLigado = com({ declaration: { tick: 'clock', holdsKeys: () => true, needsPointer: () => true }, players: 2 });
     expect([...contractSubjects(tudoLigado)].sort()).toEqual([...CONTRACT_KEYED].sort());
   });
 

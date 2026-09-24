@@ -1230,7 +1230,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ A REFERÊNCIA, e não o resultado. Chamar aqui congelava a resposta no arranque, e o
     // `reflectPauseIcons` — que existe porque a tabela de acções muda (ADR-0106 §5) — refrescava a partir
     // dela. Com vários cartuchos numa raiz de composição (ADR-0142) o ícone descrevia o primeiro deles.
-    seguraTeclas: () => cartridge.declaration.seguraTeclas(),
+    seguraTeclas: () => cartridge.declaration.holdsKeys(),
     // how many positions this cartridge declared — what «one button only» would have to offer (ADR-0218, issue #201)
     declaredPositions: () => (cartridge.preset ? presetActions(cartridge.preset).length : 0),
     // the hourglass is offered where time runs by itself (ADR-0180), read per cartridge
@@ -2185,16 +2185,16 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   function registerCartridgeMappings(): void {
     registerKeyboardMapping(
-      cartridge.declaration.mapeamentoDoTeclado
-        ? (jogadores, assento) => cartridge.declaration.mapeamentoDoTeclado!(jogadores, assento)
+      cartridge.declaration.keyboardMapping
+        ? (jogadores, assento) => cartridge.declaration.keyboardMapping!(jogadores, assento)
         : null,
     );
     // ⚠️ E O DO CONTROLE REGISTA-SE AQUI AINDA QUE ESTA RAIZ NÃO MONTE GAMEPAD NENHUM. Não é descuido: quem
     // chama `initGamepad` é o cartucho, e é exactamente por isso que o registo não pode viver lá — seria mais
     // um campo que um jogo pode esquecer, e esquecê-lo devolve o mapa da ENGINE a quem declarou outro, calado.
     registerPadMapping(
-      cartridge.declaration.mapeamentoDoPad
-        ? (jogadores, assento) => cartridge.declaration.mapeamentoDoPad!(jogadores, assento)
+      cartridge.declaration.padMapping
+        ? (jogadores, assento) => cartridge.declaration.padMapping!(jogadores, assento)
         : null,
     );
   }
@@ -3450,7 +3450,7 @@ export function createGame(o: CreateGameOptions): Engine {
       toggleBtn(cooldownButton, on);
       cooldownButton.textContent = toggleLabel(on);
       markChanged(cooldownRow, on !== (state.DEFAULTS.inputCooldown > 0));
-      cooldownRow.hidden = !cartridge.declaration.seguraTeclas();
+      cooldownRow.hidden = !cartridge.declaration.holdsKeys();
     };
     cooldownButton.addEventListener('click', () => {
       state.setInputCooldownValue(state.inputCooldown > 0 ? 0 : COOLDOWN_MS);

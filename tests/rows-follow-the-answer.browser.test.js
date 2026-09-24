@@ -15,7 +15,7 @@ import { SEM_ASSUNTO, comAssunto } from './fixtures/accommodation-answers.js';
 let motor;
 const declaracao = () => ({
   topology: () => ({ kind: 'grid', size: [3, 3], move: 'orthogonal', frame: 'compass' }), holdsAtOnce: () => 1,
-  seguraTeclas: () => false, tick: 'player', world: () => ({ kind: 'element', selector: '#game-region' }),
+  holdsKeys: () => false, tick: 'player', world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'goal', nameAt: () => ({ text: 'a', gender: 'f', plural: false }), focusOf: () => null,
   objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],
 });
