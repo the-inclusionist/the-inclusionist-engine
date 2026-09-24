@@ -59,5 +59,5 @@ if (process.argv[1] && process.argv[1].endsWith('stamp-license.mjs')) {
     const depois = carimbar(antes);
     if (depois !== antes) { writeFileSync(f, depois); tocados++; }
   }
-  console.log(`[licença] ${tocados} ficheiro(s) carimbado(s) em ${dir}`);
+  console.log(`[licence] ${tocados} file(s) stamped in ${dir}`);
 }

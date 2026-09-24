@@ -193,7 +193,6 @@ const CRU_CONHECIDO = {
   // `'Mapeados: '`, `'. Agora SOLTE tudo.'`) had neither accent nor function word — exactly the hole this file's header
   // declares («'Coletou' sozinha teria escapado») — and a `wizSay` parameter named `t` shadowing `core/i18n`'s `t` had
   // kept them raw.
-  'render/high-contrast.ts': 1,
   'render/viz-setters.ts': 1,
 
   /* --- PROGRAMMER MESSAGES, not interface: `throw`s and conformance lists that whoever writes a preset reads in the

@@ -16,8 +16,10 @@
 // which is the worst kind — it looks green. What is checked here is the FUNCTION, which is pure, plus its WIRING into
 // `build:pkg` (and `prepack` calls `build:pkg`, so the `npm publish` path necessarily goes through here).
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { carimbar, CABECALHO } from '../scripts/stamp-license.mjs';
 
 describe('carimbar — o ficheiro emitido leva a licença, venha ele como vier', () => {
@@ -72,5 +74,19 @@ describe('e o carimbo está LIGADO ao caminho do publish', () => {
     expect(pkg.license).toBe('AGPL-3.0-or-later');
     expect(pkg.files).toContain('LICENSE');
     expect(readFileSync(join(process.cwd(), 'LICENSE'), 'utf8')).toContain('GNU AFFERO GENERAL PUBLIC LICENSE');
+  });
+
+  it('[Right] the build line it prints says how many files it stamped, in English', () => {
+    // `build:pkg` prints this line to whoever publishes; it is the only sign the stamp ran, so it counts the files it
+    // CHANGED (an already stamped one is not counted) and speaks the artefacts' language.
+    const dir = mkdtempSync(join(tmpdir(), 'stamp-'));
+    try {
+      writeFileSync(join(dir, 'a.js'), 'export const x = 1;\n');
+      writeFileSync(join(dir, 'b.d.ts'), `${CABECALHO}\nexport declare const y: number;\n`);
+      const out = execFileSync(process.execPath, [join(process.cwd(), 'scripts', 'stamp-license.mjs'), dir]).toString();
+      expect(out.trim()).toBe(`[licence] 1 file(s) stamped in ${dir}`);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

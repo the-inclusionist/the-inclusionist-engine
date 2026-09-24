@@ -109,7 +109,7 @@ let ctx: HighContrastCtx | null = null;
 /** Wires the host and READS the stored role colours into `HC_ROLE` — at init, never at import (ADR-0232). */
 export function initHighContrast(c: HighContrastCtx): void { ctx = c; loadHcRole(c.store); }
 function requireCtx(): HighContrastCtx {
-  if (!ctx) throw new Error('render/high-contrast: initHighContrast(ctx) ainda não foi chamado');
+  if (!ctx) throw new Error('render/high-contrast: initHighContrast(ctx) has not been called yet');
   return ctx;
 }
 

@@ -13,7 +13,9 @@ import {
 
 describe('render/high-contrast — DI (initHighContrast ainda não chamado)', () => {
   it('[Error] worldTexFor/spriteTexFor lançam antes de initHighContrast', () => {
-    expect(() => worldTexFor('normal')).toThrow(/initHighContrast/);
+    // The message is read by a developer in a console, so it speaks the artefacts' language (English), and it names
+    // the call that is missing.
+    expect(() => worldTexFor('normal')).toThrow('render/high-contrast: initHighContrast(ctx) has not been called yet');
     // ⚠️ `'sprite-x'` and not `'coin'`: the `engine-boundary` gate fails GAME vocabulary in an engine fixture, and a
     // coin belongs to the platformer. What this case proves is that the function throws BEFORE initialisation, and for
     // that the sprite's name is irrelevant — which is exactly the argument for changing it.
