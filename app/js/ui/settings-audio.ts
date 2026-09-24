@@ -271,11 +271,11 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
  */
 export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
   const actions = card.querySelector<HTMLElement>(':scope > .overlay__actions');
-  const linhas: ControlRowSpec[] = [
+  const rows: ControlRowSpec[] = [
     { id: 'audio-master', rotulo: t('audio.som'), dica: t('audio.som.dica') },
     { id: 'audio-master-vol', rotulo: t('audio.volume'), forma: 'cursor' },
   ];
-  for (const piece of linhas) {
+  for (const piece of rows) {
     const alreadyThere = ctx.procurar('#' + piece.id);
     if (alreadyThere) {
       const linha = alreadyThere.closest<HTMLElement>('.ctrl-row');

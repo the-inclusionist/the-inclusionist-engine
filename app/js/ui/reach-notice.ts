@@ -34,10 +34,10 @@ export function noticeRows(a: Reach, t: Translator): string[] {
   if (a.ok) return [];
 
   const nome = (id: string): string => t('reach.nome.' + id);
-  const linhas = [t('reach.titulo', { pedidas: a.pedidas })];
+  const rows = [t('reach.titulo', { pedidas: a.pedidas })];
 
   for (const c of a.curtos) {
-    linhas.push(t('reach.curto', { transporte: nome(c.id), lugares: c.slots }));
+    rows.push(t('reach.curto', { transporte: nome(c.id), lugares: c.slots }));
   }
 
   // ⚠️ A TERCEIRA FRASE, e ela existe porque um transporte pode CHEGAR a todas as ações e ainda assim não
@@ -46,14 +46,14 @@ export function noticeRows(a: Reach, t: Translator): string[] {
   // telemóvel que reconhece dois não os dá. A criança tentava, não acontecia nada, e concluía que o jogo
   // estava partido. Uma frase antes de começar é a resposta honesta; meia tela jogável não é.
   for (const s of a.naoSeguram) {
-    linhas.push(t('reach.naoSegura', { transporte: nome(s.id), segura: s.holds, pedidas: a.seguraPedidas }));
+    rows.push(t('reach.naoSegura', { transporte: nome(s.id), segura: s.holds, pedidas: a.seguraPedidas }));
   }
 
-  linhas.push(a.serviriamSeLigados.length
+  rows.push(a.serviriamSeLigados.length
     ? t('reach.ligue', { saida: a.serviriamSeLigados.map(nome).join(t('reach.ou')) })
     : t('reach.semSaida'));
 
-  return linhas;
+  return rows;
 }
 
 export interface ReachNoticeCtx {
@@ -77,8 +77,8 @@ export const REACH_NOTICE_ID = 'reach-notice';
  * questão sem precisar de escapar nada.
  */
 export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
-  const linhas = noticeRows(a, ctx.t);
-  if (linhas.length === 0) return false;
+  const rows = noticeRows(a, ctx.t);
+  if (rows.length === 0) return false;
 
   const isInside = ctx.procurar('#game-region');
   if (!isInside) return false; // sem a marcação do hospedeiro não há onde mostrar; o `problems` já o denuncia
@@ -93,7 +93,7 @@ export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
   card.setAttribute('aria-modal', 'true');
   card.setAttribute('tabindex', '-1');
 
-  for (const [i, texto] of linhas.entries()) {
+  for (const [i, texto] of rows.entries()) {
     const p = ctx.criar('p');
     p.textContent = texto;
     if (i === 0) p.className = 'reach-notice__titulo';
@@ -102,12 +102,12 @@ export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
 
   // ⚠️ O BOTÃO É O QUE FAZ DISTO UM AVISO E NÃO UMA PORTA FECHADA. Ver o cabeçalho: a detecção de teclado
   // erra, e o erro só é aceitável enquanto a criança puder seguir em frente.
-  const seguir = ctx.criar('button');
-  seguir.setAttribute('type', 'button');
-  seguir.className = 'mode-btn';
-  seguir.textContent = ctx.t('reach.continuar');
-  seguir.addEventListener('click', () => overlay.remove());
-  card.appendChild(seguir);
+  const continueButton = ctx.criar('button');
+  continueButton.setAttribute('type', 'button');
+  continueButton.className = 'mode-btn';
+  continueButton.textContent = ctx.t('reach.continuar');
+  continueButton.addEventListener('click', () => overlay.remove());
+  card.appendChild(continueButton);
 
   overlay.appendChild(card);
   isInside.appendChild(overlay);
@@ -115,6 +115,6 @@ export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
   // O foco vai para o cartão, não para o botão: a criança tem de OUVIR o motivo antes de encontrar a saída.
   // (Se fosse para o botão, o leitor de tela leria «Jogar assim mesmo» e o resto ficaria para quem procurasse.)
   card.focus();
-  ctx.srAlert(linhas.join(' '));
+  ctx.srAlert(rows.join(' '));
   return true;
 }

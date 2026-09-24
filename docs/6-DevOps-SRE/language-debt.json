@@ -1,15 +1,15 @@
 {
   "measured": "2026-09-24",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 839,
+  "total": 811,
   "totals": {
-    "decl": 231,
-    "param": 266,
+    "decl": 210,
+    "param": 259,
     "membro": 342
   },
   "files": {
     "app/js/boot/create-game.ts": {
-      "decl": 57,
+      "decl": 53,
       "param": 56,
       "membro": 29
     },
@@ -44,18 +44,18 @@
       "membro": 3
     },
     "app/js/core/i18n.ts": {
-      "decl": 5,
+      "decl": 3,
       "param": 2,
       "membro": 0
     },
     "app/js/core/loop.ts": {
-      "decl": 2,
+      "decl": 1,
       "param": 4,
       "membro": 1
     },
     "app/js/core/route.ts": {
-      "decl": 3,
-      "param": 5,
+      "decl": 2,
+      "param": 2,
       "membro": 4
     },
     "app/js/core/scenes.ts": {
@@ -174,8 +174,8 @@
       "membro": 0
     },
     "app/js/platform/audio-sonar.ts": {
-      "decl": 12,
-      "param": 2,
+      "decl": 9,
+      "param": 1,
       "membro": 7
     },
     "app/js/platform/flash-sampler.ts": {
@@ -195,7 +195,7 @@
     },
     "app/js/platform/heavy.ts": {
       "decl": 0,
-      "param": 3,
+      "param": 1,
       "membro": 5
     },
     "app/js/platform/interruptible-speech.ts": {
@@ -209,7 +209,7 @@
       "membro": 4
     },
     "app/js/platform/kokoro.ts": {
-      "decl": 5,
+      "decl": 4,
       "param": 4,
       "membro": 5
     },
@@ -250,7 +250,7 @@
     },
     "app/js/render/port.ts": {
       "decl": 0,
-      "param": 4,
+      "param": 3,
       "membro": 0
     },
     "app/js/render/screen-pipeline.ts": {
@@ -354,7 +354,7 @@
       "membro": 3
     },
     "app/js/ui/menu-nav.ts": {
-      "decl": 4,
+      "decl": 3,
       "param": 5,
       "membro": 6
     },
@@ -379,7 +379,7 @@
       "membro": 2
     },
     "app/js/ui/pause-icons.ts": {
-      "decl": 13,
+      "decl": 10,
       "param": 5,
       "membro": 30
     },
@@ -389,12 +389,12 @@
       "membro": 3
     },
     "app/js/ui/reach-notice.ts": {
-      "decl": 4,
+      "decl": 1,
       "param": 3,
       "membro": 2
     },
     "app/js/ui/settings-audio.ts": {
-      "decl": 5,
+      "decl": 4,
       "param": 2,
       "membro": 5
     },
@@ -409,7 +409,7 @@
       "membro": 1
     },
     "app/js/ui/settings-mobility.ts": {
-      "decl": 5,
+      "decl": 4,
       "param": 4,
       "membro": 4
     },

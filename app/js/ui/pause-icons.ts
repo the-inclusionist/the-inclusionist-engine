@@ -576,10 +576,10 @@ const DOOR_TO_LIST: Readonly<Record<string, PauseSub>> = Object.freeze({ options
 
 export function showPauseOptions(sp: HTMLElement, sub: PauseSub): HTMLElement | null {
   sp.querySelectorAll<HTMLElement>('.pause-menu').forEach((m) => { m.hidden = m.dataset.sub !== sub; });
-  const primeiro = sp.querySelector<HTMLElement>(PM_VISIBLE_ITEMS);
+  const first = sp.querySelector<HTMLElement>(PM_VISIBLE_ITEMS);
   sp.querySelectorAll<HTMLElement>('.pm-sel,.pi-sel').forEach((b) => b.classList.remove('pm-sel', 'pi-sel'));
-  if (primeiro) primeiro.classList.add('pm-sel');
-  return primeiro;
+  if (first) first.classList.add('pm-sel');
+  return first;
 }
 
 
@@ -1283,11 +1283,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * que diz de quantos itens é a lista nova.
    */
   function announceList(sp: HTMLElement, sub: PauseSub): void {
-    const primeiro = showPauseOptions(sp, sub);
-    if (!primeiro) return;
+    const first = showPauseOptions(sp, sub);
+    if (!first) return;
     const itens = [...sp.querySelectorAll<HTMLElement>(PM_VISIBLE_ITEMS)];
     ctx.srSay(announceItem(
-      { rotulo: primeiro.textContent || '', posicao: 1, total: itens.length }, menuIndexOn,
+      { rotulo: first.textContent || '', posicao: 1, total: itens.length }, menuIndexOn,
     ));
   }
 
@@ -1330,11 +1330,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    */
   function entrarNaBarra(i: number): void {
     const bar = ctx.getA11yBars()[i];
-    const primeiro = bar && selectedIcon(bar);
-    if (!bar || !primeiro) return;
+    const first = bar && selectedIcon(bar);
+    if (!bar || !first) return;
     onBar.add(i);
     ctx.srSay(t('sr.a11y.barEnter'));
-    selectIcon(i, bar, primeiro);
+    selectIcon(i, bar, first);
   }
 
   /**

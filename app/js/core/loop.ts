@@ -39,19 +39,19 @@ export function registerCrashNotice(notice: ((erro: unknown) => void) | null): v
 
 export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, opcoes: LoopOptions = {}): void {
   let stopped = false;
-  const passo = (): void => {
+  const step = (): void => {
     if (stopped) return; // ticker sem `remove` não desregistra — a trava é o que faz o laço parar mesmo assim
     try {
       // the game speed (ADR-0180) applies to the clamped time, read each frame: a change is felt on the next one
       frame(Math.min(ticker.deltaTime, maxDt) * gameSpeed);
     } catch (erro) {
       stopped = true;
-      ticker.remove?.(passo); // some do ticker quando dá: callback que roda 60×/s para nada custa em hardware fraco
+      ticker.remove?.(step); // some do ticker quando dá: callback que roda 60×/s para nada custa em hardware fraco
       // O anúncio não pode ressuscitar o problema. Se o próprio aviso quebrar — sem leitor de tela, sem DOM —,
       // uma exceção aqui voltaria a ser invisível dentro do ticker, que é exatamente o defeito que isto fecha.
       // read at the throw, not at the start: a root mounted after the loop began still announces it
       try { (opcoes.aoFalhar ?? registeredNotice)?.(erro); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
     }
   };
-  ticker.add(passo);
+  ticker.add(step);
 }

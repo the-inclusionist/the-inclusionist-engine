@@ -91,15 +91,15 @@ export function dictionaryGaps(): string[] {
   for (const code of AVAILABLE) for (const chave in EXTRA[code] ?? {}) registered.add(chave);
   if (!registered.size) return [];
   const SHOW = 5;
-  const linhas: string[] = [];
+  const gapLines: string[] = [];
   for (const code of AVAILABLE) {
-    const faltam = [...registered].filter((chave) => !(chave in (EXTRA[code] ?? {})));
-    if (!faltam.length) continue;
-    const resto = faltam.length > SHOW ? ` (and ${faltam.length - SHOW} more)` : '';
-    linhas.push(`the cartridge's dictionary lacks ${code} for ${faltam.slice(0, SHOW).join(', ')}${resto}: `
+    const missing = [...registered].filter((chave) => !(chave in (EXTRA[code] ?? {})));
+    if (!missing.length) continue;
+    const resto = missing.length > SHOW ? ` (and ${missing.length - SHOW} more)` : '';
+    gapLines.push(`the cartridge's dictionary lacks ${code} for ${missing.slice(0, SHOW).join(', ')}${resto}: `
       + `a child playing in ${code} reads the fallback there (registerDict)`);
   }
-  return linhas;
+  return gapLines;
 }
 
 /**

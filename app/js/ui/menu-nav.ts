@@ -559,16 +559,16 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   function onPress(e: PointerEvent): void {
     release();
     engolirClique = null;
-    const sob = itemUnder(e.target);
-    if (!sob) return;
+    const under = itemUnder(e.target);
+    if (!under) return;
     const id = e.pointerId;
     holding = {
       id,
       timer: setTimeout(() => {
         holding = null;
-        engolirClique = sob.items[sob.n] ?? null;
-        if (sob.pausa) selectAndSayInPause(sob.menu, sob.items, sob.n);
-        else focusAndSay(sob.items, sob.n);
+        engolirClique = under.items[under.n] ?? null;
+        if (under.pausa) selectAndSayInPause(under.menu, under.items, under.n);
+        else focusAndSay(under.items, under.n);
       }, HOLD_MS),
     };
   }

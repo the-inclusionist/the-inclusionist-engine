@@ -298,12 +298,12 @@ export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, lista
     abas.hidden = true;
     card.insertBefore(abas, lista);
   }
-  const linhas: ControlRowSpec[] = [
+  const rows: ControlRowSpec[] = [
     { id: 'opt-facil', rotulo: t('motor.facil'), dica: t('motor.facil.dica') },
     { id: 'opt-altmove', rotulo: t('motor.altmove'), dica: t('motor.altmove.dica') },
     { id: 'opt-togglerun', rotulo: t('motor.togglerun'), dica: t('motor.togglerun.dica') },
   ];
-  for (const spec of linhas) {
+  for (const spec of rows) {
     // ⚠️ REETIQUETA EM VEZ DE SALTAR quando a linha já existe, e é por isso que esta função é chamada
     // também do `render()` de cada abertura: o texto foi capturado no intervalo de arranque, onde o idioma
     // ainda é o de recuo. 📏 Medido num navegador com `lang="en"`: o título vinha em inglês e as linhas em

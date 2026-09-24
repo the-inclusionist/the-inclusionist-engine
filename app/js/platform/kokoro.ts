@@ -131,8 +131,8 @@ export function tokenizar(phonemes: string, vocabulario: Readonly<{ [symbol: str
 
 /** The style row a sentence of `tokens` ids (pads excluded) takes from a voice table. */
 export function sentenceStyle(styleTable: Float32Array, tokens: number): Float32Array {
-  const linhas = Math.floor(styleTable.length / STYLE_DIMENSION);
-  const linha = Math.max(0, Math.min(linhas - 1, tokens));
+  const rowCount = Math.floor(styleTable.length / STYLE_DIMENSION);
+  const linha = Math.max(0, Math.min(rowCount - 1, tokens));
   return styleTable.slice(linha * STYLE_DIMENSION, (linha + 1) * STYLE_DIMENSION);
 }
 

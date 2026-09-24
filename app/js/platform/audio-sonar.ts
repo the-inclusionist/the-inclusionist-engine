@@ -70,8 +70,8 @@ export const PAN_PACES = 11;
  * Contínuo: o `unit` declarado. Grade: uma célula, por definição. Lista: nada — `hotspots` é uma ordem, não
  * uma geometria, e inventar-lhe uma largura de estéreo seria apontar para um lado que não existe.
  */
-export function worldStep(topo: Topology): number {
-  return topo.kind === 'continuous' ? topo.unit : topo.kind === 'grid' ? 1 : 0;
+export function worldStep(shape: Topology): number {
+  return shape.kind === 'continuous' ? shape.unit : shape.kind === 'grid' ? 1 : 0;
 }
 
 /**
@@ -295,11 +295,11 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   }
 
   function panFor(wx: number, pl: SonarPlayer): number {
-    const passo = worldStep(ctx.topology());
+    const pace = worldStep(ctx.topology());
     // `hotspots` não tem espaço, logo não tem lado. O `bearing` já responde `none` pelo mesmo motivo, e
     // centrar é a única resposta honesta — um pan calculado sobre índices de lista aponta para nada.
-    if (!(passo > 0)) return 0;
-    return Math.max(-1, Math.min(1, (wx - pl.x) / (PAN_PACES * passo)));
+    if (!(pace > 0)) return 0;
+    return Math.max(-1, Math.min(1, (wx - pl.x) / (PAN_PACES * pace)));
   }
 
   /**
@@ -355,11 +355,11 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   }
 
   function nearestSpot(pl: SonarPlayer): { at: Spot; d: number } | null {
-    const topo = ctx.topology();
+    const shape = ctx.topology();
     const aqui: Spot = { x: pl.x, y: pl.y };
     let nearest: Spot | null = null, bd = Infinity;
     for (const alvo of ctx.targetsOf(pl.i)) {
-      const d = distance(topo, aqui, alvo);
+      const d = distance(shape, aqui, alvo);
       if (d < bd) { bd = d; nearest = alvo; }
     }
     return nearest ? { at: nearest, d: bd } : null;
@@ -390,12 +390,12 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     // O NOME vem do jogo (campo 3). Antes era `t('sr.nav.coin')` — a engine dizia "moeda" porque só conhecia
     // moedas. O fallback existe para o jogo que declara alvo sem nome: melhor "alvo" do que uma chave crua.
     const nome = ctx.nameAt(alvo.at);
-    const corpo = t('sr.nav.sonarFound', {
+    const foundSentence = t('sr.nav.sonarFound', {
       alvo: nome ? nome.text : t('sr.nav.target'),
       lado: inWords(bearing(ctx.topology(), { x: pl.x, y: pl.y }, alvo.at)),
       dist: t(distanceKey(alvo.d)),
     });
-    const msg = (ctx.getNumPlayers() > 1 ? t('sr.player.prefix', { n: pl.i + 1 }) : '') + corpo;
+    const msg = (ctx.getNumPlayers() > 1 ? t('sr.player.prefix', { n: pl.i + 1 }) : '') + foundSentence;
     ctx.srSay(msg); ctx.narrate(msg);
   }
 

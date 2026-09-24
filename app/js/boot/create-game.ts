@@ -1319,9 +1319,9 @@ export function createGame(o: CreateGameOptions): Engine {
       if (!typo) return null;
       const cycle = typographyCycle(bcp47());
       typographyStep = (typographyStep + 1) % cycle.length;
-      const passo = cycle[typographyStep]!;
-      state.setLetterCaseValue(passo.caixa);
-      typo.setFont(passo.fonte, false);
+      const position = cycle[typographyStep]!;
+      state.setLetterCaseValue(position.caixa);
+      typo.setFont(position.fonte, false);
       /*
        * ⚠️ A ESCALA É ESCRITA SEMPRE, e não só quando é maior que 1. Escrever só na subida deixaria a mão do
        * país a valer depois de a criança voltar para a Atkinson — o texto inteiro 25% maior sem nada o
@@ -1329,9 +1329,9 @@ export function createGame(o: CreateGameOptions): Engine {
        * 📌 Na raiz do documento e não no `#game-region`: o `font-size` de base é de `html,body`, e é ele que
        * esta razão multiplica.
        */
-      doc.documentElement.style.setProperty('--fonte-escala', String(passo.escala));
+      doc.documentElement.style.setProperty('--fonte-escala', String(position.escala));
       reserveBarBand(); // the name line under the bar grows with the text (issue #160)
-      return FONT_BY_KEY[passo.fonte]?.fam ?? null;
+      return FONT_BY_KEY[position.fonte]?.fam ?? null;
     } : undefined,
     ...(cartridge.setTemaDoJogador ? { setTemaDoJogador: cartridge.setTemaDoJogador } : {}),
     /*
@@ -1605,7 +1605,7 @@ export function createGame(o: CreateGameOptions): Engine {
           const lista = $<HTMLElement>('#help-list');
           if (!lista) return;
           while (lista.firstChild) lista.removeChild(lista.firstChild);
-          const linhas = [...(cartridge.howToPlay ?? []), ...helpRows(cartridge.preset, (a) => keyboard.kbFor(0)[a], keyName)];
+          const slideContents = [...(cartridge.howToPlay ?? []), ...helpRows(cartridge.preset, (a) => keyboard.kbFor(0)[a], keyName)];
           const ctxDoSlide = { criar: (tag: string) => doc.createElement(tag), t, titulo: t('menu.help') };
           const slides = mountSlides(ctxDoSlide);
           lista.appendChild(slides);
@@ -1616,14 +1616,14 @@ export function createGame(o: CreateGameOptions): Engine {
           };
           const mostrar = (i: number): { indice: number; falado: string } => {
             stopFigure();
-            const shown = showSlide(slides, linhas, i, ctxDoSlide);
-            const slide = linhas[shown.indice];
+            const shown = showSlide(slides, slideContents, i, ctxDoSlide);
+            const slide = slideContents[shown.indice];
             if (slide && 'text' in slide) stopFigure = animateFigure(slides, slide, relogio);
             return shown;
           };
           let atual = mostrar(0).indice;
           slides.addEventListener('passo', (ev) => {
-            const fresh = nextStep(atual, linhas.length, (ev as CustomEvent<number>).detail);
+            const fresh = nextStep(atual, slideContents.length, (ev as CustomEvent<number>).detail);
             if (fresh === atual) return;
             const shown = mostrar(fresh);
             atual = shown.indice;
@@ -2494,12 +2494,12 @@ export function createGame(o: CreateGameOptions): Engine {
     reserveBarBand();
     if (hudMounted && !hudFrame && typeof win.requestAnimationFrame === 'function') {
       hudFrame = true;
-      const passo = (): void => {
+      const position = (): void => {
         if (!hudMounted) { hudFrame = false; return; }
         if (hudMounted.refresh()) reserveBarBand();
-        win.requestAnimationFrame(passo);
+        win.requestAnimationFrame(position);
       };
-      win.requestAnimationFrame(passo);
+      win.requestAnimationFrame(position);
     }
   }
   mountHud();
@@ -2513,12 +2513,12 @@ export function createGame(o: CreateGameOptions): Engine {
    * first thing a keyboard reaches; a page's own link is kept. By capability: a host double without a body mounts nothing.
    */
   if (doc.body && typeof doc.body.insertBefore === 'function' && !$('.skip-link')) {
-    const pular = doc.createElement('a');
-    pular.className = 'skip-link';
-    pular.setAttribute('href', '#game-region');
-    pular.setAttribute('data-i18n', 'skip.toGame');
-    pular.textContent = t('skip.toGame');
-    doc.body.insertBefore(pular, doc.body.firstChild); // `data-i18n`: every `setLocale` rewrites it, the boot's included
+    const skipLink = doc.createElement('a');
+    skipLink.className = 'skip-link';
+    skipLink.setAttribute('href', '#game-region');
+    skipLink.setAttribute('data-i18n', 'skip.toGame');
+    skipLink.textContent = t('skip.toGame');
+    doc.body.insertBefore(skipLink, doc.body.firstChild); // `data-i18n`: every `setLocale` rewrites it, the boot's included
   }
 
   /*

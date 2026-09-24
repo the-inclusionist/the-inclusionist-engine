@@ -1669,7 +1669,7 @@
     "interface DrawingWithCircle": [
       "drawCircle"
     ],
-    "type RenderInto": "(displayObject: unknown, alvo: unknown, limpar: boolean) => void",
+    "type RenderInto": "(displayObject: unknown, alvo: unknown, clearFirst: boolean) => void",
     "type CreateSprite": "(sourceTexture: unknown) => T",
     "type CreateTile": "(sourceTexture: unknown, largura: number, altura: number) => T",
     "type CreateDrawing": "() => T",

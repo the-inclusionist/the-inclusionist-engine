@@ -85,7 +85,7 @@ export interface Route {
 
 const DEFAULT_BUDGET = 4096;
 
-/** Chave de um ponto na fila. Arredondada, porque no contínuo os pontos nascem de somas de `passo`. */
+/** A spot's key in the queue. Rounded, because in continuous space spots are born from sums of `stride`. */
 const chave = (s: Spot, cells: number): string =>
   s.x.toFixed(cells) + '|' + s.y.toFixed(cells) + '|' + (s.z ?? 0).toFixed(cells);
 
@@ -98,10 +98,10 @@ const chave = (s: Spot, cells: number): string =>
  * ler uma amostragem, não uma trajetória — e é por isso que `passos` é uma contagem de células e não uma
  * medida física.
  */
-function neighbours(topo: Topology, passo: number): Spot[] {
-  if (topo.kind === 'hotspots') return [];
-  const dims = topo.size.length;
-  const orthogonal = topo.move === 'orthogonal';
+function neighbours(shape: Topology, stride: number): Spot[] {
+  if (shape.kind === 'hotspots') return [];
+  const dims = shape.size.length;
+  const orthogonal = shape.move === 'orthogonal';
   const out: Spot[] = [];
   const axes = [-1, 0, 1];
   for (const dx of axes) for (const dy of axes) {
@@ -109,20 +109,20 @@ function neighbours(topo: Topology, passo: number): Spot[] {
       const n = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
       if (n === 0) continue;
       if (orthogonal && n > 1) continue; // L¹: a diagonal não existe
-      out.push({ x: dx * passo, y: dy * passo, z: dz * passo });
+      out.push({ x: dx * stride, y: dy * stride, z: dz * stride });
     }
   }
   return out;
 }
 
 /** O ponto cabe na extensão declarada? Grade conta células 0..n−1; contínuo conta unidades 0..n. */
-function isInside(topo: Topology, s: Spot): boolean {
-  if (topo.kind === 'hotspots') return false;
+function isInside(shape: Topology, s: Spot): boolean {
+  if (shape.kind === 'hotspots') return false;
   const eixo = [s.x, s.y, s.z ?? 0];
-  for (let i = 0; i < topo.size.length; i++) {
-    const lim = topo.size[i] as number;
+  for (let i = 0; i < shape.size.length; i++) {
+    const lim = shape.size[i] as number;
     if (eixo[i]! < 0) return false;
-    if (topo.kind === 'grid' ? eixo[i]! > lim - 1 : eixo[i]! > lim) return false;
+    if (shape.kind === 'grid' ? eixo[i]! > lim - 1 : eixo[i]! > lim) return false;
   }
   return true;
 }
@@ -138,18 +138,18 @@ function isInside(topo: Topology, s: Spot): boolean {
  * que a criança consegue alcançar.
  */
 export function routeTo(ctx: RouteCtx, de: Spot, alvos: readonly Spot[]): Route | null {
-  const topo = ctx.topology;
-  if (topo.kind === 'hotspots' || alvos.length === 0) return null;
-  const walk = walkOf(topo);
+  const shape = ctx.topology;
+  if (shape.kind === 'hotspots' || alvos.length === 0) return null;
+  const walk = walkOf(shape);
   // a unit of zero would make the queue go nowhere, and a negative one would walk exactly like a positive one
   if (!(walk.step > 0)) return null;
-  const arrived = (s: Spot): Spot | null => alvos.find((a) => distance(topo, s, a) <= walk.tolerance) ?? null;
+  const arrived = (s: Spot): Spot | null => alvos.find((a) => distance(shape, s, a) <= walk.tolerance) ?? null;
 
   const targetHere = arrived(de);
   if (targetHere) return { proximo: de, ate: targetHere, passos: 0 };
 
   const search: Search = {
-    ctx, space: topo, arrived, keyDecimals: walk.keyDecimals, jumps: neighbours(topo, walk.step),
+    ctx, space: shape, arrived, keyDecimals: walk.keyDecimals, jumps: neighbours(shape, walk.step),
     budget: ctx.orcamento ?? DEFAULT_BUDGET, seen: new Set<string>([chave(de, walk.keyDecimals)]),
   };
   let level: Step[] = [{ at: de, first: de, steps: 0 }];

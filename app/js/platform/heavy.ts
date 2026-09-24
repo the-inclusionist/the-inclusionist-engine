@@ -45,7 +45,7 @@ export interface HeavyOptions {
    * The SHA-256 of a body, as lowercase hex (issue #168). Injected for the gate; by default `crypto.subtle`. `null`, or a
    * host without `crypto.subtle` (an insecure context), keeps NOTHING: unverifiable is not verified.
    */
-  readonly digest?: ((corpo: ArrayBuffer) => Promise<string>) | null;
+  readonly digest?: ((payload: ArrayBuffer) => Promise<string>) | null;
   /** Só estas ids, se dado. Serve ao consumidor que quer as vozes e não o resto. */
   readonly apenas?: readonly string[];
   /** The page's address the delivery's `heavy/` folder is resolved against. By default the page's own (`location.href`). */
@@ -200,8 +200,8 @@ async function keepIfChecked(p: HeavyFile, url: string, resp: Response, t: Downl
 const canComputeSha256 = (): boolean => !!(globalThis as { crypto?: Crypto }).crypto?.subtle;
 
 /** The SHA-256 of a body as lowercase hex, by `crypto.subtle` (issue #168). Needs a secure context. */
-export async function sha256Hex(corpo: ArrayBuffer): Promise<string> {
-  const bytes = new Uint8Array(await (globalThis as { crypto: Crypto }).crypto.subtle.digest('SHA-256', corpo));
+export async function sha256Hex(payload: ArrayBuffer): Promise<string> {
+  const bytes = new Uint8Array(await (globalThis as { crypto: Crypto }).crypto.subtle.digest('SHA-256', payload));
   return [...bytes].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
 
