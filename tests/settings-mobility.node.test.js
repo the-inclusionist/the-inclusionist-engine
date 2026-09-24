@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-mobility — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
-// Cobre: clamp do jogador selecionado (Boundary: sel >= numPlayers), o predicado "algum jogador ativo"
-// (liga a barra), o texto do anúncio de Modo Fácil e a construção das abas por jogador (mantidas `hidden`,
-// decisão E3). O render()/reflect() em si (toca DOM) fica no settings-mobility.browser.test.js.
-// Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Tests of ui/settings-mobility — PURE logic (node project, no document). ZOMBIES + Right-BICEP.
+// Covers: the clamp of the selected player (Boundary: sel >= numPlayers), the predicate "some player active" (turns
+// the bar on), the Easy Mode announcement text and the building of the per-player tabs (kept `hidden`, decision E3).
+// render()/reflect() themselves (they touch the DOM) are in settings-mobility.browser.test.js.
+// See docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
-import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel é alias dele desde o item 14
+import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel is its alias (item 14)
 import { t } from '../app/js/core/i18n.js';
-import { latchKey } from '../app/js/input/latch-scope.js'; // os anúncios vêm do dicionário desde o item 14
+import { latchKey } from '../app/js/input/latch-scope.js'; // the announcements come from the dictionary (item 14)
 import { easyKey, toggleRunKey, toggleMoveKey, setMoveLatch, setRunLatch } from '../app/js/ui/settings-mobility.js';
 import {
   clampSelPlayer, anyMobilityActive, onOffLabel, playerTabsHTML, easyAnnouncement,
@@ -28,7 +28,7 @@ describe('clampSelPlayer', () => {
   });
   it('[Boundary/Edge-case] volta a 0 quando a seleção é >= numPlayers (jogador saiu)', () => {
     expect(clampSelPlayer(3, 2)).toBe(0);
-    expect(clampSelPlayer(2, 2)).toBe(0); // igual ao limite também clampa (índice válido é 0..numPlayers-1)
+    expect(clampSelPlayer(2, 2)).toBe(0); // equal to the limit clamps too (the valid index is 0..numPlayers-1)
   });
   it('[Zero] numPlayers=0 sempre clampa para 0', () => {
     expect(clampSelPlayer(0, 0)).toBe(0);
@@ -52,9 +52,8 @@ describe('anyMobilityActive', () => {
 
 describe('onOffLabel', () => {
   it('[Interface] é o MESMO rótulo de ui/dom — o alias continua ligado à fonte única', () => {
-    // O corpo daqui era uma cópia das mesmas duas palavras, com um comentário que dizia "shared" sem que
-    // fosse. Virou alias de `ui/dom.toggleLabel`. O que este caso guarda não é mais o texto (isso mora em
-    // tests/dom.node.test.js): é que o alias não volte a ser uma cópia.
+    // `onOffLabel` is an alias of `ui/dom.toggleLabel`, the single source. What this case guards is not the text (that
+    // lives in tests/dom.node.test.js): it is the alias never becoming a copy again.
     expect(onOffLabel).toBe(toggleLabel);
   });
 });
@@ -82,9 +81,9 @@ describe('playerTabsHTML', () => {
 });
 
 describe('easyAnnouncement', () => {
-  // Comparado contra `t()` e não contra a frase em português. Fixar a frase aqui devolveria ao teste o texto
-  // que o item 14 acabou de tirar do código — e o caso continua pegando chave TROCADA, porque `t('…easyOn')`
-  // e `t('…easyOff')` são diferentes.
+  // Compared against `t()` and not against the Portuguese sentence. Pinning the sentence here would bring back into the
+  // test the text item 14 took out of the code — and the case still catches a SWAPPED key, because `t('…easyOn')` and
+  // `t('…easyOff')` are different.
   it('[Right] 1 jogador: sem prefixo "Jogador N"', () => {
     expect(easyAnnouncement(0, 1, true)).toBe(t('sr.motor.easyOn'));
   });
@@ -92,7 +91,7 @@ describe('easyAnnouncement', () => {
     expect(easyAnnouncement(1, 2, true)).toBe(t('sr.player.prefix', { n: 2 }) + t('sr.motor.easyOn'));
   });
   it('[Zero] a chave NUNCA vaza para o anúncio', () => {
-    // O modo silencioso de falhar da i18n por chave: um `t()` esquecido faz o leitor de tela LER a chave.
+    // The silent way key-based i18n fails: a forgotten `t()` makes the screen reader READ the key.
     for (const on of [true, false]) expect(easyAnnouncement(0, 1, on)).not.toMatch(/sr\./);
   });
   it('[Boundary] desligado: mensagem curta', () => {
@@ -108,9 +107,9 @@ describe('toggleMoveKey / a delegação das três chaves', () => {
   });
 
   it('⚠️ [Interface] as TRÊS delegam ao `KEYS` — nenhuma voltou a ser cópia do literal', () => {
-    // O `easyKey` era a última cópia deste ficheiro, e o comentário do `toggleRunKey` já registava porquê:
-    // «duas cópias de um nome mudam uma de cada vez». Este caso e os pinos literais acima seguram os dois
-    // lados — sozinho, ele moveria-se junto com o `KEYS`; sozinhos, os pinos deixariam a cópia voltar.
+    // Two copies of a name change one at a time, which is why the three key helpers delegate to `KEYS`. This case and the
+    // literal pins above hold both sides — alone, it would move together with `KEYS`; alone, the pins would let the copy
+    // come back.
     for (const i of [0, 2]) {
       expect(easyKey(i)).toBe(KEYS.easyP(i));
       expect(toggleRunKey(i)).toBe(KEYS.toggleRunP(i));
@@ -134,9 +133,9 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
     };
   }
 
-  // ⚠️ A ESCRITA DUPLA (ADR-0113), e a chave ANTIGA não sai ainda: quem LÊ continua a ser o cartucho, por
-  // `KEYS.toggleMoveP(i)`. Parar de a escrever agora faria a criança perder a escolha no arranque seguinte —
-  // é a forma do `p.visual` ao lado do `p.viz` (#104 etapa 1a), pela mesma razão.
+  // ⚠️ THE DOUBLE WRITE (ADR-0113), and the OLD key does not leave yet: the cartridge is still who READS it, through
+  // `KEYS.toggleMoveP(i)`. Stopping writing it now would make the child lose her choice at the next boot — the same
+  // shape as `p.visual` beside `p.viz` (#104 step 1a), for the same reason.
   it('🎯 [Right] com o aparelho conhecido, escreve NAS DUAS chaves — a nova e a legada', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
     c.ctx.transportInUse = () => 'gamepad';
@@ -147,16 +146,16 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
       .toBe(true);
   });
 
-  // 📌 SEM O APARELHO, o comportamento é EXACTAMENTE o de hoje — que é o que torna o campo opcional seguro.
+  // 📌 WITHOUT THE DEVICE, the behaviour is EXACTLY the legacy one — which is what makes the optional field safe.
   it('📌 [Zero] sem `transporteEmUso`, escreve só a legada, como antes', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
     setMoveLatch(c.ctx, 0, true);
     expect(Object.keys(c.escrito)).toEqual([KEYS.toggleMoveP(0)]);
   });
 
-  // ⚠️ E NOS QUATRO ASSISTIDOS A ESCRITA NOVA RECUSA-SE (cláusula 3): não há escolha a guardar, porque a
-  // alternância é o que faz aquela entrada funcionar. A legada continua a ser escrita — ela é o ajuste que a
-  // criança leva consigo para os aparelhos onde a escolha existe.
+  // ⚠️ AND ON THE FOUR ASSISTED ONES THE NEW WRITE REFUSES (clause 3): there is no choice to store, because the latch is
+  // what makes that input work. The legacy one is still written — it is the setting the child takes with her to the
+  // devices where the choice exists.
   it('⚠️ [Zero] em `olhos` a chave nova não é escrita, e a legada é', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
     c.ctx.transportInUse = () => 'olhos';
@@ -173,8 +172,8 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
   });
 
   it('⚠️ [Right] DESLIGAR pára quem está a andar por travamento — senão a personagem anda sozinha', () => {
-    // O sintoma que este caso impede não dá erro nenhum: a criança desliga o modo, larga tudo, e a
-    // personagem continua a andar sem tecla nenhuma premida.
+    // The symptom this case prevents gives no error at all: the child turns the mode off, lets go of everything, and the
+    // character keeps walking with no key pressed.
     const c = cenario([{ toggleMove: true, walkDir: -1 }]);
     setMoveLatch(c.ctx, 0, false);
     expect(c.ctx.players[0].toggleMove).toBe(false);
@@ -201,11 +200,11 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
     expect(c.ditos).toEqual([]);
   });
 
-  // ===================== A IRMÃ, A DO CORRER =====================
+  // ===================== THE SISTER, THE RUN ONE =====================
   //
-  // 🎯 Ela existe pela mesma razão e passa no mesmo teste: «cada passo já era da engine». Aqui é ainda mais
-  // verdade — `toggleRun` é campo de `PlayerBase`, a chave é `KEYS.toggleRunP(i)` e o anúncio é
-  // `sr.motor.toggleRun*`. NÃO HÁ um efeito de jogo a injectar, e é isso que torna o campo do ctx opcional.
+  // 🎯 It exists for the same reason and passes the same test: «cada passo já era da engine». Here it is even more true
+  // — `toggleRun` is a field of `PlayerBase`, the key is `KEYS.toggleRunP(i)` and the announcement is
+  // `sr.motor.toggleRun*`. There is NO game effect to inject, and that is what makes the ctx field optional.
   it('[Right] a do CORRER escreve o campo, persiste na chave da engine e anuncia', () => {
     const c = cenario([{ toggleRun: false, walkDir: 0 }]);
     setRunLatch(c.ctx, 0, true);
@@ -215,10 +214,10 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
   });
 
   it('🔴 [Inverse] DESLIGAR a do correr NÃO mexe em `walkDir` — ela não governa quem anda', () => {
-    // ⚠️ A DIFERENÇA ENTRE AS DUAS IRMÃS, e é por isso que este caso existe. A de MARCHA chama
-    // `applyLatch`, que pára quem anda por travamento: sem isso a personagem anda sozinha. A do CORRER
-    // governa uma trava de VELOCIDADE e não tem como deixar ninguém em movimento — copiar aquela linha «por
-    // simetria» mexeria em `walkDir` por causa de um botão que não lhe toca.
+    // ⚠️ THE DIFFERENCE BETWEEN THE TWO SISTERS, and it is why this case exists. The WALK one calls `applyLatch`, which
+    // stops whoever walks by latching: without it the character walks by itself. The RUN one governs a SPEED latch and
+    // has no way to leave anyone moving — copying that line «por simetria» would touch `walkDir` because of a button that
+    // does not touch it.
     const c = cenario([{ toggleRun: true, walkDir: -1 }]);
     setRunLatch(c.ctx, 0, false);
     expect(c.ctx.players[0].toggleRun).toBe(false);
@@ -240,17 +239,17 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
   });
 });
 
-// ========================= MUTACOES CONFERIDAS (etapa 1b do ADR-0106) =========================
-//   · ⚠️ tirando o `if (!on) p.walkDir = 0;` -> reprova "DESLIGAR para quem esta a andar". E a mutacao que
-//     mais interessa: o sintoma nao da erro nenhum — a crianca desliga o modo e a personagem anda sozinha —,
-//     e sem este caso a linha podia cair na mudanca de dono sem ninguem notar.
-//   · trocando `if (!on)` por `if (on)` -> reprovam DOIS ("DESLIGAR para" e "LIGAR nao mexe"), que e a
-//     medida de que os dois sentidos estao presos e nao so um.
-//   · tirando o `if (!p) return;` -> reprova "[Zero] um assento que nao existe". Sem ele, `p.toggleMove` num
-//     `undefined` lanca, e o icone da barra rapida derrubava a pausa inteira.
-//   · trocando `toggleMoveKey(i)` por `easyKey(i)` na persistencia -> reprova "ligar escreve ... na chave da
-//     engine". Sem esse caso, escrever na chave errada perderia o ajuste E estragaria o modo facil, calado.
-//   · trocando o ternario do anuncio (`on ? …On : …Off`) -> reprovam DOIS, um por sentido.
-//   · devolvendo `easyKey` ao literal `'incl_easy_p' + i` -> ⚠️ NAO reprova, e isso esta certo: a copia e o
-//     literal coincidem hoje. O que reprova e mudar `KEYS.easyP` — ai o pino literal cai. Os dois casos
-//     juntos e que seguram os dois lados; e por isso que nenhum deles sozinho bastava.
+// ========================= MUTATIONS CHECKED (step 1b of ADR-0106) =========================
+//   · ⚠️ removing the `if (!on) p.walkDir = 0;` -> fails "DESLIGAR para quem esta a andar". It is the mutation that
+//     matters most: the symptom gives no error at all — the child turns the mode off and the character walks by itself —,
+//     and without this case the line could fall in the change of owner with nobody noticing.
+//   · replacing `if (!on)` with `if (on)` -> TWO fail ("DESLIGAR para" and "LIGAR nao mexe"), which is the measure that
+//     both directions are pinned and not just one.
+//   · removing the `if (!p) return;` -> fails `[Zero] um assento que nao existe`. Without it, `p.toggleMove` on an
+//     `undefined` throws, and the quick bar's icon would bring down the whole pause.
+//   · replacing `toggleMoveKey(i)` with `easyKey(i)` in the persistence -> fails "ligar escreve ... na chave da
+//     engine". Without that case, writing to the wrong key would lose the setting AND break easy mode, silently.
+//   · swapping the announcement's ternary (`on ? …On : …Off`) -> TWO fail, one per direction.
+//   · giving `easyKey` back to the literal `'incl_easy_p' + i` -> ⚠️ does NOT fail, and that is right: the copy and the
+//     literal coincide today. What fails is changing `KEYS.easyP` — then the literal pin falls. The two cases together
+//     hold both sides; that is why neither alone was enough.

@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-typo — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
-// Cobre: validação/migração da chave persistida, mapeamento chave→CSS (data-fonte/--font-custom) e o
-// view-model das linhas do painel (seleção/desabilitado/nota). O render() em si (toca DOM) fica no
-// settings-typo.browser.test.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Tests of ui/settings-typo — PURE logic (node project, no document). ZOMBIES + Right-BICEP.
+// Covers: validation/migration of the persisted key, key→CSS mapping (data-fonte/--font-custom) and the view-model of
+// the panel's rows (selection/disabled/note). render() itself (it touches the DOM) is in settings-typo.browser.test.js.
+// See docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // o catálogo de fontes guarda CHAVE desde o item 14
+import { t } from '../app/js/core/i18n.js'; // the font catalogue holds KEYS (item 14)
 import { resolveFontKey, persistFontKey } from '../app/js/ui/settings-typo.js';
-// 📌 A metade PURA saiu para `ui/typo-choices` em 22/09 (nota BJ) — e foi este ficheiro que marcou a costura
-// antes de ela existir: os casos que ele já tinha eram todos sobre o que uma ESCOLHA é, nenhum sobre um nó.
+// 📌 The PURE half lives in `ui/typo-choices` (note BJ); the cases here were all about what a CHOICE is, none about a node.
 import {
   isSelectableFont, fontCssTarget, typoGroups, fontRow, typoRowSpec, typoControlId,
 } from '../app/js/ui/typo-choices.js';
 import { FONT_BY_KEY, FONT_GROUPS, fontRole, faceScale, BASE_EM_PX } from '../app/js/ui/fonts.js';
 
-// Fake de platform/storage.ts: um Map em memória, mesma forma (get/set) do módulo real.
+// A fake of platform/storage.ts: an in-memory Map, the same shape (get/set) as the real module.
 function fakeStore(seed = {}) {
   const m = new Map(Object.entries(seed));
   return {
@@ -29,16 +28,15 @@ describe('isSelectableFont', () => {
     expect(isSelectableFont('lexend')).toBe(true);
   });
   it('⚠️ [Boundary] falso para caligráfica e para chave que saiu do roster', () => {
-    // ⚠️ ESTE CASO PASSOU A PASSAR PELO MOTIVO ERRADO em 2026-09-07 e por isso foi reescrito. Ele afirmava
-    // `isSelectableFont('kindergarten') === false` por a face estar `.off`; a `kindergarten` saiu do roster
-    // (issue #87, item 3), então a resposta continuou `false` — mas pelo caminho da CHAVE DESCONHECIDA, que
-    // já é o caso seguinte. Um teste que sobrevive à remoção do seu próprio sujeito deixou de o medir.
+    // ⚠️ A test that survives the removal of its own subject no longer measures it: asserting
+    // `isSelectableFont('kindergarten') === false` kept passing after `kindergarten` left the roster (issue #87, item 3),
+    // through the UNKNOWN KEY path, which is already the next case.
     //
-    // O que ele mede agora é a regra que passou a existir: uma CALIGRÁFICA não é selecionável, porque o
-    // menu não a oferece e a emenda do ADR-0012 diz que ela não pode ser a face da interface.
+    // What it measures is the rule that exists: a CALLIGRAPHIC face is not selectable, because the menu does not offer
+    // it and ADR-0012's amendment says it cannot be the interface's face.
     expect(isSelectableFont('pinyon'), 'uma caligráfica virou selecionável').toBe(false);
     expect(isSelectableFont('ufmag'), 'uma caligráfica virou selecionável').toBe(false);
-    // E o contrapeso: a Playwrite BR está no mesmo GRUPO e é a face geral dele (ADR-0176) — continua selecionável.
+    // And the counterweight: Playwrite BR is in the same GROUP and is its general face (ADR-0176) — still selectable.
     expect(isSelectableFont('pwbr')).toBe(true);
   });
   it('[Zero/Error] falso para chave inexistente', () => {
@@ -53,12 +51,12 @@ describe('resolveFontKey — boot: persistida válida > migração legado > defa
     expect(resolveFontKey(store)).toBe('lexend');
   });
   it('⚠️ [Boundary] uma CALIGRÁFICA guardada volta ao padrão — senão a criança fica presa nela', () => {
-    // Antes da emenda do ADR-0012 o menu oferecia as sete caligráficas, então há crianças com `pinyon`
-    // guardado. O valor salvo é escolha delas e não é nossa para desfazer sem motivo — mas o motivo existe:
-    // uma caligráfica não pode ser a face da INTERFACE, e o menu deixou de a oferecer. Deixá-la valer daria
-    // uma interface inteira em letra cursiva a quem já não tem como sair dela pelo menu.
+    // Before ADR-0012's amendment the menu offered the calligraphic faces, so there are children with `pinyon` stored.
+    // The saved value is their choice and not ours to undo without reason — but the reason exists: a calligraphic face
+    // cannot be the INTERFACE's face, and the menu no longer offers it. Letting it stand would give a whole interface in
+    // cursive to someone who no longer has a way out of it through the menu.
     expect(resolveFontKey(fakeStore({ incl_font_k: 'pinyon' }))).toBe('atkinson');
-    // E uma chave que saiu do roster cai no mesmo lugar, em vez de ficar sem face nenhuma.
+    // And a key that left the roster falls in the same place, instead of being left with no face at all.
     expect(resolveFontKey(fakeStore({ incl_font_k: 'greatvibes' }))).toBe('atkinson');
   });
   it('[Boundary] ignora a chave nova quando desconhecida, cai no default', () => {
@@ -112,7 +110,7 @@ describe('fontCssTarget', () => {
 });
 
 // ===================================================================================================
-// O PAPEL DA FACE, E O TAMANHO MÍNIMO DE UMA CALIGRÁFICA (ADR-0012 emendado, issue #87)
+// THE FACE'S ROLE, AND THE MINIMUM SIZE OF A CALLIGRAPHIC ONE (ADR-0012 amended, issue #87)
 // ===================================================================================================
 describe('as caligráficas: papel declarado e tamanho mínimo', () => {
   const TODAS = FONT_GROUPS.flatMap((g) => g.items);
@@ -120,20 +118,20 @@ describe('as caligráficas: papel declarado e tamanho mínimo', () => {
 
   it('[Zero] há caligráficas no catálogo — senão os casos abaixo não medem nada', () => {
     expect(CALIGRAFICAS.length).toBeGreaterThan(0);
-    // ⚠️ ONZE desde 2026-09-09: as OITO Playwrite entraram (ADR-0108 §2, #87 item 3) e são caligráficas —
-    // logo ficam FORA do menu, que é a divisão do item 1 desta issue: elas são a mão que se aprende a
-    // escrever, para os botões DENTRO das atividades, não uma opção de interface.
-    // 📌 A lista continua escrita por extenso de propósito — uma face que ganhe `papel:'caligrafica'` sem
-    // alguém reparar sai do menu, e isso é decisão de produto, não etiqueta.
+    // ⚠️ The Playwrite hands are calligraphic (ADR-0108 §2, #87 item 3) — so they stay OUT of the menu, which is the
+    // division of item 1 of this issue: they are the hand one learns to write, for the buttons INSIDE the activities,
+    // not an interface option.
+    // 📌 The list is written out in full on purpose — a face gaining `papel:'caligrafica'` without anyone noticing leaves
+    // the menu, and that is a product decision, not a label.
     //
-    // 🔴 DEZOITO desde 2026-09-12 (ADR-0150): mais sete Playwrite, e elas entram por uma REGRA — três são o
-    // recuo por LÍNGUA (`pwes`, `pwpt`, `pwgbj`: um país sem mão própria recebe a do colonizador), duas
-    // foram pedidas por nome (`pwcu`, `pwpe`) e duas são a segunda mão de um país que ensina duas
-    // (`pwesdeco`, `pwgbs`), como já acontecia com `pwustrad`/`pwusmod`.
-    // ⚠️ E ELAS CONTINUAM FORA DO MENU DE FONTE, que é o que este caso mede. O que o ADR-0149 §4 abriu foi
-    // uma porta ESTREITA e noutro sítio: a posição (e) do ciclo da barra rápida, onde a criança escolhe a
-    // mão do país DELA. Isso não as põe de volta nesta lista — e se alguém as puser, este caso reprova.
-    // 📌 A `pwbr` saiu desta lista em 2026-09-13: é a face GERAL do grupo manuscrito (ADR-0176, o Dev), no menu e aumentada até o piso.
+    // 🔴 They enter by a RULE (ADR-0150): some are the fallback by LANGUAGE (`pwes`, `pwpt`, `pwgbj`: a country with no
+    // hand of its own gets the coloniser's), some were asked for by name (`pwcu`, `pwpe`) and some are the second hand of
+    // a country that teaches two (`pwesdeco`, `pwgbs`, as with `pwustrad`/`pwusmod`).
+    // ⚠️ AND THEY STAY OUT OF THE FONT MENU, which is what this case measures. What ADR-0149 §4 opened is a NARROW door
+    // elsewhere: position (e) of the quick bar's cycle, where the child picks HER country's hand. That does not put them
+    // back in this list — and if someone does, this case fails.
+    // 📌 `pwbr` is not on this list: it is the GENERAL face of the handwriting group (ADR-0176, the Dev), in the menu and
+    // scaled up to the floor.
     expect(CALIGRAFICAS.map((it) => it.k).sort()).toEqual([
       'fondamento', 'pinyon',
       'pwar', 'pwca', 'pwcl', 'pwco', 'pwcu', 'pwes', 'pwesdeco', 'pwgbj', 'pwgbs',
@@ -142,9 +140,9 @@ describe('as caligráficas: papel declarado e tamanho mínimo', () => {
   });
 
   it('⚠️ [Right] toda caligráfica declara `minPx`, com os números do Dev', () => {
-    // ⚠️ Abaixo do mínimo a face deixa de ser DIFÍCIL e passa a ser ILEGÍVEL, e as duas coisas são
-    // diferentes: a dificuldade é o exercício — a criança está a aprender a ler cursiva —, a ilegibilidade é
-    // a criança a desistir. É por isso que o item 2 da #87 diz «tem de ser gate, não recomendação».
+    // ⚠️ Below the minimum the face stops being DIFFICULT and becomes ILLEGIBLE, and the two are different: the
+    // difficulty is the exercise — the child is learning to read cursive —, the illegibility is the child giving up.
+    // That is why item 2 of #87 says «tem de ser gate, não recomendação».
     for (const it of CALIGRAFICAS) {
       expect(it.minPx, `${it.k} é caligráfica e não declara tamanho mínimo`).toBeTypeOf('number');
       expect(it.minPx, `${it.k}: mínimo abaixo de 20px`).toBeGreaterThanOrEqual(20);
@@ -178,16 +176,12 @@ describe('typoGroups — view-model das linhas', () => {
     expect(selected[0].key).toBe('lexend');
   });
   it('⚠️ [Boundary] o MECANISMO `.off` continua vivo, mesmo sem nenhuma face a usá-lo hoje', () => {
-    // Este caso apontava para a `kindergarten`, que saiu do roster em 2026-09-07 (issue #87, item 3) — era
-    // uma entrada `.off` SEM FICHEIRO, isto é, o menu oferecia-a desabilitada e não havia nada por trás.
+    // ⚠️ The `.off` mechanism stays with no face using it today: item 4 of issue #87 needs it for **Ronde**, which can
+    // only be offered if one of three faces is installed (`document.fonts.check()`), because the other two are free for
+    // personal use only and cannot be packaged.
     //
-    // ⚠️ O mecanismo NÃO saiu com ela, e não deve: o item 4 da mesma issue precisa dele para a **Ronde**, que
-    // só pode ser oferecida se uma de três faces estiver instalada (`document.fonts.check()`), porque as
-    // outras duas são gratuitas apenas para uso pessoal e não podem ser empacotadas.
-    //
-    // Por isso o caso passou a medir a FUNÇÃO com uma face de mentira, em vez de depender de o catálogo
-    // continuar a ter uma desligada. Um teste que depende da composição do roster reprova sempre que o
-    // roster muda — que foi exactamente o que aconteceu aqui.
+    // So the case measures the FUNCTION with a fake face, instead of depending on the catalogue still having a
+    // disabled one. A test that depends on the roster's composition fails whenever the roster changes.
     const falsa = { k: 'x', fam: 'Fonte de Mentira', fb: 'sans', d: 'font.desc.pinyon', off: 'font.off.pending' };
     const linha = fontRow(falsa, 'atkinson');
     expect(linha.disabled).toBe(true);
@@ -201,36 +195,32 @@ describe('typoGroups — view-model das linhas', () => {
   });
   it('[Right] preserva os 3 grupos do catálogo, TRADUZIDOS (a chave nunca chega à tela)', () => {
     const groups = typoGroups('atkinson');
-    // Contra `t()` e não contra o português: o catálogo guarda CHAVE desde o item 14, e fixar as três
-    // palavras aqui devolveria ao teste o texto que saiu do código. O que este caso guarda é que os três
-    // grupos continuam existindo, na ordem, JÁ RESOLVIDOS.
+    // Against `t()` and not against the Portuguese: the catalogue holds KEYS (item 14), and pinning the three words here
+    // would bring back into the test the text that left the code. What this case guards is that the three groups still
+    // exist, in order, ALREADY RESOLVED.
     expect(groups.map((g) => g.g)).toEqual(['font.group.sans', 'font.group.serif', 'font.group.hand'].map(t));
     for (const g of groups) expect(g.g, 'chave crua na tela').not.toMatch(/^font\./);
   });
 });
 
 // ===================================================================================================
-// O MENU É UMA ESCOLHA, NÃO UM INTERRUPTOR (ADR-0012, emenda de 27/08)
+// THE MENU IS A CHOICE, NOT A SWITCH (ADR-0012, amendment of 27/08)
 // ===================================================================================================
-// ⚠️ O CASO QUE ESTAVA AQUI CONGELAVA O DEFEITO. Ele afirmava `aria-pressed="true"` e `is-on`, ou seja
-// descrevia o que o código FAZIA em vez do que o registro DECIDE — e a emenda do ADR-0012 é literal:
+// ⚠️ ADR-0012's amendment is literal:
 //
 //     «THE MENU IS A CHOICE, NOT A TOGGLE: the selected font is shown with a yellow background, like a
 //      pressed button. One font is active; the others are alternatives, not switches.»
 //
-// O que estava no código era o oposto: `class="mode-btn switch"` (que o `style.css:427` desenha como um
-// interruptor de 52×28 px com bolinha), `aria-pressed`, e o rótulo `toggleLabel(selected)` — que devolve
-// «Ligado»/«Desligado». Oito interruptores para escolher UMA fonte, anunciados como oito estados
-// independentes a quem escuta.
+// A switch per font (`class="mode-btn switch"`, `aria-pressed`, a «Ligado»/«Desligado» label) would announce eight
+// independent states to whoever listens, to choose ONE font. A case asserting that shape would freeze the defect.
 //
-// ⚠️ E O ESTADO VAI EM DUAS FORMAS, NENHUMA DELAS COR — é a regra que `ui/activities-menu.ts:656` já
-// carrega por escrito: `aria-checked` para quem escuta, uma marca para quem vê. O fundo amarelo do
-// `.mode-btn.is-on` continua, porque é o que a emenda pede; o que ele não pode ser é o ÚNICO sinal.
+// ⚠️ AND THE STATE GOES IN TWO FORMS, NEITHER OF THEM COLOUR: `aria-checked` for whoever listens, a mark for whoever
+// sees. The yellow background of `.mode-btn.is-on` stays, because it is what the amendment asks; what it cannot be is the
+// ONLY signal.
 describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptores', () => {
-  // 📌 ESTE BLOCO DESCEU DE NÍVEL em 22/09, e é a conversão do painel para o kit que o permite. Ele lia
-  // atributos numa CADEIA de HTML; agora a lista são NÓS, então a metade que é marcação mudou-se para
-  // `settings-typo.browser.test.js`, onde há documento, e a metade que é CATÁLOGO — quem entra na lista e
-  // quem não entra — fica aqui, que é onde ela sempre pertenceu.
+  // 📌 The markup half of this block lives in `settings-typo.browser.test.js`, where there is a document (the list is
+  // built as NODES with the kit); the CATALOGUE half — who is on the list and who is not — stays here, where it has
+  // always belonged.
   const chaves = (fontKey) => typoGroups(fontKey).flatMap((g) => g.rows.map((r) => r.key));
 
   it('[Interface] a linha é uma ESCOLHA, e diz isso na forma antes de virar nó nenhum', () => {
@@ -241,8 +231,8 @@ describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptore
   });
 
   it('[Interface] a nota entra na DICA e também no nome acessível', () => {
-    // A dica vai ao rodapé pelo `fillExplain`; o nome acessível fica no botão. Quem não vê a linha ouve para
-    // quem aquela face serve sem ir caçar o rodapé — as duas metades dizem a mesma coisa em dois canais.
+    // The hint goes to the footer through `fillExplain`; the accessible name stays on the button. Whoever cannot see the
+    // row hears whom that face serves without hunting for the footer — the two halves say the same thing on two channels.
     const spec = typoRowSpec(fontRow(FONT_BY_KEY.ronde, 'atkinson'));
     expect(spec.hint, 'a ronde traz a mensagem do que instalar').toBeTruthy();
     expect(spec.ariaLabel).toContain(spec.hint);
@@ -254,15 +244,16 @@ describe('o menu de fontes é uma escolha exclusiva, não dezassete interruptore
   });
 
   it('⚠️ [Boundary] nenhuma CALIGRÁFICA aparece no menu — a emenda do ADR-0012, aferida', () => {
-    // As caligráficas existem para a criança APRENDER a ler letra cursiva, e isso é matéria: vive dentro das
-    // atividades, em botões próprios. Oferecê-las aqui dá-lhe a matéria como obstáculo em todo lugar onde
-    // ela só quer navegar o menu — e uma criança que escolhesse `ufmag` ficava com a interface inteira em
-    // gótico, incluindo o menu de onde teria de sair.
+    // Calligraphic faces exist for the child to LEARN to read cursive, and that is subject matter: it lives inside the
+    // activities, on buttons of their own. Offering them here gives her the subject as an obstacle everywhere she only
+    // wants to navigate the menu — and a child choosing `ufmag` would get the whole interface in blackletter, including
+    // the menu she would have to get out of.
     const oferecidas = chaves('atkinson');
     for (const k of ['pinyon', 'ufmag']) {
       expect(oferecidas, `a caligráfica ${k} voltou ao menu`).not.toContain(k);
     }
-    // E o contrapeso: `pwbr` está no MESMO grupo e é a face geral dele (ADR-0176) — tirá-la seria cortar pelo grupo, não pelo papel.
+    // And the counterweight: `pwbr` is in the SAME group and is its general face (ADR-0176) — removing it would be cutting
+    // by group, not by role.
     expect(oferecidas, 'a Playwrite BR saiu do menu por estar no grupo `hand`').toContain('pwbr');
   });
 

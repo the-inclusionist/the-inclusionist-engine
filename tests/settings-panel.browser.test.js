@@ -1,26 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-panel — o que SÓ o navegador prova (project BROWSER): foco de verdade
-// (document.activeElement), z-index EFETIVO (getComputedStyle) e os seletores CSS reais (`:scope > span`,
-// `#game-region .overlay`). A lógica pura e o registro estão cobertos em settings-panel.node.test.js.
+// Tests of ui/settings-panel — what ONLY the browser proves (BROWSER project): real focus (document.activeElement),
+// EFFECTIVE z-index (getComputedStyle) and the real CSS selectors (`:scope > span`, `#game-region .overlay`). The pure
+// logic and the registry are covered in settings-panel.node.test.js.
 //
-// Aqui a casca é exercitada COMPOSTA com dois painéis REAIS que já trazem o seu próprio open/close
-// (ui/settings-motion → #animation e ui/settings-empathy → #empathy): é assim que o game.js os usa, e é a
-// única forma de provar de ponta a ponta o requisito de acessibilidade — abrir foca um controle DENTRO do
-// diálogo, fechar devolve o foco ao botão que abriu, e Escape fecha UM diálogo só.
+// Here the shell is exercised COMPOSED with two REAL panels that bring their own open/close (ui/settings-motion →
+// #animation and ui/settings-empathy → #empathy): that is how a root uses them, and it is the only way to prove the
+// accessibility requirement end to end — opening focuses a control INSIDE the dialog, closing gives the focus back to
+// the button that opened it, and Escape closes ONE dialog only.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js';
 import { initSettingsPanel, EXPLAIN_IDLE } from '../app/js/ui/settings-panel.js';
 import { initSettingsMotion, setSelectedPlayer } from '../app/js/ui/settings-motion.js';
 import { initSettingsEmpathy } from '../app/js/ui/settings-empathy.js';
 /*
- * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` foi com a pilha de mundo-de-tiles para o
- * `game-platformer`. Este ficheiro nunca testou a rodada — ele PASSA uma ao que está a medir —, e os três
- * membros abaixo são exactamente os que ele lê. Fábrica e não literal: duas rodadas têm de ser dois objectos.
+ * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228): `core/run-state` went with the tile-world stack to `game-platformer`. This
+ * file never tested the round — it HANDS one to what it measures —, and the three members below are exactly the ones it
+ * reads. A factory and not a literal: two rounds have to be two objects.
  */
 const createRunState = () => ({ numPlayers: 1, players: [], setNumPlayers(n) { this.numPlayers = n; } });
-// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
-// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
-// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+// The round is local to this file (ADR-0038, phase B); the aliases below keep the cases' bodies written as they always were.
 const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
@@ -33,9 +31,8 @@ function panelCtx() {
   return { $, $$, doc: document, computedZ: (el) => Number(getComputedStyle(el).zIndex) || 0 };
 }
 
-// Marcação enxuta mas FIEL ao index.html no que importa aqui: os diálogos vivem dentro do #game-region
-// (o inCanvasMenus() os reparenta pra lá), cada um tem um .overlay__card com role/aria-modal, e o botão que
-// abre (#opt-*) fica FORA do diálogo — é para ele que o foco tem de voltar.
+// Lean markup but FAITHFUL where it matters here: the dialogs live inside #game-region, each has an .overlay__card with
+// role/aria-modal, and the button that opens (#opt-*) sits OUTSIDE the dialog — it is where focus has to return.
 const MARKUP = `
   <div id="game-region">
     <div id="animation" class="overlay" hidden>
@@ -69,7 +66,7 @@ const RM_CHAR = [
   { prop: 'rmFlavor', lbl: 'Gracinhas' },
 ];
 
-/** Monta a casca + os dois painéis reais e os registra na MESMA ordem do encadeamento do game.js. */
+/** Mounts the shell + the two real panels and registers them in a root's wiring order. */
 function boot() {
   const panel = initSettingsPanel(panelCtx());
   const noop = () => {};
@@ -86,8 +83,8 @@ function boot() {
     frontOverlay: panel.frontOverlay, restoreFocus: panel.restoreFocus,
     setHearingLoss: noop, setOneButton: noop, setWheelchair: noop,
     getOneButton: () => false, getWheelchair: () => false,
-    // Exigidos desde que o painel passou a marcar o que saiu do padrão (ADR-0029). `tsc` não pegou a falta
-    // porque este arquivo é JavaScript — o mesmo motivo pelo qual o `main.js` já escapou de três contratos hoje.
+    // Required since the panel marks what left the default (ADR-0029). `tsc` did not catch the omission because this
+    // file is JavaScript.
     getPlayers: () => [], setPlayerViz: noop,
   });
   panel.register('animation', { close: motion.close, inEscapeChain: true });
@@ -101,7 +98,7 @@ beforeEach(() => {
   players.push({ rmWalk: false, rmBreath: false, rmFlavor: false });
   setNumPlayersValue(1);
   setSelectedPlayer(0);
-  $('#opt-animation').focus(); // um foco conhecido antes de cada cenário
+  $('#opt-animation').focus(); // a known focus before each scenario
 });
 
 describe('casca + painéis reais — foco ao abrir e ao fechar', () => {
@@ -123,9 +120,8 @@ describe('casca + painéis reais — foco ao abrir e ao fechar', () => {
 
   it('[Right] o mesmo vale para o painel irmão: #empathy devolve o foco a #opt-empathy', () => {
     const { empathy } = boot();
-    // O `beforeEach` deixa o foco em #opt-animation; quem abre a Empatia é o botão DELA. Antes isto não
-    // precisava ser dito, porque o close focava um id fixo e acertava por acaso mesmo tendo sido aberto de
-    // outro lugar — o que é justamente o defeito que este arquivo passou a cobrir logo abaixo.
+    // The `beforeEach` leaves focus on #opt-animation; what opens Empathy is ITS button. A close that focused a fixed id
+    // would get it right by chance even when opened from elsewhere — which is exactly the defect the block below covers.
     $('#opt-empathy').focus();
     empathy.open();
     expect($('#empathy').contains(document.activeElement)).toBe(true);
@@ -133,12 +129,10 @@ describe('casca + painéis reais — foco ao abrir e ao fechar', () => {
     expect(document.activeElement).toBe($('#opt-empathy'));
   });
 
-  // ⚠️ O caso que faltava, e que é o motivo de este defeito ter vivido tanto: a marcação acima INVENTA os
-  // botões `#opt-animation`/`#opt-empathy`, e a página real NÃO os tem — dos nove destinos de foco que os
-  // painéis usavam, só `#opt-touchcfg` existe em app/index.html. O teste construía o DOM que fazia o código
-  // parecer certo, e por isso ficava verde enquanto quem jogava perdia o foco para o `<body>`.
-  // Aqui os botões são removidos de propósito e o painel é aberto de outro lugar — que é o que acontece de
-  // verdade, porque quem abre é o menu de pausa.
+  // ⚠️ The markup above INVENTS the `#opt-animation`/`#opt-empathy` buttons, and a real page does NOT have them — what
+  // opens a panel is the pause menu. A test that builds the DOM that makes the code look right stays green while whoever
+  // plays loses focus to the `<body>`. Here the buttons are removed on purpose and the panel is opened from elsewhere,
+  // which is what really happens.
   describe('sem os botões #opt-* (a página real): o foco volta para QUEM ABRIU, não para um id fixo', () => {
     function semOptButtons() { $('#opt-animation').remove(); $('#opt-empathy').remove(); }
 
@@ -148,9 +142,9 @@ describe('casca + painéis reais — foco ao abrir e ao fechar', () => {
       const abridor = document.createElement('button');
       abridor.textContent = 'Movimento'; document.body.appendChild(abridor); abridor.focus();
       motion.open();
-      expect($('#animation').contains(document.activeElement)).toBe(true); // o foco entrou no diálogo
+      expect($('#animation').contains(document.activeElement)).toBe(true); // focus entered the dialog
       motion.close();
-      expect(document.activeElement).toBe(abridor);                        // e voltou para quem abriu
+      expect(document.activeElement).toBe(abridor);                        // and returned to whoever opened it
     });
 
     it('[Right] dois abridores diferentes para o MESMO painel: cada um recebe o foco de volta', () => {
@@ -161,7 +155,7 @@ describe('casca + painéis reais — foco ao abrir e ao fechar', () => {
       a.focus(); motion.open(); motion.close();
       expect(document.activeElement).toBe(a);
       b.focus(); motion.open(); motion.close();
-      expect(document.activeElement).toBe(b); // um id fixo não conseguiria distinguir os dois
+      expect(document.activeElement).toBe(b); // a fixed id could not tell the two apart
     });
 
     it('[Zero/Error] abridor que sumiu do documento: restoreFocus recusa em vez de estourar', () => {
@@ -169,7 +163,7 @@ describe('casca + painéis reais — foco ao abrir e ao fechar', () => {
       semOptButtons();
       const efemero = document.createElement('button'); document.body.appendChild(efemero); efemero.focus();
       motion.open();
-      efemero.remove();               // o menu que abriu foi embora enquanto o painel estava aberto
+      efemero.remove();               // the menu that opened it went away while the panel was open
       expect(() => motion.close()).not.toThrow();
       expect(panel.restoreFocus('animation')).toBe(false);
     });
@@ -230,8 +224,8 @@ describe('Escape fecha UM diálogo — e é o primeiro da cadeia, não o de cima
     const { panel, motion, empathy } = boot();
     motion.open();
     empathy.open();
-    expect(panel.topVisibleOverlay()).toBe($('#empathy')); // o de cima é o empathy…
-    expect(panel.escapeTarget()).toBe('animation');        // …mas quem consome Escape é o 1º da cadeia
+    expect(panel.topVisibleOverlay()).toBe($('#empathy')); // the one on top is empathy…
+    expect(panel.escapeTarget()).toBe('animation');        // …but what consumes Escape is the 1st in the chain
   });
 
   it('[Right] fechar o alvo fecha SÓ ele, devolve o foco ao seu botão, e o outro segue aberto', () => {
@@ -260,14 +254,14 @@ describe('Escape fecha UM diálogo — e é o primeiro da cadeia, não o de cima
     const { panel, motion, empathy } = boot();
     motion.open();
     empathy.open();
-    $('#animation').hidden = true; // some sem passar pelo close(): visibilidade e a unica fonte, entao ele sai da vez
+    $('#animation').hidden = true; // it vanishes without going through close(): visibility is the only source, so it leaves the turn
     expect(panel.escapeTarget()).toBe('empathy');
   });
 });
 
 describe('fillExplain no DOM real — ordem de leitura', () => {
   function cardWithRow(inner) {
-    $('#animation').hidden = false; // um diálogo escondido é display:none — nada isInside dele é focável
+    $('#animation').hidden = false; // a hidden dialog is display:none — nothing inside it is focusable
     const card = $('#animation .overlay__card');
     const row = document.createElement('div');
     row.className = 'ctrl-row';

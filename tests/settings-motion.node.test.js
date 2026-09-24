@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-motion — lógica PURA (project node, sem `document`). ZOMBIES + Right-BICEP.
-// Cobre: clamp do jogador selecionado, montagem de linhas (HTML string), allOn do botão-mestre e os
-// textos de anúncio ao leitor de tela. O render/DOM real (querySelector/addEventListener/focus) é coberto
-// em tests/settings-motion.browser.test.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (ui/settings-motion).
+// Tests of ui/settings-motion — PURE logic (node project, no `document`). ZOMBIES + Right-BICEP.
+// Covers: the clamp of the selected player, the master button's allOn and the screen-reader announcement texts. The
+// real render/DOM (querySelector/addEventListener/focus, and the rows built as nodes) is covered in
+// tests/settings-motion.browser.test.js. See docs/5-Refactoring/plano-modularizacao-mapa.md (ui/settings-motion).
 import { describe, it, expect } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // RM_LABEL guarda CHAVE desde o item 14; o HTML tem de trazer o TEXTO
-// 🔴 E ESTA LISTA IMPORTAVA SEIS NOMES QUE O MÓDULO JÁ NÃO EXPORTAVA, com a suíte VERDE — medido em 2026-09-23, uma
-// hora depois de os construtores de cadeia serem apagados. Um import NOMEADO de algo que não existe resolve para
-// `undefined` sob o transformador, e enquanto nenhum caso usar o nome, nada falha. É a mesma forma da chave de
-// livro-razão que deixa de casar com ficheiro nenhum: o que não é lido deixa de exigir, em silêncio.
+import { t } from '../app/js/core/i18n.js'; // RM_LABEL holds KEYS (item 14)
+// 🔴 A NAMED import of something a module does not export resolves to `undefined` under the transformer, and while no
+// case uses the name, nothing fails — measured on 2026-09-23, when this list still imported six names the module no
+// longer exported, with the suite GREEN. The same shape as a ledger key that stops matching any file: what is not read
+// stops requiring, in silence.
 //
-// 📌 A METADE PURA MUDOU DE MÓDULO no mesmo dia (`ui/motion-choices`, ADR-0221 passo 7c), e foi ESTE ficheiro que
-// apontou a costura: ele exercita exactamente estes nomes, e o projecto node não monta documento.
+// 📌 The PURE half lives in `ui/motion-choices` (ADR-0221 step 7c), and it was THIS file that pointed at the seam: it
+// exercises exactly these names, and the node project mounts no document.
 import {
   clampSelectedPlayer, allMotionFrozen, motionMasterLabel,
   sceneMotionAnnouncement, crtToggleAnnouncement, crtLevelLabel, crtRoundAnnouncement,
@@ -38,18 +38,18 @@ describe('clampSelectedPlayer', () => {
   });
 });
 
-// 📌 OS QUATRO BLOCOS QUE MEDIAM MARCAÇÃO MUDARAM DE PROJECTO, e não de exigência: este painel passou a construir
-// NÓS com o kit (ADR-0129, 2026-09-23), logo as cadeias que o `motionRowHtml`, o `buildCharRowsHtml`, o
-// `buildSceneRowsHtml`, o `crtToggleRowHtml` e o `crtRoundRowHtml` devolviam deixaram de existir. Oito casos estão
-// inteiros em `tests/settings-motion.browser.test.js`, sob «o interior montado em nós».
+// 📌 THE FOUR BLOCKS THAT MEASURED MARKUP CHANGED PROJECT, not requirement: this panel builds NODES with the kit
+// (ADR-0129, 2026-09-23), so the strings `motionRowHtml`, `buildCharRowsHtml`, `buildSceneRowsHtml`, `crtToggleRowHtml`
+// and `crtRoundRowHtml` returned no longer exist. Eight cases are whole in `tests/settings-motion.browser.test.js`,
+// under «o interior montado em nós».
 //
-// ⚠️ DOIS NÃO FORAM, e é o certo: mediam o mecanismo «em breve», que saiu com a conversão por não ter assunto —
-// `RM_SOON` era um conjunto vazio desde que o cartucho deixou este repositório, e os únicos que lhe davam um valor
-// eram esses dois casos. Um mecanismo cujo único utilizador é um teste não é um mecanismo.
+// ⚠️ TWO DID NOT GO, and that is right: they measured the «em breve» mechanism, which left with the conversion for
+// having no subject — `RM_SOON` was an empty set since the cartridge left this repository, and the only things giving
+// it a value were those two cases. A mechanism whose only user is a test is not a mechanism.
 
 describe('allMotionFrozen', () => {
-  // rmWalk/rmBreath/rmFlavor = true SIGNIFICA "movimento reduzido LIGADO" (congelado), não "animação ligada" —
-  // mesma convenção de `rm[k]`. allMotionFrozen só é true quando TUDO está congelado.
+  // rmWalk/rmBreath/rmFlavor = true MEANS "reduced motion ON" (frozen), not "animation on" — the same convention as
+  // `rm[k]`. allMotionFrozen is only true when EVERYTHING is frozen.
   const allFrozenPlayer = { rmWalk: true, rmBreath: true, rmFlavor: true };
   const partiallyFrozenPlayer = { rmWalk: false, rmBreath: true, rmFlavor: true };
   it('[Right] true quando toda cena + todo personagem estão com movimento reduzido (congelados)', () => {
@@ -65,24 +65,23 @@ describe('allMotionFrozen', () => {
     expect(allMotionFrozen(RM_KEYS, rm, RM_CHAR, partiallyFrozenPlayer)).toBe(false);
   });
   it('🔴 [Zero] SEM personagem, a cena inteira congelada JÁ É "tudo congelado" — e dá para voltar', () => {
-    // ⚠️ ESTE CASO AFIRMAVA O CONTRÁRIO, e afirmava-o pelo MECANISMO: «sem player (undefined) nunca dá true
-    // (RM_CHAR.every falha)». Um caso escrito em termos da implementação não consegue discordar dela, e este
-    // fixou um defeito como se fosse a decisão.
+    // ⚠️ A case written in terms of the implementation cannot disagree with it: the old version asserted «sem player
+    // (undefined) nunca dá true (RM_CHAR.every falha)», and so pinned a defect as if it were the decision.
     //
-    // 📏 O que ele deixava passar, medido quando a engine passou a montar o painel para todo jogo: num jogo
-    // sem `players` — um quiz, um puzzle — `allFrozen` ficava preso em `false`, então o botão-mestre calculava
-    // `next = !false = true` a cada clique. A criança parava todas as animações e NÃO TINHA COMO AS TRAZER DE
-    // VOLTA. Quem carrega nesse botão não o faz por curiosidade; carrega com enjoo.
+    // 📏 What it let through, measured when the engine started mounting the panel for every game: in a game with no
+    // `players` — a quiz, a puzzle — `allFrozen` was stuck at `false`, so the master button computed
+    // `next = !false = true` at every click. The child stopped every animation and HAD NO WAY TO BRING THEM BACK. Whoever
+    // presses that button does not do it out of curiosity; they press it feeling sick.
     const rm = { parallax: true, decor: true, items: true, particles: true };
     expect(allMotionFrozen(RM_KEYS, rm, RM_CHAR, undefined),
       'sem personagem, a metade do personagem não pode pesar na resposta').toBe(true);
-    // e o rótulo que daí sai é o que oferece a VOLTA — a metade que a criança precisa de ver
+    // and the label that comes out of it is the one offering the WAY BACK — the half the child needs to see
     expect(motionMasterLabel(allMotionFrozen(RM_KEYS, rm, RM_CHAR, undefined)))
       .toBe('Retomar todas as animações');
   });
 
   it('[Inverse] sem personagem, cena por congelar continua a dar false', () => {
-    // O par do caso acima: a mudança tira o peso da metade AUSENTE, não o da metade que existe.
+    // The pair of the case above: the change removes the weight of the ABSENT half, not of the half that exists.
     const rm = { parallax: true, decor: false, items: true, particles: true };
     expect(allMotionFrozen(RM_KEYS, rm, RM_CHAR, undefined)).toBe(false);
   });

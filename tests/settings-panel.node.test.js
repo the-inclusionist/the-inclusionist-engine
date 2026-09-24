@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-panel — a CASCA comum dos diálogos de configuração (project node, sem `document`
-// real: ctx.$/$$/doc trabalham sobre um DOM FALSO definido aqui). Contrato: DI por closure ($/$$/doc/computedZ),
-// nenhum acesso a globais fora do ctx. O foco de verdade (quem recebe foco ao abrir, para onde volta ao fechar)
-// só o navegador prova → tests/settings-panel.browser.test.js. ZOMBIES + Right-BICEP.
-// Cobre em especial: a cadeia de Escape percorre a ORDEM DE REGISTRO (não o z-index — divergência verbatim do
-// game.js, ver o relatório da extração), a guarda `dlgVis` (flag presa em diálogo invisível não sequestra a
-// tecla), o empilhamento z crescente e a ORDEM DE LEITURA que fillExplain produz (rótulo na linha, descrição
-// num rodapé aria-live).
+// Tests of ui/settings-panel — the common SHELL of the settings dialogs (node project, no real `document`:
+// ctx.$/$$/doc work on a FAKE DOM defined here). Contract: DI by closure ($/$$/doc/computedZ), no access to globals
+// outside the ctx. Real focus (who gets focus on opening, where it returns on closing) only the browser proves →
+// tests/settings-panel.browser.test.js. ZOMBIES + Right-BICEP.
+// Covers in particular: the Escape chain walks the REGISTRATION ORDER (not the z-index), the `dlgVis` guard (a flag
+// stuck on an invisible dialog does not hijack the key), the rising z stacking and the READING ORDER fillExplain
+// produces (label on the row, description in an aria-live footer).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js';
 import {
@@ -14,9 +13,9 @@ import {
 } from '../app/js/ui/settings-panel.js';
 
 // ---------------------------------------------------------------------------------------------
-// DOM falso — só o que settings-panel.ts toca. Seletores suportados: '.classe', 'tag' e
-// ':scope > span'. `textContent` concatena os nós filhos (é assim que o original acha a descrição
-// depois do rótulo em <strong>).
+// Fake DOM — only what settings-panel.ts touches. Supported selectors: '.class', 'tag' and
+// ':scope > span'. `textContent` concatenates the child nodes (that is how the module finds the description
+// after the label in <strong>).
 // ---------------------------------------------------------------------------------------------
 class FakeEl {
   constructor(tag, cls = '', nodes = []) {
@@ -31,8 +30,8 @@ class FakeEl {
     if (this._innerHTML !== undefined) return this._innerHTML;
     return this.nodes.map((n) => (typeof n === 'string' ? n : n.outerHTML)).join('');
   }
-  // Reparsa a forma única que o módulo escreve (`<strong>rótulo</strong>`) para que uma 2ª passada de
-  // fillExplain enxergue o mesmo que enxergaria no navegador — sem isso o DOM falso mascararia bugs.
+  // Re-parses the single shape the module writes (`<strong>label</strong>`) so a 2nd pass of fillExplain sees the same
+  // as it would in the browser — without this the fake DOM would mask bugs.
   set innerHTML(v) {
     this._innerHTML = v;
     const m = /^<(\w+)(?: class="([^"]*)")?>([\s\S]*)<\/\1>$/.exec(v);
@@ -61,7 +60,7 @@ class FakeEl {
 
 const fakeDoc = { createElement: (tag) => new FakeEl(tag) };
 
-/** Linha de opção como no index.html: <div class="ctrl-row"><span><strong>Rótulo</strong> — descrição</span></div> */
+/** An option row as the panels write it: <div class="ctrl-row"><span><strong>Label</strong> — description</span></div> */
 function ctrlRow(label, sep = ' — ', desc = 'Explicação longa da opção.', hint = null) {
   const strong = new FakeEl('strong', '', [label]);
   const kids = [strong];
@@ -77,7 +76,7 @@ function overlay(id, { rows = [], hidden = true, withCard = true } = {}) {
   return ov;
 }
 
-/** ctx completo sobre um mapa de `#id` → FakeEl. `zOf` simula o getComputedStyle do navegador. */
+/** A complete ctx over a map of `#id` → FakeEl. `zOf` simulates the browser's getComputedStyle. */
 function makeCtx(elements = {}, { scope = [], zOf = (el) => Number(el.style.zIndex) || 0 } = {}) {
   return {
     $: (sel) => elements[sel] ?? null,
@@ -223,17 +222,17 @@ describe('fillExplain — rótulo na linha, descrição no rodapé', () => {
     row.fire('mouseenter');
     expect(f.textContent).toBe('em volta do personagem.');
   });
-  // A linha carrega texto solto E um .opt-hint: só o hint pode virar a explicação (se o módulo caísse no
-  // fallback, a descrição sairia com o texto solto grudado — é o que este caso distingue).
+  // The row carries loose text AND an .opt-hint: only the hint may become the explanation (if the module fell back, the
+  // description would come out with the loose text stuck to it — which is what this case tells apart).
   it('[Right] com .opt-hint dentro do span, é o hint que vira a explicação', () => {
     const row = ctrlRow('🎮 Desenho', ' — ', 'texto solto que NÃO deve virar explicação', 'escolha como rotular os botões.');
     const card = new FakeEl('div', 'overlay__card', [row]);
     api.fillExplain(card);
     expect(row.dataset.explain).toBe('escolha como rotular os botões.');
   });
-  // NOTA: não testo "não duplica listeners" na 2ª chamada — a marca `explainDone` é defesa MORTA: depois da
-  // 1ª passada o span já foi reescrito para só o <strong>, então a 2ª acha desc vazia e sai sozinha. Removendo
-  // a guarda nenhum comportamento muda (verificado por mutação). O que É observável é o rodapé único:
+  // NOTE: "does not duplicate listeners" on the 2nd call is not tested — the `explainDone` mark is a DEAD defence: after
+  // the 1st pass the span has already been rewritten to just the <strong>, so the 2nd finds an empty desc and leaves by
+  // itself. Removing the guard changes no behaviour (verified by mutation). What IS observable is the single footer:
   it('[Boundary] duas chamadas no mesmo card não duplicam o rodapé de explicação', () => {
     const row = ctrlRow('A', ' — ', 'desc');
     const card = new FakeEl('div', 'overlay__card', [row]);
@@ -268,12 +267,12 @@ describe('fillExplain — rótulo na linha, descrição no rodapé', () => {
     card.appendChild(newRow);
     api.fillExplain(card);
     expect(newRow.dataset.explain).toBe('desc nova');
-    expect(card.querySelectorAll('.opt-explain')).toHaveLength(1); // e o rodapé continua sendo um só
+    expect(card.querySelectorAll('.opt-explain')).toHaveLength(1); // and the footer is still one
   });
 });
 
 // ---------------------------------------------------------------------------------------------
-// Registro de overlays: OVERLAY_CLOSE + a cadeia de Escape
+// Overlay registry: OVERLAY_CLOSE + the Escape chain
 // ---------------------------------------------------------------------------------------------
 describe('registro de overlays — fechar por id', () => {
   it('[Right] closeById chama o close registrado e devolve true', () => {
@@ -300,19 +299,17 @@ describe('registro de overlays — fechar por id', () => {
 });
 
 describe('escapeTarget — quem consome a tecla Escape', () => {
-  // O que mudou (D1): a entrada nao traz mais `isOpen`. Aberto passou a ser UMA coisa so — o `hidden` do
-  // proprio elemento — e `inEscapeChain` diz apenas se o dialogo participa da cadeia. Antes havia duas fontes:
-  // a flag `*Open` do game.js E a guarda de visibilidade; onde discordassem, quem decidia era a visibilidade.
-  // Caiu com isso um caso que existia aqui, "visivel mas com a flag desligada e pulado": ele descrevia uma
-  // configuracao que o app nunca produz (as sete flags eram escritas na MESMA funcao que revela o painel) e
-  // que agora nao pode nem ser construida. No lugar dele entrou o teste do invariante novo, que PODE falhar:
-  // mexer so no `hidden` vira a resposta nos dois sentidos.
+  // (D1) An entry carries no `isOpen`: open is ONE thing only — the element's own `hidden` — and `inEscapeChain` only
+  // says whether the dialog takes part in the chain. With two sources (a per-dialog open flag AND the visibility guard)
+  // the visibility decided wherever they disagreed; a case for "visible but with the flag off" would describe a
+  // configuration that cannot be built. The test of the invariant CAN fail: touching only `hidden` flips the answer both
+  // ways.
   function scene({ optionsHidden = true, audioHidden = true } = {}) {
     const options = overlay('options', { hidden: optionsHidden });
     const audio = overlay('audio', { hidden: audioHidden });
     const api = initSettingsPanel(makeCtx({ '#options': options, '#audio': audio }));
     const closed = [];
-    // ordem de registro = ordem do encadeamento if/else do game.js (options antes de audio)
+    // registration order (options before audio)
     api.register('options', { close: () => closed.push('options'), inEscapeChain: true });
     api.register('audio', { close: () => closed.push('audio'), inEscapeChain: true });
     return { api, options, audio, closed };
@@ -327,14 +324,14 @@ describe('escapeTarget — quem consome a tecla Escape', () => {
   it('[Right] dois abertos: vence a ORDEM DE REGISTRO, nao o z-index (divergencia verbatim do game.js)', () => {
     const s = scene({ optionsHidden: false, audioHidden: false });
     s.options.style.zIndex = '61'; // #options esta ATRAS...
-    s.audio.style.zIndex = '62';   // ...e #audio por cima
-    expect(s.api.escapeTarget()).toBe('options'); // ainda assim e o primeiro da cadeia
+    s.audio.style.zIndex = '62';   // ...and #audio on top
+    expect(s.api.escapeTarget()).toBe('options'); // still it is the first in the chain
   });
   it('[Boundary] fecha so UM: depois de fechar o primeiro, o alvo passa a ser o outro', () => {
     const s = scene({ optionsHidden: false, audioHidden: false });
     const first = s.api.escapeTarget();
-    s.options.hidden = true; // e o que o close() de verdade faz
-    expect(s.audio.hidden).toBe(false); // o de baixo continua aberto
+    s.options.hidden = true; // it is what the real close() does
+    expect(s.audio.hidden).toBe(false); // the one below is still open
     expect(first).toBe('options');
     expect(s.api.escapeTarget()).toBe('audio');
   });
@@ -347,9 +344,9 @@ describe('escapeTarget — quem consome a tecla Escape', () => {
     expect(s.api.escapeTarget()).toBe(null);
     s.audio.hidden = false;
     expect(s.api.escapeTarget()).toBe('audio');
-    s.options.hidden = false;                       // o primeiro da cadeia aparece e assume
+    s.options.hidden = false;                       // the first in the chain appears and takes over
     expect(s.api.escapeTarget()).toBe('options');
-    s.options.hidden = true;                        // some de novo e devolve a vez
+    s.options.hidden = true;                        // it vanishes again and gives back the turn
     expect(s.api.escapeTarget()).toBe('audio');
     s.audio.hidden = true;
     expect(s.api.escapeTarget()).toBe(null);
@@ -359,8 +356,8 @@ describe('escapeTarget — quem consome a tecla Escape', () => {
     const api = initSettingsPanel(makeCtx({ '#touchcfg': touchcfg }));
     api.register('touchcfg', { close: () => {}, inEscapeChain: false });
     expect(touchcfg.hidden).toBe(false);            // visivel de verdade...
-    expect(api.escapeTarget()).toBe(null);          // ...e ainda assim fora da cadeia
-    expect(api.closeById('touchcfg')).toBe(true);   // mas continua fechavel pelo dialogBack
+    expect(api.escapeTarget()).toBe(null);          // ...and still out of the chain
+    expect(api.closeById('touchcfg')).toBe(true);   // but still closable through dialogBack
   });
   it('[Zero/Error] na cadeia mas com o elemento AUSENTE do DOM e pulado, sem lancar', () => {
     const api = initSettingsPanel(makeCtx({}));

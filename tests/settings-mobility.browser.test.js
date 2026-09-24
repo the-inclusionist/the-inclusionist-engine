@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-mobility — render/reflect/setEasy (project BROWSER: usa document). Contrato: DI por
-// closure (ctx.$/srSay/store/players/getNumPlayers/setToggleMove/rebuildCoins), nenhum acesso a globais fora
-// do ctx. A lógica pura (clamp/predicado/anúncio/HTML das abas) está coberta em settings-mobility.node.test.js.
-// Modelo: tests/a11y-sr.browser.test.js, tests/settings-typo.browser.test.js.
+// Tests of ui/settings-mobility — render/reflect/setEasy (BROWSER project: uses document). Contract: DI by closure
+// (ctx.$/srSay/store/players/getNumPlayers/setToggleMove/rebuildCoins), no access to globals outside the ctx. The pure
+// logic (clamp/predicate/announcement/tabs HTML) is covered in settings-mobility.node.test.js.
+// Model: tests/a11y-sr.browser.test.js, tests/settings-typo.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // os anúncios vêm do dicionário desde o item 14
+import { t } from '../app/js/core/i18n.js'; // the announcements come from the dictionary (item 14)
 import { initSettingsMobility } from '../app/js/ui/settings-mobility.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -14,7 +14,7 @@ function fullCtx(over = {}) {
   const storeMap = new Map();
   const toggleMoveCalls = [];
   const toggleRunCalls = [];
-  const escolhido = new Set(); // chaves que a criança de fato mexeu (o que o `store.get` devolveria não-nulo)
+  const escolhido = new Set(); // keys the child actually changed (what `store.get` would return non-null)
   let rebuildCoinsCalls = 0;
   const players = over.players ?? [{ easy: false, toggleMove: false }];
   return {
@@ -24,9 +24,9 @@ function fullCtx(over = {}) {
     players,
     getNumPlayers: () => (over.numPlayers ?? players.length),
     setToggleMove: (i, on) => { toggleMoveCalls.push([i, on]); players[i].toggleMove = on; },
-  // ⚠️ EXPLÍCITO, e a razão é que a ausência dele MUDA todos os casos deste ficheiro. Desde o ADR-0115 um
-  // ctx sem este campo esconde a linha da alternância — e trinta casos passariam na mesma, a exercitar uma
-  // linha invisível sem nada o dizer. Este fixture é de um jogo que SEGURA, que é a premissa de todos eles.
+  // ⚠️ EXPLICIT, because its absence CHANGES every case in this file. Since ADR-0115 a ctx without this field hides the
+  // latch row — and the cases would pass anyway, exercising an invisible row with nothing saying so. This fixture is a
+  // game that HOLDS keys, which is the premise of all of them.
   holdsKeys: true,
     setToggleRun: (i, on) => { toggleRunCalls.push([i, on]); players[i].toggleRun = on; escolhido.add('incl_togglerun_p' + i); },
     rebuildCoins: () => { rebuildCoinsCalls++; },
@@ -58,16 +58,14 @@ describe('ui/settings-mobility', () => {
     mountDom();
   });
 
-  /* ===================== ADR-0115 · O JOGO QUE NÃO SEGURA NADA NÃO OFERECE A LINHA =====================
+  /* ===================== ADR-0115 · THE GAME THAT HOLDS NOTHING DOES NOT OFFER THE ROW =====================
    *
-   * 🔴 A alternância existe para quem não consegue MANTER uma tecla premida. Num quiz não há nada a travar, e
-   * a linha oferecida na mesma é uma opção que não faz nada: a criança liga o ajuste de que depende e não
-   * acontece nada.
+   * 🔴 The latch exists for whoever cannot HOLD a key down. In a quiz there is nothing to latch, and the row offered
+   * anyway is an option that does nothing: the child turns on the setting she depends on and nothing happens.
    *
-   * ⚠️ E É O CONTRÁRIO DO BLOCO LOGO ABAIXO, de propósito. Ali o aparelho EXIGE a alternância e o controle
-   * fica `aria-disabled` COM o motivo, alcançável para ela poder lê-lo. Aqui não há motivo que ajude, porque
-   * não há nada que o controle pudesse fazer — e um lugar a mais na navegação por teclado, entre dois que
-   * funcionam, é custo sem contrapartida. */
+   * ⚠️ AND IT IS THE OPPOSITE OF THE BLOCK JUST BELOW, on purpose. There the device REQUIRES the latch and the control
+   * is `aria-disabled` WITH the reason, reachable so she can read it. Here no reason helps, because there is nothing the
+   * control could do — and one more stop in keyboard navigation, between two that work, is a cost with no return. */
   describe('a linha da alternância num jogo que não segura teclas', () => {
     it('🎯 [Zero] com `seguraTeclas: false`, a linha fica AUSENTE — não desabilitada', () => {
       const ctx = fullCtx();
@@ -77,8 +75,8 @@ describe('ui/settings-mobility', () => {
       const linha = document.querySelector('#opt-altmove')?.closest('.ctrl-row');
       expect(linha, 'a linha do `#opt-altmove` desapareceu do fixture').not.toBeNull();
       expect(linha.hidden, 'a linha ficou visível num jogo que não segura nada').toBe(true);
-      // ⚠️ E NÃO `aria-disabled`: essa é a resposta da cláusula 3 do ADR-0113, e usá-la aqui deixaria na tela
-      // um controle que explica por que não faz nada — que continua a ser um controle que não faz nada.
+      // ⚠️ AND NOT `aria-disabled`: that is the answer of clause 3 of ADR-0113, and using it here would leave on screen
+      // a control that explains why it does nothing — which is still a control that does nothing.
       expect(document.querySelector('#opt-altmove').getAttribute('aria-disabled'),
         'a ausência do ADR-0115 foi confundida com a recusa do ADR-0113').toBeNull();
     });
@@ -91,8 +89,8 @@ describe('ui/settings-mobility', () => {
     });
 
     it('📌 [Boundary] a ausência é do JOGO e não do aparelho — as duas regras não se confundem', () => {
-      // Com o olhar em uso (que EXIGE alternância) mas num jogo que não segura nada, a ausência ganha: não há
-      // o que exigir. Uma implementação que lesse só o transporte deixaria a linha desabilitada e visível.
+      // With gaze in use (which REQUIRES the latch) but in a game that holds nothing, the absence wins: there is
+      // nothing to require. An implementation reading only the transport would leave the row disabled and visible.
       const ctx = fullCtx();
       ctx.holdsKeys = false;
       ctx.transportInUse = () => 'olhos';
@@ -102,9 +100,9 @@ describe('ui/settings-mobility', () => {
     });
   });
 
-  // ========================= A CLÁUSULA 3 DO ADR-0113, NA TELA =========================
-  // «É impossível desligá-la em modos que não tem como funcionar sem ela (voz e câmera)» — a frase do Dev.
-  // O modelo puro vive em `ui/latch-refusal`; aqui afirma-se o que a criança encontra.
+  // ========================= CLAUSE 3 OF ADR-0113, ON SCREEN =========================
+  // «É impossível desligá-la em modos que não tem como funcionar sem ela (voz e câmera)» — the Dev's sentence.
+  // The pure model lives in `ui/latch-refusal`; here what the child finds is asserted.
   describe('a alternância exigida pelo aparelho', () => {
     it('🔴 [Right] com o olhar em uso, o controle fica `aria-disabled` e a dica diz POR QUÊ', () => {
       const ctx = fullCtx();
@@ -115,12 +113,12 @@ describe('ui/settings-mobility', () => {
       const dica = document.querySelector('#opt-altmove').closest('.ctrl-row').querySelector('.opt-hint');
       expect(dica.textContent, 'a dica não diz por que o botão não responde')
         .toContain('precisa das teclas de alternância');
-      // 📌 E a dica ORIGINAL não se perde: a explicação da linha continua lá, com o motivo a seguir.
+      // 📌 And the ORIGINAL hint is not lost: the row's explanation is still there, with the reason after it.
       expect(dica.textContent).toContain('Anda sem segurar.');
     });
 
-    // ⚠️ «Aceitar o clique e ignorá-lo» é a outra metade do que o ADR-0076 proíbe. Aqui o ouvinte é ligado
-    // uma vez e não pode ser omitido como no `render/viz-setters`, então a recusa FALA.
+    // ⚠️ «Aceitar o clique e ignorá-lo» is the other half of what ADR-0076 forbids. Here the listener is wired once and
+    // cannot be omitted as in `render/viz-setters`, so the refusal SPEAKS.
     it('🔴 [Zero] clicar não liga nada, e a recusa é DITA em vez de silenciosa', () => {
       const ctx = fullCtx();
       ctx.transportInUse = () => 'olhos';
@@ -132,10 +130,10 @@ describe('ui/settings-mobility', () => {
         .toContain('precisa das teclas de alternância');
     });
 
-    // 🎯 O CASO QUE O PRECEDENTE NÃO PRECISOU DE TER, e é a diferença de forma entre os dois: o
-    // `render/viz-setters` reconstrói a lista a cada render, então acrescentar o motivo à dica basta. Este
-    // botão é persistente e a criança larga a webcam e volta ao teclado — sem restaurar, o motivo
-    // acumular-se-ia na linha a cada troca de aparelho.
+    // 🎯 THE CASE THE PRECEDENT DID NOT NEED, and it is the difference in shape between the two: `render/viz-setters`
+    // rebuilds the list on every render, so appending the reason to the hint is enough. This button persists and the
+    // child puts the webcam down and goes back to the keyboard — without restoring, the reason would pile up on the row
+    // at every device switch.
     it('🎯 [Boundary] ao voltar para o teclado, a recusa sai e a dica volta ao que era', () => {
       const ctx = fullCtx();
       let aparelho = 'olhos';
@@ -151,7 +149,7 @@ describe('ui/settings-mobility', () => {
       expect(dica.textContent, 'o motivo ficou colado na dica').toBe('Anda sem segurar.');
     });
 
-    // 📌 SEM A RAIZ A RESPONDER, nada disto acontece — o campo é opcional e o painel comporta-se como antes.
+    // 📌 WITHOUT THE ROOT ANSWERING, none of this happens — the field is optional and the panel behaves as with no device.
     it('📌 [Zero] sem `transporteEmUso`, o controle continua accionável', () => {
       const ctx = fullCtx();
       initSettingsMobility(ctx);
@@ -167,7 +165,7 @@ describe('ui/settings-mobility', () => {
     expect($('#opt-facil').classList.contains('is-on')).toBe(false);
     expect($('#opt-altmove').classList.contains('is-on')).toBe(false);
     expect($('#opt-movement').classList.contains('is-on')).toBe(false);
-    expect(ctx.said).toHaveLength(0); // boot não fala
+    expect(ctx.said).toHaveLength(0); // boot does not speak
   });
 
   it('[Interface] initSettingsMotor reflete Fácil já ligado no jogador 0 ao montar', () => {
@@ -187,8 +185,8 @@ describe('ui/settings-mobility', () => {
     expect(ctx.storeMap.get('incl_easy_p0')).toBe('1');
     expect($('#opt-facil').classList.contains('is-on')).toBe(true);
     expect(ctx.rebuildCoinsCalls).toBe(1);
-    // Contra `t()` e não contra a frase: fixar o português aqui devolveria ao teste o texto que o item 14
-    // tirou do código. O caso continua pegando chave trocada — `easyOn` e `easyOff` dão frases diferentes.
+    // Against `t()` and not against the sentence: pinning the Portuguese here would bring back into the test the text
+    // item 14 took out of the code. The case still catches a swapped key — `easyOn` and `easyOff` give different sentences.
     expect(ctx.said).toEqual([t('sr.motor.easyOn')]);
   });
 
@@ -201,31 +199,31 @@ describe('ui/settings-mobility', () => {
   });
 
   it('[Right] a marca do ADR-0029 acompanha a alternância do correr quando ela foi ESCOLHIDA', () => {
-    // A marca existe para a criança achar o que ela mudou e poder desfazer. O ajuste novo nascia sem padrão
-    // declarado e sem marca — falha minha ao entregá-lo.
+    // The mark exists for the child to find what she changed and be able to undo it. A setting with no declared default
+    // is born with no mark — this case holds the run latch to it.
     const ctx = fullCtx({ players: [{ easy: false, toggleMove: false, toggleRun: true }] });
-    ctx.escolhido.add('incl_togglerun_p0'); // a criança mexeu neste controle
+    ctx.escolhido.add('incl_togglerun_p0'); // the child changed this control
     initSettingsMobility(ctx);
     expect($('#opt-togglerun').closest('.ctrl-row').classList.contains('is-changed')).toBe(true);
     expect($('[data-act="motora"]').classList.contains('is-changed'), 'a marca do MENU também acende').toBe(true);
   });
 
   it('[Boundary] ligada SOZINHA no toque, ela NÃO é marcada — a criança não mexeu em nada', () => {
-    // A sutileza que só existe neste ajuste: ele liga sozinho no controle de tela. Marcar ali acenderia a
-    // marca para 100% de quem joga em tablet, sem ninguém ter tocado — e uma marca sempre acesa não significa
-    // nada. Pior: o comentário do reset deste menu já diz que "uma marca errada manda a criança desfazer o
-    // que ela nunca mexeu". O que marca é a ESCOLHA guardada, não o estado.
+    // The subtlety that only exists in this setting: it turns on by itself on the on-screen control. Marking it there
+    // would light the mark for 100% of tablet players, with nobody having touched it — and a mark always lit means
+    // nothing. Worse: as this menu's reset says, a wrong mark sends the child to undo what she never changed. What marks
+    // is the stored CHOICE, not the state.
     const ctx = fullCtx({ players: [{ easy: false, toggleMove: false, toggleRun: true }] });
-    initSettingsMobility(ctx); // sem valor guardado: foi o toque que ligou
+    initSettingsMobility(ctx); // no stored value: touch turned it on
     expect($('#opt-togglerun').closest('.ctrl-row').classList.contains('is-changed')).toBe(false);
     expect($('[data-act="motora"]').classList.contains('is-changed')).toBe(false);
   });
 
   it('[Right] clicar em #opt-togglerun delega no setToggleRun INJETADO e reflete', () => {
-    // A alternância do CORRER é irmã da de movimento e segue a mesma forma: quem persiste e anuncia é a raiz
-    // (ela conhece `players` e o armazenamento); o painel só delega e reflete. O ajuste existe porque a
-    // alternância de movimento resolvia METADE — quem toca com um dedo andava sem segurar e continuava sem
-    // conseguir CORRER, que ainda exigia manter pressionado.
+    // The RUN latch is the movement latch's sibling and follows the same shape: persisting and announcing belong to the
+    // root (it knows `players` and the storage); the panel only delegates and reflects. The setting exists because the
+    // movement latch solved HALF — whoever taps with one finger walked without holding and still could not RUN, which
+    // still required holding.
     const ctx = fullCtx();
     const api = initSettingsMobility(ctx);
     $('#opt-togglerun').click();
@@ -270,10 +268,10 @@ describe('ui/settings-mobility', () => {
   it('[Boundary/Edge-case] jogador selecionado >= numPlayers clampa para 0 (o clamp do código atual)', () => {
     const ctx = fullCtx({
       players: [{ easy: true, toggleMove: false }, { easy: false, toggleMove: false }],
-      numPlayers: 1, // encolheu de 2 para 1 jogador
+      numPlayers: 1, // shrank from 2 to 1 player
     });
     const api = initSettingsMobility(ctx);
-    api.setSelPlayer(1); // seleção antiga, agora fora do intervalo
+    api.setSelPlayer(1); // old selection, now out of range
     api.renderMovPlayers();
     expect(api.getSelPlayer()).toBe(0); // clampou de volta
   });
@@ -292,7 +290,7 @@ describe('ui/settings-mobility', () => {
     const ctx = fullCtx();
     const api = initSettingsMobility(ctx);
     expect(() => api.setEasy(5, true)).not.toThrow();
-    expect(ctx.said).toHaveLength(0); // no-op: não anunciou
+    expect(ctx.said).toHaveLength(0); // no-op: did not announce
   });
 
   it('[Zero] sem os elementos no DOM, render/reflect não lançam (só não desenham)', () => {
@@ -307,8 +305,8 @@ describe('ui/settings-mobility — restaurar padrões DESTE menu (ADR-0028)', ()
   beforeEach(() => { mountDom(); });
 
   it('[Right] devolve Modo Fácil e alternância de TODOS os jogadores, não só o selecionado', () => {
-    // O painel edita um jogador por vez, mas o reset é do MENU: deixar o jogador 2 em Modo Fácil porque a aba
-    // aberta era a do jogador 1 daria dois estados diferentes com um só nome.
+    // The panel edits one player at a time, but the reset belongs to the MENU: leaving player 2 in Easy Mode because the
+    // open tab was player 1's would give two different states under one name.
     const players = [{ easy: true, toggleMove: true }, { easy: true, toggleMove: false }];
     const ctx = fullCtx({ players });
     initSettingsMobility(ctx);
@@ -317,8 +315,8 @@ describe('ui/settings-mobility — restaurar padrões DESTE menu (ADR-0028)', ()
   });
 
   it('[Interface] NÃO desliga o controle pelos olhos — um reset não pode tirar o ponteiro de quem clica com ele', () => {
-    // A criança que joga com os olhos aponta com os olhos. Desligar a webcam a deixaria sem como clicar o
-    // botão de volta: o reset teria criado a armadilha que existe para desfazer.
+    // The child who plays with her eyes points with her eyes. Turning the webcam off would leave her no way to click the
+    // button back: the reset would have created the trap it exists to undo.
     const ctx = fullCtx();
     initSettingsMobility(ctx);
     $('#opt-eyes').setAttribute('aria-pressed', 'true');
@@ -367,8 +365,8 @@ describe('ui/settings-mobility — marca o que saiu do padrão (ADR-0029)', () =
   });
 
   it('[Boundary] o menu só desmarca quando a ÚLTIMA opção volta — não quando a primeira volta', () => {
-    // Se o menu limpasse a marca cedo demais, a opção ainda alterada ficaria escondida atrás de um menu que
-    // diz estar intocado, e a criança procuraria em todo lugar menos onde está.
+    // If the menu cleared the mark too early, the option still changed would hide behind a menu claiming to be untouched,
+    // and the child would look everywhere except where it is.
     const players = [{ easy: true, toggleMove: true }];
     const ctx = fullCtx({ players });
     const api = initSettingsMobility(ctx);
@@ -389,13 +387,13 @@ describe('o ctx que a ENGINE consegue montar sozinha (ADR-0106 §1)', () => {
   beforeEach(() => { mountDom(); });
 
   it('🎯 [Zero] sem `rebuildCoins` e sem `setToggleRun`, o painel continua INTEIRO', () => {
-    // ⚠️ ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE: tirar o padrão de `rebuildCoins` não reprovava nada,
-    // porque TODOS os fixtures deste ficheiro o injectam. Um campo tornado opcional sem um caso que o omita é
-    // uma promessa que ninguém verifica — e a promessa aqui é a que decide se a engine pode montar o painel.
+    // ⚠️ THIS CASE WAS BORN FROM A SURVIVING MUTATION: removing the `rebuildCoins` default failed nothing, because EVERY
+    // fixture in this file injects it. A field made optional without a case that omits it is a promise nobody checks —
+    // and the promise here is the one that decides whether the engine can mount the panel.
     //
-    // 📌 As duas ausências significam coisas diferentes, e as duas têm de ficar bem: `setToggleRun` é uma
-    // ESCRITA que a engine agora sabe fazer (`setRunLatch`); `rebuildCoins` é a REACÇÃO DO
-    // MUNDO, que continua a ser do jogo — e cuja falta não pode apagar a escolha da criança.
+    // 📌 The two absences mean different things, and both have to be fine: `setToggleRun` is a WRITE the engine knows
+    // how to do (`setRunLatch`); `rebuildCoins` is the WORLD'S REACTION, which is still the game's — and whose absence
+    // must not erase the child's choice.
     const players = [{ easy: false, toggleMove: false, toggleRun: false, walkDir: 0 }];
     const guardado = new Map();
     const ditos = [];

@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-motion — render/DOM real (project BROWSER: usa document + querySelector). Injeção por
-// closure (mesmo padrão de ui/debug-panel): ctx com $/srSay/store/frontOverlay/toggleBtn/rm/saveRM/rmKeys/rmChar
-// FALSOS (spies), mas `players`/`numPlayers` (core/state.ts) e `CRT`/`applyCrt` (render/crt.ts) são os módulos
-// REAIS — mesmos que initSettingsMotion importa direto. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Tests of ui/settings-motion — real render/DOM (BROWSER project: uses document + querySelector). Injection by closure
+// (the same pattern as ui/debug-panel): a ctx with FAKE $/srSay/store/frontOverlay/toggleBtn/rm/saveRM/rmKeys/rmChar
+// (spies), a local round double for `players`/`numPlayers`, and the REAL `CRT`/`applyCrt` (render/crt.ts) — the same
+// module initSettingsMotion imports directly. See docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   initSettingsMotion, getSelectedPlayer, setSelectedPlayer,
 } from '../app/js/ui/settings-motion.js';
 /*
- * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` foi com a pilha de mundo-de-tiles para o
- * `game-platformer`. Este ficheiro nunca testou a rodada — ele PASSA uma ao que está a medir —, e os três
- * membros abaixo são exactamente os que ele lê. Fábrica e não literal: duas rodadas têm de ser dois objectos.
+ * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0228): `core/run-state` went with the tile-world stack to `game-platformer`. This
+ * file never tested the round — it HANDS one to what it measures —, and the three members below are exactly the ones it
+ * reads. A factory and not a literal: two rounds have to be two objects.
  */
 const createRunState = () => ({ numPlayers: 1, players: [], setNumPlayers(n) { this.numPlayers = n; } });
-// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
-// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
-// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+// The round is local to this file (ADR-0038, phase B); the aliases below keep the cases' bodies written as they always were.
 const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
@@ -34,8 +32,8 @@ const RM_CHAR = [
 ];
 
 function markup() {
-  // motion-master carrega o texto padrão ESTÁTICO do index.html (só updateMotionMaster()/render() o corrige
-  // depois) e #game-region é o alvo que applyCrt() precisa — igual ao boot real (inCanvasMenus reparenta pra lá).
+  // motion-master carries the STATIC default text of the page (only updateMotionMaster()/render() corrects it later),
+  // and #game-region is the target applyCrt() needs — as in a real boot, where the dialogs live inside it.
   document.body.innerHTML = `
     <div id="game-region">
       <button id="opt-animation" type="button"></button>
@@ -155,28 +153,28 @@ describe('initSettingsMotion — estética CRT', () => {
     const passos = $('#motion-list').querySelector('[data-crt="round"][data-passos]');
     expect(passos, 'os cantos não viraram passos').not.toBeNull();
     expect($('#motion-list').querySelector('select[data-crt]'), 'sobrou o <select> antigo').toBeNull();
-    // 🔴 UMA LINHA SÓ, «◀ Cantos arredondados: pequeno ▶» (errata do ADR-0130): nada de rótulo à esquerda da caixa.
+    // 🔴 ONE ROW ONLY, «◀ Cantos arredondados: pequeno ▶» (ADR-0130 erratum): no label to the left of the box.
     expect(passos.closest('.ctrl-row').children.length, 'sobrou o rótulo à parte, ao lado dos passos').toBe(1);
     expect(passos.querySelector('.passo-valor').textContent).toBe('Cantos arredondados: pequeno');
     passos.querySelector('[data-passo="1"]').click();
     expect(CRT.round).toBe(2);
     expect(calls.srSay.at(-1)).toBe('Cantos arredondados: grande.');
-    // ⚠️ O MESMO NÓ, e não um redesenho: redesenhar a lista tirava o foco a quem está a ajustar.
+    // ⚠️ THE SAME NODE, not a redraw: redrawing the list took the focus away from whoever is adjusting.
     expect(passos.isConnected, 'o passo redesenhou a lista e o controle focado saiu do documento').toBe(true);
     expect(passos.getAttribute('aria-valuetext')).toBe('grande');
   });
 
   it('🔴 [Right] e sobrevive ao clique da linha AO LADO — o caso acima só media o próprio passo', () => {
-    // 📏 Medido no `dist` em 2026-09-23, com o SW morto: focar os cantos e clicar no interruptor de scanlines
-    // destruía o controle e atirava o foco para o `BODY` — a criança que navega por teclado perdia o lugar no painel
-    // inteiro, e não só na linha. 🎯 E a intenção estava ESCRITA ao lado: o tratador do passo evita redesenhar
-    // «porque redesenhar tirava o foco de quem ajusta». O que a desfazia era a linha vizinha, que redesenha.
+    // 📏 Measured in `dist` on 2026-09-23, with the SW killed: focusing the corners and clicking the scanlines switch
+    // destroyed the control and threw focus to the `BODY` — the child navigating by keyboard lost her place in the whole
+    // panel, not just in the row. 🎯 And the intent was WRITTEN beside it: the step handler avoids redrawing because
+    // redrawing took the focus from whoever adjusts. What undid it was the neighbouring row, which redraws.
     const { ctx } = makeCtx();
     CRT.round = 1;
     CRT.scan = 1;
     initSettingsMotion(ctx).render();
-    // ⚠️ O painel do fixture nasce `hidden`, e um descendente de um elemento escondido NÃO aceita foco: sem esta
-    // linha o caso ficava vermelho por não conseguir focar, que é um vermelho pela razão errada.
+    // ⚠️ The fixture's panel is born `hidden`, and a descendant of a hidden element does NOT accept focus: without this
+    // line the case would go red for failing to focus, which is red for the wrong reason.
     $('#animation').hidden = false;
     const antes = $('#motion-list').querySelector('[data-crt="round"][data-passos]');
     expect(antes, 'os cantos não foram montados — o caso não mediria nada').not.toBeNull();
@@ -197,10 +195,9 @@ describe('initSettingsMotion — estética CRT', () => {
     initSettingsMotion(ctx).render();
     const antes = calls.srSay.length;
     const passos = $('#motion-list').querySelector('[data-crt="round"][data-passos]');
-    // ⚠️ COM BOLHA, como os DOIS produtores reais deste evento o despacham — a seta tocada
-    // (`ui/panel-widgets`) e a esquerda/direita do teclado e do controle (`ui/menu-nav`). A escuta passou do
-    // controle para a lista quando este painel virou nós, porque as linhas vêm e vão com o cartucho; um
-    // despacho sem bolha era uma forma que nenhum caminho real usa.
+    // ⚠️ WITH BUBBLING, as BOTH real producers of this event dispatch it — the tapped arrow (`ui/panel-widgets`) and the
+    // keyboard's and gamepad's left/right (`ui/menu-nav`). The listener is on the list, not the control, because the
+    // rows come and go with the cartridge; a dispatch without bubbling would be a shape no real path uses.
     passos.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
     expect(CRT.round).toBe(2);
     expect(calls.srSay.length, 'anunciou um passo que não aconteceu').toBe(antes);
@@ -268,9 +265,9 @@ describe('getSelectedPlayer / setSelectedPlayer', () => {
 });
 
 describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marca (ADR-0029)', () => {
-  // O padrão deste menu é o ÚNICO que não é constante: é `prefers-reduced-motion`. No ambiente de teste a
-  // consulta responde `false`, então "padrão" aqui é animado — e é contra ISSO que os casos comparam, nunca
-  // contra um `false` escrito à mão, que é justamente o erro que este menu convida a cometer.
+  // This menu's default is the ONLY one that is not a constant: it is `prefers-reduced-motion`. In the test environment
+  // the query answers `false`, so "default" here is animated — and that is what the cases compare against, never a
+  // hand-written `false`, which is precisely the mistake this menu invites.
   beforeEach(() => {
     markup();
     players.length = 0;
@@ -332,11 +329,11 @@ describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marc
   });
 
   it('[Right] numa máquina que pede MENOS movimento, o reset CONGELA em vez de religar', () => {
-    // O caso que este menu existe para não errar, e que os outros quatro casos não conseguiam pegar: com
-    // `defaultReducedMotion()` respondendo false no ambiente de teste, "ler o padrão" e "escrever false" dão
-    // o mesmo resultado, e uma mutação trocando um pelo outro passava despercebida. Aqui o sistema diz
-    // `reduce`, e aí os dois deixam de ser a mesma coisa: escrever false RELIGARIA a animação na tela de
-    // quem já pediu para não ter — o reset fazendo, sozinho, o que a WCAG 2.3.3 existe para impedir.
+    // The case this menu exists not to get wrong, and that the other four cases could not catch: with
+    // `defaultReducedMotion()` answering false in the test environment, "reading the default" and "writing false" give
+    // the same result, and a mutation swapping one for the other would pass unnoticed. Here the system says `reduce`,
+    // and then the two stop being the same thing: writing false WOULD TURN ANIMATION BACK ON for whoever already asked
+    // not to have it — the reset doing, by itself, what WCAG 2.3.3 exists to prevent.
     const real = window.matchMedia;
     window.matchMedia = (q) => ({ matches: q.includes('prefers-reduced-motion'), media: q,
       addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
@@ -349,7 +346,7 @@ describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marc
 
       expect(rm).toEqual({ parallax: true, decor: true, items: true, particles: true });
       expect(players[0]).toEqual({ rmWalk: true, rmBreath: true, rmFlavor: true });
-      // E nada disso conta como "alterado": é o padrão desta máquina, não escolha da criança.
+      // And none of this counts as "changed": it is this machine's default, not the child's choice.
       expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
     } finally {
       window.matchMedia = real;
@@ -365,16 +362,15 @@ describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marc
 
 
 // ==========================================================================================================
-// AS LINHAS DESTE PAINEL, AGORA EM NÓS (ADR-0129; ADR-0221 passo 7c)
+// THIS PANEL'S ROWS, AS NODES (ADR-0129; ADR-0221 step 7c)
 //
-// 📌 OITO CASOS MUDARAM DE PROJECTO, e não de exigência. Mediam as CADEIAS que o `motionRowHtml`, o
-// `buildCharRowsHtml`, o `buildSceneRowsHtml`, o `crtToggleRowHtml` e o `crtRoundRowHtml` devolviam; o painel
-// passou a construir NÓS com o kit, logo as cadeias deixaram de existir e o que eles afirmam passou a ser
-// observável só num documento.
+// 📌 EIGHT CASES CHANGED PROJECT, not requirement. They measured the STRINGS `motionRowHtml`, `buildCharRowsHtml`,
+// `buildSceneRowsHtml`, `crtToggleRowHtml` and `crtRoundRowHtml` returned; the panel builds NODES with the kit, so the
+// strings no longer exist and what they assert is observable only in a document.
 //
-// ⚠️ DOIS NÃO VIERAM, e é o certo: mediam o mecanismo «em breve», que saiu com a conversão por não ter assunto
-// — `RM_SOON` era um conjunto vazio desde que o cartucho deixou o repositório, e os únicos que lhe davam um
-// valor eram esses dois casos. Um mecanismo cujo único utilizador é um teste não é um mecanismo.
+// ⚠️ TWO DID NOT COME, and that is right: they measured the «em breve» mechanism, which left with the conversion for
+// having no subject — `RM_SOON` was an empty set since the cartridge left the repository, and the only things giving it
+// a value were those two cases. A mechanism whose only user is a test is not a mechanism.
 // ==========================================================================================================
 describe('initSettingsMotion — o interior montado em nós', () => {
   const lista = () => $('#motion-list');
@@ -458,15 +454,15 @@ describe('initSettingsMotion — o interior montado em nós', () => {
     expect(passos, 'os cantos não são um controle de passos').not.toBeNull();
     expect(lista().querySelector('select'), 'sobrou um `<select>` no interior').toBeNull();
     expect(passos.getAttribute('aria-valuenow')).toBe('1');
-    // 🔴 E JÁ NÃO HÁ LUGAR VAZIO: a cadeia deixava um `<span data-passos-lugar>` que o render trocava pelo
-    // controle a cada passagem, e era essa troca que tirava o foco de quem ajustava.
+    // 🔴 AND THERE IS NO EMPTY SLOT ANY MORE: the string left a `<span data-passos-lugar>` that the render swapped for the
+    // control on every pass, and that swap is what took the focus from whoever was adjusting.
     expect(lista().querySelector('[data-passos-lugar]'), 'sobrou o lugar que a cadeia deixava').toBeNull();
   });
 
   it('🔴 [Right] uma linha que perde o assunto é REMOVIDA, e as outras não são refeitas (ADR-0153)', () => {
-    // 📌 O par do caso do foco: montar uma vez só é honesto se o que deixa de ter assunto sair mesmo. Aqui o
-    // cartucho passa a dizer que não tem personagem, e as três linhas dele têm de desaparecer — enquanto as da
-    // cena, que continuam a ter assunto, têm de ser os MESMOS nós.
+    // 📌 The pair of the focus case: mounting only once is honest only if what loses its subject really leaves. Here the
+    // cartridge starts saying it has no character, and its three rows have to disappear — while the scene ones, which
+    // still have a subject, have to be the SAME nodes.
     let temPersonagem = true;
     const { ctx } = makeCtx({ hasCharacter: () => temPersonagem });
     const api = initSettingsMotion(ctx);
