@@ -1,442 +1,409 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/contract — OS SETE CAMPOS. A interface que o ADR-0030 escolheu como o eixo da engine.
+// core/contract — THE SEVEN FIELDS. The interface ADR-0030 chose as the engine's axis.
 //
-// ⚠️ ESTE FICHEIRO NÃO TINHA IMPORT NENHUM, e o único que ganhou é `import type` — apagado na compilação, logo
-// o módulo publicado continua sem dependência de execução. O que entra é o VOCABULÁRIO das catorze posições
-// (ADR-0074), e ele tinha de entrar: um campo que fala de mapeamento e escrevesse as suas próprias chaves
-// seria a segunda cópia da união que o `core/actions` existe para ser a primeira.
+// ⚠️ Its one import is `import type` — erased at compile time, so the published module keeps no run-time dependency.
+// What comes in is the VOCABULARY of the fourteen positions (ADR-0074), and it had to: a field about mapping that wrote
+// its own keys would be a second copy of the union `core/actions` exists to be the first of.
 //
-// ========================= O QUE ISTO É, E O QUE NÃO É =========================
-// Não é um framework nem uma classe-base. É a ÚNICA coisa que a pilha de acessibilidade sabe sobre um jogo.
-// O ADR-0027 mediu que as três funções que MAIS pareciam genéricas eram as três mais amarradas à plataforma —
-// `roleOf` era uma tabela de tiles, `caneProbe` usava `facing` e `BOX.w`, o sonar definia alvo como "moeda não
-// coletada deste jogador". Nenhuma delas estava errada; todas estavam ADIVINHANDO o jogo em vez de perguntar.
+// ========================= WHAT THIS IS, AND WHAT IT IS NOT =========================
+// Not a framework nor a base class. It is the ONLY thing the accessibility stack knows about a game. ADR-0027 measured
+// that the three functions that looked MOST generic were the three most tied to the platformer — the role table was a
+// tile table, the cane probe used facing and a hitbox, the sonar defined a target as "a coin this player has not taken".
+// None was wrong; all were GUESSING the game instead of asking.
 //
-// Estes sete campos são as perguntas. Um jogo que as responda ganha sonar, alto contraste, varredura, leitor de
-// tela e Libras sem escrever uma linha deles — que é o produto, e não "mais uma engine 2D" (ADR-0027).
+// These seven fields are the questions. A game that answers them gets sonar, high contrast, scanning, screen reader and
+// Libras without writing a line of them — which is the product, not "one more 2D engine" (ADR-0027).
 //
-// ========================= PURO, E DE PROPÓSITO =========================
-// Só TIPOS e funções puras. Zero dependências, zero I/O no import: é módulo-FOLHA, importável dos dois lados da
-// fronteira e do project `node`. Um contrato que precisasse de PIXI já teria escolhido o gênero.
+// ========================= PURE, ON PURPOSE =========================
+// Only TYPES and pure functions. No dependencies, no I/O at import: a LEAF module, importable from both sides of the
+// boundary and from the `node` project. A contract that needed PIXI would already have chosen the genre.
 //
-// ========================= COMO SE USA: FATIAS, NÃO O OBJETO GORDO =========================
-// Vale aqui a mesma regra de `core/entity`: quem consome declara a FATIA MÍNIMA de que precisa, com `Pick`, em
-// vez de receber a declaração inteira. O alto contraste quer `Pick<GameDeclaration, 'roleAt'>` e nada mais; o
-// HUD quer `'objective'`. Trocar 23 visões estreitas por uma interface gorda destruiria a testabilidade que o
-// projeto tem hoje — todo fixture passaria a inventar campos que o módulo não usa.
+// ========================= HOW IT IS USED: SLICES, NOT THE FAT OBJECT =========================
+// The rule of `core/entity` holds here too: a consumer declares the MINIMAL slice it needs, with `Pick`, instead of
+// receiving the whole declaration. High contrast wants `Pick<GameDeclaration, 'roleAt'>` and nothing else; the HUD wants
+// `'objective'`. A fat interface would destroy the project's testability — every fixture would invent fields the module
+// does not use.
 //
-// ========================= O QUE TEM EVIDÊNCIA E O QUE AINDA NÃO TEM =========================
-// Cinco campos nasceram de um consumidor REAL que hoje adivinha (marcados abaixo com "hoje quem adivinha").
-// DOIS não têm consumidor no código ainda — `tick` e `Announcement` — e estão aqui porque o ADR-0027 os nomeia
-// como o que decide varredura e WCAG 2.2.1. Estão marcados. Enquanto nenhum módulo os ler, são hipótese, e o
-// ADR-0030 registra que "o contrato basta" só vira resultado quando DOIS presets existirem.
+// ========================= EVIDENCE =========================
+// Each field was born from a REAL consumer that used to guess, and ADR-0030 records that "the contract is enough" only
+// becomes a result when TWO presets exist.
 
-/* ===================== 3 · NOME FALÁVEL ===================== */
+/* ===================== 3 · SPEAKABLE NAME ===================== */
 //
-// Vem primeiro porque os outros campos o usam. E é o campo que mais se subestima: sem nome não há leitor de
-// tela E NÃO HÁ LIBRAS, porque `vlibrasSay` traduz TEXTO — o mesmo dado serve às duas saídas, e é por isso que
-// o ADR-0027 diz que ele é "exigido DUAS vezes".
+// It comes first because the other fields use it. And it is the most underestimated: without a name there is no screen
+// reader AND NO LIBRAS, because `vlibrasSay` translates TEXT — the same datum serves both outputs, which is why ADR-0027
+// says it is "required TWICE".
 //
-// GÊNERO E PLURAL não são zelo gramatical: em pt-BR a moldura CONCORDA com o conteúdo. "O portão está
-// trancado" e "a porta está trancada" são a mesma frase de engine com o mesmo parâmetro, e sem o gênero uma
-// das duas sai errada. Quem monta a frase precisa saber, e só o jogo sabe.
+// GENDER AND PLURAL are not grammatical fussiness: in Portuguese the frame AGREES with the content. "the gate is locked"
+// takes a different adjective ending for a masculine and a feminine noun, and without the gender one of the two comes
+// out wrong. Whoever builds the sentence needs to know, and only the game knows.
 
 import type { Action } from './actions.js';
 
-/** Gênero gramatical do nome. `n` = neutro/indefinido (o pt-BR usa o masculino como default nesse caso). */
+/** The name's grammatical gender. `n` = neuter/unknown (Portuguese uses the masculine as the default then). */
 export type Gender = 'm' | 'f' | 'n';
 
-/** Um nome que pode ser FALADO (leitor de tela) e SINALIZADO (Libras, que traduz o mesmo texto). */
+/** A name that can be SPOKEN (screen reader) and SIGNED (Libras, which translates the same text). */
 export interface Speakable {
-  /** O nome, na língua da interface. Conteúdo de currículo NÃO se traduz — ver o pilar 3 do ADR-0010. */
+  /** The name, in the interface's language. Curriculum content is NOT translated — see pillar 3 of ADR-0010. */
   readonly text: string;
   readonly gender: Gender;
   readonly plural: boolean;
 }
 
-/* ===================== 1 · TOPOLOGIA DO ESPAÇO NAVEGÁVEL ===================== */
+/* ===================== 1 · TOPOLOGY OF THE NAVIGABLE SPACE ===================== */
 //
-// COM MÉTRICA, e a métrica é o ponto: sem ela não existe "mais perto", e sem "mais perto" não existe sonar.
-// Hoje quem adivinha: `platform/audio-nav`, que pede `tileAt`, `solidAt`, `BOX` e `TILE` para calcular
-// distância — seis coisas de plataforma para responder "qual alvo está mais perto e de que lado".
+// WITH A METRIC, and the metric is the point: without it there is no "nearer", and without "nearer" there is no sonar.
 //
-// As três formas cobrem o catálogo do ADR-0027: GRADE (Sokoban, tabuleiro, cela Braille), CONTÍNUO (plataforma,
-// top-down, corrida) e LISTA ORDENADA (quiz, menu, escolha múltipla) — onde não há espaço nenhum, só ordem.
+// The three shapes cover ADR-0027's catalogue: GRID (Sokoban, board, Braille cell), CONTINUOUS (platformer, top-down,
+// racing) and ORDERED LIST (quiz, menu, multiple choice) — where there is no space at all, only order.
 
 /**
- * COMO SE CONTA UM PASSO — e é isto que decide a métrica, que não é a mesma em todo tabuleiro.
+ * HOW A STEP IS COUNTED — and that is what decides the metric, which is not the same on every board.
  *
- * ⚠️ A grade tinha UMA métrica fixa (Chebyshev), com a razão escrita ao lado: *"numa grade, a diagonal custa um
- * passo, e é assim que quem joga conta"*. Verdade onde a diagonal é legal. **Falsa num quebra-cabeça
- * deslizante**, onde nada anda na diagonal: uma peça duas à direita e duas abaixo está a 2 por Chebyshev e a
- * QUATRO movimentos de distância. O sonar sub-relatava até 2× — e sub-relatar distância a quem não vê a tela
- * não é imprecisão, é mandar a criança para o lado errado com confiança.
+ * ⚠️ The grid had ONE fixed metric (Chebyshev), on the reasoning that on a grid a diagonal costs one step. True where the
+ * diagonal is legal. **False in a sliding puzzle**, where nothing moves diagonally: a piece two right and two down is 2
+ * away by Chebyshev and FOUR moves away. The sonar under-reported up to 2× — and under-reporting distance to someone who
+ * cannot see the screen is not imprecision, it is sending the child the wrong way with confidence.
  *
- * `grid` nunca foi UMA coisa. Quem declara a grade declara também como se anda nela.
+ * `grid` was never ONE thing. Whoever declares a grid declares how one walks on it.
  */
 export type MoveRule =
-  | 'orthogonal'  // L¹ (Manhattan) — quebra-cabeça deslizante, Sokoban, torre. A diagonal não existe.
-  | 'diagonal'    // L∞ (Chebyshev) — rei do xadrez, top-down de 8 direções. A diagonal custa um passo.
-  | 'free';       // L² (euclidiana) — espaço contínuo, onde não há passo discreto nenhum.
+  | 'orthogonal'  // L¹ (Manhattan) — sliding puzzle, Sokoban, rook. There is no diagonal.
+  | 'diagonal'    // L∞ (Chebyshev) — chess king, 8-way top-down. A diagonal costs one step.
+  | 'free';       // L² (Euclidean) — continuous space, with no discrete step at all.
 
 /**
- * EM QUE PALAVRAS SE DIZ UMA DIREÇÃO. Não é preferência de quem ouve: é propriedade do ESPAÇO do jogo.
+ * IN WHAT WORDS A DIRECTION IS SAID. Not the listener's preference: a property of the game's SPACE.
  *
- *   `compass`  norte · sul · leste · oeste (+ zênite e nadir) — tabuleiro, top-down, mapa, 3D
- *   `clock`    «às 2 horas», «às 10 horas» — PLATAFORMA 2D, vista lateral
+ *   `compass`  north · south · east · west (+ zenith and nadir) — board, top-down, map, 3D
+ *   `clock`    "at 2 o'clock", "at 10 o'clock" — a 2D PLATFORMER, side view
  *
- * ⚠️ Num jogo de plataforma, norte e sul não querem dizer nada: a criança não está a olhar um mapa, está a
- * olhar de lado. O relógio é o referencial que essa vista já usa, e dá 12 posições onde a rosa dá 8.
+ * ⚠️ In a platformer north and south mean nothing: the child is not looking at a map, they are looking from the side.
+ * The clock is the frame that view already uses, and gives 12 positions where the rose gives 8.
  *
- * ⚠️ E O RELÓGIO PRESSUPÕE LER RELÓGIO ANALÓGICO, num público que inclui alfabetização. Não é motivo para o
- * recusar — é motivo para o rótulo FALADO ser testado com criança (issue #7) antes de se declarar bom.
+ * ⚠️ AND THE CLOCK ASSUMES READING AN ANALOGUE CLOCK, for an audience that includes early literacy. Not a reason to
+ * refuse it — a reason for the SPOKEN label to be tested with children (issue #7) before it is declared good.
  */
 export type Frame = 'compass' | 'clock';
 
 export type Topology =
   /**
-   * Grade discreta. A distância é em CÉLULAS, e a métrica sai de `move`.
-   * `size` é `[colunas, linhas]` ou `[colunas, linhas, camadas]`.
+   * A discrete grid. Distance is in CELLS, and the metric comes from `move`.
+   * `size` is `[columns, rows]` or `[columns, rows, layers]`.
    */
   | { readonly kind: 'grid'; readonly size: readonly number[]; readonly move: MoveRule; readonly frame: Frame }
   /**
-   * Espaço contínuo. A distância é em UNIDADES do mundo; `unit` diz quanto vale um "passo" para quem narra.
-   * `size` é `[largura, altura]` ou `[largura, altura, profundidade]`.
+   * Continuous space. Distance is in world UNITS; `unit` says what a "step" is worth to the narrator.
+   * `size` is `[width, height]` or `[width, height, depth]`.
    */
   | { readonly kind: 'continuous'; readonly size: readonly number[]; readonly unit: number; readonly move: MoveRule; readonly frame: Frame }
-  /** Sem espaço: uma lista ORDENADA de alvos. A distância é a diferença de índice, e não há direção. */
+  /** No space: an ORDERED list of targets. Distance is the difference of index, and there is no direction. */
   | { readonly kind: 'hotspots'; readonly order: readonly string[] };
 
 /**
- * Uma posição, na métrica da topologia declarada. Em `hotspots`, `x` é o índice e `y` é ignorado.
+ * A position, in the declared topology's metric. In `hotspots`, `x` is the index and `y` is ignored.
  *
- * ⚠️ ASSIMETRIA DELIBERADA COM `size`, e vale dizer por quê. A EXTENSÃO é um vetor porque a dimensão varia e
- * `size.length` é o único lugar onde ela mora — sem isso, "tem profundidade?" viraria `depth !== undefined`
- * espalhado por cada consumidor. O PONTO tem eixos com nome porque é lido em código a toda hora: `alvo.at.x`
- * diz o que é, `alvo.at[0]` obriga a lembrar. Dimensão é 2 ou 3 e a conformidade recusa o resto, o que fecha
- * a assimetria: não há `size` que `Spot` não consiga representar.
+ * ⚠️ A DELIBERATE ASYMMETRY WITH `size`. The EXTENT is a vector because the dimension varies and `size.length` is the
+ * one place it lives — otherwise "does it have depth?" would become `depth !== undefined` in every consumer. The POINT
+ * has named axes because code reads it all the time: `target.at.x` says what it is, `target.at[0]` makes you remember.
+ * The dimension is 2 or 3 and conformance refuses the rest, which closes the asymmetry: there is no `size` `Spot`
+ * cannot represent.
  */
 export interface Spot { readonly x: number; readonly y: number; readonly z?: number }
 
-/** A dimensão que a topologia declara. `hotspots` não tem espaço, logo não tem dimensão. */
+/** The dimension the topology declares. `hotspots` has no space, so no dimension. */
 export function dimension(t: Topology): number { return t.kind === 'hotspots' ? 0 : t.size.length; }
 
-/** O eixo `i` de um ponto, para quem percorre dimensões em vez de as nomear. */
+/** Axis `i` of a point, for whoever walks dimensions instead of naming them. */
 function axis(s: Spot, i: number): number { return i === 0 ? s.x : i === 1 ? s.y : (s.z ?? 0); }
 
-/* ===================== 2 · PAPEL SEMÂNTICO ===================== */
+/* ===================== 2 · SEMANTIC ROLE ===================== */
 //
-// POR CÉLULA OU ENTIDADE, e DESACOPLADO DE COR E SPRITE — é essa separação que faz o color-blocking existir.
-// Hoje quem adivinha: `game/tile-roles.roleOf`, quatro linhas mapeando números de tile, das quais TODO o alto
-// contraste depende. Elas não estão erradas; são verdade DESTE mapa, e o ADR-0027 chama isso de "o acoplamento
-// nº 1 da base".
+// PER CELL OR ENTITY, and DECOUPLED FROM COLOUR AND SPRITE — that separation is what makes colour-blocking exist. A table
+// of tile numbers is true of ONE map, and ADR-0027 calls it "the codebase's no. 1 coupling".
 //
-// `structure` não é "sem papel": é o papel de ser cenário. A diferença importa — o alto contraste PRECISA saber
-// que uma parede é parede para deixá-la no cinza, em vez de não saber nada sobre ela.
+// `structure` is not "no role": it is the role of being scenery. The difference matters — high contrast NEEDS to know a
+// wall is a wall to leave it grey, instead of knowing nothing about it.
 
 export type Role =
-  | 'hazard'     // machuca ao encostar
-  | 'climb'      // muda-se de altura interagindo com isto
-  | 'water'      // atravessa-se nadando
-  | 'goal'       // o que a rodada pede
-  | 'gate'       // barra até uma condição
-  | 'key'        // satisfaz um `gate`
-  | 'structure'  // cenário: chão, parede, o que sustenta
-  | 'free';      // atravessável e sem significado próprio
+  | 'hazard'     // hurts on contact
+  | 'climb'      // height changes by interacting with it
+  | 'water'      // crossed by swimming
+  | 'goal'       // what the round asks for
+  | 'gate'       // bars until a condition
+  | 'key'        // satisfies a `gate`
+  | 'structure'  // scenery: floor, wall, what holds things up
+  | 'free';      // crossable, with no meaning of its own
 
-/* ===================== 4 · FOCO ===================== */
+/* ===================== 4 · FOCUS ===================== */
 //
-// QUEM tem o foco e PARA ONDE aponta. Hoje quem adivinha: `caneProbe` lê `pl.facing` e `BOX.w / 2`; a bengala
-// bate à frente, e "à frente" num jogo de grade são oito direções, num quiz é o item seguinte da lista.
+// WHO has the focus and WHERE it points. A cane taps "ahead", and "ahead" on a grid is eight directions, in a quiz it is
+// the next item of the list.
 //
-// `heading` é oito direções mais `none` porque é o que cobre grade e contínuo sem inventar ângulo: um top-down
-// anda em diagonal, uma plataforma só em 'e'/'w', e um quiz não aponta para lugar nenhum.
+// `heading` is eight directions plus `none` because that covers grid and continuous space without inventing an angle: a
+// top-down game walks diagonally, a platformer only 'e'/'w', and a quiz points nowhere.
 
 /**
- * ⚠️ `zenith` E `nadir` ENTRARAM PORQUE `up`/`down` JÁ QUEREM DIZER DUAS COISAS. `ACTIONS` (core/actions) tem
- * `up` e `down` como AÇÕES DE CONTROLE — o que a criança carrega —, e o eixo vertical do ESPAÇO é outra coisa
- * inteiramente. Enquanto o mundo era plano a ambiguidade não custava nada; num espaço de três dimensões
- * custaria o pior tipo de defeito, o que se lê certo e faz outra coisa. Palavras próprias, antes de o 3D chegar.
+ * ⚠️ `zenith` AND `nadir` EXIST BECAUSE `up`/`down` ALREADY MEAN TWO THINGS. `ACTIONS` (core/actions) has `up` and
+ * `down` as CONTROL ACTIONS — what the child presses — and the vertical axis of SPACE is something else entirely. On a
+ * flat world the ambiguity cost nothing; in three dimensions it would cost the worst kind of defect, one that reads right
+ * and does something else. Words of their own, before 3D arrives.
  */
 export type Heading = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | 'zenith' | 'nadir' | 'none';
 
 /**
- * PARA ONDE FICA UM PONTO VISTO DE OUTRO, já no referencial que a topologia declara.
+ * WHERE A POINT LIES AS SEEN FROM ANOTHER, already in the frame the topology declares.
  *
- * ⚠️ NÃO É O `heading` DO FOCO, e a diferença é o defeito que isto conserta. `Focus.heading` é para onde a
- * criança está VIRADA; isto é para onde está o ALVO. O sonar precisa do segundo e calculava-o à mão a partir
- * de `x` cru, com zona morta de ±4, dizendo `left`/`right`/`ahead` — três palavras onde o contrato tem oito, e
- * MISTURANDO REFERENCIAIS: *esquerda/direita* é relativo à tela, *à frente* é relativo ao corpo. Uma criança
- * cega que ouve as duas na mesma frase não tem como saber de qual origem cada uma fala.
+ * ⚠️ NOT THE FOCUS'S `heading`, and the difference is the defect this fixes. `Focus.heading` is where the child is
+ * FACING; this is where the TARGET is. The sonar needs the second and used to compute it by hand from a raw `x`, saying
+ * `left`/`right`/`ahead` — three words where the contract has eight, and MIXING FRAMES: left/right is relative to the
+ * screen, ahead is relative to the body. A blind child hearing both in one sentence cannot know which origin each one
+ * speaks from.
  */
 export type Bearing =
   | { readonly kind: 'compass'; readonly heading: Heading }
-  | { readonly kind: 'clock'; readonly hour: number }  // 1..12, como no mostrador
-  | { readonly kind: 'none' };                          // mesmo lugar, ou lista sem espaço
+  | { readonly kind: 'clock'; readonly hour: number }  // 1..12, as on the dial
+  | { readonly kind: 'none' };                          // the same place, or a list with no space
 
 export interface Focus {
-  /** Quem está com o foco. Um id do jogo — a engine não o interpreta, só o carrega. */
+  /** Who has the focus. A game id — the engine does not interpret it, only carries it. */
   readonly id: string;
   readonly at: Spot;
   readonly heading: Heading;
 }
 
-/* ===================== 5 · OBJETIVO E ALVO ===================== */
+/* ===================== 5 · OBJECTIVE AND TARGET ===================== */
 //
-// Hoje quem adivinha: `ui/hud`, com `vphudHtml(coinTarget)` — o exemplo que o próprio ADR-0027 usa para
-// perguntar se a fronteira está certa. Um jogo sem moedas não tem o que passar ali.
+// A HUD that takes a coin target is the example ADR-0027 itself uses to ask whether the boundary is right: a game with
+// no coins has nothing to pass there.
 //
-// `have`/`need` em vez de uma frase pronta: é o que deixa a MOLDURA traduzir ("{have} de {need}") enquanto o
-// NOME atravessa — a mesma regra que o pilar 3 aplica a currículo.
+// `have`/`need` instead of a finished sentence: that lets the FRAME translate ("{have} of {need}") while the NAME
+// crosses — the rule pillar 3 applies to curriculum.
 //
-// ========================= O CAMPO TEM DUAS METADES, E A PRIMEIRA VERSÃO SÓ TINHA UMA =========================
-// O ADR-0027 chama este campo de "objetivo E ALVO". Escrevi só o objetivo — quanto de quanto —, e a segunda
-// metade só cobrou quando o SONAR tentou usar o contrato: ele pergunta "qual alvo está mais perto e de que
-// lado", e `Objective` não sabe ONDE nada está. Um contador não localiza nada.
+// ========================= THE FIELD HAS TWO HALVES =========================
+// ADR-0027 calls this field "objective AND TARGET". The objective alone — how many of how many — cannot answer the
+// SONAR's question, "which target is nearest and on which side": a counter locates nothing.
 //
-// `targetsOf` é a metade que faltava. Ela é uma FUNÇÃO e devolve posições, não uma varredura do mapa, e isso
-// é o ponto: `roleAt` diz o que há num ponto, mas num espaço CONTÍNUO não há como enumerar os pontos, e num
-// mapa grande enumerar seria caro por quadro. Quem sabe onde estão os alvos é o jogo — sempre foi ele que
-// mantinha essa lista — e o que muda é que ele passa a ENTREGÁ-LA em vez de a engine ir buscá-la num array
-// de moedas com dono e flag de coletada.
+// `targetsOf` is the other half. It is a FUNCTION returning positions, not a sweep of the map, and that is the point:
+// `roleAt` says what is at a spot, but in a CONTINUOUS space the spots cannot be enumerated, and on a large map
+// enumerating would cost a frame. Whoever knows where the targets are is the game — it always kept that list — and it
+// HANDS it over instead of the engine digging through an array of coins with owners and collected flags.
 
 export interface Objective {
-  /** O que se está juntando/resolvendo: "moedas", "palavras", "contas". */
+  /** What is being gathered/solved: "coins", "words", "sums". */
   readonly name: Speakable;
   readonly have: number;
   readonly need: number;
 }
 
-/* ===================== 6 · DE QUEM É O TURNO ===================== */
+/* ===================== 6 · WHOSE TURN IT IS ===================== */
 //
-// ⚠️ SEM CONSUMIDOR NO CÓDIGO AINDA. Está aqui porque o ADR-0027 o nomeia como o bit que separa Sokoban de
-// Snake e que decide se VARREDURA e a WCAG 2.2.1 (Timing Adjustable) se aplicam: com o turno do jogador, o
-// tempo não pressiona e a varredura pode esperar; com o turno do relógio, ela precisa acompanhar.
-// Enquanto nada ler isto, é hipótese — e o ADR-0030 diz que só dois presets tornam o contrato um resultado.
+// ADR-0027 names it as the bit that separates Sokoban from Snake and decides whether SCANNING and WCAG 2.2.1 (Timing
+// Adjustable) apply: on the player's turn time does not press and a scan can wait; on the clock's, it has to keep up.
+// Its readers today are the ones time pressure concerns: the game speed is offered only where time runs by itself.
 
 export type TickOwner = 'player' | 'clock';
 
-/* ===================== 7 · EVENTO CONTRA ESTADO ===================== */
+/* ===================== 7 · EVENT VERSUS STATE ===================== */
 //
-// ⚠️ SEM CONSUMIDOR DIRETO AINDA, mas com uma metade já implementada: `core/a11y-sr` tem `srSay` (educado) e
-// `srAlert` (assertivo), e a distinção que falta é a terceira — o ESTADO, que não se anuncia e se CONSULTA.
+// ⚠️ NO READER YET, with one half already built: `core/a11y-sr` has `srSay` (polite) and `srAlert` (assertive), and the
+// distinction still missing is the third — the STATE, which is not announced but CONSULTED.
 //
-// Um estado é verdade até mudar e responde "o que é isto?" a qualquer momento (`aria-label`). Um evento
-// aconteceu e precisa ser dito UMA vez (`aria-live`). Confundi-los produz os dois defeitos clássicos: um
-// estado anunciado a cada quadro vira tagarelice, e um evento só consultável nunca é notado.
+// A state is true until it changes and answers "what is this?" at any moment (`aria-label`). An event happened and must
+// be said ONCE (`aria-live`). Confusing them gives the two classic defects: a state announced every frame becomes
+// chatter, and an event that can only be consulted is never noticed.
 
 export type Announcement =
   | { readonly kind: 'state'; readonly name: Speakable }
   | { readonly kind: 'event'; readonly name: Speakable; readonly urgent: boolean };
 
-/* ===================== 8 · O MUNDO ===================== */
+/* ===================== 8 · THE WORLD ===================== */
 //
-// QUAL ELEMENTO É O MUNDO DESTE JOGO. Campo novo em 2026-09-06, e o defeito que ele conserta é o mais grave
-// que a pilha de acessibilidade já teve.
+// WHICH ELEMENT IS THIS GAME'S WORLD. The defect it fixes is the most serious the accessibility stack ever had.
 //
-// ========================= O DEFEITO, MEDIDO =========================
-// `render/viz-setters.reachOfMode` dá às nove simulações de empatia o alcance `mundo`, e a raiz implementa
-// `mundo` como a canvas do PixiJS, limpando o filtro no `#dom-layer`. O RACIOCÍNIO ESTÁ CERTO e está escrito:
-// o menu é o instrumento de SAIR da simulação, e uma cegueira que apagasse o menu de pausa trancaria a
-// criança dentro dela (issue #82).
+// ========================= THE DEFECT, MEASURED =========================
+// The empathy simulations reach the WORLD and spare the menus, for a reason that is right and written down: the menu is
+// how one LEAVES the simulation, and a blindness that erased the pause menu would lock the child inside it (issue #82).
 //
-// ⚠️ NUM JOGO CUJO CONTEÚDO VISÍVEL É DOM, ISSO SE INVERTE. `blind` (`brightness(0)`) apaga uma canvas que
-// ninguém está a olhar e deixa os números perfeitamente legíveis: a simulação sai ao contrário, e um adulto é
-// informado de que sentiu algo que não sentiu. Num produto cuja razão de existir é não fazer afirmação falsa
-// sobre acessibilidade, é a pior classe de defeito possível.
+// ⚠️ IN A GAME WHOSE VISIBLE CONTENT IS DOM, THAT INVERTS. `blind` (`brightness(0)`) blacks out a canvas nobody is
+// looking at and leaves the numbers perfectly readable: the simulation comes out backwards, and an adult is told they
+// felt something they did not. For a product whose reason to exist is making no false claim about accessibility, it is
+// the worst class of defect there is.
 //
-// ⚠️ E A SOLUÇÃO ÓBVIA ESTÁ ERRADA, o que foi medido antes de escolher: «a engine passa a filtrar
-// `#game-region`» conserta o `game-15puzzle` e QUEBRA o jogo próprio da engine, porque no `app/index.html` o
-// `#dom-layer` está DENTRO do `#game-region` e o filtro CSS herda — a pausa apagaria junto. A mesma linha,
-// resultados opostos, porque a forma do DOM não é garantida pelo contrato. Por isso é DECLARAÇÃO.
+// ⚠️ AND THE OBVIOUS FIX IS WRONG, measured before choosing: filtering the whole game region fixes one game and BREAKS
+// another whose menu layer sits INSIDE that region, because a CSS filter is inherited — the pause would black out too.
+// The same line, opposite results, because the contract does not guarantee the DOM's shape. So it is a DECLARATION.
 
 /**
- * O que a criança vê como sendo o jogo.
+ * What the child sees as being the game.
  *
- * ⚠️ `none` NÃO É UM PADRÃO, É UMA ESCOLHA ESCRITA. Existe para atividade sem espaço — uma tela de pintura
- * livre, autoria, um formulário —, onde não há «mundo» para simular nem alvo para sonar. O Dev nomeou o caso:
- * *"atividades como paint não são exatamente jogos, mas podem ser feitas com a engine e sonar não vai
- * funcionar muito bem"*.
+ * ⚠️ `none` IS NOT A DEFAULT, IT IS A WRITTEN CHOICE. It exists for an activity without space — free painting,
+ * authoring, a form — where there is no world to simulate over and no target for a sonar. The Dev named the case:
+ * «atividades como paint não são exatamente jogos, mas podem ser feitas com a engine e sonar não vai funcionar muito
+ * bem».
  *
- * ⚠️ E O QUE ELE NÃO PODE SER É O QUE ACONTECE QUANDO ALGUÉM ESQUECE. Um jogo de DOM puro não é «um jogo onde
- * empatia não faz sentido»: o xadrez às cegas é a prova empírica de que faz. `none` é para quem DECLARA que
- * não tem espaço, e a ausência do campo é reprovada — hoje as duas coisas produzem o mesmo silêncio.
+ * ⚠️ AND WHAT IT CANNOT BE IS WHAT HAPPENS WHEN SOMEONE FORGETS. A pure-DOM game is not a game where empathy makes no
+ * sense: blindfold chess is the empirical proof that it does. `none` is for whoever DECLARES they have no space, and the
+ * field's absence is refused — otherwise both would produce the same silence.
  */
 export type WorldScope =
-  /** O seletor do elemento que é o mundo. A engine aplica ali o que é do mundo, e só ali. */
+  /** The selector of the element that is the world. The engine applies what belongs to the world there, and only there. */
   | { readonly kind: 'element'; readonly selector: string }
-  /** Sem espaço. Empatia e sonar NÃO são oferecidos — e a tela de seleção diz isso antes de a criança começar. */
+  /** No space. Empathy and sonar are NOT offered — and the selection screen says so before the child starts. */
   | { readonly kind: 'none' };
 
-/* ===================== A DECLARAÇÃO ===================== */
+/* ===================== THE DECLARATION ===================== */
 
 /**
- * O que um jogo entrega à engine. `tick` é dado; TODO O RESTO é função, porque a resposta muda com a posição,
- * o jogador e o instante.
+ * What a game hands the engine. `tick` is data; EVERYTHING ELSE is a function, because the answer changes with the
+ * position, the player and the instant.
  *
- * ⚠️ NÃO IMPORTE ISTO INTEIRO num módulo consumidor. Use `Pick<GameDeclaration, 'roleAt'>` e afins — a regra é
- * a de `core/entity`, e é o que mantém os fixtures de teste pequenos.
+ * ⚠️ DO NOT IMPORT THIS WHOLE into a consuming module. Use `Pick<GameDeclaration, 'roleAt'>` and the like — the rule of
+ * `core/entity`, which keeps test fixtures small.
  */
 export interface GameDeclaration {
   /**
-   * A forma do espaço AGORA.
+   * The shape of the space NOW.
    *
-   * ⚠️ ERA UM VALOR ATÉ 2026-09-06, e a assimetria já tinha sido remendada em dois lugares antes de alguém a
-   * nomear: a porta do sonar sempre pediu `topology: () => Topology` (`platform/audio-sonar.ts`), e
-   * `boot/create-game` fazia a ponte com `() => o.declaration.topology` — uma função que devolve uma
-   * constante. O `game-15puzzle` (3×3/4×4/5×5) precisou de um getter para caber no tipo, e um getter que
-   * satisfaz uma interface é COINCIDÊNCIA DO TypeScript, não contrato: nada avisava o próximo autor de que
-   * era o esperado, e `conformanceProblems` lia uma vez só — quem memorizasse a topologia ficava defasado
-   * em silêncio. Remendo que aparece duas vezes é o contrato a pedir para mudar. ADR-0084.
+   * ⚠️ It was a value, and the asymmetry had been patched in two places before anyone named it: the sonar's port always
+   * asked for a function, and the root bridged it with a function returning a constant. A sliding puzzle whose board
+   * size changes needed a getter to fit the type — and a getter that satisfies an interface is a TypeScript
+   * COINCIDENCE, not a contract: nothing told the next author it was expected, and conformance read it once, so whoever
+   * memorised the topology went stale in silence. A patch that shows up twice is the contract asking to change.
+   * ADR-0084.
    */
   topology(): Topology;
   /**
-   * QUAL ELEMENTO É O MUNDO. Ver o bloco 8 acima para o defeito que este campo conserta.
+   * WHICH ELEMENT IS THE WORLD. See block 8 above for the defect this field fixes.
    *
-   * ⚠️ OBRIGATÓRIO, e a obrigatoriedade é a decisão. A proposta original era um campo opcional com padrão;
-   * o Dev recusou, e a razão é o BLINDFOLD CHESS: xadrez às cegas existe, logo um jogo de DOM puro não é um
-   * jogo onde empatia não faz sentido — é um jogo onde ela exige mais de quem o programa. Um padrão deixaria
-   * o esquecimento passar como se fosse escolha.
+   * ⚠️ REQUIRED, and requiring it is the decision. The original proposal was an optional field with a default; the Dev
+   * refused, and the reason is BLINDFOLD CHESS: it exists, so a pure-DOM game is not one where empathy makes no sense —
+   * it is one where it asks more of whoever programs it. A default would let forgetting pass as a choice.
    */
   world(): WorldScope;
   /**
-   * QUANTAS POSIÇÕES ESTE JOGO PRECISA DE SEGURAR AO MESMO TEMPO. Correr + andar + pular são TRÊS; um quiz é
-   * UM. (ADR-0104 §A.)
+   * HOW MANY POSITIONS THIS GAME NEEDS HELD AT THE SAME TIME. Run + walk + jump is THREE; a quiz is ONE. (ADR-0104 §A.)
    *
-   * ⚠️ É UM EIXO DIFERENTE DE «QUANTAS AÇÕES», e é por não serem o mesmo que existia um ponto cego onde o
-   * aviso nunca disparava. Medido: a plataforma declara NOVE ações e o controle de tela tem NOVE lugares,
-   * então o `reach().ok` era verdadeiro e o cartão da #112 nunca aparecia — mas correr, andar e pular ao
-   * mesmo tempo são três dedos, e num telemóvel de dois a criança simplesmente não consegue, sem nada em
-   * lado nenhum a dizer porquê. Alcançar uma ação e segurá-la junto com outra são perguntas distintas.
+   * ⚠️ A DIFFERENT AXIS FROM "HOW MANY ACTIONS", and because they are not the same there was a blind spot where the
+   * warning never fired: a game declaring nine actions on a pad with nine places reached them all, so the reach notice
+   * never appeared — but running, walking and jumping at once is three fingers, and on a two-finger phone the child
+   * simply cannot, with nothing anywhere saying why. Reaching an action and holding it with another are two questions.
    *
-   * ⚠️ OBRIGATÓRIO, e a obrigatoriedade É a decisão, na frase do Dev: «os 300 jogos precisam declarar sim!
-   * Não declarar é ter a acessibilidade programada no controle pro sorte». Um campo opcional é respondido
-   * por SILÊNCIO, e aqui o silêncio decide pela criança — decide-o quem não pensou no assunto. Trezentos
-   * jogos a responder deliberadamente é o custo; acessibilidade por sorte é a alternativa.
+   * ⚠️ REQUIRED, and requiring it IS the decision, in the Dev's words: «os 300 jogos precisam declarar sim! Não declarar
+   * é ter a acessibilidade programada no controle pro sorte». An optional field is answered by SILENCE, and here the
+   * silence decides for the child — decided by whoever did not think about it.
    *
-   * FUNÇÃO e não valor, pela mesma razão que a `topology`: um jogo com fases troca de exigência entre elas —
-   * uma fase a pé pede três, a mesma fase num veículo pode pedir uma. Um valor memorizado ficaria defasado
-   * em silêncio, que é o defeito que o ADR-0084 nomeou.
+   * A FUNCTION and not a value, like `topology`: a game with stages changes its demand between them — on foot it asks
+   * for three, in a vehicle perhaps one. A memorised value would go stale in silence, the defect ADR-0084 named.
    */
   holdsAtOnce(): number;
   /**
-   * ESTE JOGO SEGURA ALGUMA TECLA? — e a resposta não é derivável de mais nada. (ADR-0115.)
+   * DOES THIS GAME HOLD ANY KEY? — and the answer cannot be derived from anything else. (ADR-0115.)
    *
-   * 🔴 A ALTERNÂNCIA EXISTE PARA UMA CRIANÇA CONCRETA: quem não consegue MANTER uma tecla premida carrega uma
-   * vez para andar e outra para parar. Num jogo onde nada se segura — um quiz, um tabuleiro, um puzzle de
-   * peças — não há nada a travar, e o controle passa a ser uma opção que **não faz nada**. A criança abre o
-   * menu de acessibilidade, liga o ajuste de que depende, e não acontece nada: ela aprende que o ajuste está
-   * partido. É o botão morto que o ADR-0106 §5 proíbe.
+   * 🔴 THE TOGGLE EXISTS FOR A CONCRETE CHILD: whoever cannot KEEP a key pressed taps once to walk and again to stop. In
+   * a game where nothing is held — a quiz, a board, a tile puzzle — there is nothing to latch, and the setting becomes
+   * an option that **does nothing**. The child opens the accessibility menu, turns on the setting they depend on, and
+   * nothing happens: they learn the setting is broken. It is the dead button ADR-0106 §5 forbids.
    *
-   * ⚠️ E O `holdsAtOnce` ACIMA NÃO RESPONDE ISTO, o que foi o achado que obrigou a este campo: ele conta
-   * POSIÇÕES SIMULTÂNEAS e recusa zero, porque zero faria a aritmética do alcance passar por vacuidade. O
-   * `consumer-quiz` declara **1 sem segurar coisa nenhuma**. «Um de cada vez» e «um SEGURADO» são o mesmo
-   * número, e toda decisão a jusante vinha a ler um número que responde a outra pergunta.
+   * ⚠️ AND `holdsAtOnce` ABOVE DOES NOT ANSWER THIS, which is the finding that forced this field: it counts SIMULTANEOUS
+   * positions and refuses zero, because zero would pass the reach arithmetic vacuously. The demo quiz declares **1
+   * while holding nothing at all**. "One at a time" and "one HELD" are the same number, and every decision downstream
+   * was reading a number that answers another question.
    *
-   * ⚠️ OBRIGATÓRIO, e a obrigatoriedade É a decisão — a mesma do `holdsAtOnce`, pela mesma frase do Dev:
-   * «não declarar é ter a acessibilidade programada no controle pro sorte». Um campo opcional faria um jogo
-   * que ESQUECE a linha perder a alternância em silêncio, e quem paga é a criança com dificuldade motora.
+   * ⚠️ REQUIRED, and requiring it IS the decision — the same as `holdsAtOnce`, by the same words of the Dev. An optional
+   * field would let a game that FORGETS the line lose the toggle in silence, and the child with a motor difficulty pays.
    *
-   * 📌 FUNÇÃO e não valor, pelo ADR-0084: um jogo muda de exigência entre fases. A pé segura-se uma direcção;
-   * o mesmo jogo dentro de um veículo pode não segurar nada.
+   * 📌 A FUNCTION and not a value, by ADR-0084: a game changes its demand between stages. On foot one holds a direction;
+   * the same game in a vehicle may hold nothing.
    */
   holdsKeys(): boolean;
   /**
-   * ESTE JOGO PRECISA DE UM PONTEIRO — posição contínua? (ADR-0112.)
+   * DOES THIS GAME NEED A POINTER — a continuous position? (ADR-0112.)
    *
-   * Um jogo de desenho precisa; um quiz não. Declarar faz um aparelho sem ponteiro RECUSAR-SE antes de a
-   * criança começar, em vez de ela descobrir a meio do primeiro traço.
+   * A drawing game does; a quiz does not. Declaring it makes a device without a pointer REFUSE before the child starts,
+   * instead of them finding out halfway through the first stroke.
    *
-   * ⚠️ OPCIONAL, E A DIFERENÇA PARA O `holdsAtOnce` LOGO ACIMA É DELIBERADA — copiar a obrigatoriedade dele
-   * seria aplicar uma regra cuja premissa não se sustenta aqui. O `holdsAtOnce` é obrigatório porque não tem
-   * padrão seguro E porque falha INVISIVELMENTE a quem escreve o jogo: ele tem teclado completo, o jogo corre,
-   * e quem descobre o defeito é a criança no telemóvel de dois dedos. Este tem padrão seguro (`false`) e falha
-   * VISIVELMENTE — um jogo de desenho que se esqueça de o declarar é inoperável no próprio aparelho de quem o
-   * escreve, porque ele também precisaria do ponteiro para o experimentar.
+   * ⚠️ OPTIONAL, AND THE DIFFERENCE FROM `holdsAtOnce` JUST ABOVE IS DELIBERATE — copying its requirement would apply a
+   * rule whose premise does not hold here. `holdsAtOnce` is required because it has no safe default AND fails INVISIBLY to
+   * whoever writes the game: they have a full keyboard, the game runs, and the child on a two-finger phone is who finds
+   * the defect. This one has a safe default (`false`) and fails VISIBLY — a drawing game that forgets to declare it is
+   * unusable on its own author's device, because they would need the pointer to try it.
    *
-   * Obrigar trezentos jogos a escrever `needsPointer: () => false` cobraria o preço do `holdsAtOnce` sem o
-   * motivo dele.
-   *
-   * FUNÇÃO e não valor, pela mesma razão das outras: uma actividade pode desenhar numa fase e não noutra.
+   * A FUNCTION and not a value, like the others: an activity may draw in one stage and not in another.
    */
   needsPointer?(): boolean;
   /**
-   * O MAPEAMENTO DE TECLADO QUE ESTE JOGO QUER — por número de jogadores e por assento (ADR-0115).
+   * THE KEYBOARD MAPPING THIS GAME WANTS — by number of players and by seat (ADR-0115).
    *
-   * A precedência é a que o registo pede, e ela cabe entre duas linhas que já existiam no `input/keyboard`:
-   * **fábrica da engine → padrão do JOGO → remapeamento da CRIANÇA.** Devolver `null` (ou não declarar) deixa
-   * a fábrica da engine intacta, que é o comportamento de sempre.
+   * The precedence is the one the record asks for: **the engine's factory → the GAME's default → the CHILD's remap.**
+   * Returning `null` (or not declaring it) leaves the engine's factory untouched, which is the behaviour it always had.
    *
-   * PARCIAL de propósito: um jogo que só queira trocar o `action1` troca o `action1`. A fusão já existe — é o
-   * `Object.assign` que sobrepõe o dado guardado —, então esta é mais uma camada no mesmo sítio e não uma
-   * segunda forma de fundir.
+   * PARTIAL on purpose: a game that only wants to change `action1` changes `action1`. The merge already exists — the
+   * `Object.assign` that lays the stored data on top — so this is one more layer in the same place, not a second way to
+   * merge.
    *
-   * ⚠️ OPCIONAL, e aqui, ao contrário do `seguraTeclas`, o silêncio tem um lado seguro: sem declaração o jogo
-   * fica com a fábrica da engine, que é jogável e é o que ele já tem hoje. Não há lado errado na ausência.
+   * ⚠️ OPTIONAL, and here, unlike `holdsKeys`, silence has a safe side: with no declaration the game keeps the engine's
+   * factory, which is playable and is what it has today.
    *
-   * ⚠️ E LEVA O ASSENTO porque o teclado de dois jogadores não é o de um: as setas mudam de dono, e um padrão
-   * que não soubesse o assento daria as mesmas teclas a duas crianças. `players` é 1, 2, 3 ou 4; `seat` é
-   * o índice dentro desse arranjo.
-   *
-   * 📌 O irmão do CONTROLE é o campo logo abaixo, e chegou um commit depois: o obstáculo era que o assento
-   * ainda não se conhecia no ponto em que a tabela de botões é lida, e a saída foi subi-lo no laço.
+   * ⚠️ AND IT TAKES THE SEAT because a two-player keyboard is not a one-player one: the arrows change owner, and a
+   * default that did not know the seat would give two children the same keys. `players` is 1, 2, 3 or 4; `seat` is the
+   * index within that arrangement.
    */
   keyboardMapping?(players: number, seat: number): Partial<Record<Action, readonly string[] | null>> | null;
   /**
-   * O MAPEAMENTO DE BOTÕES QUE ESTE JOGO QUER NO CONTROLE — mesma pergunta, outro aparelho (ADR-0115).
+   * THE BUTTON MAPPING THIS GAME WANTS ON A PAD — the same question, another device (ADR-0115).
    *
-   * Índices de botão da Gamepad API «standard», parciais: `{ action1: 3 }` troca só essa. `null` num botão diz
-   * «esta posição não existe neste jogo», que é diferente de a deixar na fábrica.
+   * Button indices of the "standard" Gamepad API, partial: `{ action1: 3 }` changes just that one. `null` on a button
+   * says "this position does not exist in this game", which differs from leaving it at the factory.
    *
-   * ⚠️ A PRECEDÊNCIA TEM UMA DIFERENÇA DE SÍTIO QUE VALE SABER: no teclado, o que a criança remapeou é uma
-   * camada POR CIMA desta; no controle, o mapa que ela gravou no assistente é um RAMO inteiro — se ele existe,
-   * este padrão não é consultado. Nos dois casos ela ganha, que é o que importa.
+   * ⚠️ THE PRECEDENCE SITS IN A DIFFERENT PLACE, worth knowing: on the keyboard, the child's remap is a layer ON TOP of
+   * this; on a pad, the map they recorded in the wizard is a whole BRANCH — if it exists, this default is not consulted.
+   * Either way the child wins, which is what matters.
    *
-   * 📌 E leva o assento pela mesma razão do teclado, ainda que por um caminho diferente: dois controles são
-   * dois aparelhos, mas o JOGO pode querer arranjos distintos por assento (o guarda-redes e o atacante não
-   * fazem o mesmo).
+   * 📌 It takes the seat for the keyboard's reason, by another path: two pads are two devices, but the GAME may want
+   * different arrangements per seat (a goalkeeper and a striker do not do the same thing).
    */
   padMapping?(players: number, seat: number): Partial<Record<Action, number | null>> | null;
   readonly tick: TickOwner;
-  /** O papel do que está em `at`. É o campo 2, e é o que substitui `roleOf`. */
+  /** The role of what is at `at`. Field 2, and what replaces a table of tile numbers. */
   roleAt(at: Spot): Role;
-  /** Como se chama o que está em `at`. Sem isto não há leitor de tela nem Libras. */
+  /** What the thing at `at` is called. Without it there is no screen reader and no Libras. */
   nameAt(at: Spot): Speakable | null;
-  /** Quem tem o foco agora, e para onde aponta. `null` = ninguém (menu fechado, rodada não começou). */
+  /** Who has the focus now, and where it points. `null` = nobody (menu closed, round not started). */
   focusOf(playerIndex: number): Focus | null;
-  /** O que a rodada pede deste jogador. */
+  /** What the round asks of this player. */
   objectiveOf(playerIndex: number): Objective;
   /**
-   * ONDE estão os alvos ainda válidos deste jogador — a segunda metade do campo 5.
+   * WHERE this player's still-valid targets are — the second half of field 5.
    *
-   * É o que substitui o `getCoins()` do sonar: em vez de a engine varrer um array de moedas e filtrar por
-   * `taken`/`owner`, o jogo devolve os pontos que ainda contam para ESTE jogador. Um quiz devolve o índice da
-   * pergunta em aberto; uma plataforma devolve as moedas não coletadas; um Sokoban devolve as caixas fora do
-   * lugar. A engine só compara distâncias, e é por isso que o sonar passa a servir a qualquer gênero.
+   * Instead of the engine sweeping an array of coins and filtering by owner and taken, the game returns the spots that
+   * still count for THIS player. A quiz returns the open question's index; a platformer, the coins not taken; a
+   * Sokoban, the boxes out of place. The engine only compares distances, which is why the sonar serves any genre.
    *
-   * Vazio é resposta legítima e significa "não há para onde apontar" — não é erro.
+   * Empty is a legitimate answer and means "there is nowhere to point" — not an error.
    */
   targetsOf(playerIndex: number): readonly Spot[];
 }
 
-/* ===================== CONFORMIDADE ===================== */
+/* ===================== CONFORMANCE ===================== */
 
 /**
- * Os problemas de UM campo declarado. VAZIA quer dizer que aquele campo está bem-formado.
+ * The problems of ONE declared field. EMPTY means that field is well formed.
  *
- * 🎯 UMA VERIFICAÇÃO POR CAMPO, E UMA TABELA A CHAMÁ-LAS, e isto não é arrumação: enquanto as dez verificações
- * viviam numa função só, ela tinha 53 caminhos de decisão contra o tecto 10 de McCabe (ADR-0221) — e a régua não
- * estava a exagerar, porque ninguém conseguia ler «o que o contrato exige do campo X» sem percorrer os outros nove.
- * Acrescentar um campo ao contrato passa a ser acrescentar uma LINHA à tabela, que é a forma que esta casa já usa
- * para o glifo de uma tecla, a aresta de uma ação, a regra de um ícone e a situação de um quadro.
+ * 🎯 ONE CHECK PER FIELD, AND A TABLE CALLING THEM, and it is not tidying: while the ten checks lived in one function it
+ * had 53 decision paths against McCabe's ceiling of 10 (ADR-0221) — and the ruler was not exaggerating, because nobody
+ * could read "what the contract asks of field X" without walking the other nine. Adding a field to the contract is
+ * adding a ROW to the table, the shape this house already uses for a key's glyph, an action's edge, an icon's rule and a
+ * frame's situation.
  */
 type FieldCheck = (d: Partial<GameDeclaration>) => string[];
 
 function topologyProblems(d: Partial<GameDeclaration>): string[] {
-  // ⚠️ DUAS FALHAS DIFERENTES, E ELAS PRECISAM DE DUAS MENSAGENS. `topology` ausente é um campo que ninguém
-  // escreveu; `topology` que não é função é o campo escrito à moda antiga — um VALOR, que passava no
-  // TypeScript de quem não recompilou e morreria em produção com "topology is not a function". Dizer só
-  // "ausente" mandaria o autor procurar um campo que está lá, à vista.
+  // ⚠️ TWO DIFFERENT FAILURES, AND THEY NEED TWO MESSAGES. A missing `topology` is a field nobody wrote; a `topology`
+  // that is not a function is the field written the old way — a VALUE, which passed the TypeScript of whoever had not
+  // recompiled and would die in production with "topology is not a function". Saying only "missing" would send the
+  // author looking for a field that is right there.
   // Each answer excludes the others, so each one returns: the order is the rule, and the space is asked for only once it
   // is known to be a function.
   if (d.topology === undefined || d.topology === null) return ['topology: missing'];
@@ -449,16 +416,16 @@ function topologyProblems(d: Partial<GameDeclaration>): string[] {
 }
 
 /**
- * 🎯 TRÊS PERGUNTAS DIFERENTES A UM ESPAÇO MEDIDO, e separá-las foi a catraca a apontar o corte certo em vez de
- * lhe ser pedida uma excepção: com as três juntas, a `topologyProblems` ficava em 22 contra o tecto 10 de McCabe.
- * São mesmo três — QUÃO GRANDE é o espaço, EM QUE UNIDADES a distância se conta, e EM QUE PALAVRAS a direção se
- * diz — e cada uma tem uma criança do outro lado.
+ * 🎯 THREE DIFFERENT QUESTIONS TO A MEASURED SPACE, and separating them was the ratchet pointing at the right cut
+ * instead of being asked for an exception: together, `topologyProblems` sat at 22 against McCabe's 10. They really are
+ * three — HOW BIG the space is, IN WHAT UNITS distance is counted, and IN WHAT WORDS direction is said — and each has a
+ * child on the other side.
  */
 type MeasuredSpace = Extract<Topology, { kind: 'grid' | 'continuous' }>;
 
-// ⚠️ A DIMENSÃO É `size.length`, e é por isso que ela é conferida ANTES de tudo: um `size` vazio ou de
-// quatro entradas não é uma medida ruim, é um espaço que `Spot` não sabe representar — e o erro apareceria
-// longe daqui, como um eixo simplesmente ignorado.
+// ⚠️ THE DIMENSION IS `size.length`, which is why it is checked BEFORE anything: an empty or four-entry `size` is not a
+// bad measurement, it is a space `Spot` cannot represent — and the error would show far from here, as an axis simply
+// ignored.
 function sizeProblems(t: MeasuredSpace): string[] {
   if (!Array.isArray(t.size) || t.size.length < 2 || t.size.length > 3) {
     return ['topology.size: must be [w, h] or [w, h, d] - dimension is 2 or 3, and it is size.length'];
@@ -468,20 +435,20 @@ function sizeProblems(t: MeasuredSpace): string[] {
 
 function metricProblems(t: MeasuredSpace): string[] {
   const p: string[] = [];
-  // `move` é o que decide a métrica. Ausente, a distância seria adivinhada — e adivinhar Chebyshev num
-  // quebra-cabeça deslizante sub-relata até 2×, que foi o achado §3 do ADR-0080.
+  // `move` decides the metric. Absent, distance would be guessed — and guessing Chebyshev in a sliding puzzle
+  // under-reports up to 2×, finding §3 of ADR-0080.
   if (t.move !== 'orthogonal' && t.move !== 'diagonal' && t.move !== 'free') {
     p.push('topology.move: must be "orthogonal" (L1), "diagonal" (L8/Chebyshev) or "free" (L2) - it is the metric the sonar counts in');
   }
-  // `unit` é o que dá MÉTRICA a um espaço contínuo: sem ela, "a dois passos" não tem como ser dito.
+  // `unit` is what gives a continuous space a METRIC: without it, "two steps away" cannot be said.
   if (t.kind === 'continuous' && !(t.unit > 0)) {
     p.push('topology.continuous: unit must be positive (it is the metric the narration counts in)');
   }
   return p;
 }
 
-// `frame` é em que PALAVRAS a direção é dita. Sem ele a engine escolheria pela criança, e num jogo de
-// plataforma escolheria mal: norte e sul não querem dizer nada numa vista lateral.
+// `frame` is in what WORDS a direction is said. Without it the engine would choose for the child, and in a platformer it
+// would choose badly: north and south mean nothing in a side view.
 function frameProblems(t: MeasuredSpace): string[] {
   return t.frame !== 'compass' && t.frame !== 'clock'
     ? ['topology.frame: must be "compass" (board, top-down, map, 3D) or "clock" (2D side view)']
@@ -494,9 +461,9 @@ function hotspotProblems(t: Extract<Topology, { kind: 'hotspots' }>): string[] {
 }
 
 function worldProblems(d: Partial<GameDeclaration>): string[] {
-  // ⚠️ TRÊS FALHAS DISTINTAS, e a terceira é a que este campo existe para tornar impossível: um jogo cujo
-  // mundo NÃO foi declarado. Antes deste campo, esquecer e escolher «não tenho espaço» produziam o mesmo
-  // silêncio — e o silêncio era resolvido pela engine a adivinhar que o mundo é a canvas.
+  // ⚠️ THREE DISTINCT FAILURES, and the third is the one this field exists to make impossible: a game whose world was
+  // NOT declared. Before this field, forgetting and choosing "I have no space" produced the same silence — and the
+  // silence was resolved by the engine guessing that the world is the canvas.
   if (d.world === undefined || d.world === null) {
     return ['world: missing - declare the element that IS the game, or {kind:"none"} if it has no space'];
   }
@@ -510,51 +477,48 @@ function worldProblems(d: Partial<GameDeclaration>): string[] {
 }
 
 function holdsAtOnceProblems(d: Partial<GameDeclaration>): string[] {
-  // ⚠️ A MENSAGEM NOMEIA A SAÍDA, como as outras quatro fazem. Um jogo que não declara isto não recebe um
-  // padrão — recebe uma frase que diz o que perguntar a si próprio, porque a resposta é do jogo e de mais
-  // ninguém. (ADR-0104 §A.)
+  // ⚠️ THE MESSAGE NAMES THE WAY OUT, like the others do. A game that does not declare this gets no default — it gets a
+  // sentence saying what to ask itself, because the answer is the game's and nobody else's. (ADR-0104 §A.)
   if (typeof d.holdsAtOnce !== 'function') {
-    // ⚠️ A MENSAGEM NÃO NOMEIA GÊNERO, e o gate de fronteira cobrou-o: a primeira escrita dizia «run+walk+jump
-    // is 3, a quiz is 1» e o `engine-boundary` reprovou a palavra «quiz» em linha de CÓDIGO da engine. Ele
-    // tinha razão, e a frase ficou melhor: descreve a FORMA da pergunta, que serve aos 300 jogos, em vez de
-    // dois exemplos que servem a dois.
+    // ⚠️ THE MESSAGE NAMES NO GENRE, and the boundary gate insisted: a first wording used a quiz as the example and the
+    // gate refused the word in a line of engine CODE. It was right, and the sentence got better: it describes the SHAPE
+    // of the question, which serves every game, instead of two examples that serve two.
     return ['holdsAtOnce: missing - declare how many positions are held AT ONCE (three if three fingers must press together, one if commands arrive one at a time)'];
   }
   const n = d.holdsAtOnce();
-  // Zero não é «não usa controle»: um jogo que não segura posição nenhuma não é jogável, e devolver zero
-  // faria a aritmética do alcance passar por vacuidade — o mesmo defeito que o `reachable` recusa.
+  // Zero is not "uses no controls": a game that holds no position cannot be played, and returning zero would pass the
+  // reach arithmetic vacuously — the same defect `reachable` refuses.
   return !Number.isInteger(n) || n < 1
     ? ['holdsAtOnce: must be an integer >= 1 - a game that holds nothing cannot be played']
     : [];
 }
 
 function latchingProblems(d: Partial<GameDeclaration>): string[] {
-  // ⚠️ E ESTA É A OUTRA PERGUNTA, que o número acima parecia responder e não responde (ADR-0115). A mensagem
-  // diz o que a ausência CUSTA, e não só o que falta: sem ela, um jogo que nada segura oferece um controle de
-  // acessibilidade que não faz nada, e um que segura tudo pode não o oferecer a quem depende dele.
+  // ⚠️ AND THIS IS THE OTHER QUESTION, which the number above seemed to answer and does not (ADR-0115). The message says
+  // what the absence COSTS, not only what is missing: without it a game that holds nothing offers an accessibility
+  // control that does nothing, and one that holds everything may not offer it to whoever depends on it.
   if (typeof d.holdsKeys !== 'function') {
     return ['holdsKeys: missing - declare whether any key is HELD in this game (latching is offered only where something can be held, and a game that holds nothing must not show a control that does nothing)'];
   }
-  // Um valor não-booleano seria truthy e ofereceria a alternância a toda a gente — o mesmo defeito
-  // silencioso que o `needsPointer` recusa logo abaixo, e pela mesma razão.
+  // A non-boolean would be truthy and offer the toggle to everyone — the same silent defect `needsPointer` refuses just
+  // below, for the same reason.
   return typeof d.holdsKeys() !== 'boolean'
     ? ['holdsKeys: must return a boolean - a non-boolean is truthy and would offer latching in a game where nothing is held']
     : [];
 }
 
 function pointerProblems(d: Partial<GameDeclaration>): string[] {
-  // ⚠️ OPCIONAL, MAS NÃO IMPUNE. Ausente é a resposta `false` e não é problema — ver a nota no campo. O que
-  // se recusa é declará-lo MAL: um `needsPointer: true` (valor em vez de função) seria sempre verdadeiro por
-  // ser um objecto, e um que devolvesse `'sim'` também. Nos dois casos o jogo julgaria ter declarado, o
-  // alcance leria uma coisa diferente do que ele quis dizer, e ninguém saberia — que é o defeito silencioso
-  // que esta função inteira existe para não deixar acontecer.
+  // ⚠️ OPTIONAL, BUT NOT UNCHECKED. Absent is the answer `false` and no problem — see the note on the field. What is
+  // refused is declaring it WRONG: `needsPointer: true` (a value instead of a function) would always be truthy for
+  // being an object, and one returning a string too. Either way the game would believe it had declared, the reach would
+  // read something other than what it meant, and nobody would know — the silent defect this whole function exists to
+  // prevent.
   if (d.needsPointer === undefined) return [];
   if (typeof d.needsPointer !== 'function') {
-    // ⚠️ MENSAGENS SEM A PALAVRA `as`, e o motivo merece uma linha porque volta a morder: o detector de prosa
-    // pt-BR do `engine-i18n` casa palavras funcionais isoladas, e `as` é artigo plural em português. Uma
-    // mensagem INGLESA que diga «declare it as …» é contada como texto cru e faz o tecto do módulo subir.
-    // O cabeçalho daquele gate já admite a aproximação («senão 'mode' casa 'de'»); reescrever a frase custa
-    // nada e afrouxar o detector custaria a razão de ele existir.
+    // ⚠️ MESSAGES WITHOUT THE WORD `as`, worth a line because it bites again: the raw-prose detector of `engine-i18n`
+    // matches isolated function words, and `as` is a plural article in Portuguese. An ENGLISH message saying
+    // "declare it as …" is counted as raw text and raises the module's ceiling. Rewording costs nothing; loosening the
+    // detector would cost the reason it exists.
     return ['needsPointer: must be a function - write `needsPointer: () => true`, because a game may draw in one phase and not in another'];
   }
   return typeof d.needsPointer() !== 'boolean'
@@ -563,16 +527,16 @@ function pointerProblems(d: Partial<GameDeclaration>): string[] {
 }
 
 /**
- * UM MAPEAMENTO DECLARADO PELO JOGO, seja ele do teclado ou do controle.
+ * A MAPPING DECLARED BY THE GAME, for the keyboard or the pad.
  *
- * 🔴 ERA A MESMA VERIFICAÇÃO ESCRITA DUAS VEZES, e as duas cópias não estavam igualmente guardadas: 📏 medido em
- * 2026-09-23, as duas decisões do teclado tinham caso e as duas do pad eram CEGAS — a assimetria da cobertura é
- * como uma duplicata se anuncia, porque uma cópia recebe atenção e a outra é presumida.
+ * 🔴 IT WAS THE SAME CHECK WRITTEN TWICE, and the two copies were not equally guarded: the keyboard's two decisions had
+ * cases and the pad's two were BLIND — asymmetric coverage is how a duplicate announces itself, because one copy gets
+ * attention and the other is assumed.
  *
- * ⚠️ Aqui um valor em vez de uma função não seria um erro barulhento, seria um mapeamento SILENCIOSAMENTE
- * ignorado — a fábrica da engine ficava, e a criança jogava com um controle que o autor do jogo julga ter
- * mudado. E devolver algo que não é objecto nem `null` atravessaria o `Object.assign` sem escrever nada, que é
- * a mesma ausência com outra roupa.
+ * ⚠️ Here a value instead of a function would not be a loud error, it would be a mapping SILENTLY ignored — the engine's
+ * factory would stay, and the child would play with controls the game's author believes they changed. And returning
+ * something that is neither an object nor `null` would pass through `Object.assign` writing nothing, the same absence in
+ * other clothes.
  */
 function mappingProblems(field: string, declared: unknown, example: string, because: string): string[] {
   if (declared === undefined) return [];
@@ -601,13 +565,13 @@ const padMappingProblems: FieldCheck = (d) => mappingProblems(
 
 const tickProblems: FieldCheck = (d) => (d.tick !== 'player' && d.tick !== 'clock' ? ['tick: must be "player" or "clock"'] : []);
 
-/** As cinco perguntas que a engine faz ao mundo. Ausente é UM problema, e a mensagem diz QUAL falta. */
+/** The five questions the engine asks the world. Each absent one is ONE problem, and the message says WHICH is missing. */
 const READERS = ['roleAt', 'nameAt', 'focusOf', 'objectiveOf', 'targetsOf'] as const;
 const readerProblems: FieldCheck = (d) => READERS.filter((f) => typeof d[f] !== 'function').map((f) => `${f}: missing`);
 
 /**
- * 📌 A ORDEM DESTA TABELA É A ORDEM DAS MENSAGENS, e ela importa a quem lê: um autor que escreve um preset recebe
- * os problemas na ordem em que os campos aparecem no contrato, em vez de na ordem em que este ficheiro cresceu.
+ * 📌 THIS TABLE'S ORDER IS THE ORDER OF THE MESSAGES, and it matters to the reader: an author writing a preset gets the
+ * problems in the order the fields appear in the contract, not in the order this file grew.
  */
 const FIELD_CHECKS: readonly FieldCheck[] = [
   topologyProblems,
@@ -622,21 +586,20 @@ const FIELD_CHECKS: readonly FieldCheck[] = [
 ];
 
 /**
- * Uma declaração é bem-formada? Devolve a lista de problemas — VAZIA quer dizer conforme.
+ * Is a declaration well formed? Returns the list of problems — EMPTY means conformant.
  *
- * Existe porque um preset é uma promessa, e promessa sem verificação é comentário. O ADR-0030 diz que um
- * pacote de gênero "ou satisfaz os sete campos ou não satisfaz"; isto é o "ou não".
+ * It exists because a preset is a promise, and a promise without a check is a comment. ADR-0030 says a genre package
+ * "either satisfies the seven fields or does not"; this is the "does not".
  *
- * Confere FORMA, não verdade: que a topologia tenha medida positiva, que as funções existam, que o objetivo
- * não peça um alvo impossível. Não tem como conferir se `roleAt` devolve o papel CERTO — isso é o teste do
- * preset, não deste módulo.
+ * It checks SHAPE, not truth: that the topology has a positive measure, that the functions exist. It cannot check
+ * whether `roleAt` returns the RIGHT role — that is the preset's own test, not this module's.
  */
 export function conformanceProblems(d: Partial<GameDeclaration> | null | undefined): string[] {
   if (!d) return ['declaration missing'];
   return FIELD_CHECKS.flatMap((check) => check(d));
 }
 
-/** Um nome falável bem-formado? Texto vazio é o defeito silencioso: o leitor de tela simplesmente cala. */
+/** Is a speakable name well formed? Empty text is the silent defect: the screen reader simply goes quiet. */
 export function speakableProblems(s: Speakable | null | undefined): string[] {
   if (!s) return ['name missing'];
   const p: string[] = [];
@@ -647,33 +610,33 @@ export function speakableProblems(s: Speakable | null | undefined): string[] {
 }
 
 /**
- * Distância entre dois pontos NA MÉTRICA declarada — a que o jogo declarou em `move`, e em quantas dimensões
- * ele declarou em `size`. É o que o sonar precisa e antes calculava em pixels.
+ * The distance between two spots IN THE DECLARED METRIC — the one the game declared in `move`, over as many dimensions
+ * as it declared in `size`. It is what the sonar needs and used to compute in pixels.
  *
- * ⚠️ A GRADE ERA SEMPRE CHEBYSHEV, e isso custava até 2× de erro num quebra-cabeça deslizante. As três regras
- * não são gosto: são o que "um passo" significa em cada jogo, e o sonar fala em passos.
+ * ⚠️ THE GRID WAS ALWAYS CHEBYSHEV, which cost up to 2× error in a sliding puzzle. The three rules are not taste: they
+ * are what "one step" means in each game, and the sonar speaks in steps.
  */
 export function distance(t: Topology, a: Spot, b: Spot): number {
-  // Lista: a distância é quantos itens separam um do outro. Não há eixo, logo não há regra de movimento.
+  // A list: the distance is how many items lie between. There is no axis, so there is no movement rule.
   if (t.kind === 'hotspots') return Math.abs(a.x - b.x);
 
   const d: number[] = [];
   for (let i = 0; i < t.size.length; i++) d.push(Math.abs(axis(a, i) - axis(b, i)));
 
-  const rawDistance = t.move === 'orthogonal' ? d.reduce((s, v) => s + v, 0)  // L¹: cada eixo custa por si
-    : t.move === 'diagonal' ? Math.max(...d)                            // L∞: a diagonal custa um passo
-      : Math.hypot(...d);                                               // L²: a reta entre os dois
-  // Contínuo: dividida pela unidade — o resultado é "quantos passos", não "quantos pixels".
+  const rawDistance = t.move === 'orthogonal' ? d.reduce((s, v) => s + v, 0)  // L¹: each axis costs on its own
+    : t.move === 'diagonal' ? Math.max(...d)                            // L∞: a diagonal costs one step
+      : Math.hypot(...d);                                               // L²: the straight line between them
+  // Continuous: divided by the unit — the result is "how many steps", not "how many pixels".
   return t.kind === 'continuous' ? rawDistance / t.unit : rawDistance;
 }
 
 /**
- * PARA ONDE FICA `to` VISTO DE `from`, já nas palavras que a topologia declarou.
+ * WHERE `to` LIES AS SEEN FROM `from`, already in the words the topology declared.
  *
- * ⚠️ DOIS EIXOS COM CONVENÇÕES DIFERENTES, e o silêncio sobre isto seria o defeito. `y` CRESCE PARA BAIXO —
- * é a coordenada da tela, herdada da canvas e de todo o código que já existe, não uma escolha desta função.
- * `z` CRESCE PARA CIMA, e essa é escolha: nada a força, e num espaço de três dimensões «zênite» só pode
- * querer dizer o lado para onde a criança olharia levantando a cabeça. Um jogo 3D tem de saber os dois.
+ * ⚠️ TWO AXES WITH DIFFERENT CONVENTIONS, and silence about it would be the defect. `y` GROWS DOWNWARD — the screen's
+ * coordinate, inherited from the canvas and all existing code, not a choice of this function. `z` GROWS UPWARD, and
+ * that is a choice: nothing forces it, and in three dimensions "zenith" can only mean the side the child would look at
+ * by raising their head. A 3D game has to know both.
  */
 export function bearing(t: Topology, from: Spot, to: Spot): Bearing {
   if (t.kind === 'hotspots') return { kind: 'none' };
@@ -683,17 +646,17 @@ export function bearing(t: Topology, from: Spot, to: Spot): Bearing {
   const dz = t.size.length > 2 ? (to.z ?? 0) - (from.z ?? 0) : 0;
   const plane = Math.hypot(dx, dy);
 
-  // O eixo vertical do ESPAÇO ganha quando domina o plano — e ganha em palavras próprias, porque `up`/`down`
-  // já são AÇÕES em `core/actions`. Ver o comentário de `Heading`.
+  // SPACE's vertical axis wins when it dominates the plane — and wins in words of its own, because `up`/`down` are
+  // already ACTIONS in `core/actions`. See the comment on `Heading`.
   if (Math.abs(dz) > plane) return { kind: 'compass', heading: dz > 0 ? 'zenith' : 'nadir' };
-  if (plane === 0) return { kind: 'none' }; // mesmo lugar: não há direção que dizer, e inventar uma seria mentir
+  if (plane === 0) return { kind: 'none' }; // the same place: there is no direction to say, and inventing one would lie
 
-  // `-dy` porque o norte é para CIMA e `y` cresce para baixo. Sem esta troca a rosa sai invertida, e o teste
-  // que a apanharia é o único que precisa de existir aqui.
-  const ang = Math.atan2(-dy, dx); // 0 = leste, cresce no sentido anti-horário
+  // `-dy` because north is UP and `y` grows downward. Without this swap the rose comes out inverted, and the test that
+  // would catch it is the only one that needs to exist here.
+  const ang = Math.atan2(-dy, dx); // 0 = east, growing anticlockwise
 
   if (t.frame === 'clock') {
-    // 12 horas é para CIMA e os ponteiros andam no sentido horário — daí `90 - graus`, e não `graus`.
+    // 12 o'clock is UP and the hands move clockwise — hence `90 - degrees`, not `degrees`.
     const clockwiseDegrees = ((90 - (ang * 180) / Math.PI) % 360 + 360) % 360;
     const h = Math.round(clockwiseDegrees / 30) % 12;
     return { kind: 'clock', hour: h === 0 ? 12 : h };
