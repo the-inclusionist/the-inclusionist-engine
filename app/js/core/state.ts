@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/state.ts — estado/cena do jogo (FONTE ÚNICA). Módulo-folha. As 8 mega-variáveis migram do game.js
-// UMA A UMA, lidas como binding vivo (import) e escritas por setter.
-// Bus mínimo (Map<evento, Set<fn>>) para os poucos leitores "de longe" que virão com os outros subsistemas.
+// core/state.ts — the child's settings for the PAGE (the SINGLE source), read as live bindings and written by setters,
+// plus a minimal typed bus (Map<event, Set<fn>>) for the readers "from afar" that react to a setting.
 
 // ⚠️ NO STORAGE IMPORT (ADR-0178, issue #174): the child's settings come through the port `loadState` receives — the
 // shape `platform/storage` already has — so `core` does not reach up to `platform` (ADR-0173).
@@ -36,34 +35,21 @@ const NULL_PORT: StatePort = {
 let port: StatePort | null = null;
 
 /**
- * ========================= O BARRAMENTO, TIPADO (Fase C do plano) =========================
+ * ========================= THE BUS, TYPED =========================
  *
- * Era `emit(evt: string, val: unknown)`. Duas coisas erradas numa assinatura só:
+ * It was `emit(evt: string, val: unknown)`, two wrongs in one signature:
  *
- *   · O NOME ERA `string`. Um `emit('viz', …)` em vez de `'vizMode'` não é erro em lugar nenhum — é
- *     SILÊNCIO. O assinante certo nunca é chamado, nada fica vermelho, e a única pista é um painel que
- *     parou de se atualizar. Hoje são dezessete pontos de emissão e cada nome aparece UMA vez; a chance de
- *     digitar errado é exatamente a chance de escrever a próxima linha.
- *   · A CARGA ERA `unknown`. Quem assinasse tinha de converter, e a conversão é onde a mentira entra.
+ *   · THE NAME WAS A `string`. An `emit('viz', …)` instead of `'vizMode'` is an error nowhere — it is SILENCE. The right
+ *     subscriber is never called, nothing goes red, and the only clue is a panel that stopped updating.
+ *   · THE PAYLOAD WAS `unknown`. A subscriber had to cast, and the cast is where the lie gets in.
  *
- * Agora `GameEvent` é um mapa nome → carga, e `emit`/`on` são genéricos sobre ele. Nome inexistente não
- * compila; carga errada não compila.
- *
- * ✅ ERRATA 2026-09-08: O BARRAMENTO TEM ASSINANTES EM PRODUÇÃO. O parágrafo abaixo dizia «ZERO `on()` em
- * produção (só o teste assina)», e isso deixou de ser verdade no dia em que a engine passou a montar a barra
- * de acessibilidade: o `ui/settings-audio` assina `blindMode` para o botão `#opt-modocego` não mentir o
- * estado, e o `boot/create-game` assina o mesmo evento para a barra montada não mentir o dela. Os dois
- * chegaram pela razão que o parágrafo previa — «painéis que se redesenham quando a criança muda um ajuste» —
- * e chegaram com o contrato já tipado, que era o ponto de ele nascer assim.
- *
- * ⚠️ POR QUE ISTO EXISTIU ANTES DE TER ASSINANTE. Hoje o barramento tem ZERO `on()` em produção (só o teste
- * assina). Um mecanismo sem uso normalmente é dívida — mas este precisa nascer tipado, não ser retipado
- * depois: o ADR-0031 já exige que painéis e atividades se redesenhem quando a criança muda idioma ou fonte,
- * e a casca do `demos` vai reagir a ajuste durante a partida. O primeiro assinante chega com o contrato
- * pronto, em vez de chegar e ser seguido por uma migração.
+ * Now `GameEvent` maps name → payload and `emit`/`on` are generic over it: an unknown name does not compile, a wrong
+ * payload does not compile. It was typed before it had subscribers on purpose — ADR-0031 already required panels to
+ * redraw when the child changes a setting, and the first subscribers (the bar and the audio panel, which must not lie
+ * about blind mode) arrived with the contract already typed instead of being followed by a migration.
  */
 export interface GameEvent {
-  /* --- ENGINE: o que este módulo emite --- */
+  /* --- ENGINE: what this module emits --- */
   numPlayers: number;
   vizMode: string;
   blindMode: boolean;
@@ -94,15 +80,14 @@ export interface GameEvent {
   /** Playing through the webcam (ADR-0215): off, hands, face or eyes — one mode at a time, each with its lines. */
   cameraControl: CameraControl;
 
-  /* --- JOGO: `game/state` AUMENTA esta interface com `cenario`, `activity`, `quizLevel` e `coins`.
-     Ver a declaração de aumento no fim daquele arquivo. A engine não pode nomear a carga de `coins` — é um
-     tipo do jogo (ADR-0033/0039) —, e não precisa: quem é dono do evento declara o evento. --- */
+  /* --- GAME: a game AUGMENTS this interface with its own events by declaration merging. The engine cannot name a game's
+     payload — it is a type of the game (ADR-0033/0039) — and does not need to: whoever owns the event declares it. --- */
 }
 
 type Listener<K extends keyof GameEvent> = (val: GameEvent[K]) => void;
 const _subs = new Map<keyof GameEvent, Set<(val: never) => void>>();
 
-/** Assina `evt`. Devolve a função que cancela — guardar o retorno é mais barato que lembrar do `off`. */
+/** Subscribes to `evt`. Returns the function that cancels — keeping the return is cheaper than remembering `off`. */
 export function on<K extends keyof GameEvent>(evt: K, fn: Listener<K>): () => void {
   if (!_subs.has(evt)) _subs.set(evt, new Set());
   _subs.get(evt)!.add(fn as (val: never) => void);
@@ -115,130 +100,69 @@ export function off<K extends keyof GameEvent>(evt: K, fn: Listener<K>): void {
 }
 
 /**
- * Avisa os assinantes de `evt`. EXPORTADO desde 2026-08-25 (item 19) porque `game/state` emite pelos mesmos
- * canais: um segundo mapa de assinantes seria um segundo barramento, e quem assinasse `coins` no lugar errado
- * simplesmente não seria avisado — sem erro, sem teste vermelho.
+ * Tells the subscribers of `evt`. EXPORTED because a game emits on the same channels: a second map of subscribers would
+ * be a second bus, and whoever subscribed in the wrong one would simply never be told — no error, no red test.
  *
- * O `try` em volta de cada assinante NÃO é preguiça: um ouvinte que estoura não pode impedir os outros de
- * receber. Um painel quebrado derruba o painel; não derruba o jogo.
+ * The `try` around each subscriber is NOT laziness: a listener that throws must not stop the others from receiving. A
+ * broken panel brings down the panel, not the game.
  */
 export function emit<K extends keyof GameEvent>(evt: K, val: GameEvent[K]): void {
   const s = _subs.get(evt);
   if (s) for (const fn of s) { try { (fn as unknown as Listener<K>)(val); } catch (e) { /* noop */ } }
 }
 
-// ========================= `phase` SAIU DAQUI (ADR-0030 C3, passo 3 da Fase B) =========================
-// Ele não virou campo de fábrica como os outros doze de RODADA: virou uma PILHA. `core/scenes` já existia,
-// testado e sem consumidor; agora a raiz de composição o usa, e `title`/`playing`/`paused` são
-// `[titulo]`, `[jogo]` e `[jogo, pausa]`.
-//
-// A diferença que motivou a troca: `phase === 'paused'` APAGAVA a informação de que há um jogo por baixo. A
-// pilha a mantém, e é dela que sai "o mundo continua desenhado, mas não recebe tempo".
-//
-// E o ADR-0030 registra ALARGAR a união (`'mapa' | 'resultado' | …`) como NÃO-OPÇÃO: um segundo jogo
-// continuaria amarrado ao NOSSO vocabulário, e teria de pedir uma constante nova à engine para existir. Por
-// isso os três nomes não moram em módulo nenhum da engine — moram na raiz, que é este jogo. Quem é engine
-// recebe BOOLEANOS: `mundoRodando()`, `menuDePausa()`, `telaDeTitulo`. É a mesma correção que o
-// `consumer-quiz` obrigou a fazer no `menu-nav` (`getPhase()` → `isNavigable()`), registrada em
-// `core/constants` como o erro a não repetir.
+// ========================= WHAT DOES NOT LIVE HERE (ADR-0038, cut by LIFETIME) =========================
+// This module holds what lives for the PAGE — the child's accessibility, language and device settings — and nothing
+// else; `tests/lifetime-gate.node.test.ts` asserts it on every run.
+//   · The PHASE became a stack (`core/scenes`). `phase === 'paused'` ERASED the fact that a game is underneath; the stack
+//     keeps it, and engine modules receive BOOLEANS, never the phase names (ADR-0030).
+//   · The ROUND (players, who paused, what ended) does not persist, and a `export let` is a SHARED live binding: two games
+//     on one page would see the same list, and the second would start with the first one's players still in it.
+//   · A GAME's own state (its scenery, activity, level, coins) persists under the game's key and travels with the
+//     cartridge (ADR-0033, ADR-0036).
 
-/* (`quizLevel` SAIU daqui em 2026-08-25, item 19 — está em `game/state`. É o nível da atividade de
- *  alfabetização: conteúdo pedagógico, e nem sequer mecânica de engine. A regra é a do ADR-0033, aplicada ao
- *  estado: o estado COMPARTILHADO guarda o que a engine possui — acessibilidade, idioma, dispositivo.) */
-
-
-// ========================= O RESTO DA RODADA SAIU DAQUI (ADR-0038, Fase B) =========================
-// `ended`, `decorSeed`, `grassDensity`, `selVizPlayer` e `pauseActor` foram para `core/run-state`, na
-// segunda fatia do passo 2. Nenhum deles persiste — que é o critério do corte —, e todos eram importados
-// APENAS pelo composition root, o que manteve a mudança em dois arquivos, como na primeira fatia.
-//
-// O CLAMP do `grassDensity` foi junto, e ele é a razão de aquele setter existir: a fração vinha protegida só
-// para quem entrasse pelo `window.__incl`, e qualquer outro caminho podia gravar 5 ou -1. Deixá-lo para trás
-// transformaria a fábrica num `let` com nome novo.
-//
-// E a fatia grande saiu em 2026-08-26: `players` e `numPlayers`, com quatorze importadores CADA. Com o
-// `phase` indo para a pilha de cenas no mesmo dia, a RODADA saiu INTEIRA daqui — este módulo é só de PÁGINA
-// agora, e `tests/lifetime-gate.node.test.ts` afirma isso a cada rodada de testes.
-
-
-// ========================= `cenario` E `activity` SAÍRAM DAQUI (ADR-0038, Fase B) =========================
-// Os dois eram estado de JOGO morando na engine — a mesma exceção que o `coins` e o `quizLevel` já haviam
-// deixado no item 19. O corte por LIFETIME do ADR-0038 os classifica como GAME: ambos são persistidos em
-// chave `gameKey()`, que é o critério mecânico, e ambos viajam com o cartucho quando o jogo mudar de
-// repositório (ADR-0036).
-//
-// Moram agora em `game/state`, com a MESMA forma — binding vivo + setter que persiste e emite. O que mudou
-// foi só o endereço, e é isso que torna a mudança conferível.
-//
-// Um consumidor precisou de mais que um import novo: `ui/activities-menu` é ENGINE, e o gate de fronteira
-// proíbe engine importar de `game/` (a lista dele esvaziou em 2026-08-25). Ele passou a receber
-// `getActivityId`/`setActivityId` por injeção, que é o que a raiz de composição existe para fazer.
-
-// --- vizMode: modo visual/cor ativo (persistido em incl_viz). A validação (VIZ_CYCLE) e o default por
-//     prefers-contrast ficam no game.js. initVizMode NÃO persiste (o default de mídia deve seguir o SO a cada
-//     boot; persistir travaria o rastreio de prefers-contrast). Mudanças do usuário usam setVizModeValue. ---
+// --- vizMode: the active visual/colour mode (stored in incl_viz). `initVizMode` does NOT store it: a default taken from
+//     the media query must follow the OS at every boot, and storing it would freeze the tracking of prefers-contrast. The
+//     child's own changes go through `setVizModeValue`. ---
 export let vizMode = 'normal';
 export function initVizMode(mode: string): void { vizMode = mode; }
 export function setVizModeValue(mode: string): void { const p = portFor('setVizModeValue'); p.set('incl_viz', mode); vizMode = mode; emit('vizMode', mode); }
 
-/* (`coins` SAIU daqui em 2026-08-25, item 19 — está em `game/state`. Ele era `unknown[]` porque `core/` não
- *  podia conhecer o tipo, e esse `unknown` era o SINTOMA: um estado que não consegue declarar o próprio tipo
- *  está na camada errada. Do outro lado da fronteira ele é `unknown[]` ainda, mas por escolha de quem pode
- *  decidir — e o `game/coins` que o consome sabe exatamente o que há dentro.) */
-
-// ========================= `players` E `numPlayers` SAÍRAM DAQUI (ADR-0038, Fase B) =========================
-// Os dois são RODADA pelo critério mecânico do ADR-0038 — nenhum é persistido —, e moram em
-// `core/run-state`, na instância que a raiz de composição possui.
-//
-// O `players` era o caso mais caro de todos os treze. Um `export let` é um binding vivo COMPARTILHADO: dois
-// jogos na mesma página (que é o que a casca do `demos` faz, ADR-0036) veriam a MESMA lista, e o segundo
-// começaria com os jogadores do primeiro ainda dentro. Não haveria erro em lugar nenhum — só uma criança a
-// mais na tela.
-//
-// A referência continua sendo mutada NO LUGAR (`push`/`length`/`players[i]`), e é por isso que a rodada não
-// tem setter para ela: trocar a lista inteira deixaria para trás as referências que os módulos já guardaram.
-// Quem entra e quem sai é `game/session`, e só ele recebe a lista mutável.
-//
-// (O tipo continua sendo `Player[]` — a visão da ENGINE. Cada jogo acrescenta campos e estreita por conta
-//  própria, que é o que o ADR-0033 desenhou.)
-
 /**
- * OS PADRÕES, com nome. Um valor por linha, e cada um usado em DOIS lugares: a leitura do boot (quando não há
- * nada gravado) e o "restaurar padrões" do menu que o contém (ADR-0028).
+ * The REDUCED MOTION default is not a constant — it is what the operating system asks for.
  *
- * Existe porque a alternativa é escrever o mesmo padrão duas vezes — uma no `store.getBool(chave, X)` e outra
- * no reset — e este repositório já mostrou quatro vezes o que acontece com duas cópias que ninguém obriga a
- * concordar. Aqui a divergência seria pior que as anteriores: um reset que restaura um valor DIFERENTE do que
- * o jogo usa quando nunca foi configurado deixa a criança num terceiro estado, que não é nem o dela nem o de
- * fábrica, e que ela não tem como nomear para pedir ajuda.
+ * It lives here, beside `DEFAULTS`, because ADR-0029's rule is ONE source for what a default is, and a computed default
+ * is no less a default for not fitting a frozen object. Its readers are the boot and the visual sensitivity panel's
+ * "restore defaults".
  *
- * `as const` + `Object.freeze` de propósito: um padrão que alguém consiga escrever em tempo de execução deixa
- * de ser padrão.
- */
-/**
- * O padrão do MOVIMENTO REDUZIDO não é uma constante — é o que o sistema operacional pede.
+ * Why the reset must read this and not `false`: on a machine whose owner asked for less motion, `false` would TURN THE
+ * ANIMATION BACK ON — the reset would do, by itself, exactly what WCAG 2.3.3 exists to prevent, on the screen of someone
+ * who already said they cannot take it.
  *
- * Mora aqui, ao lado do DEFAULTS, porque a regra do ADR-0029 é que existe UMA fonte sobre o que é padrão, e
- * um padrão calculado não deixa de ser padrão por não caber num objeto congelado. Quem lê isto: a carga do
- * boot (main.js) e o "restaurar padrões" do menu de sensibilidade visual.
- *
- * Por que importa que o reset leia isto em vez de `false`: numa máquina cujo dono pediu menos movimento,
- * devolver `false` RELIGARIA a animação — o reset passaria a fazer, sozinho, exatamente o que a WCAG 2.3.3
- * existe para impedir, e faria isso na tela de quem já tinha dito que não aguenta.
- *
- * `matchMedia` é guardado: este módulo roda no projeto `node` dos testes, onde `window` não existe.
+ * `matchMedia` is guarded: this module runs in the tests' `node` project, where there is no `window`.
  */
 export function defaultReducedMotion(): boolean {
   return !!(typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 
+/**
+ * THE DEFAULTS, named. One value per line, each used in TWO places: the boot's read (when nothing is stored) and the
+ * "restore defaults" of the panel that holds it (ADR-0028).
+ *
+ * The alternative is writing each default twice — once in the stored read, once in the reset — and two copies nobody
+ * forces to agree diverge. Here the divergence would be worse than elsewhere: a reset that restores a value DIFFERENT
+ * from what the game uses when nothing was set leaves the child in a third state, neither theirs nor the factory's, that
+ * they have no name for when asking for help.
+ *
+ * `as const` + `Object.freeze` on purpose: a default someone can write at run time stops being a default.
+ */
 export const DEFAULTS = Object.freeze({
-  // auditiva
+  // hearing
   blindMode: false,
   caneBlockDiv: 1,
   captionsOn: true,
-  menuIndexOn: true, // o indice nasce LIGADO: quem nao sabe que ele existe e quem mais precisa dele
-  // motora
+  menuIndexOn: true, // the index is born ON: whoever does not know it exists is whoever needs it most
+  // motor
   wheelchair: false,
   oneButton: false,
   inputCooldown: 0,
@@ -249,123 +173,67 @@ export const DEFAULTS = Object.freeze({
   speechPpm: 254, // the voice's normal speed, the minimum (ADR-0196)
   noGripStrength: false,
   cameraControl: 'off' as CameraControl,
-  easy: false,       // por jogador (Modo Fácil)
-  toggleMove: false,  // por jogador (movimento por alternância)
-  // A alternância do botão de CORRER nasce desligada de FÁBRICA — e liga sozinha no controle de tela, que é
-  // contexto e não escolha. A distinção importa para a marca do ADR-0029: ver `refreshMarks` em
-  // ui/settings-mobility, que marca a ESCOLHA guardada e não o estado.
-  toggleRun: false,   // por jogador (alternância do botão de correr)
+  easy: false,       // per player (Easy mode)
+  toggleMove: false,  // per player (movement by toggling)
+  // The run-button toggle is born off at the FACTORY — and switches itself on with the on-screen pad, which is context,
+  // not choice. The difference matters to ADR-0029's mark, which marks the stored CHOICE and not the state.
+  toggleRun: false,   // per player (run-button toggle)
   // visual
   cbSafe: false,
   ownerColors: true,
-  lq: 0,              // realce de contraste L→Q desligado
+  lq: 0,              // the L→Q contrast boost, off
   hcOutlineFg: 1,
   hcOutlineBg: 1,
-  // comunicação (hoje só a caixa da letra; o menu de CAA do ADR-0028 amplia isto)
+  // communication (the letter case today; the AAC panel of ADR-0028 widens this)
   letterCase: 'upper',
-  // ⚠️ AS DUAS ÚLTIMAS ENTRARAM EM 2026-09-07 (issue #61), e não por simetria: elas faltavam, e a falta
-  // tinha consequência. A marca do ADR-0029 lê `DEFAULTS` e mais nada — regra que continua certa —, e por
-  // isso um valor sem padrão nomeado aqui é um valor que a marca NÃO PODE marcar. Cinco dos sete ícones da
-  // barra rápida caíam nisso.
-  //
-  //   · `calmMode` — o nível TEA (0 normal · 1 calmo · 2 silencioso). Além de não ter padrão, ele não
-  //     PERSISTIA: ver a nota de `KEYS.tea` em platform/storage.
-  //   · `viz` — o modo de visão. `core/entity` declara `viz: string` sem dizer qual é o padrão, e o snapshot
-  //     da barra fazia `p.viz || ''`. Funcionava por acidente: a cadeia vazia não casa `hc-direto` nem
-  //     `fix-*`, então os dois ícones ficavam apagados. `'normal'` é o modo que `render/viz-modes` declara
-  //     com `kind:'normal'` — o que não faz nada —, e passa a ser dito em vez de deduzido.
+  // ⚠️ THE LAST TWO are here because they were missing and it had a cost (issue #61): ADR-0029's mark reads `DEFAULTS`
+  // and nothing else, so a value with no named default here is one the mark CANNOT mark.
+  //   · `calmMode` — the autism-support level (0 normal · 1 calm · 2 quiet).
+  //   · `viz` — the vision mode. `'normal'` is the mode that does nothing, now said instead of deduced from an empty
+  //     string that happened to match no mode.
   calmMode: 0,
   viz: 'normal',
 } as const);
 
-// --- modoCego: MODO CEGO (A12e auditiva). Só as ajudas de áudio — bengala, sonar, guarda de beirada,
-//     narração —, sem tela preta; a simulação de cegueira do Modo Empatia é outra coisa e liga esta por cima.
+// --- blindMode: BLIND MODE. Only the audio aids — cane, sonar, edge guard, narration — with no black screen; the
+//     Empathy blindness simulation is another thing and turns this on as well.
 //
-//     Migrado do main.js (ADR-0027 passo 4 / #50). Era a variável com MAIS encanamento de injeção do projeto:
-//     dezesseis pontos em seis módulos passavam `getModoCego`/`setModoCego` por ctx, e a colisão a lia por
-//     closure. Estado que seis módulos consultam não é do composition root; e enquanto for, `createGame()` não
-//     pode existir sem capturá-la, que é justamente o teste de fronteira que o ADR-0027 quer rodar.
+//     State that six modules consult does not belong to the composition root; while it did, `createGame()` could not
+//     exist without capturing it, which is the boundary test ADR-0027 wanted to run.
 //
-//     O SETTER FAZ TRÊS COISAS E SÓ TRÊS: grava, persiste, avisa. Os efeitos que o main.js pendurava no
-//     antigo `setModoCego` — refazer os extras do nível, refletir o painel, anunciar ao leitor de tela — NÃO
-//     entram aqui: são reação, e quem reage assina o evento. Um setter que sabe redesenhar a tela é um setter
-//     que nenhum teste consegue chamar. ---
+//     THE SETTER DOES THREE THINGS AND ONLY THREE: stores, persists, tells. Redrawing the level, reflecting a panel,
+//     announcing to the screen reader are REACTIONS, and whoever reacts subscribes to the event. A setter that knows how
+//     to redraw the screen is a setter no test can call. ---
 export let blindMode: boolean = NULL_PORT.getBool('incl_modocego', DEFAULTS.blindMode);
 export function setBlindModeValue(on: boolean): void {
-  if (blindMode === on) return; // a guarda VEM DO ORIGINAL: sem ela o anúncio repetiria a cada clique redundante
+  if (blindMode === on) return; // without this guard the announcement would repeat on every redundant click
   const p = portFor('setBlindModeValue'); p.setBool('incl_modocego', on); blindMode = on; emit('blindMode', on);
 }
 
 
-// --- O ESTADO DO NÍVEL: portão, sólidos-só-cadeirante e power-ups.
-//
-//     Estes cinco não são preferência de ninguém: são o RESULTADO de `game/level-geometry.setupExtras()`, que
-//     lê o mapa e devolve os quatro primeiros de uma vez, mais `buildWcGeom()`, que devolve o quinto. Moravam
-//     no main.js porque `core/collision` precisa lê-los a cada consulta de tile e o main.js era o único lugar
-//     que as duas pontas alcançavam.
-//
-//     Agora as duas pontas alcançam `core/state`, que é da mesma camada da colisão. A injeção da colisão FICA
-//     como está de propósito: tirá-la tocaria treze arquivos de teste que hoje montam mundos falsos por
-//     `initCollision(ctx)`, e trocar treze montagens de teste é mudança de arquitetura, não arrumação. O que
-//     este passo faz é menor e suficiente: o main.js deixa de ser DONO do estado, que é o que `createGame()`
-//     precisa para existir sem capturá-lo.
-//
-//     `setLevelExtras` recebe os quatro juntos porque é assim que nascem — uma desestruturação única no
-//     main.js, que em ESM não pode mais existir (não se atribui a um binding importado). Separá-los em quatro
-//     chamadas convidaria alguém a atualizar três e esquecer a quarta. ---
-
 /**
- * Um tile do portão. O portão é uma LISTA deles, não um objeto com posição — escrevi `{x, y}` na primeira
- * versão e o navegador me desmentiu: `gate` é `[{tx:29,ty:36}, {tx:30,ty:36}, …]`.
- *
- * O `tsc` não podia pegar. Quem chama `setLevelExtras` é o `main.js`, que é JavaScript, então o tipo declarado
- * aqui não tinha do outro lado nada que o contradissesse. É um argumento concreto para o `createGame()` do
- * passo 4 nascer em TypeScript: enquanto o composition root for JS, todo contrato que só ele exercita é uma
- * afirmação sem verificador.
- *
- * Mínimo ESTRUTURAL, como o `PlayerQuiz`: o `MapGateTile` de verdade mora em `game/level-geometry` e é
- * atribuível a este. `core/` não importa de `game/`.
+ * A gate tile: a gate is a LIST of these, not one object with a position. A STRUCTURAL minimum — `core/` does not
+ * import a game's types, and a game's richer tile is assignable to this.
  */
 export interface GateTile { readonly tx: number; readonly ty: number }
 
-// ========================= OS EXTRAS DE NÍVEL SAÍRAM DAQUI (ADR-0038, Fase B) =========================
-// `powerups`, `gateTiles`, `gate`, `gateOpen` e `wcSolid` eram estado de RODADA em `export let` — o que a
-// D13 do `demos` proíbe, e por um motivo concreto: numa casca que carrega jogo após jogo na mesma página, o
-// portão aberto no anterior continua aberto no seguinte.
+// --- letterCase: letters show in UPPER CASE or in their natural case. A pedagogical choice, not an aesthetic one:
+//     Brazilian literacy usually starts in upper case, and a child past that stage needs the lower case.
 //
-// Viraram uma INSTÂNCIA de `createRunState()`, em `core/run-state`, que o composition root possui. A fatia
-// foi escolhida por ser conferível: `main.ts` era o único módulo que os importava daqui; todos os outros já
-// os recebiam por injeção. O resto da RODADA (`players`, `numPlayers`, `ended`, `decorSeed`, `pauseActor`,
-// `selVizPlayer`, `grassDensity`) segue nos próximos passos, um grupo por vez.
+// --- captionsOn: captions for sounds (deaf accessibility).
 //
-// O `GateTile` acima FICOU: ele é um TIPO, não estado, e `core/run-state` o importa daqui.
-
-// --- letterCase: as letras aparecem em CAIXA ALTA ou minúscula. É escolha pedagógica, não estética: a
-//     alfabetização brasileira costuma começar em caixa alta, e a criança que já passou dessa fase precisa da
-//     minúscula. Lido pelo `disp` que o quiz usa em toda letra que exibe ou soletra.
+//     BOTH PERSIST (ADR-0028). The Dev's answer was wider than the question: EVERY settings panel persists, and every
+//     panel ends with a control that restores its own defaults. The reason is accessibility, not convenience — a deaf
+//     child who turns captions on and finds them off tomorrow pays that price every day, and whoever needs the panel
+//     most has the least margin to lose it.
 //
-// --- captionsOn: legendas dos sons (a11y surdez).
+//     The values are 'mixed' | 'upper', a choice inside the AAC panel. A stored 'lower' reads as 'mixed': the Dev asked
+//     for two options, upper and lower case together or upper case only, and the first is text in its NATURAL case, not
+//     text forced to lower — forcing lower case on a proper noun teaches wrong.
 //
-//     OS DOIS PERSISTEM (ADR-0028). A pergunta foi feita ao Dev justamente porque nenhum deles tinha chave
-//     nem leitura no boot, e inventar persistência seria inventar a decisão. A resposta foi mais ampla que a
-//     pergunta: TODO menu de configuração persiste, e todo menu termina com um controle que restaura os
-//     próprios padrões. O motivo é de acessibilidade e não de conveniência — uma criança surda que liga as
-//     legendas e as encontra desligadas amanhã paga o preço todo dia, e quem mais precisa do menu é quem menos
-//     tem margem para perdê-lo.
-//
-//     `letterCase` MUDOU DE CASA e de valores (ADR-0028, menu de CAA). Era 'lower' | 'upper', num ciclo de duas
-//     posições no botão ABC da pausa; virou 'mixed' | 'upper', uma escolha dentro do menu de Comunicação
-//     Aumentada e Alternativa, onde convive com os conjuntos de pictogramas.
-//
-//     'lower' FOI APOSENTADO e vira 'mixed' na leitura. O Dev pediu duas opções — "letras maiúsculas +
-//     minúsculas" e "letras maiúsculas somente" —, e a primeira é texto com a caixa NATURAL, não texto forçado
-//     em minúscula: forçar minúscula num nome próprio ensina errado. Quem tinha 'lower' salvo aterrissa em
-//     'mixed', que é o mais próximo do que ele escolheu — mas se "só minúsculas" tinha uso pedagógico, é uma
-//     entrada de volta na tabela e uma linha aqui.
-//
-//     A DERIVAÇÃO IMPORTA: `caaMode` NÃO existe ainda de propósito. Enquanto só as duas caixas de letra forem
-//     escolhíveis, uma segunda variável para a mesma pergunta seria o MODE × activity de novo (#54). Quando um
-//     conjunto de pictogramas puder ser escolhido, `caaMode` nasce e `letterCase` passa a derivar dele. ---
+//     THE DERIVATION MATTERS: there is no `caaMode` yet, on purpose. While only the two letter cases can be chosen, a
+//     second variable for the same question would be a duplicate state (#54). When a pictogram set can be chosen,
+//     `caaMode` is born and `letterCase` derives from it. ---
 export type LetterCase = 'mixed' | 'upper';
 export let letterCase: LetterCase = NULL_PORT.get(NULL_PORT.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
 export function setLetterCaseValue(c: LetterCase): void {
@@ -380,13 +248,13 @@ export function setCaptionsOnValue(on: boolean): void {
   const p = portFor('setCaptionsOnValue'); p.setBool(p.KEYS.captions, v); captionsOn = v; emit('captionsOn', v);
 }
 
-// --- menuIndexOn: o "6 de 10" no fim do anuncio de cada item de menu (ADR-0044, item 3).
+// --- menuIndexOn: the "6 of 10" at the end of each menu item's announcement (ADR-0044, item 3).
 //
-//     NASCE LIGADO, e a razao e a mesma do modo cego nascer com TTS e sonar: quem precisa do indice para se
-//     orientar nao tem como saber que ele existe se ele vier desligado. Quem NAO precisa descobre o ajuste
-//     lendo o menu, que e justamente a coisa que essa pessoa consegue fazer.
+//     BORN ON, for the reason blind mode is born with speech and sonar: whoever needs the index to find their way has
+//     no way to know it exists if it arrives off. Whoever does NOT need it finds the setting by reading the menu,
+//     which is exactly what that person can do.
 //
-//     PERSISTE em `incl_menuindex` (escopo da CRIANCA, ADR-0027): a preferencia segue com ela de jogo em jogo.
+//     STORED in `incl_menuindex` (the CHILD's scope, ADR-0027): the preference follows them from game to game.
 export let menuIndexOn = NULL_PORT.getBool(NULL_PORT.KEYS.menuIndex, DEFAULTS.menuIndexOn);
 export function setMenuIndexOnValue(on: boolean): void {
   const v = !!on;
@@ -394,8 +262,8 @@ export function setMenuIndexOnValue(on: boolean): void {
   const p = portFor('setMenuIndexOnValue'); p.setBool(p.KEYS.menuIndex, v); menuIndexOn = v; emit('menuIndexOn', v);
 }
 
-// --- cbSafe: PALETA SEGURA PARA DALTONISMO (Okabe-Ito). Não é um filtro sobre a imagem — é a escolha das
-//     cores de origem, aplicada IN-PLACE em PCOLOR para que todo mundo que já referencia a array veja a troca. ---
+// --- cbSafe: the COLOUR-BLIND SAFE PALETTE (Okabe-Ito). Not a filter over the image — the choice of the source colours,
+//     applied IN PLACE so everyone who already references the palette sees the change. ---
 export let cbSafe: boolean = NULL_PORT.getBool(NULL_PORT.KEYS.cbsafe, DEFAULTS.cbSafe);
 export function setCbSafeValue(on: boolean): void {
   const v = !!on;
@@ -403,8 +271,8 @@ export function setCbSafeValue(on: boolean): void {
   const p = portFor('setCbSafeValue'); p.setBool(p.KEYS.cbsafe, v); cbSafe = v; emit('cbSafe', v);
 }
 
-// --- ownerColors: no multijogador, cada item aparece na cor de QUEM pode pegá-lo. Desligado, todos veem a cor
-//     original — o que é preferível para quem não distingue as cores dos donos. ---
+// --- ownerColors: in multiplayer, each item shows in the colour of WHO can take it. Off, everyone sees the original
+//     colour — preferable for whoever cannot tell the owners' colours apart. ---
 export let ownerColors: boolean = NULL_PORT.getBool(NULL_PORT.KEYS.ownercolors, DEFAULTS.ownerColors);
 export function setOwnerColorsValue(on: boolean): void {
   const v = !!on;
@@ -412,18 +280,15 @@ export function setOwnerColorsValue(on: boolean): void {
   const p = portFor('setOwnerColorsValue'); p.setBool(p.KEYS.ownercolors, v); ownerColors = v; emit('ownerColors', v);
 }
 
-/** Espessura de contorno: 0 nenhum · 1 fino · 2 grosso. Fora da faixa satura, não rejeita. */
+/** Outline thickness: 0 none · 1 thin · 2 thick. Out of range saturates, it is not rejected. */
 export type OutlineLevel = 0 | 1 | 2;
 const toOutlineLevel = (v: number): OutlineLevel => Math.max(0, Math.min(2, v | 0)) as OutlineLevel;
 
-// --- hcOutlineFg / hcOutlineBg: CONTORNOS do alto contraste, e são dois porque servem a critérios diferentes.
-//     `fg` contorna o primeiro plano — personagem e itens — e atende a WCAG 2.4.7 (foco visível). `bg` contorna
-//     o perímetro externo de plataforma, água e lava, delimitando navegável × não-navegável, e atende a
-//     WCAG 1.4.11 (contraste de componente ≥ 3:1). Confundi-los apagaria uma das duas garantias.
+// --- hcOutlineFg / hcOutlineBg: the high-contrast OUTLINES, two because they serve different criteria. `fg` outlines
+//     the foreground — character and items — for WCAG 2.4.7 (focus visible). `bg` outlines the outer edge of what can
+//     and cannot be walked, for WCAG 1.4.11 (component contrast ≥ 3:1). Merging them would erase one of the guarantees.
 //
-//     A saturação em 0..2 vem do original e é dupla: no boot (contra um localStorage corrompido) e na escrita
-//     (contra um chamador). No main.js isso obrigava a declarar com um valor provisório e reatribuir na linha
-//     seguinte, porque a leitura saturada não cabia no mesmo `let`; aqui a função a resolve de uma vez. ---
+//     Saturating to 0..2 happens twice: at boot (against corrupted storage) and on write (against a caller). ---
 export let hcOutlineFg: OutlineLevel = toOutlineLevel(NULL_PORT.getNum(NULL_PORT.KEYS.outfg, DEFAULTS.hcOutlineFg));
 export function setOutlineFgValue(v: number): void {
   const n = toOutlineLevel(v);
@@ -437,19 +302,17 @@ export function setOutlineBgValue(v: number): void {
   const p = portFor('setOutlineBgValue'); p.set(p.KEYS.outbg, n); hcOutlineBg = n; emit('hcOutlineBg', n);
 }
 
-// --- caneBlockDiv: espaçamento da batida da BENGALA, em blocos pisados. 1 = uma batida por bloco;
-//     2 = uma batida a cada meio bloco. Não é preferência de som: é a resolução com que uma criança cega
-//     mede a distância que andou, e por isso a colisão a lê a cada passo. ---
+// --- caneBlockDiv: the CANE's tap spacing, in blocks walked. 1 = one tap per block; 2 = one tap every half block. Not a
+//     sound preference: it is the resolution at which a blind child measures how far they walked. ---
 export let caneBlockDiv: number = NULL_PORT.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
 export function setCaneBlockDivValue(div: number): void {
-  const d = (+div) || 1; // o `|| 1` vem do original: um valor corrompido no localStorage viraria NaN e a
-  if (caneBlockDiv === d) return; //  bengala pararia de bater, que é o modo de falha mais silencioso possível
+  const d = (+div) || 1; // the `|| 1`: a corrupted stored value would become NaN and the cane
+  if (caneBlockDiv === d) return; //  would stop tapping, which is the most silent failure there is
   const p = portFor('setCaneBlockDivValue'); p.set('incl_cane_div', d); caneBlockDiv = d; emit('caneBlockDiv', d);
 }
 
-// --- wheelchair: MODO CADEIRANTE. Muda a geometria do nível inteiro — degraus e escada viram rampas e
-//     elevadores, moedas descem para o chão, lava vira chão, e só voo e super-corrida sobrevivem como poderes.
-//     Por isso a colisão a lê: `isSolidType` responde diferente com ela ligada. ---
+// --- wheelchair: WHEELCHAIR MODE, a game's answer to a child who plays seated: steps and ladders become ramps and lifts
+//     in a game that has them. The engine stores and announces it; what it changes is the game's to decide. ---
 export let wheelchair: boolean = NULL_PORT.getBool('incl_wheelchair', DEFAULTS.wheelchair);
 export function setWheelchairValue(on: boolean): void {
   if (wheelchair === on) return;
@@ -464,7 +327,7 @@ export function setOneButtonValue(on: boolean): void {
   const p = portFor('setOneButtonValue'); p.setBool('incl_onebtn', on); oneButton = on; emit('oneButton', on);
 }
 
-// --- semForca: «sem força para segurar botão», the second motor empathy simulation (ADR-0181): any sustained contact of a
+// --- noGripStrength: «sem força para segurar botão», the second motor empathy simulation (ADR-0181): any sustained contact of a
 //     game key reads as one tap. Stored like the other simulations, off by default. ---
 export let noGripStrength: boolean = NULL_PORT.getBool('incl_sem_forca', DEFAULTS.noGripStrength);
 export function setNoGripStrengthValue(on: boolean): void {
