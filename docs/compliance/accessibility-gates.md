@@ -32,8 +32,9 @@ This document is also raw material for the **annual report** (ADR-0053), which t
 And the gate that runs against the BUILT application, covering A/AA as a block: `scripts/axe-check.mjs`, in the
 `a11y` job of `.github/workflows/ci.yml`.
 
-<!-- The heading below is an anchor: `tests/gates-de-acessibilidade.node.test.js` locates the boundary between the two
-     tables by that exact text, so renaming it means moving the test's anchor in the same commit. -->
+<!-- The heading below is an anchor: `tests/the-wcag-index-points-at-gates-that-exist.node.test.js` locates the
+     boundary between the two tables by that exact text, so renaming it means moving the test's anchor in the same
+     commit. -->
 ## ⚠️ Cited and NOT measured: the holes
 
 These criteria appear in the code as a declared intention and **no case measures them**. Each row is work

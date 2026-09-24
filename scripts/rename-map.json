@@ -731,6 +731,12 @@
         "docs/research/PESQUISA-FONTES-CONDICOES-LETRAMENTO.md": "docs/research/RESEARCH-FONTS-CONDITIONS-LITERACY.md",
         "docs/research/auditoria-v3-riqueza-ambiente.md": "docs/research/audit-v3-environment-richness.md"
       }
+    },
+    "tests-5": {
+      "done": "2026-09-24",
+      "files": {
+        "tests/gates-de-acessibilidade.node.test.js": "tests/the-wcag-index-points-at-gates-that-exist.node.test.js"
+      }
     }
   }
 }
