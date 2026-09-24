@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// i18n — internacionalização (ver docs/plano-i18n.md).
-// O idioma padrão (pt) é import ESTÁTICO → dicionário pronto antes do game.js rodar (boot síncrono, sem
-// refatorar o init para async). Os demais entram sob demanda ao trocar de idioma, via import.meta.glob (o
-// Vite gera um chunk por locale e o SW cacheia). import.meta.glob (em vez de import(`…${code}.ts`) cru) é o
-// jeito nativo do Vite: casa arquivos .ts no build de forma explícita, sem depender do glob "adivinhado".
+// core/i18n — internationalisation.
+// The default language (pt) is a STATIC import, so its dictionary is ready before anything renders (a synchronous boot).
+// The others load on demand when the language changes, as their own chunks (see the loaders below).
 import pt from '../i18n/pt.js';
 
 type LocaleDict = Record<string, string>;
 
 const AVAILABLE = ['pt', 'en', 'es'];
-const base: LocaleDict = pt;                // dicionário-base (fallback), tipado
-const DICTS: Record<string, LocaleDict> = { pt: base }; // dicionários já carregados (pt embutido)
+const base: LocaleDict = pt;                // the base dictionary (fallback), typed
+const DICTS: Record<string, LocaleDict> = { pt: base }; // dictionaries already loaded (pt built in)
 /**
  * The port the chosen language is kept through (ADR-0178): `platform/storage` has this shape.
  *
@@ -36,31 +34,25 @@ let localePort: LocalePort | null = null;
 /** Gives this module the port for the chosen language; the composition root calls it before `initI18n`. */
 export function loadLocale(p: LocalePort): void { localePort = p; }
 
-/* ===================== O DICIONÁRIO DE QUEM CONSOME A ENGINE =====================
+/* ===================== THE DICTIONARY OF WHOEVER CONSUMES THE ENGINE =====================
  *
- * O achado 2 do `consumer-quiz` dizia que os dicionários são do jogo de plataforma e que um segundo jogo
- * herda 253 chaves para usar um punhado — "peso morto no pacote". Estava certo para um consumidor que mora
- * DENTRO deste repositório, porque as chaves dele cabem em `../i18n/pt.ts`.
+ * ⚠️ FROM OUTSIDE, THE ENGINE'S DICTIONARIES ARE A WALL. The locales are resolved AT THIS ENGINE'S BUILD, against THIS
+ * folder. A game that installs `@the-inclusionist/engine` cannot put a file in there, and `DICTS` is private. Without
+ * this layer it would have NO way to its own keys — and pillar 3 makes no exception for a consumer.
  *
- * ⚠️ DE FORA, O MESMO ACHADO DEIXA DE SER PESO E VIRA PAREDE. Os locales entram pelo `import.meta.glob` logo
- * abaixo, e esse glob é resolvido NO BUILD DESTA ENGINE, contra ESTA pasta. Um jogo que instala
- * `@the-inclusionist/engine` não tem como pôr arquivo lá dentro, e `DICTS` é privado. Sem esta camada ele
- * fica sem NENHUM caminho para as próprias chaves — e o pilar 3 não abre exceção para consumidor.
- *
- * CAMADA SEPARADA, e não `DICTS[code] = {...DICTS[code], ...extra}`: `DICTS.pt` É o objeto importado de
- * `../i18n/pt.ts`. Mesclar ali mutaria o dicionário da própria engine, e dois jogos na mesma página herdariam
- * as strings um do outro. `tests/i18n-consumer-dict.node.test.js` prende exatamente isso.
+ * A SEPARATE LAYER, and not `DICTS[code] = {...DICTS[code], ...extra}`: `DICTS.pt` IS the object imported from
+ * `../i18n/pt.ts`. Merging there would mutate the engine's own dictionary, and two games on the same page would inherit
+ * each other's strings. `tests/i18n-consumer-dict.node.test.js` pins exactly that.
  */
 const EXTRA: Record<string, LocaleDict> = {};
 
 /**
- * Registra as chaves DESTE jogo para um idioma. Chamável antes de o idioma existir — quem registra `en` antes
- * de qualquer `setLocale('en')` é atendido quando a troca acontecer.
+ * Registers THIS game's keys for a language. Callable before the language exists — whoever registers `en` before any
+ * `setLocale('en')` is served when the switch happens.
  *
- * ⚠️ NÃO REAPLICA O DOM, de propósito. `applyDom` precisa de uma RAIZ, e alcançar o `document` global por
- * baixo de quem chama é o achado 15, que já custou uma correção. Um consumidor que registre depois de o
- * markup estático ter sido traduzido chama `applyDom(raiz)` ele mesmo — e o caso normal é registrar no boot,
- * antes de existir texto na tela.
+ * ⚠️ IT DOES NOT RE-APPLY THE DOM, on purpose. `applyDom` needs a ROOT, and reaching the global `document` under the
+ * caller's feet is a defect that already cost one fix. A consumer registering after the static markup was translated
+ * calls `applyDom(root)` itself — and the normal case is to register at boot, before any text is on screen.
  */
 export function registerDict(code: string, entries: LocaleDict): string[] {
   const refused: string[] = [];
@@ -70,8 +62,8 @@ export function registerDict(code: string, entries: LocaleDict): string[] {
     else accepted[key] = entries[key]!;
   }
   if (refused.length) {
-    // Alto, e não em silêncio: quem escreveu a string tem de saber que ela não entrou. Descartar calado
-    // faria a chave crua aparecer na tela sem nada explicando, e isso lê-se como defeito da engine.
+    // Loud, not silent: whoever wrote the string has to know it did not go in. Dropping it quietly would put the raw
+    // key on screen with nothing explaining it, and that reads as an engine defect.
     try {
       console.error('[inclusionist] i18n: chaves recusadas por conterem marcação — ' + refused.join(', '));
     } catch { /* noop */ }
@@ -103,41 +95,40 @@ export function dictionaryGaps(): string[] {
 }
 
 /**
- * A string traz marcação?
+ * Does a string carry markup?
  *
- * ⚠️ POR QUE ISTO EXISTE AQUI, E NÃO NOS ~15 SINKS QUE CONSOMEM i18n. O gate
- * `tests/i18n-without-markup.node.test.js` varre os dicionários DESTA árvore e prova que nenhuma entrada tem
- * tag. Ele não alcança — e não tem como alcançar — o `EXTRA`: são strings que um JOGO regista em tempo de
- * execução, de outro repositório (ADR-0083), e um teste desta árvore não as vê.
+ * ⚠️ WHY THIS LIVES HERE, AND NOT IN THE ~15 SINKS THAT CONSUME i18n. The gate `tests/i18n-without-markup.node.test.js`
+ * sweeps THIS tree's dictionaries and proves no entry has a tag. It does not reach — and cannot reach — `EXTRA`: those
+ * are strings a GAME registers at run time, from another repository (ADR-0083), and a test in this tree never sees them.
  *
- * ⚠️ E ELAS GANHAM DO DICIONÁRIO DA ENGINE. `resolver` consulta `EXTRA` primeiro, então um jogo pode sobrepor
- * QUALQUER chave — inclusive as que a engine cola em markup. Sem este cheque, «i18n» tinha deixado de
- * significar «texto que alguém desta árvore reviu», e nada registava a mudança.
+ * ⚠️ AND THEY WIN OVER THE ENGINE'S DICTIONARY. The resolver looks at `EXTRA` first, so a game can override ANY key —
+ * including the ones the engine pastes into markup. Without this check "i18n" would have stopped meaning "text someone
+ * in this tree reviewed", and nothing would record the change.
  *
- * A verificação vai na FRONTEIRA e não nos sinks porque a fronteira é UMA: toda string de um jogo passa por
- * aqui. Quinze sinks seriam quinze lugares para esquecer, e o esquecimento não deixa rasto.
+ * The check sits at the BOUNDARY and not in the sinks because the boundary is ONE: every string from a game passes
+ * here. Fifteen sinks would be fifteen places to forget, and forgetting leaves no trace.
  *
- * O crivo é deliberadamente grosseiro — `<` seguido de letra ou de barra, e `&` de entidade. Ele recusa
- * `a < b` escrito com espaço? Não: `< ` não casa. Recusa «5<10»? Não, o dígito não casa. O que ele recusa é
- * o que se parece com uma tag, e uma frase de interface que precise disso precisa de outra frase.
+ * The sieve is deliberately coarse — `<` followed by a letter or a slash, and `&` of an entity. Does it refuse `a < b`
+ * written with a space? No: `< ` does not match. "5<10"? No, the digit does not match. What it refuses is what looks
+ * like a tag, and an interface sentence that needs one needs another sentence.
  */
 function hasMarkup(value: string | undefined): boolean {
   return typeof value === 'string' && (/<[a-zA-Z/!?]/.test(value) || /&[a-zA-Z#][a-zA-Z0-9]*;/.test(value));
 }
 
 /**
- * A cadeia de resolução, em cinco degraus. Ela ESPELHA a que já existia (`locale → pt → a própria chave`),
- * com o consumidor colado a cada degrau em vez de empilhado por cima:
+ * The resolution chain, in five steps. It MIRRORS the one that already existed (`locale → pt → the key itself`), with
+ * the consumer glued to each step instead of stacked on top:
  *
- *   1. consumidor no idioma corrente · 2. engine no idioma corrente ·
- *   3. consumidor em pt · 4. engine em pt · 5. a própria chave
+ *   1. consumer in the current language · 2. engine in the current language ·
+ *   3. consumer in pt · 4. engine in pt · 5. the key itself
  *
- * O degrau 3 é o que faz um jogo que só escreveu pt seguir LEGÍVEL quando a criança troca para inglês: ela lê
- * português, exatamente como já lê hoje quando falta chave na engine. Degradar é melhor que calar, e é a
- * mesma escolha que o `.catch` mudo do `initI18n` já faz para o chunk que não carrega.
+ * Step 3 is what keeps a game that only wrote pt READABLE when the child switches to English: they read Portuguese,
+ * exactly as they already do when the engine lacks a key. Degrading beats going quiet, the same choice the silent
+ * `.catch` in `initI18n` makes for a chunk that does not load.
  *
- * O degrau 2 vir ANTES do 3 é a única ordem defensável: idioma certo da engine vale mais que idioma errado do
- * consumidor. A inversão daria "Potência de 2" numa interface em espanhol que tinha a tradução na mão.
+ * Step 2 coming BEFORE step 3 is the only defensible order: the engine's right language is worth more than the
+ * consumer's wrong one. Inverting it would show Portuguese in a Spanish interface that had the translation to hand.
  */
 function resolveKey(key: string): string {
   const fromGame = EXTRA[locale];
@@ -148,30 +139,20 @@ function resolveKey(key: string): string {
   return key in base ? base[key] : key;
 }
 
-/* ===================== OS CARREGADORES, E POR QUE DEIXARAM DE SER UM GLOB =====================
+/* ===================== THE LOADERS, AND WHY THEY ARE NOT A GLOB =====================
  *
- * Isto era `import.meta.glob<{default: LocaleDict}>('../i18n/*.ts')`, e a razão escrita no topo do arquivo
- * continua verdadeira para este repositório: o Vite gera um chunk por locale e o service worker o cacheia.
+ * This used to be `import.meta.glob('../i18n/*.ts')`. ⚠️ In the PACKAGE build (`tsc -p tsconfig.pkg.json`) that line
+ * survives the emit intact, and there it is false twice over:
+ *   · `tsc` is not Vite: it copies `import.meta.glob(...)` as an ordinary call. In a consumer that does not transform
+ *     the module, `import.meta.glob` is `undefined` and the call blows up on load.
+ *   · And even transformed, the pattern says `*.ts` — next to the EMITTED file there are only `.js` files. The glob
+ *     would match nothing, `ensure()` would fall to `return base`, and every language but pt would become Portuguese
+ *     WITHOUT ANY ERROR — the silent failure mode this project already paid for once.
  *
- * ⚠️ O QUE MUDOU FOI O DESTINO DO ARQUIVO, NÃO O ARGUMENTO. Medido em 2026-09-05 no primeiro build de
- * pacote (`tsc -p tsconfig.pkg.json`): a linha SOBREVIVE ao emit, intacta, em `dist-pkg/core/i18n.js` —
- * e ali ela é falsa em dois níveis ao mesmo tempo.
- *   · O `tsc` não é o Vite: ele copia `import.meta.glob(...)` como chamada comum. Num consumidor que não
- *     transforme o módulo, `import.meta.glob` é `undefined` e a chamada estoura no carregamento.
- *   · E mesmo transformado, o padrão diz `*.ts` — ao lado do arquivo EMITIDO só existem `.js`. O glob casaria
- *     zero arquivos, `ensure()` cairia no `return base`, e todo idioma que não fosse pt viraria português
- *     SEM ERRO NENHUM. É o modo de falhar que este projeto já pagou uma vez, quando uma regex morreu em
- *     silêncio com a checagem verde.
- *
- * ENUMERADO, ENTÃO — e o preço é MENOR do que eu escrevi antes de medir. O glob varria três arquivos que a
- * constante `AVAILABLE` logo acima JÁ ENUMERA, então não havia descoberta nenhuma a preservar.
- *
- * ⚠️ E O CODE-SPLITTING NÃO SE PERDE, o que eu tinha suposto que se perderia. O que o Vite divide é o
- * `import()` DINÂMICO, e ele continua aqui — a primeira versão deste comentário dizia que o custo eram
- * "~63 KB de parse a mais", e o build de 2026-09-05 mostrou o contrário na saída: `dist/assets/en-*.js`
- * (24,8 KB) e `dist/assets/es-*.js` (26,7 KB) seguem como chunks próprios, exatamente como com o glob. Quem
- * fica em pt nunca os avalia. O custo real é UM: três linhas a manter à mão no dia em que entrar um quarto
- * idioma — e `AVAILABLE` já era essa lista, então é o mesmo dia e o mesmo arquivo. */
+ * ENUMERATED, THEN — and it costs little: the glob swept three files that `AVAILABLE` above ALREADY lists. Code
+ * splitting is not lost either, because what Vite splits is the dynamic `import()`, which stays: `en` and `es` still
+ * ship as their own chunks, and a child who stays in pt never evaluates them. The one cost is three lines to keep by
+ * hand the day a fourth language arrives — the same day and the same file as `AVAILABLE`. */
 const loaders: Record<string, () => Promise<{ default: LocaleDict }>> = {
   en: () => import('../i18n/en.js'),
   es: () => import('../i18n/es.js'),
@@ -180,7 +161,7 @@ const loaders: Record<string, () => Promise<{ default: LocaleDict }>> = {
 let locale = 'pt';
 let dict: LocaleDict = base;
 
-// Traduz uma chave; a cadeia de fallback está em `resolver()` logo acima. Interpola {param}.
+// Translates a key; the fallback chain is in `resolveKey()` above. Interpolates {param}.
 export function t(key: string, params?: Record<string, string | number>): string {
   let s = resolveKey(key);
   if (params) for (const k in params) s = s.replaceAll('{' + k + '}', String(params[k]));
@@ -201,7 +182,7 @@ const REGION_OF: Readonly<Record<string, string>> = { pt: 'pt-BR', en: 'en-US', 
 export function bcp47(code: string = locale): string { return REGION_OF[code] ?? code; }
 function availableLocales(): string[] { return AVAILABLE.slice(); }
 
-// Aplica as traduções declarativas do HTML: [data-i18n] → textContent; [data-i18n-aria] → aria-label.
+// Applies the declarative translations of the markup: [data-i18n] → textContent; [data-i18n-aria] → aria-label.
 export function applyDom(root: ParentNode): void {
   root.querySelectorAll('[data-i18n]').forEach((el) => { const k = el.getAttribute('data-i18n'); if (k) el.textContent = t(k); });
   root.querySelectorAll('[data-i18n-aria]').forEach((el) => { const k = el.getAttribute('data-i18n-aria'); if (k) el.setAttribute('aria-label', t(k)); });
@@ -210,13 +191,13 @@ export function applyDom(root: ParentNode): void {
 async function ensure(code: string): Promise<LocaleDict> {
   if (DICTS[code]) return DICTS[code];
   const load = loaders[code];
-  if (!load) return base; // idioma sem arquivo → cai no pt
+  if (!load) return base; // a language with no file → falls back to pt
   const mod = await load();
   DICTS[code] = mod.default;
   return DICTS[code];
 }
 
-// Troca o idioma (carrega sob demanda), persiste, atualiza <html lang>, reaplica o DOM e avisa a UI.
+// Switches the language (loading on demand), keeps it, and hands the page effects to the host.
 export async function setLocale(code: string): Promise<void> {
   // first, before anything changes: a language switched and then refused would leave the page half moved (ADR-0178)
   const port = localePort;
@@ -237,50 +218,42 @@ function pickDefault(): string {
   return AVAILABLE.includes(nav) ? nav : 'pt';
 }
 
-/** Promessa do carregamento pedido no boot. Resolve na hora quando o idioma é pt (dicionário estático). */
+/** The promise of the load asked for at boot. Resolves at once when the language is pt (static dictionary). */
 let pending: Promise<void> = Promise.resolve();
 
 /**
- * Boot: aplica pt (síncrono, para a página nunca ficar em branco) e, se o idioma preferido for outro, PEDE a
- * troca — que é assíncrona, porque os outros locales são chunks sob demanda.
+ * Boot: applies pt (synchronously, so the page is never blank) and, if the preferred language is another, ASKS for the
+ * switch — which is asynchronous, because the other locales are on-demand chunks.
  *
- * Continua devolvendo o locale de forma síncrona e NÃO bloqueia por si: quem precisar esperar chama
- * `localeReady()`. Foi essa separação que faltava — ver o comentário lá embaixo.
+ * It still returns the locale synchronously and does NOT block on its own: whoever needs to wait calls `localeReady()`.
  *
- * `root` ENTRA em vez de ser lido do global, e foi o `boot/createGame()` que cobrou (item 13): a raiz de
- * composição recebe o documento do hospedeiro por injeção e não tinha como repassá-lo — esta linha alcançava
- * o `document` global por baixo dela. Num navegador dá no mesmo; no project `node` é a diferença entre
- * bootar contra um DOM de mentira e não bootar. O padrão continua sendo o global, então nenhum chamador
- * muda: é a mesma regra do `applyDom` logo acima.
+ * `root` COMES IN instead of being read from the global: the composition root receives the host's document by
+ * injection and had no way to pass it on while this line reached the global `document` under it. In a browser it is
+ * the same; in the `node` project it is the difference between booting against a fake DOM and not booting.
  */
 export function initI18n(root: ParentNode): string {
   applyDom(root);
   const def = pickDefault();
-  // `.catch` mudo de propósito: um chunk de locale que não carrega degrada para pt, e degradar é MUITO melhor
-  // que travar o boot. Sem ele, um `await localeReady()` lá fora derrubaria o jogo inteiro por causa do idioma.
-  if (def !== 'pt') pending = setLocale(def).catch(() => { /* fica em pt */ });
+  // A silent `.catch` on purpose: a locale chunk that fails to load degrades to pt, and degrading is FAR better than
+  // freezing the boot. Without it, an `await localeReady()` outside would bring the whole game down over the language.
+  if (def !== 'pt') pending = setLocale(def).catch(() => { /* stays in pt */ });
   return locale;
 }
 
 /**
- * Resolve quando o idioma escolhido no boot terminou de carregar (na hora, se for pt).
+ * Resolves when the language chosen at boot has finished loading (at once, if it is pt).
  *
- * ========================= POR QUE ISTO PRECISOU EXISTIR =========================
- * O `initI18n()` do main.js era a ÚLTIMA linha do boot, depois de o HUD, os menus de título e as telas de
- * pausa já estarem montados. Para pt isso não custava nada — já estava tudo em português. Para en/es, custava
- * metade da interface: o `applyDom` conserta o markup ESTÁTICO (`data-i18n`), mas o que o JavaScript monta
- * (os botões de cenário, os de atividade) tinha capturado o texto de pt e ninguém reconstruía.
+ * ========================= WHY THIS HAD TO EXIST =========================
+ * When the language loaded LAST, after the HUD and the menus were built, pt cost nothing — and en/es cost half the
+ * interface: `applyDom` fixes the STATIC markup (`data-i18n`), but what JavaScript builds had captured the pt text and
+ * nobody rebuilt it. `t()` answered "City" and the button on screen said "Cidade".
  *
- * O sintoma era desconcertante: `t('cen.cidade')` devolvia "City" e o botão na tela dizia "Cidade".
- *
- * Isto NÃO responde à pergunta maior — QUANDO a interface se reconstrói ao trocar de idioma EM EXECUÇÃO —,
- * que segue com o Dev. Responde à menor, que não tem duas respostas: a interface não se constrói antes de o
- * idioma ser conhecido.
+ * This answers the narrow question, which has one answer: the interface is not built before the language is known.
+ * Switching language AT RUN TIME is a different question, answered by the redraw on `i18n:change` (ADR-0225).
  */
 export function localeReady(): Promise<void> { return pending; }
 
 const i18n = { t, getLocale, availableLocales, applyDom, setLocale, initI18n, localeReady, registerDict };
 export default i18n;
-// 🔴 A EXPOSIÇÃO EM `window.__i18n` SAIU DAQUI (ADR-0221 passo 7g): ela era o quarto alcance a um global neste módulo, e
-// pendurar-se numa janela é trabalho de quem TEM uma. Quem o faz agora é `platform/locale-host.exposeI18n`, que a raiz
-// chama — o objecto exposto é exactamente este `default`.
+// 🔴 Exposing this on `window.__i18n` is not done here (ADR-0221 step 7g): hanging off a window is the job of whoever
+// HAS one. `platform/locale-host.exposeI18n` does it, called by the root — and the object exposed is exactly this default.

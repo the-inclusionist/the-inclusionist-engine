@@ -1,36 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/actions — AS QUATORZE AÇÕES ABSTRATAS. A fonte única do vocabulário de entrada da engine.
+// core/actions — THE FOURTEEN ABSTRACT ACTIONS. The single source of the engine's input vocabulary.
 //
-// ========================= O QUE ISTO É =========================
-// O ADR-0074 decidiu que a engine conhece POSIÇÕES, não verbos, e que o JOGO fornece as palavras. Este módulo
-// é a lista dessas posições e nada mais: zero dependências, zero I/O, importável dos dois lados da fronteira.
+// ========================= WHAT THIS IS =========================
+// ADR-0074 decided that the engine knows POSITIONS, not verbs, and that the GAME supplies the words. This module is
+// the list of those positions and nothing else: no dependencies, no I/O, importable from both sides of the boundary.
+// It was written before the transports migrated to it (issue #103), so the migration had a destination instead of
+// inventing one.
 //
-// ⚠️ ATÉ AQUI A LISTA SÓ EXISTIA NUM REGISTRO. O código continua com os oito nomes de plataforma
-// (`jump`, `run`, `swap`, `especial`) espalhados por `input/gamepad`, `input/edges`, `input/devices` e
-// `input/keydown` — a migração é a issue #103 e não aconteceu. Este módulo é o alvo dela: um sítio para onde
-// os transportes passam a apontar, escrito antes para que a migração tenha destino em vez de o inventar.
+// ========================= WHY FOURTEEN AND NOT NINE =========================
+// ADR-0074 recorded nine and wrote, among its own drawbacks, that nine is a CEILING a genre may want to exceed and
+// that the record must say what happens then. The Dev exceeded it, asking for five more for richer games.
 //
-// ========================= POR QUE QUATORZE E NÃO NOVE =========================
-// O ADR-0074 registrou nove e escreveu, entre as suas próprias desvantagens, que «nove é um TETO que um gênero
-// pode querer exceder, e o registro tem de dizer o que acontece». O Dev excedeu-o em 2026-09-06, pedindo mais
-// cinco para jogos mais elaborados. O ADR-0085 é o que acontece.
+// ⚠️ AND THE FOUR NEW ONES ARE `leftShoulder`, `leftTrigger`, `rightShoulder`, `rightTrigger` — NOT
+// `action5`..`action8`. I argued for numbers and the Dev decided against, for a reason ADR-0086 records: `action7` is
+// unreadable where someone programs, and a vocabulary nobody can read aloud is not abstraction, it is cipher.
 //
-// ⚠️ E OS QUATRO NOVOS CHAMAM-SE `leftShoulder`, `leftTrigger`, `rightShoulder`, `rightTrigger` — NÃO
-// `action5`..`action8`. Eu argumentei pelos números e o Dev decidiu contra, em 2026-09-06, com uma razão que
-// o ADR-0086 registra: `action7` é ilegível no ponto onde alguém programa, e um vocabulário que ninguém
-// consegue ler em voz alta não é abstração, é cifra. O ADR-0085 dizia o contrário; foi supersedido, não
-// emendado.
+// ⚠️ AND THE OBJECTION STAYS WRITTEN, because it does not vanish when the decision went the other way: shoulder and
+// trigger are a GAMEPAD's shape. On a keyboard `leftTrigger` is a key; on touch, a slot; for a speech recogniser, a
+// word. ADR-0086 answers that the shape is ANATOMICAL before it is a gamepad's — two fingers per hand, one above the
+// other — and that this crosses transports better than a number does. Whoever disagrees should read both records.
 //
-// ⚠️ E A OBJEÇÃO CONTINUA ESCRITA, porque ela não some por a decisão ter sido outra: ombro e gatilho são
-// FORMA DE GAMEPAD. Num teclado, `leftTrigger` é a tecla Y; num toque, um slot; num reconhecedor de fala, uma
-// palavra. O ADR-0086 responde que a forma é ANATÔMICA antes de ser de gamepad — dois dedos por mão, um por
-// cima do outro — e que isso atravessa transportes melhor do que um número atravessa. Quem discordar leia os
-// dois registros, que é para isso que eles existem.
-//
-// `start` e `select` mantêm nome pelo critério que já valia para `start`: são FUNÇÃO, não posição — o que é
-// do sistema e não do mundo do jogo.
+// `start` and `select` keep names by the criterion that already held for `start`: they are a FUNCTION, not a
+// position — what belongs to the system and not to the game's world.
 
-/** As quatorze posições que a engine conhece. Nenhuma delas é uma palavra que uma criança leia. */
+/** The fourteen positions the engine knows. None of them is a word a child reads. */
 export const ACTIONS = [
   'up', 'down', 'left', 'right',
   'action1', 'action2', 'action3', 'action4',
@@ -40,19 +33,19 @@ export const ACTIONS = [
 
 export type Action = (typeof ACTIONS)[number];
 
-/** As quatro direções, que todo transporte tem de alcançar. */
+/** The four directions, which every transport has to reach. */
 export const DIRECTIONS = ['up', 'down', 'left', 'right'] as const satisfies readonly Action[];
 
 /**
- * Os oito verbos, em DUAS metades que se nomeiam por critérios diferentes, e isso é decisão e não descuido:
+ * The eight verbs, in TWO halves named by different criteria, and that is a decision, not carelessness:
  *
- * · `action1`..`action4` — o losango. NUMERADOS, porque quatro posições em cruz não têm nomes que
- *   atravessem gêneros: o que uma plataforma chama de pulo, um quiz chama de confirmar.
- * · `leftShoulder`, `leftTrigger`, `rightShoulder`, `rightTrigger` — NOMEADOS pela anatomia da mão: dois
- *   dedos por mão, um por cima do outro. ADR-0086.
+ * · `action1`..`action4` — the diamond. NUMBERED, because four positions in a cross have no names that cross genres:
+ *   what a platformer calls jump, a quiz calls confirm.
+ * · `leftShoulder`, `leftTrigger`, `rightShoulder`, `rightTrigger` — NAMED by the hand's anatomy: two fingers per
+ *   hand, one above the other. ADR-0086.
  *
- * ⚠️ NÃO HÁ HIERARQUIA ENTRE ELES no contrato. A ordem é a de apresentação — no assistente do gamepad, na
- * tela de remapeamento — e não uma escala de importância: um jogo pode usar `rightShoulder` e nenhuma outra.
+ * ⚠️ THERE IS NO HIERARCHY BETWEEN THEM in the contract. The order is that of presentation — in the gamepad wizard, on
+ * the remap screen — and not a scale of importance: a game may use `rightShoulder` and nothing else.
  */
 export const VERBS = [
   'action1', 'action2', 'action3', 'action4',
@@ -60,77 +53,75 @@ export const VERBS = [
 ] as const satisfies readonly Action[];
 
 /**
- * As duas de SISTEMA. Não pertencem ao mundo do jogo: `start` pausa e retoma, `select` abre o que é da sessão.
+ * The two SYSTEM ones. They do not belong to the game's world: `start` pauses and resumes, `select` opens what belongs
+ * to the session.
  *
- * ⚠️ E É POR ISSO QUE A ENGINE PODE NOMEÁ-LAS e não pode nomear as outras. O ADR-0074 proíbe um nome abstrato
- * chegar a uma pessoa porque `action1` não diz nada a ninguém — mas «start» e «select» são o que está escrito
- * no próprio controle desde 1983, e a criança lê a legenda antes de ler a nossa.
+ * ⚠️ AND THAT IS WHY THE ENGINE MAY NAME THEM and may not name the others. ADR-0074 forbids an abstract name reaching a
+ * person because `action1` says nothing to anyone — but "start" and "select" are what has been printed on the pad
+ * itself since 1983, and the child reads that legend before ours.
  */
 export const SYSTEM = ['start', 'select'] as const satisfies readonly Action[];
 
-/* ===================== O PRESET: ONDE AS PALAVRAS DO JOGO MORAM ===================== */
+/* ===================== THE PRESET: WHERE THE GAME'S WORDS LIVE ===================== */
 //
-// ⚠️ ESTE É O OUTRO LADO DO CORTE, e sem ele a lista acima não separa nada. A engine conhece POSIÇÕES; o
-// jogo conhece PALAVRAS; e alguém tem de dizer qual palavra está em qual posição. Esse alguém é o jogo, e o
-// que ele entrega é isto.
+// ⚠️ THIS IS THE OTHER SIDE OF THE CUT, and without it the list above separates nothing. The engine knows POSITIONS;
+// the game knows WORDS; and someone has to say which word sits at which position. That someone is the game, and what
+// it hands over is this.
 //
-// ⚠️ E O DEFEITO QUE ISTO EXISTE PARA CONSERTAR ESTÁ MEDIDO: em 2026-09-06 a camada de entrada da engine
-// dizia `jump`, `run`, `swap` e `especial` em 132 pontos, dentro de 13 ficheiros — `input/gamepad` sozinho
-// tem 41. Quer dizer que os transportes não sabem ler um controle: sabem ler um controle DESTE jogo. Um
-// segundo jogo que não pule reescreve os transportes ou herda um vocabulário que não é o dele.
+// ⚠️ AND THE DEFECT THIS EXISTS TO FIX WAS MEASURED: the engine's input layer used to say `jump`, `run`, `swap` in over
+// a hundred places — the transports could not read a pad, only a pad for THIS game. A second game that does not jump
+// would rewrite the transports or inherit a vocabulary that is not its own.
 
-/** O que a criança lê e ouve para uma posição: o nome, e a frase que o explica quando ela pergunta. */
+/** What the child reads and hears for a position: the name, and the sentence that explains it when they ask. */
 export interface ActionWord {
-  /** «Pular», «Confirmar», «Colocar peça». NUNCA `action2` — nome abstrato que chega a uma pessoa é defeito. */
+  /** "Jump", "Confirm", "Place piece". NEVER `action2` — an abstract name reaching a person is a defect. */
   readonly label: string;
   /**
-   * A versão CURTA, para onde não cabe a longa. Cai em `label` quando ausente.
+   * The SHORT version, for where the long one does not fit. Falls back to `label` when absent.
    *
-   * ⚠️ NÃO É PREFERÊNCIA DE ESTILO: É LARGURA MEDIDA. A legenda do título põe a palavra debaixo de um glifo,
-   * numa fileira de quatro, e `ui/shell` já trazia a nota de que ali não cabe o «Correr / interagir» que a
-   * lista de remapeamento usa — por isso o dicionário tinha DUAS famílias de chaves para as mesmas quatro
-   * ações, `act.*` e `legend.*`. A distinção é do jogo, não da engine, então atravessa com as palavras.
+   * ⚠️ NOT A STYLE PREFERENCE: MEASURED WIDTH. A legend puts the word under a glyph, in a row of four, where the longer
+   * remap-screen wording does not fit — which is why the dictionary once had TWO families of keys for the same four
+   * actions. The distinction is the game's, not the engine's, so it crosses with the words.
    *
-   * ⚠️ E O RECUO PARA `label` DEGRADA VISUALMENTE, não funcionalmente: um jogo que não declare `short` vê a
-   * palavra longa espremida, e não uma legenda vazia. Escolhido assim porque uma legenda muda é pior do que
-   * uma legenda apertada — a primeira some para quem usa leitor de tela, a segunda não.
+   * ⚠️ AND THE FALLBACK TO `label` DEGRADES VISUALLY, not functionally: a game that declares no `short` gets the long
+   * word squeezed, not an empty legend. Chosen because a mute legend is worse than a tight one — the first vanishes for
+   * a screen reader user, the second does not.
    */
   readonly short?: string;
-  /** Opcional, para a tela de remapeamento: o que este botão faz, numa frase. */
+  /** Optional, for the remap screen: what this button does, in one sentence. */
   readonly hint?: string;
 }
 
 /**
- * O vocabulário de UM jogo: para cada posição que ele usa, a palavra dele.
+ * The vocabulary of ONE game: for each position it uses, its word.
  *
- * ⚠️ PARCIAL DE PROPÓSITO. Um jogo declara SÓ as posições que usa. Exigir as quatorze obrigaria um quiz a
- * inventar nome para um gatilho que ele não tem, e um nome inventado acaba numa tela de remapeamento à
- * frente de uma criança.
+ * ⚠️ PARTIAL ON PURPOSE. A game declares ONLY the positions it uses. Requiring all fourteen would make a quiz invent a
+ * name for a trigger it does not have, and an invented name ends up on a remap screen in front of a child.
  */
 export type ActionPreset = Partial<Readonly<Record<Action, ActionWord>>>;
 
-/** As posições que este preset nomeia, na ordem canônica de `ACTIONS`. */
+/** The positions this preset names, in the canonical order of `ACTIONS`. */
 export function presetActions(p: ActionPreset): Action[] {
   return ACTIONS.filter((a) => p[a] !== undefined);
 }
 
 /**
- * A pergunta que a engine faz ao jogo quando precisa MOSTRAR uma ação: «como é que isto se chama?».
+ * The question the engine asks the game when it has to SHOW an action: "what is this called?".
  *
- * É a fronteira do corte em forma de função. A engine sabe que existe uma posição; só o jogo sabe a palavra,
- * e é esta função que atravessa.
+ * It is the cut's boundary in the shape of a function. The engine knows a position exists; only the game knows the
+ * word, and this function is what crosses.
  */
 export type ActionLabeller = (a: Action) => string;
 
 /**
- * Constrói o tradutor a partir de um preset.
+ * Builds the translator from a preset.
  *
- * ⚠️ E O QUE ELE FAZ COM UMA AÇÃO SEM NOME É A DECISÃO INTEIRA. Devolver `action7` seria pôr um nome abstrato
- * à frente de uma criança, que o ADR-0074 chama de defeito em tantas palavras. Devolver vazio calaria o leitor
- * de tela, que é o defeito silencioso que `speakableProblems` já persegue noutro sítio.
+ * ⚠️ AND WHAT IT DOES WITH AN UNNAMED ACTION IS THE WHOLE DECISION. Returning `action7` would put an abstract name in
+ * front of a child, which ADR-0074 calls a defect in so many words. Returning empty would silence the screen reader,
+ * the silent defect `speakableProblems` already chases elsewhere.
  *
- * Devolve `null`, e quem chama decide: o assistente de controle NÃO PERGUNTA por uma ação que o jogo não
- * nomeia — se o jogo não a usa, não há o que mapear. Uma ausência vira menos um passo, nunca um passo mudo.
+ * It returns `null`, and the caller decides: the pad wizard DOES NOT ASK for an action the game does not name — if the
+ * game does not use it, there is nothing to map. An absence becomes one step fewer, never a mute step.
  */
 export function labellerFrom(p: ActionPreset): (a: Action) => string | null {
   return (a) => {
@@ -140,10 +131,10 @@ export function labellerFrom(p: ActionPreset): (a: Action) => string | null {
 }
 
 /**
- * O mesmo, na versão CURTA — para a legenda do título, onde a palavra vive debaixo de um glifo.
+ * The same, in the SHORT version — for a legend, where the word lives under a glyph.
  *
- * ⚠️ RECUA PARA `label`, e o recuo é a decisão: uma legenda apertada é pior que uma bonita e melhor que uma
- * vazia. Vazia sumiria também para quem usa leitor de tela, que é o custo que não se aceita aqui.
+ * ⚠️ IT FALLS BACK TO `label`, and the fallback is the decision: a tight legend is worse than a neat one and better than
+ * an empty one. Empty would also vanish for a screen reader user, which is the cost not accepted here.
  */
 export function shortLabellerFrom(p: ActionPreset): (a: Action) => string | null {
   return (a) => {
@@ -155,11 +146,11 @@ export function shortLabellerFrom(p: ActionPreset): (a: Action) => string | null
 }
 
 /**
- * Um preset é bem-formado? Devolve os problemas — VAZIA quer dizer conforme.
+ * Is a preset well formed? Returns the problems — EMPTY means conformant.
  *
- * ⚠️ O QUE ELE APANHA É O RÓTULO VAZIO, e é o mesmo defeito silencioso de `speakableProblems` em
- * `core/contract`: um `label` em branco não quebra nada, não avisa ninguém, e deixa a tela de remapeamento
- * com uma linha muda — que para quem usa leitor de tela é um botão que existe e não tem nome.
+ * ⚠️ WHAT IT CATCHES IS THE EMPTY LABEL, the same silent defect as `speakableProblems` in `core/contract`: a blank
+ * `label` breaks nothing, warns nobody, and leaves the remap screen with a mute row — for a screen reader user, a button
+ * that exists and has no name.
  */
 export function presetProblems(p: ActionPreset | null | undefined): string[] {
   if (!p) return ['preset: missing'];
@@ -213,18 +204,18 @@ export function selectClaimProblem(p: ActionPreset | null | undefined): string |
     + 'use one of the eight verb positions instead (action1..action4, leftShoulder, leftTrigger, rightShoulder, rightTrigger)';
 }
 
-/** É uma ação conhecida? Guarda de fronteira para dado que veio de fora (mapa salvo, remapeamento). */
+/** Is it a known action? A boundary guard for data that came from outside (a saved map, a remap). */
 export function isAction(x: unknown): x is Action {
   return typeof x === 'string' && (ACTIONS as readonly string[]).includes(x);
 }
 
 /**
- * Uma declaração de ações usadas por um jogo é bem-formada? Devolve os problemas — VAZIA quer dizer conforme.
+ * Is a declaration of the actions a game uses well formed? Returns the problems — EMPTY means conformant.
  *
- * ⚠️ EXIGIR AS QUATRO DIREÇÕES SERIA ERRADO, e a tentação é grande: um quiz navega por `up`/`down` e não usa
- * `left`/`right`; um jogo de um botão não usa nenhuma. Quem decide o conjunto é o jogo. O que esta função
- * confere é que o conjunto é NOMEÁVEL e não está vazio — um jogo sem ação nenhuma não tem como ser jogado, e
- * hoje isso falharia em silêncio no primeiro transporte que tentasse ligar-se a nada.
+ * ⚠️ REQUIRING THE FOUR DIRECTIONS WOULD BE WRONG, and the temptation is strong: a quiz walks by `up`/`down` and uses
+ * no `left`/`right`; a one-button game uses none. The game decides the set. What this checks is that the set is
+ * NAMEABLE and not empty — a game with no action cannot be played, and that would otherwise fail in silence in the
+ * first transport that tried to bind to nothing.
  */
 export function actionSetProblems(used: readonly string[] | null | undefined): string[] {
   const p: string[] = [];
