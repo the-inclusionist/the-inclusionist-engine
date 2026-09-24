@@ -1,76 +1,71 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/panel-widgets — UMA LINHA DE MENU, construída em vez de exigida.
+// ui/panel-widgets — ONE MENU ROW, built instead of required.
 //
-// ========================= O QUE ISTO CONSERTA, UM NÍVEL ABAIXO DO `panel-shell` =========================
-// O `ui/panel-shell` curou o contrato invisível da MOLDURA: o painel exigia `#typo`, `#typo-list`,
-// `#typo-reset`… e nada no tipo o dizia. 📏 Medido em 2026-09-11, o mesmo contrato invisível existe no
-// INTERIOR: `ui/settings-audio` alcança TREZE controles que ele não cria, cada um com a tag certa
-// (`#cane-div` tem de ser `<select>`, `#tts-vol` um `<input>`), e `ui/settings-mobility` alcança três. Nada no
-// tipo diz isso também, e o modo de falhar é o mesmo — o painel abre e a linha simplesmente não está lá.
+// ========================= WHAT THIS FIXES, ONE LEVEL BELOW `panel-shell` =========================
+// `ui/panel-shell` cured the FRAME's invisible contract. The same invisible contract exists INSIDE: a settings panel
+// reaches controls it does not create, each needing the right tag (`#cane-div` has to be a `<select>`, `#tts-vol` an
+// `<input>`). Nothing in the type says so, and the failure mode is the same — the panel opens and the row is simply not
+// there. This kit builds the row, so nobody has to provide it by hand.
 //
-// Esse markup vivia no `app/index.html`, que saiu com o cartucho (#111). Desde então cada `settings-*` procura
-// ids que ninguém cria.
+// ========================= THE MENU RULE OF `CLAUDE.md` §4, BY CONSTRUCTION =========================
+// «A explicação mora no RODAPÉ, e fica lá.» The row carries the short label in `<strong>` and nothing else in view; all
+// the prose goes into a SINGLE `.opt-hint` inside the `<span>`, which the shell (`ui/settings-panel.fillExplain`) MOVES
+// to the `.opt-explain` footer.
 //
-// ========================= A REGRA DE MENU DO `CLAUDE.md` §4, POR CONSTRUÇÃO =========================
-// «A explicação mora no RODAPÉ, e fica lá.» A linha carrega o rótulo curto em `<strong>` e nada mais à vista;
-// toda a prosa entra num ÚNICO `.opt-hint` dentro do `<span>`, que a casca (`ui/settings-panel.fillExplain`)
-// MOVE para o rodapé `.opt-explain`.
+// ⚠️ AND HERE IT STOPS DEPENDING ON SOMEONE REMEMBERING: this function has no way to receive a second block of prose,
+// nor a loose `<p>`. The other way turns the menu into a manual, closer to a configuration file than to a videogame
+// menu.
 //
-// ⚠️ E AQUI ELA DEIXA DE DEPENDER DE ALGUÉM SE LEMBRAR: esta função não tem por onde receber um segundo bloco
-// de prosa, nem um `<p>` solto. O Dev já viu o resultado da outra forma — «o menu virou um manual, mais
-// parecido com um arquivo de configuração do que com um menu de videogame».
-//
-// Sem `innerHTML`: tudo por `criar` + `textContent`, no molde do `ui/panel-shell`. O texto chega do CHAMADOR já
-// traduzido, para este módulo poder ser exercitado sem dicionário.
+// No `innerHTML`: everything through `create` + `textContent`, like `ui/panel-shell`. The text arrives from the CALLER
+// already translated, so this module can be exercised with no dictionary.
 import type { PanelShellCtx } from './panel-shell.js';
 
 /**
- * A FORMA do controle, e não a tag — porque a pergunta que um painel faz é «isto liga e desliga?», não «isto é
- * um `<button>`?».
+ * The control's SHAPE, not its tag — because the question a panel asks is "does this turn on and off?", not "is this a
+ * `<button>`?".
  *
- * 📏 As três saem de uma medição dos oito painéis: `interruptor` cobre onze dos controles que eles alcançam,
- * `escolha` três (`#cane-div`, `#tts-engine`, `#tts-voice`) e `cursor` três (`#audio-master-vol`,
- * `#navsound-master`, `#tts-vol`). Uma quarta forma entra quando um painel a exigir, e não antes.
+ * 📏 The first three came from measuring the panels: `interruptor` (a switch) covers most of the controls they reach,
+ * `escolha` (a select) and `cursor` (a slider) the rest. A new shape enters when a panel demands it, not before.
  */
 export type ControlShape = 'interruptor' | 'escolha' | 'cursor' | 'radio' | 'button';
 
 export interface ControlRowSpec {
-  /** O id do CONTROLE — `opt-facil`, `cane-div`. É por ele que o `settings-*` o encontra. */
+  /** The CONTROL's id — `opt-facil`, `cane-div`. It is how the `settings-*` finds it. */
   readonly id: string;
-  /** O rótulo CURTO, já traduzido. Vai no `<strong>`, e é a única coisa à vista na linha. */
+  /** The SHORT label, already translated. It goes in the `<strong>`, and it is the only thing in view on the row. */
   readonly label: string;
   /**
-   * A explicação, já traduzida. Vai num ÚNICO `.opt-hint`, que o `fillExplain` move para o rodapé.
+   * The explanation, already translated. It goes into a SINGLE `.opt-hint`, which `fillExplain` moves to the footer.
    *
-   * 📌 Ausente = esta linha não tem explicação, que é uma resposta legítima. O rodapé então descansa no texto
-   * do painel (`data-explain-idle`) enquanto o cursor estiver nela.
+   * 📌 Absent = this row has no explanation, which is a legitimate answer. The footer then rests on the panel's text
+   * (`data-explain-idle`) while the cursor is on it.
    */
   readonly hint?: string;
-  /** A forma do controle. Ausente: `interruptor`, que é o caso de onze dos dezassete medidos. */
+  /** The control's shape. Absent: `interruptor`, the most common case. */
   readonly shape?: ControlShape;
   /**
-   * O nome que um leitor de tela anuncia, quando ele não é o rótulo.
+   * The name a screen reader announces, when it is not the label.
    *
-   * ⚠️ EXISTE PORQUE O TEXTO DO INTERRUPTOR É O ESTADO, e não o nome: um `<button>` cujo `textContent` diz
-   * «▶ Desligado» anuncia «Desligado, botão» e a pessoa não sabe desligado O QUÊ. O `<strong>` ao lado resolve
-   * isso para quem VÊ a linha inteira; para quem navega controlo a controlo, resolve-o este atributo.
-   * Ausente, cai no `label` — que é a resposta certa e não um recuo.
+   * ⚠️ IT EXISTS BECAUSE A SWITCH'S TEXT IS ITS STATE, not its name: a `<button>` whose `textContent` says "Off"
+   * announces "Off, button" and the person does not know off WHAT. The `<strong>` beside it solves that for whoever SEES
+   * the whole row; for whoever navigates control by control, this attribute solves it. Absent, it falls back to
+   * `label` — which is the right answer, not a fallback.
    */
   readonly ariaLabel?: string;
 }
 
 export interface ControlRow {
-  /** A `.ctrl-row` inteira. É nela que o `markChanged` do ADR-0029 põe a marca de «saiu do padrão». */
+  /** The whole `.ctrl-row`. It is where ADR-0029's `markChanged` puts the left-the-default mark. */
   readonly row: HTMLElement;
-  /** O controle em si, com o id pedido. */
+  /** The control itself, with the requested id. */
   readonly controle: HTMLElement;
 }
 
 /**
- * Constrói uma linha de menu: rótulo curto, uma dica que vai para o rodapé, e um controle.
+ * Builds a menu row: a short label, a hint that goes to the footer, and a control.
  *
- * A linha NÃO é inserida em lado nenhum — quem a monta decide a ordem, que nos menus deste projeto é parte da
- * decisão (ADR-0044 §2).
+ * The row is NOT inserted anywhere — whoever mounts it decides the order, which in this project's menus is part of the
+ * decision (ADR-0044 §2).
  */
 export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow {
   const rowNode = ctx.create('div');
@@ -81,9 +76,9 @@ export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow
   shortLabel.textContent = spec.label;
   text.appendChild(shortLabel);
   if (spec.hint) {
-    // ⚠️ UM SÓ, e é o que o `fillExplain` procura. Dois `.opt-hint` na mesma linha davam duas descrições ao
-    // mesmo controle, e o rodapé mostraria a primeira — a outra ficaria na linha, que é exactamente o defeito
-    // que a regra §4 existe para impedir.
+    // ⚠️ ONLY ONE, and it is what `fillExplain` looks for. Two `.opt-hint`s on one row would give the control two
+    // descriptions, and the footer would show the first — the other would stay on the row, exactly the defect rule §4
+    // exists to prevent.
     const explanation = ctx.create('span');
     explanation.className = 'opt-hint';
     explanation.textContent = spec.hint;
@@ -100,28 +95,24 @@ export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow
 }
 
 /**
- * REESCREVE AS PALAVRAS DE UMA LINHA QUE JÁ EXISTE — o par do `ui/panel-shell.applyLabels`, um nível
- * abaixo.
+ * REWRITES THE WORDS OF A ROW THAT ALREADY EXISTS — the counterpart of `ui/panel-shell.applyLabels`, one level down.
  *
- * 🔴 O DEFEITO QUE ISTO FECHA FOI MEDIDO NUM NAVEGADOR A SÉRIO, em 2026-09-12, com `lang="en"`: o painel
- * auditivo servia o TÍTULO em inglês e as LINHAS em português, na mesma tela. A moldura ganhou a correcção
- * quando `MountPanelSpec.rotulos` passou a ser resolvido a cada abertura; o interior ficou para trás, porque
- * `montarInterior*` corre uma vez e captura o texto do intervalo de arranque — `initI18n` aplica o idioma de
- * recuo de forma síncrona e PEDE o preferido, que chega depois.
+ * 🔴 The inside of a panel is mounted once, and anything mounted at boot captures the fallback language's text:
+ * `initI18n` applies the fallback synchronously and REQUESTS the preferred one, which arrives later — a panel would serve
+ * its TITLE in one language and its ROWS in another, on the same screen.
  *
- * ⚠️ E NENHUM TESTE UNITÁRIO O APANHA, porque todos correm num idioma só. É o mesmo buraco que a barra de
- * ícones já pagou em 08/09, agora um nível mais fundo.
+ * ⚠️ AND NO UNIT TEST CATCHES IT, because they all run in a single language.
  *
- * ⚠️ REESCREVER E NÃO RECONSTRUIR, pela razão que o `applyLabels` já escreveu: cada `ui/settings-*` liga
- * os cliques dos seus controles UMA VEZ, no arranque. Refazer a linha deixaria um controle no documento e sem
- * escuta — um botão morto com aparência de vivo (ADR-0106 §5).
+ * ⚠️ REWRITE AND NOT REBUILD, for the reason `applyLabels` already states: each `ui/settings-*` wires its controls'
+ * clicks ONCE, at boot. Remaking the row would leave a control in the document with no listener — a dead button that
+ * looks alive (ADR-0106 §5).
  */
 export function labelRow(rowNode: HTMLElement, spec: ControlRowSpec): void {
   const shortLabel = rowNode.querySelector<HTMLElement>('strong');
   if (shortLabel) shortLabel.textContent = spec.label;
   const explanation = rowNode.querySelector<HTMLElement>('.opt-hint');
-  // ⚠️ A dica que SOME tem de ser apagada, e não só deixar de ser escrita: numa retradução para um dicionário
-  // sem a chave, o texto antigo sobreviveria e o rodapé descansaria no idioma anterior.
+  // ⚠️ A hint that DISAPPEARS has to be erased, not just left unwritten: on a retranslation into a dictionary without
+  // the key, the old text would survive and the footer would rest in the previous language.
   if (explanation) explanation.textContent = spec.hint ?? '';
   // The control is found by COMPARING its id, not by building a selector from it: a selector needs the id escaped, escaping
   // needs `CSS.escape`, and `CSS` is a browser global that THROWS where it does not exist — it took down a boot in a case's fake
@@ -141,8 +132,8 @@ function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
     const i = ctx.create('input');
     i.className = 'vol';
     i.setAttribute('type', 'range');
-    // Os limites do cursor de volume, iguais aos que o painel de áudio já lê. Um `range` sem `min`/`max`
-    // assume 0..100 com passo 1, e o volume deste projeto é 0..1 — sem isto, o primeiro passo salta tudo.
+    // The volume slider's bounds, the same the audio panel reads: 0..100 in steps of 1, converted to the project's
+    // 0..1 volume by the panel.
     i.setAttribute('min', '0');
     i.setAttribute('max', '100');
     i.setAttribute('step', '1');
@@ -150,14 +141,12 @@ function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
   }
   if (controlShape === 'button') {
     /*
-     * 🎯 A QUINTA FORMA, e é a única que NÃO GUARDA um valor: as outras quatro respondem «em que posição
-     * estou», esta FAZ uma coisa. O `ui/settings-controls` é o primeiro a exigi-la — o botão dele abre a
-     * captura de uma tecla —, e a regra escrita no topo deste ficheiro é essa: uma forma entra quando um
-     * painel a pede, e não antes.
+     * 🎯 THE ONE SHAPE THAT HOLDS NO VALUE: the others answer "which position am I in", this one DOES something.
+     * `ui/settings-controls` demands it — its button opens the capture of a key.
      *
-     * 📌 Sem `aria-pressed` e sem `role`: um botão que executa já É um botão para quem ouve, e um estado
-     * anunciado que não existe é pior do que estado nenhum. Quem põe a CARA nele é o painel — no caso do
-     * remapeamento, as teclas de agora —, porque só ele sabe o que o botão mostra.
+     * 📌 No `aria-pressed` and no `role`: a button that acts already IS a button to whoever listens, and an announced
+     * state that does not exist is worse than no state. The panel puts the FACE on it — for remapping, the current
+     * keys —, because only the panel knows what the button shows.
      */
     const a = ctx.create('button');
     a.className = 'mode-btn';
@@ -166,15 +155,14 @@ function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
   }
   if (controlShape === 'radio') {
     /*
-     * 🔴 UMA ESCOLHA NÃO É UM INTERRUPTOR, e a diferença é o que a emenda do ADR-0012 diz em tantas palavras:
-     * «THE MENU IS A CHOICE, NOT A TOGGLE […] One font is active; the others are alternatives, not switches.»
-     * Daí as três diferenças: sem a classe `switch` (que desenha uma chave de 52×28 px com bolinha, o desenho
-     * de um estado que não existe), `role="radio"` em vez de nada, e `aria-checked` em vez de `aria-pressed` —
-     * dezassete interruptores independentes anunciariam «Ligado/Desligado» para escolher UMA coisa.
+     * 🔴 A CHOICE IS NOT A SWITCH, and the difference is what the ADR-0012 amendment says in so many words: «THE MENU IS
+     * A CHOICE, NOT A TOGGLE […] One font is active; the others are alternatives, not switches.» Hence three
+     * differences: no `switch` class (which draws a 52×28 px knob, the drawing of a state that does not exist),
+     * `role="radio"`, and `aria-checked` instead of `aria-pressed` — independent switches would announce on/off to
+     * choose ONE thing.
      *
-     * 📌 A quarta forma entra agora porque um painel a EXIGIU, que é a regra escrita no topo deste ficheiro. O
-     * `ui/settings-typo` é o primeiro; quem agrupar os `role="radio"` num `role="radiogroup"` é o painel, e
-     * não o kit, porque é o painel que sabe se a exclusividade é de uma secção ou do menu inteiro.
+     * 📌 `ui/settings-typo` demands it. The panel, not the kit, groups the `role="radio"`s in a `role="radiogroup"`,
+     * because the panel knows whether exclusivity covers a section or the whole menu.
      */
     const r = ctx.create('button');
     r.className = 'mode-btn';
@@ -184,31 +172,29 @@ function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
     return r;
   }
   const b = ctx.create('button');
-  // `switch` é a classe que o CSS deste projeto já dá aos interruptores, e `aria-pressed` é o que diz o estado
-  // a quem ouve. Quem reflete o valor é o painel; o que nasce aqui é o estado HONESTO de quem ainda não leu
-  // nada: desligado.
+  // `switch` is the class this project's CSS gives switches, and `aria-pressed` is what tells the state to whoever
+  // listens. The panel reflects the value; what is born here is the HONEST state of something that has read nothing
+  // yet: off.
   b.className = 'mode-btn switch';
   b.setAttribute('type', 'button');
   b.setAttribute('aria-pressed', 'false');
   return b;
 }
 
-/* ===================== O CABEÇALHO DE SECÇÃO — «de quem é a vez de agir» ===================== */
+/* ===================== THE SECTION HEADER — whose turn it is to act ===================== */
 
 /**
- * O cabeçalho de uma secção de painel: um título e uma etiqueta que o qualifica.
+ * The header of a panel section: a title and a tag that qualifies it.
  *
- * 📏 Entra no kit porque QUATRO sítios o escreviam à mão como cadeia — `ui/map-hub`, `ui/settings-motion`
- * (duas vezes), `ui/settings-typo` e o `ui/settings-caa` que os trouxe aqui —, e a marcação de `.panel-sub__tag`
- * estava copiada em todos. É a mesma razão do `controlRow`: uma regra repetida em quatro ficheiros é uma regra
- * que diverge.
+ * 📏 It is in the kit because several panels wrote it by hand, with the `.panel-sub__tag` markup copied into each — the
+ * same reason as `controlRow`: a rule repeated across files is a rule that drifts.
  *
- * ⚠️ E ELE RECUSA-SE A EXISTIR SOBRE O VAZIO, que é o comportamento pelo qual vale ser uma função. Um
- * «Aguardando negociação» sem uma linha por baixo conta a quem lê que há algo ali e não há, e a pessoa procura
- * o que o título promete. `rows` é o NÚMERO de linhas que a secção vai ter — passá-lo é o que torna esta
- * regra exercível por um caso, em vez de um `if` que nenhuma árvore fixa alcança.
+ * ⚠️ AND IT REFUSES TO EXIST OVER NOTHING, which is the behaviour that makes it worth a function. An "awaiting
+ * negotiation" heading with no row under it tells the reader something is there when nothing is, and the person looks
+ * for what the title promises. `rows` is the NUMBER of rows the section will have — passing it is what makes this rule
+ * exercisable by a case, instead of an `if` no fixed tree reaches.
  *
- * 📌 O título e a etiqueta chegam JÁ TRADUZIDOS, como no `controlRow`: o kit não decide língua, monta forma.
+ * 📌 The title and tag arrive ALREADY TRANSLATED, as in `controlRow`: the kit does not decide language, it builds shape.
  */
 export function sectionHeader(ctx: PanelShellCtx, title: string, tag: string, rows: number): HTMLElement | null {
   if (rows === 0) return null;
@@ -222,35 +208,35 @@ export function sectionHeader(ctx: PanelShellCtx, title: string, tag: string, ro
   return h;
 }
 
-/* ===================== OS PASSOS ⯇ ⯈ — escolher entre posições com esquerda e direita (ADR-0151) ===================== */
+/* ===================== THE STEPS ⯇ ⯈ — choosing between positions with left and right (ADR-0151) ===================== */
 
 /**
- * O que um controle de passos precisa: um nome, as posições (já traduzidas) e a de agora.
+ * What a steps control needs: a name, the positions (already translated) and the current one.
  *
- * 🎯 PEDIDO DO DEV, e com uma forma exacta: o realce de contraste «deve funcionar trocando entre desligado,
- * linear, misto e quadrático da mesma forma que se troca o número de jogadores, isto é, apertando botões
- * direita e esquerda, e não através de uma barra», e os cantos arredondados «também». Uma barra esconde quantas
- * posições há; uma lista suspensa esconde-as todas até abrir. Os passos dizem sempre onde se está.
+ * 🎯 THE DEV ASKED FOR IT, with an exact shape: the contrast boost «deve funcionar trocando entre desligado, linear,
+ * misto e quadrático da mesma forma que se troca o número de jogadores, isto é, apertando botões direita e esquerda, e
+ * não através de uma barra», and the rounded corners «também». A slider hides how many positions there are; a dropdown
+ * hides them all until it opens. Steps always say where you are.
  *
- * 🔴 E A FORMA É UMA LINHA SÓ: «◀ Rótulo: valor ▶» (errata do ADR-0130, regra 3). A primeira construção pôs o rótulo
- * à esquerda e uma caixa «◀ pequeno ▶» à direita, e o Dev: «Não faça essa coisa estranha. Escreva "< Rounded
- * corner: off >"». É a forma de ciclar entre POUCAS posições — até cinco; acima disso, lista suspensa.
+ * 🔴 AND THE SHAPE IS A SINGLE LINE: «◀ Rótulo: valor ▶» (ADR-0130 errata, rule 3) — the Dev: «Não faça essa coisa
+ * estranha. Escreva "< Rounded corner: off >"». It is the way to cycle between FEW positions — up to five; above that,
+ * a dropdown.
  */
 export interface StepsSpec {
-  /** O nome falado do controle — vai para o `aria-label`. */
+  /** The control's spoken name — it goes to `aria-label`. */
   readonly label: string;
-  /** As posições, na ordem, já traduzidas. */
+  /** The positions, in order, already translated. */
   readonly values: readonly string[];
-  /** O índice da posição de agora. */
+  /** The index of the current position. */
   readonly current: number;
 }
 
 /**
- * O passo seguinte, PRESO nas pontas — e não em anel, e a diferença é a decisão.
+ * The next step, CLAMPED at the ends — not a ring, and the difference is the decision.
  *
- * ⚠️ Num anel, «direita» a partir de «grande» voltava a «desligado»: quem ajusta à procura do máximo passaria por
- * ele sem aviso e desligaria o que queria aumentar. Preso, a ponta é uma parede que se sente — o número de
- * jogadores, que é o modelo que o Dev deu, também não dá a volta.
+ * ⚠️ In a ring, right from the largest position would return to off: whoever adjusts looking for the maximum would pass
+ * it without warning and switch off what they wanted to raise. Clamped, the end is a wall you feel — the number of
+ * players, the model the Dev gave, does not wrap either.
  */
 export function nextStep(from: number, total: number, delta: number): number {
   if (total <= 0) return 0;
@@ -258,14 +244,14 @@ export function nextStep(from: number, total: number, delta: number): number {
 }
 
 /**
- * Constrói o controle: UM elemento focável (`role="spinbutton"`) com as duas setas dentro.
+ * Builds the control: ONE focusable element (`role="spinbutton"`) with the two arrows inside.
  *
- * ⚠️ AS SETAS NÃO SÃO BOTÕES, e é de propósito: a navegação de menus trata todo `button` como item, e três
- * itens para um só ajuste fariam o cursor parar duas vezes em setas sem nome. O foco é do controle; as setas são
- * alvo de DEDO (`data-passo`), e ficam fora da árvore de acessibilidade — quem ouve recebe o `aria-valuetext`.
+ * ⚠️ THE ARROWS ARE NOT BUTTONS, on purpose: menu navigation treats every `button` as an item, and three items for one
+ * adjustment would make the cursor stop twice on nameless arrows. Focus belongs to the control; the arrows are FINGER
+ * targets (`data-passo`), outside the accessibility tree — whoever listens gets the `aria-valuetext`.
  *
- * O controle emite `passo` (`CustomEvent<number>`, -1 ou +1): a seta tocada emite-o daqui, e a esquerda e a
- * direita do teclado e do controle emitem-no pelo `ui/menu-nav`. Quem usa ouve um evento só.
+ * The control emits `passo` (`CustomEvent<number>`, -1 or +1): a tapped arrow emits it from here, and the keyboard's and
+ * controller's left and right emit it through `ui/menu-nav`. The user listens to a single event.
  */
 export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
   const el = ctx.create('div');
@@ -291,7 +277,7 @@ export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
   return el;
 }
 
-/** Reflecte a posição de agora: o valor escrito, o que se ouve, e as pontas que já não andam. */
+/** Reflects the current position: the written value, what is heard, and the ends that no longer move. */
 export function updateSteps(el: HTMLElement, spec: StepsSpec): void {
   const lastIndex = Math.max(0, spec.values.length - 1);
   const from = Math.max(0, Math.min(lastIndex, spec.current));
@@ -302,10 +288,10 @@ export function updateSteps(el: HTMLElement, spec: StepsSpec): void {
   el.setAttribute('aria-valuenow', String(from));
   el.setAttribute('aria-valuetext', text);
   const value = el.querySelector<HTMLElement>('.passo-valor');
-  // O RÓTULO ENTRA NO TEXTO: a linha inteira é o controle, «◀ Cantos arredondados: pequeno ▶». Quem ouve recebe o
-  // mesmo em duas partes — o nome no `aria-label` e a posição no `aria-valuetext` —, sem o nome repetido.
+  // THE LABEL GOES INTO THE TEXT: the whole row is the control, «◀ Cantos arredondados: pequeno ▶». Whoever listens gets
+  // the same in two parts — the name in `aria-label` and the position in `aria-valuetext` —, without the name repeated.
   if (value) value.textContent = spec.label ? `${spec.label}: ${text}` : text;
-  // A ponta que já não anda fica marcada — sem isto a seta de uma parede parece um botão avariado.
+  // The end that no longer moves is marked — otherwise a wall's arrow looks like a broken button.
   el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', from === 0);
   el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', from === lastIndex);
 }
