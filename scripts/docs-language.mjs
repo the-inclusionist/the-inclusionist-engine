@@ -44,6 +44,7 @@ export const EXCLUSIONS = [
   ['CLAUDE.md', 'the AI\'s operating manual, kept in pt-BR on purpose; the conversation with the Dev is in pt-BR and the file says so in its first lines'],
   ['research/**', 'the Dev\'s own research material, kept in the language it was gathered in'],
   ['CHANGELOG.md', 'generated release history: the notes of a published release are not rewritten, and new entries come from English commit messages'],
+  ['.claude/plans/**', 'the working plan the AI keeps with the Dev, in pt-BR like the conversation it tracks; the Dev asked for it in the repository (2026-09-24)'],
 ];
 
 export const isExcluded = (file) => EXCLUSIONS.some(([pattern]) =>

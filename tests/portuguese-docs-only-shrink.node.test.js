@@ -37,10 +37,10 @@ describe('Portuguese in the docs only shrinks', () => {
     expect(Object.values(base.files).reduce((s, n) => s + n, 0)).toBe(base.total);
   });
 
-  it('⚠️ [Zero] the exclusions are exactly the four decided ones, each with its reason, and none is stale', () => {
+  it('⚠️ [Zero] the exclusions are exactly the five decided ones, each with its reason, and none is stale', () => {
     // 🎯 A literal set, not read back from the script: an exclusion added beside the others must turn this red.
-    expect(new Set(EXCLUSIONS.map(([p]) => p))).toEqual(new Set(['docs/educational/**', 'CLAUDE.md', 'research/**', 'CHANGELOG.md']));
-    expect(EXCLUSIONS.length, 'an exclusion listed twice').toBe(4);
+    expect(new Set(EXCLUSIONS.map(([p]) => p))).toEqual(new Set(['docs/educational/**', 'CLAUDE.md', 'research/**', 'CHANGELOG.md', '.claude/plans/**']));
+    expect(EXCLUSIONS.length, 'an exclusion listed twice').toBe(5);
     for (const [pattern, reason] of EXCLUSIONS) {
       expect(reason.length, `${pattern}: an exclusion without a reason is a hole`).toBeGreaterThan(30);
     }
@@ -51,6 +51,8 @@ describe('Portuguese in the docs only shrinks', () => {
     expect(isExcluded('docs/research/README.md')).toBe(false);
     expect(isExcluded('docs/CLAUDE.md')).toBe(false);
     expect(isExcluded('docs/educational/Curriculum-Map.md')).toBe(true);
+    expect(isExcluded('.claude/plans/mellow-questing-riddle.md')).toBe(true);
+    expect(isExcluded('.claude/README.md'), 'only the plans are the working document, not the whole folder').toBe(false);
   });
 
   it('⚠️ [Interface] a Portuguese paragraph counts, line by line; an English one does not', () => {
@@ -97,8 +99,9 @@ describe('Portuguese in the docs only shrinks', () => {
 //   · a Portuguese paragraph appended to a clean doc (docs/ROADMAP.md)   → RED  «no document carries more»
 //   · a new doc born with a Portuguese paragraph (docs/new-note.md)       → RED  «no document carries more» (0 -> 2)
 //   · a new doc born with a Portuguese name (docs/plano-novo.md)          → RED  «no Markdown file carries a Portuguese NAME»
-//   · the reason of the `CLAUDE.md` exclusion emptied                     → RED  «the exclusions are exactly the four»
-//   · a fifth exclusion added beside the others                           → RED  «the exclusions are exactly the four»
+//   · the reason of the `CLAUDE.md` exclusion emptied                     → RED  «the exclusions are exactly the five»
+//   · a sixth exclusion added beside the others                           → RED  «the exclusions are exactly the five»
+//   · the .claude/plans/** exclusion removed (the plan in the tree)      → RED  «no document carries more» (0 -> 1839)
 //   · a Portuguese paragraph inside a fence in docs/ROADMAP.md            → GREEN (and a case above)
 //   · a Portuguese paragraph between «» in docs/ROADMAP.md                → GREEN (and a case above)
 //   · a stray « and, after a blank line, a Portuguese paragraph           → RED  «no document carries more» (the « closed)
