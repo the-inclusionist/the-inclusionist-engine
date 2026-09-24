@@ -1,74 +1,55 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/entity — O JOGADOR, escrito UMA vez. Passo 1 do ADR-0027, e o único que o ADR chama de pré-requisito
-// de todos os outros. Não move nada e não muda nada em tempo de execução: `tsc --noEmit` é o teste inteiro.
+// core/entity — THE PLAYER, written ONCE. Step 1 of ADR-0027, the one that record calls the prerequisite of all the
+// others. It moves nothing and changes nothing at run time: `tsc --noEmit` is its whole test.
 //
-// O PROBLEMA QUE ISTO RESOLVE. `core/state.players` é `unknown[]`. O tipo se perde exatamente na fronteira em
-// que a entidade atravessa o programa, então cada módulo que precisa de um jogador escreveu à mão a sua
-// própria visão estrutural e fez cast. São VINTE E TRÊS — o ADR-0027 estimou dez, contei uma a uma e são 23 —
-// e elas já não concordam entre si:
+// THE PROBLEM THIS SOLVES. `core/state.players` is `unknown[]`. The type is lost exactly at the boundary where the
+// entity crosses the program, so every module that needed a player wrote its own structural view by hand and cast.
+// There were twenty-three, and they no longer agreed: the same field required in one module and optional in another
+// for the SAME object, so a player was accepted by half the program and rejected by the other half. That is the
+// failure that already cost a broken climb in Easy mode, when three copies of the action→edge table diverged: a copy
+// nobody forces to agree, diverges.
 //
-//   · `quiz` tem QUATRO formas: `unknown` (physics, session, touch), `Quiz | null` (quiz),
-//     `{ kind: string } | null` (gamepad) e `{ kind?: string } | null` (keydown). O `kind` é obrigatório numa
-//     e opcional na outra, para o MESMO objeto.
-//   · `easy` é obrigatório em physics, gamepad e settings-mobility; opcional em session, keydown, touch-bindings
-//     e draw. Um jogador sem `easy` é aceito por metade do programa e rejeitado pela outra.
-//   · `jumpEdge`, idem: obrigatório em physics/gamepad/attract, opcional em session/keydown/touch-bindings.
-//   · `quit` é obrigatório em gamepad e hud, opcional em session. `toggleMove` é obrigatório em
-//     settings-mobility, opcional em pause-icons. `viz` é obrigatório em draw, opcional em pause-icons.
-//   · `KeyScheme` (= `Record<string, string[]>`) está declarado três vezes: em input/keyboard-runtime,
-//     input/keyboard e input/keydown.
+// HOW IT IS USED — and why modules must NOT import the whole `Player`. What makes the project testable in the Vitest
+// `node` project is that each module declares the MINIMAL slice it needs and the test builds a fake with only those
+// fields. Swapping the narrow views for one fat interface would destroy that: every fixture would have to invent every
+// field.
 //
-// Nada disso é hipótese sobre o futuro: é a mesma forma de falha que já custou uma escalada quebrada no modo
-// Fácil, quando três cópias da tabela ação→borda divergiram. Uma cópia que ninguém obriga a concordar diverge.
+// The way out is to derive instead of retyping: `Pick<Player, 'x' | 'y' | 'vx'>` instead of rewriting three fields.
+// The module stays coupled only to its slice and the test still builds only that — but each field's NAME and TYPE have
+// one source, and renaming a field breaks every consumer's compilation at the same instant.
 //
-// COMO ISTO É USADO — e por que os módulos NÃO devem importar `Player` inteiro. A propriedade que faz o
-// projeto testável no project `node` do Vitest é que cada módulo declara a fatia MÍNIMA de que precisa e o
-// teste monta um objeto de mentira com só aqueles campos. Trocar 23 visões estreitas por uma interface gorda
-// destruiria isso: todo fixture de teste passaria a ter de inventar 52 campos.
-//
-// A saída é derivar em vez de redigitar: `Pick<Player, 'x' | 'y' | 'vx'>` em vez de reescrever os três campos.
-// O módulo continua acoplado só à sua fatia; o teste continua montando só aquilo; mas o NOME e o TIPO de cada
-// campo passam a ter uma fonte única, e renomear um campo quebra a compilação de todos os consumidores no
-// mesmo instante, que é precisamente o que hoje não acontece.
-//
-// A FRONTEIRA DE CAMADA. `core/` não pode importar de `game/` nem de `render/` — seria inverter a dependência.
-// Por isso os campos que apontam para outras camadas entram aqui pelo MÍNIMO ESTRUTURAL: `core` sabe que o
-// jogador tem um quiz, não sabe o que é um quiz. Os tipos ricos (`Quiz` em game/quiz, `PlayerSprite` em
-// render/draw) são atribuíveis a estes, e é o compilador que garante isso no ponto de uso.
+// THE LAYER BOUNDARY. `core/` may not import upward (ADR-0173), so fields that point at other layers enter here as the
+// STRUCTURAL MINIMUM: the rich types (a sprite in `render/`) are assignable to these, and the compiler checks it where
+// they are used.
 
-// ⚠️ O PRIMEIRO IMPORT DESTE FICHEIRO, e ele é de propósito: `core/actions` é da MESMA camada e é a fonte
-// única das quatorze posições. A regra que `core/` respeita é não importar de `game/` nem de `render/` —
-// depender de um vizinho de camada que é puro dado não a viola, e é o que permite fechar o `KeyScheme`.
+// ⚠️ This file's imports are same-layer data on purpose: `core/actions` is the single source of the fourteen positions,
+// and depending on a pure-data neighbour in the same layer is what lets `KeyScheme` be closed.
 import type { Action } from './actions.js';
 import type { VisualState } from './visual-state.js';
 
 /**
- * Ação → lista de códigos físicos (`KeyA`, `ArrowLeft`…). Fonte única: estava triplicado em input/.
+ * Action → list of physical codes (`KeyA`, `ArrowLeft`…). The single source: it was written three times in input/.
  *
- * ⚠️ FECHADO EM `Action` DESDE 2026-09-07 (issue #118, decisão do Dev), e era `Record<string, string[]>`.
- * Enquanto foi aberto, **faltar uma posição não dava erro de compilação** — e foi assim que o esquema de
- * dupla ficou com oito das quatorze, e que a `Space` do jogador 1 desapareceu sem que nada apitasse. O
- * defeito não era de digitação: era de o tipo aceitar um esquema incompleto como se fosse completo.
+ * ⚠️ CLOSED OVER `Action` (issue #118, the Dev's decision); it was `Record<string, string[]>`. While it was open,
+ * **a missing position was no compile error** — that is how a two-player scheme ended up with eight of the fourteen and
+ * player 1's `Space` vanished with nothing going off. The defect was not a typo: the type accepted an incomplete scheme
+ * as complete.
  *
- * ⚠️ E `null` NÃO É BURACO — é AUSÊNCIA DECLARADA, e é a metade que dá sentido a fechar o tipo. Um teclado
- * partido por quatro pode não ter lugar físico para ombros e gatilhos; dizer `null` afirma isso, e é o que o
- * aviso de alcance (`ui/reach-notice`, issue #112) lê para dizer à criança, ANTES de ela começar, quais das
- * ações do jogo o controlo dela não alcança. Inventar teclas para preencher seria mentir-lhe em silêncio.
+ * ⚠️ AND `null` IS NOT A HOLE — it is a DECLARED ABSENCE, the half that gives closing the type its meaning. A keyboard
+ * split four ways may have no physical room for shoulders and triggers; `null` says so, and it is what the reach notice
+ * (`ui/reach-notice`, issue #112) reads to tell the child, BEFORE they start, which of the game's actions their
+ * controls cannot reach. Inventing keys to fill it would lie to them in silence.
  *
- * Quem consome tem de tratar o `null`: `input/keyboard-runtime`, `input/touch-bindings` e
- * `ui/settings-controls` fazem-no, e é isso que impede um `null` de virar um `undefined.includes`.
+ * Consumers have to handle the `null`, and that is what keeps a `null` from becoming an `undefined.includes`.
  */
 export type KeyScheme = Record<Action, readonly string[] | null>;
 
-/** Lados da ventosa-aranha: direita, esquerda, teto, chão. */
+/** The sides a clinging player can stick to: right, left, ceiling, floor. */
 export type ClingSide = 'R' | 'L' | 'U' | 'D';
 
-/* (`PlayerQuiz` SAIU daqui em 2026-08-25 — ADR-0033. Está em `game/entity`, com o campo que o usava.) */
-
 /**
- * O sprite do jogador visto pelo jogo: posição, opacidade, escala e textura. Mesma forma que render/draw
- * declara como `PlayerSprite` — é um PIXI.Sprite reduzido ao que o jogo escreve nele, de propósito, para que
- * a lógica rode no project `node` com um sprite de mentira.
+ * The player's sprite as the game sees it: position, opacity, scale and texture. A PIXI.Sprite reduced to what the
+ * game writes on it, on purpose, so the logic runs in the `node` project with a fake sprite.
  */
 export interface PlayerSpriteLike {
   x: number;
@@ -80,34 +61,33 @@ export interface PlayerSpriteLike {
 }
 
 /**
- * O JOGADOR. Os campos até `_swapSonar` são os que `game/player.makePlayer` cria — todos obrigatórios, porque
- * a fábrica sempre os escreve. Depois vêm os que outros subsistemas ACRESCENTAM em tempo de execução, e esses
- * são opcionais porque um jogador recém-criado genuinamente não os tem.
+ * THE PLAYER. The fields down to `_swapSonar` are the ones the player factory creates — all required, because the
+ * factory always writes them. After them come the ones other subsystems ADD at run time, optional because a freshly
+ * made player genuinely does not have them.
  *
- * A distinção não é cosmética: hoje `physics` exige `elevTarget` como opcional e `gamepad` exige `quit` como
- * obrigatório, e as duas leem o MESMO objeto. Escrever de que lado da linha cada campo cai é metade do valor
- * deste arquivo.
+ * The split is not cosmetic: two modules reading the SAME object used to disagree about which side of this line a
+ * field falls on. Writing it down is half the value of this file.
  */
 export interface Player {
-  // --- identidade e corpo ---
+  // --- identity and body ---
   i: number;
   x: number;
   y: number;
   vx: number;
   vy: number;
 
-  // --- contato com o mundo ---
+  // --- contact with the world ---
   onGround: boolean;
   onLadder: boolean;
   inWater: boolean;
   clinging: boolean;
-  /** Face à qual a ventosa-aranha está grudada; `null` quando não está grudado. */
+  /** The side the player is clinging to; `null` when not clinging. */
   clingN: ClingSide | null;
   flying: boolean;
   airTime: number;
 
-  // --- animação ---
-  facing: number; // 1 = direita, -1 = esquerda
+  // --- animation ---
+  facing: number; // 1 = right, -1 = left
   anim: number;
   walkAnim: number;
   climbFrame: number;
@@ -116,17 +96,17 @@ export interface Player {
   groundIdle: number;
   flavor: number;
   flavorT: number;
-  /** Quadro corrente. `Frame` é `unknown` em render/player-anim — a textura é opaca para o jogo. */
+  /** The current frame. Opaque to the game — the texture is the renderer's business. */
   _tx: unknown;
 
-  // --- movimento ---
+  // --- movement ---
   jumpBuffer: number;
   jumpChain: number;
   waterStroke: number;
   walkDir: number;
   hurtTimer: number;
 
-  // --- bordas de entrada (um quadro de duração; input/edges é quem as liga) ---
+  // --- input edges (one frame long; the input layer sets them) ---
   jumpEdge: boolean;
   runEdge: boolean;
   swapEdge: boolean;
@@ -134,133 +114,118 @@ export interface Player {
   leftEdge: boolean;
   rightEdge: boolean;
 
-  // --- progresso ---
+  // --- progress ---
   collected: number;
   owned: string[];
   activePower: string;
   hasKey: boolean;
-  /* (`quiz` SAIU daqui em 2026-08-25 — ADR-0033: a entidade da ENGINE declara o que a engine possui, e um
-   *  desafio de alfabetização é do JOGO. Está em `game/entity.GamePlayer`, com os três módulos que o leem de
-   *  verdade — `game/physics`, `game/session` e `game/quiz`. A camada de ENTRADA deixou de precisar dele
-   *  quando passou a entregar INTENÇÃO em vez de rotear a tecla para dentro do desafio.) */
 
-  // --- configuração por jogador ---
+  // --- per-player settings ---
   /**
-   * Esquema de teclas. `makePlayer` nasce com `null` e `assignControls` preenche no boot — por isso o `| null`.
-   * `game/physics` e `input/keyboard-runtime` declaram este campo como NÃO-nulo, o que é verdade no instante
-   * em que eles rodam mas não é verdade no tipo. Divergência REAL, deixada visível aqui de propósito em vez de
-   * apagada: quem estreitar precisa fazê-lo explicitamente, no ponto onde sabe que já foi atribuído.
+   * The key scheme. A player is born with `null` and `assignControls` fills it at boot — hence the `| null`. Modules
+   * that only run after boot may treat it as non-null, which is true at that instant but not in the type: a REAL
+   * divergence, left visible on purpose — whoever narrows it does so explicitly, where they know it was assigned.
    */
   ctrl: KeyScheme | null;
-  /** Índice do gamepad, ou -1 quando o jogador não tem controle físico. */
+  /** The gamepad index, or -1 when the player has no physical pad. */
   pad: number;
   /**
-   * O ESTADO VISUAL desta criança, em DOIS EIXOS mais a simulação (ADR-0076, issue #104).
+   * This child's VISUAL STATE, in TWO AXES plus the simulation (ADR-0076, issue #104).
    *
    * The shape lives in `core/visual-state`; `render/viz-axes` applies it (issue #167).
    */
   visual: VisualState;
   /**
-   * @deprecated ⚠️ O ESPELHO LEGADO, e ele morre nesta migração. Enquanto os dois existirem, `setPlayerViz`
-   * escreve os DOIS e um gate exige que nunca discordem — é o que deixa cada leitor migrar sozinho, com a
-   * árvore verde entre cada passo, em vez de uma passagem única onde não há onde parar.
+   * @deprecated ⚠️ THE LEGACY MIRROR, and it dies in this migration. While both exist, `setPlayerViz` writes BOTH and a
+   * gate requires they never disagree — that lets each reader migrate on its own, with the tree green between steps.
    *
-   * ⚠️ E ELE NÃO CONSEGUE EXPRIMIR O QUE A #104 EXISTE PARA PERMITIR: uma criança com `hc7` E `fix-deuter` ao
-   * mesmo tempo não tem chave única que a descreva. Por isso o espelho só sobrevive enquanto os controles
-   * ainda escrevem um valor de cada vez; assim que eles passam a escrever por eixo, ele deixa de poder
-   * acompanhar e sai.
+   * ⚠️ AND IT CANNOT EXPRESS WHAT #104 EXISTS TO ALLOW: a child with `hc7` AND a colour correction at once has no single
+   * key describing them. So the mirror survives only while the controls still write one value at a time.
    */
   viz: string;
   easy: boolean;
   toggleMove: boolean;
   /**
-   * A ALTERNÂNCIA DO BOTÃO DE CORRER (pedido do Dev): correr vira ESTADO em vez de "segurar".
+   * THE RUN-BUTTON TOGGLE (asked for by the Dev): running becomes a STATE instead of "holding".
    *
-   * Irmã de `toggleMove` e pelo mesmo motivo — quem não consegue manter pressionado andava sem segurar e
-   * continuava sem conseguir CORRER. Automática no controle de toque. Ver `game/run-toggle`.
+   * Sibling of `toggleMove` for the same reason — whoever cannot keep a button held could walk without holding and
+   * still could not RUN. Automatic on the touch pad.
    */
   toggleRun: boolean;
-  /** A trava da corrida: com `toggleRun`, é ela que diz se está correndo agora. Vida de RODADA. */
+  /** The run latch: with `toggleRun`, it says whether the player is running now. Lives for a ROUND. */
   runLatch: boolean;
   rmWalk: boolean;
   rmBreath: boolean;
   rmFlavor: boolean;
 
-  // --- cadência de áudio e detecção de segurar-trocar (sonar) ---
+  // --- audio cadence and hold-to-swap detection (sonar) ---
   stepT: number;
   guardT: number;
   _swapDown: boolean;
   _swapT: number;
   _swapSonar: boolean;
 
-  // --- sprite (criado pelo render, não pela fábrica) ---
+  // --- sprite (made by the renderer, not by the factory) ---
   sprite: PlayerSpriteLike | null;
 
   // ============================================================================================
-  // Acrescentados em tempo de execução por outros subsistemas — opcionais porque um jogador
-  // recém-criado não os tem.
+  // Added at run time by other subsystems — optional because a freshly made player lacks them.
   // ============================================================================================
 
-  /** ui/shell, input/gamepad, ui/hud: o jogador pediu para sair. */
+  /** The player asked to quit. */
   quit?: boolean;
-  /** game/session: entrou no meio da partida e aguarda a próxima rodada. */
+  /** Joined mid-game and waits for the next round. */
   waiting?: boolean;
-  /** game/level-geometry, game/physics: andar de destino do elevador em que está. */
+  /** The target floor of the lift the player is on. */
   elevTarget?: number | null;
-  /** game/physics: velocidade de queda memorizada para o som de impacto. */
+  /** The fall speed remembered for the landing sound. */
   _fallV?: number;
-  /** game/physics: distância pisada desde a última batida de bengala. */
+  /** The distance walked since the last cane tap. */
   caneDist?: number;
-  /** game/session, render/player-anim: usa a bengala de corrida (o cego só corre com ela). */
+  /** Uses the running cane (a blind player only runs with it). */
   runCane?: boolean;
-  /** render/fx → render/draw: fator de esmagamento (squash) e o temporizador que o decai (8 → 0).
-   *  Os dois ANDAM JUNTOS — `stepSquash` escreve os dois e `drawPlayers` lê os dois. Declarar só o `sq`, como
-   *  esta interface fazia até a conferência no navegador, é o erro de meia-dupla: o campo que sobra fica sem
-   *  tipo nenhum e ninguém percebe, porque metade da regra continua compilando. */
+  /** The squash factor and the timer that decays it (8 → 0). The two GO TOGETHER — one step writes both and the
+   *  drawing reads both. Declaring only `sq` is the half-pair mistake: the field left over has no type at all and
+   *  nobody notices, because half the rule still compiles. */
   sq?: number;
   sqT?: number;
-  /** render/player-anim → render/draw: o jogador está andando / correndo. Derivados por quadro a partir da
-   *  velocidade e do estado de contato; existem porque a BENGALA precisa saber (a de corrida só aparece
-   *  correndo, e correr exige `runCane`). Escritos pelo render, nunca pela fábrica. */
+  /** The player is walking / running. Derived each frame from speed and contact; they exist because the CANE needs to
+   *  know (the running cane only shows when running, and running needs `runCane`). Written by the renderer, never by
+   *  the factory. */
   walking?: boolean;
   running?: boolean;
-  /** game/quiz: vitórias na atividade de alfabetização, zeradas a cada nova partida. */
+  /** Wins in the literacy activity, reset at each new game. */
   literacyWins?: number;
-  /** ui/settings-audio, ui/pause-icons: saída de áudio própria; `null`/ausente = compartilhada. */
+  /** The player's own audio output; `null`/absent = shared. */
   audioSink?: string | null;
-  // `_ac` e `_acOut` NÃO ficam aqui (ADR-0039, opção A1). São o AudioContext e o nó de ganho da saída
-  // dedicada, criados por `platform/audio-sonar`, que os declara em `PlayerAudioOut`. A entidade da engine
-  // declara o que a ENGINE possui (ADR-0033), e um AudioContext por jogador é da plataforma de áudio.
-  // Enquanto estavam aqui, a descrição mínima (`{ close(): void }` e `unknown`) discordava da real e o
-  // `unknown` escondia a discordância — inclusive um `null` que o `ui/settings-audio` escreve e que o dono
-  // não admitia.
+  // `_ac` and `_acOut` do NOT live here (ADR-0039, option A1). They are the AudioContext and gain node of a dedicated
+  // output, created by `platform/audio-sonar`, which declares them in `PlayerAudioOut`. The engine's entity declares
+  // what the ENGINE owns (ADR-0033), and an AudioContext per player belongs to the audio platform. While they were
+  // here, the minimal description disagreed with the real one and an `unknown` hid the disagreement.
   /**
    * The wall-sonar timer, read by the platformer's `platform/audio-nav` (moved there in note CC).
    *
-   * ⚠️ `guideT` SAIU em 2026-09-07 (#84 item 2), e a ausência é a notícia: ele contava os 48 quadros entre
-   * dois bipes do guia, e não há mais bipe nenhum para temporizar. O que o substituiu — o grafo de áudio vivo
-   * — não é da entidade da engine e por isso não nasce aqui: mora em `PlayerAudioOut`, ao lado do `_ac`, pela
-   * mesma regra que o parágrafo acima explica.
+   * ⚠️ `guideT` is gone (#84 item 2): it counted the frames between two guide beeps, and there is no beep left to time.
+   * What replaced it — the live audio graph — is not the engine entity's and so is not born here: it lives in
+   * `PlayerAudioOut`, beside `_ac`, by the rule the paragraph above explains.
    */
   wnT?: number;
 }
 
 /**
- * Um jogador DEPOIS de `assignControls` — o `ctrl` deixou de ser `null`.
+ * A player AFTER `assignControls` — `ctrl` is no longer `null`.
  *
- * Existe para dar nome a uma invariante que hoje é assumida em silêncio: `game/physics` e
- * `input/keyboard-runtime` declaram `ctrl` como não-nulo porque, no instante em que rodam, ele já foi
- * atribuído. Isso é verdade e continua verdade — mas era uma afirmação escondida dentro de uma interface
- * redigitada, onde ninguém a lia como afirmação. Aqui ela tem nome, e quem a usa está dizendo "eu só rodo
- * depois do boot", que é uma frase verificável, em vez de simplesmente não mencionar o `null`.
+ * It names an invariant otherwise assumed in silence: modules that only run after boot treat `ctrl` as non-null. That
+ * is true — but it was an assertion hidden inside a retyped interface, where nobody read it as one. Here it has a name,
+ * and whoever uses it is saying "I only run after boot", a checkable sentence, instead of not mentioning the `null`.
  */
 export type ControlledPlayer = Player & { ctrl: KeyScheme };
 
 /**
- * Atalho para as visões estreitas: `PlayerView<'x' | 'y'>` em vez de reescrever os campos.
+ * A shortcut for the narrow views: `PlayerView<'x' | 'y'>` instead of rewriting the fields.
  *
- * O ponto de não usar `Player` inteiro está no cabeçalho: o project `node` do Vitest monta jogadores de
- * mentira com só os campos que o módulo lê, e uma interface gorda obrigaria todo fixture a inventar 52.
- * Derivando, o módulo continua acoplado à sua fatia e o NOME e o TIPO de cada campo passam a ter fonte única.
+ * The point of not using the whole `Player` is in the header: the Vitest `node` project builds fake players with only
+ * the fields a module reads, and a fat interface would make every fixture invent all of them. Deriving keeps the module
+ * coupled to its slice while each field's NAME and TYPE have one source.
  */
 export type PlayerView<K extends keyof Player> = Pick<Player, K>;
