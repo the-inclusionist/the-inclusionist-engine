@@ -34,7 +34,7 @@
 // of returning `null` from a getter and hoping. What is declined is kept in the returned object, so a consumer can be
 // audited by what it refused.
 // ⚠️ THIS PARAGRAPH NAMES NONE OF THE FIELDS, which looks odd and is deliberate: `tests/declinio-morto` counts
-// MENTIONS, comments included, on purpose — «falhar para o lado de vivo é a direcção certa deste erro», because a
+// MENTIONS, comments included, on purpose — erring towards «alive» is the right direction for that error, because a
 // false accusation switches a gate off. So using a decline as an EXAMPLE in prose makes it look read, and a field
 // that is genuinely dead stops being accused.
 //

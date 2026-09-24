@@ -54,7 +54,7 @@ export const MEASURES = ['codeLines', 'decisionNodes', 'maxDepth', 'fanOut', 'gl
  *
  * ⚠️ AND THE LAYER GATE DOES NOT CATCH IT, which is why this measure exists: `dependencies-point-downward` checks IMPORTS,
  * and a module that imports nothing and touches `document` passes green — even in `core/`, the layer ADR-0173 describes
- * as «o que a engine É, SEM navegador».
+ * as what the engine IS, without a browser.
  */
 const BROWSER_GLOBALS = ['document', 'window', 'localStorage', 'sessionStorage', 'navigator', 'performance', 'fetch', 'CSS'];
 
