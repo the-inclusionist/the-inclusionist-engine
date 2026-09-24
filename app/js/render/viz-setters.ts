@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/viz-setters — APLICAÇÃO dos modos de visão acessível (daltonismo, baixa visão, cegueira, alto
-// contraste), por jogador e globalmente. Extraído verbatim do game.js. É a camada de POLÍTICA — "qual modo
-// vale onde" — e não a de FÁBRICA: quem constrói pixel (pixiFilterFor / parallaxTexFor / playerVizTex /
-// lvOverlayTex / renderVpOverlay) fica no game.js e sai depois em `render/viewports` (grupo B); esses quatro
-// entram AQUI por injeção. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (A16/B2).
+// render/viz-setters — APPLYING the accessible vision modes (colour blindness, low vision, blindness, high contrast), per
+// player and globally. It is the POLICY layer — "which mode counts where" — and not the FACTORY: whoever builds pixels
+// (pixiFilterFor / parallaxTexFor / playerVizTex / lvOverlayTex / renderVpOverlay) is `render/viewports`, and those
+// come in HERE by injection.
 //
-// Fronteiras que este módulo NÃO reabre:
-//  · `_lastSharedViz` FICA no game.js — não é cache de visão, é o registro de qual modo o pipeline de render
-//    ESTÁTICO aplicou por último, escrito de cinco lugares (rebuildCoins/rebuildExtras/applySharedTextures/
-//    setPlayerViz/reapplyVizAll). Entra por `getSharedViz`/`setSharedViz`/`invalidateSharedViz`.
-//  · `selVizPlayer` idem: quatro escritores (renderVizGroup, aba de jogador, ui/settings-visual, menu de
-//    pausa) → get/set por ctx, o `let` continua no game.js até o D1.
-//  · `_playerDirect` é `let` do game.js reatribuído por estas funções → clear por ctx
-//    (binding importado não pode ser reatribuído).
+// Boundaries this module does NOT reopen:
+//  · The host keeps the "mode the STATIC render pipeline last applied" record — not a vision cache, a record several
+//    places write. It comes in through `getSharedViz`/`setSharedViz`/`invalidateSharedViz`.
+//  · The selected player of the visual panel likewise: several writers (renderVizGroup, a player tab, the visual
+//    panel, the pause menu) → get/set through the ctx.
+//  · The outlined-player-frame cache belongs to render/viewports and is reassigned by these functions → cleared through
+//    the ctx (an imported binding cannot be reassigned).
 //
-// As camadas e sprites PIXI (camera/worldSprite/parallaxLayers/decoSprites/vpSpr/vpDots) são CRIADOS no
-// game.js — a ordem de addChild é a ordem de desenho — e entram injetados por interface ESTRUTURAL, para o
-// módulo rodar no project `node` sem importar PIXI. Mesmo precedente de render/scene-sky e game/traffic.
-// SEM I/O no import: initVizSetters(ctx) só fecha closures, não chama nada.
+// The PIXI layers and sprites (camera/worldSprite/parallaxLayers/decoSprites/vpSpr/vpDots) are CREATED by the host — the
+// addChild order is the drawing order — and come in injected through a STRUCTURAL interface, so the module runs in the
+// `node` project without importing PIXI.
+// NO I/O on import: initVizSetters(ctx) only closes closures, it calls nothing.
 
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, simulatesDisability, type VizMode } from './viz-modes.js';
 import {
@@ -25,7 +23,7 @@ import {
   type Theme, type Correction,
   type VisualState,
 } from './viz-axes.js';
-import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
+import { t } from '../core/i18n.js'; // VIZ_MODES keeps i18n KEYS; whoever shows them resolves them
 import {
   axesHtml, buttonChoice, THEME_LABEL, CORRECTION_LABEL,
 } from './viz-axes-labels.js';
@@ -39,38 +37,38 @@ import type { DomQuery } from '../core/dom-query.js';
 import type { WithFilter, WithTexture, Visible, DrawingWithCircle, ApplyCssFilter, FilterReach,
   ApplyHighContrastToDom } from './port.js';
 
-/* ===================== PURO (sem PIXI, sem DOM) — o que rende teste de verdade ===================== */
+/* ===================== PURE (no PIXI, no DOM) — what really earns a test ===================== */
 
 /**
- * Até onde o filtro deste modo vai. MELHORIA alcança os menus; EMPATIA fica no mundo (ver `FilterReach`).
- * Derivado de `sim`, do catálogo — a mesma flag que já distingue os dois, e não uma segunda lista para
- * alguém esquecer de atualizar.
+ * How far this mode's filter reaches. ENHANCEMENT reaches the menus; EMPATHY stays in the world (see `FilterReach`).
+ * Derived from the catalogue's `sim` — the same flag that already tells the two apart, not a second list for someone
+ * to forget to update.
  */
 export function reachOfMode(mode: string): FilterReach {
   return simulatesDisability(mode) ? 'mundo' : 'mundo-e-menus';
 }
 
-/** Modo por chave, com o fallback do original: chave desconhecida (ou nula) CAI em `normal`. */
+/** The mode by key, with a fallback: an unknown (or null) key FALLS to `normal`. */
 export function resolveViz(key: string | null | undefined): VizMode {
   return VIZ_BY_KEY[key as string] || VIZ_BY_KEY.normal;
 }
 
 /**
- * O ESTADO VISUAL GUARDADO deste jogador, de qualquer das duas formas (issue #104).
+ * This player's STORED VISUAL STATE, in either of its two shapes (issue #104).
  *
- * ⚠️ ESTA FUNÇÃO É A CAIXA «um ajuste salvo antes da divisão restaura o mesmo estado visível» da definition
- * of done, e a ordem das duas leituras é a decisão inteira:
+ * ⚠️ THIS FUNCTION IS THE definition of done's box that says a setting saved before the split restores the same visible
+ * state, and the order of the two reads is the whole decision:
  *
- *   1. a chave NOVA (`visualP`), que é a única que sabe dizer dois eixos;
- *   2. na falta dela, a chave VELHA (`vizP`), que guarda a string única — e é aqui que mora o ajuste de toda
- *      criança que já jogou este jogo antes de hoje;
- *   3. na falta das duas, o padrão.
+ *   1. the NEW key (`visualP`), the only one that can express two axes;
+ *   2. without it, the OLD key (`vizP`), which keeps the single string — and where the setting of every child who
+ *      played this game before the split lives;
+ *   3. without either, the default.
  *
- * ⚠️ O RECUO NÃO É ZELO: sem ele, a primeira sessão depois da actualização apagaria o modo visual que ela
- * escolheu — e quem escolheu `fix-deuter` ou `hc-direto-7` escolheu-o porque enxerga assim. É a diferença
- * entre migrar e recomeçar.
+ * ⚠️ THE FALLBACK IS NOT ZEAL: without it, the first session after the update would erase the visual mode the child
+ * chose — and whoever chose `fix-deuter` or `hc-direto-7` chose it because that is how they see. It is the difference
+ * between migrating and starting over.
  *
- * `migrateVisual` aceita as duas formas e é idempotente, então isto pode correr quantas vezes for preciso.
+ * `migrateVisual` accepts both shapes and is idempotent, so this can run as many times as needed.
  */
 export function readStoredVisual(i: number): VisualState {
   const storedVisual = store.getJSON<unknown>(store.KEYS.visualP(i), null);
@@ -78,21 +76,21 @@ export function readStoredVisual(i: number): VisualState {
   return migrateVisual(store.get(store.KEYS.vizP(i), null));
 }
 
-/** É um dos três níveis de Renderização Direta (alto contraste)? Mesmo teste do original: `!!DIRECT_CFG[mode]`. */
+/** Is it one of the three Direct Rendering (high contrast) levels? The test is `!!DIRECT_CFG[mode]`. */
 export function isDirectMode(mode: string): boolean { return !!DIRECT_CFG[mode]; }
 
-/** Filtro CSS da canvas no SOLO: simulação/correção de visão + realce L→Q, compostos e sem vazios. */
+/** The canvas's CSS filter in SOLO: vision simulation/correction + the L→Q enhancement, composed and with no gaps. */
 export function cssFilterFor(mode: string, lq: string): string {
   return [VIZ_FILTER[mode] || '', lq].filter(Boolean).join(' ');
 }
 
-/** Bolinha indicadora de um viewport: só cegueira (branca) e baixa visão (verde) acendem. */
+/** A viewport's indicator dot: only blindness (white) and low vision (green) light it. */
 export function vizDotFor(m: VizMode | undefined): { visible: boolean; fill: number | null } {
   const on = !!m && (m.kind === 'blind' || m.kind === 'lowvision');
   return { visible: on, fill: on ? (m!.kind === 'blind' ? 0xffffff : 0x36d36a) : null };
 }
 
-/** Bolinha GLOBAL (#viz-indicator) para um `kind`: visível, classes e rótulo de leitor de tela. */
+/** The GLOBAL dot (#viz-indicator) for a `kind`: visible, classes and screen-reader label. */
 export function vizIndicatorFor(kind: string): { on: boolean; blind: boolean; low: boolean; label: string } {
   return {
     on: kind === 'blind' || kind === 'lowvision',
@@ -101,12 +99,12 @@ export function vizIndicatorFor(kind: string): { on: boolean; blind: boolean; lo
   };
 }
 
-/** Classe do overlay DOM de baixa visão (`lv-haze`/`lv-tunnel`/…); '' para qualquer outro kind. */
+/** The low-vision DOM overlay's class (`lv-haze`/`lv-tunnel`/…); '' for any other kind. */
 export function lvOverlayClassFor(m: VizMode): string {
   return m.kind === 'lowvision' ? 'lv-' + m.lv : '';
 }
 
-/** HTML do grupo de rádios de modos visuais (uma linha por modo; o atual marcado). Verbatim do game.js. */
+/** The HTML of the vision modes' radio group (one row per mode; the current one marked). */
 export function vizGroupHtml(modes: readonly VizMode[], cur: string): string {
   return modes.map((m) => {
     const sel = m.key === cur;
@@ -115,151 +113,145 @@ export function vizGroupHtml(modes: readonly VizMode[], cur: string): string {
   }).join('');
 }
 
-/** Fala do leitor de tela ao escolher um modo: prefixa "Jogador N:" só em multi-tela. */
+/** The screen reader's line when a mode is chosen: prefixed with the player only on several screens. */
 export function vizGroupSay(numPlayers: number, sel: number, name: string): string {
   return (numPlayers > 1 ? 'Jogador ' + (sel + 1) + ': ' : '') + name + '.';
 }
 
-/* ===================== cascas: PIXI/DOM injetados ===================== */
+/* ===================== shells: PIXI/DOM injected ===================== */
 
-// `Filtered`, `Textured` e `DotGfx` vêm de `render/port` desde 2026-08-26. Eram três descrições locais
-// do mesmo PixiJS, e a do `DotGfx` divergia das outras cópias de `Graphics` da árvore no retorno de cada
-// método (`unknown` aqui, `this` lá) — foi assim que as cinco cópias de `Gfx` divergiram antes.
+// `Filtered`, `Textured` and `DotGfx` come from `render/port`: local descriptions of the same PixiJS drift (the dot's
+// graphics once returned `unknown` where the other copies returned `this`) — that is how graphics copies drift.
 type Filtered = WithFilter;
 type Textured = WithTexture;
-/** PIXI.Graphics da bolinha por viewport — só o que updateVpDots realmente usa. */
+/** The per-viewport dot's PIXI.Graphics — only what updateVpDots really uses. */
 type DotGfx = Visible & DrawingWithCircle;
 interface ClassListHost { classList: { toggle(token: string, force?: boolean): unknown; remove(...tokens: string[]): unknown } }
-// ⚠️ `visual` OPCIONAL AQUI, e `viz` não: esta é a fatia ESTRUTURAL que o módulo lê, e ela é satisfeita
-// também por fixtures de teste escritos antes da #104. Torná-lo obrigatório nesta interface local obrigaria
-// cada fixture a saber de um campo que ele não exercita — e o campo obrigatório de verdade está onde deve
-// estar, no `core/entity.PlayerBase`, que é quem descreve o jogador a sério.
+// ⚠️ `visual` OPTIONAL HERE, and `viz` not: this is the STRUCTURAL slice the module reads, and it is also satisfied by
+// test fixtures written before #104. Making it required in this local interface would force every fixture to know a
+// field it does not exercise — and the really required field is where it belongs, in `core/entity.PlayerBase`, which is
+// what describes the player for real.
 interface Pl { viz: string; visual?: VisualState; sprite?: Textured | null; _tx?: unknown }
 interface Pu { kind: string; sprite?: Textured | null }
 
 export interface VizSettersCtx {
   /* --- DOM (ui/dom + a11y) --- */
-  /** O seletor do jogo (#viz-overlay, #viz-indicator, listas do painel). `DomQuery` de `core/dom-query`
-   *  desde 2026-08-26: a versão local era NÃO-GENÉRICA, e uma função genérica atribuída a uma
-   *  assinatura não-genérica é instanciada pela RESTRIÇÃO. O `El` estrutural continua abaixo — ele é a
-   *  fatia que este módulo LÊ, e `HTMLElement` a satisfaz. */
+  /** The game's selector (#viz-overlay, #viz-indicator, the panel's lists). `DomQuery` from `core/dom-query`: a local
+   *  NON-GENERIC version would instantiate a generic function by its CONSTRAINT when assigned to it. */
   $: DomQuery;
-  body: ClassListHost;                              // document.body — classes `lowvision-mode`/`blind-mode` gateiam o CSS
-  srSay: (s: string) => void;                       // leitor de tela (região aria-live)
+  body: ClassListHost;                              // document.body — the `lowvision-mode`/`blind-mode` classes gate the CSS
+  srSay: (s: string) => void;                       // screen reader (aria-live region)
 
-  /* --- objetos PIXI criados no game.js (z-order soldado lá) --- */
-  applyCssFilter: ApplyCssFilter;               // era `app: AppLike|null` + `app.view.style.filter`; ver a porta
-  /** Alto contraste no DOM — o filtro não o alcança porque ele não É filtro. Issue #83. */
+  /* --- PIXI objects the host creates (z-order welded there) --- */
+  applyCssFilter: ApplyCssFilter;               // the verb, not the application object; see the port
+  /** High contrast in the DOM — the filter does not reach it because it IS not a filter. Issue #83. */
   applyHighContrastToDom: ApplyHighContrastToDom;
-  camera: Filtered;                                 // solo: alto contraste = filtro GPU na câmera
-  worldSprite: Textured;                            // mundo recolorido por modo
-  parallaxLayers: Textured[];                       // camadas de fundo (const; elementos só têm .texture trocada)
-  decoSprites: Textured[];                          // árvores/decoração de fundo
-  getVpSpr: () => Filtered[];                       // GETTER: configureRender REATRIBUI o array a cada troca de nº de telas
-  getVpDots: () => DotGfx[];                        // GETTER: idem (bolinhas por viewport, acima de tudo)
+  camera: Filtered;                                 // solo: high contrast = a GPU filter on the camera
+  worldSprite: Textured;                            // the world, recoloured per mode
+  parallaxLayers: Textured[];                       // background layers (the elements only get their .texture swapped)
+  decoSprites: Textured[];                          // trees/background decoration
+  getVpSpr: () => Filtered[];                       // GETTER: configureRender REASSIGNS the array when the number of screens changes
+  getVpDots: () => DotGfx[];                        // GETTER: likewise (the per-viewport dots, above everything)
   /**
-   * Os sprites dos ITENS declarados (o array vive no jogo e pode ser recriado — por isso getter).
+   * The declared ITEMS' sprites (the array lives in the game and may be recreated — hence a getter).
    *
-   * Era `getCoinSprites`, e o nome dizia o que eles são. Mesma fatia que `render/draw` recebe desde o corte
-   * das entidades declaradas: uma lista de sprites, sem o desenho saber o que cada um representa.
+   * A list of sprites, with the drawing not knowing what each one represents — not a coin-shaped getter.
    */
   getItemSprites: () => (Textured | null | undefined)[];
   /**
-   * Como o JOGO chama os itens dele no cache de recoloração de `render/high-contrast`.
+   * What the GAME calls its items in `render/high-contrast`'s recolour cache.
    *
-   * Era `spriteTexFor('coin', mode)` — a string cravada aqui dentro. O cache já não tinha forma de moeda
-   * (ele chaveia por `(id, modo)`); quem ainda nomeava uma era este módulo. Repare no vizinho de baixo: os
-   * power-ups sempre carregaram o próprio `kind`, e a engine só o repassa. Os itens não carregavam nada, e
-   * por isso o nome tinha de estar em algum lugar — agora está do lado de quem o escolheu.
+   * The cache keys by `(id, mode)`; a `'coin'` string fixed in here would be this module naming one game's item. Note
+   * the neighbour below: power-ups always carried their own `kind`, and the engine only passes it on. The items carried
+   * nothing, so the name had to live somewhere — it lives on the side of whoever chose it.
    */
   itemTexId: string;
-  getPowerups: () => readonly Pu[];                          // `powerups` é `let` do game.js
+  getPowerups: () => readonly Pu[];                          // the game's power-ups
 
-  /* --- estado do jogo (fica no game.js até o D1) --- */
+  /* --- the game's state --- */
   getPlayers: () => Pl[];
-  getNumPlayers: () => number;                      // binding vivo de core/state — muda com setNumPlayers
-  getSelVizPlayer: () => number;                    // 4 escritores fora daqui → get/set, não valor
+  getNumPlayers: () => number;                      // it changes with the player count
+  getSelVizPlayer: () => number;                    // several writers outside here → get/set, not a value
   setSelVizPlayer: (i: number) => void;
-  getSharedViz: () => string | null;                // `_lastSharedViz`: registro do render estático, FICA no game.js
+  getSharedViz: () => string | null;                // the static render's record, kept by the host
   setSharedViz: (mode: string) => void;
   invalidateSharedViz: () => void;
 
-  /* --- fábricas de textura/filtro que ficam no game.js (saem depois em render/viewports) --- */
+  /* --- texture/filter factories (render/viewports) --- */
   parallaxTexFor: (i: number, mode: string) => unknown;
   treeTexFor: (mode: string) => unknown;
   playerVizTex: (base: unknown, mode: string) => unknown;
   pixiFilterFor: (mode: string) => unknown;
-  clearPlayerDirectCache: () => void;               // zera `_playerDirect` (cache de playerVizTex, mora lá)
+  clearPlayerDirectCache: () => void;               // clears the playerVizTex cache, which lives there
   /**
-   * A TEXTURA DE UM POWER-UP NESTE MODO VISUAL, e o esquecimento dela — por PORTA desde o ADR-0228.
+   * A POWER-UP'S TEXTURE IN THIS VISUAL MODE, and forgetting it — through a DOOR (ADR-0228).
    *
-   * 🔴 Vinham de `render/textures`, que saiu para o cartucho: um power-up é mobília de um jogo, e o cache das
-   * texturas dele também. O que é da ENGINE é a regra — trocar de modo visual repinta o que está na tela —, e
-   * essa regra não precisa de saber o que um power-up é.
+   * 🔴 A power-up is a game's furniture, and so is its texture cache. What is the ENGINE's is the rule — switching visual
+   * mode repaints what is on screen —, and that rule does not need to know what a power-up is.
    */
   pupTexFor: (kind: string, mode: string) => unknown;
   resetPupTexCache: () => void;
 
-  /* --- efeitos colaterais de outros subsistemas --- */
-  setFrontDim: (on: boolean) => void;               // game/traffic: carros/placas/semáforo escurecem como fundo
-  rebuildExtras: () => void;                        // game/level-geometry
-  rebuildCoins: () => void;                         // game/coin-spawning
-  setBlindMode?: (on: boolean) => void;               // empatia cegueira liga bengala + pistas de áudio
+  /* --- side effects of other subsystems (the game's) --- */
+  setFrontDim: (on: boolean) => void;               // foreground props (cars/signs/lights) darken like the background
+  rebuildExtras: () => void;                        // the level's extra geometry
+  rebuildCoins: () => void;                         // the level's collectables
+  setBlindMode?: (on: boolean) => void;               // the blindness empathy mode turns on the cane + audio cues
   hideTouchControls: (reason?: string) => void;     // input/touch
-  reflectVizButtons: () => void;                    // acende #opt-visual/#opt-empathy (lê hearingLoss/oneButton/wheelchair)
-  renderVisualPanel: () => void;                    // visual.render() — ui/settings-visual
-  renderEmpathyPanel: () => void;                   // empathy.render() — ui/settings-empathy
+  reflectVizButtons: () => void;                    // lights #opt-visual/#opt-empathy
+  renderVisualPanel: () => void;                    // the visual panel's render()
+  renderEmpathyPanel: () => void;                   // the empathy panel's render()
 }
 
 export interface VizSettersApi {
-  /** Multi-tela: aplica as texturas ESTÁTICAS do modo (memoizado) + a do quadro atual de cada jogador. */
+  /** Several screens: applies the mode's STATIC textures (memoised) + each player's current frame. */
   applySharedTextures(mode: string): void;
-  /** Bolinhas indicadoras por viewport (fora do filtro do viewport — visíveis mesmo em cegueira). */
+  /** Per-viewport indicator dots (outside the viewport's filter — visible even in blindness). */
   updateVpDots(): void;
-  /** Filtro PIXI de cada viewport = modo do jogador daquela tela. */
+  /** Each viewport's PIXI filter = the mode of that screen's player. */
   applyVpFilters(): void;
-  /** Troca o modo de UM jogador: persiste, invalida o render estático e reaplica pelo caminho certo. */
+  /** Changes ONE player's mode: persists, invalidates the static render and reapplies by the right path. */
   setPlayerViz(i: number, mode: string): void;
   /**
-   * O ESTADO INTEIRO de um jogador, e os DOIS escritores por eixo (#104).
+   * A player's WHOLE state, and the TWO per-axis writers (#104).
    *
-   * ⚠️ Os dois de eixo existem separados porque é isso que um painel de dois controles precisa: mexer no
-   * TEMA sem tocar na correção, e vice-versa. Enquanto havia um campo só, «mexer num» significava
-   * inevitavelmente «apagar o outro» — e era o defeito, não a API.
+   * ⚠️ The per-axis writers are separate because that is what a two-control panel needs: changing the THEME without
+   * touching the correction, and vice versa. With a single field, changing one inevitably meant erasing the other — and
+   * that was the defect, not the API.
    */
   setPlayerVisual(i: number, v: VisualState): void;
   setPlayerTheme(i: number, theme: Theme): void;
   setPlayerCorrection(i: number, correction: Correction): void;
-  /** Caminho SOLO: filtro CSS na canvas + texturas globais + overlay DOM + bolinha. */
+  /** The SOLO path: CSS filter on the canvas + global textures + DOM overlay + dot. */
   applyVizGlobal(v: VisualState): void;
-  /** Reaplica tudo depois de uma mudança estrutural (cenário, nº de telas). */
+  /** Reapplies everything after a structural change (scenery, number of screens). */
   reapplyVizAll(): void;
-  /** Bolinha global (#viz-indicator) para um `kind`. */
+  /** The global dot (#viz-indicator) for a `kind`. */
   updateVizIndicator(kind: string): void;
-  /** Invalida os caches de textura direta (mundo/moeda/power-up/jogador) e re-renderiza. */
+  /** Invalidates the direct texture caches (world/sprites/power-ups/player) and re-renders. */
   rebakeDirect(): void;
-  /** Grupo de rádios de modos visuais nos painéis (visual/empatia). */
+  /** The vision modes' radio group in the panels (visual/empathy). */
   renderVizGroup(listSel: string, tabsSel: string, modes: readonly VizMode[]): void;
-  /** Os DOIS eixos do painel visual (#104). Irmão do de cima — ver a nota na implementação. */
+  /** The visual panel's TWO axes (#104). The sibling of the one above — see the note in the implementation. */
   renderVisualAxes(listSel: string, tabsSel: string): void;
 }
 
 export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
-  // estáticos (mundo/parallax/moedas/itens) só re-aplicam quando o modo muda (_lastSharedViz mora no game.js)
+  // the statics (world/parallax/items) only reapply when the mode changes (the host keeps the record)
   function applySharedTextures(mode: string): void {
     if (mode !== ctx.getSharedViz()) {
       ctx.setSharedViz(mode);
-      ctx.setFrontDim(!!DIRECT_CFG[mode]); // HC: carros/placas/semáforo (frente) escurecem como fundo
+      ctx.setFrontDim(!!DIRECT_CFG[mode]); // HC: foreground props darken like the background
       ctx.worldSprite.texture = worldTexFor(mode);
       ctx.parallaxLayers.forEach((ts, j) => { ts.texture = ctx.parallaxTexFor(j, mode); });
       ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(mode); });
       for (const s of ctx.getItemSprites()) { if (s) s.texture = spriteTexFor(ctx.itemTexId, mode); }
       for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.texture = ctx.pupTexFor(pu.kind, mode); }
     }
-    for (const pl of ctx.getPlayers()) { if (pl.sprite && pl._tx) pl.sprite.texture = ctx.playerVizTex(pl._tx, mode); } // player muda de quadro toda frame
+    for (const pl of ctx.getPlayers()) { if (pl.sprite && pl._tx) pl.sprite.texture = ctx.playerVizTex(pl._tx, mode); } // the player changes frame every tick
   }
 
-  // bolinhas indicadoras por viewport (sobre os sprites de saída → NÃO sofrem o filtro do viewport, ex. cegueira)
+  // per-viewport indicator dots (over the output sprites → they do NOT get the viewport's filter, e.g. blindness)
   function updateVpDots(): void {
     const dots = ctx.getVpDots(), players = ctx.getPlayers();
     for (let i = 0; i < dots.length; i++) {
@@ -272,10 +264,10 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   function applyVpFilters(): void {
     const spr = ctx.getVpSpr(), players = ctx.getPlayers();
-    // ⚠️ `filterKey` E NÃO `p.viz` (#104). É a outra metade do par que a etapa 0 mediu: o TEMA vai pela
-    // textura (`playerVizTex`/`applySharedTextures`) e a CORREÇÃO ou SIMULAÇÃO vai pelo FILTRO — e é
-    // exactamente por serem dois caminhos que os dois eixos podem coexistir. `null` (sem filtro) entra como
-    // `'normal'`, que é a chave que o `pixiFilterFor` já usa para «nenhum», e ele cacheia por ela.
+    // ⚠️ `filterKey` AND NOT `p.viz` (#104). The THEME goes through the texture (`playerVizTex`/`applySharedTextures`)
+    // and the CORRECTION or SIMULATION through the FILTER — and it is precisely because they are two paths that the two
+    // axes can coexist. `null` (no filter) enters as `'normal'`, the key `pixiFilterFor` already uses for "none", and it
+    // caches by it.
     for (let i = 0; i < ctx.getNumPlayers(); i++) {
       const p = players[i];
       if (spr[i]) spr[i].filters = ctx.pixiFilterFor((p.visual && filterKey(p.visual)) || 'normal');
@@ -283,105 +275,99 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   }
 
   /**
-   * O ESCRITOR DE VERDADE desde a etapa 4 da #104: recebe o ESTADO, não uma chave.
+   * THE REAL WRITER (#104): it takes the STATE, not a key.
    *
-   * ⚠️ E É AQUI QUE O ESPELHO MUDA DE SIGNIFICADO, o que estava previsto e escrito. Enquanto os controles
-   * escreviam um valor de cada vez, `viz` conseguia ser «o modo equivalente». Com dois eixos não há chave
-   * única que descreva `hc7 + fix-deuter`, então o espelho passa a ser exactamente o que ele ainda consegue
-   * ser com honestidade: **a CHAVE DE TEXTURA** — `simulação ?? tema ?? normal`, o que mais muda o que se vê.
+   * ⚠️ AND HERE THE MIRROR CHANGES MEANING. While the controls wrote one value at a time, `viz` could be "the equivalent
+   * mode". With two axes no single key describes `hc7 + fix-deuter`, so the mirror is exactly what it can still honestly
+   * be: the legacy key (`legacyKey`) — simulation, else theme, else correction, else default.
    *
-   * Isso não é uma perda escondida: é a mesma chave que o `setVizModeValue` já escreve, e o invariante do
-   * gate passou a afirmá-la nesses termos. Um leitor antigo continua a ver algo verdadeiro sobre a tela; o
-   * que ele deixa de ver é a metade que a forma antiga nunca soube dizer.
+   * It is not a hidden loss: an old reader still sees something true about the screen; what it stops seeing is the half
+   * the old shape never could say.
    */
   function writePlayerVisual(i: number, v: VisualState): void {
     const p = ctx.getPlayers()[i];
     p.visual = v;
     p.viz = legacyKey(v);
-    store.set(store.KEYS.vizP(i), p.viz);        // legada: um leitor antigo faria `VIZ_BY_KEY[v]` e recusaria JSON
-    store.setJSON(store.KEYS.visualP(i), v);     // nova: os dois eixos, que a chave velha não sabe dizer
+    store.set(store.KEYS.vizP(i), p.viz);        // legacy: an old reader would do `VIZ_BY_KEY[v]` and refuse JSON
+    store.setJSON(store.KEYS.visualP(i), v);     // new: the two axes, which the old key cannot say
     applyPlayerVisual(i, v);
   }
 
-  /** Muda SÓ o tema deste jogador. A correção e a simulação ficam onde estavam — é o ponto da #104. */
+  /** Changes ONLY this player's theme. The correction and the simulation stay where they were — the point of #104. */
   function writePlayerTheme(i: number, theme: Theme): void {
     const p = ctx.getPlayers()[i];
     writePlayerVisual(i, { ...(p.visual ?? DEFAULT_VISUAL), tema: theme });
   }
 
-  /** Muda SÓ a correção de cor deste jogador. O tema e a simulação ficam onde estavam. */
+  /** Changes ONLY this player's colour correction. The theme and the simulation stay where they were. */
   function writePlayerCorrection(i: number, correction: Correction): void {
     const p = ctx.getPlayers()[i];
     writePlayerVisual(i, { ...(p.visual ?? DEFAULT_VISUAL), correcao: correction });
   }
 
-  /** A API antiga, por chave única. Continua a valer: um jogo que escolhe um modo inteiro passa por aqui. */
+  /** The old API, by a single key. It still holds: a game that picks a whole mode goes through here. */
   function setPlayerViz(i: number, mode: string): void {
     writePlayerVisual(i, migrateVisual(resolveViz(mode).key));
   }
 
-  /** Os efeitos colaterais de ter mudado o visual de um jogador. Separados do ESCREVER de propósito: os dois
-   *  escritores por eixo e o antigo por chave partilham-nos, e uma cópia a mais seria uma cópia a divergir. */
+  /** The side effects of having changed a player's visual. Separate from WRITING on purpose: the two per-axis writers
+   *  and the old per-key one share them, and one more copy would be one more copy to drift. */
   function applyPlayerVisual(i: number, v: VisualState): void {
     ctx.invalidateSharedViz();
-    if (isBlind(v)) (ctx.setBlindMode ?? setBlindModeValue)(true); // empatia cegueira total liga o modo cego (áudio) por padrão
+    if (isBlind(v)) (ctx.setBlindMode ?? setBlindModeValue)(true); // total-blindness empathy turns blind mode (audio) on by default
     if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(v); } else { applyVpFilters(); updateVpDots(); }
     ctx.reflectVizButtons(); ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }
 
   /**
-   * ⚠️ AQUI É QUE OS DOIS EIXOS PASSAM A COEXISTIR (#104, ADR-0076), e a função nem cresceu — ela SEPAROU-SE.
+   * ⚠️ THIS IS WHERE THE TWO AXES COEXIST (#104, ADR-0076), and the function did not grow — it SPLIT.
    *
-   * Enquanto o estado era uma chave só, cada linha abaixo perguntava a mesma coisa (`mode`, `m.kind`) e a
-   * resposta tinha de ser uma. Com dois eixos, as mesmas linhas dividem-se em três grupos que nunca se
-   * tocaram — e essa é a razão de a composição já ser mecanicamente possível, como o `viz-axes` regista:
+   * With one key, every line below asked the same thing (`mode`, `m.kind`) and the answer had to be one. With two axes,
+   * the same lines fall into three groups that never touch — which is why the composition is mechanically possible, as
+   * `viz-axes` records:
    *
-   *   · TEMA (contraste) → textura e classe de DOM. `textureKey` e `hasHighContrast`.
-   *   · CORREÇÃO ou SIMULAÇÃO → filtro CSS. `filterKey`.
-   *   · SIMULAÇÃO → as classes do corpo, o overlay, os controles de toque, a bolinha.
+   *   · THEME (contrast) → texture and DOM class. `textureKey` and `hasHighContrast`.
+   *   · CORRECTION or SIMULATION → CSS filter. `filterKey`.
+   *   · SIMULATION → the body classes, the overlay, the touch controls, the dot.
    *
-   * ⚠️ E O ALCANCE DO FILTRO CONTINUA A DEPENDER DE SIMULAR OU CORRIGIR, que é a distinção do ADR-0046: uma
-   * CORREÇÃO alcança os menus, porque a criança precisa dela para LER o menu; uma SIMULAÇÃO fica no mundo,
-   * porque quem simula tem de conseguir sair.
+   * ⚠️ AND THE FILTER'S REACH STILL DEPENDS ON SIMULATING OR CORRECTING, ADR-0046's distinction: a CORRECTION reaches the
+   * menus, because the child needs it to READ the menu; a SIMULATION stays in the world, because whoever simulates has to
+   * be able to leave.
    *
-   * `setVizModeValue` continua a escrever a chave ÚNICA legada, e a que ele escreve é a de TEXTURA — que é
-   * `simulação ?? tema ?? normal`, ou seja o que mais muda o que se vê. É espelho, não fonte: o estado a
-   * sério são os dois eixos, e esta linha sai quando o último leitor da chave velha sair.
+   * `setVizModeValue` keeps writing the single legacy key. It is a mirror, not a source: the real state is the two axes,
+   * and this line goes when the last reader of the old key goes.
    */
   function applyVizGlobal(v: VisualState): void {
     const filterName = filterKey(v);
     const textureForMode = textureKey(v);
-    // ⚠️ `legacyKey` E NÃO `textura`: a de textura devolve `normal` para uma correção de cor, e escrevê-la
-    // aqui faria um leitor antigo da chave global perder a correção da criança. Ver a nota em `legacyKey`.
-    setVizModeValue(legacyKey(v)); // core/state: valor + persistência (incl_viz) + evento — espelho legado
-    // ANTES daqui saía também `ctx.setHcMode(m.kind === 'hcnew')`, alimentando um `let hcMode` no game.js cujo
-    // único leitor era o gancho window.__incl. Era `vizMode` reescrito com outro nome: derivar de VIZ_BY_KEY
-    // custa uma comparação e não pode divergir. (O inicializador daquele `let` usava OUTRA fórmula,
-    // `vizMode!=='normal'`, e discordava do setter — sem efeito, porque applyVizGlobal roda no boot antes de
-    // o gancho existir, mas é o sintoma clássico de cópia de estado.)
-    // --- eixo CORREÇÃO/SIMULAÇÃO: o filtro CSS ---
+    // ⚠️ `legacyKey` AND NOT the texture key: that one returns `normal` for a colour correction, and writing it here
+    // would make an old reader of the global key lose the child's correction. See the note on `legacyKey`.
+    setVizModeValue(legacyKey(v)); // core/state: value + persistence (incl_viz) + event — the legacy mirror
+    // There is no separate "high contrast is on" flag: deriving it from VIZ_BY_KEY costs a comparison and cannot drift,
+    // where a copied flag once disagreed with its own setter.
+    // --- the CORRECTION/SIMULATION axis: the CSS filter ---
     ctx.applyCssFilter(cssFilterFor(filterName ?? '', lqFilter()), isSimulation(v) ? 'mundo' : 'mundo-e-menus');
-    // --- eixo TEMA: DOM e textura. Não é filtro (ver `ApplyHighContrastToDom`), e é por isso que compõe.
+    // --- the THEME axis: DOM and texture. It is not a filter (see `ApplyHighContrastToDom`), which is why it composes.
     ctx.applyHighContrastToDom(hasHighContrast(v));
-    ctx.camera.filters = hasHighContrast(v) ? ctx.pixiFilterFor(textureForMode) : null; // solo: alto contraste na câmera
-    ctx.setFrontDim(hasHighContrast(v)); // HC: frente (carros/placas/semáforo) escurece como fundo
-    ctx.worldSprite.texture = worldTexFor(textureForMode);         // alto contraste direto = Renderização Direta · resto=normal
+    ctx.camera.filters = hasHighContrast(v) ? ctx.pixiFilterFor(textureForMode) : null; // solo: high contrast on the camera
+    ctx.setFrontDim(hasHighContrast(v)); // HC: the foreground props darken like the background
+    ctx.worldSprite.texture = worldTexFor(textureForMode);         // direct high contrast = Direct Rendering · else normal
     ctx.parallaxLayers.forEach((ts, i) => { ts.texture = ctx.parallaxTexFor(i, textureForMode); });
     ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(textureForMode); });
     ctx.rebuildExtras(); ctx.rebuildCoins();
-    // --- SIMULAÇÃO: baixa visão = névoa+manchas (overlay) + bolinha verde; cegueira = tela preta + esconde
-    //     controles + bolinha branca. Nenhuma delas olha para o tema, e é por isso que o tema não as apaga.
+    // --- SIMULATION: low vision = haze+spots (overlay) + green dot; blindness = black screen + hidden controls + white
+    //     dot. None of them looks at the theme, which is why the theme does not erase them.
     ctx.body.classList.toggle('lowvision-mode', isLowVision(v));
     ctx.body.classList.toggle('blind-mode', isBlind(v));
     const ov = ctx.$('#viz-overlay');
     if (ov) { ov.hidden = !isLowVision(v); ov.className = isLowVision(v) ? 'lv-' + String(v.simulacao).slice(3) : ''; }
     if (isBlind(v)) { ctx.hideTouchControls('cegueira'); }
     updateVizIndicator(isBlind(v) ? 'blind' : isLowVision(v) ? 'lowvision' : 'normal');
-    ctx.reflectVizButtons(); // (a guarda `typeof ...==='function'` do original morreu: era declaração de função, sempre verdadeira)
+    ctx.reflectVizButtons();
     ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }
 
-  // bolinha indicadora (canto sup. dir.): branca=cegueira, verde=baixa visão; toque/clique 2× volta ao normal
+  // the indicator dot (top right corner): white=blindness, green=low vision; a double tap/click goes back to normal
   function updateVizIndicator(kind: string): void {
     const el = ctx.$('#viz-indicator'); if (!el) return;
     const s = vizIndicatorFor(kind);
@@ -390,12 +376,12 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     el.setAttribute('aria-label', s.label);
   }
 
-  // MP: filtro CSS/overlay/bolinha globais OFF (por viewport agora)
+  // several screens: the global CSS filter/overlay/dot OFF (per viewport now)
   function reapplyVizAll(): void {
     ctx.invalidateSharedViz();
     if (ctx.getNumPlayers() <= 1) { applyVizGlobal(ctx.getPlayers()[0].visual ?? DEFAULT_VISUAL); }
     else {
-      ctx.applyCssFilter(lqFilter(), 'mundo-e-menus'); // realce L/Q é melhoria: alcança o menu
+      ctx.applyCssFilter(lqFilter(), 'mundo-e-menus'); // the L/Q enhancement is an enhancement: it reaches the menu
       ctx.camera.filters = null;
       ctx.body.classList.remove('lowvision-mode', 'blind-mode');
       const ov = ctx.$('#viz-overlay'); if (ov) ov.hidden = true;
@@ -403,7 +389,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     }
   }
 
-  // invalida os caches de textura direta (mundo depende de bg; sprites de fg) e re-renderiza
+  // invalidates the direct texture caches (the world depends on bg; sprites on fg) and re-renders
   function rebakeDirect(): void {
     clearWorldTexCache(); clearSpriteTexCache(); ctx.resetPupTexCache(); ctx.clearPlayerDirectCache(); ctx.invalidateSharedViz();
     if (ctx.getNumPlayers() <= 1) applyVizGlobal(ctx.getPlayers()[0].visual ?? DEFAULT_VISUAL); else applyVpFilters();
@@ -414,10 +400,10 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     if (ctx.getSelVizPlayer() >= ctx.getNumPlayers()) ctx.setSelVizPlayer(0);
     const tabs = ctx.$(tabsSel);
     if (tabs) {
-      tabs.hidden = true; // E3: sem abas — cada jogador edita só o seu
+      tabs.hidden = true; // no tabs — each player edits only their own
       tabs.innerHTML = '';
-      // NOTA (verbatim do original): o innerHTML acima já esvaziou `tabs`, então este querySelectorAll não
-      // acha nada e o listener nunca é ligado. Preservado como estava — ver relatório da extração.
+      // ⚠️ DEAD CODE, kept as it was: the innerHTML above has already emptied `tabs`, so this querySelectorAll finds
+      // nothing and the listener is never wired.
       tabs.querySelectorAll<HTMLElement>('button[data-vp]').forEach((b) => b.addEventListener('click', () => {
         ctx.setSelVizPlayer(+(b.dataset.vp as string)); ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
       }));
@@ -426,17 +412,17 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     const v = players[sel]?.visual ?? DEFAULT_VISUAL;
     const cur = legacyKey(v);
     el.innerHTML = vizGroupHtml(modes, cur);
-    // ⚠️ A RECUSA DA SIMULAÇÃO (#104, ADR-0076 §4). Com qualquer dos dois eixos fora do padrão, uma
-    // demonstração não mostra a deficiência — mostra o AJUSTE por cima do qual ela corre, e isso ensina uma
-    // coisa falsa. A linha CONTINUA na tela, desabilitada e com o motivo: sumir ensinaria que a coisa não
-    // existe, e um adulto concluiria que ela foi tirada em vez de perceber que foi ele que ligou o contraste.
+    // ⚠️ THE SIMULATION'S REFUSAL (#104, ADR-0076 §4). With either axis off its default, a demonstration does not show
+    // the disability — it shows the SETTING it runs over, and that teaches something false. The row STAYS on screen,
+    // disabled and with the reason: vanishing would teach that the thing does not exist, and an adult would conclude it
+    // was taken away instead of noticing they turned the contrast on themselves.
     //
-    // A prosa entra num `.opt-hint`, que é o que a casca (`ui/settings-panel.fillExplain`) MOVE para o rodapé
-    // — a regra das três zonas do CLAUDE.md: a explicação mora no rodapé, nunca na linha.
+    // The prose goes into an `.opt-hint`, which the shell (`ui/settings-panel.fillExplain`) MOVES to the footer — the
+    // three-zone rule in CLAUDE.md: the explanation lives in the footer, never in the row.
     //
-    // ⚠️ SÓ AS LINHAS QUE SIMULAM. Esta função desenha hoje a lista de simulações (o painel visual passou a
-    // usar o `drawVisualAxes`), mas ela continua a receber os modos por parâmetro — e uma correção de
-    // cor nesta lista não deve ser recusada por causa do eixo dela própria.
+    // ⚠️ ONLY THE ROWS THAT SIMULATE. This function draws the list of simulations (the visual panel uses
+    // `drawVisualAxes`), but it still gets the modes as a parameter — and a colour correction in this list must not be
+    // refused because of its own axis.
     const refusal = simulationRefusal(v);
     el.querySelectorAll<HTMLElement>('button[data-viz]').forEach((btn) => {
       const key = btn.dataset.viz as string;
@@ -444,7 +430,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
         btn.setAttribute('aria-disabled', 'true');
         const explanation = btn.closest('.ctrl-row')?.querySelector<HTMLElement>('.opt-hint');
         if (explanation) explanation.textContent = `${explanation.textContent} ${t(refusal.key)}`.trim();
-        return; // sem ouvinte: aceitar o clique e ignorá-lo é a outra metade do que o ADR proíbe
+        return; // no listener: accepting the click and ignoring it is the other half of what the ADR forbids
       }
       btn.addEventListener('click', () => {
         setPlayerViz(ctx.getSelVizPlayer(), key);
@@ -454,16 +440,16 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   }
 
   /**
-   * OS DOIS EIXOS no painel VISUAL (#104). Irmão do `renderVizGroup`, e SEPARADO dele de propósito.
+   * The TWO AXES in the VISUAL panel (#104). The sibling of `renderVizGroup`, and SEPARATE from it on purpose.
    *
-   * ⚠️ QUASE FIZ ISTO DENTRO DO `renderVizGroup`, E TERIA PARTIDO O PAINEL DE EMPATIA. Aquela função serve os
-   * DOIS painéis — `#visual-modes` com os sete modos e `#empathy-list` com as nove simulações —, e trocar o
-   * corpo dela teria posto os dois eixos na lista de simulações. Ali o rádio único continua CERTO: as
-   * simulações são mesmo exclusivas entre si, e o que deixou de ser exclusivo foi outra coisa.
+   * ⚠️ DOING THIS INSIDE `renderVizGroup` WOULD BREAK THE EMPATHY PANEL. That function serves BOTH panels —
+   * `#visual-modes` with the seven modes and `#empathy-list` with the nine simulations —, and changing its body would put
+   * the two axes into the list of simulations. There the single radio stays RIGHT: the simulations really are exclusive
+   * among themselves; what stopped being exclusive is something else.
    *
-   * ⚠️ E OS DOIS GRUPOS ENTRAM NO CONTENEDOR QUE JÁ EXISTE, sem markup nova do hospedeiro. Exigir um elemento
-   * a mais faria cada um dos 300 jogos ter de se lembrar dele — a forma de defeito que o ADR-0106 acabou de
-   * medir em cinco jogos sem barra de acessibilidade nenhuma.
+   * ⚠️ AND THE TWO GROUPS GO INTO THE CONTAINER THAT ALREADY EXISTS, with no new host markup. Requiring one more element
+   * would make every game have to remember it — the shape of defect ADR-0106 measured in five games with no accessibility
+   * bar at all.
    */
   function drawVisualAxes(listSel: string, tabsSel: string): void {
     const el = ctx.$(listSel); if (!el) return;
@@ -474,7 +460,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     el.innerHTML = axesHtml(v, t);
     el.querySelectorAll<HTMLElement>('button[data-eixo]').forEach((btn) => btn.addEventListener('click', () => {
       const choice = buttonChoice(btn.dataset);
-      if (!choice) return; // botão de outro assunto, ou um `data-` editado à mão: não se adivinha
+      if (!choice) return; // a button of another subject, or a hand-edited `data-`: no guessing
       const i = ctx.getSelVizPlayer();
       if (choice.axis === 'tema') {
         writePlayerTheme(i, choice.value as Theme);
@@ -489,7 +475,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   return {
     applySharedTextures, updateVpDots, applyVpFilters, setPlayerViz, applyVizGlobal, reapplyVizAll,
     updateVizIndicator, rebakeDirect, renderVizGroup, renderVisualAxes: drawVisualAxes,
-    // Os DOIS escritores por eixo (#104): é o que um painel de dois controles chama.
+    // The TWO per-axis writers (#104): what a two-control panel calls.
     setPlayerVisual: writePlayerVisual, setPlayerTheme: writePlayerTheme, setPlayerCorrection: writePlayerCorrection,
   };
 }

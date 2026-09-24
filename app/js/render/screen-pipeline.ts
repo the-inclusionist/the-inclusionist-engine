@@ -1,135 +1,128 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/screen-pipeline — QUANTAS TELAS EXISTEM, ONDE ELAS FICAM, E O QUE CADA UMA GANHA DE OBJETO PIXI.
+// render/screen-pipeline — HOW MANY SCREENS EXIST, WHERE THEY SIT, AND WHICH PIXI OBJECTS EACH ONE GETS.
 //
-// Este módulo é o antigo `configureRender()` do main.js. Ele roda toda vez que o número de jogadores muda
-// (`setNumPlayers`) e no reinício da rodada (`restartGame`), e é a única função do jogo que troca a TOPOLOGIA
-// do render: de "uma câmera desenhada direto no stage" para "N render-textures, uma por jogador, cada uma
-// virando um sprite posicionado na grade" — e de volta.
+// It runs whenever the number of players changes and when a round restarts, and it is the one function that changes the
+// render TOPOLOGY: from "one camera drawn straight onto the stage" to "N render textures, one per player, each becoming a
+// sprite placed on the grid" — and back.
 //
-// ======================= É ENGINE, E NÃO DESTE JOGO =======================
-// "N jogadores em telas SEPARADAS, sem split-screen" é o pilar 7 do ADR-0010: vale para os 35+ jogos da
-// coleção EdSP, não só para *The Inclusionist*. Um segundo jogo reusaria isto INTEIRO — nada aqui sabe o que
-// é uma moeda, um power-up, um portão ou uma área secreta. O que o módulo conhece é: um stage, um renderer,
-// uma câmera, e a conta de `core/screens.ts`. Por isso ele mora em `render/`, ao lado de `render/viewports.ts`,
-// e por isso todo o resto (o HUD, os filtros de a11y, as bolinhas) entra por INJEÇÃO, como callback — quem
-// troca o pipeline não precisa saber o que mais o jogo quer refazer quando o pipeline troca.
+// ======================= IT IS ENGINE, NOT ONE GAME'S =======================
+// "N players on SEPARATE screens, no split-screen" is ADR-0010's pillar 7: it holds for every game, not one. A second
+// game reuses this WHOLE — nothing here knows what a coin, a power-up, a gate or a secret area is. What the module knows
+// is: a stage, a renderer, a camera, and `core/screens.ts`'s arithmetic. That is why it lives in `render/`, beside
+// `render/viewports.ts`, and why everything else (the HUD, the accessibility filters, the dots) comes in by INJECTION,
+// as a callback — whoever swaps the pipeline does not need to know what else the game wants to redo when it swaps.
 //
-// ======================= POR QUE UM ARQUIVO IRMÃO, E NÃO DENTRO DE render/viewports.ts =======================
-// Os dois falam de "viewport", mas respondem a perguntas diferentes, e a diferença é justamente a fronteira:
-//   · `render/viewports.ts` é a FÁBRICA DE IMAGEM — dado um MODO de visão acessível, como o pixel sai
-//     (matriz de daltonismo, névoa de catarata, contorno do alto contraste). Ele CONSOME `vpTex` por getter e
-//     nunca o cria. É uma pergunta sobre COR e FILTRO.
-//   · aqui é a TOPOLOGIA — quantas render-textures existem, de que tamanho é o canvas, onde cada sprite fica,
-//     onde a moldura é traçada, onde a bolinha indicadora é ancorada. É uma pergunta sobre GEOMETRIA e CICLO
-//     DE VIDA (destruir o conjunto anterior antes de montar o novo).
-// Fundir os dois daria um módulo cujo `ctx` teria ~25 campos e cujo nome só poderia ser "coisas de viewport",
-// que é um tema, não uma responsabilidade — exatamente o argumento do cabeçalho de `input/touch-bindings.ts`.
-// Há ainda um motivo mecânico: `viewports.ts` é quem LÊ `vpTex` (`getVpTex()`); este módulo é quem o
-// REATRIBUI. Deixar leitor e escritor no mesmo arquivo apagaria a única pista de que aquele array troca de
-// identidade a cada mudança de nº de telas — e é essa troca que obriga metade dos getters do projeto.
-// O elo real entre os dois é estreito e explícito: `applyVpFilters()` e `updateVpDots()`, dois callbacks de
-// ré-aplicação chamados no fim do caminho multi-tela.
+// ======================= WHY A SIBLING FILE, AND NOT INSIDE render/viewports.ts =======================
+// Both speak of "viewport", but they answer different questions, and the difference is exactly the boundary:
+//   · `render/viewports.ts` is the IMAGE FACTORY — given an accessible vision MODE, how the pixel comes out
+//     (colour-blindness matrix, cataract haze, high-contrast outline). It CONSUMES the viewport textures by getter and
+//     never creates them. It is a question about COLOUR and FILTER.
+//   · here is the TOPOLOGY — how many render textures exist, how big the canvas is, where each sprite sits, where the
+//     frame is drawn, where the indicator dot is anchored. It is a question about GEOMETRY and LIFECYCLE (destroying the
+//     previous set before building the new one).
+// Merging them would give a module whose `ctx` had ~25 fields and whose name could only be "viewport stuff", which is a
+// theme, not a responsibility — exactly the argument of `input/touch-bindings.ts`'s header. There is also a mechanical
+// reason: `viewports.ts` READS the viewport textures (`getVpTex()`); this module REASSIGNS them. Keeping reader and writer
+// in one file would erase the only clue that the array changes identity on every change in the number of screens. The
+// real link between the two is narrow and explicit: `applyVpFilters()` and `updateVpDots()`, two reapply callbacks called
+// at the end of the multi-screen path.
 //
-// ======================= A PARTE PURA: PLANEJAR ≠ CONSTRUIR =======================
-// O bloco original trançava a conta da grade com as chamadas do PIXI. Aqui a conta saiu inteira para
-// `planScreens(n)`, que devolve, sem tocar em nada: o tamanho do canvas, e para cada tela a sua posição, o
-// retângulo da moldura e a âncora da bolinha. `configureRender()` vira execução de um plano.
-// É `planScreens` que carrega as três regras que ninguém enxergava no meio dos `new PIXI.Sprite`:
-//   · a grade vem de `core/screens.ts` (`screenGrid`) — a MESMA fonte do layout, do HUD e do CRT. A cópia que
-//     vivia aqui era a quinta, e era a DIVERGENTE (`cols = n<=2 ? n : 2`, sem a guarda de `n<=1`);
-//   · com 3 telas, a terceira é CENTRALIZADA na linha de baixo — `x = (LOGICAL_W*cols - LOGICAL_W)/2`;
-//   · a moldura é traçada em meio pixel (`+0.5`) e 1px menor nos dois lados, senão a linha de 1px lógico sai
-//     borrada ou comida pela borda do canvas quando a escala inteira multiplica tudo.
+// ======================= THE PURE PART: PLANNING ≠ BUILDING =======================
+// The grid arithmetic lives entirely in `planScreens(n)`, which returns, touching nothing: the canvas size, and for each
+// screen its position, the frame's rectangle and the dot's anchor. `configureRender()` is the execution of a plan.
+// `planScreens` carries the three rules nobody could see among the sprite constructions:
+//   · the grid comes from `core/screens.ts` (`screenGrid`) — the SAME source as the layout, the HUD and the CRT (a local
+//     copy once diverged: `cols = n<=2 ? n : 2`, without the `n<=1` guard);
+//   · with 3 screens, the third is CENTRED on the bottom row — `x = (LOGICAL_W*cols - LOGICAL_W)/2`;
+//   · the frame is drawn on the half pixel (`+0.5`) and 1px smaller on both sides, or the 1-logical-px line comes out
+//     blurred or eaten by the canvas edge when the integer scale multiplies everything.
 //
-// ======================= O QUE FICOU DE FORA =======================
-//  · `buildGameHud`, `applyVpFilters`, `updateVpDots` e `setMinimapVisible` são CALLBACKS. O HUD é DOM
-//    sobreposto (ui/hud.ts), os filtros são política de a11y (render/viz-setters.ts) e o minimapa é outro
-//    subsistema; este módulo só sabe QUANDO eles precisam rodar de novo, não COMO.
-//  · quem cria `camera` e solda o z-order dela continua sendo o main.js. Daqui só se move a câmera entre
-//    "filha do stage" (tela única) e "órfã, desenhada à mão nas render-textures" (multi-tela).
-//  · o LAÇO de render por viewport (quem chama `renderer.render(camera,{renderTexture:vpTex[i]})` a cada
-//    quadro) é de `render/draw.ts`. Aqui se monta a infraestrutura; lá ela é usada.
+// ======================= WHAT STAYED OUT =======================
+//  · `buildGameHud`, `applyVpFilters`, `updateVpDots` and `setMinimapVisible` are CALLBACKS. The HUD is overlaid DOM, the
+//    filters are accessibility policy (render/viz-setters.ts) and a minimap is a game's own; this module only knows WHEN
+//    they need to run again, not HOW.
+//  · The host creates the `camera` and welds its z-order. From here the camera only moves between "the stage's child"
+//    (one screen) and "an orphan, drawn by hand into the render textures" (several screens).
+//  · The per-viewport render LOOP (whoever calls `renderer.render(camera,{renderTexture:vpTex[i]})` every frame) is the
+//    host's drawing. Here the infrastructure is built; there it is used.
 //
-// ======================= ARMADILHAS DE ORDEM DE BOOT =======================
-//  · `applyVpFilters` e `updateVpDots` são `const` desestruturados de `initVizSetters`, ~300 linhas ABAIXO do
-//    ponto onde este init cabe. Por isso entram no `ctx` como SETAS PREGUIÇOSAS (`() => applyVpFilters()`):
-//    passá-los por valor derrubaria o boot na TDZ. Isso é seguro porque `configureRender` NUNCA é chamado
-//    durante o boot — só por `setNumPlayers`/`restartGame` (game/session.ts), que só rodam a partir de um
-//    clique ou do início de partida, muito depois do módulo inteiro ter avaliado.
-//  · `vpTex`/`vpSpr`/`vpFrames`/`vpDots` são `let` do main.js que ESTE módulo reatribui, e que outros três
-//    módulos leem por getter (`viewports`, `viz-setters`, `draw`). Por isso o `ctx` traz o par getter+setter
-//    de cada um, em vez de o módulo ser dono dos arrays: se ele fosse dono, o main.js teria de trocar os
-//    quatro getters que já distribuiu, e a religação deixaria de ser local.
-//  · SEM I/O no import: nada de `document`, nada de canvas no corpo. `planScreens` é aritmética pura e roda no
-//    project `node`; tudo que toca PIXI só acontece dentro de `configureRender()`.
+// ======================= BOOT-ORDER TRAPS =======================
+//  · `applyVpFilters` and `updateVpDots` may be built after this init, so they enter the `ctx` as LAZY ARROWS
+//    (`() => applyVpFilters()`): passing them by value would read them before they exist. That is safe because
+//    `configureRender` is never called during boot — only when the player count changes or a round restarts.
+//  · The viewport textures, sprites, frames and dots are the host's, REASSIGNED by this module and read by getter
+//    elsewhere (`viewports`, `viz-setters`). That is why the `ctx` carries a getter+setter pair for each, instead of the
+//    module owning the arrays: were it the owner, the host would have to swap the getters it already handed out, and the
+//    rewiring would stop being local.
+//  · NO I/O on import: no `document`, no canvas in the body. `planScreens` is pure arithmetic and runs in the `node`
+//    project; everything touching PIXI only happens inside `configureRender()`.
 //
-// PIXI entra por INTERFACE ESTRUTURAL, e não por `import * as PIXI` — mesmo precedente de render/viewports,
-// render/scene-sky e game/traffic. Aqui o motivo é mais forte do que o de costume: este é o módulo que mais
-// mexe em tipos concretos do engine (`RenderTexture`, `Sprite`, `Graphics`, `SCALE_MODES`), e é exatamente
-// isso que o obrigaria a arrastar 445KB de PixiJS para dentro do project `node` do Vitest se importasse.
+// PIXI comes in through a STRUCTURAL INTERFACE, not `import * as PIXI` — the same precedent as render/viewports. The
+// reason is stronger than usual here: this is the module that touches the most concrete engine types (`RenderTexture`,
+// `Sprite`, `Graphics`, `SCALE_MODES`), and importing them would drag 445KB of PixiJS into Vitest's `node` project.
 
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { screenGrid } from '../core/screens.js';
 import type { CreateSprite, CreateDrawing, WithFilter, DrawingWithCircle } from './port.js';
 
-/* ===================== a parte PURA: o plano da grade ===================== */
+/* ===================== the PURE part: the grid plan ===================== */
 
-/** Retângulo em pixels lógicos. */
+/** A rectangle in logical pixels. */
 export interface Rect { x: number; y: number; w: number; h: number }
 
-/** Onde uma tela fica e o que se desenha em volta dela. */
+/** Where a screen sits and what is drawn around it. */
 export interface ViewportPlacement {
-  /** Canto superior esquerdo do sprite da tela, no canvas. */
+  /** The top-left corner of the screen's sprite, on the canvas. */
   x: number;
   y: number;
-  /** Retângulo da moldura (meio pixel para dentro, 1px menor nos dois lados — ver o cabeçalho). */
+  /** The frame's rectangle (half a pixel in, 1px smaller on both sides — see the header). */
   frame: Rect;
-  /** Âncora da bolinha indicadora do modo de visão (canto superior DIREITO da tela, para dentro). */
+  /** The anchor of the vision mode's indicator dot (the screen's top RIGHT corner, inwards). */
   dot: { x: number; y: number };
 }
 
-/** O plano completo de render para `n` jogadores. */
+/** The complete render plan for `n` players. */
 export interface ScreenPlan {
-  /** `true` = caminho de TELA ÚNICA: a câmera vai direto no stage, sem render-texture nenhuma. */
+  /** `true` = the SINGLE-SCREEN path: the camera goes straight onto the stage, with no render texture. */
   single: boolean;
   cols: number;
   rows: number;
-  /** Tamanho a que o renderer é redimensionado. */
+  /** The size the renderer is resized to. */
   canvas: { w: number; h: number };
-  /** Uma entrada por tela — VAZIO no caminho de tela única, que não tem viewport. */
+  /** One entry per screen — EMPTY on the single-screen path, which has no viewport. */
   viewports: ViewportPlacement[];
 }
 
-/** Cor da moldura de tela (o mesmo cinza-azulado da borda do canvas em tela única). */
+/** The screen frame's colour (the same blue-grey as the canvas border on a single screen). */
 export const FRAME_COLOR = 0xcdd6f2;
-/** Opacidade da moldura. */
+/** The frame's opacity. */
 export const FRAME_ALPHA = 0.95;
-/** Espessura da moldura, em pixels LÓGICOS (escala junto com o canvas). */
+/** The frame's thickness, in LOGICAL pixels (it scales with the canvas). */
 export const FRAME_WIDTH = 1;
-/** Recuo da bolinha indicadora a partir da borda direita da tela. */
+/** The indicator dot's inset from the screen's right edge. */
 export const DOT_INSET_X = 9;
-/** Recuo da bolinha indicadora a partir do topo da tela. */
+/** The indicator dot's inset from the screen's top. */
 export const DOT_INSET_Y = 9;
 
 /**
- * A geometria de render para `n` jogadores, sem tocar em nada.
+ * The render geometry for `n` players, touching nothing.
  *
- * `n <= 1` devolve `single: true` e NENHUM viewport: em tela única a câmera é filha do stage e o PIXI desenha
- * direto no canvas — não há render-texture, nem moldura, nem bolinha (o indicador de modo de visão de tela
- * única é outro, no DOM).
+ * `n <= 1` returns `single: true` and NO viewport: on a single screen the camera is the stage's child and PIXI draws
+ * straight onto the canvas — there is no render texture, no frame and no dot (the single screen's vision-mode indicator
+ * is another one, in the DOM).
  *
- * `w`/`h` são parâmetros com o pixel canônico (320×180, ADR-0010) por padrão — não para o jogo trocá-los, mas
- * para a conta ser conferível com números pequenos no teste.
+ * `w`/`h` are parameters defaulting to the canonical pixel (320×180, ADR-0010) — not for the game to change them, but so
+ * the arithmetic can be checked with small numbers in the test.
  */
 export function planScreens(n: number, w: number = LOGICAL_W, h: number = LOGICAL_H): ScreenPlan {
-  const { cols, rows } = screenGrid(n); // fonte única: core/screens.ts (era a 5ª cópia, e a divergente)
+  const { cols, rows } = screenGrid(n); // the single source: core/screens.ts
   if (n <= 1) return { single: true, cols, rows, canvas: { w, h }, viewports: [] };
 
   const viewports: ViewportPlacement[] = [];
   for (let i = 0; i < n; i++) {
     let x = (i % cols) * w;
     const y = Math.floor(i / cols) * h;
-    if (n === 3 && i === 2) x = (w * cols - w) / 2; // 3 telas: a 3ª centralizada na linha de baixo
+    if (n === 3 && i === 2) x = (w * cols - w) / 2; // 3 screens: the 3rd centred on the bottom row
     viewports.push({
       x, y,
       frame: { x: x + 0.5, y: y + 0.5, w: w - 1, h: h - 1 },
@@ -139,73 +132,73 @@ export function planScreens(n: number, w: number = LOGICAL_W, h: number = LOGICA
   return { single: false, cols, rows, canvas: { w: w * cols, h: h * rows }, viewports };
 }
 
-/* ===================== interfaces estruturais (PIXI sem importar PIXI) ===================== */
+/* ===================== structural interfaces (PIXI without importing PIXI) ===================== */
 
-/** O que se toca de um `PIXI.BaseTexture`: só o modo de escala (NEAREST = pixel art sem borrar). */
+/** What is touched of a `PIXI.BaseTexture`: only the scale mode (NEAREST = pixel art without blur). */
 interface BaseTextureLike { scaleMode: number }
-/** O que se toca de uma `PIXI.RenderTexture`: o baseTexture e o descarte (`true` = destrói a base junto). */
+/** What is touched of a `PIXI.RenderTexture`: the baseTexture and disposal (`true` = destroys the base too). */
 export interface RenderTextureLike { baseTexture: BaseTextureLike; destroy(destroyBase?: boolean): void }
-/** `PIXI.RenderTexture` como FÁBRICA — é `RenderTexture.create({width,height})`, não um construtor. */
+/** `PIXI.RenderTexture` as a FACTORY — it is `RenderTexture.create({width,height})`, not a constructor. */
 export interface RenderTextureFactory { create(opts: { width: number; height: number }): RenderTextureLike }
-/** O mínimo de um objeto de cena posicionável e descartável. */
+/** The minimum of a positionable, disposable scene object. */
 export interface DisplayLike { x: number; y: number; visible: boolean; destroy(): void }
-/** `PIXI.Sprite` — aqui ele só nasce de uma render-texture e é posicionado.
- *  O `filters` NÃO é tocado aqui: quem põe filtro de GPU por tela é `render/viz-setters`, e é para lá que
- *  estes sprites vão (`getVpSpr`). A INVERSÃO DA FATIA MÍNIMA de novo — em posição de entrega, a fatia que
- *  vale é a de quem RECEBE, não a de quem lê. Ver o cabeçalho de `render/port`. */
+/** `PIXI.Sprite` — here it is only born from a render texture and positioned.
+ *  `filters` is NOT touched here: whoever puts a per-screen GPU filter is `render/viz-setters`, and that is where these
+ *  sprites go (`getVpSpr`). THE MINIMAL SLICE INVERTS again — in handing-over position, the slice that counts is the
+ *  RECEIVER's, not the reader's. See `render/port`'s header. */
 export type SpriteLike = DisplayLike & WithFilter;
-/** `PIXI.Graphics` — a moldura desenha; as bolinhas só são posicionadas (quem as pinta é viz-setters).
- *  E é por serem pintadas LÁ que a declaração inclui o desenho inteiro: as bolinhas saem daqui por
- *  `getVpDots` e o `viz-setters` chama `clear`/`beginFill`/`drawCircle` nelas. */
+/** `PIXI.Graphics` — the frame draws; the dots are only positioned (viz-setters paints them).
+ *  And because they are painted THERE, the declaration includes the whole drawing: the dots leave through `getVpDots`
+ *  and `viz-setters` calls `clear`/`beginFill`/`drawCircle` on them. */
 export interface GraphicsLike extends DisplayLike, DrawingWithCircle {}
-/** `PIXI.Container` no papel de pai de cena. */
+/** `PIXI.Container` in the role of a scene parent. */
 export interface ContainerLike {
   addChild(child: unknown): unknown;
   addChildAt(child: unknown, index: number): unknown;
   removeChild(child: unknown): unknown;
 }
-/** A câmera, vista daqui: só a sua PATERNIDADE importa (filha do stage ou órfã). */
+/** The camera, seen from here: only its PARENTHOOD matters (the stage's child or an orphan). */
 export interface CameraLike { parent: ContainerLike | null }
-/** `app.renderer` — daqui só se redimensiona o canvas. */
+/** `app.renderer` — from here only the canvas is resized. */
 export interface ResizableRenderer { resize(w: number, h: number): void }
 
 export interface ScreenPipelineCtx {
-  /* --- PIXI por interface estrutural --- */
+  /* --- PIXI through a structural interface --- */
   RenderTexture: RenderTextureFactory;                    // PIXI.RenderTexture
-  /** Fábricas, não construtores (Fase D): `new (texture: unknown)` não recebe o `PIXI.Sprite` real, cujo
-   *  construtor só aceita `Texture`. Ver `CreateSprite` no cabeçalho de `render/port`. */
+  /** Factories, not constructors: `new (texture: unknown)` does not take the real `PIXI.Sprite`, whose constructor only
+   *  accepts a `Texture`. See `CreateSprite` in `render/port`'s header. */
   createSprite: CreateSprite<SpriteLike>;
   createDrawing: CreateDrawing<GraphicsLike>;
   NEAREST: number;                                         // PIXI.SCALE_MODES.NEAREST
 
-  /* --- a cena --- */
+  /* --- the scene --- */
   stage: ContainerLike;        // app.stage
   renderer: ResizableRenderer; // app.renderer
-  camera: CameraLike;          // o container do mundo (`const` do main.js; só a paternidade muda)
+  camera: CameraLike;          // the world container (the host's; only its parenthood changes)
 
-  /* --- estado vivo do main.js --- */
-  getNumPlayers: () => number;                       // core/state.ts (reatribuído por setNumPlayers)
-  getVpTex: () => RenderTextureLike[]; setVpTex: (a: RenderTextureLike[]) => void; // `let` do main.js: par getter+setter
+  /* --- the host's live state --- */
+  getNumPlayers: () => number;                       // reassigned when the player count changes
+  getVpTex: () => RenderTextureLike[]; setVpTex: (a: RenderTextureLike[]) => void; // the host's: a getter+setter pair
   getVpSpr: () => SpriteLike[]; setVpSpr: (a: SpriteLike[]) => void;
   getVpFrames: () => GraphicsLike | null; setVpFrames: (g: GraphicsLike | null) => void;
   getVpDots: () => GraphicsLike[]; setVpDots: (a: GraphicsLike[]) => void;
 
-  /* --- o que precisa rodar de novo quando a topologia muda (callbacks, não conhecimento) --- */
-  setMinimapVisible: (on: boolean) => void; // render/minimap.ts — o minimapa só existe em tela única
-  buildGameHud: () => void;                 // ui/hud.ts — um HUD em DOM por tela
-  applyVpFilters: () => void;               // render/viz-setters.ts — SETA PREGUIÇOSA (TDZ; ver o cabeçalho)
-  updateVpDots: () => void;                 // render/viz-setters.ts — idem
+  /* --- what must run again when the topology changes (callbacks, not knowledge) --- */
+  setMinimapVisible: (on: boolean) => void; // a game's minimap — it only exists on a single screen
+  buildGameHud: () => void;                 // one DOM HUD per screen
+  applyVpFilters: () => void;               // render/viz-setters.ts — a LAZY ARROW (see the header)
+  updateVpDots: () => void;                 // render/viz-setters.ts — likewise
 }
 
 export interface ScreenPipelineApi {
-  /** Remonta o pipeline de render para o nº de jogadores ATUAL. Idempotente: destrói o conjunto anterior. */
+  /** Rebuilds the render pipeline for the CURRENT player count. Idempotent: it destroys the previous set. */
   configureRender(): void;
 }
 
 export function initScreenPipeline(ctx: ScreenPipelineCtx): ScreenPipelineApi {
   function configureRender(): void {
-    // 1) descarte do conjunto anterior — SEMPRE, inclusive ao voltar para tela única, senão as render-textures
-    //    da configuração passada ficariam na GPU sem ninguém para desenhá-las.
+    // 1) dispose of the previous set — ALWAYS, including when going back to a single screen, or the previous
+    //    configuration's render textures would stay on the GPU with nobody to draw them.
     ctx.getVpSpr().forEach((s) => s.destroy()); ctx.setVpSpr([]);
     ctx.getVpTex().forEach((t) => t.destroy(true)); ctx.setVpTex([]);
     const frames = ctx.getVpFrames();
@@ -214,7 +207,7 @@ export function initScreenPipeline(ctx: ScreenPipelineCtx): ScreenPipelineApi {
 
     const plan = planScreens(ctx.getNumPlayers());
 
-    // 2) tela única: a câmera volta a ser filha do stage (no fundo de tudo) e o PIXI desenha direto no canvas.
+    // 2) single screen: the camera is the stage's child again (beneath everything) and PIXI draws straight onto the canvas.
     if (plan.single) {
       if (ctx.camera.parent !== ctx.stage) ctx.stage.addChildAt(ctx.camera, 0);
       ctx.setMinimapVisible(true);
@@ -223,22 +216,22 @@ export function initScreenPipeline(ctx: ScreenPipelineCtx): ScreenPipelineApi {
       return;
     }
 
-    // 3) multi-tela: a câmera SAI da cena — passa a ser desenhada à mão, uma vez por viewport, dentro da
-    //    render-texture de cada jogador (o laço em si é de render/draw.ts).
+    // 3) several screens: the camera LEAVES the scene — it is drawn by hand, once per viewport, into each player's
+    //    render texture (the loop itself is the host's drawing).
     if (ctx.camera.parent) ctx.camera.parent.removeChild(ctx.camera);
-    ctx.setMinimapVisible(false); // minimapa é de tela única (não cabe replicado em 4 telas de 320×180)
+    ctx.setMinimapVisible(false); // a minimap is single-screen (it does not fit replicated in 4 screens of 320×180)
     ctx.renderer.resize(plan.canvas.w, plan.canvas.h);
 
     const vpTex: RenderTextureLike[] = [], vpSpr: SpriteLike[] = [];
     for (const vp of plan.viewports) {
       const rt = ctx.RenderTexture.create({ width: LOGICAL_W, height: LOGICAL_H });
-      rt.baseTexture.scaleMode = ctx.NEAREST; // pixel art: ampliar sem interpolar
+      rt.baseTexture.scaleMode = ctx.NEAREST; // pixel art: enlarge without interpolating
       const s = ctx.createSprite(rt); s.x = vp.x; s.y = vp.y;
       ctx.stage.addChild(s); vpTex.push(rt); vpSpr.push(s);
     }
     ctx.setVpTex(vpTex); ctx.setVpSpr(vpSpr);
 
-    // moldura: uma linha por tela, num único Graphics (separa e enquadra como a borda da tela única)
+    // the frame: one line per screen, in a single Graphics (it separates and frames like the single screen's border)
     const vpFrames = ctx.createDrawing();
     for (const vp of plan.viewports) {
       vpFrames.lineStyle(FRAME_WIDTH, FRAME_COLOR, FRAME_ALPHA);
@@ -246,8 +239,8 @@ export function initScreenPipeline(ctx: ScreenPipelineCtx): ScreenPipelineApi {
     }
     ctx.stage.addChild(vpFrames); ctx.setVpFrames(vpFrames);
 
-    // bolinhas indicadoras do modo de visão: ACIMA de tudo e FORA da render-texture, portanto fora do filtro
-    // do viewport — é por isso que elas continuam visíveis no modo cegueira (ver updateVpDots em viz-setters).
+    // the vision mode's indicator dots: ABOVE everything and OUTSIDE the render texture, so outside the viewport's
+    // filter — which is why they stay visible in blindness mode (see updateVpDots in viz-setters).
     ctx.setVpDots(plan.viewports.map((vp) => {
       const g = ctx.createDrawing();
       g.x = vp.dot.x; g.y = vp.dot.y; g.visible = false;
