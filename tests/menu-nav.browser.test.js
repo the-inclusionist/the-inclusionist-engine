@@ -706,6 +706,26 @@ describe('menuNavKey — o tradutor de teclado', () => {
     expect(esc.stops).toBe(1);
   });
 
+  it('🔴 [Right] on the quick bar the key is the BAR\'s: an open pause card does not move with it, even where every page is navigable', () => {
+    // A quiz answers `isNavigable()` true always, so the one thing keeping a bar key off an open card is that the bar branch
+    // ENDS the key. Without it, one arrow moved the bar's cursor and the card's, and was consumed twice.
+    const { nav, log, naBarra } = boot({ isNavigable: () => true });
+    naBarra.add(0);
+    showPauses();
+    const e = key('ArrowDown');
+    nav.menuNavKey(e);
+    expect(log.bar, 'the bar did not get the key').toHaveLength(1);
+    expect($('#sp0').querySelector('.pm-sel'), 'the pause card moved under the bar').toBe(null);
+    expect(e.stops, 'consumed once, by the bar').toBe(1);
+  });
+
+  it('🔴 [Right] and the bar that moves is the one of the player whose key it is', () => {
+    const { nav, log, naBarra } = boot({ whichPlayer: () => 1 });
+    naBarra.add(1);
+    nav.menuNavKey(key('ArrowRight'));
+    expect(log.bar.map(([jogador]) => jogador), 'Player 2\'s key moved another bar').toEqual([1]);
+  });
+
   it('sem diálogo aberto, as setas navegam o menu de pausa DO PRÓPRIO jogador', () => {
     const { nav } = boot({ whichPlayer: () => 1 });
     showPauses();
@@ -760,3 +780,10 @@ describe('menuNavKey — o tradutor de teclado', () => {
 //   R4 a slider change says nothing                      🔴
 //   R5 the slider's percentage from the raw value        🔴 two cases
 //   R6 a switch's state not read                         🔴
+
+// MUTATIONS CHECKED (2026-09-23) on `menuNavKey`, seventeen decisions disabled one at a time against the nine files that drive
+// this module — `scratchpad/sonda-navkey.py`. Four were green; two were holes, now held by the quick-bar cases above: the bar
+// branch ENDING the key (without it, on a page that is always navigable, one arrow moved the bar and an open card), and the
+// bar moved being its owner's. The other two are EQUIVALENT and declared rather than caught: asking the action of a key NO
+// player owns, on the bar or in a menu, answers null anyway — `whichPlayer` is −1 only when no active player's scheme has the
+// key, Player 1's included.
