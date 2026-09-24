@@ -94,7 +94,7 @@ jobs:
 
       # ⚠️ The ONE obligation that undoes itself. §51.j of the requerimento commits the project to an annual
       # public report on the eleven child-protection principles, and says why it needs a machine:
-      # "compromisso sem prestação de contas periódica degrada silenciosamente". ADR-0053 turned that into
+      # «compromisso sem prestação de contas periódica degrada silenciosamente». ADR-0053 turned that into
       # this gate. It is DORMANT until a first year is declared (see docs/compliance/README.md) and prints a
       # notice saying so on every run — a dormant gate is a notice, not a pass. Needs no build, so it sits
       # here rather than in a job of its own.
@@ -104,34 +104,34 @@ jobs:
   # ============================================================================================
   # The promise the index makes about the records, kept by a machine.
   # ============================================================================================
-  # 🔴 A ÁRVORE DOS REGISTOS DEIXOU DE VIVER AQUI (ADR-0123) — e este trabalho FICA, que é a regra do Dev:
-  # «cada repositório precisa ter seus validadores e gates para ADRs». O que mudou é de onde vem a árvore e,
-  # sobretudo, o que ESTE lado consegue conferir e o outro não: passando `--repo engine=.`, os caminhos de
-  # `confirmed-by` marcados `engine:` são ABERTOS. No `the-inclusionist-docs` eles só podem ser contados.
-  #
-  # 🔴 E ELE NASCE DORMENTE, o que é uma decisão e não um recuo. A primeira versão deixava o checkout falhar
-  # sem token — «falha ALTO é melhor do que um validador a correr sobre uma pasta vazia» —, e a primeira
-  # corrida depois do push provou-a certa no diagnóstico e errada na consequência: `Not Found`, `main`
-  # vermelha, e vermelha por tempo indeterminado à espera de um segredo que só o Dev pode criar.
-  #
-  # ⚠️ O CABEÇALHO DESTE FICHEIRO JÁ TINHA ESCRITO POR QUE ISSO É PIOR: os dois scanners do GitLab estiveram
-  # VERMELHOS durante semanas «e o ✗ cinzento foi lido por ninguém». Uma `main` que fica vermelha por uma
-  # razão administrativa ensina a não ler o vermelho — e o próximo vermelho é o que importa.
-  #
-  # 📌 A SAÍDA JÁ EXISTE NESTE FICHEIRO, no `check:annual-report`: um gate DORMENTE que «imprime um aviso em
-  # toda corrida — um gate dormente é um aviso, não um passe». É a mesma forma aqui: sem o segredo, o trabalho
-  # ANUNCIA que não conferiu nada e diz o que criar; com ele, corre a sério. Criar o segredo é o que o acorda.
+  # 🔴 THE RECORDS' TREE NO LONGER LIVES HERE (ADR-0123) — and this job STAYS, which is the Dev's rule:
+# «cada repositório precisa ter seus validadores e gates para ADRs». What changed is where the tree comes from and,
+# above all, what THIS side can check and the other cannot: passing `--repo engine=.`, the `confirmed-by` paths
+# marked `engine:` are OPENED. In `the-inclusionist-docs` they can only be counted.
+#
+# 🔴 AND IT IS BORN DORMANT, which is a decision and not a retreat. The first version let the checkout fail without a
+# token — «falha ALTO é melhor do que um validador a correr sobre uma pasta vazia» —, and the first run after the push
+# proved it right in the diagnosis and wrong in the consequence: `Not Found`, `main` red, and red indefinitely while
+# waiting for a secret only the Dev can create.
+#
+# ⚠️ THIS FILE'S HEADER HAD ALREADY WRITTEN WHY THAT IS WORSE: the two GitLab scanners were RED for weeks and the grey
+# ✗ was read by nobody. A `main` that stays red for an administrative reason teaches people not to read red — and the
+# next red is the one that matters.
+#
+# 📌 THE WAY OUT ALREADY EXISTS IN THIS FILE, in `check:annual-report`: a DORMANT gate that prints a notice on every run
+# — a dormant gate is a notice, not a pass. It is the same shape here: without the secret, the job ANNOUNCES that it
+# checked nothing and says what to create; with it, it runs for real. Creating the secret is what wakes it.
   adr:
     runs-on: ubuntu-latest
     env:
-      # ⚠️ Um segredo não pode ser lido num `if:` de trabalho, então vira booleano aqui e os passos leem-no.
+      # ⚠️ A secret cannot be read in a job-level `if:`, so it becomes a boolean here and the steps read that.
       TEM_TOKEN: ${{ secrets.DOCS_READ_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v7
 
-      # ⚠️ Repositório PRIVADO da mesma organização: o `GITHUB_TOKEN` de um workflow NÃO alcança outro
-      # repositório — medido na corrida 34352635399, que falhou com `Not Found`. Isto precisa de um PAT com
-      # leitura de conteúdo em `the-inclusionist-docs`, guardado aqui como `DOCS_READ_TOKEN`.
+      # ⚠️ A PRIVATE repository of the same organisation: a workflow's `GITHUB_TOKEN` does NOT reach another repository —
+# measured in run 34352635399, which failed with `Not Found`. This needs a PAT with content read access on
+# `the-inclusionist-docs`, stored here as `DOCS_READ_TOKEN`.
       - name: DORMANT — the records could not be fetched, so nothing here was checked
         if: env.TEM_TOKEN != 'true'
         run: |
@@ -156,14 +156,14 @@ jobs:
         run: pip install --quiet pyyaml
       # Eight checks, including the bidirectional supersession pointers. It caught a missing back-pointer
       # the day it was written and has caught one in almost every session since.
-      # 📌 `--repo engine=.` é o que este repositório tem e o outro não: o CÓDIGO que as confirmações nomeiam.
+      # 📌 `--repo engine=.` is what this repository has and the other does not: the CODE the confirmations name.
       - name: validate the ADR records, and OPEN the confirmations that name this repository
         if: env.TEM_TOKEN == 'true'
         run: python adr-tree/scripts/validate-adr.py adr-tree/docs/2-Architecture/adr --repo engine=. --repo docs=adr-tree
 
-      # 🎯 E O CRIVO DA PROSA, que é do lado do código porque um registo a nomear um ficheiro DESTA árvore que
-      # já não existe é quebra DESTA árvore (ADR-0123 §5). Sem `ADR_TREE` ele salta, e um caso próprio recusa
-      # o salto em CI.
+      # 🎯 AND THE PROSE SIEVE, which belongs on the code's side because a record naming a file of THIS tree that no longer
+# exists is a break of THIS tree (ADR-0123 §5). Without `ADR_TREE` it skips, and a case of its own refuses the skip
+# in CI.
       - uses: actions/setup-node@v7
         if: env.TEM_TOKEN == 'true'
         with:
@@ -171,15 +171,15 @@ jobs:
           cache: npm
       - if: env.TEM_TOKEN == 'true'
         run: npm ci
-      # 🎯 E A CONTRAMEDIDA DA DERIVA, no mesmo trabalho porque é aqui que as duas cópias se encontram: duas
-      # versões do validador dão dois veredictos sobre a MESMA árvore, e nada diz qual está certo. Já divergiu
-      # uma vez, no dia da mudança de casa.
+      # 🎯 AND THE COUNTERMEASURE TO DRIFT, in the same job because this is where the two copies meet: two versions of the
+# validator give two verdicts on the SAME tree, and nothing says which is right. It has drifted once already, on the
+# day of the move.
       - name: no record points at a gate that does not exist, and the two validators are the same
         if: env.TEM_TOKEN == 'true'
         env:
           ADR_TREE: ${{ github.workspace }}/adr-tree/docs/2-Architecture/adr
-          # 🎯 A declaração de responsabilidade: com ela, SALTAR reprova. É o que apanha um `ADR_TREE` com o
-          # caminho errado — o checkout a falhar derruba o trabalho sozinho, um caminho errado não.
+          # 🎯 The declaration of responsibility: with it, SKIPPING fails. It is what catches an `ADR_TREE` with the wrong
+# path — a failing checkout brings the job down by itself, a wrong path does not.
           ADR_TREE_REQUIRED: "1"
         run: npx vitest run --project node tests/records-pointing-at-dead-gates.node.test.js tests/the-validator-does-not-drift.node.test.js
 
@@ -199,10 +199,10 @@ jobs:
       - run: npm run build
       # The preview server serves `dist/`, which is what a school would receive. Any WCAG A/AA violation in
       # our own markup fails the run; the VLibras widget is excluded by the script, not by this file.
-      # ⚠️ O ALVO É `/quiz.html` E NÃO `/`, desde 2026-09-07. `dist/` já não emite `index.html` — ele saiu com
-      # o cartucho (#111) —, então a sonda de prontidão nunca ficava pronta (esperava os 30 s inteiros) e o
-      # axe estourava à espera de `#sr-status` numa página que não existe. A sonda passou a bater na MESMA
-      # página que o gate audita: uma sonda que testa outro endereço não prova que o gate tem o que auditar.
+      # ⚠️ THE TARGET IS `/quiz.html` AND NOT `/`. `dist/` emits no `index.html` — it left with the cartridge (#111) —, so a
+# readiness probe on `/` never became ready (it waited the whole 30 s) and axe timed out waiting for `#sr-status` on a
+# page that does not exist. The probe hits the SAME page the gate audits: a probe that tests another address does not
+# prove the gate has something to audit.
       - name: axe against the built app
         run: |
           npm run preview -- --port 4173 &
@@ -260,10 +260,10 @@ jobs:
         env:
           GITLEAKS_VERSION: 8.30.1
         run: |
-          # ⚠️ `--retry`: o download falhou com `curl: (35) Connection reset by peer` num commit só de
-          # documentação, e gate que fica vermelho por rede é gate que ensina a ignorar vermelho — o defeito
-          # exato que este ficheiro foi escrito para não ter. `--retry-all-errors` porque um reset não é
-          # código HTTP e sem ele o `--retry` não pega.
+          # ⚠️ `--retry`: the download failed with `curl: (35) Connection reset by peer` on a documentation-only commit, and
+# a gate that goes red over the network is a gate that teaches people to ignore red — the exact defect this file
+# was written not to have. `--retry-all-errors` because a reset is not an HTTP code, and without it `--retry`
+# does not catch it.
           curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o gitleaks.tar.gz \
             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           tar -xzf gitleaks.tar.gz gitleaks

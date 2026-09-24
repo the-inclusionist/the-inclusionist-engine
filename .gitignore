@@ -1,27 +1,27 @@
-# Artefatos de verificação / dev (não são fonte)
+# Verification / dev artefacts (not source)
 shots/
 .playwright-mcp/
 *.log
 server.log
 incl.js
 
-# Dependências / build
+# Dependencies / build
 node_modules/
 dist/
-# saída do build de PACOTE (`npm run build:pkg`, tsconfig.pkg.json) — é o que o `exports` aponta e o que o
-# `npm publish` embarca. Gerado, nunca versionado, pela mesma razão que o `dist/`.
+# the PACKAGE build's output (`npm run build:pkg`, tsconfig.pkg.json) — what `exports` points at and what
+# `npm publish` ships. Generated, never versioned, for the same reason as `dist/`.
 dist-pkg/
 .vite/
 *.tsbuildinfo
 
-# Sistema operacional
+# Operating system
 .DS_Store
 Thumbs.db
 
-# Referências PixelLab (design only; licença != GPL — não embutir no jogo)
+# PixelLab references (design only; licence != GPL — never embedded in the game)
 assets-ref/
 
-# imagens de revisão (local, servidas para o José)
+# review images (local, served to the Dev)
 _review/
 
 # TTS ONNX models downloaded for research: 484 MB in 1,091 files, voices and the sherpa wasm. DOWNLOADED artefacts, not source:
@@ -37,11 +37,11 @@ research/*.wav
 research/*.mp3
 research/*.ogg
 
-# Vitest browser-mode artefatos (gerados por rodada, nao versionados)
+# Vitest browser-mode artefacts (generated per run, not versioned)
 .vitest-attachments/
 tests/__screenshots__/
 
-# Python bytecode dos scripts de manutencao (scripts/*.py)
+# Python bytecode of the maintenance scripts (scripts/*.py)
 __pycache__/
 *.pyc
 

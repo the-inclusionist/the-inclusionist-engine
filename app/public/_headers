@@ -1,10 +1,13 @@
-# Cabeçalhos do Cloudflare Pages (https://developers.cloudflare.com/pages/configuration/headers/).
-# PWA por vite-plugin-pwa (Workbox): o SW precacheia por content-hash e auto-atualiza. Na BORDA, o que importa:
-#  • sw.js / index.html / manifest SEMPRE frescos → o mecanismo de update do PWA funciona (sem "build velho preso").
-#  • bundles hasheados do Vite (/assets/*-[hash].*) são imutáveis com segurança (o nome muda quando o conteúdo muda).
-# Ressalva: /assets/* e /vendor/* também pegam os estáticos NÃO-hasheados de public/ (sprites, pixi, fontes). Eles
-# mudam raramente e o SW cobre o cliente offline; se um mudar sem novo hash, purgar o cache do CF (ou separar o
-# build.assetsDir do Vite). Antes tinha regras /js/* e /css/* — não existem mais (o Vite bundla p/ /assets/).
+# Cloudflare Pages headers (https://developers.cloudflare.com/pages/configuration/headers/).
+# The PWA comes from vite-plugin-pwa (Workbox): the service worker precaches by content hash and updates itself. At the
+# EDGE, what matters:
+#  • sw.js / index.html / manifest ALWAYS fresh → the PWA's update mechanism works (no "stale build stuck"). This build
+#    emits no `index.html` since the cartridge left (#111); its rule is harmless without one.
+#  • Vite's hashed bundles (/assets/*-[hash].*) are safely immutable (the name changes when the content changes).
+# Caveat: /assets/* also catches any NON-hashed static of public/assets/. Such files change rarely and the service
+# worker covers the offline client; if one changes without a new hash, purge the CF cache (or separate Vite's
+# build.assetsDir). There are no /js/* or /css/* rules: Vite bundles into /assets/. The fonts under /vendor/ have
+# their own rules at the end of this file.
 
 # CONTENT-SECURITY-POLICY (issue #170; narrowed by ADR-0177, issue #173): which hosts may run script and be fetched.
 #  • script-src: this origin; `'wasm-unsafe-eval'` — the
