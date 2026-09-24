@@ -85,8 +85,8 @@ if (naoFixadas.length > 0) {
  */
 const temHash = (url) => /^assets\/[^/]+-[A-Za-z0-9_-]{8,}\.[^.]+$/.test(url);
 
-// Um URL externo FIXADO carrega a versão dentro de si, que é a mesma promessa que o hash faz — e nesse ponto
-// já passou pela pergunta acima, logo chegar aqui significa que está fixado.
+// A PINNED external URL carries its version inside it, the same promise the hash makes — and by this point it has
+// already been through the question above, so getting here means it is pinned.
 const carregaAVersao = (url) => temHash(url) || ehExterna(url);
 
 const congelados = entradas.filter((e) => e.revisao === null && !carregaAVersao(e.url));
@@ -136,8 +136,8 @@ const temRotaDeNavegacao = /NavigationRoute|createHandlerBoundToURL/.test(fonte)
 
 if (temRotaDeNavegacao) {
   const denylist = (fonte.match(/denylist:\[([^\]]*)\]/) || [, ''])[1];
-  // Compara o NOME CRU do arquivo dentro do texto do denylist. A regex do denylist escapa o ponto
-  // (`quiz\.html`), então procurar `quiz` e `.html` separadamente é o que sobrevive a qualquer escape.
+  // Compares the file's RAW NAME inside the denylist's text. The denylist regex escapes the dot (`quiz\.html`), so
+  // looking for `quiz` and `.html` separately is what survives any escaping.
   const desprotegidas = paginas.filter((u) => { const base = u.replace(/\.html$/, ''); return !(denylist.includes(base) && denylist.includes('html')); });
 
   if (desprotegidas.length > 0) {
@@ -312,27 +312,23 @@ if (emFalta.length > 0) {
   process.exit(1);
 }
 
-/* ===================== O TECTO SAIU EM 2026-09-09, POR DECISÃO DO DEV =====================
+/* ===================== NO CEILING, BY THE DEV'S DECISION =====================
  *
- * Ele perguntou de onde vinha o número e mandou tirá-lo: «Por que tem que caber em 2MB? Limite que eu coloquei
- * para abrir em dispositivo ruim? Quero que retire este limite.»
+ * The Dev asked where the number came from and had it removed: «Por que tem que caber em 2MB? Limite que eu coloquei
+ * para abrir em dispositivo ruim? Quero que retire este limite.» The `2048` was not theirs, and it was in no record —
+ * a number in a script; there was no decision to supersede, only a line to remove.
  *
- * 📏 E A PROVENIÊNCIA RESPONDE À PERGUNTA DELE: o `2048` não era dele. Entrou hoje, em `af35a7d`, num commit
- * co-autorado por esta IA, e não estava em registo nenhum — era um número num script. Não havia decisão para
- * superar; havia uma linha para retirar.
+ * ⚠️ WHAT IS LOST IS WRITTEN, because losing in silence is what this whole file fights: there is no alarm any more when
+ * something heavy lands in the first day by accident. The weight is still MEASURED and PRINTED on every run — what is
+ * gone is the failure.
  *
- * ⚠️ O QUE SE PERDE ESTÁ ESCRITO, porque perder em silêncio é o que este ficheiro inteiro combate: deixa de
- * haver alarme quando alguma coisa pesada aterra no primeiro dia por acidente. O peso continua a ser MEDIDO e
- * IMPRESSO em toda corrida — o que deixou de existir é a reprovação.
+ * 📌 AND THE CEILING WAS NEVER WHAT HELD THE RUNTIMES BACK. ADR-0124 has MediaPipe arrive through `platform/heavy`, at
+ * INSTALLATION, and not through the precache manifest. This file's subject is the DEMO (the engine's quiz); the unit a
+ * child installs is `the-inclusionist-site` (ADR-0117), and the PRODUCT's first day is a number that does not exist yet.
  *
- * 📌 E O TECTO NUNCA FOI O QUE TRAVAVA OS RUNTIMES. ADR-0124 has MediaPipe arrive through
- * `platform/heavy`, na INSTALAÇÃO, e não pelo manifesto de precache: 11,21 MB nunca iam caber aqui e nunca
- * precisaram de caber. O sujeito deste ficheiro é a DEMO (o quiz da engine); a unidade que uma criança instala
- * é o `the-inclusionist-site` (ADR-0117), e o primeiro dia do PRODUTO é um número que ainda não existe.
- *
- * 🎯 O QUE FICA A SEGURAR A MESMA CRIANÇA É O PISO, não o tecto: o crivo acima reprova quando o primeiro dia
- * NÃO é um jogo jogável. Um build que precacheia quase nada está debaixo de qualquer orçamento e offline no
- * sentido mais vazio — e essa é a metade que o pilar 1 realmente compra. */
+ * 🎯 WHAT KEEPS HOLDING THE SAME CHILD IS THE FLOOR, not the ceiling: the check above fails when the first day is NOT a
+ * playable game. A build that precaches almost nothing is under any budget and offline in the emptiest sense — and that
+ * is the half pillar 1 really buys. */
 
 const semHash = entradas.filter((e) => e.revisao !== null).length;
 // ⚠️ THE SUMMARY SAYS WHAT WAS MEASURED, and with no navigation route nothing was excluded from anything: reporting

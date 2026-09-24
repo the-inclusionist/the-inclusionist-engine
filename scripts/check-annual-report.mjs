@@ -9,8 +9,8 @@
 // What it does buy is the one thing a person reliably fails at: the year cannot pass without somebody being
 // made to write one. Of the twenty-two divergences found between the filed document and the ADRs, the annual
 // report was the ONLY obligation that RECURS — every other one is done once and stays done. This one is
-// undone by the passage of time, quietly, and by nobody's decision. §51.j says why in its own words:
-// "compromisso sem prestação de contas periódica degrada silenciosamente".
+// undone by the passage of time, quietly, and by nobody's decision. §51.j gives the reason: a commitment with no
+// periodic accountability degrades silently.
 //
 // ========================= WHY IT IS DORMANT TODAY, AND HOW IT WAKES =========================
 // ADR-0053 fixes the mechanism and deliberately leaves one thing open: "the first report is due for the

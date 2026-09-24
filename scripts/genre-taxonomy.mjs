@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// A TAXONOMIA DE GÉNEROS — da lista da Wikipédia, e não do backlog do catálogo (ADR-0145, correcção do Dev).
+// THE GENRE TAXONOMY — from Wikipedia's list, not from the catalogue's backlog (ADR-0145, the Dev's correction).
 //
-// 🔴 A CORRECÇÃO QUE ORIGINOU ISTO, palavras do Dev em 2026-09-12: «Você está tomando uma lista de pesquisa
-// rápida feita em uma tarde como a lista canônica de gênero para uma engine que será usada por milhões de
-// pessoas». O estudo das acomodações tinha usado as 35 categorias do `minigames-catalog-v2.html` como chave de
-// género — e elas são um BACKLOG DE PRODUÇÃO, não uma taxonomia.
+// 🔴 THE CORRECTION BEHIND THIS, in the Dev's words: «Você está tomando uma lista de pesquisa rápida feita em uma tarde
+// como a lista canônica de gênero para uma engine que será usada por milhões de pessoas». The accommodations study had
+// used the 35 categories of `minigames-catalog-v2.html` as the genre key — and they are a PRODUCTION BACKLOG, not a
+// taxonomy.
 //
-// 📌 AS 35 CATEGORIAS PASSAM A SER A PROVA DE COBERTURA, e não a chave: os 380 jogos têm de caber na taxonomia.
+// 📌 THE 35 CATEGORIES ARE THE COVERAGE PROOF, not the key: the catalogue's games have to fit the taxonomy.
 //
-// ⚠️ A TABELA MORA EM `lib/taxonomy.mjs`, partilhada com `accommodations-by-genre.mjs`: os dois scripts têm de
-// ler o catálogo e chavear as categorias da mesma forma. Aqui ficam as GUARDAS e a contagem.
+// ⚠️ THE TABLE LIVES IN `lib/taxonomy.mjs`, shared with `accommodations-by-genre.mjs`: both scripts must read the
+// catalogue and key the categories the same way. The GUARDS and the count stay here.
 //
-// ⚠️ SEIS GUARDAS, e nenhuma é zelo — cada uma é uma forma de uma célula esquecida parecer uma decisão:
-//   1. uma categoria do catálogo SEM mapeamento
-//   2. um mapeamento que nomeia uma secção que NÃO existe na revisão fixada
-//   3. uma categoria sem género nenhum que NÃO diz porquê
-//   4. um mapeamento a mais, que já não corresponde a categoria nenhuma do catálogo
-//   5. um eixo (perspectiva, jogadores) VAZIO ou com um valor que não é dos conhecidos
-//   6. uma categoria cujo NOME é um eixo e cujo eixo não o diz — «Isométrico» com duas perspectivas
+// ⚠️ SIX GUARDS, and none is fussiness — each is a way for a forgotten cell to look like a decision:
+//   1. a catalogue category WITHOUT a mapping
+//   2. a mapping that names a section that does NOT exist in the pinned revision
+//   3. a category with no genre at all that does NOT say why
+//   4. one mapping too many, which no longer matches any catalogue category
+//   5. an axis (perspective, players) EMPTY or with a value that is not a known one
+//   6. a category whose NAME is an axis and whose axis does not say so — «Isométrico» with two perspectives
 //
-//   node scripts/genre-taxonomy.mjs [caminho-do-catalogo.html]
+//   node scripts/genre-taxonomy.mjs [path-to-catalogue.html]
 import { CATALOGO_PADRAO, lerCatalogo, REVISAO, SECOES, RAZOES, EIXOS_DA_TAXONOMIA, MAPA } from './lib/taxonomy.mjs';
 
 const categorias = lerCatalogo(process.argv[2] ?? CATALOGO_PADRAO, 'node scripts/genre-taxonomy.mjs <catalogo.html>');
 
-/* ===================== as seis guardas ===================== */
+/* ===================== the six guards ===================== */
 const nomes = categorias.map((c) => c.nome);
 const problemas = [];
 for (const n of nomes) if (!(n in MAPA)) problemas.push(`categoria SEM mapeamento: ${n}`);
@@ -42,14 +42,14 @@ for (const [n, m] of Object.entries(MAPA)) {
     if (!Array.isArray(v) || !v.length) problemas.push(`${n}: eixo «${eixo}» vazio — toda categoria declara o seu`);
     else for (const x of v) if (!validos.has(x)) problemas.push(`${n}: «${x}» não é um valor de «${eixo}»`);
   }
-  // 6 · o nome que É um eixo tem de o fixar num valor só; senão a categoria diz uma coisa e o dado outra.
+  // 6 · a name that IS an axis must pin it to a single value; otherwise the category says one thing and the data another.
   if (m.naoE === 'perspectiva' && m.perspectiva?.length !== 1) problemas.push(`${n}: é uma PERSPECTIVA e declara ${m.perspectiva?.length ?? 0}`);
   if (m.naoE === 'modo-de-jogadores' && String(m.jogadores) !== 'local') problemas.push(`${n}: é um MODO DE JOGADORES e não declara só «local»`);
   if (m.naoE === 'proposito' && !m.proposito.length) problemas.push(`${n}: é um PROPÓSITO e não declara nenhum`);
 }
 if (problemas.length) { for (const p of problemas) console.error('⚠️ ' + p); process.exit(1); }
 
-/* ===================== contar ===================== */
+/* ===================== count ===================== */
 const TOTAL = categorias.reduce((a, c) => a + c.jogos, 0);
 const jogosDe = Object.fromEntries(categorias.map((c) => [c.nome, c.jogos]));
 const topo = (s) => s.split('.')[0];
@@ -65,8 +65,8 @@ const semGeneroNenhum = Object.entries(MAPA).filter(([, m]) => !m.generos.length
 
 console.log(`taxonomia: Wikipédia rev ${REVISAO.id} (${REVISAO.data})`);
 console.log(`catálogo: ${categorias.length} categorias · ${TOTAL} jogos — ${categorias.length} de ${categorias.length} mapeadas\n`);
-// ⚠️ A COLUNA NÃO É UMA PARTIÇÃO: uma categoria de dois géneros conta nos dois (RPG / Aventura cai em 5 e em
-// 3). Dita aqui para ninguém somar a coluna e concluir que o catálogo tem mais jogos do que tem.
+// ⚠️ THE COLUMN IS NOT A PARTITION: a category with two genres counts in both (RPG / Aventura falls in 5 and in 3).
+// Said here so nobody adds up the column and concludes the catalogue has more games than it has.
 console.log('=== onde as categorias caem, por género de TOPO da página (com sobreposição) ===');
 for (const t of Object.keys(porTopo).sort((a, b) => Number(a) - Number(b))) {
   const e = porTopo[t];

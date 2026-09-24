@@ -1,52 +1,48 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O CENSO DAS ISSUES — quantas são problemas resolvíveis por código, e quantas são livros (ADR-0126).
+// THE ISSUE CENSUS — how many are problems code can solve, and how many are books (ADR-0126).
 //
-// ========================= POR QUE ISTO EXISTE, E POR QUE NÃO REPROVA =========================
-// 📏 EM 2026-09-09 O DEV MEDIU-ME: das 33 issues abertas, DEZASSEIS não eram problemas de código, e das 126
-// de sempre a mediana do corpo era 1499 caracteres com caixas de checklist em 14 delas — 11%. O instrumento
-// que era o propósito inteiro («transformar planos em issues para facilitar a marcação das partes cumpridas»)
-// estava em um décimo do tracker; a prosa estava em todo ele.
+// ========================= WHY THIS EXISTS, AND WHY IT DOES NOT FAIL =========================
+// 📏 The Dev measured the tracker: most open issues were not code problems, bodies ran to a median of about 1500
+// characters, and checklist boxes were in about a tenth of them. The instrument that was the whole purpose
+// («transformar planos em issues para facilitar a marcação das partes cumpridas») was in a tenth of the tracker; the
+// prose was in all of it.
 //
-// ⚠️ E ELE TEVE DE O DESCOBRIR. Foi por isso que o ADR-0126 pediu um censo REPETÍVEL: um número que só
-// aparece quando alguém desconfia é um número que chega tarde.
+// ⚠️ AND THEY HAD TO DISCOVER IT. That is why ADR-0126 asked for a REPEATABLE census: a number that appears only when
+// someone is suspicious is a number that arrives late.
 //
-// 🛑 REPORTA E NÃO REPROVA, DE PROPÓSITO. A forma de um tracker não é coisa para segurar um build vermelho —
-// não há commit que a conserte, e um gate permanentemente vermelho é um gate que alguém desliga (é a lição
-// que o `check:annual-report` já carrega e a que a corrida cruzada do ADR-0123 pagou). Sai sempre 0.
+// 🛑 IT REPORTS AND DOES NOT FAIL, ON PURPOSE. The shape of a tracker is nothing to hold a build red for — no commit
+// fixes it, and a gate that is permanently red is a gate someone switches off (the lesson `check:annual-report`
+// already carries). It always exits 0.
 //
-// ⚠️ E ELE DIZ O QUE NÃO CONSEGUIU CLASSIFICAR. Um crivo que não olha para nada e imprime «está tudo bem» é
-// pior do que crivo nenhum: o primeiro é lido como garantia.
+// ⚠️ AND IT SAYS WHAT IT COULD NOT CLASSIFY. A check that looks at nothing and prints that all is well is worse than no
+// check: the first is read as a guarantee.
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 const REPO = process.argv[2] ?? 'the-inclusionist/the-inclusionist-engine';
 
 /**
- * O ORÇAMENTO DO ADR-0126 — «o corpo da issue tem de ser mais curto do que o commit que a fecha».
+ * ADR-0126'S BUDGET — the issue's body must be shorter than the commit that closes it.
  *
- * 🔴 ERA 600 E O NÚMERO ERA INVENTADO. Eu escrevi-o no ADR-0126 sem o medir, e o censo passou a imprimir
- * 17 de 18 issues «acima do orçamento» — um vermelho que não distingue um livro de um parágrafo, e um
- * relatório que acusa quase tudo é um relatório que ninguém lê.
+ * 📏 DERIVED FROM THE TREE: the rule compares with the message that CLOSES the issue, which is not known in advance, so
+ * the budget is the lowest decile of this repository's commit messages (measured over the last 400: median 2619
+ * characters, lowest decile 1388). A body below it is shorter than 90% of the commits of this tree, so it keeps the rule
+ * against almost any closing. An invented number (600) made the census flag nearly every issue, and a report that
+ * accuses almost everything is a report nobody reads.
  *
- * 📏 MEDIDO EM 2026-09-09 sobre as ÚLTIMAS 400 MENSAGENS DE COMMIT deste repositório: mediana **2619**
- * caracteres, quartil inferior 1941, decil inferior **1388**. A regra do registo compara com a mensagem que
- * FECHA a issue, e essa não se conhece de antemão — então o orçamento é o decil inferior: um corpo abaixo
- * dele é mais curto do que 90% dos commits desta árvore, logo cumpre a regra contra quase qualquer fecho.
- *
- * 📌 Derivado da árvore e não escolhido, que é a mesma razão pela qual o número de lugares do teclado é
- * `ACTIONS.length` — um número escrito à mão começa a mentir no dia em que a árvore muda, e este cresce com
- * o hábito de escrita deste projecto em vez de o contradizer.
+ * 📌 Derived and not chosen, for the same reason the number of keyboard slots is `ACTIONS.length` — a number written by
+ * hand starts lying the day the tree changes.
  */
 const ORCAMENTO_CHARS = 1400;
 
 /**
- * OS PADRÕES DE TÍTULO QUE DENUNCIAM UMA NÃO-ISSUE. ⚠️ São HEURÍSTICA e o relatório di-lo — o que é
- * mecânico é o TAMANHO e a CAIXA; isto é uma pista, e uma pista apresentada como medição é a forma de falso
- * relatório que este repositório já apanhou três vezes.
+ * THE TITLE PATTERNS THAT GIVE AWAY A NON-ISSUE. ⚠️ They are a HEURISTIC and the report says so — what is mechanical is
+ * the SIZE and the BOX; this is a clue, and a clue presented as a measurement is the kind of false report this
+ * repository has caught before.
  */
-// ⚠️ E O `[JOSÉ]` DIZ QUEM FAZ, NÃO O QUE É — a #9 («diagnosticar o erro do VLibras») é diagnóstico de
-// campo cujo CONSERTO é código. A pista acerta na issue como está escrita e erraria se ela fosse reescrita
-// como o defeito. É a razão de isto ser pista e não veredicto.
+// ⚠️ AND THE NAME TAG SAYS WHO DOES THE WORK, NOT WHAT IT IS — #9 (diagnosing the VLibras error) is field diagnosis whose
+// FIX is code. The clue is right about the issue as written and would be wrong if it were rewritten as the defect.
+// That is why this is a clue and not a verdict.
 export const PISTAS = [
   [/^roadmap\b/i, 'fase de roadmap → `ROADMAP.md`'],
   [/^\[jos[ée]\]/i, 'trabalho de campo → `Test-Plan.md`'],
@@ -54,10 +50,10 @@ export const PISTAS = [
   [/\bdecis[ãa]o\b|\bdecidir\b|^choose\b|\bde onde vem\b/i, 'decisão → um REGISTO, não uma issue'],
 ];
 
-/** As caixas de checklist de um corpo. A metade que o ADR-0126 diz ser o propósito inteiro do tracker. */
+/** A body's checklist boxes. The half ADR-0126 calls the tracker's whole purpose. */
 export const contarCaixas = (corpoDaIssue) => (String(corpoDaIssue ?? '').match(/^\s*[-*]\s*\[[ xX]\]/gm) ?? []).length;
 
-/** A pista que um título dá, ou `null`. Pura, para que um caso a conduza. */
+/** The clue a title gives, or `null`. Pure, so a case can drive it. */
 export const pistaDoTitulo = (titulo) => PISTAS.find(([re]) => re.test(String(titulo ?? '')))?.[1] ?? null;
 
 function issuesAbertas() {
@@ -72,15 +68,15 @@ function issuesAbertas() {
   }
 }
 
-// 🛑 O RUNNER SÓ CORRE QUANDO O FICHEIRO É EXECUTADO, nunca quando é IMPORTADO. Sem esta guarda, o caso
-// que exercita as metades puras iria à REDE ao importar — e um teste que depende do `gh` é um teste que
-// fica vermelho por causa de um token, que é como um gate deixa de ser lido.
+// 🛑 THE RUNNER RUNS ONLY WHEN THE FILE IS EXECUTED, never when it is IMPORTED. Without this guard, the case that
+// exercises the pure halves would go to the NETWORK on import — and a test that depends on `gh` is a test that goes red
+// because of a token, which is how a gate stops being read.
 function main() {
   const dados = issuesAbertas();
 
-  // 🛑 DORMENTE E EM VOZ ALTA: sem `gh`, sem rede ou sem acesso, o censo não mediu NADA — e dizer «0 problemas»
-  // aqui seria exactamente a mentira que o ficheiro existe para não contar. ⚠️ E um 404 sem autenticação não é
-  // ausência: é falta de acesso, que já custou a este projecto um plano refeito em cima de um vazio.
+  // 🛑 DORMANT AND OUT LOUD: without `gh`, a network or access, the census measured NOTHING — and saying zero problems here
+  // would be exactly the lie this file exists not to tell. ⚠️ And a 404 without authentication is not absence: it is
+  // lack of access, which has already cost this project a plan redone on top of an emptiness.
   if (dados.error) {
     console.log('censo de issues: DORMENTE — não consegui ler o tracker.');
     console.log(`  motivo: ${dados.error.split('\n')[0]}`);
@@ -100,12 +96,12 @@ function main() {
 
   console.log(`censo de issues · ${REPO}`);
   console.log(`  ABERTAS: ${dados.length}   mediana do corpo: ${mediana} chars   orçamento: ${ORCAMENTO_CHARS}`);
-  // 🎯 O NÚMERO ACCIONÁVEL É A INTERSECÇÃO, e separá-lo foi um conserto de 2026-09-09. «Sem caixa» sozinho
-  // acusava SETE issues de 543 a 846 caracteres, cada uma com um `done when` claro num parágrafo — uma issue
-  // pequena não precisa de checklist, precisa de ser pequena. ⚠️ Somar ruído ao sinal é como um crivo deixa
-  // de ser lido: os dois números crus ficam à vista porque medem coisas reais, e o terceiro é o que se
-  // persegue. É a mesma lição que o crivo dos módulos sem teste já tinha dado — ali a regra também era a
-  // intersecção, e não «módulo sem teste», que acusaria o `core/entity` com dezanove importadores.
+  // 🎯 THE ACTIONABLE NUMBER IS THE INTERSECTION. Counting boxes alone accused small issues of a few hundred characters, each
+  // with a clear `done when` in one paragraph — a small issue does not need a checklist, it needs to be small. ⚠️ Adding
+  // noise to the signal is how a check stops being read: the two raw numbers stay in view because they measure real
+  // things, and the third is the one to chase. It is the lesson the modules-without-tests check had already taught —
+  // there too the rule was the intersection, and not every module without a test, which would accuse `core/entity` with its
+  // many importers.
   const grandesSemCaixa = grandes.filter((i) => caixas(i) === 0);
 
   console.log(`  📏 MECÂNICO — acima do orçamento: ${grandes.length}/${dados.length}` +
@@ -125,8 +121,8 @@ function main() {
   console.log(`\n  🔎 HEURÍSTICA (pista pelo TÍTULO, não medição): ${suspeitas.length} podem não ser problemas de código`);
   for (const [i, p] of suspeitas) console.log(`    #${String(i.number).padStart(3)} ${p} — ${i.title.slice(0, 52)}`);
 
-  // 🎯 A METADE QUE SEPARA INVENTÁRIO DE MONUMENTO: dizer quantas NÃO foram classificadas. Sem esta linha, um
-  // tracker inteiro de casos que a heurística não alcança sairia daqui com ar de aprovado.
+  // 🎯 THE HALF THAT SEPARATES AN INVENTORY FROM A MONUMENT: saying how many were NOT classified. Without this line, a
+  // whole tracker of cases the heuristic does not reach would leave here looking approved.
   const naoClassificadas = dados.length - suspeitas.length;
   console.log(`\n  ⚠️ ${naoClassificadas} issues NÃO foram classificadas por nenhuma pista — a heurística lê TÍTULOS,`);
   console.log('     e uma decisão com título de tarefa passa-lhe ao lado. O número acima é um piso, não um total.');

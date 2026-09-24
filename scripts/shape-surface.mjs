@@ -1,46 +1,39 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// O RETRATO DA FORMA — a metade que o retrato de NOMES não consegue ver.
+// THE SHAPE PORTRAIT — the half the NAMES portrait cannot see.
 //
-// ⚠️ POR QUE ISTO EXISTE. O `snapshot-public-surface.mjs` guarda os nomes que cada módulo exporta, e um nome
-// que desaparece reprova. Medido em 2026-09-08 contra as quebras deste major, ele é CEGO às maiores:
+// ⚠️ WHY THIS EXISTS. `snapshot-public-surface.mjs` keeps the names each module exports, and a name that disappears
+// fails. It is BLIND to the biggest breaks, which keep every name as it was and change the SHAPE — the thing a consumer
+// writes in their code:
 //
-//   · `GameDeclaration.holdsAtOnce()` passou a OBRIGATÓRIO — nome nenhum saiu, e os quatro jogos que
-//     constroem a declaração deixam de compilar;
-//   · `PlayerBase.visual` passou a obrigatório — idem;
-//   · `SonarPlayer.viz` saiu de DENTRO da interface, que continua exportada com o mesmo nome;
-//   · `PauseIconsCtx` ganhou dois campos obrigatórios e `IconStateSnapshot.viz` virou `visual`;
-//   · `PhaseView.pauseOverlayHidden` saiu;
-//   · e o `KeyScheme` fechou-se sobre catorze posições — um ESTREITAMENTO de união, que o gate dos nomes
-//     não vê porque o nome `KeyScheme` continua lá.
+//   · a member becoming REQUIRED (`GameDeclaration.holdsAtOnce()` did, and every game that builds a declaration stopped
+//     compiling);
+//   · a member leaving an interface that is still exported under the same name (`SonarPlayer.viz`);
+//   · a union NARROWING (`KeyScheme` closed over fourteen positions), which the name gate does not see because the
+//     name `KeyScheme` is still there.
 //
-// Nas seis, o nome exportado ficou exactamente igual. **A forma é que mudou**, e é a forma que o consumidor
-// escreve no código dele.
+// ⚠️ AND THE ASYMMETRY HERE IS NOT THE NAME GATE'S. There, adding is always compatible. Here it is not: adding a
+// REQUIRED member to an interface breaks everyone who builds it. So adding an OPTIONAL one passes silently, and adding a
+// REQUIRED one asks for a declaration, as a removal does.
 //
-// ⚠️ E A ASSIMETRIA AQUI NÃO É A MESMA do gate dos nomes. Lá, acrescentar é sempre compatível. Aqui não:
-// acrescentar um membro OBRIGATÓRIO a uma interface quebra toda a gente que a constrói — foi exactamente o
-// que o `holdsAtOnce` fez. Então acrescentar OPCIONAL passa em silêncio, e acrescentar OBRIGATÓRIO pede
-// declaração, como pede a remoção.
+// ⚠️ WHAT THIS FILE IS NOT: a TypeScript analyser. It counts braces over text without comments, and some shapes escape
+// it (conditional generics, a brace inside a string literal in a type). That makes it a coarse sieve and not a proof —
+// but what it catches, it catches before the major ships, and what escapes it today escaped the name gate entirely.
 //
-// ⚠️ O QUE ESTE FICHEIRO NÃO É: um analisador de TypeScript. Ele conta chavetas sobre texto sem comentários,
-// e há formas que lhe escapam (genéricos condicionais, uma chaveta dentro de um literal de string num tipo).
-// Isso torna-o um crivo grosso e não uma prova — mas o que ele apanha, apanha antes de o major sair, e o que
-// lhe escapa hoje escapava inteiro ao gate dos nomes.
-//
-// Uso: corre pelo `snapshot-public-surface.mjs`, que escreve os dois retratos de uma vez.
+// Usage: runs through `snapshot-public-surface.mjs`, which writes both portraits at once.
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 export const RETRATO_FORMA = 'docs/6-DevOps-SRE/public-shape.json';
 
-/** Fora comentários. Feito antes de contar chavetas, senão uma chaveta num comentário desalinha tudo. */
+/** Without comments. Done before counting braces, or a brace in a comment misaligns everything. */
 function semComentarios(txt) {
   return txt.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
 }
 
-/** O corpo entre a chaveta em `abre` e a que lhe corresponde. `null` quando não fecha. */
+/** The body between the brace at `abre` and its match. `null` when it does not close. */
 function corpo(txt, abre) {
   let d = 0;
   for (let i = abre; i < txt.length; i++) {
@@ -50,13 +43,13 @@ function corpo(txt, abre) {
   return null;
 }
 
-/** Os membros de nível 1 de um corpo de interface, com `?` a marcar o opcional. Ordenados. */
+/** The level-1 members of an interface body, with `?` marking the optional ones. Sorted. */
 export function membrosDe(corpoTxt) {
   const fora = [];
   let d = 0;
   for (const linha of corpoTxt.split('\n')) {
     if (d === 0) {
-      // ⚠️ `[k: string]: X` é assinatura de índice e não membro; começa por `[` e é deixada de fora.
+      // ⚠️ `[k: string]: X` is an index signature and not a member; it starts with `[` and is left out.
       const m = /^\s*(?:readonly\s+)?([A-Za-z_$][\w$]*)\s*(\?)?\s*[:(<]/.exec(linha);
       if (m) fora.push(m[1] + (m[2] ? '?' : ''));
     }
@@ -67,11 +60,11 @@ export function membrosDe(corpoTxt) {
 }
 
 /**
- * A forma de UM ficheiro: `{ 'interface Nome': ['a', 'b?'], 'type Nome': '<lado direito normalizado>' }`.
+ * The shape of ONE file: `{ 'interface Name': ['a', 'b?'], 'type Name': '<normalised right-hand side>' }`.
  *
- * Os aliases de tipo guardam-se pelo TEXTO do lado direito, com espaços colapsados, porque a maior parte
- * deles é união ou assinatura de função e não tem membros que se listem. É essa forma que apanha o
- * estreitamento de união — o caso do `KeyScheme`.
+ * Type aliases are kept by the TEXT of their right-hand side, with spaces collapsed, because most of them are a union
+ * or a function signature and have no members to list. That form is what catches a union narrowing — the `KeyScheme`
+ * case.
  */
 export function formaDoTexto(fonte) {
   const txt = semComentarios(fonte);
@@ -100,7 +93,7 @@ function ficheiros(raiz, dir = raiz, fora = []) {
   return fora;
 }
 
-/** A forma de toda a árvore, por módulo. Módulos sem tipo exportado nenhum não entram. */
+/** The shape of the whole tree, by module. Modules with no exported type are left out. */
 export function formaDe(raizAppJs) {
   const fora = {};
   for (const rel of ficheiros(raizAppJs).sort()) {
@@ -111,20 +104,19 @@ export function formaDe(raizAppJs) {
 }
 
 /**
- * O que mudou de forma e QUEBRA quem consome.
+ * What changed shape and BREAKS whoever consumes it.
  *
- * ⚠️ Um tipo que desapareceu inteiro NÃO entra aqui: o nome dele já é caso do gate dos nomes, e contá-lo nos
- * dois faria uma lista de seis linhas parecer doze. É o mesmo `continue` que aquele gate já tem, e pela
- * mesma razão.
+ * ⚠️ A type that disappeared entirely does NOT go in here: its name is already the name gate's case, and counting it in
+ * both would make a list of six lines look like twelve. It is the same `continue` that gate has, for the same reason.
  */
 export function quebrasDeForma(antes, agora) {
   const fora = [];
   for (const [modulo, tipos] of Object.entries(antes)) {
     const hoje = agora[modulo];
-    if (!hoje) continue; // o módulo inteiro saiu — é caso do gate dos nomes
+    if (!hoje) continue; // the whole module left — the name gate's case
     for (const [tipo, forma] of Object.entries(tipos)) {
       const nova = hoje[tipo];
-      if (nova === undefined) continue; // o tipo saiu — idem
+      if (nova === undefined) continue; // the type left — likewise
 
       if (typeof forma === 'string' || typeof nova === 'string') {
         if (forma !== nova) fora.push(`${modulo}  ${tipo}  mudou de forma: «${forma}» → «${nova}»`);
@@ -139,8 +131,8 @@ export function quebrasDeForma(antes, agora) {
         else if (opcional && !agoraNomes.get(n)) fora.push(`${modulo}  ${tipo}.${n}  era opcional e passou a OBRIGATÓRIO`);
       }
       for (const [n, opcional] of agoraNomes) {
-        // ⚠️ Acrescentar OPCIONAL é compatível; acrescentar OBRIGATÓRIO quebra quem constrói o tipo. Foi
-        // exactamente isto que o `holdsAtOnce` fez aos quatro jogos, sem nenhum nome ter desaparecido.
+        // ⚠️ Adding an OPTIONAL member is compatible; adding a REQUIRED one breaks whoever builds the type — what
+        // `holdsAtOnce` did to the games, without any name disappearing.
         if (!antesNomes.has(n) && !opcional) fora.push(`${modulo}  ${tipo}.${n}  ENTROU como obrigatório`);
       }
     }

@@ -172,11 +172,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const arranque = process.argv.includes('--bootstrap');
   const lists = readLists();
   /*
-   * ⚠️ `--bootstrap` NÃO VOLTA A CLASSIFICAR NADA DESDE 22/09, e a linha que o fazia está apagada em vez de comentada.
-   * Ela declarava inglesa toda palavra que a lista portuguesa não reclamasse — e foi assim que a PROSA lida como declaração
-   * ensinou ao portão que `cor`, `ela`, `derivada`, `trampolim` e `ojogo` eram inglesas. Um identificador chamado `cor`
-   * teria passado. Classificar é acto de LER a declaração onde a palavra nasce, e por isso é à mão: o `--bootstrap` agora
-   * só escreve a linha de base, que é contagem e não juízo.
+   * ⚠️ `--bootstrap` CLASSIFIES NOTHING. Declaring English every word the Portuguese list did not claim is how PROSE read
+   * as a declaration taught the gate that `cor`, `ela`, `derivada`, `trampolim` and `ojogo` were English — an identifier
+   * named `cor` would have passed. Classifying is the act of READING the declaration where the word is born, so it is done
+   * by hand: `--bootstrap` only writes the baseline, which is a count and not a judgement.
    */
   const { debt, unknown } = inventory(lists);
   const somaDe = (cat) => Object.values(debt).reduce((a, d) => a + d[cat], 0);

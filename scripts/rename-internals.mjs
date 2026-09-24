@@ -136,10 +136,9 @@ if (mode === '--list') {
 } else if (mode === '--apply') {
   const jobs = JSON.parse(readFileSync(rest[0], 'utf8'));
   /*
-   * ⚠️ TODOS OS FICHEIROS SÃO CONFERIDOS ANTES DE UM SÓ SER ESCRITO. A primeira versão aplicava em ordem e parava
-   * na primeira colisão, o que deixava o lote PELA METADE — metade renomeada, metade não, e a correcção seguinte
-   * a bater de novo no guarda 3 por causa do que já tinha aterrado. Um lote é uma decisão só: ou entra inteiro,
-   * ou não entra.
+   * ⚠️ EVERY FILE IS CHECKED BEFORE A SINGLE ONE IS WRITTEN. Applying in order and stopping at the first clash left the
+   * batch HALF DONE — half renamed, half not, and the next fix hitting guard 3 again because of what had already landed.
+   * A batch is one decision: it goes in whole, or it does not go in.
    */
   const clashes = [];
   for (const [file, map] of Object.entries(jobs)) {

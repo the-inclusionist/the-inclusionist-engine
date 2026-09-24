@@ -56,9 +56,9 @@ export const GROUPS = {
     files: ['i18n/pt.ts', 'i18n/en.ts', 'i18n/es.ts'],
   },
   /*
-   * 🔴 UM CORTE NÃO SE MEDE COMO UMA ADOPÇÃO, e escrever isto aqui é mais barato do que voltar a ler a tabela errado: num
-   * grupo nascido de um CORTE, o «ANTES» é sempre 0% — os módulos novos não existiam, e um ficheiro que não existe não muda
-   * com ninguém. A pergunta certa é outra, e é o `splitFrom`: o ficheiro que foi partido passou a mudar MENOS vezes?
+   * 🔴 A SPLIT IS NOT MEASURED LIKE AN ADOPTION: in a group born of a SPLIT, the BEFORE is always 0% — the new modules did
+   * not exist, and a file that does not exist changes with nobody. The right question is another, and it is
+   * `splitFrom`: does the file that was split now change FEWER times?
    */
   pause: {
     what: 'the pause card after the cuts of step 7c: catalogue, markup and the module that wires them',
@@ -134,8 +134,8 @@ const relatar = (nome, g) => {
     const parte = (cs) => {
       if (!cs.length) return 'sem commits';
       const n = cs.filter((c) => c.modules.includes(g.splitFrom)).length;
-      // ⚠️ O mesmo aviso da linha de baixo, e aqui ele importa mais: uma percentagem sobre uma dúzia de commits é ruído, e
-      // uma percentagem sobre a história inteira dilui o que mudou esta semana. Nenhuma das duas responde sozinha.
+      // ⚠️ The same warning as the line below, and it matters more here: a percentage over a dozen commits is noise, and a
+      // percentage over the whole history dilutes what changed this week. Neither answers alone.
       return `${n} de ${cs.length} commits (${(n / cs.length * 100).toFixed(0)}%)${cs.length < 30 ? ' ⚠️ janela curta' : ''}`;
     };
     if (g.landed) console.log(`   ${g.splitFrom}: ANTES ${parte(antes)} · DEPOIS ${parte(depois)}`);
@@ -162,8 +162,8 @@ if (process.argv[1] && process.argv[1].endsWith('co-change.mjs')) {
   } else {
     const so = arg('--group');
     const ultimos = arg('--last');
-    // 📌 `--last N` é o que torna a pergunta respondível para um grupo sem abstração: «a raiz muda com os dicionários» é 10%
-    // na história inteira e 40% nos últimos 300 commits, e a segunda é a que descreve o trabalho de hoje.
+    // 📌 `--last N` is what makes the question answerable for a group with no abstraction: the root changing with the
+    // dictionaries is 10% over the whole history and 40% over the last 300 commits, and the second describes today's work.
     if (ultimos) JANELA.push(`-${Number(ultimos)}`);
     for (const [nome, g] of Object.entries(GROUPS)) if (!so || so === nome) relatar(nome, g);
   }

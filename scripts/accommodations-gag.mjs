@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// A PRIORIDADE DAS ACOMODAÇÕES PELA GAME ACCESSIBILITY GUIDELINES — a segunda coluna (fase 2a, passo 2).
+// THE PRIORITY OF THE ACCOMMODATIONS BY THE GAME ACCESSIBILITY GUIDELINES — the second column (phase 2a, step 2).
 //
-// 🔴 PORQUÊ ISTO EXISTE: o `CLAUDE.md` põe «WCAG 2.2 + GAG» como pilar, e o estudo das acomodações citou só a
-// WCAG. O catálogo saiu do que a engine já tinha mais o que eu inferi dos géneros — e lida a GAG, faltavam
-// acomodações e uma estava mal priorizada (`velocidadeDoTexto` é Basic, o estudo pusera-a na cauda).
+// 🔴 WHY THIS EXISTS: `CLAUDE.md` makes «WCAG 2.2 + GAG» a pillar, and the accommodations study cited only WCAG. The
+// catalogue came from what the engine already had plus what was inferred from the genres — and read against the GAG,
+// accommodations were missing and one was mis-prioritised (`velocidadeDoTexto` is Basic; the study had put it last).
 //
-// 🎯 DUAS COLUNAS, E AMBAS CONTAM: o ALCANCE (medido pelas chaves de `lib/accommodations.mjs`) e o NÍVEL GAG
-// (Basic → Intermediate → Advanced). O que entra primeiro é a intersecção: **Basic × alcance alto**.
+// 🎯 TWO COLUMNS, AND BOTH COUNT: the REACH (measured by the keys of `lib/accommodations.mjs`) and the GAG LEVEL
+// (Basic → Intermediate → Advanced). What goes first is the intersection: **Basic × high reach**.
 //
-// ⚠️ O TEXTO DA GAG NÃO ENTRA NESTE REPOSITÓRIO. A página não declara licença, e por isso aqui ficam só os
-// SLUGS — o identificador de cada directriz na URL dela — e a minha classificação. O texto, o nível e o eixo
-// lêem-se da página, ao vivo ou de uma cópia local.
+// ⚠️ THE GAG'S TEXT DOES NOT ENTER THIS REPOSITORY. The page declares no licence, so only the SLUGS stay here — each
+// guideline's identifier in its URL — and this project's classification. The text, the level and the axis are read
+// from the page, live or from a local copy.
 //
-// ⚠️ E A PÁGINA NÃO TEM REVISÃO: a lista é fixada por uma impressão digital (data + sha256 dos pares
-// eixo/nível/slug). Se a GAG mudar, isto reprova em vez de classificar uma lista que já não é a que foi lida.
+// ⚠️ AND THE PAGE HAS NO REVISION: the list is pinned by a fingerprint (date + sha256 of the axis/level/slug pairs). If
+// the GAG changes, this fails instead of classifying a list that is no longer the one that was read.
 //
-// ⚠️ SEIS GUARDAS, e nenhuma é zelo:
-//   1. a lista lida não é a fixada · 2. uma directriz da página SEM classificação · 3. uma classificação de um
-//   slug que a página não tem · 4. uma acomodação citada que não existe no catálogo · 5. uma razão desconhecida
-//   6. uma directriz que não vira acomodação e NÃO diz porquê
+// ⚠️ SIX GUARDS, and none is fussiness:
+//   1. the list read is not the pinned one · 2. a guideline on the page WITHOUT a classification · 3. a classification
+//   of a slug the page does not have · 4. a cited accommodation that is not in the catalogue · 5. an unknown reason
+//   6. a guideline that does not become an accommodation and does NOT say why
 //
-//   node scripts/accommodations-gag.mjs [--gag copia-da-full-list.html] [caminho-do-catalogo.html]
+//   node scripts/accommodations-gag.mjs [--gag copy-of-the-full-list.html] [path-to-catalogue.html]
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { CATALOGO_PADRAO, lerCatalogo } from './lib/taxonomy.mjs';
@@ -32,7 +32,7 @@ const FIXADA = { lida: '2026-09-12', sha256: '88c0a63738192e514d07ddb98cee57b7eb
 const NIVEIS = ['Basic', 'Intermediate', 'Advanced'];
 const EIXOS_GAG = ['Motor', 'Cognitive', 'Vision', 'Hearing', 'Speech', 'General'];
 
-/* ===================== AS RAZÕES para uma directriz NÃO virar acomodação ===================== */
+/* ===================== THE REASONS for a guideline NOT to become an accommodation ===================== */
 const RAZOES = {
   autoria: 'regra de DESENHO que quem escreve o jogo segue — não é um ajuste que a criança liga',
   'regra-da-engine': 'a engine já o faz sempre, sem interruptor — a nota diz onde',
@@ -41,10 +41,10 @@ const RAZOES = {
   'conflito-com-pilar': '⚠️ choca com um pilar do ADR-0010 — não se resolve aqui',
 };
 
-/* ===================== AS 105 DIRECTRIZES =====================
- * Valor = lista de acomodações do catálogo que a cumprem, OU `{ razao, nota }`.
- * Ordem: a da página (Motor, Cognitive, Vision, Hearing, Speech, General); uma directriz que aparece em dois
- * eixos é classificada UMA vez, onde aparece primeiro.
+/* ===================== THE GUIDELINES =====================
+ * Value = the list of catalogue accommodations that meet it, OR `{ razao, nota }`.
+ * Order: the page's (Motor, Cognitive, Vision, Hearing, Speech, General); a guideline that appears under two axes is
+ * classified ONCE, where it first appears.
  */
 const D = {
   // — Motor —
@@ -160,7 +160,7 @@ const D = {
   'include-every-relevant-category-of-impairment-motor-cognitive-etc-amongst-play-testing-participants-in-representative-numbers-based-on-age-demographic-of-target-audience': { razao: 'processo', nota: 'teste com pessoas' },
 };
 
-/* ===================== ler a GAG ===================== */
+/* ===================== read the GAG ===================== */
 const args = process.argv.slice(2);
 const iGag = args.indexOf('--gag');
 const copia = iGag >= 0 ? args.splice(iGag, 2)[1] : null;
@@ -171,17 +171,17 @@ if (inicio < 0 || fim < 0) { console.error('a estrutura da GAG mudou: não achei
 const lidas = [];
 let eixo = null, nivel = null;
 for (const m of html.slice(inicio, fim).matchAll(/<h2[^>]*>([^<]+)<\/h2>|<h3[^>]*>([^<]+)<\/h3>|<li class="icon"><svg[^>]*>[\s\S]*?<\/svg><a href="https:\/\/gameaccessibilityguidelines\.com\/([^"/]+)\/">([^<]+)<\/a>/g)) {
-  // 📌 E SÃO DUAS DEFESAS DE PROPÓSITO, o que as mutações mostraram: tirar uma só não reprova nada, porque a outra
-  // segura; tiradas as duas, a impressão digital muda e a guarda 1 reprova. Nenhuma das duas é inerte.
-  // ⚠️ A barra lateral da página também tem `<li class="icon">` sob um `<h2 id=…>` («All guidelines»: /basic/,
-  // /full-list/…), e a guarda 2 apanhou-os na primeira corrida como «directrizes sem classificação». Por isso um
-  // `<h2>` qualquer ZERA o nível, e só entra o que está sob um dos seis eixos da GAG.
+  // 📌 AND THERE ARE TWO DEFENCES ON PURPOSE, as the mutations showed: removing one fails nothing, because the other
+  // holds; with both removed, the fingerprint changes and guard 1 fails. Neither is inert.
+  // ⚠️ The page's sidebar also has `<li class="icon">` under an `<h2 id=…>` (All guidelines: /basic/, /full-list/…), and
+  // guard 2 caught them on the first run as guidelines without a classification. So any `<h2>` RESETS the level, and
+  // only what sits under one of the GAG's six axes gets in.
   if (m[1]) { eixo = m[1]; nivel = null; } else if (m[2]) nivel = m[2];
   else if (EIXOS_GAG.includes(eixo) && NIVEIS.includes(nivel)) lidas.push({ eixo, nivel, slug: m[3] });
 }
 const impressao = createHash('sha256').update(lidas.map((l) => `${l.eixo}|${l.nivel}|${l.slug}`).sort().join('\n')).digest('hex');
 
-/* ===================== as seis guardas ===================== */
+/* ===================== the six guards ===================== */
 const problemas = [];
 if (FIXADA.sha256 && impressao !== FIXADA.sha256) problemas.push(`a GAG mudou desde ${FIXADA.lida}: ${impressao.slice(0, 12)} ≠ ${FIXADA.sha256.slice(0, 12)} — reclassificar antes de confiar`);
 const slugs = new Set(lidas.map((l) => l.slug));
@@ -201,7 +201,7 @@ const medida = medir(categorias);
 problemas.push(...medida.problemas);
 if (problemas.length) { for (const p of problemas) console.error('⚠️ ' + p); process.exit(1); }
 
-/* ===================== cruzar ===================== */
+/* ===================== cross ===================== */
 const { linhas, TOTAL } = medida;
 const gagDe = {};
 for (const l of lidas) {

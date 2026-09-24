@@ -8,15 +8,14 @@
 //   AXE_URL=http://localhost:4173/quiz.html node scripts/axe-check.mjs
 // In CI: a job that builds, starts the preview, waits for it, then runs this script.
 //
-// ⚠️ O ALVO DEIXOU DE SER A RAIZ EM 2026-09-07, e o motivo é o mesmo corte de sempre: o `app/index.html` saiu
-// com o cartucho (issue #111) e `dist/` já não tem `index.html` nenhum. O gate continuou a apontar para `/`,
-// o servidor respondeu o que respondeu, e a espera por `#sr-status` estourou aos 10 s com um `TimeoutError`
-// cru — que diz que um seletor não apareceu, não que a PÁGINA já não existe. O CI ficou vermelho a dizer a
-// coisa errada, que é a pior forma de um gate falhar.
+// ⚠️ THE TARGET IS THE ENGINE'S PAGE, `quiz.html`, NOT THE ROOT: `app/index.html` left with the cartridge (issue #111)
+// and `dist/` has no `index.html`. Pointed at `/`, the wait for `#sr-status` timed out with a raw `TimeoutError` — which
+// says a selector did not appear, not that the PAGE does not exist. A gate red for the wrong reason is the worst way for
+// a gate to fail.
 import { chromium } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 
-/** A página que a ENGINE tem. Enquanto ela for a única, é ela o alvo — e o nome está aqui, não no workflow. */
+/** The page the ENGINE has. While it is the only one, it is the target — and the name is here, not in the workflow. */
 const URL = process.env.AXE_URL || 'http://localhost:4173/quiz.html';
 
 const browser = await chromium.launch();
@@ -25,9 +24,9 @@ try {
   const context = await browser.newContext();
   const page = await context.newPage();
   const resposta = await page.goto(URL, { waitUntil: 'networkidle' });
-  // ⚠️ O ESTADO HTTP É LIDO ANTES DE QUALQUER SELETOR. Uma página que não existe devolve 404 e depois falha
-  // à espera de um elemento — e a mensagem que sobra fala do elemento. Perguntar primeiro pelo endereço faz
-  // o gate dizer o que realmente aconteceu.
+  // ⚠️ THE HTTP STATUS IS READ BEFORE ANY SELECTOR. A page that does not exist returns 404 and then fails waiting for an
+  // element — and the message left talks about the element. Asking about the address first makes the gate say what
+  // really happened.
   if (resposta && !resposta.ok()) {
     console.error(`✗ axe: ${URL} respondeu ${resposta.status()}.`);
     console.error('  O alvo tem de ser uma PÁGINA que o build emite. `dist/` já não tem `index.html` — ele saiu');
@@ -47,18 +46,12 @@ try {
   // VLibras (gov.br, third-party, interim — pillar #2/#5) is excluded by DECISION: we do not control its
   // markup and the plan is our own zdog interpreter. Getting the exclusion right is subtler than it looks.
   //
-  // A lição desta exclusão é de QUE LADO DA FRONTEIRA o seletor mora: uma exclusão tem de nomear o espaço de
-  // nomes do TERCEIRO, porque é isso que o terceiro garante manter — e não a nossa marcação, que ele pode
-  // deixar de usar sem avisar. Foi o que aconteceu: os `[vw*]` eram o NOSSO ponto de montagem, o widget
-  // deixou de renderizar lá dentro (`vlibras-plugin.js` pendura `#vlibras-access-wrapper` direto no `<body>`,
-  // como shadow host), e as três exclusões passaram a esconder um contêiner vazio enquanto o widget real
-  // entrava no relatório. Daí o prefixo `[id^="vlibras-"]` em vez do id exacto: sobrevive a eles renomearem o
-  // invólucro, e continua estreito o bastante para nunca esconder uma violação nossa.
-  //
-  // ⚠️ AS TRÊS `[vw*]` SAÍRAM em 2026-09-07: elas nomeavam marcação do `app/index.html`, que foi com o
-  // cartucho (#111). A página da engine não monta o VLibras, então excluíam um seletor que não casa nada —
-  // e uma exclusão que não casa nada é ruído que a próxima pessoa tem de investigar para descobrir que é
-  // inofensiva.
+  // The lesson of this exclusion is WHICH SIDE OF THE BOUNDARY the selector lives on: an exclusion must name the THIRD
+  // PARTY's namespace, because that is what the third party promises to keep — not our markup, which it may stop using
+  // without notice. It did: `vlibras-plugin.js` hangs `#vlibras-access-wrapper` straight on `<body>`, as a shadow host,
+  // so exclusions of our own mounting point hid an empty container while the real widget entered the report. Hence the
+  // `[id^="vlibras-"]` prefix instead of the exact id: it survives them renaming the wrapper, and stays narrow enough to
+  // never hide a violation of ours.
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .exclude('[id^="vlibras-"]')

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Escreve o RETRATO da superfície pública do pacote: cada módulo de `app/js/**` e os nomes que ele exporta.
+// Writes the PORTRAIT of the package's public surface: each module of `app/js/**` and the names it exports.
 //
-// ⚠️ ISTO NÃO É UM ÍNDICE, É UM COMPROMISSO. `tests/superficie-publica.node.test.js` compara a árvore com o
-// retrato e reprova quando um nome DESAPARECE. Correr este script é, portanto, a forma de dizer «sim, esta
-// remoção é deliberada» — e o teste manda, na mensagem de reprovação, escrever o rodapé `BREAKING CHANGE:`
-// no commit, que é a informação que faltava nos cinco quebrantes de 2026-09-07.
+// ⚠️ THIS IS NOT AN INDEX, IT IS A COMMITMENT. `tests/superficie-publica.node.test.js` compares the tree with the portrait
+// and fails when a name DISAPPEARS. Running this script is therefore the way to say that a removal is deliberate — and
+// the test's failure message asks for the `BREAKING CHANGE:` footer in the commit, the information a release's breaking
+// changes need.
 //
 // Uso: `node scripts/snapshot-public-surface.mjs` (reescreve o retrato)
 
@@ -16,23 +16,20 @@ import { formaDe, RETRATO_FORMA } from './shape-surface.mjs';
 
 export const RETRATO = 'docs/6-DevOps-SRE/public-surface.json';
 
-/** Um `export` NOMEADO. Re-exports (`export { x } from …`) e `export default` ficam de fora de propósito:
- *  o primeiro é indireção do mesmo nome, e este projeto não usa o segundo. */
+/** A NAMED `export`. Re-exports (`export { x } from …`) and `export default` are left out on purpose:
+ *  the first is an indirection of the same name, and this project does not use the second. */
 const RE = /^export\s+(?:declare\s+)?(?:async\s+)?(?:(function|const|let|var|class|interface|type|enum)\s+)([A-Za-z_$][\w$]*)/gm;
 
 /*
- * 🔴 E OS DECLARADORES SEGUINTES DA MESMA LINHA, que o retrato não via — achado em 2026-09-21 ao medir o que os jogos
- * IMPORTAM: `export const LOGICAL_W = 320, LOGICAL_H = 180, TILE = 16;` publicava três nomes e o retrato guardava um. Os
- * outros dois são importados pelo game-platformer e pelo pixi-15-puzzle, e o crivo da superfície — que existe para reprovar
- * quando um nome público DESAPARECE — não tinha como os proteger: apagá-los passava verde.
+ * 🔴 AND THE FOLLOWING DECLARATORS OF THE SAME LINE: `export const LOGICAL_W = 320, LOGICAL_H = 180, TILE = 16;` publishes
+ * three names, and games import the second and third. Without this, the surface check — which exists to fail when a
+ * public name DISAPPEARS — could not protect them: deleting them passed green.
  *
- * 📏 Medidos oito assim: LOGICAL_H, TILE, ADULT_H, CAR_H, LIXEIRA_H, PLACA_H, NUVEM_H, PIP_H.
- *
- * ⚠️ SÓ SE LEEM OS NOMES AO NÍVEL DE VÍRGULA DO TOPO, porque um inicializador pode ele próprio ter vírgulas — em
- * parênteses, chavetas e rectos, e TAMBÉM dentro de uma cadeia. 🔴 A primeira versão contava só os delimitadores e
- * publicou um nome que não existe: `export const ITEM_SELECTOR = 'button:not([disabled]), select:not(…)'` entrou no
- * retrato com um export chamado `select`. Um retrato que INVENTA um nome é pior do que um que perde: o crivo passaria a
- * exigir para sempre um nome que nenhum módulo tem.
+ * ⚠️ ONLY THE NAMES AT THE TOP COMMA LEVEL ARE READ, because an initialiser may itself have commas — in parentheses,
+ * braces and brackets, and ALSO inside a string. 🔴 Counting only the delimiters published a name that does not exist:
+ * `export const ITEM_SELECTOR = 'button:not([disabled]), select:not(…)'` entered the portrait with an export called
+ * `select`. A portrait that INVENTS a name is worse than one that loses one: the check would demand forever a name no
+ * module has.
  */
 const CONTINUA = /^export\s+(?:declare\s+)?(?:const|let|var)\s+[A-Za-z_$][\w$]*/;
 
@@ -43,7 +40,7 @@ function declaradoresDaLinha(linha) {
   let profundidade = 0, actual = '', aspas = '', escapado = false;
   for (const ch of corpo) {
     if (aspas) {
-      // dentro de uma cadeia nada é estrutura: nem vírgula, nem parêntese
+      // inside a string nothing is structure: neither a comma nor a parenthesis
       if (escapado) escapado = false;
       else if (ch === '\\') escapado = true;
       else if (ch === aspas) aspas = '';
@@ -57,10 +54,10 @@ function declaradoresDaLinha(linha) {
     actual += ch;
   }
   nomes.push(actual);
-  // de cada declarador, só o nome antes do `:` do tipo ou do `=`
-  // 📌 O PRIMEIRO ENTRA DUAS VEZES — por aqui e pelo `RE` — e isso foi MEDIDO como equivalente: o retrato passa por um
-  // `Set`, logo saltá-lo com um `slice(1)` dava exactamente o mesmo ficheiro. A mutação que o tirava sobreviveu, e um
-  // guarda que nenhum caso consegue distinguir é código inerte: sai, em vez de ficar a pedir um caso que não existe.
+  // of each declarator, only the name before the type's `:` or the `=`
+  // 📌 THE FIRST ONE COMES IN TWICE — through here and through `RE` — and that was MEASURED as equivalent: the portrait
+  // goes through a `Set`, so skipping it with a `slice(1)` gave exactly the same file. The mutation that removed it
+  // survived, and a guard no case can tell apart is inert code: it goes, instead of asking for a case that does not exist.
   return nomes
     .map((d) => /^\s*([A-Za-z_$][\w$]*)\s*(?::|=|$)/.exec(d)?.[1])
     .filter((n) => typeof n === 'string');
@@ -75,7 +72,7 @@ function ficheiros(raiz, dir = raiz, fora = []) {
   return fora;
 }
 
-/** O retrato: `{ 'core/route.ts': ['WALKABLE_ROLES', 'isWalkable', …], … }`, ordenado. */
+/** The portrait: `{ 'core/route.ts': ['WALKABLE_ROLES', 'isWalkable', …], … }`, sorted. */
 export function superficieDe(raizAppJs) {
   const fora = {};
   for (const rel of ficheiros(raizAppJs).sort()) {
@@ -87,9 +84,9 @@ export function superficieDe(raizAppJs) {
   return fora;
 }
 
-// ⚠️ A comparação é pelo NOME do ficheiro e não por `import.meta.url === 'file://' + argv[1]`: no Windows o
-// caminho vem com barras invertidas e letra de unidade, a igualdade nunca casa, e o script sai em silêncio
-// sem escrever nada — que foi exactamente o que aconteceu ao escrevê-lo.
+// ⚠️ The comparison is by the file's NAME and not by `import.meta.url === 'file://' + argv[1]`: on Windows the path comes
+// with backslashes and a drive letter, the equality never matches, and the script exits silently without writing
+// anything.
 if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'snapshot-public-surface.mjs') {
   const raiz = process.cwd().endsWith('app') ? join(process.cwd(), '..') : process.cwd();
   const s = superficieDe(join(raiz, 'app', 'js'));
@@ -97,9 +94,9 @@ if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'snapshot-public-surface.mj
   const n = Object.values(s).reduce((t, v) => t + v.length, 0);
   console.log(`retrato escrito: ${Object.keys(s).length} módulos, ${n} nomes`);
 
-  // ⚠️ OS DOIS RETRATOS SAEM DO MESMO COMANDO, de propósito: declarar é UM acto. Dois comandos separados
-  // dariam a declaração pela metade — os nomes actualizados e a forma velha —, e o gate da forma passaria a
-  // reprovar por uma remoção que alguém julgava ter declarado.
+  // ⚠️ BOTH PORTRAITS COME OUT OF THE SAME COMMAND, on purpose: declaring is ONE act. Two separate commands would give
+  // half a declaration — the names updated and the shape stale —, and the shape gate would go on failing over a removal
+  // someone thought they had declared.
   const f = formaDe(join(raiz, 'app', 'js'));
   writeFileSync(join(raiz, RETRATO_FORMA), JSON.stringify(f, null, 2) + '\n');
   const tipos = Object.values(f).reduce((t, v) => t + Object.keys(v).length, 0);

@@ -47,14 +47,14 @@ export const EXEMPT = {
 export const MEASURES = ['codeLines', 'decisionNodes', 'maxDepth', 'fanOut', 'globalReach', 'worstFunction'];
 
 /*
- * 🔴 A QUINTA MEDIDA É O QUE UM MÓDULO ALCANÇA, e ela entrou porque as outras quatro não a viam (ADR-0221, passo 7d, issue
- * #203). O artigo lista a INJECÇÃO DE DEPENDÊNCIA entre as dimensões que pesa, e esta engine pratica-a — o hospedeiro é
- * injectado (ADR-0178), o relógio é injectado, o `fetch` é injectado. O defeito que VOLTA é o alcance directo: `rotularLinha`
- * a ler `CSS.escape` foi exactamente isso, em 21/09.
+ * 🔴 THE FIFTH MEASURE IS WHAT A MODULE REACHES, and it is here because the other four did not see it (ADR-0221, step 7d,
+ * issue #203). The article lists DEPENDENCY INJECTION among the dimensions it weighs, and this engine practises it — the
+ * host is injected (ADR-0178), the clock is injected, `fetch` is injected. The defect that COMES BACK is the direct reach:
+ * a row labeller reading `CSS.escape` was exactly that.
  *
- * ⚠️ E O PORTÃO DAS CAMADAS NÃO O APANHA, que é a razão de esta medida existir: o `dependencies-point-downward` confere
- * IMPORTS, e um módulo que não importa ninguém e toca no `document` passa verde. 📏 Medido em 22/09: 23 de 188 módulos
- * alcançam um global — e dois deles estão em `core/`, a camada que o ADR-0173 descreve como «o que a engine É, SEM navegador».
+ * ⚠️ AND THE LAYER GATE DOES NOT CATCH IT, which is why this measure exists: `dependencies-point-downward` checks IMPORTS,
+ * and a module that imports nothing and touches `document` passes green — even in `core/`, the layer ADR-0173 describes
+ * as «o que a engine É, SEM navegador».
  */
 const BROWSER_GLOBALS = ['document', 'window', 'localStorage', 'sessionStorage', 'navigator', 'performance', 'fetch', 'CSS'];
 
@@ -92,9 +92,9 @@ export function measureModule(text) {
   sf.forEachChild((n) => walk(n, 0));
 
   /*
-   * ⚠️ LIDO PELO PARSER E NÃO POR GREP, e a diferença é o que torna a medida utilizável: `document` aparece em comentários,
-   * em nomes de propriedade (`o.document`), em parâmetros (`doc = document`) e em cadeias. O que conta é um IDENTIFICADOR NU
-   * que se resolve no global — o resto é prosa ou é injecção, que é precisamente o contrário do defeito.
+   * ⚠️ READ BY THE PARSER AND NOT BY GREP, and the difference is what makes the measure usable: `document` appears in
+   * comments, in property names (`o.document`), in parameters (`doc = document`) and in strings. What counts is a BARE
+   * IDENTIFIER that resolves to the global — the rest is prose or injection, which is precisely the opposite of the defect.
    */
   const reached = new Set();
   const look = (node) => {
@@ -109,23 +109,23 @@ export function measureModule(text) {
   sf.forEachChild(look);
 
   /*
-   * 🔴 A COMPLEXIDADE CICLOMÁTICA DA PIOR FUNÇÃO, e é a única medida deste ficheiro com limiar EMPRESTADO em vez de tirado da
-   * própria árvore: McCabe (1976) propôs 10 por função, e o NIST SP 500-235 (Watson & McCabe, 1996) codificou-o, admitindo
-   * até 15 com justificação escrita. 📌 O Dev pediu uma referência melhor do que um tecto de linhas inventado, e a literatura
-   * não tem nenhuma para tamanho de ficheiro — tem esta, por FUNÇÃO.
+   * 🔴 THE CYCLOMATIC COMPLEXITY OF THE WORST FUNCTION, the only measure in this file with a BORROWED threshold instead of
+   * one taken from the tree itself: McCabe (1976) proposed 10 per function, and NIST SP 500-235 (Watson & McCabe, 1996)
+   * codified it, allowing up to 15 with a written justification. 📌 The Dev asked for a better reference than an invented
+   * line ceiling, and the literature has none for file size — it has this one, per FUNCTION.
    *
-   * ⚠️ POR FUNÇÃO, e os ramos de uma função ANINHADA não contam para a de fora: uma função que devolve um objecto de dez
-   * métodos não é complexa por os ter, e somá-los faria toda fábrica desta árvore parecer o pior módulo dela.
-   * 📏 Medido em 22/09: 2496 funções, 71 acima de 10 e 36 acima de 15, em 46 módulos — logo isto é CATRACA e não portão, como
-   * tudo o resto aqui. A pior é o próprio `createGame`, com 68.
+   * ⚠️ PER FUNCTION, and the branches of a NESTED function do not count for the outer one: a function that returns an
+   * object of ten methods is not complex for having them, and adding them up would make every factory in this tree look
+   * like its worst module. Many functions are already above the threshold, so this is a RATCHET and not a gate, like
+   * everything else here.
    */
   const ehFuncao = (n) => ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isArrowFunction(n) || ts.isMethodDeclaration(n);
   let worstFunction = 0;
   const porFuncao = (n) => {
     if (ehFuncao(n)) {
-      let ramos = 1; // a complexidade ciclomática é ramos + 1: um caminho existe sempre
+      let ramos = 1; // cyclomatic complexity is branches + 1: one path always exists
       const conta = (x) => {
-        if (x !== n && ehFuncao(x)) return; // o que está dentro de uma função aninhada é dela
+        if (x !== n && ehFuncao(x)) return; // what is inside a nested function is that function's
         if (ts.isIfStatement(x) || ts.isForStatement(x) || ts.isForOfStatement(x) || ts.isForInStatement(x)
           || ts.isWhileStatement(x) || ts.isDoStatement(x) || ts.isCaseClause(x) || ts.isCatchClause(x)
           || ts.isConditionalExpression(x)) ramos += 1;
@@ -150,11 +150,10 @@ export function measureModule(text) {
 /** The whole tree: `{ 'core/ring.ts': {codeLines, decisionNodes, maxDepth, fanOut, fanIn} }`, keyed as the portrait keys. */
 export function measureTree() {
   /*
-   * 🔴 RASTREADOS **E** POR RASTREAR, e isto é um defeito conhecido desta casa a ser fechado à nascença: o portão do português
-   * ficou verde sobre um módulo com seis identificadores portugueses porque a suíte correu com ele ainda fora do índice
-   * (21/09). `git ls-files` sozinho responde «o que já está guardado», e a pergunta aqui é «o que existe» — um módulo novo tem
-   * de ser medido no minuto em que nasce, que é quando parti-lo ainda é barato. O `--exclude-standard` mantém o `.gitignore`
-   * a valer, logo nada de `dist/` nem de temporários entra.
+   * 🔴 TRACKED **AND** UNTRACKED: a gate once stayed green over a module with Portuguese identifiers because the suite ran
+   * while the module was still outside the index. `git ls-files` alone answers «what is already stored», and the question
+   * here is «what exists» — a new module must be measured the minute it is born, which is when splitting it is still
+   * cheap. `--exclude-standard` keeps `.gitignore` in force, so nothing from `dist/` or temporary files gets in.
    */
   const lista = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
   const files = [...new Set([...lista('ls-files', 'app/js'), ...lista('ls-files', '--others', '--exclude-standard', 'app/js')])]
@@ -176,8 +175,8 @@ export function measureTree() {
     out[key] = {
       codeLines: m.codeLines, decisionNodes: m.decisionNodes, maxDepth: m.maxDepth, fanOut: m.fanOut,
       globalReach: m.globalReach, worstFunction: m.worstFunction, fanIn: fanIn.get(f) ?? 0,
-      // 📌 QUAIS os globais, e não só quantos: uma catraca sobre um número diz que piorou, e esta linha diz o que muda para o
-      // pagar. Só aparece onde há algum, para a linha de base não engordar com listas vazias.
+      // 📌 WHICH globals, not only how many: a ratchet on a number says it got worse, and this line says what to change to
+      // pay it back. It appears only where there is one, so the baseline does not grow with empty lists.
       ...(m.reached.length ? { reached: m.reached } : {}),
     };
   }
@@ -189,16 +188,17 @@ export function ceilingFrom(modules) {
   const teto = {};
   for (const measure of MEASURES) {
     /*
-     * ⚠️ O ALCANCE A GLOBAIS NÃO TEM p90: o tecto é ZERO, e por uma razão que não vem da literatura nem de um percentil. Esta
-     * engine DECIDIU que o hospedeiro é injectado (ADR-0178) e que `core` não conhece navegador (ADR-0173); um módulo novo que
-     * alcança o `document` está a desfazer uma decisão, não a ficar acima de uma média. 📏 Os 23 que já o fazem ficam
-     * congelados pela catraca e só podem encolher — é dívida, e dívida não vira licença.
+     * ⚠️ REACH TO GLOBALS HAS NO p90: the ceiling is ZERO, for a reason that comes neither from the literature nor from a
+     * percentile. This engine DECIDED that the host is injected (ADR-0178) and that `core` knows no browser (ADR-0173); a
+     * new module that reaches `document` is undoing a decision, not sitting above an average. 📏 The modules that already
+     * do are frozen by the ratchet and can only shrink — it is debt, and debt does not become a licence.
      */
     if (measure === 'globalReach') { teto[measure] = 0; continue; }
     /*
-     * ⚠️ E A PIOR FUNÇÃO TAMBÉM NÃO TEM p90, por uma razão oposta à do alcance: o limiar vem de FORA e tem fonte — McCabe
-     * (1976), codificado no NIST SP 500-235, que admite 15 com justificação escrita. 📌 Foi o Dev que pediu uma referência
-     * melhor do que um número inventado, e um p90 desta árvore seria exactamente isso: tirar o limiar do próprio defeito.
+     * ⚠️ AND THE WORST FUNCTION HAS NO p90 EITHER, for the opposite reason: the threshold comes from OUTSIDE and has a
+     * source — McCabe (1976), codified in NIST SP 500-235, which allows 15 with a written justification. 📌 The Dev asked
+     * for a better reference than an invented number, and a p90 of this tree would be exactly that: taking the threshold
+     * from the defect itself.
      */
     if (measure === 'worstFunction') { teto[measure] = 10; continue; }
     const vals = Object.entries(modules).filter(([m]) => !isExempt(m, measure)).map(([, v]) => v[measure]).sort((a, b) => a - b);

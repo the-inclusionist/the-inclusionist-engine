@@ -1,23 +1,23 @@
 #!/usr/bin/env node
-// Acha import nomeado que ficou sem uso em app/js/main.js.
+// Finds named imports left unused in a `.js` file — by default `app/js/main.js`.
 //
-//     node scripts/check-dead-imports.js [arquivo]
+//     node scripts/check-dead-imports.js [file]
 //
-// Por que existe: `main.js` é `.js`, então o `tsc` não o typecheca e não reclama de import não usado; o
-// bundler tampouco. Um import morto atravessa build, testes e navegador sem sintoma nenhum. A cada extração
-// alguns nomes deixam de ser usados aqui, e sem isto eles se acumulam — quinze de uma vez, na primeira
-// passada, resíduo de várias ondas.
+// ⚠️ The default target left with the game (ADR-0036): `app/js/main.js` is not in this tree, so run with no argument
+// the script cannot read it and exits 2. Pass a file.
 //
-// Fronteira de identificador por lookaround, não por `\b`: `$` e `$$` não são caracteres de palavra, e com
-// `\b` os dois apareciam como mortos enquanto são os seletores mais usados do arquivo.
+// Why it exists: a `.js` file is not typechecked by `tsc`, which does not complain about an unused import; nor does the
+// bundler. A dead import goes through build, tests and browser with no symptom at all, and extractions leave them
+// behind.
 //
-// COMENTARIO NAO E USO. A primeira versao varria o corpo cru e dava o arquivo por limpo enquanto dezenas de
-// imports estavam mortos: cada extracao deixa para tras uma linha de trilha do tipo `// X/Y extraidos p/
-// core/foo.js`, e o nome citado ali contava como referencia. O ponto cego crescia na mesma proporcao em que a
-// refatoracao se documentava — um conferidor que fica MAIS cego quanto melhor o codigo se explica e pior que
-// nenhum. Dai `semComentarios`: um varredor de caractere, e nao um regex, porque `//` dentro de string
-// ('https://...', 'url(#...)') nao abre comentario e cortar a linha ali esconderia o resto dela do exame.
-import { readFileSync } from 'node:fs'; // o package.json declara type:module
+// Identifier boundary by lookaround, not `\b`: `$` and `$$` are not word characters, and with `\b` both showed up as
+// dead while being the most used selectors of the file.
+//
+// A COMMENT IS NOT A USE. Scanning the raw body would count a name cited in a trail comment (`// X/Y extracted to
+// core/foo.js`) as a reference, so the checker would get MORE blind the better the code explained itself — worse than
+// none. Hence `semComentarios`: a character scanner, and not a regex, because `//` inside a string ('https://...',
+// 'url(#...)') opens no comment, and cutting the line there would hide the rest of it from the check.
+import { readFileSync } from 'node:fs'; // package.json declares type:module
 
 const alvo = process.argv[2] || 'app/js/main.js';
 let src;
@@ -25,17 +25,17 @@ try { src = readFileSync(alvo, 'utf8'); }
 catch (e) { console.error('não consegui ler ' + alvo + ' — ' + e.message); process.exit(2); }
 
 /**
- * Apaga comentarios de linha e de bloco, preservando o que estiver dentro de string ou template.
- * Troca por espaco (mantendo as quebras) para que fronteiras de identificador nao se colem.
- * Literais de expressao regular nao sao rastreados: no pior caso o varredor corta a MAIS, e cortar a mais so
- * pode gerar alarme falso — nunca silencio, que e a falha que importa aqui.
+ * Erases line and block comments, keeping what is inside a string or template.
+ * Replaces them with spaces (keeping the line breaks) so that identifier boundaries do not stick together.
+ * Regular-expression literals are not tracked: at worst the scanner cuts TOO MUCH, and cutting too much can only raise
+ * a false alarm — never silence, which is the failure that matters here.
  */
 function semComentarios(txt) {
   let out = '', i = 0, aspas = null;
   while (i < txt.length) {
     const c = txt[i], d = txt[i + 1];
     if (aspas) {
-      if (c === '\\') { out += '  '; i += 2; continue; }    // escape: consome o par
+      if (c === '\\') { out += '  '; i += 2; continue; }    // escape: consumes the pair
       if (c === aspas) aspas = null;
       out += c; i++; continue;
     }
@@ -51,10 +51,8 @@ function semComentarios(txt) {
   return out;
 }
 
-// Tira as DECLARACOES de import inteiras, e nao as LINHAS que comecam com `import`: um import quebrado em
-// duas linhas deixava a continuacao dentro do corpo, e os nomes escritos ali contavam como uso dos proprios
-// nomes que aquela declaracao importa. Dois mortos sobreviveram assim, invisiveis ate a declaracao ser
-// reescrita numa linha so.
+// Removes whole import DECLARATIONS, not the LINES that start with `import`: an import broken over two lines left its
+// continuation in the body, and the names written there counted as uses of the very names that declaration imports.
 const corpo = semComentarios(src.replace(/^import\s[^;]*;/gm, ''));
 const escapa = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

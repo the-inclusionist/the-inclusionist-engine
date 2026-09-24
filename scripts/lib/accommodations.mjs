@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// O CATÁLOGO DE ACOMODAÇÕES — cada uma com a sua chave —, as declarações por categoria e a medição do alcance.
-// Partilhado por `accommodations-by-genre.mjs` (a tabela de alcance) e `accommodations-gag.mjs` (a prioridade
-// pela Game Accessibility Guidelines). O raciocínio das chaves está no cabeçalho do primeiro.
+// THE ACCOMMODATIONS CATALOGUE — each with its key —, the declarations per category and the measurement of reach.
+// Shared by `accommodations-by-genre.mjs` (the reach table) and `accommodations-gag.mjs` (the priority by the Game
+// Accessibility Guidelines). The reasoning behind the keys is in the header of the first.
 import { MAPA, EIXOS_DA_TAXONOMIA, SECOES } from './taxonomy.mjs';
 
-/* ===================== OS EIXOS DA DECLARAÇÃO =====================
- * `fonte` diz de onde vem o eixo: um campo do contrato que já existe, ou nenhum (⚠️ ainda por declarar).
+/* ===================== THE DECLARATION'S AXES =====================
+ * `fonte` says where the axis comes from: a contract field that already exists, or none (⚠️ still to be declared).
+ * ⚠️ `segura`'s `fonte` still names `seguraTeclas()`; the contract field is `holdsKeys()` now.
  */
 export const EIXOS_DA_DECLARACAO = Object.freeze({
   tick: { fonte: 'GameDeclaration.tick', valores: new Set(['player', 'clock']) },
@@ -18,19 +19,19 @@ export const EIXOS_DA_DECLARACAO = Object.freeze({
   texto: { fonte: null, valores: new Set(['rotulos', 'narrativo', 'materia']) },
   pecas: { fonte: null, valores: new Set(['nenhuma', 'baralho', 'tabuleiro']) },
   precisao: { fonte: null, valores: new Set(['folgada', 'precisa']) },
-  // Entrou pela GAG («avoid repeated inputs», Intermediate/Motor): martelar um botão ou um QTE. O catálogo tem
-  // literalmente um «Button-mash fighter» e um «Atletismo por ritmo — mash de teclas».
+  // Came in through the GAG («avoid repeated inputs», Intermediate/Motor): mashing a button or a QTE. The catalogue
+  // literally has a «Button-mash fighter» and an «Atletismo por ritmo — mash de teclas».
   repeticao: { fonte: null, valores: new Set(['nao', 'sim']) },
 });
 
-/* ===================== UM EIXO DERIVADO — a regra que a engine JÁ aplica =====================
- * 🔴 O sonar precisa de DUAS respostas do contrato: um mundo (`world: none` ⇒ «empatia e sonar NÃO são
- * oferecidos», bloco 8) e uma direcção (`bearing` devolve `{ kind: 'none' }` em `hotspots`,
- * `core/contract.ts:610`). Chavear o modo cego só pela topologia deu-o ao Desenho, que declara `none`.
+/* ===================== A DERIVED AXIS — the rule the engine ALREADY applies =====================
+ * 🔴 The sonar needs TWO answers from the contract: a world (`world: none` ⇒ empathy and sonar are NOT offered, block 8
+ * of `core/contract.ts`) and a direction (`bearing` returns `{ kind: 'none' }` for `hotspots`). Keying blind mode by the
+ * topology alone gave it to Drawing, which declares `none`.
  *
- * 📌 Continua a ser UMA chave: o eixo é derivado dos dois campos pela mesma regra que a engine usa, e não uma
- * segunda célula onde escrever outra resposta. Como cada categoria declara CONJUNTOS, o derivado é a união
- * das combinações — uma sobre-estimativa, dita: «Experimentais» junta um passeio (espacial) e uma tela (sem mundo).
+ * 📌 It is still ONE key: the axis is derived from the two fields by the same rule the engine uses, not a second cell to
+ * write another answer in. Since each category declares SETS, the derived value is the union of the combinations — an
+ * overestimate, said: «Experimentais» joins a walk (spatial) and a canvas (no world).
  */
 export const EIXOS_DERIVADOS = Object.freeze({
   espaco: {
@@ -40,18 +41,18 @@ export const EIXOS_DERIVADOS = Object.freeze({
   },
 });
 /*
- * 📌 LEITURA DOS VALORES que pedem uma frase:
- *   segura  `botao`    = além da direcção, um BOTÃO segurado (correr, carregar força, bloquear)
- *   entrada `ponteiro` = posição CONTÍNUA (desenhar, arrastar, mirar com rato) — clicar num de N pontos é `acoes`
- *   avatar  `fixo`     = há personagem mas não se desloca (raquete, tamagotchi); `anda` = desloca-se A PÉ;
- *                     `veiculo` = desloca-se num carro/nave — não respira e não leva bengala
- *   texto   `materia`  = a palavra É o exercício (forca, digitação, quiz); `narrativo` = há diálogo a ler
- *   precisao`precisa`  = acertar depende de uma janela de tempo curta
+ * 📌 READING THE VALUES that need a sentence:
+ *   segura  `botao`    = besides the direction, a HELD button (running, charging power, blocking)
+ *   entrada `ponteiro` = CONTINUOUS position (drawing, dragging, aiming with a mouse) — clicking one of N points is `acoes`
+ *   avatar  `fixo`     = there is a character but it does not move (a paddle, a tamagotchi); `anda` = moves ON FOOT;
+ *                     `veiculo` = moves in a car/ship — it does not breathe and carries no cane
+ *   texto   `materia`  = the word IS the exercise (hangman, typing, quiz); `narrativo` = there is dialogue to read
+ *   precisao`precisa`  = hitting depends on a short time window
  */
 
-/* ===================== AS 35 CATEGORIAS × OS EIXOS DA DECLARAÇÃO =====================
- * O conjunto de valores que os jogos da categoria COBREM — lido nos títulos do catálogo, não no nome da
- * categoria. «Puzzle Lógico» segura tecla porque tem Tetris; e não segura, porque tem Sudoku.
+/* ===================== THE 35 CATEGORIES × THE DECLARATION'S AXES =====================
+ * The set of values the category's games COVER — read in the catalogue's titles, not in the category's name.
+ * «Puzzle Lógico» holds a key because it has Tetris; and does not, because it has Sudoku.
  */
 export const DECL = {
   'Arcade Clássico': { tick: ['clock'], segura: ['nada', 'direcao'], entrada: ['acoes'], mundo: ['element'], topologia: ['grid', 'continuous'], avatar: ['fixo', 'anda'], texto: ['rotulos'], pecas: ['nenhuma'], precisao: ['precisa'], repeticao: ['nao'] },
@@ -91,11 +92,11 @@ export const DECL = {
   'Híbridos / Mashups': { tick: ['player', 'clock'], segura: ['nada', 'direcao'], entrada: ['acoes'], mundo: ['element'], topologia: ['grid', 'continuous', 'hotspots'], avatar: ['nenhum', 'anda'], texto: ['rotulos', 'materia'], pecas: ['nenhuma', 'baralho'], precisao: ['folgada', 'precisa'], repeticao: ['nao'] },
 };
 
-/* ===================== AS ACOMODAÇÕES, CADA UMA COM A SUA CHAVE =====================
- * `tem` = existe na engine hoje. `chave` = `'universal'`, ou `{ eixo, valores }` — UM eixo.
+/* ===================== THE ACCOMMODATIONS, EACH WITH ITS KEY =====================
+ * `tem` = exists in the engine today. `chave` = `'universal'`, or `{ eixo, valores }` — ONE axis.
  *
- * ⚠️ `universal` NÃO É «NÃO PENSEI»: quer dizer que há texto, som, tela, menu ou teclas em qualquer jogo, e é
- * esse o argumento de cada linha que o usa.
+ * ⚠️ `universal` DOES NOT MEAN NOT THOUGHT THROUGH: it means there is text, sound, a screen, a menu or keys in any game,
+ * and that is the argument of every row that uses it.
  */
 export const U = 'universal';
 export const ACOM = {
@@ -109,38 +110,38 @@ export const ACOM = {
   altoContraste: { tem: true, o: 'alto contraste', chave: U },
   correcaoDaltonismo: { tem: true, o: 'correção de daltonismo', chave: U },
   reducaoCena: { tem: true, o: 'parar parallax, decoração, itens, partículas', chave: U },
-  // 📌 Todo jogo tem pelo menos confirmar e pausa, e o menu é navegado por teclas — até o de desenho.
+  // 📌 Every game has at least confirm and pause, and the menu is navigated by keys — even a drawing game's.
   remapearTeclas: { tem: true, o: 'remapear teclas', chave: U },
-  // 📌 A régua de alvo da fase 5b é da INTERFACE (menus, pad, barra), e há interface em todo jogo.
+  // 📌 Phase 5b's target ruler is the INTERFACE's (menus, pad, bar), and there is an interface in every game.
   tamanhoDoAlvo: { tem: false, o: 'alvos maiores para tocar/clicar', chave: U },
 
-  // — pelo que o contrato JÁ declara —
+  // — by what the contract ALREADY declares —
   velocidadeDoJogo: { tem: false, o: 'abrandar o jogo inteiro (GAG: «adjust the game speed»)', chave: { eixo: 'tick', valores: ['clock'] } },
   alternanciaDeMarcha: { tem: true, o: 'andar sem segurar a direcção', chave: { eixo: 'segura', valores: ['direcao', 'botao'] } },
   alternanciaDoCorrer: { tem: true, o: 'correr sem segurar o botão', chave: { eixo: 'segura', valores: ['botao'] } },
   controleVirtual: { tem: true, o: 'pad na tela (tamanho, geometria, slots)', chave: { eixo: 'entrada', valores: ['acoes'] } },
   umBotaoSo: { tem: false, o: 'colapsar as acções numa só', chave: { eixo: 'entrada', valores: ['acoes'] } },
-  // ⚠️ ERA «assistenciaDeTraco» (estabilizar o traço ao desenhar). A chave certa é o PONTEIRO contínuo, e com ela
-  // a mesma mão trémula que desenha também mira e arrasta — a acomodação é a do tremor, não a do desenho.
+  // ⚠️ IT WAS «assistenciaDeTraco» (steadying the stroke while drawing). The right key is the continuous POINTER, and with
+  // it the same shaky hand that draws also aims and drags — the accommodation is the tremor's, not the drawing's.
   estabilizarPonteiro: { tem: false, o: 'suavizar o tremor do ponteiro (traço, mira, arrasto)', chave: { eixo: 'entrada', valores: ['ponteiro'] } },
-  // O contrato: `world: none` ⇒ «empatia e sonar NÃO são oferecidos» (`core/contract.ts`, bloco 8).
+  // The contract: `world: none` ⇒ empathy and sonar are NOT offered (`core/contract.ts`, block 8).
   simulacaoVisual: { tem: true, o: 'empatia: simular cegueira / baixa visão / daltonismo', chave: { eixo: 'mundo', valores: ['element'] } },
-  // 🔴 E o sonar precisa de MUNDO e de DIRECÇÃO — ver `EIXOS_DERIVADOS`. Numa lista de pontos, ou sem mundo,
-  // a criança cega joga pela narração e pelo índice falado, que são universais.
+  // 🔴 And the sonar needs a WORLD and a DIRECTION — see `EIXOS_DERIVADOS`. In a list of points, or with no world, the
+  // blind child plays by narration and the spoken index, which are universal.
   blindMode: { tem: true, o: 'jogar sem ver, por pistas de áudio', chave: { eixo: 'espaco', valores: ['espacial'] } },
   navegacaoSonora: { tem: true, o: 'volume de bengala/sonar/guia', chave: { eixo: 'espaco', valores: ['espacial'] } },
 
-  // — pela taxonomia —
+  // — by the taxonomy —
   saidaDeAudio: { tem: true, o: 'saída de áudio própria por jogador', chave: { eixo: 'jogadores', valores: ['local'] } },
   balancoDaCamara: { tem: false, o: 'balanço/FOV da câmara — enjoo', chave: { eixo: 'perspectiva', valores: ['primeira-pessoa', 'atras'] } },
-  // A física do Modo Fácil da engine (gravidade, moedas no chão) e a cadeira (sem pulo) são de PLATAFORMA.
+  // The physics of the engine's Easy Mode (gravity, coins on the ground) and the wheelchair (no jump) are PLATFORMER ones.
   modoFacil: { tem: true, o: 'gravidade menor, moedas no chão, sem perigos', chave: { eixo: 'generos', valores: ['1.1'] } },
   cadeiraDeRodas: { tem: true, o: 'sem pulo; rampas e elevadores', chave: { eixo: 'generos', valores: ['1.1'] } },
   generosidadeDeteccao: { tem: false, o: 'quão depressa um guarda te vê', chave: { eixo: 'generos', valores: ['1.5'] } },
   intensidade: { tem: false, o: 'sustos, tensão', chave: { eixo: 'generos', valores: ['10.6', '2.1'] } },
   dicaOuRealce: { tem: false, o: 'dica / realce do que procurar', chave: { eixo: 'generos', valores: ['3', '3.2', '3.3', '4', '4.2', '4.2.1', '4.3', '4.6', '7', '10.1', '10.11'] } },
 
-  // — por eixos que o contrato AINDA não pergunta —
+  // — by axes the contract does NOT ask yet —
   reducaoPersonagem: { tem: true, o: 'parar andar/respirar/gracinhas do personagem', chave: { eixo: 'avatar', valores: ['fixo', 'anda'] } },
   bengalaEspacamento: { tem: true, o: 'de quanto em quanto chão a bengala bate', chave: { eixo: 'avatar', valores: ['anda'] } },
   velocidadeDoTexto: { tem: false, o: 'ler ao próprio ritmo (GAG: «text prompts at their own pace»)', chave: { eixo: 'texto', valores: ['narrativo', 'materia'] } },
@@ -149,8 +150,10 @@ export const ACOM = {
   naipesDistinguiveis: { tem: false, o: 'naipes distinguíveis sem depender de cor', chave: { eixo: 'pecas', valores: ['baralho'] } },
   janelaDeAcerto: { tem: false, o: 'quanto tempo conta como «no tempo certo»', chave: { eixo: 'precisao', valores: ['precisa'] } },
 
-  // ============ AS QUE A GAG TROUXE (`accommodations-gag.mjs`) — o estudo não as tinha ============
-  // 📌 `tem` foi conferido no código, e cada `true` diz onde; um `false` que a engine já tivesse mentiria sobre a prioridade.
+  // ============ THE ONES THE GAG BROUGHT (`accommodations-gag.mjs`) — the study did not have them ============
+  // 📌 `tem` was checked in the code when written, and each `true` says where; a `false` the engine already had would lie
+  // about the priority. ⚠️ Since then `intervaloEntreEntradas` has landed (ADR-0217) and still says `false` here, like
+  // `velocidadeDoJogo` (ADR-0180) and `umBotaoSo` (ADR-0218) above.
   entradaRepetida: { tem: false, o: 'trocar martelar/QTE por segurar ou por um toque', chave: { eixo: 'repeticao', valores: ['sim'] } },
   intervaloEntreEntradas: { tem: false, o: 'ignorar a segunda entrada dentro de N ms (tremor)', chave: { eixo: 'entrada', valores: ['acoes'] } },
   macros: { tem: false, o: 'uma entrada dispara uma sequência', chave: { eixo: 'entrada', valores: ['acoes'] } },
@@ -159,32 +162,32 @@ export const ACOM = {
   assistencia: { tem: false, o: 'mira e direcção assistidas', chave: { eixo: 'precisao', valores: ['precisa'] } },
   realceDePalavras: { tem: false, o: 'realçar as palavras importantes do texto', chave: { eixo: 'texto', valores: ['narrativo', 'materia'] } },
   audiodescricao: { tem: false, o: 'descrever em voz o que acontece na cena', chave: { eixo: 'mundo', valores: ['element'] } },
-  // `ui/help-panel.ts` (fase 1d): cada botão e o que significa, com a tecla REMAPEADA.
+  // `ui/help-panel.ts` (phase 1d): each button and what it means, with the REMAPPED key.
   ajudaDosControles: { tem: true, o: 'lembrar os controles durante o jogo', chave: U },
-  // ⚠️ `objectiveOf` é obrigatório no contrato e tem ZERO leitores em `app/js` — o mesmo padrão do `tick`.
+  // ⚠️ `objectiveOf` is required by the contract and has ZERO readers in `app/js`.
   lembreteDoObjetivo: { tem: false, o: 'lembrar o objectivo actual durante o jogo', chave: U },
   repetirInstrucao: { tem: false, o: 'ouvir de novo a última instrução', chave: U },
-  // `core/state` `captionsOn` — «legendas dos sons (a11y surdez)».
+  // `core/state` `captionsOn` — the sound captions (deaf accessibility).
   legendasDeSom: { tem: true, o: 'legendas para os sons que importam', chave: U },
   // `core/a11y-sr`: `srSay` (polite) e `srAlert` (assertive).
   leitorDeTela: { tem: true, o: 'anúncios para leitor de tela', chave: U },
   monoEstereo: { tem: false, o: 'somar os canais para quem ouve de um lado só', chave: U },
   tamanhoDaInterface: { tem: false, o: 'aumentar a interface inteira, não só a letra', chave: U },
   rearranjarInterface: { tem: false, o: 'mover os elementos da interface', chave: U },
-  // 📌 A engine não pode fazer um jogo mais fácil — pode GUARDAR, persistir e anunciar a escolha, e o jogo lê-a.
-  // É a forma do `rebuildCoins` que a fase 5a propõe para a velocidade. O Modo Fácil é a instância de plataforma.
+  // 📌 The engine cannot make a game easier — it can STORE, persist and announce the choice, and the game reads it. It is
+  // the shape of `rebuildCoins` that phase 5a proposes for speed. Easy Mode is the platformer's instance.
   dificuldade: { tem: false, o: 'escolher e mudar a dificuldade durante o jogo', chave: U },
   pularTrecho: { tem: false, o: 'saltar o que não é a mecânica central', chave: U },
   perfis: { tem: false, o: 'guardar conjuntos de ajustes por criança', chave: U },
 
-  // ============ DECIDIDAS PELO DEV, SEM MEDIÇÃO NO CATÁLOGO (ADR-0188) ============
-  // ⚠️ `semMedida`: a chave é a RESPOSTA do cartucho, e não um eixo que se declare categoria a categoria — pô-la em cada uma
-  // das 35 seria adivinhar pelo catálogo, que é amostra de estudo e não lista a construir. `medir` salta-as.
+  // ============ DECIDED BY THE DEV, WITHOUT MEASURING THE CATALOGUE (ADR-0188) ============
+  // ⚠️ `semMedida`: the key is the cartridge's ANSWER, not an axis declared category by category — putting it in each of
+  // the 35 would be guessing from the catalogue, which is a study sample and not a list to build. `medir` skips them.
   corDoDono: { tem: true, o: 'cada item na cor de quem o pode pegar', chave: { eixo: 'resposta', valores: ['sim'] }, semMedida: 'ADR-0188' },
   contornos: { tem: true, o: 'contorno de 1º e 2º plano no alto contraste', chave: { eixo: 'resposta', valores: ['sim'] }, semMedida: 'ADR-0188' },
 };
 
-/* ===================== os eixos, juntos ===================== */
+/* ===================== the axes, together ===================== */
 export const VALIDOS = {
   generos: new Set(Object.keys(SECOES)),
   ...EIXOS_DA_TAXONOMIA,
@@ -197,11 +200,11 @@ export const eixosDe = (nome) => {
 };
 
 /**
- * Confere as sete guardas e mede o alcance de cada acomodação. Devolve `{ problemas }` quando alguma guarda
- * reprova — quem chama decide como sair —, ou `{ linhas, TOTAL, problemas: [] }`, ordenadas por alcance.
+ * Checks the seven guards and measures each accommodation's reach. Returns `{ problemas }` when some guard fails — the
+ * caller decides how to exit —, or `{ linhas, TOTAL, problemas: [] }`, sorted by reach.
  */
 export function medir(categorias) {
-  /* ===================== as sete guardas ===================== */
+  /* ===================== the seven guards ===================== */
   const nomes = categorias.map((c) => c.nome);
   const problemas = [];
   for (const n of nomes) if (!(n in DECL)) problemas.push(`categoria SEM declaração: ${n}`);
@@ -223,7 +226,7 @@ export function medir(categorias) {
   }
   if (problemas.length) return { problemas };
 
-  /* ===================== contar ===================== */
+  /* ===================== count ===================== */
   const jogosDe = Object.fromEntries(categorias.map((c) => [c.nome, c.jogos]));
   const TOTAL = categorias.reduce((a, c) => a + c.jogos, 0);
   const casa = (chave, nome) => chave === U || eixosDe(nome)[chave.eixo].some((v) => chave.valores.includes(v));
