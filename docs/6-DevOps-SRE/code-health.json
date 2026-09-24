@@ -223,7 +223,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 2,
-      "fanIn": 2
+      "fanIn": 3
     },
     "core/rng.ts": {
       "codeLines": 28,
@@ -388,7 +388,7 @@
       "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 6,
-      "fanIn": 6
+      "fanIn": 7
     },
     "input/empathy-filter.ts": {
       "codeLines": 32,
@@ -1375,6 +1375,15 @@
       "worstFunction": 7,
       "fanIn": 1
     },
+    "ui/menu-intent.ts": {
+      "codeLines": 34,
+      "decisionNodes": 2,
+      "maxDepth": 1,
+      "fanOut": 2,
+      "globalReach": 0,
+      "worstFunction": 7,
+      "fanIn": 1
+    },
     "ui/menu-items.ts": {
       "codeLines": 4,
       "decisionNodes": 0,
@@ -1385,10 +1394,10 @@
       "fanIn": 3
     },
     "ui/menu-nav.ts": {
-      "codeLines": 285,
-      "decisionNodes": 54,
+      "codeLines": 254,
+      "decisionNodes": 52,
       "maxDepth": 2,
-      "fanOut": 9,
+      "fanOut": 10,
       "globalReach": 0,
       "worstFunction": 10,
       "fanIn": 2

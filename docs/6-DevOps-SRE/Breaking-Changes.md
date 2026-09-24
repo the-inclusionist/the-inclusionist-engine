@@ -2523,6 +2523,22 @@ touching the per-player toggle key only shrinks, and moving the definition would
 | `clampSelPlayer`, `anyMobilityActive`, `onOffLabel`, `playerTabsHTML`, `easyAnnouncement` | `ui/mobility-choices.js`, same names, no alias left behind |
 | — | `ui/mobility-choices.js` also publishes `playerPrefix`, which the panel's two toggle writers use |
 
+## CG · What a key means in a menu moves to `ui/menu-intent` (ADR-0221, issue #203)
+
+**Who is affected:** anyone importing `KEY_YES`, `KEY_NO`, `KEY_UP`, `KEY_DOWN`, `KEY_LEFT`, `KEY_RIGHT`,
+`menuKeyIntent`, `selectStep`, `selectWrap`, `rangeStep` or `stepInPause` from `ui/menu-nav.js`. 📏 Measured: none of the
+seven games imports any of them (the pinball names `menuKeyIntent` in a test comment, not an import). In the engine only
+`ui/menu-nav` and its node test did.
+
+🎯 **Why:** the same seam as the `*-choices` modules, drawn the same way by the suite: the node test drove exactly these
+names with no document. `ui/menu-intent` says what a key MEANS inside a menu and how far a step goes; `ui/menu-nav` keeps
+the navigation that needs a page. `hasIntent` and `stepInRing` stay published by `ui/menu-nav` as they were (they are
+re-exports of `input/edges` and `core/ring`, not its pure half).
+
+| leaving `ui/menu-nav.js` | now in |
+|---|---|
+| `KEY_YES`, `KEY_NO`, `KEY_UP`, `KEY_DOWN`, `KEY_LEFT`, `KEY_RIGHT`, `menuKeyIntent`, `selectStep`, `selectWrap`, `rangeStep`, `stepInPause` | `ui/menu-intent.js`, same names, no alias left behind |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

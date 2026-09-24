@@ -1361,27 +1361,29 @@
     "CrashNoticeCtx",
     "createCrashNotice"
   ],
-  "ui/menu-items.ts": [
-    "ITEM_SELECTOR",
-    "navigableItems"
-  ],
-  "ui/menu-nav.ts": [
+  "ui/menu-intent.ts": [
     "KEY_DOWN",
     "KEY_LEFT",
     "KEY_NO",
     "KEY_RIGHT",
     "KEY_UP",
     "KEY_YES",
-    "MenuNavApi",
-    "MenuNavCtx",
-    "NavKeyEvent",
-    "controlParts",
-    "initMenuNav",
     "menuKeyIntent",
     "rangeStep",
     "selectStep",
     "selectWrap",
     "stepInPause"
+  ],
+  "ui/menu-items.ts": [
+    "ITEM_SELECTOR",
+    "navigableItems"
+  ],
+  "ui/menu-nav.ts": [
+    "MenuNavApi",
+    "MenuNavCtx",
+    "NavKeyEvent",
+    "controlParts",
+    "initMenuNav"
   ],
   "ui/mobility-choices.ts": [
     "anyMobilityActive",

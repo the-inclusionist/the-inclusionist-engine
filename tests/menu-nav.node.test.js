@@ -12,10 +12,10 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { hasIntent, stepInRing } from '../app/js/ui/menu-nav.js';
 import {
-  KEY_YES, KEY_NO, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT,
-  menuKeyIntent, hasIntent, stepInRing, selectStep, selectWrap, rangeStep, stepInPause,
-} from '../app/js/ui/menu-nav.js';
+  KEY_YES, KEY_NO, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, menuKeyIntent, selectStep, selectWrap, rangeStep, stepInPause,
+} from '../app/js/ui/menu-intent.js';
 
 const NONE = { yes: false, no: false, up: false, down: false, left: false, right: false };
 const only = (...ks) => ({ ...NONE, ...Object.fromEntries(ks.map((k) => [k, true])) });
