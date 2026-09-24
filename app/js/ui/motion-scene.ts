@@ -1,84 +1,71 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/motion-scene — O MOVIMENTO REDUZIDO DE CENA VOLTA PARA A ENGINE (ADR-0106 §4, etapa 1).
+// ui/motion-scene — SCENE REDUCED MOTION BELONGS TO THE ENGINE (ADR-0106 §4, step 1).
 //
-// ========================= O QUE ESTAVA ERRADO, MEDIDO E NÃO SUPOSTO =========================
-// O `PauseIconsCtx` e o `SettingsMotionCtx` pediam ao JOGO quatro coisas — `rm`, `rmKeys`, `rmChar`,
-// `saveRM` — e o ADR-0106 chamou-lhes «do jogo POR ACIDENTE». A medição de 2026-09-08 no `game-platformer`
-// mostra que a palavra é exacta, porque nenhuma das quatro contém uma escolha do jogo:
+// The four things a game used to hand over — the flags, the scene keys, the character animations and the save — hold
+// no choice of the game: the scene keys are the WHOLE `MotionSceneKey` union, the character animations are the three
+// `MotionCharProp`s with keys `RM_LABEL` already translates, and the flags are read and saved under an engine key with
+// an engine default. ADR-0106 called them the game's BY ACCIDENT. A copy is not a decision, and the cost was not
+// elegance: every cartridge had to remember four lines, and a child who needs to stop the scene's motion had nowhere
+// to do it in the games that forgot.
 //
-//   · `RM_KEYS` era `['parallax','decor','items','particles']` escrito à mão — que é a união `MotionSceneKey`
-//     INTEIRA, declarada na engine. Não é «quais destes este jogo tem»: são os quatro, sempre;
-//   · `RM_CHAR` era as três propriedades de `MotionCharProp` com as chaves i18n `rm.walk`/`rm.breath`/
-//     `rm.flavor` — e o `RM_LABEL` da engine já traduz essas mesmas chaves;
-//   · `rm` era lido de `store.KEYS.reducedMotion` (chave da engine) com `defaultReducedMotion()` (padrão da
-//     engine);
-//   · `saveRM` era `store.setJSON` para a mesma chave da engine.
+// ⚠️ WHAT STAYS THE GAME'S, by nature: the EFFECT. Whoever reads `rm.decor` to freeze the clouds is the game — the
+// engine owns the switch, not what it turns off. The value is the engine's, the side effect is the cartridge's.
 //
-// ⚠️ ERA UMA CÓPIA, NÃO UMA DECISÃO. E o custo não é elegância: **cinco jogos não têm nada disto**, porque
-// cada cartucho tinha de se lembrar de escrever as quatro linhas. Uma criança que precisa de parar o
-// movimento da cena abre esses cinco e não tem por onde.
+// ⚠️ AND THE OBJECT IS SHARED BY REFERENCE, on purpose. A cartridge reads `rm.decor`/`rm.particles` from many modules
+// every frame. Handing out a copy would make each reader see a value frozen at boot, and the switch would stop doing
+// anything — silently.
 //
-// ⚠️ O QUE CONTINUA A SER DO JOGO, e por natureza: o EFEITO. Quem lê `rm.decor` para congelar as nuvens é o
-// jogo — a engine possui o interruptor, não o que ele apaga. É a mesma divisão do ADR-0106: o valor é da
-// engine, o efeito colateral é do cartucho.
-//
-// ⚠️ E O OBJECTO É PARTILHADO POR REFERÊNCIA, de propósito. No cartucho ele entra em oito módulos
-// (`weather`, `life`, `fx`, …) que leem `rm.decor`/`rm.particles` a cada quadro. Devolver uma cópia faria
-// cada leitor ver um valor congelado no arranque, e o interruptor deixaria de fazer nada — em silêncio.
-// ⚠️ O VOCABULÁRIO DESCEU PARA CÁ, e foi um gate que o mandou. Escrito ao contrário — os tipos no
-// `settings-motion` e este módulo a importá-los —, o `tests/lotes-passo5` reprovou por CICLO: o painel importa
-// os valores daqui e este importava os tipos de lá. O analisador conta o `import type` como aresta, e tem
-// razão para o que mede (ordem de extração). A saída certa não era calar o gate: o vocabulário pertence a quem
-// possui os VALORES, e o painel é consumidor dele. O `settings-motion` mantém os nomes publicados por alias,
-// então nenhuma linha de importação de nenhum consumidor muda.
+// ⚠️ THE VOCABULARY LIVES HERE, not in `settings-motion`: the panel imports the values from here, so the types there
+// would make an import cycle. The vocabulary belongs to whoever owns the VALUES, and the panel consumes it;
+// `settings-motion` keeps the published names by alias, so no consumer's import line changes.
 import * as store from '../platform/storage.js';
 import { defaultReducedMotion } from '../core/state.js';
 import type { PlayerView } from '../core/entity.js';
 
-/** As quatro animações de CENA, como vocabulário fechado. */
+/** The four SCENE animations, as a closed vocabulary. */
 export type MotionSceneKey = 'parallax' | 'decor' | 'items' | 'particles';
-/** As três do PERSONAGEM, que são campos do jogador. */
+/** The three CHARACTER ones, which are player fields. */
 export type MotionCharProp = 'rmWalk' | 'rmBreath' | 'rmFlavor';
-/** Uma animação do personagem e a chave i18n do seu rótulo. */
+/** A character animation and the i18n key of its label. */
 export interface MotionCharDef {
   readonly prop: MotionCharProp;
   readonly lbl: string;
 }
-/** ⚠️ `PlayerView` e não `Record`: um `Record` aceita qualquer objecto com essas chaves, jogador ou não. */
+/** ⚠️ `PlayerView` and not `Record`: a `Record` accepts any object with those keys, player or not. */
 export type MotionPlayer = PlayerView<'rmWalk' | 'rmBreath' | 'rmFlavor'>;
-/** Os quatro interruptores de cena. Objecto VIVO — ver a nota sobre partilha por referência no topo. */
+/** The four scene switches. A LIVE object — see the note on sharing by reference at the top. */
 export type MotionSceneFlags = Record<MotionSceneKey, boolean>;
 
-/** As quatro animações de CENA. São a união inteira, e o compilador prova-o logo abaixo. */
+/** The four SCENE animations. They are the whole union, and the compiler proves it just below. */
 export const SCENE_KEYS = ['parallax', 'decor', 'items', 'particles'] as const;
 
 /**
- * ⚠️ A PROVA DE QUE A LISTA COBRE A UNIÃO, feita pelo COMPILADOR e não por um teste.
+ * ⚠️ THE PROOF THAT THE LIST COVERS THE UNION, made by the COMPILER and not by a test.
  *
- * Uma lista escrita à mão ao lado de uma união é a forma de defeito que este ficheiro existe para desfazer —
- * seria trocar a cópia do cartucho por uma cópia da engine. Se alguém acrescentar uma quinta chave a
- * `MotionSceneKey` e esquecer a lista, `_Faltou` deixa de ser `never` e esta linha não compila.
+ * A hand-written list beside a union is the defect this file exists to undo — it would swap the cartridge's copy for an
+ * engine copy. If someone adds a fifth key to `MotionSceneKey` and forgets the list, `_Missing` stops being `never` and
+ * this line does not compile.
  *
- * `[X] extends [never]` e não `X extends never`: o condicional distribui sobre `never` e daria `never` em vez
- * de `true`, o que faria a guarda passar sempre — uma guarda que não pode falhar não é uma guarda.
+ * `[X] extends [never]` and not `X extends never`: the conditional distributes over `never` and would give `never`
+ * instead of `true`, making the guard always pass — a guard that cannot fail is not a guard.
  */
 type _Missing = Exclude<MotionSceneKey, (typeof SCENE_KEYS)[number]>;
 const _COVERS_THE_UNION: [_Missing] extends [never] ? true : false = true;
 void _COVERS_THE_UNION;
 
-/** As três animações do PERSONAGEM, com as chaves que o `RM_LABEL` desta mesma camada já traduz. */
+/** The three CHARACTER animations, with the keys `RM_LABEL` in this same layer already translates. */
 export const CHARACTER_ANIMATIONS = Object.freeze([
   { prop: 'rmWalk', lbl: 'rm.walk' },
   { prop: 'rmBreath', lbl: 'rm.breath' },
   { prop: 'rmFlavor', lbl: 'rm.flavor' },
 ] as const) satisfies readonly MotionCharDef[];
 
-/** A mesma prova, para as três do personagem: falta uma na lista e isto deixa de compilar. */
+/** The same proof, for the three character ones: one missing from the list and this stops compiling. */
 type _MissingChar = Exclude<MotionCharProp, (typeof CHARACTER_ANIMATIONS)[number]['prop']>;
 const _COVERS_THE_CHARACTER: [_MissingChar] extends [never] ? true : false = true;
 void _COVERS_THE_CHARACTER;
 
-/** Os quatro interruptores no padrão do sistema — `prefers-reduced-motion`, por `defaultReducedMotion()`. */
+/** The four switches at the system default — `prefers-reduced-motion`, through `defaultReducedMotion()`. */
 export function sceneDefault(): MotionSceneFlags {
   const o = {} as MotionSceneFlags;
   const byDefault = defaultReducedMotion();
@@ -87,12 +74,11 @@ export function sceneDefault(): MotionSceneFlags {
 }
 
 /**
- * O estado guardado, ou o padrão do sistema quando não há nada guardado.
+ * The stored state, or the system default when nothing is stored.
  *
- * ⚠️ CADA CHAVE É LIDA UMA A UMA, e não `{...guardado}`. O que está no armazenamento veio do navegador de uma
- * criança e pode estar truncado ou de uma versão anterior: espalhar o objecto traria chaves a mais e deixaria
- * chaves a menos por preencher, e uma chave em falta lê-se como `undefined` — que é «não reduzido» para quem
- * pediu redução. O laço garante exactamente as quatro.
+ * ⚠️ EACH KEY IS READ ONE BY ONE, not spread. What is in storage came from a child's browser and may be truncated or
+ * from an earlier version: spreading the object would bring extra keys and leave missing ones unfilled, and a missing
+ * key reads as `undefined` — which is "not reduced" for whoever asked for reduction. The loop guarantees exactly four.
  */
 export function readStoredScene(): MotionSceneFlags {
   const stored = store.getJSON<Record<string, unknown> | null>(store.KEYS.reducedMotion, null);
@@ -102,7 +88,7 @@ export function readStoredScene(): MotionSceneFlags {
   return o;
 }
 
-/** Guarda os quatro interruptores. Chamada depois de cada mudança, como o `saveRM` do cartucho fazia. */
+/** Stores the four switches. Called after each change. */
 export function storeScene(rm: MotionSceneFlags): void {
   store.setJSON(store.KEYS.reducedMotion, rm);
 }

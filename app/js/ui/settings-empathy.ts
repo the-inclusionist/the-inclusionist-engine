@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/settings-empathy.ts — Empathy/simulation panel (Sensibilidade → Empatia): lets a player WITHOUT a disability
-// experience one (VIZ_SIM: color-blindness/low-vision/blindness simulation, simulated hearing loss, one-button
-// play, wheelchair). This is the opposite of settings-visual, which CORRECTS the game for a player who has the
-// disability — do not merge the two, even where they share the viz-mode catalog or a helper.
+// ui/settings-empathy.ts — Empathy/simulation panel: lets a player WITHOUT a disability experience one
+// (color-blindness/low-vision/blindness simulation, simulated hearing loss, one-button play, wheelchair). This is the
+// opposite of settings-visual, which CORRECTS the game for a player who has the disability — do not merge the two,
+// even where they share the viz-mode catalog or a helper.
 // Injected via initSettingsEmpathy(ctx): DOM selector, srSay, store, the state setters (setHearingLoss/
-// setOneButton/setWheelchair — still game.js: they touch the audio graph, player powers and world geometry far
-// beyond this panel) plus their live getters, and the shared reflect/overlay helpers (renderVizGroup,
-// reflectMotorEmpathy, reflectVizButtons, frontOverlay — used by sibling panels too, so they stay in game.js).
-// Pure catalog logic (isSimKind/EMPATHY_VIZ_MODES) is unit-tested in node; render/open/close
-// are a thin DOM shell tested in browser. Model: app/js/render/fx.ts.
+// setOneButton/setWheelchair — the host's: they reach far beyond this panel) plus their live getters, and the shared
+// reflect/overlay helpers (renderVizGroup, reflectMobilityEmpathy, reflectVizButtons, frontOverlay — used by sibling
+// panels too). The pure catalog slice (EMPATHY_VIZ_MODES) is unit-tested in node; render/open/close are a thin DOM
+// shell tested in browser.
 
 import { toggleLabel } from './dom.js';
 import { VIZ_MODES, simulatesDisability, type VizMode } from '../render/viz-modes.js';
@@ -18,21 +17,20 @@ import { DEFAULTS } from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 
 /**
- * A fatia do catálogo que ESTE painel mostra: só o que SIMULA uma deficiência.
+ * The slice of the catalogue THIS panel shows: only what SIMULATES a disability.
  *
- * Era `VIZ_MODES.filter(m => isSimKind(m.kind))`, e `kind` não distingue simular de corrigir — então as três
- * "Correção de daltonismo" vinham junto, num menu chamado "sentir como é ter uma deficiência". A criança
- * daltônica precisava entrar ali para achar a correção da própria condição, ao lado do botão que simula a
- * condição dela para quem não a tem. Dois públicos opostos na mesma lista.
+ * The catalogue's `kind` does not tell simulating from correcting, so a filter by `kind` brings the colour-blindness
+ * corrections into a menu about feeling what a disability is like — a colour-blind child would have to enter it to find
+ * the correction for their own condition, beside the button that simulates it for someone who does not have it. Two
+ * opposite audiences in one list.
  *
- * O Dev decidiu (#60): as correções vão para a Acessibilidade visual, e a lista passa a se recortar pelo
- * campo `sim` do catálogo, que responde a pergunta certa. `isSimKind` foi apagado — havia TRÊS cópias dele
- * (aqui, no main.js e uma derivada morta), todas respondendo pelo `kind`, todas errando junto.
+ * The Dev decided (#60): the corrections live in visual accessibility, and this list is cut by `simulatesDisability`,
+ * which answers the right question.
  */
 export const EMPATHY_VIZ_MODES: VizMode[] = VIZ_MODES.filter((m) => simulatesDisability(m.key));
 
 /** On/off label shared by every toggle button in this panel (hearing, one-button, wheelchair). */
-// `toggleLabel` foi para ui/dom, ao lado do `toggleBtn`: era uma das TREZE cópias das mesmas duas palavras.
+// `toggleLabel` lives in ui/dom, beside `toggleBtn`.
 
 export interface EmpathySettingsCtx {
   /** ui/dom.ts querySelector shortcut. */
@@ -41,44 +39,44 @@ export interface EmpathySettingsCtx {
   srSay(msg: string): void;
   /** platform/storage.ts (or a test double) — read here only, to restore hearing-loss simulation on boot. */
   store: { getBool(key: string, fallback?: boolean): boolean };
-  /** Renders one viz-mode radio list (+ per-player tabs); shared with settings-visual, so it stays in game.js. */
+  /** Renders one viz-mode radio list (+ per-player tabs); shared with settings-visual. */
   renderVizGroup(listSel: string, tabsSel: string, modes: VizMode[]): void;
-  /** Reflects #opt-onebtn/#opt-wheelchair; game.js also calls it from its setOneButton/setWheelchair bodies. */
+  /** Reflects #opt-onebtn/#opt-wheelchair; the host also calls it from its setOneButton/setWheelchair bodies. */
   reflectMobilityEmpathy(): void;
   /** Reflects the #opt-visual/#opt-empathy summary buttons; shared across every viz-mode change in the game. */
   reflectVizButtons(): void;
-  /** Brings an overlay to front + fills its footer explanations; shared by every Sensibilidade panel. */
+  /** Brings an overlay to front + fills its footer explanations; shared by every settings panel. */
   frontOverlay(el: HTMLElement | null): void;
   /**
-   * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA render.
+   * Moves the rows' prose to the footer (`ui/settings-panel` → `fillExplain`). Called on EVERY render.
    *
-   * ⚠️ E AQUI A RECONSTRUÇÃO NÃO SE VÊ NO FICHEIRO, que foi o que atrasou este conserto. Este painel não tem
-   * um `innerHTML` sequer: quem reconstrói a lista é o `renderVizGroup` injetado, cuja implementação
-   * (`render/viz-setters`) faz `el.innerHTML = vizGroupHtml(…)` e devolve `.ctrl-row`s NOVAS, com o
-   * `.opt-hint` outra vez lá dentro e sem o `data-explain-done` que torna o `fillExplain` idempotente.
+   * ⚠️ AND HERE THE REBUILD IS NOT VISIBLE IN THE FILE. This panel has no `innerHTML` at all: the list is rebuilt by
+   * the injected `renderVizGroup`, whose implementation (`render/viz-setters`) sets `el.innerHTML` and returns NEW
+   * `.ctrl-row`s, with the `.opt-hint` back inside and without the `data-explain-done` that makes `fillExplain`
+   * idempotent.
    *
-   * Isto acontece a cada clique numa simulação e a cada uso do botão de perda auditiva — que é o pior caso
-   * possível, porque a criança que acabou de ligar "Simular cegueira total" está com a tela preta e depende
-   * do rodapé `aria-live` para saber onde está.
+   * That happens on every click on a simulation and every use of the hearing-loss button — the worst possible case,
+   * because the child who just switched on the total-blindness simulation has a black screen and depends on the
+   * `aria-live` footer to know where they are.
    *
-   * Opcional (`?.`) como nos irmãos: um consumidor que não injete continua a desenhar o painel.
+   * Optional (`?.`) as in the siblings: a consumer that does not inject it still draws the panel.
    */
   fillExplain?: (card: HTMLElement | null) => void;
-  /** Devolve o foco a quem abriu o diálogo (ui/settings-panel `restoreFocus`). Injetado, e não um `#opt-*`
-   *  fixo: o id que este módulo focava não existe no documento, então fechar deixava o foco no `<body>`. */
+  /** Returns focus to whoever opened the dialog (ui/settings-panel `restoreFocus`). Injected, not a fixed `#opt-*`:
+   *  that id does not exist in the document, so closing would leave focus on `<body>`. */
   restoreFocus?: (id: string) => boolean;
-  /** Persists + applies the audio graph change (and announces); body stays in game.js. */
+  /** Persists + applies the audio graph change (and announces); the body is the host's. */
   setHearingLoss(on: boolean): void;
-  /** Persists + applies one-button-only play (and announces); body stays in game.js. */
+  /** Persists + applies one-button-only play (and announces); the body is the host's. */
   setOneButton(on: boolean): void;
-  /** Persists + rebuilds world geometry for wheelchair mode (and announces); body stays in game.js. */
+  /** Persists + applies wheelchair mode (and announces); the body is the host's. */
   setWheelchair(on: boolean): void;
-  /** Live reads of game.js's oneButton/wheelchair booleans (not yet migrated to core/state.ts). */
+  /** Live reads of the host's oneButton/wheelchair booleans. */
   getOneButton(): boolean;
   getWheelchair(): boolean;
-  /** Jogadores vivos (core/state `players`), só para saber QUAL modo visual cada um está usando agora. */
+  /** Live players (core/state `players`), only to know WHICH visual mode each one is using now. */
   getPlayers(): readonly { viz: string }[];
-  /** Mesmo setPlayerViz do painel visual e do atalho de contraste; usado aqui só pelo "restaurar padrões". */
+  /** The same setPlayerViz as the visual panel and the contrast shortcut; used here only by the reset. */
   setPlayerViz(i: number, mode: string): void;
 }
 
@@ -91,7 +89,7 @@ export interface EmpathySettingsApi {
   close(): void;
 }
 
-/** Wires the empathy panel's DOM (buttons + boot restore) and returns render/open/close for game.js to call. */
+/** Wires the empathy panel's DOM (buttons + boot restore) and returns render/open/close for the host to call. */
 export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi {
   function render(): void {
     ctx.renderVizGroup('#empathy-list', '#empathy-players', EMPATHY_VIZ_MODES);
@@ -103,18 +101,18 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     }
     ctx.reflectMobilityEmpathy();
     refreshMarks();
-    // Depois do `renderVizGroup`, e não antes: é ele quem repõe o `.opt-hint` dentro das linhas.
+    // After `renderVizGroup`, not before: it is what puts the `.opt-hint` back inside the rows.
     ctx.fillExplain?.(ctx.$<HTMLElement>('#empathy .overlay__card'));
   }
 
   /**
-   * A marca de "saiu do padrão" (ADR-0029). Neste menu ela quer dizer "esta simulação está LIGADA", e por
-   * isso é a mais útil dos sete: uma criança que ligou a simulação de cegueira está com a tela preta e não
-   * consegue ler nada — mas o leitor de tela dela percorre o menu e diz qual linha saiu do padrão.
+   * The left-the-default mark (ADR-0029). In this menu it means this simulation is ON, which makes it the most useful
+   * of all: a child who switched on the blindness simulation has a black screen and cannot read anything — but their
+   * screen reader walks the menu and says which row left the default.
    *
-   * O recorte é o do reset, pelo mesmo motivo dele: as três CORREÇÕES de daltonismo que este painel lista
-   * não são deste menu. Marcá-las aqui mandaria a criança daltônica desfazer, no menu de empatia, a correção
-   * que a faz enxergar o jogo.
+   * The cut is the reset's, for the same reason: a colour-blindness CORRECTION a player chose in the visual panel is
+   * not this menu's. Marking it here would send the colour-blind child to undo, in the empathy menu, the correction
+   * that lets them see the game.
    */
   function refreshMarks(): void {
     const simulating = ctx.getPlayers().some((p) => simulatesDisability(p.viz));
@@ -146,7 +144,7 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     ov.hidden = true;
     if (ctx.restoreFocus && ctx.restoreFocus('empathy')) return;
     const b = ctx.$<HTMLElement>('#opt-empathy');
-    if (b) b.focus(); // recuo: este id nao existe no documento hoje (gancho de uma barra futura)
+    if (b) b.focus(); // fallback: this id does not exist in the document today (a hook for a future bar)
   }
 
   const empathyBtn = ctx.$<HTMLElement>('#opt-empathy');
@@ -156,32 +154,28 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
 
   const hearingBtn = ctx.$<HTMLElement>('#opt-hearing');
   if (hearingBtn) hearingBtn.addEventListener('click', () => { ctx.setHearingLoss(!hearingLoss); render(); ctx.reflectVizButtons(); });
-  if (ctx.store.getBool('incl_hearingloss')) setHearingLossGraph(true); // restaura o grafo de áudio persistido no boot
+  if (ctx.store.getBool('incl_hearingloss')) setHearingLossGraph(true); // restores the persisted audio graph at boot
 
-  // `refreshMarks()` depois de CADA um: estes dois setters não passam por `render()` — eles refletem o botão
-  // por conta própria —, então a marca precisa ser puxada aqui ou nunca acompanha a mudança.
+  // `refreshMarks()` after EACH one: these two setters do not go through `render()` — they reflect the button on
+  // their own —, so the mark has to be pulled here or it never follows the change.
   const oneBtn = ctx.$<HTMLElement>('#opt-onebtn');
   if (oneBtn) oneBtn.addEventListener('click', () => { ctx.setOneButton(!ctx.getOneButton()); refreshMarks(); });
   const wheelBtn = ctx.$<HTMLElement>('#opt-wheelchair');
   if (wheelBtn) wheelBtn.addEventListener('click', () => { ctx.setWheelchair(!ctx.getWheelchair()); refreshMarks(); });
 
-  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
+  // ---- reset THIS menu's defaults (ADR-0028) ----
   //
-  // De todos os oito, este é o reset que mais precisa existir e o que mais precisa ter cuidado, pelo mesmo
-  // motivo: é o menu que simula deficiências. Uma criança que liga "Simular cegueira total" fica com a tela
-  // preta, e a saída — o toque duplo na bolinha — é justamente o que ela acabou de perder a capacidade de ver.
+  // Of all the panels, this is the reset that most needs to exist and most needs care, for the same reason: it is the
+  // menu that simulates disabilities. A child who switches on the total-blindness simulation has a black screen.
   //
-  // E o cuidado: A LISTA DESTE PAINEL NÃO É A LISTA QUE O RESET DESLIGA, e a diferença é deliberada. O painel
-  // mostra também `fix-protan/fix-deuter/fix-tritan`, que são CORREÇÃO de daltonismo, porque hoje elas não têm
-  // outro lugar onde morar — o painel visual só cobre os 4 níveis de contraste. Desligá-las junto tiraria de
-  // uma criança daltônica a única correção que ela tem, a mando de um menu feito para quem não é daltônico.
-  // Por isso o reset pergunta `simulatesDisability`, que responde pelo modo, e não `isSimKind`, que responde
-  // pelo `kind` e não distingue simular de corrigir.
+  // And the care: THE RESET ASKS `simulatesDisability`, which answers per mode. A colour-blindness CORRECTION a player
+  // chose in the visual panel is not a simulation; switching it off here would take the only correction a colour-blind
+  // child has, at the command of a menu made for whoever is not colour-blind.
   const resetBtn = ctx.$<HTMLButtonElement>('#empathy-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
-    // Cada setter já é idempotente e anuncia sozinho ao mudar; chamar só na diferença evita anúncio falso de
-    // "desligado" para algo que nunca esteve ligado. O anúncio-resumo vem por último, e é o que fica no
-    // `#sr-status` — uma ação, uma frase, em vez de três.
+    // Each setter is idempotent and announces on its own when it changes; calling only on a difference avoids a false
+    // "off" announcement for something that was never on. The summary announcement comes last, and it is what stays in
+    // `#sr-status` — one action, one sentence, instead of three.
     ctx.getPlayers().forEach((p, i) => { if (simulatesDisability(p.viz)) ctx.setPlayerViz(i, 'normal'); });
     if (hearingLoss) ctx.setHearingLoss(false);
     if (ctx.getOneButton() !== DEFAULTS.oneButton) ctx.setOneButton(DEFAULTS.oneButton);
