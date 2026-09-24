@@ -334,6 +334,15 @@ describe('ui/settings-mobility — restaurar padrões DESTE menu (ADR-0028)', ()
     expect(ctx.said.at(-1)).toContain('mapeamento');
   });
 
+  it('🔴 [Right] and the run toggle comes back too — the three preferences, not two', () => {
+    const players = [{ easy: false, toggleMove: false, toggleRun: true }];
+    const ctx = fullCtx({ players });
+    initSettingsMobility(ctx);
+    $('#movement-reset').click();
+    expect(players[0].toggleRun, 'the run toggle survived the reset').toBe(false);
+    expect(ctx.toggleRunCalls.at(-1)).toEqual([0, false]);
+  });
+
   it('[Zero] com tudo já no padrão, não escreve nem chama setToggleMove', () => {
     const ctx = fullCtx();
     initSettingsMobility(ctx);
@@ -409,5 +418,10 @@ describe('o ctx que a ENGINE consegue montar sozinha (ADR-0106 §1)', () => {
     expect(players[0].toggleRun, 'sem `setToggleRun` a linha do correr ficou morta').toBe(true);
     expect(guardado.get('incl_togglerun_p0'), 'a escolha do correr não foi persistida').toBe('1');
     expect(ditos.at(-1)).toBe(t('sr.motor.toggleRunOn'));
+
+    // 🔴 and the move toggle too: its writer is the engine's as well when the host does not inject one (`setMoveLatch`)
+    $('#opt-altmove').click();
+    expect(players[0].toggleMove, 'sem `setToggleMove` a alternância de marcha ficou morta').toBe(true);
+    expect(guardado.get('incl_togglemove_p0'), 'a escolha da marcha não foi persistida').toBe('1');
   });
 });
