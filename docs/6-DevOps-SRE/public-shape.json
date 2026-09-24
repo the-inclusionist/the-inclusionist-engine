@@ -550,6 +550,7 @@
       "srAlert",
       "srSay",
       "stopAttract",
+      "store",
       "wizardStep",
       "wizardTick",
       "worldRunning"
@@ -678,6 +679,7 @@
     "type KeyboardRuntimePlayer": "Pick<ControlledPlayer, 'ctrl'>"
   },
   "input/keyboard.ts": {
+    "type KeyboardStore": "Pick<Store, 'getJSON' | 'setJSON' | 'remove'>",
     "type KBDefaults": "{ solo: KeyScheme",
     "type KeyboardMapping": "(players: number, seat: number) => Partial<KeyScheme> | null"
   },
@@ -758,7 +760,7 @@
   "input/latch-edge.ts": {
     "interface LatchedEdgeOptions": [
       "byDefault?",
-      "store?"
+      "store"
     ]
   },
   "input/latch-scope.ts": {
@@ -819,7 +821,8 @@
       "onTick?",
       "progress",
       "say",
-      "srAlert"
+      "srAlert",
+      "store"
     ],
     "interface PadWizard": [
       "close",
@@ -827,7 +830,8 @@
       "openFor",
       "state",
       "tick"
-    ]
+    ],
+    "type PadMapStore": "Pick<Store, 'getJSON' | 'setJSON'>"
   },
   "input/pointer-space.ts": {
     "interface RectLike": [

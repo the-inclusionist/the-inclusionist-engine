@@ -20,30 +20,20 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   factoryWithGame, loadKB, resetKB, registerKeyboardMapping, KB_DEFAULTS,
 } from '../app/js/input/keyboard.js';
-import * as store from '../app/js/platform/storage.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 // The SAME key `input/keyboard` uses. Written by hand here on purpose: if it changes there, this case stops exercising
 // the saved data and the gate says so instead of starting to measure nothing.
 const CKEY = 'inclusionist.kbcontrols.v3';
 
 /**
- * ⚠️ A FAKE `localStorage`, and without it half this file would measure nothing. The `node` project has none and
- * `platform/storage` degrades in SILENCE (every access is `try/catch`), so a case's `setJSON` would not write, `loadKB`
- * would not read, and the assertion «o que ela gravou vence» would compare the factory with itself. Caught while
- * running, not foreseen — it is the convention `tests/motion-scene` already carries.
+ * ⚠️ A store WITH a backend, and without it half this file would measure nothing: over none, a case's `setJSON` would not
+ * write, `loadKB` would not read, and the assertion «o que ela gravou vence» would compare the factory with itself. Each case
+ * builds its own (ADR-0232), so none inherits another's remap.
  */
-function comArmazenamento(inicial = {}) {
-  const dados = { ...inicial };
-  globalThis.localStorage = {
-    getItem: (k) => (k in dados ? dados[k] : null),
-    setItem: (k, v) => { dados[k] = String(v); },
-    removeItem: (k) => { delete dados[k]; },
-  };
-  return dados;
-}
-
-beforeEach(() => { registerKeyboardMapping(null); comArmazenamento(); });
-afterEach(() => { registerKeyboardMapping(null); delete globalThis.localStorage; });
+let store;
+beforeEach(() => { registerKeyboardMapping(null); store = createStorage(memoryBackend()); });
+afterEach(() => { registerKeyboardMapping(null); });
 
 describe('o padrão do jogo entra entre a fábrica e a criança', () => {
   it('[Zero] sem declaração, a fábrica da engine fica intacta', () => {
@@ -85,14 +75,14 @@ describe('a precedência, e o botão que a punha em causa', () => {
   it('[Right] o remapeamento da CRIANÇA vence o padrão do jogo', () => {
     registerKeyboardMapping(() => ({ action1: ['KeyQ'] }));
     store.setJSON(CKEY, { solo: { action1: ['KeyZ'] } });
-    expect(loadKB().solo.action1, 'o que ela gravou tem de vir por último').toEqual(['KeyZ']);
+    expect(loadKB(store).solo.action1, 'o que ela gravou tem de vir por último').toEqual(['KeyZ']);
   });
 
   it('🔴 «restaurar padrões» volta ao padrão do JOGO, não ao da ENGINE', () => {
     registerKeyboardMapping(() => ({ action1: ['KeyQ'] }));
     store.setJSON(CKEY, { solo: { action1: ['KeyZ'] } });
 
-    const d = resetKB();
+    const d = resetKB(store);
 
     expect(d.solo.action1, 'o reset devolveu a fábrica da engine e apagou a escolha do jogo').toEqual(['KeyQ']);
     expect(store.get(CKEY, null), 'o reset tem de apagar o que ela guardou — é isso que ele é').toBeNull();
@@ -100,7 +90,7 @@ describe('a precedência, e o botão que a punha em causa', () => {
 
   it('[Zero] e sem jogo declarado o reset continua a devolver a fábrica da engine', () => {
     store.setJSON(CKEY, { solo: { action1: ['KeyZ'] } });
-    expect(resetKB().solo.action1).toEqual(KB_DEFAULTS.solo.action1);
+    expect(resetKB(store).solo.action1).toEqual(KB_DEFAULTS.solo.action1);
   });
 
   it('⚠️ [Interface] a fábrica devolve CÓPIAS: mexer no resultado não contamina o `KB_DEFAULTS`', () => {

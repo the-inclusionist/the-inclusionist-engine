@@ -452,6 +452,7 @@
     "KBDefaults",
     "KB_DEFAULTS",
     "KeyboardMapping",
+    "KeyboardStore",
     "factoryWithGame",
     "initKB",
     "kb",
@@ -540,6 +541,7 @@
   ],
   "input/pad-wizard.ts": [
     "PADWIZ_ORDER",
+    "PadMapStore",
     "PadWizard",
     "PadWizardCtx",
     "createPadWizard",

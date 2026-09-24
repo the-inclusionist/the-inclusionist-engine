@@ -66,7 +66,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2086,
+      "codeLines": 2087,
       "decisionNodes": 281,
       "maxDepth": 4,
       "fanOut": 85,
@@ -614,7 +614,7 @@
       "fanIn": 1
     },
     "input/gamepad.ts": {
-      "codeLines": 300,
+      "codeLines": 302,
       "decisionNodes": 58,
       "maxDepth": 2,
       "fanOut": 7,
@@ -681,20 +681,17 @@
       "fanIn": 1
     },
     "input/keyboard.ts": {
-      "codeLines": 54,
+      "codeLines": 55,
       "decisionNodes": 10,
       "maxDepth": 4,
-      "fanOut": 3,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 5,
-      "statefulEdges": 1,
+      "statefulEdges": 0,
       "fanIn": 1,
       "holds": [
         "let gameMapping",
         "let kb"
-      ],
-      "statefulImports": [
-        "platform/storage.ts"
       ]
     },
     "input/keydown.ts": {
@@ -711,17 +708,16 @@
       ]
     },
     "input/latch-edge.ts": {
-      "codeLines": 22,
+      "codeLines": 21,
       "decisionNodes": 1,
       "maxDepth": 1,
-      "fanOut": 4,
+      "fanOut": 3,
       "globalReach": 0,
-      "worstFunction": 3,
-      "statefulEdges": 2,
+      "worstFunction": 2,
+      "statefulEdges": 1,
       "fanIn": 0,
       "statefulImports": [
-        "input/state.ts",
-        "platform/storage.ts"
+        "input/state.ts"
       ]
     },
     "input/latch-scope.ts": {
@@ -792,20 +788,19 @@
       ]
     },
     "input/pad-wizard.ts": {
-      "codeLines": 159,
+      "codeLines": 161,
       "decisionNodes": 31,
       "maxDepth": 2,
-      "fanOut": 3,
+      "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 8,
-      "statefulEdges": 2,
+      "statefulEdges": 1,
       "fanIn": 2,
       "holds": [
         "mutated maps"
       ],
       "statefulImports": [
-        "core/i18n.ts",
-        "platform/storage.ts"
+        "core/i18n.ts"
       ]
     },
     "input/pointer-space.ts": {
@@ -1279,7 +1274,7 @@
       "globalReach": 1,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 13,
+      "fanIn": 10,
       "reached": [
         "localStorage"
       ],

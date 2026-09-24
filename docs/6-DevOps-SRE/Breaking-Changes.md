@@ -3116,6 +3116,29 @@ and calls it twice (`app/js/main.ts`, the scene flags and the per-player charact
 `pixi-15-puzzle` import the scene reader under its older name (`lerCenaGuardada`, note AQ) and will pass the default when
 they migrate to it. No game imports `DEFAULTS`, `nextCameraControl`, `CameraControl` or `gameKey`, or builds either ctx.
 
+## CT · The storage is built by the root and passed in: no module reads `localStorage` by import (ADR-0232, issue #207)
+
+**Who is affected:** anyone calling the functions below outside `createGame`, building one of the ctx listed by hand, or
+importing the page-wide functions of `platform/storage`. A game that only calls `createGame` changes nothing: the root
+builds the store and passes it everywhere itself.
+
+📌 **Why:** outside the composition root a module imports by value only what holds no state and reaches no global
+(ADR-0232). `platform/storage` was the page's one `localStorage` reached by import from twelve modules, and the browser
+suite's instability (F9) was exactly that: ~115 test files on one origin writing the same keys while others booted.
+`platform/storage` is now a factory, `createStorage(backend)`; the root builds ONE store from `EngineHost.storage` (new,
+optional) or the host window's `localStorage`, and every module that persists receives it. A migrating game builds its
+own the same way: `const store = createStorage(window.localStorage)` — or passes `memoryBackend()` in a test.
+
+| old | new | migration |
+|---|---|---|
+| `input/keyboard.js` `loadKB()`, `initKB()`, `resetKB()`, `saveKB(kb)` | `loadKB(store)`, `initKB(store)`, `resetKB(store)`, `saveKB(store, kb)` | pass the store first |
+| `input/latch-edge.js` `LatchedEdgeOptions.store` | REQUIRED (was optional, defaulting to the page's storage) | `createLatchedEdge(() => players, { store })` |
+| `input/pad-wizard.js` `padMap(id)` · `PadWizardCtx` | `padMap(store, id)` · `PadWizardCtx.store` REQUIRED | pass the store |
+| `input/gamepad.js` `GamepadCtx` | gains a REQUIRED `store` | pass the store; the controller maps are read and saved through it |
+
+Required and not optional, by ADR-0224/0227's precedent: each of these has no safe answer without a store — the child's
+remap, latch or controller map would be read from nowhere and lost in silence.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

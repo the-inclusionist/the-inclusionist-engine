@@ -10,7 +10,7 @@
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
-import { createPadWizard, padMap, PADWIZ_ORDER as ORDEM_DO_ASSISTENTE } from './pad-wizard.js';
+import { createPadWizard, padMap, PADWIZ_ORDER as ORDEM_DO_ASSISTENTE, type PadMapStore } from './pad-wizard.js';
 import { padTable, type PadTable } from './pad-defaults.js';
 import { padCur, padPrevAct, padPrevStart } from './state.js';
 // ⚠️ `oneButton` COMES IN BY IMPORT, not through the `ctx` — unlike `input/keydown`, which gets it through a getter.
@@ -189,6 +189,11 @@ export function seatEveryPlayer(list: readonly object[]): GamepadPlayer[] {
 }
 
 export interface GamepadCtx {
+  /**
+   * Where the controller maps a child made are kept — the page's store, built by the root (ADR-0232, issue #207). Required:
+   * a pad whose map is read from nowhere answers with the standard layout, and a custom pad goes dead with no word said.
+   */
+  store: PadMapStore;
   /** The Gamepad API adapter (replaces `navigator.getGamepads()`) — the DI point for testing with no browser. */
   getGamepads: GetGamepads;
   /** DOM selector (querySelector), injected — never reaches the global `document`. */
@@ -354,11 +359,12 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   let padWizAutoResume = false; // the wizard opened by itself mid-game -> resume when it closes
 
   // the page's one cache of stored maps (input/pad-wizard): a map saved by the engine's own wizard is read here next frame
-  const padMapFor = (id: string): PadMap | null => padMap(id);
+  const padMapFor = (id: string): PadMap | null => padMap(ctx.store, id);
   function actionsFor(gp: PadLike, table?: PadTable): PadActions { return padActions(gp, padMapFor(gp.id), table); }
 
   // the wizard asks; what a position LOOKS like is drawn by the game (note CD), through the two hooks it may answer
   const wizard = createPadWizard({
+    store: ctx.store,
     getGamepads: () => ctx.getGamepads(),
     actionLabel: (action) => ctx.actionLabel(action),
     say: (phrase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = phrase; ctx.srSay(phrase); },

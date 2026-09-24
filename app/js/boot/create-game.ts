@@ -2096,7 +2096,7 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 5. Remappable keyboard — the best cut of the base (finding 11): a key scheme, no world.
   //
-  // ⚠️ THE GAME'S DEFAULT IS REGISTERED BEFORE `initKB()`, and the order is the rule: whoever reads the disk must already
+  // ⚠️ THE GAME'S DEFAULT IS REGISTERED BEFORE `initKB(store)`, and the order is the rule: whoever reads the disk must already
   // know which factory the child's data overlays (ADR-0115). Registering after would leave the first boot with the
   // ENGINE's factory and the second with the game's — the worst kind of defect, because it vanishes when someone goes
   // to look.
@@ -2127,7 +2127,7 @@ export function createGame(o: CreateGameOptions): Engine {
     );
   }
   registerCartridgeMappings();
-  initKB();
+  initKB(store);
   // (`withoutReach`, `withoutPlayers` and `players` are hoisted above `initPauseIcons` — issue #147.)
   const keyboard = initKeyboardRuntime({
     getKB: () => kb, getNumPlayers: () => players().length, getPlayers: () => players(),
@@ -3120,14 +3120,14 @@ export function createGame(o: CreateGameOptions): Engine {
       $, srSay, srAlert,
       gameActions: actionsToMap,
       store: {
-        saveKB: (conf) => { if (keyboardMode === 4) syncThree(conf); saveKB(conf); },
+        saveKB: (conf) => { if (keyboardMode === 4) syncThree(conf); saveKB(store, conf); },
         // ⚠️ «RESTORE» FOR THIS MODE, not for the whole keyboard: whoever resets the two-player keyboard does not erase the one-player one.
         resetKB: () => {
           const factory = factoryWithGame();
           if (keyboardMode === 1) kb.solo = factory.solo;
           else if (keyboardMode === 2) kb.p2 = factory.p2;
           else { kb.p4 = factory.p4; kb.p3 = factory.p3; }
-          saveKB(kb);
+          saveKB(store, kb);
           return kb;
         },
       },
@@ -3216,6 +3216,7 @@ export function createGame(o: CreateGameOptions): Engine {
     controlPanel.shell.card.insertBefore(controlSentence, controlPanel.shell.list);
     controlPanel.shell.card.insertBefore(controlProgress, controlPanel.shell.list);
     padWizard = createPadWizard({
+      store,
       getGamepads: () => {
         const nav = win.navigator as Navigator | undefined;
         return typeof nav?.getGamepads === 'function' ? nav.getGamepads() : null;
@@ -3809,7 +3810,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   // menus it has open.
   const gameHooks = padGameAnswers(cartridge.gamepad, () => !menuWithDpad());
   const gamepad = initGamepad({
-    $,
+    $, store,
     getGamepads: () => win.navigator?.getGamepads?.() ?? [],
     // THE GAME'S WORD for a position: the engine knows the position exists, only the cartridge knows what it is called —
     // and it already declared that in the `preset` to exist.

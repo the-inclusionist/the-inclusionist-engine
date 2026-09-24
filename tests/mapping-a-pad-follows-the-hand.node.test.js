@@ -14,6 +14,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createPadWizard, PADWIZ_ORDER } from '../app/js/input/pad-wizard.js';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 
 /** A pad at rest: every button up, every axis centred. */
 const mkPad = (id, index, buttons = 12, axes = 2) => ({
@@ -29,6 +30,7 @@ function mkCtx(pads, named = THREE) {
   const said = [], steps = [], progress = [], closed = [];
   let ticks = 0;
   const ctx = {
+    store: createStorage(memoryBackend()),
     getGamepads: () => pads,
     actionLabel: (a) => (named.includes(a) ? a.toUpperCase() : null),
     say: (p) => said.push(p),

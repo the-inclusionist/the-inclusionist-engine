@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/keyboard.ts — keyboard schemes (config) + persistence. A leaf module (depends only on storage).
+// input/keyboard.ts — keyboard schemes (config) + persistence, through the store the root builds and passes in (ADR-0232).
 // ⚠️ THE ACTIONS ARE POSITIONS, NOT VERBS: `up`, `down`, `left`, `right` and `action1`..`action4`. Which verb
 // lives on which position belongs to the GAME (ADR-0074), and ADR-0086 §2 says which it is for the platformer.
 // Schemes per player count (solo/p2/p3/p4).
 // The CURRENT instance (KB) and the remapping live in the composition root — here only config/load/save/reset.
-import * as store from '../platform/storage.js';
+import type { Store } from '../platform/storage.js';
 import type { KeyScheme } from '../core/entity.js';
 // ⚠️ THE SCHEMES ARE DECLARED THERE (ADR-0096), and this file derives them instead of repeating them — the union
 // issue #118 asks for. `default-bindings` is a leaf (it imports only `core/actions`), so there is no cycle: the
@@ -12,6 +12,12 @@ import type { KeyScheme } from '../core/entity.js';
 import { KEYBOARD_SOLO, KEYBOARD_DUO } from './default-bindings.js';
 
 const CKEY = 'inclusionist.kbcontrols.v3';
+
+/**
+ * What the key map is read and written through: the page's store (ADR-0232, issue #207). A PARAMETER of each function that
+ * touches it, not a module import — a test hands in its own, and two roots never write each other's map.
+ */
+export type KeyboardStore = Pick<Store, 'getJSON' | 'setJSON' | 'remove'>;
 
 // `KeyScheme` lives in `core/entity`: the entity declares `ctrl: KeyScheme | null`, so it is the owner.
 // Re-exported for whoever already imported it from here.
@@ -130,7 +136,7 @@ export function factoryWithGame(): KBDefaults {
 }
 
 // loads the saved schemes OVER the defaults (migrating the old p34 data → p3+p4)
-export function loadKB(): KBDefaults {
+export function loadKB(store: KeyboardStore): KBDefaults {
   // ⚠️ THE PRECEDENCE IS THIS AND IT IS WRITTEN ONCE: the engine's factory → the GAME's default → the CHILD's
   // remapping. What the child saved always comes last, because it is the only one of the three they chose.
   const d: KBDefaults = factoryWithGame();
@@ -147,7 +153,7 @@ export function loadKB(): KBDefaults {
   }
   return d;
 }
-export function saveKB(kb: KBDefaults): void { store.setJSON(CKEY, kb); }
+export function saveKB(store: KeyboardStore, kb: KBDefaults): void { store.setJSON(CKEY, kb); }
 
 /**
  * THE LIVE KEY MAP (#50).
@@ -156,7 +162,7 @@ export function saveKB(kb: KBDefaults): void { store.setJSON(CKEY, kb); }
  * this file. Separating the value from the three functions that manage it would move the problem instead of
  * solving it.
  *
- * IT IS BORN WITH THE DEFAULTS AND DOES NOT READ DISK ON IMPORT. `initKB()` is what reads, called once by the
+ * IT IS BORN WITH THE DEFAULTS AND DOES NOT READ DISK ON IMPORT. `initKB(store)` is what reads, called once by the
  * boot. The rule holds for every module in the project, and here breaking it has a concrete cost: a test
  * importing anything from this file would come to depend on the environment's localStorage, and a key map
  * inherited from another case is a failure that shows up far from its cause.
@@ -164,7 +170,7 @@ export function saveKB(kb: KBDefaults): void { store.setJSON(CKEY, kb); }
 export let kb: KBDefaults = JSON.parse(JSON.stringify(KB_DEFAULTS));
 
 /** Reads the persisted map into `kb`. The boot calls it once; returns the value for whoever wants to chain. */
-export function initKB(): KBDefaults { kb = loadKB(); return kb; }
+export function initKB(store: KeyboardStore): KBDefaults { kb = loadKB(store); return kb; }
 
 /** Replaces the whole map. Only the controls panel's "restore defaults" needs this — remapping one key MUTATES
  *  the object, and reassigning by mistake would leave live references pointing at the old map. */
@@ -175,4 +181,4 @@ export function setKB(next: KBDefaults): void { kb = next; }
  * 🔴 Resetting to the engine's factory alone would silently erase the mapping the game chose. The child expects
  * to return to what the game gave them.
  */
-export function resetKB(): KBDefaults { store.remove(CKEY); return factoryWithGame(); }
+export function resetKB(store: KeyboardStore): KBDefaults { store.remove(CKEY); return factoryWithGame(); }

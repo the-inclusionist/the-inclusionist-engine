@@ -16,6 +16,7 @@ import * as estado from '../app/js/core/state.js';
 // Only the last block uses these: it measures the module's SOURCE, because the hole it closes is one of writing and not of
 // execution — a raw sentence runs with no error at all.
 import { readFileSync } from 'node:fs';
+import { createStorage, memoryBackend } from '../app/js/platform/storage.js';
 import { join } from 'node:path';
 
 // padCur/padPrevAct/padPrevStart (input/state.ts) are GENUINELY shared state — not part of the ctx, and they persist
@@ -58,6 +59,8 @@ function buildCtx(over = {}) {
   const naBarra = over.naBarra || new Set();
   const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], wizardSteps: [], wizardTicks: 0, hideTouchControls: 0, stopAttract: 0, navBar: [], arestas: [], pressionadas: [], soltas: [] };
   return {
+    // each ctx its own store (ADR-0232): a map one case saves cannot be the one another case reads
+    store: createStorage(memoryBackend()),
     $: (sel) => dom.get(sel) ?? null,
     getGamepads: () => pads,
     // ⚠️ THE LABEL COMES FROM THE 'GAME', and in a test the game is the fixture: the wizard asks, and this object is the
@@ -989,7 +992,7 @@ describe('padGameAnswers — a ausência é uma resposta, não um esquecimento',
 });
 
 describe('initGamepad — padMapFor', () => {
-  it('[Right] sem mapa salvo (localStorage indisponível/vazio em node) -> null, sem lançar', () => {
+  it('[Right] sem mapa salvo (armazenamento vazio) -> null, sem lançar', () => {
     const ctx = buildCtx(); const api = initGamepad(ctx);
     expect(api.padMapFor('nunca-visto')).toBeNull();
   });

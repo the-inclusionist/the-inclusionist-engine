@@ -11,7 +11,7 @@
 // frame, not a copy it cached before.
 import { t } from '../core/i18n.js';
 import { migrateControlMap } from './vocabulary-migration.js';
-import * as store from '../platform/storage.js';
+import type { Store } from '../platform/storage.js';
 
 // ⚠️ THE SHAPES ARE WRITTEN HERE, not imported from `input/gamepad`: gamepad imports this module, and a type import back would
 // close a cycle in the module graph (`step-5-batches-leaf-first`). They are the same shapes, structurally — `initGamepad` passes its
@@ -52,6 +52,9 @@ export const PADWIZ_ORDER: readonly string[] = [
   'start', 'select',
 ];
 
+/** What this module reads and writes the maps through: the page's store, built by the root (ADR-0232, issue #207). */
+export type PadMapStore = Pick<Store, 'getJSON' | 'setJSON'>;
+
 const KEY = (id: string): string => 'incl_padmap_' + id;
 const maps = new Map<string, PadMap | null>();
 
@@ -59,12 +62,12 @@ const maps = new Map<string, PadMap | null>();
  * The stored map of pad `id`, or `null`. Read through the vocabulary translator: a map saved before ADR-0086 has the old
  * action keys, and a custom pad would otherwise stop answering with no word said.
  */
-export function padMap(id: string): PadMap | null {
+export function padMap(store: PadMapStore, id: string): PadMap | null {
   if (!maps.has(id)) maps.set(id, migrateControlMap(store.getJSON<PadMap>(KEY(id), null)));
   return maps.get(id) ?? null;
 }
 /** Stores the map of pad `id` and makes it the one read from now on. */
-function storePadMap(id: string, map: PadMap): void {
+function storePadMap(store: PadMapStore, id: string, map: PadMap): void {
   store.setJSON(KEY(id), map);
   maps.set(id, map);
 }
@@ -74,6 +77,9 @@ function skipInSession(id: string): void {
 }
 
 export interface PadWizardCtx {
+  /** Where the finished map is stored — the page's store (ADR-0232). Required: a wizard that saved nowhere would ask the
+   *  child the fourteen questions again at every visit, in silence. */
+  store: PadMapStore;
   getGamepads: GetGamepads;
   /** The position's name in the GAME's word and the language of now; `null` = the game does not use it (the step is skipped). */
   actionLabel: (action: string) => string | null;
@@ -144,7 +150,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     if (!padWiz) return;
     if (padWiz.timer != null) clearInterval(padWiz.timer);
     if (save && padWiz.id) {
-      storePadMap(padWiz.id, padWiz.map);
+      storePadMap(ctx.store, padWiz.id, padWiz.map);
       ctx.srAlert(t('sr.pad.mapSaved', { id: padWiz.id }));
     } else if (padWiz.id) {
       skipInSession(padWiz.id);

@@ -14,7 +14,6 @@
 // receive `playerEdge(player, origin)`; this returns one with that same signature, so the wiring is right without either
 // of them knowing the toggle exists. A second required field in two contexts would be more public surface, one more
 // thing a cartridge can forget, and the same question asked twice.
-import * as store from '../platform/storage.js';
 import { DEFAULTS } from '../core/setting-defaults.js';
 import { playerEdge, inputOf } from './state.js';
 import { syncLatch, type LatchPlayer } from './latch-sync.js';
@@ -23,12 +22,11 @@ import type { TransportName } from './transport-in-use.js';
 
 export interface LatchedEdgeOptions {
   /**
-   * The storage. Injectable **for the gate**, and with a default so a consumer cannot forget it.
-   *
-   * ⚠️ A default and not a required field: an injected store is something a cartridge can omit, and omitting it would
-   * make the child lose their stored choice — in silence, and only in that game.
+   * The page's store, built by the root (ADR-0232, issue #207). REQUIRED, and the reason is the one that once gave it a
+   * default: omitting it would make the child lose their stored choice — in silence, and only in that game. The compiler
+   * now refuses the omission instead of a default reaching the page's one localStorage underneath the host.
    */
-  readonly store?: LatchStore;
+  readonly store: LatchStore;
   /** The factory default. `DEFAULTS.toggleMove`, not a hand-written `false`: there is ONE source (ADR-0029). */
   readonly byDefault?: boolean;
 }
@@ -46,9 +44,9 @@ export interface LatchedEdgeOptions {
  */
 export function createLatchedEdge(
   getPlayers: () => readonly (LatchPlayer | null | undefined)[],
-  opts: LatchedEdgeOptions = {},
+  opts: LatchedEdgeOptions,
 ): (player: number, origin: TransportName) => void {
-  const latchStore = opts.store ?? store;
+  const latchStore = opts.store;
   const fallback = opts.byDefault ?? DEFAULTS.toggleMove;
   return (player: number, origin: TransportName): void => {
     playerEdge(player, origin);
