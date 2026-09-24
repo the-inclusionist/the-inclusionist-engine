@@ -139,19 +139,11 @@ describe('issue #93 §5 · nenhum elemento aleatório em recompensa alguma', () 
     expect(sorteadores.length).toBeGreaterThan(1);
   });
 
-  it('[Right] os módulos que NOMEIAM `Math.random` para dizer que não o usam não são acusados', () => {
-    // ⚠️ `render/scene-parallax.ts`, a module that named `Math.random` to say it does not use it, has left the engine: this
-    // assertion names a file that no longer exists and cannot fail. Accusing such modules would accuse precisely those
-    // who obey the rule.
-    expect(sorteadores).not.toContain('render/scene-parallax.ts');
-    expect(sorteadores).not.toContain('render/camera.ts');
-  });
-
   it('⚠️ [Right] e um EXEMPLO DE CÓDIGO dentro de um comentário também não conta', () => {
     // ⚠️ THIS CASE CAME FROM A SURVIVING MUTATION. Removing the comment guard failed nothing, because this repository's
-    // comments write `` `Math.random` `` without parentheses and the regex demands the `(`. The case above passed, but not
-    // for the reason it gave. The natural way to document a prohibition is to show the forbidden code — and that is when
-    // the guard becomes the only defence.
+    // comments write `` `Math.random` `` without parentheses and the regex demands the `(`. The natural way to document a
+    // prohibition is to show the forbidden code — and that is when the guard becomes the only defence. Accusing a module
+    // for a comment would accuse precisely the ones that obey the rule.
     expect(contaSorteios('// nunca faça isto: const premio = Math.random();')).toBe(0);
     expect(contaSorteios(' * @example const x = crypto.randomUUID();')).toBe(0);
     // And the other side, which keeps the guard from becoming a hole: real code still counts.
@@ -174,8 +166,8 @@ describe('issue #93 §5 · nenhum elemento aleatório em recompensa alguma', () 
 //   · putting a module that does not exist on the REWARD list -> its orphan case fails. Without that case the list rots:
 //     it would describe a repository that no longer exists, and look as if it covered more than it does.
 //   · ⚠️ removing the COMMENT guard -> SURVIVED on the first round, and the survival was information: the comments that
-//     named `Math.random` wrote it WITHOUT parentheses, and the regex demands the `(`. The existing case passed, but not
-//     for the reason it gave. Once the CODE-EXAMPLE-in-a-comment case was written — the natural way to document a
+//     named `Math.random` wrote it WITHOUT parentheses, and the regex demands the `(`. A case that named two such modules
+//     passed, but not for the reason it gave; it left when both modules left the engine. Once the CODE-EXAMPLE-in-a-comment case was written — the natural way to document a
 //     prohibition — the same mutation started to fail.
 //   · removing the regex's `crypto.*` branch -> the same case fails. It is there because `crypto.randomUUID` is the
 //     obvious way out for whoever wants to draw without writing the word `random` next to `Math`.
