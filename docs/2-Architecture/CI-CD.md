@@ -3,98 +3,114 @@
 The pipeline in one page. The **source of truth is the workflow file** — `.github/workflows/ci.yml`; this doc
 explains *intent* and points there, it does not restate the YAML.
 
-> ⚠️ **Reescrito em 2026-09-06.** Esta página descrevia `.gitlab-ci.yml` como fonte da verdade. Aquele ficheiro
-> foi **removido**: o projeto no GitLab está arquivado (ADR-0066 §5) e não podia mais rodar. O porte para
-> GitHub Actions é o que o ADR-0066 §4 chamou de *trabalho, não cópia* — e duas coisas de facto mudaram, não
-> só de endereço. Estão marcadas com ⚠️ abaixo.
+> ⚠️ **Rewritten on 2026-09-06.** This page described `.gitlab-ci.yml` as the source of truth. That file
+> was **removed**: the GitLab project is archived (ADR-0066 §5) and could no longer run. The port to
+> GitHub Actions is what ADR-0066 §4 called *work, not a copy* — and two things really changed, not
+> just their address. They are marked with ⚠️ below.
 
-## CI (a cada push na `main` e a cada pull request)
+`game-ci.yml`, next to it, is a different thing: the reusable gate every **game** repository calls
+(ADR-0068 §4). The engine itself does not use it.
 
-Roda em **GitHub Actions**, Node fixado pelo `.node-version`. **Seis jobs**, e o que cada um barra:
+## CI (on every push to `main` and every pull request)
 
-| job | o que barra |
+Runs on **GitHub Actions**, Node pinned by `.node-version`. **Six jobs**, and what each one blocks:
+
+| job | what it blocks |
 |---|---|
-| `gate` | cadeia de suprimentos, tipos, testes, build e o orçamento de precache |
-| `adr` | os registros — oito checagens, entre elas o ponteiro bidirecional de supersessão |
-| `a11y` | axe contra o app **servido** |
-| `dco` | `Signed-off-by` em toda pull request |
-| `secrets` | segredo em **todo o histórico** |
-| `sast` | análise estática |
+| `gate` | supply chain, types, tests, build, the precache budget and the annual compliance report |
+| `adr` | the records — eight checks, among them the bidirectional supersession pointer |
+| `a11y` | axe against the **served** app |
+| `dco` | `Signed-off-by` on every pull request |
+| `secrets` | a secret anywhere in **the whole history** |
+| `sast` | static analysis |
 
-Dentro do `gate`, na ordem, e a ordem é argumento:
+Inside `gate`, in order, and the order is an argument:
 
-1. **Cadeia de suprimentos** — `npm audit --omit=dev --audit-level=high`. Só as dependências de produção, que
-   são as que chegam ao navegador de uma criança. Primeiro, porque uma dependência vulnerável torna o resto
-   discutível.
-2. **Typecheck** — `tsc --noEmit`, sem orçamento. A dívida de 273 erros da conversão chegou a zero em
-   2026-08-26 e o gate de orçamento saiu; erro novo é erro seu.
-3. **Testes** — `vitest run`, os dois *projects*: **node** (lógica pura) e **browser**/Playwright (render/DOM).
-4. **Build** — `vite build`, que tem de produzir `dist/` limpo.
-5. **Orçamento de precache** — `npm run check:precache`. ⚠️ Um `revision: null` numa URL sem hash de build faz
-   o service worker instalado servir aqueles bytes **para sempre**; 97 de 141 entradas estavam congeladas em
-   2026-08-25, em aparelhos que ninguém alcança.
+1. **Supply chain** — `npm audit --omit=dev --audit-level=high`. Only the production dependencies, which
+   are the ones that reach a child's browser. First, because a vulnerable dependency makes the rest
+   moot.
+2. **Typecheck** — `npm run typecheck` (`tsc --noEmit`), with no budget. The 273-error debt of the conversion
+   reached zero on 2026-08-26 and the budget gate left; a new error is your error.
+3. **Tests** — `npm test` (`vitest run`), both *projects*: **node** (pure logic) and **browser**/Playwright
+   (render/DOM), after installing Chromium.
+4. **Build** — `npm run build` (`vite build`), which has to produce a clean `dist/`.
+5. **Precache budget** — `npm run check:precache`. ⚠️ A `revision: null` on a URL with no build hash makes
+   the installed service worker serve those bytes **forever**; 97 of 141 entries were frozen on
+   2026-08-25, on devices nobody can reach.
+6. **Annual compliance report** — `npm run check:annual-report` (ADR-0053). **Dormant** until a first year is
+   declared, and it prints a notice saying so on every run — a dormant gate is a notice, not a pass. See
+   [`../compliance/README.md`](../compliance/README.md).
 
-E fora do `gate`:
+And outside `gate`:
 
-6. **a11y** — axe-core contra o preview servindo `dist/`, que é o que uma escola receberia (ver
-   `../6-DevOps-SRE/CI-QA.md`).
-7. **ADR** — `scripts/validate-adr.py`. Portão que não existia no GitLab: o índice prometia registros
-   legíveis por máquina e nada conferia, e cinco de vinte e seis não parseavam.
-   🔴 **E desde 2026-09-09 (ADR-0123) a ÁRVORE não mora aqui**: o trabalho faz checkout do
-   `the-inclusionist-docs` e corre o validador com `--repo engine=.`, que é a parte que **só este lado
-   consegue** — abrir os caminhos de `confirmed-by` marcados `engine:`. No repositório dos registos eles são
-   apenas contados, e o validador diz quantos em toda corrida.
-   ⚠️ **Sem o segredo `DOCS_READ_TOKEN` o trabalho fica DORMENTE**: anuncia que não buscou nada e não
-   conferiu nada, e **não reprova**. É a forma do `check:annual-report` — um portão dormente é um aviso, não
-   um passe — e a razão é a do próprio cabeçalho do `ci.yml`: uma `main` vermelha por motivo administrativo
-   ensina a não ler o vermelho. O `GITHUB_TOKEN` de um workflow não alcança outro repositório privado
-   (medido na corrida `34352635399`, `Not Found`).
-8. **DCO** — `Signed-off-by` em toda PR (ADR-0078). Só em pull request: push do mantenedor já é atribuído
-   pelo git.
-9. ⚠️ **SAST + detecção de segredo — MUDARAM DE FERRAMENTA, e por preço.** Eram os templates do GitLab.
-   Os equivalentes nativos do GitHub — *code scanning* (CodeQL) e *secret scanning* — são gratuitos **só em
-   repositório público**; em privado exigem GitHub Advanced Security, que é pago, e o ADR-0066 §3 mantém tudo
-   privado até o ato. Então são **gitleaks** e **semgrep**, de código aberto, **fixados por versão exata** —
-   scanner que muda de regra sozinho é portão cujo veredito ninguém reproduz. O gitleaks corre o **histórico
-   inteiro** (`fetch-depth: 0`), porque segredo commitado e depois apagado continua no histórico, e é o
-   histórico que fica público. Ver `../6-DevOps-SRE/Security-Pipeline.md`.
+7. **a11y** — axe-core against the preview serving `dist/`, which is what a school would receive (see
+   `../6-DevOps-SRE/CI-QA.md`). ⚠️ The target is **`/quiz.html`**, not `/`: `dist/` no longer emits an
+   `index.html` (it left with the cartridge, #111), and the readiness probe hits the same page the gate audits.
+8. **ADR** — the records' validator. A gate that did not exist on GitLab: the index promised
+   machine-readable records and nothing checked, and five of twenty-six did not parse.
+   🔴 **And since 2026-09-09 (ADR-0123) the TREE does not live here**: the job checks out
+   `the-inclusionist-docs` and runs **that repository's** `scripts/validate-adr.py` with `--repo engine=.`, which
+   is the part that **only this side can do** — open the `confirmed-by` paths marked `engine:`. In the records'
+   repository they are only counted, and the validator says how many on every run. A second step runs
+   `tests/ponteiros-de-registo.node.test.js` and `tests/the-validator-does-not-drift.node.test.js` with
+   `ADR_TREE_REQUIRED=1`: no record may point at a gate that does not exist, and this repository's own copy of
+   `scripts/validate-adr.py` must not drift from the records' copy.
+   ⚠️ **Without the `DOCS_READ_TOKEN` secret the job is DORMANT**: it announces that it fetched nothing and
+   checked nothing, and it **does not fail**. It is the shape of `check:annual-report` — a dormant gate is a
+   notice, not a pass — and the reason is the one in `ci.yml`'s own header: a `main` that is red for an
+   administrative reason teaches people not to read red. A workflow's `GITHUB_TOKEN` does not reach another
+   private repository (measured in run `34352635399`, `Not Found`).
+9. **DCO** — `Signed-off-by` on every PR (ADR-0078). Pull requests only: the maintainer's push is already
+   attributed by git.
+10. ⚠️ **SAST + secret detection — THEY CHANGED TOOLS, and for a price.** They were the GitLab templates.
+    GitHub's native equivalents — *code scanning* (CodeQL) and *secret scanning* — are free **only on
+    public repositories**; on a private one they require GitHub Advanced Security, which is paid, and
+    ADR-0066 §3 keeps everything private until the ato. So they are **gitleaks** (8.30.1) and **semgrep**
+    (image 1.176.0), open source, **pinned to an exact version** — a scanner that changes its rules on its own
+    is a gate whose verdict nobody can reproduce. gitleaks scans the **whole history** (`fetch-depth: 0`),
+    because a secret committed and then deleted is still in the history, and it is the history that becomes
+    public. See `../6-DevOps-SRE/Security-Pipeline.md`.
 
-⚠️ **E nenhum dos dois é `continue-on-error`.** No GitLab os dois carregavam `allow_failure: true` e estavam
-**vermelhos desde que foram incluídos** — morriam num `npm: not found` herdado de um bloco `default:`, e o ✗
-cinzento não foi lido por semanas. Portar significa exatamente que agora reprovam.
+⚠️ **And neither of them is `continue-on-error`.** On GitLab both carried `allow_failure: true` and had been
+**red since they were added** — they died on an `npm: not found` inherited from a `default:` block, and the grey
+✗ went unread for weeks. Porting them means precisely that they now fail.
 
-Pipeline vermelho barra o merge. Manter rápido; suítes pesadas (baterias de hardware-alvo, por exemplo) são
-separadas e opt-in.
+A red pipeline blocks the merge. Keep it fast; heavy suites (target-hardware batteries, for example) are
+separate and opt-in.
 
 ## CD (deploy)
 
-**Cloudflare Pages.** Duas formas são possíveis e são **mutuamente exclusivas** — exatamente uma pode estar
-viva:
+⚠️ **There is NO deploy connected today.** The Dev measured on 2026-09-07 that **no Cloudflare Pages project is
+attached to any repository**. While that holds, **a push is not a publication**, and `dist/` reaches somebody
+only through a manual step.
 
-- **conectado ao git**: o CF observa o repositório, builda e publica `dist/` a cada push na `main`.
-- **upload direto**: o CF não guarda repositório; um passo roda `wrangler pages deploy dist/` com
-  `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` como segredos.
+When a deploy is connected, it will be **Cloudflare Pages**, in one of two forms that are **mutually exclusive** —
+exactly one may be live:
 
-⚠️ **E aqui há uma pendência real da migração, que só se confere no painel da Cloudflare:** a conexão git
-apontava para o **GitLab**, que agora está arquivado. Enquanto ela não for reapontada para
-`the-inclusionist/the-inclusionist-engine`, um push na `main` **não publica**. Um projeto Pages não troca de
-repositório de origem — recriar o projeto é o caminho.
+- **git-connected**: CF watches the repository, builds and publishes `dist/` on every push to `main`.
+- **direct upload**: CF keeps no repository; a step runs `wrangler pages deploy dist/` with
+  `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` as secrets.
 
-O service worker (vite-plugin-pwa, por content-hash) cuida da invalidação de cache nos dois casos, então
-nenhum cliente precisa de bump manual para atualizar.
+The former git connection pointed at **GitLab**, which is archived, and a Pages project does not switch its
+source repository — recreating the project is the way.
 
-## Release (versionamento)
+The service worker (vite-plugin-pwa, by content hash) handles cache invalidation in both cases, so
+no client needs a manual bump to update.
 
-Não faz parte do CI. Cortar versão é passo **local e humano**: `release-it` (changelog de Conventional
-Commits + tag). O build carimba `__BUILD__` a partir de `git describe`. Ver `plano-versionamento.md`.
+## Release (versioning)
 
-⚠️ **E o `npm.publish` do `.release-it.json` está `true` desde 2026-09-05**, o que faz `npm run release`
-publicar o pacote **publicamente** no npmjs. A publicação do código é objeto do **pedido `e`** do requerimento
-— ato do Poder Executivo — e o ADR-0066 §3 lista o ato entre as condições. Escrito aqui porque é a diferença
-entre cortar uma versão e publicar a obra.
+Not part of CI. Cutting a version is a **local, human** step: `release-it` (Conventional Commits changelog +
+tag; `git.push` is `false`, so it does not push). The build stamps `__BUILD__`: the version from `package.json`,
+and `git describe` decides whether it is clean or carries `+sha`/`-dirty`. See `plano-versionamento.md`.
 
-## Notas / TODO
+⚠️ **And `.release-it.json` has had `npm.publish` set to `true` since 2026-09-05**, which makes `npm run release`
+publish the package **publicly** on npmjs. Publication of the code is the subject of **request `e`** of the
+requerimento — an act of the Executive — and ADR-0066 §3 lists that act among the conditions. Written here because
+it is the difference between cutting a version and publishing the work.
 
-- [ ] Reapontar (ou recriar) o projeto do Cloudflare Pages para o repositório do GitHub.
-- [ ] Env de Node para o antivírus que reassina TLS, **se** algum dia o CI correr num runner auto-hospedado
-  atrás dele (ver `../../CLAUDE.md` §6). Os runners do GitHub são limpos, então não é preciso hoje.
+## Notes / TODO
+
+- [ ] Connect a deploy: recreate a Cloudflare Pages project pointed at the GitHub repository (or set up direct
+  upload).
+- [ ] A Node environment for an antivirus that re-signs TLS, **if** CI ever runs on a self-hosted runner
+  behind one. GitHub's runners are clean, so it is not needed today.

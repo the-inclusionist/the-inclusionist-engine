@@ -4,7 +4,7 @@ Artifacts:
 
 - **[CI-QA.md](CI-QA.md)** — QA gates in CI: **axe-core a11y** (✅ now, verifies the WCAG in NFR) · **k6 load/perf**
   (⏸ backend, verifies the SLOs).
-- **[Security-Pipeline.md](Security-Pipeline.md)** — **SAST/Dependabot/CodeQL** (✅ now, light) · **DAST** (⏸ backend)
+- **[Security-Pipeline.md](Security-Pipeline.md)** — **SAST (semgrep) · secret detection (gitleaks) · `npm audit`** (✅ now, light; no Dependabot yet) · **DAST** (⏸ backend)
   · **Pentest** (⏸ scheduled, at the child-data surface).
 - **[SLO.md](SLO.md)** — **SLI/SLO/Error-Budget/SLA** (⏸ backend, rigor by tier).
 - **[Breaking-Changes.md](Breaking-Changes.md)** — what left the PACKAGE since `7.0.1`, by CHANGE: what moved
@@ -14,7 +14,7 @@ Artifacts:
   five other repositories, and a test that read them would make this repo's CI depend on their state
   (ADR-0121). It is a step in the procedure.
 
-**Live today:** only CI/CD itself — typecheck + Vitest + build on GitHub Actions. ⚠️ **There is NO deploy
+**Live today:** only CI itself — the six jobs of `.github/workflows/ci.yml` on GitHub Actions (supply chain, typecheck, Vitest, build, precache budget, axe, ADR records, DCO, gitleaks, semgrep). ⚠️ **There is NO deploy
 connected**: this line used to say «Cloudflare Pages deploys `dist/`», and the Dev measured otherwise on
 2026-09-07 — no Cloudflare Pages project is attached to any repository. While that holds, **a push is not a
 publication**, and `dist/` reaches somebody only by a manual step

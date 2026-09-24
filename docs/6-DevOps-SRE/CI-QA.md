@@ -13,8 +13,11 @@ nothing enforces it.
 - Scope: the DOM shell (menus, `aria-live`, roles, labels, contrast on DOM UI). The **canvas** render isn't
   axe-testable — its a11y IS the DOM shell + captions, which axe covers.
 - Gate: fails CI on any WCAG-A/AA violation in our app.
-- **Dev steps** (Node runs on the Dev's side): `npm i -D @axe-core/playwright` → `npm run build && npm run preview` →
-  `AXE_URL=http://localhost:4173/ node scripts/axe-check.mjs`; then a CI job that builds + previews + runs it.
+- **In CI:** the `a11y` job builds, serves `dist/` with `npm run preview -- --port 4173`, waits for
+  `/quiz.html` and runs `AXE_URL=http://localhost:4173/quiz.html npm run test:a11y`. ⚠️ The target is `/quiz.html`,
+  not `/`: `dist/` no longer emits an `index.html` (it left with the cartridge, #111).
+- **Locally:** `npm run build && npm run preview`, then the same `AXE_URL=… npm run test:a11y`
+  (`@axe-core/playwright` is already a dev dependency).
 
 ## Load / performance — k6  ⏸ defer to backend
 
