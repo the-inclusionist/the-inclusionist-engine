@@ -1433,16 +1433,13 @@
       "fanIn": 10
     },
     "ui/panel-widgets.ts": {
-      "codeLines": 135,
-      "decisionNodes": 13,
+      "codeLines": 134,
+      "decisionNodes": 12,
       "maxDepth": 2,
       "fanOut": 1,
-      "globalReach": 1,
-      "worstFunction": 8,
-      "fanIn": 10,
-      "reached": [
-        "CSS"
-      ]
+      "globalReach": 0,
+      "worstFunction": 6,
+      "fanIn": 10
     },
     "ui/pause-buttons.ts": {
       "codeLines": 26,

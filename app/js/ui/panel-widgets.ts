@@ -123,11 +123,10 @@ export function labelRow(linha: HTMLElement, spec: ControlRowSpec): void {
   // ⚠️ A dica que SOME tem de ser apagada, e não só deixar de ser escrita: numa retradução para um dicionário
   // sem a chave, o texto antigo sobreviveria e o rodapé descansaria no idioma anterior.
   if (dica) dica.textContent = spec.dica ?? '';
-  // ⚠️ `CSS` IS A BROWSER GLOBAL, and reading it where it does not exist THROWS — it does not answer undefined. This function is
-  // called from a root that boots in node too (a case's fake document), and there it took the whole boot down. The ids here are
-  // `opt-*`, which no selector ever needs escaped; the escape stays where there IS a `CSS`, for the day one of them is not.
-  const escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(spec.id) : spec.id;
-  const controle = linha.querySelector<HTMLElement>('#' + escaped);
+  // The control is found by COMPARING its id, not by building a selector from it: a selector needs the id escaped, escaping
+  // needs `CSS.escape`, and `CSS` is a browser global that THROWS where it does not exist — it took down a boot in a case's fake
+  // document once (2026-09-21). No selector, nothing to escape, no global (ADR-0221 step 7d).
+  const controle = [...linha.querySelectorAll<HTMLElement>('[id]')].find((el) => el.id === spec.id);
   if (controle) controle.setAttribute('aria-label', spec.rotuloAria ?? spec.rotulo);
 }
 
