@@ -501,8 +501,8 @@ export interface Engine {
    */
   readonly captionSound: (text: string) => void;
   /**
-   * The game speed the child chose on the quick bar (ADR-0180): 1 is 100%, down to 0.5. `startLoop` already multiplies the
-   * frame time by it; a game that runs its own frames multiplies by this.
+   * The game speed the child chose on the quick bar (ADR-0180): 1 is 100%, down to 0.5. Pass it as `startLoop`'s REQUIRED
+   * `speed` (ADR-0232 D2c), which multiplies the frame time by it; a game that runs its own frames multiplies by this.
    */
   readonly gameSpeed: () => number;
   /**

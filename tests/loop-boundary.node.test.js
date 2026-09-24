@@ -36,7 +36,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
   it('[Right] sem exceção, nada muda — o quadro roda a cada tick, com o dt clampado', () => {
     const t = fakeTicker(5);
     const dts = [];
-    startLoop(t, (dt) => dts.push(dt), 2);
+    startLoop(t, (dt) => dts.push(dt), 2, { speed: () => 1 });
     t.tick(); t.tick();
     expect(dts, 'dt clampado em maxDt').toEqual([2, 2]);
   });
@@ -44,7 +44,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
   it('[Right] quando o quadro lança, o laço PARA de chamá-lo', () => {
     const t = fakeTicker();
     let chamadas = 0;
-    startLoop(t, () => { chamadas++; throw new Error('jogo quebrou'); }, 2, { onFailure: () => {} });
+    startLoop(t, () => { chamadas++; throw new Error('jogo quebrou'); }, 2, { speed: () => 1, onFailure: () => {} });
     t.tick();
     t.tick();
     t.tick();
@@ -56,7 +56,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     const t = fakeTicker();
     const falhas = [];
     const boom = new Error('jogo quebrou');
-    startLoop(t, () => { throw boom; }, 2, { onFailure: (e) => falhas.push(e) });
+    startLoop(t, () => { throw boom; }, 2, { speed: () => 1, onFailure: (e) => falhas.push(e) });
     t.tick(); t.tick();
     expect(falhas).toEqual([boom]);
   });
@@ -65,7 +65,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     // A difference that matters on weak hardware: a callback running 60 times a second to do nothing still costs. And it
     // leaves the ticker lying about how many things the game has.
     const t = fakeTicker();
-    startLoop(t, () => { throw new Error('x'); }, 2, { onFailure: () => {} });
+    startLoop(t, () => { throw new Error('x'); }, 2, { speed: () => 1, onFailure: () => {} });
     expect(t.inscritas).toBe(1);
     t.tick();
     expect(t.inscritas, 'saiu do ticker').toBe(0);
@@ -77,7 +77,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     const fns = [];
     const t = { deltaTime: 1, add: (fn) => fns.push(fn) };
     let chamadas = 0;
-    startLoop(t, () => { chamadas++; throw new Error('x'); }, 2, { onFailure: () => {} });
+    startLoop(t, () => { chamadas++; throw new Error('x'); }, 2, { speed: () => 1, onFailure: () => {} });
     fns[0](); fns[0](); fns[0]();
     expect(chamadas).toBe(1);
   });
@@ -86,7 +86,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     const t = fakeTicker();
     let chamadas = 0;
     expect(() => {
-      startLoop(t, () => { chamadas++; throw new Error('x'); }, 2);
+      startLoop(t, () => { chamadas++; throw new Error('x'); }, 2, { speed: () => 1 });
       t.tick(); t.tick();
     }, 'a exceção não pode escapar para o ticker').not.toThrow();
     expect(chamadas).toBe(1);
@@ -99,7 +99,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     const erros = [];
     registerCrashNotice((e) => erros.push(e));
     try {
-      startLoop(t, () => { throw new Error('quadro'); }, 2);
+      startLoop(t, () => { throw new Error('quadro'); }, 2, { speed: () => 1 });
       t.tick(); t.tick();
     } finally { registerCrashNotice(null); }
     expect(erros.map((e) => e.message), 'the registered notice was not called exactly once').toEqual(['quadro']);
@@ -111,7 +111,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     const doJogo = [];
     registerCrashNotice((e) => doRegisto.push(e));
     try {
-      startLoop(t, () => { throw new Error('x'); }, 2, { onFailure: (e) => doJogo.push(e) });
+      startLoop(t, () => { throw new Error('x'); }, 2, { speed: () => 1, onFailure: (e) => doJogo.push(e) });
       t.tick();
     } finally { registerCrashNotice(null); }
     expect([doJogo.length, doRegisto.length]).toEqual([1, 0]);
@@ -122,7 +122,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     const erros = [];
     registerCrashNotice((e) => erros.push(e));
     registerCrashNotice(null);
-    startLoop(t, () => { throw new Error('x'); }, 2);
+    startLoop(t, () => { throw new Error('x'); }, 2, { speed: () => 1 });
     t.tick();
     expect(erros).toEqual([]);
     expect(t.inscritas).toBe(0);
@@ -133,7 +133,7 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
     // ticker — which is where it would be invisible again.
     const t = fakeTicker();
     expect(() => {
-      startLoop(t, () => { throw new Error('x'); }, 2, { onFailure: () => { throw new Error('o anúncio também'); } });
+      startLoop(t, () => { throw new Error('x'); }, 2, { speed: () => 1, onFailure: () => { throw new Error('o anúncio também'); } });
       t.tick();
     }).not.toThrow();
   });

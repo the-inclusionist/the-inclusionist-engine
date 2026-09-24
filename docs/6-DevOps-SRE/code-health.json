@@ -331,16 +331,13 @@
       "codeLines": 21,
       "decisionNodes": 3,
       "maxDepth": 2,
-      "fanOut": 1,
+      "fanOut": 0,
       "globalReach": 0,
       "worstFunction": 5,
-      "statefulEdges": 1,
+      "statefulEdges": 0,
       "fanIn": 1,
       "holds": [
         "let registeredNotice"
-      ],
-      "statefulImports": [
-        "core/state.ts"
       ]
     },
     "core/pause-icon-catalogue.ts": {
@@ -435,7 +432,7 @@
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 7,
+      "fanIn": 6,
       "holds": [
         "let blindMode",
         "let cameraControl",

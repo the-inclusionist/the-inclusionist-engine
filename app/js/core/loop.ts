@@ -13,11 +13,18 @@
 // it becomes a silently wrong game, computing garbage forever. The rule is the one ADR-0047 applied to the CRT — catch
 // ONCE, STOP, and ANNOUNCE.
 
-import { gameSpeed } from './state.js';
-
 type Ticker = { add: (fn: () => void) => void; deltaTime: number; remove?: (fn: () => void) => void };
 
 export interface LoopOptions {
+  /**
+   * THE GAME SPEED the child chose (ADR-0180): 1 is 100%, down to 0.5. Read EACH FRAME, so a change is felt on the next
+   * one. A game beside `createGame` passes `engine.gameSpeed`; a game that is its own root passes
+   * `() => state.gameSpeed`.
+   *
+   * 🔴 REQUIRED (ADR-0232 D2c erratum; ADR-0224/0227's precedent): the loop no longer reads the settings store by import,
+   * and an optional port defaulting to 100% would ignore the child's choice in every game that forgot it — silently.
+   */
+  speed: () => number;
   /**
    * Called ONCE, with the error, when the frame throws. It is the channel of whoever cannot see the screen stop.
    *
@@ -36,13 +43,13 @@ export interface LoopOptions {
 let registeredNotice: ((failure: unknown) => void) | null = null;
 export function registerCrashNotice(notice: ((failure: unknown) => void) | null): void { registeredNotice = notice; }
 
-export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, options: LoopOptions = {}): void {
+export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, options: LoopOptions): void {
   let stopped = false;
   const step = (): void => {
     if (stopped) return; // a ticker without `remove` cannot unregister — this latch is what stops the loop anyway
     try {
       // the game speed (ADR-0180) applies to the clamped time, read each frame: a change is felt on the next one
-      frame(Math.min(ticker.deltaTime, maxDt) * gameSpeed);
+      frame(Math.min(ticker.deltaTime, maxDt) * options.speed());
     } catch (failure) {
       stopped = true;
       ticker.remove?.(step); // leave the ticker when possible: a callback running 60×/s for nothing costs on weak hardware

@@ -31,7 +31,7 @@ describe('the loop notice under createGame', () => {
     console.error = () => {};
     try {
       const tk = ticker();
-      startLoop(tk, () => { throw new Error('quadro'); });
+      startLoop(tk, () => { throw new Error('quadro'); }, 2, { speed: () => 1 });
       tk.tick();
     } finally { console.error = erro; }
     expect(document.getElementById('sr-alert').textContent, 'the child who listens heard nothing').toBe(t('sr.laco.parou'));
@@ -42,7 +42,7 @@ describe('the loop notice under createGame', () => {
     document.getElementById('sr-alert').textContent = '';
     document.getElementById('incl-parou').remove();
     const tk2 = ticker();
-    startLoop(tk2, () => { throw new Error('depois'); });
+    startLoop(tk2, () => { throw new Error('depois'); }, 2, { speed: () => 1 });
     tk2.tick();
     expect(document.getElementById('sr-alert').textContent, 'the notice outlived the unmount').toBe('');
   });

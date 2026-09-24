@@ -322,8 +322,9 @@ export function setCameraControlValue(v: CameraControl): void {
   const p = portFor('setCameraControlValue'); p.set('incl_camera_control', valid); cameraControl = valid; emit('cameraControl', valid);
 }
 
-// --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
-//     by it. Stored and carried between games; a stored value outside the steps reads as 100%. ---
+// --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); a game hands it to `core/loop.startLoop` as its
+//     `speed` port (ADR-0232), which multiplies the frame time by it. Stored and carried between games; a stored value
+//     outside the steps reads as 100%. ---
 export let gameSpeed: number = isGameSpeed(NULL_PORT.getNum('incl_game_speed', DEFAULTS.gameSpeed));
 export function setGameSpeedValue(v: number): void {
   const isValidSpeed = isGameSpeed(v);

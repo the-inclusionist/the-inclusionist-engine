@@ -3192,9 +3192,19 @@ setting in silence). A game that is its own root answers them from `core/state` 
 | old | new | migration |
 |---|---|---|
 | `input/gamepad.js` `GamepadCtx` | gains a REQUIRED `oneButton: () => boolean` | pass `() => state.oneButton` (`core/state`), read each frame |
+| `core/loop.js` `startLoop(ticker, frame, maxDt?, options?)` | `startLoop(ticker, frame, maxDt, options)` with a REQUIRED `options.speed: () => number` — the loop no longer reads the game speed from the settings store | pass `{ speed: engine.gameSpeed }` beside `createGame` (or `() => state.gameSpeed` in a game that is its own root); `maxDt` may be `undefined` for the default 2 |
+
+📌 **`startLoop`'s port was a decision, recorded before the code** (ADR-0232 erratum, docs `ced165e`): a REQUIRED port,
+and not a speed reader the root registers beside `registerCrashNotice` — that would be the module state D4 removes, and a
+second root on the page would overwrite the first's reader — nor an optional port defaulting to 100%, which ADR-0224/0227
+rule out because a game that forgot it would ignore the child's speed in silence.
 
 📏 **Measured in the seven games, read-only, as information:** `initGamepad` is called by `game-platformer`
-(`app/js/main.ts`) and `game-soccer` (`app/js/boot/main.ts`).
+(`app/js/main.ts`) and `game-soccer` (`app/js/boot/main.ts`). `startLoop` is called by five: `game-chess`
+(`app/js/boot/standalone.ts`, with `{ aoFalhar }` — the older name of `onFailure`), `game-platformer`
+(`src/standalone.ts`), `game-soccer` (`app/js/boot/main.ts`, with no options at all), `game-whackwhack`
+(`app/js/boot/standalone.ts`) and `pixi-15-puzzle` (`app/js/boot/standalone.ts`). Each of them has a `createGame` handle
+to answer from.
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 

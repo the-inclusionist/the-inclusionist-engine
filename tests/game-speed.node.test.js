@@ -62,22 +62,24 @@ describe('the stored choice', () => {
 });
 
 describe('the loop applies it', () => {
-  it('🔴 [Right] the frame time `startLoop` hands out is the raw time times the speed', () => {
-    state.loadState(portaFalsa({ incl_game_speed: 0.5 }));
+  it('🔴 [Right] the frame time `startLoop` hands out is the raw time times the speed its REQUIRED port answers (ADR-0232)', () => {
+    // The port, not the settings store: the store says 100% here, the port 50% then 80% — a loop that read the store
+    // by import would hand out 1 and 1.
+    state.loadState(portaFalsa({}));
+    let speed = 0.5;
     let chamar;
     const ticker = { deltaTime: 1, add: (fn) => { chamar = fn; } };
     const recebidos = [];
-    startLoop(ticker, (dt) => recebidos.push(dt));
+    startLoop(ticker, (dt) => recebidos.push(dt), 2, { speed: () => speed });
     chamar();
-    state.setGameSpeedValue(0.8);
+    speed = 0.8;
     chamar();
     expect(recebidos).toEqual([0.5, 0.8]);
   });
 
   it('📌 [Boundary] the clamp applies to the raw time, before the speed — a long frame is not stretched past maxDt', () => {
-    state.loadState(portaFalsa({ incl_game_speed: 0.5 }));
     let chamar;
-    startLoop({ deltaTime: 10, add: (fn) => { chamar = fn; } }, (dt) => { expect(dt).toBe(1); }, 2);
+    startLoop({ deltaTime: 10, add: (fn) => { chamar = fn; } }, (dt) => { expect(dt).toBe(1); }, 2, { speed: () => 0.5 });
     chamar();
   });
 });
@@ -85,6 +87,7 @@ describe('the loop applies it', () => {
 // ============================== MUTATIONS CHECKED ==============================
 //   V1 no wrap at 50%                                     🔴 wraps
 //   V2 a stored value outside the steps accepted          🔴 [Boundary]
-//   V3 startLoop ignores the speed                        🔴 the loop applies it
+//   V3 startLoop ignores the speed port                   🔴 the loop applies it
 //   V4 the speed read once at start, not per frame        🔴 the loop applies it
+//   V6 startLoop reads the settings store, not the port   🔴 the loop applies it (the store says 100%)
 //   V5 the setter does not write the storage              🔴 stored choice

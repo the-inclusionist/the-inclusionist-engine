@@ -287,7 +287,8 @@
   },
   "core/loop.ts": {
     "interface LoopOptions": [
-      "onFailure?"
+      "onFailure?",
+      "speed"
     ]
   },
   "core/pause-icon-catalogue.ts": {

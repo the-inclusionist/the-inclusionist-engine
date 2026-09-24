@@ -131,7 +131,7 @@ describe('e ligado ao laço de verdade, ponta a ponta', () => {
     const t = ticker();
     let quadros = 0;
     startLoop(t, () => { quadros++; throw new Error('o jogo quebrou'); }, 2,
-      { onFailure: createCrashNotice({ find: d.find, create: d.create }) });
+      { speed: () => 1, onFailure: createCrashNotice({ find: d.find, create: d.create }) });
 
     t.passo(); t.passo(); t.passo();
 
@@ -145,7 +145,7 @@ describe('e ligado ao laço de verdade, ponta a ponta', () => {
     const ditas = [];
     const t = ticker();
     startLoop(t, () => { throw new Error('x'); }, 2,
-      { onFailure: createCrashNotice({ find: docFalso().find, create: docFalso().create, narrate: (s) => ditas.push(s) }) });
+      { speed: () => 1, onFailure: createCrashNotice({ find: docFalso().find, create: docFalso().create, narrate: (s) => ditas.push(s) }) });
     for (let i = 0; i < 10; i++) t.passo();
     expect(ditas).toHaveLength(1);
   });
