@@ -207,6 +207,16 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
    * before the row's own listener and stops it; a moved range goes back to the stored volume, a changed list to the voice in
    * use. The footer shows the reason when the row takes focus: the card hears `focusin` after the row's own explanation.
    */
+  /**
+   * What a refused control puts back, by row: the moved volume to the stored one, the picked voice and rate to the ones in use.
+   * A row not here has nothing to undo (a switch was never flipped). A table, as the other «which row does what» answers here.
+   */
+  const UNDO_ON_REFUSAL: Readonly<Record<string, (el: HTMLElement) => void>> = {
+    '#tts-vol': (el) => { const cat = ctx.getAudioCat(); if (cat?.tts) (el as HTMLInputElement).value = String(volPercent(cat.tts.vol)); },
+    '#tts-voz': () => renderVoiceList(),
+    '#tts-ppm': () => renderRate(),
+  };
+
   function refuseWhileLocked(): void {
     for (const id of SPEECH_ROWS) {
       const el = ctx.$<HTMLElement>(id);
@@ -215,9 +225,7 @@ export function createVoiceSettings(ctx: VoiceSettingsCtx, ports: VoicePorts): V
         if (el.getAttribute('aria-disabled') !== 'true') return;
         e.stopImmediatePropagation();
         e.preventDefault();
-        if (id === '#tts-vol') { const cat = ctx.getAudioCat(); if (cat?.tts) (el as HTMLInputElement).value = String(volPercent(cat.tts.vol)); }
-        if (id === '#tts-voz') renderVoiceList();
-        if (id === '#tts-ppm') renderRate();
+        UNDO_ON_REFUSAL[id]?.(el);
         ctx.srSay(el.dataset.motivo ?? t('audio.semVoz'));
       };
       for (const kind of ['click', 'input', 'change']) el.addEventListener(kind, refuse, true);
