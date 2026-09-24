@@ -8,6 +8,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { createInputCooldown, COOLDOWN_MS } from '../app/js/input/input-cooldown.js';
+import * as state from '../app/js/core/state.js';
 
 const MS = COOLDOWN_MS;
 
@@ -71,6 +72,43 @@ describe('the wait after an accepted key', () => {
 
   it('📌 [Right] the number is the GAG\'s, and it is the only one offered', () => {
     expect(COOLDOWN_MS, 'the guideline says 0.5 s; another number needs a hand to measure it on').toBe(500);
+  });
+});
+
+/** A storage port holding what a child chose on an earlier visit. */
+function storedPort(saved = {}) {
+  const data = { ...saved };
+  return {
+    data,
+    get: (k, f) => (k in data ? String(data[k]) : f),
+    set: (k, v) => { data[k] = v; },
+    getBool: (k, f = false) => (k in data ? data[k] === true || data[k] === 'true' : f),
+    setBool: (k, on) => { data[k] = on; },
+    getNum: (k, f = 0) => (k in data ? Number(data[k]) : f),
+    KEYS: { letterCase: 'incl_lettercase', captions: 'incl_captions', menuIndex: 'incl_menuindex', cbsafe: 'incl_cbsafe', ownercolors: 'incl_ownercolors', outfg: 'incl_outfg', outbg: 'incl_outbg' },
+  };
+}
+
+// The choice was written but never read back: `loadState` reloaded every stored setting except this one, so a child who
+// turned the wait on found it off on the next visit (found 2026-09-24 by the ADR-0232 measurement).
+describe('the stored choice survives a reload', () => {
+  it('🔴 [Right] a wait stored on an earlier visit is the wait after loading', () => {
+    state.loadState(storedPort({ incl_input_cooldown: 500 }));
+    expect(state.inputCooldown, 'the stored wait was not loaded').toBe(500);
+  });
+
+  it('🎯 [Boundary] a stored value that is not a wait loads as off, never as a negative or fractional wait', () => {
+    state.loadState(storedPort({ incl_input_cooldown: 'x' }));
+    expect(state.inputCooldown).toBe(0);
+    state.loadState(storedPort({ incl_input_cooldown: -3 }));
+    expect(state.inputCooldown).toBe(0);
+    state.loadState(storedPort({ incl_input_cooldown: 499.6 }));
+    expect(state.inputCooldown).toBe(500);
+  });
+
+  it('🎯 [Zero] nothing stored is off', () => {
+    state.loadState(storedPort());
+    expect(state.inputCooldown).toBe(0);
   });
 });
 

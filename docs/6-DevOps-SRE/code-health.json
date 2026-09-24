@@ -25,7 +25,7 @@
   },
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2065,
+      "codeLines": 2064,
       "decisionNodes": 276,
       "maxDepth": 4,
       "fanOut": 85,
@@ -271,7 +271,7 @@
       "fanIn": 3
     },
     "core/state.ts": {
-      "codeLines": 238,
+      "codeLines": 240,
       "decisionNodes": 29,
       "maxDepth": 3,
       "fanOut": 3,
@@ -418,7 +418,7 @@
       "fanIn": 2
     },
     "input/gamepad.ts": {
-      "codeLines": 301,
+      "codeLines": 300,
       "decisionNodes": 58,
       "maxDepth": 2,
       "fanOut": 10,

@@ -339,9 +339,11 @@ export function setNoGripStrengthValue(on: boolean): void {
 // --- inputCooldown: a tremor is not a second press (ADR-0217, GAG Advanced/Motor). MILLISECONDS, and 0 is off — the rule reads
 //     the number, so «how long» and «whether» are one value and cannot disagree. Off by default: a child with no tremor would
 //     lose half a second between every two presses, which in a game of reaction is the game. ---
+/** A wait in whole milliseconds; anything that is not a positive number is off. The writer and the loader share it. */
+const toCooldown = (ms: number): number => (Number.isFinite(ms) && ms > 0 ? Math.round(ms) : 0);
 export let inputCooldown: number = NULL_PORT.getNum('incl_input_cooldown', DEFAULTS.inputCooldown);
 export function setInputCooldownValue(ms: number): void {
-  const v = Number.isFinite(ms) && ms > 0 ? Math.round(ms) : 0;
+  const v = toCooldown(ms);
   if (inputCooldown === v) return;
   const p = portFor('setInputCooldownValue'); p.set('incl_input_cooldown', v); inputCooldown = v; emit('inputCooldown', v);
 }
@@ -446,6 +448,7 @@ export function loadState(p: StatePort): void {
   oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
   gameSpeed = isGameSpeed(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
   noGripStrength = p.getBool('incl_sem_forca', DEFAULTS.noGripStrength);
+  inputCooldown = toCooldown(p.getNum('incl_input_cooldown', DEFAULTS.inputCooldown));
   switchScan = p.getBool('incl_switch_scan', DEFAULTS.switchScan);
   voiceControl = p.getBool('incl_voice_control', DEFAULTS.voiceControl);
   cameraControl = cameraModeOf(p.get('incl_camera_control', DEFAULTS.cameraControl));
