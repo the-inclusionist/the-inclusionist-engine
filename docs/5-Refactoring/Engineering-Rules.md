@@ -5,7 +5,7 @@ dependency injection over globals, adapters/DAO at the edges.
 
 ## Governing source (for now, this is enough)
 
-These are **already operationalized** by the modularization plan — [`plano-modularizacao.md`](plano-modularizacao.md),
+These are **already operationalized** by the modularization plan — [`plan-modularization.md`](plan-modularization.md),
 grounded in **arXiv:2409.15152** — which is the ADR for how we break `game.js` apart: cohesion up, coupling down, DI
 over globals, adapters at the edges, each extraction superseding the monolith a piece at a time. Until a case isn't
 covered by it, we do **not** add a separate rules doc — that plan carries them.

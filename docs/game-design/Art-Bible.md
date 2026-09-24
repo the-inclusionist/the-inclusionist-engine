@@ -9,8 +9,8 @@ bible states the enduring rules.
 **All art** (character, tiles, decoration) obeys **one unified palette-mother + one light direction + one outline
 style**. No embedded PNG in-game: the target is **procedural art** (semantic image `(region, luminosity)` + palette
 dictionary → recolor by colour-key + layers). PixelLab/Aseprite/Tiled are **design reference only**, converted by hand
-to procedural. Active pipeline plans: [`plano-arte-procedural.md`](plano-arte-procedural.md),
-[`plano-tiled-aseprite.md`](plano-tiled-aseprite.md).
+to procedural. Active pipeline plans: [`plan-procedural-art.md`](plan-procedural-art.md),
+[`study-tiled-aseprite.md`](study-tiled-aseprite.md).
 
 > ⚠️ **Checked on 2026-09-24: the art this bible measures is no longer in this repository.** The sprite PNGs left with
 > the cartridge on 2026-09-07 (#111) — `app/` holds none today — and the modules that drew a game's world
@@ -79,7 +79,7 @@ class, still true. Changing it would have put an error into a record that was ri
 
 The canonical font system (roster by role, evidence-based, licences) →
 [`typography.md`](typography.md). a11y text-spacing thresholds are in `../1-Discovery/NFR.md`; the evidence is in
-`../research/` (ESTUDO-FONTES, PESQUISA-FONTES).
+`../research/` (STUDY-FONTS, RESEARCH-FONTS-CONDITIONS-LITERACY).
 
 ## Scene & rendering
 
@@ -96,4 +96,4 @@ overlays. Dedicated doc: **[`Game-Feel.md`](Game-Feel.md)**.
 ## Colour & accessibility
 
 Colour roles + high-contrast + colour-blind-safe (Okabe-Ito) are **a11y**, driven by `../1-Discovery/NFR.md` and the
-studies in `../research/` (PESQUISA-ALTO-CONTRASTE, PESQUISA-DALTONIZACAO). Concrete ramps are code (palette dictionary).
+studies in `../research/` (RESEARCH-HIGH-CONTRAST, RESEARCH-DALTONIZATION). Concrete ramps are code (palette dictionary).

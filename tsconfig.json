@@ -1,5 +1,5 @@
 {
-  "//": "Migração TS+Vite — Estágio 0 (docs/plano-typescript-vite.md). FROUXO de propósito: allowJs deixa .js e .ts",
+  "//": "Migração TS+Vite — Estágio 0 (docs/2-Architecture/plan-typescript-vite.md). FROUXO de propósito: allowJs deixa .js e .ts",
   "//2": "coexistirem; checkJs:false ainda NÃO checa os .js. strict:true a partir do Estágio 3 (só os .ts são",
   "//3": "checados). Aperto mais flags conforme converto módulo a módulo. noEmit: o Vite emite; o tsc só checa.",
   "compilerOptions": {

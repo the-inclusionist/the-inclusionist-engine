@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of platform/audio-earcons (NODE project: fake Web Audio/SFX/showCaption/noiseHit injected by closure).
 // The key a11y contract: the CAPTION goes out BEFORE the sound check → a deaf child sees the earcon even with audio OFF.
-// sfx plays 1 oscillator; doorSound picks a timbre by material + fires noiseHit. See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// sfx plays 1 oscillator; doorSound picks a timbre by material + fires noiseHit. See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
 import { createAudioEarcons } from '../app/js/platform/audio-earcons.js';
 import { t } from '../app/js/core/i18n.js';

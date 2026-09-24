@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// THE CROSSING of the study in `docs/1-Discovery/estudo-acomodacoes-por-genero.md` (ADR-0145 §3).
+// THE CROSSING of the study in `docs/1-Discovery/study-accommodations-by-genre.md` (ADR-0145 §3).
 //
 // 🎯 EACH ACCOMMODATION HAS ONE KEY, AND ONLY ONE: an axis and the values of it where the accommodation has a subject.
 // Each category declares, once, the values its games cover. A per-category list of accommodations (the Dev's

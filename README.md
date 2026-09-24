@@ -46,7 +46,7 @@ docs/ · research/                    # documentation (start at docs/ARCHITECTUR
 
 ## Running locally
 
-**Vite + TypeScript** toolchain (`docs/2-Architecture/plano-typescript-vite.md`):
+**Vite + TypeScript** toolchain (`docs/2-Architecture/plan-typescript-vite.md`):
 
 ```powershell
 npm install        # also builds dist-pkg/ (the `prepare` script)

@@ -3,7 +3,7 @@
 # Test Plan — The Inclusionist
 
 Unit tests of the modules, written **as each module is extracted** (the Dev's decision, 2026-07-04; see
-`../5-Refactoring/plano-modularizacao.md` §8). Patterns adopted: **ZOMBIES** (didactic) + **Right-BICEP** (mandatory rigour).
+`../5-Refactoring/plan-modularization.md` §8). Patterns adopted: **ZOMBIES** (didactic) + **Right-BICEP** (mandatory rigour).
 
 ## 1. Why test at extraction (and with redundancy)
 The moment of extraction is when the module's contract is clearest → the test is cheapest to write, and it is a safety

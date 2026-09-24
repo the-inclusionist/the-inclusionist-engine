@@ -3,7 +3,7 @@
 // Covers: the category lists (NAV_CATS/GEN_CATS), volume->percentage (volPercent/navMasterVolume), the cane
 // validation (parseCaneDiv/caneDivMessage), the TTS engine catalogue, the voice filter by language (pickVoicesFor)
 // and the list of audio outputs (sinkOptionLabel/sinkSelectValue/sinksSupported). The render (DOM) is in the browser test.
-// See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4, ui/settings-audio).
+// See docs/5-Refactoring/plan-modularization-map.md (Stage 4, ui/settings-audio).
 import { describe, it, expect } from 'vitest';
 import {
   NAV_CATS, GEN_CATS, volPercent, navMasterVolume,

@@ -103,7 +103,7 @@ no client needs a manual bump to update.
 
 Not part of CI. Cutting a version is a **local, human** step: `release-it` (Conventional Commits changelog +
 tag; `git.push` is `false`, so it does not push). The build stamps `__BUILD__`: the version from `package.json`,
-and `git describe` decides whether it is clean or carries `+sha`/`-dirty`. See `plano-versionamento.md`.
+and `git describe` decides whether it is clean or carries `+sha`/`-dirty`. See `plan-versioning.md`.
 
 ⚠️ **And `.release-it.json` has had `npm.publish` set to `true` since 2026-09-05 (ADR-0072)**, which makes
 `npm run release` publish the package **publicly** on npmjs — `@the-inclusionist/engine` is there, at `9.0.0` when

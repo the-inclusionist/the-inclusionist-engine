@@ -16,7 +16,7 @@
 // LAYOUT: 20 numbers = 4 rows of 5 (R, G, B, A), in row order. It is EXACTLY the same layout at both destinations —
 // `feColorMatrix type="matrix"` and `PIXI.ColorMatrixFilter#matrix` — so the array serves both with no conversion.
 // Applied in sRGB on both paths (the web's standard approximation; see the research's decision 2). Primary source and
-// the value-by-value check: docs/research/PESQUISA-DALTONIZACAO.md.
+// the value-by-value check: docs/research/RESEARCH-DALTONIZATION.md.
 
 /** The six colour-blindness mode keys — the SAME keys as `VIZ_MODES` in render/viz-modes. */
 export type CvdKey = 'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'fix-protan' | 'fix-deuter' | 'fix-tritan';

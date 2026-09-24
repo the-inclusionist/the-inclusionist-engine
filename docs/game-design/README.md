@@ -18,12 +18,12 @@ minigames so far. The artifact that names *where* a mechanic can carry a learnin
 - **[Art-Bible.md](Art-Bible.md)** ✅ — visual style guide (index of the visual system).
 - **[character-animation.md](character-animation.md)** ✅ — layered character + animation spec (was `ANIMACOES-PERSONAGEM`).
 - **[typography.md](typography.md)** ✅ — canonical font system, evidence-based (was `referencia-tipografica-projeto-v6`).
-- **[Game-Feel.md](Game-Feel.md)** ✅ — juice/feel/camera (ADR-0018; audio-feel points to `../1-Discovery/plano-audio-fase-f.md`).
+- **[Game-Feel.md](Game-Feel.md)** ✅ — juice/feel/camera (ADR-0018; audio-feel points to `../1-Discovery/plan-audio-phase-f.md`).
 - **[LM-GM-Map.md](LM-GM-Map.md)** ✅ — the learning↔game-mechanic insertion-point map (seed).
-- **Art pipeline plans:** [plano-arte-procedural.md](plano-arte-procedural.md) · [plano-tiled-aseprite.md](plano-tiled-aseprite.md).
-- **Level design:** [plano-cenario-cidade.md](plano-cenario-cidade.md) (the city level; its beat chart marks activity insertion points).
+- **Art pipeline plans:** [plan-procedural-art.md](plan-procedural-art.md) · [study-tiled-aseprite.md](study-tiled-aseprite.md).
+- **Level design:** [plan-city-scenery.md](plan-city-scenery.md) (the city level; its beat chart marks activity insertion points).
 - **Per-game one-sheets** — a short pitch + core loop + its learning objective, created as each minigame is built.
-- **Engine (TDD)** stays in `../2-Architecture/` + `../2-Architecture/plano-engine.md`; **map/art tooling** in `plano-editor-mapa.md`.
+- **Engine (TDD)** stays in `../2-Architecture/` + `../2-Architecture/plan-engine.md`; **map/art tooling** in `plan-map-editor.md`.
 
 ## Not here (ADR-0009)
 

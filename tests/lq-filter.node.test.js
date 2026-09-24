@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
 import { lqCurve, lqName } from '../app/js/render/lq-filter.js';
 
-// Reference reimplementation of the formula (PESQUISA-ALTO-CONTRASTE §2.3) to check lqCurve point by point without
+// Reference reimplementation of the formula (RESEARCH-HIGH-CONTRAST §2.3) to check lqCurve point by point without
 // copying the module's expression — an independent cross-check of the implementation.
 function refSample(t, x) {
   const lin = Math.min(1, Math.max(0, 1.3 * (x - 0.5) + 0.5));

@@ -99,7 +99,7 @@ of sprite and concluded that the atlas cannot assume a uniform grid. The measure
 - **Perf (weak hardware = a pillar):** cache per combination; recompose only when the choice changes.
 
 ## 6. Import (the editor reads; the game does not)
-Reuses the research of `plano-tiled-aseprite.md` — now as **import parsers**, not runtime:
+Reuses the research of `study-tiled-aseprite.md` — now as **import parsers**, not runtime:
 - **png/jpg**: extracts the unique colours → a list for the human to annotate (colour→(region,luminosity)).
 - **Aseprite / Libresprite** (Libresprite = a GPL fork, great for the pillar): reads PNG+JSON → frames + `frameTags`
   (animations) + the **indexed palette** (in indexed mode, the colour order already comes along — speeds up annotation).
@@ -115,7 +115,7 @@ Reuses the research of `plano-tiled-aseprite.md` — now as **import parsers**, 
   outline present.
 - Reuses `art/palettes.js` and the game's render engine (a single truth; it validates the engine's boundaries).
 
-## 8. Fit into the engine (`../2-Architecture/plano-engine.md`)
+## 8. Fit into the engine (`../2-Architecture/plan-engine.md`)
 - A new **Art/Material** subsystem (`art/`): `semantic.js` (format+parse), `palettes.js` (dictionary),
   `recolor.js` (composition engine). The **Render** subsystem consumes already-composed textures; the **Entities**
   ask for "character with skin=X, shirt=Y". **Tiles** likewise (material per type).
@@ -142,7 +142,7 @@ Reuses the research of `plano-tiled-aseprite.md` — now as **import parsers**, 
 
 *Sources:* Aseprite (indexed mode / colour ramps; CLI docs, dacap's gists) · palette-swap/LUT techniques in
 pixel art (Slynyrd ramps; palette-swap gamedev) · Libresprite (GPL fork of Aseprite) · LDtk/Tiled (JSON) ·
-`plano-tiled-aseprite.md` (import parsers) · the seed in the repo (`PIP_PAL`/`indexedToCanvas`/`silhouetteCanvasIdx`).
+`study-tiled-aseprite.md` (import parsers) · the seed in the repo (`PIP_PAL`/`indexedToCanvas`/`silhouetteCanvasIdx`).
 
 ---
 

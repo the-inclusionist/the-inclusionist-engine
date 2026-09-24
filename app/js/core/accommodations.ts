@@ -9,7 +9,7 @@
 //
 // ========================= WHERE THE LIST COMES FROM =========================
 // Not from what the engine happened to build. It is the catalogue of the study
-// `docs/1-Discovery/estudo-acomodacoes-por-genero.md` — 380 games in 35 categories, keyed one accommodation at
+// `docs/1-Discovery/study-accommodations-by-genre.md` — 380 games in 35 categories, keyed one accommodation at
 // a time (section 0.1) and cross-checked against all 105 Game Accessibility Guidelines (section 0.2). The
 // study scripts keep Portuguese ids; `tests/accommodations.node.test.js` ties the two by family size, so an
 // accommodation added to one and not the other fails a gate instead of drifting.

@@ -4,7 +4,7 @@
 
 The Dev's request on 2026-07-03: plan an engine for the game. Locked decision: **bespoke for THIS game
 now** (not a generic engine for the 35+ games — the common core is extracted later, once we know what repeats).
-The engine **is not a rewrite**: it is the **formalised destination of the modularisation** (`../5-Refactoring/plano-modularizacao.md`),
+The engine **is not a rewrite**: it is the **formalised destination of the modularisation** (`../5-Refactoring/plan-modularization.md`),
 reached incrementally. Inherited pillars: **no-build, offline/PWA, a11y-first, lean**.
 
 ## 1. References studied
@@ -29,7 +29,7 @@ reached incrementally. Inherited pillars: **no-build, offline/PWA, a11y-first, l
 |---|---|---|---|
 | **Loop** | `core/loop.js` | fixed step `update(dt)` + `render()`; today it is `app.ticker` | to extract |
 | **State/Scene** | `core/state.js` | single source: `phase` (machine), players, coins, entities, event bus | to extract (it was the next step) |
-| **Level/Tilemap** | `core/world.js` + `core/tiles.js` + `assets/levels/*.map.txt` | grid, `tileAt`, tile collision, **legend/parser** | `world.js` already isolated; format → `../game-design/plano-editor-mapa.md` |
+| **Level/Tilemap** | `core/world.js` + `core/tiles.js` + `assets/levels/*.map.txt` | grid, `tileAt`, tile collision, **legend/parser** | `world.js` already isolated; format → `../game-design/plan-map-editor.md` |
 | **Physics** | `core/physics.js` | `resolveX/Y`, movement, water/ladder/trampoline | to extract |
 | **Input** | `input/{keyboard,gamepad,touch}.js` | devices → normalised actions | to extract |
 | **Render** | `render/{pixi-app,viewport,parallax,direct-viz}.js` | PIXI façade, viewports, a11y visual modes | to extract |
@@ -55,7 +55,7 @@ The editor (`tools/map-editor.html`) is the **first external consumer** of the m
 whole game along, the **engine's boundaries are right**. In other words: the editor validates the modularisation in practice.
 
 ## 6. Sequence (fits into Phase B of the modularisation, no rewrite)
-1. **Tilemap first** (`../game-design/plano-editor-mapa.md`): `core/tiles.js` (legend) + `parseLevel` in `world.js` +
+1. **Tilemap first** (`../game-design/plan-map-editor.md`): `core/tiles.js` (legend) + `parseLevel` in `world.js` +
    migration to `.map.txt` + async boot. Closes the Level subsystem and unlocks the editor.
 2. **Editor** `tools/map-editor.html` (validates the boundaries).
 3. **`core/state.js`** (the mega-barrier) — now with a clear target: it is the engine's State/Scene subsystem;
@@ -71,6 +71,6 @@ whole game along, the **engine's boundaries are right**. In other words: the edi
 - It is **not** a rewrite: each subsystem is born from a verifiable extraction from the monolith, without changing behaviour.
 
 ## 8. Pending decision (the Dev)
-Approve (a) the map format + editor (`../game-design/plano-editor-mapa.md`) and (b) this subsystem architecture as
+Approve (a) the map format + editor (`../game-design/plan-map-editor.md`) and (b) this subsystem architecture as
 the target of Phase B. With the go-ahead, I start with **Step 1 of the tilemap** (`core/tiles.js` + `parseLevel`, without changing the
 game), which is the basis of the editor and of the Level subsystem.

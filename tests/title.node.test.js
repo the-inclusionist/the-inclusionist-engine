@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { TITLE_MENU_IDS, isTitleMenuId, computeTitleMenuView } from '../app/js/ui/title.js';
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of ui/title (pure navigation between submenus) — NODE project: no real document, only the logic.
-// See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4).
+// See docs/5-Refactoring/plan-modularization-map.md (Stage 4).
 
 // ===================== ui/title — state machine (navigation) =====================
 

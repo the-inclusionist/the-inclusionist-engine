@@ -14,7 +14,7 @@
 
 - **Incremental, no behavior change:** each step = one atomic commit, verified in the preview, game identical.
 - **Don't do work a foundational decision would invalidate** — that's why format/engine come before features.
-- **Localize as you go (i18n):** every extracted UI module ships with `t()`/`data-i18n` (see `1-Discovery/plano-i18n.md` §4.2).
+- **Localize as you go (i18n):** every extracted UI module ships with `t()`/`data-i18n` (see `1-Discovery/plan-i18n.md` §4.2).
 - **Pillars:** offline/PWA, lean runtime, a11y-first, AGPL-clean.
 
 ## Phases and why this order (by dependency)
@@ -40,7 +40,7 @@ goes public). What Phase 0 did deliver, and still delivers, is the **published p
 `core/tiles` (glyph legend) + `parseLevel` + bit-exact round-trip test vs `CLARITY_MAP`; explicit async boot;
 migrate `CLARITY_MAP` → `assets/levels/ludico.map.txt`; `tools/map-editor.html`.
 **Done when:** the game loads the `.map.txt` (world identical) and a map can be edited and validated.
-Detail: `plano-editor-mapa`, `plano-engine`.
+Detail: `plan-map-editor`, `plan-engine`.
 
 📌 The `CLARITY_MAP` migration is now the **cartridge's**, not the engine's — the whole game left for
 `game-platformer` in `b55b88e` (issue #111).
@@ -61,21 +61,21 @@ cartridge left for `game-platformer` (`b55b88e`, −15 943 lines, issue #111). T
 `art/semantic` + palettes + recolor; high-contrast becomes a palette; migrate characters and tiles to the
 semantic system (PNG = authoring only).
 **Done when:** a recolorable character (skin/clothes/hair) and high-contrast through the new engine, with no
-visual regression. Detail: `plano-arte-procedural`.
+visual regression. Detail: `plan-procedural-art`.
 
 ### Phase 4 — Art editor + importers
 
 `tools/art-editor.html` (png → annotate colour → `(region, luminosity)` → preview → save semantic image);
 Aseprite/Libresprite import; Tiled/LDtk import.
 **Done when:** external art can be imported, annotated and used in-game.
-Detail: `plano-arte-procedural`, `plano-tiled-aseprite`.
+Detail: `plan-procedural-art`, `study-tiled-aseprite`.
 
 ### Phase 5 — i18n: complete en/es
 
 Per-locale voice, 🌐 selector, browser default + persistence; en and es complete (UI + Math + Lúdico); literacy
 stays pt-BR, because curriculum is per-language and is REWRITTEN rather than translated (pillar 3).
 **Done when:** switching language changes all UI + Math/Lúdico + voice, offline, with no reload.
-Detail: `plano-i18n`.
+Detail: `plan-i18n`.
 
 ### Phase 6 — Pedagogical features + audit
 
@@ -97,7 +97,7 @@ Phase 6, as decided; but items can be pulled into gaps if preferred.
 ## Other standing facts
 
 - **Migration to TS + Vite** adopted 2026-07-04 (supersedes the old «no build» preference) —
-  `2-Architecture/plano-typescript-vite.md`.
+  `2-Architecture/plan-typescript-vite.md`.
 - ⚠️ **Issue numbers survived the 2026-09-06 migration**: the 101 issues were recreated in ascending order in a
   repository with a zeroed counter, so `#1`–`#101` still point at the same things. Every `#N` written before
   that date remains valid. The GitLab board this file used to name is archived.

@@ -1,7 +1,7 @@
 # Commits (SDD phase d)
 
 - **Conventional Commits** — `feat`, `fix`, `refactor`, `docs`, `build`, `test`, `chore` (+ scope). Drives the
-  `release-it` changelog (see `../2-Architecture/plano-versionamento.md`).
+  `release-it` changelog (see `../2-Architecture/plan-versioning.md`).
 - **Atomic** — one logical change per commit; never a single giant "initial".
 - **Branch** — small team: direct to `main`; grows to PRs as the team grows.
 - **AI-authored commits** carry a `Co-Authored-By:` trailer naming the model that wrote them (today `Claude Opus 5.5 <noreply@anthropic.com>`), and a `BREAKING CHANGE:` footer goes LAST, after `Refs` and the trailer.

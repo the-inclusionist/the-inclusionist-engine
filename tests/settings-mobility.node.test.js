@@ -3,7 +3,7 @@
 // Covers: the clamp of the selected player (Boundary: sel >= numPlayers), the predicate "some player active" (turns
 // the bar on), the Easy Mode announcement text and the building of the per-player tabs (kept `hidden`, decision E3).
 // render()/reflect() themselves (they touch the DOM) are in settings-mobility.browser.test.js.
-// See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
 import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel is its alias (item 14)
 import { t } from '../app/js/core/i18n.js';

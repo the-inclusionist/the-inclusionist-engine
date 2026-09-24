@@ -3,7 +3,7 @@
 // Covers: keyName (physical code -> readable label, with 'Space' going through t()) and keyUsedByOther (a remapping
 // conflict between players). Without switching language in the tests, `t()` returns the base dictionary's pt-BR.
 // render()/handleCaptureKeydown() (they touch the DOM) are in settings-controls.browser.test.js.
-// See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
 import { ACT_LABEL } from '../app/js/ui/settings-controls.js';
 // 📌 The PURE half lives in `ui/control-choices` (note BL); the cases here were all about what a KEY is, none about a node.

@@ -5,7 +5,7 @@
 The Dev's request on 2026-07-03: the game needs to support several languages. Start with **pt-BR**, add
 **English** and **Spanish** right away (the two languages of the BNCC), and in the future the commercial list
 (Mandarin, Hindi, Indonesian, Japanese, Korean, French, German, Finnish). Integrated with the modularization
-(`../5-Refactoring/plano-modularizacao.md`) — i18n becomes one of the first modules, because it touches everything.
+(`../5-Refactoring/plan-modularization.md`) — i18n becomes one of the first modules, because it touches everything.
 
 ---
 
@@ -73,7 +73,7 @@ script infrastructure exists.
    dialogs…) already comes out with its literals replaced by `t()`/`data-i18n` and the keys in `pt.js` — **one touch
    per piece of code**. The batches already done (title, pause) are the starting point of the future `ui/*` (keys ready,
    not rework). The static strings of `index.html` (dialogs) go with the extraction of the module that
-   controls them. See `../5-Refactoring/plano-modularizacao.md`.
+   controls them. See `../5-Refactoring/plan-modularization.md`.
 3. **Voice per locale:** `localeVoice()`; 🌐 selector; persistence + browser default.
 4. **en + es (UI + Mathematics + Play):** `i18n/en.js`, `i18n/es.js`; TTS en/es; Literacy stays pt
    (label "available in Portuguese") until the curriculum packs.

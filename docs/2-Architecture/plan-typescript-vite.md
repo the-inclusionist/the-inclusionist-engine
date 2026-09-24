@@ -63,7 +63,7 @@ Goal: prove the toolchain runs with minimal change (PIXI stays a global from the
 - Each conversion: clean `tsc --noEmit` + green tests.
 
 ### Stage 4 — Resume the modularisation in `.ts`
-- The rest of the map (`../5-Refactoring/plano-modularizacao-mapa.md`) continues, but each extraction is born typed `.ts`. `game.ts`
+- The rest of the map (`../5-Refactoring/plan-modularization-map.md`) continues, but each extraction is born typed `.ts`. `game.ts`
   (formerly `game.js`) shrinks until it becomes `main.ts` (composition root).
 
 ## Deploy (Cloudflare Pages) — the Dev's action

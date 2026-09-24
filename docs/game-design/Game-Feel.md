@@ -27,4 +27,4 @@ Follow + easing; screenshake as above. (Rogers, *Level Up!*, camera chapter.)
 ## Audio feel
 
 Earcons / SFX feedback are part of feel; the 9-category **mixer** and blind-mode audio are **accessibility**, in
-`../1-Discovery/plano-audio-fase-f.md` (→ moves to the a11y layer). This doc covers only the *feel* aspect of audio cues.
+`../1-Discovery/plan-audio-phase-f.md` (→ moves to the a11y layer). This doc covers only the *feel* aspect of audio cues.

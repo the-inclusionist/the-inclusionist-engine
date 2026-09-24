@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/lq-filter.ts — the Linear→Quadratic contrast enhancement (low vision, PESQUISA-ALTO-CONTRASTE §2.3).
+// render/lq-filter.ts — the Linear→Quadratic contrast enhancement (low vision, RESEARCH-HIGH-CONTRAST §2.3).
 // A PER-PIXEL tone curve over the whole screen, composed through an SVG feComponentTransfer (17 samples, sRGB) in the
 // canvas's CSS filter. `lqCurve`/`lqName` are pure (node project); `ensureLqFilter`/`setLq` are the thin shell that
 // creates the SVG node and writes to the DOM. Recomposing the final CSS filter (with the colour modes) belongs to the

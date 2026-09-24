@@ -85,8 +85,10 @@ describe('Portuguese in the docs only shrinks', () => {
   });
 
   it('📌 [Right] a name is Portuguese by the identifier gate\'s word list, split as that gate splits', () => {
-    expect(portugueseNameWords('docs/2-Architecture/plano-engine.md')).toEqual(['plano']);
-    expect(portugueseNameWords('docs/research/PESQUISA-ALTO-CONTRASTE.md')).toEqual(['pesquisa', 'alto', 'contraste']);
+    // Made-up paths, not pointers: the two real files these once named were renamed (see the `docs` layer of
+    // `scripts/rename-map.json`), and an input to the classifier must not look like a path somebody still writes.
+    expect(portugueseNameWords('docs/plano-engine.md')).toEqual(['plano']);
+    expect(portugueseNameWords('docs/PESQUISA-ALTO-CONTRASTE.md')).toEqual(['pesquisa', 'alto', 'contraste']);
     expect(portugueseNameWords('docs/1-Discovery/study-webcam-control.md')).toEqual([]);
   });
 });

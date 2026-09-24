@@ -32,9 +32,9 @@ This document is also raw material for the **annual report** (ADR-0053), which t
 And the gate that runs against the BUILT application, covering A/AA as a block: `scripts/axe-check.mjs`, in the
 `a11y` job of `.github/workflows/ci.yml`.
 
-<!-- The heading below keeps its Portuguese words on purpose: `tests/gates-de-acessibilidade.node.test.js` locates the
-     boundary between the two tables by that exact text. -->
-## ⚠️ Citados e NÃO aferidos — cited and NOT measured: the holes
+<!-- The heading below is an anchor: `tests/gates-de-acessibilidade.node.test.js` locates the boundary between the two
+     tables by that exact text, so renaming it means moving the test's anchor in the same commit. -->
+## ⚠️ Cited and NOT measured: the holes
 
 These criteria appear in the code as a declared intention and **no case measures them**. Each row is work
 that the manual audit of #13 will have to do by hand, or a gate still to be written.

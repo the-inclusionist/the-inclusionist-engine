@@ -3,7 +3,7 @@
 // localStorage directly — every piece of state that is not its own (lq/ownerColors/cbSafe/outlines/role colors/
 // selVizPlayer/setPlayerViz) arrives by injection, and the players come from the file's local round double. DI by
 // closure — model: tests/debug-panel.browser.test.js.
-// See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4, ui/settings-visual).
+// See docs/5-Refactoring/plan-modularization-map.md (Stage 4, ui/settings-visual).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { axesHtml } from '../app/js/ui/visual-axes-panel.js';
 import { DEFAULT_VISUAL, migrateVisual } from '../app/js/render/viz-axes.js';

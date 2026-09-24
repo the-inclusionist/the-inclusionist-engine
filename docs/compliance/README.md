@@ -37,7 +37,7 @@ Many of those gates are named in other records — the forbidden mechanics (ADR-
 accessibility (ADR-0048 §8) — so the report is largely an **index of gates that already run**. ⚠️ Not all of
 them: the screen-time clock and the night window of ADR-0050 are **not built yet** (issue #94), so today they
 belong in the report as holes, not as gates. The WCAG half of that index is kept in
-[`gates-de-acessibilidade.md`](gates-de-acessibilidade.md).
+[`accessibility-gates.md`](accessibility-gates.md).
 
 A principle with **no** gate is supposed to show up here as a hole. That is the second thing the report is
 for, and it is why writing it is a free audit of the audit.

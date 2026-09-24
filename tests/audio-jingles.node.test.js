@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of platform/audio-jingles (NODE project: no real Web Audio — a fake AudioContext/tone injected by closure).
 // Contract: playVictory = 6 square tones + 4 fireworks; playPuzzleSolved = 5 sine tones; firework = 6 oscillators (1
-// whistle + 5 crackles) and respects soundOn/volume/when. See docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, audio r1).
+// whistle + 5 crackles) and respects soundOn/volume/when. See docs/5-Refactoring/plan-modularization-map.md (Tier 2, audio r1).
 import { describe, it, expect } from 'vitest';
 import { createAudioJingles } from '../app/js/platform/audio-jingles.js';
 

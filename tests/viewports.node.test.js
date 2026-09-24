@@ -12,7 +12,7 @@
 // the MULTI-SCREEN path. Written twice, they would agree by luck, and if they diverged the failure would be SILENT and of
 // ACCESSIBILITY: the same colour-blind person would see different colours on one screen and on several, with no error, no
 // log, no red test. The witnesses tied to the single source below are the research (docs/research/
-// PESQUISA-DALTONIZACAO.md, read and compared value by value) and the ids VIZ_FILTER asks for.
+// RESEARCH-DALTONIZATION.md, read and compared value by value) and the ids VIZ_FILTER asks for.
 //
 // ZOMBIES + Right-BICEP. (parallaxTexFor/treeTexFor/playerVizTex/pixiFilterFor/lvOverlayTex/renderVpOverlay.)
 import { describe, it, expect } from 'vitest';
@@ -126,7 +126,7 @@ describe('render/cvd-matrices — a fonte única confere com a pesquisa', () => 
     'fix-protan': 'fix-protan', 'fix-deutan': 'fix-deuter', 'fix-tritan': 'fix-tritan',
   };
   const doc = (() => {
-    const md = readRepo('docs/research/PESQUISA-DALTONIZACAO.md');
+    const md = readRepo('docs/research/RESEARCH-DALTONIZATION.md');
     const out = {};
     for (const line of md.split(/\r?\n/)) {
       const m = /^\|\s*\*\*([A-Za-z-]+)\*\*\s*\|(.*)\|\s*$/.exec(line);

@@ -1,4 +1,4 @@
-Historical study (2026-06-30, v3→v4 migration): kept as a record; the current state lives in `docs/game-design/plano-arte-procedural.md` and `docs/game-design/plano-cenario-cidade.md`.
+Historical study (2026-06-30, v3→v4 migration): kept as a record; the current state lives in `docs/game-design/plan-procedural-art.md` and `docs/game-design/plan-city-scenery.md`.
 
 # Audit — environment richness of v3 (`legacy/v3.1.100.html`)
 

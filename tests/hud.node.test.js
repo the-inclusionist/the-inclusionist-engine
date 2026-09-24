@@ -3,7 +3,7 @@
 // (screenGrid/screenRect/screenCount), the static MARKUP (vphudHtml/waitBadgeHtml) and the PROJECTION of one player's HUD
 // (hudRowView) are value functions — they depend on no DOM and no global state. The shell
 // (initHud/buildGameHud/updateGameHud/…) is in tests/hud.browser.test.js.
-// ZOMBIES + Right-BICEP. See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// ZOMBIES + Right-BICEP. See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
 import {
   screenGrid, screenRect, screenCount, vphudHtml, waitBadgeHtml, hudRowView, counterLabel, applyCounterLabel,

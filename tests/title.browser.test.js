@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of ui/title.initTitle (BROWSER project: needs a real `document` — hidden/focus). Contract: show(which) hides the
 // OTHER 5 submenus, shows `which`, toggles the footer legend and the title block (only on tm-main), and focuses the 1st
-// <button> of the submenu now visible. See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4).
+// <button> of the submenu now visible. See docs/5-Refactoring/plan-modularization-map.md (Stage 4).
 import { describe, it, expect } from 'vitest';
 import { initTitle } from '../app/js/ui/title.js';
 

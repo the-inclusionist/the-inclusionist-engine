@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // render/viz-modes.ts — the 16 visual accessibility modes (data) + derived indexes. A leaf module, ZERO deps. High
 // contrast (direct rendering, 3 levels), colour-blindness simulation/correction, low vision, blindness. Applying the
-// modes belongs to `render/viz-setters` and the root. See docs/PESQUISA-ALTO-CONTRASTE.md.
+// modes belongs to `render/viz-setters` and the root. See docs/research/RESEARCH-HIGH-CONTRAST.md.
 // NO `filter` field here, on purpose: VIZ_FILTER, just below, is what says "mode -> CSS filter". A per-record copy of
 // `url(#cvd-*)` nobody read would be two copies with one read: if they diverged, the wrong one would be the silent one,
 // and an optional field would keep the type silent too.

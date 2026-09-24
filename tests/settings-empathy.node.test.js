@@ -2,7 +2,7 @@
 // Tests of ui/settings-empathy — PURE logic (node project, no document). ZOMBIES + Right-BICEP.
 // Covers: which modes of the VIZ_MODES catalogue count as an empathy simulation (vs. the corrections, which live in
 // the visual menu, #60), the resulting EMPATHY_VIZ_MODES cut, and the value→label mapping of the buttons. render()/open()/
-// close() (they touch the DOM) are in settings-empathy.browser.test.js. See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// close() (they touch the DOM) are in settings-empathy.browser.test.js. See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
 import { EMPATHY_VIZ_MODES } from '../app/js/ui/settings-empathy.js';

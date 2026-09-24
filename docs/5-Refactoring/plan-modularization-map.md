@@ -3,7 +3,7 @@ Historical plan (2026-07-04, last updated 2026-08-23): kept as a record; the cur
 # Extraction map — what is still left to take out of `game.js`
 
 A study of `game.js` (v4.164.23, **3555 lines**) to stop extracting drop by drop and have the COMPLETE target
-(the Dev's request, 2026-07-04). A companion to `plano-modularizacao.md` (§3 target, §4 order, §8 tests). Each module
+(the Dev's request, 2026-07-04). A companion to `plan-modularization.md` (§3 target, §4 order, §8 tests). Each module
 follows the established pattern: **pure import, explicit I/O, with a test of the contract** (see [[project-inclusionist-testes]]).
 
 

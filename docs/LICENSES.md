@@ -7,7 +7,7 @@ have. This file says only **which rule reaches which thing**. The attributions a
 | what | regime | where it is decided |
 |---|---|---|
 | **Code** | **AGPL-3.0-or-later** | ADR-0064 · full text in [`../LICENSE`](../LICENSE) |
-| **Own art** | **NOT FOSS** — the author's copyright, restricted use | ADR-0010 pillar 10 · `research/LICENCAS-GERACAO-IMAGEM.md` |
+| **Own art** | **NOT FOSS** — the author's copyright, restricted use | ADR-0010 pillar 10 · `research/LICENSES-IMAGE-GENERATION.md` |
 | **Third-party content** | the licence its author chose, preserved | the filing, request `g` |
 
 ---
@@ -42,7 +42,7 @@ a free licence cannot restrict the field of use (freedom 0; criterion 6 of the O
 of endeavor"). There is no art that is at the same time free and of restricted use. The choice was made with the
 trade-off written down: **FOSS code + non-FOSS art**.
 
-**The protection is a stack of three, from strongest to weakest** (`research/LICENCAS-GERACAO-IMAGEM.md`):
+**The protection is a stack of three, from strongest to weakest** (`research/LICENSES-IMAGE-GENERATION.md`):
 
 1. **Registered trademark** of the characters — name and signature design. It is the mainstay, because it bars use that causes
    confusion or dilution **regardless of copyright**. Selective: not every character is registered.
@@ -106,7 +106,7 @@ request `g` of the filing asks to be put on record: the itemized list of those e
     **adaptation**: no CC BY-SA file comes in as it is.
     🔴 **And that modifiable source DOES NOT EXIST YET.** The previous version of this line said it was something
     this project already maintains, and it was false: there is no `app/js/art/`, there is no semantic format and there is no editor. **As long as
-    there is not, this door is described and not open** — the LPC does not come in. See `game-design/plano-arte-procedural.md`.
+    there is not, this door is described and not open** — the LPC does not come in. See `game-design/plan-procedural-art.md`.
   🔴 **And what has no door at all: ND** (forbids deriving, and recolouring is already deriving) and **NC** (it would make the
   art narrower than the CODE — the AGPL allows commercial use, and whoever it invites would be blocked by a
   sprite; and the NC boundary is undefined, with a municipal deployment sitting on it).
@@ -143,7 +143,7 @@ anyone's memory.
 
 ### The regime, and the restriction that travels with it
 
-According to the licence research (`research/LICENCAS-GERACAO-IMAGEM.md`), PixelLab.ai is the generator with the
+According to the licence research (`research/LICENSES-IMAGE-GENERATION.md`), PixelLab.ai is the generator with the
 cleanest terms of the survey: **the image belongs to whoever generated it**, commercial use is
 allowed — to use, modify and distribute … for any purpose —, and **there is no attribution requirement**.
 
@@ -152,7 +152,7 @@ to TRAIN A MODEL.** That matters here for two concrete reasons:
 
 1. This project's art **is not FOSS** (§2), so the own art licence is ours to write — and it
    has to **carry this restriction forward**, or we would grant third parties more than we received.
-2. The declared target is **semantic procedural art** (`plano-arte-procedural.md`): semantic image + palettes.
+2. The declared target is **semantic procedural art** (`game-design/plan-procedural-art.md`): semantic image + palettes.
    If one day that generation goes through a model trained on the assets themselves, this line is the one that says it
    may not.
 

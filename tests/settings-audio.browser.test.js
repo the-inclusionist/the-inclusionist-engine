@@ -3,7 +3,7 @@
 // window.speechSynthesis). The pure logic (labels/percentages/validation) is covered in the node test; here only what
 // needs a real DOM: renderAudio() rebuilds the category lists and rewires the static widgets; the clicks mutate the LIVE
 // injected audioCat and call setCatGain; blind mode/cane delegate to the host through the ctx; TTS and audio outputs
-// fill <select>s from browser APIs (stubbed here). See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4,
+// fill <select>s from browser APIs (stubbed here). See docs/5-Refactoring/plan-modularization-map.md (Stage 4,
 // ui/settings-audio) and tests/a11y-sr.browser.test.js (the injection model).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initSettingsAudio } from '../app/js/ui/settings-audio.js';

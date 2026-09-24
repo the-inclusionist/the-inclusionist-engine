@@ -6,7 +6,7 @@ Historical study (2026-06-02): kept as a record; the current state lives in `doc
 
 ## 0. OFFICIAL ROSTER (the Dev's decision, 2026-06-02)
 
-> ⭐ **CANONICAL document:** `../game-design/typography.md` (the former `referencia-tipografica-projeto-v6` — the Dev's complete research: orders of preference per role, empirical evidence and ABNT/DOI references). This `ESTUDO-FONTES.md` and `PESQUISA-FONTES-CONDICOES-LETRAMENTO.md` were **drafts that fed v6** — in case of conflict, **the canonical one prevails**.
+> ⭐ **CANONICAL document:** `../game-design/typography.md` (the former `referencia-tipografica-projeto-v6` — the Dev's complete research: orders of preference per role, empirical evidence and ABNT/DOI references). This `STUDY-FONTS.md` and `RESEARCH-FONTS-CONDITIONS-LITERACY.md` were **drafts that fed v6** — in case of conflict, **the canonical one prevails**.
 
 ### Core of defaults (what goes in as the default in the game)
 - **General default:** **Atkinson Hyperlegible** (OFL) — legibility/low vision; a "0" with its own stroke, distinct 1/l/I.

@@ -2,7 +2,7 @@
 // Tests of ui/settings-typo — PURE logic (node project, no document). ZOMBIES + Right-BICEP.
 // Covers: validation/migration of the persisted key, key→CSS mapping (data-fonte/--font-custom) and the view-model of
 // the panel's rows (selection/disabled/note). render() itself (it touches the DOM) is in settings-typo.browser.test.js.
-// See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // the font catalogue holds KEYS (item 14)
 import { resolveFontKey, persistFontKey } from '../app/js/ui/settings-typo.js';

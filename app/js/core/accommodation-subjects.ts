@@ -30,7 +30,7 @@ export interface SubjectInputs {
 /**
  * The contract-keyed accommodations with a subject in this game, NOW.
  *
- * The rules, each one the study's key (`docs/1-Discovery/estudo-acomodacoes-por-genero.md` §0.1) read off the contract:
+ * The rules, each one the study's key (`docs/1-Discovery/study-accommodations-by-genre.md` §0.1) read off the contract:
  *   · `gameSpeed` ← time runs on its own (`tick === 'clock'`) — WCAG 2.2.1, GAG Basic «adjust the game speed»
  *   · `moveLatch`, `holdLatch` ← the game holds keys
  *   · `virtualPad`, `oneButton`, `inputCooldown`, `macros` ← the game is played by actions

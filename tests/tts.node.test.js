@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of platform/tts (NODE project: window.speechSynthesis + SpeechSynthesisUtterance stubbed). Contracts: narrate is
 // gated by soundOn + audioCat.tts.on + non-empty text; the Web Speech fallback speaks IN THE GAME'S LANGUAGE; loadTTS
-// warns on an engine that does not speak the language. See docs/5-Refactoring/plano-modularizacao-mapa.md (#38).
+// warns on an engine that does not speak the language. See docs/5-Refactoring/plan-modularization-map.md (#38).
 //
 // The neural engine is the ENGINE's since ADR-0216: the game only declares `uses: { neuralVoice: true }`, which arrives here as
 // `ctx.neuralVoice`. The loader stays injectable so the whole path runs with a fake — no network, no wasm engine. The fake browser

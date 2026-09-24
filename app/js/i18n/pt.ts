@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Locale pt-BR — idioma base (import ESTÁTICO em core/i18n.ts → boot síncrono). Ver docs/plano-i18n.md.
+// Locale pt-BR — idioma base (import ESTÁTICO em core/i18n.ts → boot síncrono). Ver docs/1-Discovery/plan-i18n.md.
 // A UI em pt é extraída em lotes; en/es caem no fallback pt até serem completados (Etapa 4).
 const pt: Record<string, string> = {
   // ===================== ANÚNCIOS DE LEITOR DE TELA (`sr.*`) =====================

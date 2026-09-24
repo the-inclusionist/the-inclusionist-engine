@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of render/crt — the CRT look (BROWSER project: uses #game-region, classList, style, localStorage).
 // CRT is MUTABLE config (the menu adjusts its props), so each test pins CRT.scan/vig/round and checks the CSS classes.
-// See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4, Tier 1, render/crt).
+// See docs/5-Refactoring/plan-modularization-map.md (Stage 4, Tier 1, render/crt).
 import { describe, it, expect } from 'vitest';
 import { CRT, crtScanVars, applyCrt, initCrt } from '../app/js/render/crt.js';
 

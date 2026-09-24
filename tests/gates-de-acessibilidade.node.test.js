@@ -2,7 +2,7 @@
 // THE CRITERIA INDEX POINTS AT GATES THAT EXIST (issue #13).
 //
 // ========================= WHAT THIS FILE PREVENTS =========================
-// `docs/compliance/gates-de-acessibilidade.md` says which WCAG criteria this repository measures and which it only
+// `docs/compliance/accessibility-gates.md` says which WCAG criteria this repository measures and which it only
 // cites. It is the automatable half of #13 and raw material for the annual report (ADR-0053).
 //
 // ⚠️ AND IT IS EXACTLY THE KIND OF DOCUMENT THAT ROTS FIRST: it names test files, and a test file that is renamed or
@@ -10,7 +10,7 @@
 // because someone will read it to answer an audit.
 //
 // ⚠️ WHAT IT DOES NOT MEASURE: whether the gate pointed at REALLY measures that criterion. That is not decidable by
-// machine — which is why the document separates «aferido» from «citado» instead of giving a single conformance number.
+// machine — which is why the document separates «measured» from «cited» instead of giving a single conformance number.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
@@ -28,7 +28,7 @@ function todosOsModulos(dir, out = []) {
 }
 
 const RAIZ = process.cwd();
-const DOC = readFileSync(join(RAIZ, 'docs', 'compliance', 'gates-de-acessibilidade.md'), 'utf8');
+const DOC = readFileSync(join(RAIZ, 'docs', 'compliance', 'accessibility-gates.md'), 'utf8');
 
 /** A repository path quoted between backticks. */
 const RE_CAMINHO = /`((?:app|tests|scripts|docs|\.github)\/[A-Za-z0-9_\-./]+\.[a-z]+)`/g;
@@ -52,7 +52,7 @@ describe('o índice de critérios de acessibilidade (#13)', () => {
   it('⚠️ [Right] toda linha da tabela de AFERIDOS nomeia pelo menos um ficheiro de `tests/`', () => {
     // The distinction that gives the document its meaning: a criterion in the measured table with no case pointing at it
     // is a citation passing for a gate — precisely what the table below exists to separate.
-    const corte = DOC.indexOf('## ⚠️ Citados e NÃO aferidos');
+    const corte = DOC.indexOf('## ⚠️ Cited and NOT measured');
     expect(corte, 'a secção dos buracos desapareceu do documento').toBeGreaterThan(0);
     const aferidos = DOC.slice(0, corte).split(/\r?\n/).filter((l) => /^\|\s*\*\*\d\.\d+\.\d+\*\*/.test(l));
     /*

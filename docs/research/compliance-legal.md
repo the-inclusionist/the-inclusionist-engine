@@ -31,7 +31,7 @@ per-region implementation to be validated)*
 
 - **RN-01 — no open data:** no open data about children. Only **anonymous** data, via a **partnership with a reputable
   institution** (which holds the IRB/ethics); **never PII**; raw data stays local/in the region. *(the premortem showed that open
-  data about children = a scandal risk that kills the brand — see `AVALIACAO-ADVERSARIAL-PREMORTEM.md`)*
+  data about children = a scandal risk that kills the brand — see `ADVERSARIAL-ASSESSMENT-PREMORTEM.md`)*
 - **RN-02 — the adult's identity is never in the game:** whoever registers is the **adult** (teacher/guardian) via a **government
   system** (.gov in BR; RNV only inside China). We store at most a **consent token/boolean** — not the
   identity. This **does not contradict** LGPD/COPPA: identifying the adult and obtaining their consent is exactly what is required, and the child's
@@ -60,7 +60,7 @@ minimisation (GDPR/LGPD, local-first) · residency (RN-04) · no profiling/ads (
   anyone uses it for anything. So the **art is a NON-FOSS slice** separate from the code. Protection: (a) a **registered
   trademark** of the characters (the most robust mainstay, independent of copyright); (b) an own art licence (forbids adult/
   derogatory use); (c) human authorship in the algorithm. **Caveat:** AI-derived art may be uncopyrightable →
-  the **trademark** is the mainstay. The trademark is **selective** (not every character/game). Detail: `LICENCAS-GERACAO-IMAGEM.md`.
+  the **trademark** is the mainstay. The trademark is **selective** (not every character/game). Detail: `LICENSES-IMAGE-GENERATION.md`.
 - **Sources (BR):** Rouanet (cultural framing), Ancine/FSA (audiovisual — via animation/Libras), PNLD (textbook +
   accessibility — we meet it with room to spare), FAPESP, FINEP, CNPq, BNDES, Lei de Informática. **(Nordics/EU):** Nordisk
   Kulturfond, EU programmes, EdTech philanthropy, university partnerships. *(confidence: medium — eligibility of a
@@ -93,4 +93,4 @@ Standards that reinforce the pillars and must enter the conformance map:
 
 Even when converting the image into an algorithm, there may be liability for **deriving from the specific expression** generated
 by the service. State of the research (PixelLab/Magnific/ComfyUI/etc. licences × our GPL case) in
-[`LICENCAS-GERACAO-IMAGEM.md`](LICENCAS-GERACAO-IMAGEM.md).
+[`LICENSES-IMAGE-GENERATION.md`](LICENSES-IMAGE-GENERATION.md).

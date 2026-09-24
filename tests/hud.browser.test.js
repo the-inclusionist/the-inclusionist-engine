@@ -4,7 +4,7 @@
 // INJECTED pause panel) and reports through onScreensBuilt; updateGameHud() rewrites the objective/power and hides the
 // counter of whoever quit; getScreen/showWaitingBadge/clearWaitingBadge operate on the mounted screens.
 // `numPlayers`/`players` come from a local round double (below).
-// ZOMBIES + Right-BICEP. See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// ZOMBIES + Right-BICEP. See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initHud } from '../app/js/ui/hud.js';
 /*

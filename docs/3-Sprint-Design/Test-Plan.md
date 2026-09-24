@@ -161,7 +161,7 @@ has the four-player scope decided by the Dev.
 The after-everything audit: axe + Lighthouse + GAG item by item by hand + the gates of ADR-001, with an **honest
 AA-versus-AAA** report. It complements the axe gate in CI, which already runs; the automatable half — which
 criteria have a failing case and which are only cited — is kept in
-[`../compliance/gates-de-acessibilidade.md`](../compliance/gates-de-acessibilidade.md).
+[`../compliance/accessibility-gates.md`](../compliance/accessibility-gates.md).
 
 - [ ] axe and Lighthouse clean on the served build, not on dev.
 - [ ] GAG walked through item by item, by hand.

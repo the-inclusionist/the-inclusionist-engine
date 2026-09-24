@@ -8,7 +8,7 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
   de alfabetização, *features* Gherkin das atividades, que são lidas por educadores). **A conversa com o Dev é em
   pt-BR.** Este arquivo (manual operacional da IA) segue em pt-BR de propósito.
 - **Idiomas do JOGO — piso de três:** **pt-BR** (base), **inglês** e **espanhol**. Não é meta, é mínimo; toda string de
-  UI nasce localizável (`t()`/`data-i18n`), nunca fixa no código. Ver o pilar 3 do ADR-0010, `1-Discovery/plano-i18n.md`
+  UI nasce localizável (`t()`/`data-i18n`), nunca fixa no código. Ver o pilar 3 do ADR-0010, `1-Discovery/plan-i18n.md`
   e a **Fase 5** no quadro.
 - **A FRONTEIRA (decidida pelo Dev em 2026-08-24, e mais estreita do que parecia):** o idioma do programa é o idioma
   da **interface**, e é ele que define a língua "oficial" do jogador — a língua de origem de todas as atividades.
@@ -155,7 +155,7 @@ do GitHub, privada até o ato (**ADR-0066**).
   ADR-0010) + **arte não-FOSS** + gratuito + fomento.
 - **Arte = dados:** nenhum PNG embutido no jogo. O alvo é **arte procedural semântica** (imagem semântica
   `(região, luminosidade)` + dicionário de paletas → recolor infinito, unificado personagens+tiles). PNG/Aseprite/
-  Tiled só na **autoria**. Plano: `docs/plano-arte-procedural.md`, importadores em `docs/plano-tiled-aseprite.md`.
+  Tiled só na **autoria**. Plano: `docs/game-design/plan-procedural-art.md`, importadores em `docs/game-design/study-tiled-aseprite.md`.
 - **a11y-first:** quando estética briga com a11y, a11y vence. AAA é aspiracional — **marque honestamente** onde só
   dá AA (ex.: 1.4.6 7:1 briga com cores vivas). Nunca vender "AAA em bloco".
 
@@ -172,15 +172,15 @@ do GitHub, privada até o ato (**ADR-0066**).
   ⚠️ **`npm run typecheck` tem de sair LIMPO — zero erros, em qualquer arquivo.** Foram 273 no `main.ts` no dia
   da conversão, tolerados por um gate com orçamento que só descia (`scripts/check-types.mjs`); chegaram a zero
   em 2026-08-26 e o gate saiu. Não há mais dívida conhecida para tolerar: um erro novo é um erro seu.
-  **Node 24** (`.node-version`). Detalhes: `docs/plano-typescript-vite.md`, `docs/plano-testes.md`.
+  **Node 24** (`.node-version`). Detalhes: `docs/2-Architecture/plan-typescript-vite.md`, `docs/3-Sprint-Design/plan-unit-tests-at-extraction.md`.
 - **Versão:** `release-it` (você dispara) + carimbo `git describe` injetado pelo Vite (`__BUILD__`).
-  Ver `docs/plano-versionamento.md`.
+  Ver `docs/2-Architecture/plan-versioning.md`.
 
 ## 3. Onde estamos + roadmap
 
 - **Agora:** **Estágio 4 — modularização** do `game.js` em ES Modules `.ts`, cada um extraído **com teste**
-  (ZOMBIES + Right-BICEP). Alvo/ordem: `docs/plano-modularizacao-mapa.md`. **Fundamentos** que guiam a quebra
-  (coesão↑, acoplamento↓, DI, DAO, adapters — base arXiv:2409.15152): `docs/5-Refactoring/plano-modularizacao.md` — um
+  (ZOMBIES + Right-BICEP). Alvo/ordem: `docs/5-Refactoring/plan-modularization-map.md`. **Fundamentos** que guiam a quebra
+  (coesão↑, acoplamento↓, DI, DAO, adapters — base arXiv:2409.15152): `docs/5-Refactoring/plan-modularization.md` — um
   PLANO, não um registro. ⚠️ **A regra é o ADR-0173 (2026-09-13):** camadas `i18n → core → platform → input/render → ui →
   boot`, import só para a mesma camada ou abaixo, sem ciclos, `educational` fora da pilha; o gate é
   `tests/dependencies-point-downward.node.test.js`, com a dívida de nove imports que só encolhe (issue #167).
@@ -221,7 +221,7 @@ do GitHub, privada até o ato (**ADR-0066**).
 Vitest com dois *projects*: **node** (lógica pura, sem PIXI/DOM) e **browser**/Playwright (render/DOM). Cada
 módulo extraído nasce com teste. **Eu rodo o Vitest** (medido em 04/09) e cada gate
 nasce **vermelho com a mutação confirmada** antes de valer — verde que nunca pôde ficar vermelho não prova
-nada, e já aconteceu aqui: uma regex morreu em silêncio e a checagem seguiu verde. Padrões: **ZOMBIES** (didático) + **Right-BICEP** (rigor). `docs/plano-testes.md`.
+nada, e já aconteceu aqui: uma regex morreu em silêncio e a checagem seguiu verde. Padrões: **ZOMBIES** (didático) + **Right-BICEP** (rigor). `docs/3-Sprint-Design/plan-unit-tests-at-extraction.md`.
 - **Hardware-alvo (Positivo/Chromebook):** montar baterias de teste para rodar **quando os aparelhos existirem**,
   conforme o produto evolui — não bloqueia o desenvolvimento agora (não temos os aparelhos ainda).
 
@@ -242,7 +242,7 @@ nada, e já aconteceu aqui: uma regex morreu em silêncio e a checagem seguiu ve
   primeiro endereço real que esta camada tem, depois de anos pertencendo a uma plataforma que não existia. Até a
   mudança acontecer, o catálogo mora aqui com a forma do destino. `tests/engine-boundary.node.test.js` é o gate.
 - **Constantes do motor** (TILE_TYPES, TUNE, tiles, dimensões): `app/js/core/constants.ts` (fonte única, tipada).
-- **Planos legados** (`docs/plano-*.md`, `PESQUISA-*`, etc.): **ainda
+- **Planos legados** (`docs/**/plan-*.md`, `docs/research/RESEARCH-*`, etc.): **ainda
   na raiz de `docs/`**, sendo migrados **arquivo por arquivo, com revisão de conteúdo** (nada automático) para dentro
   da árvore canônica acima — issue `#1`. Até migrar, coexistem.
 

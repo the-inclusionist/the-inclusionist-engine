@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // RENDER/DOM tests (browser project — Chromium/Playwright; PIXI global via vitest.setup.browser.js).
-// Patterns: ZOMBIES + Right-BICEP (labels in the name). See docs/plano-testes.md. Modules: render/canvas,
+// Patterns: ZOMBIES + Right-BICEP (labels in the name). See docs/3-Sprint-Design/plan-unit-tests-at-extraction.md. Modules: render/canvas,
 // render/sprite-fx, platform/storage, ui/dom. STRUCTURAL tests (dimensions/types) — they do not depend on asset PNGs.
 // The art of a game (coins, trees, power-ups) belongs to the game and is tested in its own repository.
 import { describe, it, expect } from 'vitest';

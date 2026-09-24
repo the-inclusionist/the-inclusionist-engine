@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Setup do project "browser". Os módulos de render (render/canvas, render/sprites, …) agora fazem
 // `import * as PIXI from 'pixi.js'` diretamente (o global vendor/pixi.min.js foi aposentado), então não precisam
-// mais de global. Mantemos globalThis.PIXI como shim inócuo p/ qualquer acesso legado. Ver docs/plano-testes.md.
+// mais de global. Mantemos globalThis.PIXI como shim inócuo p/ qualquer acesso legado. Ver docs/3-Sprint-Design/plan-unit-tests-at-extraction.md.
 import * as PIXI from 'pixi.js';
 globalThis.PIXI = PIXI;
 // Sem supressão de erros: os módulos de render são importados de forma PURA (sprites.js só carrega texturas em

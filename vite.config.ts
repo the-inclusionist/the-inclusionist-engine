@@ -15,7 +15,7 @@ import { hashDosCabecalhos, revisarPaginasPelosCabecalhos } from './scripts/page
 // pacote por escrito. Os dois vivem agora em `game-platformer`, junto com o `scripts/atlas.mjs`.
 
 
-// ========================= CARIMBO DE BUILD (docs/plano-versionamento.md) =========================
+// ========================= CARIMBO DE BUILD (docs/2-Architecture/plan-versioning.md) =========================
 // A VERSÃO VEM DO `package.json`, e não do `git describe`. Foi assim até 2026-08-26, e o defeito era este:
 // `git describe --tags` só devolve uma versão se houver TAG ALCANÇÁVEL, e não há nenhuma — nem local, nem no
 // remoto (`git ls-remote --tags origin` volta vazio). Sem tag, o `--always` cai no SHA curto, e o jogo
@@ -52,7 +52,7 @@ const BUILD = {
   env: process.env.CF_PAGES ? 'prod' : 'local',
 };
 
-// Migração TS+Vite (docs/plano-typescript-vite.md). root=app/ (index.html) p/ dev/build.
+// Migração TS+Vite (docs/2-Architecture/plan-typescript-vite.md). root=app/ (index.html) p/ dev/build.
 // PWA (Estágio 1): o vite-plugin-pwa gera o SW (Workbox) e o manifest — aposenta o sw.js artesanal e o bump
 // manual de INCL_VERSION. Precache do shell + assets por CONTENT-HASH → cache invalida sozinho; registerType
 // 'autoUpdate' aplica a versão nova no próximo load (resolve o "build velho preso" por construção).

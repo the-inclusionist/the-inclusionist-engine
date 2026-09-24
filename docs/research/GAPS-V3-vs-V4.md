@@ -6,7 +6,7 @@ method: 4 subagents in parallel (shell/UX · environments/themes · character ·
 sources: v3.1.100.html (~3454 lines) · v4.0.0/{game.js,index.html,style.css}
 ---
 
-Historical study (2026-06-01): kept as a record; the current state lives in `docs/ROADMAP.md` and the issue board; the open character-diversity items are in `docs/game-design/plano-arte-procedural.md` and `docs/game-design/character-animation.md`.
+Historical study (2026-06-01): kept as a record; the current state lives in `docs/ROADMAP.md` and the issue board; the open character-diversity items are in `docs/game-design/plan-procedural-art.md` and `docs/game-design/character-animation.md`.
 
 # What v3 had and v4 still lacks
 

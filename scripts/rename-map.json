@@ -697,6 +697,40 @@
         "tests/voz-por-idioma.node.test.js": "tests/voice-per-language.node.test.js",
         "tests/vozes-fora-do-pacote.node.test.js": "tests/no-voice-model-in-the-package.node.test.js"
       }
+    },
+    "docs": {
+      "done": "2026-09-24",
+      "files": {
+        "docs/1-Discovery/estudo-acomodacoes-por-genero.md": "docs/1-Discovery/study-accommodations-by-genre.md",
+        "docs/1-Discovery/plano-acessibilidade.md": "docs/1-Discovery/plan-accessibility.md",
+        "docs/1-Discovery/plano-audio-fase-f.md": "docs/1-Discovery/plan-audio-phase-f.md",
+        "docs/1-Discovery/plano-i18n.md": "docs/1-Discovery/plan-i18n.md",
+        "docs/1-Discovery/plano-tts-fase-f5.md": "docs/1-Discovery/plan-tts-phase-f5.md",
+        "docs/2-Architecture/plano-engine.md": "docs/2-Architecture/plan-engine.md",
+        "docs/2-Architecture/plano-typescript-vite.md": "docs/2-Architecture/plan-typescript-vite.md",
+        "docs/2-Architecture/plano-versionamento.md": "docs/2-Architecture/plan-versioning.md",
+        "docs/3-Sprint-Design/Teste-de-campo-M7.md": "docs/3-Sprint-Design/Field-Test-M7.md",
+        "docs/3-Sprint-Design/plano-testes.md": "docs/3-Sprint-Design/plan-unit-tests-at-extraction.md",
+        "docs/5-Refactoring/plano-modularizacao-mapa.md": "docs/5-Refactoring/plan-modularization-map.md",
+        "docs/5-Refactoring/plano-modularizacao.md": "docs/5-Refactoring/plan-modularization.md",
+        "docs/5-Refactoring/plano-religacao-z-camadas.md": "docs/5-Refactoring/plan-rewiring-z-layers.md",
+        "docs/5-Refactoring/plano-tts-lab-modularizacao.md": "docs/5-Refactoring/plan-tts-lab-modularization.md",
+        "docs/INVENTARIO.md": "docs/INVENTORY.md",
+        "docs/compliance/gates-de-acessibilidade.md": "docs/compliance/accessibility-gates.md",
+        "docs/game-design/plano-arte-procedural.md": "docs/game-design/plan-procedural-art.md",
+        "docs/game-design/plano-cenario-cidade.md": "docs/game-design/plan-city-scenery.md",
+        "docs/game-design/plano-editor-mapa.md": "docs/game-design/plan-map-editor.md",
+        "docs/game-design/plano-tiled-aseprite.md": "docs/game-design/study-tiled-aseprite.md",
+        "docs/research/AUDITORIA-E13-axe.md": "docs/research/AUDIT-E13-axe.md",
+        "docs/research/AVALIACAO-ADVERSARIAL-PREMORTEM.md": "docs/research/ADVERSARIAL-ASSESSMENT-PREMORTEM.md",
+        "docs/research/ESTUDO-FONTES.md": "docs/research/STUDY-FONTS.md",
+        "docs/research/LACUNAS-V3-vs-V4.md": "docs/research/GAPS-V3-vs-V4.md",
+        "docs/research/LICENCAS-GERACAO-IMAGEM.md": "docs/research/LICENSES-IMAGE-GENERATION.md",
+        "docs/research/PESQUISA-ALTO-CONTRASTE.md": "docs/research/RESEARCH-HIGH-CONTRAST.md",
+        "docs/research/PESQUISA-DALTONIZACAO.md": "docs/research/RESEARCH-DALTONIZATION.md",
+        "docs/research/PESQUISA-FONTES-CONDICOES-LETRAMENTO.md": "docs/research/RESEARCH-FONTS-CONDITIONS-LITERACY.md",
+        "docs/research/auditoria-v3-riqueza-ambiente.md": "docs/research/audit-v3-environment-richness.md"
+      }
     }
   }
 }

@@ -107,7 +107,7 @@ Each stage extracts a piece, the old file starts importing from it, it is checke
 
 **Localise ALONG THE WAY (i18n):** each module with UI extracted here comes out with its literals already replaced by
 `t()`/`data-i18n` and the keys in `pt.js` — modularise and localise in the SAME pass (it avoids mining the monolith and
-touching the code again). See `../1-Discovery/plano-i18n.md` §4.2. The i18n foundation (`core/i18n.js`) is already done.
+touching the code again). See `../1-Discovery/plan-i18n.md` §4.2. The i18n foundation (`core/i18n.js`) is already done.
 
 **Stage 0 — Scaffolding (low risk).** Switch `index.html` to `type="module"`; create a `main.js` that only
 does `import './game.js'` (still the monolith) and add an `import map` for Pixi. Bump `sw.js`, including the new

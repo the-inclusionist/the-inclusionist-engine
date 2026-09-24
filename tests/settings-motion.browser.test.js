@@ -2,7 +2,7 @@
 // Tests of ui/settings-motion — real render/DOM (BROWSER project: uses document + querySelector). Injection by closure
 // (the same pattern as ui/debug-panel): a ctx with FAKE $/srSay/store/frontOverlay/toggleBtn/rm/saveRM/rmKeys/rmChar
 // (spies), a local round double for `players`/`numPlayers`, and the REAL `CRT`/`applyCrt` (render/crt.ts) — the same
-// module initSettingsMotion imports directly. See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// module initSettingsMotion imports directly. See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   initSettingsMotion, getSelectedPlayer, setSelectedPlayer,

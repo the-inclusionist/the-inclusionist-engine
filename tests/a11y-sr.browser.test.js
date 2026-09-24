@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of core/a11y-sr — screen-reader announcements (BROWSER project: uses document + requestAnimationFrame).
 // Contract: clears the region → writes on the next frame (forces a re-announcement) and mirrors to the INJECTED VLibras.
-// See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4, Tier 1, core/a11y-sr).
+// See docs/5-Refactoring/plan-modularization-map.md (Stage 4, Tier 1, core/a11y-sr).
 import { describe, it, expect } from 'vitest';
 import * as A from '../app/js/core/a11y-sr.js';
 

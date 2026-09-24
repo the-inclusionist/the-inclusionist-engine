@@ -9,7 +9,7 @@
 //     shows whether they are in the right place.
 //   · the Direct Rendering path (high contrast) of parallaxTexFor/treeTexFor/playerVizTex + the caches.
 //   · the stamping of the overlay inside the viewport's render-texture.
-// ZOMBIES + Right-BICEP. See ADR-0011-visual-accessibility.yaml and docs/research/PESQUISA-DALTONIZACAO.md.
+// ZOMBIES + Right-BICEP. See ADR-0011-visual-accessibility.yaml and docs/research/RESEARCH-DALTONIZATION.md.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { CVD_KEYS, CVD_MATRIX, CVD_SVG_ID, installCvdFilters } from '../app/js/render/cvd-matrices.js';
 import { initViewports } from '../app/js/render/viewports.js';

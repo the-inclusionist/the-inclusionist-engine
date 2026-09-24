@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of educational/activities-registry — the activities catalogue + id validation (node project). ZOMBIES + Right-BICEP.
-// Pure (no DOM/PIXI). See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4, ACTIVITIES).
+// Pure (no DOM/PIXI). See docs/5-Refactoring/plan-modularization-map.md (Stage 4, ACTIVITIES).
 import { describe, it, expect } from 'vitest';
 import {
   getActivity, hasActivity, isValidActivityId, listActivities, listActivityIds, DEFAULT_ACTIVITY_ID,

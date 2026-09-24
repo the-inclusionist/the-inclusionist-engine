@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of ui/debug-panel (BROWSER project: uses document). Contract: mounts only with ?debug=true; the sliders mutate the
 // LIVE TUNE/ANIM objects (the same reference the game holds); the toggles mutate JUICE and call saveJuice. Closure DI.
-// See docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 1, ui/debug-panel).
+// See docs/5-Refactoring/plan-modularization-map.md (Tier 1, ui/debug-panel).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initDebugPanel } from '../app/js/ui/debug-panel.js';
 

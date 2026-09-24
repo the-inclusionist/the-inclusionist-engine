@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of ui/settings-visual (NODE project: pure logic only, no document). Contract: the rules of the Visual
 // accessibility panel (contrast level, labels, L→Q enhancement, clamp of the selected player, role colour) do not depend
-// on the DOM; the panel's rows are measured in the browser project. See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// on the DOM; the panel's rows are measured in the browser project. See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // VIZ_MODES holds KEYS (item 14)
 import pt from '../app/js/i18n/pt.js';

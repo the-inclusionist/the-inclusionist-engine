@@ -1,4 +1,4 @@
-> Historical plan (2026-07-03): kept as a record; the current state lives in [`Art-Bible.md`](Art-Bible.md) and [`plano-arte-procedural.md`](plano-arte-procedural.md), and the level format belongs to `game-platformer` since ADR-0228.
+> Historical plan (2026-07-03): kept as a record; the current state lives in [`Art-Bible.md`](Art-Bible.md) and [`plan-procedural-art.md`](plan-procedural-art.md), and the level format belongs to `game-platformer` since ADR-0228.
 
 # Study — Compatibility with Tiled (maps) and Aseprite (sprites)
 
@@ -31,7 +31,7 @@ Adopting Tiled as the format **would reverse** the decision locked today (the ma
   `.tmj→text` (rewrites the canonical one). The game **never** reads `.tmj`; the `.txt` stays the source in git. It is a
   disciplined variant of "Option A", not adoption of Tiled as the format.
 
-**Recommendation A:** keep the **canonical glyph text** (`plano-editor-mapa.md`) and the **custom editor**. Tiled only
+**Recommendation A:** keep the **canonical glyph text** (`plan-map-editor.md`) and the **custom editor**. Tiled only
 as an optional authoring converter, if and when wanted.
 
 *Sources:* doc.mapeditor.org (JSON Map Format, Global Tile IDs, TMX, Editing Tilesets) · npm @pixi/tilemap ·
@@ -86,9 +86,9 @@ community.aseprite.org (frameTags→animations middleware; slices/pivot) · asep
 ---
 
 ## C. Impact on earlier decisions
-- **`plano-editor-mapa.md`:** confirmed — glyph text + custom editor stay. Tiled changes nothing (at most an
+- **`plan-map-editor.md`:** confirmed — glyph text + custom editor stay. Tiled changes nothing (at most an
   optional future converter).
-- **`../2-Architecture/plano-engine.md`:** the **Render** subsystem gains an `aseprite-loader.js` (if decision B is "adopt");
+- **`../2-Architecture/plan-engine.md`:** the **Render** subsystem gains an `aseprite-loader.js` (if decision B is "adopt");
   the **Entities** subsystem consumes `animations`. **High contrast** ties down the ASCII/indexed path — the
   engine must keep it as a living subsystem, not a disposable one.
 - **Public repo (GPL):** a side warning — the **provenance/licence of the current PNGs** (PixelLab) must be

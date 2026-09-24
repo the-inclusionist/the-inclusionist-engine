@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // PURE-LOGIC tests (node project — no PIXI/document/localStorage). Patterns: ZOMBIES (order/teaching) + Right-BICEP
-// (rigour). Labels in the test name. See docs/3-Sprint-Design/plano-testes.md. Modules: core/constants, input/state,
+// (rigour). Labels in the test name. See docs/3-Sprint-Design/plan-unit-tests-at-extraction.md. Modules: core/constants, input/state,
 // platform/audio (the mixer), core/rng.
 import { describe, it, expect } from 'vitest';
 import * as C from '../app/js/core/constants.js';

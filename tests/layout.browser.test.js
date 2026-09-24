@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Tests of ui/layout — the scale of #game-region (BROWSER project: uses #stage-wrap/#game-region + devicePixelRatio).
-// Patterns: ZOMBIES + Right-BICEP. VLibras closed by default (librasOpen=false). See docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Patterns: ZOMBIES + Right-BICEP. VLibras closed by default (librasOpen=false). See docs/5-Refactoring/plan-modularization-map.md.
 import { describe, it, expect } from 'vitest';
 import { layout } from '../app/js/ui/layout.js';
 

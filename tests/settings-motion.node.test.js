@@ -2,7 +2,7 @@
 // Tests of ui/settings-motion — PURE logic (node project, no `document`). ZOMBIES + Right-BICEP.
 // Covers: the clamp of the selected player, the master button's allOn and the screen-reader announcement texts. The
 // real render/DOM (querySelector/addEventListener/focus, and the rows built as nodes) is covered in
-// tests/settings-motion.browser.test.js. See docs/5-Refactoring/plano-modularizacao-mapa.md (ui/settings-motion).
+// tests/settings-motion.browser.test.js. See docs/5-Refactoring/plan-modularization-map.md (ui/settings-motion).
 import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // RM_LABEL holds KEYS (item 14)
 // 🔴 A NAMED import of something a module does not export resolves to `undefined` under the transformer, and while no

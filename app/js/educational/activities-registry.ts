@@ -2,7 +2,7 @@
 // educational/activities-registry — the ACTIVITIES catalog: every playable activity's id → metadata
 // (category, display name, sub-label, description, fraction denominators, "pick numbers" flag). This module
 // owns only the CATALOG + id validation — it does NOT hold the current selection (that stays `activity` +
-// `setActivityValue` in core/state.ts, per ADR/plano-modularizacao-mapa).
+// `setActivityValue` in core/state.ts, per ADR/plan-modularization-map).
 //
 // ============================ POR QUE ISTO NÃO MORA EM `game/` (ADR-0032) ============================
 // Isto é CURRÍCULO, não jogo. `alf1..alf5` são as hipóteses da psicogênese de Ferreiro; `mat1..mat6` e as
