@@ -52,7 +52,7 @@ const toque = (el, tipo) => el.dispatchEvent(new PointerEvent(tipo, { bubbles: t
 
 beforeAll(async () => {
   const { createGame } = await import('../app/js/boot/create-game.js');
-  try { localStorage.removeItem('incl_touchmap'); } catch { /* sem storage: o mapa de fábrica vale na mesma */ }
+  try { localStorage.removeItem('incl_touchmap'); } catch { /* no storage: the factory map holds anyway */ }
   raiz = document.createElement('div');
   raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
@@ -324,7 +324,7 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
   const fechar = () => { for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true; motor.pause.hide(0); };
 
   it('🎯 [Right] the panel opens with ONE row, «◀ Controller size: <persona> ▶», read from the stored size', () => {
-    try { localStorage.removeItem('incl_padbtnmm'); } catch { /* sem storage: vale o de fábrica */ }
+    try { localStorage.removeItem('incl_padbtnmm'); } catch { /* no storage: the factory one holds */ }
     const passos = abrirMotora();
     expect(passos, 'no persona step control in the motor panel').not.toBeNull();
     // the factory 12.5 mm reads as «small adult»
@@ -348,9 +348,9 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
     expect(cooldown, '#opt-cooldown is not in the motor panel').not.toBeNull();
     expect(cooldown.closest('.ctrl-row').hidden, 'a game nobody presses twice was offered the cool-down').toBe(true);
 
-    // 🔴 E O «JEITO DE APERTAR» NÃO É LINHA DE PAINEL NENHUM (o Dev, 2026-09-21: «Tire a linha de acessibilidade motora»): o
-    // ajuste, com as três posições, mora no ☝️ da barra rápida. A ausência é medida aqui porque uma linha removida que volta
-    // por acidente daria de novo duas superfícies ao mesmo ajuste.
+    // 🔴 AND «JEITO DE APERTAR» IS NO PANEL ROW AT ALL (the Dev, 2026-09-21: «Tire a linha de acessibilidade motora»): the
+    // setting, with its three positions, lives in the quick bar's ☝️. The absence is measured here because a removed row
+    // coming back by accident would give the same setting two surfaces again.
     expect(painel.querySelector('#opt-sticky'), 'a linha voltou ao painel motora').toBeNull();
     fechar();
   });
@@ -424,7 +424,7 @@ describe('mount() rebuilds the pad for the new cartridge', () => {
   });
 
   it('🎯 [Boundary] a platform preset gets the cross with its arms drawn the way the bindings light them', () => {
-    try { localStorage.setItem('incl_paddir', 'cross'); } catch { /* sem storage não há como pedir a cruz */ }
+    try { localStorage.setItem('incl_paddir', 'cross'); } catch { /* with no storage there is no way to ask for the cross */ }
     motor.mount(declaracao(), { accommodations: SEM_ASSUNTO, onScreenPad: true, preset: PLATAFORMA });
     const cruz = document.getElementById('touch-cross');
     expect(cruz, 'four declared directions and no cross').not.toBeNull();

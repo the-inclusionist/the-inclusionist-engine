@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/viewports — o que só o navegador prova (project browser: Chromium/Playwright).
-// A parte pura (matrizes, seleção de filtro por modo, caches, DOM falso) está em viewports.node.test.js;
-// aqui fica o que exige DOM/canvas/PIXI de verdade:
-//   · installCvdFilters no documento REAL — os <filter> precisam nascer no namespace SVG e serem achados por
-//     id, porque é assim que `filter: url(#cvd-deuter)` os encontra. Um <filter> criado no namespace errado
-//     não dá erro: simplesmente não filtra (ou, pior, apaga a canvas). É falha silenciosa de acessibilidade.
-//   · lvOverlayCanvas — a névoa/túnel/mancha/manchas de baixa visão são DESENHO, não transformação de cor;
-//     só getImageData mostra se estão no lugar certo.
-//   · o caminho de Renderização Direta (alto contraste) de parallaxTexFor/treeTexFor/playerVizTex + os caches.
-//   · o carimbo do overlay dentro da render-texture do viewport.
-// ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml e docs/research/PESQUISA-DALTONIZACAO.md.
+// Tests of render/viewports — what only the browser proves (browser project: Chromium/Playwright).
+// The pure part (matrices, filter selection by mode, caches, fake DOM) is in viewports.node.test.js; here is what needs a
+// real DOM/canvas/PIXI:
+//   · installCvdFilters in the REAL document — the <filter>s have to be born in the SVG namespace and be found by id,
+//     because that is how `filter: url(#cvd-deuter)` finds them. A <filter> created in the wrong namespace gives no
+//     error: it simply does not filter (or, worse, blanks the canvas). It is a silent accessibility failure.
+//   · lvOverlayCanvas — low vision's haze/tunnel/blot/spots are DRAWING, not colour transformation; only getImageData
+//     shows whether they are in the right place.
+//   · the Direct Rendering path (high contrast) of parallaxTexFor/treeTexFor/playerVizTex + the caches.
+//   · the stamping of the overlay inside the viewport's render-texture.
+// ZOMBIES + Right-BICEP. See ADR-0011-visual-accessibility.yaml and docs/research/PESQUISA-DALTONIZACAO.md.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { CVD_KEYS, CVD_MATRIX, CVD_SVG_ID, installCvdFilters } from '../app/js/render/cvd-matrices.js';
 import { initViewports } from '../app/js/render/viewports.js';
@@ -17,8 +17,8 @@ import { initHighContrast } from '../app/js/render/high-contrast.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-// outlineFg > 0 → directSpriteTexture realmente contorna (com 0 ela devolve a origem e o teste do cache de
-// player não poderia falhar). Os campos de mundo/moeda não são exercitados aqui.
+// outlineFg > 0 → directSpriteTexture really outlines (with 0 it returns the source and the player cache test could not
+// fail). The world/coin fields are not exercised here.
 initHighContrast({
   W: 1, H: 1, outlineFg: () => 1, outlineBg: () => 0,
   getWorldCanvasNormal: () => null, getWorldTexNormal: () => null,
@@ -30,7 +30,7 @@ const flatCanvas = (w, h, css) => {
   const c = cv.getContext('2d'); c.fillStyle = css; c.fillRect(0, 0, w, h);
   return cv;
 };
-// srcTex estrutural (ver DirectTexSource em render/high-contrast): valid=true → o paint roda SÍNCRONO.
+// A structural srcTex (see DirectTexSource in render/high-contrast): valid=true → the paint runs SYNCHRONOUSLY.
 const fakeTex = (cv) => ({ orig: { width: cv.width, height: cv.height }, baseTexture: { valid: true, resource: { source: cv }, once: () => {} } });
 const alphaAt = (cv, x, y) => cv.getContext('2d').getImageData(x, y, 1, 1).data[3];
 
@@ -43,7 +43,7 @@ function mkCtx(over = {}) {
     parallaxTexNormal: [fakeTex(flatCanvas(8, 8, '#3060c0')), fakeTex(flatCanvas(8, 8, '#20a040')), fakeTex(flatCanvas(8, 8, '#c04020'))],
     getTreeTexNormal: () => treeTexNormal,
     getLvOverlaySpr: () => spr,
-    // `renderer` virou a CAPACIDADE `renderizarEm` (Fase D): o módulo pede o verbo, não o objeto do PixiJS.
+    // The renderer is the `renderInto` CAPABILITY (phase D): the module asks for the verb, not the PixiJS object.
     renderInto: (obj, alvo, limpar) => rendered.push([obj, { renderTexture: alvo, clear: limpar }]),
     getVpTex: () => ['RT0', 'RT1'],
     cvdDefsHost: null,
@@ -77,7 +77,7 @@ describe('render/cvd-matrices — installCvdFilters no DOM de verdade', () => {
 
   it.each([...CVD_KEYS])('[Right] %s: o filtro é achável por id e traz os 20 números da fonte única', (k) => {
     installCvdFilters(defs);
-    const f = document.getElementById(CVD_SVG_ID[k]); // é EXATAMENTE o que url(#…) faz
+    const f = document.getElementById(CVD_SVG_ID[k]); // it is EXACTLY what url(#…) does
     expect(f).not.toBeNull();
     expect(f.getAttribute('color-interpolation-filters')).toBe('sRGB');
     const vals = f.firstElementChild.getAttribute('values').trim().split(/\s+/).map(Number);
@@ -99,8 +99,8 @@ describe('render/cvd-matrices — installCvdFilters no DOM de verdade', () => {
 
 describe('app/index.html — o host dos filtros existe no documento servido', () => {
   it('[Interface] o <defs id="cvd-defs"> é o contrato entre o HTML e installCvdFilters', () => {
-    // O teste roda numa página em branco, então recriamos a marcação do index.html tal como ela é hoje:
-    // o que se afirma aqui é que UM <defs> vazio basta como host — nenhum <filter> escrito à mão é preciso.
+    // The test runs on a blank page, so the host markup a page provides is recreated: what is asserted is that ONE empty
+    // <defs> is enough as the host — no hand-written <filter> is needed.
     const host = document.createElement('div');
     host.innerHTML = '<svg aria-hidden="true" width="0" height="0"><defs id="cvd-defs"></defs></svg>';
     document.body.appendChild(host);
@@ -113,7 +113,7 @@ describe('app/index.html — o host dos filtros existe no documento servido', ()
   });
 });
 
-/* ===================== 2. o overlay de baixa visão (desenho) ===================== */
+/* ===================== 2. the low-vision overlay (drawing) ===================== */
 
 describe('render/viewports — lvOverlayCanvas', () => {
   const vp = () => initViewports(mkCtx().ctx);
@@ -138,7 +138,7 @@ describe('render/viewports — lvOverlayCanvas', () => {
     expect(alphaAt(cv, 0, 0)).toBeGreaterThan(240);
   });
 
-  // Inverso exato do túnel — é o par que impede os dois gradientes de serem trocados um pelo outro.
+  // The exact inverse of the tunnel — it is the pair that stops the two gradients from being swapped for each other.
   it('[Right] macular (degeneração) faz o oposto: mancha no CENTRO, periferia limpa', () => {
     const cv = vp().lvOverlayCanvas('macular');
     expect(alphaAt(cv, CX, CY)).toBeGreaterThan(200);
@@ -177,7 +177,7 @@ describe('render/viewports — lvOverlayTex', () => {
   });
 });
 
-/* ===================== 3. o carimbo dentro da render-texture ===================== */
+/* ===================== 3. the stamp inside the render-texture ===================== */
 
 describe('render/viewports — renderVpOverlay', () => {
   it('[Right] baixa visão carimba o overlay na render-texture do viewport, SEM limpar a cena', () => {
@@ -187,13 +187,13 @@ describe('render/viewports — renderVpOverlay', () => {
     expect(rendered).toHaveLength(1);
     const [obj, opts] = rendered[0];
     expect(obj).toBe(spr);
-    expect(opts.renderTexture).toBe('RT1');   // o viewport pedido, não outro
-    expect(opts.clear).toBe(false);           // clear:true apagaria a cena já desenhada
+    expect(opts.renderTexture).toBe('RT1');   // the requested viewport, not another
+    expect(opts.clear).toBe(false);           // clear:true would erase the scene already drawn
     expect(spr.texture).toBe(v.lvOverlayTex('haze'));
   });
 
-  // Mesma razão de ordem de boot do getTreeTexNormal: o sprite de carimbo nasce depois do ponto em que
-  // initViewports precisa rodar, então ele é lido na CHAMADA, não guardado no init.
+  // The same boot-order reason as getTreeTexNormal: the stamp sprite is born after the point where initViewports has to
+  // run, so it is read at the CALL, not kept at init.
   it('[Interface] pega o sprite de carimbo no momento da chamada, não no init', () => {
     let sprite = null;
     const { ctx, rendered } = mkCtx({ getLvOverlaySpr: () => sprite });
@@ -204,7 +204,7 @@ describe('render/viewports — renderVpOverlay', () => {
     expect(sprite.texture).not.toBeNull();
   });
 
-  // configureRender REATRIBUI `vpTex` a cada troca de nº de telas — por isso ele entra por getter.
+  // configureRender REASSIGNS `vpTex` at every change in the number of screens — that is why it comes in through a getter.
   it('[Interface] lê as render-textures no momento da chamada, não as do init', () => {
     let atual = ['A0', 'A1'];
     const { ctx, rendered } = mkCtx({ getVpTex: () => atual });
@@ -239,17 +239,17 @@ describe('render/viewports — parallaxTexFor no alto contraste', () => {
     const a0 = v.parallaxTexFor(0, 'hc-direto');
     expect(v.parallaxTexFor(0, 'hc-direto')).toBe(a0);
     expect(v.parallaxTexFor(1, 'hc-direto')).not.toBe(a0);       // camada diferente
-    expect(v.parallaxTexFor(0, 'hc-direto-7')).not.toBe(a0);     // nível de contraste diferente
+    expect(v.parallaxTexFor(0, 'hc-direto-7')).not.toBe(a0);     // a different contrast level
   });
 
-  // setCenario troca as texturas cruas e chama clearParallaxTexCache: sem isso o tema novo ficaria com o
-  // fundo recolorido do tema velho — e ninguém veria erro nenhum.
+  // A scenery swap replaces the raw textures and calls clearParallaxTexCache: without that the new theme would keep the
+  // old theme's recoloured background — and nobody would see any error.
   it('[Interface] clearParallaxTexCache força o recolor com a textura crua do cenário novo', () => {
     const { ctx } = mkCtx();
     const v = initViewports(ctx);
     const antes = v.parallaxTexFor(0, 'hc-direto');
     ctx.parallaxTexNormal[0] = fakeTex(flatCanvas(8, 8, '#ffffff'));
-    expect(v.parallaxTexFor(0, 'hc-direto')).toBe(antes); // ainda o cache velho
+    expect(v.parallaxTexFor(0, 'hc-direto')).toBe(antes); // still the old cache
     v.clearParallaxTexCache();
     expect(v.parallaxTexFor(0, 'hc-direto')).not.toBe(antes);
   });
@@ -280,7 +280,7 @@ describe('render/viewports — playerVizTex no alto contraste', () => {
     expect(v.playerVizTex(b, 'hc-direto')).not.toBe(b);
   });
 
-  // O jogador troca de quadro TODA frame: o cache é por textura de origem, não por jogador.
+  // The player changes frame EVERY frame: the cache is per source texture, not per player.
   it('[Performance] memoiza por quadro dentro do modo — quadros distintos, texturas distintas', () => {
     const v = initViewports(mkCtx().ctx);
     const b1 = base(), b2 = base();
@@ -290,8 +290,8 @@ describe('render/viewports — playerVizTex no alto contraste', () => {
     expect(v.playerVizTex(b1, 'hc-direto-7')).not.toBe(t1); // nível diferente = cache diferente
   });
 
-  // rebakeDirect (viz-setters) chama isto quando a espessura do contorno muda no painel; sem invalidar, o
-  // jogador continuaria com o contorno antigo enquanto o cenário já mudou — inconsistência silenciosa.
+  // rebakeDirect (viz-setters) calls this when the outline thickness changes in the panel; without invalidating, the
+  // player would keep the old outline while the scenery has already changed — a silent inconsistency.
   it('[Interface] clearPlayerDirectCache faz o quadro ser recontornado do zero', () => {
     const v = initViewports(mkCtx().ctx);
     const b = base();
