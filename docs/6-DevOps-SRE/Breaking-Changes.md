@@ -2451,6 +2451,26 @@ the pixel grid, which is what any 2D pixel game shares. ⚠️ And four ledgers 
 `logic`, `superficie-publica`, `cartridge-constants` and `action-vocabulary-boundary` each carried a written
 argument for why these names stayed, and each now carries the measurement that ended it.
 
+## CC · The cane and the blind swim leave: `platform/audio-nav` (ADR-0228, issue #203)
+
+**Who is affected:** anyone importing `the-inclusionist-engine/platform/audio-nav.js` — `createAudioNav`,
+`AudioNavCtx`, `AudioNav`, and the `PlayerCtxOut` it re-exported. 📏 Measured: nothing in the engine imports
+it, and the `game-platformer` is its only consumer anywhere. It already has its own copy —
+`game-platformer:3389241` landed it before this deletion, with 1356 tests green.
+
+🎯 **Why it goes:** it is the half of the navigation sound that reads a tile world — the cane taps tiles and
+the blind swim asks which tile is water. That is the criterion of ADR-0228 («the modules that describe a game
+leave `app/js`»), and the Dev authorised the move on 2026-09-23. The half that serves any game stays:
+`platform/audio-sonar`, which points at a target by the contract and never asks what a tile is.
+
+📌 **The guide sound is the platformer's to decide** (the Dev, same day). The one question it left open here —
+whether a player with their own output device should hear the guide before the engine's audio starts — now
+belongs to that repository.
+
+| leaving | where it went |
+|---|---|
+| `platform/audio-nav.js` — `createAudioNav`, `AudioNavCtx`, `AudioNav`, re-export of `PlayerCtxOut` | `game-platformer/app/js/platform/audio-nav.ts`; `PlayerCtxOut` stays exported by `platform/audio-sonar.js` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

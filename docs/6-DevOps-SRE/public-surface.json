@@ -717,11 +717,6 @@
     "loadAudioCat",
     "saveAudioCat"
   ],
-  "platform/audio-nav.ts": [
-    "AudioNav",
-    "AudioNavCtx",
-    "createAudioNav"
-  ],
   "platform/audio-sonar.ts": [
     "AudioSonar",
     "FRAMES_BETWEEN_ROUTES",

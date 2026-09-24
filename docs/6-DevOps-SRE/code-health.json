@@ -151,7 +151,7 @@
       "fanOut": 2,
       "globalReach": 0,
       "worstFunction": 0,
-      "fanIn": 18
+      "fanIn": 17
     },
     "core/escape-html.ts": {
       "codeLines": 5,
@@ -708,15 +708,6 @@
       "worstFunction": 2,
       "fanIn": 3
     },
-    "platform/audio-nav.ts": {
-      "codeLines": 76,
-      "decisionNodes": 15,
-      "maxDepth": 4,
-      "fanOut": 2,
-      "globalReach": 0,
-      "worstFunction": 17,
-      "fanIn": 0
-    },
     "platform/audio-sonar.ts": {
       "codeLines": 207,
       "decisionNodes": 38,
@@ -724,7 +715,7 @@
       "fanOut": 4,
       "globalReach": 1,
       "worstFunction": 9,
-      "fanIn": 3,
+      "fanIn": 2,
       "reached": [
         "window"
       ]

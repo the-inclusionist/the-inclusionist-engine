@@ -72,8 +72,8 @@ said so. A document that describes the code has to be able to notice when it sto
 - ✅ As a **player**, I want the **game in my language**, so that I am not reading a second language to play.
   `app/js/core/i18n.ts` · `tests/i18n-dicts.node.test.js`
 - ✅ As a **blind player**, I want **audio navigation** towards what matters, so that I can find a target
-  without seeing it. `app/js/platform/audio-sonar.ts`, `app/js/platform/audio-nav.ts` ·
-  `tests/audio-sonar.node.test.js`
+  without seeing it. `app/js/platform/audio-sonar.ts` · `tests/audio-sonar.node.test.js` (the cane and the
+  blind swim, which read a tile world, live in the `game-platformer` since note CC)
 - ✅ As a **player**, I want **narration of what is on screen**, so that reading is not the price of playing.
   `app/js/platform/tts.ts`, `app/js/platform/interruptible-speech.ts` · `tests/tts.node.test.js`
 - ✅ As a **deaf player who signs**, I want a **sign-language interpreter**, so that spoken content reaches me.

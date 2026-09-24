@@ -11,7 +11,8 @@
 //
 // Estes são os dois. Aqui fica o que navega por SOM: apontar o alvo mais perto, o beacon em laço, o pan pela
 // posição relativa e a pergunta "esta criança precisa de pista sonora?". Em `audio-nav` ficam a BENGALA e o
-// NADO CEGO, que leem tile, chão e caixa de colisão — plataforma, e sem disfarce.
+// NADO CEGO, que leem tile, chão e caixa de colisão — plataforma, e sem disfarce: desde 2026-09-23 ele mora
+// no `game-platformer` (ADR-0228, nota CC), e o guia sonoro é decisão dele.
 //
 // ========================= O QUE SUBSTITUIU AS SEIS COISAS DE PLATAFORMA =========================
 // Nenhuma delas atravessou. O sonar perguntava ao jogo por um array de moedas e filtrava `taken`/`owner`;

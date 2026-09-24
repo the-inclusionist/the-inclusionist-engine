@@ -1116,33 +1116,6 @@
       "playVictory"
     ]
   },
-  "platform/audio-nav.ts": {
-    "interface AudioNavCtx": [
-      "BOX",
-      "TILE",
-      "getCenario",
-      "held",
-      "noiseHit",
-      "solidAt",
-      "sonar",
-      "tileAt",
-      "tonePan"
-    ],
-    "interface AudioNav": [
-      "caneCount",
-      "caneProbe",
-      "caneTap",
-      "guideCount",
-      "needsAudioCues",
-      "panFor",
-      "playerCtx",
-      "sonar",
-      "sonarCount",
-      "updateGuide",
-      "waterNav",
-      "waterNavCount"
-    ]
-  },
   "platform/audio-sonar.ts": {
     "interface SonarPlayer": [
       "audioSink?",
