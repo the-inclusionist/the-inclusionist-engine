@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O ÍNDICE DE CRITÉRIOS APONTA PARA GATES QUE EXISTEM (issue #13).
+// THE CRITERIA INDEX POINTS AT GATES THAT EXIST (issue #13).
 //
-// ========================= O QUE ESTE FICHEIRO IMPEDE =========================
-// `docs/compliance/gates-de-acessibilidade.md` diz quais critérios da WCAG este repositório afere e quais ele
-// apenas cita. É a metade automatizável da #13 e matéria-prima do relatório anual (ADR-0053).
+// ========================= WHAT THIS FILE PREVENTS =========================
+// `docs/compliance/gates-de-acessibilidade.md` says which WCAG criteria this repository measures and which it only
+// cites. It is the automatable half of #13 and raw material for the annual report (ADR-0053).
 //
-// ⚠️ E É EXACTAMENTE A CLASSE DE DOCUMENTO QUE APODRECE PRIMEIRO: ele nomeia ficheiros de teste, e um ficheiro
-// de teste que muda de nome ou desaparece deixa a linha a afirmar uma cobertura que já não existe. Foi medido
-// em 07/09 que três issues abertas apontavam para ficheiros que saíram com o cartucho, e nada dizia — num
-// índice de conformidade o mesmo silêncio é pior, porque alguém o vai ler para responder a uma auditoria.
+// ⚠️ AND IT IS EXACTLY THE KIND OF DOCUMENT THAT ROTS FIRST: it names test files, and a test file that is renamed or
+// disappears leaves the row claiming coverage that no longer exists. In a compliance index that silence is worse,
+// because someone will read it to answer an audit.
 //
-// ⚠️ O QUE ELE NÃO AFERE: se o gate apontado mede MESMO aquele critério. Isso não é decidível por máquina —
-// e é por isso que o documento separa «aferido» de «citado», em vez de dar um número único de conformidade.
+// ⚠️ WHAT IT DOES NOT MEASURE: whether the gate pointed at REALLY measures that criterion. That is not decidable by
+// machine — which is why the document separates «aferido» from «citado» instead of giving a single conformance number.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** Todo módulo de `app/js`, para uma pergunta que é sobre a ÁRVORE e não sobre um ficheiro nomeado. */
+/** Every `app/js` module, for a question about the TREE and not about a named file. */
 function todosOsModulos(dir, out = []) {
   for (const n of readdirSync(dir)) {
     const p = join(dir, n);
@@ -31,7 +30,7 @@ function todosOsModulos(dir, out = []) {
 const RAIZ = process.cwd();
 const DOC = readFileSync(join(RAIZ, 'docs', 'compliance', 'gates-de-acessibilidade.md'), 'utf8');
 
-/** Caminho do repositório citado entre crases. */
+/** A repository path quoted between backticks. */
 const RE_CAMINHO = /`((?:app|tests|scripts|docs|\.github)\/[A-Za-z0-9_\-./]+\.[a-z]+)`/g;
 const caminhos = [...new Set([...DOC.matchAll(RE_CAMINHO)].map((m) => m[1]))];
 
@@ -51,20 +50,17 @@ describe('o índice de critérios de acessibilidade (#13)', () => {
   });
 
   it('⚠️ [Right] toda linha da tabela de AFERIDOS nomeia pelo menos um ficheiro de `tests/`', () => {
-    // A distinção que dá sentido ao documento: um critério na tabela de aferidos sem um caso a apontá-lo é
-    // uma citação a passar por gate — que é precisamente o que a tabela de baixo existe para separar.
+    // The distinction that gives the document its meaning: a criterion in the measured table with no case pointing at it
+    // is a citation passing for a gate — precisely what the table below exists to separate.
     const corte = DOC.indexOf('## ⚠️ Citados e NÃO aferidos');
     expect(corte, 'a secção dos buracos desapareceu do documento').toBeGreaterThan(0);
     const aferidos = DOC.slice(0, corte).split(/\r?\n/).filter((l) => /^\|\s*\*\*\d\.\d+\.\d+\*\*/.test(l));
     /*
-     * 🔴 O PISO DESCEU DE NOVE PARA OITO EM 23/09, e não é afrouxamento: é o número a seguir a realidade. Dois
-     * critérios SAÍRAM da tabela dos aferidos porque os casos que os provavam saíram do repositório na F12
-     * (ADR-0228) — o 2.2.2 ia com o gate do clima e o 2.4.1 com os da ordem de camadas. ⚠️ Eles não foram
-     * apagados: estão na tabela dos BURACOS, que é onde um critério sem caso AQUI pertence, e essa é a perda
-     * que este commit regista em vez de esconder.
+     * 🔴 2.2.2 and 2.4.1 are in the table of HOLES, not the measured one: the cases that proved them left the repository
+     * with ADR-0228 (the weather gate and the layer-order gates). That is where a criterion with no case HERE belongs.
      *
-     * 📌 O piso existe para apanhar o documento a DESABAR (uma varredura que deixe de casar devolve zero e
-     * nada reprova), não para fixar quantos critérios estão provados. Por isso ele acompanha a tabela.
+     * 📌 The floor exists to catch the document COLLAPSING (a scan that stops matching returns zero and nothing fails), not
+     * to pin how many criteria are proven. So it follows the table.
      */
     expect(aferidos.length).toBeGreaterThanOrEqual(8);
     const fracas = aferidos.filter((l) => !/`tests\/[^`]+\.test\.js`/.test(l)).map((l) => l.slice(0, 60));
@@ -73,23 +69,17 @@ describe('o índice de critérios de acessibilidade (#13)', () => {
 
   it('⚠️ [Interface] o buraco do 2.3.1 continua nomeado enquanto o `FLASH_LIMIT` não existir', () => {
     /*
-     * 🔴 O BURACO FICOU MAIOR EM 23/09, E ESTE CASO MUDOU DE FORMA POR ISSO. Ele lia `core/layers.ts`, que
-     * DECLARAVA o `FLASH_LIMIT` como o passe mais externo e dizia, no próprio ficheiro, que ele ainda não
-     * estava implementado. Esse módulo saiu na F12 (ADR-0228): uma ordem-z é a ordem das camadas de um jogo.
+     * 🔴 NO MODULE OF THE ENGINE DECLARES A `FLASH_LIMIT` pass: the layer order that gave it an address left with ADR-0228
+     * (a z-order is a game's layer order), and with it the only place in the engine where the flash limiter had a marked
+     * home. And this is SAFETY about photosensitive epilepsy, not comfort.
      *
-     * ⚠️ O QUE SAIU COM ELE NÃO FOI SÓ A ORDEM — foi o único sítio da engine onde o limitador de cintilação
-     * tinha morada marcada. Antes havia «o lugar certo já ocupado»; agora não há lugar nenhum. E isto é
-     * SEGURANÇA sobre epilepsia fotossensível, não conforto.
-     *
-     * 🎯 Então o caso passa a medir a ausência em vez de a declaração: enquanto NENHUM módulo desta árvore
-     * nomear o `FLASH_LIMIT`, o 2.3.1 tem de continuar nomeado como buraco. No dia em que a engine voltar a
-     * declará-lo — que é a fronteira seguinte — este caso reprova e obriga a rever a linha.
+     * 🎯 So the case measures the absence: while NO module of this tree declares `FLASH_LIMIT`, 2.3.1 must stay named as a
+     * hole. The day the engine declares it again — the next boundary — this case fails and forces the row to be reviewed.
      */
     /*
-     * ⚠️ DECLARAÇÃO E NÃO MENÇÃO, e a primeira escrita deste caso confundiu as duas: o `core/flash-threshold`
-     * NOMEIA o `FLASH_LIMIT` num comentário — «ADR-0020 names a FLASH_LIMIT pass and the engine limits nothing
-     * a cartridge flashes: it does not own the render» — que é precisamente uma frase sobre o que a engine NÃO
-     * tem. Procurar o texto fazia o caso reprovar por causa da frase que lhe dá razão.
+     * ⚠️ DECLARATION, NOT MENTION: `core/flash-threshold` NAMES `FLASH_LIMIT` in a comment — «ADR-0020 names a FLASH_LIMIT
+     * pass and the engine limits nothing a cartridge flashes: it does not own the render» — which is precisely a sentence
+     * about what the engine does NOT have. Searching the text would make the case fail over the sentence that proves it.
      */
     const DECLARA = /(?:const|let|var|export\s+const)\s+FLASH_LIMIT\b|\bFLASH_LIMIT\s*:/;
     const declarado = todosOsModulos(join(RAIZ, 'app', 'js')).some((f) => DECLARA.test(readFileSync(f, 'utf8')));
@@ -106,13 +96,14 @@ describe('o índice de critérios de acessibilidade (#13)', () => {
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · trocando `tests/weather.node.test.js` por `tests/weather-x.node.test.js` no documento → "[Right] todo
-//     ficheiro citado EXISTE" reprova nomeando-o.
-//   · tirando o ficheiro de `tests/` da linha do 1.3.1 (deixando só a promessa) → "[Right] toda linha de
-//     AFERIDOS" reprova, que é o caso que impede uma citação de passar por gate.
-//   · apagando do `core/layers.ts` a frase «FLASH_LIMIT ainda NÃO está implementado» → "[Interface] o buraco
-//     do 2.3.1" reprova com a mensagem que manda mover o critério para a tabela de cima. ⚠️ É a mutação que
-//     torna este ficheiro útil no dia em que a dívida for paga, em vez de ele ficar a descrever um passado.
-//   · trocando o `RE_CAMINHO` por um que não case nada → "[Zero]" e "[Error]" reprovam. Sem o `[Zero]`, um
-//     crivo partido deixaria "[Right] todo ficheiro citado" verde sobre um conjunto vazio.
+// ========================= MUTATIONS CHECKED =========================
+//   · replacing `tests/weather.node.test.js` with `tests/weather-x.node.test.js` in the document → the [Right] case of
+//     every cited file EXISTING fails, naming it.
+//   · removing the `tests/` file from the 1.3.1 row (leaving only the promise) → the [Right] case of every MEASURED row
+//     fails, the case that keeps a citation from passing for a gate.
+//   · deleting from `core/layers.ts` the sentence «FLASH_LIMIT ainda NÃO está implementado» → the [Interface] case of
+//     the 2.3.1 hole fails with the message telling to move the criterion to the table above. ⚠️ It is the mutation that
+//     makes this file useful the day the debt is paid, instead of it describing a past. (Measured against the earlier
+//     form of the case, which read `core/layers.ts`; the module has since left, ADR-0228.)
+//   · replacing `RE_CAMINHO` with one that matches nothing → [Zero] and [Error] fail. Without [Zero], a broken check
+//     would leave the [Right] case of every cited file green over an empty set.

@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// AS COISAS PESADAS DESCEM NO PRIMEIRO CARREGAMENTO — e o que não tem de onde vir DIZ-SE (ADR-0110/0116/0119).
+// THE HEAVY THINGS COME DOWN ON THE FIRST LOAD — and what has nowhere to come from IS SAID (ADR-0110/0116/0119).
 //
-// ========================= O QUE ESTE FICHEIRO GUARDA =========================
-// 📏 O ADR-0119 mediu que, das quatro coisas pesadas que a engine promete, só UMA era entregue. O buscador
-// existe para mudar isso — e o defeito que ele pode introduzir é pior do que o que conserta: um buscador que
-// SALTA em silêncio o que não tem URL faz um subsistema por fazer parecer tratado, que é exactamente a forma
-// do falso relatório que este repositório já apanhou três vezes.
+// ========================= WHAT THIS FILE GUARDS =========================
+// 📏 The fetcher exists so the heavy things the engine promises are delivered (ADR-0119) — and the defect it can
+// introduce is worse than the one it fixes: a fetcher that silently SKIPS what has no URL makes an unbuilt subsystem
+// look handled, exactly the shape of false report this repository has caught three times.
 //
-// 🎯 Por isso a asserção central não é «baixou»: é que uma entrada SEM FONTE devolve `sem-fonte` com a razão.
+// 🎯 So the central assertion is not «baixou»: it is that an entry WITH NO SOURCE returns `sem-fonte` with the reason.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { downloadHeavy, bytesLeftToDownload, HEAVY_FILES, CACHE_HEAVY, sha256Hex, deliveryPath, heavyAtBoot } from '../app/js/platform/heavy.js';
 
-/** Uma Cache Storage de mentira, que CONTA o que lhe pedem. */
+/** A fake Cache Storage that COUNTS what it is asked for. */
 function cacheFalsa(jaTem = []) {
   const guardados = new Set(jaTem);
   const postos = [];
@@ -175,12 +174,12 @@ describe('what the report SAYS when a file does not arrive (probed 2026-09-23)',
 // NO pinned sha256 (the guard, and the wording that names it). The catalogue is a constant, and «every entry with a URL carries
 // a measured sha256» below refuses the only input that would reach it — the guard is the second line behind that one.
 
-// ================================ MUTAÇÕES CONFERIDAS ================================
-// 1. `if (!p.url) continue;` (saltar em silêncio em vez de devolver `sem-fonte`) → o [Zero] reprova. É a
-//    mutação inteira: um subsistema por fazer passaria a parecer tratado, que é o defeito que o ADR-0119 mediu.
+// ================================ MUTATIONS CHECKED ================================
+// 1. `if (!p.url) continue;` (skipping silently instead of returning `sem-fonte`) → the [Zero] fails. It is the whole
+//    mutation: an unbuilt subsystem would look handled, the defect ADR-0119 measured.
 // 3. removing `cache.match` (always fetch) → the [Boundary] fails: everything again at every start.
-// 4. deixar a excepção subir em vez de a apanhar → o [Inverse] reprova, e o defeito real é maior do que o
-//    caso: uma falha de rede derrubaria o arranque de um jogo por causa de um recurso que ele nem usa hoje.
+// 4. letting the exception rise instead of catching it → the [Inverse] fails, and the real defect is bigger than the
+//    case: a network failure would bring down a game's start over a resource it does not even use.
 
 describe('what comes from outside is checked before it is kept (issue #168; STRIDE client pass)', () => {
   // 📏 Measured on 2026-09-13: `downloadHeavy` put the response into Cache Storage as it came — JavaScript and WebAssembly
@@ -230,10 +229,10 @@ describe('what comes from outside is checked before it is kept (issue #168; STRI
 
   it('📌 [Right] what was cached before the check is not trusted: the cache has a new name', () => {
     /*
-     * 🔴 O NOME DA CACHE FICA EM PORTUGUÊS, e é uma decisão e não um esquecimento (ADR-0219): renomear a PASTA muda um
-     * caminho, mas renomear a CACHE órfã tudo o que está lá dentro — 814 MiB que uma escola já baixou e que ela voltaria a
-     * baixar no primeiro arranque depois da actualização. O registro deixa as chaves guardadas de fora por esta razão exacta,
-     * e o nome de uma cache é uma delas.
+     * 🔴 THE CACHE NAME STAYS IN PORTUGUESE, and it is a decision, not an oversight (ADR-0219): renaming the FOLDER changes a
+     * path, but renaming the CACHE orphans everything inside it — 814 MiB a school has already downloaded and would download
+     * again on the first start after the update. The record leaves stored keys out for exactly this reason, and a cache's
+     * name is one of them.
      */
     expect(CACHE_HEAVY, 'a cache mudou de nome: a escola volta a baixar os 814 MiB').toBe('incl-pesados-v2');
   });

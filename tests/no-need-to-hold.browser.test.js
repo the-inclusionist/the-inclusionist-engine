@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// «NÃO PRECISA SEGURAR», OFERECIDO ONDE UMA CRIANÇA PROCURA UMA OPÇÃO (ADR-0211; the Dev, 2026-09-21: «a aderência existe e falta
+// «NÃO PRECISA SEGURAR», OFFERED WHERE A CHILD LOOKS FOR AN OPTION (ADR-0211; the Dev, 2026-09-21: «a aderência existe e falta
 // oferecê-la como opção para teclado e toque, com nome que a criança entenda»).
 //
 // The setting is old — a tap holds the button down instead of a hand that cannot (`input/latch`) — and until today the only

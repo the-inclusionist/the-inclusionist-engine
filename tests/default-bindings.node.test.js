@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O gate das tabelas de binding. A asserção central é UMA: nada é atribuído duas vezes.
+// The gate of the binding tables. The central assertion is ONE: nothing is assigned twice.
 //
-// ⚠️ ELE NÃO É HIPOTÉTICO. A especificação do padrão chegou com `I` em duas ações — `action4` e R2 — e um
-// binding duplicado não produz erro em lado nenhum: as duas ações disparam juntas e a criança vê uma ação
-// dupla intermitente que ninguém reproduz de propósito.
+// ⚠️ IT IS NOT HYPOTHETICAL. The default's specification arrived with `I` on two actions — `action4` and R2 — and a
+// duplicated binding raises no error anywhere: both actions fire together and the child sees an intermittent double
+// action nobody reproduces on purpose.
 import { describe, it, expect } from 'vitest';
 import { ACTIONS } from '../app/js/core/actions.js';
 import {
   KEYBOARD_SOLO, KEYBOARD_DUO, GAMEPAD_STANDARD, bindingProblems, conflictsBetweenTables, unreachable,
 } from '../app/js/input/default-bindings.js';
-// Só o último bloco os usa. Estão aqui porque a pergunta que ele faz atravessa os dois ficheiros: uma tecla
-// pode estar livre nas TABELAS e já ser reclamada por uma constante de módulo do `input/keydown`.
+// Only the last block uses these. They are here because the question it asks crosses both files: a key may be free in
+// the TABLES and already claimed by a module constant of `input/keydown`.
 import { KB_DEFAULTS } from '../app/js/input/keyboard.js';
 import { PAUSE_KEYS, EASY_SHORTCUTS, SCREEN_DIGITS, isEasyShortcut } from '../app/js/input/keydown.js';
 
@@ -25,13 +25,12 @@ describe('as tabelas cobrem as quatorze ações, sem buraco', () => {
 });
 
 // ===================================================================================================
-// O ESQUEMA DE DOIS JOGADORES (ADR-0096)
+// THE TWO-PLAYER SCHEME (ADR-0096)
 // ===================================================================================================
-// ⚠️ O RISCO QUE ESTE BLOCO EXISTE PARA APANHAR É DE OUTRA FAMÍLIA que o do duplo-numa-tabela. Cada esquema
-// do `KEYBOARD_DUO` passa em `bindingProblems` SOZINHO; o defeito só existe entre os dois. As setas são o
-// caso concreto: no `KEYBOARD_SOLO` elas são um segundo caminho para o direcional do jogador 1, e em dupla
-// são o direcional do jogador 2. Se ficassem nos dois, os dois bonecos andariam juntos — sem erro, sem aviso,
-// e visível só jogando a dois.
+// ⚠️ THE RISK THIS BLOCK EXISTS TO CATCH IS OF ANOTHER FAMILY than the double-in-one-table. Each `KEYBOARD_DUO` scheme
+// passes `bindingProblems` ALONE; the defect exists only between the two. The arrows are the concrete case: in
+// `KEYBOARD_SOLO` they are a second path to player 1's d-pad, and in a pair they are player 2's d-pad. Left in both,
+// both characters would walk together — no error, no warning, and visible only when playing as two.
 describe('o esquema de DOIS jogadores (ADR-0096)', () => {
   const [P1, P2] = KEYBOARD_DUO;
 
@@ -54,11 +53,11 @@ describe('o esquema de DOIS jogadores (ADR-0096)', () => {
   });
 
   it('⚠️ [Boundary] as SETAS saem do jogador 1 — é a única diferença obrigatória para o solo', () => {
-    // O caso que dá nome ao problema. `KEYBOARD_SOLO` tem `ArrowUp` no `up`; em dupla, não pode ter.
+    // The case that names the problem. `KEYBOARD_SOLO` has `ArrowUp` on `up`; in a pair, it must not.
     expect(KEYBOARD_SOLO.up).toContain('ArrowUp');
     expect(P1.up, 'a seta ficou com o jogador 1 e vai mover os dois bonecos').not.toContain('ArrowUp');
     expect(P2.up).toEqual(['ArrowUp']);
-    // E o resto do jogador 1 é o solo: a dupla não reinventa o esquema, só lhe tira as setas.
+    // And the rest of player 1 is the solo scheme: the pair does not reinvent it, only takes the arrows away.
     for (const a of ['action1', 'action2', 'action3', 'action4', 'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger', 'start', 'select']) {
       expect(P1[a], `${a} divergiu do esquema solo sem motivo`).toEqual(KEYBOARD_SOLO[a]);
     }
@@ -74,37 +73,36 @@ describe('o esquema de DOIS jogadores (ADR-0096)', () => {
   });
 
   it('[Interface] alfanumérico e numérico são teclas DIFERENTES, e é disso que o esquema depende', () => {
-    // O Dev escreveu «7 (alphanumeric)» e «7 (numeric)» por extenso, e o esquema só fecha porque `code` os
-    // separa: `Digit7` é do jogador 1 (L1) e `Numpad7` é do jogador 2 (L2). Lido por `key` seriam a MESMA
-    // coisa — e com Num Lock desligado o bloco numérico chega ainda por outro nome.
+    // The Dev wrote «7 (alphanumeric)» and «7 (numeric)» in full, and the scheme only works because `code` separates
+    // them: `Digit7` is player 1's (L1) and `Numpad7` is player 2's (L2). Read by `key` they would be the SAME — and with
+    // Num Lock off the numeric block arrives under yet another name.
     expect(P1.leftShoulder).toEqual(['Digit7']);
     expect(P2.leftTrigger).toEqual(['Numpad7']);
     expect(conflictsBetweenTables(KEYBOARD_DUO)).toEqual([]);
-    // ⚠️ ESTE CRIVO ERA UMA LISTA BRANCA DO QUE A TABELA JÁ TINHA, e não do que é um `code` válido: aceitava
-    // `Key|Digit|Numpad|Arrow|Space|Enter` e mais nada. Em 2026-09-07 a #122 acrescentou `ShiftRight` — um
-    // código legítimo da especificação — e ele reprovou. Um gate que recusa mudança CORRETA não protege
-    // ninguém; empurra quem tem pressa a apagá-lo.
+    // ⚠️ This check accepts what a valid `code` is, not a whitelist of what the table already had: a whitelist refused
+    // `ShiftRight` (#122), a legitimate code of the specification. A gate that refuses a CORRECT change protects nobody;
+    // it pushes whoever is in a hurry to delete it.
     //
-    // O que ele existe para apanhar continua a valer, e é o que ficou: alguém a escrever um `key` (`'a'`,
-    // `'7'`, `'Shift'`) onde se pede um `code`. Um `key` é um caractere solto ou um nome SEM LADO — daí a
-    // recusa explícita de `Shift`/`Control`/`Alt`/`Meta` nus, que são a forma mais fácil de cometer o erro.
+    // What it exists to catch: someone writing a `key` (`'a'`, `'7'`, `'Shift'`) where a `code` is asked for. A `key` is
+    // a loose character or a name WITHOUT A SIDE — hence the explicit refusal of bare `Shift`/`Control`/`Alt`/`Meta`,
+    // the easiest way to make the mistake.
     const FAMILIAS = /^(Key[A-Z]|Digit\d|Numpad|Arrow(Up|Down|Left|Right)$|F\d{1,2}$)/;
     const NOMEADAS = new Set(['Space', 'Enter', 'Escape', 'Tab', 'Backspace', 'Backquote', 'Minus', 'Equal',
       'BracketLeft', 'BracketRight', 'Backslash', 'Semicolon', 'Quote', 'Comma', 'Period', 'Slash',
       'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'Delete', 'CapsLock', 'ContextMenu',
       'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight']);
-    const SEM_LADO = new Set(['Shift', 'Control', 'Alt', 'Meta']); // estes são `key`, nunca `code`
+    const SEM_LADO = new Set(['Shift', 'Control', 'Alt', 'Meta']); // these are `key`, never `code`
     const todas = KEYBOARD_DUO.flatMap((t) => ACTIONS.flatMap((a) => t[a] ?? []));
     const maus = todas.filter((c) => SEM_LADO.has(c) || !(FAMILIAS.test(c) || NOMEADAS.has(c)));
     expect(maus, 'binding que não é um `KeyboardEvent.code` reconhecível').toEqual([]);
-    // E o crivo tem de saber recusar: sem isto ele podia estar verde por aceitar tudo.
+    // And the check must know how to refuse: without this it could be green by accepting everything.
     expect(['a', '7', 'Shift', 'Escape '].filter((c) => SEM_LADO.has(c) || !(FAMILIAS.test(c) || NOMEADAS.has(c))))
       .toEqual(['a', '7', 'Shift', 'Escape ']);
   });
 
   it('⚠️ [Interface] a geometria do jogador 2 espelha a do jogador 1 — é o que torna o padrão ensinável', () => {
-    // `U I / J K` e `8 9 / 5 6` têm a MESMA forma no teclado, então a memória muscular atravessa a mesa:
-    //   action1 cima-esquerda · action4 cima-direita · action2 baixo-esquerda · action3 baixo-direita
+    // `U I / J K` and `8 9 / 5 6` have the SAME shape on the keyboard, so muscle memory crosses the table:
+    //   action1 top-left · action4 top-right · action2 bottom-left · action3 bottom-right
     const forma = (t, digito) => [t.action1[0], t.action4[0], t.action2[0], t.action3[0]].map((c) => c.replace(digito, ''));
     expect(forma(P1, /^Key/)).toEqual(['U', 'I', 'J', 'K']);
     expect(forma(P2, /^Numpad/)).toEqual(['8', '9', '5', '6']);
@@ -121,7 +119,7 @@ describe('⚠️ nada é atribuído duas vezes', () => {
   });
 
   it('e o detector APANHA o duplo — com o caso real que chegou na especificação', () => {
-    // `I` em `action4` e em `rightTrigger` (R2), que foi literalmente o que veio escrito.
+    // `I` on `action4` and on `rightTrigger` (R2), literally what the specification said.
     const comErro = { ...KEYBOARD_SOLO, rightTrigger: ['KeyI'] };
     const p = bindingProblems(comErro);
     expect(p).toHaveLength(1);
@@ -131,7 +129,7 @@ describe('⚠️ nada é atribuído duas vezes', () => {
   });
 
   it('apanha o duplo dentro de uma lista de várias teclas, não só entre ações', () => {
-    const comErro = { ...KEYBOARD_SOLO, action1: ['KeyU', 'ArrowUp'] }; // ArrowUp já é `up`
+    const comErro = { ...KEYBOARD_SOLO, action1: ['KeyU', 'ArrowUp'] }; // ArrowUp is already `up`
     expect(bindingProblems(comErro)).toHaveLength(1);
   });
 
@@ -153,16 +151,15 @@ describe('⚠️ nada é atribuído duas vezes', () => {
 describe('o padrão especificado pelo Dev, tecla a tecla', () => {
   it('o quadrado UIJK do teclado', () => {
     expect(KEYBOARD_SOLO.action1).toEqual(['KeyU']);
-    // ⚠️ `Space` volta ao pulo. Ela era um segundo atalho para `jump` e ficou de fora da primeira versão
-    // desta tabela porque ninguém sabia onde o pulo morava; o Dev disse (ADR-0086) que mora em `action2`,
-    // então a barra segue o verbo certo em vez de seguir uma posição escolhida por mim.
+    // ⚠️ `Space` is on the jump too: the Dev said (ADR-0086) the jump lives in `action2`, so the space bar follows the
+    // right verb instead of an arbitrarily chosen position.
     expect(KEYBOARD_SOLO.action2).toEqual(['KeyJ', 'Space']);
     expect(KEYBOARD_SOLO.action3).toEqual(['KeyK']);
     expect(KEYBOARD_SOLO.action4).toEqual(['KeyI']);
   });
 
   it('os ombros e gatilhos, na simetria do QWERTY', () => {
-    // 7 sobre U, 8 sobre I; Y à esquerda de U, O à direita de I.
+    // 7 above U, 8 above I; Y left of U, O right of I.
     expect(KEYBOARD_SOLO.leftShoulder).toEqual(['Digit7']); // L1
     expect(KEYBOARD_SOLO.leftTrigger).toEqual(['KeyY']);   // L2
     expect(KEYBOARD_SOLO.rightShoulder).toEqual(['Digit8']); // R1
@@ -181,9 +178,9 @@ describe('o padrão especificado pelo Dev, tecla a tecla', () => {
   });
 
   it('⚠️ a rotação de 45° entre teclado e Xbox é consistente nos quatro', () => {
-    // X(oeste)→U(noroeste) · Y(norte)→I(nordeste) · B(leste)→K(sudeste) · A(sul)→J(sudoeste).
-    // Não é enfeite: é o que faz a memória muscular atravessar de um transporte para o outro.
-    const XBOX_ROSA = { 2: 'W', 3: 'N', 1: 'E', 0: 'S' };            // face → ponto cardeal
+    // X(west)→U(north-west) · Y(north)→I(north-east) · B(east)→K(south-east) · A(south)→J(south-west).
+    // Not decoration: it is what makes muscle memory cross from one transport to the other.
+    const XBOX_ROSA = { 2: 'W', 3: 'N', 1: 'E', 0: 'S' };            // face → cardinal point
     const TECLA_ROSA = { KeyU: 'NW', KeyI: 'NE', KeyK: 'SE', KeyJ: 'SW' };
     const HORARIO = { W: 'NW', N: 'NE', E: 'SE', S: 'SW' };          // 45° no sentido horário
 
@@ -195,7 +192,7 @@ describe('o padrão especificado pelo Dev, tecla a tecla', () => {
   });
 
   it('start e select no teclado, na simetria de MÃO', () => {
-    // `F` ao lado do polegar da mão que se move (WASD); `H` ao lado da mão que age (UIJK).
+    // `F` by the thumb of the moving hand (WASD); `H` by the acting hand (UIJK).
     expect(KEYBOARD_SOLO.select).toEqual(['KeyF']);
     expect(KEYBOARD_SOLO.start).toEqual(['KeyH', 'Enter']);
   });
@@ -203,7 +200,7 @@ describe('o padrão especificado pelo Dev, tecla a tecla', () => {
 
 describe('o que um transporte NÃO alcança é dito, não escondido', () => {
   it('⚠️ o teclado passou a alcançar as quatorze — a dívida do ADR-0074 §1 fechou', () => {
-    // O registro dizia que `start` existia em dois transportes de nove e faltava no teclado.
+    // The record said `start` existed on two transports of nine and was missing on the keyboard.
     expect(unreachable(KEYBOARD_SOLO)).toEqual([]);
   });
 
@@ -212,34 +209,34 @@ describe('o que um transporte NÃO alcança é dito, não escondido', () => {
   });
 
   it('`unreachable` continua a apanhar uma ausência de verdade', () => {
-    // Sem esta, o teste acima passaria com um `unreachable` que devolvesse sempre vazio.
+    // Without this one, the test above would pass with an `unreachable` that always returned empty.
     expect(unreachable({ ...KEYBOARD_SOLO, leftTrigger: null })).toEqual(['leftTrigger']);
   });
 });
 
 // ==========================================================================================================
-// ⚠️ NENHUM ASSENTO FICA SEM PORTA PARA O REMAPEAMENTO (#122)
+// ⚠️ NO SEAT IS LEFT WITHOUT A DOOR TO REMAPPING (#122)
 //
-// Medido em 2026-09-07, no `KB_DEFAULTS.p2[1]`: das catorze posicoes do segundo assento, **DEZ so se
-// alcancam pelo bloco numerico** — as oito acoes mais o `start` e o `select`. Um Chromebook nao tem esse
-// bloco, e um Chromebook e o hardware que o pilar 1 nomeia.
+// In `KB_DEFAULTS.p2[1]`, of the second seat's fourteen positions, **most are reachable only through the numeric
+// block** — the eight actions plus `start` and `select` (measured on 2026-09-07). A Chromebook has no such block, and a
+// Chromebook is the hardware pillar 1 names.
 //
-// ⚠️ O QUE ISSO FAZ A UMA CRIANCA: ela anda pelas setas (que existem), nao age em nada, e **nao consegue
-// abrir o menu para consertar** — porque a tecla que abre o menu esta no mesmo bloco que falta. E a
-// definicao de «um padrao do qual a crianca nao escapa».
+// ⚠️ WHAT THAT DOES TO A CHILD: they walk with the arrows (which exist), act on nothing, and **cannot open the menu to
+// fix it** — because the key that opens the menu is in the same missing block. It is the definition of
+// «um padrao do qual a crianca nao escapa».
 //
-// ⚠️ E O CONSERTO NAO E TROCAR AS TECLAS. A auditoria e explicita: «tornar o proprio padrao remapeavel, e
-// nao trocar as teclas que ele escolheu». O layout do numpad e MELHOR onde ele existe — um bloco fisico sob
-// uma mao — e nao tira nada ao primeiro jogador. O que faltava era UMA porta.
+// ⚠️ AND THE FIX IS NOT CHANGING THE KEYS. The audit is explicit: «tornar o proprio padrao remapeavel, e nao trocar as
+// teclas que ele escolheu». The numpad layout is BETTER where it exists — a physical block under one hand — and takes
+// nothing from the first player. What was missing was ONE door.
 //
-// MUTACOES CONFERIDAS (no fim do bloco).
+// MUTATIONS CHECKED — at the end of the block.
 // ==========================================================================================================
 describe('input/default-bindings — toda cadeira tem porta para o remapeamento (#122)', () => {
   const soNumpad = (v) => (v ?? []).length > 0 && (v ?? []).every((c) => c.startsWith('Numpad'));
 
   it('⚠️ [Cross-check] o segundo assento E MESMO quase todo numpad — senao nao ha defeito a consertar', () => {
-    // Ancora a premissa: se um dia este assento deixar de depender do numpad, o caso abaixo passa a proteger
-    // uma coisa que ja nao e verdade, e este aqui avisa antes disso.
+    // Anchors the premise: if this seat ever stops depending on the numpad, the case below would be protecting
+    // something no longer true, and this one warns before that.
     const p2 = KEYBOARD_DUO[1];
     const presas = ACTIONS.filter((a) => soNumpad(p2[a]));
     expect(presas.length, 'o segundo assento deixou de depender do numpad; reler a #122').toBeGreaterThanOrEqual(8);
@@ -247,8 +244,8 @@ describe('input/default-bindings — toda cadeira tem porta para o remapeamento 
   });
 
   it('⚠️ [Right] o `start` de CADA esquema de dupla e alcancavel SEM bloco numerico', () => {
-    // `start` e a pausa, e da pausa alcanca-se a tela de remapeamento — de onde todas as outras treze
-    // posicoes se mudam. Uma porta chega para escapar; e chegar a ZERO portas nao chega.
+    // `start` is the pause, and from the pause the remapping screen is reachable — where all the other thirteen
+    // positions can be changed. One door is enough to escape; ZERO doors is not.
     for (const [i, esquema] of KEYBOARD_DUO.entries()) {
       const semNumpad = (esquema.start ?? []).filter((c) => !c.startsWith('Numpad'));
       expect(semNumpad.length, `p${i + 1}: o start so se alcanca pelo numpad — num Chromebook esta crianca nao abre o menu`)
@@ -262,7 +259,7 @@ describe('input/default-bindings — toda cadeira tem porta para o remapeamento 
   });
 
   it('[Right] as teclas do numpad FICAM — o conserto e acrescentar, nao trocar', () => {
-    // A auditoria pediu isto por escrito, e um caso a menos aqui deixaria o proximo a "arrumar" o esquema.
+    // The audit asked for this in writing, and one case fewer here would leave the next person "tidying up" the scheme.
     const p2 = KEYBOARD_DUO[1];
     expect(p2.start).toContain('Numpad1');
     expect(p2.action1).toEqual(['Numpad8']);
@@ -270,31 +267,30 @@ describe('input/default-bindings — toda cadeira tem porta para o remapeamento 
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · voltando `start: ['Numpad1']` (tirando a porta) → "[Right] o `start` de CADA esquema" reprova nomeando
-//     `p2`. E a #122 reproduzida: a crianca do segundo assento sem forma de abrir o menu num Chromebook.
-//   · trocando a porta por outra tecla ja usada (ex.: `KeyH`) → reprovam QUATRO, e tres deles sao gates que
-//     ja existiam antes desta issue. E a melhor noticia deste bloco: a propriedade "nenhuma tecla tem dois
-//     donos" nao dependia de eu me lembrar dela ao acrescentar uma porta.
-//   · trocando `Numpad1` por `ShiftRight` em vez de acrescentar → "[Right] as teclas do numpad FICAM"
-//     reprova. O conserto pedido era acrescentar uma porta, nao mudar o layout que funciona onde ha numpad.
+// ========================= MUTATIONS CHECKED =========================
+//   · going back to `start: ['Numpad1']` (removing the door) → the [Right] case of EACH scheme's `start` fails naming
+//     `p2`. It is #122 reproduced: the second seat's child with no way to open the menu on a Chromebook.
+//   · replacing the door with a key already used (e.g. `KeyH`) → FOUR fail, and three of them are gates that existed
+//     before this issue. It is this block's best news: the property "no key has two owners" did not depend on
+//     remembering it when adding a door.
+//   · replacing `Numpad1` with `ShiftRight` instead of adding → the [Right] case of the numpad keys STAYING fails. The
+//     fix asked for was adding a door, not changing the layout that works where there is a numpad.
 
 // ==========================================================================================================
-// ⚠️ UM BINDING PADRAO NAO COLIDE COM UMA TECLA QUE O MODULO JA RECLAMA
+// ⚠️ A DEFAULT BINDING DOES NOT COLLIDE WITH A KEY THE MODULE ALREADY CLAIMS
 //
-// ⚠️ ESTE BLOCO NASCEU DE UM ERRO MEU, e vale escrever assim. Ao consertar a #122 acrescentei `ShiftRight`
-// ao `start` do segundo assento e verifiquei que a tecla estava livre — nas QUATRO TABELAS. Nao olhei os
-// conjuntos de modulo do `input/keydown`, e `ShiftRight` esta em `EASY_SHORTCUTS`.
+// ⚠️ A key can be free in all FOUR TABLES and still be claimed by an `input/keydown` module set: `ShiftRight`, the
+// second seat's `start` door (#122), is in `EASY_SHORTCUTS`.
 //
-// Nao ha colisao viva: o `isEasyShortcut` exige `numPlayers <= 1` e o `p2[1]` so existe com dois. Mas isso e
-// «verdade por acidente de uma guarda noutro ficheiro» — exatamente o feitio de defeito que a #121 acabou de
-// pagar, em que o pan estava certo na plataforma por o mundo dela ser medido em pixels.
+// There is no live collision: `isEasyShortcut` requires `numPlayers <= 1` and `p2[1]` only exists with two. But that is
+// «verdade por acidente de uma guarda noutro ficheiro» — exactly the shape of defect #121 paid for, where the pan was
+// right on the platformer because its world was measured in pixels.
 //
-// Entao a seguranca deixa de ser acidente e passa a ser AFIRMADA: a sobreposicao esta nomeada com o motivo, e
-// ha um caso que prende a guarda que a torna inofensiva. Se alguem tirar o `numPlayers <= 1`, a suite fica
-// vermelha antes de a tecla de pausa da segunda crianca virar «trocar poder» do primeiro.
+// So safety stops being an accident and is ASSERTED: the overlap is named with its reason, and a case holds the guard
+// that makes it harmless. If someone removes `numPlayers <= 1`, the suite turns red before the second child's pause
+// key becomes the first player's «trocar poder».
 //
-// MUTACOES CONFERIDAS (no fim do bloco).
+// MUTATIONS CHECKED — at the end of the block.
 // ==========================================================================================================
 describe('binding padrao x teclas que o modulo ja reclama (#122, achado de 2026-09-07)', () => {
   const TABELAS = [
@@ -309,7 +305,7 @@ describe('binding padrao x teclas que o modulo ja reclama (#122, achado de 2026-
     ['SCREEN_DIGITS', (c) => SCREEN_DIGITS.test(c)],
   ];
 
-  /** As sobreposicoes CONHECIDAS, cada uma com o motivo. A lista nao cresce sem alguem escrever porque. */
+  /** The KNOWN overlaps, each with its reason. The list does not grow without someone writing why. */
   const CONHECIDAS = new Map([
     ['solo.start=Enter∩PAUSE_KEYS', 'deliberado: o `Enter` JA pausava antes de o esquema o nomear'],
     ['p2[0].start=Enter∩PAUSE_KEYS', 'o mesmo, para o primeiro assento da dupla'],
@@ -339,7 +335,7 @@ describe('binding padrao x teclas que o modulo ja reclama (#122, achado de 2026-
   });
 
   it('⚠️ [Interface] a guarda que torna a de `ShiftRight` inofensiva EXISTE, e e ela que a torna', () => {
-    // Sem `numPlayers <= 1`, a tecla de pausa da segunda crianca vira «trocar poder» do primeiro jogador.
+    // Without `numPlayers <= 1`, the second child's pause key becomes the first player's «trocar poder».
     const jogador = { easy: true };
     expect(isEasyShortcut('ShiftRight', { players: [jogador], numPlayers: 1 }),
       'a premissa do caso morreu: os atalhos do Facil ja nao valem no solo').toBe(true);
@@ -348,12 +344,12 @@ describe('binding padrao x teclas que o modulo ja reclama (#122, achado de 2026-
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · tirando `s.numPlayers <= 1` do `isEasyShortcut` → "[Interface] a guarda ... EXISTE" reprova. E o unico
-//     caminho pelo qual a excecao do `ShiftRight` deixaria de ser inofensiva, e agora ele esta fechado.
-//   · pondo `Digit1` no `select` do jogador 1 → reprovam TRES, entre eles o "[Zero] NENHUMA sobreposicao
-//     nova" contra `SCREEN_DIGITS`. E a forma exata do erro que eu cometi na #122, apanhada desta vez — e um
-//     dos tres e um caso ANTERIOR a este bloco, o que mostra que a propriedade tem mais de um dono.
-//   · tirando `ShiftRight` do `p2[1].start` → reprovam DOIS: o "[Cross-check]" daqui, porque a lista de
-//     conhecidas passa a prometer uma sobreposicao que ja nao existe (entrada orfa faz a tabela mentir sobre
-//     o tamanho da excecao), e o caso da porta da #122.
+// ========================= MUTATIONS CHECKED =========================
+//   · removing `s.numPlayers <= 1` from `isEasyShortcut` → the [Interface] case of the guard fails. It is the only path
+//     by which the `ShiftRight` exception would stop being harmless, and now it is closed.
+//   · putting `Digit1` on player 1's `select` → THREE fail, among them the [Zero] case of no new overlap against
+//     `SCREEN_DIGITS`. It is the exact shape of the mistake made in #122, caught this time — and one of the three is a
+//     case OLDER than this block, which shows the property has more than one owner.
+//   · removing `ShiftRight` from `p2[1].start` → TWO fail: this block's [Cross-check], because the known list would
+//     promise an overlap that no longer exists (an orphan entry makes the table lie about the exception's size), and
+//     #122's door case.

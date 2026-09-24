@@ -1,38 +1,32 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O MÍNIMO DE UMA CALIGRÁFICA VIRA GATE QUANDO ENCOSTA NO TAMANHO QUE A TELA USA (#87, item 2).
+// A CALLIGRAPHIC FACE'S MINIMUM BECOMES A GATE WHEN IT MEETS THE SIZE THE SCREEN USES (#87, item 2).
 //
-// ========================= O QUE FALTAVA, E ERA A METADE QUE IMPORTA =========================
-// O item 2 da #87 diz, com estas palavras: «Abaixo disso a face deixa de ser difícil e vira ilegível — tem
-// de ser gate, não recomendação.» O que existia era metade: `ui/fonts` declara `minPx` (Pinyon 24,
-// UnifrakturMaguntia 20) e `tests/settings-typo.node.test.js` afere que a DECLARAÇÃO está lá.
+// ========================= WHY =========================
+// Item 2 of #87 says, in these words: «Abaixo disso a face deixa de ser difícil e vira ilegível — tem de ser gate, não
+// recomendação.» `ui/fonts` declares `minPx` (Pinyon 24, UnifrakturMaguntia 20, Fondamento 20), and a minimum only the
+// test reads is a recommendation dressed as a gate — precisely what the issue refuses. So the number is measured here
+// against the size the screen USES.
 //
-// ⚠️ MAS NADA EM PRODUÇÃO LIA O NÚMERO. Medido em 2026-09-07: `minPx` aparece em três linhas de `ui/fonts.ts`
-// — a definição do campo e os dois valores — e em mais lado nenhum do `app/js`. Um mínimo que só o teste lê
-// é uma recomendação com aparência de gate, que é precisamente o que a issue recusa.
+// ========================= THE NUMBER ON THE OTHER SIDE =========================
+// The smallest `font-size` declared in PIXELS in `app/css/style.css` (including a `var(--x, Npx)` fallback). The rules
+// in `em` cannot be computed statically.
 //
-// ========================= O NÚMERO QUE FALTAVA DO OUTRO LADO =========================
-// Um mínimo só é aferível contra o tamanho que a tela USA. Medido no `app/css/style.css`:
+// ⚠️ AND THE DIRECTION OF THE IGNORANCE IS WHAT SAVES THE ARGUMENT. The smallest size REALLY drawn is unknown — but the
+// relative rules can only go down from what they inherit. So the smallest px size is a CEILING of the floor: the real
+// smallest size is that number or less. That is enough, because the conclusion is «não desça abaixo de». Since ADR-0163
+// every size is 16 px or more and nothing relative goes under 1em (`texto-nunca-abaixo-de-16`), so the ceiling is 16.
 //
-//   · o menor `font-size` declarado em PIXELS é **14px** (o recuo de `--hud-fs`, no `#game-hud`);
-//   · há **28** regras em `em`, e essas não se computam estaticamente.
+// ========================= THE CONSEQUENCE, WHICH STOPS BEING TASTE =========================
+// Every calligraphic face asks for more than 16. So **none of them can be offered in this interface's menu** — and
+// `OFERECIVEIS` excludes them by ROLE, which is a design rule. Here the exclusion is also tied to a NUMBER: if someone
+// puts a calligraphic face in the menu, or gives an offered face a `minPx` its scale does not reach, or lowers the
+// screen's floor, this fails.
 //
-// ⚠️ E A DIREÇÃO DA IGNORÂNCIA É A QUE SALVA O ARGUMENTO. Não sei o menor tamanho REAL desenhado — mas sei
-// que as regras relativas só podem descer a partir do que herdam. Portanto 14px é um TETO do piso: o menor
-// tamanho de facto é **14px ou menos**. E é isso que basta, porque a conclusão é «não desça abaixo de».
+// ⚠️ What this file does NOT assert: that the smallest px size is the real floor. It asserts it is a ceiling of it, and
+// the assertion uses it only in that direction. A case saying «o piso é 16» would invent precision the measurement
+// does not have.
 //
-// ========================= A CONSEQUÊNCIA, QUE DEIXA DE SER GOSTO =========================
-// Pinyon pede 24 e Maguntia pede 20. Ambas acima de 14. Logo **nenhuma das duas pode ser oferecida no menu
-// desta interface** — e o `OFERECIVEIS` já as exclui, mas excluía-as por PAPEL, que é uma regra de desenho.
-// A partir daqui a exclusão também está presa a um NÚMERO: se alguém puser uma caligráfica no menu, ou der
-// `minPx` a uma face geral, ou baixar o piso da tela, isto reprova.
-//
-// ⚠️ O que este ficheiro NÃO afirma: que 14px é o piso real. Afirma que é um teto dele, e a asserção usa-o
-// só nessa direção. Um caso que dissesse «o piso é 14» estaria a inventar precisão que a medição não tem.
-//
-// ⚠️ (2026-09-12) The numbers above are history: ADR-0163 raised every size to 16 px or more, so the smallest px size is
-// now 16 and nothing relative goes under 1em (`texto-nunca-abaixo-de-16`). The argument holds with 16 as the ceiling.
-//
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -41,32 +35,31 @@ import { FONT_GROUPS, OFERECIVEIS, fontRole, faceScale, BASE_EM_PX } from '../ap
 const RAIZ = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const CSS = readFileSync(join(RAIZ, 'app', 'css', 'style.css'), 'utf8');
 
-/** Os `font-size` em px, incluindo o recuo de um `var(--x, Npx)` — que é o que o HUD realmente usa. */
+/** The `font-size`s in px, including the fallback of a `var(--x, Npx)` — which is what the HUD really uses. */
 const EM_PX = [...CSS.matchAll(/font-size:\s*(?:var\([^,)]+,\s*)?(\d+(?:\.\d+)?)px/g)].map((m) => +m[1]);
-/** As regras relativas. Não entram na conta; entram no ARGUMENTO, porque só descem. */
+/** The relative rules. They do not enter the arithmetic; they enter the ARGUMENT, because they only go down. */
 const RELATIVAS = [...CSS.matchAll(/font-size:\s*\.?\d+(?:\.\d+)?r?em/g)].length;
 
 const TETO_DO_PISO = Math.min(...EM_PX);
 
 describe('o tamanho mínimo de uma face é aferido contra o que a tela usa (#87 item 2)', () => {
   it('⚠️ [Cross-check] a leitura do CSS acha tamanhos — senão tudo abaixo seria vazio', () => {
-    // Um regex que deixasse de casar daria `Math.min()` = Infinity, e todas as comparações abaixo ficariam
-    // verdes para sempre. Este caso é o que impede o gate de morrer em silêncio, que já aconteceu neste
-    // repositório com outra regex.
+    // A regex that stopped matching would give `Math.min()` = Infinity, and every comparison below would stay green
+    // forever. This case keeps the gate from dying silently, which has happened in this repository with another regex.
     expect(EM_PX.length, 'nenhum font-size em px encontrado no style.css').toBeGreaterThan(0);
     expect(Number.isFinite(TETO_DO_PISO)).toBe(true);
     expect(RELATIVAS, 'nenhuma regra relativa; rever a prosa do cabeçalho').toBeGreaterThan(0);
   });
 
   it('[Right] o teto do piso é um número de tela plausível, e não um acidente de leitura', () => {
-    // Larga de propósito: o caso não existe para prender o valor — existe para apanhar uma leitura absurda
-    // (0, ou 200) que faria as asserções seguintes dizerem qualquer coisa.
+    // Wide on purpose: the case does not exist to pin the value — it exists to catch an absurd reading (0, or 200) that
+    // would make the following assertions say anything.
     expect(TETO_DO_PISO).toBeGreaterThanOrEqual(8);
     expect(TETO_DO_PISO).toBeLessThanOrEqual(24);
   });
 
   it('⚠️ [Zero] NENHUMA face oferecida no menu pede mais do que a tela dá', () => {
-    // A regra inteira, e a única que precisa de existir. `minPx` ausente = a face não tem mínimo declarado.
+    // The whole rule, and the only one that needs to exist. `minPx` absent = the face declares no minimum.
     // 📌 Since ADR-0176 a face offered with a floor above the screen's is drawn LARGER, by its own scale: what is measured is the
     // size the child gets, the screen's base times that scale.
     const grandes = OFERECIVEIS
@@ -76,10 +69,9 @@ describe('o tamanho mínimo de uma face é aferido contra o que a tela usa (#87 
   });
 
   it('⚠️ [Interface] e a exclusão das caligráficas deixa de ser só desenho — passa a ter número', () => {
-    // O `OFERECIVEIS` filtra por PAPEL. Este caso afirma a segunda razão, independente da primeira: cada
-    // caligráfica pede MAIS do que esta interface garante. Se um dia a tela subir o piso, este caso reprova
-    // — e reprova a pedir uma releitura, não um conserto: a essa altura a exclusão passaria a ser só desenho
-    // outra vez, e o ADR-0012 é que decide isso.
+    // `OFERECIVEIS` filters by ROLE. This case asserts the second reason, independent of the first: every calligraphic
+    // face asks for MORE than this interface guarantees. If the screen ever raises its floor, this case fails — asking
+    // for a rereading, not a fix: by then the exclusion would be design alone again, and ADR-0012 decides that.
     const CALIGRAFICAS = FONT_GROUPS.flatMap((g) => g.items).filter((it) => fontRole(it) === 'caligrafica');
     expect(CALIGRAFICAS.length, 'não há caligráficas; este caso não mede nada').toBeGreaterThan(0);
     for (const it of CALIGRAFICAS) {
@@ -91,20 +83,20 @@ describe('o tamanho mínimo de uma face é aferido contra o que a tela usa (#87 
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · tirando o filtro por papel do `OFERECIVEIS` (`ui/fonts`) → "[Zero] NENHUMA face oferecida" reprova
-//     nomeando `pinyon` e `ufmag` com os dois números lado a lado. É a #87 item 2 aferida em vez de escrita.
-//   · acrescentando ao catálogo uma face GERAL (sem `papel`, logo oferecida) com `minPx: 20` → "[Zero]"
-//     reprova com «pede 20px e a tela desce a 14px ou menos». O gate não depende de a face ser caligráfica:
-//     depende de o número não caber na tela.
-//   · subindo TODAS as SETE declarações de `font-size` em px do `style.css` para 26px → "[Interface] a
-//     exclusão das caligráficas" reprova nas duas, a pedir releitura do ADR-0012. ⚠️ Registado como
-//     reprovação DESEJADA e não como defeito: subir o piso da tela muda a premissa da exclusão.
+// ========================= MUTATIONS CHECKED =========================
+//   · removing the role filter from `OFERECIVEIS` (`ui/fonts`) → the [Zero] case of offered faces fails, naming
+//     `pinyon` and `ufmag` with the two numbers side by side. It is #87 item 2 measured instead of written.
+//   · adding to the catalogue a GENERAL face (no role, so offered) with `minPx: 20` → the [Zero] case fails with
+//     «pede 20px e a tela desce a 14px ou menos». The gate does not depend on the face being calligraphic: it depends
+//     on the number not fitting the screen.
+//   · raising ALL SEVEN px `font-size` declarations of `style.css` to 26px → the [Interface] case of the calligraphic
+//     exclusion fails on both, asking for a rereading of ADR-0012. ⚠️ Recorded as a WANTED failure and not a defect:
+//     raising the screen's floor changes the exclusion's premise.
 //
-//     ⚠️ E REGISTADO TAMBÉM O QUE ME CORREU MAL, porque é a lição e não o resultado: tentei-a primeiro
-//     trocando UMA ocorrência de `var(--hud-fs,14px)`. Há duas, e há mais cinco declarações em px noutras
-//     regras — entre elas o `font-size:16px` do `html,body`. A suíte ficou verde e eu ia registá-la como
-//     «mutação que não falha», quando o que tinha acontecido era a mutação NÃO TER SIDO APLICADA ao número
-//     que o gate lê. Contar as ocorrências antes de substituir é o que separa as duas coisas.
-//   · trocando o regex de `px` por um que não casa → "[Cross-check] a leitura do CSS acha tamanhos" reprova.
-//     Sem ele, `Math.min()` daria Infinity e os dois casos seguintes ficariam verdes para sempre.
+//     ⚠️ AND RECORDED TOO WHAT WENT WRONG, because it is the lesson and not the result: it was first tried by
+//     replacing ONE occurrence of `var(--hud-fs,14px)`. There are two, and five more px declarations in other rules —
+//     among them the `font-size:16px` of `html,body`. The suite stayed green and it was about to be recorded as a
+//     «mutação que não falha», when what had happened was that the mutation was NOT APPLIED to the number the gate
+//     reads. Counting occurrences before replacing is what tells the two apart.
+//   · replacing the `px` regex with one that does not match → the [Cross-check] case of reading the CSS fails. Without
+//     it, `Math.min()` would give Infinity and the next two cases would stay green forever.

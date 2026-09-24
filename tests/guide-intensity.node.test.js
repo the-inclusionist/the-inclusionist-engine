@@ -77,12 +77,12 @@ describe('platform/guide-intensity — a distancia vira brilho', () => {
 // ========================= MUTATIONS CHECKED =========================
 //   · setting `FAR_VOL = 0` → "[Zero] NUNCA emudece" fails at all four distances and at the final assertion. It is the
 //     defect that would make «longe» sound like «nao ha alvo».
-//   · making the cutoff interpolation linear (`FAR_CUT + (NEAR_CUT - FAR_CUT) * perto`) → "[Boundary] o brilho e
-//     EXPONENCIAL" fails on both assertions, with the arithmetic mean in place of the geometric one.
+//   · making the cutoff interpolation linear (`FAR_CUT + (NEAR_CUT - FAR_CUT) * perto`) → the [Boundary] case of the
+//     EXPONENTIAL brightness fails on both assertions, with the arithmetic mean in place of the geometric one.
 //   · making the volume exponential too → "[Boundary] e o VOLUME e linear" fails. The two axes would accelerate at the
 //     same point, which is the opposite of having two.
 //   · removing the saturation's `Math.min(1, …)` → "[Zero] NUNCA emudece" fails at 20, 100 and 5000 steps, with the
 //     volume below the floor and the cutoff below `FAR_CUT`.
-//   · lowering `STEPS_TO_FLOOR` to 8 → TWO fail: "[Interface] o fundo da escala e a regua" and "[Right] os DOIS eixos
-//     crescem juntos", because at 12 and at 9 steps it would already be saturated and the two axes would stand still
-//     between them. The guide would bottom out while the sonar still said «perto».
+//   · lowering `STEPS_TO_FLOOR` to 8 → TWO fail: the [Interface] case of the scale's floor and the [Right] case of BOTH
+//     axes growing together, because at 12 and at 9 steps it would already be saturated and the two axes would stand
+//     still between them. The guide would bottom out while the sonar still said «perto».

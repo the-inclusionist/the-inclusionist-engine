@@ -1,33 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// NENHUMA DECLINAÇÃO PODE ESTAR MORTA — o inventário dos campos de `Declinios` que ninguém lê.
+// NO DECLINATION MAY BE DEAD — the inventory of `Declinios` fields nobody reads.
 //
-// ========================= A DISTINÇÃO QUE ESTE PROJETO DIZ FAZER =========================
-// O `create-game` repete a frase em três sítios: «declinar é escolha; não ter é omissão». Ela é o coração do
-// ADR-0106 §2 e já pagou quatro consertos — a barra de a11y (`44a7ba3`), o ator da pausa, o cartão de pausa e
-// a voz neural (`7212479`). Mas ela só é verdade enquanto **declinar mudar alguma coisa**.
+// ========================= THE DISTINCTION THIS PROJECT CLAIMS TO MAKE =========================
+// `create-game` states it: declining is a choice; not declaring is an omission. It is the heart of ADR-0106 §2 and has
+// paid for four fixes — the a11y bar (`44a7ba3`), the pause actor, the pause card and the neural voice (`7212479`). But
+// it is only true while **declining changes something**. A field the type declares and no code reads makes declaring
+// and not declaring give exactly the same result — and a case asserting only that the field crosses the root intact
+// would make an inert field look alive.
 //
-// 🔴 E EM 2026-09-08 UM CAMPO ESTAVA MORTO. `declines.semAssistenteDePad` existe no tipo desde o achado 10 do
-// segundo consumidor, o `consumer-quiz` declara-o, o retrato de FORMA regista-o e um caso afirma que ele
-// atravessa a raiz intacto — e **código nenhum o lê**. Declarar a ausência e não a declarar davam exactamente
-// o mesmo resultado.
+// ========================= WHY AN INVENTORY AND NOT A PROHIBITION =========================
+// The obvious way out — «acuse em `problems` quem não declina» — was MEASURED AND REFUSED: the consumer has no way to
+// fix a field the engine does not read. A line in `problems` its reader cannot resolve is the same as a gate with no
+// exit: it gets switched off.
 //
-// ⚠️ E O CASO QUE EXISTIA ERA O DEFEITO ESCRITO COMO GARANTIA, a segunda vez que este repositório encontra
-// essa forma (a primeira foi o `quit` montado no `001b185`). «Declinar fica NO REGISTRO — um consumidor pode
-// ser auditado pelo que recusou» é uma afirmação legítima *sobre o registo*, e por ser a ÚNICA afirmação
-// sobre este campo, fazia um campo inerte parecer vivo.
+// So what is asserted is the INVENTORY — every dead field must carry a hand-written reason — and it SHRINKS: the day a
+// field gains a reader, its entry leaves, and the exit case forces it out. The inventory is empty today (ADR-0231).
 //
-// ========================= POR QUE UM INVENTÁRIO E NÃO UMA PROIBIÇÃO =========================
-// A saída óbvia — «acuse em `problems` quem não declina» — foi MEDIDA E RECUSADA: o consumidor não tem como
-// consertar isto. ⚠️ A razão que aqui estava — a raiz não montava o assistente porque ele pedia o `spriteBase`
-// do cartucho — deixou de ser verdade: a raiz monta o próprio assistente (o painel `#padwiz`, «Mapear
-// controle»), e desde a nota CD a demonstração é do jogo e o `spriteBase` saiu. O campo continua sem leitor,
-// agora por outro motivo, escrito na entrada abaixo. Pôr em `problems` uma linha que quem a lê não pode
-// resolver é a mesma coisa que um gate sem saída: desliga-se.
-//
-// Então o que se afirma é o INVENTÁRIO — cada campo morto tem de trazer a razão escrita à mão —, e ele
-// ENCOLHE: no dia em que a raiz montar o assistente, a entrada sai daqui, e o caso da saída obriga-a a sair.
-//
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -37,10 +26,10 @@ const RAIZ_JS = fileURLToPath(new URL('../app/js/', import.meta.url));
 const CREATE_GAME = 'boot/create-game.ts';
 
 /**
- * OS CAMPOS DE `Declinios` QUE A ENGINE NÃO LÊ, e por que cada um continua no tipo.
+ * THE `Declinios` FIELDS THE ENGINE DOES NOT READ, and why each one stays in the type.
  *
- * ⚠️ A LISTA TEM DE ENCOLHER. Uma entrada nova sem razão escrita à mão é uma declinação que não declina nada,
- * e um consumidor a pensar que decidiu.
+ * ⚠️ THE LIST MUST SHRINK. A new entry without a hand-written reason is a declination that declines nothing, and a
+ * consumer who thinks they decided.
  */
 // Empty since ADR-0231: `noPadAssistant`, the last entry, left the type instead of gaining a reader — the
 // controller-mapping wizard is accessibility the engine offers every game, and that is not declinable (ADR-0122).
@@ -48,7 +37,7 @@ const SEM_LEITOR = {};
 
 const fonte = (rel) => readFileSync(join(RAIZ_JS, rel), 'utf8');
 
-/** O bloco `interface Declinios { … }`, que é onde os campos são DECLARADOS e não lidos. */
+/** The `interface Declinios { … }` block, which is where the fields are DECLARED and not read. */
 function blocoDosDeclinios(src) {
   const i = src.indexOf('export interface Declinios {');
   if (i === -1) return null;
@@ -56,12 +45,12 @@ function blocoDosDeclinios(src) {
   return fim === -1 ? null : src.slice(i, fim + 2);
 }
 
-/** Os nomes dos campos, do próprio bloco — nunca uma cópia à mão ao lado de uma união. */
+/** The field names, from the block itself — never a hand copy beside a union. */
 function camposDeclarados(bloco) {
   return [...bloco.matchAll(/readonly\s+(\w+)\??\s*:/g)].map((m) => m[1]);
 }
 
-/** Todo `.ts` da engine, menos o consumidor de exemplo — o quiz DECLARA, não lê. */
+/** Every `.ts` of the engine except the example consumer — the quiz DECLARES, it does not read. */
 function ficheirosDaEngine(dir = RAIZ_JS, prefixo = '') {
   const saida = [];
   for (const nome of readdirSync(dir)) {
@@ -78,12 +67,11 @@ const BLOCO = blocoDosDeclinios(SRC_CG);
 const CAMPOS = BLOCO ? camposDeclarados(BLOCO) : [];
 
 /**
- * Quantas vezes a engine MENCIONA o campo fora da declaração.
+ * How many times the engine MENTIONS the field outside the declaration.
  *
- * ⚠️ A CONTAGEM É GENEROSA DE PROPÓSITO — o nome em qualquer sítio conta, incluindo dentro de um comentário
- * ou de uma desestruturação. Um crivo apertado aqui acusaria um campo VIVO lido por
- * `const { semX } = declines`, e uma acusação falsa desliga o gate antes de ele apanhar a verdadeira. Falhar
- * para o lado de «vivo» é a direcção certa deste erro.
+ * ⚠️ THE COUNT IS GENEROUS ON PURPOSE — the name anywhere counts, including inside a comment or a destructuring. A tight
+ * check here would accuse a LIVE field read by `const { semX } = declines`, and a false accusation gets the gate
+ * switched off before it catches the true one. Failing towards «vivo» is the right direction for this error.
  */
 function leitores(campo) {
   let n = 0;
@@ -97,10 +85,9 @@ function leitores(campo) {
 describe('nenhuma declinação está morta · o inventário encolhe', () => {
   it('[Vácuo] o bloco `Declinios` foi mesmo encontrado, e tem campos', () => {
     expect(BLOCO, 'a interface mudou de nome ou de forma e o crivo ficou cego').not.toBeNull();
-    // ⚠️ TRÊS e não quatro desde 2026-09-09: o `semMenuDePausa` SAIU (ADR-0120), porque a razão de ele existir
-    // — a engine não ter nada que servisse a um jogo sem pausa própria — foi construída fora pelo ADR-0106.
-    // 📌 O inventário encolheu por uma ENTREGA e não por uma limpeza, que é a única forma de encolher que
-    // interessa a este ficheiro.
+    // No `semMenuDePausa` (ADR-0120): the reason it existed — the engine having nothing to serve a game without its own
+    // pause — was built by ADR-0106. 📌 The inventory shrank by a DELIVERY, not a clean-up, the only way of shrinking
+    // this file cares about.
     // Two since ADR-0231, which took `noPadAssistant` out of the type: the wizard is not declinable.
     expect(CAMPOS.length).toBeGreaterThanOrEqual(2);
     expect(CAMPOS, 'a pausa voltou a ser declinável sem registo').not.toContain('semMenuDePausa');
@@ -114,19 +101,19 @@ describe('nenhuma declinação está morta · o inventário encolhe', () => {
     expect(novos, `declinação que não declina nada e ninguém declarou: ${novos.join(', ')}`).toEqual([]);
   });
 
-  // ⚠️ A SAÍDA. Sem ela a lista vira monumento: um campo já ligado continuaria a dizer que está morto, e a
-  // próxima pessoa leria o inventário como história em vez de estado.
+  // ⚠️ THE EXIT. Without it the list becomes a monument: a field already wired would go on saying it is dead, and the
+  // next person would read the inventory as history instead of state.
   it('[Fronteira] campo da lista que ganhou leitor sai daqui', () => {
     const ressuscitados = Object.keys(SEM_LEITOR).filter((c) => leitores(c) > 0);
     expect(ressuscitados, `já é lido pela engine; apague a entrada: ${ressuscitados.join(', ')}`).toEqual([]);
   });
 
-  // 📌 O PAR QUE PROVA QUE O DETECTOR MEDE ALGUMA COISA: os outros três SÃO lidos, e o crivo tem de os ver
-  // vivos. Sem este caso, um detector que devolvesse sempre zero passaria o [Feliz] enquanto a lista o
-  // cobrisse — e passaria a acusar tudo em silêncio.
+  // 📌 THE PAIR THAT PROVES THE DETECTOR MEASURES SOMETHING: the declared fields ARE read, and the check must see them
+  // alive. Without this case, a detector always returning zero would pass [Feliz] while the list covered it — and would
+  // go on accusing everything silently.
   it('[Fronteira] os que a engine lê aparecem como vivos', () => {
-    // Eram TRÊS até 2026-09-09; o `semMenuDePausa` saiu do contrato inteiro (ADR-0120), e por isso sai daqui
-    // em vez de continuar a ser afirmado — um crivo que exige um campo inexistente reprova para sempre.
+    // `semMenuDePausa` left the contract entirely (ADR-0120), so it is not asserted here — a check that demands a
+    // non-existent field fails forever.
     for (const vivo of ['noPauseActor', 'noNeuralVoice']) {
       expect(CAMPOS, `${vivo} deixou de ser um declínio`).toContain(vivo);
       expect(leitores(vivo), `${vivo} passou a ser letra morta`).toBeGreaterThan(0);
@@ -134,17 +121,17 @@ describe('nenhuma declinação está morta · o inventário encolhe', () => {
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-08, por script, com contagem de ocorrências) =====
-// 1. tirar `semAssistenteDePad` de `SEM_LEITOR`     → [Feliz] reprova (o campo morto volta a ser silencioso)
-// 2. acrescentar `semMenuDePausa` a `SEM_LEITOR`    → [Fronteira] da saída reprova (a lista mentiria)
-// 3. `leitores()` a devolver sempre 0               → reprovam o [Feliz] **e** o [Fronteira] dos vivos
-//    📌 e a segunda metade é a que interessa: o [Feliz] só a apanha porque os outros três campos passam a
-//    parecer mortos. Se um dia a lista os cobrisse a todos, ele ficaria verde e o crivo estaria cego — quem
-//    o apanharia então é o PAR, e é por isso que ele existe em vez de se confiar na regra.
-// 4. `leitores()` a devolver sempre 1               → [Fronteira] da saída reprova
-// 5. `blocoDosDeclinios` a devolver `null`          → reprovam o [Vácuo], a saída e o par
+// ===== MUTATIONS CHECKED (2026-09-08, by script, with occurrence counts) =====
+// 1. removing `semAssistenteDePad` from `SEM_LEITOR` → [Feliz] fails (the dead field goes silent again)
+// 2. adding `semMenuDePausa` to `SEM_LEITOR`         → the exit [Fronteira] fails (the list would lie)
+// 3. `leitores()` always returning 0                 → [Feliz] **and** the living-fields [Fronteira] fail
+//    📌 and the second half is the one that matters: [Feliz] catches it only because the other fields start to look
+//    dead. If the list ever covered them all, it would stay green and the check would be blind — what would catch it
+//    then is the PAIR, which is why it exists instead of trusting the rule.
+// 4. `leitores()` always returning 1                 → the exit [Fronteira] fails
+// 5. `blocoDosDeclinios` returning `null`            → the [Vácuo], the exit and the pair fail
 //
-// 📌 Duas das cinco reprovaram casos que eu não tinha previsto. Fica o medido.
+// 📌 Two of the five failed cases that had not been predicted. What was measured stays.
 //
 // ===== MUTATIONS CHECKED (2026-09-24, ADR-0231: the inventory is empty) =====
 // 6. put `readonly noPadAssistant?: boolean;` back into `Declinios` → [Vácuo] fails on the absence, and [Feliz]
