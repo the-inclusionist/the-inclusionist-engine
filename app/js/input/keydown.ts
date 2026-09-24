@@ -52,11 +52,10 @@
 //  · `keyup` VEIO. Ele é a outra metade exata do `keys.add(e.code)` da última linha do keydown: sem os dois no
 //    mesmo lugar, quem lê "quando uma tecla entra em `keys`" tem de procurar a saída em outro arquivo. `attach()`
 //    instala os dois, na mesma ordem de antes.
-//  · `blur` NÃO veio. Parece irmão, mas não é: `keys` também recebe códigos INJETADOS pelos botões de toque
-//    (o `press`/`release` do game.js, que faz `keys.add(codeFor(act))`) e pelo controle virtual, que segura a tecla de uma
-//    posição apertada pelos olhos (`input/virtual-controller`). `blur -> keys.clear()` é uma rede de ciclo de vida da
-//    JANELA sobre um conjunto que não é só do teclado; trazê-la para cá daria a este módulo a
-//    responsabilidade de limpar estado que ele não escreve. Fica no game.js, uma linha, ao lado do `resize`.
+//  · `blur` did NOT come. It looks like a sibling and is not: `keys` also holds codes the virtual controller writes
+//    for a position the eyes pressed (`input/virtual-controller`), so letting go on `blur` is a lifecycle net of the
+//    WINDOW over a set that is not only the keyboard's. It lives in the root (`boot/create-game`), which dispatches
+//    the keyup each keyboard-held key is owed and leaves the camera's alone.
 //  · A cadeia de Escape, o registro de overlays e o `closeById` são de `ui/settings-panel.ts`. Este módulo
 //    CONSOME (`escapeTarget`, `closeOverlayById`) e não reimplementa — mesma disciplina de menu-nav.
 //  · `whichPlayer`/`actionOf`/`controlsState` são de `input/keyboard-runtime.ts`, que é quem sabe de esquema de

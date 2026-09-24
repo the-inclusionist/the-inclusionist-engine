@@ -48,7 +48,7 @@
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
 import i18nObject, { initI18n, dictionaryGaps, loadLocale, applyDom } from '../core/i18n.js';
 import { localeHostHooks, exposeI18n } from '../platform/locale-host.js';
-import { inputOf, keys, markKeyFrom, releaseKey, playerEdge } from '../input/state.js';
+import { inputOf, keys, markKeyFrom, releaseKey, playerEdge, letGoOfTheKeyboard } from '../input/state.js';
 import { initTouch, mountTouchControls, touchGaps } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
 import { createCrashNotice } from '../ui/loop-crash.js';
@@ -3911,6 +3911,19 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       else controleVirtual.release(action, source, seat);
     }, true);
   }
+  /*
+   * 🔴 LOSING FOCUS IS THE KEYUP THAT NEVER ARRIVES. With a key down, a click on the browser's own bar, an on-screen
+   * keyboard or a switch-access program taking focus, or a tab change leaves the page without its keyup: the key stays
+   * held, the character keeps walking, and the cartridge believes the button is still down. The window's `blur` is the
+   * only signal left, so it dispatches the keyup each held key is owed — through every listener a real one would reach
+   * (the simulations, the cool-down, this conductor), which is what keeps them all agreeing that the key is up.
+   *
+   * Which keys those are is `input/state`'s answer (`letGoOfTheKeyboard`); stamped `teclado` because this engine never
+   * dispatches an unsigned synthetic key (ADR-0109), and the keyboard's own stamp is what the motor filter's release uses.
+   */
+  win.addEventListener('blur', () => letGoOfTheKeyboard((code) => {
+    win.dispatchEvent(stampSource(new KeyboardEvent('keyup', { code, bubbles: true, cancelable: true }), 'teclado'));
+  }));
 
   /*
    * 🔴 O CONTROLE, MONTADO PELA ENGINE (ADR-0224). Era o único dos seis transportes montado de FORA — quem chamava

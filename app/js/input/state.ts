@@ -101,6 +101,25 @@ export function releaseAllKeys(): void {
 }
 
 /**
+ * Hands `release` every key THE KEYBOARD holds — the ones the window's `blur` owes a keyup, because no keyup will reach
+ * the page once it has lost focus.
+ *
+ * ⚠️ ONLY THE KEYBOARD'S: a key with no source (a real key carries none) or the keyboard's own stamp. A camera or voice
+ * press does not depend on the window's focus — the camera keeps reading — and letting go of it would take a held
+ * position from whoever cannot press it again quickly.
+ *
+ * 📌 It hands out codes and does not release them itself: the release has to travel the road a real keyup travels, so
+ * everything that counts presses (the simulations, the cool-down, the virtual controller) hears it. Which road that is
+ * belongs to the root.
+ */
+export function letGoOfTheKeyboard(release: (code: string) => void): void {
+  for (const code of [...keys]) {
+    const source = keySource.get(code);
+    if (!source || source === 'teclado') release(code);
+  }
+}
+
+/**
  * Quem produziu esta tecla? `undefined` quando não se sabe.
  *
  * ⚠️ `undefined` E NÃO UM PADRÃO. Um padrão `'teclado'` faria a erasão voltar por outra porta: uma tecla do
