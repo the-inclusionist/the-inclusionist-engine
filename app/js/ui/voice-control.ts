@@ -61,10 +61,6 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
   const loadRuntime = d.loadRuntime ?? loadVoskRuntime;
   const listen = d.listen ?? startVoiceListening;
   const said = new Set<string>();
-  const once = (kind: string, line: string, spoken: string): void => {
-    if (!said.has(kind)) { said.add(kind); d.report(line); }
-    d.alert(spoken);
-  };
 
   let on = false, starting: Promise<void> | null = null;
   let listener: VoiceListener | null = null;
@@ -86,7 +82,8 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
 
   /** Nothing started: the child hears why, the adult reads it once, and the icon goes back to off. */
   const failed = (kind: string, line: string, spoken: string): void => {
-    once(kind, line, spoken);
+    if (!said.has(kind)) { said.add(kind); d.report(line); }
+    d.alert(spoken);
     d.turnOff();
   };
 
@@ -98,16 +95,24 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
      * was being prevented. A failure that has no name is still a failure the child has to be told about.
      */
     let load: VoskLoad;
+    const language = d.language();
     try {
-      load = await loadRuntime({ base: d.base, language: d.language() });
+      load = await loadRuntime({ base: d.base, language });
     } catch (e) {
       failed('runtime', `voice control: the recogniser did not open (${e instanceof Error ? e.message : String(e)}) — the child `
         + 'cannot play by speaking; check that the delivery carries the command files', t('sr.voice.failed'));
       return;
     }
     if (!load.ok) {
-      failed('files', `voice control: ${load.missing.join(', ')} not on this device — the child cannot play by speaking; open the `
-        + 'game once online so the install fetches them', t('sr.voice.needsInternet'));
+      /*
+       * 📌 ONE LINE PER LANGUAGE, NAMING THAT LANGUAGE'S FIX (ADR-0225, ADR-0169). The install fetches the command model of the
+       * BOOT language only, so a child who switches can ask for one the delivery never carried; «open it online» alone sends
+       * the adult after a download that cannot happen. The reading's line names `--reading <language>` the same way.
+       */
+      const lang = language.split('-')[0]!.toLowerCase();
+      failed(`files:${lang}`, `voice control: ${load.missing.join(', ')} not on this device for ${language} — the child cannot play `
+        + `by speaking in this language; build the delivery with \`npx inclusionist-heavy --commands ${lang}\` and open the game `
+        + 'once online in this language so the install fetches them', t('sr.voice.needsInternet'));
       return;
     }
     commands = createVoiceCommands(d.language());

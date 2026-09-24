@@ -1287,6 +1287,36 @@ describe('createGame num documento de verdade', () => {
     expect(depois.getAttribute('aria-pressed'), 'o botão ficou a dizer que o comando de voz está ligado').toBe('false');
     expect(depois.getAttribute('aria-label')).toBe('Comando de voz: desligado');
   });
+
+  /*
+   * 🔴 SWITCHED TO A LANGUAGE WHOSE COMMAND MODEL IS NOT IN THE DELIVERY (ADR-0225, ADR-0169). The heavy files are chosen at
+   * boot for the boot language, so the flag can reach a language the delivery never carried. The child hears why the 👄 went
+   * off; `problems` names the missing model AND the fix for that language — the path runs from `i18n:change` on the window
+   * through `languageChanged` to the root's diagnostic channel, which the node double cannot walk (it has no microphone, so
+   * the 👄 is never mounted there).
+   */
+  it('🔴 [Zero] switched to a language whose command model did not come, `problems` says which and how to put it in the delivery', async () => {
+    const estado = await import('../app/js/core/state.js');
+    const { setLocale, t } = await import('../app/js/core/i18n.js');
+    const motor = abrir();
+    try {
+      await setLocale('en');
+      estado.setVoiceControlValue(true);
+      // ⚠️ WAITED ON THE LINE, not on the key: a root an earlier case disposed still answers the key (its subscription to
+      // `voiceControl` outlives `dispose()`), fails first and turns the key off before this root's start has finished.
+      const said = () => motor.problems.find((p) => p.startsWith('voice control:'));
+      for (let i = 0; i < 200 && !said(); i++) await new Promise((r) => { setTimeout(r, 10); });
+      expect(estado.voiceControl, 'the 👄 stayed on over a model that is not here').toBe(false);
+      const line = said();
+      expect(line, 'no line in `problems` explains why the 👄 did not start').toBeTruthy();
+      expect(line, 'the line does not name the model of the new language').toContain('commands:model:en');
+      expect(line, 'the line does not say how to put that model in the delivery').toContain('npx inclusionist-heavy --commands en');
+      expect(document.querySelector('#sr-alert').textContent, 'the child did not hear why')
+        .toBe(t('sr.voice.needsInternet'));
+    } finally {
+      await setLocale('pt');
+    }
+  });
 });
 
 // ========================= MUTATIONS CHECKED =========================

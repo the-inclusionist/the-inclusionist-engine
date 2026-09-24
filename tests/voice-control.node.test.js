@@ -310,6 +310,54 @@ describe('the language changed', () => {
     expect(b.log.listens, 'a microphone was opened for a model that is not there').toBe(1);
   });
 
+  /*
+   * 🔴 THE LINE NAMES THE FIX FOR THE LANGUAGE THE CHILD SWITCHED TO (ADR-0225, ADR-0169). The heavy files are chosen at boot
+   * for the boot language, so a delivery built without `--commands <lang>` never carries the other one — and a line that only
+   * said «open the game once online» sent the adult after a download that cannot happen. The reading's line already names
+   * `inclusionist-heavy --reading <language>`; this is the same fix for the commands.
+   */
+  const switchedTo = (models) => {
+    let lang = 'pt-BR';
+    const b = bench({
+      language: () => lang,
+      loadRuntime: async (d) => {
+        b.log.loads += 1; b.log.lastLoad = d;
+        const base = d.language.split('-')[0];
+        return models.includes(base) ? { ok: true, model: MODEL } : { ok: false, missing: [`commands:model:${base}`] };
+      },
+    });
+    return { ...b, setLanguage: (l) => { lang = l; } };
+  };
+
+  it('🔴 [Right] the missing model\'s line names `--commands` for THAT language — the delivery is what lacks it', async () => {
+    const b = switchedTo(['pt']);
+    await b.control.apply(true);
+    b.setLanguage('es-MX');
+    await b.control.languageChanged();
+    expect(b.log.reported, 'the missing model was not said anywhere').toHaveLength(1);
+    expect(b.log.reported[0], 'the line does not say how to put this language\'s model in the delivery')
+      .toContain('npx inclusionist-heavy --commands es');
+    expect(b.log.reported[0], 'the line does not name the language the child switched to').toContain('es-MX');
+    expect(b.log.alerted, 'the child was not told why the 👄 went off').toEqual([pt['sr.voice.needsInternet']]);
+  });
+
+  it('🔴 [Right] a SECOND language whose model is absent gets a line of its own — the first one named another language', async () => {
+    // ⚠️ `problems` is still written once per cause: the same language failing twice is one line (the case above, «trying
+    // again»). A different language is a different missing file, and a different fix.
+    const b = switchedTo(['pt']);
+    await b.control.apply(true);
+    b.setLanguage('en-US');
+    await b.control.languageChanged();
+    await b.control.apply(true);
+    b.setLanguage('es-MX');
+    await b.control.languageChanged();
+    await b.control.apply(true);
+    expect(b.log.reported, 'the second language\'s missing model was swallowed by the first one\'s line').toHaveLength(2);
+    expect(b.log.reported[0]).toContain('--commands en');
+    expect(b.log.reported[1]).toContain('commands:model:es');
+    expect(b.log.reported[1]).toContain('--commands es');
+  });
+
   it('⚠️ [Boundary] a change WHILE IT IS STARTING replaces the start in flight, and does not race it', async () => {
     // 📌 The start in flight is in the OLD language. Letting it finish and replacing it costs one opening; skipping the
     // wait would let it install the old model on top of the new one.
