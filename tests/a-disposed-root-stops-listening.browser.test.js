@@ -22,6 +22,7 @@
 // MUTATIONS CONFIRMED at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
+import rootSource from '../app/js/boot/create-game.ts?raw';
 
 let createGame;
 
@@ -129,6 +130,141 @@ describe('o tempo de vida de uma raiz', () => {
 });
 
 /*
+ * 🔴 AND THE STATE BUS, WHICH THE WINDOW'S SCOPE NEVER SAW (ADR-0220). `core/state` keeps its subscribers in one map for the
+ * whole page, so a root that subscribed with `state.on(...)` stayed subscribed after `dispose()`: with the stored 👄 switched on,
+ * the ended root started a recogniser of its own, failed, and turned the key OFF — which is how it was found, in
+ * `boot-create-game.browser.test.js`, turning the key off before the live root had written its line.
+ *
+ * 📌 EVERY OBSERVATION HERE IS THE ENDED ROOT'S OWN: its bar, its `problems`, its `onLocaleChange`, or a page attribute that only
+ * a subscriber writes while no root is alive. The cases open no live root beside it, so nothing measured depends on a neighbour.
+ */
+describe('a disposed root stops hearing the state bus — and an unmounted one does not', () => {
+  let host;
+  let state;
+  let i18n;
+  const alive = [];
+
+  const open = () => {
+    const root = createGame({
+      accommodations: SEM_ASSUNTO, declaration: declaracaoValida(),
+      host: { doc: document, win: window }, downloadHeavy: false,
+    });
+    alive.push(root);
+    return root;
+  };
+  const icon = (name) => document.querySelector(`#title-icons [data-pi="${name}"]`);
+  const wait = (ms) => new Promise((r) => { setTimeout(r, ms); });
+
+  beforeEach(async () => {
+    if (!createGame) ({ createGame } = await import('../app/js/boot/create-game.js'));
+    state ??= await import('../app/js/core/state.js');
+    i18n ??= await import('../app/js/core/i18n.js');
+    state.setVoiceControlValue(false);
+    state.setCbSafeValue(false);
+    state.setSwitchScanValue(false);
+    host = montarHospedeiro();
+  });
+
+  afterEach(() => {
+    for (const r of alive.splice(0)) r.dispose?.();
+    state.setVoiceControlValue(false);
+    state.setCbSafeValue(false);
+    state.setSwitchScanValue(false);
+    host.remove();
+    document.querySelectorAll('[id^="vp-pause-"]').forEach((c) => c.remove());
+  });
+
+  it('🔴 [Right] the stored 👄 switched on does not wake a disposed root: its icon, its key and its `problems` stay still', async () => {
+    const ended = open();
+    ended.dispose();
+    expect(icon('voice').getAttribute('aria-pressed')).toBe('false');
+
+    state.setVoiceControlValue(true);
+    expect(icon('voice').getAttribute('aria-pressed'), 'the ended root redrew its 👄 — it still hears `voiceControl`').toBe('false');
+    // Long enough for a live root to fail and turn the key off (the unmount case below measures that path).
+    await wait(600);
+    expect(state.voiceControl, 'the ended root started a recogniser, failed, and turned the key off').toBe(true);
+    expect(ended.problems.some((p) => p.startsWith('voice control:')), 'the ended root wrote a voice line in its `problems`').toBe(false);
+  });
+
+  it('🔴 [Right] nor do blind mode, the safe palette, the letter case or the one-button scan', () => {
+    const ended = open();
+    ended.dispose();
+    const root = document.documentElement;
+    const blindBefore = icon('blind').getAttribute('aria-pressed');
+    const lettersBefore = root.dataset.letras;
+    const chip = host.querySelector('.scan-now');
+    const blind = state.blindMode;
+    const letters = state.letterCase;
+    try {
+      state.setBlindModeValue(!blind);
+      state.setCbSafeValue(true);
+      state.setLetterCaseValue(letters === 'upper' ? 'mixed' : 'upper');
+      state.setSwitchScanValue(true);
+
+      expect(icon('blind').getAttribute('aria-pressed'), 'the ended root redrew its blind-mode icon').toBe(blindBefore);
+      expect(root.dataset.paleta, 'the ended root wrote the safe palette on the page').toBeUndefined();
+      expect(root.dataset.letras, 'the ended root wrote the letter case on the page').toBe(lettersBefore);
+      expect(chip, 'the root mounts no scan chip — this case would measure nothing').not.toBeNull();
+      expect(chip.hidden, 'the ended root started the one-button scan and shows its chip').toBe(true);
+    } finally {
+      state.setBlindModeValue(blind);
+      state.setLetterCaseValue(letters);
+      if (lettersBefore === undefined) delete root.dataset.letras; else root.dataset.letras = lettersBefore;
+    }
+  });
+
+  it('🔴 [Right] and what a subscription had STARTED ends too: a scan running at `dispose()` stops and takes its chip away', async () => {
+    state.setSwitchScanValue(true);
+    const root = open();
+    const chip = host.querySelector('.scan-now');
+    expect(chip?.hidden, 'the scan did not start with the root — this case would measure nothing').toBe(false);
+    root.dispose();
+    expect(chip.hidden, 'the ended root left its scan chip on the page').toBe(true);
+    // and its frame loop is gone: a frame later, nothing has drawn the chip back
+    await new Promise((r) => { requestAnimationFrame(() => requestAnimationFrame(r)); });
+    expect(chip.hidden, 'the ended root\'s scan loop is still drawing').toBe(true);
+  });
+
+  it('🔴 [Right] a language change does not reach a disposed root, nor the cartridge it had', async () => {
+    const ended = open();
+    let heard = 0;
+    ended.onLocaleChange(() => { heard += 1; });
+    ended.dispose();
+    try {
+      await i18n.setLocale('en');
+      expect(heard, 'the ended root handed a language change to its cartridge').toBe(0);
+    } finally {
+      await i18n.setLocale('pt');
+    }
+  });
+
+  it('🔴 [Right] but `unmount()` does NOT end the root: it goes on hearing the state bus', async () => {
+    // ⚠️ THE CASE THAT PREVENTS THE WRONG FIX, as the arrow's case above: `unmount()` releases the CARTRIDGE (ADR-0142), and a
+    // root that stopped hearing the state there would come back from the next `mount()` with a bar that lies.
+    const root = open();
+    root.unmount();
+
+    state.setCbSafeValue(true);
+    expect(document.documentElement.dataset.paleta, 'after `unmount()` the root stopped following the safe palette').toBe('okabe-ito');
+
+    state.setVoiceControlValue(true);
+    expect(icon('voice').getAttribute('aria-pressed'), 'after `unmount()` the root stopped following the 👄').toBe('true');
+    // and the whole path is alive: no microphone here, so the root's recogniser fails and puts the key back to off
+    for (let i = 0; i < 120 && state.voiceControl; i++) await wait(10);
+    expect(state.voiceControl, 'after `unmount()` the root no longer answers `voiceControl`').toBe(false);
+  });
+
+  it('🎯 [Cross-check] the root subscribes to the state bus through ONE door, the one `dispose()` closes', () => {
+    // The behaviour cases above cover the keys a test can see; this covers the ones it cannot (`inputCooldown`, `menuIndexOn`,
+    // the camera's) and the next one somebody adds: a bare `state.on(` in the root outlives `dispose()`.
+    const bare = rootSource.split('\n').filter((line) => /\bstate\.on\(/.test(line) && !/^\s*(\/\/|\*)/.test(line));
+    expect(bare, 'a subscription that does not go through the root\'s seam').toHaveLength(1);
+    expect(bare[0], 'the one `state.on(` left is not the seam').toMatch(/const off = state\.on\(/);
+  });
+});
+
+/*
  * ========================= MUTATIONS CHECKED =========================
  * Run over THIS file and over `reading-no-createGame.browser.test.js`, which measures the half of the Proxy that is not
  * about listeners. This file's four cases are called 1, 2, 3 (the `unmount` one) and 4 (the [Boundary]) here.
@@ -154,4 +290,18 @@ describe('o tempo de vida de uma raiz', () => {
  * ⚠️ AND ONE SURVIVED FIRST, and it was inert code: `Reflect.get(real, prop, real)` passed the receiver the language
  * already uses by default inside a trap. The comment beside it claimed that line decided everything, and it decided
  * nothing. The argument went, and the mutation became the real one — passing the PROXY —, which is 5 above.
+ *
+ * ========================= AND THE STATE BUS (the second `describe`) =========================
+ * Applied by script to `boot/create-game`, one at a time, each anchor counted to occur once; the file restored from a copy.
+ * Before the fix, the 👄 case, the four-keys case and the cross-check were RED; the locale and `unmount()` cases were green.
+ *
+ *  8. `stateOn` keeps no release (the `whenDisposed(off)` goes) ................................. 2 RED, the 👄 and the four keys
+ *  9. one subscription left bare, `state.on(` instead of `stateOn(` — tried for `cbSafe`, `letterCase`, `switchScan`, the bar's
+ *     `blindMode`, the bar's `voiceControl` and the recogniser's `voiceControl` .................. 2 RED each: its behaviour case
+ *     and the cross-check
+ * 10. `whenDisposed(stopScan)` goes ........................................................... 1 RED, the running scan's case
+ * 11. the releases run in `unmountAll` instead of `dispose` ................................... 1 RED, the `unmount()` case
+ * 12. `i18n:change` hung on `o.host.win` instead of the scoped window ........................... 1 RED, the locale case
+ *     — the locale case was green before this fix: that listener already went through the scope. The mutation is what shows
+ *       the case can see it leak.
  */

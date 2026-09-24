@@ -733,6 +733,15 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const listeners = createListenerScope(o.host.win);
   const win = listeners.win;
+  /*
+   * 🔴 AND THE REST OF WHAT THIS ROOT HOLDS ENDS WITH IT (ADR-0220): the window's scope never saw the STATE BUS, which keeps
+   * its subscribers for the whole page. So every `state.on` of this root goes through `stateOn`, and whatever a subscription
+   * started (the scan's frames, the recogniser, the camera) hands its stop to `whenDisposed`. `dispose()` runs them all;
+   * `unmount()` runs none, because it releases the cartridge and the root goes on hearing (ADR-0142).
+   */
+  const endOfLife: (() => void)[] = [];
+  const whenDisposed = (release: () => void): void => { endOfLife.push(release); };
+  const stateOn: typeof state.on = (evt, fn) => { const off = state.on(evt, fn); whenDisposed(off); return off; };
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
   state.loadState(store);
   /*
@@ -1122,7 +1131,7 @@ export function createGame(o: CreateGameOptions): Engine {
     else delete doc.documentElement.dataset.paleta;
   };
   applySafePalette(state.cbSafe);
-  state.on('cbSafe', (v) => applySafePalette(Boolean(v)));
+  stateOn('cbSafe', (v) => applySafePalette(Boolean(v)));
   /**
    * Wraps ANY correction writer — the cartridge's or the engine's: the palette follows the correction whoever applies it.
    * ⚠️ Wrapping only the engine's would leave a game that corrects in its own render (`game-pinball`) without the palette
@@ -1351,13 +1360,13 @@ export function createGame(o: CreateGameOptions): Engine {
      * 📌 ONLY THE STATES WITH AN EVENT that can change elsewhere: blind mode, the camera control and the voice control
      * (`GameEvent`). The other icons reflect themselves on the click, which is the path by which they change.
      */
-    state.on('blindMode', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
+    stateOn('blindMode', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
     // the 👀 changes elsewhere too: the eye control puts it back to off when the camera or the files are missing (ADR-0213)
-    state.on('cameraControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); }); // a mode that cannot start puts the 📷 back to off
+    stateOn('cameraControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); }); // a mode that cannot start puts the 📷 back to off
     // 🔴 AND THE 👄 FOR THE SAME REASON, measured in a browser on 2026-09-21: with the microphone refused, the child heard «it did
     // not open», the stored answer went back to off — and the button went on saying «ligado». A control that lies about its state
     // is worse than a missing one (ADR-0106 §5), and the click path does not cover it, because this change comes from elsewhere.
-    state.on('voiceControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
+    stateOn('voiceControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
   }
 
   // 4d. WHO OPENED THE PAUSE, when there is more than one seat — finding 3 of the `game-soccer` audit.
@@ -1968,6 +1977,10 @@ export function createGame(o: CreateGameOptions): Engine {
         },
         whenVoicesChange: (again) => {
           try { if (win.speechSynthesis) win.speechSynthesis.onvoiceschanged = again; } catch (e) { /* noop */ }
+          // one slot per page and the last root takes it: an ended root empties it only if it is still its own (ADR-0220)
+          whenDisposed(() => {
+            try { if (win.speechSynthesis?.onvoiceschanged === again) win.speechSynthesis.onvoiceschanged = null; } catch (e) { /* noop */ }
+          });
         },
       },
       audioOutputs: {
@@ -2368,7 +2381,7 @@ export function createGame(o: CreateGameOptions): Engine {
     if (doc.documentElement?.dataset) doc.documentElement.dataset.letras = c;
   };
   if (store.get(store.KEYS.letterCase, null) !== null) writeBox(state.letterCase);
-  state.on('letterCase', writeBox);
+  stateOn('letterCase', writeBox);
 
   {
     /*
@@ -3332,7 +3345,7 @@ export function createGame(o: CreateGameOptions): Engine {
       srSay(`${t('motora.camera')}: ${t(CAMERA_MODE_WORD[mode])}`);
     });
     // the 📷 and this row are one setting: whoever changes it, both show it
-    state.on('cameraControl', () => { reflectCamera(); });
+    stateOn('cameraControl', () => { reflectCamera(); });
     reflectCamera();
 
     /*
@@ -3362,7 +3375,7 @@ export function createGame(o: CreateGameOptions): Engine {
       reflectVoice();
       srSay(`${t('motora.voz')}: ${t(state.voiceControl ? 'state.on' : 'state.off')}`);
     });
-    state.on('voiceControl', () => { reflectVoice(); });
+    stateOn('voiceControl', () => { reflectVoice(); });
     reflectVoice();
 
     reflectKeyboard = () => {
@@ -3383,7 +3396,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * FIRST: a press the cool-down refuses never happened, so it must not teach the simulations that a key is held.
    */
   const cooldown = createInputCooldown();
-  state.on('inputCooldown', () => { cooldown.reset(); }); // turning it off must not leave a press refused by an old wait
+  stateOn('inputCooldown', () => { cooldown.reset(); }); // turning it off must not leave a press refused by an old wait
   const releasedByFilter = new WeakSet<Event>();
   const block = (e: Event): void => { e.preventDefault(); e.stopImmediatePropagation(); };
   win.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -3690,7 +3703,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     controleVirtual.press(action, source, 0);
     win.setTimeout(() => controleVirtual.release(action, source, 0), SWITCH_SCAN_DEFAULTS.pulseMs);
   };
-  state.on('switchScan', (on) => { if (on) startScan(); else stopScan(); });
+  stateOn('switchScan', (on) => { if (on) startScan(); else stopScan(); });
+  whenDisposed(stopScan); // the scan's frames are this root's, and an ended root keeps none running (ADR-0220)
   if (state.switchScan) startScan();
   const controleVirtual = createVirtualController({
     scheme: (i) => keyboard.kbFor(i), menuOpen: menuWithDpad,
@@ -3843,8 +3857,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     // the hands: the Gesture Recognizer and the Dev's hands map (ADR-0210), presses from `gestos`, the hands' lines (issue #191)
     const hands = createHandControl({ ...cameraDeps, openFeed: videoFeed(doc, win.navigator.mediaDevices) });
     const cameraControls = { eyes, face, hands };
-    state.on('cameraControl', (mode) => { followCameraMode(mode, cameraControls); });
+    stateOn('cameraControl', (mode) => { followCameraMode(mode, cameraControls); });
     followCameraMode(state.cameraControl, cameraControls);
+    whenDisposed(() => { followCameraMode('off', cameraControls); }); // the camera closes with the root that opened it (ADR-0220)
   }
 
   /*
@@ -3870,11 +3885,13 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
       turnOff: () => { state.setVoiceControlValue(false); },
       after: (fn, ms) => { win.setTimeout(fn, ms); },
     });
-    state.on('voiceControl', (on) => { void voiceControl?.apply(on); });
+    stateOn('voiceControl', (on) => { void voiceControl?.apply(on); });
     // the words change with the menu that is open, and a menu opens on a key or a touch — so they are re-read on every draw of
     // the bar, which is what already happens whenever a card or a panel appears (ADR-0106 §5)
-    state.on('menuIndexOn', () => { voiceControl?.refreshGrammar(); });
+    stateOn('menuIndexOn', () => { voiceControl?.refreshGrammar(); });
     void voiceControl.apply(state.voiceControl);
+    // and so does the microphone; pply(false) stops without writing the stored answer, which belongs to the child (ADR-0220)
+    whenDisposed(() => { void voiceControl?.apply(false); });
   }
   /*
   /*
@@ -3911,6 +3928,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     // 📌 The gamepad's polling loop belongs to the ROOT since ADR-0224, so it dies with it: a `requestAnimationFrame` that
     // survives `dispose()` reads the Gamepad API forever, in a root that has no players any more (ADR-0220).
     stopPollingPad();
+    for (const release of endOfLife.splice(0)) release(); // drained as it goes: a second `dispose()` finds nothing to release
     listeners.releaseAll();
   }
 

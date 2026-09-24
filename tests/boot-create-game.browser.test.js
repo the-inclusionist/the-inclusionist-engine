@@ -1302,8 +1302,8 @@ describe('createGame num documento de verdade', () => {
     try {
       await setLocale('en');
       estado.setVoiceControlValue(true);
-      // ⚠️ WAITED ON THE LINE, not on the key: a root an earlier case disposed still answers the key (its subscription to
-      // `voiceControl` outlives `dispose()`), fails first and turns the key off before this root's start has finished.
+      // 📌 WAITED ON THE LINE, not on the key: the line is what this case measures, and the key going off is only its echo.
+      // (A disposed root no longer hears `voiceControl` — ADR-0220, `a-disposed-root-stops-listening.browser.test.js`.)
       const said = () => motor.problems.find((p) => p.startsWith('voice control:'));
       for (let i = 0; i < 200 && !said(); i++) await new Promise((r) => { setTimeout(r, 10); });
       expect(estado.voiceControl, 'the 👄 stayed on over a model that is not here').toBe(false);
@@ -1311,6 +1311,8 @@ describe('createGame num documento de verdade', () => {
       expect(line, 'no line in `problems` explains why the 👄 did not start').toBeTruthy();
       expect(line, 'the line does not name the model of the new language').toContain('commands:model:en');
       expect(line, 'the line does not say how to put that model in the delivery').toContain('npx inclusionist-heavy --commands en');
+      // `srAlert` empties the region and writes the sentence on the NEXT frame (`core/a11y-sr`), so it is read a frame later.
+      await new Promise((r) => { requestAnimationFrame(() => requestAnimationFrame(r)); });
       expect(document.querySelector('#sr-alert').textContent, 'the child did not hear why')
         .toBe(t('sr.voice.needsInternet'));
     } finally {

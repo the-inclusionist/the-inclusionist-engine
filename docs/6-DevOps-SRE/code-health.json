@@ -66,8 +66,8 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2064,
-      "decisionNodes": 276,
+      "codeLines": 2074,
+      "decisionNodes": 279,
       "maxDepth": 4,
       "fanOut": 81,
       "globalReach": 1,

@@ -483,7 +483,7 @@ describe('createGame em execução', () => {
     // simulation). Without this subscription the icon would go on saying off after the child turned it on — the family of
     // a control lying about its state.
     expect(FONTE, 'a barra montada não se refaz quando o modo cego muda fora dela')
-      .toMatch(/state\.on\('blindMode',\s*\(\)\s*=>\s*\{\s*pauseIcons\.reflectIconsIn\(a11yBar,\s*0\);\s*\}\)/);
+      .toMatch(/stateOn\('blindMode',\s*\(\)\s*=>\s*\{\s*pauseIcons\.reflectIconsIn\(a11yBar,\s*0\);\s*\}\)/);
   });
 
   it('🔴 [Right] trocar de idioma avisa o RECONHECIMENTO DE FALA, e não só o que se desenha (ADR-0225)', () => {
