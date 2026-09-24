@@ -1,42 +1,45 @@
-# As acomodações por gênero — o estudo que o ADR-0145 §3 pediu
+> Historical study (2026-09-12, revised through 2026-09-22): kept as a record; the current state lives in `app/js/core/accommodations.ts` and in the scripts listed under "How to redo it", at the end.
 
-**Medido em 2026-09-12** cruzando as **35 categorias** e os **380 jogos** do
-`minigames-catalog-v2.html` com cada acomodação que a engine tem ou poderia ter. A pergunta, célula a
-célula, é a do Dev — **«isto tem ASSUNTO aqui?»** — e não «a engine consegue escrever o valor». Foi a
-confusão entre as duas que gerou o ADR-0145, e este documento é a metade que aquele registo deixou por fazer.
+# The accommodations by genre — the study ADR-0145 §3 asked for
 
-> ⚠️ **A classificação é JUÍZO, e o número é que é medição.** Cada célula é uma decisão minha sobre se a
-> acomodação tem sujeito naquele gênero; o que a máquina faz é contar. Onde eu errar uma célula, o erro
-> propaga-se para a percentagem — então as células estão todas escritas em
-> `scripts/`-adjacente (ver «Como refazer», no fim) em vez de só o resultado.
+**Measured on 2026-09-12** by crossing the **35 categories** and the **380 games** of
+`minigames-catalog-v2.html` with each accommodation the engine has or could have. The question, cell by
+cell, is the Dev's — **«isto tem ASSUNTO aqui?»** (does this have a subject here?) — and not whether the engine
+can write the value. It was the confusion between the two that produced ADR-0145, and this document is the half that
+record left undone.
+
+> ⚠️ **The classification is JUDGEMENT; the number is what is measured.** Each cell is a decision of mine about whether the
+> accommodation has a subject in that genre; what the machine does is count. Where I get a cell wrong, the error
+> propagates to the percentage — so the cells are all written in
+> `scripts/`-adjacent code (see "How to redo it", at the end) instead of only the result.
 
 ---
 
-## 0 · 🔴 A CHAVE DESTE ESTUDO ESTAVA ERRADA, e a correcção é do Dev
+## 0 · 🔴 THIS STUDY'S KEY WAS WRONG, and the correction is the Dev's
 
 > «Você está tomando uma lista de pesquisa rápida feita em uma tarde como a lista canônica de gênero para uma
-> engine que será usada por milhões de pessoas.» — o Dev, 2026-09-12
+> engine que será usada por milhões de pessoas.» — the Dev, 2026-09-12
 
-As 35 categorias do catálogo são um **backlog de produção**, não uma taxonomia. As secções 1–9 abaixo
-usaram-nas como chave de género, e isso tem uma consequência técnica e não só de nome: a mesma acomodação
-ficava espalhada por várias chaves quando o que a governa é **um eixo só**. `balancoDaCamara` aparecia sob
-*Corrida*, *Pseudo-3D* e *Isométrico* — e o que a governa é a **perspectiva**. `saidaDeAudio` aparecia sob seis
-— e o que a governa é o **modo de jogadores**.
+The catalogue's 35 categories are a **production backlog**, not a taxonomy. Sections 1–9 below
+used them as the genre key, and that has a technical consequence and not only a naming one: the same accommodation
+was spread across several keys when what governs it is **a single axis**. `balancoDaCamara` appeared under
+*Corrida*, *Pseudo-3D* and *Isométrico* — and what governs it is the **perspective**. `saidaDeAudio` appeared under six
+— and what governs it is the **player mode**.
 
-### A taxonomia passa a vir da Wikipédia, fixada numa revisão
+### The taxonomy now comes from Wikipedia, pinned to a revision
 
-<https://en.wikipedia.org/wiki/List_of_video_game_genres>, **revisão 1367745358 de 2026-08-04**. Fixada porque
-uma taxonomia tirada de uma wiki que muda todos os dias, sem dizer de que dia é, é uma lista que um dia deixa de
-concordar consigo mesma sem nada que o diga.
+<https://en.wikipedia.org/wiki/List_of_video_game_genres>, **revision 1367745358 of 2026-08-04**. Pinned because
+a taxonomy taken from a wiki that changes every day, without saying which day it is from, is a list that one day stops
+agreeing with itself with nothing to say so.
 
-📌 **E a própria página confirma o corte que o Dev pediu:** a secção 11 é «*Video game genres by purpose*»
-(educativo, sério, arte…) — um EIXO, separado dos géneros pela mesma página que os lista.
+📌 **And the page itself confirms the cut the Dev asked for:** section 11 is "*Video game genres by purpose*"
+(educational, serious, art…) — an AXIS, separated from the genres by the same page that lists them.
 
-### As 35 categorias passam a ser a PROVA DE COBERTURA, e cabem
+### The 35 categories become the COVERAGE PROOF, and they fit
 
-📏 `node scripts/genre-taxonomy.mjs` — **35 de 35 mapeadas, 380 jogos**:
+📏 `node scripts/genre-taxonomy.mjs` — **35 of 35 mapped, 380 games**:
 
-| género de topo (Wikipédia) | categorias | jogos* |
+| top-level genre (Wikipedia) | categories | games* |
 |---|---|---|
 | 1 · Action | 10 | 108 |
 | 2 · Action-adventure | 1 | 8 |
@@ -49,367 +52,367 @@ concordar consigo mesma sem nada que o diga.
 | 10 · Other notable genres | 8 | 84 |
 | 12 · Sandbox / open world | 2 | 20 |
 
-\* ⚠️ **A coluna não é partição**: uma categoria de dois géneros conta nos dois (RPG / Aventura cai em 5 e em 3).
+\* ⚠️ **The column is not a partition**: a two-genre category counts in both (RPG / Aventura falls in 5 and in 3).
 
-### 🔴 Oito categorias cujo NOME não é um género — exactamente as que o Dev apontou
+### 🔴 Eight categories whose NAME is not a genre — exactly the ones the Dev pointed at
 
-| categoria | o que é, de facto |
+| category | what it actually is |
 |---|---|
-| Arcade Clássico | uma **época** |
-| Pseudo-3D / Raycasting | uma **técnica de render** → eixo *perspectiva* (1.ª pessoa) |
-| Isométrico | uma **perspectiva** |
-| Multiplayer Local | um **modo de jogadores** |
-| Reação / Reflexo | uma **mecânica** |
-| Labirinto Exploração | uma **mecânica** (a página não lista «maze» como género) |
-| Experimentais / Arte | um **propósito** — a própria página põe «art game» em «por propósito» |
-| Híbridos / Mashups | **multi-género** por definição |
+| Arcade Clássico | an **era** |
+| Pseudo-3D / Raycasting | a **rendering technique** → *perspective* axis (1st person) |
+| Isométrico | a **perspective** |
+| Multiplayer Local | a **player mode** |
+| Reação / Reflexo | a **mechanic** |
+| Labirinto Exploração | a **mechanic** (the page does not list "maze" as a genre) |
+| Experimentais / Arte | a **purpose** — the page itself puts "art game" under "by purpose" |
+| Híbridos / Mashups | **multi-genre** by definition |
 
-📌 **E há uma nona que é metade de cada:** *Educativo / Quiz* é género (trivia, 10.11) **e** propósito
-(educativo, 11.5), e é assim que o script a regista.
+📌 **And there is a ninth that is half of each:** *Educativo / Quiz* is a genre (trivia, 10.11) **and** a purpose
+(educational, 11.5), and that is how the script records it.
 
-⚠️ **Três não têm género nenhum a atribuir** — Multiplayer Local, Experimentais/Arte e Híbridos, **33 jogos**
-— e isso não é lacuna: são exactamente as que atravessam géneros. Uma acomodação que dependa do género não
-tem sujeito nelas **pelo género**, e terá de o ter pelo eixo.
+⚠️ **Three have no genre at all to assign** — Multiplayer Local, Experimentais/Arte and Híbridos, **33 games**
+— and that is not a gap: they are exactly the ones that cut across genres. An accommodation that depends on the genre
+has no subject in them **through the genre**, and will have to have it through the axis.
 
-### O que fica por fazer nesta fase (2a)
+### What is left to do in this phase (2a)
 
-1. ✅ **Re-chavear as acomodações pelos eixos certos** — feito, secção 0.1 abaixo.
-2. ✅ **Semear o catálogo de acomodações pela GAG** — feito, secção 0.2 abaixo.
+1. ✅ **Re-key the accommodations by the right axes** — done, section 0.1 below.
+2. ✅ **Seed the accommodation catalogue from the GAG** — done, section 0.2 below.
 
 ---
 
-## 0.1 · As acomodações re-chaveadas — UMA chave cada
+## 0.1 · The accommodations re-keyed — ONE key each
 
-📏 `node scripts/accommodations-by-genre.mjs`. A primeira versão guardava **35 listas escritas à mão**, uma por
-categoria, e por isso a mesma pergunta era respondida muitas vezes e podia sê-lo de formas diferentes. Agora
-**cada acomodação tem uma chave — um eixo e os valores onde tem assunto —, e cada categoria declara uma vez os
-valores que os jogos dela cobrem.** A divergência deixa de ser possível por construção: não há segunda célula
-onde escrever outra resposta. Sete guardas; **catorze mutações distintas, catorze vermelhas** — quatro delas nas guardas novas da taxonomia.
+📏 `node scripts/accommodations-by-genre.mjs`. The first version kept **35 hand-written lists**, one per
+category, and so the same question was answered many times and could be answered in different ways. Now
+**each accommodation has one key — an axis and the values where it has a subject —, and each category declares once the
+values its games cover.** Divergence becomes impossible by construction: there is no second cell
+in which to write another answer. Seven guards; **fourteen distinct mutations, fourteen red** — four of them in the new taxonomy guards.
 
-### 🎯 O achado: metade das chaves o contrato JÁ PERGUNTA
+### 🎯 The finding: half of the keys the contract ALREADY ASKS
 
-O plano previa quatro eixos (género, perspectiva, modo de jogadores, propósito). Chaveadas uma a uma, as
-acomodações caíram em **três espécies**, e a do meio é a que muda a fase 2c:
+The plan foresaw four axes (genre, perspective, player mode, purpose). Keyed one by one, the
+accommodations fell into **three kinds**, and the middle one is the one that changes phase 2c:
 
-| espécie | eixos | acomodações |
+| kind | axes | accommodations |
 |---|---|---|
-| **taxonomia** — o que o jogo É | `generos` · `perspectiva` · `jogadores` | saída de áudio, balanço da câmara, Modo Fácil, cadeira de rodas, detecção, intensidade, dica |
-| 🎯 **declaração que o contrato já tem** | `tick` · `seguraTeclas()` · `needsPointer()` · `world()` · `topology()` | velocidade do jogo, as duas alternâncias, controle virtual, um botão só, estabilizar ponteiro, simulação visual, modo cego, navegação sonora |
-| ⚠️ **declaração que o contrato ainda não pede** | `avatar` · `texto` · `pecas` · `precisao` | redução do personagem, bengala, velocidade do texto, dificuldade lexical, peças, naipes, janela de acerto |
+| **taxonomy** — what the game IS | `generos` · `perspectiva` · `jogadores` | audio output, camera sway, Easy Mode, wheelchair, detection, intensity, hint |
+| 🎯 **a declaration the contract already has** | `tick` · `seguraTeclas()` · `needsPointer()` · `world()` · `topology()` | game speed, the two toggles, virtual controller, one button only, pointer stabilization, visual simulation, blind mode, audio navigation |
+| ⚠️ **a declaration the contract does not ask for yet** | `avatar` · `texto` · `pecas` · `precisao` | character reduction, cane, text speed, lexical difficulty, pieces, suits, hit window |
 
-🔴 **Nove acomodações não precisam de género nenhum**: a engine pode filtrá-las pelo que o jogo já declarou, e
-seis dessas nove a engine já tem. É a regra do ADR-0145 a funcionar sem o campo `genero` — o que a fase 1h
-já tinha visto no ☝️, que some num quiz porque `seguraTeclas()` é `false`.
+🔴 **Nine accommodations need no genre at all**: the engine can filter them by what the game has already declared, and
+six of those nine the engine already has. It is the rule of ADR-0145 working without the `genero` field — which phase 1h
+had already seen in the ☝️, which disappears in a quiz because `seguraTeclas()` is `false`.
 
-📌 **E um eixo teve de ser DERIVADO**, e é a mesma regra que a engine aplica: o sonar precisa de mundo
-(`world: none` ⇒ «empatia e sonar NÃO são oferecidos», `core/contract.ts` bloco 8) **e** de direcção
-(`bearing` devolve `{ kind: 'none' }` em `hotspots`, `contract.ts:610`). Chaveado só pela topologia, o modo
-cego foi dado ao Desenho, que declara `none` — medido, e corrigido antes de escrever isto.
+📌 **And one axis had to be DERIVED**, and it is the same rule the engine applies: the sonar needs a world
+(`world: none` ⇒ "Empathy and sonar are NOT offered", `core/contract.ts` block 8) **and** a direction
+(`bearing` returns `{ kind: 'none' }` in `hotspots`, `contract.ts:610`). Keyed only by the topology, blind
+mode was given to Desenho, which declares `none` — measured, and corrected before writing this.
 
-### O que mudou, por acomodação
+### What changed, per accommodation
 
-| acomodação | chave | antes | depois | porquê |
+| accommodation | key | before | after | why |
 |---|---|---|---|---|
-| modo cego · navegação sonora | `espaco ∈ espacial` | 18% | **78%** | a §6 dizia «mundo espacial» e contou 6 categorias; o contrato dá direcção a **toda** grelha e espaço contínuo — o Tabuleiro (xadrez às cegas) incluído |
-| um botão só | `entrada ∈ acoes` | 36% | **93%** | com varredura, colapsar as acções tem assunto em qualquer jogo de acções — xadrez incluído |
-| tamanho do alvo | universal | 61% | **100%** | a régua da fase 5b é da INTERFACE (menus, pad, barra), e há interface em todo jogo |
-| remapear teclas | universal | 62% | **100%** | todo jogo tem confirmar e pausa, e menus navegados por tecla |
-| bengala | `avatar ∈ anda` | 6% | 48% | a bengala é de quem anda a pé, e anda-se a pé em muito mais do que Platformer e Labirinto |
-| alternância de marcha | `segura ∈ direcao·botao` | 34% | 65% | lido nos títulos: Tetris segura a descida, o pinball segura o flipper |
-| alternância do correr | `segura ∈ botao` | 11% | 36% | ⚠️ generaliza para **qualquer botão segurado** (carregar força, bloquear), não só correr |
-| janela de acerto | `precisao ∈ precisa` | 34% | 53% | Shooters, Corrida, Pseudo-3D e Cartas (Speed) tinham-na e não estavam contados |
-| balanço da câmara | `perspectiva ∈ 1.ª pessoa·atrás` | 6% | 23% | ⚠️ **perdeu o Isométrico** — a câmara isométrica não balança; ganhou a câmara de perseguição |
-| estabilizar ponteiro | `entrada ∈ ponteiro` | 7% | 23% | **era «assistência de traço»**: a mão trémula que desenha também mira e arrasta |
-| velocidade do texto · dificuldade lexical | `texto ∈ narrativo·materia` | 18% · 11% | 25% · 25% | ⚠️ perdeu Simulação e Estratégia, onde o texto é rótulo |
-| Modo Fácil | `generos ∈ 1.1` | 30% | **6%** | a física dele (gravidade, moedas no chão) é de PLATAFORMA; «mais fácil» em geral é outra acomodação, e a GAG é que a nomeia (passo 2) |
-| intensidade | `generos ∈ 10.6·2.1` | 10% | 2% | ⚠️ flashes saíram: fotossensibilidade é da redução de cena, que é universal |
-| simulação visual | `mundo ∈ element` | 100% | 98% | o Desenho declara `none`, e o contrato recusa-lhe a simulação |
-| controle virtual | `entrada ∈ acoes` | 96% | 93% | Desenho e Sandbox são ponteiro contínuo; Palavras ganhou (a forca escolhe letras por acção) |
-| velocidade do jogo | `tick ∈ clock` | 82% | 82% | **o total não mudou, e a composição sim**: entraram Platformer, Runner e Luta (que a versão anterior só pusera na janela), Sandbox e Experimentais; saíram Tabuleiro, Narrativo, Point-and-Click e Palavras, que são por turno |
+| blind mode · audio navigation | `espaco ∈ espacial` | 18% | **78%** | §6 said spatial world and counted 6 categories; the contract gives a direction to **every** grid and continuous space — the Tabuleiro (blindfold chess) included |
+| one button only | `entrada ∈ acoes` | 36% | **93%** | with scanning, collapsing the actions has a subject in any game of actions — chess included |
+| target size | universal | 61% | **100%** | the ruler of phase 5b is the INTERFACE's (menus, pad, bar), and every game has an interface |
+| remap keys | universal | 62% | **100%** | every game has confirm and pause, and menus navigated by key |
+| cane | `avatar ∈ anda` | 6% | 48% | the cane belongs to whoever walks on foot, and one walks on foot in far more than Platformer and Labirinto |
+| gait toggle | `segura ∈ direcao·botao` | 34% | 65% | read in the titles: Tetris holds the drop, pinball holds the flipper |
+| run toggle | `segura ∈ botao` | 11% | 36% | ⚠️ generalizes to **any held button** (charge power, block), not only running |
+| hit window | `precisao ∈ precisa` | 34% | 53% | Shooters, Corrida, Pseudo-3D and Cartas (Speed) had one and were not counted |
+| camera sway | `perspectiva ∈ 1.ª pessoa·atrás` | 6% | 23% | ⚠️ **lost Isométrico** — the isometric camera does not sway; gained the chase camera |
+| pointer stabilization | `entrada ∈ ponteiro` | 7% | 23% | **it was "stroke assistance"**: the shaky hand that draws also aims and drags |
+| text speed · lexical difficulty | `texto ∈ narrativo·materia` | 18% · 11% | 25% · 25% | ⚠️ lost Simulação and Estratégia, where the text is a label |
+| Easy Mode | `generos ∈ 1.1` | 30% | **6%** | its physics (gravity, coins on the ground) is PLATFORM physics; "easier" in general is another accommodation, and the GAG is what names it (step 2) |
+| intensity | `generos ∈ 10.6·2.1` | 10% | 2% | ⚠️ flashes left: photosensitivity belongs to scene reduction, which is universal |
+| visual simulation | `mundo ∈ element` | 100% | 98% | Desenho declares `none`, and the contract refuses it the simulation |
+| virtual controller | `entrada ∈ acoes` | 96% | 93% | Desenho and Sandbox are continuous pointer; Palavras gained (hangman picks letters by action) |
+| game speed | `tick ∈ clock` | 82% | 82% | **the total did not change, and the composition did**: Platformer, Runner and Luta came in (the previous version had put them only in the window), Sandbox and Experimentais; Tabuleiro, Narrativo, Point-and-Click and Palavras, which are turn-based, left |
 
-⚠️ **O Modo Fácil e a cadeira de rodas caíram para 22 jogos, e isso é o estudo a funcionar**: montá-los
-fora de Platformer e Runner seria o interruptor sem assunto que o ADR-0145 existe para evitar.
+⚠️ **Easy Mode and the wheelchair fell to 22 games, and that is the study working**: mounting them
+outside Platformer and Runner would be the switch with no subject that ADR-0145 exists to prevent.
 
-### O que isto pede à fase 2c
+### What this asks of phase 2c
 
-Os quatro eixos que o contrato ainda não pergunta — **`avatar`, `texto`, `pecas`, `precisao`** — chaveiam sete
-acomodações, e **duas a engine tem** (a bengala e a redução do personagem, que hoje montam sem filtro). Se
-entrarem como campos, entram pela rubrica do `holdsAtOnce` (sem padrão seguro ⇒ obrigatórios) ou pela do
-`needsPointer` (padrão seguro ⇒ opcionais). Essa decisão é da 2c, e não é tomada aqui.
+The four axes the contract does not ask yet — **`avatar`, `texto`, `pecas`, `precisao`** — key seven
+accommodations, and **the engine has two of them** (the cane and the character reduction, which today mount with no filter). If
+they come in as fields, they come in by the rubric of `holdsAtOnce` (no safe default ⇒ mandatory) or by that of
+`needsPointer` (safe default ⇒ optional). That decision belongs to 2c, and is not taken here.
 
-> ⚠️ **As secções 1–9 abaixo continuam a valer como MEDIÇÃO da primeira versão** — o raciocínio delas é o
-> que produziu as listas. **Onde um número delas contradiz a tabela acima, vale a de cima**: a §1 inteira, a
-> §2 (os universais são DOZE — entram remapear e tamanho do alvo, sai a simulação visual), a §5 (a cauda) e o
-> número da §6.
+> ⚠️ **Sections 1–9 below still stand as the MEASUREMENT of the first version** — their reasoning is
+> what produced the lists. **Where a number of theirs contradicts the table above, the one above wins**: the whole of §1,
+> §2 (the universals are TWELVE — remap and target size come in, visual simulation goes out), §5 (the tail) and the
+> number in §6.
 
 ---
 
-## 0.2 · A segunda coluna: o nível da GAG
+## 0.2 · The second column: the GAG level
 
-📏 `node scripts/accommodations-gag.mjs` — lê a [lista completa](https://gameaccessibilityguidelines.com/full-list/)
-ao vivo (ou `--gag <cópia.html>`), classifica **as 105 directrizes** (122 entradas: há directrizes listadas
-em mais de um eixo, e cada uma vale pelo MELHOR nível em que aparece) e cruza cada acomodação com o alcance da 0.1.
+📏 `node scripts/accommodations-gag.mjs` — reads the [full list](https://gameaccessibilityguidelines.com/full-list/)
+live (or `--gag <copy.html>`), classifies **the 105 guidelines** (122 entries: some guidelines are listed
+on more than one axis, and each counts at the BEST level it appears at) and crosses each accommodation with the reach of 0.1.
 
-⚠️ **O texto da GAG não entra no repositório.** A página não declara licença; ficam só os **slugs** (o
-identificador de cada directriz na URL dela) e a classificação. ⚠️ **E a página não tem revisão**, então a lista
-é fixada por impressão digital (sha256 dos pares eixo/nível/slug, lida em 2026-09-12): se a GAG mudar, o script
-reprova em vez de classificar uma lista que já não é a que foi lida. Seis guardas; onze mutações. Duas
-sobreviveram sozinhas — são as duas defesas contra a barra lateral da página, e cada uma segura a falta da
-outra; tiradas juntas, reprovam. Nenhuma é inerte.
+⚠️ **The GAG text does not enter the repository.** The page declares no licence; only the **slugs** (each
+guideline's identifier in its URL) and the classification are kept. ⚠️ **And the page has no revision**, so the list
+is pinned by fingerprint (sha256 of the axis/level/slug pairs, read on 2026-09-12): if the GAG changes, the script
+fails instead of classifying a list that is no longer the one that was read. Six guards; eleven mutations. Two
+survived on their own — they are the two defences against the page's sidebar, and each one covers the absence of the
+other; removed together, they fail. Neither is inert.
 
-### Para onde foram as 105
+### Where the 105 went
 
-| destino | directrizes |
+| destination | guidelines |
 |---|---|
-| **viram acomodação** | **63** |
-| autoria — regra de desenho de quem escreve o jogo | 18 |
-| regra da engine — ela já o faz, sem interruptor (a nota diz onde) | 10 |
-| fora do escopo — a engine não tem a coisa (conversa online, vibração, janela de PC) | 8 |
-| processo — testes com pessoas, feedback, página pública | 5 |
-| ⚠️ **conflito com pilar** | **1** |
+| **become an accommodation** | **63** |
+| authoring — a design rule for whoever writes the game | 18 |
+| engine rule — it already does it, with no switch (the note says where) | 10 |
+| out of scope — the engine does not have the thing (online chat, vibration, PC window) | 8 |
+| process — tests with people, feedback, public page | 5 |
+| ⚠️ **conflict with a pillar** | **1** |
 
-🔴 **O conflito é «allow play in both landscape and portrait»** (Advanced/Motor) contra o **pilar 5**
-(320×180, paisagem). Não se resolve num estudo: fica nomeado.
+🔴 **The conflict is "allow play in both landscape and portrait"** (Advanced/Motor) against **pillar 5**
+(320×180, landscape). It is not resolved in a study: it stays named.
 
-### 🎯 A intersecção que o plano pedia — Basic × a engine NÃO tem
+### 🎯 The intersection the plan asked for — Basic × the engine does NOT have it
 
-| acomodação | alcance | eixos GAG | onde estava no plano |
+| accommodation | reach | GAG axes | where it was in the plan |
 |---|---|---|---|
-| tamanho do alvo | 100% | Motor · Vision | fase 5b ✅ |
-| 🔴 **dificuldade** | **100%** | Cognitive · **General Basic** | **não estava** |
-| 🔴 **um botão só** | **93%** | Motor Basic | **fase 6, com 36%** |
-| velocidade do jogo | 82% | Motor Basic | fase 5a ✅ |
-| velocidade do texto | 25% | Cognitive Basic | fase 5c ✅ |
-| dificuldade lexical | 25% | Cognitive Basic | fase 6 |
-| sensibilidade do controle | 23% | Motor Basic | **não estava** |
-| balanço da câmara | 23% | Vision Basic | fase 6, com 6% |
-| naipes distinguíveis | 13% | Vision Basic | fase 6 |
+| target size | 100% | Motor · Vision | phase 5b ✅ |
+| 🔴 **difficulty** | **100%** | Cognitive · **General Basic** | **it was not there** |
+| 🔴 **one button only** | **93%** | Motor Basic | **phase 6, at 36%** |
+| game speed | 82% | Motor Basic | phase 5a ✅ |
+| text speed | 25% | Cognitive Basic | phase 5c ✅ |
+| lexical difficulty | 25% | Cognitive Basic | phase 6 |
+| controller sensitivity | 23% | Motor Basic | **it was not there** |
+| camera sway | 23% | Vision Basic | phase 6, at 6% |
+| distinguishable suits | 13% | Vision Basic | phase 6 |
 
-📌 **Três leituras que mudam a ordem das fases, e nenhuma é tomada aqui:**
+📌 **Three readings that change the order of the phases, and none is taken here:**
 
-1. **A dificuldade é Basic e universal, e o plano não a tinha.** A GAG pede-a em três directrizes — escolher,
-   mudar durante o jogo, praticar sem falhar. A engine não pode fazer um jogo mais fácil; pode **guardar,
-   persistir e anunciar** a escolha, e o jogo lê-a — a mesma forma que a fase 5a propõe para a velocidade. O
-   Modo Fácil de plataforma é uma instância dela, não a acomodação.
-2. **O um botão só sai da cauda.** Na versão por categoria tinha 36%; chaveado e com o nível, é Basic a 93%.
-3. **A cauda da fase 6 deixa de ser ordenável só por alcance**: balanço da câmara e naipes são Basic, e ficam à
-   frente de acomodações Intermediate com o dobro do alcance.
+1. **Difficulty is Basic and universal, and the plan did not have it.** The GAG asks for it in three guidelines — choose,
+   change during play, practise without failing. The engine cannot make a game easier; it can **store,
+   persist and announce** the choice, and the game reads it — the same shape phase 5a proposes for speed. The
+   platform Easy Mode is an instance of it, not the accommodation.
+2. **One button only leaves the tail.** In the per-category version it had 36%; keyed and with the level, it is Basic at 93%.
+3. **The tail of phase 6 can no longer be ordered by reach alone**: camera sway and suits are Basic, and go
+   ahead of Intermediate accommodations with twice the reach.
 
-### O que a GAG trouxe — dezanove acomodações: dezasseis novas, três que a engine já tinha
+### What the GAG brought — nineteen accommodations: sixteen new, three the engine already had
 
-Por nível: **Basic** dificuldade, sensibilidade do controle · **Intermediate** lembrete do objectivo,
-mono/estéreo, tamanho da interface, rearranjar a interface, saltar trecho, macros, assistência de mira e
-direcção, realce de palavras, cor do ponteiro, entrada repetida · **Advanced** repetir a instrução, perfis,
-audiodescrição, intervalo entre entradas. E três que **a engine já tinha e o estudo não contava**: ajuda dos
-controles (`ui/help-panel.ts`, fase 1d), legendas de som (`captionsOn`) e leitor de tela (`core/a11y-sr`).
+By level: **Basic** difficulty, controller sensitivity · **Intermediate** objective reminder,
+mono/stereo, interface size, rearranging the interface, skipping a section, macros, aim and
+steering assistance, word highlighting, pointer colour, repeated input · **Advanced** repeat the instruction, profiles,
+audio description, interval between inputs. And three that **the engine already had and the study was not counting**: controls
+help (`ui/help-panel.ts`, phase 1d), sound captions (`captionsOn`) and screen reader (`core/a11y-sr`).
 
-🔴 **Um achado de passagem, e é o mesmo padrão do `tick`:** o lembrete do objectivo é Intermediate e
-universal, e o contrato **já pede** `objectiveOf` a todo jogo — com **zero leitores** em `app/js`. O dado está
-declarado em todos os jogos; falta quem o diga.
+🔴 **A finding in passing, and it is the same pattern as `tick`:** the objective reminder is Intermediate and
+universal, and the contract **already asks** every game for `objectiveOf` — with **zero readers** in `app/js`. The data is
+declared in every game; what is missing is someone to say it.
 
-### Fora da GAG — e isso não é defeito
+### Outside the GAG — and that is not a defect
 
-Treze acomodações nenhuma directriz pede: caixa da letra, índice falado, as duas simulações de empatia,
-controle virtual, redução do personagem, bengala, saída de áudio por jogador, estabilizar ponteiro, peças,
-Modo Fácil, cadeira de rodas e detecção. As simulações **não são acessibilidade de quem joga** — são empatia
-de quem assiste —, e as outras são formas concretas de directrizes mais gerais (a bengala é uma forma do
-«sonar-style audio map»; o controle virtual, do «large and well spaced»). ⚠️ Onde a forma concreta ficou
-sem directriz, é porque classifiquei a directriz na forma geral: é juízo, e está escrito linha a linha.
+Thirteen accommodations no guideline asks for: letter case, spoken index, the two empathy simulations,
+virtual controller, character reduction, cane, per-player audio output, pointer stabilization, pieces,
+Easy Mode, wheelchair and detection. The simulations **are not the accessibility of whoever plays** — they are the empathy
+of whoever watches —, and the others are concrete forms of more general guidelines (the cane is a form of the
+"sonar-style audio map"; the virtual controller, of "large and well spaced"). ⚠️ Where the concrete form was left
+without a guideline, it is because I classified the guideline under the general form: it is judgement, and it is written line by line.
 
 ---
 
-## 1 · O resultado, por alcance
+## 1 · The result, by reach
 
-| acomodação | a engine tem? | gêneros | jogos | % do catálogo |
+| accommodation | does the engine have it? | genres | games | % of the catalogue |
 |---|---|---|---|---|
-| tipografia | ✅ | 35/35 | 380 | **100%** |
-| caixa da letra (CAA) | ✅ | 35/35 | 380 | **100%** |
-| narração (TTS) | ✅ | 35/35 | 380 | **100%** |
-| índice falado dos menus | ✅ | 35/35 | 380 | **100%** |
+| typography | ✅ | 35/35 | 380 | **100%** |
+| letter case (CAA) | ✅ | 35/35 | 380 | **100%** |
+| narration (TTS) | ✅ | 35/35 | 380 | **100%** |
+| spoken menu index | ✅ | 35/35 | 380 | **100%** |
 | Libras | ✅ | 35/35 | 380 | **100%** |
-| som (mestre + categorias) | ✅ | 35/35 | 380 | **100%** |
-| simulação auditiva | ✅ | 35/35 | 380 | **100%** |
-| alto contraste | ✅ | 35/35 | 380 | **100%** |
-| correção de daltonismo | ✅ | 35/35 | 380 | **100%** |
-| simulação visual | ✅ | 35/35 | 380 | **100%** |
-| redução de movimento (cena) | ✅ | 35/35 | 380 | **100%** |
-| controle virtual | ✅ | 33/35 | 363 | 96% |
-| **tirar/esticar o tempo** | ❌ | **28/35** | **311** | **82%** |
-| remapear teclas | ✅ | 22/35 | 236 | 62% |
-| **tamanho do alvo** | ❌ | **19/35** | **231** | **61%** |
-| redução de movimento (personagem) | ✅ | 14/35 | 155 | 41% |
-| **um botão só** | ❌ | 12/35 | 135 | 36% |
-| **dica / realce** | ❌ | 11/35 | 132 | 35% |
-| **janela de acerto** | ❌ | 12/35 | 131 | 34% |
-| alternância de marcha | ✅ | 12/35 | 128 | 34% |
-| Modo Fácil | ✅ | 11/35 | 113 | 30% |
-| **velocidade do texto** | ❌ | 6/35 | 69 | 18% |
-| navegação sonora | ✅ | 6/35 | 67 | 18% |
-| modo cego | ✅ | 6/35 | 67 | 18% |
-| saída de áudio por jogador | ✅ | 6/35 | 66 | 17% |
-| alternância do correr | ✅ | 4/35 | 42 | 11% |
-| **dificuldade lexical** | ❌ | 4/35 | 41 | 11% |
-| **intensidade (sustos, flashes)** | ❌ | 5/35 | 39 | 10% |
-| **peças / baralhos alternativos** | ❌ | 3/35 | 39 | 10% |
-| **assistência de traço** | ❌ | 3/35 | 28 | 7% |
-| cadeira de rodas | ✅ | 3/35 | 27 | 7% |
-| **balanço da câmara** | ❌ | 3/35 | 22 | 6% |
-| **naipes distinguíveis** | ❌ | 2/35 | 24 | 6% |
-| espaçamento da bengala | ✅ | 2/35 | 22 | 6% |
-| **generosidade da detecção** | ❌ | 1/35 | 9 | 2% |
+| sound (master + categories) | ✅ | 35/35 | 380 | **100%** |
+| hearing simulation | ✅ | 35/35 | 380 | **100%** |
+| high contrast | ✅ | 35/35 | 380 | **100%** |
+| colour-blindness correction | ✅ | 35/35 | 380 | **100%** |
+| visual simulation | ✅ | 35/35 | 380 | **100%** |
+| motion reduction (scene) | ✅ | 35/35 | 380 | **100%** |
+| virtual controller | ✅ | 33/35 | 363 | 96% |
+| **remove/stretch the time** | ❌ | **28/35** | **311** | **82%** |
+| remap keys | ✅ | 22/35 | 236 | 62% |
+| **target size** | ❌ | **19/35** | **231** | **61%** |
+| motion reduction (character) | ✅ | 14/35 | 155 | 41% |
+| **one button only** | ❌ | 12/35 | 135 | 36% |
+| **hint / highlight** | ❌ | 11/35 | 132 | 35% |
+| **hit window** | ❌ | 12/35 | 131 | 34% |
+| gait toggle | ✅ | 12/35 | 128 | 34% |
+| Easy Mode | ✅ | 11/35 | 113 | 30% |
+| **text speed** | ❌ | 6/35 | 69 | 18% |
+| audio navigation | ✅ | 6/35 | 67 | 18% |
+| blind mode | ✅ | 6/35 | 67 | 18% |
+| per-player audio output | ✅ | 6/35 | 66 | 17% |
+| run toggle | ✅ | 4/35 | 42 | 11% |
+| **lexical difficulty** | ❌ | 4/35 | 41 | 11% |
+| **intensity (scares, flashes)** | ❌ | 5/35 | 39 | 10% |
+| **alternative pieces / decks** | ❌ | 3/35 | 39 | 10% |
+| **stroke assistance** | ❌ | 3/35 | 28 | 7% |
+| wheelchair | ✅ | 3/35 | 27 | 7% |
+| **camera sway** | ❌ | 3/35 | 22 | 6% |
+| **distinguishable suits** | ❌ | 2/35 | 24 | 6% |
+| cane spacing | ✅ | 2/35 | 22 | 6% |
+| **detection generosity** | ❌ | 1/35 | 9 | 2% |
 
 ---
 
-## 2 · O universal são ONZE, e a engine tem as onze
+## 2 · The universal ones are ELEVEN, and the engine has all eleven
 
-Onze acomodações têm sujeito nos trinta e cinco gêneros, e o argumento é o mesmo para todas: **há texto, há
-som, há tela e há menu em qualquer jogo.** São elas que preenchem «opções gerais» do ADR-0146, e a boa
-notícia deste estudo é que estão **todas construídas** — tipografia, caixa da letra, narração, índice falado,
-Libras, som, simulação auditiva, alto contraste, correção de daltonismo, simulação visual e redução de
-movimento de cena.
+Eleven accommodations have a subject in all thirty-five genres, and the argument is the same for all of them: **there is text,
+there is sound, there is a screen and there is a menu in any game.** They are what fills the «opções gerais» of ADR-0146, and the good
+news of this study is that they are **all built** — typography, letter case, narration, spoken index,
+Libras, sound, hearing simulation, high contrast, colour-blindness correction, visual simulation and scene
+motion reduction.
 
-O controle virtual fica em 96% e não em 100% por uma razão que vale dizer: nos dois gêneros que sobram —
-Digitação e Puzzle de Palavras — o dedo não substitui o teclado, porque **o teclado é o jogo**. Um pad de
-direcionais ali seria o botão sem assunto que este estudo existe para evitar.
-
----
-
-## 3 · O maior buraco da engine é o TEMPO, e não é perto
-
-> **`semTempo` — 28 dos 35 gêneros, 311 dos 380 jogos, 82% do catálogo. A engine não tem nada.**
-
-Oito painéis de ajustes, e **nenhum toca no tempo**. Uma criança com resposta motora mais lenta, ou que
-precisa de mais um segundo para pensar, está hoje fora de quatro em cada cinco jogos do catálogo, e não há
-interruptor em lado nenhum.
-
-A família é maior do que uma entrada. Somando a **janela de acerto** (34%), o tempo aparece em três formas
-diferentes que uma criança sente como a mesma coisa:
-
-- **cronômetro** — o labirinto contra o tempo, o teste de WPM, o microgame de 5 segundos;
-- **janela** — o Guitar Hero, o parry «no ms certo», o forno que queima;
-- **ritmo do mundo** — a velocidade a que os inimigos, as peças ou a esteira andam.
-
-📌 E a engine já decidiu esta pergunta uma vez, noutro eixo: o `padPxPerMm` ancora o alvo de toque em
-**milímetros reais** por causa da WCAG 2.5.5. O tempo tem norma equivalente — **WCAG 2.2.1 «Timing
-Adjustable»** — e nada a implementa.
+The virtual controller stays at 96% and not 100% for a reason worth saying: in the two genres left over —
+Digitação and Puzzle de Palavras — the finger does not replace the keyboard, because **the keyboard is the game**. A pad of
+directionals there would be the button with no subject this study exists to prevent.
 
 ---
 
-## 4 · O segundo buraco é o TAMANHO DO ALVO, e a engine já sabe fazê-lo
+## 3 · The engine's biggest hole is TIME, and it is not close
 
-> **`tamanhoDoAlvo` — 19 gêneros, 231 jogos, 61%. A engine não tem, e tem metade.**
+> **`semTempo` — 28 of the 35 genres, 311 of the 380 games, 82% of the catalogue. The engine has nothing.**
 
-O `input/touch` ancora os botões do pad em milímetros reais do aparelho (WCAG 2.5.5, `padPxPerMm`), com
-classificação de mão e nove slots. Essa régua existe e aplica-se a **uma** superfície: o pad. As cartas, as
-peças, os objetos escondidos, os alvos do aim trainer e os ladrilhos do match-3 não a conhecem.
+Eight settings panels, and **none touches time**. A child with a slower motor response, or who
+needs one more second to think, is today shut out of four in five games of the catalogue, and there is no
+switch anywhere.
 
-Isso é mais barato de consertar do que parece, e é o candidato mais óbvio a **reusar** em vez de inventar.
+The family is bigger than one entry. Adding the **hit window** (34%), time appears in three different
+forms that a child feels as the same thing:
+
+- **timer** — the maze against the clock, the WPM test, the 5-second microgame;
+- **window** — Guitar Hero, the parry at the right millisecond ("no ms certo", in the catalogue), the oven that burns;
+- **pace of the world** — the speed at which the enemies, the pieces or the conveyor move.
+
+📌 And the engine has already decided this question once, on another axis: `padPxPerMm` anchors the touch target in
+**real millimetres** because of WCAG 2.5.5. Time has an equivalent norm — **WCAG 2.2.1 "Timing
+Adjustable"** — and nothing implements it.
 
 ---
 
-## 5 · A cauda por gênero é real, e é pequena
+## 4 · The second hole is TARGET SIZE, and the engine already knows how to do it
 
-O exemplo do Dev, quantificado: **cadeira de rodas está em 3 dos 35 gêneros — 27 jogos, 7% do catálogo**
-(Platformer, Endless Runner e Isométrico, os três onde o avatar vence obstáculos verticais saltando). Montá-la
-universalmente poria um interruptor sem assunto à frente de **93%** do catálogo.
+> **`tamanhoDoAlvo` — 19 genres, 231 games, 61%. The engine does not have it, and it has half of it.**
 
-E ela não está sozinha nessa cauda:
+`input/touch` anchors the pad's buttons in the device's real millimetres (WCAG 2.5.5, `padPxPerMm`), with
+hand classification and nine slots. That ruler exists and applies to **one** surface: the pad. The cards, the
+pieces, the hidden objects, the aim trainer's targets and the match-3 tiles do not know it.
 
-| acomodação | gêneros | onde |
+That is cheaper to fix than it looks, and it is the most obvious candidate to **reuse** instead of inventing.
+
+---
+
+## 5 · The per-genre tail is real, and it is small
+
+The Dev's example, quantified: **wheelchair is in 3 of the 35 genres — 27 games, 7% of the catalogue**
+(Platformer, Endless Runner and Isométrico, the three where the avatar overcomes vertical obstacles by jumping). Mounting it
+universally would put a switch with no subject in front of **93%** of the catalogue.
+
+And it is not alone in that tail:
+
+| accommodation | genres | where |
 |---|---|---|
-| espaçamento da bengala | 2 | Platformer · Labirinto |
-| naipes distinguíveis | 2 | Cartas · Cassino |
-| balanço da câmara | 3 | Corrida · Pseudo-3D · Isométrico |
-| peças alternativas | 3 | Cartas · Tabuleiro · Cassino |
-| assistência de traço | 3 | Desenho · Sandbox · Experimentais |
-| alternância do correr | 4 | Shooters · Platformer · Corrida · Pseudo-3D |
-| generosidade da detecção | 1 | Stealth |
+| cane spacing | 2 | Platformer · Labirinto |
+| distinguishable suits | 2 | Cartas · Cassino |
+| camera sway | 3 | Corrida · Pseudo-3D · Isométrico |
+| alternative pieces | 3 | Cartas · Tabuleiro · Cassino |
+| stroke assistance | 3 | Desenho · Sandbox · Experimentais |
+| run toggle | 4 | Shooters · Platformer · Corrida · Pseudo-3D |
+| detection generosity | 1 | Stealth |
 
 ---
 
-## 6 · ⚠️ O achado que mais me fez parar: o MODO CEGO é 6/35
+## 6 · ⚠️ The finding that made me stop the most: BLIND MODE is 6/35
 
-E isso **não** quer dizer que uma criança cega alcança 18% do catálogo. Quer dizer que a engine tem **dois
-mecanismos diferentes para a mesma pessoa**, e só um deles precisa de espaço:
+And that does **not** mean a blind child reaches 18% of the catalogue. It means the engine has **two
+different mechanisms for the same person**, and only one of them needs space:
 
-- Onde há **mundo espacial** para atravessar — Platformer, Labirinto, Stealth, RPG, Terror, Arcade — ela
-  navega por **bengala, sonar e guia**. São 6 gêneros e 67 jogos.
-- Onde **não há espaço** — Cartas, Quiz, Digitação, Tabuleiro, Narrativo — ela joga pela **narração e pelo
-  índice falado**, que são universais e já estão construídos.
+- Where there is a **spatial world** to cross — Platformer, Labirinto, Stealth, RPG, Terror, Arcade — the child
+  navigates by **cane, sonar and guide**. That is 6 genres and 67 games.
+- Where **there is no space** — Cartas, Quiz, Digitação, Tabuleiro, Narrativo — the child plays through **narration and the
+  spoken index**, which are universal and already built.
 
-🔴 **Logo o modo cego é do gênero e a narração é geral, e classificá-los juntos seria o erro simétrico ao da
-cadeira de rodas:** dar bengala a um jogo de cartas é tão sem assunto quanto dar cadeira de rodas ao xadrez.
-A cobertura para quem não enxerga continua a ser 100% — por dois caminhos, não por um.
+🔴 **So blind mode belongs to the genre and narration is general, and classifying them together would be the error symmetrical to the
+wheelchair's:** giving a cane to a card game is as subjectless as giving a wheelchair to chess.
+Coverage for those who cannot see stays at 100% — by two paths, not one.
 
 ---
 
-## 7 · O que este estudo CORRIGE no ADR-0145 §4
+## 7 · What this study CORRECTS in ADR-0145 §4
 
-O §4 daquele registo deu uma classificação inicial «como ponto de partida e não como resposta». O estudo
-confirma-a quase toda e corrige um ponto:
+§4 of that record gave an initial classification "as a starting point and not as the answer". The study
+confirms almost all of it and corrects one point:
 
-| §4 dizia | o estudo mede | veredicto |
+| §4 said | the study measures | verdict |
 |---|---|---|
-| navegação sonora é **geral** | **6/35 · 18%** | 🔴 **errado** — é do gênero, pela razão do §6 acima |
-| simulação auditiva é geral | 35/35 | ✅ |
-| simulação de baixa visão/daltonismo é geral | 35/35 | ✅ |
-| tipografia, índice falado, narração são gerais | 35/35 | ✅ |
-| cadeira de rodas é do gênero | 3/35 | ✅ |
-| Modo Fácil (moedas no chão) é do gênero | 11/35 | ✅ |
-| alternância de marcha e do correr são do gênero | 12/35 e 4/35 | ✅ |
-| peças são do gênero (tabuleiro) | 3/35 | ✅ |
-| **`umBotaoSo` ficou por classificar** | **12/35 · 36%** | **do gênero** |
+| audio navigation is **general** | **6/35 · 18%** | 🔴 **wrong** — it belongs to the genre, for the reason in §6 above |
+| hearing simulation is general | 35/35 | ✅ |
+| low-vision/colour-blindness simulation is general | 35/35 | ✅ |
+| typography, spoken index, narration are general | 35/35 | ✅ |
+| wheelchair belongs to the genre | 3/35 | ✅ |
+| Easy Mode (coins on the ground) belongs to the genre | 11/35 | ✅ |
+| gait and run toggles belong to the genre | 12/35 and 4/35 | ✅ |
+| pieces belong to the genre (board) | 3/35 | ✅ |
+| **`umBotaoSo` was left unclassified** | **12/35 · 36%** | **belongs to the genre** |
 
-📌 **O `umBotaoSo` resolve-se assim:** ele tem sujeito onde o jogo tem **mais de uma acção** *e* pressão de
-tempo — Arcade, Shooters, Runner, Platformer, Esportes, Ritmo, Reação, Party, Luta, Multiplayer, Híbridos, e
-os Experimentais onde «one-button games» já é um sub-gênero. Onde o jogo já é de um botão, ou é por turnos,
-não há o que colapsar. E **a regra do que colapsa em quê é do gênero também**, que é a razão de ele não poder
-ser geral mesmo tendo 36%.
-
----
-
-## 8 · O que o Modo Fácil mostra sobre «traduzir» em vez de renomear
-
-O Modo Fácil aparece em 11 gêneros, mas o que ele **significa** hoje é vocabulário de plataforma: «gravidade
-menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais».
-
-🎯 **É o caso que prova a forma que o Dev pediu.** A entrada chama-se «dificuldade» e é a mesma nos onze; o
-que cada gênero declara é **o que ela faz lá dentro** — no Tower Defense é mais ouro inicial, no Tabuleiro é
-uma IA mais rasa, no Runner é menos velocidade. Nada é renomeado: `easy` continua `easy` no `Player`, e o
-que viaja por gênero é a tradução e o efeito.
+📌 **`umBotaoSo` is resolved like this:** it has a subject where the game has **more than one action** *and* time
+pressure — Arcade, Shooters, Runner, Platformer, Esportes, Ritmo, Reação, Party, Luta, Multiplayer, Híbridos, and
+the Experimentais where "one-button games" is already a sub-genre. Where the game is already one-button, or turn-based,
+there is nothing to collapse. And **the rule of what collapses into what belongs to the genre too**, which is why it cannot
+be general even at 36%.
 
 ---
 
-## 9 · Por onde começar, se o critério for alcance
+## 8 · What Easy Mode shows about "translating" instead of renaming
 
-1. **`semTempo`** — 82%, e a engine não tem nada. É o maior buraco de acessibilidade do catálogo e tem norma
-   própria (WCAG 2.2.1).
-2. **`tamanhoDoAlvo`** — 61%, e metade já existe (`padPxPerMm`); é reuso, não invenção.
-3. **`umBotaoSo`** (36%), **`dicaOuRealce`** (35%), **`janelaDeAcerto`** (34%) — o segundo grupo.
-4. **`velocidadeDoTexto`** (18%) — pequena e barata, e é a única do grupo que serve quem lê devagar.
-5. A cauda (2–11%), quando o gênero correspondente chegar.
+Easy Mode appears in 11 genres, but what it **means** today is platform vocabulary: "lower
+gravity, higher jump, forgiving pickup, coins on the ground, no hazards and no accidental falls".
 
-⚠️ **E há uma coisa a fazer ANTES de qualquer uma delas**, que este estudo torna urgente: o
-`ui/settings-mobility` monta Modo Fácil, alternância de marcha e alternância do correr **para qualquer jogo**, e
-os três medem 30%, 34% e 11%. Ele ainda não está ligado ao `createGame`; **ligá-lo antes da classificação
-entregaria três interruptores sem assunto a dois terços do catálogo.**
+🎯 **It is the case that proves the shape the Dev asked for.** The entry is called *difficulty* and it is the same in all eleven; what
+each genre declares is **what it does inside** — in Tower Defense it is more starting gold, in Tabuleiro it is
+a shallower AI, in Runner it is less speed. Nothing is renamed: `easy` stays `easy` in `Player`, and what
+travels by genre is the translation and the effect.
 
 ---
 
-## Como refazer
+## 9 · Where to start, if the criterion is reach
 
-O cruzamento não é prosa: ele está escrito célula a célula, e a contagem é derivada. Para o repetir depois de
-o catálogo mudar, ou para discordar de uma célula e ver o efeito, há cinco ficheiros:
+1. **`semTempo`** — 82%, and the engine has nothing. It is the biggest accessibility hole in the catalogue and has its own
+   norm (WCAG 2.2.1).
+2. **`tamanhoDoAlvo`** — 61%, and half of it already exists (`padPxPerMm`); it is reuse, not invention.
+3. **`umBotaoSo`** (36%), **`dicaOuRealce`** (35%), **`janelaDeAcerto`** (34%) — the second group.
+4. **`velocidadeDoTexto`** (18%) — small and cheap, and it is the only one in the group that serves whoever reads slowly.
+5. The tail (2–11%), when the corresponding genre arrives.
 
-- `scripts/lib/taxonomy.mjs` — o leitor do catálogo, a revisão fixada da Wikipédia e, por categoria, os
-  géneros, a perspectiva, os jogadores e o propósito;
-- `scripts/genre-taxonomy.mjs` — as guardas da taxonomia e a cobertura (secção 0);
-- `scripts/lib/accommodations.mjs` — por categoria, os eixos da declaração (`DECL`); por acomodação, a sua
-  chave (`ACOM`); as guardas e a medição do alcance;
-- `scripts/accommodations-by-genre.mjs` — a tabela da secção 0.1;
-- `scripts/accommodations-gag.mjs` — a classificação das directrizes da GAG por slug e a tabela da secção 0.2.
+⚠️ **And there is one thing to do BEFORE any of them**, which this study makes urgent:
+`ui/settings-mobility` mounts Easy Mode, the gait toggle and the run toggle **for any game**, and
+the three measure 30%, 34% and 11%. It is not yet wired to `createGame`; **wiring it before the classification
+would hand three switches with no subject to two thirds of the catalogue.**
 
-⚠️ Discordar de uma célula é editar **uma linha**: a declaração de uma categoria, ou a chave de uma
-acomodação. ⚠️ **As guardas conferem FORMA, não verdade** — um eixo esquecido, um valor que casaria zero, uma
-chave com dois eixos reprovam; uma categoria declarada com o valor errado passa, e é por isso que a coluna
-«porquê» da 0.1 existe. A primeira versão (o mapa `EXTRA`, secções 1–9) está no histórico de `scripts/accommodations-by-genre.mjs` (`git log -p`).
+---
+
+## How to redo it
+
+The crossing is not prose: it is written cell by cell, and the count is derived. To repeat it after
+the catalogue changes, or to disagree with a cell and see the effect, there are five files:
+
+- `scripts/lib/taxonomy.mjs` — the catalogue reader, the pinned Wikipedia revision and, per category, the
+  genres, the perspective, the players and the purpose;
+- `scripts/genre-taxonomy.mjs` — the taxonomy guards and the coverage (section 0);
+- `scripts/lib/accommodations.mjs` — per category, the axes of the declaration (`DECL`); per accommodation, its
+  key (`ACOM`); the guards and the measurement of reach;
+- `scripts/accommodations-by-genre.mjs` — the table in section 0.1;
+- `scripts/accommodations-gag.mjs` — the classification of the GAG guidelines by slug and the table in section 0.2.
+
+⚠️ Disagreeing with a cell is editing **one line**: a category's declaration, or an
+accommodation's key. ⚠️ **The guards check FORM, not truth** — a forgotten axis, a value that would match zero, a
+key with two axes fail; a category declared with the wrong value passes, and that is why the
+"why" column of 0.1 exists. The first version (the `EXTRA` map, sections 1–9) is in the history of `scripts/accommodations-by-genre.mjs` (`git log -p`).
