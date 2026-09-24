@@ -1,41 +1,40 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/latch-store.ts — A ALTERNÂNCIA, LIDA E ESCRITA NO ARMAZENAMENTO (ADR-0113).
+// input/latch-store.ts — THE TOGGLE, READ FROM AND WRITTEN TO STORAGE (ADR-0113).
 //
-// ========================= O QUE ESTE MÓDULO É, E POR QUE É SEPARADO =========================
-// O `input/latch-scope` é a REGRA e não toca em nada: recebe uma `LatchReading` já feita e responde.
-// Este módulo é a única coisa que faltava entre ela e o mundo — quem vai ao armazenamento buscar os três
-// valores que a regra pede, e quem grava o que a criança escolhe.
+// ========================= WHAT THIS MODULE IS, AND WHY IT IS APART =========================
+// `input/latch-scope` is the RULE and touches nothing: it takes a finished `LatchReading` and answers. This module is the
+// one thing that was missing between it and the world — whoever goes to storage for the three values the rule asks for,
+// and whoever writes what the child chooses.
 //
-// 📌 SEPARADO DE PROPÓSITO, e não por arrumação: a regra é pura e tem gate próprio; misturar armazenamento
-// dentro dela obrigaria todo caso da regra a montar um `localStorage` de mentira para afirmar uma coisa que
-// não depende dele. É a mesma divisão que o `render/viz-axes` (modelo) e o `render/viz-setters` (escrita)
-// já fazem neste repositório.
+// 📌 APART ON PURPOSE, not for tidiness: the rule is pure and has its own gate; mixing storage into it would make every
+// case of the rule build a fake `localStorage` to assert something that does not depend on it. The same split
+// `render/viz-axes` (model) and `render/viz-setters` (writing) make in this repository.
 //
-// ⚠️ E O QUE ELE NÃO FAZ: não sabe QUAL transporte está em uso. Isso é do `input/transport-in-use`, e chega
-// aqui como argumento. Um módulo de armazenamento que adivinhasse o transporte escreveria a escolha de uma
-// criança na chave de outro aparelho — em silêncio, que é o defeito que o ADR-0113 existe para evitar.
+// ⚠️ AND WHAT IT DOES NOT DO: it does not know WHICH transport is in use. That is `input/transport-in-use`'s, and it
+// arrives here as an argument. A storage module that guessed the transport would write one child's choice under another
+// device's key — in silence, the defect ADR-0113 exists to prevent.
 import {
   latchKey, legacyLatchKey, latchOf, latchIsOptional,
   type LatchReading,
 } from './latch-scope.js';
 
-/** O mínimo do `platform/storage` que isto precisa. Injectado, para o gate não precisar de um navegador. */
+/** The minimum of `platform/storage` this needs. Injected, so the gate needs no browser. */
 export interface LatchStore {
-  /** ⚠️ O CRU, e não `getBool`. Ver `readTriState`. */
+  /** ⚠️ The RAW read, not `getBool`. See `readTriState`. */
   get(key: string, fallback?: null): string | null;
   set(key: string, value: string): void;
 }
 
 /**
- * TRÊS ESTADOS E NÃO DOIS: `true`, `false`, e NUNCA ESCRITO.
+ * THREE STATES, NOT TWO: `true`, `false`, and NEVER WRITTEN.
  *
- * 🔴 ESTA FUNÇÃO EXISTE PARA NÃO SE USAR `getBool`, e a diferença custa o ajuste de uma criança. O `getBool`
- * colapsa «nunca escrito» em `false`. Com ele, o `doTransporte` de uma criança que nunca mexeu neste aparelho
- * chegaria à regra como `false` — e a regra responde na PRIMEIRA linha que encontra um valor, logo devolveria
- * `false` e **nunca consultaria a chave legada**, que é onde vive o ajuste que ela já tinha.
+ * 🔴 THIS FUNCTION EXISTS SO `getBool` IS NOT USED, and the difference costs a child's setting. `getBool` collapses
+ * "never written" into `false`. With it, the per-transport value of a child who never touched this device would reach the
+ * rule as `false` — and the rule answers at the FIRST line that finds a value, so it would return `false` and **never
+ * consult the legacy key**, where the setting they already had lives.
  *
- * ⚠️ É por isso que o `latch-scope` tipa os dois campos como `boolean | null` e tem um caso próprio a dizer
- * que «`false` guardado é um VALOR, e não uma ausência». Este é o lado do armazenamento da mesma frase.
+ * ⚠️ That is why `latch-scope` types both fields `boolean | null` and has a case of its own saying "a stored `false` is a
+ * VALUE, not an absence". This is the storage side of the same sentence.
  */
 export function readTriState(store: LatchStore, key: string): boolean | null {
   const v = store.get(key, null);
@@ -43,9 +42,9 @@ export function readTriState(store: LatchStore, key: string): boolean | null {
 }
 
 /**
- * A LEITURA COMPLETA que a regra pede, montada a partir do armazenamento.
+ * THE WHOLE READING the rule asks for, built from storage.
  *
- * `base` é `togglemove` ou `togglerun` — os dois nomes que já existem no armazenamento da criança.
+ * `base` is `togglemove` or `togglerun` — the two names that already exist in the child's storage.
  */
 export function readLatch(
   store: LatchStore,
@@ -62,10 +61,10 @@ export function readLatch(
 }
 
 /**
- * A ALTERNÂNCIA DESTE JOGADOR NESTE TRANSPORTE — a pergunta inteira, numa chamada.
+ * THIS PLAYER'S TOGGLE ON THIS TRANSPORT — the whole question, in one call.
  *
- * 📌 TROCAR DE TRANSPORTE TROCA A RESPOSTA SEM ESCREVER NADA, que é a cláusula 1 do ADR-0113 em código: o
- * valor pertence ao mapeamento do controle, como um caps-lock, e mudar de controle é mudar de mapeamento.
+ * 📌 SWITCHING TRANSPORT SWITCHES THE ANSWER WITHOUT WRITING ANYTHING, clause 1 of ADR-0113 in code: the value belongs to
+ * the controls' mapping, like a caps lock, and changing controls is changing mapping.
  */
 export function storedLatch(
   store: LatchStore,
@@ -78,20 +77,18 @@ export function storedLatch(
 }
 
 /**
- * GRAVA A ESCOLHA DA CRIANÇA para o transporte em uso. Devolve se gravou.
+ * WRITES THE CHILD'S CHOICE for the transport in use. Returns whether it wrote.
  *
- * ⚠️ RECUSA NOS TRANSPORTES DE UM COMANDO, e a recusa é um `false` devolvido e não um lançamento: em olhos,
- * rosto, gestos e fala a alternância é o que faz a entrada funcionar (ADR-0113 cláusula 3), então não há
- * escolha a gravar. Quem chama usa a resposta para DESABILITAR o controle COM MOTIVO — que é a metade que
- * falta e que vive na interface, não aqui.
+ * ⚠️ IT REFUSES ON ONE-COMMAND TRANSPORTS, and the refusal is a returned `false`, not a throw: on eyes, face, gestures and
+ * speech the toggle is what makes the input work (ADR-0113 clause 3), so there is no choice to write. The caller uses the
+ * answer to DISABLE the control WITH A REASON — the other half, which lives in the interface, not here.
  *
- * 📌 Gravar mesmo assim seria pior do que inútil: a criança mexeria no ícone, o valor iria para o disco, e o
- * jogo continuaria a ignorá-lo — um controle que mente sobre ter funcionado.
+ * 📌 Writing anyway would be worse than useless: the child would touch the icon, the value would go to disk, and the game
+ * would keep ignoring it — a control that lies about having worked.
  */
-// ⚠️ RECEBE O ESCRITOR E NÃO UM ARMAZÉM, e a mudança é de 2026-09-08, quando o painel foi ligar-se a isto.
-// O `ui/settings-mobility` já tem um `store: { setBool }` injectado — exigir-lhe um objecto com `get`/`set`
-// crus obrigaria a inventar um adaptador no ponto de uso, e um adaptador ali é onde uma segunda forma de
-// escrever a mesma chave nasce. Uma função é o mínimo que a escrita precisa.
+// ⚠️ IT TAKES THE WRITER AND NOT A STORE: the mobility panel already has a `store: { setBool }` injected, and demanding an
+// object with raw `get`/`set` would force an adapter at the call site — where a second way of writing the same key is
+// born. A function is the minimum the write needs.
 export function writeLatch(
   write: (key: string, isOn: boolean) => void,
   base: string,

@@ -1,20 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/latch-edge.ts — A ARESTA E A ALTERNÂNCIA, NUMA FUNÇÃO SÓ (ADR-0113, issue #127).
+// input/latch-edge.ts — THE EDGE AND THE TOGGLE, IN ONE FUNCTION (ADR-0113, issue #127).
 //
-// ========================= POR QUE O PAR NÃO PODE SEPARAR-SE =========================
-// Registar de que aparelho veio a aresta e resolver a alternância desse aparelho são duas metades de UM
-// acontecimento: a criança mudou de controle. Feitas em sítios diferentes, a segunda pode faltar — e o
-// resultado é a forma de defeito que este projecto já pagou várias vezes: o autómato sabe que ela pegou no
-// controle, e o jogo continua a andar com a alternância do teclado. Sem erro, e só ela dá por isso.
+// ========================= WHY THE PAIR CANNOT SPLIT =========================
+// Recording which device an edge came from and resolving that device's toggle are two halves of ONE event: the child
+// changed controls. Done in different places, the second can go missing — the kind of defect this project has paid for
+// several times: the state machine knows they picked up the pad, and the game keeps moving with the keyboard's toggle.
+// No error, and only the child notices.
 //
-// 📌 É o mesmo movimento do `consumir` no `ui/menu-nav` («uma função só para o par nunca se separar») e da
-// escrita dupla no `ui/settings-mobility`.
+// 📌 The same move as the menu navigation's "one function so the pair never splits", and the double write in
+// `ui/settings-mobility`.
 //
-// ⚠️ E É UMA FÁBRICA, NÃO UM CAMPO NOVO NO CONTEXTO DE CADA MÓDULO DE ENTRADA. O `input/keydown` e o
-// `input/touch-bindings` já recebem `playerEdge(jogador, origem)`; esta função devolve uma com essa
-// mesma assinatura, e por isso a fiação passa a estar certa sem nenhum dos dois saber que a alternância
-// existe. Um segundo campo obrigatório em dois contextos seria mais superfície pública, mais uma coisa que um
-// cartucho pode esquecer, e a mesma pergunta feita duas vezes.
+// ⚠️ AND IT IS A FACTORY, NOT A NEW FIELD IN EVERY INPUT MODULE'S CONTEXT. The keyboard and touch transports already
+// receive `playerEdge(player, origin)`; this returns one with that same signature, so the wiring is right without either
+// of them knowing the toggle exists. A second required field in two contexts would be more public surface, one more
+// thing a cartridge can forget, and the same question asked twice.
 import * as store from '../platform/storage.js';
 import { DEFAULTS } from '../core/state.js';
 import { playerEdge, inputOf } from './state.js';
@@ -24,27 +23,26 @@ import type { TransportName } from './transport-in-use.js';
 
 export interface LatchedEdgeOptions {
   /**
-   * O armazenamento. Injectável **para o gate**, e com padrão para o consumidor não poder esquecê-lo.
+   * The storage. Injectable **for the gate**, and with a default so a consumer cannot forget it.
    *
-   * ⚠️ Padrão e não campo obrigatório, e a razão é a mesma do `ui/pause-icons`: um armazém injectado é uma
-   * coisa que um cartucho pode omitir, e omiti-la faria a criança perder a escolha guardada — em silêncio, e
-   * só naquele jogo.
+   * ⚠️ A default and not a required field: an injected store is something a cartridge can omit, and omitting it would
+   * make the child lose their stored choice — in silence, and only in that game.
    */
   readonly store?: LatchStore;
-  /** O padrão de fábrica. `DEFAULTS.toggleMove`, e não `false` escrito à mão: há UMA fonte (ADR-0029). */
+  /** The factory default. `DEFAULTS.toggleMove`, not a hand-written `false`: there is ONE source (ADR-0029). */
   readonly byDefault?: boolean;
 }
 
 /**
- * DEVOLVE O `playerEdge` QUE TAMBÉM RESOLVE A ALTERNÂNCIA — para passar a `initKeydown` e a
- * `initTouchBindings` no lugar do cru.
+ * RETURNS THE `playerEdge` THAT ALSO RESOLVES THE TOGGLE — to hand to `initKeydown` and `initTouchBindings` in place of
+ * the raw one.
  *
- * ⚠️ RESOLVE CONTRA `inputOf(jogador).inUse` E NÃO CONTRA `origin`, e a distinção é de desenho e não de
- * comportamento: hoje o `afterEdge` põe sempre `emUso = origem`, logo trocar uma pela outra é uma mutação
- * EQUIVALENTE — está registada como tal no gate, em vez de fingir cobertura. O que a escolha compra é o
- * futuro: quem decide que aparelho está em uso é o autómato, e o dia em que ele ganhar uma regra que RECUSE
- * uma aresta (um falso positivo da webcam a ser filtrado, por exemplo) esta linha segue-o sem ser editada.
- * Ler `origin` seria uma segunda resposta à pergunta que o `input/transport-in-use` existe para responder.
+ * ⚠️ IT RESOLVES AGAINST `inputOf(player).inUse` AND NOT `origin`, a difference of design and not of behaviour: today the
+ * edge always sets in-use to the origin, so swapping one for the other is an EQUIVALENT mutation — recorded as such in the
+ * gate, instead of pretending coverage. What the choice buys is the future: the state machine decides which device is in
+ * use, and the day it gains a rule that REFUSES an edge (a webcam false positive being filtered, say) this line follows
+ * it without being edited. Reading `origin` would be a second answer to the question `input/transport-in-use` exists to
+ * answer.
  */
 export function createLatchedEdge(
   getPlayers: () => readonly (LatchPlayer | null | undefined)[],
@@ -54,9 +52,9 @@ export function createLatchedEdge(
   const fallback = opts.byDefault ?? DEFAULTS.toggleMove;
   return (player: number, origin: TransportName): void => {
     playerEdge(player, origin);
-    // 📌 O JOGADOR PODE NÃO EXISTIR — uma tela em espera, um assento que ainda não entrou —, e isso não torna
-    // a aresta inválida: o transporte em uso é facto sobre a ENTRADA e fica registado à mesma. O que não
-    // acontece é a segunda metade, porque não há onde a escrever.
+    // 📌 THE PLAYER MAY NOT EXIST — a waiting screen, a seat not joined yet — and that does not make the edge invalid:
+    // the transport in use is a fact about the INPUT and is recorded all the same. What does not happen is the second
+    // half, because there is nowhere to write it.
     const p = getPlayers()[player];
     if (p) syncLatch(p, latchStore, player, inputOf(player).inUse, fallback);
   };

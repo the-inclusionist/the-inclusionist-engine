@@ -25,7 +25,7 @@ interface PadLike {
 type GetGamepads = () => readonly (PadLike | null | undefined)[] | null | undefined;
 interface PadBinding { b?: number; ax?: number; s?: number; av?: number; v?: number; }
 type PadMap = Record<string, PadBinding | boolean | undefined>;
-/** A pose de repouso deste controle: que botões já estavam em baixo e onde cada eixo descansava. */
+/** This pad's resting pose: which buttons were already down and where each axis rested. */
 interface Baseline { b: boolean[]; a: number[] }
 interface WizState {
   gi: number;
@@ -40,15 +40,15 @@ interface WizState {
 }
 
 export const PADWIZ_ORDER: readonly string[] = [
-  // Direções primeiro: são o que a criança encontra sem pensar, e acertar as quatro dá confiança para as
-  // outras dez.
+  // Directions first: they are what the child finds without thinking, and getting all four right gives confidence for
+  // the other ten.
   'up', 'down', 'left', 'right',
-  // O losango, na ordem em que o dedo o percorre neste projeto (ADR-0086 §2).
+  // The diamond, in the order the finger walks it in this project (ADR-0086 §2).
   'action2', 'action1', 'action4', 'action3',
-  // Os quatro ombros: o assistente existe PARA controles que não são «standard» — genéricos, adaptados, de uma mão —, e
-  // um jogo que declare `leftShoulder` precisa de por onde a criança o mapear.
+  // The four shoulders: the wizard exists FOR pads that are not "standard" — generic, adapted, one-handed — and a game
+  // that declares `leftShoulder` needs a way for the child to map it.
   'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger',
-  // Sistema por último: `start` e `select` costumam ser os botões mais pequenos e mais escondidos.
+  // System last: `start` and `select` are usually the smallest and most hidden buttons.
   'start', 'select',
 ];
 
@@ -104,8 +104,8 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
   let padWiz: WizState | null = null;
 
   /**
-   * Anda até o próximo passo que ESTE jogo usa, ou fecha se não houver mais. UMA função: depois do último passo nomeado o
-   * assistente não fica aberto a apontar para uma posição que o jogo não usa.
+   * Walks to the next step THIS game uses, or closes if there is none left. ONE function: after the last named step the
+   * wizard does not stay open pointing at a position the game does not use.
    */
   function advance(): void {
     if (!padWiz) return;
@@ -115,18 +115,18 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
   function ask(): void {
     if (!padWiz) return;
     advance();
-    if (!padWiz) return; // fechou ao avançar
+    if (!padWiz) return; // it closed while advancing
     const action = PADWIZ_ORDER[padWiz.step]!;
     ctx.say(t('pad.wiz.step', { n: padWiz.step + 1, total: PADWIZ_ORDER.length, acao: ctx.actionLabel(action)! }));
     ctx.onStep?.(action);
-    // O travessão da lista vazia fica cru de propósito: é pontuação, não idioma.
+    // The empty list's dash stays raw on purpose: it is punctuation, not language.
     ctx.progress(t('pad.wiz.mapped', { lista: Object.keys(padWiz.map).join(' · ') || '—' }));
   }
   function wire(bd: PadBinding): void {
     if (!padWiz) return;
     padWiz.map[PADWIZ_ORDER[padWiz.step]!] = bd;
     padWiz.step++;
-    padWiz.release = true; // exige soltar antes do próximo passo
+    padWiz.release = true; // requires letting go before the next step
     advance();
   }
 
@@ -155,21 +155,21 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     ctx.onClose?.(gi, saved);
   }
 
-  /* ===================== os cinco momentos de um quadro =====================
+  /* ===================== the five moments of a frame =====================
    *
-   * 🔴 Este é um AUTÓMATO, e a ordem abaixo é o que ele é: sem controle adoptado · à espera da pose de repouso · à
-   * espera de a mão largar · com um eixo em observação · a ler o que mexeu. Cada momento é uma função com o nome do
-   * que ele espera, e o `tickWizard` é a lista deles.
+   * 🔴 This is a STATE MACHINE, and the order below is what it is: no pad adopted · waiting for the resting pose ·
+   * waiting for the hand to let go · an axis under watch · reading what moved. Each moment is a function named for what
+   * it waits for, and `tickWizard` is their list.
    *
-   * ⚠️ E NÃO É UMA TABELA, ao contrário da cadeia do `input/keydown`, porque os momentos não são simétricos: o
-   * primeiro corre SEM um controle na mão (é ele que o escolhe) e os outros quatro precisam de um. Uma lista de
-   * linhas iguais teria de fingir que o primeiro recebe o que ainda não existe.
+   * ⚠️ AND IT IS NOT A TABLE, unlike `input/keydown`'s chain, because the moments are not symmetric: the first runs
+   * WITHOUT a pad in hand (it is the one that picks it) and the other four need one. A list of equal rows would have to
+   * pretend the first receives what does not exist yet.
    *
-   * 📌 Cada momento recebe o estado em vez de o alcançar, o que é o que permite lê-los um a um — e o que tira as
-   * asserções de não-nulo que um fecho a olhar para `padWiz` obrigaria.
+   * 📌 Each moment receives the state instead of reaching for it, which is what lets them be read one at a time — and
+   * what removes the non-null assertions a closure looking at `padWiz` would need.
    */
 
-  /** 1 · Nenhum controle adoptado: a PRIMEIRA tecla premida de qualquer pad escolhe o pad que a mão segura. */
+  /** 1 · No pad adopted: the FIRST button pressed on any pad picks the pad the hand is holding. */
   function adoptTheHandsPad(w: WizState, pads: readonly (PadLike | null | undefined)[]): void {
     for (const gp of pads) {
       if (gp && gp.buttons.some((b) => b && b.pressed)) {
@@ -180,7 +180,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     }
   }
 
-  /** 2 · A pose de REPOUSO deste controle, medida no único quadro em que nada está premido. */
+  /** 2 · This pad's RESTING pose, measured on the one frame in which nothing is pressed. */
   function takeTheRestingPose(w: WizState, gp: PadLike): void {
     if (gp.buttons.some((b) => b && b.pressed)) return;
     w.baseWait = false;
@@ -189,15 +189,15 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     ask();
   }
 
-  /** 3 · A mão tem de LARGAR antes da pergunta seguinte — e largar são duas metades, os botões e os eixos. */
+  /** 3 · The hand has to LET GO before the next question — and letting go has two halves, the buttons and the axes. */
   function waitForTheHandToLetGo(w: WizState, gp: PadLike, base: Baseline): void {
     const idle = !gp.buttons.some((b, i) => b && b.pressed && !base.b[i]) && gp.axes.every((v, i) => Math.abs((v || 0) - base.a[i]!) < 0.35);
     if (idle) { w.release = false; ask(); }
   }
 
   /**
-   * 4 · Eixo em rastreio (~240 ms): classifica pelo COMPORTAMENTO — varia continuamente = analógico (limiar por
-   * sinal); salta e FICA CONSTANTE = D-pad/POV hat (valor exato, ±0.13).
+   * 4 · An axis under watch (~240 ms): classified by BEHAVIOUR — varies continuously = analogue (threshold by sign);
+   * jumps and STAYS CONSTANT = a D-pad/POV hat (exact value, ±0.13).
    */
   function classifyTheWatchedAxis(w: WizState, gp: PadLike, base: Baseline): void {
     const tr = w.axTrack!; const v = gp.axes[tr.i] || 0;
@@ -209,7 +209,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     wire(tr.changes >= 2 ? { ax: tr.i, s: pv > 0 ? 1 : -1 } : { av: tr.i, v: Math.round(pv * 10000) / 10000 });
   }
 
-  /** 5 · O que mexeu desde o repouso: um botão primeiro, e só depois um eixo que tenha saído de verdade. */
+  /** 5 · What moved since rest: a button first, and only then an axis that really left. */
   function readWhatMoved(w: WizState, gp: PadLike, base: Baseline): void {
     for (let i = 0; i < gp.buttons.length; i++) {
       if (gp.buttons[i] && gp.buttons[i]!.pressed && !base.b[i]) { wire({ b: i }); return; }
@@ -226,7 +226,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     const pads = ctx.getGamepads() ?? [];
     if (padWiz.gi < 0) { adoptTheHandsPad(padWiz, pads); return; }
     const gp = pads[padWiz.gi];
-    if (!gp) return; // controle desconectado (ou índice ainda não populado): congela até voltar
+    if (!gp) return; // pad disconnected (or its index not populated yet): freezes until it comes back
     if (padWiz.baseWait) { takeTheRestingPose(padWiz, gp); return; }
     const base = padWiz.base!;
     if (padWiz.release) { waitForTheHandToLetGo(padWiz, gp, base); return; }

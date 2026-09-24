@@ -1,52 +1,49 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/synthetic-source.ts — QUEM DESPACHOU ESTA TECLA, quando não foi um dedo num teclado (ADR-0109).
+// input/synthetic-source.ts — WHO DISPATCHED THIS KEY, when it was not a finger on a keyboard (ADR-0109).
 //
-// ========================= O PONTO DIFÍCIL DA ARESTA, E ELE ESTAVA NOMEADO =========================
-// O crivo `tests/the-keys-source-survives-the-door` carrega esta frase na entrada do `input/keydown` desde que o
-// estrangulamento começou: «a webcam despacha `KeyboardEvent` SINTÉTICO, entra pelo `keydown` e seria
-// carimbada `teclado` — a erasão a voltar pela porta da frente». Hoje a única tecla sintética da engine é a de menu que o
-// pad e o controle virtual entregam aos menus (`boot/create-game`, `teclaAoMenu`); a webcam de WebGazer saiu (ADR-0214).
+// ========================= THE HARD PART OF THE EDGE, AND IT WAS NAMED =========================
+// The gate `tests/the-keys-source-survives-the-door` has named it since the funnel began: a synthetic `KeyboardEvent`
+// enters through `keydown` and would be stamped as the keyboard — the erasure coming back through the front door. Today
+// the engine's only synthetic key is the menu key the pad and the virtual controller hand to the menus.
 //
-// `isTrusted` distingue PREMIDA de DESPACHADA — é a única propriedade que um script não consegue forjar — mas
-// não diz QUAL transporte assistido despachou. Isso tem de chegar DECLARADO, e é o que este módulo é.
+// `isTrusted` tells PRESSED from DISPATCHED — the one property a script cannot forge — but not WHICH assisted transport
+// dispatched it. That has to arrive DECLARED, and that is what this module is.
 //
-// ⚠️ POR QUE O CARIMBO VIAJA NO EVENTO, e não num «qual é a fonte sintética agora?» injectado. A resposta
-// injectada é um estado GLOBAL, e a entrada não é global: uma criança que joga por olhar e tem um adulto a
-// carregar numa tecla ao lado produz as duas arestas no mesmo instante, e o estado global carimbaria as duas
-// como olhar. O evento não se confunde consigo próprio — a origem anda com a aresta a que pertence, que é a
-// mesma razão por que o `keySource` é um mapa por CÓDIGO e não um campo só.
+// ⚠️ WHY THE STAMP TRAVELS ON THE EVENT, and not in an injected "what is the synthetic source now?". The injected answer
+// is GLOBAL state, and input is not global: a child playing by gaze with an adult pressing a key beside them produces both
+// edges at the same instant, and global state would stamp both as gaze. The event cannot be confused with itself — the
+// origin travels with the edge it belongs to, the same reason the key source is a map by CODE and not a single field.
 //
-// 📌 E é aditivo por construção: um evento sem carimbo continua a funcionar. Foi isso que permitiu migrar os
-// escritores um a um sem nenhum commit vermelho pelo meio.
+// 📌 And it is additive by construction: an unstamped event still works. That is what let the writers migrate one at a
+// time without a single red commit in between.
 
 import type { TransportName } from './transport-in-use.js';
 import { isTransportName } from './transport-in-use.js';
 
 /**
- * A propriedade pendurada no evento.
+ * The property hung on the event.
  *
- * 📌 Prefixada e feia de propósito: é um expando num objecto que não é nosso, e um nome curto («origem»)
- * podia colidir com o de outra biblioteca sem que nada o dissesse.
+ * 📌 Prefixed and ugly on purpose: it is an expando on an object that is not ours, and a short name could collide with
+ * another library's without anything saying so.
  */
 export const SOURCE_KEY = '__vpOrigem';
 
 /**
- * O mínimo que este módulo lê de um evento de tecla — ESTRUTURAL, para um `KeyboardEvent` real e um duplo de
- * teste servirem os dois.
+ * The minimum this module reads from a key event — STRUCTURAL, so a real `KeyboardEvent` and a test double both serve.
  *
- * ⚠️ `isTrusted` é OPCIONAL, e a ausência dele não é o mesmo que `false` por acaso: um duplo que não o declara
- * está a dizer «não afirmei nada sobre isto», e a resposta certa a isso é `undefined` e não `'teclado'`. É a
- * mesma regra do `sourceOf` do `input/state`, aplicada uma camada acima.
+ * ⚠️ `isTrusted` is OPTIONAL, and its absence is not `false` by accident: a double that does not declare it is saying "I
+ * asserted nothing about this", and the right answer to that is `undefined`, not the keyboard. The same rule as
+ * `input/state`'s `sourceOf`, one layer up.
  */
 export interface KeyEventLike {
   readonly isTrusted?: boolean;
 }
 
 /**
- * DECLARA que este evento veio daquele aparelho. Devolve o próprio evento, para o despacho ficar numa linha.
+ * DECLARES that this event came from that device. Returns the event itself, so the dispatch fits on one line.
  *
- * ⚠️ Carimba-se ANTES de despachar. Depois de `dispatchEvent` os ouvintes já correram, e o carimbo chegaria
- * a um evento que ninguém mais vai ler.
+ * ⚠️ Stamp it BEFORE dispatching. After `dispatchEvent` the listeners have already run, and the stamp would reach an
+ * event nobody reads any more.
  */
 export function stampSource<T extends object>(ev: T, source: TransportName): T {
   (ev as unknown as Record<string, unknown>)[SOURCE_KEY] = source;
@@ -54,20 +51,19 @@ export function stampSource<T extends object>(ev: T, source: TransportName): T {
 }
 
 /**
- * QUEM PRODUZIU ESTE EVENTO? `undefined` quando não se sabe.
+ * WHO PRODUCED THIS EVENT? `undefined` when it is not known.
  *
- * A regra inteira, em três linhas e por esta ordem:
+ * The whole rule, in three lines and in this order:
  *
- *   1. **Carimbo válido ganha.** Uma declaração explícita vence sempre uma inferência — inverter isto faria
- *      um evento REAL que alguém reatribuiu (um pedal, um interruptor de sopro que emite teclas de verdade)
- *      ser lido como teclado, apagando exactamente a informação que quem carimbou se deu ao trabalho de pôr.
- *   2. **Sem carimbo mas de confiança → `'teclado'`.** É o que `isTrusted` significa: o navegador viu a
- *      pessoa carregar. É a única inferência que este módulo faz, e fá-la sobre a propriedade que não se forja.
- *   3. **Sem carimbo e sem confiança → `undefined`.** Um evento sintético que ninguém assinou. Depois desta
- *      migração nada nesta engine produz um; quem o produz é código de fora, e código de fora não declarou.
- *      ⚠️ Devolver `'teclado'` aqui seria a erasão a voltar por outra porta, que é o defeito que o ADR-0109
- *      inteiro existe para fechar — e seria pior do que a erasão original, porque teria a forma de uma
- *      resposta.
+ *   1. **A valid stamp wins.** An explicit declaration always beats an inference — inverting it would make a REAL event
+ *      someone remapped (a pedal, a sip-and-puff switch that emits real keys) read as the keyboard, erasing exactly the
+ *      information whoever stamped it took the trouble to put there.
+ *   2. **No stamp but trusted → `'teclado'`.** That is what `isTrusted` means: the browser saw the person press. It is the
+ *      one inference this module makes, and it makes it on the property that cannot be forged.
+ *   3. **No stamp and not trusted → `undefined`.** A synthetic event nobody signed. Nothing in this engine produces one;
+ *      code from outside does, and code from outside did not declare. ⚠️ Returning the keyboard here would be the erasure
+ *      coming back another way, the defect the whole of ADR-0109 exists to close — and worse than the original, because
+ *      it would have the shape of an answer.
  */
 export function sourceOfEvent(ev: KeyEventLike): TransportName | undefined {
   const declared = (ev as unknown as Record<string, unknown>)[SOURCE_KEY];
