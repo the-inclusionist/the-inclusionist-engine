@@ -7,7 +7,7 @@
 // `players`/`numPlayers` são os módulos REAIS (core/state.ts) — os mesmos bindings vivos que o
 // game.js usa; o resto do ctx é falso (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { initPauseIcons } from '../app/js/ui/pause-icons.js';
+import { initPauseIcons, showPauseOptions } from '../app/js/ui/pause-icons.js';
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
 import { migrateVisual, PADRAO } from '../app/js/render/viz-axes.js';
 /*
@@ -216,6 +216,35 @@ describe('buildScreenPause — a árvore construída', () => {
     expect(quit.hidden, 'the locked item vanished: the card changes shape per game again').toBe(false);
     expect(quit.getAttribute('aria-disabled')).toBe('true');
     expect((quit.dataset.motivo ?? '').length, 'a locked item without its reason').toBeGreaterThan(0);
+  });
+
+  // ============ found by the probe of 2026-09-24 (`scratchpad/sonda-pausa.py`): three answers of the card's click ============
+  const visibleList = (sp) => sp.querySelector('.pause-menu:not([hidden])')?.dataset.sub;
+
+  it('🔴 [Right] pressing a LOCKED item SAYS its reason — the footer is not the channel of a child who cannot see', () => {
+    const { sp, said, state } = mount();
+    const quit = sp.querySelector('.pause-menu .pm-btn[data-act="quit"]');
+    said.length = 0;
+    quit.click();
+    expect(said).toEqual([quit.dataset.motivo]);
+    expect(state.ran, 'a locked item did something').toEqual([]);
+  });
+
+  it('🔴 [Right] «Back» in a sub-list returns to the ROOT — also in a game with its own options panel', () => {
+    // Two holes in one sentence: nothing held where «Back» goes, and with a game options PANEL declared, every item of the
+    // card was read as the door with a panel — «Back» and «Settings» stopped switching lists, with every case green.
+    for (const over of [{}, { getPauseActs: () => ({ resume: () => {}, opcoesdojogo: () => {} }) }]) {
+      const { sp } = mount(0, over);
+      showPauseOptions(sp, 'opcoes');
+      sp.querySelector('.pause-menu[data-sub="opcoes"] .pm-btn[data-act="pmback"]').click();
+      expect(visibleList(sp)).toBe('raiz');
+    }
+  });
+
+  it('🔴 [Right] «Accessibility», where a game lists it, puts the cursor on the quick bar', () => {
+    const { api, sp } = mount(0, { pmButtons: [...PM_BTNS, { act: 'acessibilidade', lbl: '♿ Acessibilidade' }] });
+    sp.querySelector('.pm-btn[data-act="acessibilidade"]').click();
+    expect(api.naBarraDe(0)).toBe(true);
   });
 
   it('⚠️ o menu só OFERECE vivo o que o jogo ACCIONA — `quit` sem tabela fica travado (ADR-0106 §5 → ADR-0161)', () => {
@@ -584,6 +613,24 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     api.navBar(0, { left: true });
     api.navBar(0, { left: true });
     expect(icones[icones.length - 1].classList.contains('pi-sel'), 'antes do primeiro está o último').toBe(true);
+  });
+
+  it('🔴 [Boundary] a bar that EMPTIES while the child is on it: a step does nothing and throws nothing', () => {
+    // Found by the probe of 2026-09-24: entering refuses a bar with no icon, but nothing held what happens when the icons
+    // go AFTER entering (a remount, a game answering differently). Without the guard a step selects an icon that is not
+    // there, and the exception lands in the frame that routes the direction.
+    const { api, bar } = mount();
+    api.entrarNaBarra(0);
+    bar.querySelectorAll('.pi-btn').forEach((b) => b.remove());
+    expect(() => api.navBar(0, { right: true })).not.toThrow();
+    expect(() => api.navBar(0, { yes: true })).not.toThrow();
+  });
+
+  it('🔴 [Boundary] a bar that GOES while the child is on it: a step does nothing and throws nothing', () => {
+    const { api, state } = mount();
+    api.entrarNaBarra(0);
+    state.bars = [];
+    expect(() => api.navBar(0, { right: true })).not.toThrow();
   });
 
   it('[Right] confirmar ATIVA o ícone sob o cursor, e a legenda conta o estado NOVO', () => {
