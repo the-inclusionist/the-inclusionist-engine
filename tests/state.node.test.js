@@ -1,29 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de core/state — o estado compartilhado e o seu barramento de eventos (project node).
+// Tests of core/state — the shared state and its event bus (node project).
 //
-// POR QUE SÓ AGORA. `core/state` é importado por 37 arquivos de teste e não tinha nenhum PRÓPRIO: todos o
-// usavam como cenário (mutar `players`, chamar `setNumPlayersValue`) sem nunca aferir o contrato dele. Isso
-// bastava enquanto ele só guardava valores; deixou de bastar quando começou a receber estado que seis
-// módulos consultam, com persistência e evento acoplados — `blindMode` é o primeiro (#50).
+// WHY THIS FILE. Many test files import `core/state` as scenery without ever checking its contract. That is enough
+// while it only keeps values; it stops being enough once it receives state that several modules consult, with
+// persistence and an event coupled to it — `blindMode` is the first (#50).
 //
-// O QUE SE AFERE AQUI É A DISCIPLINA DO SETTER: gravar, persistir, avisar — e NADA MAIS. O antigo
-// `setModoCego` do main.js refazia os extras do nível, refletia um painel de DOM e anunciava ao leitor de
-// tela dentro do próprio setter, e por isso nenhum teste conseguia chamá-lo. A separação entre gravar e
-// reagir é o que torna este arquivo possível, então é ela que os casos protegem.
+// WHAT IS CHECKED HERE IS THE SETTER'S DISCIPLINE: write, persist, notify — and NOTHING MORE. A blind-mode setter that
+// redid the level's extras, reflected a DOM panel and announced to the screen reader inside itself could not be called
+// by any test. The separation between writing and reacting is what makes this file possible, so it is what the cases
+// protect.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { blindMode, setBlindModeValue, setCaneBlockDivValue, setLetterCaseValue, setCaptionsOnValue,
   on, off, defaultReducedMotion } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
-// `blindMode` é um binding VIVO: reimportar não é preciso, mas ler o valor antigo de uma cópia local seria o
-// erro clássico — por isso os casos leem sempre do módulo.
+// `blindMode` is a LIVE binding: re-importing is not needed, but reading the old value from a local copy would be the
+// classic mistake — so the cases always read from the module.
 import * as state from '../app/js/core/state.js';
 
-// `platform/storage` é à PROVA DE EXCEÇÃO por desenho: `localStorage` lança em file:// e no modo privado de
-// alguns navegadores, e isso derrubava o boot inteiro, então todo acesso é try/catch. No project node não há
-// `localStorage` nenhum, de modo que toda gravação cai no catch e toda leitura devolve o padrão — silenciosa e
-// corretamente. Por isso o stub vai ABAIXO do storage, na API do navegador, e não no lugar do storage: o que
-// se quer aferir é que o setter MANDA persistir, com o módulo de persistência real no caminho.
+// `platform/storage` is EXCEPTION-PROOF by design: `localStorage` throws on file:// and in some browsers' private mode,
+// and that used to bring the whole boot down, so every access is try/catch. The node project has no `localStorage` at
+// all, so every write falls into the catch and every read returns the default — silently and correctly. That is why the
+// stub goes BELOW the storage, at the browser API, and not in place of the storage: what is to be checked is that the
+// setter ORDERS persistence, with the real persistence module on the way.
 let desinscrever = [];
 let localAntigo;
 beforeEach(() => {
@@ -70,20 +69,20 @@ describe('core/state — blindMode e o espaçamento da bengala', () => {
   });
 
   it('[Zero] gravar o valor QUE JÁ ESTÁ não avisa ninguém', () => {
-    // A guarda vem do original e não é otimização: sem ela, cada clique redundante no ícone de pausa
-    // repetiria o anúncio "Modo cego ligado" no ouvido de quem depende do leitor de tela.
+    // The guard is not an optimisation: without it, every redundant click on the pause icon would repeat the
+    // announcement "Modo cego ligado" in the ear of whoever depends on the screen reader.
     const vistos = escuta('blindMode');
-    setBlindModeValue(false); // já é false
+    setBlindModeValue(false); // already false
     expect(vistos).toEqual([]);
     setBlindModeValue(true);
     setBlindModeValue(true);
-    expect(vistos).toEqual([true]); // e não [true, true]
+    expect(vistos).toEqual([true]); // and not [true, true]
   });
 
   it('[Interface] o setter NÃO reage — não toca DOM, não anuncia, não redesenha', () => {
-    // É a propriedade que torna este arquivo possível. Se um dia alguém pendurar um efeito aqui, este caso
-    // continua verde (não há como afirmar uma ausência em geral), mas o teste QUEBRA de outra forma: passaria
-    // a precisar de `document`, e o project `node` não tem. A ausência de setup é a asserção.
+    // It is the property that makes this file possible. If someone one day hangs an effect here, this case stays green
+    // (there is no way to assert an absence in general), but the test BREAKS another way: it would need `document`, and
+    // the `node` project has none. The absence of setup is the assertion.
     expect(typeof document).toBe('undefined');
     setBlindModeValue(true);
     expect(state.blindMode).toBe(true);
@@ -100,20 +99,18 @@ describe('core/state — blindMode e o espaçamento da bengala', () => {
   });
 
   it('[Regressão] o espaçamento da bengala PERSISTE — antes era lido no boot e nunca gravado', () => {
-    // DEFEITO ENCONTRADO PELA MIGRAÇÃO, não por busca. O main.js lia `incl_cane_div` no boot e o setter era
-    // `(d) => { caneBlockDiv = d; }`, sem gravar — a chave estava até registrada em `storage.KEYS.caneDiv`,
-    // então a intenção existia e a escrita nunca foi escrita. Efeito: a criança cega que escolhia uma batida
-    // a cada MEIO bloco (resolução fina para medir distância andada) reencontrava o padrão a cada sessão,
-    // sem aviso e sem explicação.
+    // A DEFECT FOUND BY THE MIGRATION, not by searching: `incl_cane_div` was read at boot and the setter never wrote it —
+    // the key was even registered in `storage.KEYS.caneDiv`, so the intent existed and the write was never written.
+    // Effect: the blind child who chose a beat every HALF block (fine resolution to measure distance walked) found the
+    // default again every session, with no warning and no explanation.
     setCaneBlockDivValue(2);
     expect(state.caneBlockDiv).toBe(2);
     expect(store.getNum('incl_cane_div', 1)).toBe(2);
   });
 
   it('[Error] valor corrompido no armazenamento não desliga a bengala', () => {
-    // O `|| 1` vem do original e não é defensividade decorativa: um `incl_cane_div` corrompido viraria NaN,
-    // e uma bengala que bate a cada NaN blocos não bate nunca — o modo de falha mais silencioso que existe
-    // para quem navega por som.
+    // The `|| 1` is not decorative defensiveness: a corrupted `incl_cane_div` would become NaN, and a cane that beats every
+    // NaN blocks never beats — the most silent failure mode there is for whoever navigates by sound.
     setCaneBlockDivValue(Number.NaN);
     expect(state.caneBlockDiv).toBe(1);
     setCaneBlockDivValue(0);
@@ -122,10 +119,9 @@ describe('core/state — blindMode e o espaçamento da bengala', () => {
 
 
   it('[Right] caixa da letra e legendas PERSISTEM — decisão do ADR-0028: todo menu persiste', () => {
-    // A pergunta foi feita porque nenhum dos dois tinha chave nem leitura no boot, e inventar persistência
-    // seria inventar a decisão. A resposta do Dev foi mais ampla: todo menu persiste E todo menu ganha um
-    // reset dos próprios padrões. O motivo é acessibilidade, não conveniência — uma criança surda que liga as
-    // legendas e as encontra desligadas amanhã paga esse preço todo dia.
+    // Neither had a key nor a boot read, and inventing persistence would be inventing the decision. The Dev's answer was
+    // broader: every menu persists AND every menu gets a reset of its own defaults. The reason is accessibility, not
+    // convenience — a deaf child who turns captions on and finds them off tomorrow pays that price every day.
     setLetterCaseValue('lower');
     expect(store.get('incl_lettercase', null)).toBe('lower');
     setCaptionsOnValue(false);
@@ -135,39 +131,33 @@ describe('core/state — blindMode e o espaçamento da bengala', () => {
   });
 
   it('[Boundary] o import nomeado é uma FOTOGRAFIA; o binding do módulo é que é vivo', () => {
-    // Distinção que já mordeu este projeto: `import { blindMode }` dá um binding vivo em ESM, mas copiá-lo
-    // para uma variável local (`const m = blindMode`) congela o valor. O caso documenta os dois lados.
+    // A distinction that has already bitten this project: `import { blindMode }` gives a live binding in ESM, but copying
+    // it into a local variable (`const m = blindMode`) freezes the value. The case documents both sides.
     const copia = state.blindMode;
     setBlindModeValue(true);
-    expect(copia).toBe(false);        // a cópia local não acompanha
-    expect(state.blindMode).toBe(true); // o binding do módulo, sim
-    expect(blindMode).toBe(true);       // e o import nomeado também: ESM re-lê a célula
+    expect(copia).toBe(false);        // the local copy does not follow
+    expect(state.blindMode).toBe(true); // the module's binding does
+    expect(blindMode).toBe(true);       // and so does the named import: ESM re-reads the cell
   });
 });
 
 describe('defaultReducedMotion — o padrão que o sistema decide', () => {
-  // Este é o único DEFAULT do projeto que não é constante, e o motivo importa: devolver `false` numa máquina
-  // cujo dono pediu menos movimento RELIGARIA a animação. O reset passaria a fazer, sozinho, o que a
-  // WCAG 2.3.3 existe para impedir — e na tela de quem já tinha dito que não aguenta.
+  // This is the project's only DEFAULT that is not a constant, and the reason matters: returning `false` on a machine
+  // whose owner asked for less motion WOULD TURN ANIMATION BACK ON. The reset would do, by itself, what WCAG 2.3.3 exists
+  // to prevent — on the screen of someone who had already said they cannot bear it.
   it('[Zero] sem `window` (projeto node) responde false, em vez de explodir', () => {
     expect(typeof window).toBe('undefined');
     expect(defaultReducedMotion()).toBe(false);
   });
 
   it('[Interface] é uma FUNÇÃO, não um valor congelado no import', () => {
-    // Se virasse `export const RM_DEFAULT = matchMedia(...)`, o valor seria lido uma vez no boot e nunca mais.
-    // O sistema pode mudar a preferência com o jogo aberto, e um padrão que não acompanha deixa de ser padrão.
+    // If it became `export const RM_DEFAULT = matchMedia(...)`, the value would be read once at boot and never again. The
+    // system can change the preference with the game open, and a default that does not follow stops being a default.
     expect(typeof defaultReducedMotion).toBe('function');
   });
 });
 
-// ========================= CINCO CAMPOS SAÍRAM DAQUI, E A COBERTURA FOI JUNTO =========================
-// `ended`, `selVizPlayer`, `pauseActor`, `grassDensity` e `decorSeed` mudaram-se para `core/run-state` na
-// Fase B (ADR-0038): nenhum deles persiste, e não-persistido é o critério de RODADA.
-//
-// Os casos deles NÃO foram apagados — foram reescritos em `tests/run-state.node.test.js` contra a fábrica,
-// e ganharam um caso a mais que aqui era impossível: o do VAZAMENTO entre duas instâncias, que é a razão de
-// a fábrica existir. Apagar cobertura numa migração é como perder o troco; movê-la é o mínimo.
-//
-// O que sobrou aqui é o estado de PÁGINA — acessibilidade, idioma, dispositivo — mais o `numPlayers`, o
-// `players` e o `phase`, que são as próximas fatias.
+// ========================= WHAT IS NOT HERE =========================
+// Round state (`ended`, `selVizPlayer`, `pauseActor`, `players`, `numPlayers`, the phase…) does not live in
+// `core/state`: nothing of it persists, and not persisting is the ROUND criterion (ADR-0038); the round left the engine
+// with `core/run-state` (ADR-0228). What `core/state` keeps is PAGE state — accessibility, language, device.

@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A HERANÇA DE CHAVE LEGADA — `getWithLegacy` / `getJsonWithLegacy`, que até hoje não tinham nenhum caso.
+// LEGACY KEY INHERITANCE — `getWithLegacy` / `getJsonWithLegacy`.
 //
-// Vale dizer o que se perde quando isto quebra, porque não é um valor: é a continuidade. A criança que já
-// jogava tem o nível 5, o cenário escolhido e a gravação da demonstração gravados nos NOMES ANTIGOS. Renomear
-// a chave sem herança não dá erro nenhum — dá um jogo de fábrica. Ela abre e encontra o nível 2 no lugar do 5,
-// sem nada explicando, e não há como ela saber que o ajuste existia.
+// Worth saying what is lost when this breaks, because it is not a value: it is continuity. The child who already played
+// has level 5, the chosen scenery and the demo recording stored under the OLD NAMES. Renaming the key without
+// inheritance gives no error at all — it gives a factory game. She opens it and finds level 2 instead of 5, with nothing
+// explaining, and no way to know the setting existed.
 //
-// Por isso a herança é só de LEITURA: a escrita vai para o nome novo e a chave velha fica onde está. É dado da
-// criança, não meu para apagar, e a permanência dela é o que torna um retorno possível — se a migração se
-// revelar errada, o valor original ainda lá.
+// That is why inheritance is READ-only: writing goes to the new name and the old key stays where it is. It is the child's
+// data, not mine to delete, and its permanence is what makes going back possible — if the migration turns out wrong, the
+// original value is still there.
 //
-// ⚠️ O CASO QUE MAIS IMPORTA AQUI É O DO VALOR FALSO. `''`, `'0'` e `false` são VALORES ESCOLHIDOS, não
-// ausências: a criança que desligou a bengala escolheu `'0'` tanto quanto quem a ligou escolheu `'1'`. Um
-// `if (v)` no lugar de `if (v !== null)` compila, passa em todo caso com valor "normal", e apaga em silêncio
-// exatamente as escolhas de desligar. É a mutação que estes casos existem para apanhar.
+// ⚠️ THE CASE THAT MATTERS MOST HERE IS THE FALSY VALUE. `''`, `'0'` and `false` are CHOSEN VALUES, not absences: the
+// child who turned the cane off chose `'0'` as much as whoever turned it on chose `'1'`. An `if (v)` instead of
+// `if (v !== null)` compiles, passes every case with a "normal" value, and silently erases exactly the choices to turn
+// something off. It is the mutation these cases exist to catch.
 //
-// O stub de `localStorage` vai ABAIXO do storage, na API do navegador, e não no lugar do storage: o que se
-// quer aferir é o módulo de persistência REAL no caminho. (No project node não existe `localStorage`, então
-// sem o stub toda leitura devolveria o padrão — silenciosa e inutilmente.)
+// The `localStorage` stub goes BELOW the storage, at the browser API, and not in place of the storage: what is to be
+// checked is the REAL persistence module on the way. (The node project has no `localStorage`, so without the stub every
+// read would return the default — silently and uselessly.)
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { get, set, setJSON, getWithLegacy, getJsonWithLegacy } from '../app/js/platform/storage.js';
 
@@ -56,9 +56,9 @@ describe('getWithLegacy — a chave nova ganha, a velha sustenta', () => {
   });
 
   it('[Boundary] ⚠️ um valor FALSO herdado é um valor: `0` e `` não caem no padrão', () => {
-    // Quem desligou a bengala gravou '0'. Tratar isso como ausência devolve o padrão LIGADO, e a criança
-    // reencontra ligada a coisa que ela desligou — o pior tipo de defeito de acessibilidade, porque parece
-    // que o programa ignorou a escolha dela.
+    // Whoever turned the cane off stored '0'. Treating that as absence returns the default ON, and the child finds on
+    // again the thing she turned off — the worst kind of accessibility defect, because it looks as if the program ignored
+    // her choice.
     set(LEGADA, '0');
     expect(getWithLegacy(NOVA, LEGADA, '1')).toBe('0');
     set(LEGADA, '');
@@ -66,20 +66,20 @@ describe('getWithLegacy — a chave nova ganha, a velha sustenta', () => {
   });
 
   it('[Boundary] ⚠️ e um valor falso na NOVA também ganha — é AQUI que `!== null` decide', () => {
-    // Este é o caso que discrimina, e ele quase não entrou. Do lado da LEGADA, `if (v)` e `if (v !== null)`
-    // dão o mesmo resultado: a nova está ausente das duas maneiras. Só quando a NOVA carrega o valor falso é
-    // que a diferença aparece — e aí ela devolve o valor da chave que a criança já tinha ABANDONADO.
+    // This is the case that discriminates. On the LEGACY side, `if (v)` and `if (v !== null)` give the same result: the
+    // new one is absent either way. Only when the NEW one carries the falsy value does the difference show — and then it
+    // returns the value of the key the child had already ABANDONED.
     //
-    // ⚠️ E a string falsa é uma só: `'0'` é TRUTHY em JavaScript, ao contrário do que a intuição de outras
-    // linguagens sugere. Um caso escrito com `'0'` passaria sob a mutação e não provaria nada.
+    // ⚠️ And there is only one falsy string: `'0'` is TRUTHY in JavaScript, against what other languages' intuition
+    // suggests. A case written with `'0'` would pass under the mutation and prove nothing.
     set(NOVA, '');
     set(LEGADA, 'valor-abandonado');
     expect(getWithLegacy(NOVA, LEGADA, 'padrao')).toBe('');
   });
 
   it('[Interface] LER não migra — a legada continua lá e a nova continua ausente', () => {
-    // A permanência da chave velha é o que torna um retorno possível. Se a leitura gravasse na nova, a
-    // primeira leitura seria irreversível e uma migração errada não teria volta.
+    // The old key's permanence is what makes going back possible. If reading wrote to the new one, the first read would
+    // be irreversible and a wrong migration would have no way back.
     set(LEGADA, '5');
     getWithLegacy(NOVA, LEGADA, 'padrao');
     expect(get(NOVA, null), 'a leitura gravou na chave nova').toBe(null);
@@ -103,24 +103,24 @@ describe('getJsonWithLegacy — a mesma herança, para o outro formato', () => {
   });
 
   it('[Boundary] ⚠️ `false` e `0` herdados são valores — a metade JSON tem a mesma armadilha', () => {
-    // Se a herança dos dois formatos não for a mesma, metade das chaves migra e a outra metade some, que é o
-    // pior dos dois mundos: nem o dado antigo nem um erro que o denuncie.
+    // If inheritance is not the same for both formats, half the keys migrate and the other half vanish, which is the worst
+    // of both worlds: neither the old data nor an error that reveals it.
     setJSON(LEGADA, false);
     expect(getJsonWithLegacy(NOVA, LEGADA, true)).toBe(false);
     setJSON(LEGADA, 0);
     expect(getJsonWithLegacy(NOVA, LEGADA, 9)).toBe(0);
 
-    // ⚠️ E o mesmo do lado da NOVA, que é o lado onde `!== null` de facto decide. Em JSON a armadilha é
-    // maior do que em texto: `false`, `0`, `''` e `null` são todos falsos, então um `if (v)` aqui devolve o
-    // ajuste ANTIGO a quem acabou de desligar a coisa no ajuste novo.
+    // ⚠️ And the same on the NEW side, which is where `!== null` actually decides. In JSON the trap is bigger than in text:
+    // `false`, `0`, `''` and `null` are all falsy, so an `if (v)` here returns the OLD setting to whoever just turned the
+    // thing off in the new one.
     setJSON(NOVA, false);
     setJSON(LEGADA, true);
     expect(getJsonWithLegacy(NOVA, LEGADA)).toBe(false);
   });
 
   it('[Error] JSON corrompido na nova cai para a legada em vez de derrubar o boot', () => {
-    // `localStorage` é dado que pode ter sido escrito por uma versão anterior, por outra aba, ou ter sido
-    // truncado. Um `JSON.parse` que lança aqui derruba o boot inteiro, porque `core/state` lê no import.
+    // `localStorage` is data that may have been written by an older version, by another tab, or been truncated. A
+    // `JSON.parse` that throws here brings the whole boot down, because `core/state` reads at import.
     set(NOVA, '{isto nao e json');
     setJSON(LEGADA, { nivel: 5 });
     expect(getJsonWithLegacy(NOVA, LEGADA)).toEqual({ nivel: 5 });

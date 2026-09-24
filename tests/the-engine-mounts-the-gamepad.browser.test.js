@@ -33,7 +33,7 @@ const declaracao = () => ({
   targetsOf: () => [{ x: 0, y: 0 }],
 });
 
-/** Um controle padrão com os botões que este quadro tem premidos. */
+/** A standard controller with the buttons this frame has pressed. */
 const padFalso = (pressed) => ({
   index: 0, mapping: 'standard', id: 'test standard pad',
   buttons: Array.from({ length: 16 }, (_, i) => ({ pressed: pressed.includes(i) })),
@@ -45,7 +45,7 @@ const ESQUEMA = { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'],
   start: ['Enter'], select: ['Tab'] };
 
 let raiz; let motor; let recebidos; let botoes; let getGamepadsReal; let jogadores;
-/** Dois quadros: o laço agenda o seguinte no fim do seu, logo um só não garante uma sondagem inteira. */
+/** Two frames: the loop schedules the next one at the end of its own, so one alone does not guarantee a whole poll. */
 const quadro = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
 beforeAll(async () => {
@@ -58,14 +58,14 @@ beforeAll(async () => {
   botoes = [];
   getGamepadsReal = navigator.getGamepads;
   navigator.getGamepads = () => [padFalso(botoes)];
-  // 📌 Os jogadores são declarados COMO UM CARTUCHO OS DECLARA — `{ ctrl }` e mais nada. O assento e as arestas são
-  // da engine, e é meia da afirmação deste ficheiro que ela os semeie nestes objectos.
+  // 📌 The players are declared AS A CARTRIDGE DECLARES THEM — `{ ctrl }` and nothing more. The seat and the edges are
+  // the engine's, and half of this file's assertion is that it seeds them into these objects.
   jogadores = [{ ctrl: ESQUEMA }];
   motor = createGame({
     accommodations: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
     downloadHeavy: false, preset: PLATAFORMA, setPhase: () => {}, players: jogadores,
     onCommand: (c) => recebidos.push(c),
-    // 📌 E NADA SOBRE CONTROLES: é isso que este ficheiro mede.
+    // 📌 AND NOTHING ABOUT CONTROLLERS: that is what this file measures.
   });
   window.dispatchEvent(new Event('gamepadconnected'));
 });
@@ -78,11 +78,11 @@ afterAll(() => {
 
 describe('a cartridge that declares nothing still has a controller', () => {
   it('🔴 [Right] a button reaches `onCommand` as its POSITION, with the source and the seat', async () => {
-    // 1.º: um controle sem assento TOMA um — é a regra de atribuição por ordem de acção, e ela vem antes do jogo.
+    // 1st: a controller with no seat TAKES one — the assignment rule by order of action, and it comes before the game.
     botoes = [0]; await quadro();
     botoes = []; await quadro();
     recebidos.length = 0;
-    // 2.º: com assento, a mesma pressão é jogo, e tem de atravessar a porta única.
+    // 2nd: with a seat, the same press is play, and it has to go through the single door.
     botoes = [0]; await quadro();
     expect(recebidos.map((c) => `${c.action}:${c.pressed}:${c.source}:${c.player}`),
       'the engine mounted no controller, or what it mounted does not reach the cartridge')

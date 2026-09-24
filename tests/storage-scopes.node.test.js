@@ -1,31 +1,30 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// OS DOIS ESCOPOS DE PERSISTÊNCIA (project node: só lê a tabela de chaves, sem localStorage).
+// THE TWO PERSISTENCE SCOPES (node project: only reads the key table, no localStorage).
 //
-// O namespacing óbvio — um prefixo por jogo em TUDO — seria um defeito de acessibilidade grave, e é isso que
-// estes casos guardam. Uma criança cega configura modo cego, bengala, voz e velocidade de narração; uma
-// criança daltônica escolhe a correção; uma disléxica escolhe a fonte. Com um espaço de nomes por jogo, ela
-// refaria tudo isso nos 35 jogos do catálogo — e quem mais depende dos ajustes é quem menos tem margem para
-// refazê-los.
+// The obvious namespacing — one prefix per game on EVERYTHING — would be a serious accessibility defect, and that is what
+// these cases guard. A blind child sets up blind mode, cane, voice and narration speed; a colour-blind child chooses the
+// correction; a dyslexic child chooses the font. With one namespace per game, she would redo all of that in every game —
+// and whoever depends most on the settings is whoever has least margin to redo them.
 //
-// A linha entre os escopos não é técnica, é de PERTENCIMENTO: o que é da CRIANÇA fica compartilhado, o que é
-// da PARTIDA fica no jogo. Se alguém um dia "padronizar" prefixando tudo, estes casos reprovam.
+// The line between the scopes is not technical, it is BELONGING: what is the CHILD's is shared, what is the MATCH's stays
+// in the game. If someone one day "standardises" by prefixing everything, these cases fail.
 import { describe, it, expect } from 'vitest';
 import * as store from '../app/js/platform/storage.js';
 import { KEYS, gameKey } from '../app/js/platform/storage.js';
 
-/** O id do jogo de plataforma. Aqui ele é DADO DE TESTE, não verdade da engine: a engine deixou de o ter
- *  (ADR-0080), e o que estes casos guardam é que ele continua a produzir exatamente as chaves antigas. */
+/** The platform game's id. Here it is TEST DATA, not engine truth: the engine does not hold it (ADR-0080), and what
+ *  these cases guard is that it still produces exactly the old keys. */
 const PLATAFORMA = 'inclusionist';
 
-/** Tudo que é do escopo DO JOGO. Curto de propósito: na dúvida, a chave é da criança. */
+/** Everything in the GAME's scope. Short on purpose: when in doubt, the key belongs to the child. */
 const DO_JOGO = ['activity', 'quizlevel', 'cenario', 'tabsel', 'fracnot'];
 
-/** O que pertence à CRIANÇA e segue com ela de jogo em jogo. Amostra representativa, não a lista inteira. */
+/** What belongs to the CHILD and goes with her from game to game. A representative sample, not the whole list. */
 const DA_CRIANCA = [
   'modocego', 'caneDiv', 'onebtn', 'wheelchair', 'hearingloss',   // acessibilidade motora/auditiva
   'viz', 'cbsafe', 'outfg', 'outbg', 'lq',                        // visão
   'ttsEngine', 'ttsVoice', 'lang',                                // voz e idioma
-  'letterCase', 'captions', 'fontKey',                            // comunicação e leitura
+  'letterCase', 'captions', 'fontKey',                            // communication and reading
   'padDesign', 'touchmap', 'padBtnMm',                            // controles e toque
 ];
 
@@ -35,18 +34,18 @@ describe('escopo DO JOGO — o que é de uma partida', () => {
   });
 
   it('[Right] ⚠️ dois jogos no mesmo perfil têm chaves DISJUNTAS — é o defeito da #108 em uma linha', () => {
-    // Era este o estrago: `JOGO_ID` constante na engine, então o quiz e a plataforma escreviam os dois em
-    // `incl.inclusionist.activity`. O segundo jogo aberto apagava o progresso do primeiro, sem erro nenhum.
-    // O segundo id é NEUTRO de propósito: a propriedade é «dois jogos quaisquer não colidem», e nomear um
-    // jogo concreto aqui acoplaria um fixture de engine ao catálogo — que é o que o `engine-boundary` guarda.
+    // This was the damage: a constant `JOGO_ID` in the engine, so the quiz and the platform game both wrote to
+    // `incl.inclusionist.activity`. The second game opened erased the first one's progress, with no error at all.
+    // The second id is NEUTRAL on purpose: the property is «dois jogos quaisquer não colidem», and naming a concrete game
+    // here would couple an engine fixture to the catalogue — which is what `engine-boundary` guards.
     const daPlataforma = DO_JOGO.map((k) => KEYS[k](PLATAFORMA)).concat(KEYS.attract(PLATAFORMA, 'campo'));
     const doOutro = DO_JOGO.map((k) => KEYS[k]('jogo-b')).concat(KEYS.attract('jogo-b', 'campo'));
     expect(daPlataforma.filter((n) => doOutro.includes(n)), 'chave partilhada entre dois jogos').toEqual([]);
   });
 
   it('[Right] e a plataforma continua a resolver as chaves QUE JÁ EXISTEM no aparelho da criança', () => {
-    // O outro lado da mesma moeda: parametrizar o prefixo não pode renomear nada para quem já jogava. Os
-    // nomes abaixo são verbatim os que a versão anterior produzia com `JOGO_ID` fixo.
+    // The other side of the same coin: parametrising the prefix must not rename anything for whoever already played. The
+    // names below are verbatim the ones the fixed `JOGO_ID` produced.
     expect(KEYS.activity(PLATAFORMA)).toBe('incl.inclusionist.activity');
     expect(KEYS.quizlevel(PLATAFORMA)).toBe('incl.inclusionist.quizlevel');
     expect(KEYS.cenario(PLATAFORMA)).toBe('incl.inclusionist.cenario');
@@ -56,8 +55,8 @@ describe('escopo DO JOGO — o que é de uma partida', () => {
   });
 
   it('[Right] cada uma guarda o nome LEGADO — é como o ajuste de quem já jogava sobrevive', () => {
-    // Sem isto a renomeação seria uma perda silenciosa: a criança abriria o jogo e encontraria o nível 2 de
-    // fábrica no lugar do 5 que ela tinha alcançado, sem nada explicando.
+    // Without this the rename would be a silent loss: the child would open the game and find the factory level 2 instead
+    // of the 5 she had reached, with nothing explaining.
     for (const k of DO_JOGO) {
       expect(KEYS[k + 'Legado'], k).toBeTruthy();
       expect(KEYS[k + 'Legado'], k).toMatch(/^incl_/);
@@ -66,14 +65,14 @@ describe('escopo DO JOGO — o que é de uma partida', () => {
 
   it('[Interface] a gravação da demonstração também é do jogo, e também herda', () => {
     expect(KEYS.attract('xis', 'campo')).toBe(gameKey('xis', 'attract_campo'));
-    expect(KEYS.attractLegado('campo')).toBe('incl_attract_campo'); // a legada NÃO leva id: é anterior ao escopo
+    expect(KEYS.attractLegado('campo')).toBe('incl_attract_campo'); // the legacy one carries NO id: it predates the scope
   });
 });
 
 describe('escopo COMPARTILHADO — o que é da criança', () => {
   it('[Right] NENHUM ajuste de acessibilidade leva prefixo de jogo', () => {
-    // É o caso central deste arquivo. Se ele reprovar, alguém prefixou uma preferência da criança — e o
-    // efeito, num catálogo de 35 jogos, é obrigá-la a reconfigurar tudo 35 vezes.
+    // It is this file's central case. If it fails, someone prefixed a child's preference — and the effect is forcing her
+    // to reconfigure everything once per game.
     const prefixadas = DA_CRIANCA.filter((k) => String(KEYS[k]).startsWith('incl.'));
     expect(prefixadas, 'preferência da criança com prefixo de jogo').toEqual([]);
   });
@@ -101,15 +100,15 @@ describe('os dois escopos não se confundem', () => {
   });
 
   it('[Zero] ⚠️ a ENGINE não guarda id de jogo nenhum — era o achado 1 do ADR-0080', () => {
-    // `JOGO_ID = "inclusionist"` morava aqui. O teste do ADR-0080 é uma pergunta — *um segundo jogo quereria
-    // um valor diferente?* — e este campo respondia sim de forma cara: colisão silenciosa de progresso.
+    // `JOGO_ID = "inclusionist"` used to live here. ADR-0080's test is a question — *would a second game want a different
+    // value?* — and this field answered yes at a high price: a silent progress collision.
     expect(store.JOGO_ID, 'a engine voltou a guardar o id de um jogo').toBeUndefined();
   });
 
   it('[Zero] ⚠️ e a distinção dos dois escopos vive na FORMA, não só no comentário', () => {
-    // Chave da criança é STRING (não tem onde receber um id); chave da partida é FUNÇÃO (sem o id não
-    // compila). É o que impede tanto prefixar por engano uma preferência quanto esquecer de escopar uma
-    // chave de partida — os dois enganos que o comentário sozinho não conseguia impedir.
+    // A child's key is a STRING (it has nowhere to receive an id); a match key is a FUNCTION (without the id it does not
+    // compile). That is what prevents both prefixing a preference by mistake and forgetting to scope a match key — the two
+    // mistakes the comment alone could not prevent.
     for (const k of DA_CRIANCA) expect(typeof KEYS[k], k).toBe('string');
     for (const k of DO_JOGO) expect(typeof KEYS[k], k).toBe('function');
   });

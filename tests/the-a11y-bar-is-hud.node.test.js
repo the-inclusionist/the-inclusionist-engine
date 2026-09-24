@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A BARRA DE ACESSIBILIDADE É HUD: o rectângulo dela é reservado (ADR-0148 §3).
+// THE ACCESSIBILITY BAR IS HUD: its rectangle is reserved (ADR-0148 §3).
 //
-// ========================= O DEFEITO, MEDIDO NUM NAVEGADOR ANTES DE SER ESCRITO =========================
-// 🔴 Em 2026-09-12, no `dist/quiz.html`: `#title-icons` é `position:absolute` DENTRO do `#game-region`, em
-// (123,15) com 337×44 — e o `H2.quiz-pergunta`, o título da pergunta, ocupa os mesmos pixels. A criança que
-// procura o modo cego, o TTS ou o Libras encontra texto do jogo por cima dos botões.
+// ========================= THE DEFECT, MEASURED IN A BROWSER BEFORE IT WAS WRITTEN =========================
+// 🔴 On 2026-09-12, in `dist/quiz.html`: `#title-icons` is `position:absolute` INSIDE `#game-region`, at (123,15) with
+// 337×44 — and `H2.quiz-pergunta`, the question's title, occupies the same pixels. The child looking for blind mode,
+// TTS or Libras finds game text on top of the buttons.
 //
-// ⚠️ E NADA FALHAVA: sem erro, sem tipo, sem consola. Só uma fila de botões tapada — e quem mais depende dela
-// é precisamente quem não vê que ela está tapada. Foi o Dev que o apontou, não um crivo.
+// ⚠️ AND NOTHING FAILED: no error, no type, no console. Just a row of buttons covered — and whoever depends on it most is
+// precisely whoever cannot see it is covered. The Dev pointed it out, not a sieve.
 //
-// 📌 A DECISÃO QUE ESTE FICHEIRO PRENDE É O QUE CONTA COMO INVASÃO, que é a parte que se erra: a barra
-// intersecta-se a si mesma e aos próprios botões, e um crivo que os contasse acusaria SEMPRE.
+// 📌 THE DECISION THIS FILE PINS IS WHAT COUNTS AS AN INTRUSION, which is the part people get wrong: the bar intersects
+// itself and its own buttons, and a sieve counting them would ALWAYS accuse.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { barIntruders } from '../app/js/ui/layout.js';
 
@@ -21,10 +21,10 @@ const no = (nome, caixa, daBarra = false) => ({ name: nome, box: caixa, isBar: d
 
 describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
   it('🔴 [Right] o título que cobre a barra é ACUSADO, pelo nome', () => {
-    // O caso do Dev, com os números que o navegador deu.
-    // ⚠️ Os NOMES dos nós são neutros de propósito, e o crivo `engine-boundary` reprovou a primeira versão
-    // deles: um fixture de engine não pode precisar do vocabulário de um género para correr. O que este caso
-    // afirma é geométrico — um título por cima da barra —, e isso vale para qualquer jogo.
+    // The Dev's case, with the numbers the browser gave.
+    // ⚠️ The nodes' NAMES are neutral on purpose (the `engine-boundary` sieve demands it): an engine fixture must not
+    // need a genre's vocabulary to run. What this case asserts is geometric — a title over the bar —, and that holds for
+    // any game.
     const invasores = barIntruders(BARRA, [
       no('h2#.titulo-da-atividade', { x: 90, y: 5, w: 340, h: 60 }),
       no('div#app.raiz-do-jogo', { x: 80, y: 0, w: 420, h: 400 }),
@@ -33,8 +33,8 @@ describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
   });
 
   it('🔴 [Zero] os BOTÕES da própria barra não contam — senão o crivo acusa sempre', () => {
-    // ⚠️ Eles intersectam-na por definição. Um crivo que os contasse ficaria vermelho em todo jogo, e um
-    // crivo que acusa sempre é o mesmo que crivo nenhum — é o «afogar o que se pode resolver» do ADR-0106 §2.
+    // ⚠️ They intersect it by definition. A sieve counting them would be red in every game, and a sieve that always
+    // accuses is the same as no sieve — it is ADR-0106 §2's «afogar o que se pode resolver».
     expect(barIntruders(BARRA, [
       no('button#.pi-btn', { x: 110, y: 15, w: 40, h: 40 }, true),
       no('div#title-icons.pause-icons', BARRA, true),
@@ -42,12 +42,11 @@ describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
   });
 
   it('📌 [Boundary] encostar NÃO é invadir — nos DOIS eixos', () => {
-    // Um nó que acaba exactamente onde a barra começa está ao lado dela, não por cima. Sem isto, todo jogo
-    // com um elemento colado à barra seria acusado, e o consumidor aprenderia a ignorar a linha.
+    // A node that ends exactly where the bar begins is beside it, not on top. Without this, every game with an element
+    // stuck to the bar would be accused, and the consumer would learn to ignore the line.
     //
-    // ⚠️ OS DOIS EIXOS, e o segundo par entrou depois: uma mutação que afrouxava só a comparação em X ficou
-    // VERDE, porque o caso original só encostava em Y. Um crivo que prende uma fronteira e não a outra
-    // autoriza metade do defeito.
+    // ⚠️ BOTH AXES: a mutation loosening only the X comparison stayed GREEN while the case only touched in Y. A sieve
+    // that pins one border and not the other authorises half the defect.
     expect(barIntruders(BARRA, [no('div#.abaixo', { x: 100, y: 54, w: 300, h: 20 })])).toEqual([]);
     expect(barIntruders(BARRA, [no('div#.um-px-isInside', { x: 100, y: 53, w: 300, h: 20 })]))
       .toEqual(['div#.um-px-isInside']);
@@ -58,19 +57,18 @@ describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
   });
 
   it('[Zero] um nó SEM ÁREA não invade nada', () => {
-    // Contentores de zero altura são comuns em markup gerado, e acusá-los seria ruído puro.
+    // Zero-height containers are common in generated markup, and accusing them would be pure noise.
     //
-    // 🔴 E A SEGUNDA LINHA É A QUE IMPORTA, porque ela apanhou um erro MEU: eu tinha lido que as
-    // desigualdades estritas já excluíam quem não tem área, e tirei o guarda. É falso — elas excluem o caso
-    // DEGENERADO NA FRONTEIRA (a primeira linha), não um em geral. Uma risca de largura zero a atravessar a
-    // barra passa nas quatro comparações. O guarda voltou, e esta linha é o que o prende.
+    // 🔴 AND THE SECOND LINE IS THE ONE THAT MATTERS: the strict inequalities exclude the DEGENERATE case AT THE BORDER
+    // (the first line), not one in general. A zero-width stripe crossing the bar passes all four comparisons. The guard
+    // is needed, and this line is what pins it.
     expect(barIntruders(BARRA, [no('div#.vazio', { x: 100, y: 10, w: 0, h: 0 })])).toEqual([]);
     expect(barIntruders(BARRA, [no('div#.risca', { x: 150, y: 20, w: 0, h: 60 })])).toEqual([]);
   });
 
   it('🔴 [Zero] sem barra — ou com barra de área zero — NÃO se acusa ninguém', () => {
-    // ⚠️ É o par que impede o crivo de ser um acusador universal: contra um rectângulo de zero, tudo
-    // «intersecta» pela regra ingénua. Um jogo sem barra montada não tem nada reservado.
+    // ⚠️ It is the pair that stops the sieve from being a universal accuser: against a zero rectangle, everything
+    // «intersecta» by the naive rule. A game with no bar mounted has nothing reserved.
     const tudo = [no('div#.qualquer', { x: 0, y: 0, w: 999, h: 999 })];
     expect(barIntruders(null, tudo)).toEqual([]);
     expect(barIntruders({ x: 100, y: 10, w: 0, h: 44 }, tudo)).toEqual([]);
@@ -78,25 +76,24 @@ describe('invasoresDaBarra — quem escreve por cima do HUD', () => {
   });
 });
 
-// ============================== MUTAÇÕES CONFERIDAS ==============================
-// Aplicadas por script ao ficheiro, com a contagem de ocorrências conferida ANTES de cada uma. Oito, oito
-// vermelhas — e DUAS delas só ficaram vermelhas depois de o plano me apanhar:
+// ============================== MUTATIONS CHECKED ==============================
+// Applied by script to the file, with the occurrence count checked BEFORE each one. Eight, eight red — and TWO of them
+// only turned red after the plan caught me:
 //
-//   G1  os botões da própria barra passam a contar        🔴 o crivo acusaria SEMPRE
-//   G2a a fronteira em X afrouxa para `<=`                🔴 encostar viraria invadir
-//   G2b a fronteira em Y afrouxa para `<=`                🔴 idem, no outro eixo
-//   G3  barra de área zero deixa de ser recusada          🔴 acusaria toda a gente
-//   G4  o guarda de área zero sai                         🔴 a risca de largura zero
-//   G5  a engine não acusa a sobreposição (alvo: browser) 🔴 o silêncio volta
-//   G6  a faixa reservada não é declarada (idem)          🔴 o jogo não tem o que ler
+//   G1  the bar's own buttons start counting            🔴 the sieve would ALWAYS accuse
+//   G2a the X border loosens to `<=`                     🔴 touching would become intruding
+//   G2b the Y border loosens to `<=`                     🔴 likewise, on the other axis
+//   G3  a zero-area bar is no longer refused             🔴 it would accuse everyone
+//   G4  the zero-area guard leaves                       🔴 the zero-width stripe
+//   G5  the engine does not accuse the overlap (target: browser) 🔴 the silence comes back
+//   G6  the reserved band is not declared (likewise)     🔴 the game has nothing to read
 //
-// ⚠️ A G2 SOBREVIVEU À PRIMEIRA VOLTA porque o caso de fronteira só encostava num eixo. Um crivo que prende
-// uma fronteira e não a outra autoriza metade do defeito — e foi por isso que o caso passou a ter os quatro
-// lados.
+// ⚠️ G2 SURVIVED THE FIRST ROUND because the border case only touched on one axis. A sieve that pins one border and not
+// the other authorises half the defect — and that is why the case got all four sides.
 //
-// 🔴 E A G4 APANHOU UM ERRO MEU, que é o achado mais útil deste ficheiro. Ela sobreviveu, eu li isso como
-// «o guarda de área zero é inerte porque as desigualdades estritas já o fazem», e TIREI o guarda. A leitura
-// era falsa: as estritas excluem o caso DEGENERADO NA FRONTEIRA, não um em geral — uma risca de largura zero
-// a atravessar a barra passa nas quatro comparações. O guarda voltou, e o caso da risca é o que o prende.
-// 📌 A lição não é sobre geometria: uma mutação que sobrevive diz «o crivo não vê isto», e NÃO diz «o código
-// é inerte». As duas conclusões parecem a mesma e levam a lados opostos.
+// 🔴 AND G4 CAUGHT A MISTAKE OF MINE, which is this file's most useful finding. It survived, I read that as «o guarda de
+// área zero é inerte porque as desigualdades estritas já o fazem», and REMOVED the guard. The reading was false: the strict
+// ones exclude the DEGENERATE case AT THE BORDER, not one in general — a zero-width stripe crossing the bar passes all four
+// comparisons. The guard came back, and the stripe case is what pins it.
+// 📌 The lesson is not about geometry: a surviving mutation says «o crivo não vê isto», and does NOT say «o código é
+// inerte». The two conclusions look the same and lead in opposite directions.

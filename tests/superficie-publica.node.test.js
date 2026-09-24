@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// UM NOME NÃO SAI DO PACOTE SEM ALGUÉM DIZER QUE SAIU.
+// A NAME DOES NOT LEAVE THE PACKAGE WITHOUT SOMEONE SAYING IT LEFT.
 //
-// ========================= O QUE ISTO EXISTE PARA APANHAR =========================
-// Medido em 2026-09-07, comparando a superfície publicada em `v7.0.1` com a árvore: desde essa etiqueta
-// saíram **33 módulos** e **8 constantes**, e o tipo `KeyScheme` fechou-se sobre catorze posições. Cinco
-// commits marcaram-se quebrantes com `!` no assunto — e **nenhum** escreveu o rodapé `BREAKING CHANGE:`.
+// ========================= WHAT THIS EXISTS TO CATCH =========================
+// Measured on 2026-09-07, comparing the surface published in `v7.0.1` with the tree: since that tag **33 modules** and
+// **8 constants** had left, and the `KeyScheme` type had closed on fourteen positions. Five commits marked themselves
+// breaking with `!` in the subject — and **none** wrote the `BREAKING CHANGE:` footer.
 //
-// ⚠️ A CONSEQUÊNCIA NÃO É DE ESTILO. O `CHANGELOG.md` deste repositório é gerado dos Conventional Commits, e
-// a entrada da `v7.0.0` mostra o que ele consegue dizer quando os rodapés existem: parágrafos a dizer a quem
-// consome o que tem de mudar. Sem eles, o que sobra é um assunto de uma linha — e um assunto não é migração.
-// A `docs/6-DevOps-SRE/Breaking-Changes.md` teve de ser escrita depois do facto, a partir de uma medição,
-// porque a informação não estava em lado nenhum.
+// ⚠️ THE CONSEQUENCE IS NOT ONE OF STYLE. This repository's `CHANGELOG.md` is generated from the Conventional Commits,
+// and the `v7.0.0` entry shows what it can say when the footers exist: paragraphs telling whoever consumes what they have
+// to change. Without them, what is left is a one-line subject — and a subject is not a migration.
+// `docs/6-DevOps-SRE/Breaking-Changes.md` had to be written after the fact, from a measurement, because the information
+// was nowhere.
 //
-// Este gate é para não haver «depois do facto» outra vez. Ele compara a árvore com um RETRATO committado e
-// reprova quando um nome desaparece. Não impede a remoção: pede que ela seja DECLARADA — correr
-// `node scripts/snapshot-public-surface.mjs` é a declaração, e a mensagem abaixo diz o resto.
+// This gate is so there is no «depois do facto» again. It compares the tree with a committed SNAPSHOT and fails when a
+// name disappears. It does not prevent the removal: it asks for it to be DECLARED — running
+// `node scripts/snapshot-public-surface.mjs` is the declaration, and the message below says the rest.
 //
-// ⚠️ ACRESCENTAR NÃO REPROVA, e a assimetria é o desenho. Um nome novo é compatível para trás e um gate que
-// exigisse igualdade seria empurrado a cada `export` inocente — que é como um teto «que só desce» acaba
-// afrouxado. O que se proíbe é a única coisa que quebra alguém: **desaparecer**.
+// ⚠️ ADDING DOES NOT FAIL, and the asymmetry is the design. A new name is backwards compatible, and a gate requiring
+// equality would be pushed at every innocent `export` — which is how a ceiling «que só desce» ends up loosened. What is
+// forbidden is the one thing that breaks someone: **disappearing**.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -41,7 +41,7 @@ const COMO_DECLARAR = [
 
 describe('a superfície pública do pacote só encolhe por declaração (docs/6-DevOps-SRE/Breaking-Changes.md)', () => {
   it('[Interface] o retrato e a árvore falam do mesmo repositório', () => {
-    // Sem isto, um retrato vazio ou um caminho errado deixariam todos os casos abaixo verdes de graça.
+    // Without this, an empty snapshot or a wrong path would leave every case below green for free.
     expect(Object.keys(retrato).length, 'o retrato está vazio; correu o script?').toBeGreaterThan(50);
     expect(Object.keys(arvore).length, 'a varredura não achou módulos').toBeGreaterThan(50);
     expect(arvore['core/contract.ts'], 'a varredura não vê o contrato').toBeTruthy();
@@ -56,15 +56,15 @@ describe('a superfície pública do pacote só encolhe por declaração (docs/6-
     const sumidos = [];
     for (const [m, nomes] of Object.entries(retrato)) {
       const agora = new Set(arvore[m] ?? []);
-      if (!arvore[m]) continue; // o módulo inteiro é o caso acima; não contar duas vezes
+      if (!arvore[m]) continue; // the whole module is the case above; do not count twice
       for (const n of nomes) if (!agora.has(n)) sumidos.push(`${m}  ${n}`);
     }
     expect(sumidos, 'nomes que o pacote publicava e já não publica:' + COMO_DECLARAR).toEqual([]);
   });
 
   it('[Right] acrescentar NÃO reprova — só desaparecer', () => {
-    // A assimetria dita em prosa, afirmada em código: um nome que existe hoje e não está no retrato é
-    // compatível para trás, e este caso existe para ninguém a «consertar» exigindo igualdade.
+    // The asymmetry said in prose, asserted in code: a name that exists today and is not in the snapshot is backwards
+    // compatible, and this case exists so nobody «fixes» it by requiring equality.
     const novos = [];
     for (const [m, nomes] of Object.entries(arvore)) {
       const antes = new Set(retrato[m] ?? []);
@@ -74,14 +74,15 @@ describe('a superfície pública do pacote só encolhe por declaração (docs/6-
   });
 
   /*
-   * 🔴 O RETRATO VIA UM NOME POR LINHA, e uma linha publica quantos quiser. Achado em 2026-09-21 ao medir o que os jogos
-   * IMPORTAM da engine: `export const LOGICAL_W = 320, LOGICAL_H = 180, TILE = 16;` publica três nomes e o retrato guardava
-   * um. 📏 Oito assim, e dois deles — `LOGICAL_H` e `TILE` — são importados pelo game-platformer e pelo pixi-15-puzzle:
-   * apagá-los passava VERDE no crivo que existe justamente para reprovar quando um nome público desaparece.
+   * 🔴 THE SNAPSHOT USED TO SEE ONE NAME PER LINE, and a line publishes as many as it likes. Found on 2026-09-21 while
+   * measuring what the games IMPORT from the engine: `export const LOGICAL_W = 320, LOGICAL_H = 180, TILE = 16;` publishes
+   * three names and the snapshot kept one. 📏 Eight like that, and two of them — `LOGICAL_H` and `TILE` — are imported by
+   * game-platformer and pixi-15-puzzle: deleting them passed GREEN in the very sieve that exists to fail when a public name
+   * disappears.
    *
-   * ⚠️ E O PAR QUE IMPEDE O CONSERTO DE EXAGERAR: um retrato que INVENTA um nome é pior do que um que perde, porque passa a
-   * exigir para sempre algo que nenhum módulo tem. A primeira versão do conserto contava só parênteses e chavetas, e a
-   * vírgula DENTRO de uma cadeia («'button:not([disabled]), select:not(…)'») publicou um export chamado `select`.
+   * ⚠️ AND THE PAIR THAT STOPS THE FIX FROM OVERDOING IT: a snapshot that INVENTS a name is worse than one that loses one,
+   * because it starts requiring forever something no module has. Counting only parentheses and braces, the comma INSIDE a
+   * string («'button:not([disabled]), select:not(…)'») published an export called `select`.
    */
   it('🔴 [Right] uma linha que declara vários nomes publica TODOS — e nenhuma vírgula de dentro de uma cadeia vira nome', () => {
     const constantes = new Set(arvore['core/constants.ts'] ?? []);
@@ -94,42 +95,41 @@ describe('a superfície pública do pacote só encolhe por declaração (docs/6-
   });
 
   it('⚠️ [Interface] o retrato guarda os oito que já saíram — a medição não se perde', () => {
-    // As oito constantes de `core/constants.ts` saíram ANTES deste gate existir, e o retrato foi tirado
-    // depois. Este caso afirma que elas continuam fora: se alguém as trouxer de volta sem pensar, o gate
-    // acima não diria nada (acrescentar não reprova), e a `Breaking-Changes.md` passaria a mentir.
-    // 🔴 SÃO ONZE DESDE 23/09, e as três últimas mudaram DE LADO neste mesmo caso: até aí ele EXIGIA que
-    // `TILE_TYPES`, `isHazard` e `isTrampoline` ficassem, «por uma razão de acessibilidade e não por simetria» —
-    // o `core/collision.isSolidType` torna perigo e trampolim sólidos no modo cego e no de cadeira de rodas.
-    // Era verdade, e deixou de ser quando essa regra foi com a geometria que a consulta (ADR-0228): as três
-    // ficaram sem leitor nenhum aqui. 📌 A engine continua a saber o que é perigo — pergunta o PAPEL ao
-    // contrato, pelo `roleOf`; o que ela deixou de ter é uma tabela de NÚMEROS de tile.
+    // The eight constants of `core/constants.ts` left BEFORE this gate existed, and the snapshot was taken afterwards.
+    // This case asserts they stay out: if someone brings them back without thinking, the gate above would say nothing
+    // (adding does not fail), and `Breaking-Changes.md` would start lying.
+    // 🔴 THERE ARE ELEVEN SINCE 23/09: `TILE_TYPES`, `isHazard` and `isTrampoline` used to be required to stay, for an
+    // accessibility reason — `core/collision.isSolidType` made hazard and trampoline solid in blind and wheelchair modes.
+    // That stopped being true when that rule went with the geometry that consults it (ADR-0228): the three had no reader
+    // left here. 📌 The engine still knows what a hazard is — it asks the contract for the ROLE, through `roleOf`; what it
+    // no longer has is a table of tile NUMBERS.
     const FORAM = ['JUMP_BASE', 'TUNE', 'COIN_TARGET', 'ehAgua', 'ehEscada', 'ehPortao', 'ehChave', 'ehSecreto',
       'TILE_TYPES', 'isHazard', 'isTrampoline'];
     const constantes = new Set(arvore['core/constants.ts'] ?? []);
     for (const n of FORAM) {
       expect(constantes.has(n), `${n} voltou a core/constants.ts; a doc de quebras precisa de ser corrigida`).toBe(false);
     }
-    // E o que FICA é a resolução lógica e a grade, que é o que qualquer jogo 2D em pixel partilha.
+    // And what STAYS is the logical resolution and the grid, which is what any 2D pixel game shares.
     expect(constantes.has('TILE'), 'a grade saiu: sem ela a engine não sabe desenhar em múltiplos inteiros').toBe(true);
   });
 });
 
-// ========================= A FORMA, QUE É A METADE QUE OS NOMES NÃO VEEM =========================
-// ⚠️ MEDIDO EM 2026-09-08, comparando `v7.0.1` com a árvore: o gate dos nomes acha **32 módulos** que saíram
-// e **8 constantes**, e os dois conjuntos NÃO SE TOCAM nos 23 que se seguem. Ele é cego a todos eles, porque
-// em todos o nome exportado continua exactamente igual — o que mudou foi o que está DENTRO:
+// ========================= THE SHAPE, THE HALF THE NAMES DO NOT SEE =========================
+// ⚠️ MEASURED ON 2026-09-08, comparing `v7.0.1` with the tree: the names gate finds **32 modules** that left and
+// **8 constants**, and the two sets DO NOT TOUCH the 23 that follow. It is blind to all of them, because in all of them the
+// exported name stayed exactly the same — what changed is what is INSIDE:
 //
-//   · `GameDeclaration.holdsAtOnce` entrou como obrigatório (é ele que faz os quatro jogos não compilarem);
-//   · `PlayerBase.visual` idem; `Player.guideT` saiu;
-//   · `SonarPlayer.viz`/`.guideT` e `SonarCtx.VIZ_BY_KEY` saíram, `SonarCtx.visaoComprometida` entrou;
-//   · `IconStateSnapshot.viz` → `.visual`, e `PauseIconsCtx` ganhou dois campos obrigatórios;
-//   · `PhaseView.pauseOverlayHidden` saiu; `SettingsVisualCtx.renderVizGroup` → `renderEixosVisuais`;
-//   · e três ALIASES estreitaram: `KeyScheme` fechou-se sobre as catorze posições, `DrawPlayer` e
-//     `PausePlayer` trocaram a fatia `'viz'` por `'visual'`.
+//   · `GameDeclaration.holdsAtOnce` came in as required (it is what makes the four games not compile);
+//   · `PlayerBase.visual` likewise; `Player.guideT` left;
+//   · `SonarPlayer.viz`/`.guideT` and `SonarCtx.VIZ_BY_KEY` left, `SonarCtx.visaoComprometida` came in;
+//   · `IconStateSnapshot.viz` → `.visual`, and `PauseIconsCtx` gained two required fields;
+//   · `PhaseView.pauseOverlayHidden` left; `SettingsVisualCtx.renderVizGroup` → `renderEixosVisuais`;
+//   · and three ALIASES narrowed: `KeyScheme` closed on the fourteen positions, `DrawPlayer` and `PausePlayer` swapped
+//     the `'viz'` slice for `'visual'`.
 //
-// ⚠️ E A ASSIMETRIA AQUI É OUTRA. No gate dos nomes, acrescentar é sempre seguro. Aqui não: um membro
-// OBRIGATÓRIO novo quebra toda a gente que constrói o tipo — foi o que o `holdsAtOnce` fez. Opcional passa em
-// silêncio; obrigatório pede declaração, como pede a remoção.
+// ⚠️ AND THE ASYMMETRY HERE IS ANOTHER ONE. In the names gate, adding is always safe. Not here: a new REQUIRED member
+// breaks everyone who builds the type — which is what `holdsAtOnce` did. Optional passes silently; required asks for a
+// declaration, as removal does.
 describe('a FORMA dos tipos exportados também só muda por declaração', () => {
   const forma = JSON.parse(readFileSync(join(RAIZ, RETRATO_FORMA), 'utf8'));
   const formaArvore = formaDe(join(RAIZ, 'app', 'js'));
@@ -174,15 +174,15 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
   });
 
   it('[Right] um tipo que desaparece INTEIRO não é contado aqui — já é caso do gate dos nomes', () => {
-    // O mesmo `continue` que o gate dos nomes tem, e pela mesma razão: contá-lo nos dois faria uma lista de
-    // seis linhas parecer doze, e a segunda metade não diria nada que a primeira não tenha dito.
+    // The same `continue` the names gate has, and for the same reason: counting it in both would make a six-line list
+    // look like twelve, and the second half would say nothing the first had not said.
     expect(quebrasDeForma({ 'm.ts': { 'interface A': ['x'] } }, { 'm.ts': {} })).toEqual([]);
     expect(quebrasDeForma({ 'm.ts': { 'interface A': ['x'] } }, {})).toEqual([]);
   });
 
   it('⚠️ [Interface] o extractor lê membros de verdade — opcional, método, readonly e assinatura de índice', () => {
-    // Sem este caso, um extractor que devolvesse listas vazias deixaria TODOS os casos acima verdes: duas
-    // listas vazias não têm diferenças. É o caso do vácuo desta metade.
+    // Without this case, an extractor returning empty lists would leave ALL the cases above green: two empty lists have
+    // no differences. It is this half's vacuum case.
     const f = formaDoTexto([
       'export interface A {',
       '  readonly i: number;',
@@ -198,30 +198,30 @@ describe('a FORMA dos tipos exportados também só muda por declaração', () =>
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · apagando um `export` qualquer de `app/js/core/route.ts` → "[Zero] NENHUM nome exportado desapareceu"
-//     reprova nomeando o módulo e o nome, com as duas instruções de como declarar.
-//   · renomeando `app/js/core/route.ts` → "[Zero] NENHUM módulo saiu do pacote" reprova com o caminho antigo,
-//     e o caso dos nomes NÃO reprova junto — o `continue` existe para o mesmo desaparecimento não ser
-//     contado duas vezes, que é o que faria uma lista de 6 linhas parecer 60.
-//   · devolvendo `export const TUNE = …` a `core/constants.ts` → "[Interface] o retrato guarda os oito"
-//     reprova. É a única forma de o gate falar de uma remoção ANTERIOR ao retrato, e é por isso que ela está
-//     escrita por extenso em vez de derivada.
-//   · esvaziando o `public-surface.json` para `{}` → "[Interface] o retrato e a árvore" reprova. Sem ele os
-//     dois casos `[Zero]` ficariam verdes por não haver nada a comparar.
+// ========================= MUTATIONS CHECKED =========================
+//   · deleting any `export` from `app/js/core/route.ts` → `[Zero] NENHUM nome exportado desapareceu`
+//     fails naming the module and the name, with both instructions on how to declare.
+//   · renaming `app/js/core/route.ts` → `[Zero] NENHUM módulo saiu do pacote` fails with the old path,
+//     and the names case does NOT fail with it — the `continue` exists so the same disappearance is not counted twice,
+//     which is what would make a 6-line list look like 60.
+//   · giving `export const TUNE = …` back to `core/constants.ts` → `[Interface] o retrato guarda os oito`
+//     fails. It is the only way for the gate to speak about a removal EARLIER than the snapshot, and that is why it is
+//     written out in full instead of derived.
+//   · emptying `public-surface.json` to `{}` → `[Interface] o retrato e a árvore` fails. Without it the two `[Zero]`
+//     cases would stay green for having nothing to compare.
 //
-// ========================= MUTAÇÕES DA METADE DA FORMA =========================
-// Seis, aplicadas por script a ficheiro e com contagem de ocorrências (=1 nas seis). ⚠️ As duas primeiras
-// são contra a ÁRVORE DE VERDADE e não contra fixtures — o gate apanha uma quebra de forma em código real.
-//   · renomeando `holdsAtOnce(): number` no `core/contract.ts` → "[Zero] NENHUM tipo mudou de forma" reprova.
-//     ⚠️ E o gate dos NOMES não diz nada: `GameDeclaration` continua exportada com o mesmo nome. É a
-//     demonstração da cegueira que esta metade existe para tapar.
-//   · tornando `SonarCtx.LOGICAL_W?` obrigatório → reprova por "era opcional e passou a OBRIGATÓRIO". Um
-//     campo que já era `@deprecated` e opcional a fechar-se quebraria quem nunca o preencheu.
-//   · matando o extractor de membros → reprovam DOIS, e o segundo é o do vácuo: sem ele, duas listas vazias
-//     não têm diferenças e todos os casos de forma passariam por não terem nada que comparar.
-//   · tirando a regra do MEMBRO OBRIGATÓRIO NOVO → reprova o caso homónimo. É a regra que separa este gate
-//     do dos nomes: lá acrescentar é sempre seguro, aqui acrescentar obrigatório quebra quem constrói.
-//   · tirando a comparação de ALIAS → reprova o caso do `KeyScheme`. Sem ela, um estreitamento de união
-//     passa — e foi um estreitamento de união que o §3 desta doc teve de descrever à mão.
-//   · tirando a regra do OPCIONAL→OBRIGATÓRIO → reprova o caso homónimo.
+// ========================= MUTATIONS OF THE SHAPE HALF =========================
+// Six, applied by script to the file and with occurrence counts (=1 in all six). ⚠️ The first two are against the REAL
+// TREE and not against fixtures — the gate catches a shape break in real code.
+//   · renaming `holdsAtOnce(): number` in `core/contract.ts` → `[Zero] NENHUM tipo mudou de forma` fails.
+//     ⚠️ And the NAMES gate says nothing: `GameDeclaration` is still exported under the same name. It is the
+//     demonstration of the blindness this half exists to cover.
+//   · making `SonarCtx.LOGICAL_W?` required → fails with "was optional and became REQUIRED". A field that was already
+//     `@deprecated` and optional closing up would break whoever never filled it.
+//   · killing the member extractor → TWO fail, and the second is the vacuum one: without it, two empty lists have no
+//     differences and every shape case would pass for having nothing to compare.
+//   · removing the NEW REQUIRED MEMBER rule → the case of the same name fails. It is the rule that separates this gate
+//     from the names one: there adding is always safe, here adding a required member breaks whoever builds.
+//   · removing the ALIAS comparison → the `KeyScheme` case fails. Without it, a union narrowing passes — and it was a
+//     union narrowing that §3 of that doc had to describe by hand.
+//   · removing the OPTIONAL→REQUIRED rule → the case of the same name fails.
