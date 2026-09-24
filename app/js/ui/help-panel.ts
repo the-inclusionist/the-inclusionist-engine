@@ -205,47 +205,10 @@ export function showSlide(
   const last = Math.max(0, rows.length - 1);
   const indice = Math.max(0, Math.min(last, i));
   const r = rows[indice];
-  const slide = el.querySelector<HTMLElement>('.slide');
-  const figureFn = el.querySelector<HTMLCanvasElement>('.slide-figura');
-  const keyGlyphOf = el.querySelector<HTMLElement>('.slide-tecla');
-  const palavra = el.querySelector<HTMLElement>('.slide-palavra');
-  const texto = el.querySelector<HTMLElement>('.slide-texto');
-  const dots = el.querySelector<HTMLElement>('.slide-pontos');
-  if (!r || !slide || !figureFn || !keyGlyphOf || !palavra || !texto || !dots) return { indice, falado: '' };
-  while (dots.firstChild) dots.removeChild(dots.firstChild);
-  rows.forEach((_, n) => {
-    const p = ctx.criar('span');
-    p.className = n === indice ? 'slide-ponto is-on' : 'slide-ponto';
-    dots.appendChild(p);
-  });
-  // a sentence that already ends in a full stop is not given a second one
-  const joinParts = (parts: readonly (string | undefined)[]): string =>
-    parts.filter(Boolean).map((part) => part!.replace(/[.!?…]+\s*$/, '')).join('. ');
-  let falado: string;
-  if (isFromGame(r)) {
-    slide.setAttribute('data-kind', 'play');
-    slide.removeAttribute('data-act');
-    figureFn.hidden = !r.figure;
-    keyGlyphOf.hidden = true;
-    palavra.hidden = true;
-    const phrase = r.text();
-    texto.textContent = phrase;
-    texto.hidden = false;
-    falado = joinParts([phrase]);
-  } else {
-    slide.setAttribute('data-kind', 'button');
-    slide.setAttribute('data-act', r.action);
-    figureFn.hidden = true;
-    keyGlyphOf.hidden = false;
-    palavra.hidden = false;
-    keyGlyphOf.textContent = r.key ?? ctx.t(NO_KEY);
-    if (r.key) keyGlyphOf.removeAttribute('data-sem-tecla');
-    else keyGlyphOf.setAttribute('data-sem-tecla', '1');
-    palavra.textContent = r.word;
-    texto.textContent = r.hint ?? '';
-    texto.hidden = !r.hint;
-    falado = joinParts([r.word, r.hint, r.key ? ctx.t('help.slide.tecla', { k: r.key }) : ctx.t(NO_KEY)]);
-  }
+  const parts = slidePartsOf(el);
+  if (!r || !parts) return { indice, falado: '' };
+  drawDots(parts.dots, rows.length, indice, ctx);
+  const falado = isFromGame(r) ? showPlaySlide(parts, r) : showButtonSlide(parts, r, ctx.t);
   el.setAttribute('aria-label', ctx.titulo);
   el.setAttribute('aria-valuemin', '0');
   el.setAttribute('aria-valuemax', String(last));
@@ -254,4 +217,71 @@ export function showSlide(
   el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', indice === 0);
   el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', indice === last);
   return { indice, falado };
+}
+
+/** The parts `mountSlides` builds; `null` when one is missing, and then nothing is drawn. */
+interface SlideParts {
+  readonly slide: HTMLElement;
+  readonly figure: HTMLCanvasElement;
+  readonly keyCap: HTMLElement;
+  readonly word: HTMLElement;
+  readonly text: HTMLElement;
+  readonly dots: HTMLElement;
+}
+
+function slidePartsOf(el: HTMLElement): SlideParts | null {
+  const slide = el.querySelector<HTMLElement>('.slide');
+  const figure = el.querySelector<HTMLCanvasElement>('.slide-figura');
+  const keyCap = el.querySelector<HTMLElement>('.slide-tecla');
+  const word = el.querySelector<HTMLElement>('.slide-palavra');
+  const text = el.querySelector<HTMLElement>('.slide-texto');
+  const dots = el.querySelector<HTMLElement>('.slide-pontos');
+  if (!slide || !figure || !keyCap || !word || !text || !dots) return null;
+  return { slide, figure, keyCap, word, text, dots };
+}
+
+/** One dot per slide, the current one filled — the place without a number (ADR-0167). */
+function drawDots(dots: HTMLElement, count: number, current: number, ctx: SlideCtx): void {
+  while (dots.firstChild) dots.removeChild(dots.firstChild);
+  Array.from({ length: count }, (_, n) => {
+    const dot = ctx.criar('span');
+    dot.className = n === current ? 'slide-ponto is-on' : 'slide-ponto';
+    return dots.appendChild(dot);
+  });
+}
+
+/** What is heard, the parts joined — a sentence that already ends in a full stop is not given a second one. */
+const joinParts = (parts: readonly (string | undefined)[]): string =>
+  parts.filter(Boolean).map((part) => part!.replace(/[.!?…]+\s*$/, '')).join('. ');
+
+/**
+ * A cartridge's «how to play» slide (ADR-0195): its text and, if it has one, its figure — no key cap, no word, and no action,
+ * whatever the slide before it was.
+ */
+function showPlaySlide(p: SlideParts, r: HowToPlaySlide): string {
+  p.slide.setAttribute('data-kind', 'play');
+  p.slide.removeAttribute('data-act');
+  p.figure.hidden = !r.figure;
+  p.keyCap.hidden = true;
+  p.word.hidden = true;
+  const phrase = r.text();
+  p.text.textContent = phrase;
+  p.text.hidden = false;
+  return joinParts([phrase]);
+}
+
+/** A button's slide: the child's key (or that the keyboard does not reach it, marked), the game's word, and its sentence. */
+function showButtonSlide(p: SlideParts, r: HelpRow, t: (k: string, params?: Record<string, string>) => string): string {
+  p.slide.setAttribute('data-kind', 'button');
+  p.slide.setAttribute('data-act', r.action);
+  p.figure.hidden = true;
+  p.keyCap.hidden = false;
+  p.word.hidden = false;
+  p.keyCap.textContent = r.key ?? t(NO_KEY);
+  if (r.key) p.keyCap.removeAttribute('data-sem-tecla');
+  else p.keyCap.setAttribute('data-sem-tecla', '1');
+  p.word.textContent = r.word;
+  p.text.textContent = r.hint ?? '';
+  p.text.hidden = !r.hint;
+  return joinParts([r.word, r.hint, r.key ? t('help.slide.tecla', { k: r.key }) : t(NO_KEY)]);
 }

@@ -1313,12 +1313,12 @@
       "fanIn": 1
     },
     "ui/help-panel.ts": {
-      "codeLines": 167,
-      "decisionNodes": 24,
+      "codeLines": 184,
+      "decisionNodes": 25,
       "maxDepth": 2,
       "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 14,
+      "worstFunction": 8,
       "fanIn": 1
     },
     "ui/hud-bands.ts": {
