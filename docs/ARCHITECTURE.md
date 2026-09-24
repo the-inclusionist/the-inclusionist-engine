@@ -7,22 +7,29 @@
 > two-layer requirements, "a doc becomes a test/task/ADR"), see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 >
 > **Naming conventions:** ADRs = `ADR-NNNN-slug.yaml` (YADR); domain blueprints = `<domain>.idd.md` (Instructional
-> Design) / `.ld.md` (Learning Design); studies live in `research/`; dead docs are deleted (git history is the archive).
+> Design) / `.ld.md` (Learning Design); studies that back decisions live in `research/`, and studies that prepare a
+> decision of the Dev's about the engine live in `1-Discovery/`; dead docs are deleted (git history is the archive).
 
 ## 1. Repository layout
 
 ```
-SP-the-inclusionist-tracer/
-├── app/                      # the publishable game (Vite root)
-│   ├── index.html
-│   ├── css/style.css
-│   ├── js/                   # ES modules (TypeScript) — see §3
-│   └── public/               # static: assets/ vendor/ manifest.webmanifest icon.svg _headers
-├── dist/                     # build output (git-ignored) → deployed to Cloudflare Pages
+the-inclusionist-engine/      # published as the npm package @the-inclusionist/engine
+├── app/                      # the engine's source and its demo page (Vite root)
+│   ├── quiz.html             #   the demo cartridge's page: the only page the build emits
+│   ├── css/style.css         #   the engine stylesheet, shipped in the package as style.css
+│   ├── js/                   #   ES modules (TypeScript) — see §3
+│   └── public/               #   static: vendor/ (fonts.css + the font files) icon.svg _headers
+├── art/                      # imported art and its ledger, ATTRIBUTION.csv (empty today) — see art/README.md
+├── research/                 # the Dev's typography catalogue
+├── scripts/                  # build, delivery and measurement scripts (the inclusionist-heavy bin lives here)
+├── tools/                    # dev tools: map editor, PNG writer, history audits
+├── dist/                     # app build output (git-ignored); NO deploy is connected to it today
+├── dist-pkg/                 # package build output of tsc -p tsconfig.pkg.json (git-ignored)
 ├── docs/                     # documentation — see §2
 ├── tests/                    # Vitest: *.node.test.js (logic) + *.browser.test.js (render/DOM)
 ├── .github/workflows/        # ci.yml — the engine's gates · game-ci.yml — the workflow the GAMES call
-├── vite.config.ts  tsconfig.json  package.json  .release-it.json  .node-version
+├── vite.config.ts  tsconfig.json  tsconfig.pkg.json  package.json  .release-it.json  .node-version
+├── README.md  LICENSE  CHANGELOG.md
 └── CLAUDE.md                 # AI operating rules (entry index for the agent)
 ```
 
@@ -33,23 +40,26 @@ SP-the-inclusionist-tracer/
 
 ## 2. Documentation layout (`docs/`)
 
-**Target structure** (the consolidation is migrating the current flat `docs/` into this):
+**The structure as it is** — the flat `docs/` of the early days has been consolidated into it.
 
 Organized by **SDD lifecycle phase** (numbered), mirroring the schema we adopt (Discovery → Architecture → …).
 
 ```
 docs/
 ├── ARCHITECTURE.md            # THIS FILE — the map (start here)
-├── ROADMAP.md                 # strategy + why-this-order; phases live in GitHub Issues (Fase 0–6)
+├── ROADMAP.md                 # THE roadmap: phases, steps, done-criteria and why-this-order (ADR-0126)
 ├── CONTRIBUTING.md            # how we work + our documentation model      (community-health file)
-├── CREDITS.md                 # acknowledgements / attributions
+├── CREDITS.md                 # acknowledgements / attributions             (ships in the package)
+├── LICENSES.md                # which licence governs what: code, own art, third parties (ships in the package)
 ├── SECURITY.md                # vulnerability reporting policy             (community-health file)
+├── INVENTARIO.md              # documentation inventory against a catalogue of 108 problems (dated survey, 2026-09-03)
 ├── 1-Discovery/               # SOFTWARE / engine requirements & design (NOT pedagogy — that's educational/)
-│   ├── User-Stories.md        #   engine/game features — negotiable layer
+│   ├── User-Stories.md        #   engine-layer features — negotiable layer, paths checked by a test
 │   ├── NFR.md                 #   non-functional reqs + the 10 pillars      ← ADR-0010
 │   ├── Event-Storming.md      #   DDD events — deferred (telemetry + Student Manager)
-│   ├── plano-acessibilidade.md · plano-audio-fase-f.md · plano-tts-fase-f5.md · plano-i18n.md   # a11y/audio/i18n design
-│   └── estudo-acomodacoes-por-genero.md  # 35 gêneros × 380 jogos → o que é geral e o que é do gênero (ADR-0145 §3)
+│   ├── plano-acessibilidade.md · plano-audio-fase-f.md · plano-tts-fase-f5.md · plano-i18n.md   # historical a11y/audio/TTS/i18n plans
+│   ├── estudo-acomodacoes-por-genero.md  # 35 genres × 380 games → which accommodation is general and which is the genre's (ADR-0145 §3)
+│   └── study-*.md             #   studies for a Dev decision: ADR rules createGame does not impose; microphone; webcam
 ├── educational/               # CURRICULUM / pedagogy layer (pt-BR domain) — see ADR-0004
 │   ├── Learning-Objectives.md #   measurable objectives (BNCC + Mager) — absorbs old SRS
 │   ├── Curriculum-Map.md      #   scope & sequence, BNCC coverage (+ Instituto Reúna focus-map)
@@ -79,6 +89,7 @@ docs/
 │   ├── api/                   #   OpenAPI.md · Pact.md
 │   ├── bdd/                   #   Gherkin acceptance for activities (pt-BR features)
 │   ├── Test-Plan.md
+│   ├── Teste-de-campo-M7.md   #   field-test script on a Multilaser M7 with a child (pt-BR by declared exception)
 │   └── plano-testes.md        #   test strategy (Vitest projects, ZOMBIES/Right-BICEP)
 ├── 4-Sprints/                 # execution (phase d)
 │   ├── TDD.md                 #   TDD/XP + Vitest (ZOMBIES/Right-BICEP); Test Case → Test-Plan
@@ -86,7 +97,8 @@ docs/
 │   └── Frontend.md            #   DOM activities: light-DOM WC + Atomic + Storybook (→ ADR-0002); canvas excluded
 ├── 5-Refactoring/             # improving (phase e)
 │   ├── Engineering-Rules.md   #   DRY/SOLID/cohesion↑; supersede-don't-append; ADRs change in-sprint
-│   └── plano-modularizacao.md · plano-modularizacao-mapa.md   # the modularization ADR (arXiv:2409.15152) + extraction map
+│   ├── plano-modularizacao.md · plano-modularizacao-mapa.md   # the modularization plan (arXiv:2409.15152) + extraction map
+│   └── plano-religacao-z-camadas.md · plano-tts-lab-modularizacao.md   # z-order rewiring plan · cutting the TTS lab into packages
 ├── 6-DevOps-SRE/              # phase f
 │   ├── Breaking-Changes.md    #   what left the PACKAGE since v7.0.1, by CHANGE: what moved, and why
 │   ├── Adopting-8.0.md        #   the SAME facts by REPOSITORY: which consumer edits what, on which line.
@@ -98,25 +110,34 @@ docs/
 │   │                          #   reader (ADR-0170); hand-kept, held by `superficie-da-pagina`
 │   ├── exports-without-consumer.json # published values nothing IN THIS REPOSITORY imports — all of it debt,
 │   │                          #   and it only shrinks. `node scripts/exports-without-consumer.mjs`
+│   ├── public-shape.json · code-health.json · language-debt.json · comment-language-debt.json   # other committed
+│   │                          #   measurements the gates compare against, each rewritten by its script in scripts/
+│   ├── models.md              #   the voice, recognition and vision models: role, source, use, how to rebuild them
 │   ├── CI-QA.md               #   axe-core a11y (now, verifies NFR) · k6 load (backend, verifies SLO)
 │   ├── Security-Pipeline.md   #   SAST + secret detection + npm audit (now) · DAST (backend) · Pentest (scheduled)
 │   └── SLO.md                 #   SLI/SLO/Error-Budget/SLA (backend, rigor by tier)
 ├── 7-Async-Systems/           # phase g — message contracts · idempotency · ordering · DLQ · chaos (all deferred)
+├── compliance/                # the annual child-protection reports (ADR-0053) + which WCAG criteria the gates measure
+├── notices/                   # public notices (2026-09-14: the Piper voices withdrawn)
+├── art-ref/                   # reference art (the City scenery's tileset)
 └── research/                  # cross-cutting: studies that back decisions  ← PESQUISA-*, ESTUDO-FONTES, tts-*.md
 ```
 
-> **Labs saem de `research/` e viram produto (ADR-0023/0024/0025).** Os experimentos de inclusão vivem num repo
-> **hub** próprio, **`inclusionist-lab`** (app **multi-página** Vite/TS; uma **subpágina por lab** — `/tts/` pronto,
-> Libras/visão planejados), consumindo **pacotes versionados** `@the-inclusionist/*` (`tts`/`audio`/`logging`/`model-fetch`)
-> do repo `inclusionist-commons`, a publicar no **npmjs público** (ADR-0072; o ADR-0026 dizia GitLab). Deploy próprio no Cloudflare
-> (domínio `labs.`).
-> **`inclusionist-engine` fica só com a ENGINE** — o jogo saiu para `inclusionist-demos` (ADR-0036, que emenda o ADR-0025; a frase anterior, "fica só com o jogo", valia enquanto o jogo era o produto).
-> ⚠️ **A TOPOLOGIA INTEIRA foi decidida em 2026-08-28 — ADR-0058** (que supersede o ADR-0055): **NOVE**
-> repositórios para **CINCO sistemas**, **dois mecanismos**
-> (pacote para biblioteca, API para fronteira) e **zero submódulos**. A CASCA muda de destino: vai para
-> `the-inclusionist-site` e não para o `demos`, e o `educational/` a segue até `the-inclusionist-knowledge-tree`.
-> O que os backends do compass podem guardar é o **ADR-0063** (que supersede o ADR-0056), e ele é quem manda ali. Os **estudos** (`research/tts-*.md`) permanecem
-> aqui; o **código** dos labs vive em `inclusionist-lab`. Plano: `5-Refactoring/plano-tts-lab-modularizacao.md`.
+> **Labs leave `research/` and become product (ADR-0023/0024/0025).** The inclusion experiments live in their own
+> **hub** repo, **`inclusionist-lab`** (a **multi-page** Vite/TS app; one **sub-page per lab** — `/tts/` ready,
+> Libras/vision planned), consuming the **versioned packages** (`tts`/`audio`/`logging`/`model-fetch`) of the
+> `inclusionist-commons` repo, to be published under `@the-inclusionist/*` on **public npmjs** (ADR-0072; ADR-0026 said
+> GitLab). Its own deploy on Cloudflare (the `labs.` domain).
+> **`the-inclusionist-engine` keeps only the ENGINE** (ADR-0036, which amends ADR-0025). The game left, and **each game is
+> its own repository** (ADR-0068) — the platformer is `game-platformer`, and the tile-world stack went with it (ADR-0228);
+> `the-inclusionist-demos` no longer holds games, only the manifest of which games and versions enter a delivery. The demo
+> cartridge that stays here, `consumer-quiz/`, exists to exercise the contract from outside.
+> ⚠️ **THE WHOLE TOPOLOGY was decided on 2026-08-28 — ADR-0058** (which supersedes ADR-0055): **NINE**
+> repositories for **FIVE systems**, **two mechanisms**
+> (a package for a library, an API for a boundary) and **zero submodules**. The SHELL changes destination: it goes to
+> `the-inclusionist-site` and not to `demos`, and `educational/` follows it to `the-inclusionist-knowledge-tree`.
+> What the compass backends may store is **ADR-0063** (which supersedes ADR-0056), and it is the one in charge there. The
+> **studies** (`research/tts-*.md`) stay here; the labs' **code** lives in `inclusionist-lab`. Plan: `5-Refactoring/plano-tts-lab-modularizacao.md`.
 
 > **Dead docs are NOT kept in the tree (YAGNI).** `git history` is the archive — retired docs (the E1–E13 roadmap,
 > VERTICAL-SLICE, TODO, PLANO-EXECUCAO, DIRETRIZES-VISUAIS, README-app-v4, reorganizacao-deploy, and the `imagens-ref/`
@@ -127,28 +148,31 @@ docs/
 > (e.g. DBML at the corpus DB, OpenAPI/Pact at the backend, K8s at stage 4). The stub **is** the decision — it exists
 > so the choice isn't improvised later; it is not empty ceremony.
 >
-> **Not in `docs/`:** the **executable backlog** lives in **GitHub Issues**
-> (`jrocha-dev/inclusionist-engine`), not in a Markdown file. The **roadmap** is the board's *Fase 0–6* issues;
-> `ROADMAP.md` keeps only the strategy/why-this-order. See `CONTRIBUTING.md`.
+> **Not in `docs/`:** the **executable backlog** — problems solvable by code — lives in **GitHub Issues**
+> (`the-inclusionist/the-inclusionist-engine`), not in a Markdown file. The **roadmap** is not there: since ADR-0126
+> (2026-09-09) the phases *Fase 0–6*, their steps and done-criteria live in `ROADMAP.md`. See `CONTRIBUTING.md`.
 
 | File / folder | Holds | Used by |
 |---|---|---|
 | `ARCHITECTURE.md` | This map (files, code layout, system context) | everyone — the entry point |
-| `ROADMAP.md` | Roadmap strategy + dependency-order rationale (phases are issues !15–!21 on the board) | dev (next work), reviewer (scope) |
+| `ROADMAP.md` | The roadmap: phases, steps, done-criteria and the dependency-order rationale (ADR-0126) | dev (next work), reviewer (scope) |
+| `LICENSES.md` · `CREDITS.md` | Which licence governs what · the attributions of third-party parts | anyone reusing the code or the art, reviewer |
 | `educational/` | Curriculum layer (pt-BR): Learning Objectives (BNCC + measurable), Curriculum Map, Pedagogical Model | curriculum author, reviewer |
-| `1-Discovery/User-Stories.md` | Engine/game feature stories (small, negotiable) | dev |
+| `1-Discovery/User-Stories.md` | Engine-layer feature stories (small, negotiable), each path held by `tests/user-stories.node.test.js` | dev |
 | `1-Discovery/NFR.md` | The 10 pillars as testable non-functional requirements | dev (constraints), reviewer (audit) |
 | `game-design/` | Game craft: Art Bible, character/animation, typography, genre catalog, LM-GM map, game feel | dev, designer |
 | `1-Discovery/Event-Storming.md` | Deferred DDD scope for telemetry + Student Manager | (future) |
+| `1-Discovery/estudo-acomodacoes-por-genero.md` | Which accommodation has a subject in which genre, measured over 35 categories and 380 games (ADR-0145 §3, 2026-09-12) | Dev (decision), dev |
 | `1-Discovery/study-adr-rules-the-engine-does-not-impose.md` | What the ADRs require that `createGame` does not impose on a cartridge (hypothetical rule, 2026-09-12) | Dev (decision), dev |
 | `1-Discovery/study-microphone-control.md` | Which recogniser a microphone control transport can use: on-device, offline, restricted to the game's words (issue #182, 2026-09-13) | Dev (decision), dev |
 | `1-Discovery/study-webcam-control.md` | What a gesture, a face movement and a gaze do in a game: positions, mappings, dwell, consent (issue #182, 2026-09-13) | Dev (decision), dev |
-| `2-Architecture/` … `6-DevOps-SRE/` | The remaining SDD phases — decided section by section (see §… of this doc's evaluation) | dev, reviewer |
+| `2-Architecture/` … `6-DevOps-SRE/` | The remaining SDD phases — decided section by section | dev, reviewer |
 | `research/` | Studies with sources that justify decisions | reviewer (evidence), dev |
 
 > **Migration: complete.** The flat `docs/` was consolidated file-by-file into this structure; dead docs were deleted
-> (git is the archive). `docs/` root now holds only the four canonical top-level docs (ARCHITECTURE, ROADMAP, PILARES,
-> REGISTRO) + the phase/layer folders.
+> (git is the archive). `docs/` root now holds the top-level documents of the tree in §2 (ARCHITECTURE, ROADMAP,
+> CONTRIBUTING, CREDITS, LICENSES, SECURITY, INVENTARIO) + the phase/layer folders. The pillars are not a file here: they
+> are ADR-0010, in `the-inclusionist-docs`.
 
 ## 3. Code layout (`app/js/`) — the layers, and where to go to change something
 
