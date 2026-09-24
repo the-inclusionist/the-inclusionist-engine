@@ -12,7 +12,7 @@ A real, component-rich UI. Architecture decided in
   specifically, not custom elements.
 - **Atomic Design** (Brad Frost: atoms → molecules → organisms → templates → pages) — the organizing method.
 - **Storybook (CSF)** + **Chromatic** — isolated component development + visual-regression testing.
-- **Activates** when the DOM-activities app is built (≈ Fase 6).
+- **Activates** when the DOM-activities app is built (≈ Phase 6).
 
 ## The canvas game (PixiJS) + thin in-game menus
 
