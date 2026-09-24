@@ -56,16 +56,25 @@ export type RegionShows =
   | { readonly kind: 'button' }
   | { readonly kind: 'shoulder'; readonly label: string };
 
+const NOTHING: RegionShows = { kind: 'nothing' };
+
+/**
+ * What a preview shows, by its place in the zone's group (`GAZE_GROUPS`): the direction, the face button, the shoulder. The
+ * ORDER is the group's, so a place the table has no row for — an item from another zone's group — shows nothing.
+ */
+const PREVIEW_SHOWS: readonly ((region: GazeZone) => RegionShows)[] = [
+  (): RegionShows => ({ kind: 'arrow' }),
+  (): RegionShows => ({ kind: 'button' }),
+  (region): RegionShows => ({ kind: 'shoulder', label: SHOULDER[region] }),
+];
+
 export function whatRegionShows(region: GazeRegion, v: GazeView): RegionShows {
   if (region === 'middle') return v.restReady ? { kind: 'nothing' } : { kind: 'text', key: 'gaze.lookHere' };
   if (region !== v.zone) return { kind: 'nothing' };
   if (!v.armed) return v.preparing ? { kind: 'text', key: `gaze.prepare.${region}` } : { kind: 'nothing' };
   if (!v.preview || v.preview.item === CANCEL) return { kind: 'text', key: 'gaze.loading' };
   const i = (GAZE_GROUPS[region] as readonly string[]).indexOf(v.preview.item);
-  if (i === 0) return { kind: 'arrow' };
-  if (i === 1) return { kind: 'button' };
-  if (i === 2) return { kind: 'shoulder', label: SHOULDER[region] };
-  return { kind: 'nothing' };
+  return PREVIEW_SHOWS[i]?.(region) ?? NOTHING;
 }
 
 /** 16 px on a 720×360 game region, in proportion to it, bounded by the tighter side. */

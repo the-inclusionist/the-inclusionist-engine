@@ -1286,12 +1286,12 @@
       "fanIn": 1
     },
     "ui/gaze-overlay.ts": {
-      "codeLines": 113,
-      "decisionNodes": 22,
+      "codeLines": 116,
+      "decisionNodes": 19,
       "maxDepth": 3,
       "fanOut": 4,
       "globalReach": 0,
-      "worstFunction": 11,
+      "worstFunction": 9,
       "fanIn": 3
     },
     "ui/hand-control.ts": {
