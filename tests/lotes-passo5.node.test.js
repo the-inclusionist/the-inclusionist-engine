@@ -183,12 +183,10 @@ describe('a dívida do passo 5 é CONCENTRADA, e é isso que torna a divisão ba
   });
 
   it('[Zero] `render/viz-setters` NÃO arrasta mais nada — a conta transitiva voltou a bater com a direta', () => {
-    // `viz-setters` once dragged `game/` only transitively, through `render/textures`. ⚠️ `render/textures` no longer
-    // exists in the engine, so the third assertion below (`arrasta('render/textures')`) reads an empty dependency list
-    // and cannot fail; the first two still measure `render/viz-setters`.
+    // `viz-setters` once dragged `game/` only transitively; the direct and the transitive reading must agree that it drags
+    // nothing. (The module it dragged through, `render/textures`, left the engine, so it is not asked about here.)
     expect(DEPS.get('render/viz-setters').some((d) => d.startsWith('game/'))).toBe(false);
     expect([...arrasta('render/viz-setters')].some((d) => d.startsWith('game/'))).toBe(false);
-    expect([...arrasta('render/textures')].some((d) => d.startsWith('game/'))).toBe(false);
   });
 
   it('[Boundary] a esmagadora maioria da engine é LIMPA — o passo 5 move, não conserta', () => {
