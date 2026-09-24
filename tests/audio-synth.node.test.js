@@ -141,6 +141,64 @@ describe('noiseHit — a material, heard', () => {
   });
 });
 
+describe('tone — the engine\'s own earcon synth', () => {
+  // `tone` has no player's device: it only ever plays in the ENGINE's context, so every case lends a window with a recording
+  // context and imports the module afresh, the way the `interact` case above does. It was left out of the cut of 2026-09-23
+  // because it had no case at all; these are written against its current shape.
+  async function engineWith(setup = () => {}) {
+    const { rec, pc } = contextoDoJogador();
+    const ganhos = [];
+    const criarGanho = pc.ac.createGain;
+    // ⚠️ A gain is born at 1 in Web Audio, and the recording context above starts it at 0: here that difference decides the
+    // routing case, because the master is never set by the engine and would pass for a silenced category (the probe caught it).
+    pc.ac.createGain = () => { const g = criarGanho(); g.gain.value = 1; ganhos.push(g); return g; };
+    pc.ac.state = 'running';
+    vi.stubGlobal('window', { AudioContext: function AudioContextFalso() { return pc.ac; } });
+    vi.resetModules();
+    const fresh = await import('../app/js/platform/audio.js');
+    fresh.setSoundOn(true); fresh.setVolume(0.6);
+    setup(fresh);
+    return { rec, ganhos, fresh, done: () => vi.unstubAllGlobals() };
+  }
+
+  it('🔴 [Right] one square oscillator by default, at 0.22 of the master, stopped after its time plus a tail, delayed by `when`', async () => {
+    const { rec, fresh, done } = await engineWith();
+    fresh.tone(440, 0.1, undefined, 0.5);
+    done();
+    expect([rec.osc[0].type, rec.osc.length]).toEqual(['square', 1]);
+    expect(rec.picos[0][0]).toBeCloseTo(0.22 * 0.6, 6);
+    expect(rec.paradas).toEqual([0.5 + 0.1 + 0.02]);
+  });
+
+  it('📌 [Boundary] the asked timbre and level are used, and never below the floor', async () => {
+    const { rec, fresh, done } = await engineWith((m) => m.setVolume(0.05));
+    fresh.tone(440, 0.1, 'triangle', 0, 0.2);
+    done();
+    expect(rec.osc[0].type).toBe('triangle');
+    expect(rec.picos[0][0], 'a quiet master made the earcon inaudible').toBeCloseTo(0.02, 6);
+  });
+
+  it('🔴 [Zero] the game\'s sound off, or the master at zero: nothing is built', async () => {
+    for (const setup of [(m) => m.setSoundOn(false), (m) => m.setVolume(0)]) {
+      const { rec, fresh, done } = await engineWith(setup);
+      fresh.tone(440, 0.1);
+      done();
+      expect(rec.osc).toHaveLength(0);
+    }
+  });
+
+  it('🔴 [Right] it goes out through the `earcons` category — the slider that says so silences it', async () => {
+    const { ganhos, fresh, done } = await engineWith((m) => {
+      m.initAudioMixer();
+      m.audioCat.earcons.on = false;
+      m.audioCat.interact.on = true;
+    });
+    fresh.tone(440, 0.1);
+    done();
+    expect(ganhos.at(-1).gain.value, 'the earcon went to a category that is on — not `earcons`').toBe(0);
+  });
+});
+
 // ============================== MUTATIONS CHECKED ==============================
 // `scratchpad/sonda-audio.py --novos`: the eighteen decisions of the two synths, all green before this file, all red with it.
 // Re-probed after the cut into shared questions (`audible`, `contextFor`, `panned`, `outFor` — `sonda-audio-3.py`): 19 of 19,

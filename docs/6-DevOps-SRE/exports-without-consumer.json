@@ -22,8 +22,7 @@
     ],
     "platform/audio.ts": [
       "noiseBuffer",
-      "setMasterMuted",
-      "tone"
+      "setMasterMuted"
     ],
     "render/canvas.ts": [
       "pixelCanvas",
