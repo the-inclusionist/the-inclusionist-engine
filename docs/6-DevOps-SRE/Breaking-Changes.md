@@ -3054,6 +3054,22 @@ platformer imports the visual default (three uses) and the 15-puzzle one — bot
 | `input/transport-in-use.js` | `PADRAO` | `DEFAULT_INPUT_STATE` | the input state of a player who touched nothing |
 | `platform/kokoro.js` | `tokenizar` | `tokenize` | the token ids of a phoneme string |
 
+## CQ · The controller-mapping wizard cannot be declined: `Declinios.noPadAssistant` leaves the type (ADR-0231)
+
+**Who is affected:** a host that passes `declines: { noPadAssistant: true }` (`semAssistenteDePad` before note CN). The
+type no longer has the field, so the declaration stops compiling. **Delete the line; nothing else changes.**
+
+📌 **Behaviour does not change, and that is the point of the note:** the field had no reader since the engine started
+mounting its own wizard (the `#padwiz` panel, «Mapear controle», note CD). Declaring it and not declaring it already gave
+the same result — the wizard was in the Motora panel either way. The engine's accessibility is not declinable (ADR-0122),
+and the wizard is accessibility the engine offers every game: a donated, adapted or one-handed controller only works once
+it is mapped.
+
+📏 **Measured in the seven games, as information:** five declare it — `game-2048`, `game-chess` (and its two spikes),
+`game-soccer`, `game-whackwhack`, `pixi-15-puzzle`. ⚠️ `game-soccer`'s `mundoRodando` comment says the wizard path is
+unreachable *because* the game declines it; that was already not true, so the answer it gives (`() => !paused`) is now
+the one that matters when a child maps a controller mid-pause.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

@@ -10,7 +10,6 @@
     ],
     "interface Declinios": [
       "noNeuralVoice?",
-      "noPadAssistant?",
       "noPauseActor?"
     ],
     "interface CreateGameOptions": [

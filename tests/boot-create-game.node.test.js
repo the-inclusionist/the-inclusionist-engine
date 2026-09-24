@@ -549,7 +549,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso({ map: { '#game-region': regiao } });
     const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      declines: { semMenuDePausa: true, noPauseActor: true, noPadAssistant: true, noNeuralVoice: true },
+      declines: { semMenuDePausa: true, noPauseActor: true, noNeuralVoice: true },
     });
 
     // Pelo id e não pela contagem, pela razão escrita no caso acima.
@@ -861,13 +861,11 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso();
     const motor = createGame({ accommodations: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      // ⚠️ ERA `semMenuDePausa` AQUI, e o campo saiu do contrato (ADR-0122). O caso é sobre a TRAVESSIA dos
-      // declínios, não sobre qual deles existe — trocado por dois que continuam a descrever ausências que a
-      // engine não pode preencher, para o caso não morrer com a decisão que ele nunca mediu.
-      declines: { noNeuralVoice: true, noPadAssistant: true },
+      // The case is about declines CROSSING the root, not about which ones exist: one declared, one left out, so both
+      // halves are asserted (ADR-0122 and ADR-0231 each took a field out of this contract).
+      declines: { noNeuralVoice: true },
     });
     expect(motor.declines.noNeuralVoice).toBe(true);
-    expect(motor.declines.noPadAssistant).toBe(true);
     expect(motor.declines.noPauseActor).toBeUndefined();
   });
 

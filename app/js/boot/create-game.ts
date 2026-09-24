@@ -234,8 +234,10 @@ export interface Declinios {
    * que «pausa» quer dizer num jogo sem estado a correr. O que um jogo ainda declara é ONDE ela cabe:
    * `host.pauseHost`, com `#game-region` de recuo.
    */
-  /** Sem assistente de mapeamento de controle. */
-  readonly noPadAssistant?: boolean;
+  /*
+   * No controller-mapping decline (ADR-0231): the wizard is accessibility the engine offers to every game, and the
+   * engine's accessibility is not declinable (ADR-0122).
+   */
   /** Sem "ator da pausa" — quem apertou o botão que abriu o menu. */
   readonly noPauseActor?: boolean;
   /**

@@ -42,12 +42,9 @@ const CREATE_GAME = 'boot/create-game.ts';
  * ⚠️ A LISTA TEM DE ENCOLHER. Uma entrada nova sem razão escrita à mão é uma declinação que não declina nada,
  * e um consumidor a pensar que decidiu.
  */
-const SEM_LEITOR = {
-  noPadAssistant:
-    'a raiz MONTA o assistente (o painel `#padwiz`, «Mapear controle») e não pergunta a esta declinação se o ' +
-    'deve fazer: declinar não muda nada. Ou a raiz passa a lê-la, ou o campo sai do tipo — e sair é quebra de ' +
-    'contrato, decidida à parte (medido em 23/09, ao tirar o `spriteBase`)',
-};
+// Empty since ADR-0231: `noPadAssistant`, the last entry, left the type instead of gaining a reader — the
+// controller-mapping wizard is accessibility the engine offers every game, and that is not declinable (ADR-0122).
+const SEM_LEITOR = {};
 
 const fonte = (rel) => readFileSync(join(RAIZ_JS, rel), 'utf8');
 
@@ -104,8 +101,11 @@ describe('nenhuma declinação está morta · o inventário encolhe', () => {
     // — a engine não ter nada que servisse a um jogo sem pausa própria — foi construída fora pelo ADR-0106.
     // 📌 O inventário encolheu por uma ENTREGA e não por uma limpeza, que é a única forma de encolher que
     // interessa a este ficheiro.
-    expect(CAMPOS.length).toBeGreaterThanOrEqual(3);
+    // Two since ADR-0231, which took `noPadAssistant` out of the type: the wizard is not declinable.
+    expect(CAMPOS.length).toBeGreaterThanOrEqual(2);
     expect(CAMPOS, 'a pausa voltou a ser declinável sem registo').not.toContain('semMenuDePausa');
+    expect(CAMPOS, 'the controller-mapping wizard became declinable again without a record (ADR-0231)')
+      .not.toContain('noPadAssistant');
   });
 
   it('[Feliz] todo campo sem leitor está declarado, com a razão escrita à mão', () => {
@@ -145,3 +145,8 @@ describe('nenhuma declinação está morta · o inventário encolhe', () => {
 // 5. `blocoDosDeclinios` a devolver `null`          → reprovam o [Vácuo], a saída e o par
 //
 // 📌 Duas das cinco reprovaram casos que eu não tinha previsto. Fica o medido.
+//
+// ===== MUTATIONS CHECKED (2026-09-24, ADR-0231: the inventory is empty) =====
+// 6. put `readonly noPadAssistant?: boolean;` back into `Declinios` → [Vácuo] fails on the absence, and [Feliz]
+//    fails too, because the field would again be a declination nobody reads
+// 7. `leitores()` returning always 0 → the pair of the living fields fails (mutation 3 still holds with an empty list)
