@@ -1,23 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Tipos de ambiente do build. __BUILD__ é injetado pelo Vite (define) em vite.config.ts — carimbo de versão.
+// Build environment types. __BUILD__ is injected by Vite (`define`) in vite.config.ts — the version stamp.
 declare const __BUILD__: { version: string; sha: string; date: string; env: string };
 
 /**
- * O módulo VIRTUAL do atlas de sprites (item 22, X2) — gerado por `scripts/vite-plugin-atlas.mjs`.
+ * The VIRTUAL sprite-atlas module (item 22, X2), which the game's atlas build plugin generates.
  *
- * Existe só em tempo de build/dev; o `tsc` precisa da declaração para não acusar módulo inexistente. O tipo
- * é o CONTRATO entre o plugin e o `render/sprites`: se um dos dois mudar de forma, isto aqui é o que reprova.
+ * It exists only at build/dev time, so `tsc` needs the declaration not to report a missing module. ⚠️ Nothing under
+ * `app/js` imports it today: the sprite renderer and the plugin left with the game (ADR-0036).
  */
 declare module 'virtual:sprite-atlas' {
-  /** Caminho do PNG empacotado, relativo à raiz servida. */
+  /** Path of the packed PNG, relative to the served root. */
   export const ATLAS_URL: string;
-  /** `anim/idx` → retângulo do quadro dentro do atlas. */
+  /** `anim/idx` → the frame's rectangle inside the atlas. */
   export const FRAMES: Record<string, { x: number; y: number; w: number; h: number }>;
 }
 
 /**
- * espeak-ng 1.0.2 ships no types: its default export is the Emscripten module factory the quiz's Kokoro port calls (ADR-0198). The
- * shape is `FabricaEspeak` in `consumer-quiz/kokoro-porta`, widened here by the `instantiateWasm` hook the loader passes.
+ * espeak-ng 1.0.2 ships no types: its default export is the Emscripten module factory a Kokoro port calls (ADR-0198).
+ * ⚠️ The type import below names `consumer-quiz/kokoro-porta`, which this tree no longer has (the engine loads Kokoro
+ * itself since ADR-0216); `skipLibCheck` is why `tsc` does not report it.
  */
 declare module 'espeak-ng' {
   const createEspeak: (options: {
@@ -29,18 +30,16 @@ declare module 'espeak-ng' {
 }
 
 /**
- * OS GANCHOS DE TESTE PENDURADOS NA `window`, declarados porque o `main.ts` os cria e os estende.
+ * THE TEST HOOKS HUNG ON `window`, declared because a game's entry point creates and extends them.
  *
- * `__incl` é o objeto que o PROTOCOLO DE VERIFICAÇÃO deste projeto usa: conferir o boot é conferir que
- * `typeof window.__incl === 'object'`, e daí ler `phase`, `players`, `canvas`. Ele não é detalhe de
- * implementação — é contrato, e por isso está aqui e não num `as any` no ponto de uso.
+ * `__incl` is the object this project's VERIFICATION PROTOCOL uses: checking the boot is checking that
+ * `typeof window.__incl === 'object'`, and reading `phase`, `players`, `canvas` from it. It is not an implementation
+ * detail — it is a contract, which is why it is here and not in an `as any` where it is used.
  *
- * ⚠️ A DECLARAÇÃO É UM PISO, NÃO O CONTRATO INTEIRO, e isso é dito em vez de disfarçado: o objeto tem cerca
- * de cinquenta membros montados num literal só, e os testes de navegador o leem em tempo de execução, sem
- * tipo. O índice `[k: string]` é o que deixa esse literal ser atribuído; os três nomeados são os que o
- * `main.ts` acrescenta DEPOIS da criação, e esses o compilador passa a cobrar. Declarar os cinquenta é
- * trabalho que só paga quando o `__incl` virar a API de teste da engine — hoje ele é do jogo, que está de
- * mudança (ADR-0036).
+ * ⚠️ THE DECLARATION IS A FLOOR, NOT THE WHOLE CONTRACT, and that is said instead of disguised: the object has some
+ * fifty members built in one literal, and the browser tests read them at run time, untyped. The `[k: string]` index is
+ * what lets that literal be assigned; the three named ones are those added AFTER creation, and those the compiler
+ * checks. `__incl` belongs to the game, which left this repository (ADR-0036); nothing under `app/js` creates it now.
  */
 interface InclTestHooks {
   [k: string]: unknown;
@@ -50,19 +49,19 @@ interface InclTestHooks {
 }
 
 interface Window {
-  /** O parser de mapa em glifo, exposto para o harness de navegador. */
+  /** The glyph map parser, exposed for the browser harness. ⚠️ The tile stack left with the game; nothing sets it now. */
   __tiles?: unknown;
   __incl?: InclTestHooks;
 }
 
 /**
- * TELA CHEIA COM PREFIXO DE FORNECEDOR, e ela é declarada em vez de convertida porque é uma API DE VERDADE:
- * o Safari — inclusive o do iPad, que é a máquina de várias escolas — só oferece `webkitRequestFullscreen`.
- * O `main.ts` já faz a detecção certa (`el.requestFullscreen || el.webkitRequestFullscreen`); o que faltava
- * era o `lib.dom` conhecer o segundo nome.
+ * VENDOR-PREFIXED FULLSCREEN, declared instead of cast because it is a REAL API: Safari — including the iPad's, the
+ * machine of several schools — offers only `webkitRequestFullscreen`. A caller detects it
+ * (`el.requestFullscreen || el.webkitRequestFullscreen`); what `lib.dom` lacked was the second name.
  *
- * Opcional porque em Chrome e Firefox ele não existe — e é justamente por ser opcional que a detecção do
- * `main.ts` continua sendo obrigatória. Um cast ali teria calado o compilador e apagado essa obrigação.
+ * Optional because Chrome and Firefox do not have it — and being optional is what keeps the detection mandatory. A
+ * cast would have silenced the compiler and erased that duty. ⚠️ No module under `app/js` calls it today: the caller
+ * was the game's `main.ts`, which left with the game (ADR-0036).
  */
 interface HTMLElement {
   webkitRequestFullscreen?: () => void;
