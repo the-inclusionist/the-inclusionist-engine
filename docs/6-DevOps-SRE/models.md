@@ -41,6 +41,12 @@ npx inclusionist-heavy dist --base https://lfs-oinclusionista.jrocha.dev.br
 $env:INCLUSIONIST_HEAVY_BASE = 'C:\Users\<you>\Claude\the-inclusionist-lfs'   # or a .env beside the build (.env.example)
 ```
 
+**The licences travel with the files** (`scripts/licences/third-party.mjs`, gated by `tests/heavy-licences.node.test.js`): every
+folder of `heavy/` that receives a file also receives its project's `LICENSE` and `NOTICE` — eSpeak NG's folder a `SOURCE` too,
+saying where its GPL source is and that the exact revision is unverified — and `heavy/THIRD-PARTY-NOTICES.md` lists each project
+with its version, SPDX licence, copyright line (or `UNVERIFIED`) and those paths. The texts ship in the npm package; a catalogue
+entry with no licence group there is refused, like a file whose sha256 differs. 📏 The whole catalogue adds 38 such files, about 188 KiB.
+
 The flag beats the environment, and the environment beats the `.env`. The mapping from each upstream address to the folder a
 mirror serves it under is `platform/heavy-mirror`, written once. **The sha256 check does not move**: a base that serves other
 bytes writes nothing and the build fails naming the address — which is what makes pointing elsewhere safe, and why the base is

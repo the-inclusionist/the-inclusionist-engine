@@ -108,7 +108,8 @@
     "README.md",
     "docs/LICENSES.md",
     "docs/CREDITS.md",
-    "scripts/heavy-into-the-delivery.mjs"
+    "scripts/heavy-into-the-delivery.mjs",
+    "scripts/licences"
   ],
   "bin": {
     "inclusionist-heavy": "scripts/heavy-into-the-delivery.mjs"

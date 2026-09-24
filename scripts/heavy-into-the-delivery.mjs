@@ -15,11 +15,16 @@
 // beside the build. With a base, each file comes from the project's mirror, a school's server or a folder on this machine
 // (`platform/heavy-mirror`); without one, from upstream. The sha256 check does not move: a base that serves other bytes writes
 // nothing, which is why pointing elsewhere is safe and needs no trust.
+//
+// WHAT THE FILES OWE TRAVELS WITH THEM (`licences/third-party.mjs`): every folder of `heavy/` that holds a file also gets its
+// project's `LICENSE` and `NOTICE` (eSpeak NG's also a `SOURCE`), and `heavy/THIRD-PARTY-NOTICES.md` lists each project. A
+// catalogue entry whose licence nobody recorded there is refused like a file whose sha256 differs.
 
 import { mkdirSync, writeFileSync, readFileSync, existsSync, realpathSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL, fileURLToPath } from 'node:url';
+import { THIRD_PARTY, groupOf, writeLicences } from './licences/third-party.mjs';
 
 /** The compiled catalogue of the package this script ships in — beside it, whatever folder the build runs from. */
 export function moduloDoPacote() {
@@ -29,16 +34,26 @@ export function moduloDoPacote() {
 const sha256DoNode = (buf) => createHash('sha256').update(Buffer.from(buf)).digest('hex');
 
 /**
- * Fetches, checks and writes every entry with an address. Returns one line per entry; `ok` is false when any file failed.
+ * Fetches, checks and writes every entry with an address, then the licence files beside them. Returns one line per entry and
+ * the licence folders written (`licences`); `ok` is false when any file — or the licences — failed.
  * Everything is injected so a gate can run it without the network.
  */
 export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, fetch: buscar = fetch, sha256 = sha256DoNode,
-  base = '', fonteDe = (url) => url, lerLocal = (caminho) => readFileSync(caminho) }) {
+  base = '', fonteDe = (url) => url, lerLocal = (caminho) => readFileSync(caminho), thirdParty = THIRD_PARTY }) {
   const linhas = [];
+  const present = [];
   for (const p of pesados) {
     if (!p.url) { linhas.push({ id: p.id, outcome: 'sem-fonte' }); continue; }
+    if (!groupOf(p.id, thirdParty)) {
+      linhas.push({ id: p.id, outcome: 'falhou', error: 'no licence recorded for it in scripts/licences/third-party.mjs — not written' });
+      continue;
+    }
     const alvo = join(destino, deliveryPath(p.url));
-    if (existsSync(alvo) && sha256(readFileSync(alvo)) === p.sha256) { linhas.push({ id: p.id, outcome: 'ja-tinha' }); continue; }
+    if (existsSync(alvo) && sha256(readFileSync(alvo)) === p.sha256) {
+      linhas.push({ id: p.id, outcome: 'ja-tinha' });
+      present.push({ id: p.id, path: deliveryPath(p.url) });
+      continue;
+    }
     const fonte = fonteDe(p.url, base);
     const daRede = /^https?:\/\//i.test(fonte);
     try {
@@ -58,11 +73,18 @@ export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, 
       mkdirSync(dirname(alvo), { recursive: true });
       writeFileSync(alvo, Buffer.from(corpo));
       linhas.push({ id: p.id, outcome: 'escrito', bytes: corpo.byteLength });
+      present.push({ id: p.id, path: deliveryPath(p.url) });
     } catch (e) {
       linhas.push({ id: p.id, outcome: 'falhou', error: e instanceof Error ? e.message : String(e) });
     }
   }
-  return { ok: linhas.every((l) => l.outcome !== 'falhou'), linhas };
+  let licences = [];
+  try {
+    licences = writeLicences({ destination: destino, present, groups: thirdParty });
+  } catch (e) {
+    linhas.push({ id: 'licences', outcome: 'falhou', error: e instanceof Error ? e.message : String(e) });
+  }
+  return { ok: linhas.every((l) => l.outcome !== 'falhou'), linhas, licences };
 }
 
 /**
@@ -112,9 +134,11 @@ if (executado) {
     ...commands.flatMap((lingua) => heavyAtBoot({ kokoro: false, commands: lingua })),
   ])];
   if (base) console.log(`base: ${base}`);
-  const { ok, linhas } = await levarPesadosParaEntrega({
+  const { ok, linhas, licences } = await levarPesadosParaEntrega({
     destino, pesados: HEAVY_FILES.filter((p) => ids.includes(p.id)), deliveryPath, base, fonteDe: heavySourceOf,
   });
   for (const l of linhas) console.log(`${l.outcome.padEnd(9)} ${l.id}${l.error ? ` — ${l.error}` : ''}`);
+  for (const l of licences) console.log(`licence   ${l.key} — ${l.folders.length} folder(s)`);
+  if (licences.length) console.log('notices   heavy/THIRD-PARTY-NOTICES.md');
   if (!ok) { console.error('a heavy file failed: the delivery is incomplete, and nothing unchecked was written'); process.exit(1); }
 }

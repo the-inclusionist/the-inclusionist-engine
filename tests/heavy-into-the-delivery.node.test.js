@@ -17,8 +17,9 @@ import { levarPesadosParaEntrega, argumentosDaEntrega } from '../scripts/heavy-i
 import { deliveryPath } from '../app/js/platform/heavy.js';
 
 const hash = (s) => createHash('sha256').update(s).digest('hex');
+// the ids carry real group prefixes (`voz:kokoro`, `visao`): an id with no licence group is refused (heavy-licences test)
 const ENTRADAS = [
-  { id: 'voz:teste', url: 'https://huggingface.co/x/resolve/main/voz.onnx', sha256: hash('voz') },
+  { id: 'voz:kokoro:teste', url: 'https://huggingface.co/x/resolve/main/voz.onnx', sha256: hash('voz') },
   { id: 'visao:teste', url: 'https://cdn.jsdelivr.net/npm/pacote@1.0.0/visao.wasm', sha256: hash('visao') },
   { id: 'sem:fonte', url: null },
 ];
@@ -44,7 +45,7 @@ describe('the heavy files, put into the delivery by the build', () => {
       const { ok, linhas } = await levarPesadosParaEntrega({ destino, pesados: ENTRADAS, deliveryPath, fetch: buscar });
       expect(ok, 'an altered file let the delivery pass').toBe(false);
       expect(existsSync(join(destino, deliveryPath(ENTRADAS[0].url))), 'the altered file was written').toBe(false);
-      expect(linhas.find((l) => l.id === 'voz:teste').error).toMatch(/sha256 mismatch/);
+      expect(linhas.find((l) => l.id === 'voz:kokoro:teste').error).toMatch(/sha256 mismatch/);
       expect(existsSync(join(destino, deliveryPath(ENTRADAS[1].url))), 'one bad file stopped the good ones').toBe(true);
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
@@ -89,7 +90,7 @@ describe('the heavy files, put into the delivery by the build', () => {
         fonteDe: (url, base) => `${base}/${url.split('/').pop()}`, fetch: async () => resposta('outra coisa'),
       });
       expect(ok).toBe(false);
-      expect(linhas.find((l) => l.id === 'voz:teste').error, 'the error does not say WHERE the bytes came from').toMatch(/espelho\.exemplo/);
+      expect(linhas.find((l) => l.id === 'voz:kokoro:teste').error, 'the error does not say WHERE the bytes came from').toMatch(/espelho\.exemplo/);
       expect(existsSync(join(destino, deliveryPath(ENTRADAS[0].url)))).toBe(false);
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });

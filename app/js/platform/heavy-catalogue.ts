@@ -221,6 +221,10 @@ const KOKORO: readonly HeavyFile[] = Object.freeze([
   ...KOKORO_VOICES.map((v) => ({ id: `voz:kokoro:${v.voice}`, url: kokoroVoiceUrl(v.voice), bytes: KOKORO_VOICE_BYTES, sha256: KOKORO_VOICES_SHA256[v.voice] })),
 ]);
 
+/**
+ * 📌 Every entry with an address needs its licence group in `scripts/licences/third-party.mjs`: the delivery writes that group's
+ * `LICENSE` and `NOTICE` beside the file, and refuses a file whose licence nobody recorded (ADR-0177).
+ */
 export const HEAVY_FILES: readonly HeavyFile[] = Object.freeze([
   ...VOICE_RUNTIME,
   ...KOKORO,
