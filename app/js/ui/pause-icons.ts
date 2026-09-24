@@ -1,33 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/pause-icons — the PER-SCREEN pause menu (`.screen-pause`) and the accessibility icon bar (`.pi-btn`).
-// Extracted VERBATIM from game.js (Estágio 4): PAUSE_ICONS, buildScreenPause, calmMode/applyCalm, iconAct,
-// iconLabel, reflectIconBtn, reflectPauseIcons and hasPrivateOutput.
+// ui/pause-icons — the PER-SCREEN pause card (`.screen-pause`) and the accessibility quick bar (`.pi-btn`).
 //
-// WHY THE ICON BAR IS ITS OWN SLICE: the ten `.pi-btn` buttons are the ONLY place in the game where a state
-// owned by another subsystem (blind mode, TTS, Libras, TEA/reduced-motion, toggle-keys, contrast, CVD) is both
-// mutated AND read back as an `aria-label`. That round-trip — "the label must tell the truth about the state" —
-// is the whole reason `iconLabel` exists, and it is what the pure functions below make testable in node.
+// WHY THE QUICK BAR IS ITS OWN MODULE: its buttons are the ONLY place where a state owned by another subsystem (blind
+// mode, TTS, Libras, calm mode, the input mode, contrast, colour correction, camera, voice, speed, language) is both
+// changed AND read back as an `aria-label`. That round-trip — «the label must tell the truth about the state» — is why
+// `computeIconLabel` exists, and it is what the pure functions below make testable in node.
 //
-// `iconAct` IS A DISPATCHER (its ctx list is long by nature: seven subsystems, one button each), so it is
-// implemented here as a TABLE (`ICON_ACTS`) rather than the original if/else chain. Same order, same
-// guards, same announcements — only the shape changed.
+// Each icon's action is a row of a TABLE (`ICON_ACTS`), not a chain of `if`s: the list of subsystems is long by nature,
+// one button each.
 //
-// WHAT STAYS IN game.js (injected):
-//   · `pauseActor`      — read by the gamepad (input/gamepad.ts ctx) and the keyboard router, and by
-//                         openHelp()/openOptions(); this module only WRITES it (`setPauseActor`).
-//   · `pauseActs`       — the `.pm-btn` action table; every entry calls a panel that still lives in game.js
-//                         (openTypo/openAudio/openMovement/motion.open/openVisual/empathy.open/printMode/
-//                         quitGame/openHelp/setPhase/applyLetra/setQuizLevel/joinPlayer/fitsN/vpScreens).
-//                         Injected LAZILY (`getPauseActs`) because it is a `const` declared ~1200 lines below
-//                         the init site — an eager reference would hit its temporal dead zone.
-//   · `vpPause`         — the array of built pause screens; game.js rebuilds it in buildGameHud() and reads it
-//                         in setPhase/navPause/printMode/pauseSelect/__incl. Injected as a getter.
-//   · `rm`/`saveRM`     — the reduced-motion flags object, co-owned with ui/settings-motion (same reference).
-//   · `PM_BTNS`/`QL_NAME` — owned by ui/pause-buttons; injected, never copied.
+// INJECTED, not owned here:
+//   · `setPauseActor` — who opened the card; the panels open scoped to that player. This module only WRITES it.
+//   · `getPauseActs`  — the `.pm-btn` action table (`ui/shell` or the host's own), asked when an item is pressed, so it
+//                       can be wired after this module.
+//   · the pause screens, asked through a getter: the host rebuilds them when the number of screens changes.
+//   · `rm`/`saveRM`   — the reduced-motion flags, shared with ui/settings-motion (same reference).
+//   · `PM_BTNS` and the other lists of buttons are `ui/pause-buttons`', imported, never copied.
 
 
 import type { PlayerView } from '../core/entity.js';
-import type { NavKeys } from '../input/edges.js'; // a MESMA intenção que teclado, controle, olhar e fala montam
+import type { NavKeys } from '../input/edges.js'; // the SAME intent the keyboard, controller, eyes and speech build
 import { t, getLocale, setLocale } from '../core/i18n.js';
 import { flagOf, nextLocale, LANGUAGE_NAME, type CycleLocale } from './locale-flags.js';
 /*
@@ -64,8 +56,8 @@ import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings
 import type { AudioCatState } from './audio-choices.js';
 import { announceItem } from './item-announcement.js';
 import { accessibleLabel } from '../core/accessible-label.js';
-import { stepInRing } from '../core/ring.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
-// LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
+import { stepInRing } from '../core/ring.js'; // from the LEAF, not from ui/menu-nav: see the note there
+// A LIVE BINDING (ESM): the index can be turned off in the menu, and the value here follows without a subscription.
 import { menuIndexOn, DEFAULTS, setBlindModeValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, voiceControl, setVoiceControlValue, switchScan, setSwitchScanValue, type CameraControl } from '../core/state.js';
 
 /** The word for each position of the 📷 cycle (ADR-0215). */
@@ -114,32 +106,18 @@ export function nextInputMode(m: InputMode, holdsKeys: boolean, latchRequired = 
   return order[(i < 0 ? 0 : i + 1) % order.length]!;
 }
 
-// 📌 `applyInputMode` VIVEU AQUI e saiu no mesmo dia (2026-09-21). Ele existia para que as DUAS superfícies deste ajuste — o ☝️
-// e a linha do painel motora — escrevessem pela mesma porta; o Dev tirou a linha, ficou um chamador só, e uma porta partilhada
-// por um é uma indireção a mais para quem lê. A regra que ele guardava está escrita no acto do ícone, onde acontece.
+// The rule for applying an input mode is written in the icon's own action, where it happens: the ☝️ is the only surface of
+// this setting.
 import { nextGameSpeed } from '../core/game-speed.js';
-// ⚠️ IMPORT DIRETO DE `platform/storage`, e não uma peça a mais no `ctx`, e a escolha é sobre quem pode
-// esquecer: `initPauseIcons` é chamado pela raiz de composição de CADA jogo, e um `store` injetado é um
-// campo que um consumidor pode omitir — e omiti-lo faria o nível TEA voltar a não persistir, em silêncio,
-// exactamente no jogo que se esqueceu. É a mesma forma que `ui/fonts` usa, e `ui/` depender de `platform/`
-// não inverte camada nenhuma.
+// ⚠️ A DIRECT IMPORT of `platform/storage`, not one more piece of the ctx: an injected `store` is a field a host could
+// omit, and omitting it would make the calm level stop persisting, silently. ADR-0232 moves storage to injection from the
+// root (issue #207), and this import goes with it.
 import * as store from '../platform/storage.js';
 import { setMoveLatch } from './settings-mobility.js';
 import { latchRefusal } from './latch-refusal.js';
 import { PM_BTNS, PM_OPTIONS_BTNS, PM_GAME_BTNS } from './pause-buttons.js';
 import { SCENE_KEYS, CHARACTER_ANIMATIONS, readStoredScene, storeScene } from './motion-scene.js';
 
-/**
- * A LEGENDA de um ícone da barra de acessibilidade — uma função, e não três cópias da mesma expressão.
- *
- * Ela é escrita em TRÊS momentos que parecem diferentes e são o mesmo: o cursor direcional pousa no ícone
- * (`ui/menu-nav`), o dedo o aciona, e o mouse ou o foco passa por cima. Enquanto eram três linhas soltas, o
- * índice do ADR-0044 teria de ser acrescentado em três lugares — e a chance de um ficar para trás é a mesma
- * que este repositório já pagou dezesseis vezes com o `DomQuery`.
- *
- * O `aria-label` já conta o ESTADO ("Alto contraste, ativado"): é ele que o `reflectIconBtn` reescreve a cada
- * mudança, e é por isso que a legenda o lê de volta em vez de recompor o texto por conta própria.
- */
 /**
  * Hover and focus on a bar's icons write its NAME in the bar's `.pause-icons-cap` and ask for its EXPLANATION.
  *
@@ -168,18 +146,23 @@ export function wireBarCaption(bar: HTMLElement, explain: (k: string | null) => 
   });
 }
 
+/**
+ * What an icon of the quick bar SAYS — one function, not three copies of the same expression. It is spoken at moments
+ * that look different and are the same (the cursor lands on the icon, a finger activates it), and the `aria-label` it
+ * reads already carries the STATE («Alto contraste, ativado»): `reflectIconBtn` rewrites it on every change, which is why
+ * this reads it back instead of rebuilding the text.
+ */
 function iconCaption(barEl: ParentNode, el: HTMLElement): string {
   const icons = [...barEl.querySelectorAll<HTMLElement>('.pi-btn')];
-  // A regra "rótulo declarado vence" nasceu AQUI e valia só para os dez ícones. Virou `core/accessible-label`
-  // e agora vale para o menu inicial e para a lista de pausa também — uma resposta para "como se chama este
-  // controle", e não três.
+  // «A declared label wins» is `core/accessible-label`'s rule, shared with the pause list and every menu: one answer to
+  // «what is this control called».
   return announceItem(
     { label: accessibleLabel(el), position: icons.indexOf(el) + 1, total: icons.length },
     menuIndexOn,
   );
 }
 
-/** Lê o nível TEA do armazenamento, saneado. Chamado no `init`, nunca no import. */
+/** Reads the calm level from storage, sanitised. Called in `init`, never on import. */
 function readTeaLevel(): number {
   return sanitiseTeaLevel(store.getNum(store.KEYS.tea, DEFAULTS.calmMode), DEFAULTS.calmMode);
 }
@@ -188,19 +171,11 @@ function readTeaLevel(): number {
 // Shapes this module reads but does not own
 // ---------------------------------------------------------------------------------------------
 
-/** The slice of a player object the pause icons touch. `players` (core/state) is typed `unknown[]`. */
 /**
- * A fatia que os ícones de pausa tocam — derivada de core/entity, e SEM assinatura de índice.
- *
- * Havia uma (`[prop: string]: unknown`), posta ali porque `applyCalm` escreve por nome calculado
- * (`p[c.prop] = …`). Era andaime: `c.prop` tem tipo `MotionCharProp`, que é a união literal
- * `'rmWalk' | 'rmBreath' | 'rmFlavor'`, e o TypeScript verifica acesso por chave literal sem precisar de
- * assinatura nenhuma — bastava que os três campos tivessem nome, que é o que a derivação deu.
- *
- * E ela custava caro: uma assinatura de índice aceita QUALQUER propriedade, com valor `unknown`. Enquanto
- * existiu, um erro de digitação em qualquer campo deste objeto compilava em silêncio. Quem a denunciou foi
- * tipar `core/state.players` como `Player[]`: o compilador recusou converter um `Player` — que não tem
- * assinatura de índice — para ela, e essa recusa é a informação.
+ * The slice of a player the pause icons touch — derived from core/entity, and WITHOUT an index signature: one would
+ * accept ANY property with an `unknown` value, so a typo in any field would compile silently. `applyCalm` writes by a
+ * computed name (`p[c.prop] = …`), and `c.prop` is the literal union `'rmWalk' | 'rmBreath' | 'rmFlavor'`, which TypeScript
+ * checks without any signature.
  */
 export type PausePlayer = PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>;
 
@@ -217,12 +192,8 @@ export interface IconStateSnapshot {
   calmMode: number;
   toggleMove: boolean;
   /**
-   * O estado visual em DOIS EIXOS (#104).
-   *
-   * ⚠️ ERA `viz: string`, E O COMENTÁRIO DIZIA: «shared by the contrast and CVD icons (they overwrite each
-   * other; **that is by design**)». Não era desenho — era o campo único a impor-se, e a frase é o defeito
-   * escrito como se fosse decisão. Os dois ícones sempre ciclaram DENTRO do seu eixo (`nextContrast` e
-   * `nextCvd` existem desde sempre, separados); só não tinham onde guardar o resultado sem apagar o vizinho.
+   * The visual state on TWO AXES (#104): the contrast icon cycles the theme and the colour icon cycles the correction,
+   * each within its own axis, and neither erases the other.
    */
   visual: VisualState;
   /** Playing by SPEAKING (ADR-0189): the 👄 of the bar, on or off. */
@@ -238,26 +209,19 @@ export interface IconStateSnapshot {
   /** False disables the blind/TTS icons: those need an audio output nobody else is listening to. */
   privateOutput: boolean;
   /**
-   * O aparelho em uso EXIGE a alternância? (ADR-0113 cláusula 3.)
+   * Does the device in use REQUIRE the latch? (ADR-0113 clause 3.) With the eyes, the face, gestures and speech the latch
+   * is what makes the input work, so there is no choice to offer: the ☝️ cycle then skips `standard` (see
+   * `inputModeOrder`).
    *
-   * ⚠️ Em olhos, rosto, gestos e fala ela é o que faz a entrada funcionar, logo não há escolha a oferecer.
-   * O ícone fica desabilitado COM MOTIVO, como o painel — e não pode divergir dele: as duas superfícies
-   * escrevem o mesmo valor, e uma que aceitasse o clique enquanto a outra recusa deixaria a criança com
-   * dois botões que discordam sobre o mesmo ajuste.
-   *
-   * 🔴 OPCIONAL PORQUE O GATE DA FORMA ME APANHOU: eu escrevi-o obrigatório, e o
-   * `tests/superficie-publica` reprovou com «ENTROU como obrigatório» — que é uma MUDANÇA QUEBRANTE do
-   * pacote, porque quem constrói este snapshot passa a ter de o preencher. Foi para isto que o gate da
-   * FORMA (`2f2582f`) foi escrito, e é a primeira vez que ele apanha um campo A ENTRAR e não a sair.
-   * Ausente significa «ninguém me disse», que degrada para «não exijo» — o comportamento de hoje.
+   * OPTIONAL because adding a required member to a published snapshot is a breaking change (the shape gate,
+   * `tests/superficie-publica`, fails on it). Absent means «nobody told me», which degrades to «not required».
    */
   latchRequired?: boolean;
   /** No voice speaks the current language (ADR-0185): the narration icon is locked. Absent reads as a voice. */
   noVoice?: boolean;
 }
 
-/** A player has private output when nobody else is on the same sink. Single screen ⇒ always private.
- *  Pure form of game.js's hasPrivateOutput (see the report: it had no other caller left). */
+/** A player has private output when nobody else is on the same sink. Single screen ⇒ always private. */
 export function hasPrivateOutputIn(list: readonly PausePlayer[], count: number, i: number): boolean {
   if (count <= 1) return true;
   const p = list[i];
@@ -271,9 +235,8 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   const ic = pauseIcon(k);
   if (!ic) return '';
   const state = STATE_OF_ICON[k];
-  // O estado vira SEMPRE um parâmetro (`{v}`), nunca uma concatenação: 'on'/'off' eram palavras inglesas
-  // presas numa frase em português, e uma língua que anteponha o estado ao nome precisa do dicionário para
-  // reordenar. `nomeDoIcone: estado` é a moldura; o estado é o conteúdo, e ele também é traduzido.
+  // The state is ALWAYS a parameter (`{v}`), never a concatenation: a language that puts the state before the name needs
+  // the dictionary to reorder it. «name: state» is the frame; the state is the content, and it is translated too.
   return state ? t('icon.state', { nome: t(SHORT_NAME[k] ?? ic.n), v: state(s) }) : t(ic.n);
 }
 
@@ -296,10 +259,10 @@ const STATE_OF_ICON: { readonly [k: string]: (s: IconStateSnapshot) => string } 
 };
 
 /**
- * TEA e daltonismo têm uma chave de nome CURTO para o rótulo, porque o nome do botão chegou a trazer a lista de níveis
- * («(calmo / silencioso)», «(protan/deutan/tritan)») e o rótulo já diz o nível. ⚠️ Medido em 2026-09-23: hoje, nos três
- * dicionários, a chave curta é igual à longa palavra por palavra — a distinção ficou sem assunto, e juntar as chaves é mudança
- * de dicionário, não deste corte.
+ * Calm mode and colour correction have a SHORT name key for the label, because the button's name once carried the list of
+ * levels («(calmo / silencioso)», «(protan/deutan/tritan)») and the label already says the level. ⚠️ In the three
+ * dictionaries the short key now equals the long one word for word: the distinction has no subject left, and merging the
+ * keys is a dictionary change.
  */
 const SHORT_NAME: { readonly [k: string]: string } = { tea: 'icon.tea.short', cvd: 'icon.cvd.short' };
 
@@ -318,14 +281,9 @@ export interface IconVisual {
 }
 
 /**
- * O QUE CADA ÍCONE MOSTRA, COMO TABELA — uma regra por ícone, e cada uma devolve só o que ela decide.
- *
- * 🔴 ERA UMA ESCADA DE DEZ `else if`, e a escada é o que dava a este módulo a PROFUNDIDADE 11 contra um tecto de 4: a
- * maior da árvore inteira. ⚠️ E a régua não estava a exagerar por engano — na árvore de sintaxe uma escada de `else if`
- * É dez `if` encaixados uns nos outros. O que ela mede mal é o custo de LER, que numa escada é plano; o conserto
- * honesto é tirar a escada, e não ensinar a régua a não a ver, que seria mudar o metro para caber o móvel.
- * 📌 É a forma que esta casa já usa onde uma decisão é um mapeamento: o glifo de uma tecla, a aresta de uma acção, o
- * que cada ausência significa no comando. Acrescentar um ícone passa a ser acrescentar uma LINHA.
+ * WHAT EACH ICON SHOWS, AS A TABLE — one rule per icon, each returning only what it decides. A decision that is a mapping
+ * is written as a table here (as the glyph of a key or the edge of an action are): adding an icon is adding a ROW, not
+ * nesting one more `else if`.
  */
 type IconVisualRule = (s: IconStateSnapshot) => Partial<IconVisual>;
 
@@ -334,28 +292,27 @@ const ICON_VISUAL: Readonly<Record<string, IconVisualRule>> = Object.freeze({
   tts: (s) => ({ on: s.ttsOn, dis: !s.privateOutput || !!s.noVoice }),
   libras: (s) => ({ on: s.librasOn }),
   tea: (s) => ({ on: s.calmMode === 2, calm: s.calmMode === 1 }),
-  // ⚠️ AND IT IS NEVER GREYED OUT ANY MORE. `alternanciaExigida` says the DEVICE in use sends one command at a time and the latch
-  // cannot be turned off (ADR-0113 clause 3) — which is now told by the CYCLE, where `standard` simply does not appear. Greying
-  // the icon would have taken the one-button scan away from the child playing with her eyes, who is the likeliest to need it.
+  // ⚠️ AND IT IS NEVER GREYED OUT. `latchRequired` says the DEVICE in use sends one command at a time and the latch cannot be
+  // turned off (ADR-0113 clause 3) — which the CYCLE tells, since `standard` simply does not appear in it. Greying the icon
+  // would take the one-button scan away from the child playing with their eyes, who is the likeliest to need it.
   altmove: (s) => ({ on: inputModeOf(s) !== 'standard' }),
   contrast: (s) => ({ on: hasHighContrast(s.visual) }),
   velocidade: (s) => ({ on: (s.speed ?? 1) < 1 }),
   camera: (s) => ({ on: (s.camera ?? 'off') !== 'off' }),
   voice: (s) => ({ on: !!s.voice }),
-  // ⚠️ O FUNDO DE DUAS CORES É O SINAL DE LIGADO deste ícone, e agora ele lê o EIXO da correção — que
-  // continua a dizer o mesmo quando o tema também está ligado, coisa que a chave única não conseguia: com
-  // `hc-direto-7` no campo, a correção da criança desaparecia do ícone que existe para a mostrar.
+  // ⚠️ THE TWO-TONE BACKGROUND IS THIS ICON'S «ON» SIGNAL, and it reads the correction AXIS — so it still says the same when
+  // the high-contrast theme is on too, and the child's correction does not vanish from the icon that exists to show it.
   cvd: (s) => ({ cvd: s.visual.correcao !== 'tricro' ? `pi-cvd-${s.visual.correcao}` : '' }),
 });
 
-/** O repouso: um ícone que a tabela não nomeia não mostra nada, que é o que a escada também fazia. */
+/** At rest: an icon the table does not name shows nothing. */
 const ICON_VISUAL_AT_REST: IconVisual = Object.freeze({ on: false, dis: false, calm: false, cvd: '', active: false });
 
 /** Pure form of reflectIconBtn's branching. */
 export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   const v = { ...ICON_VISUAL_AT_REST, ...ICON_VISUAL[k]?.(s) };
-  // 📌 O `active` é DERIVADO e não declarado por regra nenhuma: ele é o `aria-pressed`, e nenhum ícone deve poder
-  // dizer que está premido sem mostrar por que é que está.
+  // 📌 `active` is DERIVED, declared by no rule: it is the `aria-pressed`, and no icon should be able to say it is pressed
+  // without showing why.
   return { ...v, active: v.on || v.calm || !!v.cvd };
 }
 
@@ -364,43 +321,24 @@ export const ICON_STATE_CLASSES: readonly string[] = ['pi-calm', 'pi-cvd-protan'
 
 
 /**
- * OS ÍCONES QUE ESTE JOGO CONSEGUE MESMO ACCIONAR (ADR-0106 §5).
- *
- * ⚠️ NENHUMA ETAPA PODE ENTREGAR BOTÃO MORTO, e o registo diz porquê com todas as letras: «uma barra que
- * oferece a uma criança um caminho e depois o recusa é pior do que uma barra que ela vê que não está lá,
- * porque a primeira ensina-lhe que o caminho não é para ela».
- *
- * ⚠️ E O CONTRASTE E A COR SÃO O CASO REAL, medido em 2026-09-08 e diferente dos outros seis campos
- * «acidentais»: eles não são estado que um cartucho calhou de guardar — precisam de um `render/viz-setters`,
- * cujo contexto tem **34 campos** do grafo de render de UM jogo (`parallaxLayers`, `decoSprites`,
- * `getPowerups`, `rebuildCoins`, `worldSprite`…). O `createGame` não monta isso, e um quiz não tem nada
- * disso para montar. Então aqui a engine não pode oferecer um padrão — o que ela pode é **não fingir**.
- *
- * ⚠️ Isto é «este jogo não tem por onde», e
- * um botão que anuncia «em breve» diria a coisa errada.
+ * THE ICONS THIS GAME CAN ACTUALLY ACTIVATE (ADR-0106 §5): no stage may ship a dead button — «a bar that offers a child a
+ * way and then refuses it is worse than a bar she sees is not there, because the first teaches her the way is not for
+ * her». An icon with nothing to activate it is not mounted, rather than mounted to announce «soon».
  */
 export interface ActionableIcons {
-  /** Há quem escreva o TEMA (o alto contraste)? Sem ele, o ícone `contrast` não é montado. */
+  /** Is there anyone to write the THEME (high contrast)? Without it, the `contrast` icon is not mounted. */
   readonly theme: boolean;
-  /** Há quem escreva a CORREÇÃO de cor? Sem ela, o ícone `cvd` não é montado. */
+  /** Is there anyone to write the colour CORRECTION? Without it, the `cvd` icon is not mounted. */
   readonly correction: boolean;
   /**
-   * ESTE JOGO SEGURA ALGUMA TECLA? — `GameDeclaration.seguraTeclas`, o campo do ADR-0115.
+   * DOES THIS GAME HOLD ANY KEY? — `GameDeclaration.holdsKeys`, the field of ADR-0115.
    *
-   * 🔴 Sem ele o ícone `altmove` não é montado, e a AUSÊNCIA é a decisão. A alternância existe para quem não
-   * consegue manter uma tecla premida; num jogo onde nada se segura ela não tem o que travar, e um controle
-   * que não faz nada ensina a uma criança que o ajuste de que ela depende está partido.
+   * The latch exists for whoever cannot keep a key pressed; in a game where nothing is held it has nothing to hold, and a
+   * control that does nothing teaches a child that the setting she depends on is broken. (A different absence from
+   * ADR-0113 clause 3's, where the device REQUIRES the latch: see `latchRequired`.)
    *
-   * ⚠️ E ISTO É UMA AUSÊNCIA DIFERENTE DA DO ADR-0113 cláusula 3, que também vive neste ficheiro: lá o
-   * controle fica DESABILITADO com o motivo, porque o aparelho EXIGE a alternância e ela não se pode
-   * desligar. Aqui não há nada a travar, e um controle que explica por que não faz nada continua a ser um
-   * controle que não faz nada.
-   *
-   * ⚠️ É FUNÇÃO E NÃO VALOR, e a razão é a mesma do ADR-0084: uma resposta lida uma vez envelhece em
-   * silêncio. Aqui envelhecia no pior sítio — o `reflectPauseIcons` existe justamente porque «a tabela de
-   * acções deste jogo pode ter mudado desde a montagem» (ADR-0106 §5), e refrescava a partir de um booleano
-   * congelado no arranque. Com um `createGame` a servir vários cartuchos (ADR-0142), o ícone descrevia o
-   * jogo que arrancou primeiro. O contrato nunca esteve errado: `GameDeclaration.seguraTeclas` já é função.
+   * A FUNCTION, not a value (as in ADR-0084): an answer read once goes stale silently, and with one `createGame` serving
+   * several cartridges (ADR-0142) the icon would describe the game that booted first.
    */
   readonly holdsKeys: () => boolean;
   /**
@@ -410,15 +348,14 @@ export interface ActionableIcons {
   readonly declaredPositions?: () => number;
   /**
    * Does this game's time run by itself? (`tick: 'clock'`, ADR-0180.) Without it the hourglass is not mounted. A function,
-   * like `seguraTeclas`, so a cartridge mounted later answers for itself (ADR-0142).
+   * like `holdsKeys`, so a cartridge mounted later answers for itself (ADR-0142).
    */
   readonly clock?: () => boolean;
   /**
-   * Alguém sabe andar no ciclo de tipografia? (ADR-0149 §1.)
+   * Does anyone know how to walk the typography cycle? (ADR-0149 §1.)
    *
-   * ⚠️ OPCIONAL, e o padrão é `false` por omissão do chamador — ao contrário do `seguraTeclas`, que é
-   * obrigatório porque os dois valores dele erram. Aqui não: `false` esconde um ícone que não faria nada,
-   * que é exactamente o que o §5 do ADR-0106 quer. A assimetria é a mesma dos dois escritores visuais.
+   * OPTIONAL, absent meaning `false` — unlike `holdsKeys`, which is required because both of its values can be wrong.
+   * Here `false` hides an icon that would do nothing, which is exactly what ADR-0106 §5 wants.
    */
   readonly typography?: boolean;
   /** Can this device play through the webcam — is there a camera to ask for? Without it the 📷 is not mounted (ADR-0215). */
@@ -430,38 +367,28 @@ export interface ActionableIcons {
 }
 
 /**
- * @deprecated O nome dizia «escritores VISUAIS» e a pergunta deixou de ser só visual quando o `seguraTeclas`
- * entrou (ADR-0115). Use `ActionableIcons`. O alias fica para o consumidor não pagar duas quebras no mesmo
- * major — uma pelo campo novo e outra pelo nome.
+ * @deprecated The name said «VISUAL writers», and the question stopped being only visual when `holdsKeys` joined it
+ * (ADR-0115). Use `ActionableIcons`.
  */
 export type VisualWriters = ActionableIcons;
 
 /**
- * QUEM ACCIONA CADA ÍCONE — uma pergunta por ícone, e um ícone que ninguém tranca é oferecido.
+ * WHO ACTIVATES EACH ICON — one question per icon, and an icon nothing locks is offered.
  *
- * ⚠️ POR ÍCONE, e não um booleano para os dois — e foi uma MUTAÇÃO SOBREVIVENTE que o mostrou. Com uma única bandeira,
- * `&&` e `||` produziam o mesmo resultado nos casos que eu tinha escrito, porque todos tiravam os DOIS escritores. O
- * `&&` escondia um ícone que FUNCIONA quando só um escritor falta, e o `||` mostrava um que NÃO funciona. Os dois
- * erram, em direcções opostas, e a pergunta certa nunca foi «este jogo tem escritores visuais» — é «este ÍCONE tem
- * quem o accione».
- * 🔴 E ISTO ERA UMA ESCADA DE OITO TERNÁRIOS ANINHADOS, pela mesma razão que a do visual de um ícone: cada ramo novo
- * entrava por dentro do anterior, e a indentação já tinha desistido de acompanhar. Um mapeamento `ícone → pergunta` é
- * uma TABELA, e acrescentar um ícone passa a ser acrescentar uma linha em vez de encaixar mais um nível.
+ * PER ICON, not one flag for the whole bar: with one flag, a single missing writer would either hide an icon that WORKS
+ * or show one that does NOT. The question is «does this ICON have something to activate it». A table, so adding an icon
+ * is adding a row.
  */
 const ICON_IS_ACTIONABLE: Readonly<Record<string, (w: ActionableIcons) => boolean>> = Object.freeze({
   contrast: (w) => w.theme,
   cvd: (w) => w.correction,
-  // 📌 «este jogo segura teclas?» é a mesma pergunta que «este ícone tem quem o accione», feita a um campo do contrato
-  // em vez de a um escritor injectado — um ramo, e não uma regra nova.
-  // 🔴 AND IT GREW A SECOND HALF (ADR-0218): the icon used to exist only where the game HOLDS a key, because the latch
-  // was all it held. «One button only» has a subject wherever the game declares a position to scan — which is why the
-  // quiz demo, holding no key, had no ☝️ at all. A game that declares nothing still has none: there would be nothing to
-  // offer, and a scan of one item is the dead button of ADR-0106 §5 paid for in seconds.
+  // «Does this game hold keys?» is the same question, asked of a contract field rather than an injected writer.
+  // AND A SECOND HALF (ADR-0218): «one button only» has a subject wherever the game declares a position to scan, so a game
+  // holding no key (the quiz demo) still has a ☝️. A game that declares nothing has none: a scan of nothing is the dead
+  // button of ADR-0106 §5 paid for in seconds.
   altmove: (w) => w.holdsKeys() || (w.declaredPositions?.() ?? 0) > 0,
-  // 📌 A mesma pergunta feita ao ciclo de tipografia (ADR-0149): o ícone existe quando alguém sabe andar nele. Sem
-  // isso seria um botão que anuncia e não muda nada.
-  // 📌 `Boolean(...)` e não o campo cru: ele é opcional, e o ternário antigo entregava-o à verdade de um `filter`.
-  // A conversão é o que a escada fazia em silêncio — aqui está escrita, e o tipo deixa de aceitar a ambiguidade.
+  // The same question asked of the typography cycle (ADR-0149): the icon exists when someone knows how to walk it.
+  // `Boolean(...)` and not the raw field: it is optional, and the conversion is written rather than left to a `filter`.
   tipografia: (w) => Boolean(w.typography),
   // the hourglass exists where time runs by itself (ADR-0180): a turn game has nothing to slow
   velocidade: (w) => Boolean(w.clock?.()),
@@ -472,32 +399,19 @@ const ICON_IS_ACTIONABLE: Readonly<Record<string, (w: ActionableIcons) => boolea
 });
 
 export function iconsThatAct(writers: ActionableIcons): readonly PauseIcon[] {
-  // 📌 A AUSÊNCIA NA TABELA É «SIM»: um ícone que nenhuma regra tranca não depende de ninguém para funcionar, e
-  // escondê-lo por falta de linha seria tirar à criança um caminho que existe.
+  // ABSENCE FROM THE TABLE MEANS YES: an icon no rule locks depends on nobody to work, and hiding it for lack of a row
+  // would take away from the child a way that exists.
   return PAUSE_ICONS.filter((ic) => ICON_IS_ACTIONABLE[ic.k]?.(writers) ?? true);
 }
 
 /**
- * OS TRÊS ITENS QUE A ENGINE ACCIONA SOZINHA, e que por isso nunca dependem do `getPauseActs` de um jogo.
- *
- * 📏 Lidos do despacho, e não decididos aqui: `options`/`pmback` trocam qual lista está no cartão e
- * `acessibilidade` leva o cursor à barra rápida — os três são tratados neste módulo e voltam antes de a
- * tabela do jogo ser consultada.
+ * THE ITEMS THE ENGINE ACTIVATES BY ITSELF, which therefore never depend on a game's `getPauseActs`. Read from the
+ * dispatch, not decided here: `options`, `opcoesdojogo` and `pmback` change which list is on the card, and
+ * `acessibilidade` takes the cursor to the quick bar — all four are handled in this module before the game's table is
+ * consulted. What belongs to the game is the CONTENT of the list `opcoesdojogo` opens.
  */
-// ⚠️ QUATRO desde 2026-09-12: `opcoesdojogo` entra pela MESMA razão que `options` já estava — ele não faz
-// nada ao jogo, troca qual lista está no cartão, e é tratado neste módulo antes de a tabela do jogo ser
-// consultada. Não é a engine a reclamar um item do jogo: o que é do jogo é o CONTEÚDO da lista que ele abre.
 const ENGINE_ITEMS: ReadonlySet<string> = new Set(['options', 'opcoesdojogo', 'pmback', 'acessibilidade']);
 
-/**
- * OS ITENS DO MENU QUE ESTE JOGO CONSEGUE MESMO ACCIONAR (ADR-0106 §5).
- *
- * ⚠️ HOJE UM ITEM SEM ACÇÃO É UM BOTÃO MORTO, E EM SILÊNCIO. O despacho faz `const fn = acts[act]; if (fn)
- * fn();` — quem carrega num item que o jogo não implementou não recebe erro, não recebe anúncio, não recebe
- * nada. Para quem vê, parece que o clique falhou; para quem navega por leitor de tela, o menu leu-lhe um
- * item que não existe. É exactamente o que o §5 chama de pior do que a ausência: «uma barra que oferece um
- * caminho e depois o recusa ensina-lhe que o caminho não é para ela».
- */
 /**
  * Why a pause item is locked, in the child's words (ADR-0161). A key per item where the reason is particular to it —
  * «Número de jogadores»: the GAME decides how many (ADR-0147) — and one general reason for the rest. Resolved at every
@@ -508,6 +422,11 @@ function itemReason(act: string): string {
   return t(OWN_REASONS.has(act) ? `pause.motivo.${act}` : 'pause.motivo');
 }
 
+/**
+ * THE MENU ITEMS THIS GAME CAN ACTUALLY ACTIVATE. The others are not hidden: they stay on the card, LOCKED with their
+ * reason said (ADR-0161) — an item that does nothing when pressed, and says nothing, reads to a screen-reader user as an
+ * item that does not exist.
+ */
 function itemsThatAct(
   buttons: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
@@ -516,30 +435,23 @@ function itemsThatAct(
 }
 
 /**
- * A LISTA RAIZ, com uma regra a mais: `options` é uma PORTA, e uma porta para uma sala vazia também é um
- * botão morto.
- *
- * ⚠️ Esta é a parte que um filtro item-a-item não apanha. Se todos os painéis de ajuste forem filtrados —
- * um jogo que não monta nenhum —, o item `options` sobrevive (a engine acciona-o) e abre uma lista sem nada.
- * A criança atravessa uma porta e fica presa num submenu vazio, cuja única saída é o `pmback` que também
- * sumiu com ele.
+ * THE ROOT LIST, with one more rule: `options` is a DOOR, and a door to an empty room acts no more than a dead button.
+ * An item-by-item filter misses this: the engine activates `options` itself, so it would pass and open a list with
+ * nothing in it.
  */
 export function rootThatActs(
   rootEl: readonly PauseMenuButton[],
   options: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
-  // ⚠️ TERCEIRO ARGUMENTO OPCIONAL, e o padrão é a lista VAZIA de propósito: quem já chamava com três
-  // argumentos continua a receber o que recebia, e um jogo que não declare nada do seu é exactamente o caso
-  // do vazio — logo o padrão é também a resposta certa, e não um remendo para não partir chamadores.
+  // An OPTIONAL fourth argument defaulting to the EMPTY list: a game that declares nothing of its own is exactly that
+  // case, so the default is also the right answer.
   fromGame: readonly PauseMenuButton[] = [],
 ): readonly PauseMenuButton[] {
   const howManyAct = (bs: readonly PauseMenuButton[]): number =>
     itemsThatAct(bs, acts).filter((b) => b.act !== 'pmback').length;
   let alive = itemsThatAct(rootEl, acts);
   if (howManyAct(options) === 0) alive = alive.filter((b) => b.act !== 'options');
-  // 📌 A MESMA REGRA PARA A PORTA NOVA, e é o gate que o ADR-0146 nomeia: um jogo sem nada seu não recebe
-  // «opções do jogo». Afirmar a ausência é o caso; oferecer a porta e abrir uma sala vazia é o que o §5 do
-  // ADR-0106 chama de pior do que a ausência.
+  // The same rule for the game's own door (ADR-0146): a game with nothing of its own gets no live «game options».
   // ADR-0182: a door whose room the ENGINE draws from the cartridge's rows is live through its action, with no list behind it
   if (howManyAct(fromGame) === 0 && typeof acts.opcoesdojogo !== 'function') alive = alive.filter((b) => b.act !== 'opcoesdojogo');
   return alive;
@@ -547,25 +459,16 @@ export function rootThatActs(
 
 
 /**
- * Os itens navegáveis de um cartão de pausa — os da lista VISÍVEL, e só eles.
+ * The navigable items of a pause card — those of the VISIBLE list, and only those.
  *
- * Uma constante porque TRÊS módulos a consultam (a navegação em `ui/menu-nav`, a seleção inicial em
- * `ui/shell` e a troca de submenu aqui). Enquanto fosse `.pm-btn` escrito três vezes, bastaria um deles
- * esquecer o `:not([hidden])` para o anel atravessar para a lista invisível — e a criança ouviria itens de um
- * menu que não está na tela.
+ * One constant because THREE modules ask (navigation in `ui/menu-nav`, the first selection in `ui/shell` and the list
+ * switch here): if one of them forgot `:not([hidden])`, the ring would step into the invisible list and the child would
+ * hear items of a menu that is not on screen. `:not([hidden])` on the ITEM too: a hidden item must not be reached nor
+ * counted in «N de M» (a locked one is not hidden — it is reached, and says why).
  */
-// 🔴 `:not([hidden])` ON THE ITEM TOO (2026-09-12): the engine hides an item with no actuator (`refrescarItensDaPausa`),
-// and without it the ring stepped onto «Ajuda» hidden in the quiz — measured in dist — and «N de M» counted it.
 export const PM_VISIBLE_ITEMS = '.pause-menu:not([hidden]) .pm-btn:not([hidden])';
 
 
-/**
- * Troca a lista visível de UM cartão de pausa, e põe o cursor no PRIMEIRO item da lista que entrou.
- *
- * Livre (e não um método do `init`) de propósito: `ui/menu-nav` precisa dela para o "não" voltar da lista de
- * opções à raiz, e não tem acesso às tabelas de botões. Como as duas listas já existem no markup, a troca é
- * só DOM — nada a re-renderizar, nada a injetar.
- */
 /**
  * THE DOORS INSIDE THE CARD, and which list each opens. They do nothing to the game — they change which list is on
  * screen — so they live here and not in the action table, which lives in `ui/shell` and does not know the card.
@@ -574,6 +477,12 @@ export const PM_VISIBLE_ITEMS = '.pause-menu:not([hidden]) .pm-btn:not([hidden])
  */
 const DOOR_TO_LIST: Readonly<Record<string, PauseSub>> = Object.freeze({ options: 'opcoes', opcoesdojogo: 'jogo', pmback: 'raiz' });
 
+/**
+ * Switches the visible list of ONE pause card, and puts the cursor on the FIRST item of the list that came in.
+ *
+ * Free-standing (not a method of `init`) on purpose: `ui/menu-nav` needs it for «no» to go back to the root, and it has no
+ * access to the button tables. Every list already exists in the markup, so the switch is DOM only.
+ */
 export function showPauseOptions(sp: HTMLElement, sub: PauseSub): HTMLElement | null {
   sp.querySelectorAll<HTMLElement>('.pause-menu').forEach((m) => { m.hidden = m.dataset.sub !== sub; });
   const first = sp.querySelector<HTMLElement>(PM_VISIBLE_ITEMS);
@@ -613,26 +522,16 @@ export function barAction(k: NavKeys, hasStart: boolean): BarAction {
 
 export interface PauseIconsCtx {
   /**
-   * O DOCUMENTO onde a pausa e a barra são CONSTRUÍDAS. Ausente, vale o global.
-   *
-   * ⚠️ ISTO É O ACHADO 15 OUTRA VEZ, e o `boot/create-game` já o descreve no próprio cabeçalho: «`initI18n()`
-   * chamava `applyDom(document)`, o GLOBAL, por baixo de quem a chamasse. Num navegador dá no mesmo e por
-   * isso sobreviveu; num teste de lógica pura é a diferença entre bootar e não bootar, e num futuro com dois
-   * documentos (uma engine em iframe, um editor ao lado do jogo) seria a diferença entre traduzir o documento
-   * certo e o outro.»
-   *
-   * 📏 Medido em 2026-09-08: as duas metades que constroem DOM (`buildScreenPause`, `buildQuickBar`) faziam
-   * `document.createElement` no global. Enquanto a raiz de composição de cada jogo era um `main.ts` a correr
-   * num navegador, dava no mesmo — e foi por isso que sobreviveu. Deixa de dar assim que a ENGINE monta,
-   * porque o `createGame` recebe o documento por `host.doc` e pode estar a montar noutro.
+   * The DOCUMENT where the pause card and the bar are BUILT. Absent, the global one (ADR-0232 is to remove that fallback).
+   * `createGame` receives its document through `host.doc` and may be building in another one (an iframe, an editor beside
+   * the game), so building on the global would put the card in the wrong document.
    */
   doc?: Document;
-  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
-   *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
-   *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
+  /** How many players/screens. ROUND state (ADR-0038): it comes from the instance the host owns — a module-level
+   *  binding would be shared by a second game on the same page. */
   getNumPlayers: () => number;
-  /** Os jogadores. Estado de RODADA, pelo mesmo motivo. `readonly unknown[]` porque cada consumidor
-   *  estreita para a SUA fatia — o tipo real é do jogo, não da engine (ADR-0033). */
+  /** The players. ROUND state, for the same reason. `readonly unknown[]` because each consumer narrows to ITS slice —
+   *  the real type is the game's, not the engine's (ADR-0033). */
   getPlayers: () => readonly unknown[];
   // --- announcements (core/a11y-sr; injected because they reach `document` at call time) ---
   /** aria-live "polite" — every successful toggle announces its NEW state. */
@@ -640,8 +539,8 @@ export interface PauseIconsCtx {
   /** aria-live "assertive" — the refusals (a shared audio output, a device that always latches). */
   srAlert: (text: string) => void;
   /**
-   * Chamado depois de TODA saída do modo barra, com a tela e se foi silenciosa. Ausente, não se faz nada.
-   * Existe para a raiz descongelar o jogo pela porta que for (ADR-0155) — a barra não sabe de fases.
+   * Called after EVERY exit from the bar mode, with the screen and whether it was silent. Absent, nothing happens. It lets
+   * the root unfreeze the game whichever door was used (ADR-0155) — the bar knows nothing of phases.
    */
   onLeaveBar?: (i: number, silent: boolean) => void;
   /**
@@ -655,82 +554,54 @@ export interface PauseIconsCtx {
 
   // --- the per-screen pause menu ---
   /**
-   * As BARRAS RÁPIDAS por tela (`.screen-a11y`), na ordem dos jogadores.
-   *
-   * Existe pelo mesmo motivo de `getPauseScreens`: `buildGameHud` REATRIBUI a array a cada remontagem, então
-   * o que se injeta é o getter e não a array. E existe separada da pausa porque, desde o item 7, a barra não
-   * mora mais dentro dela — o daltonismo é POR JOGADOR, e refletir os ícones exige achar a barra daquela tela.
+   * The per-screen QUICK BARS (`.screen-a11y`), in player order. A getter, because the host rebuilds them when the number of
+   * screens changes. Separate from the pause card because the bar does not live inside it (ADR-0044 item 7) — colour
+   * correction is PER PLAYER, and reflecting the icons means finding that screen's bar.
    */
   getA11yBars: () => readonly HTMLElement[];
   /*
-   * ⚠️ AS DUAS PASSARAM A OPCIONAIS (ADR-0106 §4), e o comentário que estava aqui já dizia porquê sem o
-   * notar: «PM_BTNS — owned by ui/pause-buttons; injected, never copied». Se a dona é a ENGINE, pedir ao
-   * jogo que a devolva é o mesmo acidente dos outros sete campos. O registo fecha o §4 com a frase que isto
-   * cumpre: «a engine entrega uma lista padrão, para que um jogo que não contribui com nada tenha uma».
-   *
-   * Ausentes, valem `PM_BTNS` / `PM_OPTIONS_BTNS`. Quem passa a sua continua a mandar.
+   * The lists of buttons are OPTIONAL (ADR-0106 §4): they belong to the engine (`ui/pause-buttons`), and asking a game to
+   * hand them back would be asking it for something it does not own — «the engine ships a default list, so that a game
+   * that contributes nothing has one». Absent, `PM_BTNS` / `PM_OPTIONS_BTNS` / `PM_GAME_BTNS`; a host that passes its own
+   * still rules.
    */
-  /** PM_OPTIONS_BTNS — o submenu de opções. Mesma dona, mesmo motivo: ninguém tem duas cópias de uma lista. */
+  /** PM_OPTIONS_BTNS — the options sub-list. */
   optionsButtons?: readonly PauseMenuButton[];
-  /** A lista do JOGO (ADR-0146). Ausente = `PM_GAME_BTNS`, que é só o «voltar» — e a porta cai sozinha. */
+  /** The GAME's list (ADR-0146). Absent = `PM_GAME_BTNS`, which is only «back» — and the door drops by itself. */
   gameButtons?: readonly PauseMenuButton[];
-  /** PM_BTNS — the `.pm-btn` list. Owned by ui/activities-menu; injected, never copied. */
+  /** PM_BTNS — the root `.pm-btn` list (`ui/pause-buttons`). */
   pmButtons?: readonly PauseMenuButton[];
-  /** QL_NAME — literacy-level names, for the (dormant) `nivel` button. Same owner as pmButtons. */
+  /*
+   * The next three are the GAME's by nature, and still optional: being the game's by nature says WHO has the right answer,
+   * not that its absence should stop the card from existing. Absent: `dynLabel` means no dynamic label, `getPauseActs`
+   * means an empty table (only the items the ENGINE activates act; the rest are locked with their reason) and
+   * `setPauseActor` records nothing.
+   */
   /**
-   * O RÓTULO de um botão dinâmico, pronto — ou `null` quando aquele botão não tem um (item 19).
-   *
-   * Era `quizLevel` (importado de `core/state`) mais `qlName` (tabela do jogo), e este módulo montava a
-   * frase. Um menu de pausa da ENGINE não sabe o que é nível de alfabetização, nem em que idioma dizê-lo.
-   * Função e não valor, porque o rótulo muda em execução — de nível E de idioma.
+   * The ready LABEL of a dynamic button, or `null` when that button has none. A function, because the label changes at run
+   * time — in value and in language. A pause card of the ENGINE does not know what a literacy level is, nor how to say it.
    */
-  /*
-   * ⚠️ OS TRÊS SÃO DO JOGO POR NATUREZA (ADR-0106 mede-os assim) E MESMO ASSIM FICARAM OPCIONAIS, e a
-   * distinção importa: ser do jogo por natureza diz de QUEM é a resposta certa, não que a ausência dela deva
-   * impedir a pausa de existir. Um jogo que não tem rótulo dinâmico, nem tabela de acções, nem ator de pausa
-   * continua a merecer um cartão — com o que sobra depois do filtro do §5, que é honesto em vez de vazio.
-   *
-   * Ausentes: `dynLabel` vale «sem rótulo dinâmico», `getPauseActs` vale «tabela vazia» (e aí só ficam os
-   * itens que a ENGINE acciona) e `setPauseActor` não regista nada — que é o que o `createGame` já faz hoje,
-   * agora sem obrigar cada consumidor a escrever a mesma função vazia.
-   */
-  /** O rótulo dinâmico, pronto — ou `null`. Ausente: nenhum botão deste jogo tem rótulo dinâmico. */
   dynLabel?: (b: PauseMenuButton) => string | null;
-  /** The `.pm-btn` action table. LAZY: `pauseActs` is a `const` declared far below the init site in game.js. */
+  /** The `.pm-btn` action table, asked when an item is pressed (so it can be wired after this module). */
   getPauseActs?: () => Record<string, (() => void) | undefined>;
-  /** Records which player opened the menu. `pauseActor` itself stays in game.js — the gamepad, the keyboard
-   *  router, openHelp() and openOptions() all read it there. */
+  /** Records which player opened the card; the panels open scoped to that player. */
   setPauseActor?: (i: number) => void;
-  /*
-   * ⚠️ `getPauseScreens` SAIU EM 2026-09-08, e a razão é o próprio ADR-0106: era um campo OBRIGATÓRIO com
-   * ZERO leitores dentro deste módulo. Medido nos três lados — na engine (`git grep ctx.getPauseScreens` em
-   * `ui/pause-icons` devolve zero), nos testes (só os fixtures o forneciam) e no cartucho (o
-   * `game-platformer` passava-o em `main.ts:1094` para nada).
-   *
-   * 📌 NÃO CONFUNDIR com o homónimo do `ui/shell`, que é de outro ctx e TEM cinco leitores a sério — é ele
-   * que esconde e mostra os cartões por fase. Este era a segunda cópia da mesma pergunta, feita a quem não a
-   * usava; os 300 jogos teriam de a responder na mesma.
-   */
 
-  // --- blind mode (game.js owns `blindMode` + persistence + the cane/extras rebuild) ---
+  // --- blind mode (the host owns `blindMode`, its persistence and whatever it rebuilds) ---
   getBlindMode: () => boolean;
   setBlindMode?: (on: boolean) => void;
 
   // --- TTS (platform/audio mixer; the panel refresh lives in ui/settings-audio) ---
   /**
-   * O mixer por categoria. NULO até `initAudioMixer()` — `platform/audio` o declara
-   * `Record<string, CatState> | null` porque o import dele é PURO (não lê localStorage), e quem inicializa
-   * é o boot do consumidor. Este ctx pedia não-nulo, o que era uma promessa que a fonte não faz.
+   * The mixer by category. NULL until `initAudioMixer()`: `platform/audio`'s import is PURE (it reads no storage), and the
+   * host's boot initialises it.
    */
   getAudioCat: () => Record<string, AudioCatState> | null;
   /** Re-applies a category's gain node after `on`/`vol` changed. */
   setCatGain: (k: string) => void;
-  /** Repaints the TTS row of the auditory panel. See BUG #1 in the report: in game.js this call is behind a
-   *  `typeof reflectTTS==='function'` guard on a symbol that no longer exists, so it never fires. The guard is
-   *  ported verbatim as `reflectTtsPanelEnabled` below rather than silently fixed. */
+  /** Repaints the TTS row of the auditory panel after the icon changes it. */
   reflectTtsPanel: () => void;
-  /** Verbatim port of game.js's dead guard: `typeof reflectTTS === 'function'`. Pass `false` to preserve
-   *  today's behaviour (the panel is NOT refreshed), `true` to restore the intended call. */
+  /** Whether the TTS icon also calls `reflectTtsPanel`. `createGame` passes `true`; `false` leaves the panel as it was. */
   reflectTtsPanelEnabled: boolean;
 
   // --- Libras (ui/vlibras; both reach `document` at call time) ---
@@ -739,59 +610,39 @@ export interface PauseIconsCtx {
 
   // --- TEA / reduced motion (the `rm` object is co-owned with ui/settings-motion — same reference) ---
   /*
-   * ⚠️ ESTES QUATRO FICARAM PARA TRÁS NA ETAPA 1a, e o gate da FORMA foi quem o mostrou. Em 2026-09-08 eles
-   * passaram a opcionais no `SettingsMotionCtx` — e AQUI continuaram obrigatórios, porque são duas cópias da
-   * mesma pergunta e eu só tratei uma. A lista de campos obrigatórios lida do retrato de forma acusou-os.
-   *
-   * 📌 É o mesmo defeito que o próprio ADR-0106 descreve: uma coisa que cada consumidor tem de se lembrar de
-   * passar, em dois sítios em vez de um. Ausentes, valem o que o `ui/motion-scene` sabe responder.
+   * OPTIONAL, as in `SettingsMotionCtx`: the same four questions in two places must have the same answer. Absent, what
+   * `ui/motion-scene` knows is used.
    */
   rm?: MotionSceneFlags;
   rmKeys?: readonly MotionSceneKey[];
   rmChar?: readonly MotionCharDef[];
   saveRM?: () => void;
 
-  // --- motor + visual (both mutate state and rebake textures in game.js) ---
+  // --- mobility + visual (each writes state that the host may also redraw from) ---
   setToggleMove?: (i: number, on: boolean) => void;
   /**
-   * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113).
-   *
-   * 📌 O ícone `altmove` desta barra é a OUTRA superfície que escreve a alternância — a mesma razão pela
-   * qual o escritor voltou para a engine (ADR-0106 §4). Sem este campo, ele escreveria só a chave antiga
-   * enquanto o painel escreve as duas, e as duas superfícies divergiriam em silêncio.
+   * WHICH DEVICE THIS PLAYER IS USING (ADR-0113). The `altmove` icon is the OTHER surface that writes the latch, besides
+   * the panel: without this it would write a different key from the panel's, and the two surfaces would disagree silently.
    */
   transportInUse?: (player: number) => string;
   setPlayerViz?: (i: number, mode: string) => void;
-  /** Os escritores POR EIXO (#104): mexer no tema não apaga a correção, e vice-versa. */
+  /** The writers PER AXIS (#104): changing the theme does not erase the correction, and vice versa. */
   setPlayerTheme?: (i: number, theme: Theme) => void;
   setPlayerCorrection?: (i: number, correction: Correction) => void;
   /**
-   * ANDA UM PASSO NO CICLO DE TIPOGRAFIA e devolve a face que ficou (ADR-0149 §1).
-   *
-   * 📌 UM CAMPO E NÃO DOIS (ler + escrever), porque quem tem de saber a posição é quem guarda o ciclo, e
-   * espalhá-la em dois sítios é a forma de eles divergirem. Este módulo só precisa do NOME da face para
-   * anunciar — o resto é da raiz.
-   *
-   * ⚠️ AUSENTE = O ÍCONE NÃO É MONTADO, pela mesma regra dos dois escritores visuais acima: um ícone que não
-   * acciona é pior do que um ícone a menos (ADR-0106 §5).
+   * MOVES ONE STEP IN THE TYPOGRAPHY CYCLE and returns the face it landed on (ADR-0149 §1). ONE field, not two (read and
+   * write): the position belongs to whoever keeps the cycle; this module only needs the face's NAME to announce it.
+   * ABSENT = THE ICON IS NOT MOUNTED (ADR-0106 §5).
    */
   cycleTypography?: () => string | null;
   /**
-   * ESTE JOGO SEGURA ALGUMA TECLA? — o valor de `GameDeclaration.seguraTeclas` (ADR-0115). Sem ele o ícone
-   * `altmove` não é montado.
+   * DOES THIS GAME HOLD ANY KEY? — `GameDeclaration.holdsKeys` (ADR-0115). Without it the `altmove` icon is not mounted.
    *
-   * ⚠️ OBRIGATÓRIO, e vai contra a direcção do ADR-0106, que passou a tornar campos deste ctx OPCIONAIS para
-   * a engine poder montar sozinha. A excepção tem razão medida: os campos que ganharam padrão têm um padrão
-   * SEGURO — o modo cego começa desligado, a lista de botões vem da engine. Aqui não há: `true` monta um
-   * controle que pode não fazer nada, e `false` esconde um de que uma criança depende. Os dois lados erram, e
-   * é essa a condição que o `holdsAtOnce` já usou para ser obrigatório também.
-   *
-   * 📌 Quem passa pelo `createGame` não escreve isto: a raiz lê a declaração, que já é obrigatória. O campo
-   * só é visível para um cartucho que chame `initPauseIcons` por fora — e é exactamente esse que não pode
-   * ficar em silêncio.
-   *
-   * ⚠️ FUNÇÃO, não valor — ver a nota no campo homónimo de `VisualWriters`. Um cartucho que monte isto
-   * por fora passa `() => this.declaration.seguraTeclas()` e não o resultado dela.
+   * ⚠️ REQUIRED, against ADR-0106's direction of making this ctx's fields optional: the fields that got a default have a
+   * SAFE one (blind mode starts off, the button lists come from the engine). This one has none — `true` mounts a control
+   * that may do nothing, `false` hides one a child depends on. Both are wrong, which is the same reason `holdsAtOnce` is
+   * required. Whoever goes through `createGame` never writes it: the root reads the declaration. A FUNCTION, not a value
+   * (see `ActionableIcons.holdsKeys`): a cartridge wiring this itself passes `() => declaration.holdsKeys()`.
    */
   holdsKeys: () => boolean;
   /** How many positions the current game declared — what «one button only» would scan (ADR-0218). Absent reads as none. */
@@ -811,26 +662,23 @@ export interface PauseIconsCtx {
 export interface PauseIconsApi {
   /** Builds one `.screen-pause` (hidden), wired for click + hover/focus caption. Caller appends it. */
   buildScreenPause: (i: number) => HTMLElement;
-  /** Monta a BARRA RÁPIDA (`.screen-a11y`) da tela `i`, já fiada. Chamada por ui/hud.ts, uma por tela. */
+  /** Builds screen `i`'s QUICK BAR (`.screen-a11y`), already wired. Called by ui/hud.ts, one per screen. */
   buildQuickBar: (i: number) => HTMLElement;
   /**
-   * OS ÍCONES QUE ESTA INSTÂNCIA MONTA — já filtrados pelo §5 do ADR-0106.
-   *
-   * ⚠️ Existe para que quem monta a barra do TÍTULO não repita o filtro. A barra do título não pode usar
-   * `buildQuickBar` (ele põe `tabIndex = -1`, e o próprio comentário lá diz porquê: no título não se está a
-   * jogar), então ela chama `iconsMarkup` directamente — e sem este acessor teria de recalcular quais ícones
-   * accionam, que é uma segunda cópia da mesma decisão.
+   * THE ICONS THIS INSTANCE MOUNTS — already filtered by ADR-0106 §5. It exists so the bar the root mounts in
+   * `#title-icons` (which cannot use `buildQuickBar`: that one sets `tabIndex = -1`, for a game in play) does not repeat
+   * the filter — a second copy of the same decision.
    */
   mountedIcons: readonly PauseIcon[];
-  /** ENTRA no modo `accessibility` da tela `i` — a metade da barra da pausa rápida (ADR-0155). Não mexe na fase. */
+  /** ENTERS screen `i`'s `accessibility` mode — the bar half of the quick pause (ADR-0155). Does not touch the phase. */
   enterBar: (i: number) => void;
-  /** SAI do modo e devolve o direcional ao personagem. `silencioso` = sai para outro ecrã, não para o jogo. */
+  /** LEAVES the mode and gives the d-pad back to the character. `silent` = leaving for another screen, not for the game. */
   leaveBar: (i: number, silent?: boolean) => void;
-  /** A tela `i` está com o direcional na BARRA em vez de no personagem? Perguntado a cada quadro. */
+  /** Is screen `i`'s d-pad on the BAR instead of on the character? Asked every frame. */
   onBar: (i: number) => boolean;
-  /** Um passo dentro do modo. `temStart` é a borda do botão de pausa — a segunda saída (ADR-0044, item 7). */
+  /** One step inside the mode. `hasStart` is the pause button's edge — the second way out (ADR-0044 item 7). */
   navBar: (i: number, k: NavKeys, hasStart?: boolean) => void;
-  /** Runs the icon `k` for screen `i`. Does NOT reflect — callers reflect after, as game.js always did. */
+  /** Runs the icon `k` for screen `i`. Does NOT reflect — callers reflect after. */
   iconAct: (k: string, i: number) => void;
   /** The state-reflecting `aria-label` of icon `k` for screen `i`. */
   iconLabel: (k: string, i: number) => string;
@@ -854,36 +702,25 @@ export interface PauseIconsApi {
 // ---------------------------------------------------------------------------------------------
 
 export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
-  // ⚠️ O NÍVEL TEA PASSOU A PERSISTIR EM 2026-09-07 (issue #61). Este comentário dizia «deliberately NOT
-  // persisted — verbatim: game.js never wrote it to storage», e o **verbatim** é o que o desqualificava como
-  // decisão: foi PRESERVADO na extração do monólito, não escolhido. O ADR-0028 diz que todo menu persiste, e
-  // este é um controlo de menu que vive na barra rápida.
+  // THE CALM LEVEL PERSISTS (issue #61; ADR-0028: every menu setting persists). The child who uses the SILENT mode is the
+  // one for whom unexpected noise costs most, and a setting that is forgotten is a daily chore, not a setting.
   //
-  // O custo de não persistir era da criança que mais precisa dele: quem usa o modo SILENCIOSO voltava a
-  // pô-lo a cada sessão — e é para quem o barulho inesperado custa mais. Um ajuste que se esquece não é um
-  // ajuste, é uma tarefa diária.
-  //
-  // ⚠️ LÊ NO INIT, NUNCA NO IMPORT: a regra vale para todo o projeto e aqui tem custo concreto — um teste que
-  // importasse este módulo passaria a depender do `localStorage` do ambiente, e um nível herdado de outro
-  // caso é uma falha que aparece longe da causa.
+  // READ IN INIT, NEVER ON IMPORT: a test importing this module would otherwise depend on the environment's storage, and a
+  // level inherited from another case is a failure that shows up far from its cause.
   let calmMode = readTeaLevel();
 
   const P = (): readonly PausePlayer[] => ctx.getPlayers() as readonly PausePlayer[];
 
   /*
-   * ⚠️ A ALTERNÂNCIA DE MARCHA PASSOU A TER PADRÃO DA ENGINE (ADR-0106 §4, etapa 1b). Quem injecta continua a
-   * mandar; quem não injecta deixa de ficar sem ela — que era o caso dos cinco jogos sem barra.
-   *
-   * O `store` vem do import directo deste módulo e não do `ctx`, porque é assim que este ficheiro já persiste
-   * o resto: uma chave injectada é um campo que um consumidor pode omitir, e omiti-la faria escrever num nome
-   * torto.
+   * THE MOVEMENT LATCH HAS AN ENGINE DEFAULT (ADR-0106 §4): a host that injects one still rules; a host that does not is
+   * no longer left without it. The `store` is this module's direct import (see the note at the import).
    */
   const setToggleMove = ctx.setToggleMove
     ?? ((i: number, on: boolean) => setMoveLatch(
       {
         players: P(), store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers,
-        // ⚠️ ATRAVESSA, e não se resolve aqui: o ícone e o painel têm de escrever a MESMA coisa. Resolver
-        // o aparelho num deles e não no outro é como duas superfícies da mesma engine passam a discordar.
+        // Passed through, not resolved here: the icon and the panel must write the SAME thing, and resolving the
+        // device in one of them only is how two surfaces of the same engine come to disagree.
         transportInUse: ctx.transportInUse,
       }, i, on));
 
