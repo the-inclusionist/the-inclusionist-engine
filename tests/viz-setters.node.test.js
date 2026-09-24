@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/viz-setters — aplicação dos modos de visão acessível por jogador e globalmente.
-// project NODE: a lógica PURA (resolução de modo, filtro CSS, bolinha, HTML do grupo de rádios) + as cascas
-// com PIXI/DOM FALSIFICADOS por interface estrutural (mesmo precedente de traffic.node/gamepad.node).
-// O que exige canvas de verdade — os três níveis de Renderização Direta (kind 'hcnew') — está no
-// .browser.test.js; aqui os modos usados são todos NÃO-diretos, que é o desvio que não toca canvas.
-// ZOMBIES + Right-BICEP. Comportamento verbatim do game.js (setPlayerViz/applyVizGlobal/reapplyVizAll/
-// applySharedTextures/applyVpFilters/updateVpDots/_rebakeDirect/updateVizIndicator/renderVizGroup).
+// Tests of render/viz-setters — applying the accessible vision modes per player and globally.
+// NODE project: the PURE logic (mode resolution, CSS filter, dot, radio-group HTML) + the shells with PIXI/DOM FAKED
+// through a structural interface (the same precedent as gamepad.node). What needs a real canvas — the three Direct
+// Rendering levels (kind 'hcnew') — is in .browser.test.js; the modes used here are all NON-direct, which is the detour
+// that does not touch a canvas.
+// ZOMBIES + Right-BICEP. (setPlayerViz/applyVizGlobal/reapplyVizAll/applySharedTextures/applyVpFilters/updateVpDots/
+// _rebakeDirect/updateVizIndicator/renderVizGroup.)
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js';
-import { migrateVisual } from '../app/js/render/viz-axes.js'; // VIZ_MODES guarda CHAVE desde o item 14
+import { migrateVisual } from '../app/js/render/viz-axes.js'; // VIZ_MODES holds KEYS (item 14)
 
-// localStorage de mentira ANTES de qualquer coisa do jogo tocar em persistência: platform/storage engole a
-// exceção (try/catch), então sem este shim `store.set` vira no-op e o teste de persistência não poderia falhar.
+// A fake localStorage BEFORE anything of the game touches persistence: platform/storage swallows the exception
+// (try/catch), so without this shim `store.set` becomes a no-op and the persistence test could not fail.
 const mem = new Map();
 globalThis.localStorage = {
   getItem: (k) => (mem.has(k) ? mem.get(k) : null),
@@ -27,17 +27,17 @@ const {
   lvOverlayClassFor, vizGroupHtml, vizGroupSay, reachOfMode,
 } = await import('../app/js/render/viz-setters.js');
 
-// worldTexFor/spriteTexFor exigem o ctx do high-contrast. Nos modos NÃO-diretos elas devolvem a textura normal
-// sem tocar em canvas — é exatamente o desvio exercitado aqui.
+// worldTexFor/spriteTexFor need the high-contrast ctx. In NON-direct modes they return the normal texture without
+// touching a canvas — which is exactly the detour exercised here.
 initHighContrast({
   W: 1, H: 1, outlineFg: () => 0, outlineBg: () => 0,
   getWorldCanvasNormal: () => null, getWorldTexNormal: () => 'TEX_WORLD_NORMAL',
-  // O registro de sprites do alto contraste é chaveado por ID, e o id aqui é o mesmo que o ctx declara
-  // (`itemTexId: 'alvo'`) — é o par que faz a recoloração encontrar a textura. Nenhum dos dois diz "moeda".
+  // The high-contrast sprite registry is keyed by ID, and the id here is the same the ctx declares (`itemTexId: 'alvo'`)
+  // — it is the pair that makes the recolouring find the texture. Neither says "moeda".
   sprites: () => ({ alvo: { canvas: null, tex: 'TEX_ITEM_NORMAL' } }),
 });
 
-/* ===================== fakes: DOM e PIXI por interface estrutural ===================== */
+/* ===================== fakes: DOM and PIXI through a structural interface ===================== */
 
 function fakeBtn(key, val) {
   const listeners = {};
@@ -48,9 +48,9 @@ function fakeBtn(key, val) {
   };
 }
 
-// Elemento DOM falso. querySelectorAll('button[data-x]') NÃO devolve uma lista pré-fabricada: varre o
-// innerHTML corrente atrás de data-x="…", como o DOM real faria — é isso que deixa o teste enxergar que um
-// `innerHTML=''` anterior apaga os botões que o seletor procuraria.
+// A fake DOM element. querySelectorAll('button[data-x]') does NOT return a prefabricated list: it scans the current
+// innerHTML for data-x="…", as the real DOM would — that is what lets the test see that an earlier `innerHTML=''` erases
+// the buttons the selector would look for.
 function fakeEl() {
   const classes = new Set(), attrs = {};
   const el = {
@@ -84,10 +84,9 @@ const filtered = () => ({ filters: 'INTOCADO' });
 /* ===================== fixture: ctx completo + espiões ===================== */
 
 function setup(over = {}) {
-  // ⚠️ O FIXTURE DERIVA `visual` DE `viz`, que é a MESMA regra do espelho que o `setPlayerViz` mantém em
-  // produção (#104). Assim os casos continuam a declarar o modo pelo nome — que é como eles falam — e
-  // nenhum corpo de caso precisou de mudar quando os leitores migraram. Quando o `viz` sair de vez, sai
-  // desta linha e os casos passam a declarar `visual` directamente.
+  // ⚠️ THE FIXTURE DERIVES `visual` FROM `viz`, the SAME mirror rule `setPlayerViz` keeps in production (#104). So the
+  // cases keep declaring the mode by its name — which is how they speak. When `viz` leaves for good, it leaves from this
+  // line and the cases declare `visual` directly.
   const players = (over.players || [{ viz: 'normal', sprite: null, _tx: null }])
     .map((p) => (p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrateVisual(p.viz) } : p));
   const env = {
@@ -115,10 +114,10 @@ function setup(over = {}) {
     $: (sel) => env.els[sel] || null,
     body: { classes: new Set(), classList: null },
     srSay: (s) => env.log.say.push(s),
-    // O módulo pede o VERBO, não o `app`: o `view.style` do PixiJS é `ICanvasStyle`, que nem tem
-    // `filter`. Quem sabe que em produção o `view` é uma canvas do DOM é a raiz de composição — e é
-    // lá que mora a guarda de "e se não houver canvas montada". Este falso imita a raiz.
-    // Alto contraste no DOM (issue #83): não é filtro, é classe — o falso só registra o liga/desliga.
+    // The module asks for the VERB, not the `app`: PixiJS's `view.style` is `ICanvasStyle`, which does not even have
+    // `filter`. What knows that in production the `view` is a DOM canvas is the composition root — and that is where the
+    // "and if there is no canvas mounted" guard lives. This fake imitates the root.
+    // High contrast in the DOM (issue #83): it is not a filter, it is a class — the fake only records the on/off.
     applyHighContrastToDom: (ligado) => { env.log.hcNoDom.push(ligado); },
     applyCssFilter: (css) => { env.log.filtrosCss.push(css); if (env.app && env.app.view) env.app.view.style.filter = css; },
     camera: env.camera,
@@ -127,9 +126,9 @@ function setup(over = {}) {
     decoSprites: env.decoSprites,
     getVpSpr: () => env.vpSpr,
     getVpDots: () => env.vpDots,
-    // OS ITENS, e o NOME deles, entram pelo ctx (item 19). Era `getCoinSprites` + a string 'coin' cravada
-    // dentro do módulo. O fixture usa 'alvo' de propósito: se ele dissesse 'coin', o teste reafirmaria por
-    // hábito o que o corte acabou de tirar — e o gate de fixtures acusaria, com razão.
+    // THE ITEMS, and their NAME, come in through the ctx (item 19). The fixture uses 'alvo' on purpose: if it said 'coin',
+    // the test would reassert out of habit what the cut took out of the module — and the fixtures gate would accuse it,
+    // rightly.
     getItemSprites: () => env.itemSprites,
     itemTexId: 'alvo',
     getPowerups: () => env.powerups,
@@ -145,9 +144,9 @@ function setup(over = {}) {
     playerVizTex: (base, mode) => 'PLAYER:' + base + ':' + mode,
     pixiFilterFor: (mode) => 'FILTER:' + mode,
     clearPlayerDirectCache: () => { env.log.clearPlayerDirect++; },
-    // 🔴 AS DUAS PORTAS QUE O ADR-0228 ABRIU: a textura de um power-up vinha de `render/textures`, que saiu
-    // para o cartucho. A REGRA continua a ser da engine — trocar de modo visual repinta o que está na tela — e
-    // ela não precisa de saber o que um power-up é, o que é exactamente o que uma porta compra.
+    // 🔴 THE TWO PORTS ADR-0228 OPENED: a power-up's texture came from `render/textures`, which left for the cartridge. The
+    // RULE is still the engine's — changing visual mode repaints what is on screen — and it does not need to know what a
+    // power-up is, which is exactly what a port buys.
     pupTexFor: (kind, mode) => ({ kind, mode }),
     resetPupTexCache: () => { env.log.resetPupTex = (env.log.resetPupTex ?? 0) + 1; },
     setFrontDim: (on) => env.log.frontDim.push(on),
@@ -292,8 +291,8 @@ describe('vizGroupHtml — grupo de rádios dos modos', () => {
   });
   it('[Right] nome e descrição de cada modo entram na linha (é o que o leitor de tela lê)', () => {
     const html = vizGroupHtml([VIZ_BY_KEY.blind], 'normal');
-    // `nome`/`desc` guardam CHAVE desde o item 14; a linha tem de trazer o TEXTO. Comparar com a chave crua
-    // passaria aceitando `viz.blind` na tela — que é o modo silencioso de falhar da i18n por chave.
+    // `nome`/`desc` hold KEYS (item 14); the row has to carry the TEXT. Comparing with the raw key would pass accepting
+    // `viz.blind` on screen — which is key-based i18n's silent way of failing.
     expect(html).toContain(t(VIZ_BY_KEY.blind.name));
     expect(html).toContain(t(VIZ_BY_KEY.blind.desc));
     expect(html).not.toContain('viz.blind');
@@ -349,7 +348,7 @@ describe('updateVpDots — bolinhas por viewport', () => {
     expect(env.vpDots[0].visible).toBe(true);
     expect(env.vpDots[0].rec.fills).toEqual([0xffffff]);
     expect(env.vpDots[1].visible).toBe(false);
-    expect(env.vpDots[1].rec.fills).toEqual([]); // apagada NÃO redesenha
+    expect(env.vpDots[1].rec.fills).toEqual([]); // switched off does NOT redraw
   });
   it('[Boundary] mais viewports que jogadores: o excedente apaga sem lançar', () => {
     const { env, api } = setup({ players: [{ viz: 'lv-blur' }], numPlayers: 1, vpDots: [fakeDot(), fakeDot()] });
@@ -381,15 +380,15 @@ describe('applyVpFilters — filtro PIXI por viewport', () => {
     const { env, api } = setup({ players: [{ viz: 'blind' }], vpSpr: [filtered()] });
     api.applyVpFilters();
     const antigo = env.vpSpr[0];
-    env.vpSpr = [filtered()]; // <- é o que configureRender faz ao trocar o nº de telas
-    // ⚠️ ESCREVE OS DOIS, como o `setPlayerViz` faz (#104). O caso escrevia só `env.players[0].viz`, o que
-    // em produção NINGUÉM faz — quem muda o modo passa pelo setter, e o setter mantém o espelho. Um teste
-    // que contorna a API acaba a medir um estado que o programa nunca produz.
+    env.vpSpr = [filtered()]; // <- it is what configureRender does when the number of screens changes
+    // ⚠️ WRITES BOTH, as `setPlayerViz` does (#104). Writing only `env.players[0].viz` is something nobody does in
+    // production — whoever changes the mode goes through the setter, and the setter keeps the mirror. A test that goes
+    // around the API ends up measuring a state the program never produces.
     env.players[0].viz = 'lv-haze';
     env.players[0].visual = migrateVisual('lv-haze');
     api.applyVpFilters();
     expect(env.vpSpr[0].filters).toBe('FILTER:lv-haze');
-    expect(antigo.filters).toBe('FILTER:blind'); // o array velho não é mais tocado
+    expect(antigo.filters).toBe('FILTER:blind'); // the old array is no longer touched
   });
 });
 
@@ -421,15 +420,15 @@ describe('applySharedTextures — texturas estáticas do multiplayer (memo por m
     env.parallaxLayers[0].texture = 'MARCA';
     env.players[0].sprite.texture = 'MARCA';
     api.applySharedTextures('blind');
-    expect(env.parallaxLayers[0].texture).toBe('MARCA'); // estático NÃO foi refeito
+    expect(env.parallaxLayers[0].texture).toBe('MARCA'); // static NOT redone
     expect(env.players[0].sprite.texture).toBe('PLAYER:TX0:blind'); // jogador FOI
-    expect(env.log.frontDim).toEqual([false]); // só a primeira vez
+    expect(env.log.frontDim).toEqual([false]); // only the first time
   });
   it('[Inverse] invalidar o registro força a reaplicação do mesmo modo', () => {
     const { env, api } = cena();
     api.applySharedTextures('blind');
     env.parallaxLayers[0].texture = 'MARCA';
-    env.sharedViz = null; // <- o que rebuildCoins/rebuildExtras/setPlayerViz fazem
+    env.sharedViz = null; // <- what rebuildCoins/rebuildExtras/setPlayerViz do
     api.applySharedTextures('blind');
     expect(env.parallaxLayers[0].texture).toBe('PX:0:blind');
   });
@@ -487,7 +486,7 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
     expect(env.els['#viz-overlay'].hidden).toBe(true);
     expect(env.els['#viz-overlay'].className).toBe('');
     expect(env.els['#viz-indicator'].hidden).toBe(true);
-    expect(env.log.hideTouch).toEqual([]); // normal não esconde o toque
+    expect(env.log.hideTouch).toEqual([]); // normal does not hide touch
   });
   it('[Zero] modo não-direto NÃO põe filtro na câmera nem escurece a frente', () => {
     const { env, api } = setup();
@@ -504,13 +503,12 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
     expect(env.log.visual).toBe(1);
     expect(env.log.empathy).toBe(1);
   });
-  // 2026-08-26: este caso mudou de assunto junto com a injeção. Antes o módulo perguntava
-  // `if (ctx.app && ctx.app.view)` — ele DECIDIA se havia canvas, e a pergunta não era dele. Agora ele
-  // chama o verbo sempre, e quem guarda é a raiz. O que sobra para provar aqui é justamente isso: sem
-  // canvas montada, o filtro continua a ser PEDIDO (a raiz é que o descarta) e o resto do modo aplica.
+  // The module always calls the verb; guarding against a missing canvas is the root's job. What is left to prove here is
+  // exactly that: with no canvas mounted, the filter is still ASKED for (the root discards it) and the rest of the mode
+  // applies.
   //
-  // MUTAÇÃO CONFERIDA: pondo `if (env.app && env.app.view)` de volta em volta da chamada dentro do
-  // módulo, `filtrosCss` fica vazio e o caso falha em "expected [] to have a length of 1".
+  // MUTATION CHECKED: putting `if (env.app && env.app.view)` back around the call inside the module, `filtrosCss` stays
+  // empty and the case fails with "expected [] to have a length of 1".
   it('[Null] sem canvas montada, o módulo AINDA pede o filtro — a guarda é da raiz', () => {
     const { env, api } = setup({ app: { view: null } });
     expect(() => api.applyVizGlobal(migrateVisual('blind'))).not.toThrow();
@@ -526,7 +524,7 @@ describe('setPlayerViz — solo e multi-tela seguem caminhos DIFERENTES', () => 
     api.setPlayerViz(0, 'lv-haze');
     expect(env.bodyClasses.has('lowvision-mode')).toBe(true);   // marca do caminho global
     expect(env.app.view.style.filter).toBe('contrast(.58) brightness(1.14) blur(.6px)');
-    expect(env.vpSpr[0].filters).toBe('INTOCADO');              // caminho por viewport não rodou
+    expect(env.vpSpr[0].filters).toBe('INTOCADO');              // the per-viewport path did not run
     expect(env.vpDots[0].visible).toBe(false);
   });
   it('[Right] MULTI-TELA: aplica filtros/bolinhas por viewport e NÃO toca no global', () => {
@@ -537,7 +535,7 @@ describe('setPlayerViz — solo e multi-tela seguem caminhos DIFERENTES', () => 
     api.setPlayerViz(1, 'blind');
     expect(env.vpSpr[1].filters).toBe('FILTER:blind');
     expect(env.vpDots[1].visible).toBe(true);
-    expect(env.bodyClasses.size).toBe(0);                       // nada de classe global
+    expect(env.bodyClasses.size).toBe(0);                       // no global class at all
     expect(env.app.view.style.filter).toBe('ANTES');            // canvas inteira intocada
     expect(env.log.rebuildCoins).toBe(0);
   });
@@ -597,13 +595,13 @@ describe('reapplyVizAll — reaplicação após mudança estrutural (cenário / 
     env.els['#viz-overlay'].hidden = false;
     env.els['#viz-indicator'].hidden = false;
     api.reapplyVizAll();
-    expect(env.app.view.style.filter).toBe('');            // só o realce L→Q, que está em 0
+    expect(env.app.view.style.filter).toBe('');            // only the L→Q enhancement, which is at 0
     expect(env.camera.filters).toBeNull();
     expect(env.bodyClasses.size).toBe(0);
     expect(env.els['#viz-overlay'].hidden).toBe(true);
     expect(env.els['#viz-indicator'].hidden).toBe(true);   // updateVizIndicator('normal')
     expect(env.vpSpr.map((s) => s.filters)).toEqual(['FILTER:blind', 'FILTER:lv-haze']);
-    expect(localStorage.getItem('incl_viz')).toBeNull();   // MP não escreve o modo global
+    expect(localStorage.getItem('incl_viz')).toBeNull();   // MP does not write the global mode
   });
   it('[Right] invalida o registro do render estático nos DOIS caminhos', () => {
     for (const n of [1, 2]) {
@@ -667,7 +665,7 @@ describe('renderVizGroup — grupo de rádios nos painéis', () => {
     api.renderVizGroup('#lista', '#abas', VIZ_MODES);
     expect(env.els['#abas'].hidden).toBe(true);
     expect(env.els['#abas'].innerHTML).toBe('');
-    expect(env.els['#abas'].lastQuery).toHaveLength(0); // o innerHTML='' apagou o que o seletor buscaria (ver relatório)
+    expect(env.els['#abas'].lastQuery).toHaveLength(0); // the innerHTML='' erased what the selector would look for
   });
   it('[Right] clicar num botão troca o modo do jogador selecionado e anuncia', () => {
     const { env, api } = setup({
@@ -683,23 +681,22 @@ describe('renderVizGroup — grupo de rádios nos painéis', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------
-// ATÉ ONDE O FILTRO ALCANÇA — decisão do Dev, 2026-08-26, issue #82.
+// HOW FAR THE FILTER REACHES — the Dev's decision, 2026-08-26, issue #82.
 //
-// O quadro é metade canvas e metade DOM, e filtro de PIXI não alcança DOM. Até esta data o filtro caía SÓ na
-// canvas: a criança daltônica recebia o JOGO corrigido e os MENUS crus — e o menu é onde estão as palavras,
-// inclusive as dos próprios ajustes de acessibilidade.
+// The frame is half canvas and half DOM, and a PIXI filter does not reach the DOM. A filter falling ONLY on the canvas
+// gives the colour-blind child the GAME corrected and the MENUS raw — and the menu is where the words are, including those
+// of the accessibility settings themselves.
 //
-// A regra que conserta isso NÃO é "filtrar tudo", e a diferença é de acessibilidade:
+// The rule that fixes it is NOT "filter everything", and the difference is one of accessibility:
 //
-//   · MELHORIA (normal, hc-direto*, fix-*) existe para a criança ENXERGAR MELHOR → alcança os menus.
-//   · EMPATIA (sim-*, lv-*, blind) existe para um adulto SENTIR como é → fica no mundo. O menu é o
-//     instrumento de SAIR da simulação; uma cegueira que apagasse o menu de pausa trancaria a criança
-//     dentro dela.
+//   · IMPROVEMENT (normal, hc-direto*, fix-*) exists for the child to SEE BETTER → it reaches the menus.
+//   · EMPATHY (sim-*, lv-*, blind) exists for an adult to FEEL what it is like → it stays in the world. The menu is the
+//     instrument to LEAVE the simulation; a blindness that blanked the pause menu would lock the child inside it.
 //
-// E o catálogo já sabia disto antes de a regra ser escrita: `sim: true` marca exatamente os nove modos de
-// empatia. Derivar dali, e não de uma segunda lista, é o que impede as duas de divergirem.
+// And the catalogue already knew this before the rule was written: `sim: true` marks exactly the nine empathy modes.
+// Deriving from there, and not from a second list, is what stops the two from drifting apart.
 //
-// MUTAÇÃO CONFERIDA: invertendo o `?` de `reachOfMode`, o [Right] falha em "normal" —
+// MUTATION CHECKED: inverting the `?` of `reachOfMode`, the [Right] fails on "normal" —
 // "expected 'mundo' to be 'mundo-e-menus'".
 describe('até onde o filtro alcança (issue #82)', () => {
   const MELHORIAS = ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7', 'fix-protan', 'fix-deuter', 'fix-tritan'];
@@ -714,30 +711,30 @@ describe('até onde o filtro alcança (issue #82)', () => {
   });
 
   it('[Interface] as duas listas juntas são o catálogo INTEIRO — nenhum modo fica sem regra', () => {
-    // O caso que impede a regra de envelhecer: um modo novo entra em VIZ_MODES e cai numa das duas, ou este
-    // caso reprova. Sem ele, o modo novo herdaria um alcance por acidente.
+    // The case that stops the rule from ageing: a new mode enters VIZ_MODES and falls into one of the two, or this case
+    // fails. Without it, the new mode would inherit a reach by accident.
     expect([...MELHORIAS, ...EMPATIA].sort()).toEqual(VIZ_MODES.map((m) => m.key).sort());
   });
 
   it('[Boundary] modo desconhecido cai em MELHORIA — e isso está declarado, não por acaso', () => {
-    // `simulatesDisability` devolve `false` para chave inexistente, então o desconhecido alcança o menu. É o
-    // lado seguro: um modo que ninguém declarou não deve poder DEIXAR o menu sem correção. Travado aqui para
-    // a escolha ser deliberada se alguém a inverter.
+    // `simulatesDisability` returns `false` for a non-existent key, so the unknown reaches the menu. It is the safe side: a
+    // mode nobody declared must not be able to LEAVE the menu without correction. Pinned here so the choice is deliberate
+    // if someone inverts it.
     expect(reachOfMode('inventado')).toBe('mundo-e-menus');
   });
 });
 
 // ---------------------------------------------------------------------------------------------------------
-// ALTO CONTRASTE NO DOM (issue #83). Ele NÃO é filtro: é Renderização Direta, e repinta as texturas da canvas.
-// O DOM não tem textura, então o conserto da #82 — propagar o filtro — não o alcançava. O que atravessa é uma
-// CLASSE, e o desenho (véu opaco, cursor invertido) mora no `style.css`, com as razões medidas em
+// HIGH CONTRAST IN THE DOM (issue #83). It is NOT a filter: it is Direct Rendering, and it repaints the canvas's textures.
+// The DOM has no texture, so the fix of #82 — propagating the filter — did not reach it. What crosses is a CLASS, and the
+// drawing (opaque veil, inverted cursor) lives in `style.css`, with the reasons measured in
 // `tests/menu-contrast-measured.node.test.js`.
 //
-// MUTAÇÃO CONFERIDA: trocando `m.kind === 'hcnew'` por `false` em `applyVizGlobal`, o [Right] falha em
+// MUTATION CHECKED: replacing `m.kind === 'hcnew'` with `false` in `applyVizGlobal`, the [Right] fails with
 // "expected [] to deeply equal [ true ]".
-// ⚠️ Os casos que LIGAM o alto contraste vivem em `viz-setters.browser.test.js`, e não aqui: o caminho
-// `hcnew` chama `worldTexFor`, que precisa de uma canvas de verdade para repintar. É a mesma razão pela qual
-// o desvio de Renderização Direta já era testado lá. Aqui fica o lado que não toca canvas.
+// ⚠️ The cases that TURN high contrast on live in `viz-setters.browser.test.js`, not here: the `hcnew` path calls
+// `worldTexFor`, which needs a real canvas to repaint. The same reason the Direct Rendering detour was already tested
+// there. Here is the side that does not touch a canvas.
 describe('alto contraste alcança o DOM por CLASSE, não por filtro (issue #83)', () => {
   it('[Inverse] modo que não é alto contraste DESLIGA a classe — inclusive os de empatia', () => {
     for (const m of ['normal', 'fix-deuter', 'sim-deuter', 'lv-blur', 'blind']) {
@@ -750,24 +747,21 @@ describe('alto contraste alcança o DOM por CLASSE, não por filtro (issue #83)'
 });
 
 // ===========================================================================================================
-// #104 · O INVARIANTE QUE SEGURA A MIGRAÇÃO ENQUANTO OS DOIS CAMPOS EXISTEM
+// #104 · THE INVARIANT THAT HOLDS THE TWO FIELDS TOGETHER
 // ===========================================================================================================
 //
-// ⚠️ ISTO É ANDAIME, E TEM DATA PARA SAIR. A #104 troca `p.viz` (uma string) por `p.visual` (dois eixos mais a
-// simulação), e fazê-lo de uma vez deixaria a árvore vermelha por dezenas de erros sem nenhum ponto verde
-// onde parar. Então os dois campos coexistem: `setPlayerViz` escreve os DOIS, os leitores migram um a um, e
-// este caso é o que garante que eles não podem divergir pelo caminho.
+// `p.visual` (two axes plus the simulation) is the state; `p.viz` is a LEGACY mirror of it, derived by `legacyKey` and
+// written for readers of the published version. Every write goes through `writePlayerVisual`, and these cases pin that
+// writing through `setPlayerViz` leaves the two fields saying the same thing.
 //
-// ⚠️ E O ESPELHO TEM UM LIMITE CONHECIDO, que é a razão de ele não poder ficar: `viz` guarda UM valor, então
-// não há chave que descreva «hc7 + fix-deuter». Enquanto os controles escrevem um valor de cada vez, o
-// espelho acompanha; assim que eles passarem a escrever por EIXO (etapas 4 e 5), ele deixa de conseguir, e é
-// aí que ele sai — junto com este bloco.
+// ⚠️ AND THE MIRROR HAS A KNOWN LIMIT: `viz` keeps ONE value, so no key describes «hc7 + fix-deuter»; for that state
+// `legacyKey` keeps the theme (see `viz-migracao.node.test.js`). Readers that need both axes read `visual`.
 describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existirem', () => {
   it('⚠️ [Right] toda escrita por `setPlayerViz` deixa os dois campos a dizer a MESMA coisa', async () => {
     const { migrateVisual, howItApplies } = await import('../app/js/render/viz-axes.js');
     const { VIZ_FILTER, needsCanvas } = await import('../app/js/render/viz-modes.js');
-    // Os modos DIRETOS ficam de fora aqui porque repintam textura e exigem canvas — o
-    // `viz-setters.browser.test.js` é quem os cobre. O que se afirma é o espelho, e ele não depende disso.
+    // The DIRECT modes are left out here because they repaint textures and need a canvas — `viz-setters.browser.test.js`
+    // covers them. What is asserted is the mirror, and it does not depend on that.
     for (const k of ['normal', 'fix-protan', 'fix-deuter', 'fix-tritan', 'sim-deuter', 'sim-protan',
       'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind']) {
       const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
@@ -775,8 +769,8 @@ describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existir
       const p = env.players[0];
       expect(p.viz, k).toBe(k);
       expect(p.visual, `o espelho de «${k}» ficou para trás`).toEqual(migrateVisual(k));
-      // E o par que o render vai aplicar continua a ser o de hoje — a mesma afirmação da rede da etapa 0,
-      // agora sobre o valor que REALMENTE foi escrito no jogador e não sobre uma chave de fixture.
+      // And the pair the render will apply is still the same — the same claim as the step-0 net, now about the value
+      // REALLY written to the player and not about a fixture key.
       expect(howItApplies(p.visual), k).toEqual({
         direct: needsCanvas(k) ? k : null,
         filter: k in VIZ_FILTER ? k : null,
@@ -785,9 +779,9 @@ describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existir
   });
 
   it('⚠️ [Zero] uma chave desconhecida cai em `normal` nos DOIS campos, e não num só', async () => {
-    // `resolveViz` já mandava chave desconhecida para `normal`. Se o espelho não seguisse essa mesma queda,
-    // o jogador ficaria com `viz: 'normal'` e um `visual` de outra coisa — a divergência mais difícil de ver,
-    // porque os dois estão preenchidos e só um está certo.
+    // `resolveViz` sends an unknown key to `normal`. If the mirror did not follow that same fall, the player would end up
+    // with `viz: 'normal'` and a `visual` of something else — the hardest divergence to see, because both are filled in
+    // and only one is right.
     const { DEFAULT_VISUAL } = await import('../app/js/render/viz-axes.js');
     const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
     api.setPlayerViz(0, 'modo-que-nao-existe');
@@ -797,23 +791,23 @@ describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existir
 });
 
 describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visível', () => {
-  // A caixa da definition of done que a issue chama de «the dangerous half». O que está em jogo é concreto:
-  // toda criança que já jogou tem uma string na chave velha, e a primeira sessão depois da actualização ou
-  // a lê, ou apaga o modo visual que ela escolheu.
+  // The box of the definition of done the issue calls «the dangerous half». What is at stake is concrete: every child who
+  // has already played has a string in the old key, and the first session after the update either reads it or erases the
+  // visual mode she chose.
   it('⚠️ [Right] só a chave VELHA presente: o ajuste dela sobrevive à actualização', async () => {
     const { readStoredVisual } = await import('../app/js/render/viz-setters.js');
     const { migrateVisual } = await import('../app/js/render/viz-axes.js');
     const { VIZ_CYCLE } = await import('../app/js/render/viz-modes.js');
     for (const k of VIZ_CYCLE) {
       mem.clear();
-      mem.set('incl_viz_p0', k); // exactamente o que está no navegador dela hoje
+      mem.set('incl_viz_p0', k); // exactly what is in her browser from before the split
       expect(readStoredVisual(0), `«${k}» perdeu-se na actualização`).toEqual(migrateVisual(k));
     }
   });
 
   it('⚠️ [Right] a chave NOVA vence a velha — é a única que sabe dizer DOIS eixos', () => {
-    // E é o caso que prova que o recuo é recuo e não a fonte: um estado de dois eixos não tem string que o
-    // descreva, então se a velha vencesse, `hc7 + fix-deuter` seria impossível de restaurar.
+    // And it is the case proving the fallback is a fallback and not the source: a two-axis state has no string to describe
+    // it, so if the old one won, `hc7 + fix-deuter` would be impossible to restore.
     mem.clear();
     mem.set('incl_viz_p0', 'normal');
     mem.set('incl_visual_p0', JSON.stringify({ tema: 'hc7', correcao: 'deuter', simulacao: null }));
@@ -830,8 +824,8 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
   });
 
   it('⚠️ [Zero] JSON corrompido na chave nova cai na VELHA em vez de no padrão', async () => {
-    // O dado vem do navegador de uma criança e pode estar truncado. Cair no padrão aqui seria descartar o
-    // ajuste que a chave velha ainda tem, guardado e íntegro, ao lado.
+    // The data comes from a child's browser and may be truncated. Falling to the default here would throw away the setting
+    // the old key still has, stored and intact, beside it.
     const { readStoredVisual } = await import('../app/js/render/viz-setters.js');
     const { migrateVisual } = await import('../app/js/render/viz-axes.js');
     mem.clear();
@@ -854,25 +848,25 @@ describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visí
   });
 });
 
-// ========================= MUTACOES CONFERIDAS (o espelho da #104) =========================
-//   · apagando a escrita `p.visual = migrateVisual(m.key)` -> reprovam os DOIS casos. E o defeito que o bloco
-//     existe para impedir: os leitores migrariam um a um para um campo que ninguem mantem, e o primeiro a
-//     migrar passaria a ler o padrao para toda a gente — sem erro, sem aviso, com a arvore verde.
-//   · ⚠️ trocando `migrateVisual(m.key)` por `migrateVisual(mode)` -> NAO reprova, e a mutacao e' EQUIVALENTE,
-//     nao um buraco. `resolveViz` manda chave desconhecida para `normal` e `migrateVisual` manda-a para
-//     `DEFAULT_VISUAL`, que sao o mesmo estado; para chave conhecida `m.key === mode`. Nao ha entrada que as separe.
-//     Fica `m.key` na mesma, porque a linha acima ja resolveu e ler duas vezes da mesma resolucao e' o que
-//     impede a terceira de divergir. Registado aqui em vez de apagado: uma mutacao sobrevivente que se
-//     confirma equivalente e' informacao, e a proxima pessoa nao precisa de a redescobrir.
+// ========================= MUTATIONS CHECKED (#104's mirror) =========================
+//   · deleting the `p.visual = migrateVisual(m.key)` write -> BOTH cases fail. It is the defect the block exists to
+//     prevent: readers would migrate one by one to a field nobody maintains, and the first to migrate would start reading
+//     the default for everyone — no error, no warning, with the tree green.
+//   · ⚠️ replacing `migrateVisual(m.key)` with `migrateVisual(mode)` -> does NOT fail, and the mutation is EQUIVALENT, not a
+//     hole. `resolveViz` sends an unknown key to `normal` and `migrateVisual` sends it to `DEFAULT_VISUAL`, which are the
+//     same state; for a known key `m.key === mode`. No input separates them. `m.key` stays anyway, because the line above
+//     has already resolved and reading twice from the same resolution is what stops a third from diverging. Recorded here
+//     instead of deleted: a surviving mutation confirmed equivalent is information, and the next person need not
+//     rediscover it.
 //
-// ========================= MUTACOES CONFERIDAS (a migracao do valor salvo, 1b) =========================
-//   · ⚠️ TIRANDO O RECUO para a chave velha (`return DEFAULT_VISUAL`) -> reprovam TRES. E o estrago que a issue chama
-//     de «the dangerous half»: a primeira sessao depois da actualizacao apagaria o modo visual de TODA
-//     crianca que ja jogou, porque o ajuste dela vive na chave velha e mais lado nenhum.
-//   · fazendo a chave VELHA vencer a nova -> reprova o caso dos dois eixos. Nao ha string que descreva
-//     «hc7 + fix-deuter», entao com a ordem invertida esse estado seria impossivel de restaurar — a nova
-//     tem de vencer justamente porque e' a unica que sabe dizer duas coisas.
-//   · deixando de escrever a chave LEGADA -> reprovam TRES, e DOIS deles sao casos ANTIGOS. E a medida de que
-//     ela ainda carrega comportamento: um leitor da versao publicada faz `if (v && VIZ_BY_KEY[v])` e
-//     recusaria JSON, entao parar de a escrever apagaria o ajuste da crianca em silencio.
-//   · deixando de escrever a chave NOVA -> reprova a ida e volta. Os dois eixos nao teriam onde ficar.
+// ========================= MUTATIONS CHECKED (the saved value's migration, 1b) =========================
+//   · ⚠️ REMOVING THE FALLBACK to the old key (`return DEFAULT_VISUAL`) -> THREE fail. It is the damage the issue calls «the
+//     dangerous half»: the first session after the update would erase the visual mode of EVERY child who has already
+//     played, because her setting lives in the old key and nowhere else.
+//   · making the OLD key beat the new one -> fails the two-axes case. No string describes «hc7 + fix-deuter», so with the
+//     order inverted that state would be impossible to restore — the new one has to win precisely because it is the only
+//     one that can say two things.
+//   · no longer writing the LEGACY key -> THREE fail, and TWO of them are OLD cases. It is the measure that it still
+//     carries behaviour: a reader of the published version does `if (v && VIZ_BY_KEY[v])` and would refuse JSON, so
+//     stopping writing it would erase the child's setting in silence.
+//   · no longer writing the NEW key -> fails the round trip. The two axes would have nowhere to live.

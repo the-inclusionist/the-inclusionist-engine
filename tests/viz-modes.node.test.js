@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/viz-modes — a tabela dos 16 modos visuais e as listas DERIVADAS dela (project node).
+// Tests of render/viz-modes — the table of the 16 visual modes and the lists DERIVED from it (node project).
 //
-// ========================= ESTE ARQUIVO NÃO EXISTIA =========================
-// `render/viz-modes` é folha, é dado puro e decide TODA a acessibilidade visual do jogo — quem aparece no
-// menu de empatia, quem aparece no de visão, qual filtro de CSS cada modo aplica, e agora qual deles precisa
-// de um mundo para existir. Nada disso tinha teste próprio: as listas derivadas eram exercitadas de lado,
-// pelos testes de quem as consome, e uma tabela errada apareceria como um menu estranho em outro arquivo.
+// ========================= WHY THIS FILE =========================
+// `render/viz-modes` is a leaf, it is pure data and it decides ALL of the game's visual accessibility — who appears in the
+// empathy menu, who appears in the vision one, which CSS filter each mode applies, and which of them needs a world to
+// exist. Exercised only from the side, by the tests of whoever consumes them, a wrong table would show up as a strange
+// menu in another file.
 //
-// O que os casos perseguem não é a tabela em si (dado literal não erra sozinho): é que as listas DERIVADAS
-// continuem derivando. Uma lista que passasse a ser escrita à mão pareceria idêntica até o dia em que alguém
-// acrescentasse um modo e ele sumisse de um dos menus, em silêncio.
+// What the cases pursue is not the table itself (literal data does not go wrong by itself): it is that the DERIVED lists
+// keep deriving. A list written by hand would look identical until the day someone added a mode and it vanished from one
+// of the menus, in silence.
 import { describe, it, expect } from 'vitest';
 import {
   VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, VIZ_CYCLE, VIZ_CORRECTIONS,
@@ -28,9 +28,9 @@ describe('a tabela e os índices', () => {
   });
 
   it('[Interface] `nome` e `desc` guardam CHAVE i18n, nunca texto', () => {
-    // A decisão está escrita no cabeçalho do módulo: uma tabela de `const` com texto resolve UMA vez, no
-    // import, e fica congelada no idioma do boot. Este menu é o que uma criança de baixa visão lê para
-    // configurar o próprio jogo — em inglês ele viraria a única página que ela não consegue usar.
+    // The decision is written in the module's header: a `const` table with text resolves ONCE, at import, and stays frozen
+    // in the boot language. This menu is what a low-vision child reads to set up her own game — in English it would become
+    // the one page she cannot use.
     for (const m of VIZ_MODES) {
       expect(m.name, m.key).toMatch(/^viz\./);
       expect(m.desc, m.key).toMatch(/^viz\.desc\./);
@@ -44,9 +44,9 @@ describe('a tabela e os índices', () => {
 
 describe('simulatesDisability — simular contra corrigir', () => {
   it('[Right] as três correções de daltonismo NÃO simulam, e as três simulações simulam', () => {
-    // A distinção que o `kind` não fazia e que o ADR-0028 obrigou a fazer: desligar as simulações é o que o
-    // "restaurar padrões" do menu de empatia deve fazer; desligar as correções junto tiraria de uma criança
-    // daltônica a única correção que ela tem, a partir de um menu feito para quem NÃO tem a condição.
+    // The distinction `kind` did not make and ADR-0028 forced: turning the simulations off is what the empathy menu's
+    // "restaurar padrões" has to do; turning the corrections off with them would take from a colour-blind child the only
+    // correction she has, from a menu made for whoever does NOT have the condition.
     for (const k of ['fix-protan', 'fix-deuter', 'fix-tritan']) expect(simulatesDisability(k), k).toBe(false);
     for (const k of ['sim-protan', 'sim-deuter', 'sim-tritan']) expect(simulatesDisability(k), k).toBe(true);
   });
@@ -63,7 +63,7 @@ describe('simulatesDisability — simular contra corrigir', () => {
   });
 });
 
-/* ===================== AS DUAS PILHAS COM UM NOME SÓ (achado 8, item 19) ===================== */
+/* ===================== THE TWO STACKS WITH ONE NAME (finding 8, item 19) ===================== */
 
 describe('needsCanvas — qual modo exige um mundo', () => {
   it('[Right] só os `hcnew` precisam de canvas: são os que repintam textura de tile', () => {
@@ -71,8 +71,8 @@ describe('needsCanvas — qual modo exige um mundo', () => {
   });
 
   it('[Zero] chave desconhecida NÃO exige canvas — a resposta que não tira nada de ninguém', () => {
-    // Mesma regra de `simulatesDisability`. Aqui "seguro" é cair na pilha de DOM: um consumidor sem mundo
-    // ainda pode oferecer o modo, e o erro na direção oposta seria esconder acessibilidade de quem a usa.
+    // The same rule as `simulatesDisability`. Here "safe" is falling into the DOM stack: a consumer with no world can
+    // still offer the mode, and the error in the opposite direction would hide accessibility from whoever uses it.
     expect(needsCanvas('nao-existe')).toBe(false);
     expect(needsCanvas('')).toBe(false);
   });
@@ -80,8 +80,8 @@ describe('needsCanvas — qual modo exige um mundo', () => {
 
 describe('VIZ_DOM_ONLY / VIZ_CANVAS_ONLY — a partição', () => {
   it('[Right] juntas são os 16 modos, sem sobra e sem repetição', () => {
-    // É o que faz delas uma PARTIÇÃO e não duas listas convenientes. Um modo que caísse fora das duas — ou
-    // nas duas — seria um modo cuja pilha ninguém sabe, e o consumidor voltaria a adivinhar.
+    // It is what makes them a PARTITION and not two convenient lists. A mode falling outside both — or in both — would be a
+    // mode whose stack nobody knows, and the consumer would go back to guessing.
     expect(VIZ_DOM_ONLY.length + VIZ_CANVAS_ONLY.length).toBe(VIZ_MODES.length);
     const chaves = [...VIZ_DOM_ONLY, ...VIZ_CANVAS_ONLY].map((m) => m.key).sort();
     expect(chaves).toEqual(VIZ_MODES.map((m) => m.key).sort());
@@ -93,8 +93,8 @@ describe('VIZ_DOM_ONLY / VIZ_CANVAS_ONLY — a partição', () => {
   });
 
   it('[Many] a pilha que VIAJA é maior do que "os filtros de daltonismo": 13 dos 16', () => {
-    // O número importa porque o achado 8 é fácil de ler como "o alto contraste não viaja, então a
-    // acessibilidade visual não viaja". Treze modos viajam. O que não viaja são três.
+    // The number matters because finding 8 is easy to read as "high contrast does not travel, so visual accessibility
+    // does not travel". Thirteen modes travel. What does not travel is three.
     const chaves = VIZ_DOM_ONLY.map((m) => m.key);
     expect(chaves).toContain('normal');
     expect(chaves).toContain('fix-deuter');
@@ -104,15 +104,15 @@ describe('VIZ_DOM_ONLY / VIZ_CANVAS_ONLY — a partição', () => {
   });
 
   it('[Cross-check] as CORREÇÕES de daltonismo estão todas na pilha que viaja', () => {
-    // O caso que liga as duas perguntas sem as misturar: corrigir daltonismo é DOM, e por isso a criança
-    // daltônica tem a correção dela em qualquer jogo do catálogo — não só neste.
+    // The case that links the two questions without mixing them: correcting colour blindness is DOM, and so the
+    // colour-blind child has her correction in any game of the catalogue — not only in this one.
     const dom = new Set(VIZ_DOM_ONLY.map((m) => m.key));
     for (const c of VIZ_CORRECTIONS) expect(dom, c.key).toContain(c.key);
   });
 
   it('[Interface] todo modo da pilha de DOM tem filtro declarado, ou é o `normal`', () => {
-    // Se um modo diz "não preciso de canvas" e não traz filtro de CSS, ele não faz NADA num jogo sem mundo —
-    // e apareceria no menu como uma opção que não muda coisa alguma. É o defeito silencioso desta partição.
+    // If a mode says "I do not need a canvas" and carries no CSS filter, it does NOTHING in a game with no world — and it
+    // would appear in the menu as an option that changes nothing at all. It is this partition's silent defect.
     for (const m of VIZ_DOM_ONLY) {
       if (m.key === 'normal') continue;
       expect(VIZ_FILTER[m.key] !== undefined, m.key).toBe(true);

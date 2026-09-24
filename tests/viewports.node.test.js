@@ -1,24 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/viewports + render/cvd-matrices — a FÁBRICA de imagem dos modos de visão acessível
-// ("como um modo vira pixel"), par de render/viz-setters (que leva a POLÍTICA, "qual modo vale onde").
+// Tests of render/viewports + render/cvd-matrices — the image FACTORY of the accessible vision modes ("how a mode becomes
+// pixels"), the counterpart of render/viz-setters (which carries the POLICY, "which mode holds where").
 //
-// project NODE: o que NÃO precisa de canvas — as seis matrizes de daltonismo, a seleção de filtro por modo,
-// os caches, a geração dos <filter> SVG (com um DOM falso) e os desvios que devolvem a textura crua. PIXI é
-// FALSIFICADO por interface estrutural (mesmo precedente de traffic.node/viz-setters.node). O que exige canvas
-// de verdade — lvOverlayCanvas, os três níveis de Renderização Direta, o carimbo do overlay na render-texture —
-// está em viewports.browser.test.js.
+// NODE project: what does NOT need a canvas — the six colour-blindness matrices, filter selection by mode, the caches,
+// the generation of the SVG <filter>s (with a fake DOM) and the detours that return the raw texture. PIXI is FAKED through
+// a structural interface (the same precedent as viz-setters.node). What needs a real canvas — lvOverlayCanvas, the three
+// Direct Rendering levels, the stamping of the overlay in the render-texture — is in viewports.browser.test.js.
 //
-// O QUE ESTE ARQUIVO EXISTE PARA PEGAR (a duplicação curada): as seis matrizes de daltonismo estavam escritas
-// DUAS vezes, em linguagens diferentes — como `<feColorMatrix values="…">` em app/index.html (caminho de TELA
-// ÚNICA) e como `PIXI.ColorMatrixFilter` dentro de `pixiFilterFor` no game.js (caminho MULTI-TELA). Batiam por
-// sorte. Se divergissem, a falha seria SILENCIOSA e de ACESSIBILIDADE: a mesma pessoa daltônica veria cores
-// diferentes em tela única e em multi-tela, sem erro, sem log, sem teste vermelho. Agora há uma fonte só
-// (render/cvd-matrices) e três testemunhas amarradas a ela aqui embaixo: a pesquisa (docs/research/
-// PESQUISA-DALTONIZACAO.md, lida e comparada valor a valor), os ids que VIZ_FILTER pede, e o index.html — que
-// não pode voltar a ter uma segunda cópia escrita à mão.
+// WHAT THIS FILE EXISTS TO CATCH: the six colour-blindness matrices have ONE source (render/cvd-matrices) feeding two
+// paths in two languages — the SVG `<feColorMatrix values="…">` of the SINGLE-SCREEN path and the `ColorMatrixFilter` of
+// the MULTI-SCREEN path. Written twice, they would agree by luck, and if they diverged the failure would be SILENT and of
+// ACCESSIBILITY: the same colour-blind person would see different colours on one screen and on several, with no error, no
+// log, no red test. The witnesses tied to the single source below are the research (docs/research/
+// PESQUISA-DALTONIZACAO.md, read and compared value by value) and the ids VIZ_FILTER asks for.
 //
-// ZOMBIES + Right-BICEP. Comportamento verbatim do game.js (parallaxTexFor/treeTexFor/playerVizTex/
-// pixiFilterFor/lvOverlayTex/renderVpOverlay).
+// ZOMBIES + Right-BICEP. (parallaxTexFor/treeTexFor/playerVizTex/pixiFilterFor/lvOverlayTex/renderVpOverlay.)
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { VIZ_MODES, VIZ_FILTER } from '../app/js/render/viz-modes.js';
@@ -27,10 +23,10 @@ import { initViewports } from '../app/js/render/viewports.js';
 
 const readRepo = (rel) => readFileSync(new URL('../' + rel, import.meta.url), 'utf8');
 
-/* ===================== fakes: PIXI e DOM por interface estrutural ===================== */
+/* ===================== fakes: PIXI and DOM through a structural interface ===================== */
 
-// PIXI.ColorMatrixFilter de mentira: guarda a matriz e o LOG das chamadas de brightness/contrast (com os
-// argumentos), que é o que distingue 'blind' de 'lv-haze' de um modo de daltonismo.
+// A fake PIXI.ColorMatrixFilter: keeps the matrix and the LOG of brightness/contrast calls (with the arguments), which is
+// what tells 'blind' from 'lv-haze' from a colour-blindness mode.
 function fakeCM() {
   const made = [];
   class CM {
@@ -53,8 +49,8 @@ function fakeSvgNode(ns, name) {
     appendChild(c) { this.children.push(c); return c; },
   };
 }
-// `<defs>` de mentira com firstChild/removeChild de verdade — é o que deixa o teste de idempotência falhar
-// se installCvdFilters parar de esvaziar o host antes de preencher (ids duplicados = falha silenciosa).
+// A fake `<defs>` with a real firstChild/removeChild — it is what lets the idempotence test fail if installCvdFilters
+// stops emptying the host before filling it (duplicate ids = a silent failure).
 function fakeDefsHost() {
   const host = fakeSvgNode('svg', 'defs');
   host.ownerDocument = { createElementNS: (ns, name) => fakeSvgNode(ns, name) };
@@ -71,7 +67,7 @@ function mkCtx(over = {}) {
     parallaxTexNormal: ['TEX_SKY', 'TEX_FAR', 'TEX_NEAR'],
     getTreeTexNormal: () => 'TEX_TREE',
     getLvOverlaySpr: () => spr,
-    // `renderer` virou a CAPACIDADE `renderizarEm` (Fase D): o módulo pede o verbo, não o objeto do PixiJS.
+    // The renderer is the `renderInto` CAPABILITY (phase D): the module asks for the verb, not the PixiJS object.
     renderInto: (obj, alvo, limpar) => rendered.push([obj, { renderTexture: alvo, clear: limpar }]),
     getVpTex: () => ['RT0', 'RT1'],
     cvdDefsHost: null,
@@ -80,7 +76,7 @@ function mkCtx(over = {}) {
   return { ctx, rendered, spr };
 }
 
-/* ===================== 1. a fonte única das matrizes ===================== */
+/* ===================== 1. the single source of the matrices ===================== */
 
 describe('render/cvd-matrices — forma das seis matrizes', () => {
   it('[Right] são exatamente os seis modos de daltonismo, e cada um traz 20 números (4 linhas × 5)', () => {
@@ -97,8 +93,8 @@ describe('render/cvd-matrices — forma das seis matrizes', () => {
     for (const k of CVD_KEYS) for (const i of [4, 9, 14]) expect(CVD_MATRIX[k][i]).toBe(0);
   });
 
-  // Propriedade das duas famílias: soma de cada linha = 1 → branco e cinzas ficam intactos, a matriz só mexe
-  // onde há croma. Pega quase todo erro de digitação de dígito (muda a soma em ~1e-4, cem vezes a tolerância).
+  // A property of both families: each row sums to 1 → white and greys stay intact, the matrix only moves where there is
+  // chroma. It catches almost every digit typo (it changes the sum by ~1e-4, a hundred times the tolerance).
   it('[Right] cada linha soma 1 — branco e cinza preservados nas seis matrizes', () => {
     for (const k of CVD_KEYS) for (const r of [0, 5, 10]) {
       const soma = CVD_MATRIX[k].slice(r, r + 3).reduce((a, b) => a + b, 0);
@@ -122,9 +118,9 @@ describe('render/cvd-matrices — forma das seis matrizes', () => {
 /* ===================== 2. as três testemunhas contra a divergência ===================== */
 
 describe('render/cvd-matrices — a fonte única confere com a pesquisa', () => {
-  // A pesquisa (Machado 2009 + daltonização canônica) é a fonte PRIMÁRIA. As tabelas são lidas do markdown e
-  // comparadas valor a valor: se alguém "ajustar" um número no módulo sem atualizar a pesquisa (ou vice-versa),
-  // este caso fica vermelho — que é a única coisa que impede as duas de tornarem a divergir em silêncio.
+  // The research (Machado 2009 + canonical daltonisation) is the PRIMARY source. The tables are read from the markdown and
+  // compared value by value: if someone "adjusts" a number in the module without updating the research (or vice versa),
+  // this case goes red — which is the only thing that stops the two from drifting apart in silence again.
   const DOC_ROW = {
     Protanopia: 'sim-protan', Deuteranopia: 'sim-deuter', Tritanopia: 'sim-tritan',
     'fix-protan': 'fix-protan', 'fix-deutan': 'fix-deuter', 'fix-tritan': 'fix-tritan',
@@ -137,7 +133,7 @@ describe('render/cvd-matrices — a fonte única confere com a pesquisa', () => 
       if (!m || !DOC_ROW[m[1]]) continue;
       const cells = m[2].split('|').map((s) => s.trim());
       if (cells.length !== 3) continue;
-      // a pesquisa usa o MENOS TIPOGRÁFICO (U+2212), não o hífen ASCII
+      // the research uses the TYPOGRAPHIC MINUS (U+2212), not the ASCII hyphen
       out[DOC_ROW[m[1]]] = cells.map((c) => c.replace(/−/g, '-').split(',').map((s) => Number(s.trim())));
     }
     return out;
@@ -154,8 +150,8 @@ describe('render/cvd-matrices — a fonte única confere com a pesquisa', () => 
 });
 
 describe('render/cvd-matrices — os ids são o contrato com o caminho de tela única', () => {
-  // VIZ_FILTER guarda só o `url(#cvd-deuter)`; quem promete que esse filtro existe no documento é CVD_SVG_ID.
-  // Renomear de um lado só apaga a canvas (referência de filtro inexistente não renderiza).
+  // VIZ_FILTER keeps only the `url(#cvd-deuter)`; what promises that filter exists in the document is CVD_SVG_ID.
+  // Renaming on one side only blanks the canvas (a reference to a non-existent filter does not render).
   it.each([...CVD_KEYS])('[Interface] %s: VIZ_FILTER pede exatamente o id que o gerador cria', (k) => {
     expect(VIZ_FILTER[k]).toBe('url(#' + CVD_SVG_ID[k] + ')');
   });
@@ -232,11 +228,11 @@ describe('render/viewports — pixiFilterFor', () => {
     const f = vp.pixiFilterFor(k);
     expect(f).toHaveLength(1);
     expect(f[0].matrix).toEqual([...CVD_MATRIX[k]]);
-    expect(f[0].calls).toEqual([]); // daltonismo é matriz pura: nada de brightness/contrast
+    expect(f[0].calls).toEqual([]); // colour blindness is a pure matrix: no brightness/contrast
   });
 
-  // Sem a cópia, o filtro ficaria com o array do MÓDULO nas mãos: qualquer c.brightness()/c.contrast() do PIXI
-  // reescreveria a fonte única em memória e contaminaria todos os outros modos.
+  // Without the copy, the filter would hold the MODULE's array: any PIXI c.brightness()/c.contrast() would rewrite the
+  // single source in memory and contaminate every other mode.
   it('[Interface] o filtro recebe uma CÓPIA da matriz — mexer nele não corrompe a fonte única', () => {
     const { vp } = withPixi();
     const f = vp.pixiFilterFor('sim-deuter');
@@ -278,12 +274,11 @@ describe('render/viewports — pixiFilterFor', () => {
     expect(vp.pixiFilterFor('modo-que-nao-existe')).toBeNull();
   });
 
-  // DEFEITO HERDADO, PINADO DE PROPÓSITO (não consertado nesta extração — comportamento verbatim do game.js).
-  // O cache é um `{}` comum e o teste de presença é `mode in _vpFilterCache`, que enxerga o PROTÓTIPO: um modo
-  // chamado 'toString' devolve Object.prototype.toString como se fosse um filtro. O mesmo buraco existe no
-  // `VIZ_BY_KEY[key]` de resolveViz (render/viz-setters), que é quem alimenta `mode` — então a decisão de fechar
-  // os dois é uma só e não cabe aqui. Se alguém trocar o cache por Object.create(null), este caso fica vermelho:
-  // é o lembrete de fechar o buraco nos DOIS lugares, não só neste.
+  // AN INHERITED DEFECT, PINNED ON PURPOSE. The cache is a plain `{}` and the presence test is `mode in _vpFilterCache`,
+  // which sees the PROTOTYPE: a mode called 'toString' returns Object.prototype.toString as if it were a filter. The same
+  // hole exists in resolveViz's `VIZ_BY_KEY[key]` (render/viz-setters), which is what feeds `mode` — so the decision to
+  // close both is one and does not fit here. If someone swaps the cache for Object.create(null), this case goes red: it is
+  // the reminder to close the hole in BOTH places, not only in this one.
   it('[Zombie] nome de propriedade de Object.prototype ainda vaza pelo cache (defeito conhecido)', () => {
     const { vp } = withPixi();
     expect(vp.pixiFilterFor('toString')).toBe(Object.prototype.toString);
@@ -304,7 +299,7 @@ describe('render/viewports — pixiFilterFor', () => {
     Object.defineProperty(ctx, 'ColorMatrixFilter', { get: () => { chamadas++; return cm.CM; } });
     const vp = initViewports(ctx);
     vp.pixiFilterFor('normal'); vp.pixiFilterFor('normal'); vp.pixiFilterFor('normal');
-    expect(chamadas).toBe(1); // 2ª e 3ª chamadas saem pelo cache, antes de ler o construtor
+    expect(chamadas).toBe(1); // the 2nd and 3rd calls leave through the cache, before reading the constructor
   });
 
   it('[Boundary] PIXI sem ColorMatrixFilter: os modos de matriz caem para null em vez de estourar', () => {
@@ -328,7 +323,7 @@ describe('render/viewports — pixiFilterFor', () => {
   });
 });
 
-/* ===================== 5. texturas: os desvios que não tocam canvas ===================== */
+/* ===================== 5. textures: the detours that do not touch a canvas ===================== */
 
 describe('render/viewports — parallaxTexFor', () => {
   it('[Right] modo não-direto devolve a textura CRUA da camada pedida', () => {
@@ -338,8 +333,8 @@ describe('render/viewports — parallaxTexFor', () => {
     expect(vp.parallaxTexFor(2, 'sim-deuter')).toBe('TEX_NEAR');
   });
 
-  // setCenario troca os ELEMENTOS de parallaxTexNormal in place (o array é `const`). É por isso que ele entra
-  // por VALOR e não por getter: se o módulo tivesse copiado o array, o tema novo nunca apareceria.
+  // A scenery swap replaces the ELEMENTS of parallaxTexNormal in place (the array is `const`). That is why it comes in by
+  // VALUE and not by getter: if the module had copied the array, the new theme would never appear.
   it('[Interface] enxerga a troca de textura feita pelo cenário (o array é o mesmo objeto)', () => {
     const { ctx } = mkCtx();
     const vp = initViewports(ctx);
@@ -361,9 +356,9 @@ describe('render/viewports — treeTexFor', () => {
     expect(vp.treeTexFor('lv-tunnel')).toBe('TEX_TREE');
   });
 
-  // A árvore é um `const` declarado DEPOIS do ponto em que initViewports precisa rodar (setCenario é chamado
-  // no topo do boot e limpa o cache de parallax). Por isso ela entra por getter: se o módulo lesse o valor no
-  // init, o boot cairia em TDZ e o cenário salvo do jogador seria perdido dentro de um try/catch mudo.
+  // The tree is a `const` a host may declare AFTER the point where initViewports has to run (restoring a saved scenery at
+  // the top of boot clears the parallax cache). That is why it comes in through a getter: if the module read the value at
+  // init, the boot would fall into the TDZ and the player's saved scenery would be lost inside a silent try/catch.
   it('[Interface] lê a árvore no momento da CHAMADA — a init pode preceder a declaração dela', () => {
     let arvore = null;
     const { ctx } = mkCtx({ getTreeTexNormal: () => arvore });
@@ -401,10 +396,10 @@ describe('render/viewports — lvOverlayTex', () => {
   });
 });
 
-/* ===================== 6. renderVpOverlay: quem NÃO desenha ===================== */
+/* ===================== 6. renderVpOverlay: who does NOT draw ===================== */
 
 describe('render/viewports — renderVpOverlay', () => {
-  // Os desvios de saída antecipada são justamente os que não tocam canvas; o carimbo em si é browser.
+  // The early-exit detours are exactly the ones that do not touch a canvas; the stamp itself is a browser case.
   it.each(['normal', 'blind', 'hc-direto', 'sim-deuter'])(
     '[Zombie] %s não é baixa visão → nenhuma passada extra de render', (mode) => {
       const { ctx, rendered } = mkCtx();
@@ -422,14 +417,13 @@ describe('render/viewports — renderVpOverlay', () => {
     const { ctx, rendered, spr } = mkCtx();
     initViewports(ctx).renderVpOverlay(0, 'lv-blur');
     expect(rendered).toHaveLength(0);
-    expect(spr.texture).toBeNull(); // nem a textura do sprite é tocada
+    expect(spr.texture).toBeNull(); // not even the sprite's texture is touched
   });
 });
 
-// ⚠️ UM DESCRIBE SAIU DAQUI em 2026-09-07 (issue #111): ele afirmava algo sobre o CARTUCHO — a raiz de
-// composicao (`main.ts`) ou o `app/index.html` do jogo — e nenhum dos dois vive mais neste repositorio.
-// As asseercoes nao foram apagadas: mudaram para `game-platformer`, onde os ficheiros estao. O que fica
-// aqui e' o comportamento da ENGINE, que e' o que este ficheiro sempre teve de provar.
+// ⚠️ Assertions about the CARTRIDGE — its composition root (`main.ts`) or its `app/index.html` — live in `game-platformer`
+// (issue #111), where those files are. What stays here is the ENGINE's behaviour, which is what this file has always had
+// to prove.
 
 // MUTATIONS CHECKED (2026-09-23) on `pixiFilterFor`, before and after it became two tables (`MATRIX_OF`, `BLUR_OF`) —
 // `scratchpad/sonda-vp.py` and `sonda-vp-3.py`. Before: 16 of 16 red, every rung of the old ladder already held by a case

@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A REDE DA #104: o que cada um dos 16 modos FAZ hoje tem de continuar a fazer depois da divisão em dois eixos.
+// #104'S NET: what each of the 16 single-value modes DID has to keep being done after the split into two axes.
 //
-// ========================= POR QUE ISTO EXISTE ANTES DE QUALQUER MUDANÇA =========================
-// A issue #104 chama a migração de «the dangerous half», e o ADR-0076 diz porquê: o ajuste salvo guarda o
-// valor único antigo, e sem a tradução o modo visual que CADA CRIANÇA JÁ ESCOLHEU é descartado. Quem escolheu
-// `fix-deuter` escolheu-o porque enxerga assim.
+// ========================= WHY THIS EXISTS =========================
+// Issue #104 calls the migration «the dangerous half», and ADR-0076 says why: the saved setting keeps the old single
+// value, and without the translation the visual mode EACH CHILD HAS ALREADY CHOSEN is thrown away. Whoever chose
+// `fix-deuter` chose it because that is how they see.
 //
-// ⚠️ E ESTE FICHEIRO NÃO DESCREVE O QUE EU ACHO QUE O CÓDIGO FAZ — ele deriva o comportamento de hoje das
-// TABELAS REAIS (`VIZ_FILTER`, `needsCanvas`, `VIZ_BY_KEY.kind`, `simulatesDisability`) e exige que o modelo
-// novo produza o mesmo. Uma rede escrita a partir da minha leitura protegeria a minha leitura, e não a
-// criança. É a diferença entre um teste de caracterização e uma paráfrase.
+// ⚠️ AND THIS FILE DOES NOT DESCRIBE WHAT SOMEONE THINKS THE CODE DOES — it derives the old behaviour from the REAL TABLES
+// (`VIZ_FILTER`, `needsCanvas`, `VIZ_BY_KEY.kind`, `simulatesDisability`) and requires the new model to produce the same.
+// A net written from a reading would protect the reading, not the child. It is the difference between a
+// characterisation test and a paraphrase.
 //
-// ========================= O QUE «O MESMO» QUER DIZER, MECANISMO A MECANISMO =========================
-// Medido em `render/viewports.ts`, que é quem aplica:
-//   · `playerVizTex(base, mode)` só faz alguma coisa quando existe `DIRECT_CFG[mode]` — os três `hc-direto*`,
-//     que são exatamente os `needsCanvas`. Para todo o resto devolve a textura como veio.
-//   · `pixiFilterFor(mode)` só produz filtro para as seis chaves de daltonismo, `blind` e os cinco `lv-*` —
-//     que são exatamente as chaves de `VIZ_FILTER`.
-// Logo o par (direto, filtro) do modelo novo é comparável, chave a chave, com o par que a tabela antiga
-// produzia. É isso que os casos abaixo afirmam.
+// ========================= WHAT «O MESMO» MEANS, MECHANISM BY MECHANISM =========================
+// Measured in `render/viewports`, which is what applies it:
+//   · `playerVizTex(base, mode)` only does something when `DIRECT_CFG[mode]` exists — the three `hc-direto*`, which are
+//     exactly the `needsCanvas` ones. For everything else it returns the texture as it came.
+//   · `pixiFilterFor(mode)` only produces a filter for the six colour-blindness keys, `blind` and the five `lv-*` — which
+//     are exactly the keys of `VIZ_FILTER`.
+// So the new model's (direct, filter) pair is comparable, key by key, with the pair the old table produced. That is what
+// the cases below assert.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import {
   VIZ_CYCLE, VIZ_FILTER, VIZ_BY_KEY, needsCanvas, simulatesDisability,
@@ -30,7 +30,7 @@ import {
   bothAxesAtDefault, DEFAULT_VISUAL, LEGACY_KEYS,
 } from '../app/js/render/viz-axes.js';
 
-/** O que a tabela ANTIGA fazia com esta chave, derivado dela e não escrito à mão. */
+/** What the OLD table did with this key, derived from it and not written by hand. */
 const comportamentoAntigo = (k) => ({
   direct: needsCanvas(k) ? k : null,
   filter: k in VIZ_FILTER ? k : null,
@@ -38,8 +38,8 @@ const comportamentoAntigo = (k) => ({
 
 describe('#104 · a migração preserva o que cada modo FAZ', () => {
   it('⚠️ [Interface] os 16 modos de hoje estão TODOS cobertos pela migração', () => {
-    // Se um modo ficasse de fora, a criança que o escolheu cairia no padrão sem que nada avisasse — e o
-    // padrão é precisamente a tela que ela não consegue usar.
+    // If a mode were left out, the child who chose it would fall to the default with nothing warning — and the default is
+    // precisely the screen she cannot use.
     const semCobertura = VIZ_CYCLE.filter((k) => !LEGACY_KEYS.includes(k));
     expect(semCobertura, 'modo antigo sem tradução: a escolha desta criança seria descartada').toEqual([]);
     expect(LEGACY_KEYS.length).toBe(VIZ_CYCLE.length);
@@ -53,8 +53,8 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
   });
 
   it('⚠️ [Right] e o que o sprite usa de textura não muda', () => {
-    // `playerVizTex` só age quando o modo tem `DIRECT_CFG`, isto é, quando `needsCanvas`. A chave nova pode
-    // ser outra palavra desde que caia do mesmo lado dessa pergunta.
+    // `playerVizTex` only acts when the mode has `DIRECT_CFG`, that is, when `needsCanvas`. The new key may be another
+    // word as long as it falls on the same side of that question.
     for (const k of VIZ_CYCLE) {
       expect(needsCanvas(textureKey(migrateVisual(k))), `a textura do modo «${k}» trocou de caminho`)
         .toBe(needsCanvas(k));
@@ -62,9 +62,9 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
   });
 
   it('⚠️ [Right] «isto simula uma deficiência?» responde igual aos 16 — é o que o reset da empatia usa', () => {
-    // O botão «restaurar padrões» do menu de empatia desliga as SIMULAÇÕES. Se a classificação escorregasse,
-    // ele passaria a desligar uma CORREÇÃO — tirar de uma criança daltônica a única correção que ela tem, a
-    // partir do menu que existe para quem não tem a deficiência.
+    // The empathy menu's «restaurar padrões» button turns SIMULATIONS off. If the classification slipped, it would start
+    // turning a CORRECTION off — taking from a colour-blind child the only correction she has, from the menu that exists
+    // for whoever does not have the disability.
     for (const k of VIZ_CYCLE) {
       expect(isSimulation(migrateVisual(k)), `«${k}» trocou de lado entre simular e corrigir`)
         .toBe(simulatesDisability(k));
@@ -81,8 +81,8 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
   });
 
   it('⚠️ [Boundary] os 13 modos que NÃO são alto contraste deixam os dois eixos no padrão', () => {
-    // É o que libera a simulação (ADR-0076): uma demonstração por cima de uma adaptação ensina uma coisa
-    // falsa. Depois da migração, todo modo antigo que não era tema tem de continuar a permitir simular.
+    // It is what frees the simulation (ADR-0076): a demonstration on top of an adaptation teaches something false. After
+    // the migration, every old mode that was not a theme has to keep allowing simulation.
     for (const k of VIZ_CYCLE) {
       const v = migrateVisual(k);
       const eraTema = needsCanvas(k);
@@ -92,15 +92,15 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
   });
 
   it('[Zero] lixo, ausência e uma chave de outra versão caem no padrão em vez de estourar', () => {
-    // O dado vem do navegador de uma criança: pode ser de outra máquina, de uma versão futura, ou corrompido.
+    // The data comes from a child's browser: it may be from another machine, a future version, or corrupted.
     for (const mau of [undefined, null, '', 'modo-de-2030', 42, [], { tema: 'roxo' }]) {
       expect(migrateVisual(mau), String(mau)).toEqual(DEFAULT_VISUAL);
     }
   });
 
   it('⚠️ [Interface] a migração é IDEMPOTENTE — ela corre mais de uma vez por sessão', () => {
-    // A leitura acontece por jogador, e o valor já migrado volta a passar por aqui. Se a segunda passagem
-    // mudasse alguma coisa, o ajuste da criança derivaria sozinho entre duas leituras.
+    // The reading happens per player, and the already migrated value passes through here again. If the second pass changed
+    // anything, the child's setting would drift by itself between two readings.
     for (const k of VIZ_CYCLE) {
       const uma = migrateVisual(k);
       expect(migrateVisual(uma), `«${k}» não sobreviveu à segunda migração`).toEqual(uma);
@@ -111,31 +111,29 @@ describe('#104 · a migração preserva o que cada modo FAZ', () => {
 
 describe('#104 · e o que a divisão TORNA POSSÍVEL, que é o ponto da issue', () => {
   it('⚠️ [Right] `hc7` E `fix-deuter` ao mesmo tempo, com os DOIS aplicados', () => {
-    // A caixa nº 1 da definition of done, e a razão de a issue existir: uma criança com daltonismo que TAMBÉM
-    // precise de alto contraste não podia ter os dois. Nenhuma chave antiga consegue exprimir este estado —
-    // é por isso que o caso o constrói à mão.
+    // Box nº 1 of the definition of done, and the reason the issue exists: a child with colour blindness who ALSO needs
+    // high contrast could not have both. No old key can express this state — that is why the case builds it by hand.
     const os_dois = { tema: 'hc7', correcao: 'deuter', simulacao: null };
     expect(howItApplies(os_dois)).toEqual({ direct: 'hc-direto-7', filter: 'fix-deuter' });
     expect(bothAxesAtDefault(os_dois), 'com um eixo fora do padrão a simulação tem de ficar travada').toBe(false);
   });
 
   it('⚠️ [Right] a chave LEGADA preserva TODO ajuste que já existia — ida e volta pelos 16 modos', () => {
-    // ⚠️ ESTE CASO NASCEU DE UM GATE VERMELHO, e o defeito que ele apanhou é o pior tipo: silencioso e a
-    // custo da criança. A primeira escrita usava a `textureKey` como espelho — e ela devolve `normal`
-    // para uma correção de cor, porque correção não muda textura nenhuma. Uma criança em `fix-deuter`
-    // passaria a gravar `'normal'` na chave velha, e um leitor antigo (o cartucho publicado) perderia a
-    // correção dela sem nada dizer.
+    // ⚠️ THIS CASE WAS BORN FROM A RED GATE, and the defect it caught is the worst kind: silent and at the child's cost.
+    // The first writing used `textureKey` as the mirror — and it returns `normal` for a colour correction, because a
+    // correction changes no texture at all. A child in `fix-deuter` would start writing `'normal'` to the old key, and an
+    // old reader (the published cartridge) would lose her correction with nothing said.
     for (const k of VIZ_CYCLE) {
       expect(legacyKey(migrateVisual(k)), `o modo «${k}» não sobrevive à chave legada`).toBe(k);
     }
   });
 
   it('⚠️ [Boundary] e o ÚNICO caso com perda é o que nunca existiu antes', () => {
-    // `hc7 + fix-deuter` só cabe como uma das duas metades no vocabulário antigo. Não há regressão possível
-    // nisso: o estado é NOVO, e um leitor de uma chave só nunca soube exprimi-lo. Quem quiser as duas
-    // metades lê a chave nova, que existe para isso.
+    // `hc7 + fix-deuter` only fits as one of its two halves in the old vocabulary. No regression is possible there: the
+    // state is NEW, and a single-key reader never knew how to express it. Whoever wants both halves reads the new key,
+    // which exists for that.
     expect(legacyKey({ tema: 'hc7', correcao: 'deuter', simulacao: null })).toBe('hc-direto-7');
-    // E a simulação vence as duas, porque é a que apaga a tela inteira.
+    // And the simulation beats both, because it is the one that blanks the whole screen.
     expect(legacyKey({ tema: 'hc7', correcao: 'deuter', simulacao: 'blind' })).toBe('blind');
   });
 
@@ -146,23 +144,22 @@ describe('#104 · e o que a divisão TORNA POSSÍVEL, que é o ponto da issue', 
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-// ⚠️ Uma rede de caracterizacao NASCE VERDE por definicao — ela descreve o que ja acontece. Entao a prova de
-// que ela serve nao e' o verde: e' que cada estrago plausivel na migracao a poe vermelha. Sete, todas
-// aplicadas por script ao `render/viz-axes.ts`, com contagem de ocorrencias:
-//   · ⚠️ APAGANDO `fix-deuter` da tabela -> reprovam TRES. E o estrago que a issue chama de «the dangerous
-//     half»: a crianca que escolheu aquela correcao volta ao padrao, em silencio, e o padrao e' exatamente a
-//     tela que ela nao consegue usar.
-//   · trocando `hc-direto-7` para o tema `hc45` — um engano de UM degrau, do tipo que passa numa leitura
-//     rapida -> reprova o par. A crianca que pediu 7:1 receberia 4.5:1 e nada diria.
-//   · fazendo `fix-protan` migrar para a SIMULACAO `sim-protan` -> reprovam TRES, e o do meio e' o que
-//     interessa: o «restaurar padroes» do menu de empatia desliga simulacoes, entao esta troca fa-lo-ia
-//     desligar a correcao de uma crianca daltonica — a partir do menu que existe para quem NAO e' daltonico.
-//   · tirando o ramo de objeto do `migrateVisual` (fica nao-idempotente) -> reprova a idempotencia. A leitura
-//     acontece por jogador e mais de uma vez por sessao; o ajuste derivaria sozinho entre duas leituras.
-//   · `filterKey` a devolver sempre `null` -> reprovam TRES, incluindo os dois casos do que a divisao TORNA
-//     POSSIVEL. O eixo da correcao ficaria mudo.
-//   · `directTheme` a devolver `null` para todo tema -> reprovam DOIS: o par e a textura do sprite.
-//   · `migrateVisual` a ESTOURAR em chave desconhecida -> reprova o caso do lixo. O dado vem do navegador de
-//     uma crianca e pode ser de outra maquina ou de uma versao futura; um `throw` ali tira o jogo do ar por
-//     causa de uma preferencia.
+// ========================= MUTATIONS CHECKED =========================
+// ⚠️ A characterisation net IS BORN GREEN by definition — it describes what already happens. So the proof that it serves
+// is not the green: it is that every plausible damage to the migration turns it red. Seven, all applied by script to
+// `render/viz-axes.ts`, with occurrence counts:
+//   · ⚠️ DELETING `fix-deuter` from the table -> THREE fail. It is the damage the issue calls «the dangerous half»: the
+//     child who chose that correction goes back to the default, in silence, and the default is exactly the screen she
+//     cannot use.
+//   · switching `hc-direto-7` to the `hc45` theme — a mistake of ONE step, the kind that passes a quick read -> fails the
+//     pair. The child who asked for 7:1 would get 4.5:1 and nothing would say so.
+//   · making `fix-protan` migrate to the SIMULATION `sim-protan` -> THREE fail, and the middle one is what matters: the
+//     empathy menu's «restaurar padroes» turns simulations off, so this swap would make it turn off a colour-blind child's
+//     correction — from the menu that exists for whoever is NOT colour-blind.
+//   · removing the object branch from `migrateVisual` (it stops being idempotent) -> fails idempotence. The reading
+//     happens per player and more than once per session; the setting would drift by itself between two readings.
+//   · `filterKey` always returning `null` -> THREE fail, including the two cases of what the split MAKES POSSIBLE. The
+//     correction axis would go mute.
+//   · `directTheme` returning `null` for every theme -> TWO fail: the pair and the sprite's texture.
+//   · `migrateVisual` THROWING on an unknown key -> fails the rubbish case. The data comes from a child's browser and may
+//     be from another machine or a future version; a `throw` there takes the game down because of a preference.

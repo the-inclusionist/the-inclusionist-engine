@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O MENU VISUAL COM DOIS CONTROLES (#104, ADR-0076) — a metade pura.
+// THE VISUAL MENU WITH TWO CONTROLS (#104, ADR-0076) — the pure half.
 //
-// ⚠️ O QUE AUTORIZA ESTA MUDANÇA está escrito no próprio `ui/settings-visual`, e continua verdadeiro sobre o
-// dia em que foi escrito: «Os sete vivem num CONTROLE SÓ… `p.viz` guarda UM valor. Dois controles separados
-// se sobrescreveriam em silêncio.» A razão que ele dá DEIXOU DE EXISTIR — o campo já não guarda um valor, e
-// os escritores por eixo mexem num sem tocar no outro. O controle único contava uma exclusividade REAL;
-// mantê-lo agora contaria uma que já não existe.
+// ⚠️ WHAT AUTHORISES THIS: the single control was justified while `p.viz` held ONE value — two separate controls would
+// have overwritten each other in silence. That reason no longer exists: the state holds two axes, and the per-axis
+// writers touch one without touching the other. The single control told a REAL exclusivity; keeping it would tell one
+// that no longer exists.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import {
   axesHtml, axisRows, buttonChoice, THEME_LABEL, CORRECTION_LABEL,
@@ -27,8 +26,8 @@ describe('ui/visual-axes-panel · dois eixos, dois rádios', () => {
   });
 
   it('⚠️ [Right] o marcado de um eixo é o do ESTADO daquele eixo, e não o do outro', () => {
-    // É a asserção que prova que os dois rádios são dois. Com um campo só, marcar `hc7` obrigaria a
-    // desmarcar `deuter` — e era isso que a criança perdia sem nada dizer.
+    // It is the assertion proving the two radio groups are two. With a single field, checking `hc7` would force unchecking
+    // `deuter` — and that is what the child lost with nothing said.
     const html = axesHtml({ tema: 'hc7', correcao: 'deuter', simulacao: null }, t);
     expect(html).toContain('data-eixo="tema" data-valor="hc7"');
     expect(html).toContain('data-eixo="correcao" data-valor="deuter"');
@@ -44,9 +43,8 @@ describe('ui/visual-axes-panel · dois eixos, dois rádios', () => {
   });
 
   it('[Right] mantém a forma de LINHA VISÍVEL, e não uma caixa fechada', () => {
-    // O `settings-visual` regista o erro que o Dev apanhou na primeira tentativa: dentro de um `<select>`,
-    // um controle cuja razão de existir é ser ACHADO por quem enxerga mal fica «quase o mesmo que não ter
-    // movido».
+    // `settings-visual` records the mistake the Dev caught on the first attempt: inside a `<select>`, a control whose reason
+    // to exist is to be FOUND by whoever sees poorly is «quase o mesmo que não ter movido».
     const html = axesHtml(DEFAULT_VISUAL, t);
     expect(html).not.toContain('<select');
     expect(html).toContain('class="ctrl-row"');
@@ -56,9 +54,8 @@ describe('ui/visual-axes-panel · dois eixos, dois rádios', () => {
 
 describe('ui/visual-axes-panel · os nomes dos padrões', () => {
   it('⚠️ [Interface] NENHUM rótulo de padrão diagnostica quem lê', () => {
-    // A última caixa da definition of done do ADR-0076: «modo sem deficiência visual» foi oferecido e
-    // RECUSADO — ele diz à criança o que ela NÃO é, no menu que ela abriu para conseguir jogar. Um padrão
-    // chama-se pelo que ele É.
+    // The last box of ADR-0076's definition of done: «modo sem deficiência visual» was offered and REFUSED — it tells the
+    // child what she is NOT, in the menu she opened to be able to play. A default is named for what it IS.
     for (const dic of [pt, en, es]) {
       for (const chave of [THEME_LABEL.padrao, CORRECTION_LABEL.tricro]) {
         const txt = dic[chave];
@@ -69,8 +66,8 @@ describe('ui/visual-axes-panel · os nomes dos padrões', () => {
   });
 
   it('⚠️ [Interface] os dois padrões têm nome PRÓPRIO, e não o neutro partilhado', () => {
-    // «Modo padrão» (`viz.normal`) era o neutro de quando os dois eixos eram um só. Com dois controles, um
-    // «padrão» sem dizer padrão de QUÊ fica ambíguo nos dois — o ADR nomeia-os por isso.
+    // «Modo padrão» (`viz.normal`) was the neutral of when the two axes were one. With two controls, a «padrão» that does
+    // not say default of WHAT is ambiguous on both — the ADR names them for that reason.
     expect(THEME_LABEL.padrao).not.toBe('viz.normal');
     expect(CORRECTION_LABEL.tricro).not.toBe('viz.normal');
     expect(pt[THEME_LABEL.padrao]).not.toBe(pt[CORRECTION_LABEL.tricro]);
@@ -92,9 +89,9 @@ describe('ui/visual-axes-panel · o que um clique quer dizer', () => {
   });
 
   it('⚠️ [Zero] botão de outro assunto, eixo inventado ou valor de OUTRO eixo devolvem `null`', () => {
-    // O painel tem outros botões (cores de papel, reset), e um `data-valor` sem `data-eixo` é de um deles.
-    // ⚠️ E o cruzado é o que mais importa: `{eixo:'tema', valor:'deuter'}` escreveria uma correção no campo
-    // do tema — um estado que o tipo não admite, chegando por um atributo de DOM que qualquer um pode editar.
+    // The panel has other buttons (role colours, reset), and a `data-valor` with no `data-eixo` belongs to one of them.
+    // ⚠️ And the crossed one is what matters most: `{eixo:'tema', valor:'deuter'}` would write a correction into the theme
+    // field — a state the type does not admit, arriving through a DOM attribute anyone can edit.
     expect(buttonChoice({})).toBeNull();
     expect(buttonChoice({ eixo: 'roxo', valor: 'hc7' })).toBeNull();
     expect(buttonChoice({ eixo: 'tema' })).toBeNull();
@@ -103,19 +100,19 @@ describe('ui/visual-axes-panel · o que um clique quer dizer', () => {
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · tirando o segundo grupo do `axesHtml` -> reprovam DOIS. E o estado de hoje: um controle so, que com
-//     dois eixos deixaria a correcao sem onde ser escolhida.
-//   · `const sel = valor === valores[0]` (marca sempre o padrao, ignorando o estado) -> reprova o caso do
-//     marcado por eixo. A crianca veria o menu a dizer que ela esta no padrao enquanto o jogo mostra outra
-//     coisa — e o menu que ela abriu para se orientar passaria a desorientar.
-//   · tirando a validacao cruzada do `buttonChoice` -> reprova o caso do Zero. `{eixo:'tema',
-//     valor:'deuter'}` escreveria uma correcao no campo do TEMA: um estado que o tipo nao admite, chegando
-//     por um atributo de DOM que qualquer um pode editar.
-//   · apontando o rotulo do tema padrao de volta para `viz.normal` -> reprova o caso dos nomes proprios.
-//     «Modo padrao» era o neutro PARTILHADO de quando os dois eixos eram um so; com dois controles, um
-//     «padrao» sem dizer padrao de QUE fica ambiguo nos dois.
+// ========================= MUTATIONS CHECKED =========================
+//   · removing the second group from `axesHtml` -> TWO fail. It is the old state: one control only, which with two axes
+//     would leave the correction with nowhere to be chosen.
+//   · `const sel = valor === valores[0]` (always checks the default, ignoring the state) -> fails the per-axis checked case.
+//     The child would see the menu saying she is at the default while the game shows something else — and the menu she
+//     opened to find her way would lose her.
+//   · removing the crossed validation from `buttonChoice` -> fails the Zero case. `{eixo:'tema', valor:'deuter'}` would
+//     write a correction into the THEME field: a state the type does not admit, arriving through a DOM attribute anyone
+//     can edit.
+//   · pointing the default theme's label back at `viz.normal` -> fails the proper-names case. «Modo padrao» was the SHARED
+//     neutral of when the two axes were one; with two controls, a «padrao» that does not say default of WHAT is ambiguous
+//     on both.
 //
-// ⚠️ E UMA MUTACAO MINHA SAIU NULA, registada porque a licao vale: envolver `atual` num `String()` quando ele
-// ja e string nao muda nada, entao o verde nao dizia nada sobre o gate. Uma mutacao que nao pode falhar nao
-// e' prova de cobertura — e' so uma edicao. Foi trocada pela de cima, que muda comportamento a serio.
+// ⚠️ AND ONE MUTATION OF MINE CAME OUT NULL, recorded because the lesson holds: wrapping `atual` in a `String()` when it
+// is already a string changes nothing, so the green said nothing about the gate. A mutation that cannot fail is not proof
+// of coverage — it is just an edit. It was replaced by the one above, which really changes behaviour.

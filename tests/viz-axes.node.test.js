@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O gate dos DOIS EIXOS (ADR-0076, issue #104).
+// The gate of the TWO AXES (ADR-0076, issue #104).
 //
-// ⚠️ O QUE ESTÁ EM JOGO: hoje `p.viz` guarda UMA string, então escolher `fix-deuter` desliga o contraste 7:1
-// e escolher contraste desliga a correção. Uma criança com daltonismo que também precise de alto contraste
-// não pode ter os dois — e as duas necessidades coexistem numa mesma pessoa com frequência.
+// ⚠️ WHAT IS AT STAKE: with a single `p.viz` string, choosing `fix-deuter` turned 7:1 contrast off and choosing contrast
+// turned the correction off. A child with colour blindness who also needs high contrast could not have both — and the two
+// needs often coexist in the same person.
 import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_VISUAL, THEMES, CORRECTIONS, SIMULATIONS, LEGACY_KEYS,
@@ -18,7 +18,7 @@ describe('os dois eixos COMPÕEM — é a razão inteira da issue', () => {
     const v = { tema: 'hc7', correcao: 'deuter', simulacao: null };
     expect(v.tema).toBe('hc7');
     expect(v.correcao).toBe('deuter');
-    // E o estado sobrevive a uma ida e volta pela migração, que é por onde ele passa ao ser lido.
+    // And the state survives a round trip through the migration, which is the way it goes when read.
     expect(migrateVisual(v)).toEqual(v);
   });
 
@@ -42,13 +42,13 @@ describe('a simulação é travada nos DOIS padrões, e a recusa diz por quê', 
   });
 
   it('⚠️ com o TEMA fora do padrão, indisponível — e o motivo é o tema', () => {
-    // Por cima de um tema de alto contraste, a simulação mostra o que o TEMA faz, não o que a
-    // deuteranopia faz. Não é uma demonstração mais fraca: ensina uma coisa falsa.
+    // On top of a high-contrast theme, the simulation shows what the THEME does, not what deuteranopia does. It is not a
+    // weaker demonstration: it teaches something false.
     expect(simulationUnavailable({ tema: 'hc7', correcao: 'tricro', simulacao: null })).toBe('tema');
   });
 
   it('⚠️ com a CORREÇÃO fora do padrão, indisponível — e o motivo é a correção', () => {
-    // De uma tela já corrigida, a simulação não mostra nem a deficiência nem a correção.
+    // From an already corrected screen, the simulation shows neither the disability nor the correction.
     expect(simulationUnavailable({ tema: 'padrao', correcao: 'deuter', simulacao: null })).toBe('correcao');
   });
 
@@ -57,9 +57,9 @@ describe('a simulação é travada nos DOIS padrões, e a recusa diz por quê', 
   });
 
   it('⚠️ devolve MOTIVO e não só `false`', () => {
-    // O ADR-0076 exige recusa VISÍVEL e explicada: nunca silenciosamente removida, nunca aceita e depois
-    // ignorada. E o motivo é um facto sobre a demonstração, não uma repreensão — quem ligou o alto
-    // contraste ligou-o porque precisa.
+    // ADR-0076 requires a VISIBLE and explained refusal: never silently removed, never accepted and then ignored. And the
+    // reason is a fact about the demonstration, not a telling-off — whoever turned high contrast on did so because they
+    // need it.
     const m = simulationUnavailable({ tema: 'hc3', correcao: 'tricro', simulacao: null });
     expect(typeof m).toBe('string');
     expect(m).not.toBe('false');
@@ -68,8 +68,8 @@ describe('a simulação é travada nos DOIS padrões, e a recusa diz por quê', 
 
 describe('a migração: nenhum ajuste já escolhido se perde', () => {
   it('⚠️ TODA chave antiga tem tradução — a asserção que nomeia zero chaves', () => {
-    // Percorre `VIZ_MODES`, que é a lista real do menu de hoje, e não uma lista escrita à mão neste
-    // ficheiro. Um modo novo lá nasce coberto ou faz este caso reprovar.
+    // Walks `VIZ_MODES`, which is the menu's real list, and not a list written by hand in this file. A new mode there is
+    // born covered or makes this case fail.
     for (const m of VIZ_MODES) {
       expect(LEGACY_KEYS, `modo "${m.key}" sem tradução`).toContain(m.key);
     }
@@ -89,8 +89,8 @@ describe('a migração: nenhum ajuste já escolhido se perde', () => {
   });
 
   it('⚠️ as nove simulações voltam com os DOIS eixos no padrão', () => {
-    // Não é perda de informação: uma simulação só era possível a partir do padrão de qualquer forma,
-    // porque ela SUBSTITUÍA tudo o resto. A forma nova diz isso em vez de o deixar implícito.
+    // It is no loss of information: a simulation was only possible from the default anyway, because it REPLACED everything
+    // else. The new shape says so instead of leaving it implicit.
     for (const k of ['sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind']) {
       const v = migrateVisual(k);
       expect(v.simulacao, k).toBe(k);
@@ -108,8 +108,8 @@ describe('a migração: nenhum ajuste já escolhido se perde', () => {
   });
 
   it('⚠️ desconhecido cai no PADRÃO em vez de estourar', () => {
-    // O dado vem do navegador de uma criança e pode ser de outra versão, de outra máquina, ou lixo. Um
-    // `throw` aqui tiraria o jogo do ar por causa de uma preferência.
+    // The data comes from a child's browser and may be from another version, another machine, or rubbish. A `throw` here
+    // would take the game down because of a preference.
     expect(migrateVisual('modo-que-nunca-existiu')).toEqual(DEFAULT_VISUAL);
     expect(migrateVisual(null)).toEqual(DEFAULT_VISUAL);
     expect(migrateVisual(undefined)).toEqual(DEFAULT_VISUAL);
@@ -125,14 +125,14 @@ describe('a migração: nenhum ajuste já escolhido se perde', () => {
 
 describe('⚠️ nenhum nome agrupa correção e simulação', () => {
   it('os eixos e as simulações são listas separadas, sem interseção', () => {
-    // O agrupamento por MECANISMO já as fundiu duas vezes — ADR-0011 e ADR-0075. Um grupo de ajustes
-    // chama-se pelo que ele SERVE, nunca pelo como é implementado.
+    // Grouping by MECHANISM has already merged them twice — ADR-0011 and ADR-0075. A group of settings is named for what it
+    // SERVES, never for how it is implemented.
     for (const c of CORRECTIONS) expect(SIMULATIONS).not.toContain(c);
     for (const s of SIMULATIONS) { if (s) expect(CORRECTIONS).not.toContain(s); }
   });
 
   it('e nenhum dos padrões diagnostica quem lê', () => {
-    // `modo sem deficiência visual` foi oferecido e recusado. Os padrões chamam-se `padrao` e `tricro`.
+    // `modo sem deficiência visual` was offered and refused. The defaults are called `padrao` and `tricro`.
     expect(THEMES).toContain('padrao');
     expect(CORRECTIONS).toContain('tricro');
     for (const nome of [...THEMES, ...CORRECTIONS]) {
@@ -143,15 +143,15 @@ describe('⚠️ nenhum nome agrupa correção e simulação', () => {
 
 describe('⚠️ a COMPOSIÇÃO: os dois aplicados ao mesmo tempo', () => {
   it('7:1 E correção de deuteranopia produzem OS DOIS', () => {
-    // A asserção que é a issue #104 inteira. Enquanto `p.viz` era um campo, aplicar um apagava o outro.
+    // The assertion that is the whole of issue #104. While `p.viz` was one field, applying one erased the other.
     const a = howItApplies({ tema: 'hc7', correcao: 'deuter', simulacao: null });
     expect(a.direct).toBe('hc-direto-7');
     expect(a.filter).toBe('fix-deuter');
   });
 
   it('⚠️ e as chaves que saem existem NAS TABELAS REAIS — senão a composição é de mentira', () => {
-    // Sem isto, `howItApplies` poderia devolver duas strings bonitas que não casam com filtro nenhum, e o
-    // teste acima passaria enquanto a tela não mudava. Comparo com as tabelas que a engine de facto lê.
+    // Without this, `howItApplies` could return two pretty strings that match no filter at all, and the test above would
+    // pass while the screen did not change. It compares with the tables the engine actually reads.
     for (const tema of THEMES) {
       for (const correcao of CORRECTIONS) {
         const a = howItApplies({ tema, correcao, simulacao: null });
@@ -207,7 +207,7 @@ describe('as perguntas que os leitores fazem, cada uma com nome', () => {
 
 describe('os ciclos andam CADA UM no seu eixo', () => {
   it('⚠️ proximoTema nao toca na correcao', () => {
-    // Era isto que a string tornava impossivel: ciclar o contraste apagava a correcao.
+    // This is what the single string made impossible: cycling the contrast erased the correction.
     const antes = { tema: 'padrao', correcao: 'deuter', simulacao: null };
     const depois = nextTheme(antes);
     expect(depois.tema).toBe('hc3');
@@ -231,9 +231,9 @@ describe('os ciclos andam CADA UM no seu eixo', () => {
   });
 
   it('⚠️ um valor desconhecido comeca no PADRAO nos DOIS ciclos', () => {
-    // O original tinha uma assimetria sem dono: `nextCvd` mandava desconhecido para o indice 1
-    // (`fix-protan`) e `nextContrast` para o 0. Um valor desconhecido e exatamente o caso em que nao se
-    // sabe o que a crianca queria, e o padrao e a unica resposta que nao escolhe por ela.
+    // An unknown value is exactly the case where nobody knows what the child wanted, and the default is the only answer
+    // that does not choose for her. (The old cycles disagreed with no owner: an unknown went to index 1 (`fix-protan`) in
+    // one and to 0 in the other.)
     expect(nextTheme({ tema: 'inexistente', correcao: 'tricro', simulacao: null }).tema).toBe('padrao');
     expect(nextCorrection({ tema: 'padrao', correcao: 'inexistente', simulacao: null }).correcao).toBe('tricro');
   });
