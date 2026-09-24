@@ -34,12 +34,12 @@
       "fanIn": 1
     },
     "consumer-quiz/main-quiz.ts": {
-      "codeLines": 231,
-      "decisionNodes": 39,
-      "maxDepth": 6,
+      "codeLines": 233,
+      "decisionNodes": 34,
+      "maxDepth": 2,
       "fanOut": 8,
       "globalReach": 1,
-      "worstFunction": 10,
+      "worstFunction": 8,
       "fanIn": 0,
       "reached": [
         "document"

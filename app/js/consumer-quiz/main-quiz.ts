@@ -357,21 +357,25 @@ function answer(i: number): void {
  * `preset` names. ⚠️ It used to read raw key codes: its own arrows worked, the scheme's W and S did not, S rang the sonar, and a transport
  * could only reach it by disguising itself as a keyboard.
  */
+const ON_BUTTON: Partial<Record<VirtualCommand['action'], (total: number) => void>> = {
+  down: (total) => { foco = nextFocus(foco, 1, total); render(); },
+  up: (total) => { foco = nextFocus(foco, -1, total); render(); },
+  // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se consumiu.
+  action2: () => { motor?.cenas.input('confirm'); },
+  // SPEAKING THE ANSWER, and giving the microphone back. ⚠️ The same button that goes back is what stops a reading: a child who
+  // changed her mind should not have to wait out the ceiling with the microphone open.
+  action1: () => { void listenForAnswer(); },
+  action3: () => { if (listening) motor?.reading.stop(); },
+  // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). The player's place is `atual`, the QUESTION, not the
+  // option under the cursor: pointing at the right option would be cheating.
+  rightShoulder: () => { motor?.sonar.sonar({ i: 0, x: atual, y: 0 }); },
+};
+
+/** A button with no row does nothing in this quiz; only a PRESS counts — a release is not a second press. */
 function handleCommand(cmd: VirtualCommand): void {
   const p = QUESTIONS[atual];
   if (!p || !cmd.pressed) return;
-  const total = p.alternativas.length;
-  if (cmd.action === 'down') { foco = nextFocus(foco, 1, total); render(); }
-  else if (cmd.action === 'up') { foco = nextFocus(foco, -1, total); render(); }
-  // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se consumiu.
-  else if (cmd.action === 'action2') motor?.cenas.input('confirm');
-  // SPEAKING THE ANSWER, and giving the microphone back. ⚠️ The same button that goes back is what stops a reading: a child who
-  // changed her mind should not have to wait out the ceiling with the microphone open.
-  else if (cmd.action === 'action1') void listenForAnswer();
-  else if (cmd.action === 'action3' && listening) motor?.reading.stop();
-  // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). The player's place is `atual`, the QUESTION, not the
-  // option under the cursor: pointing at the right option would be cheating.
-  else if (cmd.action === 'rightShoulder') motor?.sonar.sonar({ i: 0, x: atual, y: 0 });
+  ON_BUTTON[cmd.action]?.(p.alternativas.length);
 }
 
 /**
