@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/layout.ts — ESCALA do jogo (Estágio 4, Tier 1). Trava o #game-region num múltiplo inteiro de PIXELS REAIS
-// de 320×180 (por jogador) e reescala as vars de UI escopadas ao canvas. Deps: ui/dom ($), core/screens,
-// render/crt (crtScanVars). A contagem de jogadores entra por `initLayout`. fpsTick/configureRender seguem no main.js.
+// ui/layout.ts — the game's SCALE. Locks #game-region to a whole multiple of REAL PIXELS of 320×180 (per player) and
+// rescales the UI variables scoped to the canvas. Deps: ui/dom ($), core/screens, render/crt (crtScanVars). The player
+// count comes in through `initLayout`.
 //
-// JÁ NÃO RESERVA ESPAÇO PARA O INTÉRPRETE. Reservava 380px à direita quando o painel do VLibras "abria", e o
-// jogo deslocava para a esquerda — decisão revista pelo Dev: o intérprete deve aparecer NA FRENTE da tela
-// enquanto um áudio toca, e sumir. E a reserva estava sendo aplicada O TEMPO TODO, porque o detector de
-// "aberto" lia um div vazio (ver o cabeçalho de ui/vlibras): o canvas vivia em `left: -136`, fora da tela,
-// com ou sem modo pessoa surda. O acoplamento vlibras↔layout desaparece junto.
+// IT RESERVES NO SPACE FOR THE INTERPRETER: the Dev decided the interpreter appears IN FRONT of the screen while audio
+// plays, and disappears (see ui/vlibras), so the layout does not shift the game for it.
 import { $ } from './dom.js';
 import { screenBaseSize } from '../core/screens.js';
 
@@ -51,32 +48,30 @@ export function belowFloor(nodes: readonly NodeMeasure[], k: number): { text: st
 }
 
 /**
- * OS NÓS DO JOGO QUE INVADEM O RECTÂNGULO DA BARRA DE ACESSIBILIDADE (ADR-0148 §3).
+ * THE GAME'S NODES THAT INVADE THE ACCESSIBILITY BAR'S RECTANGLE (ADR-0148 §3).
  *
- * 🔴 MEDIDO no `dist/quiz.html` em 2026-09-12, e a queixa do Dev é literal na tela: `#title-icons` é
- * `position:absolute` DENTRO do `#game-region`, em (123,15) 337×44 — e o `H2.quiz-pergunta`, o título da
- * pergunta, ocupa os mesmos pixels. A criança que procura o modo cego encontra texto por cima dos botões.
+ * 🔴 The bar is `position:absolute` INSIDE `#game-region`, so a game can draw right over it — a question title on top
+ * of the buttons, and the child looking for blind mode finds text over them.
  *
- * ⚠️ E NADA FALHAVA. Não há erro, não há tipo, não há consola: só uma fila de botões tapada — e quem mais
- * depende dela é precisamente quem não vê que ela está tapada.
+ * ⚠️ AND NOTHING FAILS. No error, no type, no console: just a row of covered buttons — and whoever depends on it most is
+ * precisely whoever cannot see it is covered.
  *
- * 📌 PURA E COM AS CAIXAS INJECTADAS, para o crivo a poder conduzir sem navegador. Quem mede é quem chama;
- * o que esta função decide é o que CONTA como invasão, que é a parte que se erra.
+ * 📌 PURE AND WITH THE BOXES INJECTED, so the gate can drive it with no browser. Whoever calls measures; what this
+ * function decides is what COUNTS as an invasion, which is the part people get wrong.
  *
- * ⚠️ IGNORA OS DESCENDENTES DA PRÓPRIA BARRA: os botões dela intersectam-na por definição, e contá-los faria
- * o crivo acusar sempre — o defeito que o ADR-0106 §2 chama de afogar o que se pode resolver.
+ * ⚠️ IT IGNORES THE BAR'S OWN DESCENDANTS: its buttons intersect it by definition, and counting them would make the gate
+ * accuse always — the defect ADR-0106 §2 calls drowning what can be fixed.
  */
 export interface NamedBox { readonly name: string; readonly box: Box; readonly isBar: boolean; }
 export interface Box { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
 
 export function barIntruders(barBox: Box | null, nodes: readonly NamedBox[]): string[] {
-  // Uma barra sem área não reserva nada — e acusar contra um rectângulo de zero seria acusar toda a gente.
+  // A bar with no area reserves nothing — and accusing against a zero rectangle would accuse everyone.
   if (!barBox || barBox.w <= 0 || barBox.h <= 0) return [];
-  // ⚠️ O GUARDA DE ÁREA ZERO FAZ TRABALHO, e eu quase o tirei por uma leitura errada. Uma mutação que o
-  // removia ficou VERDE, e a minha conclusão — «as desigualdades estritas já excluem quem não tem área» —
-  // era falsa: elas excluem um nó DEGENERADO NA FRONTEIRA, não um em geral. Uma risca de largura zero
-  // atravessando a barra passa nas quatro comparações. 📌 Contentores de altura ou largura zero são comuns
-  // em markup gerado, e acusá-los seria ruído puro — que é como se ensina um consumidor a ignorar a linha.
+  // ⚠️ THE ZERO-AREA GUARD DOES WORK: the strict inequalities exclude a node that is DEGENERATE AT THE BOUNDARY, not one
+  // in general — a zero-width stripe crossing the bar passes all four comparisons. 📌 Containers of zero height or width
+  // are common in generated markup, and accusing them would be pure noise — which is how a consumer learns to ignore
+  // the line.
   return nodes
     .filter((n) => !n.isBar && n.box.w > 0 && n.box.h > 0)
     .filter((n) => n.box.x < barBox.x + barBox.w && barBox.x < n.box.x + n.box.w
@@ -85,25 +80,21 @@ export function barIntruders(barBox: Box | null, nodes: readonly NamedBox[]): st
 }
 
 
-// A CONTAGEM DE JOGADORES entra por injeção desde 2026-08-26. Era `numPlayers`, um `let` de `core/state`
-// importado como binding vivo — e um `let` de módulo é compartilhado por qualquer segundo jogo que a
-// mesma página carregue (D13 do `demos`, ADR-0038). O que entra aqui é o GETTER da rodada que a raiz
-// possui; o `let` que sobra guarda a função, não o número.
+// THE PLAYER COUNT COMES IN BY INJECTION. A module `let` imported as a live binding would be shared by any second game
+// the same page loads (ADR-0038). What comes in is the GETTER of the round the root owns; the remaining `let` holds the
+// function, not the number.
 let _countPlayers: () => number = () => 1;
-/** Liga a contagem de jogadores. Chamado uma vez pela raiz, antes do primeiro `layout()`. */
+/** Wires the player count. Meant to be called once by the root, before the first `layout()`. */
 export function initLayout(deps: { numPlayers: () => number }): void { _countPlayers = deps.numPlayers; }
 
 /**
- * A CASCA QUE DÁ O ESPAÇO DISPONÍVEL — por id OU por classe, e as duas formas valem o mesmo.
+ * THE SHELL THAT GIVES THE AVAILABLE SPACE — by id OR by class, and both forms count the same.
  *
- * ⚠️ ERA SÓ `#stage-wrap`, E ISSO DEIXOU A ENGINE SEM ESCALA NO PRÓPRIO HOST. O `app/index.html` do jogo
- * trazia `<div id="stage-wrap">`; quando o cartucho saiu (issue #111) sobrou o `app/quiz.html`, que tem
- * `<div class="stage-wrap">`. A procura por id falhava, `layout()` fazia early-return, e **nada reportava
- * nada**: um `return` silencioso é indistinguível de «não havia o que fazer». O comentário do próprio
- * `quiz.html` dizia «mesmo id que ui/layout escala» — quem o escreveu acreditava que corria.
+ * ⚠️ BY ID ONLY, a host with `<div class="stage-wrap">` (the quiz) got no scale at all: `layout()` returned early and
+ * nothing reported anything — a silent `return` is indistinguishable from "there was nothing to do".
  *
- * O consumidor não erra ao usar a classe: um documento pode ter várias telas, e um id é único. Aceitar as
- * duas é o que torna a engine consumível por quem não copiou o markup dela.
+ * The consumer is not wrong to use the class: a document can have several screens, and an id is unique. Accepting both
+ * is what makes the engine consumable by whoever did not copy its markup.
  */
 function findStageWrap(): HTMLElement | null {
   return $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap');
@@ -140,7 +131,7 @@ export function stageScale(availW: number, availH: number, dpr: number, baseW: n
 export function applyScale(region: HTMLElement, e: Scale): void {
   region.style.width = e.width + 'px'; region.style.height = e.height + 'px';
   region.style.setProperty('--hud-fs', Math.max(9, Math.round(180 * e.k * 0.052)) + 'px');
-  region.style.setProperty('--ui-fs', (8 * e.k) + 'px');   // base LÓGICA 8px × k (16px em k=2)
+  region.style.setProperty('--ui-fs', (8 * e.k) + 'px');   // LOGICAL base 8px × k (16px at k=2)
   // One ruler (plan phase 5b): `--tap` is the name three sibling games read, `--alvo-min` the engine's (ADR-0163); both come
   // from `minimumTarget`, so a display scale that gives k under 2 (Windows 110%) no longer drops `--tap` under 44 px.
   region.style.setProperty('--tap', minimumTarget(e.k) + 'px');
@@ -152,25 +143,23 @@ export function layout(): void {
   wrap.style.paddingRight = '0px';
   const availW = wrap.clientWidth || 320;
   const availH = wrap.clientHeight || 180;
-  // E11: a grade de telas define a base (1=320×180, 2=640×180, 3-4=640×360)
+  // The screen grid sets the base (1=320×180, 2=640×180, 3-4=640×360).
   const n = _countPlayers();
-  // (`screenGrid(n)` SAIU em 2026-08-26: `cols`/`rows` eram desestruturados e nunca lidos — a escala sai de
-  //  `screenBaseSize`, logo abaixo. Era uma chamada paga a cada `layout()` por nada. `noUnusedLocals` achou.)
   const { w: baseW, h: baseH } = screenBaseSize(n);
-  // Piso k=2: CADA viewport tem no mínimo 640×360. Assim 2×2 = 1280×720 cabe num Chromebook do governo (1366×768).
-  // ADR-001 (CORRIGIDO 2026-07-04): ESCALA travada em PIXELS REAIS INTEIROS. Cada pixel de arte = kDev pixels
-  // FÍSICOS (inteiro) → scanlines SEMPRE regulares e arte uniforme em QUALQUER dpr. Tolera ≤5px lógicos de corte
-  // por lado (o −10): base·kDev − avail·dpr ≤ 10·kDev ⇒ kDev ≤ avail·dpr/(base−10). (José escolheu inteiro-REAL.)
-  // A conta mora em `stageScale` desde o ADR-0163, para a engine a aplicar a todo cartucho.
+  // Floor k=2: EACH viewport is at least 640×360, so 2×2 = 1280×720 fits a government Chromebook (1366×768).
+  // ADR-0001: SCALE locked to WHOLE REAL PIXELS. Each art pixel = kDev PHYSICAL pixels (whole) → scanlines ALWAYS regular
+  // and uniform art at ANY dpr. Tolerates ≤5 logical px of crop per side (the −10): base·kDev − avail·dpr ≤ 10·kDev ⇒
+  // kDev ≤ avail·dpr/(base−10). (The Dev chose whole REAL pixels.) The arithmetic lives in `stageScale` (ADR-0163), so the
+  // engine applies it to every cartridge.
   const dpr = window.devicePixelRatio || 1;
   const ratio = stageScale(availW, availH, dpr, baseW, baseH);
   const { kDev, k } = ratio;
-  // ESCALA das vars de UI é ESCOPADA ao #game-region: só a UI DENTRO do canvas (menus/HUD/pausa/quiz) escala com o
-  // k. Fora do canvas (barra de topo, painel de debug) herda o :root → texto SEMPRE 16px, toque 44px (José).
+  // The UI variables' SCALE is SCOPED to #game-region: only the UI INSIDE the canvas (menus/HUD/pause/quiz) scales with
+  // k. Outside the canvas (top bar, debug panel) it inherits :root → text ALWAYS 16px, touch 44px (the Dev).
   const gr = $<HTMLElement>('#game-region'); if (gr) {
-    // `--tap` é o tamanho PREFERIDO (22·k) e `--alvo-min` o CHÃO (22·k, 44 px a 640×360 — ADR-0163), escritos em `applyScale`.
+    // `--tap` is the PREFERRED size (22·k) and `--alvo-min` the FLOOR (22·k, 44 px at 640×360 — ADR-0163), written in `applyScale`.
     applyScale(gr, ratio);
   }
-  crtScanVars(); // scanlines re-alinham quando a escala k muda
+  crtScanVars(); // scanlines realign when the scale k changes
   if (/[?&]debug=true/.test(location.search)) console.info(`[escala] kDev=${kDev}× px REAIS (canvas físico ${baseW * kDev}×${baseH * kDev} = múltiplo INTEIRO de ${baseW}×${baseH}); CSS ${Math.round(baseW * k)}×${Math.round(baseH * k)} (k=${k.toFixed(3)}, dpr=${dpr})`);
 }
