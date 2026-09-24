@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// tools/png-write — o codificador de PNG da AUTORIA (project node).
+// tools/png-write — the AUTHORING PNG encoder (node project).
 //
-// Ele não embarca: vive em `tools/` e nada do jogo o importa. Tem teste mesmo assim, e por um motivo
-// específico: é com ele que a arte de fundo dos cenários pode passar a ser gerada, e um codificador com um
-// erro de passo de linha produz arquivos que ABREM, parecem quase certos, e estão errados de um pixel por
-// linha. Esse é o tipo de defeito que a vista não pega e o disco guarda para sempre.
+// It does not ship: it lives in `tools/` and nothing in the game imports it. It is tested anyway, for a specific
+// reason: it is what scene background art can be generated with, and an encoder with a row-stride error produces
+// files that OPEN, look almost right, and are wrong by one pixel per row. That is the kind of defect the eye misses
+// and the disk keeps forever.
 //
-// A prova é de IDA E VOLTA contra o mesmo decodificador que tests/city-tiles usa: se os dois estivessem
-// errados do mesmo jeito, o round-trip fecharia mentindo — por isso os casos abaixo também conferem o
-// CABEÇALHO byte a byte contra o que a especificação manda, que é uma fonte independente dos dois.
+// The proof is a ROUND TRIP against this file's own decoder: if encoder and decoder were wrong the same way, the
+// round trip would close while lying — so the cases below also check the HEADER byte by byte against what the
+// specification says, which is a source independent of both.
 import { describe, it, expect } from 'vitest';
 import { inflateSync } from 'node:zlib';
 import { encodePng } from '../tools/png-write.mjs';
 
-/** Decodifica RGBA de 8 bits sem filtro-por-linha diferente de 0 (é o que o nosso codificador emite). */
+/** Decodes 8-bit RGBA with no per-row filter other than 0 (which is what our encoder emits). */
 function decodar(buf) {
   let off = 8, w = 0, h = 0, ct = 0, bits = 0;
   const idat = [];
@@ -43,7 +43,7 @@ function decodar(buf) {
   return { w, h, ct, bits, px };
 }
 
-/** Matriz de teste com dimensões ÍMPARES: um erro de passo de linha só aparece quando w não é bonito. */
+/** A test matrix with ODD dimensions: a row-stride error only shows when w is not a nice number. */
 function matriz(W, H) {
   const m = [];
   for (let y = 0; y < H; y++) {
@@ -67,8 +67,8 @@ describe('tools/png-write', () => {
   });
 
   it('[Interface] o cabeçalho é o que a especificação manda — 8 bits, RGBA, sem entrelaçamento', () => {
-    // Conferido contra a spec, e não contra o nosso decodificador: se os dois tivessem o mesmo erro, o
-    // round-trip acima fecharia mentindo. Aqui a fonte é independente.
+    // Checked against the spec, not against our decoder: if both had the same error, the round trip above would
+    // close while lying. Here the source is independent.
     const b = encodePng(matriz(4, 4));
     expect([...b.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     expect(b.toString('ascii', 12, 16)).toBe('IHDR');
@@ -78,8 +78,8 @@ describe('tools/png-write', () => {
   });
 
   it('[Boundary] o alfa atravessa — arte de camada depende de transparência', () => {
-    // As camadas de parallax se sobrepõem: uma camada opaca por engano apaga as de trás, e o sintoma é "o
-    // fundo sumiu", que ninguém liga a um canal de alfa perdido no codificador.
+    // Parallax layers overlap: a layer made opaque by mistake erases the ones behind, and the symptom is "the
+    // background vanished", which nobody connects to an alpha channel lost in the encoder.
     const alvo = [[[10, 20, 30, 0], [40, 50, 60, 128]]];
     const lido = decodar(encodePng(alvo));
     expect(lido.px[0][0]).toEqual([10, 20, 30, 0]);

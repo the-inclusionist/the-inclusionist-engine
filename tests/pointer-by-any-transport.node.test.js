@@ -1,29 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// «CAPACIDADE DECLARADA» NÃO PODE QUERER DIZER «SÓ RATO» — os dois gates que faltavam ao ADR-0112.
+// «CAPACIDADE DECLARADA» MUST NOT MEAN «SÓ RATO» — two of the four gates ADR-0112 asks for.
 //
-// O registo pede quatro. Dois estão feitos (`7ddb857` a recusa por aparelho sem ponteiro; `fd3717e` as catorze
-// discretas). Estes são os outros dois, e o plano dizia que eles «exigem a fiação». **Lidos no registo, não
-// exigem**: os dois são propriedades do MODELO.
+// The other two are the refusal by a device with no pointer and the fourteen discrete actions. These two are
+// properties of the MODEL, and need no wiring:
 //
 //   · «UM PONTEIRO ALCANÇADO PELO OLHAR OFERECE AS MESMAS OPERAÇÕES QUE UM ALCANÇADO PELO RATO»
 //   · «O PONTEIRO CARREGA A SUA FONTE, como todo comando (ADR-0111)»
 //
-// 📏 E A MEDIÇÃO DIZ ONDE CADA UM PODE SER AFIRMADO HOJE, que não é onde parece. `defaultTransports` tem
-// TRÊS linhas — gamepad, teclado, toque —, e os quatro assistidos do ADR-0074 (olhos, rosto, gestos, fala)
-// ainda não existem como transporte: são a issue #11, por construir. Logo não dá para afirmar sobre o olhar
-// REAL. O que dá, e é o que a regra pede, é afirmar as duas coisas de que o olhar vai depender no dia em que
-// chegar:
+// 📏 AND WHERE EACH CAN BE ASSERTED TODAY is not where it seems. `defaultTransports` has THREE rows — gamepad,
+// keyboard, touch —, and the four assisted ones of ADR-0074 (eyes, face, gestures, speech) are not transports there
+// (issue #11). So nothing can be asserted about the REAL gaze. What can be, and it is what the rule asks, is the two
+// things the gaze will depend on the day it arrives:
 //
-//   (a) as operações do `input/pointer` são CEGAS à origem — nenhuma delas se comporta de outro modo por
-//       quem produziu a amostra; e a única que a lê, lê-a para RESPONDER sobre ela;
-//   (b) o `reach` aceita um ponteiro declarado por um transporte QUALQUER, e não só pelos dois que hoje o
-//       declaram. Uma «optimização» que perguntasse `t.id === 'teclado' || t.id === 'toque'` passaria em toda
-//       a suíte de hoje e fecharia a porta ao olhar antes de ele existir.
+//   (a) the operations of `input/pointer` are BLIND to the source — none behaves differently by who produced the
+//       sample; and the only one that reads it, reads it to ANSWER about it;
+//   (b) `reach` accepts a pointer declared by ANY transport, and not only by the two that declare one today. An
+//       «optimisation» asking `t.id === 'teclado' || t.id === 'toque'` would pass today's whole suite and close the
+//       door on the gaze before it exists.
 //
-// ⚠️ E É ESSA A FORMA DO DEFEITO QUE O REGISTO ANTECIPA: não uma recusa escrita, mas um caminho que só o rato
-// percorre, descoberto quando alguém liga a webcam e o jogo de desenhar diz que o aparelho não serve.
+// ⚠️ AND THAT IS THE SHAPE OF THE DEFECT THE RECORD FORESEES: not a written refusal, but a path only the mouse walks,
+// discovered when someone turns on the webcam and the drawing game says the device will not do.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -35,7 +33,7 @@ const FONTE_PONTEIRO = readFileSync(fileURLToPath(new URL('../app/js/input/point
 
 const amostra = (fx, fy, apertado, origem) => ({ fx, fy, source: origem, pressed: apertado });
 
-/** Pontos que exercitam dentro, fora nos quatro lados, e as bordas inclusive. */
+/** Points that exercise inside, outside on all four sides, and the edges inclusive. */
 const PONTOS = [
   [0.5, 0.5], [0, 0], [1, 1], [0.5, 0], [0, 0.5],
   [-0.2, 0.5], [1.2, 0.5], [0.5, -0.3], [0.5, 1.4], [-2, 3],
@@ -62,8 +60,8 @@ describe('ADR-0112 · as operações do ponteiro são cegas à origem', () => {
     }
   });
 
-  // ⚠️ A BORDA É A OPERAÇÃO QUE UM JOGO DE DESENHAR MAIS USA — é ela que diz «a caneta desceu». Se ela
-  // dependesse da origem, uma criança que desenha por permanência do olhar teria um traço que não começa.
+  // ⚠️ THE EDGE IS THE OPERATION A DRAWING GAME USES MOST — it is what says «a caneta desceu». If it depended on the
+  // source, a child drawing by gaze dwell would get a stroke that never starts.
   it('[Feliz] a borda do aperto é a mesma para os sete transportes', () => {
     for (const origem of TRANSPORT_NAMES) {
       const solto = amostra(0.5, 0.5, false, origem);
@@ -74,10 +72,9 @@ describe('ADR-0112 · as operações do ponteiro são cegas à origem', () => {
     }
   });
 
-  // 🎯 O CRIVO ESTRUTURAL, e é ele que segura a regra no futuro: uma operação NOVA que ramificasse por
-  // transporte passaria nos casos acima (eles enumeram as operações de hoje) e tiraria o desenho ao olhar em
-  // silêncio. Só `switchedTransport` pode ler `.origem` — e lê-a para RESPONDER sobre ela, não para decidir
-  // outra coisa.
+  // 🎯 THE STRUCTURAL SIEVE, and it is what holds the rule in the future: a NEW operation branching by transport
+  // would pass the cases above (they enumerate today's operations) and silently take drawing away from the gaze.
+  // Only `switchedTransport` may read `.source` — and it reads it to ANSWER about it, not to decide anything else.
   it('[Fronteira] só `switchedTransport` lê `.source` neste módulo', () => {
     const semComentarios = FONTE_PONTEIRO.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n\r]*/g, '');
     const partes = semComentarios.split(/export function /);
@@ -95,34 +92,34 @@ describe('ADR-0112 · as operações do ponteiro são cegas à origem', () => {
 
 describe('ADR-0112 · o alcance aceita ponteiro de QUALQUER transporte', () => {
   const ACOES = ['up', 'down', 'left', 'right'];
-  // ⚠️ `slots: 14` E NÃO 1, e o caso [Zero] é que mo disse: com um lugar só, o olhar reprovava por LUGARES e
-  // não por ponteiro, e os três casos de cima estariam a medir a coisa errada com a resposta certa. Catorze é
-  // também o que o ADR-0074 reivindica para os transportes assistidos — o fixture descreve um aparelho que
-  // pode existir, e não um que dá jeito.
+  // ⚠️ `slots: 14` AND NOT 1, and the [Zero] case is what showed it: with one slot, the gaze would fail by SLOTS and
+  // not by pointer, and the three cases above would measure the wrong thing with the right answer. Fourteen is
+  // also what ADR-0074 claims for the assisted transports — the fixture describes a device that can exist, not a
+  // convenient one.
   const olhar = (aponta) => ({
     id: 'olhos', slots: 14, available: () => true,
     ...(aponta === undefined ? {} : { points: () => aponta }),
   });
 
-  // 🎯 O caso que fecha a porta antes de ela ser aberta: quando os transportes assistidos da #11 chegarem, o
-  // `reach` já os aceita como ponteiro, sem uma linha nova e sem uma lista de ids privilegiados.
+  // 🎯 The case that closes the door before it is opened: when the assisted transports of #11 arrive, `reach`
+  // already accepts them as a pointer, with no new line and no list of privileged ids.
   it('[Feliz] um transporte assistido que declara apontar SERVE um jogo que pede ponteiro', () => {
     const a = reach([olhar(true)], ACOES, 1, true);
     expect(a.ok, 'o olhar declarou apontar e foi recusado').toBe(true);
     expect(a.cannotPoint).toEqual([]);
   });
 
-  // 📌 O PAR. Sem ele, «aceitar sempre» passaria no caso de cima — e um jogo de desenhar diria «serve» a um
-  // aparelho que não tem como desenhar, que é a mentira que o `ok` não pode contar (ADR-0112, e a razão de o
-  // `serve` ter passado a três coisas).
+  // 📌 THE PAIR. Without it, «aceitar sempre» would pass the case above — and a drawing game would say «serve» to a
+  // device with no way to draw, which is the lie `ok` must not tell (ADR-0112, and the reason `serve` became three
+  // things).
   it('[Fronteira] o mesmo transporte SEM declarar não serve, e o cartão diz porquê', () => {
     const a = reach([olhar(undefined)], ACOES, 1, true);
     expect(a.ok).toBe(false);
     expect(a.cannotPoint).toEqual(['olhos']);
   });
 
-  // ⚠️ `aponta` É FUNÇÃO e não booleano: a webcam pode ser ligada no meio da partida. Um transporte que
-  // responde `false` agora é recusado agora, e isso não pode ficar congelado numa leitura de arranque.
+  // ⚠️ `aponta` IS A FUNCTION and not a boolean: the webcam can be turned on mid-game. A transport answering
+  // `false` now is refused now, and that must not be frozen in a boot-time reading.
   it('[Fronteira] quem declara apontar mas responde `false` agora é recusado agora', () => {
     const a = reach([olhar(false)], ACOES, 1, true);
     expect(a.ok).toBe(false);
@@ -134,19 +131,19 @@ describe('ADR-0112 · o alcance aceita ponteiro de QUALQUER transporte', () => {
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-08, por script, com contagem de ocorrências) =====
-// O que segue é o MEDIDO, e uma delas contradiz o que eu tinha previsto — de forma útil.
+// ===== MUTATIONS CHECKED (2026-09-08, by script, with occurrence counts) =====
+// What follows is what was MEASURED, and one of them contradicts what I had predicted — usefully.
 //
-// 1. `clampInside` a só devolver o mesmo objecto quando `origem === 'rato'`
-//    → reprova SÓ o crivo ESTRUTURAL. 🎯 E é a mutação mais informativa do lote: os casos de comportamento
-//    NÃO a apanham, porque `clampInside` recebe `AsFraction` (só `fx`/`fy`) e a mutação muda a IDENTIDADE do
-//    objecto devolvido, não as coordenadas — e as coordenadas são o que eles comparam. Ou seja: o crivo
-//    estrutural apanha uma classe que a enumeração de operações não alcança, que é exactamente a razão de
-//    ele existir e não uma duplicação dela.
-// 2. `pressEdge` a devolver `null` para quem não é 'teclado' nem 'toque' — a forma EXACTA do defeito que
-//    o registo teme → reprovam o [Feliz] da borda **e** o crivo estrutural
-// 3. `apontaSeFor` → `!pedePonteiro || t.id === 'teclado' || t.id === 'toque'` → o [Feliz] do alcance reprova
-// 4. `apontaSeFor` → `true`                                          → os DOIS [Fronteira] do alcance reprovam
-// 5. `TRANSPORT_NAMES` reduzido a três                                   → [Vácuo] reprova
-//    🎯 com a lista cega, os laços correriam sobre menos transportes e ficariam verdes sem dizer nada sobre o
-//    olhar — um crivo que enumera é tão forte quanto a sua lista.
+// 1. `clampInside` returning the same object only when `origem === 'rato'`
+//    → fails ONLY the STRUCTURAL sieve. 🎯 And it is the most informative mutation of the batch: the behaviour
+//    cases do NOT catch it, because `clampInside` receives `AsFraction` (only `fx`/`fy`) and the mutation changes
+//    the IDENTITY of the returned object, not the coordinates — and the coordinates are what they compare. That
+//    is: the structural sieve catches a class the enumeration of operations cannot reach, which is exactly why it
+//    exists and is not a duplicate of it.
+// 2. `pressEdge` returning `null` for anyone who is neither 'teclado' nor 'toque' — the EXACT shape of the defect
+//    the record fears → the edge's [Feliz] **and** the structural sieve fail
+// 3. `apontaSeFor` → `!pedePonteiro || t.id === 'teclado' || t.id === 'toque'` → the reach's [Feliz] fails
+// 4. `apontaSeFor` → `true`                                          → BOTH [Fronteira] of the reach fail
+// 5. `TRANSPORT_NAMES` cut down to three                             → [Vácuo] fails
+//    🎯 with the list blinded, the loops would run over fewer transports and stay green saying nothing about the
+//    gaze — a sieve that enumerates is as strong as its list.

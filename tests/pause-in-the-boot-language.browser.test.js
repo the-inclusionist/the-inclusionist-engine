@@ -1,30 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O CARTÃO DE PAUSA FALA O IDIOMA DO ARRANQUE — inclusive para quem o ESCUTA.
+// THE PAUSE CARD SPEAKS THE BOOT LANGUAGE — including to whoever LISTENS to it.
 //
-// ========================= O DEFEITO, MEDIDO NUM NAVEGADOR ANTES DE SER ESCRITO =========================
-// 🔴 Em 2026-09-12, com o `quiz.html` servido do `dist`, o service worker morto e `documentElement.lang ===
-// 'en'`, o cartão que o `createGame` monta mostrava **«Paused», «▶ Resume», «♿ Accessibility», «🔤
-// Typography»** — inglês inteiro — e anunciava-se a quem usa leitor de tela como
+// ========================= THE DEFECT, MEASURED IN A BROWSER BEFORE IT WAS WRITTEN =========================
+// 🔴 On 2026-09-12, with `quiz.html` served from `dist`, the service worker killed and `documentElement.lang ===
+// 'en'`, the card `createGame` mounts showed **«Paused», «▶ Resume», «♿ Accessibility», «🔤
+// Typography»** — all English — and announced itself to screen-reader users as
 // **«Menu de pausa do jogador 1»**.
 //
-// ⚠️ QUEM PERDIA ERA SÓ QUEM ESCUTA, e é isso que torna o defeito da família que o item 4 do ADR-0044 nomeia:
-// para quem vê, não havia nada a notar. O canal partido era o único canal de outra criança.
+// ⚠️ ONLY THE LISTENER LOST, and that puts the defect in the family item 4 of ADR-0044 names: for whoever sees,
+// there was nothing to notice. The broken channel was another child's only channel.
 //
-// 📏 E A CAUSA NÃO É STRING EM FALTA — `pause.cardAria` existe nos três dicionários. É ORDEM, a mesma que o
-// `barra-no-idioma-do-arranque` já documenta: o `initI18n` aplica pt de forma síncrona e pede en/es de forma
-// assíncrona, e a marcação nasce nesse intervalo. O que agrava aqui é que um `aria-label` COLADO não tem como
-// ser corrigido depois: o `applyDom` só alcança `[data-i18n]` e `[data-i18n-aria]` — e o segundo não serve,
-// porque chama `t(k)` SEM parâmetros e esta chave leva o número do assento. A criança ouviria as chavetas.
+// 📏 AND THE CAUSE IS NOT A MISSING STRING — `pause.cardAria` exists in all three dictionaries. It is ORDER, the same
+// one `tests/bar-in-the-boot-language.browser.test.js` documents: `initI18n` applies pt synchronously and asks for
+// en/es asynchronously, and the markup is born in that gap. What makes it worse here is that a PASTED `aria-label`
+// cannot be corrected later: `applyDom` only reaches `[data-i18n]` and `[data-i18n-aria]` — and the second does not
+// serve, because it calls `t(k)` WITHOUT parameters and this key carries the seat number. The child would hear the braces.
 //
-// 📌 ESTE FICHEIRO É PRÓPRIO, e a razão foi MEDIDA em vez de copiada. A primeira versão deste caso vivia no
-// `barra-no-idioma-do-arranque`, e ali ele ficava VERDE com o conserto desfeito: o caso anterior daquele
-// ficheiro faz `await localeReady()`, o chunk de `en` fica quente, e o cartão do segundo caso nascia já em
-// inglês. O crivo estava a afirmar o conserto e a medir a ORDEM DOS CASOS. Registo de módulos limpo é o que
-// faz o intervalo existir — que é o próprio sítio onde o defeito mora.
+// 📌 THIS FILE IS ITS OWN, and the reason was MEASURED rather than copied. Inside the bar file this case stayed GREEN
+// with the fix undone: that file's previous case does `await localeReady()`, the `en` chunk is warm, and the card is
+// born already in English — the sieve would assert the fix and measure the ORDER OF THE CASES. A clean module registry
+// is what makes the gap exist, and the gap is where the defect lives.
 //
-// ⚠️ E ELE SÓ PASSOU A IMPORTAR AGORA: até o ADR-0144 nada abria o cartão, logo ninguém o ouvia.
+// ⚠️ It matters because the card opens (ADR-0144): a card nothing opens, nobody hears.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 
@@ -75,13 +74,13 @@ describe('o cartão de pausa fala o idioma do arranque', () => {
       declaration: declaracaoValida(),
       host: { doc: document, win: window, a11yBarHost: raiz.querySelector('#title-icons') },
       downloadHeavy: false,
-      // ⚠️ DOIS ASSENTOS de propósito: o sufixo «· Jogador N» do título só existe em multijogador, e com um
-      // jogador só o caso mediria um `<span>` vazio — que fica verde com o literal português de volta.
+      // ⚠️ TWO SEATS on purpose: the title's «· Jogador N» suffix only exists in multiplayer, and with one player
+      // the case would measure an empty `<span>` — which stays green with the Portuguese literal back.
       players: [{ ctrl: {} }, { ctrl: {} }],
     });
 
-    // ⚠️ O CARTÃO NASCEU NO IDIOMA DE RECUO, e afirmá-lo é metade do caso: sem esta linha, um ambiente que
-    // resolvesse `en` antes da montagem faria o crivo aprovar uma engine que não conserta nada.
+    // ⚠️ THE CARD WAS BORN IN THE FALLBACK LANGUAGE, and asserting it is half the case: without this line, an environment
+    // that resolved `en` before mounting would have the sieve approve an engine that fixes nothing.
     const aoMontar = document.querySelector('#vp-pause-0 .pause-card')?.getAttribute('aria-label') || '';
     expect(aoMontar, 'o cartão nasceu já em inglês: este ambiente não tem o intervalo onde o defeito vive')
       .toMatch(/Menu de pausa/);
@@ -89,18 +88,18 @@ describe('o cartão de pausa fala o idioma do arranque', () => {
     await localeReady();
     expect(getLocale(), 'o chunk de en não carregou; o caso mediria o nada').toBe('en');
 
-    // ⚠️ ABRIR é o que repinta: `pausa.mostrar` chama `reflectPauseIcons()`, e é lá que o nome se refaz. O
-    // idioma vale no instante em que a criança abre a pausa, que é o instante certo.
+    // ⚠️ OPENING is what repaints: `pause.show` calls `reflectPauseIcons()`, and that is where the name is redone. The
+    // language counts at the instant the child opens the pause, which is the right instant.
     motor.pause.show(0);
 
     const nome = document.querySelector('#vp-pause-0 .pause-card')?.getAttribute('aria-label') || '';
     expect(nome, 'o cartão anuncia-se no idioma de recuo a quem usa leitor de tela').not.toMatch(/Menu de pausa/);
-    // 📌 O PAR, pela armadilha que o ficheiro irmão já pagou: exigir «nada em português» passaria com o nome
-    // VAZIO, e um diálogo sem nome acessível é pior do que um com o nome na língua errada.
+    // 📌 THE PAIR, for the trap the sibling file already paid for: requiring «nada em português» would pass with an
+    // EMPTY name, and a dialog with no accessible name is worse than one named in the wrong language.
     expect(nome, 'o cartão ficou SEM nome acessível').toMatch(/Player 1/);
 
-    // 🔴 E O QUE SE VÊ, pela mesma causa e no mesmo `<h2>`: o sufixo era `' · Jogador ' + n` colado no markup
-    // de um módulo de ENGINE. Em pt a chave e o literal dão a mesma string — só um arranque em `en` os separa.
+    // 🔴 AND WHAT IS SEEN, by the same cause and in the same `<h2>`: a suffix `' · Jogador ' + n` pasted into the markup
+    // of an ENGINE module. In pt the key and the literal give the same string — only a boot in `en` tells them apart.
     const sufixo = document.querySelector('#vp-pause-0 h2 .pause-seat')?.textContent || '';
     expect(sufixo, 'o sufixo do assento ficou em português cru').not.toMatch(/Jogador/);
     expect(sufixo, 'o sufixo do assento sumiu com dois jogadores').toMatch(/Player 1/);
@@ -110,20 +109,19 @@ describe('o cartão de pausa fala o idioma do arranque', () => {
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-12) =====
-// N1 `renomearCartao(cartao, i)` sai do `refrescarItensDaPausa`     → reprova: o nome fica em pt
-// N2 o repintar escreve `''` em vez da chave                        → reprova pelo PAR (nome vazio)
-// N4 o repintar do sufixo volta ao literal `' · Jogador '`          → reprova: o sufixo fica em pt
-// N5 o `<span class="pause-seat">` perde o nome (alvo: `pause-icons.node`) → reprova: não há onde repintar
+// ===== MUTATIONS CHECKED (2026-09-12) =====
+// N1 `renomearCartao(cartao, i)` removed from `refrescarItensDaPausa`  → fails: the name stays in pt
+// N2 the repaint writes `''` instead of the key                        → fails by the PAIR (empty name)
+// N4 the suffix repaint goes back to the literal `' · Jogador '`       → fails: the suffix stays in pt
+// N5 the `<span class="pause-seat">` loses its name (target: `pause-icons.node`) → fails: nowhere to repaint
 //
-// ⚠️ E DUAS SOBREVIVERAM, ditas aqui em vez de escondidas — nenhuma delas é buraco, e saber qual é qual é o
-// que distingue um plano de mutação de um ritual:
+// ⚠️ AND TWO SURVIVED, said here instead of hidden — neither is a hole, and knowing which is which is what tells a
+// mutation plan from a ritual:
 //
-//   N3 pôr o literal de volta no MARKUP (e não no repintar) fica VERDE, porque o repintar o corrige antes
-//      de alguém o ver. É a mesma coisa escrita duas vezes; a que vale é a que corre quando a pausa abre. O
-//      valor de montagem fica traduzido na mesma porque `screenPauseMarkup` é EXPORTADO — alguém pode
-//      desenhar o cartão sem a engine por perto, e aí não há repintar nenhum.
-//   N6 `renomearCartao(cartao, 0)` — renumerar todos os assentos para o primeiro — fica VERDE porque esta
-//      raiz monta UM cartão só (`buildScreenPause(0)`). O laço indexado existe para o dia em que montar o
-//      segundo; hoje é código correcto e INERTE, e um crivo que o provasse teria de montar um cartão que a
-//      engine ainda não monta.
+//   N3 putting the literal back in the MARKUP (and not in the repaint) stays GREEN, because the repaint corrects it
+//      before anyone sees it. It is the same thing written twice; the one that counts runs when the pause opens. The
+//      mount value is translated anyway because `screenPauseMarkup` is EXPORTED — someone can draw the card with
+//      no engine around, and then there is no repaint at all.
+//   N6 `renomearCartao(cartao, 0)` — renumbering every seat as the first — stays GREEN because this root mounts ONE
+//      card only (`buildScreenPause(0)`). The indexed loop exists for the day it mounts the second; today it is
+//      correct and INERT code, and a sieve proving it would have to mount a card the engine does not mount yet.

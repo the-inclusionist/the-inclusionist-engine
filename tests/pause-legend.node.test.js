@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A LEGENDA DA PAUSA DEIXA DE SER INVISÍVEL PARA QUEM MAIS PRECISA DELA — item 4 do ADR-0044.
+// THE PAUSE LEGEND IS NOT INVISIBLE TO WHOEVER NEEDS IT MOST — item 4 of ADR-0044.
 //
-// ========================= O ACHADO =========================
-// `.pause-legend` é a linha que diz QUAL BOTÃO FAZ O QUÊ, e ela carregava `aria-hidden="true"`. É exatamente
-// o que a XAG 106 manda narrar ("A to Select"), explicitamente removido da árvore de acessibilidade.
+// ========================= THE FINDING =========================
+// `.pause-legend` is the line that says WHICH BUTTON DOES WHAT, and it carried `aria-hidden="true"`. That is exactly
+// what XAG 106 says to narrate ("A to Select"), explicitly removed from the accessibility tree.
 //
-// Dá para adivinhar por que alguém pôs o atributo, e a intenção era boa: a legenda mostra GLIFOS de controle
-// — `✕`, `○`, `□`, `△` no PlayStation —, e um leitor de tela lê `✕` como "sinal de multiplicação", ou não lê
-// nada. Esconder o ruído parece a saída. Mas o preço foi esconder a INFORMAÇÃO junto com o ruído: quem não
-// enxerga passou a não ter como saber qual botão confirma.
+// The intent behind the attribute is easy to guess, and it was good: the legend shows controller GLYPHS — `✕`, `○`,
+// `□`, `△` on PlayStation —, and a screen reader reads `✕` as a multiplication sign, or reads nothing. Hiding the
+// noise looks like the way out. But the price was hiding the INFORMATION with the noise: whoever cannot see had no
+// way to know which button confirms.
 //
-// ========================= POR QUE NÃO BASTA TIRAR O ATRIBUTO =========================
-// Tirar `aria-hidden` e parar aí devolveria o ruído: "sinal de multiplicação Sim, círculo Não". A decisão do
-// ADR diz isso com todas as letras — "It has to be written so it reads well, which is a rewrite and not an
+// ========================= WHY REMOVING THE ATTRIBUTE IS NOT ENOUGH =========================
+// Removing `aria-hidden` and stopping there would bring the noise back: "sinal de multiplicação Sim, círculo Não". The
+// ADR's decision says so in so many words — "It has to be written so it reads well, which is a rewrite and not an
 // attribute removal".
 //
-// Então são DUAS camadas no mesmo elemento: os chips ficam visíveis e MUDOS (`aria-hidden` desce para eles),
-// e ao lado nasce uma frase só para leitor de tela — "Botão xis para confirmar, botão bola para voltar." O
-// glifo continua na tela para quem o reconhece; a palavra existe para quem o escuta.
+// So there are TWO layers in the same element: the chips stay visible and MUTE (`aria-hidden` moves down to them),
+// and beside them a sentence only for the screen reader — "Botão xis para confirmar, botão bola para voltar." The
+// glyph stays on screen for whoever recognises it; the word exists for whoever listens.
 //
-// MUTAÇÕES CONFERIDAS (no fim do arquivo).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { pauseLegendHtml, spokenGlyph } from '../app/js/ui/shell.js';
 import { PAD_DESIGNS } from '../app/js/input/devices.js';
@@ -34,17 +34,17 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
   it('[Right] os chips visíveis ficam MUDOS e a frase falada nasce ao lado', () => {
     const [sim, nao] = par('microsoft');
     const html = pauseLegendHtml(sim, nao);
-    // O que se vê: dois chips com o glifo e a palavra, marcados para o leitor de tela ignorar.
+    // What is seen: two chips with the glyph and the word, marked for the screen reader to ignore.
     expect(html).toContain('<span class="lg" aria-hidden="true">');
     expect(html).toContain('>A<');
     expect(html).toContain('>B<');
-    // O que se ouve: UMA frase, e ela diz o que cada botão FAZ.
+    // What is heard: ONE sentence, and it says what each button DOES.
     expect(html).toContain('<span class="sr-only">Botão A para confirmar, botão B para voltar.</span>');
   });
 
   it('[Right] o glifo do PlayStation vira PALAVRA na frase falada — e continua glifo na tela', () => {
-    // O caso que justifica o item inteiro. `✕` na tela é reconhecível para quem enxerga; no ouvido ele é
-    // "sinal de multiplicação" ou silêncio. As duas coisas têm de valer ao mesmo tempo.
+    // The case that justifies the whole item. `✕` on screen is recognisable to whoever sees; to the ear it is
+    // a multiplication sign or silence. Both have to hold at the same time.
     const [sim, nao] = par('sony'); // yes is the south button on PlayStation too: cross (ADR-0013 erratum)
     const html = pauseLegendHtml(sim, nao);
     expect(html).toContain('>○<');
@@ -53,19 +53,19 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
   });
 
   it('[Zero] NADA na legenda carrega `aria-hidden` no elemento de fora — só nos chips', () => {
-    // A regressão que este caso impede é a volta do atributo para o `<p>`: bastaria isso para a frase falada
-    // sumir junto, e o teste de cima continuaria verde, porque a frase estaria lá — apenas inalcançável.
+    // The regression this case prevents is the attribute returning to the `<p>`: that alone would make the spoken
+    // sentence vanish with it, and the case above would stay green, because the sentence would be there — just unreachable.
     const [sim, nao] = par('generic');
     const html = pauseLegendHtml(sim, nao);
-    expect(html.startsWith('<span class="lg"')).toBe(true); // sem invólucro nenhum: quem monta o `<p>` é o DOM
+    expect(html.startsWith('<span class="lg"')).toBe(true); // no wrapper at all: the DOM builds the `<p>`
     expect(html).toContain('class="sr-only"');
     expect(html.indexOf('aria-hidden')).toBeGreaterThan(-1);
-    expect(html.split('sr-only')).toHaveLength(2); // uma frase, não uma por chip
+    expect(html.split('sr-only')).toHaveLength(2); // one sentence, not one per chip
   });
 
   it('[Boundary] glifo que já se lê passa INTOCADO — a tradução é só para os quatro que não se leem', () => {
-    // Traduzir "A" para "letra A" seria ruído acrescentado em nome de acessibilidade, que é o defeito que
-    // este item conserta pelo avesso.
+    // Turning "A" into "letra A" would be noise added in the name of accessibility, which is the defect this
+    // item fixes, turned inside out.
     expect(spokenGlyph('A')).toBe('A');
     expect(spokenGlyph('0')).toBe('0');
     expect(spokenGlyph('✕')).toBe('xis');
@@ -75,8 +75,8 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
   });
 
   it('[Interface] a cor do chip continua saindo do desenho do controle', () => {
-    // A legenda é a única pista de cor que casa a tela com o controle físico na mão da criança. Ela não pode
-    // ser vítima da mudança de acessibilidade.
+    // The legend is the only colour cue that matches the screen to the physical controller in the child's hand. It
+    // must not be a casualty of the accessibility change.
     const [sim, nao] = par('microsoft');
     const html = pauseLegendHtml(sim, nao);
     expect(html).toContain('background:' + sim[1]);
@@ -84,9 +84,9 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · tirando o `aria-hidden` dos chips → "[Right] os chips visíveis ficam MUDOS" reprova, e o efeito real
-//     seria o leitor lendo o glifo E a frase, em dobro.
-//   · devolvendo o glifo cru à frase falada (sem `spokenGlyph`) → "[Right] o glifo do PlayStation" reprova
-//     com "Botão ○ para confirmar".
-//   · trocando a frase por dois `sr-only`, um por chip → "[Zero] uma frase, não uma por chip" reprova.
+// ========================= MUTATIONS CHECKED =========================
+//   · removing `aria-hidden` from the chips → `[Right] os chips visíveis ficam MUDOS` fails, and the real effect
+//     would be the reader reading the glyph AND the sentence, twice.
+//   · giving the raw glyph back to the spoken sentence (without `spokenGlyph`) → `[Right] o glifo do PlayStation` fails
+//     with "Botão ○ para confirmar".
+//   · replacing the sentence with two `sr-only`, one per chip → `[Zero] uma frase, não uma por chip` fails.

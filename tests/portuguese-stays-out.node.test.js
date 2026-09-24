@@ -60,9 +60,9 @@ describe('Portuguese in the engine only shrinks', () => {
   });
 
   it('🔴 [Right] a PARAMETER counts, and a destructured one too — the hole that let `(bruto, padrao)` in', () => {
-    // 📏 O defeito, medido em 22/09: `sanitiseTeaLevel(bruto, padrao)` viveu um dia inteiro num ficheiro que este portão
-    // chamava limpo, e num módulo que o próprio portão exigira que nascesse a zero. Um parâmetro não é uma declaração, e
-    // era só isso que ele lia. ⚠️ O segundo caso é a desestruturação: sem ele o mesmo buraco reabre uma sintaxe abaixo.
+    // 📏 The defect, measured on 2026-09-22: a Portuguese parameter pair (`bruto, padrao`) lived a whole day in a file this
+    // gate called clean, in a module the gate itself required to be born at zero. A parameter is not a declaration, and
+    // declarations were all it read. ⚠️ The second case is destructuring: without it the same hole reopens one syntax lower.
     expect(parameterNames('export function f(bruto: number, padrao = 1): void {}').sort()).toEqual(['bruto', 'padrao']);
     expect(parameterNames('const g = ({ raiz, filhos }) => raiz + filhos;').sort()).toEqual(['filhos', 'raiz']);
     expect(parameterNames('const naoEParametro = 1;'), 'uma declaração não é um parâmetro').toEqual([]);
@@ -70,8 +70,8 @@ describe('Portuguese in the engine only shrinks', () => {
   });
 
   it('🔴 [Right] a MEMBER counts — o campo, o método e a posição de um enum', () => {
-    // 📌 São os que a fase 7 do plano do inglês renomeia (ADR-0219): `CreateGameOptions.baixarPesados`,
-    // `Declinios.semVozNeural`, os campos do ctx que um cartucho preenche. Medir é este commit; renomear é uma release.
+    // 📌 These are the ones phase 7 of the English plan renames (ADR-0219): `CreateGameOptions.baixarPesados`,
+    // `Declinios.semVozNeural`, the ctx fields a cartridge fills in. This gate measures them; renaming them is a release.
     const fonte = [
       'export interface Opcoes { baixarPesados: boolean; aoProgredir(n: number): void; }',
       'export enum Estado { ligado = 1 }',
@@ -80,8 +80,8 @@ describe('Portuguese in the engine only shrinks', () => {
     expect(memberNames(fonte).sort())
       .toEqual(['aoProgredir', 'baixarPesados', 'guardado', 'ligado', 'valorAtual']);
     expect(memberNames('export function f(x: number): void {}'), 'nem parâmetro nem declaração é membro').toEqual([]);
-    // ⚠️ E as três categorias são DISJUNTAS: se não fossem, o mesmo nome contava duas vezes e a catraca de uma
-    // esconderia a da outra — que é exactamente o que três números por ficheiro existem para impedir.
+    // ⚠️ And the three categories are DISJOINT: if they were not, the same name would count twice and one ratchet
+    // would hide the other — exactly what three numbers per file exist to prevent.
     const misto = 'export interface I { campo: number } export const v = 1; export function g(p: number): void {}';
     expect([declaredNames(misto), parameterNames(misto), memberNames(misto)].map((l) => l.sort()))
       .toEqual([['I', 'g', 'v'], ['p'], ['campo']]);

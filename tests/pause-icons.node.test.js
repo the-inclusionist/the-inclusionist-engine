@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/pause-icons — a barra de ícones de acessibilidade da pausa (.pi-btn) e o menu por tela.
-// Project NODE: lógica PURA (rótulos, ciclos, plano do modo TEA, markup) + as cascas de reflexo com DOM FALSO
-// (objetos simples, no estilo de tests/gamepad.node.test.js — nenhum `document` real). A casca que só existe
-// no navegador (buildScreenPause, que usa document.createElement/innerHTML) vive em pause-icons.browser.test.js.
+// Tests of ui/pause-icons — the pause's accessibility icon bar (.pi-btn) and the per-screen menu.
+// NODE project: PURE logic (labels, cycles, the autism-mode plan, markup) + the reflect shells over a FAKE DOM
+// (plain objects, in the style of tests/gamepad.node.test.js — no real `document`). The shell that only exists
+// in the browser (buildScreenPause, which uses document.createElement/innerHTML) lives in pause-icons.browser.test.js.
 //
-// O QUE ESTES TESTES PROTEGEM, acima de tudo: o contrato de acessibilidade dos ícones. Um `.pi-btn` é um toggle
-// de estado alheio (modo cego, TTS, Libras, TEA, teclas de alternância, contraste, daltonismo) — se o
-// `aria-label` não disser o estado ATUAL, o botão é invisível para quem usa leitor de tela, e essa é a razão de
-// `iconLabel`/`computeIconLabel` existirem. Daí os invariantes: todo ícone tem rótulo não-vazio, o rótulo muda
-// quando o estado muda, e um ícone `em construção` nunca se declara ligado.
+// WHAT THESE TESTS PROTECT, above all: the icons' accessibility contract. A `.pi-btn` toggles state owned
+// elsewhere (blind mode, TTS, Libras, autism mode, latching keys, contrast, colour blindness) — if its
+// `aria-label` does not say the CURRENT state, the button is invisible to a screen-reader user, and that is why
+// `iconLabel`/`computeIconLabel` exist. Hence the invariants: every icon has a non-empty label, the label changes
+// when the state changes, and no icon ever declares itself on without a state behind it.
 // ZOMBIES (Zero/One/Many/Boundary/Interface/Exception/Simple) + Right-BICEP.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { migrateVisual, DEFAULT_VISUAL } from '../app/js/render/viz-axes.js';
@@ -19,26 +19,24 @@ import {
   iconsThatAct,
   initPauseIcons,
 } from '../app/js/ui/pause-icons.js';
-// 📌 O catálogo mudou de casa para `core/pause-icon-catalogue` (ADR-0221, issue #203): QUAIS ícones existem e por que ordem é
-// dado, e este ficheiro mede o que eles FAZEM. Os casos ficam aqui porque é aqui que a barra se monta.
+// 📌 The catalogue lives in `core/pause-icon-catalogue` (ADR-0221, issue #203): WHICH icons exist and in what order is
+// data, and this file measures what they DO. The cases stay here because this is where the bar is mounted.
 import { PAUSE_ICONS } from '../app/js/core/pause-icon-catalogue.js';
-// 📌 E a MARCAÇÃO mudou de casa no mesmo passo (ADR-0221, issue #203): montar a cadeia e ligar os elementos que o navegador
-// faz dela são dois trabalhos que não precisam um do outro. Os casos ficam aqui porque medem a barra inteira.
+// 📌 And the MARKUP lives in `ui/pause-markup` (ADR-0221, issue #203): building the string and wiring the elements the browser
+// makes from it are two jobs that do not need each other. The cases stay here because they measure the whole bar.
 import { iconBtnMarkup, iconsMarkup, pmBtnMarkup, screenPauseMarkup } from '../app/js/ui/pause-markup.js';
-// 📌 O modo calmo mudou de casa para `core/calm-mode` (ADR-0221, issue #203): ele não é sobre ícones, é sobre o que uma
-// criança que não suporta ruído precisa que a engine cale. Os casos ficam aqui porque é aqui que o ciclo do ☺ é exercido.
+// 📌 Calm mode lives in `core/calm-mode` (ADR-0221, issue #203): it is not about icons, it is about what a child who cannot
+// bear noise needs the engine to silence. The cases stay here because this is where the ☺ cycle is exercised.
 import { nextCalmMode, calmAudioPlan, calmMotionPlan, CALM_AUDIO_CATS } from '../app/js/core/calm-mode.js';
 import { CVD_SEQ, CVD_NAMES, nextContrast, nextCvd, CONTRAST_LEVELS } from '../app/js/core/visual-cycles.js';
 
 // ☝️ keeps ONE value for the whole engine (ADR-0218), so it is read and reset here as the module state it is.
 import * as estado from '../app/js/core/state.js';
-// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
-// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
-// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
 /*
- * 🔴 A RODADA É UM DUPLO LOCAL desde o ADR-0228: `core/run-state` saiu para o `game-platformer` com a pilha
- * de mundo-de-tiles. Este ficheiro nunca testou a rodada — ele PASSA uma ao cartão de pausa, e o que mede é o
- * cartão. O mínimo que o cartão lê chega aqui, e o duplo é honesto porque a asserção nunca foi sobre ele.
+ * 🔴 THE ROUND IS A LOCAL DOUBLE (ADR-0038, ADR-0228): the round's state is not in `core/state` and `core/run-state` left
+ * the engine. This file never tested the round — it HANDS one to the pause card, and what it measures is the card. The
+ * minimum the card reads is built here, and the double is honest because the assertions were never about it. The aliases
+ * below keep the cases written as they always were.
  */
 const rodada = {
   numPlayers: 1,
@@ -47,20 +45,20 @@ const rodada = {
 };
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
-const numPlayers = () => rodada.numPlayers; // era binding vivo; virou função (o teste chama `numPlayers()`)
+const numPlayers = () => rodada.numPlayers; // a function, so the cases call `numPlayers()`
 
 
-// SEM RÓTULO DINÂMICO: a resposta de um jogo cujo botão não tem rótulo próprio. Era `quizLevel` + `QL_NAME`,
-// e o módulo montava a frase; agora ele recebe a frase ou `null` (item 19).
+// NO DYNAMIC LABEL: the answer of a game whose button has no label of its own. The module receives the ready phrase or
+// `null` (item 19); building it is the game's job.
 const SEM_DIN = () => null;
 
 // ---------------------------------------------------------------------------------------------
-// Fixtures — DOM falso (objetos simples) e um ctx falso que registra tudo o que foi chamado
+// Fixtures — a fake DOM (plain objects) and a fake ctx that records everything called on it
 // ---------------------------------------------------------------------------------------------
 
-// classList mínimo: só o que reflectIconBtn usa (remove variádico, add, toggle com `force`, contains).
-// `className` é derivado — reflectIconBtn no game.js original testava `/pi-cvd-/.test(b.className)`, então o
-// fake precisa manter os dois em sincronia, senão o teste passaria por um motivo errado.
+// Minimal classList: only what reflectIconBtn uses (variadic remove, add, toggle with `force`, contains).
+// `className` is derived from it, so a case that reads `b.className` sees the same classes the classList holds —
+// a fake that let the two drift apart would make a case pass for the wrong reason.
 function fakeClassList() {
   const set = new Set();
   return {
@@ -81,17 +79,15 @@ function fakeIconBtn(pi) {
     get className() { return [...classList._set].join(' '); },
     setAttribute(n, v) { attrs[n] = v; },
     getAttribute(n) { return n in attrs ? attrs[n] : null; },
-    // ⚠️ O DUPLO FICOU CURTO PELA QUARTA VEZ NESTE FICHEIRO, e o conserto é DELE e não da engine — a lição já
-    // está no cabeçalho duas vezes. Faltava `removeAttribute`, e faltava porque até hoje nada TIRAVA um
-    // atributo: a issue #128 (`aria-disabled` a espelhar o `pi-dis`) é o primeiro caso que o faz. Um duplo
-    // mais pobre do que a coisa real não reprova o código — rebenta ao lado dele, e o erro aponta para a
-    // engine em vez de apontar para si próprio.
+    // ⚠️ A DOUBLE POORER THAN THE REAL THING does not fail the code — it breaks beside it, and the error points at the
+    // engine instead of at itself. The fix belongs to the DOUBLE, not to the engine. `removeAttribute` is here because
+    // issue #128 (`aria-disabled` mirroring `pi-dis`) is a case that REMOVES an attribute.
     removeAttribute(n) { delete attrs[n]; },
     _attrs: attrs,
   };
 }
 
-// "Tela de pausa" falsa: só precisa saber devolver seus .pi-btn.
+// Fake "pause screen": it only needs to hand back its .pi-btn.
 function fakeScreen(keys = PAUSE_ICONS.map((ic) => ic.k)) {
   const btns = keys.map(fakeIconBtn);
   return { _btns: btns, querySelectorAll: (sel) => (sel === '.pi-btn' ? btns : []) };
@@ -137,23 +133,22 @@ function buildCtx(over = {}) {
     optionsButtons: PM_OPTS,
     qlName: QL_NAME,
     getPauseActs: () => state.acts,
-    // ⚠️ CAMPO OBRIGATÓRIO, e este fixture omitia-o. Em JS isso dava `undefined`, que é falso, e o ícone
-    // `altmove` desaparecia em silêncio — «metade do defeito que este campo existe para não cometer», nas
-    // palavras do próprio `ui/pause-icons`. Agora é função (ADR-0142) e a omissão passa a LANÇAR, que é o
-    // que se quer: um ctx mal montado deixou de poder mentir baixinho.
+    // ⚠️ A REQUIRED FIELD. Omitted, the `altmove` icon would vanish in silence — hiding the control is half the
+    // defect this field exists to prevent. It is a function (ADR-0142), so omitting it THROWS, which is what is
+    // wanted: a badly built ctx can no longer lie quietly.
     holdsKeys: () => true,
     setPauseActor: (i) => { state.pauseActor = i; },
     getPauseScreens: () => state.screens,
-    // As BARRAS RÁPIDAS (ADR-0044, item 7): desde que elas saíram do cartão, é aqui que os ícones vivem, e é
-    // por aqui que `reflectPauseIcons` os encontra. Os testes que exercitam o reflexo alimentam `state.bars`;
-    // os que só olham o markup do cartão deixam a lista vazia — e o reflexo então não faz nada, corretamente.
+    // The QUICK BARS (ADR-0044, item 7): the icons live in the bars, outside the card, and this is how
+    // `reflectPauseIcons` finds them. The cases that exercise the reflect fill `state.bars`; the ones that only look
+    // at the card's markup leave the list empty — and the reflect then does nothing, correctly.
     getA11yBars: () => state.bars || state.screens,
     getBlindMode: () => state.blindMode,
     setBlindMode: (on) => { state.blindMode = on; },
     getAudioCat: () => state.audioCat,
     setCatGain: (k) => state.catGains.push(k),
     reflectTtsPanel: () => { state.ttsPanelRefreshes++; },
-    reflectTtsPanelEnabled: false, // VERBATIM do game.js — ver o bug do `typeof reflectTTS` no relatório
+    reflectTtsPanelEnabled: false, // `false`: the icon does not repaint the TTS panel — see `reflectTtsPanelEnabled` in ui/pause-icons
     isLibrasOn: () => state.libras,
     toggleLibras: () => { state.librasToggles++; state.libras = !state.libras; },
     rm: state.rm,
@@ -162,7 +157,7 @@ function buildCtx(over = {}) {
     saveRM: () => { state.saved++; },
     setToggleMove: (i, on) => { state.toggleMoveCalls.push([i, on]); const p = players[i]; if (p) p.toggleMove = on; },
     setPlayerViz: (i, mode) => { state.vizCalls.push([i, mode]); const p = players[i]; if (p) { p.viz = mode; p.visual = migrateVisual(mode); } },
-    // Os escritores POR EIXO (#104): mexer num nao apaga o outro, e e' isso que os casos afirmam.
+    // The PER-AXIS writers (#104): moving one does not erase the other, and that is what the cases assert.
     setPlayerTheme: (i, tema) => { state.vizCalls.push([i, 'tema:' + tema]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? DEFAULT_VISUAL), tema }; },
     setPlayerCorrection: (i, correcao) => { state.vizCalls.push([i, 'correcao:' + correcao]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? DEFAULT_VISUAL), correcao }; },
     ...over,
@@ -170,21 +165,21 @@ function buildCtx(over = {}) {
   return { ctx, state, said, alerted };
 }
 
-// Popula core/state.players IN PLACE (o módulo real lê o binding vivo; nunca reatribui o array).
+// Fills the round's players IN PLACE (the ctx reads `rodada.players`; the array is never reassigned).
 function setPlayers(list) {
   players.length = 0;
-  // ⚠️ DERIVA `visual` de `viz`, a mesma regra do espelho que a produção mantém (#104), para os casos
-  // continuarem a declarar o modo pelo nome — que é como eles falam. Quem precisa dos DOIS eixos ao mesmo
-  // tempo passa `visual` directamente, e é isso que o distingue.
+  // ⚠️ DERIVES `visual` from `viz`, the same mirror rule production keeps (#104), so the cases can keep naming the
+  // mode by its name — which is how they speak. A case that needs BOTH axes at once passes `visual` directly, and
+  // that is what sets it apart.
   list.forEach((p) => players.push(
     p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrateVisual(p.viz) } : p,
   ));
   setNumPlayersValue(list.length || 1);
 }
 
-// ⚠️ `switchScan` e `voiceControl` são estado de MÓDULO (uma chave para a engine toda, ADR-0218 e issue #184): sem os
-// reposicionar, um caso que entra na varredura — ou que liga o microfone — deixa o seguinte a começar lá dentro, e um caso
-// que depende da ordem dos vizinhos não mede o que diz.
+// ⚠️ `switchScan` and `voiceControl` are MODULE state (one key for the whole engine, ADR-0218 and issue #184): without
+// resetting them, a case that enters the scan — or turns the microphone on — leaves the next one starting inside it, and
+// a case that depends on the order of its neighbours does not measure what it says.
 beforeEach(() => {
   setPlayers([{ viz: 'normal', visual: DEFAULT_VISUAL }]);
   estado.setSwitchScanValue(false);
@@ -192,7 +187,7 @@ beforeEach(() => {
 });
 
 // =============================================================================================
-// PURO — saída privada de áudio (o portão dos ícones de som)
+// PURE — private audio output (the gate of the sound icons)
 // =============================================================================================
 describe('hasPrivateOutputIn — quem pode mexer em som/TTS/modo cego', () => {
   it('ZERO jogadores: devolve true (a contagem <=1 curto-circuita antes de olhar a lista)', () => {
@@ -229,7 +224,7 @@ describe('hasPrivateOutputIn — quem pode mexer em som/TTS/modo cego', () => {
 });
 
 // =============================================================================================
-// PURO — os três ciclos (TEA, contraste, daltonismo)
+// PURE — the three cycles (autism mode, contrast, colour blindness)
 // =============================================================================================
 describe('ciclos dos ícones', () => {
   it('TEA percorre 0→1→2→0 (BORDA: fecha o anel, não estoura em 3)', () => {
@@ -259,13 +254,13 @@ describe('ciclos dos ícones', () => {
   it('ASSIMETRIA proposital: viz fora da lista cai no índice 1 no daltonismo (e no 0 no contraste)', () => {
     expect(nextCvd('hc-direto')).toEqual({ idx: 1, mode: 'fix-protan' });
     expect(nextCvd(undefined)).toEqual({ idx: 1, mode: 'fix-protan' });
-    expect(nextContrast('hc-direto')).toBe('hc-direto-45'); // este ESTÁ na lista; a assimetria é só p/ os de fora
+    expect(nextContrast('hc-direto')).toBe('hc-direto-45'); // this one IS in the list; the asymmetry is only for values outside it
   });
 
   it('INVARIANTE: os nomes de anúncio estão alinhados por índice com a sequência de modos', () => {
     expect(CVD_NAMES).toHaveLength(CVD_SEQ.length);
-    // CVD_NAMES guarda CHAVES i18n desde a Fase 5; a assercao atravessa o dicionario para continuar
-    // afirmando o que a pessoa ouve, e nao apenas que ha alguma chave la.
+    // CVD_NAMES holds i18n KEYS (phase 5); the assertion goes through the dictionary so it keeps asserting what
+    // the person hears, and not merely that some key is there.
     expect(pt[CVD_NAMES[nextCvd('normal').idx]]).toBe('protanopia');
     expect(pt[CVD_NAMES[nextCvd('fix-tritan').idx]]).toBe('visão tricromática');
   });
@@ -299,19 +294,19 @@ describe('plano do modo TEA (applyCalm sem DOM)', () => {
   });
   it('BUG PRESERVADO: 0→1→0 NÃO devolve o volume original (o teto de 0.3 é destrutivo)', () => {
     const v1 = calmAudioPlan(1, 0.9).vol;
-    expect(calmAudioPlan(0, v1).vol).toBe(0.3); // e não 0.9 — ver o relatório
+    expect(calmAudioPlan(0, v1).vol).toBe(0.3); // and not 0.9 — the 0.3 cap is not undone
   });
 });
 
 // =============================================================================================
-// PURO — o rótulo REFLETE o estado (o coração da acessibilidade destes botões)
+// PURE — the label REFLECTS the state (the heart of these buttons' accessibility)
 // =============================================================================================
 /**
- * ⚠️ O SNAPSHOT PASSOU A CARREGAR `visual` (#104), e este helper DERIVA-O de `viz` para os casos continuarem
- * a dizer o modo pelo nome — que é como eles falam. É a mesma regra do espelho que a produção mantém.
+ * ⚠️ THE SNAPSHOT CARRIES `visual` (#104), and this helper DERIVES it from `viz` so the cases can keep naming the
+ * mode by its name — which is how they speak. It is the same mirror rule production keeps.
  *
- * Um caso que precise de um estado que a chave única NÃO exprime — `hc7` com `fix-deuter`, que é o ponto da
- * issue — passa `visual` directamente, e é isso que o distingue dos outros.
+ * A case that needs a state the single key CANNOT express — `hc7` with `fix-deuter`, which is the point of the
+ * issue — passes `visual` directly, and that is what sets it apart from the others.
  */
 function snap(over = {}) {
   const base = {
@@ -338,8 +333,8 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
       // ☝️ LEFT THIS LIST in 2026-09-21: it stopped being a boolean and became three positions (ADR-0218). Its own case is below.
     ];
     for (const [k, flag, prefix] of cases) {
-      // 'on'/'off' eram palavras INGLESAS dentro de uma frase em portugues — o defeito exato que a passada
-      // de i18n existe para remover. Agora o estado tambem passa pelo dicionario.
+      // 'on'/'off' would be ENGLISH words inside a Portuguese sentence — the exact defect the i18n pass exists
+      // to remove. The state goes through the dictionary too.
       expect(computeIconLabel(k, snap({ [flag]: false }))).toBe(prefix + ': desligado');
       expect(computeIconLabel(k, snap({ [flag]: true }))).toBe(prefix + ': ligado');
     }
@@ -353,8 +348,8 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     expect(computeIconLabel('altmove', snap({ toggleMove: false }))).toBe('Jeito de apertar: padrão');
     expect(computeIconLabel('altmove', snap({ toggleMove: true }))).toBe('Jeito de apertar: não precisa segurar');
     expect(computeIconLabel('altmove', snap({ switchScan: true }))).toBe('Jeito de apertar: um botão só');
-    // 🔴 E A VARREDURA GANHA DA ADERÊNCIA: com um botão só não há o que segurar, e um valor guardado da aderência faria o
-    // ícone anunciar uma posição em que a criança não está.
+    // 🔴 AND THE SCAN WINS OVER THE LATCH: with one button only there is nothing to hold, and a stored latch value would
+    // make the icon announce a position the child is not in.
     expect(computeIconLabel('altmove', snap({ toggleMove: true, switchScan: true }))).toBe('Jeito de apertar: um botão só');
   });
 
@@ -384,8 +379,8 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     expect(computeIconVisual('altmove', snap({ toggleMove: false })).on).toBe(false);
     expect(computeIconVisual('altmove', snap({ toggleMove: true })).on).toBe(true);
     expect(computeIconVisual('altmove', snap({ switchScan: true })).on).toBe(true);
-    // 🔴 E NUNCA APAGADO: apagar o ícone num aparelho que exige a aderência levava «um botão só» junto, e quem joga com os
-    // olhos é quem mais precisa dele. A trava vive no ciclo (caso abaixo), não no aspecto.
+    // 🔴 AND NEVER GREYED OUT: greying the icon on a device that requires the latch would take «um botão só» with it, and
+    // whoever plays with their eyes is who needs it most. The lock lives in the cycle (case below), not in the look.
     expect(computeIconVisual('altmove', snap({ toggleMove: true, latchRequired: true })).dis).toBe(false);
   });
 
@@ -399,7 +394,7 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     it('🔴 [Right] num jogo que NÃO segura tecla são duas: a aderência não teria o que segurar', () => {
       expect(nextInputMode('standard', false)).toBe('scan');
       expect(nextInputMode('scan', false)).toBe('standard');
-      // e uma posição que não existe neste ciclo devolve a primeira, em vez de ficar presa fora dele
+      // and a position that does not exist in this cycle returns the first one, instead of staying stuck outside it
       expect(nextInputMode('sticky', false)).toBe('standard');
     });
 
@@ -434,24 +429,21 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     expect(computeIconLabel('cvd', snap({ viz: 'fix-protan' }))).toBe('Correção de daltonismo: protanopia');
     expect(computeIconLabel('cvd', snap({ viz: 'fix-deuter' }))).toBe('Correção de daltonismo: deuteranopia');
     expect(computeIconLabel('cvd', snap({ viz: 'fix-tritan' }))).toBe('Correção de daltonismo: tritanopia');
-    // ⚠️ AQUI É O FALLBACK, E ELE CONTINUA `desligado` DE PROPÓSITO. `hc-direto` é alto contraste: não há
-    // correção de daltonismo ligada, e é só isso que o rótulo pode afirmar. Dizer `visão tricromática` seria
-    // o software afirmando o que a criança ENXERGA — e o fallback cobre 13 dos 16 modos, incluindo as três
-    // SIMULAÇÕES de daltonismo, a baixa visão e o modo cego. A quarta ESCOLHA do ciclo nomeia a visão
-    // (`cvd.tricro`, no teste do invariante acima); o fallback nomeia o interruptor. São chaves diferentes.
+    // ⚠️ THIS IS THE FALLBACK, AND IT STAYS `desligado` ON PURPOSE. `hc-direto` is high contrast: no colour-blindness
+    // correction is on, and that is all the label may assert. Saying `visão tricromática` would be the software
+    // asserting what the child SEES — and the fallback covers 13 of the 16 modes, including the three colour-blindness
+    // SIMULATIONS, low vision and blind mode. The fourth CHOICE of the cycle names the vision (`cvd.tricro`, in the
+    // invariant test above); the fallback names the switch. They are different keys.
     expect(computeIconLabel('cvd', snap({ viz: 'hc-direto' }))).toBe('Correção de daltonismo: desligado');
-    // e a simulação é o caso que torna a distinção obrigatória, não uma sutileza:
+    // and the simulation is the case that makes the distinction mandatory, not a subtlety:
     expect(computeIconLabel('cvd', snap({ viz: 'sim-deuter' }))).toBe('Correção de daltonismo: desligado');
   });
 
   /*
-   * 🔴 «EM CONSTRUÇÃO» SAIU DA BARRA em 2026-09-21 (issue #184), e o caso que aqui estava media o que já não existe: ele
-   * percorria `PAUSE_ICONS.filter((x) => x.soon)`, que hoje é uma lista VAZIA — um laço sobre nada passa sempre, e teria
-   * continuado verde a dizer que media o rótulo de um ícone por construir.
-   *
-   * O que fica no lugar é a AUSÊNCIA, e ela tem criança dentro: enquanto o 👄 estava por construir, o rótulo dele dizia
-   * «Comando de voz, em construção» e nunca on/off. Agora ele COMANDA. Um rótulo que continuasse a dizer «em construção»
-   * sobre um ícone que age ensina a criança a não tentar — que é o mesmo defeito, virado do avesso.
+   * 🔴 NO ICON ON THE BAR ANNOUNCES ITSELF «EM CONSTRUÇÃO» (issue #184): the `soon` mechanism left the bar, so a loop over
+   * `PAUSE_ICONS.filter((x) => x.soon)` would run over an EMPTY list and pass forever. What is asserted instead is the ABSENCE,
+   * and it has a child inside it: the 👄 now COMMANDS, and a label still saying «em construção» about an icon that acts would
+   * teach the child not to try — the same defect, turned inside out.
    */
   it('🔴 [Zero] nenhum ícone da barra se anuncia EM CONSTRUÇÃO — e o 👄, que era o último, diz o estado', () => {
     const tudoLigado = snap({ blindMode: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, voice: true });
@@ -477,9 +469,8 @@ describe('computeIconVisual — o visual e o aria-pressed andam juntos', () => {
   });
 
   /*
-   * ⚠️ ESTE CASO MEDIA O 👄 ENQUANTO ELE ERA `soon`: com tudo o resto ligado, um ícone por construir tinha de continuar a
-   * responder «desligado», porque não havia estado nenhum por trás dele. Com o comando de voz construído (issue #184) o
-   * que tem de ser verdade é o oposto e é mais forte — o ícone responde ao ESTADO DELE, e só a ele.
+   * ⚠️ The 👄 answers to ITS OWN state (issue #184), and to nothing else: with everything else on, nothing on the rest
+   * of the bar may turn it on.
    */
   it('🔴 [Right] o 👄 lê o próprio estado, e nada do resto da barra o liga', () => {
     const tudoMenosAVoz = snap({ blindMode: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, viz: 'fix-protan', privateOutput: false });
@@ -542,9 +533,9 @@ describe('computeIconVisual — o visual e o aria-pressed andam juntos', () => {
 describe('markup dos ícones e do menu', () => {
 
   it('[Right] o ícone da alternância é ☝️ — o gesto de UM DEDO, não o braço mecânico', () => {
-    // Pedido do Dev. 🦾 é prótese; a alternância de movimento não é sobre prótese, é sobre TOCAR com um dedo
-    // em vez de manter pressionado — que é o que a linha do painel motor descreve com todas as letras: "para
-    // quem não consegue manter pressionado (1 dedo)". O ícone passa a mostrar o gesto que o ajuste pede.
+    // The Dev's request. 🦾 is a prosthesis; the movement toggle is not about prostheses, it is about TAPPING with one
+    // finger instead of holding — which is what the motor panel's hint says: one touch turns it on and another turns it
+    // off, instead of holding the button. The icon shows the gesture the setting asks for.
     const alt = PAUSE_ICONS.find((i) => i.k === 'altmove');
     expect(alt, 'o ícone da alternância sumiu da barra').toBeTruthy();
     expect(alt.e).toBe('☝️');
@@ -566,9 +557,9 @@ describe('markup dos ícones e do menu', () => {
   });
 
   it('🔴 [Zero] nenhum botão nasce com a marca de «em construção» — nem a classe, nem o sufixo (issue #184)', () => {
-    // A marcação era o outro lado do mecanismo que saiu: `.pi-soon` apagava o botão a 55% e o `aria-label` levava o sufixo.
-    // Os dois saíram juntos, e a classe saiu também do `style.css` — uma classe que o CSS ainda pintasse voltaria a
-    // apagar um botão vivo no dia em que alguém a escrevesse por engano.
+    // The markup was the other side of the mechanism that left: `.pi-soon` greyed the button to 55% and the `aria-label`
+    // carried the suffix. Both left together, and the class left `style.css` too — a class the CSS still painted would
+    // grey a live button again the day someone wrote it by mistake.
     for (const ic of PAUSE_ICONS) {
       const h = iconBtnMarkup(ic);
       expect(h, `${ic.k} nasceu com \`pi-soon\``).not.toContain('pi-soon');
@@ -577,21 +568,21 @@ describe('markup dos ícones e do menu', () => {
   });
 
   it('🔴 o sufixo do assento é CHAVE, e não português cru colado no markup', () => {
-    // 🔴 A linha era `' · Jogador ' + (o.player + 1)`, dentro de um módulo de ENGINE. Num jogo em inglês
-    // lia-se «Paused · Jogador 2» — a mesma família do «📚 Nível» que este ficheiro já apanhou uma vez, e o
-    // crivo de prosa crua não a via porque ela nasce de uma concatenação e não de um literal inteiro.
+    // 🔴 A seat suffix concatenated as raw Portuguese inside an ENGINE module would read «Paused · Jogador 2» in an
+    // English game — the same family as the «📚 Nível» this file already caught once, and the raw-prose sieve cannot see
+    // it because it is born from a concatenation and not from a whole literal.
     //
-    // ⚠️ ESTE CASO MEDE A FORMA, E O IDIOMA MEDE-SE NOUTRO SÍTIO. Aqui o dicionário activo é o pt, onde a
-    // chave e o literal antigo produzem a MESMA string — uma asserção «não contém Jogador» estaria a medir
-    // o dicionário e não o mecanismo, e ficaria verde com o literal de volta. Quem distingue literal de
-    // chave é o ARRANQUE EM `en`: `tests/bar-in-the-boot-language.browser.test.js`.
+    // ⚠️ THIS CASE MEASURES THE SHAPE; THE LANGUAGE IS MEASURED ELSEWHERE. Here the active dictionary is pt, where the
+    // key and a raw literal produce the SAME string — an assertion «não contém Jogador» would be measuring the
+    // dictionary and not the mechanism, and would stay green with the literal back. What tells literal from key is
+    // BOOTING IN `en`: `tests/bar-in-the-boot-language.browser.test.js`.
     const h = screenPauseMarkup({ player: 1, numPlayers: 2, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
-    // O `<span>` próprio é o que o `refrescarItensDaPausa` precisa para REPINTAR o sufixo quando a pausa
-    // abre — sem um sítio nomeado, o conserto do idioma não tem onde pousar.
+    // The `<span>` of its own is what `refreshPauseItems` needs to REPAINT the suffix when the pause opens —
+    // without a named place, the language fix has nowhere to land.
     expect(h, 'o sufixo do assento desapareceu em multijogador').toContain('class="pause-seat"');
     expect(h.match(/class="pause-seat">([^<]*)</)[1].trim().length,
       'o `<span>` do assento existe e está vazio com dois jogadores').toBeGreaterThan(0);
-    // E com UM jogador ele fica vazio — o sufixo é informação de multijogador, não decoração.
+    // And with ONE player it stays empty — the suffix is multiplayer information, not decoration.
     const solo = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
     expect(solo).toContain('<span class="pause-seat"></span>');
   });
@@ -599,16 +590,16 @@ describe('markup dos ícones e do menu', () => {
   it('ZERO botões de menu: o cartão, o título, as duas listas e o rodapé continuam lá', () => {
     const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
     expect(h).toContain('class="pause-card" role="dialog" aria-modal="true"');
-    // A BARRA e a LEGENDA saíram do cartão no item 7 do ADR-0044 — vivem no HUD, em `quickBarMarkup`. Este
-    // caso passa a AFIRMAR a ausência: se elas voltarem para cá, a pausa volta a ser grade de duas zonas e o
-    // anel do `stepInPause` volta a ser proibido pela XAG 106.
+    // The BAR and the LEGEND are not in the card (ADR-0044, item 7) — they live in the HUD, in `quickBarMarkup`. This
+    // case ASSERTS the absence: if they came back here, the pause would be a two-zone grid again and the ring of
+    // `stepInPause` would again be forbidden by XAG 106.
     expect(h).not.toContain('pause-icons');
     expect(h).not.toContain('pi-btn');
-    // DUAS listas desde o item 5 do ADR-0044: a raiz visível e as opções escondidas.
+    // TWO lists (ADR-0044, item 5): the visible root and the hidden options.
     expect(h).toContain('<div class="pause-menu" role="menu" data-sub="raiz"></div>');
     expect(h).toContain('<div class="pause-menu" role="menu" data-sub="opcoes" hidden></div>');
-    // O `aria-hidden` SAIU daqui no item 4 do ADR-0044: a legenda diz qual botão confirma, e era invisível
-    // exatamente para quem não vê o glifo. Quem esconde agora são os CHIPS, e só eles — ver `pauseLegendHtml`.
+    // No `aria-hidden` on the legend (ADR-0044, item 4): it says which button confirms, and hiding it hid it from
+    // exactly who cannot see the glyph. What hides now are the CHIPS, and only they — see `pauseLegendHtml`.
     expect(h).toContain('class="pause-legend"');
     expect(h).not.toContain('class="pause-legend" aria-hidden');
   });
@@ -631,22 +622,22 @@ describe('markup dos ícones e do menu', () => {
   });
 
   it('BORDA: o botão de NÍVEL (dormente hoje) monta o rótulo com o nível vigente', () => {
-    // O RÓTULO chega PRONTO (item 19): montá-lo era da engine e passou a ser do jogo, que sabe o que é um
-    // nível, como ele se chama e em que idioma dizê-lo. O que este caso ainda mede — e é o que importa — é
-    // que o botão dinâmico usa o rótulo entregue e NÃO ganha `data-i18n` (senão o `applyDom` o apagaria).
+    // The LABEL arrives READY (item 19): building it is the game's job, since the game knows what a level is, what it
+    // is called and in which language to say it. What this case measures — and it is what matters — is that the
+    // dynamic button uses the label it was given and does NOT get `data-i18n` (or `applyDom` would erase it).
     const h = pmBtnMarkup({ act: 'nivel', lbl: 'ignorado', level: true }, () => 'RÓTULO DO JOGO', (k) => k);
     expect(h).toContain('pm-nivel');
     expect(h).toContain('RÓTULO DO JOGO');
-    expect(h).not.toContain('ignorado'); // o `lbl` estático é ignorado quando há rótulo dinâmico
+    expect(h).not.toContain('ignorado'); // the static `lbl` is ignored when there is a dynamic label
     expect(h).not.toContain('data-i18n');
   });
 
   it('o menu monta um .pm-btn por entrada de PM_BTNS, na ordem recebida — e o submenu depois dele', () => {
-    // A ordem das DUAS listas no markup importa para quem lê o documento em sequência: a raiz vem primeiro,
-    // e é ela que está visível. A ordem de NAVEGAÇÃO, essa, sai de `PM_VISIBLE_ITEMS` e nunca mistura as duas.
+    // The order of the TWO lists in the markup matters to whoever reads the document in sequence: the root comes first,
+    // and it is the visible one. The NAVIGATION order comes from `PM_VISIBLE_ITEMS` and never mixes the two.
     const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: PM_BTNS, optionsButtons: PM_OPTS, dynLabel: SEM_DIN, t: (k) => k });
     const acts = [...h.matchAll(/data-act="([^"]+)"/g)].map((m) => m[1]);
-    // ⚠️ E a TERCEIRA lista vem no fim (ADR-0146): sem `jogoButtons` ela é o padrão, só o «voltar».
+    // ⚠️ And the THIRD list comes last (ADR-0146): with no `jogoButtons` it is the default, only «voltar».
     expect(acts).toEqual(['resume', 'letra', 'quit', 'pmback', 'caa', 'pmback']);
   });
 });
@@ -674,10 +665,9 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(said[1]).toBe('Modo cego desligado.');
   });
   it('⚠️ [Right] SEM `setModoCego` injetado, o ícone continua a ligar o modo cego — e a PERSISTIR', async () => {
-    // ADR-0106 §4, etapa 1b. Cinco jogos do catálogo nunca injectaram nada disto, e a consequência não é
-    // «o botão não faz efeito»: é uma criança cega abrir o jogo e não ter por onde. O padrão é o
-    // `setBlindModeValue` do `core/state`, que faz as três coisas que aquele registo diz que um setter faz —
-    // grava, persiste, avisa — e NADA mais: refazer os extras do nível é reacção, e quem reage assina.
+    // ADR-0106 §4, step 1b. A game that injects none of this must not leave a blind child with no way in. The default
+    // is `core/state`'s `setBlindModeValue`, which does the three things that record says a setter does — write,
+    // persist, notify — and NOTHING more: redoing the level's extras is a reaction, and whoever reacts signs for it.
     const guardado = {};
     globalThis.localStorage = {
       getItem: (k) => (k in guardado ? guardado[k] : null),
@@ -688,31 +678,31 @@ describe('initPauseIcons — ações dos ícones', () => {
       const estadoReal = await import('../app/js/core/state.js');
       const antes = estadoReal.blindMode;
       const { ctx, said } = buildCtx();
-      delete ctx.setBlindMode;                 // o jogo que não se lembrou
+      delete ctx.setBlindMode;                 // the game that forgot
       ctx.getBlindMode = () => estadoReal.blindMode;
 
       initPauseIcons(ctx).iconAct('blind', 0);
 
       expect(estadoReal.blindMode, 'o ícone não mexeu no estado real').toBe(!antes);
-      // ⚠️ `'1'`/`'0'` e não `'true'`/`'false'`: é a codificação que o `store.setBool` grava, e é ela que o
-      // armazenamento de uma criança que já jogou contém. Pinada pelo literal de propósito — afirmar isto
-      // relendo pelo `store.getBool` mediria a ida e a volta pela mesma tabela, e as duas mover-se-iam juntas.
+      // ⚠️ `'1'`/`'0'` and not `'true'`/`'false'`: it is the encoding `store.setBool` writes, and it is what the
+      // storage of a child who has already played contains. Pinned by the literal on purpose — asserting it by
+      // reading back through `store.getBool` would measure the round trip through the same table, and the two would move together.
       expect(guardado['incl_modocego'], 'ligou mas não persistiu — no arranque seguinte volta a estar desligado')
         .toBe(antes ? '0' : '1');
-      // ⚠️ E o anúncio NÃO se perde nem se duplica: quem o diz é este ícone, não o setter.
+      // ⚠️ And the announcement is neither lost nor doubled: the icon says it, not the setter.
       expect(said).toEqual([antes ? 'Modo cego desligado.' : 'Modo cego ligado.']);
 
-      estadoReal.setBlindModeValue(antes);      // devolve o estado do módulo a quem vier a seguir
+      estadoReal.setBlindModeValue(antes);      // hands the module state back to whoever comes next
     } finally {
       delete globalThis.localStorage;
     }
   });
 
 
-  // 🎯 O GATE QUE O ADR-0113 PEDE PARA O ÍCONE: «pressioná-lo escreve a bandeira DO TRANSPORTE EM USO, e não
-  // uma global». Este é o irmão do caso do modo cego logo acima — mesma forma, mesma razão: o ícone da barra
-  // é a OUTRA superfície que escreve a alternância, e se ela e o painel escrevessem coisas diferentes as duas
-  // divergiriam em silêncio.
+  // 🎯 THE GATE ADR-0113 ASKS OF THE ICON: «pressioná-lo escreve a bandeira DO TRANSPORTE EM USO, e não
+  // uma global». The sibling of the blind-mode case just above — same shape, same reason: the bar's icon is the
+  // OTHER surface that writes the latch, and if it and the panel wrote different things the two would drift apart
+  // in silence.
   it('🎯 [Right] o ícone `altmove` escreve as DUAS chaves — a do aparelho em uso e a legada', async () => {
     const guardado = {};
     globalThis.localStorage = {
@@ -723,14 +713,14 @@ describe('initPauseIcons — ações dos ícones', () => {
     try {
       setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
       const { ctx } = buildCtx();
-      delete ctx.setToggleMove;                  // o jogo que não se lembrou
-      ctx.transportInUse = () => 'gamepad';     // e a raiz que sabe o aparelho
+      delete ctx.setToggleMove;                  // the game that forgot
+      ctx.transportInUse = () => 'gamepad';     // and the root that knows the device
 
       initPauseIcons(ctx).iconAct('altmove', 0);
 
-      // ⚠️ Literais, e não `latchKey(...)`: afirmar a chave chamando a mesma função que a escreve
-      // mediria a ida e a volta pela mesma tabela, e as duas mover-se-iam juntas. É a mesma nota que o caso
-      // do modo cego já carrega sobre a codificação `1`/`0`.
+      // ⚠️ Literals, not `latchKey(...)`: asserting the key by calling the same function that writes it would
+      // measure the round trip through the same table, and the two would move together. The blind-mode case carries
+      // the same note about the `1`/`0` encoding.
       expect(guardado['incl_togglemove_p0_gamepad'], 'o ícone não escreveu a chave do aparelho em uso')
         .toBe('1');
       expect(guardado['incl_togglemove_p0'], 'o ícone deixou de escrever a legada e a criança perde a escolha')
@@ -740,8 +730,8 @@ describe('initPauseIcons — ações dos ícones', () => {
     }
   });
 
-  // 📌 SEM A RAIZ A RESPONDER, o ícone faz exactamente o que já fazia — que é o que torna o campo opcional
-  // seguro, e o que garante que este commit não muda nada para quem ainda não migrou.
+  // 📌 WITHOUT THE ROOT ANSWERING, the icon does exactly what it always did — which is what makes the optional field
+  // safe for a consumer that has not migrated.
   it('📌 [Zero] sem `transporteEmUso`, o ícone escreve só a legada', async () => {
     const guardado = {};
     globalThis.localStorage = {
@@ -760,10 +750,10 @@ describe('initPauseIcons — ações dos ícones', () => {
     }
   });
 
-  // ========================= A CLÁUSULA 3 DO ADR-0113, NO ÍCONE DA BARRA =========================
-  // ⚠️ O ÍCONE E O `#opt-altmove` ESCREVEM O MESMO VALOR. Um a aceitar o clique enquanto o outro recusa
-  // daria à criança dois botões que discordam sobre o mesmo ajuste — e o que ela veria era o painel a dizer
-  // «não dá» e a barra a fingir que deu.
+  // ========================= CLAUSE 3 OF ADR-0113, ON THE BAR'S ICON =========================
+  // ⚠️ THE ICON AND `#opt-altmove` WRITE THE SAME VALUE. One accepting the click while the other refuses would give
+  // the child two buttons that disagree about the same setting — and what she would see is the panel saying
+  // it cannot and the bar pretending it did.
   it('🔴 [Zero] com o olhar em uso, o ícone `altmove` recusa DIZENDO, e não mexe em nada', () => {
     setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
     const { ctx, alerted } = buildCtx();
@@ -785,45 +775,43 @@ describe('initPauseIcons — ações dos ícones', () => {
   });
 
   /*
-   * 🔴 REESCRITO EM 2026-09-21, E A MUDANÇA É A DECISÃO (ADR-0218). Este caso nasceu de uma mutação sobrevivente e media o
-   * ASPECTO: com o olhar em uso, o ícone aparecia APAGADO, porque a alternância não se pode desligar nesse aparelho.
-   *
-   * Com três posições isso passou a custar caro demais: apagar o ícone inteiro tiraria a varredura de «um botão só» — e quem
-   * joga com os olhos é justamente quem mais precisa dela. A trava do ADR-0113 cláusula 3 continua inteira, dita pelo CICLO:
-   * o «padrão» simplesmente não aparece, e a criança nunca alcança uma posição em que o aparelho não a deixaria ficar.
+   * 🔴 THE LOCK IS SAID BY THE CYCLE, NOT BY THE LOOK (ADR-0218). Greying the whole icon when gaze is in use would take
+   * away the scan of «um botão só» — and whoever plays with their eyes is exactly who needs it most. Clause 3 of ADR-0113
+   * holds in full through the CYCLE: «padrão» simply does not appear, and the child never reaches a position the device
+   * would not let her stay in.
    */
   it('🔴 [Right] com o olhar em uso, o ciclo PULA o padrão — e o ícone continua accionável', () => {
     setPlayers([{ viz: 'normal', toggleMove: true, walkDir: 0 }]);
     const { ctx, state } = buildCtx();
     ctx.transportInUse = () => 'olhos';
-    ctx.holdsKeys = () => true; // senão a aderência não teria o que travar e o ciclo seria outro (o de duas posições)
+    ctx.holdsKeys = () => true; // otherwise the latch would have nothing to hold and the cycle would be the other one (the two-position one)
     const api = initPauseIcons(ctx);
     const b = fakeIconBtn('altmove');
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-dis'), 'o ícone foi apagado e levou a varredura com ele').toBe(false);
 
-    // De «não precisa segurar» vai para «um botão só»…
+    // From «não precisa segurar» it goes to «um botão só»…
     api.iconAct('altmove', 0);
     expect(estado.switchScan, 'não entrou na varredura').toBe(true);
-    // …e de lá volta para a aderência, nunca para o padrão: o aparelho manda um comando de cada vez e a aderência fica.
+    // …and from there back to the latch, never to the standard: the device sends one command at a time and the latch stays.
     api.iconAct('altmove', 0);
     expect(estado.switchScan).toBe(false);
     expect(state.toggleMoveCalls, 'o padrão foi alcançado num aparelho que exige a alternância').toEqual([]);
   });
 
-  // 🔴 A ISSUE #128, E ELA É DE UMA LINHA. `pi-dis` é CLASSE CSS: a criança que enxerga vê o ícone apagado,
-  // a que navega por leitor de tela não recebe nada — o botão anuncia-se accionável e não responde.
+  // 🔴 ISSUE #128, AND IT IS ONE LINE. `pi-dis` is a CSS CLASS: the child who sees gets a greyed icon, the one who
+  // navigates by screen reader gets nothing — the button announces itself actionable and does not respond.
   it('🔴 [Right] `pi-dis` passa a ter par em `aria-disabled` — e sai quando o motivo sai', () => {
     const { ctx } = buildCtx();
     const api = initPauseIcons(ctx);
     const b = fakeIconBtn('blind');
 
-    setPlayers([{ audioSink: 'x' }, { audioSink: 'x' }]);   // dois no mesmo sink: sem saída privada
+    setPlayers([{ audioSink: 'x' }, { audioSink: 'x' }]);   // two on the same sink: no private output
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-dis'), 'o cenário não desabilitou o ícone').toBe(true);
     expect(b.getAttribute('aria-disabled'), 'a criança cega não sabe que o botão não responde').toBe('true');
 
-    setPlayers([{ audioSink: 'x' }]);                        // sozinha: a saída volta a ser privada
+    setPlayers([{ audioSink: 'x' }]);                        // alone: the output is private again
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-dis')).toBe(false);
     expect(b.getAttribute('aria-disabled'), 'ficou marcado como desabilitado depois de voltar a funcionar')
@@ -851,18 +839,16 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(state.ttsPanelRefreshes).toBe(1);
   });
 
-  // `audioCat` nasce NULL em platform/audio e só vira objeto em `initAudioMixer()`, chamado no boot do
-  // main.ts. O invariante está escrito em TRÊS comentários (audio.ts:44, boot/create-game.ts:18,
-  // consumer-quiz/main-quiz.ts:31) e não é imposto em lugar nenhum — e das três leituras deste arquivo,
-  // duas se protegem com `cat && …` e esta era a única sem guarda. O `tsc` apontou para ela quando o
-  // main.ts virou TypeScript: o ctx pedia não-nulo e a fonte é nula.
-  // MUTAÇÃO: removida a guarda do conserto, este caso falha com
-  // `TypeError: Cannot read properties of null (reading 'tts')` — conferido antes de valer.
+  // `audioCat` is born NULL in platform/audio and only becomes an object in `initAudioMixer()`, which the root calls
+  // at boot. The invariant is written in comments (platform/audio, boot/create-game, consumer-quiz/main-quiz) and
+  // enforced nowhere — so the TTS action guards it like the other readings of it in this module do.
+  // MUTATION: with the guard removed, this case fails with
+  // `TypeError: Cannot read properties of null (reading 'tts')` — checked before it counted.
   it('o ícone de TTS não quebra quando o mixer ainda não foi inicializado', () => {
     const { ctx, state, said } = buildCtx({ getAudioCat: () => null });
     expect(() => initPauseIcons(ctx).iconAct('tts', 0)).not.toThrow();
-    expect(state.catGains).toEqual([]);   // não mexe no ganho de um mixer que não existe
-    expect(said).toEqual([]);             // e não anuncia um estado que não leu
+    expect(state.catGains).toEqual([]);   // does not touch the gain of a mixer that does not exist
+    expect(said).toEqual([]);             // and does not announce a state it did not read
   });
 
   it('Libras delega ao intérprete e anuncia o estado resultante', () => {
@@ -881,9 +867,9 @@ describe('initPauseIcons — ações dos ícones', () => {
   });
 
   /*
-   * 🔴 O CICLO INTEIRO PELO ACTO, num jogo que segura tecla e num aparelho que não exige nada — que é o caso comum, o teclado,
-   * e o único que nenhum caso media. `nextInputMode` é puro e está medido; o que falta provar é que APERTAR o ícone três vezes
-   * percorre as três posições e volta. 📌 Escrito depois de o Dev relatar «só cicla entre padrão e não precisa segurar».
+   * 🔴 THE WHOLE CYCLE THROUGH THE ACT, in a game that holds keys and on a device that requires nothing — the common case,
+   * the keyboard. `nextInputMode` is pure and measured; what this proves is that PRESSING the icon three times walks the
+   * three positions and comes back. 📌 Written after the Dev reported «só cicla entre padrão e não precisa segurar».
    */
   it('🔴 [Right] três toques no ☝️ percorrem as TRÊS posições e voltam ao padrão', () => {
     setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
@@ -895,7 +881,7 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(posicao()).toBe('Jeito de apertar: padrão');
     api.iconAct('altmove', 0);
     expect(state.toggleMoveCalls, 'o primeiro toque não escreveu a aderência').toEqual([[0, true]]);
-    rodada.players[0].toggleMove = true; // o escritor do ctx é um espião; o assento que ele escreveria é este
+    rodada.players[0].toggleMove = true; // the ctx's writer is a spy; this is the seat it would write
     expect(posicao()).toBe('Jeito de apertar: não precisa segurar');
 
     api.iconAct('altmove', 0);
@@ -909,8 +895,8 @@ describe('initPauseIcons — ações dos ícones', () => {
   });
 
   it('teclas de alternância invertem a flag do jogador CERTO', () => {
-    // 📌 Os dois assentos partem do PADRÃO: desde o ADR-0218 uma pressão sobre um assento que já está na aderência leva-o para
-    // «um botão só», que não escreve aderência nenhuma — e o caso deixaria de medir o assento, que é o que ele existe para medir.
+    // 📌 Both seats start at the STANDARD: since ADR-0218 a press on a seat already latched takes it to «um botão só»,
+    // which writes no latch at all — and the case would stop measuring the seat, which is what it exists to measure.
     setPlayers([{ toggleMove: false }, { toggleMove: false }]);
     const { ctx, state } = buildCtx();
     const api = initPauseIcons(ctx);
@@ -919,13 +905,9 @@ describe('initPauseIcons — ações dos ícones', () => {
   });
 
   it('⚠️ contraste e daltonismo ciclam CADA UM NO SEU EIXO, e um não apaga o outro (#104)', () => {
-    // ⚠️ ESTE CASO ERA A DEMONSTRAÇÃO DO DEFEITO, escrita como se fosse comportamento: ele afirmava que,
-    // depois do contraste, o ícone de daltonismo saltava para o índice 1 «porque `hc-direto` não está na
-    // sequência CVD». Não estava porque as duas sequências dividiam UM campo — a criança ligava o contraste
-    // e o daltonismo perdia o lugar dela.
-    //
-    // Agora cada ícone escreve no seu eixo, e a asserção que interessa é a última: depois de mexer nos DOIS,
-    // os DOIS continuam ligados.
+    // ⚠️ Each icon writes ITS OWN axis (#104): when contrast and colour blindness shared ONE field, turning contrast on
+    // cost the colour-blindness correction its place. The assertion that matters is the last one: after moving BOTH,
+    // BOTH are still on.
     setPlayers([{ visual: DEFAULT_VISUAL }, { visual: DEFAULT_VISUAL }]);
     const { ctx, state, said } = buildCtx();
     const api = initPauseIcons(ctx);
@@ -935,14 +917,13 @@ describe('initPauseIcons — ações dos ícones', () => {
     api.iconAct('cvd', 1);
     expect(state.vizCalls[1]).toEqual([1, 'correcao:protan']);
     expect(said[1]).toBe('Correção de daltonismo: protanopia.');
-    // ⚠️ E O TEMA SOBREVIVEU AO SEGUNDO CLIQUE. É a linha que o modelo antigo não conseguia produzir.
+    // ⚠️ AND THE THEME SURVIVED THE SECOND CLICK — the line a single shared field could not produce.
     expect(players[1].visual).toEqual({ tema: 'hc3', correcao: 'protan', simulacao: null });
   });
 
   /*
-   * 🔴 O 👄 DEIXOU DE SER A EXCEÇÃO (issue #184): este caso exigia que ele ALERTASSE «em construção» e não tocasse em
-   * estado nenhum, e era o último ícone da barra a fazê-lo. Agora ele escreve a resposta da criança e DIZ o que ficou —
-   * quem a recusa, e por quê, é o `ui/voice-control`, que devolve o ícone a desligado com o motivo falado.
+   * 🔴 THE 👄 IS NOT AN EXCEPTION (issue #184): it writes the child's answer and SAYS what stayed. Who refuses it, and
+   * why, is `ui/voice-control`, which turns the icon back off with the reason spoken.
    */
   it('🔴 [Right] o 👄 escreve a chave guardada e ANUNCIA o que ficou — já não há alerta de construção', () => {
     const { ctx, state, said, alerted } = buildCtx();
@@ -954,7 +935,7 @@ describe('initPauseIcons — ações dos ícones', () => {
     api.iconAct('voice', 0);
     expect(estado.voiceControl, 'o segundo toque não desligou').toBe(false);
     expect(said[1]).toBe('Comando de voz: desligado.');
-    // e o acto do 👄 não escorrega para os vizinhos
+    // and the 👄's act does not slip into its neighbours
     expect(state.blindMode).toBe(false);
     expect(state.vizCalls).toEqual([]);
   });
@@ -1016,7 +997,7 @@ describe('initPauseIcons — applyCalm', () => {
     expect(state.rm).toEqual({ parallax: true, decor: true, items: true, particles: true });
     expect(players[0].rmWalk).toBe(false);
     for (const k of CALM_AUDIO_CATS) {
-      expect(state.audioCat[k].on).toBe(true);          // calmo REDUZ, não silencia
+      expect(state.audioCat[k].on).toBe(true);          // calm REDUCES, it does not silence
       expect(state.audioCat[k].vol).toBeLessThanOrEqual(0.3);
     }
   });
@@ -1060,20 +1041,18 @@ describe('initPauseIcons — applyCalm', () => {
 });
 
 describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
-  // 🔴 UM ÍCONE SEM ESTADO TAMBÉM TEM DE SER REETIQUETADO PELO REFLEXO, e a razão de isto não ser zelo é uma premissa que
-  // DEIXOU DE SER VERDADE. O guarda que existia aqui dizia: «estes botões ficam com o rótulo que a marcação lhes deu (a
-  // mesma string) — não há estado a reportar». A segunda metade continua certa; «mesma string» era verdade só enquanto a
-  // marcação e o reflexo corressem no MESMO idioma.
+  // 🔴 AN ICON WITH NO STATE MUST ALSO BE RELABELLED BY THE REFLECT. Such a button has no state to report, but its
+  // markup label is only «mesma string» while the markup and the reflect run in the SAME language.
   //
-  // ⚠️ MEDIDO NUM NAVEGADOR EM 2026-09-08, na barra que o `createGame` passou a montar: o `initI18n` carrega
-  // en/es de forma ASSÍNCRONA (são chunks próprios), a marcação da barra é gerada ANTES de o dicionário
-  // chegar, e depois só os rótulos COM ESTADO se corrigem. Resultado servido pela página: cinco ícones a
-  // dizer «Blind mode… / Voice narration…» e três ainda em português, na mesma barra.
+  // ⚠️ MEASURED IN A BROWSER ON 2026-09-08, on the bar `createGame` mounts: `initI18n` loads en/es ASYNCHRONOUSLY
+  // (they are chunks of their own), the bar's markup is generated BEFORE the dictionary arrives, and only the labels WITH
+  // state corrected themselves afterwards. The page served five icons saying «Blind mode… / Voice narration…» and three
+  // still in Portuguese, on the same bar.
   //
-  // 📌 É a MESMA forma do ACHADO 15: uma premissa que valia enquanto toda raiz fosse um `main.ts` que
-  // montava depois do i18n, e que a engine invalidou ao passar a montar ela própria.
-  // 📌 O SUJEITO MUDOU em 2026-09-21 (issue #184): era o 👄, enquanto ele estava «em construção»; hoje o ícone sem estado
-  // é o ☰, que abre os menus e não guarda nada — e a regra é a mesma.
+  // 📌 The same shape as FINDING 15 in the header of `boot/create-game`: a premise that held while every root was a
+  // `main.ts` mounting after i18n, and that the engine broke by mounting the bar itself.
+  // 📌 The icon with no state today is the ☰, which opens the menus and keeps nothing (the 👄 was it while it was
+  // «em construção», until issue #184) — and the rule is the same.
   it('🔴 [Zero] um ícone SEM ESTADO recebe rótulo do reflexo — «mesma string» deixou de ser verdade', () => {
     const { ctx } = buildCtx();
     const api = initPauseIcons(ctx);
@@ -1122,14 +1101,12 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     expect(b.classList.contains('pi-cvd-tritan')).toBe(true);
   });
 
-  // ⚠️ ESTE CASO FOI VIRADO EM 2026-09-08, e o que ele afirmava era o DEFEITO ESCRITO COMO GARANTIA — a
-  // terceira vez que este repositório encontra essa forma. O título antigo era «ícone EM CONSTRUÇÃO não
-  // recebe aria-label do reflexo — o rótulo do markup fica de pé», e ele prendia a premissa «mesma string»
-  // que a medição num navegador desmentiu: com a engine a montar a barra antes de o dicionário assíncrono
-  // chegar, o rótulo da marcação e o do reflexo estão em IDIOMAS diferentes.
+  // ⚠️ The reflect WRITES the label on every icon: with the engine mounting the bar before the asynchronous dictionary
+  // arrives, the markup's label and the reflect's can be in different LANGUAGES, so skipping the write for an icon
+  // with no state is not safe.
   //
-  // 📌 O que fica afirmado é o que não regride: quando o idioma NÃO mudou, o reflexo escreve exactamente a
-  // string que a marcação escreveria. A escrita passou a ser garantida em vez de dispensada.
+  // 📌 What is asserted is what must not regress: when the language did NOT change, the reflect writes exactly the
+  // string the markup would.
   it('⚠️ [Right] o reflexo ESCREVE em todo ícone: o rótulo com estado por cima do de repouso, e a mesma string onde não há estado', () => {
     const { ctx } = buildCtx();
     const api = initPauseIcons(ctx);
@@ -1139,9 +1116,9 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
       api.reflectIconBtn(b, 0);
       expect(b.getAttribute('aria-label'), `${ic.k} ficou sem rótulo do reflexo`).toBe(api.iconLabel(ic.k, 0));
     }
-    // 🔴 E AS DUAS PONTAS DA MESMA REGRA, para «escreve sempre» não passar por «escreve o mesmo»: onde há estado, o rótulo
-    // do reflexo SUBSTITUI o de repouso que a marcação deu; onde não há, ele escreve exactamente a mesma string — e é por
-    // isso que o ☰ parecia dispensar a escrita, até a barra passar a nascer antes de o dicionário assíncrono chegar.
+    // 🔴 AND BOTH ENDS OF THE SAME RULE, so «escreve sempre» is not mistaken for «escreve o mesmo»: where there is state, the
+    // reflect's label REPLACES the resting one the markup gave; where there is none, it writes exactly the same string —
+    // which is why the ☰ seemed not to need the write, until the bar started being born before the async dictionary arrived.
     const comEstado = fakeIconBtn('blind');
     api.reflectIconBtn(comEstado, 0);
     expect(comEstado.getAttribute('aria-label'), 'o rótulo com estado não substituiu o de repouso').not.toBe(daMarcacao('blind'));
@@ -1177,9 +1154,8 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     api.reflectPauseIcons();
     for (const b of state.screens[0]._btns) {
       const lbl = b.getAttribute('aria-label');
-      // ⚠️ SEM RAMO POR `soon`: o título deste caso sempre disse «TODO .pi-btn», e o ramo que aqui estava
-      // dizia o contrário dele. Agora os dois concordam — e é essa concordância que apanha um ícone
-      // encalhado no idioma da marcação.
+      // ⚠️ NO BRANCH ON `soon`: the title of this case says «TODO .pi-btn», and the case agrees with it — that
+      // agreement is what catches an icon stranded in the markup's language.
       expect(lbl.trim().length, `${b.dataset.pi} ficou sem rótulo depois do reflexo`).toBeGreaterThan(0);
       // the ☰ opens the menus and holds no state: it is the one button that must NOT announce itself as a toggle
       expect(b.dataset.pi === 'menu' ? [null] : ['true', 'false'], b.dataset.pi).toContain(b.getAttribute('aria-pressed'));
@@ -1233,13 +1209,12 @@ describe('initPauseIcons — o que NÃO acontece no import', () => {
     expect(api.getCalmMode()).toBe(0);
     expect(said).toEqual([]); expect(alerted).toEqual([]);
     expect(state.saved).toBe(0); expect(state.catGains).toEqual([]);
-    expect(spy).not.toHaveBeenCalled(); // pauseActs é LAZY — nunca lido no init (TDZ no game.js)
+    expect(spy).not.toHaveBeenCalled(); // pauseActs is LAZY — never read at init (a game may define its acts after the icons are mounted)
   });
 
-  // Antes de 2026-08-26 este caso dizia "vem de core/state (binding vivo)". A fonte mudou — hoje é o getter
-  // da rodada injetado no ctx — mas a garantia é a MESMA e continua valendo: o módulo PERGUNTA a cada uso,
-  // em vez de copiar a contagem no init. Um `const n = ctx.getNumPlayers()` guardado no init faria a segunda
-  // metade deste caso falhar.
+  // The count comes from the round's getter injected in the ctx, and the module ASKS on every use instead of
+  // copying the count at init. A `const n = ctx.getNumPlayers()` kept at init would make the second half of this
+  // case fail.
   it('a contagem é PERGUNTADA a cada uso, não copiada no init', () => {
     setPlayers([{ audioSink: 'A' }, { audioSink: 'A' }]);
     const { ctx, alerted } = buildCtx();
@@ -1255,13 +1230,11 @@ describe('initPauseIcons — o que NÃO acontece no import', () => {
 
 describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5)', () => {
   it('⚠️ [Right] SEM escritor visual, o contraste e a cor NÃO entram na barra', () => {
-    // O registo decide isto por escrito: «uma barra que oferece a uma criança um caminho e depois o recusa é
+    // The record decides this in writing: «uma barra que oferece a uma criança um caminho e depois o recusa é
     // pior do que uma barra que ela vê que não está lá, porque a primeira ensina-lhe que o caminho não é
-    // para ela». Os outros oito ícones continuam — perder a barra inteira por causa de dois seria a troca
-    // errada.
-    // 📌 	ipografia: true desde 2026-09-12 (ADR-0149): o 11.o icone tem a mesma regra dos dois visuais, e
-    // deixa-lo de fora aqui mediria DUAS ausencias em vez da que o caso nomeia.
-    // `relogio: () => true` from ADR-0180 on: the hourglass mounts only in a clock game, and each case here measures its own absence.
+    // para ela». The other icons stay — losing the whole bar because of two would be the wrong trade.
+    // 📌 `tipografia: true` (ADR-0149): the typography icon follows the same rule as the two visual ones, and leaving
+    // it out here would measure TWO absences instead of the one the case names.
     const chaves = iconsThatAct({ clock: () => true, theme: false, correction: false, holdsKeys: () => true, typography: true, camera: true, microphone: true, menus: true }).map((ic) => ic.k);
     expect(chaves).not.toContain('contrast');
     expect(chaves).not.toContain('cvd');
@@ -1275,11 +1248,10 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   });
 
   it('⚠️ [Boundary] com UM escritor só, aparece UM ícone só — e é o que funciona', () => {
-    // ⚠️ ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE, e ela apontava um defeito de DESENHO e não um buraco
-    // de cobertura. Enquanto a pergunta era uma bandeira só («este jogo tem escritores visuais»), trocar
-    // `&&` por `||` não reprovava nada — porque todos os casos tiravam os DOIS. E os dois operadores erram,
-    // em direcções opostas: o `&&` esconde um ícone que FUNCIONA, o `||` mostra um que NÃO funciona. A
-    // pergunta certa é por ÍCONE.
+    // ⚠️ THIS CASE WAS BORN FROM A SURVIVING MUTATION, and it pointed at a DESIGN defect rather than a coverage
+    // hole. While the question was a single flag («este jogo tem escritores visuais»), swapping `&&` for `||` failed
+    // nothing — because every case removed BOTH. And the two operators are wrong in opposite directions: `&&` hides
+    // an icon that WORKS, `||` shows one that does NOT. The right question is per ICON.
     const soTema = iconsThatAct({ theme: true, correction: false, holdsKeys: () => true, typography: true }).map((ic) => ic.k);
     expect(soTema).toContain('contrast');
     expect(soTema).not.toContain('cvd');
@@ -1290,25 +1262,24 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   });
 
   it('⚠️ [Right] o ícone que sobra SOME — «este jogo não tem» nunca foi «em breve»', () => {
-    // «Em breve» dizia «ainda não construímos isto», e um botão a dizê-lo sobre o alto contraste mentiria: o alto
-    // contraste está construído. O que falta é este jogo ter por onde o aplicar — e a resposta a isso é a ausência.
-    // 📌 O mecanismo saiu inteiro em 2026-09-21 (issue #184); o que este caso guarda é que a ausência NÃO foi
-    // substituída por um botão apagado a dizer-se por construir.
+    // «Em breve» said «ainda não construímos isto», and a button saying it about high contrast would lie: high contrast
+    // is built. What is missing is a way for this game to apply it — and the answer to that is absence.
+    // 📌 The `soon` mechanism is gone (issue #184); what this case guards is that the absence is NOT replaced by a
+    // greyed button calling itself unbuilt.
     const ficaram = iconsThatAct({ theme: false, correction: false, holdsKeys: () => true });
     for (const ic of ficaram) expect(ic, `${ic.k} voltou a anunciar-se em construção`).not.toHaveProperty('soon');
     expect(ficaram.map((ic) => ic.k), 'o contraste sem escritor ficou na barra').not.toContain('contrast');
   });
 
-  /* ===================== ADR-0115 · um jogo que não segura nada não OFERECE a alternância =====================
+  /* ===================== ADR-0115 · a game that holds nothing does not OFFER the latch =====================
    *
-   * 🔴 O defeito tem uma criança dentro: a alternância existe para quem não consegue MANTER uma tecla premida.
-   * Num quiz, num tabuleiro ou num puzzle de peças não há nada a travar — e o controle, oferecido na mesma,
-   * é uma opção que não faz nada. A criança liga o ajuste de que depende e não acontece nada; ela aprende que
-   * o ajuste está partido.
+   * 🔴 The defect has a child inside it: the latch exists for whoever cannot HOLD a key down. In a quiz, a board or
+   * a tile puzzle there is nothing to latch — and the control, offered anyway, is an option that does nothing. The
+   * child turns on the setting she depends on and nothing happens; she learns the setting is broken.
    *
-   * ⚠️ E É UMA AUSÊNCIA DIFERENTE DA DO ADR-0113 cláusula 3, que vive no mesmo ficheiro: lá o controle fica
-   * DESABILITADO com o motivo, porque o aparelho EXIGE a alternância. Aqui não há nada a travar, e explicar
-   * por que um controle não faz nada continua a ser entregar um controle que não faz nada. */
+   * ⚠️ AND IT IS A DIFFERENT ABSENCE FROM CLAUSE 3 OF ADR-0113, which lives in the same file: there the control is
+   * DISABLED with the reason, because the device REQUIRES the latch. Here there is nothing to latch, and explaining
+   * why a control does nothing is still handing over a control that does nothing. */
   it('🎯 [Zero] um jogo que não segura teclas NEM declara posição não recebe o ícone `altmove`', () => {
     const chaves = iconsThatAct({ clock: () => true, theme: true, correction: true, holdsKeys: () => false, typography: true, camera: true, microphone: true, menus: true }).map((ic) => ic.k);
     expect(chaves, 'o `altmove` foi montado num jogo que não segura nada').not.toContain('altmove');
@@ -1316,9 +1287,9 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   });
 
   /*
-   * 🔴 E A OUTRA METADE, QUE ENTROU COM O ADR-0218 e que uma mutação sobrevivente mostrou não estar medida: o ícone existe
-   * também onde o jogo DECLARA POSIÇÃO sem segurar tecla nenhuma — que é o quiz, e que era o jogo sem ☝️ nenhum. A aderência
-   * não tem o que segurar lá; «um botão só» tem o que varrer.
+   * 🔴 AND THE OTHER HALF (ADR-0218), which a surviving mutation showed was not measured: the icon also exists where the
+   * game DECLARES POSITIONS without holding any key — the quiz. The latch has nothing to hold there; «um botão só» has
+   * something to scan.
    */
   it('🔴 [Right] mas um jogo que DECLARA POSIÇÃO recebe-o, mesmo sem segurar tecla — é o caso do quiz', () => {
     const chaves = iconsThatAct({
@@ -1330,18 +1301,17 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   });
 
   it('⚠️ [Right] e o PAR: um jogo que segura recebe-o — senão «ausente» passaria por nunca montar nada', () => {
-    // Sem este caso, uma implementação que devolvesse lista vazia satisfaria o de cima. É a mesma razão pela
-    // qual o [Zero] dos escritores visuais tem o seu par logo acima.
+    // Without this case, an implementation returning an empty list would satisfy the one above. The same reason
+    // the [Zero] of the visual writers has its pair just above.
     const chaves = iconsThatAct({ theme: true, correction: true, holdsKeys: () => true, typography: true }).map((ic) => ic.k);
     expect(chaves).toContain('altmove');
   });
 
   it('⚠️ [Boundary] a ausência do `altmove` é INDEPENDENTE dos escritores visuais', () => {
-    // Os três ramos do filtro são perguntas separadas, e uma implementação que colapsasse duas delas numa
-    // bandeira só passaria nos casos de cima — foi exactamente o defeito que a mutação `&&`/`||` expôs para
-    // o par tema/correcção.
-    // ⚠️ 	ipografia FICA DE FORA aqui de propósito, e o número abaixo conta QUATRO ausências: este caso mede
-    // que os ramos do filtro sao INDEPENDENTES, e o quarto ramo entrou em 2026-09-12 (ADR-0149).
+    // The filter's branches are separate questions, and an implementation collapsing two of them into one flag
+    // would pass the cases above — exactly the defect the `&&`/`||` mutation exposed for the theme/correction pair.
+    // ⚠️ `tipografia` is LEFT OUT here on purpose, and the number below counts FOUR absences: this case measures
+    // that the filter's branches are INDEPENDENT, and the typography branch is one of them (ADR-0149).
     const semNada = iconsThatAct({ clock: () => true, theme: false, correction: false, holdsKeys: () => false }).map((ic) => ic.k);
     expect(semNada).not.toContain('contrast');
     expect(semNada).not.toContain('cvd');
@@ -1363,12 +1333,12 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     expect(alt, 'a alternância passou a anunciar-se como em construção').not.toHaveProperty('soon');
   });
 
-  // ⚠️ A BARRA MONTADA é caso do project BROWSER (`buildQuickBar` chama `document.createElement`), e está lá:
-  // «a barra montada não tem os dois botões quando não há escritor». Aqui fica a metade pura, que é onde a
-  // REGRA vive; lá fica a prova de que ela alcança o DOM.
+  // ⚠️ THE MOUNTED BAR is a BROWSER-project case (`buildQuickBar` calls `document.createElement`), and it is there:
+  // `SEM escritor visual, o contraste e a cor não são MONTADOS`. Here is the pure half, where the RULE lives; there
+  // is the proof that it reaches the DOM.
 
   it('[Zero] e chamar `iconAct` por chave, sem escritor, não rebenta nem anuncia', () => {
-    // `iconAct` é EXPORTADO: a barra já não monta o botão, mas um consumidor pode chamá-lo pela chave.
+    // `iconAct` is EXPORTED: the bar no longer mounts the button, but a consumer can call it by key.
     const { ctx, said } = buildCtx();
     delete ctx.setPlayerTheme;
     delete ctx.setPlayerCorrection;
@@ -1380,9 +1350,9 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
 
 describe('PauseIconsCtx — o campo que ninguém lia (ADR-0106)', () => {
   it('⚠️ [Zero] a barra e o cartão montam-se SEM `getPauseScreens` — ele era obrigatório e morto', () => {
-    // 📏 Medido nos três lados antes de sair: zero leitores em `ui/pause-icons`, nos testes só os fixtures o
-    // forneciam, e o `game-platformer` passava-o para nada. 📌 O homónimo do `ui/shell` é de OUTRO ctx e tem
-    // cinco leitores a sério — é ele que esconde e mostra os cartões por fase.
+    // 📏 Measured on all three sides before it left: zero readers in `ui/pause-icons`, in the tests only the fixtures
+    // supplied it, and `game-platformer` passed it for nothing. 📌 The namesake in `ui/shell` belongs to ANOTHER ctx and
+    // has real readers — it is what hides and shows the cards per phase.
     const { ctx, said } = buildCtx();
     delete ctx.getPauseScreens;
     const api = initPauseIcons(ctx);
