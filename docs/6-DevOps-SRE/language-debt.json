@@ -1,11 +1,11 @@
 {
-  "measured": "2026-09-23",
+  "measured": "2026-09-24",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 868,
+  "total": 839,
   "totals": {
-    "decl": 247,
-    "param": 274,
-    "membro": 347
+    "decl": 231,
+    "param": 266,
+    "membro": 342
   },
   "files": {
     "app/js/boot/create-game.ts": {
@@ -23,16 +23,6 @@
       "param": 0,
       "membro": 0
     },
-    "app/js/core/collision.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 1
-    },
-    "app/js/core/constants.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 1
-    },
     "app/js/core/contract.ts": {
       "decl": 2,
       "param": 4,
@@ -44,8 +34,8 @@
       "membro": 1
     },
     "app/js/core/flash-threshold.ts": {
-      "decl": 1,
-      "param": 1,
+      "decl": 0,
+      "param": 0,
       "membro": 3
     },
     "app/js/core/genres.ts": {
@@ -64,9 +54,9 @@
       "membro": 1
     },
     "app/js/core/route.ts": {
-      "decl": 7,
+      "decl": 3,
       "param": 5,
-      "membro": 6
+      "membro": 4
     },
     "app/js/core/scenes.ts": {
       "decl": 0,
@@ -104,8 +94,8 @@
       "membro": 1
     },
     "app/js/input/gamepad.ts": {
-      "decl": 1,
-      "param": 7,
+      "decl": 0,
+      "param": 5,
       "membro": 6
     },
     "app/js/input/keyboard.ts": {
@@ -115,7 +105,7 @@
     },
     "app/js/input/keydown.ts": {
       "decl": 1,
-      "param": 4,
+      "param": 3,
       "membro": 4
     },
     "app/js/input/latch-edge.ts": {
@@ -183,11 +173,6 @@
       "param": 7,
       "membro": 0
     },
-    "app/js/platform/audio-nav.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 1
-    },
     "app/js/platform/audio-sonar.ts": {
       "decl": 12,
       "param": 2,
@@ -209,7 +194,7 @@
       "membro": 1
     },
     "app/js/platform/heavy.ts": {
-      "decl": 3,
+      "decl": 0,
       "param": 3,
       "membro": 5
     },
@@ -339,7 +324,7 @@
       "membro": 1
     },
     "app/js/ui/help-panel.ts": {
-      "decl": 7,
+      "decl": 5,
       "param": 0,
       "membro": 4
     },
@@ -369,8 +354,8 @@
       "membro": 3
     },
     "app/js/ui/menu-nav.ts": {
-      "decl": 6,
-      "param": 7,
+      "decl": 4,
+      "param": 5,
       "membro": 6
     },
     "app/js/ui/mount-panel.ts": {
@@ -394,7 +379,7 @@
       "membro": 2
     },
     "app/js/ui/pause-icons.ts": {
-      "decl": 14,
+      "decl": 13,
       "param": 5,
       "membro": 30
     },
@@ -414,8 +399,8 @@
       "membro": 5
     },
     "app/js/ui/settings-controls.ts": {
-      "decl": 5,
-      "param": 2,
+      "decl": 3,
+      "param": 0,
       "membro": 3
     },
     "app/js/ui/settings-empathy.ts": {
