@@ -472,6 +472,7 @@ const es: Record<string, string> = {
   'sr.quiz.bemVindo': 'Cuestionario. Use las flechas para elegir y Enter para responder.',
   // Las preguntas del quiz — claves, no frases, para que cambiar la bandera alcance la ACTIVIDAD y no sólo el
   // marco del motor (ADR-0225). Un quiz no es una materia de idioma: nada de esto queda sin traducir.
+  'quiz.pageTitle': 'The Inclusionist — cuestionario de demostración',
   'quiz.p1': '¿Qué animal pone huevos y tiene pico?',
   'quiz.p1.a': 'Gato',
   'quiz.p1.b': 'Gallina',

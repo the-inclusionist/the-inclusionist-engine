@@ -587,6 +587,7 @@ const pt: Record<string, string> = {
   // AS PERGUNTAS DO QUIZ. O quiz NÃO é uma disciplina de idioma, logo nem a excepção do `CLAUDE.md` §A FRONTEIRA
   // se aplica: «o ENUNCIADO SEMPRE TRADUZ». Eram literais em pt-BR dentro do cartucho até 23/09, e trocar a
   // bandeira mudava a moldura da engine sem tocar na atividade (ADR-0225).
+  'quiz.pageTitle': 'The Inclusionist — quiz de demonstração',
   'quiz.p1': 'Qual animal põe ovos e tem bico?',
   'quiz.p1.a': 'Gato',
   'quiz.p1.b': 'Galinha',

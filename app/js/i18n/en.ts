@@ -473,6 +473,7 @@ const en: Record<string, string> = {
   'sr.quiz.bemVindo': 'Quiz. Use the arrow keys to choose and Enter to answer.',
   // The quiz's questions — keys, not sentences, so that changing the flag reaches the ACTIVITY and not only the
   // engine's frame (ADR-0225). A quiz is not a language subject, so nothing here is exempt from translating.
+  'quiz.pageTitle': 'The Inclusionist — demo quiz',
   'quiz.p1': 'Which animal lays eggs and has a beak?',
   'quiz.p1.a': 'Cat',
   'quiz.p1.b': 'Hen',

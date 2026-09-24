@@ -67,7 +67,7 @@ export default defineConfig({
       manifest: {
         name: 'The Inclusionist',
         short_name: 'Inclusionist',
-        description: 'Jogo educativo de plataforma acessível (PixiJS · WCAG 2.2 + GAG).',
+        description: 'Demonstração da engine The Inclusionist: um quiz acessível (WCAG 2.2 + GAG).', // the manifest's language is the demo's base language, pt-BR (a manifest is not localised per locale)
         lang: 'pt-BR',
         start_url: '.',
         scope: '.',
