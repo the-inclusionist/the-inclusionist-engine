@@ -1,41 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/settings-audio — Audio panel (Estágio 4, #audio overlay): extracted from game.js's renderAudio()/
-// renderAudioSinks()/catRowHTML/wireCatControls/renderNavSound/reflectAudioMaster + the TTS-panel functions that
-// platform/tts.ts already documents as belonging here (reflectTTS/populateTTSEngines/populateTTSVoices). Pure
-// logic (category markup, volume->percent, sink option/label, cane-div validation, pt-BR voice filtering) is
-// separated from the thin DOM-touching render/wire functions. DI via initSettingsAudio(ctx): `$`, `srSay`,
-// `store` (narrow get/set), the live sound/mixer primitives from platform/audio.ts (getSoundOn/setSoundOn/
-// getVolume/setVolume/getAudioCat/setCatGain), the injected `tts` panel API (platform/tts.ts), and the SHARED
-// game.js helpers other panels also use (`toggleBtn`, `getNumPlayers`/`getPlayers`) or that live outside audio
-// entirely (`getBlindMode`/`setBlindMode`, `getCaneBlockDiv`/`setCaneBlockDiv` — core collision state; the widgets
-// live in this overlay, the state does not). Overlay open/close plumbing (#audio hidden toggle, frontOverlay,
-// focus management, Escape, `ensureAC()`) is the shared infra every settings panel uses and stays in game.js,
-// which calls `renderAudio()` from its `openAudio()`. `reflectBlindMode`/`reflectTts` are also exported because
-// game.js's own `setModoCego()` and the pause-menu icon bar (`iconAct('tts'|'blind', …)`) call them directly.
+// ui/settings-audio — the hearing accessibility and audio panels (#audio overlay): the thin DOM-touching render/wire
+// functions; what a choice IS lives in ./audio-choices.js and the voice section in ./voice-settings.js. DI via
+// initSettingsAudio(ctx): `$`, `srSay`, `store` (narrow get/set), the browser through three required ports
+// (`newElement`, `speech`, `audioOutputs`), the live sound/mixer primitives from platform/audio.ts
+// (getSoundOn/setSoundOn/getVolume/setVolume/getAudioCat/setCatGain), the injected `tts` panel API (platform/tts.ts), and
+// the host's shared helpers (`toggleBtn`, `getNumPlayers`/`getPlayers`) plus state that lives outside audio
+// (`getBlindMode`/`setBlindMode`, `getCaneBlockDiv`/`setCaneBlockDiv` — the widgets live in this overlay, the state does
+// not). Overlay open/close plumbing (frontOverlay, focus management, Escape) is the shared infrastructure every settings
+// panel uses. `reflectBlindMode`/`reflectTts` are exported because the pause-menu icon bar calls them directly.
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
 import { DEFAULTS } from '../core/state.js';
-// O módulo INTEIRO, e não os nomes soltos: `menuIndexOn` é ligação viva e `setMenuIndexOnValue` a muda — ler
-// pelo namespace deixa isso à vista em cada uso, em vez de parecer uma constante importada.
+// The WHOLE module, not loose names: `menuIndexOn` is a live binding and `setMenuIndexOnValue` changes it — reading it
+// through the namespace keeps that visible at each use, instead of looking like an imported constant.
 import * as state from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
-import type { PlayerAudioOut } from '../platform/audio-sonar.js'; // ADR-0039: o dono declara `_ac`/`_acOut`
+import type { PlayerAudioOut } from '../platform/audio-sonar.js'; // ADR-0039: the owner declares `_ac`/`_acOut`
 import type { DomQuery } from '../core/dom-query.js';
 import type { PanelShellCtx } from './panel-shell.js';
 import { controlRow, labelRow, type ControlRowSpec } from './panel-widgets.js';
 /*
- * 🔴 A SECÇÃO DA VOZ MUDOU DE CASA para `ui/voice-settings` (ADR-0221, issue #203): metade deste ficheiro era sobre FALA — o
- * interruptor da narração, o motor, a voz, o ritmo, o índice falado e o botão de teste — e a outra metade sobre categorias de
- * som, bengala, modo cego e saídas. As duas nunca precisaram uma da outra.
+ * 🔴 THE VOICE SECTION LIVES IN `ui/voice-settings` (ADR-0221, issue #203): speech — the narration switch, the engine, the
+ * voice, the rate, the spoken index and the test button — and the sound categories, cane, blind mode and outputs never
+ * needed each other.
  */
 import { createVoiceSettings, type TtsPanel } from './voice-settings.js';
 
-// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
-// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+// `DomQuery` lives in `core/dom-query`: copies of this line in many modules drifted apart. Re-exported for whoever
+// already imported it from here.
 export type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal platform/storage.ts shape this module needs (get/set only — no direct localStorage access). */
@@ -45,10 +41,10 @@ export interface AudioStore {
 }
 
 /*
- * 🔴 A METADE PURA MUDOU DE CASA para `ui/audio-choices` (ADR-0221, issue #203): o que uma escolha É — a lista de
- * categorias, a conta do volume, o catálogo de motores, o filtro de vozes, o rótulo de uma saída — não precisa de documento
- * nenhum, e este ficheiro é sobre ENCONTRAR os treze controles e ligá-los. Quem já tinha feito o corte era a suíte: o teste
- * node importava exactamente aqueles nomes e o de navegador conduzia este resto.
+ * 🔴 THE PURE HALF LIVES IN `ui/audio-choices` (ADR-0221, issue #203): what a choice IS — the category list, the volume
+ * arithmetic, the engine catalogue, the voice filter, an output's label — needs no document, and this file is about
+ * FINDING the controls and wiring them. The suite had already made the cut: the node test imported exactly those names
+ * and the browser test drove the rest.
  */
 import {
   type AudioCatDef, type AudioCatState,
@@ -57,10 +53,10 @@ import {
 } from './audio-choices.js';
 
 /**
- * Saída de áudio dedicada de um jogador: o id do dispositivo e o AudioContext/ganho que ele abriu.
+ * A player's dedicated audio output: the device id and the AudioContext/gain it opened.
  *
- * O id é da entidade (é preferência do jogador, persistida); o par `_ac`/`_acOut` é do
- * `platform/audio-sonar`, que os cria. Daí a intersecção em vez de três chaves numa vista só.
+ * The id is the entity's (a persisted player preference); the `_ac`/`_acOut` pair is `platform/audio-sonar`'s, which
+ * creates them. Hence the intersection instead of three keys in one view.
  */
 export type SinkPlayer = PlayerView<'audioSink'> & PlayerAudioOut;
 
@@ -73,51 +69,47 @@ export interface SettingsAudioCtx {
    *  here; the mixer categories persist through `setCatGain` (platform/audio.ts already saves them). */
   store: AudioStore;
   /*
-   * 🔴 O NAVEGADOR CHEGA EM TRÊS PORTAS OBRIGATÓRIAS, e não é alcançado (ADR-0227; Dev, 23/09: «(a)»). Este era
-   * o último módulo do passo 7d com `globalReach` acima de zero — `document`, `window.speechSynthesis` e
-   * `navigator.mediaDevices` —, e o `ui/voice-settings`, que saiu deste mesmo ficheiro, mede zero por RECEBER o
-   * navegador em quatro portas.
+   * 🔴 THE BROWSER ARRIVES THROUGH THREE REQUIRED PORTS, and is not reached (ADR-0227; the Dev: «(a)»): `document`,
+   * `window.speechSynthesis` and `navigator.mediaDevices` come in, so this module's global reach is zero, like
+   * `ui/voice-settings`, which receives the browser through four ports.
    *
-   * ⚠️ OBRIGATÓRIAS, e a distinção que separa isto de «opcionais que não oferecem»: um hospedeiro sem vozes
-   * responde `voices: () => []` e o painel já sabe dizer «este navegador não consegue» na língua da criança —
-   * isso é o hospedeiro a FALAR. Uma porta ausente é o hospedeiro em SILÊNCIO, e um campo esquecido é
-   * indistinguível de um campo respondido «não» (ADR-0224).
+   * ⚠️ REQUIRED, which is what separates this from optional ports that mean "not offered": a host with no voices answers
+   * `voices: () => []`, and the panel already knows how to say the browser cannot, in the child's language — that is the
+   * host SPEAKING. An absent port is the host SILENT, and a forgotten field is indistinguishable from a field answered
+   * "no" (ADR-0224).
    */
   /**
-   * Cria um elemento MANTENDO o tipo — o `<select>` das saídas responde `.value`, a lista de vozes precisa de
-   * `<option>`.
+   * Creates an element KEEPING its type — the outputs' `<select>` answers `.value`, the voice list needs `<option>`.
    *
-   * 📌 Chama-se `newElement` e não `criar` como o do `PanelShellCtx`, e a divergência é deliberada: um nome que
-   * NASCE nasce em inglês (ADR-0219), e o do kit é superfície publicada que sai na fase 7. Os dois convergem
-   * nessa release; até lá este casa com o vizinho que já existe, o `newOption` do `ui/voice-settings`.
+   * 📌 Named like its neighbour, `ui/voice-settings`'s `newOption`.
    */
   newElement: <K extends keyof HTMLElementTagNameMap>(tag: K) => HTMLElementTagNameMap[K];
-  /** A síntese de fala DESTE aparelho. Sem vozes, `voices` devolve uma lista vazia — que é uma resposta. */
+  /** THIS device's speech synthesis. With no voices, `voices` returns an empty list — which is an answer. */
   speech: {
     voices: () => readonly SpeechSynthesisVoice[];
     speakSample: (sample: string, chosen: SpeechSynthesisVoice | null) => void;
     whenVoicesChange: (again: () => void) => void;
   };
-  /** As saídas de áudio deste aparelho, e o que ele consegue fazer com elas. */
+  /** This device's audio outputs, and what it can do with them. */
   audioOutputs: {
-    /** Este navegador sabe ENUMERAR saídas? */
+    /** Can this browser LIST outputs? */
     canList: () => boolean;
-    /** Este navegador sabe ENCAMINHAR som para uma saída escolhida? (precisa de um AudioContext.) */
+    /** Can this browser ROUTE sound to a chosen output? (It needs an AudioContext.) */
     canRoute: () => boolean;
-    /** As saídas já conhecidas, sem pedir permissão — muitas vêm sem nome, e isso é o desenho do navegador. */
+    /** The outputs already known, without asking permission — many come unnamed, which is the browser's design. */
     list: () => Promise<readonly MediaDeviceInfo[]>;
-    /** Pede permissão para que as saídas tenham NOME, e devolve-as. */
+    /** Asks permission so the outputs have NAMES, and returns them. */
     detect: () => Promise<readonly MediaDeviceInfo[]>;
   };
-  /** Category catalog (platform/audio-mixer.ts's AUDIO_CATS) — pure data, injected like game.js's own import. */
+  /** Category catalog (platform/audio-mixer.ts's AUDIO_CATS) — pure data, injected. */
   audioCats: readonly AudioCatDef[];
-  /** Shared helper (game.js): toggles a button's .is-on/aria-pressed. Used by many other panels too — not ours. */
+  /** Shared helper (the host's): toggles a button's .is-on/aria-pressed. Used by many other panels too — not ours. */
   toggleBtn: (b: HTMLElement, on: boolean) => void;
-  /** Shared: current player count (core/state.ts's numPlayers, read live via game.js). */
+  /** Shared: current player count, read live from the host. */
   getNumPlayers: () => number;
-  /** Shared: the live players array (core/state.ts) — only `.audioSink`/`._ac`/`._acOut` are touched here. */
+  /** Shared: the live players array — only `.audioSink`/`._ac`/`._acOut` are touched here. */
   getPlayers: () => SinkPlayer[];
-  /** Master mute (platform/audio.ts's soundOn), read/write live via game.js's re-export. */
+  /** Master mute (platform/audio.ts's soundOn), read/write live. */
   getSoundOn: () => boolean;
   setSoundOn: (on: boolean) => void;
   /** Master volume 0..1 (platform/audio.ts's volume). */
@@ -129,83 +121,72 @@ export interface SettingsAudioCtx {
   setCatGain: (cat: string) => void;
   /** Narration engine/voice panel API (platform/tts.ts's createTts() instance). */
   tts: TtsPanel;
-  /** Core collision state (NOT owned by this panel — core/collision.ts reads it via isModoCego). The toggle's
-   *  widget lives inside #audio; the state and its gameplay side effects (setupExtras) stay in game.js. */
+  /** Blind-mode state (NOT owned by this panel). The toggle's widget lives inside #audio; the state and its gameplay
+   *  side effects belong to the host. */
   getBlindMode: () => boolean;
   setBlindMode?: (on: boolean) => void;
-  /** Core collision state (cane hit spacing). Same reasoning as modo cego. */
+  /** Cane hit spacing. Same reasoning as blind mode. */
   getCaneBlockDiv: () => number;
   setCaneBlockDiv: (div: number) => void;
   /**
-   * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA render.
+   * Moves the rows' prose to the footer (`ui/settings-panel` → `fillExplain`). Called on EVERY render.
    *
-   * ⚠️ NÃO É OPCIONAL POR ELEGÂNCIA: `fillExplain` roda uma vez quando o overlay é frontalizado e move o
-   * `.opt-hint` de dentro de cada linha para o rodapé. Este painel RECONSTRÓI as linhas, e as linhas novas
-   * voltam com a prosa lá dentro — então a explicação aparece duas vezes, no rodapé e sob o rótulo, a
-   * partir do primeiro clique. O `CLAUDE.md` §4 regista exatamente isto, e a issue #109 já o consertou
-   * uma vez noutros painéis.
+   * ⚠️ Relabelling a row puts its `.opt-hint` back inside it — so without this call the explanation appears twice, in
+   * the footer and under the label, from the first click. `CLAUDE.md` §4 records exactly this (issue #109).
    *
-   * Opcional na assinatura porque um consumidor pode montar o painel sem a casca (um teste, o segundo
-   * consumidor): sem casca não há rodapé para duplicar.
+   * Optional in the signature because a consumer can mount the panel without the shell (a test): without the shell
+   * there is no footer to duplicate.
    */
   fillExplain?: (card: HTMLElement | null) => void;
 }
 
 export interface SettingsAudioApi {
-  /** Re-renders the whole #audio overlay content (master, categories, nav-sound, TTS panel, sinks, modo-cego and
-   *  cane-div sync) and re-wires whatever it (re)creates. Idempotent; game.js's openAudio() calls it every open. */
+  /** Re-renders the whole #audio overlay content (master, categories, nav-sound, TTS panel, sinks, blind-mode and
+   *  cane-div sync) and re-wires whatever it (re)creates. Idempotent; the host calls it on every open. */
   renderAudio: () => void;
-  /** Refreshes the #opt-modocego button. Exported because game.js's setModoCego() calls it directly. */
+  /** Refreshes the #opt-modocego button. Exported because the host's blind-mode setter calls it directly. */
   reflectBlindMode: () => void;
-  /** Refreshes the #opt-tts button + #tts-engine selection. Exported because the pause-menu icon bar's
-   *  iconAct('tts', …) toggles audioCat.tts.on itself and then calls this. */
+  /** Refreshes the #opt-tts button + #tts-engine selection. Exported because the pause-menu icon bar toggles
+   *  audioCat.tts.on itself and then calls this. */
   reflectTts: () => void;
 }
 
 /**
- * MONTA O INTERIOR DESTE PAINEL — os treze controles e os dois contentores que ele alcança e nunca criou.
+ * MOUNTS THIS PANEL'S INSIDE — the controls and containers it reaches.
  *
- * 🔴 É O MAIOR CONTRATO INVISÍVEL DOS OITO. 📏 Medido em 2026-09-11: este ficheiro procura `#audio-master`,
- * `#audio-master-vol`, `#navsound-master`, `#navsound-list`, `#opt-modocego`, `#cane-div`, `#opt-menuindex`,
- * `#opt-tts`, `#tts-engine`, `#tts-voice`, `#tts-vol`, `#opt-tts-test`, `#audio-detect` e `#audio-sinks` — e
- * nada no tipo o diz. O markup vivia no `app/index.html`, que saiu com o cartucho (#111); desde então o painel
- * de acessibilidade AUDITIVA abria com o cartão, o título e o botão de repor.
+ * 🔴 IT IS THE LARGEST INVISIBLE CONTRACT OF THE PANELS: this file looks for `#opt-modocego`, `#cane-div`,
+ * `#opt-menuindex`, `#opt-tts`, `#tts-vol` and more, and nothing in the type says so — which is why it builds them.
  *
- * ⚠️ E A TAG DE CADA UM IMPORTA, o que torna este o pior sítio para adivinhar: `#cane-div`, `#tts-engine` e
- * `#tts-voice` têm de ser `<select>` — o painel escreve `.value` neles —, e os três volumes têm de ser
- * `<input type=range>`. Num `<button>`, escrever `.value` não dá erro nenhum: cria uma propriedade que
- * ninguém lê, e a escolha da criança some em silêncio.
+ * ⚠️ AND EACH ONE'S TAG MATTERS, which makes this the worst place to guess: `#cane-div` and the voice selects have to be
+ * `<select>` — the panel writes `.value` into them —, and the volumes have to be `<input type=range>`. On a `<button>`,
+ * writing `.value` gives no error at all: it creates a property nobody reads, and the child's choice vanishes silently.
  *
- * 📌 A ORDEM É A DECISÃO (ADR-0044 §2), e ela vai do geral para o particular: o som primeiro, porque é o que
- * mais gente procura; a navegação sonora a seguir, com o seu volume acima da lista que ele governa; depois o
- * modo cego e a bengala, que andam juntos; a voz inteira num bloco, do interruptor ao teste; e as saídas de
- * áudio por último, porque são escolha de APARELHO e não preferência.
+ * 📌 THE ORDER IS THE DECISION (ADR-0044 §2), from general to particular (see the composition below).
  *
- * ⚠️ `#opt-sound` NÃO É CRIADO AQUI, e a ausência é deliberada: ele é o espelho deste ajuste na barra rápida,
- * fora do painel. O `reflectMaster` alcança-o com guarda (`if (sb)`), porque um jogo pode não ter barra.
+ * ⚠️ `#opt-sound` IS NOT CREATED HERE, deliberately: it is this setting's mirror on the quick bar, outside the panel.
+ * `reflectMaster` reaches it with a guard (`if (sb)`), because a game may have no bar.
  *
- * Idempotente: chamar duas vezes reaproveita o que já existe em vez de o duplicar.
+ * Idempotent: calling it twice reuses what exists instead of duplicating it.
  */
 export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
   // Each entry is either a control row or a CONTAINER the panel fills with rows of its own.
   const pieces: (ControlRowSpec | { readonly container: string; readonly label?: string })[] = [
     /*
-     * 🔴 A COMPOSIÇÃO DO ADR-0151 E DAS ERRATAS DELE (2026-09-12), na ordem do geral para o particular:
-     *   · o MODO CEGO primeiro, porque é o modo em que os outros sons passam a ser a tela — e SEM a dica: «é
+     * 🔴 THE COMPOSITION OF ADR-0151 AND ITS ERRATA, from general to particular:
+     *   · BLIND MODE first, because it is the mode where the other sounds become the screen — and WITHOUT the hint: «é
      *     redundante. Quem precisa sabe o que é»;
-     *   · a BENGALA ao lado dele (e só num jogo que responde que alguém anda, ADR-0153);
-     *   · o SONAR, a GUARDA e a GUIA, cada um com o seu interruptor e o seu volume: são a lista da casca;
-     *   · a NARRAÇÃO e o seu volume, com o ÍNDICE FALADO logo a seguir, porque é a narração que ele encurta.
-     * 🔴 O SOM e o VOLUME GERAIS MUDARAM-SE para o painel «Áudio» (`mountSoundInside`): o Dev primeiro tirou-os
-     * («Volume geral é o do computador») e no mesmo dia devolveu-os — «toggle + barra para som geral voltam» —, e
-     * voltam para o painel do som, não para o da acessibilidade. SAIU o VOLUME DA NAVEGAÇÃO, que era um segundo
-     * lugar para os três volumes da lista (um lugar por escolha, D2 do registo).
+     *   · the CANE beside it (and only in a game that answers that someone walks, ADR-0153);
+     *   · the SONAR, GUARD and GUIDE, each with its switch and volume: they are the shell's list;
+     *   · NARRATION and its volume, with the SPOKEN INDEX right after, because narration is what it shortens.
+     * 🔴 The GENERAL sound and volume live in the audio panel (`mountSoundInside`) — «toggle + barra para som geral
+     * voltam», the Dev said, and they came back to the sound panel, not the accessibility one. There is no separate
+     * navigation volume: it would be a second place for the list's three volumes (one place per choice, D2 of the record).
      */
     // ⚠️ Their own short keys, not the bar's `icon.blind`/`icon.tts`: those carry «(navegação sonora)» and «(TTS)», and
     // a row keeps no explanation in parentheses (ADR-0158).
     { id: 'opt-modocego', label: t('audio.modocego') },
     { id: 'cane-div', label: t('audio.cane'), hint: t('audio.cane.dica'), shape: 'escolha' },
-    { container: '@lista' }, // a lista da casca: sonar, guarda e guia
+    { container: '@lista' }, // the shell's list: sonar, guard and guide
     { id: 'opt-tts', label: t('audio.narracao'), hint: t('audio.tts.dica') },
     { id: 'tts-vol', label: t('audio.ttsVol'), shape: 'cursor' },
     // ADR-0183 §1, ADR-0196: the speech rate, 254 to 504 by 50 — six positions, so a list (ADR-0130 erratum)
@@ -214,24 +195,20 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, list: HT
     { id: 'tts-voz', label: t('audio.voz'), shape: 'escolha' },
     { id: 'opt-menuindex', label: t('audio.menuindex'), hint: t('audio.menuindex.dica') },
     /*
-     * 🔴 SAÍRAM QUATRO LINHAS em 2026-09-12 (ADR-0151), pelas palavras do Dev:
-     *   · o MOTOR, a VOZ e o TESTAR VOZ — «quem escolhe a voz é o jogo (cartucho), não o jogador. Jogador só
+     * 🔴 NOT OFFERED by the engine (ADR-0151), in the Dev's words:
+     *   · the ENGINE, the VOICE and the voice TEST — «quem escolhe a voz é o jogo (cartucho), não o jogador. Jogador só
      *     habilita/desabilita o TTS»;
-     *   · as SAÍDAS DE ÁUDIO POR JOGADOR e o «detectar» — «navegadores não são bons nisso».
-     * 📌 A fiação do `initSettingsAudio` para esses ids CONTINUA e está guardada (`if (el)`): um jogo com
-     * marcação própria não parte. O que muda é que a engine deixou de OFERECER a escolha à criança.
+     *   · the PER-PLAYER AUDIO OUTPUTS and their detect button — «navegadores não são bons nisso».
+     * 📌 `initSettingsAudio`'s wiring for those ids STAYS and is guarded (`if (el)`): a game with markup of its own does
+     * not break. What changed is that the engine no longer OFFERS the choice to the child.
      */
   ];
 
   /*
-   * ⚠️ REETIQUETA EM VEZ DE SALTAR o que já existe, e é por isso que esta função é chamada também do
-   * `render()` de cada abertura.
-   *
-   * 🔴 📏 MEDIDO NUM NAVEGADOR COM `lang="en"` em 2026-09-12: este painel servia o TÍTULO em inglês e as
-   * LINHAS em português, na mesma tela. A moldura foi corrigida quando `MountPanelSpec.rotulos` passou a
-   * resolver-se a cada abertura; o interior ficou para trás, porque corria uma vez e capturava o texto do
-   * intervalo de arranque — `initI18n` aplica o idioma de recuo de forma síncrona e PEDE o preferido, que
-   * chega depois. Nenhum teste unitário o apanhava: todos correm num idioma só.
+   * ⚠️ IT RELABELS INSTEAD OF SKIPPING what already exists, which is why this function is also called from every open's
+   * `render()`: anything built once at boot captures the fallback language's text — `initI18n` applies the fallback
+   * synchronously and REQUESTS the preferred one, which arrives later — and a panel would serve its TITLE in one
+   * language and its ROWS in another. No unit test catches it: they all run in one language.
    */
   // ADR-0158: the rows go BEFORE the reset, never after it — the reset is the panel's last item, and «Voltar» its first.
   const actions = card.querySelector<HTMLElement>(':scope > .overlay__actions');
@@ -262,12 +239,11 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, list: HT
 }
 
 /**
- * MONTA O INTERIOR DO PAINEL «ÁUDIO» (ADR-0151 §2 item 4): o som geral — interruptor e volume — e, a seguir, a
- * lista da casca com as quatro categorias de gosto (música, ambiente, interacção, earcons).
+ * MOUNTS THE AUDIO PANEL'S INSIDE (ADR-0151 §2 item 4): the general sound — switch and volume — and then the shell's
+ * list with the four taste categories (music, ambience, interaction, earcons).
  *
- * ⚠️ OS IDS SÃO OS QUE `initSettingsAudio` JÁ ESCUTA (`#audio-master`, `#audio-master-vol`, `#audio-list`): o
- * painel mudou de sítio e o contrato invisível não. E a mesma regra de ordem: montar ANTES do `init`.
- * Idempotente e reetiquetável, como o irmão auditivo.
+ * ⚠️ THE IDS ARE THE ONES `initSettingsAudio` ALREADY LISTENS TO (`#audio-master`, `#audio-master-vol`, `#audio-list`). And
+ * the same order rule: mount BEFORE `init`. Idempotent and relabellable, like its hearing sibling.
  */
 export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
   const actions = card.querySelector<HTMLElement>(':scope > .overlay__actions');
@@ -292,17 +268,17 @@ export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, list: HT
 // ---------------------------------------------------------------------------------------------
 
 export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
-  // ⚠️ PADRÃO DA ENGINE (ADR-0106 §4): quem injecta manda; quem não injecta deixa de ficar sem modo cego.
-  // O `setBlindModeValue` faz as três coisas que o `core/state` diz que um setter faz — grava, persiste, avisa
-  // — e nada mais: os efeitos (refazer os extras do nível) são reação, e quem reage assina o evento.
+  // ⚠️ THE ENGINE'S DEFAULT (ADR-0106 §4): whoever injects rules; whoever does not still gets blind mode.
+  // `setBlindModeValue` does the three things `core/state` says a setter does — store, persist, notify — and nothing
+  // more: the effects are reactions, and whoever reacts subscribes to the event.
   const writeBlindMode = ctx.setBlindMode ?? state.setBlindModeValue;
 
   let audioDevices: MediaDeviceInfo[] = [];
 
   /*
-   * ⚠️ O NAVEGADOR VIAJA COMO QUATRO FUNÇÕES, e não como um global alcançado lá dentro: um módulo NOVO que alcança
-   * `document` ou `window` é recusado pela catraca do passo 7d (o tecto do alcance é ZERO). Este ficheiro continua a
-   * alcançá-los — é dívida declarada dele —, e o que passa para baixo são portas.
+   * ⚠️ THE BROWSER TRAVELS AS FOUR FUNCTIONS, not as a global reached inside: a module that reaches `document` or
+   * `window` is refused by the ratchet (the reach ceiling is ZERO). What this file received through its own ports it
+   * passes down as ports.
    */
   const voice = createVoiceSettings(ctx, {
     newOption: () => ctx.newElement('option'),
@@ -337,7 +313,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   /**
    * The same document, but KEEPING the element type.
    *
-   * 📌 `PanelShellCtx.criar` is `string → HTMLElement` on purpose: the shell only ever appends generic nodes, and
+   * 📌 `PanelShellCtx.create` is `string → HTMLElement` on purpose: the shell only ever appends generic nodes, and
    * widening it would be a one-way door on a published shape (ADR-0172). The sinks section needs a `<select>` that
    * answers `.value`, so the typed factory lives HERE, over the same `ownerDocument`, instead of the contract
    * growing a field for one caller.
@@ -472,9 +448,8 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (m && state) m.value = String(navMasterVolume(state, NAV_CATS));
   }
 
-  // 📌 As duas perguntas são do HOSPEDEIRO desde o ADR-0227, e continuam DUAS porque produzem frases
-  // diferentes: «este navegador não consegue» e «não há aparelho nenhum» não são a mesma notícia para quem
-  // procura uns auscultadores (era um dos cinco ramos cegos que a sonda deste painel achou em 23/09).
+  // 📌 Both questions are the HOST's (ADR-0227), and they stay TWO because they produce different sentences: the browser
+  // cannot do it, and there is no device at all, are not the same news to someone looking for their headphones.
   const hasEnumerateDevices = (): boolean => ctx.audioOutputs.canList();
   const hasAudioContextCtor = (): boolean => ctx.audioOutputs.canRoute();
 
@@ -520,15 +495,15 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   }
 
   async function enumerateSinks(): Promise<void> {
-    // sem pedir permissão: só as saídas já conhecidas
-    try { audioDevices = [...await ctx.audioOutputs.list()]; } catch (e) { /* a porta recusou; a lista fica como está */ }
+    // without asking permission: only the outputs already known
+    try { audioDevices = [...await ctx.audioOutputs.list()]; } catch (e) { /* the port refused; the list stays as it is */ }
     renderSinks(audioDevices);
   }
 
   async function detectAudioDevices(): Promise<void> {
-    // ⚠️ A LISTA ESVAZIA-SE quando a detecção falha, e o `enumerateSinks` acima NÃO a esvazia: ali um erro é
-    // «não consegui perguntar» e aqui é «a criança pediu e a resposta é nenhuma». As duas frases que o painel
-    // desenha a seguir são diferentes, e por isso os dois `catch` também são.
+    // ⚠️ THE LIST EMPTIES when detection fails, and `enumerateSinks` above does NOT empty it: there an error means "I
+    // could not ask", here it means "the child asked and the answer is none". The two sentences the panel draws next are
+    // different, and so are the two `catch`es.
     try { audioDevices = [...await ctx.audioOutputs.detect()]; } catch (e) { audioDevices = []; }
     renderSinks(audioDevices);
   }
@@ -546,23 +521,21 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     voice.render();
     const cd = ctx.$<HTMLSelectElement>('#cane-div');
     if (cd) cd.value = String(ctx.getCaneBlockDiv());
-    void enumerateSinks(); // sem await no original: dispara e segue (lista assíncrona atualiza sozinha)
+    void enumerateSinks(); // not awaited: fire and carry on (the asynchronous list updates by itself)
     refreshMarks();
   }
 
   /**
-   * A marca de "saiu do padrão" (ADR-0029).
+   * The left-the-default mark (ADR-0029).
    *
-   * Chamada de dentro dos HANDLERS de mudança, e não só do `renderAudio()`. Pendurei-a primeiro no render, e
-   * no jogo a marca não aparecia: mexer numa categoria atualiza aquela linha sozinha, sem redesenhar o painel.
-   * O ADR-0029 já avisava disso — "pode envelhecer na tela se um painel esquecer de atualizar depois de uma
-   * mudança" — e eu escrevi o aviso e caí nele na mesma tarde. A regra que sobra: a marca anda com quem
-   * ESCREVE o valor, nunca com quem desenha.
+   * Called from inside the change HANDLERS, not only from `renderAudio()`: changing a category updates that row by
+   * itself, without redrawing the panel, so a mark hung only on render goes stale on screen — ADR-0029 warns about it.
+   * The rule: the mark travels with whoever WRITES the value, never with whoever draws.
    *
-   * O recorte é o MESMO do reset deste menu, e isso não é economia —
-   * é a regra: só pode ser marcado o que tem padrão em DEFAULTS/`defaultAudioCat`. O motor de voz e a saída
-   * de áudio por jogador não têm, porque são escolha de DISPOSITIVO e não preferência restaurável; marcá-los
-   * exigiria inventar uma segunda opinião sobre o que é "padrão" para um fone.
+   * The cut is the SAME as this menu's reset, and that is the rule, not thrift: only what has a default in
+   * DEFAULTS/`defaultAudioCat` can be marked. The voice engine and the per-player audio output have none, because they
+   * are a DEVICE choice and not a restorable preference; marking them would mean inventing a second opinion on what a
+   * headset's "default" is.
    */
   function refreshMarks(): void {
     const state = ctx.getAudioCat();
@@ -573,8 +546,8 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     };
     mark('#opt-modocego', ctx.getBlindMode() !== DEFAULTS.blindMode);
     mark('#cane-div', ctx.getCaneBlockDiv() !== DEFAULTS.caneBlockDiv);
-    // ⚠️ DUAS MARCAS DE MENU, uma por painel: a de «Áudio» acesa por um sonar mudado mandaria a criança
-    // procurar no painel errado.
+    // ⚠️ TWO MENU MARKS, one per panel: the audio panel's lit by a changed sonar would send the child searching the
+    // wrong panel.
     const fromSound: boolean[] = [];
     for (const c of ctx.audioCats) {
       const d = defaultAudioCat(c.k);
@@ -589,7 +562,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     markMenuChanged(ctx.$<HTMLElement>('[data-act="som"]'), fromSound);
   }
 
-  // ----- widgets estáticos (existem sempre no #audio; fiados UMA vez, nunca recriados por renderAudio) -----
+  // ----- static widgets (always present in #audio; wired ONCE, never recreated by renderAudio) -----
 
   const audioMasterBtn = ctx.$<HTMLButtonElement>('#audio-master');
   if (audioMasterBtn) audioMasterBtn.addEventListener('click', () => {
@@ -614,18 +587,14 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   });
 
   /*
-   * ⚠️ ESTE BOTÃO ERA O ÚNICO DESTE PAINEL QUE NÃO ANUNCIAVA. Medido em 2026-09-08: os cinco irmãos daqui
-   * anunciam (som, TTS, divisor da bengala, índice de menu, saída de áudio) e o modo cego não — ele parecia
-   * anunciar porque UM cartucho o fazia a partir do próprio `setBlindMode`, e o painel herdava o efeito.
+   * ⚠️ THIS BUTTON ANNOUNCES, like its siblings (sound, TTS, cane spacing, menu index, audio output): with the engine's
+   * default setter (`setBlindModeValue`, which stores/persists/notifies and does NOT speak), a game that does not inject
+   * its own setter would otherwise get a mute button. A toggle that changes state without saying so is invisible to a
+   * screen-reader user.
    *
-   * ⚠️ E ISSO PASSOU A EXPOR SILÊNCIO no mesmo dia: desde que o campo ganhou padrão da engine
-   * (`setBlindModeValue`, que grava/persiste/avisa e NÃO fala), um jogo que não injecta o seu próprio setter
-   * ficava com este botão mudo. Um alternador que muda estado sem o dizer é invisível para quem usa leitor de
-   * tela — a mesma família de defeito que o `reflectTTS` e o `reflectBlindMode` já custaram aqui.
-   *
-   * O anúncio pertence a QUEM É ACCIONADO, não ao setter: `core/state` diz que o setter faz três coisas e só
-   * três. ⚠️ Consequência de lockstep, escrita para não se descobrir depois: quando o `game-platformer` subir
-   * de versão, tem de TIRAR o `srSay` do `setBlindMode` dele, senão a criança ouve o estado duas vezes.
+   * The announcement belongs to WHOEVER IS ACTIVATED, not to the setter: `core/state` says a setter does three things
+   * and only three. ⚠️ Lockstep consequence, written so it is not discovered later: a cartridge whose own `setBlindMode`
+   * also speaks must drop that, or the child hears the state twice.
    */
   const mcBtn = ctx.$<HTMLButtonElement>('#opt-modocego');
   if (mcBtn) {
@@ -647,14 +616,14 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   }
 
   //
-  // A regra dura é o escopo: este botão restaura o que o menu AUDITIVO contém e nada mais. Um reset que
-  // alcançasse fora de si seria pior que a armadilha que ele existe para desfazer — a criança que desfaz um
-  // ajuste de som e perde de quebra a configuração motora fica sem conseguir jogar, e sem entender por quê.
+  // The hard rule is scope: this button restores what the HEARING menu contains and nothing else. A reset that reached
+  // beyond itself would be worse than the trap it exists to undo — a child who undoes a sound setting and loses the
+  // mobility setup along with it can no longer play, and does not understand why.
   //
-  // O que é deste menu: o modo cego, o espaçamento da bengala e as nove categorias do mixer. O motor de voz
-  // e a saída de áudio por jogador NÃO entram — são escolha de dispositivo, não preferência restaurável, e
-  // zerá-las tiraria da criança o fone que é dela numa sala compartilhada.
-  /** Repõe as categorias de `keys` (as que existirem no mixer) no estado de fábrica. */
+  // What belongs to this menu: blind mode, the cane spacing and the mixer categories that are not the audio panel's.
+  // The voice engine and the per-player audio output do NOT — they are a device choice, not a restorable preference,
+  // and clearing them would take away the child's own headset in a shared room.
+  /** Resets the categories in `keys` (those that exist in the mixer) to their factory state. */
   function resetCategories(keys: readonly string[]): void {
     const state = ctx.getAudioCat();
     if (!state) return;
@@ -669,13 +638,13 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   if (resetBtn) resetBtn.addEventListener('click', () => {
     writeBlindMode(DEFAULTS.blindMode);
     ctx.setCaneBlockDiv(DEFAULTS.caneBlockDiv);
-    // 🔴 DESDE O ADR-0151 ESTE MENU NÃO TEM A MÚSICA: repor aqui a música seria alcançar fora de si — a regra do
-    // escopo, acima. Tudo o que não é das categorias de gosto é deste painel.
+    // 🔴 THIS MENU DOES NOT HOLD THE MUSIC (ADR-0151): resetting it here would reach beyond itself — the scope rule,
+    // above. Everything that is not a taste category belongs to this panel.
     resetCategories(ctx.audioCats.map((c) => c.k).filter((k) => !(GEN_CATS as readonly string[]).includes(k)));
     renderAudio(); drawBlindMode();
     ctx.srSay(t('sr.audio.reset'));
   });
-  // O «repor» do painel ÁUDIO: as categorias de gosto e nada mais.
+  // The AUDIO panel's reset: the taste categories and nothing else.
   const soundReset = ctx.$<HTMLButtonElement>('#som-reset');
   if (soundReset) soundReset.addEventListener('click', () => {
     resetCategories(GEN_CATS);
@@ -686,21 +655,19 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   const audioDetectBtn = ctx.$<HTMLButtonElement>('#audio-detect');
   if (audioDetectBtn) audioDetectBtn.addEventListener('click', () => { void detectAudioDevices(); });
 
-  reflectMaster(); // estado inicial do botão/slider mestre, antes de qualquer abertura do painel
+  reflectMaster(); // initial state of the master button/slider, before the panel is ever opened
 
   /*
-   * ⚠️ O PAINEL ASSINA O EVENTO, e isto não é uma ideia nova: é a decisão que o `core/state` já tinha
-   * escrito ao lado do `setBlindModeValue` — «o setter faz três coisas e só três: grava, persiste, avisa. Os
-   * efeitos … são reação, e quem reage assina o evento».
+   * ⚠️ THE PANEL SUBSCRIBES TO THE EVENT — the decision `core/state` writes next to `setBlindModeValue`: a setter stores,
+   * persists and notifies, and effects are reactions, subscribed by whoever reacts.
    *
-   * Sem esta assinatura, um jogo que NÃO injecta o seu próprio `setBlindMode` liga o modo cego pelo ícone da
-   * barra e o botão `#opt-modocego` deste painel continua a dizer «Desligado», com `aria-pressed=false` — o
-   * controlo a mentir o estado para o leitor de tela. É o gémeo exacto do defeito do `reflectTTS` que já está
-   * registado no `ui/pause-icons`, e não vale a pena descobri-lo uma terceira vez.
+   * Without it, a game that does NOT inject its own `setBlindMode` switches blind mode on through the bar's icon and this
+   * panel's `#opt-modocego` keeps saying off, with `aria-pressed=false` — the control lying about the state to the screen
+   * reader.
    *
-   * ⚠️ É seguro para quem JÁ reflecte a partir do seu próprio setter: reflectir é idempotente — relê o estado
-   * e reescreve o botão. Um anúncio duplicado seria outra história, e por isso a assinatura NÃO anuncia: o
-   * ícone da barra já diz `sr.icon.blindOn`/`Off` por si.
+   * ⚠️ It is safe for whoever ALREADY reflects from their own setter: reflecting is idempotent — it rereads the state and
+   * rewrites the button. A duplicated announcement would be another matter, which is why the subscription does NOT
+   * announce: the bar's icon already speaks for itself.
    */
   state.on('blindMode', () => { drawBlindMode(); });
 
