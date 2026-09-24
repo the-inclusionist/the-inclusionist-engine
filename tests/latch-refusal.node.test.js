@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/latch-refusal — a cláusula 3 do ADR-0113, na metade PURA.
+// ui/latch-refusal — clause 3 of ADR-0113, the PURE half.
 //
-// «É impossível desligá-la em modos que não tem como funcionar sem ela (voz e câmera)» — a frase do Dev. Este
-// ficheiro afirma as duas metades que essa frase carrega e que são fáceis de implementar pela metade:
+// «É impossível desligá-la em modos que não tem como funcionar sem ela (voz e câmera)» — the Dev's sentence. This file
+// asserts the two halves that sentence carries and that are easy to implement by half:
 //
-//   · o controle NÃO SOME — fica desabilitado, e continua na tela;
-//   · o motivo é DITO, e é um FACTO sobre o aparelho e não uma repreensão.
+//   · the control does NOT VANISH — it is disabled, and stays on screen;
+//   · the reason is SAID, and it is a FACT about the device, not a reprimand.
 //
-// 📌 É o irmão do `tests/simulation-refusal.node.test.js`, de propósito: mesma forma, mesmo lugar na camada.
+// 📌 It is the sibling of `tests/simulation-refusal.node.test.js`, on purpose: same shape, same place in the layer.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import {
   latchRefusal, showsEvenWhenRequired, REFUSAL_KEY, NEED_LATCH,
@@ -21,8 +21,8 @@ import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';
 
 describe('latch-refusal · onde há escolha, não se diz nada', () => {
-  // ⚠️ `null` E NÃO UMA FRASE VAZIA: um aviso que aparece sempre deixa de ser lido, e a interface precisa de
-  // distinguir «não há motivo» de «há um motivo que ainda não sei escrever».
+  // ⚠️ `null` AND NOT AN EMPTY SENTENCE: a notice that always shows stops being read, and the interface must tell
+  // «não há motivo» from «há um motivo que ainda não sei escrever».
   it('[Zero] nos três aparelhos de hoje a recusa é `null`', () => {
     for (const t of ['teclado', 'gamepad', 'toque']) {
       expect(latchRefusal(t), `${t} passou a recusar uma escolha legítima`).toBe(null);
@@ -40,18 +40,17 @@ describe('latch-refusal · onde há escolha, não se diz nada', () => {
 });
 
 describe('latch-refusal · a lista vem da REGRA, e não de uma cópia', () => {
-  // 🎯 O CASO QUE IMPEDE A SEGUNDA TABELA. Este repositório já pagou o defeito três vezes (o `DomQuery`, os
-  // rótulos de movimento reduzido, as chaves de armazenamento): duas listas do mesmo facto divergem, e
-  // divergem uma entrada de cada vez. Aqui o custo seria um aparelho que exige alternância e cujo botão
-  // continua a desligá-la.
+  // 🎯 THE CASE THAT PREVENTS THE SECOND TABLE. This repository has paid for the defect three times (`DomQuery`, the
+  // reduced-motion labels, the storage keys): two lists of the same fact drift apart, one entry at a time. Here the
+  // cost would be a device that requires the latch while its button still turns it off.
   it('🎯 [Interface] os transportes que exigem alternância são EXACTAMENTE os da regra', () => {
     expect([...NEED_LATCH].sort()).toEqual([...ONE_COMMAND_AT_A_TIME].sort());
     expect(NEED_LATCH, 'a lista foi copiada em vez de reexportada').toBe(ONE_COMMAND_AT_A_TIME);
   });
 
-  // ⚠️ E O PAR: todo transporte que a regra exige TEM frase. Sem isto, um aparelho novo entraria na regra e o
-  // botão dele ficaria desabilitado SEM motivo — pior do que o defeito que este módulo conserta, porque a
-  // criança deixa de saber que existe uma razão.
+  // ⚠️ AND THE PAIR: every transport the rule requires HAS a sentence. Without this, a new device would enter the rule
+  // and its button would be disabled WITH NO reason — worse than the defect this module fixes, because the child no
+  // longer knows there is a reason.
   it('⚠️ [Interface] todo transporte exigente tem chave, e nenhuma chave sobra', () => {
     expect(Object.keys(REFUSAL_KEY).sort()).toEqual([...ONE_COMMAND_AT_A_TIME].sort());
   });
@@ -73,10 +72,10 @@ describe('latch-refusal · as frases existem nos três idiomas, e dizem um FACTO
     }
   });
 
-  // 🔴 O QUE A FRASE NÃO PODE SER. O ADR-0076 já pagou esta distinção uma vez, e a mutação que a apanhou
-  // trocava a frase por uma mais curta, mais clara e mais útil — «Desligue o alto contraste para ver a
-  // simulação» — que reprovava na mesma, porque repreende uma criança pelo ajuste de que ela precisa.
-  // Aqui o equivalente seria «não desligue isto». O crivo procura o IMPERATIVO de comando dirigido a ela.
+  // 🔴 WHAT THE SENTENCE CANNOT BE. ADR-0076 already paid for this distinction once, and the mutation that caught it
+  // swapped the sentence for a shorter, clearer, more useful one — «Desligue o alto contraste para ver a simulação» —
+  // that failed all the same, because it reprimands a child for the setting they need. Here the equivalent would be
+  // «não desligue isto». The check looks for a command IMPERATIVE addressed to the child.
   it('🔴 [Zero] nenhuma frase manda a criança fazer nada — é facto, não repreensão', () => {
     const imperativos = /\b(não desligue|nao desligue|desligue|ligue|deixe|pare de|don't|do not|turn off|turn on|no apagues|apaga|enciende)\b/i;
     for (const chave of Object.values(REFUSAL_KEY)) {
@@ -88,26 +87,26 @@ describe('latch-refusal · as frases existem nos três idiomas, e dizem um FACTO
 });
 
 describe('latch-refusal · o controle não some', () => {
-  // ⚠️ FUNÇÃO COM NOME PRÓPRIO E NÃO UM `!recusa` NO PONTO DE USO, porque responde a outra pergunta:
-  // `latchRefusal` diz POR QUE não dá; esta diz que a linha CONTINUA NA TELA. Juntá-las faria «não há
-  // motivo» parecer «não desenhe a linha» — que é como um controle desaparece de uma tela sem ninguém decidir.
+  // ⚠️ A FUNCTION WITH ITS OWN NAME AND NOT A `!recusa` AT THE CALL SITE, because it answers another question:
+  // `latchRefusal` says WHY it cannot; this one says the row STAYS ON SCREEN. Merging them would make «não há motivo»
+  // look like «não desenhe a linha» — which is how a control vanishes from a screen without anyone deciding.
   it('[Interface] mostrar é sempre — sumir ensinaria que a coisa não existe', () => {
     expect(showsEvenWhenRequired()).toBe(true);
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-08, por script, com contagem de ocorrências) =====
-// 1. `latchRefusal` a devolver `null` sempre        → o caso dos quatro assistidos reprova
-// 2. tirar a guarda `latchIsOptional` de `latchRefusal` → SOBREVIVEU, e é EQUIVALÊNCIA MEDIDA
-//    com mecanismo nomeado: sem ela, `REFUSAL_KEY['teclado']` é `undefined` e o `chave ? … : null` já
-//    devolve `null`. Os dois caminhos concordam por construção — e é o caso «todo exigente tem chave, e
-//    nenhuma chave sobra» que os obriga a concordar. ⚠️ Fica registada e a guarda FICA: ela é a regra
-//    autoritativa, e a tabela é a frase. Apagá-la faria uma chave acrescentada por engano recusar um
-//    aparelho onde há escolha, e nada nesta suíte veria a diferença até a tabela e a regra divergirem
-// 3. `NEED_LATCH` a ser uma cópia (`new Set([...])`) → 🎯 o caso da identidade reprova, e é o que
-//    impede a segunda tabela — o defeito que este repositório já pagou três vezes
-// 4. tirar `alt.exigida.gestos` do `REFUSAL_KEY`       → o par «todo exigente tem chave» reprova, e o
-//    caso do vácuo continua verde: a ausência degrada para «não recuso», que mantém o controle vivo em vez
-//    de o desabilitar sem motivo
-// 5. a frase de `pt` trocada por «Não desligue as teclas de alternância.» → 🔴 o crivo do imperativo reprova
-//    📌 é a mutação que interessa: a frase fica MAIS CURTA e MAIS DIRECTA, e ainda assim repreende
+// ===== MUTATIONS CHECKED (2026-09-08, by script, with occurrence counts) =====
+// 1. `latchRefusal` always returning `null`         → the case of the four assisted transports fails
+// 2. removing the `latchIsOptional` guard from `latchRefusal` → SURVIVED, and it is a MEASURED EQUIVALENCE with a named
+//    mechanism: without it, `REFUSAL_KEY['teclado']` is `undefined` and `chave ? … : null` already returns `null`. The
+//    two paths agree by construction — and the case «todo exigente tem chave, e nenhuma chave sobra» is what forces
+//    them to agree. ⚠️ Recorded, and the guard STAYS: it is the authoritative rule, and the table is the sentence.
+//    Deleting it would let a key added by mistake refuse a device where there is a choice, and nothing in this suite
+//    would see the difference until the table and the rule drifted apart
+// 3. `NEED_LATCH` being a copy (`new Set([...])`) → 🎯 the identity case fails, and it is what prevents the second
+//    table — the defect this repository has paid for three times
+// 4. removing `alt.exigida.gestos` from `REFUSAL_KEY` → the pair «todo exigente tem chave» fails, and the vacuum case
+//    stays green: the absence degrades to «não recuso», which keeps the control alive instead of disabling it with no
+//    reason
+// 5. the `pt` sentence swapped for «Não desligue as teclas de alternância.» → 🔴 the imperative check fails
+//    📌 it is the mutation that matters: the sentence gets SHORTER and MORE DIRECT, and still reprimands

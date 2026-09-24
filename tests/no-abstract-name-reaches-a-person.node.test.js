@@ -1,27 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// NENHUM NOME ABSTRATO CHEGA A UMA PESSOA — o quarto gate que o ADR-0111 deve, e a regra mais afiada do
-// ADR-0074: «a palavra que a CRIANÇA lê e ouve — no ecrã de remapeamento, na bolha de toque, no anúncio — é
-// sempre a palavra do JOGO, nunca `action1`. Um nome abstrato que chega a uma pessoa é um defeito.»
+// NO ABSTRACT NAME REACHES A PERSON — the fourth gate ADR-0111 owes, and ADR-0074's sharpest rule: «a palavra que a
+// CRIANÇA lê e ouve — no ecrã de remapeamento, na bolha de toque, no anúncio — é sempre a palavra do JOGO, nunca
+// `action1`. Um nome abstrato que chega a uma pessoa é um defeito.»
 //
-// ⚠️ ELA JÁ FOI QUEBRADA DUAS VEZES, E NENHUMA DAS DUAS TINHA GATE GERAL. O `7742ac0` apanhou o leitor de tela
-// a dizer «Essa tecla já é de action2» no ecrã de remapeamento; a varredura ao módulo ao lado apanhou
-// «Botão 0 (baixo): action3.» na bolha de toque. Os dois consertos trouxeram casos DA SUA TELA — este ficheiro
-// é a metade que nenhuma tela dá.
+// ⚠️ IT HAS BEEN BROKEN TWICE, NEITHER TIME WITH A GENERAL GATE: `7742ac0` caught the screen reader saying
+// «Essa tecla já é de action2» on the remapping screen, and a sweep of the neighbouring module caught
+// «Botão 0 (baixo): action3.» in the touch bubble. Both fixes brought cases for THEIR screen — this file is the half no
+// screen gives.
 //
-// ========================= O ALCANCE É DECLARADO, E É MENOR DO QUE A REGRA =========================
-// 📏 Das catorze posições, este crivo cobre OITO — os verbos. As outras seis são `up`, `down`, `left`,
-// `right`, `start` e `select`, que são PALAVRAS DE LÍNGUA: um dicionário inglês diz «start» com toda a razão,
-// e um detector que as marcasse mentiria em cada segunda linha. Este projeto já pagou exactamente esse erro —
-// o gate de i18n acusou a palavra inglesa «as» por ela estar na lista de palavras funcionais do pt-BR — e a
-// saída foi apertar o detector, nunca afrouxar a regra.
-// 📌 Os oito verbos não têm esse problema: `action1`..`action4` e os quatro `*Shoulder`/`*Trigger` em
-// camelCase não ocorrem em prosa nenhuma dos três idiomas.
+// ========================= THE REACH IS DECLARED, AND IT IS SMALLER THAN THE RULE =========================
+// 📏 Of the fourteen positions, this check covers EIGHT — the verbs. The other six are `up`, `down`, `left`, `right`,
+// `start` and `select`, which are WORDS OF A LANGUAGE: an English dictionary says «start» quite rightly, and a detector
+// that flagged them would lie on every other line. This project has paid for exactly that mistake — the i18n gate
+// flagged the English word «as» for being on the pt-BR function-word list — and the way out was tightening the
+// detector, never loosening the rule.
+// 📌 The eight verbs have no such problem: `action1`..`action4` and the four camelCase `*Shoulder`/`*Trigger` occur in no
+// prose of the three languages.
 //
-// ⚠️ E O QUE ESTE FICHEIRO NÃO ALCANÇA, dito para não parecer coberto: a frase COMPOSTA em tempo de execução
-// — `t('...', { acao: umValorQualquer })` — não é visível a um crivo de texto. Essa metade só se apanha
-// conduzindo a tela, e é por isso que os dois consertos acima trouxeram casos de comportamento em
-// `tests/settings-controls.browser.test.js` e `tests/touch.browser.test.js`. Este ficheiro fecha a porta
-// ESTÁTICA; aqueles fecham a dinâmica, tela a tela.
+// ⚠️ AND WHAT THIS FILE DOES NOT REACH, said so it does not look covered: the sentence COMPOSED at run time —
+// `t('...', { acao: umValorQualquer })` — is invisible to a text check. That half is only caught by driving the screen,
+// which is why the two fixes above brought behaviour cases in `tests/settings-controls.browser.test.js` and
+// `tests/touch.browser.test.js`. This file closes the STATIC door; those close the dynamic one, screen by screen.
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
@@ -33,16 +32,15 @@ import { VERBS, ACTIONS } from '../app/js/core/actions.js';
 const RAIZ_JS = fileURLToPath(new URL('../app/js/', import.meta.url));
 const RAIZ_I18N = join(RAIZ_JS, 'i18n');
 
-/** ⚠️ A lista sai de `core/actions.VERBS` e NÃO é copiada à mão: uma cópia ao lado de uma união é o defeito
- *  que o `RM_KEYS` já custou a este repositório, e um verbo novo (o ADR-0085 já acrescentou quatro) passaria
- *  a escapar em silêncio. */
+/** ⚠️ The list comes from `core/actions.VERBS` and is NOT copied by hand: a copy beside a union is the defect `RM_KEYS`
+ *  already cost this repository, and a new verb (ADR-0085 added four) would slip through silently. */
 const ABSTRATOS = VERBS;
 
-/** Os textos de um dicionário, sem as chaves — o que uma pessoa lê é o VALOR. */
+/** A dictionary's texts, without the keys — what a person reads is the VALUE. */
 function valoresDe(idioma) {
   const src = readFileSync(join(RAIZ_I18N, `${idioma}.ts`), 'utf8');
   const sem = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n\r]*/g, '');
-  // `'chave': 'valor',` — só o lado direito.
+  // `'key': 'value',` — only the right-hand side.
   return [...sem.matchAll(/^\s*'[^']+':\s*'((?:[^'\\]|\\.)*)'/gm)].map((m) => m[1]);
 }
 
@@ -50,7 +48,7 @@ const IDIOMAS = readdirSync(RAIZ_I18N)
   .filter((f) => /^(pt|en|es)\.ts$/.test(f))
   .map((f) => f.slice(0, -3));
 
-/** Todo `.ts` da engine, para o crivo dos atributos. */
+/** Every `.ts` of the engine, for the attributes check. */
 function modulos(dir = RAIZ_JS, prefixo = '') {
   const saida = [];
   for (const nome of readdirSync(dir)) {
@@ -71,8 +69,8 @@ describe('nenhum nome abstrato chega a uma pessoa · os dicionários', () => {
     expect(ABSTRATOS).toHaveLength(8);
     expect(ABSTRATOS).toContain('action1');
     expect(ABSTRATOS).toContain('rightTrigger');
-    // 📌 E as seis fora do alcance continuam a ser posições — o alcance é uma escolha do detector, não uma
-    // afirmação de que elas deixaram de ser nomes abstratos.
+    // 📌 And the six out of reach are still positions — the reach is the detector's choice, not a claim that they
+    // stopped being abstract names.
     expect(ACTIONS.length - ABSTRATOS.length).toBe(6);
   });
 
@@ -88,9 +86,8 @@ describe('nenhum nome abstrato chega a uma pessoa · os dicionários', () => {
 });
 
 describe('nenhum nome abstrato chega a uma pessoa · os atributos escritos à mão', () => {
-  // 📌 `aria-label`, `title`, `placeholder` e `alt` são lidos em voz alta ou mostrados. `data-act="action1"` e
-  // `value="${acao}"` NÃO entram: são maquinaria, e o comentário do `input/touch` já explica por que um é
-  // seguro e o outro não.
+  // 📌 `aria-label`, `title`, `placeholder` and `alt` are read aloud or shown. `data-act="action1"` and `value="${acao}"`
+  // do NOT count: they are machinery, and the `input/touch` comment explains why one is safe and the other is not.
   const ATRIBUTOS = /(?:aria-label|title|placeholder|alt)\s*=\s*["']([^"'`]*)["']/g;
 
   it('[Feliz] nenhum atributo visível ou falado traz um nome abstrato', () => {
@@ -106,10 +103,10 @@ describe('nenhum nome abstrato chega a uma pessoa · os atributos escritos à m�
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-08, aplicadas por script com contagem de ocorrências) =====
-// 1. plantar `'sr.debug.pos': 'A posição é action2.'` em `app/js/i18n/pt.ts`  → [Feliz] do pt reprova, e SÓ ele
-// 2. plantar o mesmo em `en.ts`                                              → [Feliz] do en reprova
-// 3. plantar `aria-label="leftTrigger"` num módulo de `ui/`                   → [Feliz] dos atributos reprova
-// 4. `ABSTRATOS = VERBS` → lista à mão com sete (sem `rightTrigger`)          → [Vácuo] da lista reprova
-// 5. `valoresDe` a devolver `[]`                                             → [Vácuo] dos dicionários reprova
-//    🎯 é a mutação que importa: um crivo cego aprova tudo, e o [Feliz] ficaria verde para sempre
+// ===== MUTATIONS CHECKED (2026-09-08, applied by script with occurrence counts) =====
+// 1. planting `'sr.debug.pos': 'A posição é action2.'` in `app/js/i18n/pt.ts` → pt's [Feliz] fails, and ONLY it
+// 2. planting the same in `en.ts`                                            → en's [Feliz] fails
+// 3. planting `aria-label="leftTrigger"` in a `ui/` module                   → the attributes' [Feliz] fails
+// 4. `ABSTRATOS = VERBS` → a hand list of seven (without `rightTrigger`)      → the list's [Vácuo] fails
+// 5. `valoresDe` returning `[]`                                              → the dictionaries' [Vácuo] fails
+//    🎯 it is the mutation that matters: a blind check approves everything, and [Feliz] would stay green forever

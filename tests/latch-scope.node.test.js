@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A ALTERNÂNCIA É DE UM TRANSPORTE, e em quatro deles não é escolha nenhuma (ADR-0104 §C, issue #114).
+// THE LATCH BELONGS TO A TRANSPORT, and on four of them it is no choice at all (ADR-0104 §C, issue #114).
 //
-// ========================= O DEFEITO QUE ESTES CASOS SEGURAM =========================
-// A alternância estava guardada por JOGADOR — por pessoa, e para todos os aparelhos ao mesmo tempo. Ligá-la
-// no controle de tela, onde ninguém segura um botão virtual com conforto, ligava-a também no teclado, onde
-// segurar uma tecla é exactamente o que a criança sabe fazer. Ninguém pediu isso e nada o dizia.
+// ========================= THE DEFECT THESE CASES HOLD =========================
+// Stored per PLAYER — per person, for every device at once — turning the latch on for the on-screen pad, where nobody
+// holds a virtual button comfortably, also turned it on for the keyboard, where holding a key is exactly what the child
+// can do. Nobody asked for that and nothing said so.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import {
   ONE_COMMAND_AT_A_TIME, latchAlwaysOn, latchIsOptional,
@@ -24,8 +24,8 @@ describe('input/latch-scope · a chave leva o transporte no nome', () => {
   });
 
   it('⚠️ [Interface] a chave nova COMEÇA pela antiga, e é isso que a torna migrável', () => {
-    // Se o nome novo não fosse um prolongamento do antigo, a herança abaixo teria de ser uma tabela de
-    // conversão à parte — e uma tabela à parte é onde um par se perde sem ninguém ver.
+    // If the new name were not an extension of the old one, the inheritance below would need a separate conversion
+    // table — and a separate table is where a pair gets lost without anyone seeing.
     for (const base of ['togglemove', 'togglerun']) {
       for (const t of ['toque', 'teclado', 'gamepad']) {
         expect(latchKey(base, 0, t).startsWith(legacyLatchKey(base, 0))).toBe(true);
@@ -37,7 +37,7 @@ describe('input/latch-scope · a chave leva o transporte no nome', () => {
     const chaves = defaultTransports({ gamepad: () => true, keyboard: () => true, touch: () => true, mouse: () => true })
       .map((t) => latchKey('togglemove', 0, t.id));
     expect(new Set(chaves).size, 'dois transportes escrevem no mesmo lugar').toBe(chaves.length);
-    // E dois JOGADORES também não, que é a separação que já existia e não pode ter-se perdido no caminho.
+    // And two PLAYERS do not either, the separation that already existed and must not have been lost on the way.
     expect(latchKey('togglemove', 0, 'toque')).not.toBe(latchKey('togglemove', 1, 'toque'));
   });
 });
@@ -55,9 +55,9 @@ describe('input/latch-scope · nos transportes de UM COMANDO ela não é prefer�
   });
 
   it('⚠️ [Zero] e um `false` guardado NÃO os desliga — nem pelo legado', () => {
-    // O pior defeito possível, e no controle de quem tem menos alternativas: uma criança que tivesse
-    // desligado a alternância no teclado herdaria esse `false` e ficaria com um controle de olhar que não
-    // responde. Por isso a pergunta «este transporte é de um comando?» vem ANTES de qualquer leitura.
+    // The worst possible defect, on the controller of whoever has the fewest alternatives: a child who had turned the
+    // latch off on the keyboard would inherit that `false` and be left with a gaze control that does not respond. So
+    // the question «este transporte é de um comando?» comes BEFORE any read.
     const desligado = { fromTransport: false, fromLegacy: false, byDefault: false };
     for (const t of ONE_COMMAND_AT_A_TIME) {
       expect(latchOf(t, desligado), `${t} foi desligado por um valor guardado`).toBe(true);
@@ -65,8 +65,8 @@ describe('input/latch-scope · nos transportes de UM COMANDO ela não é prefer�
   });
 
   it('[Interface] os quatro nomes são exactamente quatro — acrescentar um é uma decisão', () => {
-    // Um transporte entra nesta lista porque emite um comando de cada vez, e não porque seria conveniente.
-    // Se alguém puser o toque aqui, a opção deixa de ser oferecida a quem a quer desligada.
+    // A transport enters this list because it emits one command at a time, not because it would be convenient. If
+    // someone puts touch here, the option stops being offered to whoever wants it off.
     expect([...ONE_COMMAND_AT_A_TIME].sort()).toEqual(['fala', 'gestos', 'olhos', 'rosto']);
   });
 });
@@ -78,9 +78,9 @@ describe('input/latch-scope · a resolução, e a herança da chave antiga', () 
   });
 
   it('⚠️ [Boundary] sem valor deste transporte, o LEGADO herda — e herda para todos', () => {
-    // O valor velho foi posto pela criança nalgum contexto e a chave não registava qual. As saídas eram
-    // perder o ajuste, adivinhar um transporte, ou herdar para todos. Só a terceira não tira nada a quem
-    // depende do ajuste, e o vazamento que ela mantém dura até ela mexer no assunto uma vez em cada aparelho.
+    // The old value was set by the child in some context and the key did not record which. The ways out were losing
+    // the setting, guessing a transport, or inheriting for all. Only the third takes nothing from whoever depends on
+    // the setting, and the leak it keeps lasts until they touch it once on each device.
     for (const t of ['toque', 'teclado', 'gamepad']) {
       expect(latchOf(t, { fromTransport: null, fromLegacy: true, byDefault: false })).toBe(true);
     }
@@ -92,27 +92,27 @@ describe('input/latch-scope · a resolução, e a herança da chave antiga', () 
   });
 
   it('⚠️ [Boundary] `false` guardado é um VALOR, e não uma ausência', () => {
-    // O erro clássico deste desenho é escrever `l.doTransporte || l.doLegado || l.padrao`: um `false`
-    // deliberado cairia para o legado e a criança que DESLIGOU a alternância vê-la-ia voltar sozinha.
+    // The classic mistake of this design is writing `l.doTransporte || l.doLegado || l.padrao`: a deliberate `false`
+    // would fall through to the legacy value and the child who TURNED OFF the latch would see it come back by itself.
     expect(latchOf('teclado', { fromTransport: false, fromLegacy: true, byDefault: true })).toBe(false);
     expect(latchOf('teclado', { fromTransport: null, fromLegacy: false, byDefault: true })).toBe(false);
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · ⚠️ TIRANDO O TRANSPORTE DA CHAVE (de volta a `incl_${base}_p${jogador}`) -> reprovam DOIS. E o defeito
-//     inteiro, na sua forma original: ligar a alternancia no controle de tela liga-a no teclado.
-//   · pondo a pergunta «este transporte e de um comando?» DEPOIS das leituras -> reprova o caso do `false`
-//     guardado. Uma crianca que tivesse desligado a alternancia no teclado herdaria esse `false` e ficaria
-//     com um controle de olhar que nao responde — no controle de quem tem menos alternativas.
-//   · trocando as duas conferencias de `null` por `l.doTransporte || l.doLegado || l.padrao` — o erro
-//     classico deste desenho — -> reprovam DOIS. Um `false` deliberado viraria ausencia, e a alternancia
-//     que a crianca DESLIGOU voltaria sozinha.
-//   · tirando a heranca do legado -> reprovam DOIS. A crianca perderia o ajuste que ja tinha, que e o custo
-//     que a heranca existe para nao cobrar.
-//   · pondo `toque` na lista dos de um comando -> reprovam TRES. A opcao deixaria de ser oferecida a quem a
-//     quer desligada, e um controle de tela SEGURA dois pontos — ele nao e de um comando so.
-//   · tirando `olhos` da lista -> reprovam DOIS. E a mutacao que mostra que a lista e uma decisao e nao um
-//     detalhe: sai um nome e um controle inteiro deixa de funcionar.
-//   · `latchIsOptional` a devolver sempre `true` -> reprova o caso dos quatro. O painel desenharia um
-//     botao que nao pode fazer nada, que e pior do que nao o desenhar.
+// ========================= MUTATIONS CHECKED =========================
+//   · ⚠️ TAKING THE TRANSPORT OUT OF THE KEY (back to `incl_${base}_p${jogador}`) -> TWO fail. It is the whole defect in
+//     its original form: turning the latch on for the on-screen pad turns it on for the keyboard.
+//   · putting the question «este transporte e de um comando?» AFTER the reads -> the stored-`false` case fails. A child
+//     who had turned the latch off on the keyboard would inherit that `false` and be left with a gaze control that
+//     does not respond — on the controller of whoever has the fewest alternatives.
+//   · replacing the two `null` checks with `l.doTransporte || l.doLegado || l.padrao` — the classic mistake of this
+//     design — -> TWO fail. A deliberate `false` would become an absence, and the latch the child TURNED OFF would
+//     come back by itself.
+//   · removing the legacy inheritance -> TWO fail. The child would lose the setting they already had, which is the
+//     cost the inheritance exists not to charge.
+//   · putting `toque` on the one-command list -> THREE fail. The option would stop being offered to whoever wants it
+//     off, and an on-screen pad HOLDS two points — it is not one-command.
+//   · taking `olhos` off the list -> TWO fail. It is the mutation that shows the list is a decision and not a detail:
+//     one name leaves and a whole controller stops working.
+//   · `latchIsOptional` always returning `true` -> the four-transports case fails. The panel would draw a button that
+//     can do nothing, which is worse than not drawing it.

@@ -1,25 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A FRONTEIRA DE ENTRADA, como inventário — o crivo que o ADR-0111 deve.
+// THE INPUT BOUNDARY, as an inventory — the check ADR-0111 owes.
 //
-// ========================= A REGRA, E POR QUE ELA NÃO PODE SER UMA PROIBIÇÃO HOJE =========================
-// O ADR-0111 decide que o CONTROLE VIRTUAL é tudo o que um cartucho recebe: ele não importa `input/`, não
-// chama `held()`, não vê códigos de tecla nem índices de comando. E o registo já antecipa o formato deste
-// gate: «an INVENTORY while the platformer is unmigrated: a list that SHRINKS reports the true state, where a
-// flat prohibition would be red for months and get switched off».
+// ========================= THE RULE, AND WHY IT CANNOT BE A PROHIBITION =========================
+// ADR-0111 decides the VIRTUAL CONTROLLER is all a cartridge receives: it does not import `input/`, does not call
+// `held()`, sees no key codes nor command indices. And the record already anticipates this gate's form: «an INVENTORY
+// while the platformer is unmigrated: a list that SHRINKS reports the true state, where a flat prohibition would be red
+// for months and get switched off».
 //
-// 📌 O QUE ESTE FICHEIRO CONGELA É O QUE A ENGINE PUBLICA, e não o que os jogos importam — porque o primeiro é
-// facto desta árvore e o segundo é estado de outro repositório. O `package.json` exporta `./input/*.js`, um
-// CURINGA: todo módulo em `app/js/input/` fica alcançável por um cartucho no instante em que é criado. A
-// fronteira do ADR-0111 fecha-se encolhendo esta lista, e cada entrada tem de dizer por que ainda está aqui.
+// 📌 WHAT THIS FILE FREEZES IS WHAT THE ENGINE PUBLISHES, not what games import — the first is a fact of this tree, the
+// second another repository's state. `package.json` exports `./input/*.js`, a WILDCARD: every module in `app/js/input/`
+// is reachable by a cartridge the instant it is created. ADR-0111's boundary closes by shrinking this list, and each
+// entry must say why it is still here. (The split below between "reached" and "not reached" records what was measured
+// in the sibling repositories on 2026-09-08; it is not re-measured here.)
 //
-// 📏 MEDIDO EM 2026-09-08, e o número vale mais do que a regra: dos três cartuchos clonados nesta máquina,
-// `game-platformer` alcança DEZ destes módulos, `game-soccer` alcança TRÊS — e o `pixi-15-puzzle` alcança
-// ZERO, porque consome só pelo `createGame`. ⚠️ **Um dos seis já vive do lado certo da fronteira**, o que faz
-// do ADR-0111 uma coisa demonstrada em vez de pretendida.
-// ⚠️ E TRÊS REPOSITÓRIOS NÃO ESTAVAM CLONADOS AQUI, então onze é um PISO e não o total. Dito para ninguém ler
-// a medição como se fosse o censo — é a mesma cautela que o `gh search code` já custou a este projeto.
-//
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -28,13 +22,13 @@ import { fileURLToPath } from 'node:url';
 const RAIZ_INPUT = fileURLToPath(new URL('../app/js/input/', import.meta.url));
 
 /**
- * OS MÓDULOS DE `input/` QUE UM CARTUCHO ALCANÇA HOJE, e por que cada um ainda está alcançável.
+ * THE `input/` MODULES A CARTRIDGE CAN REACH, and why each one is still reachable.
  *
- * ⚠️ A LISTA TEM DE ENCOLHER. Cada entrada que sair é um pedaço da fronteira do ADR-0111 a fechar-se; uma
- * entrada NOVA sem razão escrita à mão é a fronteira a abrir-se sem ninguém decidir.
+ * ⚠️ THE LIST MUST SHRINK. Each entry that leaves is a piece of ADR-0111's boundary closing; a NEW entry without a
+ * hand-written reason is the boundary opening without anyone deciding.
  */
 const PUBLICADOS = {
-  // --- alcançados de facto por pelo menos um cartucho (a dívida da migração) ---
+  // --- actually reached by at least one cartridge (the migration's debt) ---
   'state': 'o `held`/`keys` que a física do cartucho lê a cada quadro — é o coração do que o controle virtual tem de passar a entregar',
   'keydown': 'o cartucho instala o ouvinte de teclado por sua conta; o controle virtual passa a instalá-lo',
   'touch-bindings': 'idem para o ponteiro e os direcionais de toque',
@@ -47,7 +41,7 @@ const PUBLICADOS = {
   'transports': 'o alcance, que o cartucho mostra na sua própria tela de selecção',
   'default-bindings': 'os mapeamentos de fábrica por modelo de controle',
 
-  // --- publicados pelo curinga mas NÃO alcançados por nenhum cartucho clonado (2026-09-08) ---
+  // --- published by the wildcard but NOT reached by any cloned cartridge (2026-09-08) ---
   'edges': 'vocabulário de arestas e navegação; publicado pelo curinga, sem consumidor externo medido',
   'latch-scope': 'a regra de escopo da alternância (ADR-0104 §C); sem consumidor externo medido',
   'transport-in-use': 'o autómato do ADR-0109; sem consumidor externo medido — e ele NÃO deve ganhar um, porque quem responde à alternância é a engine',
@@ -113,33 +107,33 @@ describe('ADR-0111 · a fronteira de entrada, e ela só se fecha encolhendo', ()
   });
 
   it('⚠️ [Interface] e o crivo está VIVO: ele lê a pasta de entrada a sério', () => {
-    // Um caminho errado deixaria os dois casos acima verdes por não terem nada que examinar — e este ficheiro
-    // inteiro é sobre uma lista, então uma lista vazia é o pior verde possível.
+    // A wrong path would leave the two cases above green for having nothing to examine — and this whole file is about a
+    // list, so an empty list is the worst possible green.
     const mods = modulosDeInput();
     expect(mods.length, 'a varredura não achou módulo nenhum em `input/`').toBeGreaterThan(10);
     expect(mods, 'o par de `input/state` é a âncora: se ele sumiu, a varredura mudou de pasta').toContain('state');
   });
 
   it('📌 [Right] o curinga do pacote continua a ser o que torna isto necessário', () => {
-    // Se um dia o `exports` deixar de publicar `./input/*.js`, a fronteira fecha-se de vez e este ficheiro
-    // deixa de ter assunto. Enquanto o curinga estiver lá, cada módulo novo nasce público.
+    // If `exports` ever stops publishing `./input/*.js`, the boundary closes for good and this file has no subject left.
+    // While the wildcard is there, every new module is born public.
     const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
     expect(Object.keys(pkg.exports ?? {}), 'o curinga saiu — se foi de propósito, este ficheiro pode morrer')
       .toContain('./input/*.js');
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-// Quatro, todas mortas. ⚠️ E a primeira NAO E EDICAO DE CODIGO: ela CRIA um `app/js/input/intensidade.ts` e
-// apaga-o a seguir. E o defeito real que este ficheiro existe para apanhar — um modulo novo em `input/` nasce
-// PUBLICO por causa do curinga `./input/*.js`, sem ninguem ter decidido abrir a fronteira. O nome escolhido
-// nao e inocente: `intensidade` e como a opcao 2 do ADR-0112 chegaria.
+// ========================= MUTATIONS CHECKED =========================
+// Four, all killed. ⚠️ And the first is NOT A CODE EDIT: it CREATES an `app/js/input/intensidade.ts` and deletes it
+// afterwards. It is the real defect this file exists to catch — a new module in `input/` is born PUBLIC because of the
+// `./input/*.js` wildcard, without anyone deciding to open the boundary. The chosen name is not innocent: `intensidade`
+// is how option 2 of ADR-0112 would arrive.
 //
-//   1. modulo novo sem entrada na lista -> reprova o [Interface] dos declarados.
-//   2. um ORFAO na lista (entrada de modulo que nao existe) -> reprova o caso dos orfaos. Sem ele a lista
-//      podia crescer com nomes mortos e parecer que a divida encolhia.
-//   3. a varredura apontada para `render/` -> reprovam TRES. Um inventario que le a pasta errada esta verde
-//      pela pior razao possivel.
-//   4. o curinga a sair do `exports` -> reprova o caso dele. ⚠️ Esse caso e o unico do ficheiro que pode um dia
-//      reprovar por BOA noticia: se o curinga sair de proposito, a fronteira fechou-se e este ficheiro morre.
-//      Fica escrito na mensagem para ninguem o apagar sem perceber que ganhou.
+//   1. a new module with no entry in the list -> the declared-modules [Interface] fails.
+//   2. an ORPHAN in the list (an entry for a module that does not exist) -> the orphans case fails. Without it the list
+//      could grow with dead names and look as if the debt were shrinking.
+//   3. the scan pointed at `render/` -> THREE fail. An inventory reading the wrong folder is green for the worst
+//      possible reason.
+//   4. the wildcard leaving `exports` -> its case fails. ⚠️ That case is the only one in the file that may one day fail
+//      on GOOD news: if the wildcard leaves on purpose, the boundary has closed and this file dies. It is written in the
+//      message so nobody deletes it without realising they won.

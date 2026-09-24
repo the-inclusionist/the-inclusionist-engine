@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A ALTERNÂNCIA SEGUE O CONTROLE — e trocar de controle NÃO escreve nada (ADR-0113 cláusula 1, issue #127).
+// THE LATCH FOLLOWS THE CONTROLLER — and switching controllers writes NOTHING (ADR-0113 clause 1, issue #127).
 //
-// ========================= O QUE ESTE FICHEIRO AFIRMA, E POR QUE É EM SEQUÊNCIAS =========================
-// «Trocar de controle troca a alternância» não quer dizer nada sem se ter trocado. É a lição que os casos do
-// `input/transport-in-use` já tinham escrito: um caso que chama uma função uma vez mede a função; o que faz
-// a criança tropeçar é a ORDEM. Então os casos daqui são sequências — o mesmo jogador, dois aparelhos.
+// ========================= WHAT THIS FILE ASSERTS, AND WHY IN SEQUENCES =========================
+// «Trocar de controle troca a alternância» means nothing without having switched. It is the lesson the
+// `input/transport-in-use` cases had already written: a case that calls a function once measures the function; what
+// makes the child stumble is the ORDER. So the cases here are sequences — the same player, two devices.
 //
-// 🎯 E A PROPRIEDADE MAIS IMPORTANTE É NEGATIVA: o armazenamento CONTA as escritas, e a troca de transporte
-// tem de somar ZERO. Um `sincronizar` que gravasse o valor resolvido apagaria, na primeira aresta, a escolha
-// que a criança fez no outro controle — e ficaria verde em todos os casos positivos.
+// 🎯 AND THE MOST IMPORTANT PROPERTY IS NEGATIVE: the store COUNTS the writes, and the transport switch must add up to
+// ZERO. A `sincronizar` that wrote the resolved value would erase, on the first edge, the choice the child made on the
+// other controller — and would stay green in every positive case.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { applyLatch, syncLatch, BASE_DA_MARCHA } from '../app/js/input/latch-sync.js';
 import { latchKey, legacyLatchKey } from '../app/js/input/latch-scope.js';
 
-/** Um armazém de mentira que CONTA as escritas — é a contagem que prova a cláusula 1. */
+/** A fake store that COUNTS the writes — the count is what proves clause 1. */
 function armazemFalso(inicial = {}) {
   const dados = { ...inicial };
   const escritas = [];
@@ -105,29 +105,29 @@ describe('a regra que acompanha o desligar', () => {
 });
 
 // ============================================================================================
-// O QUE FAZ DA CACHE UMA CACHE: UM ESCRITOR SÓ
+// WHAT MAKES THE CACHE A CACHE: ONE WRITER ONLY
 // ============================================================================================
 //
-// 🎯 `p.toggleMove` é uma CACHE DERIVADA desde a issue #127 — a engine reescreve-o na aresta, a partir da
-// chave do transporte em uso, e o laço de física do cartucho continua a lê-lo. Isso só é verdade enquanto
-// houver UM escritor. Um segundo, em qualquer módulo, faz o campo divergir da fonte de que ele diz derivar —
-// e a divergência não erra em voz alta: a criança troca de aparelho, o valor não a acompanha, e nada o diz.
+// 🎯 `p.toggleMove` is a DERIVED CACHE (issue #127) — the engine rewrites it on the edge, from the key of the transport
+// in use, and the cartridge's physics loop reads it. That holds only while there is ONE writer. A second, in any module,
+// makes the field drift from the source it claims to derive from — and the drift does not fail loudly: the child
+// switches devices, the value does not follow, and nothing says so.
 //
-// ⚠️ TECTO E NÃO PISO. Este número não pode SUBIR. Ele pode descer (se um dia o campo sair), e por isso a
-// asserção é sobre o conjunto e não sobre a contagem: um nome novo tem de aparecer na mensagem de reprovação
-// para quem o leia saber onde foi.
+// ⚠️ A CEILING, NOT A FLOOR. This number cannot RISE. It can fall (if the field ever leaves), which is why the assertion
+// is on the set and not the count: a new name must appear in the failure message so whoever reads it knows where it
+// went.
 //
-// 📌 E ele fala só da ENGINE. O `game-platformer` escreve `pl.toggleMove` no laço dele, e isso é legítimo e
-// não é medível daqui — a lição do ADR-0121 é que a CI deste repositório não pode depender do estado de
-// outro. O que se afirma é o que esta árvore controla.
+// 📌 And it speaks only of the ENGINE. `game-platformer` writes `pl.toggleMove` in its own loop, which is legitimate and
+// not measurable from here — the lesson of ADR-0121 is that this repository's CI cannot depend on another's state.
+// What is asserted is what this tree controls.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'app', 'js');
 
-/** ⚠️ NÃO come URLs: `(^|[^:])//` deixa o `https://` em paz. Um tira-comentários ingénuo já enganou este
- *  repositório duas vezes, e das duas o resultado foi uma varredura vazia lida como ausência. */
+/** ⚠️ Does NOT eat URLs: `(^|[^:])//` leaves `https://` alone. A naive comment-stripper has fooled this repository
+ *  before, each time with an empty scan read as absence. */
 const semComentarios = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n\r]*/g, '$1');
 
 function ficheiros(dir) {
@@ -152,20 +152,20 @@ describe('quem escreve a alternância no jogador', () => {
   });
 
   it('📌 [Vácuo] a varredura ACHA o escritor que existe — senão ela aprovaria uma árvore vazia', () => {
-    // Sem este caso, matar a regex deixa o [Interface] a comparar `[]` com `[]` e o gate fica cego para
-    // sempre. É a metade da SAÍDA, que é o que separa inventário de monumento.
+    // Without this case, killing the regex leaves the [Interface] comparing `[]` with `[]` and the gate blind forever.
+    // It is the EXIT half, which is what separates an inventory from a monument.
     expect(escritores().length, 'a varredura não acha nada — está cega, e não é a árvore que está limpa')
       .toBeGreaterThan(0);
   });
 });
 
-// ================================ MUTAÇÕES CONFERIDAS ================================
-// 1. `syncLatch` a gravar o valor resolvido (`armazem.set(...)`) → 🎯 a [Sequência] reprova pela
-//    contagem de escritas, e SÓ por ela: todos os casos de valor continuariam verdes. É a mutação que separa
-//    «a alternância segue o controle» de «a alternância segue o último controle e apaga os outros».
-// 2. ignorar o argumento `transporte` (fixar `'teclado'`) → a [Sequência] reprova na segunda asserção.
-// 3. tirar o `if (!ligada) p.walkDir = 0` → o caso do desligar reprova, com a frase do defeito escrita.
-// 4. `p.walkDir = 0` incondicional → o caso do LIGAR reprova. As duas mutações juntas são a razão de a linha
-//    ser condicional, e nenhuma delas sozinha o mostrava.
-// 5. `readTriState` a colapsar «nunca escrito» em `false` (o `getBool` que o `latch-store` recusa) → o caso do
-//    LEGADO reprova: a criança que já jogava perde o ajuste no primeiro arranque depois da actualização.
+// ================================ MUTATIONS CHECKED ================================
+// 1. `syncLatch` writing the resolved value (`armazem.set(...)`) → 🎯 the [Sequência] fails on the write count, and ONLY
+//    on it: every value case would stay green. It is the mutation that separates «a alternância segue o controle» from
+//    «a alternância segue o último controle e apaga os outros».
+// 2. ignoring the `transporte` argument (fixing `'teclado'`) → the [Sequência] fails on the second assertion.
+// 3. removing `if (!ligada) p.walkDir = 0` → the turning-off case fails, with the defect's sentence written.
+// 4. an unconditional `p.walkDir = 0` → the TURNING-ON case fails. The two mutations together are why the line is
+//    conditional, and neither alone showed it.
+// 5. `readTriState` collapsing «nunca escrito» into `false` (the `getBool` `latch-store` refuses) → the LEGACY case
+//    fails: the child who already played loses the setting on the first start after the update.

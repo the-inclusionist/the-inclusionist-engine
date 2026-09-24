@@ -1,23 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A CASCA DO PAINEL É CONSTRUÍDA, E POR ISSO O CONTRATO DEIXA DE SER INVISÍVEL (#62, #115, achado 6 da #63).
+// THE PANEL SHELL IS BUILT, SO THE CONTRACT STOPS BEING INVISIBLE (#62, #115, finding 6 of #63).
 //
-// ========================= O QUE ISTO IMPEDE =========================
-// O segundo consumidor mediu e escreveu: «o ctx do painel pede `$` e `store`; o que ele REALMENTE exige é
+// ========================= WHAT THIS PREVENTS =========================
+// The second consumer measured and wrote: «o ctx do painel pede `$` e `store`; o que ele REALMENTE exige é
 // que o documento contenha `#typo`, `#typo-list`, `#typo-preview`, `#typo-close` e `#typo-reset`. Nada no
 // tipo diz isso — descobre-se por tentativa, e o modo de falhar é o pior possível: **o painel abre vazio,
 // sem erro**.»
 //
-// Cada `ui/settings-*` preenche o interior; o exterior vinha do `app/index.html`, que saiu com o cartucho
-// (#111). Desde então a engine exigia cinco ids por painel e não os declarava em lado nenhum.
+// Each `ui/settings-*` fills the inside; the shell builds the outside, so the engine no longer requires ids per panel
+// that it declares nowhere.
 //
-// ⚠️ E A REGRA DE MENU DO `CLAUDE.md` §4 PASSA A SER CONSTRUÇÃO EM VEZ DE LEMBRETE. A introdução de um painel
-// vai no `data-explain-idle` do cartão, nunca num `<p>` de prosa no topo — e a casca não tem por onde receber
-// um `<p>`. Era o que a #62 mandava editar em seis blocos de markup; o markup saiu e a regra ficou sem alvo.
+// ⚠️ AND THE MENU RULE OF `CLAUDE.md` §4 BECOMES CONSTRUCTION INSTEAD OF A REMINDER. A panel's introduction goes in the
+// card's `data-explain-idle`, never in a `<p>` of prose at the top — and the shell has no way to receive a `<p>` (#62).
 //
-// ⚠️ Este é um teste de BROWSER porque a casca é uma árvore de DOM: o project `node` não distingue «criou o
-// nó» de «criou o nó no sítio certo», e o defeito que ela conserta é exactamente de estrutura.
+// ⚠️ This is a BROWSER test because the shell is a DOM tree: the `node` project cannot tell «criou o nó» from
+// «criou o nó no sítio certo», and the defect it fixes is exactly one of structure.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { mountShell, shellIds } from '../app/js/ui/panel-shell.js';
 
@@ -62,8 +61,8 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   });
 
   it('⚠️ [Right] o cartão é um diálogo NOMEADO pelo próprio título', () => {
-    // O `aria-labelledby` a apontar para o `<h2>` é o que faz o leitor de tela anunciar QUAL painel abriu.
-    // Sem ele a criança ouve «diálogo» e tem de adivinhar em qual dos oito entrou.
+    // `aria-labelledby` pointing at the `<h2>` is what makes the screen reader announce WHICH panel opened. Without it
+    // the child hears «diálogo» and has to guess which of the eight they entered.
     const { card, overlay } = mountShell(ctx, SPEC);
     document.body.appendChild(overlay);
     expect(card.getAttribute('role')).toBe('dialog');
@@ -80,24 +79,24 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   });
 
   it('⚠️ [Boundary] ZERO prosa no topo — a introdução só cabe no `data-explain-idle`', () => {
-    // O caso da #62. A casca não tem parâmetro para um parágrafo no topo, então a única forma de a
-    // introdução existir é como texto de REPOUSO do rodapé — que é o que o `fillExplain` lê.
+    // The case of #62. The shell has no parameter for a paragraph at the top, so the only way for the introduction to
+    // exist is as the footer's IDLE text — which is what `fillExplain` reads.
     const { card } = mountShell(ctx, { ...SPEC, intro: 'Ajuste como o jogo soa.' });
     expect(card.getAttribute('data-explain-idle')).toBe('Ajuste como o jogo soa.');
     expect(card.querySelectorAll('p').length, 'apareceu prosa no topo do cartão').toBe(0);
-    // E o primeiro filho é o título: nada se intromete entre o cartão e o `<h2>`.
+    // And the first child is the title: nothing gets between the card and the `<h2>`.
     expect(card.firstElementChild?.tagName).toBe('H2');
   });
 
   it('[Zero] sem introdução o atributo não existe — ausência é ausência, não cadeia vazia', () => {
-    // Um `data-explain-idle=""` faria o `fillExplain` pôr uma região viva com texto vazio, que o leitor de
-    // tela anuncia como nada. «Este painel não tem introdução» é uma resposta legítima.
+    // A `data-explain-idle=""` would make `fillExplain` set a live region with empty text, which the screen reader
+    // announces as nothing. «Este painel não tem introdução» is a legitimate answer.
     const { card } = mountShell(ctx, SPEC);
     expect(card.hasAttribute('data-explain-idle')).toBe(false);
   });
 
   it('⚠️ [Interface] o rótulo entra por `textContent` — markup de dicionário não vira markup', () => {
-    // Um rótulo traduzido é dado de fora, e um dicionário de consumidor pode trazer o que quiser dentro.
+    // A translated label is outside data, and a consumer's dictionary may carry anything inside it.
     const { close: fechar } = mountShell(ctx, { ...SPEC, closeLabel: '<img src=x onerror=alert(1)>Fechar' });
     document.body.appendChild(document.createElement('div')).appendChild(fechar);
     expect(fechar.querySelector('img'), 'o rótulo foi ANALISADO como marcação').toBe(null);
@@ -105,8 +104,8 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   });
 
   it('⚠️ [Exercise] montar duas vezes NÃO duplica o véu — a grade de telas remonta', () => {
-    // A raiz remonta os painéis quando a contagem de jogadores muda. Dois véus com o mesmo id é o defeito
-    // que o `.pause-menu[hidden]` já pagou noutra camada: dois nós, um deles invisível ao `querySelector`.
+    // The root remounts the panels when the player count changes. Two veils with the same id is the defect
+    // `.pause-menu[hidden]` already paid for in another layer: two nodes, one of them invisible to `querySelector`.
     document.body.appendChild(mountShell(ctx, SPEC).overlay);
     const segunda = mountShell(ctx, { ...SPEC, title: 'Outro título' });
     expect(document.querySelectorAll('#audio').length).toBe(1);
@@ -120,18 +119,18 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · tirando o `aria-labelledby` do cartão → "[Right] o cartão é um diálogo NOMEADO" reprova. É o atributo
-//     que faz a criança ouvir QUAL painel abriu em vez de só «diálogo».
-//   · trocando `card.setAttribute('data-explain-idle', …)` por um `<p>` acrescentado ao cartão → "[Boundary]
-//     ZERO prosa no topo" reprova nas duas asserções. É a #62 aferida em vez de editada.
-//   · pondo `if (spec.introducao !== undefined)` no lugar de `if (spec.introducao)` → "[Zero] sem introdução"
-//     continua verde (o campo é `undefined`), mas passar `introducao: ''` produziria o atributo vazio. ⚠️
-//     Registado como mutação que NÃO falha: o caso mede a ausência do campo, não a cadeia vazia, e fechar
-//     esse buraco exigiria um caso próprio — que não escrevi porque nenhum chamador passa cadeia vazia hoje.
-//   · trocando `textContent` por `innerHTML` no botão → "[Interface] o rótulo entra por textContent" reprova
-//     com o `<img>` montado.
-//   · tirando o `while (overlay.firstChild)` da remontagem → "[Exercise] montar duas vezes" reprova com dois
-//     `#audio-title` no documento.
+// ========================= MUTATIONS CHECKED =========================
+//   · removing the card's `aria-labelledby` → "[Right] o cartão é um diálogo NOMEADO" fails. It is the attribute
+//     that makes the child hear WHICH panel opened instead of just «diálogo».
+//   · replacing `card.setAttribute('data-explain-idle', …)` with a `<p>` appended to the card → "[Boundary] ZERO
+//     prosa no topo" fails on both assertions. It is #62 measured instead of edited.
+//   · putting `if (spec.introducao !== undefined)` in place of `if (spec.introducao)` → "[Zero] sem introdução" stays
+//     green (the field is `undefined`), but passing `introducao: ''` would produce the empty attribute. ⚠️ Recorded as
+//     a mutation that does NOT fail: the case measures the field's absence, not the empty string, and closing that
+//     hole would need its own case — not written because no caller passes an empty string.
+//   · replacing `textContent` with `innerHTML` on the button → "[Interface] o rótulo entra por textContent" fails with
+//     the `<img>` mounted.
+//   · removing the remount's `while (overlay.firstChild)` → "[Exercise] montar duas vezes" fails with two
+//     `#audio-title` in the document.
 //   · (2026-09-12, ADR-0158) «Voltar» appended AFTER the list → the «Voltar is the FIRST control» case is red; and
 //     the close button put back into `.overlay__actions` after the reset → red too, by the last-button assertion.

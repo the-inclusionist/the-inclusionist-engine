@@ -1,38 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O "KAGE BUNSHIN": o alto contraste contornava o ATLAS INTEIRO — item 22 quebrou uma suposição do item de HC.
+// THE "KAGE BUNSHIN": high contrast outlining the WHOLE ATLAS — several copies of the character, in different poses, in a
+// regular grid.
 //
-// ========================= O DEFEITO, E COMO ELE FOI ACHADO =========================
-// O Dev relatou várias cópias do personagem, em poses diferentes, numa grade regular. Eu descartei cinco
-// causas medindo (sprite órfão, retângulos do atlas, acúmulo de textura de render, a barra de acessibilidade,
-// fundo repetido no DOM) e não reproduzia nenhuma — porque em todas elas eu media uma tela SADIA. Foi ele
-// quem fechou o cerco: "modo alto contraste liga o kage bushin".
+// ========================= THE DEFECT =========================
+// `directSpriteTexture` draws the dark outline that makes a sprite stand out in high contrast. A sprite packed in an
+// ATLAS is a CROP (`frame`) inside a larger image; outlining the texture's BASE instead of its frame draws the whole
+// atlas — every frame of the character, in a grid, at once. It passes build and tests and only shows on screen, so the
+// gate is here: the outline must respect the texture's frame.
 //
-// A causa está em `directSpriteTexture`, o contorno escuro que faz o personagem saltar no alto contraste:
-//
-//     const s = srcTex.baseTexture.resource.source;   // ← a IMAGEM INTEIRA
-//     const o = outlineCanvas(s, th);                 // ← contorna tudo o que houver nela
-//
-// Ela lê a BASE e ignora o `frame` — o recorte. E havia um comentário logo ali dizendo por que isso era
-// seguro: "directSpriteTexture só é chamada p/ texturas de player (sempre canvas-sourced, nunca PNG)".
-//
-// A afirmação era VERDADEIRA e virou FALSA. O item 22 empacotou os sprites num ATLAS de 256×207, e desde
-// então só os quadros que passam pelo tapa-costuras (idle, andar, correr) viram tela própria de 26×35. Pulo,
-// escada, parede, teto, nado e voo continuam sendo um RECORTE dentro do atlas — e contornar a base deles
-// desenha o atlas inteiro: todos os quadros do personagem, em grade, de uma vez.
-//
-// O tapa-costuras é ASSÍNCRONO, e é por isso que o idle também aparecia: com o alto contraste ligado cedo, o
-// cache `_playerDirect` memoriza a versão baseada no atlas e a guarda para sempre.
-//
-// ⚠️ ISTO JÁ ESTAVA PREVISTO POR ESCRITO, no `aplicarInpaint` de render/sprites, sobre o mesmo perigo:
-// "Desenhar o atlas inteiro aqui não estouraria — produziria um sprite com o personagem inteiro dentro, o que
-// é exatamente o tipo de defeito que passa por build e por teste e só aparece na tela." O aviso estava certo
-// e no arquivo vizinho; faltava o gate.
-//
-// MUTAÇÕES CONFERIDAS (no fim do arquivo).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { initHighContrast, directSpriteTexture } from '../app/js/render/high-contrast.js';
 
-/** Uma "folha" com 4 quadros de 10×10 lado a lado — o atlas em miniatura. */
+/** A "sheet" with 4 frames of 10×10 side by side — the atlas in miniature. */
 function folhaDeQuadros() {
   const cv = document.createElement('canvas');
   cv.width = 40; cv.height = 10;
@@ -41,7 +21,7 @@ function folhaDeQuadros() {
   return cv;
 }
 
-/** A superfície mínima de `PIXI.Texture` que `directSpriteTexture` toca, com um RECORTE dentro da folha. */
+/** The minimal `PIXI.Texture` surface `directSpriteTexture` touches, with a CROP inside the sheet. */
 function texturaComRecorte(fonte, recorte) {
   return {
     orig: { width: recorte.width, height: recorte.height },
@@ -50,7 +30,7 @@ function texturaComRecorte(fonte, recorte) {
   };
 }
 
-/** O `initHighContrast` pede um punhado de leituras do jogo; aqui só o contorno importa. */
+/** `initHighContrast` asks for a handful of the game's reads; here only the outline matters. */
 function ligarHC(espessura) {
   initHighContrast({
     outlineFg: () => espessura,
@@ -63,8 +43,8 @@ function ligarHC(espessura) {
 
 describe('alto contraste · o contorno respeita o RECORTE do quadro', () => {
   it('[Right] um quadro DENTRO de uma folha vira um sprite do tamanho do QUADRO', () => {
-    // O caso do defeito, escrito pelo avesso: recorte de 10×10 dentro de uma folha de 40×10. Sem respeitar o
-    // recorte, o resultado tem 40 de largura — os quatro quadros de uma vez, que é o kage bunshin.
+    // The defect's case, written inside out: a 10×10 crop inside a 40×10 sheet. Without respecting the crop, the result
+    // is 40 wide — the four frames at once, which is the kage bunshin.
     ligarHC(1);
     const t = directSpriteTexture(texturaComRecorte(folhaDeQuadros(), { x: 20, y: 0, width: 10, height: 10 }), 'hc-direto');
     const cv = t.baseTexture.resource.source;
@@ -73,24 +53,23 @@ describe('alto contraste · o contorno respeita o RECORTE do quadro', () => {
   });
 
   it('[Right] e é o quadro CERTO: o recorte pedido, não o primeiro da folha', () => {
-    // Respeitar o TAMANHO e pegar o quadro errado seria trocar um defeito visível por um invisível: o
-    // personagem saltaria no alto contraste exibindo a pose de outra animação — e ninguém ligaria uma coisa
-    // à outra.
+    // Respecting the SIZE and taking the wrong frame would trade a visible defect for an invisible one: the character
+    // would stand out in high contrast showing another animation's pose — and nobody would connect the two.
     //
-    // A primeira versão deste caso usava espessura 0, que é um atalho e nem chega a recortar: ele passava com
-    // a mutação "recorta sempre em 0,0" aplicada. Ler o PIXEL é o que o faz morder.
+    // Thickness 1, not 0: thickness 0 is a shortcut that never crops, and with it the case passed with the mutation
+    // "always crop at 0,0" applied. Reading the PIXEL is what makes it bite.
     ligarHC(1);
     const t = directSpriteTexture(texturaComRecorte(folhaDeQuadros(), { x: 20, y: 0, width: 10, height: 10 }), 'hc-direto');
     const cv = t.baseTexture.resource.source;
     const c = cv.getContext('2d');
     const meio = c.getImageData(Math.floor(cv.width / 2), Math.floor(cv.height / 2), 1, 1).data;
-    // O terceiro quadro da folha é AZUL (#00f). O primeiro é vermelho — é o que a mutação traria.
+    // The sheet's third frame is BLUE (#00f). The first is red — which is what the mutation would bring.
     expect([meio[0], meio[1], meio[2]], 'o recorte pegou o quadro errado da folha').toEqual([0, 0, 255]);
   });
 
   it('[Boundary] textura SEM recorte (a folha inteira é o quadro) continua funcionando', () => {
-    // É o caso dos quadros que passam pelo tapa-costuras: cada um vira uma tela própria, e ali o recorte É a
-    // base inteira. O conserto não pode quebrar o caminho que já estava certo.
+    // A frame that is its own canvas: there the crop IS the whole base. The fix must not break the path that was
+    // already right.
     ligarHC(1);
     const fonte = folhaDeQuadros();
     const t = directSpriteTexture(texturaComRecorte(fonte, { x: 0, y: 0, width: 40, height: 10 }), 'hc-direto');
@@ -105,7 +84,7 @@ describe('alto contraste · o contorno respeita o RECORTE do quadro', () => {
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · devolvendo `outlineCanvas(s, th)` sobre a base (o código de antes) → "[Right] um quadro DENTRO de uma
-//     folha" reprova com largura 42, que é a folha inteira contornada.
-//   · recortando sempre em 0,0 → "[Right] e é o quadro CERTO" reprova.
+// ========================= MUTATIONS CHECKED =========================
+//   · returning `outlineCanvas(s, th)` over the base (the old code) → the [Right] case of a frame INSIDE a sheet fails
+//     with width 42, which is the whole sheet outlined.
+//   · always cropping at 0,0 → the [Right] case of the RIGHT frame fails.
