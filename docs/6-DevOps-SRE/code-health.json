@@ -65,7 +65,7 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2093,
+      "codeLines": 2095,
       "decisionNodes": 281,
       "maxDepth": 4,
       "fanOut": 85,
@@ -102,12 +102,12 @@
     },
     "consumer-quiz/main-quiz.ts": {
       "codeLines": 233,
-      "decisionNodes": 34,
+      "decisionNodes": 35,
       "maxDepth": 2,
       "fanOut": 7,
       "globalReach": 1,
       "worstFunction": 8,
-      "statefulEdges": 4,
+      "statefulEdges": 3,
       "fanIn": 0,
       "reached": [
         "document"
@@ -123,8 +123,7 @@
       "statefulImports": [
         "boot/create-game.ts",
         "core/a11y-sr.ts",
-        "core/i18n.ts",
-        "core/state.ts"
+        "core/i18n.ts"
       ]
     },
     "core/a11y-sr.ts": {
@@ -412,7 +411,7 @@
       "globalReach": 0,
       "worstFunction": 1,
       "statefulEdges": 0,
-      "fanIn": 10
+      "fanIn": 11
     },
     "core/speech-rate.ts": {
       "codeLines": 32,
@@ -432,7 +431,7 @@
       "globalReach": 0,
       "worstFunction": 4,
       "statefulEdges": 0,
-      "fanIn": 2,
+      "fanIn": 1,
       "holds": [
         "let blindMode",
         "let cameraControl",

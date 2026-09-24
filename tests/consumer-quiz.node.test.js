@@ -135,20 +135,26 @@ describe('the voice of a question — the statement, then each option with its p
 
   it('🔴 [Right] opening a question says the statement and then «Gato, 1 de 4. Galinha, 2 de 4. …»', () => {
     // A literal: a format computed in the test would move with the code. The place comes AFTER the name (ADR-0167).
-    expect(questionNarration(galinha)).toBe(ABERTA);
+    expect(questionNarration(galinha, true)).toBe(ABERTA);
   });
 
   it('[Zero] a question with no options says only its statement — no dangling space', () => {
-    expect(questionNarration({ enunciado: 'Vazio?', alternativas: [], certa: 0 })).toBe('Vazio?');
+    expect(questionNarration({ enunciado: 'Vazio?', alternativas: [], certa: 0 }, true)).toBe('Vazio?');
   });
 
   it('🔴 [Right] the WHOLE question only when it opens; a move on the same question says only the option reached', () => {
-    const abre = narrationOnDraw(galinha, 0, 0, -1);
+    const abre = narrationOnDraw(galinha, 0, 0, -1, true);
     expect(abre).toEqual({ texto: ABERTA, narrada: 0 });
     // before, every arrow press re-read the statement and never said where the cursor was
-    expect(narrationOnDraw(galinha, 0, 1, abre.narrada)).toEqual({ texto: 'Galinha, 2 de 4', narrada: 0 });
+    expect(narrationOnDraw(galinha, 0, 1, abre.narrada, true)).toEqual({ texto: 'Galinha, 2 de 4', narrada: 0 });
     // and the next question opens whole again
-    expect(narrationOnDraw(galinha, 1, 0, 0).narrada).toBe(1);
+    expect(narrationOnDraw(galinha, 1, 0, 0, true).narrada).toBe(1);
+  });
+
+  it('🔴 [Right] the place is said only while the child keeps the index on — the quiz asks the engine, not the store (ADR-0232)', () => {
+    // `indexOn` is what the quiz page reads from its engine handle (`Engine.menuIndexOn()`); with it off, the names alone.
+    expect(questionNarration(galinha, false)).toBe('Qual animal põe ovos e tem bico? Gato. Galinha. Cavalo. Peixe');
+    expect(narrationOnDraw(galinha, 0, 1, 0, false)).toEqual({ texto: 'Galinha', narrada: 0 });
   });
 });
 

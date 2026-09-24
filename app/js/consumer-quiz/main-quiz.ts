@@ -128,8 +128,8 @@
 import { escapeHtml } from '../core/escape-html.js'; // #106: enunciado e alternativas sao TEXTO
 import { t, localeReady } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
-import { menuIndexOn } from '../core/state.js';
 import { captionDuration } from '../core/caption-duration.js';
+import { DEFAULTS } from '../core/setting-defaults.js';
 import { announceItem } from '../ui/item-announcement.js';
 import { createGame, type Engine, type VirtualCommand } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
@@ -191,15 +191,16 @@ export function nextFocus(currentIdx: number, delta: number, total: number): num
  *
  * A question is not answerable by ear until its options are heard. The place is said the way every menu item says it:
  * the Dev asked for «uma única função que capture a posição de item e a totalidade de itens», and it is the engine's.
+ * `indexOn` is the child's choice of saying it, which the quiz page asks its engine for (`Engine.menuIndexOn()`, ADR-0232).
  */
-export function questionNarration(p: Question): string {
-  const opcoes = p.alternativas.map((_, i) => spokenOption(p, i)).join('. ');
+export function questionNarration(p: Question, indexOn: boolean): string {
+  const opcoes = p.alternativas.map((_, i) => spokenOption(p, i, indexOn)).join('. ');
   return opcoes ? `${t(p.enunciado)} ${opcoes}` : t(p.enunciado);
 }
 
 /** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
-function spokenOption(p: Question, i: number): string {
-  return announceItem({ label: t(p.alternativas[i] ?? ''), position: i + 1, total: p.alternativas.length }, menuIndexOn);
+function spokenOption(p: Question, i: number, indexOn: boolean): string {
+  return announceItem({ label: t(p.alternativas[i] ?? ''), position: i + 1, total: p.alternativas.length }, indexOn);
 }
 
 /**
@@ -208,10 +209,10 @@ function spokenOption(p: Question, i: number): string {
  * The whole question only when it OPENS; a draw on the same question is the cursor moving, and then only the option
  * under it is said. 🔴 Before this, every arrow press re-read the statement and never said which option was reached.
  */
-export function narrationOnDraw(p: Question, question: number, focusIdx: number, alreadyNarrated: number): { texto: string; narrada: number } {
+export function narrationOnDraw(p: Question, question: number, focusIdx: number, alreadyNarrated: number, indexOn: boolean): { texto: string; narrada: number } {
   return question === alreadyNarrated
-    ? { texto: spokenOption(p, focusIdx), narrada: alreadyNarrated }
-    : { texto: questionNarration(p), narrada: question };
+    ? { texto: spokenOption(p, focusIdx, indexOn), narrada: alreadyNarrated }
+    : { texto: questionNarration(p, indexOn), narrada: question };
 }
 
 /**
@@ -271,7 +272,8 @@ function render(): void {
   if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escapeHtml(endText(correctCount, QUESTIONS.length))}</h2>`; return; }
   app.innerHTML = questionHtml(p, foco);
   // a narração é do consumidor: a engine só empresta a voz
-  const fala = narrationOnDraw(p, atual, foco, narratedQuestion);
+  // the «N de M» follows the child's choice, which the page asks its engine for — it reads no settings store (ADR-0232)
+  const fala = narrationOnDraw(p, atual, foco, narratedQuestion, motor ? motor.menuIndexOn() : DEFAULTS.menuIndexOn);
   narratedQuestion = fala.narrada;
   motor?.tts.narrate(fala.texto);
   app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {

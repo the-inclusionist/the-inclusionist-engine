@@ -1109,6 +1109,21 @@ describe('createGame num documento de verdade', () => {
       }
     });
 
+    it('🔴 [Right] the handle answers the spoken index from the settings store, LIVE (ADR-0044 item 3; ADR-0232 D2c)', async () => {
+      // A game that announces its own items — the demo quiz does — asks the engine instead of reading `core/state` by import.
+      const state = await import('../app/js/core/state.js');
+      const motor = abrir();
+      const before = state.menuIndexOn;
+      try {
+        state.setMenuIndexOnValue(false);
+        expect(motor.menuIndexOn(), 'the handle kept saying the index is on').toBe(false);
+        state.setMenuIndexOnValue(true);
+        expect(motor.menuIndexOn(), 'the handle did not follow the store back on').toBe(true);
+      } finally {
+        state.setMenuIndexOnValue(before);
+      }
+    });
+
     it('🔴 [Right] ONE set of reduced-motion flags: the calm mode the quick bar sets is what the motion panel shows and keeps', () => {
       // The quick bar's calm icon and the motion panel both write the scene flags. Each used to build its own copy from
       // storage, so the panel showed the scene still animated after the bar reduced it, and its next switch stored its stale

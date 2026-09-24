@@ -506,6 +506,12 @@ export interface Engine {
    */
   readonly gameSpeed: () => number;
   /**
+   * Does the child want the «N de M» said after an item (ADR-0044 item 3)? Read at each announcement: the hearing panel
+   * turns it off and on. A game that announces its own items asks here instead of reading the settings store by import
+   * (ADR-0232 D2c), as it asks `gameSpeed` — the demo quiz does.
+   */
+  readonly menuIndexOn: () => boolean;
+  /**
    * MEASURES WHAT THE WORLD'S CANVAS FLASHES for `ms`, against the WCAG 2.3.1 general flash threshold (study item B2;
    * `core/flash-threshold`). Only when called — reading pixels every frame costs a school machine (pillar 1), so play never
    * pays for it. A failure is also a line of `problems`. `lido: false` says why nothing was measured (no canvas, a canvas
@@ -3990,6 +3996,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     reading,
     captionSound: writeSoundCaption,
     gameSpeed: () => state.gameSpeed,
+    menuIndexOn: () => state.menuIndexOn,
     measureFlashes: sampleWorldFlashes,
     overlays,
     nav,

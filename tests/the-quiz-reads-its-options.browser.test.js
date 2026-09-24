@@ -48,6 +48,23 @@ describe('the quiz, heard', () => {
     expect(falas.slice(antes)).toEqual(['Galinha, 2 de 4']);
   });
 
+  it('🔴 [Right] with the index turned off in the hearing panel, the option reached is said by name alone (ADR-0232)', () => {
+    // The quiz no longer reads `core/state` by import: it asks `Engine.menuIndexOn()` at each draw. The child turns the
+    // index off where she would — the engine's hearing panel, `#opt-menuindex` — and the next draw drops the «N de M».
+    const regiao = document.getElementById('game-region');
+    const indice = document.getElementById('opt-menuindex');
+    expect(indice, 'the page mounts no hearing panel — this case would measure nothing').not.toBeNull();
+    indice.click();
+    try {
+      const antes = falas.length;
+      regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowUp', key: 'ArrowUp', bubbles: true }));
+      expect(falas.slice(antes)).toEqual(['Gato']);
+    } finally {
+      indice.click();
+      regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', bubbles: true }));
+    }
+  });
+
   it('🔴 [Right] the quiz hears the VIRTUAL CONTROLLER: S (the scheme\'s «down») moves the option, W brings it back (ADR-0111, #197)', () => {
     // 📏 The Dev, 2026-09-16: the quiz read raw arrow codes — its arrows worked, the scheme's W and S did not, and S rang the sonar.
     const regiao = document.getElementById('game-region');
@@ -91,3 +108,4 @@ describe('the quiz, heard', () => {
 //   Q7 the root not delivering keyboard commands (listener removed)  🔴 S moves the option, W brings it back
 //   Q8 a key stamped `olhos` delivered again                         🔴 «not delivered again»
 //   (Q5, Q6 held the drawn number; ADR-0167 took it out — see the checks in `itens-sem-numero`)
+//   Q9 the page passing `true` for the index instead of `motor.menuIndexOn()` (ADR-0232)  🔴 «with the index turned off»

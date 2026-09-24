@@ -54,6 +54,7 @@
       "gameSpeed",
       "keyboard",
       "measureFlashes",
+      "menuIndexOn",
       "mount",
       "nav",
       "onFailure",
