@@ -1,58 +1,56 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/caa-sets.ts — O CATÁLOGO DA COMUNICAÇÃO AUMENTADA E ALTERNATIVA (ADR-0028). Módulo-folha: dados puros e
-// dois predicados, zero DOM, zero I/O. Quem desenha o menu é ui/settings-caa; quem decide o que ele oferece
-// é este arquivo, porque a decisão é de LICENÇA e não de interface.
+// ui/caa-sets.ts — THE AUGMENTATIVE AND ALTERNATIVE COMMUNICATION CATALOGUE (ADR-0028). Leaf module: pure data and
+// two predicates, zero DOM, zero I/O. ui/settings-caa draws the menu; this file decides what it offers, because the
+// decision is about LICENSING and not about interface.
 //
-// PARA QUEM ISTO EXISTE: há crianças que leem símbolos e não letras. Para elas, o pictograma não é um enfeite
-// nem uma muleta — é a escrita. Um jogo educativo que só sabe exibir letras simplesmente não fala com elas.
+// WHO THIS EXISTS FOR: there are children who read symbols and not letters. For them, a pictogram is neither
+// decoration nor a crutch — it is writing. An educational game that can only show letters does not speak to them.
 //
-// A REGRA QUE ORGANIZA A LISTA: a camada de cada conjunto é decidida pela LICENÇA DELE e por mais nada — não
-// pela qualidade, não pelo tamanho, não pela facilidade de integrar. No instante em que um conjunto mudar de
-// camada por outro motivo, este arquivo terá deixado de ser verdadeiro.
+// THE RULE THAT ORGANISES THE LIST: each set's tier is decided by ITS LICENCE and nothing else — not quality, not
+// size, not ease of integration. The moment a set changes tier for another reason, this file stops being true.
 //
-// `tier` é o FATO JURÍDICO (podemos redistribuir? é preciso baixar? falta permissão?). `disponivel` é o FATO
-// DE HOJE (funciona nesta build?). São duas perguntas diferentes e o menu precisa das duas: a primeira diz
-// quem tem de agir, a segunda diz o que a criança consegue escolher agora.
+// `tier` is the LEGAL FACT (may we redistribute? must it be downloaded? is permission missing?). `available` is
+// TODAY's FACT (does it work in this build?). They are two different questions and the menu needs both: the first
+// says who has to act, the second says what the child can choose now.
 import { t } from '../core/i18n.js';
 
 export type CaaTier =
-  /** CC BY-SA ou nosso: pode viajar dentro do jogo, funciona sem rede nenhuma. */
+  /** CC BY-SA or ours: it may travel inside the game and works with no network at all. */
   | 'bundled'
-  /** A licença permite usar, não redistribuir: quem baixa é a pessoa, uma vez, e fica em cache. */
+  /** The licence allows use, not redistribution: the person downloads it, once, and it stays cached. */
   | 'fetched'
-  /** Falta permissão. Aparece no menu, não é escolhível. */
+  /** Permission is missing. It appears in the menu and is not selectable. */
   | 'negotiating';
 
 export interface CaaSet {
   readonly key: string;
   readonly name: string;
   readonly tier: CaaTier;
-  /** Licença como ela foi VERIFICADA, ou null quando ainda não há. Texto curto, para caber na tela. */
+  /** The licence as it was VERIFIED, or null when there is none yet. Short text, to fit on screen. */
   readonly license: string | null;
-  /** Funciona NESTA build? Hoje só as letras — os pictogramas são arquivos que ainda não vieram. */
+  /** Does it work IN THIS build? The pictograms are files that have not arrived yet. */
   readonly available: boolean;
-  /** Só para pictogramas: uma linha sobre a origem, quando ela muda o que a escolha significa. */
+  /** Pictograms only: one line about the origin, when it changes what the choice means. */
   readonly note?: string;
 }
 
-// AS LETRAS NÃO ESTÃO NESTA LISTA, e a ausência é decisão do Dev. Elas eram duas entradas — "maiúsculas e
-// minúsculas" e "maiúsculas somente" — e viraram UM interruptor: "Letras maiúsculas", ligado ou desligado,
-// com o desligado significando as duas caixas. Uma escolha binária apresentada como duas opções faz a criança
-// comparar duas linhas para descobrir que são a mesma pergunta; um interruptor pergunta uma vez.
+// LETTERS ARE NOT IN THIS LIST, and the absence is the Dev's decision: letter case is ONE switch (upper case, on or
+// off, with off meaning both cases), not two entries. A binary choice presented as two options makes the child compare
+// two rows to discover they are the same question; a switch asks once.
 //
-// Sobra aqui o que é de verdade uma LISTA: os conjuntos de pictogramas, entre os quais se escolhe um.
+// What remains here is genuinely a LIST: the pictogram sets, of which one is chosen.
 export const CAA_SETS: readonly CaaSet[] = [
-  // --- PICTOGRAMAS que PODEM viajar com o jogo (CC BY-SA, verificado pelo Dev em 2026-08-24). ---
+  // --- PICTOGRAMS that MAY travel with the game (CC BY-SA, verified by the Dev). ---
   { key: 'mulberry', name: 'Mulberry Symbols', tier: 'bundled', license: 'CC BY-SA', available: false },
   { key: 'blissymbolics', name: 'Blissymbolics', tier: 'bundled', license: 'CC BY-SA 4.0', available: false,
     note: 'Escrita simbólica própria: os símbolos se combinam para formar sentidos novos.' },
   { key: 'tawasol', name: 'Tawasol', tier: 'bundled', license: 'CC BY-SA 4.0', available: false,
     note: 'Desenhado na e para a cultura árabe. Um pictograma não é neutro — a criança reconhece mais depressa os objetos, as roupas e os rostos do próprio mundo.' },
 
-  // --- PICTOGRAMA que precisa ser BAIXADO. ---
+  // --- PICTOGRAMS that must be DOWNLOADED. ---
   { key: 'arasaac', name: 'ARASAAC', tier: 'fetched', license: 'baixado à parte', available: false },
 
-  // --- AGUARDANDO NEGOCIAÇÃO. Ficam visíveis de propósito: ver `caaReason`. ---
+  // --- AWAITING NEGOTIATION. Visible on purpose: see `caaReason`. ---
   { key: 'sclera', name: 'Sclera', tier: 'negotiating', license: null, available: false },
   { key: 'pcs', name: 'PCS', tier: 'negotiating', license: null, available: false },
   { key: 'symbolstix', name: 'SymbolStix', tier: 'negotiating', license: null, available: false },
@@ -61,30 +59,30 @@ export const CAA_SETS: readonly CaaSet[] = [
 
 export const CAA_BY_KEY: Readonly<Record<string, CaaSet>> = Object.fromEntries(CAA_SETS.map((s) => [s.key, s]));
 
-/** Quais CONJUNTOS a criança pode escolher hoje: nenhum. O menu não finge o contrário — os pictogramas são
- *  milhares de arquivos que ainda não entraram no repositório, e quatro deles dependem de negociação. */
+/** Which SETS the child can choose today: none. The menu does not pretend otherwise — the pictograms are thousands
+ *  of files that have not entered the repository, and four of the sets depend on negotiation. */
 export function caaAvailable(): CaaSet[] {
   return CAA_SETS.filter((s) => s.available);
 }
 
 /**
- * Por que este conjunto não está disponível — chave i18n, nunca texto pronto.
+ * Why this set is not available — an i18n key, never finished text.
  *
- * As duas respostas dizem coisas diferentes a quem lê, e é por isso que são duas: "em preparação" quer dizer
- * que a licença está resolvida e o trabalho é NOSSO; "aguardando negociação" quer dizer que a permissão é de
- * OUTRA PESSOA e nenhum esforço nosso a antecipa.
+ * The two answers tell the reader different things, which is why there are two: "in preparation" means the licence
+ * is settled and the work is OURS; "awaiting negotiation" means the permission belongs to SOMEONE ELSE and no effort
+ * of ours brings it forward.
  *
- * E é por isso que os indisponíveis aparecem em vez de serem escondidos: são justamente os conjuntos que uma
- * escola brasileira tem mais chance de já usar em outro produto. O educador que procura PCS e não acha conclui
- * que o jogo não faz — quando o obstáculo é uma licença, não uma capacidade. Esconder responderia a pergunta
- * errada, e responderia errado.
+ * And that is why the unavailable ones are shown instead of hidden: they are exactly the sets a Brazilian school is
+ * most likely to already use in another product. The educator who looks for PCS and does not find it concludes the
+ * game cannot do it — when the obstacle is a licence, not a capability. Hiding would answer the wrong question, and
+ * answer it wrongly.
  */
 export function caaReason(s: CaaSet): string | null {
   if (s.available) return null;
   return s.tier === 'negotiating' ? 'caa.aguardandoNegociacao' : 'caa.emPreparo';
 }
 
-/** Rótulo pronto para a linha do menu: nome + o motivo, quando há um. */
+/** A label ready for the menu row: the name + the reason, when there is one. */
 export function caaLabel(s: CaaSet): string {
   const reason = caaReason(s);
   return reason ? `${s.name} — ${t(reason)}` : s.name;

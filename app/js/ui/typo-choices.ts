@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/typo-choices.ts — O QUE UMA ESCOLHA DE TIPOGRAFIA É, sem documento nenhum.
+// ui/typo-choices.ts — WHAT A TYPOGRAPHY CHOICE IS, with no document anywhere near it.
 //
-// Este módulo responde três perguntas e só três: que faces podem ser escolhidas, que CSS cada escolha comanda,
-// e que forma tem a linha que a oferece. Zero DOM, zero ctx, zero estado — é a metade que o projecto node
-// consegue exercer inteira, e foi a SUÍTE que marcou esta costura antes de ela existir: os casos puros já
-// viviam em `tests/settings-typo.node.test.js` e os de marcação noutro ficheiro.
+// This module answers three questions and only three: which faces can be chosen, what CSS each choice drives, and what
+// shape the row offering it has. Zero DOM, zero ctx, zero state — it is the half the node project can exercise whole,
+// and the SUITE drew this seam before it existed: the pure cases live in `tests/settings-typo.node.test.js` and the
+// markup ones in another file.
 //
-// 📌 Mesmo corte que o `ui/audio-choices` recebeu do `ui/settings-audio` (nota BD), e pela mesma razão: o
-// `ui/settings-typo` tinha o trabalho que o nome dele nunca mencionava — achar os nós que ele alcança e nunca
-// criou, ligá-los e reflectir a escolha — misturado com a tabela do que uma escolha É.
-//
-// 🔴 E A RAZÃO IMEDIATA FOI MEDIDA: ao adoptar o kit de painel (nota BI), o `ui/settings-typo` ficou com 183
-// linhas contra um tecto de 187 (ADR-0221). Tinha gasto a folga dele, e a mudança honesta seguinte não caberia
-// — que é a catraca a apontar para o corte certo em vez de a pedir uma excepção.
+// 📌 The same cut `ui/audio-choices` received from `ui/settings-audio`, for the same reason: `ui/settings-typo` holds the
+// work its name never mentioned — finding the nodes it reaches and never created, wiring them and reflecting the
+// choice — and the table of what a choice IS lives here (ADR-0221).
 import { t } from '../core/i18n.js';
 import { FONT_GROUPS, FONT_BY_KEY, fontRole, faceAvailable, type FontItem } from './fonts.js';
 import type { ControlRowSpec } from './panel-widgets.js';
@@ -21,10 +17,9 @@ import type { ControlRowSpec } from './panel-widgets.js';
  * A key is selectable when it exists in the catalog, is not marked `.off` (licence pending, etc.) — and is
  * `geral`.
  *
- * ⚠️ O TERCEIRO TERMO ENTROU EM 2026-09-07 (issue #87), e sem ele o resto da mudança seria decoração: o menu
- * deixaria de OFERECER as caligráficas e elas continuariam SELECIONÁVEIS por qualquer outro caminho — o
- * `resolveFontKey` de uma chave guardada, um `data-font` num markup de consumidor. «Não está na lista» e «não
- * pode ser escolhida» têm de ser a mesma afirmação, ou a lista é só uma sugestão.
+ * ⚠️ WITHOUT THE THIRD TERM (issue #87) the menu would stop OFFERING the handwriting faces and they would stay
+ * SELECTABLE by any other path — `resolveFontKey` of a stored key, a `data-font` in a consumer's markup. "Not in the
+ * list" and "cannot be chosen" have to be the same statement, or the list is only a suggestion.
  */
 export function isSelectableFont(k: string, installed?: (family: string) => boolean): boolean {
   const it = FONT_BY_KEY[k];
@@ -50,19 +45,17 @@ export interface FontCssTarget {
 }
 
 /**
- * Maps a selectable font key to the CSS it drives. The three canonical EdSP fonts (atkinson/andika/lexend) use
+ * Maps a selectable font key to the CSS it drives. The three canonical fonts (atkinson/andika/lexend) use
  * dedicated data-fonte values (Lexend's keeps the BDA letter/word spacing tied to data-fonte="dislexia"); every
  * other catalog font goes through --font-custom with a generic fallback by family (serif/cursive/none).
  */
 export function fontCssTarget(k: string, it: FontItem): FontCssTarget {
-  // ⚠️ AS TRÊS CANÓNICAS NÃO SÃO CURSIVAS, e responder `false` por elas é afirmação e não descuido: Atkinson,
-  // Andika e Lexend são faces de leitura, e é justamente nelas que o espaçamento da BDA tem de valer.
+  // ⚠️ THE THREE CANONICAL FACES ARE NOT CURSIVE, and answering `false` for them is a statement, not an oversight:
+  // Atkinson, Andika and Lexend are reading faces, and it is exactly on them that the BDA spacing must hold.
   if (k === 'atkinson') return { font: 'padrao', customFamily: null, cursive: false };
   if (k === 'andika') return { font: 'alfabetizacao', customFamily: null, cursive: false };
   if (k === 'lexend') return { font: 'dislexia', customFamily: null, cursive: false };
-  // ⚠️ O CAMPO chama-se `cursiva` e o local não: o campo é superfície publicada e sai na fase 7 do plano do
-  // inglês, junto dos outros 310 membros; o que nasce aqui é meu e nasce em inglês. `joined` é a palavra que
-  // a própria documentação do campo usa — «is this a JOINED face?» —, e é mais exacta do que «cursiva».
+  // `joined` is the word the field's own documentation uses — "is this a JOINED face?".
   const joined = it.fb === 'cursive';
   const suffix = it.fb === 'serif' ? ',Georgia,serif' : joined ? ',cursive' : '';
   return { font: 'custom', customFamily: `'${it.fam}'${suffix}`, cursive: joined };
@@ -82,21 +75,19 @@ export interface TypoGroupView {
 }
 
 /**
- * UMA linha da lista, a partir de uma face do catálogo. Extraída em 2026-09-07 (issue #87) porque o gate do
- * mecanismo `.off` precisava de a exercitar com uma face de MENTIRA: as duas únicas entradas desligadas
- * saíram do roster, e um caso que dependa da composição do catálogo reprova sempre que o roster muda.
+ * ONE row of the list, from a catalogue face. A function of its own so the gate of the `.off` mechanism can exercise it
+ * with a FAKE face: a case that depends on the catalogue's composition fails every time the roster changes.
  *
- * O mecanismo fica, e é preciso: o item 4 da #87 usa-o para a **Ronde**, que só pode ser oferecida se uma de
- * três faces estiver instalada, porque duas delas são gratuitas apenas para uso pessoal e não podem ser
- * empacotadas.
+ * The mechanism is needed (issue #87, item 4): the **Ronde** can only be offered if one of three faces is installed,
+ * because two of them are free for personal use only and cannot be bundled.
  */
 export function fontRow(it: FontItem, fontKey: string, installed?: (family: string) => boolean): TypoRow {
-  // ⚠️ A MESMA pergunta que o `isSelectableFont` faz, pela MESMA função. Duas respostas dariam uma linha
-  // clicável que o clique recusa — ou, pior, uma linha cinzenta que o `resolveFontKey` aceita por outro
-  // caminho. «Não está disponível» e «não pode ser escolhida» têm de ser a mesma afirmação.
+  // ⚠️ THE SAME question `isSelectableFont` asks, through the SAME function. Two answers would give a clickable row the
+  // click refuses — or, worse, a grey row that `resolveFontKey` accepts by another path. "Not available" and "cannot be
+  // chosen" have to be the same statement.
   const disabled = !faceAvailable(it, installed);
-  // `d` e `off` também guardam CHAVE. O travessão que junta os dois é pontuação, não frase — as duas
-  // metades são independentes e cada uma traduz por si.
+  // `d` and `off` hold KEYS too. The dash joining them is punctuation, not a sentence — the two halves are independent
+  // and each translates on its own.
   const desc = it.d ? t(it.d) : '', reason = it.off ? t(it.off) : '';
   const note = desc ? desc + (disabled ? ' — ' + reason : '') : disabled ? reason : '';
   return { key: it.k, fam: it.fam, selected: fontKey === it.k, disabled, note };
@@ -104,30 +95,29 @@ export function fontRow(it: FontItem, fontKey: string, installed?: (family: stri
 
 /** Pure view-model for the typography list: which row is selected/disabled and its note, per catalog group. */
 export function typoGroups(fontKey: string, installed?: (family: string) => boolean): TypoGroupView[] {
-  // ⚠️ SÓ AS GERAIS ENTRAM NA LISTA (emenda do ADR-0012, issue #87). As caligráficas existem para a criança
-  // APRENDER a ler letra cursiva — isso é matéria, e vive DENTRO das atividades, em botões próprios. Oferecê-
-  // las aqui é dar-lhe a matéria como obstáculo em todo lugar onde ela só quer navegar o menu.
+  // ⚠️ ONLY THE GENERAL FACES ENTER THE LIST (ADR-0012 amendment, issue #87). The handwriting faces exist for the child
+  // to LEARN to read cursive — that is subject matter, and it lives INSIDE the activities, on buttons of their own.
+  // Offering them here would hand the child the subject as an obstacle everywhere they only want to navigate the menu.
   //
-  // Um grupo que fique sem nenhuma face geral desaparece da lista, em vez de aparecer como título vazio.
+  // A group left with no general face disappears from the list, instead of appearing as an empty heading.
   return FONT_GROUPS.map((g) => ({
-    g: t(g.g),  // `g` guarda CHAVE i18n desde o item 14 (ver ui/fonts)
+    g: t(g.g),  // `g` holds an i18n KEY (see ui/fonts)
     rows: g.items.filter((it) => fontRole(it) === 'geral').map((it) => fontRow(it, fontKey, installed)),
   })).filter((group) => group.rows.length > 0);
 }
 
-/** O id do botão de uma face. Sai da CHAVE do catálogo, que é única por construção (`FONT_BY_KEY`). */
+/** The id of a face's button. It comes from the catalogue KEY, which is unique by construction (`FONT_BY_KEY`). */
 export const typoControlId = (key: string): string => `typo-font-${key}`;
 
 /**
- * O que uma linha de fonte DIZ, antes de existir nó nenhum — a forma que o kit consome.
+ * What a font row SAYS, before any node exists — the shape the kit consumes.
  *
- * ⚠️ `forma: 'radio'` e não `interruptor`, e isso foi decidido em 2026-09-07: eram dezassete interruptores
- * independentes anunciando «Ligado»/«Desligado» para escolher UMA fonte. A emenda do ADR-0012 diz o contrário
- * em tantas palavras: «THE MENU IS A CHOICE, NOT A TOGGLE […] One font is active; the others are
- * alternatives, not switches.»
+ * ⚠️ `shape: 'radio'` and not a switch: independent switches announcing on/off to choose ONE font say the opposite of
+ * the ADR-0012 amendment, «THE MENU IS A CHOICE, NOT A TOGGLE […] One font is active; the others are alternatives, not
+ * switches.»
  *
- * 📌 A nota entra na DICA — que o `fillExplain` leva ao rodapé — e TAMBÉM no nome acessível, porque quem não
- * vê a linha precisa de ouvir para quem aquela face serve sem ir caçar o rodapé.
+ * 📌 The note goes into the HINT — which `fillExplain` takes to the footer — and ALSO into the accessible name, because
+ * whoever does not see the row needs to hear who that face is for without hunting for the footer.
  */
 export function typoRowSpec(row: TypoRow): ControlRowSpec {
   return {

@@ -1,34 +1,33 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/reach-notice.ts — A TELA QUE DIZ, ANTES DE COMEÇAR, que o controle desta criança não alcança este jogo.
-// Segunda metade da issue #112; a aritmética é do `input/transports` (ADR-0079 §3).
+// ui/reach-notice.ts — THE SCREEN THAT SAYS, BEFORE STARTING, that this child's controller does not reach this game.
+// Issue #112; the arithmetic is `input/transports`'s (ADR-0079 §3).
 //
-// ⚠️ POR QUE ISTO NÃO É POLIMENTO. O controle de tela tem NOVE slots desde sempre, e o conjunto de ações
-// passou a CATORZE em 2026-09-06 (ADR-0085). Um jogo de doze ações num tablet é uma combinação real — e num
-// tablet de escola pública o toque não é o caminho alternativo, é o ÚNICO. Sem esta tela, a criança descobre
-// no meio da partida que não alcança uma ação e conclui que o jogo está partido, sem ter como saber que não
-// está. A resposta honesta é uma frase ANTES, e não meia tela jogável.
+// ⚠️ WHY THIS IS NOT POLISH. A transport has a fixed number of slots and a game can ask for more positions than it has
+// (ADR-0085). On a public-school tablet, touch is not the alternative path, it is the ONLY one. Without this screen the
+// child discovers in the middle of a match that an action is out of reach and concludes the game is broken, with no
+// way to know it is not. The honest answer is a sentence BEFORE, not half a playable screen.
 //
-// ⚠️ ELA INFORMA, NÃO RECUSA — e essa é a decisão que sustenta todo o resto. A detecção de teclado é
-// imprecisa por natureza: não há API que diga «há um teclado físico ligado», e um tablet COM teclado responde
-// «toque» ao `pointer:coarse && hover:none` que o projeto usa. Se esta tela barrasse, esse tablet levaria uma
-// recusa FALSA num jogo que ele joga. Informando, o erro custa uma frase a mais e nunca uma porta fechada.
+// ⚠️ IT INFORMS, IT DOES NOT REFUSE — and that decision holds up everything else. Keyboard detection is imprecise by
+// nature: no API says a physical keyboard is attached, and a tablet WITH a keyboard answers "touch" to the
+// `pointer:coarse && hover:none` the project uses. If this screen blocked, that tablet would get a FALSE refusal in a
+// game it can play. By informing, the error costs one extra sentence and never a closed door.
 //
-// ⚠️ E O TEXTO É MOLDADO À PARTE DO DOM de propósito: as frases são a coisa que precisa de ser lida com
-// cuidado e traduzida para três idiomas, e o project node consegue afereri-las sem navegador nenhum.
+// ⚠️ AND THE TEXT IS SHAPED APART FROM THE DOM on purpose: the sentences are what needs careful reading and translating
+// into three languages, and the node project can check them with no browser.
 import type { Reach } from '../input/transports.js';
 
-/** `core/i18n.t` — injetado para o núcleo continuar puro e para o teste poder ver as chaves cruas. */
+/** `core/i18n.t` — injected so the core stays pure and the test can see the raw keys. */
 export type Translator = (key: string, params?: Record<string, string | number>) => string;
 
 /**
- * AS FRASES DO AVISO, na ordem em que são lidas. Vazio = não há nada a dizer, e é o caso comum.
+ * THE NOTICE'S SENTENCES, in reading order. Empty = there is nothing to say, which is the common case.
  *
- * ⚠️ A ÚLTIMA LINHA TEM DUAS FORMAS, e a diferença entre elas é a diferença entre ajudar e mentir:
+ * ⚠️ THE LAST LINE HAS TWO FORMS, and the difference between them is the difference between helping and lying:
  *
- *   · há transporte que serviria se ligado → «ligue um controle», que é acionável.
- *   · não há nenhum → dizer «ligue um controle» seria mandar a criança procurar uma coisa que não resolve.
- *     Nesse caso o problema é do JOGO, que pede mais posições do que qualquer transporte deste aparelho
- *     oferece, e a frase honesta é outra.
+ *   · some transport would serve if switched on → tell the child to switch it on, which is actionable.
+ *   · there is none → telling them to plug in a controller would send the child looking for something that does not
+ *     solve it. Then the problem is the GAME's, which asks for more positions than any transport on this device
+ *     offers, and the honest sentence is a different one.
  */
 export function noticeRows(a: Reach, t: Translator): string[] {
   if (a.ok) return [];
@@ -40,11 +39,9 @@ export function noticeRows(a: Reach, t: Translator): string[] {
     rows.push(t('reach.curto', { transporte: name(c.id), lugares: c.slots }));
   }
 
-  // ⚠️ A TERCEIRA FRASE, e ela existe porque um transporte pode CHEGAR a todas as ações e ainda assim não
-  // deixar a criança jogar (ADR-0104). Medido: a plataforma pede nove ações, o controle de tela tem nove
-  // lugares, e o cartão nunca aparecia — mas correr, andar e pular ao mesmo tempo são três dedos, e um
-  // telemóvel que reconhece dois não os dá. A criança tentava, não acontecia nada, e concluía que o jogo
-  // estava partido. Uma frase antes de começar é a resposta honesta; meia tela jogável não é.
+  // ⚠️ THE THIRD SENTENCE exists because a transport can REACH every action and still not let the child play
+  // (ADR-0104): holding three actions at once takes three fingers, and a phone that recognises two does not give
+  // them. The child would try, nothing would happen, and they would conclude the game was broken.
   for (const s of a.cannotHold) {
     rows.push(t('reach.naoSegura', { transporte: name(s.id), segura: s.holds, pedidas: a.holdsAsked }));
   }
@@ -57,31 +54,30 @@ export function noticeRows(a: Reach, t: Translator): string[] {
 }
 
 export interface ReachNoticeCtx {
-  /** `querySelector` do documento deste jogo. */
+  /** `querySelector` of this game's document. */
   find: (sel: string) => HTMLElement | null;
-  /** `document.createElement`. Injetado como tudo o mais que toca o documento. */
+  /** `document.createElement`. Injected like everything else that touches the document. */
   create: (tag: string) => HTMLElement;
   t: Translator;
-  /** Anúncio assertivo. Uma criança cega tem de OUVIR isto — ela não vai ver o cartão. */
+  /** Assertive announcement. A blind child has to HEAR this — they will not see the card. */
   srAlert: (text: string) => void;
 }
 
-/** O id do cartão. Estável porque o teste e a folha de estilo o procuram. */
+/** The card's id. Stable because the test and the stylesheet look for it. */
 export const REACH_NOTICE_ID = 'reach-notice';
 
 /**
- * Mostra o aviso, se houver o que dizer. Devolve `true` quando mostrou.
+ * Shows the notice, if there is something to say. Returns `true` when it showed.
  *
- * ⚠️ MONTA POR NÓS E NÃO POR `innerHTML`. As frases passam por `t()` e um dicionário é conteúdo que muda sem
- * passar por revisão de código — é exatamente a fronteira que a issue #106 mapeia. `textContent` fecha a
- * questão sem precisar de escapar nada.
+ * ⚠️ BUILT FROM NODES AND NOT `innerHTML`. The sentences go through `t()`, and a dictionary is content that changes
+ * without code review — exactly the boundary issue #106 maps. `textContent` settles it with nothing to escape.
  */
 export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
   const rows = noticeRows(a, ctx.t);
   if (rows.length === 0) return false;
 
   const isInside = ctx.find('#game-region');
-  if (!isInside) return false; // sem a marcação do hospedeiro não há onde mostrar; o `problems` já o denuncia
+  if (!isInside) return false; // without the host's markup there is nowhere to show it; `problems` already reports that
 
   const overlay = ctx.create('div');
   overlay.id = REACH_NOTICE_ID;
@@ -100,8 +96,8 @@ export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
     card.appendChild(p);
   }
 
-  // ⚠️ O BOTÃO É O QUE FAZ DISTO UM AVISO E NÃO UMA PORTA FECHADA. Ver o cabeçalho: a detecção de teclado
-  // erra, e o erro só é aceitável enquanto a criança puder seguir em frente.
+  // ⚠️ THE BUTTON IS WHAT MAKES THIS A NOTICE AND NOT A CLOSED DOOR. See the header: keyboard detection errs, and the
+  // error is only acceptable while the child can carry on.
   const continueButton = ctx.create('button');
   continueButton.setAttribute('type', 'button');
   continueButton.className = 'mode-btn';
@@ -112,8 +108,8 @@ export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
   overlay.appendChild(card);
   isInside.appendChild(overlay);
 
-  // O foco vai para o cartão, não para o botão: a criança tem de OUVIR o motivo antes de encontrar a saída.
-  // (Se fosse para o botão, o leitor de tela leria «Jogar assim mesmo» e o resto ficaria para quem procurasse.)
+  // Focus goes to the card, not the button: the child has to HEAR the reason before finding the way out.
+  // (On the button, a screen reader would read "Play anyway" and the rest would be left for whoever looked.)
   card.focus();
   ctx.srAlert(rows.join(' '));
   return true;

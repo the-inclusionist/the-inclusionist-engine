@@ -1,59 +1,57 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/changed-mark.ts — MARCA O QUE SAIU DO PADRÃO (ADR-0029). Módulo-folha: só DOM e i18n, nenhuma dep de
-// estado. Quem sabe o que é padrão é cada painel, que já leu DEFAULTS (ADR-0028); aqui mora só o COMO marcar.
+// ui/changed-mark.ts — MARKS WHAT LEFT THE DEFAULT (ADR-0029). Leaf module: only DOM and i18n, no state dependency.
+// Each panel knows what the default is, having read DEFAULTS (ADR-0028); only HOW to mark lives here.
 //
-// O problema que ele resolve: o reset por menu do ADR-0028 só serve a quem sabe que há algo para desfazer.
-// Sete menus, ~40 controles, e o que a criança mexeu tem exatamente a mesma aparência do que ela não mexeu.
-// Os menus não estavam mal rotulados — estavam IMPESQUISÁVEIS.
+// The problem it solves: ADR-0028's per-menu reset only serves whoever knows there is something to undo. Many menus,
+// dozens of controls, and what the child changed looks exactly like what they did not. The menus were not badly
+// labelled — they were UNSEARCHABLE.
 //
-// TRÊS CANAIS, e nenhum é enfeite. O ADR-0029 explica por quê; em resumo: a moldura branca sozinha não serve
-// a quem não distingue cores, some no alto contraste (onde `--ink-soft` JÁ é branco) e não existe para quem
-// não enxerga. Então:
+// THREE CHANNELS, and none is decoration. ADR-0029 explains why; in short: a white frame alone does not serve whoever
+// does not tell colours apart, disappears in high contrast (where `--ink-soft` IS ALREADY white) and does not exist for
+// whoever cannot see. So:
 //
-//   1. COR   — `--changed` na moldura (CSS; troca sozinha no alto contraste).
-//   2. FORMA — anel interno, uma moldura dupla. Sobrevive a escala de cinza e a qualquer paleta, porque é uma
-//              CONTAGEM DE ANÉIS e não uma matiz.
-//   3. NOME  — o nome acessível do controle ganha um sufixo. É o canal que faz mais trabalho pelo menor preço:
-//              a criança cega PERCORRE o menu e OUVE, em ordem, o que saiu do padrão.
+//   1. COLOUR — `--changed` on the frame (CSS; it switches by itself in high contrast).
+//   2. SHAPE  — an inner ring, a double frame. It survives greyscale and any palette, because it is a COUNT OF RINGS
+//               and not a hue.
+//   3. NAME   — the control's accessible name gets a suffix. It is the channel that does the most work for the least:
+//               a blind child WALKS the menu and HEARS, in order, what left the default.
 //
-// O canal 3 tem dois caminhos porque os painéis constroem o nome de duas formas, e um `aria-label` vence o
-// conteúdo do botão. Marcar só um deles deixaria metade dos controles mudos — em silêncio, que é o pior jeito
-// de uma marca de acessibilidade falhar, porque nada na tela denuncia a falta.
+// Channel 3 has two paths because panels build the name in two ways, and an `aria-label` beats the button's content.
+// Marking only one would leave half the controls mute — silently, which is the worst way for an accessibility mark to
+// fail, because nothing on screen reveals the gap.
 //
-// O sufixo NUNCA toca o `textContent`. A primeira versão pendurava um `<span class="sr-only">` dentro do
-// botão, e um teste que aferia o rótulo visível caiu — mostrando o problema real: os painéis reescrevem
-// `textContent` inteiro a cada reflect, então o sufixo vivia à mercê da ordem das chamadas. Agora o caminho
-// sem `aria-label` CRIA um, a partir do conteúdo, e o desmarcar simplesmente o remove.
+// The suffix NEVER touches `textContent`: the panels rewrite `textContent` whole on every reflect, so a suffix there
+// would live at the mercy of the call order. The path without an `aria-label` CREATES one from the content, and
+// unmarking simply removes it.
 //
-// E a idempotência é ESTRUTURAL, não caso a caso: toda chamada primeiro devolve o controle ao estado
-// original — tirando qualquer rastro nosso, dos dois caminhos — e só então aplica. Uma marca que só soubesse
-// acrescentar acabaria em tudo, e uma marca em tudo não é marca.
+// And idempotence is STRUCTURAL, not case by case: every call first returns the control to its original state —
+// removing any trace of ours, on both paths — and only then applies. A mark that only knew how to add would end up on
+// everything, and a mark on everything is no mark.
 import { t } from '../core/i18n.js';
 
 export const CHANGED_CLASS = 'is-changed';
-/** Guarda o `aria-label` ORIGINAL quando ele é do painel, para devolvê-lo sem adivinhar por texto. */
+/** Keeps the ORIGINAL `aria-label` when it is the panel's, to give it back without guessing from text. */
 const BASE_ATTR = 'markBase';
-/** Marca que o `aria-label` foi criado por NÓS: desmarcar tira o atributo inteiro em vez de restaurar algo. */
+/** Marks that the `aria-label` was created by US: unmarking removes the whole attribute instead of restoring one. */
 const OWNED_ATTR = 'markOwnsLabel';
 
 /**
- * O nó cujo NOME acessível recebe o sufixo: o PRIMEIRO controle da linha em ordem de documento, ou a própria
- * linha quando ela não tem controle dentro.
+ * The node whose accessible NAME gets the suffix: the row's FIRST control in document order, or the row itself when it
+ * has no control inside.
  *
- * "O primeiro" é decisão, não acaso — e ela apareceu ao verificar no jogo. Uma linha do mixer tem DOIS
- * controles: o volume e o liga/desliga. O sufixo foi para o volume, que vem antes no markup, e isso está
- * certo por dois motivos: é o controle que a criança alcança primeiro ao tabular, então ela ouve "alterado"
- * ANTES de decidir se para nesta linha; e repetir o sufixo nos dois faria o leitor de tela dizer a mesma
- * coisa duas vezes ao atravessar uma linha só, que é ruído com cara de informação.
+ * "The first" is a decision, not chance. A mixer row has TWO controls: the volume and the on/off. The suffix goes on the
+ * volume, which comes first in the markup, for two reasons: it is the control the child reaches first when tabbing, so
+ * they hear the mark BEFORE deciding whether to stop on this row; and repeating the suffix on both would make the
+ * screen reader say the same thing twice across one row, which is noise dressed as information.
  *
- * O que isto deixa frágil, e por isso está preso por teste: reordenar o markup move o sufixo de controle sem
- * quebrar nada visível.
+ * What this leaves fragile, and why a test holds it: reordering the markup moves the suffix to another control without
+ * breaking anything visible.
  */
 function namedNode(el: HTMLElement): HTMLElement {
   return el.querySelector<HTMLElement>('button, select, input, [role="button"]') ?? el;
 }
 
-/** Devolve o controle ao estado original, venha o rótulo do painel ou de nós. Base de toda chamada. */
+/** Returns the control to its original state, whether the label came from the panel or from us. The base of every call. */
 function clearMark(node: HTMLElement): void {
   if (node.dataset[OWNED_ATTR] !== undefined) {
     node.removeAttribute('aria-label');
@@ -65,8 +63,8 @@ function clearMark(node: HTMLElement): void {
 }
 
 /**
- * Marca (ou desmarca) UM controle. Idempotente por construção: limpa e só então aplica. Os painéis chamam
- * isto de dentro do mesmo `reflect*` que já redesenha o controle, então ele roda muitas vezes seguidas.
+ * Marks (or unmarks) ONE control. Idempotent by construction: clears and only then applies. The panels call this from
+ * inside the same `reflect*` that already redraws the control, so it runs many times in a row.
  */
 export function markChanged(el: HTMLElement | null, changed: boolean): void {
   if (!el) return;
@@ -78,20 +76,20 @@ export function markChanged(el: HTMLElement | null, changed: boolean): void {
   const suffix = t('a11y.changed');
   const label = node.getAttribute('aria-label');
   if (label !== null) {
-    node.dataset[BASE_ATTR] = label;               // rótulo do painel: guardamos e devolvemos depois
+    node.dataset[BASE_ATTR] = label;               // the panel's label: keep it and give it back later
     node.setAttribute('aria-label', label + ', ' + suffix);
   } else {
-    node.dataset[OWNED_ATTR] = '1';                // rótulo vinha do conteúdo: criamos um e o assumimos
+    node.dataset[OWNED_ATTR] = '1';                // the label came from the content: create one and own it
     node.setAttribute('aria-label', (node.textContent ?? '').trim() + ', ' + suffix);
   }
 }
 
 /**
- * Sobe a marca um nível: o botão que ABRE o menu fica marcado enquanto qualquer opção dentro dele estiver.
- * Sem isso a trilha começaria dentro do menu, e achar o menu certo continuaria custando abrir os sete.
+ * Raises the mark one level: the button that OPENS the menu stays marked while any option inside it is. Without this
+ * the trail would start inside the menu, and finding the right menu would still cost opening every one.
  *
- * `changes` é uma lista de booleanos e não de elementos porque quem sabe comparar com o padrão é o painel;
- * este módulo não deve ter opinião sobre o que é padrão — há uma fonte só, e é o DEFAULTS do ADR-0028.
+ * `changes` is a list of booleans and not of elements because the panel is the one that knows how to compare with the
+ * default; this module must have no opinion on what the default is — there is one source, ADR-0028's DEFAULTS.
  */
 export function markMenuChanged(opener: HTMLElement | null, changes: readonly boolean[]): void {
   markChanged(opener, changes.some(Boolean));
