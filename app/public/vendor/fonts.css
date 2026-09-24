@@ -1,16 +1,16 @@
 /* SPDX-License-Identifier: OFL-1.1
- * Fontes oficiais do EdSP — self-hosted (PWA offline). Todas SIL OFL 1.1.
- *  Atkinson Hyperlegible  → PADRÃO (UI/leitura)            — Braille Institute
- *  Andika                 → ALFABETIZAÇÃO                  — SIL
- *  Lexend                 → OPCIONAL (dislexia/TDAH/discalculia) — SIL
- *  Atkinson Hyperlegible Mono → MATEMÁTICA (algarismos)    — Braille Institute
- * latin cobre PT-BR + nórdico (À-ÿ, å ä ö ø æ); latin-ext só baixa se necessário. */
+ * The engine's fonts — self-hosted (offline PWA). All SIL OFL 1.1.
+ *  Atkinson Hyperlegible  → DEFAULT (UI/reading)           — Braille Institute
+ *  Andika                 → LITERACY                       — SIL
+ *  Lexend                 → OPTIONAL (dyslexia/ADHD/dyscalculia) — SIL
+ *  Atkinson Hyperlegible Mono → MATHEMATICS (digits)       — Braille Institute
+ * latin covers pt-BR + Nordic (À-ÿ, å ä ö ø æ); latin-ext only downloads when needed. */
 
 /* ---- ranges ---- */
-/* latin:     U+0000–00FF + pontuação tipográfica
-   latin-ext: U+0100–024F etc. (carga sob demanda) */
+/* latin:     U+0000–00FF + typographic punctuation
+   latin-ext: U+0100–024F etc. (loaded on demand) */
 
-/* ===== Atkinson Hyperlegible (PADRÃO) ===== */
+/* ===== Atkinson Hyperlegible (DEFAULT) ===== */
 @font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;
   src:url('fonts/atkinson-400.woff2') format('woff2');
   unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
@@ -24,7 +24,7 @@
   src:url('fonts/atkinson-700-ext.woff2') format('woff2');
   unicode-range:U+0100-024F,U+0259,U+1E00-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF;}
 
-/* ===== Andika (ALFABETIZAÇÃO) ===== */
+/* ===== Andika (LITERACY) ===== */
 @font-face{font-family:'Andika';font-style:normal;font-weight:400;font-display:swap;
   src:url('fonts/andika-400.woff2') format('woff2');
   unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
@@ -38,7 +38,7 @@
   src:url('fonts/andika-700-ext.woff2') format('woff2');
   unicode-range:U+0100-024F,U+0259,U+1E00-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF;}
 
-/* ===== Lexend (OPCIONAL) ===== */
+/* ===== Lexend (OPTIONAL) ===== */
 @font-face{font-family:'Lexend';font-style:normal;font-weight:400;font-display:swap;
   src:url('fonts/lexend-400.woff2') format('woff2');
   unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
@@ -52,7 +52,7 @@
   src:url('fonts/lexend-700-ext.woff2') format('woff2');
   unicode-range:U+0100-024F,U+0259,U+1E00-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF;}
 
-/* ===== Atkinson Hyperlegible Mono (MATEMÁTICA) ===== */
+/* ===== Atkinson Hyperlegible Mono (MATHEMATICS) ===== */
 @font-face{font-family:'Atkinson Hyperlegible Mono';font-style:normal;font-weight:400;font-display:swap;
   src:url('fonts/atkinson-mono-400.woff2') format('woff2');
   unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
@@ -60,8 +60,8 @@
   src:url('fonts/atkinson-mono-400-ext.woff2') format('woff2');
   unicode-range:U+0100-024F,U+0259,U+1E00-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF;}
 
-/* ===== L2/Tipografia: catálogo escolhível no menu (todas SIL OFL 1.1; subset latin) ===== */
-/* Sem serifa */
+/* ===== Typography: the catalogue chosen from the menu (all SIL OFL 1.1; latin subset) ===== */
+/* Sans serif */
 @font-face{font-family:'iA Writer Quattro';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/quattro-400.woff2') format('woff2');}
 @font-face{font-family:'iA Writer Quattro';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/quattro-700.woff2') format('woff2');}
 @font-face{font-family:'Source Sans 3';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/sourcesans-400.woff2') format('woff2');}
@@ -72,53 +72,52 @@
 @font-face{font-family:'Open Sans';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/opensans-700.woff2') format('woff2');}
 @font-face{font-family:'Lato';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/lato-400.woff2') format('woff2');}
 @font-face{font-family:'Lato';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/lato-700.woff2') format('woff2');}
-/* Serifadas */
+/* Serif */
 @font-face{font-family:'Literata';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/literata-400.woff2') format('woff2');}
 @font-face{font-family:'Literata';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/literata-700.woff2') format('woff2');}
 @font-face{font-family:'Source Serif 4';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/sourceserif-400.woff2') format('woff2');}
 @font-face{font-family:'Source Serif 4';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/sourceserif-700.woff2') format('woff2');}
 @font-face{font-family:'Newsreader';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/newsreader-400.woff2') format('woff2');}
 @font-face{font-family:'Newsreader';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/newsreader-700.woff2') format('woff2');}
-/* Manuscritas (caligráficas inglesas · blackletter alemãs · alfabetização) */
+/* Handwriting (English calligraphic · German blackletter · literacy) */
 @font-face{font-family:'Pinyon Script';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/pinyon-400.woff2') format('woff2');}
 @font-face{font-family:'UnifrakturMaguntia';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/ufmag-400.woff2') format('woff2');}
 
-/* ===== ARCADE (papel `jogo`: HUD, título, rótulos — NUNCA a face da interface) =====
-   ⚠️ SEM `unicode-range`, E É DELIBERADO. O Google Fonts serve esta família em CINCO ficheiros ordenados
-   por `unicode-range` **com o latino por ÚLTIMO**, e uma vendorização que pegue no primeiro `src:` traz o
-   subconjunto cirílico — um woff2 válido, corretamente declarado, corretamente carregado, e sem uma única
-   letra latina.
+/* ===== ARCADE (the `jogo` role: HUD, title, labels — NEVER the interface's face) =====
+   ⚠️ NO `unicode-range`, AND IT IS DELIBERATE. Google Fonts serves this family in FIVE files ordered by
+   `unicode-range` **with Latin LAST**, and a vendoring that takes the first `src:` brings the Cyrillic subset —
+   a valid woff2, correctly declared, correctly loaded, and without a single Latin letter.
 
-   Isso aconteceu de verdade, no `SP-the-inclusionist-whackwhack`: o título saiu na fonte errada durante
-   QUATRO commits e todas as verificações disponíveis diziam que estava certo —
-   `document.fonts.check()` devolvia `true`, o `status` era `loaded`, o `getComputedStyle` mostrava a
-   família certa. As três comparam o NOME da família, uma string escrita duas vezes pela mesma mão; nenhuma
-   olha para dentro do ficheiro. E o CSS resolve por CODEPOINT, então uma face sem glifo para `U+0057` é
-   ignorada para aquele caractere em silêncio.
+   It really happened, in `SP-the-inclusionist-whackwhack`: the title came out in the wrong face for FOUR commits
+   and every available check said it was right — `document.fonts.check()` returned `true`, the `status` was
+   `loaded`, `getComputedStyle` showed the right family. All three compare the family's NAME, a string written
+   twice by the same hand; none looks inside the file. And CSS resolves by CODEPOINT, so a face with no glyph for
+   `U+0057` is silently skipped for that character.
 
-   O ficheiro aqui é o subconjunto LATINO, copiado daquele repositório já verificado, e o gate que o mede
-   é `tests/the-face-can-draw-the-letters.browser.test.js` — pela LARGURA DE AVANÇO, que vem do glifo e portanto do ficheiro. */
+   The file here is the LATIN subset, copied from that already verified repository, and the gate that measures it
+   is `tests/the-face-can-draw-the-letters.browser.test.js` — by the ADVANCE WIDTH, which comes from the glyph and
+   so from the file. */
 @font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/pressstart-400.woff2') format('woff2');}
 
 
-/* ===== OpenDyslexic (ACESSIBILIDADE — oferecida, e SEM alegação de eficácia) =====
-   SIL OFL 1.1, confirmada na API do repositório oficial (antijingoist/opendyslexic) e não de memória — a
-   licença desta face JÁ MUDOU uma vez, e afirmar de cabeça seria afirmar o estado antigo.
+/* ===== OpenDyslexic (ACCESSIBILITY — offered, and with NO claim of efficacy) =====
+   SIL OFL 1.1, confirmed on the official repository's API (antijingoist/opendyslexic) and not from memory — this
+   face's licence HAS CHANGED once already, and asserting it offhand would be asserting the old state.
 
-   ⚠️ ELA NÃO PROMETE LEITURA MELHOR, e isso é decisão registada. O `docs/game-design/typography.md` diz por
-   extenso: «Ofereça a Dyslexie e a OpenDyslexic apenas como escolha do usuário. A pesquisa não mostra ganho
-   de leitura com elas.» A descrição no menu fala do desenho — hastes pesadas na base —, nunca do efeito.
+   ⚠️ IT DOES NOT PROMISE BETTER READING, and that is a recorded decision. `docs/game-design/typography.md` says it
+   in full: «Offer Dyslexie and OpenDyslexic only as the user's choice. Research shows no reading gain from them.»
+   The menu's description speaks of the design — heavy stems at the base —, never of the effect.
 
-   ⚠️ E ELA NÃO É SUBCONJUNTO: 100,9 KB do ficheiro compilado do próprio projeto, contra 23 KB da Fondamento
-   latina. É a face mais pesada do roster, e entra assim porque o upstream não publica subconjuntos; quem
-   quiser cortá-la depois faz por `pyftsubset`, e o gate de precache é quem reclama se o orçamento apertar. */
+   ⚠️ AND IT IS NOT A SUBSET: 100.9 KB of the project's own compiled file, against 23 KB for the Latin Fondamento.
+   It is the heaviest face of the roster, and it enters as it is because upstream publishes no subsets; whoever
+   wants to cut it later does so with `pyftsubset`, and the precache gate is what complains if the budget tightens. */
 @font-face{font-family:'OpenDyslexic';font-style:normal;font-weight:400;font-display:swap;
   src:url('fonts/opendyslexic-400.woff2') format('woff2');}
 
-/* ===== Fondamento (CALIGRÁFICA — fora do menu, para dentro das atividades) =====
-   SIL OFL 1.1, do Google Fonts, nos dois subconjuntos que ele serve. Mínimo de 20 px fixado pelo Dev na
-   emenda do ADR-0012: abaixo disso a face deixa de ser DIFÍCIL e passa a ser ilegível, e as duas coisas são
-   diferentes — a dificuldade é o exercício, a ilegibilidade é a criança a desistir. */
+/* ===== Fondamento (CALLIGRAPHIC — out of the menu, for use inside activities) =====
+   SIL OFL 1.1, from Google Fonts, in the two subsets it serves. A 20 px minimum set by the Dev in the ADR-0012
+   amendment: below that the face stops being DIFFICULT and becomes illegible, and the two are different things —
+   difficulty is the exercise, illegibility is the child giving up. */
 @font-face{font-family:'Fondamento';font-style:normal;font-weight:400;font-display:swap;
   src:url('fonts/fondamento-400.woff2') format('woff2');
   unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
@@ -126,10 +125,10 @@
   src:url('fonts/fondamento-400-ext.woff2') format('woff2');
   unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
 
-/* ===== Playwrite — as OITO das Américas (ADR-0108 §2, issue #87 item 3) =====
- * A mão que cada país ensina a escrever. Os EUA entram com AS DUAS que ensinam — escolher uma seria
- * escolher pela criança. São variáveis no peso (100–400) e cada família é UM ficheiro: a Google não as
- * corta por unicode-range, então não há metade `-ext` para carregar depois. SIL OFL 1.1, como as outras. */
+/* ===== Playwrite — the EIGHT of the Americas (ADR-0108 §2, issue #87 item 3) =====
+ * The hand each country teaches children to write. The USA comes in with BOTH it teaches — choosing one would be
+ * choosing for the child. They are variable in weight (100–400) and each family is ONE file: Google does not cut
+ * them by unicode-range, so there is no `-ext` half to load later. SIL OFL 1.1, like the others. */
 @font-face{font-family:'Playwrite BR';font-style:normal;font-weight:100 400;font-display:swap;
   src:url('fonts/playwrite-br.woff2') format('woff2');}
 @font-face{font-family:'Playwrite US Trad';font-style:normal;font-weight:100 400;font-display:swap;
@@ -147,21 +146,21 @@
 @font-face{font-family:'Playwrite CO';font-style:normal;font-weight:100 400;font-display:swap;
   src:url('fonts/playwrite-co.woff2') format('woff2');}
 
-/* ===== QUATRO FACES ARREDONDADAS (pedido do Dev, 2026-09-12) =====
- * Fredoka · Comfortaa · Quicksand · Nunito. SIL OFL 1.1, como as outras.
+/* ===== ROUNDED FACES (the Dev's request) =====
+ * Fredoka · Quicksand · Nunito (Comfortaa was here and left; see below). SIL OFL 1.1, like the others.
  *
- * ⚠️ SÃO VARIÁVEIS NO PESO, E POR ISSO **UM FICHEIRO SERVE 400 E 700** — o mesmo que as Playwrite acima já
- * fazem. 📏 Medido antes de gravar: pedir os dois pesos à Google devolve o MESMO woff2, byte a byte, para os
- * quatro. Guardá-los como `-400` e `-700` teria duplicado 206 KB e posto no nome um peso que o ficheiro não
- * tem. Daí `-var`: quem lê o nome sabe que não há segundo ficheiro à espera.
+ * ⚠️ THEY ARE VARIABLE IN WEIGHT, AND SO **ONE FILE SERVES 400 AND 700** — as the Playwrite faces above already do.
+ * 📏 Measured before saving: asking Google for both weights returns the SAME woff2, byte for byte. Saving them as
+ * `-400` and `-700` would have duplicated the bytes and put in the name a weight the file does not have. Hence
+ * `-var`: whoever reads the name knows there is no second file waiting.
  *
- * ⚠️ «FREDOKA ONE» É O NOME LEGADO. A Google publica hoje a família variável como `Fredoka`, e a antiga
- * estática «Fredoka One» corresponde ao peso 600 dela. O pedido dizia «Fredoka One»; o que entra é `Fredoka`,
- * e esta linha existe para ninguém ler a diferença como erro.
+ * ⚠️ «FREDOKA ONE» IS THE LEGACY NAME. Google now publishes the variable family as `Fredoka`, and the old static
+ * «Fredoka One» matches its weight 600. The request said «Fredoka One»; what enters is `Fredoka`, and this line
+ * exists so nobody reads the difference as a mistake.
  *
- * As gamas abaixo vieram da folha da Google e NÃO foram copiadas das faces vizinhas: elas divergem (estas
- * incluem U+0304/U+0308/U+0329, combinantes que as mais antigas não listam), e copiar é como se perde um
- * acento sem nada ficar vermelho. */
+ * The ranges below came from Google's stylesheet and were NOT copied from the neighbouring faces: they differ (these
+ * include U+0304/U+0308/U+0329, combining marks the older ones do not list), and copying is how an accent gets lost
+ * without anything turning red. */
 @font-face{font-family:'Fredoka';font-style:normal;font-weight:400 700;font-display:swap;
   src:url('fonts/fredoka-var.woff2') format('woff2');
   unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
@@ -169,10 +168,10 @@
   src:url('fonts/fredoka-var-ext.woff2') format('woff2');
   unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
 
-/* ⚠️ A COMFORTAA ESTEVE AQUI E SAIU no mesmo dia em que entrou, por decisão do Dev: «ruim para dislexia».
- * A razão é visível na face — as formas arredondadas quase geométricas reduzem a diferenciação entre letras,
- * que é exactamente o eixo pelo qual a Atkinson Hyperlegible é a padrão deste projeto. O registo fica porque
- * uma face que sai sem rasto volta a ser proposta. */
+/* ⚠️ COMFORTAA WAS HERE AND LEFT the same day it came in, by the Dev's decision: «ruim para dislexia».
+ * The reason is visible in the face — the near-geometric rounded shapes reduce the differentiation between letters,
+ * which is exactly the axis on which Atkinson Hyperlegible is this project's default. The note stays because a face
+ * that leaves without a trace gets proposed again. */
 
 @font-face{font-family:'Quicksand';font-style:normal;font-weight:400 700;font-display:swap;
   src:url('fonts/quicksand-var.woff2') format('woff2');
@@ -188,7 +187,7 @@
   src:url('fonts/nunito-var-ext.woff2') format('woff2');
   unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
 
-/* ===== Teachers (pedido do Dev, 2026-09-12) ===== Variável no peso, 400–800. SIL OFL 1.1. */
+/* ===== Teachers (the Dev's request) ===== Variable in weight, 400–800. SIL OFL 1.1. */
 @font-face{font-family:'Teachers';font-style:normal;font-weight:400 800;font-display:swap;
   src:url('fonts/teachers-var.woff2') format('woff2');
   unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
@@ -196,17 +195,16 @@
   src:url('fonts/teachers-var-ext.woff2') format('woff2');
   unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
 
-/* ===== SETE PLAYWRITE A MAIS (ADR-0150, decisão do Dev de 2026-09-12) =====
- * Cuba e Peru, pedidas por nome; e os três RECUOS POR LÍNGUA — Espanha, Portugal e Inglaterra —, que é a
- * regra nova: um país sem Playwrite própria recebe a do COLONIZADOR, e já não a dos Estados Unidos.
- * `ES Deco` e `GB S` entram pela outra metade: onde o país tem mais de um TRAÇO, aparecem os dois.
+/* ===== SEVEN MORE PLAYWRITE (ADR-0150, the Dev's decision) =====
+ * Cuba and Peru, asked for by name; and the three FALLBACKS BY LANGUAGE — Spain, Portugal and England —, which is the
+ * rule: a country without a Playwrite of its own gets the COLONISER's, and no longer the United States'.
+ * `ES Deco` and `GB S` come in through the other half: where the country has more than one HAND, both appear.
  *
- * ⚠️ AS «GUIDES» NÃO ENTRAM, por decisão do Dev, e a ausência é decidida e não esquecida. 📏 Medido:
- * catorze países têm uma `Playwrite XX Guides`, e ela não é um segundo traço — é o MESMO traço com as
- * pautas de caligrafia por cima. A engine não as usa; um jogo que precise delas traz a sua própria fonte.
+ * 📌 The «Guides» variants — the SAME hand with the handwriting ruling drawn over it — were left out here, and have
+ * since come in with the whole catalogue (ADR-0176 erratum, the packaged block below), as layer A families.
  *
- * ⚠️ E ELAS SÃO EMPACOTADAS, revogando o P3 do ADR-0108: «devem ser baixadas no primeiro dia para fazer
- * parte do PWA» (Dev, 2026-09-12). São variáveis (100–400) como as oito que já cá estavam. */
+ * ⚠️ AND THEY ARE PACKAGED, revoking ADR-0108's P3: «devem ser baixadas no primeiro dia para fazer parte do PWA»
+ * (the Dev). They are variable (100–400) like the eight that were already here. */
 @font-face{font-family:'Playwrite ES';font-style:normal;font-weight:100 400;font-display:swap;
   src:url('fonts/playwrite-es.woff2') format('woff2');}
 @font-face{font-family:'Playwrite ES Deco';font-style:normal;font-weight:100 400;font-display:swap;
@@ -222,18 +220,18 @@
 @font-face{font-family:'Playwrite PE';font-style:normal;font-weight:100 400;font-display:swap;
   src:url('fonts/playwrite-pe.woff2') format('woff2');}
 
-/* ===== O REPERTÓRIO PADRÃO CRESCE (ADR-0150) =====
- * Quinze faces pedidas pelo Dev em 2026-09-12. Sete da lista dele já cá estavam (Source Sans 3, Inter,
- * Open Sans, Lato, Literata, Source Serif 4, Newsreader) e não se repetem.
+/* ===== THE DEFAULT REPERTOIRE GROWS (ADR-0150) =====
+ * Fifteen faces the Dev asked for. Seven of his list were already here (Source Sans 3, Inter, Open Sans, Lato,
+ * Literata, Source Serif 4, Newsreader) and are not repeated.
  *
- * 🔴 A CLASH DISPLAY NÃO ENTRA, e a ausência é medida: ela NÃO está no Google Fonts — é da Fontshare
- * (Indian Type Foundry), e o §3 do `LICENSES.md` exige a licença conferida ANTES de empacotar. É o mesmo
- * teste que as três faces da ronde reprovaram, e reprovaram por serem livres só para uso PESSOAL.
- * 🔴 LIDA EM 2026-09-12, E REPROVA: ITF Free Font License §02 — sem distribuição por repositório, aplicação
- * ou servidor público, e sem a servir como fonte selecionável a terceiros.
+ * 🔴 CLASH DISPLAY DOES NOT COME IN, and the absence is measured: it is NOT on Google Fonts — it is Fontshare's
+ * (Indian Type Foundry), and §3 of `LICENSES.md` requires the licence checked BEFORE packaging. It is the same test
+ * the three rounded faces failed, and they failed it for being free for PERSONAL use only.
+ * 🔴 READ, AND IT FAILS: ITF Free Font License §02 — no distribution through a repository, an application or a public
+ * server, and no serving it as a selectable font to third parties.
  *
- * ⚠️ TRÊS DELAS NÃO SÃO VARIÁVEIS e por isso têm dois ficheiros por subconjunto, como a Atkinson: Ubuntu,
- * Spectral e DM Serif Display. 📌 A DM Serif Display tem só o 400 — é uma face de display de um peso só. */
+ * ⚠️ THREE OF THEM ARE NOT VARIABLE and so have two files per subset, like Atkinson: Ubuntu, Spectral and DM Serif
+ * Display. 📌 DM Serif Display has only the 400 — it is a display face with a single weight. */
 @font-face{font-family:'Roboto Flex';font-style:normal;font-weight:100 1000;font-display:swap;
   src:url('fonts/robotoflex-var.woff2') format('woff2');
   unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}

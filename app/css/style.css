@@ -4,57 +4,57 @@
   --incl-engine-stylesheet:1;
   --bg:#0b1020; --panel:#1b2440; --ink:#f5f8ff; --ink-soft:#cdd6f2;
   --accent:#ffd23f; --accent-ink:#1a1400; --focus:#ffd23f; --good:#34e29b;
-  --changed:#fff; /* ADR-0029: moldura de quem saiu do padrão */
-  /* Alto contraste no DOM (issue #83): o véu do painel sem transparência, e o fundo de botão. Ficam aqui,
-     junto dos outros tokens, para o teste de contraste poder lê-los do CSS em vez de os copiar. */
+  --changed:#fff; /* ADR-0029: the frame of a setting that left its default */
+  /* High contrast in the DOM (issue #83): the panel veil without transparency, and the button background. They live here,
+     beside the other tokens, so the contrast test can read them from the CSS instead of copying them. */
   --bg-solid:#04070f; --panel-btn:#1a2740;
   --maxw:1000px; --tap:44px;
-  --ui-fs:16px; /* fonte-base da UI (<p>): 16px = MÍNIMO a 640×360; o JS (layout) aumenta conforme o canvas cresce */
-  /* ===== Tipografia oficial EdSP ===== */
-  /* 'Noto Color Emoji' no fim do stack → emoji consistentes (nativo no Chromebook/Android; woff2 abaixo p/ Windows) */
+  --ui-fs:16px; /* the UI's base font size (<p>): 16px = the MINIMUM at 640×360; `ui/layout` raises it as the canvas grows */
+  /* ===== The engine's typography ===== */
+  /* 'Noto Color Emoji' at the end of the stack → consistent emoji (native on Chromebook/Android; the system face elsewhere) */
   --font-fallback:system-ui,"Segoe UI",Roboto,Arial,sans-serif,'Noto Color Emoji';
-  --font:'Atkinson Hyperlegible',var(--font-fallback);          /* PADRÃO */
-  --font-math:'Atkinson Hyperlegible Mono',ui-monospace,"Cascadia Mono",Consolas,monospace; /* matemática */
-  /* ===== ESPAÇAMENTO: O PADRÃO SUBIU DO PISO DA WCAG PARA O DA BDA (ADR-0149 §2) =====
-     Era 0.12em/0.16em — o piso do §1.4.12 da WCAG 2.2 —, e passou a 0.18em/0.63em, que é a recomendação da
-     British Dyslexia Association: palavra ≥ 3,5× letra. Decisão do Dev em 2026-09-12: «somente fontes
+  --font:'Atkinson Hyperlegible',var(--font-fallback);          /* DEFAULT */
+  --font-math:'Atkinson Hyperlegible Mono',ui-monospace,"Cascadia Mono",Consolas,monospace; /* mathematics */
+  /* ===== SPACING: THE DEFAULT ROSE FROM THE WCAG FLOOR TO THE BDA'S (ADR-0149 §2) =====
+     It was 0.12em/0.16em — the floor of WCAG 2.2 §1.4.12 —, and it is now 0.18em/0.63em, the British Dyslexia
+     Association's recommendation: word ≥ 3.5× letter. The Dev's decision on 2026-09-12: «somente fontes
      cursivas não precisam seguir; ao usar todas as outras fontes, é obrigatório seguir».
 
-     ⚠️ ANTES ISTO ERA EXCEPÇÃO DE UMA FACE. Os números da BDA viviam só em `[data-fonte="dislexia"]` (a
-     Lexend), e a face PADRÃO — a Atkinson, que todos os jogos desenham — ficava no piso da WCAG. Não era
-     «sem espaçamento nenhum», como uma primeira versão do registo dizia; era o piso mais baixo dos dois, e
-     aplicado por causa de um RÓTULO em vez de por causa de uma regra sobre faces.
+     ⚠️ THIS USED TO BE THE EXCEPTION OF ONE FACE. The BDA numbers lived only in `[data-fonte="dislexia"]` (Lexend),
+     and the DEFAULT face — Atkinson, which every game draws — sat on the WCAG floor. It was not «no spacing at all»,
+     as a first version of the record said; it was the lower of the two floors, applied because of a LABEL instead of
+     because of a rule about faces.
 
-     🔴 E O RAIO DISTO É O CATÁLOGO INTEIRO: mudar o espaçamento da face padrão muda a métrica de todas as
-     telas ao mesmo tempo. É a regra certa e é uma mudança de layout em 300 jogos. */
+     🔴 AND THE REACH OF THIS IS EVERY GAME: changing the default face's spacing changes the metrics of every screen at
+     once. It is the right rule, and it is a layout change in every game that uses the engine. */
   --ls:0.18em;   /* letter-spacing — BDA */
-  --ws:0.63em;   /* word-spacing  — BDA (≥ 3,5× a letra) */
+  --ws:0.63em;   /* word-spacing  — BDA (≥ 3.5× the letter) */
   --lh:1.5;      /* line-height */
 
-  /* ===== ORDEM-Z CANÔNICA — a faixa de OVERLAY do `core/layers.ts` (ADR-0020) =====
-     Estes valores são a MESMA fonte que o mundo usa em PIXI, trazida para o CSS. Eles existem antes do
-     primeiro consumidor DE PROPÓSITO, e o motivo é o mesmo que a Fase C deu ao barramento tipado: o contrato
-     precisa nascer certo em vez de ser retipado depois. `tests/z-order-css.node.test.js` compara este bloco,
-     valor a valor, com o `Z` do TypeScript — divergir fica vermelho.
+  /* ===== THE Z-ORDER SLOTS — the engine's canonical stacking order (ADR-0020, ADR-0102) =====
+     These `--z-*` variables are where the z-order lives now. They were born as the OVERLAY band of the `Z` table in
+     `core/layers.ts`; that table was the platformer's world order and left with the tile world (ADR-0228), so the
+     slots below are the only copy. `tests/the-skip-link-outranks-the-transition.node.test.js` holds what the engine
+     needs of them: the skip link sits on its slot, above the transition and every other slot except the loop-crash
+     notice and the debug panel, and no literal `z-index` in this file reaches it.
 
-     ⚠️ NENHUM SELETOR AINDA OS USA, e isso NÃO é esquecimento. Adotá-los inverte três ordens que hoje valem,
-     e inverter ordem é decisão de produto:
+     ⚠️ MOST SELECTORS STILL CARRY LITERALS, and that is not forgetfulness. Only `.skip-link`, `#incl-parou` and the
+     touch pad over an open panel read a slot. Adopting the slots everywhere inverts three orders that hold today, and
+     inverting an order is a product decision:
 
-       · `.caption` (8) está ABAIXO de `#touch-controls` (14). Canonicamente CAPTIONS(26000) fica ACIMA de
-         TOUCH_CONTROLS(25000). A inversão CONSERTA um defeito — legenda é recurso de surdez, e controle de
-         toque cobrindo legenda é a coisa errada —, mas muda a tela.
-       · `.quiz` (12) está ABAIXO de `#touch-controls` (14); canonicamente DIALOGUE(27000) fica acima.
-       · `.skip-link` (100) está ACIMA dos modais (60). O comentário do `Z` põe o skip-link em CAPTIONS
-         (26000), o que o deixaria ABAIXO de MENU(30000) — e um "pular para o conteúdo" embaixo de um modal
-         não é alcançável. Aqui o comentário do `Z` é que está errado, não o CSS.
+       · `.caption` (8) is BELOW the touch pad (14). In the slots, captions (26000) are ABOVE touch controls (25000).
+         The inversion FIXES a defect — the caption serves deaf players, and a touch control covering it is the wrong
+         way round —, but it changes the screen.
+       · `.quiz` (12) is BELOW the touch pad (14); in the slots, dialogue (27000) is above.
+       · the skip link was already corrected: it sits on `--z-skip-link`, above the modals and the transition.
 
-     E DUAS COISAS NÃO TÊM SLOT: os dois pseudo-elementos do CRT (`crt-vig-1::before` em 5 e
-     `crt-scan-1::after` em 500). Pelo ADR-0020 o CRT é PÓS-PROCESSO, não camada — inventar um número para
-     ele repetiria o erro de categoria que a emenda de 2026-08-26 já registrou no `app.stage`.
+     AND TWO THINGS HAVE NO SLOT: the two CRT pseudo-elements (`crt-vig-1::before` at 5 and `crt-scan-1::after` at
+     500). Under ADR-0020 the CRT is POST-PROCESSING, not a layer — inventing a number for it would repeat the category
+     error the record already names.
 
-     ⚠️ E `z-index` de CSS NÃO É PLANO. `#game-hud` tem `z-index:4` e CRIA CONTEXTO DE EMPILHAMENTO, então o
-     `.screen-pause` (6) compete só lá dentro — o menu de pausa vive efetivamente em "4" na raiz. Uma lista
-     plana de valores globais não expressa isso. Adotar exige decidir, por elemento, em que contexto ele vive. */
+     ⚠️ AND CSS `z-index` IS NOT FLAT. `#game-hud` has `z-index:4` and CREATES A STACKING CONTEXT, so `.screen-pause`
+     (6) competes only inside it — the pause menu effectively lives at "4" at the root. A flat list of global values
+     cannot express that. Adopting the slots means deciding, per element, which context it lives in. */
   --z-hud:24000;
   --z-touch-controls:25000;
   --z-captions:26000;
@@ -68,79 +68,78 @@
   --z-loop-crash:45000;
   --z-debug:90000;
 }
-/* Emoji: usa o Noto Color Emoji do sistema (Chromebook/Android/Linux) e, se ausente, o woff2 embutido
-   (offline). Se o arquivo não estiver presente, o navegador cai no emoji do SO — sem quebrar. */
-@font-face{ font-family:'Noto Color Emoji'; src:local('Noto Color Emoji'); /* só a fonte do sistema; sem download (o .woff2 nunca existiu) */ font-display:swap; }
-/* Modo ALFABETIZAÇÃO → Andika */
+/* Emoji: the system's Noto Color Emoji (Chromebook/Android/Linux). No file is shipped for it, so where the system
+   lacks it the browser falls back to the OS emoji — without breaking. */
+@font-face{ font-family:'Noto Color Emoji'; src:local('Noto Color Emoji'); /* the system face only; no download (the .woff2 never existed) */ font-display:swap; }
+/* LITERACY mode → Andika */
 :root[data-fonte="alfabetizacao"]{ --font:'Andika',var(--font-fallback); }
-/* Modo DISLEXIA/TDAH → Lexend. 📌 O espaçamento da BDA SAIU daqui em 2026-09-12: ele deixou de ser a
-   excepção desta face e passou a ser o padrão do documento (ver `:root`, ADR-0149 §2). A regra fica só com a
-   FAMÍLIA, que é o que ela sempre teve de próprio. */
+/* DYSLEXIA/ADHD mode → Lexend. 📌 The BDA spacing is not here: it is the document's default (see `:root`, ADR-0149 §2),
+   not this face's exception. The rule keeps only the FAMILY, which is all it ever had of its own. */
 :root[data-fonte="dislexia"]{ --font:'Lexend',var(--font-fallback); }
-/* ===== A EXCEPÇÃO CURSIVA (ADR-0149 §3) =====
-   🔴 Espaçamento de letra numa face LIGADA parte-a exactamente nas junções que a fazem cursiva: o que serve
-   para ajudar a leitura destruiria a coisa que se está a ler. Palavras do Dev: «para manter os conectores».
-   Não é uma concessão — é a mesma regra aplicada a uma face onde ela se inverte.
-   ⚠️ `normal` e não `0`: `word-spacing:0` ainda é uma declaração de espaçamento; `normal` devolve a métrica
-   que o desenhista da face escolheu, que é precisamente o que se quer preservar. */
+/* ===== THE CURSIVE EXCEPTION (ADR-0149 §3) =====
+   🔴 Letter spacing on a JOINED face breaks it exactly at the joins that make it cursive: what is meant to help the
+   reading would destroy the thing being read. The Dev's words: «para manter os conectores».
+   It is not a concession — it is the same rule applied to a face where it inverts.
+   ⚠️ `normal` and not `0`: `word-spacing:0` is still a spacing declaration; `normal` gives back the metrics the face's
+   designer chose, which is precisely what is meant to be preserved. */
 :root[data-cursiva="1"]{ --ls:normal; --ws:normal; }
-/* PALETA SEGURA PARA DALTONISMO NOS MENUS E NO HUD (ADR-0151) — Okabe-Ito.
-   📏 O sentido por cor da interface está em dois tokens: `--accent` (seleção, «ligado», escolha) e `--good` (a
-   resposta certa revelada). O par de sempre, amarelo e verde, é o que protan e deutan confundem: ΔE CIE76 de 48
-   e 55 depois da simulação de Machado (2009). Laranja e azul-céu dão 101, 111 e 87 (tritan) — o maior pior caso
-   entre os pares Okabe-Ito medidos — e todo contraste fica ≥ 4,5:1 (o mais justo é `--good` sobre o botão
-   selecionado, 4,88:1). O crivo é `tests/okabe-ito-palette.node.test.js`. */
+/* A COLOUR-VISION-SAFE PALETTE FOR THE MENUS AND THE HUD (ADR-0151) — Okabe-Ito.
+   📏 The interface's meaning-by-colour sits in two tokens: `--accent` (selection, «on», choice) and `--good` (the right
+   answer revealed). The usual pair, yellow and green, is the one protans and deutans confuse: CIE76 ΔE of 48 and 55
+   after Machado's (2009) simulation. Orange and sky blue give 101, 111 and 87 (tritan) — the largest worst case among
+   the Okabe-Ito pairs measured — and every contrast stays ≥ 4.5:1 (the tightest is `--good` on the selected button,
+   4.88:1). The gate is `tests/okabe-ito-palette.node.test.js`. */
 :root[data-paleta="okabe-ito"]{ --accent:#E69F00; --focus:#E69F00; --good:#56B4E9; }
-/* Tipografia: qualquer fonte do catálogo (menu próprio na pausa); --font-custom traz a pilha com fallback */
+/* Typography: any face of the catalogue (its own menu in the pause); --font-custom brings the stack with its fallback */
 :root[data-fonte="custom"]{ --font:var(--font-custom,'Atkinson Hyperlegible'),var(--font-fallback); }
-/* Menu Tipografia: caixa branca de pré-visualização (pangrama), escrita escura */
+/* Typography menu: a white preview box (pangram), dark text */
 .typo-preview{background:#fff;color:#14141f;border:2px solid var(--ink-soft);border-radius:8px;padding:.65rem .9rem;margin:.2rem 0 .6rem;font-size:1.3em;line-height:1.3;text-align:center}
-/* Tela de título (visual da v3): overlay TRANSPARENTE — a cena (céu/nuvens/grama) vem do canvas */
-#title-overlay{background:transparent;font-size:var(--ui-fs,16px)} /* UI do splash escala com o k inteiro do canvas (igual pausa/diálogos) — NÃO fica fixa em 16px */
-body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:none} /* HUD do jogo não vaza no menu inicial (display: filhos não conseguem re-exibir) */
+/* Title screen: a TRANSPARENT overlay — the scene behind it comes from the canvas */
+#title-overlay{background:transparent;font-size:var(--ui-fs,16px)} /* the splash UI scales with the canvas's integer k (like the pause and the dialogs) — it does NOT stay at 16px */
+body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:none} /* the game's HUD does not leak into the start menu (display: children cannot show themselves again) */
 .title-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;max-height:96%;}
 .game-title{color:#fff;font-size:2em;line-height:1.2;margin:0;text-align:center;letter-spacing:var(--ls);text-shadow:2px 2px 0 #0d0d1a,-1px -1px 0 #0d0d1a}
 .title-block{display:inline-block}
 .game-byline{color:#f6f5f0;font-size:1em;text-align:right;margin-top:2px;text-shadow:1px 1px 0 #0d0d1a}
 .game-version{color:#9999b3;font-size:1em;text-align:right;letter-spacing:var(--ls);margin-top:2px;text-shadow:1px 1px 0 #0d0d1a}
 .game-subtitle{color:#f6f5f0;font-size:1em;margin:0 0 4px;text-shadow:1px 1px 0 #0d0d1a;text-align:center}
-/* Splash DENTRO do canvas, SEM rolagem. GESTALT (José): a11y no CABEÇALHO · menu no ESPAÇO DE TRABALHO · legenda no RODAPÉ */
+/* The splash INSIDE the canvas, with NO scrolling. GESTALT (the Dev): a11y in the HEADER · menu in the WORKSPACE · legend in the FOOTER */
 .title-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;max-height:none}
-.title-legend{position:absolute;left:0;right:0;bottom:8px}                 /* RODAPÉ, como a legenda da pausa */
-.title-menu{display:flex;flex-direction:column;gap:.35em;align-items:stretch;padding:2px;width:13em;margin:0 auto} /* largura fixa ENXUTA */
+.title-legend{position:absolute;left:0;right:0;bottom:8px}                 /* FOOTER, like the pause legend */
+.title-menu{display:flex;flex-direction:column;gap:.35em;align-items:stretch;padding:2px;width:13em;margin:0 auto} /* a fixed, LEAN width */
 .title-menu[hidden]{display:none}
-/* O menu principal com o DOBRO da largura base (13em → 26em): a 13em os rótulos quebravam em DUAS linhas, e
-   um botão de duas linhas muda de altura conforme o idioma — a mesma tela com uma geometria em pt-BR e outra
-   em espanhol. Quem se orienta por alinhamento perde a referência; quem escuta nem percebe que ela existia. */
+/* The main menu at TWICE the base width (13em → 26em): at 13em the labels wrapped onto TWO lines, and a two-line
+   button changes height with the language — the same screen with one geometry in pt-BR and another in Spanish.
+   Whoever finds their way by alignment loses the reference; whoever listens never knew it existed. */
 #tm-main{width:26em}
-/* ===================== SUBMENUS DA ABERTURA: LISTA VERTICAL COM ROLAGEM (ADR-0044) =====================
-   Eram GRADES de duas colunas, e a seta anda em ordem de DOM: “para baixo” pulava para a coluna da direita,
-   atravessando a tela. O anel do item 1 já estava certo no código (`nextTitleIndex` dá a volta) — era o
-   LAYOUT que mentia sobre ele. Em lista, a ordem que se VÊ é a ordem em que se ANDA.
+/* ===================== THE OPENING SUBMENUS: A VERTICAL LIST THAT SCROLLS (ADR-0044) =====================
+   They were two-column GRIDS, and the arrow moves in DOM order: “down” jumped to the right-hand column, across the
+   screen. The ring of item 1 was already right in the code (`nextTitleIndex` wraps around) — it was the LAYOUT that
+   lied about it. In a list, the order you SEE is the order you MOVE in.
 
-   Onze frações não cabem no quadro, então a lista ROLA — foi o que o Dev pediu, e o preço é barato:
-   `focus()` traz o item para dentro da janela sozinho, de modo que quem anda por teclado ou controle nunca
-   perde o foco fora da vista.
+   Eleven fractions do not fit the frame, so the list SCROLLS — which is what the Dev asked for, and the price is low:
+   `focus()` brings the item into view by itself, so whoever moves by keyboard or controller never loses the focus
+   out of sight.
 
-   O painel é OPACO pelo mesmo motivo do véu da pausa: por trás da abertura corre o modo de atração, e
-   texto sobre quadro variável tem a razão de contraste que o quadro permitir — média de sorte, não garantia. */
+   The panel is OPAQUE for the same reason as the pause veil: the attract mode runs behind the opening, and text over a
+   changing frame has whatever contrast the frame allows — an average of luck, not a guarantee. */
 #tm-alf,#tm-mat,#tm-tab,#tm-fr,#tm-cen{width:26em;max-height:72%;overflow-y:auto;overflow-x:hidden;background:var(--bg-solid);border-radius:10px;padding:.5em .7em}
-/* O título do submenu fica GRUDADO no topo: numa lista que rola, um cabeçalho que sobe leva embora a única
-   pista de “onde estou” que quem lê por resto de visão tem. */
+/* The submenu's title STICKS to the top: in a scrolling list, a heading that scrolls away takes with it the only
+   “where am I” cue that someone reading with residual vision has. */
 #tm-alf .tm-title,#tm-mat .tm-title,#tm-tab .tm-title,#tm-fr .tm-title,#tm-cen .tm-title{position:sticky;top:-.5em;z-index:1;background:var(--bg-solid);padding:.35em 0 .25em;margin:0}
-/* …e por isso os itens precisam de MARGEM DE ROLAGEM: um cabeçalho grudado cobre o item que o navegador acaba
-   de "trazer para a vista", porque para ele o item já estava dentro do quadro. MEDIDO no navegador antes de
-   existir esta linha: dando a volta do último para o primeiro, o primeiro botão parava com o topo em 143px e
-   o cabeçalho terminava em 155 — 12px encobertos, e a criança via um item cortado no lugar do foco. O valor
-   cobre a altura do cabeçalho (34px ≈ 2,1em) com folga. */
+/* …and that is why the items need a SCROLL MARGIN: a sticky heading covers the item the browser has just "brought into
+   view", because for the browser the item was already inside the frame. MEASURED in the browser before this line
+   existed: wrapping from the last item to the first, the first button stopped with its top at 143px while the heading
+   ended at 155 — 12px covered, and the child saw a cut-off item where the focus was. The value covers the heading's
+   height (34px ≈ 2.1em) with room to spare. */
 #tm-alf .title-btn,#tm-mat .title-btn,#tm-tab .title-btn,#tm-fr .title-btn,#tm-cen .title-btn{scroll-margin-top:2.4em;scroll-margin-bottom:.5em}
-/* As notações de fração continuam LADO A LADO: são cinco alternadores de UM grupo, e não itens da lista —
-   virar coluna aqui alongaria a rolagem sem ganhar ordem nenhuma. */
+/* The fraction notations stay SIDE BY SIDE: they are five toggles of ONE group, not list items — turning them into a
+   column here would lengthen the scroll without adding any order. */
 #tm-fr .frac-nots{display:flex;flex-direction:column;gap:.25em}
-/* AS CINCO NOTAÇÕES SÃO AJUSTE, NÃO ITEM DE MENU (pedido do Dev). Elas usavam `.title-btn` — a mesma classe
-   dos botões que ABREM uma atividade — e ficavam empilhadas logo acima deles: cinco coisas com cara de
-   "entrar" que na verdade ligam e desligam. A moldura (`fieldset`/`legend`) é a fronteira, e a marca ☑/☐ é o
-   estado sem depender de cor (a cor sozinha reprova a WCAG 1.4.1). */
+/* THE FIVE NOTATIONS ARE SETTINGS, NOT MENU ITEMS (the Dev's request). They used `.title-btn` — the same class as the
+   buttons that OPEN an activity — and were stacked right above them: five things that looked like "enter" and in fact
+   switch on and off. The frame (`fieldset`/`legend`) is the boundary, and the ☑/☐ mark is the state without relying
+   on colour (colour alone fails WCAG 1.4.1). */
 #tm-fr .frac-nots{border:2px solid var(--ink-soft);border-radius:10px;padding:.3em .5em .5em;margin:0 0 .45em}
 #tm-fr .frac-nots legend{padding:0 .4em;font-size:1em;font-weight:700;color:var(--ink-soft)}
 #tm-fr .fnot-opt{display:flex;align-items:center;gap:.5em;width:100%;min-height:44px;padding:.2em .4em;background:transparent;color:#fff;border:0;border-radius:8px;font:inherit;cursor:pointer;text-align:left}
@@ -149,27 +148,27 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 #tm-fr .fnot-opt[aria-checked="true"] .fnot-marca{color:var(--accent)}
 #tm-fr .fnot-sym{font-size:1em}
 #tm-fr .fnot-opt .fv{font-size:1em}
-.tm-title{color:#fff;font-size:1em;margin:0 0 .1em;text-align:center;text-shadow:1px 1px 0 #0d0d1a} /* título do submenu */
-.title-btn{background:var(--accent);color:var(--accent-ink);border:3px solid #0d0d1a;font-family:inherit;font-weight:bold;font-size:1em;padding:.4em .6em;border-radius:6px;cursor:pointer;min-width:0;width:100%;min-height:2.3em} /* contorno PRETO grosso (3px) = mesma cor do texto (José) */
-.title-btn.ghost{background:#e8862b;color:#0d0d1a;border:2px solid #0d0d1a} /* Voltar = preenchimento LARANJA */
-.act-sub{display:block;font-size:1em;font-weight:600;opacity:.7;letter-spacing:var(--ls);margin-top:.06em;font-family:var(--font-math,inherit);white-space:nowrap} /* subtítulo de exemplo (2ª linha, NUNCA quebra — botão largo o bastante) */
-/* Seletor VERMELHO fixo (piscar removido a pedido do José). Especificidade via #title-overlay. */
+.tm-title{color:#fff;font-size:1em;margin:0 0 .1em;text-align:center;text-shadow:1px 1px 0 #0d0d1a} /* the submenu's title */
+.title-btn{background:var(--accent);color:var(--accent-ink);border:3px solid #0d0d1a;font-family:inherit;font-weight:bold;font-size:1em;padding:.4em .6em;border-radius:6px;cursor:pointer;min-width:0;width:100%;min-height:2.3em} /* a thick BLACK outline (3px) = the same colour as the text (the Dev) */
+.title-btn.ghost{background:#e8862b;color:#0d0d1a;border:2px solid #0d0d1a} /* Back = ORANGE fill */
+.act-sub{display:block;font-size:1em;font-weight:600;opacity:.7;letter-spacing:var(--ls);margin-top:.06em;font-family:var(--font-math,inherit);white-space:nowrap} /* the example subtitle (2nd line, NEVER wraps — the button is wide enough) */
+/* A fixed RED selector (blinking removed at the Dev's request). Specificity through #title-overlay. */
 #title-overlay .title-btn:focus-visible,#title-overlay .title-btn:focus{outline:4px solid #ff3b30;outline-offset:2px}
-#title-overlay .title-btn.act-fx{animation:titleAct .22s ease}         /* efeito de ATIVAÇÃO (antes de trocar de tela) */
+#title-overlay .title-btn.act-fx{animation:titleAct .22s ease}         /* the ACTIVATION effect (before the screen changes) */
 @keyframes titleAct{0%{transform:scale(.92);filter:brightness(1.6)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion: reduce){ #title-overlay .title-btn.act-fx{animation:none;filter:brightness(1.4)} }
 .title-btn.tab-on{box-shadow:inset 0 0 0 3px #14141f}
-/* As fileiras da tabuada eram DUAS linhas de números lado a lado, e o Dev cobrou de novo depois de ver o
-   resultado: menu "misto" é menu onde "para baixo" às vezes anda para o lado. Viraram coluna, como todo o
-   resto da abertura. O seletor ganhou o `#tm-tab` na frente de propósito — é o que deixa o gate de layout
-   enxergar esta regra como sendo DE um submenu da abertura, em vez de uma classe solta que ninguém vigia. */
+/* The times-table rows were TWO lines of numbers side by side, and the Dev objected again after seeing the result: a
+   "mixed" menu is a menu where "down" sometimes moves sideways. They became a column, like the rest of the opening.
+   The selector carries `#tm-tab` in front on purpose — that is what lets the layout gate see this rule as belonging TO
+   an opening submenu, instead of a loose class nobody watches. */
 #tm-tab .tab-row{display:flex;flex-direction:column;gap:.35em}
 #tm-tab .tab-row .title-btn{width:100%;padding:.4em .5em}
-/* RODAPÉ (mesmo estilo do menu de pausa): descrição no fundo do canvas, NÃO colada ao grupo de botões (José).
-   Fundo fumê PRETO → contraste ≥7:1 entre o texto claro (#f6f5f0) e o fundo (≈#0a0a12). */
+/* FOOTER (the same style as the pause menu): the description at the bottom of the canvas, NOT glued to the button group (the Dev).
+   A smoked BLACK background → contrast ≥7:1 between the light text (#f6f5f0) and the background (≈#0a0a12). */
 .tm-desc:not(:empty){position:absolute;left:50%;transform:translateX(-50%);bottom:10px;max-width:88%;color:#f6f5f0;font-size:1em;text-align:center;background:rgba(8,8,16,.92);padding:.35em .7em;border-radius:8px;line-height:1.25}
 .tm-desc:empty{position:absolute;left:0;bottom:10px}
-/* Legenda de controles: mesmo visual/posição da legenda do menu de pausa (chips), em 2 LINHAS */
+/* Controls legend: the same look and place as the pause menu's legend (chips), on 2 LINES */
 .title-legend{display:flex;flex-direction:column;gap:.25em;align-items:center;margin:.5em 0 .1em;font-size:1em;color:#c3cfe0}
 .title-legend .lg-row{display:flex;gap:1.1em;justify-content:center;flex-wrap:wrap}
 .title-legend .lg{display:inline-flex;align-items:center;gap:.35em}
@@ -181,26 +180,26 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 #title-icons .pause-icons-cap{position:absolute;top:100%;line-height:1.25;left:50%;transform:translateX(-50%);margin:0;text-align:center;font-size:1em;color:#f6f5f0;pointer-events:none;white-space:nowrap;min-height:0;padding:calc(var(--ui-fs,16px) * .2) calc(var(--ui-fs,16px) * .6)}
 /* the padding stays when empty: the room `createGame` reserves under the bar reads it (issue #160) */
 #title-icons .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px}
-/* Seletor de jogadores = UM botão só ("◀ Nº de jogadores: X ▶"); o lado clicado decide +1/−1 */
+/* Player-count selector = ONE button ("◀ No. of players: X ▶"); the side clicked decides +1/−1 */
 #np-btn{letter-spacing:var(--ls)}
 #np-btn #np-n{display:inline-block;min-width:1.1em;text-align:center}
-/* Fração VERTICAL: pilha número/traço/número em HTML puro (zero dependência) */
+/* VERTICAL fraction: a number/bar/number stack in plain HTML (zero dependencies) */
 .fv{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .1em}
 .fv b{font-weight:800;padding:0 .25em}
 .fv b:first-child{border-bottom:2px solid currentColor}
-/* Fração como FIGURA (pizza/quadrado): SVG inline, 2-6 partes iguais; imprópria = várias unidades lado a lado */
-:root{--frac-fill:#f2a03d} /* laranja: alto contraste sobre branco + contorno preto (não depende só da cor — WCAG 1.4.1) */
+/* A fraction as a FIGURE (pie/square): inline SVG, 2-6 equal parts; an improper one = several units side by side */
+:root{--frac-fill:#f2a03d} /* orange: high contrast on white + a black outline (not colour alone — WCAG 1.4.1) */
 .frac-fig{display:inline-flex;align-items:center;gap:.25em;vertical-align:middle}
-.frac-shape{display:inline-flex;align-items:center;gap:.15em} /* círculo + quadrado da mesma fração, lado a lado */
-.frac-op{display:inline-flex;flex-direction:column;align-items:center;gap:.15em;vertical-align:middle} /* operando da conta: número EM CIMA, gráfico embaixo */
+.frac-shape{display:inline-flex;align-items:center;gap:.15em} /* circle + square of the same fraction, side by side */
+.frac-op{display:inline-flex;flex-direction:column;align-items:center;gap:.15em;vertical-align:middle} /* an operand of the sum: the number ON TOP, the figure below */
 .frac-svg{width:2.4em;height:2.4em;display:inline-block;vertical-align:middle}
 .quiz-choice .frac-svg{width:2.6em;height:2.6em}
 .quiz-prob .frac-svg{width:2.6em;height:2.6em}
 .quiz-dots{font-size:1.3em;letter-spacing:.15em;line-height:1.3;margin:.3rem 0;max-width:12em}
 @media (prefers-contrast: more){
-  /* Aqui `--ink-soft` JÁ é branco: a moldura de "alterado" tem que deixar de ser branca, ou marcado e
-     não-marcado viram a mesma moldura — justamente para a criança cujos ajustes têm mais chance de estar
-     fora do padrão. Uma marca cuja visibilidade depende do tema não é uma marca (ADR-0029). */
+  /* Here `--ink-soft` is ALREADY white: the "changed" frame has to stop being white, or marked and unmarked become the
+     same frame — precisely for the child whose settings are most likely to be off the default. A mark whose
+     visibility depends on the theme is not a mark (ADR-0029). */
   :root{ --bg:#000; --panel:#000; --ink:#fff; --ink-soft:#fff; --accent:#ffe600; --changed:#ffe600; }
 }
 *{box-sizing:border-box}
@@ -216,46 +215,46 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font)
    `letter-spacing: normal`, which beat the inheritance — measured: pause items and quiz options had none. Zero specificity, so a
    rule that spaces a control on purpose still decides. */
 :where(button,select,option,input,textarea){letter-spacing:inherit;word-spacing:inherit}
-/* matemática em mono tabular (algarismos alinhados/legíveis) */
+/* mathematics in tabular mono (aligned, legible digits) */
 .quiz-box--math .quiz-prob,.quiz-box--math .quiz-choice,#hud-coins,#hud-total{font-family:var(--font-math);font-variant-numeric:tabular-nums}
-/* espaçamento de parágrafo ≥2× só em blocos de leitura (não quebra HUD/menus) */
+/* paragraph spacing ≥2× only in reading blocks (it does not break the HUD or the menus) */
 .overlay__card p + p{margin-top:2em}
-/* A página NUNCA rola (José): altura travada no viewport e overflow escondido — o excedente do canvas
-   (tolerância de 5px lógicos/lado) é cortado pelo .stage-wrap, e os menus rolam DENTRO dos cards. */
+/* The page NEVER scrolls (the Dev): height locked to the viewport and overflow hidden — the canvas's excess (a tolerance
+   of 5 logical px per side) is cut by .stage-wrap, and the menus scroll INSIDE their cards. */
 body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-/* O `z-index` ADOTOU O SLOT em 2026-09-07. Era `100`, um literal que estava CERTO e cuja tabela estava
-   errada: o `Z` punha o skip-link em CAPTIONS(26000), abaixo dos modais. Ver `SKIP_LINK` em core/layers. */
+/* The skip link sits on its SLOT, `--z-skip-link`, and not on a literal: above the modals and the transition, below only
+   the loop-crash notice and the debug panel. `tests/the-skip-link-outranks-the-transition.node.test.js` holds it (ADR-0102). */
 .skip-link{position:absolute;left:8px;top:-60px;background:var(--accent);color:var(--accent-ink);padding:.6em 1em;border-radius:0 0 10px 10px;font-weight:700;z-index:var(--z-skip-link);transition:top .15s}
 .skip-link:focus{top:0}
 :focus-visible{outline:4px solid var(--focus);outline-offset:2px;border-radius:6px}
 
 .topbar{max-width:var(--maxw);margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o jogo já mostra no splash); recupera a vertical */
+body:not(.dbg) .topbar{display:none} /* the PAGE title only under ?debug=true (the game already shows it on the splash); gives back the vertical room */
 .title{font-size:1.3em;margin:0}
 .ver{color:var(--ink-soft);font-weight:400;font-size:1em}
 .badge{margin:0;color:var(--accent-ink);background:var(--accent);border-radius:999px;padding:.2em .8em;font-weight:700;font-size:1em}
 
 .hud{max-width:var(--maxw);margin:0 auto;padding:0 1rem .5rem;display:flex;gap:1.5rem;flex-wrap:wrap}
 .hud__item{margin:0;font-size:1.05em}
-/* moedas/missão/poder migraram para dentro da tela de cada jogador; ficam sr-only (leitor de tela) */
+/* coins/mission/power moved into each player's screen; they stay sr-only (for the screen reader) */
 .hud__item--sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-/* HUD por jogador SOBRE o canvas (DOM = alta definição, não pixela). Um por viewport; moedas na 1ª coluna, poder na 2ª. */
+/* Per-player HUD OVER the canvas (DOM = high definition, no pixelation). One per viewport; coins in the 1st column, power in the 2nd. */
 #game-hud{position:absolute;inset:0;pointer-events:none;z-index:4;font-family:var(--font);font-size:var(--hud-fs,16px);font-weight:800}
-/* "Tela do jogador": um contêiner por jogador (posicionado na fatia do viewport dele). Hospeda HUD, e nas
-   próximas etapas a pausa e os menus daquele jogador. O render segue compartilhado (um contexto WebGL). */
+/* "Player screen": one container per player (placed on that player's slice of the viewport). It hosts the HUD, and the
+   pause and menus of that player. The render stays shared (one WebGL context). */
 .player-screen{position:absolute;pointer-events:none}
 .vphud{position:absolute;top:0;left:0;width:100%;display:flex;align-items:flex-start;gap:0;padding:.4em .55em;box-sizing:border-box;color:#fff;text-shadow:0 1px 2px #000,0 0 3px #000,0 0 6px #000;line-height:1.15}
 .vphud-obj,.vphud-power{flex:1 1 50%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vphud-ico{font-weight:400}
-/* jogador que saiu (MP): viewport preto com "Jogo abandonado" no centro; os outros seguem */
+/* a player who left (multiplayer): a black viewport with "Game abandoned" in the middle; the others carry on */
 .vphud-quit{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;color:#cdd6f2;font-family:var(--font);font-weight:800;font-size:var(--hud-fs,16px);text-align:center}
 .vphud-quit[hidden]{display:none}
-/* PAUSA dentro do canvas (tela = canvas) — sobreposta ao #game-region, não à página */
+/* PAUSE inside the canvas (screen = canvas) — laid over #game-region, not over the page */
 .pause-incanvas{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:var(--bg-solid);font-family:var(--font)}
 .pause-incanvas[hidden]{display:none}
-/* Etapa 2: menu de pausa POR TELA (dentro de cada .player-screen). Cada jogador vê e navega o seu. */
-.screen-pause{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:var(--bg-solid);font-family:var(--font);font-size:var(--ui-fs,16px);pointer-events:auto} /* base = --ui-fs (16 no mínimo, escala com o canvas) */
+/* The pause menu PER SCREEN (inside each .player-screen). Each player sees and moves through their own. */
+.screen-pause{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:var(--bg-solid);font-family:var(--font);font-size:var(--ui-fs,16px);pointer-events:auto} /* base = --ui-fs (16 at least, scales with the canvas) */
 .screen-pause[hidden]{display:none}
 /* ADR-0163: seven 44 px items are 308 of the 360 px at 640×360 (measured). The title keeps the 16 px text floor with a tight
    line (20 px, not 29) and the card may use the whole height. */
@@ -266,86 +265,82 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 .screen-pause .pause-card{height:100%;box-sizing:border-box}
 .screen-pause .pause-card h2{font-size:1em;line-height:1.25;margin:0 0 .1rem}
 .screen-pause .pause-menu{gap:.3rem}
-/* O quadro por jogador aperta o PADDING, nunca a altura mínima: o quadro apertado é o do jogo com quatro
-   crianças, onde os dedos disputam espaço — o pior lugar possível para encolher um alvo de toque. O cartão
-   tem `overflow:auto` e rola; o botão não diminui. */
+/* The per-player frame tightens the PADDING, never the minimum height: the tight frame is the one of a game with four
+   children, where fingers compete for room — the worst possible place to shrink a touch target. The card has
+   `overflow:auto` and scrolls; the button does not shrink. */
 .screen-pause .pm-btn{padding:.3rem .7rem}
 .screen-pause .pause-legend{margin:.1rem 0 0}
 /* ADR-0163: with 42 px items the seven-item submenu overflowed 640×360 by 28 px (measured). The gap goes, not the target:
    centres stay 44 px apart, far above the 24 px the WCAG 2.5.8 spacing exception protects. */
 .screen-pause .pause-menu{gap:2px}
-/* Atalhos de a11y = botões do menu em forma de ícone, DENTRO do card (sem barra/sombra própria).
-   Navegáveis por teclado (cima a partir de Continuar) e por toque/clique. */
+/* a11y shortcuts = menu buttons shaped as icons, INSIDE the card (no bar or shadow of their own).
+   Reachable by keyboard (up from Continue) and by touch/click. */
 .pause-icons{display:flex;flex-wrap:wrap;gap:0;justify-content:center;align-items:center;margin:.1rem 0 .35rem}
-/* ===================== A BARRA RÁPIDA NO HUD (ADR-0044, item 7) =====================
-   Ela saiu do cartão de pausa e passou a viver na tela do jogador, disponível DURANTE a partida — que é
-   quando uma criança precisa mudar um ajuste que está a atrapalhando, e não depois de pausar.
+/* ===================== THE QUICK BAR IN THE HUD (ADR-0044, item 7) =====================
+   It lives on the player's screen, available DURING play — which is when a child needs to change a setting that is
+   getting in the way, and not after pausing.
 
-   É IRMÃ da `.screen-exp` e não filha, e a razão é o #82: `filter` de CSS desce para os descendentes e um
-   filho não consegue cancelá-lo. Dentro da experiência, o modo empatia degradaria justamente o que existe
-   para DAR acesso — e simulação não é acessibilidade, é o contrário dela.
+   It is a SIBLING of `.screen-exp` and not a child, and the reason is #82: a CSS `filter` reaches every descendant and a
+   child cannot cancel it. Inside the experience, the empathy mode would degrade exactly what exists to GIVE access — and
+   simulation is not accessibility, it is its opposite.
 
-   `pointer-events:auto` porque a `.player-screen` inteira é `none` (o jogo recebe o toque); os dez ícones
-   são a exceção, como o cartão de pausa já era. */
-/* A ALTURA DA BARRA, num token: é ela que empurra o HUD para baixo. Sem isto os dois ficavam ancorados no
-   topo e se sobrepunham — o HUD lido por cima dos ícones, que foi o que o Dev viu e chamou de péssimo. */
+   `pointer-events:auto` because the whole `.player-screen` is `none` (the game receives the touch); the icons are the
+   exception, as the pause card already was. */
+/* THE BAR'S HEIGHT, in one token: it is what pushes the HUD down. Without it both were anchored to the top and overlapped
+   — the HUD read over the icons, which is what the Dev saw and called terrible. */
 .player-screen{--a11y-h:calc(var(--alvo-min,44px) + .5rem)}
 .screen-a11y{position:absolute;left:0;right:0;top:0;height:var(--a11y-h);z-index:5;pointer-events:auto;font-family:var(--font);font-size:var(--ui-fs,16px)}
 .screen-a11y .pause-icons{flex-wrap:nowrap;white-space:nowrap;gap:0;margin:0;height:100%}
-/* SÓ OS BOTÕES OCUPAM ESPAÇO. A explicação é ABSOLUTA e fica fora do fluxo — ela aparece por cima do jogo ao
-   passar o mouse (ou quando o cursor do modo `accessibility` pousa num ícone) e some sem deixar buraco. Uma
-   faixa de texto reservando altura na tela de jogo é o contrário do que uma barra de atalho serve. */
+/* ONLY THE BUTTONS TAKE ROOM. The explanation is ABSOLUTE and stays out of the flow — it appears over the game on mouse
+   hover (or when the `accessibility` mode's cursor rests on an icon) and goes without leaving a hole. A strip of text
+   reserving height on the game screen is the opposite of what a shortcut bar is for. */
 .screen-a11y .pause-icons-cap{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--a11y-h) + .1rem);margin:0;max-width:92%;text-align:center;font-size:1em;color:#f6f5f0;pointer-events:none}
 .screen-a11y .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px;padding:.2em .6em}
-/* O HUD desce para DEBAIXO da barra. É a mesma conta, e é por isso que ela mora num token: as duas medidas
-   não podem divergir sem que uma tape a outra. */
+/* The HUD moves BELOW the bar. It is the same sum, and that is why it lives in a token: the two measures cannot
+   diverge without one covering the other. */
 .screen-exp .vphud{top:var(--a11y-h)}
 .pi-btn{width:var(--alvo-min,44px);height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);min-height:var(--alvo-min,44px);border-radius:10px;border:2px solid var(--ink-soft);background:#1a2740;color:#f6f5f0;font-size:1.25em;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
-/* Wizard de gamepad: demonstração com ANIMAÇÃO REAL (frames do jogo trocados via JS) + deslocamento CSS */
+/* Gamepad wizard: a demonstration with REAL ANIMATION (game frames swapped by JS) + a CSS offset */
 /* ADR-0159 rule 10 / WCAG 1.4.1: «on» is not colour alone — a thick stripe along the base appears with it. */
 .pi-btn.pi-on{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 -5px 0 var(--accent-ink)}
-/* Modo TEA (🧩): pi-on preenchido de amarelo = silencioso · fundo branco = calmo · base (azul) = off.
-   (fundo, não borda — a borda é reservada ao realce de seleção :focus/.pi-sel e sobreporia o sinal.) */
+/* ASD mode (🧩): pi-on filled yellow = silent · white background = calm · base (blue) = off.
+   (the background, not the border — the border is kept for the selection highlight :focus/.pi-sel and would hide the signal.) */
 .pi-btn.pi-calm{background:#fff;border-color:var(--ink-soft)}
-/* Correção de daltonismo (🚥): fundo bicolor "diagnóstico" — pares escolhidos por busca (simulação Machado
-   2009, ΔE Lab) p/ que quem TEM a deficiência-alvo veja o maior contraste e as outras duas o menor. Tritan
-   (eixo azul-amarelo, isolado) separa limpo com vermelho/verde; protan e deutan compartilham o eixo
-   vermelho-verde → separação só PARCIAL (limite físico). off = base (azul, borda cinza); borda clara = ativo. */
+/* Colour-vision correction (🚥): a two-colour "diagnostic" background — pairs chosen by search (Machado's 2009 simulation,
+   Lab ΔE) so that whoever HAS the target deficiency sees the largest contrast and the other two the smallest. Tritan
+   (the blue-yellow axis, on its own) separates cleanly with red/green; protan and deutan share the red-green axis
+   → only a PARTIAL separation (a physical limit). off = base (blue, grey border); a light border = active. */
 .pi-btn.pi-cvd-protan{background:linear-gradient(90deg,#b3671b 0 50%,#b31b41 50% 100%);border-color:var(--ink)}
 .pi-btn.pi-cvd-deuter{background:linear-gradient(90deg,#0000f2 0 50%,#aa61f2 50% 100%);border-color:var(--ink)}
 .pi-btn.pi-cvd-tritan{background:linear-gradient(90deg,#f23d00 0 50%,#1bb341 50% 100%);border-color:var(--ink)}
 .pi-btn.pi-dis{opacity:.35;cursor:not-allowed}
 .pi-btn.pi-sel,.pi-btn:focus,.pi-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .pause-icons-cap{text-align:center;margin:0 0 .3rem;font-size:1em;color:var(--ink-soft);min-height:1.1em}
-/* `scrollbar-gutter: stable both-edges` — MEDIDO no navegador depois do item 6: com a lista em 44 px o
-   cartão passa a rolar, a barra de rolagem come largura de UM lado só, e a lista centrada saía 7,5 px do
-   centro. Reservar a calha nos dois lados devolve a simetria, role ou não. */
+/* `scrollbar-gutter: stable both-edges` — MEASURED in the browser after item 6: with the list at 44 px the card starts
+   scrolling, the scrollbar eats width on ONE side only, and the centred list sat 7.5 px off centre. Reserving the gutter
+   on both sides gives the symmetry back, scrolling or not. */
 .pause-card{background:#0e1626;border:2px solid #ffd23f;border-radius:14px;padding:.8rem 1rem;max-width:88%;max-height:92%;overflow:auto;scrollbar-gutter:stable both-edges;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)}
 .pause-card h2{margin:.1rem 0 .6rem;color:#ffd23f}
-/* ===================== A LISTA DE PAUSA (ADR-0044, item 6) =====================
-   Era `grid-template-columns:1fr 1fr`, e a grade contava a mesma mentira dos submenus da abertura: a seta
-   anda em ordem de DOM, então "para baixo" pulava para a coluna da direita. Uma coluna, e o que se vê volta
-   a ser a ordem em que se anda.
-   CENTRADA E MAIS LARGA: 26 letras contra os 262 px medidos antes — o número está no gate, não na opinião.
-   ⚠️ EM `em`, NÃO `rem` (2026-09-16, apontado pelo Dev): a letra dos menus cresce com a região (`--ui-fs`) e o `rem` fica nos 16 px da
-   raiz — medido a 1920×1080, letra de 48 px numa lista de 416 px, e cada item quebrava em duas linhas.
-   `width` e não `min(26em,100%)`: com a barra de ícones fora do cartão (item 7), o cartão passou a se
-   encolher ao conteúdo, e um `100%` medido contra ele virava circular — a lista caiu para 182 px. Quem
-   declara a largura é a LISTA; o cartão a acompanha até o `max-width` dele. */
+/* ===================== THE PAUSE LIST (ADR-0044, item 6) =====================
+   It was `grid-template-columns:1fr 1fr`, and the grid told the same lie as the opening submenus: the arrow moves in
+   DOM order, so "down" jumped to the right-hand column. One column, and what you see is again the order you move in.
+   CENTRED AND WIDER: 26 letters against the 262 px measured before — the number is in the gate, not in an opinion.
+   ⚠️ IN `em`, NOT `rem` (pointed out by the Dev): the menus' letters grow with the region (`--ui-fs`) and `rem` stays at the
+   root's 16 px — measured at 1920×1080, 48 px letters in a 416 px list, and every item wrapped onto two lines.
+   `width` and not `min(26em,100%)`: with the icon bar out of the card (item 7), the card shrinks to its content, and a
+   `100%` measured against it became circular — the list fell to 182 px. The LIST declares the width; the card follows
+   it up to its own `max-width`. */
 .pause-menu{display:flex;flex-direction:column;gap:.45rem;width:26em;max-width:100%;margin:0 auto}
-/* A lista ESCONDIDA tem de sumir de verdade: `display:grid` de autor vence o `[hidden]{display:none}` do
-   navegador, e sem esta linha as duas listas do cartão de pausa apareceriam empilhadas (ADR-0044, item 5). */
+/* The HIDDEN list has to really disappear: an author's `display:grid` beats the browser's `[hidden]{display:none}`, and
+   without this line the two lists of the pause card would show stacked (ADR-0044, item 5). */
 .pause-menu[hidden]{display:none}
-/* 44 px NÃO é o mínimo da WCAG — o 2.5.8 pede 24×24, e o cartão já passava nisso com folga. 44 é a
-   recomendação da Apple (HIG). `min-height` e não `padding` porque a altura de antes (35,6 px) não estava
-   declarada em lugar nenhum: ela RESULTAVA da soma de padding, fonte e entrelinha. Um alvo que ninguém
-   escreveu é um alvo que ninguém defende.
-
-   ⚠️ ESTA LINHA DIZIA TAMBÉM «e este projeto trata piso como piso», e essa metade morreu no ADR-0095: o
-   piso deixou de ser um número único e passou a ser a régua abaixo. Fica o resto, que continua a valer. */
+/* 44 px is NOT the WCAG minimum — 2.5.8 asks for 24×24, and the card already passed that with room to spare. 44 is
+   Apple's recommendation (HIG). `min-height` and not `padding` because the earlier height (35.6 px) was declared
+   nowhere: it RESULTED from the sum of padding, font and line height. A target nobody wrote down is a target nobody
+   defends. */
 /* The menu item's target is `--alvo-min`, never a literal. ADR-0163 superseded ADR-0095's height ruler (24/34/44 px):
    the engine forces the resolution, no screen is under 640×360, and the floor is 22 × k — 44 px there, growing with the
-   scale. `aplicarEscala` writes it on the game region; the 44 px fallback is that same floor at k = 2. */
+   scale. `applyScale` (`ui/layout`) writes it on the game region; the 44 px fallback is that same floor at k = 2. */
 /* ADR-0159 rule 8 / WCAG 1.4.11: the item's border is its boundary against the card (#0e1626). #3a4a6a measured 2.04:1;
    #6a7a96 is 4.2:1. */
 .pm-btn{background:#1a2740;color:#eaf2f8;border:1px solid #6a7a96;border-radius:10px;padding:.5rem .8rem;min-height:var(--alvo-min,44px);display:flex;align-items:center;justify-content:center;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
@@ -364,51 +359,51 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 .hud__fps{color:var(--ink-soft)}
 
 main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:0 .25rem .25rem;min-height:0;overflow:hidden}
-/* tela = prioridade: ocupa todo o espaço; o excedente (até 5px×k por lado) é cortado sem rolagem */
+/* screen = priority: it takes all the room; the excess (up to 5px×k per side) is cut without scrolling */
 .stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:0;overflow:hidden}
 .stage{position:relative;display:flex;align-items:center}
-/* ===== A CAMADA DOM (issue #82) =====
-   Tudo o que não é a canvas. Existe para o filtro de acessibilidade poder cair numa superfície que contém os
-   MENUS e não contém o mundo — filtro de PIXI não alcança DOM, e filtrar o `#game-region` inteiro aplicaria
-   duas vezes na canvas.
+/* ===== THE DOM LAYER (issue #82) =====
+   Everything that is not the canvas. It exists so the accessibility filter can land on a surface that holds the MENUS
+   and not the world — a PIXI filter does not reach the DOM, and filtering the whole `#game-region` would apply twice
+   on the canvas.
 
-   `pointer-events:none` porque o invólucro cobre a região inteira e não pode engolir clique; os quatro filhos
-   que precisam de clique e não o declaravam (herdavam do `#game-region`) ganham `auto` logo abaixo.
+   `pointer-events:none` because the wrapper covers the whole region and must not swallow clicks; the four children
+   that need clicks and did not declare it (they inherited it from `#game-region`) get `auto` just below.
 
-   `z-index:1`: acima da canvas, ABAIXO dos dois pseudo-elementos do CRT (vinheta em 5, scanline em 500), que
-   ficam no `#game-region`. O CRT é efeito de tela e passa por cima de tudo — o que a scanline já fazia por
-   decisão do Dev, e a vinheta agora acompanha. */
+   `z-index:1`: above the canvas, BELOW the two CRT pseudo-elements (vignette at 5, scanline at 500), which sit on
+   `#game-region`. The CRT is a screen effect and goes over everything — which the scanline already did by the Dev's
+   decision, and the vignette now follows. */
 #dom-layer{position:absolute;inset:0;z-index:1;pointer-events:none}
 
-/* ===== ALTO CONTRASTE NO DOM (issue #83) =====
-   O alto contraste NÃO é filtro: ele é Renderização Direta, e repinta as TEXTURAS da canvas. No DOM não há
-   textura para repintar — há que escrever o equivalente, e é isto.
+/* ===== HIGH CONTRAST IN THE DOM (issue #83) =====
+   High contrast is NOT a filter: it is Direct Rendering, and it repaints the canvas's TEXTURES. The DOM has no texture
+   to repaint — the equivalent has to be written, and this is it.
 
-   MEDIDO, não estimado (WCAG 1.4.3, razão sobre sRGB linearizado). O que falhava, e só no nível 7:1:
+   MEASURED, not estimated (WCAG 1.4.3, the ratio over linearised sRGB). What failed, and only at the 7:1 level:
 
-     · o VÉU do painel de pausa é `rgba(4,7,15,.72)` — translúcido. A razão do texto sobre ele DEPENDE do
-       jogo por trás: 19,17:1 sobre um quadro preto e 8,07:1 sobre um branco. Com `--ink-soft`, `--accent` e
-       `--good` a conta cai a 5,92 / 5,94 / 5,11:1 — AA, não AAA. Nos níveis 3:1 e 4,5:1 nada falhava.
-     · o botão SELECIONADO é `#2a3a5e`, e `--good` sobre ele dá 6,70:1.
+     · the pause panel's VEIL was `rgba(4,7,15,.72)` — translucent. The text's ratio over it DEPENDED on the game behind:
+       19.17:1 over a black frame and 8.07:1 over a white one. With `--ink-soft`, `--accent` and `--good` the sum fell to
+       5.92 / 5.94 / 5.11:1 — AA, not AAA. At the 3:1 and 4.5:1 levels nothing failed.
+     · the SELECTED button is `#2a3a5e`, and `--good` on it gives 6.70:1.
 
-   Duas mudanças, e nenhuma inventa cor:
+   Two changes, and neither invents a colour:
 
-   1. O VÉU FICA OPACO. É o que "alto contraste" quer dizer: sai o meio-tom, e com ele a dependência do que
-      está atrás. Sozinha, esta já leva tudo a AAA menos um caso.
-   2. O CURSOR INVERTE — fundo `--accent`, texto `--accent-ink`, 12,71:1. Escurecer o selecionado o
-      aproximaria do não-selecionado (`#1a2740`) e a criança PERDERIA O CURSOR; inverter resolve as duas
-      coisas de uma vez, e é o padrão de alto contraste de qualquer sistema operacional.
+   1. THE VEIL IS OPAQUE. That is what "high contrast" means: the half-tone goes, and with it the dependence on what is
+      behind. On its own this takes everything to AAA but one case.
+   2. THE CURSOR INVERTS — `--accent` background, `--accent-ink` text, 12.71:1. Darkening the selected item would bring
+      it closer to the unselected one (`#1a2740`) and the child would LOSE THE CURSOR; inverting solves both at once, and
+      it is the high-contrast pattern of every operating system.
 
-   Resultado: o pior par do menu vai de 5,11:1 para 10,29:1 (`--ink-soft` sobre botão). Margem de +47% sobre
-   o 7:1. `tests/menu-contrast-measured.node.test.js` afirma isso a cada rodada, com as razões calculadas do próprio
-   CSS — não copiadas para dentro do teste.
+   Result: the worst pair of the menu goes from 5.11:1 to 10.29:1 (`--ink-soft` on a button). A margin of +47% over
+   7:1. `tests/menu-contrast-measured.node.test.js` asserts it on every run, with the ratios computed from this CSS
+   itself — not copied into the test.
 
-   ⚠️ VALE PARA OS TRÊS NÍVEIS, e não só para o 7:1: nos outros dois o menu já passava, mas passava POR SORTE
-   do que estivesse na tela. Determinismo é ganho em todos. */
-/* (A regra do véu SAIU daqui em 2026-08-26: ele passou a ser opaco NA BASE, por decisão do Dev — os menus
-   de título e de pausa têm de estar em 7:1 DESDE O INÍCIO, porque é justamente neles que a pessoa com
-   deficiência ajusta os controles para si. Um contraste que só chega depois de achar o ajuste chega tarde.
-   Sobra aqui o que é específico do modo: o cursor invertido.) */
+   ⚠️ IT HOLDS FOR ALL THREE LEVELS, not only 7:1: at the other two the menu already passed, but it passed BY THE LUCK
+   of whatever was on screen. Determinism is a gain at every level. */
+/* (The veil's rule is not here: the veil is opaque AT THE BASE, by the Dev's decision — the title and pause menus have to
+   be at 7:1 FROM THE START, because they are precisely where a person with a disability adjusts the controls for
+   themselves. A contrast that only arrives after finding the setting arrives late.
+   What is left here is what is specific to the mode: the inverted cursor.) */
 #dom-layer.hc .pm-btn{background:var(--panel-btn)}
 #dom-layer.hc .pm-btn:hover,
 #dom-layer.hc .pm-btn:focus,
@@ -418,24 +413,24 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .game-region{position:relative;background:#05070f;box-shadow:0 0 0 3px var(--ink-soft);border-radius:8px;overflow:hidden;flex:none}
 .libras-slot{flex:none;width:0;height:0;background:#0b1020;border-radius:8px;overflow:hidden}
 .game-region:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
-/* ===== O AVISO DE ALCANCE (issue #112) =====
-   Reaproveita `.overlay` e `.overlay__card` inteiros — o cartão nasce com a mesma casca dos outros diálogos,
-   e é isso que o faz parecer parte do jogo em vez de um erro do navegador. Só o destaque do título é próprio. */
+/* ===== THE REACH NOTICE (issue #112) =====
+   It reuses `.overlay` and `.overlay__card` whole — the card is born with the same shell as the other dialogs, and
+   that is what makes it look like part of the game instead of a browser error. Only the title's emphasis is its own. */
 #reach-notice .reach-notice__titulo{font-weight:700;margin:0 0 .5rem}
 #reach-notice p{margin:0 0 .5rem}
 #reach-notice button{margin-top:.75rem}
-/* ===== O LAÇO PAROU (ADR-0054, issue #109) =====
-   O TEXTO VEM DO ATRIBUTO, e é esse o ponto: `ui/loop-crash` escreve a frase JÁ TRADUZIDA em
-   `data-incl-parou`, e o CSS só a mostra. Um aviso cravado aqui estaria em inglês para uma criança
-   brasileira — o defeito que o pilar 3 existe para impedir.
-   ⚠️ E AS CORES SÃO CRUAS, DE PROPÓSITO: nada de `var(--…)`. Este aviso aparece justamente quando alguma
-   coisa quebrou, e a máquina de temas é candidata plausível. Branco sobre vinho dá 9,5:1, acima do 7:1 do
-   1.4.6, e não depende de nada ter sobrevivido. */
-/* ⚠️ ERA UM `::after` COM `content: attr(...)`, E NUNCA APARECERIA. Medido no arranque real: o
-   `.game-region.crt-scan-1::after` logo abaixo é a scanline do CRT, ligada por padrão — e um elemento tem UM
-   `::after` só. As duas regras não se empilham; a do CRT vem depois e vence. O `::before` está tomado pela
-   vinheta. Agora é um ELEMENTO, que não disputa lugar com ninguém — e cujo texto entra na árvore de
-   acessibilidade, coisa que `content` não garante. `z-index` acima do 500 da scanline, de propósito. */
+/* ===== THE LOOP STOPPED (ADR-0054, issue #109) =====
+   THE TEXT COMES FROM THE SCRIPT, and that is the point: `ui/loop-crash` writes the sentence ALREADY TRANSLATED (from
+   `t()`, through `textContent`), and the CSS only shows it. A notice hard-coded here would be in English for a Brazilian
+   child — the defect pillar 3 exists to prevent.
+   ⚠️ AND THE COLOURS ARE RAW, ON PURPOSE: no `var(--…)`. This notice appears exactly when something broke, and the
+   theming machinery is a plausible suspect. White on wine gives 9.5:1, above the 7:1 of 1.4.6, and does not depend on
+   anything having survived. */
+/* ⚠️ IT IS AN ELEMENT, NOT A `::after` WITH `content: attr(...)` — that version would never show. The
+   `.game-region.crt-scan-1::after` just below is the CRT scanline, on by default — and an element has ONE `::after`
+   only. The two rules do not stack; the CRT's comes later and wins. The `::before` is taken by the vignette. An
+   ELEMENT competes with nobody for its place — and its text enters the accessibility tree, which `content` does not
+   guarantee. Its slot, `--z-loop-crash`, is above the scanline's 500 on purpose. */
 #incl-parou{
   position:absolute;inset:auto 0 0 0;z-index:var(--z-loop-crash);
   padding:14px 18px;
@@ -444,22 +439,22 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
   text-align:center;text-wrap:balance
 }
 .pixi-mount,.pixi-mount canvas{display:block;width:100%;height:100%}
-/* pixel-art nítida ao escalar */
+/* crisp pixel art when scaling */
 .pixi-mount canvas{image-rendering:pixelated;image-rendering:crisp-edges}
-/* L2: Estética CRT (menu Sensibilidade visual) em 3 níveis: -1=pequeno, -2=grande. z-index 5 = sobre o
-   canvas/HUD do jogo, ABAIXO da pausa in-canvas (6) e dos diálogos (60) → menus nunca perdem legibilidade. */
+/* The CRT look (visual sensitivity menu) in 3 levels: -1=small, -2=large. z-index 5 = over the game's canvas/HUD, BELOW the
+   in-canvas pause (6) and the dialogs (60) → the menus never lose legibility. */
 .game-region.crt-scan-1::after,
 .game-region.crt-vig-1::before{content:'';position:absolute;inset:0;z-index:5;pointer-events:none}
-/* Scanlines ALINHADAS: período = 1 pixel LÓGICO do jogo (k px), arredondado p/ pixel FÍSICO (dpr) e
-   linha = 1 pixel físico — o JS (layout/applyCrt) calcula --scan-per/--scan-line; sem isso o gradiente
-   1px/3px em px CSS caía fora da grade (linhas desiguais em telas com escala do Windows). */
-.game-region.crt-scan-1::after{z-index:500;background:repeating-linear-gradient(to bottom, rgba(0,0,0,.16) 0 var(--scan-line,1px), transparent var(--scan-line,1px) var(--scan-per,3px))} /* z-index alto = scanlines POR CIMA de tudo (canvas E menus DOM), pedido do José */
+/* ALIGNED scanlines: period = 1 LOGICAL game pixel (k px), rounded to a PHYSICAL pixel (dpr), and line = 1 physical
+   pixel — the JS (`render/crt`, applyCrt) computes --scan-per/--scan-line; without it the 1px/3px gradient in CSS px
+   fell off the grid (uneven lines on screens with Windows scaling). */
+.game-region.crt-scan-1::after{z-index:500;background:repeating-linear-gradient(to bottom, rgba(0,0,0,.16) 0 var(--scan-line,1px), transparent var(--scan-line,1px) var(--scan-per,3px))} /* a high z-index = scanlines OVER everything (canvas AND DOM menus), the Dev's request */
 .game-region.crt-vig-1::before{background:radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.34) 100%)}
-.game-region.crt-round-0{border-radius:0}   /* tela quadrada */
-.game-region.crt-round-2{border-radius:24px} /* nível 1 (pequeno) = o padrão de 8px, sem classe */
+.game-region.crt-round-0{border-radius:0}   /* square screen */
+.game-region.crt-round-2{border-radius:24px} /* level 1 (small) = the 8px default, no class */
 @media (prefers-reduced-transparency: reduce){ .game-region.crt-scan-1::after,.game-region.crt-vig-1::before{display:none} }
 
-/* dicas de início sobre o canvas */
+/* start tips over the canvas */
 .start-tips{position:absolute;left:50%;top:14%;transform:translateX(-50%);
   display:flex;flex-direction:column;gap:.5rem;align-items:center;pointer-events:none;
   transition:opacity .5s ease;z-index:6;max-width:92%}
@@ -469,25 +464,25 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .start-tips.hide{opacity:0}
 @media (prefers-reduced-motion: reduce){ .start-tips{transition:none} }
 
-/* seletor de modo */
+/* mode selector */
 .modes{max-width:var(--maxw);margin:0 auto .5rem;padding:0 1rem;display:flex;gap:.5rem;flex-wrap:wrap}
 .mode-btn{min-height:var(--alvo-min,44px);padding:.4em .9em;font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:2px solid var(--ink-soft);border-radius:999px;cursor:pointer}
 .mode-btn.is-on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-/* PASSOS ⯇ ⯈ (ADR-0151): escolher entre posições com esquerda e direita. As setas são alvo de DEDO e seguem a
-   régua de alvo (`--alvo-min`, ADR-0095); o foco é do controle inteiro, e a ponta que não anda fica apagada. */
+/* STEPS ⯇ ⯈ (ADR-0151): choosing between positions with left and right. The arrows are FINGER targets and follow the
+   target ruler (`--alvo-min`, ADR-0163); the focus belongs to the whole control, and the end that cannot move is dimmed. */
 .passos{display:inline-flex;align-items:center;gap:.25rem;min-height:var(--alvo-min,44px);border:2px solid var(--ink-soft);border-radius:8px;padding:0 .15rem;background:var(--panel-btn);color:var(--ink);font-weight:700;user-select:none;-webkit-user-select:none}
 .passos:focus,.passos:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .passo-seta{display:inline-flex;align-items:center;justify-content:center;min-width:var(--alvo-min,44px);min-height:var(--alvo-min,44px);cursor:pointer;font-size:1.1em;touch-action:manipulation}
 .passo-seta.no-limite{opacity:.35;cursor:default}
 .passo-valor{min-width:6ch;text-align:center;flex:1}
-/* «◀ Rótulo: valor ▶» ocupa a LINHA inteira (errata do ADR-0130): não há rótulo à esquerda a disputar o espaço. */
-/* 🔴 E SEM CAIXA DENTRO DA CAIXA: a LINHA é o item. A primeira versão manteve a borda e o fundo do `.passos`, e o texto
-   quebrava em quatro linhas dentro de uma caixa ao lado da dica — o Dev: «Por que continua desenhando os botões de seleção
-   de <=5 itens do jeito errado?!». Numa linha só, `◀ Rótulo: valor ▶`, sem quebra. */
+/* «◀ Label: value ▶» takes the whole ROW (ADR-0130 erratum): there is no label on the left competing for the room. */
+/* 🔴 AND NO BOX INSIDE THE BOX: the ROW is the item. The first version kept `.passos`'s border and background, and the
+   text wrapped onto four lines inside a box beside the hint — the Dev: «Por que continua desenhando os botões de seleção
+   de <=5 itens do jeito errado?!». On one line, `◀ Label: value ▶`, with no wrapping. */
 .ctrl-row--passos .passos{flex:1;justify-content:space-between;border:0;background:transparent;padding:0;white-space:nowrap}
 .ctrl-row--passos .passo-valor{white-space:nowrap}
-/* TOGGLE (switch): substitui os botões "ícone + Ligado/Desligado". Estado = trilho + manopla que desliza.
-   Semântica de botão de alternância via aria-pressed (o texto interno fica oculto por font-size:0). */
+/* TOGGLE (switch): replaces the "icon + On/Off" buttons. State = a track + a knob that slides.
+   Toggle-button semantics through aria-pressed (the inner text is hidden by font-size:0). */
 .mode-btn.switch{--sw-w:52px;--sw-h:28px;position:relative;width:var(--sw-w);min-width:var(--sw-w);height:var(--sw-h);min-height:var(--sw-h);padding:0;flex:0 0 auto;border-radius:999px;border:2px solid var(--ink-soft);background:#0e1326;color:transparent;font-size:0;transition:background .18s,border-color .18s}
 .mode-btn.switch::after{content:"";position:absolute;top:50%;left:3px;transform:translateY(-50%);width:calc(var(--sw-h) - 10px);height:calc(var(--sw-h) - 10px);border-radius:50%;background:var(--ink-soft);transition:left .18s,background .18s}
 .mode-btn.switch[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
@@ -495,13 +490,13 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .mode-btn.switch:focus-visible,.mode-btn.switch:focus{outline:3px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){ .mode-btn.switch,.mode-btn.switch::after{transition:none} }
 
-/* desafio Soma-Sub (overlay sobre o canvas) */
+/* the quiz challenge (an overlay over the canvas) */
 .quiz{position:absolute;inset:0;z-index:12;display:grid;place-items:center;background:rgba(0,0,0,.55)}
 .quiz-box{position:relative;background:#14141f;color:var(--ink);border:3px solid var(--accent);border-radius:12px;padding:1rem 1.1rem;max-width:90%;text-align:center}
-/* 3 luzes de progresso (canto sup. direito): apagada = cinza; acesa = amarela com luz acesa em volta */
+/* 3 progress lights (top right corner): off = grey; on = yellow with a glow around it */
 .quiz-wins{position:absolute;top:.5rem;right:.6rem;display:flex;gap:.4rem}
 .qw-dot{width:.95rem;height:.95rem;border-radius:50%;background:#3a4152;border:2px solid #0d0d1a}
-.qw-dot.on{background:var(--accent);border-color:#8a6d00;box-shadow:0 0 .55rem .12rem var(--accent)} /* iluminação em volta (luz acesa) */
+.qw-dot.on{background:var(--accent);border-color:#8a6d00;box-shadow:0 0 .55rem .12rem var(--accent)} /* the glow around it (a light that is on) */
 .quiz-wins.celebrate .qw-dot.on{animation:qwPop .6s ease}
 @keyframes qwPop{0%{transform:scale(1)}45%{transform:scale(1.4);box-shadow:0 0 .9rem .3rem var(--accent)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){ .quiz-wins.celebrate .qw-dot.on{animation:none} }
@@ -513,7 +508,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .quiz-choice.reveal{outline:3px solid var(--good);outline-offset:2px}
 .quiz-hint{font-size:1em;margin-top:.6rem;color:var(--ink-soft)}
 .quiz-emoji{font-size:2.4em;line-height:1}
-/* Palavra do topo = emoji SELECIONÁVEL (pular sobre ela repete a fala / VLibras gesticula) */
+/* The top word = a SELECTABLE emoji (jumping on it repeats the speech / VLibras signs it) */
 .quiz-word{font-size:2.4em;line-height:1;background:transparent;border:2px solid transparent;border-radius:12px;padding:.05em .2em;cursor:pointer}
 .quiz-word.sel{border-color:var(--accent);background:rgba(255,230,0,.12)}
 .quiz-letter{font-size:1em;color:var(--ink-soft);margin:.1rem 0 .4rem}
@@ -521,7 +516,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .silaba-box{min-width:34px;min-height:28px;border:2px dashed var(--ink-soft);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.15em}
 .silaba-box.filled{border-style:solid;border-color:var(--accent);background:rgba(255,255,255,.08)}
 .silaba-actions{display:flex;gap:.4rem;justify-content:center;margin-top:.4rem}
-/* E8: cela Braille */
+/* a Braille cell */
 .bcells{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin:.4rem 0}
 .bcell{display:flex;flex-direction:column;align-items:center;gap:.2rem}
 .bcell-grid{display:grid;grid-template-columns:repeat(2,10px);grid-auto-rows:10px;gap:3px;padding:4px;background:#0e1326;border:1px solid var(--ink-soft);border-radius:4px}
@@ -531,7 +526,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 @media (prefers-contrast: more){ .quiz-box{background:#000} .quiz-choice{background:#000} .quiz-choice.sel{background:#fff;color:#000} }
 
 .opts{max-width:var(--maxw);margin:0 auto .5rem;padding:0 1rem;display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center}
-/* barra de controles compacta → cabe em UMA fileira em telas comuns (não afeta botões de overlay) */
+/* a compact controls bar → fits on ONE row on common screens (does not affect overlay buttons) */
 .opts .mode-btn{padding:.35em .65em;font-size:1em;white-space:nowrap}
 .caption{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;
   border:2px solid rgba(255,255,255,.5);border-radius:8px;padding:.25em .7em;font-weight:700;font-size:1em;
@@ -548,44 +543,44 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .btn--primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 
 .overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(0,0,0,.7);padding:1rem}
-/* "tela = canvas": os diálogos de a11y são reparentados para dentro do #game-region (JS) e ficam
-   presos aos limites do canvas; o último aberto sobe (z-index via JS). Só afeta os que estão dentro. */
+/* "screen = canvas": the a11y dialogs are re-parented into #game-region (JS) and stay held within the canvas's bounds;
+   the last one opened goes on top (z-index by JS). Only affects the ones inside. */
 #game-region .overlay{position:absolute;z-index:60;padding:.6rem}
-/* O QUIZ COMEÇA ABAIXO DA BARRA RÁPIDA (ADR-0148). A engine declara `--barra-a11y-h` no `#game-region`; a barra fica a
-   10 px do topo (`#title-icons`), e o enunciado estava desenhado atrás dela — medido num print do Dev. */
+/* THE QUIZ STARTS BELOW THE QUICK BAR (ADR-0148). The engine declares `--barra-a11y-h` on `#game-region`; the bar sits
+   10 px from the top (`#title-icons`), and the statement was drawn behind it — measured on a screenshot of the Dev's. */
 /* Since issue #160 the variable is the WHOLE room (the bar's offset, the bar, the icon name line and a light gap): read as is. */
 .quiz-app{padding-top:var(--barra-a11y-h,0px);padding-bottom:var(--rodape-h,0px)} /* the footer band is its own zone (ADR-0164) */
 /* ADR-0163: at 640×360 the bar, the statement, four 44 px options and the footer band had 404 px to fit in 360 (measured).
    The spacing goes, not the targets or the 16 px floor: the statement keeps its size on a 1.25 line and no outer margins. */
 .quiz-pergunta{margin:0 0 calc(.25rem * var(--espaco-fixo,1));line-height:1.25}
 /* The quiz's MENU button (ADR-0166 erratum), in the top-left corner the bar leaves free: the engine's target size. */
-/* A PAUSA RÁPIDA (ADR-0155): PAUSADO ao centro da tela congelada — SÓ A PALAVRA, branca, com CONTORNO PRETO NAS
-   LETRAS e nenhuma caixa: «Borda nas letras, não numa caixa» (Dev, errata do registo). O contorno é o que a mantém
-   legível sobre um cenário claro; `paint-order` põe o traço POR BAIXO do preenchimento, para a letra não emagrecer, e
-   a sombra em oito direcções cobre os navegadores sem `-webkit-text-stroke`. z-index 12, o NÚMERO JÁ EM DÍVIDA do
-   seletor do desafio (`tests/z-order-css`): por cima do conteúdo pela ordem do documento, por baixo do pad (14) e
-   dos painéis (60). O slot certo é GAME_MSG, e adoptá-lo sozinho poria PAUSADO por cima de um painel. Sem ponteiro. */
+/* THE QUICK PAUSE (ADR-0155): PAUSED in the middle of the frozen screen — THE WORD ONLY, white, with a BLACK OUTLINE ON
+   THE LETTERS and no box: «Borda nas letras, não numa caixa» (the Dev, the record's erratum). The outline is what keeps it
+   legible over a light scene; `paint-order` puts the stroke UNDER the fill, so the letter does not get thinner, and the
+   shadow in eight directions covers browsers without `-webkit-text-stroke`. z-index 12, the same literal as the quiz
+   overlay (`.quiz`), not yet a slot: over the content by document order, under the pad (14) and the panels (60). The
+   right slot is `--z-game-msg`, and adopting it alone would put PAUSED over a panel. No pointer events. */
 .pausa-rapida{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:12;pointer-events:none;
   color:#fff;-webkit-text-stroke:.08em #000;paint-order:stroke fill;
   text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px 2px #000,2px -2px #000,-2px -2px #000;
   font-family:var(--font);font-weight:800;font-size:calc(var(--ui-fs,16px)*2);letter-spacing:var(--ls);white-space:nowrap}
 .pausa-rapida[hidden]{display:none}
-/* O QUE A VARREDURA ESTÁ A OFERECER (ADR-0218, #201): com «um botão só», a criança não escolhe — ela espera, e o que
-   ela espera tem de estar à vista. As MESMAS letras brancas contornadas da pausa rápida, sem caixa, e no ALTO da
-   região, abaixo da faixa da barra (`--barra-a11y-h`), que é a zona que nenhum jogo usa. Sem ponteiro: é aviso, não
-   controle — quem o aciona é o único botão dela, onde quer que ele esteja. */
-/* ⚠️ `--scan-top` e NÃO `--barra-a11y-h`: esta etiqueta faz a faixa crescer, e posicioná-la pela faixa criava um laço — ela
-   empurrava a faixa, a faixa empurrava-a, e ela descia a tela a cada medição (apanhado por um caso). `--scan-top` é onde a
-   barra acaba, e não depende dela. */
+/* WHAT THE SCAN IS OFFERING (ADR-0218, #201): with «um botão só», the child does not choose — they wait, and what they
+   wait for has to be in view. The SAME outlined white letters as the quick pause, no box, at the TOP of the region,
+   below the bar's band (`--barra-a11y-h`), which is the zone no game uses. No pointer events: it is a notice, not a
+   control — what fires it is its single button, wherever that is. */
+/* ⚠️ `--scan-top` and NOT `--barra-a11y-h`: this label makes the band grow, and placing it by the band made a loop — it
+   pushed the band, the band pushed it, and it went down the screen on every measure (caught by a test case). `--scan-top`
+   is where the bar ends, and does not depend on it (`ui/top-band` writes both). */
 .scan-now{position:absolute;left:50%;top:var(--scan-top,0px);transform:translateX(-50%);z-index:12;
   pointer-events:none;color:#fff;-webkit-text-stroke:.06em #000;paint-order:stroke fill;
   text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px 2px #000,2px -2px #000,-2px -2px #000;
   font-family:var(--font);font-weight:800;font-size:calc(var(--ui-fs,16px)*1.5);letter-spacing:var(--ls);white-space:nowrap}
 .scan-now[hidden]{display:none}
-/* A LEGENDA DO RODAPÉ da pausa rápida (errata do ADR-0155): as mesmas letras brancas contornadas, sem caixa, logo
-   ACIMA da pílula START do pad — que continua à vista, porque é a saída de quem só tem dedo. ⚠️ `left`/`right` e não
-   `left:50%` + `translate`: com ele a caixa encolhia para METADE da região (medido: 271 px, três linhas, por cima do
-   PAUSADO). */
+/* THE FOOTER LEGEND of the quick pause (ADR-0155 erratum): the same outlined white letters, no box, right ABOVE the pad's
+   START pill — which stays in view, because it is the way out for someone who only has a finger. ⚠️ `left`/`right` and
+   not `left:50%` + `translate`: with that, the box shrank to HALF of the region (measured: 271 px, three lines, over
+   PAUSED). */
 /* 🔴 The footer is ONE column (2026-09-12): the explanation of the pointed bar icon above the quick-pause legend. Two
    absolute strips covered each other as soon as one wrapped. */
 /* 🔴 ADR-0164 (2026-09-12): the footer is at the LOWEST edge of the region, over a darkened band, and holds at most TWO
@@ -687,8 +682,8 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .slide-pontos{display:flex;gap:.45em;justify-content:center;margin-top:.2em}
 .slide-ponto{width:.6em;height:.6em;border-radius:50%;border:1px solid #eaf2f8;box-sizing:border-box}
 .slide-ponto.is-on{background:#ffd23f;border-color:#ffd23f}
-/* Rodapé de explicação: branco sobre preto translúcido 0,82 → contraste do branco >7:1 mesmo sobre 100% branco
-   (composição: 1-0,82=0,18 → L≈0,027 → ~13:1), sem ser 100% opaco. Fixo no rodapé do card. */
+/* Explanation footer: white on 0.82 translucent black → the white's contrast is >7:1 even over 100% white
+   (composition: 1-0.82=0.18 → L≈0.027 → ~13:1), without being 100% opaque. Fixed at the card's foot. */
 .opt-explain{position:sticky;bottom:calc(-1 * var(--card-pad,1.5rem));margin:.8rem calc(-1 * var(--card-pad,1.5rem)) calc(-1 * var(--card-pad,1.5rem));padding:.6rem .9rem;min-height:2.8rem;text-align:left;
   background:rgba(0,0,0,.82);color:#fff;font-size:1em;line-height:1.35;border-top:1px solid rgba(255,255,255,.18);border-radius:0 0 9px 9px;backdrop-filter:blur(1px);
   /* ADR-0164: two lines at most — a longer explanation is cut here and has to be rewritten to fit */
@@ -701,34 +696,32 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
   border:0;border-radius:0;text-align:center;line-height:1.3;font-size:var(--ui-fs,16px)}
 #game-region .overlay{padding:0}
 #game-region .overlay__actions{position:static;background:transparent;padding:.5rem 0 0;margin:0}
-#visual{background:rgba(0,0,0,.28)} /* cor: fundo translúcido p/ ver o efeito imediato no jogo */
+#visual{background:rgba(0,0,0,.28)} /* colour: a translucent background, to see the effect on the game at once */
 
-/* Indicador de simulação (canto sup. dir.): branca=cegueira, verde=baixa visão. Duplo toque volta ao normal. */
-#viz-indicator{position:absolute;top:6px;right:6px;z-index:20;width:16px;height:16px;border-radius:50%;border:2px solid rgba(0,0,0,.6);padding:0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.7)} /* DENTRO do canvas (game-region) — funciona como botão */
+/* Simulation indicator (top right corner): white=blindness, green=low vision. A double tap returns to normal. */
+#viz-indicator{position:absolute;top:6px;right:6px;z-index:20;width:16px;height:16px;border-radius:50%;border:2px solid rgba(0,0,0,.6);padding:0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.7)} /* INSIDE the canvas (game-region) — it works as a button */
 #viz-indicator.blind{background:#fff}
 #viz-indicator.low{background:#36d36a}
-/* Baixa visão — 5 simulações (desfoque vem do filter na canvas; aqui só os overlays) */
+/* Low vision — 5 simulations (the blur comes from the filter on the canvas; only the overlays are here) */
 #viz-overlay{position:absolute;inset:0;z-index:8;pointer-events:none}
-#viz-overlay.lv-blur{background:none}                                              /* miopia/astigmatismo: só desfoque */
-#viz-overlay.lv-haze{background:rgba(244,246,250,.42)}                              /* catarata: película esbranquiçada */
-#viz-overlay.lv-tunnel{background:radial-gradient(circle at 50% 50%, transparent 0 15%, rgba(0,0,0,.55) 27%, rgba(0,0,0,.99) 42%)}  /* glaucoma: visão de túnel */
-#viz-overlay.lv-macular{background:radial-gradient(circle at 50% 50%, rgba(12,12,15,.95) 0 10%, rgba(12,12,15,.55) 17%, transparent 28%)} /* degeneração macular: borrão central */
-#viz-overlay.lv-diabetic{background:                                               /* retinopatia diabética: manchas dispersas */
+#viz-overlay.lv-blur{background:none}                                              /* myopia/astigmatism: blur only */
+#viz-overlay.lv-haze{background:rgba(244,246,250,.42)}                              /* cataract: a whitish film */
+#viz-overlay.lv-tunnel{background:radial-gradient(circle at 50% 50%, transparent 0 15%, rgba(0,0,0,.55) 27%, rgba(0,0,0,.99) 42%)}  /* glaucoma: tunnel vision */
+#viz-overlay.lv-macular{background:radial-gradient(circle at 50% 50%, rgba(12,12,15,.95) 0 10%, rgba(12,12,15,.55) 17%, transparent 28%)} /* macular degeneration: a central blur */
+#viz-overlay.lv-diabetic{background:                                               /* diabetic retinopathy: scattered spots */
     radial-gradient(circle at 22% 30%, rgba(10,10,14,.95) 0 4%, transparent 11%),
     radial-gradient(circle at 64% 22%, rgba(10,10,14,.9) 0 3%, transparent 9%),
     radial-gradient(circle at 80% 58%, rgba(10,10,14,.95) 0 5%, transparent 12%),
     radial-gradient(circle at 40% 70%, rgba(10,10,14,.9) 0 4%, transparent 10%),
     radial-gradient(circle at 16% 80%, rgba(10,10,14,.85) 0 3%, transparent 9%),
     radial-gradient(circle at 54% 48%, rgba(10,10,14,.8) 0 3%, transparent 8%)}
-/* Cegueira total: a canvas vira preta (filter brightness(0)); escondemos HUD e controles na tela */
+/* Total blindness: the canvas turns black (filter brightness(0)); we hide the HUD and the on-screen controls */
 body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-tips, body.blind-mode #caption{visibility:hidden}
 [hidden]{display:none!important}
-/* CAIXA ALTA (menu de CAA, ADR-0028). O jogo tem DOIS caminhos de texto e por isso dois mecanismos, que não
-   são redundância: o `disp()` do main.js cobre o que a PIXI desenha na canvas, e esta regra cobre o que o
-   navegador desenha no DOM — menus, HUD, legendas. O botão só ligava o primeiro, então a criança escolhia
-   "maiúsculas" e os menus continuavam mistos.
-   `text-transform` e NÃO transformar o texto: o conteúdo acessível fica intacto, e um leitor de tela não passa
-   a soletrar letra por letra, que é o que ALL CAPS de verdade provoca em NVDA/JAWS. */
+/* CAPITAL LETTERS (the AAC menu, ADR-0028). What a game draws on the canvas is the game's to capitalise; this rule covers
+   what the browser draws in the DOM — menus, HUD, captions. `createGame` writes `data-letras` on the root (ADR-0149 §1).
+   `text-transform` and NOT transforming the text: the accessible content stays intact, and a screen reader does not start
+   spelling letter by letter, which is what real ALL CAPS causes in NVDA/JAWS. */
 /* Quiz options take the ENGINE's target floor (ADR-0163 rule 2): 44 px at 640×360, growing with the scale. They had
    9 mm computed by the quiz (54 px on a desktop), and four of them pushed the last one out of a 360 px region. */
 .quiz-alt{min-height:var(--alvo-min,44px);display:block;width:100%;margin:0;padding:calc(var(--ui-fs,16px) * .4) calc(var(--ui-fs,16px) * .9)} /* the list gap spaces them (#160); padding in `--ui-fs`, so a larger face grows the text only (#172) */
@@ -741,13 +734,12 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
 :root[data-letras="upper"] option,
 :root[data-letras="upper"] input,
 :root[data-letras="upper"] textarea{text-transform:uppercase}
-/* Os controles de formulário estão na lista porque a folha do NAVEGADOR lhes impõe `text-transform:none`, e
-   `none` numa regra do UA vence a herança. Sem eles a caixa alta pegava no texto das telas e falhava em cada
-   BOTÃO — que é justamente onde os rótulos dos menus moram. Foi o que o Dev viu: "não torna todas as letras
-   do menu maiúsculas". */
-/* menus nunca ultrapassam a tela: limitados à altura do viewport e roláveis (rodapé de ações fica fixo embaixo) */
+/* The form controls are on the list because the BROWSER's stylesheet imposes `text-transform:none` on them, and `none`
+   in a UA rule beats inheritance. Without them the capitals took the screens' text and failed on every BUTTON — which
+   is exactly where the menus' labels live. It is what the Dev saw: «não torna todas as letras do menu maiúsculas». */
+/* menus never overflow the screen: limited to the viewport's height and scrollable (the actions footer stays fixed at the bottom) */
 .overlay__card{background:var(--panel);border:3px solid var(--accent);border-radius:12px;padding:1.5rem;max-width:420px;width:100%;text-align:center;font-size:var(--ui-fs,16px);
-  max-height:92dvh;overflow-y:auto;overscroll-behavior:contain} /* base = --ui-fs (16 mín, escala com o canvas); internos em em */
+  max-height:92dvh;overflow-y:auto;overscroll-behavior:contain} /* base = --ui-fs (16 min, scales with the canvas); inner sizes in em */
 .overlay__card h2{margin-top:0}
 /* ADR-0158: «Voltar» is the panel's item 1 — a full-width row above the list, not a pill at the bottom. */
 .overlay__back{display:flex;align-items:center;width:100%;margin:0 0 .45rem;text-align:left;border-radius:8px}
@@ -764,8 +756,8 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
 .panel-sub{text-align:left;font-size:1em;margin:1rem 0 .4rem;border-bottom:1px solid var(--accent);padding-bottom:.2rem}
 .panel-sub:first-of-type{margin-top:.4rem}
 .panel-sub__tag{color:var(--ink-soft);font-size:1em;font-weight:400}
-.vol{width:140px;max-width:45%;accent-color:var(--accent);height:1.5rem;cursor:pointer} /* barra de volume (range) */
-/* Caixas de seleção com a IDENTIDADE do jogo: fonte escolhida, cores e tamanho (não o estilo do SO) */
+.vol{width:140px;max-width:45%;accent-color:var(--accent);height:1.5rem;cursor:pointer} /* the volume bar (range) */
+/* Select boxes with the game's IDENTITY: the chosen face, colours and size (not the OS style) */
 select.vol, .overlay__card select, .ctrl-col select{
   font-family:var(--font);font-size:1em;font-weight:600;color:var(--ink);
   width:auto;max-width:100%;height:auto;min-height:var(--alvo-min,44px);
@@ -780,16 +772,16 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 .ctrl-players .mode-btn{padding:.3em .7em;font-size:1em}
 .ctrl-list{display:flex;flex-direction:column;gap:.45rem;text-align:left}
 .ctrl-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;background:#0e1326;border:2px solid var(--ink-soft);border-radius:8px;padding:.4rem .6rem}
-/* ADR-0029 — SAIU DO PADRÃO. Dois canais visuais no mesmo lugar: a COR da moldura e a FORMA, que é uma
-   moldura DUPLA (borda, respiro, anel). O anel transparente de 2px revela o fundo do próprio elemento e é o
-   que cria o respiro; sem ele os dois anéis colariam e viraria só uma borda mais grossa — uma diferença de
-   espessura que ninguém percebe sem ter o não-marcado ao lado para comparar. A contagem de anéis sobrevive a
-   escala de cinza, a daltonismo e a toda paleta do jogo, porque não é uma matiz. */
+/* ADR-0029 — LEFT THE DEFAULT. Two visual channels in the same place: the frame's COLOUR and its SHAPE, which is a
+   DOUBLE frame (border, gap, ring). The transparent 2px ring reveals the element's own background and is what makes
+   the gap; without it the two rings would touch and become just a thicker border — a difference in thickness nobody
+   notices without the unmarked one beside it for comparison. The ring count survives greyscale, colour-vision
+   deficiency and every palette of the game, because it is not a hue. */
 .is-changed{border-color:var(--changed)!important;box-shadow:inset 0 0 0 2px transparent,inset 0 0 0 4px var(--changed)}
-/* A marca CEDE ao foco: perder o lugar é pior que perder uma dica. */
+/* The mark YIELDS to the focus: losing your place is worse than losing a hint. */
 .is-changed:focus-visible,.is-changed:focus{box-shadow:none}
 .ctrl-row kbd{background:var(--ink);color:var(--bg);border-radius:5px;padding:.05em .45em;font-weight:700}
-.ctrl-row.row-off{opacity:.42} /* item desabilitado (ex.: modo de teclado indisponível) = só cinza claro, sem texto extra */
+.ctrl-row.row-off{opacity:.42} /* a disabled item (e.g. an unavailable keyboard mode) = light grey only, no extra text */
 .ctrl-row .mode-btn[disabled]{cursor:not-allowed;opacity:.7}
 .ctrl-row.ctrl-col{flex-direction:column;align-items:stretch;gap:.4rem}
 .ctrl-row.ctrl-col label{font-weight:700}
@@ -800,7 +792,7 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 .pad-warn{font-size:1em;color:#ffdf9e;background:#3a2e12;border:1px solid #6a5220;border-radius:8px;padding:.45rem .6rem}
 .ctrl-col input[type=range]{width:100%;min-height:var(--alvo-min,44px);accent-color:var(--accent)}
 
-/* E13: controles de toque (mobile) — overlay nas bordas inferiores, não cobre o centro */
+/* touch controls (mobile) — an overlay on the bottom edges, not covering the centre */
 .touch{position:absolute;inset:0;z-index:14;display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:6px 8px;pointer-events:none}
 /* ADR-0160: the shoulders in the TOP corners of the region, the trigger (2) above the bumper (1). `.touch` covers the whole
    region since then (`inset:0`, still `pointer-events:none`) so a corner is the region's corner, not the pad strip's. */
@@ -817,33 +809,33 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 .touch-btn{width:56px;height:56px;min-width:var(--alvo-min,44px);min-height:var(--alvo-min,44px);border-radius:12px;border:2px solid rgba(255,255,255,.75);background:rgba(13,17,32,.92);color:#fff;font-size:1.4em;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
 .touch-btn:active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .touch-jump{background:rgba(18,74,52,.94)}
-/* Botões de ação em LOSANGO (4 bolhas: 0 baixo, 1 direita, 2 esquerda, 3 cima) + START pílula */
+/* Action buttons in a DIAMOND (4 bubbles: 0 bottom, 1 right, 2 left, 3 top) + a START pill */
 .touch-actions{align-items:center}
-/* Tamanho FÍSICO (mm), não px: --pad-btn e --pad-diam são calculados no JS a partir de mm reais
-   (referência: iPhone 16 ocupando a tela toda). Config em A12e motora. Fallback antes do JS rodar. */
+/* PHYSICAL size (mm), not px: --pad-btn and --pad-diam are computed by `input/touch` from real millimetres
+   (reference: an iPhone 16 filling the screen). These are the fallbacks before the JS runs. */
 .pad-diamond{position:relative;width:var(--pad-diam,182px);height:var(--pad-diam,182px);pointer-events:none}
 .pad-b{position:absolute;width:var(--pad-btn,66px);height:var(--pad-btn,66px);border-radius:50%;font-size:calc(var(--pad-btn,66px)*.42);font-weight:800;pointer-events:auto;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
 .pad-top{top:0;left:50%;transform:translateX(-50%)}
 .pad-bottom{bottom:0;left:50%;transform:translateX(-50%)}
 .pad-left{left:0;top:50%;transform:translateY(-50%)}
 .pad-right{right:0;top:50%;transform:translateY(-50%)}
-/* `width:auto`: a pílula também é `.touch-btn`, cujo 56px fixo cortava a palavra — medido no dist, «START» com 66px
-   de texto num botão de 56px à escala 1,25 da mão cursiva (ADR-0149). A pílula cresce com a palavra, e o piso é o alvo. */
-/* As duas pílulas de sistema, SELECT e START, num contentor ao centro (ADR-0155). Dentro dele deixam de se posicionar
-   sozinhas: o contentor põe-nas lado a lado, e cada uma continua com a largura do seu texto. */
-/* 🔴 COM UM PAINEL ABERTO, O PAD FICA POR CIMA DELE (ADR-0157): é o direccional dele que anda no painel. O véu do painel
-   (`#game-region .overlay`, 60) cobria o pad (14), e um toque na seta caía no véu. `--z-menu-max` é o topo da faixa de
-   menus, e é esse o papel do pad enquanto um menu está aberto — uma variável e não um literal novo (`tests/z-order-css`). */
+/* `width:auto`: the pill is also a `.touch-btn`, whose fixed 56px cut the word — measured in the dist, «START» with 66px
+   of text in a 56px button at the cursive hand's 1.25 scale (ADR-0149). The pill grows with the word, and the floor is the target. */
+/* The two system pills, SELECT and START, in a container at the centre (ADR-0155). Inside it they no longer place
+   themselves: the container puts them side by side, and each keeps the width of its text. */
+/* 🔴 WITH A PANEL OPEN, THE PAD SITS ABOVE IT (ADR-0157): its directional is what moves in the panel. The panel's veil
+   (`#game-region .overlay`, 60) covered the pad (14), and a tap on an arrow landed on the veil. `--z-menu-max` is the top
+   of the menu band, and that is the pad's role while a menu is open — a slot and not a new literal. */
 #game-region:has(.overlay:not([hidden])) .touch{z-index:var(--z-menu-max)}
 .touch-sistema{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;gap:10px;pointer-events:none}
 .touch-sistema .touch-start,.touch-sistema .touch-select{position:static;transform:none}
 .touch-start,.touch-select{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--alvo-min,44px);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:1em;letter-spacing:var(--ls);background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
 .touch-start:active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-/* joystick digital: base (círculo maior) + manopla (círculo menor) */
-/* Direcional (analógico/"alavanca"): base = superfície + deslocamento; manopla = superfície de contato. Ambos em mm (JS). */
+/* digital joystick: base (larger circle) + knob (smaller circle) */
+/* Directional (analogue/"lever"): base = surface + travel; knob = contact surface. Both in mm (JS). */
 .touch-stick{position:relative;width:var(--stick-base,124px);height:var(--stick-base,124px);border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(13,17,32,.85);touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none}
 .touch-knob{position:absolute;left:50%;top:50%;width:var(--stick-knob,58px);height:var(--stick-knob,58px);margin:calc(var(--stick-knob,58px)/-2) 0 0 calc(var(--stick-knob,58px)/-2);border-radius:50%;background:rgba(255,255,255,.88);box-shadow:0 0 0 2px rgba(0,0,0,.45);transition:transform .04s linear;pointer-events:none}
-/* D-pad em cruz (estilo alternativo): 4 braços + miolo; tamanho do braço em mm (JS → --dpad-arm-l/w, --dpad-span) */
+/* Cross D-pad (an alternative style): 4 arms + a core; the arm's size in mm (JS → --dpad-arm-l/w, --dpad-span) */
 .touch-cross{position:relative;width:var(--dpad-span,120px);height:var(--dpad-span,120px);touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none}
 .touch-cross[hidden]{display:none}
 .dpad-arm{position:absolute;display:flex;align-items:center;justify-content:center;background:rgba(13,17,32,.92);border:2px solid rgba(255,255,255,.75);color:rgba(255,255,255,.85);font-size:calc(var(--dpad-arm-w,34px)*.5);line-height:1;pointer-events:none}
