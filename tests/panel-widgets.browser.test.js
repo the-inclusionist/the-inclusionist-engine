@@ -87,6 +87,20 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
     expect(controle.getAttribute('aria-label'), 'o nome falado ficou no idioma anterior').toBe('Depois');
   });
 
+  it('🔴 [Right] relabelling names THE control with that id — not the first element of the row that has an id', () => {
+    // Found by the probe of 2026-09-24: every kit row has one id, the control's, so «the first element with an id» and «the
+    // element with this id» were the same answer. `labelRow` is published and takes any row, and a row built by hand — the
+    // four colour swatches of the visual panel — carries several.
+    const { linha, controle } = controlRow(ctx, { id: 'x', rotulo: 'Antes' });
+    const outro = document.createElement('span');
+    outro.id = 'outro';
+    linha.prepend(outro);
+    hospedeiro.appendChild(linha);
+    labelRow(linha, { id: 'x', rotulo: 'Depois' });
+    expect(controle.getAttribute('aria-label')).toBe('Depois');
+    expect(outro.hasAttribute('aria-label'), 'another element of the row got the control\'s name').toBe(false);
+  });
+
   it('[Right] `rotuloAria` ganha ao rótulo, para quando o nome falado não é o escrito', () => {
     const { controle } = controlRow(ctx, { id: 'x', rotulo: '↺', rotuloAria: 'Restaurar cores padrão' });
     expect(controle.getAttribute('aria-label')).toBe('Restaurar cores padrão');
