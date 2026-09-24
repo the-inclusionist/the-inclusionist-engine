@@ -128,8 +128,8 @@ export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
       const spec = typoRowSpec(row);
       const old = ctx.find('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
       if (old) { labelRow(old, spec); dressRow(old, row); continue; }
-      const { row: rowNode, controle } = controlRow(ctx, spec);
-      controle.dataset.font = row.key;
+      const { row: rowNode, controle: faceButton } = controlRow(ctx, spec);
+      faceButton.dataset.font = row.key;
       dressRow(rowNode, row);
       radios.appendChild(rowNode);
     }

@@ -205,8 +205,8 @@ function motionParts(ctx: PanelShellCtx, spec: MotionInsideSpec): MotionPart[] {
   const switchPart = (key: string, id: string, label: string, mark: readonly [string, string]): MotionPart => ({
     key,
     build: () => {
-      const { row: newRow, controle } = controlRow(ctx, { id, label: label, ariaLabel: label });
-      controle.setAttribute(mark[0], mark[1]);
+      const { row: newRow, controle: switchButton } = controlRow(ctx, { id, label: label, ariaLabel: label });
+      switchButton.setAttribute(mark[0], mark[1]);
       return newRow;
     },
     // ⚠️ ONLY THE WORDS. The state (class, `aria-pressed`, the button's text) is written by the panel's reflect, which

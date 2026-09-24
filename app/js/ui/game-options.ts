@@ -115,16 +115,16 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, list: HTMLElement, opti
   for (const o of options) {
     const id = `game-option-${o.id}`;
     if (o.kind === 'switch') {
-      const { row: rowNode, controle } = controlRow(ctx, { id, label: o.label, hint: o.hint });
+      const { row: rowNode, controle: switchButton } = controlRow(ctx, { id, label: o.label, hint: o.hint });
       const reflect = (): boolean => {
         const on = o.read();
-        controle.classList.toggle('is-on', on);
-        controle.setAttribute('aria-pressed', String(on));
-        controle.textContent = toggleLabel(on);
+        switchButton.classList.toggle('is-on', on);
+        switchButton.setAttribute('aria-pressed', String(on));
+        switchButton.textContent = toggleLabel(on);
         return on;
       };
       reflect();
-      controle.addEventListener('click', () => {
+      switchButton.addEventListener('click', () => {
         o.write(!o.read());
         ctx.say(`${o.label}: ${toggleLabel(reflect())}`);
       });
@@ -133,8 +133,8 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, list: HTMLElement, opti
     }
     const labelOf = (chosen: string): string => o.values.find((v) => v.value === chosen)?.label ?? chosen;
     if (o.kind === 'list') {
-      const { row: rowNode, controle } = controlRow(ctx, { id, label: o.label, hint: o.hint, shape: 'escolha' });
-      const sel = controle as HTMLSelectElement;
+      const { row: rowNode, controle: control } = controlRow(ctx, { id, label: o.label, hint: o.hint, shape: 'escolha' });
+      const sel = control as HTMLSelectElement;
       for (const v of o.values) {
         const op = ctx.create('option') as HTMLOptionElement;
         op.value = v.value;

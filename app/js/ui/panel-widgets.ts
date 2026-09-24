@@ -86,12 +86,12 @@ export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow
   }
   rowNode.appendChild(text);
 
-  const controle = buildControl(ctx, spec);
-  controle.id = spec.id;
-  controle.setAttribute('aria-label', spec.ariaLabel ?? spec.label);
-  rowNode.appendChild(controle);
+  const control = buildControl(ctx, spec);
+  control.id = spec.id;
+  control.setAttribute('aria-label', spec.ariaLabel ?? spec.label);
+  rowNode.appendChild(control);
 
-  return { row: rowNode, controle };
+  return { row: rowNode, controle: control };
 }
 
 /**
@@ -117,8 +117,8 @@ export function labelRow(rowNode: HTMLElement, spec: ControlRowSpec): void {
   // The control is found by COMPARING its id, not by building a selector from it: a selector needs the id escaped, escaping
   // needs `CSS.escape`, and `CSS` is a browser global that THROWS where it does not exist — it took down a boot in a case's fake
   // document once (2026-09-21). No selector, nothing to escape, no global (ADR-0221 step 7d).
-  const controle = [...rowNode.querySelectorAll<HTMLElement>('[id]')].find((el) => el.id === spec.id);
-  if (controle) controle.setAttribute('aria-label', spec.ariaLabel ?? spec.label);
+  const control = [...rowNode.querySelectorAll<HTMLElement>('[id]')].find((el) => el.id === spec.id);
+  if (control) control.setAttribute('aria-label', spec.ariaLabel ?? spec.label);
 }
 
 function buildControl(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {

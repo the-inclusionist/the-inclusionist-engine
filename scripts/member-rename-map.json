@@ -19,7 +19,8 @@
     "ui/settings-visual.ts v.visual.correcao": "a READ of the stored VisualState (player.visual), which keeps its shape by ADR-0230 §3",
     "ui/hud-bands.ts HudBar.segmentos": "the learning band takes a bar in the SAME shape as educational/segment-bar Bar { segmentos, cor } (ADR-0168: the shape, without importing educational); educational stays in pt-BR (ADR-0032), so renaming this side alone breaks the handoff",
     "ui/hud-bands.ts HudBar.cor": "the learning band takes a bar in the SAME shape as educational/segment-bar Bar { segmentos, cor } (ADR-0168: the shape, without importing educational); educational stays in pt-BR (ADR-0032), so renaming this side alone breaks the handoff",
-    "ui/debug-panel.ts stopSampling.__sonda": "a console handle: `window.__sonda` is typed by hand in the browser's devtools to reach the raw samples"
+    "ui/debug-panel.ts stopSampling.__sonda": "a console handle: `window.__sonda` is typed by hand in the browser's devtools to reach the raw samples",
+    "ui/panel-widgets.ts ControlRow.controle": "NOT A DECISION, A PENDING ONE: phase 7 never saw it, because scripts/word-lists.json classified `controle` as English until the list was corrected; it is a member of the published ControlRow (public-shape.json), so renaming it is a breaking change left to the Dev — remove this line in the commit that renames it"
   },
   "dataKeys": {
     "tests/faces-answer-to-the-type-catalogue.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
