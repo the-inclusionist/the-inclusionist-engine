@@ -65,7 +65,7 @@ export function registerDict(code: string, entries: LocaleDict): string[] {
     // Loud, not silent: whoever wrote the string has to know it did not go in. Dropping it quietly would put the raw
     // key on screen with nothing explaining it, and that reads as an engine defect.
     try {
-      console.error('[inclusionist] i18n: chaves recusadas por conterem marcação — ' + refused.join(', '));
+      console.error('[inclusionist] i18n: keys refused because they contain markup — ' + refused.join(', '));
     } catch { /* noop */ }
   }
   EXTRA[code] = { ...EXTRA[code], ...accepted };
