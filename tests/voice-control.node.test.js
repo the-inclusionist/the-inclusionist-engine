@@ -315,8 +315,8 @@ describe('the language changed', () => {
     // wait would let it install the old model on top of the new one.
     let arrive;
     let lang = 'pt-BR';
-    // 📌 Só a PRIMEIRA abertura fica pendurada: é a que está em voo quando a língua muda. A segunda responde logo, senão o
-    // caso mediria o duble a não responder em vez do controle a substituir o arranque.
+    // 📌 Only the FIRST opening is left hanging: it is the one in flight when the language changes. The second answers at
+    // once, or the case would measure the double not answering instead of the controller replacing the start.
     const b = bench({
       language: () => lang,
       listen: (d) => {

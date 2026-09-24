@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O MICROFONE DOS COMANDOS, E O QUE ELE DEVOLVE (ADR-0189, ADR-0193; issue #184).
+// THE COMMANDS' MICROPHONE, AND WHAT IT GIVES BACK (ADR-0189, ADR-0193; issue #184).
 //
-// A leitura abre o microfone para uma frase e fecha-o; este fica aberto enquanto a criança joga por voz. O que se mede aqui é
-// a promessa inteira desse «fica aberto»: que o som vai para um reconhecedor NESTA máquina, que a gramática deixa o
-// reconhecedor dizer «não foi nenhuma destas», e — sobretudo — que LARGAR é parte do trabalho. Uma página que continua a ouvir
-// depois de a criança desligar a voz é a promessa quebrada, por melhor que seja a razão.
+// Reading opens the microphone for one sentence and closes it; this one stays open while the child plays by voice. What is
+// measured here is the whole promise of that «fica aberto»: that the sound goes to a recogniser ON THIS machine, that the
+// grammar lets the recogniser say «não foi nenhuma destas», and — above all — that LETTING GO is part of the job. A page
+// that keeps listening after the child turns voice off is the promise broken, however good the reason.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { startVoiceListening, VOICE_BLOCK } from '../app/js/platform/voice-listener.js';
 
-/** Um modelo de mentira que grava as gramáticas que lhe pedem e devolve reconhecedores controláveis. */
+/** A fake model that records the grammars asked of it and returns controllable recognisers. */
 function modeloFalso() {
   const feitos = [];
   function KaldiRecognizer(sampleRate, grammar) {
@@ -116,9 +116,9 @@ describe('largar é parte do trabalho', () => {
 
   it('📌 [Boundary] parar duas vezes não rebenta, e um bloco atrasado depois de parar não é ouvido', async () => {
     const { ouvinte, amb, feitos } = await abrir();
-    // ⚠️ O BLOCO É GUARDADO ANTES DE PARAR, e é isso que torna este caso um caso: parar desliga o `onaudioprocess`, então
-    // chamá-lo pelo nó depois não mediria nada. O que existe de verdade é o bloco que o navegador JÁ TEM EM MÃOS quando a
-    // criança desliga a voz — e uma mutação sobrevivente foi quem mostrou que eu não o estava a medir.
+    // ⚠️ THE BLOCK IS KEPT BEFORE STOPPING, and that is what makes this case a case: stopping switches `onaudioprocess` off,
+    // so calling it through the node afterwards would measure nothing. What really exists is the block the browser ALREADY
+    // HAS IN HAND when the child turns voice off — and a surviving mutation is what showed it was not being measured.
     const blocoEmVoo = amb.no.onaudioprocess;
     await ouvinte.stop();
     await ouvinte.stop();
@@ -134,7 +134,7 @@ describe('largar é parte do trabalho', () => {
     expect(JSON.parse(feitos[1].grammar)).toEqual(['voltar ao jogo', '[unk]']);
     expect(feitos[0].removido, 'o reconhecedor antigo ficou a ouvir em paralelo').toBe(true);
     expect(amb.faixas[0].parada, 'trocar a gramática fechou o microfone').toBe(false);
-    // e o som passa a ir para o NOVO
+    // and the sound goes to the NEW one
     amb.no.onaudioprocess({ inputBuffer: 'depois' });
     expect(feitos[1].blocos).toEqual(['depois']);
   });

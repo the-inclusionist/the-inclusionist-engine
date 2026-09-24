@@ -21,10 +21,10 @@ const apiFalsa = () => {
   return {
     pedidos,
     /*
-     * 🔴 O DUBLE TEM A FORMA DO FICHEIRO SERVIDO, medida no navegador em 2026-09-21 e não suposta: o bundle é um MÓDULO que
-     * exporta `createModel(modelUrl, resolver, logLevel)` e pede os dois vizinhos pelo nome lógico — a primeira versão deste
-     * duble tinha a forma da minha crença («um script clássico que define um global e acha os vizinhos sozinho»), sete
-     * mutações ficaram vermelhas contra ela, e o que o Dev teria encontrado na rodada era um 👄 aceso sobre silêncio.
+     * 🔴 THE DOUBLE HAS THE SHAPE OF THE SERVED FILE, measured in the browser on 2026-09-21 and not assumed: the bundle is a
+     * MODULE that exports `createModel(modelUrl, resolver, logLevel)` and asks for its two neighbours by logical name — a
+     * double shaped by a belief («um script clássico que define um global e acha os vizinhos sozinho») had seven mutations
+     * go red against it, and what the Dev would have found in the round was a 👄 lit over silence.
      */
     loadBundle: async (u) => {
       pedidos.push(['bundle', u]);
@@ -56,23 +56,24 @@ describe('nada é carregado sem ter sido conferido', () => {
     expect(r.ok).toBe(true);
     expect(r.model).toBe(api.modelo);
     const [bundle, model] = api.pedidos;
-    // 📌 A ENTREGA, e não o endereço de origem: `heavy/<host><path>` ao lado da página, que é o que o service worker responde
-    // da cache conferida. Um endereço de terceiro aqui seria a criança a contactar um servidor para poder falar.
+    // 📌 THE DELIVERY, not the origin address: `heavy/<host><path>` beside the page, which is what the service worker
+    // answers from the checked cache. A third-party address here would be the child contacting a server in order to speak.
     expect(bundle[1]).toBe(BASE + deliveryPath(urlOf('commands:runtime')));
     expect(model[1]).toBe(BASE + deliveryPath(urlOf('commands:model:pt')));
     expect(String(bundle[1]).startsWith(BASE), 'o runtime veio de fora da origem do jogo').toBe(true);
-    // 🔴 E OS DOIS VIZINHOS QUE O BUNDLE PEDE, pelos endereços da entrega: o worker que ele abre e o wasm que esse worker
-    // carrega. Sem isto ele resolve-os contra o próprio endereço e, num dia em que a pasta mude, abre um worker que não existe.
+    // 🔴 AND THE TWO NEIGHBOURS THE BUNDLE ASKS FOR, by the delivery's addresses: the worker it opens and the wasm that
+    // worker loads. Without this it resolves them against its own address and, the day the folder changes, opens a worker
+    // that does not exist.
     expect(model[3], 'o worker não veio da entrega').toBe(BASE + deliveryPath(urlOf('commands:runtime:worker')));
     expect(model[4], 'o wasm não veio da entrega').toBe(BASE + deliveryPath(urlOf('commands:runtime:wasm')));
   });
 
   it('🎯 [Zero] um ficheiro que a entrega não carrega é RECUSADO pelo nome, em vez de servir o que estiver à mão', async () => {
-    // Um worker alimentado com o wasm (ou o contrário) falha lá dentro de uma thread, longe de qualquer frase que a criança ouça.
+    // A worker fed with the wasm (or the other way round) fails inside a thread, far from any sentence the child hears.
     const api = apiFalsa();
     let resolver = null;
     api.loadBundle = async () => ({ createModel: async (m, resolve) => { resolver = resolve; return api.modelo; } });
-    // ⚠️ BASE PRÓPRIA: o memo é do módulo e vive o tempo da página — com a base dos outros casos este carregador nunca correria.
+    // ⚠️ ITS OWN BASE: the memo is the module's and lives as long as the page — with the other cases' base this loader would never run.
     await loadVoskRuntime({ base: 'https://terceira.exemplo/jogo/', language: 'pt-BR', hasFile: cacheCom(), ...api });
     expect(() => resolver('npm/vosk/outra-coisa.js')).toThrow(/outra-coisa/);
   });
@@ -101,9 +102,9 @@ describe('nada é carregado sem ter sido conferido', () => {
   });
 
   /*
-   * 🔴 O BUNDLE É CARREGADO UMA VEZ SÓ, e a promessa é do RUNTIME e não de uma forma de carregar: ela envolve também o
-   * carregador injetado, senão este caso mediria o duble. O bundle abre um worker e compila um wasm; pedi-lo de novo paga as
-   * duas coisas outra vez na máquina que menos pode.
+   * 🔴 THE BUNDLE IS LOADED ONLY ONCE, and the promise belongs to the RUNTIME and not to one way of loading: it wraps the
+   * injected loader too, or this case would measure the double. The bundle opens a worker and compiles a wasm; asking for
+   * it again pays both again on the machine that can least afford it.
    */
   it('🔴 [Right] o bundle é carregado UMA vez, mesmo pedido duas', async () => {
     const api = apiFalsa();
@@ -115,12 +116,13 @@ describe('nada é carregado sem ter sido conferido', () => {
   });
 
   it('🎯 [Zero] um bundle sem `createModel` falha DIZENDO, em vez de devolver um modelo torto', async () => {
-    // ⚠️ OUTRA BASE de propósito: o memo é do MÓDULO e vive o tempo da página, então o caso acima já deixou o endereço dele
-    // carregado. Reusá-lo aqui mediria o memo, não o bundle — e foi assim que este caso falhou primeiro.
-    const vazio = { loadBundle: async () => ({}) }; // carregou, e não exporta nada: a entrega tem o ficheiro errado
-    // 🔴 A FRASE DA ENGINE, e não a palavra `createModel` — a primeira versão deste caso pedia `/createModel/` e uma mutação
-    // sobreviveu por isso: sem o guarda, o que rebenta é «api.createModel is not a function», que TAMBÉM contém a palavra. A
-    // asserção media o acidente em vez da exigência, e quem lê `problems` ficaria com um erro de JavaScript no lugar do motivo.
+    // ⚠️ ANOTHER BASE on purpose: the memo is the MODULE's and lives as long as the page, so the case above has already left
+    // its address loaded. Reusing it here would measure the memo, not the bundle — which is how this case first failed.
+    const vazio = { loadBundle: async () => ({}) }; // it loaded, and exports nothing: the delivery has the wrong file
+    // 🔴 THE ENGINE'S SENTENCE, and not the word `createModel` — asking for `/createModel/` let a mutation survive: without
+    // the guard, what blows up is «api.createModel is not a function», which ALSO contains the word. The assertion would
+    // measure the accident instead of the requirement, and whoever reads `problems` would get a JavaScript error instead of
+    // the reason.
     await expect(loadVoskRuntime({ base: 'https://outra.exemplo/jogo/', language: 'pt-BR', hasFile: cacheCom(), ...vazio }))
       .rejects.toThrow(/the delivery has the wrong file/);
   });

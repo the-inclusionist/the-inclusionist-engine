@@ -23,8 +23,8 @@ describe('the vocabulary is the one the Dev decided', () => {
   });
 
   it('🔴 [Right] e são as palavras dele, não outras parecidas', () => {
-    // Literais: uma tabela comparada consigo mesma não mede nada, e estas palavras foram escolhidas UMA a UMA contra o uso dos
-    // jogos (corrida R2 acelera / L2 freia; tiro L2 mira / R2 dispara) — trocá-las é uma decisão, não um detalhe.
+    // Literals: a table compared with itself measures nothing, and these words were chosen ONE by ONE against the games'
+    // use (racing R2 accelerates / L2 brakes; shooting L2 aims / R2 fires) — changing them is a decision, not a detail.
     expect(voiceWordsFor('pt').leftShoulder).toEqual(['bombordo']);
     expect(voiceWordsFor('pt').rightTrigger).toEqual(['gatilho', 'acelera']);
     expect(voiceWordsFor('es').rightShoulder).toEqual(['estribor']);
@@ -32,12 +32,12 @@ describe('the vocabulary is the one the Dev decided', () => {
   });
 
   /*
-   * 🔴 ESTE CASO FOI ESCRITO POR UM MODELO DE VERDADE, em 2026-09-21: com `acao` na mesa, o Vosk pt respondeu
-   * «Ignoring word missing in vocabulary: 'acao'» na consola e a primeira posição ficava MUDA — a criança dizia a palavra e
-   * nada acontecia, sem erro em lado nenhum. O vocabulário do reconhecedor guarda a palavra como a língua a escreve.
+   * 🔴 THIS CASE WAS WRITTEN BY A REAL MODEL, on 2026-09-21: with `acao` in the table, the pt Vosk answered «Ignoring word
+   * missing in vocabulary: 'acao'» in the console and the first position went MUTE — the child said the word and nothing
+   * happened, with no error anywhere. The recogniser's vocabulary keeps the word as the language writes it.
    *
-   * ⚠️ E A OUTRA METADE É O QUE TORNA ISTO SEGURO: quem COMPARA não olha acentos (`wordsOf` tira-os dos dois lados), logo
-   * escrever certo na mesa não pode partir o reconhecimento de um recogniser que escreva sem acento.
+   * ⚠️ AND THE OTHER HALF IS WHAT MAKES THIS SAFE: what COMPARES ignores accents (`wordsOf` strips them on both sides), so
+   * writing correctly in the table cannot break recognition by a recogniser that writes without accents.
    */
   it('🔴 [Right] a mesa escreve a palavra como a LÍNGUA a escreve, e o acento não decide o disparo', () => {
     expect(voiceWordsFor('pt').action1, 'sem o cedilho o modelo pt ignora a palavra').toEqual(['ação']);
@@ -80,7 +80,7 @@ describe('quando uma palavra ouvida vira uma pressão', () => {
   it('🔴 [Right] o parcial cresce e SÓ O QUE É NOVO dispara', () => {
     const v = createVoiceCommands('pt');
     expect(v.partial('acima')).toBe('up');
-    // 🔴 A segunda palavra é um segundo comando, e não o primeiro outra vez: sem isto a criança que diz duas coisas anda uma só.
+    // 🔴 The second word is a second command, and not the first again: without this the child who says two things moves once.
     expect(v.partial('acima abaixo')).toBe('down');
     expect(v.partial('acima abaixo'), 'o mesmo parcial disparou duas vezes').toBeNull();
   });
@@ -93,7 +93,7 @@ describe('quando uma palavra ouvida vira uma pressão', () => {
   it('[Zero] uma palavra que não é comando não dispara nada', () => {
     const v = createVoiceCommands('pt');
     expect(v.partial('elefante')).toBeNull();
-    // e não fica a dever: a palavra seguinte, essa sim, dispara
+    // and it does not stay owing: the next word does fire
     expect(v.partial('elefante acima')).toBe('up');
   });
 
@@ -107,7 +107,8 @@ describe('quando uma palavra ouvida vira uma pressão', () => {
     expect(v.partial('acima abaixo')).toBe('down');
     v.reset();
     expect(v.partial('acima'), 'depois do fim da frase, a mesma palavra é um comando novo').toBe('up');
-    // ⚠️ E sem `reset`: um reconhecedor que recomeça sozinho devolve um parcial MENOR, e o que já foi respondido não vale mais.
+    // ⚠️ And without `reset`: a recogniser that restarts by itself returns a SHORTER partial, and what was already answered no
+    // longer counts.
     expect(v.partial('abaixo')).toBe('down');
   });
 });

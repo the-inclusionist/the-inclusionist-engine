@@ -1,22 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/vlibras — MODO PESSOA SURDA (project BROWSER: usa DOM e localStorage).
+// Tests of ui/vlibras — DEAF PERSON MODE (BROWSER project: uses the DOM and localStorage).
 //
-// ESTE ARQUIVO MUDOU DE CONTRATO, e o motivo é um defeito que ele estava FIXANDO em vez de pegar.
+// THE CONTRACT: the state is the PERSON'S CHOICE, persisted, and the widget is at most a translator that may or may not
+// be present. An accessibility mode whose state depends on the geometry of a third-party library is a mode that turns
+// itself off when the library changes its mind.
 //
-// A versão anterior aferia que "botão de acesso escondido ⇒ painel ABERTO": o estado do modo pessoa surda era
-// deduzido da GEOMETRIA do widget do VLibras. Funcionava enquanto o widget renderizava dentro do nosso
-// `<div vw>`. Ele parou de renderizar ali — passou a anexar `#vlibras-access-wrapper` no `<body>` — e o que
-// restou no nosso markup é um div VAZIO de altura zero. Altura zero era a assinatura de "aberto", então o modo
-// ficou permanentemente ligado: o layout reservava 380px para um intérprete inexistente (canvas medido em
-// `left: -136`, fora da tela) e o botão não desligava, porque mandava um evento de fechar a quem não escutava.
-//
-// O teste passava o tempo todo. Ele afirmava a inferência, e a inferência é que estava errada — nenhum caso
-// perguntava se o resultado fazia sentido para uma pessoa. É a diferença entre testar o que o código faz e
-// testar o que a pessoa precisa que ele faça.
-//
-// O contrato agora: o estado é uma ESCOLHA DA PESSOA, persistida, e o widget é no máximo um tradutor que pode
-// ou não estar presente. Um modo de acessibilidade cujo estado depende da geometria de uma biblioteca de
-// terceiro é um modo que desliga sozinho quando a biblioteca muda de ideia.
+// Why it matters: deducing the mode from the VLibras widget's GEOMETRY ("access button hidden ⇒ panel OPEN") broke when
+// the widget started attaching `#vlibras-access-wrapper` to the `<body>` instead of rendering inside our `<div vw>`. What
+// was left in our markup was an EMPTY zero-height div, and zero height was the signature of "open" — so the mode was
+// permanently on: the layout reserved 380px for an interpreter that did not exist (canvas measured at `left: -136`, off
+// screen) and the button did not turn it off, because it sent a close event to nobody listening. A test asserting the
+// inference passed the whole time; no case asked whether the result made sense for a person. It is the difference
+// between testing what the code does and testing what the person needs it to do.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as V from '../app/js/ui/vlibras.js';
 
@@ -26,7 +21,7 @@ beforeEach(() => {
   document.body.innerHTML = '<p id="sr-status"></p><p id="sr-alert"></p>';
   localStorage.removeItem('incl_libras');
   V.setOnLibrasChange(() => {});
-  if (V.librasOpen) V.toggleLibras(); // o estado é de MÓDULO: cada caso começa desligado
+  if (V.librasOpen) V.toggleLibras(); // the state is MODULE state: each case starts off
 });
 afterEach(() => {
   if (V.librasOpen) V.toggleLibras();
@@ -35,8 +30,8 @@ afterEach(() => {
 
 describe('ui/vlibras — o toggle é um toggle', () => {
   it('[Right] liga e desliga, e nada disso depende do widget existir', () => {
-    // O caso que o defeito tornava impossível: sem o widget carregado, `toggleLibras` só conseguia avisar.
-    // Quem precisa do modo não pode depender de uma biblioteca externa ter carregado para conseguir ligá-lo.
+    // The case the defect made impossible: without the widget loaded, `toggleLibras` could only warn. Whoever needs the mode
+    // cannot depend on an external library having loaded to be able to turn it on.
     expect(V.librasOpen).toBe(false);
     V.toggleLibras();
     expect(V.librasOpen).toBe(true);
@@ -45,9 +40,9 @@ describe('ui/vlibras — o toggle é um toggle', () => {
   });
 
   it('[Right] `vlibrasOpen()` lê o NOSSO estado, não o retângulo do widget', () => {
-    // A regressão que isto prende: um div de altura zero no markup legado costumava significar "ligado".
+    // The regression this pins: a zero-height div in the legacy markup used to mean "on".
     document.body.innerHTML += '<div vw-access-button style="display:none"></div>';
-    expect(V.vlibrasOpen()).toBe(false); // escondido, e mesmo assim DESLIGADO — porque ninguém ligou
+    expect(V.vlibrasOpen()).toBe(false); // hidden, and still OFF — because nobody turned it on
     V.toggleLibras();
     expect(V.vlibrasOpen()).toBe(true);
   });
@@ -65,28 +60,27 @@ describe('ui/vlibras — o toggle é um toggle', () => {
     V.toggleLibras();
     expect(n).toBe(1);
     V.toggleLibras();
-    expect(n).toBe(2); // desligar também reflui: o layout não pode ficar com a forma do estado anterior
+    expect(n).toBe(2); // turning off reflows too: the layout cannot keep the shape of the previous state
   });
 
   it('[Interface] a confirmação de ligar sai EM LIBRAS, não no leitor de tela', async () => {
-    // Escrevi este caso esperando o texto em `#sr-status` e ele falhou — a expectativa é que estava errada, e
-    // o desenho original é melhor que a minha suposição: `vlibrasSay` manda a confirmação ao INTÉRPRETE, ou
-    // seja, ela sai na língua de que o modo trata. Quem anuncia ao leitor de tela é quem chama o toggle
-    // (`ui/pause-icons`, com sr.icon.librasOn/Off), e é lá que esse caso mora.
+    // `vlibrasSay` sends the confirmation to the INTERPRETER, that is, it comes out in the language the mode is about.
+    // Whoever announces to the screen reader is whoever calls the toggle (`ui/pause-icons`, with sr.icon.librasOn/Off), and
+    // that is where that case lives.
     //
-    // Sem o widget carregado nada disso é visível, e é justamente por isso que o toggle NÃO PODE depender
-    // dele: o modo liga de qualquer forma, e o tradutor aparece se puder.
+    // Without the widget loaded none of this is visible, and that is precisely why the toggle MUST NOT depend on it: the
+    // mode turns on anyway, and the translator appears if it can.
     expect(() => V.toggleLibras()).not.toThrow();
     await nextFrame();
     expect(V.librasOpen).toBe(true);
-    expect(document.querySelector('#sr-status').textContent).toBe(''); // o módulo não fala aqui, por desenho
+    expect(document.querySelector('#sr-status').textContent).toBe(''); // the module does not speak here, by design
   });
 });
 
 describe('ui/vlibras — vlTick já não decide nada', () => {
   it('[Zero] chamar vlTick não muda o estado nem dispara reflow', () => {
-    // Ele era o polling que lia a geometria a cada 250ms e virava a chave sozinho. Agora só espelha, e este
-    // caso existe para que ninguém o transforme de volta num decisor sem notar.
+    // It used to be the polling that read the geometry every 250ms and flipped the switch by itself. It only mirrors now,
+    // and this case exists so nobody turns it back into a decider without noticing.
     let n = 0; V.setOnLibrasChange(() => { n++; });
     V.vlTick(); V.vlTick(); V.vlTick();
     expect(n).toBe(0);
