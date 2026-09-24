@@ -1,52 +1,52 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// AS QUATRO CORES DE PAPEL CONTINUAM DIFERENTES PARA QUEM NÃO DISTINGUE CORES (issue #12, item 4).
+// THE FOUR ROLE COLOURS STAY DIFFERENT FOR WHOEVER DOES NOT TELL COLOURS APART (issue #12, item 4).
 //
-// ========================= A PERGUNTA, E POR QUE ELA PRECISAVA DE MEDIÇÃO =========================
-// O ADR-0011 decide *color-blocking*: no alto contraste, o PAPEL de um tile é dito pela cor — perigo é
-// laranja-quente, escalável é ciano, água é azul, portão é magenta. A issue #12 pede o «estudo protan/deutan,
-// para além da luminância», e a pergunta que ele responde é exactamente esta: **um daltónico continua a ver
-// quatro papéis, ou dois deles colapsam num só?**
+// ========================= THE QUESTION, AND WHY IT NEEDED MEASURING =========================
+// ADR-0011 decides *color-blocking*: in high contrast, a tile's ROLE is said by colour — hazard is hot orange, climbable
+// is cyan, water is blue, gate is magenta. Issue #12 asks for the «estudo protan/deutan, para além da luminância», and
+// the question it answers is exactly this: **does a colour-blind person still see four roles, or do two of them
+// collapse into one?**
 //
-// Se colapsarem, a criança perde a informação que a cor carregava — e perde-a em silêncio, porque o jogo
-// continua a desenhar quatro cores distintas para quem as distingue.
+// If they collapse, the child loses the information the colour carried — and loses it in silence, because the game
+// keeps drawing four distinct colours for whoever tells them apart.
 //
-// ========================= ⚠️ A PRIMEIRA MEDIÇÃO QUE EU FIZ ESTAVA ERRADA =========================
-// Comecei por medir a RAZÃO DE CONTRASTE (WCAG) entre os pares, que é a ferramenta que este repositório já
-// tinha à mão — e ela deu um alarme falso enorme: `hazard × water` a 1,16:1 **sem simulação nenhuma**, e
-// `hazard × water` a 1,00:1 sob tritanopia.
+// ========================= ⚠️ THE CONTRAST RATIO IS THE WRONG MEASURE =========================
+// The first measurement used the CONTRAST RATIO (WCAG) between the pairs, the tool this repository already had at
+// hand — and it raised a huge false alarm: `hazard × water` at 1.16:1 **with no simulation at all**, and
+// `hazard × water` at 1.00:1 under tritanopia.
 //
-// A razão de contraste vê SÓ LUMINÂNCIA. E a paleta de papéis separa por MATIZ de propósito — é isso que
-// *color-blocking* significa. Medir luminância nela é perguntar a pergunta errada com muita precisão: ela
-// diria «indistinguíveis» sobre duas cores que qualquer pessoa separa num relance.
+// The contrast ratio sees ONLY LUMINANCE. And the role palette separates by HUE on purpose — that is what
+// *color-blocking* means. Measuring luminance on it is asking the wrong question very precisely: it would say
+// «indistinguíveis» about two colours anyone separates at a glance.
 //
-// O que responde é o **ΔE** (CIE76, em Lab), que é distância PERCEBIDA e vê matiz, saturação e luminância.
-// Fica registado porque a versão errada teria produzido um gate que exigia da paleta uma propriedade que ela
-// nunca prometeu — e que, para a cumprir, obrigaria a desfazer o color-blocking.
+// What answers is **ΔE** (CIE76, in Lab), which is PERCEIVED distance and sees hue, saturation and luminance. It stays
+// recorded because the wrong version would have produced a gate demanding from the palette a property it never
+// promised — and that, to meet it, would force undoing the color-blocking.
 //
-// ========================= O QUE FOI MEDIDO (2026-09-07) =========================
-// O par mais apertado de cada visão, aplicando as matrizes de `render/cvd-matrices` à paleta de
+// ========================= WHAT WAS MEASURED (2026-09-07) =========================
+// The tightest pair of each vision, applying the matrices of `render/cvd-matrices` to the palette of
 // `render/hc-role-data`:
 //
-//     visão típica     ΔE 57,6   (water × gate)
-//     protanopia       ΔE 25,1   (water × gate)
-//     deuteranopia     ΔE 14,6   (water × gate)   ← o mais apertado dos doze
-//     tritanopia       ΔE 29,2   (hazard × gate)
+//     typical vision   ΔE 57.6   (water × gate)
+//     protanopia       ΔE 25.1   (water × gate)
+//     deuteranopia     ΔE 14.6   (water × gate)   ← the tightest of the twelve
+//     tritanopia       ΔE 29.2   (hazard × gate)
 //
-// ✅ **Nenhum papel colapsa noutro.** O color-blocking sobrevive às três simulações. O par a vigiar é
-// água×portão sob deuteranopia, que é onde o azul e o magenta se aproximam mais.
+// ✅ **No role collapses into another.** The color-blocking survives the three simulations. The pair to watch is
+// water×gate under deuteranopia, which is where blue and magenta come closest.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { HC_ROLE_DEF, HC_ROLE_KEYS } from '../app/js/render/hc-role-data.js';
 import { CVD_MATRIX } from '../app/js/render/cvd-matrices.js';
 import { razaoDeContraste } from './fixtures/wcag-contrast.js';
 
-/** As três SIMULAÇÕES — é o que uma pessoa daltónica vê. As `fix-*` são correcções e não entram aqui. */
+/** The three SIMULATIONS — it is what a colour-blind person sees. The `fix-*` ones are corrections and do not enter here. */
 const SIMULATIONS = ['sim-protan', 'sim-deuter', 'sim-tritan'];
 
 /**
- * Aplica uma `feColorMatrix` (4 linhas de 5: R,G,B,A,offset) a um RGB 0-255.
- * É a MESMA matriz que o SVG usa em produção — se ela mudar, esta conta muda com ela.
+ * Applies a `feColorMatrix` (4 rows of 5: R,G,B,A,offset) to a 0-255 RGB.
+ * It is the SAME matrix the SVG uses in production — if it changes, this sum changes with it.
  */
 function aplicar([r, g, b], m) {
   const n = (v) => Math.max(0, Math.min(255, Math.round(v * 255)));
@@ -58,10 +58,10 @@ function aplicar([r, g, b], m) {
   ];
 }
 
-/* ===================== ΔE (CIE76), a distância PERCEBIDA =====================
- * Mora aqui e não numa fixture porque só este gate a usa. Move-se para `tests/fixtures/` no dia em que um
- * segundo precisar dela — que foi exactamente o caminho da conta da WCAG, e a regra que o justificou é a
- * mesma: não se importa um ficheiro de teste a partir de outro. */
+/* ===================== ΔE (CIE76), the PERCEIVED distance =====================
+ * It lives here and not in a fixture because only this gate uses it. It moves to `tests/fixtures/` the day a second one
+ * needs it — which was exactly the path of the WCAG sum, and the rule that justified it is the same: a test file is not
+ * imported from another. */
 const lin = (c) => { const v = c / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
 function lab([r, g, b]) {
   const [R, G, B] = [lin(r), lin(g), lin(b)];
@@ -76,7 +76,7 @@ function deltaE(a, b) {
   return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
 }
 
-/** Todos os pares de papéis, na visão dada (`null` = típica). */
+/** Every pair of roles, in the given vision (`null` = typical). */
 function paresDe(matriz) {
   const vistas = Object.fromEntries(HC_ROLE_KEYS.map((k) => [k, matriz ? aplicar(HC_ROLE_DEF[k], matriz) : HC_ROLE_DEF[k]]));
   const out = [];
@@ -90,12 +90,12 @@ function paresDe(matriz) {
 }
 
 /**
- * O piso de separação. Hoje o pior par mede 14,6 (água×portão sob deuteranopia); 12 dá a folga de uma
- * mudança pequena e reprova uma colisão de verdade.
+ * The separation floor. Today the worst pair measures 14.6 (water×gate under deuteranopia); 12 gives the slack of a
+ * small change and fails a real collision.
  *
- * ⚠️ NÃO É UM ALVO DE QUALIDADE — é o ponto abaixo do qual dois papéis deixam de ser dois. Para referência:
- * ΔE ≈ 1 é o limiar de percepção em condições ideais; num tile de pixel-art visto de longe, quer-se muito
- * mais do que isso, e é por isso que 12 é um PISO e não uma meta.
+ * ⚠️ IT IS NOT A QUALITY TARGET — it is the point below which two roles stop being two. For reference: ΔE ≈ 1 is the
+ * perception threshold under ideal conditions; on a pixel-art tile seen from afar, much more than that is wanted, and
+ * that is why 12 is a FLOOR and not a goal.
  */
 const PISO_DE_SEPARACAO = 12;
 
@@ -122,33 +122,32 @@ describe('color-blocking sobrevive ao daltonismo (ADR-0011, issue #12)', () => {
     const pior = paresDe(CVD_MATRIX['sim-deuter']).sort((a, b) => a.de - b.de)[0];
     expect(pior.nome).toBe('water×gate');
     expect(pior.de).toBeGreaterThan(PISO_DE_SEPARACAO);
-    expect(pior.de).toBeLessThan(20); // se subir daqui, alguém melhorou a paleta e este número desce
+    expect(pior.de).toBeLessThan(20); // if it rises above this, someone improved the palette and this number goes down
   });
 
   it('⚠️ [Interface] a RAZÃO DE CONTRASTE é a ferramenta ERRADA aqui, e o caso prova-o com número', () => {
-    // ⚠️ Este caso existe para que ninguém «conserte» este gate para a métrica que o repositório já tinha à
-    // mão. A razão de contraste vê SÓ luminância; a paleta de papéis separa por MATIZ, de propósito — é isso
-    // que color-blocking significa.
+    // ⚠️ This case exists so nobody «fixes» this gate to the metric the repository already had at hand. The contrast
+    // ratio sees ONLY luminance; the role palette separates by HUE, on purpose — that is what color-blocking means.
     //
-    // `hazard` (laranja) e `water` (azul) são duas cores que qualquer pessoa separa num relance, e a razão de
-    // contraste entre elas é 1,16:1 — que, lida como separação, diria «indistinguíveis». O ΔE diz 129.
+    // `hazard` (orange) and `water` (blue) are two colours anyone separates at a glance, and the contrast ratio between
+    // them is 1.16:1 — which, read as separation, would say «indistinguíveis». ΔE says 129.
     //
-    // Um gate construído sobre a razão de contraste exigiria da paleta uma propriedade que ela nunca
-    // prometeu, e cumpri-la obrigaria a DESFAZER o color-blocking, empurrando os papéis para luminâncias
-    // diferentes — quer dizer, a piorar a coisa que o gate deveria proteger.
+    // A gate built on the contrast ratio would demand from the palette a property it never promised, and meeting it
+    // would force UNDOING the color-blocking, pushing the roles to different luminances — that is, making worse the
+    // thing the gate should protect.
     const laranja = HC_ROLE_DEF.hazard, azul = HC_ROLE_DEF.water;
     expect(razaoDeContraste(laranja, azul)).toBeLessThan(1.5);
     expect(deltaE(laranja, azul)).toBeGreaterThan(100);
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · pondo `water: [200, 60, 210]` (quase o magenta do portão) em `hc-role-data` → "[Right] nenhum par
-//     colapsa" reprova nas QUATRO visões, e "[Boundary]" reprova junto. É o defeito que o gate existe para
-//     apanhar: dois papéis a virar um.
-//   · trocando a matriz `sim-deuter` pela identidade → "[Boundary] o par mais apertado" reprova, porque sob
-//     visão típica o par mais próximo é outro (water×gate a ΔE 57,6, acima do tecto de 20 do caso).
-//   · trocando `deltaE` por `razaoDeContraste` no crivo de pares → "[Right] nenhum par colapsa" reprova em
-//     TODAS as visões, incluindo a típica. ⚠️ É a mutação mais instrutiva: ela mostra que a métrica errada
-//     não falha por pouco, falha por completo — e que um gate assim teria sido lido como «a paleta está
-//     partida» quando o partido era o gate.
+// ========================= MUTATIONS CHECKED =========================
+//   · putting `water: [200, 60, 210]` (almost the gate's magenta) in `hc-role-data` → `[Right] nenhum par
+//     colapsa` fails in all FOUR visions, and `[Boundary]` fails with it. It is the defect the gate exists to
+//     catch: two roles becoming one.
+//   · replacing the `sim-deuter` matrix with the identity → `[Boundary] o par mais apertado` fails, because under
+//     typical vision the closest pair is another one (water×gate at ΔE 57.6, above the case's ceiling of 20).
+//   · replacing `deltaE` with `razaoDeContraste` in the pairs sieve → `[Right] nenhum par colapsa` fails in
+//     EVERY vision, typical included. ⚠️ It is the most instructive mutation: it shows the wrong metric does not
+//     fail by a little, it fails completely — and that such a gate would have been read as «a paleta está
+//     partida» when what was broken was the gate.

@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de core/scenes — a pilha de cenas (item 22, C3). Project node: nada de DOM, nada de PIXI.
+// Tests of core/scenes — the scene stack (item 22, C3). Node project: no DOM, no PIXI.
 //
-// As três regras da pilha não são convenção de biblioteca: cada uma reproduz um comportamento que o jogo já
-// tem, e é por isso que valem teste. `update` só no topo É o congelamento da pausa; `draw` de baixo para cima
-// É o menu desenhado sobre o mundo com o mundo visível; `input` só no topo É a entrada modal do ADR-0033.
+// The stack's three rules are not a library convention: each reproduces a behaviour the game already has, and that is
+// why they deserve a test. `update` only on top IS the pause's freeze; `draw` bottom-up IS the menu drawn over the world
+// with the world visible; `input` only on top IS ADR-0033's modal input.
 //
-// O caso que fecha o arquivo é o que mais importa: as três fases de HOJE (`title`/`playing`/`paused`), ditas
-// como pilha, produzem exatamente o que o enum produz. Se isso não fosse verdade, a pilha não substituiria
-// nada — seria uma segunda forma de dizer a mesma coisa, com o dobro do custo.
+// The case closing the file is the one that matters most: the three phases of TODAY (`title`/`playing`/`paused`), said
+// as a stack, produce exactly what the enum produces. If that were not true, the stack would replace nothing — it would
+// be a second way of saying the same thing, at twice the cost.
 import { describe, it, expect } from 'vitest';
 import { createSceneStack } from '../app/js/core/scenes.js';
 
-/** Uma cena que ANOTA tudo o que recebe — é assim que se afirma "quem foi chamado, e em que ordem". */
+/** A scene that WRITES DOWN everything it receives — that is how "who was called, and in what order" is asserted. */
 function cena(nome, log, over = {}) {
   return {
     name: nome,
@@ -44,8 +44,8 @@ describe('empilhar e desempilhar', () => {
   });
 
   it('[Inverse] pop devolve o topo e RESSUSCITA quem estava embaixo', () => {
-    // O `enter()` de quem reaparece é o que faz "voltar da pausa" ser um evento, e não um silêncio. Sem ele,
-    // a cena de baixo volta ao topo sem saber — e é ali que se re-apanha o foco do teclado, por exemplo.
+    // The `enter()` of whoever reappears is what makes "back from the pause" an event, and not a silence. Without it,
+    // the scene below returns to the top without knowing — and that is where, for instance, keyboard focus is taken back.
     const log = [];
     const p = createSceneStack();
     p.push(cena('jogo', log));
@@ -58,8 +58,8 @@ describe('empilhar e desempilhar', () => {
   });
 
   it('[Right] replace é UMA transição, e não um pop seguido de push', () => {
-    // Se fosse pop+push, a cena de baixo receberia `enter()` por um instante e reapareceria no topo entre as
-    // duas chamadas. Numa transição de tela isso é um quadro com a cena errada — visível, e intermitente.
+    // If it were pop+push, the scene below would get `enter()` for an instant and reappear on top between the two calls.
+    // In a screen transition that is a frame with the wrong scene — visible, and intermittent.
     const log = [];
     const p = createSceneStack();
     p.push(cena('menu', log));
@@ -67,7 +67,7 @@ describe('empilhar e desempilhar', () => {
     log.length = 0;
     p.replace(cena('nivel', log));
     expect(log).toEqual(['mapa:exit', 'nivel:enter']);
-    expect(log).not.toContain('menu:enter'); // a de baixo NÃO reapareceu no meio do caminho
+    expect(log).not.toContain('menu:enter'); // the one below did NOT reappear midway
     expect(p.names()).toEqual(['menu', 'nivel']);
   });
 
@@ -87,7 +87,7 @@ describe('as três regras', () => {
     p.push(cena('pausa', log));
     log.length = 0;
     p.update(2);
-    expect(log).toEqual(['pausa:update:2']); // o jogo NÃO simula por baixo do menu
+    expect(log).toEqual(['pausa:update:2']); // the game does NOT simulate under the menu
   });
 
   it('[Right] draw de BAIXO para cima — o menu por cima, o mundo ainda visível', () => {
@@ -107,12 +107,13 @@ describe('as três regras', () => {
     p.push(cena('pausa', log, { input: (i) => { log.push('pausa:input:' + i); return true; } }));
     log.length = 0;
     expect(p.input('up')).toBe(true);
-    expect(log).toEqual(['pausa:input:up']); // o jogo não vê a tecla
+    expect(log).toEqual(['pausa:input:up']); // the game does not see the key
   });
 
   it('[Boundary] topo que NÃO consome devolve false — a tecla é de outro dono', () => {
-    // A distinção que o ADR-0033 deu à entrada modal: "é do modal" e "significa algo no modal" são perguntas
-    // diferentes. Sem o retorno, a pilha teria de adivinhar, e adivinhar aqui é engolir tecla em silêncio.
+    // The distinction ADR-0033 gave modal input: "it belongs to the modal" and "it means something in the modal" are
+    // different questions. Without the return value the stack would have to guess, and guessing here is swallowing a
+    // key in silence.
     const p = createSceneStack();
     p.push({ name: 'x', input: () => false });
     expect(p.input('qualquer')).toBe(false);
@@ -127,15 +128,15 @@ describe('as três regras', () => {
 });
 
 describe('as fases de HOJE, ditas como pilha', () => {
-  // O caso que decide se isto substitui alguma coisa. `title`/`playing`/`paused` viram `[titulo]`, `[jogo]` e
-  // `[jogo, pausa]` — e as respostas que `ui/shell.phaseView` dá a partir do enum saem da pilha sem que ela
-  // conheça nenhum dos três nomes.
+  // The case that decides whether this replaces anything. `title`/`playing`/`paused` become `[titulo]`, `[jogo]` and
+  // `[jogo, pausa]` — and the facts `ui/shell.phaseView` reads (`SceneFacts`) come out of the stack without it knowing
+  // any of the three names.
   const montar = (fases) => {
     const p = createSceneStack();
     for (const f of fases) p.push({ name: f });
     return p;
   };
-  /** As três perguntas de que as sete respostas de `phaseView` derivam — feitas à PILHA, não ao enum. */
+  /** The three questions `phaseView`'s answers derive from — asked of the STACK, not of the enum. */
   const fatos = (p) => ({
     titleScreen: p.top()?.name === 'titulo',
     worldRunning: p.top()?.name === 'jogo',
@@ -151,16 +152,16 @@ describe('as fases de HOJE, ditas como pilha', () => {
   });
 
   it('[Right] paused → [jogo, pausa] — e o JOGO continua na pilha, que é o que o enum não dizia', () => {
-    // É a diferença que motiva a troca. `phase === 'paused'` apaga a informação de que há um jogo por baixo;
-    // a pilha a mantém, e é dela que sai "o mundo continua desenhado, mas não recebe tempo".
+    // It is the difference that motivates the change. `phase === 'paused'` erases the information that there is a game
+    // underneath; the stack keeps it, and from it comes "the world is still drawn, but gets no time".
     const p = montar(['jogo', 'pausa']);
     expect(fatos(p)).toEqual({ titleScreen: false, worldRunning: false, pauseMenu: true });
     expect(p.names()).toEqual(['jogo', 'pausa']);
   });
 
   it('[Interface] um gênero que o enum NÃO comporta cabe sem mudar esta pilha', () => {
-    // O motivo de C1 (alargar a união) ser não-opção no ADR-0030: um jogo com mapa de fases e tela de
-    // resultados precisaria de duas constantes novas NA ENGINE. Aqui ele só empilha.
+    // Why C1 (widening the union) is a non-option in ADR-0030: a game with a level map and a results screen would need
+    // two new constants IN THE ENGINE. Here it just pushes.
     const p = montar(['titulo', 'mapa', 'nivel', 'resultado']);
     expect(p.names()).toEqual(['titulo', 'mapa', 'nivel', 'resultado']);
     expect(p.top().name).toBe('resultado');

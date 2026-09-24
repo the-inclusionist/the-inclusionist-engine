@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// core/screens — a grade de telas, fonte única.
+// core/screens — the screen grid, single source.
 //
-// Por que estes testes existem: a conta estava copiada em cinco lugares (layout, CRT, HUD, configureRender e
-// fitsN) e UMA das cópias divergia — `cols = n<=2 ? n : 2`, sem a guarda de `n<=1`. Para n>=1 as duas dão o
-// mesmo resultado, então a divergência atravessou a vida inteira do arquivo sem sintoma. O caso que a separa
-// é n=0: a versão certa devolve 1 coluna, a divergente devolve 0, e dividir a janela em 0 colunas dá NaN em
-// toda a geometria. Testar só o que o jogo alcança hoje teria deixado a cópia errada passar de novo.
+// Why these tests exist: the sum was once copied in five places (layout, CRT, HUD, configureRender and fitsN) and ONE
+// copy diverged — `cols = n<=2 ? n : 2`, without the `n<=1` guard. For n>=1 both give the same result, so the
+// divergence went unnoticed with no symptom. The case that separates them is n=0: the right version returns 1 column,
+// the divergent one returns 0, and dividing the window into 0 columns gives NaN in all the geometry. Testing only what
+// the game reaches today would let a wrong copy pass again.
 import { describe, it, expect } from 'vitest';
 import { screenGrid, screenBaseSize } from '../app/js/core/screens.js';
 
@@ -17,7 +17,7 @@ describe('core/screens — a grade', () => {
     expect(screenGrid(4)).toEqual({ cols: 2, rows: 2 });
   });
 
-  // ESTE é o caso que separa a versão certa da cópia divergente.
+  // THIS is the case that separates the right version from the divergent copy.
   it('[Zero] nenhuma tela ainda devolve UMA coluna — nunca zero', () => {
     expect(screenGrid(0).cols).toBe(1);
     expect(screenGrid(-1).cols).toBe(1);

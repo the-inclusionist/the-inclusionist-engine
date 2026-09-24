@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-audio — lógica PURA (project NODE: sem document). ZOMBIES + Right-BICEP.
-// Cobre: as listas de categorias (NAV_CATS/GEN_CATS), volume->percentual (volPercent/navMasterVolume),
-// validação da bengala (parseCaneDiv/caneDivMessage), catálogo de motores TTS, filtro de vozes pt-BR e a lista
-// de saídas de áudio (sinkOptionLabel/sinkSelectValue/sinksSupported). O render (DOM) fica no teste browser.
-// Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, ui/settings-audio).
+// Tests of ui/settings-audio — PURE logic (NODE project: no document). ZOMBIES + Right-BICEP.
+// Covers: the category lists (NAV_CATS/GEN_CATS), volume->percentage (volPercent/navMasterVolume), the cane
+// validation (parseCaneDiv/caneDivMessage), the TTS engine catalogue, the voice filter by language (pickVoicesFor)
+// and the list of audio outputs (sinkOptionLabel/sinkSelectValue/sinksSupported). The render (DOM) is in the browser test.
+// See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4, ui/settings-audio).
 import { describe, it, expect } from 'vitest';
 import {
   NAV_CATS, GEN_CATS, volPercent, navMasterVolume,
@@ -14,7 +14,7 @@ import {
 describe('ui/settings-audio — categorias (dados)', () => {
   it('[Zero] NAV_CATS e GEN_CATS não se sobrepõem e cobrem sonar/guard/guide + music/ambient/interact/earcons', () => {
     expect(NAV_CATS).toEqual(['sonar', 'guard', 'guide']);
-    // `other` SAIU (ADR-0151, errata): não controlava som nenhum.
+    // `other` is gone (ADR-0151, erratum): it controlled no sound at all.
     expect(GEN_CATS).toEqual(['music', 'ambient', 'interact', 'earcons']);
     expect(NAV_CATS.some((k) => GEN_CATS.includes(k))).toBe(false);
   });
@@ -32,10 +32,10 @@ describe('ui/settings-audio — volPercent', () => {
 });
 
 /*
- * 🔴 OS CINCO CASOS DE `catRowHTML`/`catsListHTML` MUDARAM DE PROJECTO (BREAKING, nota BV). Eles liam a linha
- * como TEXTO, e a lista de categorias passou a ser montada em NÓS (ADR-0129) — o que afirmavam só é observável
- * num documento. Estão inteiros em `tests/settings-audio.browser.test.js`, com duas afirmações A MAIS que a
- * cadeia não conseguia fazer: a linha que fica é o MESMO nó entre dois renders, e a que perde o nome é removida.
+ * 🔴 THE `catRowHTML`/`catsListHTML` CASES LIVE IN THE BROWSER PROJECT (BREAKING, note BV). The category list is built
+ * as NODES (ADR-0129), so what they assert is only observable in a document. They are whole in
+ * `tests/settings-audio.browser.test.js`, with two assertions a string could not make: the row that stays is the SAME
+ * node between two renders, and the one that loses its name is removed.
  */
 
 describe('ui/settings-audio — navMasterVolume', () => {
@@ -93,9 +93,9 @@ describe('ui/settings-audio — TTS_ENGINE_OPTIONS', () => {
 });
 
 describe('ui/settings-audio — pickVoicesFor', () => {
-  // Era `pickPtVoices`, com o `/^pt/i` fixo — o jogo em inglês oferecia uma lista de vozes PORTUGUESAS para
-  // ler texto em inglês. Agora recebe o idioma; a comparação é por PREFIXO, para que pt-BR possa cair numa
-  // voz pt-PT quando é a única instalada, que é o caso comum num computador de escola.
+  // The filter receives the language (a fixed `/^pt/i` would offer an English game a list of PORTUGUESE voices to read
+  // English text). The comparison is by PREFIX, so pt-BR can fall back on a pt-PT voice when it is the only one
+  // installed, which is the common case on a school computer.
   it('[Right] filtra pelo prefixo de idioma pedido, ignorando a região e a caixa', () => {
     const voices = [{ name: 'A', lang: 'en-US' }, { name: 'B', lang: 'pt-BR' }, { name: 'C', lang: 'PT-PT' }];
     expect(pickVoicesFor(voices, 'pt-BR').map((v) => v.name)).toEqual(['B', 'C']);

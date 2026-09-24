@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de ui/settings-audio — render/wiring DOM (project BROWSER: usa document + navigator.mediaDevices +
-// window.speechSynthesis). A lógica pura (rótulos/percentuais/validação) já é coberta no teste node; aqui só o
-// que exige DOM real: renderAudio() recria as listas de categoria e refia os widgets estáticos; os cliques mutam
-// o audioCat VIVO injetado e chamam setCatGain; modo cego/bengala delegam ao game.js via ctx; TTS e saídas de
-// áudio populam <select> a partir de APIs de navegador (stubadas aqui). Ver docs/5-Refactoring/plano-
-// modularizacao-mapa.md (Estágio 4, ui/settings-audio) e tests/a11y-sr.browser.test.js (modelo de injeção).
+// Tests of ui/settings-audio — DOM render/wiring (BROWSER project: uses document + navigator.mediaDevices +
+// window.speechSynthesis). The pure logic (labels/percentages/validation) is covered in the node test; here only what
+// needs a real DOM: renderAudio() rebuilds the category lists and rewires the static widgets; the clicks mutate the LIVE
+// injected audioCat and call setCatGain; blind mode/cane delegate to the host through the ctx; TTS and audio outputs
+// fill <select>s from browser APIs (stubbed here). See docs/5-Refactoring/plano-modularizacao-mapa.md (Stage 4,
+// ui/settings-audio) and tests/a11y-sr.browser.test.js (the injection model).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initSettingsAudio } from '../app/js/ui/settings-audio.js';
 import { NAV_CATS, GEN_CATS } from '../app/js/ui/audio-choices.js';
 import { defaultAudioCat } from '../app/js/platform/audio-mixer.js';
 import { menuIndexOn, setMenuIndexOnValue, speechPpm, setSpeechPpmValue } from '../app/js/core/state.js';
 import { SPEECH_RATES } from '../app/js/core/speech-rate.js';
-// A frase é pedida ao dicionário e não copiada: uma cópia aqui passaria a medir-se a si própria.
+// The sentence is asked of the dictionary and not copied: a copy here would end up measuring itself.
 import { t as tr } from '../app/js/core/i18n.js';
 
 const AUDIO_HTML = `
@@ -47,12 +47,11 @@ const AUDIO_CATS = [
 ];
 
 /**
- * O estado de FÁBRICA das categorias — pedido a `defaultAudioCat`, não recopiado.
+ * The FACTORY state of the categories — asked of `defaultAudioCat`, not copied again.
  *
- * Era `{ on: k !== 'tts', vol: 0.8 }` escrito aqui, uma segunda cópia da regra. Ela divergiu no dia em que o
- * `guide` passou a nascer desligado (2026-08-26): a fixture continuou nascendo com ele LIGADO, e a marca de
- * "saiu do padrão" do ADR-0029 apareceu num menu que ninguém tinha tocado. O caso reprovou e estava certo —
- * era a cópia que estava errada, não o código.
+ * A second copy of the rule written here (`{ on: k !== 'tts', vol: 0.8 }`) diverged the day `guide` started being born
+ * off: the fixture kept it ON, and ADR-0029's "changed from default" mark showed up in a menu nobody had touched. The
+ * case failed and it was right — the copy was wrong, not the code.
  */
 function freshAudioCat() {
   const cat = {};
@@ -70,9 +69,8 @@ function fullCtx(over = {}) {
   let blindMode = over.blindMode ?? false;
   let caneBlockDiv = over.caneBlockDiv ?? 1;
   const players = over.players || [{ audioSink: null }];
-  // O catálogo é do HOSPEDEIRO, e passou a ser sobreponível quando a lista virou nós: o que antes se media
-  // dando uma lista de categorias à construtora de markup mede-se agora dizendo ao painel que o hospedeiro
-  // nomeia outras — é a mesma pergunta, feita pelo caminho que existe.
+  // The catalogue belongs to the HOST, and can be overridden since the list is built as nodes: what is measured is the
+  // panel being told the host names other categories — the same question, asked through the path that exists.
   const audioCats = over.audioCats || AUDIO_CATS;
   const tts = {
     engineSel: 'webspeech',
@@ -105,10 +103,10 @@ function fullCtx(over = {}) {
     getCaneBlockDiv: () => caneBlockDiv,
     setCaneBlockDiv: (v) => { caneBlockDiv = v; },
     /*
-     * 🔴 O NAVEGADOR CHEGA POR PORTA desde o ADR-0227, e estas três são obrigatórias. Aqui elas delegam para os
-     * mesmos `stubMediaDevices`/`stubSpeech` que este ficheiro já montava, para que os casos existentes
-     * continuem a medir o que mediam. 📌 Um caso que queira um aparelho SEM navegador nenhum passa as suas
-     * próprias portas por `ctxOver`, que é a propriedade que as portas existem para comprar.
+     * 🔴 THE BROWSER ARRIVES THROUGH PORTS (ADR-0227), and these three are required. Here they delegate to the same
+     * `stubMediaDevices`/`stubSpeech` this file already set up, so the existing cases keep measuring what they measured.
+     * 📌 A case that wants a device with NO browser at all passes its own ports through `ctxOver`, which is the
+     * property the ports exist to buy.
      */
     newElement: (tag) => document.createElement(tag),
     speech: {
@@ -182,14 +180,14 @@ describe('ui/settings-audio — renderAudio (categorias)', () => {
   });
 
   /*
-   * 🔴 AS CINCO AFIRMAÇÕES QUE VIVIAM SOBRE A CADEIA (BREAKING, nota BV). Eram casos de node sobre
-   * `catRowHTML`/`catsListHTML`, que liam a marcação como TEXTO; a lista passou a ser montada em NÓS, e o que
-   * elas exigiam passou a ser observável só num documento. Nenhuma exigência caiu: o rótulo, a percentagem do
-   * cursor, o estado do interruptor, a ordem e a chave sem nome continuam presos, agora pelo caminho que existe.
+   * 🔴 THE FIVE ASSERTIONS THAT USED TO LIVE ON THE STRING (BREAKING, note BV). They were node cases over
+   * `catRowHTML`/`catsListHTML`, which read the markup as TEXT; the list is built as NODES, and what they required is
+   * observable only in a document. No requirement was dropped: the label, the slider's percentage, the switch's state,
+   * the order and the unnamed key are still pinned, now through the path that exists.
    *
-   * 🎯 E DUAS SÃO NOVAS, porque só a forma nova as torna possíveis: a linha que FICA é o MESMO nó entre dois
-   * renders (que é o que impede o cursor de cair de quem está a mexer no volume) e a linha que perde o nome é
-   * removida. Uma cadeia rebentava tudo a cada render e nenhuma das duas perguntas fazia sentido.
+   * 🎯 AND TWO ARE NEW, because only the new shape makes them possible: the row that STAYS is the SAME node between two
+   * renders (which is what keeps the slider from dropping out from under whoever is moving the volume) and the row that
+   * loses its name is removed. A string blew everything away on each render and neither question made sense.
    */
   it('🔴 [Right] a linha leva o rótulo, a percentagem do volume e o estado ligado do interruptor', () => {
     const cat = freshAudioCat();
@@ -215,7 +213,7 @@ describe('ui/settings-audio — renderAudio (categorias)', () => {
   });
 
   it('🔴 [Error] chave que o hospedeiro NÃO NOMEIA não vira linha — e o painel não lança', () => {
-    // «Não se oferece o que não tem nome»: um interruptor sem rótulo é um botão que a criança não sabe o que faz.
+    // «Não se oferece o que não tem nome»: a switch with no label is a button the child does not know what it does.
     const semMusica = AUDIO_CATS.filter((c) => c.k !== 'music');
     const { ctx } = fullCtx({ audioCats: semMusica });
     expect(() => initSettingsAudio(ctx).renderAudio()).not.toThrow();
@@ -271,10 +269,9 @@ describe('ui/settings-audio — renderAudio (categorias)', () => {
     api.renderAudio();
     const slider = document.querySelector('#audio-list input[data-avol="ambient"]');
     slider.value = '25';
-    // ⚠️ COM BOLHA, como um `input` de verdade: a especificação diz que um `input` disparado por interacção
-    // BORBULHA, e a escuta desta lista passou a ser por delegação quando o painel virou nós — as linhas de
-    // categoria vêm e vão com o cartucho, e ligar controle a controle a cada render acumulava escutas. Um
-    // despacho sem bolha era uma forma que nenhum caminho real usa.
+    // ⚠️ WITH BUBBLING, like a real `input`: the spec says an `input` fired by interaction BUBBLES, and this list listens
+    // by delegation — the category rows come and go with the cartridge, and wiring control by control on every render
+    // piled up listeners. A dispatch without bubbling would be a shape no real path uses.
     slider.dispatchEvent(new Event('input', { bubbles: true }));
     expect(audioCat.ambient.vol).toBeCloseTo(0.25);
     expect(audioCat.ambient.on).toBe(true);
@@ -403,8 +400,8 @@ describe('ui/settings-audio — TTS', () => {
   });
 
   it('[Interface] o botão do ÍNDICE alterna o ajuste, reflete no botão e anuncia (ADR-0044, item 3)', () => {
-    // O índice "6 de 10" nasce LIGADO — quem precisa dele para se orientar não tem como descobrir que ele
-    // existe se vier desligado. Este caso prova o caminho de DESLIGAR, que é o que a XAG 106 exige que exista.
+    // The "6 de 10" index is born ON — whoever needs it to find their way has no means of discovering it exists if it
+    // comes off. This case proves the path to turn it OFF, which is what XAG 106 requires to exist.
     const inicial = menuIndexOn;
     try {
       const { ctx, said } = fullCtx();
@@ -414,11 +411,11 @@ describe('ui/settings-audio — TTS', () => {
       expect(menuIndexOn).toBe(!inicial);
       expect(btn.getAttribute('aria-pressed')).toBe(String(!inicial));
       expect(said.at(-1)).toBe(inicial ? 'Posição na lista desligada.' : 'Posição na lista ligada.');
-      btn.click(); // inverso: volta ao que era, e o anúncio acompanha
+      btn.click(); // inverse: back to what it was, and the announcement follows
       expect(menuIndexOn).toBe(inicial);
       expect(said.at(-1)).toBe(inicial ? 'Posição na lista ligada.' : 'Posição na lista desligada.');
     } finally {
-      setMenuIndexOnValue(inicial); // `core/state` é módulo: o valor sobrevive ao caso e vazaria para os outros
+      setMenuIndexOnValue(inicial); // `core/state` is a module: the value outlives the case and would leak into the others
     }
   });
 
@@ -453,7 +450,7 @@ describe('ui/settings-audio — saídas de áudio (sinks)', () => {
     const rows = document.querySelectorAll('#audio-sinks select');
     expect(rows.length).toBe(2); // 2 jogadores
     expect(rows[0].value).toBe('d1');
-    expect([...rows[0].options].map((o) => o.textContent)).toEqual(['Padrão (compartilhado)', 'Fone USB']); // só audiooutput
+    expect([...rows[0].options].map((o) => o.textContent)).toEqual(['Padrão (compartilhado)', 'Fone USB']); // only audiooutput
   });
 
   it('[Interface] trocar a saída de um jogador persiste via store e anuncia', async () => {
@@ -483,22 +480,22 @@ describe('ui/settings-audio — saídas de áudio (sinks)', () => {
 });
 
 describe('ui/settings-audio — restaurar padrões DESTE menu (ADR-0028)', () => {
-  // O caso que importa mais não é o de o reset funcionar: é o de ele NÃO alcançar fora de si. Um reset que
-  // apagasse em silêncio a configuração motora seria pior que a armadilha que ele existe para desfazer — a
-  // criança desfaz um ajuste de som e perde o que a deixava jogar, sem relação visível entre uma coisa e outra.
+  // The case that matters most is not the reset working: it is the reset NOT reaching outside itself. A reset that
+  // silently erased the motor settings would be worse than the trap it exists to undo — the child undoes a sound
+  // setting and loses what let her play, with no visible link between one thing and the other.
   it('[Right] devolve modo cego, bengala, navegação e narração ao padrão — e NÃO a música, que é do «Áudio»', () => {
     const cat = freshAudioCat();
-    cat.music.on = false; cat.music.vol = 0.1;   // mexido, mas no OUTRO painel desde o ADR-0151
+    cat.music.on = false; cat.music.vol = 0.1;   // changed, but in the OTHER panel (ADR-0151)
     cat.sonar.vol = 0.2;                          // mexido, e deste painel
-    cat.tts.on = true;                            // o TTS nasce DESLIGADO, então isto é desvio
+    cat.tts.on = true;                            // TTS is born OFF, so this is a deviation
     const { ctx, said, getBlindMode: getModoCego, getCaneBlockDiv } = fullCtx({ audioCat: cat, blindMode: true, caneBlockDiv: 2 });
     initSettingsAudio(ctx);
     document.querySelector('#audio-reset').click();
     expect(getModoCego()).toBe(false);
     expect(getCaneBlockDiv()).toBe(1);
     expect(cat.sonar).toEqual(defaultAudioCat('sonar'));
-    expect(cat.tts).toEqual({ on: false, vol: 0.8 }); // volta a DESLIGADO, o padrão dele
-    // 🔴 O ESCOPO: repor a acessibilidade auditiva não alcança o painel ao lado.
+    expect(cat.tts).toEqual({ on: false, vol: 0.8 }); // back to OFF, its default
+    // 🔴 THE SCOPE: resetting auditory accessibility does not reach the panel next door.
     expect(cat.music, 'o «repor» auditivo desfez a música, que é do painel Áudio').toEqual({ on: false, vol: 0.1 });
     expect(said.at(-1)).toContain('auditiva');
   });
@@ -515,8 +512,8 @@ describe('ui/settings-audio — restaurar padrões DESTE menu (ADR-0028)', () =>
   });
 
   it('[Interface] NÃO toca no que não é deste menu — motor de voz e saída de áudio ficam', () => {
-    // Escolha de DISPOSITIVO não é preferência restaurável: zerar a saída tiraria da criança o fone que é
-    // dela numa sala compartilhada, e trocar o motor de voz a deixaria sem a voz que ela entende.
+    // A DEVICE choice is not a restorable preference: clearing the output would take from the child the headphones that
+    // are hers in a shared room, and switching the voice engine would leave her without the voice she understands.
     const players = [{ audioSink: 'fone-da-crianca' }];
     const { ctx, tts } = fullCtx({ players });
     tts.setEngineSel('kokoro');
@@ -528,18 +525,17 @@ describe('ui/settings-audio — restaurar padrões DESTE menu (ADR-0028)', () =>
 });
 
 describe('ui/settings-audio — marca o que saiu do padrão (ADR-0029)', () => {
-  // `#audio-list` nasce vazio: quem o preenche é `renderAudio()`, como no jogo ao abrir o painel.
+  // `#audio-list` is born empty: `renderAudio()` fills it, as the game does when the panel opens.
   const montar = (over) => { const { ctx } = fullCtx(over); initSettingsAudio(ctx).renderAudio(); return ctx; };
-  // Estes casos existem porque os primeiros não existiam. Eu tinha pendurado a marca no `renderAudio()`, e os
-  // testes chamavam `render()` explicitamente — então passavam. No jogo a marca não aparecia: mexer numa
-  // categoria atualiza a linha sozinha, sem redesenhar o painel. Por isso aqui se CLICA, como a criança faz.
+  // These cases click, as the child does: moving a category updates its row by itself, without redrawing the panel,
+  // so a mark hung only on `renderAudio()` would pass a case that called `render()` and never show in the game.
   it('[Right] clicar uma categoria marca a linha dela e o botão do menu', () => {
     montar();
     document.querySelector('#audio-list button[data-acat="music"]').click();
     const linha = document.querySelector('#audio-list button[data-acat="music"]').closest('.ctrl-row');
     expect(linha.classList.contains('is-changed')).toBe(true);
-    // ⚠️ A MARCA VAI AO MENU DE QUEM TEM A LINHA: a música é do «Áudio», e acender a acessibilidade auditiva
-    // mandaria a criança procurar no painel errado.
+    // ⚠️ THE MARK GOES TO THE MENU THAT HOLDS THE ROW: music belongs to «Áudio», and lighting auditory accessibility
+    // would send the child looking in the wrong panel.
     expect(document.querySelector('[data-act="som"]').classList.contains('is-changed')).toBe(true);
     expect(document.querySelector('[data-act="audio"]').classList.contains('is-changed')).toBe(false);
   });
@@ -557,7 +553,7 @@ describe('ui/settings-audio — marca o que saiu do padrão (ADR-0029)', () => {
     montar({ blindMode: true });
     document.querySelector('#audio-list button[data-acat="music"]').click();
     expect(document.querySelectorAll('.is-changed').length).toBeGreaterThan(0);
-    // cada «repor» limpa o que é seu; os dois juntos limpam o documento
+    // each «repor» clears what is its own; the two together clear the document
     document.querySelector('#audio-reset').click();
     document.querySelector('#som-reset').click();
     expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
@@ -566,10 +562,11 @@ describe('ui/settings-audio — marca o que saiu do padrão (ADR-0029)', () => {
 
 describe('ui/settings-audio — o painel ASSINA o modo cego (ADR-0106 §4)', () => {
   it('⚠️ [Interface] o botão #opt-modocego acompanha uma mudança feita FORA do painel', async () => {
-    // O defeito que este caso impede é o controlo a MENTIR o estado para o leitor de tela: a criança liga o
-    // modo cego pelo ícone da barra rápida, abre este painel, e o botão diz «Desligado» com
-    // aria-pressed=false. É o gémeo exacto do defeito do `reflectTTS` já registado no `ui/pause-icons`, e a
-    // saída é a que o `core/state` já tinha escrito ao lado do `setBlindModeValue`: quem reage assina o evento.
+    // The defect this case prevents is the control LYING about the state to the screen reader: the child turns blind
+    // mode on through the quick bar's icon, opens this panel, and the button says «Desligado» with aria-pressed=false.
+    // It is the exact twin of the dead `reflectTtsPanel` guard recorded in `ui/pause-icons` (`reflectTtsPanelEnabled`),
+    // and the way out is the one `core/state` already wrote beside `setBlindModeValue`: whoever reacts subscribes to
+    // the event.
     const estado = await import('../app/js/core/state.js');
     let cego = estado.blindMode;
     const { ctx } = fullCtx({});
@@ -580,28 +577,28 @@ describe('ui/settings-audio — o painel ASSINA o modo cego (ADR-0106 §4)', () 
     expect(btn.getAttribute('aria-pressed')).toBe(String(cego));
 
     cego = !cego;
-    estado.setBlindModeValue(cego);          // ninguém tocou no painel — só no estado
+    estado.setBlindModeValue(cego);          // nobody touched the panel — only the state
 
     expect(btn.getAttribute('aria-pressed'), 'o painel não acompanhou o evento').toBe(String(cego));
     estado.setBlindModeValue(!cego);
   });
 });
 
-// ========================= MUTACOES CONFERIDAS (ADR-0106 §4, etapa 1b) =========================
-//   · tirando o `state.on('blindMode', …)` do fim de `initSettingsAudio` -> reprova o caso acima. Sem ele, um
-//     jogo que nao injecta o seu proprio `setModoCego` deixa este botao a mentir o estado.
-//   · trocando a assinatura por `state.on('blindMode', () => {})` (assina e nao reage) -> reprova tambem, que
-//     e a medida de que o caso afirma o EFEITO e nao a subscricao.
+// ========================= MUTATIONS CHECKED (ADR-0106 §4, step 1b) =========================
+//   · removing the `state.on('blindMode', …)` at the end of `initSettingsAudio` -> fails the case above. Without it, a
+//     game that does not inject its own `setModoCego` leaves this button lying about the state.
+//   · replacing the subscription with `state.on('blindMode', () => {})` (subscribes and does not react) -> fails too,
+//     which is the measure that the case asserts the EFFECT and not the subscription.
 
 describe('ui/settings-audio — o modo cego ANUNCIA, como os cinco irmãos deste painel', () => {
   it('⚠️ [Interface] ligar pelo painel diz o estado NOVO — um alternador mudo é invisível a leitor de tela', () => {
-    // 📏 Medido em 2026-09-08: os cinco irmãos deste painel anunciam (som, TTS, divisor da bengala, índice de
-    // menu, saída de áudio) e o modo cego NÃO — ele parecia anunciar porque UM cartucho o fazia a partir do
-    // próprio `setModoCego`, e o painel herdava o efeito de graça.
+    // 📏 Measured on 2026-09-08: this panel's five siblings announce (sound, TTS, cane divider, menu index, audio
+    // output) and blind mode did NOT — it seemed to announce because ONE cartridge did it from its own setter, and the
+    // panel inherited the effect for free.
     //
-    // ⚠️ E o silêncio ficou ALCANÇÁVEL no mesmo dia: com `setModoCego` a ganhar padrão da engine
-    // (`setBlindModeValue`, que grava/persiste/avisa e não fala), um jogo que não injecta o seu setter ficava
-    // com este botão mudo — a mesma família do `reflectTTS`, que já custou um controlo a mentir o estado.
+    // ⚠️ And the silence is REACHABLE: with the setter defaulting to the engine's `setBlindModeValue` (which writes,
+    // persists and notifies, and does not speak), a game that does not inject its setter would get a mute button — the
+    // same family as the `reflectTtsPanel` guard, which already cost a control lying about the state.
     let cego = false;
     const { ctx, said } = fullCtx({});
     ctx.getBlindMode = () => cego;
@@ -610,22 +607,22 @@ describe('ui/settings-audio — o modo cego ANUNCIA, como os cinco irmãos deste
 
     document.querySelector('#opt-modocego').click();
     expect(cego, 'o botão não mexeu no estado').toBe(true);
-    // O literal é pinado, e não lido por `t()`: afirmar pelo dicionário mediria a ida e a volta pela mesma
-    // tabela, e as duas metades mover-se-iam juntas.
+    // The literal is pinned, not read through `t()`: asserting through the dictionary would measure the round trip
+    // through the same table, and the two halves would move together.
     expect(said.at(-1), 'ligou sem dizer nada').toBe('Modo cego ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.');
 
     document.querySelector('#opt-modocego').click();
     expect(cego).toBe(false);
-    // ⚠️ E o anúncio conta o estado NOVO, não o que a criança acabou de deixar — por isso ele vem DEPOIS do
-    // `setModoCego`, e é o que esta segunda metade prende.
+    // ⚠️ And the announcement tells the NEW state, not the one the child just left — so it comes AFTER the setter
+    // (`ctx.setBlindMode`), and that is what this second half pins.
     expect(said.at(-1)).toBe('Modo cego desligado.');
   });
 });
 
-// ========================= MUTACOES CONFERIDAS (o anuncio do modo cego) =========================
-//   · tirando o `ctx.srSay(...)` do clique -> reprova. E o defeito que existia ate hoje.
-//   · movendo o `srSay` para ANTES do `setModoCego` -> reprova, porque passa a anunciar o estado que a
-//     crianca acabou de deixar. E a mesma regra do icone da barra rapida, e nenhum dos dois a tinha escrita.
+// ========================= MUTATIONS CHECKED (the blind-mode announcement) =========================
+//   · removing the `ctx.srSay(...)` from the click -> fails. It is the defect that existed until then.
+//   · moving the `srSay` to BEFORE `setModoCego` -> fails, because it announces the state the child just left. It is
+//     the same rule as the quick bar's icon, and neither had it written down.
 
 // ===================================================================================================
 // THE VOICE CHOICE AND THE LOCK (ADR-0185; issue #180)
@@ -722,15 +719,16 @@ describe('ui/settings-audio — the voice choice (ADR-0185)', () => {
 });
 
 /*
- * ============== AS DUAS PEÇAS DA VOZ QUE NINGUÉM VIA (2026-09-22, ADR-0221 passo 7c) ==============
+ * ============== THE TWO PIECES OF THE VOICE NOBODY SAW (2026-09-22, ADR-0221 step 7c) ==============
  *
- * 🔴 MEDIDO ANTES DE MEXER, como no `pollPads`: as sete peças do bloco da voz foram desligadas, uma de cada vez, e a suíte
- * respondeu por cinco delas. Ficaram VERDES o `reflectTts` — o espelho do interruptor da narração e do motor escolhido, que
- * a barra de ícones chama de fora por `reflectTtsPanel` — e o `renderRitmo`, a lista de ritmo da fala.
+ * 🔴 MEASURED BEFORE TOUCHING, as in `pollPads`: the seven pieces of the voice block were switched off, one at a time, and
+ * the suite answered for five of them. GREEN stayed `reflectTts` — the mirror of the narration switch and of the chosen
+ * engine, which the icon bar calls from outside through `reflectTtsPanel` — and the speech-rate list (`renderRate`, in
+ * `ui/voice-settings`).
  *
- * ⚠️ E O SEGUNDO ESTAVA CEGO POR UM MOTIVO QUE VALE ESCREVER: a fixture desta suíte não tinha `#tts-ppm`, logo o
- * `renderRitmo` saía no primeiro `if (!sel) return` e não havia o que medir. Um controle que o painel constrói e que o
- * cenário de teste não tem é um buraco que nenhuma contagem de casos mostra.
+ * ⚠️ AND THE SECOND WAS BLIND FOR A REASON WORTH WRITING: this suite's fixture had no `#tts-ppm`, so the rate renderer left
+ * at its first `if (!sel) return` and there was nothing to measure. A control the panel builds and the test scenario does
+ * not have is a hole no case count shows.
  */
 describe('ui/settings-audio — o que a voz reflecte', () => {
   it('🔴 [Right] o interruptor da narração e o motor escolhido DIZEM o estado guardado', () => {
@@ -767,18 +765,18 @@ describe('ui/settings-audio — o que a voz reflecte', () => {
 
 
 // ==========================================================================================================
-// OS CINCO RAMOS QUE A SONDA ACHOU CEGOS (ADR-0221 passo 7c, 2026-09-23)
+// THE FIVE BRANCHES THE PROBE FOUND BLIND (ADR-0221 step 7c, 2026-09-23)
 //
-// 📏 As treze decisões deste painel desligadas uma a uma, contra os dez ficheiros que lhe tocam: oito ficaram
-// vermelhas e CINCO verdes. Três das cinco tinham, ao lado, um comentário a argumentar exactamente o que nada
-// segurava — e um comentário que declara uma regra não é um portão.
+// 📏 The thirteen decisions of this panel switched off one by one, against the ten files that touch it: eight turned
+// red and FIVE green. Three of the five had, beside them, a comment arguing exactly what nothing held — and a comment
+// that declares a rule is not a gate.
 // ==========================================================================================================
 describe('ui/settings-audio — o que a sonda achou cego', () => {
   it('🔴 [Right] trocar a saída FECHA o contexto de áudio antigo — senão o som continua no aparelho anterior', async () => {
-    // 🔴 O MAIS CARO DOS CINCO, e é o que a criança sente sem ver: a linha que fecha o contexto podia ser apagada
-    // com a suíte inteira verde. Sem ela, a escolha aparece feita na lista e o som continua a sair pelo aparelho
-    // de antes — o controle responde e o mundo não, que é a forma mais frustrante de defeito para quem depende
-    // de um fone próprio para ouvir o seu jogo numa sala com outras vinte pessoas.
+    // 🔴 THE COSTLIEST OF THE FIVE, and it is what the child feels without seeing: the line that closes the context could
+    // be deleted with the whole suite green. Without it, the choice appears made in the list and the sound keeps coming
+    // out of the previous device — the control answers and the world does not, which is the most frustrating kind of
+    // defect for whoever depends on their own headphones to hear their game in a room with twenty other people.
     stubMediaDevices({ devices: [{ deviceId: 'd1', kind: 'audiooutput', label: 'Fone USB' }] });
     let fechado = false;
     const player = { audioSink: null, _ac: { close: () => { fechado = true; } }, _acOut: {} };
@@ -794,8 +792,8 @@ describe('ui/settings-audio — o que a sonda achou cego', () => {
   });
 
   it('🔴 [Right] um contexto que RECUSA fechar não derruba a troca — a escolha vale na mesma', async () => {
-    // O par do caso acima: `close()` pode lançar num contexto já fechado, e a criança não pode perder a escolha
-    // por causa disso. É por essa razão que o `try` existe, e sem este caso ele podia ser apagado.
+    // The pair of the case above: `close()` can throw on an already closed context, and the child must not lose the
+    // choice because of it. That is why the `try` exists, and without this case it could be deleted.
     stubMediaDevices({ devices: [{ deviceId: 'd1', kind: 'audiooutput', label: 'Fone USB' }] });
     const player = { audioSink: null, _ac: { close: () => { throw new Error('already closed'); } }, _acOut: {} };
     const { ctx, store } = fullCtx({ players: [player] });
@@ -809,9 +807,9 @@ describe('ui/settings-audio — o que a sonda achou cego', () => {
   });
 
   it('🔴 [Boundary] um navegador que NÃO CONSEGUE ouve outra frase, e não a de «clique em Detectar»', async () => {
-    // 📌 São duas frases no dicionário porque são duas situações: «ainda não procurei» pede uma acção à criança,
-    // «este navegador não faz isso» diz-lhe que não há acção nenhuma. Saíam como uma só, e nada reparava — a
-    // fixture estuba sempre o `mediaDevices`, logo o caminho do «não consegue» nunca era percorrido.
+    // 📌 There are two sentences in the dictionary because there are two situations: «ainda não procurei» asks the child
+    // for an action, «este navegador não faz isso» tells her there is no action at all. They came out as one, and nothing
+    // noticed — the fixture always stubs `mediaDevices`, so the «não consegue» path was never walked.
     const semMediaDevices = Object.getOwnPropertyDescriptor(navigator, 'mediaDevices');
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
     try {
@@ -827,8 +825,8 @@ describe('ui/settings-audio — o que a sonda achou cego', () => {
   });
 
   it('🔴 [Right] a prosa volta ao rodapé depois de a lista ser reconstruída (CLAUDE.md §4, #109)', () => {
-    // A lista de categorias é refeita a cada render, e as linhas novas voltam com a prosa lá dentro. Sem esta
-    // chamada o menu vira o manual que a decisão de 2026-08-25 proibiu, a partir do primeiro clique.
+    // The category list is rebuilt on every render, and the new rows come back with the prose inside. Without this call
+    // the menu becomes the manual the decision of 2026-08-25 forbade, from the first click on.
     const cartoes = [];
     const { ctx } = fullCtx({ ctxOver: { fillExplain: (card) => cartoes.push(card) } });
     initSettingsAudio(ctx).renderAudio();
@@ -836,9 +834,8 @@ describe('ui/settings-audio — o que a sonda achou cego', () => {
   });
 
   it('🔴 [Interface] e no rodapé do cartão QUE TEM A LISTA, não no primeiro da página (ADR-0151)', () => {
-    // 📌 São DOIS painéis desde o ADR-0151 — «Conforto auditivo» e «Áudio» —, e o rodapé do outro não é o desta
-    // criança: escrever nele deixa a explicação numa tela que ela não está a ver e a tela onde ela está muda.
-    // O comentário ao lado desta linha dizia isto desde o dia em que foi escrita; nada o segurava.
+    // 📌 There are TWO panels (ADR-0151) — «Conforto auditivo» and «Áudio» —, and the other one's footer is not this
+    // child's: writing in it leaves the explanation on a screen she is not looking at and the screen where she is mute.
     document.body.innerHTML = '<div class="overlay"><div class="overlay__card" id="outro"></div></div>'
       + '<div class="overlay"><div class="overlay__card" id="oDaLista">' + AUDIO_HTML + '</div></div>';
     const cartoes = [];
@@ -863,19 +860,19 @@ describe('ui/settings-audio — o que a sonda achou cego', () => {
 
 // -----------------------------------------------------------------------------------------------------------
 /*
- * 🔴 O NAVEGADOR CHEGA POR PORTA, E ISSO TEM DE SER OBSERVÁVEL (ADR-0227; Dev, 23/09: «(a)»).
+ * 🔴 THE BROWSER ARRIVES THROUGH PORTS, AND THAT HAS TO BE OBSERVABLE (ADR-0227; the Dev, 23/09: «(a)»).
  *
- * 📏 Este era o último módulo do passo 7d com `globalReach 3` — `document`, `window.speechSynthesis` e
- * `navigator.mediaDevices` — contra um tecto de ZERO. Os dois casos abaixo são a confirmação do registo, e o
- * segundo é a propriedade que as portas existem para comprar: se o módulo alcançasse um global, ele REBENTAVA.
+ * 📏 This was the last module of step 7d with `globalReach 3` — `document`, `window.speechSynthesis` and
+ * `navigator.mediaDevices` — against a ceiling of ZERO. The two cases below are the record's confirmation, and the
+ * second is the property the ports exist to buy: if the module reached a global, it would BLOW UP.
  */
 describe('as três portas do navegador (ADR-0227)', () => {
   it('⚠️ [Zero] um aparelho SEM vozes recebe a frase, e não um controle vazio', async () => {
     /*
-     * 🎯 É ESTA A DIFERENÇA ENTRE A OPÇÃO (a) E A OPÇÃO (c) DO REGISTO. Uma lista VAZIA é o hospedeiro a
-     * responder «este aparelho não tem vozes», e o painel sabe o que fazer com isso desde o ADR-0185: diz-lo
-     * na língua da criança. Uma porta AUSENTE seria o hospedeiro calado, e um `<select>` sem nada dentro
-     * parece um menu avariado — que é o §5 do ADR-0106.
+     * 🎯 THIS IS THE DIFFERENCE BETWEEN OPTION (a) AND OPTION (c) OF THE RECORD. An EMPTY list is the host answering
+     * «este aparelho não tem vozes», and the panel knows what to do with that since ADR-0185: say it in the child's
+     * language. An ABSENT port would be the host keeping quiet, and a `<select>` with nothing inside looks like a broken
+     * menu — which is §5 of ADR-0106.
      */
     const { ctx } = fullCtx({ ctxOver: { speech: { voices: () => [], speakSample: () => {}, whenVoicesChange: () => {} } } });
     initSettingsAudio(ctx).renderAudio();
@@ -888,21 +885,21 @@ describe('as três portas do navegador (ADR-0227)', () => {
 
   it('🔴 [Right] o painel desenha com os globais a LANÇAR — se ele os alcançasse, rebentava', async () => {
     /*
-     * ⚠️ A FORMA DO CASO É O QUE O TORNA UM PORTÃO. «Não alcança o global» não se observa lendo o módulo; o
-     * que se observa é o módulo a funcionar quando tocar no global é um erro. Os três globais passam a atirar,
-     * as portas respondem sem eles, e o que se exige é o painel INTEIRO desenhado: as categorias, a frase das
-     * saídas e o selector de voz.
+     * ⚠️ THE SHAPE OF THE CASE IS WHAT MAKES IT A GATE. «Não alcança o global» cannot be observed by reading the module;
+     * what can be observed is the module working when touching the global is an error. The three globals throw, the
+     * ports answer without them, and what is required is the WHOLE panel drawn: the categories, the outputs sentence and
+     * the voice selector.
      */
     const explode = () => { throw new Error('o módulo alcançou um global do navegador'); };
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, get: explode });
     Object.defineProperty(window, 'speechSynthesis', { configurable: true, get: explode });
 
     /*
-     * 🔴 E AS ESPIAS SÃO O QUE FAZ DISTO UM PORTÃO, medido por mutação: fazer os globais LANÇAR apanha o
-     * `window.speechSynthesis` e o `navigator.mediaDevices`, e não apanha mais nada — porque `document` continua
-     * a existir num teste de navegador, e porque o `catch` do `enumerateSinks` engole a diferença entre «a porta
-     * respondeu vazio» e «o global rebentou». 📌 A propriedade que interessa não é «não rebenta»: é que o painel
-     * PERGUNTE à porta, e uma espia observa exactamente isso.
+     * 🔴 AND THE SPIES ARE WHAT MAKE THIS A GATE, measured by mutation: making the globals THROW catches
+     * `window.speechSynthesis` and `navigator.mediaDevices`, and nothing else — because `document` still exists in a
+     * browser test, and because `enumerateSinks`'s `catch` swallows the difference between «a porta respondeu vazio» and
+     * «o global rebentou». 📌 The property that matters is not «não rebenta»: it is the panel ASKING the port, and a spy
+     * observes exactly that.
      */
     const asked = { elements: [], list: 0, voices: 0 };
     const { ctx } = fullCtx({

@@ -127,7 +127,7 @@ describe('the rows follow the cartridge\'s answer', () => {
 });
 
 describe('and the rows the CONTRACT answers are derived, not asked (ADR-0153)', () => {
-  // 📌 Desde o ADR-0151 não há volume-mestre da navegação: o que se esconde é a LISTA do sonar, guarda e guia.
+  // 📌 There is no navigation master volume (ADR-0151): what is hidden is the LIST of sonar, guard and guide.
   const linhaDoSonar = () => document.querySelector('#navsound-list');
   const abrirAuditiva = () => {
     motor.pause.show(0);

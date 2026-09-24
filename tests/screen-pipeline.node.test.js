@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/screen-pipeline — a TOPOLOGIA do render: quantas telas, onde, e o que cada uma ganha.
-// ZOMBIES + Right-BICEP. project NODE: PIXI é FALSIFICADO por interface estrutural (mesmo precedente de
-// viewports.node/traffic.node), porque aqui não há um pixel para conferir — há uma GRADE e um CICLO DE VIDA.
+// Tests of render/screen-pipeline — the render TOPOLOGY: how many screens, where, and what each one gets.
+// ZOMBIES + Right-BICEP. NODE project: PIXI is FAKED through a structural interface (the same precedent as
+// viewports.node), because there is no pixel to check here — there is a GRID and a LIFE CYCLE.
 //
-// O que este arquivo existe para pegar:
-//  · a grade tem de vir de core/screens.ts. A conta que vivia dentro do configureRender era a QUINTA cópia
-//    e era a divergente. Se alguém a reescrever à mão aqui, os números abaixo mudam.
-//  · o descarte. `configureRender` roda toda vez que o nº de jogadores muda; se ele não destruir as
-//    render-textures anteriores, o vazamento é de VRAM e não aparece em teste nenhum de render.
-//  · a terceira tela CENTRALIZADA. É a única irregularidade da grade e a mais fácil de perder num refator.
+// What this file exists to catch:
+//  · the grid has to come from core/screens.ts, the single source. If someone rewrites the sum by hand here, the
+//    numbers below change.
+//  · disposal. `configureRender` runs every time the number of players changes; if it does not destroy the previous
+//    render-textures, the leak is of VRAM and shows up in no render test at all.
+//  · the CENTRED third screen. It is the grid's only irregularity and the easiest to lose in a refactor.
 import { describe, it, expect } from 'vitest';
 import { planScreens, initScreenPipeline, FRAME_COLOR, FRAME_ALPHA, FRAME_WIDTH, DOT_INSET_X, DOT_INSET_Y } from '../app/js/render/screen-pipeline.js';
 import { screenGrid } from '../app/js/core/screens.js';
 
-const W = 320, H = 180; // o pixel canônico (ADR-0010)
+const W = 320, H = 180; // the canonical pixel (ADR-0010)
 
 /* ===================== 1. planScreens — a parte PURA ===================== */
 
@@ -30,7 +30,7 @@ describe('planScreens — tela única', () => {
       const p = planScreens(n);
       expect(p.single).toBe(true);
       expect(p.cols).toBe(1);
-      expect(p.canvas).toEqual({ w: W, h: H }); // e não NaN, que é o que 0 colunas daria
+      expect(p.canvas).toEqual({ w: W, h: H }); // and not NaN, which is what 0 columns would give
     }
   });
 });
@@ -52,9 +52,9 @@ describe('planScreens — multi-tela', () => {
 
   it('[Boundary] 3 jogadores: a TERCEIRA é centralizada na linha de baixo (a única irregularidade da grade)', () => {
     const p = planScreens(3);
-    expect(p.canvas).toEqual({ w: 640, h: 360 }); // o canvas continua 2x2, com meia linha vazia
+    expect(p.canvas).toEqual({ w: 640, h: 360 }); // the canvas stays 2x2, with half a row empty
     expect(p.viewports.map(v => [v.x, v.y])).toEqual([[0, 0], [320, 0], [160, 180]]);
-    // e a 3ª fica EXATAMENTE no meio: sobra igual dos dois lados
+    // and the 3rd sits EXACTLY in the middle: equal room on both sides
     const t = p.viewports[2];
     expect(t.x).toBe((640 - 320) / 2);
     expect(640 - (t.x + 320)).toBe(t.x);
@@ -100,9 +100,9 @@ describe('planScreens — moldura e bolinha', () => {
   });
 });
 
-/* ===================== 2. configureRender — o ciclo de vida ===================== */
+/* ===================== 2. configureRender — the life cycle ===================== */
 
-// PIXI de mentira: só os campos que o módulo toca, e um LOG de tudo que foi destruído/anexado.
+// Fake PIXI: only the fields the module touches, and a LOG of everything destroyed/attached.
 function mkHarness(numPlayers) {
   const log = { destroyed: [], added: [], removedFromParent: 0, resizes: [], minimap: [], hud: 0, filters: 0, dots: 0 };
   let id = 0;
@@ -123,7 +123,7 @@ function mkHarness(numPlayers) {
   const camera = { kind: 'camera', parent: stage };
   let vpTex = [], vpSpr = [], vpFrames = null, vpDots = [];
   const api = initScreenPipeline({
-    // Construtores viraram FÁBRICAS (Fase D): a porta pede o verbo, não a classe. Ver `render/port`.
+    // Constructors are FACTORIES (phase D): the port asks for the verb, not the class. See `render/port`.
     RenderTexture, NEAREST: 0,
     createSprite: (t) => new SpriteCtor(t), createDrawing: () => new GraphicsCtor(),
     stage, renderer: { resize: (w, h) => log.resizes.push([w, h]) }, camera,
@@ -148,9 +148,9 @@ function mkHarness(numPlayers) {
 describe('configureRender — tela única', () => {
   it('[Right] a câmera volta para o FUNDO do stage, o minimapa reaparece e o canvas volta a 320x180', () => {
     const h = mkHarness(1);
-    h.camera.parent = null; // veio do caminho multi-tela, onde a câmera fica órfã
+    h.camera.parent = null; // it came from the multi-screen path, where the camera is left orphaned
     h.api.configureRender();
-    expect(h.log.added).toEqual([['at0', h.camera]]); // addChildAt(camera, 0) — atrás de tudo
+    expect(h.log.added).toEqual([['at0', h.camera]]); // addChildAt(camera, 0) — behind everything
     expect(h.log.minimap).toEqual([true]);
     expect(h.log.resizes).toEqual([[320, 180]]);
     expect(h.log.hud).toBe(1);
@@ -177,7 +177,7 @@ describe('configureRender — multi-tela', () => {
     h.api.configureRender();
     expect(h.log.minimap).toEqual([false]);
     expect(h.log.resizes).toEqual([[640, 180]]);
-    expect(h.log.added.some(([, c]) => c === h.camera)).toBe(false); // a câmera NÃO entra no stage
+    expect(h.log.added.some(([, c]) => c === h.camera)).toBe(false); // the camera does NOT enter the stage
   });
 
   it('[Right] uma render-texture 320x180 NEAREST por jogador, e um sprite posicionado por render-texture', () => {
@@ -186,10 +186,10 @@ describe('configureRender — multi-tela', () => {
     expect(h.vpTex).toHaveLength(3);
     for (const rt of h.vpTex) {
       expect([rt.width, rt.height]).toEqual([320, 180]);
-      expect(rt.baseTexture.scaleMode).toBe(0); // NEAREST: pixel art não interpola
+      expect(rt.baseTexture.scaleMode).toBe(0); // NEAREST: pixel art does not interpolate
     }
     expect(h.vpSpr.map(s => [s.x, s.y])).toEqual([[0, 0], [320, 0], [160, 180]]);
-    expect(h.vpSpr.map(s => s.texture)).toEqual(h.vpTex); // cada sprite mostra a SUA render-texture
+    expect(h.vpSpr.map(s => s.texture)).toEqual(h.vpTex); // each sprite shows ITS OWN render-texture
   });
 
   it('[Right] a moldura é UM Graphics com uma linha e um retângulo por tela', () => {
@@ -206,8 +206,8 @@ describe('configureRender — multi-tela', () => {
     h.api.configureRender();
     expect(h.vpDots.map(g => [g.x, g.y, g.visible])).toEqual([[311, 9, false], [631, 9, false]]);
     const ordem = h.log.added.map(([, c]) => c);
-    expect(ordem.slice(-2)).toEqual(h.vpDots);          // depois das molduras
-    expect(ordem.indexOf(h.vpFrames)).toBeGreaterThan(ordem.indexOf(h.vpSpr[1])); // e depois dos sprites
+    expect(ordem.slice(-2)).toEqual(h.vpDots);          // after the frames
+    expect(ordem.indexOf(h.vpFrames)).toBeGreaterThan(ordem.indexOf(h.vpSpr[1])); // and after the sprites
   });
 
   it('[Right] multi-tela reaplica HUD, filtros de a11y e bolinhas — nessa ordem, uma vez cada', () => {
@@ -229,7 +229,7 @@ describe('configureRender — descarte (o vazamento que nenhum teste de render p
     for (const s of antigos.spr) expect(h.log.destroyed).toContainEqual(['spr', s.id]);
     expect(h.log.destroyed).toContainEqual(['gfx', antigos.frames.id]);
     for (const g of antigos.dots) expect(h.log.destroyed).toContainEqual(['gfx', g.id]);
-    expect(h.vpTex).toHaveLength(4); // e o conjunto novo já está de pé
+    expect(h.vpTex).toHaveLength(4); // and the new set is already up
   });
 
   it('[Right] voltar de 4 telas para 1 também destrói tudo (o caminho que mais esquece)', () => {

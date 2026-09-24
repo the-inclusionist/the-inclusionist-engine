@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A BARRA DE DEZ SEGMENTOS NÃO DECIDE NADA — ela mostra o veredicto do motor adaptativo (#93, ADR-0049 §5).
+// THE TEN-SEGMENT BAR DECIDES NOTHING — it shows the adaptive engine's verdict (#93, ADR-0049 §5).
 //
-// ========================= O QUE ESTES CASOS PROTEGEM =========================
-// A leitura literal da issue («8 azuis sobem, 4 vermelhos seguidos ou 5 espalhados descem») produz uma
-// segunda implementação de uma decisão que já vive no `bandOf`. A arquitectura impede-a — o `educational/`
-// não importa nada, logo a barra não alcança o `bandOf` nem o `piso` —, e estes casos afirmam que a
-// projecção que sobrou é fiel. O do PISO é o que prova que a cópia já estaria errada hoje.
+// ========================= WHAT THESE CASES PROTECT =========================
+// The literal reading of the issue («8 azuis sobem, 4 vermelhos seguidos ou 5 espalhados descem») produces a second
+// implementation of a decision that already lives in `bandOf`. The architecture prevents it — `educational/` imports
+// nothing, so the bar cannot reach `bandOf` or the floor —, and these cases assert that the projection that is left is
+// faithful. The FLOOR case is the one proving a copy would already be wrong today.
 //
-// ⚠️ ESTE FICHEIRO É O TESTE E PODE IMPORTAR OS DOIS, que é justamente o que o módulo não pode. É por isso
-// que os casos de junção — as duas uniões de resultado, e a janela — vivem aqui: são a costura entre dois
-// módulos que, por decisão de camada, não se conhecem.
+// ⚠️ THIS FILE IS THE TEST AND MAY IMPORT BOTH, which is exactly what the module may not. That is why the joining
+// cases — the two result unions, and the window — live here: they are the seam between two modules that, by layer
+// decision, do not know each other.
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import {
   barOf, corDoSegmento, afterSignalling, BAR_SEGMENTS,
@@ -20,9 +20,9 @@ import {
   bandOf, resultadoDaQuestao, WINDOW, LEVEL_UP_TARGET, MISSES_IN_A_ROW_THAT_DROP,
 } from '../app/js/educational/adaptive-engine.js';
 
-const PISO5 = 0.6; // o piso do chute de uma questão de cinco alternativas — o caso do ADR-0048
+const PISO5 = 0.6; // the guessing floor of a five-option question — ADR-0048's case
 const rep = (r, n) => Array.from({ length: n }, () => r);
-// A COSTURA, num sítio só: quem chama corre o motor e entrega o veredicto. A barra não tem como o fazer.
+// THE SEAM, in one place: the caller runs the engine and hands over the verdict. The bar has no way to do it.
 const barra = (hist, over = {}) =>
   barOf('mat.fracoes', hist, bandOf(hist, over.piso ?? PISO5), over);
 
@@ -50,8 +50,8 @@ describe('educational/segment-bar · a cor de um segmento é UMA QUESTÃO, nunca
 
 describe('educational/segment-bar · a cor da BARRA é o veredicto, e não uma segunda contagem', () => {
   it('⚠️ [Interface] a barra NUNCA discorda do `faixaDe` — em cem histórias sorteadas deterministicamente', () => {
-    // Se alguém puser contadores próprios dentro do módulo — usando os segmentos, que ele tem — eles vão
-    // coincidir com o motor em alguns casos e não em todos, e é aqui que a divergência aparece.
+    // If someone puts counters of their own inside the module — using the segments, which it has — they will agree
+    // with the engine in some cases and not in all, and this is where the divergence shows up.
     const RES = ['primeira', 'mediada', 'falhou'];
     let semente = 7;
     const prox = () => (semente = (semente * 1103515245 + 12345) % 2147483648) / 2147483648;
@@ -65,16 +65,16 @@ describe('educational/segment-bar · a cor da BARRA é o veredicto, e não uma s
   });
 
   it('⚠️ [Interface] o PISO manda, e é por isso que «cinco vermelhos» não pode estar escrito na barra', () => {
-    // Cinco falhadas em dez dá `resolvidas = 0,50`. Com piso 0,60 (cinco alternativas) isso DESCE. Com o piso
-    // de uma questão de verdadeiro-ou-falso, muito mais alto, MENOS falhas já bastam — e uma barra com o
-    // «cinco» literal continuaria a mostrar verde a uma criança que o motor já teria descido.
+    // Five failed out of ten gives `resolvidas = 0.50`. With a 0.60 floor (five options) that DROPS. With the floor of a
+    // true-or-false question, much higher, FEWER failures already suffice — and a bar with a literal «cinco» would keep
+    // showing green to a child the engine would already have dropped.
     const cincoEspalhadas = ['falhou', 'primeira', 'falhou', 'mediada', 'falhou', 'primeira', 'falhou', 'mediada', 'falhou', 'primeira'];
     expect(barra(cincoEspalhadas).cor).toBe('laranja');
 
-    // QUATRO falhadas em dez: 0,60 de resolvidas. Com piso 0,60 o corte é `<=`, logo desce também.
+    // FOUR failed out of ten: 0.60 solved. With a 0.60 floor the cut is `<=`, so it drops too.
     const quatro = ['falhou', 'primeira', 'falhou', 'mediada', 'falhou', 'primeira', 'falhou', 'mediada', 'primeira', 'mediada'];
     expect(barra(quatro, { piso: PISO5 }).cor, 'o `<=` do piso virou `<`').toBe('laranja');
-    // E com um piso mais baixo a MESMA história não desce. Uma barra que contasse vermelhos não veria isto.
+    // And with a lower floor the SAME story does not drop. A bar counting reds would not see this.
     expect(barra(quatro, { piso: 0.3 }).cor, 'a barra ignorou o piso — está a contar sozinha').toBe('nenhuma');
   });
 
@@ -92,9 +92,9 @@ describe('educational/segment-bar · a cor da BARRA é o veredicto, e não uma s
   });
 
   it('⚠️ [Interface] COPIAR A RESPOSTA fica laranja de imediato, sem esperar por quatro falhadas', () => {
-    // ADR-0049: falhadas as três tentativas e as três da explicação, a resposta aparece para copiar e «o
-    // nível desce imediatamente». O histórico não distingue isso de um `falhou` qualquer — só a entrada
-    // separada distingue —, e é por isso que ela existe.
+    // ADR-0049: once the three attempts and the three of the explanation have failed, the answer appears to be copied
+    // and «o nível desce imediatamente». The history does not tell that apart from any `falhou` — only the separate
+    // input does —, and that is why it exists.
     const uma = ['falhou'];
     expect(barra(uma).cor, 'uma falha sozinha não desce nível nenhum').toBe('nenhuma');
     expect(barra(uma, { copiouAResposta: true }).cor).toBe('laranja');
@@ -103,10 +103,10 @@ describe('educational/segment-bar · a cor da BARRA é o veredicto, e não uma s
 
 describe('educational/segment-bar · o que ela NÃO faz', () => {
   it('⚠️ [Interface] o módulo não importa NADA — nem armazenamento, nem o motor que o colore', async () => {
-    // Duas dívidas num caso só. A do ADR-0103 (a barra não persiste; a razão é pedagógica antes de jurídica,
-    // e um histórico guardado leria um recuo normal como regressão sob qualquer controlador) e a do ADR-0032
-    // (o currículo é DADO e viaja sozinho). É a segunda que faz a primeira barata de garantir: um módulo que
-    // não importa nada não tem por onde alcançar o `localStorage`.
+    // Two debts in one case. ADR-0103's (the bar does not persist; the reason is pedagogical before it is legal, and a
+    // stored history would read a normal step back as regression under any controller) and ADR-0032's (the curriculum
+    // is DATA and travels alone). It is the second that makes the first cheap to guarantee: a module that imports
+    // nothing has no way to reach `localStorage`.
     const { readFileSync } = await import('node:fs');
     const src = readFileSync(new URL('../app/js/educational/segment-bar.ts', import.meta.url), 'utf8');
     const importa = [...src.matchAll(/^\s*import[\s(]/gm)].map((m) => m[0]);
@@ -115,10 +115,10 @@ describe('educational/segment-bar · o que ela NÃO faz', () => {
   });
 
   it('⚠️ [Interface] as duas uniões de RESULTADO continuam idênticas, apesar de os módulos não se conhecerem', () => {
-    // O preço de a camada não importar nada: `Resultado` está declarado nos dois ficheiros. Em TypeScript
-    // duas uniões estruturalmente iguais atravessam uma para a outra sem conversão — e sem ninguém a avisar
-    // quando deixam de ser iguais. Este caso é o aviso. Se o motor ganhar um quarto resultado, ele cai aqui
-    // em vez de a barra o pintar como vermelho por omissão.
+    // The price of the layer importing nothing: `Resultado` is declared in both files. In TypeScript two structurally
+    // equal unions pass into each other with no conversion — and with nobody warning when they stop being equal. This
+    // case is the warning. If the engine gains a fourth result, it lands here instead of the bar painting it red by
+    // omission.
     const doMotor = [resultadoDaQuestao(1), resultadoDaQuestao(3), resultadoDaQuestao(null)];
     expect(new Set(doMotor)).toEqual(new Set(['primeira', 'mediada', 'falhou']));
     for (const r of doMotor) {
@@ -137,25 +137,24 @@ describe('educational/segment-bar · o que ela NÃO faz', () => {
   });
 
   it('[Interface] a barra tem tantos segmentos quanto a JANELA que o motor julga', () => {
-    // Uma barra de doze mostraria duas questões que o veredicto não olhou.
+    // A bar of twelve would show two questions the verdict did not look at.
     expect(BAR_SEGMENTS).toBe(WINDOW);
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · ⚠️ A BARRA VOLTA A CONTAR SOZINHA — trocando o veredicto por `vermelhos >= 5 ? laranja : azuis >= 8 ?
-//     roxa`, que e literalmente o que a issue #93 diz — reprovam QUATRO: "NUNCA discorda do faixaDe" (nas
-//     cem historias), "o PISO manda", "quatro falhas SEGUIDAS" (a copia so olha a janela, e nao ha janela
-//     cheia) e o zerar. E a mutacao mais importante do ficheiro: e a implementacao que uma leitura literal
-//     da issue produz, e ela discorda do motor em quatro frentes.
-//   · tirando o `ctx.copiouAResposta` do inicio da expressao → reprova "COPIAR A RESPOSTA fica laranja de
-//     imediato". O nivel desceria so tres questoes depois, quando o ADR-0049 diz «sem esperar».
-//   · fazendo o `afterSignalling` zerar so no roxo → reprova o caso do zerar. Os quatro vermelhos ficariam na
-//     janela e a barra mandaria descer a CADA questao nova — quatro descidas onde a decisao foi uma.
-//   · `BAR_SEGMENTS` de 10 para 12 → reprovam DOIS: a barra mostraria duas questoes que o veredicto
-//     nao olhou.
-//   · `mediada` a devolver `azul` → reprovam DOIS. Mediacao passaria a parecer desempenho sem apoio, que e
-//     precisamente a distincao que o ADR-0048 §5 usa para julgar.
-//   · acrescentando `import * as store from '../platform/storage.js'` → reprovam TRES, e em DOIS ficheiros:
-//     o caso do ADR-0103 aqui, e os dois casos do `engine-boundary` que dizem que o curriculo nao importa
-//     nada. E o que torna a proibicao de persistir barata: um modulo sem imports nao alcanca o localStorage.
+// ========================= MUTATIONS CHECKED =========================
+//   · ⚠️ THE BAR COUNTING ON ITS OWN AGAIN — replacing the verdict with `vermelhos >= 5 ? laranja : azuis >= 8 ?
+//     roxa`, which is literally what issue #93 says — FOUR fail: "NUNCA discorda do faixaDe" (in the hundred stories),
+//     "o PISO manda", "quatro falhas SEGUIDAS" (the copy only looks at the window, and there is no full window) and
+//     the reset. It is the most important mutation of the file: it is the implementation a literal reading of the
+//     issue produces, and it disagrees with the engine on four fronts.
+//   · removing `ctx.copiouAResposta` from the start of the expression → fails "COPIAR A RESPOSTA fica laranja de
+//     imediato". The level would only drop three questions later, when ADR-0049 says «sem esperar».
+//   · making `afterSignalling` reset only on purple → fails the reset case. The four reds would stay in the window and
+//     the bar would call for a drop at EVERY new question — four drops where the decision was one.
+//   · `BAR_SEGMENTS` from 10 to 12 → TWO fail: the bar would show two questions the verdict did not look at.
+//   · `mediada` returning `azul` → TWO fail. Mediation would look like unsupported performance, which is precisely the
+//     distinction ADR-0048 §5 uses to judge.
+//   · adding `import * as store from '../platform/storage.js'` → THREE fail, in TWO files: the ADR-0103 case here, and
+//     the two `engine-boundary` cases that say the curriculum imports nothing. That is what makes the ban on persisting
+//     cheap: a module with no imports cannot reach localStorage.

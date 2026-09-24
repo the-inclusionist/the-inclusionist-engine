@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A ROTA NÃO ATRAVESSA PAREDE, E É SÓ ISSO QUE ELA TEM DE PROVAR (#84, item 1).
+// THE ROUTE DOES NOT GO THROUGH A WALL, AND THAT IS ALL IT HAS TO PROVE (#84, item 1).
 //
-// ========================= O QUE ESTE FICHEIRO AFERE =========================
-// A #84 diz que a pista de hoje «aponta em linha reta para o alvo, e a linha reta atravessa parede». O caso
-// central deste ficheiro é exatamente esse desenho: um alvo perto, atrás de um muro, e um alvo longe, por um
-// corredor aberto. A resposta certa é o LONGE.
+// ========================= WHAT THIS FILE CHECKS =========================
+// #84 says the straight-line cue «aponta em linha reta para o alvo, e a linha reta atravessa parede». The central case of
+// this file is exactly that drawing: a near target, behind a wall, and a far target, down an open corridor. The right
+// answer is the FAR one.
 //
-// ⚠️ E ele reprova por si mesmo se o mapa estiver mal desenhado: um `[Cross-check]` afirma que, em linha
-// reta, o vencedor seria o outro. Sem isso o caso central podia ficar verde por os dois estarem à mesma
-// distância, e eu nunca saberia.
+// ⚠️ And it fails by itself if the map is badly drawn: a `[Cross-check]` asserts that, in a straight line, the winner
+// would be the other one. Without that the central case could stay green because both were at the same distance, and
+// nobody would know.
 //
-// Project `node` porque não há DOM nenhum aqui: é aritmética sobre o contrato.
+// `node` project because there is no DOM here at all: it is arithmetic over the contract.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED (at the end of the file).
 import { describe, it, expect } from 'vitest';
 import { routeTo, isWalkable, WALKABLE_ROLES } from '../app/js/core/route.js';
 import { distance } from '../app/js/core/contract.js';
 
 const GRADE = (w, h, move = 'orthogonal') => ({ kind: 'grid', size: [w, h], move, frame: 'compass' });
 
-/** Um mapa desenhado em texto: `#` é parede, `.` é ar, `~` é água, `^` é espinho, `+` é portão, `L` escada. */
+/** A map drawn in text: `#` is wall, `.` is air, `~` is water, `^` is spikes, `+` is gate, `L` ladder. */
 function mapa(linhas) {
   const PAPEL = { '#': 'structure', '.': 'free', '~': 'water', '^': 'hazard', '+': 'gate', L: 'climb', k: 'key' };
   return (at) => {
     const linha = linhas[at.y];
     const c = linha ? linha[at.x] : undefined;
-    return PAPEL[c] ?? 'structure'; // fora do desenho é parede: o mapa é o que está escrito
+    return PAPEL[c] ?? 'structure'; // outside the drawing is wall: the map is what is written
   };
 }
 
@@ -73,7 +73,7 @@ describe('core/route — a rota contorna, a linha reta atravessa', () => {
 
   it('[Right] `passos` conta o caminho andado, não a reta', () => {
     const r = routeTo(ctx, DE, [LONGE]);
-    // Contornar pela esquerda ou pela direita dá o mesmo: 6 de descida + 2 de desvio, ida e volta.
+    // Going round by the left or by the right gives the same: 6 down + 2 of detour, there and back.
     expect(r.steps).toBeGreaterThan(distance(topo, DE, LONGE));
   });
 
@@ -98,7 +98,7 @@ describe('core/route — a rota contorna, a linha reta atravessa', () => {
 });
 
 describe('core/route — a métrica declarada decide quantos vizinhos um ponto tem', () => {
-  // Um corredor diagonal: só se atravessa andando na diagonal.
+  // A diagonal corridor: it can only be crossed by walking diagonally.
   //  012
   // 0.#.
   // 1#.#
@@ -116,7 +116,7 @@ describe('core/route — a métrica declarada decide quantos vizinhos um ponto t
 
 describe('core/route — os casos que o contrato manda tratar', () => {
   it('⚠️ [Boundary] o ÚLTIMO passo entra num alvo que não se atravessa', () => {
-    // Uma bandeira declarada dentro de um portão. Recusar entrar faria a rota nunca chegar.
+    // A flag declared inside a gate. Refusing to enter would make the route never arrive.
     const DESENHO = ['...+'];
     const ctx = { topology: GRADE(4, 1), roleAt: mapa(DESENHO) };
     const r = routeTo(ctx, { x: 0, y: 0 }, [{ x: 3, y: 0 }]);
@@ -143,16 +143,16 @@ describe('core/route — os casos que o contrato manda tratar', () => {
   });
 
   it('⚠️ [Zero] `hotspots` não tem espaço, logo não tem rota', () => {
-    // Uma lista ordenada não tem geometria: inventar uma direção ali seria mentir, e o `bearing` do contrato
-    // já responde `none` pelo mesmo motivo.
+    // An ordered list has no geometry: inventing a direction there would be lying, and the contract's `bearing` already
+    // answers `none` for the same reason.
     const ctx = { topology: { kind: 'hotspots', order: ['a', 'b', 'c'] }, roleAt: () => 'free' };
     expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 2, y: 0 }])).toBe(null);
   });
 
   it('⚠️ [Exercise] o ORÇAMENTO corta, e `null` quer dizer «não sei» e não «não há»', () => {
-    // O aviso está escrito no `core/contract`: enumerar um mapa grande por quadro seria caro. Um campo aberto
-    // de 60×60 com o alvo no canto tem caminho de sobra — o que se afere é que a busca DESISTE em vez de o
-    // varrer inteiro, e que com orçamento à altura ela acha.
+    // The warning is written in `core/contract`: enumerating a big map per frame would be expensive. An open 60×60 field
+    // with the target in the corner has path to spare — what is checked is that the search GIVES UP instead of sweeping
+    // it whole, and that with a budget to match it finds it.
     const aberto = { topology: GRADE(60, 60), roleAt: () => 'free' };
     const de = { x: 0, y: 0 }, ate = { x: 59, y: 59 };
     expect(routeTo({ ...aberto, budget: 50 }, de, [ate]), 'varreu o mapa apesar do teto').toBe(null);
@@ -160,7 +160,7 @@ describe('core/route — os casos que o contrato manda tratar', () => {
   });
 
   it('[Boundary] fora da extensão declarada não é caminho', () => {
-    // `size` é 3×1: `y = 1` não existe, e um vizinho para lá não pode ser considerado.
+    // `size` is 3×1: `y = 1` does not exist, and a neighbour out there cannot be considered.
     const ctx = { topology: GRADE(3, 1), roleAt: () => 'free' };
     const r = routeTo(ctx, { x: 0, y: 0 }, [{ x: 2, y: 0 }]);
     expect(r.steps).toBe(2);
@@ -180,8 +180,8 @@ describe('core/route — contínuo: a grelha é uma AMOSTRAGEM, e está declarad
   });
 
   it('⚠️ [Boundary] um alvo ENTRE pontos da grelha continua alcançável', () => {
-    // 20 não é múltiplo de 8. Sem a tolerância de meio passo a rota nunca «chegaria», e o guia calaria-se
-    // num alvo que está mesmo ali — que é o modo de falhar mais cruel: silêncio sobre o que existe.
+    // 20 is not a multiple of 8. Without the half-step tolerance the route would never «chegar», and the guide would fall
+    // silent on a target that is right there — the cruellest way to fail: silence about what exists.
     const ctx = { topology: CONT, roleAt: () => 'free' };
     expect(routeTo(ctx, { x: 0, y: 0 }, [{ x: 20, y: 0 }])).not.toBe(null);
   });
@@ -232,16 +232,16 @@ describe('core/route — what the probe of 2026-09-23 found unheld', () => {
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · tirando `if (!isWalkable(ctx.roleAt(vizinho))) continue;` → reprovam SETE casos, entre eles "[Right]
-//     a rota escolhe o alcançável" (que passa a apontar o alvo EMPAREDADO) e "[Zero] alvo totalmente
-//     emparedado" (que devolve rota em vez de null). É o defeito da #84 reproduzido: a pista atravessa a
-//     parede. ⚠️ Eu tinha registado dois; são sete, e a diferença é boa notícia — a propriedade está presa
-//     por vários lados, e não por um caso só.
-//   · trocando o `primeiro` por `vizinho` (guardar sempre o último passo em vez do primeiro) → reprovam TRÊS,
-//     entre eles "[Right] `proximo` é UM passo".
-//   · pondo `if (ortogonal && n > 1) continue;` a valer sempre → "[Interface] com `diagonal` a rota passa"
-//     reprova: o corredor diagonal fecha-se.
-//   · movendo o teste de alvo (`chegou`) para DEPOIS do teste de atravessabilidade → "[Boundary] o ÚLTIMO
-//     passo entra num alvo que não se atravessa" reprova com null.
-//   · trocando `tolerancia` de 0.5 para 0 no contínuo → "[Boundary] um alvo ENTRE pontos da grelha" reprova.
+// ========================= MUTATIONS CHECKED =========================
+//   · removing `if (!isWalkable(ctx.roleAt(vizinho))) continue;` → SEVEN cases fail, among them
+//     `[Right] a rota escolhe o alcançável` (which now points at the WALLED-IN target) and
+//     `[Zero] alvo totalmente emparedado` (which returns a route instead of null). It is #84's defect reproduced: the
+//     cue goes through the wall. ⚠️ I had recorded two; there are seven, and the difference is good news — the property
+//     is held from several sides, and not by one case alone.
+//   · replacing `primeiro` with `vizinho` (always keeping the last step instead of the first) → THREE fail,
+//     among them the one that says `proximo` is ONE step.
+//   · making `if (ortogonal && n > 1) continue;` always apply → the case where the route passes with `diagonal`
+//     fails: the diagonal corridor closes.
+//   · moving the target test (`chegou`) AFTER the walkability test →
+//     `[Boundary] o ÚLTIMO passo entra num alvo que não se atravessa` fails with null.
+//   · changing `tolerancia` from 0.5 to 0 in the continuous space → `[Boundary] um alvo ENTRE pontos da grelha` fails.
