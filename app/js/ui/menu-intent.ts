@@ -9,12 +9,12 @@
 import type { NavKeys } from '../input/edges.js';
 import { stepInRing } from '../core/ring.js';
 
-/* As tabelas de tecla GENÉRICA (as que valem para qualquer jogador, mesmo sem remap). Viraram `Set` porque é
-   o que elas sempre foram semanticamente — pertinência, não ordem — e porque um `Set` nomeado deixa a tabela
-   auditável de fora (o teste importa a constante em vez de repetir os literais). Conteúdo VERBATIM. */
-/** Confirma/entra. `NumpadEnter` conta aqui (mas NÃO pausa: ver o ouvinte de bolha do game.js). */
+/* The GENERIC key tables (the ones that hold for any player, even with no remap). They are `Set`s because that is
+   what they are — membership, not order — and because a named `Set` keeps the table auditable from outside (the
+   test imports the constant instead of repeating the literals). */
+/** Confirm/enter. `NumpadEnter` counts here (but does NOT pause — see `input/keydown`). */
 export const KEY_YES: ReadonlySet<string> = new Set(['Space', 'KeyJ', 'Enter', 'NumpadEnter']);
-/** Volta. ⚠️ DEFEITO 2: `Escape` é a MESMA intenção que a ação "especial" do gamepad. Verbatim. */
+/** Back. ⚠️ DEFECT 2: `Escape` is the SAME intent as the gamepad's "special" action. */
 export const KEY_NO: ReadonlySet<string> = new Set(['Escape']);
 export const KEY_UP: ReadonlySet<string> = new Set(['ArrowUp', 'KeyW']);
 export const KEY_DOWN: ReadonlySet<string> = new Set(['ArrowDown', 'KeyS']);
@@ -22,8 +22,8 @@ export const KEY_LEFT: ReadonlySet<string> = new Set(['ArrowLeft', 'KeyA']);
 export const KEY_RIGHT: ReadonlySet<string> = new Set(['ArrowRight', 'KeyD']);
 
 /**
- * Traduz (tecla física, ação remapeada do dono da tecla) → intenção. `act` é `null` quando a tecla não é de
- * nenhum jogador (tecla genérica). Verbatim das seis linhas de `menuNavKey`.
+ * Translates (physical key, the key owner's remapped action) → intent. `act` is `null` when the key belongs to no
+ * player (a generic key).
  */
 export function menuKeyIntent(code: string, act: string | null): NavKeys {
   return {
@@ -36,38 +36,31 @@ export function menuKeyIntent(code: string, act: string | null): NavKeys {
   };
 }
 
-/** `select` com esquerda/direita: um passo, SEM dar a volta — ajustar VALOR não é navegar lista (ver acima). */
+/** `select` with left/right: one step, WITHOUT wrapping — adjusting a VALUE is not navigating a list. */
 export function selectStep(selectedIndex: number, optionsLen: number, delta: number): number {
   return Math.max(0, Math.min(optionsLen - 1, selectedIndex + delta));
 }
 
-/** `select` com "sim": um passo, COM volta. É a diferença deliberada entre confirmar e ajustar. */
+/** `select` with "yes": one step, WITH wrapping. That is the deliberate difference between confirming and adjusting. */
 export function selectWrap(selectedIndex: number, optionsLen: number): number {
   return (selectedIndex + 1) % optionsLen;
 }
 
-/** `input[type=range]` com esquerda/direita: um `step` (default 1), preso entre `min` e `max`. */
+/** `input[type=range]` with left/right: one `step` (default 1), clamped between `min` and `max`. */
 export function rangeStep(value: number, min: number, max: number, step: number, delta: number): number {
-  const st = step || 1; // `+cur.step||1`: step ausente/0/NaN vira 1, verbatim
+  const st = step || 1; // a missing/0/NaN step becomes 1
   return Math.max(min, Math.min(max, value + delta * st));
 }
 
 /**
- * O PASSO DO CURSOR NO MENU DE PAUSA — um ANEL, agora que a pausa é uma lista (ADR-0044, itens 1 e 7).
+ * THE CURSOR STEP IN THE PAUSE MENU — a RING, because the pause card is one list (ADR-0044, items 1 and 7).
  *
- * ISTO SUBSTITUI `pauseGridMove`, e a substituição é o desfecho do ADR-0044, não uma limpeza. O que havia
- * era uma GRADE de duas zonas — a barra de dez ícones em cima, a lista de itens em duas colunas embaixo — e
- * uma fronteira entre elas com quatro regras próprias ("de cima, 'baixo' cai sempre no primeiro item", "da
- * primeira linha, 'cima' sobe para o ícone de mesmo índice", …). Cada regra dessas era uma coisa a mais para
- * a criança descobrir sem ver, e nenhuma delas era descobrível: só se aprendia esbarrando.
+ * XAG 106 allows wrapping for a LINEAR menu and FORBIDS it for a two-dimensional grid — in a grid, wrapping
+ * teleports the cursor to the other corner and the person loses track of where they are. With the icon bar in the
+ * HUD, the card is a single list, so wrapping is the recommended behaviour rather than a forbidden one — and there
+ * are no zone-crossing rules for a child to discover without seeing.
  *
- * A XAG 106 permite laço para menu LINEAR e o PROÍBE para grade de duas dimensões — numa grade, dar a volta
- * teleporta o cursor para o outro canto e a pessoa perde a noção de onde está. Era por isso que o anel do
- * item 1 valia para todo menu do jogo MENOS este. Com a barra no HUD (item 7), o cartão passou a ter uma
- * lista só, e o laço deixou de ser proibido para virar o recomendado.
- *
- * O que se ganha em troca das quatro regras: `quit` fica a UMA tecla para CIMA de `resume`. Último na
- * leitura, vizinho no dedo.
+ * What it buys: `quit` is ONE key UP from `resume`. Last to be read, next to the finger.
  */
 export function stepInPause(len: number, idx: number, k: NavKeys): number {
   const d = (k.down || k.right) ? 1 : -1;

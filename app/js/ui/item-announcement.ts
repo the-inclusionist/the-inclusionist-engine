@@ -1,43 +1,43 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/item-announcement — COMO UM ITEM DE MENU SE ANUNCIA (ADR-0044, item 3).
+// ui/item-announcement — HOW A MENU ITEM ANNOUNCES ITSELF (ADR-0044, item 3; ADR-0167).
 //
-// A XAG 106 descreve a frase inteira — "Gamma, slider, 38%, 6 of 9" — e este módulo monta a parte que o jogo
-// controla: RÓTULO, ESTADO e ÍNDICE, nessa ordem, com o índice no FIM.
+// XAG 106 describes the whole sentence — "Gamma, slider, 38%, 6 of 9" — and this module builds the part the game
+// controls: LABEL, STATE and INDEX, in that order, with the index at the END.
 //
-// POR QUE O ÍNDICE VAI NO FIM. Quem varre um menu por escuta interrompe assim que reconhece o item — é o que
-// a narração interrompível do item 2 passou a permitir. Com o número na frente, a contagem seria a única
-// parte que SEMPRE daria tempo de ouvir, e o rótulo, a única que interessa, a que nunca chegaria.
+// WHY THE INDEX GOES LAST. Whoever scans a menu by ear interrupts as soon as they recognise the item — which the
+// interruptible narration allows. With the number first, the count would be the one part there is ALWAYS time to
+// hear, and the label, the only part that matters, the one that never arrives.
 //
-// POR QUE ELE PODE SER DESLIGADO. Para quem já sabe o menu de cor, o número vira ruído em toda passagem. A
-// XAG pede a opção explicitamente, e o princípio é o mesmo do resto do projeto: acessibilidade que não se
-// pode desligar é imposição, não ajuste.
+// WHY IT CAN BE TURNED OFF. For someone who knows the menu by heart, the number is noise on every pass. XAG asks
+// for the option explicitly, and the principle is the one the whole project follows: accessibility that cannot be
+// turned off is an imposition, not a setting.
 //
-// ESTE MÓDULO NÃO TOCA O DOM. Quem chama separa as partes (o rótulo do botão, o sub-rótulo, o estado do
-// alternador) e recebe uma frase. É o que permite que a regra seja a MESMA na abertura, na pausa e nas
-// atividades sem que cada tela reinvente a pontuação.
+// THIS MODULE DOES NOT TOUCH THE DOM. The caller separates the parts (the button's label, the sub-label, the
+// toggle's state) and gets a sentence back. That is what keeps the rule the SAME on every screen, without each
+// one reinventing the punctuation.
 
 import { t } from '../core/i18n.js';
 
 export interface ItemDeMenu {
-  /** O que o item é. Espaço em branco de markup é normalizado aqui. */
+  /** What the item is. Markup whitespace is normalised here. */
   label: string;
-  /** O valor ou estado: "ativado", "38%", a palavra de exemplo do minijogo. Opcional. */
+  /** The value or state: "on", "38%", the game's example word. Optional. */
   state?: string;
-  /** Posição na lista, contada a partir de 1 — é o número que a criança ouve, não o índice do array. */
+  /** Position in the list, counted from 1 — the number the child hears, not the array index. */
   position: number;
-  /** Quantos itens a lista tem. */
+  /** How many items the list has. */
   total: number;
 }
 
-/** Espaço em branco de markup (quebras de linha, indentação) vira UM espaço; pontas somem. */
+/** Markup whitespace (line breaks, indentation) becomes ONE space; the ends are trimmed. */
 const tidy = (s: string | undefined): string => (s || '').replace(/\s+/g, ' ').trim();
 
 /**
- * A frase que o item narra.
+ * The sentence the item narrates.
  *
- * A posição fora de faixa NÃO é anunciada, e é decisão, não guarda defensivo: um item filtrado por
- * visibilidade sai da lista e deixa o índice de quem sobrou fora dela. "0 de 7" ensina uma geografia falsa
- * do menu, e a criança confia nela — número errado é pior que número nenhum.
+ * An out-of-range position is NOT announced, and that is a decision, not a defensive guard: an item filtered out
+ * by visibility leaves the list and can leave the index of the ones that remain out of range. "0 of 7" teaches a
+ * false geography of the menu, and the child trusts it — a wrong number is worse than no number.
  */
 export function announceItem(item: ItemDeMenu, withIndex: boolean): string {
   const indexApplies = withIndex && item.total >= 1 && item.position >= 1 && item.position <= item.total;

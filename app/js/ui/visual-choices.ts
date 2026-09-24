@@ -21,45 +21,44 @@ type RoleKey = HcRoleKey;
 export type RGB = readonly [number, number, number];
 
 /**
- * TUDO que este menu escreve em `p.viz`: os 4 níveis de contraste MAIS as 3 correções de daltonismo, que mudaram de
- * casa por decisão do Dev (#60). Elas moravam no Modo empatia, onde a criança daltônica precisava entrar no menu
- * "sentir como é ter uma deficiência" para achar a correção da deficiência que ela tem.
+ * EVERYTHING this menu writes into `p.viz`: the 4 contrast levels PLUS the 3 colour-blindness corrections, which live
+ * here by the Dev's decision (#60) — in the empathy panel a colour-blind child would have had to enter the menu for
+ * "feeling what a disability is like" to find the correction for the one they have.
  *
- * Os sete vivem num CONTROLE SÓ, e isso não é economia de espaço: `p.viz` guarda UM valor. Dois controles separados se
- * sobrescreveriam em silêncio — a criança escolheria a correção, depois o contraste, e perderia a correção sem nada
- * dizer que perdeu. Uma lista só conta a verdade sobre a exclusividade.
+ * The seven live in ONE control, and that is not about saving space: `p.viz` holds ONE value. Two separate controls
+ * would overwrite each other silently — the child would pick the correction, then the contrast, and lose the
+ * correction with nothing saying so. One list tells the truth about the exclusivity.
  */
 export const VISUAL_MODES: readonly string[] = [...CONTRAST_LEVELS, ...VIZ_CORRECTIONS.map((m) => m.key)];
 const VISUAL_MODE_SET: ReadonlySet<string> = new Set(VISUAL_MODES);
 
-/** Short announcement labels — mirrors game.js's HC_LABEL. */
-// Chaves i18n, não texto. Os dois extremos parecem números universais, mas '4,5:1' usa a vírgula decimal do pt-BR e
-// vira '4.5:1' em inglês — e 'off' era uma palavra inglesa dentro de uma frase em português.
+/** Short announcement labels. */
+// i18n keys, not text. The ratios look like universal numbers, but '4,5:1' uses the pt-BR decimal comma and becomes
+// '4.5:1' in English — and 'off' is a word in each language.
 export const CONTRAST_LABELS: Readonly<Record<string, string>> = { normal: 'contrast.off', 'hc-direto': 'contrast.3', 'hc-direto-45': 'contrast.45', 'hc-direto-7': 'contrast.7' };
 
 export const ROLE_KEYS: readonly RoleKey[] = HC_ROLE_KEYS;
-/** Readable labels for the color-blocking roles — mirrors game.js's ROLE_LBL. */
+/** Readable labels for the color-blocking roles. */
 export const ROLE_LABELS: Readonly<Record<RoleKey, string>> = { hazard: 'perigo (lava)', climb: 'escalável (escada/trampolim)', water: 'água', gate: 'portão' };
 
 /**
- * Os 7 modos como o painel os OFERECE: uma lista de rádio, com nome e descrição em cada linha.
+ * The 7 modes as the panel OFFERS them: a radio list, with a name and a description on each row.
  *
- * A primeira versão desta mudança usou um `<select>`, e foi um erro que o Dev pegou na hora: no menu de empatia as três
- * correções eram LINHAS VISÍVEIS, com descrição; dentro de um `<select>` viraram uma linha fechada dentro de uma caixa
- * fechada. Para um controle cuja razão de existir é ser ACHADO por quem enxerga mal, esconder atrás de um clique é
- * quase o mesmo que não ter movido.
+ * Not a `<select>`, and the Dev caught that immediately: inside a `<select>` the corrections become one closed line in
+ * a closed box. For a control whose reason to exist is to be FOUND by someone who sees poorly, hiding it behind a
+ * click is almost the same as not offering it.
  *
- * Rádio, e não sete botões: `p.viz` guarda UM valor, e a exclusividade fica dita pela forma do controle em vez de ser
- * descoberta ao perder a correção que se acabou de escolher.
+ * Radio, and not seven buttons: `p.viz` holds ONE value, and the exclusivity is said by the shape of the control
+ * instead of being discovered by losing the correction just chosen.
  */
 export const VISUAL_MODE_LIST: readonly VizMode[] =
   VIZ_MODES.filter((m) => m.kind === 'normal' || m.kind === 'hcnew').concat(VIZ_CORRECTIONS);
 
 /**
- * `viz` quando ele é um modo DESTE menu (contraste ou correção), senão 'normal'.
+ * `viz` when it is a mode of THIS menu (contrast or correction), otherwise 'normal'.
  *
- * Chamava-se `resolveContrastValue` enquanto o menu só tinha contraste. O nome antigo passaria a mentir ao devolver
- * `fix-deuter`, e um nome que mente sobre o que devolve é pior que um nome comprido.
+ * Named for what it returns: a name that said "contrast" would lie when it returns `fix-deuter`, and a name that lies
+ * about what it returns is worse than a long one.
  */
 export function resolveVisualMode(viz: string): string {
   return VISUAL_MODE_SET.has(viz) ? viz : 'normal';
@@ -84,33 +83,32 @@ export { lqName as lqLabel } from '../render/lq-filter.js';
 import { lqName } from '../render/lq-filter.js';
 
 /**
- * AS QUATRO POSIÇÕES DO REALCE DE CONTRASTE, escolhidas com esquerda e direita (ADR-0151): desligado, linear, misto e
- * quadrático — «da mesma forma que se troca o número de jogadores, e não através de uma barra».
+ * THE FOUR POSITIONS OF THE CONTRAST BOOST, chosen with left and right (ADR-0151): off, linear, mixed and quadratic —
+ * «da mesma forma que se troca o número de jogadores, e não através de uma barra».
  *
- * ⚠️ O VALOR DE «LINEAR» NÃO PODE SER ZERO: `setLq(0)` desliga o filtro, e qualquer valor acima liga a curva. 0,05 é o
- * primeiro passo que o cursor antigo dava — o valor mais linear que ainda liga o filtro. Misto é o meio, e quadrático
- * é a curva S inteira. Cada posição cai na faixa que o `lqName` já dá ao seu nome.
+ * ⚠️ THE "LINEAR" VALUE CANNOT BE ZERO: `setLq(0)` turns the filter off, and any value above turns the curve on. 0.05
+ * is the most linear value that still turns the filter on. Mixed is the middle, and quadratic is the whole S-curve.
+ * Each position falls within the range `lqName` already gives its name.
  */
 export const LQ_STEPS: readonly number[] = [0, 0.05, 0.5, 1];
 
 /**
- * Em que posição está um valor contínuo — incluindo um GUARDADO pelo cursor antigo (0,35, 0,7…). Pela faixa do
- * `lqName`, e não pelo valor mais próximo: é o NOME que a criança ouviu que tem de continuar a ser o de agora.
+ * Which position a continuous value is in — including one STORED by the old slider (0.35, 0.7…). By `lqName`'s range,
+ * not by the nearest value: the NAME the child heard has to stay the name now.
  */
 export function lqPosition(amount: number): number {
   return Math.max(0, ['lq.off', 'lq.linear', 'lq.mixed', 'lq.quadratic'].indexOf(lqName(amount)));
 }
 
 /** t (0..1) -> slider percent (0..100, rounded) — mirrors `Math.round(lqT*100)`.
- *  @deprecated Desde o ADR-0151 o realce é escolhido por PASSOS (`LQ_STEPS`/`lqPosition`); fica pelo consumidor.
- *  ⚠️ Mudou de casa com o resto da metade pura e continua sem leitor na engine: a dívida veio junto, e dizê-lo aqui é
- *  o que impede a mudança de morada de a apagar da vista. */
+ *  @deprecated Since ADR-0151 the boost is chosen by STEPS (`LQ_STEPS`/`lqPosition`); kept for consumers.
+ *  ⚠️ It has no reader inside the engine: that debt is said here so that it stays in view. */
 export function lqPercent(t: number): number {
   return Math.round(clamp01(t) * 100);
 }
 
 /** slider percent (any number) -> clamped t (0..1) — mirrors `+lq.value/100` fed into setLq's clamp.
- *  @deprecated Desde o ADR-0151 o realce é escolhido por PASSOS; fica pelo consumidor. */
+ *  @deprecated Since ADR-0151 the boost is chosen by STEPS; kept for consumers. */
 export function lqFromPercent(pct: number): number {
   return clamp01(pct / 100);
 }
@@ -120,7 +118,7 @@ export function clampSelectedPlayer(selected: number, playerCount: number): numb
   return selected >= playerCount ? 0 : selected;
 }
 
-/** [r,g,b] (0..255) -> '#rrggbb' — mirrors game.js's rgbHex. */
+/** [r,g,b] (0..255) -> '#rrggbb'. */
 export function rgbToHex(rgb: RGB): string {
   return '#' + rgb.map((n) => n.toString(16).padStart(2, '0')).join('');
 }

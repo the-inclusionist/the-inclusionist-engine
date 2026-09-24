@@ -1,20 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/dom.ts — atalhos de seleção do DOM, usados em toda a UI (menus/HUD/pausa/quiz/opções). PURO no import:
-// só define as funções (não toca no DOM → importável em node). $ = querySelector; $$ = querySelectorAll
-// como Array. Genéricos: $<HTMLInputElement>('#x') já tipa o retorno. (Fase 2.27 / Tier 1)
+// ui/dom.ts — DOM selection shortcuts, used across the whole UI (menus/HUD/pause/quiz/options). PURE on import:
+// it only defines functions (it does not touch the DOM → importable in node). $ = querySelector; $$ =
+// querySelectorAll as an Array. Generic: $<HTMLInputElement>('#x') already types the result.
 //
-// DEIXOU DE SER FOLHA no item 14, e de propósito: passou a importar `core/i18n` para que `toggleLabel` (o
-// texto do botão de alternância) more ao lado do `toggleBtn` (a classe e o `aria-pressed`). A propriedade que
-// importa — importável em node, sem I/O no import — continua valendo; o que se perdeu foi a contagem de zero
-// dependências, e o que se ganhou está escrito no comentário de `toggleLabel`.
+// IT IS NOT A LEAF, on purpose: it imports `core/i18n` so that `toggleLabel` (the text of a toggle button) lives
+// beside `toggleBtn` (the class and `aria-pressed`). The property that matters — importable in node, no I/O on
+// import — still holds; what it gave up is having zero dependencies, and what it gained is written on
+// `toggleLabel`.
 import { t } from '../core/i18n.js';
 import { $ as consultar, $$ as consultarTodos } from '../core/dom-query.js';
 
-// O PADRAO E `HTMLElement`, NAO `Element`, e a diferenca aparece em dezessete pontos de chamada: `.hidden`,
-// `.focus()` e `.value` nao existem em `Element`, e sao exatamente o que uma aplicacao faz com o que
-// seleciona. `Element` e o padrao do lib.dom porque `querySelector` tambem serve para SVG e MathML —
-// nenhum seletor deste projeto pega um desses (conferido). Quem precisar de um tipo mais estreito passa
-// o parametro: `$<HTMLSelectElement>('#pad-design')`.
+// THE DEFAULT IS `HTMLElement`, NOT `Element`: `.hidden`, `.focus()` and `.value` do not exist on `Element`, and
+// they are exactly what an application does with what it selects. `Element` is lib.dom's default because
+// `querySelector` also serves SVG and MathML — no selector in this project picks one of those. Whoever needs a
+// narrower type passes the parameter: `$<HTMLSelectElement>('#pad-design')`.
 // The two global queries moved to `core/dom-query` (issue #167); the names stay here for whoever imports them from ui.
 export const $ = consultar;
 export const $$ = consultarTodos;
@@ -31,22 +30,19 @@ export function toggleBtn(b: Element | null, on: boolean): void {
 }
 
 /**
- * O TEXTO do botão de alternância: '❚❚ Ligado' / '▶ Desligado'.
+ * The TEXT of a toggle button: 'On' / 'Off' in English.
  *
- * Mora aqui pelo mesmo motivo do `toggleBtn` logo acima — os dois são as duas metades do mesmo gesto, e a
- * nota daquela função diz que elas "não podem se separar". Elas tinham se separado em TREZE cópias, em nove
- * arquivos, e dois deles declaravam um helper que se chamava compartilhado e servia um chamador só
- * (`settings-empathy.toggleLabel` e `settings-mobility.onOffLabel`, ambos apagados agora).
- *
- * O custo dessa dispersão não era estético: com o texto em treze lugares, traduzir o jogo exigiria achar os
- * treze, e esquecer um deixaria um botão em português no meio do inglês — sem erro, sem teste vermelho.
+ * It lives here for the same reason as `toggleBtn` just above — the two are halves of one gesture, and must not
+ * drift apart. A text copied into each panel is a text that translating the game has to find everywhere, and the
+ * one copy it misses leaves a button in the wrong language — with no error and no red test.
  */
 export function toggleLabel(on: boolean): string {
   return t(on ? 'ui.toggle.on' : 'ui.toggle.off');
 }
 
-/** O `aria-label` da mesma alternância: '{alvo}: ligado'. Separado do rótulo visível porque o leitor de tela
- *  precisa do NOME do alvo junto, e a tela não (o nome já está na linha ao lado do botão). */
+/** The `aria-label` of the same toggle: '{alvo}: on' (`{alvo}` is the dictionary's interpolation key). Separate from
+ *  the visible label because a screen reader needs the NAME of the target with it, and the screen does not (the
+ *  name is already on the row beside the button). */
 export function toggleAria(target: string, on: boolean): string {
   return t(on ? 'ui.toggle.ariaOn' : 'ui.toggle.ariaOff', { alvo: target });
 }
