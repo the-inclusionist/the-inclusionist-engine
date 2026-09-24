@@ -20,12 +20,12 @@
 //
 //   · GENERAL — there is text, sound, a screen and a menu in every game. The engine mounts these always.
 //   · CONTRACT_KEYED — the subject is answered by a declaration the contract ALREADY asks every game
-//     (`tick`, `seguraTeclas()`, `needsPointer()`, `world()` × `topology()`, the players list). The engine can
+//     (`tick`, `holdsKeys()`, `needsPointer()`, `world()` × `topology()`, the players list). The engine can
 //     derive these without a genre, which is the `sonarPlayers` precedent: absent ⇒ derive from the contract.
 //   · GAME_KEYED — nothing the engine holds answers it (genre, perspective, avatar, text, pieces, timing).
 //     The game — or the template of its genre — declares it.
 //
-// ⚠️ Being in the catalogue is NOT being built. `gameSpeed` is here and no writer exists; the row mounts when
+// ⚠️ Being in the catalogue is NOT being built. `macros` is here and no writer exists; the row mounts when
 // the action works, and not before (ADR-0106 §5). The catalogue names what can be asked for.
 
 /** Every accommodation the engine knows by name. None of these ids is a word a child reads. */
@@ -67,7 +67,7 @@ export const GENERAL = [
  * Subject answered by something the contract ALREADY asks, so the engine can derive it with no genre:
  *
  *   · `gameSpeed` ← `tick === 'clock'` (WCAG 2.2.1; the GAG's Basic «adjust the game speed»)
- *   · `moveLatch`, `holdLatch` ← `seguraTeclas()` and the positions the preset declares
+ *   · `moveLatch`, `holdLatch` ← `holdsKeys()` and the positions the preset declares
  *   · `virtualPad`, `oneButton`, `inputCooldown`, `macros` ← action input (`needsPointer()` false)
  *   · `pointerSmoothing`, `pointerSensitivity`, `pointerStyle` ← `needsPointer()` true
  *   · `visionSimulation`, `audioDescription` ← `world().kind === 'element'`
