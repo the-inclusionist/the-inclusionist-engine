@@ -1400,12 +1400,12 @@
       "fanIn": 3
     },
     "ui/menu-nav.ts": {
-      "codeLines": 283,
-      "decisionNodes": 57,
+      "codeLines": 285,
+      "decisionNodes": 54,
       "maxDepth": 2,
       "fanOut": 9,
       "globalReach": 0,
-      "worstFunction": 14,
+      "worstFunction": 10,
       "fanIn": 2
     },
     "ui/motion-choices.ts": {

@@ -546,21 +546,25 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // No TECLADO a saída é Escape (o `no` do projeto). O START do controle é a segunda saída e entra por
     // `input/gamepad`; aqui ele não tem par próprio, porque Enter já é "confirmar" e roubá-lo tiraria da
     // criança o único jeito de ATIVAR o ícone sob o cursor.
-    const keyOwner = ctx.whichPlayer(e.code);
-    const pKey = keyOwner < 0 ? 0 : keyOwner;
-    if (ctx.naBarraDe(pKey)) {
-      const kb = menuKeyIntent(e.code, keyOwner >= 0 ? ctx.actionOf(e.code, pKey) : null);
-      if (hasIntent(kb)) { consumir(e); ctx.navBar(pKey, kb); }
+    const { player, keys } = intentOf(e.code);
+    if (ctx.naBarraDe(player)) {
+      if (hasIntent(keys)) { consumir(e); ctx.navBar(player, keys); }
       return; // na barra, tecla de menu é da barra — com ou sem intenção, não desce para o personagem
     }
 
-    if (!ctx.isNavigable()) return;
+    if (!ctx.isNavigable() || !hasIntent(keys)) return;
+    navOpenMenu(e, player, keys);
+  }
 
-    const owner = ctx.whichPlayer(e.code);
-    const pi = owner < 0 ? 0 : owner;                       // tecla genérica → Jogador 1
-    const k = menuKeyIntent(e.code, owner >= 0 ? ctx.actionOf(e.code, pi) : null);
-    if (!hasIntent(k)) return;
+  /** Whose key this is — a key no player owns is Player 1's — and what it asks of a menu. */
+  function intentOf(code: string): { readonly player: number; readonly keys: NavKeys } {
+    const owner = ctx.whichPlayer(code);
+    const player = owner < 0 ? 0 : owner;
+    return { player, keys: menuKeyIntent(code, owner >= 0 ? ctx.actionOf(code, player) : null) };
+  }
 
+  /** The key moves the dialog on top if there is one, else the player's own pause card if it is open, else nothing. */
+  function navOpenMenu(e: NavKeyEvent, pi: number, k: NavKeys): void {
     // A TECLA SÓ É CONSUMIDA SE HOUVER O QUE NAVEGAR. Antes, `preventDefault()` + `stopPropagation()` vinham
     // AQUI, antes de se saber se havia diálogo ou menu aberto — e o `menuNavKey` matava o evento para depois
     // descobrir que não tinha nada a fazer com ele. Na plataforma isso era invisível: `isNavigable()` é
