@@ -185,7 +185,7 @@ describe('ADR-0109 · quem despachou este evento', () => {
     mau[SOURCE_KEY] = 'olho';
     expect(sourceOfEvent(mau)).toBe('teclado'); // cai na regra seguinte, em vez de aceitar o lixo
     const naoString = ev();
-    naoString[SOURCE_KEY] = { emUso: 'olhos' };
+    naoString[SOURCE_KEY] = { inUse: 'olhos' };
     expect(sourceOfEvent(naoString)).toBeUndefined();
   });
 

@@ -55,8 +55,8 @@ export function readLatch(
   padrao: boolean,
 ): LatchReading {
   return {
-    doTransporte: readTriState(armazem, latchKey(base, jogador, transporte)),
-    doLegado: readTriState(armazem, legacyLatchKey(base, jogador)),
+    fromTransport: readTriState(armazem, latchKey(base, jogador, transporte)),
+    fromLegacy: readTriState(armazem, legacyLatchKey(base, jogador)),
     padrao,
   };
 }

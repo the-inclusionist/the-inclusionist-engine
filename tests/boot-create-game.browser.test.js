@@ -843,7 +843,7 @@ describe('createGame num documento de verdade', () => {
     // pede ponteiro, e o aviso não chegava a existir. Sem transporte nenhum disponível, `some` é falso e a
     // engine tem o que dizer, que é a pré-condição deste caso.
     const semNada = {
-      gamepad: () => false, toque: () => false, teclado: () => false, rato: () => false,
+      gamepad: () => false, touch: () => false, keyboard: () => false, mouse: () => false,
     };
     const motor = abrir({
       declaration: { ...declaracaoValida(), needsPointer: () => true },

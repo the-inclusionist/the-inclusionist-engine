@@ -89,7 +89,7 @@ describe('o número é usado como MAGNITUDE, e não como bandeira', () => {
   it('📌 [Right] quem não segura o bastante é NOMEADO, com o número dele', async () => {
     const { reach } = await import('../app/js/input/transports.js');
     const a = reach([{ id: 'toque', slots: 14, holds: 2, available: () => true }], ['up', 'down'], 3);
-    expect(a.naoSeguram).toEqual([{ id: 'toque', holds: 2 }]);
+    expect(a.cannotHold).toEqual([{ id: 'toque', holds: 2 }]);
   });
 });
 

@@ -98,9 +98,9 @@ export function legacyLatchKey(base: string, jogador: number): string {
 /** O que se sabe ao resolver a alternância de um transporte. */
 export interface LatchReading {
   /** O que está guardado para ESTE transporte. `null` = nunca foi escrito. */
-  readonly doTransporte: boolean | null;
+  readonly fromTransport: boolean | null;
   /** O que está guardado na chave antiga, sem transporte. `null` = nunca foi escrito. */
-  readonly doLegado: boolean | null;
+  readonly fromLegacy: boolean | null;
   /** O padrão de fábrica (`DEFAULTS.toggleMove` / `DEFAULTS.toggleRun`). */
   readonly padrao: boolean;
 }
@@ -117,7 +117,7 @@ export interface LatchReading {
  */
 export function latchOf(transporte: string, l: LatchReading): boolean {
   if (latchAlwaysOn(transporte)) return true;
-  if (l.doTransporte !== null) return l.doTransporte;
-  if (l.doLegado !== null) return l.doLegado;
+  if (l.fromTransport !== null) return l.fromTransport;
+  if (l.fromLegacy !== null) return l.fromLegacy;
   return l.padrao;
 }

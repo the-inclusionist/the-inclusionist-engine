@@ -64,7 +64,7 @@ function buildCtx(over = {}) {
     // ⚠️ O RÓTULO VEM DO 'JOGO', e num teste o jogo é o fixture. Antes o assistente lia as palavras
     // de uma constante em português dentro de `input/gamepad.ts`; agora pergunta, e este objeto é a
     // resposta. `leftShoulder` fica de fora de propósito: prova que uma posição não nomeada é SALTADA.
-    rotuloDaAcao: (a) => ({
+    actionLabel: (a) => ({
       up: 'CIMA', down: 'BAIXO', left: 'ESQUERDA', right: 'DIREITA',
       action1: 'CORRER', action2: 'PULAR', action3: 'ESPECIAL', action4: 'TROCAR', start: 'START',
     })[a] || null,
@@ -73,10 +73,10 @@ function buildCtx(over = {}) {
     frontOverlay: (el) => fronted.push(el),
     // 2026-08-26: o ctx deixou de pedir a FASE e passou a pedir dois booleanos e dois verbos (ADR-0030 C3).
     // O falso segue guardando a string por dentro — é como os casos se leem —, e traduz aqui.
-    mundoRodando: () => phase === 'playing',
-    menuDePausa: () => phase === 'paused',
-    pausar: () => { calls.setPhase.push('paused'); phase = 'paused'; },
-    retomar: () => { calls.setPhase.push('playing'); phase = 'playing'; },
+    worldRunning: () => phase === 'playing',
+    pauseMenu: () => phase === 'paused',
+    pause: () => { calls.setPhase.push('paused'); phase = 'paused'; },
+    resume: () => { calls.setPhase.push('playing'); phase = 'playing'; },
     isAttractActive: () => false,
     stopAttract: () => { calls.stopAttract++; },
     isTouchMode: () => false,
@@ -86,7 +86,7 @@ function buildCtx(over = {}) {
     navTitle: (k) => calls.navTitle.push(k),
     // O MODO `accessibility` (ADR-0044, item 7): com o jogo andando, o direcional dirige a barra do HUD e não
     // o personagem. Por padrão ninguém está nele — os casos que o exercitam alimentam `naBarra`.
-    naBarraDe: (i) => naBarra.has(i),
+    onBar: (i) => naBarra.has(i),
     navBar: (i, k, temStart) => calls.navBar.push([i, k, temStart]),
     sharedDialogOpen: () => null,
     navDialog: (dlg, k) => calls.navDialog.push([dlg, k]),
@@ -302,7 +302,7 @@ describe('initGamepad — wizard: fluxo completo', () => {
     // nomeia nove das quatorze, e o assistente SALTA as cinco que este jogo não usa — perguntar por elas
     // produziria um passo mudo. Até 2026-09-06 a lista tinha exatamente nove entradas e as duas coisas
     // coincidiam por acidente; agora não coincidem, e é a primeira que importa.
-    const NOMEADAS = PADWIZ_ORDER.filter((a) => ctx.rotuloDaAcao(a) !== null);
+    const NOMEADAS = PADWIZ_ORDER.filter((a) => ctx.actionLabel(a) !== null);
     expect(NOMEADAS).toHaveLength(9);
     for (let i = 0; i < NOMEADAS.length; i++) {
       ctx.setPads([makePad({ id: 'DirectInput X', index: 0, pressed: [i] })]);
@@ -635,7 +635,7 @@ describe('initGamepad — pollPads', () => {
   });
 
   it('⚠️ com o cartão de pausa aberto SOBRE um mundo que corre, manda a pausa: o START retoma e não volta a pausar', () => {
-    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], mundoRodando: () => true, menuDePausa: () => true });
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })], worldRunning: () => true, pauseMenu: () => true });
     const api = initGamepad(ctx);
     ctx.setPads([makePad({ id: 'std', index: 0, pressed: [9] })]);
     api.pollPads();
@@ -1178,10 +1178,10 @@ describe('input/pad-wizard — o assistente de mapeamento fala por t(), sem exce
     .filter(([, l]) => !/^\s*(\/\/|\*|\/\*)/.test(l));
 
   it('⚠️ [Zero] tudo o que o assistente fala vem de t( — nenhuma chamada com literal', () => {
-    const falas = CODIGO.filter(([, l]) => /ctx\.dizer\s*\(/.test(l));
+    const falas = CODIGO.filter(([, l]) => /ctx\.say\s*\(/.test(l));
     expect(falas.length, 'ninguem fala pelo assistente; rever este caso').toBeGreaterThan(0);
     const crus = falas
-      .filter(([, l]) => !/ctx\.dizer\s*\(\s*t\s*\(/.test(l) && !/ctx\.dizer\s*\(\s*phrase\s*\)/.test(l))
+      .filter(([, l]) => !/ctx\.say\s*\(\s*t\s*\(/.test(l) && !/ctx\.say\s*\(\s*phrase\s*\)/.test(l))
       .map(([n, l]) => `${n}: ${l.trim()}`);
     expect(crus, 'o assistente fala uma frase que nao passa por t()').toEqual([]);
     // the one `ctx.dizer(frase)` is `comecar`'s, and every caller of `comecar` hands it a `t(`
@@ -1191,10 +1191,10 @@ describe('input/pad-wizard — o assistente de mapeamento fala por t(), sem exce
   });
 
   it('[Right] e o rodape de progresso tambem — ou apaga, ou passa por t(', () => {
-    const escritas = CODIGO.filter(([, l]) => /ctx\.progresso\s*\(/.test(l));
+    const escritas = CODIGO.filter(([, l]) => /ctx\.progress\s*\(/.test(l));
     expect(escritas.length, 'ninguem escreve no rodape de progresso; rever este caso').toBeGreaterThan(0);
     const crus = escritas
-      .filter(([, l]) => !/ctx\.progresso\s*\(\s*''\s*\)/.test(l) && !/ctx\.progresso\s*\(\s*t\s*\(/.test(l))
+      .filter(([, l]) => !/ctx\.progress\s*\(\s*''\s*\)/.test(l) && !/ctx\.progress\s*\(\s*t\s*\(/.test(l))
       .map(([n, l]) => `${n}: ${l.trim()}`);
     expect(crus, 'o rodape de progresso recebe texto que nao passa por t()').toEqual([]);
     expect(escritas.some(([, l]) => /t\s*\(\s*'pad\.wiz\.mapped'/.test(l)),

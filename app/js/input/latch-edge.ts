@@ -30,7 +30,7 @@ export interface LatchedEdgeOptions {
    * coisa que um cartucho pode omitir, e omiti-la faria a criança perder a escolha guardada — em silêncio, e
    * só naquele jogo.
    */
-  readonly armazem?: LatchStore;
+  readonly store?: LatchStore;
   /** O padrão de fábrica. `DEFAULTS.toggleMove`, e não `false` escrito à mão: há UMA fonte (ADR-0029). */
   readonly padrao?: boolean;
 }
@@ -50,7 +50,7 @@ export function createLatchedEdge(
   getPlayers: () => readonly (LatchPlayer | null | undefined)[],
   opts: LatchedEdgeOptions = {},
 ): (jogador: number, origem: TransportName) => void {
-  const armazem = opts.armazem ?? store;
+  const armazem = opts.store ?? store;
   const padrao = opts.padrao ?? DEFAULTS.toggleMove;
   return (jogador: number, origem: TransportName): void => {
     playerEdge(jogador, origem);
@@ -58,6 +58,6 @@ export function createLatchedEdge(
     // a aresta inválida: o transporte em uso é facto sobre a ENTRADA e fica registado à mesma. O que não
     // acontece é a segunda metade, porque não há onde a escrever.
     const p = getPlayers()[jogador];
-    if (p) syncLatch(p, armazem, jogador, inputOf(jogador).emUso, padrao);
+    if (p) syncLatch(p, armazem, jogador, inputOf(jogador).inUse, padrao);
   };
 }

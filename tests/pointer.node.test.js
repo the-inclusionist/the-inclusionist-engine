@@ -59,27 +59,27 @@ describe('onde o ponteiro está', () => {
 
 describe('o que o ponteiro está a fazer', () => {
   it('[Right] a borda do aperto é a descida e a subida, e nada entre elas', () => {
-    const solto = amostra({ apertado: false });
-    const preso = amostra({ apertado: true });
+    const solto = amostra({ pressed: false });
+    const preso = amostra({ pressed: true });
     expect(pressEdge(solto, preso)).toBe('desceu');
     expect(pressEdge(preso, solto)).toBe('subiu');
   });
 
   it('⚠️ [Zero] segurar não é uma borda — senão o jogo desenharia o mesmo ponto 60 vezes', () => {
-    const preso = amostra({ apertado: true });
-    expect(pressEdge(preso, amostra({ apertado: true, fx: 0.9 }))).toBeNull();
+    const preso = amostra({ pressed: true });
+    expect(pressEdge(preso, amostra({ pressed: true, fx: 0.9 }))).toBeNull();
     expect(pressEdge(amostra(), amostra({ fx: 0.1 }))).toBeNull();
   });
 
   it('⚠️ [Right] a TROCA DE APARELHO é perguntável — a criança larga o rato e olha para a tela', () => {
     // Sem isto, a troca de transporte só seria notada na próxima TECLA, e as regras do ADR-0109 (a alternância
     // segue o aparelho em uso) ficariam a responder sobre um aparelho que ninguém está a usar.
-    expect(switchedTransport(amostra({ origem: 'teclado' }), amostra({ origem: 'olhos' }))).toBe(true);
-    expect(switchedTransport(amostra({ origem: 'olhos' }), amostra({ origem: 'olhos', fx: 0.9 }))).toBe(false);
+    expect(switchedTransport(amostra({ source: 'teclado' }), amostra({ source: 'olhos' }))).toBe(true);
+    expect(switchedTransport(amostra({ source: 'olhos' }), amostra({ source: 'olhos', fx: 0.9 }))).toBe(false);
   });
 
   it('[Interface] o padrão é o repouso, e é congelado', () => {
-    expect(PADRAO).toEqual({ fx: 0.5, fy: 0.5, origem: 'teclado', apertado: false });
+    expect(PADRAO).toEqual({ fx: 0.5, fy: 0.5, source: 'teclado', pressed: false });
     expect(Object.isFrozen(PADRAO)).toBe(true);
   });
 });

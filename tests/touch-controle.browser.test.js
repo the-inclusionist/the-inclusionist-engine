@@ -16,8 +16,8 @@ import { mountTouchControls, touchGaps } from '../app/js/input/touch.js';
 import { TOUCH_DEFAULT } from '../app/js/input/devices.js';
 
 const ctx = {
-  procurar: (s) => document.querySelector(s),
-  criar: (t) => document.createElement(t),
+  find: (s) => document.querySelector(s),
+  create: (t) => document.createElement(t),
 };
 
 let hospedeiro;
@@ -29,9 +29,9 @@ afterEach(() => { hospedeiro.remove(); });
 
 const montar = (acoes, extra = {}) => {
   const raiz = mountTouchControls(ctx, {
-    mapa: TOUCH_DEFAULT,
-    acoesDoJogo: new Set(acoes),
-    rotuloDoSlot: (s) => 'rótulo de ' + s,
+    map: TOUCH_DEFAULT,
+    gameActions: new Set(acoes),
+    slotLabel: (s) => 'rótulo de ' + s,
     ...extra,
   });
   hospedeiro.appendChild(raiz);
@@ -53,7 +53,7 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
   it('🔴 [Right] duas acções e nenhuma direção: DOIS botões e NENHUM braço (ADR-0162)', () => {
     // O ADR-0157 dava o mínimo a todo jogo (direções e quatro botões); o Dev: «Vale para todos os botões: somente
     // aparecem se o jogo os nomeia.»
-    const raiz = montar(DUAS_ACOES, { direcional: 'cruz' });
+    const raiz = montar(DUAS_ACOES, { dpad: 'cruz' });
     expect(raiz.querySelectorAll('.touch-arm'), 'um braço que o jogo não nomeou').toHaveLength(0);
     expect(raiz.querySelector('#touch-cross'), 'uma cruz sem braço nenhum').toBeNull();
     expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(2);
@@ -65,10 +65,10 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
     const slotDe = (acao) => Object.keys(TOUCH_DEFAULT).find((s) => TOUCH_DEFAULT[s] === acao);
     const FUNCOES = { action2: 'Confirm', action3: 'Back', leftShoulder: 'Page', up: 'Climb' };
     const raiz = mountTouchControls(ctx, {
-      mapa: TOUCH_DEFAULT,
-      acoesDoJogo: new Set(Object.keys(FUNCOES)),
-      rotuloDoSlot: (s) => FUNCOES[TOUCH_DEFAULT[s]] ?? (s === 'start' ? 'START' : s === 'select' ? 'SELECT' : ''),
-      direcional: 'cruz',
+      map: TOUCH_DEFAULT,
+      gameActions: new Set(Object.keys(FUNCOES)),
+      slotLabel: (s) => FUNCOES[TOUCH_DEFAULT[s]] ?? (s === 'start' ? 'START' : s === 'select' ? 'SELECT' : ''),
+      dpad: 'cruz',
     });
     hospedeiro.appendChild(raiz);
     const botao = (acao) => raiz.querySelector(`[data-btn="${slotDe(acao).slice(1)}"]`);
@@ -88,7 +88,7 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
 
   it('⚠️ [Right] a REMAPPED slot takes the name of the action it now fires — the name follows the place', () => {
     const slot = Object.keys(TOUCH_DEFAULT).find((s) => TOUCH_DEFAULT[s] === 'action2');
-    const raiz = montar(['action4'], { mapa: { ...TOUCH_DEFAULT, [slot]: 'action4' } });
+    const raiz = montar(['action4'], { map: { ...TOUCH_DEFAULT, [slot]: 'action4' } });
     expect([...raiz.querySelectorAll('.touch-btn[data-btn]')].map((b) => b.textContent)).toContain('4');
   });
 
@@ -118,7 +118,7 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
 
   it('⚠️ [Right] o analógico traz a `.touch-knob`, sem a qual o `touch-bindings` desiste dele', () => {
     // `if (stick && knob)` — sem a manopla, o analógico inteiro fica sem escuta, em silêncio.
-    const raiz = montar(OITO_ACOES, { direcional: 'analogico' });
+    const raiz = montar(OITO_ACOES, { dpad: 'analogico' });
     const stick = raiz.querySelector('#touch-stick');
     expect(stick, 'o analógico não foi montado').not.toBeNull();
     expect(stick.querySelector('.touch-knob'), 'o analógico veio sem manopla e fica sem escuta').not.toBeNull();
@@ -129,14 +129,14 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
 
   it('🔴 [Right] the pad READS in a controller\'s order: directions, buttons, shoulders, then SELECT and START', () => {
     // The document order is the order a screen reader and Tab walk the pad (WCAG 2.4.3), whatever the stylesheet puts where.
-    const raiz = montar([...OITO_ACOES, 'leftShoulder', 'rightShoulder'], { direcional: 'cruz' });
+    const raiz = montar([...OITO_ACOES, 'leftShoulder', 'rightShoulder'], { dpad: 'cruz' });
     expect([...raiz.children].map((el) => el.className.split(' ')[0]))
       .toEqual(['touch-cross', 'touch-pad', 'touch-ombros', 'touch-ombros', 'touch-sistema']);
   });
 
   it('🔴 [Right] no button box where the game names no button, and no corner where it names no shoulder', () => {
     // An empty box on the screen is a promise with nothing in it — the ADR-0162 rule, for the containers as well as the keys.
-    const raiz = montar(['up', 'down', 'left', 'right'], { direcional: 'cruz' });
+    const raiz = montar(['up', 'down', 'left', 'right'], { dpad: 'cruz' });
     expect(raiz.querySelector('.touch-pad'), 'an empty button box is drawn').toBeNull();
     expect(raiz.querySelectorAll('.touch-ombros'), 'an empty shoulder corner is drawn').toHaveLength(0);
   });
@@ -151,11 +151,11 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
 
 describe('ADR-0143 §4 · o silêncio acaba', () => {
   it('🔴 [Zero] sem `preset`: só SELECT e START, E a linha diz o que falta (ADR-0162)', () => {
-    const raiz = montar([], { direcional: 'cruz' });
+    const raiz = montar([], { dpad: 'cruz' });
     expect(raiz.querySelectorAll('.touch-arm')).toHaveLength(0);
     expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(0);
     expect(raiz.querySelector('#touch-start')).not.toBeNull();
-    const linhas = touchGaps({ mapa: TOUCH_DEFAULT, acoesDoJogo: new Set() });
+    const linhas = touchGaps({ map: TOUCH_DEFAULT, gameActions: new Set() });
     expect(linhas).toHaveLength(1);
     expect(linhas[0], 'a linha não nomeia a saída').toMatch(/preset/);
     expect(linhas[0], 'a linha não diz o que a criança perde').toMatch(/tablet/);
@@ -164,16 +164,16 @@ describe('ADR-0143 §4 · o silêncio acaba', () => {
   it('🎯 [Zero] com o preset do platformer, `problems` não inventa lacuna nenhuma', () => {
     // O par do caso acima. Sem ele, o crivo aprovaria uma engine que acusa sempre — tão inútil quanto uma
     // que nunca acusa.
-    expect(touchGaps({ mapa: TOUCH_DEFAULT, acoesDoJogo: new Set(OITO_ACOES) })).toEqual([]);
+    expect(touchGaps({ map: TOUCH_DEFAULT, gameActions: new Set(OITO_ACOES) })).toEqual([]);
   });
 
   it('🔴 [Boundary] uma acção declarada que NENHUM slot dispara também vira linha', () => {
     // ⚠️ A lacuna PARCIAL, que hoje não aparece em lado nenhum: a acção existe no teclado e não existe no
     // toque. Quem joga por toque simplesmente não a tem, e ninguém lhe diz.
     const linhas = touchGaps({
-      mapa: TOUCH_DEFAULT,
+      map: TOUCH_DEFAULT,
       // ⚠️ `select` e não `leftShoulder`: desde o ADR-0160 os ombros TÊM slot, e o exemplo deixaria de ser exemplo
-      acoesDoJogo: new Set(['action1', 'select']),
+      gameActions: new Set(['action1', 'select']),
     });
     expect(linhas).toHaveLength(1);
     expect(linhas[0]).toMatch(/select/);

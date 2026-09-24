@@ -164,9 +164,9 @@ export interface KeydownSnapshot {
      e `string` era pior do que parece: `s.phase === 'titel'` não é erro em lugar nenhum, é só uma tecla que
      nunca chega. Estas duas perguntas são as únicas que a decisão de teclado faz à cena. */
   /** A tela de título está no topo? (Só o Jogador 1 escolhe o jogo; os outros ouvem um aviso.) */
-  telaDeTitulo: boolean;
+  titleScreen: boolean;
   /** Há jogo em curso — rodando OU pausado? (Alt+N e a tecla de pausa exigem isto, e quiz fechado.) */
-  emJogo: boolean;
+  inGame: boolean;
   numPlayers: number;
   players: readonly KeydownPlayer[];
   /**
@@ -434,7 +434,7 @@ const CHAIN: readonly ChainQuestion[] = [
 
   // 5 · título.
   (_ev, s, f) => {
-    if (!s.telaDeTitulo) return null;
+    if (!s.titleScreen) return null;
     // multi-tela: só o Jogador 1 escolhe o jogo. A tecla de um dos outros é consumida com um aviso falado.
     if (s.numPlayers > 1 && s.whichPlayer(f.code) > 0) return { kind: 'title', wait: true, nav: null, preventDefault: true };
     const nav = titleNavOf(f.code, s, f.action2);
@@ -444,10 +444,10 @@ const CHAIN: readonly ChainQuestion[] = [
 
   // 6..7 · número de telas e pausa. As DUAS exigem quiz FECHADO: com um desafio aberto na tela, Alt+3 não pode
   // reconfigurar o jogo por baixo dele, e Enter é a confirmação do quiz, não a pausa.
-  (ev, s, f) => (ev.altKey && !ev.ctrlKey && SCREEN_DIGITS.test(f.code) && s.emJogo && !f.anyModal
+  (ev, s, f) => (ev.altKey && !ev.ctrlKey && SCREEN_DIGITS.test(f.code) && s.inGame && !f.anyModal
     ? { kind: 'screens', count: +f.code.slice(5), preventDefault: true }
     : null),
-  (_ev, s, f) => (!f.anyModal && f.pauseKey && s.emJogo ? { kind: 'pause', preventDefault: true } : null),
+  (_ev, s, f) => (!f.anyModal && f.pauseKey && s.inGame ? { kind: 'pause', preventDefault: true } : null),
 
   // 8 · modal. A tecla age no modal do DONO dela; genérica cai no P1. `preventDefault` NÃO depende de a
   // tecla ter significado lá dentro: basta ser tecla de jogo — o desafio engole a tecla de qualquer forma.
@@ -501,8 +501,8 @@ export interface KeydownCtx {
 
   /* --- estado (tudo getter: o game.js reatribui) --- */
   /** Os dois fatos da cena. Ver `KeydownSnapshot`: booleanos, nunca a fase. */
-  isTelaDeTitulo: () => boolean;
-  isEmJogo: () => boolean;
+  isTitleScreen: () => boolean;
+  isInGame: () => boolean;
   getNumPlayers: () => number;
   getPlayers: () => readonly KeydownPlayer[];
   /** `kbRuntime.controlsState()` — memorizado do lado de lá; uma chamada por tecla, como no original. */
@@ -598,7 +598,7 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
 
   function snapshot(): KeydownSnapshot {
     return {
-      telaDeTitulo: ctx.isTelaDeTitulo(), emJogo: ctx.isEmJogo(), numPlayers: ctx.getNumPlayers(), players: ctx.getPlayers(), controls: ctx.getControls(),
+      titleScreen: ctx.isTitleScreen(), inGame: ctx.isInGame(), numPlayers: ctx.getNumPlayers(), players: ctx.getPlayers(), controls: ctx.getControls(),
       // A RESPOSTA, ao lado dos jogadores — e montada aqui, onde eles já estão na mão (ADR-0033).
       modalOpen: ctx.getPlayers().map((_, i) => ctx.hasModal(i)),
       heldKeys: ctx.heldKeys, oneButton: ctx.isOneButton(),

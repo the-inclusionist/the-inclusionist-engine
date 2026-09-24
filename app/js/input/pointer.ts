@@ -29,13 +29,13 @@ export interface PointerSample {
   readonly fx: number;
   readonly fy: number;
   /** Quem produziu esta amostra (ADR-0111). */
-  readonly origem: TransportName;
+  readonly source: TransportName;
   /** A «caneta» está em baixo? Rato: botão premido. Toque: dedo em contacto. Olhar: permanência. */
-  readonly apertado: boolean;
+  readonly pressed: boolean;
 }
 
 /** O repouso: centro da região, sem aperto, teclado — o mesmo padrão que o `transport-in-use` assume. */
-export const PADRAO: PointerSample = Object.freeze({ fx: 0.5, fy: 0.5, origem: 'teclado', apertado: false });
+export const PADRAO: PointerSample = Object.freeze({ fx: 0.5, fy: 0.5, source: 'teclado', pressed: false });
 
 /**
  * A amostra está DENTRO da região do jogo?
@@ -79,8 +79,8 @@ export type PressEdge = 'desceu' | 'subiu' | null;
  * quisesse reagir ao clique teria de guardar o quadro anterior por sua conta — trezentas vezes.
  */
 export function pressEdge(anterior: PointerSample, atual: PointerSample): PressEdge {
-  if (anterior.apertado === atual.apertado) return null;
-  return atual.apertado ? 'desceu' : 'subiu';
+  if (anterior.pressed === atual.pressed) return null;
+  return atual.pressed ? 'desceu' : 'subiu';
 }
 
 /**
@@ -91,5 +91,5 @@ export function pressEdge(anterior: PointerSample, atual: PointerSample): PressE
  * a criança larga o rato e olha para a tela. Sem esta pergunta, a troca seria invisível até à próxima tecla.
  */
 export function switchedTransport(anterior: PointerSample, atual: PointerSample): boolean {
-  return anterior.origem !== atual.origem;
+  return anterior.source !== atual.source;
 }

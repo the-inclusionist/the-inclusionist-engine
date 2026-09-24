@@ -76,28 +76,28 @@ function skipInSession(id: string): void {
 export interface PadWizardCtx {
   getGamepads: GetGamepads;
   /** The position's name in the GAME's word and the language of now; `null` = the game does not use it (the step is skipped). */
-  rotuloDaAcao: (acao: string) => string | null;
+  actionLabel: (acao: string) => string | null;
   /** Shows and says the wizard's sentence. */
-  dizer: (phrase: string) => void;
+  say: (phrase: string) => void;
   /** Shows what is mapped so far. */
-  progresso: (texto: string) => void;
+  progress: (texto: string) => void;
   srAlert: (phrase: string) => void;
   /** The step that starts (`null` while waiting for a pad) — the host's demonstration, when it has one. */
-  aoPasso?: (acao: string | null) => void;
+  onStep?: (acao: string | null) => void;
   /** Every tick while open — the host's animation, when it has one. */
-  aoTique?: () => void;
+  onTick?: () => void;
   /** After closing: the pad index mapped (-1 if none was identified) and whether the map was saved. */
-  aoFechar?: (gi: number, saved: boolean) => void;
+  onClose?: (gi: number, saved: boolean) => void;
 }
 
 export interface PadWizard {
   /** Opens waiting for any pad to press a button. */
-  abrir(): void;
+  open(): void;
   /** Opens for a pad already identified. */
-  abrirPara(gp: PadLike): void;
-  fechar(save: boolean): void;
-  tique(): void;
-  estado(): WizState | null;
+  openFor(gp: PadLike): void;
+  close(save: boolean): void;
+  tick(): void;
+  state(): WizState | null;
 }
 
 export function createPadWizard(ctx: PadWizardCtx): PadWizard {
@@ -109,7 +109,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
    */
   function advance(): void {
     if (!padWiz) return;
-    while (padWiz.step < PADWIZ_ORDER.length && !ctx.rotuloDaAcao(PADWIZ_ORDER[padWiz.step]!)) padWiz.step++;
+    while (padWiz.step < PADWIZ_ORDER.length && !ctx.actionLabel(PADWIZ_ORDER[padWiz.step]!)) padWiz.step++;
     if (padWiz.step >= PADWIZ_ORDER.length) fechar(true);
   }
   function ask(): void {
@@ -117,10 +117,10 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     advance();
     if (!padWiz) return; // fechou ao avançar
     const acao = PADWIZ_ORDER[padWiz.step]!;
-    ctx.dizer(t('pad.wiz.step', { n: padWiz.step + 1, total: PADWIZ_ORDER.length, acao: ctx.rotuloDaAcao(acao)! }));
-    ctx.aoPasso?.(acao);
+    ctx.say(t('pad.wiz.step', { n: padWiz.step + 1, total: PADWIZ_ORDER.length, acao: ctx.actionLabel(acao)! }));
+    ctx.onStep?.(acao);
     // O travessão da lista vazia fica cru de propósito: é pontuação, não idioma.
-    ctx.progresso(t('pad.wiz.mapped', { lista: Object.keys(padWiz.map).join(' · ') || '—' }));
+    ctx.progress(t('pad.wiz.mapped', { lista: Object.keys(padWiz.map).join(' · ') || '—' }));
   }
   function wire(bd: PadBinding): void {
     if (!padWiz) return;
@@ -132,9 +132,9 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
 
   function begin(gi: number, id: string, phrase: string): void {
     padWiz = { gi, id, step: -1, base: null, map: {}, release: false, baseWait: gi >= 0, axTrack: null, timer: null };
-    ctx.dizer(phrase);
-    ctx.aoPasso?.(null);
-    ctx.progresso('');
+    ctx.say(phrase);
+    ctx.onStep?.(null);
+    ctx.progress('');
     padWiz.timer = setInterval(tique, 30);
   }
   function abrir(): void { begin(-1, '', t('pad.wiz.pressAny')); }
@@ -152,7 +152,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     const gi = padWiz.gi;
     const saved = save && !!padWiz.id;
     padWiz = null;
-    ctx.aoFechar?.(gi, saved);
+    ctx.onClose?.(gi, saved);
   }
 
   /* ===================== os cinco momentos de um quadro =====================
@@ -174,7 +174,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     for (const gp of pads) {
       if (gp && gp.buttons.some((b) => b && b.pressed)) {
         w.gi = gp.index; w.id = gp.id; w.baseWait = true;
-        ctx.dizer(t('pad.wiz.releaseAll', { id: gp.id }));
+        ctx.say(t('pad.wiz.releaseAll', { id: gp.id }));
         break;
       }
     }
@@ -222,7 +222,7 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
 
   function tique(): void {
     if (!padWiz) return;
-    ctx.aoTique?.();
+    ctx.onTick?.();
     const pads = ctx.getGamepads() ?? [];
     if (padWiz.gi < 0) { adoptTheHandsPad(padWiz, pads); return; }
     const gp = pads[padWiz.gi];
@@ -234,5 +234,5 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     readWhatMoved(padWiz, gp, base);
   }
 
-  return { abrir, abrirPara, fechar, tique, estado: () => padWiz };
+  return { open: abrir, openFor: abrirPara, close: fechar, tick: tique, state: () => padWiz };
 }

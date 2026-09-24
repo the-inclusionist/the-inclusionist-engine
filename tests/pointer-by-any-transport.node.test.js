@@ -33,7 +33,7 @@ import { reach } from '../app/js/input/transports.js';
 
 const FONTE_PONTEIRO = readFileSync(fileURLToPath(new URL('../app/js/input/pointer.ts', import.meta.url)), 'utf8');
 
-const amostra = (fx, fy, apertado, origem) => ({ fx, fy, origem, apertado });
+const amostra = (fx, fy, apertado, origem) => ({ fx, fy, source: origem, pressed: apertado });
 
 /** Pontos que exercitam dentro, fora nos quatro lados, e as bordas inclusive. */
 const PONTOS = [
@@ -78,18 +78,18 @@ describe('ADR-0112 · as operações do ponteiro são cegas à origem', () => {
   // transporte passaria nos casos acima (eles enumeram as operações de hoje) e tiraria o desenho ao olhar em
   // silêncio. Só `switchedTransport` pode ler `.origem` — e lê-a para RESPONDER sobre ela, não para decidir
   // outra coisa.
-  it('[Fronteira] só `switchedTransport` lê `.origem` neste módulo', () => {
+  it('[Fronteira] só `switchedTransport` lê `.source` neste módulo', () => {
     const semComentarios = FONTE_PONTEIRO.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n\r]*/g, '');
     const partes = semComentarios.split(/export function /);
     const leitores = partes
-      .filter((p) => p.includes('.origem'))
+      .filter((p) => p.includes('.source'))
       .map((p) => p.slice(0, p.indexOf('(')));
     expect(leitores, `operação que ramifica por transporte: ${leitores.join(', ')}`).toEqual(['switchedTransport']);
   });
 
   it('[Interface] a origem é obrigatória na amostra — o padrão traz uma', () => {
-    expect(TRANSPORT_NAMES).toContain(PADRAO.origem);
-    expect(switchedTransport(PADRAO, { ...PADRAO, origem: 'olhos' })).toBe(true);
+    expect(TRANSPORT_NAMES).toContain(PADRAO.source);
+    expect(switchedTransport(PADRAO, { ...PADRAO, source: 'olhos' })).toBe(true);
   });
 });
 
@@ -101,7 +101,7 @@ describe('ADR-0112 · o alcance aceita ponteiro de QUALQUER transporte', () => {
   // pode existir, e não um que dá jeito.
   const olhar = (aponta) => ({
     id: 'olhos', slots: 14, available: () => true,
-    ...(aponta === undefined ? {} : { aponta: () => aponta }),
+    ...(aponta === undefined ? {} : { points: () => aponta }),
   });
 
   // 🎯 O caso que fecha a porta antes de ela ser aberta: quando os transportes assistidos da #11 chegarem, o
@@ -109,7 +109,7 @@ describe('ADR-0112 · o alcance aceita ponteiro de QUALQUER transporte', () => {
   it('[Feliz] um transporte assistido que declara apontar SERVE um jogo que pede ponteiro', () => {
     const a = reach([olhar(true)], ACOES, 1, true);
     expect(a.ok, 'o olhar declarou apontar e foi recusado').toBe(true);
-    expect(a.naoApontam).toEqual([]);
+    expect(a.cannotPoint).toEqual([]);
   });
 
   // 📌 O PAR. Sem ele, «aceitar sempre» passaria no caso de cima — e um jogo de desenhar diria «serve» a um
@@ -118,7 +118,7 @@ describe('ADR-0112 · o alcance aceita ponteiro de QUALQUER transporte', () => {
   it('[Fronteira] o mesmo transporte SEM declarar não serve, e o cartão diz porquê', () => {
     const a = reach([olhar(undefined)], ACOES, 1, true);
     expect(a.ok).toBe(false);
-    expect(a.naoApontam).toEqual(['olhos']);
+    expect(a.cannotPoint).toEqual(['olhos']);
   });
 
   // ⚠️ `aponta` É FUNÇÃO e não booleano: a webcam pode ser ligada no meio da partida. Um transporte que
@@ -126,7 +126,7 @@ describe('ADR-0112 · o alcance aceita ponteiro de QUALQUER transporte', () => {
   it('[Fronteira] quem declara apontar mas responde `false` agora é recusado agora', () => {
     const a = reach([olhar(false)], ACOES, 1, true);
     expect(a.ok).toBe(false);
-    expect(a.naoApontam).toEqual(['olhos']);
+    expect(a.cannotPoint).toEqual(['olhos']);
   });
 
   it('[Zero] sem pedir ponteiro, o mesmo transporte serve na mesma', () => {

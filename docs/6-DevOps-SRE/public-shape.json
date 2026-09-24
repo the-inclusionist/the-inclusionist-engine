@@ -455,7 +455,7 @@
   },
   "input/empathy-filter.ts": {
     "interface EmpathySimulation": [
-      "umPorVez"
+      "noChords"
     ],
     "interface EmpathyFilter": [
       "keydown",
@@ -515,6 +515,7 @@
     ],
     "interface GamepadCtx": [
       "$",
+      "actionLabel",
       "clearWaitingBadge",
       "frontOverlay",
       "getGamepads",
@@ -526,28 +527,27 @@
       "isAttractActive",
       "isTouchMode",
       "joinPlayer",
-      "menuDePausa",
       "modalInput",
-      "mundoRodando",
-      "naBarraDe",
       "navBar",
       "navDialog",
       "navPause",
       "navTitle",
-      "pausar",
+      "onBar",
+      "pause",
+      "pauseMenu",
       "playerEdge",
       "press",
       "release",
       "respawnPlayer",
-      "retomar",
-      "rotuloDaAcao",
+      "resume",
       "setPauseActor",
       "sharedDialogOpen",
       "srAlert",
       "srSay",
       "stopAttract",
       "wizardStep",
-      "wizardTick"
+      "wizardTick",
+      "worldRunning"
     ],
     "interface GamepadApi": [
       "closePadWiz",
@@ -694,15 +694,15 @@
     "interface KeydownSnapshot": [
       "actionOf",
       "controls",
-      "emJogo",
       "escapeTargetId",
       "heldKeys",
+      "inGame",
       "modalOpen",
       "numPlayers",
       "oneButton",
       "padWizVisible",
       "players",
-      "telaDeTitulo",
+      "titleScreen",
       "touchCfgVisible",
       "whichPlayer",
       "winVisible"
@@ -726,9 +726,9 @@
       "hasModal",
       "heldKeys",
       "hideTouchControls",
-      "isEmJogo",
+      "isInGame",
       "isOneButton",
-      "isTelaDeTitulo",
+      "isTitleScreen",
       "markKey",
       "markKeyWithoutSource",
       "modalInput",
@@ -752,14 +752,14 @@
   },
   "input/latch-edge.ts": {
     "interface LatchedEdgeOptions": [
-      "armazem?",
-      "padrao?"
+      "padrao?",
+      "store?"
     ]
   },
   "input/latch-scope.ts": {
     "interface LatchReading": [
-      "doLegado",
-      "doTransporte",
+      "fromLegacy",
+      "fromTransport",
       "padrao"
     ]
   },
@@ -807,21 +807,21 @@
   },
   "input/pad-wizard.ts": {
     "interface PadWizardCtx": [
-      "aoFechar?",
-      "aoPasso?",
-      "aoTique?",
-      "dizer",
+      "actionLabel",
       "getGamepads",
-      "progresso",
-      "rotuloDaAcao",
+      "onClose?",
+      "onStep?",
+      "onTick?",
+      "progress",
+      "say",
       "srAlert"
     ],
     "interface PadWizard": [
-      "abrir",
-      "abrirPara",
-      "estado",
-      "fechar",
-      "tique"
+      "close",
+      "open",
+      "openFor",
+      "state",
+      "tick"
     ]
   },
   "input/pointer-space.ts": {
@@ -837,10 +837,10 @@
   },
   "input/pointer.ts": {
     "interface PointerSample": [
-      "apertado",
       "fx",
       "fy",
-      "origem"
+      "pressed",
+      "source"
     ],
     "type PressEdge": "'desceu' | 'subiu' | null"
   },
@@ -888,7 +888,6 @@
     ],
     "interface TouchBindingsCtx": [
       "$",
-      "abrirMenus?",
       "attractOnInput",
       "defer?",
       "getControls",
@@ -900,6 +899,7 @@
       "getTouchMap",
       "heldKeys",
       "hideTips",
+      "openMenus?",
       "playerEdge",
       "press",
       "release",
@@ -929,8 +929,8 @@
     ],
     "interface TouchCtx": [
       "$",
-      "acoesDoJogo",
       "frontOverlay",
+      "gameActions",
       "isMobile",
       "onPadDesignApplied?",
       "onTouchControlsHidden?",
@@ -968,19 +968,19 @@
       "showTouchControls"
     ],
     "interface TouchMarkupCtx": [
-      "criar",
-      "procurar"
+      "create",
+      "find"
     ],
     "interface TouchMarkupSpec": [
-      "acoesDoJogo",
-      "direcional?",
-      "mapa",
-      "rotuloDoSlot"
+      "dpad?",
+      "gameActions",
+      "map",
+      "slotLabel"
     ],
     "interface PersonaDoPad": [
-      "chave",
-      "mm",
-      "rotulo"
+      "key",
+      "label",
+      "mm"
     ],
     "type HandTag": "'crianca' | 'adulto' | 'inter'",
     "type PadLayout": "'sony' | 'nintendo' | 'microsoft' | 'generic'",
@@ -988,34 +988,34 @@
   },
   "input/transport-in-use.ts": {
     "interface InputState": [
-      "assistidaLigada",
-      "emUso"
+      "assistedOn",
+      "inUse"
     ],
     "type TransportName": "'teclado' | 'gamepad' | 'toque' | 'olhos' | 'rosto' | 'gestos' | 'fala'"
   },
   "input/transports.ts": {
     "interface Availability": [
       "gamepad",
-      "rato",
-      "teclado",
-      "toque"
+      "keyboard",
+      "mouse",
+      "touch"
     ],
     "interface Transport": [
-      "aponta?",
       "available",
       "holds?",
       "id",
+      "points?",
       "slots"
     ],
     "interface Reach": [
-      "curtos",
-      "naoApontam",
-      "naoSeguram",
+      "asked",
+      "cannotHold",
+      "cannotPoint",
+      "holdsAsked",
+      "needsPointer",
       "ok",
-      "pedePonteiro",
-      "pedidas",
-      "seguraPedidas",
-      "serviriamSeLigados"
+      "short",
+      "wouldServeIfOn"
     ]
   },
   "input/virtual-controller.ts": {

@@ -204,7 +204,7 @@ export interface GamepadCtx {
    * só o jogo sabe a palavra. Antes desta linha o assistente dizia «PULAR» a partir de uma constante
    * deste ficheiro — em português, sem passar por `t()`, dentro do motor.
    */
-  rotuloDaAcao: (acao: string) => string | null;
+  actionLabel: (acao: string) => string | null;
   /** Anúncios de leitor de tela (core/a11y-sr), injetados. */
   srSay: (msg: string) => void;
   srAlert: (msg: string) => void;
@@ -216,12 +216,12 @@ export interface GamepadCtx {
      estão sempre disponíveis tinha de se declarar "pausado" para navegar os próprios menus. O que este
      módulo de fato precisa são duas perguntas e dois verbos. */
   /** O mundo está rodando? (START aqui PAUSA.) */
-  mundoRodando: () => boolean;
+  worldRunning: () => boolean;
   /** O menu de pausa está aberto? (START aqui RETOMA.) */
-  menuDePausa: () => boolean;
+  pauseMenu: () => boolean;
   /** Pausar e retomar. Quem empilha a cena é a raiz; daqui sai só a intenção. */
-  pausar: () => void;
-  retomar: () => void;
+  pause: () => void;
+  resume: () => void;
   /** Modo demonstração (attract) — game.js's attractCtl. */
   isAttractActive: () => boolean;
   stopAttract: () => void;
@@ -234,7 +234,7 @@ export interface GamepadCtx {
   /** Navegação de menus (game.js): título, diálogo compartilhado (o de cima), e a pausa por tela. */
   navTitle: (k: NavKeys) => void;
   /** A tela `i` está no modo `accessibility`? (ADR-0044, item 7 — o direcional dirige a barra do HUD.) */
-  naBarraDe: (i: number) => boolean;
+  onBar: (i: number) => boolean;
   /** Um passo dentro da barra. `temStart` é a borda do botão de pausa, que é a SEGUNDA saída do modo. */
   navBar: (i: number, k: NavKeys, hasStart: boolean) => void;
   sharedDialogOpen: () => HTMLElement | null;
@@ -368,13 +368,13 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   // the wizard asks; what a position LOOKS like is drawn by the game (note CD), through the two hooks it may answer
   const wizard = createPadWizard({
     getGamepads: () => ctx.getGamepads(),
-    rotuloDaAcao: (acao) => ctx.rotuloDaAcao(acao),
-    dizer: (phrase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = phrase; ctx.srSay(phrase); },
-    progresso: (texto) => { const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = texto; },
+    actionLabel: (acao) => ctx.actionLabel(acao),
+    say: (phrase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = phrase; ctx.srSay(phrase); },
+    progress: (texto) => { const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = texto; },
     srAlert: (phrase) => ctx.srAlert(phrase),
-    aoPasso: (position) => ctx.wizardStep(position),
-    aoTique: () => ctx.wizardTick(),
-    aoFechar: (gi) => {
+    onStep: (position) => ctx.wizardStep(position),
+    onTick: () => ctx.wizardTick(),
+    onClose: (gi) => {
       const ov = ctx.$<HTMLElement>('#padwiz'); if (ov) ov.hidden = true;
       // sem edges fantasmas: o botão ainda SEGURADO do último passo (START) não pode pausar/agir ao retomar
       try {
@@ -382,22 +382,22 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         const gp = pads[gi];
         if (gp) { const c = actionsFor(gp); padCur[gi] = c; padPrevAct[gi] = c; padPrevStart[gi] = c._start; }
       } catch { /* espelha o try/catch silencioso do original */ }
-      if (padWizAutoResume) { padWizAutoResume = false; if (ctx.menuDePausa()) ctx.retomar(); }
+      if (padWizAutoResume) { padWizAutoResume = false; if (ctx.pauseMenu()) ctx.resume(); }
     },
   });
   function openPadWiz(): void {
     const ov = ctx.$<HTMLElement>('#padwiz'); if (!ov) return;
     ov.hidden = false; ctx.frontOverlay(ov);
-    wizard.abrir();
+    wizard.open();
   }
   // Wizard aberto AUTOMATICAMENTE (controle DirectInput sem mapa apertou algo): já sabemos qual controle é.
   function openPadWizFor(gp: PadLike): void {
     const ov = ctx.$<HTMLElement>('#padwiz'); if (!ov) return;
     ov.hidden = false; ctx.frontOverlay(ov);
-    wizard.abrirPara(gp);
+    wizard.openFor(gp);
   }
-  const closePadWiz = (save: boolean): void => wizard.fechar(save);
-  const padWizTick = (): void => wizard.tique();
+  const closePadWiz = (save: boolean): void => wizard.close(save);
+  const padWizTick = (): void => wizard.tick();
 
   const cancelBtn = ctx.$<HTMLButtonElement>('#padwiz-cancel');
   if (cancelBtn) cancelBtn.addEventListener('click', () => closePadWiz(false));
@@ -442,8 +442,8 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   /** Controle fora do padrão (DirectInput) SEM mapa guardado que apertou algo: pausa geral e o assistente abre nele. */
   function wizardTookOver(gp: PadLike): boolean {
     if (gp.mapping === 'standard' || padMapFor(gp.id) || !gp.buttons.some((b) => b && b.pressed)) return false;
-    padWizAutoResume = ctx.mundoRodando();
-    if (ctx.mundoRodando()) ctx.pausar();
+    padWizAutoResume = ctx.worldRunning();
+    if (ctx.worldRunning()) ctx.pause();
     openPadWizFor(gp);
     return true;
   }
@@ -466,7 +466,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
 
   /** Cartão de pausa: o START retoma, e o direcional navega o diálogo partilhado ou o menu do próprio assento. */
   function steerPause(f: PadFrame): void {
-    if (f.pauseEdge) { ctx.retomar(); return; } // START retoma
+    if (f.pauseEdge) { ctx.resume(); return; } // START retoma
     const k = f.navKeys();
     if (!anyIntent(k)) return;
     const dlg = ctx.sharedDialogOpen();
@@ -518,7 +518,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
 
   /** O jogo a sério: o START pausa, o modal come o direcional, e o resto vira bandeira de acção. */
   function playRound(f: PadFrame, p: GamepadPlayer): void {
-    if (f.pauseEdge) { ctx.pausar(); ctx.setPauseActor(f.owner); return; } // START pausa (todos pausam; cada tela navega a sua)
+    if (f.pauseEdge) { ctx.pause(); ctx.setPauseActor(f.owner); return; } // START pausa (todos pausam; cada tela navega a sua)
     if (ctx.hasModal(f.owner)) { // o pad navega o modal do PRÓPRIO jogador (o jogo dos outros segue)
       // O que saiu daqui foi o SIGNIFICADO — o ±1/±3 da grade e o desvio de Braille, que são decisão do jogo.
       const hit = MODAL_BY_POSITION.find(([position]) => f.edge(position));
@@ -557,7 +557,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     // Both exits arrive together: `especial` (action 3) is the project's BACK — the east button: B on Xbox, ◯ on
     // PlayStation, A on Nintendo — and `startEdge` is the button that opens the pause, where this was entered. A child
     // who is lost goes back the way they came, one who knows the game tries the usual back; both work.
-    if (f.owner >= 0 && ctx.naBarraDe(f.owner)) {
+    if (f.owner >= 0 && ctx.onBar(f.owner)) {
       const k = f.navKeys();
       if (f.startEdge || anyIntent(k)) ctx.navBar(f.owner, k, !!f.startEdge);
       return;
@@ -586,13 +586,13 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
    * tela de resultados), o controle deve navegar como no título — o comportamento seguro — em vez de não fazer nada.
    */
   function steerFrame(f: PadFrame): void {
-    if (ctx.menuDePausa()) steerPause(f);
-    else if (ctx.mundoRodando()) steerGame(f);
+    if (ctx.pauseMenu()) steerPause(f);
+    else if (ctx.worldRunning()) steerGame(f);
     else steerTitle(f);
   }
 
   function pollPads(): void {
-    if (wizard.estado()) return; // durante o wizard, os pads falam só com ele
+    if (wizard.state()) return; // durante o wizard, os pads falam só com ele
     const pads = ctx.getGamepads();
     if (!pads || attractTook(pads)) return;
     for (const gp of pads) {
@@ -608,5 +608,5 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     }
   }
 
-  return { pollPads, openPadWiz, openPadWizFor, closePadWiz, padWizTick, padMapFor, getPadWiz: () => wizard.estado() };
+  return { pollPads, openPadWiz, openPadWizFor, closePadWiz, padWizTick, padMapFor, getPadWiz: () => wizard.state() };
 }

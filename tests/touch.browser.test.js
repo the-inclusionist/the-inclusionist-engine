@@ -72,12 +72,12 @@ function makeCtx(over = {}) {
     srSay: (t) => calls.srSay.push(t),
     // As posicoes que ESTE 'jogo' usa. O menu de cada slot oferecia nove opcoes fixas da engine; agora
     // oferece as do jogo, e num teste o jogo e o fixture.
-    acoesDoJogo: () => [
-      { acao: 'left', rotulo: 'Andar a esquerda' }, { acao: 'right', rotulo: 'Andar a direita' },
-      { acao: 'up', rotulo: 'Subir' }, { acao: 'down', rotulo: 'Descer' },
-      { acao: 'action2', rotulo: 'Pular' }, { acao: 'action1', rotulo: 'Correr' },
-      { acao: 'action3', rotulo: 'Especial' }, { acao: 'action4', rotulo: 'Trocar poder' },
-      { acao: 'start', rotulo: 'Pausar (START)' },
+    gameActions: () => [
+      { action: 'left', label: 'Andar a esquerda' }, { action: 'right', label: 'Andar a direita' },
+      { action: 'up', label: 'Subir' }, { action: 'down', label: 'Descer' },
+      { action: 'action2', label: 'Pular' }, { action: 'action1', label: 'Correr' },
+      { action: 'action3', label: 'Especial' }, { action: 'action4', label: 'Trocar poder' },
+      { action: 'start', label: 'Pausar (START)' },
     ],
     store,
     root: document.documentElement,
@@ -144,7 +144,7 @@ describe('initTouch — renderTouchMap / config de toque', () => {
     // FORA do alvo do `textContent` e por isso sobrevive.
     const { ctx } = makeCtx();
     const FUGA = '</option><option id="fugiu-do-jogo"></option>';
-    ctx.acoesDoJogo = () => [{ acao: 'action1', rotulo: FUGA }];
+    ctx.gameActions = () => [{ action: 'action1', label: FUGA }];
     initTouch(ctx).renderTouchMap();
 
     const lista = document.querySelector('#touchmap-list');
@@ -173,7 +173,7 @@ describe('initTouch — renderTouchMap / config de toque', () => {
     b0.value = 'action3'; // a posição existia no desenho anterior
 
     // A criança troca de atividade: o preset novo nomeia outras posições.
-    ctx.acoesDoJogo = () => [{ acao: 'action1', rotulo: 'Responder' }];
+    ctx.gameActions = () => [{ action: 'action1', label: 'Responder' }];
     b0.dispatchEvent(new Event('change'));
 
     const ditos = calls.srSay.join(' | ');

@@ -34,9 +34,9 @@ export function noticeRows(a: Reach, t: Translator): string[] {
   if (a.ok) return [];
 
   const nome = (id: string): string => t('reach.nome.' + id);
-  const rows = [t('reach.titulo', { pedidas: a.pedidas })];
+  const rows = [t('reach.titulo', { pedidas: a.asked })];
 
-  for (const c of a.curtos) {
+  for (const c of a.short) {
     rows.push(t('reach.curto', { transporte: nome(c.id), lugares: c.slots }));
   }
 
@@ -45,12 +45,12 @@ export function noticeRows(a: Reach, t: Translator): string[] {
   // lugares, e o cartão nunca aparecia — mas correr, andar e pular ao mesmo tempo são três dedos, e um
   // telemóvel que reconhece dois não os dá. A criança tentava, não acontecia nada, e concluía que o jogo
   // estava partido. Uma frase antes de começar é a resposta honesta; meia tela jogável não é.
-  for (const s of a.naoSeguram) {
-    rows.push(t('reach.naoSegura', { transporte: nome(s.id), segura: s.holds, pedidas: a.seguraPedidas }));
+  for (const s of a.cannotHold) {
+    rows.push(t('reach.naoSegura', { transporte: nome(s.id), segura: s.holds, pedidas: a.holdsAsked }));
   }
 
-  rows.push(a.serviriamSeLigados.length
-    ? t('reach.ligue', { saida: a.serviriamSeLigados.map(nome).join(t('reach.ou')) })
+  rows.push(a.wouldServeIfOn.length
+    ? t('reach.ligue', { saida: a.wouldServeIfOn.map(nome).join(t('reach.ou')) })
     : t('reach.semSaida'));
 
   return rows;

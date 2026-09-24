@@ -33,15 +33,15 @@ describe('entrada por jogador · quem nunca tocou em nada tem uma resposta', () 
   });
 
   it('[Interface] o padrão é teclado, sem assistida', () => {
-    expect(inputOf(0).emUso).toBe('teclado');
-    expect(inputOf(0).assistidaLigada).toBe(false);
+    expect(inputOf(0).inUse).toBe('teclado');
+    expect(inputOf(0).assistedOn).toBe(false);
   });
 });
 
 describe('entrada por jogador · a aresta troca o transporte, e só o daquele jogador', () => {
   it('[Right] a aresta define o transporte em uso', () => {
     playerEdge(0, 'toque');
-    expect(inputOf(0).emUso).toBe('toque');
+    expect(inputOf(0).inUse).toBe('toque');
   });
 
   // 🎯 O CASO QUE DÁ SENTIDO AO `Record` — sem separação por jogador, a criança do segundo assento herdaria o
@@ -49,10 +49,10 @@ describe('entrada por jogador · a aresta troca o transporte, e só o daquele jo
   it('🎯 [Right] dois jogadores, dois aparelhos, e nenhum lê o do outro', () => {
     playerEdge(0, 'teclado');
     playerEdge(1, 'gamepad');
-    expect(inputOf(0).emUso).toBe('teclado');
-    expect(inputOf(1).emUso).toBe('gamepad');
+    expect(inputOf(0).inUse).toBe('teclado');
+    expect(inputOf(1).inUse).toBe('gamepad');
     playerEdge(1, 'toque');
-    expect(inputOf(0).emUso, 'a aresta do jogador 1 mexeu no jogador 0').toBe('teclado');
+    expect(inputOf(0).inUse, 'a aresta do jogador 1 mexeu no jogador 0').toBe('teclado');
   });
 
   it('📌 [Right] sem mudança, o MESMO objecto volta — não se aloca por quadro', () => {
@@ -68,21 +68,21 @@ describe('entrada por jogador · habilitar a assistida é um acto explícito (AD
   // positivo da webcam — uma sombra, um segundo rosto a passar — trancaria a alternância de toda a gente.
   it('⚠️ [Zero] uma aresta de `olhos` NÃO habilita a assistida', () => {
     playerEdge(0, 'olhos');
-    expect(inputOf(0).emUso).toBe('olhos');
-    expect(inputOf(0).assistidaLigada, 'a webcam habilitou-se sozinha').toBe(false);
+    expect(inputOf(0).inUse).toBe('olhos');
+    expect(inputOf(0).assistedOn, 'a webcam habilitou-se sozinha').toBe(false);
   });
 
   it('[Right] habilitada, ela sobrevive a arestas de outros aparelhos', () => {
     enableAssistedFor(0);
     playerEdge(0, 'teclado');
-    expect(inputOf(0).emUso, 'a tecla devolveu o teclado, como manda a regra 3').toBe('teclado');
-    expect(inputOf(0).assistidaLigada, 'uma tecla desligou a assistida de quem depende dela').toBe(true);
+    expect(inputOf(0).inUse, 'a tecla devolveu o teclado, como manda a regra 3').toBe('teclado');
+    expect(inputOf(0).assistedOn, 'uma tecla desligou a assistida de quem depende dela').toBe(true);
   });
 
   it('[Right] desabilitar é a outra metade, e é simétrica', () => {
     enableAssistedFor(0);
     disableAssistedFor(0);
-    expect(inputOf(0).assistidaLigada).toBe(false);
+    expect(inputOf(0).assistedOn).toBe(false);
   });
 
   // ⚠️ ESTE PAR NASCEU DE UMA MUTAÇÃO SOBREVIVENTE, e o buraco era real. O caso era só «habilitar o 0 não
@@ -90,13 +90,13 @@ describe('entrada por jogador · habilitar a assistida é um acto explícito (AD
   // desligado pela razão errada. Faltava a outra ponta: que habilitar o 1 habilite MESMO o 1.
   it('[Zero] habilitar um jogador não habilita o outro — nos DOIS sentidos', () => {
     enableAssistedFor(0);
-    expect(inputOf(0).assistidaLigada).toBe(true);
-    expect(inputOf(1).assistidaLigada).toBe(false);
+    expect(inputOf(0).assistedOn).toBe(true);
+    expect(inputOf(1).assistedOn).toBe(false);
 
     forgetInputs();
     enableAssistedFor(1);
-    expect(inputOf(1).assistidaLigada, 'habilitar o jogador 1 não chegou ao jogador 1').toBe(true);
-    expect(inputOf(0).assistidaLigada).toBe(false);
+    expect(inputOf(1).assistedOn, 'habilitar o jogador 1 não chegou ao jogador 1').toBe(true);
+    expect(inputOf(0).assistedOn).toBe(false);
   });
 });
 
@@ -109,8 +109,8 @@ describe('entrada por jogador · o que o `blur` NÃO faz', () => {
     playerEdge(0, 'olhos');
     enableAssistedFor(0);
     releaseAllKeys();
-    expect(inputOf(0).emUso, 'o blur devolveu a criança ao teclado').toBe('olhos');
-    expect(inputOf(0).assistidaLigada, 'o blur desligou a assistida').toBe(true);
+    expect(inputOf(0).inUse, 'o blur devolveu a criança ao teclado').toBe('olhos');
+    expect(inputOf(0).assistedOn, 'o blur desligou a assistida').toBe(true);
   });
 
   // 📌 O PAR: e existe uma porta que ESQUECE, para o fim de uma partida, onde a pergunta se põe de novo.

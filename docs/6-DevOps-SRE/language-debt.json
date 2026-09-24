@@ -1,17 +1,17 @@
 {
   "measured": "2026-09-24",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 740,
+  "total": 684,
   "totals": {
-    "decl": 217,
+    "decl": 215,
     "param": 259,
-    "membro": 264
+    "membro": 210
   },
   "files": {
     "app/js/boot/create-game.ts": {
-      "decl": 53,
+      "decl": 51,
       "param": 56,
-      "membro": 29
+      "membro": 27
     },
     "app/js/core/accommodation-subjects.ts": {
       "decl": 1,
@@ -73,15 +73,10 @@
       "param": 0,
       "membro": 0
     },
-    "app/js/input/empathy-filter.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 1
-    },
     "app/js/input/gamepad.ts": {
       "decl": 0,
       "param": 5,
-      "membro": 6
+      "membro": 0
     },
     "app/js/input/keyboard.ts": {
       "decl": 0,
@@ -91,17 +86,17 @@
     "app/js/input/keydown.ts": {
       "decl": 1,
       "param": 3,
-      "membro": 4
+      "membro": 0
     },
     "app/js/input/latch-edge.ts": {
       "decl": 1,
       "param": 4,
-      "membro": 1
+      "membro": 0
     },
     "app/js/input/latch-scope.ts": {
       "decl": 0,
       "param": 6,
-      "membro": 2
+      "membro": 0
     },
     "app/js/input/latch-store.ts": {
       "decl": 0,
@@ -121,37 +116,32 @@
     "app/js/input/pad-wizard.ts": {
       "decl": 5,
       "param": 3,
-      "membro": 11
+      "membro": 0
     },
     "app/js/input/pointer.ts": {
       "decl": 0,
       "param": 4,
-      "membro": 2
+      "membro": 0
     },
     "app/js/input/state.ts": {
       "decl": 0,
       "param": 6,
       "membro": 0
     },
-    "app/js/input/touch-bindings.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 1
-    },
     "app/js/input/touch.ts": {
       "decl": 4,
       "param": 3,
-      "membro": 11
+      "membro": 0
     },
     "app/js/input/transport-in-use.ts": {
       "decl": 0,
       "param": 5,
-      "membro": 2
+      "membro": 0
     },
     "app/js/input/transports.ts": {
       "decl": 0,
       "param": 6,
-      "membro": 11
+      "membro": 0
     },
     "app/js/input/vocabulary-migration.ts": {
       "decl": 4,

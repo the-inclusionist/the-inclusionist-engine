@@ -65,8 +65,8 @@ const HOLDS_TOUCH = 2;
 /** Como se descobre que cada transporte está aqui AGORA. Injetado: nenhuma destas perguntas é pura. */
 export interface Availability {
   gamepad: () => boolean;
-  toque: () => boolean;
-  teclado: () => boolean;
+  touch: () => boolean;
+  keyboard: () => boolean;
   /**
    * Há um RATO aqui? (ADR-0112)
    *
@@ -75,7 +75,7 @@ export interface Availability {
    * do teclado — a frase do Dev, «no caso do teclado, o sinal contínuo passa a ser o mouse» —, e é o que dá
    * fundação aos transportes 8 e 9 do ADR-0074, que aquele registo declarava como não tendo nenhuma.
    */
-  rato: () => boolean;
+  mouse: () => boolean;
 }
 
 /**
@@ -95,9 +95,9 @@ export function defaultTransports(d: Availability): Transport[] {
     // do curso morta é ergonomia certa para um BOTÃO e errada para um CURSOR.
     { id: 'gamepad', slots: SLOTS.gamepad, available: d.gamepad },
     // O teclado aponta QUANDO HÁ RATO — a cláusula do Dev, e a fundação dos transportes 8 e 9 do ADR-0074.
-    { id: 'teclado', slots: SLOTS.teclado, available: d.teclado, aponta: d.rato },
+    { id: 'teclado', slots: SLOTS.teclado, available: d.keyboard, points: d.mouse },
     // O toque aponta por natureza: a superfície É o ponteiro, e é o mesmo dedo que carrega nos botões.
-    { id: 'toque', slots: SLOTS.toque, holds: HOLDS_TOUCH, available: d.toque, aponta: d.toque },
+    { id: 'toque', slots: SLOTS.toque, holds: HOLDS_TOUCH, available: d.touch, points: d.touch },
   ];
 }
 
@@ -131,7 +131,7 @@ export interface Transport {
    * o ponteiro é uma capacidade que se DECLARA, e um transporte que não a declara não a tem. O `holds` é o
    * oposto porque lá a ausência é «não há tecto conhecido», e lê-la como zero reprovaria todo o mundo.
    */
-  readonly aponta?: () => boolean;
+  readonly points?: () => boolean;
 }
 
 /** Este transporte carrega este conjunto de ações? Aritmética, como o ADR-0079 §3 a descreve. */
@@ -185,22 +185,22 @@ export interface Reach {
    */
   readonly ok: boolean;
   /** Quantas ações o jogo pede. */
-  readonly pedidas: number;
+  readonly asked: number;
   /** Quantas ele pede SEGURAR ao mesmo tempo — o segundo eixo, e o que o `holdsAtOnce` declara. */
-  readonly seguraPedidas: number;
+  readonly holdsAsked: number;
   /** Os que serviriam se estivessem ligados — a informação acionável: «ligue um controle». */
-  readonly serviriamSeLigados: readonly string[];
+  readonly wouldServeIfOn: readonly string[];
   /** Os disponíveis que NÃO cabem, com quantos lugares têm. Para a frase dizer o número. */
-  readonly curtos: readonly { readonly id: string; readonly slots: number }[];
+  readonly short: readonly { readonly id: string; readonly slots: number }[];
   /**
    * Os disponíveis que CHEGAM às ações mas não seguram quantas o jogo pede de uma vez, com o tecto deles.
    *
    * É a terceira frase do cartão da #112, e ela precisa dos dois números: «o controle de tela segura dois
    * botões de cada vez e este jogo pede três». Sem o tecto, a frase diria que algo falta sem dizer o quê.
    */
-  readonly naoSeguram: readonly { readonly id: string; readonly holds: number }[];
+  readonly cannotHold: readonly { readonly id: string; readonly holds: number }[];
   /** Este jogo declarou que precisa de PONTEIRO? (ADR-0112) */
-  readonly pedePonteiro: boolean;
+  readonly needsPointer: boolean;
   /**
    * Os disponíveis que chegam às acções E seguram quantas o jogo pede, e falham SÓ por não apontarem.
    *
@@ -208,7 +208,7 @@ export interface Reach {
    * faria o cartão da #112 dizer dois problemas onde há um, e a criança leria dois motivos para a mesma
    * recusa. A lista é vazia quando o jogo não pede ponteiro — não «todos», porque nenhum falhou.
    */
-  readonly naoApontam: readonly string[];
+  readonly cannotPoint: readonly string[];
 }
 
 /**
@@ -229,24 +229,24 @@ export function reach(
    * mudança, e um quarto argumento exigido faria cada chamador existente decidir hoje uma coisa que não lhe
    * diz respeito.
    */
-  const pointsIfNeeded = (t: Transport) => !pedePonteiro || (!!t.aponta && t.aponta());
+  const pointsIfNeeded = (t: Transport) => !pedePonteiro || (!!t.points && t.points());
   // ⚠️ «Serve» passou a ser TRÊS coisas. Foi DUAS na #114 (o `ok` dizia sim a quem não segurava três dedos), e
   // é três desde o ADR-0112 — pela mesma razão das duas vezes: um `ok` verdadeiro sobre um jogo que a criança
   // não consegue jogar é a pior coisa que este campo pode fazer.
   const serve = (t: Transport) => carries(t, actions) && holds(t, seguraPedidas) && pointsIfNeeded(t);
   return {
     ok: actions.length > 0 && availableNow.some(serve),
-    pedidas: actions.length,
-    seguraPedidas,
-    pedePonteiro,
-    serviriamSeLigados: lista.filter((t) => !t.available() && serve(t)).map((t) => t.id),
-    curtos: availableNow.filter((t) => !carries(t, actions)).map((t) => ({ id: t.id, slots: t.slots })),
-    naoApontam: availableNow
+    asked: actions.length,
+    holdsAsked: seguraPedidas,
+    needsPointer: pedePonteiro,
+    wouldServeIfOn: lista.filter((t) => !t.available() && serve(t)).map((t) => t.id),
+    short: availableNow.filter((t) => !carries(t, actions)).map((t) => ({ id: t.id, slots: t.slots })),
+    cannotPoint: availableNow
       .filter((t) => carries(t, actions) && holds(t, seguraPedidas) && !pointsIfNeeded(t))
       .map((t) => t.id),
     // ⚠️ SÓ QUEM CHEGA, e não quem já reprovou por lugares. Um transporte que aparecesse nas duas listas
     // faria o cartão dizer duas coisas sobre o mesmo defeito, e a criança leria dois problemas onde há um.
-    naoSeguram: availableNow
+    cannotHold: availableNow
       .filter((t) => carries(t, actions) && !holds(t, seguraPedidas))
       .map((t) => ({ id: t.id, holds: t.holds as number })),
   };

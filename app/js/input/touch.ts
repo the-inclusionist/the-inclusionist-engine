@@ -45,7 +45,7 @@ export interface TouchCtx {
    * A ordem também vem daqui: é a ordem canônica de `core/actions`, a mesma que a tela de remapeamento usa,
    * para a criança não ter de reaprender a lista ao trocar de painel.
    */
-  acoesDoJogo: () => readonly { readonly acao: string; readonly rotulo: string }[];
+  gameActions: () => readonly { readonly action: string; readonly label: string }[];
   /** Persistence (platform/storage.ts), injected. */
   store: TouchStore;
   /** Element the --pad-* CSS custom properties are written to: document.documentElement in production
@@ -255,14 +255,14 @@ export function initTouch(ctx: TouchCtx): TouchApi {
       // do jogo — `acoesDoJogo()` sai do preset —, e um jogo vive noutro repositório (ADR-0083), então este
       // texto não é revisto por esta árvore. `value="${acao}"` fica: `acao` é o nome ABSTRATO, e a engine
       // enumera-o em `core/actions`; é dela e não do jogo.
-      ctx.acoesDoJogo().map(({ acao }) => `<option value="${acao}"${touchMap[s.k] === acao ? ' selected' : ''}></option>`).join('') +
+      ctx.gameActions().map(({ action: acao }) => `<option value="${acao}"${touchMap[s.k] === acao ? ' selected' : ''}></option>`).join('') +
       `</select></div>`
     ).join('');
     // As palavras do jogo, por `textContent` — que escapa por construção. A ordem casa porque é a mesma lista.
     for (const sel of el.querySelectorAll<HTMLSelectElement>('select[data-slot]')) {
-      const words = ctx.acoesDoJogo();
+      const words = ctx.gameActions();
       for (let i = 0; i < sel.options.length && i < words.length; i++) {
-        sel.options[i]!.textContent = words[i]!.rotulo;
+        sel.options[i]!.textContent = words[i]!.label;
       }
     }
     el.querySelectorAll<HTMLSelectElement>('select[data-slot]').forEach((sel) => {
@@ -273,7 +273,7 @@ export function initTouch(ctx: TouchCtx): TouchApi {
         const label = sel.previousElementSibling ? sel.previousElementSibling.textContent : null;
         // ⚠️ A palavra falada é a MESMA que a lida: sai da mesma lista que acabou de montar o `<option>`.
         // Antes vinham de tabelas diferentes e nada obrigava as duas a concordar.
-        const chosen = ctx.acoesDoJogo().find((x) => x.acao === sel.value);
+        const chosen = ctx.gameActions().find((x) => x.action === sel.value);
         const slotName = label || t('touch.slot.fallback');
         // ⚠️ SEM PALAVRA DO JOGO, O ANÚNCIO PERDE A POSIÇÃO — NÃO RECUA PARA O ID. `sel.value` é o nome
         // ABSTRATO (`action3`), e o ADR-0074 diz que ele nunca chega a uma pessoa; o `7742ac0` já pagou este
@@ -281,7 +281,7 @@ export function initTouch(ctx: TouchCtx): TouchApi {
         // 📌 O recuo é alcançável porque `acoesDoJogo()` é FUNÇÃO do cartucho, relida a cada `change`: num hub
         // de atividades a lista muda por baixo e a `<option>` desenhada antes fica órfã.
         ctx.srSay(chosen
-          ? t('sr.touch.slotSet', { slot: slotName, acao: chosen.rotulo })
+          ? t('sr.touch.slotSet', { slot: slotName, acao: chosen.label })
           : t('sr.touch.slotSetUnnamed', { slot: slotName }));
       });
     });
@@ -458,19 +458,19 @@ export function initTouch(ctx: TouchCtx): TouchApi {
 
 /** As três coisas do `document` de que a marcação do pad precisa. Mesma forma do `ui/panel-shell`. */
 export interface TouchMarkupCtx {
-  procurar: (sel: string) => HTMLElement | null;
-  criar: (tag: string) => HTMLElement;
+  find: (sel: string) => HTMLElement | null;
+  create: (tag: string) => HTMLElement;
 }
 
 export interface TouchMarkupSpec {
   /** O MAPA VIVO de slot→acção (`TOUCH_DEFAULT` fundido com o que a criança remapeou). */
-  readonly mapa: Readonly<Record<string, string>>;
+  readonly map: Readonly<Record<string, string>>;
   /** As acções que ESTE jogo declara (`presetActions(preset)`). Vazio = não há o que desenhar. */
-  readonly acoesDoJogo: ReadonlySet<string>;
+  readonly gameActions: ReadonlySet<string>;
   /** O rótulo de cada slot, já traduzido — a palavra do JOGO para a acção que ele dispara. */
-  readonly rotuloDoSlot: (slot: string) => string;
+  readonly slotLabel: (slot: string) => string;
   /** O desenho do direcional: `cruz` ou `analogico`. Vem do ajuste persistido do pad (`padDir`). */
-  readonly direcional?: 'cruz' | 'analogico';
+  readonly dpad?: 'cruz' | 'analogico';
 }
 
 /**
@@ -509,7 +509,7 @@ const SHOULDERS = [['esq', ['bl2', 'bl1']], ['dir', ['br2', 'br1']]] as const;
  * Idempotente: montar duas vezes devolve o mesmo nó, com o conteúdo refeito para o mapa de agora.
  */
 export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): HTMLElement {
-  const touchControls = ctx.procurar('#touch-controls') ?? ctx.criar('div');
+  const touchControls = ctx.find('#touch-controls') ?? ctx.create('div');
   touchControls.id = 'touch-controls';
   touchControls.className = 'touch';
   touchControls.hidden = true;
@@ -532,12 +532,12 @@ interface PadFaces {
 function padFacesOf(spec: TouchMarkupSpec): PadFaces {
   // 🔴 SÓ O QUE O JOGO NOMEIA (ADR-0162, supersede o mínimo do ADR-0157): «Vale para todos os botões: somente aparecem
   // se o jogo os nomeia.» Um botão na tela é uma promessa de que ele faz alguma coisa, e quem sabe isso é o jogo.
-  const named = (slot: string): boolean => spec.acoesDoJogo.has(spec.mapa[slot] ?? '');
+  const named = (slot: string): boolean => spec.gameActions.has(spec.map[slot] ?? '');
   // ADR-0165: the face is the NAME of the position the slot fires; the accessible name is «name, function».
-  const nameOf = (slot: string): string => buttonName(spec.mapa[slot] ?? slot) ?? spec.rotuloDoSlot(slot);
+  const nameOf = (slot: string): string => buttonName(spec.map[slot] ?? slot) ?? spec.slotLabel(slot);
   const accessible = (slot: string): string => {
     const nome = nameOf(slot);
-    const funcao = spec.rotuloDoSlot(slot);
+    const funcao = spec.slotLabel(slot);
     return funcao && funcao !== nome ? `${nome}, ${funcao}` : nome;
   };
   return { named, nameOf, accessible };
@@ -547,20 +547,20 @@ function padFacesOf(spec: TouchMarkupSpec): PadFaces {
 function directionPad(ctx: TouchMarkupCtx, spec: TouchMarkupSpec, f: PadFaces): HTMLElement[] {
   const live = DIRECTIONS.filter(f.named);
   if (!live.length) return [];
-  const kind = spec.direcional === 'analogico' ? 'touch-stick' : 'touch-cross';
-  const dir = ctx.criar('div');
+  const kind = spec.dpad === 'analogico' ? 'touch-stick' : 'touch-cross';
+  const dir = ctx.create('div');
   dir.id = kind;
   dir.className = kind; // the id is what `touch-bindings` finds; the class is what the stylesheet DRAWS
   if (kind === 'touch-stick') {
     // `touch-bindings` exige a `.touch-knob` dentro da base (`if (stick && knob)`), e sem ela desiste do
     // analógico inteiro — em silêncio.
-    const knob = ctx.criar('div');
+    const knob = ctx.create('div');
     knob.className = 'touch-knob';
     dir.appendChild(knob);
     return [dir];
   }
   for (const d of live) {
-    const arm = ctx.criar('button');
+    const arm = ctx.create('button');
     // ⚠️ AS TRÊS CLASSES, e cada uma tem um leitor. `touch-arm` é a deste módulo; `dpad-arm` é a que a folha
     // de estilo DESENHA; `dpad-<dir>` é a que o `touch-bindings` ACENDE ao toque (`.dpad-up` & co.). Com só
     // a primeira — que era o que isto escrevia até ser ligado ao `createGame` —, o braço era um botão sem
@@ -579,7 +579,7 @@ function directionPad(ctx: TouchMarkupCtx, spec: TouchMarkupSpec, f: PadFaces): 
  * answer, and the child's remapping would stop counting.
  */
 function padButton(ctx: TouchMarkupCtx, f: PadFaces, slot: string, className: string): HTMLElement {
-  const botao = ctx.criar('button');
+  const botao = ctx.create('button');
   botao.className = className;
   botao.dataset.btn = slot.slice(1);
   botao.setAttribute('type', 'button');
@@ -592,13 +592,13 @@ function padButton(ctx: TouchMarkupCtx, f: PadFaces, slot: string, className: st
 function actionButtons(ctx: TouchMarkupCtx, spec: TouchMarkupSpec, f: PadFaces): HTMLElement[] {
   const live = BUTTONS.filter(f.named);
   if (!live.length) return [];
-  const rhombus = ctx.criar('div');
+  const rhombus = ctx.create('div');
   rhombus.className = 'touch-pad';
   for (const b of live) {
     const botao = padButton(ctx, f, b, 'touch-btn');
     // O LUGAR SEGUE A ACÇÃO, não o slot (ADR-0160: 1 4 em cima, 2 3 embaixo): a folha de estilo põe cada botão na
     // célula do seu número, e um slot remapeado leva o botão para o lugar da acção que passou a disparar.
-    botao.dataset.acao = spec.mapa[b] ?? '';
+    botao.dataset.acao = spec.map[b] ?? '';
     rhombus.appendChild(botao);
   }
   return [rhombus];
@@ -609,7 +609,7 @@ function shoulderCorners(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement[] {
   return SHOULDERS.flatMap(([lado, slots]) => {
     const named = slots.filter(f.named);
     if (!named.length) return [];
-    const corner = ctx.criar('div');
+    const corner = ctx.create('div');
     corner.className = `touch-ombros touch-ombros--${lado}`;
     for (const s of named) corner.appendChild(padButton(ctx, f, s, 'touch-btn touch-ombro'));
     return [corner];
@@ -622,10 +622,10 @@ function shoulderCorners(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement[] {
  * e a pausa não é declinável (ADR-0122) — um tablet sem teclado não tem outra forma de chegar a «Sair».
  */
 function systemPills(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement {
-  const system = ctx.criar('div');
+  const system = ctx.create('div');
   system.className = 'touch-sistema';
   for (const slot of ['select', 'start'] as const) {
-    const b = ctx.criar('button');
+    const b = ctx.create('button');
     b.id = `touch-${slot}`;
     b.className = `touch-btn touch-${slot}`;
     b.setAttribute('type', 'button');
@@ -643,17 +643,17 @@ function systemPills(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement {
  * 📌 Devolve LINHAS e não lança: uma lacuna do hospedeiro nunca derruba o boot, pela mesma regra que o resto
  * de `problems` já segue. As frases vão para o consumidor que INTEGRA a engine, e não para uma criança.
  */
-export function touchGaps(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo'>): string[] {
+export function touchGaps(spec: Pick<TouchMarkupSpec, 'map' | 'gameActions'>): string[] {
   // ⚠️ SEM `preset` O PAD SÓ TEM SELECT E START (ADR-0162): nenhuma direção, nenhum botão — nem para andar nos menus.
   // É lacuna de quem integra, e diz-se.
-  if (!spec.acoesDoJogo.size) {
+  if (!spec.gameActions.size) {
     return ['the virtual pad shows only SELECT and START — no direction and no button: a child on a tablet without a '
       + 'keyboard cannot play — declare `preset` with the positions this game uses and a word for each'];
   }
   // ⚠️ E A LACUNA PARCIAL TAMBÉM SE DIZ. Um jogo pode declarar uma acção que nenhum slot dispara: ela existe
   // no teclado e não existe no toque, e hoje isso não aparece em lado nenhum.
-  const reached = new Set(TOUCH_SLOTS.map((s) => spec.mapa[s.k]).filter(Boolean));
-  const outsideTouch = [...spec.acoesDoJogo].filter((a) => !reached.has(a));
+  const reached = new Set(TOUCH_SLOTS.map((s) => spec.map[s.k]).filter(Boolean));
+  const outsideTouch = [...spec.gameActions].filter((a) => !reached.has(a));
   if (!outsideTouch.length) return [];
   return [`the virtual pad does not reach ${outsideTouch.join(', ')}: no slot fires them, so a child playing by touch `
     + 'does not have them — remap a slot in the pad panel, or declare fewer actions'];
@@ -690,9 +690,9 @@ export function touchGaps(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo'>): 
 export type PersonaKey = 'crianca-pequena' | 'crianca-grande' | 'adulto-pequeno' | 'adulto-maos-grandes';
 
 export interface PersonaDoPad {
-  readonly chave: PersonaKey;
+  readonly key: PersonaKey;
   /** The i18n key of the persona's name. */
-  readonly rotulo: string;
+  readonly label: string;
   readonly mm: Readonly<PadMm>;
 }
 
@@ -709,13 +709,13 @@ function pad(btn: number): PadMm {
 /** The four, in the Dev's order. */
 export const PERSONAS_DO_PAD: readonly PersonaDoPad[] = Object.freeze([
   // 16 mm: an adult's 9.6 mm plus twice the extra spread of a 3-year-old (≈ 2.4 mm each side), rounded up.
-  { chave: 'crianca-pequena', rotulo: 'motora.pad.crianca-pequena', mm: pad(16) },
+  { key: 'crianca-pequena', label: 'motora.pad.crianca-pequena', mm: pad(16) },
   // 14 mm: 9 mm is still missed once in six until 17 (Anthony), and 12.7 mm was the size that did not trouble them.
-  { chave: 'crianca-grande', rotulo: 'motora.pad.crianca-grande', mm: pad(14) },
+  { key: 'crianca-grande', label: 'motora.pad.crianca-grande', mm: pad(14) },
   // 11.5 mm: where adult performance levels off (Parhi) — above it there is no gain, only lost room.
-  { chave: 'adulto-pequeno', rotulo: 'motora.pad.adulto-pequeno', mm: pad(11.5) },
+  { key: 'adulto-pequeno', label: 'motora.pad.adulto-pequeno', mm: pad(11.5) },
   // 15 mm: a 16–20 mm finger covers anything smaller and hides the label under the thumb (MIT Touch Lab).
-  { chave: 'adulto-maos-grandes', rotulo: 'motora.pad.adulto-maos-grandes', mm: pad(15) },
+  { key: 'adulto-maos-grandes', label: 'motora.pad.adulto-maos-grandes', mm: pad(15) },
 ]);
 
 /**

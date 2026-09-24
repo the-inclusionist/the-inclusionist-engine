@@ -17,7 +17,7 @@ import { join } from 'node:path';
 function portaGuardada(inicial = {}) {
   const mapa = new Map(Object.entries(inicial));
   return {
-    mapa,
+    map: mapa,
     get: (k, fallback) => (mapa.has(k) ? mapa.get(k) : fallback),
     set: (k, v) => { mapa.set(k, String(v)); return true; },
     getBool: (k, fallback = false) => (mapa.has(k) ? mapa.get(k) === '1' : fallback),
@@ -59,8 +59,8 @@ describe('the stored settings, loaded by the root (ADR-0178)', () => {
     state.loadState(porta);
     state.setWheelchairValue(true);
     state.setLetterCaseValue('mixed');
-    expect(porta.mapa.get('incl_wheelchair')).toBe('1');
-    expect(porta.mapa.get('incl_lettercase')).toBe('mixed');
+    expect(porta.map.get('incl_wheelchair')).toBe('1');
+    expect(porta.map.get('incl_lettercase')).toBe('mixed');
   });
 
   it('🔴 [Right] setLocale before the language port is refused, and nothing has moved', async () => {

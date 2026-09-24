@@ -32,7 +32,7 @@ const DOZE = [...NOVE, 'leftShoulder', 'leftTrigger', 'rightShoulder'];
 // 📌 `aponta` É UMA FUNÇÃO e não um booleano, pela MESMA razão escrita no campo `available` ao lado: um rato é
 // ligado no meio da partida, tal como um controle.
 const tp = (id, slots, available = true, aponta = undefined) => ({
-  id, slots, available: () => available, ...(aponta === undefined ? {} : { aponta: () => aponta }),
+  id, slots, available: () => available, ...(aponta === undefined ? {} : { points: () => aponta }),
 });
 
 describe('ADR-0112 · um jogo que pede PONTEIRO é recusado por quem não tem', () => {
@@ -41,8 +41,8 @@ describe('ADR-0112 · um jogo que pede PONTEIRO é recusado por quem não tem', 
   it('[Right] o TOQUE aponta por natureza — a superfície é o ponteiro', () => {
     const r = reach([tp('toque', 9, true, true)], TRES, 1, true);
     expect(r.ok).toBe(true);
-    expect(r.pedePonteiro).toBe(true);
-    expect(r.naoApontam).toEqual([]);
+    expect(r.needsPointer).toBe(true);
+    expect(r.cannotPoint).toEqual([]);
   });
 
   it('🔴 [Zero] TECLADO SEM RATO não serve um jogo que pede ponteiro, e diz qual é o problema', () => {
@@ -51,11 +51,11 @@ describe('ADR-0112 · um jogo que pede PONTEIRO é recusado por quem não tem', 
     // descobriria isso depois de escolher.
     const r = reach([tp('teclado', 40, true, false)], TRES, 1, true);
     expect(r.ok, 'o alcance disse sim a um jogo que esta criança não consegue jogar').toBe(false);
-    expect(r.naoApontam, 'a frase precisa de saber QUEM chegou perto e falhou só nisto').toEqual(['teclado']);
+    expect(r.cannotPoint, 'a frase precisa de saber QUEM chegou perto e falhou só nisto').toEqual(['teclado']);
     // ⚠️ e NÃO aparece nas outras listas: ele não é curto de lugares nem falha em segurar. Um transporte em
     // duas listas faria o cartão dizer dois problemas onde há um — a mesma regra que o `naoSeguram` já segue.
-    expect(r.curtos).toEqual([]);
-    expect(r.naoSeguram).toEqual([]);
+    expect(r.short).toEqual([]);
+    expect(r.cannotHold).toEqual([]);
   });
 
   it('⚠️ [Right] o MESMO teclado COM RATO serve — «no caso do teclado, o sinal contínuo é o rato»', () => {
@@ -63,28 +63,28 @@ describe('ADR-0112 · um jogo que pede PONTEIRO é recusado por quem não tem', 
     // registo declarava como «sem fundação nenhuma».
     const r = reach([tp('teclado', 40, true, true)], TRES, 1, true);
     expect(r.ok).toBe(true);
-    expect(r.naoApontam).toEqual([]);
+    expect(r.cannotPoint).toEqual([]);
   });
 
   it('⚠️ [Zero] um jogo que NÃO pede ponteiro não é afectado por nada disto', () => {
     // A garantia de aditividade: os trezentos jogos que não desenham não podem sentir esta mudança.
     const r = reach([tp('teclado', 40, true, false)], TRES, 1);
     expect(r.ok).toBe(true);
-    expect(r.pedePonteiro).toBe(false);
-    expect(r.naoApontam).toEqual([]);
+    expect(r.needsPointer).toBe(false);
+    expect(r.cannotPoint).toEqual([]);
   });
 
   it('[Boundary] «ligue um controle» não é oferecido quando o controle também não aponta', () => {
     // `serviriamSeLigados` é informação ACIONÁVEL; oferecer uma saída que não resolve é pior que não oferecer.
     const r = reach([tp('gamepad', 17, false, false), tp('teclado', 40, true, false)], TRES, 1, true);
     expect(r.ok).toBe(false);
-    expect(r.serviriamSeLigados, 'mandou ligar um controle que também não desenha').toEqual([]);
+    expect(r.wouldServeIfOn, 'mandou ligar um controle que também não desenha').toEqual([]);
   });
 
   it('[Right] mas É oferecido quando o que está desligado aponta', () => {
     const r = reach([tp('toque', 9, false, true), tp('teclado', 40, true, false)], TRES, 1, true);
     expect(r.ok).toBe(false);
-    expect(r.serviriamSeLigados).toEqual(['toque']);
+    expect(r.wouldServeIfOn).toEqual(['toque']);
   });
 
   it('⚠️ [Zero] quem OMITE o campo não aponta — ausência é «não oferece», e é a forma do gamepad', () => {
@@ -95,7 +95,7 @@ describe('ADR-0112 · um jogo que pede PONTEIRO é recusado por quem não tem', 
     const semCampo = { id: 'gamepad', slots: 17, available: () => true };
     const r = reach([semCampo], TRES, 1, true);
     expect(r.ok).toBe(false);
-    expect(r.naoApontam).toEqual(['gamepad']);
+    expect(r.cannotPoint).toEqual(['gamepad']);
   });
 
   it('⚠️ [Boundary] quem falha por LUGARES não entra também na lista de quem não aponta', () => {
@@ -103,8 +103,8 @@ describe('ADR-0112 · um jogo que pede PONTEIRO é recusado por quem não tem', 
     // que o impede podia cair sem nada reprovar — foi o que a mutação mostrou.
     const estreito = tp('acionador', 2, true, false); // dois lugares para três acções, e sem ponteiro
     const r = reach([estreito], TRES, 1, true);
-    expect(r.curtos).toEqual([{ id: 'acionador', slots: 2 }]);
-    expect(r.naoApontam, 'o mesmo transporte acusado duas vezes').toEqual([]);
+    expect(r.short).toEqual([{ id: 'acionador', slots: 2 }]);
+    expect(r.cannotPoint, 'o mesmo transporte acusado duas vezes').toEqual([]);
   });
 });
 
@@ -113,18 +113,18 @@ describe('ADR-0112 · a cláusula do Dev, na FÁBRICA e não num fixture', () =>
   // apagar `aponta: d.rato` do `defaultTransports` não reprovava nada — e essa linha É o commit. «No caso do
   // teclado, o sinal contínuo passa a ser o mouse» tem de ser afirmado sobre a lista que o jogo recebe.
   const disp = (over) => ({
-    gamepad: () => false, toque: () => false, teclado: () => true, rato: () => false, ...over,
+    gamepad: () => false, touch: () => false, keyboard: () => true, mouse: () => false, ...over,
   });
   const acha = (lista, id) => lista.find((x) => x.id === id);
 
   it('⚠️ [Right] o TECLADO aponta quando há rato, e não aponta quando não há', () => {
-    expect(acha(defaultTransports(disp({ rato: () => true })), 'teclado').aponta()).toBe(true);
-    expect(acha(defaultTransports(disp({ rato: () => false })), 'teclado').aponta()).toBe(false);
+    expect(acha(defaultTransports(disp({ mouse: () => true })), 'teclado').points()).toBe(true);
+    expect(acha(defaultTransports(disp({ mouse: () => false })), 'teclado').points()).toBe(false);
   });
 
   it('⚠️ [Right] o TOQUE aponta por natureza — a mesma sonda que o torna disponível', () => {
-    const lista = defaultTransports(disp({ toque: () => true }));
-    expect(acha(lista, 'toque').aponta()).toBe(true);
+    const lista = defaultTransports(disp({ touch: () => true }));
+    expect(acha(lista, 'toque').points()).toBe(true);
     expect(acha(lista, 'toque').available()).toBe(true);
   });
 
@@ -132,7 +132,7 @@ describe('ADR-0112 · a cláusula do Dev, na FÁBRICA e não num fixture', () =>
     // O stick tem o sinal contínuo e a engine deita-o fora na fonte (`PAD_DEAD = 0.5`). Ligá-lo é possível e
     // traz de volta a pergunta que o ADR-0112 já deixou nomeada — meio curso morto serve a um BOTÃO e não a
     // um CURSOR. Enquanto não for ligado, declarar que ele aponta seria mentir para o cartão da #112.
-    expect(acha(defaultTransports(disp({ gamepad: () => true })), 'gamepad').aponta).toBeUndefined();
+    expect(acha(defaultTransports(disp({ gamepad: () => true })), 'gamepad').points).toBeUndefined();
   });
 
   // ===================== MUTACOES CONFERIDAS (o ponteiro, ADR-0112) =====================
@@ -199,7 +199,7 @@ describe('o que a tela de seleção precisa saber ANTES de a criança começar',
   it('quando serve, diz que serve', () => {
     const a = reach([TOQUE, GAMEPAD], NOVE);
     expect(a.ok).toBe(true);
-    expect(a.pedidas).toBe(9);
+    expect(a.asked).toBe(9);
   });
 
   it('⚠️ quando NÃO serve, diz o número e diz o que ligar', () => {
@@ -207,9 +207,9 @@ describe('o que a tela de seleção precisa saber ANTES de a criança começar',
     // pede 12; um controle resolveria» diz o que fazer.
     const a = reach([TOQUE, t('gamepad', 17, false)], DOZE);
     expect(a.ok).toBe(false);
-    expect(a.pedidas).toBe(12);
-    expect(a.curtos).toEqual([{ id: 'touch', slots: 9 }]);
-    expect(a.serviriamSeLigados).toEqual(['gamepad']);
+    expect(a.asked).toBe(12);
+    expect(a.short).toEqual([{ id: 'touch', slots: 9 }]);
+    expect(a.wouldServeIfOn).toEqual(['gamepad']);
   });
 
   it('devolve DADO e não texto', () => {
@@ -221,7 +221,7 @@ describe('o que a tela de seleção precisa saber ANTES de a criança começar',
 
   it('um transporte disponível que CABE não aparece como curto', () => {
     const a = reach([TOQUE, GAMEPAD], DOZE);
-    expect(a.curtos.map((c) => c.id)).toEqual(['touch']);
+    expect(a.short.map((c) => c.id)).toEqual(['touch']);
     expect(a.ok).toBe(true);
   });
 });
@@ -232,7 +232,7 @@ describe('A LISTA REAL de transportes — os números saem do aparelho, não de 
   // tautológico — o código É `ACTIONS.length` —, e um caso que se move junto com a implementação não falha
   // nunca. O que interessa é o que cada número FAZ quando a aritmética o usa.
   const sempre = () => true, nunca = () => false;
-  const todos = (v) => defaultTransports({ gamepad: v, teclado: v, toque: v, rato: v });
+  const todos = (v) => defaultTransports({ gamepad: v, keyboard: v, touch: v, mouse: v });
   const acha = (lista, id) => lista.find((x) => x.id === id);
 
   it('[Right] ⚠️ o TOQUE não carrega as catorze — é a combinação que a issue #112 existe para avisar', () => {
@@ -260,27 +260,27 @@ describe('A LISTA REAL de transportes — os números saem do aparelho, não de 
 
   it('[Zero] ⚠️ num tablet SEM controle ligado, o conjunto de catorze NÃO é alcançável', () => {
     // O caso da issue, inteiro: só o toque disponível, e ele é curto. É este `false` que faz a tela aparecer.
-    const tablet = defaultTransports({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca });
+    const tablet = defaultTransports({ gamepad: nunca, keyboard: nunca, touch: sempre, mouse: nunca });
     expect(reachable(tablet, ACTIONS)).toBe(false);
 
     const a = reach(tablet, ACTIONS);
     expect(a.ok).toBe(false);
     // ⚠️ E a informação tem de ser ACIONÁVEL: «faltam lugares» não ajuda ninguém. Quem está curto, com quantos
     // lugares tem, e o que resolveria se fosse ligado — é isso que vira frase.
-    expect(a.curtos).toEqual([{ id: 'toque', slots: 13 }]); // nove até os ombros do ADR-0160
-    expect(a.serviriamSeLigados).toEqual(['gamepad', 'teclado']);
-    expect(a.pedidas).toBe(ACTIONS.length);
+    expect(a.short).toEqual([{ id: 'toque', slots: 13 }]); // nove até os ombros do ADR-0160
+    expect(a.wouldServeIfOn).toEqual(['gamepad', 'teclado']);
+    expect(a.asked).toBe(ACTIONS.length);
   });
 
   it('[Right] e ligar um controle resolve — a mesma lista, com o gamepad disponível', () => {
-    const comPad = defaultTransports({ gamepad: sempre, teclado: nunca, toque: sempre, rato: nunca });
+    const comPad = defaultTransports({ gamepad: sempre, keyboard: nunca, touch: sempre, mouse: nunca });
     expect(reachable(comPad, ACTIONS)).toBe(true);
     expect(reach(comPad, ACTIONS).ok).toBe(true);
   });
 
   it('[Boundary] um jogo de NOVE ações cabe no toque, e a tela não tem por que aparecer', () => {
     // A tela avisa quando é preciso, e cala quando não é. Um aviso que aparece sempre deixa de ser lido.
-    const tablet = defaultTransports({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca });
+    const tablet = defaultTransports({ gamepad: nunca, keyboard: nunca, touch: sempre, mouse: nunca });
     expect(reachable(tablet, NOVE)).toBe(true);
   });
 
@@ -289,16 +289,16 @@ describe('A LISTA REAL de transportes — os números saem do aparelho, não de 
     // não é o que ela tem, e nomeá-lo faria a frase apontar para um objeto que não está na sala — o oposto
     // de acionável. É a linha que separa «o toque tem 9 lugares» de uma lista de tudo o que existe no mundo.
     const acionador = { id: 'acionador', slots: 2, available: () => false };
-    const lista = [...defaultTransports({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca }), acionador];
+    const lista = [...defaultTransports({ gamepad: nunca, keyboard: nunca, touch: sempre, mouse: nunca }), acionador];
     const a = reach(lista, ACTIONS);
-    expect(a.curtos.map((c) => c.id), 'a frase citou um aparelho desligado').toEqual(['toque']);
+    expect(a.short.map((c) => c.id), 'a frase citou um aparelho desligado').toEqual(['toque']);
     // E ele também não entra em «serviria se ligado», porque não serviria: dois lugares para catorze ações.
-    expect(a.serviriamSeLigados).not.toContain('acionador');
+    expect(a.wouldServeIfOn).not.toContain('acionador');
   });
 
   it('[Interface] a disponibilidade é PERGUNTADA a cada vez — um controle liga-se no meio da partida', () => {
     let ligado = false;
-    const lista = defaultTransports({ gamepad: () => ligado, teclado: nunca, toque: sempre, rato: nunca });
+    const lista = defaultTransports({ gamepad: () => ligado, keyboard: nunca, touch: sempre, mouse: nunca });
     expect(reachable(lista, ACTIONS)).toBe(false);
     ligado = true;
     expect(reachable(lista, ACTIONS), 'a lista memorizou a resposta de antes').toBe(true);

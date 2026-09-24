@@ -71,8 +71,8 @@ function snap(over = {}) {
   // `{ phase: 'title' }`, que é como se lê melhor; a tradução é feita aqui, em UM lugar.
   const fase = over.phase || 'playing';
   const base = {
-    telaDeTitulo: fase === 'title',
-    emJogo: fase === 'playing' || fase === 'paused',
+    titleScreen: fase === 'title',
+    inGame: fase === 'playing' || fase === 'paused',
     numPlayers,
     players,
     controls: over.controls || controlsFrom(active),
@@ -539,8 +539,8 @@ function mkCtx(over = {}) {
     attractOnInput: over.attractOnInput || (() => false),
     handleCaptureKeydown: over.handleCaptureKeydown || (() => false),
     // Os dois fatos da cena (ADR-0030 C3). O falso guarda a string, como os casos se leem.
-    isTelaDeTitulo: () => (over.phase || faseFalsa) === 'title',
-    isEmJogo: () => { const f = over.phase || faseFalsa; return f === 'playing' || f === 'paused'; },
+    isTitleScreen: () => (over.phase || faseFalsa) === 'title',
+    isInGame: () => { const f = over.phase || faseFalsa; return f === 'playing' || f === 'paused'; },
     getNumPlayers: () => players.length,
     getPlayers: () => players,
     getControls: () => controlsFrom(schemes),
@@ -744,10 +744,10 @@ describe('initKeydown — o efeito de cada ramo', () => {
       { code: 'KeyJ', altKey: false, ctrlKey: false, isTrusted: false, preventDefault: () => {} },
       'olhos',
     ));
-    expect(inputOf(0).emUso, 'o carimbo não chegou ao autómato: a webcam continua a ser lida como teclado').toBe('olhos');
+    expect(inputOf(0).inUse, 'o carimbo não chegou ao autómato: a webcam continua a ser lida como teclado').toBe('olhos');
 
     fire(api, 'KeyJ');
-    expect(inputOf(0).emUso, 'uma tecla premida a sério tinha de devolver o teclado').toBe('teclado');
+    expect(inputOf(0).inUse, 'uma tecla premida a sério tinha de devolver o teclado').toBe('teclado');
     forgetInputs();
   });
 
@@ -760,7 +760,7 @@ describe('initKeydown — o efeito de cada ramo', () => {
       'olhos',
     ));
     fire(api, 'KeyJ', { isTrusted: false });     // ninguém assinou: origem desconhecida
-    expect(inputOf(0).emUso, 'uma aresta sem origem foi contada como teclado').toBe('olhos');
+    expect(inputOf(0).inUse, 'uma aresta sem origem foi contada como teclado').toBe('olhos');
     forgetInputs();
   });
 
@@ -775,7 +775,7 @@ describe('initKeydown — o efeito de cada ramo', () => {
       { code: 'KeyZ', altKey: false, ctrlKey: false, isTrusted: false, preventDefault: () => {} },
       'olhos',
     ));
-    expect(inputOf(0).emUso, 'a key of no seat left the automaton of seat 1 untouched').toBe('olhos');
+    expect(inputOf(0).inUse, 'a key of no seat left the automaton of seat 1 untouched').toBe('olhos');
     forgetInputs();
   });
 
@@ -821,9 +821,9 @@ describe('initKeydown — o efeito de cada ramo', () => {
     const { ctx } = mkCtx();
     const api = initKeydown(ctx);
     setPhaseValue('paused');
-    expect(api.snapshot()).toMatchObject({ telaDeTitulo: false, emJogo: true });
+    expect(api.snapshot()).toMatchObject({ titleScreen: false, inGame: true });
     setPhaseValue('title');
-    expect(api.snapshot()).toMatchObject({ telaDeTitulo: true, emJogo: false });
+    expect(api.snapshot()).toMatchObject({ titleScreen: true, inGame: false });
   });
 });
 

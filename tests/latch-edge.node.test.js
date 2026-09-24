@@ -37,18 +37,18 @@ describe('a aresta que também resolve a alternância', () => {
   it('[Right] a aresta chega ao autómato E o jogador recebe a alternância daquele aparelho', () => {
     const armazem = armazemFalso({ [chave(0, 'gamepad')]: '1' });
     const p = jogador();
-    const aresta = createLatchedEdge(() => [p], { armazem, padrao: false });
+    const aresta = createLatchedEdge(() => [p], { store: armazem, padrao: false });
 
     aresta(0, 'gamepad');
 
-    expect(inputOf(0).emUso, 'o autómato não soube do controle').toBe('gamepad');
+    expect(inputOf(0).inUse, 'o autómato não soube do controle').toBe('gamepad');
     expect(p.toggleMove, 'a alternância guardada para o controle não chegou ao jogador').toBe(true);
   });
 
   it('🎯 [Sequência] trocar de aparelho troca a resposta — e o armazenamento não é tocado', () => {
     const armazem = armazemFalso({ [chave(0, 'gamepad')]: '1', [chave(0, 'teclado')]: '0' });
     const p = jogador();
-    const aresta = createLatchedEdge(() => [p], { armazem, padrao: false });
+    const aresta = createLatchedEdge(() => [p], { store: armazem, padrao: false });
 
     aresta(0, 'gamepad');
     expect(p.toggleMove).toBe(true);
@@ -66,34 +66,34 @@ describe('a aresta que também resolve a alternância', () => {
       [chave(0, 'olhos')]: '0', [legacyLatchKey(BASE_DA_MARCHA, 0)]: '0',
     });
     const p = jogador();
-    createLatchedEdge(() => [p], { armazem, padrao: false })(0, 'olhos');
+    createLatchedEdge(() => [p], { store: armazem, padrao: false })(0, 'olhos');
     expect(p.toggleMove, 'quem joga por olhar ficou sem a alternância de que a entrada dela depende').toBe(true);
   });
 
   it('[Muitos] cada assento resolve o seu — a aresta do J2 não mexe no J1', () => {
     const armazem = armazemFalso({ [chave(1, 'toque')]: '1' });
     const p0 = jogador(); const p1 = jogador();
-    const aresta = createLatchedEdge(() => [p0, p1], { armazem, padrao: false });
+    const aresta = createLatchedEdge(() => [p0, p1], { store: armazem, padrao: false });
 
     aresta(1, 'toque');
 
     expect([p0.toggleMove, p1.toggleMove], 'a alternância foi para o assento errado').toEqual([false, true]);
-    expect(inputOf(0).emUso, 'a aresta do J2 mexeu no transporte do J1').toBe('teclado');
-    expect(inputOf(1).emUso).toBe('toque');
+    expect(inputOf(0).inUse, 'a aresta do J2 mexeu no transporte do J1').toBe('teclado');
+    expect(inputOf(1).inUse).toBe('toque');
   });
 
   it('[Zero] assento sem jogador: a aresta fica registada à mesma, e nada rebenta', () => {
     const armazem = armazemFalso();
-    const aresta = createLatchedEdge(() => [], { armazem, padrao: false });
+    const aresta = createLatchedEdge(() => [], { store: armazem, padrao: false });
     expect(() => aresta(3, 'toque')).not.toThrow();
-    expect(inputOf(3).emUso, 'o transporte em uso é facto sobre a ENTRADA, não sobre quem já entrou').toBe('toque');
+    expect(inputOf(3).inUse, 'o transporte em uso é facto sobre a ENTRADA, não sobre quem já entrou').toBe('toque');
   });
 
   it('📌 [Boundary] o padrão de fábrica é o do `DEFAULTS`, não um `false` escrito à mão', async () => {
     const { DEFAULTS } = await import('../app/js/core/state.js');
     const armazem = armazemFalso();
     const p = { toggleMove: !DEFAULTS.toggleMove, walkDir: 0 };
-    createLatchedEdge(() => [p], { armazem })(0, 'teclado');
+    createLatchedEdge(() => [p], { store: armazem })(0, 'teclado');
     expect(p.toggleMove, 'sem nada guardado, a resposta tem de ser a de fábrica').toBe(DEFAULTS.toggleMove);
   });
 });

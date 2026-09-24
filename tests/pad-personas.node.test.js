@@ -10,11 +10,11 @@ import es from '../app/js/i18n/es.js';
 
 describe('PERSONAS_DO_PAD', () => {
   it('🎯 [Right] FOUR, in the Dev\'s order: small child, older child, small adult, large hands', () => {
-    expect(PERSONAS_DO_PAD.map((p) => p.chave)).toEqual(['crianca-pequena', 'crianca-grande', 'adulto-pequeno', 'adulto-maos-grandes']);
+    expect(PERSONAS_DO_PAD.map((p) => p.key)).toEqual(['crianca-pequena', 'crianca-grande', 'adulto-pequeno', 'adulto-maos-grandes']);
   });
 
   it('🔴 [Right] every button clears the adult floor the sources measured (Parhi 2006: 9.2–9.6 mm)', () => {
-    for (const p of PERSONAS_DO_PAD) expect(p.mm.btn, `${p.chave} is below the measured floor`).toBeGreaterThanOrEqual(9.6);
+    for (const p of PERSONAS_DO_PAD) expect(p.mm.btn, `${p.key} is below the measured floor`).toBeGreaterThanOrEqual(9.6);
   });
 
   it('🔴 [Right] the small child has the LARGEST button — imprecision, not hand size, is the constraint (Vatavu 2015)', () => {
@@ -34,7 +34,7 @@ describe('PERSONAS_DO_PAD', () => {
 
   it('[Interface] each persona has its name in pt, en and es — the step control never shows a key', () => {
     for (const [nome, dic] of [['pt', pt], ['en', en], ['es', es]]) {
-      for (const p of PERSONAS_DO_PAD) expect(dic[p.rotulo], `${nome}: ${p.rotulo} missing`).toBeTruthy();
+      for (const p of PERSONAS_DO_PAD) expect(dic[p.label], `${nome}: ${p.label} missing`).toBeTruthy();
       expect(dic['motora.pad'], `${nome}: motora.pad missing`).toBeTruthy();
     }
   });
@@ -46,12 +46,12 @@ describe('closestPersona', () => {
   });
 
   it('[Boundary] the factory pad (12.5 mm), sized before the personas, reads as «small adult»', () => {
-    expect(PERSONAS_DO_PAD[closestPersona(12.5)].chave).toBe('adulto-pequeno');
+    expect(PERSONAS_DO_PAD[closestPersona(12.5)].key).toBe('adulto-pequeno');
   });
 
   it('[Boundary] a tie goes to the LARGER button — when in doubt, the easier target', () => {
     // 15.5 is 0.5 from 15 (large hands) and 0.5 from 16 (small child)
-    expect(PERSONAS_DO_PAD[closestPersona(15.5)].chave).toBe('crianca-pequena');
+    expect(PERSONAS_DO_PAD[closestPersona(15.5)].key).toBe('crianca-pequena');
   });
 });
 

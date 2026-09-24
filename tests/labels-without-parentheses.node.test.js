@@ -22,7 +22,7 @@ const DICIONARIOS = { pt, en, es };
 const ROTULOS = [
   ...AUDIO_CATS.map((c) => c.lbl),
   ...Object.values(RM_LABEL),
-  ...PERSONAS_DO_PAD.map((p) => p.rotulo),
+  ...PERSONAS_DO_PAD.map((p) => p.label),
   'audio.modocego', 'audio.narracao',
 ];
 // ⚠️ NO HINTS HERE ON PURPOSE. The parentheses held one game's examples — «água, rua», «moedas», «andar, escalar» — and

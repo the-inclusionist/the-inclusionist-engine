@@ -387,7 +387,7 @@ export interface TouchBindingsCtx {
   hideTips: () => void;
   togglePause: () => void;
   /** A pílula SELECT abre os menus da pausa (ADR-0155). Ausente, a pílula não faz nada — só a raiz que a desenha a liga. */
-  abrirMenus?: () => void;
+  openMenus?: () => void;
   /** `input/touch.ts:getTouchMap()` — slot → ação, remapeável. Lido A CADA evento, verbatim: remapear no
    *  painel passa a valer no toque seguinte, sem re-amarrar ouvinte nenhum. */
   getTouchMap: () => Record<string, string>;
@@ -582,7 +582,7 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
     const startBtn = ctx.$<HTMLElement>('#touch-start');
     if (startBtn) startBtn.addEventListener('click', pressStart);
     const selectBtn = ctx.$<HTMLElement>('#touch-select');
-    if (selectBtn) selectBtn.addEventListener('click', () => ctx.abrirMenus?.());
+    if (selectBtn) selectBtn.addEventListener('click', () => ctx.openMenus?.());
 
     // analógico: base (círculo grande) + manopla que desliza para a direção tocada
     const stick = ctx.$<HTMLElement>('#touch-stick');

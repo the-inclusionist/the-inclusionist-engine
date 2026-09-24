@@ -1279,7 +1279,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * 📌 E é a RAIZ que o passa, não o ícone que o importa: `ui/` a ler estado de módulo de `input/` seria
      * uma aresta nova entre camadas para poupar um argumento. A composição é o trabalho deste ficheiro.
      */
-    transporteEmUso: (i: number) => inputOf(i).emUso,
+    transporteEmUso: (i: number) => inputOf(i).inUse,
     // ✅ O guarda morto do monólito volta a valer — ver a nota em `audio`, acima.
     reflectTtsPanel: () => { audio?.reflectTts(); },
     reflectTtsPanelEnabled: true,
@@ -2329,8 +2329,8 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const disponibilidade: Availability = o.disponibilidade ?? {
     gamepad: () => { try { return [...(win.navigator?.getGamepads?.() ?? [])].some(Boolean); } catch { return false; } },
-    toque: () => { try { return win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches; } catch { return false; } },
-    teclado: () => { try { return !(win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches); } catch { return true; } },
+    touch: () => { try { return win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches; } catch { return false; } },
+    keyboard: () => { try { return !(win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches); } catch { return true; } },
     /**
      * O RATO (ADR-0112) — e a sonda é `any-pointer` de propósito, não `pointer`.
      *
@@ -2342,7 +2342,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * a sério — logo isso não é erro. O que pode faltar é um rato ligado depois do arranque, e por isso a
      * sonda é uma FUNÇÃO, avaliada a cada pergunta, como as três acima.
      */
-    rato: () => { try { return win.matchMedia('(any-pointer:fine)').matches; } catch { return false; } },
+    mouse: () => { try { return win.matchMedia('(any-pointer:fine)').matches; } catch { return false; } },
   };
   // O segundo eixo entra aqui, e vem do jogo (ADR-0104 §A): quantas posições ele segura ao mesmo tempo.
   // ⚠️ O TERCEIRO EIXO ENTRA AQUI (ADR-0112), e vem do jogo tal como os outros dois. `?? false` e não um
@@ -2914,20 +2914,20 @@ export function createGame(o: CreateGameOptions): Engine {
     const alvo = $<HTMLElement>('#game-region') ?? doc.body;
     alvo.dispatchEvent(stampSource(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origem));
   };
-  const labelledActions = (): readonly { acao: string; rotulo: string }[] => {
+  const labelledActions = (): readonly { action: string; label: string }[] => {
     const preset = cartridge.preset;
     if (!preset) return [];
-    const nome = labellerFrom(preset);
+    const labelOf = labellerFrom(preset);
     return presetActions(preset).flatMap((a) => {
-      const rotulo = nome(a);
-      return rotulo ? [{ acao: a, rotulo }] : [];
+      const label = labelOf(a);
+      return label ? [{ action: a, label }] : [];
     });
   };
   const toque = initTouch({
     $, srSay, store, win,
-    acoesDoJogo: labelledActions,
+    gameActions: labelledActions,
     root: doc.documentElement,
-    isMobile: disponibilidade.toque,
+    isMobile: disponibilidade.touch,
     viewport: () => ({ w: win.innerWidth, h: win.innerHeight }),
     frontOverlay: overlays.frontOverlay,
     // O toque é sempre do Jogador 1 (`touch-bindings`), e com o cartão ou um painel aberto a criança toca
@@ -2967,23 +2967,23 @@ export function createGame(o: CreateGameOptions): Engine {
     const mapa = toque.getTouchMap();
     const short = cartridge.preset ? shortLabellerFrom(cartridge.preset) : (): null => null;
     const pad = mountTouchControls(
-      { procurar: (sel) => $<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) },
+      { find: (sel) => $<HTMLElement>(sel), create: (tag) => doc.createElement(tag) },
       {
-        mapa,
-        acoesDoJogo: cartridgeActions(),
+        map: mapa,
+        gameActions: cartridgeActions(),
         // The FUNCTION of each slot (ADR-0165): the game's SHORT word, said after the button's name in its accessible
         // name; the face shows the name. `start`/`select` are system positions the engine names itself.
-        rotuloDoSlot: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select')
+        slotLabel: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select')
             // só se desenha o que o jogo nomeia (ADR-0162), logo a palavra dele existe sempre
             : (short(mapa[slot] as Action) ?? '')),
-        direcional: store.get(store.KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
+        dpad: store.get(store.KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
       },
     );
     if (!pad.parentNode) touchHostEl.appendChild(pad);
   }
 
   padGapProblems = () => (!cartridge.controleNaTela ? [] : touchUsable
-    ? touchGaps({ mapa: toque.getTouchMap(), acoesDoJogo: cartridgeActions() })
+    ? touchGaps({ map: toque.getTouchMap(), gameActions: cartridgeActions() })
     : ['the virtual pad has nowhere to mount: set `host.touchHost`, or give #game-region room for children. '
       + 'Without it, a child on a keyboardless tablet cannot play, nor reach the pause']);
 
@@ -3030,7 +3030,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // O pad FICA à vista com o cartão aberto (ADR-0157): é o direccional dele que anda no cartão, e quem o leva lá é
     // agora o controle virtual — ele já carimba a origem (ADR-0109), que é o que o «teclado esconde o pad» pergunta;
     // sem o carimbo o pad sumiria a cada seta que ele próprio entregou.
-    abrirMenus: () => { openSeatMenus(0); },
+    openMenus: () => { openSeatMenus(0); },
     getTouchMap: () => toque.getTouchMap(),
     // ✅ O DEFEITO QUE O `TouchBindingsCtx` GUARDAVA MORRE AQUI: no cartucho a linha era `touchMap.start` num
     // escopo onde `touchMap` não existia, e o START da tela estava quebrado. Esta raiz TEM o mapa.
@@ -3114,7 +3114,7 @@ export function createGame(o: CreateGameOptions): Engine {
     let currentPersona = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
     const specDoPad = () => ({
       rotulo: t('motora.pad'),
-      valores: PERSONAS_DO_PAD.map((p) => t(p.rotulo)),
+      valores: PERSONAS_DO_PAD.map((p) => t(p.label)),
       atual: currentPersona,
     });
     const mobilityPanel = mountPanel(mobilityCtx, {
@@ -3157,7 +3157,7 @@ export function createGame(o: CreateGameOptions): Engine {
       currentPersona = fresh;
       toque.setPadMm(PERSONAS_DO_PAD[fresh]!.mm);
       updateSteps(padSteps!, specDoPad());
-      srSay(`${t('motora.pad')}: ${t(PERSONAS_DO_PAD[fresh]!.rotulo)}`);
+      srSay(`${t('motora.pad')}: ${t(PERSONAS_DO_PAD[fresh]!.label)}`);
     });
     engineActions.motora = mobilityPanel.abrir;
 
@@ -3312,7 +3312,7 @@ export function createGame(o: CreateGameOptions): Engine {
     let padWizard: ReturnType<typeof createPadWizard> | null = null;
     /** One closer for «Voltar» and Escape: a running wizard is cancelled (and its close hides the panel); an idle one just hides. */
     const closeControl = (): void => {
-      if (padWizard?.estado()) { padWizard.fechar(false); return; }
+      if (padWizard?.state()) { padWizard.close(false); return; }
       controlPanel.casca.overlay.hidden = true;
       overlays.restoreFocus?.('padwiz');
     };
@@ -3342,11 +3342,11 @@ export function createGame(o: CreateGameOptions): Engine {
         const nav = win.navigator as Navigator | undefined;
         return typeof nav?.getGamepads === 'function' ? nav.getGamepads() : null;
       },
-      rotuloDaAcao: (acao) => actionsToMap().find((x) => x.acao === acao)?.rotulo ?? null,
-      dizer: (phrase) => { controlSentence.textContent = phrase; srSay(phrase); },
-      progresso: (texto) => { controlProgress.textContent = texto; },
+      actionLabel: (acao) => actionsToMap().find((x) => x.acao === acao)?.rotulo ?? null,
+      say: (phrase) => { controlSentence.textContent = phrase; srSay(phrase); },
+      progress: (texto) => { controlProgress.textContent = texto; },
       srAlert,
-      aoFechar: () => {
+      onClose: () => {
         controlPanel.casca.overlay.hidden = true;
         overlays.restoreFocus?.('padwiz');
       },
@@ -3363,7 +3363,7 @@ export function createGame(o: CreateGameOptions): Engine {
     controlButton.id = 'opt-controle';
     controlButton.addEventListener('click', () => {
       controlPanel.abrir();
-      padWizard?.abrir();
+      padWizard?.open();
     });
     controlMappingRow.appendChild(controlButton);
     mobilityPanel.casca.lista.appendChild(controlMappingRow);
@@ -3567,7 +3567,7 @@ export function createGame(o: CreateGameOptions): Engine {
       block(e);
       return;
     }
-    const decision = empathyFilter.keydown(e.code, e.repeat, { umPorVez: state.oneButton, noGripStrength: state.noGripStrength });
+    const decision = empathyFilter.keydown(e.code, e.repeat, { noChords: state.oneButton, noGripStrength: state.noGripStrength });
     if (decision === 'barrar') { block(e); return; }
     if (decision === 'tocar') {
       const alvo = e.target ?? win;
@@ -3931,17 +3931,17 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     getGamepads: () => win.navigator?.getGamepads?.() ?? [],
     // A PALAVRA DO JOGO para uma posição (a fronteira do corte de 2026-09-06): a engine sabe que a posição existe, só
     // o cartucho sabe como ela se chama — e ele já a declarou no `preset` para existir.
-    rotuloDaAcao: (action) => (cartridge.preset ? labellerFrom(cartridge.preset)(action as Action) : null),
+    actionLabel: (action) => (cartridge.preset ? labellerFrom(cartridge.preset)(action as Action) : null),
     srSay, srAlert,
     frontOverlay: overlays.frontOverlay,
     // ⚠️ «MENU DE PAUSA» AQUI É TODO MENU COM DIRECIONAL, e não só o cartão: o `steerPause` do transporte já trata o
     // diálogo partilhado antes do cartão, que é o painel aberto por cima. A mesma pergunta que o controle virtual faz.
-    menuDePausa: menuWithDpad,
-    mundoRodando: gameHooks.worldRunning,
+    pauseMenu: menuWithDpad,
+    worldRunning: gameHooks.worldRunning,
     // O START do comando é a PAUSA RÁPIDA (ADR-0155), como o da tela; e a saída reusa a decisão já escrita para o dedo,
     // que sabe distinguir sair da pausa rápida de fechar o cartão.
-    pausar: () => { enterQuickPause(0); },
-    retomar: togglePauseByTouch,
+    pause: () => { enterQuickPause(0); },
+    resume: togglePauseByTouch,
     isAttractActive: gameHooks.attractActive,
     stopAttract: gameHooks.stopAttract,
     // Um botão FÍSICO faz sumir o pad da tela — a mesma alternância por modalidade do teclado.
@@ -3952,7 +3952,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     getPlayers: () => seatEveryPlayer(players()),
     getNumPlayers: () => players().length,
     navTitle: gameHooks.navTitle,
-    naBarraDe,
+    onBar: naBarraDe,
     // ✅ E A METADE QUE FICAVA POR LIGAR NA BARRA LIGA-SE AQUI: o `navBar` do `ui/menu-nav` recebe `(i, k)` e nunca o
     // terceiro argumento, que é a borda do START — a SEGUNDA saída do modo (ADR-0044 item 7). Ela chegava por uma rota
     // do cartucho que esta raiz não montava; agora a raiz monta o comando, e ela chega por aqui.

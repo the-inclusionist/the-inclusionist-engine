@@ -9,7 +9,7 @@
  *     real release do not reach the game.
  */
 export type KeyDecision = 'passar' | 'barrar' | 'tocar';
-export interface EmpathySimulation { readonly umPorVez: boolean; readonly noGripStrength: boolean }
+export interface EmpathySimulation { readonly noChords: boolean; readonly noGripStrength: boolean }
 
 export interface EmpathyFilter {
   /** A game key goes down. `tocar`: let it through and release it at once. */
@@ -26,7 +26,7 @@ export function createEmpathyFilter(): EmpathyFilter {
   return {
     keydown(code, repeat, sim) {
       if (touched.has(code) || blocked.has(code)) return 'barrar';
-      if (sim.umPorVez && anotherHeld(code)) { blocked.add(code); return 'barrar'; }
+      if (sim.noChords && anotherHeld(code)) { blocked.add(code); return 'barrar'; }
       if (sim.noGripStrength) {
         if (repeat && accepted.has(code)) return 'barrar';
         accepted.delete(code);

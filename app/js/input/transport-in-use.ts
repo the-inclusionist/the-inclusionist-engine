@@ -77,12 +77,12 @@ export const LATCH_OF_THEIR_OWN: ReadonlySet<TransportName> = new Set(['toque'])
 
 export interface InputState {
   /** Qual aparelho está a ser usado AGORA por este jogador. */
-  readonly emUso: TransportName;
+  readonly inUse: TransportName;
   /**
    * A câmera/microfone foi habilitada? ⚠️ Uma vez `true`, NUNCA volta a `false` por uma aresta — só uma
    * decisão explícita a desliga, e o ADR-0109 §4 diz que a criança não tem essa decisão. Ver `desabilitar`.
    */
-  readonly assistidaLigada: boolean;
+  readonly assistedOn: boolean;
 }
 
 /**
@@ -93,7 +93,7 @@ export interface InputState {
  * O `emUso` só passa a distingui-los quando alguém quiser MOSTRAR o aparelho corrente, que é outra questão
  * e o ADR-0109 deixa-a explicitamente por decidir.
  */
-export const PADRAO: InputState = Object.freeze({ emUso: 'teclado', assistidaLigada: false });
+export const PADRAO: InputState = Object.freeze({ inUse: 'teclado', assistedOn: false });
 
 /**
  * HÁ ALTERNÂNCIA AGORA? — ⚠️ **NÃO PERGUNTE ISTO A ESTA FUNÇÃO.** Ver o parágrafo abaixo.
@@ -123,8 +123,8 @@ export const PADRAO: InputState = Object.freeze({ emUso: 'teclado', assistidaLig
  * argumento. `tests/latching-per-transport.node.test.js` afirma que esta função continua sem consumidor.
  */
 export function latchNow(estado: InputState): boolean {
-  if (estado.assistidaLigada) return true;
-  return LATCH_OF_THEIR_OWN.has(estado.emUso);
+  if (estado.assistedOn) return true;
+  return LATCH_OF_THEIR_OWN.has(estado.inUse);
 }
 
 /**
@@ -135,13 +135,13 @@ export function latchNow(estado: InputState): boolean {
  * um segundo rosto a passar — trancava a alternância de toda a gente sem ninguém ter pedido.
  */
 export function afterEdge(estado: InputState, origem: TransportName): InputState {
-  if (estado.emUso === origem) return estado; // sem mudança: devolve o MESMO objecto, não uma cópia
-  return { emUso: origem, assistidaLigada: estado.assistidaLigada };
+  if (estado.inUse === origem) return estado; // sem mudança: devolve o MESMO objecto, não uma cópia
+  return { inUse: origem, assistedOn: estado.assistedOn };
 }
 
 /** A criança (ou quem a acompanha) habilitou câmera/microfone. Daqui em diante a alternância é lei. */
 export function enableAssisted(estado: InputState): InputState {
-  return estado.assistidaLigada ? estado : { emUso: estado.emUso, assistidaLigada: true };
+  return estado.assistedOn ? estado : { inUse: estado.inUse, assistedOn: true };
 }
 
 /**
@@ -153,5 +153,5 @@ export function enableAssisted(estado: InputState): InputState {
  * decisão mora.
  */
 export function disableAssisted(estado: InputState): InputState {
-  return estado.assistidaLigada ? { emUso: estado.emUso, assistidaLigada: false } : estado;
+  return estado.assistedOn ? { inUse: estado.inUse, assistedOn: false } : estado;
 }

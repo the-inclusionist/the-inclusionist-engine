@@ -60,8 +60,8 @@ function wire({ pauseMenu = null } = {}) {
   const keydown = initKeydown({
     attractOnInput: () => false,
     handleCaptureKeydown: () => false,
-    isTelaDeTitulo: () => faseFalsa === 'title',
-    isEmJogo: () => faseFalsa === 'playing' || faseFalsa === 'paused',
+    isTitleScreen: () => faseFalsa === 'title',
+    isInGame: () => faseFalsa === 'playing' || faseFalsa === 'paused',
     getNumPlayers: () => 1,
     getPlayers: () => players,
     getControls: () => CONTROLS,

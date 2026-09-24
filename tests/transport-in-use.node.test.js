@@ -55,7 +55,7 @@ describe('ADR-0109 §1 · a alternância segue o aparelho em uso', () => {
     // Um falso positivo da webcam (uma sombra, um segundo rosto a passar) trancaria a alternância de toda a
     // gente sem ninguém ter pedido. O §4 diz «precisam ser habilitados», e isto é essa palavra.
     for (const t of NEED_ENABLING) {
-      expect(afterEdge(PADRAO, t).assistidaLigada, `${t} habilitou-se sozinho`).toBe(false);
+      expect(afterEdge(PADRAO, t).assistedOn, `${t} habilitou-se sozinho`).toBe(false);
       expect(latchNow(afterEdge(PADRAO, t)), `${t} ligou a alternância sem habilitação`).toBe(false);
     }
   });

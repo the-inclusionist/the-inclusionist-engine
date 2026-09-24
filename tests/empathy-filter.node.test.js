@@ -9,10 +9,10 @@
 import { describe, it, expect } from 'vitest';
 import { createEmpathyFilter } from '../app/js/input/empathy-filter.js';
 
-const DESLIGADAS = { umPorVez: false, noGripStrength: false };
-const UM = { umPorVez: true, noGripStrength: false };
-const FORCA = { umPorVez: false, noGripStrength: true };
-const AMBAS = { umPorVez: true, noGripStrength: true };
+const DESLIGADAS = { noChords: false, noGripStrength: false };
+const UM = { noChords: true, noGripStrength: false };
+const FORCA = { noChords: false, noGripStrength: true };
+const AMBAS = { noChords: true, noGripStrength: true };
 
 describe('one button at a time', () => {
   it('🔴 [Right] while one game key is held, a second is never accepted — nor its release', () => {

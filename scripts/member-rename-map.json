@@ -2,7 +2,8 @@
   "about": "Phase 7 of the English plan (ADR-0230, issue #206): published MEMBERS renamed by (type, member). Keys are '<module under app/js> <Type>.<member>'; the table in Breaking-Changes is printed from this file by `node scripts/apply-member-rename.mjs --table`.",
   "layersApplied": [
     "core",
-    "platform"
+    "platform",
+    "input"
   ],
   "excluded": {
     "core/visual-state.ts VisualState.tema": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6",
@@ -15,7 +16,10 @@
     "tests/fontes-carregam.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
     "tests/fontes-empacotadas.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
     "app/js/ui/pause-markup.ts tipo": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name",
-    "app/js/ui/shell.ts tipo": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name"
+    "app/js/ui/shell.ts tipo": "a pause action id: the key of the action table, which is also the `data-act` value a game reads — data, not a member name",
+    "app/js/input/transports.ts toque": "SLOTS: a table keyed by the VALUES of TransportName ('toque', 'teclado'), which are data — the transport stamp a key carries — and not member names",
+    "app/js/input/transports.ts teclado": "SLOTS: a table keyed by the VALUES of TransportName ('toque', 'teclado'), which are data — the transport stamp a key carries — and not member names",
+    "tests/transports.node.test.js toque": "SLOTS: a table keyed by the VALUES of TransportName ('toque', 'teclado'), which are data — the transport stamp a key carries — and not member names"
   },
   "layers": {
     "core": {
@@ -103,6 +107,60 @@
       "ui/voice-settings.ts TtsPanel.setVoz": "setVoice",
       "ui/voice-settings.ts TtsPanel.vozAtual": "currentVoice",
       "ui/voice-settings.ts TtsPanel.vozes": "voices"
+    },
+    "input": {
+      "input/empathy-filter.ts EmpathySimulation.umPorVez": "noChords",
+      "input/gamepad.ts GamepadCtx.menuDePausa": "pauseMenu",
+      "input/gamepad.ts GamepadCtx.mundoRodando": "worldRunning",
+      "input/gamepad.ts GamepadCtx.naBarraDe": "onBar",
+      "input/gamepad.ts GamepadCtx.pausar": "pause",
+      "input/gamepad.ts GamepadCtx.retomar": "resume",
+      "input/gamepad.ts GamepadCtx.rotuloDaAcao": "actionLabel",
+      "input/keydown.ts KeydownCtx.isEmJogo": "isInGame",
+      "input/keydown.ts KeydownCtx.isTelaDeTitulo": "isTitleScreen",
+      "input/keydown.ts KeydownSnapshot.emJogo": "inGame",
+      "input/keydown.ts KeydownSnapshot.telaDeTitulo": "titleScreen",
+      "input/latch-edge.ts LatchedEdgeOptions.armazem": "store",
+      "input/latch-scope.ts LatchReading.doLegado": "fromLegacy",
+      "input/latch-scope.ts LatchReading.doTransporte": "fromTransport",
+      "input/pad-wizard.ts PadWizard.abrir": "open",
+      "input/pad-wizard.ts PadWizard.abrirPara": "openFor",
+      "input/pad-wizard.ts PadWizard.estado": "state",
+      "input/pad-wizard.ts PadWizard.fechar": "close",
+      "input/pad-wizard.ts PadWizard.tique": "tick",
+      "input/pad-wizard.ts PadWizardCtx.aoFechar": "onClose",
+      "input/pad-wizard.ts PadWizardCtx.aoPasso": "onStep",
+      "input/pad-wizard.ts PadWizardCtx.aoTique": "onTick",
+      "input/pad-wizard.ts PadWizardCtx.dizer": "say",
+      "input/pad-wizard.ts PadWizardCtx.progresso": "progress",
+      "input/pad-wizard.ts PadWizardCtx.rotuloDaAcao": "actionLabel",
+      "input/pointer.ts PointerSample.apertado": "pressed",
+      "input/pointer.ts PointerSample.origem": "source",
+      "input/touch-bindings.ts TouchBindingsCtx.abrirMenus": "openMenus",
+      "input/touch.ts PersonaDoPad.chave": "key",
+      "input/touch.ts PersonaDoPad.rotulo": "label",
+      "input/touch.ts TouchCtx.acoesDoJogo": "gameActions",
+      "input/touch.ts TouchCtx.acoesDoJogo.acao": "action",
+      "input/touch.ts TouchCtx.acoesDoJogo.rotulo": "label",
+      "input/touch.ts TouchMarkupCtx.criar": "create",
+      "input/touch.ts TouchMarkupCtx.procurar": "find",
+      "input/touch.ts TouchMarkupSpec.acoesDoJogo": "gameActions",
+      "input/touch.ts TouchMarkupSpec.direcional": "dpad",
+      "input/touch.ts TouchMarkupSpec.mapa": "map",
+      "input/touch.ts TouchMarkupSpec.rotuloDoSlot": "slotLabel",
+      "input/transport-in-use.ts InputState.assistidaLigada": "assistedOn",
+      "input/transport-in-use.ts InputState.emUso": "inUse",
+      "input/transports.ts Availability.rato": "mouse",
+      "input/transports.ts Availability.teclado": "keyboard",
+      "input/transports.ts Availability.toque": "touch",
+      "input/transports.ts Reach.curtos": "short",
+      "input/transports.ts Reach.naoApontam": "cannotPoint",
+      "input/transports.ts Reach.naoSeguram": "cannotHold",
+      "input/transports.ts Reach.pedePonteiro": "needsPointer",
+      "input/transports.ts Reach.pedidas": "asked",
+      "input/transports.ts Reach.seguraPedidas": "holdsAsked",
+      "input/transports.ts Reach.serviriamSeLigados": "wouldServeIfOn",
+      "input/transports.ts Transport.aponta": "points"
     }
   }
 }

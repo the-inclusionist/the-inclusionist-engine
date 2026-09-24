@@ -2682,6 +2682,79 @@ The table is printed from `scripts/member-rename-map.json` by `node scripts/appl
 | `ui/voice-settings.js` | `TtsPanel` | `vozAtual` | `currentVoice` |
 | `ui/voice-settings.js` | `TtsPanel` | `vozes` | `voices` |
 
+## CK · Published members speak English — the `input` layer (ADR-0230, issue #206)
+
+**Who is affected:** a cartridge or host that builds one of these ctx objects or reads one of these results — above all
+a game that mounts the gamepad or the pad-mapping assistant itself (`GamepadCtx.worldRunning`, `pauseMenu`, `pause`,
+`resume`, `onBar`, `actionLabel`; `PadWizardCtx.say`, `progress`, `onStep`, `onTick`, `onClose`), the touch pad
+(`TouchCtx.gameActions` with `{ action, label }` items; `TouchMarkupSpec.map`, `dpad`, `slotLabel`), a pointer sample
+(`source`, `pressed`), and the reach answer (`Reach.asked`, `holdsAsked`, `wouldServeIfOn`, …).
+
+⚠️ **The quiet case is the ctx a game builds by hand.** A TypeScript consumer gets an error on a fresh object literal;
+one that builds the ctx in plain JavaScript gets `ctx.onBar is not a function` on the first frame — or, for an optional
+member, nothing at all. Search the game for the old names in this table.
+
+📌 **Not moved, by what they are:** the transport NAMES are values (`'teclado'`, `'toque'`, `'olhos'`) — the stamp a key
+carries — so `SLOTS.teclado` stays; so do the pad personas' stored values (`'crianca-pequena'`) and the `data-acao`
+attribute. Only the member names around them changed.
+
+The table is printed from `scripts/member-rename-map.json` by `node scripts/apply-member-rename.mjs --table input`.
+
+| module | type | old member | new member |
+|---|---|---|---|
+| `input/empathy-filter.js` | `EmpathySimulation` | `umPorVez` | `noChords` |
+| `input/gamepad.js` | `GamepadCtx` | `menuDePausa` | `pauseMenu` |
+| `input/gamepad.js` | `GamepadCtx` | `mundoRodando` | `worldRunning` |
+| `input/gamepad.js` | `GamepadCtx` | `naBarraDe` | `onBar` |
+| `input/gamepad.js` | `GamepadCtx` | `pausar` | `pause` |
+| `input/gamepad.js` | `GamepadCtx` | `retomar` | `resume` |
+| `input/gamepad.js` | `GamepadCtx` | `rotuloDaAcao` | `actionLabel` |
+| `input/keydown.js` | `KeydownCtx` | `isEmJogo` | `isInGame` |
+| `input/keydown.js` | `KeydownCtx` | `isTelaDeTitulo` | `isTitleScreen` |
+| `input/keydown.js` | `KeydownSnapshot` | `emJogo` | `inGame` |
+| `input/keydown.js` | `KeydownSnapshot` | `telaDeTitulo` | `titleScreen` |
+| `input/latch-edge.js` | `LatchedEdgeOptions` | `armazem` | `store` |
+| `input/latch-scope.js` | `LatchReading` | `doLegado` | `fromLegacy` |
+| `input/latch-scope.js` | `LatchReading` | `doTransporte` | `fromTransport` |
+| `input/pad-wizard.js` | `PadWizard` | `abrir` | `open` |
+| `input/pad-wizard.js` | `PadWizard` | `abrirPara` | `openFor` |
+| `input/pad-wizard.js` | `PadWizard` | `estado` | `state` |
+| `input/pad-wizard.js` | `PadWizard` | `fechar` | `close` |
+| `input/pad-wizard.js` | `PadWizard` | `tique` | `tick` |
+| `input/pad-wizard.js` | `PadWizardCtx` | `aoFechar` | `onClose` |
+| `input/pad-wizard.js` | `PadWizardCtx` | `aoPasso` | `onStep` |
+| `input/pad-wizard.js` | `PadWizardCtx` | `aoTique` | `onTick` |
+| `input/pad-wizard.js` | `PadWizardCtx` | `dizer` | `say` |
+| `input/pad-wizard.js` | `PadWizardCtx` | `progresso` | `progress` |
+| `input/pad-wizard.js` | `PadWizardCtx` | `rotuloDaAcao` | `actionLabel` |
+| `input/pointer.js` | `PointerSample` | `apertado` | `pressed` |
+| `input/pointer.js` | `PointerSample` | `origem` | `source` |
+| `input/touch-bindings.js` | `TouchBindingsCtx` | `abrirMenus` | `openMenus` |
+| `input/touch.js` | `PersonaDoPad` | `chave` | `key` |
+| `input/touch.js` | `PersonaDoPad` | `rotulo` | `label` |
+| `input/touch.js` | `TouchCtx` | `acoesDoJogo` | `gameActions` |
+| `input/touch.js` | `TouchCtx.acoesDoJogo` | `acao` | `action` |
+| `input/touch.js` | `TouchCtx.acoesDoJogo` | `rotulo` | `label` |
+| `input/touch.js` | `TouchMarkupCtx` | `criar` | `create` |
+| `input/touch.js` | `TouchMarkupCtx` | `procurar` | `find` |
+| `input/touch.js` | `TouchMarkupSpec` | `acoesDoJogo` | `gameActions` |
+| `input/touch.js` | `TouchMarkupSpec` | `direcional` | `dpad` |
+| `input/touch.js` | `TouchMarkupSpec` | `mapa` | `map` |
+| `input/touch.js` | `TouchMarkupSpec` | `rotuloDoSlot` | `slotLabel` |
+| `input/transport-in-use.js` | `InputState` | `assistidaLigada` | `assistedOn` |
+| `input/transport-in-use.js` | `InputState` | `emUso` | `inUse` |
+| `input/transports.js` | `Availability` | `rato` | `mouse` |
+| `input/transports.js` | `Availability` | `teclado` | `keyboard` |
+| `input/transports.js` | `Availability` | `toque` | `touch` |
+| `input/transports.js` | `Reach` | `curtos` | `short` |
+| `input/transports.js` | `Reach` | `naoApontam` | `cannotPoint` |
+| `input/transports.js` | `Reach` | `naoSeguram` | `cannotHold` |
+| `input/transports.js` | `Reach` | `pedePonteiro` | `needsPointer` |
+| `input/transports.js` | `Reach` | `pedidas` | `asked` |
+| `input/transports.js` | `Reach` | `seguraPedidas` | `holdsAsked` |
+| `input/transports.js` | `Reach` | `serviriamSeLigados` | `wouldServeIfOn` |
+| `input/transports.js` | `Transport` | `aponta` | `points` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

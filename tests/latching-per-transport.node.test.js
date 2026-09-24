@@ -163,30 +163,30 @@ describe('a alternância migra para a chave por transporte · o modelo superado 
   // ⚠️ ESTE BLOCO TORNA A SUPERSESSÃO EXECUTÁVEL. Um `@deprecated` é prosa; prosa não reprova.
 
   it('🔴 [Zero] a criança do TECLADO com alternância gravada: as duas funções DIVERGEM, e o registo diz qual vale', () => {
-    const estado = { emUso: 'teclado', assistidaLigada: false };
-    const gravado = { doTransporte: true, doLegado: null, padrao: false };
+    const estado = { inUse: 'teclado', assistedOn: false };
+    const gravado = { fromTransport: true, fromLegacy: null, padrao: false };
 
     // O modelo do ADR-0109: o teclado não tem alternância própria, logo NÃO.
     expect(latchNow(estado), 'o modelo superado deixou de dizer o que dizia').toBe(false);
     // O modelo do ADR-0113: ela gravou, logo SIM. É o controle que a leitura literal lhe tirava.
-    expect(latchOf(estado.emUso, gravado), 'a regra do ADR-0113 deixou de ler o valor gravado').toBe(true);
+    expect(latchOf(estado.inUse, gravado), 'a regra do ADR-0113 deixou de ler o valor gravado').toBe(true);
   });
 
   it('⚠️ [Fronteira] e no TOQUE também divergem — a cláusula do toque caiu com a mesma frase', () => {
-    const estado = { emUso: 'toque', assistidaLigada: false };
-    const desligadoPelaCrianca = { doTransporte: false, doLegado: null, padrao: false };
+    const estado = { inUse: 'toque', assistedOn: false };
+    const desligadoPelaCrianca = { fromTransport: false, fromLegacy: null, padrao: false };
 
     expect(latchNow(estado), 'o toque deixou de estar em COM_ALTERNANCIA_PROPRIA').toBe(true);
-    expect(latchOf(estado.emUso, desligadoPelaCrianca), 'o toque deixou de ser escolha').toBe(false);
+    expect(latchOf(estado.inUse, desligadoPelaCrianca), 'o toque deixou de ser escolha').toBe(false);
   });
 
   // 📌 E ONDE AS DUAS CONCORDAM, que é o que impede este bloco de parecer uma acusação geral: nos quatro
   // assistidos a alternância é obrigatória nos DOIS modelos, por razões diferentes e com o mesmo resultado.
   it('[Feliz] nos quatro assistidos as duas concordam — obrigatória, e ninguém a desliga', () => {
     for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
-      expect(latchOf(t, { doTransporte: false, doLegado: false, padrao: false }), `${t} pôde ser desligado`)
+      expect(latchOf(t, { fromTransport: false, fromLegacy: false, padrao: false }), `${t} pôde ser desligado`)
         .toBe(true);
-      expect(latchNow({ emUso: t, assistidaLigada: true }), `${t} habilitado deixou de forçar`).toBe(true);
+      expect(latchNow({ inUse: t, assistedOn: true }), `${t} habilitado deixou de forçar`).toBe(true);
     }
   });
 

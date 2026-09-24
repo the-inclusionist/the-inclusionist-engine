@@ -49,8 +49,8 @@ describe('latch-store · três estados, e não dois', () => {
   it('🔴 [Zero] nunca escrito NÃO é `false`: o legado ainda é consultado, e é o ajuste da criança', () => {
     const a = armazem({ [legacyLatchKey(BASE, 0)]: '1' });
     const l = readLatch(a, BASE, 0, 'teclado', false);
-    expect(l.doTransporte, 'nunca escrito virou um valor').toBe(null);
-    expect(l.doLegado).toBe(true);
+    expect(l.fromTransport, 'nunca escrito virou um valor').toBe(null);
+    expect(l.fromLegacy).toBe(true);
     expect(storedLatch(a, BASE, 0, 'teclado', false), 'a criança perdeu o ajuste que já tinha').toBe(true);
   });
 

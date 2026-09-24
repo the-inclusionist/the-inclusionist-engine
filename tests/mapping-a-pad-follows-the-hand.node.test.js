@@ -30,13 +30,13 @@ function mkCtx(pads, named = THREE) {
   let ticks = 0;
   const ctx = {
     getGamepads: () => pads,
-    rotuloDaAcao: (a) => (named.includes(a) ? a.toUpperCase() : null),
-    dizer: (p) => said.push(p),
-    progresso: (p) => progress.push(p),
+    actionLabel: (a) => (named.includes(a) ? a.toUpperCase() : null),
+    say: (p) => said.push(p),
+    progress: (p) => progress.push(p),
     srAlert: () => {},
-    aoPasso: (a) => steps.push(a),
-    aoTique: () => { ticks++; },
-    aoFechar: (gi, saved) => closed.push([gi, saved]),
+    onStep: (a) => steps.push(a),
+    onTick: () => { ticks++; },
+    onClose: (gi, saved) => closed.push([gi, saved]),
   };
   return { ctx, said, steps, progress, closed, questions: () => steps.filter(Boolean).length, tickCount: () => ticks };
 }
@@ -53,11 +53,11 @@ afterEach(() => { globalThis.setInterval = realSet; globalThis.clearInterval = r
 
 /** Adopt the pad and take the baseline: press a button, let go, and the first question is asked. */
 function upToTheFirstQuestion(wiz, pad) {
-  wiz.abrir();
+  wiz.open();
   pad.buttons[2].pressed = true;
-  wiz.tique();                       // 1 · this pad is the one, now let go of everything
+  wiz.tick();                       // 1 · this pad is the one, now let go of everything
   pad.buttons[2].pressed = false;
-  wiz.tique();                       // 2 · baseline taken, step 0, first question asked
+  wiz.tick();                       // 2 · baseline taken, step 0, first question asked
 }
 
 describe('a wizard that is not open', () => {
@@ -66,7 +66,7 @@ describe('a wizard that is not open', () => {
     // ordinary case, not the odd one, and reading a pad into a null state is a throw inside somebody's rAF.
     const { ctx, tickCount } = mkCtx([mkPad('p', 0)]);
     const wiz = createPadWizard(ctx);
-    expect(() => wiz.tique()).not.toThrow();
+    expect(() => wiz.tick()).not.toThrow();
     expect(tickCount(), 'a closed wizard told the host it had ticked').toBe(0);
   });
 });
@@ -78,17 +78,17 @@ describe('which pad the wizard adopts', () => {
     const held = mkPad('the pad in the hand', 0), other = mkPad('the pad on the table', 1);
     const { ctx } = mkCtx([held, other]);
     const wiz = createPadWizard(ctx);
-    wiz.abrir();
+    wiz.open();
     held.buttons[2].pressed = true; other.buttons[5].pressed = true;
-    wiz.tique();
-    expect(wiz.estado().id, 'the wizard adopted the pad the child is not holding').toBe('the pad in the hand');
+    wiz.tick();
+    expect(wiz.state().id, 'the wizard adopted the pad the child is not holding').toBe('the pad in the hand');
   });
 
   it('⚠️ the host is told about every tick — its demonstration animates on this call and no other', () => {
     const { ctx, tickCount } = mkCtx([mkPad('p', 0)]);
     const wiz = createPadWizard(ctx);
-    wiz.abrir();
-    wiz.tique(); wiz.tique();
+    wiz.open();
+    wiz.tick(); wiz.tick();
     expect(tickCount(), 'the host was never told the wizard ticked').toBe(2);
   });
 });
@@ -107,14 +107,14 @@ describe('letting go before the next question', () => {
     expect(questions()).toBe(1);
 
     pad.buttons[5].pressed = true;
-    wiz.tique();                     // wires the button, and now demands the hand lets go
+    wiz.tick();                     // wires the button, and now demands the hand lets go
     pad.buttons[5].pressed = false;
     pad.axes[0] = 0.9;               // the thumb never left the stick
-    wiz.tique();
+    wiz.tick();
     expect(questions(), 'the next position was asked with the stick still pushed').toBe(1);
 
     pad.axes[0] = 0;
-    wiz.tique();
+    wiz.tick();
     expect(questions(), 'and with the hand off, the next position is asked').toBe(2);
   });
 });
@@ -126,9 +126,9 @@ describe('reading an axis', () => {
     const wiz = createPadWizard(ctx);
     upToTheFirstQuestion(wiz, pad);
     pad.axes[0] = 0.3;               // a resting stick drifts this much
-    wiz.tique();
-    expect(wiz.estado().axTrack, 'a drifting stick started being mapped').toBeNull();
-    expect(wiz.estado().map, 'and nothing was wired').toEqual({});
+    wiz.tick();
+    expect(wiz.state().axTrack, 'a drifting stick started being mapped').toBeNull();
+    expect(wiz.state().map, 'and nothing was wired').toEqual({});
   });
 
   it('⚠️ what gets wired is the EXTREME the axis reached, not the first frame past the threshold', () => {
@@ -145,9 +145,9 @@ describe('reading an axis', () => {
     const first = PADWIZ_ORDER.find((a) => THREE.includes(a));
 
     pad.axes[0] = 0.5;
-    wiz.tique();                     // past 0.45: the axis is now watched
-    for (const v of [0.6, 0.7, -0.9, -0.9, -0.9, -0.9, -0.9, -0.9]) { pad.axes[0] = v; wiz.tique(); }
-    expect(wiz.estado().map[first], 'the axis was wired by where it started instead of where it went')
+    wiz.tick();                     // past 0.45: the axis is now watched
+    for (const v of [0.6, 0.7, -0.9, -0.9, -0.9, -0.9, -0.9, -0.9]) { pad.axes[0] = v; wiz.tick(); }
+    expect(wiz.state().map[first], 'the axis was wired by where it started instead of where it went')
       .toEqual({ ax: 0, s: -1 });
   });
 });
@@ -156,9 +156,9 @@ describe('closing', () => {
   it('⚠️ closing stops the clock — a wizard that is gone does not keep polling the pads', () => {
     const { ctx } = mkCtx([mkPad('p', 0)]);
     const wiz = createPadWizard(ctx);
-    wiz.abrir();
+    wiz.open();
     expect(clocks.length, 'the wizard did not start a clock').toBe(1);
-    wiz.fechar(false);
+    wiz.close(false);
     expect(clocks[0].cleared, 'the interval outlived the wizard: it polls the gamepads for the rest of the session').toBe(true);
   });
 });
