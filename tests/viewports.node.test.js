@@ -430,3 +430,10 @@ describe('render/viewports — renderVpOverlay', () => {
 // composicao (`main.ts`) ou o `app/index.html` do jogo — e nenhum dos dois vive mais neste repositorio.
 // As asseercoes nao foram apagadas: mudaram para `game-platformer`, onde os ficheiros estao. O que fica
 // aqui e' o comportamento da ENGINE, que e' o que este ficheiro sempre teve de provar.
+
+// MUTATIONS CHECKED (2026-09-23) on `pixiFilterFor`, before and after it became two tables (`MATRIX_OF`, `BLUR_OF`) —
+// `scratchpad/sonda-vp.py` and `sonda-vp-3.py`. Before: 16 of 16 red, every rung of the old ladder already held by a case
+// above. After: 16 of 17, including three only the tables let one ask — colour vision reading the single source and not a
+// row, the blindness row itself, and the cataract's ORDER (contrast, then brightness). The survivor is EQUIVALENT by the
+// table and declared rather than caught: a missing strength tested as `!== undefined` or as falsy answers the same while no
+// row has a strength of 0.

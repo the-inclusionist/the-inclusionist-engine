@@ -1111,12 +1111,12 @@
       "fanIn": 1
     },
     "render/viewports.ts": {
-      "codeLines": 103,
-      "decisionNodes": 19,
-      "maxDepth": 6,
+      "codeLines": 112,
+      "decisionNodes": 17,
+      "maxDepth": 2,
       "fanOut": 7,
       "globalReach": 0,
-      "worstFunction": 15,
+      "worstFunction": 6,
       "fanIn": 0
     },
     "render/viz-axes-labels.ts": {

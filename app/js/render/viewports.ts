@@ -57,6 +57,38 @@ interface ColorMatrixLike {
 interface ColorMatrixCtor { new (): ColorMatrixLike }
 /** `PIXI.BlurFilter` é opaco aqui: só se constrói com a força e se entrega para o `filters` do sprite. */
 interface BlurCtor { new (strength: number): unknown }
+
+/**
+ * The modes a COLOUR MATRIX draws, besides colour vision (which reads the single source, `CVD_MATRIX`). Blindness is
+ * brightness 0 NOT multiplied — black, not darkened; the cataract's haze is contrast lowered and THEN a multiplied
+ * brightness, and the order is the effect.
+ */
+const MATRIX_OF: Readonly<Record<string, (c: ColorMatrixLike) => void>> = {
+  blind: (c) => { c.brightness(0, false); },
+  'lv-haze': (c) => { c.contrast(-0.45, false); c.brightness(1.12, true); },
+};
+
+/** The modes a BLUR draws, and how strong. The tunnel and the spots are also drawn as a texture on top (`renderVpOverlay`). */
+const BLUR_OF: Readonly<Record<string, number>> = { 'lv-blur': 5, 'lv-tunnel': 1.5, 'lv-diabetic': 2, 'lv-macular': 2 };
+
+/**
+ * A mode's viewport filter, or `null` for a mode with none — and for one whose PIXI constructor is missing, which falls back
+ * to no filter instead of throwing. High contrast is never here: it is a texture, not a filter.
+ */
+function filterFor(mode: string, CM: ColorMatrixCtor | null | undefined, BL: BlurCtor | null | undefined): unknown[] | null {
+  const cvd = CVD_MATRIX[mode as CvdKey]; // the single source: the SAME numbers that build the HTML `<feColorMatrix>`
+  // a COPY of the matrix: holding the module's array, the filter's own calls would rewrite the source every mode reads
+  const paint = cvd ? (c: ColorMatrixLike) => { c.matrix = cvd.slice(); } : MATRIX_OF[mode];
+  if (paint) return CM ? [matrixWith(CM, paint)] : null;
+  const strength = BLUR_OF[mode];
+  return strength !== undefined && BL ? [new BL(strength)] : null;
+}
+
+function matrixWith(CM: ColorMatrixCtor, paint: (c: ColorMatrixLike) => void): ColorMatrixLike {
+  const c = new CM();
+  paint(c);
+  return c;
+}
 /** O sprite reaproveitado para carimbar o overlay de baixa visão — só a textura é trocada. */
 interface TexturedSprite { texture: unknown }
 /** `app.renderer` — só a passada extra em render-texture (`clear:false` = por cima da cena já desenhada). */
@@ -154,15 +186,7 @@ export function initViewports(ctx: ViewportsCtx): ViewportsApi {
   const _vpFilterCache: Record<string, unknown> = {};
   function pixiFilterFor(mode: string): unknown {
     if (mode in _vpFilterCache) return _vpFilterCache[mode];
-    let f: unknown = null;
-    const CM = ctx.ColorMatrixFilter, BL = ctx.BlurFilter;
-    const cvd = CVD_MATRIX[mode as CvdKey]; // fonte única: os MESMOS números que geram o <feColorMatrix> do HTML
-    if (cvd && CM) { const c = new CM(); c.matrix = cvd.slice(); f = [c]; } // slice: o filtro não fica com o array do módulo
-    else if (mode === 'blind' && CM) { const c = new CM(); c.brightness(0, false); f = [c]; }
-    else if (mode === 'lv-blur' && BL) { f = [new BL(5)]; }
-    else if (mode === 'lv-haze' && CM) { const c = new CM(); c.contrast(-0.45, false); c.brightness(1.12, true); f = [c]; }
-    else if ((mode === 'lv-tunnel' || mode === 'lv-diabetic' || mode === 'lv-macular') && BL) { f = [new BL(mode === 'lv-tunnel' ? 1.5 : 2)]; }
-    return _vpFilterCache[mode] = f;
+    return _vpFilterCache[mode] = filterFor(mode, ctx.ColorMatrixFilter, ctx.BlurFilter);
   }
 
   /* ===================== baixa visão: o overlay como textura ===================== */
