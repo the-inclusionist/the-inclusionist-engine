@@ -32,6 +32,15 @@ describe('Portuguese in comments only shrinks', () => {
     expect(isPortugueseLine('// `nao` and `que` are identifiers here, and the line is English')).toBe(false);
     // a word joined by an apostrophe is neither: split, `o'clock` would hand Portuguese its article twice
     expect(isPortugueseLine('//   `clock`    "at 2 o\'clock", "at 10 o\'clock" — a side view')).toBe(false);
+    // and letters glued to digits are neither: split, the note `E5` would hand Portuguese its "and"
+    expect(isPortugueseLine('// a rising jingle (C5 E5 G5 C6 B5 E6) over a C6')).toBe(false);
+  });
+
+  it('📌 [Boundary] a quotation of the Dev across two `//` comments is quoted on both lines', () => {
+    expect(portugueseCommentLines('// The Dev: «a criança não consegue segurar\n// o botão quando o jogo pausa» — so this waits\nconst a = 1;\n')).toBe(0);
+    // and the quotation ends where it closes, on the next line or the same one: the prose after it is read again
+    expect(portugueseCommentLines('// The Dev: «keep it\n// short» e a criança não consegue segurar o botão quando o jogo pausa\nconst a = 1;\n')).toBe(1);
+    expect(portugueseCommentLines('// «isto»\n// a criança não consegue segurar o botão quando o jogo pausa\nconst a = 1;\n')).toBe(1);
   });
 
   it('🔴 [Boundary] a comment AFTER a template with an interpolation is read — a raw scanner loses its place there', () => {

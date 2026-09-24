@@ -39,12 +39,14 @@ const EN = new Set(('the of and to is it that this for with not are be was were 
 const ACCENT = /[ãõçáéíóúâêôà]/i;
 
 /**
- * Is this comment line Portuguese? Quotations («…») and code (`…`) are not read, and neither are words joined by an
- * apostrophe: `o'clock` split at it gives `o`, a Portuguese article (measured: the one line left in `core/contract` was
- * "at 2 o'clock"), while Portuguese itself almost never writes one.
+ * Is this comment line Portuguese? Quotations («…») and code (`…`) are not read, and neither are two kinds of token that
+ * split into Portuguese articles by accident: words joined by an apostrophe (`o'clock` → `o`) and letters glued to digits
+ * (the note `E5` → `e`, the Portuguese "and"). Measured, each was a false positive on an English line; Portuguese itself
+ * almost never writes either.
  */
 export function isPortugueseLine(line) {
-  const text = line.replace(/«[^»]*»?/g, ' ').replace(/`[^`]*`/g, ' ').replace(/[a-zà-ÿ]+['’][a-zà-ÿ]+/gi, ' ').toLowerCase();
+  const text = line.replace(/«[^»]*»?/g, ' ').replace(/`[^`]*`/g, ' ').replace(/[a-zà-ÿ]+['’][a-zà-ÿ]+/gi, ' ')
+    .replace(/[a-zà-ÿ]*\d[a-zà-ÿ\d]*/gi, ' ').toLowerCase();
   const words = text.split(/[^a-zà-ÿ]+/).filter(Boolean);
   const pt = words.filter((w) => PT.has(w)).length;
   const en = words.filter((w) => EN.has(w)).length;
@@ -72,12 +74,25 @@ export function commentsOf(text, fileName = 'x.ts') {
   return [...found.values()];
 }
 
-/** The Portuguese comment lines of one source text. A quotation that spans lines is the Dev's words on every line of it. */
+/**
+ * The Portuguese comment lines of one source text. A quotation that spans lines is the Dev's words on every line of it —
+ * inside one block comment, and across consecutive `//` comments too, where each line is a comment of its own: a «
+ * left open in one stays open in the next until its ».
+ */
 export function portugueseCommentLines(text, fileName = 'x.ts') {
-  let n = 0;
+  const blank = (q) => q.replace(/[^\n]/g, ' ');
+  let n = 0, open = false;
   for (const comment of commentsOf(text, fileName)) {
-    const unquoted = comment.replace(/«[^»]*»?/g, (q) => q.replace(/[^\n]/g, ' '));
-    for (const l of unquoted.split(/\r?\n/)) if (l.trim() && isPortugueseLine(l)) n++;
+    let c = comment;
+    if (open) {
+      const end = c.indexOf('»');
+      open = end < 0;
+      c = open ? blank(c) : blank(c.slice(0, end + 1)) + c.slice(end + 1);
+    }
+    c = c.replace(/«[^»]*»/g, blank);
+    const start = c.indexOf('«');
+    if (start >= 0) { open = true; c = c.slice(0, start) + blank(c.slice(start)); }
+    for (const l of c.split(/\r?\n/)) if (l.trim() && isPortugueseLine(l)) n++;
   }
   return n;
 }
