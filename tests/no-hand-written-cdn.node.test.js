@@ -160,7 +160,7 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
       const suas = BUSCAS.filter((a) => a.f === f).map((a) => a.url);
       if (suas.length > urls) aMais.push(`${f}: ${urls} declarada(s), ${suas.length} achada(s) → ${suas.join(' · ')}`);
     }
-    expect(aMais, `URL nova isInside de um ficheiro já desculpado: ${aMais.join(' | ')}`).toEqual([]);
+    expect(aMais, `a new URL inside a file already excused: ${aMais.join(' | ')}`).toEqual([]);
   });
 
   // ⚠️ THE EXIT, with TWO halves. Without them the list becomes a monument: an entry would go on saying a network

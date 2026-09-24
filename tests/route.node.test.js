@@ -58,8 +58,8 @@ describe('core/route — a rota contorna, a linha reta atravessa', () => {
   const topo = GRADE(7, 7);
   const ctx = { topology: topo, roleAt: mapa(DESENHO) };
   const DE = { x: 3, y: 0 };
-  const PERTO = { x: 3, y: 3 };   // isInside da caixa fechada
-  const LONGE = { x: 3, y: 6 };   // fora, alcançável contornando
+  const PERTO = { x: 3, y: 3 };   // inside the closed box
+  const LONGE = { x: 3, y: 6 };   // outside, reachable by going around
 
   it('⚠️ [Cross-check] em LINHA RETA o vencedor seria o emparedado — senão este ficheiro não prova nada', () => {
     expect(distance(topo, DE, PERTO)).toBeLessThan(distance(topo, DE, LONGE));

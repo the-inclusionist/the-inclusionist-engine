@@ -127,7 +127,7 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
     expect(nivel.size).toBe(ENGINE.length);
   });
 
-  it('[Interface] isInside de um lote, nenhum módulo depende de outro do MESMO lote', () => {
+  it('[Interface] inside a batch, no module depends on another of the SAME batch', () => {
     // The property that makes a batch movable AT ONCE. Without it, a "batch" would be only a grouping by name, and the
     // move would have to go module by module anyway.
     const { nivel } = niveis();
@@ -135,7 +135,7 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
     for (const m of ENGINE) {
       for (const d of DENTRO.get(m)) if (nivel.get(d) === nivel.get(m)) conflitos.push(`${m} → ${d}`);
     }
-    expect(conflitos, 'dependência isInside do mesmo lote').toEqual([]);
+    expect(conflitos, 'a dependency inside the same batch').toEqual([]);
   });
 
   it('[Boundary] os lotes são CONTÍGUOS a partir de 0 e nenhum é vazio', () => {

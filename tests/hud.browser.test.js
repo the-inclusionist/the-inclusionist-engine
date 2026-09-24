@@ -381,8 +381,8 @@ describe('ui/hud · o que dá ACESSO fica fora da subárvore que a empatia degra
     expect(telas.length).toBe(4);
     for (let i = 0; i < telas.length; i++) {
       const { exp, barra, pausa } = pecasDaTela(i);
-      expect(exp.contains(barra), `tela ${i}: a barra rápida caiu isInside da .screen-exp`).toBe(false);
-      expect(exp.contains(pausa), `tela ${i}: o painel de pausa caiu isInside da .screen-exp`).toBe(false);
+      expect(exp.contains(barra), `screen ${i}: the quick bar fell inside .screen-exp`).toBe(false);
+      expect(exp.contains(pausa), `screen ${i}: the pause panel fell inside .screen-exp`).toBe(false);
     }
   });
 });
