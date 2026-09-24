@@ -682,12 +682,12 @@
       "fanIn": 0
     },
     "platform/audio-earcons.ts": {
-      "codeLines": 58,
+      "codeLines": 63,
       "decisionNodes": 13,
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 0,
-      "worstFunction": 13,
+      "worstFunction": 8,
       "fanIn": 0
     },
     "platform/audio-jingles.ts": {

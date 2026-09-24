@@ -62,37 +62,50 @@ export interface AudioEarcons {
 }
 
 export function createAudioEarcons(ctx: AudioEarconsCtx): AudioEarcons {
+  /** Whether a sound may play at all: the game's sound on, and a volume above zero. */
+  const audible = (): boolean => ctx.getSoundOn() && ctx.getVolume() > 0;
+  /** A category's bus; without one, the master; without that, the device itself. */
+  const busFor = (cat: string, ac: AudioContext): AudioNode => ctx.catNode(cat) || ctx.audioOut() || ac.destination;
+
   function sfx(name: string): void {
     const c = ctx.SFX[name]; if (!c) return;
     // LEGENDA primeiro (visual + aria-live via role=status) — e RESOLVIDA no ponto de uso: `cap` guarda a
     // CHAVE desde o item 19, porque a tabela vive no jogo e uma tabela de `const` com texto congelaria no
     // idioma do boot. Quem exibe resolve; é a mesma regra de `render/viz-modes`.
     if (ctx.getCaptionsOn() && c.cap) ctx.showCaption(t(c.cap));
-    if (!ctx.getSoundOn() || ctx.getVolume() <= 0) return;    // ...só então o som — surdez: a legenda já saiu
-    try {
-      const ac = ctx.ensureAC(); if (!ac) return;
-      const o = ac.createOscillator(), g = ac.createGain();
-      o.type = c.t; o.frequency.value = c.f; g.gain.value = 0.0001;
-      o.connect(g).connect(ctx.catNode('earcons') || ctx.audioOut() || ac.destination);
-      const t = ac.currentTime, vol = ctx.getVolume();
-      // A FIGURA, quando a tabela pede uma (#124). `setValueAtTime` antes da rampa como no `doorSound`: sem
-      // ele o ponto de partida da curva fica por conta da implementação, e o glissando começa onde calhar.
-      //
-      // ⚠️ AS DUAS GUARDAS SÃO NECESSÁRIAS E NÃO ZELO. `exponentialRampToValueAtTime` LANÇA com alvo zero ou
-      // negativo — uma tabela com `f2: 0` mataria o earcon inteiro pelo `catch`, em silêncio. E `f2 === f`
-      // não é rampa nenhuma: pedi-la ao navegador seria trabalho para produzir a nota parada que já havia.
-      if (typeof c.f2 === 'number' && c.f2 > 0 && c.f2 !== c.f) {
-        o.frequency.setValueAtTime(c.f, t);
-        o.frequency.exponentialRampToValueAtTime(c.f2, t + c.d);
-      }
-      g.gain.exponentialRampToValueAtTime(Math.max(0.02, 0.25 * vol), t + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + c.d);
-      o.start(t); o.stop(t + c.d + 0.02);
-    } catch (e) { /* Web Audio indisponível */ }
+    if (!audible()) return;    // ...só então o som — surdez: a legenda já saiu
+    try { play(c); } catch (e) { /* Web Audio indisponível */ }
+  }
+
+  /** One earcon: its timbre, its figure when the table asks for one, a peak that follows the master volume, and its length. */
+  function play(c: SfxDef): void {
+    const ac = ctx.ensureAC(); if (!ac) return;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = c.t; o.frequency.value = c.f; g.gain.value = 0.0001;
+    o.connect(g).connect(busFor('earcons', ac));
+    const now = ac.currentTime, vol = ctx.getVolume();
+    glide(o, c, now);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.02, 0.25 * vol), now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + c.d);
+    o.start(now); o.stop(now + c.d + 0.02);
+  }
+
+  /**
+   * A FIGURA, quando a tabela pede uma (#124). `setValueAtTime` antes da rampa como no `doorSound`: sem ele o ponto de
+   * partida da curva fica por conta da implementação, e o glissando começa onde calhar.
+   *
+   * ⚠️ AS DUAS GUARDAS SÃO NECESSÁRIAS E NÃO ZELO. `exponentialRampToValueAtTime` LANÇA com alvo zero ou negativo — uma
+   * tabela com `f2: 0` mataria o earcon inteiro pelo `catch`, em silêncio. E `f2 === f` não é rampa nenhuma: pedi-la ao
+   * navegador seria trabalho para produzir a nota parada que já havia.
+   */
+  function glide(o: OscillatorNode, c: SfxDef, now: number): void {
+    if (typeof c.f2 !== 'number' || c.f2 <= 0 || c.f2 === c.f) return;
+    o.frequency.setValueAtTime(c.f, now);
+    o.frequency.exponentialRampToValueAtTime(c.f2, now + c.d);
   }
 
   function doorSound(mat: string): void {
-    if (!ctx.getSoundOn() || ctx.getVolume() <= 0) return;
+    if (!audible()) return;
     const ac = ctx.ensureAC(); if (!ac) return;
     try { // porta: rangido (madeira) ou clangor (ferro) + baque
       const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime, vol = ctx.getVolume();
@@ -100,7 +113,7 @@ export function createAudioEarcons(ctx: AudioEarconsCtx): AudioEarcons {
       o.frequency.setValueAtTime(mat === 'ferro' ? 520 : 200, t);
       o.frequency.exponentialRampToValueAtTime(mat === 'ferro' ? 300 : 110, t + 0.3);
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.14 * vol, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
-      o.connect(g).connect(ctx.catNode('interact') || ctx.audioOut() || ac.destination);
+      o.connect(g).connect(busFor('interact', ac));
       o.start(t); o.stop(t + 0.4); ctx.noiseHit(mat === 'ferro' ? 'ferro' : 'madeira');
     } catch (e) { /* Web Audio indisponível */ }
   }
