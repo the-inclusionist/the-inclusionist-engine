@@ -32,71 +32,71 @@ except ImportError:
 
 META_KEYS = ["status", "date", "decision-makers", "consulted", "informed"]
 
-# 🔴 A RAIZ CONTRA A QUAL O `confirmed-by` É CONFERIDO, e ela era `os.getcwd()` escrito no meio da comparação.
+# 🔴 THE ROOT AGAINST WHICH `confirmed-by` IS CHECKED, and it used to be `os.getcwd()` written into the middle of the comparison.
 #
-# 📏 MEDIDO EM 2026-09-09, correndo este validador de FORA do repositório: 122 registos, **113 sãos e 9 com
-# problemas** — e os nove eram os nove que têm `confirmed-by`. Nenhum defeito nos registos: a comparação
-# resolvia caminhos contra a pasta de onde alguém chamou o comando, e ninguém tinha declarado que era isso.
+# 📏 MEASURED ON 2026-09-09, running this validator from OUTSIDE the repository: 122 records, **113 sound and 9 with
+# problems** — and the nine were the nine that have `confirmed-by`. No defect in the records: the comparison
+# resolved paths against the folder someone called the command from, and nobody had declared that it did.
 #
-# ⚠️ E A MEDIÇÃO VALE MAIS DO QUE O CONSERTO, porque ela desenha a fronteira de uma decisão em aberto (a
-# proposta do Dev de um repositório só para a árvore de ADR): a conferência da FORMA viaja — 113 passaram
-# fora da árvore — e a conferência da CONSTRUÇÃO não viaja, porque precisa do código ao lado. São nove
-# registos, e são exactamente os que não podem mudar de casa sem perder o que os confirma.
+# ⚠️ AND THE MEASUREMENT IS WORTH MORE THAN THE FIX, because it draws the boundary of an open decision (the
+# Dev's proposal of a repository just for the ADR tree): the check of SHAPE travels — 113 passed
+# outside the tree — and the check of CONSTRUCTION does not travel, because it needs the code beside it. They are nine
+# records, and they are exactly the ones that cannot move house without losing what confirms them.
 #
-# 📌 O padrão continua a ser o `cwd`, para nenhum chamador de hoje mudar de comportamento; o que muda é que a
-# raiz passa a ser DECLARÁVEL (`--root=…`) e a ser DITA na mensagem de reprovação. Um caminho em falta deixa
-# de parecer um registo mentiroso quando é só o comando a correr do sítio errado.
+# 📌 The default is still the `cwd`, so that no caller of today changes behaviour; what changes is that the
+# root becomes DECLARABLE (`--root=…`) and is STATED in the failure message. A missing path stops looking
+# like a lying record when it is only the command running from the wrong place.
 RAIZ = os.getcwd()
 
-# 🔴 E DESDE A MUDANÇA DE CASA, UM CAMINHO PODE VIVER NOUTRO REPOSITÓRIO. `confirmed-by: engine:app/js/x.ts`
-# diz DUAS coisas — que artefacto confirma o registo, e onde ele mora —, e a segunda passou a ser necessária
-# no dia em que os registos deixaram de morar ao lado do código (ADR-0123).
+# 🔴 AND SINCE THE MOVE, A PATH CAN LIVE IN ANOTHER REPOSITORY. `confirmed-by: engine:app/js/x.ts`
+# says TWO things — which artefact confirms the record, and where it lives —, and the second became necessary
+# on the day the records stopped living beside the code (ADR-0123).
 #
-# ⚠️ SEM A RAIZ DAQUELE REPOSITÓRIO, A CONFERÊNCIA NÃO ACONTECE — e é isso que tem de aparecer. Um crivo que
-# não confere nada e imprime «tudo são» é pior do que não existir: é a forma exacta do falso relatório que
-# este projecto já apanhou três vezes. Então o que não se confere é CONTADO e DITO no fim, por repositório,
-# em toda corrida. Passa-se a raiz com `--repo engine=../SP-the-inclusionist-tracer`.
+# ⚠️ WITHOUT THAT REPOSITORY'S ROOT, THE CHECK DOES NOT HAPPEN — and that is what has to show. A sieve that
+# checks nothing and prints «tudo são» is worse than not existing: it is the exact shape of the false report
+# this project has already caught three times. So what is not checked is COUNTED and STATED at the end, per
+# repository, on every run. The root is passed with `--repo engine=../SP-the-inclusionist-tracer`.
 RAIZES = {}
 NAO_CONFERIDOS = {}
 
-# 🔴 OS PREFIXOS QUE EXISTEM. O ADR-0123 fechou dizendo que isto não se podia pagar — «nada confere que
-# `engine:` ainda nomeia um repositório real» — e a frase estava MAL POSTA. Um prefixo não é o nome de um
-# repositório no GitHub: é um RÓTULO que alguém liga a uma raiz com `--repo`. Renomear o repositório não o
-# parte; o que o parte é escrever um rótulo que nenhum `--repo` alguma vez fornece.
+# 🔴 THE PREFIXES THAT EXIST. ADR-0123 closed by saying this could not be paid for — «nada confere que
+# `engine:` ainda nomeia um repositório real» — and the sentence was WRONGLY FRAMED. A prefix is not the name of a
+# repository on GitHub: it is a LABEL that someone binds to a root with `--repo`. Renaming the repository does not
+# break it; what breaks it is writing a label that no `--repo` ever supplies.
 #
-# ⚠️ E ESSE É O CASO QUE SE DISFARÇA DE NORMAL: `enigne:app/js/x.ts` num registo seria contado como «não
-# conferido», que é exactamente o que uma corrida sem a raiz imprime todos os dias. O erro de escrita ficava
-# a viver dentro da mensagem que existe para dizer que está tudo bem.
+# ⚠️ AND THAT IS THE CASE THAT PASSES FOR NORMAL: `enigne:app/js/x.ts` in a record would be counted as «não
+# conferido», which is exactly what a run without the root prints every day. The typo would go on
+# living inside the message that exists to say everything is fine.
 #
-# 📌 Uma lista declarada resolve-o e custa uma linha por repositório: prefixo conhecido sem raiz é CONTADO;
-# prefixo desconhecido é PROBLEMA. Acrescentar um repositório a esta lista é o acto de o admitir.
-# 🔴 `docs` ENTROU EM 2026-09-09, e o que o obrigou foi o VEREDICTO DIVERGENTE que esta lista existe para
-# impedir. O ADR-0126 confirmava-se em `scripts/divida-dos-registos.py` SEM prefixo, e um caminho sem prefixo
-# resolve-se contra o repositório de onde se corre: a CI do docs abria-o e passava, a corrida a partir da
-# engine procurava-o na árvore errada e reprovava. A mesma árvore, verde de um lado e vermelha do outro, sem
-# nada a dizer qual estava certo — que é exactamente o defeito do `9d4a5e3`, agora vindo do DADO em vez da
-# ferramenta. 📌 Um caminho sem prefixo passa a significar «o repositório de onde se corre», e isso só é
-# seguro para um registo que vive com o código que ele nomeia; tudo o resto declara-se.
-# 📌 `game-platformer` ENTROU EM 2026-09-23 com os seis registos que são dele (ADR-0229): a árvore dele cita
-# registos que ficaram aqui, e o índice daqui aponta para os que foram para lá.
+# 📌 A declared list solves it and costs one line per repository: a known prefix without a root is COUNTED;
+# an unknown prefix is a PROBLEM. Adding a repository to this list is the act of admitting it.
+# 🔴 `docs` ENTERED ON 2026-09-09, and what forced it was the DIVERGENT VERDICT this list exists to
+# prevent. ADR-0126 was confirmed by `scripts/divida-dos-registos.py` WITHOUT a prefix, and a path without a prefix
+# resolves against the repository it is run from: the docs CI opened it and passed, the run from the
+# engine looked for it in the wrong tree and failed. The same tree, green on one side and red on the other, with
+# nothing to say which was right — which is exactly the defect of `9d4a5e3`, now coming from the DATA instead of
+# the tool. 📌 A path without a prefix comes to mean «o repositório de onde se corre», and that is only
+# safe for a record that lives with the code it names; everything else is declared.
+# 📌 `game-platformer` ENTERED ON 2026-09-23 with the six records that are its own (ADR-0229): its tree cites
+# records that stayed here, and the index here points at the ones that went there.
 REPOS_CONHECIDOS = {"engine", "docs", "game-platformer"}
 MOVIDOS_NAO_CONFERIDOS = {}
 
-# ADR-0057 diz como um registo MUDA. `confirmed-by` diz outra coisa, que faltava: se ele foi CONSTRUÍDO.
+# ADR-0057 says how a record CHANGES. `confirmed-by` says something else, which was missing: whether it was BUILT.
 #
-# A distinção apareceu na issue #95. O ADR-0053 fecha com «⚠️ NOT YET BUILT. This record is the decision; the
-# script is its issue» — verdade no dia em que foi escrita, e falsa no dia em que o script nasceu. Não é
-# errata (o autor, com os factos daquele dia, teria escrito exactamente aquilo) nem supersessão (a decisão
-# não mudou): é uma linha de ESTADO que envelheceu, e o ADR-0057 não tem forma para ela.
+# The distinction appeared in issue #95. ADR-0053 closes with «⚠️ NOT YET BUILT. This record is the decision; the
+# script is its issue» — true on the day it was written, and false on the day the script was born. It is not an
+# erratum (the author, with that day's facts, would have written exactly that) nor a supersession (the decision
+# did not change): it is a STATE line that aged, and ADR-0057 has no form for it.
 #
-# ⚠️ A PROSA DA `confirmation` NÃO SE REESCREVE. Ela é histórica e fica como estava; `confirmed-by` é o facto
-# de hoje, e vive nos METADADOS, que num YADR são a primeira coisa que se lê. Assim o registo diz as duas
-# coisas verdadeiras ao mesmo tempo — o que foi decidido, e que já existe — sem que nenhuma delas minta.
+# ⚠️ THE PROSE OF THE `confirmation` IS NOT REWRITTEN. It is historical and stays as it was; `confirmed-by` is
+# today's fact, and it lives in the METADATA, which in a YADR is the first thing one reads. So the record says
+# both true things at once — what was decided, and that it already exists — without either of them lying.
 #
-# O que a máquina passa a saber: a diferença entre «decidido» e «decidido e construído». Cada caminho listado
-# TEM DE EXISTIR, e é aí que a chave paga o próprio custo — foi medido em 2026-09-07 que três issues abertas
-# apontavam para ficheiros que tinham saído com o cartucho, e nada dizia. Um `confirmed-by` a apontar para um
-# gate apagado seria a mesma coisa, num registo aceite.
+# What the machine comes to know: the difference between «decidido» and «decidido e construído». Every listed path
+# MUST EXIST, and that is where the key pays its own cost — it was measured on 2026-09-07 that three open issues
+# pointed at files that had left with the cartridge, and nothing said so. A `confirmed-by` pointing at a
+# deleted gate would be the same thing, in an accepted record.
 CONFIRMED_BY = "confirmed-by"
 FULL_KEYS = [
     "metadata", "title", "context-and-problem-statement", "decision-drivers",
@@ -122,14 +122,14 @@ AMEND_MARKER = re.compile(r"(AMENDED|CORRECTED|COMPLETED 20|Settled 20|EMENDA|Em
 # ADR-0043 shape: a known debt gets a budget that ONLY GOES DOWN. These are the records that
 # predate ADR-0057 and still carry the old form. Entries are REMOVED as the retrofit lands; a
 # name that no longer needs to be here is itself a failure, so the list cannot rot upward.
-# ZERADA em 2026-09-04. Os quatro registros que guardavam prosa no `status` foram quebrados nos
-# campos do ADR-0057. A lista fica, vazia: um orçamento que chegou a zero e some deixa de provar
-# que chegou, e a proxima entrada tem de ser uma decisao e nao um esquecimento.
+# ZEROED on 2026-09-04. The four records that kept prose in `status` were split into the
+# fields of ADR-0057. The list stays, empty: a budget that reached zero and disappears stops proving
+# that it got there, and the next entry has to be a decision and not an oversight.
 STATUS_DEBT = set()
-# ZERADA em 2026-09-04, uma semana depois de ser criada com catorze nomes. Cada entrada saiu por
-# classificacao — errata, supersessao, ou conserto do proprio gate — e nenhuma por ser tolerada.
-# A lista fica, vazia, pela mesma razao da STATUS_DEBT: orcamento que chega a zero e some deixa de
-# provar que chegou.
+# ZEROED on 2026-09-04, a week after it was created with fourteen names. Every entry left by
+# classification — erratum, supersession, or a fix to the gate itself — and none by being tolerated.
+# The list stays, empty, for the same reason as STATUS_DEBT: a budget that reaches zero and disappears stops
+# proving that it got there.
 AMEND_DEBT = set()
 
 
@@ -213,7 +213,7 @@ def check(path):
     if status == "superseded" and not metadata.get("superseded-by"):
         problems.append("status is `superseded` with no `superseded-by` — a dead end for the reader (ADR-0057)")
 
-    # --- issue #95: a máquina sabe a diferença entre decidido e CONSTRUÍDO --------------------
+    # --- issue #95: the machine knows the difference between decided and BUILT --------------------
     if CONFIRMED_BY in metadata:
         alvos = metadata[CONFIRMED_BY]
         if not isinstance(alvos, list) or not alvos:
@@ -224,7 +224,7 @@ def check(path):
                     problems.append(f"`{CONFIRMED_BY}` holds {type(alvo).__name__}; every entry is a path")
                 else:
                     repo, _, resto = alvo.partition(":")
-                    if not resto:                       # sem prefixo: o caminho é deste repositório
+                    if not resto:                       # no prefix: the path belongs to this repository
                         repo, resto = "", alvo
                     if repo and repo not in REPOS_CONHECIDOS:
                         problems.append(
@@ -241,8 +241,8 @@ def check(path):
                             f"`{CONFIRMED_BY}` names {alvo}, which does not exist under {onde} — a record "
                             "that says it was built, pointing at nothing, is worse than one that says nothing"
                         )
-        # Uma PROPOSTA não pode estar confirmada: o que ainda não foi decidido não pode ter sido construído,
-        # e um registo nesse estado é ou uma proposta que já correu à frente, ou um `status` esquecido.
+        # A PROPOSAL cannot be confirmed: what has not been decided yet cannot have been built, and a
+        # record in that state is either a proposal that ran ahead, or a forgotten `status`.
         if status == "proposed":
             problems.append(f"status is `proposed` and carries `{CONFIRMED_BY}` — a proposal cannot be built yet")
 
@@ -377,15 +377,15 @@ def pointer_problems(files):
                 if not any((e.get("by") if isinstance(e, dict) else e) == name for e in back):
                     note(path, f"`supersedes-in-part: {replaced}`, but {replaced} does not point back")
 
-    # 🔴 O ÍNDICE É A PORTA, E ELE DRENA EM SILÊNCIO. Medido em 2026-09-09: 133 registos no disco e 126
-    # linhas no `README.md` — os sete últimos nunca lá entraram, um de cada vez, sem que nada o dissesse.
-    # Um registo fora do índice existe só para quem já sabe o número, e ninguém que precise dele sabe.
-    # ⚠️ A pergunta é «tem LINHA», não «é mencionado»: um registo citado dentro da prosa de outra linha
-    # apareceria a um `grep` e continuaria sem entrada própria — que é como as sete se esconderam.
-    # 📌 A pasta sai do PRÓPRIO registo e não de uma variável global: o índice vive ao lado dos ficheiros
-    # que indexa, e derivá-lo daqui é o que impede este caso de medir a pasta de onde alguém correu.
-    # 📌 E UMA LINHA QUE DIZ «MUDOU-SE» É UM PONTEIRO COMO OS OUTROS (ADR-0229): o ficheiro tem de estar do outro
-    # lado, e não pode continuar deste. Sem a raiz daquele repositório a linha é CONTADA, pela regra de cima.
+    # 🔴 THE INDEX IS THE DOOR, AND IT DRAINS IN SILENCE. Measured on 2026-09-09: 133 records on disk and 126
+    # rows in `README.md` — the last seven never got in, one at a time, without anything saying so.
+    # A record outside the index exists only for whoever already knows its number, and nobody who needs it does.
+    # ⚠️ The question is «tem LINHA», not «é mencionado»: a record cited inside the prose of another row
+    # would show up to a `grep` and still have no entry of its own — which is how the seven hid.
+    # 📌 The folder comes from the record ITSELF and not from a global variable: the index lives beside the files
+    # it indexes, and deriving it from here is what stops this case from measuring the folder someone ran from.
+    # 📌 AND A ROW THAT SAYS «MUDOU-SE» IS A POINTER LIKE THE OTHERS (ADR-0229): the file has to be on the other
+    # side, and cannot also remain on this one. Without that repository's root the row is COUNTED, by the rule above.
     for moved_name, (repo, rel) in sorted(moved.items()):
         if moved_name in meta:
             note(meta[moved_name][0], f"has a file here AND an index row saying it moved to `{repo}:` — one of the "
@@ -410,9 +410,9 @@ def pointer_problems(files):
 
 def main():
     global RAIZ
-    # ⚠️ UMA PASSAGEM SÓ, e o valor de `--repo` é consumido AQUI. A primeira versão filtrava as opções com um
-    # `startswith("--")` e depois lia-as noutro laço — e o `engine=…` de `--repo engine=…` não começa por
-    # traço, logo ia parar à lista de argumentos posicionais e era lido como a PASTA dos registos.
+    # ⚠️ ONE PASS ONLY, and the value of `--repo` is consumed HERE. The first version filtered the options with a
+    # `startswith("--")` and then read them in another loop — and the `engine=…` of `--repo engine=…` does not start
+    # with a dash, so it ended up in the list of positional arguments and was read as the records' FOLDER.
     args = []
     resto = list(sys.argv[1:])
     while resto:
@@ -452,9 +452,9 @@ def main():
         for problem in crossed[path]:
             print(f"       {problem}")
     print(f"\n{len(files)} records · {len(files) - failed} sound · {failed} with problems")
-    # 🔴 O QUE NÃO FOI CONFERIDO É DITO, SEMPRE. Sem esta linha, um repositório que só tem os registos
-    # imprimiria «tudo são» sem ter aberto um único artefacto — e essa é a diferença entre um crivo e um
-    # carimbo. Passe `--repo engine=<caminho>` para o conferir de verdade.
+    # 🔴 WHAT WAS NOT CHECKED IS STATED, ALWAYS. Without this line, a repository that only holds the records
+    # would print «tudo são» without having opened a single artefact — and that is the difference between a sieve
+    # and a rubber stamp. Pass `--repo engine=<path>` to really check it.
     for repo in sorted(NAO_CONFERIDOS):
         print(f"⚠️  {NAO_CONFERIDOS[repo]} `confirmed-by` paths in `{repo}` NOT checked "
               f"— pass `--repo {repo}=<path>` to check them")
