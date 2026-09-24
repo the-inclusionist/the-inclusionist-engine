@@ -52,25 +52,25 @@ function bindingAt(map: PadMap, key: string): PadBinding | undefined {
 export type ActionKey = 'left' | 'right' | 'up' | 'down' | 'action2' | 'action1' | 'action4' | 'action3';
 export interface Dirs { left: boolean; right: boolean; up: boolean; down: boolean; }
 export interface PadActions extends Dirs {
-  [key: string]: boolean; // torna PadActions atribuível a PadState (input/state.ts's Record<string,boolean>)
+  [key: string]: boolean; // makes PadActions assignable to PadState (input/state.ts's Record<string,boolean>)
   action2: boolean; action1: boolean; action4: boolean; action3: boolean;
-  _start: boolean; // pulo OU start (fecha diálogos/telas de vitória)
-  _pause: boolean; // só start (pausa/retoma)
+  _start: boolean; // action 2 OR start (closes dialogs and victory screens)
+  _pause: boolean; // start only (pause/resume)
 }
 
-// [axisValue, up, down, left, right] — os 8 passos de um D-pad "POV hat" (eixo alto do DirectInput), repouso ~1.286.
+// [axisValue, up, down, left, right] — the 8 steps of a "POV hat" D-pad (DirectInput's high axis), resting at ~1.286.
 const HAT_STEPS: readonly [number, 0 | 1, 0 | 1, 0 | 1, 0 | 1][] = [
   [-1, 1, 0, 0, 0], [-0.7143, 1, 0, 0, 1], [-0.4286, 0, 0, 0, 1], [-0.1429, 0, 1, 0, 1],
   [0.1429, 0, 1, 0, 0], [0.4286, 0, 1, 1, 0], [0.7143, 0, 0, 1, 0], [1, 1, 0, 1, 0],
 ];
 
-/** O passo do hat que este valor de eixo É, ou `null` — os oito distam ~0.286, e a tolerância é ±0.09. */
+/** The hat step this axis value IS, or `null` — the eight are ~0.286 apart, and the tolerance is ±0.09. */
 function hatStepAt(v: number | undefined): readonly [number, 0 | 1, 0 | 1, 0 | 1, 0 | 1] | null {
-  if (typeof v !== 'number' || Math.abs(v) > 1.001) return null; // fora do repouso do hat
+  if (typeof v !== 'number' || Math.abs(v) > 1.001) return null; // the hat's rest, outside the steps
   return HAT_STEPS.find(([hv]) => Math.abs(v - hv) <= 0.09) ?? null;
 }
 
-/** Um passo do hat ACENDE direções e nunca as apaga — é o que deixa o stick e o D-pad vivos ao mesmo tempo. */
+/** A hat step LIGHTS directions and never puts them out — which keeps the stick and the D-pad alive at once. */
 function applyHatStep(d: Dirs, step: readonly [number, 0 | 1, 0 | 1, 0 | 1, 0 | 1]): void {
   const [, up, down, left, right] = step;
   if (up) d.up = true;
@@ -79,8 +79,8 @@ function applyHatStep(d: Dirs, step: readonly [number, 0 | 1, 0 | 1, 0 | 1, 0 | 
   if (right) d.right = true;
 }
 
-/** Direções pelas FONTES PADRÃO: stick 0/1 (zona morta PAD_DEAD), D-pad 12-15, e o "hat" nos eixos >=6 (POV do
- *  DirectInput). Controles com os dois direcionais mapeados ficam com ambos vivos (dedo no stick não mata o D-pad). */
+/** Directions from the STANDARD SOURCES: stick 0/1 (dead zone PAD_DEAD), D-pad 12-15, and the "hat" on axes >=6
+ *  (DirectInput's POV). A pad with both directionals mapped keeps both alive (a thumb on the stick does not kill the D-pad). */
 export function stdDirs(gp: PadLike): Dirs {
   const b = (i: number): boolean => !!(gp.buttons[i] && gp.buttons[i]!.pressed);
   const ax = (i: number): number => gp.axes[i] || 0;
@@ -92,8 +92,8 @@ export function stdDirs(gp: PadLike): Dirs {
   return d;
 }
 
-/** Está o binding `bd` ativo agora neste gamepad? Digital = pressed; analógico ({ax,s}) = limiar por sinal
- *  (metade do curso); hat ({av,v}) = valor exato do passo (±0.13 — os 8 passos distam ~0.286). */
+/** Is binding `bd` active now on this gamepad? Digital = pressed; analogue ({ax,s}) = threshold by sign (half the
+ *  travel); hat ({av,v}) = the step's exact value (±0.13 — the 8 steps are ~0.286 apart). */
 export function bindActive(gp: PadLike, bd: PadBinding | null | undefined): boolean {
   if (!bd) return false;
   if (bd.b != null) return !!(gp.buttons[bd.b] && gp.buttons[bd.b]!.pressed);
@@ -102,8 +102,8 @@ export function bindActive(gp: PadLike, bd: PadBinding | null | undefined): bool
   return false;
 }
 
-/** O retrato quando a CRIANÇA gravou um mapa no assistente: as direções dela caem de volta no padrão quando o
- *  binding não está ativo, para o D-pad e o stick continuarem vivos ao lado do que ela escolheu. */
+/** The snapshot when the CHILD recorded a map in the wizard: their directions fall back to the standard ones when the
+ *  binding is not active, so the D-pad and the stick stay alive beside what they chose. */
 function actionsFromTheSavedMap(gp: PadLike, custom: PadMap): PadActions {
   const A = (k: string): boolean => bindActive(gp, bindingAt(custom, k));
   const sd = stdDirs(gp);
@@ -114,16 +114,16 @@ function actionsFromTheSavedMap(gp: PadLike, custom: PadMap): PadActions {
 }
 
 /**
- * O retrato pela TABELA declarada — a fábrica da engine com o padrão deste jogo por cima (ADR-0115), resolvida em
+ * The snapshot by the declared TABLE — the engine's factory with this game's default on top (ADR-0115), resolved in
  * `input/pad-defaults`.
  *
- * ⚠️ OS ÍNDICES SAEM DA TABELA, e não de literais aqui. Enquanto eram literais, esta linha e
- * `input/default-bindings` DISCORDAVAM e nada notava — a mesma forma de defeito que o gate do toque apanhou: duas
- * tabelas que concordam entre si não provam nada sobre um terceiro que as lê.
+ * ⚠️ THE INDICES COME FROM THE TABLE, not from literals here. While they were literals, this line and
+ * `input/default-bindings` DISAGREED and nothing noticed — the defect the touch gate caught: two tables agreeing with
+ * each other prove nothing about a third that reads them.
  *
- * ⚠️ E A DISCORDÂNCIA ERA REAL: aqui estava `action1: b(2) || b(5) || b(7)`, ou seja X, R1 e R2 todos a correr,
- * enquanto a tabela declara R1 como `rightShoulder` e R2 como `rightTrigger`. O ADR-0086 registrou esta mudança
- * como o asterisco do seu «zero movimento»: nenhum VERBO muda de botão, mas `run` perde dois dos seus três.
+ * ⚠️ AND THE DISAGREEMENT WAS REAL: here `action1` was `b(2) || b(5) || b(7)` — X, R1 and R2 all running — while the table
+ * declares R1 as `rightShoulder` and R2 as `rightTrigger`. ADR-0086 recorded it as the asterisk of its "zero movement": no
+ * VERB changes button, but that one loses two of its three.
  */
 function actionsFromTheTable(gp: PadLike, table: PadTable): PadActions {
   const b = (i: number): boolean => !!(gp.buttons[i] && gp.buttons[i]!.pressed);
@@ -134,58 +134,55 @@ function actionsFromTheTable(gp: PadLike, table: PadTable): PadActions {
     action1: at('action1'), action2: at('action2'), action3: at('action3'), action4: at('action4'),
     leftShoulder: at('leftShoulder'), leftTrigger: at('leftTrigger'),
     rightShoulder: at('rightShoulder'), rightTrigger: at('rightTrigger'),
-    // ⚠️ `start` COMO POSIÇÃO, e não só como os derivados abaixo. Faltava, e o gate da tabela foi quem
-    // o encontrou: quem quisesse saber «o START está apertado?» tinha de ler `_start`, que começa por
-    // underscore e quer dizer outra coisa (fecha diálogo, e aceita a ação 2 também).
+    // ⚠️ `start` AS A POSITION, not only as the derived ones below. It was missing, and the table's gate found it:
+    // whoever wanted to know "is START pressed?" had to read `_start`, which starts with an underscore and means
+    // something else (closes a dialog, and accepts action 2 too).
     start: at('start'), select: at('select'),
-    // `_start` e `_pause` são DERIVADOS e não posições: «fecha diálogo» aceita a ação 2 ou o START, «pausa»
-    // só o START. Ficam escritos aqui porque descrevem o que a raiz faz com duas posições, não uma terceira.
+    // `_start` and `_pause` are DERIVED, not positions: "close dialog" accepts action 2 or START, "pause" only START.
+    // They are written here because they describe what the root does with two positions, not a third one.
     _start: at('action2') || at('start'), _pause: at('start'),
   };
 }
 
-/** Ações do frame para este gamepad. `custom` = mapa salvo pelo assistente para este `gp.id` (null/`_skip` = a
- *  tabela declarada). ⚠️ A tabela só decide no segundo ramo, que é o certo: o padrão de um jogo não se sobrepõe
- *  a uma escolha que a criança gravou. */
+/** This frame's actions for this gamepad. `custom` = the map the wizard saved for this `gp.id` (null/`_skip` = the
+ *  declared table). ⚠️ The table decides only in the second branch, which is right: a game's default does not override
+ *  a choice the child recorded. */
 export function padActions(gp: PadLike, custom: PadMap | null, table: PadTable = GAMEPAD_STANDARD): PadActions {
   return custom && !custom._skip ? actionsFromTheSavedMap(gp, custom) : actionsFromTheTable(gp, table);
 }
 
 /**
- * AS POSIÇÕES QUE O MODO DE UM BOTÃO NÃO CORTA. Pausar é a SAÍDA, não uma jogada.
+ * THE POSITIONS THE ONE-BUTTON SIMULATION DOES NOT CUT. Pausing is the WAY OUT, not a move.
  *
- * ⚠️ Cortar o START prenderia a criança dentro da partida — é o mesmo raciocínio que põe «a saída
- * primeiro» no ADR-0044 e que fez a armadilha de foco existir no ADR-0090. Uma acomodação que tranca não
- * é acomodação. Os derivados (`_start`, `_pause`) também passam: eles descrevem o que a raiz faz com
- * estas duas posições, não uma terceira.
+ * ⚠️ Cutting START would trap the child inside the match — the reasoning that puts "the way out first" in ADR-0044 and
+ * made the focus trap exist in ADR-0090. An accommodation that locks is not an accommodation. The derived ones (`_start`,
+ * `_pause`) pass too: they describe what the root does with these two positions, not a third.
  */
 const OUTSIDE_CUT = new Set(['start', 'select', '_start', '_pause']);
 
 /**
- * O MODO DE UM BOTÃO, APLICADO AO CONTROLE — a metade que faltava da empatia motora (issue #120).
+ * ONE BUTTON AT A TIME, APPLIED TO THE PAD — the missing half of the motor empathy simulation (issue #120).
  *
- * ⚠️ ELE VALIA SÓ NO TECLADO. `input/keydown` solta todas as outras teclas de jogo quando uma nova chega com o
- * modo ligado; `pollPads` não tinha equivalente nenhum. Uma criança que ligasse o modo e tivesse um controle na
- * mão **não estava no modo** — sem erro, sem aviso, sem sintoma, porque as definições continuavam a dizer que
- * estava ligado.
+ * ⚠️ IT USED TO HOLD ONLY ON THE KEYBOARD. The keyboard transport releases every other game key when a new one arrives
+ * with the simulation on; the pad polling had no equivalent. A child who turned it on with a pad in hand **was not in
+ * it** — no error, no warning, no symptom, because the settings kept saying it was on.
  *
- * ⚠️ AS DIREÇÕES CONTAM, e é isso que torna a regra fiel ao teclado: lá, `isGameKeyCode` inclui as teclas
- * de `p.ctrl`, que são as quatro direções — andar e pular não coexistem. Um filtro que poupasse as
- * direções seria mais confortável e estaria a simular outra deficiência.
+ * ⚠️ THE DIRECTIONS COUNT, which is what makes the rule faithful to the keyboard: there, the game keys include the four
+ * directions — walking and jumping do not coexist. A filter that spared the directions would be more comfortable and
+ * would be simulating another disability.
  *
- * ⚠️ E A ESCOLHA DE QUEM SOBREVIVE É DIFERENTE DA DO TECLADO, POR NECESSIDADE. No teclado a chegada nova
- * ganha, porque HÁ uma chegada: o evento diz qual é. Um controle é lido por SONDAGEM — o que chega é um
- * retrato, sem ordem. Então mantém-se a que já valia, e só quando ela solta é que a próxima assume. É o
- * que impede o botão de correr de ser cortado porque o polegar encostou noutro, e é a mesma leitura de
- * «segurar» que o ADR-0077 dá.
+ * ⚠️ AND WHO SURVIVES DIFFERS FROM THE KEYBOARD, BY NECESSITY. On the keyboard the new arrival wins, because there IS an
+ * arrival: the event says which. A pad is read by POLLING — what arrives is a snapshot, without order. So the one that
+ * already held stays, and only when it lets go does the next take over. That keeps the run button from being cut because
+ * the thumb brushed another, and it is the reading of "holding" ADR-0077 gives.
  *
- * A POLÍTICA é a mesma do `keydown`; a IMPLEMENTAÇÃO não pode ser partilhada hoje porque as formas do
- * estado diferem — lá é um `Set` de códigos de tecla, aqui é um retrato de booleanos por posição.
+ * The POLICY is the keyboard's; the IMPLEMENTATION cannot be shared today because the state's shapes differ — there a
+ * `Set` of key codes, here a snapshot of booleans by position.
  */
 export function oneButtonAtOnce(
-  // ⚠️ O QUADRO ANTERIOR É TIPADO PELO QUE ESTA FUNÇÃO LÊ, e não por `PadActions`: o `padPrevAct[gi]` do laço é
-  // `PadState`, mais frouxo, e exigir a forma completa obrigaria o chamador a um molde que não descreve o
-  // que se passa aqui — só se pergunta «esta chave estava em baixo?».
+  // ⚠️ THE PREVIOUS FRAME IS TYPED BY WHAT THIS FUNCTION READS, not by `PadActions`: the loop's previous-frame state is
+  // looser, and demanding the full shape would force the caller into a mould that does not describe what happens here —
+  // the only question is "was this key down?".
   wasDown: Readonly<Record<string, boolean | undefined>>,
   reading: PadActions,
   on: boolean,
@@ -194,7 +191,7 @@ export function oneButtonAtOnce(
   const cuttable = Object.keys(reading).filter((k) => !OUTSIDE_CUT.has(k));
   const active = cuttable.filter((k) => reading[k] === true);
   if (active.length <= 1) return reading;
-  // A que já valia tem prioridade; sem nenhuma, a primeira do retrato assume.
+  // The one that already held has priority; with none, the snapshot's first takes over.
   const kept = active.find((k) => wasDown[k] === true) ?? active[0];
   const onlyOne: PadActions = { ...reading };
   for (const k of active) if (k !== kept) onlyOne[k] = false;

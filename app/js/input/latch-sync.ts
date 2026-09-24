@@ -1,66 +1,61 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/latch-sync.ts — A ALTERNÂNCIA DO TRANSPORTE EM USO, POSTA NO JOGADOR (ADR-0113, issue #127).
+// input/latch-sync.ts — THE TOGGLE OF THE TRANSPORT IN USE, PUT ON THE PLAYER (ADR-0113, issue #127).
 //
-// ========================= A PEÇA QUE FALTAVA, E O QUE ELA FECHA =========================
-// O ADR-0113 decidiu que a alternância é um CAPS-LOCK guardado com o mapeamento de cada controle: trocar de
-// controle é receber o estado daquele controle, sem escrever nada. Três módulos foram construídos para isso e
-// nenhum deles responde a pergunta inteira:
+// ========================= THE MISSING PIECE, AND WHAT IT CLOSES =========================
+// ADR-0113 decided the toggle is a CAPS LOCK kept with each device's mapping: changing controls is receiving that
+// device's state, without writing anything. Three modules were built for it and none answers the whole question:
 //
-//   · `input/latch-scope`      — a REGRA (assistido sempre ligado · valor do transporte · legado · fábrica);
-//   · `input/latch-store`      — o ARMAZENAMENTO (os três estados, e a chave com o transporte no nome);
-//   · `input/transport-in-use` — o AUTÓMATO (que aparelho produziu as arestas deste jogador).
+//   · `input/latch-scope`      — the RULE (assisted always on · the transport's value · legacy · factory);
+//   · `input/latch-store`      — the STORAGE (the three states, and the key with the transport in its name);
+//   · `input/transport-in-use` — the STATE MACHINE (which device produced this player's edges).
 //
-// 📏 E MEDIDO EM 2026-09-09: `storedLatch` tinha ZERO chamadores em produção. A regra estava escrita,
-// aferida, e ninguém a lia — quem decidia a alternância continuava a ser `p.toggleMove`, escrito só pelo
-// ícone. Este módulo é a junção: pergunta ao autómato QUEM está a jogar, ao armazenamento O QUE está guardado
-// para esse aparelho, e escreve a resposta onde a física a lê.
+// 📏 Measured: `storedLatch` once had ZERO callers in production. The rule was written and tested, and nobody read it.
+// This module is the join: it asks the state machine WHO is playing, the storage WHAT is kept for that device, and writes
+// the answer where the physics reads it.
 //
-// ⚠️ ESCREVER NO JOGADOR E NÃO SUBSTITUIR O CAMPO É DECISÃO, e a razão é o catálogo. `p.toggleMove` é lido no
-// laço de física de um CARTUCHO (`game/physics.ts`, `game/run-toggle.ts`), que vive noutro repositório e não
-// se edita daqui. Fazer da alternância uma pergunta que a física passasse a chamar seria mudar o laço mais
-// quente de um jogo alheio para poupar um campo; pô-la NO campo que ele já lê mantém os leitores certos e
-// torna o campo uma CACHE DERIVADA — recalculada na aresta, nunca adivinhada.
+// ⚠️ WRITING ON THE PLAYER, AND NOT REPLACING THE FIELD, IS A DECISION. `p.toggleMove` is read in a CARTRIDGE's physics
+// loop, which lives in another repository. Making the toggle a question the physics would call would change another
+// game's hottest loop to save a field; putting it IN the field it already reads keeps the readers right and makes the
+// field a DERIVED CACHE — recomputed on the edge, never guessed.
 //
-// 🔴 E A LINHA QUE MAIS IMPORTA AQUI É O `walkDir = 0`. Desligar a alternância sem parar quem anda por
-// travamento deixa a personagem a andar sozinha com a criança a largar tudo — sem erro, sem aviso, e no
-// aparelho de quem tem menos alternativas. O `ui/settings-mobility` já tinha esta regra para o ícone; ter uma
-// segunda cópia dela aqui seria a terceira tabela do `DomQuery` outra vez, então a regra passou a morar numa
-// função só (`applyLatch`) e o painel chama-a.
+// 🔴 AND THE LINE THAT MATTERS MOST HERE IS `walkDir = 0`. Turning the toggle off without stopping whoever walks by latch
+// leaves the character walking alone while the child lets go of everything — no error, no warning, on the device of
+// whoever has fewest alternatives. The mobility panel had this rule for its icon; a second copy here would be one more
+// duplicated table, so the rule lives in one function (`applyLatch`) and the panel calls it.
 import type { PlayerView } from '../core/entity.js';
 import { storedLatch, type LatchStore } from './latch-store.js';
 
 /**
- * O MÍNIMO DO JOGADOR que a alternância toca — dois campos, e nenhum deles é do contrato do jogo.
+ * The MINIMUM OF THE PLAYER the toggle touches — two fields, neither of them part of the game's contract.
  *
- * 📌 `PlayerView` e não `PlayerBase`: este módulo não tem nada que fazer com sprites, física ou câmara, e um
- * tipo largo aqui faria um gate precisar de um jogador inteiro de mentira para afirmar duas linhas.
+ * 📌 `PlayerView` and not the whole player: this module has nothing to do with sprites, physics or camera, and a wide type
+ * here would make a gate need a whole fake player to assert two lines.
  *
- * ⚠️ E ELE MUDOU DE CASA EM VEZ DE NASCER SEGUNDO. Esta linha existia, palavra por palavra, no
- * `ui/settings-mobility` — e escrevê-la aqui outra vez seria a segunda cópia de um tipo, que é o defeito que
- * este repositório já pagou dezasseis vezes com o `DomQuery`. O painel passou a publicá-la por ALIAS, para o
- * retrato de nomes não a ler como removida.
+ * ⚠️ AND IT MOVED HERE INSTEAD OF BEING BORN A SECOND TIME. This line existed word for word in the mobility panel —
+ * writing it again would be a second copy of a type. The panel publishes it by ALIAS, so the names snapshot does not read
+ * it as removed.
  */
 export type LatchPlayer = PlayerView<'toggleMove' | 'walkDir'>;
 
 /**
- * A base com que a alternância de MARCHA vive no armazenamento da criança.
+ * The base under which the WALKING toggle lives in the child's storage.
  *
- * ⚠️ A IRMÃ (`togglerun`, a alternância de CORRER) NÃO ENTRA AQUI HOJE, e a ausência é declarada em vez de
- * esquecida: `p.toggleRun` tem um leitor de RODADA no cartucho (`game/run-toggle`), com uma trava própria que
- * diz se está a correr AGORA — o `walkDir = 0` daqui não é o gesto certo para ela, e inventar-lhe um sem o
- * leitor à frente seria decidir por um jogo que não abri. O `input/latch-store` já aceita a base como
- * argumento, então quando ela entrar entra sem uma segunda forma da mesma pergunta.
+ * ⚠️ ITS SIBLING (`togglerun`, the RUN toggle) DOES NOT ENTER HERE, and the absence is declared rather than forgotten:
+ * `p.toggleRun` has a ROUND reader in the cartridge, with its own latch saying whether it is running NOW — `walkDir = 0`
+ * is not the right gesture for it, and inventing one without that reader in front of me would decide for a game I did not
+ * open. `input/latch-store` already takes the base as an argument, so when it enters it needs no second form of the same
+ * question.
  */
 export const BASE_DA_MARCHA = 'togglemove';
 
 /**
- * PÕE A ALTERNÂNCIA DE MARCHA NO JOGADOR, com a regra que a acompanha. Devolve se MUDOU alguma coisa.
+ * PUTS THE WALKING TOGGLE ON THE PLAYER, with the rule that goes with it. Returns whether anything CHANGED.
  *
- * ⚠️ O `walkDir = 0` só corre quando a alternância CAI. Zerá-lo em toda chamada tiraria a direcção a quem
- * está a andar, uma vez por aresta — que é o defeito ao contrário, e mais frequente.
+ * ⚠️ `walkDir = 0` runs only when the toggle FALLS. Zeroing it on every call would take the direction from whoever is
+ * walking, once per edge — the defect inside out, and more frequent.
  *
- * 📌 Devolver «mudou» não é conveniência: quem chama na aresta corre isto muitas vezes por segundo, e anunciar
- * ou reflectir a cada chamada encheria o leitor de tela com a mesma frase.
+ * 📌 Returning "changed" is not convenience: a caller on the edge runs this many times a second, and announcing or
+ * reflecting on every call would fill the screen reader with the same sentence.
  */
 export function applyLatch(p: LatchPlayer, on: boolean): boolean {
   if (p.toggleMove === on) return false;
@@ -70,15 +65,15 @@ export function applyLatch(p: LatchPlayer, on: boolean): boolean {
 }
 
 /**
- * A ALTERNÂNCIA DESTE JOGADOR, RESOLVIDA PARA O TRANSPORTE EM USO E ESCRITA NELE. Devolve se mudou.
+ * THIS PLAYER'S TOGGLE, RESOLVED FOR THE TRANSPORT IN USE AND WRITTEN ON THEM. Returns whether it changed.
  *
- * É a cláusula 1 do ADR-0113 em código, e a propriedade que ela promete é NEGATIVA: chamar isto ao trocar de
- * aparelho troca a resposta **sem escrever no armazenamento**. Um `sincronizar` que gravasse o valor resolvido
- * apagaria, na primeira aresta, a escolha que a criança fez no outro controle.
+ * Clause 1 of ADR-0113 in code, and the property it promises is NEGATIVE: calling this when the device changes changes
+ * the answer **without writing to storage**. A sync that stored the resolved value would erase, on the first edge, the
+ * choice the child made on the other device.
  *
- * ⚠️ E NOS QUATRO ASSISTIDOS ELE RESPONDE `true` SEM CONSULTAR NADA — a regra vive no `latch-scope` e a razão
- * está lá: em olhos, rosto, gestos e fala a alternância é o que faz a entrada funcionar, e herdar um `false`
- * que a criança escolheu no teclado deixá-la-ia com um controle de olhar que não responde.
+ * ⚠️ AND ON THE FOUR ASSISTED TRANSPORTS IT ANSWERS `true` WITHOUT CONSULTING ANYTHING — the rule lives in `latch-scope`
+ * with its reason: on eyes, face, gestures and speech the toggle is what makes the input work, and inheriting a `false`
+ * the child chose on the keyboard would leave them with a gaze control that does not respond.
  */
 export function syncLatch(
   p: LatchPlayer,

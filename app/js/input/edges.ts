@@ -1,90 +1,79 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/edges — a tabela "ação → borda de entrada", e a regra de quem pode levantá-la. Módulo FOLHA: zero
-// imports, nada de DOM, nada de estado.
+// input/edges — the "action → input edge" table, and the rule of who may raise it. A LEAF module: no imports, no DOM,
+// no state.
 //
-// POR QUE ISTO EXISTE COMO MÓDULO
-// Uma "borda" é o instante em que o jogador ACABOU de acionar algo — `jumpEdge`, `runEdge`, `leftEdge`… — em
-// oposição a manter pressionado. Quem levanta borda são os três caminhos de entrada, e cada um tinha a sua
-// própria cópia da mesma tabela: `input/keydown.ts`, `input/gamepad.ts` (seis `if` à mão) e
-// `input/touch-bindings.ts`. Três cópias que precisavam concordar, e nada obrigando.
+// WHY THIS EXISTS AS A MODULE
+// An "edge" is the instant the player JUST triggered something — `jumpEdge`, `runEdge`, `leftEdge`… — as opposed to
+// holding it. The three input paths raise edges, and each had its own copy of the same table: three copies that had to
+// agree, with nothing forcing them.
 //
-// Elas divergiram. A cópia do toque não tinha a guarda do modo Fácil, e como `runEdge` NÃO é a velocidade de
-// corrida — é o gatilho que gruda e solta da parede, a escalada tipo aranha de `updateCling` em
-// `game/physics.ts:177` e `:179` — o resultado foi que a criança em modo Fácil (que existe para dificuldade
-// motora) não conseguia escalar com teclado nem com controle, e conseguia com o botão da tela. No tablet de
-// escola pública, o toque não é o caminho alternativo: é o único. O sintoma foi corrigido antes deste módulo;
-// este módulo é o que impede a divergência de voltar, porque agora só há um lugar onde ela poderia morar.
+// They diverged. The touch copy lacked the Easy-mode guard, and since `runEdge` is not the running speed — it is the
+// trigger that clings to and lets go of a wall — a child in Easy mode (which exists for motor difficulty) could not climb
+// with keyboard or pad and could with the on-screen button. On a public-school tablet, touch is not the alternative path:
+// it is the only one. The symptom was fixed before this module; this module is what keeps the divergence from coming
+// back, because there is only one place left for it to live.
 //
-// A ORDEM DA TABELA É OBSERVÁVEL: `edgesFor` devolve a lista na ordem em que percorre, e há teste ancorando-a.
+// THE TABLE'S ORDER IS OBSERVABLE: the edges come back in the order it is walked, and a test anchors it.
 
-/** As seis bordas de entrada, pelo nome do campo que elas levantam no jogador. */
+/** The six input edges, by the name of the field they raise on the player. */
 export type EdgeFlag = 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge';
-/** As seis ações que levantam borda. Nomeado (e não `string`) para o compilador casar com o `ActionKey` de
- *  input/gamepad, que é quem lê a tabela passando a ação adiante. */
+/** The six actions that raise an edge. Named (not `string`) so the compiler matches it with the pad transport, which
+ *  reads the table passing the action on. */
 export type EdgeAction = 'action2' | 'action1' | 'left' | 'right' | 'action4' | 'action3';
 
-/** Ação → borda, na ORDEM em que os três caminhos as levantam. */
+/** Action → edge, in the ORDER the three paths raise them. */
 export const EDGE_BY_ACTION: ReadonlyArray<readonly [EdgeAction, EdgeFlag]> = Object.freeze([
   ['action2', 'jumpEdge'], ['action1', 'runEdge'], ['left', 'leftEdge'],
   ['right', 'rightEdge'], ['action4', 'swapEdge'], ['action3', 'specialEdge'],
 ] as ReadonlyArray<readonly [EdgeAction, EdgeFlag]>);
 
 /**
- * Este jogador pode levantar a borda desta ação?
+ * May this player raise this action's edge?
  *
- * Hoje há uma regra só, e ela é de acessibilidade: no modo Fácil o `run` não levanta borda — sem correr, e
- * portanto sem escalada de parede. Vale para teclado, controle e toque, que é justamente o ponto.
- * Se um dia houver uma segunda regra, ela entra AQUI e passa a valer nos três de uma vez.
+ * There is one rule today, and it is about accessibility: in Easy mode `action1` raises no edge — no running, and so no
+ * wall climbing. It holds for keyboard, pad and touch, which is exactly the point. A second rule would enter HERE and
+ * hold for all three at once.
  */
 export function edgeAllowed(action: EdgeAction, easy: boolean | undefined): boolean {
   return !(action === 'action1' && !!easy);
 }
 
 // ---------------------------------------------------------------------------------------------
-// A INTENÇÃO DE NAVEGAR UM MENU
+// THE INTENT TO NAVIGATE A MENU
 // ---------------------------------------------------------------------------------------------
 
 /**
- * As seis intenções de navegação de menu — a mesma história das bordas, um andar acima.
+ * The six menu-navigation intents — the edges' story, one floor up.
  *
- * Estava declarada QUATRO vezes: `input/gamepad`, `ui/menu-nav`, `ui/activities-menu` e, sob o nome
- * `TitleNav`, `input/keydown`. Três delas traziam um comentário dizendo "MESMA forma que…", que é uma cópia
- * pedindo para ser notada. E já tinham divergido: a de `ui/activities-menu` declarava os seis campos
- * OPCIONAIS e as outras três, obrigatórios — de modo que `navTitle` aceitava `{}` enquanto quem a alimenta
- * sempre manda os seis.
+ * It was declared FOUR times, and three of them carried a comment saying "SAME shape as…", which is a copy asking to be
+ * noticed. They had already diverged: one declared the six fields OPTIONAL and the other three required.
  *
- * Mora em `input/` porque é uma intenção de ENTRADA: quem a produz são os tradutores (teclado, controle,
- * toque, e amanhã voz e webcam) e quem a consome é a UI. `input/` nunca importa de `ui/`; `ui/` já importa de
- * `input/devices`. A direção é essa.
+ * It lives in `input/` because it is an INPUT intent: the translators (keyboard, pad, touch, voice, camera) produce it and
+ * the UI consumes it. `input/` never imports `ui/`; `ui/` imports `input/`. That is the direction.
  *
- * OPCIONAIS de propósito, ao contrário das bordas: um tradutor manda só o que aconteceu. `{ down: true }` é
- * uma frase completa — "para baixo" —, e obrigar os outros cinco `false` faria cada chamada carregar cinco
- * negações que ninguém lê. É a forma que `ui/activities-menu` já usava, e é a certa; o que estava errado era
- * as outras três discordarem dela.
+ * OPTIONAL on purpose, unlike the edges: a translator sends only what happened. `{ down: true }` is a whole sentence —
+ * "down" — and requiring the other five `false`s would make every call carry five negations nobody reads.
  */
 export interface NavKeys {
   up?: boolean;
   down?: boolean;
   left?: boolean;
   right?: boolean;
-  /** Confirmar / entrar. */
+  /** Confirm / enter. */
   yes?: boolean;
-  /** Voltar / cancelar. */
+  /** Back / cancel. */
   no?: boolean;
 }
 
 /**
- * Alguma intenção foi expressa neste quadro? Sem intenção, a tecla NÃO é consumida — nem `preventDefault`,
- * nem `stopPropagation`, nem `navTitle`.
+ * Was any intent expressed this frame? With no intent, the key is NOT consumed — no `preventDefault`, no
+ * `stopPropagation`, no navigation.
  *
- * Estava escrita DUAS vezes, com o mesmo corpo e nomes diferentes: `hasIntent` em `ui/menu-nav` e
- * `hasTitleIntent` em `input/keydown`. Quase deixei as duas onde estavam, no raciocínio de que mover o tipo
- * para cá e criar uma função nova seria trocar seis por meia dúzia — o raciocínio estava certo e o número,
- * errado: não era uma cópia, eram duas, e o canônico apaga as duas. Os dois módulos reexportam com o nome
- * que os chamadores e os testes deles já usam.
+ * It was written TWICE, with the same body under two names; the canonical one erases both, and the two modules re-export
+ * it under the names their callers and tests already use.
  *
- * O `!!` importa: com os campos opcionais, a cadeia de `||` devolve `boolean | undefined`. Foi o compilador
- * que apontou, ao estreitar o tipo — as duas funções vinham devolvendo `undefined` como se fosse `false`.
+ * The `!!` matters: with optional fields, the `||` chain returns `boolean | undefined`. The compiler pointed it out when
+ * the type narrowed — both functions had been returning `undefined` as if it were `false`.
  */
 export function hasNavIntent(k: NavKeys): boolean {
   return !!(k.yes || k.no || k.up || k.down || k.left || k.right);
