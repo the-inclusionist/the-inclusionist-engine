@@ -165,10 +165,6 @@ const TOCAM_NA_REDE = {
   'core/i18n.ts': 'LOCAL. `import(\'../i18n/en.js\')` — os dicionários de en/es são chunks do próprio pacote, '
     + 'cortados pelo Vite e servidos pelo service worker. Nada sai da máquina; o `import()` está no crivo '
     + 'porque com um especificador absoluto ele SAI, e é por isso que o discriminador o inclui',
-  'input/gamepad.ts': 'LOCAL. `img.src = ctx.spriteBase + …` no assistente de mapeamento — arte do CARTUCHO, '
-    + 'por caminho relativo. ⚠️ Um cartucho que ponha uma URL absoluta em `spriteBase` transforma isto numa '
-    + 'busca sem tocar na engine; o crivo não o alcança porque o literal viveria no jogo, e fica escrito aqui '
-    + 'para não ser descoberto numa escola',
   'platform/heavy.ts': '🎯 A SEGUNDA BUSCA EXTERNA DA ENGINE, e é DECIDIDA — ADR-0110 (b): os quatro '
     + 'modelos de voz não viajam no pacote e descem no primeiro carregamento. ⚠️ NÃO VIOLA O PILAR 8, e a '
     + 'diferença é a errata que o próprio Dev ditou: «primeiro uso não pode ser considerado rede porque o '

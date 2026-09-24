@@ -489,9 +489,6 @@
     "type BlendshapeScores": "Partial<Readonly<Record<EyeBlendshape, number>>>"
   },
   "input/gamepad.ts": {
-    "interface WizAnimDef": [
-      "seq?"
-    ],
     "interface WizState": [
       "axTrack",
       "base",
@@ -511,8 +508,9 @@
       "modalInput?",
       "navTitle?",
       "respawnPlayer?",
-      "spriteBase?",
       "stopAttract?",
+      "wizardStep?",
+      "wizardTick?",
       "worldRunning?"
     ],
     "interface GamepadCtx": [
@@ -545,10 +543,11 @@
       "rotuloDaAcao",
       "setPauseActor",
       "sharedDialogOpen",
-      "spriteBase",
       "srAlert",
       "srSay",
-      "stopAttract"
+      "stopAttract",
+      "wizardStep",
+      "wizardTick"
     ],
     "interface GamepadApi": [
       "closePadWiz",

@@ -2471,6 +2471,28 @@ belongs to that repository.
 |---|---|
 | `platform/audio-nav.js` — `createAudioNav`, `AudioNavCtx`, `AudioNav`, re-export of `PlayerCtxOut` | `game-platformer/app/js/platform/audio-nav.ts`; `PlayerCtxOut` stays exported by `platform/audio-sonar.js` |
 
+## CD · The mapping wizard's demonstration is the game's: `spriteBase` becomes `wizardStep`/`wizardTick` (ADR-0228, ADR-0224, issue #203)
+
+**Who is affected:** anyone passing `spriteBase` to `initGamepad` (`GamepadCtx`) or in `CreateGameOptions.gamepad`
+(`GamepadGameHooks`), anyone importing `WizAnimDef` from `input/gamepad.js`, and any page that relied on the
+engine's `style.css` to animate `#padwiz-demo`. 📏 Measured: the `game-platformer` is the one game with a
+`#padwiz-demo` in its page, and it already has the demonstration — `game-platformer:0b6a7f3`.
+
+🎯 **Why:** while the wizard asks for each position, a picture showed the platformer's boy doing it — climbing,
+walking, jumping, the swap icons — from a table of that game's sprite paths inside the engine (`PADWIZ_ANIM`),
+drawn frame by frame from the `spriteBase` the game passed, with `pw-*` animations in the engine's stylesheet.
+The Dev ordered on 2026-09-23: «PADWIZ_ANIM e wizDemo vão para o platformer». The engine keeps what is the
+wizard's — which positions it asks and in what order — and tells the game which step it is on.
+
+| leaving | instead |
+|---|---|
+| `GamepadCtx.spriteBase`, `GamepadGameHooks.spriteBase` | `wizardStep(position \| null)` and `wizardTick()` — the game draws; `null` is the wizard opening. Absent in `CreateGameOptions.gamepad`: the wizard speaks with no drawing (ADR-0224's table). |
+| `WizAnimDef`, and the private `PADWIZ_ANIM` | `game-platformer/app/js/ui/pad-wizard-demo.ts` (`createPadWizardDemo({ $, spriteBase })` returns `step` and `tick`) |
+| `#padwiz-demo`, `#padwiz-demo-img`, `#padwiz-demo-fx`, `.pw-*` and the `pw*` keyframes in `style.css` | `game-platformer/app/js/ui/pad-wizard-demo.css` |
+
+📌 Migrating the platformer is two fields: `wizardStep: demo.step, wizardTick: demo.tick`, with `demo` made once
+from the module above.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

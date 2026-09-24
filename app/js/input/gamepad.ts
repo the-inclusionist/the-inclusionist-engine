@@ -64,20 +64,6 @@ export type { DomQuery } from '../core/dom-query.js';
  */
 export const PADWIZ_ORDER: readonly string[] = ORDEM_DO_ASSISTENTE;
 
-export interface WizAnimDef { seq?: string[]; hold?: number; cls: string; fx?: string; noimg?: number; flip?: number; }
-/** Demonstração animada de cada ação (frames reais do jogo) mostrada durante o passo correspondente do wizard. */
-const PADWIZ_ANIM: Record<string, WizAnimDef> = {
-  up: { seq: ['escada/0', 'escada/1'], hold: 9, cls: 'pw-up' },
-  down: { seq: ['escada/1', 'escada/0'], hold: 9, cls: 'pw-down' },
-  left: { seq: ['andar/0', 'andar/1', 'andar/2', 'andar/3', 'andar/4', 'andar/5', 'andar/6', 'andar/7'], hold: 4, cls: 'pw-left', flip: 1 },
-  right: { seq: ['andar/0', 'andar/1', 'andar/2', 'andar/3', 'andar/4', 'andar/5', 'andar/6', 'andar/7'], hold: 4, cls: 'pw-right' },
-  action2: { seq: ['pulo/0', 'pulo/0', 'pulo/1', 'pulo/1'], hold: 7, cls: 'pw-jump' },
-  action1: { seq: ['correr/0', 'correr/1', 'correr/2', 'correr/3'], hold: 3, cls: 'pw-run' },
-  action4: { fx: '👟 🕷️ 🎈 🐇 🦘', cls: 'pw-swap', noimg: 1 },
-  action3: { seq: ['idle/0', 'idle/1', 'idle/2', 'idle/3'], hold: 8, fx: '✨', cls: 'pw-especial' },
-  start: { fx: 'PAUSA', cls: 'pw-start', noimg: 1 },
-};
-
 interface WizBase { b: boolean[]; a: number[]; }
 interface WizAxTrack { i: number; v: number; last: number; changes: number; ticks: number; }
 /** Estado do wizard em andamento; `null` = fechado. Espelha o `padWiz` do game.js. */
@@ -142,8 +128,14 @@ export interface GamepadGameHooks {
   readonly respawnPlayer?: (playerIndex: number) => void;
   /** O selo «aguardando» do HUD do jogo. **Ausente: não há selo** a tirar. */
   readonly clearWaitingBadge?: (playerIndex: number) => void;
-  /** A arte da demonstração animada do assistente de mapeamento. **Ausente: o assistente fala, sem desenho.** */
-  readonly spriteBase?: string;
+  /**
+   * A demonstration of what each position does, drawn by the GAME while the mapping wizard asks for it — `null` is
+   * the wizard opening. **Absent: the wizard speaks, with no drawing.** The engine asks the questions and in what
+   * order; what a position LOOKS like is the game's (note CD — the engine used to draw one game's boy here).
+   */
+  readonly wizardStep?: (position: string | null) => void;
+  /** One tick of the wizard's clock, for a demonstration that animates. **Absent: nothing animates.** */
+  readonly wizardTick?: () => void;
 }
 
 /** As mesmas respostas, todas presentes: é isto que o `GamepadCtx` consome, e o que a tabela abaixo garante. */
@@ -166,7 +158,8 @@ const SILENT_PAD_ANSWERS: Omit<PadGameAnswers, 'worldRunning'> = Object.freeze({
   joinPlayer: () => false,        // ninguém entra a meio de um jogo a andar
   respawnPlayer: () => {},        // uma tela abandonada fica abandonada
   clearWaitingBadge: () => {},    // o selo de espera é HUD do jogo; sem jogo a declará-lo, não existe
-  spriteBase: '',                 // o assistente de mapeamento fala, sem desenho
+  wizardStep: () => {},           // the mapping wizard speaks, with no drawing
+  wizardTick: () => {},           // and so nothing animates
 });
 
 /**
@@ -300,14 +293,10 @@ export interface GamepadCtx {
   respawnPlayer: (playerIndex: number) => void;
   /** Remove o selo "aguardando" da tela quando ela ganha um controle (parte do HUD, game.js). */
   clearWaitingBadge: (playerIndex: number) => void;
-  /**
-   * Caminho-base dos sprites usado pela demo animada do wizard. NOTA — bug encontrado, não corrigido: o
-   * game.js original referencia um identificador `SPR` que NUNCA é declarado/importado ali (só existe, sem
-   * export, em render/sprites.ts) — `padWizDemo`/`padWizDemoTick` lançam ReferenceError em runtime assim que
-   * o wizard mostra qualquer demonstração animada (inclusive ao abrir: `padWizDemo(null)` já cai no ramo que lê
-   * `SPR`). Fica como dependência EXPLÍCITA aqui em vez de reproduzir o global inexistente — ver retorno da tarefa.
-   */
-  spriteBase: string;
+  /** The game's demonstration of each wizard step (`GamepadGameHooks.wizardStep`). */
+  wizardStep: (position: string | null) => void;
+  /** One tick of the wizard's clock for that demonstration (`GamepadGameHooks.wizardTick`). */
+  wizardTick: () => void;
 }
 
 export interface GamepadApi {
@@ -371,44 +360,20 @@ const MODAL_BY_POSITION: readonly (readonly [ActionKey, ModalIntent])[] = Object
 
 export function initGamepad(ctx: GamepadCtx): GamepadApi {
   let padWizAutoResume = false; // wizard aberto automaticamente no meio do jogo -> retoma a fase ao fechar
-  let padWizAnim: { seq: string[]; hold: number; t: number } | null = null;
 
   // the page's one cache of stored maps (input/pad-wizard): a map saved by the engine's own wizard is read here next frame
   const padMapFor = (id: string): PadMap | null => padMap(id);
   function actionsFor(gp: PadLike, table?: PadTable): PadActions { return padActions(gp, padMapFor(gp.id), table); }
 
-  // ----- wizard: the demonstration is THIS module's host's (the platformer's sprites), not the wizard's -----
-  function wizDemo(k: string | null): void {
-    const d = ctx.$<HTMLElement>('#padwiz-demo');
-    const img = ctx.$<HTMLImageElement>('#padwiz-demo-img');
-    const fx = ctx.$<HTMLElement>('#padwiz-demo-fx');
-    if (!d) return;
-    const a = k ? PADWIZ_ANIM[k] : null;
-    d.className = a ? a.cls : '';
-    padWizAnim = null;
-    if (fx) fx.textContent = (a && a.fx) || '';
-    if (img) {
-      img.style.display = a && a.noimg ? 'none' : '';
-      img.style.transform = a && a.flip ? 'scaleX(-1)' : '';
-      if (a && a.seq) { img.src = ctx.spriteBase + a.seq[0] + '.png'; padWizAnim = { seq: a.seq, hold: a.hold || 6, t: 0 }; }
-      else if (!a) img.src = ctx.spriteBase + 'idle/0.png';
-    }
-  }
-  function wizDemoTick(): void {
-    if (!padWizAnim) return;
-    const a = padWizAnim; a.t++;
-    const img = ctx.$<HTMLImageElement>('#padwiz-demo-img');
-    if (img) img.src = ctx.spriteBase + a.seq[Math.floor(a.t / a.hold) % a.seq.length] + '.png';
-  }
-
+  // the wizard asks; what a position LOOKS like is drawn by the game (note CD), through the two hooks it may answer
   const wizard = createPadWizard({
     getGamepads: () => ctx.getGamepads(),
     rotuloDaAcao: (acao) => ctx.rotuloDaAcao(acao),
     dizer: (phrase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = phrase; ctx.srSay(phrase); },
     progresso: (texto) => { const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = texto; },
     srAlert: (phrase) => ctx.srAlert(phrase),
-    aoPasso: wizDemo,
-    aoTique: wizDemoTick,
+    aoPasso: (position) => ctx.wizardStep(position),
+    aoTique: () => ctx.wizardTick(),
     aoFechar: (gi) => {
       const ov = ctx.$<HTMLElement>('#padwiz'); if (ov) ov.hidden = true;
       // sem edges fantasmas: o botão ainda SEGURADO do último passo (START) não pode pausar/agir ao retomar

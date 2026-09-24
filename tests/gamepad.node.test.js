@@ -57,7 +57,7 @@ function buildCtx(over = {}) {
   let phase = 'playing';
   const players = over.players ?? [];
   const naBarra = over.naBarra || new Set();
-  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], hideTouchControls: 0, stopAttract: 0, navBar: [], arestas: [], pressionadas: [], soltas: [] };
+  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], wizardSteps: [], wizardTicks: 0, hideTouchControls: 0, stopAttract: 0, navBar: [], arestas: [], pressionadas: [], soltas: [] };
   return {
     $: (sel) => dom.get(sel) ?? null,
     getGamepads: () => pads,
@@ -112,7 +112,8 @@ function buildCtx(over = {}) {
     joinPlayer: (gi) => { calls.joinPlayer.push(gi); return true; },
     respawnPlayer: (i) => calls.respawnPlayer.push(i),
     clearWaitingBadge: (i) => calls.clearWaitingBadge.push(i),
-    spriteBase: 'assets/sprites/menino/',
+    wizardStep: (position) => calls.wizardSteps.push(position),
+    wizardTick: () => { calls.wizardTicks++; },
     // helpers de teste (não fazem parte do contrato GamepadCtx)
     dom, said, alerted, fronted, calls,
     setPads: (p) => { pads = p; },
@@ -959,10 +960,9 @@ describe('padGameAnswers — a ausência é uma resposta, não um esquecimento',
     expect(a.attractActive(), 'inventou-se uma demonstração que não existe').toBe(false);
     expect(a.hasModal(0), 'inventou-se um desafio aberto').toBe(false);
     expect(a.joinPlayer(1), 'deixou entrar alguém num jogo que não sabe receber').toBe(false);
-    expect(a.spriteBase, 'inventou-se um caminho de arte').toBe('');
     // 📌 As quatro que não devolvem nada: o que se afirma é que EXISTEM e não estouram — uma porta em falta
     // rebentaria no meio de um quadro, que é o pior sítio possível para descobrir uma declaração esquecida.
-    expect(() => { a.navTitle({}); a.stopAttract(); a.modalInput(0, 'confirm'); a.respawnPlayer(0); a.clearWaitingBadge(0); })
+    expect(() => { a.navTitle({}); a.stopAttract(); a.modalInput(0, 'confirm'); a.respawnPlayer(0); a.clearWaitingBadge(0); a.wizardStep('up'); a.wizardTick(); })
       .not.toThrow();
   });
 
@@ -972,14 +972,15 @@ describe('padGameAnswers — a ausência é uma resposta, não um esquecimento',
       hasModal: (i) => i === 1,
       modalInput: (i, intent) => vistos.push([i, intent]),
       joinPlayer: () => true,
-      spriteBase: 'art/',
+      wizardStep: (position) => vistos.push(['passo', position]),
     }, SEMPRE_A_ANDAR);
     expect(a.hasModal(1)).toBe(true);
     expect(a.hasModal(0)).toBe(false);
     a.modalInput(1, 'erase');
     expect(vistos).toEqual([[1, 'erase']]);
     expect(a.joinPlayer(0)).toBe(true);
-    expect(a.spriteBase).toBe('art/');
+    a.wizardStep('up');
+    expect(vistos.at(-1)).toEqual(['passo', 'up']);
     expect(a.attractActive(), 'declarar uma coisa apagou as outras').toBe(false);
   });
 
@@ -987,10 +988,10 @@ describe('padGameAnswers — a ausência é uma resposta, não um esquecimento',
     // ⚠️ É o defeito silencioso que a função existe para não ter: espalhar o objecto cru por cima da tabela
     // sobrescreve a resposta com `undefined`, e o primeiro quadro que a chame estoura. Um cartucho escreve
     // `{ hasModal: temModal ? f : undefined }` sem pensar duas vezes.
-    const a = padGameAnswers({ hasModal: undefined, spriteBase: undefined }, SEMPRE_A_ANDAR);
+    const a = padGameAnswers({ hasModal: undefined, wizardStep: undefined }, SEMPRE_A_ANDAR);
     expect(typeof a.hasModal, 'a resposta da tabela foi apagada por um `undefined` declarado').toBe('function');
     expect(a.hasModal(0)).toBe(false);
-    expect(a.spriteBase).toBe('');
+    expect(() => a.wizardStep(null), 'a demonstração declarada como `undefined` apagou a resposta').not.toThrow();
   });
 
   it('🔴 [CrossCheck] `worldRunning` é a única ausência que quem MONTA responde', () => {
@@ -1015,26 +1016,23 @@ describe('initGamepad — padMapFor', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// Demonstracao animada do assistente — regressao do `SPR` (ver render/sprites.ts)
-// No game.js o caminho dos PNGs era escrito como `SPR`, um identificador que NUNCA foi declarado nem
-// importado ali: existia so como const privado do render/sprites.ts. Abrir o assistente chamava
-// padWizDemo(null), que caia no ramo do sprite parado e lancava ReferenceError — o remapeamento de
-// controle inteiro estava morto, sem que build, tsc ou teste algum notasse (game.js nao e tipado nem
-// coberto). Aqui a base entra como dependencia declarada, entao a falha e impossivel por construcao;
-// estes testes fixam o VALOR para que ninguem a desligue por engano depois.
+// A demonstração do assistente é DO JOGO (nota CD). A engine faz as perguntas e diz a cada passo QUAL posição
+// está a pedir; o que essa posição parece — o menino do plataformer a subir uma escada — o jogo desenha. Até
+// 23/09 a engine desenhava um jogo aqui (`PADWIZ_ANIM`, `spriteBase`); os casos antigos fixavam o caminho dos PNGs.
 // ---------------------------------------------------------------------------------------------
 
-describe('initGamepad — imagem da demonstracao', () => {
-  it('[Right] abrir o assistente aponta a imagem para o sprite parado, a partir da base injetada', () => {
+describe('initGamepad — a demonstração do assistente é do jogo', () => {
+  it('[Right] abrir o assistente avisa o jogo com `null` — o passo de antes de qualquer pergunta', () => {
     const ctx = buildCtx(); const api = initGamepad(ctx);
     api.openPadWiz();
-    expect(ctx.dom.get('#padwiz-demo-img').src).toBe('assets/sprites/menino/idle/0.png');
+    expect(ctx.calls.wizardSteps).toEqual([null]);
   });
 
-  it('[Interface] a base vem do ctx, nao esta escrita no modulo', () => {
-    const ctx = buildCtx({ spriteBase: 'x/y/' }); const api = initGamepad(ctx);
+  it('[Right] o relógio do assistente chega ao jogo, para uma demonstração que anima', () => {
+    const ctx = buildCtx(); const api = initGamepad(ctx);
     api.openPadWiz();
-    expect(ctx.dom.get('#padwiz-demo-img').src).toBe('x/y/idle/0.png');
+    api.padWizTick();
+    expect(ctx.calls.wizardTicks, 'o tique do assistente não chegou à demonstração do jogo').toBeGreaterThan(0);
   });
 });
 

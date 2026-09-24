@@ -302,28 +302,6 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 .screen-exp .vphud{top:var(--a11y-h)}
 .pi-btn{width:var(--alvo-min,44px);height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);min-height:var(--alvo-min,44px);border-radius:10px;border:2px solid var(--ink-soft);background:#1a2740;color:#f6f5f0;font-size:1.25em;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 /* Wizard de gamepad: demonstração com ANIMAÇÃO REAL (frames do jogo trocados via JS) + deslocamento CSS */
-#padwiz-demo{height:86px;display:flex;align-items:flex-end;justify-content:center;position:relative;margin:.15rem 0 .4rem;overflow:hidden}
-#padwiz-demo-img{height:64px;image-rendering:pixelated}
-#padwiz-demo-fx{position:absolute;top:2px;font-size:1.5em;line-height:1}
-#padwiz-demo.pw-left #padwiz-demo-img{animation:pwSlideL 1.4s linear infinite}
-#padwiz-demo.pw-right #padwiz-demo-img{animation:pwSlideR 1.4s linear infinite}
-#padwiz-demo.pw-up #padwiz-demo-img{animation:pwClimbUp 1.4s linear infinite}
-#padwiz-demo.pw-down #padwiz-demo-img{animation:pwClimbDown 1.4s linear infinite}
-#padwiz-demo.pw-jump #padwiz-demo-img{animation:pwJump .9s cubic-bezier(.3,0,.7,1) infinite}
-#padwiz-demo.pw-run #padwiz-demo-img{animation:pwSlideR .8s linear infinite}
-#padwiz-demo.pw-swap,#padwiz-demo.pw-start{align-items:center}
-#padwiz-demo.pw-swap #padwiz-demo-fx{position:static;white-space:nowrap;font-size:1.7em;animation:pwIcons 4s linear infinite}
-#padwiz-demo.pw-especial #padwiz-demo-fx{animation:pwPulse .8s ease-in-out infinite}
-#padwiz-demo.pw-start #padwiz-demo-fx{position:static;font-weight:800;font-size:1.9em;letter-spacing:var(--ls);animation:pwBlink 1s steps(2,end) infinite}
-@keyframes pwSlideL{0%{translate:34px 0}100%{translate:-34px 0}}
-@keyframes pwSlideR{0%{translate:-34px 0}100%{translate:34px 0}}
-@keyframes pwClimbUp{0%{translate:0 22px}100%{translate:0 -22px}}
-@keyframes pwClimbDown{0%{translate:0 -22px}100%{translate:0 22px}}
-@keyframes pwJump{0%,100%{translate:0 0}35%{translate:0 -26px}55%{translate:0 -22px}}
-@keyframes pwIcons{0%{translate:60px 0}100%{translate:-60px 0}}
-@keyframes pwPulse{0%,100%{scale:1;opacity:.7}50%{scale:1.5;opacity:1}}
-@keyframes pwBlink{0%,100%{opacity:1}50%{opacity:.25}}
-@media (prefers-reduced-motion: reduce){ #padwiz-demo *{animation:none !important} }
 /* ADR-0159 rule 10 / WCAG 1.4.1: «on» is not colour alone — a thick stripe along the base appears with it. */
 .pi-btn.pi-on{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 -5px 0 var(--accent-ink)}
 /* Modo TEA (🧩): pi-on preenchido de amarelo = silencioso · fundo branco = calmo · base (azul) = off.

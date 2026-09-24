@@ -3970,7 +3970,8 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     joinPlayer: gameHooks.joinPlayer,
     respawnPlayer: gameHooks.respawnPlayer,
     clearWaitingBadge: gameHooks.clearWaitingBadge,
-    spriteBase: gameHooks.spriteBase,
+    wizardStep: gameHooks.wizardStep,
+    wizardTick: gameHooks.wizardTick,
   });
   /*
    * E A ENGINE PASSA A SONDAR, porque quem monta sonda. ⚠️ O laço do jogo é do CARTUCHO (`core/loop.startLoop` é

@@ -18,10 +18,11 @@
 //
 // ========================= POR QUE UM INVENTÁRIO E NÃO UMA PROIBIÇÃO =========================
 // A saída óbvia — «acuse em `problems` quem não declina» — foi MEDIDA E RECUSADA: o consumidor não tem como
-// consertar isto. O assistente vive em `input/gamepad` e esta raiz não o monta, e não o monta por duas razões
-// reais: ele precisa do `spriteBase` do CARTUCHO, e o `padWizDemo` carrega um `ReferenceError` herdado do
-// `game.js` (o identificador `SPR` nunca é declarado) que dispara **ao abrir**. Pôr em `problems` uma linha
-// que quem a lê não pode resolver é a mesma coisa que um gate sem saída: desliga-se.
+// consertar isto. ⚠️ A razão que aqui estava — a raiz não montava o assistente porque ele pedia o `spriteBase`
+// do cartucho — deixou de ser verdade: a raiz monta o próprio assistente (o painel `#padwiz`, «Mapear
+// controle»), e desde a nota CD a demonstração é do jogo e o `spriteBase` saiu. O campo continua sem leitor,
+// agora por outro motivo, escrito na entrada abaixo. Pôr em `problems` uma linha que quem a lê não pode
+// resolver é a mesma coisa que um gate sem saída: desliga-se.
 //
 // Então o que se afirma é o INVENTÁRIO — cada campo morto tem de trazer a razão escrita à mão —, e ele
 // ENCOLHE: no dia em que a raiz montar o assistente, a entrada sai daqui, e o caso da saída obriga-a a sair.
@@ -43,9 +44,9 @@ const CREATE_GAME = 'boot/create-game.ts';
  */
 const SEM_LEITOR = {
   semAssistenteDePad:
-    'o assistente vive em `input/gamepad` e esta raiz não o monta: ele pede o `spriteBase` do cartucho e o ' +
-    '`padWizDemo` tem um ReferenceError herdado do `game.js` (`SPR` nunca declarado) que dispara ao abrir. ' +
-    'Sai daqui quando a raiz montar o assistente — e é aí que declinar passa a mudar alguma coisa',
+    'a raiz MONTA o assistente (o painel `#padwiz`, «Mapear controle») e não pergunta a esta declinação se o ' +
+    'deve fazer: declinar não muda nada. Ou a raiz passa a lê-la, ou o campo sai do tipo — e sair é quebra de ' +
+    'contrato, decidida à parte (medido em 23/09, ao tirar o `spriteBase`)',
 };
 
 const fonte = (rel) => readFileSync(join(RAIZ_JS, rel), 'utf8');

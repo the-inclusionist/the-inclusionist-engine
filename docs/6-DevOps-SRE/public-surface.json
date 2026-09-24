@@ -392,7 +392,6 @@
     "GamepadPlayer",
     "PADWIZ_ORDER",
     "PadGameAnswers",
-    "WizAnimDef",
     "WizState",
     "initGamepad",
     "padGameAnswers",
