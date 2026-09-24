@@ -1,196 +1,161 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/touch-bindings.ts — AS AMARRAS DO CONTROLE POR TOQUE: o gesto vira TECLA.
+// input/touch-bindings.ts — THE TOUCH CONTROL'S BINDINGS: the gesture becomes a POSITION.
 //
-// Este módulo é a outra metade de `input/touch.ts`. Aquele é o DONO DO PAD — a geometria física (mm→px), o
-// painel de configuração, o mapa remapeável (`getTouchMap`), mostrar/esconder os botões. Ele sabe onde o
-// polegar encosta e de que tamanho o alvo tem de ser. Não sabe o que acontece depois do toque.
-// É isto aqui. E o que acontece depois do toque é uma coisa só, e surpreendente: o botão da tela **finge ser
-// o teclado**. `press('jump')` não chama a física, não empurra o personagem, não fala com o jogo — ele
-// descobre qual TECLA está mapeada para "pular" no esquema do Jogador 1, injeta esse código no `keys` de
-// `input/state.ts` (o mesmo conjunto que o `keydown` alimenta) e levanta a borda `jumpEdge` em todo jogador
-// que tenha aquele código no próprio esquema. O resto do jogo nunca fica sabendo que houve um dedo na tela.
+// This module is the other half of `input/touch.ts`. That one OWNS THE PAD — the physical geometry (mm→px), the
+// settings panel, the remappable map (`getTouchMap`), showing/hiding the buttons. It knows where the thumb lands and
+// how big the target has to be. It does not know what happens after the touch.
+// This is what does. A screen button PRESSES A POSITION on the virtual controller (ADR-0223), stamped `toque`, the
+// same door the eyes, the voice and the keyboard use: in a menu the position becomes the menu's key, in play the
+// controller holds the child's key and delivers the command to the cartridge. On top of that, for a press that reached
+// the game, this module raises the matching edge flag on every player whose scheme holds that key.
 //
-// ======================= POR QUE UM ARQUIVO NOVO, E NÃO DENTRO DE input/touch.ts =======================
-// Porque são duas perguntas diferentes, e a segunda depende de coisas que a primeira não conhece.
-// `input/touch.ts` fecha sobre `$`, `store`, `root`, `viewport` — desenho e persistência. Este módulo precisa
-// do ESQUEMA DE TECLAS vivo (`kbRuntime.controlsState()`), do ARRAY DE JOGADORES, do `keys` compartilhado, do
-// `togglePause`, do `attract` e do `hideTips`: seis dependências que não têm nada a ver com desenhar um pad e
-// que arrastariam metade do jogo para dentro de um módulo que hoje é quase todo geometria pura.
-// A fronteira caiu, portanto, entre "onde o dedo está" (lá) e "o que o dedo significa" (aqui).
-// FUNDIR DEPOIS? Na minha leitura, NÃO — mas se um dia se fundir, que seja como DOIS `init` no mesmo arquivo
-// (`initTouch` e `initTouchBindings`), nunca como um `ctx` só: o `ctx` unificado teria quinze campos e o
-// módulo passaria a ser "tudo que tem a ver com toque", que é um tema, não uma responsabilidade. O acoplamento
-// real entre os dois é estreitíssimo e já está explícito no `ctx` daqui: `getTouchMap`, `getStickTravelPx`,
-// `getStickDeadPx` e `showTouchControls` — quatro getters, todos de leitura.
+// ======================= WHY A FILE OF ITS OWN, AND NOT INSIDE input/touch.ts =======================
+// Because they are two different questions, and the second depends on things the first does not know.
+// `input/touch.ts` closes over `$`, `store`, `root`, `viewport` — drawing and persistence. This module needs the live KEY
+// SCHEME, the PLAYERS array, the controller's door, `togglePause` and the host's hooks: dependencies that have nothing
+// to do with drawing a pad. So the boundary falls between "where the finger is" (there) and "what the finger means"
+// (here). If they are ever merged, let it be as TWO `init`s in one file, never one `ctx`: a unified ctx would make the
+// module "everything about touch", which is a theme, not a responsibility. The real coupling is narrow and explicit in
+// this ctx: `getTouchMap`, `getStickTravelPx`, `getStickDeadPx` and `showTouchControls` — four read-only getters.
 //
-// ======================= A ENTREGA: DECIDIR ≠ EXECUTAR =======================
-// O bloco original (`touchSetup` do main.js) trançava três coisas num `const` de uma linha cada: a tradução
-// gesto→tecla, a geometria do direcional e o amarrado de ouvintes. As duas primeiras são PURAS e aqui estão
-// separadas, no mesmo movimento que `input/keydown.ts` fez com `decideKeydown`:
-//   · `decideTouch(acao, ligado, snapshot) -> TouchDecision` — dado (ação, esquema do J1, esquemas dos
-//     jogadores, teclas já seguradas), existe UMA resposta. Sem DOM, sem ponteiro, sem `window`. Roda no
-//     project `node`. É onde a divergência do modo Fácil (abaixo) deixa de ser observável só num tablet.
-//   · `crossDirsAt` / `stickDirsAt` / `stickKnobOffset` — posição do ponteiro + retângulo do elemento →
-//     conjunto de direções ligadas. Zona morta, quadrantes e a borda da zona morta viram casos de teste.
-//   · `initTouchBindings(ctx).attach()` — a metade IMPURA: captura de ponteiro, `preventDefault`, `classList`,
-//     `setTimeout`. É a única parte que precisa de navegador de verdade.
+// ======================= DECIDING ≠ DOING =======================
+// Two parts are PURE and kept apart, the same move `input/keydown.ts` made with `decideKeydown`:
+//   · `decideTouch(action, on, snapshot) -> TouchDecision` — given (action, P1's scheme, the players' schemes, the keys
+//     already held) there is ONE answer. No DOM, no pointer, no `window`: it runs in the `node` project.
+//   · `crossDirsAt` / `stickDirsAt` / `stickKnobOffset` — pointer position + the element's rectangle → the set of
+//     directions on. Dead zone, quadrants and the dead zone's edge become test cases.
+//   · `initTouchBindings(ctx).attach()` — the IMPURE half: pointer capture, `preventDefault`, `classList`,
+//     `setTimeout`. The only part that needs a real browser.
 //
-// ======================= ⚠️ A TABELA "AÇÃO → BORDA" EXISTE TRÊS VEZES, E UMA DELAS DISCORDA =======================
-// A mesma correspondência entre as seis ações e as seis flags de borda está escrita em três lugares:
-//   1. `input/keydown.ts` (`EDGE_BY_ACTION`, tabela congelada; consumida em `edgesFor`, que aplica a guarda
-//      `if (act === 'run' && p.easy) continue; // Fácil: sem correr`);
-//   2. `input/gamepad.ts` (seis `if` à mão dentro de `pollPads`; o do `run` TEM a guarda: `if (edge('run') &&
-//      !p.easy) p.runEdge = true;`);
-//   3. AQUI (`TOUCH_EDGE_BY_ACTION` + `touchEdgesFor`), que veio dos seis `if` à mão do main.js — e o do `run`
-//      **NÃO TEM** a guarda do Fácil.
-// Isso FOI CORRIGIDO: o `run` daqui passou a ter a mesma guarda dos outros dois caminhos.
+// ======================= ONE ACTION → EDGE TABLE, AND ONE EASY-MODE RULE =======================
+// The keyboard, the pad and touch raise edges from the same table and the same guard (`input/edges`). They used to be
+// three hand-written copies, and touch's forgot Easy mode: `runEdge` is not running speed but the trigger that clings
+// to and lets go of a wall, so a child in Easy mode (which exists for motor difficulty) could climb by the screen
+// button and not by keyboard or pad. One table leaves the divergence nowhere to come back.
 //
-// A consequência é de acessibilidade, e é ao contrário do que o nome sugere. `runEdge` não é a velocidade de
-// corrida (isso é `held(pl,'run')`, lido em `game/physics.ts:169-170`): `runEdge` é a BORDA que gruda e solta
-// da parede — a ventosa/homem-aranha de `updateCling`, em `game/physics.ts:177` e `:179`. Logo, hoje, no modo
-// Fácil (deficiência motora), a criança NÃO consegue escalar parede pelo teclado nem pelo controle físico —
-// mas CONSEGUE pelo botão da tela. Três caminhos de entrada, dois comportamentos.
-// O teste continua comparando os TRÊS caminhos lado a lado, com o `edgesFor` real importado de `keydown.js` —
-// agora exigindo que CONCORDEM. As três tabelas ainda são três; fundi-las numa só é o passo seguinte, e é o
-// que impede a divergência de voltar.
+// ======================= WHAT STAYED OUT, AND WHY =======================
+//  · `hideTouchControls`/`showTouchControls` belong to `input/touch.ts`. Here `showTouchControls` is only CALLED (touch
+//    reveals the buttons); hiding belongs to whoever knows the keyboard took over.
+//  · The demo's `attractOnInput()` does not become pure, for the same reason as in `keydown.ts`'s header: it DECIDES AND
+//    ACTS in one call (resets idleness, ends the demo, returns whether it ended). It stays in the listener.
+//  · The d-pad's PHYSICAL geometry (how many px the travel is, how many px the stick's dead zone is) is
+//    `input/touch.ts`'s, recomputed on every `applyPadPhysical()`. It comes in by getter and is read ON EVERY MOVE —
+//    turning the device mid-gesture changes the travel on the next gesture.
+//  · The CROSS's dead zone, by contrast, is not configurable: 18% of the side (`CROSS_DEAD_FRACTION`).
 //
-// ======================= O QUE FICOU DE FORA, E POR QUÊ =======================
-//  · `hideTouchControls`/`showTouchControls` são de `input/touch.ts`. Aqui só se CHAMA `showTouchControls`
-//    (o toque revela os botões); esconder é do `keydown`, que sabe que o teclado assumiu.
-//  · `attractCtl.onInput()` não vira parte pura, pelo mesmo motivo do cabeçalho de `keydown.ts`: ela DECIDE E
-//    AGE na mesma chamada (zera a ociosidade, encerra a demo, devolve se encerrou). Fica no ouvinte.
-//  · A geometria FÍSICA do direcional (quantos px vale o curso, quantos px vale a zona morta do analógico) é
-//    de `input/touch.ts`, que a recalcula a cada `applyPadPhysical()`. Entra por getter e é lida A CADA
-//    MOVIMENTO, verbatim — girar o aparelho no meio de um gesto muda o curso no gesto seguinte.
-//  · A zona morta da CRUZ, ao contrário, não é configurável: são 18% do lado, escritos no lugar. Continua
-//    assim (`CROSS_DEAD_FRACTION`), agora com nome.
+// ======================= BOOT-ORDER TRAPS =======================
+// `initTouchBindings(ctx)` touches no DOM: it only closes over the `ctx` and returns the api. Every effect is in
+// `attach()`, which is where `#touch-controls` is looked up (and where the whole function gives up if it is missing).
+// Even so, the ctx is almost all GETTERS: what the host REASSIGNS (the players, the controls) comes in by getter, and
+// what is a `const` mutated in place (`keys`) comes in by VALUE.
+// REGISTRATION ORDER: `attach()` installs a CAPTURE `pointerdown` on the window, which is what ends a demo on the first
+// touch; registering later only matters if another window pointer listener is ever born in between.
 //
-// ======================= ARMADILHAS DE ORDEM DE BOOT =======================
-// `initTouchBindings(ctx)` não toca em DOM nenhum: só fecha sobre o `ctx` e devolve a api. Todo efeito está em
-// `attach()`, que é onde o `#touch-controls` é procurado (e onde a função inteira desiste, se ele não existir —
-// a guarda `if(!tc)return` do original).
-// MESMO ASSIM, o ctx é quase todo GETTER, e por dois motivos independentes:
-//   1. TDZ. No main.js, `attractCtl` é `const` declarado ABAIXO do ponto onde este bloco mora. O IIFE original
-//      só funcionava porque o corpo dos ouvintes é preguiçoso. Passar `attractCtl` por VALOR derruba o boot.
-//   2. Reatribuição. A regra da casa: o que o main.js REATRIBUI entra por getter. `keys` é `const` de
-//      `input/state.ts`, mutado in place → entra por VALOR (é sempre o mesmo objeto, para sempre).
-// ORDEM DE REGISTRO: `attach()` instala um `pointerdown` de CAPTURA na janela. Ele é hoje o primeiro ouvinte
-// de ponteiro do jogo e é ele que encerra a demo; registrar mais tarde só passa a importar se algum dia nascer
-// outro ouvinte de ponteiro de janela no meio. Mantenha a chamada no lugar exato onde o IIFE estava.
-//
-// SEM I/O NO IMPORT: o corpo do módulo só declara constantes congeladas e funções puras.
-//
-// Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D3-b).
+// NO I/O ON IMPORT: the module body only declares frozen constants and pure functions.
 
-/* ===================== interfaces mínimas ===================== */
+/* ===================== minimal interfaces ===================== */
 
-/** `ui/dom.ts` `$` — injetado; o módulo nunca alcança `document`. */
+/** `ui/dom.ts` `$` — injected; the module never reaches `document`. */
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import type { TransportName } from './transport-in-use.js';
 import { fromCentre, type RectLike } from './pointer-space.js';
 import type { PlayerView } from '../core/entity.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
-// `isAction` guarda a porta: o `act` chega como string de um `data-` do markup de toque, e desde a #118 o
-// esquema só aceita as quatorze posições. Uma string que não é posição devolve `null` — o toque não faz nada,
-// que é exactamente o que o cabeçalho desta função já prometia.
+// `isAction` guards the door: the `act` arrives as a string from a `data-` of the touch markup, and since #118 the
+// scheme only accepts the fourteen positions. A string that is not a position returns `null` — the touch does nothing,
+// which is what this function's header promises.
 import { isAction, type Action } from '../core/actions.js';
-// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
-// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+// `DomQuery` lives in `core/dom-query`: this line was copied into SIXTEEN modules, and the copies drifted.
+// Re-exported for whoever already imported it from here.
 export type { DomQuery } from '../core/dom-query.js';
 
-/** ação -> lista de códigos físicos. Cópia ESTRUTURAL do `KeyScheme` de `input/keyboard-runtime.ts` — a casa
- *  prefere a cópia a puxar um alias de tipo através de camadas (mesmo precedente de `input/keydown.ts`). */
-// `KeyScheme` mora em `core/entity` desde 2026-08-26: a entidade declara `ctrl: KeyScheme | null`, então
-// ela é a dona. A mesma linha estava escrita em SEIS módulos. Reexportada para quem já a importava daqui.
+/** action -> list of physical codes. */
+// `KeyScheme` lives in `core/entity`: the entity declares `ctrl: KeyScheme | null`, so it is the owner. The same line was
+// written in SIX modules. Re-exported for whoever already imported it from here.
 export type { KeyScheme } from '../core/entity.js';
 
-/** As seis bordas de entrada que o toque levanta no jogador (consumidas e zeradas pela física). */
+/** The six input edges touch raises on the player (consumed and cleared by the game's physics). */
 export type EdgeFlag = 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge';
 
-/** Uma borda a levantar: qual jogador (POSIÇÃO no array) e qual flag. */
+/** An edge to raise: which player (POSITION in the array) and which flag. */
 export interface EdgeRaise { playerIndex: number; edge: EdgeFlag }
 
-/** O que este módulo lê (e escreve) de um jogador — e SÓ isso. DERIVADA de core/entity.
- *  `easy`: quem está no modo Fácil não levanta `runEdge`, e portanto não gruda na parede — a mesma regra do
- *  teclado e do controle, que é justamente a que divergiu em três cópias uma vez. Ver o cabeçalho. */
+/** What this module reads (and writes) of a player — and ONLY that. DERIVED from core/entity.
+ *  `easy`: whoever is in Easy mode raises no `runEdge`, and so does not cling to the wall — the same rule as the
+ *  keyboard and the pad, which is exactly the one that once drifted across three copies. See the header. */
 export type TouchBindPlayer = PlayerView<'ctrl'>
   & Partial<PlayerView<'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'>>;
 /*
- * ⚠️ AS SEIS BORDAS E O `easy` SÃO OPCIONAIS DESDE A FASE 4, e era o bloqueio que o plano nomeava: exigi-los
- * obrigava o `createGame` — cujos jogadores são `{ ctrl, audioSink? }` — a pendurar vocabulário de PLATAFORMA
- * (`jumpEdge`, `swapEdge`) no jogador de um quiz para o pad poder existir. É o que o ADR-0145 D4 recusa: o
- * `jumpEdge` fica no `Player` para quem pula, e quem não pula nunca o declara.
+ * ⚠️ THE SIX EDGES AND `easy` ARE OPTIONAL: requiring them would force `createGame` — whose players are
+ * `{ ctrl, audioSink? }` — to hang PLATFORMER vocabulary (`jumpEdge`, `swapEdge`) on a quiz's player for the pad to
+ * exist. That is what ADR-0145 D4 refuses: `jumpEdge` stays on `Player` for whoever jumps, and whoever does not jump
+ * never declares it.
  *
- * 📌 NÃO MUDA O QUE O MÓDULO FAZ: `edgeAllowed` já aceitava `easy` indefinido, e escrever `p[edge] = true`
- * num jogador que não tem a borda deixa lá uma bandeira que ninguém lê — inofensiva, e sem assunto só no quiz.
+ * 📌 IT DOES NOT CHANGE WHAT THE MODULE DOES: `edgeAllowed` accepts an undefined `easy`, and writing `p[edge] = true` on
+ * a player without the edge leaves a flag nobody reads — harmless.
  */
 
-/** TUDO o que a decisão precisa saber do mundo, num objeto só, montado ANTES de qualquer efeito. */
+/** EVERYTHING the decision needs to know about the world, in one object, built BEFORE any effect. */
 export interface TouchBindSnapshot {
-  /** `kbRuntime.controlsState().controls` — o esquema do Jogador 1 (remapeável). É dele, e só dele, que sai a
-   *  tecla que o botão da tela injeta: o toque é sempre o J1, mesmo em multi-tela. */
+  /** Player 1's scheme (remappable). The key a screen button holds comes from it, and only it: touch is always P1,
+   *  even with several screens. */
   controls: KeyScheme;
-  /** o array vivo de jogadores: as bordas são levantadas em TODOS que tenham o código no próprio esquema. */
+  /** the live array of players: edges are raised on ALL who have the code in their own scheme. */
   players: readonly TouchBindPlayer[];
-  /** `keys` de `input/state.ts`: as teclas seguradas AGORA (teclado, toque e webcam, misturados). */
+  /** `input/state.ts`'s `keys`: the keys held NOW (every transport's, mixed). */
   heldKeys: ReadonlySet<string>;
 }
 
-/** Reexportado: a definicao passou a viver em `input/pointer-space`, com a conta que a usa (issue #105). */
+/** Re-exported: the definition lives in `input/pointer-space`, with the arithmetic that uses it (issue #105). */
 export type { RectLike } from './pointer-space.js';
 
-/** As quatro direções físicas do direcional, ligadas ou não. */
+/** The d-pad's four physical directions, on or off. */
 export interface DirSet { left: boolean; right: boolean; up: boolean; down: boolean }
 
-/** Um evento de ponteiro, reduzido ao que este módulo lê (`PointerEvent` real é atribuível a isto). */
+/** A pointer event, reduced to what this module reads (a real `PointerEvent` is assignable to this). */
 export interface PointerLike { pointerId: number; clientX: number; clientY: number; preventDefault(): void }
 
 /**
- * A resposta única: o que este toque SIGNIFICA.
+ * The single answer: what this touch MEANS.
  *
- * 🔴 A MOEDA DESTA DECISÃO PASSOU A SER A POSIÇÃO E NÃO A TECLA, em 2026-09-22 (ADR-0223). O botão da tela «fingia ser o
- * teclado», e o preço estava medido: a raiz exclui a origem `toque` da escuta de janela, logo um cartucho que ouve
- * `onCommand` — o quiz é um — não respondia ao dedo. Agora o toque APERTA o controle virtual, que é a porta única, e a
- * tecla volta a ser o que sempre devia ter sido: um efeito da pressão, escrito num sítio só.
+ * 🔴 THE CURRENCY OF THIS DECISION IS THE POSITION, NOT THE KEY (ADR-0223). Touch PRESSES the virtual controller, the
+ * single door, and the key is an effect of the press written in one place — a screen button that pretended to be the
+ * keyboard never reached a cartridge that listens to `onCommand`, because the root's window listener leaves `toque`
+ * out.
  *
- * ⚠️ E UMA POSIÇÃO SEM TECLA MAPEADA DEIXOU DE SER `noop`. O mapa é do JOGO e não do teclado (ADR-0111), então uma posição
- * que o cartucho declarou chega-lhe mesmo que a criança não tenha tecla para ela — o que antes era silêncio.
+ * ⚠️ AND A POSITION WITH NO MAPPED KEY IS NOT A `noop`. The map is the GAME's, not the keyboard's (ADR-0111), so a
+ * position the cartridge declared reaches it even if the child has no key for it.
  */
 export type TouchDecision =
-  /** slot vazio, ação que não existe, ou SOLTAR de `pause` — nada acontece. */
+  /** an empty slot, an action that does not exist, or RELEASING `pause` — nothing happens. */
   | { kind: 'noop' }
-  /** `pause` é o único caso especial: não é uma posição, chama `togglePause()` direto (e só no APERTAR). */
+  /** `pause` is the only special case: it is not a position, it calls `togglePause()` directly (and only on PRESS). */
   | { kind: 'pause' }
-  /** apertar. `addKey=false` = a tecla JÁ estava segurada (outro dedo, ou o teclado): não levanta borda de
-   *  novo — é isso que faz disto uma BORDA e não um estado. `hideTips` é independente. */
+  /** press. `addKey=false` = the key was ALREADY held (another finger, or the keyboard): no edge is raised again — that
+   *  is what makes this an EDGE and not a state. `hideTips` is independent. */
   | { kind: 'press'; action: Action; addKey: boolean; edges: EdgeRaise[]; hideTips: boolean }
-  /** soltar. NÃO abaixa borda nenhuma (quem zera as bordas é a física). */
+  /** release. It lowers NO edge (the game's physics clears the edges). */
   | { kind: 'release'; action: Action };
 
-/* ===================== PURO (sem DOM — project node) ===================== */
+/* ===================== PURE (no DOM — node project) ===================== */
 
-/**
- * Ação → borda, na MESMA ordem das outras duas cópias do projeto.
- * ⚠️ TERCEIRA CÓPIA DE UMA TABELA QUE JÁ EXISTE DUAS VEZES — `input/keydown.ts` (`EDGE_BY_ACTION`) e
- * `input/gamepad.ts` (seis `if` dentro de `pollPads`). Ver o bloco de aviso no cabeçalho: as três não
- * concordam sobre o modo Fácil, e a divergência está PRESERVADA de propósito.
- */
-export { EDGE_BY_ACTION as TOUCH_EDGE_BY_ACTION } from './edges.js'; // MESMA tabela dos outros dois caminhos
+/** Action → edge: the ONE table keyboard, pad and touch share (`input/edges`), re-exported under touch's old name. */
+export { EDGE_BY_ACTION as TOUCH_EDGE_BY_ACTION } from './edges.js'; // the SAME table as the other two paths
 
-/** `?touch=1` na URL força os controles de toque a aparecerem no desktop (atalho de teste do José). */
+/** `?touch=1` in the URL forces the touch controls to show on a desktop (the Dev's testing shortcut). */
 const TOUCH_FORCE_RE = /[?&]touch=1/;
 
-/** Predicado do `?touch=1`, isolado para o teste não repetir o regex. */
+/** The `?touch=1` predicate, isolated so the test does not repeat the regex. */
 export function wantsForcedTouch(search: string): boolean {
   return TOUCH_FORCE_RE.test(search || '');
 }
 
 /**
- * Que TECLA este botão de tela finge apertar? A 1ª do esquema do Jogador 1 para aquela ação — 1ª, e não
- * todas, porque só uma precisa entrar em `keys` para o jogo inteiro reagir. Remapear o teclado remapeia o
- * toque junto, de graça: é a mesma tabela.
- * `null` = a ação não existe no esquema (ou o slot do mapa de toque está vazio) → o toque não faz nada.
+ * Which KEY does this screen button's position hold? The 1st in Player 1's scheme for that action — the 1st and not all,
+ * because only one has to enter `keys` for the whole game to react. Remapping the keyboard remaps touch along with it,
+ * for free: it is the same table.
+ * `null` = the action is not in the scheme (or the touch map's slot is empty) → no key, and so no edge.
  */
 export function codeForAction(act: string | undefined | null, controls: KeyScheme): string | null {
   if (!act || !isAction(act)) return null;
@@ -199,27 +164,22 @@ export function codeForAction(act: string | undefined | null, controls: KeySchem
 }
 
 /**
- * As bordas que este toque levanta, e em quem.
+ * The edges this touch raises, and on whom.
  *
- * ⚠️ SEM A GUARDA DO MODO FÁCIL — VERBATIM DO main.js, DEFEITO PRESERVADO.
- * `input/keydown.ts:edgesFor` pula `run` quando `p.easy` ("Fácil: sem correr"); `input/gamepad.ts:pollPads`
- * também (`if (edge('run') && !p.easy)`). Este caminho NÃO pula. Como `runEdge` é o gatilho de grudar/soltar
- * da parede (`game/physics.ts:177` e `:179`), e não a velocidade de corrida, o efeito prático é que no modo
- * Fácil a escalada existe pelo botão da tela e não existe pelo teclado nem pelo controle.
- * NÃO acrescente a guarda aqui sem consertar as três cópias de uma vez — ver o cabeçalho.
+ * WITH THE EASY-MODE GUARD (`edgeAllowed`, from `input/edges`), the same as the keyboard and the pad: `runEdge` is the
+ * trigger that clings to and lets go of a wall, not running speed, so without the guard a child in Easy mode could
+ * climb by the screen button and not by keyboard or pad.
  *
- * ÚNICO DESVIO DE LITERALIDADE, declarado: `p.ctrl[a] || []`. O original alcançava `p.ctrl.jump`/`.run`/
- * `.left`/`.right` DIRETO (e estouraria num esquema sem a ação), enquanto guardava `swap` e `especial` com
- * `&&` — assimetria sem intenção. Trocar um TypeError por um no-op não remove rede de conserto nenhuma; é o
- * mesmo precedente que `input/keydown.ts:edgesFor` já abriu, e está anotado lá pelo mesmo motivo.
+ * `p.ctrl[a] || []` and not a raw `p.ctrl[a]`: a scheme without the action turns a TypeError into a no-op — the same
+ * choice `input/keydown`'s `edgesFor` makes, for the same reason.
  */
 export function touchEdgesFor(act: string, code: string, players: readonly TouchBindPlayer[]): EdgeRaise[] {
   const out: EdgeRaise[] = [];
   players.forEach((p, idx) => {
-    if (!p.ctrl) return; // jogador sem esquema (tela não ativada) não recebe borda
+    if (!p.ctrl) return; // a player with no scheme (screen not activated) gets no edge
     for (const [a, edge] of EDGE_BY_ACTION) {
       if (a !== act) continue;
-      if (!edgeAllowed(a, p.easy)) continue; // Fácil: sem correr (input/edges.ts)
+      if (!edgeAllowed(a, p.easy)) continue; // Easy: no running (input/edges.ts)
       if ((p.ctrl[a] || []).includes(code)) out.push({ playerIndex: idx, edge });
     }
   });
@@ -227,19 +187,20 @@ export function touchEdgesFor(act: string, code: string, players: readonly Touch
 }
 
 /**
- * A DECISÃO. Gesto (ação mapeada + apertar/soltar) + mundo → o que isso significa.
- * `pause` primeiro, porque é o único que não passa pelo teclado sintético. Depois a tecla; sem tecla, nada.
+ * THE DECISION. A gesture (mapped action + press/release) + the world → what it means.
+ * `pause` first, because it is the only one that is not a position. Then the position and its key; without a key, the
+ * press still happens, with no edge.
  */
 export function decideTouch(act: string | undefined | null, on: boolean, s: TouchBindSnapshot): TouchDecision {
-  if (act === 'start') return on ? { kind: 'pause' } : { kind: 'noop' }; // SOLTAR o START não despausa
-  // ⚠️ O SLOT PODE ESTAR VAZIO OU TRAZER UMA STRING QUE NÃO É POSIÇÃO: o valor vem de um `data-` do markup, e desde a
-  // #118 o esquema só aceita as catorze. Aí sim não há nada a apertar — o que mudou é que uma posição VÁLIDA sem tecla
-  // mapeada já não cai aqui.
+  if (act === 'start') return on ? { kind: 'pause' } : { kind: 'noop' }; // RELEASING START does not unpause
+  // ⚠️ THE SLOT MAY BE EMPTY OR CARRY A STRING THAT IS NOT A POSITION: the value comes from a markup `data-`, and since
+  // #118 the scheme only accepts the fourteen. Then there really is nothing to press — a VALID position with no mapped
+  // key does not land here.
   if (!act || !isAction(act)) return { kind: 'noop' };
   if (!on) return { kind: 'release', action: act };
   const code = codeForAction(act, s.controls);
-  // BORDA: só a PRIMEIRA vez que o código entra em `keys`. Se o teclado (ou o outro polegar) já o segurava,
-  // o toque não re-levanta as bordas — mas `hideTips` roda igual, verbatim. Sem tecla não há borda a levantar.
+  // EDGE: only the FIRST time the code enters `keys`. If the keyboard (or the other thumb) already held it, touch does
+  // not raise the edges again — but `hideTips` runs all the same. With no key there is no edge to raise.
   const fresh = !!code && !s.heldKeys.has(code);
   return {
     kind: 'press', action: act, addKey: fresh,
@@ -248,20 +209,20 @@ export function decideTouch(act: string | undefined | null, on: boolean, s: Touc
   };
 }
 
-/* --- geometria do direcional (pura: posição + retângulo → direções) --- */
+/* --- d-pad geometry (pure: position + rectangle → directions) --- */
 
-/** Zona morta da CRUZ: ~18% do LADO a partir do centro, em cada eixo. Ver a nota de `crossDirsAt` sobre o
- *  `width` valer também para o eixo vertical — é verbatim, e é uma assimetria de verdade. */
+/** The CROSS's dead zone: ~18% of the SIDE from the centre, on each axis. See the note on `crossDirsAt` about `width`
+ *  also counting for the vertical axis — it is a real asymmetry. */
 export const CROSS_DEAD_FRACTION = 0.18;
 
 /**
- * Cruz (D-pad): onde o dedo está → quais direções ligam. Miolo neutro para não disparar por encostar no meio.
- * As quatro comparações são INDEPENDENTES: fora do miolo, uma diagonal liga DUAS direções (é o que dá o
- * comportamento de D-pad físico de 8 setores). O centro exato não liga nenhuma.
+ * Cross (D-pad): where the finger is → which directions turn on. A neutral core so brushing the middle does not fire.
+ * The four comparisons are INDEPENDENT: outside the core, a diagonal turns on TWO directions (which gives a physical
+ * 8-sector D-pad's behaviour). The exact centre turns on none.
  *
- * VERBATIM, incluindo a assimetria: a zona morta dos DOIS eixos sai de `rect.width` — a altura nunca entra na
- * conta. Numa cruz quadrada (é o que o CSS `--dpad-span` produz) dá no mesmo; numa cruz achatada, o miolo
- * vertical ficaria proporcionalmente maior ou menor que o horizontal. Anotado, não consertado.
+ * Including the asymmetry: both axes' dead zone comes from `rect.width` — the height never enters. On a square cross
+ * (what the CSS `--dpad-span` produces) it is the same; on a flattened one, the vertical core would be proportionally
+ * larger or smaller than the horizontal. Noted, not fixed.
  */
 export function crossDirsAt(px: number, py: number, rect: RectLike): DirSet {
   const { dx, dy } = fromCentre(px, py, rect);
@@ -270,8 +231,8 @@ export function crossDirsAt(px: number, py: number, rect: RectLike): DirSet {
 }
 
 /**
- * Analógico virtual: mesma regra da cruz, mas a zona morta vem em PX de `input/touch.ts` (derivada dos mm
- * configuráveis — A12e motora), não de uma fração do elemento.
+ * Virtual stick: the cross's rule, but the dead zone comes in PX from `input/touch.ts` (derived from the configurable
+ * mm), not as a fraction of the element.
  */
 export function stickDirsAt(px: number, py: number, rect: RectLike, deadPx: number): DirSet {
   const { dx, dy } = fromCentre(px, py, rect);
@@ -279,9 +240,9 @@ export function stickDirsAt(px: number, py: number, rect: RectLike, deadPx: numb
 }
 
 /**
- * Para onde a manopla do analógico anda (px, relativo ao centro da base): segue o dedo até o limite do curso
- * `travelPx` e ali PARA, mantendo o ângulo (recorte radial, não por eixo — por isso `hypot`, e não `clamp`).
- * O `|| 1` do original evita divisão por zero quando o dedo cai no centro exato.
+ * Where the stick's knob goes (px, relative to the base's centre): it follows the finger up to the `travelPx` limit
+ * and STOPS there, keeping the angle (a radial clip, not per axis — hence `hypot` and not `clamp`).
+ * The `|| 1` avoids a division by zero when the finger lands on the exact centre.
  */
 export function stickKnobOffset(px: number, py: number, rect: RectLike, travelPx: number): { x: number; y: number } {
   const { dx, dy } = fromCentre(px, py, rect);
@@ -290,26 +251,21 @@ export function stickKnobOffset(px: number, py: number, rect: RectLike, travelPx
   return { x: dx * f, y: dy * f };
 }
 
-/* ===================== IMPURO (DOM + ponteiro — via initTouchBindings(ctx)) ===================== */
+/* ===================== IMPURE (DOM + pointer — through initTouchBindings(ctx)) ===================== */
 
-/** Só o que `attach()` precisa da janela. `(e: never)` é o mesmo truque de `input/keydown.ts`: o handler é
- *  convertido no ponto de registro, e o alvo real (window) satisfaz isto de sobra. */
 /**
- * A porta de ESCUTA de eventos, e ela é genérica sobre o mapa de eventos porque é isso que o `window` é.
+ * The event-LISTENING door, generic over the event map because that is what `window` is.
  *
- * ⚠️ ELA DIZIA `fn: (e: never) => void`, E ESTAVA ERRADA — de um jeito que já tinha cobrado duas vezes. Um
- * parâmetro `never` parece dizer "o ouvinte não olha o evento", mas por contravariância ele exige que o
- * ALVO aceite qualquer coisa, e o `window` real declara `ev: any`, que não é atribuível a `never`. O
- * resultado era o pior dos dois lados: um `as (e: never) => void` em CADA registro dentro da engine, e um
- * adaptador de uma linha em CADA consumidor. O `boot/create-game` escrevia esse adaptador (Achado 12) e o
- * `consumer-quiz/main-quiz` registrou por escrito que "a engine pede uma forma de `window` que o `window`
- * não tem".
+ * ⚠️ NOT `fn: (e: never) => void`: a `never` parameter looks like "the listener does not look at the event", but by
+ * contravariance it demands that the TARGET accept anything, and the real `window` declares `ev: any`, which is not
+ * assignable to `never`. That cost a cast at every registration inside the engine and a one-line adapter in every
+ * consumer.
  *
- * Genérica sobre `WindowEventMap`, o `window` a satisfaz DIRETO e cada ouvinte recebe o evento certo:
- * `'keydown'` casa com `KeyboardEvent`, `'pointerdown'` com `PointerEvent`. Sem cast e sem adaptador.
+ * Generic over `WindowEventMap`, `window` satisfies it DIRECTLY and each listener gets the right event: `'keydown'`
+ * matches `KeyboardEvent`, `'pointerdown'` matches `PointerEvent`. No cast and no adapter.
  *
- * `WindowEventMap` é global de `lib.dom`, ligado no `tsconfig` — não há import a fazer, e portanto não há
- * aresta nova de dependência.
+ * `WindowEventMap` is a `lib.dom` global, enabled in `tsconfig` — there is no import to make, and so no new dependency
+ * edge.
  */
 export interface EventTargetLike {
   addEventListener<K extends keyof WindowEventMap>(
@@ -319,107 +275,99 @@ export interface EventTargetLike {
   ): void;
 }
 
-/** Quanto tempo o START segura a ação, quando ela é momentânea (não é `pause`). */
+/** How long START holds the action when it is momentary (not `pause`). */
 export const START_TAP_MS = 140;
 
 export interface TouchBindingsCtx {
-  /** `ui/dom.ts` `$` — injetado; o módulo nunca alcança `document`. */
+  /** `ui/dom.ts` `$` — injected; the module never reaches `document`. */
   $: DomQuery;
-  /** `window`, só para os dois ouvintes globais de "houve um dedo/ponteiro". */
+  /** `window`, only for the two global "there was a finger/pointer" listeners. */
   win: EventTargetLike;
-  /** `location.search` — lido por getter para o teste poder mentir sem mexer na URL. */
+  /** `location.search` — read by getter so the test can lie without touching the URL. */
   getSearch: () => string;
-  /** `kbRuntime.controlsState().controls` (memorizado do lado de lá) — o esquema do J1, lido a cada toque. */
+  /** Player 1's scheme (memoised on the other side), read on every touch. */
   getControls: () => KeyScheme;
-  /** o array vivo de jogadores. Getter: o main.js o repovoa a cada `restartGame`. */
+  /** the live array of players. A getter: the host may repopulate it on a restart. */
   getPlayers: () => readonly TouchBindPlayer[];
   /*
-   * ⚠️ O PAR DE `input/state`, E NÃO O CONJUNTO CRU (ADR-0109). Isto recebia `heldKeys: Set<string>` e
-   * escrevia lá dentro — e era exactamente aí que a origem se perdia: um código posto pelo TOQUE ficava
-   * indistinguível de um posto pelo teclado, e a alternância, que é uma propriedade do APARELHO, não tinha
-   * como se resolver. A issue #114 §C mediu essa erasão e ficou dois meses por construir por causa dela.
+   * ⚠️ THIS MODULE NEVER WRITES `keys` (ADR-0109): a code put there by TOUCH would be indistinguishable from one put by
+   * the keyboard, and the latch, which is a property of the DEVICE, could not be resolved (issue #114 §C). Writing goes
+   * through `press`/`release`, which stamp the source; reading goes through `heldKeys`.
    *
-   * 📌 Recebido e não importado, pela razão de sempre neste módulo: um consumidor pode montar o toque sem o
-   * estado global da engine (um teste, um segundo consumidor), e o par é o que ele injecta.
+   * 📌 Received and not imported: a consumer can mount touch without the engine's global state (a test, a second
+   * consumer), and these doors are what it injects.
    */
   /**
-   * A PORTA ÚNICA PARA O CARTUCHO (ADR-0223): apertar uma POSIÇÃO. Responde se a pressão chegou ao JOGO — `false` quer
-   * dizer que um menu a levou.
+   * THE SINGLE DOOR TO THE CARTRIDGE (ADR-0223): press a POSITION. Answers whether the press reached the GAME — `false`
+   * means a menu took it.
    *
-   * 🔴 SUBSTITUI O `markKey` E O PAR `emMenu`/`teclaDeMenu`, e os três eram a mesma decisão escrita aqui uma segunda
-   * vez. O que o controle faz é o que já fazia pelos olhos e pela voz, e é o que o ADR-0111 decidiu: com um menu aberto
-   * a posição vira a tecla do menu, no jogo segura a tecla da criança E entrega o comando ao cartucho.
+   * 🔴 One decision, taken once: what the controller does for touch is what it does for the eyes and the voice, as
+   * ADR-0111 decided — with a menu open the position becomes the menu's key, in play it holds the child's key AND
+   * delivers the command to the cartridge. A second copy of that decision here is how the two doors once came to
+   * disagree.
    *
-   * 📏 O preço de não ser assim estava medido: a escuta de janela da raiz exclui a origem `toque`, então um cartucho
-   * que ouve `onCommand` — o quiz é um — não respondia ao dedo.
-   *
-   * 📌 SEM ASSENTO, e a ausência é a afirmação: o multiplayer desta engine é em telas SEPARADAS (pilar 7), logo um
-   * aparelho com pad tem UM dedo e UM assento — o do controle. Uma assinatura que aceitasse assento ofereceria uma
-   * capacidade que este transporte não tem, e ninguém poderia exercê-la para a provar.
+   * 📌 NO SEAT, and the absence is the statement: this engine's multiplayer is on SEPARATE screens (pillar 7), so a
+   * device with a pad has ONE finger and ONE seat. A signature accepting a seat would offer a capability this transport
+   * does not have, and nobody could exercise it to prove it.
    */
   press: (action: Action, source: TransportName) => boolean;
-  /** Soltar a POSIÇÃO. O controle solta a tecla que segurou e entrega a soltura — e só para uma pressão que o jogo ouviu. */
+  /** Release the POSITION. The controller lets go of the key it held and delivers the release — only for a press the game heard. */
   release: (action: Action, source: TransportName) => void;
   /**
-   * ESTA ARESTA É DESTE JOGADOR, E VEIO DO TOQUE (ADR-0113 cláusula 4, issue #127) —
-   * `input/state.playerEdge`.
+   * THIS EDGE IS THIS PLAYER'S, AND IT CAME FROM TOUCH (ADR-0113 clause 4, issue #127) — `input/state.playerEdge`.
    *
-   * 🔴 OBRIGATÓRIO, e é aqui que a troca de aparelho fica VISÍVEL: o toque é o transporte que a criança usa
-   * ao lado do teclado, e sem esta linha o autómato responde `teclado` mesmo com o dedo no ecrã — logo a
-   * alternância lida seria a do teclado, no aparelho errado. 📌 O `onTouchControlsShown` do cartucho
-   * (`main.ts:1695`) é o remendo que existe hoje exactamente para compensar esta falta.
+   * 🔴 REQUIRED, and it is where the device switch becomes VISIBLE: touch is the transport the child uses beside the
+   * keyboard, and without this line the automaton answers `teclado` even with the finger on the screen — so the latch
+   * read would be the keyboard's, on the wrong device.
    */
   playerEdge: (player: number, source: TransportName) => void;
   /**
-   * O conjunto para LER — a decisão pura pergunta que teclas já estão seguradas.
+   * The set for READING — the pure decision asks which keys are already held.
    *
-   * ⚠️ `ReadonlySet` e não `Set`, e a diferença é a razão de este par existir: LER o conjunto nunca foi o
-   * problema; ESCREVER nele é que apagava a origem. O tipo passa a dizer isso, e uma escrita crua que
-   * voltasse aqui deixa de compilar em vez de passar despercebida.
+   * ⚠️ `ReadonlySet` and not `Set`: READING the set was never the problem; WRITING into it is what erased the source.
+   * The type says so, and a raw write coming back here stops compiling instead of slipping by.
    */
   readonly heldKeys: ReadonlySet<string>;
-  /** `game/attract.ts`: zera a ociosidade e encerra a demo; `true` = o toque foi só para acordar.
-   *  LAZY obrigatoriamente — `attractCtl` é `const` declarado ABAIXO do ponto de init no main.js. */
+  /** The demo: resets idleness and ends the demo; `true` = the touch was only to wake it up. A function, called when a
+   *  touch happens, because the demo may be built after this module. */
   attractOnInput: () => boolean;
-  /** `input/touch.ts`: o toque REVELA os botões (o `hideTouchControls` é do keydown, não daqui). */
+  /** `input/touch.ts`: touch REVEALS the buttons (`hideTouchControls` belongs to whoever sees the keyboard take over). */
   showTouchControls: () => void;
-  /** main.js: hoje um stub vazio (as dicas de início saíram em 2026-07-04); o call-site é mantido verbatim. */
+  /** Hides the host's start tips on a jump; the root has none and passes a no-op. */
   hideTips: () => void;
   togglePause: () => void;
-  /** A pílula SELECT abre os menus da pausa (ADR-0155). Ausente, a pílula não faz nada — só a raiz que a desenha a liga. */
+  /** The SELECT pill opens the pause menus (ADR-0155). Absent, the pill does nothing — only the root that draws it wires it. */
   openMenus?: () => void;
-  /** `input/touch.ts:getTouchMap()` — slot → ação, remapeável. Lido A CADA evento, verbatim: remapear no
-   *  painel passa a valer no toque seguinte, sem re-amarrar ouvinte nenhum. */
+  /** `input/touch.ts:getTouchMap()` — slot → action, remappable. Read ON EVERY event: a remap in the panel counts on the
+   *  next touch, without rewiring any listener. */
   getTouchMap: () => Record<string, string>;
-  /** A ação do slot `start`. VER O RELATO DA EXTRAÇÃO: no main.js a linha original é `touchMap.start`, e
-   *  `touchMap` NÃO EXISTE naquele escopo — o botão START da tela está quebrado hoje. Este campo é o ponto
-   *  exato onde esse defeito vive, isolado para poder ser consertado (ou não) numa linha só, com decisão. */
+  /** The action of the `start` slot — the root reads it from the live touch map. */
   getStartAction: () => string | undefined;
-  /** `input/touch.ts`: curso e zona morta do analógico, em px, recalculados a cada `applyPadPhysical()`. */
+  /** `input/touch.ts`: the stick's travel and dead zone, in px, recomputed on every `applyPadPhysical()`. */
   getStickTravelPx: () => number;
   getStickDeadPx: () => number;
-  /** `setTimeout` — injetável só para o teste do START não esperar 140 ms de relógio. */
+  /** `setTimeout` — injectable only so the START test does not wait 140 ms of clock. */
   defer?: (fn: () => void, ms: number) => void;
 }
 
 export interface TouchBindingsApi {
-  /** A decisão pura, já com o mundo de agora. Exposta para o teste comparar sem aplicar. */
+  /** The pure decision, with the world of now. Exposed so the test can compare without applying. */
   decide: (act: string | undefined, on: boolean) => TouchDecision;
-  /** O despacho inteiro: decide e carimba no mundo. É o `doTouch` do main.js. */
+  /** The whole dispatch: decides and stamps it on the world. */
   doTouch: (act: string | undefined, on: boolean) => void;
-  /** O que o botão START faz num clique (pausar, ou apertar-e-soltar depois de `START_TAP_MS`). */
+  /** What the START button does on a click (pause, or press-and-release after `START_TAP_MS`). */
   pressStart: () => void;
-  /** `window.__incl.showTouch` — revela os botões à força, para teste em desktop. */
+  /** Reveals the buttons by force, for testing on a desktop. */
   revealForTests: () => void;
-  /** Amarra tudo: os dois ouvintes globais, os `.touch-btn`, o START, o analógico e a cruz. */
+  /** Wires everything: the two global listeners, the `.touch-btn`s, START, the stick and the cross. */
   attach: () => void;
   /**
-   * Amarra SÓ o que está dentro de `#touch-controls` — botões, START, analógico, cruz —, sem os ouvintes da
-   * janela. É o que se chama depois de o pad ser REDESENHADO (um `mount()` de outro cartucho, ADR-0142).
+   * Wires ONLY what is inside `#touch-controls` — buttons, START, stick, cross —, without the window listeners. It is
+   * what gets called after the pad is REDRAWN (another cartridge's `mount()`, ADR-0142).
    *
-   * ⚠️ EXISTE PORQUE `attach()` DUAS VEZES ACUMULA OUVINTES NA JANELA: um hub que monta dez cartuchos ficaria
-   * com vinte ouvintes de `pointerdown`. Os nós do pad são novos a cada desenho, e os ouvintes deles morrem
-   * com os nós antigos; os da janela, não.
+   * ⚠️ IT EXISTS BECAUSE `attach()` TWICE PILES LISTENERS ON THE WINDOW: a hub mounting ten cartridges would end up with
+   * twenty `pointerdown` listeners. The pad's nodes are new on every drawing, and their listeners die with the old
+   * nodes; the window's do not.
    */
   rewire: () => void;
 }
@@ -435,34 +383,33 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
     return decideTouch(act, on, snapshot());
   }
 
-  /** A metade IMPURA: pega a decisão pronta e a carimba no mundo. Ordem verbatim: a tecla entra em `keys`
-   *  ANTES das bordas, e `hideTips` vem depois de tudo. */
+  /** The IMPURE half: takes the ready decision and stamps it on the world. The press first, then the edges, and
+   *  `hideTips` after everything. */
   function apply(d: TouchDecision): void {
     if (d.kind === 'noop') return;
     if (d.kind === 'pause') { ctx.togglePause(); return; }
     if (d.kind === 'release') { ctx.release(d.action, 'toque'); return; }
     /*
-     * 🔴 O TOQUE APERTA O CONTROLE VIRTUAL (ADR-0223). Era ele que decidia aqui o que a pressão significa — ir ao menu,
-     * marcar a tecla, entregar nada — e essa é exactamente a decisão que o `input/virtual-controller` existe para tomar
-     * UMA vez. O que ele faz agora é o que já fazia pelos olhos e pela voz: com um menu aberto a posição vira a tecla do
-     * menu (ADR-0157), no jogo segura a tecla da criança E entrega o comando ao cartucho.
+     * 🔴 TOUCH PRESSES THE VIRTUAL CONTROLLER (ADR-0223). What a press means — going to the menu, holding the key,
+     * delivering nothing — is exactly the decision `input/virtual-controller` exists to take ONCE: with a menu open the
+     * position becomes the menu's key (ADR-0157), in play it holds the child's key AND delivers the command.
      *
-     * 📌 A RESPOSTA DELE É O QUE DIZ SE HOUVE JOGO. A pergunta «há um menu aberto?» tinha duas respostas — a dele e o
-     * `emMenu()` daqui — e duas respostas para uma pergunta é como as duas portas vieram a discordar. Agora há uma.
+     * 📌 ITS ANSWER IS WHAT SAYS THERE WAS PLAY. The question "is a menu open?" has one answer, the controller's — two
+     * answers to one question is how the two doors once came to disagree.
      *
-     * ⚠️ `'toque'` continua a ser o carimbo, e é a regra 2 do ADR-0109 a manter-se executável: é ESTE transporte cuja
-     * alternância liga, e é o controle quem o leva à tecla e ao comando.
+     * ⚠️ `'toque'` is the stamp, and it is ADR-0109's rule 2 kept executable: it is THIS transport whose latch turns on,
+     * and the controller is what carries it to the key and the command.
      */
-    if (!ctx.press(d.action, 'toque')) return; // um menu levou a pressão: não há borda nem dica a mexer
+    if (!ctx.press(d.action, 'toque')) return; // a menu took the press: no edge and no tip to touch
     if (d.addKey) {
       const players = ctx.getPlayers();
       for (const { playerIndex, edge } of d.edges) {
         const p = players[playerIndex];
-        // 📌 A ARESTA POR JOGADOR, ao lado da borda que ela levanta — e não uma vez por toque: o mesmo código
-        // pode pertencer a mais de um assento (`d.edges` é construído com `includes` sobre o esquema de cada
-        // um), e o transporte em uso é uma pergunta POR CRIANÇA. Marcar só o jogador 0 daria a alternância do
-        // primeiro assento a quem joga no segundo. (The guard on `p` is defensive: `d.edges` comes from the same
-        // frame's players, so an index without one does not happen today.)
+        // 📌 THE EDGE PER PLAYER, beside the flag it raises — and not once per touch: the same code may belong to more
+        // than one seat (`d.edges` is built with `includes` over each one's scheme), and the transport in use is a
+        // question PER CHILD. Marking only player 0 would give the first seat's latch to whoever plays in the second.
+        // (The guard on `p` is defensive: `d.edges` comes from the same frame's players, so an index without one does
+        // not happen today.)
         if (p) { p[edge] = true; ctx.playerEdge(playerIndex, 'toque'); }
       }
     }
@@ -475,7 +422,7 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
     const a = ctx.getStartAction();
     if (a === 'start') { ctx.togglePause(); return; }
     doTouch(a, true);
-    later(() => doTouch(a, false), START_TAP_MS); // ação momentânea: aperta e solta sozinho
+    later(() => doTouch(a, false), START_TAP_MS); // a momentary action: press and release by itself
   }
 
   function revealForTests(): void {
@@ -483,8 +430,8 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
     if (tc) tc.hidden = false;
   }
 
-  /** Direcional (analógico ou cruz): um só padrão — estado por direção, só despacha na MUDANÇA. Sem isso,
-   *  arrastar o polegar dentro do mesmo quadrante re-levantaria a borda a cada `pointermove`. */
+  /** The d-pad (stick or cross): one pattern — state per direction, dispatched only on a CHANGE. Without it, dragging
+   *  the thumb inside the same quadrant would raise the edge again on every `pointermove`. */
   function makeDirGate(onChange: (dir: keyof DirSet, on: boolean) => void): {
     set: (dir: keyof DirSet, on: boolean) => void;
     apply: (dirs: DirSet) => void;
@@ -503,24 +450,24 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
     };
   }
 
-  /* --- os .touch-btn do losango --- */
+  /* --- the diamond's .touch-btn buttons --- */
   function wireButtons(tc: HTMLElement): void {
     tc.querySelectorAll<HTMLElement>('.touch-btn').forEach((b) => {
-      const slot = 'b' + (b.dataset.btn || ''); // a função vem do touchMap (remapeável), não do data-act
+      const slot = 'b' + (b.dataset.btn || ''); // the function comes from the (remappable) touchMap, not from a data attribute
       const down = (e: PointerLike): void => { e.preventDefault(); doTouch(ctx.getTouchMap()[slot], true); };
       const up = (e: PointerLike): void => { e.preventDefault(); doTouch(ctx.getTouchMap()[slot], false); };
       b.addEventListener('pointerdown', down);
       b.addEventListener('pointerup', up);
-      b.addEventListener('pointerleave', up);   // o dedo escorregou para fora: conta como soltar
+      b.addEventListener('pointerleave', up);   // the finger slid off: counts as a release
       b.addEventListener('pointercancel', up);
-      b.addEventListener('contextmenu', (e: Event) => e.preventDefault()); // segurar não abre menu do sistema
+      b.addEventListener('contextmenu', (e: Event) => e.preventDefault()); // holding does not open the system menu
     });
   }
 
   /**
-   * Analógico e cruz compartilham TODO o ciclo de vida do ponteiro (captura, um dedo por vez, soltar/cancelar,
-   * perder a captura). O que muda é só a conta de direção e o retorno visual — por isso os dois entram aqui e
-   * a diferença vira dois callbacks.
+   * Stick and cross share the WHOLE pointer lifecycle (capture, one finger at a time, release/cancel, losing the
+   * capture). Only the direction arithmetic and the visual feedback differ — so both come in here and the difference
+   * becomes two callbacks.
    */
   function wirePointerPad(
     el: HTMLElement,
@@ -531,7 +478,7 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
   ): void {
     let pid: number | null = null;
     const gate = makeDirGate((dir, on) => {
-      doTouch(ctx.getTouchMap()[dir], on); // direção FÍSICA → função mapeada (a cruz também é remapeável)
+      doTouch(ctx.getTouchMap()[dir], on); // PHYSICAL direction → mapped function (the cross is remappable too)
       if (onDirVisual) onDirVisual(dir, on);
     });
     const at = (px: number, py: number): void => {
@@ -544,29 +491,29 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
       e.preventDefault();
       const id = e.pointerId;
       pid = id;
-      // captura: o dedo pode sair do elemento sem que o gesto acabe (é o que faz um direcional ser usável)
-      try { el.setPointerCapture(id); } catch { /* sem captura de ponteiro: o gesto ainda funciona por cima do elemento */ }
+      // capture: the finger can leave the element without ending the gesture (it is what makes a d-pad usable)
+      try { el.setPointerCapture(id); } catch { /* no pointer capture: the gesture still works over the element */ }
       at(e.clientX, e.clientY);
     });
     el.addEventListener('pointermove', (e: PointerLike) => {
-      if (pid !== e.pointerId) return; // um dedo por vez: o segundo ponteiro é ignorado, não disputa
+      if (pid !== e.pointerId) return; // one finger at a time: the second pointer is ignored, not contested
       e.preventDefault();
       at(e.clientX, e.clientY);
     });
     const end = (e: PointerLike): void => { if (pid !== e.pointerId) return; e.preventDefault(); reset(); };
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
-    el.addEventListener('lostpointercapture', reset); // rede: perdeu a captura = solta tudo (nada fica preso)
+    el.addEventListener('lostpointercapture', reset); // a net: capture lost = release everything (nothing stays stuck)
     el.addEventListener('contextmenu', (e: Event) => e.preventDefault());
   }
 
   function attach(): void {
     const tc = ctx.$<HTMLElement>('#touch-controls');
-    if (!tc) return; // sem os botões no documento, não há o que amarrar (guarda do IIFE original)
+    if (!tc) return; // without the buttons in the document there is nothing to wire
 
-    // alternância por modalidade: toque/clique MOSTRA; teclado/controle OCULTA (lá no keydown/gamepad).
+    // switching by modality: a touch/click SHOWS; the keyboard/pad HIDES (over there).
     if (wantsForcedTouch(ctx.getSearch())) ctx.showTouchControls();
-    const onPointerDown = (): void => { if (ctx.attractOnInput()) return; ctx.showTouchControls(); }; // toque revela (e encerra a demo)
+    const onPointerDown = (): void => { if (ctx.attractOnInput()) return; ctx.showTouchControls(); }; // touch reveals (and ends the demo)
     const onTouchStart = (): void => { ctx.showTouchControls(); };
     ctx.win.addEventListener('pointerdown', onPointerDown, true);
     ctx.win.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
@@ -584,13 +531,13 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
     const selectBtn = ctx.$<HTMLElement>('#touch-select');
     if (selectBtn) selectBtn.addEventListener('click', () => ctx.openMenus?.());
 
-    // analógico: base (círculo grande) + manopla que desliza para a direção tocada
+    // stick: a base (the large circle) + a knob that slides toward the touched direction
     const stick = ctx.$<HTMLElement>('#touch-stick');
     const knob = stick && stick.querySelector<HTMLElement>('.touch-knob');
     if (stick && knob) {
       wirePointerPad(
         stick,
-        (px, py, rect) => stickDirsAt(px, py, rect, ctx.getStickDeadPx()), // px/mm relidos a cada movimento
+        (px, py, rect) => stickDirsAt(px, py, rect, ctx.getStickDeadPx()), // px/mm reread on every move
         (px, py, rect) => {
           const o = stickKnobOffset(px, py, rect, ctx.getStickTravelPx());
           knob.style.transform = `translate(${o.x}px,${o.y}px)`;
@@ -600,7 +547,7 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
       );
     }
 
-    // cruz (estilo alternativo ao analógico): superfície dividida por hit-test, com miolo neutro
+    // cross (the alternative to the stick): a surface split by hit-test, with a neutral core
     const cross = ctx.$<HTMLElement>('#touch-cross');
     if (cross) {
       const arms: Record<keyof DirSet, HTMLElement | null> = {
