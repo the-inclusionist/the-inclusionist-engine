@@ -1,72 +1,56 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/default-bindings — O QUE CADA TRANSPORTE OFERECE, POR PADRÃO, PARA CADA UMA DAS QUATORZE AÇÕES.
+// input/default-bindings — WHAT EACH TRANSPORT OFFERS, BY DEFAULT, FOR EACH OF THE FOURTEEN ACTIONS.
 //
-// ========================= O QUE ISTO É, E ONDE ELE MORA DE PROPÓSITO =========================
-// O ADR-0085 decidiu as quatorze POSIÇÕES (`core/actions.ts`) e disse, em tantas palavras, que os nomes
-// físicos — L1, R2, X, A — são BINDING e vivem no transporte, não no vocabulário. Este é o ficheiro onde eles
-// vivem. Um transporte novo (fala, olhar, toque) traz a sua tabela e não toca em `core/actions`.
+// ========================= WHAT THIS IS, AND WHY IT LIVES WHERE IT DOES =========================
+// ADR-0085 decided the fourteen POSITIONS (`core/actions.ts`) and said, in so many words, that the physical
+// names — L1, R2, X, A — are BINDINGS and live in the transport, not in the vocabulary. This is the file where
+// they live. A new transport (speech, gaze, touch) brings its own table and does not touch `core/actions`.
 //
-// ✅ AS TRÊS ESTÃO LIGADAS, e esta nota já mentiu duas vezes — cada versão dela era verdade no dia em que foi
-// escrita e deixou de ser sem ninguém a corrigir. A primeira dizia «NADA AQUI ESTÁ LIGADO AINDA» (morreu com a
-// issue #103, 06/09); a segunda dizia que só o gamepad estava, e morreu com a issue #118, que uniu as duas
-// tabelas de teclado. 📏 Medido em 2026-09-09:
+// ✅ ALL THREE ARE WIRED:
 //
-//   · `GAMEPAD_STANDARD` — `input/gamepad.ts:129` lê os índices desta tabela em vez de literais, e a ligação
-//     apanhou uma discordância real: `action1` corria em X, R1 e R2 enquanto a tabela declarava R1 e R2 como
-//     ombro e gatilho.
-//   · `KEYBOARD_SOLO` / `KEYBOARD_DUO` — `input/keyboard.ts:73` constrói o `KB_DEFAULTS` a partir delas
-//     (`vivo(KEYBOARD_SOLO)` e `KEYBOARD_DUO.map(vivo)`). Deixaram de ser duas listas paralelas: são a MESMA
-//     decisão, derivada, e por isso a divergência de antes não pode voltar por esquecimento.
+//   · `GAMEPAD_STANDARD` — `input/pad-reading` reads this table's indices instead of literals (and
+//     `input/pad-defaults` lays the game's mapping over it). Wiring it caught a real disagreement: `action1` ran
+//     on X, R1 and R2 while the table declared R1 and R2 as shoulder and trigger.
+//   · `KEYBOARD_SOLO` / `KEYBOARD_DUO` — `input/keyboard` builds `KB_DEFAULTS` from them (`mutableCopy`). They
+//     stopped being two parallel lists: they are the SAME decision, derived, so the old divergence cannot come
+//     back by forgetting.
 //
-// ⚠️ E A DERIVAÇÃO É POR CÓPIA PROFUNDA (`vivo` faz JSON round-trip), em DUAS camadas — verificado antes de
-// escrito, porque a primeira versão desta linha dizia mais do que é verdade. `input/keyboard.ts` copia estas
-// tabelas para o `KB_DEFAULTS`, e copia OUTRA VEZ para o `kb` mutável. O remapeamento da criança muta o `kb`
-// («remapear uma tecla MUTA o objeto», diz o `setKB`), logo ele já não alcançaria isto nem sem a primeira
-// cópia. O que a primeira camada compra é o resto: `KB_DEFAULTS` é exportado, e sem ela qualquer consumidor
-// que lhe escrevesse dentro alterava o padrão de fábrica desta tabela para toda a gente.
+// ⚠️ AND THE DERIVATION IS BY DEEP COPY (`mutableCopy` is a JSON round-trip), in TWO layers. `input/keyboard`
+// copies these tables into `KB_DEFAULTS`, and copies AGAIN into the mutable `kb`. The child's remapping mutates
+// `kb` ("remapping one key MUTATES the object", says `setKB`), so it would not reach this even without the first
+// copy. What the first layer buys is the rest: `KB_DEFAULTS` is exported, and without it any consumer writing
+// into it would change this table's factory default for everyone.
 //
-// 📌 A LIÇÃO QUE ESTA NOTA CARREGA AGORA É SOBRE SI PRÓPRIA: um comentário que descreve estado de ligação
-// apodrece a cada entrega. Este diz a DATA da medição, para que a próxima pessoa saiba contra o que a
-// comparar em vez de acreditar.
+// ========================= THE KEYBOARD'S SYMMETRY, WHICH IS NOT DECORATION =========================
+// The default the Dev specified rests on a block of the QWERTY:
 //
-// ========================= A SIMETRIA DO TECLADO, QUE NÃO É DECORAÇÃO =========================
-// O padrão que o Dev especificou apoia-se num bloco do QWERTY:
-//
-//        7  8          ← L1 sobre U, R1 sobre I
-//     Y  U  I  O       ← L2 à esquerda de U, R2 à direita de I
+//        7  8          ← L1 over U, R1 over I
+//     Y  U  I  O       ← L2 left of U, R2 right of I
 //     H  J  K  L
 //
-// ⚠️ E O MAPEAMENTO TECLADO↔XBOX É UMA ROTAÇÃO DE 45°, consistente nos quatro: X(oeste)→U(noroeste),
-// Y(norte)→I(nordeste), B(leste)→K(sudeste), A(sul)→J(sudoeste). O losango do controle pousa no quadrado
-// `U I / J K` girando um oitavo de volta. É por isso que a tabela cai bem no dedo: o que a memória muscular
-// guarda é a POSIÇÃO RELATIVA, não a letra.
+// ⚠️ AND THE KEYBOARD↔XBOX MAPPING IS A 45° ROTATION, consistent across all four: X(west)→U(northwest),
+// Y(north)→I(northeast), B(east)→K(southeast), A(south)→J(southwest). The pad's diamond lands on the `U I / J K`
+// square by turning an eighth. That is why the table sits well under the finger: what muscle memory keeps is the
+// RELATIVE POSITION, not the letter.
 //
-// ⚠️ E FOI ESSA SIMETRIA QUE DENUNCIOU UM ERRO NA ESPECIFICAÇÃO. Ela chegou com `I` atribuído DUAS vezes —
-// para `action4` e para R2 —, e o par simétrico de `Y` (à esquerda de U) é `O` (à direita de I). Adotado `O`.
-// O gate deste ficheiro reprova tecla repetida, então o erro não teria passado de qualquer forma; o que a
-// simetria deu foi a tecla CERTA em vez de só a notícia de que havia uma errada.
+// ⚠️ AND IT WAS THAT SYMMETRY THAT EXPOSED AN ERROR IN THE SPECIFICATION. It arrived with `I` assigned TWICE —
+// to `action4` and to R2 —, and the symmetric pair of `Y` (left of U) is `O` (right of I). `O` was adopted. This
+// file's gate fails a repeated key, so the error would not have passed anyway; what the symmetry gave was the
+// RIGHT key instead of only the news that one was wrong.
 
 import { ACTIONS, type Action } from '../core/actions.js';
 
-/** `null` = este transporte NÃO alcança esta ação por padrão. Ausência declarada, nunca esquecimento. */
+/** `null` = this transport does NOT reach this action by default. A declared absence, never an oversight. */
 export type Binding<T> = T | null;
 
-// ⚠️ A `Space` ESTÁ EM `action2`, E ISTO É A HISTÓRIA DE COMO LÁ FOI PARAR — porque este bloco dizia o
-// contrário e sobreviveu à decisão que o revogou.
-//
-// Ela ficou de fora da primeira versão desta tabela, e a razão estava certa: a barra é o segundo atalho do
-// pulo desde sempre, a especificação do padrão não a mencionava, e pô-la em `action2` por conta própria
-// seria decidir que o pulo mora ali. Se o preset da plataforma puser o pulo noutra posição, a barra segue o
-// verbo errado — pior do que ela não existir.
-//
-// O Dev decidiu (ADR-0086 §2) que o pulo mora em `action2`, e a barra voltou. O texto acima continuou a
-// dizer «fica de fora» durante todo esse tempo, ao lado de duas linhas que a declaram. Corrigido em
-// 2026-09-07, na mesma passagem da issue #118 — que trata exactamente desta classe de erro: um comentário
-// que descreve um estado que já passou.
+// ⚠️ `Space` IS ON `action2` because ADR-0086 §2 put jump there. It was left out of the first version of this
+// table, and for a sound reason at the time: the bar has been jump's second shortcut forever, the specification
+// did not mention it, and putting it on `action2` unasked would have decided where jump lives. Once the Dev
+// decided that (ADR-0086 §2), the bar came back.
 
 /**
- * Teclado, esquema SOLO. Códigos de `KeyboardEvent.code` — físicos, não a letra impressa, que muda com o
- * layout ABNT2/US e é a razão de nunca se usar `key` aqui.
+ * Keyboard, SOLO scheme. `KeyboardEvent.code` codes — physical, not the printed letter, which changes with the
+ * ABNT2/US layout and is the reason `key` is never used here.
  */
 export const KEYBOARD_SOLO: Readonly<Record<Action, Binding<readonly string[]>>> = {
   up: ['KeyW', 'ArrowUp'],
@@ -80,47 +64,46 @@ export const KEYBOARD_SOLO: Readonly<Record<Action, Binding<readonly string[]>>>
   leftShoulder: ['Digit7'],  // L1
   leftTrigger: ['KeyY'],    // L2
   rightShoulder: ['Digit8'],  // R1
-  rightTrigger: ['KeyO'],    // R2 — ver a nota da simetria acima
-  // ⚠️ E ESTAS DUAS FECHAM UMA DÍVIDA QUE O ADR-0074 §1 REGISTROU: `start` existia em dois transportes de
-  // nove e faltava no teclado. Deixa de faltar. A simetria é de MÃO: `F` fica ao lado do polegar da mão que
-  // se move (o bloco WASD), `H` ao lado da mão que age (o bloco UIJK).
-  // `Enter` acompanha `H` porque JÁ pausava — `input/keydown.ts:240` tem `PAUSE_KEYS = {Escape, Enter}` —,
-  // então declará-lo aqui descreve o que a tecla faz há muito, em vez de lhe dar um trabalho novo.
+  rightTrigger: ['KeyO'],    // R2 — see the symmetry note above
+  // ⚠️ AND THESE TWO CLOSE A DEBT ADR-0074 §1 RECORDED: `start` existed in two transports of nine and was missing
+  // from the keyboard. It is no longer missing. The symmetry is one of HANDS: `F` sits by the thumb of the hand that
+  // moves (the WASD block), `H` by the hand that acts (the UIJK block).
+  // `Enter` goes with `H` because it ALREADY paused — `input/keydown` has `PAUSE_KEYS = {Escape, Enter}` —, so
+  // declaring it here describes what the key has long done instead of giving it a new job.
   start: ['KeyH', 'Enter'],
   select: ['KeyF'],
 };
 
 /**
- * Teclado, esquema de DOIS JOGADORES — as quatorze posições para cada um (ADR-0096).
+ * Keyboard, TWO-PLAYER scheme — the fourteen positions for each (ADR-0096).
  *
- * ⚠️ O JOGADOR 1 AQUI NÃO É O `KEYBOARD_SOLO`, e a diferença é UMA e obrigatória: as SETAS saem dele. No solo
- * elas são um segundo caminho para o direcional; em dupla são o direcional DO OUTRO. Deixá-las nos dois faria
- * os dois bonecos andarem juntos — um defeito que não dá erro em lado nenhum e que só se vê jogando a dois.
- * `conflictsBetweenTables` existe por causa desta linha.
+ * ⚠️ PLAYER 1 HERE IS NOT `KEYBOARD_SOLO`, and the difference is ONE and mandatory: the ARROWS leave it. In solo
+ * they are a second path for the d-pad; in duo they are the OTHER player's d-pad. Leaving them in both would make
+ * the two characters walk together — a defect that raises no error anywhere and only shows when playing as two.
+ * `conflictsBetweenTables` exists because of this line.
  *
- * ⚠️ E A GEOMETRIA DO JOGADOR 2 É A MESMA DO JOGADOR 1, TRANSPOSTA PARA O TECLADO NUMÉRICO — o que faz a
- * memória muscular atravessar de um lado da mesa para o outro:
+ * ⚠️ AND PLAYER 2'S GEOMETRY IS PLAYER 1'S, MOVED TO THE NUMERIC KEYPAD — which is what carries muscle memory from
+ * one side of the table to the other:
  *
- *        7  8            /  *          ombros na linha DE CIMA
- *     Y  U  I  O      7  8  9  +       gatilhos nas PONTAS da linha das ações
+ *        7  8            /  *          shoulders on the TOP row
+ *     Y  U  I  O      7  8  9  +       triggers at the ENDS of the action row
  *        J  K            5  6
  *
- *   action1 U ↔ Numpad8 (cima-esquerda)   action4 I ↔ Numpad9 (cima-direita)
- *   action2 J ↔ Numpad5 (baixo-esquerda)  action3 K ↔ Numpad6 (baixo-direita)
+ *   action1 U ↔ Numpad8 (top-left)      action4 I ↔ Numpad9 (top-right)
+ *   action2 J ↔ Numpad5 (bottom-left)   action3 K ↔ Numpad6 (bottom-right)
  *
- * O bloco `U I / J K` e o bloco `8 9 / 5 6` têm a MESMA forma, então a rotação de 45° que o cabeçalho deste
- * ficheiro descreve para o Xbox vale igual para o jogador 2. Não é coincidência de teclado: é o que torna o
- * padrão ensinável uma vez só.
+ * The `U I / J K` block and the `8 9 / 5 6` block have the SAME shape, so the 45° rotation this file's header
+ * describes for the Xbox holds for player 2 as well. It is not a keyboard coincidence: it is what makes the default
+ * teachable once.
  *
- * ⚠️ `Digit7`/`Digit8` (jogador 1) e `Numpad7` (jogador 2) SÃO TECLAS DIFERENTES, e é por isso que a
- * especificação do Dev diz «alphanumeric» e «numeric» em tantas palavras. `KeyboardEvent.code` distingue-as
- * sempre; `key` não — com Num Lock desligado o numérico chega como `ArrowUp`/`Home`, e um esquema lido por
- * `key` juntaria o direcional do jogador 2 com as ações dele. Mais uma razão de este ficheiro só falar
- * `code`.
+ * ⚠️ `Digit7`/`Digit8` (player 1) and `Numpad7` (player 2) ARE DIFFERENT KEYS, which is why the Dev's specification
+ * says «alphanumeric» and «numeric» in so many words. `KeyboardEvent.code` always tells them apart; `key` does not —
+ * with Num Lock off the keypad arrives as `ArrowUp`/`Home`, and a scheme read by `key` would merge player 2's d-pad
+ * with their actions. One more reason this file only speaks `code`.
  */
 export const KEYBOARD_DUO: readonly Readonly<Record<Action, Binding<readonly string[]>>>[] = Object.freeze([
   {
-    // JOGADOR 1 — a mão esquerda anda (WASD), a direita age (UIJK). Sem as setas: são do jogador 2.
+    // PLAYER 1 — the left hand moves (WASD), the right acts (UIJK). No arrows: they are player 2's.
     up: ['KeyW'],
     down: ['KeyS'],
     left: ['KeyA'],
@@ -137,9 +120,9 @@ export const KEYBOARD_DUO: readonly Readonly<Record<Action, Binding<readonly str
     select: ['KeyF'],
   },
   {
-    // JOGADOR 2 — as setas andam, o teclado numérico age. `Enter` fica com o jogador 1; o `NumpadEnter` não
-    // entra aqui de propósito, porque `ui/menu-nav` já o usa como CONFIRMAR em qualquer menu (KEY_YES) e
-    // `input/keydown` registra, verbatim, que ele NÃO pausa. Dar-lhe um terceiro trabalho seria sobrepor.
+    // PLAYER 2 — the arrows move, the numeric keypad acts. `Enter` stays with player 1; `NumpadEnter` is left out on
+    // purpose, because `ui/menu-intent` already uses it as CONFIRM in every menu (KEY_YES) and `input/keydown`
+    // records that it does NOT pause. Giving it a third job would overlap.
     up: ['ArrowUp'],
     down: ['ArrowDown'],
     left: ['ArrowLeft'],
@@ -148,29 +131,29 @@ export const KEYBOARD_DUO: readonly Readonly<Record<Action, Binding<readonly str
     action2: ['Numpad5'],
     action3: ['Numpad6'],
     action4: ['Numpad9'],
-    leftShoulder: ['NumpadDivide'],     // a tecla `/` do bloco numérico
+    leftShoulder: ['NumpadDivide'],     // the keypad's `/` key
     leftTrigger: ['Numpad7'],
-    rightShoulder: ['NumpadMultiply'],  // a tecla `*`
-    rightTrigger: ['NumpadAdd'],        // a tecla `+`
+    rightShoulder: ['NumpadMultiply'],  // the `*` key
+    rightTrigger: ['NumpadAdd'],        // the `+` key
     /**
-     * ⚠️ `ShiftRight` É A PORTA DE SAÍDA, E ELA FALTAVA (#122).
+     * ⚠️ `ShiftRight` IS THE WAY OUT, AND IT WAS MISSING (#122).
      *
-     * Um Chromebook não tem bloco numérico, e um Chromebook é o hardware que o pilar 1 nomeia. Medido em
-     * 2026-09-07: das catorze posições deste assento, **DEZ só se alcançam pelo numpad** — as oito ações
-     * mais o `start` e o `select`. A criança da segunda cadeira anda pelas setas, não age em nada, e **não
-     * consegue abrir o menu para consertar**, porque a tecla que abre o menu está no mesmo bloco que falta.
+     * A Chromebook has no numeric keypad, and a Chromebook is the hardware pillar 1 names. Of this seat's fourteen
+     * positions, **TEN are reachable only through the keypad** — the eight actions plus `start` and `select`. The
+     * child in the second chair moves with the arrows, acts on nothing, and **cannot open the menu to fix it**,
+     * because the key that opens the menu is in the same missing block.
      *
-     * Isso é o que a auditoria chamou de «um padrão do qual a criança não escapa», e o conserto que ela pede
-     * é textual: *«tornar o próprio padrão remapeável, e não trocar as teclas que ele escolheu».* As teclas
-     * ficam — o layout do numpad é melhor onde ele existe, é um bloco físico sob uma mão, e não tira nada ao
-     * primeiro jogador. O que entra é UMA porta que todo teclado tem, para o remapeamento ser alcançável.
+     * That is what the audit called «um padrão do qual a criança não escapa», and the fix it asks for is literal:
+     * *«tornar o próprio padrão remapeável, e não trocar as teclas que ele escolheu».* The keys stay — the keypad
+     * layout is better where it exists, it is one physical block under one hand, and it takes nothing from the first
+     * player. What enters is ONE door every keyboard has, so the remapping is reachable.
      *
-     * ⚠️ E É SÓ NO `start`, de propósito: da pausa alcança-se a tela de remapeamento, e de lá TODAS as outras
-     * treze posições. Uma porta chega para escapar; cada padrão a mais é uma tecla tirada do bolo comum, e
-     * este teclado já é repartido por duas crianças.
+     * ⚠️ AND ONLY ON `start`, on purpose: from the pause the remapping screen is reachable, and from there ALL the
+     * other thirteen positions. One door is enough to escape; each extra default is a key taken from the common pool,
+     * and this keyboard is already shared by two children.
      *
-     * `ShiftRight` porque existe em todo o teclado, fica ao lado do bloco de setas (a mesma mão que já as
-     * usa), não é tecla de texto — e está LIVRE nas quatro tabelas, o que foi medido e não suposto.
+     * `ShiftRight` because every keyboard has it, it sits beside the arrow block (the same hand that already uses
+     * them), it is not a text key — and it is FREE in all four tables, which was measured and not assumed.
      */
     start: ['Numpad1', 'ShiftRight'],
     select: ['Numpad0'],
@@ -178,12 +161,12 @@ export const KEYBOARD_DUO: readonly Readonly<Record<Action, Binding<readonly str
 ]);
 
 /**
- * Gamepad, mapa PADRÃO da Gamepad API (`mapping: "standard"`), que é o que um controle de Xbox reporta.
- * O número é o índice em `gamepad.buttons`.
+ * Gamepad, the Gamepad API's STANDARD map (`mapping: "standard"`), which is what an Xbox controller reports.
+ * The number is the index into `gamepad.buttons`.
  */
 export const GAMEPAD_STANDARD: Readonly<Record<Action, Binding<number>>> = {
-  // As direções não vêm de botões: vêm do stick 0/1 e do D-pad 12–15, em `stdDirs`. Declarar `null` aqui
-  // diria "não alcança", que é falso — por isso os índices do D-pad estão nomeados.
+  // The directions do not come from buttons: they come from stick 0/1 and the D-pad 12–15, in `stdDirs`. Declaring
+  // `null` here would say "does not reach", which is false — that is why the D-pad indices are named.
   up: 12,
   down: 13,
   left: 14,
@@ -193,21 +176,21 @@ export const GAMEPAD_STANDARD: Readonly<Record<Action, Binding<number>>> = {
   action3: 1,   // B
   action4: 3,   // Y
   leftShoulder: 4,   // L1
-  leftTrigger: 6,   // L2 — ⚠️ gatilho ANALÓGICO: a API expõe-no como botão com `.value`, e em alguns
-                //     controles também como eixo. `bindActive` já trata os dois; `padActions` só lê
-                //     `pressed`, o que funciona mas descarta o curso do gatilho.
+  leftTrigger: 6,   // L2 — ⚠️ ANALOGUE trigger: the API exposes it as a button with `.value`, and on some
+                //     controllers also as an axis. `bindActive` already handles both; `padActions` only reads
+                //     `pressed`, which works but throws away the trigger's travel.
   rightShoulder: 5,   // R1
-  rightTrigger: 7,   // R2 — mesma ressalva analógica
+  rightTrigger: 7,   // R2 — same analogue caveat
   start: 9,     // Start / Menu
   select: 8,    // Select / Back / View
 };
 
 /**
- * Todos os problemas de uma tabela de binding. VAZIA quer dizer conforme.
+ * Every problem in a binding table. EMPTY means conformant.
  *
- * ⚠️ O QUE ISTO EXISTE PARA APANHAR É O DUPLO, e ele já aconteceu: a especificação chegou com `I` em duas
- * ações. Um binding duplicado não dá erro em lado nenhum — as duas ações disparam juntas, e a criança vê uma
- * ação dupla intermitente que ninguém consegue reproduzir de propósito.
+ * ⚠️ WHAT THIS EXISTS TO CATCH IS THE DOUBLE, and it has already happened: the specification arrived with `I` on two
+ * actions. A duplicated binding raises no error anywhere — the two actions fire together, and the child sees an
+ * intermittent double action nobody can reproduce on purpose.
  */
 export function bindingProblems<T>(table: Readonly<Record<Action, Binding<T | readonly T[]>>>): string[] {
   const p: string[] = [];
@@ -230,14 +213,14 @@ export function bindingProblems<T>(table: Readonly<Record<Action, Binding<T | re
 }
 
 /**
- * As teclas que DUAS OU MAIS tabelas reclamam para si. VAZIA quer dizer que os jogadores não se atropelam.
+ * The keys TWO OR MORE tables claim. EMPTY means the players do not trample each other.
  *
- * ⚠️ ISTO É UM PROBLEMA DIFERENTE DO `bindingProblems`, E FOI POR ISSO QUE PRECISOU DE FUNÇÃO PRÓPRIA: aquele
- * olha UMA tabela e apanha a mesma tecla em duas ações; este olha DUAS tabelas e apanha a mesma tecla em dois
- * JOGADORES. Cada esquema do `KEYBOARD_DUO` passa no primeiro sozinho — e as setas, se ficassem nos dois,
- * fariam os dois bonecos andarem juntos sem que nada reprovasse.
+ * ⚠️ THIS IS A DIFFERENT PROBLEM FROM `bindingProblems`, WHICH IS WHY IT NEEDED ITS OWN FUNCTION: that one looks at
+ * ONE table and catches the same key on two actions; this one looks at TWO tables and catches the same key on two
+ * PLAYERS. Each `KEYBOARD_DUO` scheme passes the first on its own — and the arrows, if they stayed in both, would make
+ * the two characters walk together with nothing failing.
  *
- * A mensagem nomeia os dois donos, porque «tecla repetida» manda procurar o que a função já sabe.
+ * The message names both owners, because "repeated key" sends someone looking for what the function already knows.
  */
 export function conflictsBetweenTables<T>(
   tables: readonly Readonly<Record<Action, Binding<T | readonly T[]>>>[],
@@ -260,7 +243,7 @@ export function conflictsBetweenTables<T>(
   return p;
 }
 
-/** As ações que este transporte NÃO alcança. É o que uma tela de seleção precisa dizer ANTES de a criança começar. */
+/** The actions this transport does NOT reach. It is what a selection screen has to say BEFORE the child starts. */
 export function unreachable<T>(table: Readonly<Record<Action, Binding<T | readonly T[]>>>): Action[] {
   return ACTIONS.filter((a) => table[a] === null || table[a] === undefined);
 }
