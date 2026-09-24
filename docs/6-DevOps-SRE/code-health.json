@@ -1457,12 +1457,12 @@
       "fanIn": 2
     },
     "ui/pause-icons.ts": {
-      "codeLines": 598,
-      "decisionNodes": 83,
+      "codeLines": 592,
+      "decisionNodes": 81,
       "maxDepth": 3,
       "fanOut": 21,
       "globalReach": 0,
-      "worstFunction": 11,
+      "worstFunction": 9,
       "fanIn": 4
     },
     "ui/pause-markup.ts": {

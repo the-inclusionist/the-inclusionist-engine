@@ -566,6 +566,14 @@ export const PM_VISIBLE_ITEMS = '.pause-menu:not([hidden]) .pm-btn:not([hidden])
  * opções à raiz, e não tem acesso às tabelas de botões. Como as duas listas já existem no markup, a troca é
  * só DOM — nada a re-renderizar, nada a injetar.
  */
+/**
+ * THE DOORS INSIDE THE CARD, and which list each opens. They do nothing to the game — they change which list is on
+ * screen — so they live here and not in the action table, which lives in `ui/shell` and does not know the card.
+ * `pmback` always returns to the ROOT, from either list. A table and not a chain of `if`s: a fourth list is one more
+ * row, not one more branch.
+ */
+const DOOR_TO_LIST: Readonly<Record<string, PauseSub>> = Object.freeze({ options: 'opcoes', opcoesdojogo: 'jogo', pmback: 'raiz' });
+
 export function showPauseOptions(sp: HTMLElement, sub: PauseSub): HTMLElement | null {
   sp.querySelectorAll<HTMLElement>('.pause-menu').forEach((m) => { m.hidden = m.dataset.sub !== sub; });
   const primeiro = sp.querySelector<HTMLElement>(PM_VISIBLE_ITEMS);
@@ -1369,13 +1377,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (acao === 'sair') { sairDaBarra(i); return; }
     const icons = [...bar.querySelectorAll<HTMLElement>('.pi-btn')];
     if (!icons.length) return;
-    const cur = selectedIcon(bar);
-    const idx = cur ? icons.indexOf(cur) : 0;
-    if (acao === 'ativar') { setPauseActor(i); if (cur) cur.click(); return; }
-    if (acao === 'andar') {
-      const d = (k.down || k.right) ? 1 : -1;
-      selectIcon(i, bar, icons[stepInRing(icons.length, idx, d)]);
-    }
+    // never null here: the bar has an icon, and `selectedIcon` falls back to the first one
+    const cur = selectedIcon(bar) as HTMLElement;
+    // the click goes through the bar's own listener, which records who pressed it (`setPauseActor`)
+    if (acao === 'ativar') { cur.click(); return; }
+    if (acao === 'andar') selectIcon(i, bar, icons[stepInRing(icons.length, icons.indexOf(cur), (k.down || k.right) ? 1 : -1)]);
   }
 
   function buildScreenPause(i: number): HTMLElement {
@@ -1407,40 +1413,32 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     refreshPauseItems(); // o §5 vale já na montagem, e não só na primeira abertura
 
     sp.addEventListener('click', (e) => {
-      const target = e.target as Element | null;
-      const b = target && target.closest<HTMLElement>('.pm-btn');
-      if (b) {
-        // TRAVADO (ADR-0161): accioná-lo DIZ o motivo e não faz nada — nem porta, nem acção.
-        if (b.getAttribute('aria-disabled') === 'true') {
-          const motivo = b.dataset.motivo ?? '';
-          ctx.srSay(motivo);
-          ctx.explicarItem?.(motivo);
-          return;
-        }
-        setPauseActor(i);
-        const act = b.dataset.act || '';
-        // NAVEGAÇÃO DENTRO DO CARTÃO fica aqui, e não na tabela de ações: `options` e `pmback` não fazem nada
-        // ao jogo — trocam qual lista está na tela. A tabela vive em `ui/shell`, que não conhece este `sp`.
-        // ⚠️ TRÊS PORTAS AGORA, e o `pmback` volta sempre à RAIZ — de qualquer das duas listas. Escrito como
-        // tabela e não como encadeado de `if`, porque uma quarta lista seria mais uma linha e não mais um ramo.
-        const FOR: Record<string, PauseSub> = { options: 'opcoes', opcoesdojogo: 'jogo', pmback: 'raiz' };
-        // «Opções do jogo» with the cartridge's rows opens the engine's panel (ADR-0182), not the list a host may pass
-        const doorWithPanel = act === 'opcoesdojogo' && typeof getPauseActs().opcoesdojogo === 'function';
-        if (FOR[act] && !doorWithPanel) { announceList(sp, FOR[act]!); return; }
-        // `acessibilidade` leva o cursor à BARRA RÁPIDA. Enquanto ela mora dentro do cartão, "entrar no modo"
-        // é pôr o cursor nela — e a saída continua sendo a saída da pausa, que é a mesma de sempre. Quando o
-        // item 7 levar a barra para o HUD, esta linha o segue; o que o item SIGNIFICA não muda.
-        // ⚠️ O ITEM SAIU DA RAIZ (ADR-0151) e só o alcança uma lista que o JOGO passe; para ela o comportamento
-        // antigo fica aqui, explícito — fechar o cartão e jogar com a barra —, já que `entrarNaBarra` deixou de
-        // retomar sozinho (ADR-0155).
-        if (act === 'acessibilidade') { getPauseActs().resume?.(); entrarNaBarra(i); return; }
-        const acts = getPauseActs();
-        const fn = acts[act];
-        if (fn) fn();
-        return;
-      }
+      const b = (e.target as Element | null)?.closest<HTMLElement>('.pm-btn');
+      if (b) pressPauseItem(i, sp, b);
     });
     return sp;
+  }
+
+  /** One item of screen `i`'s pause card pressed — a locked one, a door between its lists, the quick bar, or an action. */
+  function pressPauseItem(i: number, sp: HTMLElement, b: HTMLElement): void {
+    // TRAVADO (ADR-0161): accioná-lo DIZ o motivo e não faz nada — nem porta, nem acção.
+    if (b.getAttribute('aria-disabled') === 'true') {
+      const motivo = b.dataset.motivo ?? '';
+      ctx.srSay(motivo);
+      ctx.explicarItem?.(motivo);
+      return;
+    }
+    setPauseActor(i);
+    const act = b.dataset.act || '';
+    // «Opções do jogo» with the cartridge's rows opens the engine's panel (ADR-0182), not the list a host may pass
+    const doorWithPanel = act === 'opcoesdojogo' && typeof getPauseActs().opcoesdojogo === 'function';
+    if (DOOR_TO_LIST[act] && !doorWithPanel) { announceList(sp, DOOR_TO_LIST[act]!); return; }
+    // `acessibilidade` leva o cursor à BARRA RÁPIDA. ⚠️ O ITEM SAIU DA RAIZ (ADR-0151) e só o alcança uma lista que o
+    // JOGO passe; para ela o comportamento antigo fica aqui, explícito — fechar o cartão e jogar com a barra —, já que
+    // `entrarNaBarra` deixou de retomar sozinho (ADR-0155).
+    if (act === 'acessibilidade') { getPauseActs().resume?.(); entrarNaBarra(i); return; }
+    const fn = getPauseActs()[act];
+    if (fn) fn();
   }
 
   /**
