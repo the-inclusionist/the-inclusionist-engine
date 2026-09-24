@@ -25,9 +25,9 @@ import { simulationUnavailable, type UnavailableReason, type VisualState } from 
 
 /** Uma linha pronta a traduzir: a chave e o que ela precisa. `null` = não há nada a dizer. */
 export interface Refusal {
-  readonly chave: string;
+  readonly key: string;
   /** O que a criança tem de desfazer para a demonstração ser honesta. Entra na frase por `{eixo}`. */
-  readonly eixo: UnavailableReason;
+  readonly axis: UnavailableReason;
 }
 
 /**
@@ -51,7 +51,7 @@ export const REASON_KEY: Readonly<Record<UnavailableReason, string>> = Object.fr
  */
 export function simulationRefusal(v: VisualState): Refusal | null {
   const reason = simulationUnavailable(v);
-  return reason === null ? null : { chave: REASON_KEY[reason], eixo: reason };
+  return reason === null ? null : { key: REASON_KEY[reason], axis: reason };
 }
 
 /**

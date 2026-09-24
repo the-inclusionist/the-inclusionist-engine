@@ -80,10 +80,10 @@ function setup(over = {}) {
     $: (sel) => document.querySelector(sel),
     body: document.body,
     srSay: (s) => env.log.say.push(s),
-    aplicarFiltroCss: (css) => { if (env.app && env.app.view) env.app.view.style.filter = css; }, // a raiz é quem sabe da canvas
+    applyCssFilter: (css) => { if (env.app && env.app.view) env.app.view.style.filter = css; }, // a raiz é quem sabe da canvas
     // Alto contraste no DOM (issue #83): não é filtro, é CLASSE. Este falso imita a raiz, que faz
     // `#dom-layer.classList.toggle('hc', ligado)`.
-    aplicarAltoContrasteNoDom: (ligado) => { env.hcNoDom.push(ligado); },
+    applyHighContrastToDom: (ligado) => { env.hcNoDom.push(ligado); },
     camera: env.camera, worldSprite: env.worldSprite,
     parallaxLayers: env.parallaxLayers, decoSprites: env.decoSprites,
     getVpSpr: () => env.vpSpr, getVpDots: () => env.vpDots,
@@ -99,7 +99,7 @@ function setup(over = {}) {
     clearPlayerDirectCache: () => {},
     setFrontDim: (on) => env.log.frontDim.push(on),
     rebuildExtras: () => {}, rebuildCoins: () => {},
-    setModoCego: () => {}, hideTouchControls: (r) => env.log.hideTouch.push(r),
+    setBlindMode: () => {}, hideTouchControls: (r) => env.log.hideTouch.push(r),
     reflectVizButtons: () => {}, renderVisualPanel: () => {}, renderEmpathyPanel: () => {},
   };
   return { env, api: initVizSetters(ctx) };

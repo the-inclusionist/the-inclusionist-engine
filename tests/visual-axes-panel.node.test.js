@@ -87,8 +87,8 @@ describe('ui/visual-axes-panel · os nomes dos padrões', () => {
 
 describe('ui/visual-axes-panel · o que um clique quer dizer', () => {
   it('[Right] lê o eixo e o valor do botão', () => {
-    expect(buttonChoice({ eixo: 'tema', valor: 'hc7' })).toEqual({ eixo: 'tema', valor: 'hc7' });
-    expect(buttonChoice({ eixo: 'correcao', valor: 'deuter' })).toEqual({ eixo: 'correcao', valor: 'deuter' });
+    expect(buttonChoice({ eixo: 'tema', valor: 'hc7' })).toEqual({ axis: 'tema', value: 'hc7' });
+    expect(buttonChoice({ eixo: 'correcao', valor: 'deuter' })).toEqual({ axis: 'correcao', value: 'deuter' });
   });
 
   it('⚠️ [Zero] botão de outro assunto, eixo inventado ou valor de OUTRO eixo devolvem `null`', () => {

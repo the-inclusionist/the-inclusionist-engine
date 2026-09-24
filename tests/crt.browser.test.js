@@ -56,7 +56,7 @@ describe('render/crt — crtScanVars (scanline ancorada em px reais)', () => {
 //   · trocando o `!` por nada (suprimir quando NÃO há a11y), o caso [Inverse] falha — a vinheta some de
 //     quem não pediu acessibilidade nenhuma.
 describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', () => {
-  const comA11y = (ativa) => initCrt({ numJogadores: () => 1, a11yVisualAtiva: () => ativa });
+  const comA11y = (ativa) => initCrt({ numPlayers: () => 1, a11yVisualOn: () => ativa });
 
   it('[Right] com modo de a11y ativo, a vinheta NÃO é aplicada', () => {
     const g = region();

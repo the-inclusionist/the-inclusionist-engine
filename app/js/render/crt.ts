@@ -35,9 +35,9 @@ let _playerCount: () => number = () => 1;
  */
 let _a11yVisualActive: () => boolean = () => false;
 /** Liga a contagem de jogadores e a pergunta de a11y. Chamado uma vez pela raiz, antes do 1º `applyCrt()`. */
-export function initCrt(deps: { numJogadores: () => number; a11yVisualAtiva: () => boolean }): void {
-  _playerCount = deps.numJogadores;
-  _a11yVisualActive = deps.a11yVisualAtiva;
+export function initCrt(deps: { numPlayers: () => number; a11yVisualOn: () => boolean }): void {
+  _playerCount = deps.numPlayers;
+  _a11yVisualActive = deps.a11yVisualOn;
 }
 
 export const CRT: CrtCfg = crtFromStored(store.get(store.KEYS.crt, null), store.get(store.KEYS.crtLegacy, null));

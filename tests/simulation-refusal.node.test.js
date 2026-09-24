@@ -31,9 +31,9 @@ describe('ui/simulation-refusal · quando NÃO há o que dizer, não se diz nada
 
 describe('ui/simulation-refusal · quando há, ela diz QUAL eixo e devolve DADO', () => {
   it('[Right] cada eixo fora do padrão dá o seu motivo, e os dois juntos dão o terceiro', () => {
-    expect(simulationRefusal(comEixos('hc7', 'tricro'))?.eixo).toBe('tema');
-    expect(simulationRefusal(comEixos('padrao', 'deuter'))?.eixo).toBe('correcao');
-    expect(simulationRefusal(comEixos('hc7', 'deuter'))?.eixo).toBe('ambos');
+    expect(simulationRefusal(comEixos('hc7', 'tricro'))?.axis).toBe('tema');
+    expect(simulationRefusal(comEixos('padrao', 'deuter'))?.axis).toBe('correcao');
+    expect(simulationRefusal(comEixos('hc7', 'deuter'))?.axis).toBe('ambos');
   });
 
   it('⚠️ [Many] TODO par de eixos fora do padrão produz recusa — nenhum escapa por não ter sido pensado', () => {
@@ -49,8 +49,8 @@ describe('ui/simulation-refusal · quando há, ela diz QUAL eixo e devolve DADO'
   it('[Right] devolve CHAVE i18n e não texto — a frase é da interface', () => {
     // Devolver português daqui repetiria o defeito que o `PADWIZ_STEPS` deixou de cometer.
     const r = simulationRefusal(comEixos('hc7', 'tricro'));
-    expect(r.chave).toBe('sim.indisponivel.tema');
-    expect(/[À-ÿ ]/.test(r.eixo), 'o eixo virou prosa em vez de chave').toBe(false);
+    expect(r.key).toBe('sim.indisponivel.tema');
+    expect(/[À-ÿ ]/.test(r.axis), 'o eixo virou prosa em vez de chave').toBe(false);
   });
 });
 

@@ -119,8 +119,8 @@ function setup(over = {}) {
     // `filter`. Quem sabe que em produção o `view` é uma canvas do DOM é a raiz de composição — e é
     // lá que mora a guarda de "e se não houver canvas montada". Este falso imita a raiz.
     // Alto contraste no DOM (issue #83): não é filtro, é classe — o falso só registra o liga/desliga.
-    aplicarAltoContrasteNoDom: (ligado) => { env.log.hcNoDom.push(ligado); },
-    aplicarFiltroCss: (css) => { env.log.filtrosCss.push(css); if (env.app && env.app.view) env.app.view.style.filter = css; },
+    applyHighContrastToDom: (ligado) => { env.log.hcNoDom.push(ligado); },
+    applyCssFilter: (css) => { env.log.filtrosCss.push(css); if (env.app && env.app.view) env.app.view.style.filter = css; },
     camera: env.camera,
     worldSprite: env.worldSprite,
     parallaxLayers: env.parallaxLayers,
@@ -153,7 +153,7 @@ function setup(over = {}) {
     setFrontDim: (on) => env.log.frontDim.push(on),
     rebuildExtras: () => { env.log.rebuildExtras++; },
     rebuildCoins: () => { env.log.rebuildCoins++; },
-    setModoCego: (on) => env.log.blindMode.push(on),
+    setBlindMode: (on) => env.log.blindMode.push(on),
     hideTouchControls: (r) => env.log.hideTouch.push(r),
     reflectVizButtons: () => { env.log.reflect++; },
     renderVisualPanel: () => { env.log.visual++; },
@@ -294,7 +294,7 @@ describe('vizGroupHtml — grupo de rádios dos modos', () => {
     const html = vizGroupHtml([VIZ_BY_KEY.blind], 'normal');
     // `nome`/`desc` guardam CHAVE desde o item 14; a linha tem de trazer o TEXTO. Comparar com a chave crua
     // passaria aceitando `viz.blind` na tela — que é o modo silencioso de falhar da i18n por chave.
-    expect(html).toContain(t(VIZ_BY_KEY.blind.nome));
+    expect(html).toContain(t(VIZ_BY_KEY.blind.name));
     expect(html).toContain(t(VIZ_BY_KEY.blind.desc));
     expect(html).not.toContain('viz.blind');
   });
@@ -778,8 +778,8 @@ describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existir
       // E o par que o render vai aplicar continua a ser o de hoje — a mesma afirmação da rede da etapa 0,
       // agora sobre o valor que REALMENTE foi escrito no jogador e não sobre uma chave de fixture.
       expect(howItApplies(p.visual), k).toEqual({
-        direto: needsCanvas(k) ? k : null,
-        filtro: k in VIZ_FILTER ? k : null,
+        direct: needsCanvas(k) ? k : null,
+        filter: k in VIZ_FILTER ? k : null,
       });
     }
   });

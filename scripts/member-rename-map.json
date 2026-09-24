@@ -3,13 +3,16 @@
   "layersApplied": [
     "core",
     "platform",
-    "input"
+    "input",
+    "render"
   ],
   "excluded": {
     "core/visual-state.ts VisualState.tema": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6",
     "core/visual-state.ts VisualState.correcao": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6",
     "core/visual-state.ts VisualState.simulacao": "the shape of a stored value: written whole per player by store.setJSON(KEYS.visualP(i)) — ADR-0230 §3, the rule of ADR-0219 §6",
-    "platform/vision.ts TasksVision.FilesetResolver": "a foreign API: the name MediaPipe tasks-vision exports, mirrored so the checker sees it. «resolver» is a word of both languages, and the name is not this tree's to choose"
+    "platform/vision.ts TasksVision.FilesetResolver": "a foreign API: the name MediaPipe tasks-vision exports, mirrored so the checker sees it. «resolver» is a word of both languages, and the name is not this tree's to choose",
+    "render/viz-axes-labels.ts buttonChoice.eixo": "a DOM dataset key: buttonChoice reads data-eixo/data-valor, the attributes the visual-modes markup writes and the panel queries — markup, not a member name",
+    "render/viz-axes-labels.ts buttonChoice.valor": "a DOM dataset key: buttonChoice reads data-eixo/data-valor, the attributes the visual-modes markup writes and the panel queries — markup, not a member name"
   },
   "dataKeys": {
     "tests/catalogo-tipografico.node.test.js familia": "a field of research/catalogo_tipografico.json, the Dev's typographic catalogue, which this tree reads and must not edit",
@@ -161,6 +164,27 @@
       "input/transports.ts Reach.seguraPedidas": "holdsAsked",
       "input/transports.ts Reach.serviriamSeLigados": "wouldServeIfOn",
       "input/transports.ts Transport.aponta": "points"
+    },
+    "render": {
+      "render/crt.ts initCrt.a11yVisualAtiva": "a11yVisualOn",
+      "render/crt.ts initCrt.numJogadores": "numPlayers",
+      "render/screen-pipeline.ts ScreenPipelineCtx.criarDesenho": "createDrawing",
+      "render/screen-pipeline.ts ScreenPipelineCtx.criarSprite": "createSprite",
+      "render/viewports.ts ViewportsCtx.renderizarEm": "renderInto",
+      "render/viz-axes-labels.ts AxisChoice.eixo": "axis",
+      "render/viz-axes-labels.ts AxisChoice.valor": "value",
+      "render/viz-axes.ts HowItApplies.direto": "direct",
+      "render/viz-axes.ts HowItApplies.filtro": "filter",
+      "render/viz-modes.ts VizMode.nome": "name",
+      "render/viz-refusal.ts Refusal.chave": "key",
+      "render/viz-refusal.ts Refusal.eixo": "axis",
+      "render/viz-setters.ts VizSettersApi.renderEixosVisuais": "renderVisualAxes",
+      "render/viz-setters.ts VizSettersApi.setCorrecaoDoJogador": "setPlayerCorrection",
+      "render/viz-setters.ts VizSettersApi.setTemaDoJogador": "setPlayerTheme",
+      "render/viz-setters.ts VizSettersApi.setVisualDoJogador": "setPlayerVisual",
+      "render/viz-setters.ts VizSettersCtx.aplicarAltoContrasteNoDom": "applyHighContrastToDom",
+      "render/viz-setters.ts VizSettersCtx.aplicarFiltroCss": "applyCssFilter",
+      "render/viz-setters.ts VizSettersCtx.setModoCego": "setBlindMode"
     }
   }
 }

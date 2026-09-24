@@ -1,11 +1,11 @@
 {
   "measured": "2026-09-24",
   "what": "Identifiers carrying a Portuguese word, per file, split by what kind of name it is: `decl` (variables, functions, classes, interfaces, type aliases, enums), `param` (parameters and destructured bindings) and `membro` (properties, methods, accessors and enum members). The gate refuses any increase IN ANY of the three, so a renamed parameter cannot hide a new Portuguese declaration. Run --bootstrap to record a decrease. 📌 `membro` is the debt phase 7 of the English plan renames (ADR-0219); measuring it is this file, renaming it is a breaking release.",
-  "total": 684,
+  "total": 665,
   "totals": {
     "decl": 215,
     "param": 259,
-    "membro": 210
+    "membro": 191
   },
   "files": {
     "app/js/boot/create-game.ts": {
@@ -203,11 +203,6 @@
       "param": 0,
       "membro": 0
     },
-    "app/js/render/crt.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 2
-    },
     "app/js/render/high-contrast.ts": {
       "decl": 2,
       "param": 0,
@@ -218,40 +213,20 @@
       "param": 3,
       "membro": 0
     },
-    "app/js/render/screen-pipeline.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 2
-    },
-    "app/js/render/viewports.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 1
-    },
     "app/js/render/viz-axes-labels.ts": {
       "decl": 0,
       "param": 8,
-      "membro": 4
+      "membro": 2
     },
     "app/js/render/viz-axes.ts": {
       "decl": 1,
       "param": 0,
-      "membro": 2
-    },
-    "app/js/render/viz-modes.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 1
-    },
-    "app/js/render/viz-refusal.ts": {
-      "decl": 0,
-      "param": 0,
-      "membro": 2
+      "membro": 0
     },
     "app/js/render/viz-setters.ts": {
       "decl": 6,
       "param": 5,
-      "membro": 7
+      "membro": 0
     },
     "app/js/ui/caa-sets.ts": {
       "decl": 0,

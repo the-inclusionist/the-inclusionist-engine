@@ -110,7 +110,7 @@ export function lvOverlayClassFor(m: VizMode): string {
 export function vizGroupHtml(modes: readonly VizMode[], cur: string): string {
   return modes.map((m) => {
     const sel = m.key === cur;
-    return `<div class="ctrl-row"><span><strong>${t(m.nome)}</strong><br><span class="opt-hint" style="margin:0">${t(m.desc)}</span></span>`
+    return `<div class="ctrl-row"><span><strong>${t(m.name)}</strong><br><span class="opt-hint" style="margin:0">${t(m.desc)}</span></span>`
       + `<button class="mode-btn${sel ? ' is-on' : ''}" role="radio" aria-checked="${sel}" data-viz="${m.key}" type="button">${sel ? '✓ Selecionado' : 'Selecionar'}</button></div>`;
   }).join('');
 }
@@ -148,9 +148,9 @@ export interface VizSettersCtx {
   srSay: (s: string) => void;                       // leitor de tela (região aria-live)
 
   /* --- objetos PIXI criados no game.js (z-order soldado lá) --- */
-  aplicarFiltroCss: ApplyCssFilter;               // era `app: AppLike|null` + `app.view.style.filter`; ver a porta
+  applyCssFilter: ApplyCssFilter;               // era `app: AppLike|null` + `app.view.style.filter`; ver a porta
   /** Alto contraste no DOM — o filtro não o alcança porque ele não É filtro. Issue #83. */
-  aplicarAltoContrasteNoDom: ApplyHighContrastToDom;
+  applyHighContrastToDom: ApplyHighContrastToDom;
   camera: Filtered;                                 // solo: alto contraste = filtro GPU na câmera
   worldSprite: Textured;                            // mundo recolorido por modo
   parallaxLayers: Textured[];                       // camadas de fundo (const; elementos só têm .texture trocada)
@@ -204,7 +204,7 @@ export interface VizSettersCtx {
   setFrontDim: (on: boolean) => void;               // game/traffic: carros/placas/semáforo escurecem como fundo
   rebuildExtras: () => void;                        // game/level-geometry
   rebuildCoins: () => void;                         // game/coin-spawning
-  setModoCego?: (on: boolean) => void;               // empatia cegueira liga bengala + pistas de áudio
+  setBlindMode?: (on: boolean) => void;               // empatia cegueira liga bengala + pistas de áudio
   hideTouchControls: (reason?: string) => void;     // input/touch
   reflectVizButtons: () => void;                    // acende #opt-visual/#opt-empathy (lê hearingLoss/oneButton/wheelchair)
   renderVisualPanel: () => void;                    // visual.render() — ui/settings-visual
@@ -227,9 +227,9 @@ export interface VizSettersApi {
    * TEMA sem tocar na correção, e vice-versa. Enquanto havia um campo só, «mexer num» significava
    * inevitavelmente «apagar o outro» — e era o defeito, não a API.
    */
-  setVisualDoJogador(i: number, v: VisualState): void;
-  setTemaDoJogador(i: number, tema: Theme): void;
-  setCorrecaoDoJogador(i: number, correcao: Correction): void;
+  setPlayerVisual(i: number, v: VisualState): void;
+  setPlayerTheme(i: number, tema: Theme): void;
+  setPlayerCorrection(i: number, correcao: Correction): void;
   /** Caminho SOLO: filtro CSS na canvas + texturas globais + overlay DOM + bolinha. */
   applyVizGlobal(v: VisualState): void;
   /** Reaplica tudo depois de uma mudança estrutural (cenário, nº de telas). */
@@ -241,7 +241,7 @@ export interface VizSettersApi {
   /** Grupo de rádios de modos visuais nos painéis (visual/empatia). */
   renderVizGroup(listSel: string, tabsSel: string, modes: readonly VizMode[]): void;
   /** Os DOIS eixos do painel visual (#104). Irmão do de cima — ver a nota na implementação. */
-  renderEixosVisuais(listSel: string, tabsSel: string): void;
+  renderVisualAxes(listSel: string, tabsSel: string): void;
 }
 
 export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
@@ -324,7 +324,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    *  escritores por eixo e o antigo por chave partilham-nos, e uma cópia a mais seria uma cópia a divergir. */
   function applyPlayerVisual(i: number, v: VisualState): void {
     ctx.invalidateSharedViz();
-    if (isBlind(v)) (ctx.setModoCego ?? setBlindModeValue)(true); // empatia cegueira total liga o modo cego (áudio) por padrão
+    if (isBlind(v)) (ctx.setBlindMode ?? setBlindModeValue)(true); // empatia cegueira total liga o modo cego (áudio) por padrão
     if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(v); } else { applyVpFilters(); updateVpDots(); }
     ctx.reflectVizButtons(); ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }
@@ -360,9 +360,9 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     // `vizMode!=='normal'`, e discordava do setter — sem efeito, porque applyVizGlobal roda no boot antes de
     // o gancho existir, mas é o sintoma clássico de cópia de estado.)
     // --- eixo CORREÇÃO/SIMULAÇÃO: o filtro CSS ---
-    ctx.aplicarFiltroCss(cssFilterFor(filtro ?? '', lqFilter()), isSimulation(v) ? 'mundo' : 'mundo-e-menus');
+    ctx.applyCssFilter(cssFilterFor(filtro ?? '', lqFilter()), isSimulation(v) ? 'mundo' : 'mundo-e-menus');
     // --- eixo TEMA: DOM e textura. Não é filtro (ver `ApplyHighContrastToDom`), e é por isso que compõe.
-    ctx.aplicarAltoContrasteNoDom(hasHighContrast(v));
+    ctx.applyHighContrastToDom(hasHighContrast(v));
     ctx.camera.filters = hasHighContrast(v) ? ctx.pixiFilterFor(textureForMode) : null; // solo: alto contraste na câmera
     ctx.setFrontDim(hasHighContrast(v)); // HC: frente (carros/placas/semáforo) escurece como fundo
     ctx.worldSprite.texture = worldTexFor(textureForMode);         // alto contraste direto = Renderização Direta · resto=normal
@@ -395,7 +395,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     ctx.invalidateSharedViz();
     if (ctx.getNumPlayers() <= 1) { applyVizGlobal(ctx.getPlayers()[0].visual ?? PADRAO); }
     else {
-      ctx.aplicarFiltroCss(lqFilter(), 'mundo-e-menus'); // realce L/Q é melhoria: alcança o menu
+      ctx.applyCssFilter(lqFilter(), 'mundo-e-menus'); // realce L/Q é melhoria: alcança o menu
       ctx.camera.filters = null;
       ctx.body.classList.remove('lowvision-mode', 'blind-mode');
       const ov = ctx.$('#viz-overlay'); if (ov) ov.hidden = true;
@@ -443,12 +443,12 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       if (refusal && simulatesDisability(key)) {
         btn.setAttribute('aria-disabled', 'true');
         const dica = btn.closest('.ctrl-row')?.querySelector<HTMLElement>('.opt-hint');
-        if (dica) dica.textContent = `${dica.textContent} ${t(refusal.chave)}`.trim();
+        if (dica) dica.textContent = `${dica.textContent} ${t(refusal.key)}`.trim();
         return; // sem ouvinte: aceitar o clique e ignorá-lo é a outra metade do que o ADR proíbe
       }
       btn.addEventListener('click', () => {
         setPlayerViz(ctx.getSelVizPlayer(), key);
-        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), ctx.getSelVizPlayer(), t(VIZ_MODES.find((m) => m.key === key)!.nome)));
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), ctx.getSelVizPlayer(), t(VIZ_MODES.find((m) => m.key === key)!.name)));
       });
     });
   }
@@ -476,20 +476,20 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       const choice = buttonChoice(btn.dataset);
       if (!choice) return; // botão de outro assunto, ou um `data-` editado à mão: não se adivinha
       const i = ctx.getSelVizPlayer();
-      if (choice.eixo === 'tema') {
-        setTemaDoJogador(i, choice.valor as Theme);
-        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(THEME_LABEL[choice.valor as Theme])));
+      if (choice.axis === 'tema') {
+        setTemaDoJogador(i, choice.value as Theme);
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(THEME_LABEL[choice.value as Theme])));
       } else {
-        setCorrecaoDoJogador(i, choice.valor as Correction);
-        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(CORRECTION_LABEL[choice.valor as Correction])));
+        setCorrecaoDoJogador(i, choice.value as Correction);
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(CORRECTION_LABEL[choice.value as Correction])));
       }
     }));
   }
 
   return {
     applySharedTextures, updateVpDots, applyVpFilters, setPlayerViz, applyVizGlobal, reapplyVizAll,
-    updateVizIndicator, rebakeDirect, renderVizGroup, renderEixosVisuais,
+    updateVizIndicator, rebakeDirect, renderVizGroup, renderVisualAxes: renderEixosVisuais,
     // Os DOIS escritores por eixo (#104): é o que um painel de dois controles chama.
-    setVisualDoJogador, setTemaDoJogador, setCorrecaoDoJogador,
+    setPlayerVisual: setVisualDoJogador, setPlayerTheme: setTemaDoJogador, setPlayerCorrection: setCorrecaoDoJogador,
   };
 }

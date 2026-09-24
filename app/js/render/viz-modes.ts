@@ -27,24 +27,24 @@
  * Quem EXIBE resolve (`render/viz-setters`, `consumer-quiz`), e por isso este módulo continua FOLHA: dado
  * puro, sem dependência nenhuma, importável dos dois lados da fronteira.
  */
-export type VizMode = { key: string; kind: string; nome: string; desc: string; lv?: string; sim?: true };
+export type VizMode = { key: string; kind: string; name: string; desc: string; lv?: string; sim?: true };
 export const VIZ_MODES: VizMode[] = [
-  {key:'normal', kind:'normal', nome:'viz.normal',        desc:'viz.desc.normal'},
-  {key:'hc-direto', kind:'hcnew', nome:'viz.hc-direto', desc:'viz.desc.hc-direto'},
-  {key:'hc-direto-45', kind:'hcnew', nome:'viz.hc-direto-45', desc:'viz.desc.hc-direto-45'},
-  {key:'hc-direto-7', kind:'hcnew', nome:'viz.hc-direto-7', desc:'viz.desc.hc-direto-7'},
-  {key:'sim-deuter', sim:true, kind:'filter', nome:'viz.sim-deuter', desc:'viz.desc.sim-deuter'},
-  {key:'sim-protan', sim:true, kind:'filter', nome:'viz.sim-protan',   desc:'viz.desc.sim-protan'},
-  {key:'sim-tritan', sim:true, kind:'filter', nome:'viz.sim-tritan',   desc:'viz.desc.sim-tritan'},
-  {key:'fix-protan', kind:'filter', nome:'viz.fix-protan', desc:'viz.desc.fix-protan'},
-  {key:'fix-deuter', kind:'filter', nome:'viz.fix-deuter', desc:'viz.desc.fix-deuter'},
-  {key:'fix-tritan', kind:'filter', nome:'viz.fix-tritan', desc:'viz.desc.fix-tritan'},
-  {key:'lv-blur',     sim:true, kind:'lowvision', lv:'blur',     nome:'viz.lv-blur',         desc:'viz.desc.lv-blur'},
-  {key:'lv-haze',     sim:true, kind:'lowvision', lv:'haze',     nome:'viz.lv-haze',            desc:'viz.desc.lv-haze'},
-  {key:'lv-tunnel',   sim:true, kind:'lowvision', lv:'tunnel',   nome:'viz.lv-tunnel',   desc:'viz.desc.lv-tunnel'},
-  {key:'lv-macular',  sim:true, kind:'lowvision', lv:'macular',  nome:'viz.lv-macular',   desc:'viz.desc.lv-macular'},
-  {key:'lv-diabetic', sim:true, kind:'lowvision', lv:'diabetic', nome:'viz.lv-diabetic',desc:'viz.desc.lv-diabetic'},
-  {key:'blind', sim:true, kind:'blind', nome:'viz.blind', desc:'viz.desc.blind'},
+  {key:'normal', kind:'normal', name:'viz.normal',        desc:'viz.desc.normal'},
+  {key:'hc-direto', kind:'hcnew', name:'viz.hc-direto', desc:'viz.desc.hc-direto'},
+  {key:'hc-direto-45', kind:'hcnew', name:'viz.hc-direto-45', desc:'viz.desc.hc-direto-45'},
+  {key:'hc-direto-7', kind:'hcnew', name:'viz.hc-direto-7', desc:'viz.desc.hc-direto-7'},
+  {key:'sim-deuter', sim:true, kind:'filter', name:'viz.sim-deuter', desc:'viz.desc.sim-deuter'},
+  {key:'sim-protan', sim:true, kind:'filter', name:'viz.sim-protan',   desc:'viz.desc.sim-protan'},
+  {key:'sim-tritan', sim:true, kind:'filter', name:'viz.sim-tritan',   desc:'viz.desc.sim-tritan'},
+  {key:'fix-protan', kind:'filter', name:'viz.fix-protan', desc:'viz.desc.fix-protan'},
+  {key:'fix-deuter', kind:'filter', name:'viz.fix-deuter', desc:'viz.desc.fix-deuter'},
+  {key:'fix-tritan', kind:'filter', name:'viz.fix-tritan', desc:'viz.desc.fix-tritan'},
+  {key:'lv-blur',     sim:true, kind:'lowvision', lv:'blur',     name:'viz.lv-blur',         desc:'viz.desc.lv-blur'},
+  {key:'lv-haze',     sim:true, kind:'lowvision', lv:'haze',     name:'viz.lv-haze',            desc:'viz.desc.lv-haze'},
+  {key:'lv-tunnel',   sim:true, kind:'lowvision', lv:'tunnel',   name:'viz.lv-tunnel',   desc:'viz.desc.lv-tunnel'},
+  {key:'lv-macular',  sim:true, kind:'lowvision', lv:'macular',  name:'viz.lv-macular',   desc:'viz.desc.lv-macular'},
+  {key:'lv-diabetic', sim:true, kind:'lowvision', lv:'diabetic', name:'viz.lv-diabetic',desc:'viz.desc.lv-diabetic'},
+  {key:'blind', sim:true, kind:'blind', name:'viz.blind', desc:'viz.desc.blind'},
 ];
 export const VIZ_BY_KEY: Record<string, VizMode> = Object.fromEntries(VIZ_MODES.map((m): [string, VizMode] => [m.key, m]));
 export const VIZ_FILTER: Record<string, string> = {'sim-deuter':'url(#cvd-deuter)','sim-protan':'url(#cvd-protan)','sim-tritan':'url(#cvd-tritan)',

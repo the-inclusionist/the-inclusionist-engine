@@ -2755,6 +2755,43 @@ The table is printed from `scripts/member-rename-map.json` by `node scripts/appl
 | `input/transports.js` | `Reach` | `serviriamSeLigados` | `wouldServeIfOn` |
 | `input/transports.js` | `Transport` | `aponta` | `points` |
 
+## CL · Published members speak English — the `render` layer (ADR-0230, issue #206)
+
+**Who is affected:** a host that fills the render ctx objects (`ScreenPipelineCtx.createDrawing`/`createSprite`,
+`ViewportsCtx.renderInto`, `VizSettersCtx.applyCssFilter`/`applyHighContrastToDom`/`setBlindMode`), or calls the visual
+writers (`setPlayerTheme`, `setPlayerCorrection`, `setPlayerVisual`, `renderVisualAxes`), or reads `howItApplies`
+(`{ direct, filter }`), a `buttonChoice` (`{ axis, value }`), a `VizMode.name` or a refusal (`{ key, axis }`).
+
+⚠️ **The quiet case is the ctx a host builds by hand**, as in the layers before: a JavaScript host that keeps
+`setModoCego` gets no error, and the blind mode is never switched on by the simulation that asks for it.
+
+📌 **Not moved:** the markup attributes `data-eixo`/`data-valor` — `buttonChoice` still reads them from a `dataset`, and
+the panel queries them; they are markup, not member names. What `buttonChoice` RETURNS is `{ axis, value }`.
+
+The table is printed from `scripts/member-rename-map.json` by `node scripts/apply-member-rename.mjs --table render`.
+
+| module | type | old member | new member |
+|---|---|---|---|
+| `render/crt.js` | `initCrt` | `a11yVisualAtiva` | `a11yVisualOn` |
+| `render/crt.js` | `initCrt` | `numJogadores` | `numPlayers` |
+| `render/screen-pipeline.js` | `ScreenPipelineCtx` | `criarDesenho` | `createDrawing` |
+| `render/screen-pipeline.js` | `ScreenPipelineCtx` | `criarSprite` | `createSprite` |
+| `render/viewports.js` | `ViewportsCtx` | `renderizarEm` | `renderInto` |
+| `render/viz-axes-labels.js` | `AxisChoice` | `eixo` | `axis` |
+| `render/viz-axes-labels.js` | `AxisChoice` | `valor` | `value` |
+| `render/viz-axes.js` | `HowItApplies` | `direto` | `direct` |
+| `render/viz-axes.js` | `HowItApplies` | `filtro` | `filter` |
+| `render/viz-modes.js` | `VizMode` | `nome` | `name` |
+| `render/viz-refusal.js` | `Refusal` | `chave` | `key` |
+| `render/viz-refusal.js` | `Refusal` | `eixo` | `axis` |
+| `render/viz-setters.js` | `VizSettersApi` | `renderEixosVisuais` | `renderVisualAxes` |
+| `render/viz-setters.js` | `VizSettersApi` | `setCorrecaoDoJogador` | `setPlayerCorrection` |
+| `render/viz-setters.js` | `VizSettersApi` | `setTemaDoJogador` | `setPlayerTheme` |
+| `render/viz-setters.js` | `VizSettersApi` | `setVisualDoJogador` | `setPlayerVisual` |
+| `render/viz-setters.js` | `VizSettersCtx` | `aplicarAltoContrasteNoDom` | `applyHighContrastToDom` |
+| `render/viz-setters.js` | `VizSettersCtx` | `aplicarFiltroCss` | `applyCssFilter` |
+| `render/viz-setters.js` | `VizSettersCtx` | `setModoCego` | `setBlindMode` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

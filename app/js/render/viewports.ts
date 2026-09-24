@@ -107,7 +107,7 @@ export interface ViewportsCtx {
 
   /* --- objetos PIXI criados no game.js (z-order e ciclo de vida soldados lá) --- */
   getLvOverlaySpr: () => TexturedSprite; // GETTER idem; sprite de carimbo, nunca entra em container
-  renderizarEm: RenderInto;                // `app.renderer` (app é `const`, criado no início do boot)
+  renderInto: RenderInto;                // `app.renderer` (app é `const`, criado no início do boot)
   getVpTex: () => unknown[];             // GETTER: `let vpTex` é REATRIBUÍDO por configureRender a cada troca de nº de telas
 
   /* --- DOM: o host dos <filter> gerados (cura da duplicação das matrizes) --- */
@@ -212,7 +212,7 @@ export function initViewports(ctx: ViewportsCtx): ViewportsApi {
     const m = VIZ_BY_KEY[mode];
     if (!m || m.kind !== 'lowvision') return;
     const t = lvOverlayTex(m.lv as string);
-    if (t) { const spr = ctx.getLvOverlaySpr(); spr.texture = t; ctx.renderizarEm(spr, ctx.getVpTex()[i], false); }
+    if (t) { const spr = ctx.getLvOverlaySpr(); spr.texture = t; ctx.renderInto(spr, ctx.getVpTex()[i], false); }
   }
 
   return {

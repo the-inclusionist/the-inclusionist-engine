@@ -32,8 +32,8 @@ import {
 
 /** O que a tabela ANTIGA fazia com esta chave, derivado dela e não escrito à mão. */
 const comportamentoAntigo = (k) => ({
-  direto: needsCanvas(k) ? k : null,
-  filtro: k in VIZ_FILTER ? k : null,
+  direct: needsCanvas(k) ? k : null,
+  filter: k in VIZ_FILTER ? k : null,
 });
 
 describe('#104 · a migração preserva o que cada modo FAZ', () => {
@@ -115,7 +115,7 @@ describe('#104 · e o que a divisão TORNA POSSÍVEL, que é o ponto da issue', 
     // precise de alto contraste não podia ter os dois. Nenhuma chave antiga consegue exprimir este estado —
     // é por isso que o caso o constrói à mão.
     const os_dois = { tema: 'hc7', correcao: 'deuter', simulacao: null };
-    expect(howItApplies(os_dois)).toEqual({ direto: 'hc-direto-7', filtro: 'fix-deuter' });
+    expect(howItApplies(os_dois)).toEqual({ direct: 'hc-direto-7', filter: 'fix-deuter' });
     expect(nosPadroes(os_dois), 'com um eixo fora do padrão a simulação tem de ficar travada').toBe(false);
   });
 
@@ -141,8 +141,8 @@ describe('#104 · e o que a divisão TORNA POSSÍVEL, que é o ponto da issue', 
 
   it('[Right] mexer num eixo não mexe no outro — uma asserção em cada sentido', () => {
     const base = { tema: 'hc45', correcao: 'protan', simulacao: null };
-    expect(howItApplies({ ...base, tema: 'padrao' }).filtro, 'tirar o tema apagou a correção').toBe('fix-protan');
-    expect(howItApplies({ ...base, correcao: 'tricro' }).direto, 'tirar a correção apagou o tema').toBe('hc-direto-45');
+    expect(howItApplies({ ...base, tema: 'padrao' }).filter, 'tirar o tema apagou a correção').toBe('fix-protan');
+    expect(howItApplies({ ...base, correcao: 'tricro' }).direct, 'tirar a correção apagou o tema').toBe('hc-direto-45');
   });
 });
 

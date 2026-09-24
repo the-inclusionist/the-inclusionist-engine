@@ -44,7 +44,7 @@ function mkCtx(over = {}) {
     getTreeTexNormal: () => treeTexNormal,
     getLvOverlaySpr: () => spr,
     // `renderer` virou a CAPACIDADE `renderizarEm` (Fase D): o módulo pede o verbo, não o objeto do PixiJS.
-    renderizarEm: (obj, alvo, limpar) => rendered.push([obj, { renderTexture: alvo, clear: limpar }]),
+    renderInto: (obj, alvo, limpar) => rendered.push([obj, { renderTexture: alvo, clear: limpar }]),
     getVpTex: () => ['RT0', 'RT1'],
     cvdDefsHost: null,
     ...over,

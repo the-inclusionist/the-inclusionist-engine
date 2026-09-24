@@ -38,7 +38,7 @@ describe('EMPATHY_VIZ_MODES — só o que SIMULA', () => {
     const blind = EMPATHY_VIZ_MODES.find((m) => m.key === 'blind');
     // Contra `t()` e não contra o português: fixar a frase aqui devolveria ao teste o texto que o item 14
     // tirou do catálogo. O caso segue pegando entrada trocada — cada modo tem chave própria.
-    expect(t(blind.nome)).toBe(t('viz.blind'));
+    expect(t(blind.name)).toBe(t('viz.blind'));
     expect(t(blind.desc)).toContain('Tela preta');
   });
 });

@@ -145,8 +145,8 @@ describe('⚠️ a COMPOSIÇÃO: os dois aplicados ao mesmo tempo', () => {
   it('7:1 E correção de deuteranopia produzem OS DOIS', () => {
     // A asserção que é a issue #104 inteira. Enquanto `p.viz` era um campo, aplicar um apagava o outro.
     const a = howItApplies({ tema: 'hc7', correcao: 'deuter', simulacao: null });
-    expect(a.direto).toBe('hc-direto-7');
-    expect(a.filtro).toBe('fix-deuter');
+    expect(a.direct).toBe('hc-direto-7');
+    expect(a.filter).toBe('fix-deuter');
   });
 
   it('⚠️ e as chaves que saem existem NAS TABELAS REAIS — senão a composição é de mentira', () => {
@@ -155,8 +155,8 @@ describe('⚠️ a COMPOSIÇÃO: os dois aplicados ao mesmo tempo', () => {
     for (const tema of THEMES) {
       for (const correcao of CORRECTIONS) {
         const a = howItApplies({ tema, correcao, simulacao: null });
-        if (a.direto) expect(isDirectMode(a.direto), `modo direto inexistente: ${a.direto}`).toBe(true);
-        if (a.filtro) expect(VIZ_FILTER[a.filtro], `filtro inexistente: ${a.filtro}`).toBeTypeOf('string');
+        if (a.direct) expect(isDirectMode(a.direct), `modo direto inexistente: ${a.direct}`).toBe(true);
+        if (a.filter) expect(VIZ_FILTER[a.filter], `filtro inexistente: ${a.filter}`).toBeTypeOf('string');
       }
     }
   });
@@ -165,18 +165,18 @@ describe('⚠️ a COMPOSIÇÃO: os dois aplicados ao mesmo tempo', () => {
     for (const s of SIMULATIONS) {
       if (!s) continue;
       const a = howItApplies({ tema: 'padrao', correcao: 'tricro', simulacao: s });
-      expect(VIZ_FILTER[a.filtro], `filtro inexistente para ${s}`).toBeTypeOf('string');
-      expect(a.direto, 'uma simulação corre no tema padrão').toBeNull();
+      expect(VIZ_FILTER[a.filter], `filtro inexistente para ${s}`).toBeTypeOf('string');
+      expect(a.direct, 'uma simulação corre no tema padrão').toBeNull();
     }
   });
 
   it('o padrão dos dois eixos não aplica nada', () => {
-    expect(howItApplies(PADRAO)).toEqual({ direto: null, filtro: null });
+    expect(howItApplies(PADRAO)).toEqual({ direct: null, filter: null });
   });
 
   it('tema sozinho não inventa filtro, e correção sozinha não inventa tema', () => {
-    expect(howItApplies({ tema: 'hc45', correcao: 'tricro', simulacao: null })).toEqual({ direto: 'hc-direto-45', filtro: null });
-    expect(howItApplies({ tema: 'padrao', correcao: 'protan', simulacao: null })).toEqual({ direto: null, filtro: 'fix-protan' });
+    expect(howItApplies({ tema: 'hc45', correcao: 'tricro', simulacao: null })).toEqual({ direct: 'hc-direto-45', filter: null });
+    expect(howItApplies({ tema: 'padrao', correcao: 'protan', simulacao: null })).toEqual({ direct: null, filter: 'fix-protan' });
   });
 });
 

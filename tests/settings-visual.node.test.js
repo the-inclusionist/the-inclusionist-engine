@@ -185,7 +185,7 @@ describe('ui/settings-visual — VISUAL_MODE_LIST', () => {
     for (const m of VISUAL_MODE_LIST) {
       // Os campos guardam CHAVE; o que precisa existir é a TRADUÇÃO delas. Cobrar só o comprimento da chave
       // deixaria passar um modo cuja chave não está no dicionário — e ele apareceria no menu como 'viz.xyz'.
-      expect(t(m.nome), m.key).not.toBe(m.nome);
+      expect(t(m.name), m.key).not.toBe(m.name);
       expect(t(m.desc), m.key).not.toBe(m.desc);
     }
   });

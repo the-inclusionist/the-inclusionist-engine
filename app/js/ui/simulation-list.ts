@@ -90,7 +90,7 @@ export function createSimulationList(ctx: SimulationListCtx): SimulationList {
         if (!mode) continue; // a key no mode answers for would become a blank option the child can choose
         const option = ctx.make('option');
         option.value = key;
-        option.textContent = t(mode.nome); // what it DOES, never the key that stores it (ADR-0074)
+        option.textContent = t(mode.name); // what it DOES, never the key that stores it (ADR-0074)
         choice.appendChild(option);
       }
       choice.value = ctx.running() ?? 'normal';

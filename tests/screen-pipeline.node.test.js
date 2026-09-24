@@ -125,7 +125,7 @@ function mkHarness(numPlayers) {
   const api = initScreenPipeline({
     // Construtores viraram FÁBRICAS (Fase D): a porta pede o verbo, não a classe. Ver `render/port`.
     RenderTexture, NEAREST: 0,
-    criarSprite: (t) => new SpriteCtor(t), criarDesenho: () => new GraphicsCtor(),
+    createSprite: (t) => new SpriteCtor(t), createDrawing: () => new GraphicsCtor(),
     stage, renderer: { resize: (w, h) => log.resizes.push([w, h]) }, camera,
     getNumPlayers: () => numPlayers,
     getVpTex: () => vpTex, setVpTex: (a) => { vpTex = a; },

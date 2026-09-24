@@ -951,8 +951,8 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   initCrt({
     // `cartucho` and not `players()`: this runs at boot, above the `players` declaration (temporal dead zone)
-    numJogadores: () => Math.max(1, (cartridge.players ?? []).length),
-    a11yVisualAtiva: () => filterKey(worldState) !== null || getLqT() > 0,
+    numPlayers: () => Math.max(1, (cartridge.players ?? []).length),
+    a11yVisualOn: () => filterKey(worldState) !== null || getLqT() > 0,
   });
   initLqFilter({ onChange: recomposeWorldFilter });
   if (getLqT() > 0) recomposeWorldFilter(); // o realce guardado vale desde o arranque

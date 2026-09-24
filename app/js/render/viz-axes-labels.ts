@@ -104,13 +104,13 @@ export function axesHtml(v: VisualState, t: Translator): string {
 
 /** O que um clique num botão do painel quer dizer. `null` quando o botão não é de eixo nenhum. */
 export interface AxisChoice {
-  readonly eixo: VisualAxis;
-  readonly valor: string;
+  readonly axis: VisualAxis;
+  readonly value: string;
 }
 export function buttonChoice(dataset: { eixo?: string; valor?: string }): AxisChoice | null {
   const { eixo, valor } = dataset;
   if (eixo !== 'tema' && eixo !== 'correcao') return null;
   if (!valor) return null;
   const allowed: readonly string[] = eixo === 'tema' ? THEMES : CORRECTIONS;
-  return allowed.includes(valor) ? { eixo, valor } : null;
+  return allowed.includes(valor) ? { axis: eixo, value: valor } : null;
 }

@@ -1721,8 +1721,8 @@
       "applyVpFilters",
       "buildGameHud",
       "camera",
-      "criarDesenho",
-      "criarSprite",
+      "createDrawing",
+      "createSprite",
       "getNumPlayers",
       "getVpDots",
       "getVpFrames",
@@ -1747,7 +1747,7 @@
       "getTreeTexNormal",
       "getVpTex",
       "parallaxTexNormal",
-      "renderizarEm"
+      "renderInto"
     ],
     "interface ViewportsApi": [
       "clearParallaxTexCache",
@@ -1763,16 +1763,16 @@
   },
   "render/viz-axes-labels.ts": {
     "interface AxisChoice": [
-      "eixo",
-      "valor"
+      "axis",
+      "value"
     ],
     "type VisualAxis": "'tema' | 'correcao'",
     "type Translator": "(chave: string, params?: Record<string, string | number>) => string"
   },
   "render/viz-axes.ts": {
     "interface HowItApplies": [
-      "direto",
-      "filtro"
+      "direct",
+      "filter"
     ],
     "type Theme": "TemaDoCore",
     "type Correction": "CorrecaoDoCore",
@@ -1785,15 +1785,15 @@
   },
   "render/viz-refusal.ts": {
     "interface Refusal": [
-      "chave",
-      "eixo"
+      "axis",
+      "key"
     ]
   },
   "render/viz-setters.ts": {
     "interface VizSettersCtx": [
       "$",
-      "aplicarAltoContrasteNoDom",
-      "aplicarFiltroCss",
+      "applyCssFilter",
+      "applyHighContrastToDom",
       "body",
       "camera",
       "clearPlayerDirectCache",
@@ -1820,8 +1820,8 @@
       "renderEmpathyPanel",
       "renderVisualPanel",
       "resetPupTexCache",
+      "setBlindMode?",
       "setFrontDim",
-      "setModoCego?",
       "setSelVizPlayer",
       "setSharedViz",
       "srSay",
@@ -1834,12 +1834,12 @@
       "applyVpFilters",
       "reapplyVizAll",
       "rebakeDirect",
-      "renderEixosVisuais",
+      "renderVisualAxes",
       "renderVizGroup",
-      "setCorrecaoDoJogador",
+      "setPlayerCorrection",
+      "setPlayerTheme",
+      "setPlayerVisual",
       "setPlayerViz",
-      "setTemaDoJogador",
-      "setVisualDoJogador",
       "updateVizIndicator",
       "updateVpDots"
     ]

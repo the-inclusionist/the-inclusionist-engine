@@ -32,7 +32,7 @@ describe('a tabela e os índices', () => {
     // import, e fica congelada no idioma do boot. Este menu é o que uma criança de baixa visão lê para
     // configurar o próprio jogo — em inglês ele viraria a única página que ela não consegue usar.
     for (const m of VIZ_MODES) {
-      expect(m.nome, m.key).toMatch(/^viz\./);
+      expect(m.name, m.key).toMatch(/^viz\./);
       expect(m.desc, m.key).toMatch(/^viz\.desc\./);
     }
   });

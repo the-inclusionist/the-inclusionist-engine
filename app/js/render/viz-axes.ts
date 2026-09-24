@@ -99,12 +99,12 @@ export function filterKey(v: VisualState): string | null {
  */
 export interface HowItApplies {
   /** A chave do modo direto (alto contraste), ou `null`. */
-  readonly direto: string | null;
+  readonly direct: string | null;
   /** A chave do filtro CSS (correção ou simulação), ou `null`. */
-  readonly filtro: string | null;
+  readonly filter: string | null;
 }
 export function howItApplies(v: VisualState): HowItApplies {
-  return { direto: directTheme(v), filtro: filterKey(v) };
+  return { direct: directTheme(v), filter: filterKey(v) };
 }
 
 /* ===================== O QUE OS LEITORES DE FACTO PERGUNTAM ===================== */
