@@ -123,6 +123,15 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
     expect(stick, 'o analógico não foi montado').not.toBeNull();
     expect(stick.querySelector('.touch-knob'), 'o analógico veio sem manopla e fica sem escuta').not.toBeNull();
     expect(raiz.querySelector('#touch-cross'), 'montou os dois direcionais ao mesmo tempo').toBeNull();
+    // the BASE is what the stylesheet draws (`.touch-stick`): with the id alone the knob moves inside a circle nobody sees
+    expect(stick.classList.contains('touch-stick'), 'the stick\'s base is not drawn').toBe(true);
+  });
+
+  it('🔴 [Right] no button box where the game names no button, and no corner where it names no shoulder', () => {
+    // An empty box on the screen is a promise with nothing in it — the ADR-0162 rule, for the containers as well as the keys.
+    const raiz = montar(['up', 'down', 'left', 'right'], { direcional: 'cruz' });
+    expect(raiz.querySelector('.touch-pad'), 'an empty button box is drawn').toBeNull();
+    expect(raiz.querySelectorAll('.touch-ombros'), 'an empty shoulder corner is drawn').toHaveLength(0);
   });
 
   it('⚠️ [Zero] montar DUAS vezes deixa UM pad', () => {
@@ -171,3 +180,12 @@ describe('ADR-0143 §4 · o silêncio acaba', () => {
 //   N3 L1 and L2 swapped                                   🔴
 //   N4 directions without a spoken name                   🔴
 //   N5 the name read from the slot, not the action it fires 🔴
+//
+// PROBED AGAIN (2026-09-23), twenty-seven decisions of `mountTouchControls` disabled one at a time against the nine files that
+// draw or drive the pad — `scratchpad/sonda-pad.py`. Five were green:
+//   · the analog base's class, which is what the stylesheet draws  → «o analógico traz a `.touch-knob`…» (last assertion)
+//   · an empty button box, and an empty shoulder corner              → «no button box where the game names no button…»
+//   · the arm's `data-dir` — 📏 NO reader in the engine, its stylesheet or any of the seven games (the 2048 writes its own on
+//     its own buttons): an inert write, and it left in the cut instead of being pinned.
+//   · 📏 EQUIVALENT, and declared: a drawn slot whose position has no name falls back to the game's word — no drawn slot can
+//     reach it today, since every action in the catalogue has a position name; it is the fallback for one added without.
