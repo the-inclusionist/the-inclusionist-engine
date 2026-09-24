@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de render/high-contrast — Renderização Direta em canvas REAL (project browser: Chromium/Playwright).
-// A lógica pura (dcfg/roleOf/HC_ROLE) já está no .node.test.js; aqui cobrimos o que exige getImageData/
-// putImageData/drawImage de verdade: worldToTextureDirect (repintura por papel + contorno de 2º plano),
-// directBgTexture (dessaturação assíncrona), directSprite{Canvas,Texture} (contorno de 1º plano) e o cache
-// de worldTexFor/spriteTexFor. ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
+// Tests of render/high-contrast — Direct Rendering on a REAL canvas (browser project: Chromium/Playwright).
+// The pure logic (dcfg/HC_ROLE) is in the .node.test.js; here we cover what needs real getImageData/putImageData/
+// drawImage: worldToTextureDirect (repaint by role + background outline), directBgTexture (asynchronous
+// desaturation), directSprite{Canvas,Texture} (foreground outline) and the worldTexFor/spriteTexFor cache.
+// ZOMBIES + Right-BICEP. See ADR-0011 (visual accessibility).
 import { describe, it, expect, beforeAll } from 'vitest';
-import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // a tabela tile→papel é do JOGO (ADR-0080); a engine a RECEBE, e o gate prova que a cor sai do PAPEL
+import { roleOfFalso as roleOf } from './fixtures/fake-cartridge.js'; // the tile→role table belongs to the GAME (ADR-0080); the engine RECEIVES it, and the gate proves the colour comes from the ROLE
 
 import { TILE } from '../app/js/core/constants.js';
 import {
@@ -13,9 +13,9 @@ import {
   worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache, initHighContrast, HC_ROLE,
 } from '../app/js/render/high-contrast.js';
 
-// Mundo de teste 4×3 (TILE=16): col0=pedra(2, estrutura) · col1=lava(9, hazard) · col2=escada(4, climb,
-// caso especial) · col3=água(3, water); linha do meio replica a estrutura; linha de baixo é ar(0/1) — dá
-// perímetro real ao redor da linha do meio p/ testar o contorno de 2º plano.
+// 4×3 test world (TILE=16): col0=stone(2, structure) · col1=lava(9, hazard) · col2=ladder(4, climb, special case) ·
+// col3=water(3, water); the middle row repeats the structure; the bottom row is air(0/1) — giving a real perimeter
+// around the middle row to test the background outline.
 const W = 4, H = 3;
 const WORLD = [
   [2, 9, 4, 3],
@@ -23,12 +23,9 @@ const WORLD = [
   [0, 1, 0, 1],
 ];
 /*
- * 🔴 A GRADE É DO CASO, e não de um módulo da engine, desde 23/09. Este ficheiro montava um `core/collision`
- * inteiro — mundo, cadeira de rodas, modo cego, portão — só para lhe perguntar `tileAt`. Aquele módulo mudou de
- * repositório (nota CB) e o alto contraste passou a RECEBER a consulta por porta (nota CA), então o que o caso
- * precisa de dar é uma função de duas linhas.
- * 📌 Fora da grade responde PEDRA (2), que é a mesma resposta que o módulo dava: uma parede natural, para o
- * contorno de perímetro não achar ar onde o mundo acaba.
+ * 🔴 THE GRID BELONGS TO THE CASE, not to an engine module: high contrast RECEIVES the `tileAt` query through a port,
+ * so what the case has to give is a two-line function.
+ * 📌 Outside the grid it answers STONE (2): a natural wall, so the perimeter outline finds no air where the world ends.
  */
 const tileAt = (tx, ty) => (tx < 0 || tx >= W || ty < 0 || ty >= H ? 2 : WORLD[ty][tx]);
 
@@ -37,9 +34,9 @@ function flatCanvas(w, h, css) {
   const c = cv.getContext('2d'); c.fillStyle = css; c.fillRect(0, 0, w, h);
   return cv;
 }
-const canvasOf = (texture) => texture.baseTexture.resource.source; // real PIXI.Texture (tex() do canvas.js)
+const canvasOf = (texture) => texture.baseTexture.resource.source; // real PIXI.Texture
 const pixelAt = (cv, x, y) => [...cv.getContext('2d').getImageData(x, y, 1, 1).data];
-// srcTex "de mentira" (estrutural — ver DirectTexSource): baseTexture.valid=true → paint() roda SÍNCRONO.
+// a fake srcTex (structural — see DirectTexSource): baseTexture.valid=true → paint() runs SYNCHRONOUSLY.
 const fakeTex = (cv) => ({ orig: { width: cv.width, height: cv.height }, baseTexture: { valid: true, resource: { source: cv }, once: () => {} } });
 
 describe('render/high-contrast — dimDesat (dessaturação/escurecimento)', () => {
@@ -60,7 +57,7 @@ describe('render/high-contrast — dimDesat (dessaturação/escurecimento)', () 
     const cv = document.createElement('canvas'); cv.width = 1; cv.height = 1;
     const c = cv.getContext('2d'); c.clearRect(0, 0, 1, 1); // alpha=0
     dimDesat(c, 1, 1, 0.5, 1.2, 90);
-    expect(pixelAt(cv, 0, 0)).toEqual([0, 0, 0, 0]); // continua transparente, não virou cinza-90
+    expect(pixelAt(cv, 0, 0)).toEqual([0, 0, 0, 0]); // still transparent, did not become grey-90
   });
 });
 
@@ -81,9 +78,9 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
 
   it('[Right] hazard(9) vira um vermelho/laranja com R dominante (HC_ROLE.hazard = [255,110,45])', () => {
     const cv = canvasOf(worldToTextureDirect(flatCanvas(W * TILE, H * TILE, '#888888'), 'hc-direto'));
-    const [r, g, b] = pixelAt(cv, 1 * TILE + 8, 0 * TILE + 8); // centro do tile (col1,row0) = lava
+    const [r, g, b] = pixelAt(cv, 1 * TILE + 8, 0 * TILE + 8); // centre of tile (col1,row0) = lava
     expect(r).toBeGreaterThan(b); expect(r).toBeGreaterThan(g);
-    expect([r, g, b]).not.toEqual([r, r, r]); // não ficou cinza (dessaturado) — foi repintado
+    expect([r, g, b]).not.toEqual([r, r, r]); // not grey (desaturated) — it was repainted
   });
 
   it('[Right] água(3) vira um azul com B dominante (HC_ROLE.water = [70,140,255])', () => {
@@ -94,10 +91,10 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
 
   it('[Boundary] escada(4) é caso especial: quase-preto + trilho ciano na borda (não vira faixa sólida)', () => {
     const cv = canvasOf(worldToTextureDirect(flatCanvas(W * TILE, H * TILE, '#888888'), 'hc-direto'));
-    const centro = pixelAt(cv, 2 * TILE + 8, 0 * TILE + 5); // vão entre degraus (ry=2 e ry=7 não cobrem a linha 5) = fundo #0a0e14
+    const centro = pixelAt(cv, 2 * TILE + 8, 0 * TILE + 5); // gap between rungs (ry=2 and ry=7 do not cover line 5) = background #0a0e14
     expect(centro.slice(0, 3)).toEqual([0x0a, 0x0e, 0x14]);
-    // 🔴 o trilho era lido na linha 8, que é um DEGRAU (os degraus cobrem as linhas 2–3, 7–8, 12–13): o caso via a cor do
-    // papel sem o trilho existir. A linha 5 é vão entre degraus, e ali só o trilho a pinta. Medido na sonda de 2026-09-23.
+    // 🔴 the rail is read on line 5, a gap between rungs (the rungs cover lines 2–3, 7–8, 12–13), where only the rail paints
+    // the role's colour. Read on line 8, a RUNG, the case saw the colour with no rail at all — measured by the 2026-09-23 probe.
     const trilho = pixelAt(cv, 2 * TILE + 1, 0 * TILE + 5);
     expect(trilho.slice(0, 3), 'no rail on the ladder').toEqual(HC_ROLE.climb);
     const degrau = pixelAt(cv, 2 * TILE + 8, 0 * TILE + 2);
@@ -116,20 +113,20 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
 
   it('[Inverse] estrutura (pedra=2) NÃO é repintada por papel — só dessaturada (R≈G; sem o vermelho/azul saturado dos papéis)', () => {
     const cv = canvasOf(worldToTextureDirect(flatCanvas(W * TILE, H * TILE, '#888888'), 'hc-direto'));
-    const [r, g, b] = pixelAt(cv, 0 * TILE + 8, 0 * TILE + 8); // (col0,row0) = pedra
-    expect(Math.abs(r - g)).toBeLessThanOrEqual(3); // dimDesat: R×mul vs G×mul×1.02 — quase iguais (não há matiz de papel)
-    expect(b).toBeGreaterThan(r); // canal azul recebe o multiplicador extra (blue=1.22)
+    const [r, g, b] = pixelAt(cv, 0 * TILE + 8, 0 * TILE + 8); // (col0,row0) = stone
+    expect(Math.abs(r - g)).toBeLessThanOrEqual(3); // dimDesat: R×mul vs G×mul×1.02 — almost equal (no role hue)
+    expect(b).toBeGreaterThan(r); // the blue channel gets the extra multiplier (blue=1.22)
   });
 
   it('[Boundary] contorno de 2º plano só no PERÍMETRO externo (linha do meio faz fronteira com o ar de baixo)', () => {
-    // rgba(200,222,255,0.97) compõe SOBRE o pixel já dessaturado (123,125,150 p/ hc-direto) — não é opaco puro;
-    // 0.97*200+0.03*123≈198 / 0.97*222+0.03*125≈219 / 0.97*255+0.03*150≈252. Checa a composição, não um valor cravado.
+    // rgba(200,222,255,0.97) composites OVER the already desaturated pixel (123,125,150 for hc-direto) — not pure opaque;
+    // 0.97*200+0.03*123≈198 / 0.97*222+0.03*125≈219 / 0.97*255+0.03*150≈252. Checks the composition, not a fixed value.
     const cv = canvasOf(worldToTextureDirect(flatCanvas(W * TILE, H * TILE, '#888888'), 'hc-direto'));
-    const bordaInferior = pixelAt(cv, 0 * TILE + 8, 1 * TILE + TILE - 1); // base do tile (col0,row1), vizinho de baixo é ar
-    expect(bordaInferior[0]).toBeGreaterThan(190); // R salta de 123 (estrutura) p/ ~198 (contorno)
-    expect(bordaInferior[2]).toBeGreaterThan(245); // B salta de 150 p/ ~252
-    const meioDoBloco = pixelAt(cv, 0 * TILE + 8, 1 * TILE + 4); // interior do mesmo tile, longe de qualquer fronteira c/ ar
-    expect(meioDoBloco[0]).toBeLessThan(190); // sem contorno: continua no tom dessaturado (R≈123)
+    const bordaInferior = pixelAt(cv, 0 * TILE + 8, 1 * TILE + TILE - 1); // bottom of tile (col0,row1), the neighbour below is air
+    expect(bordaInferior[0]).toBeGreaterThan(190); // R jumps from 123 (structure) to ~198 (outline)
+    expect(bordaInferior[2]).toBeGreaterThan(245); // B jumps from 150 to ~252
+    const meioDoBloco = pixelAt(cv, 0 * TILE + 8, 1 * TILE + 4); // inside the same tile, far from any border with air
+    expect(meioDoBloco[0]).toBeLessThan(190); // no outline: stays at the desaturated tone (R≈123)
   });
 
   it('[Zero] outlineBg=0 → sem contorno de 2º plano (a borda fica só com o tom dessaturado/repintado)', () => {
@@ -141,8 +138,9 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
     });
     const cv = canvasOf(worldToTextureDirect(flatCanvas(W * TILE, H * TILE, '#888888'), 'hc-direto'));
     const bordaInferior = pixelAt(cv, 0 * TILE + 8, 1 * TILE + TILE - 1);
-    // 🔴 era `not.toEqual([200, 222, 255])`, e o contorno COMPÕE-SE a 97% (≈198, 219, 252) — a asserção passava com ou sem
-    // contorno. Medido na sonda de 2026-09-23: desligar a guarda do contorno ficava verde. O limiar é o do caso de cima.
+    // 🔴 a threshold, not `not.toEqual([200, 222, 255])`: the outline COMPOSITES at 97% (≈198, 219, 252), so that assertion
+    // passed with or without an outline (the 2026-09-23 probe: turning off the outline guard stayed green). The threshold
+    // is the one of the case above.
     expect(bordaInferior[0], 'the outline was drawn with a thickness of zero').toBeLessThan(190);
   });
 
@@ -206,8 +204,8 @@ describe('render/high-contrast — directBgTexture (fundo/decoração: só dessa
     const dst = directBgTexture(fakeTex(src), 'hc-direto');
     const cv = canvasOf(dst);
     const [r] = pixelAt(cv, 0, 0);
-    // directBgTexture chama dimDesat SEM `off` (só cfg.bgMul=0.30 p/ hc-direto) — o fundo não ganha o clareamento
-    // do "off" que a estrutura do mundo recebe; só escurece/recua. g = 0 + 200*0.30 = 60.
+    // directBgTexture calls dimDesat WITHOUT `off` (only cfg.bgMul=0.30 for hc-direto) — the background does not get the
+    // "off" lightening the world's structure gets; it only darkens/recedes. g = 0 + 200*0.30 = 60.
     expect(r).toBe(200 * 0.30);
   });
   it('[Interface] não usa outlineFg/outlineBg (funciona mesmo sem initHighContrast novo — não lança)', () => {

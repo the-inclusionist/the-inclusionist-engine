@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A NARRAÇÃO INTERROMPÍVEL — item 2 do ADR-0044, e a corrida que ele esconde.
+// INTERRUPTIBLE NARRATION — item 2 of ADR-0044, and the race it hides.
 //
-// O motor neural falava por FILA DE UM: `if (busy) next = text; else speakNow(text)`. Varrendo cinco itens
-// de menu, a criança ouvia o primeiro inteiro e depois o último — os três do meio sumiam, porque cada pedido
-// sobrescrevia o `next`. Lento E lacunar, e as duas coisas doem no mesmo lugar: quem não enxerga navega por
-// escuta, e a escuta ficava vários itens atrás do foco.
+// A QUEUE OF ONE (`if (busy) next = text; else speakNow(text)`) is what this replaces: scanning five menu items, the
+// child heard the first in full and then the last — the three in between vanished, because each request overwrote
+// `next`. Slow AND gappy, and both hurt in the same place: whoever cannot see navigates by ear, and the ear fell
+// several items behind the focus.
 //
-// Este arquivo prova as duas garantias com falsos, em milissegundos — o bloco neural de verdade vive dentro
-// de um `import()` que só resolve com 25,6 MB de runtime presente.
+// This file proves both guarantees with fakes, in milliseconds — the real neural block lives inside an `import()` that
+// only resolves with the heavy runtime present.
 //
-// MUTAÇÕES CONFERIDAS (no fim do arquivo).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { createInterruptibleSpeech } from '../app/js/platform/interruptible-speech.js';
 
 /**
- * Motor falso com síntese de duração CONTROLÁVEL — é o que permite encenar a corrida: um pedido lento
- * seguido de um rápido, terminando fora de ordem.
+ * A fake engine with CONTROLLABLE synthesis time — what lets the race be staged: a slow request followed by a fast
+ * one, finishing out of order.
  */
 function motorFalso() {
   const log = [];
-  /** texto → ms que a "síntese" demora. O que não estiver aqui é instantâneo. */
+  /** text → ms the "synthesis" takes. Anything not here is instant. */
   const demora = {};
   let n = 0;
   const motor = {
@@ -50,23 +50,23 @@ describe('fala interrompível — o último pedido é o que vale', () => {
   });
 
   it('[Right] pedido novo CALA o anterior antes mesmo de sintetizar', async () => {
-    // A garantia 1, e é ela que dá o silêncio imediato. Parar só quando o áudio novo fica pronto deixaria a
-    // voz velha falando durante a síntese — o item errado, com convicção.
+    // Guarantee 1, the one that gives immediate silence. Stopping only when the new audio is ready would leave the old
+    // voice speaking during synthesis — the wrong item, with conviction.
     const { motor, log } = motorFalso();
     const fala = createInterruptibleSpeech(motor);
     fala.speak('Continuar');
     await esperar(10);
     log.length = 0;
     fala.speak('Sair');
-    // ANTES de qualquer espera, o `parar` já tem de ter acontecido.
+    // BEFORE any wait, the `parar` must already have happened.
     expect(log[0], 'o anterior precisa calar na hora, não ao fim da síntese').toBe('parar:Continuar');
     await esperar(10);
     expect(log).toEqual(['parar:Continuar', 'sintetizar:Sair', 'tocar:Sair']);
   });
 
   it('[Many] varrer CINCO itens depressa toca só o último — e nenhum do meio', async () => {
-    // O caso que descreve o defeito original pelo avesso. Com a fila de um, isto tocava o primeiro E o
-    // último. Agora toca UM: aquele em que o dedo parou.
+    // The case that describes the queue-of-one defect inside out. With a queue of one, this played the first AND the
+    // last. It plays ONE: the one where the finger stopped.
     const { motor, log, demora } = motorFalso();
     for (const t of ['um', 'dois', 'três', 'quatro', 'cinco']) demora[t] = 20;
     const fala = createInterruptibleSpeech(motor);
@@ -76,16 +76,16 @@ describe('fala interrompível — o último pedido é o que vale', () => {
   });
 
   it('[Boundary] síntese que termina FORA DE ORDEM não atropela a mais nova', async () => {
-    // A corrida que a geração existe para impedir, e ela é real: a síntese neural de um texto curto pode
-    // terminar antes da de um texto longo pedido antes. Sem a geração, a criança ouviria o item que ela já
-    // passou, por cima do atual.
+    // The race the generation counter exists to prevent, and it is real: the neural synthesis of a short text can finish
+    // before that of a long text requested earlier. Without the generation, the child would hear the item they already
+    // passed, over the current one.
     const { motor, log, demora } = motorFalso();
     demora['lento'] = 50; demora['rápido'] = 5;
     const fala = createInterruptibleSpeech(motor);
     fala.speak('lento');
     await esperar(1);
-    fala.speak('rápido');   // pedido depois, mas termina antes
-    await esperar(100);     // tempo de sobra para o 'lento' voltar da síntese
+    fala.speak('rápido');   // requested later, but finishes first
+    await esperar(100);     // time to spare for 'lento' to come back from synthesis
     expect(log.filter((l) => l.startsWith('tocar:')), 'o lento não pode tocar depois').toEqual(['tocar:rápido']);
   });
 
@@ -102,8 +102,8 @@ describe('fala interrompível — o último pedido é o que vale', () => {
   });
 
   it('[Zero] texto vazio não sintetiza — mas ainda CALA o anterior', async () => {
-    // Um menu que anuncia string vazia acontece (rótulo ainda não traduzido, item sem nome). Não vale
-    // sintetizar silêncio, mas vale calar: o foco mudou.
+    // A menu announcing an empty string happens (a label not yet translated, an item with no name). Synthesising
+    // silence is not worth it, but stopping is: the focus moved.
     const { motor, log } = motorFalso();
     const fala = createInterruptibleSpeech(motor);
     fala.speak('Continuar');
@@ -115,8 +115,8 @@ describe('fala interrompível — o último pedido é o que vale', () => {
   });
 
   it('[Error] síntese que estoura não derruba a narração seguinte', async () => {
-    // O silêncio de UM item é melhor que um motor morto. Sem o `try`, uma promessa rejeitada deixaria a
-    // geração travada e o menu inteiro mudo dali para a frente.
+    // ONE item's silence is better than a dead engine. Without the `try`, a rejected promise would leave the generation
+    // stuck and the whole menu mute from then on.
     const log = [];
     let falhar = true;
     const motor = {
@@ -134,10 +134,10 @@ describe('fala interrompível — o último pedido é o que vale', () => {
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · tirando o `pararTudo()` do começo de `falar` → "[Right] pedido novo CALA o anterior" falha em
+// ========================= MUTATIONS CHECKED =========================
+//   · removing the `pararTudo()` at the start of `falar` → "[Right] pedido novo CALA o anterior" fails with
 //     "expected 'sintetizar:Sair' to be 'parar:Continuar'".
-//   · tirando o primeiro `if (minha !== geracao) return` → "[Boundary] fora de ordem" falha com
+//   · removing the first `if (minha !== geracao) return` → "[Boundary] fora de ordem" fails with
 //     ['tocar:rápido', 'tocar:lento'].
-//   · trocando `falar` por uma fila (`if (tocando) proximo = texto`) → "[Many] varrer cinco" falha,
-//     que é exatamente o comportamento antigo reaparecendo.
+//   · replacing `falar` with a queue (`if (tocando) proximo = texto`) → "[Many] varrer cinco" fails, which is exactly
+//     the old behaviour coming back.

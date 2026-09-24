@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A ARESTA E A ALTERNÂNCIA CHEGAM JUNTAS — a cadeia inteira do ADR-0113, de ponta a ponta (issue #127).
+// THE EDGE AND THE LATCH ARRIVE TOGETHER — ADR-0113's whole chain, end to end (issue #127).
 //
-// ========================= O QUE ESTE FICHEIRO FECHA =========================
-// Os outros três gates desta cadeia afirmam cada um a sua peça: a REGRA (`latch-scope`), o ARMAZENAMENTO
-// (`latch-store`), o AUTÓMATO (`transport-in-use`) e a RESOLUÇÃO (`latch-sync`). Todos verdes, e durante um
-// dia inteiro a cadeia não existia — medido em 2026-09-09, `playerEdge` e `storedLatch` tinham
-// ZERO chamadores em produção. Peças aferidas não são uma fiação.
+// ========================= WHAT THIS FILE CLOSES =========================
+// The other gates of this chain each assert their own piece: the RULE (`latch-scope`), the STORAGE (`latch-store`), the
+// AUTOMATON (`transport-in-use`) and the RESOLUTION (`latch-sync`). All can be green while nothing wires them — pieces
+// that were measured are not a wiring (on 2026-09-09 `playerEdge` and `storedLatch` had ZERO production callers).
 //
-// 🎯 Este é o caso que só passa quando as quatro estão ligadas: uma criança troca de aparelho, e o jogador
-// que a física lê muda com ela.
+// 🎯 This is the case that passes only when all four are connected: a child switches devices, and the player the
+// physics reads changes with them.
 //
-// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLatchedEdge } from '../app/js/input/latch-edge.js';
 import { inputOf, forgetInputs } from '../app/js/input/state.js';
@@ -52,7 +51,7 @@ describe('a aresta que também resolve a alternância', () => {
 
     aresta(0, 'gamepad');
     expect(p.toggleMove).toBe(true);
-    p.walkDir = -1;                       // ela estava a andar por travamento
+    p.walkDir = -1;                       // she was walking by latch
 
     aresta(0, 'teclado');
     expect(p.toggleMove, 'o teclado herdou a alternância do controle').toBe(false);
@@ -98,14 +97,15 @@ describe('a aresta que também resolve a alternância', () => {
   });
 });
 
-// ================================ MUTAÇÕES CONFERIDAS ================================
-// 1. tirar o `playerEdge(jogador, origem)` → a [Sequência] reprova: sem o autómato, `emUso` fica no
-//    `teclado` para sempre e a alternância do controle nunca é lida. É a metade que faltava até hoje.
-// 2. tirar o `syncLatch(...)` → o [Right] reprova: o autómato sabe, e o jogador não.
-// 3. resolver o jogador 0 sempre (`getPlayers()[0]`) → o [Muitos] reprova. A alternância é o ajuste de quem
-//    não consegue manter uma tecla premida; dá-la ao assento errado é dá-la a quem não pediu e tirá-la a
-//    quem precisa.
-// 4. ⚠️ trocar `inputOf(jogador).emUso` por `origem` → SOBREVIVE, e está registada por isso: hoje o
-//    `afterEdge` põe sempre `emUso = origem`, logo as duas expressões são o mesmo valor. Fica no código a
-//    ler o autómato — não por cobertura, mas porque QUAL transporte está em uso é a pergunta que aquele
-//    módulo existe para responder, e uma segunda resposta divergiria no dia em que ele ganhasse uma regra.
+// ================================ MUTATIONS CHECKED ================================
+// 1. removing `playerEdge(jogador, origem)` → the [Sequência] case fails: without the automaton, `emUso` stays at
+//    `teclado` forever and the pad's latch is never read. It was the missing half.
+// 2. removing `syncLatch(...)` → the [Right] case fails: the automaton knows, and the player does not.
+// 3. always resolving player 0 (`getPlayers()[0]`) → the [Muitos] case fails. The latch is the setting of whoever
+//    cannot keep a key pressed; giving it to the wrong seat gives it to someone who did not ask and takes it from
+//    someone who needs it.
+// 4. ⚠️ replacing `inputOf(jogador).emUso` with `origem` → SURVIVES, and is recorded for that: `afterEdge` always sets
+//    `emUso = origem`, so the two expressions are the same value. The code keeps reading the automaton — not for
+//    coverage, but because WHICH transport is in use is the question that module exists to answer, and a second
+//    answer would drift the day it gained a rule.
+//    (`emUso` is today's `inUse`.)

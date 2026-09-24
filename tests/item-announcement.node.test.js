@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O ÍNDICE "6 de 10" — item 3 do ADR-0044, e o motivo de ele estar no FIM.
+// THE "6 de 10" INDEX — item 3 of ADR-0044, and why it comes at the END.
 //
-// ========================= O QUE A XAG 106 PEDE, E POR QUE =========================
+// ========================= WHAT XAG 106 ASKS, AND WHY =========================
 // "Position and total help non-sighted players remain oriented and confident that they have found all of the
-// controls." Sem o índice, a criança que varre um menu por escuta não tem como saber se chegou ao fim ou se
-// perdeu alguma coisa no caminho — e essa dúvida custa mais que o tempo de ouvir o número.
+// controls." Without the index, a child scanning a menu by ear cannot know whether they reached the end or missed
+// something on the way — and that doubt costs more than the time to hear the number.
 //
-// O número vai no FIM da frase, e isso é decisão da própria XAG ("Gamma, slider, 38%, 6 of 9"). A razão é de
-// uso: quem varre depressa quer o RÓTULO primeiro e interrompe assim que reconhece o item. Índice na frente
-// obrigaria a ouvir a contagem inteira antes de saber do que se trata — e, com a narração interrompível do
-// item 2, seria a única parte que sempre daria tempo de ouvir.
+// The number goes at the END of the sentence, following XAG itself ("Gamma, slider, 38%, 6 of 9"). The reason is use:
+// whoever scans fast wants the LABEL first and interrupts as soon as they recognise the item. An index in front would
+// force hearing the whole count before knowing what it is about — and, with item 2's interruptible narration, it would
+// be the only part there was always time to hear.
 //
-// E existe a opção de DESLIGAR, também da XAG: para quem já conhece o menu de cor, o número vira ruído em
-// toda passagem. Acessibilidade que não se pode desligar é imposição.
+// And there is the option to TURN IT OFF, also from XAG: for someone who knows the menu by heart, the number becomes
+// noise on every pass. Accessibility that cannot be turned off is an imposition.
 //
-// MUTAÇÕES CONFERIDAS (no fim do arquivo).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { announceItem } from '../app/js/ui/item-announcement.js';
 import { t } from '../app/js/core/i18n.js';
@@ -26,8 +26,8 @@ describe('anúncio de item de menu · rótulo, estado e o índice no fim', () =>
   });
 
   it('[Right] desligar o índice tira SÓ o índice', () => {
-    // O que o desligamento não pode fazer é levar o estado junto: quem desliga a contagem continua precisando
-    // saber se o item está ativado.
+    // What turning it off must not do is take the state with it: whoever turns off the count still needs to know
+    // whether the item is on.
     expect(announceItem({ label: 'Alto contraste', state: 'ativado', position: 6, total: 10 }, false))
       .toBe('Alto contraste, ativado');
   });
@@ -38,24 +38,24 @@ describe('anúncio de item de menu · rótulo, estado e o índice no fim', () =>
   });
 
   it('[Boundary] as pontas do anel contam certo — 1 de 7 e 7 de 7', () => {
-    // O anel do item 1 faz `quit` ficar a UMA tecla de `resume`, e é o índice que conta essa história: quem
-    // aperta para cima no primeiro item precisa ouvir "7 de 7" para entender que deu a volta, e não que andou.
+    // Item 1's ring puts `quit` ONE key away from `resume`, and the index is what tells that story: whoever presses up
+    // on the first item needs to hear "7 de 7" to understand they wrapped around, not that they moved on.
     expect(announceItem({ label: 'Continuar', position: 1, total: 7 }, true)).toContain('1 de 7');
     expect(announceItem({ label: 'Sair', position: 7, total: 7 }, true)).toContain('7 de 7');
   });
 
   it('[Error] posição impossível NÃO é anunciada — número errado é pior que número nenhum', () => {
-    // Acontece de verdade: um item filtrado por visibilidade sai da lista e o índice de quem sobrou fica fora
-    // de faixa. Anunciar "0 de 7" ou "9 de 7" ensina uma geografia falsa do menu, e a criança confia nela.
+    // It really happens: an item filtered out by visibility leaves the list and the index of what remains goes out of
+    // range. Announcing "0 de 7" or "9 de 7" teaches a false geography of the menu, and the child trusts it.
     expect(announceItem({ label: 'Continuar', position: 0, total: 7 }, true)).toBe('Continuar');
     expect(announceItem({ label: 'Continuar', position: 9, total: 7 }, true)).toBe('Continuar');
     expect(announceItem({ label: 'Continuar', position: 1, total: 0 }, true)).toBe('Continuar');
   });
 
   it('[Interface] rótulo colado do DOM vira frase legível', () => {
-    // `button.textContent` traz quebra de linha e indentação do markup, e um sub-rótulo em `<span>` gruda no
-    // rótulo sem espaço nenhum: o menu de alfabetização narrava "Descobrindo palavrasBABA". Quem monta o
-    // pedido separa as partes; aqui a normalização garante que o espaço em branco do markup não vaze.
+    // `button.textContent` carries the markup's line breaks and indentation, and a sub-label in a `<span>` sticks to the
+    // label with no space at all ("Descobrindo palavrasBABA"). Whoever builds the request separates the parts; here the
+    // normalisation keeps the markup's whitespace from leaking.
     expect(announceItem({ label: '\n  Descobrindo palavras  \n', state: ' BABA ', position: 3, total: 6 }, true))
       .toBe('Descobrindo palavras, BABA, 3 de 6');
   });
@@ -65,17 +65,17 @@ describe('anúncio de item de menu · rótulo, estado e o índice no fim', () =>
   });
 
   it('[Interface] o molde do índice vem do DICIONÁRIO, não daqui', () => {
-    // Sem isto, alguém poderia montar "6 de 10" com concatenação e os casos acima continuariam verdes em
-    // português — enquanto o inglês narraria "6 de 10". A paridade entre os três idiomas é do
-    // `i18n-dicts.node.test.js`; o que ESTE caso garante é que o módulo passa pela chave.
+    // Without this, someone could build "6 de 10" by concatenation and the cases above would stay green in Portuguese —
+    // while English would narrate "6 de 10". Parity across the three languages belongs to `i18n-dicts.node.test.js`;
+    // what THIS case guarantees is that the module goes through the key.
     expect(t('sr.menu.index', { n: 6, m: 10 })).toBe('6 de 10');
     expect(announceItem({ label: 'x', position: 6, total: 10 }, true).endsWith(t('sr.menu.index', { n: 6, m: 10 }))).toBe(true);
   });
 });
 
-// ========================= MUTAÇÕES CONFERIDAS =========================
-//   · pondo o índice na FRENTE (`[indice, rotulo, estado]`) → "[Right] rótulo + estado + índice" reprova com
+// ========================= MUTATIONS CHECKED =========================
+//   · putting the index in FRONT (`[indice, rotulo, estado]`) → "[Right] rótulo + estado + índice" fails with
 //     "6 de 10, Alto contraste, ativado".
-//   · trocando a guarda `posicao >= 1 && posicao <= total` por `posicao >= 0` → "[Error] posição impossível"
-//     reprova anunciando "Continuar, 0 de 7".
-//   · tirando o `.filter(Boolean)` das partes → "[Zero] item sem estado" reprova com "Continuar, , 1 de 7".
+//   · replacing the guard `posicao >= 1 && posicao <= total` with `posicao >= 0` → "[Error] posição impossível"
+//     fails, announcing "Continuar, 0 de 7".
+//   · removing the parts' `.filter(Boolean)` → "[Zero] item sem estado" fails with "Continuar, , 1 de 7".

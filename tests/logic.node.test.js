@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de LÓGICA PURA (project node — sem PIXI/document/localStorage). Padrões: ZOMBIES (ordem/didática) +
-// Right-BICEP (rigor). Rótulos no nome do teste. Ver docs/plano-testes.md. Módulos: constants, tiles, world, input/state.
+// PURE-LOGIC tests (node project — no PIXI/document/localStorage). Patterns: ZOMBIES (order/teaching) + Right-BICEP
+// (rigour). Labels in the test name. See docs/3-Sprint-Design/plano-testes.md. Modules: core/constants, input/state,
+// platform/audio (the mixer), core/rng.
 import { describe, it, expect } from 'vitest';
 import * as C from '../app/js/core/constants.js';
 import * as S from '../app/js/input/state.js';
@@ -10,20 +11,18 @@ import * as RNG from '../app/js/core/rng.js';
 
 describe('core/constants', () => {
   it('[Right] o que qualquer jogo 2D em pixel usa', () => {
-    // ⚠️ `C.TUNE.jumpVel` saiu daqui em 2026-09-07 (issue #63, etapa B) e o `C.ANIM` saiu em 2026-09-23 na F12
-    // (ADR-0228): cadências de uma personagem que anda, corre, nada e escala são de um jogo. O que ficou é a
-    // grelha, e é a única coisa desta linha que qualquer cartucho partilha.
+    // ⚠️ No `C.TUNE.jumpVel` (issue #63) and no `C.ANIM` (ADR-0228): the cadences of a character that walks, runs, swims
+    // and climbs belong to a game. What stays is the grid, the one thing on this line every cartridge shares.
     expect(C.TILE).toBe(16);
   });
   it('⚠️ [Interface] o que DESCREVE UM MUNDO DE TILES saiu do catálogo, e voltar por engano reprova aqui', () => {
     /*
-     * 🎯 Encolher superfície pública é uma major, e uma constante que volte sem querer desfá-la em silêncio.
-     * 🔴 ESTE CASO MUDOU DE LADO EM 23/09, e a razão vale mais do que a lista: até aí ele EXIGIA que
-     * `TILE_TYPES`, `isHazard` e `isTrampoline` ficassem, «porque o `core/collision.isSolidType` torna perigo e
-     * trampolim sólidos no modo cego e no de cadeira de rodas — e isso é acessibilidade». Era verdade, e deixou
-     * de ser quando essa regra foi com a geometria que a consulta: as três ficaram sem leitor nenhum na engine.
-     * 📌 A engine continua a saber o que é perigo — pergunta o PAPEL ao contrato (`roleOf`), que é o mecanismo
-     * que já existia. O que ela deixou de ter é uma tabela de NÚMEROS de tile, que só é verdade num mapa.
+     * 🎯 Shrinking the public surface is a major, and a constant that comes back by accident undoes it silently.
+     * 🔴 `TILE_TYPES`, `isHazard` and `isTrampoline` were kept while a collision rule in the engine read them (hazard
+     * and trampoline solid in the blind and wheelchair modes); that rule left with the geometry it queries, and the
+     * three were left with no reader in the engine.
+     * 📌 The engine still knows what a hazard is — it asks the contract for the ROLE (`roleOf`). What it no longer has
+     * is a table of tile NUMBERS, which is only true in one map.
      */
     for (const n of ['ANIM', 'EASY', 'TILE_COLOR', 'TILE_TYPES', 'isHazard', 'isTrampoline']) {
       expect(n in C, `${n} voltou ao catálogo — ele descreve um jogo`).toBe(false);
@@ -31,13 +30,11 @@ describe('core/constants', () => {
     expect(C.TILE, 'a GRADE em pixels fica: é o que qualquer jogo 2D em pixel partilha').toBe(16);
   });
   it('⚠️ [Interface] `JUMP_BASE` e `ehChave` SAÍRAM, e este caso é o que impede que voltem por engano', () => {
-    // O caso que estava aqui verificava `JUMP_BASE === jumpVel * sqrt(8/5)` — isto é, **reafirmava a própria
-    // definição**. Um teste que não pode falhar por motivo nenhum que importe, e que mantinha viva uma
-    // constante sem um único consumidor: nem na engine, nem nos testes, nem no `game-platformer`. A issue
-    // #63 já o nomeava no «achado solto», e a etapa B levou os dois na mesma passagem.
+    // Both left with issue #63: `JUMP_BASE` had no consumer anywhere, and the only case about it restated its own
+    // definition, so it could not fail for any reason that mattered.
     //
-    // O que fica no lugar afirma a AUSÊNCIA, que é o que agora importa: a superfície pública da engine
-    // encolheu, e encolher superfície pública é uma major — não é coisa que se desfaça por distração.
+    // What stands here asserts the ABSENCE: the engine's public surface shrank, and shrinking public surface is a
+    // major — not something to undo by distraction.
     expect('JUMP_BASE' in C, 'JUMP_BASE voltou ao catálogo').toBe(false);
     expect('ehChave' in C, 'ehChave voltou ao catálogo').toBe(false);
   });
@@ -50,7 +47,7 @@ describe('core/constants', () => {
 
 
 describe('platform/audio — mixer (import PURO, init explícito; dívida paga Fase 2.25)', () => {
-  // [Zero] roda ANTES de qualquer init (é o 1º teste do bloco e nada mais chama initAudioMixer):
+  // [Zero] runs BEFORE any init (it is the block's 1st test and nothing else calls initAudioMixer):
   it('[Zero] import não carrega o mixer — audioCat === null até initAudioMixer() (sem I/O no import)', () => {
     expect(AUDIO.audioCat).toBe(null);
     expect(typeof AUDIO.initAudioMixer).toBe('function');
@@ -117,14 +114,12 @@ describe('input/state — held(pl, act)', () => {
   });
   it('[Boundary] pl.pad = -1 ignora o gamepad mesmo com padCur ocupada', () => {
     const pl = mkPlayer({ pad: -1 });
-    S.padCur[0] = { jump: true }; // existe, mas não é o pad dele
+    S.padCur[0] = { jump: true }; // it exists, but it is not their pad
     expect(S.held(pl, 'jump')).toBe(false);
     delete S.padCur[0];
   });
 });
 
-// ⚠️ O DESCRIBE `render/sprites — contrato PURO` SAIU DAQUI na separacao do cartucho (issue #111). O
-// modulo `render/sprites` nao e' engine e o `tsconfig.pkg.json` ja' o excluia do pacote por escrito: ele
-// importa `virtual:sprite-atlas`, que so' existe dentro do plugin de build do JOGO. As tres asseercoes
-// mudaram para `game-platformer/tests/sprites-contrato.node.test.js`, onde o modulo agora vive.
+// ⚠️ The sprite-contract assertions live in `game-platformer/tests/sprites-contrato.node.test.js`, with the module
+// (issue #111): `render/sprites` imports `virtual:sprite-atlas`, which exists only inside the GAME's build plugin.
 

@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// input/latch-store — a alternância lida e escrita no armazenamento (ADR-0113).
+// input/latch-store — the latch read from and written to storage (ADR-0113).
 //
-// 🎯 ESTE FICHEIRO AFIRMA A CLÁUSULA 1 DO ADR-0113 EM CÓDIGO: «trocar de transporte troca o valor como troca
-// o mapa de teclas». O gate que o registo pede é literalmente isso — *o mesmo jogador, com dois transportes,
-// dá duas respostas, e trocar de transporte troca a resposta SEM nenhuma escrita no armazenamento*.
+// 🎯 THIS FILE ASSERTS CLAUSE 1 OF ADR-0113 IN CODE: «trocar de transporte troca o valor como troca o mapa de
+// teclas». The gate the record asks for is literally that — *the same player, with two transports, gives two answers,
+// and switching transport switches the answer WITHOUT any write to storage*.
 //
-// 📌 E É UM MÓDULO À PARTE DA REGRA de propósito. O `latch-scope` é puro e já tem gate; se o armazenamento
-// vivesse lá dentro, cada caso da regra teria de montar um `localStorage` de mentira para afirmar coisas que
-// não dependem dele. A divisão é a mesma do `render/viz-axes` (modelo) e `render/viz-setters` (escrita).
+// 📌 AND IT IS A MODULE APART FROM THE RULE on purpose. `latch-scope` is pure and has its own gate; if storage lived in
+// it, every case of the rule would have to build a fake `localStorage` to assert things that do not depend on it. The
+// split is the same as `render/viz-axes` (model) and `render/viz-setters` (writing).
 //
-// MUTACOES CONFERIDAS (no fim do ficheiro).
+// MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import {
   readTriState, readLatch, storedLatch, writeLatch,
 } from '../app/js/input/latch-store.js';
 import { latchKey, legacyLatchKey } from '../app/js/input/latch-scope.js';
 
-/** Um armazém de mentira com a superfície mínima — e que REGISTA as escritas, porque uma delas é o defeito. */
+/** A fake store with the minimum surface — which RECORDS the writes, because one of them is the defect. */
 function armazem(inicial = {}) {
   const dados = { ...inicial };
   const escritas = [];
@@ -24,10 +24,9 @@ function armazem(inicial = {}) {
   return {
     get: (k) => (k in dados ? dados[k] : null),
     set,
-    // ⚠️ A FORMA QUE `writeLatch` PEDE desde que o painel se ligou a ela: um ESCRITOR, e não um
-    // armazém. O `ui/settings-mobility` já tem um `store.setBool` injectado, e exigir-lhe um objecto com
-    // `get`/`set` crus obrigaria a inventar um adaptador no ponto de uso — que é onde uma segunda forma de
-    // escrever a mesma chave nasce.
+    // ⚠️ THE SHAPE `writeLatch` ASKS FOR: a WRITER, not a store. `ui/settings-mobility` already has an injected
+    // `store.setBool`, and demanding an object with raw `get`/`set` would force an adapter at the call site — which is
+    // where a second way of writing the same key is born.
     _escrever: (k, on) => set(k, on ? '1' : '0'),
     _dados: dados,
     _escritas: escritas,
@@ -44,8 +43,8 @@ describe('latch-store · três estados, e não dois', () => {
     expect(readTriState(a, 'z')).toBe(null);
   });
 
-  // 🔴 O CASO QUE DÁ NOME AO MÓDULO. Com `getBool`, «nunca escrito» viraria `false`, a regra pararia na
-  // primeira linha e NUNCA consultaria o legado — e a criança perderia o ajuste que já tinha.
+  // 🔴 THE CASE THAT NAMES THE MODULE. With `getBool`, «nunca escrito» would become `false`, the rule would stop at its
+  // first line and NEVER consult the legacy key — and the child would lose the setting they already had.
   it('🔴 [Zero] nunca escrito NÃO é `false`: o legado ainda é consultado, e é o ajuste da criança', () => {
     const a = armazem({ [legacyLatchKey(BASE, 0)]: '1' });
     const l = readLatch(a, BASE, 0, 'teclado', false);
@@ -64,8 +63,8 @@ describe('latch-store · três estados, e não dois', () => {
 });
 
 describe('latch-store · a cláusula 1 do ADR-0113: trocar de controle troca o valor', () => {
-  // 🎯 O GATE QUE O REGISTO PEDE, e a segunda metade dele é a que importa: NENHUMA escrita acontece. Se
-  // trocar de transporte precisasse de gravar, o valor não pertenceria ao mapeamento — pertenceria à sessão.
+  // 🎯 THE GATE THE RECORD ASKS FOR, and its second half is the one that matters: NO write happens. If switching
+  // transport needed a write, the value would not belong to the mapping — it would belong to the session.
   it('🎯 [Right] o mesmo jogador dá duas respostas em dois transportes, sem escrever nada', () => {
     const a = armazem({
       [latchKey(BASE, 0, 'teclado')]: '1',
@@ -98,9 +97,9 @@ describe('latch-store · a escrita, e onde ela se recusa', () => {
     expect(a._dados[legacyLatchKey(BASE, 0)], 'a escrita tocou na chave legada').toBeUndefined();
   });
 
-  // ⚠️ A CLÁUSULA 3 DO ADR-0113: nos quatro assistidos não há escolha a gravar, porque a alternância é o que
-  // faz a entrada funcionar. E a recusa é um `false` DEVOLVIDO — quem chama usa-o para desabilitar o controle
-  // com o motivo dito, que é a metade que vive na interface.
+  // ⚠️ CLAUSE 3 OF ADR-0113: on the four assisted transports there is no choice to store, because the latch is what makes
+  // the input work. And the refusal is a RETURNED `false` — the caller uses it to disable the control with the reason
+  // stated, which is the half that lives in the interface.
   it('⚠️ [Zero] nos quatro assistidos a escrita RECUSA-SE, e não grava nada', () => {
     for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
       const a = armazem();
@@ -109,8 +108,8 @@ describe('latch-store · a escrita, e onde ela se recusa', () => {
     }
   });
 
-  // 📌 O PAR: e nesses quatro a LEITURA continua a responder ligada, seja o que for que esteja no disco.
-  // Sem este caso, «recusar a escrita» poderia significar «deixar a criança sem alternância», que é o oposto.
+  // 📌 THE PAIR: on those four the READ keeps answering on, whatever is on disk. Without this case, «recusar a escrita»
+  // could mean «deixar a criança sem alternância», which is the opposite.
   it('📌 [Boundary] e a leitura deles responde LIGADA mesmo com `0` no disco', () => {
     for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
       const a = armazem({
@@ -130,13 +129,13 @@ describe('latch-store · a escrita, e onde ela se recusa', () => {
   });
 });
 
-// ===== MUTAÇÕES CONFERIDAS (2026-09-08, por script, com contagem de ocorrências) =====
-// 1. `readTriState` a devolver `v === '1'` sem o ramo do nulo (= o `getBool` que este módulo existe para
-//    evitar)                                            → 🔴 o caso do LEGADO reprova: a criança perde o ajuste
-// 2. `readLatch` a ignorar o legado           → o mesmo caso reprova, por outro caminho
-// 3. `latchKey` sem o transporte no nome       → o caso dos DOIS TRANSPORTES reprova
-// 4. `writeLatch` sem a guarda `latchIsOptional` → o caso da RECUSA reprova nos quatro
-// 5. `writeLatch` a devolver `false` sempre       → o caso dos três de hoje reprova
-//    📌 é o par da 4: sem ele, «recusar sempre» passaria no caso da recusa e mataria a escolha de toda a gente
-// 6. `storedLatch` a gravar o valor lido (uma «cache»)  → 🎯 o caso da cláusula 1 reprova pela
-//    asserção das ESCRITAS, e não pelo valor — que é a razão de essa asserção existir
+// ===== MUTATIONS CHECKED (2026-09-08, by script, with occurrence counts) =====
+// 1. `readTriState` returning `v === '1'` without the null branch (= the `getBool` this module exists to avoid)
+//                                                      → 🔴 the LEGACY case fails: the child loses the setting
+// 2. `readLatch` ignoring the legacy key        → the same case fails, by another path
+// 3. `latchKey` without the transport in the name → the TWO TRANSPORTS case fails
+// 4. `writeLatch` without the `latchIsOptional` guard → the REFUSAL case fails on all four
+// 5. `writeLatch` always returning `false`      → the case of today's three fails
+//    📌 it is the pair of 4: without it, «recusar sempre» would pass the refusal case and kill everyone's choice
+// 6. `storedLatch` writing the value it read (a «cache») → 🎯 the clause-1 case fails on the WRITES assertion, not on
+//    the value — which is why that assertion exists

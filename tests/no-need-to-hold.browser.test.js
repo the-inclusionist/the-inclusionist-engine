@@ -70,22 +70,22 @@ const fechar = () => {
 
 describe('the sticky-keys row a child can read', () => {
   /*
-   * 🔴 A LINHA SAIU DESTE PAINEL (o Dev, 2026-09-21: «Tire a linha de acessibilidade motora»), no mesmo dia em que entrou, e o
-   * que este caso mede é a AUSÊNCIA — porque uma linha removida que volta por acidente é exactamente o tipo de regresso que
-   * ninguém nota. O ajuste existe, com as três posições, no ☝️ da barra rápida: é essa a superfície que ele desenhou.
+   * 🔴 THE ROW IS NOT IN THIS PANEL (the Dev, 2026-09-21: «Tire a linha de acessibilidade motora»), and what this case measures
+   * is the ABSENCE — because a removed row that comes back by accident is exactly the kind of regression nobody notices. The
+   * setting exists, with its three positions, on the quick bar's ☝️: that is the surface the Dev designed.
    */
   it('🎯 [Zero] o «jeito de apertar» NÃO é uma linha do painel motora — ele mora no ☝️ da barra', async () => {
     const botao = await abrirMotora();
     expect(botao, 'a linha voltou ao painel: o ajuste passou a ter duas superfícies outra vez').toBeNull();
-    // e o par, senão «ausente» passaria por um painel que não abriu: a linha vizinha (ADR-0217) continua lá
+    // and the pair, or «ausente» would pass for a panel that never opened: the neighbouring row (ADR-0217) is still there
     expect(document.querySelector('#motora #opt-cooldown'), 'o painel motora não abriu — o caso acima não mediria nada').not.toBeNull();
     fechar();
   });
 
   /**
-   * 🔴 «ESPERAR ENTRE TOQUES» (ADR-0217): a linha que FICA — é outro ajuste, e ninguém a tirou. Ela é para a mão que não
-   * consegue apertar UMA vez, e sai de fábrica desligada, porque para quem não treme seria meio segundo perdido entre duas
-   * presses — and what it refuses is measured in `input-cooldown.node`; here it is that she can find it and that it is kept.
+   * 🔴 «ESPERAR ENTRE TOQUES» (ADR-0217): the row that STAYS — it is another setting. It is for the hand that cannot press ONCE,
+   * and it ships off, because for someone without a tremor it would be half a second lost between two presses — and what it
+   * refuses is measured in `input-cooldown.node`; here it is that she can find it and that it is kept.
    */
   it('🔴 [Right] «Esperar entre toques» is offered, off, and the choice survives to the next day', async () => {
     const state = await import('../app/js/core/state.js'); // a module of bindings, not a default export
@@ -168,15 +168,15 @@ describe('the sticky-keys row a child can read', () => {
     try {
       const botao = document.querySelector('#motora #opt-voice');
       expect(botao, 'the microphone row the Dev listed in #182').not.toBeNull();
-      // ⚠️ e VISÍVEL: este navegador tem microfone por onde pedir, logo uma linha escondida aqui seria o caso a medir nada
+      // ⚠️ and VISIBLE: this browser has a microphone to ask for, so a hidden row here would be the case measuring nothing
       expect(botao.closest('.ctrl-row').hidden).toBe(false);
-      // ⚠️ PELA MESMA FUNÇÃO QUE A ENGINE USA (`toggleLabel`), e não pelo dicionário cru: o rótulo do interruptor entra com a
-      // primeira letra maiúscula, e comparar com a chave crua media a capitalização em vez do estado.
+      // ⚠️ THROUGH THE SAME FUNCTION THE ENGINE USES (`toggleLabel`), not the raw dictionary: the switch's label is capitalised,
+      // and comparing with the raw key would measure the capitalisation instead of the state.
       const { toggleLabel } = await import('../app/js/ui/dom.js');
       expect(botao.textContent, 'a linha nasceu a dizer o contrário do valor guardado').toBe(toggleLabel(false));
-      // ⚠️ A EXPLICAÇÃO NÃO MORA NA LINHA, mora no RODAPÉ do painel e só aparece quando a linha é alcançada — é a regra de menu
-      // do `CLAUDE.md` §4. Por isso o caso a ALCANÇA: o que ele prende é que a frase existe e diz à família a única coisa que
-      // decide se o microfone é ligado — que o que a criança diz não sai do aparelho.
+      // ⚠️ THE EXPLANATION DOES NOT LIVE ON THE ROW, it lives in the panel's FOOTER and only shows when the row is reached — the
+      // menu rule of `CLAUDE.md` §4. So the case REACHES it: what it holds is that the sentence exists and tells the family the
+      // one thing that decides whether the microphone is turned on — that what the child says does not leave the device.
       botao.closest('.ctrl-row').dispatchEvent(new Event('focusin', { bubbles: true }));
       expect(document.querySelector('#motora .opt-explain')?.textContent,
         'alcançar a linha não disse à família que o microfone fica no aparelho').toContain('fica no aparelho');
@@ -184,8 +184,8 @@ describe('the sticky-keys row a child can read', () => {
       expect(botao.textContent, 'o 👄 mudou e o painel continuou a mostrar o valor antigo').toBe(toggleLabel(true));
       state.setVoiceControlValue(false);
       expect(botao.textContent).toBe(toggleLabel(false));
-      // 🔴 E O OUTRO SENTIDO, que é onde uma mutação sobreviveu: o clique escreve A MESMA chave que o 👄 escreve, e não uma
-      // segunda de sua lavra. Sem esta metade, a linha podia ligar a varredura e o caso acima continuava verde.
+      // 🔴 AND THE OTHER DIRECTION, where a mutation survived: the click writes THE SAME key the 👄 writes, not a second one of
+      // its own. Without this half, the row could turn on the scan and the case above stayed green.
       botao.click();
       expect(state.voiceControl, 'o clique na linha não escreveu a resposta da criança').toBe(true);
       expect(localStorage.getItem('incl_voice_control'), 'a escolha não foi guardada para o dia seguinte').toBe('1');
@@ -226,8 +226,8 @@ describe('the sticky-keys row a child can read', () => {
       const passos = outro.querySelector('#motora #opt-camera');
       expect(passos, 'the row must be BUILT even here — hidden, so the panel does not change shape between devices').not.toBeNull();
       expect(passos.closest('.ctrl-row').hidden, 'a device with no camera was offered playing with one').toBe(true);
-      // 📌 E A MESMA PORTA RESPONDE PELAS DUAS: `getUserMedia` é o que se pede à câmera E ao microfone, então um aparelho que
-      // não a tem não é oferecido nem uma nem outra. Sem esta linha, uma mutação que mostrasse sempre a linha da voz passava.
+      // 📌 AND THE SAME DOOR ANSWERS FOR BOTH: `getUserMedia` is what is asked of the camera AND the microphone, so a device
+      // without it is offered neither. Without this line, a mutation that always showed the voice row would pass.
       const voz = outro.querySelector('#motora #opt-voice');
       expect(voz, 'a linha da voz não é construída neste aparelho').not.toBeNull();
       expect(voz.closest('.ctrl-row').hidden, 'um aparelho sem microfone foi convidado a jogar falando').toBe(true);
@@ -236,9 +236,8 @@ describe('the sticky-keys row a child can read', () => {
     }
   });
 
-  // ⚠️ O CASO DA TRAVA DO APARELHO SAIU COM A LINHA (2026-09-21). Ele media que, nos olhos, no rosto, nos gestos e na fala, a
-  // linha ficava VISÍVEL e trancada com o motivo (ADR-0113 cláusula 3). Sem linha não há o que trancar: o ☝️ simplesmente não
-  // oferece o «padrão» nesses aparelhos, e essa regra é medida em `pause-icons.node`, onde o ciclo vive.
+  // ⚠️ NO DEVICE-LOCK CASE HERE: without the row there is nothing to lock (ADR-0113 clause 3). With eyes, face, gestures and
+  // speech the ☝️ simply does not offer «padrão», and that rule is measured in `pause-icons.node`, where the cycle lives.
 });
 
 // MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-nao-precisa-segurar.py`:

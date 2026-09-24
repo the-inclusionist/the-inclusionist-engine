@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O gate da MIGRAÇÃO DE DADO SALVO (issue #103, e é a metade que mexe no navegador da criança).
+// The gate of the SAVED-DATA MIGRATION (issue #103 — the half that touches the child's browser).
 //
-// ⚠️ O QUE ESTÁ EM JOGO NÃO É COMPATIBILIDADE, É UMA ADAPTAÇÃO. Quem remapeou teclas normalmente remapeou por
-// necessidade — alcance de mão, dedo que não estica, teclado sem numpad. Um esquema salvo com as chaves
-// antigas que deixe de casar não dá erro: as teclas simplesmente param de responder, e a criança conclui que
-// o jogo quebrou. Perder isso é perder uma adaptação, não uma preferência.
+// ⚠️ WHAT IS AT STAKE IS NOT COMPATIBILITY, IT IS AN ADAPTATION. Whoever remapped keys usually did it out of need — hand
+// reach, a finger that does not stretch, a keyboard with no numpad. A saved scheme whose old keys stop matching raises
+// no error: the keys simply stop responding, and the child concludes the game broke. Losing that is losing an
+// adaptation, not a preference.
 import { describe, it, expect } from 'vitest';
 import { migrateScheme, migrateSaved, migrateTouchMap, migrateControlMap, OLD_VOCABULARY } from '../app/js/input/vocabulary-migration.js';
 
-/** Um esquema tal como está salvo hoje, no vocabulário de plataforma. */
+/** A scheme as saved in the old platform vocabulary. */
 const ANTIGO = {
   left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'],
   run: ['KeyU'], jump: ['KeyJ', 'Space'], swap: ['KeyI'], especial: ['KeyK'],
@@ -18,8 +18,8 @@ describe('a tradução segue o ADR-0086, e não o ADR-0074', () => {
   it('⚠️ `run` é `action1` e `jump` é `action2` — a tabela do 0074 movia a tecla da criança', () => {
     expect(OLD_VOCABULARY).toEqual({
       run: 'action1', jump: 'action2', especial: 'action3', swap: 'action4',
-      // ⚠️ A quinta não é verbo de plataforma: a camada de toque chamava `pause` a posição que todo o
-      // resto chama `start`. Era a única palavra de ação que não existia no conjunto abstrato.
+      // ⚠️ The fifth is not a platform verb: the touch layer called `pause` the position everything else calls
+      // `start`. It was the only action word missing from the abstract set.
       pause: 'start',
     });
   });
@@ -41,8 +41,8 @@ describe('a tradução segue o ADR-0086, e não o ADR-0074', () => {
   });
 
   it('⚠️ NENHUMA tecla se perde: o conjunto de códigos é o mesmo antes e depois', () => {
-    // A asserção que vale, porque é a única que apanha um erro de tradução de QUALQUER chave, inclusive
-    // uma que este teste não pensou em nomear.
+    // The assertion that counts, because it is the only one that catches a mistranslation of ANY key, including one
+    // this test did not think to name.
     const codigos = (e) => [...new Set(Object.values(e).flat())].sort();
     expect(codigos(migrateScheme(ANTIGO))).toEqual(codigos(ANTIGO));
   });
@@ -50,8 +50,8 @@ describe('a tradução segue o ADR-0086, e não o ADR-0074', () => {
 
 describe('a função aguenta o mundo real', () => {
   it('é IDEMPOTENTE — aplicada duas vezes dá o mesmo', () => {
-    // `loadKB` pode correr mais de uma vez na mesma sessão; uma migração que estragasse na segunda
-    // passagem falharia longe da causa.
+    // `loadKB` may run more than once in a session; a migration that broke on the second pass would fail far from its
+    // cause.
     const uma = migrateScheme(ANTIGO);
     expect(migrateScheme(uma)).toEqual(uma);
   });
@@ -64,7 +64,7 @@ describe('a função aguenta o mundo real', () => {
   });
 
   it('esquema meio migrado UNE as duas chaves em vez de perder uma', () => {
-    // Perder uma tecla é o dano; ter a mesma duas vezes não é.
+    // Losing a key is the damage; having the same one twice is not.
     const meio = { jump: ['KeyJ'], action2: ['Space'] };
     expect(migrateScheme(meio).action2.sort()).toEqual(['KeyJ', 'Space']);
   });
@@ -88,8 +88,8 @@ describe('o objeto salvo inteiro, com os quatro formatos que existem', () => {
   });
 
   it('⚠️ o formato mais antigo, `p34`, também é traduzido — ele já sobreviveu a uma migração', () => {
-    // `loadKB` migra a FORMA de `p34` para p3+p4 desde antes; se o vocabulário não fosse migrado aqui,
-    // o dado mais velho de todos seria o único a se perder.
+    // `loadKB` migrates the SHAPE of `p34` into p3+p4; if the vocabulary were not migrated here, the oldest data of all
+    // would be the only data lost.
     const novo = migrateSaved({ p34: [ANTIGO, null, ANTIGO] });
     expect(novo.p34[0].action2).toEqual(['KeyJ', 'Space']);
     expect(novo.p34[1]).toBeNull();
@@ -119,8 +119,8 @@ describe('⚠️ o SEGUNDO dado salvo: o mapa de toque, onde a ação está no V
   });
 
   it('⚠️ o slot do START deixa de dizer `pause` e passa a dizer `start`', () => {
-    // Sem esta tradução o único botão de pausa de um tablet pararia de pausar: `decide()` procura
-    // `'start'` e receberia `'pause'`, que já não é ação nenhuma. Sem erro e sem aviso.
+    // Without this translation a tablet's only pause button would stop pausing: `decide()` looks for `'start'` and
+    // would receive `'pause'`, which is no action any more. No error and no warning.
     expect(migrateTouchMap({ start: 'pause' })).toEqual({ start: 'start' });
   });
 
@@ -135,8 +135,8 @@ describe('⚠️ o SEGUNDO dado salvo: o mapa de toque, onde a ação está no V
   });
 
   it('⚠️ NENHUM slot se perde — o conjunto de chaves é o mesmo', () => {
-    // O dano aqui seria um botão da tela que deixa de fazer nada, e num tablet de escola pública
-    // o toque não é o caminho alternativo: é o único.
+    // The damage here would be an on-screen button that stops doing anything, and on a public-school tablet touch is
+    // not the alternative path: it is the only one.
     const antigo = { up: 'up', down: 'down', left: 'left', right: 'right', start: 'pause', b0: 'jump', b1: 'especial', b2: 'run', b3: 'swap' };
     expect(Object.keys(migrateTouchMap(antigo)).sort()).toEqual(Object.keys(antigo).sort());
   });
@@ -171,8 +171,8 @@ describe('⚠️ o TERCEIRO dado salvo: o mapa do assistente de controle', () =>
   });
 
   it('⚠️ NENHUM binding se perde — a contagem de entradas é a mesma', () => {
-    // Este é o mais caro dos três a perder: o mapa existe porque alguém passou por um assistente de
-    // nove passos, botão a botão, quase sempre porque o controle NÃO é "standard".
+    // This is the costliest of the three to lose: the map exists because someone went through a wizard, button by
+    // button, almost always because the pad is NOT "standard".
     const antigo = { up: { b: 12 }, down: { b: 13 }, left: { b: 14 }, right: { b: 15 }, jump: { b: 0 }, run: { b: 2 }, swap: { b: 3 }, especial: { b: 1 }, start: { b: 9 } };
     expect(Object.keys(migrateControlMap(antigo))).toHaveLength(Object.keys(antigo).length);
   });

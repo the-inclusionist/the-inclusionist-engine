@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O GUIA FICA MAIS INTENSO AO APROXIMAR-SE, E NUNCA EMUDECE (#84 item 2).
+// THE GUIDE GROWS MORE INTENSE AS YOU GET CLOSER, AND NEVER GOES SILENT (#84 item 2).
 //
-// ========================= O QUE ISTO SUBSTITUI =========================
-// Um `triangle` de 0,12 s a cada 0,8 s, para sempre. O veredicto do Dev: «um ping é a pior escolha possível,
-// tenebroso para quem tem TEA». O que entra é presença contínua — nada dispara, a coisa fica mais presente.
+// ========================= WHY CONTINUOUS =========================
+// No repeating ping — the Dev's verdict: «um ping é a pior escolha possível, tenebroso para quem tem TEA». The guide is a
+// continuous presence — nothing fires, the thing just becomes more present.
 //
-// O eixo é o BRILHO, com uma parcela pequena de volume por cima, e a escolha é do Dev. A redundância não é
-// enfeite: para uma criança com perda auditiva o brilho pode cair na banda que ela não alcança, e dois eixos
-// significam que nenhum decide sozinho.
+// The axis is BRIGHTNESS, with a small share of volume on top, and the choice is the Dev's. The redundancy is not
+// decoration: for a child with hearing loss the brightness may fall in a band they cannot reach, and two axes mean
+// neither decides alone.
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
@@ -24,8 +24,8 @@ describe('platform/guide-intensity — a distancia vira brilho', () => {
   });
 
   it('⚠️ [Zero] NUNCA emudece — longe ainda soa, e e a assercao que mais importa', () => {
-    // Se o guia calasse ao longe, «longe» ficaria indistinguivel de «nao ha alvo», e a crianca que depende
-    // dele concluiria que nao ha nada para achar exatamente quando ha e esta distante.
+    // If the guide went silent far away, «longe» would be indistinguishable from «nao ha alvo», and the child who
+    // depends on it would conclude there is nothing to find exactly when there is and it is far.
     for (const passos of [12, 20, 100, 5000]) {
       expect(guideIntensity(passos).volume, `${passos} passos calou o guia`).toBeGreaterThanOrEqual(FAR_VOL);
       expect(guideIntensity(passos).cutoff, `${passos} passos fechou o filtro`).toBeGreaterThanOrEqual(FAR_CUT);
@@ -44,16 +44,16 @@ describe('platform/guide-intensity — a distancia vira brilho', () => {
   });
 
   it('⚠️ [Boundary] o brilho e EXPONENCIAL: a meia distancia nao esta a meio caminho', () => {
-    // Uma rampa linear abriria quase tudo no primeiro terco do caminho e depois pareceria parada — a crianca
-    // sentiria que chegou quando ainda faltava metade. Com razao constante, meio caminho da a MEDIA
-    // GEOMETRICA dos extremos, que e sensivelmente menor do que a aritmetica.
+    // A linear ramp would open almost everything in the first third of the way and then seem to stall — the child
+    // would feel they had arrived with half still to go. With a constant ratio, halfway gives the GEOMETRIC MEAN of the
+    // ends, noticeably smaller than the arithmetic one.
     const meio = guideIntensity(STEPS_TO_FLOOR / 2).cutoff;
     expect(meio).toBeCloseTo(Math.sqrt(FAR_CUT * NEAR_CUT), 4);
     expect(meio, 'o corte virou linear').toBeLessThan((FAR_CUT + NEAR_CUT) / 2);
   });
 
   it('[Boundary] e o VOLUME e linear — a assimetria e deliberada', () => {
-    // Se os dois fossem exponenciais acelerariam no mesmo ponto, que e o oposto de ter dois eixos.
+    // If both were exponential they would accelerate at the same point, which is the opposite of having two axes.
     expect(guideIntensity(STEPS_TO_FLOOR / 2).volume).toBeCloseTo((1 + FAR_VOL) / 2, 6);
   });
 
@@ -66,24 +66,23 @@ describe('platform/guide-intensity — a distancia vira brilho', () => {
   });
 
   it('⚠️ [Interface] o fundo da escala e a regua que o resto do modulo ja usa', () => {
-    // `chaveDeDistancia` corta «muito perto» em 4 passos e «perto» em 9; `PAN_PACES` satura o estereo em 11.
-    // O guia satura logo depois — a informacao fina serve para quem ja esta a chegar. Se alguem mudar este
-    // numero para dentro daquela faixa, o guia passa a estar no fundo enquanto o sonar ainda diz «perto».
+    // The sonar's `distanceKey` cuts "very near" at 4 steps and "near" at 9; `PAN_PACES` saturates the stereo at 11. The
+    // guide saturates just after — the fine information serves whoever is already arriving. If someone moves this
+    // number inside that range, the guide bottoms out while the sonar still says «perto».
     expect(STEPS_TO_FLOOR).toBeGreaterThan(9);
     expect(NEAR_CUT, 'acima disto o timbre sibila, e sibilar chama atencao como um bipe').toBeLessThanOrEqual(4000);
   });
 });
 
-// ========================= MUTACOES CONFERIDAS =========================
-//   · pondo `FAR_VOL = 0` → "[Zero] NUNCA emudece" reprova nas quatro distancias e na assercao final. E o
-//     defeito que faria «longe» soar como «nao ha alvo».
-//   · trocando a interpolacao do corte por linear (`FAR_CUT + (NEAR_CUT - FAR_CUT) * perto`) →
-//     "[Boundary] o brilho e EXPONENCIAL" reprova nas duas assercoes, com a media aritmetica no lugar da
-//     geometrica.
-//   · trocando o volume para exponencial tambem → "[Boundary] e o VOLUME e linear" reprova. Os dois eixos
-//     passariam a acelerar no mesmo ponto, que e o oposto de ter dois.
-//   · tirando o `Math.min(1, …)` da saturacao → "[Zero] NUNCA emudece" reprova a 20, 100 e 5000 passos, com o
-//     volume abaixo do piso e o corte abaixo de `FAR_CUT`.
-//   · baixando `STEPS_TO_FLOOR` para 8 → reprovam DOIS: "[Interface] o fundo da escala e a regua" e
-//     "[Right] os DOIS eixos crescem juntos", porque a 12 e a 9 passos ja se estaria saturado e os dois
-//     eixos ficariam parados entre eles. O guia estaria no fundo enquanto o sonar ainda dissesse «perto».
+// ========================= MUTATIONS CHECKED =========================
+//   · setting `FAR_VOL = 0` → "[Zero] NUNCA emudece" fails at all four distances and at the final assertion. It is the
+//     defect that would make «longe» sound like «nao ha alvo».
+//   · making the cutoff interpolation linear (`FAR_CUT + (NEAR_CUT - FAR_CUT) * perto`) → "[Boundary] o brilho e
+//     EXPONENCIAL" fails on both assertions, with the arithmetic mean in place of the geometric one.
+//   · making the volume exponential too → "[Boundary] e o VOLUME e linear" fails. The two axes would accelerate at the
+//     same point, which is the opposite of having two.
+//   · removing the saturation's `Math.min(1, …)` → "[Zero] NUNCA emudece" fails at 20, 100 and 5000 steps, with the
+//     volume below the floor and the cutoff below `FAR_CUT`.
+//   · lowering `STEPS_TO_FLOOR` to 8 → TWO fail: "[Interface] o fundo da escala e a regua" and "[Right] os DOIS eixos
+//     crescem juntos", because at 12 and at 9 steps it would already be saturated and the two axes would stand still
+//     between them. The guide would bottom out while the sonar still said «perto».
