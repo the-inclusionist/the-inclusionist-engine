@@ -1,35 +1,108 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/storage.ts — the single persistence layer (localStorage), a leaf module but for its key table. Exception-proof: localStorage
-// THROWS on file:// and in some browsers' private mode, and that used to bring the whole boot down (hence every access
-// is try/catch). Centralised here: one place to change the strategy (namespacing, IndexedDB…) without hunting dozens of
-// call sites.
+// platform/storage.ts — the single persistence layer, as a FACTORY: `createStorage(backend)` wraps the browser object it is
+// given (ADR-0232 point 2). The composition root builds the one store of a page from what the HOST lends it, and every
+// module that persists receives that store through its ctx or deps (issue #207).
+//
+// Exception-proof: `localStorage` THROWS on file:// and in some browsers' private mode, and that used to bring the whole
+// boot down (hence every access is try/catch). Centralised here: one place to change the strategy (namespacing,
+// IndexedDB…) without hunting dozens of call sites.
 
 import { KEYS as KEY_TABLE } from './storage-keys.js';
 
-// OVERLOADS BECAUSE THE DEFAULT DECIDES THE RETURN TYPE. With a `fallback: string` the result CANNOT be null — a single
-// signature returned `string | null` regardless, and every caller with a default paid for an impossible `null`.
-export function get(key: string, fallback: string): string;
-export function get(key: string, fallback?: null): string | null;
-export function get(key: string, fallback: string | null = null): string | null {
-  try { const v = localStorage.getItem(key); return v == null ? fallback : v; } catch { return fallback; }
-}
-export function set(key: string, value: string | number | boolean): boolean {
-  try { localStorage.setItem(key, String(value)); return true; } catch { return false; }
-}
-export function remove(key: string): void { try { localStorage.removeItem(key); } catch { /* noop */ } }
-
-export function getBool(key: string, fallback = false): boolean { const v = get(key, null); return v == null ? fallback : v === '1'; }
-export function setBool(key: string, on: boolean): void { set(key, on ? '1' : '0'); }
-
-export function getNum(key: string, fallback = 0): number {
-  const v = get(key, null); const n = v == null ? NaN : parseFloat(v);
-  return isFinite(n) ? n : fallback;
+/**
+ * What the store wraps: the three methods of the Web Storage API it calls. A window's `localStorage` has this shape, and so
+ * does `memoryBackend()` — which is how a test, or a second root on the same page, gets storage nobody else writes.
+ */
+export interface StorageLike {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
 }
 
-export function getJSON<T = unknown>(key: string, fallback: T | null = null): T | null {
-  try { const s = get(key, null); return s == null ? fallback : (JSON.parse(s) as T); } catch { return fallback; }
+/** The store every persisting module receives: typed reads with a fallback, writes that never throw. */
+export interface Store {
+  // OVERLOADS BECAUSE THE DEFAULT DECIDES THE RETURN TYPE. With a `fallback: string` the result CANNOT be null — a single
+  // signature returned `string | null` regardless, and every caller with a default paid for an impossible `null`.
+  get(key: string, fallback: string): string;
+  get(key: string, fallback?: null): string | null;
+  /** `false` when the backend refused the write (quota, private mode, no storage at all). */
+  set(key: string, value: string | number | boolean): boolean;
+  remove(key: string): void;
+  getBool(key: string, fallback?: boolean): boolean;
+  setBool(key: string, on: boolean): void;
+  getNum(key: string, fallback?: number): number;
+  getJSON<T = unknown>(key: string, fallback?: T | null): T | null;
+  setJSON(key: string, obj: unknown): void;
+  /**
+   * Reads the NEW key; if it does not exist yet, inherits the LEGACY one's value. Read-only: whoever writes, writes to the
+   * new one. It is what lets a key be renamed without a migration step and without anyone losing a setting.
+   */
+  getWithLegacy(newKey: string, legacyKey: string, fallback: string): string;
+  getWithLegacy(newKey: string, legacyKey: string, fallback?: null): string | null;
+  /** `getWithLegacy`'s pair for a JSON value — the inheritance has to hold for both formats, or half the keys migrate and
+   *  the other half vanish, the worst of both worlds. */
+  getJsonWithLegacy<T = unknown>(newKey: string, legacyKey: string, fallback?: T | null): T | null;
 }
-export function setJSON(key: string, obj: unknown): void { try { set(key, JSON.stringify(obj)); } catch { /* noop */ } }
+
+/**
+ * THE STORE, built around the backend it is GIVEN (ADR-0232). `null` is a host with no storage at all: every read gives its
+ * fallback and every write reports `false` — the same answer a throwing `localStorage` gives, so the two cannot differ.
+ *
+ * 📌 CLOSURES AND NOT METHODS ON `this`: `loadLocale({ ...store, ...hooks })` spreads the store into another object, and a
+ * method that read `this` would lose its backend in the spread.
+ */
+export function createStorage(backend: StorageLike | null): Store {
+  function get(key: string, fallback: string): string;
+  function get(key: string, fallback?: null): string | null;
+  function get(key: string, fallback: string | null = null): string | null {
+    try { const v = backend ? backend.getItem(key) : null; return v == null ? fallback : v; } catch { return fallback; }
+  }
+  const set = (key: string, value: string | number | boolean): boolean => {
+    if (!backend) return false;
+    try { backend.setItem(key, String(value)); return true; } catch { return false; }
+  };
+  const remove = (key: string): void => { try { backend?.removeItem(key); } catch { /* noop */ } };
+  const getJSON = <T = unknown>(key: string, fallback: T | null = null): T | null => {
+    try { const s = get(key, null); return s == null ? fallback : (JSON.parse(s) as T); } catch { return fallback; }
+  };
+  function getWithLegacy(newKey: string, legacyKey: string, fallback: string): string;
+  function getWithLegacy(newKey: string, legacyKey: string, fallback?: null): string | null;
+  function getWithLegacy(newKey: string, legacyKey: string, fallback: string | null = null): string | null {
+    const v = get(newKey, null);
+    if (v !== null) return v;
+    const inherited = get(legacyKey, null);
+    return inherited !== null ? inherited : fallback;
+  }
+  return {
+    get, set, remove, getJSON, getWithLegacy,
+    getBool: (key, fallback = false) => { const v = get(key, null); return v == null ? fallback : v === '1'; },
+    setBool: (key, on) => { set(key, on ? '1' : '0'); },
+    getNum: (key, fallback = 0) => {
+      const v = get(key, null); const n = v == null ? NaN : parseFloat(v);
+      return isFinite(n) ? n : fallback;
+    },
+    setJSON: (key, obj) => { try { set(key, JSON.stringify(obj)); } catch { /* noop */ } },
+    getJsonWithLegacy: <T = unknown>(newKey: string, legacyKey: string, fallback: T | null = null): T | null => {
+      const v = getJSON<T>(newKey, null);
+      if (v !== null) return v;
+      const inherited = getJSON<T>(legacyKey, null);
+      return inherited !== null ? inherited : fallback;
+    },
+  };
+}
+
+/**
+ * A backend kept in memory, seeded with `entries` — for a host with no storage worth writing to, and for a test: a file that
+ * builds its own cannot inherit another file's keys nor race it for them (ADR-0232 driver D4, the browser suite's F9).
+ */
+export function memoryBackend(entries: Iterable<readonly [string, string]> = []): StorageLike {
+  const kept = new Map<string, string>(entries);
+  return {
+    getItem: (key) => kept.get(key) ?? null,
+    setItem: (key, value) => { kept.set(key, String(value)); },
+    removeItem: (key) => { kept.delete(key); },
+  };
+}
 
 /* ===================== the TWO scopes (namespaced saves, ADR-0027 step 7) ===================== */
 //
@@ -61,34 +134,32 @@ export function keysOutsideScopes(storedKeys: Iterable<string>): string[] {
   return [...storedKeys].filter((k) => !k.startsWith('incl_') && !k.startsWith('inclusionist.') && !k.startsWith('incl.'));
 }
 
-/**
- * Reads the NEW key; if it does not exist yet, inherits the LEGACY one's value. Read-only: whoever writes, writes to the
- * new one. It is what lets a key be renamed without a migration step and without anyone losing a setting.
- */
-export function getWithLegacy(newKey: string, legacyKey: string, fallback: string): string;
-export function getWithLegacy(newKey: string, legacyKey: string, fallback?: null): string | null;
-export function getWithLegacy(newKey: string, legacyKey: string, fallback: string | null = null): string | null {
-  const v = get(newKey, null);
-  if (v !== null) return v;
-  const inherited = get(legacyKey, null);
-  return inherited !== null ? inherited : fallback;
-}
-
-/** `getWithLegacy`'s pair for a JSON value — the inheritance has to hold for both formats, or half the keys migrate and
- *  the other half vanish, the worst of both worlds. */
-export function getJsonWithLegacy<T = unknown>(newKey: string, legacyKey: string, fallback: T | null = null): T | null {
-  const v = getJSON<T>(newKey, null);
-  if (v !== null) return v;
-  const inherited = getJSON<T>(legacyKey, null);
-  return inherited !== null ? inherited : fallback;
-}
+/* ===================== the page's default store — ENDS WITH D2b ===================== */
+//
+// ⚠️ TRANSITIONAL: the modules below `boot` that still import this module by value read and write through these names,
+// which wrap the page's global `localStorage` exactly as before. Each layer that moves to an injected store stops using
+// them, and they leave with the `KEYS` alias when nothing imports this module by value (ADR-0232 point 5, issue #207).
+const pageStore = createStorage({
+  getItem: (key) => localStorage.getItem(key),
+  setItem: (key, value) => { localStorage.setItem(key, value); },
+  removeItem: (key) => { localStorage.removeItem(key); },
+});
+// One declaration per name, not a destructuring: the public-surface snapshot reads declared names, and a destructured export
+// would read as ten names removed while all ten are still here.
+export const get = pageStore.get;
+export const set = pageStore.set;
+export const remove = pageStore.remove;
+export const getBool = pageStore.getBool;
+export const setBool = pageStore.setBool;
+export const getNum = pageStore.getNum;
+export const getJSON = pageStore.getJSON;
+export const setJSON = pageStore.setJSON;
+export const getWithLegacy = pageStore.getWithLegacy;
+export const getJsonWithLegacy = pageStore.getJsonWithLegacy;
 
 /**
  * The register of known keys and `gameKey` live in `platform/storage-keys`, a stateless module (ADR-0232, issue #207).
- *
- * ⚠️ `KEYS` IS STILL PUBLISHED HERE, as an alias and not a re-export (the surface snapshot does not see re-exports), and it
- * is measured, not habit: two games read `KEYS` from this module, eight engine modules read `store.KEYS` through the
- * namespace they store with, and this namespace is the port `core/state.loadState` receives. It ends with D2b, when the
- * root builds the storage and nothing imports this module by value.
+ * ⚠️ `KEYS` IS STILL PUBLISHED HERE, as an alias and not a re-export (the surface snapshot does not see re-exports), until
+ * nothing imports this module by value.
  */
 export const KEYS = KEY_TABLE;

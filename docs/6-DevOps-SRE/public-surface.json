@@ -918,6 +918,9 @@
   ],
   "platform/storage.ts": [
     "KEYS",
+    "StorageLike",
+    "Store",
+    "createStorage",
     "get",
     "getBool",
     "getJSON",
@@ -925,6 +928,7 @@
     "getNum",
     "getWithLegacy",
     "keysOutsideScopes",
+    "memoryBackend",
     "remove",
     "set",
     "setBool",

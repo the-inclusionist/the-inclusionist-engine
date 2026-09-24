@@ -66,10 +66,10 @@
   ],
   "modules": {
     "boot/create-game.ts": {
-      "codeLines": 2079,
-      "decisionNodes": 279,
+      "codeLines": 2086,
+      "decisionNodes": 281,
       "maxDepth": 4,
-      "fanOut": 84,
+      "fanOut": 85,
       "globalReach": 1,
       "worstFunction": 69,
       "statefulEdges": 22,
@@ -1269,19 +1269,22 @@
       "globalReach": 0,
       "worstFunction": 1,
       "statefulEdges": 0,
-      "fanIn": 3
+      "fanIn": 4
     },
     "platform/storage.ts": {
-      "codeLines": 38,
-      "decisionNodes": 15,
+      "codeLines": 86,
+      "decisionNodes": 17,
       "maxDepth": 1,
       "fanOut": 1,
       "globalReach": 1,
-      "worstFunction": 3,
+      "worstFunction": 4,
       "statefulEdges": 0,
       "fanIn": 13,
       "reached": [
         "localStorage"
+      ],
+      "holds": [
+        "singleton pageStore"
       ]
     },
     "platform/tts.ts": {

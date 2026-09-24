@@ -135,7 +135,8 @@ import { createInputCooldown, COOLDOWN_MS } from '../input/input-cooldown.js';
 import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
 import { gameOptionsProblems, drawGameOptions, type GameOption } from '../ui/game-options.js';
-import * as store from '../platform/storage.js';
+import { createStorage, keysOutsideScopes, type StorageLike } from '../platform/storage.js';
+import { KEYS } from '../platform/storage-keys.js';
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
 // 🔴 THE GAMEPAD IS MOUNTED HERE (ADR-0224), like every other transport — no longer by the cartridge.
@@ -191,6 +192,25 @@ export interface EngineHost {
    * the host — so the host is the game's rectangle, not the page.
    */
   readonly touchHost?: Element | null;
+  /**
+   * WHERE THE CHILD'S SETTINGS ARE KEPT (ADR-0232, issue #207). The root builds the page's one store from it and hands that
+   * store to every module that persists.
+   *
+   * 📌 OPTIONAL, against ADR-0224/ADR-0227's preference for required ports, because here absence has a SAFE answer rather
+   * than a silent one: the host window's `localStorage`, which is what «this browser remembers the child's choices» means.
+   * A host passes one to keep a root's settings apart from everything else on the origin — a test file its own
+   * `memoryBackend()`, so no file inherits or races another's keys; a page with two roots one each (ADR-0142).
+   */
+  readonly storage?: StorageLike;
+}
+
+/**
+ * The backend the host lent, else its window's `localStorage` — or `null` where the window has none or reading it throws
+ * (file://, private modes): a host with no storage, whose reads give their fallbacks.
+ */
+function hostStorage(host: EngineHost): StorageLike | null {
+  if (host.storage) return host.storage;
+  try { return host.win.localStorage ?? null; } catch { return null; }
 }
 
 /**
@@ -744,15 +764,22 @@ export function createGame(o: CreateGameOptions): Engine {
   const endOfLife: (() => void)[] = [];
   const whenDisposed = (release: () => void): void => { endOfLife.push(release); };
   const stateOn: typeof state.on = (evt, fn) => { const off = state.on(evt, fn); whenDisposed(off); return off; };
+  /*
+   * 🔴 THE PAGE'S ONE STORE IS BUILT HERE, from what the HOST lends (ADR-0232 point 2, issue #207): the backend the host
+   * passed, or its window's `localStorage`. Every module below that persists receives THIS store; none reaches the global.
+   * Reading `win.localStorage` can itself THROW (file://, some private modes), which is a host with no storage: `null`.
+   */
+  const store = createStorage(hostStorage(o.host));
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
-  state.loadState(store);
+  // ⚠️ The port of ADR-0178 carries the key names beside the store, so core names no storage place itself.
+  state.loadState({ ...store, KEYS });
   /*
    * 🔴 THE STORED LANGUAGE **AND** THE BROWSER'S (ADR-0221 step 7g). `core/i18n` keeps the decisions; the page effects —
    * writing `<html lang>`, dispatching on the window, reading `navigator.language` — come in through these two functions,
    * which are THIS root's host speaking: the document and window it received, never the globals. `core` is what the
    * engine IS without a browser.
    */
-  loadLocale({ ...store, ...localeHostHooks(doc as Document, win, applyDom) });
+  loadLocale({ ...store, KEYS, ...localeHostHooks(doc as Document, win, applyDom) });
   // 📌 And the debugging exposure: whoever HAS a window is this root.
   exposeI18n(win, i18nObject);
   /*
@@ -1869,7 +1896,7 @@ export function createGame(o: CreateGameOptions): Engine {
       restoreFocus: overlays.restoreFocus,
       setHearingLoss: (on) => {
         setHearingLossGraph(on);
-        store.set(store.KEYS.hearingloss, on);
+        store.set(KEYS.hearingloss, on);
         srSay(t(on ? 'sr.empathy.hearingOn' : 'sr.empathy.hearingOff'));
       },
       setOneButton: (on) => {
@@ -2393,7 +2420,7 @@ export function createGame(o: CreateGameOptions): Engine {
   const writeBox = (c: state.LetterCase): void => {
     if (doc.documentElement?.dataset) doc.documentElement.dataset.letras = c;
   };
-  if (store.get(store.KEYS.letterCase, null) !== null) writeBox(state.letterCase);
+  if (store.get(KEYS.letterCase, null) !== null) writeBox(state.letterCase);
   stateOn('letterCase', writeBox);
 
   {
@@ -2834,7 +2861,7 @@ export function createGame(o: CreateGameOptions): Engine {
         slotLabel: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select')
             // only what the game names is drawn (ADR-0162), so its word always exists
             : (short(padMap[slot] as Action) ?? '')),
-        dpad: store.get(store.KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
+        dpad: store.get(KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
       },
     );
     if (!pad.parentNode) touchHostEl.appendChild(pad);
@@ -2962,7 +2989,7 @@ export function createGame(o: CreateGameOptions): Engine {
     let padSizeRow: HTMLElement | null = null;
     /** Reflects the keyboard-mapping rows (defined further below, with the `#ctrl` panel). */
     let reflectKeyboard = (): void => {};
-    let currentPersona = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
+    let currentPersona = closestPersona(store.getNum(KEYS.padBtnMm, 12.5));
     const specDoPad = () => ({
       label: t('motora.pad'),
       values: PERSONAS_DO_PAD.map((p) => t(p.label)),
@@ -2978,7 +3005,7 @@ export function createGame(o: CreateGameOptions): Engine {
       }),
       // Read again at every opening: the size may have changed elsewhere, and the labels follow the language of now.
       render: () => {
-        currentPersona = closestPersona(store.getNum(store.KEYS.padBtnMm, 12.5));
+        currentPersona = closestPersona(store.getNum(KEYS.padBtnMm, 12.5));
         // ADR-0166 + ADR-0106 §5: the pad's size is offered only to a cartridge that has a pad — hidden, not locked, because
         // there is nothing to unlock. Read at each opening: `mount()` may have swapped the cartridge.
         if (padSizeRow) padSizeRow.hidden = !cartridge.onScreenPad;
@@ -3560,7 +3587,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   const keysAtBoot = storageKeys();
   function storageOutsideScope(): string[] {
     const keysSinceBoot = [...storageKeys()].filter((k) => !keysAtBoot.has(k));
-    const outsideScopes = store.keysOutsideScopes(keysSinceBoot);
+    const outsideScopes = keysOutsideScopes(keysSinceBoot);
     if (!outsideScopes.length) return [];
     return [`the cartridge stored keys outside the engine's scopes (${outsideScopes.slice(0, 5).join(', ')}): a child's settings `
       + 'kept there do not follow them to the next game, and a game\'s own collide with other games\' — what belongs to '

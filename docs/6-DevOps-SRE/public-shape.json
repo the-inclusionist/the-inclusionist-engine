@@ -5,6 +5,7 @@
       "cvdHost?",
       "doc",
       "pauseHost?",
+      "storage?",
       "touchHost?",
       "win"
     ],
@@ -1454,6 +1455,25 @@
     ],
     "type OnDeviceAvailability": "'available' | 'downloadable' | 'downloading' | 'unavailable'",
     "type HeardCommand": "{ readonly kind: 'palavra'"
+  },
+  "platform/storage.ts": {
+    "interface StorageLike": [
+      "getItem",
+      "removeItem",
+      "setItem"
+    ],
+    "interface Store": [
+      "get",
+      "getBool",
+      "getJSON",
+      "getJsonWithLegacy",
+      "getNum",
+      "getWithLegacy",
+      "remove",
+      "set",
+      "setBool",
+      "setJSON"
+    ]
   },
   "platform/tts.ts": {
     "interface TtsCtx": [
