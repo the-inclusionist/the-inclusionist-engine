@@ -86,51 +86,85 @@ export async function loadReadingRuntime(d: ReadingRuntimeDeps): Promise<Reading
 
   const start = openingOf(plan, tokenizer, generation);
   const eos = generation.eos_token_id ?? -1;
-  const heads = config.num_key_value_heads ?? config.num_attention_heads ?? 0;
-  const width = config.hidden_size && config.num_attention_heads ? config.hidden_size / config.num_attention_heads : 64;
+  const { heads, width } = cacheSizeOf(config);
   const ceiling = d.maxTokens ?? MAX_TOKENS;
 
   return {
     async transcribe(samples: Float32Array): Promise<string> {
-      const input: { [name: string]: OnnxTensor } = plan.input === 'log-mel'
-        ? { input_features: new ort.Tensor('float32', logMel(samples, melFilters ?? []), [1, WHISPER_BANDS, WHISPER_FRAMES]) }
-        : { input_values: new ort.Tensor('float32', samples, [1, samples.length]) };
-      const encoded = await encoder.run(input);
+      const encoded = await encoder.run(soundFor(ort, plan, samples, melFilters));
       const hidden = encoded[encoder.outputNames[0]!]!;
-      const frames = (hidden as { dims?: readonly number[] }).dims?.[1] ?? 0;
-
-      // the merged graph wants the caches present and EMPTY on the first pass, and the flag that says which pass this is
-      const merged = !decoderPast;
+      const shape: DecodingShape = {
+        ort, start, hidden, heads, width,
+        frames: (hidden as { dims?: readonly number[] }).dims?.[1] ?? 0,
+        // the merged graph wants the caches present and EMPTY on the first pass, and the flag that says which pass this is
+        merged: !decoderPast,
+      };
       const past: Record<string, unknown> = {};
       const ids: number[] = [];
-      let answered: Record<string, unknown> = {};
       for (let step = 0; step < ceiling; step++) {
         const first = step === 0;
-        const session = first || merged ? decoder : decoderPast!;
-        const inputIds = first ? start : [ids[ids.length - 1]!];
-        const inputs: Record<string, unknown> = {
-          input_ids: new ort.Tensor('int64', BigInt64Array.from(inputIds, BigInt), [1, inputIds.length]),
-          encoder_hidden_states: hidden,
-          ...(first && merged ? emptyCaches(ort, session, heads, width, frames) : past),
-        };
-        if (merged) inputs.use_cache_branch = new ort.Tensor('bool', Uint8Array.of(first ? 0 : 1), [1]);
-        answered = await session.run(inputs as never) as Record<string, unknown>;
-
-        for (const name of session.outputNames) {
-          if (!name.startsWith('present.')) continue;
-          const key = name.replace('present.', 'past_key_values.');
-          // ⚠️ ONLY the self-attention half grows. The cross-attention half is the sound, and the sound does not change.
-          if (first || name.includes('.decoder.')) past[key] = answered[name];
-        }
-
-        const logits = lastLogits(answered[session.outputNames[0]!]);
-        const chosen = nextToken(logits, suppressedTokens(generation, first));
+        const session = first || shape.merged ? decoder : decoderPast!;
+        const answered = await session.run(stepInputs(shape, session, first, ids, past) as never) as Record<string, unknown>;
+        keepPast(past, session, answered, first);
+        const chosen = nextToken(lastLogits(answered[session.outputNames[0]!]), suppressedTokens(generation, first));
+        // no token at all (a row of NaN) is an end, like the end-of-text: pushing it would ask for a word the vocabulary lacks
         if (chosen < 0 || chosen === eos) break;
         ids.push(chosen);
       }
       return readingTextOf(tokenizer, ids).trim();
     },
   };
+}
+
+/** What every decoder step shares: the sound as the encoder heard it, the opening, and the size of the caches. */
+interface DecodingShape {
+  readonly ort: OnnxRuntime;
+  readonly start: readonly number[];
+  readonly hidden: OnnxTensor;
+  readonly heads: number;
+  readonly width: number;
+  readonly frames: number;
+  /** One decoder graph for both passes (Moonshine en), told which one by `use_cache_branch`. */
+  readonly merged: boolean;
+}
+
+/**
+ * WHAT THE ENCODER HEARS. Whisper a log-mel picture of 30 s drawn with the model's own filters (80 bands × 3000 frames), Moonshine
+ * the wave itself, every sample. The names are the graphs' own: a real session refuses any other.
+ */
+function soundFor(
+  ort: OnnxRuntime, plan: ReadingModelPlan, samples: Float32Array, melFilters: number[][] | null,
+): { [name: string]: OnnxTensor } {
+  return plan.input === 'log-mel'
+    ? { input_features: new ort.Tensor('float32', logMel(samples, melFilters ?? []), [1, WHISPER_BANDS, WHISPER_FRAMES]) }
+    : { input_values: new ort.Tensor('float32', samples, [1, samples.length]) };
+}
+
+/** What one decoder step is handed: the opening on the first, then only the newest token, and the caches so far. */
+function stepInputs(
+  shape: DecodingShape, session: OnnxSession, first: boolean, ids: readonly number[], past: Record<string, unknown>,
+): Record<string, unknown> {
+  const { ort } = shape;
+  const inputIds = first ? shape.start : [ids[ids.length - 1]!];
+  const inputs: Record<string, unknown> = {
+    input_ids: new ort.Tensor('int64', BigInt64Array.from(inputIds, BigInt), [1, inputIds.length]),
+    encoder_hidden_states: shape.hidden,
+    ...(first && shape.merged ? emptyCaches(ort, session, shape.heads, shape.width, shape.frames) : past),
+  };
+  if (shape.merged) inputs.use_cache_branch = new ort.Tensor('bool', Uint8Array.of(first ? 0 : 1), [1]);
+  return inputs;
+}
+
+/**
+ * The caches carried to the next step: each `present.*` the decoder answered, renamed to the `past_key_values.*` it takes. The
+ * `logits` beside them are the answer, never a cache.
+ * ⚠️ ONLY the self-attention half grows. The cross-attention half is the sound, and the sound does not change.
+ */
+function keepPast(past: Record<string, unknown>, session: OnnxSession, answered: Record<string, unknown>, first: boolean): void {
+  for (const name of session.outputNames) {
+    if (!name.startsWith('present.')) continue;
+    if (first || name.includes('.decoder.')) past[name.replace('present.', 'past_key_values.')] = answered[name];
+  }
 }
 
 /**
@@ -145,6 +179,17 @@ function openingOf(plan: ReadingModelPlan, tokenizer: TokenizerFile, generation:
   const named = [`<|${plan.language}|>`, '<|transcribe|>', '<|notimestamps|>'].map((c) => tokenIdOf(tokenizer, c));
   if (named.some((id) => id === null)) throw new Error(`reading: this model has no token for ${plan.language} transcription`);
   return [first, ...named as number[]];
+}
+
+/**
+ * How big one cache is, from `config.json`: the KEY-VALUE heads (a model with grouped attention keeps fewer than it attends with),
+ * and a width of `hidden_size / heads`, 64 where the config does not say.
+ */
+function cacheSizeOf(config: ModelConfig): { readonly heads: number; readonly width: number } {
+  return {
+    heads: config.num_key_value_heads ?? config.num_attention_heads ?? 0,
+    width: config.hidden_size && config.num_attention_heads ? config.hidden_size / config.num_attention_heads : 64,
+  };
 }
 
 /** The caches a merged decoder wants on its first pass: the self-attention halves empty, the cross-attention ones the sound's. */

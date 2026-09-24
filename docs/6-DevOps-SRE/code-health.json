@@ -890,12 +890,12 @@
       ]
     },
     "platform/reading-runtime.ts": {
-      "codeLines": 115,
+      "codeLines": 142,
       "decisionNodes": 22,
-      "maxDepth": 3,
+      "maxDepth": 2,
       "fanOut": 2,
       "globalReach": 1,
-      "worstFunction": 18,
+      "worstFunction": 9,
       "fanIn": 1,
       "reached": [
         "fetch"
