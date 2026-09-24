@@ -13,37 +13,6 @@
 // Integration belongs to whoever integrates.
 
 /**
- * The collision box, `{w:10,h:30}`: ONE number, kept here so a fake context and a fake player cannot disagree about it
- * (a camera case checks `y - BOX.h/2`). ⚠️ Nothing imports it today.
- */
-export const BOX_FALSO = Object.freeze({ w: 10, h: 30 });
-
-/**
- * A player with the slice a render module reads, and nothing more; the values are a game's start-up values, so the fake
- * starts where the game starts.
- *
- * ⚠️ The fields were the ones the player-animation module read, found by scanning `pl.<field>`. That module left the
- * engine and nothing imports this function today.
- */
-export function jogadorFalso(i = 0, over = {}) {
-  return {
-    i,
-    x: 100 + i * 22, y: 100, vx: 0, vy: 0,
-    onGround: false, onLadder: false, inWater: false, airTime: 99,
-    facing: 1, anim: 0, walkAnim: 0, walkDir: 0,
-    hurtTimer: 0, clinging: false, clingN: null, jumpChain: 0, groundIdle: 0,
-    // the block the animation state machine read
-    flying: false, idleNow: false, idleTime: 0, flavor: -1, flavorT: 0, climbFrame: 0,
-    running: false, walking: false, runCane: false,
-    rmWalk: false, rmBreath: false, rmFlavor: false,
-    viz: 'normal', easy: false, toggleMove: false,
-    activePower: 'off', owned: [], hasKey: false,
-    quiz: null, sprite: null, _tx: null,
-    ...over,
-  };
-}
-
-/**
  * A fake tile→role table. The real one belongs to the GAME and the engine RECEIVES it.
  *
  * ⚠️ The roles are the ENGINE's (`render/hc-role-data`), not the game's tiles: what a high-contrast gate proves is that
@@ -85,5 +54,3 @@ export function presetFalso() {
   };
 }
 
-/** The storage id, which belongs to the game and not the engine (ADR-0088). Neutral on purpose. ⚠️ Nothing imports it today. */
-export const JOGO_FALSO = 'jogo-de-teste';
