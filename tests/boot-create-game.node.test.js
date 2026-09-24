@@ -15,9 +15,14 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/accommodation-answers.js';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
+import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
 
 const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'boot', 'create-game.ts'), 'utf8');
+/** What the root names, as paths under `app/js`, in EVERY import form the parser returns (type-only included: a boot that
+ *  knows a game's type knows the game). A pattern over `from '…'` let a literal `import()` through. */
+const ALVOS = specifiersOf(FONTE, 'create-game.ts')
+  .filter((s) => s.spec?.startsWith('.')).map((s) => posix.normalize(posix.join('boot', s.spec)));
 
 /** The source's CODE lines: no comments. This module's prose QUOTES `coinTarget` to explain the verdict, and a filter
  *  that confused the quotation with the demand would fail the record itself. */
@@ -42,11 +47,11 @@ describe('o veredito: a fronteira passa ou não passa', () => {
   });
 
   it('[Right] a raiz de composição NÃO importa de game/', () => {
-    expect(CODIGO).not.toMatch(/from '\.\.\/game\//);
+    expect(ALVOS.filter((a) => a.startsWith('game/'))).toEqual([]);
   });
 
   it('[Right] nem de educational/ — currículo é da plataforma, e um boot genérico não o conhece', () => {
-    expect(CODIGO).not.toMatch(/from '\.\.\/educational\//);
+    expect(ALVOS.filter((a) => a.startsWith('educational/'))).toEqual([]);
   });
 
   it('[Interface] o mixer é ligado ANTES da voz — a ordem do achado 3, na ordem do arquivo', () => {

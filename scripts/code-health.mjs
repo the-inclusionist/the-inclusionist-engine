@@ -26,6 +26,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname, relative, resolve } from 'node:path';
 import ts from 'typescript';
+// The one definition of «type-only», shared with the import gates that read the same declarations.
+import { isTypeOnlyImport } from './lib/module-specifiers.mjs';
 
 const ROOT = process.cwd().endsWith('app') ? join(process.cwd(), '..') : process.cwd();
 export const BASELINE = 'docs/6-DevOps-SRE/code-health.json';
@@ -187,23 +189,6 @@ export const isExempt = (mod, measure) => {
  *   · statefulEdges — DISTINCT value imports of a module that holds state (ADR-0232 point 4). Computed over the tree in
  *                     `measureTree`, because it needs to know which modules are stateful.
  */
-
-/**
- * Is this import or re-export TYPE-ONLY? `import type …`, `export type … from`, or named bindings that are ALL marked
- * `type`. A bare `import './x'` and a default or namespace import load the module, so they are value imports.
- */
-export const isTypeOnlyImport = (node) => {
-  if (ts.isExportDeclaration(node)) {
-    if (node.isTypeOnly) return true;
-    const c = node.exportClause;
-    return !!c && ts.isNamedExports(c) && c.elements.length > 0 && c.elements.every((e) => e.isTypeOnly);
-  }
-  const c = node.importClause;
-  if (!c) return false;
-  if (c.isTypeOnly) return true;
-  return !c.name && !!c.namedBindings && ts.isNamedImports(c.namedBindings)
-    && c.namedBindings.elements.length > 0 && c.namedBindings.elements.every((e) => e.isTypeOnly);
-};
 
 export function measureModule(text) {
   const sf = ts.createSourceFile('m.ts', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);

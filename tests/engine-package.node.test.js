@@ -23,6 +23,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
 
 const RAIZ_REPO = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const CR = String.fromCharCode(13);
@@ -73,23 +74,35 @@ function linhasDeCodigo(texto) {
   return out;
 }
 
-/** Constructs ONLY Vite understands. Each survives `tsc` with no warning, which is what makes them dangerous. */
+/** Constructs ONLY Vite understands. Each survives `tsc` with no warning, which is what makes them dangerous. These two are
+ *  TEXT, read on code lines. */
 const SO_NO_VITE = [
   { nome: 'import.meta.glob', re: /import\s*\.\s*meta\s*\.\s*glob\s*[<(]/ },
-  { nome: "import de 'virtual:'", re: /from\s*['"]virtual:/ },
   { nome: '__BUILD__ (define do Vite)', re: /\b__BUILD__\b/ },
-  { nome: 'import com sufixo ?raw/?url/?worker', re: /from\s*['"][^'"]+\?(raw|url|worker|inline)['"]/ },
 ];
+/** And these two are SPECIFIERS, read by the TypeScript parser in every import form: a side-effect `import 'virtual:…'`
+ *  and an `import('./x?raw')` escaped a pattern over `from '…'`. Type-only imports count — the emitted `.d.ts` keeps
+ *  them, and a consumer's `tsc` cannot resolve a `virtual:` module either. */
+const SO_NO_VITE_ESPECIFICADOR = [
+  { nome: "import de 'virtual:'", casa: (s) => s.startsWith('virtual:') },
+  { nome: 'import com sufixo ?raw/?url/?worker', casa: (s) => /\?(raw|url|worker|inline)$/.test(s) },
+];
+
+/** [line, construct] for everything the sieve catches in a source text. */
+function construcoesDoVite(texto) {
+  const achados = [];
+  for (const [n, linha] of linhasDeCodigo(texto)) {
+    for (const { nome, re } of SO_NO_VITE) if (re.test(linha)) achados.push([n, nome]);
+  }
+  for (const { spec, line } of specifiersOf(texto)) {
+    for (const { nome, casa } of SO_NO_VITE_ESPECIFICADOR) if (spec && casa(spec)) achados.push([line, nome]);
+  }
+  return achados;
+}
 
 /** [module, line, construct] for everything the sieve catches. */
 function ocorrencias(modulos = MODULOS) {
-  const achados = [];
-  for (const m of modulos) {
-    for (const [n, linha] of linhasDeCodigo(fonte(m))) {
-      for (const { nome, re } of SO_NO_VITE) if (re.test(linha)) achados.push([m, n, nome]);
-    }
-  }
-  return achados;
+  return modulos.flatMap((m) => construcoesDoVite(fonte(m)).map(([n, nome]) => [m, n, nome]));
 }
 
 describe('o pacote publicável não carrega construção que só o Vite entende (ADR-0072 §4)', () => {
@@ -114,9 +127,13 @@ describe('o pacote publicável não carrega construção que só o Vite entende 
       "const loaders = import.meta.glob<{ default: LocaleDict }>('../i18n/*.ts');",
       "import { ATLAS_URL, FRAMES } from 'virtual:sprite-atlas';",
       "const v = String(__BUILD__.version);",
+      // and the forms without `from`, which load the same module
+      "import 'virtual:sprite-atlas';",
+      "const atlas = await import('virtual:sprite-atlas');",
+      "const svg = await import('./icon.svg?raw');",
     ];
     for (const linha of amostras) {
-      expect(SO_NO_VITE.some(({ re }) => re.test(linha)), `o crivo deixaria passar: ${linha}`).toBe(true);
+      expect(construcoesDoVite(linha), `o crivo deixaria passar: ${linha}`).toHaveLength(1);
     }
   });
 
@@ -152,8 +169,6 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
     ...Object.keys(PKG.peerDependencies ?? {}),
   ]);
 
-  /** `from 'x'`, `import 'x'` and `import('x')` — the three forms in which a module names another. */
-  const ESPECIFICADOR = /(?:\bfrom|\bimport)\s*\(?\s*['"]([^'"]+)['"]/g;
 
   /** The PACKAGE NAME, not the path: `@scope/nome/sub.js` → `@scope/nome`; `foo/bar` → `foo`. */
   function nomeDoPacote(spec) {
@@ -161,27 +176,23 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
     return spec.startsWith('@') ? p.slice(0, 2).join('/') : p[0];
   }
 
-  /** Third-party names. Relative, absolute, `node:` and `virtual:` are not npm packages — and `virtual:` is already failed
-   *  by the sieve above, so failing it here again would only duplicate the error. */
-  function especificadoresNus(linha) {
+  /** Third-party names, as [line, package]. Relative, absolute, `node:` and `virtual:` are not npm packages — and
+   *  `virtual:` is already failed by the sieve above, so failing it here again would only duplicate the error.
+   *  📌 Read by the TypeScript parser, in every form a module names another: `from`, side-effect `import`, re-export,
+   *  literal `import()`, `require()`. A pattern had missed `require()`, and the parser also skips comments and strings. */
+  function pacotesNomeados(texto) {
     const out = [];
-    for (const m of linha.matchAll(ESPECIFICADOR)) {
-      const s = m[1];
-      if (s.startsWith('.') || s.startsWith('/') || s.startsWith('node:') || s.startsWith('virtual:')) continue;
-      out.push(nomeDoPacote(s));
+    for (const { spec: s, line } of specifiersOf(texto)) {
+      if (!s || s.startsWith('.') || s.startsWith('/') || s.startsWith('node:') || s.startsWith('virtual:')) continue;
+      out.push([line, nomeDoPacote(s)]);
     }
     return out;
   }
+  const especificadoresNus = (texto) => pacotesNomeados(texto).map(([, nome]) => nome);
 
   /** [module, line, package] for everything the shipped modules name. */
   function nomeados(modulos = MODULOS) {
-    const achados = [];
-    for (const m of modulos) {
-      for (const [n, linha] of linhasDeCodigo(fonte(m))) {
-        for (const nome of especificadoresNus(linha)) achados.push([m, n, nome]);
-      }
-    }
-    return achados;
+    return modulos.flatMap((m) => pacotesNomeados(fonte(m)).map(([n, nome]) => [m, n, nome]));
   }
 
   it('[Zero] NENHUM módulo embarcado nomeia pacote fora de dependencies/peerDependencies', () => {
@@ -195,9 +206,13 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
     const dinamica = "    import('@example/neural-voice').then(async (mod) => {";
     const estatica = "import { Application } from 'pixi.js';";
     const lateral = "import 'algum-polyfill';";
+    const exigido = "const pad = require('left-pad');";
+    const reexportado = "export * from '@scope/utilidades';";
     expect(especificadoresNus(dinamica)).toEqual(['@example/neural-voice']);
     expect(especificadoresNus(estatica)).toEqual(['pixi.js']);
     expect(especificadoresNus(lateral)).toEqual(['algum-polyfill']);
+    expect(especificadoresNus(exigido)).toEqual(['left-pad']);
+    expect(especificadoresNus(reexportado)).toEqual(['@scope/utilidades']);
   });
 
   it('[Right] o NOME do pacote sobrevive ao subcaminho — senão um `pixi.js/lib/x` viraria órfão', () => {
@@ -220,7 +235,7 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
 
   it('[Exception] prosa que MENCIONA o pacote não conta — este arquivo o menciona sete vezes', () => {
     const comentada = "// a lib vem do npm: import('@example/neural-voice'), code-split pelo Vite";
-    expect(linhasDeCodigo(comentada)).toEqual([]);
+    expect(especificadoresNus(comentada)).toEqual([]);
   });
 });
 

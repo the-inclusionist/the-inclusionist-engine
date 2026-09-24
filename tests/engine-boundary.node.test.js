@@ -15,9 +15,15 @@
 // THE FORM IS A LIST THAT CAN ONLY SHRINK. A test that simply failed would be deleted or loosened at the first rush. A
 // known-debt list does three things at once: keeps the suite green, makes the debt COUNTABLE, and makes any NEW edge
 // fail at once. Whoever fixes a line deletes the line; whoever creates one finds out the same minute.
+//
+// EVERY IMPORT IS READ BY THE TYPESCRIPT PARSER (`scripts/lib/module-specifiers.mjs`), never by a pattern over `from '…'`:
+// a side-effect `import '../game/x.js'`, an `import('…')`, a `require('…')` and a double-quoted specifier all load code,
+// and a pattern written around `from '` let every one of them through. The side-effect form is the one `tsc` does not
+// even check for a missing file. Type-only imports COUNT in every edge below, for the reason `IMPORTS_CONHECIDOS` gives.
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname, resolve, relative, sep } from 'node:path';
+import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
 
 const RAIZ_REPO = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const RAIZ = join(RAIZ_REPO, 'app', 'js');
@@ -61,6 +67,16 @@ const MODULOS = CAMADAS_ENGINE.flatMap(modulosDe);
 const CR = String.fromCharCode(13);
 const fonte = (m) => readFileSync(join(RAIZ, ...m.split('/')), 'utf8').split(CR).join('');
 
+/**
+ * What module `m` (`core/rng.ts`) names by a RELATIVE specifier, as a path under `app/js` (`game/x.js`), in every form the
+ * parser returns: static, side-effect, re-export, `import type`, literal `import()`, `require()`.
+ */
+function alvosDe(m) {
+  return specifiersOf(fonte(m), m)
+    .filter((s) => s.spec?.startsWith('.'))
+    .map((s) => relative(RAIZ, resolve(RAIZ, dirname(m), s.spec)).split(sep).join('/'));
+}
+
 /** CODE lines: no block, line or end-of-line comments. Prose is not a dependency — a comment describing the game does
  *  not tie the module to it. */
 function linhasDeCodigo(texto) {
@@ -100,7 +116,7 @@ const IMPORTS_CURRICULO = {
 };
 
 function importsDeJogo(m) {
-  return [...fonte(m).matchAll(/from '\.\.\/(game\/[\w.-]+)'/g)].map((x) => x[1]);
+  return alvosDe(m).filter((a) => a.startsWith('game/'));
 }
 
 describe('fronteira engine↔jogo — arestas de importação (ADR-0027 passo 4)', () => {
@@ -138,8 +154,7 @@ describe('fronteira engine↔jogo — arestas de importação (ADR-0027 passo 4)
 });
 
 describe('fronteira engine↔currículo — a aresta que a mudança de endereço criou (ADR-0032)', () => {
-  const importsDeCurriculo = (m) =>
-    [...fonte(m).matchAll(/from '\.\.\/(educational\/[\w.-]+)'/g)].map((x) => x[1]);
+  const importsDeCurriculo = (m) => alvosDe(m).filter((a) => a.startsWith('educational/'));
 
   it('[Right] NENHUM módulo de engine importa de educational/ além da dívida conhecida', () => {
     const novas = {};
@@ -166,10 +181,8 @@ describe('fronteira engine↔currículo — a aresta que a mudança de endereço
     const arquivos = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.ts')) : [];
     expect(arquivos.length, 'a camada de currículo sumiu — se foi de propósito, apague este caso').toBeGreaterThan(0);
     for (const f of arquivos) {
-      const alheias = linhasDeCodigo(fonte(`educational/${f}`))
-        .filter(([, ln]) => /from '\.\.\//.test(ln))
-        .map(([n, ln]) => `${f}:${n} ${ln.trim()}`);
-      expect(alheias, 'currículo importando de fora de si — ver ADR-0032').toEqual([]);
+      const alheias = alvosDe(`educational/${f}`).filter((a) => !a.startsWith('educational/'));
+      expect(alheias, `educational/${f}: currículo importando de fora de si — ver ADR-0032`).toEqual([]);
     }
   });
 });
@@ -237,7 +250,7 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
     // ADR-0027's literal case: a `vphudHtml(coinTarget = COIN_TARGET)` would mean the boundary is wrong. Three assertions,
     // one per layer: no DEPENDENCY on the game's constant, no SUBJECT (a whole `Objective` enters, the icon is injected),
     // and the HUD does not read the player's `collected`.
-    expect(fonte('ui/hud.ts'), 'a dependência').not.toMatch(/from '\.\.\/core\/constants\.js'/);
+    expect(alvosDe('ui/hud.ts'), 'a dependência').not.toContain('core/constants.js');
     expect(fonte('ui/hud.ts'), 'o assunto').toMatch(/vphudHtml\(objective: Objective, icon: string\)/);
     // Against the CODE ROWS, not the file: this module's prose may explain that `collected` left, and a sieve confusing the
     // explanation with the use would fail precisely whoever documented the fix. The same trap `getPhase` once set.
@@ -272,12 +285,11 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
 
 const T_DIR = join(process.cwd(), 'tests');
 // (`VOCAB_JOGO` is declared in section 2 — the SAME matcher, of which there is only one.)
-// STATIC **AND** DYNAMIC IMPORT. Seeing only `from '…'` is BLIND to every test that loads the module with
-// `await import('…')` — which some do by necessity, to install a `localStorage` shim BEFORE the module touches
-// persistence. A gate blind in silence is what this whole file exists not to be.
-const DE = String.raw`(?:from |await import\()'\.\./app/js/`;
-const IMPORTA_ENGINE = new RegExp(DE + '(core|input|render|platform|ui|audio|i18n)/');
-const IMPORTA_JOGO = new RegExp(DE + 'game/');
+// A test's imports are read by the PARSER, in every form: some tests load the module with `import('…')` by necessity, to
+// install a `localStorage` shim BEFORE the module touches persistence, and a side-effect or double-quoted import loads it
+// just the same. A test the classifier does not see is a fixture whose vocabulary nobody measures.
+const IMPORTA_ENGINE = /^\.\.\/app\/js\/(core|input|render|platform|ui|audio|i18n)\//;
+const IMPORTA_JOGO = /^\.\.\/app\/js\/game\//;
 /** A case title: `it('… moeda …')` is PROSE, and prose describes the game without tying the test to it. */
 const TITULO_DE_CASO = /^\s*(it|describe|test)\s*\(/;
 
@@ -328,8 +340,8 @@ function linhasDeFixture(arquivo) {
 /** Tests that exercise an ENGINE module and none of `game/`. A `game/` test talks about the game by duty. */
 function testesDeEngine() {
   return readdirSync(T_DIR).filter((f) => f.endsWith('.test.js')).sort().filter((f) => {
-    const s = readFileSync(join(T_DIR, f), 'utf8').split(CR).join('');
-    return IMPORTA_ENGINE.test(s) && !IMPORTA_JOGO.test(s);
+    const specs = specifiersOf(readFileSync(join(T_DIR, f), 'utf8'), f).map((s) => s.spec ?? '');
+    return specs.some((s) => IMPORTA_ENGINE.test(s)) && !specs.some((s) => IMPORTA_JOGO.test(s));
   });
 }
 
@@ -419,12 +431,20 @@ describe('A RAIZ DE COMPOSICAO SAIU — e este ficheiro mudou de assunto, como e
   // The cartridge left this repository (issue #111). What is asserted is the property after that, stronger than any
   // ceiling: no root file imports from `game/`, there is no `game/` folder, and so no edge to one. The boundary needs no
   // ceiling because it has no door.
-  const RAIZ_TS = readdirSync(RAIZ).filter((f) => f.endsWith('.ts') && !f.endsWith('.d.ts'));
-  const arestasDeJogo = (ficheiro) =>
-    (readFileSync(join(RAIZ, ficheiro), 'utf8').split(CR).join('').match(/from '\.\/game\//g) || []).length;
+  // What is scanned is every module OUTSIDE the published layers: the root files (today only `env.d.ts`, which declares
+  // and imports nothing) and the composition roots that stay in this repository (`consumer-quiz/`). Scanning the root
+  // files alone read ZERO modules, and a scan over nothing is green by construction — hence the count below.
+  const PUBLICADAS = new Set(camadasPublicadas());
+  const FORA_DO_PACOTE = [
+    ...readdirSync(RAIZ).filter((f) => f.endsWith('.ts') && !f.endsWith('.d.ts')),
+    ...readdirSync(RAIZ, { withFileTypes: true })
+      .filter((e) => e.isDirectory() && !PUBLICADAS.has(e.name) && e.name !== 'game')
+      .flatMap((e) => modulosDe(e.name)),
+  ];
 
   it('[Zero] ⚠️ NENHUM ficheiro de raiz importa de `game/` — a porta fechou-se saindo', () => {
-    const portas = RAIZ_TS.filter((f) => arestasDeJogo(f) > 0);
+    expect(FORA_DO_PACOTE.length, 'nothing outside the package was scanned: the case would measure nothing').toBeGreaterThan(0);
+    const portas = FORA_DO_PACOTE.filter((f) => importsDeJogo(f).length > 0);
     expect(portas, 'nasceu uma raiz que importa um jogo: o cartucho esta a voltar').toEqual([]);
   });
 
@@ -451,49 +471,49 @@ describe('A RAIZ DE COMPOSICAO SAIU — e este ficheiro mudou de assunto, como e
 //
 // And the difference matters because of the layer's destination. `educational/` exists to travel to
 // `the-inclusionist-knowledge-tree` (ADR-0058) WITHOUT dragging code behind it; a `pixi.js` in there breaks that as well
-// as a `../core/`. So the question here is the widest possible: is there an `import`, an `import()` or a `require()` on
-// a code line? If so, the layer stopped being data.
+// as a `../core/`. So the question here is the widest possible: does the parser find ANY module specifier — an import of
+// any form, a re-export, an `import()` (literal or not), a `require()`? If so, the layer stopped being data.
 // ==========================================================================================================
 describe('educational/ e DADO: nao importa nada (CLAUDE.md, ADR-0032)', () => {
   const FICHEIROS = existsSync(join(RAIZ, 'educational'))
     ? readdirSync(join(RAIZ, 'educational')).filter((f) => f.endsWith('.ts'))
     : [];
+  /** Every specifier `texto` names, as `line: kind 'spec'`. A re-export counts: `export * from` loads code as surely. */
+  const importacoes = (texto) => specifiersOf(texto).map((s) => `${s.line}: ${s.kind} '${s.spec ?? '(computed)'}'`);
 
   it('[Interface] a camada existe e tem ficheiros — senao o caso abaixo nao mede nada', () => {
     expect(FICHEIROS.length, 'nao ha `app/js/educational/`; a regra ficou sem sujeito').toBeGreaterThan(0);
   });
 
   it('⚠️ [Zero] NENHUM ficheiro de educational/ tem um import', () => {
-    const comImport = [];
-    for (const f of FICHEIROS) {
-      for (const [n, ln] of linhasDeCodigo(fonte('educational/' + f))) {
-        if (/(^|[^\w$])(import\s|import\(|require\()/.test(ln)) comImport.push(`educational/${f}:${n}: ${ln.trim()}`);
-      }
-    }
+    const comImport = FICHEIROS.flatMap((f) => importacoes(fonte('educational/' + f)).map((i) => `educational/${f}:${i}`));
     expect(comImport, 'o curriculo passou a depender de codigo; ele deixa de viajar sozinho').toEqual([]);
   });
 
   it('⚠️ [Cross-check] o crivo APANHA um import — senao o [Zero] estaria verde por nao olhar nada', () => {
-    // The two forms that exist, plus the dynamic one. Without this proof, a broken regex would leave the rule with no
-    // owner.
+    // Every form that names a module, including the two re-exports that have no `import` keyword at all. Without this
+    // proof, a reader that stopped seeing a form would leave the rule with no owner.
     const amostras = [
       "import { ACTIONS } from '../core/actions.js';",
       "import type { Role } from '../core/contract.js';",
+      "import '../core/tiles.js';",
+      "export * from '../core/tiles.js';",
+      "export { ACTIONS } from './activities-registry.js';",
       "const m = await import('../core/tiles.js');",
       "const x = require('node:fs');",
     ];
-    for (const ln of amostras) {
-      expect(/(^|[^\w$])(import\s|import\(|require\()/.test(ln), `deixaria passar: ${ln}`).toBe(true);
-    }
-    // And it must not confuse the WORD with the construct: that layer's header says «importa» in prose.
-    expect(/(^|[^\w$])(import\s|import\(|require\()/.test('a que importa mais e acertar de primeira')).toBe(false);
+    for (const ln of amostras) expect(importacoes(ln), `deixaria passar: ${ln}`).toHaveLength(1);
+    // And it must not confuse the WORD with the construct: that layer's header says «importa» in prose, and a comment
+    // quoting an import is still prose.
+    expect(importacoes('// a que importa mais e acertar de primeira')).toEqual([]);
+    expect(importacoes("// import { ACTIONS } from '../core/actions.js';")).toEqual([]);
   });
 });
 
 // ========================= MUTATIONS CHECKED (the `educational` block) =========================
 //   · `import { ACTIONS } from '../core/actions.js';` in `adaptive-engine` → TWO fail: the sibling `[Boundary]` (which
-//     sees the `from '../`) and this block's `[Zero]`. Useful redundancy: the property has two owners.
+//     sees the relative path leaving the folder) and this block's `[Zero]`. Useful redundancy: the property has two owners.
 //   · ⚠️ `import { Application } from 'pixi.js';` → ONLY this block's `[Zero]` fails. It is why it exists: the sibling
 //     case looks for relative imports and a bare specifier goes right past it.
-//   · replacing the regex with one that demands `from` → the [Cross-check] fails on the `import()` and `require()`
-//     samples, the two forms without `from`.
+//   · `export { a } from './adaptive-engine.js';` in `segment-bar` → this block's `[Zero]` fails. A reader that looked for
+//     the `import` keyword let a re-export through, and it loads code as surely as an import.

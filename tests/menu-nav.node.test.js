@@ -10,7 +10,8 @@
 // The DOM shell (real focus, `offsetParent`, z-index, Escape) is in menu-nav.browser.test.js and is NOT repeated here.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
+import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
 import { hasIntent, stepInRing } from '../app/js/ui/menu-nav.js';
 import {
   KEY_YES, KEY_NO, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, menuKeyIntent, selectStep, selectWrap, rangeStep, stepInPause,
@@ -155,7 +156,11 @@ describe('a independência do módulo — o que ele NÃO conhece', () => {
     // itself "paused" to navigate its own menus (finding 10). The question is `isNavigable()` in the ctx. If the import
     // comes back, this case fails — and the cost of it coming back is invisible from inside a platformer, where a menu
     // is ALWAYS a pause thing.
-    expect(fonte).not.toMatch(/from '\.\.\/core\/state\.js'/);
+    // Read by the parser, in every import form (a side-effect or `import()` of `core/state` escaped a `from '…'` pattern);
+    // a type-only import counts too — knowing the phase model's shape is the coupling this case refuses.
+    const alvos = specifiersOf(fonte, 'menu-nav.ts').filter((s) => s.spec?.startsWith('.'))
+      .map((s) => posix.normalize(posix.join('ui', s.spec)));
+    expect(alvos).not.toContain('core/state.js');
   });
 
   it('[Interface] o ctx pergunta um BOOLEANO, e não a fase — é o que evita a mentira', () => {

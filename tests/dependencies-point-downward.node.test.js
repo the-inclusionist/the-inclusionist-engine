@@ -5,13 +5,17 @@
 // gate. 📏 Measured on 2026-09-13 over `app/js`: 141 modules, no cycle, and nine imports against the direction — listed
 // below as a DEBT that only shrinks. `engine-boundary` already holds the engine↔game direction; this file holds the rest.
 //
-// 📌 The graph is read from the SOURCE (every `import … from`, `export … from`, `import type`, side-effect and dynamic
-// `import()` of a relative path): a type-only import couples a lower layer to an upper one's shape just the same.
+// 📌 The graph is read from the SOURCE by the TypeScript parser (`scripts/lib/module-specifiers.mjs`): every `import … from`,
+// `export … from` and `export * from`, `import type`, side-effect `import '…'`, literal `import()`, `require()` and
+// `new URL('…', import.meta.url)` of a relative path. A type-only import STAYS IN: it couples a lower layer to an upper
+// one's shape just the same (ADR-0173). A pattern over the text read comments as imports and let `require()`, the worker
+// URL and an `export` glued to a `;` through.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve, relative, sep } from 'node:path';
+import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
 
 const RAIZ = join(process.cwd(), 'app', 'js');
 
@@ -38,17 +42,19 @@ function modulos() {
 const nome = (p) => relative(RAIZ, p).split(sep).join('/');
 const camada = (m) => (m.includes('/') ? m.split('/')[0] : '(root)');
 
+/** Relative specifiers that name no module on disk, as `module:line spec`. */
+const SEM_ALVO = [];
+
 /** module → the local modules it imports. */
 function grafo() {
   const g = new Map();
-  const IMPORT = /(?:^|\s)(?:import|export)\s[^'"`;]*?from\s*['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)|^\s*import\s+['"]([^'"]+)['"]/gm;
   for (const p of modulos()) {
     const alvos = new Set();
-    for (const m of readFileSync(p, 'utf8').matchAll(IMPORT)) {
-      const spec = m[1] ?? m[2] ?? m[3];
+    for (const { spec, line } of specifiersOf(readFileSync(p, 'utf8'), p)) {
       if (!spec?.startsWith('.')) continue;
       const alvo = resolve(dirname(p), spec).replace(/\.js$/, '.ts');
       if (existsSync(alvo)) alvos.add(nome(alvo));
+      else SEM_ALVO.push(`${nome(p)}:${line} ${spec}`);
     }
     g.set(nome(p), alvos);
   }
@@ -76,6 +82,12 @@ describe('the direction of dependencies (ADR-0173)', () => {
     const semLugar = [...new Set([...G.keys()].map(camada))].filter((c) => !(c in ALTURA) && !FORA_DA_PILHA.has(c));
     expect(semLugar, 'a layer with no height in ALTURA').toEqual([]);
     expect(G.size, 'the graph read almost nothing — the case would measure nothing').toBeGreaterThan(100);
+  });
+
+  it('[Interface] every relative specifier names a module on disk — an edge the graph cannot place is an edge unjudged', () => {
+    // An import whose target does not resolve cannot be given a layer, so it would leave the graph in silence. And the
+    // side-effect form is the one `tsc` does not check (`noUncheckedSideEffectImports` is off): only the build would fail.
+    expect(SEM_ALVO, 'a relative import that resolves to no module').toEqual([]);
   });
 
   it('🔴 [Right] no module cycle', () => {
@@ -112,3 +124,7 @@ describe('the direction of dependencies (ADR-0173)', () => {
 //   G6 a dynamic `import()` core → ui               🔴 direction
 //   G7 an `export type … from` core → render        🔴 direction
 //   G8 an engine layer importing educational        🔴 direction
+//   G9 core → ui by `require()`, by `import x = require()`, by `new URL(…, import.meta.url)`, and by
+//      `…;export * from` glued to a `;`                                     🔴 direction (each alone)
+//   G10 a side-effect import of a file that does not exist                  🔴 names a module on disk
+//   G11 a COMMENT quoting an import core → ui                                green: prose is not an edge

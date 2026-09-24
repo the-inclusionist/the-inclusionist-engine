@@ -30,6 +30,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
 
 const RAIZ = join(process.cwd(), 'app', 'js');
 // ⚠️ The layer list comes from `tsconfig.pkg.json`, not from a hand copy: hand copies of this list in the suite drifted
@@ -46,8 +47,6 @@ const CAMADAS_ENGINE = (() => {
     .filter((c) => c && !c.includes('/'))
     .sort();
 })();
-const CR = String.fromCharCode(13);
-
 function modulosDe(camada) {
   const dir = join(RAIZ, camada);
   if (!existsSync(dir)) return [];
@@ -56,22 +55,17 @@ function modulosDe(camada) {
 const ENGINE = CAMADAS_ENGINE.flatMap(modulosDe);
 const SET = new Set(ENGINE);
 
-/** Source WITHOUT comments. The `split(CR).join('')` is not hygiene: with CRLF the regex's `.` does not reach the CR,
- *  the end anchor never arrives and the comment stripper FAILS OPEN — it has produced a false debt list in this project,
- *  and a false list is worse than none (see the engine-boundary header). */
-function semComentarios(caminho) {
-  return readFileSync(caminho, 'utf8').split(CR).join('')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n').map((l) => l.replace(/\/\/.*$/, '')).join('\n');
-}
-
-/** `m`'s imports of other app/js modules, resolved to the `layer/name` form. */
+/**
+ * `m`'s imports of other app/js modules, resolved to the `layer/name` form, read by the TypeScript parser in every form —
+ * static, side-effect, re-export, literal `import()`, `require()`, worker URL. A module moved in a batch breaks each of
+ * them alike, so each is an ordering edge. `import type` STAYS IN for the same reason: the type checker still needs the
+ * file where the import says it is. (A pattern over `from '…'` let a side-effect or dynamic cycle through.)
+ */
 function importesDe(m) {
-  const src = semComentarios(join(RAIZ, ...m.split('/')) + '.ts');
+  const src = readFileSync(join(RAIZ, ...m.split('/')) + '.ts', 'utf8');
   const base = m.split('/')[0], alvo = new Set();
-  for (const achado of src.matchAll(/from\s+'([^']+\.js)'/g)) {
-    const rel = achado[1];
-    if (!rel.startsWith('.')) continue; // npm package (pixi.js): not an internal edge
+  for (const { spec: rel } of specifiersOf(src, `${m}.ts`)) {
+    if (!rel?.startsWith('.')) continue; // npm package (pixi.js) or a computed URL: not an internal edge
     let p = rel.replace(/\.js$/, '');
     if (p.startsWith('./')) p = base + '/' + p.slice(2);
     else if (p.startsWith('../')) p = p.slice(3);

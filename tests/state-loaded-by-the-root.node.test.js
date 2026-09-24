@@ -11,7 +11,8 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
+import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
 
 /** A storage double with the shape of `platform/storage`, holding what a child saved. */
 function portaGuardada(inicial = {}) {
@@ -72,9 +73,13 @@ describe('the stored settings, loaded by the root (ADR-0178)', () => {
   });
 
   it('🎯 [Zero] core imports no storage — the two debts of #167 are paid', () => {
+    // Every import form, read by the parser — a side-effect or `import()` of the storage escaped a `from '…'` pattern —
+    // and type-only imports included, as ADR-0173 counts them.
     for (const f of ['state.ts', 'i18n.ts']) {
       const fonte = readFileSync(join(process.cwd(), 'app', 'js', 'core', f), 'utf8');
-      expect(fonte, `core/${f} imports platform/storage again`).not.toMatch(/from '\.\.\/platform\/storage\.js'/);
+      const alvos = specifiersOf(fonte, f).filter((s) => s.spec?.startsWith('.'))
+        .map((s) => posix.normalize(posix.join('core', s.spec)));
+      expect(alvos, `core/${f} imports platform/storage again`).not.toContain('platform/storage.js');
     }
   });
 });

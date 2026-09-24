@@ -127,7 +127,14 @@ describe('the neural voice, loaded by the engine', () => {
     };
     descer('app/js');
     expect(ficheiros.length, 'the walk found nothing: a gate over an empty tree approves everything').toBeGreaterThan(100);
-    const estaticos = ficheiros.filter((f) => /^\s*import\s[^(]*from\s+'[^']*kokoro-runtime\.js'/m.test(readFileSync(f, 'utf8')));
+    // Read by the TypeScript parser (`scripts/lib/module-specifiers.mjs`): a side-effect `import`, an `export … from` and an
+    // `export * from` put the runtime in the chunk exactly like `import … from`, and a pattern over `import … from '…'`
+    // let all three through. What stays allowed is the literal `import()` — the late load this case exists to demand —
+    // and a type-only import, which the build erases and so bundles nothing.
+    const { specifiersOf } = await import('../scripts/lib/module-specifiers.mjs');
+    const estaticos = ficheiros.flatMap((f) => specifiersOf(readFileSync(f, 'utf8'), f)
+      .filter((s) => /(^|\/)kokoro-runtime\.js$/.test(s.spec ?? '') && s.kind !== 'dynamic' && !s.typeOnly)
+      .map((s) => `${f}:${s.line} ${s.kind}`));
     expect(estaticos, 'a static import would bundle espeak-ng and onnxruntime into every game').toEqual([]);
   });
 });
@@ -139,4 +146,7 @@ describe('the neural voice, loaded by the engine', () => {
 //   · a missing runtime loaded as `undefined` instead of refusing → «REFUSES with its name»
 //   · `import 'espeak-ng'` put back                               → «nothing is imported from npm»
 //   · `platform/tts` importing this module statically             → «no module imports the runtime statically»
+//   · the same by side effect, `export … from`, `export * from`
+//     and a double-quoted specifier, each alone                   → «no module imports the runtime statically»
+//   · an `import type` of it                                       → stays green: erased, nothing bundled
 //   · the walk stopped at the top folder (empty tree)             → «the walk found nothing»

@@ -9,20 +9,26 @@
 // `game/`. It is the experiment's whole rule, and without it the first hurry undoes it without anyone noticing.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
+import { specifiersOf } from '../scripts/lib/module-specifiers.mjs';
 import { questionHtml, nextFocus, answerText, endText, questionNarration, narrationOnDraw, heardAlternative } from '../app/js/consumer-quiz/main-quiz.js';
 
 const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'consumer-quiz', 'main-quiz.ts'), 'utf8');
+/** Every specifier the consumer names, read by the parser in every form — a literal `import()` and a side-effect
+ *  `import 'pixi.js'` load code as surely as `from`, and a pattern over `from '…'` let both through. Type-only imports
+ *  count: the case is about what the consumer is TIED to, not only about bytes. */
+const SPECS = specifiersOf(FONTE, 'main-quiz.ts').map((s) => s.spec).filter(Boolean);
+const ALVOS = SPECS.filter((s) => s.startsWith('.')).map((s) => posix.normalize(posix.join('consumer-quiz', s)));
 
 describe('o consumidor obedece à própria regra', () => {
   it('[Right] NÃO importa de game/ — é a regra que faz dele um instrumento e não um jogo a mais', () => {
-    expect(FONTE).not.toMatch(/from '\.\.\/game\//);
+    expect(ALVOS.filter((a) => a.startsWith('game/'))).toEqual([]);
   });
 
   it('[Interface] e também não importa PIXI: quem não desenha mundo não paga 467 kB por isso', () => {
     // It is not economy, it is the measure. If the quiz needed PIXI to use the accessibility stack, that stack would be
     // tied to the platformer's renderer — and pillar 2 would hold only inside the genre.
-    expect(FONTE).not.toMatch(/from 'pixi\.js'|@pixi/);
+    expect(SPECS.filter((s) => s === 'pixi.js' || s.startsWith('pixi.js/') || s.startsWith('@pixi/'))).toEqual([]);
   });
 
   it('[Interface] importa de core/ — a camada de a11y é alcançável sem trazer o jogo junto', () => {
