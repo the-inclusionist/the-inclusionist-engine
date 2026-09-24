@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Setup do project "browser". Os módulos de render (render/canvas, render/sprites, …) agora fazem
-// `import * as PIXI from 'pixi.js'` diretamente (o global vendor/pixi.min.js foi aposentado), então não precisam
-// mais de global. Mantemos globalThis.PIXI como shim inócuo p/ qualquer acesso legado. Ver docs/3-Sprint-Design/plan-unit-tests-at-extraction.md.
+// Setup of the "browser" project. The render module (`render/canvas`) does `import * as PIXI from 'pixi.js'` directly (the
+// global `vendor/pixi.min.js` was retired), so it needs no global. globalThis.PIXI stays as a harmless shim for any
+// legacy access. See docs/3-Sprint-Design/plan-unit-tests-at-extraction.md.
 import * as PIXI from 'pixi.js';
 globalThis.PIXI = PIXI;
-// Sem supressão de erros: os módulos de render são importados de forma PURA (sprites.js só carrega texturas em
-// initCharacterSprites(), que os testes NÃO chamam), então não há mais rejeição de load de asset para ignorar.
+// No error suppression: the render modules are imported PURELY (nothing loads a texture at import time), so there is no
+// asset-load rejection to ignore.
 // The stored settings are loaded as a composition root loads them (ADR-0178); `createGame` loads them again from the page's
 // storage, and `estado-carregado-pela-raiz` checks the order without this setup.
 import * as store from './app/js/platform/storage.js';
@@ -13,10 +13,10 @@ import { loadState } from './app/js/core/state.js';
 import { loadLocale, applyDom } from './app/js/core/i18n.js';
 import { localeHostHooks } from './app/js/platform/locale-host.js';
 loadState(store);
-// 🔴 E O HOSPEDEIRO TAMBÉM (ADR-0221 passo 7g): desde que o `core/i18n` deixou de alcançar `document`/`window`, as três
-// coisas que uma PÁGINA faz ao trocar de idioma — `<html lang>`, retraduzir a marcação e avisar a janela — entram pelo porto.
-// Este setup faz o papel da raiz de composição, e sem esta linha um caso que afere `<html lang>` mede uma página que ninguém
-// avisou. Foi exactamente o que aconteceu: `tts.browser` ficou vermelho no instante do corte, e estava certo.
+// 🔴 AND THE HOST TOO (ADR-0221 step 7g): since `core/i18n` stopped reaching `document`/`window`, the three things a PAGE
+// does when the language changes — `<html lang>`, re-translating the markup and telling the window — come in through
+// the port. This setup plays the composition root, and without this line a case that checks `<html lang>` measures a
+// page nobody told. That is exactly what happened: `tts.browser` went red at the moment of the cut, and it was right.
 loadLocale({ ...store, ...localeHostHooks(document, window, applyDom) });
 
 // EACH FILE STARTS WITH NO TYPOGRAPHY CHOSEN. The browser project shares one localStorage across files, and five of them walk the
