@@ -45,9 +45,8 @@ export interface EyeControlDeps {
   readonly openFeed?: () => Promise<CameraFeed>;
 }
 
-// 📌 A FORMA É A DA FAMÍLIA (ADR-0221 passo 7f): este módulo declarava um EyeControl que era a mesma linha dos outros três.
-// O que ele devolve É um SwitchableControl — seguir o 📷: ligado na posição dos olhos abre a câmera e o desenho, desligado
-// solta tudo.
+// 📌 THE SHAPE IS THE FAMILY'S (ADR-0221 step 7f): what this module returns IS a SwitchableControl — following the 📷: on in
+// the eyes position it opens the camera and the drawing, off it lets go of everything.
 
 export function videoFeed(doc: Document, media: MediaDevices): () => Promise<CameraFeed> {
   return async () => {

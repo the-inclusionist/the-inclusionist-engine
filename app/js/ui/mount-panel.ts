@@ -76,7 +76,7 @@ export interface MountPanelSpec {
    */
   readonly render: () => void;
   // 🔴 `primeiroFoco` WAS REMOVED (ADR-0158): focus now always lands on «Voltar», item 1 — the way out is where the
-  // cursor lands, as `resume` is in the pause root. ⚠️ Never `casca.lista`: a `div[role=group]` with no `tabindex`
+  // cursor lands, as `resume` is in the pause root. ⚠️ Never `panelShell.list`: a `div[role=group]` with no `tabindex`
   // accepts `.focus()`, moves nothing and reports nothing, and an `aria-modal` dialog would leave the reader outside.
   /**
    * THIS PANEL ALREADY WIRES ITS OWN `#X-close`, so pass its `close()` here instead of letting this file wire
@@ -122,8 +122,8 @@ export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPan
   // now only spoken, after the name, by the navigation.
 
   const openPanel = (): void => {
-    // ⚠️ OS RÓTULOS ANTES DO `render()`, e a ordem tem consequência: `ui/settings-panel.fillExplain` lê o
-    // `data-explain-idle` do cartão para montar o rodapé, e quem o chama é o render de cada painel.
+    // ⚠️ THE LABELS BEFORE `render()`, and the order has a consequence: `ui/settings-panel.fillExplain` reads the card's
+    // `data-explain-idle` to build the footer, and each panel's render is what calls it.
     applyLabels(panelShell, spec.labels());
     spec.render();
     panelShell.overlay.hidden = false;
@@ -155,8 +155,8 @@ export function mountPanel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPan
     win.addEventListener('i18n:change', () => { redrawOf.get(panelShell.overlay)?.(); });
   }
 
-  // Só quando o painel NÃO liga o próprio botão. Ver `fecharProprio`: dois ouvintes no mesmo controle são dois
-  // donos da mesma saída, e é assim que elas divergem.
+  // Only when the panel does NOT wire its own button. See `closeOwn`: two listeners on the same control are two owners of
+  // the same exit, and that is how exits drift.
   if (!spec.closeOwn) panelShell.close.addEventListener('click', closePanel);
   // ⚠️ THE ESCAPE CHAIN IS NOT DECORATION. `ui/settings-panel.escapeTarget()` walks the registry, and under
   // `createGame` that registry was EMPTY — nothing had ever registered. A modal dialog no key closes is the

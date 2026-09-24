@@ -33,13 +33,12 @@ export function volPercent(v: number): number {
 }
 
 /*
- * 🔴 `catRowHTML` E `catsListHTML` SAÍRAM (BREAKING, nota BV): a lista de categorias do painel auditivo passou a
- * ser montada em NÓS (ADR-0129), e uma construtora de markup sem consumidor é dívida publicada — não muda de
- * morada, apaga-se. O que ela dizia continua dito, num sítio onde a linha também se RECONCILIA em vez de
- * renascer: `ui/settings-audio.buildCatRow`.
+ * 🔴 NO CATEGORY-ROW MARKUP HERE (note BV): the audio panel's category list is built as NODES (ADR-0129), in
+ * `ui/settings-audio.buildCatRow`, where the row is also RECONCILED instead of reborn. A markup builder with no consumer is
+ * published debt — it is deleted, not moved.
  *
- * 📌 E não fica apelido: um re-export manteria vivo um caminho que nada importa e faria o retrato da superfície
- * mentir, porque ele não vê re-exports (issue #204). É o precedente do corte do `pause-icons`.
+ * 📌 And no alias is left: a re-export would keep alive a path nothing imports and make the surface snapshot lie, because
+ * it does not see re-exports (issue #204).
  */
 
 /** #navsound-master's value: the loudest of the nav categories, as a 0..100 slider value. */

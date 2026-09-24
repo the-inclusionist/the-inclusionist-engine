@@ -32,7 +32,7 @@ export interface HandControlDeps {
   readonly loadTracker?: (deps: VisionDeps) => Promise<HandTrackerLoad>;
 }
 
-// 📌 A FORMA É A DA FAMÍLIA (ADR-0221 passo 7f): o HandControl era a mesma linha dos outros três, escrita uma quarta vez.
+// 📌 THE SHAPE IS THE FAMILY'S (ADR-0221 step 7f): what this module returns is a SwitchableControl, not a fourth copy of it.
 
 /** The hand's bones, mirrored so they move the way the child moves; a bone to a landmark the hand does not have is skipped. */
 function drawBones(g: CanvasRenderingContext2D, w: number, h: number, bones: HandTracker['handLines'],

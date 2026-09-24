@@ -6,9 +6,9 @@
 
 import type { CameraControl } from '../core/state.js';
 /*
- * 🔴 A FORMA DE UM CONTROLE PASSOU A TER NOME PRÓPRIO (ADR-0221 passo 7f): era o `CameraModeControl`, declarado aqui, e os
- * quatro membros da família — olhos, rosto, mãos e voz — tinham a mesma forma sem nunca o dizerem. O `SwitchableControl` é
- * essa forma, e a VOZ também a declara: ela responde ao 👄 e não ao 📷, logo o nome da família não podia ser «câmera».
+ * 🔴 A CONTROL'S SHAPE HAS A NAME OF ITS OWN (ADR-0221 step 7f): the family's four members — eyes, face, hands and voice —
+ * share one shape, `SwitchableControl`, and the VOICE declares it too: it answers the 👄 and not the 📷, so the family's
+ * name could not be "camera".
  */
 import type { SwitchableControl } from './switchable-control.js';
 

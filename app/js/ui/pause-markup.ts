@@ -21,7 +21,7 @@ import { type PauseIcon, PAUSE_ICONS } from '../core/pause-icon-catalogue.js';
 import { flagOf } from './locale-flags.js';
 import { PM_GAME_BTNS } from './pause-buttons.js';
 
-/** One `.pm-btn` descriptor — the shape of game.js's PM_BTNS (owned by ui/pause-buttons). */
+/** One `.pm-btn` descriptor — the shape of an entry of `PM_BTNS` (owned by ui/pause-buttons). */
 export interface PauseMenuButton {
   act: string;
   /** Read ONLY when the button has a dynamic label; see the note on `PauseBtnDef` (ui/pause-buttons). */
@@ -41,8 +41,8 @@ export function iconBtnMarkup(ic: PauseIcon): string {
     '" aria-label="' + t(ic.n) + '">' + (ic.k === 'idioma' ? flagOf(getLocale()) : ic.e) + '</button>';
 }
 
-/** The whole icon bar. Used by the pause screen AND by the splash `#title-icons` (which built the same string
- *  by hand in game.js — that duplication dies with this export).
+/** The whole icon bar. Used by the pause screen AND by the splash `#title-icons` — one builder, so the two bars
+ *  cannot drift apart.
  *  The parameter is ADDITIVE and the default is the whole list: whoever already called it with no arguments gets the same
  *  string back. */
 export function iconsMarkup(icons: readonly PauseIcon[] = PAUSE_ICONS): string {
@@ -59,8 +59,8 @@ export function iconsMarkup(icons: readonly PauseIcon[] = PAUSE_ICONS): string {
  *
  *   1. BOUNDARY. `level` came from `core/state.quizLevel` and `qlName` from a table owned by the game. An ENGINE pause menu
  *      was assembling the label of a literacy activity — pedagogical content, not mechanics.
- *   2. LANGUAGE. «Nível» is raw pt-BR inside an engine module. The gate of that time watched `main.js` and did not reach
- *      `ui/`, so this line crossed the whole i18n pass unseen. In an English build, a child's pause menu said «📚 Nível 2 · …».
+ *   2. LANGUAGE. «Nível» is raw pt-BR inside an engine module. The gate of that time did not reach `ui/`, so this line
+ *      crossed the whole i18n pass unseen. In an English build, a child's pause menu said «📚 Nível 2 · …».
  *
  * Now the game hands over the finished phrase (`dynLabel`) and the engine only puts it on the button. The game is the one who
  * knows what a level is, what it is called, and in which language to say it.
@@ -88,11 +88,11 @@ export function pmBtnMarkup(
  * reader is `pmBtnMarkup`, one screen above.
  */
 const ITEM_GLYPH: Readonly<Record<string, string>> = {
-  // 🔴 O `resume` TEM O GLIFO DO VOLTAR desde 2026-09-22, e não uma seta de «tocar»: o Dev perguntou «não seria melhor
-  // usar "↩ Voltar" para o primeiro item do menu pausado também?». O ADR-0158 já fizera de «Voltar» o item 1 de todo
-  // painel; o cartão era a única excepção, e ela não tinha justificação própria. Do ponto de vista da criança é uma
-  // palavra só — sair daqui e voltar ao que eu estava a fazer —, e o destino é sempre o nível anterior: do painel, o
-  // cartão; do submenu, a raiz; da raiz, o jogo. «Voltar ao jogo» nomeava o DESTINO em vez da acção, e era o único.
+  // 🔴 `resume` HAS THE BACK GLYPH, not a «tocar» arrow: the Dev asked «não seria melhor usar "↩ Voltar" para o primeiro
+  // item do menu pausado também?». ADR-0158 had already made «Voltar» item 1 of every panel; the card was the only
+  // exception, with no reason of its own. From the child's point of view it is one word — leave here and go back to what
+  // I was doing —, and the destination is always the previous level: from the panel, the card; from the submenu, the
+  // root; from the root, the game. «Voltar ao jogo» named the DESTINATION instead of the action, and it was the only one.
   resume: '↩', acessibilidade: '♿', options: '⚙', opcoesdojogo: '🎮', pmback: '↩', tipo: '🔤', addplayer: '👥',
   audio: '🦻', som: '🔊', motora: '♿', anim: '🎞', visual: '🎨', empatia: '🫂', ajuda: '❓', print: '📷', quit: '🚪',
   caa: '🔠',

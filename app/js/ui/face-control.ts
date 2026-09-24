@@ -34,8 +34,8 @@ export interface FaceControlDeps {
   readonly loadTracker?: (deps: VisionDeps) => Promise<FaceTrackerLoad>;
 }
 
-// 📌 A FORMA É A DA FAMÍLIA (ADR-0221 passo 7f): este módulo deixou de declarar um `FaceControl` próprio, que era a mesma
-// linha escrita numa quarta cópia. O que ele devolve É um `SwitchableControl`, e agora o compilador vê isso.
+// 📌 THE SHAPE IS THE FAMILY'S (ADR-0221 step 7f): this module declares no `FaceControl` of its own — what it returns IS a
+// `SwitchableControl`, and the compiler sees it.
 
 const REST_MS = 3000;
 

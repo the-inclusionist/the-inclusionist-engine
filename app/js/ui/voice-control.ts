@@ -42,8 +42,8 @@ export interface VoiceControlDeps {
 }
 
 /**
- * 🎯 A VOZ ESTÁ NA FAMÍLIA E NÃO NO CICLO DA CÂMERA (ADR-0221 passo 7f): ela responde ao 👄 e não ao 📷, e tem um método a
- * mais. Declarar a família é o que faz o compilador ver que ela se liga e desliga como as outras três.
+ * 🎯 THE VOICE IS IN THE FAMILY AND NOT IN THE CAMERA'S CYCLE (ADR-0221 step 7f): it answers the 👄 and not the 📷, and has
+ * one more method. Declaring the family is what makes the compiler see it turns on and off like the other three.
  */
 export interface VoiceControl extends SwitchableControl {
   /** The open menu changed: the words it shows join the grammar, or leave it. */

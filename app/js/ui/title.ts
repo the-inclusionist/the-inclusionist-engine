@@ -1,28 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/title — title-screen submenu NAVIGATION (Estágio 4): extracted from game.js's showTitleMenu(). Shows one
-// submenu (`tm-main`/`tm-alf`/`tm-mat`/`tm-tab`/`tm-fr`/`tm-cen`) and hides the rest, toggles the footer legend
-// (only on `tm-main`) and the game-title block (only on `tm-main` — submenus show their own `.tm-title` instead),
-// then focuses the first button of the now-visible submenu. DI via initTitle(ctx): only `$` (DOM selector,
-// ui/dom.ts shape) is needed — the transition carries no message of its own (callers picked the srSay text
-// per-transition in game.js; duplicating an announcement here would double-speak). Everything else that used to
-// live under "menu inicial" in game.js — building the submenu markup (buildTitleMenus), the footer legend
-// (updateTitleLegend), arrow-key focus traversal (navTitle/titleButtons) and the click/keydown wiring — belongs to
-// other Estágio-4 slices and stays in game.js for now.
+// ui/title — title-screen submenu NAVIGATION. Shows one submenu (`tm-main`/`tm-alf`/`tm-mat`/`tm-tab`/`tm-fr`/`tm-cen`)
+// and hides the rest, toggles the footer legend (only on `tm-main`) and the game-title block (only on `tm-main` —
+// submenus show their own `.tm-title` instead), then focuses the first button of the now-visible submenu. DI via
+// initTitle(ctx): only `$` (DOM selector, ui/dom.ts shape) is needed — the transition carries no message of its own
+// (the caller picks what to announce per transition; announcing here too would double-speak). Building the submenu
+// markup, the footer legend, arrow-key traversal and the click/keydown wiring belong to the game that owns the title
+// screen, not to this module.
 
 import type { DomQuery } from '../core/dom-query.js';
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
-// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+// `DomQuery` lives in `core/dom-query`: this line was copied into SIXTEEN modules, and the copies drifted.
+// Re-exported for whoever already imported it from here.
 export type { DomQuery } from '../core/dom-query.js';
 
 export type TitleMenuId = 'tm-main' | 'tm-alf' | 'tm-mat' | 'tm-tab' | 'tm-fr' | 'tm-cen';
 
 /**
- * The 6 submenus of the title screen, in the order game.js has always hidden/shown them.
+ * The 6 submenus of the title screen, in the order they are hidden/shown.
  *
  * The ORDERED array is the source and the Set is derived from it, not the other way round. A Set carries no
- * order in its type, so ui/activities-menu - which has to scan the submenus in order to find the visible one -
- * had declared its own array of the same six ids, kept in step by discipline alone. One list now.
+ * order in its type, so a reader that has to scan the submenus in order to find the visible one would otherwise
+ * declare its own array of the same six ids, kept in step by discipline alone. One list.
  */
 export const TITLE_MENU_IDS_ORDERED: readonly TitleMenuId[] = [
   'tm-main', 'tm-alf', 'tm-mat', 'tm-tab', 'tm-fr', 'tm-cen',
@@ -60,7 +58,7 @@ export interface TitleMenuView {
   titleBlockDisplay: '' | 'none';
 }
 
-/** Pure view-model for showTitleMenu(which). Verbatim port of the old function's branching. */
+/** Pure view-model for show(which). */
 export function computeTitleMenuView(which: TitleMenuId): TitleMenuView {
   const hidden = new Map<TitleMenuId, boolean>();
   for (const id of TITLE_MENU_IDS) hidden.set(id, id !== which);
