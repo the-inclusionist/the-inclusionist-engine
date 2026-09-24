@@ -127,6 +127,13 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
     expect(stick.classList.contains('touch-stick'), 'the stick\'s base is not drawn').toBe(true);
   });
 
+  it('🔴 [Right] the pad READS in a controller\'s order: directions, buttons, shoulders, then SELECT and START', () => {
+    // The document order is the order a screen reader and Tab walk the pad (WCAG 2.4.3), whatever the stylesheet puts where.
+    const raiz = montar([...OITO_ACOES, 'leftShoulder', 'rightShoulder'], { direcional: 'cruz' });
+    expect([...raiz.children].map((el) => el.className.split(' ')[0]))
+      .toEqual(['touch-cross', 'touch-pad', 'touch-ombros', 'touch-ombros', 'touch-sistema']);
+  });
+
   it('🔴 [Right] no button box where the game names no button, and no corner where it names no shoulder', () => {
     // An empty box on the screen is a promise with nothing in it — the ADR-0162 rule, for the containers as well as the keys.
     const raiz = montar(['up', 'down', 'left', 'right'], { direcional: 'cruz' });
@@ -189,3 +196,6 @@ describe('ADR-0143 §4 · o silêncio acaba', () => {
 //     its own buttons): an inert write, and it left in the cut instead of being pinned.
 //   · 📏 EQUIVALENT, and declared: a drawn slot whose position has no name falls back to the game's word — no drawn slot can
 //     reach it today, since every action in the catalogue has a position name; it is the fallback for one added without.
+// RE-PROBED IN THE NEW SHAPE (a function per part — `scratchpad/sonda-pad-3.py`): 26 of 26 red, with «the pad READS in a
+// controller's order», added with the cut and green on the old shape too: the order of the parts had no case in either shape,
+// and it is the order a screen reader and Tab walk the pad.

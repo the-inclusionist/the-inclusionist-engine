@@ -531,6 +531,21 @@ export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): 
   touchControls.hidden = true;
   while (touchControls.firstChild) touchControls.removeChild(touchControls.firstChild);
 
+  const f = padFacesOf(spec);
+  // in the order they sit on the screen; a part the game names nothing for is an empty list, never an empty box
+  const parts = [...directionPad(ctx, spec, f), ...actionButtons(ctx, spec, f), ...shoulderCorners(ctx, f), systemPills(ctx, f)];
+  for (const part of parts) touchControls.appendChild(part);
+  return touchControls;
+}
+
+/** How the pad shows a slot: whether it is drawn at all, its face, and its accessible name. */
+interface PadFaces {
+  readonly named: (slot: string) => boolean;
+  readonly nameOf: (slot: string) => string;
+  readonly accessible: (slot: string) => string;
+}
+
+function padFacesOf(spec: TouchMarkupSpec): PadFaces {
   // 🔴 SÓ O QUE O JOGO NOMEIA (ADR-0162, supersede o mínimo do ADR-0157): «Vale para todos os botões: somente aparecem
   // se o jogo os nomeia.» Um botão na tela é uma promessa de que ele faz alguma coisa, e quem sabe isso é o jogo.
   const named = (slot: string): boolean => spec.acoesDoJogo.has(spec.mapa[slot] ?? '');
@@ -541,96 +556,101 @@ export function mountTouchControls(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): 
     const funcao = spec.rotuloDoSlot(slot);
     return funcao && funcao !== nome ? `${nome}, ${funcao}` : nome;
   };
-  const liveDirections = DIRECTIONS.filter(named);
-  if (liveDirections.length) {
-    const analogico = spec.direcional === 'analogico';
-    const dir = ctx.criar('div');
-    dir.id = analogico ? 'touch-stick' : 'touch-cross';
-    dir.className = analogico ? 'touch-stick' : 'touch-cross';
-    if (analogico) {
-      // `touch-bindings` exige a `.touch-knob` dentro da base (`if (stick && knob)`), e sem ela desiste do
-      // analógico inteiro — em silêncio.
-      const knob = ctx.criar('div');
-      knob.className = 'touch-knob';
-      dir.appendChild(knob);
-    } else {
-      for (const d of liveDirections) {
-        const arm = ctx.criar('button');
-        // ⚠️ AS TRÊS CLASSES, e cada uma tem um leitor. `touch-arm` é a deste módulo; `dpad-arm` é a que a folha
-        // de estilo DESENHA; `dpad-<dir>` é a que o `touch-bindings` ACENDE ao toque (`.dpad-up` & co.). Com só
-        // a primeira — que era o que isto escrevia até ser ligado ao `createGame` —, o braço era um botão sem
-        // estilo que nunca acendia, e nenhum caso o via, porque nada tinha ainda montado os dois juntos.
-        arm.className = `touch-arm dpad-arm dpad-${d}`;
-        arm.dataset.dir = d;
-        arm.setAttribute('type', 'button');
-        arm.setAttribute('aria-label', accessible(d));
-        dir.appendChild(arm);
-      }
-    }
-    touchControls.appendChild(dir);
-  }
+  return { named, nameOf, accessible };
+}
 
-  const liveButtons = BUTTONS.filter(named);
-  if (liveButtons.length) {
-    const rhombus = ctx.criar('div');
-    rhombus.className = 'touch-pad';
-    for (const b of liveButtons) {
-      const botao = ctx.criar('button');
-      botao.className = 'touch-btn';
-      // `b2` -> `2`, que é o que `'b' + dataset.btn` volta a compor no despacho. Escrever a ACÇÃO aqui
-      // criaria uma segunda fonte para a mesma resposta, e o remapeamento da criança deixaria de valer.
-      botao.dataset.btn = b.slice(1);
-      // O LUGAR SEGUE A ACÇÃO, não o slot (ADR-0160: 1 4 em cima, 2 3 embaixo): a folha de estilo põe cada botão na
-      // célula do seu número, e um slot remapeado leva o botão para o lugar da acção que passou a disparar.
-      botao.dataset.acao = spec.mapa[b] ?? '';
-      botao.setAttribute('type', 'button');
-      botao.setAttribute('aria-label', accessible(b));
-      botao.textContent = nameOf(b);
-      rhombus.appendChild(botao);
-    }
-    touchControls.appendChild(rhombus);
+/** The directional, where the game names a direction: the analog stick with its knob, or the cross with its arms. */
+function directionPad(ctx: TouchMarkupCtx, spec: TouchMarkupSpec, f: PadFaces): HTMLElement[] {
+  const live = DIRECTIONS.filter(f.named);
+  if (!live.length) return [];
+  const kind = spec.direcional === 'analogico' ? 'touch-stick' : 'touch-cross';
+  const dir = ctx.criar('div');
+  dir.id = kind;
+  dir.className = kind; // the id is what `touch-bindings` finds; the class is what the stylesheet DRAWS
+  if (kind === 'touch-stick') {
+    // `touch-bindings` exige a `.touch-knob` dentro da base (`if (stick && knob)`), e sem ela desiste do
+    // analógico inteiro — em silêncio.
+    const knob = ctx.criar('div');
+    knob.className = 'touch-knob';
+    dir.appendChild(knob);
+    return [dir];
   }
+  for (const d of live) {
+    const arm = ctx.criar('button');
+    // ⚠️ AS TRÊS CLASSES, e cada uma tem um leitor. `touch-arm` é a deste módulo; `dpad-arm` é a que a folha
+    // de estilo DESENHA; `dpad-<dir>` é a que o `touch-bindings` ACENDE ao toque (`.dpad-up` & co.). Com só
+    // a primeira — que era o que isto escrevia até ser ligado ao `createGame` —, o braço era um botão sem
+    // estilo que nunca acendia, e nenhum caso o via, porque nada tinha ainda montado os dois juntos.
+    arm.className = `touch-arm dpad-arm dpad-${d}`;
+    arm.setAttribute('type', 'button');
+    arm.setAttribute('aria-label', f.accessible(d));
+    dir.appendChild(arm);
+  }
+  return [dir];
+}
 
-  // OS OMBROS, cada par no seu canto superior (ADR-0160), e só os que o jogo nomeia (ADR-0162).
-  for (const [lado, slots] of SHOULDERS) {
-    const namedSlots = slots.filter(named);
-    if (!namedSlots.length) continue;
+/**
+ * One button the dispatch can read back: `data-btn` is the slot without its `b` (`b2` -> `2`, `bl1` -> `l1`), which is
+ * what `'b' + dataset.btn` in `touch-bindings` recomposes. Writing the ACTION here would be a second source for the same
+ * answer, and the child's remapping would stop counting.
+ */
+function padButton(ctx: TouchMarkupCtx, f: PadFaces, slot: string, className: string): HTMLElement {
+  const botao = ctx.criar('button');
+  botao.className = className;
+  botao.dataset.btn = slot.slice(1);
+  botao.setAttribute('type', 'button');
+  botao.setAttribute('aria-label', f.accessible(slot));
+  botao.textContent = f.nameOf(slot);
+  return botao;
+}
+
+/** The four action buttons, where the game names them, in a 2×2 block by the action's NUMBER (ADR-0160). */
+function actionButtons(ctx: TouchMarkupCtx, spec: TouchMarkupSpec, f: PadFaces): HTMLElement[] {
+  const live = BUTTONS.filter(f.named);
+  if (!live.length) return [];
+  const rhombus = ctx.criar('div');
+  rhombus.className = 'touch-pad';
+  for (const b of live) {
+    const botao = padButton(ctx, f, b, 'touch-btn');
+    // O LUGAR SEGUE A ACÇÃO, não o slot (ADR-0160: 1 4 em cima, 2 3 embaixo): a folha de estilo põe cada botão na
+    // célula do seu número, e um slot remapeado leva o botão para o lugar da acção que passou a disparar.
+    botao.dataset.acao = spec.mapa[b] ?? '';
+    rhombus.appendChild(botao);
+  }
+  return [rhombus];
+}
+
+/** OS OMBROS, cada par no seu canto superior (ADR-0160), e só os que o jogo nomeia (ADR-0162) — nenhum canto vazio. */
+function shoulderCorners(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement[] {
+  return SHOULDERS.flatMap(([lado, slots]) => {
+    const named = slots.filter(f.named);
+    if (!named.length) return [];
     const corner = ctx.criar('div');
     corner.className = `touch-ombros touch-ombros--${lado}`;
-    for (const s of namedSlots) {
-      const botao = ctx.criar('button');
-      botao.className = 'touch-btn touch-ombro';
-      botao.dataset.btn = s.slice(1); // `bl1` -> `l1`: o `'b' + dataset.btn` do `touch-bindings` recompõe o slot
-      botao.setAttribute('type', 'button');
-      botao.setAttribute('aria-label', accessible(s));
-      botao.textContent = nameOf(s);
-      corner.appendChild(botao);
-    }
-    touchControls.appendChild(corner);
-  }
+    for (const s of named) corner.appendChild(padButton(ctx, f, s, 'touch-btn touch-ombro'));
+    return [corner];
+  });
+}
 
-  /*
-   * AS DUAS PÍLULAS DE SISTEMA, lado a lado e ao centro: SELECT (os menus) e START (a pausa rápida), na ordem de
-   * um comando de consola. ⚠️ AMBAS INCONDICIONAIS, pela mesma razão: desde o ADR-0155 são as duas portas da pausa,
-   * e a pausa não é declinável (ADR-0122) — um tablet sem teclado não tem outra forma de chegar a «Sair».
-   */
+/*
+ * AS DUAS PÍLULAS DE SISTEMA, lado a lado e ao centro: SELECT (os menus) e START (a pausa rápida), na ordem de
+ * um comando de consola. ⚠️ AMBAS INCONDICIONAIS, pela mesma razão: desde o ADR-0155 são as duas portas da pausa,
+ * e a pausa não é declinável (ADR-0122) — um tablet sem teclado não tem outra forma de chegar a «Sair».
+ */
+function systemPills(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement {
   const system = ctx.criar('div');
   system.className = 'touch-sistema';
-  const pill = (id: string, slot: 'select' | 'start'): HTMLElement => {
+  for (const slot of ['select', 'start'] as const) {
     const b = ctx.criar('button');
-    b.id = id;
+    b.id = `touch-${slot}`;
     b.className = `touch-btn touch-${slot}`;
     b.setAttribute('type', 'button');
-    b.setAttribute('aria-label', accessible(slot));
+    b.setAttribute('aria-label', f.accessible(slot));
     // ⚠️ E ESCRITO, não só dito: uma pílula sem texto é um botão que quem vê não sabe ler.
-    b.textContent = nameOf(slot);
-    return b;
-  };
-  system.appendChild(pill('touch-select', 'select'));
-  system.appendChild(pill('touch-start', 'start'));
-  touchControls.appendChild(system);
-
-  return touchControls;
+    b.textContent = f.nameOf(slot);
+    system.appendChild(b);
+  }
+  return system;
 }
 
 /**

@@ -616,12 +616,12 @@
       "fanIn": 3
     },
     "input/touch.ts": {
-      "codeLines": 415,
+      "codeLines": 425,
       "decisionNodes": 62,
-      "maxDepth": 3,
+      "maxDepth": 2,
       "fanOut": 5,
       "globalReach": 1,
-      "worstFunction": 14,
+      "worstFunction": 6,
       "fanIn": 1,
       "reached": [
         "navigator"
