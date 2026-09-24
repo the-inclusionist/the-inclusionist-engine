@@ -526,7 +526,7 @@ function itemsThatAct(
  */
 export function rootThatActs(
   rootEl: readonly PauseMenuButton[],
-  opcoes: readonly PauseMenuButton[],
+  options: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
   // ⚠️ TERCEIRO ARGUMENTO OPCIONAL, e o padrão é a lista VAZIA de propósito: quem já chamava com três
   // argumentos continua a receber o que recebia, e um jogo que não declare nada do seu é exactamente o caso
@@ -536,7 +536,7 @@ export function rootThatActs(
   const howManyAct = (bs: readonly PauseMenuButton[]): number =>
     itemsThatAct(bs, acts).filter((b) => b.act !== 'pmback').length;
   let alive = itemsThatAct(rootEl, acts);
-  if (howManyAct(opcoes) === 0) alive = alive.filter((b) => b.act !== 'options');
+  if (howManyAct(options) === 0) alive = alive.filter((b) => b.act !== 'options');
   // 📌 A MESMA REGRA PARA A PORTA NOVA, e é o gate que o ADR-0146 nomeia: um jogo sem nada seu não recebe
   // «opções do jogo». Afirmar a ausência é o caso; oferecer a porta e abrir uma sala vazia é o que o §5 do
   // ADR-0106 chama de pior do que a ausência.
@@ -651,7 +651,7 @@ export interface PauseIconsCtx {
    */
   explainIcon?: (i: number, k: string | null) => void;
   /** A text for the screen footer — the reason of a locked pause item (ADR-0161) — or `null` to clear it. */
-  explainItem?: (texto: string | null) => void;
+  explainItem?: (text: string | null) => void;
 
   // --- the per-screen pause menu ---
   /**
@@ -760,11 +760,11 @@ export interface PauseIconsCtx {
    * qual o escritor voltou para a engine (ADR-0106 §4). Sem este campo, ele escreveria só a chave antiga
    * enquanto o painel escreve as duas, e as duas superfícies divergiriam em silêncio.
    */
-  transportInUse?: (jogador: number) => string;
+  transportInUse?: (player: number) => string;
   setPlayerViz?: (i: number, mode: string) => void;
   /** Os escritores POR EIXO (#104): mexer no tema não apaga a correção, e vice-versa. */
-  setPlayerTheme?: (i: number, tema: Theme) => void;
-  setPlayerCorrection?: (i: number, correcao: Correction) => void;
+  setPlayerTheme?: (i: number, theme: Theme) => void;
+  setPlayerCorrection?: (i: number, correction: Correction) => void;
   /**
    * ANDA UM PASSO NO CICLO DE TIPOGRAFIA e devolve a face que ficou (ADR-0149 §1).
    *
@@ -1230,18 +1230,18 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   function renameCard(cardEl: HTMLElement, i: number): void {
     const card = cardEl.querySelector<HTMLElement>('.pause-card');
     if (card) card.setAttribute('aria-label', t('pause.cardAria', { n: i + 1 }));
-    const assento = cardEl.querySelector<HTMLElement>('h2 .pause-seat');
-    if (assento) assento.textContent = ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: i + 1 }) : '';
+    const seat = cardEl.querySelector<HTMLElement>('h2 .pause-seat');
+    if (seat) seat.textContent = ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: i + 1 }) : '';
   }
 
   function refreshPauseItems(): void {
     const acts = getPauseActs();
     const rootEl = ctx.pmButtons ?? PM_BTNS;
-    const opcoes = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
+    const options = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
     const fromGame = ctx.gameButtons ?? PM_GAME_BTNS;
     const actingItems = new Set([
-      ...rootThatActs(rootEl, opcoes, acts, fromGame).map((b) => b.act),
-      ...itemsThatAct(opcoes, acts).map((b) => b.act),
+      ...rootThatActs(rootEl, options, acts, fromGame).map((b) => b.act),
+      ...itemsThatAct(options, acts).map((b) => b.act),
       ...itemsThatAct(fromGame, acts).map((b) => b.act),
     ]);
     // ⚠️ `filter(Boolean)` VIROU ÍNDICE EXPLÍCITO, e a razão é a linha do nome logo abaixo: os cartões são
@@ -1373,15 +1373,15 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (!onBar.has(i)) return;
     const bar = ctx.getA11yBars()[i];
     if (!bar) return;
-    const acao = barAction(k, hasStart);
-    if (acao === 'sair') { leaveBarMode(i); return; }
+    const action = barAction(k, hasStart);
+    if (action === 'sair') { leaveBarMode(i); return; }
     const icons = [...bar.querySelectorAll<HTMLElement>('.pi-btn')];
     if (!icons.length) return;
     // never null here: the bar has an icon, and `selectedIcon` falls back to the first one
     const cur = selectedIcon(bar) as HTMLElement;
     // the click goes through the bar's own listener, which records who pressed it (`setPauseActor`)
-    if (acao === 'ativar') { cur.click(); return; }
-    if (acao === 'andar') selectIcon(i, bar, icons[stepInRing(icons.length, icons.indexOf(cur), (k.down || k.right) ? 1 : -1)]);
+    if (action === 'ativar') { cur.click(); return; }
+    if (action === 'andar') selectIcon(i, bar, icons[stepInRing(icons.length, icons.indexOf(cur), (k.down || k.right) ? 1 : -1)]);
   }
 
   function buildScreenPause(i: number): HTMLElement {
@@ -1423,9 +1423,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   function pressPauseItem(i: number, sp: HTMLElement, b: HTMLElement): void {
     // TRAVADO (ADR-0161): accioná-lo DIZ o motivo e não faz nada — nem porta, nem acção.
     if (b.getAttribute('aria-disabled') === 'true') {
-      const motivo = b.dataset.motivo ?? '';
-      ctx.srSay(motivo);
-      ctx.explainItem?.(motivo);
+      const reason = b.dataset.motivo ?? '';
+      ctx.srSay(reason);
+      ctx.explainItem?.(reason);
       return;
     }
     setPauseActor(i);

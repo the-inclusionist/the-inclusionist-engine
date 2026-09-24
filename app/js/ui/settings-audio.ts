@@ -186,7 +186,7 @@ export interface SettingsAudioApi {
  *
  * Idempotente: chamar duas vezes reaproveita o que já existe em vez de o duplicar.
  */
-export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
+export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
   // Each entry is either a control row or a CONTAINER the panel fills with rows of its own.
   const pieces: (ControlRowSpec | { readonly container: string; readonly label?: string })[] = [
     /*
@@ -237,7 +237,7 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
   const actions = card.querySelector<HTMLElement>(':scope > .overlay__actions');
   for (const piece of pieces) {
     if ('container' in piece) {
-      if (piece.container === '@lista') { card.insertBefore(lista, actions); continue; }
+      if (piece.container === '@lista') { card.insertBefore(list, actions); continue; }
       const jaHa = ctx.find('#' + piece.container);
       if (jaHa) {
         if (piece.label) jaHa.setAttribute('aria-label', piece.label);
@@ -269,7 +269,7 @@ export function mountAudioInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
  * painel mudou de sítio e o contrato invisível não. E a mesma regra de ordem: montar ANTES do `init`.
  * Idempotente e reetiquetável, como o irmão auditivo.
  */
-export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
+export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
   const actions = card.querySelector<HTMLElement>(':scope > .overlay__actions');
   const rows: ControlRowSpec[] = [
     { id: 'audio-master', label: t('audio.som'), hint: t('audio.som.dica') },
@@ -282,9 +282,9 @@ export function mountSoundInside(ctx: PanelShellCtx, card: HTMLElement, lista: H
       if (rowNode) labelRow(rowNode, piece);
       continue;
     }
-    card.insertBefore(controlRow(ctx, piece).row, lista.parentNode === card ? lista : actions);
+    card.insertBefore(controlRow(ctx, piece).row, list.parentNode === card ? list : actions);
   }
-  if (lista.parentNode !== card) card.insertBefore(lista, actions);
+  if (list.parentNode !== card) card.insertBefore(list, actions);
 }
 
 // ---------------------------------------------------------------------------------------------

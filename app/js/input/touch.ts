@@ -251,11 +251,11 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     if (!el) return;
     el.innerHTML = TOUCH_SLOTS.map((s) =>
       `<div class="ctrl-row"><label for="tm-${s.k}">${t(s.lbl)}</label><select id="tm-${s.k}" class="vol" data-slot="${s.k}">` +
-      // ⚠️ A OPÇÃO NASCE VAZIA e o `rotulo` entra logo abaixo por `textContent` (issue #106). Ele é a PALAVRA
-      // do jogo — `acoesDoJogo()` sai do preset —, e um jogo vive noutro repositório (ADR-0083), então este
-      // texto não é revisto por esta árvore. `value="${acao}"` fica: `acao` é o nome ABSTRATO, e a engine
+      // ⚠️ A OPÇÃO NASCE VAZIA e o `label` entra logo abaixo por `textContent` (issue #106). Ele é a PALAVRA
+      // do jogo — `gameActions()` sai do preset —, e um jogo vive noutro repositório (ADR-0083), então este
+      // texto não é revisto por esta árvore. `value="${slotAction}"` fica: `slotAction` é o nome ABSTRATO, e a engine
       // enumera-o em `core/actions`; é dela e não do jogo.
-      ctx.gameActions().map(({ action: acao }) => `<option value="${acao}"${touchMap[s.k] === acao ? ' selected' : ''}></option>`).join('') +
+      ctx.gameActions().map(({ action: slotAction }) => `<option value="${slotAction}"${touchMap[s.k] === slotAction ? ' selected' : ''}></option>`).join('') +
       `</select></div>`
     ).join('');
     // As palavras do jogo, por `textContent` — que escapa por construção. A ordem casa porque é a mesma lista.
@@ -482,9 +482,9 @@ const SLOT_NAME: Readonly<Record<string, string>> = {
   leftShoulder: 'L1', leftTrigger: 'L2', rightShoulder: 'R1', rightTrigger: 'R2',
   select: 'SELECT', start: 'START',
 };
-function buttonName(acao: string): string | null {
-  if (SLOT_NAME[acao]) return SLOT_NAME[acao]!;
-  return acao === 'up' || acao === 'down' || acao === 'left' || acao === 'right' ? t(`touch.nome.${acao}`) : null;
+function buttonName(slotAction: string): string | null {
+  if (SLOT_NAME[slotAction]) return SLOT_NAME[slotAction]!;
+  return slotAction === 'up' || slotAction === 'down' || slotAction === 'left' || slotAction === 'right' ? t(`touch.nome.${slotAction}`) : null;
 }
 
 /** Os quatro slots direcionais, na ordem em que a cruz os desenha. */
@@ -536,9 +536,9 @@ function padFacesOf(spec: TouchMarkupSpec): PadFaces {
   // ADR-0165: the face is the NAME of the position the slot fires; the accessible name is «name, function».
   const nameOf = (slot: string): string => buttonName(spec.map[slot] ?? slot) ?? spec.slotLabel(slot);
   const accessible = (slot: string): string => {
-    const nome = nameOf(slot);
-    const funcao = spec.slotLabel(slot);
-    return funcao && funcao !== nome ? `${nome}, ${funcao}` : nome;
+    const name = nameOf(slot);
+    const purpose = spec.slotLabel(slot);
+    return purpose && purpose !== name ? `${name}, ${purpose}` : name;
   };
   return { named, nameOf, accessible };
 }
@@ -579,13 +579,13 @@ function directionPad(ctx: TouchMarkupCtx, spec: TouchMarkupSpec, f: PadFaces): 
  * answer, and the child's remapping would stop counting.
  */
 function padButton(ctx: TouchMarkupCtx, f: PadFaces, slot: string, className: string): HTMLElement {
-  const botao = ctx.create('button');
-  botao.className = className;
-  botao.dataset.btn = slot.slice(1);
-  botao.setAttribute('type', 'button');
-  botao.setAttribute('aria-label', f.accessible(slot));
-  botao.textContent = f.nameOf(slot);
-  return botao;
+  const button = ctx.create('button');
+  button.className = className;
+  button.dataset.btn = slot.slice(1);
+  button.setAttribute('type', 'button');
+  button.setAttribute('aria-label', f.accessible(slot));
+  button.textContent = f.nameOf(slot);
+  return button;
 }
 
 /** The four action buttons, where the game names them, in a 2×2 block by the action's NUMBER (ADR-0160). */
@@ -595,22 +595,22 @@ function actionButtons(ctx: TouchMarkupCtx, spec: TouchMarkupSpec, f: PadFaces):
   const rhombus = ctx.create('div');
   rhombus.className = 'touch-pad';
   for (const b of live) {
-    const botao = padButton(ctx, f, b, 'touch-btn');
+    const button = padButton(ctx, f, b, 'touch-btn');
     // O LUGAR SEGUE A ACÇÃO, não o slot (ADR-0160: 1 4 em cima, 2 3 embaixo): a folha de estilo põe cada botão na
     // célula do seu número, e um slot remapeado leva o botão para o lugar da acção que passou a disparar.
-    botao.dataset.acao = spec.map[b] ?? '';
-    rhombus.appendChild(botao);
+    button.dataset.acao = spec.map[b] ?? '';
+    rhombus.appendChild(button);
   }
   return [rhombus];
 }
 
 /** OS OMBROS, cada par no seu canto superior (ADR-0160), e só os que o jogo nomeia (ADR-0162) — nenhum canto vazio. */
 function shoulderCorners(ctx: TouchMarkupCtx, f: PadFaces): HTMLElement[] {
-  return SHOULDERS.flatMap(([lado, slots]) => {
+  return SHOULDERS.flatMap(([side, slots]) => {
     const named = slots.filter(f.named);
     if (!named.length) return [];
     const corner = ctx.create('div');
-    corner.className = `touch-ombros touch-ombros--${lado}`;
+    corner.className = `touch-ombros touch-ombros--${side}`;
     for (const s of named) corner.appendChild(padButton(ctx, f, s, 'touch-btn touch-ombro'));
     return [corner];
   });

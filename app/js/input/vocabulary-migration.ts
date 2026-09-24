@@ -68,11 +68,11 @@ export const OLD_VOCABULARY: Readonly<Record<string, string>> = Object.freeze({
  */
 export function migrateTouchMap(touchMap: Record<string, string> | null | undefined): Record<string, string> | null {
   if (!touchMap) return null;
-  const saida: Record<string, string> = {};
-  for (const [slot, acao] of Object.entries(touchMap)) {
-    saida[slot] = OLD_VOCABULARY[acao] ?? acao;
+  const migrated: Record<string, string> = {};
+  for (const [slot, action] of Object.entries(touchMap)) {
+    migrated[slot] = OLD_VOCABULARY[action] ?? action;
   }
-  return saida;
+  return migrated;
 }
 
 /**
@@ -90,11 +90,11 @@ export function migrateTouchMap(touchMap: Record<string, string> | null | undefi
  */
 export function migrateControlMap<T>(touchMap: Record<string, T> | null | undefined): Record<string, T> | null {
   if (!touchMap) return null;
-  const saida: Record<string, T> = {};
-  for (const [chave, valor] of Object.entries(touchMap)) {
-    saida[OLD_VOCABULARY[chave] ?? chave] = valor;
+  const migrated: Record<string, T> = {};
+  for (const [key, value] of Object.entries(touchMap)) {
+    migrated[OLD_VOCABULARY[key] ?? key] = value;
   }
-  return saida;
+  return migrated;
 }
 
 /** O objeto salvo, tal como `input/keyboard` o persiste. `p34` é o formato mais antigo de todos. */
@@ -117,26 +117,26 @@ export interface SavedKB {
  */
 export function migrateScheme(saved: SavedScheme | null | undefined): SavedScheme | null {
   if (!saved) return null;
-  const saida: SavedScheme = {};
-  for (const [chave, teclas] of Object.entries(saved)) {
-    const newKey = OLD_VOCABULARY[chave] ?? chave;
+  const migrated: SavedScheme = {};
+  for (const [key, keys] of Object.entries(saved)) {
+    const newKey = OLD_VOCABULARY[key] ?? key;
     // ⚠️ Esquema MEIO migrado (as duas chaves presentes): a UNIÃO, nunca a sobreposição. Perder uma tecla é
     // o dano que este módulo existe para impedir; ter a mesma tecla duas vezes não é dano nenhum.
-    saida[newKey] = saida[newKey] ? [...new Set([...saida[newKey], ...teclas])] : [...teclas];
+    migrated[newKey] = migrated[newKey] ? [...new Set([...migrated[newKey], ...keys])] : [...keys];
   }
-  return saida;
+  return migrated;
 }
 
 /** Traduz o objeto salvo inteiro — o esquema solo e as listas por contagem de jogadores. */
 export function migrateSaved(s: SavedKB | null | undefined): SavedKB | null {
   if (!s) return null;
-  const lista = (arr: (SavedScheme | null)[] | undefined): SavedScheme[] | undefined =>
+  const list = (arr: (SavedScheme | null)[] | undefined): SavedScheme[] | undefined =>
     (Array.isArray(arr) ? arr.map((m) => migrateScheme(m) as SavedScheme) : undefined);
   const out: SavedKB = {};
   const solo = migrateScheme(s.solo);
   if (solo) out.solo = solo;
   for (const g of ['p2', 'p3', 'p4'] as const) {
-    const v = lista(s[g]);
+    const v = list(s[g]);
     if (v) out[g] = v;
   }
   // `p34` migra de VOCABULÁRIO aqui e de FORMA em `loadKB`, que já o fazia antes deste módulo existir.

@@ -61,7 +61,7 @@ export const SHORT_CORRECTION: Readonly<Record<Correction, string>> = Object.fre
 export type VisualAxis = 'tema' | 'correcao';
 
 /** Um tradutor, igual ao que o resto da interface recebe. */
-export type Translator = (chave: string, params?: Record<string, string | number>) => string;
+export type Translator = (key: string, params?: Record<string, string | number>) => string;
 
 /**
  * As linhas de UM eixo, no formato de rádio que o painel já usa.
@@ -75,17 +75,17 @@ export type Translator = (chave: string, params?: Record<string, string | number
  * por quem enxerga mal fica «quase o mesmo que não ter movido».
  */
 export function axisRows(
-  eixo: VisualAxis,
+  axisName: VisualAxis,
   options: readonly string[],
   optionLabels: Readonly<Record<string, string>>,
   selected: string,
   t: Translator,
 ): string {
-  return options.map((valor) => {
-    const sel = valor === selected;
-    return `<div class="ctrl-row"><span><strong>${t(optionLabels[valor]!)}</strong></span>`
+  return options.map((valueName) => {
+    const sel = valueName === selected;
+    return `<div class="ctrl-row"><span><strong>${t(optionLabels[valueName]!)}</strong></span>`
       + `<button class="mode-btn${sel ? ' is-on' : ''}" role="radio" aria-checked="${sel}"`
-      + ` data-eixo="${eixo}" data-valor="${valor}" type="button">${sel ? t('viz.escolhido') : t('viz.escolher')}</button></div>`;
+      + ` data-eixo="${axisName}" data-valor="${valueName}" type="button">${sel ? t('viz.escolhido') : t('viz.escolher')}</button></div>`;
   }).join('');
 }
 
@@ -108,9 +108,9 @@ export interface AxisChoice {
   readonly value: string;
 }
 export function buttonChoice(dataset: { eixo?: string; valor?: string }): AxisChoice | null {
-  const { eixo, valor } = dataset;
-  if (eixo !== 'tema' && eixo !== 'correcao') return null;
-  if (!valor) return null;
-  const allowed: readonly string[] = eixo === 'tema' ? THEMES : CORRECTIONS;
-  return allowed.includes(valor) ? { axis: eixo, value: valor } : null;
+  const { eixo: axisName, valor: valueName } = dataset;
+  if (axisName !== 'tema' && axisName !== 'correcao') return null;
+  if (!valueName) return null;
+  const allowed: readonly string[] = axisName === 'tema' ? THEMES : CORRECTIONS;
+  return allowed.includes(valueName) ? { axis: axisName, value: valueName } : null;
 }

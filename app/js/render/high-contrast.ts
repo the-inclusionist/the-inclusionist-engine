@@ -281,9 +281,9 @@ export function spriteTexFor(id: string, mode: string): unknown {
   const src = hc.sprites()[id];
   if (!src) return undefined;
   if (DIRECT_CFG[mode]) {
-    const chave = id + '|' + mode;
-    if (!_spriteTexHC[chave] && src.canvas) _spriteTexHC[chave] = tex(directSpriteCanvas(src.canvas, mode));
-    return _spriteTexHC[chave] ?? src.tex;
+    const key = id + '|' + mode;
+    if (!_spriteTexHC[key] && src.canvas) _spriteTexHC[key] = tex(directSpriteCanvas(src.canvas, mode));
+    return _spriteTexHC[key] ?? src.tex;
   }
   return src.tex;
 }

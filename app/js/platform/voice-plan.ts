@@ -17,6 +17,6 @@ export interface NeuralVoice {
  * is not offered: Portuguese text through English phonemes is noise.
  */
 export function voicesForLocale(tag: string, catalogue: readonly NeuralVoice[]): readonly NeuralVoice[] {
-  const idioma = (tag.split('-')[0] ?? '').toLowerCase();
-  return catalogue.filter((v) => (v.locale.split('-')[0] ?? '').toLowerCase() === idioma);
+  const language = (tag.split('-')[0] ?? '').toLowerCase();
+  return catalogue.filter((v) => (v.locale.split('-')[0] ?? '').toLowerCase() === language);
 }

@@ -91,7 +91,7 @@ import { migrateSaved, type SavedKB } from './vocabulary-migration.js';
  * O PADRÃO QUE O JOGO QUER, por número de jogadores e por assento (ADR-0115). Parcial: o que ele não disser
  * fica como a fábrica da engine o deixou.
  */
-export type KeyboardMapping = (jogadores: number, assento: number) => Partial<KeyScheme> | null;
+export type KeyboardMapping = (players: number, seat: number) => Partial<KeyScheme> | null;
 
 let gameMapping: KeyboardMapping | null = null;
 
@@ -119,9 +119,9 @@ export function registerKeyboardMapping(f: KeyboardMapping | null): void { gameM
 export function factoryWithGame(): KBDefaults {
   const d: KBDefaults = JSON.parse(JSON.stringify(KB_DEFAULTS));
   if (!gameMapping) return d;
-  const overlayGameMapping = (alvo: KeyScheme, jogadores: number, assento: number): void => {
-    const changes = gameMapping!(jogadores, assento);
-    if (changes) Object.assign(alvo, changes);
+  const overlayGameMapping = (target: KeyScheme, players: number, seat: number): void => {
+    const changes = gameMapping!(players, seat);
+    if (changes) Object.assign(target, changes);
   };
   overlayGameMapping(d.solo, 1, 0);
   d.p2.forEach((seatScheme, i) => overlayGameMapping(seatScheme, 2, i));

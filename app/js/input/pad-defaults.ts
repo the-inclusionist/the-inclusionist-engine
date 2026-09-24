@@ -22,7 +22,7 @@ import type { Action } from '../core/actions.js';
 import { GAMEPAD_STANDARD, type Binding } from './default-bindings.js';
 
 /** O que o jogo declara: só o que ele quer mudar. `null` num botão é «esta posição não existe neste jogo». */
-export type PadMapping = (jogadores: number, assento: number) => Partial<Record<Action, number | null>> | null;
+export type PadMapping = (players: number, seat: number) => Partial<Record<Action, number | null>> | null;
 
 export type PadTable = Readonly<Record<Action, Binding<number>>>;
 
@@ -48,13 +48,13 @@ export function registerPadMapping(f: PadMapping | null): void {
  * sessenta vezes por segundo por jogador é lixo que nenhuma criança vê e que o coletor paga. A chave é
  * `arranjo:assento`, e o registo limpa-a — que é o único momento em que a resposta pode mudar.
  */
-export function padTable(jogadores: number, assento: number): PadTable {
+export function padTable(players: number, seat: number): PadTable {
   if (!gameMapping) return GAMEPAD_STANDARD;
-  const chave = `${jogadores}:${assento}`;
-  const cached = memo.get(chave);
+  const key = `${players}:${seat}`;
+  const cached = memo.get(key);
   if (cached) return cached;
-  const changes = gameMapping(jogadores, assento);
+  const changes = gameMapping(players, seat);
   const table: PadTable = changes ? Object.freeze({ ...GAMEPAD_STANDARD, ...changes }) : GAMEPAD_STANDARD;
-  memo.set(chave, table);
+  memo.set(key, table);
   return table;
 }

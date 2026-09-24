@@ -194,7 +194,7 @@ export interface MenuNavCtx {
    * foco sozinho. A pausa seleciona por CLASSE (`.pm-sel`), porque é desenhada dentro da tela do jogador —
    * e classe nenhuma dispara anúncio. Sem esta injeção o menu é mudo para quem o navega por escuta.
    */
-  srSay: (texto: string) => void;
+  srSay: (text: string) => void;
   /**
    * O índice "N de M" está ligado? (ADR-0044, item 3, e a XAG 106 exige que ele possa ser desligado.)
    *
@@ -205,7 +205,7 @@ export interface MenuNavCtx {
    */
   withIndex: () => boolean;
   /** Writes the reason of a locked pause item in the screen footer, or clears it with `null` (ADR-0161). Optional. */
-  explainItem?: (texto: string | null) => void;
+  explainItem?: (text: string | null) => void;
   /**
    * A tela `i` está no modo `accessibility` (ADR-0044, item 7)? Perguntado ANTES de `isNavigable`, porque
    * esse modo roda com o jogo ANDANDO — é a única coisa deste módulo que age fora da pausa.
@@ -342,8 +342,8 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   function sayItem(items: readonly HTMLElement[], n: number): void {
     const el = items[n];
     if (!el) return;
-    const { label: rotulo, state: estado } = controlParts(el);
-    ctx.srSay(announceItem({ label: rotulo, state: estado, position: n + 1, total: items.length }, ctx.withIndex()));
+    const { label: partLabel, state: partState } = controlParts(el);
+    ctx.srSay(announceItem({ label: partLabel, state: partState, position: n + 1, total: items.length }, ctx.withIndex()));
   }
 
   function focusAndSay(items: readonly HTMLElement[], n: number): void {
@@ -451,10 +451,10 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // `accessibleLabel` e não `textContent`: um item com `aria-label` seria narrado de um jeito pelo jogo e de
     // outro pelo leitor de tela, e quem ouve os dois não teria como saber qual é a verdadeira.
     // 🔴 UM ITEM TRAVADO DIZ PORQUÊ ao ser alcançado (ADR-0161): dito a seguir ao nome, e escrito no rodapé.
-    const motivo = items[n].getAttribute('aria-disabled') === 'true' ? (items[n].dataset.motivo ?? '') : '';
-    const anuncio = announceItem({ label: accessibleLabel(items[n]), position: n + 1, total: items.length }, ctx.withIndex());
-    ctx.srSay(motivo ? `${anuncio}. ${motivo}` : anuncio);
-    ctx.explainItem?.(motivo || null);
+    const reason = items[n].getAttribute('aria-disabled') === 'true' ? (items[n].dataset.motivo ?? '') : '';
+    const announcement = announceItem({ label: accessibleLabel(items[n]), position: n + 1, total: items.length }, ctx.withIndex());
+    ctx.srSay(reason ? `${announcement}. ${reason}` : announcement);
+    ctx.explainItem?.(reason || null);
   }
 
   /* ===================== teclado ===================== */
@@ -534,9 +534,9 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   let holding: { id: number; timer: ReturnType<typeof setTimeout> } | null = null;
   let clickToSwallow: HTMLElement | null = null;
 
-  /** The open menu and the item under `alvo`, when `alvo` is inside one: the top dialog first, else a pause card. */
-  function itemUnder(alvo: EventTarget | null): { menu: HTMLElement; items: HTMLElement[]; n: number; inPause: boolean } | null {
-    const no = alvo as HTMLElement | null;
+  /** The open menu and the item under `target`, when `target` is inside one: the top dialog first, else a pause card. */
+  function itemUnder(target: EventTarget | null): { menu: HTMLElement; items: HTMLElement[]; n: number; inPause: boolean } | null {
+    const no = target as HTMLElement | null;
     if (!no || typeof no.closest !== 'function') return null;
     const dlg = sharedDialogOpen();
     if (dlg) {
@@ -578,9 +578,9 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   }
 
   function onClick(e: MouseEvent): void {
-    const alvo = clickToSwallow;
+    const swallowed = clickToSwallow;
     clickToSwallow = null;
-    if (alvo && e.target instanceof Node && alvo.contains(e.target)) { e.preventDefault(); e.stopPropagation(); }
+    if (swallowed && e.target instanceof Node && swallowed.contains(e.target)) { e.preventDefault(); e.stopPropagation(); }
   }
 
   function attach(): void {

@@ -22,8 +22,8 @@ import {
 /** O mínimo do `platform/storage` que isto precisa. Injectado, para o gate não precisar de um navegador. */
 export interface LatchStore {
   /** ⚠️ O CRU, e não `getBool`. Ver `readTriState`. */
-  get(chave: string, padrao?: null): string | null;
-  set(chave: string, valor: string): void;
+  get(key: string, fallback?: null): string | null;
+  set(key: string, value: string): void;
 }
 
 /**
@@ -37,8 +37,8 @@ export interface LatchStore {
  * ⚠️ É por isso que o `latch-scope` tipa os dois campos como `boolean | null` e tem um caso próprio a dizer
  * que «`false` guardado é um VALOR, e não uma ausência». Este é o lado do armazenamento da mesma frase.
  */
-export function readTriState(store: LatchStore, chave: string): boolean | null {
-  const v = store.get(chave, null);
+export function readTriState(store: LatchStore, key: string): boolean | null {
+  const v = store.get(key, null);
   return v == null ? null : v === '1';
 }
 
@@ -50,14 +50,14 @@ export function readTriState(store: LatchStore, chave: string): boolean | null {
 export function readLatch(
   store: LatchStore,
   base: string,
-  jogador: number,
-  transporte: string,
-  padrao: boolean,
+  player: number,
+  transport: string,
+  fallback: boolean,
 ): LatchReading {
   return {
-    fromTransport: readTriState(store, latchKey(base, jogador, transporte)),
-    fromLegacy: readTriState(store, legacyLatchKey(base, jogador)),
-    byDefault: padrao,
+    fromTransport: readTriState(store, latchKey(base, player, transport)),
+    fromLegacy: readTriState(store, legacyLatchKey(base, player)),
+    byDefault: fallback,
   };
 }
 
@@ -70,11 +70,11 @@ export function readLatch(
 export function storedLatch(
   store: LatchStore,
   base: string,
-  jogador: number,
-  transporte: string,
-  padrao: boolean,
+  player: number,
+  transport: string,
+  fallback: boolean,
 ): boolean {
-  return latchOf(transporte, readLatch(store, base, jogador, transporte, padrao));
+  return latchOf(transport, readLatch(store, base, player, transport, fallback));
 }
 
 /**
@@ -93,13 +93,13 @@ export function storedLatch(
 // crus obrigaria a inventar um adaptador no ponto de uso, e um adaptador ali é onde uma segunda forma de
 // escrever a mesma chave nasce. Uma função é o mínimo que a escrita precisa.
 export function writeLatch(
-  write: (chave: string, isOn: boolean) => void,
+  write: (key: string, isOn: boolean) => void,
   base: string,
-  jogador: number,
-  transporte: string,
+  player: number,
+  transport: string,
   isOn: boolean,
 ): boolean {
-  if (!latchIsOptional(transporte)) return false;
-  write(latchKey(base, jogador, transporte), isOn);
+  if (!latchIsOptional(transport)) return false;
+  write(latchKey(base, player, transport), isOn);
   return true;
 }

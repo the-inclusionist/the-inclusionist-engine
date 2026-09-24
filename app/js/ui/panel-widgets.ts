@@ -54,7 +54,7 @@ export interface ControlRowSpec {
    * ⚠️ EXISTE PORQUE O TEXTO DO INTERRUPTOR É O ESTADO, e não o nome: um `<button>` cujo `textContent` diz
    * «▶ Desligado» anuncia «Desligado, botão» e a pessoa não sabe desligado O QUÊ. O `<strong>` ao lado resolve
    * isso para quem VÊ a linha inteira; para quem navega controlo a controlo, resolve-o este atributo.
-   * Ausente, cai no `rotulo` — que é a resposta certa e não um recuo.
+   * Ausente, cai no `label` — que é a resposta certa e não um recuo.
    */
   readonly ariaLabel?: string;
 }
@@ -76,10 +76,10 @@ export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow
   const rowNode = ctx.create('div');
   rowNode.className = 'ctrl-row';
 
-  const texto = ctx.create('span');
+  const text = ctx.create('span');
   const shortLabel = ctx.create('strong');
   shortLabel.textContent = spec.label;
-  texto.appendChild(shortLabel);
+  text.appendChild(shortLabel);
   if (spec.hint) {
     // ⚠️ UM SÓ, e é o que o `fillExplain` procura. Dois `.opt-hint` na mesma linha davam duas descrições ao
     // mesmo controle, e o rodapé mostraria a primeira — a outra ficaria na linha, que é exactamente o defeito
@@ -87,9 +87,9 @@ export function controlRow(ctx: PanelShellCtx, spec: ControlRowSpec): ControlRow
     const explanation = ctx.create('span');
     explanation.className = 'opt-hint';
     explanation.textContent = spec.hint;
-    texto.appendChild(explanation);
+    text.appendChild(explanation);
   }
-  rowNode.appendChild(texto);
+  rowNode.appendChild(text);
 
   const controle = buildControl(ctx, spec);
   controle.id = spec.id;
@@ -282,10 +282,10 @@ export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
     s.addEventListener('click', () => el.dispatchEvent(new CustomEvent('passo', { detail: delta, bubbles: true })));
     return s;
   };
-  const valor = ctx.create('span');
-  valor.className = 'passo-valor';
+  const value = ctx.create('span');
+  value.className = 'passo-valor';
   el.appendChild(arrow(-1, '◀'));
-  el.appendChild(valor);
+  el.appendChild(value);
   el.appendChild(arrow(1, '▶'));
   updateSteps(el, spec);
   return el;
@@ -295,16 +295,16 @@ export function mountSteps(ctx: PanelShellCtx, spec: StepsSpec): HTMLElement {
 export function updateSteps(el: HTMLElement, spec: StepsSpec): void {
   const lastIndex = Math.max(0, spec.values.length - 1);
   const from = Math.max(0, Math.min(lastIndex, spec.current));
-  const texto = spec.values[from] ?? '';
+  const text = spec.values[from] ?? '';
   el.setAttribute('aria-label', spec.label);
   el.setAttribute('aria-valuemin', '0');
   el.setAttribute('aria-valuemax', String(lastIndex));
   el.setAttribute('aria-valuenow', String(from));
-  el.setAttribute('aria-valuetext', texto);
-  const valor = el.querySelector<HTMLElement>('.passo-valor');
+  el.setAttribute('aria-valuetext', text);
+  const value = el.querySelector<HTMLElement>('.passo-valor');
   // O RÓTULO ENTRA NO TEXTO: a linha inteira é o controle, «◀ Cantos arredondados: pequeno ▶». Quem ouve recebe o
   // mesmo em duas partes — o nome no `aria-label` e a posição no `aria-valuetext` —, sem o nome repetido.
-  if (valor) valor.textContent = spec.label ? `${spec.label}: ${texto}` : texto;
+  if (value) value.textContent = spec.label ? `${spec.label}: ${text}` : text;
   // A ponta que já não anda fica marcada — sem isto a seta de uma parede parece um botão avariado.
   el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', from === 0);
   el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', from === lastIndex);

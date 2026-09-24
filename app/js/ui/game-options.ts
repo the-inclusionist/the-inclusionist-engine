@@ -103,35 +103,35 @@ function positionProblem(v: Row | null, at: string, seen: Set<string>): string |
 
 export interface GameOptionsDrawCtx extends PanelShellCtx {
   /** Where a change is said (the polite live region). */
-  readonly say: (texto: string) => void;
+  readonly say: (text: string) => void;
 }
 
 /**
- * Draws the rows into `lista`, replacing what was there — the rows are the CURRENT cartridge's, and `mount()` may have
+ * Draws the rows into `list`, replacing what was there — the rows are the CURRENT cartridge's, and `mount()` may have
  * swapped it (ADR-0142). Every value shown is READ from the cartridge, at drawing and after each write.
  */
-export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, options: readonly GameOption[]): void {
-  while (lista.firstChild) lista.removeChild(lista.firstChild); // node by node: no markup sink, and a host without `replaceChildren` still clears
+export function drawGameOptions(ctx: GameOptionsDrawCtx, list: HTMLElement, options: readonly GameOption[]): void {
+  while (list.firstChild) list.removeChild(list.firstChild); // node by node: no markup sink, and a host without `replaceChildren` still clears
   for (const o of options) {
     const id = `game-option-${o.id}`;
     if (o.kind === 'switch') {
       const { row: rowNode, controle } = controlRow(ctx, { id, label: o.label, hint: o.hint });
-      const refletir = (): boolean => {
+      const reflect = (): boolean => {
         const on = o.read();
         controle.classList.toggle('is-on', on);
         controle.setAttribute('aria-pressed', String(on));
         controle.textContent = toggleLabel(on);
         return on;
       };
-      refletir();
+      reflect();
       controle.addEventListener('click', () => {
         o.write(!o.read());
-        ctx.say(`${o.label}: ${toggleLabel(refletir())}`);
+        ctx.say(`${o.label}: ${toggleLabel(reflect())}`);
       });
-      lista.appendChild(rowNode);
+      list.appendChild(rowNode);
       continue;
     }
-    const labelOf = (valor: string): string => o.values.find((v) => v.value === valor)?.label ?? valor;
+    const labelOf = (chosen: string): string => o.values.find((v) => v.value === chosen)?.label ?? chosen;
     if (o.kind === 'list') {
       const { row: rowNode, controle } = controlRow(ctx, { id, label: o.label, hint: o.hint, shape: 'escolha' });
       const sel = controle as HTMLSelectElement;
@@ -147,7 +147,7 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
         sel.value = o.read();
         ctx.say(`${o.label}: ${labelOf(sel.value)}`);
       });
-      lista.appendChild(rowNode);
+      list.appendChild(rowNode);
       continue;
     }
     // steps: the row IS the control, «◀ Label: value ▶» (ADR-0130 erratum); the hint rides in the row for the footer
@@ -174,6 +174,6 @@ export function drawGameOptions(ctx: GameOptionsDrawCtx, lista: HTMLElement, opt
       updateSteps(stepper, spec());
       ctx.say(`${o.label}: ${labelOf(o.read())}`);
     });
-    lista.appendChild(rowNode);
+    list.appendChild(rowNode);
   }
 }

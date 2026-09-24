@@ -147,8 +147,8 @@ export function carries(t: Transport, actions: readonly Action[]): boolean {
  * controle passariam a reprovar todos os jogos por não terem número nenhum. Onde não há decisão, o modelo
  * cala; é o toque que tem decisão, e é só ele que pode reprovar aqui.
  */
-export function holds(t: Transport, pedidas: number): boolean {
-  return t.holds === undefined || t.holds >= pedidas;
+export function holds(t: Transport, asked: number): boolean {
+  return t.holds === undefined || t.holds >= asked;
 }
 
 /**
@@ -157,8 +157,8 @@ export function holds(t: Transport, pedidas: number): boolean {
  * ⚠️ Disponibilidade e capacidade são conferidas nesta ordem de propósito: um transporte que caberia mas não
  * está ligado não é resposta para uma criança que está à frente do aparelho agora.
  */
-export function carriedBy(lista: readonly Transport[], actions: readonly Action[]): Transport[] {
-  return lista.filter((t) => t.available() && carries(t, actions));
+export function carriedBy(list: readonly Transport[], actions: readonly Action[]): Transport[] {
+  return list.filter((t) => t.available() && carries(t, actions));
 }
 
 /**
@@ -168,8 +168,8 @@ export function carriedBy(lista: readonly Transport[], actions: readonly Action[
  * nenhuma não é um jogo que qualquer transporte serve — é um jogo que ninguém consegue jogar, e
  * `actionSetProblems` já o reprova. Devolver `true` aqui esconderia esse defeito atrás desta função.
  */
-export function reachable(lista: readonly Transport[], actions: readonly Action[]): boolean {
-  return actions.length > 0 && carriedBy(lista, actions).length > 0;
+export function reachable(list: readonly Transport[], actions: readonly Action[]): boolean {
+  return actions.length > 0 && carriedBy(list, actions).length > 0;
 }
 
 /** O que a tela de seleção precisa dizer, e o que ela precisa saber para o dizer. */
@@ -218,12 +218,12 @@ export interface Reach {
  * repetiria o defeito que o `PADWIZ_STEPS` acabou de deixar de cometer.
  */
 export function reach(
-  lista: readonly Transport[],
+  list: readonly Transport[],
   actions: readonly Action[],
   askedHolds: number,
   wantsPointer = false,
 ): Reach {
-  const availableNow = lista.filter((t) => t.available());
+  const availableNow = list.filter((t) => t.available());
   /**
    * ⚠️ PADRÃO `false` E NÃO PARÂMETRO OBRIGATÓRIO: os trezentos jogos que não desenham não podem sentir esta
    * mudança, e um quarto argumento exigido faria cada chamador existente decidir hoje uma coisa que não lhe
@@ -239,7 +239,7 @@ export function reach(
     asked: actions.length,
     holdsAsked: askedHolds,
     needsPointer: wantsPointer,
-    wouldServeIfOn: lista.filter((t) => !t.available() && serve(t)).map((t) => t.id),
+    wouldServeIfOn: list.filter((t) => !t.available() && serve(t)).map((t) => t.id),
     short: availableNow.filter((t) => !carries(t, actions)).map((t) => ({ id: t.id, slots: t.slots })),
     cannotPoint: availableNow
       .filter((t) => carries(t, actions) && holds(t, askedHolds) && !pointsIfNeeded(t))

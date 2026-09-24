@@ -64,8 +64,8 @@ export function nextInTrap<T>(
 }
 
 interface KeydownTarget {
-  addEventListener: (tipo: 'keydown', fn: (e: KeyboardEvent) => void, capture?: boolean) => void;
-  removeEventListener?: (tipo: 'keydown', fn: (e: KeyboardEvent) => void, capture?: boolean) => void;
+  addEventListener: (kind: 'keydown', fn: (e: KeyboardEvent) => void, capture?: boolean) => void;
+  removeEventListener?: (kind: 'keydown', fn: (e: KeyboardEvent) => void, capture?: boolean) => void;
 }
 
 export interface FocusTrapCtx {
@@ -102,11 +102,11 @@ export function initFocusTrap(ctx: FocusTrapCtx): FocusTrapApi {
     const dialogo = ctx.topOverlay();
     if (!dialogo) return; // sem diálogo aberto o Tab é do jogo, e tem de continuar a ser
 
-    const alvo = nextInTrap(ctx.focusablesIn(dialogo), ctx.currentFocus() as HTMLElement | null, e.shiftKey);
-    if (!alvo) return;
+    const target = nextInTrap(ctx.focusablesIn(dialogo), ctx.currentFocus() as HTMLElement | null, e.shiftKey);
+    if (!target) return;
 
     e.preventDefault();
-    alvo.focus();
+    target.focus();
   }
 
   return {

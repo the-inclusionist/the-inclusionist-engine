@@ -57,7 +57,7 @@ export interface SettingsControlsCtx {
    * especial. Um quiz mostraria quatro linhas para ações que não existem nele, e uma criança tentaria
    * remapear um botão que não faz nada.
    */
-  // ⚠️ `acao` é `Action` e não `string` desde a issue #118, e o comentário do `render()` já dizia porquê:
+  // ⚠️ `action` é `Action` e não `string` desde a issue #118, e o comentário do `render()` já dizia porquê:
   // «`a` é o nome ABSTRATO da ação, que a engine enumera em `core/actions`» (ADR-0086). Enquanto foi
   // `string`, um jogo podia declarar uma posição que não existe e a linha era desenhada com teclas vazias,
   // sem que nada apontasse o erro — a criança via uma ação que nunca responderia.
@@ -316,9 +316,9 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
      * valor vivo — e resolve-o pondo o valor DENTRO do controle. Aqui o valor é a tecla, e o controle é o
      * botão que a troca.
      *
-     * ⚠️ A palavra do jogo continua a entrar por `textContent` (o `controlRow` escreve o `rotulo` assim) e o
+     * ⚠️ A palavra do jogo continua a entrar por `textContent` (o `controlRow` escreve o `label` assim) e o
      * nome acessível por `setAttribute` (o kit escreve o `rotuloAria` assim). São as duas correcções que as
-     * issues #106 e #125 custaram, e o kit preserva-as por construção em vez de por lembrança: `rotulo` é
+     * issues #106 e #125 custaram, e o kit preserva-as por construção em vez de por lembrança: `label` é
      * TEXTO DO JOGO, que esta árvore não revê, e um `aria-label` errado SOBREPÕE-SE ao texto visível — foi o
      * «Alterar tecla de undefined do Jogador 1» medido em seis de doze botões do `game-soccer`.
      */
@@ -331,8 +331,8 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
         shape: 'button',
         ariaLabel: t('ctrl.changeKeyAria', { acao: label, n: player + 1 }),
       });
-      // `data-act` fica, e a diferença com o `rotulo` é a razão: `a` é o nome ABSTRATO da posição, que a
-      // engine enumera em `core/actions`, e o `rotulo` é a palavra do JOGO (ADR-0086).
+      // `data-act` fica, e a diferença com o `label` é a razão: `a` é o nome ABSTRATO da posição, que a
+      // engine enumera em `core/actions`, e o `label` é a palavra do JOGO (ADR-0086).
       control.dataset.act = a;
       drawKeys(control, map[a] ?? []);
       el.appendChild(row);
@@ -351,11 +351,11 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
         // não a usa, não há o que mapear; uma ausência vira menos um passo, nunca um passo mudo». As linhas
         // vêm todas de `acoesDoJogo()`, logo isto não acontece hoje — e é essa garantia que fica escrita em
         // vez de assumida, porque quem a partir amanhã acorda um anúncio sem sujeito.
-        const palavra = gameWordFor(act);
-        if (!palavra) return;
+        const word = gameWordFor(act);
+        if (!word) return;
         capture = { action: act, mapRef: map };
         b.textContent = t('ctrl.pressing'); // estava cravado em português isInside do motor (#125)
-        ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: palavra, n: player + 1 }));
+        ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: word, n: player + 1 }));
       });
     });
     // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109).
@@ -390,14 +390,14 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     // mover deixaria a ação antiga com lista vazia — que o `bindingProblems` classifica como problema, e que
     // a criança descobriria no meio do jogo, sem anúncio, com uma ação que deixou de existir. Recusar custa
     // dois passos (soltar a antiga, prender a nova) e não perde nada pelo caminho.
-    const aqui = actionAlreadyBound(e.code, capture.mapRef, capture.action);
-    if (aqui) {
-      // ⚠️ `aqui` VEM DO ESQUEMA, e o esquema liga posições que o jogo pode não nomear — é por aqui que o id
+    const here = actionAlreadyBound(e.code, capture.mapRef, capture.action);
+    if (here) {
+      // ⚠️ `here` VEM DO ESQUEMA, e o esquema liga posições que o jogo pode não nomear — é por aqui que o id
       // abstracto chegava a uma criança. Sem palavra, a frase diz a verdade que INTERESSA («a tecla está
       // ocupada aqui») em vez do nome interno: calar seria o defeito gémeo, e dizer `action2` era o defeito.
-      const palavra = gameWordFor(aqui);
-      ctx.srAlert(palavra
-        ? t('sr.ctrl.keyTakenHere', { acao: palavra })
+      const word = gameWordFor(here);
+      ctx.srAlert(word
+        ? t('sr.ctrl.keyTakenHere', { acao: word })
         : t('sr.ctrl.keyTakenHereUnnamed'));
       e.preventDefault();
       return true; // não associa: segue capturando

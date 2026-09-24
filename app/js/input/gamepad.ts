@@ -204,7 +204,7 @@ export interface GamepadCtx {
    * só o jogo sabe a palavra. Antes desta linha o assistente dizia «PULAR» a partir de uma constante
    * deste ficheiro — em português, sem passar por `t()`, dentro do motor.
    */
-  actionLabel: (acao: string) => string | null;
+  actionLabel: (action: string) => string | null;
   /** Anúncios de leitor de tela (core/a11y-sr), injetados. */
   srSay: (msg: string) => void;
   srAlert: (msg: string) => void;
@@ -258,7 +258,7 @@ export interface GamepadCtx {
    * conjunto de teclas, passa por `padCur` —, e é exactamente por isso que a falta aqui era invisível: o
    * módulo sabe de que controle veio a aresta, e o autómato não.
    */
-  playerEdge: (jogador: number, origin: 'gamepad') => void;
+  playerEdge: (player: number, origin: 'gamepad') => void;
   /**
    * A PORTA ÚNICA PARA O CARTUCHO (ADR-0223): apertar uma POSIÇÃO no assento deste controle. Responde se a
    * pressão chegou ao JOGO — `false` quer dizer que um menu a levou.
@@ -368,9 +368,9 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   // the wizard asks; what a position LOOKS like is drawn by the game (note CD), through the two hooks it may answer
   const wizard = createPadWizard({
     getGamepads: () => ctx.getGamepads(),
-    actionLabel: (acao) => ctx.actionLabel(acao),
+    actionLabel: (action) => ctx.actionLabel(action),
     say: (phrase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = phrase; ctx.srSay(phrase); },
-    progress: (texto) => { const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = texto; },
+    progress: (text) => { const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = text; },
     srAlert: (phrase) => ctx.srAlert(phrase),
     onStep: (position) => ctx.wizardStep(position),
     onTick: () => ctx.wizardTick(),

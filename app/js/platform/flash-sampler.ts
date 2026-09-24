@@ -17,7 +17,7 @@
 
 import { analyseFlashes, COLUMNS, ROWS, type LuminanceFrame } from '../core/flash-threshold.js';
 
-/** What a measurement found. `passa` and `piorSegundo` exist only when the canvas was actually read. */
+/** What a measurement found. `passes` and `worstSecond` exist only when the canvas was actually read. */
 export interface FlashMeasurement {
   readonly measured: boolean;
   readonly reason?: string;
@@ -83,12 +83,12 @@ export function sampleFlashes(ctx: FlashSamplerCtx, ms: number): Promise<FlashMe
         resolve({ measured: false, reason: 'the world\'s canvas read transparent in every frame (WebGL canvases need preserveDrawingBuffer)' });
         return;
       }
-      const { passes: passa, worstSecond: piorSegundo } = analyseFlashes(frames);
-      if (!passa) {
-        ctx.report(`the world's canvas flashed ${piorSegundo} times in one second within a 10-degree field `
+      const { passes: passed, worstSecond: worst } = analyseFlashes(frames);
+      if (!passed) {
+        ctx.report(`the world's canvas flashed ${worst} times in one second within a 10-degree field `
           + '(WCAG 2.3.1 allows 3): it can trigger a seizure in a child with photosensitive epilepsy — slow or dim it');
       }
-      resolve({ measured: true, passes: passa, worstSecond: piorSegundo });
+      resolve({ measured: true, passes: passed, worstSecond: worst });
     };
     frame(step);
   });

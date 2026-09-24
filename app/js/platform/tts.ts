@@ -122,9 +122,9 @@ export function createTts(ctx: TtsCtx): Tts {
    * no neural voice is loaded; then Kokoro's where the game declared it speaks neurally (ADR-0216 §3) — the fallback.
    */
   const browserVoices = (): readonly NeuralVoice[] => {
-    let lista: readonly SpeechSynthesisVoice[] = [];
-    try { lista = window.speechSynthesis?.getVoices() ?? []; } catch { /* no speech synthesis here */ }
-    return voicesForLocale(bcp47(), lista.map((v) => ({ locale: v.lang.replace('_', '-'), engine: 'webspeech', voice: 'webspeech:' + v.name })));
+    let list: readonly SpeechSynthesisVoice[] = [];
+    try { list = window.speechSynthesis?.getVoices() ?? []; } catch { /* no speech synthesis here */ }
+    return voicesForLocale(bcp47(), list.map((v) => ({ locale: v.lang.replace('_', '-'), engine: 'webspeech', voice: 'webspeech:' + v.name })));
   };
   const availableVoices = (): readonly NeuralVoice[] => [...browserVoices(), ...(ctx.neuralVoice ? voicesForLocale(bcp47(), KOKORO_VOICES) : [])];
   /** The browser voice an entry names, or null. */
@@ -133,9 +133,9 @@ export function createTts(ctx: TtsCtx): Tts {
     try { return window.speechSynthesis?.getVoices().find((v) => 'webspeech:' + v.name === id) ?? null; } catch { return null; }
   };
   function voiceInUse(): NeuralVoice | null {
-    const lista = availableVoices();
+    const list = availableVoices();
     const storedVoiceId = store.get(store.KEYS.ttsVoz, null);
-    return lista.find((v) => v.voice === storedVoiceId) ?? lista[0] ?? null;
+    return list.find((v) => v.voice === storedVoiceId) ?? list[0] ?? null;
   }
   function chooseVoice(id: string): boolean {
     if (!availableVoices().some((v) => v.voice === id)) return false;
@@ -174,31 +174,31 @@ export function createTts(ctx: TtsCtx): Tts {
    * A neural voice's utterances, whatever made the WAV (ADR-0183 §1): every utterance is measured — its words over its speech time,
    * silent ends trimmed — and played at the child's rate over the voice's, through a media element that keeps the pitch.
    */
-  function speakByWav(voiceId: string, produce: (texto: string) => Promise<ArrayBuffer>): { speak: (texto: string) => void } {
+  function speakByWav(voiceId: string, produce: (text: string) => Promise<ArrayBuffer>): { speak: (text: string) => void } {
     return createInterruptibleSpeech<{ url: string; rate: number }, HTMLAudioElement>({
-      synthesize: async (texto) => {
-        const bytes = await produce(texto);
+      synthesize: async (text) => {
+        const bytes = await produce(text);
         const ac = ctx.ensureAC();
         if (!ac) throw new Error('AudioContext unavailable'); // o `catch` de lá trata: silêncio deste item, motor vivo
         let speedRatio = 1;
         if (ctx.getSpeechPpm) {
           const buf = await ac.decodeAudioData(bytes.slice(0));
-          const measure = speechPlaybackRate(spokenWords(texto), speechSeconds(buf.getChannelData(0), buf.sampleRate), ctx.getSpeechPpm(), voiceAverage.get(voiceId) ?? null);
+          const measure = speechPlaybackRate(spokenWords(text), speechSeconds(buf.getChannelData(0), buf.sampleRate), ctx.getSpeechPpm(), voiceAverage.get(voiceId) ?? null);
           media(voiceId, measure.voiceWpm);
           speedRatio = measure.rate;
         }
         return { url: URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' })), rate: speedRatio };
       },
-      play: (som, onFinish) => {
+      play: (sound, onFinish) => {
         const ac = ctx.ensureAC();
-        if (!ac) { URL.revokeObjectURL(som.url); return null; }
+        if (!ac) { URL.revokeObjectURL(sound.url); return null; }
         const el = ctx.createAudio ? ctx.createAudio() : document.createElement('audio');
         el.preservesPitch = true;
-        el.src = som.url;
-        el.playbackRate = som.rate;
+        el.src = sound.url;
+        el.playbackRate = sound.rate;
         try { ac.createMediaElementSource(el).connect(ctx.catNode('tts') || ctx.audioOut() || ac.destination); } catch { /* already routed */ }
-        el.onended = () => { URL.revokeObjectURL(som.url); onFinish(); };
-        void el.play().catch(() => { URL.revokeObjectURL(som.url); onFinish(); });
+        el.onended = () => { URL.revokeObjectURL(sound.url); onFinish(); };
+        void el.play().catch(() => { URL.revokeObjectURL(sound.url); onFinish(); });
         return el;
       },
       stop: (el) => { el.pause(); URL.revokeObjectURL(el.src); },
@@ -216,10 +216,10 @@ export function createTts(ctx: TtsCtx): Tts {
     if (!kv) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
     ttsLoading = true; loadedVoice = forVoice.voice; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
     load().then(async (mod) => {
-      const [vocabulario, tabela] = await Promise.all([mod.vocabulary(), mod.voice(kv.voice)]);
-      const synthesiseWith = async (kokoroSession: KokoroSession, texto: string): Promise<Float32Array> => {
-        const ids = tokenize(await mod.phonemize(texto, kv.espeak), vocabulario);
-        return kokoroSession.synthesize(ids, sentenceStyle(tabela, ids.length - 2));
+      const [symbolIds, table] = await Promise.all([mod.vocabulary(), mod.voice(kv.voice)]);
+      const synthesiseWith = async (kokoroSession: KokoroSession, text: string): Promise<Float32Array> => {
+        const ids = tokenize(await mod.phonemize(text, kv.espeak), symbolIds);
+        return kokoroSession.synthesize(ids, sentenceStyle(table, ids.length - 2));
       };
       let kokoroSession: KokoroSession | null = null;
       try {
@@ -228,7 +228,7 @@ export function createTts(ctx: TtsCtx): Tts {
       } catch { /* no WebGPU here: WASM below */ }
       if (!kokoroSession) { kokoroSession = await mod.session('wasm'); kokoroBackend = 'wasm'; }
       const used = kokoroSession;
-      const fala = speakByWav(kv.voice, async (texto) => wavDe(await synthesiseWith(used, texto)));
+      const fala = speakByWav(kv.voice, async (text) => wavDe(await synthesiseWith(used, text)));
       ttsEngine = { id: 'kokoro', speak: (text: string) => { fala.speak(text); } };
       ttsLoading = false;
       try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) { /* noop */ }

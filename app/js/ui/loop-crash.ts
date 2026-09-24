@@ -34,7 +34,7 @@ export interface CrashNoticeCtx {
   /** `document.createElement` — a caixa do aviso é um elemento de verdade, não um pseudo-elemento. */
   create: (tag: string) => HTMLElement;
   /** A narração falada, quando o jogo tiver uma. Ausente = o aviso escrito basta. */
-  narrate?: (texto: string) => void;
+  narrate?: (text: string) => void;
 }
 
 /**
@@ -75,11 +75,11 @@ export function createCrashNotice(ctx: CrashNoticeCtx): (failure: unknown) => vo
     // ela chega traduzida e escapada. O que muda é o recipiente.
     const region = ctx.find('#game-region');
     if (!region) return;
-    const anterior = ctx.find('#' + CRASH_NOTICE_ID);
-    const notice = anterior ?? ctx.create('div');
+    const previous = ctx.find('#' + CRASH_NOTICE_ID);
+    const notice = previous ?? ctx.create('div');
     notice.id = CRASH_NOTICE_ID;
     notice.setAttribute('role', 'alert');
     notice.textContent = msg;
-    if (!anterior) region.appendChild(notice);
+    if (!previous) region.appendChild(notice);
   };
 }

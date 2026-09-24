@@ -18,7 +18,7 @@
 import type { Reach } from '../input/transports.js';
 
 /** `core/i18n.t` — injetado para o núcleo continuar puro e para o teste poder ver as chaves cruas. */
-export type Translator = (chave: string, params?: Record<string, string | number>) => string;
+export type Translator = (key: string, params?: Record<string, string | number>) => string;
 
 /**
  * AS FRASES DO AVISO, na ordem em que são lidas. Vazio = não há nada a dizer, e é o caso comum.
@@ -33,11 +33,11 @@ export type Translator = (chave: string, params?: Record<string, string | number
 export function noticeRows(a: Reach, t: Translator): string[] {
   if (a.ok) return [];
 
-  const nome = (id: string): string => t('reach.nome.' + id);
+  const name = (id: string): string => t('reach.nome.' + id);
   const rows = [t('reach.titulo', { pedidas: a.asked })];
 
   for (const c of a.short) {
-    rows.push(t('reach.curto', { transporte: nome(c.id), lugares: c.slots }));
+    rows.push(t('reach.curto', { transporte: name(c.id), lugares: c.slots }));
   }
 
   // ⚠️ A TERCEIRA FRASE, e ela existe porque um transporte pode CHEGAR a todas as ações e ainda assim não
@@ -46,11 +46,11 @@ export function noticeRows(a: Reach, t: Translator): string[] {
   // telemóvel que reconhece dois não os dá. A criança tentava, não acontecia nada, e concluía que o jogo
   // estava partido. Uma frase antes de começar é a resposta honesta; meia tela jogável não é.
   for (const s of a.cannotHold) {
-    rows.push(t('reach.naoSegura', { transporte: nome(s.id), segura: s.holds, pedidas: a.holdsAsked }));
+    rows.push(t('reach.naoSegura', { transporte: name(s.id), segura: s.holds, pedidas: a.holdsAsked }));
   }
 
   rows.push(a.wouldServeIfOn.length
-    ? t('reach.ligue', { saida: a.wouldServeIfOn.map(nome).join(t('reach.ou')) })
+    ? t('reach.ligue', { saida: a.wouldServeIfOn.map(name).join(t('reach.ou')) })
     : t('reach.semSaida'));
 
   return rows;
@@ -63,7 +63,7 @@ export interface ReachNoticeCtx {
   create: (tag: string) => HTMLElement;
   t: Translator;
   /** Anúncio assertivo. Uma criança cega tem de OUVIR isto — ela não vai ver o cartão. */
-  srAlert: (texto: string) => void;
+  srAlert: (text: string) => void;
 }
 
 /** O id do cartão. Estável porque o teste e a folha de estilo o procuram. */
@@ -93,9 +93,9 @@ export function showReachNotice(ctx: ReachNoticeCtx, a: Reach): boolean {
   card.setAttribute('aria-modal', 'true');
   card.setAttribute('tabindex', '-1');
 
-  for (const [i, texto] of rows.entries()) {
+  for (const [i, text] of rows.entries()) {
     const p = ctx.create('p');
-    p.textContent = texto;
+    p.textContent = text;
     if (i === 0) p.className = 'reach-notice__titulo';
     card.appendChild(p);
   }

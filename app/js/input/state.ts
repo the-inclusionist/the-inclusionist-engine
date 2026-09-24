@@ -129,8 +129,8 @@ const inputByPlayer: Record<number, InputState> = {};
  * resposta honesta sobre uma tecla que já existe; aqui a pergunta é sobre um JOGADOR, e um jogador que
  * ainda não tocou em nada está mesmo no teclado sem assistida — que é o que `DEFAULT_INPUT_STATE` diz.
  */
-export function inputOf(jogador: number): InputState {
-  return inputByPlayer[jogador] ?? DEFAULT_INPUT_STATE;
+export function inputOf(player: number): InputState {
+  return inputByPlayer[player] ?? DEFAULT_INPUT_STATE;
 }
 
 /**
@@ -140,17 +140,17 @@ export function inputOf(jogador: number): InputState {
  * ⚠️ E uma aresta de um transporte assistido NÃO o habilita — essa regra vive no `afterEdge` e a razão
  * está lá: um falso positivo da webcam trancaria a alternância de toda a gente sem ninguém ter pedido.
  */
-export function playerEdge(jogador: number, origin: TransportName): void {
-  inputByPlayer[jogador] = afterEdge(inputOf(jogador), origin);
+export function playerEdge(player: number, origin: TransportName): void {
+  inputByPlayer[player] = afterEdge(inputOf(player), origin);
 }
 
 /** Habilitar a assistida é um ACTO EXPLÍCITO (ADR-0109 regra 4), e por isso tem porta própria. */
-export function enableAssistedFor(jogador: number): void {
-  inputByPlayer[jogador] = enableAssisted(inputOf(jogador));
+export function enableAssistedFor(player: number): void {
+  inputByPlayer[player] = enableAssisted(inputOf(player));
 }
 
-export function disableAssistedFor(jogador: number): void {
-  inputByPlayer[jogador] = disableAssisted(inputOf(jogador));
+export function disableAssistedFor(player: number): void {
+  inputByPlayer[player] = disableAssisted(inputOf(player));
 }
 
 /**

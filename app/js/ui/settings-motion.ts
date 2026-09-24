@@ -348,12 +348,12 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   /** O ESTADO de cada interruptor — o que o kit não escreve, porque é o painel que sabe o valor. */
   function reflectSwitches(el: HTMLElement): void {
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
-    const writeSwitch = (sel: string, on: boolean, nome: string): void => {
+    const writeSwitch = (sel: string, on: boolean, name: string): void => {
       const b = el.querySelector<HTMLElement>(sel);
       if (!b) return;
       ctx.toggleBtn(b, on);
       b.textContent = toggleLabel(on);
-      b.setAttribute('aria-label', toggleAria(nome, on));
+      b.setAttribute('aria-label', toggleAria(name, on));
     };
     // ⚠️ «Animado» é o CONTRÁRIO de `rm`/`player[prop]`, que guardam «movimento reduzido». O nome fiel está no
     // `allMotionFrozen` e a inversão mora aqui, num sítio só.

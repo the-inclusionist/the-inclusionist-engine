@@ -78,8 +78,8 @@ export type PressEdge = 'desceu' | 'subiu' | null;
  * jogo que perguntasse «está apertado?» a cada quadro desenharia o mesmo ponto sessenta vezes, e um que
  * quisesse reagir ao clique teria de guardar o quadro anterior por sua conta — trezentas vezes.
  */
-export function pressEdge(anterior: PointerSample, current: PointerSample): PressEdge {
-  if (anterior.pressed === current.pressed) return null;
+export function pressEdge(previous: PointerSample, current: PointerSample): PressEdge {
+  if (previous.pressed === current.pressed) return null;
   return current.pressed ? 'desceu' : 'subiu';
 }
 
@@ -90,6 +90,6 @@ export function pressEdge(anterior: PointerSample, current: PointerSample): Pres
  * aparelho em uso —, e um ponteiro é um dos sítios onde a troca acontece sem que nenhuma tecla seja premida:
  * a criança larga o rato e olha para a tela. Sem esta pergunta, a troca seria invisível até à próxima tecla.
  */
-export function switchedTransport(anterior: PointerSample, current: PointerSample): boolean {
-  return anterior.source !== current.source;
+export function switchedTransport(previous: PointerSample, current: PointerSample): boolean {
+  return previous.source !== current.source;
 }

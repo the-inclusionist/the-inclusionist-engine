@@ -65,9 +65,9 @@ const EXTRA: Record<string, LocaleDict> = {};
 export function registerDict(code: string, entries: LocaleDict): string[] {
   const refused: string[] = [];
   const accepted: LocaleDict = {};
-  for (const chave in entries) {
-    if (hasMarkup(entries[chave])) refused.push(chave);
-    else accepted[chave] = entries[chave]!;
+  for (const key in entries) {
+    if (hasMarkup(entries[key])) refused.push(key);
+    else accepted[key] = entries[key]!;
   }
   if (refused.length) {
     // Alto, e não em silêncio: quem escreveu a string tem de saber que ela não entrou. Descartar calado
@@ -88,15 +88,15 @@ export function registerDict(code: string, entries: LocaleDict): string[] {
  */
 export function dictionaryGaps(): string[] {
   const registered = new Set<string>();
-  for (const code of AVAILABLE) for (const chave in EXTRA[code] ?? {}) registered.add(chave);
+  for (const code of AVAILABLE) for (const key in EXTRA[code] ?? {}) registered.add(key);
   if (!registered.size) return [];
   const SHOW = 5;
   const gapLines: string[] = [];
   for (const code of AVAILABLE) {
-    const missing = [...registered].filter((chave) => !(chave in (EXTRA[code] ?? {})));
+    const missing = [...registered].filter((key) => !(key in (EXTRA[code] ?? {})));
     if (!missing.length) continue;
-    const resto = missing.length > SHOW ? ` (and ${missing.length - SHOW} more)` : '';
-    gapLines.push(`the cartridge's dictionary lacks ${code} for ${missing.slice(0, SHOW).join(', ')}${resto}: `
+    const rest = missing.length > SHOW ? ` (and ${missing.length - SHOW} more)` : '';
+    gapLines.push(`the cartridge's dictionary lacks ${code} for ${missing.slice(0, SHOW).join(', ')}${rest}: `
       + `a child playing in ${code} reads the fallback there (registerDict)`);
   }
   return gapLines;
@@ -121,8 +121,8 @@ export function dictionaryGaps(): string[] {
  * `a < b` escrito com espaço? Não: `< ` não casa. Recusa «5<10»? Não, o dígito não casa. O que ele recusa é
  * o que se parece com uma tag, e uma frase de interface que precise disso precisa de outra frase.
  */
-function hasMarkup(valor: string | undefined): boolean {
-  return typeof valor === 'string' && (/<[a-zA-Z/!?]/.test(valor) || /&[a-zA-Z#][a-zA-Z0-9]*;/.test(valor));
+function hasMarkup(value: string | undefined): boolean {
+  return typeof value === 'string' && (/<[a-zA-Z/!?]/.test(value) || /&[a-zA-Z#][a-zA-Z0-9]*;/.test(value));
 }
 
 /**

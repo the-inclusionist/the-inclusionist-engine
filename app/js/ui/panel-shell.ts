@@ -148,23 +148,23 @@ export function mountShell(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell
   // ADR-0158: «Voltar» is item 1 and nothing closes the panel after its rows. The way out is where the cursor lands
   // when the panel opens — a close button at the bottom made the child walk every row to leave. The id stays
   // `#X-close`, which is contract; only its place and its word changed.
-  const backButton = botao(ctx, ids.close, 'mode-btn overlay__back');
+  const backButton = button(ctx, ids.close, 'mode-btn overlay__back');
   card.appendChild(backButton);
 
-  const lista = ctx.create('div');
-  lista.id = ids.list;
-  lista.className = 'ctrl-list';
-  lista.setAttribute('role', 'group');
-  card.appendChild(lista);
+  const listNode = ctx.create('div');
+  listNode.id = ids.list;
+  listNode.className = 'ctrl-list';
+  listNode.setAttribute('role', 'group');
+  card.appendChild(listNode);
 
   const actionsRow = ctx.create('div');
   actionsRow.className = 'overlay__actions';
-  const reset = botao(ctx, ids.reset, 'mode-btn');
+  const reset = button(ctx, ids.reset, 'mode-btn');
   actionsRow.appendChild(reset);
   card.appendChild(actionsRow);
 
   overlay.appendChild(card);
-  const shell: PanelShell = { overlay, card, title: h2, list: lista, reset, close: backButton, ids };
+  const shell: PanelShell = { overlay, card, title: h2, list: listNode, reset, close: backButton, ids };
   applyLabels(shell, spec);
   return shell;
 }
@@ -199,7 +199,7 @@ export function applyLabels(shell: PanelShell, r: PanelLabels): void {
   else shell.card.removeAttribute('data-explain-idle');
 }
 
-function botao(ctx: PanelShellCtx, id: string, cssClass: string): HTMLElement {
+function button(ctx: PanelShellCtx, id: string, cssClass: string): HTMLElement {
   const b = ctx.create('button');
   b.id = id;
   b.className = cssClass;

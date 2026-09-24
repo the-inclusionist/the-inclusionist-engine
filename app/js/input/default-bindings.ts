@@ -213,17 +213,17 @@ export function bindingProblems<T>(table: Readonly<Record<Action, Binding<T | re
   const p: string[] = [];
   const actionOfKey = new Map<string, Action>();
 
-  for (const acao of ACTIONS) {
-    if (!(acao in table)) { p.push(`binding: ${acao} is not declared - write null if the transport cannot reach it`); continue; }
-    const v = table[acao];
+  for (const action of ACTIONS) {
+    if (!(action in table)) { p.push(`binding: ${action} is not declared - write null if the transport cannot reach it`); continue; }
+    const v = table[action];
     if (v === null) continue;
     const keyList = Array.isArray(v) ? v : [v];
-    if (keyList.length === 0) { p.push(`binding: ${acao} has an empty list - write null instead`); continue; }
+    if (keyList.length === 0) { p.push(`binding: ${action} has an empty list - write null instead`); continue; }
     for (const item of keyList) {
-      const chave = String(item);
-      const anterior = actionOfKey.get(chave);
-      if (anterior) p.push(`binding: ${chave} is bound to both ${anterior} and ${acao}`);
-      else actionOfKey.set(chave, acao);
+      const key = String(item);
+      const previous = actionOfKey.get(key);
+      if (previous) p.push(`binding: ${key} is bound to both ${previous} and ${action}`);
+      else actionOfKey.set(key, action);
     }
   }
   return p;
@@ -245,15 +245,15 @@ export function conflictsBetweenTables<T>(
   const p: string[] = [];
   const actionOfKey = new Map<string, string>();
   tables.forEach((table, i) => {
-    for (const acao of ACTIONS) {
-      const v = table[acao];
+    for (const action of ACTIONS) {
+      const v = table[action];
       if (v === null || v === undefined) continue;
       for (const item of (Array.isArray(v) ? v : [v]) as readonly T[]) {
-        const chave = String(item);
-        const aqui = `p${i + 1}.${acao}`;
-        const anterior = actionOfKey.get(chave);
-        if (anterior) p.push(`cross: ${chave} is claimed by both ${anterior} and ${aqui}`);
-        else actionOfKey.set(chave, aqui);
+        const key = String(item);
+        const here = `p${i + 1}.${action}`;
+        const previous = actionOfKey.get(key);
+        if (previous) p.push(`cross: ${key} is claimed by both ${previous} and ${here}`);
+        else actionOfKey.set(key, here);
       }
     }
   });

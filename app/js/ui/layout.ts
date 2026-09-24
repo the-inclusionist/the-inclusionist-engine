@@ -40,14 +40,14 @@ export interface NodeMeasure {
  */
 export function belowFloor(nodes: readonly NodeMeasure[], k: number): { text: string[]; targets: string[] } {
   const ratio = minimumTarget(k) / 22;
-  const texto: string[] = [];
+  const smallText: string[] = [];
   const smallTargets: string[] = [];
   for (const n of nodes) {
     if (n.daEngine) continue;
-    if (n.fontPx !== null && n.fontPx > 0 && n.fontPx < 8 * ratio - 0.5) texto.push(n.name);
+    if (n.fontPx !== null && n.fontPx > 0 && n.fontPx < 8 * ratio - 0.5) smallText.push(n.name);
     if (n.target && n.target.w > 0 && n.target.h > 0 && Math.min(n.target.w, n.target.h) < minimumTarget(k) - 0.5) smallTargets.push(n.name);
   }
-  return { text: texto, targets: smallTargets };
+  return { text: smallText, targets: smallTargets };
 }
 
 /**

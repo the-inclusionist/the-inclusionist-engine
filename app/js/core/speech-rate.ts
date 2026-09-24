@@ -25,8 +25,8 @@ export function isSpeechRate(ppm: number): SpeechRate {
 }
 
 /** The words a voice says: tokens holding a letter; a dash, a number or a sign alone is not counted. */
-export function spokenWords(texto: string): number {
-  return texto.split(/\s+/).filter((w) => /\p{L}/u.test(w)).length;
+export function spokenWords(text: string): number {
+  return text.split(/\s+/).filter((w) => /\p{L}/u.test(w)).length;
 }
 
 /** Seconds from the first to the last sample above the silence threshold — the pauses inside stay, the silent ends go. */
@@ -47,11 +47,11 @@ export function speechPlaybackRate(
   ppm: number,
   voiceAverage: number | null,
 ): { readonly rate: number; readonly voiceWpm: number | null } {
-  const alvo = isSpeechRate(ppm);
+  const target = isSpeechRate(ppm);
   const clampInside = (x: number): number => Math.min(MAX_PLAYBACK_RATE, Math.max(MIN_PLAYBACK_RATE, +x.toFixed(6)));
   if (words >= WORDS_TO_MEASURE && seconds >= SECONDS_TO_MEASURE) {
     const measuredWpm = (words / seconds) * 60;
-    return { rate: clampInside(alvo / measuredWpm), voiceWpm: measuredWpm };
+    return { rate: clampInside(target / measuredWpm), voiceWpm: measuredWpm };
   }
-  return { rate: voiceAverage ? clampInside(alvo / voiceAverage) : 1, voiceWpm: null };
+  return { rate: voiceAverage ? clampInside(target / voiceAverage) : 1, voiceWpm: null };
 }

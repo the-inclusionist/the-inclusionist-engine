@@ -256,11 +256,11 @@ export function spokenGlyph(g: string): string {
  * Takes the `[glyph, colour]` pairs of the pad's design by position: yes is the south button (A · ✕ · B) and no the east one
  * (B · ◯ · A) on every design — no design swaps them (the Dev's association, ADR-0013 erratum).
  */
-export function pauseLegendHtml(sim: readonly [string, string], nao: readonly [string, string]): string {
-  const silentLegend = (g: readonly [string, string], palavra: string): string =>
-    `<span class="lg" aria-hidden="true"><span class="lg-ico" style="background:${g[1]}">${g[0]}</span> ${palavra}</span>`;
-  const falada = t('menu.legendSpoken', { sim: spokenGlyph(sim[0]), nao: spokenGlyph(nao[0]) });
-  return silentLegend(sim, t('menu.yes')) + silentLegend(nao, t('menu.no')) + `<span class="sr-only">${falada}</span>`;
+export function pauseLegendHtml(sim: readonly [string, string], no: readonly [string, string]): string {
+  const silentLegend = (g: readonly [string, string], word: string): string =>
+    `<span class="lg" aria-hidden="true"><span class="lg-ico" style="background:${g[1]}">${g[0]}</span> ${word}</span>`;
+  const spoken = t('menu.legendSpoken', { sim: spokenGlyph(sim[0]), nao: spokenGlyph(no[0]) });
+  return silentLegend(sim, t('menu.yes')) + silentLegend(no, t('menu.no')) + `<span class="sr-only">${spoken}</span>`;
 }
 
 /** Os quatro botões de ação, na ordem fixa da legenda: pular · especial · correr · trocar. */
@@ -290,11 +290,11 @@ export function legendRow1(dirTxt: string, pauseTxt: string): string {
  * especial, correr e trocar, nessa ordem. Agora `wordFor` é perguntado ao jogo (a versão CURTA, ver
  * `ActionWord.short`), e uma posição que o jogo não nomeia não vira ficha nenhuma.
  */
-export function legendRow2(g: ActionGlyphs, wordFor: (acao: string) => string | null): string {
+export function legendRow2(g: ActionGlyphs, wordFor: (action: string) => string | null): string {
   const GLYPH_ORDER: readonly (keyof ActionGlyphs)[] = ['action2', 'action3', 'action1', 'action4'];
   return GLYPH_ORDER.map((a) => {
-    const palavra = wordFor(a);
-    return palavra ? chip(g[a][0], g[a][1], palavra) : '';
+    const word = wordFor(a);
+    return word ? chip(g[a][0], g[a][1], word) : '';
   }).join('');
 }
 
@@ -404,7 +404,7 @@ export interface ShellCtx {
    * largura para o «Correr / interagir» que a lista de remapeamento usa. A distinção já estava no dicionário
    * (`legend.*` contra `act.*`) e agora atravessa a fronteira COM as palavras — ver `ActionWord.short`.
    */
-  shortLabel: (acao: string) => string | null;
+  shortLabel: (action: string) => string | null;
 
   /* --- as ações do menu de pausa (cada uma é um callback: TDZ, ver o cabeçalho) --- */
   /** `setQuizLevel(n, announce)` — o ciclo 1..5 do nível de alfabetização. */

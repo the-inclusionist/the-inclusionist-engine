@@ -49,8 +49,8 @@ export const ONE_COMMAND_AT_A_TIME: ReadonlySet<string> = new Set(['olhos', 'ros
  * um padrão pode ser mudado, e mudá-lo aqui deixaria o controle inutilizável. Por isso o valor guardado nem
  * chega a ser lido nestes transportes — ver `latchOf`.
  */
-export function latchAlwaysOn(transporte: string): boolean {
-  return ONE_COMMAND_AT_A_TIME.has(transporte);
+export function latchAlwaysOn(transport: string): boolean {
+  return ONE_COMMAND_AT_A_TIME.has(transport);
 }
 
 /**
@@ -60,8 +60,8 @@ export function latchAlwaysOn(transporte: string): boolean {
  * chama para decidir o estado, o outro para decidir se desenha o botão. Um painel que desenhasse o botão e
  * ignorasse o clique seria pior do que não o desenhar.
  */
-export function latchIsOptional(transporte: string): boolean {
-  return !latchAlwaysOn(transporte);
+export function latchIsOptional(transport: string): boolean {
+  return !latchAlwaysOn(transport);
 }
 
 /**
@@ -74,8 +74,8 @@ export function latchIsOptional(transporte: string): boolean {
  *
  * `base` é `togglemove` ou `togglerun`, os dois nomes que já existem no armazenamento da criança.
  */
-export function latchKey(base: string, jogador: number, transporte: string): string {
-  return `incl_${base}_p${jogador}_${transporte}`;
+export function latchKey(base: string, player: number, transport: string): string {
+  return `incl_${base}_p${player}_${transport}`;
 }
 
 /**
@@ -91,8 +91,8 @@ export function latchKey(base: string, jogador: number, transporte: string): str
  * desde a migração anterior, e a nota do `platform/storage` diz porquê — «a chave velha fica onde está: é
  * dado da criança, não meu para apagar, e a sua permanência é o que torna um retorno possível».
  */
-export function legacyLatchKey(base: string, jogador: number): string {
-  return `incl_${base}_p${jogador}`;
+export function legacyLatchKey(base: string, player: number): string {
+  return `incl_${base}_p${player}`;
 }
 
 /** O que se sabe ao resolver a alternância de um transporte. */
@@ -115,8 +115,8 @@ export interface LatchReading {
  * criança que tivesse desligado a alternância no teclado herdaria esse `false` pelo legado e ficaria com um
  * controle de olhar que não responde — o pior defeito possível, no controle de quem tem menos alternativas.
  */
-export function latchOf(transporte: string, l: LatchReading): boolean {
-  if (latchAlwaysOn(transporte)) return true;
+export function latchOf(transport: string, l: LatchReading): boolean {
+  if (latchAlwaysOn(transport)) return true;
   if (l.fromTransport !== null) return l.fromTransport;
   if (l.fromLegacy !== null) return l.fromLegacy;
   return l.byDefault;

@@ -127,17 +127,17 @@ export function deliveryCacheKey(urlOrRequest: string | { readonly request: { re
  * subsistema ainda não tem de onde vir» e «este subsistema está tratado», e é exactamente a distinção que o
  * ADR-0119 mediu em falta: a engine PROMETIA quatro coisas e entregava uma, sem nada a dizê-lo.
  */
-export async function downloadHeavy(opcoes: HeavyOptions = {}): Promise<HeavyReport[]> {
-  const targets = opcoes.only ? HEAVY_FILES.filter((p) => opcoes.only!.includes(p.id)) : HEAVY_FILES;
+export async function downloadHeavy(options: HeavyOptions = {}): Promise<HeavyReport[]> {
+  const targets = options.only ? HEAVY_FILES.filter((p) => options.only!.includes(p.id)) : HEAVY_FILES;
   const out: HeavyReport[] = [];
-  const record = (r: HeavyReport): void => { out.push(r); opcoes.onProgress?.(r); };
+  const record = (r: HeavyReport): void => { out.push(r); options.onProgress?.(r); };
 
-  const { cacheStorage, fetchFile } = hostOf(opcoes);
+  const { cacheStorage, fetchFile } = hostOf(options);
   if (!cacheStorage || !fetchFile) {
     for (const p of targets) record({ id: p.id, outcome: 'falhou', error: 'sem Cache Storage ou sem fetch' });
     return out;
   }
-  const tools: DownloadTools = { cache: await cacheStorage.open(CACHE_HEAVY), fetchFile, ...checkAndBaseOf(opcoes) };
+  const tools: DownloadTools = { cache: await cacheStorage.open(CACHE_HEAVY), fetchFile, ...checkAndBaseOf(options) };
   for (const p of targets) record(await fetchOne(p, tools));
   return out;
 }

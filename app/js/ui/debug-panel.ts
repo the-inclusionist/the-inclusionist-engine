@@ -211,9 +211,9 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
     h.style.cssText = 'margin:.7rem 0 .1rem;font-weight:700;color:#ffd23f;border-bottom:1px solid rgba(255,210,63,.4)';
     p.appendChild(h);
 
-    const saida = document.createElement('pre');
-    saida.style.cssText = 'margin:.4rem 0 0;font:11px/1.35 ui-monospace,monospace;white-space:pre-wrap;color:#cfe';
-    saida.setAttribute('aria-live', 'polite');
+    const migrated = document.createElement('pre');
+    migrated.style.cssText = 'margin:.4rem 0 0;font:11px/1.35 ui-monospace,monospace;white-space:pre-wrap;color:#cfe';
+    migrated.setAttribute('aria-live', 'polite');
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -224,7 +224,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
       btn.disabled = true;
       const samples: CharacterSample[] = [];
       let n = 0;
-      saida.textContent = 'gravando… PULE agora';
+      migrated.textContent = 'gravando… PULE agora';
       const stopSampling = everyFrame(() => {
         const a = sampleCharacter();
         if (a) samples.push(a);
@@ -232,7 +232,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
         stopSampling();
         btn.disabled = false;
         const r = summariseProbe(samples);
-        saida.textContent = [
+        migrated.textContent = [
           'quadros: ' + r.frames + '  texturas: ' + r.textures,
           'irmãos desenhando: ' + r.maxSiblings + (r.siblingExample ? ' em ' + r.siblingExample : ''),
           'recorte grande: ' + (r.sangramento.length ? r.sangramento.join(' ') : 'nenhum'),
@@ -245,7 +245,7 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
       });
     });
     p.appendChild(btn);
-    p.appendChild(saida);
+    p.appendChild(migrated);
   }
 
   document.body.appendChild(p);

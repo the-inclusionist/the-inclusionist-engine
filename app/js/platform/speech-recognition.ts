@@ -16,7 +16,7 @@ export type OnDeviceAvailability = 'available' | 'downloadable' | 'downloading' 
 export interface RecognitionApi {
   new (): RecognitionInstance;
   readonly prototype: object;
-  readonly available?: (opcoes: { langs: readonly string[]; processLocally: boolean }) => Promise<OnDeviceAvailability>;
+  readonly available?: (options: { langs: readonly string[]; processLocally: boolean }) => Promise<OnDeviceAvailability>;
 }
 
 export interface RecognitionInstance {
@@ -69,15 +69,15 @@ export interface CommandReader {
    * One hypothesis of utterance `index`: returns the commands it completes that were not returned before for that utterance. A
    * partial one holds back its last name while another item's name continues it («voltar» may become «voltar ao jogo»).
    */
-  read(index: number, texto: string, final: boolean): readonly HeardCommand[];
+  read(index: number, text: string, final: boolean): readonly HeardCommand[];
 }
 
 export function createCommandReader(vocabulary: readonly string[]): CommandReader {
   const spokenForms = vocabulary.map(spokenText);
   let spokenItems: readonly string[] = [];
   const firedCount = new Map<number, number>();
-  const phrasesIn = (texto: string): string[] => {
-    const p = spokenText(texto).split(' ').filter(Boolean);
+  const phrasesIn = (text: string): string[] => {
+    const p = spokenText(text).split(' ').filter(Boolean);
     const found: string[] = [];
     for (let i = 0; i < p.length;) {
       let matched: string | null = null;
@@ -91,8 +91,8 @@ export function createCommandReader(vocabulary: readonly string[]): CommandReade
   };
   return {
     items(names) { spokenItems = names.map(spokenText); },
-    read(index, texto, final) {
-      const found = phrasesIn(texto);
+    read(index, text, final) {
+      const found = phrasesIn(text);
       const alreadyFired = firedCount.get(index) ?? 0;
       const newCommands: HeardCommand[] = [];
       for (let i = alreadyFired; i < found.length; i++) {

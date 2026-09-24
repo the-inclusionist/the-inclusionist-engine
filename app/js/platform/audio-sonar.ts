@@ -356,11 +356,11 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
 
   function nearestSpot(pl: SonarPlayer): { at: Spot; d: number } | null {
     const shape = ctx.topology();
-    const aqui: Spot = { x: pl.x, y: pl.y };
+    const here: Spot = { x: pl.x, y: pl.y };
     let nearest: Spot | null = null, bd = Infinity;
-    for (const alvo of ctx.targetsOf(pl.i)) {
-      const d = distance(shape, aqui, alvo);
-      if (d < bd) { bd = d; nearest = alvo; }
+    for (const target of ctx.targetsOf(pl.i)) {
+      const d = distance(shape, here, target);
+      if (d < bd) { bd = d; nearest = target; }
     }
     return nearest ? { at: nearest, d: bd } : null;
   }
@@ -378,22 +378,22 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   function sonar(pl: SonarPlayer): void {
     _sonarCount++;
     const pc = playerCtx(pl);
-    const alvo = nearestSpot(pl);
+    const target = nearestSpot(pl);
     // A chave era `sr.nav.noCoinNear` — "Nenhuma moeda por perto." Um sonar que não sabe mais o que é o alvo
     // não pode dizer o nome dele no caso em que NÃO HÁ alvo nenhum: virou "Nada por perto.", que é verdade em
     // qualquer gênero. Foi o gate de fixtures que cobrou, ao acusar a palavra dentro do teste novo.
-    if (!alvo) { ctx.tonePan(300, 0.2, 'sonar', 0, 0.2, 'sine', pc); ctx.srSay(t('sr.nav.noTargetNear')); return; }
+    if (!target) { ctx.tonePan(300, 0.2, 'sonar', 0, 0.2, 'sine', pc); ctx.srSay(t('sr.nav.noTargetNear')); return; }
 
-    const pan = panFor(alvo.at.x, pl), near = Math.max(0, 1 - alvo.d / 12);
+    const pan = panFor(target.at.x, pl), near = Math.max(0, 1 - target.d / 12);
     ctx.tonePan(380 + 740 * near, 0.16, 'sonar', pan, 0.26, 'sine', pc); // mais perto = mais agudo
 
     // O NOME vem do jogo (campo 3). Antes era `t('sr.nav.coin')` — a engine dizia "moeda" porque só conhecia
     // moedas. O fallback existe para o jogo que declara alvo sem nome: melhor "alvo" do que uma chave crua.
-    const nome = ctx.nameAt(alvo.at);
+    const name = ctx.nameAt(target.at);
     const foundSentence = t('sr.nav.sonarFound', {
-      alvo: nome ? nome.text : t('sr.nav.target'),
-      lado: inWords(bearing(ctx.topology(), { x: pl.x, y: pl.y }, alvo.at)),
-      dist: t(distanceKey(alvo.d)),
+      alvo: name ? name.text : t('sr.nav.target'),
+      lado: inWords(bearing(ctx.topology(), { x: pl.x, y: pl.y }, target.at)),
+      dist: t(distanceKey(target.d)),
     });
     const msg = (ctx.getNumPlayers() > 1 ? t('sr.player.prefix', { n: pl.i + 1 }) : '') + foundSentence;
     ctx.srSay(msg); ctx.narrate(msg);
@@ -413,16 +413,16 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * por isso que é recuo e não escolha. Mas é o que o guia já dizia antes desta mudança, e continuar a dizê-lo
    * é estritamente melhor do que calar — calar afirmaria que não há alvo.
    */
-  function stepsToTarget(pl: SonarPlayer, alvo: { at: Spot; d: number }): number {
+  function stepsToTarget(pl: SonarPlayer, target: { at: Spot; d: number }): number {
     const roleAt = ctx.roleAt;
     if (roleAt) {
       const path = routeTo(
         { topology: ctx.topology(), roleAt, budget: ROUTE_BUDGET },
-        { x: pl.x, y: pl.y }, [alvo.at],
+        { x: pl.x, y: pl.y }, [target.at],
       );
       if (path) return path.steps;
     }
-    return alvo.d;
+    return target.d;
   }
 
   /** Acende o grafo contínuo deste jogador. `null` = não deu (sem contexto, ou motor sem Web Audio). */
@@ -437,11 +437,11 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
       lowpass.type = 'lowpass';
       lowpass.frequency.value = FAR_CUT; // nasce no fundo da escala e sobe; nascer aberto seria um susto
       level.gain.value = 0;                 // e nasce calado, para não estalar ao ligar
-      let saida: AudioNode = level;
+      let migrated: AudioNode = level;
       let panner: StereoPannerNode | null = null;
-      if (ac.createStereoPanner) { panner = ac.createStereoPanner(); level.connect(panner); saida = panner; }
+      if (ac.createStereoPanner) { panner = ac.createStereoPanner(); level.connect(panner); migrated = panner; }
       osc.connect(lowpass).connect(level);
-      saida.connect(pc ? pc.out : (ctx.catNode?.('guide') || ctx.audioOut?.() || ac.destination));
+      migrated.connect(pc ? pc.out : (ctx.catNode?.('guide') || ctx.audioOut?.() || ac.destination));
       osc.start();
       // `desdeARota` nasce no tecto para que a PRIMEIRA volta já meça a rota, em vez de soar doze quadros
       // com um `passos` inventado.
@@ -518,10 +518,10 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   function remeasure(pl: SonarPlayer, g: LiveGuide): boolean {
     if (++g.framesSinceRoute < FRAMES_BETWEEN_ROUTES) return true;
     g.framesSinceRoute = 0;
-    const alvo = nearestSpot(pl);
-    if (!alvo) return false;
-    g.steps = stepsToTarget(pl, alvo);
-    g.pan = panFor(alvo.at.x, pl);
+    const target = nearestSpot(pl);
+    if (!target) return false;
+    g.steps = stepsToTarget(pl, target);
+    g.pan = panFor(target.at.x, pl);
     return true;
   }
 

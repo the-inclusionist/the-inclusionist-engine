@@ -255,7 +255,7 @@ export const FONT_GROUPS: FontGroup[] = [
      * adulto resolve numa tarde. 📌 «Instale uma fonte ronde» seria o defeito de volta — um adulto não age
      * sobre uma categoria —, e é por isso que a mensagem nomeia as três.
      *
-     * ⚠️ `papel` AUSENTE, logo `geral`, e é deliberado apesar de a ronde ser caligráfica por natureza: as
+     * ⚠️ `role` AUSENTE, logo `geral`, e é deliberado apesar de a ronde ser caligráfica por natureza: as
      * caligráficas são filtradas do menu (`fontRole === 'geral'`), e uma linha filtrada não pode dizer
      * nada a ninguém. Marcar o papel «certo» aqui apagaria a única coisa que este item existe para fazer.
      */
@@ -349,7 +349,7 @@ export function faceFamilies(it: FontItem): string[] {
  * o que fazer. O silêncio não decide nada contra a criança — ele mantém o estado que já existia e que é
  * accionável. É o oposto do `seguraTeclas`, onde os dois lados do padrão erravam.
  */
-export function faceAvailable(it: FontItem, installed?: (familia: string) => boolean): boolean {
+export function faceAvailable(it: FontItem, installed?: (family: string) => boolean): boolean {
   if (!it.off) return true;
   return !!installed && faceFamilies(it).some((f) => installed(f));
 }

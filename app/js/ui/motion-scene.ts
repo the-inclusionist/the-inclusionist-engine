@@ -81,8 +81,8 @@ void _COVERS_THE_CHARACTER;
 /** Os quatro interruptores no padrão do sistema — `prefers-reduced-motion`, por `defaultReducedMotion()`. */
 export function sceneDefault(): MotionSceneFlags {
   const o = {} as MotionSceneFlags;
-  const padrao = defaultReducedMotion();
-  for (const k of SCENE_KEYS) o[k] = padrao;
+  const byDefault = defaultReducedMotion();
+  for (const k of SCENE_KEYS) o[k] = byDefault;
   return o;
 }
 

@@ -178,13 +178,13 @@ export function mountSlides(ctx: SlideCtx): HTMLElement {
   figureFn.hidden = true;
   const keyGlyphOf = ctx.create('kbd');
   keyGlyphOf.className = 'slide-tecla';
-  const palavra = ctx.create('p');
-  palavra.className = 'slide-palavra';
-  const texto = ctx.create('p');
-  texto.className = 'slide-texto';
+  const word = ctx.create('p');
+  word.className = 'slide-palavra';
+  const text = ctx.create('p');
+  text.className = 'slide-texto';
   const dots = ctx.create('div');
   dots.className = 'slide-pontos';
-  for (const child of [figureFn, keyGlyphOf, palavra, texto, dots]) slide.appendChild(child);
+  for (const child of [figureFn, keyGlyphOf, word, text, dots]) slide.appendChild(child);
   el.appendChild(arrow(-1, '◀'));
   el.appendChild(slide);
   el.appendChild(arrow(1, '▶'));

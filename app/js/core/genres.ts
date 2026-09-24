@@ -40,18 +40,18 @@ export const GENRES: readonly Genre[] = Object.freeze(([
 ] as Genre[]).map((g) => Object.freeze(g)));
 
 /** Is a declared genre acceptable? EMPTY means conformant; any line refuses the boot (a malformed declaration). */
-export function genreProblems(genero: unknown): string[] {
-  if (genero === undefined) return [];
-  if (typeof genero !== 'string') return ['genre: must be a genre name from the engine\'s list (ADR-0156), or absent'];
-  const g = GENRES.find((x) => x.name === genero);
-  if (!g) return [`genre: «${genero}» is not in the engine's genre list (ADR-0156) - declare what the game plays like, or no genre`];
+export function genreProblems(genre: unknown): string[] {
+  if (genre === undefined) return [];
+  if (typeof genre !== 'string') return ['genre: must be a genre name from the engine\'s list (ADR-0156), or absent'];
+  const g = GENRES.find((x) => x.name === genre);
+  if (!g) return [`genre: «${genre}» is not in the engine's genre list (ADR-0156) - declare what the game plays like, or no genre`];
   if (g.mark === 'refused') return [`genre: Casino game is prohibited in this engine (ADR-0156 §2) - a cartridge that declares it does not boot`];
   return [];
 }
 
 /** The line `problems` carries for an accepted genre with a mark: Horror game plays, and the author reads why to avoid it. */
-export function genreWarning(genero: unknown): string | null {
-  const g = typeof genero === 'string' ? GENRES.find((x) => x.name === genero) : undefined;
+export function genreWarning(genre: unknown): string | null {
+  const g = typeof genre === 'string' ? GENRES.find((x) => x.name === genre) : undefined;
   return g?.mark === 'avoid'
     ? `genre: Horror game is marked avoid - it is hard to make work for children (ADR-0156 §3); consider what else the game plays like`
     : null;

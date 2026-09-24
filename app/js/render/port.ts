@@ -80,7 +80,7 @@ export interface WithTexture {
  * visual — nenhum teste de lógica o vê. Tornar o parâmetro obrigatório faz o compilador cobrar a intenção de
  * cada chamador, uma vez, e para sempre.
  */
-export type RenderInto = (displayObject: unknown, alvo: unknown, clearFirst: boolean) => void;
+export type RenderInto = (displayObject: unknown, target: unknown, clearFirst: boolean) => void;
 
 /**
  * CRIAR UM SPRITE a partir de uma textura, e um AZULEJO a partir dela.

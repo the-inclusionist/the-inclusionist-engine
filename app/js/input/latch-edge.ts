@@ -49,15 +49,15 @@ export interface LatchedEdgeOptions {
 export function createLatchedEdge(
   getPlayers: () => readonly (LatchPlayer | null | undefined)[],
   opts: LatchedEdgeOptions = {},
-): (jogador: number, origin: TransportName) => void {
+): (player: number, origin: TransportName) => void {
   const latchStore = opts.store ?? store;
-  const padrao = opts.byDefault ?? DEFAULTS.toggleMove;
-  return (jogador: number, origin: TransportName): void => {
-    playerEdge(jogador, origin);
+  const fallback = opts.byDefault ?? DEFAULTS.toggleMove;
+  return (player: number, origin: TransportName): void => {
+    playerEdge(player, origin);
     // 📌 O JOGADOR PODE NÃO EXISTIR — uma tela em espera, um assento que ainda não entrou —, e isso não torna
     // a aresta inválida: o transporte em uso é facto sobre a ENTRADA e fica registado à mesma. O que não
     // acontece é a segunda metade, porque não há onde a escrever.
-    const p = getPlayers()[jogador];
-    if (p) syncLatch(p, latchStore, jogador, inputOf(jogador).inUse, padrao);
+    const p = getPlayers()[player];
+    if (p) syncLatch(p, latchStore, player, inputOf(player).inUse, fallback);
   };
 }

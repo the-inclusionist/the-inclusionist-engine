@@ -46,13 +46,13 @@ export const REFUSAL_KEY: Readonly<Record<string, string>> = Object.freeze({
  *
  * `null` = pode; a interface não mostra nada, porque um aviso que aparece sempre deixa de ser lido.
  */
-export function latchRefusal(transporte: string): LatchRefusal | null {
-  if (latchIsOptional(transporte)) return null;
-  const chave = REFUSAL_KEY[transporte];
+export function latchRefusal(transportName: string): LatchRefusal | null {
+  if (latchIsOptional(transportName)) return null;
+  const refusalKey = REFUSAL_KEY[transportName];
   // 📌 Um transporte que exija alternância e não tenha frase seria um botão desabilitado SEM motivo — pior do
   // que o defeito que isto conserta, porque a criança deixa de saber sequer que há uma razão. O gate afirma
   // que os dois conjuntos coincidem; aqui a ausência degrada para «não recuso», que mantém o controle vivo.
-  return chave ? { key: chave, transport: transporte } : null;
+  return refusalKey ? { key: refusalKey, transport: transportName } : null;
 }
 
 /**

@@ -24,7 +24,7 @@ export interface KokoroSession {
  * have to load the speaker to be loaded by it.
  */
 export interface KokoroModule {
-  readonly phonemize: (texto: string, espeak: string) => Promise<string>;
+  readonly phonemize: (text: string, espeak: string) => Promise<string>;
   readonly vocabulary: () => Promise<Readonly<{ [symbol: string]: number }>>;
   readonly voice: (id: string) => Promise<Float32Array>;
   readonly session: (device: 'webgpu' | 'wasm') => Promise<KokoroSession>;
@@ -61,10 +61,10 @@ export const KOKORO_VOICES: readonly KokoroVoice[] = Object.freeze([
  * WHERE KOKORO COMES FROM, in one place (ADR-0114's rule for hosts): the model repository the catalogue fetches at build time; the
  * delivery serves the same paths from its own origin (ADR-0177), and a game's port asks for them there.
  */
-const REPOSITORIO_KOKORO = 'https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main';
-export const KOKORO_MODEL_URL = `${REPOSITORIO_KOKORO}/onnx/model.onnx`;
-export const URL_DO_TOKENIZADOR_KOKORO = `${REPOSITORIO_KOKORO}/tokenizer.json`;
-export const kokoroVoiceUrl = (id: string): string => `${REPOSITORIO_KOKORO}/voices/${id}.bin`;
+const KOKORO_REPOSITORY = 'https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main';
+export const KOKORO_MODEL_URL = `${KOKORO_REPOSITORY}/onnx/model.onnx`;
+export const URL_DO_TOKENIZADOR_KOKORO = `${KOKORO_REPOSITORY}/tokenizer.json`;
+export const kokoroVoiceUrl = (id: string): string => `${KOKORO_REPOSITORY}/voices/${id}.bin`;
 
 /**
  * Each voice file's SHA-256 and size, read from the repository's LFS metadata on 2026-09-14 (all 522 240 bytes); `pf_dora` also
@@ -157,10 +157,10 @@ export function wavDe(waveform: ArrayLike<number>, sampleRate = KOKORO_SAMPLE_RA
   const n = waveform.length;
   const buf = new ArrayBuffer(44 + n * 2);
   const v = new DataView(buf);
-  const texto = (o: number, s: string): void => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
-  texto(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); texto(8, 'WAVE'); texto(12, 'fmt ');
+  const text = (o: number, s: string): void => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  text(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); text(8, 'WAVE'); text(12, 'fmt ');
   v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sampleRate, true);
-  v.setUint32(28, sampleRate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); texto(36, 'data'); v.setUint32(40, n * 2, true);
+  v.setUint32(28, sampleRate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); text(36, 'data'); v.setUint32(40, n * 2, true);
   for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.round(Math.max(-1, Math.min(1, waveform[i]!)) * 32767), true);
   return buf;
 }

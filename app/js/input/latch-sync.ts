@@ -83,9 +83,9 @@ export function applyLatch(p: LatchPlayer, on: boolean): boolean {
 export function syncLatch(
   p: LatchPlayer,
   store: LatchStore,
-  jogador: number,
-  transporte: string,
-  padrao: boolean,
+  player: number,
+  transport: string,
+  byDefault: boolean,
 ): boolean {
-  return applyLatch(p, storedLatch(store, BASE_DA_MARCHA, jogador, transporte, padrao));
+  return applyLatch(p, storedLatch(store, BASE_DA_MARCHA, player, transport, byDefault));
 }

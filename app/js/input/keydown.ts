@@ -536,7 +536,7 @@ export interface KeydownCtx {
    * chega carimbado (`input/synthetic-source`), então é por esta linha que `olhos`/`rosto`/`gestos`/`fala`
    * passam a ser o transporte em uso. Uma tecla premida a sério devolve o teclado, que é a regra 3 do ADR-0109.
    */
-  playerEdge: (jogador: number, origin: TransportName) => void;
+  playerEdge: (player: number, origin: TransportName) => void;
   releaseKey: (code: string) => void;
   /** `let oneButton` do game.js (empatia motora) → getter. */
   isOneButton: () => boolean;

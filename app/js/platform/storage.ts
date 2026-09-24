@@ -181,6 +181,6 @@ export const KEYS = {
   rmFlavorP: (i: number): string => 'incl_rmFlavor_p' + i,
   // demo/attract: uma gravação por cenário (fn em vez de string — chave parametrizada). ESCOPO DO JOGO: a
   // gravação é de uma fase DESTE jogo e não faz sentido nenhum em outro.
-  attract: (gameId: string, cen: string): string => gameKey(gameId, 'attract_' + cen),
-  attractLegado: (cen: string): string => 'incl_attract_' + cen,
+  attract: (gameId: string, scenery: string): string => gameKey(gameId, 'attract_' + scenery),
+  attractLegado: (scenery: string): string => 'incl_attract_' + scenery,
 };

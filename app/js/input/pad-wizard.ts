@@ -76,14 +76,14 @@ function skipInSession(id: string): void {
 export interface PadWizardCtx {
   getGamepads: GetGamepads;
   /** The position's name in the GAME's word and the language of now; `null` = the game does not use it (the step is skipped). */
-  actionLabel: (acao: string) => string | null;
+  actionLabel: (action: string) => string | null;
   /** Shows and says the wizard's sentence. */
   say: (phrase: string) => void;
   /** Shows what is mapped so far. */
-  progress: (texto: string) => void;
+  progress: (text: string) => void;
   srAlert: (phrase: string) => void;
   /** The step that starts (`null` while waiting for a pad) — the host's demonstration, when it has one. */
-  onStep?: (acao: string | null) => void;
+  onStep?: (action: string | null) => void;
   /** Every tick while open — the host's animation, when it has one. */
   onTick?: () => void;
   /** After closing: the pad index mapped (-1 if none was identified) and whether the map was saved. */
@@ -116,9 +116,9 @@ export function createPadWizard(ctx: PadWizardCtx): PadWizard {
     if (!padWiz) return;
     advance();
     if (!padWiz) return; // fechou ao avançar
-    const acao = PADWIZ_ORDER[padWiz.step]!;
-    ctx.say(t('pad.wiz.step', { n: padWiz.step + 1, total: PADWIZ_ORDER.length, acao: ctx.actionLabel(acao)! }));
-    ctx.onStep?.(acao);
+    const action = PADWIZ_ORDER[padWiz.step]!;
+    ctx.say(t('pad.wiz.step', { n: padWiz.step + 1, total: PADWIZ_ORDER.length, acao: ctx.actionLabel(action)! }));
+    ctx.onStep?.(action);
     // O travessão da lista vazia fica cru de propósito: é pontuação, não idioma.
     ctx.progress(t('pad.wiz.mapped', { lista: Object.keys(padWiz.map).join(' · ') || '—' }));
   }

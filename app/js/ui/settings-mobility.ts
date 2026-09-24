@@ -80,7 +80,7 @@ export interface SettingsMobilityCtx {
    * ⚠️ Opcional pela mesma razão que na `LatchWriteCtx`: sem ele a escrita cai no que já fazia,
    * e exigi-lo quebraria todo consumidor por causa de uma migração a meio.
    */
-  transportInUse?: (jogador: number) => string;
+  transportInUse?: (player: number) => string;
   /**
    * A ALTERNÂNCIA DO BOTÃO DE CORRER.
    *
@@ -204,7 +204,7 @@ export interface LatchWriteCtx {
    * 📌 E é INJECTADO em vez de importado: `ui/` a ler estado de módulo de `input/` é uma aresta nova entre
    * duas camadas, para poupar um argumento. Este ctx já recebe tudo o resto assim.
    */
-  readonly transportInUse?: (jogador: number) => string;
+  readonly transportInUse?: (player: number) => string;
 }
 
 /**
@@ -234,8 +234,8 @@ export function setMoveLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
   // não há escolha a guardar (ADR-0113 cláusula 3) — e devolve `false` para quem chama desabilitar o
   // controle com o motivo dito. Aqui a recusa não muda mais nada: o valor em memória continua a ser o que
   // a regra resolve, e é ela que responde `true` naqueles quatro.
-  const transporte = ctx.transportInUse ? ctx.transportInUse(i) : null;
-  if (transporte) writeLatch((chave, isOn) => ctx.store.setBool(chave, isOn), BASE_DA_MARCHA, i, transporte, on);
+  const transport = ctx.transportInUse ? ctx.transportInUse(i) : null;
+  if (transport) writeLatch((key, isOn) => ctx.store.setBool(key, isOn), BASE_DA_MARCHA, i, transport, on);
   // 📌 O ANÚNCIO É INCONDICIONAL, ao contrário do `applyLatch`, que devolve «mudou». A criança
   // carregou no ícone: calar-se porque o valor já era esse deixaria o botão sem resposta para quem ouve.
   ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
@@ -289,14 +289,14 @@ export function setRunLatch(ctx: LatchWriteCtx, i: number, on: boolean): void {
  *
  * Idempotente: chamar duas vezes reaproveita a lista em vez de a duplicar.
  */
-export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
+export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, list: HTMLElement): void {
   if (!ctx.find('#movement-players')) {
     const abas = ctx.create('div');
     abas.id = 'movement-players';
     // Nascem escondidas e vazias: quem as desenha é `renderMovPlayers()`, que sabe quantos assentos há AGORA —
     // e o número muda durante a partida.
     abas.hidden = true;
-    card.insertBefore(abas, lista);
+    card.insertBefore(abas, list);
   }
   const rows: ControlRowSpec[] = [
     { id: 'opt-facil', label: t('motor.facil'), hint: t('motor.facil.dica') },
@@ -314,7 +314,7 @@ export function mountMobilityInside(ctx: PanelShellCtx, card: HTMLElement, lista
       if (rowNode) labelRow(rowNode, spec);
       continue;
     }
-    lista.appendChild(controlRow(ctx, spec).row);
+    list.appendChild(controlRow(ctx, spec).row);
   }
 }
 
@@ -345,7 +345,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
    */
   const altMoveRow = altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null;
   const altMoveHint = altMoveRow?.querySelector<HTMLElement>('.opt-hint') ?? null;
-  const dicaOriginal = altMoveHint?.textContent ?? '';
+  const originalHint = altMoveHint?.textContent ?? '';
 
   /*
    * ADR-0115 · A LINHA SOME NUM JOGO QUE NÃO SEGURA NADA — e some para TODA A GENTE.
@@ -441,7 +441,7 @@ export function initSettingsMobility(ctx: SettingsMobilityCtx): SettingsMobility
       const refusal = refusalFor(selMovPlayer);
       if (refusal) altMoveBtn.setAttribute('aria-disabled', 'true');
       else altMoveBtn.removeAttribute('aria-disabled');
-      if (altMoveHint) altMoveHint.textContent = refusal ? `${dicaOriginal} ${t(refusal.key)}`.trim() : dicaOriginal;
+      if (altMoveHint) altMoveHint.textContent = refusal ? `${originalHint} ${t(refusal.key)}`.trim() : originalHint;
     }
     reflectMovementBtn();
   }

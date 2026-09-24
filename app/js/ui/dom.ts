@@ -47,6 +47,6 @@ export function toggleLabel(on: boolean): string {
 
 /** O `aria-label` da mesma alternância: '{alvo}: ligado'. Separado do rótulo visível porque o leitor de tela
  *  precisa do NOME do alvo junto, e a tela não (o nome já está na linha ao lado do botão). */
-export function toggleAria(alvo: string, on: boolean): string {
-  return t(on ? 'ui.toggle.ariaOn' : 'ui.toggle.ariaOff', { alvo });
+export function toggleAria(target: string, on: boolean): string {
+  return t(on ? 'ui.toggle.ariaOn' : 'ui.toggle.ariaOff', { alvo: target });
 }

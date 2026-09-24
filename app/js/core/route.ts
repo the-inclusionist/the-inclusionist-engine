@@ -23,7 +23,7 @@
 //   structure  «cenário: chão, parede, o que sustenta»           → NÃO
 //   gate       «barra até uma condição»                          → NÃO: barrar é o que ele faz
 //   hazard     «machuca ao encostar»                             → NÃO, e é a única onde eu escolhi
-//   goal       «o que a rodada pede»                             → caso à parte, ver `alvo` abaixo
+//   goal       «o que a rodada pede»                             → caso à parte, ver `targets` abaixo
 //
 // ⚠️ O `hazard` É A ESCOLHA, e declaro-a: a métrica dele não diz se se atravessa, diz o que custa. Rota que
 // passa por espinho é rota que manda a criança levar dano — e no modo cego e no modo cadeirante o próprio
@@ -55,8 +55,8 @@ import { distance } from './contract.js';
 export const WALKABLE_ROLES: ReadonlySet<Role> = new Set<Role>(['free', 'water', 'climb', 'key']);
 
 /** Este papel deixa passar? */
-export function isWalkable(papel: Role): boolean {
-  return WALKABLE_ROLES.has(papel);
+export function isWalkable(role: Role): boolean {
+  return WALKABLE_ROLES.has(role);
 }
 
 export interface RouteCtx {
@@ -86,7 +86,7 @@ export interface Route {
 const DEFAULT_BUDGET = 4096;
 
 /** A spot's key in the queue. Rounded, because in continuous space spots are born from sums of `stride`. */
-const chave = (s: Spot, cells: number): string =>
+const key = (s: Spot, cells: number): string =>
   s.x.toFixed(cells) + '|' + s.y.toFixed(cells) + '|' + (s.z ?? 0).toFixed(cells);
 
 /**
@@ -118,11 +118,11 @@ function neighbours(shape: Topology, stride: number): Spot[] {
 /** O ponto cabe na extensão declarada? Grade conta células 0..n−1; contínuo conta unidades 0..n. */
 function isInside(shape: Topology, s: Spot): boolean {
   if (shape.kind === 'hotspots') return false;
-  const eixo = [s.x, s.y, s.z ?? 0];
+  const axis = [s.x, s.y, s.z ?? 0];
   for (let i = 0; i < shape.size.length; i++) {
     const lim = shape.size[i] as number;
-    if (eixo[i]! < 0) return false;
-    if (shape.kind === 'grid' ? eixo[i]! > lim - 1 : eixo[i]! > lim) return false;
+    if (axis[i]! < 0) return false;
+    if (shape.kind === 'grid' ? axis[i]! > lim - 1 : axis[i]! > lim) return false;
   }
   return true;
 }
@@ -150,7 +150,7 @@ export function routeTo(ctx: RouteCtx, de: Spot, targets: readonly Spot[]): Rout
 
   const search: Search = {
     ctx, space: shape, arrived, keyDecimals: walk.keyDecimals, jumps: neighbours(shape, walk.step),
-    budget: ctx.budget ?? DEFAULT_BUDGET, seen: new Set<string>([chave(de, walk.keyDecimals)]),
+    budget: ctx.budget ?? DEFAULT_BUDGET, seen: new Set<string>([key(de, walk.keyDecimals)]),
   };
   let level: Step[] = [{ at: de, first: de, steps: 0 }];
   while (level.length) {
@@ -192,7 +192,7 @@ function nextLevel(s: Search, level: readonly Step[]): Route | null | Step[] {
     for (const d of s.jumps) {
       const neighbour = stepFrom(item.at, d);
       if (!isInside(s.space, neighbour)) continue;
-      const k = chave(neighbour, s.keyDecimals);
+      const k = key(neighbour, s.keyDecimals);
       if (s.seen.has(k)) continue;
       s.seen.add(k);
       if (s.seen.size > s.budget) return null;

@@ -166,8 +166,8 @@ export function presetProblems(p: ActionPreset | null | undefined): string[] {
   const problemas: string[] = [];
   const named = presetActions(p);
   if (named.length === 0) problemas.push('preset: names no action - the child would see an unlabelled control');
-  for (const chave of Object.keys(p)) {
-    if (!isAction(chave)) problemas.push(`preset: ${chave} is not an action`);
+  for (const key of Object.keys(p)) {
+    if (!isAction(key)) problemas.push(`preset: ${key} is not an action`);
   }
   for (const a of named) {
     const w = p[a];

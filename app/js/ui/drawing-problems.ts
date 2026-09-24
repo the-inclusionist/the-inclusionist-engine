@@ -58,12 +58,12 @@ export function drawnBelowTheFloor(ctx: DrawingProblemsCtx): string | null {
       target: el.matches(TOUCH_TARGET) ? { w: b.width, h: b.height } : null,
     };
   });
-  const { text: texto, targets: alvos } = belowFloor(nodes, scale.k);
-  if (!texto.length && !alvos.length) return null;
+  const { text: smallText, targets: smallTargets } = belowFloor(nodes, scale.k);
+  if (!smallText.length && !smallTargets.length) return null;
   const k = minimumTarget(scale.k) / 22;
   const parts = [
-    texto.length ? `text under ${8 * k} px (${texto.slice(0, 4).join(', ')})` : '',
-    alvos.length ? `targets under ${22 * k} px (${alvos.slice(0, 4).join(', ')})` : '',
+    smallText.length ? `text under ${8 * k} px (${smallText.slice(0, 4).join(', ')})` : '',
+    smallTargets.length ? `targets under ${22 * k} px (${smallTargets.slice(0, 4).join(', ')})` : '',
   ].filter(Boolean);
   return `the cartridge draws ${parts.join(' and ')} in #game-region: a child with low vision or unsteady hands cannot `
     + 'read or hit them — text and targets start at 16 and 44 px at 640×360 and grow with the scale (ADR-0163): size them '

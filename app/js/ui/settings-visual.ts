@@ -383,10 +383,10 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
      * nunca a alcança.
      */
     const visual = playerVisual(ctx.getPlayers(), ctx.getSelectedPlayer());
-    const tema = visual.theme !== PADRAO_VISUAL.tema;
-    const correcao = visual.correction !== PADRAO_VISUAL.correcao;
-    const rowOfCheckedAxis = (eixo: string): HTMLElement | null =>
-      ctx.$<HTMLElement>(`#visual-modes button[data-eixo="${eixo}"][aria-checked="true"]`)
+    const themeChanged = visual.theme !== PADRAO_VISUAL.tema;
+    const correctionChanged = visual.correction !== PADRAO_VISUAL.correcao;
+    const rowOfCheckedAxis = (axis: string): HTMLElement | null =>
+      ctx.$<HTMLElement>(`#visual-modes button[data-eixo="${axis}"][aria-checked="true"]`)
         ?.closest<HTMLElement>('.ctrl-row') ?? null;
     const lqOff = s.lq !== DEFAULTS.lq;
     const owner = s.ownerColors !== DEFAULTS.ownerColors;
@@ -396,15 +396,15 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     const rolesChanged = ROLE_KEYS.some((k) => !sameRgb(s.roleColors[k], HC_ROLE_DEF[k]));
     const rowOf = (sel: string): HTMLElement | null =>
       ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null;
-    markChanged(rowOfCheckedAxis('tema'), tema);
-    markChanged(rowOfCheckedAxis('correcao'), correcao);
+    markChanged(rowOfCheckedAxis('tema'), themeChanged);
+    markChanged(rowOfCheckedAxis('correcao'), correctionChanged);
     markChanged(rowOf('#opt-lq'), lqOff);
     markChanged(rowOf('#opt-ownercolors'), owner);
     markChanged(rowOf('#opt-cbsafe'), cb);
     markChanged(rowOf('#opt-outline-fg'), fg);
     markChanged(rowOf('#opt-outline-bg'), bg);
     markChanged(rowOf('#opt-role-reset'), rolesChanged);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="visual"]'), [tema, correcao, lqOff, owner, cb, fg, bg, rolesChanged]);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="visual"]'), [themeChanged, correctionChanged, lqOff, owner, cb, fg, bg, rolesChanged]);
   }
 
   // ---- restaurar os padrões DESTE menu (ADR-0028) ----

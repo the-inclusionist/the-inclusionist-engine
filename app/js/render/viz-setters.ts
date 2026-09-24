@@ -116,8 +116,8 @@ export function vizGroupHtml(modes: readonly VizMode[], cur: string): string {
 }
 
 /** Fala do leitor de tela ao escolher um modo: prefixa "Jogador N:" só em multi-tela. */
-export function vizGroupSay(numPlayers: number, sel: number, nome: string): string {
-  return (numPlayers > 1 ? 'Jogador ' + (sel + 1) + ': ' : '') + nome + '.';
+export function vizGroupSay(numPlayers: number, sel: number, name: string): string {
+  return (numPlayers > 1 ? 'Jogador ' + (sel + 1) + ': ' : '') + name + '.';
 }
 
 /* ===================== cascas: PIXI/DOM injetados ===================== */
@@ -228,8 +228,8 @@ export interface VizSettersApi {
    * inevitavelmente «apagar o outro» — e era o defeito, não a API.
    */
   setPlayerVisual(i: number, v: VisualState): void;
-  setPlayerTheme(i: number, tema: Theme): void;
-  setPlayerCorrection(i: number, correcao: Correction): void;
+  setPlayerTheme(i: number, theme: Theme): void;
+  setPlayerCorrection(i: number, correction: Correction): void;
   /** Caminho SOLO: filtro CSS na canvas + texturas globais + overlay DOM + bolinha. */
   applyVizGlobal(v: VisualState): void;
   /** Reaplica tudo depois de uma mudança estrutural (cenário, nº de telas). */
@@ -304,15 +304,15 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   }
 
   /** Muda SÓ o tema deste jogador. A correção e a simulação ficam onde estavam — é o ponto da #104. */
-  function writePlayerTheme(i: number, tema: Theme): void {
+  function writePlayerTheme(i: number, theme: Theme): void {
     const p = ctx.getPlayers()[i];
-    writePlayerVisual(i, { ...(p.visual ?? DEFAULT_VISUAL), tema });
+    writePlayerVisual(i, { ...(p.visual ?? DEFAULT_VISUAL), tema: theme });
   }
 
   /** Muda SÓ a correção de cor deste jogador. O tema e a simulação ficam onde estavam. */
-  function writePlayerCorrection(i: number, correcao: Correction): void {
+  function writePlayerCorrection(i: number, correction: Correction): void {
     const p = ctx.getPlayers()[i];
-    writePlayerVisual(i, { ...(p.visual ?? DEFAULT_VISUAL), correcao });
+    writePlayerVisual(i, { ...(p.visual ?? DEFAULT_VISUAL), correcao: correction });
   }
 
   /** A API antiga, por chave única. Continua a valer: um jogo que escolhe um modo inteiro passa por aqui. */

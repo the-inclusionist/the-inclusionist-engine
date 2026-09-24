@@ -58,7 +58,7 @@ export interface SettingsTypoCtx {
    * dois lados erravam. Sem detector a linha fica desabilitada COM a mensagem, e a mensagem diz ao adulto as
    * três fontes que resolvem. O estado por omissão é o de hoje, e é accionável.
    */
-  fontInstalled?: (familia: string) => boolean;
+  fontInstalled?: (family: string) => boolean;
 }
 
 export interface SettingsTypoApi {
@@ -115,7 +115,7 @@ const OFFERED_MARK = '○';
  * escolha. (Quando há `fillExplain`, ela nem chega a ficar na linha: vai para o rodapé.)
  */
 export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
-  fontKey: string, isInstalled?: (familia: string) => boolean): void {
+  fontKey: string, isInstalled?: (family: string) => boolean): void {
   let radios = list.querySelector<HTMLElement>('[role="radiogroup"]');
   if (!radios) {
     radios = ctx.create('div');
@@ -135,10 +135,10 @@ export function mountTypoInside(ctx: PanelShellCtx, list: HTMLElement,
       const spec = typoRowSpec(row);
       const old = ctx.find('#' + spec.id)?.closest<HTMLElement>('.ctrl-row');
       if (old) { labelRow(old, spec); dressRow(old, row); continue; }
-      const { row: linha, controle } = controlRow(ctx, spec);
+      const { row: rowNode, controle } = controlRow(ctx, spec);
       controle.dataset.font = row.key;
-      dressRow(linha, row);
-      radios.appendChild(linha);
+      dressRow(rowNode, row);
+      radios.appendChild(rowNode);
     }
   }
 }
@@ -162,7 +162,7 @@ function dressRow(where: HTMLElement, row: TypoRow): void {
  * 📌 A TRAVA é reflectida e não construída, porque ela pode MUDAR: a `ronde` só fica disponível no instante em
  * que o adulto instala uma das faces que a mensagem nomeia (ADR-0012, a palavra «enquanto»).
  */
-function reflectTypo(list: HTMLElement, fontKey: string, isInstalled?: (familia: string) => boolean): void {
+function reflectTypo(list: HTMLElement, fontKey: string, isInstalled?: (family: string) => boolean): void {
   // Percorre o que EXISTE na lista, e não o catálogo: reflectir é sobre os nós que já lá estão, e perguntar
   // ao catálogo outra vez seria montar a lista uma segunda vez só para a ler.
   for (const b of list.querySelectorAll<HTMLButtonElement>('button[data-font]')) {

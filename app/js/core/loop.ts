@@ -37,7 +37,7 @@ export interface LoopOptions {
 let registeredNotice: ((failure: unknown) => void) | null = null;
 export function registerCrashNotice(notice: ((failure: unknown) => void) | null): void { registeredNotice = notice; }
 
-export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, opcoes: LoopOptions = {}): void {
+export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, options: LoopOptions = {}): void {
   let stopped = false;
   const step = (): void => {
     if (stopped) return; // ticker sem `remove` não desregistra — a trava é o que faz o laço parar mesmo assim
@@ -50,7 +50,7 @@ export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2
       // O anúncio não pode ressuscitar o problema. Se o próprio aviso quebrar — sem leitor de tela, sem DOM —,
       // uma exceção aqui voltaria a ser invisível dentro do ticker, que é exatamente o defeito que isto fecha.
       // read at the throw, not at the start: a root mounted after the loop began still announces it
-      try { (opcoes.onFailure ?? registeredNotice)?.(failure); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
+      try { (options.onFailure ?? registeredNotice)?.(failure); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
     }
   };
   ticker.add(step);

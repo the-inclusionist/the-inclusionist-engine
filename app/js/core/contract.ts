@@ -122,7 +122,7 @@ export interface Spot { readonly x: number; readonly y: number; readonly z?: num
 export function dimension(t: Topology): number { return t.kind === 'hotspots' ? 0 : t.size.length; }
 
 /** O eixo `i` de um ponto, para quem percorre dimensões em vez de as nomear. */
-function eixo(s: Spot, i: number): number { return i === 0 ? s.x : i === 1 ? s.y : (s.z ?? 0); }
+function axis(s: Spot, i: number): number { return i === 0 ? s.x : i === 1 ? s.y : (s.z ?? 0); }
 
 /* ===================== 2 · PAPEL SEMÂNTICO ===================== */
 //
@@ -375,13 +375,13 @@ export interface GameDeclaration {
    * fica com a fábrica da engine, que é jogável e é o que ele já tem hoje. Não há lado errado na ausência.
    *
    * ⚠️ E LEVA O ASSENTO porque o teclado de dois jogadores não é o de um: as setas mudam de dono, e um padrão
-   * que não soubesse o assento daria as mesmas teclas a duas crianças. `jogadores` é 1, 2, 3 ou 4; `assento` é
+   * que não soubesse o assento daria as mesmas teclas a duas crianças. `players` é 1, 2, 3 ou 4; `seat` é
    * o índice dentro desse arranjo.
    *
    * 📌 O irmão do CONTROLE é o campo logo abaixo, e chegou um commit depois: o obstáculo era que o assento
    * ainda não se conhecia no ponto em que a tabela de botões é lida, e a saída foi subi-lo no laço.
    */
-  keyboardMapping?(jogadores: number, assento: number): Partial<Record<Action, readonly string[] | null>> | null;
+  keyboardMapping?(players: number, seat: number): Partial<Record<Action, readonly string[] | null>> | null;
   /**
    * O MAPEAMENTO DE BOTÕES QUE ESTE JOGO QUER NO CONTROLE — mesma pergunta, outro aparelho (ADR-0115).
    *
@@ -396,7 +396,7 @@ export interface GameDeclaration {
    * dois aparelhos, mas o JOGO pode querer arranjos distintos por assento (o guarda-redes e o atacante não
    * fazem o mesmo).
    */
-  padMapping?(jogadores: number, assento: number): Partial<Record<Action, number | null>> | null;
+  padMapping?(players: number, seat: number): Partial<Record<Action, number | null>> | null;
   readonly tick: TickOwner;
   /** O papel do que está em `at`. É o campo 2, e é o que substitui `roleOf`. */
   roleAt(at: Spot): Role;
@@ -579,8 +579,8 @@ function mappingProblems(field: string, declared: unknown, example: string, beca
   if (typeof declared !== 'function') {
     return [`${field}: must be a function - write \`${field}: ${example}\`, because ${because}`];
   }
-  // ⚠️ Os nomes DESTA anotação são meus, logo nascem em inglês; os do CAMPO (`jogadores`, `assento`) são
-  // superfície publicada e saem na fase 7 do ADR-0219 — é por isso que a frase de exemplo acima os mantém.
+  // The names of THIS annotation are mine and were born in English; the field's own (`players`, `seat`) became
+  // English with phase 7 of the English plan (ADR-0230).
   const m = (declared as (players: number, seat: number) => unknown)(1, 0);
   return m !== null && (typeof m !== 'object' || Array.isArray(m))
     ? [`${field}: must return an object or null - anything else is merged into nothing, and this game keeps the engine factory while its author believes otherwise`]
@@ -658,7 +658,7 @@ export function distance(t: Topology, a: Spot, b: Spot): number {
   if (t.kind === 'hotspots') return Math.abs(a.x - b.x);
 
   const d: number[] = [];
-  for (let i = 0; i < t.size.length; i++) d.push(Math.abs(eixo(a, i) - eixo(b, i)));
+  for (let i = 0; i < t.size.length; i++) d.push(Math.abs(axis(a, i) - axis(b, i)));
 
   const rawDistance = t.move === 'orthogonal' ? d.reduce((s, v) => s + v, 0)  // L¹: cada eixo custa por si
     : t.move === 'diagonal' ? Math.max(...d)                            // L∞: a diagonal custa um passo
@@ -681,12 +681,12 @@ export function bearing(t: Topology, from: Spot, to: Spot): Bearing {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const dz = t.size.length > 2 ? (to.z ?? 0) - (from.z ?? 0) : 0;
-  const plano = Math.hypot(dx, dy);
+  const plane = Math.hypot(dx, dy);
 
   // O eixo vertical do ESPAÇO ganha quando domina o plano — e ganha em palavras próprias, porque `up`/`down`
   // já são AÇÕES em `core/actions`. Ver o comentário de `Heading`.
-  if (Math.abs(dz) > plano) return { kind: 'compass', heading: dz > 0 ? 'zenith' : 'nadir' };
-  if (plano === 0) return { kind: 'none' }; // mesmo lugar: não há direção que dizer, e inventar uma seria mentir
+  if (Math.abs(dz) > plane) return { kind: 'compass', heading: dz > 0 ? 'zenith' : 'nadir' };
+  if (plane === 0) return { kind: 'none' }; // mesmo lugar: não há direção que dizer, e inventar uma seria mentir
 
   // `-dy` porque o norte é para CIMA e `y` cresce para baixo. Sem esta troca a rosa sai invertida, e o teste
   // que a apanharia é o único que precisa de existir aqui.

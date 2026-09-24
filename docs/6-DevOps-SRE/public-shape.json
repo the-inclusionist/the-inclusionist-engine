@@ -674,7 +674,7 @@
   },
   "input/keyboard.ts": {
     "type KBDefaults": "{ solo: KeyScheme",
-    "type KeyboardMapping": "(jogadores: number, assento: number) => Partial<KeyScheme> | null"
+    "type KeyboardMapping": "(players: number, seat: number) => Partial<KeyScheme> | null"
   },
   "input/keydown.ts": {
     "interface KeydownEventLike": [
@@ -776,7 +776,7 @@
     "type LatchDir": "-1 | 0 | 1"
   },
   "input/pad-defaults.ts": {
-    "type PadMapping": "(jogadores: number, assento: number) => Partial<Record<Action, number | null>> | null",
+    "type PadMapping": "(players: number, seat: number) => Partial<Record<Action, number | null>> | null",
     "type PadTable": "Readonly<Record<Action, Binding<number>>>"
   },
   "input/pad-reading.ts": {
@@ -1669,7 +1669,7 @@
     "interface DrawingWithCircle": [
       "drawCircle"
     ],
-    "type RenderInto": "(displayObject: unknown, alvo: unknown, clearFirst: boolean) => void",
+    "type RenderInto": "(displayObject: unknown, target: unknown, clearFirst: boolean) => void",
     "type CreateSprite": "(sourceTexture: unknown) => T",
     "type CreateTile": "(sourceTexture: unknown, tileWidth: number, tileHeight: number) => T",
     "type CreateDrawing": "() => T",
@@ -1767,7 +1767,7 @@
       "value"
     ],
     "type VisualAxis": "'tema' | 'correcao'",
-    "type Translator": "(chave: string, params?: Record<string, string | number>) => string"
+    "type Translator": "(key: string, params?: Record<string, string | number>) => string"
   },
   "render/viz-axes.ts": {
     "interface HowItApplies": [
@@ -2376,7 +2376,7 @@
       "srAlert",
       "t"
     ],
-    "type Translator": "(chave: string, params?: Record<string, string | number>) => string"
+    "type Translator": "(key: string, params?: Record<string, string | number>) => string"
   },
   "ui/scan-overlay.ts": {
     "interface ScanOverlay": [

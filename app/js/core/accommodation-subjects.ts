@@ -45,10 +45,10 @@ export function contractSubjects(i: SubjectInputs): ReadonlySet<ContractKeyedAcc
   const hasDirection = hasWorld && d.topology().kind !== 'hotspots';
   const byActions = i.actions.length > 0;
   const pointer = d.needsPointer?.() === true;
-  const segura = d.holdsKeys();
+  const holds = d.holdsKeys();
   const rule: Readonly<Record<ContractKeyedAccommodation, boolean>> = {
     gameSpeed: d.tick === 'clock',
-    moveLatch: segura, holdLatch: segura,
+    moveLatch: holds, holdLatch: holds,
     virtualPad: byActions, oneButton: byActions, inputCooldown: byActions, macros: byActions,
     pointerSmoothing: pointer, pointerSensitivity: pointer, pointerStyle: pointer,
     visionSimulation: hasWorld, audioDescription: hasWorld,
